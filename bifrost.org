@@ -1,0 +1,330 @@
+#+TITLE: Bifrost
+#+AUTHOR: Christian Stewart 
+#+EMAIL: christian@aperturerobotics.com
+#+DESCRIPTION: Overview of the bifrost router.
+
+* Bifrost: p2p mesh router
+
+Bifrost is a multi-hop encrypted mesh networking router.
+
+The Bifrost router wraps a libp2p host with peer tracking and multi-hop routing.
+
+** Design Overview
+
+Terminology and overview:
+
+ - A node is a process with one or more attached peers sharing transports.
+ - Each node has a set of transports, which yield links to other nodes.
+ - Each node has a Router, which tracks connections to other nodes and attempts
+   to build new connections based on historical data.
+ - Peers can request streams to other peers seamlessly.
+ - Usually, a single host process binds to the network transports while the rest
+   communicate via a unix socket to the host controller as a relay.
+
+Links or "route segments":
+
+ - Represent a single hop of connectivity between nodes.
+ - Each end has an associated transport, usually the same.
+ - Capture perf stats such as bandwidth, latency (ping time) and packet loss.
+ - Statistics are aggregated when building routes into route scores.
+ - Transport-level trends of statistics are kept to make predictions for new
+   connection performances.
+
+Examples of "links" or "route segments" and their associated transports:
+
+ - Local machine -> local machine (shm shared memory transport)
+ - Localhost -> Localhost (TCP or uDP transport)
+ - Localhost -> internet -> Remote Host (TCP/UDP transport)
+ - Localhost -> browser (WebRTC / Websocket transport)
+ - Local machine -> radio -> remote machine (XBee transport)
+
+The router can optionally preempt a solicitation:
+
+ - Router B catches route solicitation packet A -> B -> F?
+ - Lookup to see if B -> F has been made before.
+ - Find a proven route B -> C -> F -> G, return to A
+
+Types of packets that can be sent over the gossip layer:
+
+ - Routing: route solicitation messages.
+ - Telemetry: transport / link statistics repeated along all relevant routes.
+ - Identity: identity solicitation messages.
+
+Inspiration / references:
+
+ - https://www.open-mesh.org/projects/batman-adv/wiki/Multi-link-optimize
+
+** Virtual networking / compatibility layer
+
+There are several planned interfaces to the router:
+
+ - **API**: Go API to interface directly with the libp2p router in-process.
+ - **IPC/Shmem*: inter-process communication on the same host.
+ - **VPN**: a tun interface over which IPV6-addressed packets are sent.
+ - **SOCKS5**: socks proxy for secure meshed connections.
+
+For now, in-process is the primary implementation.
+
+*** VPN addressing
+
+Make a network interface on the machine (TUN). Use `gopacket` to do on-demand
+decoding of the destination address. Translate the TCP packet stages through to
+the proxying layer.
+
+*** Proxy addressing
+
+Listen with a SOCKS5 proxy on a port. Use a public-key derived format for the
+destination address.
+
+** Routing
+
+The primary goals of this project vs. other routers, such as babel:
+
+ - Route in user-space. Particularly important for cross-platform/browser.
+ - Accept only authenticated peers, and encrypt traffic in channels.
+ - Build encrypted circuits with diverse routes, then multiplex streams.
+
+The routing algorithm works like this:
+
+ - Gossip probes through the connection graph building routes between peers.
+ - Probes are kept in memory of the peers until their expiration time (on the
+   order of seconds to minutes) and repeated to peers that have not yet seen the
+   probe.
+ - Circuits can have further probing restrictions, like avoiding different types
+   of network partitions (entering a network pocket, for example).
+
+The general rules are:
+
+ - Never re-transmit a route probe to a peer that appears in the probe's
+   existing path.
+ - Drop incoming probes that already contain the local peer.
+
+** Transports
+
+Questions:
+
+ - Is PacketConn a good enough interface to have them implement?
+ - Is the transport reliable? (does it handle re-transmission)
+ - Is the transport MTU-capped? (if so, what is the MTU?)
+ - Is the transport secured, and if so, what is the remote identity?
+ - Does the transport support multicast?
+ - How can we establish unreliable streams, and send this data in-band?
+
+Overview:
+
+ - Add an additional header to the packet, maybe 1 byte, to indicate type.
+ - Types: Unreliable (raw), KCP (kcp-wrapped packet)
+
+** Code Stack Overview
+
+Low to high level:
+
+ - Application Traffic (P2P metadata, other streams)
+ - Stream Transport (P2P Link Protocol, KCP)
+ - Packet Transport (UDP/TCP/XBEE/...) (has MTU? reliable? expected bandwidth?)
+
+Given any kind of input packet transport:
+
+ - UDP (unreliable/unordered, insecure)
+ - TCP (reliable/ordered, insecure)
+ - TCP/TLS pre-authed (reliable/ordered, secure)
+ - ONION/TOR (reliable/ordered, secure)
+ - QUIC (reliable/ordered, secure)
+
+Types of handshake / encryption we want to support:
+
+ - TLS (Certificates / X.509 / CA Certs / RSA)
+ - S2S (Station to Station)
+
+Transport encryption is added in an onion-like layered way, example:
+
+ - S2S negotiation
+ - KCP Connection (reliable, no streams, insecure)
+ - UDP Connection (unordered/unreliable insecure)
+
+But, in the case where we want to negotiate a KCP connection;
+
+ - UDP Connction (unordered / unreliable insecure)
+ - Pass to ConnectionUpgrader -> notices unordered/insecure, execute handshaker.
+ - Initialize KCP connection with encryption (negotiated key)
+
+The transport level feeds the Conn object to the ConnUpgrader. The upgrader
+checks the parameters of the transport and attaches these components if
+necessary:
+
+ - KCP: if the connection is packet-based, has a MTU, or is unreliable.
+
+** Connection Negotiation and Packet Structure
+
+*** Secret Negotation / Key Exchange
+
+Between Alice (A) and Bob (B) over a unencrypted / unordered connection.
+
+ 1. A computes a random number $x$, and sends its peer ID as well as the
+    exponential $g^x$ to B. If the peer ID of B is predicted and B's public key
+    is known, A indicates the expected peer ID of B.
+ 3. B generates a random number $y$ and computes the exponential $g^y$.
+ 4. B computes the shared secret key $K=(g^x)^y$.
+ 5. Bob concats the exponentials $(g^y, g&x)$, signs them using private key $B$,
+    and then encrypts the signature with $K$. B sends ciphertext along with
+    exponential $g^y$ to A. B also indicates in this packet its own peer ID if
+    message 1 does not contain the correct one, and indicates if A's public key
+    is known. B also indicates which inner packet schemes it supports.
+ 6. A computes the shared key $K=(g^y)^x$.
+ 7. A decrypts and verifies B's signature using B's public key.
+ 8. A concatenates the exponential $(g^x, g^y)$, signs them using A's private
+    key, then encrypts the signature with K. A sends the ciphertext to B, along
+    with A's public key if B indicated it was not known. A also indicates which
+    inner packet schemes it supports.
+ 9. B decrypts and verifies A's signature using A's public key.
+
+This process is the [[https://en.wikipedia.org/wiki/Station-to-Station_protocol][S2S Protocol]] modified to include a lazy public-key exchange.
+
+*** Inner Protocol Upgrade
+
+Following this handshake, packets have an attached 1 byte header. The header
+indicates what type of packet follows, IDs go as follows:
+
+| ID     | Packet Type                |
+|--------+----------------------------|
+| $0x00$ | S2S handshake              |
+| $0x01$ | Raw unencrypted unreliable |
+| $0x02$ | KCP bus  [smux]            |
+| $0x03$ | Smux w/o KCP               |
+
+Raw packets are used to transfer in-band data with minimal encrypt/decrypt
+overhead. This marks an important capability of transferring data end-to-end
+encrypted, rather than point-to-point. This approach yields a significant
+performance bonus.
+
+The types of packets supported are exchanged in the initial handshake.
+
+*** KCP Streams with Smux
+
+This KCP stream uses the shared secret yielded by the key exchange as the secret
+for Salsa20 packet-level encryption. This scheme encrypts all data transferred.
+
+[[https://github.com/xtaci/smux][Smux]] is layered on top of this stream to provide multiple channels of
+communication. 
+
+*** Secure Streams
+
+The negotiated secure streaming scheme is used, and passed to the streams
+abstraction layer in the form of an opaque interface.
+
+Each stream is opened with a stream intent packet. The intent packet indicates
+what kind of stream is intended, which is used to route the stream to the
+appropriate packet handler.
+
+** Multicast Coding
+
+Could use available airtime to transmit to multiple peers at the same time.
+
+If multicast is possible, can send identical packet to multiple peers. Can also
+transmit data down two branches in a route fork using huffman coding.
+
+** Code Design
+
+Objectives:
+
+ - Extremely low CPU/Memory usage for embedded.
+ - Durable to DOS attacks.
+ - Modular to allow code re-use in the browser.
+
+Possible process entry points:
+
+ - Transport yields a new connection (link).
+
+Create a "conn" connection object to contain information about a connection
+associated with a transport (one side of a Link). Properties of a conn:
+
+ - Identification: is the connection identified, do we expect a specific peer?
+ - Encryption: is the connection already encrypted to the peer?
+ - Reliability: is the connection ordered (TCP) or unreliable (UDP/XBee).
+
+These properties are expected to be deterministic and inferred by the transport
+at either end of the connection. Both ends of the connection must yield the same
+connection properties, otherwise the handshake will not function properly.
+
+If the connection is not identified, not encrypted, or not reliable, the S2S
+identity handshake will be executed, and KCP will be used. Otherwise, this step
+is skipped.
+
+The smux stream multiplexer is always used in some form. 
+
+ - Client initiates a dial attempt (link establish attempt).
+
+The write-through call stack looks like:
+
+ - kcp.Write: write data to the kcp stream
+ - pc.WritePacket: write packet to PacketLink, prefixes with packet type code.
+ - link.WritePacket: write packet to the underlying link
+
+The read call stack looks like:
+
+ - kcp.Read: read data from the packet stream
+ - pc.ReadPacket: read packet from the underlying packet stream with kcp prefix.
+ - link.ReadPacket: read packet from the underlying link
+
+*** E2E: Incoming connection
+
+ - UDP transport binds to a local address and port.
+ - Receives a establishing packet from a given remote address and port.
+ - New session is created, bind to a new random port.
+
+** Browser Code Re-use
+
+The majority of the code should be re-usable. WebSocket + WebRTC transport can
+be implemented with JS bindings, while other transports will be build-flagged to
+not be included. Other than networking, bifrost uses no OS-specific code that
+would not be usable in JS via GopherJS or WebAssembly.
+
+** Issues
+
+Potential issue discussion.
+
+*** Re-encryption latency
+
+At the moment this design dictates:
+
+ - Xmit via route A -> B -> C -> D
+ - Packet is crafted on A, encrypted to D.
+ - Encrypted packet is transmitted A->B.
+ - Both the metadata AND the packet decrypted on B.
+ - Both metadata And the packet re-encrypted B -> C.
+ - Encrypted packet is transmitted B -> C.
+ - Etc ...
+
+There is an unnecessary encrypt/decrypt step here. A possible solution might be:
+
+ - Encrypt the body of the packet to the destination (end-to-end).
+ - Sign / encrypt the header of the packet only.
+ - Transmit the header, then the body. Do not decrypt / encrypt the body.
+
+This requires:
+
+ - Packet-level transports.
+ - Ability to flag a packet as O_ENCRYPT or not.
+
+An option here might be to just not encrypt at the transport level, I think
+this makes the most sense.
+
+Can prefix a packet with a header indicating if it is encrypted or not.
+
+Use a unique ID for the connection to reference the block of unencrypted data
+as an encrypted inner packet getting transported via a route.
+
+*** Transport security / KCP
+
+ - How can we maintain protocol modularity?
+ - How to negotiate the KCP connection?
+
+** Further research
+
+Ideas from ethereum:
+
+ - multiple authenticated connectivity modes (ECDH+ECDHE, AES128)
+ - authenticated discovery (ECDSA)
+ - connection framing
+ - peer reputation model
+
