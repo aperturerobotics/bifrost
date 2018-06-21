@@ -1,9 +1,13 @@
 package udp
 
 import (
+	"context"
+
 	"github.com/aperturerobotics/bifrost/transport"
+	"github.com/libp2p/go-libp2p-crypto"
 	ma "github.com/multiformats/go-multiaddr"
 	manet "github.com/multiformats/go-multiaddr-net"
+	"github.com/sirupsen/logrus"
 	mafmt "github.com/whyrusleeping/mafmt"
 )
 
@@ -15,13 +19,19 @@ type Factory struct {
 }
 
 // Register registers the UDP factory with a controller.
+/*
 func Register(c transport.Controller) error {
 	return c.RegisterTransportFactory(&Factory{})
 }
+*/
 
 // BuildListeners builds transport listeners given the multiaddress.
 // If the multiaddress format is not supported, returns nil.
-func (f *Factory) BuildListeners(listenAddr ma.Multiaddr) ([]transport.Transport, error) {
+func (f *Factory) BuildListeners(
+	le *logrus.Entry,
+	pkey crypto.PrivKey,
+	listenAddr ma.Multiaddr,
+) ([]transport.Transport, error) {
 	if !MaddrFmt.Matches(listenAddr) {
 		return nil, nil
 	}
@@ -31,7 +41,7 @@ func (f *Factory) BuildListeners(listenAddr ma.Multiaddr) ([]transport.Transport
 		return nil, err
 	}
 
-	u, err := NewUDP(na.String())
+	u, err := NewUDP(le, na.String(), pkey)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +52,7 @@ func (f *Factory) BuildListeners(listenAddr ma.Multiaddr) ([]transport.Transport
 // Execute executes the UDP factory.
 // For example, NICs might be detected and automatically yield transports.
 // If execute returns an error, will be retried. If err is nil, will not retry.
-func (f *Factory) Execute(ctx context.Context) error {
+func (f *Factory) Execute(ctx context.Context, h transport.FactoryHandler) error {
 	// TODO: implement UDP discovery.
 	return nil
 }

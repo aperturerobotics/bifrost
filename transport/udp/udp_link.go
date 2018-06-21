@@ -5,7 +5,9 @@ import (
 	"net"
 	"time"
 
+	"github.com/aperturerobotics/bifrost/handshake/identity"
 	"github.com/aperturerobotics/bifrost/peer"
+	// 	"github.com/xtaci/kcp-go"
 )
 
 // Link represents a UDP-based connection/link.
@@ -14,6 +16,15 @@ type Link struct {
 	pc net.PacketConn
 	// addr is the bound remote address
 	addr *net.UDPAddr
+	// neg is the negotiated identity data
+	neg *identity.Result
+	// sharedSecret is the shared secret
+	sharedSecret [32]byte
+}
+
+// NewLink builds a new link.
+func NewLink(pc net.PacketConn, addr *net.UDPAddr, neg *identity.Result, sharedSecret [32]byte) *Link {
+	return &Link{pc: pc, addr: addr, neg: neg, sharedSecret: sharedSecret}
 }
 
 // LocalAddr returns the local network address.

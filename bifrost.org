@@ -3,8 +3,6 @@
 #+EMAIL: christian@aperturerobotics.com
 #+DESCRIPTION: Overview of the bifrost router.
 
-* Bifrost: p2p mesh router
-
 Bifrost is a multi-hop encrypted mesh networking router.
 
 The Bifrost router wraps a libp2p host with peer tracking and multi-hop routing.
@@ -142,18 +140,6 @@ Transport encryption is added in an onion-like layered way, example:
  - KCP Connection (reliable, no streams, insecure)
  - UDP Connection (unordered/unreliable insecure)
 
-But, in the case where we want to negotiate a KCP connection;
-
- - UDP Connction (unordered / unreliable insecure)
- - Pass to ConnectionUpgrader -> notices unordered/insecure, execute handshaker.
- - Initialize KCP connection with encryption (negotiated key)
-
-The transport level feeds the Conn object to the ConnUpgrader. The upgrader
-checks the parameters of the transport and attaches these components if
-necessary:
-
- - KCP: if the connection is packet-based, has a MTU, or is unreliable.
-
 ** Connection Negotiation and Packet Structure
 
 *** Secret Negotation / Key Exchange
@@ -165,32 +151,30 @@ Between Alice (A) and Bob (B) over a unencrypted / unordered connection.
     is known, A indicates the expected peer ID of B.
  3. B generates a random number $y$ and computes the exponential $g^y$.
  4. B computes the shared secret key $K=(g^x)^y$.
- 5. Bob concats the exponentials $(g^y, g&x)$, signs them using private key $B$,
+ 5. Bob concats the exponentials $(g^y, g^x)$, signs them using private key $B$,
     and then encrypts the signature with $K$. B sends ciphertext along with
-    exponential $g^y$ to A. B also indicates in this packet its own peer ID if
-    message 1 does not contain the correct one, and indicates if A's public key
-    is known. B also indicates which inner packet schemes it supports.
+    exponential $g^y$ to A. Included in the ciphertext is Bs public key if
+    message 1 does not contain the correct peer ID, and a flag to indicate if
+    A's public key was known.
  6. A computes the shared key $K=(g^y)^x$.
  7. A decrypts and verifies B's signature using B's public key.
  8. A concatenates the exponential $(g^x, g^y)$, signs them using A's private
-    key, then encrypts the signature with K. A sends the ciphertext to B, along
-    with A's public key if B indicated it was not known. A also indicates which
-    inner packet schemes it supports.
+    key, then encrypts the signature with K. Additionally, the public key is
+    included in the ciphertext if B indicated it was not known. A sends the
+    ciphertext to B.
  9. B decrypts and verifies A's signature using A's public key.
 
 This process is the [[https://en.wikipedia.org/wiki/Station-to-Station_protocol][S2S Protocol]] modified to include a lazy public-key exchange.
 
 *** Inner Protocol Upgrade
 
-Following this handshake, packets have an attached 1 byte header. The header
+All packets have an attached 1 byte header. The header
 indicates what type of packet follows, IDs go as follows:
 
 | ID     | Packet Type                |
 |--------+----------------------------|
-| $0x00$ | S2S handshake              |
-| $0x01$ | Raw unencrypted unreliable |
-| $0x02$ | KCP bus  [smux]            |
-| $0x03$ | Smux w/o KCP               |
+| $0x00$ | Raw unencrypted unreliable |
+| $0x01$ | KCP bus                    |
 
 Raw packets are used to transfer in-band data with minimal encrypt/decrypt
 overhead. This marks an important capability of transferring data end-to-end
@@ -198,6 +182,8 @@ encrypted, rather than point-to-point. This approach yields a significant
 performance bonus.
 
 The types of packets supported are exchanged in the initial handshake.
+
+This header is encrypted with the shared secret, and an nonce 
 
 *** KCP Streams with Smux
 
@@ -231,40 +217,32 @@ Objectives:
  - Durable to DOS attacks.
  - Modular to allow code re-use in the browser.
 
-Possible process entry points:
+We introduce a "context tree" of state machines / controllers:
 
- - Transport yields a new connection (link).
+- NodeController: tracks configured sub-controllers.
+- LinkController: tracks + controls active / sleeping links and updates the
+  graph database.
+- Sub-controller types:
+  - TransportFactory: automatically generates Transport instances and runs them
+    as sub-controllers.
+    - Transport: a listener / dialer running on a particular interface.
+      - Link: an instance of an open / known (and later, lost / closed) connection
+        to a peer.
 
-Create a "conn" connection object to contain information about a connection
-associated with a transport (one side of a Link). Properties of a conn:
+Each "controller" has a context, that when canceled, also cancels the context of
+all sub-controllers. Each controller has a execute goroutine, which handles
+runtime logic for the particular component of the system.
+
+Link has the following properties:
 
  - Identification: is the connection identified, do we expect a specific peer?
  - Encryption: is the connection already encrypted to the peer?
  - Reliability: is the connection ordered (TCP) or unreliable (UDP/XBee).
 
-These properties are expected to be deterministic and inferred by the transport
-at either end of the connection. Both ends of the connection must yield the same
-connection properties, otherwise the handshake will not function properly.
+It is up to the transport / link to chose which handshake and encryption type to use.
 
-If the connection is not identified, not encrypted, or not reliable, the S2S
-identity handshake will be executed, and KCP will be used. Otherwise, this step
-is skipped.
-
-The smux stream multiplexer is always used in some form. 
-
- - Client initiates a dial attempt (link establish attempt).
-
-The write-through call stack looks like:
-
- - kcp.Write: write data to the kcp stream
- - pc.WritePacket: write packet to PacketLink, prefixes with packet type code.
- - link.WritePacket: write packet to the underlying link
-
-The read call stack looks like:
-
- - kcp.Read: read data from the packet stream
- - pc.ReadPacket: read packet from the underlying packet stream with kcp prefix.
- - link.ReadPacket: read packet from the underlying link
+ - Smux is hooked up to the Link Read/Write. All smux packets go through reliable/enc chan.
+ - Additionally, add ability to return a writer that is unencrypted / unreliable.
 
 *** E2E: Incoming connection
 
@@ -318,6 +296,20 @@ as an encrypted inner packet getting transported via a route.
 
  - How can we maintain protocol modularity?
  - How to negotiate the KCP connection?
+
+*** Connection sleeping / virtual network graph
+
+Sometimes we may want to "sleep" links between nodes, for example:
+
+ - Make a internet connection between two inter-planetary nodes.
+ - Notice that the average ping time is high, packet loss high.
+ - Prioritize a faster link. Connection is idle, and the link closes.
+ - Close the link, mark it as "asleep" in the link database.
+ - When attempting to use the link in the future, can wake it by re-dialing.
+
+When booting up, nodes will always start out with local links as asleep. This
+will allow a natural re-dial mechanism where the better links are attempted to
+be re-established first.
 
 ** Further research
 
