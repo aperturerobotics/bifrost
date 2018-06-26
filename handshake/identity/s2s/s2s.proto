@@ -48,11 +48,14 @@ message Packet {
   message Ciphertext {
     // TupleSignature is the signature of the two ephemeral pub keys.
     // The signature is made using the sender's public key.
-    // The keys are concatinated as {Initiator_Pub}{Other_Pub}
+    // The keys are concatinated as AB
     bytes tuple_signature = 1;
     // SenderPubKey contains B's public key if necessary.
     bytes sender_pub_key = 2;
     // ReceiverKeyKnown indicates that A's public key is known.
     bool receiver_key_known = 3;
+    // ExtraInfo contains extra information supplied by the transport.
+    // Example: in UDP this is information about what port to dial KCP on.
+    bytes extra_info = 4;
   }
 }

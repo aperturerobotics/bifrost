@@ -25,8 +25,8 @@ func init() {
 type handler struct {
 }
 
-// HandleLink handles a link.
-func (h *handler) HandleLink(nk link.Link) {
+// AddLink handles a link.
+func (h *handler) AddLink(nk link.Link) {
 	fmt.Printf("link built: %#v\n", nk)
 }
 
@@ -62,7 +62,9 @@ func main() {
 
 	h := &handler{}
 	go func() {
-		if err := utp2.Execute(ctx, h); err != nil {
+		ctx2, ctx2Cancel := context.WithTimeout(ctx, time.Second*10)
+		defer ctx2Cancel()
+		if err := utp2.Execute(ctx2, h); err != nil {
 			fmt.Println(err.Error())
 			// os.Exit(1)
 		}

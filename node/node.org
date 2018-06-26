@@ -1,0 +1,48 @@
+* Node
+
+The node's job is to:
+
+ - Track and use links with remote peers.
+ - Wake sleeping links when needed.
+
+Job list:
+
+ - Read a configuration and spawn transport listeners.
+ - Handle / store incoming link information and monitor link lifecycle.
+ - Build routes to remote peers by emitting TLVs or consulting the graph db.
+ - Establish those routes into links.
+ - Monitor all available links to a peer and use streams over them to maintain connections.
+
+Code components:
+
+ - TransportController: controls starting / stopping configured transport
+   factories and attaching the yielded transports to a node.
+ - Transport: a
+ - PeerController: tracks a remote peer, links open with the peer.
+
+Process:
+
+ - Listeners are started
+ - Links are emitted based on discovery, dialing, or incoming requests.
+ - Link information is stored in the db.
+ - 
+
+External commands:
+
+ - Open new link given a description over an existing transport (hand-dial).
+ - Get/operate on all links that exist based on filters
+ - Modify the transport configuration(s) yielding a change in transports.
+ - Open a link with a peer.
+
+Possible link close reasons:
+
+ - CLOSING - The peer no longer wants to maintain this link.
+ - SLEEPING - The peer is de-activating this link until some data needs to be sent over it.
+ - RESET - The peer is closing the link with no particular reason (it can be re-opened).
+
+Is the dynamic mesh routing actually a transport?
+
+ - We probably want to test out multiple routing algorithms.
+ - Each routing algorithm can talk to nearby peers sharing the same link mechanisms.
+ - When we build a circuit with a peer we actually emit a link.
+ - This link is marked as a multi-hop/non-routing link, but can be used by the peer streaming manager.

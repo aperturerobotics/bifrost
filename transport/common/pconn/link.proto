@@ -1,0 +1,18 @@
+syntax = "proto3";
+package pconn;
+
+// PacketType is a one-byte header indicating the type of packet.
+// TODO: implement MSBs holding conversation ID.
+enum PacketType {
+  PacketType_HANDSHAKE = 0;
+  PacketType_RAW = 1;
+  PacketType_KCP_SMUX = 2;
+}
+
+// LinkInfo is information about a UDP link.
+message LinkInfo {
+  // SourceAddr is the listener address.
+  string source_addr = 1;
+  // DestAddr is the destination address.
+  string dest_addr = 2;
+}

@@ -1,37 +1,36 @@
 package transport
 
 import (
-	"context"
-
 	"github.com/aperturerobotics/bifrost/link"
 )
 
-// Transport is similar to a NIC, yielding links to remote peers.
-type Transport interface {
-	// Execute processes the transport, emitting events to the handler.
-	// Fatal errors are returned.
-	Execute(ctx context.Context, handler Handler) error
-}
-
 // Handler handles lifecycle events of a transport.
 type Handler interface {
-	// HandleLink handles an incoming link.
-	HandleLink(link.Link)
+	// AddLink handles an incoming link.
+	AddLink(link.Link)
+}
+
+// Transport is similar to a NIC, yielding links to remote peers.
+type Transport interface {
+	// GetUUID returns a host-unique ID for this transport.
+	GetUUID() uint64
+	// GetLinks returns the list of links this transport has active.
+	GetLinks() []link.Link
+	// RestoreLink instructs the transport to attempt to restore a link.
+	// If the link would be a duplicate, return the existing link.
+	// If the link is no longer valid, return nil.
+	// In an exceptional case (invalid data), return an error.
+	RestoreLink(*link.LinkInfo) (link.Link, error)
 }
 
 // FactoryHandler handles events from a factory.
 type FactoryHandler interface {
-	Handler
-	// HandleTransport handles a new transport.
-	HandleTransport(Transport)
+	// AddTransport handles a new transport.
+	AddTransport(Transport)
 }
 
-// Factory configures transports given listen addresses.
+// Factory configures and tracks transports given configuration.
 type Factory interface {
-	// Execute processes the factory and produces transports.
-	// For example, NICs might be detected and automatically yield transports.
-	// If execute returns an error, will be retried. If err is nil, will not retry.
-	Execute(ctx context.Context, handler FactoryHandler) error
 }
 
 // Controller manages transport factories and transports.

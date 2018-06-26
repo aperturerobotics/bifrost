@@ -47,6 +47,7 @@ func NewHandshaker(
 	expectedRemotePub crypto.PubKey,
 	writePacket func(data []byte) error,
 	lookupPubKey func(pid peer.ID) crypto.PubKey,
+	extraData []byte,
 ) (*Handshaker, error) {
 	// hPub is the handshake public key.
 	hPub, hPriv, err := box.GenerateKey(rand.Reader)

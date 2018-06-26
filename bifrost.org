@@ -7,13 +7,13 @@ Bifrost is a multi-hop encrypted mesh networking router.
 
 The Bifrost router wraps a libp2p host with peer tracking and multi-hop routing.
 
-** Design Overview
+** TODO Design Overview
 
 Terminology and overview:
 
  - A node is a process with one or more attached peers sharing transports.
  - Each node has a set of transports, which yield links to other nodes.
- - Each node has a Router, which tracks connections to other nodes and attempts
+ - Each node has a router, which tracks connections to other nodes and attempts
    to build new connections based on historical data.
  - Peers can request streams to other peers seamlessly.
  - Usually, a single host process binds to the network transports while the rest
@@ -169,12 +169,17 @@ This process is the [[https://en.wikipedia.org/wiki/Station-to-Station_protocol]
 *** Inner Protocol Upgrade
 
 All packets have an attached 1 byte header. The header
-indicates what type of packet follows, IDs go as follows:
+indicates what type of packet follows with four LSB bits, IDs go as follows:
 
-| ID     | Packet Type                |
-|--------+----------------------------|
-| $0x00$ | Raw unencrypted unreliable |
-| $0x01$ | KCP bus                    |
+| ID      | Packet Type                 |
+|---------+-----------------------------|
+| $0x00$  | Handshake                   |
+| $0x01$  | Raw unencrypted unreliable  |
+| $0x02$  | KCP+SMUX reliable encrypted |
+| $>0x16$ | (Out of range)              |
+
+The four MSBs are used for the "conversation ID," determined randomly by the 
+initiator and used to indicate when a new session starts.
 
 Raw packets are used to transfer in-band data with minimal encrypt/decrypt
 overhead. This marks an important capability of transferring data end-to-end
@@ -239,10 +244,32 @@ Link has the following properties:
  - Encryption: is the connection already encrypted to the peer?
  - Reliability: is the connection ordered (TCP) or unreliable (UDP/XBee).
 
-It is up to the transport / link to chose which handshake and encryption type to use.
+It is up to the transport / link to chose which handshake and encryption type to
+use.
 
- - Smux is hooked up to the Link Read/Write. All smux packets go through reliable/enc chan.
- - Additionally, add ability to return a writer that is unencrypted / unreliable.
+A Link object is an established and running link. It:
+
+ - Emits state to observers.
+ - Returns a LinkInfo object with information about the link.
+ - Embeds a packet into the link info with re-dial information.
+
+*** E2E: Initialization of node and transports
+
+Node needs to be aware of:
+
+ + List of active root transport factories (create transports or other factories)
+ + List of active transports (all transports created by all factories)
+ + List of active links (all links created by all transports)
+
+Therefore:
+
+ - Node is constructed with a private key.
+ - Transport factories are attached with AddTransportFactory.
+ - Transport factories produce transports that are added to the node automatically.
+ - Other transports can be attached with AddTransport.
+ - A "config" transport factory is attached with a given configuration source
+   (JSON file for example or CLI) and this factory creates / shuts down transports
+ - Shutting down a node closes all transport factories Execute() contexts
 
 *** E2E: Incoming connection
 
