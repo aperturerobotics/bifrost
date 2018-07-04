@@ -1,7 +1,7 @@
 package pconn
 
 import (
-	"github.com/aperturerobotics/bifrost/link"
+	"github.com/aperturerobotics/bifrost/stream"
 	"github.com/xtaci/smux"
 )
 
@@ -11,6 +11,6 @@ type smuxStream struct {
 }
 
 // NewSmuxStream builds a new stream from an smux stream
-func NewSmuxStream(sstream *smux.Stream) link.Stream {
+func NewSmuxStream(sstream *smux.Stream) stream.Stream {
 	return &smuxStream{Stream: sstream}
 }

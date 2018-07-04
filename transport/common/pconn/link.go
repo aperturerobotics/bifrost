@@ -6,8 +6,8 @@ import (
 	"net"
 
 	"github.com/aperturerobotics/bifrost/handshake/identity"
-	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/peer"
+	"github.com/aperturerobotics/bifrost/stream"
 	"github.com/aperturerobotics/bifrost/util/scrc"
 	"github.com/sirupsen/logrus"
 	"github.com/xtaci/kcp-go"
@@ -28,8 +28,6 @@ type Link struct {
 	neg *identity.Result
 	// sharedSecret is the shared secret
 	sharedSecret [32]byte
-	// info is the link info
-	info *link.LinkInfo
 	// peerID is the remote peer id
 	peerID peer.ID
 	// mux is the reliable stream multiplexer
@@ -38,6 +36,8 @@ type Link struct {
 	kpc *kcpPacketConn
 	// sess is the kcp session
 	sess *kcp.UDPSession
+	// uuid is the link uuid
+	uuid uint64
 }
 
 // NewLink builds a new link.
@@ -59,17 +59,8 @@ func NewLink(
 		localAddr:    localAddr,
 		addr:         remoteAddr,
 		neg:          neg,
-		info: link.NewLinkInfo(
-			newLinkUUID(localAddr, remoteAddr, pid),
-			transportUUID,
-			true,
-			pid,
-			&LinkInfo{
-				SourceAddr: localAddr.String(),
-				DestAddr:   remoteAddr.String(),
-			},
-		),
-		peerID: pid,
+		peerID:       pid,
+		uuid:         newLinkUUID(localAddr, remoteAddr, pid),
 	}
 
 	// dummy raddr
@@ -106,6 +97,11 @@ func NewLink(
 	return l
 }
 
+// GetUUID returns the link unique id.
+func (l *Link) GetUUID() uint64 {
+	return l.uuid
+}
+
 // computeConvID computes the conversation id using the shared secret
 func computeConvID(sharedSecret []byte) uint32 {
 	return crc32.ChecksumIEEE(sharedSecret)
@@ -132,10 +128,6 @@ func (l *Link) acceptStreamPump() {
 	}
 }
 
-type stream struct {
-	*smux.Stream
-}
-
 // buildBlockCrypt returns the block crypto for this link.
 func (l *Link) buildBlockCrypt() (c kcp.BlockCrypt) {
 	c, _ = kcp.NewSalsa20BlockCrypt(l.sharedSecret[:])
@@ -157,14 +149,8 @@ func (l *Link) GetRemotePeer() peer.ID {
 	return l.peerID
 }
 
-// GetInfo returns information about the link.
-// TODO: Returns nil if the link is lost?
-func (l *Link) GetInfo() *link.LinkInfo {
-	return l.info
-}
-
 // OpenStream opens a stream on the link, with the given parameters.
-func (l *Link) OpenStream(encrypted, reliable bool) (link.Stream, error) {
+func (l *Link) OpenStream(opts stream.OpenOpts) (stream.Stream, error) {
 	s, err := l.mux.OpenStream()
 	if err != nil {
 		return nil, err

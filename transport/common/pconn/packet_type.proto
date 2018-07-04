@@ -1,0 +1,9 @@
+syntax = "proto3";
+package pconn;
+
+// PacketType is a one-byte header indicating the type of packet.
+enum PacketType {
+  PacketType_HANDSHAKE = 0;
+  PacketType_RAW = 1;
+  PacketType_KCP_SMUX = 2;
+}

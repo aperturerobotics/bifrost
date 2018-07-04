@@ -304,13 +304,5 @@ func (u *Transport) GetLinks() (lnks []link.Link) {
 	return
 }
 
-// RestoreLink instructs the transport to attempt to restore a link.
-// If the link would be a duplicate, return the existing link.
-// If the link is no longer valid, return nil.
-// In an exceptional case (invalid data), return an error.
-func (u *Transport) RestoreLink(li *link.LinkInfo) (link.Link, error) {
-	return nil, errors.New("don't know how to restore links")
-}
-
 // _ is a type assertion.
 var _ transport.Transport = ((*Transport)(nil))

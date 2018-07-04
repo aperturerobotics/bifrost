@@ -35,12 +35,12 @@ func main() {
 		return nil
 	}
 
-	s1, err = s2s.NewHandshaker(s1Priv, nil, s1w, nil)
+	s1, err = s2s.NewHandshaker(s1Priv, nil, s1w, nil, nil)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 
-	s2, err = s2s.NewHandshaker(s2Priv, nil, s2w, nil)
+	s2, err = s2s.NewHandshaker(s2Priv, nil, s2w, nil, nil)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
