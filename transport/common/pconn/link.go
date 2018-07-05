@@ -38,6 +38,8 @@ type Link struct {
 	sess *kcp.UDPSession
 	// uuid is the link uuid
 	uuid uint64
+	// transportUUID is the transport uuid
+	transportUUID uint64
 }
 
 // NewLink builds a new link.
@@ -53,14 +55,15 @@ func NewLink(
 	nctx, nctxCancel := context.WithCancel(ctx)
 	pid, _ := peer.IDFromPublicKey(neg.Peer)
 	l := &Link{
-		ctx:          nctx,
-		ctxCancel:    nctxCancel,
-		sharedSecret: sharedSecret,
-		localAddr:    localAddr,
-		addr:         remoteAddr,
-		neg:          neg,
-		peerID:       pid,
-		uuid:         newLinkUUID(localAddr, remoteAddr, pid),
+		ctx:           nctx,
+		ctxCancel:     nctxCancel,
+		sharedSecret:  sharedSecret,
+		localAddr:     localAddr,
+		addr:          remoteAddr,
+		neg:           neg,
+		peerID:        pid,
+		uuid:          newLinkUUID(localAddr, remoteAddr, pid),
+		transportUUID: transportUUID,
 	}
 
 	// dummy raddr
@@ -113,7 +116,7 @@ func (l *Link) acceptStreamPump() {
 		s, err := l.mux.AcceptStream()
 		if err != nil {
 			logrus.WithError(err).Error("stopped accepting stream")
-			l.Close()
+			_ = l.Close()
 			return
 		}
 
@@ -142,6 +145,11 @@ func newLinkUUID(localAddr, remoteAddr net.Addr, peerID peer.ID) uint64 {
 		[]byte(remoteAddr.String()),
 		[]byte(peerID),
 	)
+}
+
+// GetTransportUUID returns the unique ID of the transport.
+func (l *Link) GetTransportUUID() uint64 {
+	return l.transportUUID
 }
 
 // GetRemotePeer returns the identity of the remote peer if encrypted.

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
+	"sync/atomic"
 
 	"github.com/aperturerobotics/bifrost/handshake/identity"
 	"github.com/aperturerobotics/bifrost/peer"
@@ -17,6 +18,8 @@ import (
 
 // Handshaker implements the Station to Station handshake protocol.
 type Handshaker struct {
+	// nInPkt is the number of handled packets
+	nInPkt int32
 	// writePacketFn writes a packet
 	writePacketFn func(data []byte) error
 	// lookupPubKey looks up a cached public key for the sender.
@@ -32,6 +35,8 @@ type Handshaker struct {
 	packetCh chan []byte
 	// localPeerID is the local peer id
 	localPeerID peer.ID
+	// initiator indicates we initiated the request
+	initiator bool
 
 	// remotePubKey is the remote public key if known
 	remotePubKey crypto.PubKey
@@ -98,6 +103,7 @@ func checkPacketType(actual, expected PacketType) error {
 // Initiator indicates the handshaker is the initiator of the handshake.
 // Returning an error cancels the attempt.
 func (h *Handshaker) Execute(ctx context.Context, initiator bool) (*identity.Result, error) {
+	h.initiator = initiator
 	inPkt := &Packet{}
 	var remoteEphPub [32]byte
 	var sharedKey [32]byte
@@ -398,11 +404,20 @@ func (h *Handshaker) decodePubKey(cipher *Packet_Ciphertext) error {
 
 // Handle handles an incoming packet.
 // The buffer is re-used upon return.
-func (h *Handshaker) Handle(data []byte) {
+func (h *Handshaker) Handle(data []byte) bool {
 	select {
 	case h.packetCh <- data:
 	default:
+		return false
 	}
+
+	nPkt := atomic.AddInt32(&h.nInPkt, 1)
+
+	if h.initiator {
+		return nPkt < 1 // 1 packet expected
+	}
+
+	return nPkt < 2
 }
 
 // Close cleans up any resources allocated by the handshake.

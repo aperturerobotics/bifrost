@@ -6,10 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aperturerobotics/bifrost/handshake/identity"
-	"github.com/aperturerobotics/bifrost/handshake/identity/s2s"
+	"github.com/aperturerobotics/bifrost/directive"
 	"github.com/aperturerobotics/bifrost/link"
-	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/aperturerobotics/bifrost/util/scrc"
 	"github.com/libp2p/go-libp2p-crypto"
@@ -34,6 +32,11 @@ type Transport struct {
 	// privKey is the local priv key
 	privKey crypto.PrivKey
 
+	// addDirectiveCh indicates a new incoming directive
+	addDirectiveCh chan directive.Directive
+	// readErrCh indicates a read error
+	readErrCh chan error
+
 	// handshakesMtx guards the handshakes map
 	handshakesMtx sync.Mutex
 	// handshakes is the set of ongoing handshakes
@@ -49,7 +52,7 @@ type Transport struct {
 	lastLinkAddr string
 }
 
-// New builds a new packet-conn and KCP based transport, listening on the addr.
+// New builds a new packet-conn based transport, listening on the addr.
 func New(le *logrus.Entry, pc net.PacketConn, pKey crypto.PrivKey) *Transport {
 	uuid := scrc.Crc64([]byte(pc.LocalAddr().String()))
 	return &Transport{
@@ -60,46 +63,10 @@ func New(le *logrus.Entry, pc net.PacketConn, pKey crypto.PrivKey) *Transport {
 
 		handshakes: make(map[string]*inflightHandshake),
 		links:      make(map[string]*Link),
+
+		addDirectiveCh: make(chan directive.Directive, 5),
+		readErrCh:      make(chan error, 1),
 	}
-}
-
-// handleCompleteHandshake handles a completed handshake.
-func (u *Transport) handleCompleteHandshake(
-	addr net.Addr,
-	result *identity.Result,
-	initiator bool,
-) {
-	ctx := u.ctx
-	as := addr.String()
-	pid, _ := peer.IDFromPublicKey(result.Peer)
-	le := u.le.
-		WithField("remote-id", pid.Pretty()).
-		WithField("remote-addr", as)
-	le.Info("handshake complete")
-
-	u.linksMtx.Lock()
-	defer u.linksMtx.Unlock()
-
-	// TODO; re-configure link for new secret rather than closing it.
-	// TODO: find any peers with this ID and userp
-	if l, ok := u.links[as]; ok {
-		le.
-			Debug("userping old session with peer")
-		l.Close()
-	}
-
-	le.Debug("registering link")
-	u.links[as] = NewLink(
-		ctx,
-		u.pc.LocalAddr(),
-		addr,
-		u.GetUUID(),
-		result,
-		result.Secret,
-		u.pc.WriteTo,
-		initiator,
-	)
-	// HandleLink()
 }
 
 // GetUUID returns a host-unique ID for this transport.
@@ -129,6 +96,24 @@ func (u *Transport) Dial(ctx context.Context, addr net.Addr) error {
 // Fatal errors are returned.
 func (u *Transport) Execute(ctx context.Context, handler transport.Handler) error {
 	u.ctx = ctx
+	go u.readPump(ctx)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case rerr := <-u.readErrCh:
+			return rerr
+		}
+	}
+}
+
+// readPump reads data from the listener
+func (u *Transport) readPump(ctx context.Context) (readErr error) {
+	defer func() {
+		u.readErrCh <- readErr
+	}()
+
 	laddr := *u.pc.LocalAddr().(*net.UDPAddr)
 	laddr.Port = 0
 	var buf []byte
@@ -171,6 +156,11 @@ func (u *Transport) Execute(ctx context.Context, handler transport.Handler) erro
 			buf = nil
 		}
 	}
+}
+
+// LocalAddr returns the local address.
+func (u *Transport) LocalAddr() net.Addr {
+	return u.pc.LocalAddr()
 }
 
 // handlePacket handles an incoming packet.
@@ -225,72 +215,6 @@ func (u *Transport) handlePacket(ctx context.Context, buf []byte, addr net.Addr)
 	return nil
 }
 
-// LocalAddr returns the local address.
-func (u *Transport) LocalAddr() net.Addr {
-	return u.pc.LocalAddr()
-}
-
-// Close closes the connection.
-func (u *Transport) Close() error {
-	return u.pc.Close()
-}
-
-// pushHandshaker builds a new handshaker for the address.
-// it is expected that handshakesMtx is locked before calling pushHandshaker
-func (u *Transport) pushHandshaker(ctx context.Context, addr net.Addr, inititiator bool) (*inflightHandshake, error) {
-	as := addr.String()
-	nctx, nctxCancel := context.WithTimeout(ctx, handshakeTimeout)
-	hs := &inflightHandshake{ctxCancel: nctxCancel, addr: addr}
-	var err error
-	hs.hs, err = s2s.NewHandshaker(
-		u.privKey,
-		nil,
-		func(data []byte) error {
-			data = append(data, byte(PacketType_PacketType_HANDSHAKE))
-			_, err := u.pc.WriteTo(data, addr)
-			return err
-		},
-		nil,
-		nil,
-	)
-	if err != nil {
-		nctxCancel()
-		return nil, err
-	}
-
-	u.handshakes[as] = hs
-	go u.processHandshake(nctx, hs, inititiator)
-	return hs, nil
-}
-
-// processHandshake processes an in-flight handshake.
-func (u *Transport) processHandshake(ctx context.Context, hs *inflightHandshake, initiator bool) {
-	as := hs.addr.String()
-	ule := u.le.WithField("addr", as)
-
-	defer func() {
-		hs.hs.Close()
-		u.handshakesMtx.Lock()
-		ohs := u.handshakes[as]
-		if ohs == hs {
-			delete(u.handshakes, as)
-		}
-		u.handshakesMtx.Unlock()
-	}()
-
-	res, err := hs.hs.Execute(ctx, initiator)
-	if err != nil {
-		if err == context.Canceled {
-			return
-		}
-
-		ule.WithError(err).Warn("error handshaking")
-		return
-	}
-
-	u.handleCompleteHandshake(hs.addr, res, initiator)
-}
-
 // GetLinks returns the links currently active.
 func (u *Transport) GetLinks() (lnks []link.Link) {
 	u.linksMtx.Lock()
@@ -302,6 +226,19 @@ func (u *Transport) GetLinks() (lnks []link.Link) {
 	}
 
 	return
+}
+
+// AddDirective adds a new directive to the transport.
+func (u *Transport) AddDirective(d directive.Directive) {
+	select {
+	case <-u.ctx.Done():
+	case u.addDirectiveCh <- d:
+	}
+}
+
+// Close closes the connection.
+func (u *Transport) Close() error {
+	return u.pc.Close()
 }
 
 // _ is a type assertion.

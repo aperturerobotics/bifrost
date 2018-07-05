@@ -21,7 +21,8 @@ type Handshaker interface {
 	Execute(ctx context.Context, initiator bool) (*Result, error)
 	// Handle handles an incoming packet.
 	// The buffer will be re-used after the func returns.
-	Handle(data []byte)
+	// Returns if we expect more handshake packets.
+	Handle(data []byte) bool
 	// Close cleans up any resources allocated by the handshake.
 	Close()
 }

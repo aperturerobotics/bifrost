@@ -1,0 +1,9 @@
+syntax = "proto3";
+package websocket;
+
+// PacketType is a one-byte trailer indicating the type of packet.
+enum PacketType {
+  PacketType_HANDSHAKE = 0;
+  PacketType_RAW = 1;
+  PacketType_CRYPT_SMUX = 2;
+}
