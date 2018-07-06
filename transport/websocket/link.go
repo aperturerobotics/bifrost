@@ -9,6 +9,7 @@ import (
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/stream"
 	"github.com/aperturerobotics/bifrost/util/scrc"
+	"github.com/sirupsen/logrus"
 	"github.com/xtaci/smux"
 )
 
@@ -19,6 +20,8 @@ type Link struct {
 	ctx context.Context
 	// ctxCancel cancels the context for this link.
 	ctxCancel context.CancelFunc
+	// le is the logrus entry
+	le *logrus.Entry
 	// url is the url we dialed/the remote addr
 	url string
 	// neg is the negotiated identity data
@@ -38,6 +41,7 @@ type Link struct {
 // NewLink builds a new link.
 func NewLink(
 	ctx context.Context,
+	le *logrus.Entry,
 	url string,
 	transportUUID uint64,
 	neg *identity.Result,
@@ -47,6 +51,11 @@ func NewLink(
 ) *Link {
 	nctx, nctxCancel := context.WithCancel(ctx)
 	pid, _ := peer.IDFromPublicKey(neg.Peer)
+
+	// Construct the encrypted channel
+	// TODO: add support for unencryoted streams
+	conn = newEncConn(conn, sharedSecret)
+
 	var sess *smux.Session
 	if initiator {
 		sess, _ = smux.Server(conn, smux.DefaultConfig())
@@ -57,12 +66,14 @@ func NewLink(
 	return &Link{
 		ctx:       nctx,
 		ctxCancel: nctxCancel,
-		url:       url,
-		neg:       neg,
-		peerID:    pid,
-		mux:       sess,
-		uuid:      newLinkUUID(url, pid),
-		conn:      conn,
+
+		le:     le,
+		url:    url,
+		neg:    neg,
+		peerID: pid,
+		mux:    sess,
+		uuid:   newLinkUUID(url, pid),
+		conn:   conn,
 
 		sharedSecret:  sharedSecret,
 		transportUUID: transportUUID,

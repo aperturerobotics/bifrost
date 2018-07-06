@@ -35,6 +35,7 @@ func (u *Transport) handleCompleteHandshake(
 	le.Debug("registering link")
 	u.links[url] = NewLink(
 		ctx,
+		le,
 		url,
 		u.GetUUID(),
 		result,
