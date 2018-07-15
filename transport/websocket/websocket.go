@@ -8,10 +8,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aperturerobotics/bifrost/directive"
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/aperturerobotics/bifrost/util/scrc"
+	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/gorilla/websocket"
 	"github.com/libp2p/go-libp2p-crypto"
 	"github.com/sirupsen/logrus"
@@ -34,8 +34,6 @@ type Transport struct {
 	// privKey is the local priv key
 	privKey crypto.PrivKey
 
-	// addDirectiveCh indicates a new incoming directive
-	addDirectiveCh chan directive.Directive
 	// listenErrCh is the listen error channel
 	listenErrCh chan error
 
@@ -65,8 +63,7 @@ func New(le *logrus.Entry, listenStr string, pKey crypto.PrivKey) *Transport {
 		handshakes: make(map[string]*inflightHandshake),
 		links:      make(map[string]*Link),
 
-		addDirectiveCh: make(chan directive.Directive, 5),
-		listenErrCh:    make(chan error, 1),
+		listenErrCh: make(chan error, 1),
 	}
 
 	if listenStr != "" {
@@ -120,9 +117,9 @@ func (u *Transport) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	<-req.Context().Done()
 }
 
-// Execute processes the transport, emitting events to the handler.
+// Execute processes the transport.
 // Fatal errors are returned.
-func (u *Transport) Execute(ctx context.Context, handler transport.Handler) error {
+func (u *Transport) Execute(ctx context.Context) error {
 	u.ctx = ctx
 
 	if u.server != nil {
@@ -157,12 +154,13 @@ func (u *Transport) GetLinks() (lnks []link.Link) {
 	return
 }
 
-// AddDirective adds a new directive to the transport.
-func (u *Transport) AddDirective(d directive.Directive) {
-	select {
-	case <-u.ctx.Done():
-	case u.addDirectiveCh <- d:
-	}
+// HandleDirective asks if the handler can resolve the directive.
+// If it can, it returns a resolver. If not, returns nil.
+// Any exceptional errors are returned for logging.
+// It is safe to add a reference to the directive during this call.
+func (u *Transport) HandleDirective(inst directive.Instance) (directive.Resolver, error) {
+	// TODO
+	return nil, nil
 }
 
 // Close closes the connection.

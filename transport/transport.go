@@ -1,8 +1,8 @@
 package transport
 
 import (
-	"github.com/aperturerobotics/bifrost/directive"
 	"github.com/aperturerobotics/bifrost/link"
+	"github.com/aperturerobotics/controllerbus/controller"
 )
 
 // Handler handles newly built links.
@@ -13,7 +13,7 @@ type Handler interface {
 
 // Transport is similar to a NIC, yielding links to remote peers.
 type Transport interface {
-	directive.Handler
+	controller.Controller
 
 	// GetUUID returns a host-unique ID for this transport.
 	GetUUID() uint64

@@ -6,10 +6,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aperturerobotics/bifrost/directive"
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/aperturerobotics/bifrost/util/scrc"
+	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/libp2p/go-libp2p-crypto"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -32,8 +32,6 @@ type Transport struct {
 	// privKey is the local priv key
 	privKey crypto.PrivKey
 
-	// addDirectiveCh indicates a new incoming directive
-	addDirectiveCh chan directive.Directive
 	// readErrCh indicates a read error
 	readErrCh chan error
 
@@ -64,8 +62,7 @@ func New(le *logrus.Entry, pc net.PacketConn, pKey crypto.PrivKey) *Transport {
 		handshakes: make(map[string]*inflightHandshake),
 		links:      make(map[string]*Link),
 
-		addDirectiveCh: make(chan directive.Directive, 5),
-		readErrCh:      make(chan error, 1),
+		readErrCh: make(chan error, 1),
 	}
 }
 
@@ -94,7 +91,7 @@ func (u *Transport) Dial(ctx context.Context, addr net.Addr) error {
 
 // Execute processes the transport, emitting events to the handler.
 // Fatal errors are returned.
-func (u *Transport) Execute(ctx context.Context, handler transport.Handler) error {
+func (u *Transport) Execute(ctx context.Context) error {
 	u.ctx = ctx
 	go u.readPump(ctx)
 
@@ -228,12 +225,13 @@ func (u *Transport) GetLinks() (lnks []link.Link) {
 	return
 }
 
-// AddDirective adds a new directive to the transport.
-func (u *Transport) AddDirective(d directive.Directive) {
-	select {
-	case <-u.ctx.Done():
-	case u.addDirectiveCh <- d:
-	}
+// HandleDirective asks if the handler can resolve the directive.
+// If it can, it returns a resolver. If not, returns nil.
+// Any exceptional errors are returned for logging.
+// It is safe to add a reference to the directive during this call.
+func (u *Transport) HandleDirective(inst directive.Instance) (directive.Resolver, error) {
+	// TODO
+	return nil, nil
 }
 
 // Close closes the connection.

@@ -8,7 +8,6 @@ import (
 	"time"
 	// "net"
 
-	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/transport/udp"
 	"github.com/libp2p/go-libp2p-crypto"
@@ -20,14 +19,6 @@ var le = logrus.NewEntry(log)
 
 func init() {
 	log.SetLevel(logrus.DebugLevel)
-}
-
-type handler struct {
-}
-
-// AddLink handles a link.
-func (h *handler) AddLink(nk link.Link) {
-	fmt.Printf("link built: %#v\n", nk)
 }
 
 func genPeerIdentity() (peer.ID, crypto.PrivKey) {
@@ -60,11 +51,10 @@ func main() {
 	defer utp2.Close()
 	fmt.Printf("%s: listening on %s\n", pid2.Pretty(), utp2.LocalAddr().String())
 
-	h := &handler{}
 	go func() {
 		ctx2, ctx2Cancel := context.WithTimeout(ctx, time.Second*10)
 		defer ctx2Cancel()
-		if err := utp2.Execute(ctx2, h); err != nil {
+		if err := utp2.Execute(ctx2); err != nil {
 			fmt.Println(err.Error())
 			// os.Exit(1)
 		}
@@ -75,7 +65,7 @@ func main() {
 		utp2.Dial(ctx, utp1.LocalAddr())
 	}()
 
-	if err := utp1.Execute(ctx, h); err != nil {
+	if err := utp1.Execute(ctx); err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
 	}

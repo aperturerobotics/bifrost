@@ -2,16 +2,16 @@ package node
 
 import (
 	"context"
+	"sync"
 
-	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/peer"
+	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/libp2p/go-libp2p-crypto"
 	"github.com/sirupsen/logrus"
 )
 
 // Node is a full routing peer in the network.
 // Has its own identity.
-// It can connect to agents over IPC and receive routing claims for them.
 type Node struct {
 	peer.Peer
 
@@ -19,11 +19,15 @@ type Node struct {
 	le *logrus.Entry
 	// ctx is the node context
 	ctx context.Context
+
+	// transportsMtx guards the transports map
+	transportsMtx sync.Mutex
+	// transports are the running transports
+	transports map[uint64]transport.Transport
 }
 
 // NewNode constructs a node.
 // If privKey is nil, one will be generated.
-// TODO: transport configs, graph database (?)
 func NewNode(ctx context.Context, le *logrus.Entry, privKey crypto.PrivKey) (*Node, error) {
 	var err error
 
@@ -36,10 +40,26 @@ func NewNode(ctx context.Context, le *logrus.Entry, privKey crypto.PrivKey) (*No
 		Peer: *p,
 		ctx:  ctx,
 		le:   le,
+
+		transports: make(map[uint64]transport.Transport),
 	}, nil
 }
 
-// AddLink adds a new link for processing.
-func (n *Node) AddLink(l link.Link) {
-	n.le.Debug("link added")
+// AddTransport adds a transport to the node.
+// The Node will call Execute() on the transport.
+func (n *Node) AddTransport(tpt transport.Transport) {
+	// First, kill any transports with the same uuid.
+	uuid := tpt.GetUUID()
+	n.transportsMtx.Lock()
+	_, ok := n.transports[uuid]
+	if ok {
+		delete(n.transports, uuid)
+	}
+	n.transportsMtx.Unlock()
+
+}
+
+// removeTransport removes and cleans up a transport
+func (n *Node) removeTransport(uuid uint64) {
+	// TODO: remove from directive handler set?
 }

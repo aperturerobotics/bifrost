@@ -1,0 +1,10 @@
+syntax = "proto3";
+package libp2p;
+
+// TransportConfigInner configures a transport controller.
+message TransportConfigInner {
+  // ListenMultiaddr is the multiaddress to listen on.
+  string listen_multiaddr = 1;
+  // DialMultiaddrs are addresses to dial from the listener.
+  // TODO
+}

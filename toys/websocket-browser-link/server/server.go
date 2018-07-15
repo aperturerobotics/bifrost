@@ -44,7 +44,7 @@ func main() {
 	mux.Handle("/ws/bifrost-0.1", tpt)
 
 	go func() {
-		err := tpt.Execute(context.Background(), nil)
+		err := tpt.Execute(context.Background())
 		if err != nil {
 			panic(err)
 		}
