@@ -1,0 +1,10 @@
+syntax = "proto3";
+package controller;
+
+// Config is the node controller config.
+message Config {
+  // PrivKey is the node private key, pem format.
+  // The libp2p key is in the bytes field.
+  // --- BEGIN LIBP2P PRIVATE KEY ---
+  string priv_key = 1;
+}

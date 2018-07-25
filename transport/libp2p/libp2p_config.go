@@ -3,6 +3,7 @@ package libp2p
 import (
 	"errors"
 	"github.com/aperturerobotics/controllerbus/config"
+	"github.com/golang/protobuf/proto"
 	ma "github.com/multiformats/go-multiaddr"
 )
 
@@ -54,6 +55,16 @@ func (c *TransportConfig) Validate() error {
 // Example: bifrost/transport/udp/1
 func (c *TransportConfig) GetConfigID() string {
 	return c.configID
+}
+
+// EqualsConfig checks if two configs are equal.
+func (c *TransportConfig) EqualsConfig(other config.Config) bool {
+	oc, ok := other.(*TransportConfig)
+	if !ok {
+		return false
+	}
+
+	return proto.Equal(oc, c)
 }
 
 // _ is a type assertion

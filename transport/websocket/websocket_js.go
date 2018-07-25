@@ -7,13 +7,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aperturerobotics/bifrost/directive"
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/aperturerobotics/bifrost/util/scrc"
+	"github.com/blang/semver"
 	"github.com/libp2p/go-libp2p-crypto"
 	"github.com/sirupsen/logrus"
 )
+
+// Version is the version of the websocket implementation.
+var Version = semver.MustParse("0.0.1")
 
 // handshakeTimeout is the time after which a handshake expires
 var handshakeTimeout = time.Second * 4
@@ -21,15 +24,13 @@ var handshakeTimeout = time.Second * 4
 // Transport is a Websocket based transport.
 type Transport struct {
 	ctx context.Context
+
 	// le is the logger
 	le *logrus.Entry
 	// uuid is the unique id
 	uuid uint64
 	// privKey is the local priv key
 	privKey crypto.PrivKey
-
-	// addDirectiveCh indicates a new incoming directive
-	addDirectiveCh chan directive.Directive
 
 	// handshakesMtx guards the handshakes map
 	handshakesMtx sync.Mutex
@@ -44,11 +45,13 @@ type Transport struct {
 	lastLink *Link
 	// lastLinkAddr was the last addr to receive a packet from
 	lastLinkAddr string
+
+	bootDialAddrs []string
 }
 
 // New builds a new websocket based transport.
 // In the browser, this can only dial out.
-func New(le *logrus.Entry, pKey crypto.PrivKey) *Transport {
+func New(le *logrus.Entry, _ string, dialAddrs []string, pKey crypto.PrivKey) *Transport {
 	uuid := scrc.Crc64([]byte("websocket/js"))
 	return &Transport{
 		le:      le,
@@ -58,7 +61,7 @@ func New(le *logrus.Entry, pKey crypto.PrivKey) *Transport {
 		handshakes: make(map[string]*inflightHandshake),
 		links:      make(map[string]*Link),
 
-		addDirectiveCh: make(chan directive.Directive, 5),
+		bootDialAddrs: dialAddrs,
 	}
 }
 
@@ -83,19 +86,16 @@ func (u *Transport) Dial(ctx context.Context, url string) error {
 	return nil
 }
 
-// Execute processes the transport, emitting events to the handler.
+// Execute processes the transport.
 // Fatal errors are returned.
-func (u *Transport) Execute(ctx context.Context, handler transport.Handler) error {
+func (u *Transport) Execute(ctx context.Context) error {
 	u.ctx = ctx
-
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case d := <-u.addDirectiveCh:
-			_ = d
-		}
+	for _, d := range u.bootDialAddrs {
+		go u.Dial(ctx, d)
 	}
+
+	// TODO: when returning, close all links
+	return nil
 }
 
 // GetLinks returns the links currently active.
@@ -111,12 +111,23 @@ func (u *Transport) GetLinks() (lnks []link.Link) {
 	return
 }
 
-// AddDirective adds a new directive to the transport.
-func (u *Transport) AddDirective(d directive.Directive) {
-	select {
-	case <-u.ctx.Done():
-	case u.addDirectiveCh <- d:
+// Close closes the transport.
+func (u *Transport) Close() error {
+	u.handshakesMtx.Lock()
+	for k, h := range u.handshakes {
+		h.ctxCancel()
+		delete(u.handshakes, k)
 	}
+	u.handshakesMtx.Unlock()
+
+	u.linksMtx.Lock()
+	for k, l := range u.links {
+		_ = l.Close()
+		delete(u.links, k)
+	}
+	u.linksMtx.Unlock()
+
+	return nil
 }
 
 // _ is a type assertion.

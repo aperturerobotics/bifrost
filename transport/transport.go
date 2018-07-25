@@ -1,22 +1,29 @@
 package transport
 
 import (
+	"context"
+
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/controllerbus/controller"
 )
 
-// Handler handles newly built links.
-type Handler interface {
-	// AddLink handles a new link.
-	AddLink(link.Link)
-}
-
 // Transport is similar to a NIC, yielding links to remote peers.
 type Transport interface {
-	controller.Controller
-
+	// Execute executes the transport as configured, returning any fatal error.
+	Execute(ctx context.Context) error
 	// GetUUID returns a host-unique ID for this transport.
 	GetUUID() uint64
 	// GetLinks returns the list of links this transport has active.
 	GetLinks() []link.Link
+	// Close closes the transport, returning any errors closing.
+	Close() error
+}
+
+// Controller is a transport controller.
+type Controller interface {
+	// Controller is the controllerbus controller interface.
+	controller.Controller
+
+	// GetTransport returns the controlled transport.
+	GetTransport() Transport
 }

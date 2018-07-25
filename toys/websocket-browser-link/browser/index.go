@@ -1,31 +1,20 @@
 //+build js
-//go:generate gopherjs build -o index.js index.go
+//go:generate gopherjs build -o browser.js index.go
 
 package main
 
 import (
 	"context"
-	"crypto/rand"
 	"fmt"
-	"time"
 
-	"github.com/aperturerobotics/bifrost/peer"
-	wst "github.com/aperturerobotics/bifrost/transport/websocket"
+	"github.com/aperturerobotics/bifrost/toys/websocket-browser-link/common"
+	wtpt "github.com/aperturerobotics/bifrost/transport/websocket"
+	"github.com/aperturerobotics/controllerbus/controller/resolver"
+	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/gopherjs/gopherjs/js"
-	"github.com/libp2p/go-libp2p-crypto"
-	"github.com/sirupsen/logrus"
 )
 
-var log = logrus.New()
-var le = logrus.NewEntry(log)
 var maxPacketSize = 1500
-
-func init() {
-	log.Formatter = &logrus.TextFormatter{
-		DisableColors: true,
-	}
-	log.SetLevel(logrus.DebugLevel)
-}
 
 func getWSBaseURL() string {
 	document := js.Global.Get("window").Get("document")
@@ -36,35 +25,33 @@ func getWSBaseURL() string {
 		wsProtocol = "wss"
 	}
 
-	return fmt.Sprintf("%s://%s:%s/ws/", wsProtocol, location.Get("hostname"), location.Get("port"))
-}
-
-func genPeerIdentity() (peer.ID, crypto.PrivKey) {
-	pk1, _, err := crypto.GenerateEd25519Key(rand.Reader)
-	if err != nil {
-		log.Fatal(err)
-	}
-	pid1, _ := peer.IDFromPrivateKey(pk1)
-	log.Debugf("generated peer id: %s", pid1.Pretty())
-
-	return pid1, pk1
+	return fmt.Sprintf("%s://%s:%d/ws/", wsProtocol, location.Get("hostname"), 2015)
 }
 
 func main() {
-	wsBaseURL := getWSBaseURL()
-	peerID, peerPrivKey := genPeerIdentity()
+	ctx := context.Background()
 
-	le.
-		WithField("base-url", wsBaseURL).
-		WithField("local-peer-id", peerID.Pretty()).
-		Debug("contacting websocket peer")
-
-	tpt := wst.New(le, peerPrivKey)
-	go tpt.Execute(context.Background(), nil)
-	if err := tpt.Dial(context.Background(), wsBaseURL+"bifrost-0.1"); err != nil {
-		le.WithError(err).Warn("unable to start handshake")
-		return
+	le := common.GetLogEntry()
+	b, peerPrivKey, err := common.BuildCommonBus(ctx)
+	if err != nil {
+		panic(err)
 	}
 
-	time.Sleep(time.Second * 5000)
+	_ = peerPrivKey
+	wsBaseURL := getWSBaseURL()
+	le.
+		WithField("base-url", wsBaseURL).
+		Debug("contacting websocket peer")
+
+	_, wsRef, err := b.AddDirective(
+		resolver.NewLoadControllerWithConfigSingleton(&wtpt.Config{
+			DialAddrs: []string{wsBaseURL + "bifrost-0.1"},
+		}),
+		func(val directive.Value) {
+			le.Infof("websocket transport resolved: %#v", val)
+		},
+	)
+	defer wsRef.Release()
+
+	<-ctx.Done()
 }

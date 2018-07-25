@@ -8,16 +8,20 @@ import (
 
 // Peer implements common functionalities between peer types.
 // Includes: identity.
-type Peer struct {
-	// privKey is the private key
-	privKey crypto.PrivKey
-	// peerID is the local peer id
-	peerID ID
+type Peer interface {
+	// GetPubKey returns the public key of the node.
+	GetPubKey() crypto.PubKey
+
+	// GetPrivKey returns the private key.
+	GetPrivKey() crypto.PrivKey
+
+	// GetPeerID returns the peer ID.
+	GetPeerID() ID
 }
 
 // NewPeer builds a new Peer object.
 // If privKey is nil, one will be generated.
-func NewPeer(privKey crypto.PrivKey) (*Peer, error) {
+func NewPeer(privKey crypto.PrivKey) (Peer, error) {
 	if privKey == nil {
 		var err error
 		privKey, _, err = crypto.GenerateEd25519Key(rand.Reader)
@@ -31,23 +35,28 @@ func NewPeer(privKey crypto.PrivKey) (*Peer, error) {
 		return nil, err
 	}
 
-	return &Peer{
+	return &peer{
 		privKey: privKey,
 		peerID:  id,
 	}, nil
 }
 
+type peer struct {
+	privKey crypto.PrivKey
+	peerID  ID
+}
+
 // GetPubKey returns the public key of the node.
-func (p *Peer) GetPubKey() crypto.PubKey {
+func (p *peer) GetPubKey() crypto.PubKey {
 	return p.privKey.GetPublic()
 }
 
 // GetPrivKey returns the private key.
-func (p *Peer) GetPrivKey() crypto.PrivKey {
+func (p *peer) GetPrivKey() crypto.PrivKey {
 	return p.privKey
 }
 
 // GetPeerID returns the peer ID.
-func (p *Peer) GetPeerID() ID {
+func (p *peer) GetPeerID() ID {
 	return p.peerID
 }

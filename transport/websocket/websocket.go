@@ -11,22 +11,31 @@ import (
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/aperturerobotics/bifrost/util/scrc"
-	"github.com/aperturerobotics/controllerbus/directive"
+	"github.com/blang/semver"
 	"github.com/gorilla/websocket"
 	"github.com/libp2p/go-libp2p-crypto"
 	"github.com/sirupsen/logrus"
 )
 
+// Version is the version of the websocket implementation.
+var Version = semver.MustParse("0.0.1")
+
 // handshakeTimeout is the time after which a handshake expires
 var handshakeTimeout = time.Second * 8
 
 // upgrader is the websocket upgrader
-var upgrader = &websocket.Upgrader{}
+var upgrader = &websocket.Upgrader{
+	// Allow any origin
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+}
 
 // Transport is a Websocket based transport.
 // This implements the non-browser end.
 type Transport struct {
 	ctx context.Context
+
 	// le is the logger
 	le *logrus.Entry
 	// uuid is the unique id
@@ -49,10 +58,17 @@ type Transport struct {
 
 	// server is the http server
 	server *http.Server
+	// bootDialAddrs are addresses to dial on boot
+	bootDialAddrs []string
 }
 
 // New builds a new packet-conn based transport, listening on the addr.
-func New(le *logrus.Entry, listenStr string, pKey crypto.PrivKey) *Transport {
+func New(
+	le *logrus.Entry,
+	listenStr string,
+	bootDialAddrs []string,
+	pKey crypto.PrivKey,
+) *Transport {
 	uuid := scrc.Crc64([]byte(listenStr))
 
 	t := &Transport{
@@ -63,7 +79,8 @@ func New(le *logrus.Entry, listenStr string, pKey crypto.PrivKey) *Transport {
 		handshakes: make(map[string]*inflightHandshake),
 		links:      make(map[string]*Link),
 
-		listenErrCh: make(chan error, 1),
+		listenErrCh:   make(chan error, 1),
+		bootDialAddrs: bootDialAddrs,
 	}
 
 	if listenStr != "" {
@@ -128,6 +145,10 @@ func (u *Transport) Execute(ctx context.Context) error {
 		}()
 	}
 
+	for _, d := range u.bootDialAddrs {
+		go u.Dial(ctx, d)
+	}
+
 	// TODO: when returning, close all links
 	select {
 	case <-ctx.Done():
@@ -152,15 +173,6 @@ func (u *Transport) GetLinks() (lnks []link.Link) {
 	}
 
 	return
-}
-
-// HandleDirective asks if the handler can resolve the directive.
-// If it can, it returns a resolver. If not, returns nil.
-// Any exceptional errors are returned for logging.
-// It is safe to add a reference to the directive during this call.
-func (u *Transport) HandleDirective(inst directive.Instance) (directive.Resolver, error) {
-	// TODO
-	return nil, nil
 }
 
 // Close closes the connection.
