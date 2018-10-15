@@ -14,8 +14,6 @@ import (
 	"github.com/gopherjs/gopherjs/js"
 )
 
-var maxPacketSize = 1500
-
 func getWSBaseURL() string {
 	document := js.Global.Get("window").Get("document")
 	location := document.Get("location")
