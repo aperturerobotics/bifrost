@@ -3,9 +3,11 @@ package daemon
 import (
 	"context"
 
+	"github.com/aperturerobotics/bifrost/daemon/api"
 	nctr "github.com/aperturerobotics/bifrost/node/controller"
 	"github.com/aperturerobotics/bifrost/node/keypem"
 	"github.com/aperturerobotics/bifrost/peer"
+	udptpt "github.com/aperturerobotics/bifrost/transport/udp"
 	wtpt "github.com/aperturerobotics/bifrost/transport/websocket"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
@@ -13,6 +15,8 @@ import (
 	"github.com/aperturerobotics/controllerbus/controller/resolver/static"
 	"github.com/aperturerobotics/controllerbus/core"
 	"github.com/aperturerobotics/controllerbus/directive"
+	"github.com/aperturerobotics/objstore/db"
+	"github.com/aperturerobotics/objstore/db/inmem"
 	"github.com/libp2p/go-libp2p-crypto"
 	"github.com/sirupsen/logrus"
 )
@@ -23,6 +27,8 @@ type Daemon struct {
 	bus bus.Bus
 	// staticResolver is the static controller factory resolver.
 	staticResolver *static.Resolver
+	// db is the database
+	db db.Db
 
 	// nodePriv is the primary node private key
 	nodePriv crypto.PrivKey
@@ -40,6 +46,9 @@ type ConstructOpts struct {
 	// ExtraControllerFactories is a set of extra controller factories to
 	// make available to the daemon.
 	ExtraControllerFactories []func(bus.Bus) controller.Factory
+	// Database is the key-value storage database to use.
+	// If nil, will use an in-memory database.
+	Database db.Db
 }
 
 // NewDaemon constructs a new daemon.
@@ -61,7 +70,9 @@ func NewDaemon(
 		return nil, err
 	}
 
+	staticResolver.AddFactory(api.NewFactory(controllerBus))
 	staticResolver.AddFactory(wtpt.NewFactory(controllerBus))
+	staticResolver.AddFactory(udptpt.NewFactory(controllerBus))
 	staticResolver.AddFactory(nctr.NewFactory(controllerBus))
 
 	for _, factory := range opts.ExtraControllerFactories {
@@ -93,12 +104,18 @@ func NewDaemon(
 		return nil, err
 	}
 
+	ddb := opts.Database
+	if ddb == nil {
+		ddb = inmem.NewInmemDb()
+	}
+
 	return &Daemon{
-		bus:            controllerBus,
-		staticResolver: staticResolver,
+		bus: controllerBus,
+		db:  ddb,
 
 		nodePriv:         nodePriv,
 		nodePeerID:       peerID,
+		staticResolver:   staticResolver,
 		nodePeerIDPretty: peerIDPretty,
 	}, nil
 }

@@ -1,0 +1,27 @@
+syntax = "proto3";
+package api;
+
+// Config configures the GRPC API.
+message Config {
+  // ListenAddr is the address to listen on for connections.
+  string listen_addr = 1;
+  // NodePeerId constrains the API to a specific running node.
+  // Empty will select the first available node.
+  string node_peer_id = 2;
+}
+
+// GetNodeInfoRequest is the request type for GetNodeInfo.
+message GetNodeInfoRequest {
+}
+
+// GetNodeInfoResponse is the response type for GetNodeInfo.
+message GetNodeInfoResponse {
+  // NodeID is the b58 node ID.
+  string node_id = 1;
+}
+
+// BifrostDaemonService is the control service for a daemon, contacted by the CLI.
+service BifrostDaemonService {
+  // GetNodeInfo returns the node information
+  rpc GetNodeInfo(GetNodeInfoRequest) returns (GetNodeInfoResponse) {}
+}

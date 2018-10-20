@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/aperturerobotics/bifrost/daemon"
+	"github.com/aperturerobotics/bifrost/daemon/api"
 	"github.com/aperturerobotics/bifrost/node/keypem"
 	udptpt "github.com/aperturerobotics/bifrost/transport/udp"
 	wtpt "github.com/aperturerobotics/bifrost/transport/websocket"
@@ -20,6 +21,7 @@ import (
 var daemonFlags struct {
 	PeerPrivPath    string
 	WebsocketListen string
+	APIListen       string
 	UDPListen       string
 }
 
@@ -38,13 +40,19 @@ func init() {
 					Value:       "daemon_node_priv.pem",
 				},
 				cli.StringFlag{
+					Name:        "api-listen",
+					Usage:       "if set, will listen on address for API grpc connections, ex :5110",
+					Destination: &daemonFlags.APIListen,
+					Value:       ":5110",
+				},
+				cli.StringFlag{
 					Name:        "websocket-listen",
-					Usage:       "if set, will listen on address for websocket connections, ex :5000",
+					Usage:       "if set, will listen on address for websocket connections, ex :5111",
 					Destination: &daemonFlags.WebsocketListen,
 				},
 				cli.StringFlag{
 					Name:        "udp-listen",
-					Usage:       "if set, will listen on address for udp connections, ex :5001",
+					Usage:       "if set, will listen on address for udp connections, ex :5112",
 					Destination: &daemonFlags.UDPListen,
 				},
 			},
@@ -96,6 +104,21 @@ func runDaemon(c *cli.Context) error {
 	}
 
 	b := d.GetControllerBus()
+
+	if daemonFlags.APIListen != "" {
+		_, apiRef, err := b.AddDirective(
+			resolver.NewLoadControllerWithConfigSingleton(&api.Config{
+				ListenAddr: daemonFlags.APIListen,
+			}),
+			func(val directive.Value) {
+				le.Infof("grpc api listening on: %s", daemonFlags.APIListen)
+			},
+		)
+		if err != nil {
+			return errors.Wrap(err, "listen on grpc api")
+		}
+		defer apiRef.Release()
+	}
 
 	// TODO: Load these from CLI/yaml configuration.
 	// For now, hardcode it.
