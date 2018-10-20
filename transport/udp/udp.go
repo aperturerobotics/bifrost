@@ -6,9 +6,13 @@ import (
 
 	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/aperturerobotics/bifrost/transport/common/pconn"
+	"github.com/blang/semver"
 	"github.com/libp2p/go-libp2p-crypto"
 	"github.com/sirupsen/logrus"
 )
+
+// Version is the version of the udp implementation.
+var Version = semver.MustParse("0.0.1")
 
 // handshakeTimeout is the time after which a handshake expires
 var handshakeTimeout = time.Second * 8

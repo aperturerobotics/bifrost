@@ -1,0 +1,19 @@
+syntax = "proto3";
+package udp;
+
+// Config is the configuration for the udp transport.
+message Config {
+  // NodePeerID constrains the node peer ID.
+  // If empty, attaches to whatever node is running.
+  string node_peer_id = 1;
+  // ListenAddr contains the address to listen on.
+  // Has no effect in the browser.
+  string listen_addr = 2;
+
+  // DialAddrs contain the addresses to dial on start.
+  // Failure to connect is not a fatal error.
+  // repeated string dial_addrs = 3;
+
+  // CanDial indicates if the transport will respond to Dial directives.
+  // bool can_dial = 4;
+}

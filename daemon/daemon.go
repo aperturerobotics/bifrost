@@ -1,0 +1,109 @@
+package daemon
+
+import (
+	"context"
+
+	nctr "github.com/aperturerobotics/bifrost/node/controller"
+	"github.com/aperturerobotics/bifrost/node/keypem"
+	"github.com/aperturerobotics/bifrost/peer"
+	wtpt "github.com/aperturerobotics/bifrost/transport/websocket"
+	"github.com/aperturerobotics/controllerbus/bus"
+	"github.com/aperturerobotics/controllerbus/controller"
+	"github.com/aperturerobotics/controllerbus/controller/resolver"
+	"github.com/aperturerobotics/controllerbus/controller/resolver/static"
+	"github.com/aperturerobotics/controllerbus/core"
+	"github.com/aperturerobotics/controllerbus/directive"
+	"github.com/libp2p/go-libp2p-crypto"
+	"github.com/sirupsen/logrus"
+)
+
+// Daemon implements the Bifrost daemon.
+type Daemon struct {
+	// bus is the controller bus.
+	bus bus.Bus
+	// staticResolver is the static controller factory resolver.
+	staticResolver *static.Resolver
+
+	// nodePriv is the primary node private key
+	nodePriv crypto.PrivKey
+	// nodePeerID is the primary node ID
+	nodePeerID peer.ID
+	// nodePeerIDPretty is the node peer ID as a b58 address
+	nodePeerIDPretty string
+}
+
+// ConstructOpts are extra options passed to the daemon constructor.
+type ConstructOpts struct {
+	// LogEntry is the root logger to use.
+	// If unset, will use a default logger.
+	LogEntry *logrus.Entry
+	// ExtraControllerFactories is a set of extra controller factories to
+	// make available to the daemon.
+	ExtraControllerFactories []func(bus.Bus) controller.Factory
+}
+
+// NewDaemon constructs a new daemon.
+func NewDaemon(
+	ctx context.Context,
+	nodePriv crypto.PrivKey,
+	opts ConstructOpts,
+) (*Daemon, error) {
+	le := opts.LogEntry
+	if le == nil {
+		log := logrus.New()
+		log.SetLevel(logrus.DebugLevel)
+		le = logrus.NewEntry(log)
+	}
+
+	// Construct the controller bus.
+	controllerBus, staticResolver, err := core.NewCoreBus(ctx, le)
+	if err != nil {
+		return nil, err
+	}
+
+	staticResolver.AddFactory(wtpt.NewFactory(controllerBus))
+	staticResolver.AddFactory(nctr.NewFactory(controllerBus))
+
+	for _, factory := range opts.ExtraControllerFactories {
+		if con := factory(controllerBus); con != nil {
+			staticResolver.AddFactory(con)
+		}
+	}
+
+	// Construct the node controller.
+	peerID, err := peer.IDFromPrivateKey(nodePriv)
+	if err != nil {
+		return nil, err
+	}
+
+	peerIDPretty := peerID.Pretty()
+	nodePrivKeyPem, err := keypem.MarshalPrivKeyPem(nodePriv)
+	if err != nil {
+		return nil, err
+	}
+	_, _, err = controllerBus.AddDirective(
+		resolver.NewLoadControllerWithConfigSingleton(&nctr.Config{
+			PrivKey: string(nodePrivKeyPem),
+		}),
+		func(val directive.Value) {
+			le.Infof("node controller resolved w/ ID: %s", peerIDPretty)
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Daemon{
+		bus:            controllerBus,
+		staticResolver: staticResolver,
+
+		nodePriv:         nodePriv,
+		nodePeerID:       peerID,
+		nodePeerIDPretty: peerIDPretty,
+	}, nil
+}
+
+// GetControllerBus returns the controller bus.
+func (d *Daemon) GetControllerBus() bus.Bus {
+	return d.bus
+}

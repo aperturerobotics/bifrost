@@ -66,7 +66,6 @@ func (c *Controller) Execute(ctx context.Context) error {
 
 	// Get the priv key
 	privKey := n.GetPrivKey()
-	c.le.Infof("got priv key: %#v", privKey)
 
 	// Construct the transport
 	tpt, err := c.ctor(
