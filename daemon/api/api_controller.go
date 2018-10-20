@@ -43,6 +43,15 @@ func NewController(
 	}
 }
 
+// GetControllerInfo returns information about the controller.
+func (c *Controller) GetControllerInfo() controller.Info {
+	return controller.NewInfo(
+		ControllerID,
+		Version,
+		"grpc api controller",
+	)
+}
+
 // Execute executes the API controller and the listener.
 // Returning nil ends execution.
 // Returning an error triggers a retry with backoff.
@@ -57,7 +66,7 @@ func (c *Controller) Execute(ctx context.Context) error {
 	}
 
 	// Construct the API
-	api, err := NewAPI(n)
+	api, err := NewAPI(c.bus, n)
 	if err != nil {
 		return err
 	}

@@ -54,6 +54,8 @@ func (t *Factory) Construct(
 		func(le *logrus.Entry, pkey crypto.PrivKey) (transport.Transport, error) {
 			return NewUDP(le, cc.GetListenAddr(), pkey)
 		},
+		TransportID,
+		Version,
 	), nil
 }
 

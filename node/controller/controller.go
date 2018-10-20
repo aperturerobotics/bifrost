@@ -73,6 +73,15 @@ func (c *Controller) HandleDirective(di directive.Instance) (directive.Resolver,
 	return nil, nil
 }
 
+// GetControllerInfo returns information about the controller.
+func (c *Controller) GetControllerInfo() controller.Info {
+	return controller.NewInfo(
+		ControllerID,
+		Version,
+		"node controller "+c.GetPeerID().Pretty(),
+	)
+}
+
 // GetPubKey returns the public key of the node.
 func (c *Controller) GetPubKey() crypto.PubKey {
 	return c.peer.GetPubKey()

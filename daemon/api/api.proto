@@ -1,6 +1,8 @@
 syntax = "proto3";
 package api;
 
+import "github.com/aperturerobotics/controllerbus/controller/controller.proto";
+
 // Config configures the GRPC API.
 message Config {
   // ListenAddr is the address to listen on for connections.
@@ -18,6 +20,8 @@ message GetNodeInfoRequest {
 message GetNodeInfoResponse {
   // NodeID is the b58 node ID.
   string node_id = 1;
+  // RunningControllers is the list of running controllers.
+  repeated controller.Info running_controllers = 2;
 }
 
 // BifrostDaemonService is the control service for a daemon, contacted by the CLI.

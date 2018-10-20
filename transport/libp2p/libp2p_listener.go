@@ -6,11 +6,16 @@ import (
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/aperturerobotics/bifrost/util/scrc"
+	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
+	"github.com/blang/semver"
 	lt "github.com/libp2p/go-libp2p-transport"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 )
+
+// Version is the version of the listener.
+var Version = semver.MustParse("0.0.1")
 
 // Listener listens on a libp2p transport.
 type Listener struct {
@@ -38,6 +43,15 @@ func NewListener(
 		ma:   listenAddr,
 		uuid: uuid,
 	}
+}
+
+// GetControllerInfo returns information about the controller.
+func (l *Listener) GetControllerInfo() controller.Info {
+	return controller.NewInfo(
+		"bifrost/transport/libp2p/"+l.ma.String()+"/"+Version.String(),
+		Version,
+		"libp2p listener",
+	)
 }
 
 // GetUUID returns a host-unique ID for this transport.
@@ -111,3 +125,6 @@ func (l *Listener) Close() error {
 
 // _ is a type assertion
 var _ transport.Transport = ((*Listener)(nil))
+
+// _ is a type assertion
+var _ controller.Controller = ((*Listener)(nil))

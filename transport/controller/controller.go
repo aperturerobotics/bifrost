@@ -2,13 +2,16 @@ package controller
 
 import (
 	"context"
+	"strings"
 	"sync"
 
 	"github.com/aperturerobotics/bifrost/node"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/aperturerobotics/controllerbus/bus"
+	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
+	"github.com/blang/semver"
 	"github.com/libp2p/go-libp2p-crypto"
 	"github.com/sirupsen/logrus"
 )
@@ -33,6 +36,11 @@ type Controller struct {
 	tptMtx sync.Mutex
 	// tpt is the transport
 	tpt transport.Transport
+
+	// transportID is the transport identifier.
+	transportID string
+	// transportVersion is the transport version
+	transportVersion semver.Version
 }
 
 // NewController constructs a new transport controller.
@@ -41,6 +49,8 @@ func NewController(
 	bus bus.Bus,
 	nodePeerIDConstraint peer.ID,
 	ctor Constructor,
+	transportID string,
+	transportVersion semver.Version,
 ) *Controller {
 	return &Controller{
 		le:   le,
@@ -48,7 +58,23 @@ func NewController(
 		ctor: ctor,
 
 		peerIDConstraint: nodePeerIDConstraint,
+		transportID:      transportID,
+		transportVersion: transportVersion,
 	}
+}
+
+// GetControllerID returns the controller ID.
+func (c *Controller) GetControllerID() string {
+	return strings.Join([]string{"bifrost", "transport", c.transportID, c.transportVersion.String()}, "/")
+}
+
+// GetControllerInfo returns information about the controller.
+func (c *Controller) GetControllerInfo() controller.Info {
+	return controller.NewInfo(
+		c.GetControllerID(),
+		c.transportVersion,
+		"transport controller "+c.transportID+"@"+c.transportVersion.String(),
+	)
 }
 
 // Execute executes the transport controller and the transport.

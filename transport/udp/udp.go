@@ -11,6 +11,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// TransportID is the transport identifier
+const TransportID = "udp"
+
 // Version is the version of the udp implementation.
 var Version = semver.MustParse("0.0.1")
 

@@ -54,6 +54,8 @@ func (t *Factory) Construct(
 		func(le *logrus.Entry, pkey crypto.PrivKey) (transport.Transport, error) {
 			return New(le, cc.GetListenAddr(), cc.GetDialAddrs(), pkey), nil
 		},
+		TransportID,
+		Version,
 	), nil
 }
 

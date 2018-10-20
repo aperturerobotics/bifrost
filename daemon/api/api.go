@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"github.com/aperturerobotics/bifrost/node"
+	"github.com/aperturerobotics/controllerbus/bus"
+	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/blang/semver"
 	"google.golang.org/grpc"
 )
@@ -13,12 +15,13 @@ var Version = semver.MustParse("0.0.1")
 
 // API implements the GRPC API.
 type API struct {
+	bus  bus.Bus
 	node node.Node
 }
 
 // NewAPI constructs a new instance of the API.
-func NewAPI(node node.Node) (*API, error) {
-	return &API{node: node}, nil
+func NewAPI(bus bus.Bus, node node.Node) (*API, error) {
+	return &API{bus: bus, node: node}, nil
 }
 
 // GetNodeInfo returns the node information
@@ -27,8 +30,17 @@ func (a *API) GetNodeInfo(
 	req *GetNodeInfoRequest,
 ) (*GetNodeInfoResponse, error) {
 	prettyID := a.node.GetPeerID().Pretty()
+
+	var controllerInfos []*controller.Info
+	controllers := a.bus.GetControllers()
+	for _, controller := range controllers {
+		ci := controller.GetControllerInfo()
+		controllerInfos = append(controllerInfos, &ci)
+	}
+
 	return &GetNodeInfoResponse{
-		NodeId: prettyID,
+		NodeId:             prettyID,
+		RunningControllers: controllerInfos,
 	}, nil
 }
 
