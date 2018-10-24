@@ -1,71 +1,138 @@
 package libp2p
 
 import (
-	"errors"
+	"context"
 
-	"github.com/aperturerobotics/controllerbus/config"
+	"github.com/aperturerobotics/bifrost/link"
+	"github.com/aperturerobotics/bifrost/transport"
+	"github.com/aperturerobotics/bifrost/util/scrc"
 	"github.com/aperturerobotics/controllerbus/controller"
+	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/blang/semver"
 	lt "github.com/libp2p/go-libp2p-transport"
 	ma "github.com/multiformats/go-multiaddr"
+	"github.com/sirupsen/logrus"
 )
 
-// TransportFactory wraps a libp2p transport into a bifrost factory.
-type TransportFactory struct {
-	tpt          lt.Transport
-	controllerID string
-	ver          semver.Version
+// BaseTransportID is the base transport identifier
+const BaseTransportID = "libp2p"
+
+// GetTransportID returns the transport identifier for a listen ma.
+func GetTransportID(listenMultiaddr ma.Multiaddr) string {
+	return BaseTransportID + "/" + listenMultiaddr.String()
 }
 
-// NewTransportFactory wraps a libp2p transport into a Bifrost factory.
-func NewTransportFactory(
-	controllerID string,
-	tptVer semver.Version,
+// Version is the version of the udp implementation.
+var Version = semver.MustParse("0.0.1")
+
+// LibP2P listens on a libp2p transport.
+type LibP2P struct {
+	// le is the logger
+	le *logrus.Entry
+	// tpt is the transport to listen on
+	tpt lt.Transport
+	// ma is the multiaddr to listen with
+	ma ma.Multiaddr
+	// uuid is the host-local unique id
+	uuid uint64
+}
+
+// NewLibP2P constructs a new listener controller.
+func NewLibP2P(
+	le *logrus.Entry,
 	tpt lt.Transport,
-) *TransportFactory {
-	return &TransportFactory{
-		tpt:          tpt,
-		controllerID: controllerID,
-		ver:          tptVer,
+	listenAddr ma.Multiaddr,
+) *LibP2P {
+	lstr := listenAddr.String()
+	uuid := scrc.Crc64([]byte(lstr))
+	return &LibP2P{
+		le:   le.WithField("listen-multiaddr", lstr),
+		tpt:  tpt,
+		ma:   listenAddr,
+		uuid: uuid,
 	}
 }
 
-// GetControllerID returns the unique ID for the controller.
-func (t *TransportFactory) GetControllerID() string {
-	return t.controllerID
+// GetControllerInfo returns information about the controller.
+func (l *LibP2P) GetControllerInfo() controller.Info {
+	return controller.NewInfo(
+		"bifrost/transport/libp2p/"+l.ma.String()+"/"+Version.String(),
+		Version,
+		"libp2p listener",
+	)
 }
 
-// ConstructConfig constructs an instance of the controller configuration.
-func (t *TransportFactory) ConstructConfig() config.Config {
-	return NewTransportConfig(t.controllerID, TransportConfigInner{})
+// GetUUID returns a host-unique ID for this transport.
+func (l *LibP2P) GetUUID() uint64 {
+	return l.uuid
 }
 
-// Construct constructs the associated controller given configuration.
-func (t *TransportFactory) Construct(
-	conf config.Config,
-	opts controller.ConstructOpts,
-) (controller.Controller, error) {
-	type tconf interface {
-		ParseListenMultiaddr() (ma.Multiaddr, error)
-	}
-	tc, ok := conf.(tconf)
-	if !ok {
-		return nil, errors.New("config type not recognized")
-	}
+// GetLinks returns the list of links this transport has active.
+func (l *LibP2P) GetLinks() []link.Link {
+	// TODO
+	return nil
+}
 
-	listenMultiaddr, err := tc.ParseListenMultiaddr()
+// Execute executes the given controller.
+// Returning nil ends execution.
+// Returning an error triggers a retry with backoff.
+func (l *LibP2P) Execute(ctx context.Context) error {
+	l.le.Info("listening")
+	list, err := l.tpt.Listen(l.ma)
 	if err != nil {
-		return nil, err
+		l.le.WithError(err).Error("error listening")
+		return err
 	}
+	defer list.Close()
 
-	le := opts.GetLogger()
-	return NewListener(le, t.tpt, listenMultiaddr), nil
+	// accept loop
+	errCh := make(chan error, 1)
+	go func() {
+		for {
+			conn, err := list.Accept()
+			if err != nil {
+				errCh <- err
+				return
+			}
+
+			l.handleConn(conn)
+		}
+	}()
+
+	select {
+	case <-ctx.Done():
+		return nil
+	case err := <-errCh:
+		return err
+	}
 }
 
-// GetVersion returns the version of this controller.
-func (t *TransportFactory) GetVersion() semver.Version {
-	return t.ver
+// HandleDirective asks if the handler can resolve the directive.
+// If it can, it returns a resolver. If not, returns nil.
+// Any exceptional errors are returned for logging.
+// It is safe to add a reference to the directive during this call.
+func (l *LibP2P) HandleDirective(inst directive.Instance) (directive.Resolver, error) {
+	// TODO
+	return nil, nil
+}
+
+// handleConn handles a new connection
+func (l *LibP2P) handleConn(c lt.Conn) {
+	le := l.le.
+		WithField("remote-multiaddr", c.RemoteMultiaddr().String()).
+		WithField("remote-peer", c.RemotePeer().Pretty())
+	le.Info("connection accepted")
+	// TODO
+}
+
+// Close releases any resources used by the controller.
+// Error indicates any issue encountered releasing.
+func (l *LibP2P) Close() error {
+	return nil
 }
 
 // _ is a type assertion
-var _ controller.Factory = ((*TransportFactory)(nil))
+var _ transport.Transport = ((*LibP2P)(nil))
+
+// _ is a type assertion
+var _ controller.Controller = ((*LibP2P)(nil))

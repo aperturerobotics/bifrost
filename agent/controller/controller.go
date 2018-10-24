@@ -47,10 +47,9 @@ func NewController(le *logrus.Entry, privKey crypto.PrivKey) (*Controller, error
 // Returning nil ends execution.
 // Returning an error triggers a retry with backoff.
 func (c *Controller) Execute(ctx context.Context) error {
-	// TODO implement core agent management loop
-
 	// Acquire handle to node.
 	// Register agent private key with node.
+	// Process incoming agent API calls.
 
 	return nil
 }

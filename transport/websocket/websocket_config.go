@@ -16,7 +16,7 @@ func (c *Config) Validate() error { return nil }
 
 // ParseNodePeerID parses the node peer ID if it is not empty.
 func (c *Config) ParseNodePeerID() (peer.ID, error) {
-	return confparse.ParsePeerId(c.GetNodePeerId())
+	return confparse.ParsePeerID(c.GetNodePeerId())
 }
 
 // GetConfigID returns the unique string for this configuration type.
