@@ -82,8 +82,8 @@ func NewLink(
 		l.Close,
 	)
 	l.sess, _ = kcp.NewConn(
-		computeConvID(sharedSecret[:]),
-		dummyKcpRemoteAddr,
+		// computeConvID(sharedSecret[:]),
+		dummyKcpRemoteAddr.String(),
 		l.buildBlockCrypt(),
 		0, 0,
 		l.kpc,
