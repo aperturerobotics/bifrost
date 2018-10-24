@@ -2,6 +2,7 @@ package udp
 
 import (
 	"github.com/aperturerobotics/bifrost/peer"
+	"github.com/aperturerobotics/bifrost/util/confparse"
 	"github.com/aperturerobotics/controllerbus/config"
 	"github.com/golang/protobuf/proto"
 )
@@ -15,12 +16,7 @@ func (c *Config) Validate() error { return nil }
 
 // ParseNodePeerID parses the node peer ID if it is not empty.
 func (c *Config) ParseNodePeerID() (peer.ID, error) {
-	peerID := c.GetNodePeerId()
-	if peerID == "" {
-		return "", nil
-	}
-
-	return peer.IDFromString(peerID)
+	return confparse.ParsePeerID(c.GetNodePeerId())
 }
 
 // GetConfigID returns the unique string for this configuration type.

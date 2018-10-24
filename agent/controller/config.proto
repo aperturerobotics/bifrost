@@ -7,4 +7,7 @@ message Config {
   // The libp2p key is in the bytes field.
   // --- BEGIN LIBP2P PRIVATE KEY ---
   string priv_key = 1;
+  // NodePeerID constrains the node peer ID.
+  // If empty, attaches to whatever node is running.
+  string node_peer_id = 2;
 }

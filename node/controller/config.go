@@ -1,9 +1,7 @@
 package node_controller
 
 import (
-	"errors"
-
-	"github.com/aperturerobotics/bifrost/keypem"
+	"github.com/aperturerobotics/bifrost/util/confparse"
 	"github.com/aperturerobotics/controllerbus/config"
 	"github.com/golang/protobuf/proto"
 	"github.com/libp2p/go-libp2p-crypto"
@@ -39,18 +37,5 @@ func (c *Config) Validate() error {
 // ParsePrivateKey parses the private key from the configuration.
 func (c *Config) ParsePrivateKey() (crypto.PrivKey, error) {
 	privKeyDat := []byte(c.GetPrivKey())
-	if len(privKeyDat) == 0 {
-		return nil, nil
-	}
-
-	key, err := keypem.ParsePrivKeyPem(privKeyDat)
-	if err != nil {
-		return nil, err
-	}
-
-	if key == nil {
-		return nil, errors.New("no pem data found")
-	}
-
-	return key, nil
+	return confparse.ParsePrivateKey(privKeyDat)
 }

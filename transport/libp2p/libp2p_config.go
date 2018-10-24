@@ -2,6 +2,7 @@ package libp2p
 
 import (
 	"errors"
+
 	"github.com/aperturerobotics/controllerbus/config"
 	"github.com/golang/protobuf/proto"
 	ma "github.com/multiformats/go-multiaddr"
