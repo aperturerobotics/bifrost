@@ -9,7 +9,7 @@ import (
 // Peer implements common functionalities between peer types.
 // Includes: identity.
 type Peer interface {
-	// GetPubKey returns the public key of the node.
+	// GetPubKey returns the public key of the peer.
 	GetPubKey() crypto.PubKey
 
 	// GetPrivKey returns the private key.

@@ -5,8 +5,8 @@ import (
 	"crypto/rand"
 	"fmt"
 
+	"github.com/aperturerobotics/bifrost/keypem"
 	nctr "github.com/aperturerobotics/bifrost/node/controller"
-	"github.com/aperturerobotics/bifrost/node/keypem"
 	"github.com/aperturerobotics/bifrost/peer"
 	wtpt "github.com/aperturerobotics/bifrost/transport/websocket"
 	"github.com/aperturerobotics/controllerbus/bus"

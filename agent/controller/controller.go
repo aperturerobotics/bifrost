@@ -1,12 +1,10 @@
-package node_controller
+package agent_controller
 
 import (
 	"context"
-	"sync"
 
-	"github.com/aperturerobotics/bifrost/node"
+	"github.com/aperturerobotics/bifrost/agent"
 	"github.com/aperturerobotics/bifrost/peer"
-	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/blang/semver"
@@ -18,23 +16,18 @@ import (
 var Version = semver.MustParse("0.0.1")
 
 // ControllerID is the ID of the controller.
-const ControllerID = "bifrost/node/1"
+const ControllerID = "bifrost/agent/1"
 
-// Controller is the Node controller.
-// It implements node.Node as a controller.
+// Controller is the Agent controller.
+// It implements agent.Agent as a controller.
 type Controller struct {
 	// peer is the underlying peer
 	peer peer.Peer
 	// le is the root logger
 	le *logrus.Entry
-
-	// transportsMtx guards the transports map
-	transportsMtx sync.Mutex
-	// transports are the running transports
-	transports map[uint64]transport.Transport
 }
 
-// NewController constructs a new node controller.
+// NewController constructs a new agent controller.
 // If privKey is nil, one will be generated.
 func NewController(le *logrus.Entry, privKey crypto.PrivKey) (*Controller, error) {
 	var err error
@@ -47,8 +40,6 @@ func NewController(le *logrus.Entry, privKey crypto.PrivKey) (*Controller, error
 	return &Controller{
 		le:   le,
 		peer: p,
-
-		transports: make(map[uint64]transport.Transport),
 	}, nil
 }
 
@@ -56,7 +47,7 @@ func NewController(le *logrus.Entry, privKey crypto.PrivKey) (*Controller, error
 // Returning nil ends execution.
 // Returning an error triggers a retry with backoff.
 func (c *Controller) Execute(ctx context.Context) error {
-	// TODO implement core node management loop
+	// TODO implement core agent management loop
 	return nil
 }
 
@@ -65,11 +56,6 @@ func (c *Controller) Execute(ctx context.Context) error {
 // Any exceptional errors are returned for logging.
 // It is safe to add a reference to the directive during this call.
 func (c *Controller) HandleDirective(di directive.Instance) (directive.Resolver, error) {
-	dir := di.GetDirective()
-	if d, ok := dir.(node.GetNode); ok {
-		return c.resolveGetNode(d), nil
-	}
-
 	return nil, nil
 }
 
@@ -78,11 +64,11 @@ func (c *Controller) GetControllerInfo() controller.Info {
 	return controller.NewInfo(
 		ControllerID,
 		Version,
-		"node controller "+c.GetPeerID().Pretty(),
+		"agent controller "+c.GetPeerID().Pretty(),
 	)
 }
 
-// GetPubKey returns the public key of the node.
+// GetPubKey returns the public key of the agent.
 func (c *Controller) GetPubKey() crypto.PubKey {
 	return c.peer.GetPubKey()
 }
@@ -107,4 +93,4 @@ func (c *Controller) Close() error {
 var _ controller.Controller = ((*Controller)(nil))
 
 // _ is a type assertion
-var _ node.Node = ((*Controller)(nil))
+var _ agent.Agent = ((*Controller)(nil))

@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/aperturerobotics/bifrost/daemon/api"
+	"github.com/aperturerobotics/bifrost/keypem"
 	nctr "github.com/aperturerobotics/bifrost/node/controller"
-	"github.com/aperturerobotics/bifrost/node/keypem"
 	"github.com/aperturerobotics/bifrost/peer"
 	udptpt "github.com/aperturerobotics/bifrost/transport/udp"
 	wtpt "github.com/aperturerobotics/bifrost/transport/websocket"

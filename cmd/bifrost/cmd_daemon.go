@@ -7,7 +7,7 @@ import (
 
 	"github.com/aperturerobotics/bifrost/daemon"
 	"github.com/aperturerobotics/bifrost/daemon/api"
-	"github.com/aperturerobotics/bifrost/node/keypem"
+	"github.com/aperturerobotics/bifrost/keypem"
 	udptpt "github.com/aperturerobotics/bifrost/transport/udp"
 	wtpt "github.com/aperturerobotics/bifrost/transport/websocket"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"

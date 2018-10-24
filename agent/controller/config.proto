@@ -1,9 +1,9 @@
 syntax = "proto3";
-package node.controller;
+package agent.controller;
 
-// Config is the node controller config.
+// Config is the agent controller config.
 message Config {
-  // PrivKey is the node private key, pem format.
+  // PrivKey is the agent private key, pem format.
   // The libp2p key is in the bytes field.
   // --- BEGIN LIBP2P PRIVATE KEY ---
   string priv_key = 1;

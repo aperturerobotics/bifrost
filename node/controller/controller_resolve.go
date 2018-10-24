@@ -1,4 +1,4 @@
-package controller
+package node_controller
 
 import (
 	"context"

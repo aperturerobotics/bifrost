@@ -15,7 +15,7 @@ type GetNode interface {
 	GetNodePeerIDConstraint() peer.ID
 }
 
-// GetNodeSingleton implements GetNode keyed by peer ID cosntraint.
+// GetNodeSingleton implements GetNode with a peer ID constraint.
 type GetNodeSingleton struct {
 	peerIDConstraint peer.ID
 }

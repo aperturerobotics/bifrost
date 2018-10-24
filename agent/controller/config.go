@@ -1,4 +1,4 @@
-package node_controller
+package agent_controller
 
 import (
 	"errors"
