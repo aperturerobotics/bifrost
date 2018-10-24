@@ -23,8 +23,8 @@ const ControllerID = "bifrost/node/1"
 // Controller is the Node controller.
 // It implements node.Node as a controller.
 type Controller struct {
-	// peer is the underlying peer
-	peer peer.Peer
+	// Peer is the underlying peer
+	peer.Peer
 	// le is the root logger
 	le *logrus.Entry
 
@@ -45,9 +45,9 @@ func NewController(le *logrus.Entry, privKey crypto.PrivKey) (*Controller, error
 	}
 
 	return &Controller{
-		le:   le,
-		peer: p,
+		Peer: p,
 
+		le:         le,
 		transports: make(map[uint64]transport.Transport),
 	}, nil
 }
@@ -80,21 +80,6 @@ func (c *Controller) GetControllerInfo() controller.Info {
 		Version,
 		"node controller "+c.GetPeerID().Pretty(),
 	)
-}
-
-// GetPubKey returns the public key of the node.
-func (c *Controller) GetPubKey() crypto.PubKey {
-	return c.peer.GetPubKey()
-}
-
-// GetPrivKey returns the private key.
-func (c *Controller) GetPrivKey() crypto.PrivKey {
-	return c.peer.GetPrivKey()
-}
-
-// GetPeerID returns the peer ID.
-func (c *Controller) GetPeerID() peer.ID {
-	return c.peer.GetPeerID()
 }
 
 // Close releases any resources used by the controller.

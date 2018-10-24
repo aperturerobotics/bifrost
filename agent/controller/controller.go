@@ -21,8 +21,8 @@ const ControllerID = "bifrost/agent/1"
 // Controller is the Agent controller.
 // It implements agent.Agent as a controller.
 type Controller struct {
-	// peer is the underlying peer
-	peer peer.Peer
+	// Peer is the underlying peer
+	peer.Peer
 	// le is the root logger
 	le *logrus.Entry
 }
@@ -39,7 +39,7 @@ func NewController(le *logrus.Entry, privKey crypto.PrivKey) (*Controller, error
 
 	return &Controller{
 		le:   le,
-		peer: p,
+		Peer: p,
 	}, nil
 }
 
@@ -66,21 +66,6 @@ func (c *Controller) GetControllerInfo() controller.Info {
 		Version,
 		"agent controller "+c.GetPeerID().Pretty(),
 	)
-}
-
-// GetPubKey returns the public key of the agent.
-func (c *Controller) GetPubKey() crypto.PubKey {
-	return c.peer.GetPubKey()
-}
-
-// GetPrivKey returns the private key.
-func (c *Controller) GetPrivKey() crypto.PrivKey {
-	return c.peer.GetPrivKey()
-}
-
-// GetPeerID returns the peer ID.
-func (c *Controller) GetPeerID() peer.ID {
-	return c.peer.GetPeerID()
 }
 
 // Close releases any resources used by the controller.
