@@ -47,8 +47,9 @@ func NewController(le *logrus.Entry, privKey crypto.PrivKey) (*Controller, error
 // Returning nil ends execution.
 // Returning an error triggers a retry with backoff.
 func (c *Controller) Execute(ctx context.Context) error {
-	// Acquire handle to node.
+	// Acquire handle to node GetNode.
 	// Register agent private key with node.
+	// Issue directive looking up the agent listener / handler
 	// Process incoming agent API calls.
 
 	return nil

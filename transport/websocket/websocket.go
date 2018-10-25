@@ -105,7 +105,7 @@ func (u *Transport) Dial(ctx context.Context, url string) error {
 	defer u.handshakesMtx.Unlock()
 
 	if _, ok := u.handshakes[url]; !ok {
-		u.le.WithField("addr", url).Debug("pushing new handshaker")
+		u.le.WithField("addr", url).Debug("pushing new handshaker [dial]")
 		_, err := u.pushHandshaker(ctx, url, nil)
 		return err
 	}

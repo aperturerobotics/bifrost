@@ -54,7 +54,7 @@ type Transport struct {
 func New(le *logrus.Entry, pc net.PacketConn, pKey crypto.PrivKey) *Transport {
 	uuid := scrc.Crc64([]byte(pc.LocalAddr().String()))
 	return &Transport{
-		le:      le,
+		le:      le.WithField("laddr", pc.LocalAddr().String()),
 		pc:      pc,
 		privKey: pKey,
 		uuid:    uuid,
@@ -81,7 +81,7 @@ func (u *Transport) Dial(ctx context.Context, addr net.Addr) error {
 	defer u.handshakesMtx.Unlock()
 
 	if _, ok := u.handshakes[as]; !ok {
-		u.le.WithField("addr", as).Debug("pushing new handshaker")
+		u.le.WithField("addr", as).Debug("pushing new handshaker [dial]")
 		_, err := u.pushHandshaker(ctx, addr, true)
 		return err
 	}
@@ -175,7 +175,7 @@ func (u *Transport) handlePacket(ctx context.Context, buf []byte, addr net.Addr)
 		hs := u.handshakes[as]
 		ale := u.le.WithField("addr", as)
 		if hs == nil {
-			ale.Debug("pushing new handshaker")
+			ale.Debug("pushing new handshaker [accept]")
 			hs, err = u.pushHandshaker(ctx, addr, false)
 		} else {
 			ale.Debug("used existing handshaker")

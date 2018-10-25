@@ -57,7 +57,11 @@ func (u *Transport) handleCompleteHandshake(
 
 // pushHandshaker builds a new handshaker for the address.
 // it is expected that handshakesMtx is locked before calling pushHandshaker
-func (u *Transport) pushHandshaker(ctx context.Context, addr net.Addr, inititiator bool) (*inflightHandshake, error) {
+func (u *Transport) pushHandshaker(
+	ctx context.Context,
+	addr net.Addr,
+	inititiator bool,
+) (*inflightHandshake, error) {
 	as := addr.String()
 	nctx, nctxCancel := context.WithTimeout(ctx, handshakeTimeout)
 	hs := &inflightHandshake{ctxCancel: nctxCancel, addr: addr}

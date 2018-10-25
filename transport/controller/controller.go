@@ -102,6 +102,10 @@ func (c *Controller) Execute(ctx context.Context) error {
 		return err
 	}
 
+	c.tptMtx.Lock()
+	c.tpt = tpt
+	c.tptMtx.Unlock()
+
 	tptErr := make(chan error, 1)
 	go func() {
 		c.le.Debug("executing transport")
