@@ -4,6 +4,8 @@ import (
 	"context"
 	"hash/crc32"
 	"net"
+	"sync"
+	"time"
 
 	"github.com/aperturerobotics/bifrost/handshake/identity"
 	"github.com/aperturerobotics/bifrost/peer"
@@ -40,6 +42,10 @@ type Link struct {
 	uuid uint64
 	// transportUUID is the transport uuid
 	transportUUID uint64
+	// closed is the closed callback
+	closed func()
+	// closedOnce guards closed
+	closedOnce sync.Once
 }
 
 // NewLink builds a new link.
@@ -51,18 +57,21 @@ func NewLink(
 	sharedSecret [32]byte,
 	writer func(b []byte, addr net.Addr) (n int, err error),
 	initiator bool,
+	closed func(),
 ) *Link {
 	nctx, nctxCancel := context.WithCancel(ctx)
 	pid, _ := peer.IDFromPublicKey(neg.Peer)
 	l := &Link{
-		ctx:           nctx,
-		ctxCancel:     nctxCancel,
-		sharedSecret:  sharedSecret,
-		localAddr:     localAddr,
-		addr:          remoteAddr,
+		ctx:       nctx,
+		ctxCancel: nctxCancel,
+
 		neg:           neg,
-		peerID:        pid,
+		addr:          remoteAddr,
 		uuid:          newLinkUUID(localAddr, remoteAddr, pid),
+		peerID:        pid,
+		closed:        closed,
+		localAddr:     localAddr,
+		sharedSecret:  sharedSecret,
 		transportUUID: transportUUID,
 	}
 
@@ -90,10 +99,13 @@ func NewLink(
 	)
 	l.sess.SetMtu(1350)
 
+	conf := smux.DefaultConfig()
+	conf.KeepAliveInterval = time.Second * 5
+	conf.KeepAliveTimeout = time.Second * 13
 	if initiator {
-		l.mux, _ = smux.Server(l.sess, smux.DefaultConfig())
+		l.mux, _ = smux.Server(l.sess, conf)
 	} else {
-		l.mux, _ = smux.Client(l.sess, smux.DefaultConfig())
+		l.mux, _ = smux.Client(l.sess, conf)
 	}
 
 	go l.acceptStreamPump()
@@ -115,7 +127,6 @@ func (l *Link) acceptStreamPump() {
 	for {
 		s, err := l.mux.AcceptStream()
 		if err != nil {
-			logrus.WithError(err).Error("stopped accepting stream")
 			_ = l.Close()
 			return
 		}
@@ -180,9 +191,15 @@ func (l *Link) HandlePacket(packetType PacketType, data []byte) {
 
 // Close closes the connection.
 func (l *Link) Close() error {
-	logrus.Warnf("closing conn: %v", l.GetRemotePeer().Pretty())
-	_ = l.mux.Close()
-	_ = l.sess.Close()
+	if closed := l.closed; closed != nil {
+		l.closedOnce.Do(closed)
+	}
 	l.ctxCancel()
+	if l.mux != nil {
+		_ = l.mux.Close()
+	}
+	if l.sess != nil {
+		_ = l.sess.Close()
+	}
 	return nil
 }

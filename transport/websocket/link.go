@@ -3,6 +3,7 @@ package websocket
 import (
 	"context"
 	"net"
+	"sync"
 
 	"github.com/aperturerobotics/bifrost/handshake/identity"
 	"github.com/aperturerobotics/bifrost/link"
@@ -34,6 +35,10 @@ type Link struct {
 	mux *smux.Session
 	// conn is the underlying connection
 	conn net.Conn
+	// closed is the closed callback
+	closed func()
+	// closedOnce guards closed
+	closedOnce sync.Once
 
 	uuid, transportUUID uint64
 }
@@ -48,6 +53,7 @@ func NewLink(
 	sharedSecret [32]byte,
 	conn net.Conn,
 	initiator bool,
+	closed func(),
 ) *Link {
 	nctx, nctxCancel := context.WithCancel(ctx)
 	pid, _ := peer.IDFromPublicKey(neg.Peer)
@@ -114,7 +120,14 @@ func (l *Link) OpenStream(opts stream.OpenOpts) (stream.Stream, error) {
 // Close closes the link.
 // Any blocked ReadFrom or WriteTo operations will be unblocked and return errors.
 func (l *Link) Close() error {
-	return l.mux.Close()
+	_ = l.mux.Close()
+	_ = l.conn.Close()
+	if closed := l.closed; closed != nil {
+		l.closedOnce.Do(func() {
+			closed()
+		})
+	}
+	return nil
 }
 
 // _ is a type assertion

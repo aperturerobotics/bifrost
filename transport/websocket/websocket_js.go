@@ -31,6 +31,8 @@ type Transport struct {
 	uuid uint64
 	// privKey is the local priv key
 	privKey crypto.PrivKey
+	// handler is the transport handler
+	handler transport.TransportHandler
 
 	// handshakesMtx guards the handshakes map
 	handshakesMtx sync.Mutex
@@ -51,12 +53,19 @@ type Transport struct {
 
 // New builds a new websocket based transport.
 // In the browser, this can only dial out.
-func New(le *logrus.Entry, _ string, dialAddrs []string, pKey crypto.PrivKey) *Transport {
+func New(
+	le *logrus.Entry,
+	_ string,
+	dialAddrs []string,
+	pKey crypto.PrivKey,
+	handler transport.TransportHandler,
+) *Transport {
 	uuid := scrc.Crc64([]byte("websocket/js"))
 	return &Transport{
 		le:      le,
 		privKey: pKey,
 		uuid:    uuid,
+		handler: handler,
 
 		handshakes: make(map[string]*inflightHandshake),
 		links:      make(map[string]*Link),
@@ -96,19 +105,6 @@ func (u *Transport) Execute(ctx context.Context) error {
 
 	// TODO: when returning, close all links
 	return nil
-}
-
-// GetLinks returns the links currently active.
-func (u *Transport) GetLinks() (lnks []link.Link) {
-	u.linksMtx.Lock()
-	defer u.linksMtx.Unlock()
-
-	lnks = make([]link.Link, 0, len(u.links))
-	for _, lnk := range u.links {
-		lnks = append(lnks, lnk)
-	}
-
-	return
 }
 
 // Close closes the transport.

@@ -51,8 +51,12 @@ func (t *Factory) Construct(
 		le,
 		t.bus,
 		peerIDConstraint,
-		func(le *logrus.Entry, pkey crypto.PrivKey) (transport.Transport, error) {
-			return NewUDP(le, cc.GetListenAddr(), pkey)
+		func(
+			le *logrus.Entry,
+			pkey crypto.PrivKey,
+			handler transport.TransportHandler,
+		) (transport.Transport, error) {
+			return NewUDP(le, cc.GetListenAddr(), cc.GetDialAddrs(), pkey, handler)
 		},
 		TransportID,
 		Version,

@@ -32,8 +32,8 @@ func (u *Transport) handleCompleteHandshake(
 		l.Close()
 	}
 
-	le.Debug("registering link")
-	u.links[url] = NewLink(
+	var nlnk *Link
+	nlnk = NewLink(
 		ctx,
 		le,
 		url,
@@ -42,6 +42,13 @@ func (u *Transport) handleCompleteHandshake(
 		result.Secret,
 		conn,
 		initiator,
+		func() {
+			le.Debug("handleLinkLost()")
+			go u.handleLinkLost(url, nlnk)
+		},
 	)
-	// HandleLink()
+	u.links[url] = nlnk
+	if u.handler != nil {
+		u.handler.HandleLinkEstablished(nlnk)
+	}
 }

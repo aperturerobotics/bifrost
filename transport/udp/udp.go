@@ -1,6 +1,7 @@
 package udp
 
 import (
+	"context"
 	"net"
 	"time"
 
@@ -25,13 +26,30 @@ var handshakeTimeout = time.Second * 8
 type UDP = pconn.Transport
 
 // NewUDP builds a new UDP transport, listening on the addr.
-func NewUDP(le *logrus.Entry, listenAddr string, pKey crypto.PrivKey) (*UDP, error) {
+func NewUDP(
+	le *logrus.Entry,
+	listenAddr string,
+	dialAddrs []string,
+	pKey crypto.PrivKey,
+	c transport.TransportHandler,
+) (*UDP, error) {
 	pc, err := net.ListenPacket("udp", listenAddr)
 	if err != nil {
 		return nil, err
 	}
 
-	return pconn.New(le, pc, pKey), nil
+	conn := pconn.New(le, pc, pKey, c)
+	for _, addr := range dialAddrs {
+		da, err := net.ResolveUDPAddr("udp", addr)
+		if err != nil {
+			le.WithError(err).Warnf("cannot resolve address: %s", addr)
+			continue
+		}
+
+		go conn.Dial(context.TODO(), da)
+	}
+
+	return conn, nil
 }
 
 // _ is a type assertion.

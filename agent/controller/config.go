@@ -43,5 +43,5 @@ func (c *Config) ParsePrivateKey() (crypto.PrivKey, error) {
 
 // ParseNodePeerID parses the node peer ID if it is not empty.
 func (c *Config) ParseNodePeerID() (peer.ID, error) {
-	return confparse.ParsePeerId(c.GetNodePeerId())
+	return confparse.ParsePeerID(c.GetNodePeerId())
 }

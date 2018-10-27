@@ -1,3 +1,5 @@
+//+build !js
+
 package main
 
 import (
@@ -23,6 +25,10 @@ var daemonFlags struct {
 	WebsocketListen string
 	APIListen       string
 	UDPListen       string
+
+	// UDPDial
+	// Temporary
+	UDPDial cli.StringSlice
 }
 
 func init() {
@@ -54,6 +60,11 @@ func init() {
 					Name:        "udp-listen",
 					Usage:       "if set, will listen on address for udp connections, ex :5112",
 					Destination: &daemonFlags.UDPListen,
+				},
+				cli.StringSliceFlag{
+					Name:  "udp-dial",
+					Usage: "if set, dial address with udp on startup, udp-listen must also be set",
+					Value: &daemonFlags.UDPDial,
 				},
 			},
 		},
@@ -141,6 +152,7 @@ func runDaemon(c *cli.Context) error {
 		_, udpRef, err := b.AddDirective(
 			resolver.NewLoadControllerWithConfigSingleton(&udptpt.Config{
 				ListenAddr: daemonFlags.UDPListen,
+				DialAddrs:  []string(daemonFlags.UDPDial),
 			}),
 			func(val directive.Value) {
 				le.Infof("UDP listening on: %s", daemonFlags.UDPListen)

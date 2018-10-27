@@ -10,9 +10,10 @@ message Config {
   // Has no effect in the browser.
   string listen_addr = 2;
 
-  // DialAddrs contain the addresses to dial on start.
+  // DialAddrs contain the addresses to dial on startup.
   // Failure to connect is not a fatal error.
-  // repeated string dial_addrs = 3;
+  // Note: may be removed.
+  repeated string dial_addrs = 3;
 
   // CanDial indicates if the transport will respond to Dial directives.
   // bool can_dial = 4;

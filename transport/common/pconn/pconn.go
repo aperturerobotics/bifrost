@@ -31,6 +31,8 @@ type Transport struct {
 	uuid uint64
 	// privKey is the local priv key
 	privKey crypto.PrivKey
+	// handler is the transport handler
+	handler transport.TransportHandler
 
 	// readErrCh indicates a read error
 	readErrCh chan error
@@ -51,13 +53,19 @@ type Transport struct {
 }
 
 // New builds a new packet-conn based transport, listening on the addr.
-func New(le *logrus.Entry, pc net.PacketConn, pKey crypto.PrivKey) *Transport {
+func New(
+	le *logrus.Entry,
+	pc net.PacketConn,
+	pKey crypto.PrivKey,
+	tc transport.TransportHandler,
+) *Transport {
 	uuid := scrc.Crc64([]byte(pc.LocalAddr().String()))
 	return &Transport{
 		le:      le.WithField("laddr", pc.LocalAddr().String()),
 		pc:      pc,
 		privKey: pKey,
 		uuid:    uuid,
+		handler: tc,
 
 		handshakes: make(map[string]*inflightHandshake),
 		links:      make(map[string]*Link),
@@ -95,13 +103,11 @@ func (u *Transport) Execute(ctx context.Context) error {
 	u.ctx = ctx
 	go u.readPump(ctx)
 
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case rerr := <-u.readErrCh:
-			return rerr
-		}
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case rerr := <-u.readErrCh:
+		return rerr
 	}
 }
 
@@ -210,6 +216,21 @@ func (u *Transport) handlePacket(ctx context.Context, buf []byte, addr net.Addr)
 
 	link.HandlePacket(packetType, buf)
 	return nil
+}
+
+// handleLinkLost is called when a link is lost.
+func (u *Transport) handleLinkLost(addr string, lnk *Link) {
+	u.linksMtx.Lock()
+	existing := u.links[addr]
+	rel := existing == lnk
+	if rel {
+		delete(u.links, addr)
+	}
+	u.linksMtx.Unlock()
+
+	if u.handler != nil && rel {
+		u.handler.HandleLinkLost(lnk)
+	}
 }
 
 // GetLinks returns the links currently active.

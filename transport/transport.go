@@ -19,6 +19,14 @@ type Transport interface {
 	Close() error
 }
 
+// TransportHandler manages a Transport and receives event callbacks.
+type TransportHandler interface {
+	// HandleLinkEstablished is called when a link is established.
+	HandleLinkEstablished(lnk link.Link)
+	// HandleLinkLost is called when a link is lost.
+	HandleLinkLost(lnk link.Link)
+}
+
 // Controller is a transport controller.
 type Controller interface {
 	// Controller is the controllerbus controller interface.

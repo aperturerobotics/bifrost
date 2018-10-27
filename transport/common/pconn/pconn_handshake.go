@@ -41,8 +41,8 @@ func (u *Transport) handleCompleteHandshake(
 		l.Close()
 	}
 
-	le.Debug("registering link")
-	u.links[as] = NewLink(
+	var lnk *Link
+	lnk = NewLink(
 		ctx,
 		u.pc.LocalAddr(),
 		addr,
@@ -51,8 +51,12 @@ func (u *Transport) handleCompleteHandshake(
 		result.Secret,
 		u.pc.WriteTo,
 		initiator,
+		func() {
+			go u.handleLinkLost(as, lnk)
+		},
 	)
-	// HandleLink()
+	u.links[as] = lnk
+	go u.handler.HandleLinkEstablished(lnk)
 }
 
 // pushHandshaker builds a new handshaker for the address.

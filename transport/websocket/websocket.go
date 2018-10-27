@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/aperturerobotics/bifrost/util/scrc"
 	"github.com/blang/semver"
@@ -42,6 +41,8 @@ type Transport struct {
 	uuid uint64
 	// privKey is the local priv key
 	privKey crypto.PrivKey
+	// handler is the transport handler
+	handler transport.TransportHandler
 
 	// listenErrCh is the listen error channel
 	listenErrCh chan error
@@ -68,6 +69,7 @@ func New(
 	listenStr string,
 	bootDialAddrs []string,
 	pKey crypto.PrivKey,
+	handler transport.TransportHandler,
 ) *Transport {
 	uuid := scrc.Crc64([]byte(listenStr))
 
@@ -75,6 +77,7 @@ func New(
 		le:      le,
 		privKey: pKey,
 		uuid:    uuid,
+		handler: handler,
 
 		handshakes: make(map[string]*inflightHandshake),
 		links:      make(map[string]*Link),
@@ -160,19 +163,6 @@ func (u *Transport) Execute(ctx context.Context) error {
 	case rerr := <-u.listenErrCh:
 		return rerr
 	}
-}
-
-// GetLinks returns the links currently active.
-func (u *Transport) GetLinks() (lnks []link.Link) {
-	u.linksMtx.Lock()
-	defer u.linksMtx.Unlock()
-
-	lnks = make([]link.Link, 0, len(u.links))
-	for _, lnk := range u.links {
-		lnks = append(lnks, lnk)
-	}
-
-	return
 }
 
 // Close closes the connection.

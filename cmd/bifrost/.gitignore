@@ -1,3 +1,4 @@
 bifrost
-daemon_node_priv.pem
+*.pem
 bifrost.exe
+debug

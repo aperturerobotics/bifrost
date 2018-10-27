@@ -18,5 +18,7 @@ type Link interface {
 	GetRemotePeer() peer.ID
 	// Close closes the link.
 	// Any blocked ReadFrom or WriteTo operations will be unblocked and return errors.
+	// The link should call the HandleLinkLost callback exactly once.
+	// Close may be called many times.
 	Close() error
 }
