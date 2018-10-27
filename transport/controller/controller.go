@@ -187,12 +187,13 @@ func (c *Controller) HandleLinkEstablished(lnk link.Link) {
 	if elOk {
 		if el.Link == lnk {
 			// duplicate HandleLinkEstablished call
+			le.Debug("duplicate handle-link-established call")
 			return
 		}
 
 		// close dupe
 		le.Debug("closing existing link identical to incoming link")
-		c.flushEstablishedLink(el)
+		go c.flushEstablishedLink(el)
 		delete(c.links, luuid)
 	}
 

@@ -35,11 +35,13 @@ func (u *Transport) handleCompleteHandshake(
 
 	// TODO; re-configure link for new secret rather than closing it.
 	// TODO: find any peers with this ID and userp
-	if l, ok := u.links[as]; ok {
-		le.
-			Debug("userping old session with peer")
-		l.Close()
-	}
+	/*
+		if l, ok := u.links[as]; ok {
+			le.
+				Debug("userping old session with peer")
+			l.Close()
+		}
+	*/
 
 	var lnk *Link
 	lnk = NewLink(
