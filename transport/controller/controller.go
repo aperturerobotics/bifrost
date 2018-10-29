@@ -178,7 +178,7 @@ func (c *Controller) HandleLinkEstablished(lnk link.Link) {
 	// quick sanity check
 	if lnk.GetRemotePeer() == c.localPeerID {
 		le.Warn("self-dial detected, closing link")
-		lnk.Close()
+		go lnk.Close()
 		return
 	}
 

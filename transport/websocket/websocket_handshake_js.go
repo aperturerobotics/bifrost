@@ -48,6 +48,7 @@ func (u *Transport) processHandshake(ctx context.Context, hs *inflightHandshake)
 	}()
 
 	ule.Debug("dialing")
+	initiator := true
 	var err error
 	conn, err := websocket.Dial(hs.url)
 	if err != nil {
@@ -62,7 +63,7 @@ func (u *Transport) processHandshake(ctx context.Context, hs *inflightHandshake)
 		func(data []byte) error {
 			_, err := conn.Write(data)
 			return err
-		}, nil, nil,
+		}, nil, initiator, nil,
 	)
 	if err != nil {
 		ule.WithError(err).Warn("error building handshaker")
@@ -89,8 +90,7 @@ func (u *Transport) processHandshake(ctx context.Context, hs *inflightHandshake)
 		}
 	}()
 
-	initiator := true
-	res, err := hns.Execute(ctx, initiator)
+	res, err := hns.Execute(ctx)
 	if err != nil {
 		if err == context.Canceled {
 			return

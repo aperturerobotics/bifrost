@@ -81,6 +81,7 @@ func (u *Transport) pushHandshaker(
 			return err
 		},
 		nil,
+		inititiator,
 		nil,
 	)
 	if err != nil {
@@ -112,7 +113,7 @@ func (u *Transport) processHandshake(ctx context.Context, hs *inflightHandshake,
 		u.handshakesMtx.Unlock()
 	}()
 
-	res, err := hs.hs.Execute(ctx, initiator)
+	res, err := hs.hs.Execute(ctx)
 	if err != nil {
 		if err == context.Canceled {
 			return

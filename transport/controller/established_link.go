@@ -69,7 +69,8 @@ func (e *establishedLink) initialHoldOpen(ctx context.Context, ref directive.Ref
 	defer ht.Stop()
 
 	e.DirectiveInstance.AddDisposeCallback(func() {
-		e.le.Debug("establish link directive expired, closing link")
+		// TODO: avoid calling this multiple times
+		// e.le.Debug("establish link directive expired, closing link")
 		e.Link.Close()
 		e.Cancel()
 	})

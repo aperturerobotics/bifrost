@@ -36,7 +36,8 @@ type kcpPacketConn struct {
 	ctx    context.Context
 	readCh chan []byte
 
-	localAddr, remoteAddr net.Addr
+	localAddr, remoteAddr       net.Addr
+	readDeadline, writeDeadline time.Time
 
 	writer func(b []byte, addr net.Addr) (n int, err error)
 	closer func() error
@@ -60,8 +61,16 @@ func newKcpPacketConn(
 
 // pushPacket pushes an incoming packet to the read channel.
 func (c *kcpPacketConn) pushPacket(dat []byte) {
+	ctx := c.ctx
+	// TODO: slow, fix
+	if !c.writeDeadline.IsZero() {
+		nctx, nctxCancel := context.WithDeadline(ctx, c.writeDeadline)
+		defer nctxCancel()
+		ctx = nctx
+	}
+
 	select {
-	case <-c.ctx.Done():
+	case <-ctx.Done():
 	case c.readCh <- dat:
 	}
 }
@@ -75,8 +84,15 @@ func (c *kcpPacketConn) pushPacket(dat []byte) {
 // see SetDeadline and SetReadDeadline.
 func (c *kcpPacketConn) ReadFrom(b []byte) (int, net.Addr, error) {
 	// Read from channel
+	ctx := c.ctx
+	if !c.readDeadline.IsZero() {
+		nctx, nctxCancel := context.WithDeadline(ctx, c.readDeadline)
+		defer nctxCancel()
+		ctx = nctx
+	}
+
 	select {
-	case <-c.ctx.Done():
+	case <-ctx.Done():
 		return 0, nil, c.ctx.Err()
 	case buf := <-c.readCh:
 		if len(buf) > len(b) {
@@ -105,7 +121,8 @@ func (c *kcpPacketConn) LocalAddr() net.Addr {
 // Close closes the connection.
 // Any blocked ReadFrom or WriteTo operations will be unblocked and return errors.
 func (c *kcpPacketConn) Close() error {
-	return c.closer()
+	go c.closer()
+	return nil
 }
 
 // SetDeadline sets the read and write deadlines associated
@@ -124,6 +141,8 @@ func (c *kcpPacketConn) Close() error {
 //
 // A zero value for t means I/O operations will not time out.
 func (c *kcpPacketConn) SetDeadline(t time.Time) error {
+	c.SetReadDeadline(t)
+	c.SetWriteDeadline(t)
 	return nil
 }
 
@@ -131,6 +150,7 @@ func (c *kcpPacketConn) SetDeadline(t time.Time) error {
 // and any currently-blocked ReadFrom call.
 // A zero value for t means ReadFrom will not time out.
 func (c *kcpPacketConn) SetReadDeadline(t time.Time) error {
+	c.readDeadline = t
 	return nil
 }
 
@@ -140,6 +160,7 @@ func (c *kcpPacketConn) SetReadDeadline(t time.Time) error {
 // some of the data was successfully written.
 // A zero value for t means WriteTo will not time out.
 func (c *kcpPacketConn) SetWriteDeadline(t time.Time) error {
+	c.writeDeadline = t
 	return nil
 }
 

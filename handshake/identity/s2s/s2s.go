@@ -52,6 +52,7 @@ func NewHandshaker(
 	expectedRemotePub crypto.PubKey,
 	writePacket func(data []byte) error,
 	lookupPubKey func(pid peer.ID) crypto.PubKey,
+	initiator bool,
 	extraData []byte,
 ) (*Handshaker, error) {
 	// hPub is the handshake public key.
@@ -80,6 +81,7 @@ func NewHandshaker(
 		hPub:          hPub,
 		writePacketFn: writePacket,
 		localPeerID:   localPeerID,
+		initiator:     initiator,
 		remotePeerID:  remotePeerID,
 		remotePubKey:  expectedRemotePub,
 		packetCh:      make(chan []byte, 3),
@@ -102,8 +104,8 @@ func checkPacketType(actual, expected PacketType) error {
 // Execute executes the handshake with a context.
 // Initiator indicates the handshaker is the initiator of the handshake.
 // Returning an error cancels the attempt.
-func (h *Handshaker) Execute(ctx context.Context, initiator bool) (*identity.Result, error) {
-	h.initiator = initiator
+func (h *Handshaker) Execute(ctx context.Context) (*identity.Result, error) {
+	initiator := h.initiator
 	inPkt := &Packet{}
 	var remoteEphPub [32]byte
 	var sharedKey [32]byte
