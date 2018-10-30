@@ -250,7 +250,7 @@ func (u *Transport) GetLinks() (lnks []link.Link) {
 // If it can, it returns a resolver. If not, returns nil.
 // Any exceptional errors are returned for logging.
 // It is safe to add a reference to the directive during this call.
-func (u *Transport) HandleDirective(inst directive.Instance) (directive.Resolver, error) {
+func (c *Transport) HandleDirective(ctx context.Context, di directive.Instance) (directive.Resolver, error) {
 	// TODO
 	return nil, nil
 }

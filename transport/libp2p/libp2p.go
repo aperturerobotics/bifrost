@@ -111,7 +111,7 @@ func (l *LibP2P) Execute(ctx context.Context) error {
 // If it can, it returns a resolver. If not, returns nil.
 // Any exceptional errors are returned for logging.
 // It is safe to add a reference to the directive during this call.
-func (l *LibP2P) HandleDirective(inst directive.Instance) (directive.Resolver, error) {
+func (c *LibP2P) HandleDirective(ctx context.Context, di directive.Instance) (directive.Resolver, error) {
 	// TODO
 	return nil, nil
 }

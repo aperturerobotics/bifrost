@@ -37,6 +37,14 @@ func (d *GetNodeSingleton) Validate() error {
 	return nil
 }
 
+// GetValueOptions returns options relating to value handling.
+func (d *GetNodeSingleton) GetValueOptions() directive.ValueOptions {
+	return directive.ValueOptions{
+		MaxValueCount:   1,
+		MaxValueHardCap: true,
+	}
+}
+
 // IsEquivalent checks if the other directive is equivalent. If two
 // directives are equivalent, and the new directive does not superceed the
 // old, then the new directive will be merged (de-duplicated) into the old.

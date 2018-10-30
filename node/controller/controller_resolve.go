@@ -33,15 +33,9 @@ func newGetNodeResolver(
 }
 
 // Resolve resolves the values.
-// Any fatal error resolving the value is returned.
-// When the context is canceled valCh will not be drained anymore.
-func (c *getNodeResolver) Resolve(ctx context.Context, valCh chan<- directive.Value) error {
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case valCh <- node.Node(c.controller):
-		return nil
-	}
+func (c *getNodeResolver) Resolve(ctx context.Context, valHandler directive.ResolverHandler) error {
+	_, _ = valHandler.AddValue(node.Node(c.controller))
+	return nil
 }
 
 // resolveGetNode resolves the GetNode directive

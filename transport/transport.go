@@ -20,6 +20,7 @@ type Transport interface {
 }
 
 // TransportHandler manages a Transport and receives event callbacks.
+// This is typically fulfilled by the transport controller.
 type TransportHandler interface {
 	// HandleLinkEstablished is called when a link is established.
 	HandleLinkEstablished(lnk link.Link)

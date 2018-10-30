@@ -14,10 +14,11 @@ func GetNodeWithPeerID(
 	b bus.Bus,
 	peerIDConstraint peer.ID,
 ) (Node, error) {
-	v, err := bus.ExecSingleton(ctx, b, NewGetNodeSingleton(peerIDConstraint))
+	v, ref, err := bus.ExecOneOff(ctx, b, NewGetNodeSingleton(peerIDConstraint), nil)
 	if err != nil {
 		return nil, err
 	}
+	ref.Release()
 
 	return v.(Node), nil
 }

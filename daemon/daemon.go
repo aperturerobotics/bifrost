@@ -16,7 +16,6 @@ import (
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
 	"github.com/aperturerobotics/controllerbus/controller/resolver/static"
 	"github.com/aperturerobotics/controllerbus/core"
-	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/aperturerobotics/objstore/db"
 	"github.com/aperturerobotics/objstore/db/inmem"
 	"github.com/libp2p/go-libp2p-crypto"
@@ -38,6 +37,9 @@ type Daemon struct {
 	nodePeerID peer.ID
 	// nodePeerIDPretty is the node peer ID as a b58 address
 	nodePeerIDPretty string
+
+	// closeCbs are funcs to call when we close the daemon
+	closeCbs []func()
 }
 
 // ConstructOpts are extra options passed to the daemon constructor.
@@ -94,17 +96,16 @@ func NewDaemon(
 	if err != nil {
 		return nil, err
 	}
-	_, _, err = controllerBus.AddDirective(
-		resolver.NewLoadControllerWithConfigSingleton(&nctr.Config{
-			PrivKey: string(nodePrivKeyPem),
-		}),
-		func(val directive.Value) {
-			le.Infof("node controller resolved w/ ID: %s", peerIDPretty)
-		},
-	)
+
+	dir := resolver.NewLoadControllerWithConfigSingleton(&nctr.Config{
+		PrivKey: string(nodePrivKeyPem),
+	})
+	val, valRef, err := bus.ExecOneOff(ctx, controllerBus, dir, nil)
 	if err != nil {
 		return nil, err
 	}
+	_ = val
+	le.Infof("node controller resolved w/ ID: %s", peerIDPretty)
 
 	ddb := opts.Database
 	if ddb == nil {
@@ -115,6 +116,7 @@ func NewDaemon(
 		bus: controllerBus,
 		db:  ddb,
 
+		closeCbs:         []func(){valRef.Release},
 		nodePriv:         nodePriv,
 		nodePeerID:       peerID,
 		staticResolver:   staticResolver,

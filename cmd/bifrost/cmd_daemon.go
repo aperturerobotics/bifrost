@@ -12,6 +12,7 @@ import (
 	"github.com/aperturerobotics/bifrost/keypem"
 	udptpt "github.com/aperturerobotics/bifrost/transport/udp"
 	wtpt "github.com/aperturerobotics/bifrost/transport/websocket"
+	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/libp2p/go-libp2p-crypto"
@@ -121,9 +122,9 @@ func runDaemon(c *cli.Context) error {
 			resolver.NewLoadControllerWithConfigSingleton(&api.Config{
 				ListenAddr: daemonFlags.APIListen,
 			}),
-			func(val directive.Value) {
+			bus.NewCallbackHandler(func(val directive.Value) {
 				le.Infof("grpc api listening on: %s", daemonFlags.APIListen)
-			},
+			}, nil, nil),
 		)
 		if err != nil {
 			return errors.Wrap(err, "listen on grpc api")
@@ -138,9 +139,9 @@ func runDaemon(c *cli.Context) error {
 			resolver.NewLoadControllerWithConfigSingleton(&wtpt.Config{
 				ListenAddr: daemonFlags.WebsocketListen,
 			}),
-			func(val directive.Value) {
+			bus.NewCallbackHandler(func(val directive.Value) {
 				le.Infof("websocket listening on: %s", daemonFlags.WebsocketListen)
-			},
+			}, nil, nil),
 		)
 		if err != nil {
 			return errors.Wrap(err, "listen on websocket")
@@ -154,9 +155,9 @@ func runDaemon(c *cli.Context) error {
 				ListenAddr: daemonFlags.UDPListen,
 				DialAddrs:  []string(daemonFlags.UDPDial),
 			}),
-			func(val directive.Value) {
+			bus.NewCallbackHandler(func(val directive.Value) {
 				le.Infof("UDP listening on: %s", daemonFlags.UDPListen)
-			},
+			}, nil, nil),
 		)
 		if err != nil {
 			return errors.Wrap(err, "listen on udp")
