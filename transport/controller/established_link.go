@@ -39,7 +39,7 @@ func newEstablishedLink(
 	// Close the reference after a hold-open time.
 	// Close the link when the directive expires.
 	di, dir, err := b.AddDirective(
-		link.NewEstablishLinkSingleton(lnk.GetRemotePeer()),
+		link.NewEstablishLinkWithPeer(lnk.GetRemotePeer()),
 		nil,
 	)
 	if err != nil {
@@ -55,25 +55,24 @@ func newEstablishedLink(
 		Cancel:            ctxCancel,
 	}
 	di.AddDisposeCallback(func() { _ = lnk.Close() })
-	go el.initialHoldOpen(ctx, dir)
+	go el.manageLinkLifecycle(ctx, dir)
 
 	return el, nil
 }
 
-// initialHoldOpen manages the initial hold-open period for the link.
-func (e *establishedLink) initialHoldOpen(ctx context.Context, ref directive.Reference) {
+// manageLinkLifecycle manages the link lifecycle.
+func (e *establishedLink) manageLinkLifecycle(ctx context.Context, ref directive.Reference) {
 	ctxCancel := e.Cancel
 	defer ctxCancel()
 
 	ht := time.NewTimer(linkHoldOpenDur)
 	defer ht.Stop()
 
-	e.DirectiveInstance.AddDisposeCallback(func() {
-		// TODO: avoid calling this multiple times
-		// e.le.Debug("establish link directive expired, closing link")
-		e.Link.Close()
-		e.Cancel()
+	disposeRel := e.DirectiveInstance.AddDisposeCallback(func() {
+		ctxCancel()
 	})
+	defer disposeRel()
+
 	select {
 	case <-ctx.Done():
 	case <-ht.C:
@@ -84,4 +83,6 @@ func (e *establishedLink) initialHoldOpen(ctx context.Context, ref directive.Ref
 	}
 
 	ref.Release()
+	<-ctx.Done()
+	e.Link.Close()
 }

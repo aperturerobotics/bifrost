@@ -17,25 +17,25 @@ type EstablishLink interface {
 	EstablishLinkPeerIDConstraint() peer.ID
 }
 
-// EstablishLinkSingleton implements EstablishLink with a peer ID constraint.
-type EstablishLinkSingleton struct {
+// EstablishLinkWithPeer implements EstablishLink with a peer ID constraint.
+type EstablishLinkWithPeer struct {
 	peerIDConstraint peer.ID
 }
 
-// NewEstablishLinkSingleton constructs a new EstablishLinkSingleton directive.
-func NewEstablishLinkSingleton(peerID peer.ID) *EstablishLinkSingleton {
-	return &EstablishLinkSingleton{peerIDConstraint: peerID}
+// NewEstablishLinkWithPeer constructs a new EstablishLinkWithPeer directive.
+func NewEstablishLinkWithPeer(peerID peer.ID) *EstablishLinkWithPeer {
+	return &EstablishLinkWithPeer{peerIDConstraint: peerID}
 }
 
 // EstablishLinkPeerIDConstraint returns a specific peer ID node we are looking for.
 // If empty, any node is matched.
-func (d *EstablishLinkSingleton) EstablishLinkPeerIDConstraint() peer.ID {
+func (d *EstablishLinkWithPeer) EstablishLinkPeerIDConstraint() peer.ID {
 	return d.peerIDConstraint
 }
 
 // Validate validates the directive.
 // This is a cursory validation to see if the values "look correct."
-func (d *EstablishLinkSingleton) Validate() error {
+func (d *EstablishLinkWithPeer) Validate() error {
 	if len(d.peerIDConstraint) == 0 {
 		return errors.New("peer id constraint required")
 	}
@@ -44,17 +44,15 @@ func (d *EstablishLinkSingleton) Validate() error {
 }
 
 // GetValueOptions returns options relating to value handling.
-func (d *EstablishLinkSingleton) GetValueOptions() directive.ValueOptions {
-	return directive.ValueOptions{
-		MaxValueCount:   1,
-		MaxValueHardCap: true,
-	}
+func (d *EstablishLinkWithPeer) GetValueOptions() directive.ValueOptions {
+	// no value cap
+	return directive.ValueOptions{}
 }
 
 // IsEquivalent checks if the other directive is equivalent. If two
 // directives are equivalent, and the new directive does not superceed the
 // old, then the new directive will be merged (de-duplicated) into the old.
-func (d *EstablishLinkSingleton) IsEquivalent(other directive.Directive) bool {
+func (d *EstablishLinkWithPeer) IsEquivalent(other directive.Directive) bool {
 	od, ok := other.(EstablishLink)
 	if !ok {
 		return false
@@ -65,9 +63,9 @@ func (d *EstablishLinkSingleton) IsEquivalent(other directive.Directive) bool {
 
 // Superceeds checks if the directive overrides another.
 // The other directive will be canceled if superceded.
-func (d *EstablishLinkSingleton) Superceeds(other directive.Directive) bool {
+func (d *EstablishLinkWithPeer) Superceeds(other directive.Directive) bool {
 	return false
 }
 
 // _ is a type constraint
-var _ EstablishLink = ((*EstablishLinkSingleton)(nil))
+var _ EstablishLink = ((*EstablishLinkWithPeer)(nil))
