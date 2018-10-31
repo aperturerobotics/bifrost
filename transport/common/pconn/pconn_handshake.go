@@ -34,7 +34,6 @@ func (u *Transport) handleCompleteHandshake(
 	defer u.linksMtx.Unlock()
 
 	// TODO; re-configure link for new secret rather than closing it.
-	// TODO: find any peers with this ID and userp
 	/*
 		if l, ok := u.links[as]; ok {
 			le.

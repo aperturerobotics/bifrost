@@ -87,6 +87,7 @@ func NewLink(
 	}
 
 	go l.watchLinkContextCancel()
+	go l.readPump()
 	return l
 }
 
@@ -139,6 +140,23 @@ func (l *Link) watchLinkContextCancel() {
 	<-l.ctx.Done()
 	l.le.Debug("link context canceled, calling close")
 	l.Close()
+}
+
+// readPump reads messages from the link.
+func (l *Link) readPump() {
+	for {
+		strm, err := l.mux.AcceptStream()
+		if err != nil {
+			l.le.WithError(err).Warn("link reader exiting")
+			l.Close()
+			return
+		}
+
+		l.le.
+			WithField("stream-id", strm.ID()).
+			Debug("stream accepted")
+		_ = strm
+	}
 }
 
 // _ is a type assertion

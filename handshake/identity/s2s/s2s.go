@@ -406,6 +406,7 @@ func (h *Handshaker) decodePubKey(cipher *Packet_Ciphertext) error {
 
 // Handle handles an incoming packet.
 // The buffer is re-used upon return.
+// Returns if another packet is expected.
 func (h *Handshaker) Handle(data []byte) bool {
 	select {
 	case h.packetCh <- data:
