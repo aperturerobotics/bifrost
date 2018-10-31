@@ -209,14 +209,12 @@ func (c *Controller) HandleLinkEstablished(lnk link.Link) {
 
 // HandleLinkLost is called when a link is lost.
 func (c *Controller) HandleLinkLost(lnk link.Link) {
-	le := c.loggerForLink(lnk)
 	c.linksMtx.Lock()
 	defer c.linksMtx.Unlock()
 
 	// fast path: clear by uuid
 	luuid := lnk.GetUUID()
 	if el, elOk := c.links[luuid]; elOk {
-		le.Debug("link lost/closed")
 		delete(c.links, luuid)
 		c.flushEstablishedLink(el)
 		return
@@ -225,7 +223,6 @@ func (c *Controller) HandleLinkLost(lnk link.Link) {
 	// slow path: equality check to be sure
 	for k, l := range c.links {
 		if l.Link == lnk {
-			le.Debug("link lost/closed")
 			delete(c.links, k)
 			c.flushEstablishedLink(l)
 			break
@@ -236,6 +233,8 @@ func (c *Controller) HandleLinkLost(lnk link.Link) {
 // flushEstablishedLink closes an established link and cleans it up.
 // linksmtx is locked by caller
 func (c *Controller) flushEstablishedLink(el *establishedLink) {
+	le := c.loggerForLink(el.Link)
+	le.Debug("link lost/closed")
 	el.Cancel()
 	el.Link.Close()
 }

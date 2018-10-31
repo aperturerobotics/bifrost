@@ -135,6 +135,7 @@ func (u *Transport) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 	// TODO: do something smarter than holding the conn open
 	<-req.Context().Done()
+	le.Info("link serve http exiting")
 }
 
 // Execute processes the transport.

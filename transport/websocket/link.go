@@ -69,7 +69,7 @@ func NewLink(
 		sess, _ = smux.Client(conn, smux.DefaultConfig())
 	}
 
-	return &Link{
+	l := &Link{
 		ctx:       nctx,
 		ctxCancel: nctxCancel,
 
@@ -80,10 +80,14 @@ func NewLink(
 		mux:    sess,
 		uuid:   newLinkUUID(url, pid),
 		conn:   conn,
+		closed: closed,
 
 		sharedSecret:  sharedSecret,
 		transportUUID: transportUUID,
 	}
+
+	go l.watchLinkContextCancel()
+	return l
 }
 
 // newLinkUUID builds the UUID for a link
@@ -120,14 +124,21 @@ func (l *Link) OpenStream(opts stream.OpenOpts) (stream.Stream, error) {
 // Close closes the link.
 // Any blocked ReadFrom or WriteTo operations will be unblocked and return errors.
 func (l *Link) Close() error {
-	_ = l.mux.Close()
-	_ = l.conn.Close()
-	if closed := l.closed; closed != nil {
-		l.closedOnce.Do(func() {
+	l.closedOnce.Do(func() {
+		_ = l.conn.Close()
+		if closed := l.closed; closed != nil {
 			closed()
-		})
-	}
+		}
+		_ = l.mux.Close()
+	})
 	return nil
+}
+
+// watchLinkContextCancel cleans up the link after the context is canceled.
+func (l *Link) watchLinkContextCancel() {
+	<-l.ctx.Done()
+	l.le.Debug("link context canceled, calling close")
+	l.Close()
 }
 
 // _ is a type assertion

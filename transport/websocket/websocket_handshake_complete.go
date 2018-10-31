@@ -1,6 +1,7 @@
 package websocket
 
 import (
+	"context"
 	"net"
 
 	"github.com/aperturerobotics/bifrost/handshake/identity"
@@ -9,12 +10,12 @@ import (
 
 // handleCompleteHandshake handles a completed handshake.
 func (u *Transport) handleCompleteHandshake(
+	ctx context.Context,
 	url string,
 	conn net.Conn,
 	result *identity.Result,
 	initiator bool,
 ) {
-	ctx := u.ctx
 	pid, _ := peer.IDFromPublicKey(result.Peer)
 	le := u.le.
 		WithField("remote-id", pid.Pretty()).
@@ -43,7 +44,6 @@ func (u *Transport) handleCompleteHandshake(
 		conn,
 		initiator,
 		func() {
-			le.Debug("handleLinkLost()")
 			go u.handleLinkLost(url, nlnk)
 		},
 	)

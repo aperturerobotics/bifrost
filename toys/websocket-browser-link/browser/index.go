@@ -9,6 +9,7 @@ import (
 
 	"github.com/aperturerobotics/bifrost/toys/websocket-browser-link/common"
 	wtpt "github.com/aperturerobotics/bifrost/transport/websocket"
+	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/gopherjs/gopherjs/js"
@@ -45,9 +46,9 @@ func main() {
 		resolver.NewLoadControllerWithConfigSingleton(&wtpt.Config{
 			DialAddrs: []string{wsBaseURL + "bifrost-0.1"},
 		}),
-		func(val directive.Value) {
+		bus.NewCallbackHandler(func(val directive.Value) {
 			le.Infof("websocket transport resolved: %#v", val)
-		},
+		}, nil, nil),
 	)
 	defer wsRef.Release()
 

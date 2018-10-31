@@ -30,12 +30,12 @@ func (u *Transport) pushHandshaker(
 	}
 	u.handshakes[url] = hs
 
-	go u.processHandshake(nctx, hs)
+	go u.processHandshake(ctx, nctx, hs)
 	return hs, nil
 }
 
 // processHandshake processes an in-flight handshake.
-func (u *Transport) processHandshake(ctx context.Context, hs *inflightHandshake) {
+func (u *Transport) processHandshake(ctx, hsctx context.Context, hs *inflightHandshake) {
 	ule := u.le.WithField("url", hs.url)
 
 	defer func() {
@@ -90,7 +90,7 @@ func (u *Transport) processHandshake(ctx context.Context, hs *inflightHandshake)
 		}
 	}()
 
-	res, err := hns.Execute(ctx)
+	res, err := hns.Execute(hsctx)
 	if err != nil {
 		if err == context.Canceled {
 			return
@@ -102,13 +102,13 @@ func (u *Transport) processHandshake(ctx context.Context, hs *inflightHandshake)
 	}
 
 	select {
-	case <-ctx.Done():
-		ule.WithError(ctx.Err()).Warn("handshake succeeded but ctx canceled")
+	case <-hsctx.Done():
+		ule.WithError(hsctx.Err()).Warn("handshake succeeded but ctx canceled")
 		conn.Close()
 		return
 	default:
 	}
 
 	ule.Debug("handshake complete")
-	u.handleCompleteHandshake(hs.url, conn, res, initiator)
+	u.handleCompleteHandshake(ctx, hs.url, conn, res, initiator)
 }

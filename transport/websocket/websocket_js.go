@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aperturerobotics/bifrost/link"
+	// "github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/aperturerobotics/bifrost/util/scrc"
 	"github.com/blang/semver"

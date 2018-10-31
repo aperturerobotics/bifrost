@@ -61,9 +61,9 @@ func BuildCommonBus(ctx context.Context) (bus.Bus, crypto.PrivKey, error) {
 		resolver.NewLoadControllerWithConfigSingleton(&nctr.Config{
 			PrivKey: string(peerPrivKeyPem),
 		}),
-		func(val directive.Value) {
+		bus.NewCallbackHandler(func(val directive.Value) {
 			le.Infof("node controller resolved: %#v", val)
-		},
+		}, nil, nil),
 	)
 	if err != nil {
 		return nil, nil, err

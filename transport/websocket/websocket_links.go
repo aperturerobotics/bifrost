@@ -27,7 +27,6 @@ func (u *Transport) handleLinkLost(addr string, lnk *Link) {
 	}
 	u.linksMtx.Unlock()
 
-	u.le.Debug("handleLinkLost() calling HandleLinkLost()")
 	if u.handler != nil && rel {
 		u.handler.HandleLinkLost(lnk)
 	}
