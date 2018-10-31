@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/aperturerobotics/bifrost/handshake/identity"
+	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/stream"
 	"github.com/aperturerobotics/bifrost/util/scrc"
@@ -22,6 +23,8 @@ type Link struct {
 	ctx context.Context
 	// ctxCancel cancels the context for this link.
 	ctxCancel context.CancelFunc
+	// le is the log entry
+	le *logrus.Entry
 	// addr is the bound remote address
 	addr net.Addr
 	// localAddr is the local address
@@ -46,11 +49,30 @@ type Link struct {
 	closed func()
 	// closedOnce guards closed
 	closedOnce sync.Once
+	// acceptStreamCh contains incoming streams
+	acceptStreamCh chan *acceptedStream
+	// rawStreamsMtx guards rawStreams
+	rawStreamsMtx sync.Mutex
+	// lastRawStream contains the last used raw stream.
+	lastRawStream *rawStream
+	// lastRawStreamID is the last raw stream ID
+	lastRawStreamID uint32
+	// rawStreams contains all raw streams by ID
+	rawStreams map[uint32]*rawStream
+	// writer is the writer function
+	writer func(b []byte, addr net.Addr) (n int, err error)
+}
+
+// acceptedStream temporarily holds an incoming stream.
+type acceptedStream struct {
+	stream     stream.Stream
+	streamOpts stream.OpenOpts
 }
 
 // NewLink builds a new link.
 func NewLink(
 	ctx context.Context,
+	le *logrus.Entry,
 	localAddr, remoteAddr net.Addr,
 	transportUUID uint64,
 	neg *identity.Result,
@@ -65,14 +87,18 @@ func NewLink(
 		ctx:       nctx,
 		ctxCancel: nctxCancel,
 
-		neg:           neg,
-		addr:          remoteAddr,
-		uuid:          newLinkUUID(localAddr, remoteAddr, pid),
-		peerID:        pid,
-		closed:        closed,
-		localAddr:     localAddr,
-		sharedSecret:  sharedSecret,
-		transportUUID: transportUUID,
+		neg:            neg,
+		le:             le,
+		addr:           remoteAddr,
+		uuid:           newLinkUUID(localAddr, remoteAddr, pid),
+		peerID:         pid,
+		closed:         closed,
+		writer:         writer,
+		localAddr:      localAddr,
+		rawStreams:     make(map[uint32]*rawStream),
+		sharedSecret:   sharedSecret,
+		transportUUID:  transportUUID,
+		acceptStreamCh: make(chan *acceptedStream),
 	}
 
 	// dummy raddr
@@ -107,8 +133,8 @@ func NewLink(
 	} else {
 		l.mux, _ = smux.Client(l.sess, conf)
 	}
+	go l.smuxAcceptPump()
 
-	go l.acceptStreamPump()
 	return l
 }
 
@@ -117,13 +143,8 @@ func (l *Link) GetUUID() uint64 {
 	return l.uuid
 }
 
-// computeConvID computes the conversation id using the shared secret
-func computeConvID(sharedSecret []byte) uint32 {
-	return crc32.ChecksumIEEE(sharedSecret)
-}
-
-// acceptStreamPump goroutine accepts incoming streams.
-func (l *Link) acceptStreamPump() {
+// smuxAcceptPump accepts streams from the stream muxer.
+func (l *Link) smuxAcceptPump() {
 	for {
 		s, err := l.mux.AcceptStream()
 		if err != nil {
@@ -131,15 +152,43 @@ func (l *Link) acceptStreamPump() {
 			return
 		}
 
-		logrus.
-			WithField("stream-id", s.ID()).
-			WithField("remote-peer", l.GetRemotePeer().Pretty()).
-			Info("accepted stream")
-
-		strm := &smuxStream{Stream: s}
-		// TODO: handle incoming stream
-		_ = strm
+		select {
+		case <-l.ctx.Done():
+			s.Close()
+			return
+		case l.acceptStreamCh <- &acceptedStream{
+			stream: s,
+			streamOpts: stream.OpenOpts{
+				Reliable:  true,
+				Encrypted: true,
+			},
+		}:
+		}
 	}
+}
+
+// AcceptStream accepts a stream from the link.
+func (l *Link) AcceptStream() (stream.Stream, stream.OpenOpts, error) {
+	var astrm *acceptedStream
+	select {
+	case <-l.ctx.Done():
+		return nil, stream.OpenOpts{}, l.ctx.Err()
+	case astrm = <-l.acceptStreamCh:
+	}
+
+	s := astrm.stream
+	opts := astrm.streamOpts
+	l.le.
+		WithField("stream-reliable", opts.Reliable).
+		WithField("stream-encrypted", opts.Encrypted).
+		WithField("remote-peer", l.GetRemotePeer().Pretty()).
+		Info("accepted stream")
+	return s, opts, nil
+}
+
+// computeConvID computes the conversation id using the shared secret
+func computeConvID(sharedSecret []byte) uint32 {
+	return crc32.ChecksumIEEE(sharedSecret)
 }
 
 // buildBlockCrypt returns the block crypto for this link.
@@ -175,18 +224,72 @@ func (l *Link) OpenStream(opts stream.OpenOpts) (stream.Stream, error) {
 		return nil, err
 	}
 
-	strm := &smuxStream{Stream: s}
-	return strm, nil
+	return s, nil
 }
 
 // HandlePacket handles a packet.
 func (l *Link) HandlePacket(packetType PacketType, data []byte) {
 	switch packetType {
 	case PacketType_PacketType_RAW:
-		// TODO: route raw packet to stream
+		l.handleRawPacket(data)
 	case PacketType_PacketType_KCP_SMUX:
 		l.kpc.pushPacket(data)
 	}
+}
+
+// handleRawPacket handles an incoming raw packet.
+func (l *Link) handleRawPacket(data []byte) {
+	// expect varint stream ID as suffix
+	// reversed, take last 4 bytes
+	fi := len(data) - 5
+	if fi < 0 {
+		fi = 0
+	}
+	streamID, varintBytes := decodeRawStreamIDVarint(data[fi:])
+	if varintBytes == 0 {
+		l.le.Warn("dropped raw packet with invalid varint trailer")
+		return
+	}
+
+	data = data[:len(data)-varintBytes]
+	if len(data) == 0 {
+		l.le.Warn("dropped raw packet with empty body")
+		return
+	}
+
+	if streamID > 4294967290 {
+		l.le.
+			WithField("stream-id", streamID).
+			Warn("dropped raw packet with invalid stream id")
+		return
+	}
+
+	// TODO: mitigate possible DOS by spamming stream IDs
+	sid := uint32(streamID)
+	l.rawStreamsMtx.Lock()
+	strm, ok := l.rawStreams[sid]
+	if !ok {
+		strm = newRawStream(
+			l.ctx,
+			sid,
+			func(data []byte) error {
+				_, err := l.writer(data, l.addr)
+				return err
+			}, func() {
+				l.rawStreamsMtx.Lock()
+				if l.rawStreams != nil {
+					if est := l.rawStreams[sid]; est == strm {
+						delete(l.rawStreams, sid)
+					}
+				}
+				l.rawStreamsMtx.Unlock()
+			},
+		)
+		l.rawStreams[sid] = strm
+	}
+	l.rawStreamsMtx.Unlock()
+
+	strm.PushPacket(data)
 }
 
 // Close closes the connection.
@@ -203,3 +306,6 @@ func (l *Link) Close() error {
 	}
 	return nil
 }
+
+// _ is a type assertion
+var _ link.Link = ((*Link)(nil))

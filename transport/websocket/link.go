@@ -87,7 +87,6 @@ func NewLink(
 	}
 
 	go l.watchLinkContextCancel()
-	go l.readPump()
 	return l
 }
 
@@ -122,6 +121,21 @@ func (l *Link) OpenStream(opts stream.OpenOpts) (stream.Stream, error) {
 	return l.mux.OpenStream()
 }
 
+// AcceptStream accepts a stream from the link.
+func (l *Link) AcceptStream() (stream.Stream, stream.OpenOpts, error) {
+	strm, err := l.mux.AcceptStream()
+	if err != nil {
+		l.le.WithError(err).Warn("link reader exiting")
+		l.Close()
+		return nil, stream.OpenOpts{}, nil
+	}
+
+	l.le.
+		WithField("stream-id", strm.ID()).
+		Debug("stream accepted")
+	return strm, stream.OpenOpts{Encrypted: true, Reliable: true}, nil
+}
+
 // Close closes the link.
 // Any blocked ReadFrom or WriteTo operations will be unblocked and return errors.
 func (l *Link) Close() error {
@@ -140,23 +154,6 @@ func (l *Link) watchLinkContextCancel() {
 	<-l.ctx.Done()
 	l.le.Debug("link context canceled, calling close")
 	l.Close()
-}
-
-// readPump reads messages from the link.
-func (l *Link) readPump() {
-	for {
-		strm, err := l.mux.AcceptStream()
-		if err != nil {
-			l.le.WithError(err).Warn("link reader exiting")
-			l.Close()
-			return
-		}
-
-		l.le.
-			WithField("stream-id", strm.ID()).
-			Debug("stream accepted")
-		_ = strm
-	}
 }
 
 // _ is a type assertion

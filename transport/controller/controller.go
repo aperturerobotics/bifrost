@@ -1,13 +1,16 @@
-package controller
+package transport_controller
 
 import (
 	"context"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/node"
 	"github.com/aperturerobotics/bifrost/peer"
+	"github.com/aperturerobotics/bifrost/protocol"
+	"github.com/aperturerobotics/bifrost/stream"
 	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
@@ -16,6 +19,12 @@ import (
 	"github.com/libp2p/go-libp2p-crypto"
 	"github.com/sirupsen/logrus"
 )
+
+// streamEstablishTimeout is the max time to wait for a stream header.
+var streamEstablishTimeout = time.Second * 5
+
+// streamEstablishMaxPacketSize is the maximum stream establish header size
+var streamEstablishMaxPacketSize = 100000
 
 // Constructor constructs a transport with common parameters.
 type Constructor func(
@@ -198,13 +207,90 @@ func (c *Controller) HandleLinkEstablished(lnk link.Link) {
 	}
 
 	// construct new established link
-	el, err := newEstablishedLink(c.le, c.ctx, c.bus, lnk)
+	el, err := newEstablishedLink(c.le, c.ctx, c.bus, lnk, c)
 	if err != nil {
-		c.le.WithError(err).Warn("unable to construct establish link directive")
+		c.le.WithError(err).Warn("unable to construct established link")
 		return
 	}
 	c.links[luuid] = el
 	le.Debug("link established")
+}
+
+// HandleIncomingStream handles an incoming stream from a link. It negotiates
+// the protocol for the stream, acquires a handler for the protocol, and hands
+// the stream to the protocol handler, then returns. Uses the ctx for
+// cancellation.
+func (c *Controller) HandleIncomingStream(
+	rctx context.Context,
+	lnk link.Link,
+	strm stream.Stream,
+	strmOpts stream.OpenOpts,
+) {
+	// TODO: do we need to ensure EstablishLink is held open during this process
+	// as of now it is a race between the hold-open timeout and the stream establish timeout
+
+	readDeadline := time.Now().Add(streamEstablishTimeout)
+	ctx, ctxCancel := context.WithDeadline(rctx, readDeadline)
+	defer ctxCancel()
+	strm.SetReadDeadline(readDeadline)
+
+	// process stream establish header;
+	streamEst, err := readStreamEstablishHeader(strm)
+	if err != nil {
+		c.le.WithError(err).Warn("unable to read stream establish header")
+		strm.Close()
+		return
+	}
+	strm.SetReadDeadline(time.Time{})
+
+	// received stream establish header, now, create handlestream directive
+	pid := protocol.ID(streamEst.GetProtocolId())
+	if err := pid.Validate(); err != nil {
+		c.le.
+			WithError(err).
+			WithField("stream-protocol-id", streamEst.GetProtocolId()).
+			Warn("failed to validate protocol id")
+		strm.Close()
+		return
+	}
+
+	var mstrm link.MountedStream = newMountedStream(strm, strmOpts, pid, lnk)
+	_ = mstrm
+
+	// bus is the controller bus
+	dir := link.NewHandleMountedStreamWithProtocolID(pid, c.localPeerID, mstrm.GetPeerID())
+	dval, dref, err := bus.ExecOneOff(ctx, c.bus, dir, nil)
+	if err != nil {
+		c.le.
+			WithError(err).
+			WithField("protocol-id", pid).
+			Warn("error retrieving stream handler for stream")
+		strm.Close()
+		return
+	}
+	defer dref.Release()
+
+	mhnd, ok := dval.(link.MountedStreamHandler)
+	if !ok {
+		c.le.
+			WithError(err).
+			WithField("protocol-id", pid).
+			Warn("stream handler retrieved is not a link.MountedStreamHandler")
+		strm.Close()
+		return
+	}
+
+	if err := mhnd.HandleMountedStream(mstrm); err != nil {
+		c.le.
+			WithError(err).
+			WithField("protocol-id", pid).
+			Warn("stream handler returned an error")
+		strm.Close()
+		return
+
+	}
+
+	// stream is now handled by the handler.
 }
 
 // HandleLinkLost is called when a link is lost.

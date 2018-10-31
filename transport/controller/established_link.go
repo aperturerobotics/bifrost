@@ -1,4 +1,4 @@
-package controller
+package transport_controller
 
 import (
 	"context"
@@ -22,6 +22,8 @@ type establishedLink struct {
 	Link link.Link
 	// DirectiveInstance is the EstablishLink directive instance.
 	DirectiveInstance directive.Instance
+	// Controller is the transport controller
+	Controller *Controller
 	// Cancel closes any pending goroutines related to the link
 	Cancel context.CancelFunc
 }
@@ -33,6 +35,7 @@ func newEstablishedLink(
 	rctx context.Context,
 	b bus.Bus,
 	lnk link.Link,
+	ctrl *Controller,
 ) (*establishedLink, error) {
 	// Construct EstablishLink directive.
 	// The controller will match the directive to this link.
@@ -53,6 +56,7 @@ func newEstablishedLink(
 		Link:              lnk,
 		DirectiveInstance: di,
 		Cancel:            ctxCancel,
+		Controller:        ctrl,
 	}
 	di.AddDisposeCallback(func() { _ = lnk.Close() })
 	go el.manageLinkLifecycle(ctx, dir)
@@ -62,6 +66,7 @@ func newEstablishedLink(
 
 // manageLinkLifecycle manages the link lifecycle.
 func (e *establishedLink) manageLinkLifecycle(ctx context.Context, ref directive.Reference) {
+	lnk := e.Link
 	ctxCancel := e.Cancel
 	defer ctxCancel()
 
@@ -72,6 +77,8 @@ func (e *establishedLink) manageLinkLifecycle(ctx context.Context, ref directive
 		ctxCancel()
 	})
 	defer disposeRel()
+
+	go e.acceptStreamPump(ctx)
 
 	select {
 	case <-ctx.Done():
@@ -84,5 +91,24 @@ func (e *establishedLink) manageLinkLifecycle(ctx context.Context, ref directive
 
 	ref.Release()
 	<-ctx.Done()
-	e.Link.Close()
+	lnk.Close()
+}
+
+func (e *establishedLink) acceptStreamPump(ctx context.Context) {
+	// accept streams
+	lnk := e.Link
+	ctrl := e.Controller
+	defer e.Cancel()
+
+	for {
+		strm, strmOpts, err := lnk.AcceptStream()
+		if err != nil {
+			if err != context.Canceled {
+				e.le.WithError(err).Warn("link accept stream errored")
+			}
+			return
+		}
+
+		go ctrl.HandleIncomingStream(ctx, lnk, strm, strmOpts)
+	}
 }

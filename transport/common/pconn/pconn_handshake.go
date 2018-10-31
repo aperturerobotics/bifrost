@@ -45,6 +45,7 @@ func (u *Transport) handleCompleteHandshake(
 	var lnk *Link
 	lnk = NewLink(
 		ctx,
+		le,
 		u.pc.LocalAddr(),
 		addr,
 		u.GetUUID(),

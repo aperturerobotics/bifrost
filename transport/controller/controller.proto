@@ -1,0 +1,10 @@
+syntax = "proto3";
+package transport.controller;
+
+// StreamEstablish is the first message sent by the initiator of a stream.
+// Prefixed by a uint32 length.
+// Max size: 100kb
+message StreamEstablish {
+  // ProtocolID is the protocol identifier string for the stream.
+  string protocol_id = 1;
+}

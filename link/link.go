@@ -14,6 +14,8 @@ type Link interface {
 	GetTransportUUID() uint64
 	// OpenStream opens a stream on the link, with the given parameters.
 	OpenStream(opts stream.OpenOpts) (stream.Stream, error)
+	// AcceptStream accepts a stream from the link.
+	AcceptStream() (stream.Stream, stream.OpenOpts, error)
 	// GetRemotePeer returns the identity of the remote peer.
 	GetRemotePeer() peer.ID
 	// Close closes the link.

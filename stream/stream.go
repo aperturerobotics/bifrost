@@ -15,7 +15,6 @@ type OpenOpts struct {
 }
 
 // Stream is a stream-based data channel between two peers over a link.
-// It partially implements net.Conn.
 type Stream interface {
 	// Read data from the stream.
 	Read(b []byte) (n int, err error)
