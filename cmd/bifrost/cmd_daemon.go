@@ -10,6 +10,9 @@ import (
 	"github.com/aperturerobotics/bifrost/daemon"
 	"github.com/aperturerobotics/bifrost/daemon/api"
 	"github.com/aperturerobotics/bifrost/keypem"
+	"github.com/aperturerobotics/bifrost/link"
+	"github.com/aperturerobotics/bifrost/peer"
+	"github.com/aperturerobotics/bifrost/stream"
 	udptpt "github.com/aperturerobotics/bifrost/transport/udp"
 	wtpt "github.com/aperturerobotics/bifrost/transport/websocket"
 	"github.com/aperturerobotics/controllerbus/bus"
@@ -161,6 +164,30 @@ func runDaemon(c *cli.Context) error {
 		)
 		if err != nil {
 			return errors.Wrap(err, "listen on udp")
+		}
+		defer udpRef.Release()
+	}
+
+	// TEST
+	{
+		rid, err := peer.IDB58Decode("12D3KooWASCtX4bsU1SQAcSW5U19bMK2Qx48kyjoZJkv7Nia6kfu")
+		if err != nil {
+			return err
+		}
+		_, udpRef, err := b.AddDirective(
+			link.NewOpenStreamWithPeer("test/protocol/1", peer.ID(""), rid, 0, stream.OpenOpts{
+				// Encrypted: true,
+				// Reliable:  true,
+			}),
+			bus.NewCallbackHandler(func(val directive.Value) {
+				le.Infof("stream opened with peer: %#v", val)
+				mstrm := val.(link.MountedStream)
+				strm := mstrm.GetStream()
+				strm.Write([]byte("Hello world"))
+			}, nil, nil),
+		)
+		if err != nil {
+			return errors.Wrap(err, "dial peer")
 		}
 		defer udpRef.Release()
 	}

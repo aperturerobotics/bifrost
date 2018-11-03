@@ -9,6 +9,10 @@ import (
 	"github.com/aperturerobotics/bifrost/peer"
 )
 
+// defaultMaxInflightStreamEstablish is the maximum number of raw stream
+// establish messages to send before applying backpressure.
+var defaultMaxInflightStreamEstablish = 5
+
 // inflightHandshake is an on-going handshake.
 type inflightHandshake struct {
 	ctxCancel context.CancelFunc
@@ -46,6 +50,8 @@ func (u *Transport) handleCompleteHandshake(
 	lnk = NewLink(
 		ctx,
 		le,
+		u.opts.GetDataShards(),
+		u.opts.GetParityShards(),
 		u.pc.LocalAddr(),
 		addr,
 		u.GetUUID(),
@@ -72,6 +78,7 @@ func (u *Transport) pushHandshaker(
 	nctx, nctxCancel := context.WithTimeout(ctx, handshakeTimeout)
 	hs := &inflightHandshake{ctxCancel: nctxCancel, addr: addr}
 	var err error
+	// TODO: construct extra data
 	hs.hs, err = s2s.NewHandshaker(
 		u.privKey,
 		nil,

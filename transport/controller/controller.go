@@ -61,6 +61,8 @@ type Controller struct {
 	linksMtx sync.Mutex
 	// links is the links set, keyed by link uuid
 	links map[uint64]*establishedLink
+	// linkWaiters is a set of callbacks waiting for connections with peers.
+	linkWaiters map[peer.ID][]*linkWaiter
 
 	// transportID is the transport identifier.
 	transportID string
@@ -78,10 +80,12 @@ func NewController(
 	transportVersion semver.Version,
 ) *Controller {
 	return &Controller{
-		le:    le,
-		bus:   bus,
-		ctor:  ctor,
-		links: make(map[uint64]*establishedLink),
+		le:   le,
+		bus:  bus,
+		ctor: ctor,
+
+		links:       make(map[uint64]*establishedLink),
+		linkWaiters: make(map[peer.ID][]*linkWaiter),
 
 		peerIDConstraint: nodePeerIDConstraint,
 		localPeerID:      nodePeerIDConstraint,
@@ -175,6 +179,11 @@ func (c *Controller) GetTransport() transport.Transport {
 // Any exceptional errors are returned for logging.
 // It is safe to add a reference to the directive during this call.
 func (c *Controller) HandleDirective(ctx context.Context, di directive.Instance) (directive.Resolver, error) {
+	dir := di.GetDirective()
+	if d, ok := dir.(link.OpenStream); ok {
+		return c.resolveOpenStreamWithPeer(ctx, di, d)
+	}
+
 	return nil, nil
 }
 
@@ -214,6 +223,9 @@ func (c *Controller) HandleLinkEstablished(lnk link.Link) {
 	}
 	c.links[luuid] = el
 	le.Debug("link established")
+
+	// flush any relevant link waiters
+	c.resolveLinkWaiters(el.Link)
 }
 
 // HandleIncomingStream handles an incoming stream from a link. It negotiates
@@ -235,6 +247,7 @@ func (c *Controller) HandleIncomingStream(
 	strm.SetReadDeadline(readDeadline)
 
 	// process stream establish header;
+	c.le.Debug("handling stream establish header")
 	streamEst, err := readStreamEstablishHeader(strm)
 	if err != nil {
 		c.le.WithError(err).Warn("unable to read stream establish header")
@@ -258,13 +271,12 @@ func (c *Controller) HandleIncomingStream(
 	_ = mstrm
 
 	// bus is the controller bus
+	le := c.loggerForLink(lnk).WithField("protocol-id", pid)
+	le.Debug("handling incoming stream")
 	dir := link.NewHandleMountedStreamWithProtocolID(pid, c.localPeerID, mstrm.GetPeerID())
 	dval, dref, err := bus.ExecOneOff(ctx, c.bus, dir, nil)
 	if err != nil {
-		c.le.
-			WithError(err).
-			WithField("protocol-id", pid).
-			Warn("error retrieving stream handler for stream")
+		le.WithError(err).Warn("error retrieving stream handler for stream")
 		strm.Close()
 		return
 	}

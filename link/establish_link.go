@@ -45,7 +45,6 @@ func (d *EstablishLinkWithPeer) Validate() error {
 
 // GetValueOptions returns options relating to value handling.
 func (d *EstablishLinkWithPeer) GetValueOptions() directive.ValueOptions {
-	// no value cap
 	return directive.ValueOptions{}
 }
 

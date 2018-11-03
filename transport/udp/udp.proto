@@ -1,6 +1,8 @@
 syntax = "proto3";
 package udp;
 
+import "github.com/aperturerobotics/bifrost/transport/common/pconn/pconn.proto";
+
 // Config is the configuration for the udp transport.
 message Config {
   // NodePeerID constrains the node peer ID.
@@ -14,6 +16,10 @@ message Config {
   // Failure to connect is not a fatal error.
   // Note: may be removed.
   repeated string dial_addrs = 3;
+
+  // PacketOpts are options to set on the packet connection.
+  // On lossy transports, set the data shards for FEC.
+  pconn.Opts packet_opts = 4;
 
   // CanDial indicates if the transport will respond to Dial directives.
   // bool can_dial = 4;

@@ -33,6 +33,8 @@ type Transport struct {
 	privKey crypto.PrivKey
 	// handler is the transport handler
 	handler transport.TransportHandler
+	// opts are extra options
+	opts Opts
 
 	// readErrCh indicates a read error
 	readErrCh chan error
@@ -58,14 +60,19 @@ func New(
 	pc net.PacketConn,
 	pKey crypto.PrivKey,
 	tc transport.TransportHandler,
+	opts *Opts,
 ) *Transport {
 	uuid := scrc.Crc64([]byte(pc.LocalAddr().String()))
+	if opts == nil {
+		opts = &Opts{}
+	}
 	return &Transport{
 		le:      le.WithField("laddr", pc.LocalAddr().String()),
 		pc:      pc,
 		privKey: pKey,
 		uuid:    uuid,
 		handler: tc,
+		opts:    *opts,
 
 		handshakes: make(map[string]*inflightHandshake),
 		links:      make(map[string]*Link),
@@ -155,7 +162,12 @@ func (u *Transport) readPump(ctx context.Context) (readErr error) {
 				WithField("addr", addr.String()).
 				Debug("dropped packet")
 		} else {
-			// u.le.WithField("length", n).WithField("addr", addr.String()).Debugf("handled packet: %#v", buf[:n])
+			/*
+				u.le.
+					WithField("length", n).
+					WithField("addr", addr.String()).
+					Debugf("handled packet: %#v", buf[:n])
+			*/
 			buf = nil
 		}
 	}

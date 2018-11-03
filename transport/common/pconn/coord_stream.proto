@@ -1,0 +1,49 @@
+syntax = "proto3";
+package pconn;
+
+// CoordPacketType is the packet type of a coordination stream packet.
+enum CoordPacketType {
+  CoordPacketType_UNKNOWN = 0;
+  CoordPacketType_RSTREAM_ESTABLISH = 1;
+  CoordPacketType_RSTREAM_ACK = 2;
+  CoordPacketType_RSTREAM_CLOSE = 3;
+}
+
+// CoordinationStreamPacket is the packet wrapper for a coordination stream
+// packet.
+message CoordinationStreamPacket {
+  // PacketType is the coordination stream packet type.
+  CoordPacketType packet_type = 1;
+
+  // RawStreamEstablish is the raw stream establish packet.
+  RawStreamEstablish raw_stream_establish = 2;
+  // RawStreamAck is the raw stream ack packet.
+  RawStreamAck raw_stream_ack = 3;
+  // RawStreamClose is the raw stream close packet.
+  RawStreamClose raw_stream_close = 4;
+}
+
+// RawStreamEstablish is a coordination stream raw-stream establish message.
+message RawStreamEstablish {
+  // InitiatorStreamId is the stream ID the initiator wants to use.
+  uint32 initiator_stream_id = 1;
+}
+
+// RawStreamAck is a coordination stream raw-stream acknowledge message.
+message RawStreamAck {
+  // InitiatorStreamId is the stream ID the initiator wanted to use.
+  uint32 initiator_stream_id = 1;
+  // AckStreamId is the stream ID the responder wants to use.
+  // Zero if the stream was rejected.
+  uint32 ack_stream_id = 2;
+  // AckError indicates an error establishing the stream, rejecting the stream.
+  string ack_error = 3;
+}
+
+// RawStreamClose indicates an intent to close a raw stream.
+message RawStreamClose {
+  // StreamId is the stream ID the reciever indicated to use.
+  uint32 stream_id = 1;
+  // CloseError indicates an error included with the stream close.
+  string close_error = 2;
+}

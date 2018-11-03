@@ -1,0 +1,21 @@
+syntax = "proto3";
+package pconn;
+
+// Opts are extra options for the packet conn.
+message Opts {
+  // DataShards are the number of FEC data shards to use. By adding t check
+  // symbols to the data, a Reed–Solomon code can detect any combination of up
+  // to t erroneous symbols, or correct up to ⌊t/2⌋ symbols. As an erasure code,
+  // it can correct up to t known erasures, or it can detect and correct
+  // combinations of errors and erasures. Furthermore, Reed–Solomon codes are
+  // suitable as multiple-burst bit-error correcting codes, since a sequence of
+  // b + 1 consecutive bit errors can affect at most two symbols of size b. The
+  // choice of t is up to the designer of the code, and may be selected within
+  // wide limits. Maximum is 256.
+  // Recommended: 10
+  // If zero, FEC is disabled.
+  uint32 data_shards = 1;
+  // ParityShards are the number of FEC parity shards to use.
+  // Recommended: 3
+  uint32 parity_shards = 2;
+}

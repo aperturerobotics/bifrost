@@ -13,16 +13,26 @@ import (
 type rawStream struct {
 	// ctx is the stream context
 	ctx context.Context
+	// localStreamID is the local stream id
+	localStreamID uint32
+	// remoteStreamID is the remote stream id
+	remoteStreamID uint32
 	// headerVarint is the header varint
 	// the bytes are reversed.
+	// empty until remote stream ID is known
 	headerVarint []byte
 
 	// packetCh is a packet buffer implemented with a channel
-	packetCh chan []byte
-	writeFn  func(data []byte) error
-	closeFn  func()
+	packetCh    chan []byte
+	writeFn     func(data []byte) error
+	closeFn     func(*rawStream)
+	establishCb func(err error)
 
 	readDeadline, writeDeadline time.Time
+
+	// closed indicates this stream is already disposed
+	// guarded by the rawStreamMtx in the link
+	closed bool
 }
 
 func revSlice(vb []byte) {
@@ -49,24 +59,36 @@ func decodeRawStreamIDVarint(vb []byte) (x uint64, n int) {
 
 func newRawStream(
 	ctx context.Context,
-	streamID uint32,
+	localStreamID uint32,
+	establishCb func(err error),
 	writeFn func(data []byte) error,
-	closeFn func(),
+	closeFn func(*rawStream),
 ) *rawStream {
 	return &rawStream{
-		ctx:          ctx,
-		headerVarint: encodeRawStreamIDVarint(streamID),
+		ctx: ctx,
 		// keep 60000 packets
 		// 1 packet = 1500 byte maximum
 		// 60000*1500 ~= 100mb packet ring
-		packetCh: make(chan []byte, 60000),
-		writeFn:  writeFn,
-		closeFn:  closeFn,
+		packetCh:      make(chan []byte, 60000),
+		establishCb:   establishCb,
+		writeFn:       writeFn,
+		closeFn:       closeFn,
+		localStreamID: localStreamID,
 	}
+}
+
+// SetRemoteStreamID sets the remote stream ID varint trailer
+func (s *rawStream) SetRemoteStreamID(id uint32) {
+	s.remoteStreamID = id
+	s.headerVarint = encodeRawStreamIDVarint(id)
 }
 
 // PushPacket pushes a packet to the stream, dropping the oldest packet if necessary.
 func (s *rawStream) PushPacket(packet []byte) {
+	if s.closed {
+		return
+	}
+
 PushLoop:
 	for {
 		select {
@@ -103,7 +125,11 @@ func (s *rawStream) Read(b []byte) (n int, err error) {
 	select {
 	case <-s.ctx.Done():
 		return 0, io.EOF
-	case pkt := <-s.packetCh:
+	case pkt, ok := <-s.packetCh:
+		if !ok {
+			return 0, io.EOF
+		}
+
 		copy(b, pkt)
 		xmitBuf.Put(pkt)
 		if len(b) < len(pkt) {
@@ -124,7 +150,7 @@ func (s *rawStream) Write(b []byte) (n int, err error) {
 		b = append(b, s.headerVarint...)
 	} else {
 		b = b[:blenWithSuffix]
-		copy(b[len(b)-len(s.headerVarint)-1:], s.headerVarint)
+		copy(b[blen:], s.headerVarint)
 	}
 
 	if err := s.writeFn(b); err != nil {
@@ -155,9 +181,23 @@ func (s *rawStream) SetDeadline(t time.Time) error {
 	return nil
 }
 
+// markClosed marks the stream as closed.
+func (s *rawStream) markClosed() {
+	if s.closed {
+		return
+	}
+
+	s.closed = true
+	close(s.packetCh)
+}
+
+// writeClosePacket writes the stream close packet.
+func (s *rawStream) writeClosePacket() {
+}
+
 // Close closes the stream.
 func (s *rawStream) Close() error {
-	go s.closeFn()
+	go s.closeFn(s)
 	return nil
 }
 

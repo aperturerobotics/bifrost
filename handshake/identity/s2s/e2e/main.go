@@ -35,12 +35,12 @@ func main() {
 		return nil
 	}
 
-	s1, err = s2s.NewHandshaker(s1Priv, nil, s1w, nil, nil)
+	s1, err = s2s.NewHandshaker(s1Priv, nil, s1w, nil, true, nil)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 
-	s2, err = s2s.NewHandshaker(s2Priv, nil, s2w, nil, nil)
+	s2, err = s2s.NewHandshaker(s2Priv, nil, s2w, nil, false, nil)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -48,7 +48,7 @@ func main() {
 	t1 := time.Now()
 	ctx := context.Background()
 	go func() {
-		r, err := s1.Execute(ctx, true)
+		r, err := s1.Execute(ctx)
 		if err != nil {
 			log.Fatal(err.Error())
 		}
@@ -60,7 +60,7 @@ func main() {
 		le.Info("s1 complete")
 	}()
 
-	r2, err := s2.Execute(ctx, false)
+	r2, err := s2.Execute(ctx)
 	if err != nil {
 		log.Fatal(err.Error())
 	}

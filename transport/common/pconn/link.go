@@ -2,6 +2,7 @@ package pconn
 
 import (
 	"context"
+	"encoding/binary"
 	"hash/crc32"
 	"net"
 	"sync"
@@ -12,8 +13,8 @@ import (
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/stream"
 	"github.com/aperturerobotics/bifrost/util/scrc"
+	"github.com/paralin/kcp-go-lite"
 	"github.com/sirupsen/logrus"
-	"github.com/xtaci/kcp-go"
 	"github.com/xtaci/smux"
 )
 
@@ -51,14 +52,28 @@ type Link struct {
 	closedOnce sync.Once
 	// acceptStreamCh contains incoming streams
 	acceptStreamCh chan *acceptedStream
+
 	// rawStreamsMtx guards rawStreams
 	rawStreamsMtx sync.Mutex
 	// lastRawStream contains the last used raw stream.
 	lastRawStream *rawStream
-	// lastRawStreamID is the last raw stream ID
+	// lastRawStreamID is the ID of the *rawStream in lastRawStream field
 	lastRawStreamID uint32
 	// rawStreams contains all raw streams by ID
 	rawStreams map[uint32]*rawStream
+	// nextRawStreamID is the next raw stream id to use for local stream identification
+	nextRawStreamID uint32
+	// rawStreamEstablishQueueInc is the set of rawStream that have not yet been
+	// established (incoming, capped remotely)
+	rawStreamEstablishQueueInc []*rawStream
+	// inflightRawStreamEstablishOut is the number of in-flight *rawStream establishes
+	inflightRawStreamEstablishOut uint32
+	// rawStreamEstablishQueueOut is the set of rawStream that have not yet been
+	// established (outgoing, no cap)
+	rawStreamEstablishQueueOut []*rawStream
+	// coordStream is the coordination stream
+	coordStream stream.Stream
+
 	// writer is the writer function
 	writer func(b []byte, addr net.Addr) (n int, err error)
 }
@@ -73,6 +88,7 @@ type acceptedStream struct {
 func NewLink(
 	ctx context.Context,
 	le *logrus.Entry,
+	dataShards, parityShards uint32,
 	localAddr, remoteAddr net.Addr,
 	transportUUID uint64,
 	neg *identity.Result,
@@ -87,18 +103,19 @@ func NewLink(
 		ctx:       nctx,
 		ctxCancel: nctxCancel,
 
-		neg:            neg,
-		le:             le,
-		addr:           remoteAddr,
-		uuid:           newLinkUUID(localAddr, remoteAddr, pid),
-		peerID:         pid,
-		closed:         closed,
-		writer:         writer,
-		localAddr:      localAddr,
-		rawStreams:     make(map[uint32]*rawStream),
-		sharedSecret:   sharedSecret,
-		transportUUID:  transportUUID,
-		acceptStreamCh: make(chan *acceptedStream),
+		neg:             neg,
+		le:              le,
+		addr:            remoteAddr,
+		uuid:            newLinkUUID(localAddr, remoteAddr, pid),
+		peerID:          pid,
+		closed:          closed,
+		writer:          writer,
+		localAddr:       localAddr,
+		rawStreams:      make(map[uint32]*rawStream),
+		sharedSecret:    sharedSecret,
+		transportUUID:   transportUUID,
+		nextRawStreamID: 1,
+		acceptStreamCh:  make(chan *acceptedStream),
 	}
 
 	// dummy raddr
@@ -116,12 +133,16 @@ func NewLink(
 		},
 		l.Close,
 	)
-	l.sess, _ = kcp.NewConn(
-		// computeConvID(sharedSecret[:]),
-		dummyKcpRemoteAddr.String(),
-		l.buildBlockCrypt(),
-		0, 0,
+
+	// build conv id from shared secret
+	convid := binary.LittleEndian.Uint32(sharedSecret[:4])
+	l.sess = kcp.NewUDPSession(
+		convid,
+		int(dataShards),
+		int(parityShards),
 		l.kpc,
+		dummyKcpRemoteAddr,
+		l.buildBlockCrypt(),
 	)
 	l.sess.SetMtu(1350)
 
@@ -133,7 +154,9 @@ func NewLink(
 	} else {
 		l.mux, _ = smux.Client(l.sess, conf)
 	}
-	go l.smuxAcceptPump()
+
+	l.rawStreamsMtx.Lock()
+	go l.smuxAcceptPump(initiator)
 
 	return l
 }
@@ -143,37 +166,22 @@ func (l *Link) GetUUID() uint64 {
 	return l.uuid
 }
 
-// smuxAcceptPump accepts streams from the stream muxer.
-func (l *Link) smuxAcceptPump() {
-	for {
-		s, err := l.mux.AcceptStream()
-		if err != nil {
-			_ = l.Close()
-			return
+// AcceptStream accepts a stream from the link.
+func (l *Link) AcceptStream() (stream.Stream, stream.OpenOpts, error) {
+	var astrm *acceptedStream
+	for astrm == nil {
+		l.rawStreamsMtx.Lock()
+		inc := l.drainIncomingEstablishQueue()
+		l.rawStreamsMtx.Unlock()
+		if inc != nil {
+			return inc, stream.OpenOpts{}, nil
 		}
 
 		select {
 		case <-l.ctx.Done():
-			s.Close()
-			return
-		case l.acceptStreamCh <- &acceptedStream{
-			stream: s,
-			streamOpts: stream.OpenOpts{
-				Reliable:  true,
-				Encrypted: true,
-			},
-		}:
+			return nil, stream.OpenOpts{}, l.ctx.Err()
+		case astrm = <-l.acceptStreamCh:
 		}
-	}
-}
-
-// AcceptStream accepts a stream from the link.
-func (l *Link) AcceptStream() (stream.Stream, stream.OpenOpts, error) {
-	var astrm *acceptedStream
-	select {
-	case <-l.ctx.Done():
-		return nil, stream.OpenOpts{}, l.ctx.Err()
-	case astrm = <-l.acceptStreamCh:
 	}
 
 	s := astrm.stream
@@ -219,16 +227,19 @@ func (l *Link) GetRemotePeer() peer.ID {
 
 // OpenStream opens a stream on the link, with the given parameters.
 func (l *Link) OpenStream(opts stream.OpenOpts) (stream.Stream, error) {
-	s, err := l.mux.OpenStream()
-	if err != nil {
-		return nil, err
+	if opts.Encrypted || opts.Reliable {
+		l.rawStreamsMtx.Lock()
+		strm, err := l.mux.OpenStream()
+		l.rawStreamsMtx.Unlock()
+		return strm, err
 	}
 
-	return s, nil
+	return l.openRawStream()
 }
 
 // HandlePacket handles a packet.
 func (l *Link) HandlePacket(packetType PacketType, data []byte) {
+	l.le.WithField("packet-type", packetType.String()).Debugf("handling packet: %#v", data)
 	switch packetType {
 	case PacketType_PacketType_RAW:
 		l.handleRawPacket(data)
@@ -264,33 +275,39 @@ func (l *Link) handleRawPacket(data []byte) {
 		return
 	}
 
-	// TODO: mitigate possible DOS by spamming stream IDs
 	sid := uint32(streamID)
 	l.rawStreamsMtx.Lock()
 	strm, ok := l.rawStreams[sid]
-	if !ok {
-		strm = newRawStream(
-			l.ctx,
-			sid,
-			func(data []byte) error {
-				_, err := l.writer(data, l.addr)
-				return err
-			}, func() {
-				l.rawStreamsMtx.Lock()
-				if l.rawStreams != nil {
-					if est := l.rawStreams[sid]; est == strm {
-						delete(l.rawStreams, sid)
-					}
-				}
-				l.rawStreamsMtx.Unlock()
-			},
-		)
-		l.rawStreams[sid] = strm
-	}
 	l.rawStreamsMtx.Unlock()
 
-	strm.PushPacket(data)
+	if ok {
+		strm.PushPacket(data)
+	} else {
+		l.le.
+			WithField("stream-id", sid).
+			Warn("dropped raw packet with unknown stream id")
+	}
 }
+
+/*
+	strm = newRawStream(
+		l.ctx,
+		sid,
+		func(data []byte) error {
+			_, err := l.writer(data, l.addr)
+			return err
+		}, func() {
+			l.rawStreamsMtx.Lock()
+			if l.rawStreams != nil {
+				if est := l.rawStreams[sid]; est == strm {
+					delete(l.rawStreams, sid)
+				}
+			}
+			l.rawStreamsMtx.Unlock()
+		},
+	)
+	l.rawStreams[sid] = strm
+*/
 
 // Close closes the connection.
 func (l *Link) Close() error {

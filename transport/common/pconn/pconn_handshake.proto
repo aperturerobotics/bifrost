@@ -1,0 +1,13 @@
+syntax = "proto3";
+package pconn;
+
+// HandshakeExtraData contains the extra data field of the pconn handshake.
+message HandshakeExtraData {
+  // MaxInflightRawStreamEstablish is the maximum number of outgoing raw stream
+  // establish messages to send before applying backpressure. If zero, assumes
+  // default of 5 streams. May be capped to behave as if this value was lower.
+  // Un-acked stream establish messages past this cap will be dropped.
+  // TODO
+  // uint32 max_inflight_raw_stream_establish = 1;
+}
+

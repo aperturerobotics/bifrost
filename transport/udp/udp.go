@@ -32,13 +32,14 @@ func NewUDP(
 	dialAddrs []string,
 	pKey crypto.PrivKey,
 	c transport.TransportHandler,
+	pconnOpts *pconn.Opts,
 ) (*UDP, error) {
 	pc, err := net.ListenPacket("udp", listenAddr)
 	if err != nil {
 		return nil, err
 	}
 
-	conn := pconn.New(le, pc, pKey, c)
+	conn := pconn.New(le, pc, pKey, c, pconnOpts)
 	for _, addr := range dialAddrs {
 		da, err := net.ResolveUDPAddr("udp", addr)
 		if err != nil {

@@ -56,7 +56,14 @@ func (t *Factory) Construct(
 			pkey crypto.PrivKey,
 			handler transport.TransportHandler,
 		) (transport.Transport, error) {
-			return NewUDP(le, cc.GetListenAddr(), cc.GetDialAddrs(), pkey, handler)
+			return NewUDP(
+				le,
+				cc.GetListenAddr(),
+				cc.GetDialAddrs(),
+				pkey,
+				handler,
+				cc.GetPacketOpts(),
+			)
 		},
 		TransportID,
 		Version,

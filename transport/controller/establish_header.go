@@ -3,9 +3,32 @@ package transport_controller
 import (
 	"io"
 
+	"github.com/aperturerobotics/bifrost/protocol"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 )
+
+// NewStreamEstablish constructs a new StreamEstablish message.
+func NewStreamEstablish(protocolID protocol.ID) *StreamEstablish {
+	return &StreamEstablish{ProtocolId: string(protocolID)}
+}
+
+func writeStreamEstablishHeader(w io.Writer, msg *StreamEstablish) (int, error) {
+	dat, err := proto.Marshal(msg)
+	if err != nil {
+		return 0, err
+	}
+
+	i, err := w.Write(proto.EncodeVarint(uint64(len(dat))))
+	nw := i
+	if err != nil {
+		return nw, err
+	}
+
+	i, err = w.Write(dat)
+	nw += i
+	return nw, err
+}
 
 func readStreamEstablishHeader(r io.Reader) (*StreamEstablish, error) {
 	b := make([]byte, 1500)

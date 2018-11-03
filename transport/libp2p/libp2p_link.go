@@ -42,6 +42,14 @@ func (l *Link) OpenStream(opts stream.OpenOpts) (stream.Stream, error) {
 	return l.conn.OpenStream()
 }
 
+// AcceptStream accepts a stream.
+func (l *Link) AcceptStream() (stream.Stream, stream.OpenOpts, error) {
+	// All libp2p transports are reliable + encrypted
+	opts := stream.OpenOpts{Encrypted: true, Reliable: true}
+	s, err := l.conn.AcceptStream()
+	return s, opts, err
+}
+
 // GetRemotePeer returns the identity of the remote peer.
 func (l *Link) GetRemotePeer() bp.ID {
 	return bp.ID(l.conn.RemotePeer())

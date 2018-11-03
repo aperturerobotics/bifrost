@@ -18,7 +18,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
-// PacketType is a one-byte header indicating the type of packet.
+// PacketType is a one-byte trailer indicating the type of packet.
 type PacketType int32
 
 const (
@@ -42,7 +42,7 @@ func (x PacketType) String() string {
 	return proto.EnumName(PacketType_name, int32(x))
 }
 func (PacketType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_packet_type_38533e98692f6e94, []int{0}
+	return fileDescriptor_packet_type_4165e57a2fb78752, []int{0}
 }
 
 func init() {
@@ -50,10 +50,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("github.com/aperturerobotics/bifrost/transport/common/pconn/packet_type.proto", fileDescriptor_packet_type_38533e98692f6e94)
+	proto.RegisterFile("github.com/aperturerobotics/bifrost/transport/common/pconn/packet_type.proto", fileDescriptor_packet_type_4165e57a2fb78752)
 }
 
-var fileDescriptor_packet_type_38533e98692f6e94 = []byte{
+var fileDescriptor_packet_type_4165e57a2fb78752 = []byte{
 	// 167 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xf2, 0x49, 0xcf, 0x2c, 0xc9,
 	0x28, 0x4d, 0xd2, 0x4b, 0xce, 0xcf, 0xd5, 0x4f, 0x2c, 0x48, 0x2d, 0x2a, 0x29, 0x2d, 0x4a, 0x2d,

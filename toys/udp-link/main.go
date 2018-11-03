@@ -12,6 +12,7 @@ import (
 	"github.com/aperturerobotics/bifrost/transport"
 	tptc "github.com/aperturerobotics/bifrost/transport/controller"
 	udptpt "github.com/aperturerobotics/bifrost/transport/udp"
+	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/libp2p/go-libp2p-crypto"
@@ -73,12 +74,12 @@ func execute() error {
 		resolver.NewLoadControllerWithConfigSingleton(&udptpt.Config{
 			ListenAddr: ":5553",
 		}),
-		func(val directive.Value) {
+		bus.NewCallbackHandler(func(val directive.Value) {
 			le.Info("UDP listening on: :5553")
 			<-time.After(time.Millisecond * 500)
 			tpt1 = val.(*tptc.Controller).GetTransport()
 			wg.Done()
-		},
+		}, nil, nil),
 	)
 	if err != nil {
 		return errors.Wrap(err, "listen on udp 1")
@@ -90,12 +91,12 @@ func execute() error {
 		resolver.NewLoadControllerWithConfigSingleton(&udptpt.Config{
 			ListenAddr: ":5554",
 		}),
-		func(val directive.Value) {
+		bus.NewCallbackHandler(func(val directive.Value) {
 			le.Info("UDP listening on: :5554")
 			<-time.After(time.Millisecond * 500)
 			tpt2 = val.(*tptc.Controller).GetTransport()
 			wg.Done()
-		},
+		}, nil, nil),
 	)
 	if err != nil {
 		return errors.Wrap(err, "listen on udp 2")
