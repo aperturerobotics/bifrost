@@ -16,6 +16,7 @@ import (
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
 	"github.com/aperturerobotics/controllerbus/controller/resolver/static"
 	"github.com/aperturerobotics/controllerbus/core"
+	egc "github.com/aperturerobotics/entitygraph/controller"
 	"github.com/aperturerobotics/objstore/db"
 	"github.com/aperturerobotics/objstore/db/inmem"
 	"github.com/libp2p/go-libp2p-crypto"
@@ -78,6 +79,7 @@ func NewDaemon(
 	staticResolver.AddFactory(wtpt.NewFactory(controllerBus))
 	staticResolver.AddFactory(udptpt.NewFactory(controllerBus))
 	staticResolver.AddFactory(nctr.NewFactory(controllerBus))
+	staticResolver.AddFactory(egc.NewFactory(controllerBus))
 
 	for _, factory := range opts.ExtraControllerFactories {
 		if con := factory(controllerBus); con != nil {

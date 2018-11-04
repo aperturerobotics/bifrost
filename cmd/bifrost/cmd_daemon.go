@@ -18,6 +18,7 @@ import (
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
 	"github.com/aperturerobotics/controllerbus/directive"
+	egc "github.com/aperturerobotics/entitygraph/controller"
 	"github.com/libp2p/go-libp2p-crypto"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -120,6 +121,21 @@ func runDaemon(c *cli.Context) error {
 
 	b := d.GetControllerBus()
 
+	// Entity graph controller.
+	{
+		_, egRef, err := b.AddDirective(
+			resolver.NewLoadControllerWithConfigSingleton(&egc.Config{}),
+			bus.NewCallbackHandler(func(val directive.Value) {
+				le.Info("entity graph controller running")
+			}, nil, nil),
+		)
+		if err != nil {
+			return errors.Wrap(err, "start entity graph controller")
+		}
+		defer egRef.Release()
+	}
+
+	// Daemon API
 	if daemonFlags.APIListen != "" {
 		_, apiRef, err := b.AddDirective(
 			resolver.NewLoadControllerWithConfigSingleton(&api.Config{

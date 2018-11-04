@@ -36,3 +36,6 @@ func (c *Config) GetConfigID() string {
 func (c *Config) EqualsConfig(other config.Config) bool {
 	return proto.Equal(c, other)
 }
+
+// _ is a type assertion
+var _ config.Config = ((*Config)(nil))
