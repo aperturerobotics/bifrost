@@ -5,18 +5,15 @@ package daemon
 import (
 	"context"
 
+	"github.com/aperturerobotics/bifrost/core"
 	"github.com/aperturerobotics/bifrost/daemon/api"
 	"github.com/aperturerobotics/bifrost/keypem"
 	nctr "github.com/aperturerobotics/bifrost/node/controller"
 	"github.com/aperturerobotics/bifrost/peer"
-	udptpt "github.com/aperturerobotics/bifrost/transport/udp"
-	wtpt "github.com/aperturerobotics/bifrost/transport/websocket"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
 	"github.com/aperturerobotics/controllerbus/controller/resolver/static"
-	"github.com/aperturerobotics/controllerbus/core"
-	egc "github.com/aperturerobotics/entitygraph/controller"
 	"github.com/aperturerobotics/objstore/db"
 	"github.com/aperturerobotics/objstore/db/inmem"
 	"github.com/libp2p/go-libp2p-crypto"
@@ -70,22 +67,12 @@ func NewDaemon(
 	}
 
 	// Construct the controller bus.
-	controllerBus, staticResolver, err := core.NewCoreBus(ctx, le)
+	b, sr, err := core.NewCoreBus(ctx, le)
 	if err != nil {
 		return nil, err
 	}
 
-	staticResolver.AddFactory(api.NewFactory(controllerBus))
-	staticResolver.AddFactory(wtpt.NewFactory(controllerBus))
-	staticResolver.AddFactory(udptpt.NewFactory(controllerBus))
-	staticResolver.AddFactory(nctr.NewFactory(controllerBus))
-	staticResolver.AddFactory(egc.NewFactory(controllerBus))
-
-	for _, factory := range opts.ExtraControllerFactories {
-		if con := factory(controllerBus); con != nil {
-			staticResolver.AddFactory(con)
-		}
-	}
+	sr.AddFactory(api.NewFactory(b))
 
 	// Construct the node controller.
 	peerID, err := peer.IDFromPrivateKey(nodePriv)
@@ -102,7 +89,7 @@ func NewDaemon(
 	dir := resolver.NewLoadControllerWithConfigSingleton(&nctr.Config{
 		PrivKey: string(nodePrivKeyPem),
 	})
-	val, valRef, err := bus.ExecOneOff(ctx, controllerBus, dir, nil)
+	val, valRef, err := bus.ExecOneOff(ctx, b, dir, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -115,13 +102,13 @@ func NewDaemon(
 	}
 
 	return &Daemon{
-		bus: controllerBus,
+		bus: b,
 		db:  ddb,
 
 		closeCbs:         []func(){valRef.Release},
 		nodePriv:         nodePriv,
 		nodePeerID:       peerID,
-		staticResolver:   staticResolver,
+		staticResolver:   sr,
 		nodePeerIDPretty: peerIDPretty,
 	}, nil
 }
