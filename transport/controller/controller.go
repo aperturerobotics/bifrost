@@ -180,8 +180,11 @@ func (c *Controller) GetTransport() transport.Transport {
 // It is safe to add a reference to the directive during this call.
 func (c *Controller) HandleDirective(ctx context.Context, di directive.Instance) (directive.Resolver, error) {
 	dir := di.GetDirective()
-	if d, ok := dir.(link.OpenStream); ok {
+	switch d := dir.(type) {
+	case link.OpenStream:
 		return c.resolveOpenStreamWithPeer(ctx, di, d)
+	case link.EstablishLink:
+		return c.resolveEstablishLink(ctx, di, d)
 	}
 
 	return nil, nil
@@ -225,7 +228,7 @@ func (c *Controller) HandleLinkEstablished(lnk link.Link) {
 	le.Debug("link established")
 
 	// flush any relevant link waiters
-	c.resolveLinkWaiters(el.Link)
+	c.resolveLinkWaiters(el.Link, true)
 }
 
 // HandleIncomingStream handles an incoming stream from a link. It negotiates

@@ -46,6 +46,8 @@ type Link struct {
 	uuid uint64
 	// transportUUID is the transport uuid
 	transportUUID uint64
+	// remoteTransportUUID is the remote transport uuid
+	remoteTransportUUID uint64
 	// closed is the closed callback
 	closed func()
 	// closedOnce guards closed
@@ -90,7 +92,7 @@ func NewLink(
 	le *logrus.Entry,
 	dataShards, parityShards uint32,
 	localAddr, remoteAddr net.Addr,
-	transportUUID uint64,
+	transportUUID, remoteTransportUUID uint64,
 	neg *identity.Result,
 	sharedSecret [32]byte,
 	writer func(b []byte, addr net.Addr) (n int, err error),
@@ -103,19 +105,20 @@ func NewLink(
 		ctx:       nctx,
 		ctxCancel: nctxCancel,
 
-		neg:             neg,
-		le:              le,
-		addr:            remoteAddr,
-		uuid:            newLinkUUID(localAddr, remoteAddr, pid),
-		peerID:          pid,
-		closed:          closed,
-		writer:          writer,
-		localAddr:       localAddr,
-		rawStreams:      make(map[uint32]*rawStream),
-		sharedSecret:    sharedSecret,
-		transportUUID:   transportUUID,
-		nextRawStreamID: 1,
-		acceptStreamCh:  make(chan *acceptedStream),
+		neg:                 neg,
+		le:                  le,
+		addr:                remoteAddr,
+		uuid:                newLinkUUID(localAddr, remoteAddr, pid),
+		peerID:              pid,
+		closed:              closed,
+		writer:              writer,
+		localAddr:           localAddr,
+		rawStreams:          make(map[uint32]*rawStream),
+		sharedSecret:        sharedSecret,
+		transportUUID:       transportUUID,
+		remoteTransportUUID: remoteTransportUUID,
+		nextRawStreamID:     1,
+		acceptStreamCh:      make(chan *acceptedStream),
 	}
 
 	// dummy raddr
@@ -218,6 +221,12 @@ func newLinkUUID(localAddr, remoteAddr net.Addr, peerID peer.ID) uint64 {
 // GetTransportUUID returns the unique ID of the transport.
 func (l *Link) GetTransportUUID() uint64 {
 	return l.transportUUID
+}
+
+// GetRemoteTransportUUID returns the unique ID of the remote transport.
+// Reported by the remote peer. May be zero or unreliable value.
+func (l *Link) GetRemoteTransportUUID() uint64 {
+	return l.remoteTransportUUID
 }
 
 // GetRemotePeer returns the identity of the remote peer if encrypted.

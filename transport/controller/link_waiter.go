@@ -8,29 +8,36 @@ import (
 // linkWaiter waits for a link from a specific peer to be opened.
 type linkWaiter struct {
 	peerID peer.ID
-	cb     func(link.Link)
+	cb     func(link.Link, bool)
+	cbOnce bool
 }
 
 // pushLinkWaiter pushes a new waiter for a link with a peer id.
-// checks for a link that matches the peer id first.
-// returns nil if callback was called immediately
+// checks for a link that matches the peer id
+// returns nil if callback was called immediately and cbOnce is set
+// cb added indicates if it is an add or remove event.
 // linksMtx should be locked.
-func (c *Controller) pushLinkWaiter(peerID peer.ID, cb func(link.Link)) *linkWaiter {
+func (c *Controller) pushLinkWaiter(peerID peer.ID, cbOnce bool, cb func(lnk link.Link, added bool)) *linkWaiter {
+	peerIDEmpty := peerID == peer.ID("")
 	for _, lnk := range c.links {
-		if lnk.Link.GetRemotePeer() == peerID {
-			go cb(lnk.Link)
-			return nil
+		if peerIDEmpty || lnk.Link.GetRemotePeer() == peerID {
+			go cb(lnk.Link, true)
+			if cbOnce {
+				return nil
+			} else {
+				break
+			}
 		}
 	}
 
-	w := &linkWaiter{peerID: peerID, cb: cb}
+	w := &linkWaiter{peerID: peerID, cb: cb, cbOnce: cbOnce}
 	pw := c.linkWaiters[peerID]
 	pw = append(pw, w)
 	c.linkWaiters[peerID] = pw
 	return w
 }
 
-// clearLinkWaiter removes waiter for a link with a peer id.
+// clearLinkWaiter removes waiter for a link
 // linksMtx should be locked.
 // returns if the waiter was found
 func (c *Controller) clearLinkWaiter(w *linkWaiter) bool {
@@ -64,12 +71,26 @@ func (c *Controller) clearLinkWaiter(w *linkWaiter) bool {
 
 // resolveLinkWaiters resolves waiters with a link.
 // linksMtx should be locked.
-func (c *Controller) resolveLinkWaiters(lnk link.Link) {
+func (c *Controller) resolveLinkWaiters(lnk link.Link, added bool) {
 	peerID := lnk.GetRemotePeer()
 	if pw, ok := c.linkWaiters[peerID]; ok {
-		for _, w := range pw {
-			w.cb(lnk)
+		for i := 0; i < len(pw); i++ {
+			w := pw[i]
+			if w.cbOnce && !added {
+				continue
+			}
+			w.cb(lnk, added)
+			if w.cbOnce {
+				pw[i] = pw[len(pw)-1]
+				pw[len(pw)-1] = nil
+				pw = pw[:len(pw)-1]
+				i--
+			}
 		}
-		delete(c.linkWaiters, peerID)
+		if len(pw) == 0 {
+			delete(c.linkWaiters, peerID)
+		} else {
+			c.linkWaiters[peerID] = pw
+		}
 	}
 }

@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	// "github.com/aperturerobotics/bifrost/link"
+	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/aperturerobotics/bifrost/util/scrc"
 	"github.com/blang/semver"
@@ -31,6 +31,8 @@ type Transport struct {
 	uuid uint64
 	// privKey is the local priv key
 	privKey crypto.PrivKey
+	// peerID is the local peer id
+	peerID peer.ID
 	// handler is the transport handler
 	handler transport.TransportHandler
 
@@ -61,11 +63,13 @@ func New(
 	handler transport.TransportHandler,
 ) *Transport {
 	uuid := scrc.Crc64([]byte("websocket/js"))
+	peerID, _ := peer.IDFromPrivateKey(pKey)
 	return &Transport{
 		le:      le,
 		privKey: pKey,
 		uuid:    uuid,
 		handler: handler,
+		peerID:  peerID,
 
 		handshakes: make(map[string]*inflightHandshake),
 		links:      make(map[string]*Link),
@@ -105,6 +109,11 @@ func (u *Transport) Execute(ctx context.Context) error {
 
 	// TODO: when returning, close all links
 	return nil
+}
+
+// GetNodeID returns the node peer ID.
+func (u *Transport) GetNodeID() peer.ID {
+	return u.peerID
 }
 
 // Close closes the transport.

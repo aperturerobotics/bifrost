@@ -15,3 +15,11 @@ message Config {
   // CanDial indicates if the transport will respond to Dial directives.
   bool can_dial = 4;
 }
+
+// HandshakeExtraData contains the extra data field of the pconn handshake.
+message HandshakeExtraData {
+  // LocalTransportUuid is the transport uuid of the sender.
+  // This is used for monitoring / analysis at a later time.
+  // Coorelates the transport connections between two machines.
+  uint64 local_transport_uuid = 1;
+}

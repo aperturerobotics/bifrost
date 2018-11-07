@@ -37,6 +37,8 @@ type Handshaker struct {
 	localPeerID peer.ID
 	// initiator indicates we initiated the request
 	initiator bool
+	// extraData is the extra data field
+	extraData []byte
 
 	// remotePubKey is the remote public key if known
 	remotePubKey crypto.PubKey
@@ -86,6 +88,7 @@ func NewHandshaker(
 		remotePubKey:  expectedRemotePub,
 		packetCh:      make(chan []byte, 3),
 		lookupPubKey:  lookupPubKey,
+		extraData:     extraData,
 	}, nil
 }
 
@@ -119,6 +122,7 @@ func (h *Handshaker) Execute(ctx context.Context) (*identity.Result, error) {
 		nonce[len(nonce)-1]++
 	}
 
+	var rxExtraData []byte
 	if initiator {
 		if err := h.writeInit(); err != nil {
 			return nil, err
@@ -162,6 +166,7 @@ func (h *Handshaker) Execute(ctx context.Context) (*identity.Result, error) {
 		if err := h.decodePubKey(cipher); err != nil {
 			return nil, err
 		}
+		rxExtraData = cipher.GetExtraInfo()
 
 		// Compute the proof
 		concatKeys := make([]byte, len(remoteEphPub)+len(*h.hPub))
@@ -179,6 +184,7 @@ func (h *Handshaker) Execute(ctx context.Context) (*identity.Result, error) {
 
 		// Reuse cipher
 		cipher.Reset()
+		cipher.ExtraInfo = h.extraData
 		cipher.TupleSignature, err = h.privKey.Sign(concatKeys)
 		if err != nil {
 			return nil, errors.Wrap(err, "sign ephemeral keypair")
@@ -240,6 +246,7 @@ func (h *Handshaker) Execute(ctx context.Context) (*identity.Result, error) {
 
 		ackCipher := &Packet_Ciphertext{}
 		ackCipher.ReceiverKeyKnown = h.remotePubKey != nil
+		ackCipher.ExtraInfo = h.extraData
 
 		// Check the peer id
 		sendPubKey := bytes.Compare(initMsg.GetReceiverPeerId(), []byte(h.localPeerID)) != 0
@@ -307,6 +314,7 @@ func (h *Handshaker) Execute(ctx context.Context) (*identity.Result, error) {
 		if err := h.decodePubKey(ackCipher); err != nil {
 			return nil, err
 		}
+		rxExtraData = ackCipher.GetExtraInfo()
 
 		ok, err = h.remotePubKey.Verify(concatKeys, ackCipher.GetTupleSignature())
 		if err != nil {
@@ -317,7 +325,7 @@ func (h *Handshaker) Execute(ctx context.Context) (*identity.Result, error) {
 		}
 	}
 
-	res := &identity.Result{Peer: h.remotePubKey}
+	res := &identity.Result{Peer: h.remotePubKey, ExtraData: rxExtraData}
 	res.Secret = sharedKey
 	return res, nil
 }

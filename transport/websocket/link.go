@@ -40,7 +40,7 @@ type Link struct {
 	// closedOnce guards closed
 	closedOnce sync.Once
 
-	uuid, transportUUID uint64
+	uuid, transportUUID, remoteTransportUUID uint64
 }
 
 // NewLink builds a new link.
@@ -49,6 +49,7 @@ func NewLink(
 	le *logrus.Entry,
 	url string,
 	transportUUID uint64,
+	remoteTransportUUID uint64,
 	neg *identity.Result,
 	sharedSecret [32]byte,
 	conn net.Conn,
@@ -82,8 +83,9 @@ func NewLink(
 		conn:   conn,
 		closed: closed,
 
-		sharedSecret:  sharedSecret,
-		transportUUID: transportUUID,
+		sharedSecret:        sharedSecret,
+		transportUUID:       transportUUID,
+		remoteTransportUUID: remoteTransportUUID,
 	}
 
 	go l.watchLinkContextCancel()
@@ -115,6 +117,11 @@ func (l *Link) GetTransportUUID() uint64 {
 	return l.transportUUID
 }
 
+// GetRemoteTransportUUID returns the unique ID of the remote transport.
+func (l *Link) GetRemoteTransportUUID() uint64 {
+	return l.remoteTransportUUID
+}
+
 // OpenStream opens a stream on the link, with the given parameters.
 // WebSocket is always reliable and always encrypted.
 func (l *Link) OpenStream(opts stream.OpenOpts) (stream.Stream, error) {
@@ -125,9 +132,11 @@ func (l *Link) OpenStream(opts stream.OpenOpts) (stream.Stream, error) {
 func (l *Link) AcceptStream() (stream.Stream, stream.OpenOpts, error) {
 	strm, err := l.mux.AcceptStream()
 	if err != nil {
-		l.le.WithError(err).Warn("link reader exiting")
+		if err.Error() != "broken pipe" {
+			l.le.WithError(err).Warn("link reader exiting")
+		}
 		l.Close()
-		return nil, stream.OpenOpts{}, nil
+		return nil, stream.OpenOpts{}, err
 	}
 
 	l.le.

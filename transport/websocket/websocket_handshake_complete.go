@@ -6,6 +6,7 @@ import (
 
 	"github.com/aperturerobotics/bifrost/handshake/identity"
 	"github.com/aperturerobotics/bifrost/peer"
+	"github.com/golang/protobuf/proto"
 )
 
 // handleCompleteHandshake handles a completed handshake.
@@ -21,6 +22,12 @@ func (u *Transport) handleCompleteHandshake(
 		WithField("remote-id", pid.Pretty()).
 		WithField("remote-url", url)
 	le.Info("handshake complete")
+
+	edDat := result.ExtraData
+	ed := &HandshakeExtraData{}
+	if err := proto.Unmarshal(edDat, ed); err != nil {
+		le.WithError(err).Warn("cannot unmarshal remote extra data")
+	}
 
 	u.linksMtx.Lock()
 	defer u.linksMtx.Unlock()
@@ -39,6 +46,7 @@ func (u *Transport) handleCompleteHandshake(
 		le,
 		url,
 		u.GetUUID(),
+		ed.GetLocalTransportUuid(),
 		result,
 		result.Secret,
 		conn,

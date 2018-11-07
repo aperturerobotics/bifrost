@@ -7,6 +7,7 @@ import (
 	"io"
 
 	"github.com/aperturerobotics/bifrost/handshake/identity/s2s"
+	"github.com/golang/protobuf/proto"
 	"github.com/gorilla/websocket"
 )
 
@@ -62,12 +63,22 @@ func (u *Transport) processHandshake(ctx, hsctx context.Context, hs *inflightHan
 	}
 
 	ule.Debug("handshaking")
+	ed := &HandshakeExtraData{
+		LocalTransportUuid: u.GetUUID(),
+	}
+	edDat, err := proto.Marshal(ed)
+	if err != nil {
+		ule.WithError(err).Warn("cannot marshal handshake extra data")
+	}
 	hns, err := s2s.NewHandshaker(
 		u.privKey,
 		nil,
 		func(data []byte) error {
 			return hs.conn.WriteMessage(websocket.BinaryMessage, data)
-		}, nil, initiator, nil,
+		},
+		nil,
+		initiator,
+		edDat,
 	)
 	if err != nil {
 		ule.WithError(err).Warn("error building handshaker")

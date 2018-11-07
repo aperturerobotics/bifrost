@@ -4,11 +4,13 @@ import (
 	"context"
 
 	"github.com/aperturerobotics/bifrost/link"
+	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/aperturerobotics/bifrost/util/scrc"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/blang/semver"
+	"github.com/libp2p/go-libp2p-crypto"
 	lt "github.com/libp2p/go-libp2p-transport"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
@@ -26,6 +28,7 @@ func GetTransportID(listenMultiaddr ma.Multiaddr) string {
 var Version = semver.MustParse("0.0.1")
 
 // LibP2P listens on a libp2p transport.
+// NOTE: This transport is not code-complete yet.
 type LibP2P struct {
 	// le is the logger
 	le *logrus.Entry
@@ -35,22 +38,32 @@ type LibP2P struct {
 	ma ma.Multiaddr
 	// uuid is the host-local unique id
 	uuid uint64
+	// peerID is the peer id
+	peerID peer.ID
 }
 
 // NewLibP2P constructs a new listener controller.
 func NewLibP2P(
 	le *logrus.Entry,
 	tpt lt.Transport,
+	privKey crypto.PrivKey,
 	listenAddr ma.Multiaddr,
 ) *LibP2P {
 	lstr := listenAddr.String()
 	uuid := scrc.Crc64([]byte(lstr))
+	pid, _ := peer.IDFromPrivateKey(privKey)
 	return &LibP2P{
-		le:   le.WithField("listen-multiaddr", lstr),
-		tpt:  tpt,
-		ma:   listenAddr,
-		uuid: uuid,
+		le:     le.WithField("listen-multiaddr", lstr),
+		tpt:    tpt,
+		ma:     listenAddr,
+		uuid:   uuid,
+		peerID: pid,
 	}
+}
+
+// GetNodeID returns the node id.
+func (l *LibP2P) GetNodeID() peer.ID {
+	return l.peerID
 }
 
 // GetControllerInfo returns information about the controller.
@@ -122,7 +135,9 @@ func (l *LibP2P) handleConn(c lt.Conn) {
 		WithField("remote-multiaddr", c.RemoteMultiaddr().String()).
 		WithField("remote-peer", c.RemotePeer().Pretty())
 	le.Info("connection accepted")
+	remoteTransportUUID := scrc.Crc64([]byte(c.RemoteMultiaddr().String()))
 	// TODO
+	_ = remoteTransportUUID
 }
 
 // Close releases any resources used by the controller.

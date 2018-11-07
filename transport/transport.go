@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/aperturerobotics/bifrost/link"
+	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/controllerbus/controller"
 )
 
@@ -15,6 +16,8 @@ type Transport interface {
 	GetUUID() uint64
 	// GetLinks returns the list of links this transport has active.
 	GetLinks() []link.Link
+	// GetNodeID returns the node peer ID.
+	GetNodeID() peer.ID
 	// Close closes the transport, returning any errors closing.
 	Close() error
 }

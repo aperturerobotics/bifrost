@@ -10,19 +10,20 @@ import (
 
 // Link wraps a libp2p connection with a smux link.
 type Link struct {
-	conn          lt.Conn
-	uuid          uint64
-	transportUUID uint64
+	conn                lt.Conn
+	uuid                uint64
+	transportUUID       uint64
+	remoteTransportUUID uint64
 }
 
 // NewLink builds a new link.
-func NewLink(transportUUID uint64, conn lt.Conn) *Link {
+func NewLink(transportUUID, remoteTransportUUID uint64, conn lt.Conn) *Link {
 	uuid := scrc.Crc64(
 		[]byte(conn.LocalMultiaddr().String()),
 		[]byte(conn.RemoteMultiaddr().String()),
 		[]byte(conn.RemotePeer().Pretty()),
 	)
-	return &Link{conn: conn, uuid: uuid, transportUUID: transportUUID}
+	return &Link{conn: conn, uuid: uuid, transportUUID: transportUUID, remoteTransportUUID: remoteTransportUUID}
 }
 
 // GetUUID returns the host-unique ID.
@@ -34,6 +35,11 @@ func (l *Link) GetUUID() uint64 {
 // GetTransportUUID returns the unique ID of the transport.
 func (l *Link) GetTransportUUID() uint64 {
 	return l.transportUUID
+}
+
+// GetRemoteTransportUUID returns the unique ID of the remote transport.
+func (l *Link) GetRemoteTransportUUID() uint64 {
+	return l.remoteTransportUUID
 }
 
 // OpenStream opens a stream on the link, with the given parameters.

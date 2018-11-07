@@ -11,6 +11,8 @@ type Result struct {
 	Secret [32]byte
 	// Peer is the public key of the remote peer.
 	Peer crypto.PubKey
+	// ExtraData is the extra data the remote peer sent.
+	ExtraData []byte
 }
 
 // Handshaker performs an identity handshake.

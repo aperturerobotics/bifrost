@@ -31,7 +31,11 @@ func (o *openStreamResolver) Resolve(ctx context.Context, handler directive.Reso
 	strmCh := make(chan link.MountedStream, 1)
 
 	c.linksMtx.Lock()
-	lw := c.pushLinkWaiter(o.dir.OpenStreamTargetPeerID(), func(lnk link.Link) {
+	lw := c.pushLinkWaiter(o.dir.OpenStreamTargetPeerID(), true, func(lnk link.Link, added bool) {
+		if !added {
+			return
+		}
+
 		select {
 		case <-ctx.Done():
 			return

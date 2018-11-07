@@ -109,6 +109,8 @@ func (e *establishedLink) acceptStreamPump(ctx context.Context) {
 			return
 		}
 
-		go ctrl.HandleIncomingStream(ctx, lnk, strm, strmOpts)
+		if strm != nil {
+			go ctrl.HandleIncomingStream(ctx, lnk, strm, strmOpts)
+		}
 	}
 }

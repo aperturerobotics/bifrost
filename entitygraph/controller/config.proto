@@ -1,0 +1,6 @@
+syntax = "proto3";
+package entitygraph.controller;
+
+// Config is entity graph controller config.
+message Config {
+}

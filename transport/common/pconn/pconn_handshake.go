@@ -7,6 +7,7 @@ import (
 	"github.com/aperturerobotics/bifrost/handshake/identity"
 	"github.com/aperturerobotics/bifrost/handshake/identity/s2s"
 	"github.com/aperturerobotics/bifrost/peer"
+	"github.com/golang/protobuf/proto"
 )
 
 // defaultMaxInflightStreamEstablish is the maximum number of raw stream
@@ -29,9 +30,19 @@ func (u *Transport) handleCompleteHandshake(
 	ctx := u.ctx
 	as := addr.String()
 	pid, _ := peer.IDFromPublicKey(result.Peer)
+
 	le := u.le.
 		WithField("remote-id", pid.Pretty()).
 		WithField("remote-addr", as)
+
+	exd := &HandshakeExtraData{}
+	if err := proto.Unmarshal(result.ExtraData, exd); err != nil {
+		le.WithError(err).Warn("unable to decode extra data from handshake")
+		exd.Reset()
+	} else {
+		le = le.WithField("remote-transport-id", exd.GetLocalTransportUuid())
+	}
+
 	le.Info("handshake complete")
 
 	u.linksMtx.Lock()
@@ -55,6 +66,7 @@ func (u *Transport) handleCompleteHandshake(
 		u.pc.LocalAddr(),
 		addr,
 		u.GetUUID(),
+		exd.GetLocalTransportUuid(),
 		result,
 		result.Secret,
 		u.pc.WriteTo,
@@ -79,6 +91,11 @@ func (u *Transport) pushHandshaker(
 	hs := &inflightHandshake{ctxCancel: nctxCancel, addr: addr}
 	var err error
 	// TODO: construct extra data
+	ed := &HandshakeExtraData{LocalTransportUuid: u.GetUUID()}
+	edDat, err := proto.Marshal(ed)
+	if err != nil {
+		return nil, err
+	}
 	hs.hs, err = s2s.NewHandshaker(
 		u.privKey,
 		nil,
@@ -89,7 +106,7 @@ func (u *Transport) pushHandshaker(
 		},
 		nil,
 		inititiator,
-		nil,
+		edDat,
 	)
 	if err != nil {
 		nctxCancel()

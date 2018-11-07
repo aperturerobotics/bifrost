@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/aperturerobotics/bifrost/link"
+	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/aperturerobotics/bifrost/util/scrc"
 	"github.com/aperturerobotics/controllerbus/directive"
@@ -31,6 +32,8 @@ type Transport struct {
 	uuid uint64
 	// privKey is the local priv key
 	privKey crypto.PrivKey
+	// peerID is the node peer id
+	peerID peer.ID
 	// handler is the transport handler
 	handler transport.TransportHandler
 	// opts are extra options
@@ -66,10 +69,12 @@ func New(
 	if opts == nil {
 		opts = &Opts{}
 	}
+	pid, _ := peer.IDFromPrivateKey(pKey)
 	return &Transport{
 		le:      le.WithField("laddr", pc.LocalAddr().String()),
 		pc:      pc,
 		privKey: pKey,
+		peerID:  pid,
 		uuid:    uuid,
 		handler: tc,
 		opts:    *opts,
@@ -243,6 +248,11 @@ func (u *Transport) handleLinkLost(addr string, lnk *Link) {
 	if u.handler != nil && rel {
 		u.handler.HandleLinkLost(lnk)
 	}
+}
+
+// GetNodeID returns the node peer id.
+func (u *Transport) GetNodeID() peer.ID {
+	return u.peerID
 }
 
 // GetLinks returns the links currently active.

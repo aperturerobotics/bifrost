@@ -18,6 +18,9 @@ type Link interface {
 	AcceptStream() (stream.Stream, stream.OpenOpts, error)
 	// GetRemotePeer returns the identity of the remote peer.
 	GetRemotePeer() peer.ID
+	// GetRemoteTransportUUID returns the reported remote transport UUID.
+	// This should be negotiated in the handshake.
+	GetRemoteTransportUUID() uint64
 	// Close closes the link.
 	// Any blocked ReadFrom or WriteTo operations will be unblocked and return errors.
 	// The link should call the HandleLinkLost callback exactly once.
