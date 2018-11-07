@@ -52,10 +52,8 @@ type Controller struct {
 	// localPeerID contains the node peer ID
 	localPeerID peer.ID
 
-	// tptMtx is the transport mutex
-	tptMtx sync.Mutex
-	// tpt is the transport
-	tpt transport.Transport
+	// tptCh holds the transport like a bucket
+	tptCh chan transport.Transport
 
 	// linksMtx is the links mutex
 	linksMtx sync.Mutex
@@ -86,6 +84,7 @@ func NewController(
 
 		links:       make(map[uint64]*establishedLink),
 		linkWaiters: make(map[peer.ID][]*linkWaiter),
+		tptCh:       make(chan transport.Transport, 1),
 
 		peerIDConstraint: nodePeerIDConstraint,
 		localPeerID:      nodePeerIDConstraint,
@@ -145,9 +144,7 @@ func (c *Controller) Execute(ctx context.Context) error {
 	}
 	defer tpt.Close()
 
-	c.tptMtx.Lock()
-	c.tpt = tpt
-	c.tptMtx.Unlock()
+	c.tptCh <- tpt
 
 	tptErr := make(chan error, 1)
 	go func() {
@@ -167,11 +164,14 @@ func (c *Controller) Execute(ctx context.Context) error {
 
 // GetTransport returns the controlled transport.
 // This may be nil until the transport is constructed.
-func (c *Controller) GetTransport() transport.Transport {
-	c.tptMtx.Lock()
-	defer c.tptMtx.Unlock()
-
-	return c.tpt
+func (c *Controller) GetTransport(ctx context.Context) (transport.Transport, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case tpt := <-c.tptCh:
+		c.tptCh <- tpt
+		return tpt, nil
+	}
 }
 
 // HandleDirective asks if the handler can resolve the directive.
@@ -185,6 +185,8 @@ func (c *Controller) HandleDirective(ctx context.Context, di directive.Instance)
 		return c.resolveOpenStreamWithPeer(ctx, di, d)
 	case link.EstablishLink:
 		return c.resolveEstablishLink(ctx, di, d)
+	case transport.LookupTransport:
+		return c.resolveLookupTransport(ctx, di, d)
 	}
 
 	return nil, nil
@@ -336,6 +338,7 @@ func (c *Controller) HandleLinkLost(lnk link.Link) {
 func (c *Controller) flushEstablishedLink(el *establishedLink) {
 	le := c.loggerForLink(el.Link)
 	le.Debug("link lost/closed")
+	c.resolveLinkWaiters(el.Link, false)
 	el.Cancel()
 	el.Link.Close()
 }
@@ -357,13 +360,10 @@ func (c *Controller) Close() error {
 	c.bus = nil
 	c.peerIDConstraint = ""
 
-	c.tptMtx.Lock()
-	tpt := c.tpt
-	c.tpt = nil
-	c.tptMtx.Unlock()
-
-	if tpt != nil {
-		return tpt.Close()
+	select {
+	case tpt := <-c.tptCh:
+		tpt.Close()
+	default:
 	}
 
 	return nil

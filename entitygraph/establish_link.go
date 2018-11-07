@@ -1,4 +1,4 @@
-package entitygraph_controller
+package bifrost_entitygraph
 
 import (
 	"sync"
@@ -62,13 +62,22 @@ func (e *establishLinkHandler) HandleValueRemoved(inst directive.Instance, val d
 // HandleInstanceDisposed is called when a directive instance is disposed.
 // This will occur if Close() is called on the directive instance.
 func (e *establishLinkHandler) HandleInstanceDisposed(inst directive.Instance) {
-	if e.ref == nil {
+	eref := e.ref
+	if eref == nil {
 		return
 	}
+	e.ref = nil
+
+	e.mtx.Lock()
+	for k, val := range e.vals {
+		e.c.store.RemoveEntityObj(val)
+		delete(e.vals, k)
+	}
+	e.mtx.Unlock()
 
 	e.c.mtx.Lock()
 	for i, ref := range e.c.cleanupRefs {
-		if ref == e.ref {
+		if ref == eref {
 			a := e.c.cleanupRefs
 			a[i] = a[len(a)-1]
 			a[len(a)-1] = nil

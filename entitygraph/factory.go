@@ -1,4 +1,4 @@
-package entitygraph_controller
+package bifrost_entitygraph
 
 import (
 	"github.com/aperturerobotics/controllerbus/bus"
@@ -38,7 +38,7 @@ func (t *Factory) Construct(
 	cc := conf.(*Config)
 
 	_ = cc
-	return NewController(le), nil
+	return NewController(le, t.bus), nil
 }
 
 // GetVersion returns the version of this controller.

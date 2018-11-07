@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/aperturerobotics/bifrost/link"
+	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/aperturerobotics/controllerbus/directive"
 )
 
@@ -26,6 +27,18 @@ func (o *openStreamResolver) Resolve(ctx context.Context, handler directive.Reso
 	openOpts := o.dir.OpenStreamOpenOpts()
 	protocolID := o.dir.OpenStreamProtocolID()
 	estMsg := NewStreamEstablish(protocolID)
+
+	var tpt transport.Transport
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case tpt = <-c.tptCh:
+		c.tptCh <- tpt
+	}
+
+	if !checkOpenStreamMatchesTpt(o.dir, tpt) {
+		return nil
+	}
 
 	errCh := make(chan error, 1)
 	strmCh := make(chan link.MountedStream, 1)
@@ -86,6 +99,24 @@ func (o *openStreamResolver) Resolve(ctx context.Context, handler directive.Reso
 	}
 }
 
+// checkOpenStreamMatchesTpt checks if a OpenStream matches a tpt
+func checkOpenStreamMatchesTpt(dir link.OpenStream, tpt transport.Transport) bool {
+	if tptConstraint := dir.OpenStreamTransportConstraint(); tptConstraint != 0 {
+		if tpt.GetUUID() != tptConstraint {
+			return false
+		}
+	}
+
+	// Check peer ID constraint
+	if srcPeerID := dir.OpenStreamSourcePeerID(); len(srcPeerID) != 0 {
+		if srcPeerID != tpt.GetNodeID() {
+			return false
+		}
+	}
+
+	return true
+}
+
 // resolveOpenStreamWithPeer returns a resolver for opening a stream.
 // Negotiates the protocol ID as well.
 func (c *Controller) resolveOpenStreamWithPeer(
@@ -93,20 +124,16 @@ func (c *Controller) resolveOpenStreamWithPeer(
 	di directive.Instance,
 	dir link.OpenStream,
 ) (directive.Resolver, error) {
+	select {
+	case tpt := <-c.tptCh:
+		c.tptCh <- tpt
+		if !checkOpenStreamMatchesTpt(dir, tpt) {
+			return nil, nil
+		}
+	default:
+	}
+
 	// Check transport constraint
-	if tptConstraint := dir.OpenStreamTransportConstraint(); tptConstraint != 0 {
-		if c.GetTransport().GetUUID() != tptConstraint {
-			return nil, nil
-		}
-	}
-
-	// Check peer ID constraint
-	if srcPeerID := dir.OpenStreamSourcePeerID(); len(srcPeerID) != 0 {
-		if srcPeerID != c.localPeerID {
-			return nil, nil
-		}
-	}
-
 	// Return resolver.
 	return &openStreamResolver{c: c, ctx: ctx, di: di, dir: dir}, nil
 }

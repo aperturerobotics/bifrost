@@ -1,4 +1,4 @@
-package entitygraph_controller
+package bifrost_entitygraph
 
 import (
 	"context"

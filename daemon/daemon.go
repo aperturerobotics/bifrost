@@ -113,6 +113,11 @@ func NewDaemon(
 	}, nil
 }
 
+// GetStaticResolver returns the underlying static resolver for controller impl lookups.
+func (d *Daemon) GetStaticResolver() *static.Resolver {
+	return d.staticResolver
+}
+
 // GetControllerBus returns the controller bus.
 func (d *Daemon) GetControllerBus() bus.Bus {
 	return d.bus

@@ -1,0 +1,82 @@
+package bifrost_entitygraph
+
+import (
+	"sync"
+
+	"github.com/aperturerobotics/bifrost/transport"
+	"github.com/aperturerobotics/controllerbus/directive"
+	"github.com/aperturerobotics/entitygraph/entity"
+)
+
+// lookupTransportHandler handles the LookupTransport directive results
+type lookupTransportHandler struct {
+	c    *Controller
+	mtx  sync.Mutex
+	vals map[directive.Value]lookupTransportHandlerVal
+}
+
+// lookupTransportHandlerVal is the value tuple
+type lookupTransportHandlerVal struct {
+	tptObj   entity.Entity
+	assocObj entity.Entity
+}
+
+// newLookupTransportHandler constructs a lookupTransportHandler
+func newLookupTransportHandler(c *Controller) *lookupTransportHandler {
+	return &lookupTransportHandler{c: c, vals: make(map[directive.Value]lookupTransportHandlerVal)}
+}
+
+// HandleValueAdded is called when a value is added to the directive.
+func (h *lookupTransportHandler) HandleValueAdded(
+	inst directive.Instance,
+	val directive.Value,
+) {
+	tpt, ok := val.(transport.Transport)
+	if !ok {
+		h.c.le.Warn("LookupTransport value was not a Transport")
+		return
+	}
+
+	tptObj, tptAssocObj := NewTransportEntity(tpt)
+	h.mtx.Lock()
+	_, exists := h.vals[val]
+	if !exists {
+		h.vals[val] = lookupTransportHandlerVal{
+			tptObj:   tptObj,
+			assocObj: tptAssocObj,
+		}
+	}
+	h.mtx.Unlock()
+
+	if !exists {
+		h.c.store.AddEntityObj(tptObj)
+		h.c.store.AddEntityObj(tptAssocObj)
+	}
+}
+
+// HandleValueRemoved is called when a value is removed from the directive.
+func (h *lookupTransportHandler) HandleValueRemoved(
+	inst directive.Instance,
+	val directive.Value,
+) {
+	h.mtx.Lock()
+	ent, exists := h.vals[val]
+	if exists {
+		delete(h.vals, val)
+	}
+	h.mtx.Unlock()
+
+	if exists {
+		h.c.store.RemoveEntityObj(ent.tptObj)
+		h.c.store.RemoveEntityObj(ent.assocObj)
+	}
+}
+
+// HandleInstanceDisposed is called when a directive instance is disposed.
+// This will occur if Close() is called on the directive instance.
+func (h *lookupTransportHandler) HandleInstanceDisposed(inst directive.Instance) {
+	// noop
+}
+
+// _ is a type assertion
+var _ directive.ReferenceHandler = ((*lookupTransportHandler)(nil))

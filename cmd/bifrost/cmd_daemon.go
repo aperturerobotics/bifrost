@@ -9,6 +9,7 @@ import (
 
 	"github.com/aperturerobotics/bifrost/daemon"
 	"github.com/aperturerobotics/bifrost/daemon/api"
+	egctr "github.com/aperturerobotics/bifrost/entitygraph"
 	"github.com/aperturerobotics/bifrost/keypem"
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/peer"
@@ -18,7 +19,9 @@ import (
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
 	"github.com/aperturerobotics/controllerbus/directive"
+	"github.com/aperturerobotics/entitygraph"
 	egc "github.com/aperturerobotics/entitygraph/controller"
+	"github.com/aperturerobotics/entitygraph/entity"
 	"github.com/libp2p/go-libp2p-crypto"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -120,6 +123,8 @@ func runDaemon(c *cli.Context) error {
 	}
 
 	b := d.GetControllerBus()
+	sr := d.GetStaticResolver()
+	sr.AddFactory(egctr.NewFactory(b))
 
 	// Entity graph controller.
 	{
@@ -133,6 +138,37 @@ func runDaemon(c *cli.Context) error {
 			return errors.Wrap(err, "start entity graph controller")
 		}
 		defer egRef.Release()
+	}
+
+	// Entity graph reporter for bifrost
+	{
+		_, _, err = b.AddDirective(
+			resolver.NewLoadControllerWithConfigSingleton(&egctr.Config{}),
+			bus.NewCallbackHandler(func(val directive.Value) {
+				le.Info("entitygraph bifrost reporter running")
+			}, nil, nil),
+		)
+		if err != nil {
+			return errors.Wrap(err, "start entitygraph bifrost reporter")
+		}
+	}
+
+	// TODO: something better than this logger
+	{
+		le.Debug("constructing entitygraph logger")
+		_, _, err = b.AddDirective(
+			entitygraph.NewObserveEntityGraph(),
+			bus.NewCallbackHandler(func(val directive.Value) {
+				ent := val.(entity.Entity)
+				le.Infof("EntityGraph: value added: %s: %s", ent.GetEntityTypeName(), ent.GetEntityID())
+			}, func(val directive.Value) {
+				ent := val.(entity.Entity)
+				le.Infof("EntityGraph: value removed: %s: %s", ent.GetEntityTypeName(), ent.GetEntityID())
+			}, nil),
+		)
+		if err != nil {
+			return errors.Wrap(err, "start entitygraph logger")
+		}
 	}
 
 	// Daemon API
@@ -196,8 +232,12 @@ func runDaemon(c *cli.Context) error {
 				// Reliable:  true,
 			}),
 			bus.NewCallbackHandler(func(val directive.Value) {
-				le.Infof("stream opened with peer: %#v", val)
 				mstrm := val.(link.MountedStream)
+				le.
+					WithField("protocol-id", mstrm.GetProtocolID()).
+					WithField("stream-encrypted", mstrm.GetOpenOpts().Encrypted).
+					WithField("stream-reliable", mstrm.GetOpenOpts().Reliable).
+					Debug("stream opened with peer")
 				strm := mstrm.GetStream()
 				strm.Write([]byte("Hello world"))
 			}, nil, nil),

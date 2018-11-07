@@ -1,4 +1,4 @@
-package entitygraph_controller
+package bifrost_entitygraph
 
 import (
 	"strconv"
@@ -17,7 +17,7 @@ type TransportEntity struct {
 
 // NewTransportEntityRef constructs a new entity ref to a transport.
 func NewTransportEntityRef(transportID uint64) entity.Ref {
-	tptIDStr := strconv.FormatInt(int64(transportID), 10)
+	tptIDStr := strconv.FormatUint(transportID, 10)
 	return entity.NewEntityRefWithID(tptIDStr, TransportEntityTypeName)
 }
 

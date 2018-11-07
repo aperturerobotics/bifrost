@@ -248,7 +248,7 @@ func (l *Link) OpenStream(opts stream.OpenOpts) (stream.Stream, error) {
 
 // HandlePacket handles a packet.
 func (l *Link) HandlePacket(packetType PacketType, data []byte) {
-	l.le.WithField("packet-type", packetType.String()).Debugf("handling packet: %#v", data)
+	// l.le.WithField("packet-type", packetType.String()).Debugf("handling packet: %#v", data)
 	switch packetType {
 	case PacketType_PacketType_RAW:
 		l.handleRawPacket(data)

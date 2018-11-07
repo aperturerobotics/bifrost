@@ -222,7 +222,6 @@ func (l *Link) writeCoordStreamPacket(pkt *CoordinationStreamPacket) error {
 	if err != nil {
 		return err
 	}
-	l.le.Debugf("writing coord packet: %#v", pktDat)
 
 	// encode packet len
 	plenBuf := make([]byte, 4)

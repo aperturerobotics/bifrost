@@ -1,16 +1,21 @@
-package entitygraph_controller
+package bifrost_entitygraph
 
 import (
 	"context"
 	"sync"
 
 	"github.com/aperturerobotics/bifrost/link"
+	"github.com/aperturerobotics/bifrost/peer"
+	"github.com/aperturerobotics/bifrost/transport"
+
 	"github.com/aperturerobotics/entitygraph"
 	"github.com/aperturerobotics/entitygraph/entity"
 	"github.com/aperturerobotics/entitygraph/store"
 
+	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
+
 	"github.com/blang/semver"
 	"github.com/sirupsen/logrus"
 )
@@ -29,6 +34,8 @@ type Controller struct {
 	le *logrus.Entry
 	// store is the entity store
 	store *store.Store
+	// bus is the controller bus
+	bus bus.Bus
 
 	// mtx guards the collectors map
 	mtx sync.Mutex
@@ -42,14 +49,17 @@ type Controller struct {
 
 // NOTE: CollectEntityGraph de-duplicates entity objects!
 // That means:
-// - emit two node Entity objects per EstablishLink interest
-// - emit one Entity<Link> object per EstablishLink interest
-// - emit one Entity<Link> object per known Link yielded by EstablishLink
+// - emit two node Entity objects per EstablishLink interest (node objects)
+// - emit one Entity<Link> object per EstablishLink interest (not value, just interest)
+// - DONE emit one Entity<Link> object per known Link yielded by EstablishLink
+// - emit one Transport object per known remote transport (from Link objects)
+// - emit one Transport object per known local transport (from LookupTransport directives)
 
 // NewController constructs a new entitygraph controller.
-func NewController(le *logrus.Entry) *Controller {
+func NewController(le *logrus.Entry, bus bus.Bus) *Controller {
 	c := &Controller{
 		le:     le,
+		bus:    bus,
 		values: make(map[store.EntityMapKey]entity.Entity),
 	}
 	c.store = store.NewStore(newStoreHandler(c))
@@ -60,7 +70,21 @@ func NewController(le *logrus.Entry) *Controller {
 // Returning nil ends execution.
 // Returning an error triggers a retry with backoff.
 func (c *Controller) Execute(ctx context.Context) error {
+	c.le.Info("registering lookuptransport directive")
+	di, diRef, err := c.bus.AddDirective(
+		transport.NewLookupTransport(peer.ID(""), 0),
+		newLookupTransportHandler(c),
+	)
+	if err != nil {
+		return err
+	}
+	defer diRef.Release()
+	_ = di
+
+	// Wait for the controller to quit
 	<-ctx.Done()
+
+	// Cleanup all created refs
 	c.mtx.Lock()
 	for _, ref := range c.cleanupRefs {
 		ref.Release()

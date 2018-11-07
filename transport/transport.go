@@ -37,5 +37,6 @@ type Controller interface {
 	controller.Controller
 
 	// GetTransport returns the controlled transport.
-	GetTransport() Transport
+	// This may wait for the controller to be ready.
+	GetTransport(ctx context.Context) (Transport, error)
 }

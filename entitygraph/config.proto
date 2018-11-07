@@ -1,5 +1,5 @@
 syntax = "proto3";
-package entitygraph.controller;
+package bifrost.entitygraph;
 
 // Config is entity graph controller config.
 message Config {
