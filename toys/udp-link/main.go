@@ -77,7 +77,7 @@ func execute() error {
 		bus.NewCallbackHandler(func(val directive.Value) {
 			le.Info("UDP listening on: :5553")
 			<-time.After(time.Millisecond * 500)
-			tpt1 = val.(*tptc.Controller).GetTransport()
+			tpt1, _ = val.(*tptc.Controller).GetTransport(ctx)
 			wg.Done()
 		}, nil, nil),
 	)
@@ -94,7 +94,7 @@ func execute() error {
 		bus.NewCallbackHandler(func(val directive.Value) {
 			le.Info("UDP listening on: :5554")
 			<-time.After(time.Millisecond * 500)
-			tpt2 = val.(*tptc.Controller).GetTransport()
+			tpt2, _ = val.(*tptc.Controller).GetTransport(ctx)
 			wg.Done()
 		}, nil, nil),
 	)
