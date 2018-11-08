@@ -39,10 +39,7 @@ func (d *GetNodeSingleton) Validate() error {
 
 // GetValueOptions returns options relating to value handling.
 func (d *GetNodeSingleton) GetValueOptions() directive.ValueOptions {
-	return directive.ValueOptions{
-		MaxValueCount:   1,
-		MaxValueHardCap: true,
-	}
+	return directive.ValueOptions{}
 }
 
 // IsEquivalent checks if the other directive is equivalent. If two

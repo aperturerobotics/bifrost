@@ -3,7 +3,7 @@ package bifrost_entitygraph
 import (
 	"strconv"
 
-	"github.com/aperturerobotics/bifrost/transport"
+	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/entitygraph/entity"
 )
 
@@ -22,10 +22,9 @@ func NewTransportEntityRef(transportID uint64) entity.Ref {
 }
 
 // NewTransportEntity constructs a new TransportEntity and TransportAssocEntity.
-func NewTransportEntity(tpt transport.Transport) (*TransportEntity, *TransportAssocEntity) {
-	tptRef := NewTransportEntityRef(tpt.GetUUID())
+func NewTransportEntity(tptUUID uint64, nodeID peer.ID) (*TransportEntity, *TransportAssocEntity) {
+	tptRef := NewTransportEntityRef(tptUUID)
 	tptID := tptRef.GetEntityRefId()
-	nodeID := tpt.GetNodeID()
 	nodeRef := NewNodeEntityRef(nodeID)
 	return &TransportEntity{
 			entityID:       tptID,

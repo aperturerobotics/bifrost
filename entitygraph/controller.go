@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/aperturerobotics/bifrost/link"
+	"github.com/aperturerobotics/bifrost/node"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/transport"
 
@@ -71,15 +72,24 @@ func NewController(le *logrus.Entry, bus bus.Bus) *Controller {
 // Returning an error triggers a retry with backoff.
 func (c *Controller) Execute(ctx context.Context) error {
 	c.le.Info("registering lookuptransport directive")
-	di, diRef, err := c.bus.AddDirective(
+	_, diRef1, err := c.bus.AddDirective(
 		transport.NewLookupTransport(peer.ID(""), 0),
 		newLookupTransportHandler(c),
 	)
 	if err != nil {
 		return err
 	}
-	defer diRef.Release()
-	_ = di
+	defer diRef1.Release()
+
+	c.le.Info("registering getnode directive")
+	_, diRef2, err := c.bus.AddDirective(
+		node.NewGetNodeSingleton(peer.ID("")),
+		newGetNodeHandler(c),
+	)
+	if err != nil {
+		return err
+	}
+	defer diRef2.Release()
 
 	// Wait for the controller to quit
 	<-ctx.Done()

@@ -17,12 +17,18 @@ type establishLinkHandler struct {
 	// mtx guards vals
 	mtx sync.Mutex
 	// vals are values
-	vals map[directive.Value]entity.Entity
+	vals map[directive.Value]establishLinkHandlerVal
+}
+
+// establishLinkHandlerVal is the value tuple
+type establishLinkHandlerVal struct {
+	linkObj, remoteNodObj           entity.Entity
+	remoteTptObj, remoteTptAssocObj entity.Entity
 }
 
 // newEstablishLinkHandler constructs a new establishLinkHandler
 func newEstablishLinkHandler(c *Controller) *establishLinkHandler {
-	return &establishLinkHandler{c: c, vals: make(map[directive.Value]entity.Entity)}
+	return &establishLinkHandler{c: c, vals: make(map[directive.Value]establishLinkHandlerVal)}
 }
 
 // HandleValueAdded is called when a value is added to the directive.
@@ -34,15 +40,25 @@ func (e *establishLinkHandler) HandleValueAdded(inst directive.Instance, val dir
 	}
 
 	entObj := NewLinkEntity(vl)
+	nodObj := NewNodeEntity(vl.GetRemotePeer())
+	remoteTptObj, remoteTptAssocObj := NewTransportEntity(vl.GetRemoteTransportUUID(), vl.GetRemotePeer())
 	e.mtx.Lock()
 	_, exists := e.vals[val]
 	if !exists {
-		e.vals[val] = entObj
+		e.vals[val] = establishLinkHandlerVal{
+			remoteNodObj:      nodObj,
+			linkObj:           entObj,
+			remoteTptAssocObj: remoteTptAssocObj,
+			remoteTptObj:      remoteTptObj,
+		}
 	}
 	e.mtx.Unlock()
 
 	if !exists {
 		e.c.store.AddEntityObj(entObj)
+		e.c.store.AddEntityObj(nodObj)
+		e.c.store.AddEntityObj(remoteTptAssocObj)
+		e.c.store.AddEntityObj(remoteTptObj)
 	}
 }
 
@@ -55,7 +71,10 @@ func (e *establishLinkHandler) HandleValueRemoved(inst directive.Instance, val d
 	}
 	e.mtx.Unlock()
 	if exists {
-		e.c.store.RemoveEntityObj(ent)
+		e.c.store.RemoveEntityObj(ent.linkObj)
+		e.c.store.RemoveEntityObj(ent.remoteNodObj)
+		e.c.store.RemoveEntityObj(ent.remoteTptAssocObj)
+		e.c.store.RemoveEntityObj(ent.remoteTptObj)
 	}
 }
 
@@ -70,7 +89,8 @@ func (e *establishLinkHandler) HandleInstanceDisposed(inst directive.Instance) {
 
 	e.mtx.Lock()
 	for k, val := range e.vals {
-		e.c.store.RemoveEntityObj(val)
+		e.c.store.RemoveEntityObj(val.linkObj)
+		e.c.store.RemoveEntityObj(val.remoteNodObj)
 		delete(e.vals, k)
 	}
 	e.mtx.Unlock()

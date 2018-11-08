@@ -6,6 +6,7 @@ import (
 	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/aperturerobotics/entitygraph/entity"
+	"github.com/aperturerobotics/entitygraph/link"
 )
 
 // lookupTransportHandler handles the LookupTransport directive results
@@ -18,7 +19,7 @@ type lookupTransportHandler struct {
 // lookupTransportHandlerVal is the value tuple
 type lookupTransportHandlerVal struct {
 	tptObj   entity.Entity
-	assocObj entity.Entity
+	assocObj link.Link
 }
 
 // newLookupTransportHandler constructs a lookupTransportHandler
@@ -37,7 +38,7 @@ func (h *lookupTransportHandler) HandleValueAdded(
 		return
 	}
 
-	tptObj, tptAssocObj := NewTransportEntity(tpt)
+	tptObj, tptAssocObj := NewTransportEntity(tpt.GetUUID(), tpt.GetNodeID())
 	h.mtx.Lock()
 	_, exists := h.vals[val]
 	if !exists {
@@ -50,7 +51,7 @@ func (h *lookupTransportHandler) HandleValueAdded(
 
 	if !exists {
 		h.c.store.AddEntityObj(tptObj)
-		h.c.store.AddEntityObj(tptAssocObj)
+		h.c.store.AddEntityObj((link.Link)(tptAssocObj))
 	}
 }
 
