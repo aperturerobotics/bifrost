@@ -166,18 +166,31 @@ func NewLink(
 	case KCPMode_KCPMode_UNKNOWN:
 		fallthrough
 	case KCPMode_KCPMode_NORMAL:
-		l.sess.SetNoDelay(0, 40, 2, 1)
+		l.sess.SetNoDelay(0, 100, 0, 0)
 	case KCPMode_KCPMode_FAST:
-		l.sess.SetNoDelay(0, 30, 2, 1)
+		l.sess.SetNoDelay(0, 40, 2, 1)
 	case KCPMode_KCPMode_FAST2:
 		l.sess.SetNoDelay(1, 20, 2, 1)
 	case KCPMode_KCPMode_FAST3:
 		l.sess.SetNoDelay(1, 10, 2, 1)
+	case KCPMode_KCPMode_SLOW1:
+		l.sess.SetNoDelay(0, 200, 0, 0)
 	}
 
-	l.sess.SetWriteDelay(false)
-	l.sess.SetWindowSize(1024*12, 1024*12)
-	l.sess.SetACKNoDelay(true)
+	if kcpMode == KCPMode_KCPMode_SLOW1 ||
+		kcpMode == KCPMode_KCPMode_NORMAL ||
+		kcpMode == KCPMode_KCPMode_FAST {
+		l.sess.SetWriteDelay(true)
+		l.sess.SetACKNoDelay(false)
+		l.sess.SetStreamMode(true)
+		// Bandwidth-in-bits-per-second * Round-trip-latency-in-seconds = TCP window size in bytes
+		// 10000*300
+		l.sess.SetWindowSize(3000000, 3000000)
+	} else {
+		l.sess.SetWriteDelay(false)
+		l.sess.SetWindowSize(1024*12, 1024*12)
+		l.sess.SetACKNoDelay(true)
+	}
 
 	conf := smux.DefaultConfig()
 	conf.KeepAliveInterval = time.Second * 5

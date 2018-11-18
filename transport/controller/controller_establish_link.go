@@ -26,9 +26,13 @@ func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.R
 	peerIDConst := o.dir.EstablishLinkWPIDConstraint()
 	peerIDPretty := peerIDConst.Pretty()
 
+	var pushDialer func()
 	if spm := c.staticPeerMap; spm != nil {
 		if dOpts, ok := spm[peerIDPretty]; ok && dOpts.GetAddress() != "" {
-			go c.PushDialer(ctx, peerIDConst, dOpts)
+			pushDialer = func() {
+				c.PushDialer(ctx, peerIDConst, dOpts)
+			}
+			go pushDialer()
 		}
 	}
 
@@ -43,6 +47,9 @@ func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.R
 			if vid, ok := linkIDs[lnk]; ok {
 				handler.RemoveValue(vid)
 				delete(linkIDs, lnk)
+				if pushDialer != nil {
+					go pushDialer()
+				}
 			}
 		}
 	})

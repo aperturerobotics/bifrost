@@ -28,6 +28,7 @@ var streamEstablishMaxPacketSize = 100000
 
 // Constructor constructs a transport with common parameters.
 type Constructor func(
+	ctx context.Context,
 	le *logrus.Entry,
 	pkey crypto.PrivKey,
 	handler transport.TransportHandler,
@@ -146,6 +147,7 @@ func (c *Controller) Execute(ctx context.Context) error {
 
 	// Construct the transport
 	tpt, err := c.ctor(
+		ctx,
 		c.le,
 		privKey,
 		c,
@@ -411,6 +413,15 @@ func (c *Controller) startLinkDialer(
 // flushEstablishedLink closes an established link and cleans it up.
 // linksmtx is locked by caller
 func (c *Controller) flushEstablishedLink(el *establishedLink) {
+	/*
+		peerIDStr := el.Link.GetLocalPeer().Pretty()
+		for ldk := range c.linkDialers {
+			if ldk.peerID == peerIDStr {
+				c.linkDialers[ldk].dialer.
+			}
+		}
+	*/
+
 	le := c.loggerForLink(el.Link)
 	le.Debug("link lost/closed")
 	c.resolveLinkWaiters(el.Link, false)

@@ -21,10 +21,12 @@ type inflightHandshake struct {
 	addr      net.Addr
 
 	mtx         sync.Mutex
+	completeErr error
 	complete    bool
 	lnk         *Link
 	hs          identity.Handshaker
 	pendingData [][]byte
+	completeCbs []func(err error)
 }
 
 func (h *inflightHandshake) pushPacket(packet []byte) {
@@ -43,6 +45,18 @@ func (h *inflightHandshake) pushPacket(packet []byte) {
 	} else {
 		h.complete = !h.hs.Handle(packet)
 	}
+}
+
+func (h *inflightHandshake) pushCompleteCb(cb func(err error)) {
+	h.mtx.Lock()
+	defer h.mtx.Unlock()
+
+	if h.complete {
+		go cb(h.completeErr)
+		return
+	}
+
+	h.completeCbs = append(h.completeCbs, cb)
 }
 
 // handleCompleteHandshake handles a completed handshake.
@@ -140,12 +154,10 @@ func (u *Transport) pushHandshaker(
 		nil,
 		func(data []byte) error {
 			data = append(data, byte(PacketType_PacketType_HANDSHAKE))
-			/*
-				u.le.
-					WithField("data-len", len(data)).
-					WithField("addr", addr.String()).
-					Debug("writing handshaking packet")
-			*/
+			u.le.
+				WithField("data-len", len(data)).
+				WithField("addr", addr.String()).
+				Debugf("writing handshaking packet: %v", data)
 			_, err := u.pc.WriteTo(data, addr)
 			return err
 		},
@@ -168,7 +180,11 @@ func (u *Transport) pushHandshaker(
 }
 
 // processHandshake processes an in-flight handshake.
-func (u *Transport) processHandshake(ctx context.Context, hs *inflightHandshake, initiator bool) {
+func (u *Transport) processHandshake(
+	ctx context.Context,
+	hs *inflightHandshake,
+	initiator bool,
+) {
 	as := hs.addr.String()
 	ule := u.le.WithField("addr", as)
 
@@ -183,18 +199,20 @@ func (u *Transport) processHandshake(ctx context.Context, hs *inflightHandshake,
 	}()
 
 	res, err := hs.hs.Execute(ctx)
-	if err != nil {
-		if err == context.Canceled {
-			return
-		}
-
+	if err != nil && err != context.Canceled {
 		ule.WithError(err).Warn("error handshaking")
-		return
 	}
 
 	hs.mtx.Lock()
-	hs.lnk = u.handleCompleteHandshake(hs.addr, res, initiator, hs.pendingData)
+	if err == nil {
+		hs.lnk = u.handleCompleteHandshake(hs.addr, res, initiator, hs.pendingData)
+	}
 	hs.complete = true
+	hs.completeErr = err
 	hs.pendingData = nil
+	for _, cb := range hs.completeCbs {
+		go cb(err)
+	}
+	hs.completeCbs = nil
 	hs.mtx.Unlock()
 }

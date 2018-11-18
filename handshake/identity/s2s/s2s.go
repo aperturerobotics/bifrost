@@ -378,7 +378,7 @@ func (h *Handshaker) readPacket(ctx context.Context, packet *Packet, expectedTyp
 	}
 
 	if err := proto.Unmarshal(pktDat, packet); err != nil {
-		return errors.Errorf("unmarshal packet %v: %v", expectedType.String(), err.Error())
+		return errors.Errorf("unmarshal packet %v %v: %v", pktDat, expectedType.String(), err.Error())
 	}
 
 	if expectedType != PacketType(0) {

@@ -1,4 +1,4 @@
-package websocket
+package xbee
 
 import (
 	"context"
@@ -13,13 +13,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Factory constructs a websocket transport.
+// Factory constructs a XBee transport.
 type Factory struct {
 	// bus is the controller bus
 	bus bus.Bus
 }
 
-// NewFactory builds a websocket transport factory.
+// NewFactory builds a XBee transport factory.
 func NewFactory(bus bus.Bus) *Factory {
 	return &Factory{bus: bus}
 }
@@ -59,12 +59,13 @@ func (t *Factory) Construct(
 			pkey crypto.PrivKey,
 			handler transport.TransportHandler,
 		) (transport.Transport, error) {
-			return New(
+			return NewXBee(
+				ctx,
 				le,
-				cc.GetListenAddr(),
+				cc,
 				pkey,
 				handler,
-			), nil
+			)
 		},
 		TransportID,
 		Version,

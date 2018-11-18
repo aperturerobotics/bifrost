@@ -29,6 +29,12 @@ enum KCPMode {
   // Resend = 2
   // NoCongestion = 1
   KCPMode_FAST3 = 4;
+  // KCPMode_SLOW1 is the slow 1 mode.
+  // NoDelay = 0
+  // Interval = 100
+  // Resend = 0
+  // NoCongestion = 0
+  KCPMode_SLOW1 = 5;
 }
 
 // BlockCrypt sets the type of block crypto to use.

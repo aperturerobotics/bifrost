@@ -109,16 +109,40 @@ func (u *Transport) DialPeer(ctx context.Context, peerID peer.ID, as string) (bo
 		return true, err
 	}
 
-	u.handshakesMtx.Lock()
-	defer u.handshakesMtx.Unlock()
-
-	if _, ok := u.handshakes[as]; !ok {
-		u.le.WithField("addr", as).Debug("pushing new handshaker [dial]")
-		_, err := u.pushHandshaker(ctx, addr, true)
-		return true, err
+	// abort if we already have a peer with the same id connected
+	u.linksMtx.Lock()
+	for _, lnk := range u.links {
+		if lnk.peerID == peerID {
+			u.linksMtx.Unlock()
+			return false, nil
+		}
 	}
+	u.linksMtx.Unlock()
 
-	return false, nil
+	var hs *inflightHandshake
+	var ok bool
+	u.handshakesMtx.Lock()
+	hs, ok = u.handshakes[as]
+	if !ok {
+		u.le.WithField("addr", as).Debug("pushing new handshaker [dial]")
+		hs, err = u.pushHandshaker(ctx, addr, true)
+		if err != nil {
+			u.handshakesMtx.Unlock()
+			return true, err
+		}
+	}
+	u.handshakesMtx.Unlock()
+
+	errCh := make(chan error, 1)
+	hs.pushCompleteCb(func(err error) {
+		errCh <- err
+	})
+	select {
+	case <-ctx.Done():
+		return false, ctx.Err()
+	case err := <-errCh:
+		return false, err
+	}
 }
 
 // Execute processes the transport, emitting events to the handler.
@@ -140,9 +164,6 @@ func (u *Transport) readPump(ctx context.Context) (readErr error) {
 	defer func() {
 		u.readErrCh <- readErr
 	}()
-
-	laddr := *u.pc.LocalAddr().(*net.UDPAddr)
-	laddr.Port = 0
 
 	mtu := u.opts.GetMtu()
 	if mtu == 0 {

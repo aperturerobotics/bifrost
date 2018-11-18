@@ -1,6 +1,8 @@
 package udp
 
 import (
+	"context"
+
 	"github.com/aperturerobotics/bifrost/transport"
 	tc "github.com/aperturerobotics/bifrost/transport/controller"
 	"github.com/aperturerobotics/controllerbus/bus"
@@ -52,6 +54,7 @@ func (t *Factory) Construct(
 		t.bus,
 		peerIDConstraint,
 		func(
+			ctx context.Context,
 			le *logrus.Entry,
 			pkey crypto.PrivKey,
 			handler transport.TransportHandler,

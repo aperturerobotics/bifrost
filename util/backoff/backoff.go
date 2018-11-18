@@ -26,20 +26,20 @@ func (b *Backoff) constructExpo() backoff.BackOff {
 
 	initialInterval := opts.GetInitialInterval()
 	if initialInterval == 0 {
-		// default to 500ms
-		initialInterval = 500
+		// default to 800ms
+		initialInterval = 800
 	}
 	expo.InitialInterval = time.Duration(initialInterval) * time.Millisecond
 
 	multiplier := opts.GetMultiplier()
 	if multiplier == 0 {
-		multiplier = 1.7
+		multiplier = 1.8
 	}
 	expo.Multiplier = float64(multiplier)
 
 	maxInterval := opts.GetMaxInterval()
 	if maxInterval == 0 {
-		maxInterval = 10000
+		maxInterval = 20000
 	}
 	expo.MaxInterval = time.Duration(maxInterval) * time.Millisecond
 	expo.RandomizationFactor = float64(opts.GetRandomizationFactor())

@@ -22,6 +22,8 @@ import (
 	"github.com/aperturerobotics/bifrost/transport/common/pconn"
 	udptpt "github.com/aperturerobotics/bifrost/transport/udp"
 	wtpt "github.com/aperturerobotics/bifrost/transport/websocket"
+	xbtpt "github.com/aperturerobotics/bifrost/transport/xbee"
+	"github.com/aperturerobotics/bifrost/util/backoff"
 	"github.com/aperturerobotics/bifrost/util/confparse"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
@@ -46,12 +48,18 @@ var daemonFlags struct {
 	UDPListen       string
 	ProfListen      string
 
+	XBeePath string
+	XBeeBaud int
+
 	// UDPPeers is a static peer list
 	// peer-id@address
 	UDPPeers cli.StringSlice
 	// WebsocketPeers is a static peer list
 	// peer-id@address
 	WebsocketPeers cli.StringSlice
+	// XbeePeers is a static peer list
+	// peer-id@address
+	XbeePeers cli.StringSlice
 }
 
 func init() {
@@ -88,6 +96,22 @@ func init() {
 					Name:        "udp-listen",
 					Usage:       "if set, will listen on address for udp connections, ex :5112",
 					Destination: &daemonFlags.UDPListen,
+				},
+				cli.StringFlag{
+					Name:        "xbee-device-path",
+					Usage:       "xbee device path to open, if set",
+					Destination: &daemonFlags.XBeePath,
+				},
+				cli.IntFlag{
+					Name:        "xbee-device-baud",
+					Usage:       "xbee device baudrate to use, defaults to 115200",
+					Destination: &daemonFlags.XBeeBaud,
+					Value:       115200,
+				},
+				cli.StringSliceFlag{
+					Name:  "xbee-peers",
+					Usage: "list of peer-id=address known XBee peers",
+					Value: &daemonFlags.XbeePeers,
 				},
 				cli.StringSliceFlag{
 					Name:  "udp-peers",
@@ -173,6 +197,7 @@ func runDaemon(c *cli.Context) error {
 	b := d.GetControllerBus()
 	sr := d.GetStaticResolver()
 	sr.AddFactory(egctr.NewFactory(b))
+	sr.AddFactory(xbtpt.NewFactory(b))
 	sr.AddFactory(stream_forwarding.NewFactory(b))
 	sr.AddFactory(stream_listening.NewFactory(b))
 	sr.AddFactory(stream_grpc_accept.NewFactory(b))
@@ -259,6 +284,47 @@ func runDaemon(c *cli.Context) error {
 			return errors.Wrap(err, "listen on websocket")
 		}
 		defer wsRef.Release()
+	}
+
+	if daemonFlags.XBeePath != "" {
+		staticPeers, err := parseDialerAddrs(daemonFlags.XbeePeers)
+		if err != nil {
+			return errors.Wrap(err, "xbee-peers")
+		}
+		for _, peer := range staticPeers {
+			peer.Backoff = &backoff.Backoff{
+				BackoffKind: backoff.BackoffKind_BackoffKind_EXPONENTIAL,
+				Exponential: &backoff.Exponential{
+					InitialInterval:     1000,
+					RandomizationFactor: 0.8,
+					Multiplier:          1.7,
+				},
+			}
+		}
+
+		_, xbRef, err := b.AddDirective(
+			resolver.NewLoadControllerWithConfigSingleton(&xbtpt.Config{
+				DevicePath: daemonFlags.XBeePath,
+				DeviceBaud: int32(daemonFlags.XBeeBaud),
+				Dialers:    staticPeers,
+				PacketOpts: &pconn.Opts{
+					Mtu: 220,
+					// KcpMode:    pconn.KCPMode_KCPMode_FAST3,
+					KcpMode: pconn.KCPMode_KCPMode_SLOW1,
+					// BlockCrypt: pconn.BlockCrypt_BlockCrypt_AES256,
+					BlockCrypt: pconn.BlockCrypt_BlockCrypt_TWOFISH,
+					// DataShards:   10,
+					// ParityShards: 3,
+				},
+			}),
+			bus.NewCallbackHandler(func(val directive.Value) {
+				le.Infof("xbee listening on: %s@%d", daemonFlags.XBeePath, daemonFlags.XBeeBaud)
+			}, nil, nil),
+		)
+		if err != nil {
+			return errors.Wrap(err, "listen on xbee")
+		}
+		defer xbRef.Release()
 	}
 
 	if daemonFlags.UDPListen != "" {

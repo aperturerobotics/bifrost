@@ -25,13 +25,13 @@ message Backoff {
 // Exponential is the exponential arguments.
 message Exponential {
   // InitialInterval is the initial interval in milliseconds.
-  // Default: 500ms.
+  // Default: 800ms.
   uint32 initial_interval = 1;
   // Multiplier is the timing multiplier.
-  // Default: 1.7
+  // Default: 1.8
   float multiplier = 2;
   // MaxInterval is the maximum timing interval in milliseconds.
-  // Default: 10 seconds
+  // Default: 20 seconds
   uint32 max_interval = 3;
   // RandomizationFactor is the randomization factor.
   // Default: 0
