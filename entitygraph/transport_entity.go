@@ -22,10 +22,10 @@ func NewTransportEntityRef(transportID uint64) entity.Ref {
 }
 
 // NewTransportEntity constructs a new TransportEntity and TransportAssocEntity.
-func NewTransportEntity(tptUUID uint64, nodeID peer.ID) (*TransportEntity, *TransportAssocEntity) {
+func NewTransportEntity(tptUUID uint64, peerID peer.ID) (*TransportEntity, *TransportAssocEntity) {
 	tptRef := NewTransportEntityRef(tptUUID)
 	tptID := tptRef.GetEntityRefId()
-	nodeRef := NewNodeEntityRef(nodeID)
+	nodeRef := NewPeerEntityRef(peerID)
 	return &TransportEntity{
 			entityID:       tptID,
 			entityTypeName: TransportEntityTypeName,

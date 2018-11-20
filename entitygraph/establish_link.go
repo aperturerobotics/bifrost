@@ -40,7 +40,7 @@ func (e *establishLinkHandler) HandleValueAdded(inst directive.Instance, val dir
 	}
 
 	entObj := NewLinkEntity(vl)
-	nodObj := NewNodeEntity(vl.GetRemotePeer())
+	nodObj := NewPeerEntity(vl.GetRemotePeer())
 	remoteTptObj, remoteTptAssocObj := NewTransportEntity(vl.GetRemoteTransportUUID(), vl.GetRemotePeer())
 	e.mtx.Lock()
 	_, exists := e.vals[val]

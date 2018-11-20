@@ -6,7 +6,6 @@ import (
 	"context"
 	"net"
 
-	"github.com/aperturerobotics/bifrost/node"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
@@ -62,7 +61,7 @@ func (c *Controller) Execute(ctx context.Context) error {
 	c.le.
 		WithField("peer-id", c.peerIDConstraint.Pretty()).
 		Info("looking up node with peer ID")
-	n, err := node.GetNodeWithPeerID(ctx, c.bus, c.peerIDConstraint)
+	n, err := peer.GetPeerWithID(ctx, c.bus, c.peerIDConstraint)
 	if err != nil {
 		return err
 	}

@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/aperturerobotics/bifrost/link"
-	"github.com/aperturerobotics/bifrost/node"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/transport"
 
@@ -81,10 +80,10 @@ func (c *Controller) Execute(ctx context.Context) error {
 	}
 	defer diRef1.Release()
 
-	c.le.Info("registering getnode directive")
+	c.le.Info("registering GetPeer directive")
 	_, diRef2, err := c.bus.AddDirective(
-		node.NewGetNodeSingleton(peer.ID("")),
-		newGetNodeHandler(c),
+		peer.NewGetPeerSingleton(peer.ID("")),
+		newGetPeerHandler(c),
 	)
 	if err != nil {
 		return err

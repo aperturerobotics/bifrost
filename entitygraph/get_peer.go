@@ -3,35 +3,35 @@ package bifrost_entitygraph
 import (
 	"sync"
 
-	"github.com/aperturerobotics/bifrost/node"
+	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/aperturerobotics/entitygraph/entity"
 )
 
-// getNodeHandler handles the GetNode directive results
-type getNodeHandler struct {
+// getPeerHandler handles the GetPeer directive results
+type getPeerHandler struct {
 	c    *Controller
 	mtx  sync.Mutex
 	vals map[directive.Value]entity.Entity
 }
 
-// newGetNodeHandler constructs a getNodeHandler
-func newGetNodeHandler(c *Controller) *getNodeHandler {
-	return &getNodeHandler{c: c, vals: make(map[directive.Value]entity.Entity)}
+// newGetPeerHandler constructs a getPeerHandler
+func newGetPeerHandler(c *Controller) *getPeerHandler {
+	return &getPeerHandler{c: c, vals: make(map[directive.Value]entity.Entity)}
 }
 
 // HandleValueAdded is called when a value is added to the directive.
-func (h *getNodeHandler) HandleValueAdded(
+func (h *getPeerHandler) HandleValueAdded(
 	inst directive.Instance,
 	val directive.Value,
 ) {
-	nod, ok := val.(node.Node)
+	nod, ok := val.(peer.Peer)
 	if !ok {
-		h.c.le.Warn("GetNode value was not a Node")
+		h.c.le.Warn("GetPeer value was not a Peer")
 		return
 	}
 
-	nodObj := NewNodeEntity(nod.GetPeerID())
+	nodObj := NewPeerEntity(nod.GetPeerID())
 	h.mtx.Lock()
 	_, exists := h.vals[val]
 	if !exists {
@@ -45,7 +45,7 @@ func (h *getNodeHandler) HandleValueAdded(
 }
 
 // HandleValueRemoved is called when a value is removed from the directive.
-func (h *getNodeHandler) HandleValueRemoved(
+func (h *getPeerHandler) HandleValueRemoved(
 	inst directive.Instance,
 	val directive.Value,
 ) {
@@ -63,9 +63,9 @@ func (h *getNodeHandler) HandleValueRemoved(
 
 // HandleInstanceDisposed is called when a directive instance is disposed.
 // This will occur if Close() is called on the directive instance.
-func (h *getNodeHandler) HandleInstanceDisposed(inst directive.Instance) {
+func (h *getPeerHandler) HandleInstanceDisposed(inst directive.Instance) {
 	// noop
 }
 
 // _ is a type assertion
-var _ directive.ReferenceHandler = ((*getNodeHandler)(nil))
+var _ directive.ReferenceHandler = ((*getPeerHandler)(nil))

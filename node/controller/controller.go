@@ -66,8 +66,8 @@ func (c *Controller) Execute(ctx context.Context) error {
 // It is safe to add a reference to the directive during this call.
 func (c *Controller) HandleDirective(ctx context.Context, di directive.Instance) (directive.Resolver, error) {
 	dir := di.GetDirective()
-	if d, ok := dir.(node.GetNode); ok {
-		return c.resolveGetNode(d), nil
+	if d, ok := dir.(peer.GetPeer); ok {
+		return c.resolveGetPeer(d), nil
 	}
 
 	return nil, nil
@@ -80,6 +80,11 @@ func (c *Controller) GetControllerInfo() controller.Info {
 		Version,
 		"node controller "+c.GetPeerID().Pretty(),
 	)
+}
+
+// resolveGetPeer resolves the GetPeer directive
+func (c *Controller) resolveGetPeer(d peer.GetPeer) directive.Resolver {
+	return peer.NewGetPeerResolver(d, c)
 }
 
 // Close releases any resources used by the controller.
