@@ -27,10 +27,7 @@ const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 // Config configures the GRPC API.
 type Config struct {
 	// ListenAddr is the address to listen on for connections.
-	ListenAddr string `protobuf:"bytes,1,opt,name=listen_addr,json=listenAddr" json:"listen_addr,omitempty"`
-	// NodePeerId constrains the API to a specific running node.
-	// Empty will select the first available node.
-	NodePeerId           string   `protobuf:"bytes,2,opt,name=node_peer_id,json=nodePeerId" json:"node_peer_id,omitempty"`
+	ListenAddr           string   `protobuf:"bytes,1,opt,name=listen_addr,json=listenAddr" json:"listen_addr,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -40,7 +37,7 @@ func (m *Config) Reset()         { *m = Config{} }
 func (m *Config) String() string { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_api_e4f7b774ef9f2820, []int{0}
+	return fileDescriptor_api_c81df2d0c1d57b05, []int{0}
 }
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
@@ -67,87 +64,191 @@ func (m *Config) GetListenAddr() string {
 	return ""
 }
 
-func (m *Config) GetNodePeerId() string {
-	if m != nil {
-		return m.NodePeerId
-	}
-	return ""
-}
-
-// GetNodeInfoRequest is the request type for GetNodeInfo.
-type GetNodeInfoRequest struct {
+// GetPeerInfoRequest is the request type for GetPeerInfo.
+type GetPeerInfoRequest struct {
+	// PeerId restricts the response to a specific peer ID.
+	PeerId               string   `protobuf:"bytes,1,opt,name=peer_id,json=peerId" json:"peer_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *GetNodeInfoRequest) Reset()         { *m = GetNodeInfoRequest{} }
-func (m *GetNodeInfoRequest) String() string { return proto.CompactTextString(m) }
-func (*GetNodeInfoRequest) ProtoMessage()    {}
-func (*GetNodeInfoRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_api_e4f7b774ef9f2820, []int{1}
+func (m *GetPeerInfoRequest) Reset()         { *m = GetPeerInfoRequest{} }
+func (m *GetPeerInfoRequest) String() string { return proto.CompactTextString(m) }
+func (*GetPeerInfoRequest) ProtoMessage()    {}
+func (*GetPeerInfoRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_api_c81df2d0c1d57b05, []int{1}
 }
-func (m *GetNodeInfoRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_GetNodeInfoRequest.Unmarshal(m, b)
+func (m *GetPeerInfoRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_GetPeerInfoRequest.Unmarshal(m, b)
 }
-func (m *GetNodeInfoRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_GetNodeInfoRequest.Marshal(b, m, deterministic)
+func (m *GetPeerInfoRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_GetPeerInfoRequest.Marshal(b, m, deterministic)
 }
-func (dst *GetNodeInfoRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_GetNodeInfoRequest.Merge(dst, src)
+func (dst *GetPeerInfoRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetPeerInfoRequest.Merge(dst, src)
 }
-func (m *GetNodeInfoRequest) XXX_Size() int {
-	return xxx_messageInfo_GetNodeInfoRequest.Size(m)
+func (m *GetPeerInfoRequest) XXX_Size() int {
+	return xxx_messageInfo_GetPeerInfoRequest.Size(m)
 }
-func (m *GetNodeInfoRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_GetNodeInfoRequest.DiscardUnknown(m)
+func (m *GetPeerInfoRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetPeerInfoRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_GetNodeInfoRequest proto.InternalMessageInfo
+var xxx_messageInfo_GetPeerInfoRequest proto.InternalMessageInfo
 
-// GetNodeInfoResponse is the response type for GetNodeInfo.
-type GetNodeInfoResponse struct {
-	// NodeID is the b58 node ID.
-	NodeId string `protobuf:"bytes,1,opt,name=node_id,json=nodeId" json:"node_id,omitempty"`
+func (m *GetPeerInfoRequest) GetPeerId() string {
+	if m != nil {
+		return m.PeerId
+	}
+	return ""
+}
+
+// PeerInfo is basic information about a peer.
+type PeerInfo struct {
+	// PeerId is the b58 peer ID.
+	PeerId               string   `protobuf:"bytes,1,opt,name=peer_id,json=peerId" json:"peer_id,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *PeerInfo) Reset()         { *m = PeerInfo{} }
+func (m *PeerInfo) String() string { return proto.CompactTextString(m) }
+func (*PeerInfo) ProtoMessage()    {}
+func (*PeerInfo) Descriptor() ([]byte, []int) {
+	return fileDescriptor_api_c81df2d0c1d57b05, []int{2}
+}
+func (m *PeerInfo) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_PeerInfo.Unmarshal(m, b)
+}
+func (m *PeerInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_PeerInfo.Marshal(b, m, deterministic)
+}
+func (dst *PeerInfo) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_PeerInfo.Merge(dst, src)
+}
+func (m *PeerInfo) XXX_Size() int {
+	return xxx_messageInfo_PeerInfo.Size(m)
+}
+func (m *PeerInfo) XXX_DiscardUnknown() {
+	xxx_messageInfo_PeerInfo.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_PeerInfo proto.InternalMessageInfo
+
+func (m *PeerInfo) GetPeerId() string {
+	if m != nil {
+		return m.PeerId
+	}
+	return ""
+}
+
+// GetPeerInfoResponse is the response type for GetPeerInfo.
+type GetPeerInfoResponse struct {
+	// LocalPeers is the set of peers loaded.
+	LocalPeers           []*PeerInfo `protobuf:"bytes,1,rep,name=local_peers,json=localPeers" json:"local_peers,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
+	XXX_unrecognized     []byte      `json:"-"`
+	XXX_sizecache        int32       `json:"-"`
+}
+
+func (m *GetPeerInfoResponse) Reset()         { *m = GetPeerInfoResponse{} }
+func (m *GetPeerInfoResponse) String() string { return proto.CompactTextString(m) }
+func (*GetPeerInfoResponse) ProtoMessage()    {}
+func (*GetPeerInfoResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_api_c81df2d0c1d57b05, []int{3}
+}
+func (m *GetPeerInfoResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_GetPeerInfoResponse.Unmarshal(m, b)
+}
+func (m *GetPeerInfoResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_GetPeerInfoResponse.Marshal(b, m, deterministic)
+}
+func (dst *GetPeerInfoResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetPeerInfoResponse.Merge(dst, src)
+}
+func (m *GetPeerInfoResponse) XXX_Size() int {
+	return xxx_messageInfo_GetPeerInfoResponse.Size(m)
+}
+func (m *GetPeerInfoResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetPeerInfoResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetPeerInfoResponse proto.InternalMessageInfo
+
+func (m *GetPeerInfoResponse) GetLocalPeers() []*PeerInfo {
+	if m != nil {
+		return m.LocalPeers
+	}
+	return nil
+}
+
+// GetBusInfoRequest is the request type for GetBusInfo.
+type GetBusInfoRequest struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *GetBusInfoRequest) Reset()         { *m = GetBusInfoRequest{} }
+func (m *GetBusInfoRequest) String() string { return proto.CompactTextString(m) }
+func (*GetBusInfoRequest) ProtoMessage()    {}
+func (*GetBusInfoRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_api_c81df2d0c1d57b05, []int{4}
+}
+func (m *GetBusInfoRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_GetBusInfoRequest.Unmarshal(m, b)
+}
+func (m *GetBusInfoRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_GetBusInfoRequest.Marshal(b, m, deterministic)
+}
+func (dst *GetBusInfoRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetBusInfoRequest.Merge(dst, src)
+}
+func (m *GetBusInfoRequest) XXX_Size() int {
+	return xxx_messageInfo_GetBusInfoRequest.Size(m)
+}
+func (m *GetBusInfoRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetBusInfoRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetBusInfoRequest proto.InternalMessageInfo
+
+// GetBusInfoResponse is the response type for GetBusInfo.
+type GetBusInfoResponse struct {
 	// RunningControllers is the list of running controllers.
-	RunningControllers   []*controller.Info `protobuf:"bytes,2,rep,name=running_controllers,json=runningControllers" json:"running_controllers,omitempty"`
+	RunningControllers   []*controller.Info `protobuf:"bytes,1,rep,name=running_controllers,json=runningControllers" json:"running_controllers,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
 	XXX_unrecognized     []byte             `json:"-"`
 	XXX_sizecache        int32              `json:"-"`
 }
 
-func (m *GetNodeInfoResponse) Reset()         { *m = GetNodeInfoResponse{} }
-func (m *GetNodeInfoResponse) String() string { return proto.CompactTextString(m) }
-func (*GetNodeInfoResponse) ProtoMessage()    {}
-func (*GetNodeInfoResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_api_e4f7b774ef9f2820, []int{2}
+func (m *GetBusInfoResponse) Reset()         { *m = GetBusInfoResponse{} }
+func (m *GetBusInfoResponse) String() string { return proto.CompactTextString(m) }
+func (*GetBusInfoResponse) ProtoMessage()    {}
+func (*GetBusInfoResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_api_c81df2d0c1d57b05, []int{5}
 }
-func (m *GetNodeInfoResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_GetNodeInfoResponse.Unmarshal(m, b)
+func (m *GetBusInfoResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_GetBusInfoResponse.Unmarshal(m, b)
 }
-func (m *GetNodeInfoResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_GetNodeInfoResponse.Marshal(b, m, deterministic)
+func (m *GetBusInfoResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_GetBusInfoResponse.Marshal(b, m, deterministic)
 }
-func (dst *GetNodeInfoResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_GetNodeInfoResponse.Merge(dst, src)
+func (dst *GetBusInfoResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetBusInfoResponse.Merge(dst, src)
 }
-func (m *GetNodeInfoResponse) XXX_Size() int {
-	return xxx_messageInfo_GetNodeInfoResponse.Size(m)
+func (m *GetBusInfoResponse) XXX_Size() int {
+	return xxx_messageInfo_GetBusInfoResponse.Size(m)
 }
-func (m *GetNodeInfoResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_GetNodeInfoResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_GetNodeInfoResponse proto.InternalMessageInfo
-
-func (m *GetNodeInfoResponse) GetNodeId() string {
-	if m != nil {
-		return m.NodeId
-	}
-	return ""
+func (m *GetBusInfoResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetBusInfoResponse.DiscardUnknown(m)
 }
 
-func (m *GetNodeInfoResponse) GetRunningControllers() []*controller.Info {
+var xxx_messageInfo_GetBusInfoResponse proto.InternalMessageInfo
+
+func (m *GetBusInfoResponse) GetRunningControllers() []*controller.Info {
 	if m != nil {
 		return m.RunningControllers
 	}
@@ -156,8 +257,11 @@ func (m *GetNodeInfoResponse) GetRunningControllers() []*controller.Info {
 
 func init() {
 	proto.RegisterType((*Config)(nil), "api.Config")
-	proto.RegisterType((*GetNodeInfoRequest)(nil), "api.GetNodeInfoRequest")
-	proto.RegisterType((*GetNodeInfoResponse)(nil), "api.GetNodeInfoResponse")
+	proto.RegisterType((*GetPeerInfoRequest)(nil), "api.GetPeerInfoRequest")
+	proto.RegisterType((*PeerInfo)(nil), "api.PeerInfo")
+	proto.RegisterType((*GetPeerInfoResponse)(nil), "api.GetPeerInfoResponse")
+	proto.RegisterType((*GetBusInfoRequest)(nil), "api.GetBusInfoRequest")
+	proto.RegisterType((*GetBusInfoResponse)(nil), "api.GetBusInfoResponse")
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -171,8 +275,10 @@ const _ = grpc.SupportPackageIsVersion4
 // Client API for BifrostDaemonService service
 
 type BifrostDaemonServiceClient interface {
-	// GetNodeInfo returns the node information
-	GetNodeInfo(ctx context.Context, in *GetNodeInfoRequest, opts ...grpc.CallOption) (*GetNodeInfoResponse, error)
+	// GetPeerInfo returns information about attached peers.
+	GetPeerInfo(ctx context.Context, in *GetPeerInfoRequest, opts ...grpc.CallOption) (*GetPeerInfoResponse, error)
+	// GetBusInfo requests information about the controller bus.
+	GetBusInfo(ctx context.Context, in *GetBusInfoRequest, opts ...grpc.CallOption) (*GetBusInfoResponse, error)
 }
 
 type bifrostDaemonServiceClient struct {
@@ -183,9 +289,18 @@ func NewBifrostDaemonServiceClient(cc *grpc.ClientConn) BifrostDaemonServiceClie
 	return &bifrostDaemonServiceClient{cc}
 }
 
-func (c *bifrostDaemonServiceClient) GetNodeInfo(ctx context.Context, in *GetNodeInfoRequest, opts ...grpc.CallOption) (*GetNodeInfoResponse, error) {
-	out := new(GetNodeInfoResponse)
-	err := grpc.Invoke(ctx, "/api.BifrostDaemonService/GetNodeInfo", in, out, c.cc, opts...)
+func (c *bifrostDaemonServiceClient) GetPeerInfo(ctx context.Context, in *GetPeerInfoRequest, opts ...grpc.CallOption) (*GetPeerInfoResponse, error) {
+	out := new(GetPeerInfoResponse)
+	err := grpc.Invoke(ctx, "/api.BifrostDaemonService/GetPeerInfo", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bifrostDaemonServiceClient) GetBusInfo(ctx context.Context, in *GetBusInfoRequest, opts ...grpc.CallOption) (*GetBusInfoResponse, error) {
+	out := new(GetBusInfoResponse)
+	err := grpc.Invoke(ctx, "/api.BifrostDaemonService/GetBusInfo", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -195,28 +310,48 @@ func (c *bifrostDaemonServiceClient) GetNodeInfo(ctx context.Context, in *GetNod
 // Server API for BifrostDaemonService service
 
 type BifrostDaemonServiceServer interface {
-	// GetNodeInfo returns the node information
-	GetNodeInfo(context.Context, *GetNodeInfoRequest) (*GetNodeInfoResponse, error)
+	// GetPeerInfo returns information about attached peers.
+	GetPeerInfo(context.Context, *GetPeerInfoRequest) (*GetPeerInfoResponse, error)
+	// GetBusInfo requests information about the controller bus.
+	GetBusInfo(context.Context, *GetBusInfoRequest) (*GetBusInfoResponse, error)
 }
 
 func RegisterBifrostDaemonServiceServer(s *grpc.Server, srv BifrostDaemonServiceServer) {
 	s.RegisterService(&_BifrostDaemonService_serviceDesc, srv)
 }
 
-func _BifrostDaemonService_GetNodeInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetNodeInfoRequest)
+func _BifrostDaemonService_GetPeerInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPeerInfoRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(BifrostDaemonServiceServer).GetNodeInfo(ctx, in)
+		return srv.(BifrostDaemonServiceServer).GetPeerInfo(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/api.BifrostDaemonService/GetNodeInfo",
+		FullMethod: "/api.BifrostDaemonService/GetPeerInfo",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BifrostDaemonServiceServer).GetNodeInfo(ctx, req.(*GetNodeInfoRequest))
+		return srv.(BifrostDaemonServiceServer).GetPeerInfo(ctx, req.(*GetPeerInfoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BifrostDaemonService_GetBusInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetBusInfoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BifrostDaemonServiceServer).GetBusInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/api.BifrostDaemonService/GetBusInfo",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BifrostDaemonServiceServer).GetBusInfo(ctx, req.(*GetBusInfoRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -226,8 +361,12 @@ var _BifrostDaemonService_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*BifrostDaemonServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "GetNodeInfo",
-			Handler:    _BifrostDaemonService_GetNodeInfo_Handler,
+			MethodName: "GetPeerInfo",
+			Handler:    _BifrostDaemonService_GetPeerInfo_Handler,
+		},
+		{
+			MethodName: "GetBusInfo",
+			Handler:    _BifrostDaemonService_GetBusInfo_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -235,27 +374,30 @@ var _BifrostDaemonService_serviceDesc = grpc.ServiceDesc{
 }
 
 func init() {
-	proto.RegisterFile("github.com/aperturerobotics/bifrost/daemon/api/api.proto", fileDescriptor_api_e4f7b774ef9f2820)
+	proto.RegisterFile("github.com/aperturerobotics/bifrost/daemon/api/api.proto", fileDescriptor_api_c81df2d0c1d57b05)
 }
 
-var fileDescriptor_api_e4f7b774ef9f2820 = []byte{
-	// 283 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x90, 0xb1, 0x6b, 0xf3, 0x30,
-	0x10, 0xc5, 0xbf, 0x24, 0xe0, 0x8f, 0xca, 0x1d, 0x8a, 0x12, 0x88, 0xc9, 0x52, 0xe3, 0x29, 0x93,
-	0x0d, 0xe9, 0xd2, 0x35, 0x49, 0x4b, 0x31, 0x85, 0x52, 0xd2, 0xad, 0x8b, 0xb1, 0xad, 0xb3, 0x7b,
-	0xe0, 0xe8, 0x94, 0x93, 0xdc, 0xbf, 0xbf, 0xd8, 0x0e, 0xc4, 0x25, 0xd0, 0x41, 0xa0, 0x7b, 0x7a,
-	0x7a, 0x7a, 0xfa, 0x89, 0xc7, 0x1a, 0xdd, 0x57, 0x5b, 0xc4, 0x25, 0x1d, 0x93, 0xdc, 0x00, 0xbb,
-	0x96, 0x81, 0xa9, 0x20, 0x87, 0xa5, 0x4d, 0x0a, 0xac, 0x98, 0xac, 0x4b, 0x54, 0x0e, 0x47, 0xd2,
-	0x49, 0x6e, 0xb0, 0x5b, 0xb1, 0x61, 0x72, 0x24, 0x67, 0xb9, 0xc1, 0xd5, 0xf3, 0x5f, 0xd7, 0x4b,
-	0xd2, 0x8e, 0xa9, 0x69, 0x80, 0x8b, 0x76, 0x3c, 0x8d, 0xb6, 0x43, 0x56, 0xf4, 0x2a, 0xbc, 0x3d,
-	0xe9, 0x0a, 0x6b, 0x79, 0x2f, 0xfc, 0x06, 0xad, 0x03, 0x9d, 0xe5, 0x4a, 0x71, 0x30, 0x09, 0x27,
-	0xeb, 0x9b, 0x83, 0x18, 0xa4, 0xad, 0x52, 0x2c, 0x43, 0x71, 0xab, 0x49, 0x41, 0x66, 0x00, 0x38,
-	0x43, 0x15, 0x4c, 0x07, 0x47, 0xa7, 0xbd, 0x03, 0x70, 0xaa, 0xa2, 0x85, 0x90, 0x2f, 0xe0, 0xde,
-	0x48, 0x41, 0xaa, 0x2b, 0x3a, 0xc0, 0xa9, 0x05, 0xeb, 0xa2, 0x93, 0x98, 0xff, 0x52, 0xad, 0x21,
-	0x6d, 0x41, 0x2e, 0xc5, 0xff, 0x3e, 0x0e, 0xd5, 0xf9, 0x2d, 0xaf, 0x1b, 0x53, 0x25, 0xb7, 0x62,
-	0xce, 0xad, 0xd6, 0xa8, 0xeb, 0xec, 0x52, 0xd7, 0x06, 0xd3, 0x70, 0xb6, 0xf6, 0x37, 0x77, 0xf1,
-	0xe8, 0x0b, 0x7d, 0x9e, 0x3c, 0x9b, 0xf7, 0x17, 0xef, 0xe6, 0x53, 0x2c, 0x76, 0x03, 0xc1, 0xa7,
-	0x1e, 0xe0, 0x07, 0xf0, 0x37, 0x96, 0x20, 0x77, 0xc2, 0x1f, 0x55, 0x91, 0xcb, 0xb8, 0x83, 0x7a,
-	0x5d, 0x79, 0x15, 0x5c, 0x1f, 0x0c, 0xad, 0xa3, 0x7f, 0x85, 0xd7, 0x83, 0x7b, 0xf8, 0x09, 0x00,
-	0x00, 0xff, 0xff, 0xfb, 0xab, 0xc0, 0x75, 0xc0, 0x01, 0x00, 0x00,
+var fileDescriptor_api_c81df2d0c1d57b05 = []byte{
+	// 329 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x91, 0x41, 0x4f, 0xfa, 0x40,
+	0x10, 0xc5, 0xff, 0x0d, 0x09, 0x7f, 0x9d, 0xc6, 0x44, 0x17, 0x23, 0x84, 0x8b, 0xa4, 0x5e, 0xf0,
+	0x60, 0x9b, 0xe0, 0xc5, 0x9b, 0x01, 0x24, 0x84, 0x9b, 0xc1, 0x83, 0xc7, 0xa6, 0xed, 0x0e, 0xb8,
+	0x49, 0xd9, 0xa9, 0xb3, 0x5b, 0xbf, 0x8c, 0x5f, 0xd6, 0xb4, 0xa5, 0x50, 0xd2, 0xe8, 0xa1, 0x49,
+	0x67, 0xfa, 0x9b, 0xd7, 0x37, 0x6f, 0xe0, 0x69, 0xab, 0xec, 0x47, 0x1e, 0xfb, 0x09, 0xed, 0x82,
+	0x28, 0x43, 0xb6, 0x39, 0x23, 0x53, 0x4c, 0x56, 0x25, 0x26, 0x88, 0xd5, 0x86, 0xc9, 0xd8, 0x40,
+	0x46, 0xb8, 0x23, 0x1d, 0x44, 0x99, 0x2a, 0x1e, 0x3f, 0x63, 0xb2, 0x24, 0x3a, 0x51, 0xa6, 0x86,
+	0x8b, 0xbf, 0xc6, 0x13, 0xd2, 0x96, 0x29, 0x4d, 0x91, 0xe3, 0xbc, 0x59, 0x35, 0x5e, 0x2b, 0x2d,
+	0xef, 0x1e, 0xba, 0x73, 0xd2, 0x1b, 0xb5, 0x15, 0xb7, 0xe0, 0xa6, 0xca, 0x58, 0xd4, 0x61, 0x24,
+	0x25, 0x0f, 0x9c, 0x91, 0x33, 0x3e, 0x5f, 0x43, 0xd5, 0x9a, 0x4a, 0xc9, 0xde, 0x03, 0x88, 0x25,
+	0xda, 0x57, 0x44, 0x5e, 0xe9, 0x0d, 0xad, 0xf1, 0x33, 0x47, 0x63, 0x45, 0x1f, 0xfe, 0x67, 0x88,
+	0x1c, 0x2a, 0xb9, 0x1f, 0xe9, 0x16, 0xe5, 0x4a, 0x7a, 0x77, 0x70, 0x56, 0xb3, 0xbf, 0x43, 0x0b,
+	0xe8, 0x9d, 0x68, 0x9a, 0x8c, 0xb4, 0x41, 0xe1, 0x83, 0x9b, 0x52, 0x12, 0xa5, 0x61, 0x81, 0x99,
+	0x81, 0x33, 0xea, 0x8c, 0xdd, 0xc9, 0x85, 0x5f, 0x44, 0x70, 0x60, 0xa1, 0x24, 0x8a, 0xd2, 0x78,
+	0x3d, 0xb8, 0x5a, 0xa2, 0x9d, 0xe5, 0xa6, 0xe1, 0xcc, 0x7b, 0x2f, 0xfd, 0x1e, 0x9a, 0x7b, 0xe9,
+	0x29, 0xf4, 0x38, 0xd7, 0x5a, 0xe9, 0x6d, 0x78, 0x0c, 0xa3, 0xfe, 0xc5, 0xa5, 0xdf, 0x08, 0xa8,
+	0x1c, 0x13, 0x7b, 0x78, 0x7e, 0x64, 0x27, 0xdf, 0x0e, 0x5c, 0xcf, 0xaa, 0x03, 0xbd, 0x94, 0xf7,
+	0x79, 0x43, 0xfe, 0x52, 0x09, 0x8a, 0x19, 0xb8, 0x8d, 0x6d, 0x44, 0xbf, 0x34, 0xdc, 0xce, 0x6c,
+	0x38, 0x68, 0x7f, 0xa8, 0xdc, 0x79, 0xff, 0xc4, 0x33, 0xc0, 0xd1, 0xb5, 0xb8, 0xa9, 0xc9, 0xd3,
+	0xdd, 0x86, 0xfd, 0x56, 0xbf, 0x16, 0x88, 0xbb, 0xe5, 0x61, 0x1f, 0x7f, 0x02, 0x00, 0x00, 0xff,
+	0xff, 0xf3, 0x23, 0x7d, 0x82, 0x60, 0x02, 0x00, 0x00,
 }

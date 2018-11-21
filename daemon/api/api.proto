@@ -7,25 +7,40 @@ import "github.com/aperturerobotics/controllerbus/controller/controller.proto";
 message Config {
   // ListenAddr is the address to listen on for connections.
   string listen_addr = 1;
-  // NodePeerId constrains the API to a specific running node.
-  // Empty will select the first available node.
-  string node_peer_id = 2;
 }
 
-// GetNodeInfoRequest is the request type for GetNodeInfo.
-message GetNodeInfoRequest {
+// GetPeerInfoRequest is the request type for GetPeerInfo.
+message GetPeerInfoRequest {
+  // PeerId restricts the response to a specific peer ID.
+  string peer_id = 1;
 }
 
-// GetNodeInfoResponse is the response type for GetNodeInfo.
-message GetNodeInfoResponse {
-  // NodeID is the b58 node ID.
-  string node_id = 1;
+// PeerInfo is basic information about a peer.
+message PeerInfo {
+  // PeerId is the b58 peer ID.
+  string peer_id = 1;
+}
+
+// GetPeerInfoResponse is the response type for GetPeerInfo.
+message GetPeerInfoResponse {
+  // LocalPeers is the set of peers loaded.
+  repeated PeerInfo local_peers = 1;
+}
+
+// GetBusInfoRequest is the request type for GetBusInfo.
+message GetBusInfoRequest {
+}
+
+// GetBusInfoResponse is the response type for GetBusInfo.
+message GetBusInfoResponse {
   // RunningControllers is the list of running controllers.
-  repeated controller.Info running_controllers = 2;
+  repeated controller.Info running_controllers = 1;
 }
 
 // BifrostDaemonService is the control service for a daemon, contacted by the CLI.
 service BifrostDaemonService {
-  // GetNodeInfo returns the node information
-  rpc GetNodeInfo(GetNodeInfoRequest) returns (GetNodeInfoResponse) {}
+  // GetPeerInfo returns information about attached peers.
+  rpc GetPeerInfo(GetPeerInfoRequest) returns (GetPeerInfoResponse) {}
+  // GetBusInfo requests information about the controller bus.
+  rpc GetBusInfo(GetBusInfoRequest) returns (GetBusInfoResponse) {}
 }

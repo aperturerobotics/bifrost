@@ -40,13 +40,8 @@ func (t *Factory) Construct(
 	le := opts.GetLogger()
 	cc := conf.(*Config)
 
-	peerIDConstraint, err := cc.ParseNodePeerID()
-	if err != nil {
-		return nil, err
-	}
-
 	// Construct the API controller.
-	return NewController(le, cc.GetListenAddr(), t.bus, peerIDConstraint), nil
+	return NewController(le, cc.GetListenAddr(), t.bus), nil
 }
 
 // GetVersion returns the version of this controller.

@@ -13,7 +13,7 @@ func GetPeerWithID(
 	b bus.Bus,
 	peerIDConstraint ID,
 ) (Peer, error) {
-	v, ref, err := bus.ExecOneOff(ctx, b, NewGetPeerSingleton(peerIDConstraint), nil)
+	v, ref, err := bus.ExecOneOff(ctx, b, NewGetPeer(peerIDConstraint), nil)
 	if err != nil {
 		return nil, err
 	}

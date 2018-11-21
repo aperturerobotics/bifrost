@@ -13,15 +13,15 @@ import (
 
 // clientCommands set in cmd_client.go
 
-// runClientInfo runs the client information command.
-func runClientInfo(*cli.Context) error {
+// runPeerInfo runs the peer information command.
+func runPeerInfo(*cli.Context) error {
 	ctx := context.Background()
 	c, err := GetClient()
 	if err != nil {
 		return err
 	}
 
-	ni, err := c.GetNodeInfo(ctx, &api.GetNodeInfoRequest{})
+	ni, err := c.GetPeerInfo(ctx, &api.GetPeerInfoRequest{})
 	if err != nil {
 		return err
 	}

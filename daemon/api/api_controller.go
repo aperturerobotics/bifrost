@@ -6,7 +6,6 @@ import (
 	"context"
 	"net"
 
-	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
@@ -22,8 +21,6 @@ type Controller struct {
 	le *logrus.Entry
 	// bus is the controller bus
 	bus bus.Bus
-	// peerIDConstraint constrains the node peer id
-	peerIDConstraint peer.ID
 	// listenAddr is the listen address
 	listenAddr string
 }
@@ -33,14 +30,11 @@ func NewController(
 	le *logrus.Entry,
 	listenAddr string,
 	bus bus.Bus,
-	nodePeerIDConstraint peer.ID,
 ) *Controller {
 	return &Controller{
 		le:         le,
 		bus:        bus,
 		listenAddr: listenAddr,
-
-		peerIDConstraint: nodePeerIDConstraint,
 	}
 }
 
@@ -57,17 +51,8 @@ func (c *Controller) GetControllerInfo() controller.Info {
 // Returning nil ends execution.
 // Returning an error triggers a retry with backoff.
 func (c *Controller) Execute(ctx context.Context) error {
-	// Acquire a handle to the node.
-	c.le.
-		WithField("peer-id", c.peerIDConstraint.Pretty()).
-		Info("looking up node with peer ID")
-	n, err := peer.GetPeerWithID(ctx, c.bus, c.peerIDConstraint)
-	if err != nil {
-		return err
-	}
-
 	// Construct the API
-	api, err := NewAPI(c.bus, n)
+	api, err := NewAPI(c.bus)
 	if err != nil {
 		return err
 	}
@@ -108,7 +93,6 @@ func (c *Controller) Close() error {
 	// nil references to help GC along
 	c.le = nil
 	c.bus = nil
-	c.peerIDConstraint = ""
 
 	return nil
 }

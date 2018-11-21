@@ -15,9 +15,9 @@ var clientCommands []cli.Command
 
 func init() {
 	clientCommands = append(clientCommands, cli.Command{
-		Name:   "info",
-		Usage:  "returns daemon information",
-		Action: runClientInfo,
+		Name:   "local-peers",
+		Usage:  "returns local peer info",
+		Action: runPeerInfo,
 	})
 	commands = append(
 		commands,

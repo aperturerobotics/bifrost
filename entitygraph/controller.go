@@ -82,7 +82,7 @@ func (c *Controller) Execute(ctx context.Context) error {
 
 	c.le.Info("registering GetPeer directive")
 	_, diRef2, err := c.bus.AddDirective(
-		peer.NewGetPeerSingleton(peer.ID("")),
+		peer.NewGetPeer(peer.ID("")),
 		newGetPeerHandler(c),
 	)
 	if err != nil {
