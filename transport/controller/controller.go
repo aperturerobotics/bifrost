@@ -251,7 +251,6 @@ func (c *Controller) HandleIncomingStream(
 	strm.SetReadDeadline(readDeadline)
 
 	// process stream establish header;
-	c.le.Debug("handling stream establish header")
 	streamEst, err := readStreamEstablishHeader(strm)
 	if err != nil {
 		c.le.WithError(err).Warn("unable to read stream establish header")

@@ -75,6 +75,7 @@ func (l *Link) coordinationStreamPump(coordStrm stream.Stream) {
 
 		var err error
 		pktType := pkt.GetPacketType()
+		// l.le.Debugf("coordination stream: read packet of length %d type %s", packetLen, pktType.String())
 		switch pktType {
 		case CoordPacketType_CoordPacketType_RSTREAM_ESTABLISH:
 			err = l.handleCoordRawStreamEstablish(pkt.GetRawStreamEstablish())
@@ -104,6 +105,9 @@ func (l *Link) handleCoordRawStreamEstablish(pkt *RawStreamEstablish) error {
 	defer l.rawStreamsMtx.Unlock()
 
 	// check the length of the accept queue
+	if len(l.rawStreamEstablishQueueInc) >= int(maxInflightEstablishes) {
+		return errors.New("maximum in-flight stream establishes exceeded")
+	}
 
 	initStreamID := pkt.GetInitiatorStreamId()
 	// pick the next stream ID to use
@@ -115,14 +119,15 @@ func (l *Link) handleCoordRawStreamEstablish(pkt *RawStreamEstablish) error {
 	rstrm.SetRemoteStreamID(initStreamID)
 	l.rawStreams[localStreamID] = rstrm
 
-	// transmit raw stream ack
-	return l.writeCoordStreamPacket(&CoordinationStreamPacket{
-		PacketType: CoordPacketType_CoordPacketType_RSTREAM_ACK,
-		RawStreamAck: &RawStreamAck{
-			InitiatorStreamId: initStreamID,
-			AckStreamId:       localStreamID,
-		},
-	})
+	l.rawStreamEstablishQueueInc = append(l.rawStreamEstablishQueueInc, rstrm)
+
+	// notify the acceptor that the queue is filled
+	select {
+	case l.acceptStreamCh <- nil:
+	default:
+	}
+
+	return nil
 }
 
 // constructRawStream constructs the rawStream object with a local stream ID

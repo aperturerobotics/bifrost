@@ -12,7 +12,8 @@ import (
 
 // linkHoldOpenDur is the minimum amount of time to hold a link open.
 // TODO: move this to a more configurable location
-var linkHoldOpenDur = time.Duration(10) * time.Second
+// var linkHoldOpenDur = time.Duration(10) * time.Second
+var linkHoldOpenDur = time.Duration(60) * time.Second
 
 // establishedLink holds state for an established link.
 type establishedLink struct {
@@ -101,6 +102,7 @@ func (e *establishedLink) acceptStreamPump(ctx context.Context) {
 	defer e.Cancel()
 
 	for {
+		e.le.Debug("waiting to accept stream")
 		strm, strmOpts, err := lnk.AcceptStream()
 		if err != nil {
 			if err != context.Canceled {
@@ -110,6 +112,7 @@ func (e *establishedLink) acceptStreamPump(ctx context.Context) {
 		}
 
 		if strm != nil {
+			// e.le.Debug("accepted incoming stream")
 			go ctrl.HandleIncomingStream(ctx, lnk, strm, strmOpts)
 		}
 	}
