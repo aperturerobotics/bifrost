@@ -3,8 +3,10 @@ package stream_forwarding
 import (
 	"context"
 
+	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
+	ma "github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 )
 
@@ -16,17 +18,25 @@ type Controller struct {
 	le *logrus.Entry
 	// conf is the config
 	conf *Config
+	// dialMa is the dial multiaddr
+	dialMa ma.Multiaddr
 }
 
 // NewController constructs a new API controller.
 func NewController(
 	le *logrus.Entry,
 	conf *Config,
-) *Controller {
-	return &Controller{
-		le:   le,
-		conf: conf,
+) (*Controller, error) {
+	dialMa, err := conf.ParseTargetMultiaddr()
+	if err != nil {
+		return nil, err
 	}
+
+	return &Controller{
+		le:     le,
+		conf:   conf,
+		dialMa: dialMa,
+	}, nil
 }
 
 // GetControllerInfo returns information about the controller.
@@ -42,8 +52,7 @@ func (c *Controller) GetControllerInfo() controller.Info {
 // Returning nil ends execution.
 // Returning an error triggers a retry with backoff.
 func (c *Controller) Execute(ctx context.Context) error {
-	// TODO listen, etc, etc, etc.
-	<-ctx.Done()
+	// For forwarding, we just handle directives directly.
 	return nil
 }
 
@@ -52,7 +61,22 @@ func (c *Controller) Execute(ctx context.Context) error {
 // Any exceptional errors are returned for logging.
 // It is safe to add a reference to the directive during this call.
 func (c *Controller) HandleDirective(ctx context.Context, di directive.Instance) (directive.Resolver, error) {
+	dir := di.GetDirective()
+	// HandleMountedStream handler.
+	if d, ok := dir.(link.HandleMountedStream); ok {
+		return c.resolveHandleMountedStream(ctx, di, d)
+	}
+
 	return nil, nil
+}
+
+// resolveHandleMountedStream resolves a HandleMountedStream directive by dialing a target.
+func (c *Controller) resolveHandleMountedStream(
+	ctx context.Context,
+	di directive.Instance,
+	dir link.HandleMountedStream,
+) (directive.Resolver, error) {
+	return NewDialResolver(c.le, c.dialMa)
 }
 
 // Close releases any resources used by the controller.

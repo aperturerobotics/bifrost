@@ -1,6 +1,8 @@
 package link
 
 import (
+	"context"
+
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/protocol"
 	"github.com/aperturerobotics/bifrost/stream"
@@ -28,5 +30,5 @@ type MountedStreamHandler interface {
 	// Any returned error indicates the stream should be closed.
 	// This function should return as soon as possible, and start
 	// additional goroutines to manage the lifecycle of the stream.
-	HandleMountedStream(MountedStream) error
+	HandleMountedStream(context.Context, MountedStream) error
 }

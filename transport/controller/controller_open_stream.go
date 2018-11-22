@@ -124,6 +124,7 @@ func (c *Controller) resolveOpenStreamWithPeer(
 	di directive.Instance,
 	dir link.OpenStream,
 ) (directive.Resolver, error) {
+	// opportune moment: if tpt is already available, filter
 	select {
 	case tpt := <-c.tptCh:
 		c.tptCh <- tpt

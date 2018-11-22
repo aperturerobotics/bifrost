@@ -9,7 +9,7 @@ import (
 // ControllerID identifies the API controller.
 const ControllerID = "bifrost/stream/forwarding/1"
 
-// Version is the API version.
+// Version is the controller version.
 var Version = semver.MustParse("0.0.1")
 
 // Factory constructs a forwarding controller
@@ -39,8 +39,8 @@ func (t *Factory) Construct(
 	le := opts.GetLogger()
 	cc := conf.(*Config)
 
-	// Construct the API controller.
-	return NewController(le, cc), nil
+	// Construct the controller.
+	return NewController(le, cc)
 }
 
 // GetVersion returns the version of this controller.

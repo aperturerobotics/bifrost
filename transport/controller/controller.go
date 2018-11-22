@@ -296,7 +296,7 @@ func (c *Controller) HandleIncomingStream(
 		return
 	}
 
-	if err := mhnd.HandleMountedStream(mstrm); err != nil {
+	if err := mhnd.HandleMountedStream(ctx, mstrm); err != nil {
 		c.le.
 			WithError(err).
 			WithField("protocol-id", pid).
