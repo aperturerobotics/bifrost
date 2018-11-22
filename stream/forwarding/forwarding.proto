@@ -1,0 +1,12 @@
+syntax = "proto3";
+package stream.forwarding;
+
+// Config configures the forwarding controller.
+message Config {
+  // PeerId is the peer ID to forward for.
+  string peer_id = 1;
+  // ProtocolId is the protocol ID to forward for.
+  string protocol_id = 2;
+  // TargetMultiaddr is the target multiaddress.
+  string target_multiaddr = 3;
+}

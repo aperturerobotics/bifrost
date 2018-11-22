@@ -66,5 +66,19 @@ func (d *EstablishLinkWithPeer) Superceeds(other directive.Directive) bool {
 	return false
 }
 
+// GetName returns the directive's type name.
+// This is not necessarily unique, and is primarily intended for display.
+func (d *EstablishLinkWithPeer) GetName() string {
+	return "EstablishLinkWithPeer"
+}
+
+// GetDebugVals returns the directive arguments as k/v pairs.
+// This is not necessarily unique, and is primarily intended for display.
+func (d *EstablishLinkWithPeer) GetDebugVals() directive.DebugValues {
+	vals := directive.NewDebugValues()
+	vals["peer-id"] = []string{d.peerIDConstraint.Pretty()}
+	return vals
+}
+
 // _ is a type constraint
 var _ EstablishLink = ((*EstablishLinkWithPeer)(nil))

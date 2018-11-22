@@ -38,7 +38,7 @@ func (h *lookupTransportHandler) HandleValueAdded(
 		return
 	}
 
-	tptObj, tptAssocObj := NewTransportEntity(tpt.GetUUID(), tpt.GetNodeID())
+	tptObj, tptAssocObj := NewTransportEntity(tpt.GetUUID(), tpt.GetPeerID())
 	h.mtx.Lock()
 	_, exists := h.vals[val]
 	if !exists {

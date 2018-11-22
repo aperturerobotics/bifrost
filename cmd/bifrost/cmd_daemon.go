@@ -14,6 +14,7 @@ import (
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/stream"
+	"github.com/aperturerobotics/bifrost/stream/forwarding"
 	udptpt "github.com/aperturerobotics/bifrost/transport/udp"
 	wtpt "github.com/aperturerobotics/bifrost/transport/websocket"
 	"github.com/aperturerobotics/controllerbus/bus"
@@ -125,6 +126,7 @@ func runDaemon(c *cli.Context) error {
 	b := d.GetControllerBus()
 	sr := d.GetStaticResolver()
 	sr.AddFactory(egctr.NewFactory(b))
+	sr.AddFactory(stream_forwarding.NewFactory())
 
 	// Entity graph controller.
 	{

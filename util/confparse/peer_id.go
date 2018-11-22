@@ -8,5 +8,5 @@ func ParsePeerID(peerID string) (peer.ID, error) {
 		return "", nil
 	}
 
-	return peer.IDFromString(peerID)
+	return peer.IDB58Decode(peerID)
 }

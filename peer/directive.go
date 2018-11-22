@@ -59,5 +59,22 @@ func (d *getPeer) Superceeds(other directive.Directive) bool {
 	return false
 }
 
+// GetName returns the directive's type name.
+// This is not necessarily unique, and is primarily intended for display.
+func (d *getPeer) GetName() string {
+	return "GetPeer"
+}
+
+// GetDebugString returns the directive arguments stringified.
+// This should be something like param1="test", param2="test".
+// This is not necessarily unique, and is primarily intended for display.
+func (d *getPeer) GetDebugVals() directive.DebugValues {
+	vals := directive.DebugValues{}
+	if pid := d.GetPeerIDConstraint(); pid != ID("") {
+		vals["peer-id"] = []string{pid.Pretty()}
+	}
+	return vals
+}
+
 // _ is a type constraint
 var _ GetPeer = ((*getPeer)(nil))

@@ -6,6 +6,7 @@ package api
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
+import forwarding "github.com/aperturerobotics/bifrost/stream/forwarding"
 import controller "github.com/aperturerobotics/controllerbus/controller"
 
 import (
@@ -24,6 +25,36 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
+// ControllerStatus holds basic status for a controller.
+type ControllerStatus int32
+
+const (
+	// ControllerStatus_UNKNOWN is unrecognized.
+	ControllerStatus_ControllerStatus_UNKNOWN ControllerStatus = 0
+	// ControllerStatus_CONFIGURING indicates the controller is configuring.
+	ControllerStatus_ControllerStatus_CONFIGURING ControllerStatus = 1
+	// ControllerStatus_RUNNING indicates the controller is running.
+	ControllerStatus_ControllerStatus_RUNNING ControllerStatus = 2
+)
+
+var ControllerStatus_name = map[int32]string{
+	0: "ControllerStatus_UNKNOWN",
+	1: "ControllerStatus_CONFIGURING",
+	2: "ControllerStatus_RUNNING",
+}
+var ControllerStatus_value = map[string]int32{
+	"ControllerStatus_UNKNOWN":     0,
+	"ControllerStatus_CONFIGURING": 1,
+	"ControllerStatus_RUNNING":     2,
+}
+
+func (x ControllerStatus) String() string {
+	return proto.EnumName(ControllerStatus_name, int32(x))
+}
+func (ControllerStatus) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_api_0b5d6d5baa1f5179, []int{0}
+}
+
 // Config configures the GRPC API.
 type Config struct {
 	// ListenAddr is the address to listen on for connections.
@@ -37,7 +68,7 @@ func (m *Config) Reset()         { *m = Config{} }
 func (m *Config) String() string { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_api_c81df2d0c1d57b05, []int{0}
+	return fileDescriptor_api_0b5d6d5baa1f5179, []int{0}
 }
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
@@ -77,7 +108,7 @@ func (m *GetPeerInfoRequest) Reset()         { *m = GetPeerInfoRequest{} }
 func (m *GetPeerInfoRequest) String() string { return proto.CompactTextString(m) }
 func (*GetPeerInfoRequest) ProtoMessage()    {}
 func (*GetPeerInfoRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_api_c81df2d0c1d57b05, []int{1}
+	return fileDescriptor_api_0b5d6d5baa1f5179, []int{1}
 }
 func (m *GetPeerInfoRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetPeerInfoRequest.Unmarshal(m, b)
@@ -117,7 +148,7 @@ func (m *PeerInfo) Reset()         { *m = PeerInfo{} }
 func (m *PeerInfo) String() string { return proto.CompactTextString(m) }
 func (*PeerInfo) ProtoMessage()    {}
 func (*PeerInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_api_c81df2d0c1d57b05, []int{2}
+	return fileDescriptor_api_0b5d6d5baa1f5179, []int{2}
 }
 func (m *PeerInfo) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_PeerInfo.Unmarshal(m, b)
@@ -157,7 +188,7 @@ func (m *GetPeerInfoResponse) Reset()         { *m = GetPeerInfoResponse{} }
 func (m *GetPeerInfoResponse) String() string { return proto.CompactTextString(m) }
 func (*GetPeerInfoResponse) ProtoMessage()    {}
 func (*GetPeerInfoResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_api_c81df2d0c1d57b05, []int{3}
+	return fileDescriptor_api_0b5d6d5baa1f5179, []int{3}
 }
 func (m *GetPeerInfoResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetPeerInfoResponse.Unmarshal(m, b)
@@ -195,7 +226,7 @@ func (m *GetBusInfoRequest) Reset()         { *m = GetBusInfoRequest{} }
 func (m *GetBusInfoRequest) String() string { return proto.CompactTextString(m) }
 func (*GetBusInfoRequest) ProtoMessage()    {}
 func (*GetBusInfoRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_api_c81df2d0c1d57b05, []int{4}
+	return fileDescriptor_api_0b5d6d5baa1f5179, []int{4}
 }
 func (m *GetBusInfoRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetBusInfoRequest.Unmarshal(m, b)
@@ -228,7 +259,7 @@ func (m *GetBusInfoResponse) Reset()         { *m = GetBusInfoResponse{} }
 func (m *GetBusInfoResponse) String() string { return proto.CompactTextString(m) }
 func (*GetBusInfoResponse) ProtoMessage()    {}
 func (*GetBusInfoResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_api_c81df2d0c1d57b05, []int{5}
+	return fileDescriptor_api_0b5d6d5baa1f5179, []int{5}
 }
 func (m *GetBusInfoResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetBusInfoResponse.Unmarshal(m, b)
@@ -255,6 +286,85 @@ func (m *GetBusInfoResponse) GetRunningControllers() []*controller.Info {
 	return nil
 }
 
+// ForwardStreamsRequest is the request type for ForwardStreams.
+type ForwardStreamsRequest struct {
+	ForwardingConfig     *forwarding.Config `protobuf:"bytes,1,opt,name=forwarding_config,json=forwardingConfig" json:"forwarding_config,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
+	XXX_unrecognized     []byte             `json:"-"`
+	XXX_sizecache        int32              `json:"-"`
+}
+
+func (m *ForwardStreamsRequest) Reset()         { *m = ForwardStreamsRequest{} }
+func (m *ForwardStreamsRequest) String() string { return proto.CompactTextString(m) }
+func (*ForwardStreamsRequest) ProtoMessage()    {}
+func (*ForwardStreamsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_api_0b5d6d5baa1f5179, []int{6}
+}
+func (m *ForwardStreamsRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ForwardStreamsRequest.Unmarshal(m, b)
+}
+func (m *ForwardStreamsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ForwardStreamsRequest.Marshal(b, m, deterministic)
+}
+func (dst *ForwardStreamsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ForwardStreamsRequest.Merge(dst, src)
+}
+func (m *ForwardStreamsRequest) XXX_Size() int {
+	return xxx_messageInfo_ForwardStreamsRequest.Size(m)
+}
+func (m *ForwardStreamsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_ForwardStreamsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ForwardStreamsRequest proto.InternalMessageInfo
+
+func (m *ForwardStreamsRequest) GetForwardingConfig() *forwarding.Config {
+	if m != nil {
+		return m.ForwardingConfig
+	}
+	return nil
+}
+
+// ForwardStreamsResponse is the response type for ForwardStreams.
+type ForwardStreamsResponse struct {
+	// ControllerStatus is the status of the forwarding controller.
+	ControllerStatus     ControllerStatus `protobuf:"varint,1,opt,name=controller_status,json=controllerStatus,enum=api.ControllerStatus" json:"controller_status,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
+	XXX_unrecognized     []byte           `json:"-"`
+	XXX_sizecache        int32            `json:"-"`
+}
+
+func (m *ForwardStreamsResponse) Reset()         { *m = ForwardStreamsResponse{} }
+func (m *ForwardStreamsResponse) String() string { return proto.CompactTextString(m) }
+func (*ForwardStreamsResponse) ProtoMessage()    {}
+func (*ForwardStreamsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_api_0b5d6d5baa1f5179, []int{7}
+}
+func (m *ForwardStreamsResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ForwardStreamsResponse.Unmarshal(m, b)
+}
+func (m *ForwardStreamsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ForwardStreamsResponse.Marshal(b, m, deterministic)
+}
+func (dst *ForwardStreamsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ForwardStreamsResponse.Merge(dst, src)
+}
+func (m *ForwardStreamsResponse) XXX_Size() int {
+	return xxx_messageInfo_ForwardStreamsResponse.Size(m)
+}
+func (m *ForwardStreamsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_ForwardStreamsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ForwardStreamsResponse proto.InternalMessageInfo
+
+func (m *ForwardStreamsResponse) GetControllerStatus() ControllerStatus {
+	if m != nil {
+		return m.ControllerStatus
+	}
+	return ControllerStatus_ControllerStatus_UNKNOWN
+}
+
 func init() {
 	proto.RegisterType((*Config)(nil), "api.Config")
 	proto.RegisterType((*GetPeerInfoRequest)(nil), "api.GetPeerInfoRequest")
@@ -262,6 +372,9 @@ func init() {
 	proto.RegisterType((*GetPeerInfoResponse)(nil), "api.GetPeerInfoResponse")
 	proto.RegisterType((*GetBusInfoRequest)(nil), "api.GetBusInfoRequest")
 	proto.RegisterType((*GetBusInfoResponse)(nil), "api.GetBusInfoResponse")
+	proto.RegisterType((*ForwardStreamsRequest)(nil), "api.ForwardStreamsRequest")
+	proto.RegisterType((*ForwardStreamsResponse)(nil), "api.ForwardStreamsResponse")
+	proto.RegisterEnum("api.ControllerStatus", ControllerStatus_name, ControllerStatus_value)
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -279,6 +392,9 @@ type BifrostDaemonServiceClient interface {
 	GetPeerInfo(ctx context.Context, in *GetPeerInfoRequest, opts ...grpc.CallOption) (*GetPeerInfoResponse, error)
 	// GetBusInfo requests information about the controller bus.
 	GetBusInfo(ctx context.Context, in *GetBusInfoRequest, opts ...grpc.CallOption) (*GetBusInfoResponse, error)
+	// ForwardStreams forwards streams to the target multiaddress.
+	// Handles HandleMountedStream directives by contacting the target.
+	ForwardStreams(ctx context.Context, in *ForwardStreamsRequest, opts ...grpc.CallOption) (BifrostDaemonService_ForwardStreamsClient, error)
 }
 
 type bifrostDaemonServiceClient struct {
@@ -307,6 +423,38 @@ func (c *bifrostDaemonServiceClient) GetBusInfo(ctx context.Context, in *GetBusI
 	return out, nil
 }
 
+func (c *bifrostDaemonServiceClient) ForwardStreams(ctx context.Context, in *ForwardStreamsRequest, opts ...grpc.CallOption) (BifrostDaemonService_ForwardStreamsClient, error) {
+	stream, err := grpc.NewClientStream(ctx, &_BifrostDaemonService_serviceDesc.Streams[0], c.cc, "/api.BifrostDaemonService/ForwardStreams", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &bifrostDaemonServiceForwardStreamsClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type BifrostDaemonService_ForwardStreamsClient interface {
+	Recv() (*ForwardStreamsResponse, error)
+	grpc.ClientStream
+}
+
+type bifrostDaemonServiceForwardStreamsClient struct {
+	grpc.ClientStream
+}
+
+func (x *bifrostDaemonServiceForwardStreamsClient) Recv() (*ForwardStreamsResponse, error) {
+	m := new(ForwardStreamsResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // Server API for BifrostDaemonService service
 
 type BifrostDaemonServiceServer interface {
@@ -314,6 +462,9 @@ type BifrostDaemonServiceServer interface {
 	GetPeerInfo(context.Context, *GetPeerInfoRequest) (*GetPeerInfoResponse, error)
 	// GetBusInfo requests information about the controller bus.
 	GetBusInfo(context.Context, *GetBusInfoRequest) (*GetBusInfoResponse, error)
+	// ForwardStreams forwards streams to the target multiaddress.
+	// Handles HandleMountedStream directives by contacting the target.
+	ForwardStreams(*ForwardStreamsRequest, BifrostDaemonService_ForwardStreamsServer) error
 }
 
 func RegisterBifrostDaemonServiceServer(s *grpc.Server, srv BifrostDaemonServiceServer) {
@@ -356,6 +507,27 @@ func _BifrostDaemonService_GetBusInfo_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _BifrostDaemonService_ForwardStreams_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ForwardStreamsRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(BifrostDaemonServiceServer).ForwardStreams(m, &bifrostDaemonServiceForwardStreamsServer{stream})
+}
+
+type BifrostDaemonService_ForwardStreamsServer interface {
+	Send(*ForwardStreamsResponse) error
+	grpc.ServerStream
+}
+
+type bifrostDaemonServiceForwardStreamsServer struct {
+	grpc.ServerStream
+}
+
+func (x *bifrostDaemonServiceForwardStreamsServer) Send(m *ForwardStreamsResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 var _BifrostDaemonService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "api.BifrostDaemonService",
 	HandlerType: (*BifrostDaemonServiceServer)(nil),
@@ -369,35 +541,51 @@ var _BifrostDaemonService_serviceDesc = grpc.ServiceDesc{
 			Handler:    _BifrostDaemonService_GetBusInfo_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "ForwardStreams",
+			Handler:       _BifrostDaemonService_ForwardStreams_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "github.com/aperturerobotics/bifrost/daemon/api/api.proto",
 }
 
 func init() {
-	proto.RegisterFile("github.com/aperturerobotics/bifrost/daemon/api/api.proto", fileDescriptor_api_c81df2d0c1d57b05)
+	proto.RegisterFile("github.com/aperturerobotics/bifrost/daemon/api/api.proto", fileDescriptor_api_0b5d6d5baa1f5179)
 }
 
-var fileDescriptor_api_c81df2d0c1d57b05 = []byte{
-	// 329 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x91, 0x41, 0x4f, 0xfa, 0x40,
-	0x10, 0xc5, 0xff, 0x0d, 0x09, 0x7f, 0x9d, 0xc6, 0x44, 0x17, 0x23, 0x84, 0x8b, 0xa4, 0x5e, 0xf0,
-	0x60, 0x9b, 0xe0, 0xc5, 0x9b, 0x01, 0x24, 0x84, 0x9b, 0xc1, 0x83, 0xc7, 0xa6, 0xed, 0x0e, 0xb8,
-	0x49, 0xd9, 0xa9, 0xb3, 0x5b, 0xbf, 0x8c, 0x5f, 0xd6, 0xb4, 0xa5, 0x50, 0xd2, 0xe8, 0xa1, 0x49,
-	0x67, 0xfa, 0x9b, 0xd7, 0x37, 0x6f, 0xe0, 0x69, 0xab, 0xec, 0x47, 0x1e, 0xfb, 0x09, 0xed, 0x82,
-	0x28, 0x43, 0xb6, 0x39, 0x23, 0x53, 0x4c, 0x56, 0x25, 0x26, 0x88, 0xd5, 0x86, 0xc9, 0xd8, 0x40,
-	0x46, 0xb8, 0x23, 0x1d, 0x44, 0x99, 0x2a, 0x1e, 0x3f, 0x63, 0xb2, 0x24, 0x3a, 0x51, 0xa6, 0x86,
-	0x8b, 0xbf, 0xc6, 0x13, 0xd2, 0x96, 0x29, 0x4d, 0x91, 0xe3, 0xbc, 0x59, 0x35, 0x5e, 0x2b, 0x2d,
-	0xef, 0x1e, 0xba, 0x73, 0xd2, 0x1b, 0xb5, 0x15, 0xb7, 0xe0, 0xa6, 0xca, 0x58, 0xd4, 0x61, 0x24,
-	0x25, 0x0f, 0x9c, 0x91, 0x33, 0x3e, 0x5f, 0x43, 0xd5, 0x9a, 0x4a, 0xc9, 0xde, 0x03, 0x88, 0x25,
-	0xda, 0x57, 0x44, 0x5e, 0xe9, 0x0d, 0xad, 0xf1, 0x33, 0x47, 0x63, 0x45, 0x1f, 0xfe, 0x67, 0x88,
-	0x1c, 0x2a, 0xb9, 0x1f, 0xe9, 0x16, 0xe5, 0x4a, 0x7a, 0x77, 0x70, 0x56, 0xb3, 0xbf, 0x43, 0x0b,
-	0xe8, 0x9d, 0x68, 0x9a, 0x8c, 0xb4, 0x41, 0xe1, 0x83, 0x9b, 0x52, 0x12, 0xa5, 0x61, 0x81, 0x99,
-	0x81, 0x33, 0xea, 0x8c, 0xdd, 0xc9, 0x85, 0x5f, 0x44, 0x70, 0x60, 0xa1, 0x24, 0x8a, 0xd2, 0x78,
-	0x3d, 0xb8, 0x5a, 0xa2, 0x9d, 0xe5, 0xa6, 0xe1, 0xcc, 0x7b, 0x2f, 0xfd, 0x1e, 0x9a, 0x7b, 0xe9,
-	0x29, 0xf4, 0x38, 0xd7, 0x5a, 0xe9, 0x6d, 0x78, 0x0c, 0xa3, 0xfe, 0xc5, 0xa5, 0xdf, 0x08, 0xa8,
-	0x1c, 0x13, 0x7b, 0x78, 0x7e, 0x64, 0x27, 0xdf, 0x0e, 0x5c, 0xcf, 0xaa, 0x03, 0xbd, 0x94, 0xf7,
-	0x79, 0x43, 0xfe, 0x52, 0x09, 0x8a, 0x19, 0xb8, 0x8d, 0x6d, 0x44, 0xbf, 0x34, 0xdc, 0xce, 0x6c,
-	0x38, 0x68, 0x7f, 0xa8, 0xdc, 0x79, 0xff, 0xc4, 0x33, 0xc0, 0xd1, 0xb5, 0xb8, 0xa9, 0xc9, 0xd3,
-	0xdd, 0x86, 0xfd, 0x56, 0xbf, 0x16, 0x88, 0xbb, 0xe5, 0x61, 0x1f, 0x7f, 0x02, 0x00, 0x00, 0xff,
-	0xff, 0xf3, 0x23, 0x7d, 0x82, 0x60, 0x02, 0x00, 0x00,
+var fileDescriptor_api_0b5d6d5baa1f5179 = []byte{
+	// 492 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x53, 0x5f, 0x8b, 0xd3, 0x4e,
+	0x14, 0xdd, 0xfc, 0x16, 0xfa, 0xd3, 0x1b, 0x5c, 0xd2, 0xa9, 0xbb, 0xad, 0x71, 0xc1, 0x12, 0x5f,
+	0x56, 0xc1, 0x44, 0xea, 0x8b, 0x6f, 0xb2, 0xad, 0xdb, 0x52, 0xc4, 0xac, 0xa4, 0x94, 0x7d, 0x11,
+	0x42, 0xfe, 0x4c, 0xe2, 0x40, 0x3a, 0x13, 0x67, 0x26, 0xfa, 0x9d, 0xfd, 0x14, 0x92, 0x99, 0xa6,
+	0x49, 0xff, 0x28, 0x3e, 0x04, 0x32, 0xe7, 0x9e, 0x7b, 0xe6, 0xcc, 0xb9, 0x33, 0xf0, 0x3e, 0x27,
+	0xf2, 0x5b, 0x15, 0xbb, 0x09, 0xdb, 0x78, 0x51, 0x89, 0xb9, 0xac, 0x38, 0xe6, 0x2c, 0x66, 0x92,
+	0x24, 0xc2, 0x8b, 0x49, 0xc6, 0x99, 0x90, 0x5e, 0x1a, 0xe1, 0x0d, 0xa3, 0x5e, 0x54, 0x92, 0xfa,
+	0x73, 0x4b, 0xce, 0x24, 0x43, 0xe7, 0x51, 0x49, 0xec, 0xbb, 0xbf, 0xb5, 0x27, 0x8c, 0x4a, 0xce,
+	0x8a, 0x02, 0xf3, 0xb8, 0xea, 0xae, 0x3a, 0xbf, 0x5a, 0xcb, 0x9e, 0xff, 0x8b, 0x0b, 0x21, 0x39,
+	0x8e, 0x36, 0x5e, 0xc6, 0xf8, 0xcf, 0x88, 0xa7, 0x84, 0xe6, 0x9d, 0x5f, 0xad, 0xe3, 0xbc, 0x82,
+	0xde, 0x8c, 0xd1, 0x8c, 0xe4, 0xe8, 0x05, 0x98, 0x05, 0x11, 0x12, 0xd3, 0x30, 0x4a, 0x53, 0x3e,
+	0x32, 0xc6, 0xc6, 0xcd, 0xe3, 0x00, 0x34, 0x74, 0x9b, 0xa6, 0xdc, 0x79, 0x03, 0x68, 0x81, 0xe5,
+	0x17, 0x8c, 0xf9, 0x92, 0x66, 0x2c, 0xc0, 0xdf, 0x2b, 0x2c, 0x24, 0x1a, 0xc2, 0xff, 0x25, 0xc6,
+	0x3c, 0x24, 0xe9, 0xb6, 0xa5, 0x57, 0x2f, 0x97, 0xa9, 0xf3, 0x12, 0x1e, 0x35, 0xdc, 0x3f, 0x93,
+	0xee, 0x60, 0xb0, 0xa7, 0x29, 0x4a, 0x46, 0x05, 0x46, 0x2e, 0x98, 0x05, 0x4b, 0xa2, 0x22, 0xac,
+	0x69, 0x62, 0x64, 0x8c, 0xcf, 0x6f, 0xcc, 0xc9, 0x13, 0xb7, 0x8e, 0x72, 0xc7, 0x05, 0xc5, 0xa8,
+	0x97, 0xc2, 0x19, 0x40, 0x7f, 0x81, 0xe5, 0xb4, 0x12, 0x1d, 0x67, 0xce, 0x83, 0xf2, 0xbb, 0x03,
+	0xb7, 0xd2, 0xb7, 0x30, 0xe0, 0x15, 0xa5, 0x84, 0xe6, 0x61, 0x1b, 0x6a, 0xb3, 0x85, 0xe5, 0x76,
+	0x82, 0x56, 0x6d, 0x68, 0x4b, 0x9e, 0xb5, 0x5c, 0x27, 0x84, 0xcb, 0xb9, 0xce, 0x71, 0xa5, 0x02,
+	0x16, 0x4d, 0x16, 0x73, 0xe8, 0xb7, 0x01, 0xd7, 0xf2, 0x19, 0xc9, 0xd5, 0x81, 0xcd, 0xc9, 0x33,
+	0x57, 0x0f, 0xc3, 0xed, 0x4c, 0x40, 0x07, 0x1f, 0x58, 0x2d, 0xa4, 0x11, 0xe7, 0x2b, 0x5c, 0x1d,
+	0x6e, 0xb0, 0x75, 0x3f, 0x85, 0x7e, 0xeb, 0x30, 0x14, 0x32, 0x92, 0x95, 0x50, 0x3b, 0x5c, 0x4c,
+	0x2e, 0x55, 0x3c, 0xad, 0xcf, 0x95, 0x2a, 0x06, 0x56, 0x72, 0x80, 0xbc, 0x2e, 0xc1, 0x3a, 0x64,
+	0xa1, 0x6b, 0x18, 0x1d, 0x62, 0xe1, 0xda, 0xff, 0xe4, 0xdf, 0x3f, 0xf8, 0xd6, 0x19, 0x1a, 0xc3,
+	0xf5, 0x51, 0x75, 0x76, 0xef, 0xcf, 0x97, 0x8b, 0x75, 0xb0, 0xf4, 0x17, 0x96, 0x71, 0xb2, 0x3f,
+	0x58, 0xfb, 0x7e, 0x5d, 0xfd, 0x6f, 0xf2, 0xcb, 0x80, 0xa7, 0x53, 0x7d, 0x27, 0x3f, 0xaa, 0x87,
+	0xb1, 0xc2, 0xfc, 0x07, 0x49, 0xea, 0xe3, 0x98, 0x9d, 0xf1, 0xa3, 0xa1, 0x3a, 0xc2, 0xf1, 0x25,
+	0xb3, 0x47, 0xc7, 0x05, 0x1d, 0x88, 0x73, 0x86, 0x3e, 0x00, 0xb4, 0x63, 0x46, 0x57, 0x0d, 0x73,
+	0xff, 0x32, 0xd8, 0xc3, 0x23, 0x7c, 0x27, 0xf0, 0x19, 0x2e, 0xf6, 0xd3, 0x46, 0xb6, 0x22, 0x9f,
+	0x9c, 0xb1, 0xfd, 0xfc, 0x64, 0xad, 0x11, 0x7b, 0x6b, 0xc4, 0x3d, 0xf5, 0xb0, 0xde, 0xfd, 0x0e,
+	0x00, 0x00, 0xff, 0xff, 0xa8, 0x7a, 0x17, 0x49, 0x28, 0x04, 0x00, 0x00,
 }

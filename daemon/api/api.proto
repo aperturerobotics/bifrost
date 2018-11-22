@@ -2,6 +2,7 @@ syntax = "proto3";
 package api;
 
 import "github.com/aperturerobotics/controllerbus/controller/controller.proto";
+import "github.com/aperturerobotics/bifrost/stream/forwarding/forwarding.proto";
 
 // Config configures the GRPC API.
 message Config {
@@ -37,10 +38,34 @@ message GetBusInfoResponse {
   repeated controller.Info running_controllers = 1;
 }
 
+// ControllerStatus holds basic status for a controller.
+enum ControllerStatus {
+  // ControllerStatus_UNKNOWN is unrecognized.
+  ControllerStatus_UNKNOWN = 0;
+  // ControllerStatus_CONFIGURING indicates the controller is configuring.
+  ControllerStatus_CONFIGURING = 1;
+  // ControllerStatus_RUNNING indicates the controller is running.
+  ControllerStatus_RUNNING = 2;
+}
+
+// ForwardStreamsRequest is the request type for ForwardStreams.
+message ForwardStreamsRequest {
+  stream.forwarding.Config forwarding_config = 1;
+}
+
+// ForwardStreamsResponse is the response type for ForwardStreams.
+message ForwardStreamsResponse {
+  // ControllerStatus is the status of the forwarding controller.
+  ControllerStatus controller_status = 1;
+}
+
 // BifrostDaemonService is the control service for a daemon, contacted by the CLI.
 service BifrostDaemonService {
   // GetPeerInfo returns information about attached peers.
   rpc GetPeerInfo(GetPeerInfoRequest) returns (GetPeerInfoResponse) {}
   // GetBusInfo requests information about the controller bus.
   rpc GetBusInfo(GetBusInfoRequest) returns (GetBusInfoResponse) {}
+  // ForwardStreams forwards streams to the target multiaddress.
+  // Handles HandleMountedStream directives by contacting the target.
+  rpc ForwardStreams(ForwardStreamsRequest) returns (stream ForwardStreamsResponse) {}
 }

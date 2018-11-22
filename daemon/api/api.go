@@ -4,6 +4,7 @@ package api
 
 import (
 	"context"
+	"time"
 
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/controllerbus/bus"
@@ -114,6 +115,48 @@ func (a *API) GetPeerInfo(
 	}
 
 	return resp, nil
+}
+
+// ForwardStreams forwards streams to the target multiaddress.
+// Handles HandleMountedStream directives by contacting the target.
+func (a *API) ForwardStreams(
+	req *ForwardStreamsRequest,
+	serv BifrostDaemonService_ForwardStreamsServer,
+) error {
+	ctx := serv.Context()
+	conf := req.GetForwardingConfig()
+	if err := conf.Validate(); err != nil {
+		return err
+	}
+
+	targetPeerID, err := req.GetForwardingConfig().ParsePeerID()
+	if err != nil {
+		return err
+	}
+
+	reqCtx, reqCtxCancel := context.WithCancel(ctx)
+	defer reqCtxCancel()
+
+	plCtx, plCtxCancel := context.WithTimeout(reqCtx, time.Second*3)
+	defer plCtxCancel()
+
+	// if the peer is unloaded the request will be canceled.
+	_, peerRef, err := bus.ExecOneOff(
+		plCtx,
+		a.bus,
+		peer.NewGetPeer(targetPeerID),
+		reqCtxCancel,
+	)
+	if err != nil {
+		return errors.Errorf("peer not loaded: %s", targetPeerID.Pretty())
+	}
+	defer peerRef.Release()
+
+	return a.executeController(reqCtx, conf, func(status ControllerStatus) {
+		_ = serv.Send(&ForwardStreamsResponse{
+			ControllerStatus: status,
+		})
+	})
 }
 
 // RegisterAsGRPCServer registers the API to the GRPC instance.

@@ -18,6 +18,27 @@ func init() {
 		Name:   "local-peers",
 		Usage:  "returns local peer info",
 		Action: runPeerInfo,
+	}, cli.Command{
+		Name:   "forward",
+		Usage:  "Protocol ID will be forwarded to the target multiaddress",
+		Action: runForwardController,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:        "peer-id",
+				Usage:       "peer ID to match incoming streams to",
+				Destination: &forwardingConf.PeerId,
+			},
+			&cli.StringFlag{
+				Name:        "protocol-id",
+				Usage:       "protocol ID to match incoming streams to",
+				Destination: &forwardingConf.ProtocolId,
+			},
+			&cli.StringFlag{
+				Name:        "target",
+				Usage:       "target multiaddr to forward streams to",
+				Destination: &forwardingConf.TargetMultiaddr,
+			},
+		},
 	})
 	commands = append(
 		commands,

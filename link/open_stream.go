@@ -2,6 +2,7 @@ package link
 
 import (
 	"errors"
+	"strconv"
 
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/protocol"
@@ -114,6 +115,26 @@ func (d *OpenStreamWithPeer) IsEquivalent(other directive.Directive) bool {
 // The other directive will be canceled if superceded.
 func (d *OpenStreamWithPeer) Superceeds(other directive.Directive) bool {
 	return false
+}
+
+// GetName returns the directive's type name.
+// This is not necessarily unique, and is primarily intended for display.
+func (d *OpenStreamWithPeer) GetName() string {
+	return "OpenStreamWithPeer"
+}
+
+// GetDebugVals returns the directive arguments as key/value pairs.
+// This should be something like param1="test", param2="test".
+// This is not necessarily unique, and is primarily intended for display.
+func (d *OpenStreamWithPeer) GetDebugVals() directive.DebugValues {
+	vals := directive.NewDebugValues()
+	vals["protocol-id"] = []string{string(d.OpenStreamProtocolID())}
+	vals["target-peer"] = []string{d.OpenStreamTargetPeerID().Pretty()}
+	vals["source-peer"] = []string{d.OpenStreamSourcePeerID().Pretty()}
+	if tpt := d.OpenStreamTransportConstraint(); tpt != 0 {
+		vals["transport"] = []string{strconv.FormatUint(tpt, 10)}
+	}
+	return vals
 }
 
 // _ is a type constraint

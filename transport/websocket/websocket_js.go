@@ -111,8 +111,8 @@ func (u *Transport) Execute(ctx context.Context) error {
 	return nil
 }
 
-// GetNodeID returns the node peer ID.
-func (u *Transport) GetNodeID() peer.ID {
+// GetPeerID returns the peer ID.
+func (u *Transport) GetPeerID() peer.ID {
 	return u.peerID
 }
 

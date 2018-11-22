@@ -107,5 +107,21 @@ func (d *HandleMountedStreamWithProtocolID) Superceeds(other directive.Directive
 	return false
 }
 
+// GetName returns the directive's type name.
+// This is not necessarily unique, and is primarily intended for display.
+func (d *HandleMountedStreamWithProtocolID) GetName() string {
+	return "HandleMountedStreamWithProtocolID"
+}
+
+// GetDebugVals returns the directive arguments as k/v pairs.
+// This is not necessarily unique, and is primarily intended for display.
+func (d *HandleMountedStreamWithProtocolID) GetDebugVals() directive.DebugValues {
+	vals := directive.DebugValues{}
+	vals["protocol-id"] = []string{string(d.HandleMountedStreamProtocolID())}
+	vals["local-peer"] = []string{d.HandleMountedStreamLocalPeerID().Pretty()}
+	vals["remote-peer"] = []string{d.HandleMountedStreamRemotePeerID().Pretty()}
+	return vals
+}
+
 // _ is a type constraint
 var _ HandleMountedStream = ((*HandleMountedStreamWithProtocolID)(nil))

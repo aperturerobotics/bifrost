@@ -109,7 +109,7 @@ func checkOpenStreamMatchesTpt(dir link.OpenStream, tpt transport.Transport) boo
 
 	// Check peer ID constraint
 	if srcPeerID := dir.OpenStreamSourcePeerID(); len(srcPeerID) != 0 {
-		if srcPeerID != tpt.GetNodeID() {
+		if srcPeerID != tpt.GetPeerID() {
 			return false
 		}
 	}

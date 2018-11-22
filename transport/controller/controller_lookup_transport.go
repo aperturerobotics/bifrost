@@ -43,8 +43,8 @@ func checkLookupMatchesTpt(dir transport.LookupTransport, tpt transport.Transpor
 			return false
 		}
 	}
-	if peerIDConstraint := dir.LookupTransportNodeIDConstraint(); len(peerIDConstraint) != 0 {
-		if tpt.GetNodeID() != peerIDConstraint {
+	if peerIDConstraint := dir.LookupTransportPeerIDConstraint(); len(peerIDConstraint) != 0 {
+		if tpt.GetPeerID() != peerIDConstraint {
 			return false
 		}
 	}

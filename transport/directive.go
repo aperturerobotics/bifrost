@@ -3,6 +3,7 @@ package transport
 import (
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/controllerbus/directive"
+	"strconv"
 )
 
 // LookupTransport is a directive to lookup running transports.
@@ -11,9 +12,9 @@ type LookupTransport interface {
 	// Directive indicates LookupTransport is a directive.
 	directive.Directive
 
-	// LookupTransportNodeIDConstraint returns a specific node ID we are looking for.
+	// LookupTransportPeerIDConstraint returns a specific node ID we are looking for.
 	// Can be empty.
-	LookupTransportNodeIDConstraint() peer.ID
+	LookupTransportPeerIDConstraint() peer.ID
 	// LookupTransportIDConstraint returns a specific transport ID we are looking for.
 	// Can be empty.
 	LookupTransportIDConstraint() uint64
@@ -21,22 +22,22 @@ type LookupTransport interface {
 
 // lookupTransport implements LookupTransport
 type lookupTransport struct {
-	nodeIDConstraint      peer.ID
+	peerIDConstraint      peer.ID
 	transportIDConstraint uint64
 }
 
 // NewLookupTransport constructs a new LookupTransport directive.
-func NewLookupTransport(nodeID peer.ID, transportID uint64) LookupTransport {
+func NewLookupTransport(peerID peer.ID, transportID uint64) LookupTransport {
 	return &lookupTransport{
-		nodeIDConstraint:      nodeID,
+		peerIDConstraint:      peerID,
 		transportIDConstraint: transportID,
 	}
 }
 
-// LookupTransportNodeIDConstraint returns a specific peer ID node we are looking for.
+// LookupTransportPeerIDConstraint returns a specific peer ID node we are looking for.
 // If empty, any node is matched.
-func (d *lookupTransport) LookupTransportNodeIDConstraint() peer.ID {
-	return d.nodeIDConstraint
+func (d *lookupTransport) LookupTransportPeerIDConstraint() peer.ID {
+	return d.peerIDConstraint
 }
 
 // LookupTransportIDConstraint returns a specific transport ID we are looking for.
@@ -66,13 +67,34 @@ func (d *lookupTransport) IsEquivalent(other directive.Directive) bool {
 	}
 
 	return d.LookupTransportIDConstraint() == od.LookupTransportIDConstraint() &&
-		d.LookupTransportNodeIDConstraint() == od.LookupTransportNodeIDConstraint()
+		d.LookupTransportPeerIDConstraint() == od.LookupTransportPeerIDConstraint()
 }
 
 // Superceeds checks if the directive overrides another.
 // The other directive will be canceled if superceded.
 func (d *lookupTransport) Superceeds(other directive.Directive) bool {
 	return false
+}
+
+// GetName returns the directive's type name.
+// This is not necessarily unique, and is primarily intended for display.
+func (d *lookupTransport) GetName() string {
+	return "LookupTransport"
+}
+
+// GetDebugString returns the directive arguments stringified.
+// This should be something like param1="test", param2="test".
+// This is not necessarily unique, and is primarily intended for display.
+func (d *lookupTransport) GetDebugVals() directive.DebugValues {
+	vals := directive.DebugValues{}
+	if tpt := d.LookupTransportIDConstraint(); tpt != 0 {
+		vals["transport-id"] = []string{strconv.FormatUint(tpt, 10)}
+	}
+	if nod := d.LookupTransportPeerIDConstraint(); nod != peer.ID("") {
+		peerID := d.LookupTransportPeerIDConstraint().Pretty()
+		vals["peer-id"] = []string{peerID}
+	}
+	return vals
 }
 
 // _ is a type assertion

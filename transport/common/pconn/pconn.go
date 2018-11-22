@@ -250,8 +250,8 @@ func (u *Transport) handleLinkLost(addr string, lnk *Link) {
 	}
 }
 
-// GetNodeID returns the node peer id.
-func (u *Transport) GetNodeID() peer.ID {
+// GetPeerID returns the node peer id.
+func (u *Transport) GetPeerID() peer.ID {
 	return u.peerID
 }
 
