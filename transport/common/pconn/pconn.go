@@ -165,7 +165,8 @@ func (u *Transport) readPump(ctx context.Context) (readErr error) {
 			u.le.
 				WithError(err).
 				WithField("addr", addr.String()).
-				Debug("dropped packet")
+				Debugf("dropped packet: %v", buf[:n])
+			// Debug("dropped packet")
 		} else {
 			/*
 				u.le.

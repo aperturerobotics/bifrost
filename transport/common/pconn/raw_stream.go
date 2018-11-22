@@ -3,6 +3,7 @@ package pconn
 import (
 	"context"
 	"io"
+	"sync"
 	"time"
 
 	"github.com/aperturerobotics/bifrost/stream"
@@ -25,6 +26,7 @@ type rawStream struct {
 	// packetCh is a packet buffer implemented with a channel
 	packetCh    chan []byte
 	writeFn     func(data []byte) error
+	writeMtx    sync.Mutex
 	closeFn     func(*rawStream)
 	establishCb func(err error)
 
@@ -33,6 +35,10 @@ type rawStream struct {
 	// closed indicates this stream is already disposed
 	// guarded by the rawStreamMtx in the link
 	closed bool
+	// mtu is the maximum transmission unit
+	mtu uint32
+	// closeFnOnce calls closeFn once
+	closeFnOnce sync.Once
 }
 
 func revSlice(vb []byte) {
@@ -60,6 +66,7 @@ func decodeRawStreamIDVarint(vb []byte) (x uint64, n int) {
 func newRawStream(
 	ctx context.Context,
 	localStreamID uint32,
+	mtu uint32,
 	establishCb func(err error),
 	writeFn func(data []byte) error,
 	closeFn func(*rawStream),
@@ -69,10 +76,12 @@ func newRawStream(
 		// keep 60000 packets
 		// 1 packet = 1500 byte maximum
 		// 60000*1500 ~= 100mb packet ring
-		packetCh:      make(chan []byte, 60000),
+		// can be replaced with a better ringbuffer impl later
+		packetCh:      make(chan []byte, mtu*60000),
 		establishCb:   establishCb,
 		writeFn:       writeFn,
 		closeFn:       closeFn,
+		mtu:           mtu,
 		localStreamID: localStreamID,
 	}
 }
@@ -144,7 +153,55 @@ func (s *rawStream) Read(b []byte) (n int, err error) {
 
 // Write data to the stream.
 func (s *rawStream) Write(b []byte) (n int, err error) {
+	// TODO: Fragment here.
+	var nw int
+	mtu := int(s.mtu) - len(s.headerVarint)
 	blen := len(b)
+
+	s.writeMtx.Lock()
+	defer s.writeMtx.Unlock()
+
+	// If fragmentation is necessary...
+	// slow path
+	if blen > mtu {
+		var xpkt []byte
+		for i := 0; i < blen; i += mtu {
+			j := i + mtu
+			if j > blen {
+				j = blen
+			}
+
+			jWithSuffix := j + len(s.headerVarint)
+			var pkt []byte
+			if j == blen && jWithSuffix < cap(b) {
+				// if we know we will re-use the end of the b buffer
+				// and it's safe because j is past the end of the buff
+				// but still within capacity
+				pkt = b[i:jWithSuffix]
+			} else {
+				if xpkt != nil {
+					pkt = xpkt
+				} else {
+					pkt = xmitBuf.Get().([]byte)
+					xpkt = pkt
+					defer func() {
+						xmitBuf.Put(xpkt)
+					}()
+				}
+				pkt = pkt[:jWithSuffix-i]
+				copy(pkt, b[i:j])
+			}
+			copy(pkt[j-i:], s.headerVarint)
+
+			if err := s.writeFn(pkt); err != nil {
+				return nw, err
+			}
+			nw += jWithSuffix - i
+		}
+
+		return nw, nil
+	}
+
 	blenWithSuffix := blen + len(s.headerVarint)
 	if cap(b) < blenWithSuffix {
 		b = append(b, s.headerVarint...)
@@ -156,6 +213,7 @@ func (s *rawStream) Write(b []byte) (n int, err error) {
 	if err := s.writeFn(b); err != nil {
 		return 0, err
 	}
+
 	return blen, nil
 }
 
@@ -191,13 +249,11 @@ func (s *rawStream) markClosed() {
 	close(s.packetCh)
 }
 
-// writeClosePacket writes the stream close packet.
-func (s *rawStream) writeClosePacket() {
-}
-
 // Close closes the stream.
 func (s *rawStream) Close() error {
-	go s.closeFn(s)
+	s.closeFnOnce.Do(func() {
+		go s.closeFn(s)
+	})
 	return nil
 }
 

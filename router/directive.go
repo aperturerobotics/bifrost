@@ -41,12 +41,6 @@ func NewDiscoverRoutesWithPeerIDs(
 	}
 }
 
-// DiscoverRoutesPeerIDs returns the protocol ID we are requesting a
-// handler for. Cannot be empty.
-func (d *DiscoverRoutesWithPeerIDs) DiscoverRoutesPeerIDs() protocol.ID {
-	return d.protocolID
-}
-
 // DiscoverRoutesLocalPeerID returns the local peer ID we are
 // requesting a handler for. Cannot be empty.
 func (d *DiscoverRoutesWithPeerIDs) DiscoverRoutesLocalPeerID() peer.ID {
@@ -99,6 +93,26 @@ func (d *DiscoverRoutesWithPeerIDs) IsEquivalent(other directive.Directive) bool
 // The other directive will be canceled if superceded.
 func (d *DiscoverRoutesWithPeerIDs) Superceeds(other directive.Directive) bool {
 	return false
+}
+
+// GetName returns the directive's type name.
+// This is not necessarily unique, and is primarily intended for display.
+func (d *DiscoverRoutesWithPeerIDs) GetName() string {
+	return "DiscoverRoutesWithPeerIDs"
+}
+
+// GetDebugString returns the directive arguments stringified.
+// This should be something like param1="test", param2="test".
+// This is not necessarily unique, and is primarily intended for display.
+func (d *DiscoverRoutesWithPeerIDs) GetDebugVals() directive.DebugValues {
+	vals := directive.DebugValues{}
+	if pid := d.DiscoverRoutesLocalPeerID(); pid != peer.ID("") {
+		vals["local-peer-id"] = []string{pid.Pretty()}
+	}
+	if pid := d.DiscoverRoutesRemotePeerID(); pid != peer.ID("") {
+		vals["remote-peer-id"] = []string{pid.Pretty()}
+	}
+	return vals
 }
 
 // _ is a type constraint

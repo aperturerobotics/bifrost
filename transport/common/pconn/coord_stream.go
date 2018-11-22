@@ -135,6 +135,7 @@ func (l *Link) constructRawStream(localStreamID uint32, establishCb func(err err
 	return newRawStream(
 		l.ctx,
 		localStreamID,
+		l.mtu,
 		establishCb,
 		func(data []byte) error {
 			data = append(data, byte(PacketType_PacketType_RAW))
@@ -145,6 +146,7 @@ func (l *Link) constructRawStream(localStreamID uint32, establishCb func(err err
 			if !rs.closed {
 				if l.rawStreams != nil {
 					if est := l.rawStreams[rs.localStreamID]; est == rs {
+						l.le.WithField("local-stream-id", localStreamID).Debug("stream closed")
 						_ = l.writeStreamClosePacket(rs.remoteStreamID)
 						delete(l.rawStreams, rs.localStreamID)
 					}

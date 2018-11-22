@@ -38,8 +38,8 @@ type LibP2P struct {
 	ma ma.Multiaddr
 	// uuid is the host-local unique id
 	uuid uint64
-	// peerID is the peer id
-	peerID peer.ID
+	// PeerID is the peer id
+	PeerID peer.ID
 }
 
 // NewLibP2P constructs a new listener controller.
@@ -57,13 +57,13 @@ func NewLibP2P(
 		tpt:    tpt,
 		ma:     listenAddr,
 		uuid:   uuid,
-		peerID: pid,
+		PeerID: pid,
 	}
 }
 
-// GetNodeID returns the node id.
-func (l *LibP2P) GetNodeID() peer.ID {
-	return l.peerID
+// GetPeerID returns the node id.
+func (l *LibP2P) GetPeerID() peer.ID {
+	return l.PeerID
 }
 
 // GetControllerInfo returns information about the controller.

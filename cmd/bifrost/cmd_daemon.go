@@ -224,7 +224,8 @@ func runDaemon(c *cli.Context) error {
 
 	// TEST
 	{
-		rid, err := peer.IDB58Decode("12D3KooWASCtX4bsU1SQAcSW5U19bMK2Qx48kyjoZJkv7Nia6kfu")
+		rid, err := peer.IDB58Decode("12D3KooWSk3AvMVENL5dXxNFk5CmmUfT93tnSpmAxAGGKesszWTK")
+		// rid, err := peer.IDB58Decode("12D3KooWASCtX4bsU1SQAcSW5U19bMK2Qx48kyjoZJkv7Nia6kfu")
 		if err != nil {
 			return err
 		}
@@ -241,7 +242,15 @@ func runDaemon(c *cli.Context) error {
 					WithField("stream-reliable", mstrm.GetOpenOpts().Reliable).
 					Debug("stream opened with peer")
 				strm := mstrm.GetStream()
-				strm.Write([]byte("Hello world"))
+				strm.Write([]byte("GET / HTTP/1.1\n\n"))
+
+				dat, err := ioutil.ReadAll(strm)
+				if err != nil {
+					le.WithError(err).Warn("read terminated with error")
+				} else {
+					le.Debug("read terminated normally")
+				}
+				le.Debugf("received data: %s", string(dat))
 			}, nil, nil),
 		)
 		if err != nil {

@@ -65,6 +65,7 @@ func (u *Transport) handleCompleteHandshake(
 		u.opts.GetParityShards(),
 		u.pc.LocalAddr(),
 		addr,
+		u.opts.GetMtu(),
 		u.GetUUID(),
 		exd.GetLocalTransportUuid(),
 		result,

@@ -75,6 +75,8 @@ type Link struct {
 	rawStreamEstablishQueueOut []*rawStream
 	// coordStream is the coordination stream
 	coordStream stream.Stream
+	// mtu is the maximum transmission unit
+	mtu uint32
 
 	// writer is the writer function
 	writer func(b []byte, addr net.Addr) (n int, err error)
@@ -92,6 +94,7 @@ func NewLink(
 	le *logrus.Entry,
 	dataShards, parityShards uint32,
 	localAddr, remoteAddr net.Addr,
+	mtu uint32,
 	transportUUID, remoteTransportUUID uint64,
 	neg *identity.Result,
 	sharedSecret [32]byte,
@@ -99,6 +102,10 @@ func NewLink(
 	initiator bool,
 	closed func(),
 ) *Link {
+	if mtu == 0 {
+		mtu = 1350
+	}
+
 	nctx, nctxCancel := context.WithCancel(ctx)
 	pid, _ := peer.IDFromPublicKey(neg.Peer)
 	l := &Link{
@@ -107,6 +114,7 @@ func NewLink(
 
 		neg:                 neg,
 		le:                  le,
+		mtu:                 mtu,
 		addr:                remoteAddr,
 		uuid:                newLinkUUID(localAddr, remoteAddr, pid),
 		peerID:              pid,
@@ -147,7 +155,7 @@ func NewLink(
 		dummyKcpRemoteAddr,
 		l.buildBlockCrypt(),
 	)
-	l.sess.SetMtu(1350)
+	l.sess.SetMtu(int(mtu))
 
 	conf := smux.DefaultConfig()
 	conf.KeepAliveInterval = time.Second * 5
@@ -297,26 +305,6 @@ func (l *Link) handleRawPacket(data []byte) {
 			Warn("dropped raw packet with unknown stream id")
 	}
 }
-
-/*
-	strm = newRawStream(
-		l.ctx,
-		sid,
-		func(data []byte) error {
-			_, err := l.writer(data, l.addr)
-			return err
-		}, func() {
-			l.rawStreamsMtx.Lock()
-			if l.rawStreams != nil {
-				if est := l.rawStreams[sid]; est == strm {
-					delete(l.rawStreams, sid)
-				}
-			}
-			l.rawStreamsMtx.Unlock()
-		},
-	)
-	l.rawStreams[sid] = strm
-*/
 
 // Close closes the connection.
 func (l *Link) Close() error {

@@ -18,4 +18,7 @@ message Opts {
   // ParityShards are the number of FEC parity shards to use.
   // Recommended: 3
   uint32 parity_shards = 2;
+  // Mtu is the maximum transmission unit to use.
+  // Defaults to 1350 (UDP safe packet size).
+  uint32 mtu = 3;
 }
