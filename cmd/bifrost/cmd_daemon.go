@@ -4,6 +4,7 @@ package main
 
 import (
 	"context"
+	"io"
 	"io/ioutil"
 	"os"
 
@@ -244,11 +245,20 @@ func runDaemon(c *cli.Context) error {
 				strm := mstrm.GetStream()
 				strm.Write([]byte("GET / HTTP/1.1\n\n"))
 
-				dat, err := ioutil.ReadAll(strm)
-				if err != nil {
-					le.WithError(err).Warn("read terminated with error")
-				} else {
-					le.Debug("read terminated normally")
+				var dat []byte
+				b := make([]byte, 1500)
+				for {
+					nr, err := strm.Read(b)
+					if err != nil {
+						if err == io.EOF {
+							break
+						}
+
+						le.WithError(err).Warn("error reading data")
+						break
+					}
+
+					dat = append(dat, b[:nr]...)
 				}
 				le.Debugf("received data: %s", string(dat))
 			}, nil, nil),

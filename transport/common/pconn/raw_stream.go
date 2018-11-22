@@ -140,12 +140,13 @@ func (s *rawStream) Read(b []byte) (n int, err error) {
 		}
 
 		copy(b, pkt)
+		nr := len(pkt)
 		xmitBuf.Put(pkt)
-		if len(b) < len(pkt) {
+		if len(b) < nr {
 			return len(b), io.ErrShortBuffer
 		}
 
-		return len(pkt), nil
+		return nr, nil
 	case <-c:
 		return 0, context.DeadlineExceeded
 	}
