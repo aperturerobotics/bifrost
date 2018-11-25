@@ -38,8 +38,6 @@ type Link struct {
 	peerID peer.ID
 	// mux is the reliable stream multiplexer
 	mux *smux.Session
-	// kpc is the kcp packet conn interface
-	kpc *kcpPacketConn
 	// sess is the kcp session
 	sess *kcp.UDPSession
 	// uuid is the link uuid
@@ -99,7 +97,7 @@ func NewLink(
 	writer func(b []byte, addr net.Addr) (n int, err error),
 	initiator bool,
 	closed func(),
-) *Link {
+) (*Link, error) {
 	sharedSecret := neg.Secret
 	mtu := opts.GetMtu()
 	if mtu == 0 {
@@ -129,12 +127,17 @@ func NewLink(
 		acceptStreamCh:      make(chan *acceptedStream),
 	}
 
-	// dummy raddr
-	l.kpc = newKcpPacketConn(
-		l.ctx,
-		l.localAddr,
-		l.addr,
-		func(b []byte, addr net.Addr) (n int, err error) {
+	// build conv id from shared secret
+	convid := binary.LittleEndian.Uint32(sharedSecret[:4])
+	dataShards := opts.GetDataShards()
+	parityShards := opts.GetParityShards()
+	bc, err := BuildBlockCrypt(opts.GetBlockCrypt(), neg.Secret[:])
+	if err != nil {
+		return nil, err
+	}
+
+	l.sess = kcp.NewUDPSession(
+		func(b []byte) (n int, err error) {
 			b = append(b, byte(PacketType_PacketType_KCP_SMUX))
 			n, err = writer(b, l.addr)
 			if n > 0 {
@@ -142,23 +145,14 @@ func NewLink(
 			}
 			return
 		},
-		l.Close,
-	)
-
-	// build conv id from shared secret
-	convid := binary.LittleEndian.Uint32(sharedSecret[:4])
-	dataShards := opts.GetDataShards()
-	parityShards := opts.GetParityShards()
-	l.sess = kcp.NewUDPSession(
 		convid,
 		int(dataShards),
 		int(parityShards),
-		l.kpc,
-		dummyKcpRemoteAddr,
-		l.buildBlockCrypt(),
+		bc,
 	)
 
 	l.sess.SetStreamMode(true)
+	// l.sess.SetStreamMode(false)
 	l.sess.SetMtu(int(mtu))
 
 	kcpMode := opts.GetKcpMode()
@@ -176,7 +170,8 @@ func NewLink(
 	}
 
 	l.sess.SetWriteDelay(false)
-	l.sess.SetWindowSize(1024, 1024)
+	l.sess.SetWindowSize(1024*12, 1024*12)
+	l.sess.SetACKNoDelay(true)
 
 	conf := smux.DefaultConfig()
 	conf.KeepAliveInterval = time.Second * 5
@@ -191,7 +186,7 @@ func NewLink(
 	l.rawStreamsMtx.Lock()
 	go l.smuxAcceptPump(initiator)
 
-	return l
+	return l, nil
 }
 
 // GetUUID returns the link unique id.
@@ -230,12 +225,6 @@ func (l *Link) AcceptStream() (stream.Stream, stream.OpenOpts, error) {
 // computeConvID computes the conversation id using the shared secret
 func computeConvID(sharedSecret []byte) uint32 {
 	return crc32.ChecksumIEEE(sharedSecret)
-}
-
-// buildBlockCrypt returns the block crypto for this link.
-func (l *Link) buildBlockCrypt() (c kcp.BlockCrypt) {
-	c, _ = kcp.NewAESBlockCrypt(l.sharedSecret[:])
-	return
 }
 
 // newLinkUUID builds the UUID for a link
@@ -283,7 +272,7 @@ func (l *Link) HandlePacket(packetType PacketType, data []byte) {
 	case PacketType_PacketType_RAW:
 		l.handleRawPacket(data)
 	case PacketType_PacketType_KCP_SMUX:
-		l.kpc.pushPacket(data)
+		l.sess.RxPacket(data)
 	}
 }
 
@@ -326,8 +315,8 @@ func (l *Link) handleRawPacket(data []byte) {
 		l.le.
 			WithField("stream-id", sid).
 			Warn("dropped raw packet with unknown stream id")
-		xmitBuf.Put(data[:cap(data)])
 	}
+	// xmitBuf.Put(data[:cap(data)])
 }
 
 // Close closes the connection.

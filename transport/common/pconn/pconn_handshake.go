@@ -58,7 +58,8 @@ func (u *Transport) handleCompleteHandshake(
 	*/
 
 	var lnk *Link
-	lnk = NewLink(
+	var err error
+	lnk, err = NewLink(
 		ctx,
 		le,
 		&u.opts,
@@ -73,6 +74,11 @@ func (u *Transport) handleCompleteHandshake(
 			go u.handleLinkLost(as, lnk)
 		},
 	)
+	if err != nil {
+		le.WithError(err).Warn("cannot construct link, dropping conn")
+		return
+	}
+
 	u.links[as] = lnk
 	go u.handler.HandleLinkEstablished(lnk)
 }

@@ -131,7 +131,13 @@ func (u *Transport) readPump(ctx context.Context) (readErr error) {
 
 	laddr := *u.pc.LocalAddr().(*net.UDPAddr)
 	laddr.Port = 0
-	var buf []byte
+
+	mtu := u.opts.GetMtu()
+	if mtu == 0 {
+		mtu = 1500
+	}
+	buf := make([]byte, mtu*2)
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -141,11 +147,6 @@ func (u *Transport) readPump(ctx context.Context) (readErr error) {
 
 		if err := u.pc.SetReadDeadline(time.Now().Add(3 * time.Second)); err != nil {
 			return err
-		}
-
-		if buf == nil {
-			buf = xmitBuf.Get().([]byte)
-			buf = buf[:cap(buf)]
 		}
 
 		n, addr, err := u.pc.ReadFrom(buf)
@@ -166,7 +167,6 @@ func (u *Transport) readPump(ctx context.Context) (readErr error) {
 				WithError(err).
 				WithField("addr", addr.String()).
 				Debugf("dropped packet: %v", buf[:n])
-			// Debug("dropped packet")
 		} else {
 			/*
 				u.le.
@@ -174,9 +174,8 @@ func (u *Transport) readPump(ctx context.Context) (readErr error) {
 					WithField("addr", addr.String()).
 					Debugf("handled packet: %#v", buf[:n])
 			*/
-			// No error, release pointer to buf
-			buf = nil
 		}
+		buf = buf[:cap(buf)]
 	}
 }
 
@@ -186,6 +185,7 @@ func (u *Transport) LocalAddr() net.Addr {
 }
 
 // handlePacket handles an incoming packet.
+// buf must be copied before it returns
 func (u *Transport) handlePacket(ctx context.Context, buf []byte, addr net.Addr) error {
 	as := addr.String()
 	packetType := PacketType(buf[len(buf)-1])
@@ -211,7 +211,6 @@ func (u *Transport) handlePacket(ctx context.Context, buf []byte, addr net.Addr)
 		}
 
 		hs.hs.Handle(buf)
-		xmitBuf.Put(buf)
 		return nil
 	}
 

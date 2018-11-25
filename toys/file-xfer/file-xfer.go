@@ -20,19 +20,31 @@ import (
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"runtime/pprof"
 )
 
 var testProtocolID = protocol.ID("/x/test")
 
 func main() {
-	if err := doIt(); err != nil {
+	if err := doIt(true); err != nil {
 		os.Stderr.WriteString(err.Error())
 		os.Stderr.WriteString("\n")
 		os.Exit(1)
 	}
 }
 
-func doIt() error {
+func doIt(doProf bool) error {
+	if doProf {
+		cpuProf, err := os.OpenFile("cpu-profile.prof", os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
+		if err != nil {
+			return err
+		}
+		defer cpuProf.Close()
+
+		pprof.StartCPUProfile(cpuProf)
+		defer pprof.StopCPUProfile()
+	}
+
 	log := logrus.New()
 	log.SetLevel(logrus.DebugLevel)
 	le := logrus.NewEntry(log)
@@ -108,13 +120,18 @@ func doIt() error {
 	}
 	defer n2Ref.Release()
 
+	pconnOpts := &pconn.Opts{
+		KcpMode:      pconn.KCPMode_KCPMode_FAST3,
+		BlockCrypt:   pconn.BlockCrypt_BlockCrypt_NONE,
+		DataShards:   10,
+		ParityShards: 3,
+	}
+
 	// Construct transports.
 	_, n1UdpRef, err := b1.AddDirective(
 		resolver.NewLoadControllerWithConfigSingleton(&udptpt.Config{
 			ListenAddr: "127.0.0.1:9823",
-			PacketOpts: &pconn.Opts{
-				KcpMode: pconn.KCPMode_KCPMode_FAST2,
-			},
+			PacketOpts: pconnOpts,
 		}),
 		bus.NewCallbackHandler(func(val directive.Value) {
 			le.Infof("UDP listening on: %s", "127.0.0.1:9823")
@@ -129,9 +146,7 @@ func doIt() error {
 		resolver.NewLoadControllerWithConfigSingleton(&udptpt.Config{
 			ListenAddr: "127.0.0.1:9824",
 			DialAddrs:  []string{"127.0.0.1:9823"},
-			PacketOpts: &pconn.Opts{
-				KcpMode: pconn.KCPMode_KCPMode_FAST2,
-			},
+			PacketOpts: pconnOpts,
 		}),
 		bus.NewCallbackHandler(func(val directive.Value) {
 			le.Infof("UDP listening on: %s", "127.0.0.1:9824")
@@ -236,7 +251,7 @@ func (h *StreamHandler) HandleMountedStream(
 	go func() {
 		defer f.Close()
 		h.le.Debug("starting transfer of file.in")
-		buf := make([]byte, 1500)
+		buf := make([]byte, 100000)
 		nw, err := io.CopyBuffer(strm.GetStream(), f, buf)
 		if err != nil {
 			h.le.WithError(err).Warn("unable to transfer file.in")
