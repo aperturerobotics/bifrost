@@ -3,12 +3,13 @@ module github.com/aperturerobotics/bifrost
 require (
 	github.com/Workiva/go-datastructures v1.0.50 // indirect
 	github.com/agl/ed25519 v0.0.0-20170116200512-5312a6153412 // indirect
-	github.com/aperturerobotics/controllerbus v0.0.0-20181122222316-da29ad297e7d
+	github.com/aperturerobotics/controllerbus v0.0.0-20181125122420-87eba10d0073
 	github.com/aperturerobotics/entitygraph v0.0.0-20181122083621-64f6f29247c6
 	github.com/aperturerobotics/objstore v0.0.0-20181017205445-a91d4c919399
 	github.com/blang/semver v3.5.1+incompatible
-	github.com/btcsuite/btcd v0.0.0-20181013004428-67e573d211ac // indirect
+	github.com/btcsuite/btcd v0.0.0-20181123190223-3dcf298fed2d // indirect
 	github.com/cenkalti/backoff v2.0.0+incompatible
+	github.com/djherbis/buffer v1.0.0
 	github.com/gogo/protobuf v1.1.1 // indirect
 	github.com/golang/protobuf v1.2.0
 	github.com/gopherjs/gopherjs v0.0.0-20181103185306-d547d1d9531e
