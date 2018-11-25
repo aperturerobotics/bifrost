@@ -223,7 +223,10 @@ func runDaemon(c *cli.Context) error {
 				ListenAddr: daemonFlags.UDPListen,
 				DialAddrs:  []string(daemonFlags.UDPDial),
 				PacketOpts: &pconn.Opts{
-					KcpMode: pconn.KCPMode_KCPMode_FAST3,
+					KcpMode:    pconn.KCPMode_KCPMode_FAST3,
+					BlockCrypt: pconn.BlockCrypt_BlockCrypt_AES256,
+					// DataShards:   10,
+					// ParityShards: 3,
 				},
 			}),
 			bus.NewCallbackHandler(func(val directive.Value) {

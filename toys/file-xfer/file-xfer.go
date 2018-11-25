@@ -121,8 +121,9 @@ func doIt(doProf bool) error {
 	defer n2Ref.Release()
 
 	pconnOpts := &pconn.Opts{
-		KcpMode:      pconn.KCPMode_KCPMode_FAST3,
-		BlockCrypt:   pconn.BlockCrypt_BlockCrypt_NONE,
+		KcpMode: pconn.KCPMode_KCPMode_FAST3,
+		// BlockCrypt:   pconn.BlockCrypt_BlockCrypt_NONE,
+		BlockCrypt:   pconn.BlockCrypt_BlockCrypt_AES256,
 		DataShards:   10,
 		ParityShards: 3,
 	}

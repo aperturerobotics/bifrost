@@ -73,12 +73,12 @@ func init() {
 					Usage:       "listen multiaddr",
 					Destination: &listeningConf.ListenMultiaddr,
 				},
-				&cli.BoolFlag{
+				&cli.BoolTFlag{
 					Name:        "encrypted",
 					Usage:       "encrypted stream",
 					Destination: &listeningConf.Encrypted,
 				},
-				&cli.BoolFlag{
+				&cli.BoolTFlag{
 					Name:        "reliable",
 					Usage:       "reliable stream",
 					Destination: &listeningConf.Reliable,
