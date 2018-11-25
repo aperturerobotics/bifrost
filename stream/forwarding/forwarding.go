@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/aperturerobotics/bifrost/link"
+	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
 	ma "github.com/multiformats/go-multiaddr"
@@ -19,6 +20,8 @@ type Controller struct {
 	conf *Config
 	// dialMa is the dial multiaddr
 	dialMa ma.Multiaddr
+	// localPeerID is the peer ID to dial for
+	localPeerID peer.ID
 }
 
 // NewController constructs a new API controller.
@@ -31,10 +34,16 @@ func NewController(
 		return nil, err
 	}
 
+	pid, err := conf.ParsePeerID()
+	if err != nil {
+		return nil, err
+	}
+
 	return &Controller{
-		le:     le,
-		conf:   conf,
-		dialMa: dialMa,
+		le:          le,
+		conf:        conf,
+		dialMa:      dialMa,
+		localPeerID: pid,
 	}, nil
 }
 
@@ -75,6 +84,20 @@ func (c *Controller) resolveHandleMountedStream(
 	di directive.Instance,
 	dir link.HandleMountedStream,
 ) (directive.Resolver, error) {
+	if c.conf.GetProtocolId() != "" &&
+		c.conf.GetProtocolId() != string(dir.HandleMountedStreamProtocolID()) {
+		return nil, nil
+	}
+	if localPeerID := c.localPeerID; localPeerID != peer.ID("") {
+		if lid := dir.HandleMountedStreamLocalPeerID(); lid != localPeerID {
+			c.le.Debugf(
+				"incoming stream %s != filtered %s",
+				lid.Pretty(),
+				localPeerID.Pretty(),
+			)
+			return nil, nil
+		}
+	}
 	return NewDialResolver(c.le, c.dialMa)
 }
 

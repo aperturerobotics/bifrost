@@ -11,8 +11,8 @@ import (
 
 var grpcacceptConf stream_grpcaccept.Config
 
-// runForwardController runs a forwarding controller.
-func runForwardController(cctx *cli.Context) error {
+// runAcceptController runs a accept controller.
+func runAcceptController(cctx *cli.Context) error {
 	ctx := context.Background()
 	c, err := GetClient()
 	if err != nil {
@@ -24,6 +24,9 @@ func runForwardController(cctx *cli.Context) error {
 		return err
 	}
 
+	if len(remotePeerIdsCsv) != 0 {
+		grpcacceptConf.RemotePeerIds = parseRemotePeerIdsCsv()
+	}
 	err = client.Send(&api.AcceptStreamRequest{
 		Config: &grpcacceptConf,
 	})

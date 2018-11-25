@@ -3,15 +3,29 @@
 package main
 
 import (
+	"strings"
 	"sync"
 
 	"github.com/aperturerobotics/bifrost/daemon/api"
+	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/urfave/cli"
 	"google.golang.org/grpc"
 )
 
 var clientDialAddr string
 var clientCommands []cli.Command
+
+var remotePeerIdsCsv string
+
+func parseRemotePeerIdsCsv() []string {
+	pts := strings.Split(remotePeerIdsCsv, ",")
+	var peerIds []string
+	for _, pt := range pts {
+		pt = strings.TrimSpace(pt)
+		peerIds = append(peerIds, pt)
+	}
+	return peerIds
+}
 
 func init() {
 	clientCommands = append(
@@ -45,6 +59,33 @@ func init() {
 					Name:        "target",
 					Usage:       "target multiaddr to forward streams to",
 					Destination: &forwardingConf.TargetMultiaddr,
+				},
+			},
+		},
+		cli.Command{
+			Name:   "accept",
+			Usage:  "Single incoming stream with Protocol ID will be accepted",
+			Action: runAcceptController,
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:        "local-peer-id",
+					Usage:       "local peer ID to match incoming streams to",
+					Destination: &grpcacceptConf.LocalPeerId,
+				},
+				&cli.StringFlag{
+					Name:        "protocol-id",
+					Usage:       "protocol ID to match incoming streams to",
+					Destination: &grpcacceptConf.ProtocolId,
+				},
+				&cli.StringFlag{
+					Name:        "remote-peer-ids",
+					Usage:       "remote peer ids, comma separated, to match, if empty accepts any",
+					Destination: &remotePeerIdsCsv,
+				},
+				&cli.Uint64Flag{
+					Name:        "transport-id",
+					Usage:       "if set, filter the transport id",
+					Destination: &grpcacceptConf.TransportId,
 				},
 			},
 		},

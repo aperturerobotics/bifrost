@@ -5,26 +5,26 @@ import (
 	"os"
 
 	"github.com/aperturerobotics/bifrost/daemon/api"
-	"github.com/aperturerobotics/bifrost/stream/grpcaccept"
 	"github.com/urfave/cli"
 )
 
-var grpcacceptConf stream_grpcaccept.Config
-
-// runForwardController runs a forwarding controller.
-func runForwardController(cctx *cli.Context) error {
+// runDialController runs a dial controller.
+func runDialController(cctx *cli.Context) error {
 	ctx := context.Background()
 	c, err := GetClient()
 	if err != nil {
 		return err
 	}
 
-	client, err := c.AcceptStream(ctx)
+	client, err := c.DialStream(ctx)
 	if err != nil {
 		return err
 	}
 
-	err = client.Send(&api.AcceptStreamRequest{
+	if len(remotePeerIdsCsv) != 0 {
+		grpcacceptConf.RemotePeerIds = parseRemotePeerIdsCsv()
+	}
+	err = client.Send(&api.DialStreamRequest{
 		Config: &grpcacceptConf,
 	})
 	if err != nil {
@@ -43,7 +43,7 @@ func runForwardController(cctx *cli.Context) error {
 				return
 			}
 
-			err = client.Send(&api.AcceptStreamRequest{
+			err = client.Send(&api.DialStreamRequest{
 				Request: &stream_grpcaccept.Request{
 					Data: data[:n],
 				},

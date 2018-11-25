@@ -7,8 +7,10 @@ import (
 	"time"
 
 	"github.com/aperturerobotics/bifrost/peer"
+	"github.com/aperturerobotics/bifrost/stream/grpcaccept"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
+	"github.com/aperturerobotics/controllerbus/controller/resolver"
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
@@ -197,6 +199,62 @@ func (a *API) ListenStreams(
 			ControllerStatus: status,
 		})
 	})
+}
+
+// acceptRPC fulfills grpcaccept
+type acceptRPC struct {
+	BifrostDaemonService_AcceptStreamServer
+}
+
+// Send sends a packet.
+func (r *acceptRPC) Send(resp *stream_grpcaccept.Response) error {
+	return r.BifrostDaemonService_AcceptStreamServer.Send(&AcceptStreamResponse{
+		Response: resp,
+	})
+}
+
+// Recv receives a packet.
+func (r *acceptRPC) Recv() (*stream_grpcaccept.Request, error) {
+	msg, err := r.BifrostDaemonService_AcceptStreamServer.Recv()
+	return msg.GetRequest(), err
+}
+
+// AcceptStream accepts an incoming stream.
+// Stream data is sent over the request / response streams.
+func (a *API) AcceptStream(serv BifrostDaemonService_AcceptStreamServer) error {
+	ctx := serv.Context()
+	msg, err := serv.Recv()
+	if err != nil {
+		return err
+	}
+
+	conf := &stream_grpcaccept.Config{
+		// LocalPeerId is the peer ID to accept incoming connections with.
+		LocalPeerId: msg.GetConfig().GetLocalPeerId(),
+		// RemotePeerIds are peer IDs to accept incoming connections from.
+		// Can be empty to accept any remote peer IDs.
+		RemotePeerIds: msg.GetConfig().GetRemotePeerIds(),
+		// ProtocolId is the protocol ID to accept.
+		ProtocolId: msg.GetConfig().GetProtocolId(),
+		// TransportId constrains the transport ID to accept from.
+		TransportId: msg.GetConfig().GetTransportId(),
+	}
+	if err := conf.Validate(); err != nil {
+		return err
+	}
+
+	dir := resolver.NewLoadControllerWithConfigSingleton(conf)
+
+	// executeController will execute the grpcaccept controller
+	// wait until it's ready
+	val, valRef, err := bus.ExecOneOff(ctx, a.bus, dir, nil)
+	if err != nil {
+		return err
+	}
+	defer valRef.Release()
+
+	ctrl := val.(*stream_grpcaccept.Controller)
+	return ctrl.AttachRPC(&acceptRPC{BifrostDaemonService_AcceptStreamServer: serv})
 }
 
 // RegisterAsGRPCServer registers the API to the GRPC instance.

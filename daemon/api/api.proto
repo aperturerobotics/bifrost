@@ -4,6 +4,7 @@ package api;
 import "github.com/aperturerobotics/controllerbus/controller/controller.proto";
 import "github.com/aperturerobotics/bifrost/stream/forwarding/forwarding.proto";
 import "github.com/aperturerobotics/bifrost/stream/listening/listening.proto";
+import "github.com/aperturerobotics/bifrost/stream/grpcaccept/grpcaccept.proto";
 
 // Config configures the GRPC API.
 message Config {
@@ -89,6 +90,21 @@ message ListenStreamsResponse {
   ControllerStatus controller_status = 1;
 }
 
+// AcceptStreamRequest is the request type for AcceptStream.
+message AcceptStreamRequest {
+  // Config is the configuration for the accept.
+  // The first packet will contain this value.
+  stream.grpcaccept.Config config = 1;
+  // Request is a request packet.
+  stream.grpcaccept.Request request = 2;
+}
+
+// AcceptStreamResponse is the response type for AcceptStream.
+message AcceptStreamResponse {
+  // Response is a response packet.
+  stream.grpcaccept.Response response = 1;
+}
+
 // BifrostDaemonService is the control service for a daemon, contacted by the CLI.
 service BifrostDaemonService {
   // GetPeerInfo returns information about attached peers.
@@ -101,4 +117,7 @@ service BifrostDaemonService {
   // ListenStreams listens for connections to the multiaddress.
   // Forwards the connections to a remote peer with a protocol ID.
   rpc ListenStreams(ListenStreamsRequest) returns (stream ListenStreamsResponse) {}
+  // AcceptStream accepts an incoming stream.
+  // Stream data is sent over the request / response streams.
+  rpc AcceptStream(stream AcceptStreamRequest) returns (stream AcceptStreamResponse) {}
 }
