@@ -1,0 +1,22 @@
+syntax = "proto3";
+package stream.listening;
+
+// Config configures the listening controller.
+message Config {
+  // LocalPeerId is the peer ID to forward incoming connections with.
+  // Can be empty.
+  string local_peer_id = 1;
+  // RemotePeerId is the peer ID to forward incoming connections to.
+  string remote_peer_id = 2;
+  // ProtocolId is the protocol ID to assign to incoming connections.
+  string protocol_id = 3;
+  // ListenMultiaddr is the listening multiaddress.
+  string listen_multiaddr = 4;
+  // TransportId sets a transport ID constraint.
+  // Can be empty.
+  uint64 transport_id = 5;
+  // Reliable indicates the stream should be reliable.
+  bool reliable = 6;
+  // Encrypted indicates the stream should be encrypted.
+  bool encrypted = 7;
+}

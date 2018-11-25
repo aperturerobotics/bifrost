@@ -15,6 +15,7 @@ type linkWaiter struct {
 // pushLinkWaiter pushes a new waiter for a link with a peer id.
 // checks for a link that matches the peer id
 // returns nil if callback was called immediately and cbOnce is set
+// if cbOnce, only added events will be sent, and only one cb() will be called
 // cb added indicates if it is an add or remove event.
 // linksMtx should be locked.
 func (c *Controller) pushLinkWaiter(peerID peer.ID, cbOnce bool, cb func(lnk link.Link, added bool)) *linkWaiter {
@@ -24,8 +25,6 @@ func (c *Controller) pushLinkWaiter(peerID peer.ID, cbOnce bool, cb func(lnk lin
 			go cb(lnk.Link, true)
 			if cbOnce {
 				return nil
-			} else {
-				break
 			}
 		}
 	}
@@ -79,7 +78,7 @@ func (c *Controller) resolveLinkWaiters(lnk link.Link, added bool) {
 			if w.cbOnce && !added {
 				continue
 			}
-			w.cb(lnk, added)
+			go w.cb(lnk, added)
 			if w.cbOnce {
 				pw[i] = pw[len(pw)-1]
 				pw[len(pw)-1] = nil

@@ -10,9 +10,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Controller implements the API controller. The controller looks up the Node,
-// acquires its identity, constructs the GRPC listener, and responds to incoming
-// API calls.
+// Controller implements the forwarding controller. The controller handles
+// HandleMountedStream directives by dialing a target multiaddress.
 type Controller struct {
 	// le is the logger
 	le *logrus.Entry

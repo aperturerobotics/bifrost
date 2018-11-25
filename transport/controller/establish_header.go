@@ -30,13 +30,25 @@ func writeStreamEstablishHeader(w io.Writer, msg *StreamEstablish) (int, error) 
 	return nw, err
 }
 
+func readAtLeast(r io.Reader, n, min int, buf []byte) (int, error) {
+	for n < min {
+		nr, err := r.Read(buf[n:])
+		if err != nil {
+			return n, err
+		}
+		n += nr
+	}
+	return n, nil
+}
+
 func readStreamEstablishHeader(r io.Reader) (*StreamEstablish, error) {
-	b := make([]byte, 1500)
-	n, err := r.Read(b)
+	b := make([]byte, 4)
+	n := 0
+	var err error
+	n, err = readAtLeast(r, n, 4, b)
 	if err != nil {
 		return nil, err
 	}
-	b = b[:n]
 
 	// Read the header length varint
 	headerLen, headerLenBytes := proto.DecodeVarint(b)
@@ -53,16 +65,14 @@ func readStreamEstablishHeader(r io.Reader) (*StreamEstablish, error) {
 		)
 	}
 
-	headerBuf := make([]byte, headerLen)
+	headerBuf := make([]byte, int(headerLen))
 	copy(headerBuf, b[headerLenBytes:])
-	remainingBytes := int(headerLen) - (len(b) - headerLenBytes)
-	if remainingBytes > 0 {
-		_, err := io.ReadFull(r, headerBuf[(len(b)-headerLenBytes):])
-		if err != nil {
-			return nil, err
-		}
+	n = len(b) - headerLenBytes
+	if _, err := readAtLeast(r, n, int(headerLen), headerBuf); err != nil {
+		return nil, err
 	}
 
+	// logrus.Infof("read stream establish: %v", headerBuf)
 	// decode stream establish header
 	estHeader := &StreamEstablish{}
 	if err := proto.Unmarshal(headerBuf, estHeader); err != nil {

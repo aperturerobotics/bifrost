@@ -40,8 +40,27 @@ func (a *API) GetBusInfo(
 		controllerInfos = append(controllerInfos, &ci)
 	}
 
+	directives := a.bus.GetDirectives()
+	directiveInfo := make([]*DirectiveInfo, len(directives))
+	for i, directive := range directives {
+		dv := &DirectiveInfo{}
+		dir := directive.GetDirective()
+		debugVals := dir.GetDebugVals()
+		if debugVals != nil {
+			for key, vals := range debugVals {
+				dv.DebugVals = append(dv.DebugVals, &DebugValue{
+					Key:    key,
+					Values: vals,
+				})
+			}
+		}
+		dv.Name = dir.GetName()
+		directiveInfo[i] = dv
+	}
+
 	return &GetBusInfoResponse{
 		RunningControllers: controllerInfos,
+		RunningDirectives:  directiveInfo,
 	}, nil
 }
 
@@ -154,6 +173,27 @@ func (a *API) ForwardStreams(
 
 	return a.executeController(reqCtx, conf, func(status ControllerStatus) {
 		_ = serv.Send(&ForwardStreamsResponse{
+			ControllerStatus: status,
+		})
+	})
+}
+
+// ListenStreams listens for streams on the multiaddress.
+func (a *API) ListenStreams(
+	req *ListenStreamsRequest,
+	serv BifrostDaemonService_ListenStreamsServer,
+) error {
+	ctx := serv.Context()
+	conf := req.GetListeningConfig()
+	if err := conf.Validate(); err != nil {
+		return err
+	}
+
+	reqCtx, reqCtxCancel := context.WithCancel(ctx)
+	defer reqCtxCancel()
+
+	return a.executeController(reqCtx, conf, func(status ControllerStatus) {
+		_ = serv.Send(&ListenStreamsResponse{
 			ControllerStatus: status,
 		})
 	})

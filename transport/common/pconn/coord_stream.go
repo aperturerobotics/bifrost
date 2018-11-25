@@ -146,7 +146,7 @@ func (l *Link) constructRawStream(localStreamID uint32, establishCb func(err err
 			if !rs.closed {
 				if l.rawStreams != nil {
 					if est := l.rawStreams[rs.localStreamID]; est == rs {
-						l.le.WithField("local-stream-id", localStreamID).Debug("stream closed")
+						l.le.WithField("local-stream-id", localStreamID).Debug("raw stream closed")
 						_ = l.writeStreamClosePacket(rs.remoteStreamID)
 						delete(l.rawStreams, rs.localStreamID)
 					}
@@ -192,6 +192,11 @@ func (l *Link) handleCoordRawStreamAck(pkt *RawStreamAck) error {
 		return errors.Errorf("ack: unknown local stream %d", localStreamID)
 	}
 
+	// already ack'd
+	if rstrm.remoteStreamID != 0 {
+		return nil
+	}
+
 	var estErr error
 	if pkt.GetAckError() != "" {
 		rstrm.markClosed()
@@ -202,6 +207,24 @@ func (l *Link) handleCoordRawStreamAck(pkt *RawStreamAck) error {
 	}
 	if rstrm.establishCb != nil {
 		go rstrm.establishCb(estErr)
+	}
+	if l.inflightRawStreamEstablishOut != 0 {
+		l.inflightRawStreamEstablishOut--
+	}
+
+	for l.inflightRawStreamEstablishOut < maxInflightEstablishes {
+		if len(l.rawStreamEstablishQueueOut) == 0 {
+			break
+		}
+
+		o := l.rawStreamEstablishQueueOut[len(l.rawStreamEstablishQueueOut)-1]
+		l.rawStreamEstablishQueueOut[len(l.rawStreamEstablishQueueOut)-1] = nil
+		l.rawStreamEstablishQueueOut = l.rawStreamEstablishQueueOut[:len(l.rawStreamEstablishQueueOut)-1]
+		if err := l.writeRawStreamEstablish(o); err != nil {
+			l.le.WithError(err).Warn("error writing raw stream establish")
+		} else {
+			l.inflightRawStreamEstablishOut++
+		}
 	}
 
 	return estErr
@@ -257,7 +280,7 @@ func (l *Link) handleCoordRawStreamClose(pkt *RawStreamClose) error {
 
 	_ = localStream.Close()
 	if closeErr := pkt.GetCloseError(); closeErr != "" {
-		l.le.WithError(errors.New(closeErr)).Warn("stream closed with error")
+		l.le.WithError(errors.New(closeErr)).Warn("raw stream closed with error")
 		return nil
 	}
 	return nil

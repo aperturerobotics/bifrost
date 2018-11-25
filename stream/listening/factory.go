@@ -1,23 +1,27 @@
-package stream_forwarding
+package stream_listening
 
 import (
+	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/config"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/blang/semver"
 )
 
 // ControllerID identifies the API controller.
-const ControllerID = "bifrost/stream/forwarding/1"
+const ControllerID = "bifrost/stream/listening/1"
 
 // Version is the controller version.
 var Version = semver.MustParse("0.0.1")
 
-// Factory constructs a forwarding controller
-type Factory struct{}
+// Factory constructs a listening controller
+type Factory struct {
+	// bus is the controller bus
+	bus bus.Bus
+}
 
-// NewFactory builds a forwarding factory.
-func NewFactory() *Factory {
-	return &Factory{}
+// NewFactory builds a listening factory.
+func NewFactory(bus bus.Bus) *Factory {
+	return &Factory{bus: bus}
 }
 
 // GetControllerID returns the unique ID for the controller.
@@ -40,7 +44,7 @@ func (t *Factory) Construct(
 	cc := conf.(*Config)
 
 	// Construct the controller.
-	return NewController(le, cc)
+	return NewController(le, cc, t.bus)
 }
 
 // GetVersion returns the version of this controller.

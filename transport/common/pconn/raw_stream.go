@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/aperturerobotics/bifrost/stream"
+	"github.com/djherbis/buffer"
 	"github.com/golang/protobuf/proto"
 )
 
@@ -23,8 +24,10 @@ type rawStream struct {
 	// empty until remote stream ID is known
 	headerVarint []byte
 
-	// packetCh is a packet buffer implemented with a channel
-	packetCh    chan []byte
+	packetMtx  sync.Mutex
+	packetBuf  buffer.Buffer
+	packetWake chan struct{}
+
 	writeFn     func(data []byte) error
 	writeMtx    sync.Mutex
 	closeFn     func(*rawStream)
@@ -63,6 +66,11 @@ func decodeRawStreamIDVarint(vb []byte) (x uint64, n int) {
 	return
 }
 
+// keep 6000 packets
+// 1 packet = 1500 byte maximum
+// 6000*1500 ~= 10mb packet ring
+var packetRingSize = 6000 * 1500
+
 func newRawStream(
 	ctx context.Context,
 	localStreamID uint32,
@@ -72,12 +80,9 @@ func newRawStream(
 	closeFn func(*rawStream),
 ) *rawStream {
 	return &rawStream{
-		ctx: ctx,
-		// keep 60000 packets
-		// 1 packet = 1500 byte maximum
-		// 60000*1500 ~= 100mb packet ring
-		// can be replaced with a better ringbuffer impl later
-		packetCh:      make(chan []byte, mtu*60000),
+		ctx:           ctx,
+		packetWake:    make(chan struct{}, 1),
+		packetBuf:     buffer.NewRing(buffer.New(int64(packetRingSize))),
 		establishCb:   establishCb,
 		writeFn:       writeFn,
 		closeFn:       closeFn,
@@ -98,57 +103,56 @@ func (s *rawStream) PushPacket(packet []byte) {
 		return
 	}
 
-PushLoop:
-	for {
-		select {
-		case s.packetCh <- packet:
-			break PushLoop
-		default:
-		}
+	s.packetMtx.Lock()
+	s.packetBuf.Write(packet)
+	// logrus.Infof("pushPacket: %v len(buf): %d", packet, s.packetBuf.Len())
+	s.packetMtx.Unlock()
 
-		// drop a packet
-		select {
-		case pkt := <-s.packetCh:
-			xmitBuf.Put(pkt)
-		default:
-		}
+	select {
+	case s.packetWake <- struct{}{}:
+	default:
 	}
 }
 
 // Read data from the stream.
 func (s *rawStream) Read(b []byte) (n int, err error) {
-	readDeadline := s.readDeadline
-	var c <-chan time.Time
-	if !readDeadline.IsZero() {
-		now := time.Now()
-		if readDeadline.Before(now) {
+	for {
+		s.packetMtx.Lock()
+		n, err = s.packetBuf.Read(b)
+		s.packetMtx.Unlock()
+		if err == io.EOF {
+			err = nil
+		}
+		if n != 0 || err != nil {
+			return n, err
+		}
+
+		readDeadline := s.readDeadline
+		var c <-chan time.Time
+		if !readDeadline.IsZero() {
+			now := time.Now()
+			if readDeadline.Before(now) {
+				return 0, context.DeadlineExceeded
+			}
+
+			fromNow := readDeadline.Sub(now)
+			c = time.After(fromNow)
+		}
+
+		select {
+		case <-s.ctx.Done():
+			s.packetMtx.Lock()
+			n, err = s.packetBuf.Read(b)
+			s.packetMtx.Unlock()
+			if n == 0 && err == nil {
+				err = io.EOF
+			}
+			return
+		case <-c:
 			return 0, context.DeadlineExceeded
+		case <-s.packetWake:
+			// wakeup
 		}
-
-		fromNow := readDeadline.Sub(now)
-		tck := time.NewTicker(fromNow)
-		defer tck.Stop()
-		c = tck.C
-	}
-
-	select {
-	case <-s.ctx.Done():
-		return 0, io.EOF
-	case pkt, ok := <-s.packetCh:
-		if !ok {
-			return 0, io.EOF
-		}
-
-		copy(b, pkt)
-		nr := len(pkt)
-		xmitBuf.Put(pkt)
-		if len(b) < nr {
-			return len(b), io.ErrShortBuffer
-		}
-
-		return nr, nil
-	case <-c:
-		return 0, context.DeadlineExceeded
 	}
 }
 
@@ -164,6 +168,8 @@ func (s *rawStream) Write(b []byte) (n int, err error) {
 
 	// If fragmentation is necessary...
 	// slow path
+	// TODO: this may incorrectly be re-assembled on the other end
+	// TODO: maybe use native IP fragmenting here instead.
 	if blen > mtu {
 		var xpkt []byte
 		for i := 0; i < blen; i += mtu {
@@ -186,7 +192,7 @@ func (s *rawStream) Write(b []byte) (n int, err error) {
 					pkt = xmitBuf.Get().([]byte)
 					xpkt = pkt
 					defer func() {
-						xmitBuf.Put(xpkt)
+						xmitBuf.Put(pkt)
 					}()
 				}
 				pkt = pkt[:jWithSuffix-i]
@@ -247,7 +253,6 @@ func (s *rawStream) markClosed() {
 	}
 
 	s.closed = true
-	close(s.packetCh)
 }
 
 // Close closes the stream.

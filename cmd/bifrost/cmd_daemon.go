@@ -4,18 +4,18 @@ package main
 
 import (
 	"context"
-	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
+	"runtime"
 
 	"github.com/aperturerobotics/bifrost/daemon"
 	"github.com/aperturerobotics/bifrost/daemon/api"
 	egctr "github.com/aperturerobotics/bifrost/entitygraph"
 	"github.com/aperturerobotics/bifrost/keypem"
-	"github.com/aperturerobotics/bifrost/link"
-	"github.com/aperturerobotics/bifrost/peer"
-	"github.com/aperturerobotics/bifrost/stream"
 	"github.com/aperturerobotics/bifrost/stream/forwarding"
+	"github.com/aperturerobotics/bifrost/stream/listening"
+	"github.com/aperturerobotics/bifrost/transport/common/pconn"
 	udptpt "github.com/aperturerobotics/bifrost/transport/udp"
 	wtpt "github.com/aperturerobotics/bifrost/transport/websocket"
 	"github.com/aperturerobotics/controllerbus/bus"
@@ -30,11 +30,15 @@ import (
 	"github.com/urfave/cli"
 )
 
+// _ enables the profiling endpoints
+import _ "net/http/pprof"
+
 var daemonFlags struct {
 	PeerPrivPath    string
 	WebsocketListen string
 	APIListen       string
 	UDPListen       string
+	ProfListen      string
 
 	// UDPDial
 	// Temporary
@@ -60,6 +64,11 @@ func init() {
 					Usage:       "if set, will listen on address for API grpc connections, ex :5110",
 					Destination: &daemonFlags.APIListen,
 					Value:       ":5110",
+				},
+				cli.StringFlag{
+					Name:        "prof-listen",
+					Usage:       "if set, debug profiler will be hosted on the port, ex :8080",
+					Destination: &daemonFlags.ProfListen,
 				},
 				cli.StringFlag{
 					Name:        "websocket-listen",
@@ -128,6 +137,7 @@ func runDaemon(c *cli.Context) error {
 	sr := d.GetStaticResolver()
 	sr.AddFactory(egctr.NewFactory(b))
 	sr.AddFactory(stream_forwarding.NewFactory())
+	sr.AddFactory(stream_listening.NewFactory(b))
 
 	// Entity graph controller.
 	{
@@ -212,6 +222,9 @@ func runDaemon(c *cli.Context) error {
 			resolver.NewLoadControllerWithConfigSingleton(&udptpt.Config{
 				ListenAddr: daemonFlags.UDPListen,
 				DialAddrs:  []string(daemonFlags.UDPDial),
+				PacketOpts: &pconn.Opts{
+					KcpMode: pconn.KCPMode_KCPMode_FAST2,
+				},
 			}),
 			bus.NewCallbackHandler(func(val directive.Value) {
 				le.Infof("UDP listening on: %s", daemonFlags.UDPListen)
@@ -223,50 +236,14 @@ func runDaemon(c *cli.Context) error {
 		defer udpRef.Release()
 	}
 
-	// TEST
-	{
-		rid, err := peer.IDB58Decode("12D3KooWSk3AvMVENL5dXxNFk5CmmUfT93tnSpmAxAGGKesszWTK")
-		// rid, err := peer.IDB58Decode("12D3KooWASCtX4bsU1SQAcSW5U19bMK2Qx48kyjoZJkv7Nia6kfu")
-		if err != nil {
-			return err
-		}
-		_, udpRef, err := b.AddDirective(
-			link.NewOpenStreamWithPeer("test/protocol/1", peer.ID(""), rid, 0, stream.OpenOpts{
-				// Encrypted: true,
-				// Reliable:  true,
-			}),
-			bus.NewCallbackHandler(func(val directive.Value) {
-				mstrm := val.(link.MountedStream)
-				le.
-					WithField("protocol-id", mstrm.GetProtocolID()).
-					WithField("stream-encrypted", mstrm.GetOpenOpts().Encrypted).
-					WithField("stream-reliable", mstrm.GetOpenOpts().Reliable).
-					Debug("stream opened with peer")
-				strm := mstrm.GetStream()
-				strm.Write([]byte("GET / HTTP/1.1\n\n"))
-
-				var dat []byte
-				b := make([]byte, 1500)
-				for {
-					nr, err := strm.Read(b)
-					if err != nil {
-						if err == io.EOF {
-							break
-						}
-
-						le.WithError(err).Warn("error reading data")
-						break
-					}
-
-					dat = append(dat, b[:nr]...)
-				}
-				le.Debugf("received data: %s", string(dat))
-			}, nil, nil),
-		)
-		if err != nil {
-			return errors.Wrap(err, "dial peer")
-		}
-		defer udpRef.Release()
+	if daemonFlags.ProfListen != "" {
+		runtime.SetBlockProfileRate(1)
+		runtime.SetMutexProfileFraction(1)
+		go func() {
+			le.Debugf("profiling listener running: %s", daemonFlags.ProfListen)
+			err := http.ListenAndServe(daemonFlags.ProfListen, nil)
+			le.WithError(err).Warn("profiling listener exited")
+		}()
 	}
 
 	_ = d

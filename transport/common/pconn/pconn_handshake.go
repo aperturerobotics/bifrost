@@ -61,15 +61,12 @@ func (u *Transport) handleCompleteHandshake(
 	lnk = NewLink(
 		ctx,
 		le,
-		u.opts.GetDataShards(),
-		u.opts.GetParityShards(),
+		&u.opts,
 		u.pc.LocalAddr(),
 		addr,
-		u.opts.GetMtu(),
 		u.GetUUID(),
 		exd.GetLocalTransportUuid(),
 		result,
-		result.Secret,
 		u.pc.WriteTo,
 		initiator,
 		func() {

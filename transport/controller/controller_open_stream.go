@@ -45,10 +45,6 @@ func (o *openStreamResolver) Resolve(ctx context.Context, handler directive.Reso
 
 	c.linksMtx.Lock()
 	lw := c.pushLinkWaiter(o.dir.OpenStreamTargetPeerID(), true, func(lnk link.Link, added bool) {
-		if !added {
-			return
-		}
-
 		select {
 		case <-ctx.Done():
 			return
@@ -58,9 +54,11 @@ func (o *openStreamResolver) Resolve(ctx context.Context, handler directive.Reso
 		strm, err := lnk.OpenStream(openOpts)
 		if err != nil {
 			errCh <- err
-			if strm != nil {
-				strm.Close()
-			}
+			/*
+				if strm != nil {
+					strm.Close()
+				}
+			*/
 			return
 		}
 		strm.SetWriteDeadline(time.Now().Add(streamEstablishTimeout))

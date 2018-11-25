@@ -35,3 +35,26 @@ func runPeerInfo(*cli.Context) error {
 	os.Stdout.WriteString("\n")
 	return nil
 }
+
+// runBusInfo runs the bus information command.
+func runBusInfo(*cli.Context) error {
+	ctx := context.Background()
+	c, err := GetClient()
+	if err != nil {
+		return err
+	}
+
+	ni, err := c.GetBusInfo(ctx, &api.GetBusInfoRequest{})
+	if err != nil {
+		return err
+	}
+
+	dat, err := json.MarshalIndent(ni, "", "\t")
+	if err != nil {
+		return err
+	}
+
+	os.Stdout.WriteString(string(dat))
+	os.Stdout.WriteString("\n")
+	return nil
+}

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/aperturerobotics/bifrost/link"
+	"github.com/aperturerobotics/bifrost/stream/proxy"
 	ma "github.com/multiformats/go-multiaddr"
 	manet "github.com/multiformats/go-multiaddr-net"
 	"github.com/sirupsen/logrus"
@@ -31,18 +32,21 @@ func (m *MountedStreamHandler) HandleMountedStream(
 	ctx context.Context,
 	strm link.MountedStream,
 ) error {
-	// Attempt to dial the target.
-	// TODO: use context here
-	m.le.Debug("dialing to forward stream")
-	conn, err := manet.Dial(m.dialMa)
-	if err != nil {
-		return err
-	}
+	go func() {
+		// Attempt to dial the target.
+		// TODO: use context here
+		m.le.Debug("dialing to forward stream")
+		s := strm.GetStream()
+		conn, err := manet.Dial(m.dialMa)
+		if err != nil {
+			s.Close()
+			m.le.WithError(err).Warn("unable to dial to forward stream")
+			return
+		}
 
-	m.le.Debug("connection opened")
-	s := strm.GetStream()
-
-	ProxyStreams(conn, s)
+		m.le.Debug("connection opened")
+		proxy.ProxyStreams(conn, s)
+	}()
 	return nil
 }
 

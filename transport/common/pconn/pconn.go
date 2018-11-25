@@ -174,6 +174,7 @@ func (u *Transport) readPump(ctx context.Context) (readErr error) {
 					WithField("addr", addr.String()).
 					Debugf("handled packet: %#v", buf[:n])
 			*/
+			// No error, release pointer to buf
 			buf = nil
 		}
 	}

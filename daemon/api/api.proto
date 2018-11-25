@@ -3,6 +3,7 @@ package api;
 
 import "github.com/aperturerobotics/controllerbus/controller/controller.proto";
 import "github.com/aperturerobotics/bifrost/stream/forwarding/forwarding.proto";
+import "github.com/aperturerobotics/bifrost/stream/listening/listening.proto";
 
 // Config configures the GRPC API.
 message Config {
@@ -32,10 +33,28 @@ message GetPeerInfoResponse {
 message GetBusInfoRequest {
 }
 
+// DebugValue is a debug value.
+message DebugValue {
+  // Key is the debug value key.
+  string key = 1;
+  // Values are the debug value values.
+  repeated string values = 2;
+}
+
+// DirectiveInfo contains directive information.
+message DirectiveInfo {
+  // Name is the directive name.
+  string name = 1;
+  // DebugVals contains the directive debug values.
+  repeated DebugValue debug_vals = 2;
+}
+
 // GetBusInfoResponse is the response type for GetBusInfo.
 message GetBusInfoResponse {
   // RunningControllers is the list of running controllers.
   repeated controller.Info running_controllers = 1;
+  // RunningDirectives is the list of running directives.
+  repeated DirectiveInfo running_directives = 2;
 }
 
 // ControllerStatus holds basic status for a controller.
@@ -59,6 +78,17 @@ message ForwardStreamsResponse {
   ControllerStatus controller_status = 1;
 }
 
+// ListenStreamsRequest is the request type for ListenStreams.
+message ListenStreamsRequest {
+  stream.listening.Config listening_config = 1;
+}
+
+// ListenStreamsResponse is the response type for ListenStreams.
+message ListenStreamsResponse {
+  // ControllerStatus is the status of the forwarding controller.
+  ControllerStatus controller_status = 1;
+}
+
 // BifrostDaemonService is the control service for a daemon, contacted by the CLI.
 service BifrostDaemonService {
   // GetPeerInfo returns information about attached peers.
@@ -68,4 +98,7 @@ service BifrostDaemonService {
   // ForwardStreams forwards streams to the target multiaddress.
   // Handles HandleMountedStream directives by contacting the target.
   rpc ForwardStreams(ForwardStreamsRequest) returns (stream ForwardStreamsResponse) {}
+  // ListenStreams listens for connections to the multiaddress.
+  // Forwards the connections to a remote peer with a protocol ID.
+  rpc ListenStreams(ListenStreamsRequest) returns (stream ListenStreamsResponse) {}
 }

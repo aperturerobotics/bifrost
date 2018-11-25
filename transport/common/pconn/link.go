@@ -92,16 +92,16 @@ type acceptedStream struct {
 func NewLink(
 	ctx context.Context,
 	le *logrus.Entry,
-	dataShards, parityShards uint32,
+	opts *Opts,
 	localAddr, remoteAddr net.Addr,
-	mtu uint32,
 	transportUUID, remoteTransportUUID uint64,
 	neg *identity.Result,
-	sharedSecret [32]byte,
 	writer func(b []byte, addr net.Addr) (n int, err error),
 	initiator bool,
 	closed func(),
 ) *Link {
+	sharedSecret := neg.Secret
+	mtu := opts.GetMtu()
 	if mtu == 0 {
 		mtu = 1350
 	}
@@ -147,6 +147,8 @@ func NewLink(
 
 	// build conv id from shared secret
 	convid := binary.LittleEndian.Uint32(sharedSecret[:4])
+	dataShards := opts.GetDataShards()
+	parityShards := opts.GetParityShards()
 	l.sess = kcp.NewUDPSession(
 		convid,
 		int(dataShards),
@@ -155,11 +157,31 @@ func NewLink(
 		dummyKcpRemoteAddr,
 		l.buildBlockCrypt(),
 	)
+
+	l.sess.SetStreamMode(true)
 	l.sess.SetMtu(int(mtu))
+
+	kcpMode := opts.GetKcpMode()
+	switch kcpMode {
+	case KCPMode_KCPMode_UNKNOWN:
+		fallthrough
+	case KCPMode_KCPMode_NORMAL:
+		l.sess.SetNoDelay(0, 40, 2, 1)
+	case KCPMode_KCPMode_FAST:
+		l.sess.SetNoDelay(0, 30, 2, 1)
+	case KCPMode_KCPMode_FAST2:
+		l.sess.SetNoDelay(1, 20, 2, 1)
+	case KCPMode_KCPMode_FAST3:
+		l.sess.SetNoDelay(1, 10, 2, 1)
+	}
+
+	l.sess.SetWriteDelay(false)
+	l.sess.SetWindowSize(1024, 1024)
 
 	conf := smux.DefaultConfig()
 	conf.KeepAliveInterval = time.Second * 5
 	conf.KeepAliveTimeout = time.Second * 13
+	conf.MaxReceiveBuffer = 4194304
 	if initiator {
 		l.mux, _ = smux.Server(l.sess, conf)
 	} else {
@@ -212,7 +234,7 @@ func computeConvID(sharedSecret []byte) uint32 {
 
 // buildBlockCrypt returns the block crypto for this link.
 func (l *Link) buildBlockCrypt() (c kcp.BlockCrypt) {
-	c, _ = kcp.NewSalsa20BlockCrypt(l.sharedSecret[:])
+	c, _ = kcp.NewAESBlockCrypt(l.sharedSecret[:])
 	return
 }
 
@@ -269,6 +291,7 @@ func (l *Link) HandlePacket(packetType PacketType, data []byte) {
 func (l *Link) handleRawPacket(data []byte) {
 	// expect varint stream ID as suffix
 	// reversed, take last 4 bytes
+	// l.le.Infof("handleRawPacket: %v", data)
 	fi := len(data) - 5
 	if fi < 0 {
 		fi = 0
@@ -303,6 +326,7 @@ func (l *Link) handleRawPacket(data []byte) {
 		l.le.
 			WithField("stream-id", sid).
 			Warn("dropped raw packet with unknown stream id")
+		xmitBuf.Put(data[:cap(data)])
 	}
 }
 

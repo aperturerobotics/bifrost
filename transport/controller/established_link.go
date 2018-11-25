@@ -13,7 +13,7 @@ import (
 // linkHoldOpenDur is the minimum amount of time to hold a link open.
 // TODO: move this to a more configurable location
 // var linkHoldOpenDur = time.Duration(10) * time.Second
-var linkHoldOpenDur = time.Duration(60) * time.Second
+var linkHoldOpenDur = time.Duration(3) * time.Minute
 
 // establishedLink holds state for an established link.
 type establishedLink struct {
