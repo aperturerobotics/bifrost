@@ -45,7 +45,7 @@ func (m *MountedStreamHandler) HandleMountedStream(
 		}
 
 		m.le.Debug("connection opened")
-		proxy.ProxyStreams(conn, s)
+		proxy.ProxyStreams(conn, s, func() {})
 	}()
 	return nil
 }

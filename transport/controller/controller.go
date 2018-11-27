@@ -180,7 +180,7 @@ func (c *Controller) GetTransport(ctx context.Context) (transport.Transport, err
 func (c *Controller) HandleDirective(ctx context.Context, di directive.Instance) (directive.Resolver, error) {
 	dir := di.GetDirective()
 	switch d := dir.(type) {
-	case link.OpenStream:
+	case link.OpenStreamWithPeer:
 		return c.resolveOpenStreamWithPeer(ctx, di, d)
 	case link.EstablishLink:
 		return c.resolveEstablishLink(ctx, di, d)

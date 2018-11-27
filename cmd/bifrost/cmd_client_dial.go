@@ -5,8 +5,12 @@ import (
 	"os"
 
 	"github.com/aperturerobotics/bifrost/daemon/api"
+	"github.com/aperturerobotics/bifrost/stream/grpc"
+	"github.com/aperturerobotics/bifrost/stream/grpc/dial"
 	"github.com/urfave/cli"
 )
+
+var grpcdialConf stream_grpc_dial.Config
 
 // runDialController runs a dial controller.
 func runDialController(cctx *cli.Context) error {
@@ -21,11 +25,8 @@ func runDialController(cctx *cli.Context) error {
 		return err
 	}
 
-	if len(remotePeerIdsCsv) != 0 {
-		grpcacceptConf.RemotePeerIds = parseRemotePeerIdsCsv()
-	}
 	err = client.Send(&api.DialStreamRequest{
-		Config: &grpcacceptConf,
+		Config: &grpcdialConf,
 	})
 	if err != nil {
 		return err
@@ -44,7 +45,7 @@ func runDialController(cctx *cli.Context) error {
 			}
 
 			err = client.Send(&api.DialStreamRequest{
-				Request: &stream_grpcaccept.Request{
+				Request: &stream_grpc.Request{
 					Data: data[:n],
 				},
 			})

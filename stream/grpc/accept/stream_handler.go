@@ -1,9 +1,10 @@
-package stream_grpcaccept
+package stream_grpc_accept
 
 import (
 	"context"
 
 	"github.com/aperturerobotics/bifrost/link"
+	"github.com/aperturerobotics/bifrost/stream/grpc"
 	"github.com/sirupsen/logrus"
 )
 
@@ -30,54 +31,7 @@ func (m *MountedStreamHandler) HandleMountedStream(
 ) error {
 	rpc := m.rpc.rpc
 	s := strm.GetStream()
-
-	// Read pump (from stream -> grpc)
-	errCh := make(chan error, 3)
-	go func() {
-		defer s.Close()
-		buf := make([]byte, 1500)
-		for {
-			n, err := s.Read(buf)
-			if err != nil {
-				errCh <- err
-				return
-			}
-
-			err = rpc.Send(&Response{
-				Data: buf[:n],
-			})
-			if err != nil {
-				errCh <- err
-				return
-			}
-		}
-	}()
-
-	// Write pump (grpc -> stream)
-	go func() {
-		defer s.Close()
-		for {
-			msg, err := rpc.Recv()
-			if err != nil {
-				errCh <- err
-				return
-			}
-
-			_, err = s.Write(msg.GetData())
-			if err != nil {
-				errCh <- err
-				return
-			}
-		}
-	}()
-
-	// Error catcher
-	go func() {
-		err := <-errCh
-		m.rpc.doneCb(err)
-	}()
-
-	return nil
+	return stream_grpc.AttachRPCToStream(rpc, s)
 }
 
 var _ link.MountedStreamHandler = ((*MountedStreamHandler)(nil))

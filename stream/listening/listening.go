@@ -130,49 +130,33 @@ var openStreamTimeout = time.Second * 10
 
 // handleConn handles a connection.
 func (c *Controller) handleConn(ctx context.Context, conn manet.Conn) {
-	// Dial the remote.
-	// refHandler is the reference handler
-	// construct it, and it will handle the build stream
-	// when ctx is canceled -> cancel directive & cancel ref handler etc.
-	// close conn, etc.
-	// when refHandler gets a stream -> proxy it to the conn
-	_, estLinkInst, err := c.bus.AddDirective(
-		link.NewEstablishLinkWithPeer(c.remotePeerID),
-		nil,
-	)
-	if err != nil {
-		conn.Close()
-		return
-	}
-	defer estLinkInst.Release()
-
 	openCtx, openCtxCancel := context.WithTimeout(ctx, openStreamTimeout)
 	defer openCtxCancel()
 
-	val, inst, err := bus.ExecOneOff(
+	opts := stream.OpenOpts{
+		Reliable:  c.conf.GetReliable(),
+		Encrypted: c.conf.GetEncrypted(),
+	}
+	mstrm, rel, err := link.OpenStreamWithPeerEx(
 		openCtx,
 		c.bus,
-		link.NewOpenStreamWithPeer(
-			c.protocolID,
-			c.localPeerID,
-			c.remotePeerID,
-			c.conf.GetTransportId(),
-			stream.OpenOpts{
-				Reliable:  c.conf.GetReliable(),
-				Encrypted: c.conf.GetEncrypted(),
-			},
-		),
-		nil,
+		c.protocolID,
+		c.localPeerID,
+		c.remotePeerID,
+		c.conf.GetTransportId(),
+		opts,
 	)
 	if err != nil {
 		conn.Close()
+		c.le.WithError(err).Warn("unable to open stream to handle conn")
 		return
 	}
-	inst.Release()
 
-	mstrm := val.(link.MountedStream)
 	strm := mstrm.GetStream()
-	proxy.ProxyStreams(conn, strm)
+	proxy.ProxyStreams(conn, strm, func() {
+		conn.Close()
+		rel()
+	})
 }
 
 // HandleDirective asks if the handler can resolve the directive.

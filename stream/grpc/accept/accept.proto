@@ -1,5 +1,5 @@
 syntax = "proto3";
-package stream.grpcaccept;
+package stream.grpc.accept;
 
 // Config configures the grpcaccept controller.
 message Config {
@@ -14,16 +14,4 @@ message Config {
   // TransportId constrains the transport ID to accept from.
   // Can be empty.
   uint64 transport_id = 4;
-}
-
-// Request is a request packet.
-message Request {
-  // Data is packet data from the remote.
-  bytes data = 1;
-}
-
-// Response is a response packet.
-message Response {
-  // Data is packet data from the remote.
-  bytes data = 1;
 }

@@ -14,7 +14,7 @@ type openStreamResolver struct {
 	c   *Controller
 	ctx context.Context
 	di  directive.Instance
-	dir link.OpenStream
+	dir link.OpenStreamWithPeer
 }
 
 // Resolve resolves the values, emitting them to the handler.
@@ -24,8 +24,8 @@ type openStreamResolver struct {
 // Values will be maintained from the previous call.
 func (o *openStreamResolver) Resolve(ctx context.Context, handler directive.ResolverHandler) error {
 	c := o.c
-	openOpts := o.dir.OpenStreamOpenOpts()
-	protocolID := o.dir.OpenStreamProtocolID()
+	openOpts := o.dir.OpenStreamWPOpenOpts()
+	protocolID := o.dir.OpenStreamWPProtocolID()
 	estMsg := NewStreamEstablish(protocolID)
 
 	var tpt transport.Transport
@@ -44,36 +44,40 @@ func (o *openStreamResolver) Resolve(ctx context.Context, handler directive.Reso
 	strmCh := make(chan link.MountedStream, 1)
 
 	c.linksMtx.Lock()
-	lw := c.pushLinkWaiter(o.dir.OpenStreamTargetPeerID(), true, func(lnk link.Link, added bool) {
-		select {
-		case <-ctx.Done():
-			return
-		default:
-		}
+	lw := c.pushLinkWaiter(
+		o.dir.OpenStreamWPTargetPeerID(),
+		true,
+		func(lnk link.Link, added bool) {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+			}
 
-		strm, err := lnk.OpenStream(openOpts)
-		if err != nil {
-			errCh <- err
-			/*
-				if strm != nil {
-					strm.Close()
-				}
-			*/
-			return
-		}
-		strm.SetWriteDeadline(time.Now().Add(streamEstablishTimeout))
-		if _, err := writeStreamEstablishHeader(strm, estMsg); err != nil {
-			errCh <- err
-			strm.Close()
-			return
-		}
+			strm, err := lnk.OpenStream(openOpts)
+			if err != nil {
+				errCh <- err
+				/*
+					if strm != nil {
+						strm.Close()
+					}
+				*/
+				return
+			}
+			strm.SetWriteDeadline(time.Now().Add(streamEstablishTimeout))
+			if _, err := writeStreamEstablishHeader(strm, estMsg); err != nil {
+				errCh <- err
+				strm.Close()
+				return
+			}
 
-		o.c.le.
-			WithField("link-id", lnk.GetUUID()).
-			WithField("protocol-id", protocolID).
-			Debug("opened stream with peer")
-		strmCh <- newMountedStream(strm, openOpts, protocolID, lnk)
-	})
+			o.c.le.
+				WithField("link-id", lnk.GetUUID()).
+				WithField("protocol-id", protocolID).
+				Debug("opened stream with peer")
+			strmCh <- newMountedStream(strm, openOpts, protocolID, lnk)
+		},
+	)
 	c.linksMtx.Unlock()
 
 	if lw != nil {
@@ -98,15 +102,15 @@ func (o *openStreamResolver) Resolve(ctx context.Context, handler directive.Reso
 }
 
 // checkOpenStreamMatchesTpt checks if a OpenStream matches a tpt
-func checkOpenStreamMatchesTpt(dir link.OpenStream, tpt transport.Transport) bool {
-	if tptConstraint := dir.OpenStreamTransportConstraint(); tptConstraint != 0 {
+func checkOpenStreamMatchesTpt(dir link.OpenStreamWithPeer, tpt transport.Transport) bool {
+	if tptConstraint := dir.OpenStreamWPTransportConstraint(); tptConstraint != 0 {
 		if tpt.GetUUID() != tptConstraint {
 			return false
 		}
 	}
 
 	// Check peer ID constraint
-	if srcPeerID := dir.OpenStreamSourcePeerID(); len(srcPeerID) != 0 {
+	if srcPeerID := dir.OpenStreamWPSourcePeerID(); len(srcPeerID) != 0 {
 		if srcPeerID != tpt.GetPeerID() {
 			return false
 		}
@@ -120,7 +124,7 @@ func checkOpenStreamMatchesTpt(dir link.OpenStream, tpt transport.Transport) boo
 func (c *Controller) resolveOpenStreamWithPeer(
 	ctx context.Context,
 	di directive.Instance,
-	dir link.OpenStream,
+	dir link.OpenStreamWithPeer,
 ) (directive.Resolver, error) {
 	// opportune moment: if tpt is already available, filter
 	select {

@@ -14,7 +14,7 @@ import (
 	egctr "github.com/aperturerobotics/bifrost/entitygraph"
 	"github.com/aperturerobotics/bifrost/keypem"
 	"github.com/aperturerobotics/bifrost/stream/forwarding"
-	"github.com/aperturerobotics/bifrost/stream/grpcaccept"
+	"github.com/aperturerobotics/bifrost/stream/grpc/accept"
 	"github.com/aperturerobotics/bifrost/stream/listening"
 	"github.com/aperturerobotics/bifrost/transport/common/pconn"
 	udptpt "github.com/aperturerobotics/bifrost/transport/udp"
@@ -139,7 +139,7 @@ func runDaemon(c *cli.Context) error {
 	sr.AddFactory(egctr.NewFactory(b))
 	sr.AddFactory(stream_forwarding.NewFactory())
 	sr.AddFactory(stream_listening.NewFactory(b))
-	sr.AddFactory(stream_grpcaccept.NewFactory(b))
+	sr.AddFactory(stream_grpc_accept.NewFactory(b))
 
 	// Entity graph controller.
 	{

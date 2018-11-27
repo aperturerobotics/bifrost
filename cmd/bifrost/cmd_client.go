@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	"github.com/aperturerobotics/bifrost/daemon/api"
-	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/urfave/cli"
 	"google.golang.org/grpc"
 )
@@ -86,6 +85,43 @@ func init() {
 					Name:        "transport-id",
 					Usage:       "if set, filter the transport id",
 					Destination: &grpcacceptConf.TransportId,
+				},
+			},
+		},
+		cli.Command{
+			Name:   "dial",
+			Usage:  "Single outgoing stream with Protocol ID will be dialed",
+			Action: runDialController,
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:        "local-peer-id",
+					Usage:       "local peer ID to dial from, can be empty",
+					Destination: &grpcdialConf.LocalPeerId,
+				},
+				&cli.StringFlag{
+					Name:        "protocol-id",
+					Usage:       "protocol ID to dial with",
+					Destination: &grpcdialConf.ProtocolId,
+				},
+				&cli.StringFlag{
+					Name:        "peer-id",
+					Usage:       "remote peer id to dial",
+					Destination: &grpcdialConf.PeerId,
+				},
+				&cli.Uint64Flag{
+					Name:        "transport-id",
+					Usage:       "if set, filter the transport id",
+					Destination: &grpcdialConf.TransportId,
+				},
+				&cli.BoolTFlag{
+					Name:        "encrypted",
+					Usage:       "encrypted stream",
+					Destination: &grpcdialConf.Encrypted,
+				},
+				&cli.BoolTFlag{
+					Name:        "reliable",
+					Usage:       "reliable stream",
+					Destination: &grpcdialConf.Reliable,
 				},
 			},
 		},

@@ -10,47 +10,47 @@ import (
 	"github.com/aperturerobotics/controllerbus/directive"
 )
 
-// OpenStream is a directive to open a stream with a peer.
+// OpenStreamWithPeer is a directive to open a stream with a peer.
 // Not de-duplicated, intended to be used with OneOff.
-type OpenStream interface {
-	// Directive indicates OpenStream is a directive.
+type OpenStreamWithPeer interface {
+	// Directive indicates OpenStreamWithPeer is a directive.
 	directive.Directive
 
-	// OpenStreamProtocolID returns the protocol ID to negotiate with the peer.
+	// OpenStreamWithPeerProtocolID returns the protocol ID to negotiate with the peer.
 	// Cannot be empty.
-	OpenStreamProtocolID() protocol.ID
-	// OpenStreamTargetPeerID returns the target peer ID.
+	OpenStreamWPProtocolID() protocol.ID
+	// OpenStreamWithPeerTargetPeerID returns the target peer ID.
 	// Cannot be empty.
-	OpenStreamTargetPeerID() peer.ID
-	// OpenStreamOpenOpts returns the open stream options.
+	OpenStreamWPTargetPeerID() peer.ID
+	// OpenStreamWithPeerOpenOpts returns the open stream options.
 	// Cannot be empty.
-	OpenStreamOpenOpts() stream.OpenOpts
+	OpenStreamWPOpenOpts() stream.OpenOpts
 
-	// OpenStreamSourcePeerID returns the source peer ID.
+	// OpenStreamWithPeerSourcePeerID returns the source peer ID.
 	// Can be empty.
-	OpenStreamSourcePeerID() peer.ID
-	// OpenStreamTransportConstraint returns a specific transport ID we want.
+	OpenStreamWPSourcePeerID() peer.ID
+	// OpenStreamWithPeerTransportConstraint returns a specific transport ID we want.
 	// Can be empty.
-	OpenStreamTransportConstraint() uint64
+	OpenStreamWPTransportConstraint() uint64
 }
 
-// OpenStreamWithPeer implements OpenStream with a peer ID constraint.
+// openStreamWithPeer implements OpenStreamWithPeer with a peer ID constraint.
 // Value: link.MountedStream
-type OpenStreamWithPeer struct {
+type openStreamWithPeer struct {
 	protocolID                 protocol.ID
 	sourcePeerID, targetPeerID peer.ID
 	transportConstraint        uint64
 	openOpts                   stream.OpenOpts
 }
 
-// NewOpenStreamWithPeer constructs a new OpenStreamWithPeer directive.
+// NewOpenStreamWithPeer constructs a new openStreamWithPeer directive.
 func NewOpenStreamWithPeer(
 	protocolID protocol.ID,
 	sourcePeerID, targetPeerID peer.ID,
 	transportConstraint uint64,
 	openOpts stream.OpenOpts,
-) *OpenStreamWithPeer {
-	return &OpenStreamWithPeer{
+) OpenStreamWithPeer {
+	return &openStreamWithPeer{
 		protocolID:          protocolID,
 		sourcePeerID:        sourcePeerID,
 		targetPeerID:        targetPeerID,
@@ -59,36 +59,36 @@ func NewOpenStreamWithPeer(
 	}
 }
 
-// OpenStreamProtocolID returns a specific protocol ID to negotiate.
-func (d *OpenStreamWithPeer) OpenStreamProtocolID() protocol.ID {
+// OpenStreamWithPeerProtocolID returns a specific protocol ID to negotiate.
+func (d *openStreamWithPeer) OpenStreamWPProtocolID() protocol.ID {
 	return d.protocolID
 }
 
-// OpenStreamSourcePeerID returns a specific peer ID node we are originating from.
+// OpenStreamWithPeerSourcePeerID returns a specific peer ID node we are originating from.
 // Can be empty.
-func (d *OpenStreamWithPeer) OpenStreamSourcePeerID() peer.ID {
+func (d *openStreamWithPeer) OpenStreamWPSourcePeerID() peer.ID {
 	return d.sourcePeerID
 }
 
-// OpenStreamTargetPeerID returns a specific peer ID node we are looking for.
-func (d *OpenStreamWithPeer) OpenStreamTargetPeerID() peer.ID {
+// OpenStreamWithPeerTargetPeerID returns a specific peer ID node we are looking for.
+func (d *openStreamWithPeer) OpenStreamWPTargetPeerID() peer.ID {
 	return d.targetPeerID
 }
 
-// OpenStreamTransportConstraint returns the transport ID constraint.
+// OpenStreamWithPeerTransportConstraint returns the transport ID constraint.
 // If empty, any transport is matched.
-func (d *OpenStreamWithPeer) OpenStreamTransportConstraint() uint64 {
+func (d *openStreamWithPeer) OpenStreamWPTransportConstraint() uint64 {
 	return d.transportConstraint
 }
 
-// OpenStreamOpenOpts returns the open options.
-func (d *OpenStreamWithPeer) OpenStreamOpenOpts() stream.OpenOpts {
+// OpenStreamWithPeerOpenOpts returns the open options.
+func (d *openStreamWithPeer) OpenStreamWPOpenOpts() stream.OpenOpts {
 	return d.openOpts
 }
 
 // Validate validates the directive.
 // This is a cursory validation to see if the values "look correct."
-func (d *OpenStreamWithPeer) Validate() error {
+func (d *openStreamWithPeer) Validate() error {
 	if len(d.targetPeerID) == 0 {
 		return errors.New("peer id constraint required")
 	}
@@ -97,7 +97,7 @@ func (d *OpenStreamWithPeer) Validate() error {
 }
 
 // GetValueOptions returns options relating to value handling.
-func (d *OpenStreamWithPeer) GetValueOptions() directive.ValueOptions {
+func (d *openStreamWithPeer) GetValueOptions() directive.ValueOptions {
 	return directive.ValueOptions{
 		MaxValueCount:   1,
 		MaxValueHardCap: true,
@@ -107,35 +107,35 @@ func (d *OpenStreamWithPeer) GetValueOptions() directive.ValueOptions {
 // IsEquivalent checks if the other directive is equivalent. If two
 // directives are equivalent, and the new directive does not superceed the
 // old, then the new directive will be merged (de-duplicated) into the old.
-func (d *OpenStreamWithPeer) IsEquivalent(other directive.Directive) bool {
+func (d *openStreamWithPeer) IsEquivalent(other directive.Directive) bool {
 	return false
 }
 
 // Superceeds checks if the directive overrides another.
 // The other directive will be canceled if superceded.
-func (d *OpenStreamWithPeer) Superceeds(other directive.Directive) bool {
+func (d *openStreamWithPeer) Superceeds(other directive.Directive) bool {
 	return false
 }
 
 // GetName returns the directive's type name.
 // This is not necessarily unique, and is primarily intended for display.
-func (d *OpenStreamWithPeer) GetName() string {
+func (d *openStreamWithPeer) GetName() string {
 	return "OpenStreamWithPeer"
 }
 
 // GetDebugVals returns the directive arguments as key/value pairs.
 // This should be something like param1="test", param2="test".
 // This is not necessarily unique, and is primarily intended for display.
-func (d *OpenStreamWithPeer) GetDebugVals() directive.DebugValues {
+func (d *openStreamWithPeer) GetDebugVals() directive.DebugValues {
 	vals := directive.NewDebugValues()
-	vals["protocol-id"] = []string{string(d.OpenStreamProtocolID())}
-	vals["target-peer"] = []string{d.OpenStreamTargetPeerID().Pretty()}
-	vals["source-peer"] = []string{d.OpenStreamSourcePeerID().Pretty()}
-	if tpt := d.OpenStreamTransportConstraint(); tpt != 0 {
+	vals["protocol-id"] = []string{string(d.OpenStreamWPProtocolID())}
+	vals["target-peer"] = []string{d.OpenStreamWPTargetPeerID().Pretty()}
+	vals["source-peer"] = []string{d.OpenStreamWPSourcePeerID().Pretty()}
+	if tpt := d.OpenStreamWPTransportConstraint(); tpt != 0 {
 		vals["transport"] = []string{strconv.FormatUint(tpt, 10)}
 	}
 	return vals
 }
 
 // _ is a type constraint
-var _ OpenStream = ((*OpenStreamWithPeer)(nil))
+var _ OpenStreamWithPeer = ((*openStreamWithPeer)(nil))

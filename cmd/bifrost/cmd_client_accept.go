@@ -5,11 +5,12 @@ import (
 	"os"
 
 	"github.com/aperturerobotics/bifrost/daemon/api"
-	"github.com/aperturerobotics/bifrost/stream/grpcaccept"
+	"github.com/aperturerobotics/bifrost/stream/grpc"
+	"github.com/aperturerobotics/bifrost/stream/grpc/accept"
 	"github.com/urfave/cli"
 )
 
-var grpcacceptConf stream_grpcaccept.Config
+var grpcacceptConf stream_grpc_accept.Config
 
 // runAcceptController runs a accept controller.
 func runAcceptController(cctx *cli.Context) error {
@@ -47,7 +48,7 @@ func runAcceptController(cctx *cli.Context) error {
 			}
 
 			err = client.Send(&api.AcceptStreamRequest{
-				Request: &stream_grpcaccept.Request{
+				Request: &stream_grpc.Request{
 					Data: data[:n],
 				},
 			})

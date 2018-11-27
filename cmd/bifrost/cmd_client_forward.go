@@ -5,11 +5,11 @@ import (
 	"os"
 
 	"github.com/aperturerobotics/bifrost/daemon/api"
-	"github.com/aperturerobotics/bifrost/stream/grpcaccept"
+	"github.com/aperturerobotics/bifrost/stream/forwarding"
 	"github.com/urfave/cli"
 )
 
-var grpcacceptConf stream_grpcaccept.Config
+var forwardingConf stream_forwarding.Config
 
 // runForwardController runs a forwarding controller.
 func runForwardController(cctx *cli.Context) error {
@@ -19,49 +19,20 @@ func runForwardController(cctx *cli.Context) error {
 		return err
 	}
 
-	client, err := c.AcceptStream(ctx)
-	if err != nil {
-		return err
-	}
-
-	err = client.Send(&api.AcceptStreamRequest{
-		Config: &grpcacceptConf,
+	req, err := c.ForwardStreams(ctx, &api.ForwardStreamsRequest{
+		ForwardingConfig: &forwardingConf,
 	})
 	if err != nil {
 		return err
 	}
 
-	errCh := make(chan error, 3)
-
-	// write stdin -> request
-	go func() {
-		data := make([]byte, 1500)
-		for {
-			n, err := os.Stdin.Read(data)
-			if err != nil {
-				errCh <- err
-				return
-			}
-
-			err = client.Send(&api.AcceptStreamRequest{
-				Request: &stream_grpcaccept.Request{
-					Data: data[:n],
-				},
-			})
-			if err != nil {
-				errCh <- err
-				return
-			}
-		}
-	}()
-
-	// write responses -> stdout
 	for {
-		resp, err := client.Recv()
+		resp, err := req.Recv()
 		if err != nil {
 			return err
 		}
 
-		os.Stdout.Write(resp.GetResponse().GetData())
+		os.Stdout.WriteString(resp.GetControllerStatus().String())
+		os.Stdout.WriteString("\n")
 	}
 }

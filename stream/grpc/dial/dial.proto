@@ -1,0 +1,32 @@
+syntax = "proto3";
+package stream.grpc.dial;
+
+// Config configures the grpcdial controller.
+message Config {
+  // PeerId is the remote peer ID to dial.
+  string peer_id = 1;
+  // LocalPeerId is the peer ID to dial with.
+  // Can be empty to accept any loaded peer.
+  string local_peer_id = 2;
+  // ProtocolId is the protocol ID to dial with.
+  string protocol_id = 3;
+  // TransportId constrains the transport ID to dial with.
+  // Can be empty.
+  uint64 transport_id = 4;
+  // Encrypted indicates the stream should be encrypted.
+  bool encrypted = 5;
+  // Reliable indicates the stream should be reliable.
+  bool reliable = 6;
+}
+
+// Request is a request packet.
+message Request {
+  // Data is packet data from the remote.
+  bytes data = 1;
+}
+
+// Response is a response packet.
+message Response {
+  // Data is packet data from the remote.
+  bytes data = 1;
+}

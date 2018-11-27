@@ -1,4 +1,4 @@
-package stream_grpcaccept
+package stream_grpc_accept
 
 import (
 	"github.com/aperturerobotics/bifrost/peer"

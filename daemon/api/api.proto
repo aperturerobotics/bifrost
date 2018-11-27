@@ -4,7 +4,10 @@ package api;
 import "github.com/aperturerobotics/controllerbus/controller/controller.proto";
 import "github.com/aperturerobotics/bifrost/stream/forwarding/forwarding.proto";
 import "github.com/aperturerobotics/bifrost/stream/listening/listening.proto";
-import "github.com/aperturerobotics/bifrost/stream/grpcaccept/grpcaccept.proto";
+
+import "github.com/aperturerobotics/bifrost/stream/grpc/grpc.proto";
+import "github.com/aperturerobotics/bifrost/stream/grpc/accept/accept.proto";
+import "github.com/aperturerobotics/bifrost/stream/grpc/dial/dial.proto";
 
 // Config configures the GRPC API.
 message Config {
@@ -94,15 +97,30 @@ message ListenStreamsResponse {
 message AcceptStreamRequest {
   // Config is the configuration for the accept.
   // The first packet will contain this value.
-  stream.grpcaccept.Config config = 1;
+  stream.grpc.accept.Config config = 1;
   // Request is a request packet.
-  stream.grpcaccept.Request request = 2;
+  stream.grpc.Request request = 2;
 }
 
 // AcceptStreamResponse is the response type for AcceptStream.
 message AcceptStreamResponse {
   // Response is a response packet.
-  stream.grpcaccept.Response response = 1;
+  stream.grpc.Response response = 1;
+}
+
+// DialStreamRequest is the request type for DialStream.
+message DialStreamRequest {
+  // Config is the configuration for the dial.
+  // The first packet will contain this value.
+  stream.grpc.dial.Config config = 1;
+  // Request is a request packet.
+  stream.grpc.Request request = 2;
+}
+
+// DialStreamResponse is the response type for DialStream.
+message DialStreamResponse {
+  // Response is a response packet.
+  stream.grpc.Response response = 1;
 }
 
 // BifrostDaemonService is the control service for a daemon, contacted by the CLI.
@@ -120,4 +138,7 @@ service BifrostDaemonService {
   // AcceptStream accepts an incoming stream.
   // Stream data is sent over the request / response streams.
   rpc AcceptStream(stream AcceptStreamRequest) returns (stream AcceptStreamResponse) {}
+  // DialStream dials a outgoing stream.
+  // Stream data is sent over the request / response streams.
+  rpc DialStream(stream DialStreamRequest) returns (stream DialStreamResponse) {}
 }

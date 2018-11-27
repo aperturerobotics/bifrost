@@ -1,4 +1,4 @@
-package stream_grpcaccept
+package stream_grpc_accept
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/protocol"
+	"github.com/aperturerobotics/bifrost/stream/grpc"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
@@ -102,24 +103,14 @@ func (c *Controller) HandleDirective(ctx context.Context, di directive.Instance)
 	return nil, nil
 }
 
-// RPC matches the GRPC request/response interface.
-type RPC interface {
-	// Context returns the context.
-	Context() context.Context
-	// Send sends a packet.
-	Send(*Response) error
-	// Recv receives a packet.
-	Recv() (*Request, error)
-}
-
 // queuedRPC is a queued RPC
 type queuedRPC struct {
-	rpc    RPC
+	rpc    stream_grpc.RPC
 	doneCb func(err error)
 }
 
 // AttachRPC attaches a RPC call to the controller.
-func (c *Controller) AttachRPC(rpc RPC) error {
+func (c *Controller) AttachRPC(rpc stream_grpc.RPC) error {
 	ctx := rpc.Context()
 	errCh := make(chan error, 1)
 	select {
