@@ -257,7 +257,7 @@ func (c *Controller) HandleIncomingStream(
 		strm.Close()
 		return
 	}
-	strm.SetReadDeadline(time.Time{})
+	strm.SetDeadline(time.Time{})
 
 	// received stream establish header, now, create handlestream directive
 	pid := protocol.ID(streamEst.GetProtocolId())
@@ -302,7 +302,6 @@ func (c *Controller) HandleIncomingStream(
 			Warn("stream handler returned an error")
 		strm.Close()
 		return
-
 	}
 
 	// stream is now handled by the handler.

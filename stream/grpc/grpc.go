@@ -22,6 +22,7 @@ func AttachRPCToStream(rpc RPC, s stream.Stream) error {
 	errCh := make(chan error, 3)
 	go func() {
 		defer s.Close()
+
 		buf := make([]byte, 1500)
 		for {
 			n, err := s.Read(buf)

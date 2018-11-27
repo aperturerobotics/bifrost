@@ -2,6 +2,7 @@ package stream_grpc_accept
 
 import (
 	"context"
+	"io"
 
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/stream/grpc"
@@ -31,7 +32,15 @@ func (m *MountedStreamHandler) HandleMountedStream(
 ) error {
 	rpc := m.rpc.rpc
 	s := strm.GetStream()
-	return stream_grpc.AttachRPCToStream(rpc, s)
+
+	go func() {
+		if err := stream_grpc.AttachRPCToStream(rpc, s); err != nil &&
+			err != io.EOF &&
+			err != context.Canceled {
+			m.le.WithError(err).Warn("rpc stream returned an error")
+		}
+	}()
+	return nil
 }
 
 var _ link.MountedStreamHandler = ((*MountedStreamHandler)(nil))

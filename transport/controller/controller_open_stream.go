@@ -71,6 +71,7 @@ func (o *openStreamResolver) Resolve(ctx context.Context, handler directive.Reso
 				return
 			}
 
+			strm.SetDeadline(time.Time{})
 			o.c.le.
 				WithField("link-id", lnk.GetUUID()).
 				WithField("protocol-id", protocolID).
