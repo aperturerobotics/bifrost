@@ -3,10 +3,12 @@ package udp
 import (
 	"context"
 	"net"
+	"strings"
 	"time"
 
 	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/aperturerobotics/bifrost/transport/common/pconn"
+	"github.com/aperturerobotics/bifrost/util/scrc"
 	"github.com/blang/semver"
 	"github.com/libp2p/go-libp2p-crypto"
 	"github.com/sirupsen/logrus"
@@ -39,7 +41,10 @@ func NewUDP(
 		return nil, err
 	}
 
-	conn := pconn.New(le, pc, pKey, c, pconnOpts)
+	uuid := scrc.Crc64([]byte(
+		strings.Join([]string{TransportID, listenAddr}, "/"),
+	))
+	conn := pconn.New(le, uuid, pc, pKey, c, pconnOpts)
 	for _, addr := range dialAddrs {
 		da, err := net.ResolveUDPAddr("udp", addr)
 		if err != nil {

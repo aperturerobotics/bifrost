@@ -182,7 +182,7 @@ func (c *Controller) HandleDirective(ctx context.Context, di directive.Instance)
 	switch d := dir.(type) {
 	case link.OpenStreamWithPeer:
 		return c.resolveOpenStreamWithPeer(ctx, di, d)
-	case link.EstablishLink:
+	case link.EstablishLinkWithPeer:
 		return c.resolveEstablishLink(ctx, di, d)
 	case transport.LookupTransport:
 		return c.resolveLookupTransport(ctx, di, d)

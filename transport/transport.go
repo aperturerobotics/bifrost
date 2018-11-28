@@ -14,8 +14,6 @@ type Transport interface {
 	Execute(ctx context.Context) error
 	// GetUUID returns a host-unique ID for this transport.
 	GetUUID() uint64
-	// GetLinks returns the list of links this transport has active.
-	GetLinks() []link.Link
 	// GetPeerID returns the peer ID.
 	GetPeerID() peer.ID
 	// Close closes the transport, returning any errors closing.

@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	"github.com/aperturerobotics/bifrost/keypem"
-	nctr "github.com/aperturerobotics/bifrost/node/controller"
 	"github.com/aperturerobotics/bifrost/peer"
+	nctr "github.com/aperturerobotics/bifrost/peer/controller"
 	wtpt "github.com/aperturerobotics/bifrost/transport/websocket"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"

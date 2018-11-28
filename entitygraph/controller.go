@@ -113,7 +113,7 @@ func (c *Controller) HandleDirective(
 ) (directive.Resolver, error) {
 	dir := di.GetDirective()
 	switch d := dir.(type) {
-	case link.EstablishLink:
+	case link.EstablishLinkWithPeer:
 		c.handleEstablishLink(ctx, di, d)
 	case entitygraph.CollectEntityGraph:
 		return c.handleCollectEntityGraph(ctx, di, d)
@@ -135,7 +135,7 @@ func (c *Controller) handleCollectEntityGraph(
 func (c *Controller) handleEstablishLink(
 	ctx context.Context,
 	di directive.Instance,
-	d link.EstablishLink,
+	d link.EstablishLinkWithPeer,
 ) {
 	handler := newEstablishLinkHandler(c)
 	ref := di.AddReference(handler, true)

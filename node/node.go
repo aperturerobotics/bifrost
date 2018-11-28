@@ -8,6 +8,4 @@ import (
 type Node interface {
 	// Peer indicates Node is a Peer.
 	peer.Peer
-
-	//
 }

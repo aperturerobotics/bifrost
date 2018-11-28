@@ -1,4 +1,4 @@
-package node_controller
+package peer_controller
 
 import (
 	"github.com/aperturerobotics/bifrost/util/confparse"

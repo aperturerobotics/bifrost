@@ -1,4 +1,4 @@
-package node_controller
+package peer_controller
 
 import (
 	"github.com/aperturerobotics/bifrost/keypem"
@@ -8,7 +8,7 @@ import (
 	"github.com/blang/semver"
 )
 
-// Factory constructs a Node controller.
+// Factory constructs a Peer controller.
 type Factory struct {
 	// bus is the controller bus
 	bus bus.Bus
@@ -30,7 +30,6 @@ func (t *Factory) ConstructConfig() config.Config {
 }
 
 // Construct constructs the associated controller given configuration.
-// The transport's identity (private key) comes from a GetNode lookup.
 func (t *Factory) Construct(
 	conf config.Config,
 	opts controller.ConstructOpts,

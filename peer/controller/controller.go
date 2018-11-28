@@ -1,10 +1,9 @@
-package node_controller
+package peer_controller
 
 import (
 	"context"
 	"sync"
 
-	"github.com/aperturerobotics/bifrost/node"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/aperturerobotics/controllerbus/controller"
@@ -18,10 +17,11 @@ import (
 var Version = semver.MustParse("0.0.1")
 
 // ControllerID is the ID of the controller.
-const ControllerID = "bifrost/node/1"
+const ControllerID = "bifrost/peer/1"
 
-// Controller is the Node controller.
-// It implements node.Node as a controller.
+// Controller is the Peer controller.
+// It implements peer.Peer as a controller.
+// It implements a "localhost" loopback transport for the peer.
 type Controller struct {
 	// Peer is the underlying peer
 	peer.Peer
@@ -34,7 +34,7 @@ type Controller struct {
 	transports map[uint64]transport.Transport
 }
 
-// NewController constructs a new node controller.
+// NewController constructs a new peer controller.
 // If privKey is nil, one will be generated.
 func NewController(le *logrus.Entry, privKey crypto.PrivKey) (*Controller, error) {
 	var err error
@@ -56,7 +56,7 @@ func NewController(le *logrus.Entry, privKey crypto.PrivKey) (*Controller, error
 // Returning nil ends execution.
 // Returning an error triggers a retry with backoff.
 func (c *Controller) Execute(ctx context.Context) error {
-	// TODO implement core node management loop
+	// TODO: loopback controller
 	return nil
 }
 
@@ -64,9 +64,13 @@ func (c *Controller) Execute(ctx context.Context) error {
 // If it can, it returns a resolver. If not, returns nil.
 // Any exceptional errors are returned for logging.
 // It is safe to add a reference to the directive during this call.
-func (c *Controller) HandleDirective(ctx context.Context, di directive.Instance) (directive.Resolver, error) {
+func (c *Controller) HandleDirective(
+	ctx context.Context,
+	di directive.Instance,
+) (directive.Resolver, error) {
 	dir := di.GetDirective()
-	if d, ok := dir.(peer.GetPeer); ok {
+	switch d := dir.(type) {
+	case peer.GetPeer:
 		return c.resolveGetPeer(d), nil
 	}
 
@@ -78,7 +82,7 @@ func (c *Controller) GetControllerInfo() controller.Info {
 	return controller.NewInfo(
 		ControllerID,
 		Version,
-		"node controller "+c.GetPeerID().Pretty(),
+		"peer controller "+c.GetPeerID().Pretty(),
 	)
 }
 
@@ -97,4 +101,4 @@ func (c *Controller) Close() error {
 var _ controller.Controller = ((*Controller)(nil))
 
 // _ is a type assertion
-var _ node.Node = ((*Controller)(nil))
+var _ peer.Peer = ((*Controller)(nil))

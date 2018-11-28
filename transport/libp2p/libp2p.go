@@ -80,12 +80,6 @@ func (l *LibP2P) GetUUID() uint64 {
 	return l.uuid
 }
 
-// GetLinks returns the list of links this transport has active.
-func (l *LibP2P) GetLinks() []link.Link {
-	// TODO
-	return nil
-}
-
 // Execute executes the given controller.
 // Returning nil ends execution.
 // Returning an error triggers a retry with backoff.

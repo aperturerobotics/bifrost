@@ -6,10 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/transport"
-	"github.com/aperturerobotics/bifrost/util/scrc"
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/libp2p/go-libp2p-crypto"
 	"github.com/pkg/errors"
@@ -60,12 +58,12 @@ type Transport struct {
 // New builds a new packet-conn based transport, listening on the addr.
 func New(
 	le *logrus.Entry,
+	uuid uint64,
 	pc net.PacketConn,
 	pKey crypto.PrivKey,
 	tc transport.TransportHandler,
 	opts *Opts,
 ) *Transport {
-	uuid := scrc.Crc64([]byte(pc.LocalAddr().String()))
 	if opts == nil {
 		opts = &Opts{}
 	}
@@ -254,19 +252,6 @@ func (u *Transport) handleLinkLost(addr string, lnk *Link) {
 // GetPeerID returns the node peer id.
 func (u *Transport) GetPeerID() peer.ID {
 	return u.peerID
-}
-
-// GetLinks returns the links currently active.
-func (u *Transport) GetLinks() (lnks []link.Link) {
-	u.linksMtx.Lock()
-	defer u.linksMtx.Unlock()
-
-	lnks = make([]link.Link, 0, len(u.links))
-	for _, lnk := range u.links {
-		lnks = append(lnks, lnk)
-	}
-
-	return
 }
 
 // HandleDirective asks if the handler can resolve the directive.

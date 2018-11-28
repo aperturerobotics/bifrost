@@ -1,5 +1,5 @@
 syntax = "proto3";
-package node.controller;
+package peer.controller;
 
 // Config is the node controller config.
 message Config {

@@ -3,7 +3,7 @@ package core
 import (
 	"context"
 
-	nctr "github.com/aperturerobotics/bifrost/node/controller"
+	nctr "github.com/aperturerobotics/bifrost/peer/controller"
 	udptpt "github.com/aperturerobotics/bifrost/transport/udp"
 	wtpt "github.com/aperturerobotics/bifrost/transport/websocket"
 	"github.com/aperturerobotics/controllerbus/bus"

@@ -12,7 +12,7 @@ type establishLinkResolver struct {
 	c   *Controller
 	ctx context.Context
 	di  directive.Instance
-	dir link.EstablishLink
+	dir link.EstablishLinkWithPeer
 }
 
 // Resolve resolves the values, emitting them to the handler.
@@ -22,7 +22,7 @@ type establishLinkResolver struct {
 // Values will be maintained from the previous call.
 func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.ResolverHandler) error {
 	c := o.c
-	peerIDConst := o.dir.EstablishLinkPeerIDConstraint()
+	peerIDConst := o.dir.EstablishLinkWPIDConstraint()
 
 	linkIDs := make(map[link.Link]uint32)
 	c.linksMtx.Lock()
@@ -55,7 +55,7 @@ func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.R
 func (c *Controller) resolveEstablishLink(
 	ctx context.Context,
 	di directive.Instance,
-	dir link.EstablishLink,
+	dir link.EstablishLinkWithPeer,
 ) (directive.Resolver, error) {
 	// Return resolver.
 	return &establishLinkResolver{c: c, ctx: ctx, di: di, dir: dir}, nil
