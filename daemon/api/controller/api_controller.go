@@ -1,6 +1,6 @@
 //+build !js
 
-package api
+package api_controller
 
 import (
 	"context"
@@ -9,9 +9,13 @@ import (
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
+	"github.com/blang/semver"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
+
+// Version is the API version.
+var Version = semver.MustParse("0.0.1")
 
 // Controller implements the API controller. The controller looks up the Node,
 // acquires its identity, constructs the GRPC listener, and responds to incoming

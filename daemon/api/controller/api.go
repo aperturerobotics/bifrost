@@ -1,20 +1,15 @@
-//+build !js
-
-package api
+package api_controller
 
 import (
 	"context"
 	"time"
 
+	"github.com/aperturerobotics/bifrost/daemon/api"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/controllerbus/bus"
-	"github.com/blang/semver"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 )
-
-// Version is the API version.
-var Version = semver.MustParse("0.0.1")
 
 // API implements the GRPC API.
 type API struct {
@@ -29,8 +24,8 @@ func NewAPI(bus bus.Bus) (*API, error) {
 // ForwardStreams forwards streams to the target multiaddress.
 // Handles HandleMountedStream directives by contacting the target.
 func (a *API) ForwardStreams(
-	req *ForwardStreamsRequest,
-	serv BifrostDaemonService_ForwardStreamsServer,
+	req *api.ForwardStreamsRequest,
+	serv api.BifrostDaemonService_ForwardStreamsServer,
 ) error {
 	ctx := serv.Context()
 	conf := req.GetForwardingConfig()
@@ -61,8 +56,8 @@ func (a *API) ForwardStreams(
 	}
 	defer peerRef.Release()
 
-	return a.executeController(reqCtx, conf, func(status ControllerStatus) {
-		_ = serv.Send(&ForwardStreamsResponse{
+	return a.executeController(reqCtx, conf, func(status api.ControllerStatus) {
+		_ = serv.Send(&api.ForwardStreamsResponse{
 			ControllerStatus: status,
 		})
 	})
@@ -70,8 +65,8 @@ func (a *API) ForwardStreams(
 
 // ListenStreams listens for streams on the multiaddress.
 func (a *API) ListenStreams(
-	req *ListenStreamsRequest,
-	serv BifrostDaemonService_ListenStreamsServer,
+	req *api.ListenStreamsRequest,
+	serv api.BifrostDaemonService_ListenStreamsServer,
 ) error {
 	ctx := serv.Context()
 	conf := req.GetListeningConfig()
@@ -82,8 +77,8 @@ func (a *API) ListenStreams(
 	reqCtx, reqCtxCancel := context.WithCancel(ctx)
 	defer reqCtxCancel()
 
-	return a.executeController(reqCtx, conf, func(status ControllerStatus) {
-		_ = serv.Send(&ListenStreamsResponse{
+	return a.executeController(reqCtx, conf, func(status api.ControllerStatus) {
+		_ = serv.Send(&api.ListenStreamsResponse{
 			ControllerStatus: status,
 		})
 	})
@@ -91,8 +86,8 @@ func (a *API) ListenStreams(
 
 // RegisterAsGRPCServer registers the API to the GRPC instance.
 func (a *API) RegisterAsGRPCServer(grpcServer *grpc.Server) {
-	RegisterBifrostDaemonServiceServer(grpcServer, a)
+	api.RegisterBifrostDaemonServiceServer(grpcServer, a)
 }
 
 // _ is a type assertion
-var _ BifrostDaemonServiceServer = ((*API)(nil))
+var _ api.BifrostDaemonServiceServer = ((*API)(nil))

@@ -6,7 +6,7 @@ import (
 	"context"
 
 	"github.com/aperturerobotics/bifrost/core"
-	"github.com/aperturerobotics/bifrost/daemon/api"
+	"github.com/aperturerobotics/bifrost/daemon/api/controller"
 	"github.com/aperturerobotics/bifrost/keypem"
 	"github.com/aperturerobotics/bifrost/peer"
 	nctr "github.com/aperturerobotics/bifrost/peer/controller"
@@ -72,7 +72,7 @@ func NewDaemon(
 		return nil, err
 	}
 
-	sr.AddFactory(api.NewFactory(b))
+	sr.AddFactory(api_controller.NewFactory(b))
 
 	// Construct the node controller.
 	peerID, err := peer.IDFromPrivateKey(nodePriv)

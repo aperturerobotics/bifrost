@@ -9,12 +9,6 @@ import "github.com/aperturerobotics/bifrost/stream/grpc/grpc.proto";
 import "github.com/aperturerobotics/bifrost/stream/grpc/accept/accept.proto";
 import "github.com/aperturerobotics/bifrost/stream/grpc/dial/dial.proto";
 
-// Config configures the GRPC API.
-message Config {
-  // ListenAddr is the address to listen on for connections.
-  string listen_addr = 1;
-}
-
 // GetPeerInfoRequest is the request type for GetPeerInfo.
 message GetPeerInfoRequest {
   // PeerId restricts the response to a specific peer ID.
@@ -98,14 +92,14 @@ message AcceptStreamRequest {
   // Config is the configuration for the accept.
   // The first packet will contain this value.
   stream.grpc.accept.Config config = 1;
-  // Request is a request packet.
-  stream.grpc.Request request = 2;
+  // Data is a data packet.
+  stream.grpc.Data data = 2;
 }
 
 // AcceptStreamResponse is the response type for AcceptStream.
 message AcceptStreamResponse {
   // Response is a response packet.
-  stream.grpc.Response response = 1;
+  stream.grpc.Data data = 1;
 }
 
 // DialStreamRequest is the request type for DialStream.
@@ -113,14 +107,14 @@ message DialStreamRequest {
   // Config is the configuration for the dial.
   // The first packet will contain this value.
   stream.grpc.dial.Config config = 1;
-  // Request is a request packet.
-  stream.grpc.Request request = 2;
+  // Data is a data packet.
+  stream.grpc.Data data = 2;
 }
 
 // DialStreamResponse is the response type for DialStream.
 message DialStreamResponse {
-  // Response is a response packet.
-  stream.grpc.Response response = 1;
+  // Data is a data packet.
+  stream.grpc.Data data = 1;
 }
 
 // BifrostDaemonService is the control service for a daemon, contacted by the CLI.

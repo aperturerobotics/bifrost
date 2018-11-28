@@ -1,4 +1,4 @@
-package api
+package api_controller
 
 import (
 	"github.com/aperturerobotics/controllerbus/bus"

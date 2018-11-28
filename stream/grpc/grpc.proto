@@ -1,14 +1,8 @@
 syntax = "proto3";
 package stream.grpc;
 
-// Request is a request packet.
-message Request {
-  // Data is packet data from the remote.
-  bytes data = 1;
-}
-
-// Response is a response packet.
-message Response {
+// Data is a data packet.
+message Data {
   // Data is packet data from the remote.
   bytes data = 1;
 }

@@ -1,10 +1,9 @@
-//+build !js
-
-package api
+package api_controller
 
 import (
 	"context"
 
+	"github.com/aperturerobotics/bifrost/daemon/api"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/config"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
@@ -14,21 +13,21 @@ import (
 func (a *API) executeController(
 	ctx context.Context,
 	conf config.Config,
-	cb func(ControllerStatus),
+	cb func(api.ControllerStatus),
 ) error {
 	if cb == nil {
-		cb = func(ControllerStatus) {}
+		cb = func(api.ControllerStatus) {}
 	}
 	dir := resolver.NewLoadControllerWithConfigSingleton(conf)
 
-	cb(ControllerStatus_ControllerStatus_CONFIGURING)
+	cb(api.ControllerStatus_ControllerStatus_CONFIGURING)
 	_, valRef, err := bus.ExecOneOff(ctx, a.bus, dir, nil)
 	if err != nil {
 		return err
 	}
 	defer valRef.Release()
 
-	cb(ControllerStatus_ControllerStatus_RUNNING)
+	cb(api.ControllerStatus_ControllerStatus_RUNNING)
 	<-ctx.Done()
 	return nil
 }

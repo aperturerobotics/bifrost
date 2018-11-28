@@ -1,10 +1,9 @@
-//+build !js
-
-package api
+package api_controller
 
 import (
 	"context"
 
+	"github.com/aperturerobotics/bifrost/daemon/api"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
@@ -15,8 +14,8 @@ import (
 // GetBusInfo returns the bus information
 func (a *API) GetBusInfo(
 	ctx context.Context,
-	req *GetBusInfoRequest,
-) (*GetBusInfoResponse, error) {
+	req *api.GetBusInfoRequest,
+) (*api.GetBusInfoResponse, error) {
 	var controllerInfos []*controller.Info
 	controllers := a.bus.GetControllers()
 	for _, controller := range controllers {
@@ -25,14 +24,14 @@ func (a *API) GetBusInfo(
 	}
 
 	directives := a.bus.GetDirectives()
-	directiveInfo := make([]*DirectiveInfo, len(directives))
+	directiveInfo := make([]*api.DirectiveInfo, len(directives))
 	for i, directive := range directives {
-		dv := &DirectiveInfo{}
+		dv := &api.DirectiveInfo{}
 		dir := directive.GetDirective()
 		debugVals := dir.GetDebugVals()
 		if debugVals != nil {
 			for key, vals := range debugVals {
-				dv.DebugVals = append(dv.DebugVals, &DebugValue{
+				dv.DebugVals = append(dv.DebugVals, &api.DebugValue{
 					Key:    key,
 					Values: vals,
 				})
@@ -42,24 +41,17 @@ func (a *API) GetBusInfo(
 		directiveInfo[i] = dv
 	}
 
-	return &GetBusInfoResponse{
+	return &api.GetBusInfoResponse{
 		RunningControllers: controllerInfos,
 		RunningDirectives:  directiveInfo,
 	}, nil
 }
 
-// NewPeerInfo builds peer info from a peer.
-func NewPeerInfo(p peer.Peer) (*PeerInfo, error) {
-	pi := &PeerInfo{}
-	pi.PeerId = peer.IDB58Encode(p.GetPeerID())
-	return pi, nil
-}
-
 // GetPeerInfo returns the peer information
 func (a *API) GetPeerInfo(
 	ctx context.Context,
-	req *GetPeerInfoRequest,
-) (*GetPeerInfoResponse, error) {
+	req *api.GetPeerInfoRequest,
+) (*api.GetPeerInfoResponse, error) {
 	var peerID peer.ID
 	if peerIDStr := req.GetPeerId(); peerIDStr != "" {
 		var err error
@@ -72,18 +64,18 @@ func (a *API) GetPeerInfo(
 	subCtx, subCtxCancel := context.WithCancel(ctx)
 	defer subCtxCancel()
 
-	resp := &GetPeerInfoResponse{}
+	resp := &api.GetPeerInfoResponse{}
 	di, dir, err := a.bus.AddDirective(
 		peer.NewGetPeer(peerID),
 		bus.NewCallbackHandler(func(v directive.Value) {
-			pi, err := NewPeerInfo(v.(peer.Peer))
+			pi, err := api.NewPeerInfo(v.(peer.Peer))
 			if err != nil {
 				return
 			}
 			resp.LocalPeers = append(resp.LocalPeers, pi)
 		}, func(v directive.Value) {
 			p := v.(peer.Peer)
-			pi, err := NewPeerInfo(p)
+			pi, err := api.NewPeerInfo(p)
 			if err != nil {
 				return
 			}

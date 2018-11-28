@@ -18,8 +18,8 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
-// Request is a request packet.
-type Request struct {
+// Data is a data packet.
+type Data struct {
 	// Data is packet data from the remote.
 	Data                 []byte   `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
@@ -27,71 +27,31 @@ type Request struct {
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *Request) Reset()         { *m = Request{} }
-func (m *Request) String() string { return proto.CompactTextString(m) }
-func (*Request) ProtoMessage()    {}
-func (*Request) Descriptor() ([]byte, []int) {
-	return fileDescriptor_grpc_f739700d03459bf9, []int{0}
+func (m *Data) Reset()         { *m = Data{} }
+func (m *Data) String() string { return proto.CompactTextString(m) }
+func (*Data) ProtoMessage()    {}
+func (*Data) Descriptor() ([]byte, []int) {
+	return fileDescriptor_grpc_53e7b2177bd74d3c, []int{0}
 }
-func (m *Request) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_Request.Unmarshal(m, b)
+func (m *Data) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Data.Unmarshal(m, b)
 }
-func (m *Request) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_Request.Marshal(b, m, deterministic)
+func (m *Data) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Data.Marshal(b, m, deterministic)
 }
-func (dst *Request) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Request.Merge(dst, src)
+func (dst *Data) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Data.Merge(dst, src)
 }
-func (m *Request) XXX_Size() int {
-	return xxx_messageInfo_Request.Size(m)
+func (m *Data) XXX_Size() int {
+	return xxx_messageInfo_Data.Size(m)
 }
-func (m *Request) XXX_DiscardUnknown() {
-	xxx_messageInfo_Request.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Request proto.InternalMessageInfo
-
-func (m *Request) GetData() []byte {
-	if m != nil {
-		return m.Data
-	}
-	return nil
+func (m *Data) XXX_DiscardUnknown() {
+	xxx_messageInfo_Data.DiscardUnknown(m)
 }
 
-// Response is a response packet.
-type Response struct {
-	// Data is packet data from the remote.
-	Data                 []byte   `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
+var xxx_messageInfo_Data proto.InternalMessageInfo
 
-func (m *Response) Reset()         { *m = Response{} }
-func (m *Response) String() string { return proto.CompactTextString(m) }
-func (*Response) ProtoMessage()    {}
-func (*Response) Descriptor() ([]byte, []int) {
-	return fileDescriptor_grpc_f739700d03459bf9, []int{1}
-}
-func (m *Response) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_Response.Unmarshal(m, b)
-}
-func (m *Response) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_Response.Marshal(b, m, deterministic)
-}
-func (dst *Response) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Response.Merge(dst, src)
-}
-func (m *Response) XXX_Size() int {
-	return xxx_messageInfo_Response.Size(m)
-}
-func (m *Response) XXX_DiscardUnknown() {
-	xxx_messageInfo_Response.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Response proto.InternalMessageInfo
-
-func (m *Response) GetData() []byte {
+func (m *Data) GetData() []byte {
 	if m != nil {
 		return m.Data
 	}
@@ -99,23 +59,21 @@ func (m *Response) GetData() []byte {
 }
 
 func init() {
-	proto.RegisterType((*Request)(nil), "stream.grpc.Request")
-	proto.RegisterType((*Response)(nil), "stream.grpc.Response")
+	proto.RegisterType((*Data)(nil), "stream.grpc.Data")
 }
 
 func init() {
-	proto.RegisterFile("github.com/aperturerobotics/bifrost/stream/grpc/grpc.proto", fileDescriptor_grpc_f739700d03459bf9)
+	proto.RegisterFile("github.com/aperturerobotics/bifrost/stream/grpc/grpc.proto", fileDescriptor_grpc_53e7b2177bd74d3c)
 }
 
-var fileDescriptor_grpc_f739700d03459bf9 = []byte{
-	// 134 bytes of a gzipped FileDescriptorProto
+var fileDescriptor_grpc_53e7b2177bd74d3c = []byte{
+	// 117 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xb2, 0x4a, 0xcf, 0x2c, 0xc9,
 	0x28, 0x4d, 0xd2, 0x4b, 0xce, 0xcf, 0xd5, 0x4f, 0x2c, 0x48, 0x2d, 0x2a, 0x29, 0x2d, 0x4a, 0x2d,
 	0xca, 0x4f, 0xca, 0x2f, 0xc9, 0x4c, 0x2e, 0xd6, 0x4f, 0xca, 0x4c, 0x2b, 0xca, 0x2f, 0x2e, 0xd1,
 	0x2f, 0x2e, 0x29, 0x4a, 0x4d, 0xcc, 0xd5, 0x4f, 0x2f, 0x2a, 0x48, 0x06, 0x13, 0x7a, 0x05, 0x45,
-	0xf9, 0x25, 0xf9, 0x42, 0xdc, 0x10, 0x71, 0x3d, 0x90, 0x90, 0x92, 0x2c, 0x17, 0x7b, 0x50, 0x6a,
-	0x61, 0x69, 0x6a, 0x71, 0x89, 0x90, 0x10, 0x17, 0x4b, 0x4a, 0x62, 0x49, 0xa2, 0x04, 0xa3, 0x02,
-	0xa3, 0x06, 0x4f, 0x10, 0x98, 0xad, 0x24, 0xc7, 0xc5, 0x11, 0x94, 0x5a, 0x5c, 0x90, 0x9f, 0x57,
-	0x9c, 0x8a, 0x4d, 0x3e, 0x89, 0x0d, 0x6c, 0xa4, 0x31, 0x20, 0x00, 0x00, 0xff, 0xff, 0x94, 0x3e,
-	0x57, 0x5b, 0x90, 0x00, 0x00, 0x00,
+	0xf9, 0x25, 0xf9, 0x42, 0xdc, 0x10, 0x71, 0x3d, 0x90, 0x90, 0x92, 0x14, 0x17, 0x8b, 0x4b, 0x62,
+	0x49, 0xa2, 0x90, 0x10, 0x17, 0x4b, 0x4a, 0x62, 0x49, 0xa2, 0x04, 0xa3, 0x02, 0xa3, 0x06, 0x4f,
+	0x10, 0x98, 0x9d, 0xc4, 0x06, 0x56, 0x6f, 0x0c, 0x08, 0x00, 0x00, 0xff, 0xff, 0xae, 0x0c, 0x2b,
+	0x4e, 0x6d, 0x00, 0x00, 0x00,
 }

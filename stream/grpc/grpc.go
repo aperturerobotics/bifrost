@@ -2,8 +2,7 @@ package stream_grpc
 
 import (
 	"context"
-
-	"github.com/aperturerobotics/bifrost/stream"
+	"io"
 )
 
 // RPC matches the GRPC request/response interface.
@@ -11,19 +10,20 @@ type RPC interface {
 	// Context returns the context.
 	Context() context.Context
 	// Send sends a packet.
-	Send(*Response) error
+	Send(*Data) error
 	// Recv receives a packet.
-	Recv() (*Request, error)
+	Recv() (*Data, error)
 }
 
 // AttachRPCToStream attaches a RPC to a stream.
-func AttachRPCToStream(rpc RPC, s stream.Stream) error {
+func AttachRPCToStream(rpc RPC, s io.ReadWriteCloser) error {
 	// Read pump (from stream -> grpc)
 	errCh := make(chan error, 3)
 	go func() {
 		defer s.Close()
 
 		buf := make([]byte, 1500)
+		d := &Data{}
 		for {
 			n, err := s.Read(buf)
 			if err != nil {
@@ -31,9 +31,8 @@ func AttachRPCToStream(rpc RPC, s stream.Stream) error {
 				return
 			}
 
-			err = rpc.Send(&Response{
-				Data: buf[:n],
-			})
+			d.Data = buf[:n]
+			err = rpc.Send(d)
 			if err != nil {
 				errCh <- err
 				return

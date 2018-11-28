@@ -10,7 +10,7 @@ import (
 	"runtime"
 
 	"github.com/aperturerobotics/bifrost/daemon"
-	"github.com/aperturerobotics/bifrost/daemon/api"
+	"github.com/aperturerobotics/bifrost/daemon/api/controller"
 	egctr "github.com/aperturerobotics/bifrost/entitygraph"
 	"github.com/aperturerobotics/bifrost/keypem"
 	"github.com/aperturerobotics/bifrost/stream/forwarding"
@@ -189,7 +189,7 @@ func runDaemon(c *cli.Context) error {
 	// Daemon API
 	if daemonFlags.APIListen != "" {
 		_, apiRef, err := b.AddDirective(
-			resolver.NewLoadControllerWithConfigSingleton(&api.Config{
+			resolver.NewLoadControllerWithConfigSingleton(&api_controller.Config{
 				ListenAddr: daemonFlags.APIListen,
 			}),
 			bus.NewCallbackHandler(func(val directive.Value) {
