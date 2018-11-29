@@ -18,6 +18,8 @@ type Link interface {
 	AcceptStream() (stream.Stream, stream.OpenOpts, error)
 	// GetRemotePeer returns the identity of the remote peer.
 	GetRemotePeer() peer.ID
+	// GetLocalPeer returns the identity of the local peer.
+	GetLocalPeer() peer.ID
 	// GetRemoteTransportUUID returns the reported remote transport UUID.
 	// This should be negotiated in the handshake.
 	GetRemoteTransportUUID() uint64

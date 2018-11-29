@@ -31,6 +31,8 @@ type Link struct {
 	sharedSecret [32]byte
 	// peerID is the remote peer id
 	peerID peer.ID
+	// localPeerID is the local peer id
+	localPeerID peer.ID
 	// mux is the reliable stream multiplexer
 	mux *smux.Session
 	// conn is the underlying connection
@@ -49,6 +51,7 @@ func NewLink(
 	le *logrus.Entry,
 	url string,
 	transportUUID uint64,
+	localPeerID peer.ID,
 	remoteTransportUUID uint64,
 	neg *identity.Result,
 	sharedSecret [32]byte,
@@ -83,6 +86,7 @@ func NewLink(
 		conn:   conn,
 		closed: closed,
 
+		localPeerID:         localPeerID,
 		sharedSecret:        sharedSecret,
 		transportUUID:       transportUUID,
 		remoteTransportUUID: remoteTransportUUID,
@@ -104,6 +108,11 @@ func newLinkUUID(url string, peerID peer.ID) uint64 {
 // GetRemotePeer returns the identity of the remote peer.
 func (l *Link) GetRemotePeer() peer.ID {
 	return l.peerID
+}
+
+// GetLocalPeer returns the identity of the local peer.
+func (l *Link) GetLocalPeer() peer.ID {
+	return l.localPeerID
 }
 
 // GetUUID returns the host-unique ID.

@@ -46,6 +46,8 @@ type Link struct {
 	transportUUID uint64
 	// remoteTransportUUID is the remote transport uuid
 	remoteTransportUUID uint64
+	// localPeerID is the local peer ID
+	localPeerID peer.ID
 	// closed is the closed callback
 	closed func()
 	// closedOnce guards closed
@@ -91,6 +93,7 @@ func NewLink(
 	ctx context.Context,
 	le *logrus.Entry,
 	opts *Opts,
+	localPeerID peer.ID,
 	localAddr, remoteAddr net.Addr,
 	transportUUID, remoteTransportUUID uint64,
 	neg *identity.Result,
@@ -120,6 +123,7 @@ func NewLink(
 		writer:              writer,
 		localAddr:           localAddr,
 		rawStreams:          make(map[uint32]*rawStream),
+		localPeerID:         localPeerID,
 		sharedSecret:        sharedSecret,
 		transportUUID:       transportUUID,
 		remoteTransportUUID: remoteTransportUUID,
@@ -250,6 +254,11 @@ func (l *Link) GetRemoteTransportUUID() uint64 {
 // GetRemotePeer returns the identity of the remote peer if encrypted.
 func (l *Link) GetRemotePeer() peer.ID {
 	return l.peerID
+}
+
+// GetLocalPeer returns the identity of the local peer.
+func (l *Link) GetLocalPeer() peer.ID {
+	return l.localPeerID
 }
 
 // OpenStream opens a stream on the link, with the given parameters.

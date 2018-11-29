@@ -40,5 +40,6 @@ func runAcceptController(cctx *cli.Context) error {
 	return stream_grpc.AttachRPCToStream(
 		drpc,
 		rwc.NewReadWriteCloser(os.Stdin, os.Stdout),
+		nil,
 	)
 }

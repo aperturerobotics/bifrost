@@ -6,6 +6,7 @@ import (
 
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/stream/grpc"
+	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/sirupsen/logrus"
 )
 
@@ -15,11 +16,17 @@ type MountedStreamHandler struct {
 	le *logrus.Entry
 	// rpc is the rpc to use
 	rpc *queuedRPC
+	// b is the bus
+	b bus.Bus
 }
 
 // NewMountedStreamHandler constructs the mounted stream handler.
-func NewMountedStreamHandler(le *logrus.Entry, rpc *queuedRPC) (*MountedStreamHandler, error) {
-	return &MountedStreamHandler{le: le, rpc: rpc}, nil
+func NewMountedStreamHandler(
+	le *logrus.Entry,
+	bus bus.Bus,
+	rpc *queuedRPC,
+) (*MountedStreamHandler, error) {
+	return &MountedStreamHandler{le: le, rpc: rpc, b: bus}, nil
 }
 
 // HandleMountedStream handles an incoming mounted stream.
@@ -32,9 +39,25 @@ func (m *MountedStreamHandler) HandleMountedStream(
 ) error {
 	rpc := m.rpc.rpc
 	s := strm.GetStream()
+	_, estLinkInst, err := m.b.AddDirective(
+		link.NewEstablishLinkWithPeer(strm.GetPeerID()),
+		nil,
+	)
+	if err != nil {
+		return err
+	}
 
 	go func() {
-		if err := stream_grpc.AttachRPCToStream(rpc, s); err != nil &&
+		defer estLinkInst.Release()
+
+		if err := rpc.Send(&stream_grpc.Data{
+			State: stream_grpc.StreamState_StreamState_ESTABLISHED,
+		}); err != nil {
+			s.Close()
+			return
+		}
+
+		if err := stream_grpc.AttachRPCToStream(rpc, s, nil); err != nil &&
 			err != io.EOF &&
 			err != context.Canceled {
 			m.le.WithError(err).Warn("rpc stream returned an error")

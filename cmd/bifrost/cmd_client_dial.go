@@ -37,5 +37,6 @@ func runDialController(cctx *cli.Context) error {
 	return stream_grpc.AttachRPCToStream(
 		rpc,
 		rwc.NewReadWriteCloser(os.Stdin, os.Stdout),
+		nil,
 	)
 }

@@ -32,6 +32,11 @@ func ProcessRPC(
 	}
 
 	// Dial the target.
+	if err := rpc.Send(&stream_grpc.Data{
+		State: stream_grpc.StreamState_StreamState_ESTABLISHING,
+	}); err != nil {
+		return err
+	}
 	strm, rel, err := link.OpenStreamWithPeerEx(
 		ctx,
 		b,
@@ -46,8 +51,14 @@ func ProcessRPC(
 	if err != nil {
 		return err
 	}
-	defer rel()
 
+	defer rel()
 	defer strm.GetStream().Close()
-	return stream_grpc.AttachRPCToStream(rpc, strm.GetStream())
+
+	if err := rpc.Send(&stream_grpc.Data{
+		State: stream_grpc.StreamState_StreamState_ESTABLISHED,
+	}); err != nil {
+		return err
+	}
+	return stream_grpc.AttachRPCToStream(rpc, strm.GetStream(), nil)
 }

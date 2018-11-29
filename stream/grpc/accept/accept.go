@@ -113,6 +113,13 @@ type queuedRPC struct {
 func (c *Controller) AttachRPC(rpc stream_grpc.RPC) error {
 	ctx := rpc.Context()
 	errCh := make(chan error, 1)
+
+	if err := rpc.Send(&stream_grpc.Data{
+		State: stream_grpc.StreamState_StreamState_ESTABLISHING,
+	}); err != nil {
+		return err
+	}
+
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -179,7 +186,7 @@ func (c *Controller) Resolve(ctx context.Context, handler directive.ResolverHand
 	case rpc = <-c.rpcCh:
 	}
 
-	h, err := NewMountedStreamHandler(c.le, rpc)
+	h, err := NewMountedStreamHandler(c.le, c.bus, rpc)
 	if err != nil {
 		rpc.doneCb(err)
 		return err

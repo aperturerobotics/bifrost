@@ -18,15 +18,3 @@ message Config {
   // Reliable indicates the stream should be reliable.
   bool reliable = 6;
 }
-
-// Request is a request packet.
-message Request {
-  // Data is packet data from the remote.
-  bytes data = 1;
-}
-
-// Response is a response packet.
-message Response {
-  // Data is packet data from the remote.
-  bytes data = 1;
-}

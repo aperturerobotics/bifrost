@@ -46,6 +46,7 @@ func (u *Transport) handleCompleteHandshake(
 		le,
 		url,
 		u.GetUUID(),
+		u.peerID,
 		ed.GetLocalTransportUuid(),
 		result,
 		result.Secret,

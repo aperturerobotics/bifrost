@@ -16,12 +16,15 @@ type RPC interface {
 }
 
 // AttachRPCToStream attaches a RPC to a stream.
-func AttachRPCToStream(rpc RPC, s io.ReadWriteCloser) error {
+func AttachRPCToStream(
+	rpc RPC,
+	s io.ReadWriteCloser,
+	stateCb func(state StreamState),
+) error {
 	// Read pump (from stream -> grpc)
 	errCh := make(chan error, 3)
 	go func() {
 		defer s.Close()
-
 		buf := make([]byte, 1500)
 		d := &Data{}
 		for {
@@ -48,6 +51,14 @@ func AttachRPCToStream(rpc RPC, s io.ReadWriteCloser) error {
 			if err != nil {
 				errCh <- err
 				return
+			}
+
+			if st := msg.GetState(); st != StreamState_StreamState_NONE {
+				if stateCb != nil {
+					stateCb(st)
+				}
+
+				continue
 			}
 
 			_, err = s.Write(msg.GetData())

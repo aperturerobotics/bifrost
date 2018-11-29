@@ -98,7 +98,7 @@ message AcceptStreamRequest {
 
 // AcceptStreamResponse is the response type for AcceptStream.
 message AcceptStreamResponse {
-  // Response is a response packet.
+  // Data is a data packet.
   stream.grpc.Data data = 1;
 }
 

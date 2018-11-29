@@ -60,6 +60,7 @@ func (u *Transport) handleCompleteHandshake(
 		ctx,
 		le,
 		&u.opts,
+		u.peerID,
 		u.pc.LocalAddr(),
 		addr,
 		u.GetUUID(),
