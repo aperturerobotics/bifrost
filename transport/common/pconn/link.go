@@ -325,11 +325,13 @@ func (l *Link) handleRawPacket(data []byte) {
 
 // Close closes the connection.
 func (l *Link) Close() error {
+	// TODO race on l.writer
 	if l.writer != nil {
 		_, _ = l.writer(
 			[]byte{byte(PacketType_PacketType_CLOSE_LINK)},
 			l.addr,
 		)
+		l.writer = nil
 	}
 	if closed := l.closed; closed != nil {
 		l.closedOnce.Do(closed)

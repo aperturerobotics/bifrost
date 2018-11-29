@@ -5,6 +5,7 @@ import (
 
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/peer"
+	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
 	ma "github.com/multiformats/go-multiaddr"
@@ -16,6 +17,8 @@ import (
 type Controller struct {
 	// le is the logger
 	le *logrus.Entry
+	// bus is the controller bus
+	bus bus.Bus
 	// conf is the config
 	conf *Config
 	// dialMa is the dial multiaddr
@@ -27,6 +30,7 @@ type Controller struct {
 // NewController constructs a new API controller.
 func NewController(
 	le *logrus.Entry,
+	bus bus.Bus,
 	conf *Config,
 ) (*Controller, error) {
 	dialMa, err := conf.ParseTargetMultiaddr()
@@ -42,6 +46,7 @@ func NewController(
 	return &Controller{
 		le:          le,
 		conf:        conf,
+		bus:         bus,
 		dialMa:      dialMa,
 		localPeerID: pid,
 	}, nil
@@ -98,7 +103,7 @@ func (c *Controller) resolveHandleMountedStream(
 			return nil, nil
 		}
 	}
-	return NewDialResolver(c.le, c.dialMa)
+	return NewDialResolver(c.le, c.bus, c.dialMa)
 }
 
 // Close releases any resources used by the controller.

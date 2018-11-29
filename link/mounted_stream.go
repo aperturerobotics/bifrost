@@ -30,5 +30,6 @@ type MountedStreamHandler interface {
 	// Any returned error indicates the stream should be closed.
 	// This function should return as soon as possible, and start
 	// additional goroutines to manage the lifecycle of the stream.
+	// Typically EstablishLink is asserted in HandleMountedStream.
 	HandleMountedStream(context.Context, MountedStream) error
 }

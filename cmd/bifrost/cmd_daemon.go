@@ -173,7 +173,7 @@ func runDaemon(c *cli.Context) error {
 	b := d.GetControllerBus()
 	sr := d.GetStaticResolver()
 	sr.AddFactory(egctr.NewFactory(b))
-	sr.AddFactory(stream_forwarding.NewFactory())
+	sr.AddFactory(stream_forwarding.NewFactory(b))
 	sr.AddFactory(stream_listening.NewFactory(b))
 	sr.AddFactory(stream_grpc_accept.NewFactory(b))
 

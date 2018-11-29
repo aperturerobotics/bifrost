@@ -5,6 +5,7 @@ import (
 
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/stream/proxy"
+	"github.com/aperturerobotics/controllerbus/bus"
 	ma "github.com/multiformats/go-multiaddr"
 	manet "github.com/multiformats/go-multiaddr-net"
 	"github.com/sirupsen/logrus"
@@ -16,12 +17,14 @@ type MountedStreamHandler struct {
 	le *logrus.Entry
 	// dialMa is the multiaddr to dial
 	dialMa ma.Multiaddr
+	// bus is the controller bus
+	bus bus.Bus
 }
 
 // NewMountedStreamHandler constructs the mounted stream handler.
-func NewMountedStreamHandler(le *logrus.Entry, dialMa ma.Multiaddr) (*MountedStreamHandler, error) {
+func NewMountedStreamHandler(le *logrus.Entry, bus bus.Bus, dialMa ma.Multiaddr) (*MountedStreamHandler, error) {
 	le = le.WithField("dial-multiaddr", dialMa.String())
-	return &MountedStreamHandler{le: le, dialMa: dialMa}, nil
+	return &MountedStreamHandler{le: le, dialMa: dialMa, bus: bus}, nil
 }
 
 // HandleMountedStream handles an incoming mounted stream.
@@ -32,7 +35,12 @@ func (m *MountedStreamHandler) HandleMountedStream(
 	ctx context.Context,
 	strm link.MountedStream,
 ) error {
+	_, elRef, err := m.bus.AddDirective(link.NewEstablishLinkWithPeer(strm.GetPeerID()), nil)
+	if err != nil {
+		return err
+	}
 	go func() {
+		defer elRef.Release()
 		// Attempt to dial the target.
 		// TODO: use context here
 		m.le.Debug("dialing to forward stream")
@@ -45,7 +53,11 @@ func (m *MountedStreamHandler) HandleMountedStream(
 		}
 
 		m.le.Debug("connection opened")
-		proxy.ProxyStreams(conn, s, func() {})
+		subCtx, subCtxCancel := context.WithCancel(ctx)
+		defer subCtxCancel()
+		proxy.ProxyStreams(conn, s, subCtxCancel)
+		<-subCtx.Done()
+		// wait to release EstablishLink ref
 	}()
 	return nil
 }

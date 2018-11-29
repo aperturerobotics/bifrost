@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/aperturerobotics/bifrost/link"
+	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/directive"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
@@ -15,16 +16,18 @@ type DialResolver struct {
 	le *logrus.Entry
 	// ma is the multiaddress to dial
 	ma ma.Multiaddr
+	// bus is the controller bus
+	bus bus.Bus
 }
 
 // NewDialResolver constructs a new dial resolver.
-func NewDialResolver(le *logrus.Entry, ma ma.Multiaddr) (*DialResolver, error) {
-	return &DialResolver{le: le, ma: ma}, nil
+func NewDialResolver(le *logrus.Entry, bus bus.Bus, ma ma.Multiaddr) (*DialResolver, error) {
+	return &DialResolver{le: le, ma: ma, bus: bus}, nil
 }
 
 // Resolve resolves the values, emitting them to the handler.
 func (r *DialResolver) Resolve(ctx context.Context, handler directive.ResolverHandler) error {
-	h, err := NewMountedStreamHandler(r.le, r.ma)
+	h, err := NewMountedStreamHandler(r.le, r.bus, r.ma)
 	if err != nil {
 		return err
 	}

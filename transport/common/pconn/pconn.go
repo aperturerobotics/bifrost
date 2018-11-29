@@ -170,7 +170,7 @@ func (u *Transport) readPump(ctx context.Context) (readErr error) {
 			continue
 		}
 
-		if n < 2 {
+		if n == 0 {
 			continue
 		}
 
@@ -281,7 +281,7 @@ func (c *Transport) HandleDirective(ctx context.Context, di directive.Instance) 
 	return nil, nil
 }
 
-// Close closes the connection.
+// Close closes the transport.
 func (u *Transport) Close() error {
 	return u.pc.Close()
 }

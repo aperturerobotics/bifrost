@@ -262,8 +262,14 @@ func (c *Controller) HandleIncomingStream(
 	strm stream.Stream,
 	strmOpts stream.OpenOpts,
 ) {
-	// TODO: do we need to ensure EstablishLink is held open during this process
-	// as of now it is a race between the hold-open timeout and the stream establish timeout
+	// Assert EstablishLink to keep the stream open during the header exchange.
+	_, elRef, err := c.bus.AddDirective(
+		link.NewEstablishLinkWithPeer(lnk.GetRemotePeer()),
+		nil,
+	)
+	if err == nil {
+		defer elRef.Release()
+	}
 
 	readDeadline := time.Now().Add(streamEstablishTimeout)
 	ctx, ctxCancel := context.WithDeadline(rctx, readDeadline)
@@ -315,7 +321,7 @@ func (c *Controller) HandleIncomingStream(
 		return
 	}
 
-	if err := mhnd.HandleMountedStream(ctx, mstrm); err != nil {
+	if err := mhnd.HandleMountedStream(rctx, mstrm); err != nil {
 		c.le.
 			WithError(err).
 			WithField("protocol-id", pid).
