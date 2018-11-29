@@ -2,10 +2,14 @@ package link
 
 import (
 	"errors"
+	"time"
 
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/controllerbus/directive"
 )
+
+// holdOpenDur is the minimum hold open duration
+var holdOpenDur = time.Second * 10
 
 // EstablishLinkWithPeer is a directive to establish a link with a peer.
 type EstablishLinkWithPeer interface {
@@ -44,7 +48,9 @@ func (d *establishLinkWithPeer) Validate() error {
 
 // GetValueOptions returns options relating to value handling.
 func (d *establishLinkWithPeer) GetValueOptions() directive.ValueOptions {
-	return directive.ValueOptions{}
+	return directive.ValueOptions{
+		UnrefDisposeDur: holdOpenDur,
+	}
 }
 
 // IsEquivalent checks if the other directive is equivalent. If two

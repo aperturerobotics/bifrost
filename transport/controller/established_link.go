@@ -2,17 +2,12 @@ package transport_controller
 
 import (
 	"context"
-	"time"
 
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/sirupsen/logrus"
 )
-
-// linkHoldOpenDur is the minimum amount of time to hold a link open.
-// TODO: move this to a more configurable location
-var linkHoldOpenDur = time.Duration(10) * time.Second
 
 // establishedLink holds state for an established link.
 type establishedLink struct {
@@ -62,28 +57,10 @@ func newEstablishedLink(
 		_ = lnk.Close()
 		ctxCancel()
 	})
-	go el.manageLinkLifecycle(ctx, dir)
+	go el.acceptStreamPump(ctx)
 
+	dir.Release()
 	return el, nil
-}
-
-// manageLinkLifecycle manages the link lifecycle.
-func (e *establishedLink) manageLinkLifecycle(ctx context.Context, ref directive.Reference) {
-	ht := time.NewTimer(linkHoldOpenDur)
-	defer ht.Stop()
-
-	go e.acceptStreamPump(ctx)
-
-	select {
-	case <-ctx.Done():
-	case <-ht.C:
-		e.le.
-			WithField("link-uuid", e.Link.GetUUID()).
-			WithField("duration", linkHoldOpenDur.String()).
-			Debug("link hold-open duration expired")
-	}
-
-	ref.Release()
 }
 
 func (e *establishedLink) acceptStreamPump(ctx context.Context) {
