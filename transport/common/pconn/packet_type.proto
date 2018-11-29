@@ -6,4 +6,5 @@ enum PacketType {
   PacketType_HANDSHAKE = 0;
   PacketType_RAW = 1;
   PacketType_KCP_SMUX = 2;
+  PacketType_CLOSE_LINK = 3;
 }

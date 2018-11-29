@@ -12,8 +12,7 @@ import (
 
 // linkHoldOpenDur is the minimum amount of time to hold a link open.
 // TODO: move this to a more configurable location
-// var linkHoldOpenDur = time.Duration(10) * time.Second
-var linkHoldOpenDur = time.Duration(3) * time.Minute
+var linkHoldOpenDur = time.Duration(10) * time.Second
 
 // establishedLink holds state for an established link.
 type establishedLink struct {
@@ -59,7 +58,10 @@ func newEstablishedLink(
 		Cancel:            ctxCancel,
 		Controller:        ctrl,
 	}
-	di.AddDisposeCallback(func() { _ = lnk.Close() })
+	di.AddDisposeCallback(func() {
+		_ = lnk.Close()
+		ctxCancel()
+	})
 	go el.manageLinkLifecycle(ctx, dir)
 
 	return el, nil
@@ -67,17 +69,8 @@ func newEstablishedLink(
 
 // manageLinkLifecycle manages the link lifecycle.
 func (e *establishedLink) manageLinkLifecycle(ctx context.Context, ref directive.Reference) {
-	lnk := e.Link
-	ctxCancel := e.Cancel
-	defer ctxCancel()
-
 	ht := time.NewTimer(linkHoldOpenDur)
 	defer ht.Stop()
-
-	disposeRel := e.DirectiveInstance.AddDisposeCallback(func() {
-		ctxCancel()
-	})
-	defer disposeRel()
 
 	go e.acceptStreamPump(ctx)
 
@@ -91,8 +84,6 @@ func (e *establishedLink) manageLinkLifecycle(ctx context.Context, ref directive
 	}
 
 	ref.Release()
-	<-ctx.Done()
-	lnk.Close()
 }
 
 func (e *establishedLink) acceptStreamPump(ctx context.Context) {
@@ -102,7 +93,7 @@ func (e *establishedLink) acceptStreamPump(ctx context.Context) {
 	defer e.Cancel()
 
 	for {
-		e.le.Debug("waiting to accept stream")
+		// e.le.Debug("waiting to accept stream")
 		strm, strmOpts, err := lnk.AcceptStream()
 		if err != nil {
 			if err != context.Canceled {

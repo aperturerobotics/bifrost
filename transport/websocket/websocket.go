@@ -62,15 +62,12 @@ type Transport struct {
 
 	// server is the http server
 	server *http.Server
-	// bootDialAddrs are addresses to dial on boot
-	bootDialAddrs []string
 }
 
 // New builds a new packet-conn based transport, listening on the addr.
 func New(
 	le *logrus.Entry,
 	listenStr string,
-	bootDialAddrs []string,
 	pKey crypto.PrivKey,
 	handler transport.TransportHandler,
 ) *Transport {
@@ -87,8 +84,7 @@ func New(
 		handshakes: make(map[string]*inflightHandshake),
 		links:      make(map[string]*Link),
 
-		listenErrCh:   make(chan error, 1),
-		bootDialAddrs: bootDialAddrs,
+		listenErrCh: make(chan error, 1),
 	}
 
 	if listenStr != "" {
@@ -105,10 +101,15 @@ func (u *Transport) GetUUID() uint64 {
 	return u.uuid
 }
 
-// Dial instructs the transport to attempt to handshake with a peer.
-// The function may return immediately.
-// The handshake will be canceled if ctx is canceled.
-func (u *Transport) Dial(ctx context.Context, url string) error {
+// DialPeer dials a peer given an address. The yielded link should be
+// emitted to the transport handler. DialPeer should return nil if the link
+// was established. DialPeer will then not be called again for the same peer
+// ID and address tuple until the yielded link is lost.
+func (u *Transport) DialPeer(
+	ctx context.Context,
+	peerID peer.ID,
+	url string,
+) error {
 	u.handshakesMtx.Lock()
 	defer u.handshakesMtx.Unlock()
 
@@ -152,10 +153,6 @@ func (u *Transport) Execute(ctx context.Context) error {
 		go func() {
 			u.listenErrCh <- u.server.ListenAndServe()
 		}()
-	}
-
-	for _, d := range u.bootDialAddrs {
-		go u.Dial(ctx, d)
 	}
 
 	// TODO: when returning, close all links

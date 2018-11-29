@@ -13,6 +13,7 @@ import (
 	nctr "github.com/aperturerobotics/bifrost/peer/controller"
 	"github.com/aperturerobotics/bifrost/protocol"
 	"github.com/aperturerobotics/bifrost/stream"
+	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/aperturerobotics/bifrost/transport/common/pconn"
 	udptpt "github.com/aperturerobotics/bifrost/transport/udp"
 	"github.com/aperturerobotics/controllerbus/bus"
@@ -146,11 +147,11 @@ func doIt(doProf bool) error {
 	_, n2UdpRef, err := b2.AddDirective(
 		resolver.NewLoadControllerWithConfigSingleton(&udptpt.Config{
 			ListenAddr: "127.0.0.1:9824",
-			DialAddrs:  []string{"127.0.0.1:9823"},
 			PacketOpts: pconnOpts,
 		}),
 		bus.NewCallbackHandler(func(val directive.Value) {
 			le.Infof("UDP listening on: %s", "127.0.0.1:9824")
+			val.(transport.TransportDialer).DialPeer(ctx, p1, "127.0.0.1:9823")
 		}, nil, nil),
 	)
 	if err != nil {

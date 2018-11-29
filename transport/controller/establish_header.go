@@ -19,15 +19,12 @@ func writeStreamEstablishHeader(w io.Writer, msg *StreamEstablish) (int, error) 
 		return 0, err
 	}
 
-	i, err := w.Write(proto.EncodeVarint(uint64(len(dat))))
-	nw := i
-	if err != nil {
-		return nw, err
-	}
+	lenVarInt := proto.EncodeVarint(uint64(len(dat)))
+	outBuf := make([]byte, len(dat)+len(lenVarInt))
+	copy(outBuf, lenVarInt)
+	copy(outBuf[len(lenVarInt):], dat)
 
-	i, err = w.Write(dat)
-	nw += i
-	return nw, err
+	return w.Write(outBuf)
 }
 
 func readAtLeast(r io.Reader, n, min int, buf []byte) (int, error) {

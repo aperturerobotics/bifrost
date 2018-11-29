@@ -18,7 +18,11 @@ type linkWaiter struct {
 // if cbOnce, only added events will be sent, and only one cb() will be called
 // cb added indicates if it is an add or remove event.
 // linksMtx should be locked.
-func (c *Controller) pushLinkWaiter(peerID peer.ID, cbOnce bool, cb func(lnk link.Link, added bool)) *linkWaiter {
+func (c *Controller) pushLinkWaiter(
+	peerID peer.ID,
+	cbOnce bool,
+	cb func(lnk link.Link, added bool),
+) *linkWaiter {
 	peerIDEmpty := peerID == peer.ID("")
 	for _, lnk := range c.links {
 		if peerIDEmpty || lnk.Link.GetRemotePeer() == peerID {

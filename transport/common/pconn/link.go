@@ -183,7 +183,6 @@ func NewLink(
 		l.mux, _ = smux.Client(l.sess, conf)
 	}
 
-	l.rawStreamsMtx.Lock()
 	go l.smuxAcceptPump(initiator)
 
 	return l, nil
@@ -255,10 +254,11 @@ func (l *Link) GetRemotePeer() peer.ID {
 
 // OpenStream opens a stream on the link, with the given parameters.
 func (l *Link) OpenStream(opts stream.OpenOpts) (stream.Stream, error) {
+	l.rawStreamsMtx.Lock()
+	defer l.rawStreamsMtx.Unlock()
+
 	if opts.Encrypted || opts.Reliable {
-		l.rawStreamsMtx.Lock()
 		strm, err := l.mux.OpenStream()
-		l.rawStreamsMtx.Unlock()
 		return strm, err
 	}
 
@@ -273,6 +273,10 @@ func (l *Link) HandlePacket(packetType PacketType, data []byte) {
 		l.handleRawPacket(data)
 	case PacketType_PacketType_KCP_SMUX:
 		l.sess.RxPacket(data)
+	case PacketType_PacketType_CLOSE_LINK:
+		l.le.Debug("received close_link packet")
+		l.writer = nil
+		l.Close()
 	}
 }
 
@@ -321,6 +325,12 @@ func (l *Link) handleRawPacket(data []byte) {
 
 // Close closes the connection.
 func (l *Link) Close() error {
+	if l.writer != nil {
+		_, _ = l.writer(
+			[]byte{byte(PacketType_PacketType_CLOSE_LINK)},
+			l.addr,
+		)
+	}
 	if closed := l.closed; closed != nil {
 		l.closedOnce.Do(closed)
 	}

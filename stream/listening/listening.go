@@ -148,14 +148,14 @@ func (c *Controller) handleConn(ctx context.Context, conn manet.Conn) {
 	)
 	if err != nil {
 		conn.Close()
-		c.le.WithError(err).Warn("unable to open stream to handle conn")
+		// c.le.WithError(err).Warn("unable to open stream to handle conn")
 		return
 	}
 
 	strm := mstrm.GetStream()
 	proxy.ProxyStreams(conn, strm, func() {
-		conn.Close()
 		rel()
+		conn.Close()
 	})
 }
 

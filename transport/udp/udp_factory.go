@@ -59,7 +59,6 @@ func (t *Factory) Construct(
 			return NewUDP(
 				le,
 				cc.GetListenAddr(),
-				cc.GetDialAddrs(),
 				pkey,
 				handler,
 				cc.GetPacketOpts(),
@@ -67,6 +66,7 @@ func (t *Factory) Construct(
 		},
 		TransportID,
 		Version,
+		cc.GetDialers(),
 	), nil
 }
 

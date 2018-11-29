@@ -49,8 +49,6 @@ type Transport struct {
 	lastLink *Link
 	// lastLinkAddr was the last addr to receive a packet from
 	lastLinkAddr string
-
-	bootDialAddrs []string
 }
 
 // New builds a new websocket based transport.
@@ -58,7 +56,6 @@ type Transport struct {
 func New(
 	le *logrus.Entry,
 	_ string,
-	dialAddrs []string,
 	pKey crypto.PrivKey,
 	handler transport.TransportHandler,
 ) *Transport {
@@ -73,8 +70,6 @@ func New(
 
 		handshakes: make(map[string]*inflightHandshake),
 		links:      make(map[string]*Link),
-
-		bootDialAddrs: dialAddrs,
 	}
 }
 
@@ -103,11 +98,6 @@ func (u *Transport) Dial(ctx context.Context, url string) error {
 // Fatal errors are returned.
 func (u *Transport) Execute(ctx context.Context) error {
 	u.ctx = ctx
-	for _, d := range u.bootDialAddrs {
-		go u.Dial(ctx, d)
-	}
-
-	// TODO: when returning, close all links
 	return nil
 }
 

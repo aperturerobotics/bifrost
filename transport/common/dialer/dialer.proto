@@ -1,0 +1,14 @@
+syntax = "proto3";
+package dialer;
+
+import "github.com/aperturerobotics/bifrost/util/backoff/backoff.proto";
+
+// DialerOpts contains options relating to dialing a statically configured peer.
+message DialerOpts {
+  // Address is the address of the peer, in the format expected by the transport.
+  string address = 1;
+  // Backoff is the dialing backoff configuration.
+  // Can be empty.
+  backoff.Backoff backoff = 2;
+}
+

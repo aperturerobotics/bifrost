@@ -59,13 +59,13 @@ func (t *Factory) Construct(
 			return New(
 				le,
 				cc.GetListenAddr(),
-				cc.GetDialAddrs(),
 				pkey,
 				handler,
 			), nil
 		},
 		TransportID,
 		Version,
+		cc.GetDialers(),
 	), nil
 }
 

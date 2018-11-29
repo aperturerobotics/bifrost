@@ -48,14 +48,11 @@ func (u *Transport) handleCompleteHandshake(
 	u.linksMtx.Lock()
 	defer u.linksMtx.Unlock()
 
-	// TODO; re-configure link for new secret rather than closing it.
-	/*
-		if l, ok := u.links[as]; ok {
-			le.
-				Debug("userping old session with peer")
-			l.Close()
-		}
-	*/
+	if l, ok := u.links[as]; ok {
+		le.
+			Debug("userping old session with peer")
+		l.Close()
+	}
 
 	var lnk *Link
 	var err error

@@ -11,6 +11,7 @@ import (
 	"github.com/aperturerobotics/bifrost/protocol"
 	"github.com/aperturerobotics/bifrost/stream"
 	"github.com/aperturerobotics/bifrost/transport"
+	"github.com/aperturerobotics/bifrost/transport/common/dialer"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
@@ -60,11 +61,18 @@ type Controller struct {
 	links map[uint64]*establishedLink
 	// linkWaiters is a set of callbacks waiting for connections with peers.
 	linkWaiters map[peer.ID][]*linkWaiter
+	// linkDialers tracks ongoing dial attempts
+	linkDialers map[linkDialerKey]*linkDialer
 
 	// transportID is the transport identifier.
 	transportID string
 	// transportVersion is the transport version
 	transportVersion semver.Version
+
+	// staticPeerMap maps a peer ID to a peermap.DialPeer
+	// when EstablishLink matches a peer ID in this map,
+	// the transport controller will dial the peer.
+	staticPeerMap map[string]*dialer.DialerOpts
 }
 
 // NewController constructs a new transport controller.
@@ -75,6 +83,7 @@ func NewController(
 	ctor Constructor,
 	transportID string,
 	transportVersion semver.Version,
+	staticPeerMap map[string]*dialer.DialerOpts,
 ) *Controller {
 	return &Controller{
 		le:   le,
@@ -89,6 +98,9 @@ func NewController(
 		localPeerID:      nodePeerIDConstraint,
 		transportID:      transportID,
 		transportVersion: transportVersion,
+		linkDialers:      make(map[linkDialerKey]*linkDialer),
+
+		staticPeerMap: staticPeerMap,
 	}
 }
 
@@ -196,6 +208,14 @@ func (c *Controller) HandleLinkEstablished(lnk link.Link) {
 	le := c.loggerForLink(lnk)
 	c.linksMtx.Lock()
 	defer c.linksMtx.Unlock()
+
+	pidStr := lnk.GetRemotePeer().Pretty()
+	for k, d := range c.linkDialers {
+		if k.peerID == pidStr {
+			delete(c.linkDialers, k)
+			d.cancel()
+		}
+	}
 
 	// quick sanity check
 	if lnk.GetRemotePeer() == c.localPeerID {
@@ -328,6 +348,58 @@ func (c *Controller) HandleLinkLost(lnk link.Link) {
 			break
 		}
 	}
+}
+
+// PushDialer pushes a new dialer.
+// Waits for the transport to be constructed.
+// If the transport is not a TransportDialer, returns nil.
+// Returns after the dialer is pushed.
+func (c *Controller) PushDialer(
+	ctx context.Context,
+	peerID peer.ID,
+	opts *dialer.DialerOpts,
+) error {
+	var tptDialer transport.TransportDialer
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case tpt := <-c.tptCh:
+		c.tptCh <- tpt
+		var ok bool
+		tptDialer, ok = tpt.(transport.TransportDialer)
+		if !ok {
+			return nil
+		}
+	}
+
+	key := linkDialerKey{
+		peerID:      peerID.Pretty(),
+		dialAddress: opts.GetAddress(),
+	}
+	go c.startLinkDialer(peerID, key, opts, tptDialer)
+	return nil
+}
+
+// startLinkDialer starts a new link dialer.
+func (c *Controller) startLinkDialer(
+	peerID peer.ID,
+	key linkDialerKey,
+	opts *dialer.DialerOpts,
+	tptDialer transport.TransportDialer,
+) {
+	c.linksMtx.Lock()
+	_, ok := c.linkDialers[key]
+	if !ok {
+		dialer := dialer.NewDialer(c.le, tptDialer, opts, peerID, key.dialAddress)
+		ctx, ctxCancel := context.WithCancel(c.ctx)
+		ld := &linkDialer{
+			dialer: dialer,
+			cancel: ctxCancel,
+		}
+		c.linkDialers[key] = ld
+		go c.executeDialer(ctx, key, ld)
+	}
+	c.linksMtx.Unlock()
 }
 
 // flushEstablishedLink closes an established link and cleans it up.

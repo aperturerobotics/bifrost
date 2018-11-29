@@ -53,6 +53,10 @@ type Transport struct {
 	lastLink *Link
 	// lastLinkAddr was the last addr to receive a packet from
 	lastLinkAddr string
+
+	// addrParser parses an address from a string
+	// if nil, the dialer will not function
+	addrParser func(addr string) (net.Addr, error)
 }
 
 // New builds a new packet-conn based transport, listening on the addr.
@@ -61,6 +65,7 @@ func New(
 	uuid uint64,
 	pc net.PacketConn,
 	pKey crypto.PrivKey,
+	addrParser func(addr string) (net.Addr, error),
 	tc transport.TransportHandler,
 	opts *Opts,
 ) *Transport {
@@ -80,7 +85,8 @@ func New(
 		handshakes: make(map[string]*inflightHandshake),
 		links:      make(map[string]*Link),
 
-		readErrCh: make(chan error, 1),
+		readErrCh:  make(chan error, 1),
+		addrParser: addrParser,
 	}
 }
 
@@ -89,11 +95,19 @@ func (u *Transport) GetUUID() uint64 {
 	return u.uuid
 }
 
-// Dial instructs the transport to attempt to handshake with a peer.
-// The function may return immediately.
-// The handshake will be canceled if ctx is canceled.
-func (u *Transport) Dial(ctx context.Context, addr net.Addr) error {
-	as := addr.String()
+// DialPeer dials a peer given an address. The yielded link should be
+// emitted to the transport handler. DialPeer should return nil if the link
+// was established. DialPeer will then not be called again for the same peer
+// ID and address tuple until the yielded link is lost.
+func (u *Transport) DialPeer(ctx context.Context, peerID peer.ID, as string) (bool, error) {
+	if u.addrParser == nil {
+		return true, nil
+	}
+
+	addr, err := u.addrParser(as)
+	if err != nil {
+		return true, err
+	}
 
 	u.handshakesMtx.Lock()
 	defer u.handshakesMtx.Unlock()
@@ -101,10 +115,10 @@ func (u *Transport) Dial(ctx context.Context, addr net.Addr) error {
 	if _, ok := u.handshakes[as]; !ok {
 		u.le.WithField("addr", as).Debug("pushing new handshaker [dial]")
 		_, err := u.pushHandshaker(ctx, addr, true)
-		return err
+		return true, err
 	}
 
-	return nil
+	return false, nil
 }
 
 // Execute processes the transport, emitting events to the handler.
@@ -164,7 +178,7 @@ func (u *Transport) readPump(ctx context.Context) (readErr error) {
 			u.le.
 				WithError(err).
 				WithField("addr", addr.String()).
-				Debugf("dropped packet: %v", buf[:n])
+				Debugf("dropped packet len(%d)", n)
 		} else {
 			/*
 				u.le.
@@ -241,6 +255,10 @@ func (u *Transport) handleLinkLost(addr string, lnk *Link) {
 	rel := existing == lnk
 	if rel {
 		delete(u.links, addr)
+	}
+	if u.lastLink == lnk {
+		u.lastLink = nil
+		u.lastLinkAddr = ""
 	}
 	u.linksMtx.Unlock()
 

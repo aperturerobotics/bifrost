@@ -4,17 +4,14 @@ import (
 	"context"
 	"time"
 
+	bo "github.com/aperturerobotics/bifrost/util/backoff"
 	"github.com/cenkalti/backoff"
 	"github.com/sirupsen/logrus"
 )
 
 // DefaultBackoff returns the default backoff.
 func DefaultBackoff() backoff.BackOff {
-	b := backoff.NewExponentialBackOff()
-	b.InitialInterval = 500 * time.Millisecond
-	b.Multiplier = 1.7
-	b.MaxInterval = time.Duration(10) * time.Second
-	return b
+	return (&bo.Backoff{}).Construct()
 }
 
 // Retry uses a backoff to re-try a process.

@@ -254,12 +254,10 @@ func (l *Link) writeCoordStreamPacket(pkt *CoordinationStreamPacket) error {
 	}
 
 	// encode packet len
-	plenBuf := make([]byte, 4)
-	binary.LittleEndian.PutUint32(plenBuf, uint32(len(pktDat)))
-	if _, err := l.coordStream.Write(plenBuf); err != nil {
-		return err
-	}
-	if _, err := l.coordStream.Write(pktDat); err != nil {
+	pktBuf := make([]byte, 4+len(pktDat))
+	binary.LittleEndian.PutUint32(pktBuf[:4], uint32(len(pktDat)))
+	copy(pktBuf[4:], pktDat)
+	if _, err := l.coordStream.Write(pktBuf); err != nil {
 		return err
 	}
 

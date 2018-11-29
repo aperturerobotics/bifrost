@@ -8,17 +8,21 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"strings"
 
 	"github.com/aperturerobotics/bifrost/daemon"
 	"github.com/aperturerobotics/bifrost/daemon/api/controller"
 	egctr "github.com/aperturerobotics/bifrost/entitygraph"
 	"github.com/aperturerobotics/bifrost/keypem"
+	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/stream/forwarding"
 	"github.com/aperturerobotics/bifrost/stream/grpc/accept"
 	"github.com/aperturerobotics/bifrost/stream/listening"
+	"github.com/aperturerobotics/bifrost/transport/common/dialer"
 	"github.com/aperturerobotics/bifrost/transport/common/pconn"
 	udptpt "github.com/aperturerobotics/bifrost/transport/udp"
 	wtpt "github.com/aperturerobotics/bifrost/transport/websocket"
+	"github.com/aperturerobotics/bifrost/util/confparse"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
 	"github.com/aperturerobotics/controllerbus/directive"
@@ -29,6 +33,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
+	"google.golang.org/grpc"
 )
 
 // _ enables the profiling endpoints
@@ -41,9 +46,12 @@ var daemonFlags struct {
 	UDPListen       string
 	ProfListen      string
 
-	// UDPDial
-	// Temporary
-	UDPDial cli.StringSlice
+	// UDPPeers is a static peer list
+	// peer-id@address
+	UDPPeers cli.StringSlice
+	// WebsocketPeers is a static peer list
+	// peer-id@address
+	WebsocketPeers cli.StringSlice
 }
 
 func init() {
@@ -82,13 +90,40 @@ func init() {
 					Destination: &daemonFlags.UDPListen,
 				},
 				cli.StringSliceFlag{
-					Name:  "udp-dial",
-					Usage: "if set, dial address with udp on startup, udp-listen must also be set",
-					Value: &daemonFlags.UDPDial,
+					Name:  "udp-peers",
+					Usage: "list of peer-id@address known UDP peers",
+					Value: &daemonFlags.UDPPeers,
+				},
+				cli.StringSliceFlag{
+					Name:  "websocket-peers",
+					Usage: "list of peer-id=address known WebSocket peers",
+					Value: &daemonFlags.WebsocketPeers,
 				},
 			},
 		},
 	)
+}
+
+// parseDialerAddrs parses a dialer map from a string slice
+func parseDialerAddrs(ss cli.StringSlice) (map[string]*dialer.DialerOpts, error) {
+	m := make(map[string]*dialer.DialerOpts)
+	for _, s := range ss {
+		pair := strings.Split(s, "@")
+		if len(pair) < 2 {
+			continue
+		}
+		pid, err := confparse.ParsePeerID(strings.TrimSpace(pair[0]))
+		if err != nil {
+			return nil, err
+		}
+		if pid == peer.ID("") {
+			continue
+		}
+		m[pid.Pretty()] = &dialer.DialerOpts{
+			Address: strings.TrimSpace(pair[1]),
+		}
+	}
+	return m, nil
 }
 
 // runDaemon runs the daemon.
@@ -97,6 +132,7 @@ func runDaemon(c *cli.Context) error {
 	log := logrus.New()
 	log.SetLevel(logrus.DebugLevel)
 	le := logrus.NewEntry(log)
+	grpc.EnableTracing = daemonFlags.ProfListen != ""
 
 	// Load private key.
 	var peerPriv crypto.PrivKey
@@ -205,8 +241,14 @@ func runDaemon(c *cli.Context) error {
 	// TODO: Load these from CLI/yaml configuration.
 	// For now, hardcode it.
 	if daemonFlags.WebsocketListen != "" {
+		staticPeers, err := parseDialerAddrs(daemonFlags.WebsocketPeers)
+		if err != nil {
+			return errors.Wrap(err, "websocket-peers")
+		}
+
 		_, wsRef, err := b.AddDirective(
 			resolver.NewLoadControllerWithConfigSingleton(&wtpt.Config{
+				Dialers:    staticPeers,
 				ListenAddr: daemonFlags.WebsocketListen,
 			}),
 			bus.NewCallbackHandler(func(val directive.Value) {
@@ -220,13 +262,20 @@ func runDaemon(c *cli.Context) error {
 	}
 
 	if daemonFlags.UDPListen != "" {
+		staticPeers, err := parseDialerAddrs(daemonFlags.UDPPeers)
+		if err != nil {
+			return errors.Wrap(err, "udp-peers")
+		}
+
 		_, udpRef, err := b.AddDirective(
 			resolver.NewLoadControllerWithConfigSingleton(&udptpt.Config{
+				Dialers:    staticPeers,
 				ListenAddr: daemonFlags.UDPListen,
-				DialAddrs:  []string(daemonFlags.UDPDial),
 				PacketOpts: &pconn.Opts{
-					KcpMode:    pconn.KCPMode_KCPMode_FAST3,
-					BlockCrypt: pconn.BlockCrypt_BlockCrypt_AES256,
+					// KcpMode:    pconn.KCPMode_KCPMode_FAST3,
+					KcpMode: pconn.KCPMode_KCPMode_NORMAL,
+					// BlockCrypt: pconn.BlockCrypt_BlockCrypt_AES256,
+					BlockCrypt: pconn.BlockCrypt_BlockCrypt_NONE,
 					// DataShards:   10,
 					// ParityShards: 3,
 				},

@@ -1,7 +1,6 @@
 package udp
 
 import (
-	"context"
 	"net"
 	"strings"
 	"time"
@@ -31,7 +30,6 @@ type UDP = pconn.Transport
 func NewUDP(
 	le *logrus.Entry,
 	listenAddr string,
-	dialAddrs []string,
 	pKey crypto.PrivKey,
 	c transport.TransportHandler,
 	pconnOpts *pconn.Opts,
@@ -44,19 +42,22 @@ func NewUDP(
 	uuid := scrc.Crc64([]byte(
 		strings.Join([]string{TransportID, listenAddr}, "/"),
 	))
-	conn := pconn.New(le, uuid, pc, pKey, c, pconnOpts)
-	for _, addr := range dialAddrs {
-		da, err := net.ResolveUDPAddr("udp", addr)
-		if err != nil {
-			le.WithError(err).Warnf("cannot resolve address: %s", addr)
-			continue
-		}
-
-		go conn.Dial(context.TODO(), da)
-	}
-
+	conn := pconn.New(
+		le,
+		uuid,
+		pc,
+		pKey,
+		func(addr string) (net.Addr, error) {
+			return net.ResolveUDPAddr("udp", addr)
+		},
+		c,
+		pconnOpts,
+	)
 	return conn, nil
 }
 
 // _ is a type assertion.
 var _ transport.Transport = ((*UDP)(nil))
+
+// _ is a type assertion
+var _ transport.TransportDialer = ((*UDP)(nil))

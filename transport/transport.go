@@ -20,6 +20,22 @@ type Transport interface {
 	Close() error
 }
 
+// TransportDialer is a transport that supports dialing string-serialized remote
+// addresses. The Transport controller will call Dial if provided an address for
+// the transport, and directed to connect to the peer.
+type TransportDialer interface {
+	// DialPeer dials a peer given an address. The yielded link should be
+	// emitted to the transport handler. DialPeer should return nil if the link
+	// was established. DialPeer will then not be called again for the same peer
+	// ID and address tuple until the yielded link is lost.
+	// Returns fatal and error.
+	DialPeer(
+		ctx context.Context,
+		peerID peer.ID,
+		addr string,
+	) (fatal bool, err error)
+}
+
 // TransportHandler manages a Transport and receives event callbacks.
 // This is typically fulfilled by the transport controller.
 type TransportHandler interface {

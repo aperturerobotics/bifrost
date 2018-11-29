@@ -45,7 +45,7 @@ func execute() error {
 	le := logrus.NewEntry(log)
 
 	_, pk1 := genPeerIdentity()
-	_, pk2 := genPeerIdentity()
+	p2, pk2 := genPeerIdentity()
 
 	d1, err := daemon.NewDaemon(ctx, pk1, daemon.ConstructOpts{
 		LogEntry: le,
@@ -105,10 +105,10 @@ func execute() error {
 
 	wg.Wait()
 
-	tpt1.(*udptpt.UDP).Dial(ctx, &net.UDPAddr{
+	tpt1.(*udptpt.UDP).DialPeer(ctx, p2, (&net.UDPAddr{
 		IP:   net.IP{127, 0, 0, 1},
 		Port: 5554,
-	})
+	}).String())
 	<-ctx.Done()
 	return nil
 }

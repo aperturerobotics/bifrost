@@ -15,13 +15,15 @@ func (l *Link) smuxAcceptPump(initiator bool) {
 	} else {
 		coordStrm, err = l.mux.AcceptStream()
 	}
-	l.coordStream = coordStrm
-	l.rawStreamsMtx.Unlock()
 	if err != nil {
 		l.le.WithError(err).Warn("error opening coordination stream")
 		_ = l.Close()
 		return
 	}
+
+	l.rawStreamsMtx.Lock()
+	l.coordStream = coordStrm
+	l.rawStreamsMtx.Unlock()
 
 	// Start coordination processor
 	go l.coordinationStreamPump(coordStrm)

@@ -68,7 +68,7 @@ func (d *establishLinkWithPeer) Superceeds(other directive.Directive) bool {
 // GetName returns the directive's type name.
 // This is not necessarily unique, and is primarily intended for display.
 func (d *establishLinkWithPeer) GetName() string {
-	return "establishLinkWithPeer"
+	return "EstablishLinkWithPeer"
 }
 
 // GetDebugVals returns the directive arguments as k/v pairs.
