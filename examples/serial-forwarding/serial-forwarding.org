@@ -1,0 +1,71 @@
+#+TITLE: Serial Device Forwarding
+#+AUTHOR: Christian Stewart 
+#+EMAIL: christian@aperturerobotics.com
+#+DESCRIPTION: Example of using Bifrost to forward serial device over network.
+
+* Introduction
+
+Embedded devices typically use serial communication such as USB (Universal
+Serial Bus) or tty based serial lines for configuration and debug at development
+time. For example, the BetaFlight Configurator is used to flash the BetaFlight
+software to a Naze32 (or similar) embedded flight controller board, and to
+configure the parameters of the software.
+
+This example demonstrates how forwarding the ttyS2 serial line from a device
+where ttyS2 is connected to a BetaFlight MSP-enabled UART line to a remote
+device via Bifrost can enable the BetaFlight configurator to operate seamlessly
+over a complex network environment with zero code modification.
+
+* Method
+
+This section describes the commands to execute on each device to run the demo.
+
+** Device 1
+
+#+BEGIN_SRC bash
+  # Start the Bifrost daemon, listening on port :5000.
+  # The API will automatically start as well.
+  # Copy the <device-1-peer-id> here.
+  ./bifrost daemon \
+            --udp-listen :5000 \
+            --node-priv node_priv.pem
+  # Start a socat instance listening on TCP port 51351 and forwarding data to
+  # /dev/ttyS2 device.
+  socat tcp-l:51351,reuseaddr file:/dev/ttyS2,nonblock,waitlock=/var/run/ttyS2.lock
+  # Instruct the local daemon to forward incoming streams with protocol /serial-example/1
+  # to the socat instance.
+  ./bifrost client \
+            forward --peer-id <device-1-peer-id> \
+            --protocol-id "/serial-example/1" --target /ip4/127.0.0.1/tcp/51351
+#+END_SRC
+
+** Device 2
+
+#+BEGIN_SRC bash
+  # Start the Bifrost daemon, listening on port :5000. Inform the daemon that the
+  # <device-1-peer-id> peer is available at <device-1-ip-address>. The daemon will
+  # not dial the remote peer until a request requires it.
+  ./bifrost daemon \
+            --udp-listen :5000 \
+            --node-priv node_priv.pem \
+            --udp-peers "<device-1-peer-id>@<device-1-ip-address>:5000"
+  # Instruct the daemon to listen on port 51351 and forward connections to
+  # <device-1-peer-id> with protocol ID /serport/1.
+  ./bifrost client listen \
+          --peer-id "<device-1-peer-id>" \
+          --protocol-id "/serport/1" \
+          --listen /ip4/127.0.0.1/tcp/51351
+  # Finally, map the localhost:51351 listener to a virtual serial modem.
+   socat pty,link=$HOME/vmodem0,waitslave tcp:127.0.0.1:51351
+#+END_SRC
+
+Launch the BetaFlight configurator. Use a custom serial device at $HOME/vmodem0.
+The configurator will open the serial device, socat will dial localhost:51351,
+Bifrost will forward the stream to the remote peer, and the internal Bifrost
+machinery will build a UDP connection to support the stream. Finally, the
+forwarder on device 1 will handle the incoming stream by opening the Naze32's
+serial port and attaching the stream to the port.
+
+The BetaFlight configurator will connect to the Naze32 and work as usual.
+Furthermore, it is possible to flash firmware over the network in this way.
+
