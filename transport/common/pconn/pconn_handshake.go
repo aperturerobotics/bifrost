@@ -3,6 +3,7 @@ package pconn
 import (
 	"context"
 	"net"
+	"sync"
 
 	"github.com/aperturerobotics/bifrost/handshake/identity"
 	"github.com/aperturerobotics/bifrost/handshake/identity/s2s"
@@ -17,8 +18,31 @@ var defaultMaxInflightStreamEstablish = 5
 // inflightHandshake is an on-going handshake.
 type inflightHandshake struct {
 	ctxCancel context.CancelFunc
-	hs        identity.Handshaker
 	addr      net.Addr
+
+	mtx         sync.Mutex
+	complete    bool
+	lnk         *Link
+	hs          identity.Handshaker
+	pendingData [][]byte
+}
+
+func (h *inflightHandshake) pushPacket(packet []byte) {
+	h.mtx.Lock()
+	defer h.mtx.Unlock()
+
+	if h.lnk != nil {
+		h.lnk.handleRawPacket(packet)
+		return
+	}
+
+	if h.complete {
+		b2 := make([]byte, len(packet))
+		copy(b2, packet)
+		h.pendingData = append(h.pendingData, b2)
+	} else {
+		h.complete = !h.hs.Handle(packet)
+	}
 }
 
 // handleCompleteHandshake handles a completed handshake.
@@ -26,7 +50,8 @@ func (u *Transport) handleCompleteHandshake(
 	addr net.Addr,
 	result *identity.Result,
 	initiator bool,
-) {
+	extraData [][]byte,
+) *Link {
 	ctx := u.ctx
 	as := addr.String()
 	pid, _ := peer.IDFromPublicKey(result.Peer)
@@ -66,7 +91,15 @@ func (u *Transport) handleCompleteHandshake(
 		u.GetUUID(),
 		exd.GetLocalTransportUuid(),
 		result,
-		u.pc.WriteTo,
+		func(b []byte, a net.Addr) (int, error) {
+			/*
+				le.
+					WithField("data-len", len(b)).
+					WithField("addr", a.String()).
+					Debug("writing packet")
+			*/
+			return u.pc.WriteTo(b, a)
+		},
 		initiator,
 		func() {
 			go u.handleLinkLost(as, lnk)
@@ -74,11 +107,15 @@ func (u *Transport) handleCompleteHandshake(
 	)
 	if err != nil {
 		le.WithError(err).Warn("cannot construct link, dropping conn")
-		return
+		return nil
 	}
 
 	u.links[as] = lnk
+	for _, b := range extraData {
+		lnk.handleRawPacket(b)
+	}
 	go u.handler.HandleLinkEstablished(lnk)
+	return lnk
 }
 
 // pushHandshaker builds a new handshaker for the address.
@@ -103,6 +140,12 @@ func (u *Transport) pushHandshaker(
 		nil,
 		func(data []byte) error {
 			data = append(data, byte(PacketType_PacketType_HANDSHAKE))
+			/*
+				u.le.
+					WithField("data-len", len(data)).
+					WithField("addr", addr.String()).
+					Debug("writing handshaking packet")
+			*/
 			_, err := u.pc.WriteTo(data, addr)
 			return err
 		},
@@ -149,5 +192,9 @@ func (u *Transport) processHandshake(ctx context.Context, hs *inflightHandshake,
 		return
 	}
 
-	u.handleCompleteHandshake(hs.addr, res, initiator)
+	hs.mtx.Lock()
+	hs.lnk = u.handleCompleteHandshake(hs.addr, res, initiator, hs.pendingData)
+	hs.complete = true
+	hs.pendingData = nil
+	hs.mtx.Unlock()
 }

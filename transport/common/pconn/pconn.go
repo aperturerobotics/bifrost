@@ -208,9 +208,9 @@ func (u *Transport) handlePacket(ctx context.Context, buf []byte, addr net.Addr)
 
 	var err error
 	if packetType == PacketType_PacketType_HANDSHAKE {
+		ale := u.le.WithField("addr", as).WithField("data-len", len(buf))
 		u.handshakesMtx.Lock()
 		hs := u.handshakes[as]
-		ale := u.le.WithField("addr", as)
 		if hs == nil {
 			ale.Debug("pushing new handshaker [accept]")
 			hs, err = u.pushHandshaker(ctx, addr, false)
@@ -222,10 +222,11 @@ func (u *Transport) handlePacket(ctx context.Context, buf []byte, addr net.Addr)
 			return errors.Wrap(err, "build handshaker")
 		}
 
-		hs.hs.Handle(buf)
+		hs.pushPacket(buf)
 		return nil
 	}
 
+	isCloseMarker := packetType == PacketType_PacketType_CLOSE_LINK
 	u.linksMtx.Lock()
 	var link *Link
 	if u.lastLinkAddr == as && u.lastLink != nil {
@@ -241,7 +242,20 @@ func (u *Transport) handlePacket(ctx context.Context, buf []byte, addr net.Addr)
 	u.linksMtx.Unlock()
 
 	if link == nil {
-		return errors.Errorf("unknown remote link: %s", as)
+		if !isCloseMarker {
+			u.handshakesMtx.Lock()
+			hs, ok := u.handshakes[as]
+			u.handshakesMtx.Unlock()
+			if ok {
+				hs.pushPacket(buf)
+				return nil
+			} else {
+				_, _ = u.pc.WriteTo([]byte{byte(PacketType_PacketType_CLOSE_LINK)}, addr)
+				return errors.Errorf("unknown remote link: %s", as)
+			}
+		} else {
+			return nil
+		}
 	}
 
 	link.HandlePacket(packetType, buf)

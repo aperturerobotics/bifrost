@@ -33,7 +33,9 @@ func (l *Link) coordinationStreamPump(coordStrm stream.Stream) {
 		// Coordination stream is stream-oriented, not packet oriented.
 		// Read uint32 packet length header.
 		if _, err := io.ReadFull(coordStrm, plenBuf); err != nil {
-			// l.le.WithError(err).Warn("coordination stream: cannot read packet len")
+			if err != io.EOF {
+				l.le.WithError(err).Warn("coordination stream: cannot read packet len")
+			}
 			return
 		}
 

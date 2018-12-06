@@ -378,7 +378,7 @@ func (h *Handshaker) readPacket(ctx context.Context, packet *Packet, expectedTyp
 	}
 
 	if err := proto.Unmarshal(pktDat, packet); err != nil {
-		return err
+		return errors.Errorf("unmarshal packet %v: %v", expectedType.String(), err.Error())
 	}
 
 	if expectedType != PacketType(0) {
@@ -416,8 +416,12 @@ func (h *Handshaker) decodePubKey(cipher *Packet_Ciphertext) error {
 // The buffer is re-used upon return.
 // Returns if another packet is expected.
 func (h *Handshaker) Handle(data []byte) bool {
+	// copy the buf
+	b2 := make([]byte, len(data))
+	copy(b2, data)
+
 	select {
-	case h.packetCh <- data:
+	case h.packetCh <- b2:
 	default:
 		return false
 	}

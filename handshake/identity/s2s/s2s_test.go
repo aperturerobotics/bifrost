@@ -1,6 +1,7 @@
 package s2s
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"testing"
@@ -35,19 +36,28 @@ func TestS2S(t *testing.T) {
 		return nil
 	}
 
-	s1, err = NewHandshaker(s1Priv, nil, s1w, nil)
+	ex1 := make([]byte, 50)
+	ex2 := make([]byte, 50)
+	if _, err := rand.Read(ex1); err != nil {
+		t.Fatal(err.Error())
+	}
+	if _, err := rand.Read(ex2); err != nil {
+		t.Fatal(err.Error())
+	}
+
+	s1, err = NewHandshaker(s1Priv, nil, s1w, nil, true, ex1)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	s2, err = NewHandshaker(s2Priv, nil, s2w, nil)
+	s2, err = NewHandshaker(s2Priv, nil, s2w, nil, false, ex2)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
 	ctx := context.Background()
 	go func() {
-		r, err := s1.Execute(ctx, true)
+		r, err := s1.Execute(ctx)
 		if err != nil {
 			t.Fatal(err.Error())
 		}
@@ -56,16 +66,24 @@ func TestS2S(t *testing.T) {
 			t.Fatalf("s1 remote pub mismatch")
 		}
 
+		if bytes.Compare(ex2, r.ExtraData) != 0 {
+			t.Fatalf("s1 remote extradata mismatch")
+		}
+
 		le.Info("s1 complete")
 	}()
 
-	r2, err := s2.Execute(ctx, false)
+	r2, err := s2.Execute(ctx)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
 	if !r2.Peer.Equals(s1Pub) {
 		t.Fatalf("s2 remote pub mismatch")
+	}
+
+	if bytes.Compare(ex1, r2.ExtraData) != 0 {
+		t.Fatalf("s1 remote extradata mismatch")
 	}
 
 	le.Info("s2 complete")
