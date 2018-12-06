@@ -13,7 +13,7 @@ import (
 	nctr "github.com/aperturerobotics/bifrost/peer/controller"
 	"github.com/aperturerobotics/bifrost/protocol"
 	"github.com/aperturerobotics/bifrost/stream"
-	"github.com/aperturerobotics/bifrost/transport"
+	"github.com/aperturerobotics/bifrost/transport/common/dialer"
 	"github.com/aperturerobotics/bifrost/transport/common/pconn"
 	udptpt "github.com/aperturerobotics/bifrost/transport/udp"
 	"github.com/aperturerobotics/controllerbus/bus"
@@ -148,16 +148,28 @@ func doIt(doProf bool) error {
 		resolver.NewLoadControllerWithConfigSingleton(&udptpt.Config{
 			ListenAddr: "127.0.0.1:9824",
 			PacketOpts: pconnOpts,
+			Dialers: map[string]*dialer.DialerOpts{
+				p1.Pretty(): &dialer.DialerOpts{Address: "127.0.0.1:9823"},
+			},
 		}),
 		bus.NewCallbackHandler(func(val directive.Value) {
 			le.Infof("UDP listening on: %s", "127.0.0.1:9824")
-			val.(transport.TransportDialer).DialPeer(ctx, p1, "127.0.0.1:9823")
 		}, nil, nil),
 	)
 	if err != nil {
 		return errors.Wrap(err, "listen on udp n2")
 	}
 	defer n2UdpRef.Release()
+
+	// Open link
+	_, l2_1Ref, err := b2.AddDirective(
+		link.NewEstablishLinkWithPeer(p1),
+		nil,
+	)
+	if err != nil {
+		return errors.Wrap(err, "open link with p1")
+	}
+	defer l2_1Ref.Release()
 
 	// Open stream
 	doneCh := make(chan struct{})

@@ -21,9 +21,12 @@ func (l *Link) smuxAcceptPump(initiator bool) {
 		return
 	}
 
-	l.rawStreamsMtx.Lock()
-	l.coordStream = coordStrm
-	l.rawStreamsMtx.Unlock()
+	l.coordStreamCh <- coordStrm
+
+	// Write a noop to assert stream is open
+	_ = l.writeCoordStreamPacket(&CoordinationStreamPacket{
+		PacketType: CoordPacketType_CoordPacketType_RSTREAM_NOOP,
+	})
 
 	// Start coordination processor
 	go l.coordinationStreamPump(coordStrm)

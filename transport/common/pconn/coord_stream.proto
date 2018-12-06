@@ -7,6 +7,7 @@ enum CoordPacketType {
   CoordPacketType_RSTREAM_ESTABLISH = 1;
   CoordPacketType_RSTREAM_ACK = 2;
   CoordPacketType_RSTREAM_CLOSE = 3;
+  CoordPacketType_RSTREAM_NOOP = 4;
 }
 
 // CoordinationStreamPacket is the packet wrapper for a coordination stream

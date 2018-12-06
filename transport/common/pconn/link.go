@@ -73,10 +73,11 @@ type Link struct {
 	// rawStreamEstablishQueueOut is the set of rawStream that have not yet been
 	// established (outgoing, no cap)
 	rawStreamEstablishQueueOut []*rawStream
-	// coordStream is the coordination stream
-	coordStream stream.Stream
 	// mtu is the maximum transmission unit
 	mtu uint32
+
+	// coordStreamCh holds the coordination stream
+	coordStreamCh chan stream.Stream
 
 	// writer is the writer function
 	writer func(b []byte, addr net.Addr) (n int, err error)
@@ -123,6 +124,7 @@ func NewLink(
 		writer:              writer,
 		localAddr:           localAddr,
 		rawStreams:          make(map[uint32]*rawStream),
+		coordStreamCh:       make(chan stream.Stream, 1),
 		localPeerID:         localPeerID,
 		sharedSecret:        sharedSecret,
 		transportUUID:       transportUUID,
@@ -263,14 +265,21 @@ func (l *Link) GetLocalPeer() peer.ID {
 
 // OpenStream opens a stream on the link, with the given parameters.
 func (l *Link) OpenStream(opts stream.OpenOpts) (stream.Stream, error) {
-	l.rawStreamsMtx.Lock()
-	defer l.rawStreamsMtx.Unlock()
+	// ensure coord stream exists
+	select {
+	case <-l.ctx.Done():
+		return nil, l.ctx.Err()
+	case strm := <-l.coordStreamCh:
+		l.coordStreamCh <- strm
+	}
 
 	if opts.Encrypted || opts.Reliable {
 		strm, err := l.mux.OpenStream()
 		return strm, err
 	}
 
+	l.rawStreamsMtx.Lock()
+	defer l.rawStreamsMtx.Unlock()
 	return l.openRawStream()
 }
 

@@ -21,10 +21,6 @@ var maxInflightEstablishes = uint32(5)
 func (l *Link) coordinationStreamPump(coordStrm stream.Stream) {
 	defer l.Close()
 
-	l.rawStreamsMtx.Lock()
-	l.coordStream = coordStrm
-	l.rawStreamsMtx.Unlock()
-
 	plenBuf := make([]byte, 4)
 	var pkt CoordinationStreamPacket
 	var pktBuf []byte
@@ -33,7 +29,7 @@ func (l *Link) coordinationStreamPump(coordStrm stream.Stream) {
 		// Coordination stream is stream-oriented, not packet oriented.
 		// Read uint32 packet length header.
 		if _, err := io.ReadFull(coordStrm, plenBuf); err != nil {
-			if err != io.EOF {
+			if err != io.EOF && err.Error() != "broken pipe" {
 				l.le.WithError(err).Warn("coordination stream: cannot read packet len")
 			}
 			return
@@ -79,6 +75,8 @@ func (l *Link) coordinationStreamPump(coordStrm stream.Stream) {
 		pktType := pkt.GetPacketType()
 		// l.le.Debugf("coordination stream: read packet of length %d type %s", packetLen, pktType.String())
 		switch pktType {
+		case CoordPacketType_CoordPacketType_RSTREAM_NOOP:
+			continue
 		case CoordPacketType_CoordPacketType_RSTREAM_ESTABLISH:
 			err = l.handleCoordRawStreamEstablish(pkt.GetRawStreamEstablish())
 		case CoordPacketType_CoordPacketType_RSTREAM_ACK:
@@ -245,8 +243,12 @@ func (l *Link) writeStreamClosePacket(remoteStreamID uint32) error {
 // writeCoordStreamPacket writes a packet to the coord stream
 // assumes rawStreamsMtx is locked
 func (l *Link) writeCoordStreamPacket(pkt *CoordinationStreamPacket) error {
-	if l.coordStream == nil {
-		return nil
+	var coordStream stream.Stream
+	select {
+	case coordStream = <-l.coordStreamCh:
+		l.coordStreamCh <- coordStream
+	case <-l.ctx.Done():
+		return l.ctx.Err()
 	}
 
 	// encode packet
@@ -259,7 +261,7 @@ func (l *Link) writeCoordStreamPacket(pkt *CoordinationStreamPacket) error {
 	pktBuf := make([]byte, 4+len(pktDat))
 	binary.LittleEndian.PutUint32(pktBuf[:4], uint32(len(pktDat)))
 	copy(pktBuf[4:], pktDat)
-	if _, err := l.coordStream.Write(pktBuf); err != nil {
+	if _, err := coordStream.Write(pktBuf); err != nil {
 		return err
 	}
 
@@ -303,8 +305,7 @@ func (l *Link) openRawStream() (stream.Stream, error) {
 	l.rawStreams[localStreamID] = rstrm
 
 	// transmit raw stream establish
-	if l.coordStream == nil ||
-		l.inflightRawStreamEstablishOut >= maxInflightEstablishes {
+	if l.inflightRawStreamEstablishOut >= maxInflightEstablishes {
 		l.rawStreamEstablishQueueOut = append(l.rawStreamEstablishQueueOut, rstrm)
 	} else {
 		l.inflightRawStreamEstablishOut++
