@@ -40,6 +40,23 @@ func init() {
 			Action: runBusInfo,
 		},
 		cli.Command{
+			Name:   "identify",
+			Usage:  "Private key will be loaded with a peer controller",
+			Action: runIdentifyController,
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:        "peer-priv",
+					Usage:       "path to private key file",
+					Destination: &identifyKeyPath,
+				},
+				&cli.BoolFlag{
+					Name:        "generate-priv",
+					Usage:       "if set, generate private key if file does not exist",
+					Destination: &identifyGenKey,
+				},
+			},
+		},
+		cli.Command{
 			Name:   "forward",
 			Usage:  "Protocol ID will be forwarded to the target multiaddress",
 			Action: runForwardController,

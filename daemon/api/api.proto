@@ -2,6 +2,7 @@ syntax = "proto3";
 package api;
 
 import "github.com/aperturerobotics/controllerbus/controller/controller.proto";
+import "github.com/aperturerobotics/bifrost/peer/controller/config.proto";
 import "github.com/aperturerobotics/bifrost/stream/forwarding/forwarding.proto";
 import "github.com/aperturerobotics/bifrost/stream/listening/listening.proto";
 
@@ -117,8 +118,22 @@ message DialStreamResponse {
   stream.grpc.Data data = 1;
 }
 
+// IdentifyRequest is a request to load an identity.
+message IdentifyRequest {
+  // Config is the request to configure the peer controller.
+  peer.controller.Config config = 1;
+}
+
+// IdentifyResponse is a response to an identify request.
+message IdentifyResponse {
+  // ControllerStatus is the status of the peer controller.
+  ControllerStatus controller_status = 1;
+}
+
 // BifrostDaemonService is the control service for a daemon, contacted by the CLI.
 service BifrostDaemonService {
+  // Identify loads and manages a private key identity.
+  rpc Identify(IdentifyRequest) returns (stream IdentifyResponse) {}
   // GetPeerInfo returns information about attached peers.
   rpc GetPeerInfo(GetPeerInfoRequest) returns (GetPeerInfoResponse) {}
   // GetBusInfo requests information about the controller bus.
