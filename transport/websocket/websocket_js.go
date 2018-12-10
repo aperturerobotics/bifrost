@@ -78,20 +78,25 @@ func (u *Transport) GetUUID() uint64 {
 	return u.uuid
 }
 
-// Dial instructs the transport to attempt to handshake with a peer.
-// The function may return immediately.
-// The handshake will be canceled if ctx is canceled.
-func (u *Transport) Dial(ctx context.Context, url string) error {
+// DialPeer dials a peer given an address. The yielded link should be
+// emitted to the transport handler. DialPeer should return nil if the link
+// was established. DialPeer will then not be called again for the same peer
+// ID and address tuple until the yielded link is lost.
+func (u *Transport) DialPeer(
+	ctx context.Context,
+	peerID peer.ID,
+	url string,
+) (fatal bool, err error) {
 	u.handshakesMtx.Lock()
 	defer u.handshakesMtx.Unlock()
 
 	if _, ok := u.handshakes[url]; !ok {
-		u.le.WithField("url", url).Debug("pushing new handshaker [dial]")
+		u.le.WithField("addr", url).Debug("pushing new handshaker [dial]")
 		_, err := u.pushHandshaker(ctx, url)
-		return err
+		return false, err
 	}
 
-	return nil
+	return false, nil
 }
 
 // Execute processes the transport.
@@ -127,3 +132,6 @@ func (u *Transport) Close() error {
 
 // _ is a type assertion.
 var _ transport.Transport = ((*Transport)(nil))
+
+// _ is a type assertion
+var _ transport.TransportDialer = ((*Transport)(nil))

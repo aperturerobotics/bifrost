@@ -109,17 +109,17 @@ func (u *Transport) DialPeer(
 	ctx context.Context,
 	peerID peer.ID,
 	url string,
-) error {
+) (bool, error) {
 	u.handshakesMtx.Lock()
 	defer u.handshakesMtx.Unlock()
 
 	if _, ok := u.handshakes[url]; !ok {
 		u.le.WithField("addr", url).Debug("pushing new handshaker [dial]")
 		_, err := u.pushHandshaker(ctx, url, nil)
-		return err
+		return false, err
 	}
 
-	return nil
+	return false, nil
 }
 
 // ServeHTTP serves the bifrost-0.1 protocol.
@@ -180,3 +180,6 @@ func (u *Transport) Close() error {
 
 // _ is a type assertion.
 var _ transport.Transport = ((*Transport)(nil))
+
+// _ is a type assertion
+var _ transport.TransportDialer = ((*Transport)(nil))
