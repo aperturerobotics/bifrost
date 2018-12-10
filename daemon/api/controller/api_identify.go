@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/aperturerobotics/bifrost/daemon/api"
-	"github.com/pkg/errors"
 )
 
 // Identify loads and manages a private key identity.

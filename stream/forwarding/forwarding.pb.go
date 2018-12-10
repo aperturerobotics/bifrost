@@ -21,10 +21,11 @@ const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 // Config configures the forwarding controller.
 type Config struct {
 	// PeerId is the peer ID to forward for.
+	// Can be empty.
 	PeerId string `protobuf:"bytes,1,opt,name=peer_id,json=peerId" json:"peer_id,omitempty"`
 	// ProtocolId is the protocol ID to forward for.
 	ProtocolId string `protobuf:"bytes,2,opt,name=protocol_id,json=protocolId" json:"protocol_id,omitempty"`
-	// TargetMultiaddr is the target multiaddress.
+	// TargetMultiaddr is the target multiaddress to dial.
 	TargetMultiaddr      string   `protobuf:"bytes,3,opt,name=target_multiaddr,json=targetMultiaddr" json:"target_multiaddr,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -35,7 +36,7 @@ func (m *Config) Reset()         { *m = Config{} }
 func (m *Config) String() string { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_forwarding_c3de06b66e604781, []int{0}
+	return fileDescriptor_forwarding_f1e860d7dd68a5d9, []int{0}
 }
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
@@ -81,10 +82,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("github.com/aperturerobotics/bifrost/stream/forwarding/forwarding.proto", fileDescriptor_forwarding_c3de06b66e604781)
+	proto.RegisterFile("github.com/aperturerobotics/bifrost/stream/forwarding/forwarding.proto", fileDescriptor_forwarding_f1e860d7dd68a5d9)
 }
 
-var fileDescriptor_forwarding_c3de06b66e604781 = []byte{
+var fileDescriptor_forwarding_f1e860d7dd68a5d9 = []byte{
 	// 174 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x4c, 0x8b, 0xb1, 0x0a, 0xc2, 0x30,
 	0x10, 0x86, 0xa9, 0x42, 0xc5, 0x38, 0xa8, 0x59, 0xec, 0xa6, 0x38, 0xe9, 0xd2, 0x0c, 0x3e, 0x82,

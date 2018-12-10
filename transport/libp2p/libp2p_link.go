@@ -61,6 +61,11 @@ func (l *Link) GetRemotePeer() bp.ID {
 	return bp.ID(l.conn.RemotePeer())
 }
 
+// GetLocalPeer returns the identity of the local peer.
+func (l *Link) GetLocalPeer() bp.ID {
+	return bp.ID(l.conn.LocalPeer())
+}
+
 // Close closes the link.
 // Any blocked ReadFrom or WriteTo operations will be unblocked and return errors.
 func (l *Link) Close() error {
