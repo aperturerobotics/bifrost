@@ -49,7 +49,7 @@ func (x *XBeeSerial) SetDataHandler(handler func(data []byte, addr XBeeAddr)) {
 
 // ReadPump is a goroutine that reads data from the xbee.
 func (x *XBeeSerial) ReadPump() error {
-	buf := make([]byte, 1500)
+	buf := make([]byte, 1200)
 	for {
 		n, err := x.port.Read(buf)
 		if err != nil {

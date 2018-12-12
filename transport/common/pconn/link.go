@@ -186,16 +186,18 @@ func NewLink(
 	case KCPMode_KCPMode_FAST3:
 		l.sess.SetNoDelay(1, 10, 2, 1)
 	case KCPMode_KCPMode_SLOW1:
-		l.sess.SetNoDelay(0, 30, 0, 0)
+		l.sess.SetNoDelay(0, 20, 0, 0)
 	}
 
 	windowSize := 128
+	if mtu < 800 {
+		// 1 packet = 200 bytes
+		windowSize = 240
+	}
+
 	l.sess.SetStreamMode(true)
-	l.sess.SetReadBuffer(4194304)
-	l.sess.SetWriteBuffer(4194304)
 	if kcpMode == KCPMode_KCPMode_SLOW1 ||
-		kcpMode == KCPMode_KCPMode_NORMAL ||
-		kcpMode == KCPMode_KCPMode_FAST {
+		kcpMode == KCPMode_KCPMode_NORMAL {
 		l.sess.SetACKNoDelay(false)
 		l.sess.SetWriteDelay(true)
 		l.sess.SetWindowSize(windowSize, windowSize)
@@ -213,7 +215,7 @@ func NewLink(
 	case BlockCompress_BlockCompress_NONE:
 		strmSess = l.sess
 	case BlockCompress_BlockCompress_SNAPPY:
-		strmSess = newCompStream(l.sess)
+		strmSess = newSnappyStream(l.sess)
 	default:
 		l.Close()
 		return nil, errors.Errorf(
@@ -422,6 +424,8 @@ func (l *Link) handleRawPacket(data []byte) {
 func (l *Link) Close() error {
 	// TODO race on l.writer
 	if l.writer != nil {
+		l.le.Debugf("snmp stats: %#v", kcp.DefaultSnmp.Copy())
+		kcp.DefaultSnmp.Reset()
 		_, _ = l.writer(
 			[]byte{byte(PacketType_PacketType_CLOSE_LINK)},
 			l.addr,

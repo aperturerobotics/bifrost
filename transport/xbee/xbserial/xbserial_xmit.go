@@ -94,7 +94,8 @@ func (x *XBeeSerial) TxToAddr(
 	f.data[18] = 0
 	// write options (1) (1 byte)
 	// 0x01 = no ack
-	f.data[19] = 0x01
+	// f.data[19] = 0x01
+	f.data[19] = 0x01 | 0x02 | 0x40
 	// write data len(data)
 	copy(f.data[20:], data)
 
