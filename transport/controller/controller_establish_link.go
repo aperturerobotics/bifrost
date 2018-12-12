@@ -47,9 +47,11 @@ func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.R
 			if vid, ok := linkIDs[lnk]; ok {
 				handler.RemoveValue(vid)
 				delete(linkIDs, lnk)
-				if pushDialer != nil {
-					go pushDialer()
-				}
+				/*
+					if pushDialer != nil {
+						go pushDialer()
+					}
+				*/
 			}
 		}
 	})

@@ -45,7 +45,7 @@ func (x BackoffKind) String() string {
 	return proto.EnumName(BackoffKind_name, int32(x))
 }
 func (BackoffKind) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_backoff_a8f19e2499711297, []int{0}
+	return fileDescriptor_backoff_651336e6d9327bdd, []int{0}
 }
 
 // Backoff configures a backoff.
@@ -65,7 +65,7 @@ func (m *Backoff) Reset()         { *m = Backoff{} }
 func (m *Backoff) String() string { return proto.CompactTextString(m) }
 func (*Backoff) ProtoMessage()    {}
 func (*Backoff) Descriptor() ([]byte, []int) {
-	return fileDescriptor_backoff_a8f19e2499711297, []int{0}
+	return fileDescriptor_backoff_651336e6d9327bdd, []int{0}
 }
 func (m *Backoff) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Backoff.Unmarshal(m, b)
@@ -109,13 +109,13 @@ func (m *Backoff) GetConstant() *Constant {
 // Exponential is the exponential arguments.
 type Exponential struct {
 	// InitialInterval is the initial interval in milliseconds.
-	// Default: 500ms.
+	// Default: 800ms.
 	InitialInterval uint32 `protobuf:"varint,1,opt,name=initial_interval,json=initialInterval" json:"initial_interval,omitempty"`
 	// Multiplier is the timing multiplier.
-	// Default: 1.7
+	// Default: 1.8
 	Multiplier float32 `protobuf:"fixed32,2,opt,name=multiplier" json:"multiplier,omitempty"`
 	// MaxInterval is the maximum timing interval in milliseconds.
-	// Default: 10 seconds
+	// Default: 20 seconds
 	MaxInterval uint32 `protobuf:"varint,3,opt,name=max_interval,json=maxInterval" json:"max_interval,omitempty"`
 	// RandomizationFactor is the randomization factor.
 	// Default: 0
@@ -133,7 +133,7 @@ func (m *Exponential) Reset()         { *m = Exponential{} }
 func (m *Exponential) String() string { return proto.CompactTextString(m) }
 func (*Exponential) ProtoMessage()    {}
 func (*Exponential) Descriptor() ([]byte, []int) {
-	return fileDescriptor_backoff_a8f19e2499711297, []int{1}
+	return fileDescriptor_backoff_651336e6d9327bdd, []int{1}
 }
 func (m *Exponential) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Exponential.Unmarshal(m, b)
@@ -202,7 +202,7 @@ func (m *Constant) Reset()         { *m = Constant{} }
 func (m *Constant) String() string { return proto.CompactTextString(m) }
 func (*Constant) ProtoMessage()    {}
 func (*Constant) Descriptor() ([]byte, []int) {
-	return fileDescriptor_backoff_a8f19e2499711297, []int{2}
+	return fileDescriptor_backoff_651336e6d9327bdd, []int{2}
 }
 func (m *Constant) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Constant.Unmarshal(m, b)
@@ -237,10 +237,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("github.com/aperturerobotics/bifrost/util/backoff/backoff.proto", fileDescriptor_backoff_a8f19e2499711297)
+	proto.RegisterFile("github.com/aperturerobotics/bifrost/util/backoff/backoff.proto", fileDescriptor_backoff_651336e6d9327bdd)
 }
 
-var fileDescriptor_backoff_a8f19e2499711297 = []byte{
+var fileDescriptor_backoff_651336e6d9327bdd = []byte{
 	// 376 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x5c, 0x92, 0x51, 0x8b, 0xd3, 0x40,
 	0x14, 0x85, 0x4d, 0x57, 0xdd, 0x72, 0xb3, 0xae, 0x71, 0xb6, 0xb0, 0x41, 0x41, 0x6a, 0x1f, 0xa4,

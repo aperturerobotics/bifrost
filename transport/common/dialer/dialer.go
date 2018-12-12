@@ -46,6 +46,7 @@ func NewDialer(
 // Execute executes the dialer, with backoff.
 func (d *Dialer) Execute(ctx context.Context) error {
 	for {
+		d.le.Debug("attempting to dial peer")
 		fatal, err := d.tptDialer.DialPeer(ctx, d.peerID, d.address)
 		if err == nil {
 			d.backoff.Reset()

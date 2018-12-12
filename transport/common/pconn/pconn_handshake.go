@@ -116,7 +116,9 @@ func (u *Transport) handleCompleteHandshake(
 		},
 		initiator,
 		func() {
-			go u.handleLinkLost(as, lnk)
+			if lnk != nil {
+				go u.handleLinkLost(as, lnk)
+			}
 		},
 	)
 	if err != nil {

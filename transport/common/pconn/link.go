@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/binary"
 	"hash/crc32"
+	"io"
 	"net"
 	"sync"
 	"time"
@@ -13,7 +14,9 @@ import (
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/stream"
 	"github.com/aperturerobotics/bifrost/util/scrc"
+	"github.com/hashicorp/yamux"
 	"github.com/paralin/kcp-go-lite"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/xtaci/smux"
 )
@@ -37,7 +40,7 @@ type Link struct {
 	// peerID is the remote peer id
 	peerID peer.ID
 	// mux is the reliable stream multiplexer
-	mux *smux.Session
+	mux streamMuxer
 	// sess is the kcp session
 	sess *kcp.UDPSession
 	// uuid is the link uuid
@@ -87,6 +90,16 @@ type Link struct {
 type acceptedStream struct {
 	stream     stream.Stream
 	streamOpts stream.OpenOpts
+}
+
+// streamMuxer is the generic stream muxer interface.
+type streamMuxer interface {
+	// OpenStream opens a stream.
+	OpenStream() (stream.Stream, error)
+	// AcceptStream accepts a stream.
+	AcceptStream() (stream.Stream, error)
+	// Close closes the muxer.
+	Close() error
 }
 
 // NewLink builds a new link.
@@ -157,7 +170,6 @@ func NewLink(
 		bc,
 	)
 
-	l.sess.SetStreamMode(true)
 	// l.sess.SetStreamMode(false)
 	l.sess.SetMtu(int(mtu))
 
@@ -166,40 +178,92 @@ func NewLink(
 	case KCPMode_KCPMode_UNKNOWN:
 		fallthrough
 	case KCPMode_KCPMode_NORMAL:
-		l.sess.SetNoDelay(0, 100, 0, 0)
+		l.sess.SetNoDelay(0, 30, 0, 0)
 	case KCPMode_KCPMode_FAST:
-		l.sess.SetNoDelay(0, 40, 2, 1)
+		l.sess.SetNoDelay(1, 30, 2, 1)
 	case KCPMode_KCPMode_FAST2:
 		l.sess.SetNoDelay(1, 20, 2, 1)
 	case KCPMode_KCPMode_FAST3:
 		l.sess.SetNoDelay(1, 10, 2, 1)
 	case KCPMode_KCPMode_SLOW1:
-		l.sess.SetNoDelay(0, 200, 0, 0)
+		l.sess.SetNoDelay(0, 30, 0, 0)
 	}
 
+	windowSize := 128
+	l.sess.SetStreamMode(true)
+	l.sess.SetReadBuffer(4194304)
+	l.sess.SetWriteBuffer(4194304)
 	if kcpMode == KCPMode_KCPMode_SLOW1 ||
 		kcpMode == KCPMode_KCPMode_NORMAL ||
 		kcpMode == KCPMode_KCPMode_FAST {
-		l.sess.SetWriteDelay(true)
 		l.sess.SetACKNoDelay(false)
-		l.sess.SetStreamMode(true)
-		// Bandwidth-in-bits-per-second * Round-trip-latency-in-seconds = TCP window size in bytes
-		// 10000*300
-		l.sess.SetWindowSize(3000000, 3000000)
+		l.sess.SetWriteDelay(true)
+		l.sess.SetWindowSize(windowSize, windowSize)
 	} else {
 		l.sess.SetWriteDelay(false)
-		l.sess.SetWindowSize(1024*12, 1024*12)
 		l.sess.SetACKNoDelay(true)
+		// windowSize = 1024 * 12
+		l.sess.SetWindowSize(windowSize, windowSize)
 	}
 
-	conf := smux.DefaultConfig()
-	conf.KeepAliveInterval = time.Second * 5
-	conf.KeepAliveTimeout = time.Second * 13
-	conf.MaxReceiveBuffer = 4194304
-	if initiator {
-		l.mux, _ = smux.Server(l.sess, conf)
-	} else {
-		l.mux, _ = smux.Client(l.sess, conf)
+	// conf.MaxStreamWindowSize
+	// conf.MaxReceiveBuffer = 4194304
+	var strmSess io.ReadWriteCloser
+	switch opts.GetBlockCompress() {
+	case BlockCompress_BlockCompress_NONE:
+		strmSess = l.sess
+	case BlockCompress_BlockCompress_SNAPPY:
+		strmSess = newCompStream(l.sess)
+	default:
+		l.Close()
+		return nil, errors.Errorf(
+			"unrecognized block compression type: %s",
+			opts.GetBlockCompress().String(),
+		)
+	}
+
+	// TODO: Expose all settings in Config
+	// TODO: check muxertype
+	switch opts.GetStreamMuxer() {
+	case StreamMuxer_StreamMuxer_UNKNOWN:
+		fallthrough
+	case StreamMuxer_StreamMuxer_XTACI_SMUX:
+		conf := smux.DefaultConfig()
+		conf.KeepAliveInterval = time.Second * 10
+		// conf.MaxFrameSize = int(mtu) - 10
+		// conf.MaxReceiveBuffer = windowSize
+		var sess *smux.Session
+		if initiator {
+			sess, err = smux.Server(strmSess, conf)
+		} else {
+			sess, err = smux.Client(strmSess, conf)
+		}
+		if err == nil {
+			l.mux = &smuxWrapper{Session: sess}
+		}
+	case StreamMuxer_StreamMuxer_YAMUX:
+		conf := yamux.DefaultConfig()
+		conf.KeepAliveInterval = time.Second * 10
+		// conf.AcceptBacklog = 10
+		conf.LogOutput = le.WriterLevel(logrus.DebugLevel)
+		conf.EnableKeepAlive = true
+		// conf.MaxStreamWindowSize = uint32(windowSize)
+
+		var sess *yamux.Session
+		if initiator {
+			sess, err = yamux.Server(strmSess, conf)
+		} else {
+			sess, err = yamux.Client(strmSess, conf)
+		}
+		if err == nil {
+			l.mux = &yamuxWrapper{Session: sess}
+		}
+	default:
+		err = errors.Errorf("unknown stream muxer: %s", opts.GetStreamMuxer().String())
+	}
+	if err != nil {
+		l.Close()
+		return nil, err
 	}
 
 	go l.smuxAcceptPump(initiator)

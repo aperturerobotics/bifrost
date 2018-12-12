@@ -93,7 +93,8 @@ func (x *XBeeSerial) TxToAddr(
 	// write broadcast radius (max hops) (1 byte)
 	f.data[18] = 0
 	// write options (1) (1 byte)
-	f.data[19] = 0
+	// 0x01 = no ack
+	f.data[19] = 0x01
 	// write data len(data)
 	copy(f.data[20:], data)
 
@@ -115,7 +116,9 @@ WaitTxLoop:
 			if statusPkt.ID() == frameID {
 				// x.le.Debugf("frame id %v status %v", frameID, statusPkt.Delivery())
 				if statusPkt.Delivery() != 0 {
-					return errors.Errorf("delivery failed with status %v", statusPkt.Delivery())
+					err := errors.Errorf("delivery failed with status %v", statusPkt.Delivery())
+					x.le.WithError(err).Warn("error txing packet")
+					return err
 				}
 
 				break WaitTxLoop

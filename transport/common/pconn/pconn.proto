@@ -37,6 +37,24 @@ enum KCPMode {
   KCPMode_SLOW1 = 5;
 }
 
+// BlockCompress sets the type of compression to use.
+enum BlockCompress {
+  // BlockCompress_NONE indicates no compression.
+  BlockCompress_NONE = 0;
+  // BlockCompress_SNAPPY indicates Snappy compression.
+  BlockCompress_SNAPPY = 1;
+}
+
+// StreamMuxer sets the type of stream muxer to use.
+enum StreamMuxer {
+  // StreamMuxer_UNKNOWN defaults to StreamMuxer_XTACI_SMUX
+  StreamMuxer_UNKNOWN = 0;
+  // StreamMuxer_XTACI_SMUX is the xtaci/smux muxer.
+  StreamMuxer_XTACI_SMUX = 1;
+  // StreamMuxer_YAMUX is the yamux muxer.
+  StreamMuxer_YAMUX = 2;
+}
+
 // BlockCrypt sets the type of block crypto to use.
 enum BlockCrypt {
   // BlockCrypt_UNKNOWN defaults to BlockCrypt_AES256
@@ -95,4 +113,9 @@ message Opts {
   // Defaults to AES256.
   // Uses the handshake-negotiated session key.
   BlockCrypt block_crypt = 5;
+  // BlockCompress is the block compression to use.
+  BlockCompress block_compress = 6;
+  // StreamMuxer is the stream muxer to use.
+  // Defaults to smux.
+  StreamMuxer stream_muxer = 7;
 }

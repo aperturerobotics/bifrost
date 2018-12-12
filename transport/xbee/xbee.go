@@ -86,13 +86,7 @@ func NewXBee(
 
 // Execute executes the transport as configured, returning any fatal error.
 func (c *XBee) Execute(ctx context.Context) error {
-	go c.logMetrics(ctx)
 	return c.Transport.Execute(ctx)
-}
-
-// logMetrics logs metrics while ctx is active.
-func (c *XBee) logMetrics(ctx context.Context) {
-	c.Transport.
 }
 
 // _ is a type assertion.
