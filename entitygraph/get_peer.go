@@ -10,14 +10,17 @@ import (
 
 // getPeerHandler handles the GetPeer directive results
 type getPeerHandler struct {
-	c    *Controller
+	c    *Reporter
 	mtx  sync.Mutex
 	vals map[directive.Value]entity.Entity
 }
 
 // newGetPeerHandler constructs a getPeerHandler
-func newGetPeerHandler(c *Controller) *getPeerHandler {
-	return &getPeerHandler{c: c, vals: make(map[directive.Value]entity.Entity)}
+func newGetPeerHandler(c *Reporter) *getPeerHandler {
+	return &getPeerHandler{
+		c:    c,
+		vals: make(map[directive.Value]entity.Entity),
+	}
 }
 
 // HandleValueAdded is called when a value is added to the directive.

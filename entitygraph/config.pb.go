@@ -18,7 +18,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
-// Config is entity graph controller config.
+// Config is the config object for the entitygraph repoter.
 type Config struct {
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -29,7 +29,7 @@ func (m *Config) Reset()         { *m = Config{} }
 func (m *Config) String() string { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_4d1f67466c57fd69, []int{0}
+	return fileDescriptor_config_bbbe67fb5ef46480, []int{0}
 }
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
@@ -54,10 +54,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("github.com/aperturerobotics/bifrost/entitygraph/config.proto", fileDescriptor_config_4d1f67466c57fd69)
+	proto.RegisterFile("github.com/aperturerobotics/bifrost/entitygraph/config.proto", fileDescriptor_config_bbbe67fb5ef46480)
 }
 
-var fileDescriptor_config_4d1f67466c57fd69 = []byte{
+var fileDescriptor_config_bbbe67fb5ef46480 = []byte{
 	// 105 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x4c, 0xca, 0x3b, 0x0e, 0x80, 0x20,
 	0x0c, 0x00, 0xd0, 0x8d, 0x18, 0x46, 0xbd, 0x81, 0x07, 0xa0, 0x83, 0xab, 0x9b, 0x27, 0xa1, 0x84,

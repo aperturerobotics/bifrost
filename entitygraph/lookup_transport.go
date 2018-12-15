@@ -11,7 +11,7 @@ import (
 
 // lookupTransportHandler handles the LookupTransport directive results
 type lookupTransportHandler struct {
-	c    *Controller
+	c    *Reporter
 	mtx  sync.Mutex
 	vals map[directive.Value]lookupTransportHandlerVal
 }
@@ -23,8 +23,11 @@ type lookupTransportHandlerVal struct {
 }
 
 // newLookupTransportHandler constructs a lookupTransportHandler
-func newLookupTransportHandler(c *Controller) *lookupTransportHandler {
-	return &lookupTransportHandler{c: c, vals: make(map[directive.Value]lookupTransportHandlerVal)}
+func newLookupTransportHandler(c *Reporter) *lookupTransportHandler {
+	return &lookupTransportHandler{
+		c:    c,
+		vals: make(map[directive.Value]lookupTransportHandlerVal),
+	}
 }
 
 // HandleValueAdded is called when a value is added to the directive.

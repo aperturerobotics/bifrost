@@ -11,7 +11,7 @@ import (
 // establishLinkHandler handles EstablishLink values
 type establishLinkHandler struct {
 	// c is the controller
-	c *Controller
+	c *Reporter
 	// ref is the reference
 	ref directive.Reference
 	// mtx guards vals
@@ -27,7 +27,7 @@ type establishLinkHandlerVal struct {
 }
 
 // newEstablishLinkHandler constructs a new establishLinkHandler
-func newEstablishLinkHandler(c *Controller) *establishLinkHandler {
+func newEstablishLinkHandler(c *Reporter) *establishLinkHandler {
 	return &establishLinkHandler{c: c, vals: make(map[directive.Value]establishLinkHandlerVal)}
 }
 

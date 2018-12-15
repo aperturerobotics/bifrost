@@ -4,16 +4,17 @@ import (
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/config"
 	"github.com/aperturerobotics/controllerbus/controller"
+	rctr "github.com/aperturerobotics/entitygraph/reporter/controller"
 	"github.com/blang/semver"
 )
 
-// Factory constructs a Node controller.
+// Factory constructs a EntityGraph reporter controller.
 type Factory struct {
 	// bus is the controller bus
 	bus bus.Bus
 }
 
-// NewFactory builds a websocket transport factory.
+// NewFactory builds a entitygraph controller factory.
 func NewFactory(bus bus.Bus) *Factory {
 	return &Factory{bus: bus}
 }
@@ -29,7 +30,6 @@ func (t *Factory) ConstructConfig() config.Config {
 }
 
 // Construct constructs the associated controller given configuration.
-// The transport's identity (private key) comes from a GetNode lookup.
 func (t *Factory) Construct(
 	conf config.Config,
 	opts controller.ConstructOpts,
@@ -38,7 +38,12 @@ func (t *Factory) Construct(
 	cc := conf.(*Config)
 
 	_ = cc
-	return NewController(le, t.bus), nil
+	return rctr.NewController(
+		le,
+		t.bus,
+		GetControllerInfo(),
+		NewReporter,
+	), nil
 }
 
 // GetVersion returns the version of this controller.
