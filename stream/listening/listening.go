@@ -38,7 +38,7 @@ type Controller struct {
 	protocolID protocol.ID
 }
 
-// NewController constructs a new API controller.
+// NewController constructs a new listening controller.
 func NewController(
 	le *logrus.Entry,
 	conf *Config,

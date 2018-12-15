@@ -27,7 +27,7 @@ type Controller struct {
 	localPeerID peer.ID
 }
 
-// NewController constructs a new API controller.
+// NewController constructs a new forwarding controller.
 func NewController(
 	le *logrus.Entry,
 	bus bus.Bus,

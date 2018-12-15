@@ -35,7 +35,7 @@ type Controller struct {
 	rpcCh chan *queuedRPC
 }
 
-// NewController constructs a new API controller.
+// NewController constructs a new accept controller.
 func NewController(
 	le *logrus.Entry,
 	conf *Config,
