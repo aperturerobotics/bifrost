@@ -2,10 +2,11 @@ syntax = "proto3";
 package api;
 
 import "github.com/aperturerobotics/controllerbus/controller/controller.proto";
+import "github.com/aperturerobotics/controllerbus/controller/exec/exec.proto";
+
 import "github.com/aperturerobotics/bifrost/peer/controller/config.proto";
 import "github.com/aperturerobotics/bifrost/stream/forwarding/forwarding.proto";
 import "github.com/aperturerobotics/bifrost/stream/listening/listening.proto";
-
 import "github.com/aperturerobotics/bifrost/stream/grpc/grpc.proto";
 import "github.com/aperturerobotics/bifrost/stream/grpc/accept/accept.proto";
 import "github.com/aperturerobotics/bifrost/stream/grpc/dial/dial.proto";
@@ -56,16 +57,6 @@ message GetBusInfoResponse {
   repeated DirectiveInfo running_directives = 2;
 }
 
-// ControllerStatus holds basic status for a controller.
-enum ControllerStatus {
-  // ControllerStatus_UNKNOWN is unrecognized.
-  ControllerStatus_UNKNOWN = 0;
-  // ControllerStatus_CONFIGURING indicates the controller is configuring.
-  ControllerStatus_CONFIGURING = 1;
-  // ControllerStatus_RUNNING indicates the controller is running.
-  ControllerStatus_RUNNING = 2;
-}
-
 // ForwardStreamsRequest is the request type for ForwardStreams.
 message ForwardStreamsRequest {
   stream.forwarding.Config forwarding_config = 1;
@@ -74,7 +65,7 @@ message ForwardStreamsRequest {
 // ForwardStreamsResponse is the response type for ForwardStreams.
 message ForwardStreamsResponse {
   // ControllerStatus is the status of the forwarding controller.
-  ControllerStatus controller_status = 1;
+  controller.exec.ControllerStatus controller_status = 1;
 }
 
 // ListenStreamsRequest is the request type for ListenStreams.
@@ -85,7 +76,7 @@ message ListenStreamsRequest {
 // ListenStreamsResponse is the response type for ListenStreams.
 message ListenStreamsResponse {
   // ControllerStatus is the status of the forwarding controller.
-  ControllerStatus controller_status = 1;
+  controller.exec.ControllerStatus controller_status = 1;
 }
 
 // AcceptStreamRequest is the request type for AcceptStream.
@@ -127,7 +118,7 @@ message IdentifyRequest {
 // IdentifyResponse is a response to an identify request.
 message IdentifyResponse {
   // ControllerStatus is the status of the peer controller.
-  ControllerStatus controller_status = 1;
+  controller.exec.ControllerStatus controller_status = 1;
 }
 
 // BifrostDaemonService is the control service for a daemon, contacted by the CLI.

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/aperturerobotics/bifrost/daemon/api"
+	"github.com/aperturerobotics/controllerbus/controller/exec"
 )
 
 // Identify loads and manages a private key identity.
@@ -20,9 +21,14 @@ func (a *API) Identify(
 	reqCtx, reqCtxCancel := context.WithCancel(ctx)
 	defer reqCtxCancel()
 
-	return a.executeController(reqCtx, conf, func(status api.ControllerStatus) {
-		_ = serv.Send(&api.IdentifyResponse{
-			ControllerStatus: status,
-		})
-	})
+	return controller_exec.ExecuteController(
+		reqCtx,
+		a.bus,
+		conf,
+		func(status controller_exec.ControllerStatus) {
+			_ = serv.Send(&api.IdentifyResponse{
+				ControllerStatus: status,
+			})
+		},
+	)
 }

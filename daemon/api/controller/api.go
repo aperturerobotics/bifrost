@@ -7,6 +7,7 @@ import (
 	"github.com/aperturerobotics/bifrost/daemon/api"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/controllerbus/bus"
+	"github.com/aperturerobotics/controllerbus/controller/exec"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 )
@@ -56,11 +57,16 @@ func (a *API) ForwardStreams(
 	}
 	defer peerRef.Release()
 
-	return a.executeController(reqCtx, conf, func(status api.ControllerStatus) {
-		_ = serv.Send(&api.ForwardStreamsResponse{
-			ControllerStatus: status,
-		})
-	})
+	return controller_exec.ExecuteController(
+		reqCtx,
+		a.bus,
+		conf,
+		func(status controller_exec.ControllerStatus) {
+			_ = serv.Send(&api.ForwardStreamsResponse{
+				ControllerStatus: status,
+			})
+		},
+	)
 }
 
 // ListenStreams listens for streams on the multiaddress.
@@ -77,11 +83,16 @@ func (a *API) ListenStreams(
 	reqCtx, reqCtxCancel := context.WithCancel(ctx)
 	defer reqCtxCancel()
 
-	return a.executeController(reqCtx, conf, func(status api.ControllerStatus) {
-		_ = serv.Send(&api.ListenStreamsResponse{
-			ControllerStatus: status,
-		})
-	})
+	return controller_exec.ExecuteController(
+		reqCtx,
+		a.bus,
+		conf,
+		func(status controller_exec.ControllerStatus) {
+			_ = serv.Send(&api.ListenStreamsResponse{
+				ControllerStatus: status,
+			})
+		},
+	)
 }
 
 // RegisterAsGRPCServer registers the API to the GRPC instance.
