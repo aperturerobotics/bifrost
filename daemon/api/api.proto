@@ -125,10 +125,15 @@ message IdentifyResponse {
 service BifrostDaemonService {
   // Identify loads and manages a private key identity.
   rpc Identify(IdentifyRequest) returns (stream IdentifyResponse) {}
+
   // GetPeerInfo returns information about attached peers.
   rpc GetPeerInfo(GetPeerInfoRequest) returns (GetPeerInfoResponse) {}
   // GetBusInfo requests information about the controller bus.
   rpc GetBusInfo(GetBusInfoRequest) returns (GetBusInfoResponse) {}
+
+  // TODO GetTransportInfo requests information about attached transports.
+  // rpc GetTransportInfo(GetTransportInfoRequest) returns (GetTransportInfoResponse) {}
+
   // ForwardStreams forwards streams to the target multiaddress.
   // Handles HandleMountedStream directives by contacting the target.
   rpc ForwardStreams(ForwardStreamsRequest) returns (stream ForwardStreamsResponse) {}
