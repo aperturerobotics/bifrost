@@ -205,7 +205,7 @@ func runDaemon(c *cli.Context) error {
 	// Entity graph controller.
 	{
 		_, egRef, err := b.AddDirective(
-			resolver.NewLoadControllerWithConfigSingleton(&egc.Config{}),
+			resolver.NewLoadControllerWithConfig(&egc.Config{}),
 			bus.NewCallbackHandler(func(val directive.Value) {
 				le.Info("entity graph controller running")
 			}, nil, nil),
@@ -219,7 +219,7 @@ func runDaemon(c *cli.Context) error {
 	// Entity graph reporter for bifrost
 	{
 		_, _, err = b.AddDirective(
-			resolver.NewLoadControllerWithConfigSingleton(&egctr.Config{}),
+			resolver.NewLoadControllerWithConfig(&egctr.Config{}),
 			bus.NewCallbackHandler(func(val directive.Value) {
 				le.Info("entitygraph bifrost reporter running")
 			}, nil, nil),
@@ -250,7 +250,7 @@ func runDaemon(c *cli.Context) error {
 	// Daemon API
 	if daemonFlags.APIListen != "" {
 		_, apiRef, err := b.AddDirective(
-			resolver.NewLoadControllerWithConfigSingleton(&api_controller.Config{
+			resolver.NewLoadControllerWithConfig(&api_controller.Config{
 				ListenAddr: daemonFlags.APIListen,
 			}),
 			bus.NewCallbackHandler(func(val directive.Value) {
@@ -272,7 +272,7 @@ func runDaemon(c *cli.Context) error {
 		}
 
 		_, wsRef, err := b.AddDirective(
-			resolver.NewLoadControllerWithConfigSingleton(&wtpt.Config{
+			resolver.NewLoadControllerWithConfig(&wtpt.Config{
 				Dialers:    staticPeers,
 				ListenAddr: daemonFlags.WebsocketListen,
 			}),
@@ -303,7 +303,7 @@ func runDaemon(c *cli.Context) error {
 		}
 
 		_, xbRef, err := b.AddDirective(
-			resolver.NewLoadControllerWithConfigSingleton(&xbtpt.Config{
+			resolver.NewLoadControllerWithConfig(&xbtpt.Config{
 				DevicePath: daemonFlags.XBeePath,
 				DeviceBaud: int32(daemonFlags.XBeeBaud),
 				Dialers:    staticPeers,
@@ -335,7 +335,7 @@ func runDaemon(c *cli.Context) error {
 		}
 
 		_, udpRef, err := b.AddDirective(
-			resolver.NewLoadControllerWithConfigSingleton(&udptpt.Config{
+			resolver.NewLoadControllerWithConfig(&udptpt.Config{
 				Dialers:    staticPeers,
 				ListenAddr: daemonFlags.UDPListen,
 				PacketOpts: &pconn.Opts{

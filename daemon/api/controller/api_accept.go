@@ -21,7 +21,7 @@ func (a *API) AcceptStream(serv api.BifrostDaemonService_AcceptStreamServer) err
 		return err
 	}
 
-	dir := resolver.NewLoadControllerWithConfigSingleton(conf)
+	dir := resolver.NewLoadControllerWithConfig(conf)
 
 	// executeController will execute the grpcaccept controller
 	// wait until it's ready

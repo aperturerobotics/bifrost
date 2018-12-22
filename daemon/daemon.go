@@ -86,7 +86,7 @@ func NewDaemon(
 		return nil, err
 	}
 
-	dir := resolver.NewLoadControllerWithConfigSingleton(&nctr.Config{
+	dir := resolver.NewLoadControllerWithConfig(&nctr.Config{
 		PrivKey: string(nodePrivKeyPem),
 	})
 	val, valRef, err := bus.ExecOneOff(ctx, b, dir, nil)

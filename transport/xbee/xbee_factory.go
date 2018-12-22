@@ -24,6 +24,11 @@ func NewFactory(bus bus.Bus) *Factory {
 	return &Factory{bus: bus}
 }
 
+// GetConfigID returns the configuration ID for the controller.
+func (t *Factory) GetConfigID() string {
+	return ConfigID
+}
+
 // GetControllerID returns the unique ID for the controller.
 func (t *Factory) GetControllerID() string {
 	return ControllerID
