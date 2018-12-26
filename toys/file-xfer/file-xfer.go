@@ -94,7 +94,7 @@ func doIt(doProf bool) error {
 	_, n1Ref, err := bus.ExecOneOff(
 		ctx,
 		b1,
-		resolver.NewLoadControllerWithConfigSingleton(
+		resolver.NewLoadControllerWithConfig(
 			&nctr.Config{
 				PrivKey: string(n1Pem),
 			},
@@ -109,7 +109,7 @@ func doIt(doProf bool) error {
 	_, n2Ref, err := bus.ExecOneOff(
 		ctx,
 		b2,
-		resolver.NewLoadControllerWithConfigSingleton(
+		resolver.NewLoadControllerWithConfig(
 			&nctr.Config{
 				PrivKey: string(n2Pem),
 			},
@@ -131,11 +131,11 @@ func doIt(doProf bool) error {
 
 	// Construct transports.
 	_, n1UdpRef, err := b1.AddDirective(
-		resolver.NewLoadControllerWithConfigSingleton(&udptpt.Config{
+		resolver.NewLoadControllerWithConfig(&udptpt.Config{
 			ListenAddr: "127.0.0.1:9823",
 			PacketOpts: pconnOpts,
 		}),
-		bus.NewCallbackHandler(func(val directive.Value) {
+		bus.NewCallbackHandler(func(val directive.AttachedValue) {
 			le.Infof("UDP listening on: %s", "127.0.0.1:9823")
 		}, nil, nil),
 	)
@@ -145,14 +145,14 @@ func doIt(doProf bool) error {
 	defer n1UdpRef.Release()
 
 	_, n2UdpRef, err := b2.AddDirective(
-		resolver.NewLoadControllerWithConfigSingleton(&udptpt.Config{
+		resolver.NewLoadControllerWithConfig(&udptpt.Config{
 			ListenAddr: "127.0.0.1:9824",
 			PacketOpts: pconnOpts,
 			Dialers: map[string]*dialer.DialerOpts{
 				p1.Pretty(): &dialer.DialerOpts{Address: "127.0.0.1:9823"},
 			},
 		}),
-		bus.NewCallbackHandler(func(val directive.Value) {
+		bus.NewCallbackHandler(func(val directive.AttachedValue) {
 			le.Infof("UDP listening on: %s", "127.0.0.1:9824")
 		}, nil, nil),
 	)
@@ -177,7 +177,7 @@ func doIt(doProf bool) error {
 	// open stream p1 -> p2 with protocol pid
 	_, s1_2Ref, err := b1.AddDirective(
 		link.NewOpenStreamWithPeer(testProtocolID, p1, p2, 0, so),
-		bus.NewCallbackHandler(func(v directive.Value) {
+		bus.NewCallbackHandler(func(v directive.AttachedValue) {
 			mstrm := v.(link.MountedStream)
 			le.Debug("opened stream p1 -> p2")
 			defer mstrm.GetStream().Close()

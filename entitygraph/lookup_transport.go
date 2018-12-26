@@ -33,9 +33,9 @@ func newLookupTransportHandler(c *Reporter) *lookupTransportHandler {
 // HandleValueAdded is called when a value is added to the directive.
 func (h *lookupTransportHandler) HandleValueAdded(
 	inst directive.Instance,
-	val directive.Value,
+	val directive.AttachedValue,
 ) {
-	tpt, ok := val.(transport.Transport)
+	tpt, ok := val.GetValue().(transport.Transport)
 	if !ok {
 		h.c.le.Warn("LookupTransport value was not a Transport")
 		return
@@ -61,7 +61,7 @@ func (h *lookupTransportHandler) HandleValueAdded(
 // HandleValueRemoved is called when a value is removed from the directive.
 func (h *lookupTransportHandler) HandleValueRemoved(
 	inst directive.Instance,
-	val directive.Value,
+	val directive.AttachedValue,
 ) {
 	h.mtx.Lock()
 	ent, exists := h.vals[val]

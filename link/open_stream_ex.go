@@ -44,6 +44,6 @@ func OpenStreamWithPeerEx(
 	}
 	inst.Release()
 
-	mstrm := val.(MountedStream)
+	mstrm := val.GetValue().(MountedStream)
 	return mstrm, estLinkInst.Release, nil
 }

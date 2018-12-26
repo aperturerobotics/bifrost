@@ -313,7 +313,7 @@ func (c *Controller) HandleIncomingStream(
 	}
 	defer dref.Release()
 
-	mhnd, ok := dval.(link.MountedStreamHandler)
+	mhnd, ok := dval.GetValue().(link.MountedStreamHandler)
 	if !ok {
 		c.le.
 			WithError(err).

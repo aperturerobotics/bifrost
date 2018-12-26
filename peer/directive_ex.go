@@ -19,5 +19,5 @@ func GetPeerWithID(
 	}
 	ref.Release()
 
-	return v.(Peer), nil
+	return v.GetValue().(Peer), nil
 }

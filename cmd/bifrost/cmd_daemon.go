@@ -206,7 +206,7 @@ func runDaemon(c *cli.Context) error {
 	{
 		_, egRef, err := b.AddDirective(
 			resolver.NewLoadControllerWithConfig(&egc.Config{}),
-			bus.NewCallbackHandler(func(val directive.Value) {
+			bus.NewCallbackHandler(func(val directive.AttachedValue) {
 				le.Info("entity graph controller running")
 			}, nil, nil),
 		)
@@ -220,7 +220,7 @@ func runDaemon(c *cli.Context) error {
 	{
 		_, _, err = b.AddDirective(
 			resolver.NewLoadControllerWithConfig(&egctr.Config{}),
-			bus.NewCallbackHandler(func(val directive.Value) {
+			bus.NewCallbackHandler(func(val directive.AttachedValue) {
 				le.Info("entitygraph bifrost reporter running")
 			}, nil, nil),
 		)
@@ -234,11 +234,11 @@ func runDaemon(c *cli.Context) error {
 		le.Debug("constructing entitygraph logger")
 		_, _, err = b.AddDirective(
 			entitygraph.NewObserveEntityGraph(),
-			bus.NewCallbackHandler(func(val directive.Value) {
-				ent := val.(entity.Entity)
+			bus.NewCallbackHandler(func(val directive.AttachedValue) {
+				ent := val.GetValue().(entity.Entity)
 				le.Infof("EntityGraph: value added: %s: %s", ent.GetEntityTypeName(), ent.GetEntityID())
-			}, func(val directive.Value) {
-				ent := val.(entity.Entity)
+			}, func(val directive.AttachedValue) {
+				ent := val.GetValue().(entity.Entity)
 				le.Infof("EntityGraph: value removed: %s: %s", ent.GetEntityTypeName(), ent.GetEntityID())
 			}, nil),
 		)
@@ -253,7 +253,7 @@ func runDaemon(c *cli.Context) error {
 			resolver.NewLoadControllerWithConfig(&api_controller.Config{
 				ListenAddr: daemonFlags.APIListen,
 			}),
-			bus.NewCallbackHandler(func(val directive.Value) {
+			bus.NewCallbackHandler(func(val directive.AttachedValue) {
 				le.Infof("grpc api listening on: %s", daemonFlags.APIListen)
 			}, nil, nil),
 		)
@@ -276,7 +276,7 @@ func runDaemon(c *cli.Context) error {
 				Dialers:    staticPeers,
 				ListenAddr: daemonFlags.WebsocketListen,
 			}),
-			bus.NewCallbackHandler(func(val directive.Value) {
+			bus.NewCallbackHandler(func(val directive.AttachedValue) {
 				le.Infof("websocket listening on: %s", daemonFlags.WebsocketListen)
 			}, nil, nil),
 		)
@@ -318,7 +318,7 @@ func runDaemon(c *cli.Context) error {
 					// ParityShards: 3,
 				},
 			}),
-			bus.NewCallbackHandler(func(val directive.Value) {
+			bus.NewCallbackHandler(func(val directive.AttachedValue) {
 				le.Infof("xbee listening on: %s@%d", daemonFlags.XBeePath, daemonFlags.XBeeBaud)
 			}, nil, nil),
 		)
@@ -347,7 +347,7 @@ func runDaemon(c *cli.Context) error {
 					// ParityShards: 3,
 				},
 			}),
-			bus.NewCallbackHandler(func(val directive.Value) {
+			bus.NewCallbackHandler(func(val directive.AttachedValue) {
 				le.Infof("UDP listening on: %s", daemonFlags.UDPListen)
 			}, nil, nil),
 		)

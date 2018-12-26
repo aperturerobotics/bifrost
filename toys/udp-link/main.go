@@ -71,13 +71,13 @@ func execute() error {
 	var tpt1 transport.Transport
 	var tpt2 transport.Transport
 	_, udpRef1, err := bus1.AddDirective(
-		resolver.NewLoadControllerWithConfigSingleton(&udptpt.Config{
+		resolver.NewLoadControllerWithConfig(&udptpt.Config{
 			ListenAddr: ":5553",
 		}),
-		bus.NewCallbackHandler(func(val directive.Value) {
+		bus.NewCallbackHandler(func(val directive.AttachedValue) {
 			le.Info("UDP listening on: :5553")
 			<-time.After(time.Millisecond * 500)
-			tpt1, _ = val.(*tptc.Controller).GetTransport(ctx)
+			tpt1, _ = val.GetValue().(*tptc.Controller).GetTransport(ctx)
 			wg.Done()
 		}, nil, nil),
 	)
@@ -88,13 +88,13 @@ func execute() error {
 
 	// Execute the UDP transport on the second daemon.
 	_, udpRef2, err := bus2.AddDirective(
-		resolver.NewLoadControllerWithConfigSingleton(&udptpt.Config{
+		resolver.NewLoadControllerWithConfig(&udptpt.Config{
 			ListenAddr: ":5554",
 		}),
-		bus.NewCallbackHandler(func(val directive.Value) {
+		bus.NewCallbackHandler(func(val directive.AttachedValue) {
 			le.Info("UDP listening on: :5554")
 			<-time.After(time.Millisecond * 500)
-			tpt2, _ = val.(*tptc.Controller).GetTransport(ctx)
+			tpt2, _ = val.GetValue().(*tptc.Controller).GetTransport(ctx)
 			wg.Done()
 		}, nil, nil),
 	)

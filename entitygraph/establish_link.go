@@ -17,7 +17,7 @@ type establishLinkHandler struct {
 	// mtx guards vals
 	mtx sync.Mutex
 	// vals are values
-	vals map[directive.Value]establishLinkHandlerVal
+	vals map[uint32]establishLinkHandlerVal
 }
 
 // establishLinkHandlerVal is the value tuple
@@ -28,24 +28,28 @@ type establishLinkHandlerVal struct {
 
 // newEstablishLinkHandler constructs a new establishLinkHandler
 func newEstablishLinkHandler(c *Reporter) *establishLinkHandler {
-	return &establishLinkHandler{c: c, vals: make(map[directive.Value]establishLinkHandlerVal)}
+	return &establishLinkHandler{
+		c:    c,
+		vals: make(map[uint32]establishLinkHandlerVal),
+	}
 }
 
 // HandleValueAdded is called when a value is added to the directive.
-func (e *establishLinkHandler) HandleValueAdded(inst directive.Instance, val directive.Value) {
-	vl, ok := val.(link.Link)
+func (e *establishLinkHandler) HandleValueAdded(inst directive.Instance, val directive.AttachedValue) {
+	vl, ok := val.GetValue().(link.Link)
 	if !ok {
 		e.c.le.Warn("EstablishLink value was not a Link")
 		return
 	}
+	valID := val.GetValueID()
 
 	entObj := NewLinkEntity(vl)
 	nodObj := NewPeerEntity(vl.GetRemotePeer())
 	remoteTptObj, remoteTptAssocObj := NewTransportEntity(vl.GetRemoteTransportUUID(), vl.GetRemotePeer())
 	e.mtx.Lock()
-	_, exists := e.vals[val]
+	_, exists := e.vals[valID]
 	if !exists {
-		e.vals[val] = establishLinkHandlerVal{
+		e.vals[valID] = establishLinkHandlerVal{
 			remoteNodObj:      nodObj,
 			linkObj:           entObj,
 			remoteTptAssocObj: remoteTptAssocObj,
@@ -63,11 +67,11 @@ func (e *establishLinkHandler) HandleValueAdded(inst directive.Instance, val dir
 }
 
 // HandleValueRemoved is called when a value is removed from the directive.
-func (e *establishLinkHandler) HandleValueRemoved(inst directive.Instance, val directive.Value) {
+func (e *establishLinkHandler) HandleValueRemoved(inst directive.Instance, val directive.AttachedValue) {
 	e.mtx.Lock()
-	ent, exists := e.vals[val]
+	ent, exists := e.vals[val.GetValueID()]
 	if exists {
-		delete(e.vals, val)
+		delete(e.vals, val.GetValueID())
 	}
 	e.mtx.Unlock()
 	if exists {

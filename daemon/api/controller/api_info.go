@@ -67,14 +67,14 @@ func (a *API) GetPeerInfo(
 	resp := &api.GetPeerInfoResponse{}
 	di, dir, err := a.bus.AddDirective(
 		peer.NewGetPeer(peerID),
-		bus.NewCallbackHandler(func(v directive.Value) {
-			pi, err := api.NewPeerInfo(v.(peer.Peer))
+		bus.NewCallbackHandler(func(v directive.AttachedValue) {
+			pi, err := api.NewPeerInfo(v.GetValue().(peer.Peer))
 			if err != nil {
 				return
 			}
 			resp.LocalPeers = append(resp.LocalPeers, pi)
-		}, func(v directive.Value) {
-			p := v.(peer.Peer)
+		}, func(v directive.AttachedValue) {
+			p := v.GetValue().(peer.Peer)
 			pi, err := api.NewPeerInfo(p)
 			if err != nil {
 				return

@@ -26,9 +26,9 @@ func newGetPeerHandler(c *Reporter) *getPeerHandler {
 // HandleValueAdded is called when a value is added to the directive.
 func (h *getPeerHandler) HandleValueAdded(
 	inst directive.Instance,
-	val directive.Value,
+	val directive.AttachedValue,
 ) {
-	nod, ok := val.(peer.Peer)
+	nod, ok := val.GetValue().(peer.Peer)
 	if !ok {
 		h.c.le.Warn("GetPeer value was not a Peer")
 		return
@@ -50,7 +50,7 @@ func (h *getPeerHandler) HandleValueAdded(
 // HandleValueRemoved is called when a value is removed from the directive.
 func (h *getPeerHandler) HandleValueRemoved(
 	inst directive.Instance,
-	val directive.Value,
+	val directive.AttachedValue,
 ) {
 	h.mtx.Lock()
 	ent, exists := h.vals[val]

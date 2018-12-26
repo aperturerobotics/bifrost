@@ -54,15 +54,14 @@ func BuildCommonBus(ctx context.Context) (bus.Bus, crypto.PrivKey, error) {
 	sr.AddFactory(wtpt.NewFactory(b))
 	sr.AddFactory(nctr.NewFactory(b))
 
-	le.
-		WithField("peer-id", peerID.Pretty()).
-		Debug("constructing node")
+	le = le.WithField("peer-id", peerID.Pretty())
+	le.Debug("constructing node")
 	_, _, err = b.AddDirective(
-		resolver.NewLoadControllerWithConfigSingleton(&nctr.Config{
+		resolver.NewLoadControllerWithConfig(&nctr.Config{
 			PrivKey: string(peerPrivKeyPem),
 		}),
-		bus.NewCallbackHandler(func(val directive.Value) {
-			le.Infof("node controller resolved: %#v", val)
+		bus.NewCallbackHandler(func(val directive.AttachedValue) {
+			le.Debug("node controller resolved")
 		}, nil, nil),
 	)
 	if err != nil {

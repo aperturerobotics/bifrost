@@ -31,11 +31,11 @@ func main() {
 
 	_ = privKey
 	_, wsRef, err := b.AddDirective(
-		resolver.NewLoadControllerWithConfigSingleton(&wtpt.Config{
+		resolver.NewLoadControllerWithConfig(&wtpt.Config{
 			ListenAddr: ":2015",
 		}),
-		bus.NewCallbackHandler(func(val directive.Value) {
-			le.Infof("websocket transport resolved: %#v", val)
+		bus.NewCallbackHandler(func(val directive.AttachedValue) {
+			le.Debug("websocket transport resolved")
 		}, nil, nil),
 	)
 	defer wsRef.Release()

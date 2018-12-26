@@ -31,6 +31,6 @@ func (a *API) AcceptStream(serv api.BifrostDaemonService_AcceptStreamServer) err
 	}
 	defer valRef.Release()
 
-	ctrl := val.(*stream_grpc_accept.Controller)
+	ctrl := val.GetValue().(*stream_grpc_accept.Controller)
 	return ctrl.AttachRPC(api.NewAcceptRPCServer(serv))
 }
