@@ -7,7 +7,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/aperturerobotics/bifrost/link"
+	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/toys/websocket-browser-link/common"
+	"github.com/aperturerobotics/bifrost/transport/common/dialer"
 	wtpt "github.com/aperturerobotics/bifrost/transport/websocket"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
@@ -42,15 +45,30 @@ func main() {
 		WithField("base-url", wsBaseURL).
 		Debug("contacting websocket peer")
 
+	peerIDStr := "12D3KooWKDHwreWoMwZH2oeijxawWPNvQaAf3zXZfVQW2sbCW21n"
 	_, wsRef, err := b.AddDirective(
-		resolver.NewLoadControllerWithConfigSingleton(&wtpt.Config{
-			DialAddrs: []string{wsBaseURL + "bifrost-0.1"},
+		resolver.NewLoadControllerWithConfig(&wtpt.Config{
+			Dialers: map[string]*dialer.DialerOpts{
+				peerIDStr: &dialer.DialerOpts{
+					Address: wsBaseURL + "bifrost-0.1",
+				},
+			},
 		}),
-		bus.NewCallbackHandler(func(val directive.Value) {
+		bus.NewCallbackHandler(func(val directive.AttachedValue) {
 			le.Infof("websocket transport resolved: %#v", val)
 		}, nil, nil),
 	)
 	defer wsRef.Release()
+
+	pid, _ := peer.IDB58Decode(peerIDStr)
+	_, dialRef, err := b.AddDirective(
+		link.NewEstablishLinkWithPeer(pid),
+		nil,
+	)
+	if err != nil {
+		panic(err)
+	}
+	defer dialRef.Release()
 
 	<-ctx.Done()
 }
