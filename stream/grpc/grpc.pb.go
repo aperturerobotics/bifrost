@@ -6,6 +6,18 @@ package stream_grpc
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
+import forwarding "github.com/aperturerobotics/bifrost/stream/forwarding"
+import accept "github.com/aperturerobotics/bifrost/stream/grpc/accept"
+import dial "github.com/aperturerobotics/bifrost/stream/grpc/dial"
+import rpc "github.com/aperturerobotics/bifrost/stream/grpc/rpc"
+import listening "github.com/aperturerobotics/bifrost/stream/listening"
+import _ "github.com/aperturerobotics/controllerbus/controller"
+import exec "github.com/aperturerobotics/controllerbus/controller/exec"
+
+import (
+	context "golang.org/x/net/context"
+	grpc "google.golang.org/grpc"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -18,108 +30,695 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
-// StreamState is state for the stream related calls.
-type StreamState int32
-
-const (
-	// StreamState_NONE indicates nothing about the state
-	StreamState_StreamState_NONE StreamState = 0
-	// StreamState_ESTABLISHING indicates the stream is connecting.
-	StreamState_StreamState_ESTABLISHING StreamState = 1
-	// StreamState_ESTABLISHED indicates the stream is established.
-	StreamState_StreamState_ESTABLISHED StreamState = 2
-)
-
-var StreamState_name = map[int32]string{
-	0: "StreamState_NONE",
-	1: "StreamState_ESTABLISHING",
-	2: "StreamState_ESTABLISHED",
-}
-var StreamState_value = map[string]int32{
-	"StreamState_NONE":         0,
-	"StreamState_ESTABLISHING": 1,
-	"StreamState_ESTABLISHED":  2,
+// ForwardStreamsRequest is the request type for ForwardStreams.
+type ForwardStreamsRequest struct {
+	ForwardingConfig     *forwarding.Config `protobuf:"bytes,1,opt,name=forwarding_config,json=forwardingConfig" json:"forwarding_config,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
+	XXX_unrecognized     []byte             `json:"-"`
+	XXX_sizecache        int32              `json:"-"`
 }
 
-func (x StreamState) String() string {
-	return proto.EnumName(StreamState_name, int32(x))
+func (m *ForwardStreamsRequest) Reset()         { *m = ForwardStreamsRequest{} }
+func (m *ForwardStreamsRequest) String() string { return proto.CompactTextString(m) }
+func (*ForwardStreamsRequest) ProtoMessage()    {}
+func (*ForwardStreamsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_grpc_c0281e066c4e15ea, []int{0}
 }
-func (StreamState) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_grpc_36f56351cecb6a19, []int{0}
+func (m *ForwardStreamsRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ForwardStreamsRequest.Unmarshal(m, b)
 }
-
-// Data is a data packet.
-type Data struct {
-	// State indicates stream state in-band.
-	// Data is packet data from the remote.
-	Data []byte `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
-	// State indicates the stream state.
-	State                StreamState `protobuf:"varint,2,opt,name=state,enum=stream.grpc.StreamState" json:"state,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
-	XXX_unrecognized     []byte      `json:"-"`
-	XXX_sizecache        int32       `json:"-"`
+func (m *ForwardStreamsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ForwardStreamsRequest.Marshal(b, m, deterministic)
 }
-
-func (m *Data) Reset()         { *m = Data{} }
-func (m *Data) String() string { return proto.CompactTextString(m) }
-func (*Data) ProtoMessage()    {}
-func (*Data) Descriptor() ([]byte, []int) {
-	return fileDescriptor_grpc_36f56351cecb6a19, []int{0}
+func (dst *ForwardStreamsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ForwardStreamsRequest.Merge(dst, src)
 }
-func (m *Data) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_Data.Unmarshal(m, b)
+func (m *ForwardStreamsRequest) XXX_Size() int {
+	return xxx_messageInfo_ForwardStreamsRequest.Size(m)
 }
-func (m *Data) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_Data.Marshal(b, m, deterministic)
-}
-func (dst *Data) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Data.Merge(dst, src)
-}
-func (m *Data) XXX_Size() int {
-	return xxx_messageInfo_Data.Size(m)
-}
-func (m *Data) XXX_DiscardUnknown() {
-	xxx_messageInfo_Data.DiscardUnknown(m)
+func (m *ForwardStreamsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_ForwardStreamsRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_Data proto.InternalMessageInfo
+var xxx_messageInfo_ForwardStreamsRequest proto.InternalMessageInfo
 
-func (m *Data) GetData() []byte {
+func (m *ForwardStreamsRequest) GetForwardingConfig() *forwarding.Config {
+	if m != nil {
+		return m.ForwardingConfig
+	}
+	return nil
+}
+
+// ForwardStreamsResponse is the response type for ForwardStreams.
+type ForwardStreamsResponse struct {
+	// ControllerStatus is the status of the forwarding controller.
+	ControllerStatus     exec.ControllerStatus `protobuf:"varint,1,opt,name=controller_status,json=controllerStatus,enum=controller.exec.ControllerStatus" json:"controller_status,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
+	XXX_unrecognized     []byte                `json:"-"`
+	XXX_sizecache        int32                 `json:"-"`
+}
+
+func (m *ForwardStreamsResponse) Reset()         { *m = ForwardStreamsResponse{} }
+func (m *ForwardStreamsResponse) String() string { return proto.CompactTextString(m) }
+func (*ForwardStreamsResponse) ProtoMessage()    {}
+func (*ForwardStreamsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_grpc_c0281e066c4e15ea, []int{1}
+}
+func (m *ForwardStreamsResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ForwardStreamsResponse.Unmarshal(m, b)
+}
+func (m *ForwardStreamsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ForwardStreamsResponse.Marshal(b, m, deterministic)
+}
+func (dst *ForwardStreamsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ForwardStreamsResponse.Merge(dst, src)
+}
+func (m *ForwardStreamsResponse) XXX_Size() int {
+	return xxx_messageInfo_ForwardStreamsResponse.Size(m)
+}
+func (m *ForwardStreamsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_ForwardStreamsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ForwardStreamsResponse proto.InternalMessageInfo
+
+func (m *ForwardStreamsResponse) GetControllerStatus() exec.ControllerStatus {
+	if m != nil {
+		return m.ControllerStatus
+	}
+	return exec.ControllerStatus_ControllerStatus_UNKNOWN
+}
+
+// ListenStreamsRequest is the request type for ListenStreams.
+type ListenStreamsRequest struct {
+	ListeningConfig      *listening.Config `protobuf:"bytes,1,opt,name=listening_config,json=listeningConfig" json:"listening_config,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
+	XXX_unrecognized     []byte            `json:"-"`
+	XXX_sizecache        int32             `json:"-"`
+}
+
+func (m *ListenStreamsRequest) Reset()         { *m = ListenStreamsRequest{} }
+func (m *ListenStreamsRequest) String() string { return proto.CompactTextString(m) }
+func (*ListenStreamsRequest) ProtoMessage()    {}
+func (*ListenStreamsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_grpc_c0281e066c4e15ea, []int{2}
+}
+func (m *ListenStreamsRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ListenStreamsRequest.Unmarshal(m, b)
+}
+func (m *ListenStreamsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ListenStreamsRequest.Marshal(b, m, deterministic)
+}
+func (dst *ListenStreamsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListenStreamsRequest.Merge(dst, src)
+}
+func (m *ListenStreamsRequest) XXX_Size() int {
+	return xxx_messageInfo_ListenStreamsRequest.Size(m)
+}
+func (m *ListenStreamsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_ListenStreamsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ListenStreamsRequest proto.InternalMessageInfo
+
+func (m *ListenStreamsRequest) GetListeningConfig() *listening.Config {
+	if m != nil {
+		return m.ListeningConfig
+	}
+	return nil
+}
+
+// ListenStreamsResponse is the response type for ListenStreams.
+type ListenStreamsResponse struct {
+	// ControllerStatus is the status of the forwarding controller.
+	ControllerStatus     exec.ControllerStatus `protobuf:"varint,1,opt,name=controller_status,json=controllerStatus,enum=controller.exec.ControllerStatus" json:"controller_status,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
+	XXX_unrecognized     []byte                `json:"-"`
+	XXX_sizecache        int32                 `json:"-"`
+}
+
+func (m *ListenStreamsResponse) Reset()         { *m = ListenStreamsResponse{} }
+func (m *ListenStreamsResponse) String() string { return proto.CompactTextString(m) }
+func (*ListenStreamsResponse) ProtoMessage()    {}
+func (*ListenStreamsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_grpc_c0281e066c4e15ea, []int{3}
+}
+func (m *ListenStreamsResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ListenStreamsResponse.Unmarshal(m, b)
+}
+func (m *ListenStreamsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ListenStreamsResponse.Marshal(b, m, deterministic)
+}
+func (dst *ListenStreamsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListenStreamsResponse.Merge(dst, src)
+}
+func (m *ListenStreamsResponse) XXX_Size() int {
+	return xxx_messageInfo_ListenStreamsResponse.Size(m)
+}
+func (m *ListenStreamsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_ListenStreamsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ListenStreamsResponse proto.InternalMessageInfo
+
+func (m *ListenStreamsResponse) GetControllerStatus() exec.ControllerStatus {
+	if m != nil {
+		return m.ControllerStatus
+	}
+	return exec.ControllerStatus_ControllerStatus_UNKNOWN
+}
+
+// AcceptStreamRequest is the request type for AcceptStream.
+type AcceptStreamRequest struct {
+	// Config is the configuration for the accept.
+	// The first packet will contain this value.
+	Config *accept.Config `protobuf:"bytes,1,opt,name=config" json:"config,omitempty"`
+	// Data is a data packet.
+	Data                 *rpc.Data `protobuf:"bytes,2,opt,name=data" json:"data,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
+	XXX_unrecognized     []byte    `json:"-"`
+	XXX_sizecache        int32     `json:"-"`
+}
+
+func (m *AcceptStreamRequest) Reset()         { *m = AcceptStreamRequest{} }
+func (m *AcceptStreamRequest) String() string { return proto.CompactTextString(m) }
+func (*AcceptStreamRequest) ProtoMessage()    {}
+func (*AcceptStreamRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_grpc_c0281e066c4e15ea, []int{4}
+}
+func (m *AcceptStreamRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_AcceptStreamRequest.Unmarshal(m, b)
+}
+func (m *AcceptStreamRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_AcceptStreamRequest.Marshal(b, m, deterministic)
+}
+func (dst *AcceptStreamRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AcceptStreamRequest.Merge(dst, src)
+}
+func (m *AcceptStreamRequest) XXX_Size() int {
+	return xxx_messageInfo_AcceptStreamRequest.Size(m)
+}
+func (m *AcceptStreamRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_AcceptStreamRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_AcceptStreamRequest proto.InternalMessageInfo
+
+func (m *AcceptStreamRequest) GetConfig() *accept.Config {
+	if m != nil {
+		return m.Config
+	}
+	return nil
+}
+
+func (m *AcceptStreamRequest) GetData() *rpc.Data {
 	if m != nil {
 		return m.Data
 	}
 	return nil
 }
 
-func (m *Data) GetState() StreamState {
+// AcceptStreamResponse is the response type for AcceptStream.
+type AcceptStreamResponse struct {
+	// Data is a data packet.
+	Data                 *rpc.Data `protobuf:"bytes,1,opt,name=data" json:"data,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
+	XXX_unrecognized     []byte    `json:"-"`
+	XXX_sizecache        int32     `json:"-"`
+}
+
+func (m *AcceptStreamResponse) Reset()         { *m = AcceptStreamResponse{} }
+func (m *AcceptStreamResponse) String() string { return proto.CompactTextString(m) }
+func (*AcceptStreamResponse) ProtoMessage()    {}
+func (*AcceptStreamResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_grpc_c0281e066c4e15ea, []int{5}
+}
+func (m *AcceptStreamResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_AcceptStreamResponse.Unmarshal(m, b)
+}
+func (m *AcceptStreamResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_AcceptStreamResponse.Marshal(b, m, deterministic)
+}
+func (dst *AcceptStreamResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AcceptStreamResponse.Merge(dst, src)
+}
+func (m *AcceptStreamResponse) XXX_Size() int {
+	return xxx_messageInfo_AcceptStreamResponse.Size(m)
+}
+func (m *AcceptStreamResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_AcceptStreamResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_AcceptStreamResponse proto.InternalMessageInfo
+
+func (m *AcceptStreamResponse) GetData() *rpc.Data {
 	if m != nil {
-		return m.State
+		return m.Data
 	}
-	return StreamState_StreamState_NONE
+	return nil
+}
+
+// DialStreamRequest is the request type for DialStream.
+type DialStreamRequest struct {
+	// Config is the configuration for the dial.
+	// The first packet will contain this value.
+	Config *dial.Config `protobuf:"bytes,1,opt,name=config" json:"config,omitempty"`
+	// Data is a data packet.
+	Data                 *rpc.Data `protobuf:"bytes,2,opt,name=data" json:"data,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
+	XXX_unrecognized     []byte    `json:"-"`
+	XXX_sizecache        int32     `json:"-"`
+}
+
+func (m *DialStreamRequest) Reset()         { *m = DialStreamRequest{} }
+func (m *DialStreamRequest) String() string { return proto.CompactTextString(m) }
+func (*DialStreamRequest) ProtoMessage()    {}
+func (*DialStreamRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_grpc_c0281e066c4e15ea, []int{6}
+}
+func (m *DialStreamRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_DialStreamRequest.Unmarshal(m, b)
+}
+func (m *DialStreamRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_DialStreamRequest.Marshal(b, m, deterministic)
+}
+func (dst *DialStreamRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DialStreamRequest.Merge(dst, src)
+}
+func (m *DialStreamRequest) XXX_Size() int {
+	return xxx_messageInfo_DialStreamRequest.Size(m)
+}
+func (m *DialStreamRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_DialStreamRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DialStreamRequest proto.InternalMessageInfo
+
+func (m *DialStreamRequest) GetConfig() *dial.Config {
+	if m != nil {
+		return m.Config
+	}
+	return nil
+}
+
+func (m *DialStreamRequest) GetData() *rpc.Data {
+	if m != nil {
+		return m.Data
+	}
+	return nil
+}
+
+// DialStreamResponse is the response type for DialStream.
+type DialStreamResponse struct {
+	// Data is a data packet.
+	Data                 *rpc.Data `protobuf:"bytes,1,opt,name=data" json:"data,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
+	XXX_unrecognized     []byte    `json:"-"`
+	XXX_sizecache        int32     `json:"-"`
+}
+
+func (m *DialStreamResponse) Reset()         { *m = DialStreamResponse{} }
+func (m *DialStreamResponse) String() string { return proto.CompactTextString(m) }
+func (*DialStreamResponse) ProtoMessage()    {}
+func (*DialStreamResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_grpc_c0281e066c4e15ea, []int{7}
+}
+func (m *DialStreamResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_DialStreamResponse.Unmarshal(m, b)
+}
+func (m *DialStreamResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_DialStreamResponse.Marshal(b, m, deterministic)
+}
+func (dst *DialStreamResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DialStreamResponse.Merge(dst, src)
+}
+func (m *DialStreamResponse) XXX_Size() int {
+	return xxx_messageInfo_DialStreamResponse.Size(m)
+}
+func (m *DialStreamResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_DialStreamResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DialStreamResponse proto.InternalMessageInfo
+
+func (m *DialStreamResponse) GetData() *rpc.Data {
+	if m != nil {
+		return m.Data
+	}
+	return nil
 }
 
 func init() {
-	proto.RegisterType((*Data)(nil), "stream.grpc.Data")
-	proto.RegisterEnum("stream.grpc.StreamState", StreamState_name, StreamState_value)
+	proto.RegisterType((*ForwardStreamsRequest)(nil), "stream.grpc.ForwardStreamsRequest")
+	proto.RegisterType((*ForwardStreamsResponse)(nil), "stream.grpc.ForwardStreamsResponse")
+	proto.RegisterType((*ListenStreamsRequest)(nil), "stream.grpc.ListenStreamsRequest")
+	proto.RegisterType((*ListenStreamsResponse)(nil), "stream.grpc.ListenStreamsResponse")
+	proto.RegisterType((*AcceptStreamRequest)(nil), "stream.grpc.AcceptStreamRequest")
+	proto.RegisterType((*AcceptStreamResponse)(nil), "stream.grpc.AcceptStreamResponse")
+	proto.RegisterType((*DialStreamRequest)(nil), "stream.grpc.DialStreamRequest")
+	proto.RegisterType((*DialStreamResponse)(nil), "stream.grpc.DialStreamResponse")
+}
+
+// Reference imports to suppress errors if they are not otherwise used.
+var _ context.Context
+var _ grpc.ClientConn
+
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the grpc package it is being compiled against.
+const _ = grpc.SupportPackageIsVersion4
+
+// Client API for StreamService service
+
+type StreamServiceClient interface {
+	// ForwardStreams forwards streams to the target multiaddress.
+	// Handles HandleMountedStream directives by contacting the target.
+	ForwardStreams(ctx context.Context, in *ForwardStreamsRequest, opts ...grpc.CallOption) (StreamService_ForwardStreamsClient, error)
+	// ListenStreams listens for connections to the multiaddress.
+	// Forwards the connections to a remote peer with a protocol ID.
+	ListenStreams(ctx context.Context, in *ListenStreamsRequest, opts ...grpc.CallOption) (StreamService_ListenStreamsClient, error)
+	// AcceptStream accepts an incoming stream.
+	// Stream data is sent over the request / response streams.
+	AcceptStream(ctx context.Context, opts ...grpc.CallOption) (StreamService_AcceptStreamClient, error)
+	// DialStream dials a outgoing stream.
+	// Stream data is sent over the request / response streams.
+	DialStream(ctx context.Context, opts ...grpc.CallOption) (StreamService_DialStreamClient, error)
+}
+
+type streamServiceClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewStreamServiceClient(cc *grpc.ClientConn) StreamServiceClient {
+	return &streamServiceClient{cc}
+}
+
+func (c *streamServiceClient) ForwardStreams(ctx context.Context, in *ForwardStreamsRequest, opts ...grpc.CallOption) (StreamService_ForwardStreamsClient, error) {
+	stream, err := grpc.NewClientStream(ctx, &_StreamService_serviceDesc.Streams[0], c.cc, "/stream.grpc.StreamService/ForwardStreams", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &streamServiceForwardStreamsClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type StreamService_ForwardStreamsClient interface {
+	Recv() (*ForwardStreamsResponse, error)
+	grpc.ClientStream
+}
+
+type streamServiceForwardStreamsClient struct {
+	grpc.ClientStream
+}
+
+func (x *streamServiceForwardStreamsClient) Recv() (*ForwardStreamsResponse, error) {
+	m := new(ForwardStreamsResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *streamServiceClient) ListenStreams(ctx context.Context, in *ListenStreamsRequest, opts ...grpc.CallOption) (StreamService_ListenStreamsClient, error) {
+	stream, err := grpc.NewClientStream(ctx, &_StreamService_serviceDesc.Streams[1], c.cc, "/stream.grpc.StreamService/ListenStreams", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &streamServiceListenStreamsClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type StreamService_ListenStreamsClient interface {
+	Recv() (*ListenStreamsResponse, error)
+	grpc.ClientStream
+}
+
+type streamServiceListenStreamsClient struct {
+	grpc.ClientStream
+}
+
+func (x *streamServiceListenStreamsClient) Recv() (*ListenStreamsResponse, error) {
+	m := new(ListenStreamsResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *streamServiceClient) AcceptStream(ctx context.Context, opts ...grpc.CallOption) (StreamService_AcceptStreamClient, error) {
+	stream, err := grpc.NewClientStream(ctx, &_StreamService_serviceDesc.Streams[2], c.cc, "/stream.grpc.StreamService/AcceptStream", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &streamServiceAcceptStreamClient{stream}
+	return x, nil
+}
+
+type StreamService_AcceptStreamClient interface {
+	Send(*AcceptStreamRequest) error
+	Recv() (*AcceptStreamResponse, error)
+	grpc.ClientStream
+}
+
+type streamServiceAcceptStreamClient struct {
+	grpc.ClientStream
+}
+
+func (x *streamServiceAcceptStreamClient) Send(m *AcceptStreamRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *streamServiceAcceptStreamClient) Recv() (*AcceptStreamResponse, error) {
+	m := new(AcceptStreamResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *streamServiceClient) DialStream(ctx context.Context, opts ...grpc.CallOption) (StreamService_DialStreamClient, error) {
+	stream, err := grpc.NewClientStream(ctx, &_StreamService_serviceDesc.Streams[3], c.cc, "/stream.grpc.StreamService/DialStream", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &streamServiceDialStreamClient{stream}
+	return x, nil
+}
+
+type StreamService_DialStreamClient interface {
+	Send(*DialStreamRequest) error
+	Recv() (*DialStreamResponse, error)
+	grpc.ClientStream
+}
+
+type streamServiceDialStreamClient struct {
+	grpc.ClientStream
+}
+
+func (x *streamServiceDialStreamClient) Send(m *DialStreamRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *streamServiceDialStreamClient) Recv() (*DialStreamResponse, error) {
+	m := new(DialStreamResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// Server API for StreamService service
+
+type StreamServiceServer interface {
+	// ForwardStreams forwards streams to the target multiaddress.
+	// Handles HandleMountedStream directives by contacting the target.
+	ForwardStreams(*ForwardStreamsRequest, StreamService_ForwardStreamsServer) error
+	// ListenStreams listens for connections to the multiaddress.
+	// Forwards the connections to a remote peer with a protocol ID.
+	ListenStreams(*ListenStreamsRequest, StreamService_ListenStreamsServer) error
+	// AcceptStream accepts an incoming stream.
+	// Stream data is sent over the request / response streams.
+	AcceptStream(StreamService_AcceptStreamServer) error
+	// DialStream dials a outgoing stream.
+	// Stream data is sent over the request / response streams.
+	DialStream(StreamService_DialStreamServer) error
+}
+
+func RegisterStreamServiceServer(s *grpc.Server, srv StreamServiceServer) {
+	s.RegisterService(&_StreamService_serviceDesc, srv)
+}
+
+func _StreamService_ForwardStreams_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ForwardStreamsRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(StreamServiceServer).ForwardStreams(m, &streamServiceForwardStreamsServer{stream})
+}
+
+type StreamService_ForwardStreamsServer interface {
+	Send(*ForwardStreamsResponse) error
+	grpc.ServerStream
+}
+
+type streamServiceForwardStreamsServer struct {
+	grpc.ServerStream
+}
+
+func (x *streamServiceForwardStreamsServer) Send(m *ForwardStreamsResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func _StreamService_ListenStreams_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ListenStreamsRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(StreamServiceServer).ListenStreams(m, &streamServiceListenStreamsServer{stream})
+}
+
+type StreamService_ListenStreamsServer interface {
+	Send(*ListenStreamsResponse) error
+	grpc.ServerStream
+}
+
+type streamServiceListenStreamsServer struct {
+	grpc.ServerStream
+}
+
+func (x *streamServiceListenStreamsServer) Send(m *ListenStreamsResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func _StreamService_AcceptStream_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(StreamServiceServer).AcceptStream(&streamServiceAcceptStreamServer{stream})
+}
+
+type StreamService_AcceptStreamServer interface {
+	Send(*AcceptStreamResponse) error
+	Recv() (*AcceptStreamRequest, error)
+	grpc.ServerStream
+}
+
+type streamServiceAcceptStreamServer struct {
+	grpc.ServerStream
+}
+
+func (x *streamServiceAcceptStreamServer) Send(m *AcceptStreamResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *streamServiceAcceptStreamServer) Recv() (*AcceptStreamRequest, error) {
+	m := new(AcceptStreamRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func _StreamService_DialStream_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(StreamServiceServer).DialStream(&streamServiceDialStreamServer{stream})
+}
+
+type StreamService_DialStreamServer interface {
+	Send(*DialStreamResponse) error
+	Recv() (*DialStreamRequest, error)
+	grpc.ServerStream
+}
+
+type streamServiceDialStreamServer struct {
+	grpc.ServerStream
+}
+
+func (x *streamServiceDialStreamServer) Send(m *DialStreamResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *streamServiceDialStreamServer) Recv() (*DialStreamRequest, error) {
+	m := new(DialStreamRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+var _StreamService_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "stream.grpc.StreamService",
+	HandlerType: (*StreamServiceServer)(nil),
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "ForwardStreams",
+			Handler:       _StreamService_ForwardStreams_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "ListenStreams",
+			Handler:       _StreamService_ListenStreams_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "AcceptStream",
+			Handler:       _StreamService_AcceptStream_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+		{
+			StreamName:    "DialStream",
+			Handler:       _StreamService_DialStream_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+	},
+	Metadata: "github.com/aperturerobotics/bifrost/stream/grpc/grpc.proto",
 }
 
 func init() {
-	proto.RegisterFile("github.com/aperturerobotics/bifrost/stream/grpc/grpc.proto", fileDescriptor_grpc_36f56351cecb6a19)
+	proto.RegisterFile("github.com/aperturerobotics/bifrost/stream/grpc/grpc.proto", fileDescriptor_grpc_c0281e066c4e15ea)
 }
 
-var fileDescriptor_grpc_36f56351cecb6a19 = []byte{
-	// 196 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xb2, 0x4a, 0xcf, 0x2c, 0xc9,
-	0x28, 0x4d, 0xd2, 0x4b, 0xce, 0xcf, 0xd5, 0x4f, 0x2c, 0x48, 0x2d, 0x2a, 0x29, 0x2d, 0x4a, 0x2d,
-	0xca, 0x4f, 0xca, 0x2f, 0xc9, 0x4c, 0x2e, 0xd6, 0x4f, 0xca, 0x4c, 0x2b, 0xca, 0x2f, 0x2e, 0xd1,
-	0x2f, 0x2e, 0x29, 0x4a, 0x4d, 0xcc, 0xd5, 0x4f, 0x2f, 0x2a, 0x48, 0x06, 0x13, 0x7a, 0x05, 0x45,
-	0xf9, 0x25, 0xf9, 0x42, 0xdc, 0x10, 0x71, 0x3d, 0x90, 0x90, 0x92, 0x17, 0x17, 0x8b, 0x4b, 0x62,
-	0x49, 0xa2, 0x90, 0x10, 0x17, 0x4b, 0x4a, 0x62, 0x49, 0xa2, 0x04, 0xa3, 0x02, 0xa3, 0x06, 0x4f,
-	0x10, 0x98, 0x2d, 0xa4, 0xc7, 0xc5, 0x5a, 0x5c, 0x92, 0x58, 0x92, 0x2a, 0xc1, 0xa4, 0xc0, 0xa8,
-	0xc1, 0x67, 0x24, 0xa1, 0x87, 0xa4, 0x51, 0x2f, 0x18, 0xcc, 0x0e, 0x06, 0xc9, 0x07, 0x41, 0x94,
-	0x69, 0xc5, 0x71, 0x71, 0x23, 0x89, 0x0a, 0x89, 0x70, 0x09, 0x20, 0x71, 0xe3, 0xfd, 0xfc, 0xfd,
-	0x5c, 0x05, 0x18, 0x84, 0x64, 0xb8, 0x24, 0x90, 0x45, 0x5d, 0x83, 0x43, 0x1c, 0x9d, 0x7c, 0x3c,
-	0x83, 0x3d, 0x3c, 0xfd, 0xdc, 0x05, 0x18, 0x85, 0xa4, 0xb9, 0xc4, 0xb1, 0xca, 0xba, 0xba, 0x08,
-	0x30, 0x25, 0xb1, 0x81, 0xdd, 0x6f, 0x0c, 0x08, 0x00, 0x00, 0xff, 0xff, 0xd1, 0x68, 0x79, 0xaa,
-	0xfd, 0x00, 0x00, 0x00,
+var fileDescriptor_grpc_c0281e066c4e15ea = []byte{
+	// 496 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x94, 0xcf, 0x6f, 0xd3, 0x30,
+	0x14, 0xc7, 0xc9, 0x84, 0x76, 0x78, 0x63, 0xa3, 0x35, 0x2b, 0x2a, 0x39, 0xc0, 0x1a, 0x2e, 0xe3,
+	0x92, 0x56, 0xe5, 0x86, 0x84, 0xa6, 0xa9, 0xa5, 0x27, 0xc4, 0xa1, 0x3d, 0x01, 0x42, 0x95, 0xe3,
+	0xba, 0x99, 0xa5, 0x2c, 0x0e, 0xb6, 0x03, 0xfc, 0xed, 0x9c, 0x50, 0x6d, 0x37, 0xb1, 0x43, 0x09,
+	0xa4, 0x12, 0x87, 0x78, 0xce, 0xdb, 0x7b, 0x9f, 0xf7, 0xeb, 0x9b, 0xc2, 0x9b, 0x94, 0xa9, 0xbb,
+	0x32, 0x89, 0x09, 0xbf, 0x1f, 0xe3, 0x82, 0x0a, 0x55, 0x0a, 0x2a, 0x78, 0xc2, 0x15, 0x23, 0x72,
+	0x9c, 0xb0, 0xad, 0xe0, 0x52, 0x8d, 0xa5, 0x12, 0x14, 0xdf, 0x8f, 0x53, 0x51, 0x10, 0x7d, 0xc4,
+	0x85, 0xe0, 0x8a, 0xa3, 0x33, 0x63, 0x8f, 0x77, 0xa6, 0xf0, 0x5d, 0x1b, 0x88, 0xf0, 0x5c, 0x09,
+	0x9e, 0x65, 0x54, 0x24, 0xa5, 0xfb, 0xe6, 0x5c, 0x0d, 0x33, 0x9c, 0x1f, 0x85, 0xa1, 0x3f, 0x28,
+	0xd1, 0x87, 0xa5, 0x2c, 0x3a, 0x74, 0xb5, 0xe5, 0xe2, 0x3b, 0x16, 0x1b, 0x96, 0xa7, 0xce, 0xf5,
+	0x5f, 0xaa, 0x69, 0x70, 0x32, 0x26, 0x15, 0xcd, 0x77, 0x98, 0xea, 0x66, 0x29, 0x6f, 0xbb, 0xce,
+	0xd8, 0x3e, 0x36, 0x7c, 0xd6, 0x35, 0x1c, 0x13, 0x42, 0x0b, 0x65, 0xff, 0x58, 0xc8, 0x4d, 0x57,
+	0xc8, 0x86, 0xe1, 0x4c, 0x1f, 0x06, 0x10, 0xad, 0x61, 0xb0, 0x30, 0xe3, 0x59, 0x69, 0x2f, 0xb9,
+	0xa4, 0x5f, 0x4b, 0x2a, 0x15, 0x5a, 0x40, 0xbf, 0x9e, 0xdb, 0x9a, 0xf0, 0x7c, 0xcb, 0xd2, 0x61,
+	0x70, 0x15, 0x5c, 0x9f, 0x4d, 0x9f, 0xc5, 0x56, 0x21, 0xce, 0x60, 0x67, 0xda, 0x61, 0xd9, 0xab,
+	0x4d, 0xc6, 0x12, 0xdd, 0xc1, 0xd3, 0x66, 0x02, 0x59, 0xf0, 0x5c, 0x52, 0xf4, 0x01, 0xfa, 0xf5,
+	0xae, 0xd7, 0x52, 0x61, 0x55, 0x4a, 0x9d, 0xe1, 0x62, 0x3a, 0x8a, 0x1d, 0x05, 0x69, 0x01, 0xcc,
+	0xaa, 0xf7, 0x95, 0x76, 0x5c, 0xf6, 0x48, 0xc3, 0x12, 0x7d, 0x86, 0xcb, 0xf7, 0x7a, 0x45, 0x8d,
+	0x4e, 0x66, 0xd0, 0xab, 0x56, 0xe7, 0x37, 0x32, 0xdc, 0x37, 0x52, 0xaf, 0xd6, 0xf6, 0xf1, 0xb8,
+	0xb2, 0xd8, 0x36, 0x52, 0x18, 0x34, 0xe0, 0xff, 0xa9, 0x0b, 0x05, 0x4f, 0x6e, 0xf5, 0x86, 0x4d,
+	0xa2, 0x7d, 0x13, 0x53, 0x38, 0xf5, 0x4a, 0x0f, 0x63, 0xe7, 0x2b, 0x8d, 0xad, 0x26, 0x6c, 0xf1,
+	0xd6, 0x13, 0xbd, 0x82, 0x87, 0x1b, 0xac, 0xf0, 0xf0, 0x44, 0x47, 0x0c, 0xbc, 0x88, 0xdd, 0x33,
+	0xc7, 0x0a, 0x2f, 0xb5, 0x4b, 0x74, 0x0b, 0x97, 0x7e, 0x56, 0xdb, 0xdd, 0x1e, 0x11, 0xfc, 0x1d,
+	0x51, 0x40, 0x7f, 0xce, 0x70, 0xe6, 0x97, 0x3d, 0x69, 0x94, 0x3d, 0xf4, 0x08, 0x5a, 0x87, 0xc7,
+	0x17, 0x7d, 0x03, 0xc8, 0xcd, 0xd8, 0xb9, 0xe4, 0xe9, 0xcf, 0x13, 0x38, 0x37, 0xd1, 0x2b, 0x2a,
+	0xbe, 0x31, 0x42, 0xd1, 0x17, 0xb8, 0xf0, 0xd5, 0x8a, 0x22, 0x0f, 0x70, 0xf0, 0x5b, 0x09, 0x5f,
+	0xb6, 0xfa, 0x98, 0xba, 0xa2, 0x07, 0x93, 0x00, 0x7d, 0x82, 0x73, 0x4f, 0x45, 0x68, 0xe4, 0x45,
+	0x1e, 0x92, 0x6f, 0x18, 0xb5, 0xb9, 0x38, 0xec, 0x8f, 0xf0, 0xc8, 0x5d, 0x21, 0xba, 0xf2, 0xe2,
+	0x0e, 0x68, 0x2a, 0x1c, 0xb5, 0x78, 0xec, 0xc1, 0xd7, 0xc1, 0x24, 0x40, 0x2b, 0x80, 0x7a, 0xd0,
+	0xe8, 0xb9, 0x17, 0xf6, 0xdb, 0xce, 0xc3, 0x17, 0x7f, 0xfc, 0xbf, 0x0b, 0x4d, 0x4e, 0xf5, 0x0f,
+	0xd0, 0xeb, 0x5f, 0x01, 0x00, 0x00, 0xff, 0xff, 0xb8, 0xc7, 0x51, 0xbd, 0xab, 0x06, 0x00, 0x00,
 }

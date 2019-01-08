@@ -4,8 +4,8 @@ import (
 	"context"
 	"os"
 
-	"github.com/aperturerobotics/bifrost/daemon/api"
 	"github.com/aperturerobotics/bifrost/stream/forwarding"
+	"github.com/aperturerobotics/bifrost/stream/grpc"
 	"github.com/urfave/cli"
 )
 
@@ -19,7 +19,7 @@ func runForwardController(cctx *cli.Context) error {
 		return err
 	}
 
-	req, err := c.ForwardStreams(ctx, &api.ForwardStreamsRequest{
+	req, err := c.ForwardStreams(ctx, &stream_grpc.ForwardStreamsRequest{
 		ForwardingConfig: &forwardingConf,
 	})
 	if err != nil {

@@ -4,9 +4,9 @@ import (
 	"context"
 	"os"
 
-	"github.com/aperturerobotics/bifrost/daemon/api"
 	"github.com/aperturerobotics/bifrost/stream/grpc"
 	"github.com/aperturerobotics/bifrost/stream/grpc/accept"
+	"github.com/aperturerobotics/bifrost/stream/grpc/rpc"
 	"github.com/aperturerobotics/bifrost/util/rwc"
 	"github.com/urfave/cli"
 )
@@ -29,15 +29,15 @@ func runAcceptController(cctx *cli.Context) error {
 	if len(remotePeerIdsCsv) != 0 {
 		grpcacceptConf.RemotePeerIds = parseRemotePeerIdsCsv()
 	}
-	err = client.Send(&api.AcceptStreamRequest{
+	err = client.Send(&stream_grpc.AcceptStreamRequest{
 		Config: &grpcacceptConf,
 	})
 	if err != nil {
 		return err
 	}
 
-	drpc := api.NewAcceptRPCClient(client)
-	return stream_grpc.AttachRPCToStream(
+	drpc := stream_grpc.NewAcceptStreamClientRPC(client)
+	return stream_grpc_rpc.AttachRPCToStream(
 		drpc,
 		rwc.NewReadWriteCloser(os.Stdin, os.Stdout),
 		nil,

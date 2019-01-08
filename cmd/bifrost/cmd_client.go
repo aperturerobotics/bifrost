@@ -1,5 +1,3 @@
-//+build !js
-
 package main
 
 import (
@@ -199,11 +197,11 @@ func init() {
 }
 
 var clientMtx sync.Mutex
-var client api.BifrostDaemonServiceClient
+var client api.BifrostDaemonClient
 var clientConn *grpc.ClientConn
 
 // GetClient builds / returns the client.
-func GetClient() (api.BifrostDaemonServiceClient, error) {
+func GetClient() (api.BifrostDaemonClient, error) {
 	clientMtx.Lock()
 	defer clientMtx.Unlock()
 
@@ -217,7 +215,7 @@ func GetClient() (api.BifrostDaemonServiceClient, error) {
 		return nil, err
 	}
 
-	client = api.NewBifrostDaemonServiceClient(clientConn)
+	client = api.NewBifrostDaemonClient(clientConn)
 	return client, nil
 }
 

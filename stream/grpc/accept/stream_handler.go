@@ -5,7 +5,7 @@ import (
 	"io"
 
 	"github.com/aperturerobotics/bifrost/link"
-	"github.com/aperturerobotics/bifrost/stream/grpc"
+	stream_grpc "github.com/aperturerobotics/bifrost/stream/grpc/rpc"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/sirupsen/logrus"
 )

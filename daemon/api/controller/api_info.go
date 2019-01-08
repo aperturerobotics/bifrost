@@ -3,19 +3,20 @@ package api_controller
 import (
 	"context"
 
-	"github.com/aperturerobotics/bifrost/daemon/api"
 	"github.com/aperturerobotics/bifrost/peer"
+	"github.com/aperturerobotics/bifrost/peer/grpc"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
+	"github.com/aperturerobotics/controllerbus/grpc"
 	"github.com/pkg/errors"
 )
 
 // GetBusInfo returns the bus information
 func (a *API) GetBusInfo(
 	ctx context.Context,
-	req *api.GetBusInfoRequest,
-) (*api.GetBusInfoResponse, error) {
+	req *controllerbus_grpc.GetBusInfoRequest,
+) (*controllerbus_grpc.GetBusInfoResponse, error) {
 	var controllerInfos []*controller.Info
 	controllers := a.bus.GetControllers()
 	for _, controller := range controllers {
@@ -24,24 +25,27 @@ func (a *API) GetBusInfo(
 	}
 
 	directives := a.bus.GetDirectives()
-	directiveInfo := make([]*api.DirectiveInfo, len(directives))
+	directiveInfo := make([]*controllerbus_grpc.DirectiveInfo, len(directives))
 	for i, directive := range directives {
-		dv := &api.DirectiveInfo{}
+		dv := &controllerbus_grpc.DirectiveInfo{}
 		dir := directive.GetDirective()
 		debugVals := dir.GetDebugVals()
 		if debugVals != nil {
 			for key, vals := range debugVals {
-				dv.DebugVals = append(dv.DebugVals, &api.DebugValue{
-					Key:    key,
-					Values: vals,
-				})
+				dv.DebugVals = append(
+					dv.DebugVals,
+					&controllerbus_grpc.DebugValue{
+						Key:    key,
+						Values: vals,
+					},
+				)
 			}
 		}
 		dv.Name = dir.GetName()
 		directiveInfo[i] = dv
 	}
 
-	return &api.GetBusInfoResponse{
+	return &controllerbus_grpc.GetBusInfoResponse{
 		RunningControllers: controllerInfos,
 		RunningDirectives:  directiveInfo,
 	}, nil
@@ -50,8 +54,8 @@ func (a *API) GetBusInfo(
 // GetPeerInfo returns the peer information
 func (a *API) GetPeerInfo(
 	ctx context.Context,
-	req *api.GetPeerInfoRequest,
-) (*api.GetPeerInfoResponse, error) {
+	req *peer_grpc.GetPeerInfoRequest,
+) (*peer_grpc.GetPeerInfoResponse, error) {
 	var peerID peer.ID
 	if peerIDStr := req.GetPeerId(); peerIDStr != "" {
 		var err error
@@ -64,18 +68,18 @@ func (a *API) GetPeerInfo(
 	subCtx, subCtxCancel := context.WithCancel(ctx)
 	defer subCtxCancel()
 
-	resp := &api.GetPeerInfoResponse{}
+	resp := &peer_grpc.GetPeerInfoResponse{}
 	di, dir, err := a.bus.AddDirective(
 		peer.NewGetPeer(peerID),
 		bus.NewCallbackHandler(func(v directive.AttachedValue) {
-			pi, err := api.NewPeerInfo(v.GetValue().(peer.Peer))
+			pi, err := peer_grpc.NewPeerInfo(v.GetValue().(peer.Peer))
 			if err != nil {
 				return
 			}
 			resp.LocalPeers = append(resp.LocalPeers, pi)
 		}, func(v directive.AttachedValue) {
 			p := v.GetValue().(peer.Peer)
-			pi, err := api.NewPeerInfo(p)
+			pi, err := peer_grpc.NewPeerInfo(p)
 			if err != nil {
 				return
 			}

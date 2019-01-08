@@ -6,6 +6,7 @@ import (
 
 	"github.com/aperturerobotics/bifrost/daemon/api"
 	"github.com/aperturerobotics/bifrost/peer"
+	"github.com/aperturerobotics/bifrost/stream/grpc"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller/exec"
 	"github.com/pkg/errors"
@@ -25,8 +26,8 @@ func NewAPI(bus bus.Bus) (*API, error) {
 // ForwardStreams forwards streams to the target multiaddress.
 // Handles HandleMountedStream directives by contacting the target.
 func (a *API) ForwardStreams(
-	req *api.ForwardStreamsRequest,
-	serv api.BifrostDaemonService_ForwardStreamsServer,
+	req *stream_grpc.ForwardStreamsRequest,
+	serv stream_grpc.StreamService_ForwardStreamsServer,
 ) error {
 	ctx := serv.Context()
 	conf := req.GetForwardingConfig()
@@ -62,17 +63,19 @@ func (a *API) ForwardStreams(
 		a.bus,
 		conf,
 		func(status controller_exec.ControllerStatus) {
-			_ = serv.Send(&api.ForwardStreamsResponse{
-				ControllerStatus: status,
-			})
+			_ = serv.Send(
+				&stream_grpc.ForwardStreamsResponse{
+					ControllerStatus: status,
+				},
+			)
 		},
 	)
 }
 
 // ListenStreams listens for streams on the multiaddress.
 func (a *API) ListenStreams(
-	req *api.ListenStreamsRequest,
-	serv api.BifrostDaemonService_ListenStreamsServer,
+	req *stream_grpc.ListenStreamsRequest,
+	serv stream_grpc.StreamService_ListenStreamsServer,
 ) error {
 	ctx := serv.Context()
 	conf := req.GetListeningConfig()
@@ -88,17 +91,19 @@ func (a *API) ListenStreams(
 		a.bus,
 		conf,
 		func(status controller_exec.ControllerStatus) {
-			_ = serv.Send(&api.ListenStreamsResponse{
-				ControllerStatus: status,
-			})
+			_ = serv.Send(
+				&stream_grpc.ListenStreamsResponse{
+					ControllerStatus: status,
+				},
+			)
 		},
 	)
 }
 
 // RegisterAsGRPCServer registers the API to the GRPC instance.
 func (a *API) RegisterAsGRPCServer(grpcServer *grpc.Server) {
-	api.RegisterBifrostDaemonServiceServer(grpcServer, a)
+	api.RegisterAsGRPCServer(a, grpcServer)
 }
 
 // _ is a type assertion
-var _ api.BifrostDaemonServiceServer = ((*API)(nil))
+var _ api.BifrostDaemonServer = ((*API)(nil))

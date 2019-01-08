@@ -5,9 +5,9 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/aperturerobotics/bifrost/daemon/api"
 	"github.com/aperturerobotics/bifrost/keypem"
 	nctr "github.com/aperturerobotics/bifrost/peer/controller"
+	"github.com/aperturerobotics/bifrost/peer/grpc"
 	"github.com/urfave/cli"
 )
 
@@ -54,7 +54,7 @@ func runIdentifyController(cctx *cli.Context) error {
 		return err
 	}
 
-	req, err := c.Identify(ctx, &api.IdentifyRequest{
+	req, err := c.Identify(ctx, &peer_grpc.IdentifyRequest{
 		Config: &identifyConf,
 	})
 	if err != nil {

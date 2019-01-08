@@ -6,7 +6,7 @@ import (
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/protocol"
-	"github.com/aperturerobotics/bifrost/stream/grpc"
+	"github.com/aperturerobotics/bifrost/stream/grpc/rpc"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
@@ -105,17 +105,17 @@ func (c *Controller) HandleDirective(ctx context.Context, di directive.Instance)
 
 // queuedRPC is a queued RPC
 type queuedRPC struct {
-	rpc    stream_grpc.RPC
+	rpc    stream_grpc_rpc.RPC
 	doneCb func(err error)
 }
 
 // AttachRPC attaches a RPC call to the controller.
-func (c *Controller) AttachRPC(rpc stream_grpc.RPC) error {
+func (c *Controller) AttachRPC(rpc stream_grpc_rpc.RPC) error {
 	ctx := rpc.Context()
 	errCh := make(chan error, 1)
 
-	if err := rpc.Send(&stream_grpc.Data{
-		State: stream_grpc.StreamState_StreamState_ESTABLISHING,
+	if err := rpc.Send(&stream_grpc_rpc.Data{
+		State: stream_grpc_rpc.StreamState_StreamState_ESTABLISHING,
 	}); err != nil {
 		return err
 	}

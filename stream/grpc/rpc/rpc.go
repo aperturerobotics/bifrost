@@ -1,4 +1,4 @@
-package stream_grpc
+package stream_grpc_rpc
 
 import (
 	"context"

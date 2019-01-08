@@ -1,4 +1,4 @@
-package api
+package peer_grpc
 
 import (
 	"github.com/aperturerobotics/bifrost/peer"

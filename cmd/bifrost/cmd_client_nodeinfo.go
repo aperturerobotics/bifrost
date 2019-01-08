@@ -1,5 +1,3 @@
-//+build !js
-
 package main
 
 import (
@@ -7,7 +5,8 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/aperturerobotics/bifrost/daemon/api"
+	"github.com/aperturerobotics/bifrost/peer/grpc"
+	"github.com/aperturerobotics/controllerbus/grpc"
 	"github.com/urfave/cli"
 )
 
@@ -21,7 +20,7 @@ func runPeerInfo(*cli.Context) error {
 		return err
 	}
 
-	ni, err := c.GetPeerInfo(ctx, &api.GetPeerInfoRequest{})
+	ni, err := c.GetPeerInfo(ctx, &peer_grpc.GetPeerInfoRequest{})
 	if err != nil {
 		return err
 	}
@@ -44,7 +43,7 @@ func runBusInfo(*cli.Context) error {
 		return err
 	}
 
-	ni, err := c.GetBusInfo(ctx, &api.GetBusInfoRequest{})
+	ni, err := c.GetBusInfo(ctx, &controllerbus_grpc.GetBusInfoRequest{})
 	if err != nil {
 		return err
 	}

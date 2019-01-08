@@ -1,13 +1,13 @@
 package api_controller
 
 import (
-	"github.com/aperturerobotics/bifrost/daemon/api"
+	"github.com/aperturerobotics/bifrost/stream/grpc"
 	"github.com/aperturerobotics/bifrost/stream/grpc/dial"
 )
 
 // DialStream dials a outgoing stream.
 // Stream data is sent over the request / response streams.
-func (a *API) DialStream(serv api.BifrostDaemonService_DialStreamServer) error {
+func (a *API) DialStream(serv stream_grpc.StreamService_DialStreamServer) error {
 	ctx := serv.Context()
 	msg, err := serv.Recv()
 	if err != nil {
@@ -23,6 +23,6 @@ func (a *API) DialStream(serv api.BifrostDaemonService_DialStreamServer) error {
 		ctx,
 		a.bus,
 		conf,
-		api.NewDialRPCServer(serv),
+		stream_grpc.NewDialServerRPC(serv),
 	)
 }

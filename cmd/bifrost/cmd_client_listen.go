@@ -4,7 +4,7 @@ import (
 	"context"
 	"os"
 
-	"github.com/aperturerobotics/bifrost/daemon/api"
+	"github.com/aperturerobotics/bifrost/stream/grpc"
 	"github.com/aperturerobotics/bifrost/stream/listening"
 	"github.com/urfave/cli"
 )
@@ -19,7 +19,7 @@ func runListeningController(cctx *cli.Context) error {
 		return err
 	}
 
-	req, err := c.ListenStreams(ctx, &api.ListenStreamsRequest{
+	req, err := c.ListenStreams(ctx, &stream_grpc.ListenStreamsRequest{
 		ListeningConfig: &listeningConf,
 	})
 	if err != nil {

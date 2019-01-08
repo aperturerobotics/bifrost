@@ -4,9 +4,9 @@ import (
 	"context"
 	"os"
 
-	"github.com/aperturerobotics/bifrost/daemon/api"
 	"github.com/aperturerobotics/bifrost/stream/grpc"
 	"github.com/aperturerobotics/bifrost/stream/grpc/dial"
+	"github.com/aperturerobotics/bifrost/stream/grpc/rpc"
 	"github.com/aperturerobotics/bifrost/util/rwc"
 	"github.com/urfave/cli"
 )
@@ -26,15 +26,15 @@ func runDialController(cctx *cli.Context) error {
 		return err
 	}
 
-	err = client.Send(&api.DialStreamRequest{
+	err = client.Send(&stream_grpc.DialStreamRequest{
 		Config: &grpcdialConf,
 	})
 	if err != nil {
 		return err
 	}
 
-	rpc := api.NewDialRPCClient(client)
-	return stream_grpc.AttachRPCToStream(
+	rpc := stream_grpc.NewDialStreamClientRPC(client)
+	return stream_grpc_rpc.AttachRPCToStream(
 		rpc,
 		rwc.NewReadWriteCloser(os.Stdin, os.Stdout),
 		nil,

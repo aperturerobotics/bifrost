@@ -1,7 +1,7 @@
 package api_controller
 
 import (
-	"github.com/aperturerobotics/bifrost/daemon/api"
+	"github.com/aperturerobotics/bifrost/stream/grpc"
 	"github.com/aperturerobotics/bifrost/stream/grpc/accept"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
@@ -9,7 +9,7 @@ import (
 
 // AcceptStream accepts an incoming stream.
 // Stream data is sent over the request / response streams.
-func (a *API) AcceptStream(serv api.BifrostDaemonService_AcceptStreamServer) error {
+func (a *API) AcceptStream(serv stream_grpc.StreamService_AcceptStreamServer) error {
 	ctx := serv.Context()
 	msg, err := serv.Recv()
 	if err != nil {
@@ -32,5 +32,5 @@ func (a *API) AcceptStream(serv api.BifrostDaemonService_AcceptStreamServer) err
 	defer valRef.Release()
 
 	ctrl := val.GetValue().(*stream_grpc_accept.Controller)
-	return ctrl.AttachRPC(api.NewAcceptRPCServer(serv))
+	return ctrl.AttachRPC(stream_grpc.NewAcceptServerRPC(serv))
 }

@@ -6,7 +6,7 @@ import (
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/protocol"
 	"github.com/aperturerobotics/bifrost/stream"
-	"github.com/aperturerobotics/bifrost/stream/grpc"
+	stream_grpc "github.com/aperturerobotics/bifrost/stream/grpc/rpc"
 	"github.com/aperturerobotics/controllerbus/bus"
 )
 
