@@ -14,8 +14,6 @@ import (
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
 	"github.com/aperturerobotics/controllerbus/controller/resolver/static"
-	"github.com/aperturerobotics/objstore/db"
-	"github.com/aperturerobotics/objstore/db/inmem"
 	"github.com/libp2p/go-libp2p-crypto"
 	"github.com/sirupsen/logrus"
 )
@@ -26,8 +24,6 @@ type Daemon struct {
 	bus bus.Bus
 	// staticResolver is the static controller factory resolver.
 	staticResolver *static.Resolver
-	// db is the database
-	db db.Db
 
 	// nodePriv is the primary node private key
 	nodePriv crypto.PrivKey
@@ -48,9 +44,6 @@ type ConstructOpts struct {
 	// ExtraControllerFactories is a set of extra controller factories to
 	// make available to the daemon.
 	ExtraControllerFactories []func(bus.Bus) controller.Factory
-	// Database is the key-value storage database to use.
-	// If nil, will use an in-memory database.
-	Database db.Db
 }
 
 // NewDaemon constructs a new daemon.
@@ -96,14 +89,8 @@ func NewDaemon(
 	_ = val
 	le.Infof("node controller resolved w/ ID: %s", peerIDPretty)
 
-	ddb := opts.Database
-	if ddb == nil {
-		ddb = inmem.NewInmemDb()
-	}
-
 	return &Daemon{
 		bus: b,
-		db:  ddb,
 
 		closeCbs:         []func(){valRef.Release},
 		nodePriv:         nodePriv,

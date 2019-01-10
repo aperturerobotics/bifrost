@@ -1,14 +1,12 @@
 module github.com/aperturerobotics/bifrost
 
 require (
-	github.com/Workiva/go-datastructures v1.0.50 // indirect
 	github.com/agl/ed25519 v0.0.0-20170116200512-5312a6153412 // indirect
-	github.com/aperturerobotics/controllerbus v0.0.0-20181226223106-213eb62747b0
+	github.com/aperturerobotics/controllerbus v0.0.0-20190108033723-2cf5f56f7860
 	github.com/aperturerobotics/entitygraph v0.0.0-20181226225716-1e77d0ca8bd7
-	github.com/aperturerobotics/objstore v0.0.0-20181017205445-a91d4c919399
 	github.com/blang/semver v3.5.1+incompatible
-	github.com/btcsuite/btcd v0.0.0-20181130015935-7d2daa5bfef2 // indirect
-	github.com/cenkalti/backoff v2.1.0+incompatible
+	github.com/btcsuite/btcd v0.0.0-20190109040709-5bda5314ca95 // indirect
+	github.com/cenkalti/backoff v2.1.1+incompatible
 	github.com/djherbis/buffer v1.0.0
 	github.com/gogo/protobuf v1.2.0 // indirect
 	github.com/golang/protobuf v1.2.0
@@ -33,17 +31,17 @@ require (
 	github.com/mattn/go-colorable v0.0.9 // indirect
 	github.com/mattn/go-isatty v0.0.4 // indirect
 	github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1 // indirect
-	github.com/minio/sha256-simd v0.0.0-20181005183134-51976451ce19 // indirect
+	github.com/minio/sha256-simd v0.0.0-20190108234304-79eac576c45d // indirect
 	github.com/mr-tron/base58 v1.1.0
 	github.com/multiformats/go-multiaddr v1.4.0
 	github.com/multiformats/go-multiaddr-dns v0.2.5 // indirect
 	github.com/multiformats/go-multiaddr-net v1.7.1
 	github.com/multiformats/go-multihash v1.0.8
 	github.com/opentracing/opentracing-go v1.0.2 // indirect
-	github.com/paralin/kcp-go-lite v4.3.1+incompatible
+	github.com/paralin/kcp-go-lite v4.3.2-0.20181125120641-d71c59f1ca69+incompatible
 	github.com/pauleyj/gobee v0.0.0-20170221144200-48ad5f04527c
-	github.com/pkg/errors v0.8.0
-	github.com/sirupsen/logrus v1.2.0
+	github.com/pkg/errors v0.8.1
+	github.com/sirupsen/logrus v1.3.0
 	github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72 // indirect
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
 	github.com/templexxx/cpufeat v0.0.0-20180724012125-cef66df7f161 // indirect
@@ -51,8 +49,8 @@ require (
 	github.com/tjfoc/gmsm v1.0.1 // indirect
 	github.com/urfave/cli v1.20.0
 	github.com/whyrusleeping/go-logging v0.0.0-20170515211332-0457bb6b88fc // indirect
-	github.com/xtaci/smux v1.0.7
-	golang.org/x/crypto v0.0.0-20181203042331-505ab145d0a9
-	golang.org/x/net v0.0.0-20181220203305-927f97764cc3
+	github.com/xtaci/smux v1.1.0
+	golang.org/x/crypto v0.0.0-20190103213133-ff983b9c42bc
+	golang.org/x/net v0.0.0-20190110044637-be1c187aa6c6
 	google.golang.org/grpc v1.17.0
 )
