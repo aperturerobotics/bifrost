@@ -75,3 +75,12 @@ func (h *Hash) MarshalString() string {
 	}
 	return b58.Encode(dat)
 }
+
+// MarshalDigest marshals the hash to a binary slice.
+func (h *Hash) MarshalDigest() []byte {
+	if h == nil {
+		return nil
+	}
+	dat, _ := proto.Marshal(h)
+	return dat
+}

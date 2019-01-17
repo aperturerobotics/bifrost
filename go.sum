@@ -1,7 +1,5 @@
 cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 github.com/aead/siphash v1.0.1/go.mod h1:Nywa3cDsYNNK3gaciGTWPwHt0wlpNV15vwmswBAUSII=
-github.com/agl/ed25519 v0.0.0-20170116200512-5312a6153412 h1:w1UutsfOrms1J05zt7ISrnJIXKzwaspym5BTKGx93EI=
-github.com/agl/ed25519 v0.0.0-20170116200512-5312a6153412/go.mod h1:WPjqKcmVOxf0XSf3YxCJs6N6AOSrOx3obionmG7T0y0=
 github.com/aperturerobotics/controllerbus v0.0.0-20190108033723-2cf5f56f7860 h1:tg1B2cJ3OHTYhG3+QZgACrYPIFIhLToRgrZhi1gLvRw=
 github.com/aperturerobotics/controllerbus v0.0.0-20190108033723-2cf5f56f7860/go.mod h1:Do4BhvhxFhx7vNBu7NvoBHa4v/DG3v6Iq/9NVF7iV7Y=
 github.com/aperturerobotics/entitygraph v0.0.0-20181226225716-1e77d0ca8bd7 h1:x/5HysHvn+pxF+saXHk0FH9p6feKcldFSTHBO4R0LLk=
@@ -80,10 +78,6 @@ github.com/mattn/go-colorable v0.0.9 h1:UVL0vNpWh04HeJXV0KLcaT7r06gOH2l4OW6ddYRU
 github.com/mattn/go-colorable v0.0.9/go.mod h1:9vuHe8Xs5qXnSaW/c/ABM9alt+Vo+STaOChaDxuIBZU=
 github.com/mattn/go-isatty v0.0.4 h1:bnP0vzxcAdeI1zdubAl5PjU6zsERjGZb7raWodagDYs=
 github.com/mattn/go-isatty v0.0.4/go.mod h1:M+lRXTBqGeGNdLjl/ufCoiOlB5xdOkqRJdNxMWT7Zi4=
-github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1 h1:lYpkrQH5ajf0OXOcUbGjvZxxijuBwbbmlSxLiuofa+g=
-github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1/go.mod h1:pD8RvIylQ358TN4wwqatJ8rNavkEINozVn9DtGI3dfQ=
-github.com/minio/sha256-simd v0.0.0-20190108234304-79eac576c45d h1:EE9Z/8xy3lJ1UApbziZ6wDRIo1pH5pEZemcOqu/XsE0=
-github.com/minio/sha256-simd v0.0.0-20190108234304-79eac576c45d/go.mod h1:2FMWW+8GMoPweT6+pI63m9YE3Lmw4J71hV56Chs1E/U=
 github.com/mr-tron/base58 v1.1.0 h1:Y51FGVJ91WBqCEabAi5OPUz38eAx8DakuAm5svLcsfQ=
 github.com/mr-tron/base58 v1.1.0/go.mod h1:xcD2VGqlgYjBdcBLw+TuYLr8afG+Hj8g2eTVqeSzSU8=
 github.com/multiformats/go-multiaddr v1.4.0 h1:xt9fCCmSyTosXSvEhEqYnC75LiaDSdXycwOLJaDGPic=
@@ -99,6 +93,8 @@ github.com/onsi/ginkgo v1.7.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+W
 github.com/onsi/gomega v1.4.3/go.mod h1:ex+gbHU/CVuBBDIJjb2X0qEXbFg53c61hWP/1CpauHY=
 github.com/opentracing/opentracing-go v1.0.2 h1:3jA2P6O1F9UOrWVpwrIo17pu01KWvNWg4X946/Y5Zwg=
 github.com/opentracing/opentracing-go v1.0.2/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=
+github.com/paralin/go-libp2p-crypto v0.0.0-20190110112134-4f99fef99f04/go.mod h1:l3iDSqZaFaSLE+HbUNP9YY1NjO5lxtXnyLP8jKZ+zpk=
+github.com/paralin/go-multihash v0.0.0-20190110102829-0484db56787c/go.mod h1:DyWbVxPOvAZx/t5okrwkTatEHBrr++iNvrXoLe+KGJ4=
 github.com/paralin/kcp-go-lite v4.3.2-0.20181125120641-d71c59f1ca69+incompatible h1:KZUShTllJ4mdfYqq/BHwmnT2r7URQJSgWL3XdGiMSHM=
 github.com/paralin/kcp-go-lite v4.3.2-0.20181125120641-d71c59f1ca69+incompatible/go.mod h1:xx9nKQFXkwO0tnyhlrrBtTzJcYlDBaR6rxrvVOnA5oA=
 github.com/pauleyj/gobee v0.0.0-20170221144200-48ad5f04527c h1:T3cQdcFa4wpimDIuxLYoUiqHXYRNoWAzoKsng9o7skg=

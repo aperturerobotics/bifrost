@@ -1,7 +1,6 @@
 module github.com/aperturerobotics/bifrost
 
 require (
-	github.com/agl/ed25519 v0.0.0-20170116200512-5312a6153412 // indirect
 	github.com/aperturerobotics/controllerbus v0.0.0-20190108033723-2cf5f56f7860
 	github.com/aperturerobotics/entitygraph v0.0.0-20181226225716-1e77d0ca8bd7
 	github.com/blang/semver v3.5.1+incompatible
@@ -30,8 +29,6 @@ require (
 	github.com/libp2p/go-stream-muxer v3.0.1+incompatible // indirect
 	github.com/mattn/go-colorable v0.0.9 // indirect
 	github.com/mattn/go-isatty v0.0.4 // indirect
-	github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1 // indirect
-	github.com/minio/sha256-simd v0.0.0-20190108234304-79eac576c45d // indirect
 	github.com/mr-tron/base58 v1.1.0
 	github.com/multiformats/go-multiaddr v1.4.0
 	github.com/multiformats/go-multiaddr-dns v0.2.5 // indirect
@@ -54,3 +51,7 @@ require (
 	golang.org/x/net v0.0.0-20190110044637-be1c187aa6c6
 	google.golang.org/grpc v1.17.0
 )
+
+replace github.com/multiformats/go-multihash => github.com/paralin/go-multihash v0.0.0-20190110102829-0484db56787c
+
+replace github.com/libp2p/go-libp2p-crypto => github.com/paralin/go-libp2p-crypto v0.0.0-20190110112134-4f99fef99f04
