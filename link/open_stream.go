@@ -92,6 +92,9 @@ func (d *openStreamWithPeer) Validate() error {
 	if len(d.targetPeerID) == 0 {
 		return errors.New("peer id constraint required")
 	}
+	if len(d.protocolID) == 0 {
+		return errors.New("protocol id required")
+	}
 
 	return nil
 }
