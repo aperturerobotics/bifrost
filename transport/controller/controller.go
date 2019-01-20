@@ -156,23 +156,15 @@ func (c *Controller) Execute(ctx context.Context) error {
 		return err
 	}
 	defer tpt.Close()
-
 	c.tptCh <- tpt
 
-	tptErr := make(chan error, 1)
-	go func() {
-		c.le.Debug("executing transport")
-		if err := tpt.Execute(ctx); err != nil {
-			tptErr <- err
-		}
-	}()
-
+	c.le.Debug("executing transport")
+	err = tpt.Execute(ctx)
 	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case err := <-tptErr:
-		return err
+	case <-c.tptCh:
+	default:
 	}
+	return err
 }
 
 // GetTransport returns the controlled transport.
@@ -306,7 +298,7 @@ func (c *Controller) HandleIncomingStream(
 	// bus is the controller bus
 	le := c.loggerForLink(lnk).WithField("protocol-id", pid)
 	le.Debug("handling incoming stream")
-	dir := link.NewHandleMountedStreamWithProtocolID(pid, c.localPeerID, mstrm.GetPeerID())
+	dir := link.NewHandleMountedStream(pid, c.localPeerID, mstrm.GetPeerID())
 	dval, dref, err := bus.ExecOneOff(ctx, c.bus, dir, nil)
 	if err != nil {
 		le.WithError(err).Warn("error retrieving stream handler for stream")

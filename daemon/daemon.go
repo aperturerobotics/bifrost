@@ -1,5 +1,3 @@
-//+build !js
-
 package daemon
 
 import (
@@ -10,6 +8,7 @@ import (
 	"github.com/aperturerobotics/bifrost/keypem"
 	"github.com/aperturerobotics/bifrost/peer"
 	nctr "github.com/aperturerobotics/bifrost/peer/controller"
+	"github.com/aperturerobotics/bifrost/pubsub/floodsub/controller"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
@@ -82,17 +81,27 @@ func NewDaemon(
 	dir := resolver.NewLoadControllerWithConfig(&nctr.Config{
 		PrivKey: string(nodePrivKeyPem),
 	})
-	val, valRef, err := bus.ExecOneOff(ctx, b, dir, nil)
+	_, ncRef, err := bus.ExecOneOff(ctx, b, dir, nil)
 	if err != nil {
 		return nil, err
 	}
-	_ = val
 	le.Infof("node controller resolved w/ ID: %s", peerIDPretty)
+
+	dir = resolver.NewLoadControllerWithConfig(&floodsub_controller.Config{})
+	_, fsRef, err := bus.ExecOneOff(ctx, b, dir, nil)
+	if err != nil {
+		ncRef.Release()
+		return nil, err
+	}
+	le.Info("pubsub controller resolved")
 
 	return &Daemon{
 		bus: b,
 
-		closeCbs:         []func(){valRef.Release},
+		closeCbs: []func(){
+			ncRef.Release,
+			fsRef.Release,
+		},
 		nodePriv:         nodePriv,
 		nodePeerID:       peerID,
 		staticResolver:   sr,

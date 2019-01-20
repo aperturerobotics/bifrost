@@ -26,20 +26,23 @@ type HandleMountedStream interface {
 	HandleMountedStreamRemotePeerID() peer.ID
 }
 
-// HandleMountedStreamWithProtocolID implements HandleMountedStream with a
-// protocol ID and peer ID.
-type HandleMountedStreamWithProtocolID struct {
+// HandleMountedStreamValue is the value type for HandleMountedStream.
+type HandleMountedStreamValue = MountedStreamHandler
+
+// handleMountedStream implements HandleMountedStream with a protocol ID and
+// peer ID.
+type handleMountedStream struct {
 	protocolID   protocol.ID
 	localPeerID  peer.ID
 	remotePeerID peer.ID
 }
 
-// NewHandleMountedStreamWithProtocolID constructs a new HandleMountedStreamWithProtocolID directive.
-func NewHandleMountedStreamWithProtocolID(
+// NewHandleMountedStream constructs a new HandleMountedStream directive.
+func NewHandleMountedStream(
 	protocolID protocol.ID,
 	localPeerID, remotePeerID peer.ID,
-) *HandleMountedStreamWithProtocolID {
-	return &HandleMountedStreamWithProtocolID{
+) HandleMountedStream {
+	return &handleMountedStream{
 		protocolID:   protocolID,
 		localPeerID:  localPeerID,
 		remotePeerID: remotePeerID,
@@ -48,25 +51,25 @@ func NewHandleMountedStreamWithProtocolID(
 
 // HandleMountedStreamProtocolID returns the protocol ID we are requesting a
 // handler for. Cannot be empty.
-func (d *HandleMountedStreamWithProtocolID) HandleMountedStreamProtocolID() protocol.ID {
+func (d *handleMountedStream) HandleMountedStreamProtocolID() protocol.ID {
 	return d.protocolID
 }
 
 // HandleMountedStreamLocalPeerID returns the local peer ID we are
 // requesting a handler for. Cannot be empty.
-func (d *HandleMountedStreamWithProtocolID) HandleMountedStreamLocalPeerID() peer.ID {
+func (d *handleMountedStream) HandleMountedStreamLocalPeerID() peer.ID {
 	return d.localPeerID
 }
 
 // HandleMountedStreamRemotePeerID returns the remote peer ID we are
 // requesting a handler for. Cannot be empty.
-func (d *HandleMountedStreamWithProtocolID) HandleMountedStreamRemotePeerID() peer.ID {
+func (d *handleMountedStream) HandleMountedStreamRemotePeerID() peer.ID {
 	return d.remotePeerID
 }
 
 // Validate validates the directive.
 // This is a cursory validation to see if the values "look correct."
-func (d *HandleMountedStreamWithProtocolID) Validate() error {
+func (d *handleMountedStream) Validate() error {
 	if len(d.localPeerID) == 0 {
 		return errors.New("local peer id required")
 	}
@@ -81,7 +84,7 @@ func (d *HandleMountedStreamWithProtocolID) Validate() error {
 }
 
 // GetValueOptions returns options relating to value handling.
-func (d *HandleMountedStreamWithProtocolID) GetValueOptions() directive.ValueOptions {
+func (d *handleMountedStream) GetValueOptions() directive.ValueOptions {
 	return directive.ValueOptions{
 		MaxValueCount:   1,
 		MaxValueHardCap: true,
@@ -91,7 +94,7 @@ func (d *HandleMountedStreamWithProtocolID) GetValueOptions() directive.ValueOpt
 // IsEquivalent checks if the other directive is equivalent. If two
 // directives are equivalent, and the new directive does not superceed the
 // old, then the new directive will be merged (de-duplicated) into the old.
-func (d *HandleMountedStreamWithProtocolID) IsEquivalent(other directive.Directive) bool {
+func (d *handleMountedStream) IsEquivalent(other directive.Directive) bool {
 	od, ok := other.(HandleMountedStream)
 	if !ok {
 		return false
@@ -103,19 +106,19 @@ func (d *HandleMountedStreamWithProtocolID) IsEquivalent(other directive.Directi
 
 // Superceeds checks if the directive overrides another.
 // The other directive will be canceled if superceded.
-func (d *HandleMountedStreamWithProtocolID) Superceeds(other directive.Directive) bool {
+func (d *handleMountedStream) Superceeds(other directive.Directive) bool {
 	return false
 }
 
 // GetName returns the directive's type name.
 // This is not necessarily unique, and is primarily intended for display.
-func (d *HandleMountedStreamWithProtocolID) GetName() string {
-	return "HandleMountedStreamWithProtocolID"
+func (d *handleMountedStream) GetName() string {
+	return "handleMountedStream"
 }
 
 // GetDebugVals returns the directive arguments as k/v pairs.
 // This is not necessarily unique, and is primarily intended for display.
-func (d *HandleMountedStreamWithProtocolID) GetDebugVals() directive.DebugValues {
+func (d *handleMountedStream) GetDebugVals() directive.DebugValues {
 	vals := directive.DebugValues{}
 	vals["protocol-id"] = []string{string(d.HandleMountedStreamProtocolID())}
 	vals["local-peer"] = []string{d.HandleMountedStreamLocalPeerID().Pretty()}
@@ -124,4 +127,4 @@ func (d *HandleMountedStreamWithProtocolID) GetDebugVals() directive.DebugValues
 }
 
 // _ is a type constraint
-var _ HandleMountedStream = ((*HandleMountedStreamWithProtocolID)(nil))
+var _ HandleMountedStream = ((*handleMountedStream)(nil))

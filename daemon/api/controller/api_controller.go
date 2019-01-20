@@ -55,23 +55,29 @@ func (c *Controller) GetControllerInfo() controller.Info {
 // Returning nil ends execution.
 // Returning an error triggers a retry with backoff.
 func (c *Controller) Execute(ctx context.Context) error {
+	c.le.Debug("constructing api")
 	// Construct the API
 	api, err := NewAPI(c.bus)
 	if err != nil {
 		return err
 	}
 
+	c.le.Debug("registering grpc server")
 	server := grpc.NewServer()
 	api.RegisterAsGRPCServer(server)
 
+	c.le.Debug("starting listener")
 	lis, err := net.Listen("tcp", c.listenAddr)
 	if err != nil {
 		return err
 	}
+	c.le.Debugf("api listening: %s", lis.Addr().String())
 
 	errCh := make(chan error, 1)
 	go func() {
+		c.le.Debug("server listening start")
 		errCh <- server.Serve(lis)
+		c.le.Debug("server listener closed")
 	}()
 
 	select {

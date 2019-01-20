@@ -123,7 +123,7 @@ func (d *openStreamViaLink) GetName() string {
 func (d *openStreamViaLink) GetDebugVals() directive.DebugValues {
 	vals := directive.NewDebugValues()
 	vals["protocol-id"] = []string{string(d.OpenStreamViaLinkProtocolID())}
-	vals["link-uuid"] = []string{string(d.OpenStreamViaLinkUUID())}
+	vals["link-uuid"] = []string{strconv.FormatUint(d.OpenStreamViaLinkUUID(), 10)}
 	if tpt := d.OpenStreamViaLinkTransportConstraint(); tpt != 0 {
 		vals["transport"] = []string{strconv.FormatUint(tpt, 10)}
 	}

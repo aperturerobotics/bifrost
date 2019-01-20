@@ -4,6 +4,7 @@ import (
 	"context"
 
 	nctr "github.com/aperturerobotics/bifrost/peer/controller"
+	"github.com/aperturerobotics/bifrost/pubsub/floodsub/controller"
 	udptpt "github.com/aperturerobotics/bifrost/transport/udp"
 	wtpt "github.com/aperturerobotics/bifrost/transport/websocket"
 	"github.com/aperturerobotics/controllerbus/bus"
@@ -29,6 +30,7 @@ func NewCoreBus(
 	sr.AddFactory(udptpt.NewFactory(b))
 	sr.AddFactory(nctr.NewFactory(b))
 	sr.AddFactory(egc.NewFactory(b))
+	sr.AddFactory(floodsub_controller.NewFactory(b))
 
 	return b, sr, nil
 }

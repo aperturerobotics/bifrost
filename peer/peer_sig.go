@@ -1,6 +1,8 @@
 package peer
 
 import (
+	"errors"
+
 	"github.com/aperturerobotics/bifrost/hash"
 	"github.com/libp2p/go-libp2p-crypto"
 )
@@ -29,4 +31,25 @@ func NewSignature(
 		s.PubKey = pkey
 	}
 	return s, nil
+}
+
+// VerifyWithPublic checks a signature with a public key, hashing the data.
+// Returns ok and any error interpeting the signature.
+func (s *Signature) VerifyWithPublic(pubKey crypto.PubKey, data []byte) (bool, error) {
+	ht := s.GetHashType()
+	if ht == hash.HashType_HashType_UNKNOWN {
+		return false, errors.New("hash type missing")
+	}
+	if len(s.GetSigData()) == 0 {
+		return false, errors.New("signature empty")
+	}
+	if err := ht.Validate(); err != nil {
+		return false, err
+	}
+
+	dataHash, err := hash.Sum(ht, data)
+	if err != nil {
+		return false, err
+	}
+	return pubKey.Verify(dataHash.GetHash(), s.GetSigData())
 }

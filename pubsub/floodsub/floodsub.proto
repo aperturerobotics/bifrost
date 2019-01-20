@@ -1,0 +1,73 @@
+syntax = "proto3";
+package floodsub;
+
+import "github.com/aperturerobotics/bifrost/peer/peer.proto";
+import "github.com/aperturerobotics/bifrost/hash/hash.proto";
+import "github.com/aperturerobotics/timestamp/timestamp.proto";
+
+// Config configures the floodsub router.
+message Config {
+  // Degree is the target degree.
+  // Defaults to 6.
+  uint32 degree = 1;
+  // DegreeLow is the low water mark degree.
+  // Defaults to 4.
+  // Must be less than degree.
+  uint32 degree_low = 2;
+  // DegreeHigh is the high water mark degree.
+  // Defaults to 12.
+  // Must be greater than degree.
+  uint32 degree_high = 3;
+
+  // HistoryLen is the window size of the message cache.
+  // Hard capped to 10000
+  uint32 history_len = 4;
+  // HistoryGossip is the number of historic messages to opportunistically
+  // gossip to peers.
+  // Defaults to 3.
+  // Hard capped to 50.
+  uint32 history_gossip = 5;
+
+  // PublishHashType is the hash type to use when signing published messages.
+  // Defaults to sha256
+  hash.HashType publish_hash_type = 6;
+}
+
+// Packet is the floodsub packet.
+message Packet {
+  // Subscriptions contains any new subscription changes.
+	repeated SubscriptionOpts subscriptions = 1;
+  // Publish contains messages we are publishing.
+	repeated PubMessage publish = 2;
+}
+
+// SubscriptionOpts are subscription options.
+message SubscriptionOpts {
+  // Subscribe indicates if we are subscribing to this channel ID.
+  bool subscribe = 1;
+  // ChannelId is the channel to subscribe to.
+  string channel_id = 2;
+}
+
+// PubMessageInner is the signed inner portion of the message.
+message PubMessageInner {
+  // Data is the message data.
+	bytes data = 1;
+  // Channel is the channel.
+  string channel = 2;
+  // Timestamp is the message timestamp.
+  timestamp.Timestamp timestamp = 3;
+  // Salt is a random int32.
+  fixed32 salt = 4;
+}
+
+// PubMessage is a message published via the pubsub channel.
+message PubMessage {
+  // FromPeerId is the peer identifier of the sender.
+	string from_peer_id = 1;
+  // Signature is the sender signature.
+  // Should not contain PubKey, which is inferred from peer id.
+  peer.Signature signature = 2;
+  // Data is the PubMessageInner data.
+  bytes data = 3;
+}
