@@ -135,20 +135,26 @@ func (s *streamHandler) handleSubscriptions(subs []*SubscriptionOpts) {
 		if chid == "" {
 			continue
 		}
+		le := s.le.WithField("channel-id", chid)
 		if sub.GetSubscribe() {
 			cm, ok := s.m.peerChannels[chid]
 			if !ok {
 				cm = make(map[pubsub.PeerLinkTuple]struct{})
 				s.m.peerChannels[chid] = cm
 			}
-			cm[s.tpl] = struct{}{}
+			if _, ok := cm[s.tpl]; !ok {
+				le.Debug("peer subscribed to channel")
+				cm[s.tpl] = struct{}{}
+			}
 		} else {
 			tm, ok := s.m.peerChannels[chid]
 			if !ok {
 				continue
 			}
-			delete(tm, s.tpl)
-			//
+			if _, ok := tm[s.tpl]; ok {
+				le.Debug("peer unsubscribed from channel")
+				delete(tm, s.tpl)
+			}
 			if len(tm) == 0 {
 				delete(s.m.peerChannels, chid)
 			}

@@ -55,6 +55,18 @@ func init() {
 			},
 		},
 		cli.Command{
+			Name:   "subscribe",
+			Usage:  "Subscribe to a pubsub channel and publish with identified peers",
+			Action: runSubscribe,
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:        "channel-id",
+					Usage:       "channel id",
+					Destination: &subscribeConf.ChannelId,
+				},
+			},
+		},
+		cli.Command{
 			Name:   "forward",
 			Usage:  "Protocol ID will be forwarded to the target multiaddress",
 			Action: runForwardController,

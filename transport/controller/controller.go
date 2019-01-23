@@ -133,10 +133,11 @@ func (c *Controller) Execute(ctx context.Context) error {
 	c.le.
 		WithField("peer-id", c.peerIDConstraint.Pretty()).
 		Info("looking up peer with ID")
-	n, err := peer.GetPeerWithID(ctx, c.bus, c.peerIDConstraint)
+	n, nRef, err := peer.GetPeerWithID(ctx, c.bus, c.peerIDConstraint)
 	if err != nil {
 		return err
 	}
+	defer nRef.Release()
 
 	// Get the priv key
 	privKey := n.GetPrivKey()

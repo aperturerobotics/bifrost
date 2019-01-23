@@ -24,6 +24,7 @@ type emittedSubscription struct {
 // Release releases the subscription handle, clearing the handlers.
 func (e *emittedSubscription) Release() {
 	e.ctxCancel()
+	e.Subscription.Release()
 }
 
 // resolveBuildChannelSub resolves building a channel subscription.
