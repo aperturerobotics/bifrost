@@ -26,11 +26,16 @@ func NewCoreBus(
 		return nil, nil, err
 	}
 
+	AddFactories(b, sr)
+
+	return b, sr, nil
+}
+
+// AddFactories adds factories to an existing static resolver.
+func AddFactories(b bus.Bus, sr *static.Resolver) {
 	sr.AddFactory(wtpt.NewFactory(b))
 	sr.AddFactory(udptpt.NewFactory(b))
 	sr.AddFactory(nctr.NewFactory(b))
 	sr.AddFactory(egc.NewFactory(b))
 	sr.AddFactory(floodsub_controller.NewFactory(b))
-
-	return b, sr, nil
 }

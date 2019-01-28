@@ -178,7 +178,7 @@ func doIt(doProf bool) error {
 	_, s1_2Ref, err := b1.AddDirective(
 		link.NewOpenStreamWithPeer(testProtocolID, p1, p2, 0, so),
 		bus.NewCallbackHandler(func(v directive.AttachedValue) {
-			mstrm := v.(link.MountedStream)
+			mstrm := v.GetValue().(link.MountedStream)
 			le.Debug("opened stream p1 -> p2")
 			defer mstrm.GetStream().Close()
 			f, err := os.OpenFile("file-p1.out", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
