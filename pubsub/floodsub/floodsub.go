@@ -106,7 +106,7 @@ func (m *FloodSub) Execute(ctx context.Context) error {
 			// if !s.initiator {
 			if initSet == nil {
 				initSet = make([]*SubscriptionOpts, 0, len(m.channels))
-				for chid, _ := range m.channels {
+				for chid := range m.channels {
 					initSet = append(initSet, &SubscriptionOpts{
 						ChannelId: chid,
 						Subscribe: true,
@@ -152,6 +152,7 @@ func (m *FloodSub) Execute(ctx context.Context) error {
 					delete(pubbedChannels, chid)
 				}
 				delete(m.channels, chid)
+				m.le.WithField("channel-id", chid).Info("unsubscribed from channel")
 			} else if _, ok := pubbedChannels[chid]; !ok {
 				pubbedChannels[chid] = struct{}{}
 				subChanges = append(subChanges, &SubscriptionOpts{
@@ -268,6 +269,7 @@ func (m *FloodSub) AddSubscription(ctx context.Context, channelID string) (pubsu
 		subs = make(map[*subscription]struct{})
 		defer m.wake()
 		m.channels[channelID] = subs
+		m.le.WithField("channel-id", channelID).Info("subscribed to channel")
 	}
 	subs[ns] = struct{}{}
 	m.mtx.Unlock()

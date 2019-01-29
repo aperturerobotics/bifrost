@@ -149,7 +149,7 @@ func doIt(doProf bool) error {
 			ListenAddr: "127.0.0.1:9824",
 			PacketOpts: pconnOpts,
 			Dialers: map[string]*dialer.DialerOpts{
-				p1.Pretty(): &dialer.DialerOpts{Address: "127.0.0.1:9823"},
+				p1.Pretty(): {Address: "127.0.0.1:9823"},
 			},
 		}),
 		bus.NewCallbackHandler(func(val directive.AttachedValue) {

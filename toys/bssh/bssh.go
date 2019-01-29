@@ -70,7 +70,7 @@ func main() {
 		},
 	}
 	app.Commands = []cli.Command{
-		cli.Command{
+		{
 			Name:   "connect",
 			Usage:  "connect to a remote bssh listener",
 			Action: runConnect,
@@ -98,7 +98,7 @@ func main() {
 				},
 			},
 		},
-		cli.Command{
+		{
 			Name:   "listen",
 			Usage:  "listen for incoming bssh connections",
 			Action: runListen,

@@ -49,7 +49,7 @@ func main() {
 	_, wsRef, err := b.AddDirective(
 		resolver.NewLoadControllerWithConfig(&wtpt.Config{
 			Dialers: map[string]*dialer.DialerOpts{
-				peerIDStr: &dialer.DialerOpts{
+				peerIDStr: {
 					Address: wsBaseURL + "bifrost-0.1",
 				},
 			},
