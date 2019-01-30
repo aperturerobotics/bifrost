@@ -24,7 +24,7 @@ func NewSignature(
 	}
 	s := &Signature{HashType: hashType, SigData: sd}
 	if inclPubKey {
-		pkey, err := privKey.Bytes()
+		pkey, err := crypto.MarshalPublicKey(privKey.GetPublic())
 		if err != nil {
 			return nil, err
 		}
@@ -52,4 +52,9 @@ func (s *Signature) VerifyWithPublic(pubKey crypto.PubKey, data []byte) (bool, e
 		return false, err
 	}
 	return pubKey.Verify(dataHash.GetHash(), s.GetSigData())
+}
+
+// ParsePubKey parses the incldued public key.
+func (s *Signature) ParsePubKey() (crypto.PubKey, error) {
+	return crypto.UnmarshalPublicKey(s.GetPubKey())
 }
