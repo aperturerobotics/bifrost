@@ -42,6 +42,9 @@ func (t *trackedLink) trackLink(ctx context.Context) error {
 		),
 		nil,
 	)
+	if err != nil {
+		return err
+	}
 	defer avRef.Release()
 
 	mtStrm, ok := av.GetValue().(link.MountedStream)

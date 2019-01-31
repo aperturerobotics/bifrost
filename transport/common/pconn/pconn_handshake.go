@@ -156,10 +156,12 @@ func (u *Transport) pushHandshaker(
 		nil,
 		func(data []byte) error {
 			data = append(data, byte(PacketType_PacketType_HANDSHAKE))
-			u.le.
-				WithField("data-len", len(data)).
-				WithField("addr", addr.String()).
-				Debugf("writing handshaking packet: %v", data)
+			/*
+				u.le.
+					WithField("data-len", len(data)).
+					WithField("addr", addr.String()).
+					Debugf("writing handshaking packet: %v", data)
+			*/
 			_, err := u.pc.WriteTo(data, addr)
 			return err
 		},
