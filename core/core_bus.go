@@ -3,6 +3,8 @@ package core
 import (
 	"context"
 
+	bifrosteg "github.com/aperturerobotics/bifrost/entitygraph"
+	"github.com/aperturerobotics/bifrost/link/hold-open"
 	nctr "github.com/aperturerobotics/bifrost/peer/controller"
 	"github.com/aperturerobotics/bifrost/pubsub/floodsub/controller"
 	udptpt "github.com/aperturerobotics/bifrost/transport/udp"
@@ -27,7 +29,6 @@ func NewCoreBus(
 	}
 
 	AddFactories(b, sr)
-
 	return b, sr, nil
 }
 
@@ -37,5 +38,7 @@ func AddFactories(b bus.Bus, sr *static.Resolver) {
 	sr.AddFactory(udptpt.NewFactory(b))
 	sr.AddFactory(nctr.NewFactory(b))
 	sr.AddFactory(egc.NewFactory(b))
+	sr.AddFactory(bifrosteg.NewFactory(b))
 	sr.AddFactory(floodsub_controller.NewFactory(b))
+	sr.AddFactory(link_holdopen_controller.NewFactory(b))
 }

@@ -3,9 +3,11 @@
 
 package pconn
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -16,7 +18,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 // CoordPacketType is the packet type of a coordination stream packet.
 type CoordPacketType int32
@@ -36,6 +38,7 @@ var CoordPacketType_name = map[int32]string{
 	3: "CoordPacketType_RSTREAM_CLOSE",
 	4: "CoordPacketType_RSTREAM_NOOP",
 }
+
 var CoordPacketType_value = map[string]int32{
 	"CoordPacketType_UNKNOWN":           0,
 	"CoordPacketType_RSTREAM_ESTABLISH": 1,
@@ -47,21 +50,22 @@ var CoordPacketType_value = map[string]int32{
 func (x CoordPacketType) String() string {
 	return proto.EnumName(CoordPacketType_name, int32(x))
 }
+
 func (CoordPacketType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_coord_stream_f2d0c0d2787cb1ce, []int{0}
+	return fileDescriptor_c55809ead6d73baa, []int{0}
 }
 
 // CoordinationStreamPacket is the packet wrapper for a coordination stream
 // packet.
 type CoordinationStreamPacket struct {
 	// PacketType is the coordination stream packet type.
-	PacketType CoordPacketType `protobuf:"varint,1,opt,name=packet_type,json=packetType,enum=pconn.CoordPacketType" json:"packet_type,omitempty"`
+	PacketType CoordPacketType `protobuf:"varint,1,opt,name=packet_type,json=packetType,proto3,enum=pconn.CoordPacketType" json:"packet_type,omitempty"`
 	// RawStreamEstablish is the raw stream establish packet.
-	RawStreamEstablish *RawStreamEstablish `protobuf:"bytes,2,opt,name=raw_stream_establish,json=rawStreamEstablish" json:"raw_stream_establish,omitempty"`
+	RawStreamEstablish *RawStreamEstablish `protobuf:"bytes,2,opt,name=raw_stream_establish,json=rawStreamEstablish,proto3" json:"raw_stream_establish,omitempty"`
 	// RawStreamAck is the raw stream ack packet.
-	RawStreamAck *RawStreamAck `protobuf:"bytes,3,opt,name=raw_stream_ack,json=rawStreamAck" json:"raw_stream_ack,omitempty"`
+	RawStreamAck *RawStreamAck `protobuf:"bytes,3,opt,name=raw_stream_ack,json=rawStreamAck,proto3" json:"raw_stream_ack,omitempty"`
 	// RawStreamClose is the raw stream close packet.
-	RawStreamClose       *RawStreamClose `protobuf:"bytes,4,opt,name=raw_stream_close,json=rawStreamClose" json:"raw_stream_close,omitempty"`
+	RawStreamClose       *RawStreamClose `protobuf:"bytes,4,opt,name=raw_stream_close,json=rawStreamClose,proto3" json:"raw_stream_close,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
 	XXX_unrecognized     []byte          `json:"-"`
 	XXX_sizecache        int32           `json:"-"`
@@ -71,16 +75,17 @@ func (m *CoordinationStreamPacket) Reset()         { *m = CoordinationStreamPack
 func (m *CoordinationStreamPacket) String() string { return proto.CompactTextString(m) }
 func (*CoordinationStreamPacket) ProtoMessage()    {}
 func (*CoordinationStreamPacket) Descriptor() ([]byte, []int) {
-	return fileDescriptor_coord_stream_f2d0c0d2787cb1ce, []int{0}
+	return fileDescriptor_c55809ead6d73baa, []int{0}
 }
+
 func (m *CoordinationStreamPacket) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CoordinationStreamPacket.Unmarshal(m, b)
 }
 func (m *CoordinationStreamPacket) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CoordinationStreamPacket.Marshal(b, m, deterministic)
 }
-func (dst *CoordinationStreamPacket) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CoordinationStreamPacket.Merge(dst, src)
+func (m *CoordinationStreamPacket) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CoordinationStreamPacket.Merge(m, src)
 }
 func (m *CoordinationStreamPacket) XXX_Size() int {
 	return xxx_messageInfo_CoordinationStreamPacket.Size(m)
@@ -122,7 +127,7 @@ func (m *CoordinationStreamPacket) GetRawStreamClose() *RawStreamClose {
 // RawStreamEstablish is a coordination stream raw-stream establish message.
 type RawStreamEstablish struct {
 	// InitiatorStreamId is the stream ID the initiator wants to use.
-	InitiatorStreamId    uint32   `protobuf:"varint,1,opt,name=initiator_stream_id,json=initiatorStreamId" json:"initiator_stream_id,omitempty"`
+	InitiatorStreamId    uint32   `protobuf:"varint,1,opt,name=initiator_stream_id,json=initiatorStreamId,proto3" json:"initiator_stream_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -132,16 +137,17 @@ func (m *RawStreamEstablish) Reset()         { *m = RawStreamEstablish{} }
 func (m *RawStreamEstablish) String() string { return proto.CompactTextString(m) }
 func (*RawStreamEstablish) ProtoMessage()    {}
 func (*RawStreamEstablish) Descriptor() ([]byte, []int) {
-	return fileDescriptor_coord_stream_f2d0c0d2787cb1ce, []int{1}
+	return fileDescriptor_c55809ead6d73baa, []int{1}
 }
+
 func (m *RawStreamEstablish) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RawStreamEstablish.Unmarshal(m, b)
 }
 func (m *RawStreamEstablish) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_RawStreamEstablish.Marshal(b, m, deterministic)
 }
-func (dst *RawStreamEstablish) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RawStreamEstablish.Merge(dst, src)
+func (m *RawStreamEstablish) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RawStreamEstablish.Merge(m, src)
 }
 func (m *RawStreamEstablish) XXX_Size() int {
 	return xxx_messageInfo_RawStreamEstablish.Size(m)
@@ -162,12 +168,12 @@ func (m *RawStreamEstablish) GetInitiatorStreamId() uint32 {
 // RawStreamAck is a coordination stream raw-stream acknowledge message.
 type RawStreamAck struct {
 	// InitiatorStreamId is the stream ID the initiator wanted to use.
-	InitiatorStreamId uint32 `protobuf:"varint,1,opt,name=initiator_stream_id,json=initiatorStreamId" json:"initiator_stream_id,omitempty"`
+	InitiatorStreamId uint32 `protobuf:"varint,1,opt,name=initiator_stream_id,json=initiatorStreamId,proto3" json:"initiator_stream_id,omitempty"`
 	// AckStreamId is the stream ID the responder wants to use.
 	// Zero if the stream was rejected.
-	AckStreamId uint32 `protobuf:"varint,2,opt,name=ack_stream_id,json=ackStreamId" json:"ack_stream_id,omitempty"`
+	AckStreamId uint32 `protobuf:"varint,2,opt,name=ack_stream_id,json=ackStreamId,proto3" json:"ack_stream_id,omitempty"`
 	// AckError indicates an error establishing the stream, rejecting the stream.
-	AckError             string   `protobuf:"bytes,3,opt,name=ack_error,json=ackError" json:"ack_error,omitempty"`
+	AckError             string   `protobuf:"bytes,3,opt,name=ack_error,json=ackError,proto3" json:"ack_error,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -177,16 +183,17 @@ func (m *RawStreamAck) Reset()         { *m = RawStreamAck{} }
 func (m *RawStreamAck) String() string { return proto.CompactTextString(m) }
 func (*RawStreamAck) ProtoMessage()    {}
 func (*RawStreamAck) Descriptor() ([]byte, []int) {
-	return fileDescriptor_coord_stream_f2d0c0d2787cb1ce, []int{2}
+	return fileDescriptor_c55809ead6d73baa, []int{2}
 }
+
 func (m *RawStreamAck) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RawStreamAck.Unmarshal(m, b)
 }
 func (m *RawStreamAck) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_RawStreamAck.Marshal(b, m, deterministic)
 }
-func (dst *RawStreamAck) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RawStreamAck.Merge(dst, src)
+func (m *RawStreamAck) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RawStreamAck.Merge(m, src)
 }
 func (m *RawStreamAck) XXX_Size() int {
 	return xxx_messageInfo_RawStreamAck.Size(m)
@@ -221,9 +228,9 @@ func (m *RawStreamAck) GetAckError() string {
 // RawStreamClose indicates an intent to close a raw stream.
 type RawStreamClose struct {
 	// StreamId is the stream ID the reciever indicated to use.
-	StreamId uint32 `protobuf:"varint,1,opt,name=stream_id,json=streamId" json:"stream_id,omitempty"`
+	StreamId uint32 `protobuf:"varint,1,opt,name=stream_id,json=streamId,proto3" json:"stream_id,omitempty"`
 	// CloseError indicates an error included with the stream close.
-	CloseError           string   `protobuf:"bytes,2,opt,name=close_error,json=closeError" json:"close_error,omitempty"`
+	CloseError           string   `protobuf:"bytes,2,opt,name=close_error,json=closeError,proto3" json:"close_error,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -233,16 +240,17 @@ func (m *RawStreamClose) Reset()         { *m = RawStreamClose{} }
 func (m *RawStreamClose) String() string { return proto.CompactTextString(m) }
 func (*RawStreamClose) ProtoMessage()    {}
 func (*RawStreamClose) Descriptor() ([]byte, []int) {
-	return fileDescriptor_coord_stream_f2d0c0d2787cb1ce, []int{3}
+	return fileDescriptor_c55809ead6d73baa, []int{3}
 }
+
 func (m *RawStreamClose) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RawStreamClose.Unmarshal(m, b)
 }
 func (m *RawStreamClose) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_RawStreamClose.Marshal(b, m, deterministic)
 }
-func (dst *RawStreamClose) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RawStreamClose.Merge(dst, src)
+func (m *RawStreamClose) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RawStreamClose.Merge(m, src)
 }
 func (m *RawStreamClose) XXX_Size() int {
 	return xxx_messageInfo_RawStreamClose.Size(m)
@@ -268,18 +276,18 @@ func (m *RawStreamClose) GetCloseError() string {
 }
 
 func init() {
+	proto.RegisterEnum("pconn.CoordPacketType", CoordPacketType_name, CoordPacketType_value)
 	proto.RegisterType((*CoordinationStreamPacket)(nil), "pconn.CoordinationStreamPacket")
 	proto.RegisterType((*RawStreamEstablish)(nil), "pconn.RawStreamEstablish")
 	proto.RegisterType((*RawStreamAck)(nil), "pconn.RawStreamAck")
 	proto.RegisterType((*RawStreamClose)(nil), "pconn.RawStreamClose")
-	proto.RegisterEnum("pconn.CoordPacketType", CoordPacketType_name, CoordPacketType_value)
 }
 
 func init() {
-	proto.RegisterFile("github.com/aperturerobotics/bifrost/transport/common/pconn/coord_stream.proto", fileDescriptor_coord_stream_f2d0c0d2787cb1ce)
+	proto.RegisterFile("github.com/aperturerobotics/bifrost/transport/common/pconn/coord_stream.proto", fileDescriptor_c55809ead6d73baa)
 }
 
-var fileDescriptor_coord_stream_f2d0c0d2787cb1ce = []byte{
+var fileDescriptor_c55809ead6d73baa = []byte{
 	// 438 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x93, 0xdf, 0x6a, 0xd4, 0x40,
 	0x14, 0xc6, 0x4d, 0x5a, 0xa5, 0x3d, 0xdb, 0xae, 0x71, 0xea, 0x9f, 0xc8, 0x2a, 0xdd, 0x06, 0x84,

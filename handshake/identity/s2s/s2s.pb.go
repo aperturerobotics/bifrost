@@ -3,9 +3,11 @@
 
 package s2s
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -16,7 +18,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type PacketType int32
 
@@ -34,6 +36,7 @@ var PacketType_name = map[int32]string{
 	1: "PacketType_INIT_ACK",
 	2: "PacketType_COMPLETE",
 }
+
 var PacketType_value = map[string]int32{
 	"PacketType_INIT":     0,
 	"PacketType_INIT_ACK": 1,
@@ -43,20 +46,21 @@ var PacketType_value = map[string]int32{
 func (x PacketType) String() string {
 	return proto.EnumName(PacketType_name, int32(x))
 }
+
 func (PacketType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_s2s_80c5e196362a4e51, []int{0}
+	return fileDescriptor_c53050c28092d77b, []int{0}
 }
 
 // Packet is a handshake packet.
 type Packet struct {
 	// PacketType is the packet type.
-	PacketType PacketType `protobuf:"varint,1,opt,name=packet_type,json=packetType,enum=s2s.PacketType" json:"packet_type,omitempty"`
+	PacketType PacketType `protobuf:"varint,1,opt,name=packet_type,json=packetType,proto3,enum=s2s.PacketType" json:"packet_type,omitempty"`
 	// InitPkt is the init packet.
-	InitPkt *Packet_Init `protobuf:"bytes,2,opt,name=init_pkt,json=initPkt" json:"init_pkt,omitempty"`
+	InitPkt *Packet_Init `protobuf:"bytes,2,opt,name=init_pkt,json=initPkt,proto3" json:"init_pkt,omitempty"`
 	// InitAck is the init-ack packet.
-	InitAckPkt *Packet_InitAck `protobuf:"bytes,3,opt,name=init_ack_pkt,json=initAckPkt" json:"init_ack_pkt,omitempty"`
+	InitAckPkt *Packet_InitAck `protobuf:"bytes,3,opt,name=init_ack_pkt,json=initAckPkt,proto3" json:"init_ack_pkt,omitempty"`
 	// Complete is the complete packet.
-	CompletePkt          *Packet_Complete `protobuf:"bytes,4,opt,name=complete_pkt,json=completePkt" json:"complete_pkt,omitempty"`
+	CompletePkt          *Packet_Complete `protobuf:"bytes,4,opt,name=complete_pkt,json=completePkt,proto3" json:"complete_pkt,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
 	XXX_unrecognized     []byte           `json:"-"`
 	XXX_sizecache        int32            `json:"-"`
@@ -66,16 +70,17 @@ func (m *Packet) Reset()         { *m = Packet{} }
 func (m *Packet) String() string { return proto.CompactTextString(m) }
 func (*Packet) ProtoMessage()    {}
 func (*Packet) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s2s_80c5e196362a4e51, []int{0}
+	return fileDescriptor_c53050c28092d77b, []int{0}
 }
+
 func (m *Packet) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Packet.Unmarshal(m, b)
 }
 func (m *Packet) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Packet.Marshal(b, m, deterministic)
 }
-func (dst *Packet) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Packet.Merge(dst, src)
+func (m *Packet) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Packet.Merge(m, src)
 }
 func (m *Packet) XXX_Size() int {
 	return xxx_messageInfo_Packet.Size(m)
@@ -131,16 +136,17 @@ func (m *Packet_Init) Reset()         { *m = Packet_Init{} }
 func (m *Packet_Init) String() string { return proto.CompactTextString(m) }
 func (*Packet_Init) ProtoMessage()    {}
 func (*Packet_Init) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s2s_80c5e196362a4e51, []int{0, 0}
+	return fileDescriptor_c53050c28092d77b, []int{0, 0}
 }
+
 func (m *Packet_Init) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Packet_Init.Unmarshal(m, b)
 }
 func (m *Packet_Init) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Packet_Init.Marshal(b, m, deterministic)
 }
-func (dst *Packet_Init) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Packet_Init.Merge(dst, src)
+func (m *Packet_Init) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Packet_Init.Merge(m, src)
 }
 func (m *Packet_Init) XXX_Size() int {
 	return xxx_messageInfo_Packet_Init.Size(m)
@@ -187,16 +193,17 @@ func (m *Packet_InitAck) Reset()         { *m = Packet_InitAck{} }
 func (m *Packet_InitAck) String() string { return proto.CompactTextString(m) }
 func (*Packet_InitAck) ProtoMessage()    {}
 func (*Packet_InitAck) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s2s_80c5e196362a4e51, []int{0, 1}
+	return fileDescriptor_c53050c28092d77b, []int{0, 1}
 }
+
 func (m *Packet_InitAck) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Packet_InitAck.Unmarshal(m, b)
 }
 func (m *Packet_InitAck) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Packet_InitAck.Marshal(b, m, deterministic)
 }
-func (dst *Packet_InitAck) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Packet_InitAck.Merge(dst, src)
+func (m *Packet_InitAck) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Packet_InitAck.Merge(m, src)
 }
 func (m *Packet_InitAck) XXX_Size() int {
 	return xxx_messageInfo_Packet_InitAck.Size(m)
@@ -233,16 +240,17 @@ func (m *Packet_Complete) Reset()         { *m = Packet_Complete{} }
 func (m *Packet_Complete) String() string { return proto.CompactTextString(m) }
 func (*Packet_Complete) ProtoMessage()    {}
 func (*Packet_Complete) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s2s_80c5e196362a4e51, []int{0, 2}
+	return fileDescriptor_c53050c28092d77b, []int{0, 2}
 }
+
 func (m *Packet_Complete) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Packet_Complete.Unmarshal(m, b)
 }
 func (m *Packet_Complete) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Packet_Complete.Marshal(b, m, deterministic)
 }
-func (dst *Packet_Complete) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Packet_Complete.Merge(dst, src)
+func (m *Packet_Complete) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Packet_Complete.Merge(m, src)
 }
 func (m *Packet_Complete) XXX_Size() int {
 	return xxx_messageInfo_Packet_Complete.Size(m)
@@ -268,7 +276,7 @@ type Packet_Ciphertext struct {
 	// SenderPubKey contains B's public key if necessary.
 	SenderPubKey []byte `protobuf:"bytes,2,opt,name=sender_pub_key,json=senderPubKey,proto3" json:"sender_pub_key,omitempty"`
 	// ReceiverKeyKnown indicates that A's public key is known.
-	ReceiverKeyKnown bool `protobuf:"varint,3,opt,name=receiver_key_known,json=receiverKeyKnown" json:"receiver_key_known,omitempty"`
+	ReceiverKeyKnown bool `protobuf:"varint,3,opt,name=receiver_key_known,json=receiverKeyKnown,proto3" json:"receiver_key_known,omitempty"`
 	// ExtraInfo contains extra information supplied by the transport.
 	// Example: in UDP this is information about what port to dial KCP on.
 	ExtraInfo            []byte   `protobuf:"bytes,4,opt,name=extra_info,json=extraInfo,proto3" json:"extra_info,omitempty"`
@@ -281,16 +289,17 @@ func (m *Packet_Ciphertext) Reset()         { *m = Packet_Ciphertext{} }
 func (m *Packet_Ciphertext) String() string { return proto.CompactTextString(m) }
 func (*Packet_Ciphertext) ProtoMessage()    {}
 func (*Packet_Ciphertext) Descriptor() ([]byte, []int) {
-	return fileDescriptor_s2s_80c5e196362a4e51, []int{0, 3}
+	return fileDescriptor_c53050c28092d77b, []int{0, 3}
 }
+
 func (m *Packet_Ciphertext) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Packet_Ciphertext.Unmarshal(m, b)
 }
 func (m *Packet_Ciphertext) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Packet_Ciphertext.Marshal(b, m, deterministic)
 }
-func (dst *Packet_Ciphertext) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Packet_Ciphertext.Merge(dst, src)
+func (m *Packet_Ciphertext) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Packet_Ciphertext.Merge(m, src)
 }
 func (m *Packet_Ciphertext) XXX_Size() int {
 	return xxx_messageInfo_Packet_Ciphertext.Size(m)
@@ -330,19 +339,19 @@ func (m *Packet_Ciphertext) GetExtraInfo() []byte {
 }
 
 func init() {
+	proto.RegisterEnum("s2s.PacketType", PacketType_name, PacketType_value)
 	proto.RegisterType((*Packet)(nil), "s2s.Packet")
 	proto.RegisterType((*Packet_Init)(nil), "s2s.Packet.Init")
 	proto.RegisterType((*Packet_InitAck)(nil), "s2s.Packet.InitAck")
 	proto.RegisterType((*Packet_Complete)(nil), "s2s.Packet.Complete")
 	proto.RegisterType((*Packet_Ciphertext)(nil), "s2s.Packet.Ciphertext")
-	proto.RegisterEnum("s2s.PacketType", PacketType_name, PacketType_value)
 }
 
 func init() {
-	proto.RegisterFile("github.com/aperturerobotics/bifrost/handshake/identity/s2s/s2s.proto", fileDescriptor_s2s_80c5e196362a4e51)
+	proto.RegisterFile("github.com/aperturerobotics/bifrost/handshake/identity/s2s/s2s.proto", fileDescriptor_c53050c28092d77b)
 }
 
-var fileDescriptor_s2s_80c5e196362a4e51 = []byte{
+var fileDescriptor_c53050c28092d77b = []byte{
 	// 454 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x6c, 0x92, 0x5f, 0x6b, 0xdb, 0x30,
 	0x14, 0xc5, 0xe7, 0x36, 0xb4, 0xd9, 0x8d, 0x49, 0x8c, 0x32, 0x58, 0x09, 0x6c, 0x94, 0x31, 0x58,

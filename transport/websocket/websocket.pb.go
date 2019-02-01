@@ -3,10 +3,12 @@
 
 package websocket
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import dialer "github.com/aperturerobotics/bifrost/transport/common/dialer"
+import (
+	fmt "fmt"
+	dialer "github.com/aperturerobotics/bifrost/transport/common/dialer"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -17,18 +19,18 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 // Config is the configuration for the websocket transport.
 type Config struct {
 	// NodePeerID constrains the node peer ID.
 	// If empty, attaches to whatever node is running.
-	NodePeerId string `protobuf:"bytes,1,opt,name=node_peer_id,json=nodePeerId" json:"node_peer_id,omitempty"`
+	NodePeerId string `protobuf:"bytes,1,opt,name=node_peer_id,json=nodePeerId,proto3" json:"node_peer_id,omitempty"`
 	// ListenAddr contains the address to listen on.
 	// Has no effect in the browser.
-	ListenAddr string `protobuf:"bytes,2,opt,name=listen_addr,json=listenAddr" json:"listen_addr,omitempty"`
+	ListenAddr string `protobuf:"bytes,2,opt,name=listen_addr,json=listenAddr,proto3" json:"listen_addr,omitempty"`
 	// Dialers maps peer IDs to websocket addresses.
-	Dialers              map[string]*dialer.DialerOpts `protobuf:"bytes,5,rep,name=dialers" json:"dialers,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Dialers              map[string]*dialer.DialerOpts `protobuf:"bytes,5,rep,name=dialers,proto3" json:"dialers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral struct{}                      `json:"-"`
 	XXX_unrecognized     []byte                        `json:"-"`
 	XXX_sizecache        int32                         `json:"-"`
@@ -38,16 +40,17 @@ func (m *Config) Reset()         { *m = Config{} }
 func (m *Config) String() string { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_websocket_ff79bd188b41c29f, []int{0}
+	return fileDescriptor_fd1c0afc3d9a579c, []int{0}
 }
+
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
 }
 func (m *Config) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Config.Marshal(b, m, deterministic)
 }
-func (dst *Config) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Config.Merge(dst, src)
+func (m *Config) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Config.Merge(m, src)
 }
 func (m *Config) XXX_Size() int {
 	return xxx_messageInfo_Config.Size(m)
@@ -84,7 +87,7 @@ type HandshakeExtraData struct {
 	// LocalTransportUuid is the transport uuid of the sender.
 	// This is used for monitoring / analysis at a later time.
 	// Coorelates the transport connections between two machines.
-	LocalTransportUuid   uint64   `protobuf:"varint,1,opt,name=local_transport_uuid,json=localTransportUuid" json:"local_transport_uuid,omitempty"`
+	LocalTransportUuid   uint64   `protobuf:"varint,1,opt,name=local_transport_uuid,json=localTransportUuid,proto3" json:"local_transport_uuid,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -94,16 +97,17 @@ func (m *HandshakeExtraData) Reset()         { *m = HandshakeExtraData{} }
 func (m *HandshakeExtraData) String() string { return proto.CompactTextString(m) }
 func (*HandshakeExtraData) ProtoMessage()    {}
 func (*HandshakeExtraData) Descriptor() ([]byte, []int) {
-	return fileDescriptor_websocket_ff79bd188b41c29f, []int{1}
+	return fileDescriptor_fd1c0afc3d9a579c, []int{1}
 }
+
 func (m *HandshakeExtraData) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_HandshakeExtraData.Unmarshal(m, b)
 }
 func (m *HandshakeExtraData) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_HandshakeExtraData.Marshal(b, m, deterministic)
 }
-func (dst *HandshakeExtraData) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_HandshakeExtraData.Merge(dst, src)
+func (m *HandshakeExtraData) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_HandshakeExtraData.Merge(m, src)
 }
 func (m *HandshakeExtraData) XXX_Size() int {
 	return xxx_messageInfo_HandshakeExtraData.Size(m)
@@ -128,10 +132,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("github.com/aperturerobotics/bifrost/transport/websocket/websocket.proto", fileDescriptor_websocket_ff79bd188b41c29f)
+	proto.RegisterFile("github.com/aperturerobotics/bifrost/transport/websocket/websocket.proto", fileDescriptor_fd1c0afc3d9a579c)
 }
 
-var fileDescriptor_websocket_ff79bd188b41c29f = []byte{
+var fileDescriptor_fd1c0afc3d9a579c = []byte{
 	// 296 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x50, 0xc1, 0x4e, 0xc2, 0x40,
 	0x10, 0x4d, 0x41, 0x30, 0x2c, 0x1c, 0xcc, 0xc6, 0x03, 0xe1, 0xa0, 0x84, 0x13, 0xa7, 0xd6, 0xe0,

@@ -3,10 +3,12 @@
 
 package floodsub_controller
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import floodsub "github.com/aperturerobotics/bifrost/pubsub/floodsub"
+import (
+	fmt "fmt"
+	floodsub "github.com/aperturerobotics/bifrost/pubsub/floodsub"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -17,12 +19,12 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 // Config is the floodsub controller config.
 type Config struct {
 	// FloodsubConfig are mesh-sub specific configuration variables.
-	FloodsubConfig       *floodsub.Config `protobuf:"bytes,1,opt,name=floodsub_config,json=floodsubConfig" json:"floodsub_config,omitempty"`
+	FloodsubConfig       *floodsub.Config `protobuf:"bytes,1,opt,name=floodsub_config,json=floodsubConfig,proto3" json:"floodsub_config,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
 	XXX_unrecognized     []byte           `json:"-"`
 	XXX_sizecache        int32            `json:"-"`
@@ -32,16 +34,17 @@ func (m *Config) Reset()         { *m = Config{} }
 func (m *Config) String() string { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_72d7e50045c2fbda, []int{0}
+	return fileDescriptor_d76a407a7722ae39, []int{0}
 }
+
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
 }
 func (m *Config) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Config.Marshal(b, m, deterministic)
 }
-func (dst *Config) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Config.Merge(dst, src)
+func (m *Config) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Config.Merge(m, src)
 }
 func (m *Config) XXX_Size() int {
 	return xxx_messageInfo_Config.Size(m)
@@ -64,10 +67,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("github.com/aperturerobotics/bifrost/pubsub/floodsub/controller/config.proto", fileDescriptor_config_72d7e50045c2fbda)
+	proto.RegisterFile("github.com/aperturerobotics/bifrost/pubsub/floodsub/controller/config.proto", fileDescriptor_d76a407a7722ae39)
 }
 
-var fileDescriptor_config_72d7e50045c2fbda = []byte{
+var fileDescriptor_d76a407a7722ae39 = []byte{
 	// 152 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xf2, 0x4e, 0xcf, 0x2c, 0xc9,
 	0x28, 0x4d, 0xd2, 0x4b, 0xce, 0xcf, 0xd5, 0x4f, 0x2c, 0x48, 0x2d, 0x2a, 0x29, 0x2d, 0x4a, 0x2d,

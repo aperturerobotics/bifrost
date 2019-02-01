@@ -3,9 +3,11 @@
 
 package stream_grpc_dial
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -16,24 +18,24 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 // Config configures the grpcdial controller.
 type Config struct {
 	// PeerId is the remote peer ID to dial.
-	PeerId string `protobuf:"bytes,1,opt,name=peer_id,json=peerId" json:"peer_id,omitempty"`
+	PeerId string `protobuf:"bytes,1,opt,name=peer_id,json=peerId,proto3" json:"peer_id,omitempty"`
 	// LocalPeerId is the peer ID to dial with.
 	// Can be empty to accept any loaded peer.
-	LocalPeerId string `protobuf:"bytes,2,opt,name=local_peer_id,json=localPeerId" json:"local_peer_id,omitempty"`
+	LocalPeerId string `protobuf:"bytes,2,opt,name=local_peer_id,json=localPeerId,proto3" json:"local_peer_id,omitempty"`
 	// ProtocolId is the protocol ID to dial with.
-	ProtocolId string `protobuf:"bytes,3,opt,name=protocol_id,json=protocolId" json:"protocol_id,omitempty"`
+	ProtocolId string `protobuf:"bytes,3,opt,name=protocol_id,json=protocolId,proto3" json:"protocol_id,omitempty"`
 	// TransportId constrains the transport ID to dial with.
 	// Can be empty.
-	TransportId uint64 `protobuf:"varint,4,opt,name=transport_id,json=transportId" json:"transport_id,omitempty"`
+	TransportId uint64 `protobuf:"varint,4,opt,name=transport_id,json=transportId,proto3" json:"transport_id,omitempty"`
 	// Encrypted indicates the stream should be encrypted.
-	Encrypted bool `protobuf:"varint,5,opt,name=encrypted" json:"encrypted,omitempty"`
+	Encrypted bool `protobuf:"varint,5,opt,name=encrypted,proto3" json:"encrypted,omitempty"`
 	// Reliable indicates the stream should be reliable.
-	Reliable             bool     `protobuf:"varint,6,opt,name=reliable" json:"reliable,omitempty"`
+	Reliable             bool     `protobuf:"varint,6,opt,name=reliable,proto3" json:"reliable,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -43,16 +45,17 @@ func (m *Config) Reset()         { *m = Config{} }
 func (m *Config) String() string { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_dial_57b09423f52a5a37, []int{0}
+	return fileDescriptor_1fe0d85a2c74aa7c, []int{0}
 }
+
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
 }
 func (m *Config) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Config.Marshal(b, m, deterministic)
 }
-func (dst *Config) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Config.Merge(dst, src)
+func (m *Config) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Config.Merge(m, src)
 }
 func (m *Config) XXX_Size() int {
 	return xxx_messageInfo_Config.Size(m)
@@ -110,10 +113,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("github.com/aperturerobotics/bifrost/stream/grpc/dial/dial.proto", fileDescriptor_dial_57b09423f52a5a37)
+	proto.RegisterFile("github.com/aperturerobotics/bifrost/stream/grpc/dial/dial.proto", fileDescriptor_1fe0d85a2c74aa7c)
 }
 
-var fileDescriptor_dial_57b09423f52a5a37 = []byte{
+var fileDescriptor_1fe0d85a2c74aa7c = []byte{
 	// 225 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x44, 0x8d, 0xcf, 0x4a, 0xc3, 0x40,
 	0x10, 0x87, 0x59, 0xad, 0xb1, 0xdd, 0x28, 0xc8, 0x5e, 0x0c, 0x22, 0x18, 0x7b, 0xca, 0x29, 0x7b,

@@ -3,12 +3,14 @@
 
 package floodsub
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import hash "github.com/aperturerobotics/bifrost/hash"
-import peer "github.com/aperturerobotics/bifrost/peer"
-import timestamp "github.com/aperturerobotics/timestamp"
+import (
+	fmt "fmt"
+	hash "github.com/aperturerobotics/bifrost/hash"
+	peer "github.com/aperturerobotics/bifrost/peer"
+	timestamp "github.com/aperturerobotics/timestamp"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -19,13 +21,13 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 // Config configures the floodsub router.
 type Config struct {
 	// PublishHashType is the hash type to use when signing published messages.
 	// Defaults to sha256
-	PublishHashType      hash.HashType `protobuf:"varint,1,opt,name=publish_hash_type,json=publishHashType,enum=hash.HashType" json:"publish_hash_type,omitempty"`
+	PublishHashType      hash.HashType `protobuf:"varint,1,opt,name=publish_hash_type,json=publishHashType,proto3,enum=hash.HashType" json:"publish_hash_type,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
 	XXX_unrecognized     []byte        `json:"-"`
 	XXX_sizecache        int32         `json:"-"`
@@ -35,16 +37,17 @@ func (m *Config) Reset()         { *m = Config{} }
 func (m *Config) String() string { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_floodsub_6b5268b63f9e57bb, []int{0}
+	return fileDescriptor_b604b3634b345d9a, []int{0}
 }
+
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
 }
 func (m *Config) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Config.Marshal(b, m, deterministic)
 }
-func (dst *Config) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Config.Merge(dst, src)
+func (m *Config) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Config.Merge(m, src)
 }
 func (m *Config) XXX_Size() int {
 	return xxx_messageInfo_Config.Size(m)
@@ -65,9 +68,9 @@ func (m *Config) GetPublishHashType() hash.HashType {
 // Packet is the floodsub packet.
 type Packet struct {
 	// Subscriptions contains any new subscription changes.
-	Subscriptions []*SubscriptionOpts `protobuf:"bytes,1,rep,name=subscriptions" json:"subscriptions,omitempty"`
+	Subscriptions []*SubscriptionOpts `protobuf:"bytes,1,rep,name=subscriptions,proto3" json:"subscriptions,omitempty"`
 	// Publish contains messages we are publishing.
-	Publish              []*PubMessage `protobuf:"bytes,2,rep,name=publish" json:"publish,omitempty"`
+	Publish              []*PubMessage `protobuf:"bytes,2,rep,name=publish,proto3" json:"publish,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
 	XXX_unrecognized     []byte        `json:"-"`
 	XXX_sizecache        int32         `json:"-"`
@@ -77,16 +80,17 @@ func (m *Packet) Reset()         { *m = Packet{} }
 func (m *Packet) String() string { return proto.CompactTextString(m) }
 func (*Packet) ProtoMessage()    {}
 func (*Packet) Descriptor() ([]byte, []int) {
-	return fileDescriptor_floodsub_6b5268b63f9e57bb, []int{1}
+	return fileDescriptor_b604b3634b345d9a, []int{1}
 }
+
 func (m *Packet) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Packet.Unmarshal(m, b)
 }
 func (m *Packet) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Packet.Marshal(b, m, deterministic)
 }
-func (dst *Packet) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Packet.Merge(dst, src)
+func (m *Packet) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Packet.Merge(m, src)
 }
 func (m *Packet) XXX_Size() int {
 	return xxx_messageInfo_Packet.Size(m)
@@ -114,9 +118,9 @@ func (m *Packet) GetPublish() []*PubMessage {
 // SubscriptionOpts are subscription options.
 type SubscriptionOpts struct {
 	// Subscribe indicates if we are subscribing to this channel ID.
-	Subscribe bool `protobuf:"varint,1,opt,name=subscribe" json:"subscribe,omitempty"`
+	Subscribe bool `protobuf:"varint,1,opt,name=subscribe,proto3" json:"subscribe,omitempty"`
 	// ChannelId is the channel to subscribe to.
-	ChannelId            string   `protobuf:"bytes,2,opt,name=channel_id,json=channelId" json:"channel_id,omitempty"`
+	ChannelId            string   `protobuf:"bytes,2,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -126,16 +130,17 @@ func (m *SubscriptionOpts) Reset()         { *m = SubscriptionOpts{} }
 func (m *SubscriptionOpts) String() string { return proto.CompactTextString(m) }
 func (*SubscriptionOpts) ProtoMessage()    {}
 func (*SubscriptionOpts) Descriptor() ([]byte, []int) {
-	return fileDescriptor_floodsub_6b5268b63f9e57bb, []int{2}
+	return fileDescriptor_b604b3634b345d9a, []int{2}
 }
+
 func (m *SubscriptionOpts) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_SubscriptionOpts.Unmarshal(m, b)
 }
 func (m *SubscriptionOpts) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_SubscriptionOpts.Marshal(b, m, deterministic)
 }
-func (dst *SubscriptionOpts) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_SubscriptionOpts.Merge(dst, src)
+func (m *SubscriptionOpts) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_SubscriptionOpts.Merge(m, src)
 }
 func (m *SubscriptionOpts) XXX_Size() int {
 	return xxx_messageInfo_SubscriptionOpts.Size(m)
@@ -165,11 +170,11 @@ type PubMessageInner struct {
 	// Data is the message data.
 	Data []byte `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
 	// Channel is the channel.
-	Channel string `protobuf:"bytes,2,opt,name=channel" json:"channel,omitempty"`
+	Channel string `protobuf:"bytes,2,opt,name=channel,proto3" json:"channel,omitempty"`
 	// Timestamp is the message timestamp.
-	Timestamp *timestamp.Timestamp `protobuf:"bytes,3,opt,name=timestamp" json:"timestamp,omitempty"`
+	Timestamp *timestamp.Timestamp `protobuf:"bytes,3,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 	// Salt is a random int32.
-	Salt                 uint32   `protobuf:"fixed32,4,opt,name=salt" json:"salt,omitempty"`
+	Salt                 uint32   `protobuf:"fixed32,4,opt,name=salt,proto3" json:"salt,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -179,16 +184,17 @@ func (m *PubMessageInner) Reset()         { *m = PubMessageInner{} }
 func (m *PubMessageInner) String() string { return proto.CompactTextString(m) }
 func (*PubMessageInner) ProtoMessage()    {}
 func (*PubMessageInner) Descriptor() ([]byte, []int) {
-	return fileDescriptor_floodsub_6b5268b63f9e57bb, []int{3}
+	return fileDescriptor_b604b3634b345d9a, []int{3}
 }
+
 func (m *PubMessageInner) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_PubMessageInner.Unmarshal(m, b)
 }
 func (m *PubMessageInner) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_PubMessageInner.Marshal(b, m, deterministic)
 }
-func (dst *PubMessageInner) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_PubMessageInner.Merge(dst, src)
+func (m *PubMessageInner) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_PubMessageInner.Merge(m, src)
 }
 func (m *PubMessageInner) XXX_Size() int {
 	return xxx_messageInfo_PubMessageInner.Size(m)
@@ -230,10 +236,10 @@ func (m *PubMessageInner) GetSalt() uint32 {
 // PubMessage is a message published via the pubsub channel.
 type PubMessage struct {
 	// FromPeerId is the peer identifier of the sender.
-	FromPeerId string `protobuf:"bytes,1,opt,name=from_peer_id,json=fromPeerId" json:"from_peer_id,omitempty"`
+	FromPeerId string `protobuf:"bytes,1,opt,name=from_peer_id,json=fromPeerId,proto3" json:"from_peer_id,omitempty"`
 	// Signature is the sender signature.
 	// Should not contain PubKey, which is inferred from peer id.
-	Signature *peer.Signature `protobuf:"bytes,2,opt,name=signature" json:"signature,omitempty"`
+	Signature *peer.Signature `protobuf:"bytes,2,opt,name=signature,proto3" json:"signature,omitempty"`
 	// Data is the PubMessageInner data.
 	Data                 []byte   `protobuf:"bytes,3,opt,name=data,proto3" json:"data,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
@@ -245,16 +251,17 @@ func (m *PubMessage) Reset()         { *m = PubMessage{} }
 func (m *PubMessage) String() string { return proto.CompactTextString(m) }
 func (*PubMessage) ProtoMessage()    {}
 func (*PubMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_floodsub_6b5268b63f9e57bb, []int{4}
+	return fileDescriptor_b604b3634b345d9a, []int{4}
 }
+
 func (m *PubMessage) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_PubMessage.Unmarshal(m, b)
 }
 func (m *PubMessage) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_PubMessage.Marshal(b, m, deterministic)
 }
-func (dst *PubMessage) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_PubMessage.Merge(dst, src)
+func (m *PubMessage) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_PubMessage.Merge(m, src)
 }
 func (m *PubMessage) XXX_Size() int {
 	return xxx_messageInfo_PubMessage.Size(m)
@@ -295,10 +302,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("github.com/aperturerobotics/bifrost/pubsub/floodsub/floodsub.proto", fileDescriptor_floodsub_6b5268b63f9e57bb)
+	proto.RegisterFile("github.com/aperturerobotics/bifrost/pubsub/floodsub/floodsub.proto", fileDescriptor_b604b3634b345d9a)
 }
 
-var fileDescriptor_floodsub_6b5268b63f9e57bb = []byte{
+var fileDescriptor_b604b3634b345d9a = []byte{
 	// 402 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x52, 0x4d, 0x6f, 0x9c, 0x30,
 	0x10, 0x95, 0xb3, 0xd1, 0x6e, 0x98, 0xa4, 0xd9, 0xd6, 0xea, 0x01, 0x45, 0xad, 0x84, 0x38, 0x71,

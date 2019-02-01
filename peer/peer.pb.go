@@ -3,10 +3,12 @@
 
 package peer
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import hash "github.com/aperturerobotics/bifrost/hash"
+import (
+	fmt "fmt"
+	hash "github.com/aperturerobotics/bifrost/hash"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -17,7 +19,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 // Signature contains a signature by a peer.
 type Signature struct {
@@ -26,7 +28,7 @@ type Signature struct {
 	PubKey []byte `protobuf:"bytes,1,opt,name=pub_key,json=pubKey,proto3" json:"pub_key,omitempty"`
 	// HashType is the hash type used to hash the data.
 	// The signature is then of the hash bytes (usually 32).
-	HashType hash.HashType `protobuf:"varint,2,opt,name=hash_type,json=hashType,enum=hash.HashType" json:"hash_type,omitempty"`
+	HashType hash.HashType `protobuf:"varint,2,opt,name=hash_type,json=hashType,proto3,enum=hash.HashType" json:"hash_type,omitempty"`
 	// SigData contains the signature data.
 	// The format is defined by the key type.
 	SigData              []byte   `protobuf:"bytes,3,opt,name=sig_data,json=sigData,proto3" json:"sig_data,omitempty"`
@@ -39,16 +41,17 @@ func (m *Signature) Reset()         { *m = Signature{} }
 func (m *Signature) String() string { return proto.CompactTextString(m) }
 func (*Signature) ProtoMessage()    {}
 func (*Signature) Descriptor() ([]byte, []int) {
-	return fileDescriptor_peer_2d81b3a08f40efa3, []int{0}
+	return fileDescriptor_ec16e5b0f2a2ffce, []int{0}
 }
+
 func (m *Signature) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Signature.Unmarshal(m, b)
 }
 func (m *Signature) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Signature.Marshal(b, m, deterministic)
 }
-func (dst *Signature) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Signature.Merge(dst, src)
+func (m *Signature) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Signature.Merge(m, src)
 }
 func (m *Signature) XXX_Size() int {
 	return xxx_messageInfo_Signature.Size(m)
@@ -85,10 +88,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("github.com/aperturerobotics/bifrost/peer/peer.proto", fileDescriptor_peer_2d81b3a08f40efa3)
+	proto.RegisterFile("github.com/aperturerobotics/bifrost/peer/peer.proto", fileDescriptor_ec16e5b0f2a2ffce)
 }
 
-var fileDescriptor_peer_2d81b3a08f40efa3 = []byte{
+var fileDescriptor_ec16e5b0f2a2ffce = []byte{
 	// 188 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x8d, 0xbd, 0x6a, 0xc3, 0x30,
 	0x14, 0x46, 0x71, 0x5b, 0xfc, 0x23, 0x8a, 0x07, 0x2d, 0x75, 0x3b, 0x99, 0x4e, 0x86, 0x82, 0x0d,

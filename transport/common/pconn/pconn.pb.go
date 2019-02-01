@@ -3,9 +3,12 @@
 
 package pconn
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	math "math"
+
+	proto "github.com/golang/protobuf/proto"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -16,7 +19,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 // KCPMode is the mode to set KCP to.
 type KCPMode int32
@@ -64,6 +67,7 @@ var KCPMode_name = map[int32]string{
 	4: "KCPMode_FAST3",
 	5: "KCPMode_SLOW1",
 }
+
 var KCPMode_value = map[string]int32{
 	"KCPMode_UNKNOWN": 0,
 	"KCPMode_NORMAL":  1,
@@ -76,8 +80,9 @@ var KCPMode_value = map[string]int32{
 func (x KCPMode) String() string {
 	return proto.EnumName(KCPMode_name, int32(x))
 }
+
 func (KCPMode) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_pconn_193b809645808d23, []int{0}
+	return fileDescriptor_a43f218b8bfe240c, []int{0}
 }
 
 // BlockCompress sets the type of compression to use.
@@ -94,6 +99,7 @@ var BlockCompress_name = map[int32]string{
 	0: "BlockCompress_NONE",
 	1: "BlockCompress_SNAPPY",
 }
+
 var BlockCompress_value = map[string]int32{
 	"BlockCompress_NONE":   0,
 	"BlockCompress_SNAPPY": 1,
@@ -102,8 +108,9 @@ var BlockCompress_value = map[string]int32{
 func (x BlockCompress) String() string {
 	return proto.EnumName(BlockCompress_name, int32(x))
 }
+
 func (BlockCompress) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_pconn_193b809645808d23, []int{1}
+	return fileDescriptor_a43f218b8bfe240c, []int{1}
 }
 
 // StreamMuxer sets the type of stream muxer to use.
@@ -123,6 +130,7 @@ var StreamMuxer_name = map[int32]string{
 	1: "StreamMuxer_XTACI_SMUX",
 	2: "StreamMuxer_YAMUX",
 }
+
 var StreamMuxer_value = map[string]int32{
 	"StreamMuxer_UNKNOWN":    0,
 	"StreamMuxer_XTACI_SMUX": 1,
@@ -132,8 +140,9 @@ var StreamMuxer_value = map[string]int32{
 func (x StreamMuxer) String() string {
 	return proto.EnumName(StreamMuxer_name, int32(x))
 }
+
 func (StreamMuxer) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_pconn_193b809645808d23, []int{2}
+	return fileDescriptor_a43f218b8bfe240c, []int{2}
 }
 
 // BlockCrypt sets the type of block crypto to use.
@@ -186,6 +195,7 @@ var BlockCrypt_name = map[int32]string{
 	12: "BlockCrypt_XTEA",
 	13: "BlockCrypt_SALSA20",
 }
+
 var BlockCrypt_value = map[string]int32{
 	"BlockCrypt_UNKNOWN":  0,
 	"BlockCrypt_AES256":   1,
@@ -206,8 +216,9 @@ var BlockCrypt_value = map[string]int32{
 func (x BlockCrypt) String() string {
 	return proto.EnumName(BlockCrypt_name, int32(x))
 }
+
 func (BlockCrypt) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_pconn_193b809645808d23, []int{3}
+	return fileDescriptor_a43f218b8bfe240c, []int{3}
 }
 
 // Opts are extra options for the packet conn.
@@ -223,24 +234,24 @@ type Opts struct {
 	// wide limits. Maximum is 256.
 	// Recommended: 10
 	// If zero, FEC is disabled.
-	DataShards uint32 `protobuf:"varint,1,opt,name=data_shards,json=dataShards" json:"data_shards,omitempty"`
+	DataShards uint32 `protobuf:"varint,1,opt,name=data_shards,json=dataShards,proto3" json:"data_shards,omitempty"`
 	// ParityShards are the number of FEC parity shards to use.
 	// Recommended: 3
-	ParityShards uint32 `protobuf:"varint,2,opt,name=parity_shards,json=parityShards" json:"parity_shards,omitempty"`
+	ParityShards uint32 `protobuf:"varint,2,opt,name=parity_shards,json=parityShards,proto3" json:"parity_shards,omitempty"`
 	// Mtu is the maximum transmission unit to use.
 	// Defaults to 1350 (UDP safe packet size).
-	Mtu uint32 `protobuf:"varint,3,opt,name=mtu" json:"mtu,omitempty"`
+	Mtu uint32 `protobuf:"varint,3,opt,name=mtu,proto3" json:"mtu,omitempty"`
 	// KcpMode is the KCP mode.
-	KcpMode KCPMode `protobuf:"varint,4,opt,name=kcp_mode,json=kcpMode,enum=pconn.KCPMode" json:"kcp_mode,omitempty"`
+	KcpMode KCPMode `protobuf:"varint,4,opt,name=kcp_mode,json=kcpMode,proto3,enum=pconn.KCPMode" json:"kcp_mode,omitempty"`
 	// BlockCrypt is the block crypto to use.
 	// Defaults to AES256.
 	// Uses the handshake-negotiated session key.
-	BlockCrypt BlockCrypt `protobuf:"varint,5,opt,name=block_crypt,json=blockCrypt,enum=pconn.BlockCrypt" json:"block_crypt,omitempty"`
+	BlockCrypt BlockCrypt `protobuf:"varint,5,opt,name=block_crypt,json=blockCrypt,proto3,enum=pconn.BlockCrypt" json:"block_crypt,omitempty"`
 	// BlockCompress is the block compression to use.
-	BlockCompress BlockCompress `protobuf:"varint,6,opt,name=block_compress,json=blockCompress,enum=pconn.BlockCompress" json:"block_compress,omitempty"`
+	BlockCompress BlockCompress `protobuf:"varint,6,opt,name=block_compress,json=blockCompress,proto3,enum=pconn.BlockCompress" json:"block_compress,omitempty"`
 	// StreamMuxer is the stream muxer to use.
 	// Defaults to smux.
-	StreamMuxer          StreamMuxer `protobuf:"varint,7,opt,name=stream_muxer,json=streamMuxer,enum=pconn.StreamMuxer" json:"stream_muxer,omitempty"`
+	StreamMuxer          StreamMuxer `protobuf:"varint,7,opt,name=stream_muxer,json=streamMuxer,proto3,enum=pconn.StreamMuxer" json:"stream_muxer,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
 	XXX_unrecognized     []byte      `json:"-"`
 	XXX_sizecache        int32       `json:"-"`
@@ -250,16 +261,17 @@ func (m *Opts) Reset()         { *m = Opts{} }
 func (m *Opts) String() string { return proto.CompactTextString(m) }
 func (*Opts) ProtoMessage()    {}
 func (*Opts) Descriptor() ([]byte, []int) {
-	return fileDescriptor_pconn_193b809645808d23, []int{0}
+	return fileDescriptor_a43f218b8bfe240c, []int{0}
 }
+
 func (m *Opts) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Opts.Unmarshal(m, b)
 }
 func (m *Opts) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Opts.Marshal(b, m, deterministic)
 }
-func (dst *Opts) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Opts.Merge(dst, src)
+func (m *Opts) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Opts.Merge(m, src)
 }
 func (m *Opts) XXX_Size() int {
 	return xxx_messageInfo_Opts.Size(m)
@@ -320,18 +332,18 @@ func (m *Opts) GetStreamMuxer() StreamMuxer {
 }
 
 func init() {
-	proto.RegisterType((*Opts)(nil), "pconn.Opts")
 	proto.RegisterEnum("pconn.KCPMode", KCPMode_name, KCPMode_value)
 	proto.RegisterEnum("pconn.BlockCompress", BlockCompress_name, BlockCompress_value)
 	proto.RegisterEnum("pconn.StreamMuxer", StreamMuxer_name, StreamMuxer_value)
 	proto.RegisterEnum("pconn.BlockCrypt", BlockCrypt_name, BlockCrypt_value)
+	proto.RegisterType((*Opts)(nil), "pconn.Opts")
 }
 
 func init() {
-	proto.RegisterFile("github.com/aperturerobotics/bifrost/transport/common/pconn/pconn.proto", fileDescriptor_pconn_193b809645808d23)
+	proto.RegisterFile("github.com/aperturerobotics/bifrost/transport/common/pconn/pconn.proto", fileDescriptor_a43f218b8bfe240c)
 }
 
-var fileDescriptor_pconn_193b809645808d23 = []byte{
+var fileDescriptor_a43f218b8bfe240c = []byte{
 	// 537 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x6c, 0x93, 0x4d, 0x6f, 0xda, 0x4c,
 	0x10, 0xc7, 0x63, 0x07, 0x42, 0x9e, 0x01, 0xf3, 0x2c, 0x9b, 0x97, 0x5a, 0xbd, 0x34, 0x6a, 0x2f,

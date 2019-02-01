@@ -1,0 +1,7 @@
+syntax = "proto3";
+package link.holdopen.controller;
+
+// Config is the hold-open controller config.
+message Config {
+  // TODO: limit to specific transport ID, etc.
+}

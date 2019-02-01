@@ -3,9 +3,11 @@
 
 package hash
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -16,7 +18,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 // HashType identifies the hash type in use.
 type HashType int32
@@ -32,6 +34,7 @@ var HashType_name = map[int32]string{
 	0: "HashType_UNKNOWN",
 	1: "HashType_SHA256",
 }
+
 var HashType_value = map[string]int32{
 	"HashType_UNKNOWN": 0,
 	"HashType_SHA256":  1,
@@ -40,14 +43,15 @@ var HashType_value = map[string]int32{
 func (x HashType) String() string {
 	return proto.EnumName(HashType_name, int32(x))
 }
+
 func (HashType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_hash_d16623bc6d85d56b, []int{0}
+	return fileDescriptor_79657252606e4824, []int{0}
 }
 
 // Hash is a hash of a binary blob.
 type Hash struct {
 	// HashType is the hash type in use.
-	HashType HashType `protobuf:"varint,1,opt,name=hash_type,json=hashType,enum=hash.HashType" json:"hash_type,omitempty"`
+	HashType HashType `protobuf:"varint,1,opt,name=hash_type,json=hashType,proto3,enum=hash.HashType" json:"hash_type,omitempty"`
 	// Hash is the hash value.
 	Hash                 []byte   `protobuf:"bytes,2,opt,name=hash,proto3" json:"hash,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
@@ -59,16 +63,17 @@ func (m *Hash) Reset()         { *m = Hash{} }
 func (m *Hash) String() string { return proto.CompactTextString(m) }
 func (*Hash) ProtoMessage()    {}
 func (*Hash) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hash_d16623bc6d85d56b, []int{0}
+	return fileDescriptor_79657252606e4824, []int{0}
 }
+
 func (m *Hash) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Hash.Unmarshal(m, b)
 }
 func (m *Hash) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Hash.Marshal(b, m, deterministic)
 }
-func (dst *Hash) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Hash.Merge(dst, src)
+func (m *Hash) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Hash.Merge(m, src)
 }
 func (m *Hash) XXX_Size() int {
 	return xxx_messageInfo_Hash.Size(m)
@@ -94,15 +99,15 @@ func (m *Hash) GetHash() []byte {
 }
 
 func init() {
-	proto.RegisterType((*Hash)(nil), "hash.Hash")
 	proto.RegisterEnum("hash.HashType", HashType_name, HashType_value)
+	proto.RegisterType((*Hash)(nil), "hash.Hash")
 }
 
 func init() {
-	proto.RegisterFile("github.com/aperturerobotics/bifrost/hash/hash.proto", fileDescriptor_hash_d16623bc6d85d56b)
+	proto.RegisterFile("github.com/aperturerobotics/bifrost/hash/hash.proto", fileDescriptor_79657252606e4824)
 }
 
-var fileDescriptor_hash_d16623bc6d85d56b = []byte{
+var fileDescriptor_79657252606e4824 = []byte{
 	// 172 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x32, 0x4e, 0xcf, 0x2c, 0xc9,
 	0x28, 0x4d, 0xd2, 0x4b, 0xce, 0xcf, 0xd5, 0x4f, 0x2c, 0x48, 0x2d, 0x2a, 0x29, 0x2d, 0x4a, 0x2d,

@@ -8,7 +8,7 @@ import (
 	"github.com/aperturerobotics/controllerbus/directive"
 )
 
-// holdOpenDur is the minimum hold open duration
+// holdOpenDur is the default hold open duration
 var holdOpenDur = time.Second * 10
 
 // EstablishLinkWithPeer is a directive to establish a link with a peer.

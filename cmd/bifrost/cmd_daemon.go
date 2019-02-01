@@ -14,6 +14,7 @@ import (
 	"github.com/aperturerobotics/bifrost/daemon/api/controller"
 	egctr "github.com/aperturerobotics/bifrost/entitygraph"
 	"github.com/aperturerobotics/bifrost/keypem"
+	"github.com/aperturerobotics/bifrost/link/hold-open"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/stream/forwarding"
 	"github.com/aperturerobotics/bifrost/stream/grpc/accept"
@@ -28,9 +29,8 @@ import (
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
 	"github.com/aperturerobotics/controllerbus/directive"
-	"github.com/aperturerobotics/entitygraph"
 	egc "github.com/aperturerobotics/entitygraph/controller"
-	"github.com/aperturerobotics/entitygraph/entity"
+	"github.com/aperturerobotics/entitygraph/logger"
 	"github.com/libp2p/go-libp2p-crypto"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -47,6 +47,7 @@ var daemonFlags struct {
 	APIListen       string
 	UDPListen       string
 	ProfListen      string
+	HoldOpenLinks   bool
 
 	XBeePath string
 	XBeeBaud int
@@ -70,58 +71,74 @@ func init() {
 			Usage:  "run a bifrost daemon",
 			Action: runDaemon,
 			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:        "hold-open-links",
+					Usage:       "if set, hold open links without an inactivity timeout",
+					EnvVar:      "BIFROST_HOLD_OPEN_LINKS",
+					Destination: &daemonFlags.HoldOpenLinks,
+				},
 				cli.StringFlag{
 					Name:        "node-priv",
 					Usage:       "path to node private key, will be generated if doesn't exist",
-					Destination: &daemonFlags.PeerPrivPath,
+					EnvVar:      "BIFROST_NODE_PRIV",
 					Value:       "daemon_node_priv.pem",
+					Destination: &daemonFlags.PeerPrivPath,
 				},
 				cli.StringFlag{
 					Name:        "api-listen",
 					Usage:       "if set, will listen on address for API grpc connections, ex :5110",
-					Destination: &daemonFlags.APIListen,
+					EnvVar:      "BIFROST_API_LISTEN",
 					Value:       ":5110",
+					Destination: &daemonFlags.APIListen,
 				},
 				cli.StringFlag{
 					Name:        "prof-listen",
 					Usage:       "if set, debug profiler will be hosted on the port, ex :8080",
+					EnvVar:      "BIFROST_PROF_LISTEN",
 					Destination: &daemonFlags.ProfListen,
 				},
 				cli.StringFlag{
 					Name:        "websocket-listen",
 					Usage:       "if set, will listen on address for websocket connections, ex :5111",
+					EnvVar:      "BIFROST_WS_LISTEN",
 					Destination: &daemonFlags.WebsocketListen,
 				},
 				cli.StringFlag{
 					Name:        "udp-listen",
 					Usage:       "if set, will listen on address for udp connections, ex :5112",
+					EnvVar:      "BIFROST_UDP_LISTEN",
 					Destination: &daemonFlags.UDPListen,
 				},
 				cli.StringFlag{
 					Name:        "xbee-device-path",
 					Usage:       "xbee device path to open, if set",
+					EnvVar:      "BIFROST_XBEE_PATH",
 					Destination: &daemonFlags.XBeePath,
 				},
 				cli.IntFlag{
 					Name:        "xbee-device-baud",
 					Usage:       "xbee device baudrate to use, defaults to 115200",
+					EnvVar:      "BIFROST_XBEE_BAUD",
 					Destination: &daemonFlags.XBeeBaud,
 					Value:       115200,
 				},
 				cli.StringSliceFlag{
-					Name:  "xbee-peers",
-					Usage: "list of peer-id=address known XBee peers",
-					Value: &daemonFlags.XbeePeers,
+					Name:   "xbee-peers",
+					Usage:  "list of peer-id=address known XBee peers",
+					EnvVar: "BIFROST_XBEE_PEERS",
+					Value:  &daemonFlags.XbeePeers,
 				},
 				cli.StringSliceFlag{
-					Name:  "udp-peers",
-					Usage: "list of peer-id@address known UDP peers",
-					Value: &daemonFlags.UDPPeers,
+					Name:   "udp-peers",
+					Usage:  "list of peer-id@address known UDP peers",
+					EnvVar: "BIFROST_UDP_PEERS",
+					Value:  &daemonFlags.UDPPeers,
 				},
 				cli.StringSliceFlag{
-					Name:  "websocket-peers",
-					Usage: "list of peer-id=address known WebSocket peers",
-					Value: &daemonFlags.WebsocketPeers,
+					Name:   "websocket-peers",
+					Usage:  "list of peer-id=address known WebSocket peers",
+					EnvVar: "BIFROST_WS_PEERS",
+					Value:  &daemonFlags.WebsocketPeers,
 				},
 			},
 		},
@@ -230,22 +247,9 @@ func runDaemon(c *cli.Context) error {
 		}
 	}
 
-	// TODO: something better than this logger
-	{
-		le.Debug("constructing entitygraph logger")
-		_, _, err = b.AddDirective(
-			entitygraph.NewObserveEntityGraph(),
-			bus.NewCallbackHandler(func(val directive.AttachedValue) {
-				ent := val.GetValue().(entity.Entity)
-				le.Infof("EntityGraph: value added: %s: %s", ent.GetEntityTypeName(), ent.GetEntityID())
-			}, func(val directive.AttachedValue) {
-				ent := val.GetValue().(entity.Entity)
-				le.Infof("EntityGraph: value removed: %s: %s", ent.GetEntityTypeName(), ent.GetEntityID())
-			}, nil),
-		)
-		if err != nil {
-			return errors.Wrap(err, "start entitygraph logger")
-		}
+	_, err = entitygraph_logger.AttachBasicLogger(b, le)
+	if err != nil {
+		return errors.Wrap(err, "start entitygraph logger")
 	}
 
 	// Daemon API
@@ -311,10 +315,10 @@ func runDaemon(c *cli.Context) error {
 				PacketOpts: &pconn.Opts{
 					Mtu: 200,
 					// KcpMode: pconn.KCPMode_KCPMode_FAST3,
-					KcpMode:       pconn.KCPMode_KCPMode_SLOW1,
-					BlockCrypt:    pconn.BlockCrypt_BlockCrypt_TWOFISH,
+					KcpMode: pconn.KCPMode_KCPMode_SLOW1,
+					// BlockCrypt:    pconn.BlockCrypt_BlockCrypt_TWOFISH,
+					BlockCrypt:    pconn.BlockCrypt_BlockCrypt_SALSA20,
 					BlockCompress: pconn.BlockCompress_BlockCompress_SNAPPY,
-					// BlockCrypt: pconn.BlockCrypt_BlockCrypt_TWOFISH,
 					// DataShards:   3,
 					// ParityShards: 3,
 				},
@@ -356,6 +360,17 @@ func runDaemon(c *cli.Context) error {
 			return errors.Wrap(err, "listen on udp")
 		}
 		defer udpRef.Release()
+	}
+
+	if daemonFlags.HoldOpenLinks {
+		_, holdOpenRef, err := b.AddDirective(
+			resolver.NewLoadControllerWithConfig(&link_holdopen_controller.Config{}),
+			nil,
+		)
+		if err != nil {
+			return errors.Wrap(err, "hold-open controller")
+		}
+		defer holdOpenRef.Release()
 	}
 
 	if daemonFlags.ProfListen != "" {

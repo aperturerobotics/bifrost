@@ -3,9 +3,11 @@
 
 package stream_grpc_accept
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -16,21 +18,21 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 // Config configures the grpcaccept controller.
 type Config struct {
 	// LocalPeerId is the peer ID to accept incoming connections with.
 	// Can be empty to accept any peer.
-	LocalPeerId string `protobuf:"bytes,1,opt,name=local_peer_id,json=localPeerId" json:"local_peer_id,omitempty"`
+	LocalPeerId string `protobuf:"bytes,1,opt,name=local_peer_id,json=localPeerId,proto3" json:"local_peer_id,omitempty"`
 	// RemotePeerIds are peer IDs to accept incoming connections from.
 	// Can be empty to accept any remote peer IDs.
-	RemotePeerIds []string `protobuf:"bytes,2,rep,name=remote_peer_ids,json=remotePeerIds" json:"remote_peer_ids,omitempty"`
+	RemotePeerIds []string `protobuf:"bytes,2,rep,name=remote_peer_ids,json=remotePeerIds,proto3" json:"remote_peer_ids,omitempty"`
 	// ProtocolId is the protocol ID to accept.
-	ProtocolId string `protobuf:"bytes,3,opt,name=protocol_id,json=protocolId" json:"protocol_id,omitempty"`
+	ProtocolId string `protobuf:"bytes,3,opt,name=protocol_id,json=protocolId,proto3" json:"protocol_id,omitempty"`
 	// TransportId constrains the transport ID to accept from.
 	// Can be empty.
-	TransportId          uint64   `protobuf:"varint,4,opt,name=transport_id,json=transportId" json:"transport_id,omitempty"`
+	TransportId          uint64   `protobuf:"varint,4,opt,name=transport_id,json=transportId,proto3" json:"transport_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -40,16 +42,17 @@ func (m *Config) Reset()         { *m = Config{} }
 func (m *Config) String() string { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_accept_7dd275a7d522964b, []int{0}
+	return fileDescriptor_7fc56fa21bd17d76, []int{0}
 }
+
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
 }
 func (m *Config) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Config.Marshal(b, m, deterministic)
 }
-func (dst *Config) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Config.Merge(dst, src)
+func (m *Config) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Config.Merge(m, src)
 }
 func (m *Config) XXX_Size() int {
 	return xxx_messageInfo_Config.Size(m)
@@ -93,10 +96,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("github.com/aperturerobotics/bifrost/stream/grpc/accept/accept.proto", fileDescriptor_accept_7dd275a7d522964b)
+	proto.RegisterFile("github.com/aperturerobotics/bifrost/stream/grpc/accept/accept.proto", fileDescriptor_7fc56fa21bd17d76)
 }
 
-var fileDescriptor_accept_7dd275a7d522964b = []byte{
+var fileDescriptor_7fc56fa21bd17d76 = []byte{
 	// 205 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x3c, 0xcd, 0xbf, 0x6a, 0xc3, 0x30,
 	0x10, 0xc7, 0x71, 0xd4, 0x84, 0x40, 0xe4, 0x86, 0x82, 0xa6, 0x6c, 0x75, 0x33, 0x14, 0x4f, 0xd2,

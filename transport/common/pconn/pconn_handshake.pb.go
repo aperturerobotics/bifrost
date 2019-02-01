@@ -3,9 +3,11 @@
 
 package pconn
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -16,14 +18,14 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 // HandshakeExtraData contains the extra data field of the pconn handshake.
 type HandshakeExtraData struct {
 	// LocalTransportUuid is the transport uuid of the sender.
 	// This is used for monitoring / analysis at a later time.
 	// Coorelates the transport connections between two machines.
-	LocalTransportUuid   uint64   `protobuf:"varint,1,opt,name=local_transport_uuid,json=localTransportUuid" json:"local_transport_uuid,omitempty"`
+	LocalTransportUuid   uint64   `protobuf:"varint,1,opt,name=local_transport_uuid,json=localTransportUuid,proto3" json:"local_transport_uuid,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -33,16 +35,17 @@ func (m *HandshakeExtraData) Reset()         { *m = HandshakeExtraData{} }
 func (m *HandshakeExtraData) String() string { return proto.CompactTextString(m) }
 func (*HandshakeExtraData) ProtoMessage()    {}
 func (*HandshakeExtraData) Descriptor() ([]byte, []int) {
-	return fileDescriptor_pconn_handshake_3d14d067af27c642, []int{0}
+	return fileDescriptor_5357c10144d48b0e, []int{0}
 }
+
 func (m *HandshakeExtraData) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_HandshakeExtraData.Unmarshal(m, b)
 }
 func (m *HandshakeExtraData) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_HandshakeExtraData.Marshal(b, m, deterministic)
 }
-func (dst *HandshakeExtraData) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_HandshakeExtraData.Merge(dst, src)
+func (m *HandshakeExtraData) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_HandshakeExtraData.Merge(m, src)
 }
 func (m *HandshakeExtraData) XXX_Size() int {
 	return xxx_messageInfo_HandshakeExtraData.Size(m)
@@ -65,10 +68,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("github.com/aperturerobotics/bifrost/transport/common/pconn/pconn_handshake.proto", fileDescriptor_pconn_handshake_3d14d067af27c642)
+	proto.RegisterFile("github.com/aperturerobotics/bifrost/transport/common/pconn/pconn_handshake.proto", fileDescriptor_5357c10144d48b0e)
 }
 
-var fileDescriptor_pconn_handshake_3d14d067af27c642 = []byte{
+var fileDescriptor_5357c10144d48b0e = []byte{
 	// 156 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x3c, 0xcc, 0xbd, 0xaa, 0x02, 0x31,
 	0x10, 0xc5, 0x71, 0x16, 0xee, 0xb5, 0x48, 0x19, 0x2c, 0x2c, 0xc5, 0xca, 0x6a, 0x23, 0xf8, 0x0a,

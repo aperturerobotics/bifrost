@@ -3,9 +3,11 @@
 
 package websocket
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -16,7 +18,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 // PacketType is a one-byte trailer indicating the type of packet.
 type PacketType int32
@@ -32,6 +34,7 @@ var PacketType_name = map[int32]string{
 	1: "PacketType_RAW",
 	2: "PacketType_CRYPT_SMUX",
 }
+
 var PacketType_value = map[string]int32{
 	"PacketType_HANDSHAKE":  0,
 	"PacketType_RAW":        1,
@@ -41,8 +44,9 @@ var PacketType_value = map[string]int32{
 func (x PacketType) String() string {
 	return proto.EnumName(PacketType_name, int32(x))
 }
+
 func (PacketType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_packet_type_57d542aa721ec6a9, []int{0}
+	return fileDescriptor_e395887c1e05dc29, []int{0}
 }
 
 func init() {
@@ -50,10 +54,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("github.com/aperturerobotics/bifrost/transport/websocket/packet_type.proto", fileDescriptor_packet_type_57d542aa721ec6a9)
+	proto.RegisterFile("github.com/aperturerobotics/bifrost/transport/websocket/packet_type.proto", fileDescriptor_e395887c1e05dc29)
 }
 
-var fileDescriptor_packet_type_57d542aa721ec6a9 = []byte{
+var fileDescriptor_e395887c1e05dc29 = []byte{
 	// 163 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xf2, 0x4c, 0xcf, 0x2c, 0xc9,
 	0x28, 0x4d, 0xd2, 0x4b, 0xce, 0xcf, 0xd5, 0x4f, 0x2c, 0x48, 0x2d, 0x2a, 0x29, 0x2d, 0x4a, 0x2d,

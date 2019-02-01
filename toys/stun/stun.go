@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/gortc/stun"
 )
@@ -13,11 +12,10 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	deadline := time.Now().Add(time.Second * 5)
 	// Bulding binding request with random transaction id.
 	message := stun.MustBuild(stun.TransactionID, stun.BindingRequest)
 	// Sending request to STUN server, waiting for response message.
-	if err := c.Do(message, deadline, func(res stun.Event) {
+	if err := c.Do(message, func(res stun.Event) {
 		if res.Error != nil {
 			panic(res.Error)
 		}

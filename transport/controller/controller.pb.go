@@ -3,9 +3,11 @@
 
 package transport_controller
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -16,14 +18,14 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 // StreamEstablish is the first message sent by the initiator of a stream.
 // Prefixed by a uint32 length.
 // Max size: 100kb
 type StreamEstablish struct {
 	// ProtocolID is the protocol identifier string for the stream.
-	ProtocolId           string   `protobuf:"bytes,1,opt,name=protocol_id,json=protocolId" json:"protocol_id,omitempty"`
+	ProtocolId           string   `protobuf:"bytes,1,opt,name=protocol_id,json=protocolId,proto3" json:"protocol_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -33,16 +35,17 @@ func (m *StreamEstablish) Reset()         { *m = StreamEstablish{} }
 func (m *StreamEstablish) String() string { return proto.CompactTextString(m) }
 func (*StreamEstablish) ProtoMessage()    {}
 func (*StreamEstablish) Descriptor() ([]byte, []int) {
-	return fileDescriptor_controller_47ee4394bb9a586d, []int{0}
+	return fileDescriptor_ca4a41ff50791ed0, []int{0}
 }
+
 func (m *StreamEstablish) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_StreamEstablish.Unmarshal(m, b)
 }
 func (m *StreamEstablish) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_StreamEstablish.Marshal(b, m, deterministic)
 }
-func (dst *StreamEstablish) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_StreamEstablish.Merge(dst, src)
+func (m *StreamEstablish) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_StreamEstablish.Merge(m, src)
 }
 func (m *StreamEstablish) XXX_Size() int {
 	return xxx_messageInfo_StreamEstablish.Size(m)
@@ -65,10 +68,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("github.com/aperturerobotics/bifrost/transport/controller/controller.proto", fileDescriptor_controller_47ee4394bb9a586d)
+	proto.RegisterFile("github.com/aperturerobotics/bifrost/transport/controller/controller.proto", fileDescriptor_ca4a41ff50791ed0)
 }
 
-var fileDescriptor_controller_47ee4394bb9a586d = []byte{
+var fileDescriptor_ca4a41ff50791ed0 = []byte{
 	// 144 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xf2, 0x4c, 0xcf, 0x2c, 0xc9,
 	0x28, 0x4d, 0xd2, 0x4b, 0xce, 0xcf, 0xd5, 0x4f, 0x2c, 0x48, 0x2d, 0x2a, 0x29, 0x2d, 0x4a, 0x2d,

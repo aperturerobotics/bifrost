@@ -1,4 +1,4 @@
-package api_controller
+package link_holdopen_controller
 
 import (
 	"github.com/aperturerobotics/controllerbus/bus"
@@ -7,21 +7,18 @@ import (
 	"github.com/blang/semver"
 )
 
-// ControllerID identifies the API controller.
-const ControllerID = "bifrost/daemon/api/1"
-
-// Factory constructs a API.
+// Factory constructs a Link Hold-Open controller.
 type Factory struct {
 	// bus is the controller bus
 	bus bus.Bus
 }
 
-// NewFactory builds a API factory.
+// NewFactory builds a link hold open factory.
 func NewFactory(bus bus.Bus) *Factory {
 	return &Factory{bus: bus}
 }
 
-// GetConfigID returns the unique ID for the config.
+// GetConfigID returns the configuration ID for the controller.
 func (t *Factory) GetConfigID() string {
 	return ConfigID
 }
@@ -42,10 +39,8 @@ func (t *Factory) Construct(
 	opts controller.ConstructOpts,
 ) (controller.Controller, error) {
 	le := opts.GetLogger()
-	cc := conf.(*Config)
-
-	// Construct the API controller.
-	return NewController(le, cc.GetListenAddr(), t.bus), nil
+	// cc := conf.(*Config)
+	return NewController(t.bus, le)
 }
 
 // GetVersion returns the version of this controller.

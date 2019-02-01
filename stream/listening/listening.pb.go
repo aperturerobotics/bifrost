@@ -3,9 +3,11 @@
 
 package stream_listening
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -16,26 +18,26 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 // Config configures the listening controller.
 type Config struct {
 	// LocalPeerId is the peer ID to forward incoming connections with.
 	// Can be empty.
-	LocalPeerId string `protobuf:"bytes,1,opt,name=local_peer_id,json=localPeerId" json:"local_peer_id,omitempty"`
+	LocalPeerId string `protobuf:"bytes,1,opt,name=local_peer_id,json=localPeerId,proto3" json:"local_peer_id,omitempty"`
 	// RemotePeerId is the peer ID to forward incoming connections to.
-	RemotePeerId string `protobuf:"bytes,2,opt,name=remote_peer_id,json=remotePeerId" json:"remote_peer_id,omitempty"`
+	RemotePeerId string `protobuf:"bytes,2,opt,name=remote_peer_id,json=remotePeerId,proto3" json:"remote_peer_id,omitempty"`
 	// ProtocolId is the protocol ID to assign to incoming connections.
-	ProtocolId string `protobuf:"bytes,3,opt,name=protocol_id,json=protocolId" json:"protocol_id,omitempty"`
+	ProtocolId string `protobuf:"bytes,3,opt,name=protocol_id,json=protocolId,proto3" json:"protocol_id,omitempty"`
 	// ListenMultiaddr is the listening multiaddress.
-	ListenMultiaddr string `protobuf:"bytes,4,opt,name=listen_multiaddr,json=listenMultiaddr" json:"listen_multiaddr,omitempty"`
+	ListenMultiaddr string `protobuf:"bytes,4,opt,name=listen_multiaddr,json=listenMultiaddr,proto3" json:"listen_multiaddr,omitempty"`
 	// TransportId sets a transport ID constraint.
 	// Can be empty.
-	TransportId uint64 `protobuf:"varint,5,opt,name=transport_id,json=transportId" json:"transport_id,omitempty"`
+	TransportId uint64 `protobuf:"varint,5,opt,name=transport_id,json=transportId,proto3" json:"transport_id,omitempty"`
 	// Reliable indicates the stream should be reliable.
-	Reliable bool `protobuf:"varint,6,opt,name=reliable" json:"reliable,omitempty"`
+	Reliable bool `protobuf:"varint,6,opt,name=reliable,proto3" json:"reliable,omitempty"`
 	// Encrypted indicates the stream should be encrypted.
-	Encrypted            bool     `protobuf:"varint,7,opt,name=encrypted" json:"encrypted,omitempty"`
+	Encrypted            bool     `protobuf:"varint,7,opt,name=encrypted,proto3" json:"encrypted,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -45,16 +47,17 @@ func (m *Config) Reset()         { *m = Config{} }
 func (m *Config) String() string { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_listening_132fa1a03dc5ffda, []int{0}
+	return fileDescriptor_95737aaff72d6d19, []int{0}
 }
+
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
 }
 func (m *Config) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Config.Marshal(b, m, deterministic)
 }
-func (dst *Config) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Config.Merge(dst, src)
+func (m *Config) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Config.Merge(m, src)
 }
 func (m *Config) XXX_Size() int {
 	return xxx_messageInfo_Config.Size(m)
@@ -119,10 +122,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("github.com/aperturerobotics/bifrost/stream/listening/listening.proto", fileDescriptor_listening_132fa1a03dc5ffda)
+	proto.RegisterFile("github.com/aperturerobotics/bifrost/stream/listening/listening.proto", fileDescriptor_95737aaff72d6d19)
 }
 
-var fileDescriptor_listening_132fa1a03dc5ffda = []byte{
+var fileDescriptor_95737aaff72d6d19 = []byte{
 	// 250 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x44, 0xce, 0xc1, 0x4e, 0x83, 0x40,
 	0x10, 0x80, 0xe1, 0xa0, 0x15, 0xdb, 0xa1, 0x6a, 0xb3, 0x27, 0x62, 0x4c, 0xc4, 0xc6, 0x03, 0x5e,

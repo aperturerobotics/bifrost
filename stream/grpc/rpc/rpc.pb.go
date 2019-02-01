@@ -3,9 +3,11 @@
 
 package stream_grpc_rpc
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -16,7 +18,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 // StreamState is state for the stream related calls.
 type StreamState int32
@@ -35,6 +37,7 @@ var StreamState_name = map[int32]string{
 	1: "StreamState_ESTABLISHING",
 	2: "StreamState_ESTABLISHED",
 }
+
 var StreamState_value = map[string]int32{
 	"StreamState_NONE":         0,
 	"StreamState_ESTABLISHING": 1,
@@ -44,8 +47,9 @@ var StreamState_value = map[string]int32{
 func (x StreamState) String() string {
 	return proto.EnumName(StreamState_name, int32(x))
 }
+
 func (StreamState) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_rpc_d31f369802dbe947, []int{0}
+	return fileDescriptor_e858c2ad1e5f8ef8, []int{0}
 }
 
 // Data is a data packet.
@@ -54,7 +58,7 @@ type Data struct {
 	// Data is packet data from the remote.
 	Data []byte `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
 	// State indicates the stream state.
-	State                StreamState `protobuf:"varint,2,opt,name=state,enum=stream.grpc.rpc.StreamState" json:"state,omitempty"`
+	State                StreamState `protobuf:"varint,2,opt,name=state,proto3,enum=stream.grpc.rpc.StreamState" json:"state,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
 	XXX_unrecognized     []byte      `json:"-"`
 	XXX_sizecache        int32       `json:"-"`
@@ -64,16 +68,17 @@ func (m *Data) Reset()         { *m = Data{} }
 func (m *Data) String() string { return proto.CompactTextString(m) }
 func (*Data) ProtoMessage()    {}
 func (*Data) Descriptor() ([]byte, []int) {
-	return fileDescriptor_rpc_d31f369802dbe947, []int{0}
+	return fileDescriptor_e858c2ad1e5f8ef8, []int{0}
 }
+
 func (m *Data) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Data.Unmarshal(m, b)
 }
 func (m *Data) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Data.Marshal(b, m, deterministic)
 }
-func (dst *Data) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Data.Merge(dst, src)
+func (m *Data) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Data.Merge(m, src)
 }
 func (m *Data) XXX_Size() int {
 	return xxx_messageInfo_Data.Size(m)
@@ -99,15 +104,15 @@ func (m *Data) GetState() StreamState {
 }
 
 func init() {
-	proto.RegisterType((*Data)(nil), "stream.grpc.rpc.Data")
 	proto.RegisterEnum("stream.grpc.rpc.StreamState", StreamState_name, StreamState_value)
+	proto.RegisterType((*Data)(nil), "stream.grpc.rpc.Data")
 }
 
 func init() {
-	proto.RegisterFile("github.com/aperturerobotics/bifrost/stream/grpc/rpc/rpc.proto", fileDescriptor_rpc_d31f369802dbe947)
+	proto.RegisterFile("github.com/aperturerobotics/bifrost/stream/grpc/rpc/rpc.proto", fileDescriptor_e858c2ad1e5f8ef8)
 }
 
-var fileDescriptor_rpc_d31f369802dbe947 = []byte{
+var fileDescriptor_e858c2ad1e5f8ef8 = []byte{
 	// 201 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xb2, 0x4d, 0xcf, 0x2c, 0xc9,
 	0x28, 0x4d, 0xd2, 0x4b, 0xce, 0xcf, 0xd5, 0x4f, 0x2c, 0x48, 0x2d, 0x2a, 0x29, 0x2d, 0x4a, 0x2d,

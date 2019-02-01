@@ -3,11 +3,13 @@
 
 package xbee
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import dialer "github.com/aperturerobotics/bifrost/transport/common/dialer"
-import pconn "github.com/aperturerobotics/bifrost/transport/common/pconn"
+import (
+	fmt "fmt"
+	dialer "github.com/aperturerobotics/bifrost/transport/common/dialer"
+	pconn "github.com/aperturerobotics/bifrost/transport/common/pconn"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -18,22 +20,22 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 // Config is the configuration for the udp transport.
 type Config struct {
 	// NodePeerID constrains the node peer ID.
 	// If empty, attaches to whatever node is running.
-	NodePeerId string `protobuf:"bytes,1,opt,name=node_peer_id,json=nodePeerId" json:"node_peer_id,omitempty"`
+	NodePeerId string `protobuf:"bytes,1,opt,name=node_peer_id,json=nodePeerId,proto3" json:"node_peer_id,omitempty"`
 	// DevicePath is the device path to open the serial stream.
-	DevicePath string `protobuf:"bytes,2,opt,name=device_path,json=devicePath" json:"device_path,omitempty"`
+	DevicePath string `protobuf:"bytes,2,opt,name=device_path,json=devicePath,proto3" json:"device_path,omitempty"`
 	// DeviceBaud is the device baudrate.
-	DeviceBaud int32 `protobuf:"varint,3,opt,name=device_baud,json=deviceBaud" json:"device_baud,omitempty"`
+	DeviceBaud int32 `protobuf:"varint,3,opt,name=device_baud,json=deviceBaud,proto3" json:"device_baud,omitempty"`
 	// PacketOpts are options to set on the packet connection.
 	// In lossy environments, set the data shards for error correction.
-	PacketOpts *pconn.Opts `protobuf:"bytes,4,opt,name=packet_opts,json=packetOpts" json:"packet_opts,omitempty"`
+	PacketOpts *pconn.Opts `protobuf:"bytes,4,opt,name=packet_opts,json=packetOpts,proto3" json:"packet_opts,omitempty"`
 	// Dialers maps peer IDs to dialers.
-	Dialers              map[string]*dialer.DialerOpts `protobuf:"bytes,5,rep,name=dialers" json:"dialers,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Dialers              map[string]*dialer.DialerOpts `protobuf:"bytes,5,rep,name=dialers,proto3" json:"dialers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral struct{}                      `json:"-"`
 	XXX_unrecognized     []byte                        `json:"-"`
 	XXX_sizecache        int32                         `json:"-"`
@@ -43,16 +45,17 @@ func (m *Config) Reset()         { *m = Config{} }
 func (m *Config) String() string { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_xbee_eb3967fd6108773d, []int{0}
+	return fileDescriptor_1cb971cd2f37ccfb, []int{0}
 }
+
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
 }
 func (m *Config) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Config.Marshal(b, m, deterministic)
 }
-func (dst *Config) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Config.Merge(dst, src)
+func (m *Config) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Config.Merge(m, src)
 }
 func (m *Config) XXX_Size() int {
 	return xxx_messageInfo_Config.Size(m)
@@ -104,10 +107,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("github.com/aperturerobotics/bifrost/transport/xbee/xbee.proto", fileDescriptor_xbee_eb3967fd6108773d)
+	proto.RegisterFile("github.com/aperturerobotics/bifrost/transport/xbee/xbee.proto", fileDescriptor_1cb971cd2f37ccfb)
 }
 
-var fileDescriptor_xbee_eb3967fd6108773d = []byte{
+var fileDescriptor_1cb971cd2f37ccfb = []byte{
 	// 303 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x50, 0xcb, 0x6a, 0xc3, 0x30,
 	0x10, 0xc4, 0x79, 0x95, 0xca, 0x39, 0x14, 0x9d, 0xdc, 0x5c, 0x6a, 0x7a, 0xf2, 0xa1, 0xd8, 0x90,
