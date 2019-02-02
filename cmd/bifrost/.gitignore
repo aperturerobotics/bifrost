@@ -2,3 +2,4 @@ bifrost
 *.pem
 bifrost.exe
 debug
+testrig*
