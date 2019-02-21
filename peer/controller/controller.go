@@ -9,7 +9,7 @@ import (
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/blang/semver"
-	"github.com/libp2p/go-libp2p-crypto"
+	crypto "github.com/libp2p/go-libp2p-crypto"
 	"github.com/sirupsen/logrus"
 )
 
@@ -88,7 +88,11 @@ func (c *Controller) GetControllerInfo() controller.Info {
 
 // resolveGetPeer resolves the GetPeer directive
 func (c *Controller) resolveGetPeer(d peer.GetPeer) directive.Resolver {
-	return peer.NewGetPeerResolver(d, c)
+	res := peer.NewGetPeerResolver(d, c)
+	if res == nil {
+		return nil
+	}
+	return res
 }
 
 // Close releases any resources used by the controller.
