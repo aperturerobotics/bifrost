@@ -38,7 +38,7 @@ func NewXBeeSerial(
 	s.atHandlers = make(map[byte]func(frame *rx.AT))
 	s.txStatusCh = make(chan *rx.TXStatus, 1)
 	str := &serialTxRx{xbs: s}
-	s.xbee = gobee.NewWithEscapeMode(str, str, api.EscapeModeActive)
+	s.xbee = gobee.New(str, str, gobee.APIEscapeMode(api.EscapeModeActive))
 	return s
 }
 

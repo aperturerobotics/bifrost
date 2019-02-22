@@ -9,7 +9,7 @@ import (
 
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/pubsub"
-	"github.com/aperturerobotics/bifrost/stream/packet"
+	stream_packet "github.com/aperturerobotics/bifrost/stream/packet"
 	"github.com/golang/protobuf/proto"
 	"github.com/sirupsen/logrus"
 )
@@ -88,7 +88,7 @@ func (s *streamHandler) handlePublish(pkts []*PubMessage) {
 		}
 		pubKey, err := pid.ExtractPublicKey()
 		if err != nil {
-			s.le.WithError(err).Warn(
+			s.le.WithError(err).Warnf(
 				"unable to extract pub key from peer id: %s",
 				pkt.GetFromPeerId(),
 			)

@@ -18,18 +18,18 @@ require (
 	github.com/gopherjs/gopherjs v0.0.0-20181103185306-d547d1d9531e
 	github.com/gopherjs/websocket v0.0.0-20170522004412-87ee47603f13
 	github.com/gorilla/websocket v1.4.1-0.20190205004414-7c8e298727d1
-	github.com/gortc/stun v1.18.3-0.20190204054523-a13506a49686
-	github.com/gxed/hashland v0.0.0-20180221191214-d9f6b97f8db2 // indirect
+	github.com/gortc/stun v1.18.5-0.20190218215507-831759deeef4
+	github.com/gxed/hashland/keccakpg v0.0.1 // indirect
 	github.com/hashicorp/yamux v0.0.0-20181012175058-2f1d1f20f75d
 	github.com/klauspost/cpuid v1.2.1-0.20190110101622-0da02118eaa3 // indirect
-	github.com/klauspost/reedsolomon v1.8.0 // indirect
-	github.com/libp2p/go-libp2p-crypto v2.0.1-0.20190201091004-f2988f11483a+incompatible
+	github.com/klauspost/reedsolomon v1.9.1-0.20190215143143-09979cdf932f // indirect
+	github.com/libp2p/go-libp2p-crypto v2.0.5-0.20190218135128-e333f2201582+incompatible
 	github.com/minio/sha256-simd v0.0.0-20190131020904-2d45a736cd16 // indirect
 	github.com/mr-tron/base58 v1.1.1-0.20190103133359-fe73eb131202
-	github.com/multiformats/go-multiaddr v1.4.1-0.20181227223746-152990b98bf9
+	github.com/multiformats/go-multiaddr v1.4.1-0.20190220142057-19d7396df105
 	github.com/multiformats/go-multiaddr-dns v0.2.6-0.20181204224821-b3d6340f0777 // indirect
 	github.com/multiformats/go-multiaddr-net v1.7.1
-	github.com/multiformats/go-multihash v1.0.9-0.20181227181238-3cedc8477438
+	github.com/multiformats/go-multihash v1.0.10
 	github.com/paralin/kcp-go-lite v4.3.2-0.20190202132049-1e12d0a0fd45+incompatible
 	github.com/patrickmn/go-cache v2.1.1-0.20180815053127-5633e0862627+incompatible
 	github.com/pauleyj/gobee v0.0.0-20190212035730-6270c53072a4
@@ -43,5 +43,5 @@ require (
 	github.com/urfave/cli v1.20.1-0.20190203184040-693af58b4d51
 	github.com/xtaci/smux v1.1.1
 	golang.org/x/crypto v0.0.0-20190131182504-b8fe1690c613
-	google.golang.org/grpc v1.2.1-0.20190221020346-587cec03e631
+	google.golang.org/grpc v1.2.1-0.20190222003737-2773c7bbcf81
 )

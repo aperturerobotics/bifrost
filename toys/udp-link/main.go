@@ -15,7 +15,7 @@ import (
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
 	"github.com/aperturerobotics/controllerbus/directive"
-	"github.com/libp2p/go-libp2p-crypto"
+	crypto "github.com/libp2p/go-libp2p-crypto"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -69,7 +69,6 @@ func execute() error {
 
 	// Execute the UDP transport on the first daemon.
 	var tpt1 transport.Transport
-	var tpt2 transport.Transport
 	_, udpRef1, err := bus1.AddDirective(
 		resolver.NewLoadControllerWithConfig(&udptpt.Config{
 			ListenAddr: ":5553",
@@ -93,8 +92,8 @@ func execute() error {
 		}),
 		bus.NewCallbackHandler(func(val directive.AttachedValue) {
 			le.Info("UDP listening on: :5554")
-			<-time.After(time.Millisecond * 500)
-			tpt2, _ = val.GetValue().(*tptc.Controller).GetTransport(ctx)
+			// <-time.After(time.Millisecond * 500)
+			// tpt2, _ = val.GetValue().(*tptc.Controller).GetTransport(ctx)
 			wg.Done()
 		}, nil, nil),
 	)

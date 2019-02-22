@@ -44,7 +44,7 @@ var (
 )
 
 // execATCall executes an AT call and waits for a response.
-func (x *XBeeSerial) execATCall(ctx context.Context, cmd ATCommand, param *byte) (*rx.AT, error) {
+func (x *XBeeSerial) execATCall(ctx context.Context, cmd ATCommand, param []byte) (*rx.AT, error) {
 	frameCh := make(chan *rx.AT, 1)
 	x.cmdMtx.Lock()
 	x.ncmdID++
@@ -62,11 +62,11 @@ func (x *XBeeSerial) execATCall(ctx context.Context, cmd ATCommand, param *byte)
 
 	// x.le.Debugf("writing frame: id(%v) command(%v) param(%v)", id, cmd, param)
 	_, err := x.WriteFrame(
-		tx.NewATBuilder().
-			ID(id).
-			Command(cmd).
-			Parameter(param).
-			Build(),
+		tx.NewAT(
+			tx.FrameID(id),
+			tx.Command(cmd),
+			tx.Parameter(param),
+		),
 	)
 	if err != nil {
 		unregHandler()
