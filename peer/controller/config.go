@@ -1,6 +1,7 @@
 package peer_controller
 
 import (
+	"github.com/aperturerobotics/bifrost/keypem"
 	"github.com/aperturerobotics/bifrost/util/confparse"
 	"github.com/aperturerobotics/controllerbus/config"
 	"github.com/golang/protobuf/proto"
@@ -9,6 +10,18 @@ import (
 
 // ConfigID is the identifier for the config type.
 const ConfigID = ControllerID
+
+// NewConfigWithPrivKey builds a new configuration with a private key
+func NewConfigWithPrivKey(pk crypto.PrivKey) (*Config, error) {
+	privKeyPem, err := keypem.MarshalPrivKeyPem(pk)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Config{
+		PrivKey: string(privKeyPem),
+	}, nil
+}
 
 // GetConfigID returns the config identifier.
 func (c *Config) GetConfigID() string {
