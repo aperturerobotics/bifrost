@@ -36,7 +36,7 @@ func NewCoreBus(
 func AddFactories(b bus.Bus, sr *static.Resolver) {
 	sr.AddFactory(wtpt.NewFactory(b))
 	sr.AddFactory(udptpt.NewFactory(b))
-	sr.AddFactory(nctr.NewFactory(b))
+	sr.AddFactory(nctr.NewFactory())
 	sr.AddFactory(egc.NewFactory(b))
 	sr.AddFactory(bifrosteg.NewFactory(b))
 	sr.AddFactory(floodsub_controller.NewFactory(b))

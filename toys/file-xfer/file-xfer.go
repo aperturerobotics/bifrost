@@ -16,6 +16,7 @@ import (
 	"github.com/aperturerobotics/bifrost/transport/common/dialer"
 	"github.com/aperturerobotics/bifrost/transport/common/pconn"
 	udptpt "github.com/aperturerobotics/bifrost/transport/udp"
+	"github.com/aperturerobotics/bifrost/util/blockcrypt"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
 	"github.com/aperturerobotics/controllerbus/directive"
@@ -124,7 +125,7 @@ func doIt(doProf bool) error {
 	pconnOpts := &pconn.Opts{
 		KcpMode: pconn.KCPMode_KCPMode_FAST3,
 		// BlockCrypt:   pconn.BlockCrypt_BlockCrypt_NONE,
-		BlockCrypt:   pconn.BlockCrypt_BlockCrypt_AES256,
+		BlockCrypt:   blockcrypt.BlockCrypt_BlockCrypt_AES256,
 		DataShards:   10,
 		ParityShards: 3,
 	}

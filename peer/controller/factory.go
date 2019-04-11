@@ -1,8 +1,7 @@
 package peer_controller
 
 import (
-	"github.com/aperturerobotics/bifrost/keypem"
-	"github.com/aperturerobotics/controllerbus/bus"
+	"errors"
 	"github.com/aperturerobotics/controllerbus/config"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/blang/semver"
@@ -10,13 +9,11 @@ import (
 
 // Factory constructs a Peer controller.
 type Factory struct {
-	// bus is the controller bus
-	bus bus.Bus
 }
 
-// NewFactory builds a websocket transport factory.
-func NewFactory(bus bus.Bus) *Factory {
-	return &Factory{bus: bus}
+// NewFactory builds a peer controller factory.
+func NewFactory() *Factory {
+	return &Factory{}
 }
 
 // GetConfigID returns the configuration ID for the controller.
@@ -48,11 +45,14 @@ func (t *Factory) Construct(
 	}
 
 	if privKey == nil {
-		le.Info("generating private key, none configured")
-		privKey, _, err = keypem.GeneratePrivKey()
-		if err != nil {
-			return nil, err
-		}
+		return nil, errors.New("private key must be configured")
+		/*
+			le.Info("generating private key, none configured")
+			privKey, _, err = keypem.GeneratePrivKey()
+			if err != nil {
+				return nil, err
+			}
+		*/
 	}
 
 	return NewController(le, privKey)

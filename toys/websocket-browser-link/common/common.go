@@ -52,7 +52,7 @@ func BuildCommonBus(ctx context.Context) (bus.Bus, crypto.PrivKey, error) {
 		panic(err)
 	}
 	sr.AddFactory(wtpt.NewFactory(b))
-	sr.AddFactory(nctr.NewFactory(b))
+	sr.AddFactory(nctr.NewFactory())
 
 	le = le.WithField("peer-id", peerID.Pretty())
 	le.Debug("constructing node")
