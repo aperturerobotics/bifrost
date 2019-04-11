@@ -23,6 +23,7 @@ gengo: vendor/bin/gobin
 				ls-files "*.proto" |\
 				xargs printf -- \
 				"$$(pwd)/vendor/$${PROJECT}/%s ")
+	git clean -xfd ./vendor
 
 
 vendor/bin/gobin:

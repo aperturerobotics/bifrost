@@ -56,6 +56,7 @@ func NewController(le *logrus.Entry, privKey crypto.PrivKey) (*Controller, error
 // Returning nil ends execution.
 // Returning an error triggers a retry with backoff.
 func (c *Controller) Execute(ctx context.Context) error {
+	c.le.WithField("peer-id", c.GetPeerID().Pretty()).Debug("peer mounted")
 	// TODO: loopback controller
 	return nil
 }
