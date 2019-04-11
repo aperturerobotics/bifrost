@@ -13,6 +13,7 @@ import (
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/stream"
+	"github.com/aperturerobotics/bifrost/util/blockcrypt"
 	"github.com/aperturerobotics/bifrost/util/scrc"
 	"github.com/hashicorp/yamux"
 	"github.com/paralin/kcp-go-lite"
@@ -150,7 +151,7 @@ func NewLink(
 	convid := binary.LittleEndian.Uint32(sharedSecret[:4])
 	dataShards := opts.GetDataShards()
 	parityShards := opts.GetParityShards()
-	bc, err := BuildBlockCrypt(opts.GetBlockCrypt(), neg.Secret[:])
+	bc, err := blockcrypt.BuildBlockCrypt(opts.GetBlockCrypt(), neg.Secret[:])
 	if err != nil {
 		return nil, err
 	}

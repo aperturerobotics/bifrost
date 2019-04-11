@@ -1,6 +1,8 @@
 syntax = "proto3";
 package pconn;
 
+import "github.com/aperturerobotics/bifrost/util/blockcrypt/blockcrypt.proto";
+
 // KCPMode is the mode to set KCP to.
 enum KCPMode {
   // KCPMode_UNKNOWN defaults to normal mode.
@@ -55,38 +57,6 @@ enum StreamMuxer {
   StreamMuxer_YAMUX = 2;
 }
 
-// BlockCrypt sets the type of block crypto to use.
-enum BlockCrypt {
-  // BlockCrypt_UNKNOWN defaults to BlockCrypt_AES256
-  BlockCrypt_UNKNOWN = 0;
-  // BlockCrypt_AES256 is AES 256-bit block encryption.
-  BlockCrypt_AES256 = 1;
-  // BlockCrypt_AES128 is AES 128-bit block encryption.
-  BlockCrypt_AES128 = 2;
-  // BlockCrypt_AES192 is AES 192-bit block encryption.
-  BlockCrypt_AES192 = 3;
-  // BlockCrypt_SM4_16 is SM4 16-bit block encryption.
-  BlockCrypt_SM4_16 = 4;
-  // BlockCrypt_TEA16 is 16-bit TEA block encryption.
-  BlockCrypt_TEA16 = 5;
-  // BlockCrypt_XOR is simple XOR block encryption.
-  BlockCrypt_XOR = 6;
-  // BlockCrypt_NONE is unencrypted.
-  BlockCrypt_NONE = 7;
-  // BlockCrypt_BLOWFISH is blowfish 32-bit block encryption.
-  BlockCrypt_BLOWFISH = 8;
-  // BlockCrypt_TWOFISH is twofish 32-bit block encryption.
-  BlockCrypt_TWOFISH = 9;
-  // BlockCrypt_CAST5 is cast5 16bit block encryption.
-  BlockCrypt_CAST5 = 10;
-  // BlockCrypt_3DES is 3des 24-bit block encryption.
-  BlockCrypt_3DES = 11;
-  // BlockCrypt_XTEA is xtea 16-bit block encryption.
-  BlockCrypt_XTEA = 12;
-  // BlockCrypt_SALSA20 is salsa20 32-bit block encryption.
-  BlockCrypt_SALSA20 = 13;
-}
-
 // Opts are extra options for the packet conn.
 message Opts {
   // DataShards are the number of FEC data shards to use. By adding t check
@@ -112,7 +82,7 @@ message Opts {
   // BlockCrypt is the block crypto to use.
   // Defaults to AES256.
   // Uses the handshake-negotiated session key.
-  BlockCrypt block_crypt = 5;
+  blockcrypt.BlockCrypt block_crypt = 5;
   // BlockCompress is the block compression to use.
   BlockCompress block_compress = 6;
   // StreamMuxer is the stream muxer to use.

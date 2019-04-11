@@ -1,7 +1,7 @@
 syntax = "proto3";
 package stream.grpc;
 
-import "github.com/aperturerobotics/controllerbus/controller/controller.proto";
+// import "github.com/aperturerobotics/controllerbus/controller/controller.proto";
 import "github.com/aperturerobotics/controllerbus/controller/exec/exec.proto";
 
 import "github.com/aperturerobotics/bifrost/stream/forwarding/forwarding.proto";

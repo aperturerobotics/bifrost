@@ -25,6 +25,7 @@ import (
 	wtpt "github.com/aperturerobotics/bifrost/transport/websocket"
 	xbtpt "github.com/aperturerobotics/bifrost/transport/xbee"
 	"github.com/aperturerobotics/bifrost/util/backoff"
+	"github.com/aperturerobotics/bifrost/util/blockcrypt"
 	"github.com/aperturerobotics/bifrost/util/confparse"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
@@ -317,7 +318,7 @@ func runDaemon(c *cli.Context) error {
 					// KcpMode: pconn.KCPMode_KCPMode_FAST3,
 					KcpMode: pconn.KCPMode_KCPMode_SLOW1,
 					// BlockCrypt:    pconn.BlockCrypt_BlockCrypt_TWOFISH,
-					BlockCrypt:    pconn.BlockCrypt_BlockCrypt_SALSA20,
+					BlockCrypt:    blockcrypt.BlockCrypt_BlockCrypt_SALSA20,
 					BlockCompress: pconn.BlockCompress_BlockCompress_SNAPPY,
 					// DataShards:   3,
 					// ParityShards: 3,
@@ -347,7 +348,7 @@ func runDaemon(c *cli.Context) error {
 					// KcpMode:    pconn.KCPMode_KCPMode_FAST3,
 					KcpMode: pconn.KCPMode_KCPMode_NORMAL,
 					// BlockCrypt: pconn.BlockCrypt_BlockCrypt_AES256,
-					BlockCrypt: pconn.BlockCrypt_BlockCrypt_NONE,
+					BlockCrypt: blockcrypt.BlockCrypt_BlockCrypt_NONE,
 					// DataShards:   10,
 					// ParityShards: 3,
 				},

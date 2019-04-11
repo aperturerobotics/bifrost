@@ -1,12 +1,25 @@
-package pconn
+package blockcrypt
 
 import (
 	"github.com/paralin/kcp-go-lite"
 	"github.com/pkg/errors"
 )
 
+// Crypt defines encryption/decryption methods for a given byte slice.
+// Notes on implementing: the data to be encrypted contains a builtin
+// nonce at the first 16 bytes
+type Crypt interface {
+	// Encrypt encrypts the whole block in src into dst.
+	// Dst and src may point at the same memory.
+	Encrypt(dst, src []byte)
+
+	// Decrypt decrypts the whole block in src into dst.
+	// Dst and src may point at the same memory.
+	Decrypt(dst, src []byte)
+}
+
 // BuildBlockCrypt builds block crypt from known types.
-func BuildBlockCrypt(crypt BlockCrypt, pass []byte) (kcp.BlockCrypt, error) {
+func BuildBlockCrypt(crypt BlockCrypt, pass []byte) (Crypt, error) {
 	switch crypt {
 	case BlockCrypt_BlockCrypt_SM4_16:
 		return kcp.NewSM4BlockCrypt(pass[:16])

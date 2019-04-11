@@ -27,9 +27,9 @@ gengo: vendor/bin/gobin
 
 vendor/bin/gobin:
 	mkdir -p vendor/bin
-	go mod vendor
 	export GO111MODULE=on ; \
-	cd ./vendor ; touch go.mod ; \
+	go mod vendor; \
+	cd ./vendor ; echo "module fakevendor" > go.mod ; \
 	go mod tidy -v ; \
 	go build -v \
 		-o ./bin/protoc-gen-go \
