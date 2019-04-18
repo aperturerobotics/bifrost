@@ -373,7 +373,6 @@ func (l *Link) HandlePacket(packetType PacketType, data []byte) {
 		l.sess.RxPacket(data)
 	case PacketType_PacketType_CLOSE_LINK:
 		l.le.Debug("received close_link packet")
-		l.writer = nil
 		l.Close()
 	}
 }
@@ -423,26 +422,26 @@ func (l *Link) handleRawPacket(data []byte) {
 
 // Close closes the connection.
 func (l *Link) Close() error {
-	// TODO race on l.writer
-	if l.writer != nil {
+	l.closedOnce.Do(func() {
 		l.le.Debugf("snmp stats: %#v", kcp.DefaultSnmp.Copy())
 		kcp.DefaultSnmp.Reset()
-		_, _ = l.writer(
-			[]byte{byte(PacketType_PacketType_CLOSE_LINK)},
-			l.addr,
-		)
-		l.writer = nil
-	}
-	if closed := l.closed; closed != nil {
-		l.closedOnce.Do(closed)
-	}
-	l.ctxCancel()
-	if l.mux != nil {
-		_ = l.mux.Close()
-	}
-	if l.sess != nil {
-		_ = l.sess.Close()
-	}
+		if l.writer != nil {
+			_, _ = l.writer(
+				[]byte{byte(PacketType_PacketType_CLOSE_LINK)},
+				l.addr,
+			)
+		}
+		if closed := l.closed; closed != nil {
+			l.closedOnce.Do(closed)
+		}
+		l.ctxCancel()
+		if l.mux != nil {
+			_ = l.mux.Close()
+		}
+		if l.sess != nil {
+			_ = l.sess.Close()
+		}
+	})
 	return nil
 }
 
