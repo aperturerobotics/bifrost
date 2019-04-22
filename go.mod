@@ -5,7 +5,7 @@ replace github.com/multiformats/go-multihash => github.com/paralin/go-multihash 
 replace github.com/libp2p/go-libp2p-crypto => github.com/paralin/go-libp2p-crypto v0.0.0-20181130162722-b150863d61f7
 
 require (
-	github.com/aperturerobotics/controllerbus v0.0.0-20190314041023-9288fa0e12c9
+	github.com/aperturerobotics/controllerbus v0.0.0-20190412141224-a86f75f58cec
 	github.com/aperturerobotics/entitygraph v0.0.0-20190314052401-c4dff866fe8f
 	github.com/aperturerobotics/timestamp v0.2.2-0.20190226083629-0175fc7d961e
 	github.com/blang/semver v3.5.2-0.20180723201105-3c1074078d32+incompatible
