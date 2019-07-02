@@ -8,26 +8,26 @@ require (
 	github.com/aperturerobotics/controllerbus v0.0.0-20190412141224-a86f75f58cec
 	github.com/aperturerobotics/entitygraph v0.0.0-20190314052401-c4dff866fe8f
 	github.com/aperturerobotics/timestamp v0.2.2-0.20190226083629-0175fc7d961e
-	github.com/blang/semver v3.5.2-0.20180723201105-3c1074078d32+incompatible
-	github.com/btcsuite/btcd v0.0.0-20190410025418-9bfb2ca0346b // indirect
+	github.com/blang/semver v3.5.1+incompatible
+	github.com/btcsuite/btcd v0.0.0-20190629003639-c26ffa870fd8 // indirect
 	github.com/cenkalti/backoff v2.1.1+incompatible
 	github.com/djherbis/buffer v1.0.1-0.20181027144806-3c732ee9b562
-	github.com/gogo/protobuf v1.2.1 // indirect
-	github.com/golang/protobuf v1.3.1-0.20190228151929-b5d812f8a370
+	github.com/gogo/protobuf v1.2.2-0.20190611061853-dadb62585089 // indirect
+	github.com/golang/protobuf v1.3.2-0.20190701182201-6c65a5562fc0
 	github.com/golang/snappy v0.0.1
-	github.com/gopherjs/gopherjs v0.0.0-20181103185306-d547d1d9531e
+	github.com/gopherjs/gopherjs v0.0.0-20190430165422-3e4dfb77656c
 	github.com/gopherjs/websocket v0.0.0-20170522004412-87ee47603f13
-	github.com/gorilla/websocket v1.4.1-0.20190205004414-7c8e298727d1
-	github.com/gortc/stun v1.18.5-0.20190218215507-831759deeef4
+	github.com/gorilla/websocket v1.4.1-0.20190629185528-ae1634f6a989
+	github.com/gortc/stun v1.19.1-0.20190509220556-d73420a61edc
 	github.com/hashicorp/yamux v0.0.0-20181012175058-2f1d1f20f75d
-	github.com/klauspost/cpuid v1.2.1-0.20190110101622-0da02118eaa3 // indirect
-	github.com/klauspost/reedsolomon v1.9.2-0.20190407153631-a373324398e4 // indirect
+	github.com/klauspost/cpuid v1.2.1 // indirect
+	github.com/klauspost/reedsolomon v1.9.3-0.20190625143044-789068412913 // indirect
 	github.com/libp2p/go-libp2p-crypto v0.0.1
 	github.com/mr-tron/base58 v1.1.1
-	github.com/multiformats/go-multiaddr v0.0.3-0.20190406155144-0460aad0fe51
+	github.com/multiformats/go-multiaddr v0.0.4
 	github.com/multiformats/go-multiaddr-dns v0.0.2-0.20190321165136-7d0de25ce05c // indirect
 	github.com/multiformats/go-multiaddr-net v0.0.1
-	github.com/multiformats/go-multihash v0.0.2-0.20190322023522-2ca70e715b69
+	github.com/multiformats/go-multihash v0.0.6
 	github.com/paralin/kcp-go-lite v4.3.2-0.20190202132049-1e12d0a0fd45+incompatible
 	github.com/patrickmn/go-cache v2.1.1-0.20180815053127-5633e0862627+incompatible
 	github.com/pauleyj/gobee v0.0.0-20190212035730-6270c53072a4

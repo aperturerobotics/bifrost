@@ -314,10 +314,10 @@ func runDaemon(c *cli.Context) error {
 				DeviceBaud: int32(daemonFlags.XBeeBaud),
 				Dialers:    staticPeers,
 				PacketOpts: &pconn.Opts{
-					Mtu: 200,
+					Mtu: 128,
 					// KcpMode: pconn.KCPMode_KCPMode_FAST3,
 					KcpMode: pconn.KCPMode_KCPMode_SLOW1,
-					// BlockCrypt:    pconn.BlockCrypt_BlockCrypt_TWOFISH,
+					// BlockCrypt: pconn.BlockCrypt_BlockCrypt_TWOFISH,
 					BlockCrypt:    blockcrypt.BlockCrypt_BlockCrypt_SALSA20,
 					BlockCompress: pconn.BlockCompress_BlockCompress_SNAPPY,
 					// DataShards:   3,
