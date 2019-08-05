@@ -45,6 +45,8 @@ enum BlockCompress {
   BlockCompress_NONE = 0;
   // BlockCompress_SNAPPY indicates Snappy compression.
   BlockCompress_SNAPPY = 1;
+  // BlockCompress_LZ4 indicates LZ4 compression.
+  BlockCompress_LZ4 = 2;
 }
 
 // StreamMuxer sets the type of stream muxer to use.

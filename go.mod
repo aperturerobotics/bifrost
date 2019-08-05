@@ -13,7 +13,7 @@ require (
 	github.com/cenkalti/backoff v2.1.1+incompatible
 	github.com/djherbis/buffer v1.0.1-0.20181027144806-3c732ee9b562
 	github.com/gogo/protobuf v1.2.2-0.20190611061853-dadb62585089 // indirect
-	github.com/golang/protobuf v1.3.2-0.20190701182201-6c65a5562fc0
+	github.com/golang/protobuf v1.3.3-0.20190805180045-4c88cc3f1a34
 	github.com/golang/snappy v0.0.1
 	github.com/gopherjs/gopherjs v0.0.0-20190430165422-3e4dfb77656c
 	github.com/gopherjs/websocket v0.0.0-20170522004412-87ee47603f13
@@ -31,6 +31,7 @@ require (
 	github.com/paralin/kcp-go-lite v4.3.2-0.20190202132049-1e12d0a0fd45+incompatible
 	github.com/patrickmn/go-cache v2.1.1-0.20180815053127-5633e0862627+incompatible
 	github.com/pauleyj/gobee v0.0.0-20190212035730-6270c53072a4
+	github.com/pierrec/lz4 v2.0.5+incompatible
 	github.com/pkg/errors v0.8.2-0.20190227000051-27936f6d90f9
 	github.com/sirupsen/logrus v1.4.0
 	github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72 // indirect

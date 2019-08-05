@@ -217,6 +217,8 @@ func NewLink(
 		strmSess = l.sess
 	case BlockCompress_BlockCompress_SNAPPY:
 		strmSess = newSnappyStream(l.sess)
+	case BlockCompress_BlockCompress_LZ4:
+		strmSess = newLz4Stream(l.sess)
 	default:
 		l.Close()
 		return nil, errors.Errorf(

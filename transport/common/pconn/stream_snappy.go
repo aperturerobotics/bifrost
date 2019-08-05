@@ -17,7 +17,9 @@ func (c *snappyStream) Read(p []byte) (n int, err error) {
 
 func (c *snappyStream) Write(p []byte) (n int, err error) {
 	n, err = c.w.Write(p)
-	err = c.w.Flush()
+	if err == nil {
+		err = c.w.Flush()
+	}
 	return n, err
 }
 
