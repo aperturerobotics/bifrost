@@ -151,6 +151,7 @@ func (u *Transport) Execute(ctx context.Context) error {
 	u.ctx = ctx
 	go u.readPump(ctx)
 
+	u.le.Debug("listening")
 	select {
 	case <-ctx.Done():
 		return ctx.Err()

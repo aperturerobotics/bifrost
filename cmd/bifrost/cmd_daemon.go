@@ -8,25 +8,16 @@ import (
 	"net/http"
 	"os"
 	"runtime"
-	"strings"
 
+	"github.com/aperturerobotics/bifrost/cliflags"
 	"github.com/aperturerobotics/bifrost/daemon"
 	"github.com/aperturerobotics/bifrost/daemon/api/controller"
 	egctr "github.com/aperturerobotics/bifrost/entitygraph"
 	"github.com/aperturerobotics/bifrost/keypem"
-	"github.com/aperturerobotics/bifrost/link/hold-open"
-	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/stream/forwarding"
 	"github.com/aperturerobotics/bifrost/stream/grpc/accept"
 	"github.com/aperturerobotics/bifrost/stream/listening"
-	"github.com/aperturerobotics/bifrost/transport/common/dialer"
-	"github.com/aperturerobotics/bifrost/transport/common/pconn"
-	udptpt "github.com/aperturerobotics/bifrost/transport/udp"
-	wtpt "github.com/aperturerobotics/bifrost/transport/websocket"
 	xbtpt "github.com/aperturerobotics/bifrost/transport/xbee"
-	"github.com/aperturerobotics/bifrost/util/backoff"
-	"github.com/aperturerobotics/bifrost/util/blockcrypt"
-	"github.com/aperturerobotics/bifrost/util/confparse"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
 	"github.com/aperturerobotics/controllerbus/directive"
@@ -43,25 +34,11 @@ import (
 import _ "net/http/pprof"
 
 var daemonFlags struct {
-	PeerPrivPath    string
-	WebsocketListen string
-	APIListen       string
-	UDPListen       string
-	ProfListen      string
-	HoldOpenLinks   bool
+	cliflags.BifrostArgs
 
-	XBeePath string
-	XBeeBaud int
-
-	// UDPPeers is a static peer list
-	// peer-id@address
-	UDPPeers cli.StringSlice
-	// WebsocketPeers is a static peer list
-	// peer-id@address
-	WebsocketPeers cli.StringSlice
-	// XbeePeers is a static peer list
-	// peer-id@address
-	XbeePeers cli.StringSlice
+	PeerPrivPath string
+	APIListen    string
+	ProfListen   string
 }
 
 func init() {
@@ -71,13 +48,8 @@ func init() {
 			Name:   "daemon",
 			Usage:  "run a bifrost daemon",
 			Action: runDaemon,
-			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name:        "hold-open-links",
-					Usage:       "if set, hold open links without an inactivity timeout",
-					EnvVar:      "BIFROST_HOLD_OPEN_LINKS",
-					Destination: &daemonFlags.HoldOpenLinks,
-				},
+			Flags: append(
+				(&daemonFlags.BifrostArgs).BuildFlags(),
 				cli.StringFlag{
 					Name:        "node-priv",
 					Usage:       "path to node private key, will be generated if doesn't exist",
@@ -98,74 +70,9 @@ func init() {
 					EnvVar:      "BIFROST_PROF_LISTEN",
 					Destination: &daemonFlags.ProfListen,
 				},
-				cli.StringFlag{
-					Name:        "websocket-listen",
-					Usage:       "if set, will listen on address for websocket connections, ex :5111",
-					EnvVar:      "BIFROST_WS_LISTEN",
-					Destination: &daemonFlags.WebsocketListen,
-				},
-				cli.StringFlag{
-					Name:        "udp-listen",
-					Usage:       "if set, will listen on address for udp connections, ex :5112",
-					EnvVar:      "BIFROST_UDP_LISTEN",
-					Destination: &daemonFlags.UDPListen,
-				},
-				cli.StringFlag{
-					Name:        "xbee-device-path",
-					Usage:       "xbee device path to open, if set",
-					EnvVar:      "BIFROST_XBEE_PATH",
-					Destination: &daemonFlags.XBeePath,
-				},
-				cli.IntFlag{
-					Name:        "xbee-device-baud",
-					Usage:       "xbee device baudrate to use, defaults to 115200",
-					EnvVar:      "BIFROST_XBEE_BAUD",
-					Destination: &daemonFlags.XBeeBaud,
-					Value:       115200,
-				},
-				cli.StringSliceFlag{
-					Name:   "xbee-peers",
-					Usage:  "list of peer-id=address known XBee peers",
-					EnvVar: "BIFROST_XBEE_PEERS",
-					Value:  &daemonFlags.XbeePeers,
-				},
-				cli.StringSliceFlag{
-					Name:   "udp-peers",
-					Usage:  "list of peer-id@address known UDP peers",
-					EnvVar: "BIFROST_UDP_PEERS",
-					Value:  &daemonFlags.UDPPeers,
-				},
-				cli.StringSliceFlag{
-					Name:   "websocket-peers",
-					Usage:  "list of peer-id=address known WebSocket peers",
-					EnvVar: "BIFROST_WS_PEERS",
-					Value:  &daemonFlags.WebsocketPeers,
-				},
-			},
+			),
 		},
 	)
-}
-
-// parseDialerAddrs parses a dialer map from a string slice
-func parseDialerAddrs(ss cli.StringSlice) (map[string]*dialer.DialerOpts, error) {
-	m := make(map[string]*dialer.DialerOpts)
-	for _, s := range ss {
-		pair := strings.Split(s, "@")
-		if len(pair) < 2 {
-			continue
-		}
-		pid, err := confparse.ParsePeerID(strings.TrimSpace(pair[0]))
-		if err != nil {
-			return nil, err
-		}
-		if pid == peer.ID("") {
-			continue
-		}
-		m[pid.Pretty()] = &dialer.DialerOpts{
-			Address: strings.TrimSpace(pair[1]),
-		}
-	}
-	return m, nil
 }
 
 // runDaemon runs the daemon.
@@ -271,108 +178,19 @@ func runDaemon(c *cli.Context) error {
 
 	// TODO: Load these from CLI/yaml configuration.
 	// For now, hardcode it.
-	if daemonFlags.WebsocketListen != "" {
-		staticPeers, err := parseDialerAddrs(daemonFlags.WebsocketPeers)
-		if err != nil {
-			return errors.Wrap(err, "websocket-peers")
-		}
-
-		_, wsRef, err := b.AddDirective(
-			resolver.NewLoadControllerWithConfig(&wtpt.Config{
-				Dialers:    staticPeers,
-				ListenAddr: daemonFlags.WebsocketListen,
-			}),
-			bus.NewCallbackHandler(func(val directive.AttachedValue) {
-				le.Infof("websocket listening on: %s", daemonFlags.WebsocketListen)
-			}, nil, nil),
-		)
-		if err != nil {
-			return errors.Wrap(err, "listen on websocket")
-		}
-		defer wsRef.Release()
+	confs, err := daemonFlags.BuildControllerConfigs()
+	if err != nil {
+		return err
 	}
-
-	if daemonFlags.XBeePath != "" {
-		staticPeers, err := parseDialerAddrs(daemonFlags.XbeePeers)
-		if err != nil {
-			return errors.Wrap(err, "xbee-peers")
-		}
-		for _, peer := range staticPeers {
-			peer.Backoff = &backoff.Backoff{
-				BackoffKind: backoff.BackoffKind_BackoffKind_EXPONENTIAL,
-				Exponential: &backoff.Exponential{
-					InitialInterval:     1000,
-					RandomizationFactor: 0.8,
-					Multiplier:          1.7,
-				},
-			}
-		}
-
-		_, xbRef, err := b.AddDirective(
-			resolver.NewLoadControllerWithConfig(&xbtpt.Config{
-				DevicePath: daemonFlags.XBeePath,
-				DeviceBaud: int32(daemonFlags.XBeeBaud),
-				Dialers:    staticPeers,
-				PacketOpts: &pconn.Opts{
-					Mtu:     150,
-					KcpMode: pconn.KCPMode_KCPMode_FAST3,
-					// KcpMode: pconn.KCPMode_KCPMode_SLOW1,
-					// BlockCrypt: pconn.BlockCrypt_BlockCrypt_TWOFISH,
-					BlockCrypt:    blockcrypt.BlockCrypt_BlockCrypt_SALSA20,
-					BlockCompress: pconn.BlockCompress_BlockCompress_SNAPPY,
-					// BlockCompress: pconn.BlockCompress_BlockCompress_LZ4,
-					// DataShards:   3,
-					// ParityShards: 3,
-				},
-			}),
-			bus.NewCallbackHandler(func(val directive.AttachedValue) {
-				le.Infof("xbee listening on: %s@%d", daemonFlags.XBeePath, daemonFlags.XBeeBaud)
-			}, nil, nil),
-		)
-		if err != nil {
-			return errors.Wrap(err, "listen on xbee")
-		}
-		defer xbRef.Release()
-	}
-
-	if daemonFlags.UDPListen != "" {
-		staticPeers, err := parseDialerAddrs(daemonFlags.UDPPeers)
-		if err != nil {
-			return errors.Wrap(err, "udp-peers")
-		}
-
-		_, udpRef, err := b.AddDirective(
-			resolver.NewLoadControllerWithConfig(&udptpt.Config{
-				Dialers:    staticPeers,
-				ListenAddr: daemonFlags.UDPListen,
-				PacketOpts: &pconn.Opts{
-					// KcpMode:    pconn.KCPMode_KCPMode_FAST3,
-					KcpMode: pconn.KCPMode_KCPMode_NORMAL,
-					// BlockCrypt: pconn.BlockCrypt_BlockCrypt_AES256,
-					BlockCrypt: blockcrypt.BlockCrypt_BlockCrypt_NONE,
-					// DataShards:   10,
-					// ParityShards: 3,
-				},
-			}),
-			bus.NewCallbackHandler(func(val directive.AttachedValue) {
-				le.Infof("UDP listening on: %s", daemonFlags.UDPListen)
-			}, nil, nil),
-		)
-		if err != nil {
-			return errors.Wrap(err, "listen on udp")
-		}
-		defer udpRef.Release()
-	}
-
-	if daemonFlags.HoldOpenLinks {
-		_, holdOpenRef, err := b.AddDirective(
-			resolver.NewLoadControllerWithConfig(&link_holdopen_controller.Config{}),
+	for id, conf := range confs {
+		_, confRef, err := b.AddDirective(
+			resolver.NewLoadControllerWithConfig(conf),
 			nil,
 		)
 		if err != nil {
-			return errors.Wrap(err, "hold-open controller")
+			return errors.Wrap(err, id+" controller")
 		}
-		defer holdOpenRef.Release()
+		defer confRef.Release()
 	}
 
 	if daemonFlags.ProfListen != "" {
