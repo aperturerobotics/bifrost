@@ -9,8 +9,8 @@ import (
 var cliArgs bcli.ClientArgs
 
 func init() {
-	clientCommands := cliArgs.BuildCommands()
-	clientFlags := cliArgs.BuildFlags()
+	clientCommands := (&cliArgs).BuildCommands()
+	clientFlags := (&cliArgs).BuildFlags()
 	commands = append(
 		commands,
 		cli.Command{

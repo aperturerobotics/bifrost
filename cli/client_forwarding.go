@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"context"
 	"os"
 
 	"github.com/aperturerobotics/bifrost/stream/grpc"
@@ -9,7 +8,8 @@ import (
 )
 
 // RunForwarding runs the forwarding command.
-func (a *ClientArgs) RunForwarding(ctx context.Context, _ *cli.Context) error {
+func (a *ClientArgs) RunForwarding(_ *cli.Context) error {
+	ctx := a.GetContext()
 	c, err := a.BuildClient()
 	if err != nil {
 		return err
