@@ -8,6 +8,8 @@ import (
 	fmt "fmt"
 	proto "github.com/golang/protobuf/proto"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	math "math"
 )
 
@@ -451,6 +453,14 @@ type PubSubServiceServer interface {
 	// Subscribe subscribes to a channel, allowing the subscriber to publish
 	// messages over the same channel.
 	Subscribe(PubSubService_SubscribeServer) error
+}
+
+// UnimplementedPubSubServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedPubSubServiceServer struct {
+}
+
+func (*UnimplementedPubSubServiceServer) Subscribe(srv PubSubService_SubscribeServer) error {
+	return status.Errorf(codes.Unimplemented, "method Subscribe not implemented")
 }
 
 func RegisterPubSubServiceServer(s *grpc.Server, srv PubSubServiceServer) {

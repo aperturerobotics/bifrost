@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/aperturerobotics/bifrost/core"
-	"github.com/aperturerobotics/bifrost/daemon/api/controller"
+	api_controller "github.com/aperturerobotics/bifrost/daemon/api/controller"
 	"github.com/aperturerobotics/bifrost/keypem"
 	"github.com/aperturerobotics/bifrost/peer"
 	nctr "github.com/aperturerobotics/bifrost/peer/controller"

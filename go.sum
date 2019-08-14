@@ -37,8 +37,6 @@ github.com/golang/mock v1.1.1/go.mod h1:oTYuIxOrZwtPieC+H1uAHpcLFnEyAGVDL/k47Jfb
 github.com/golang/protobuf v1.2.0/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
 github.com/golang/protobuf v1.3.1-0.20190228151929-b5d812f8a370 h1:KPswMJ+HgjBEaXJh5x9Q9Jvb7HRIPixSrKOs7yZXWc8=
 github.com/golang/protobuf v1.3.1-0.20190228151929-b5d812f8a370/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
-github.com/golang/protobuf v1.3.2-0.20190701182201-6c65a5562fc0 h1:C2gRK+w1/e8M82AV511yxHurF1JqvyLoC/CCDPKKRdU=
-github.com/golang/protobuf v1.3.2-0.20190701182201-6c65a5562fc0/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
 github.com/golang/protobuf v1.3.3-0.20190805180045-4c88cc3f1a34 h1:lOqqfn77CiAxttSZEEe2qqzjdnzwCrdzZqEEOiro+18=
 github.com/golang/protobuf v1.3.3-0.20190805180045-4c88cc3f1a34/go.mod h1:vzj43D7+SQXF/4pzW/hwtAqwc6iTitCiVSaWz5lYuqw=
 github.com/golang/snappy v0.0.1 h1:Qgr9rKW7uDUkrbSmQeiDsGa8SjGyCOGtuasMWwvp2P4=

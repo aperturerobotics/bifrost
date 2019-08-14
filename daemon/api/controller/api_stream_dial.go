@@ -1,4 +1,4 @@
-package api_controller
+package bifrost_api_controller
 
 import (
 	"github.com/aperturerobotics/bifrost/stream/grpc"

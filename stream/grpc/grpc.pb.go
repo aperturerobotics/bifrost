@@ -14,6 +14,8 @@ import (
 	exec "github.com/aperturerobotics/controllerbus/controller/exec"
 	proto "github.com/golang/protobuf/proto"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	math "math"
 )
 
@@ -598,6 +600,23 @@ type StreamServiceServer interface {
 	// DialStream dials a outgoing stream.
 	// Stream data is sent over the request / response streams.
 	DialStream(StreamService_DialStreamServer) error
+}
+
+// UnimplementedStreamServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedStreamServiceServer struct {
+}
+
+func (*UnimplementedStreamServiceServer) ForwardStreams(req *ForwardStreamsRequest, srv StreamService_ForwardStreamsServer) error {
+	return status.Errorf(codes.Unimplemented, "method ForwardStreams not implemented")
+}
+func (*UnimplementedStreamServiceServer) ListenStreams(req *ListenStreamsRequest, srv StreamService_ListenStreamsServer) error {
+	return status.Errorf(codes.Unimplemented, "method ListenStreams not implemented")
+}
+func (*UnimplementedStreamServiceServer) AcceptStream(srv StreamService_AcceptStreamServer) error {
+	return status.Errorf(codes.Unimplemented, "method AcceptStream not implemented")
+}
+func (*UnimplementedStreamServiceServer) DialStream(srv StreamService_DialStreamServer) error {
+	return status.Errorf(codes.Unimplemented, "method DialStream not implemented")
 }
 
 func RegisterStreamServiceServer(s *grpc.Server, srv StreamServiceServer) {

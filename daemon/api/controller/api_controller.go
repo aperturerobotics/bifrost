@@ -1,6 +1,6 @@
 //+build !js
 
-package api_controller
+package bifrost_api_controller
 
 import (
 	"context"

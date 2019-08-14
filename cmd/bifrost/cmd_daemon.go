@@ -11,7 +11,7 @@ import (
 
 	bcli "github.com/aperturerobotics/bifrost/cli"
 	"github.com/aperturerobotics/bifrost/daemon"
-	"github.com/aperturerobotics/bifrost/daemon/api/controller"
+	api_controller "github.com/aperturerobotics/bifrost/daemon/api/controller"
 	egctr "github.com/aperturerobotics/bifrost/entitygraph"
 	"github.com/aperturerobotics/bifrost/keypem"
 	"github.com/aperturerobotics/bifrost/stream/forwarding"

@@ -10,6 +10,8 @@ import (
 	exec "github.com/aperturerobotics/controllerbus/controller/exec"
 	proto "github.com/golang/protobuf/proto"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	math "math"
 )
 
@@ -340,6 +342,17 @@ type PeerServiceServer interface {
 	Identify(*IdentifyRequest, PeerService_IdentifyServer) error
 	// GetPeerInfo returns information about attached peers.
 	GetPeerInfo(context.Context, *GetPeerInfoRequest) (*GetPeerInfoResponse, error)
+}
+
+// UnimplementedPeerServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedPeerServiceServer struct {
+}
+
+func (*UnimplementedPeerServiceServer) Identify(req *IdentifyRequest, srv PeerService_IdentifyServer) error {
+	return status.Errorf(codes.Unimplemented, "method Identify not implemented")
+}
+func (*UnimplementedPeerServiceServer) GetPeerInfo(ctx context.Context, req *GetPeerInfoRequest) (*GetPeerInfoResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetPeerInfo not implemented")
 }
 
 func RegisterPeerServiceServer(s *grpc.Server, srv PeerServiceServer) {

@@ -1,5 +1,5 @@
 syntax = "proto3";
-package api.controller;
+package bifrost.api.controller;
 
 // Config configures the GRPC API.
 message Config {
