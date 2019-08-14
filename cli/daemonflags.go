@@ -1,4 +1,4 @@
-package cliflags
+package cli
 
 import (
 	"github.com/aperturerobotics/bifrost/link/hold-open"
@@ -13,8 +13,8 @@ import (
 	"github.com/urfave/cli"
 )
 
-// BifrostArgs contains common flags for bifrost-powered binaries.
-type BifrostArgs struct {
+// DaemonArgs contains common flags for bifrost-powered daemons.
+type DaemonArgs struct {
 	WebsocketListen string
 	UDPListen       string
 	HoldOpenLinks   bool
@@ -34,7 +34,7 @@ type BifrostArgs struct {
 }
 
 // BuildFlags attaches the flags to a flag set.
-func (a *BifrostArgs) BuildFlags() []cli.Flag {
+func (a *DaemonArgs) BuildFlags() []cli.Flag {
 	return []cli.Flag{
 		cli.BoolFlag{
 			Name:        "hold-open-links",
@@ -91,7 +91,7 @@ func (a *BifrostArgs) BuildFlags() []cli.Flag {
 
 // BuildControllerConfigs builds controller configurations from the args.
 // Map is from string descriptor to config object.
-func (a *BifrostArgs) BuildControllerConfigs() (map[string]config.Config, error) {
+func (a *DaemonArgs) BuildControllerConfigs() (map[string]config.Config, error) {
 	confs := make(map[string]config.Config)
 
 	if a.WebsocketListen != "" {

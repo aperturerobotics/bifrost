@@ -1,4 +1,4 @@
-package main
+package cli
 
 import (
 	"context"
@@ -7,16 +7,12 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/aperturerobotics/bifrost/pubsub/grpc"
 	"github.com/urfave/cli"
 )
 
-var subscribeConf pubsub_grpc.SubscribeRequest
-
-// runSubscribe runs a pubsub subscription.
-func runSubscribe(cctx *cli.Context) error {
-	ctx := context.Background()
-	c, err := GetClient()
+// RunSubscribe runs the subscription command.
+func (a *ClientArgs) RunSubscribe(ctx context.Context, _ *cli.Context) error {
+	c, err := a.BuildClient()
 	if err != nil {
 		return err
 	}
@@ -25,7 +21,7 @@ func runSubscribe(cctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	if err := client.Send(&subscribeConf); err != nil {
+	if err := client.Send(&a.SubscribeConf); err != nil {
 		return err
 	}
 	for {
@@ -39,7 +35,7 @@ func runSubscribe(cctx *cli.Context) error {
 		}
 		if msg.GetSubscriptionStatus().GetSubscribed() {
 			os.Stdout.WriteString("sub ")
-			os.Stdout.WriteString(subscribeConf.GetChannelId())
+			os.Stdout.WriteString(a.SubscribeConf.GetChannelId())
 			os.Stdout.WriteString("\n")
 		}
 		if msg.GetOutgoingStatus().GetIdentifier() != 0 {
@@ -75,4 +71,5 @@ func runSubscribe(cctx *cli.Context) error {
 			os.Stdout.WriteString("\n")
 		}
 	}
+	return nil
 }

@@ -9,7 +9,7 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/aperturerobotics/bifrost/cliflags"
+	bcli "github.com/aperturerobotics/bifrost/cli"
 	"github.com/aperturerobotics/bifrost/daemon"
 	"github.com/aperturerobotics/bifrost/daemon/api/controller"
 	egctr "github.com/aperturerobotics/bifrost/entitygraph"
@@ -34,7 +34,7 @@ import (
 import _ "net/http/pprof"
 
 var daemonFlags struct {
-	cliflags.BifrostArgs
+	bcli.DaemonArgs
 
 	PeerPrivPath string
 	APIListen    string
@@ -49,7 +49,7 @@ func init() {
 			Usage:  "run a bifrost daemon",
 			Action: runDaemon,
 			Flags: append(
-				(&daemonFlags.BifrostArgs).BuildFlags(),
+				(&daemonFlags.DaemonArgs).BuildFlags(),
 				cli.StringFlag{
 					Name:        "node-priv",
 					Usage:       "path to node private key, will be generated if doesn't exist",

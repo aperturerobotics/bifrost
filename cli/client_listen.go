@@ -1,26 +1,21 @@
-package main
+package cli
 
 import (
-	"context"
 	"os"
 
 	"github.com/aperturerobotics/bifrost/stream/grpc"
-	"github.com/aperturerobotics/bifrost/stream/listening"
 	"github.com/urfave/cli"
 )
 
-var listeningConf stream_listening.Config
-
-// runListeningController runs a listening controller.
-func runListeningController(cctx *cli.Context) error {
-	ctx := context.Background()
-	c, err := GetClient()
+// RunListen runs the listen command.
+func (a *ClientArgs) RunListen(*cli.Context) error {
+	ctx := a.GetContext()
+	c, err := a.BuildClient()
 	if err != nil {
 		return err
 	}
-
 	req, err := c.ListenStreams(ctx, &stream_grpc.ListenStreamsRequest{
-		ListeningConfig: &listeningConf,
+		ListeningConfig: &a.ListeningConf,
 	})
 	if err != nil {
 		return err

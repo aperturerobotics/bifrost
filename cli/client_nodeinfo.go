@@ -1,7 +1,6 @@
-package main
+package cli
 
 import (
-	"context"
 	"encoding/json"
 	"os"
 
@@ -10,12 +9,10 @@ import (
 	"github.com/urfave/cli"
 )
 
-// clientCommands set in cmd_client.go
-
-// runPeerInfo runs the peer information command.
-func runPeerInfo(*cli.Context) error {
-	ctx := context.Background()
-	c, err := GetClient()
+// RunPeerInfo runs the peer information command.
+func (a *ClientArgs) RunPeerInfo(_ *cli.Context) error {
+	ctx := a.GetContext()
+	c, err := a.BuildClient()
 	if err != nil {
 		return err
 	}
@@ -29,16 +26,15 @@ func runPeerInfo(*cli.Context) error {
 	if err != nil {
 		return err
 	}
-
 	os.Stdout.WriteString(string(dat))
 	os.Stdout.WriteString("\n")
 	return nil
 }
 
-// runBusInfo runs the bus information command.
-func runBusInfo(*cli.Context) error {
-	ctx := context.Background()
-	c, err := GetClient()
+// RunBusInfo runs the bus information command.
+func (a *ClientArgs) RunBusInfo(_ *cli.Context) error {
+	ctx := a.GetContext()
+	c, err := a.BuildClient()
 	if err != nil {
 		return err
 	}

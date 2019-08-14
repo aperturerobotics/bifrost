@@ -1,4 +1,4 @@
-package cliflags
+package cli
 
 import (
 	"github.com/aperturerobotics/bifrost/peer"
