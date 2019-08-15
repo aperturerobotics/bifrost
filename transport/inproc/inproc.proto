@@ -1,0 +1,14 @@
+syntax = "proto3";
+package inproc;
+
+import "github.com/aperturerobotics/bifrost/transport/common/pconn/pconn.proto";
+
+// Config is the configuration for the inproc testing transport.
+message Config {
+  // NodePeerID constrains the node peer ID.
+  // If empty, attaches to whatever node is running.
+  string node_peer_id = 1;
+  // PacketOpts are options to set on the packet connection.
+  pconn.Opts packet_opts = 2;
+}
+

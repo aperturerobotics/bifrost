@@ -7,6 +7,7 @@ import (
 	"github.com/aperturerobotics/bifrost/link/hold-open"
 	nctr "github.com/aperturerobotics/bifrost/peer/controller"
 	"github.com/aperturerobotics/bifrost/pubsub/floodsub/controller"
+	iproctpt "github.com/aperturerobotics/bifrost/transport/inproc"
 	udptpt "github.com/aperturerobotics/bifrost/transport/udp"
 	wtpt "github.com/aperturerobotics/bifrost/transport/websocket"
 	"github.com/aperturerobotics/controllerbus/bus"
@@ -36,6 +37,7 @@ func NewCoreBus(
 func AddFactories(b bus.Bus, sr *static.Resolver) {
 	sr.AddFactory(wtpt.NewFactory(b))
 	sr.AddFactory(udptpt.NewFactory(b))
+	sr.AddFactory(iproctpt.NewFactory(b))
 	sr.AddFactory(nctr.NewFactory())
 	sr.AddFactory(egc.NewFactory(b))
 	sr.AddFactory(bifrosteg.NewFactory(b))
