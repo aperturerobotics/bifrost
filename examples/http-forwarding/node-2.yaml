@@ -1,0 +1,21 @@
+udp:
+  config:
+    dialers:
+      12D3KooWC9dBAEoTHbEXq2aaTeFit7QVdvPcb6Yf76oGQZ6dGf8N:
+        address: 127.0.0.1:5112
+    listenAddr: :5113
+    packetOpts:
+      blockCrypt: BlockCrypt_NONE
+      kcpMode: KCPMode_NORMAL
+  id: bifrost/udp/1
+  revision: 1
+listening:
+  config:
+    remotePeerId: 12D3KooWC9dBAEoTHbEXq2aaTeFit7QVdvPcb6Yf76oGQZ6dGf8N
+    protocolId: my/http/forwarding/1
+    listenMultiaddr: "/ip4/127.0.0.1/tcp/8084"
+    reliable: true
+    encrypted: true
+  id: bifrost/stream/listening/1
+  revision: 1
+

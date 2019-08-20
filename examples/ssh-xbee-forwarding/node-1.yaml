@@ -1,0 +1,18 @@
+xbee:
+  config:
+    device_path: /dev/ttyUSB0
+    device_baud: 115200
+    packetOpts:
+      mtu: 150
+      blockCompress: BlockCompress_SNAPPY
+      blockCrypt: BlockCrypt_SALSA20
+      kcpMode: KCPMode_FAST3
+  id: bifrost/xbee/1
+  revision: 1
+forwarding:
+  config:
+    protocolId: my/ssh/forwarding/1
+    targetMultiaddr: "/ip4/127.0.0.1/tcp/22"
+  id: bifrost/stream/forwarding/1
+  revision: 1
+

@@ -1,0 +1,16 @@
+udp:
+  config:
+    dialers: {}
+    listenAddr: :5112
+    packetOpts:
+      blockCrypt: BlockCrypt_NONE
+      kcpMode: KCPMode_NORMAL
+  id: bifrost/udp/1
+  revision: 1
+forwarding:
+  config:
+    protocolId: my/http/forwarding/1
+    targetMultiaddr: "/ip4/127.0.0.1/tcp/8080"
+  id: bifrost/stream/forwarding/1
+  revision: 1
+

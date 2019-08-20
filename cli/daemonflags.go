@@ -69,7 +69,7 @@ func (a *DaemonArgs) BuildFlags() []cli.Flag {
 		},
 		cli.StringSliceFlag{
 			Name:   "xbee-peers",
-			Usage:  "list of peer-id=address known XBee peers",
+			Usage:  "list of peer-id@address known XBee peers",
 			EnvVar: "BIFROST_XBEE_PEERS",
 			Value:  &a.XbeePeers,
 		},
@@ -81,7 +81,7 @@ func (a *DaemonArgs) BuildFlags() []cli.Flag {
 		},
 		cli.StringSliceFlag{
 			Name:   "websocket-peers",
-			Usage:  "list of peer-id=address known WebSocket peers",
+			Usage:  "list of peer-id@address known WebSocket peers",
 			EnvVar: "BIFROST_WS_PEERS",
 			Value:  &a.WebsocketPeers,
 		},

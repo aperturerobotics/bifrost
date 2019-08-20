@@ -146,38 +146,6 @@ func runDaemon(c *cli.Context) error {
 	sr.AddFactory(stream_listening.NewFactory(b))
 	sr.AddFactory(stream_grpc_accept.NewFactory(b))
 
-	// Entity graph controller.
-	{
-		_, egRef, err := b.AddDirective(
-			resolver.NewLoadControllerWithConfig(&egc.Config{}),
-			bus.NewCallbackHandler(func(val directive.AttachedValue) {
-				le.Info("entity graph controller running")
-			}, nil, nil),
-		)
-		if err != nil {
-			return errors.Wrap(err, "start entity graph controller")
-		}
-		defer egRef.Release()
-	}
-
-	// Entity graph reporter for bifrost
-	{
-		_, _, err = b.AddDirective(
-			resolver.NewLoadControllerWithConfig(&egctr.Config{}),
-			bus.NewCallbackHandler(func(val directive.AttachedValue) {
-				le.Info("entitygraph bifrost reporter running")
-			}, nil, nil),
-		)
-		if err != nil {
-			return errors.Wrap(err, "start entitygraph bifrost reporter")
-		}
-	}
-
-	_, err = entitygraph_logger.AttachBasicLogger(b, le)
-	if err != nil {
-		return errors.Wrap(err, "start entitygraph logger")
-	}
-
 	// Construct config set.
 	confSet := configset.ConfigSet{}
 
@@ -242,6 +210,38 @@ func runDaemon(c *cli.Context) error {
 
 	for id, conf := range confs {
 		confSet[id] = configset.NewControllerConfig(1, conf)
+	}
+
+	// Entity graph controller.
+	{
+		_, egRef, err := b.AddDirective(
+			resolver.NewLoadControllerWithConfig(&egc.Config{}),
+			bus.NewCallbackHandler(func(val directive.AttachedValue) {
+				le.Info("entity graph controller running")
+			}, nil, nil),
+		)
+		if err != nil {
+			return errors.Wrap(err, "start entity graph controller")
+		}
+		defer egRef.Release()
+	}
+
+	// Entity graph reporter for bifrost
+	{
+		_, _, err = b.AddDirective(
+			resolver.NewLoadControllerWithConfig(&egctr.Config{}),
+			bus.NewCallbackHandler(func(val directive.AttachedValue) {
+				le.Info("entitygraph bifrost reporter running")
+			}, nil, nil),
+		)
+		if err != nil {
+			return errors.Wrap(err, "start entitygraph bifrost reporter")
+		}
+	}
+
+	_, err = entitygraph_logger.AttachBasicLogger(b, le)
+	if err != nil {
+		return errors.Wrap(err, "start entitygraph logger")
 	}
 
 	if daemonFlags.ConfigPath != "" && daemonFlags.WriteConfig {

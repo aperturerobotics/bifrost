@@ -23,7 +23,6 @@ var Version = semver.MustParse("0.0.1")
 var handshakeTimeout = time.Second * 8
 
 // UDP implements a UDP transport.
-// It is unordered, unreliable, and unencrypted.
 type UDP = pconn.Transport
 
 // NewUDP builds a new UDP transport, listening on the addr.
