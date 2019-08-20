@@ -14,16 +14,19 @@ import (
 	api_controller "github.com/aperturerobotics/bifrost/daemon/api/controller"
 	egctr "github.com/aperturerobotics/bifrost/entitygraph"
 	"github.com/aperturerobotics/bifrost/keypem"
-	"github.com/aperturerobotics/bifrost/stream/forwarding"
-	"github.com/aperturerobotics/bifrost/stream/grpc/accept"
-	"github.com/aperturerobotics/bifrost/stream/listening"
+	stream_forwarding "github.com/aperturerobotics/bifrost/stream/forwarding"
+	stream_grpc_accept "github.com/aperturerobotics/bifrost/stream/grpc/accept"
+	stream_listening "github.com/aperturerobotics/bifrost/stream/listening"
 	xbtpt "github.com/aperturerobotics/bifrost/transport/xbee"
 	"github.com/aperturerobotics/controllerbus/bus"
+	configset "github.com/aperturerobotics/controllerbus/controller/configset"
+	configset_controller "github.com/aperturerobotics/controllerbus/controller/configset/controller"
+	configset_json "github.com/aperturerobotics/controllerbus/controller/configset/json"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
 	"github.com/aperturerobotics/controllerbus/directive"
 	egc "github.com/aperturerobotics/entitygraph/controller"
-	"github.com/aperturerobotics/entitygraph/logger"
-	"github.com/libp2p/go-libp2p-crypto"
+	entitygraph_logger "github.com/aperturerobotics/entitygraph/logger"
+	crypto "github.com/libp2p/go-libp2p-crypto"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -36,6 +39,8 @@ import _ "net/http/pprof"
 var daemonFlags struct {
 	bcli.DaemonArgs
 
+	WriteConfig  bool
+	ConfigPath   string
 	PeerPrivPath string
 	APIListen    string
 	ProfListen   string
@@ -51,10 +56,23 @@ func init() {
 			Flags: append(
 				(&daemonFlags.DaemonArgs).BuildFlags(),
 				cli.StringFlag{
+					Name:        "config, c",
+					Usage:       "path to configuration yaml file",
+					EnvVar:      "BIFROST_CONFIG",
+					Value:       "bifrost_daemon.yaml",
+					Destination: &daemonFlags.ConfigPath,
+				},
+				cli.BoolFlag{
+					Name:        "write-config",
+					Usage:       "write the daemon config file on startup",
+					EnvVar:      "BIFROST_WRITE_CONFIG",
+					Destination: &daemonFlags.WriteConfig,
+				},
+				cli.StringFlag{
 					Name:        "node-priv",
 					Usage:       "path to node private key, will be generated if doesn't exist",
 					EnvVar:      "BIFROST_NODE_PRIV",
-					Value:       "daemon_node_priv.pem",
+					Value:       "bifrost_daemon.pem",
 					Destination: &daemonFlags.PeerPrivPath,
 				},
 				cli.StringFlag{
@@ -160,6 +178,35 @@ func runDaemon(c *cli.Context) error {
 		return errors.Wrap(err, "start entitygraph logger")
 	}
 
+	// Construct config set.
+	confSet := configset.ConfigSet{}
+
+	// Load config file
+	configLe := le.WithField("config", daemonFlags.ConfigPath)
+	if confPath := daemonFlags.ConfigPath; confPath != "" {
+		confDat, err := ioutil.ReadFile(confPath)
+		if err != nil {
+			if os.IsNotExist(err) {
+				if daemonFlags.WriteConfig {
+					configLe.Info("cannot find config but write-config is set, continuing")
+				} else {
+					return errors.Wrapf(
+						err,
+						"cannot find config at %s",
+						daemonFlags.ConfigPath,
+					)
+				}
+			} else {
+				return errors.Wrap(err, "load config")
+			}
+		}
+
+		err = configset_json.UnmarshalYAML(ctx, b, confDat, confSet, true)
+		if err != nil {
+			return errors.Wrap(err, "unmarshal config yaml")
+		}
+	}
+
 	// Daemon API
 	if daemonFlags.APIListen != "" {
 		_, apiRef, err := b.AddDirective(
@@ -176,22 +223,46 @@ func runDaemon(c *cli.Context) error {
 		defer apiRef.Release()
 	}
 
+	// ConfigSet controller
+	_, csRef, err := b.AddDirective(
+		resolver.NewLoadControllerWithConfig(&configset_controller.Config{}),
+		nil,
+	)
+	if err != nil {
+		return errors.Wrap(err, "construct configset controller")
+	}
+	defer csRef.Release()
+
 	// TODO: Load these from CLI/yaml configuration.
 	// For now, hardcode it.
 	confs, err := daemonFlags.BuildControllerConfigs()
 	if err != nil {
 		return err
 	}
+
 	for id, conf := range confs {
-		_, confRef, err := b.AddDirective(
-			resolver.NewLoadControllerWithConfig(conf),
-			nil,
-		)
-		if err != nil {
-			return errors.Wrap(err, id+" controller")
-		}
-		defer confRef.Release()
+		confSet[id] = configset.NewControllerConfig(1, conf)
 	}
+
+	if daemonFlags.ConfigPath != "" && daemonFlags.WriteConfig {
+		confDat, err := configset_json.MarshalYAML(confSet)
+		if err != nil {
+			return errors.Wrap(err, "marshal config")
+		}
+		err = ioutil.WriteFile(daemonFlags.ConfigPath, confDat, 0644)
+		if err != nil {
+			return errors.Wrap(err, "write config file")
+		}
+	}
+
+	_, bdbRef, err := b.AddDirective(
+		configset.NewApplyConfigSet(confSet),
+		nil,
+	)
+	if err != nil {
+		return err
+	}
+	defer bdbRef.Release()
 
 	if daemonFlags.ProfListen != "" {
 		runtime.SetBlockProfileRate(1)

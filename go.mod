@@ -5,7 +5,7 @@ replace github.com/multiformats/go-multihash => github.com/paralin/go-multihash 
 replace github.com/libp2p/go-libp2p-crypto => github.com/paralin/go-libp2p-crypto v0.0.0-20181130162722-b150863d61f7
 
 require (
-	github.com/aperturerobotics/controllerbus v0.0.0-20190412141224-a86f75f58cec
+	github.com/aperturerobotics/controllerbus v0.0.0-20190820025710-22efcef818fb
 	github.com/aperturerobotics/entitygraph v0.0.0-20190314052401-c4dff866fe8f
 	github.com/aperturerobotics/timestamp v0.2.2-0.20190226083629-0175fc7d961e
 	github.com/blang/semver v3.5.1+incompatible
@@ -33,7 +33,7 @@ require (
 	github.com/pauleyj/gobee v0.0.0-20190212035730-6270c53072a4
 	github.com/pierrec/lz4 v2.0.5+incompatible
 	github.com/pkg/errors v0.8.2-0.20190227000051-27936f6d90f9
-	github.com/sirupsen/logrus v1.4.0
+	github.com/sirupsen/logrus v1.4.1
 	github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72 // indirect
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
 	github.com/templexxx/cpufeat v0.0.0-20180724012125-cef66df7f161 // indirect
@@ -42,5 +42,5 @@ require (
 	github.com/urfave/cli v1.20.1-0.20190203184040-693af58b4d51
 	github.com/xtaci/smux v1.1.1
 	golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2
-	google.golang.org/grpc v1.19.0
+	google.golang.org/grpc v1.23.0
 )
