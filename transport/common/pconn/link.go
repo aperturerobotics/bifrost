@@ -124,15 +124,16 @@ func NewLink(
 
 	nctx, nctxCancel := context.WithCancel(ctx)
 	pid, _ := peer.IDFromPublicKey(neg.Peer)
+	uuid := newLinkUUID(localAddr, remoteAddr, pid)
 	l := &Link{
 		ctx:       nctx,
 		ctxCancel: nctxCancel,
 
 		neg:                 neg,
-		le:                  le,
+		le:                  le.WithField("link-uuid", uuid),
 		mtu:                 mtu,
 		addr:                remoteAddr,
-		uuid:                newLinkUUID(localAddr, remoteAddr, pid),
+		uuid:                uuid,
 		peerID:              pid,
 		closed:              closed,
 		writer:              writer,
@@ -434,7 +435,7 @@ func (l *Link) Close() error {
 			)
 		}
 		if closed := l.closed; closed != nil {
-			l.closedOnce.Do(closed)
+			closed()
 		}
 		l.ctxCancel()
 		if l.mux != nil {
