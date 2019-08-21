@@ -19,6 +19,9 @@ const TransportID = "udp"
 // Version is the version of the udp implementation.
 var Version = semver.MustParse("0.0.1")
 
+// ExtendedSockBuf is the sockbuf parameter to set on udp sockets.
+var ExtendedSockBuf = 16777217
+
 // handshakeTimeout is the time after which a handshake expires
 var handshakeTimeout = time.Second * 8
 
@@ -36,6 +39,14 @@ func NewUDP(
 	pc, err := net.ListenPacket("udp", listenAddr)
 	if err != nil {
 		return nil, err
+	}
+	if uc, ok := pc.(*net.UDPConn); ok {
+		if err := uc.SetReadBuffer(ExtendedSockBuf); err != nil {
+			le.WithError(err).Warn("unable to set read buffer on conn")
+		}
+		if err := uc.SetWriteBuffer(ExtendedSockBuf); err != nil {
+			le.WithError(err).Warn("unable to set write buffer on conn")
+		}
 	}
 
 	uuid := scrc.Crc64([]byte(

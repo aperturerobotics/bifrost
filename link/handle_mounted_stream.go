@@ -113,7 +113,7 @@ func (d *handleMountedStream) Superceeds(other directive.Directive) bool {
 // GetName returns the directive's type name.
 // This is not necessarily unique, and is primarily intended for display.
 func (d *handleMountedStream) GetName() string {
-	return "handleMountedStream"
+	return "HandleMountedStream"
 }
 
 // GetDebugVals returns the directive arguments as k/v pairs.

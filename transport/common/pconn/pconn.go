@@ -17,6 +17,9 @@ import (
 // handshakeTimeout is the time after which a handshake expires
 var handshakeTimeout = time.Second * 8
 
+// defaultMtu is the default mtu to use
+var defaultMtu = 1300
+
 // Transport is a net.PacketConn based transport.
 // The remote address string is used as an identifying key for sessions.
 // It uses KCP to upgrade remote connections to reliable streams.
@@ -168,7 +171,7 @@ func (u *Transport) readPump(ctx context.Context) (readErr error) {
 
 	mtu := u.opts.GetMtu()
 	if mtu == 0 {
-		mtu = 1500
+		mtu = uint32(defaultMtu)
 	}
 	buf := make([]byte, mtu*2)
 

@@ -1,4 +1,4 @@
-* HTTP Forwarding Example
+* Websocket Forwarding Example
 
 ** Node 1
 

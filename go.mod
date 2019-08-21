@@ -15,11 +15,13 @@ require (
 	github.com/gogo/protobuf v1.2.2-0.20190611061853-dadb62585089 // indirect
 	github.com/golang/protobuf v1.3.3-0.20190805180045-4c88cc3f1a34
 	github.com/golang/snappy v0.0.1
+	github.com/google/pprof v0.0.0-20190723021845-34ac40c74b70 // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20190430165422-3e4dfb77656c
 	github.com/gopherjs/websocket v0.0.0-20170522004412-87ee47603f13
 	github.com/gorilla/websocket v1.4.1-0.20190629185528-ae1634f6a989
 	github.com/gortc/stun v1.19.1-0.20190509220556-d73420a61edc
 	github.com/hashicorp/yamux v0.0.0-20181012175058-2f1d1f20f75d
+	github.com/ianlancetaylor/demangle v0.0.0-20181102032728-5e5cf60278f6 // indirect
 	github.com/klauspost/cpuid v1.2.1 // indirect
 	github.com/klauspost/reedsolomon v1.9.3-0.20190625143044-789068412913 // indirect
 	github.com/libp2p/go-libp2p-crypto v0.0.1
@@ -41,6 +43,7 @@ require (
 	github.com/tjfoc/gmsm v1.0.2-0.20190220015903-f915c2cebf58 // indirect
 	github.com/urfave/cli v1.20.1-0.20190203184040-693af58b4d51
 	github.com/xtaci/smux v1.1.1
+	golang.org/x/arch v0.0.0-20190815191158-8a70ba74b3a1 // indirect
 	golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2
 	google.golang.org/grpc v1.23.0
 )

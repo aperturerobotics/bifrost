@@ -49,3 +49,51 @@ to node-1, and proxy the SSH session over the wire.
 Experiment with editing the configs and changing the block crypto and
 compression settings.
 
+** Adding additional controllers at runtime
+
+You can run additional controllers with the client:
+
+#+BEGIN_SRC textNAME:
+   bifrost client - client sub-commands
+
+USAGE:
+   bifrost client command [command options] [arguments...]
+
+COMMANDS:
+     local-peers  returns local peer info
+     bus-info     returns bus information
+     identify     Private key will be loaded with a peer controller
+     subscribe    Subscribe to a pubsub channel and publish with identified peers
+     forward      Protocol ID will be forwarded to the target multiaddress
+     accept       Single incoming stream with Protocol ID will be accepted
+     dial         Single outgoing stream with Protocol ID will be dialed
+     listen       Listen on the multiaddress and forward the connection to a remote stream.
+
+OPTIONS:
+   --dial-addr value  address to dial API on (default: "127.0.0.1:5110")
+   --help, -h         show help
+   
+#+END_SRC
+
+Examples:
+
+#+BEGIN_SRC bash
+  # On node 1:
+  python -m SimpleHTTPServer 8080 & # example workload
+  ./bifrost client forward --protocol-id "http-proxy/1" --target /ip4/127.0.0.1/tcp/8080
+  # On node 2:
+  # localhost:8084 is forwarded to localhost:8080 on node 1.
+  ./bifrost client --dial-addr 127.0.0.1:5112 listen \
+             --peer-id "12D3KooWC9dBAEoTHbEXq2aaTeFit7QVdvPcb6Yf76oGQZ6dGf8N " \
+             --protocol-id http-proxy/1 \
+             --listen /ip4/127.0.0.1/tcp/8084
+#+END_SRC
+
+These commands will instruct the daemon to run extra controllers whilst the
+client commands are active. Exiting the client commands with ctrl+c will cancel
+the controllers.
+
+You can also add more controller definitions to the yaml daemon configuration.
+The root level keys are user-specified controller IDs (arbitrary keys). An
+unlimited number of controller configurations can be added - listeners on
+various ports, devices, etc.

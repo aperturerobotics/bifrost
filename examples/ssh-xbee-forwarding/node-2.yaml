@@ -3,8 +3,9 @@ udp:
     dialers: {}
     listenAddr: :5111
     packetOpts:
-      blockCrypt: BlockCrypt_NONE
-      kcpMode: KCPMode_NORMAL
+      blockCompress: BlockCompress_NONE
+      blockCrypt: BlockCrypt_SALSA20
+      kcpMode: KCPMode_SLOW1
   id: bifrost/udp/1
   revision: 1
 xbee:
@@ -12,21 +13,21 @@ xbee:
     device_path: /dev/ttyUSB0
     device_baud: 115200
     dialers:
-      12D3KooWC9dBAEoTHbEXq2aaTeFit7QVdvPcb6Yf76oGQZ6dGf8N:
+      12D3KooWAuEBeRTQPZumrHV6oWfwvF93GHoWi95t7MLfRkWqH6Ez:
         # This is printed when the daemon starts.
         # It is derived from the serial no. of the board.
-        address: 0013a20040db7492
+        address: 0013a200410acc76
     # these must be set for MTU + optimal connection speed
     packetOpts:
       mtu: 150
-      blockCompress: BlockCompress_SNAPPY
+      blockCompress: BlockCompress_NONE
       blockCrypt: BlockCrypt_SALSA20
       kcpMode: KCPMode_FAST3
   id: bifrost/xbee/1
   revision: 1
 listening:
   config:
-    remotePeerId: 12D3KooWC9dBAEoTHbEXq2aaTeFit7QVdvPcb6Yf76oGQZ6dGf8N
+    remotePeerId: 12D3KooWAuEBeRTQPZumrHV6oWfwvF93GHoWi95t7MLfRkWqH6Ez
     protocolId: my/ssh/forwarding/1
     listenMultiaddr: "/ip4/127.0.0.1/tcp/2000"
     reliable: true

@@ -1,14 +1,16 @@
-udp:
+websocket:
   config:
     dialers:
       12D3KooWC9dBAEoTHbEXq2aaTeFit7QVdvPcb6Yf76oGQZ6dGf8N:
-        address: 127.0.0.1:5112
+        address: ws://127.0.0.1:5112/ws/bifrost-0.1
+        backoff:
+          backoffKind: BackoffKind_EXPONENTIAL
+          exponential:
+            initialInterval: 1000
+            maxInterval: 3000
+            multiplier: 1.4
     listenAddr: :5113
-    packetOpts:
-      blockCompress: BlockCompress_NONE
-      blockCrypt: BlockCrypt_SALSA20
-      kcpMode: KCPMode_FAST3
-  id: bifrost/udp/1
+  id: bifrost/websocket/1
   revision: 1
 listening:
   config:

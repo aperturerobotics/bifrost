@@ -4,7 +4,7 @@ xbee:
     device_baud: 115200
     packetOpts:
       mtu: 150
-      blockCompress: BlockCompress_SNAPPY
+      blockCompress: BlockCompress_NONE
       blockCrypt: BlockCrypt_SALSA20
       kcpMode: KCPMode_FAST3
   id: bifrost/xbee/1

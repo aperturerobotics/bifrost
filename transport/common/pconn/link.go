@@ -119,7 +119,7 @@ func NewLink(
 	sharedSecret := neg.Secret
 	mtu := opts.GetMtu()
 	if mtu == 0 {
-		mtu = 1350
+		mtu = uint32(defaultMtu)
 	}
 
 	nctx, nctxCancel := context.WithCancel(ctx)
