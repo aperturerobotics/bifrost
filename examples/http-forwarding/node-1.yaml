@@ -4,7 +4,9 @@ udp:
     listenAddr: :5112
     packetOpts:
       blockCompress: BlockCompress_NONE
-      blockCrypt: BlockCrypt_SALSA20
+      blockCrypt: BlockCrypt_NONE
+      # blockCompress: BlockCompress_SNAPPY
+      # blockCrypt: BlockCrypt_AES256
       kcpMode: KCPMode_FAST3
   id: bifrost/udp/1
   revision: 1

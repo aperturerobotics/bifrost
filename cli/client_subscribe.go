@@ -11,12 +11,13 @@ import (
 )
 
 // RunSubscribe runs the subscription command.
-func (a *ClientArgs) RunSubscribe(ctx context.Context, _ *cli.Context) error {
+func (a *ClientArgs) RunSubscribe(_ *cli.Context) error {
 	c, err := a.BuildClient()
 	if err != nil {
 		return err
 	}
 
+	ctx := a.GetContext()
 	client, err := c.Subscribe(ctx)
 	if err != nil {
 		return err

@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"context"
 	"io/ioutil"
 	"os"
 
@@ -11,7 +10,7 @@ import (
 )
 
 // RunIdentifyController runs an identify controller.
-func (a *ClientArgs) RunIdentifyController(ctx context.Context, _ *cli.Context) error {
+func (a *ClientArgs) RunIdentifyController(_ *cli.Context) error {
 	c, err := a.BuildClient()
 	if err != nil {
 		return err
@@ -46,7 +45,7 @@ func (a *ClientArgs) RunIdentifyController(ctx context.Context, _ *cli.Context) 
 		return err
 	}
 
-	req, err := c.Identify(ctx, &peer_grpc.IdentifyRequest{
+	req, err := c.Identify(a.GetContext(), &peer_grpc.IdentifyRequest{
 		Config: &a.IdentifyConf,
 	})
 	if err != nil {
