@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/aperturerobotics/bifrost/link"
-	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/controllerbus/directive"
 )
 
@@ -26,13 +25,9 @@ func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.R
 	peerIDConst := o.dir.EstablishLinkWPIDConstraint()
 	peerIDPretty := peerIDConst.Pretty()
 
-	var pushDialer func()
 	if spm := c.staticPeerMap; spm != nil {
 		if dOpts, ok := spm[peerIDPretty]; ok && dOpts.GetAddress() != "" {
-			pushDialer = func() {
-				c.PushDialer(ctx, peerIDConst, dOpts)
-			}
-			go pushDialer()
+			go c.PushDialer(ctx, peerIDConst, dOpts)
 		}
 	}
 
@@ -47,11 +42,6 @@ func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.R
 			if vid, ok := linkIDs[lnk]; ok {
 				handler.RemoveValue(vid)
 				delete(linkIDs, lnk)
-				/*
-					if pushDialer != nil {
-						go pushDialer()
-					}
-				*/
 			}
 		}
 	})
@@ -74,7 +64,7 @@ func (c *Controller) resolveEstablishLink(
 	di directive.Instance,
 	dir link.EstablishLinkWithPeer,
 ) (directive.Resolver, error) {
-	if dir.EstablishLinkWPIDConstraint() == peer.ID("") {
+	if len(dir.EstablishLinkWPIDConstraint()) == 0 {
 		return nil, nil
 	}
 
