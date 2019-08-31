@@ -213,19 +213,10 @@ func NewLink(
 	// conf.MaxStreamWindowSize
 	// conf.MaxReceiveBuffer = 4194304
 	var strmSess io.ReadWriteCloser
-	switch opts.GetBlockCompress() {
-	case BlockCompress_BlockCompress_NONE:
-		strmSess = l.sess
-	case BlockCompress_BlockCompress_SNAPPY:
-		strmSess = newSnappyStream(l.sess)
-	case BlockCompress_BlockCompress_LZ4:
-		strmSess = newLz4Stream(l.sess)
-	default:
+	strmSess, err = opts.GetBlockCompress().BuildCompressStream(l.sess)
+	if err != nil {
 		l.Close()
-		return nil, errors.Errorf(
-			"unrecognized block compression type: %s",
-			opts.GetBlockCompress().String(),
-		)
+		return nil, err
 	}
 
 	// TODO: Expose all settings in Config

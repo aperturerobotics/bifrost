@@ -22,7 +22,8 @@ require (
 	github.com/gortc/stun v1.19.1-0.20190509220556-d73420a61edc
 	github.com/hashicorp/yamux v0.0.0-20181012175058-2f1d1f20f75d
 	github.com/ianlancetaylor/demangle v0.0.0-20181102032728-5e5cf60278f6 // indirect
-	github.com/klauspost/cpuid v1.2.1 // indirect
+	github.com/klauspost/compress v1.8.1
+	github.com/klauspost/cpuid v1.2.2-0.20190713094507-cf2ded4aa833 // indirect
 	github.com/klauspost/reedsolomon v1.9.3-0.20190625143044-789068412913 // indirect
 	github.com/libp2p/go-libp2p-crypto v0.0.1
 	github.com/mr-tron/base58 v1.1.1
