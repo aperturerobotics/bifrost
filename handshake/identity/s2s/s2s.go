@@ -9,7 +9,7 @@ import (
 	"github.com/aperturerobotics/bifrost/handshake/identity"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/golang/protobuf/proto"
-	"github.com/libp2p/go-libp2p-crypto"
+	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/nacl/box"
 	// "golang.org/x/crypto/nacl/secretbox"

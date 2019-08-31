@@ -3,7 +3,8 @@ package peer
 import (
 	"crypto/rand"
 
-	"github.com/libp2p/go-libp2p-crypto"
+	"github.com/libp2p/go-libp2p-core/crypto"
+	lpeer "github.com/libp2p/go-libp2p-core/peer"
 )
 
 // Peer implements common functionalities between peer types.
@@ -30,7 +31,7 @@ func NewPeer(privKey crypto.PrivKey) (Peer, error) {
 		}
 	}
 
-	id, err := IDFromPrivateKey(privKey)
+	id, err := lpeer.IDFromPrivateKey(privKey)
 	if err != nil {
 		return nil, err
 	}

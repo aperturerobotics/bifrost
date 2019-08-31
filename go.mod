@@ -1,8 +1,6 @@
 module github.com/aperturerobotics/bifrost
 
-replace github.com/multiformats/go-multihash => github.com/paralin/go-multihash v0.0.0-20190328060944-4974b52a2e95
-
-replace github.com/libp2p/go-libp2p-crypto => github.com/paralin/go-libp2p-crypto v0.0.0-20181130162722-b150863d61f7
+replace github.com/multiformats/go-multihash => github.com/paralin/go-multihash v0.0.0-20190831070958-91cde46649b8 // gopherjs-compat
 
 require (
 	github.com/aperturerobotics/controllerbus v0.0.0-20190820025710-22efcef818fb
@@ -25,19 +23,17 @@ require (
 	github.com/klauspost/compress v1.8.1
 	github.com/klauspost/cpuid v1.2.2-0.20190713094507-cf2ded4aa833 // indirect
 	github.com/klauspost/reedsolomon v1.9.3-0.20190625143044-789068412913 // indirect
-	github.com/libp2p/go-libp2p-crypto v0.0.1
-	github.com/mr-tron/base58 v1.1.1
+	github.com/libp2p/go-libp2p-core v0.2.3-0.20190828160545-b74f60b9cc2b
+	github.com/mr-tron/base58 v1.1.2
 	github.com/multiformats/go-multiaddr v0.0.4
-	github.com/multiformats/go-multiaddr-dns v0.0.2-0.20190321165136-7d0de25ce05c // indirect
-	github.com/multiformats/go-multiaddr-net v0.0.1
-	github.com/multiformats/go-multihash v0.0.6
+	github.com/multiformats/go-multiaddr-dns v0.0.3 // indirect
+	github.com/multiformats/go-multiaddr-net v0.0.2-0.20190812154948-60a59169e3dc
 	github.com/paralin/kcp-go-lite v4.3.2-0.20190202132049-1e12d0a0fd45+incompatible
 	github.com/patrickmn/go-cache v2.1.1-0.20180815053127-5633e0862627+incompatible
 	github.com/pauleyj/gobee v0.0.0-20190212035730-6270c53072a4
 	github.com/pierrec/lz4 v2.0.5+incompatible
 	github.com/pkg/errors v0.8.2-0.20190227000051-27936f6d90f9
 	github.com/sirupsen/logrus v1.4.1
-	github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72 // indirect
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
 	github.com/templexxx/cpufeat v0.0.0-20180724012125-cef66df7f161 // indirect
 	github.com/templexxx/xor v0.0.0-20181023030647-4e92f724b73b // indirect
@@ -45,6 +41,6 @@ require (
 	github.com/urfave/cli v1.20.1-0.20190203184040-693af58b4d51
 	github.com/xtaci/smux v1.1.1
 	golang.org/x/arch v0.0.0-20190815191158-8a70ba74b3a1 // indirect
-	golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2
+	golang.org/x/crypto v0.0.0-20190618222545-ea8f1a30c443
 	google.golang.org/grpc v1.23.0
 )

@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/aperturerobotics/bifrost/keypem"
-	"github.com/libp2p/go-libp2p-crypto"
+	"github.com/libp2p/go-libp2p-core/crypto"
 )
 
 // ParsePrivateKey parses the private key from a configuration.

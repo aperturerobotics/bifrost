@@ -14,7 +14,7 @@ import (
 	"github.com/aperturerobotics/bifrost/stream/packet"
 	"github.com/aperturerobotics/timestamp"
 	"github.com/golang/protobuf/proto"
-	"github.com/libp2p/go-libp2p-crypto"
+	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"

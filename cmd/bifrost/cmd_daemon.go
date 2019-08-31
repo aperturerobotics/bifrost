@@ -26,7 +26,7 @@ import (
 	"github.com/aperturerobotics/controllerbus/directive"
 	egc "github.com/aperturerobotics/entitygraph/controller"
 	entitygraph_logger "github.com/aperturerobotics/entitygraph/logger"
-	crypto "github.com/libp2p/go-libp2p-crypto"
+	crypto "github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"

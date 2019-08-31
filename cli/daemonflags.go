@@ -7,6 +7,7 @@ import (
 	wtpt "github.com/aperturerobotics/bifrost/transport/websocket"
 	xbtpt "github.com/aperturerobotics/bifrost/transport/xbee"
 	"github.com/aperturerobotics/bifrost/util/backoff"
+	"github.com/aperturerobotics/bifrost/util/blockcompress"
 	"github.com/aperturerobotics/bifrost/util/blockcrypt"
 	"github.com/aperturerobotics/controllerbus/config"
 	"github.com/pkg/errors"
@@ -132,8 +133,8 @@ func (a *DaemonArgs) BuildControllerConfigs() (map[string]config.Config, error) 
 				// KcpMode: pconn.KCPMode_KCPMode_SLOW1,
 				// BlockCrypt: pconn.BlockCrypt_BlockCrypt_TWOFISH,
 				BlockCrypt:    blockcrypt.BlockCrypt_BlockCrypt_SALSA20,
-				BlockCompress: pconn.BlockCompress_BlockCompress_SNAPPY,
-				// BlockCompress: pconn.BlockCompress_BlockCompress_LZ4,
+				BlockCompress: blockcompress.BlockCompress_BlockCompress_S2,
+				// BlockCompress: blockcompress.BlockCompress_BlockCompress_LZ4,
 				// DataShards:   3,
 				// ParityShards: 3,
 			},
@@ -152,7 +153,7 @@ func (a *DaemonArgs) BuildControllerConfigs() (map[string]config.Config, error) 
 			PacketOpts: &pconn.Opts{
 				KcpMode:       pconn.KCPMode_KCPMode_FAST3,
 				BlockCrypt:    blockcrypt.BlockCrypt_BlockCrypt_SALSA20,
-				BlockCompress: pconn.BlockCompress_BlockCompress_NONE,
+				BlockCompress: blockcompress.BlockCompress_BlockCompress_NONE,
 				// KcpMode: pconn.KCPMode_KCPMode_NORMAL,
 				// BlockCrypt: pconn.BlockCrypt_BlockCrypt_AES256,
 				// DataShards:   10,

@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/aperturerobotics/bifrost/hash"
-	"github.com/libp2p/go-libp2p-crypto"
+	"github.com/libp2p/go-libp2p-core/crypto"
 )
 
 // NewSignature constructs a signature.

@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/aperturerobotics/bifrost/pubsub"
-	"github.com/libp2p/go-libp2p-crypto"
+	"github.com/libp2p/go-libp2p-core/crypto"
 )
 
 // subscription implements the pubsub subscription handle.

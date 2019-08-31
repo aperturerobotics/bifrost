@@ -5,7 +5,7 @@ import (
 	"encoding/pem"
 	"errors"
 
-	"github.com/libp2p/go-libp2p-crypto"
+	"github.com/libp2p/go-libp2p-core/crypto"
 )
 
 // PrivPemType is the expected header type on private keys.
