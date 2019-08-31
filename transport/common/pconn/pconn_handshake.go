@@ -90,7 +90,9 @@ func (u *Transport) handleCompleteHandshake(
 	if l, ok := u.links[as]; ok {
 		le.
 			Debug("userping old session with peer")
+		u.linksMtx.Unlock()
 		l.Close()
+		u.linksMtx.Lock()
 	}
 
 	var lnk *Link
