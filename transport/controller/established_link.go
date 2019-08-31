@@ -54,7 +54,7 @@ func newEstablishedLink(
 		Controller:        ctrl,
 	}
 	di.AddDisposeCallback(func() {
-		_ = lnk.Close()
+		go lnk.Close()
 		ctxCancel()
 	})
 	go el.acceptStreamPump(ctx)
