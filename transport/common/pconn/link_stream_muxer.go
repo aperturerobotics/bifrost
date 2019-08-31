@@ -16,7 +16,10 @@ func (l *Link) smuxAcceptPump(initiator bool) {
 		coordStrm, err = l.mux.AcceptStream()
 	}
 	if err != nil {
-		l.le.WithError(err).Warn("error opening coordination stream")
+		l.le.
+			WithError(err).
+			WithField("initiator", initiator).
+			Warn("error opening coordination stream")
 		_ = l.Close()
 		return
 	}
