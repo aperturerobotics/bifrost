@@ -5,9 +5,9 @@ go 1.13
 replace github.com/multiformats/go-multihash => github.com/paralin/go-multihash v0.0.0-20190831070958-91cde46649b8 // gopherjs-compat
 
 require (
-	github.com/aperturerobotics/controllerbus v0.0.0-20190831081211-b9945169481b
-	github.com/aperturerobotics/entitygraph v0.0.0-20190314052401-c4dff866fe8f
-	github.com/aperturerobotics/timestamp v0.2.2-0.20190226083629-0175fc7d961e
+	github.com/aperturerobotics/controllerbus v0.1.0
+	github.com/aperturerobotics/entitygraph v0.1.0
+	github.com/aperturerobotics/timestamp v0.2.3
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/btcsuite/btcd v0.0.0-20190824003749-130ea5bddde3 // indirect
 	github.com/cenkalti/backoff v2.1.1+incompatible
@@ -19,14 +19,19 @@ require (
 	github.com/gopherjs/websocket v0.0.0-20170522004412-87ee47603f13
 	github.com/gorilla/websocket v1.4.1
 	github.com/hashicorp/yamux v0.0.0-20181012175058-2f1d1f20f75d
+	github.com/jbenet/goprocess v0.1.3
 	github.com/klauspost/compress v1.8.1
 	github.com/klauspost/cpuid v1.2.2-0.20190713094507-cf2ded4aa833 // indirect
 	github.com/klauspost/reedsolomon v1.9.3-0.20190625143044-789068412913 // indirect
+	github.com/libp2p/go-eventbus v0.1.0
+	github.com/libp2p/go-libp2p-connmgr v0.1.1
 	github.com/libp2p/go-libp2p-core v0.2.3-0.20190828160545-b74f60b9cc2b
+	github.com/libp2p/go-libp2p-peerstore v0.1.3
 	github.com/mr-tron/base58 v1.1.2
 	github.com/multiformats/go-multiaddr v0.0.4
 	github.com/multiformats/go-multiaddr-dns v0.0.3 // indirect
 	github.com/multiformats/go-multiaddr-net v0.0.2-0.20190812154948-60a59169e3dc
+	github.com/multiformats/go-multistream v0.1.0
 	github.com/paralin/kcp-go-lite v1.0.2-0.20190909213738-b58bf160d159
 	github.com/patrickmn/go-cache v2.1.1-0.20180815053127-5633e0862627+incompatible
 	github.com/pauleyj/gobee v0.0.0-20190212035730-6270c53072a4
