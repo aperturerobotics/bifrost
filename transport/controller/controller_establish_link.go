@@ -35,8 +35,10 @@ func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.R
 	c.linksMtx.Lock()
 	lw := o.c.pushLinkWaiter(peerIDConst, false, func(lnk link.Link, added bool) {
 		if added {
-			if vid, ok := handler.AddValue(lnk); ok {
-				linkIDs[lnk] = vid
+			if _, ok := linkIDs[lnk]; !ok {
+				if vid, ok := handler.AddValue(lnk); ok {
+					linkIDs[lnk] = vid
+				}
 			}
 		} else {
 			if vid, ok := linkIDs[lnk]; ok {
