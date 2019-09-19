@@ -226,7 +226,8 @@ func NewLink(
 		fallthrough
 	case StreamMuxer_StreamMuxer_XTACI_SMUX:
 		conf := smux.DefaultConfig()
-		conf.KeepAliveInterval = time.Second * 10
+		conf.KeepAliveInterval = time.Second * 5
+		conf.KeepAliveTimeout = time.Second * 15
 		// conf.MaxFrameSize = int(mtu) - 10
 		// conf.MaxReceiveBuffer = windowSize
 		var sess *smux.Session
