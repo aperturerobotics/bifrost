@@ -41,6 +41,8 @@ github.com/dgraph-io/badger v1.6.0-rc1/go.mod h1:zwt7syl517jmP8s94KqSxTlM6IMsdhY
 github.com/dgryski/go-farm v0.0.0-20190423205320-6a90982ecee2/go.mod h1:SqUrOPUnsFjfmXRMNPybcSiG0BgUW2AuFH8PAnS2iTw=
 github.com/djherbis/buffer v1.0.1-0.20190902192026-c0b8778b6422 h1:u8i+NtsqHER9nRd6WmklewnEI0hz3t5/Y58yaDjmVGY=
 github.com/djherbis/buffer v1.0.1-0.20190902192026-c0b8778b6422/go.mod h1:VwN8VdFkMY0DCALdY8o00d3IZ6Amz/UNVMWcSaJT44o=
+github.com/djherbis/buffer v1.1.0 h1:uGQ+DZDAMlfC2z3khbBtLcAHC0wyoNrX9lpOml3g3fg=
+github.com/djherbis/buffer v1.1.0/go.mod h1:VwN8VdFkMY0DCALdY8o00d3IZ6Amz/UNVMWcSaJT44o=
 github.com/dustin/go-humanize v1.0.0/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
 github.com/ghodss/yaml v1.0.0 h1:wQHKEahhL6wmXdzwWG11gIVCkOv05bNOh+Rxn0yngAk=
@@ -68,6 +70,7 @@ github.com/google/go-cmp v0.2.0/go.mod h1:oXzfMopK8JAjlY9xF4vHSVASa0yLyX7SntLO5a
 github.com/google/uuid v1.1.1/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/gopherjs/gopherjs v0.0.0-20190909024252-1852f3ae2951 h1:/VMsB5OxWbsVMq8407hoGXbn37cbGYs1k2O9MyhYJTU=
 github.com/gopherjs/gopherjs v0.0.0-20190909024252-1852f3ae2951/go.mod h1:wJfORRmW1u3UXTncJ5qlYoELFm8eSnnEO6hX4iZ3EWY=
+github.com/gopherjs/gopherjs v0.0.0-20190915194858-d3ddacdb130f/go.mod h1:wJfORRmW1u3UXTncJ5qlYoELFm8eSnnEO6hX4iZ3EWY=
 github.com/gopherjs/websocket v0.0.0-20170522004412-87ee47603f13 h1:3TcZe31zyrteCrSU2+4QSSx9N6sQC6PjXwrHjfX3USM=
 github.com/gopherjs/websocket v0.0.0-20170522004412-87ee47603f13/go.mod h1:jd+zY81Fx2lC4bfw58+Rflg1srqmedQjbBUejKOjYNY=
 github.com/gorilla/websocket v1.4.1 h1:q7AeDBpnBk8AogcD4DSag/Ukw/KV+YhzLj2bP5HvKCM=
@@ -161,12 +164,16 @@ github.com/multiformats/go-multiaddr v0.0.1/go.mod h1:xKVEak1K9cS1VdmPZW3LSIb6lg
 github.com/multiformats/go-multiaddr v0.0.2/go.mod h1:xKVEak1K9cS1VdmPZW3LSIb6lgmoS58qz/pzqmAxV44=
 github.com/multiformats/go-multiaddr v0.0.4 h1:WgMSI84/eRLdbptXMkMWDXPjPq7SPLIgGUVm2eroyU4=
 github.com/multiformats/go-multiaddr v0.0.4/go.mod h1:xKVEak1K9cS1VdmPZW3LSIb6lgmoS58qz/pzqmAxV44=
+github.com/multiformats/go-multiaddr v0.1.0 h1:fkISCUNDb3xIpCcI6BGlPsQE+ywcxzimOsUnHWnrE74=
+github.com/multiformats/go-multiaddr v0.1.0/go.mod h1:xKVEak1K9cS1VdmPZW3LSIb6lgmoS58qz/pzqmAxV44=
 github.com/multiformats/go-multiaddr-dns v0.0.1/go.mod h1:9kWcqw/Pj6FwxAwW38n/9403szc57zJPs45fmnznu3Q=
 github.com/multiformats/go-multiaddr-dns v0.0.3 h1:P19q/k9jwmtgh+qXFkKfgFM7rCg/9l5AVqh7VNxSXhs=
 github.com/multiformats/go-multiaddr-dns v0.0.3/go.mod h1:9kWcqw/Pj6FwxAwW38n/9403szc57zJPs45fmnznu3Q=
 github.com/multiformats/go-multiaddr-net v0.0.1/go.mod h1:nw6HSxNmCIQH27XPGBuX+d1tnvM7ihcFwHMSstNAVUU=
 github.com/multiformats/go-multiaddr-net v0.0.2-0.20190812154948-60a59169e3dc h1:Cl+pRZWz7Qd7GMH8oD3/QiDtv4u5FcGh15UrMzeCNvw=
 github.com/multiformats/go-multiaddr-net v0.0.2-0.20190812154948-60a59169e3dc/go.mod h1:nw6HSxNmCIQH27XPGBuX+d1tnvM7ihcFwHMSstNAVUU=
+github.com/multiformats/go-multiaddr-net v0.1.0 h1:ZepO8Ezwovd+7b5XPPDhQhayk1yt0AJpzQBpq9fejx4=
+github.com/multiformats/go-multiaddr-net v0.1.0/go.mod h1:5JNbcfBOP4dnhoZOv10JJVkJO0pCCEf8mTnipAo2UZQ=
 github.com/multiformats/go-multibase v0.0.1/go.mod h1:bja2MqRZ3ggyXtZSEDKpl0uO/gviWFaSteVbWT51qgs=
 github.com/multiformats/go-multistream v0.1.0 h1:UpO6jrsjqs46mqAK3n6wKRYFhugss9ArzbyUzU+4wkQ=
 github.com/multiformats/go-multistream v0.1.0/go.mod h1:fJTiDfXJVmItycydCnNx4+wSzZ5NwG2FEVAI30fiovg=

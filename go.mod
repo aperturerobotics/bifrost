@@ -11,11 +11,11 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/btcsuite/btcd v0.0.0-20190824003749-130ea5bddde3 // indirect
 	github.com/cenkalti/backoff v2.1.1+incompatible
-	github.com/djherbis/buffer v1.0.1-0.20190902192026-c0b8778b6422
+	github.com/djherbis/buffer v1.1.0
 	github.com/gogo/protobuf v1.3.1-0.20190908201246-8a5ed79f6888 // indirect
 	github.com/golang/protobuf v1.3.3-0.20190827175835-822fe56949f5
 	github.com/golang/snappy v0.0.1
-	github.com/gopherjs/gopherjs v0.0.0-20190909024252-1852f3ae2951
+	github.com/gopherjs/gopherjs v0.0.0-20190915194858-d3ddacdb130f
 	github.com/gopherjs/websocket v0.0.0-20170522004412-87ee47603f13
 	github.com/gorilla/websocket v1.4.1
 	github.com/hashicorp/yamux v0.0.0-20181012175058-2f1d1f20f75d
@@ -23,15 +23,10 @@ require (
 	github.com/klauspost/compress v1.8.1
 	github.com/klauspost/cpuid v1.2.2-0.20190713094507-cf2ded4aa833 // indirect
 	github.com/klauspost/reedsolomon v1.9.3-0.20190625143044-789068412913 // indirect
-	github.com/libp2p/go-eventbus v0.1.0
-	github.com/libp2p/go-libp2p-connmgr v0.1.1
 	github.com/libp2p/go-libp2p-core v0.2.3-0.20190828160545-b74f60b9cc2b
-	github.com/libp2p/go-libp2p-peerstore v0.1.3
 	github.com/mr-tron/base58 v1.1.2
-	github.com/multiformats/go-multiaddr v0.0.4
-	github.com/multiformats/go-multiaddr-dns v0.0.3 // indirect
-	github.com/multiformats/go-multiaddr-net v0.0.2-0.20190812154948-60a59169e3dc
-	github.com/multiformats/go-multistream v0.1.0
+	github.com/multiformats/go-multiaddr v0.1.0
+	github.com/multiformats/go-multiaddr-net v0.1.0
 	github.com/paralin/kcp-go-lite v1.0.2-0.20190909213738-b58bf160d159
 	github.com/patrickmn/go-cache v2.1.1-0.20180815053127-5633e0862627+incompatible
 	github.com/pauleyj/gobee v0.0.0-20190212035730-6270c53072a4
