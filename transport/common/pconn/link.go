@@ -177,10 +177,10 @@ func NewLink(
 
 	kcpMode := opts.GetKcpMode()
 	switch kcpMode {
-	case KCPMode_KCPMode_UNKNOWN:
-		fallthrough
 	case KCPMode_KCPMode_NORMAL:
 		l.sess.SetNoDelay(0, 30, 0, 0)
+	case KCPMode_KCPMode_UNKNOWN:
+		fallthrough
 	case KCPMode_KCPMode_FAST:
 		l.sess.SetNoDelay(1, 30, 2, 1)
 	case KCPMode_KCPMode_FAST2:
