@@ -30,18 +30,12 @@ type dialer struct {
 
 // newDialer constructs a new dialer.
 func newDialer(
-	ctx context.Context,
+	rctx context.Context,
 	t *Transport,
 	peerID peer.ID,
 	addr net.Addr,
 	address string,
 ) (*dialer, error) {
-	var rctx context.Context
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case rctx = <-t.ctxCh:
-	}
 	d := &dialer{
 		t:       t,
 		rootCtx: rctx,
@@ -76,14 +70,4 @@ func (d *dialer) execute() (*Link, error) {
 	}
 
 	return d.t.handleSession(d.rootCtx, sess)
-}
-
-// waitForComplete waits for the dialer to complete.
-// returns an error and/or the yielded link
-func (d *dialer) waitForComplete(ctx context.Context) (*Link, error) {
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-		// TODO
-	}
 }

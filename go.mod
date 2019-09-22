@@ -5,8 +5,8 @@ go 1.13
 replace github.com/multiformats/go-multihash => github.com/paralin/go-multihash v0.0.0-20190831070958-91cde46649b8 // gopherjs-compat
 
 require (
-	github.com/aperturerobotics/controllerbus v0.1.2
-	github.com/aperturerobotics/entitygraph v0.1.0
+	github.com/aperturerobotics/controllerbus v0.1.3-0.20190922062412-142439791827
+	github.com/aperturerobotics/entitygraph v0.1.1-0.20190909222015-b58513aa9083
 	github.com/aperturerobotics/timestamp v0.2.3
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/btcsuite/btcd v0.0.0-20190824003749-130ea5bddde3 // indirect

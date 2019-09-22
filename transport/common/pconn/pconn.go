@@ -29,6 +29,8 @@ type Transport struct {
 	pc net.PacketConn
 	// uuid is the unique id
 	uuid uint64
+	// laddr is the local address
+	laddr net.Addr
 	// handler is the transport handler
 	handler transport.TransportHandler
 	// opts are extra options
@@ -84,6 +86,7 @@ func New(
 		identity:   identity,
 		opts:       *opts,
 		peerID:     peerID,
+		laddr:      laddr,
 		privKey:    privKey,
 		uuid:       newTransportUUID(laddr, peerID),
 		links:      make(map[string]*Link),
@@ -118,6 +121,11 @@ func defaultQuicConfig() *quic.Config {
 	}
 }
 
+// LocalAddr returns the local address.
+func (t *Transport) LocalAddr() net.Addr {
+	return t.laddr
+}
+
 // DialPeer dials a peer given an address. The yielded link should be
 // emitted to the transport handler. DialPeer should return nil if the link
 // was established. DialPeer will then not be called again for the same peer
@@ -135,44 +143,56 @@ func (t *Transport) DialPeer(ctx context.Context, peerID peer.ID, as string) (bo
 		return false, errors.Errorf("addr parser returned %s when input was %s", adrs, as)
 	}
 
+	var rctx context.Context
+	select {
+	case <-ctx.Done():
+		return false, ctx.Err()
+	case rctx = <-t.ctxCh:
+		t.ctxCh <- rctx
+	}
+
 	// abort if we already have a peer with the same id connected
 	var dl *dialer
 	t.linksMtx.Lock()
+	defer t.linksMtx.Unlock()
+
 	if edl, dialerOk := t.dialers[as]; dialerOk {
 		if edl.peerID != peerID {
 			// TODO: possibly override the prior
-			t.linksMtx.Unlock()
 			return false, nil
 		}
 		dl = edl
 	} else {
 		if _, elnk := t.links[as]; elnk {
-			t.linksMtx.Unlock()
 			return false, nil
 		}
 	}
 	if dl == nil {
-		dl, err = newDialer(ctx, t, peerID, addr, as)
+		dl, err = newDialer(rctx, t, peerID, addr, as)
 		if err == nil {
 			t.dialers[as] = dl
 			go func() {
-				_, _ = dl.execute()
-				t.linksMtx.Lock()
-				if odl, odlOk := t.dialers[as]; odlOk && odl == dl {
-					delete(t.dialers, as)
+				lnk, _ := dl.execute()
+				if lnk == nil {
+					t.linksMtx.Lock()
+					if odl, odlOk := t.dialers[as]; odlOk && odl == dl {
+						delete(t.dialers, as)
+					}
+					t.linksMtx.Unlock()
 				}
-				t.linksMtx.Unlock()
 			}()
 		}
 	}
-	t.linksMtx.Unlock()
 	if err != nil {
 		return false, err
 	}
+	return true, nil
 
 	// Add a reference to the dialer.
-	nlnk, err := dl.waitForComplete(ctx)
-	return nlnk != nil, err
+	/*
+		nlnk, err := dl.waitForComplete(ctx)
+		return nlnk != nil, err
+	*/
 }
 
 // Execute executes the transport as configured, returning any fatal error.
@@ -273,6 +293,7 @@ func (t *Transport) handleSession(ctx context.Context, sess quic.Session) (*Link
 		// TODO fully cancel dialer
 		// TODO push link to dialer (to resolve it)
 		dialer.ctxCancel()
+		delete(t.dialers, as)
 	}
 	if elnk, elnkOk := t.links[as]; elnkOk {
 		rpeer := elnk.peerID
@@ -280,7 +301,7 @@ func (t *Transport) handleSession(ctx context.Context, sess quic.Session) (*Link
 			WithField("remote-addr", as).
 			WithField("remote-peer", rpeer.Pretty()).
 			Warn("userping existing session with peer")
-		elnk.Close()
+		go elnk.Close()
 	}
 	t.links[as] = lnk
 	go t.handler.HandleLinkEstablished(lnk)
