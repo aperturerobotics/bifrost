@@ -4,10 +4,6 @@ udp:
       12D3KooWC9dBAEoTHbEXq2aaTeFit7QVdvPcb6Yf76oGQZ6dGf8N:
         address: 127.0.0.1:5112
     listenAddr: :5113
-    packetOpts:
-      blockCompress: BlockCompress_NONE
-      blockCrypt: BlockCrypt_NONE
-      kcpMode: KCPMode_FAST3
   id: bifrost/udp/1
   revision: 1
 listening:

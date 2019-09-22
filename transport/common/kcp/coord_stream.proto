@@ -1,5 +1,5 @@
 syntax = "proto3";
-package pconn;
+package kcp;
 
 // CoordPacketType is the packet type of a coordination stream packet.
 enum CoordPacketType {

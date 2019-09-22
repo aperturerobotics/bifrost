@@ -1,5 +1,5 @@
 syntax = "proto3";
-package pconn;
+package kcp;
 
 // PacketType is a one-byte trailer indicating the type of packet.
 enum PacketType {

@@ -23,6 +23,8 @@ require (
 	github.com/klauspost/cpuid v1.2.2-0.20190713094507-cf2ded4aa833 // indirect
 	github.com/klauspost/reedsolomon v1.9.3-0.20190625143044-789068412913 // indirect
 	github.com/libp2p/go-libp2p-core v0.2.3-0.20190828160545-b74f60b9cc2b
+	github.com/libp2p/go-libp2p-tls v0.1.1
+	github.com/lucas-clemente/quic-go v0.12.0
 	github.com/mr-tron/base58 v1.1.2
 	github.com/multiformats/go-multiaddr v0.1.0
 	github.com/multiformats/go-multiaddr-net v0.1.0

@@ -1,7 +1,7 @@
 package xbee
 
 import (
-	"github.com/aperturerobotics/bifrost/transport/common/pconn"
+	pconn "github.com/aperturerobotics/bifrost/transport/common/kcp"
 )
 
 // Link represents a UDP-based connection/link.

@@ -1,4 +1,4 @@
-package pconn
+package kcp
 
 import (
 	"github.com/aperturerobotics/bifrost/stream"

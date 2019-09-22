@@ -2,6 +2,7 @@ package cli
 
 import (
 	"github.com/aperturerobotics/bifrost/link/hold-open"
+	"github.com/aperturerobotics/bifrost/transport/common/kcp"
 	"github.com/aperturerobotics/bifrost/transport/common/pconn"
 	udptpt "github.com/aperturerobotics/bifrost/transport/udp"
 	wtpt "github.com/aperturerobotics/bifrost/transport/websocket"
@@ -127,16 +128,11 @@ func (a *DaemonArgs) BuildControllerConfigs() (map[string]config.Config, error) 
 			DevicePath: a.XBeePath,
 			DeviceBaud: int32(a.XBeeBaud),
 			Dialers:    staticPeers,
-			PacketOpts: &pconn.Opts{
-				Mtu:     150,
-				KcpMode: pconn.KCPMode_KCPMode_FAST3,
-				// KcpMode: pconn.KCPMode_KCPMode_SLOW1,
-				// BlockCrypt: pconn.BlockCrypt_BlockCrypt_TWOFISH,
+			PacketOpts: &kcp.Opts{
+				Mtu:           150,
+				KcpMode:       kcp.KCPMode_KCPMode_FAST3,
 				BlockCrypt:    blockcrypt.BlockCrypt_BlockCrypt_SALSA20,
 				BlockCompress: blockcompress.BlockCompress_BlockCompress_S2,
-				// BlockCompress: blockcompress.BlockCompress_BlockCompress_LZ4,
-				// DataShards:   3,
-				// ParityShards: 3,
 			},
 		}
 	}
@@ -150,15 +146,7 @@ func (a *DaemonArgs) BuildControllerConfigs() (map[string]config.Config, error) 
 		confs["udp"] = &udptpt.Config{
 			Dialers:    staticPeers,
 			ListenAddr: a.UDPListen,
-			PacketOpts: &pconn.Opts{
-				KcpMode:       pconn.KCPMode_KCPMode_FAST3,
-				BlockCrypt:    blockcrypt.BlockCrypt_BlockCrypt_SALSA20,
-				BlockCompress: blockcompress.BlockCompress_BlockCompress_NONE,
-				// KcpMode: pconn.KCPMode_KCPMode_NORMAL,
-				// BlockCrypt: pconn.BlockCrypt_BlockCrypt_AES256,
-				// DataShards:   10,
-				// ParityShards: 3,
-			},
+			PacketOpts: &pconn.Opts{},
 		}
 	}
 

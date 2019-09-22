@@ -2,12 +2,10 @@ package udp
 
 import (
 	"net"
-	"strings"
 	"time"
 
 	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/aperturerobotics/bifrost/transport/common/pconn"
-	"github.com/aperturerobotics/bifrost/util/scrc"
 	"github.com/blang/semver"
 	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/sirupsen/logrus"
@@ -49,12 +47,8 @@ func NewUDP(
 		}
 	}
 
-	uuid := scrc.Crc64([]byte(
-		strings.Join([]string{TransportID, listenAddr}, "/"),
-	))
-	conn := pconn.New(
+	return pconn.New(
 		le,
-		uuid,
 		pc,
 		pKey,
 		func(addr string) (net.Addr, error) {
@@ -63,7 +57,6 @@ func NewUDP(
 		c,
 		pconnOpts,
 	)
-	return conn, nil
 }
 
 // _ is a type assertion.

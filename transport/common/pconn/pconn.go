@@ -2,302 +2,241 @@ package pconn
 
 import (
 	"context"
+	"crypto/tls"
 	"net"
 	"sync"
-	"time"
 
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/transport"
-	"github.com/aperturerobotics/controllerbus/directive"
+	"github.com/aperturerobotics/bifrost/util/scrc"
 	"github.com/libp2p/go-libp2p-core/crypto"
+	p2ptls "github.com/libp2p/go-libp2p-tls"
+	"github.com/lucas-clemente/quic-go"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
-// handshakeTimeout is the time after which a handshake expires
-var handshakeTimeout = time.Second * 8
-
-// defaultMtu is the default mtu to use
-var defaultMtu = 1300
-
-// Transport is a net.PacketConn based transport.
-// The remote address string is used as an identifying key for sessions.
-// It uses KCP to upgrade remote connections to reliable streams.
+// Transport implements a bifrost transport with a Quic-based packet conn.
+// Transport UUIDs are deterministic and based on the LocalAddr() of the pconn.
 type Transport struct {
-	ctx context.Context
 	// le is the logger
 	le *logrus.Entry
+	// peerID is the local peer id
+	peerID peer.ID
+	// privKey is the local private key
+	privKey crypto.PrivKey
 	// pc is the underlying packet conn.
 	pc net.PacketConn
 	// uuid is the unique id
 	uuid uint64
-	// privKey is the local priv key
-	privKey crypto.PrivKey
-	// peerID is the node peer id
-	peerID peer.ID
 	// handler is the transport handler
 	handler transport.TransportHandler
 	// opts are extra options
 	opts Opts
-
-	// readErrCh indicates a read error
-	readErrCh chan error
-
-	// handshakesMtx guards the handshakes map
-	handshakesMtx sync.Mutex
-	// handshakes is the set of ongoing handshakes
-	handshakes map[string]*inflightHandshake
-
-	// linksMtx guards the links map
-	linksMtx sync.Mutex
-	// links is the set of active links
-	links map[string]*Link
-	// lastLink was the last link to receive a packet
-	lastLink *Link
-	// lastLinkAddr was the last addr to receive a packet from
-	lastLinkAddr string
-
 	// addrParser parses an address from a string
 	// if nil, the dialer will not function
 	addrParser func(addr string) (net.Addr, error)
+	// identity is the p2ptls identity
+	identity *p2ptls.Identity
+	// ctxCh contains the ctx
+	ctxCh chan context.Context
+
+	// linksMtx guards links and dialers
+	linksMtx sync.Mutex
+	// links is the links map
+	// TODO: we can have multiple links for one remote peer on a transport
+	// TODO: key this by address instead
+	// maps peer.ID to Link
+	links map[string]*Link
+	// dialers is the dialers map
+	// maps address to dialer
+	dialers map[string]*dialer
 }
 
-// New builds a new packet-conn based transport, listening on the addr.
+// New constructs a new packet-conn based transport.
 func New(
 	le *logrus.Entry,
-	uuid uint64,
 	pc net.PacketConn,
-	pKey crypto.PrivKey,
+	privKey crypto.PrivKey,
 	addrParser func(addr string) (net.Addr, error),
 	tc transport.TransportHandler,
 	opts *Opts,
-) *Transport {
+) (*Transport, error) {
 	if opts == nil {
 		opts = &Opts{}
 	}
-	pid, _ := peer.IDFromPrivateKey(pKey)
-	return &Transport{
-		le:      le.WithField("laddr", pc.LocalAddr().String()),
-		pc:      pc,
-		privKey: pKey,
-		peerID:  pid,
-		uuid:    uuid,
-		handler: tc,
-		opts:    *opts,
 
-		handshakes: make(map[string]*inflightHandshake),
-		links:      make(map[string]*Link),
-
-		readErrCh:  make(chan error, 1),
-		addrParser: addrParser,
+	peerID, err := peer.IDFromPrivateKey(privKey)
+	if err != nil {
+		return nil, err
 	}
+
+	identity, err := p2ptls.NewIdentity(privKey)
+	if err != nil {
+		return nil, err
+	}
+
+	laddr := pc.LocalAddr()
+	return &Transport{
+		le:         le.WithField("laddr", laddr.String()),
+		pc:         pc,
+		handler:    tc,
+		identity:   identity,
+		opts:       *opts,
+		peerID:     peerID,
+		privKey:    privKey,
+		uuid:       newTransportUUID(laddr, peerID),
+		links:      make(map[string]*Link),
+		dialers:    make(map[string]*dialer),
+		addrParser: addrParser,
+		ctxCh:      make(chan context.Context, 1),
+	}, nil
 }
 
-// GetUUID returns a host-unique ID for this transport.
-func (u *Transport) GetUUID() uint64 {
-	return u.uuid
+// newTransportUUID builds the UUID for a transport
+func newTransportUUID(localAddr net.Addr, peerID peer.ID) uint64 {
+	return scrc.Crc64(
+		[]byte("bifrost/pconn/"),
+		[]byte(localAddr.String()),
+		[]byte("/"),
+		[]byte(peerID.Pretty()),
+	)
+}
+
+// defaultQuicConfig constructs the default quic config.
+func defaultQuicConfig() *quic.Config {
+	return &quic.Config{
+		MaxIncomingStreams:                    1000,
+		MaxIncomingUniStreams:                 -1,              // disable unidirectional streams
+		MaxReceiveStreamFlowControlWindow:     3 * (1 << 20),   // 3 MB
+		MaxReceiveConnectionFlowControlWindow: 4.5 * (1 << 20), // 4.5 MB
+		AcceptToken: func(clientAddr net.Addr, _ *quic.Token) bool {
+			// TODO(#6): require source address validation when under load
+			return true
+		},
+		KeepAlive: true,
+	}
 }
 
 // DialPeer dials a peer given an address. The yielded link should be
 // emitted to the transport handler. DialPeer should return nil if the link
 // was established. DialPeer will then not be called again for the same peer
 // ID and address tuple until the yielded link is lost.
-func (u *Transport) DialPeer(ctx context.Context, peerID peer.ID, as string) (bool, error) {
-	if u.addrParser == nil {
+func (t *Transport) DialPeer(ctx context.Context, peerID peer.ID, as string) (bool, error) {
+	if t.addrParser == nil {
 		return true, nil
 	}
 
-	addr, err := u.addrParser(as)
+	addr, err := t.addrParser(as)
 	if err != nil {
 		return true, err
 	}
+	if adrs := addr.String(); adrs != as {
+		return false, errors.Errorf("addr parser returned %s when input was %s", adrs, as)
+	}
 
 	// abort if we already have a peer with the same id connected
-	u.linksMtx.Lock()
-	for _, lnk := range u.links {
-		if lnk.peerID == peerID {
-			u.linksMtx.Unlock()
+	var dl *dialer
+	t.linksMtx.Lock()
+	if edl, dialerOk := t.dialers[as]; dialerOk {
+		if edl.peerID != peerID {
+			// TODO: possibly override the prior
+			t.linksMtx.Unlock()
+			return false, nil
+		}
+		dl = edl
+	} else {
+		if _, elnk := t.links[as]; elnk {
+			t.linksMtx.Unlock()
 			return false, nil
 		}
 	}
-	u.linksMtx.Unlock()
-
-	var hs *inflightHandshake
-	var ok bool
-	u.handshakesMtx.Lock()
-	hs, ok = u.handshakes[as]
-	if !ok {
-		u.le.WithField("addr", as).Debug("pushing new handshaker [dial]")
-		hs, err = u.pushHandshaker(ctx, addr, true)
-		if err != nil {
-			u.handshakesMtx.Unlock()
-			return true, err
+	if dl == nil {
+		dl, err = newDialer(ctx, t, peerID, addr, as)
+		if err == nil {
+			t.dialers[as] = dl
+			go func() {
+				_, _ = dl.execute()
+				t.linksMtx.Lock()
+				if odl, odlOk := t.dialers[as]; odlOk && odl == dl {
+					delete(t.dialers, as)
+				}
+				t.linksMtx.Unlock()
+			}()
 		}
 	}
-	u.handshakesMtx.Unlock()
-
-	errCh := make(chan error, 1)
-	hs.pushCompleteCb(func(err error) {
-		errCh <- err
-	})
-	select {
-	case <-ctx.Done():
-		return false, ctx.Err()
-	case err := <-errCh:
+	t.linksMtx.Unlock()
+	if err != nil {
 		return false, err
 	}
+
+	// Add a reference to the dialer.
+	nlnk, err := dl.waitForComplete(ctx)
+	return nlnk != nil, err
 }
 
-// Execute processes the transport, emitting events to the handler.
-// Fatal errors are returned.
-func (u *Transport) Execute(ctx context.Context) error {
-	u.ctx = ctx
-	go u.readPump(ctx)
-
-	u.le.Debug("listening")
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case rerr := <-u.readErrCh:
-		return rerr
-	}
-}
-
-// readPump reads data from the listener
-func (u *Transport) readPump(ctx context.Context) (readErr error) {
+// Execute executes the transport as configured, returning any fatal error.
+func (t *Transport) Execute(ctx context.Context) error {
+	t.ctxCh <- ctx
 	defer func() {
-		u.readErrCh <- readErr
+		<-t.ctxCh
 	}()
-
-	mtu := u.opts.GetMtu()
-	if mtu == 0 {
-		mtu = uint32(defaultMtu)
+	// Listen
+	var tlsConf tls.Config
+	tlsConf.GetConfigForClient = func(_ *tls.ClientHelloInfo) (*tls.Config, error) {
+		// return a tls.Config that verifies the peer's certificate chain.
+		// Note that since we have no way of associating an incoming QUIC connection with
+		// the peer ID calculated here, we don't actually receive the peer's public key
+		// from the key chan.
+		conf, _ := t.identity.ConfigForAny()
+		return conf, nil
 	}
-	buf := make([]byte, mtu*2)
+	quicConfig := defaultQuicConfig()
+	t.le.Debug("starting to listen with quic + tls")
+	ln, err := quic.Listen(t.pc, &tlsConf, quicConfig)
+	if err != nil {
+		return err
+	}
+	defer ln.Close()
 
+	// accept new connections
 	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
-		}
-
-		if err := u.pc.SetReadDeadline(time.Now().Add(3 * time.Second)); err != nil {
+		sess, err := ln.Accept(ctx)
+		if err != nil {
 			return err
 		}
 
-		n, addr, err := u.pc.ReadFrom(buf)
+		_, err = t.handleSession(ctx, sess)
 		if err != nil {
-			if e, ok := err.(net.Error); !ok || (!e.Timeout() || !e.Temporary()) {
-				return err
-			}
-
+			t.le.WithError(err).Warn("cannot build link for session")
+			_ = sess.CloseWithError(500, "cannot build link")
 			continue
 		}
-
-		if n == 0 {
-			continue
-		}
-
-		if err := u.handlePacket(ctx, buf[:n], addr); err != nil {
-			u.le.
-				WithError(err).
-				WithField("addr", addr.String()).
-				Debugf("dropped packet len(%d)", n)
-		} else {
-			/*
-				u.le.
-					WithField("length", n).
-					WithField("addr", addr.String()).
-					Debugf("handled packet: %#v", buf[:n])
-			*/
-		}
-		buf = buf[:cap(buf)]
 	}
 }
 
-// LocalAddr returns the local address.
-func (u *Transport) LocalAddr() net.Addr {
-	return u.pc.LocalAddr()
+// GetUUID returns a host-unique ID for this transport.
+func (t *Transport) GetUUID() uint64 {
+	return t.uuid
 }
 
-// handlePacket handles an incoming packet.
-// buf must be copied before it returns
-func (u *Transport) handlePacket(ctx context.Context, buf []byte, addr net.Addr) error {
-	as := addr.String()
-	packetType := PacketType(buf[len(buf)-1])
-	if err := packetType.Validate(); err != nil {
-		return err
-	}
-	buf = buf[:len(buf)-1]
+// GetPeerID returns the peer ID.
+func (t *Transport) GetPeerID() peer.ID {
+	return t.peerID
+}
 
-	var err error
-	if packetType == PacketType_PacketType_HANDSHAKE {
-		ale := u.le.WithField("addr", as).WithField("data-len", len(buf))
-		u.handshakesMtx.Lock()
-		hs := u.handshakes[as]
-		if hs == nil {
-			ale.Debug("pushing new handshaker [accept]")
-			hs, err = u.pushHandshaker(ctx, addr, false)
-		} else {
-			ale.Debug("used existing handshaker")
-		}
-		u.handshakesMtx.Unlock()
-		if err != nil {
-			return errors.Wrap(err, "build handshaker")
-		}
-
-		hs.pushPacket(buf)
-		return nil
-	}
-
-	isCloseMarker := packetType == PacketType_PacketType_CLOSE_LINK
-	u.linksMtx.Lock()
-	var link *Link
-	if u.lastLinkAddr == as && u.lastLink != nil {
-		link = u.lastLink
-	} else {
-		var ok bool
-		link, ok = u.links[as]
-		if ok {
-			u.lastLinkAddr = as
-			u.lastLink = link
-		}
-	}
-	u.linksMtx.Unlock()
-
-	if link == nil {
-		if !isCloseMarker {
-			u.handshakesMtx.Lock()
-			hs, ok := u.handshakes[as]
-			u.handshakesMtx.Unlock()
-			if ok {
-				hs.pushPacket(buf)
-				return nil
-			} else {
-				_, _ = u.pc.WriteTo([]byte{byte(PacketType_PacketType_CLOSE_LINK)}, addr)
-				return errors.Errorf("unknown remote link: %s", as)
-			}
-		} else {
-			return nil
-		}
-	}
-
-	link.HandlePacket(packetType, buf)
+// Close closes the transport, returning any errors closing.
+func (t *Transport) Close() error {
 	return nil
 }
 
 // handleLinkLost is called when a link is lost.
-func (u *Transport) handleLinkLost(addr string, lnk *Link) {
+func (u *Transport) handleLinkLost(addrStr string, lnk *Link) {
 	u.linksMtx.Lock()
-	existing := u.links[addr]
+	existing := u.links[addrStr]
 	rel := existing == lnk
 	if rel {
-		delete(u.links, addr)
-	}
-	if u.lastLink == lnk {
-		u.lastLink = nil
-		u.lastLinkAddr = ""
+		delete(u.links, addrStr)
 	}
 	u.linksMtx.Unlock()
 
@@ -306,24 +245,48 @@ func (u *Transport) handleLinkLost(addr string, lnk *Link) {
 	}
 }
 
-// GetPeerID returns the node peer id.
-func (u *Transport) GetPeerID() peer.ID {
-	return u.peerID
+// handleSession handles a new session.
+func (t *Transport) handleSession(ctx context.Context, sess quic.Session) (*Link, error) {
+	var lnk *Link
+	var err error
+	as := sess.RemoteAddr().String()
+	lnk, err = NewLink(
+		ctx,
+		t.le,
+		&t.opts,
+		t.GetUUID(),
+		t.peerID,
+		t.pc.LocalAddr(),
+		sess,
+		func() {
+			if lnk != nil {
+				go t.handleLinkLost(as, lnk)
+			}
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	t.linksMtx.Lock()
+	if dialer, dialerOk := t.dialers[as]; dialerOk {
+		// TODO fully cancel dialer
+		// TODO push link to dialer (to resolve it)
+		dialer.ctxCancel()
+	}
+	if elnk, elnkOk := t.links[as]; elnkOk {
+		rpeer := elnk.peerID
+		t.le.
+			WithField("remote-addr", as).
+			WithField("remote-peer", rpeer.Pretty()).
+			Warn("userping existing session with peer")
+		elnk.Close()
+	}
+	t.links[as] = lnk
+	go t.handler.HandleLinkEstablished(lnk)
+	t.linksMtx.Unlock()
+	return lnk, nil
 }
 
-// HandleDirective asks if the handler can resolve the directive.
-// If it can, it returns a resolver. If not, returns nil.
-// Any exceptional errors are returned for logging.
-// It is safe to add a reference to the directive during this call.
-func (c *Transport) HandleDirective(ctx context.Context, di directive.Instance) (directive.Resolver, error) {
-	// TODO
-	return nil, nil
-}
-
-// Close closes the transport.
-func (u *Transport) Close() error {
-	return u.pc.Close()
-}
-
-// _ is a type assertion.
+// _ is a type assertion
 var _ transport.Transport = ((*Transport)(nil))

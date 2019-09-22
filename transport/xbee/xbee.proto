@@ -1,7 +1,7 @@
 syntax = "proto3";
 package xbee;
 
-import "github.com/aperturerobotics/bifrost/transport/common/pconn/pconn.proto";
+import "github.com/aperturerobotics/bifrost/transport/common/kcp/kcp.proto";
 import "github.com/aperturerobotics/bifrost/transport/common/dialer/dialer.proto";
 
 // Config is the configuration for the udp transport.
@@ -15,7 +15,7 @@ message Config {
   int32 device_baud = 3;
   // PacketOpts are options to set on the packet connection.
   // In lossy environments, set the data shards for error correction.
-  pconn.Opts packet_opts = 4;
+  kcp.Opts packet_opts = 4;
   // Dialers maps peer IDs to dialers.
   map<string, dialer.DialerOpts> dialers = 5;
 }

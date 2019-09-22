@@ -1,5 +1,5 @@
 syntax = "proto3";
-package pconn;
+package kcp;
 
 // HandshakeExtraData contains the extra data field of the pconn handshake.
 message HandshakeExtraData {

@@ -1,85 +1,9 @@
 syntax = "proto3";
 package pconn;
 
-import "github.com/aperturerobotics/bifrost/util/blockcrypt/blockcrypt.proto";
-import "github.com/aperturerobotics/bifrost/util/blockcompress/blockcompress.proto";
-
-// KCPMode is the mode to set KCP to.
-enum KCPMode {
-  // KCPMode_UNKNOWN defaults to normal mode.
-  KCPMode_UNKNOWN = 0;
-  // KCPMode_NORMAL is the normal mode.
-  // NoDelay = 0
-  // Interval = 40
-  // Resend = 2
-  // NoCongestion = 1
-  KCPMode_NORMAL = 1;
-  // KCPMode_FAST is the "fast" mode.
-  // NoDelay = 0
-  // Interval = 30
-  // Resend = 2
-  // NoCongestion = 1
-  KCPMode_FAST = 2;
-  // KCPMode_FAST2 is the "fast2" mode.
-  // NoDelay = 1
-  // Interval = 20
-  // Resend = 2
-  // NoCongestion = 1
-  KCPMode_FAST2 = 3;
-  // KCPMode_FAST3 is the "fast3" mode.
-  // NoDelay = 1
-  // Interval = 10
-  // Resend = 2
-  // NoCongestion = 1
-  KCPMode_FAST3 = 4;
-  // KCPMode_SLOW1 is the slow 1 mode.
-  // NoDelay = 0
-  // Interval = 100
-  // Resend = 0
-  // NoCongestion = 0
-  KCPMode_SLOW1 = 5;
-}
-
-
-// StreamMuxer sets the type of stream muxer to use.
-enum StreamMuxer {
-  // StreamMuxer_UNKNOWN defaults to StreamMuxer_XTACI_SMUX
-  StreamMuxer_UNKNOWN = 0;
-  // StreamMuxer_XTACI_SMUX is the xtaci/smux muxer.
-  StreamMuxer_XTACI_SMUX = 1;
-  // StreamMuxer_YAMUX is the yamux muxer.
-  StreamMuxer_YAMUX = 2;
-}
+// import "github.com/aperturerobotics/bifrost/util/blockcrypt/blockcrypt.proto";
+// import "github.com/aperturerobotics/bifrost/util/blockcompress/blockcompress.proto";
 
 // Opts are extra options for the packet conn.
 message Opts {
-  // DataShards are the number of FEC data shards to use. By adding t check
-  // symbols to the data, a Reed–Solomon code can detect any combination of up
-  // to t erroneous symbols, or correct up to ⌊t/2⌋ symbols. As an erasure code,
-  // it can correct up to t known erasures, or it can detect and correct
-  // combinations of errors and erasures. Furthermore, Reed–Solomon codes are
-  // suitable as multiple-burst bit-error correcting codes, since a sequence of
-  // b + 1 consecutive bit errors can affect at most two symbols of size b. The
-  // choice of t is up to the designer of the code, and may be selected within
-  // wide limits. Maximum is 256.
-  // Recommended: 10
-  // If zero, FEC is disabled.
-  uint32 data_shards = 1;
-  // ParityShards are the number of FEC parity shards to use.
-  // Recommended: 3
-  uint32 parity_shards = 2;
-  // Mtu is the maximum transmission unit to use.
-  // Defaults to 1350 (UDP safe packet size).
-  uint32 mtu = 3;
-  // KcpMode is the KCP mode.
-  KCPMode kcp_mode = 4;
-  // BlockCrypt is the block crypto to use.
-  // Defaults to AES256.
-  // Uses the handshake-negotiated session key.
-  blockcrypt.BlockCrypt block_crypt = 5;
-  // BlockCompress is the block compression to use.
-  blockcompress.BlockCompress block_compress = 6;
-  // StreamMuxer is the stream muxer to use.
-  // Defaults to smux.
-  StreamMuxer stream_muxer = 7;
 }

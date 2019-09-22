@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/aperturerobotics/bifrost/transport"
-	"github.com/aperturerobotics/bifrost/transport/common/pconn"
+	pconn "github.com/aperturerobotics/bifrost/transport/common/kcp"
 	"github.com/aperturerobotics/bifrost/transport/xbee/xbserial"
 	"github.com/aperturerobotics/bifrost/util/scrc"
 	"github.com/blang/semver"
