@@ -2,6 +2,7 @@ package transport_controller
 
 import (
 	"context"
+	"io"
 	"strings"
 	"sync"
 	"time"
@@ -276,7 +277,9 @@ func (c *Controller) HandleIncomingStream(
 	// process stream establish header;
 	streamEst, err := readStreamEstablishHeader(strm)
 	if err != nil {
-		c.le.WithError(err).Warn("unable to read stream establish header")
+		if err != io.EOF && err != context.Canceled {
+			c.le.WithError(err).Warn("unable to read stream establish header")
+		}
 		strm.Close()
 		return
 	}
