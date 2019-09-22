@@ -53,7 +53,9 @@ func (e *establishLinkHandler) HandleValueAdded(inst directive.Instance, val dir
 			WithField("link-uuid", vl.GetUUID()).
 			WithField("local-peer", vl.GetLocalPeer().Pretty()).
 			Debug("starting peer hold-open tracking")
-		e.rigidRef = e.di.AddReference(nil, false)
+		go func() {
+			e.rigidRef = e.di.AddReference(nil, false)
+		}()
 	}
 }
 
