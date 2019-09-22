@@ -1,7 +1,9 @@
 package pconn
 
 import (
+	"context"
 	"github.com/aperturerobotics/bifrost/stream"
+	"io"
 )
 
 // smuxAcceptPump accepts streams from the stream muxer.
@@ -37,6 +39,9 @@ func (l *Link) smuxAcceptPump(initiator bool) {
 	for {
 		s, err := l.mux.AcceptStream()
 		if err != nil {
+			if err != nil && err != io.EOF && err != context.Canceled {
+				l.le.WithError(err).Warn("cannot accept stream, closing link")
+			}
 			_ = l.Close()
 			return
 		}

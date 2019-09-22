@@ -20,6 +20,7 @@ var maxInflightEstablishes = uint32(5)
 // coordinationStreamPump manages the coordination stream.
 func (l *Link) coordinationStreamPump(coordStrm stream.Stream) {
 	defer l.Close()
+	defer l.le.Debug("coordination stream exiting")
 
 	plenBuf := make([]byte, 4)
 	var pkt CoordinationStreamPacket

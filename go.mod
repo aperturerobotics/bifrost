@@ -19,7 +19,6 @@ require (
 	github.com/gopherjs/websocket v0.0.0-20170522004412-87ee47603f13
 	github.com/gorilla/websocket v1.4.1
 	github.com/hashicorp/yamux v0.0.0-20181012175058-2f1d1f20f75d
-	github.com/jbenet/goprocess v0.1.3
 	github.com/klauspost/compress v1.8.1
 	github.com/klauspost/cpuid v1.2.2-0.20190713094507-cf2ded4aa833 // indirect
 	github.com/klauspost/reedsolomon v1.9.3-0.20190625143044-789068412913 // indirect
