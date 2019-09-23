@@ -1,11 +1,15 @@
 package hash
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"github.com/golang/protobuf/proto"
 	b58 "github.com/mr-tron/base58/base58"
 	"github.com/pkg/errors"
 )
+
+// ErrHashMismatch is returned when hashes mismatch.
+var ErrHashMismatch = errors.New("hash mismatch")
 
 // Validate validates the hash type.
 func (h HashType) Validate() error {
@@ -37,6 +41,23 @@ func (h HashType) Sum(data []byte) ([]byte, error) {
 	default:
 		return nil, errors.Errorf("hash type unknown: %v", h.String())
 	}
+}
+
+// VerifyData verifies data against the sum.
+// Returns the hash of the data, hash type, and error
+// Returns an error if failed to validate.
+func (h *Hash) VerifyData(data []byte) ([]byte, error) {
+	hash, err := h.GetHashType().Sum(data)
+	if err != nil {
+		return nil, err
+	}
+	if len(hash) != len(h.GetHash()) {
+		return hash, ErrHashMismatch
+	}
+	if bytes.Compare(hash, h.GetHash()) != 0 {
+		return hash, ErrHashMismatch
+	}
+	return hash, nil
 }
 
 // NewHash constructs a new hash object.
