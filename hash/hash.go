@@ -44,6 +44,26 @@ func (h HashType) Sum(data []byte) ([]byte, error) {
 	}
 }
 
+// CompareHash compares two hashes.
+func (h *Hash) CompareHash(other *Hash) bool {
+	if other == nil && h == nil {
+		return true
+	}
+	if h == nil || other == nil {
+		return false
+	}
+	if h.GetHashType() != other.GetHashType() {
+		return false
+	}
+	if len(h.GetHash()) != len(other.GetHash()) {
+		return false
+	}
+	if bytes.Compare(h.GetHash(), other.GetHash()) != 0 {
+		return false
+	}
+	return true
+}
+
 // BuildHasher builds the hasher for the hash type.
 func (h HashType) BuildHasher() (hash.Hash, error) {
 	switch h {
