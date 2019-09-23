@@ -6,6 +6,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	b58 "github.com/mr-tron/base58/base58"
 	"github.com/pkg/errors"
+	"hash"
 )
 
 // ErrHashMismatch is returned when hashes mismatch.
@@ -38,6 +39,16 @@ func (h HashType) Sum(data []byte) ([]byte, error) {
 	case HashType_HashType_SHA256:
 		h := sha256.Sum256(data)
 		return h[:], nil
+	default:
+		return nil, errors.Errorf("hash type unknown: %v", h.String())
+	}
+}
+
+// BuildHasher builds the hasher for the hash type.
+func (h HashType) BuildHasher() (hash.Hash, error) {
+	switch h {
+	case HashType_HashType_SHA256:
+		return sha256.New(), nil
 	default:
 		return nil, errors.Errorf("hash type unknown: %v", h.String())
 	}
