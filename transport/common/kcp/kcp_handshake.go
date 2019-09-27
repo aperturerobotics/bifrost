@@ -81,8 +81,7 @@ func (u *Transport) handleCompleteHandshake(
 	} else {
 		le = le.WithField("remote-transport-id", exd.GetLocalTransportUuid())
 	}
-
-	le.Info("handshake complete")
+	le.Debug("handshake complete")
 
 	u.linksMtx.Lock()
 	defer u.linksMtx.Unlock()

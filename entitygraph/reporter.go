@@ -55,7 +55,7 @@ func NewReporter(
 // Returning nil ends execution.
 // Returning an error triggers a retry with backoff.
 func (c *Reporter) Execute(ctx context.Context) error {
-	c.le.Info("registering lookuptransport directive")
+	c.le.Debug("registering lookuptransport directive")
 	_, diRef1, err := c.bus.AddDirective(
 		transport.NewLookupTransport(peer.ID(""), 0),
 		newLookupTransportHandler(c),
@@ -65,7 +65,7 @@ func (c *Reporter) Execute(ctx context.Context) error {
 	}
 	defer diRef1.Release()
 
-	c.le.Info("registering GetPeer directive")
+	c.le.Debug("registering get peer directive")
 	_, diRef2, err := c.bus.AddDirective(
 		peer.NewGetPeer(peer.ID("")),
 		newGetPeerHandler(c),

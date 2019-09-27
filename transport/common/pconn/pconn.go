@@ -212,7 +212,7 @@ func (t *Transport) Execute(ctx context.Context) error {
 		return conf, nil
 	}
 	quicConfig := defaultQuicConfig()
-	t.le.Debug("starting to listen with quic + tls")
+	t.le.Info("starting to listen with quic + tls")
 	ln, err := quic.Listen(t.pc, &tlsConf, quicConfig)
 	if err != nil {
 		return err

@@ -133,7 +133,7 @@ func (c *Controller) Execute(ctx context.Context) error {
 	// Acquire a handle to the node.
 	c.le.
 		WithField("peer-id", c.peerIDConstraint.Pretty()).
-		Info("looking up peer with ID")
+		Debug("looking up peer with ID")
 	n, nRef, err := peer.GetPeerWithID(ctx, c.bus, c.peerIDConstraint)
 	if err != nil {
 		return err

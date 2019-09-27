@@ -85,7 +85,7 @@ func NewDaemon(
 	if err != nil {
 		return nil, err
 	}
-	le.Infof("node controller resolved w/ ID: %s", peerIDPretty)
+	le.Debugf("node controller resolved w/ ID: %s", peerIDPretty)
 
 	dir = resolver.NewLoadControllerWithConfig(&floodsub_controller.Config{})
 	_, fsRef, err := bus.ExecOneOff(ctx, b, dir, nil)
