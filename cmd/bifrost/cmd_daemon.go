@@ -203,13 +203,8 @@ func runDaemon(c *cli.Context) error {
 
 	// TODO: Load these from CLI/yaml configuration.
 	// For now, hardcode it.
-	confs, err := daemonFlags.BuildControllerConfigs()
-	if err != nil {
+	if err := daemonFlags.ApplyToConfigSet(confSet, true); err != nil {
 		return err
-	}
-
-	for id, conf := range confs {
-		confSet[id] = configset.NewControllerConfig(1, conf)
 	}
 
 	// Entity graph controller.

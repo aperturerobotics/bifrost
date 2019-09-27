@@ -11,6 +11,7 @@ import (
 	"github.com/aperturerobotics/bifrost/util/blockcompress"
 	"github.com/aperturerobotics/bifrost/util/blockcrypt"
 	"github.com/aperturerobotics/controllerbus/config"
+	configset "github.com/aperturerobotics/controllerbus/controller/configset"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli"
 )
@@ -91,27 +92,33 @@ func (a *DaemonArgs) BuildFlags() []cli.Flag {
 
 }
 
-// BuildControllerConfigs builds controller configurations from the args.
+// ApplyToConfigSet applies controller configurations to a config set.
 // Map is from string descriptor to config object.
-func (a *DaemonArgs) BuildControllerConfigs() (map[string]config.Config, error) {
-	confs := make(map[string]config.Config)
-
+func (a *DaemonArgs) ApplyToConfigSet(confSet configset.ConfigSet, overwrite bool) error {
+	apply := func(id string, conf config.Config) {
+		if !overwrite {
+			if _, ok := confSet[id]; ok {
+				return
+			}
+		}
+		confSet[id] = configset.NewControllerConfig(1, conf)
+	}
 	if a.WebsocketListen != "" {
 		staticPeers, err := parseDialerAddrs(a.WebsocketPeers)
 		if err != nil {
-			return nil, errors.Wrap(err, "websocket-peers")
+			return errors.Wrap(err, "websocket-peers")
 		}
 
-		confs["websocket"] = &wtpt.Config{
+		apply("websocket", &wtpt.Config{
 			Dialers:    staticPeers,
 			ListenAddr: a.WebsocketListen,
-		}
+		})
 	}
 
 	if a.XBeePath != "" {
 		staticPeers, err := parseDialerAddrs(a.XbeePeers)
 		if err != nil {
-			return nil, errors.Wrap(err, "xbee-peers")
+			return errors.Wrap(err, "xbee-peers")
 		}
 		for _, peer := range staticPeers {
 			peer.Backoff = &backoff.Backoff{
@@ -124,7 +131,7 @@ func (a *DaemonArgs) BuildControllerConfigs() (map[string]config.Config, error) 
 			}
 		}
 
-		confs["xbee"] = &xbtpt.Config{
+		apply("xbee", &xbtpt.Config{
 			DevicePath: a.XBeePath,
 			DeviceBaud: int32(a.XBeeBaud),
 			Dialers:    staticPeers,
@@ -134,30 +141,25 @@ func (a *DaemonArgs) BuildControllerConfigs() (map[string]config.Config, error) 
 				BlockCrypt:    blockcrypt.BlockCrypt_BlockCrypt_SALSA20,
 				BlockCompress: blockcompress.BlockCompress_BlockCompress_S2,
 			},
-		}
+		})
 	}
 
 	if a.UDPListen != "" {
 		staticPeers, err := parseDialerAddrs(a.UDPPeers)
 		if err != nil {
-			return nil, errors.Wrap(err, "udp-peers")
+			return errors.Wrap(err, "udp-peers")
 		}
 
-		confs["udp"] = &udptpt.Config{
+		apply("udp", &udptpt.Config{
 			Dialers:    staticPeers,
 			ListenAddr: a.UDPListen,
 			PacketOpts: &pconn.Opts{},
-		}
+		})
 	}
 
 	if a.HoldOpenLinks {
-		confs["hold-open"] = &link_holdopen_controller.Config{}
+		apply("hold-open", &link_holdopen_controller.Config{})
 	}
 
-	for id, conf := range confs {
-		if err := conf.Validate(); err != nil {
-			return nil, errors.Wrap(err, id)
-		}
-	}
-	return confs, nil
+	return nil
 }

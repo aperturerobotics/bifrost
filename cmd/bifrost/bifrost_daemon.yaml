@@ -2,8 +2,5 @@ udp:
   config:
     dialers: {}
     listenAddr: :5112
-    packetOpts:
-      blockCrypt: BlockCrypt_NONE
-      kcpMode: KCPMode_NORMAL
   id: bifrost/udp/1
   revision: 1
