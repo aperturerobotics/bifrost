@@ -1,7 +1,7 @@
 package blockcrypt
 
 import (
-	"github.com/paralin/kcp-go-lite"
+	kcrypt "github.com/aperturerobotics/bifrost/util/blockcrypt/crypt"
 	"github.com/pkg/errors"
 )
 
@@ -22,33 +22,33 @@ type Crypt interface {
 func BuildBlockCrypt(crypt BlockCrypt, pass []byte) (Crypt, error) {
 	switch crypt {
 	case BlockCrypt_BlockCrypt_SM4_16:
-		return kcp.NewSM4BlockCrypt(pass[:16])
+		return kcrypt.NewSM4BlockCrypt(pass[:16])
 	case BlockCrypt_BlockCrypt_TEA16:
-		return kcp.NewTEABlockCrypt(pass[:16])
+		return kcrypt.NewTEABlockCrypt(pass[:16])
 	case BlockCrypt_BlockCrypt_XOR:
-		return kcp.NewSimpleXORBlockCrypt(pass)
+		return kcrypt.NewSimpleXORBlockCrypt(pass)
 	case BlockCrypt_BlockCrypt_NONE:
-		return kcp.NewNoneBlockCrypt(pass)
+		return kcrypt.NewNoneBlockCrypt(pass)
 	case BlockCrypt_BlockCrypt_AES128:
-		return kcp.NewAESBlockCrypt(pass[:16])
+		return kcrypt.NewAESBlockCrypt(pass[:16])
 	case BlockCrypt_BlockCrypt_AES192:
-		return kcp.NewAESBlockCrypt(pass[:24])
+		return kcrypt.NewAESBlockCrypt(pass[:24])
 	case BlockCrypt_BlockCrypt_BLOWFISH:
-		return kcp.NewBlowfishBlockCrypt(pass)
+		return kcrypt.NewBlowfishBlockCrypt(pass)
 	case BlockCrypt_BlockCrypt_TWOFISH:
-		return kcp.NewTwofishBlockCrypt(pass)
+		return kcrypt.NewTwofishBlockCrypt(pass)
 	case BlockCrypt_BlockCrypt_CAST5:
-		return kcp.NewCast5BlockCrypt(pass[:16])
+		return kcrypt.NewCast5BlockCrypt(pass[:16])
 	case BlockCrypt_BlockCrypt_3DES:
-		return kcp.NewTripleDESBlockCrypt(pass[:24])
+		return kcrypt.NewTripleDESBlockCrypt(pass[:24])
 	case BlockCrypt_BlockCrypt_XTEA:
-		return kcp.NewXTEABlockCrypt(pass[:16])
+		return kcrypt.NewXTEABlockCrypt(pass[:16])
 	case BlockCrypt_BlockCrypt_SALSA20:
-		return kcp.NewSalsa20BlockCrypt(pass)
+		return kcrypt.NewSalsa20BlockCrypt(pass)
 	case BlockCrypt_BlockCrypt_UNKNOWN:
 		fallthrough
 	case BlockCrypt_BlockCrypt_AES256:
-		return kcp.NewAESBlockCrypt(pass)
+		return kcrypt.NewAESBlockCrypt(pass)
 	default:
 		return nil, errors.Errorf("unrecognized blockcrypt type: %s", crypt.String())
 	}

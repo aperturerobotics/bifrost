@@ -35,7 +35,8 @@ require (
 	github.com/pkg/errors v0.8.2-0.20190227000051-27936f6d90f9
 	github.com/sirupsen/logrus v1.4.2
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
-	github.com/tjfoc/gmsm v1.0.2-0.20190220015903-f915c2cebf58 // indirect
+	github.com/templexxx/xor v0.0.0-20181023030647-4e92f724b73b
+	github.com/tjfoc/gmsm v1.0.2-0.20190220015903-f915c2cebf58
 	github.com/urfave/cli v1.21.0
 	github.com/xtaci/smux v1.1.1
 	golang.org/x/crypto v0.0.0-20190909091759-094676da4a83
