@@ -297,11 +297,14 @@ func (c *Controller) HandleIncomingStream(
 	}
 
 	var mstrm link.MountedStream = newMountedStream(strm, strmOpts, pid, lnk)
-	_ = mstrm
 
 	// bus is the controller bus
 	le := c.loggerForLink(lnk).WithField("protocol-id", pid)
-	le.Debug("handling incoming stream")
+	le.
+		WithField("stream-reliable", strmOpts.Reliable).
+		WithField("stream-encrypted", strmOpts.Encrypted).
+		WithField("remote-peer", lnk.GetRemotePeer().Pretty()).
+		Info("accepted stream")
 	dir := link.NewHandleMountedStream(pid, c.localPeerID, mstrm.GetPeerID())
 	dval, dref, err := bus.ExecOneOff(ctx, c.bus, dir, nil)
 	if err != nil {

@@ -105,12 +105,6 @@ func (l *Link) AcceptStream() (stream.Stream, stream.OpenOpts, error) {
 		Reliable:  true,
 		Encrypted: true,
 	}
-	l.le.
-		WithField("stream-id", qstream.StreamID()).
-		WithField("stream-reliable", opts.Reliable).
-		WithField("stream-encrypted", opts.Encrypted).
-		WithField("remote-peer", l.GetRemotePeer().Pretty()).
-		Info("accepted stream")
 	return qstream, opts, nil
 }
 
