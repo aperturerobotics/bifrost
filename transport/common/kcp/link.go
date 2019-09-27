@@ -294,11 +294,6 @@ func (l *Link) AcceptStream() (stream.Stream, stream.OpenOpts, error) {
 
 	s := astrm.stream
 	opts := astrm.streamOpts
-	l.le.
-		WithField("stream-reliable", opts.Reliable).
-		WithField("stream-encrypted", opts.Encrypted).
-		WithField("remote-peer", l.GetRemotePeer().Pretty()).
-		Info("accepted stream")
 	return s, opts, nil
 }
 
