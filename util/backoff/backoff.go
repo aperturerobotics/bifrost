@@ -43,7 +43,11 @@ func (b *Backoff) constructExpo() backoff.BackOff {
 	}
 	expo.MaxInterval = time.Duration(maxInterval) * time.Millisecond
 	expo.RandomizationFactor = float64(opts.GetRandomizationFactor())
-	expo.MaxElapsedTime = time.Duration(opts.GetMaxElapsedTime()) * time.Millisecond
+	if opts.GetMaxElapsedTime() == 0 {
+		expo.MaxElapsedTime = 0
+	} else {
+		expo.MaxElapsedTime = time.Duration(opts.GetMaxElapsedTime()) * time.Millisecond
+	}
 	return expo
 }
 
