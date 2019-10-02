@@ -58,9 +58,15 @@ func newEstablishedLink(
 		ctxCancel()
 	})
 	go el.acceptStreamPump(ctx)
+	go el.executeMonitorClose(ctx)
 
 	dir.Release()
 	return el, nil
+}
+
+func (e *establishedLink) executeMonitorClose(ctx context.Context) {
+	<-ctx.Done()
+	e.Link.Close()
 }
 
 func (e *establishedLink) acceptStreamPump(ctx context.Context) {
