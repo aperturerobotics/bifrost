@@ -43,22 +43,19 @@ func (e *establishLinkHandler) HandleValueRemoved(inst directive.Instance, val d
 	if !ok {
 		return
 	}
+	e.c.le.Debugf("lost link with uuid %v", vl.GetUUID())
 	tpl := pubsub.NewPeerLinkTuple(vl)
-	var wake bool
 	e.c.mtx.Lock()
 	for i, l := range e.c.incLinks {
 		if l == vl {
 			e.c.incLinks[i] = e.c.incLinks[len(e.c.incLinks)-1]
 			e.c.incLinks[len(e.c.incLinks)-1] = nil
 			e.c.incLinks = e.c.incLinks[:len(e.c.incLinks)-1]
-			wake = true
 			break
 		}
 	}
-	if !wake {
-		if v, ok := e.c.links[tpl]; ok {
-			v.ctxCancel()
-		}
+	if v, ok := e.c.links[tpl]; ok {
+		v.ctxCancel()
 	}
 	e.c.mtx.Unlock()
 }
