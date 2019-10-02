@@ -173,7 +173,13 @@ func (t *Transport) DialPeer(ctx context.Context, peerID peer.ID, as string) (bo
 		if err == nil {
 			t.dialers[as] = dl
 			go func() {
-				lnk, _ := dl.execute()
+				lnk, dlErr := dl.execute()
+				if dlErr != nil {
+					t.le.
+						WithError(dlErr).
+						WithField("remote-addr", as).
+						Warn("error dialing peer")
+				}
 				if lnk == nil {
 					t.linksMtx.Lock()
 					if odl, odlOk := t.dialers[as]; odlOk && odl == dl {
