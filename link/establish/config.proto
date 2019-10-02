@@ -1,0 +1,9 @@
+syntax = "proto3";
+package link.establish.controller;
+
+// Config is the link establish controller config.
+// The establish controller attempts to establish links with configured peers.
+message Config {
+  // PeerIds is the list of peer IDs to attempt to establish links to.
+  repeated string peer_ids = 1;
+}

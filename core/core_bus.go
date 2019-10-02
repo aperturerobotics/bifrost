@@ -4,6 +4,7 @@ import (
 	"context"
 
 	bifrosteg "github.com/aperturerobotics/bifrost/entitygraph"
+	"github.com/aperturerobotics/bifrost/link/establish"
 	"github.com/aperturerobotics/bifrost/link/hold-open"
 	nctr "github.com/aperturerobotics/bifrost/peer/controller"
 	"github.com/aperturerobotics/bifrost/pubsub/floodsub/controller"
@@ -43,4 +44,5 @@ func AddFactories(b bus.Bus, sr *static.Resolver) {
 	sr.AddFactory(bifrosteg.NewFactory(b))
 	sr.AddFactory(floodsub_controller.NewFactory(b))
 	sr.AddFactory(link_holdopen_controller.NewFactory(b))
+	sr.AddFactory(link_establish_controller.NewFactory(b))
 }
