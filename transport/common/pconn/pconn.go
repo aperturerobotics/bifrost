@@ -204,10 +204,6 @@ func (t *Transport) DialPeer(ctx context.Context, peerID peer.ID, as string) (bo
 
 // Execute executes the transport as configured, returning any fatal error.
 func (t *Transport) Execute(ctx context.Context) error {
-	t.ctxCh <- ctx
-	defer func() {
-		<-t.ctxCh
-	}()
 	// Listen
 	var tlsConf tls.Config
 	tlsConf.GetConfigForClient = func(_ *tls.ClientHelloInfo) (*tls.Config, error) {
@@ -225,6 +221,11 @@ func (t *Transport) Execute(ctx context.Context) error {
 		return err
 	}
 	defer ln.Close()
+
+	t.ctxCh <- ctx
+	defer func() {
+		<-t.ctxCh
+	}()
 
 	// accept new connections
 	for {
