@@ -132,6 +132,7 @@ func (t *Transport) LocalAddr() net.Addr {
 // ID and address tuple until the yielded link is lost.
 func (t *Transport) DialPeer(ctx context.Context, peerID peer.ID, as string) (bool, error) {
 	if t.addrParser == nil {
+		t.le.WithField("dial-addr", as).Warn("nil addr parser, cannot dial peer")
 		return true, nil
 	}
 
