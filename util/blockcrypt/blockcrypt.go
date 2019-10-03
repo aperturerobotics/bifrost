@@ -5,6 +5,9 @@ import (
 	"github.com/pkg/errors"
 )
 
+// BlockCrypt_BlockCrypt_MAX is the maximum value for BlockCrypt.
+const BlockCrypt_BlockCrypt_MAX = BlockCrypt_BlockCrypt_SALSA20
+
 // Crypt defines encryption/decryption methods for a given byte slice.
 // Notes on implementing: the data to be encrypted contains a builtin
 // nonce at the first 16 bytes
@@ -23,8 +26,6 @@ func BuildBlockCrypt(crypt BlockCrypt, pass []byte) (Crypt, error) {
 	switch crypt {
 	case BlockCrypt_BlockCrypt_SM4_16:
 		return kcrypt.NewSM4BlockCrypt(pass[:16])
-	case BlockCrypt_BlockCrypt_TEA16:
-		return kcrypt.NewTEABlockCrypt(pass[:16])
 	case BlockCrypt_BlockCrypt_XOR:
 		return kcrypt.NewSimpleXORBlockCrypt(pass)
 	case BlockCrypt_BlockCrypt_NONE:
@@ -33,16 +34,8 @@ func BuildBlockCrypt(crypt BlockCrypt, pass []byte) (Crypt, error) {
 		return kcrypt.NewAESBlockCrypt(pass[:16])
 	case BlockCrypt_BlockCrypt_AES192:
 		return kcrypt.NewAESBlockCrypt(pass[:24])
-	case BlockCrypt_BlockCrypt_BLOWFISH:
-		return kcrypt.NewBlowfishBlockCrypt(pass)
-	case BlockCrypt_BlockCrypt_TWOFISH:
-		return kcrypt.NewTwofishBlockCrypt(pass)
-	case BlockCrypt_BlockCrypt_CAST5:
-		return kcrypt.NewCast5BlockCrypt(pass[:16])
 	case BlockCrypt_BlockCrypt_3DES:
 		return kcrypt.NewTripleDESBlockCrypt(pass[:24])
-	case BlockCrypt_BlockCrypt_XTEA:
-		return kcrypt.NewXTEABlockCrypt(pass[:16])
 	case BlockCrypt_BlockCrypt_SALSA20:
 		return kcrypt.NewSalsa20BlockCrypt(pass)
 	case BlockCrypt_BlockCrypt_UNKNOWN:
