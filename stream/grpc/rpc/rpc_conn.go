@@ -92,8 +92,8 @@ func (n *NetConn) RemoteAddr() net.Addr {
 // A zero value for t means I/O operations will not time out.
 // Deadlines are stubbed here.
 func (n *NetConn) SetDeadline(t time.Time) error {
-	n.SetReadDeadline(t)
-	n.SetWriteDeadline(t)
+	_ = n.SetReadDeadline(t)
+	_ = n.SetWriteDeadline(t)
 	return nil
 }
 

@@ -272,7 +272,7 @@ func (c *Controller) HandleIncomingStream(
 	readDeadline := time.Now().Add(streamEstablishTimeout)
 	ctx, ctxCancel := context.WithDeadline(rctx, readDeadline)
 	defer ctxCancel()
-	strm.SetReadDeadline(readDeadline)
+	_ = strm.SetReadDeadline(readDeadline)
 
 	// process stream establish header;
 	streamEst, err := readStreamEstablishHeader(strm)
@@ -283,7 +283,7 @@ func (c *Controller) HandleIncomingStream(
 		strm.Close()
 		return
 	}
-	strm.SetDeadline(time.Time{})
+	_ = strm.SetDeadline(time.Time{})
 
 	// received stream establish header, now, create handlestream directive
 	pid := protocol.ID(streamEst.GetProtocolId())

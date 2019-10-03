@@ -134,8 +134,8 @@ func (u *Transport) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	_, err = u.pushHandshaker(req.Context(), req.RemoteAddr, conn)
 	if err != nil {
 		rw.WriteHeader(500)
-		rw.Write([]byte(err.Error()))
-		conn.Close()
+		_, _ = rw.Write([]byte(err.Error()))
+		_ = conn.Close()
 		return
 	}
 

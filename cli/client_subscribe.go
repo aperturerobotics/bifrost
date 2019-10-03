@@ -72,5 +72,4 @@ func (a *ClientArgs) RunSubscribe(_ *cli.Context) error {
 			os.Stdout.WriteString("\n")
 		}
 	}
-	return nil
 }

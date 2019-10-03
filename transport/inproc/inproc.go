@@ -4,7 +4,6 @@ import (
 	"context"
 	"net"
 	"sync"
-	"time"
 
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/transport"
@@ -22,9 +21,6 @@ const ControllerID = "bifrost/inproc/1"
 
 // Version is the version of the inproc implementation.
 var Version = semver.MustParse("0.0.1")
-
-// handshakeTimeout is the time after which a handshake expires
-var handshakeTimeout = time.Second * 8
 
 // Inproc implements a Inproc transport.
 type Inproc struct {

@@ -2,7 +2,6 @@ package udp
 
 import (
 	"net"
-	"time"
 
 	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/aperturerobotics/bifrost/transport/common/pconn"
@@ -19,9 +18,6 @@ var Version = semver.MustParse("0.0.1")
 
 // ExtendedSockBuf is the sockbuf parameter to set on udp sockets.
 var ExtendedSockBuf = 16777217
-
-// handshakeTimeout is the time after which a handshake expires
-var handshakeTimeout = time.Second * 8
 
 // UDP implements a UDP transport.
 type UDP = pconn.Transport

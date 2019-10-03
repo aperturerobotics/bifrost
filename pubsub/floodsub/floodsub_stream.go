@@ -16,14 +16,13 @@ import (
 
 // streamHandler is a remote floodsub peer with a stream.
 type streamHandler struct {
-	tpl        pubsub.PeerLinkTuple
-	m          *FloodSub
-	initiator  bool
-	stream     *stream_packet.Session
-	le         *logrus.Entry
-	initSubSet []*SubscriptionOpts
-	packetCh   chan *Packet
-	peerID     peer.ID
+	tpl       pubsub.PeerLinkTuple
+	m         *FloodSub
+	initiator bool
+	stream    *stream_packet.Session
+	le        *logrus.Entry
+	packetCh  chan *Packet
+	peerID    peer.ID
 
 	ctx       context.Context
 	ctxCancel context.CancelFunc

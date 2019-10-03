@@ -66,13 +66,15 @@ func (a *API) Subscribe(serv pubsub_grpc.PubSubService_SubscribeServer) error {
 				return err
 			}
 			defer val.AddHandler(func(m pubsub.Message) {
-				go serv.Send(&pubsub_grpc.SubscribeResponse{
-					IncomingMessage: &pubsub_grpc.IncomingMessage{
-						FromPeerId:    m.GetFrom().Pretty(),
-						Data:          m.GetData(),
-						Authenticated: m.GetAuthenticated(),
-					},
-				})
+				go func() {
+					_ = serv.Send(&pubsub_grpc.SubscribeResponse{
+						IncomingMessage: &pubsub_grpc.IncomingMessage{
+							FromPeerId:    m.GetFrom().Pretty(),
+							Data:          m.GetData(),
+							Authenticated: m.GetAuthenticated(),
+						},
+					})
+				}()
 			})()
 		}
 		if channelID == "" {
@@ -91,7 +93,7 @@ func (a *API) Subscribe(serv pubsub_grpc.PubSubService_SubscribeServer) error {
 			if handlePeerRef != nil {
 				handlePeerRef.Release()
 				handlePeerRef = nil
-				handlePeerID = ""
+				// handlePeerID = ""
 				handlePeer = nil
 			}
 

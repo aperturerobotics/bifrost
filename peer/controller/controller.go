@@ -2,10 +2,8 @@ package peer_controller
 
 import (
 	"context"
-	"sync"
 
 	"github.com/aperturerobotics/bifrost/peer"
-	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/blang/semver"
@@ -27,11 +25,6 @@ type Controller struct {
 	peer.Peer
 	// le is the root logger
 	le *logrus.Entry
-
-	// transportsMtx guards the transports map
-	transportsMtx sync.Mutex
-	// transports are the running transports
-	transports map[uint64]transport.Transport
 }
 
 // NewController constructs a new peer controller.
@@ -47,8 +40,7 @@ func NewController(le *logrus.Entry, privKey crypto.PrivKey) (*Controller, error
 	return &Controller{
 		Peer: p,
 
-		le:         le,
-		transports: make(map[uint64]transport.Transport),
+		le: le,
 	}, nil
 }
 

@@ -76,14 +76,14 @@ func (o *openStreamViaLinkResolver) Resolve(ctx context.Context, handler directi
 				errCh <- err
 				return
 			}
-			strm.SetWriteDeadline(time.Now().Add(streamEstablishTimeout))
+			_ = strm.SetWriteDeadline(time.Now().Add(streamEstablishTimeout))
 			if _, err := writeStreamEstablishHeader(strm, estMsg); err != nil {
 				errCh <- err
 				strm.Close()
 				return
 			}
 
-			strm.SetDeadline(time.Time{})
+			_ = strm.SetDeadline(time.Time{})
 			mtx.Lock()
 			if done {
 				strm.Close()

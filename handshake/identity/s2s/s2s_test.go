@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
+	"errors"
 	"testing"
 
 	"github.com/libp2p/go-libp2p-core/crypto"
@@ -56,21 +57,26 @@ func TestS2S(t *testing.T) {
 	}
 
 	ctx := context.Background()
+	errCh := make(chan error, 1)
 	go func() {
 		r, err := s1.Execute(ctx)
 		if err != nil {
-			t.Fatal(err.Error())
+			errCh <- err
+			return
 		}
 
 		if !r.Peer.Equals(s2Pub) {
-			t.Fatalf("s1 remote pub mismatch")
+			errCh <- errors.New("s1 remote pub mismatch")
+			return
 		}
 
-		if bytes.Compare(ex2, r.ExtraData) != 0 {
-			t.Fatalf("s1 remote extradata mismatch")
+		if !bytes.Equal(ex2, r.ExtraData) {
+			errCh <- errors.New("s1 remote extradata mismatch")
+			return
 		}
 
 		le.Info("s1 complete")
+		errCh <- nil
 	}()
 
 	r2, err := s2.Execute(ctx)
@@ -82,9 +88,12 @@ func TestS2S(t *testing.T) {
 		t.Fatalf("s2 remote pub mismatch")
 	}
 
-	if bytes.Compare(ex1, r2.ExtraData) != 0 {
+	if !bytes.Equal(ex1, r2.ExtraData) {
 		t.Fatalf("s1 remote extradata mismatch")
 	}
 
 	le.Info("s2 complete")
+	if err := <-errCh; err != nil {
+		t.Fatal(err.Error())
+	}
 }

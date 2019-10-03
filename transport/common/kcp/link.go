@@ -3,7 +3,6 @@ package kcp
 import (
 	"context"
 	"encoding/binary"
-	"hash/crc32"
 	"io"
 	"net"
 	"sync"
@@ -61,10 +60,6 @@ type Link struct {
 
 	// rawStreamsMtx guards rawStreams
 	rawStreamsMtx sync.Mutex
-	// lastRawStream contains the last used raw stream.
-	lastRawStream *rawStream
-	// lastRawStreamID is the ID of the *rawStream in lastRawStream field
-	lastRawStreamID uint32
 	// rawStreams contains all raw streams by ID
 	rawStreams map[uint32]*rawStream
 	// nextRawStreamID is the next raw stream id to use for local stream identification
@@ -295,11 +290,6 @@ func (l *Link) AcceptStream() (stream.Stream, stream.OpenOpts, error) {
 	s := astrm.stream
 	opts := astrm.streamOpts
 	return s, opts, nil
-}
-
-// computeConvID computes the conversation id using the shared secret
-func computeConvID(sharedSecret []byte) uint32 {
-	return crc32.ChecksumIEEE(sharedSecret)
 }
 
 // newLinkUUID builds the UUID for a link

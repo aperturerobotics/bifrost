@@ -106,6 +106,7 @@ func (e *establishLinkHandler) HandleInstanceDisposed(inst directive.Instance) {
 			a[i] = a[len(a)-1]
 			a[len(a)-1] = nil
 			a = a[:len(a)-1]
+			e.c.cleanupRefs = a
 			break
 		}
 	}

@@ -27,7 +27,9 @@ func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.R
 
 	if spm := c.staticPeerMap; spm != nil {
 		if dOpts, ok := spm[peerIDPretty]; ok && dOpts.GetAddress() != "" {
-			go c.PushDialer(ctx, peerIDConst, dOpts)
+			go func() {
+				_ = c.PushDialer(ctx, peerIDConst, dOpts)
+			}()
 		}
 	}
 

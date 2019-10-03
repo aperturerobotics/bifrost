@@ -222,35 +222,6 @@ func (m *FloodSub) execPublish(prevHopPeerID peer.ID, pubMsg *publishChMsg) {
 	m.mtx.Unlock()
 }
 
-func shufflePeers(peers []pubsub.PeerLinkTuple) {
-	for i := range peers {
-		j := rand.Intn(i + 1)
-		peers[i], peers[j] = peers[j], peers[i]
-	}
-}
-
-// getPeers returns peers for a channel
-func (m *FloodSub) getPeers(channel string, count int, filter func(pubsub.PeerLinkTuple) bool) []pubsub.PeerLinkTuple {
-	tmap, ok := m.peerChannels[channel]
-	if !ok {
-		return nil
-	}
-
-	peers := make([]pubsub.PeerLinkTuple, 0, len(tmap))
-	for p := range tmap {
-		if filter(p) {
-			peers = append(peers, p)
-		}
-	}
-
-	shufflePeers(peers)
-	if count > 0 && len(peers) > count {
-		peers = peers[:count]
-	}
-
-	return peers
-}
-
 // AddSubscription adds a channel subscription, returning a subscription handle.
 func (m *FloodSub) AddSubscription(ctx context.Context, channelID string) (pubsub.Subscription, error) {
 	if channelID == "" {
@@ -397,17 +368,15 @@ func (m *FloodSub) handleValidMessage(
 	msg := newMessage(pid, pktInner)
 	m.mtx.Lock()
 	subs := m.channels[channelID]
-	if subs != nil {
-		for sub := range subs {
-			ss := sub
-			go func() {
-				ss.mtx.Lock()
-				for s := range ss.handlers {
-					s.cb(msg)
-				}
-				ss.mtx.Unlock()
-			}()
-		}
+	for sub := range subs {
+		ss := sub
+		go func() {
+			ss.mtx.Lock()
+			for s := range ss.handlers {
+				s.cb(msg)
+			}
+			ss.mtx.Unlock()
+		}()
 	}
 	m.mtx.Unlock()
 	select {
@@ -428,6 +397,40 @@ func (m *FloodSub) wake() {
 	}
 }
 
+/*
+func shufflePeers(peers []pubsub.PeerLinkTuple) {
+	for i := range peers {
+		j := rand.Intn(i + 1)
+		peers[i], peers[j] = peers[j], peers[i]
+	}
+}
+
+// getPeers returns peers for a channel
+func (m *FloodSub) getPeers(
+	channel string,
+	count int,
+	filter func(pubsub.PeerLinkTuple) bool,
+) []pubsub.PeerLinkTuple {
+	tmap, ok := m.peerChannels[channel]
+	if !ok {
+		return nil
+	}
+
+	peers := make([]pubsub.PeerLinkTuple, 0, len(tmap))
+	for p := range tmap {
+		if filter(p) {
+			peers = append(peers, p)
+		}
+	}
+
+	shufflePeers(peers)
+	if count > 0 && len(peers) > count {
+		peers = peers[:count]
+	}
+
+	return peers
+}
+
 // peerListToMap converts a slice to a map
 func peerListToMap(peers []pubsub.PeerLinkTuple) map[pubsub.PeerLinkTuple]struct{} {
 	pmap := make(map[pubsub.PeerLinkTuple]struct{})
@@ -444,6 +447,7 @@ func peerMapToList(peers map[pubsub.PeerLinkTuple]struct{}) []pubsub.PeerLinkTup
 	}
 	return plst
 }
+*/
 
 // _ is a type assertion
 var _ pubsub.PubSub = ((*FloodSub)(nil))

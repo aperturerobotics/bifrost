@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/aperturerobotics/bifrost/stream"
-	"github.com/djherbis/buffer"
 	"github.com/golang/protobuf/proto"
 )
 
@@ -15,10 +14,6 @@ type rawStream struct {
 
 	// ctx is the stream context
 	ctx context.Context
-
-	packetMtx  sync.Mutex
-	packetBuf  buffer.Buffer
-	packetWake chan struct{}
 
 	closeFn     func(*rawStream)
 	establishCb func(err error)

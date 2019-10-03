@@ -128,7 +128,7 @@ func runE2E(cctx *cli.Context) error {
 
 	le.Info("running")
 	select {
-	case _ = <-dataCh:
+	case <-dataCh:
 	case <-ctx.Done():
 		return ctx.Err()
 	case err := <-errCh:

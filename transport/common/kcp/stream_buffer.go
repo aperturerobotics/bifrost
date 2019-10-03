@@ -49,7 +49,7 @@ func NewPacketBuffer(
 // PushPacket pushes a packet to the stream, dropping the oldest packet if necessary.
 func (s *PacketBuffer) PushPacket(packet []byte) {
 	s.packetMtx.Lock()
-	s.packetBuf.Write(packet)
+	_, _ = s.packetBuf.Write(packet)
 	// logrus.Infof("pushPacket: %v len(buf): %d", packet, s.packetBuf.Len())
 	s.packetMtx.Unlock()
 
@@ -102,9 +102,10 @@ func (s *PacketBuffer) Read(b []byte) (n int, err error) {
 }
 
 // Write data to the stream.
-func (s *PacketBuffer) Write(b []byte) (n int, err error) {
+func (s *PacketBuffer) Write(in []byte) (n int, err error) {
+	b := make([]byte, len(in))
+	copy(b, in)
 	blen := len(b)
-
 	blenWithSuffix := blen + len(s.headerVarint)
 	if cap(b) < blenWithSuffix {
 		b = append(b, s.headerVarint...)

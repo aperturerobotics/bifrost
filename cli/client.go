@@ -16,38 +16,20 @@ import (
 	"google.golang.org/grpc"
 )
 
-// ForwardingConf is the forwarding configuration.
-type ForwardingConf = stream_forwarding.Config
-
-// AcceptConf is the GRPC accept configuration.
-type AcceptConf = stream_grpc_accept.Config
-
-// DialConf is the dial configuration.
-type DialConf = stream_grpc_dial.Config
-
-// IdentifyConf is the identify configuration
-type IdentifyConf = peer_controller.Config
-
-// SubscribeConf configures the subscribe call
-type SubscribeConf = pubsub_grpc.SubscribeRequest
-
-// ListeningConf is the listening configuration
-type ListeningConf = stream_listening.Config
-
 // ClientArgs contains the client arguments and functions.
 type ClientArgs struct {
 	// DialConf is the dialing configuration.
-	DialConf
+	DialConf stream_grpc_dial.Config
 	// ForwardingConf is the forwarding configuration.
-	ForwardingConf
+	ForwardingConf stream_forwarding.Config
 	// IdentifyConf is the identify configuration
-	IdentifyConf
+	IdentifyConf peer_controller.Config
 	// SubscribeConf is the configuration for the subscribe call.
-	SubscribeConf
+	SubscribeConf pubsub_grpc.SubscribeRequest
 	// AcceptConf is the accept configuration.
-	AcceptConf
+	AcceptConf stream_grpc_accept.Config
 	// ListeningConf is the listening configuration.
-	ListeningConf
+	ListeningConf stream_listening.Config
 
 	// ctx is the context
 	ctx context.Context

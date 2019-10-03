@@ -26,11 +26,11 @@ func TestBlockCrypt(t *testing.T) {
 			dataBefore := make([]byte, len(data))
 			copy(dataBefore, data[:])
 			c.Encrypt(data[:], data[:])
-			if bytes.Compare(data[:], dataBefore) == 0 {
+			if bytes.Equal(data[:], dataBefore) {
 				return errors.New("data was identical after encrypt")
 			}
 			c.Decrypt(data[:], data[:])
-			if bytes.Compare(data[:], dataBefore) != 0 {
+			if !bytes.Equal(data[:], dataBefore) {
 				return errors.New("data was not identical after decrypt")
 			}
 			return nil

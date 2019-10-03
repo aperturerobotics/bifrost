@@ -2,7 +2,6 @@ package pconn
 
 import (
 	"context"
-	"hash/crc32"
 	"net"
 	"sync"
 
@@ -106,11 +105,6 @@ func (l *Link) AcceptStream() (stream.Stream, stream.OpenOpts, error) {
 		Encrypted: true,
 	}
 	return qstream, opts, nil
-}
-
-// computeConvID computes the conversation id using the shared secret
-func computeConvID(sharedSecret []byte) uint32 {
-	return crc32.ChecksumIEEE(sharedSecret)
 }
 
 // newLinkUUID builds the UUID for a link

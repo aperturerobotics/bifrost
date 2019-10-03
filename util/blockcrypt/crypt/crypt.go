@@ -486,7 +486,7 @@ func decrypt8(block cipher.Block, dst, src, buf []byte) {
 	case 1:
 		block.Encrypt(next, src[base:])
 		xor.BytesSrc1(dst[base:], src[base:], tbl)
-		tbl, next = next, tbl
+		// tbl, next = next, tbl
 		base += 8
 		fallthrough
 	case 0:
@@ -572,7 +572,7 @@ func decrypt16(block cipher.Block, dst, src, buf []byte) {
 	case 1:
 		block.Encrypt(next, src[base:])
 		xor.BytesSrc1(dst[base:], src[base:], tbl)
-		tbl, next = next, tbl
+		// tbl, next = next, tbl
 		base += 16
 		fallthrough
 	case 0:
@@ -671,7 +671,7 @@ func decryptVariant(block cipher.Block, dst, src, buf []byte) {
 	case 1:
 		block.Encrypt(next, src[base:])
 		xor.BytesSrc1(dst[base:], src[base:], tbl)
-		tbl, next = next, tbl
+		// tbl, next = next, tbl
 		base += blocksize
 		fallthrough
 	case 0:

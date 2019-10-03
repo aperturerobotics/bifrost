@@ -152,7 +152,9 @@ func (u *Transport) DialPeer(ctx context.Context, peerID peer.ID, as string) (bo
 // Fatal errors are returned.
 func (u *Transport) Execute(ctx context.Context) error {
 	u.ctx = ctx
-	go u.readPump(ctx)
+	go func() {
+		_ = u.readPump(ctx)
+	}()
 
 	u.le.Debug("listening")
 	select {
@@ -204,13 +206,6 @@ func (u *Transport) readPump(ctx context.Context) (readErr error) {
 				WithError(err).
 				WithField("addr", addr.String()).
 				Debugf("dropped packet len(%d)", n)
-		} else {
-			/*
-				u.le.
-					WithField("length", n).
-					WithField("addr", addr.String()).
-					Debugf("handled packet: %#v", buf[:n])
-			*/
 		}
 		buf = buf[:cap(buf)]
 	}

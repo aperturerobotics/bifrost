@@ -40,9 +40,8 @@ func readAtLeast(r io.Reader, n, min int, buf []byte) (int, error) {
 
 func readStreamEstablishHeader(r io.Reader) (*StreamEstablish, error) {
 	b := make([]byte, 4)
-	n := 0
 	var err error
-	n, err = readAtLeast(r, n, 4, b)
+	_, err = readAtLeast(r, 0, 4, b)
 	if err != nil {
 		return nil, err
 	}
@@ -51,6 +50,9 @@ func readStreamEstablishHeader(r io.Reader) (*StreamEstablish, error) {
 	headerLen, headerLenBytes := proto.DecodeVarint(b)
 	if headerLenBytes == 0 {
 		return nil, err
+	}
+	if headerLenBytes > len(b) { // this should not be possible
+		headerLenBytes = len(b)
 	}
 
 	// header len is at most 100,000 bytes
@@ -64,7 +66,7 @@ func readStreamEstablishHeader(r io.Reader) (*StreamEstablish, error) {
 
 	headerBuf := make([]byte, int(headerLen))
 	copy(headerBuf, b[headerLenBytes:])
-	n = len(b) - headerLenBytes
+	n := len(b) - headerLenBytes
 	if _, err := readAtLeast(r, n, int(headerLen), headerBuf); err != nil {
 		return nil, err
 	}

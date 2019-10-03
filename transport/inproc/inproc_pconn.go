@@ -133,8 +133,8 @@ func (c *packetConn) LocalAddr() net.Addr {
 //
 // A zero value for t means I/O operations will not time out.
 func (c *packetConn) SetDeadline(t time.Time) error {
-	c.SetReadDeadline(t)
-	c.SetWriteDeadline(t)
+	_ = c.SetReadDeadline(t)
+	_ = c.SetWriteDeadline(t)
 	return nil
 }
 

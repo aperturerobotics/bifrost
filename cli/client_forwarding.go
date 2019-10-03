@@ -31,6 +31,4 @@ func (a *ClientArgs) RunForwarding(_ *cli.Context) error {
 		os.Stdout.WriteString(resp.GetControllerStatus().String())
 		os.Stdout.WriteString("\n")
 	}
-
-	return nil
 }

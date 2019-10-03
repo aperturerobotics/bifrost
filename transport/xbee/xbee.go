@@ -4,7 +4,6 @@ import (
 	"context"
 	"net"
 	"strings"
-	"time"
 
 	"github.com/aperturerobotics/bifrost/transport"
 	pconn "github.com/aperturerobotics/bifrost/transport/common/kcp"
@@ -22,9 +21,6 @@ const TransportID = "xbee"
 
 // Version is the version of the xbee implementation.
 var Version = semver.MustParse("0.0.1")
-
-// handshakeTimeout is the time after which a handshake expires
-var handshakeTimeout = time.Second * 8
 
 // XBee implements a XBee transport.
 type XBee struct {
@@ -55,7 +51,9 @@ func NewXBee(
 	}
 
 	xbs := xbserial.NewXBeeSerial(le, sp)
-	go xbs.ReadPump()
+	go func() {
+		_ = xbs.ReadPump()
+	}()
 
 	le.Debug("reading device address")
 	pc, err := xbserial.NewPacketConn(ctx, xbs)

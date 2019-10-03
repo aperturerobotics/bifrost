@@ -249,7 +249,7 @@ func (h *Handshaker) Execute(ctx context.Context) (*identity.Result, error) {
 		ackCipher.ExtraInfo = h.extraData
 
 		// Check the peer id
-		sendPubKey := bytes.Compare(initMsg.GetReceiverPeerId(), []byte(h.localPeerID)) != 0
+		sendPubKey := !bytes.Equal(initMsg.GetReceiverPeerId(), []byte(h.localPeerID))
 		if sendPubKey {
 			b, err := h.privKey.GetPublic().Bytes()
 			if err != nil {

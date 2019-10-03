@@ -1,7 +1,6 @@
 package stream_packet
 
 import (
-	"context"
 	"encoding/binary"
 	"io"
 	"sync"
@@ -14,8 +13,6 @@ import (
 // Session wraps a stream in a session.
 type Session struct {
 	stream.Stream
-	ctx            context.Context
-	ctxCancel      context.CancelFunc
 	sendMtx        sync.Mutex
 	readMtx        sync.Mutex
 	maxMessageSize uint32

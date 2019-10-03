@@ -64,14 +64,14 @@ func (o *openStreamResolver) Resolve(ctx context.Context, handler directive.Reso
 				*/
 				return
 			}
-			strm.SetWriteDeadline(time.Now().Add(streamEstablishTimeout))
+			_ = strm.SetWriteDeadline(time.Now().Add(streamEstablishTimeout))
 			if _, err := writeStreamEstablishHeader(strm, estMsg); err != nil {
 				errCh <- err
 				strm.Close()
 				return
 			}
 
-			strm.SetDeadline(time.Time{})
+			_ = strm.SetDeadline(time.Time{})
 			o.c.le.
 				WithField("link-id", lnk.GetUUID()).
 				WithField("protocol-id", protocolID).

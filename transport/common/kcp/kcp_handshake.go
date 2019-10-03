@@ -11,10 +11,6 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
-// defaultMaxInflightStreamEstablish is the maximum number of raw stream
-// establish messages to send before applying backpressure.
-var defaultMaxInflightStreamEstablish = 5
-
 // inflightHandshake is an on-going handshake.
 type inflightHandshake struct {
 	ctxCancel context.CancelFunc

@@ -58,7 +58,7 @@ func (h *Hash) CompareHash(other *Hash) bool {
 	if len(h.GetHash()) != len(other.GetHash()) {
 		return false
 	}
-	if bytes.Compare(h.GetHash(), other.GetHash()) != 0 {
+	if !bytes.Equal(h.GetHash(), other.GetHash()) {
 		return false
 	}
 	return true
@@ -85,7 +85,7 @@ func (h *Hash) VerifyData(data []byte) ([]byte, error) {
 	if len(hash) != len(h.GetHash()) {
 		return hash, ErrHashMismatch
 	}
-	if bytes.Compare(hash, h.GetHash()) != 0 {
+	if !bytes.Equal(hash, h.GetHash()) {
 		return hash, ErrHashMismatch
 	}
 	return hash, nil
