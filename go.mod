@@ -2,7 +2,7 @@ module github.com/aperturerobotics/bifrost
 
 go 1.13
 
-replace github.com/multiformats/go-multihash => github.com/paralin/go-multihash v0.0.0-20190831070958-91cde46649b8 // gopherjs-compat
+replace github.com/multiformats/go-multihash => github.com/paralin/go-multihash v0.0.0-20190927235035-24ce17a9c4f3 // gopherjs-compat
 
 require (
 	github.com/aperturerobotics/controllerbus v0.1.5
