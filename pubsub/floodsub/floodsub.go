@@ -136,8 +136,8 @@ func (m *FloodSub) Execute(ctx context.Context) error {
 		m.mtx.Unlock() // intentional mtx hold-break
 		initSet = nil
 
-		var subChanges []*SubscriptionOpts
 		var xmitPeers []*streamHandler
+		var subChanges []*SubscriptionOpts
 		m.mtx.Lock()
 		// sweep empty channels
 		for chid, chm := range m.channels {
@@ -163,8 +163,11 @@ func (m *FloodSub) Execute(ctx context.Context) error {
 		}
 
 		if len(subChanges) != 0 {
+			xmitPeers = make([]*streamHandler, 0, len(m.peers))
 			for _, p := range m.peers {
-				xmitPeers = append(xmitPeers, p)
+				if p.ctx != nil {
+					xmitPeers = append(xmitPeers, p)
+				}
 			}
 		}
 		m.mtx.Unlock()
@@ -341,7 +344,9 @@ func (m *FloodSub) Close() {
 		delete(m.peers, pid)
 	}
 	for _, s := range m.incSessions {
-		s.stream.Close()
+		if s.stream != nil {
+			s.stream.Close()
+		}
 	}
 	m.incSessions = nil
 	m.mtx.Unlock()
