@@ -12,7 +12,6 @@ import (
 	"github.com/libp2p/go-libp2p-core/crypto"
 	p2ptls "github.com/libp2p/go-libp2p-tls"
 	"github.com/lucas-clemente/quic-go"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -140,9 +139,12 @@ func (t *Transport) DialPeer(ctx context.Context, peerID peer.ID, as string) (bo
 	if err != nil {
 		return true, err
 	}
-	if adrs := addr.String(); adrs != as {
-		return false, errors.Errorf("addr parser returned %s when input was %s", adrs, as)
-	}
+	as = addr.String()
+	/*
+		if adrs := addr.String(); adrs != as {
+			return false, errors.Errorf("addr parser returned %s when input was %s", adrs, as)
+		}
+	*/
 
 	var rctx context.Context
 	select {
