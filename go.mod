@@ -9,9 +9,10 @@ require (
 	github.com/aperturerobotics/entitygraph v0.1.2
 	github.com/aperturerobotics/timestamp v0.2.3
 	github.com/blang/semver v3.5.1+incompatible
-	github.com/btcsuite/btcd v0.0.0-20191010011042-988181ef23fa // indirect
+	github.com/btcsuite/btcd v0.20.1-beta // indirect
 	github.com/cenkalti/backoff v2.1.1+incompatible
 	github.com/djherbis/buffer v1.1.0
+	github.com/frankban/quicktest v1.7.2 // indirect
 	github.com/golang/protobuf v1.3.3-0.20191022195553-ed6926b37a63
 	github.com/golang/snappy v0.0.2-0.20190904063534-ff6b7dc882cf
 	github.com/gopherjs/gopherjs v0.0.0-20191106031601-ce3c9ade29de
@@ -37,7 +38,7 @@ require (
 	github.com/templexxx/xor v0.0.0-20181023030647-4e92f724b73b
 	github.com/tjfoc/gmsm v1.0.2-0.20191016014117-71e91645d4e3
 	github.com/urfave/cli v1.22.2-0.20191024042601-850de854cda0
-	github.com/xtaci/smux v2.0.1+incompatible
+	github.com/xtaci/smux v1.4.6
 	golang.org/x/crypto v0.0.0-20191106202628-ed6320f186d4
 	google.golang.org/grpc v1.24.0
 	gortc.io/stun v1.21.1
