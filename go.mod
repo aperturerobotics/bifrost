@@ -9,7 +9,6 @@ require (
 	github.com/aperturerobotics/entitygraph v0.1.2
 	github.com/aperturerobotics/timestamp v0.2.3
 	github.com/blang/semver v3.5.1+incompatible
-	github.com/btcsuite/btcd v0.20.1-beta // indirect
 	github.com/cenkalti/backoff v2.1.1+incompatible
 	github.com/djherbis/buffer v1.1.0
 	github.com/frankban/quicktest v1.7.2 // indirect
@@ -22,24 +21,24 @@ require (
 	github.com/klauspost/compress v1.9.1
 	github.com/klauspost/cpuid v1.2.2-0.20191106130511-5a626f7029c9 // indirect
 	github.com/klauspost/reedsolomon v1.9.3 // indirect
-	github.com/libp2p/go-libp2p-core v0.2.5-0.20191101065116-42a4b347f6b3
+	github.com/libp2p/go-libp2p-core v0.3.1-0.20191214080825-6f2516674ace
 	github.com/libp2p/go-libp2p-tls v0.1.2
-	github.com/lucas-clemente/quic-go v0.13.0
-	github.com/mr-tron/base58 v1.1.2
-	github.com/multiformats/go-multiaddr v0.1.1
+	github.com/lucas-clemente/quic-go v0.14.1
+	github.com/mr-tron/base58 v1.1.3
+	github.com/multiformats/go-multiaddr v0.2.0
 	github.com/multiformats/go-multiaddr-net v0.1.1
 	github.com/paralin/kcp-go-lite v1.0.2-0.20190927004254-2be397fe467b
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pauleyj/gobee v0.0.0-20190212035730-6270c53072a4
 	github.com/pierrec/lz4 v2.3.0+incompatible
-	github.com/pkg/errors v0.8.2-0.20190227000051-27936f6d90f9
+	github.com/pkg/errors v0.8.2-0.20191109102316-7f95ac13edff
 	github.com/sirupsen/logrus v1.4.2
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
 	github.com/templexxx/xor v0.0.0-20181023030647-4e92f724b73b
 	github.com/tjfoc/gmsm v1.0.2-0.20191016014117-71e91645d4e3
 	github.com/urfave/cli v1.22.2-0.20191024042601-850de854cda0
 	github.com/xtaci/smux v1.4.6
-	golang.org/x/crypto v0.0.0-20191106202628-ed6320f186d4
+	golang.org/x/crypto v0.0.0-20191206172530-e9b2fee46413
 	google.golang.org/grpc v1.24.0
 	gortc.io/stun v1.21.1
 )
