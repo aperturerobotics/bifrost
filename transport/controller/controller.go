@@ -244,7 +244,7 @@ func (c *Controller) HandleLinkEstablished(lnk link.Link) {
 		return
 	}
 	c.links[luuid] = el
-	le.Debug("link established")
+	le.Info("link established")
 
 	// flush any relevant link waiters
 	c.resolveLinkWaiters(el.Link, true)
@@ -424,7 +424,7 @@ func (c *Controller) flushEstablishedLink(el *establishedLink) {
 	*/
 
 	le := c.loggerForLink(el.Link)
-	le.Debug("link lost/closed")
+	le.Info("link lost/closed")
 	c.resolveLinkWaiters(el.Link, false)
 	el.Cancel()
 	el.Link.Close()
