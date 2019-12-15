@@ -2,6 +2,7 @@ package xbee
 
 import (
 	"github.com/aperturerobotics/bifrost/peer"
+	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/aperturerobotics/bifrost/util/confparse"
 	"github.com/aperturerobotics/controllerbus/config"
 	"github.com/golang/protobuf/proto"
@@ -30,3 +31,11 @@ func (c *Config) GetConfigID() string {
 func (c *Config) EqualsConfig(other config.Config) bool {
 	return proto.Equal(c, other)
 }
+
+// SetNodePeerId sets the node peer ID field.
+func (c *Config) SetNodePeerId(peerID string) {
+	c.NodePeerId = peerID
+}
+
+// _ is a type assertion
+var _ transport.Config = ((*Config)(nil))
