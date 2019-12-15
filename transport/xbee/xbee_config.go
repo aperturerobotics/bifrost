@@ -17,7 +17,7 @@ func (c *Config) Validate() error { return nil }
 
 // ParseNodePeerID parses the node peer ID if it is not empty.
 func (c *Config) ParseNodePeerID() (peer.ID, error) {
-	return confparse.ParsePeerID(c.GetNodePeerId())
+	return confparse.ParsePeerID(c.GetTransportPeerId())
 }
 
 // GetConfigID returns the unique string for this configuration type.
@@ -32,9 +32,9 @@ func (c *Config) EqualsConfig(other config.Config) bool {
 	return proto.Equal(c, other)
 }
 
-// SetNodePeerId sets the node peer ID field.
-func (c *Config) SetNodePeerId(peerID string) {
-	c.NodePeerId = peerID
+// SetTransportPeerId sets the node peer ID field.
+func (c *Config) SetTransportPeerId(peerID string) {
+	c.TransportPeerId = peerID
 }
 
 // _ is a type assertion

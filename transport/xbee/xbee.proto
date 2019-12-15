@@ -6,9 +6,9 @@ import "github.com/aperturerobotics/bifrost/transport/common/dialer/dialer.proto
 
 // Config is the configuration for the udp transport.
 message Config {
-  // NodePeerID constrains the node peer ID.
-  // If empty, attaches to whatever node is running.
-  string node_peer_id = 1;
+  // TransportPeerID sets the peer ID to attach the transport to.
+  // If unset, attaches to any running peer with a private key.
+  string transport_peer_id = 1;
   // DevicePath is the device path to open the serial stream.
   string device_path = 2;
   // DeviceBaud is the device baudrate.

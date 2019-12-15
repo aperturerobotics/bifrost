@@ -6,8 +6,8 @@ import "github.com/aperturerobotics/controllerbus/config"
 type Config interface {
 	// Config indicates this is a controllerbus config.
 	config.Config
-	// GetNodePeerId returns the node peer ID constraint.
-	GetNodePeerId() string
-	// SetNodePeerId sets the node peer ID field.
-	SetNodePeerId(peerID string)
+	// GetTransportPeerId returns the node peer ID constraint.
+	GetTransportPeerId() string
+	// SetTransportPeerId sets the node peer ID field.
+	SetTransportPeerId(peerID string)
 }
