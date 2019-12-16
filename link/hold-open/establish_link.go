@@ -5,6 +5,7 @@ import (
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/sirupsen/logrus"
+	"sync"
 )
 
 // establishLinkHandler handles EstablishLink values
@@ -20,6 +21,8 @@ type establishLinkHandler struct {
 	// di is the directive instance
 	di directive.Instance
 
+	// mtx guards below fields
+	mtx sync.Mutex
 	// valCount is the number of added values
 	valCount int
 	// rigidRef is the non-weak reference
@@ -47,41 +50,53 @@ func (e *establishLinkHandler) HandleValueAdded(inst directive.Instance, val dir
 	if !ok || vl == nil {
 		return
 	}
+	e.mtx.Lock()
 	e.valCount++
-	if e.rigidRef == nil {
+	nrr := e.rigidRef == nil
+	e.mtx.Unlock()
+
+	if nrr {
 		e.le.
 			WithField("link-uuid", vl.GetUUID()).
 			WithField("local-peer", vl.GetLocalPeer().Pretty()).
 			Debug("starting peer hold-open tracking")
 		go func() {
+			e.mtx.Lock()
 			e.rigidRef = e.di.AddReference(nil, false)
+			e.mtx.Unlock()
 		}()
 	}
 }
 
 // HandleValueRemoved is called when a value is removed from the directive.
 func (e *establishLinkHandler) HandleValueRemoved(inst directive.Instance, val directive.AttachedValue) {
+	e.mtx.Lock()
 	if e.valCount > 0 {
 		e.valCount--
 	}
 	if e.valCount == 0 && e.rigidRef != nil {
-		e.rigidRef.Release()
+		go e.rigidRef.Release()
 		e.rigidRef = nil
 	}
+	e.mtx.Unlock()
 }
 
 // HandleInstanceDisposed is called when a directive instance is disposed.
 // This will occur if Close() is called on the directive instance.
 func (e *establishLinkHandler) HandleInstanceDisposed(inst directive.Instance) {
+	e.mtx.Lock()
+
 	eref := e.ref
 	if eref == nil {
+		e.mtx.Unlock()
 		return
 	}
 	e.ref = nil
 	if e.rigidRef != nil {
-		e.rigidRef.Release()
+		go e.rigidRef.Release()
 		e.rigidRef = nil
 	}
+	e.mtx.Unlock()
 
 	e.c.mtx.Lock()
 	for i, ref := range e.c.cleanupRefs {

@@ -174,6 +174,7 @@ func (t *Transport) DialPeer(ctx context.Context, peerID peer.ID, as string) (bo
 		dl, err = newDialer(rctx, t, peerID, addr, as)
 		if err == nil {
 			t.dialers[as] = dl
+			// start a separate goroutine to execute the dialer.
 			go func() {
 				lnk, dlErr := dl.execute()
 				if dlErr != nil {
