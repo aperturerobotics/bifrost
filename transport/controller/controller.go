@@ -57,20 +57,19 @@ type Controller struct {
 	// tptCh holds the transport like a bucket
 	tptCh chan transport.Transport
 
-	// linksMtx is the links mutex
-	linksMtx sync.Mutex
+	// transportID is the transport identifier.
+	transportID string
+	// transportVersion is the transport version
+	transportVersion semver.Version
+
+	// mtx guards the below fields
+	mtx sync.Mutex
 	// links is the links set, keyed by link uuid
 	links map[uint64]*establishedLink
 	// linkWaiters is a set of callbacks waiting for connections with peers.
 	linkWaiters map[peer.ID][]*linkWaiter
 	// linkDialers tracks ongoing dial attempts
 	linkDialers map[linkDialerKey]*linkDialer
-
-	// transportID is the transport identifier.
-	transportID string
-	// transportVersion is the transport version
-	transportVersion semver.Version
-
 	// staticPeerMap maps a peer ID to a peermap.DialPeer
 	// when EstablishLink matches a peer ID in this map,
 	// the transport controller will dial the peer.
@@ -123,6 +122,23 @@ func (c *Controller) GetControllerInfo() controller.Info {
 		c.transportVersion,
 		"transport controller "+c.transportID+"@"+c.transportVersion.String(),
 	)
+}
+
+// SetStaticPeerMap sets the static dialing peer map.
+func (c *Controller) SetStaticPeerMap(m map[string]*dialer.DialerOpts) {
+	c.mtx.Lock()
+	c.staticPeerMap = m
+	c.mtx.Unlock()
+}
+
+// PushStaticPeer pushes a static peer dialer.
+func (c *Controller) PushStaticPeer(id string, opts *dialer.DialerOpts) {
+	c.mtx.Lock()
+	if c.staticPeerMap == nil {
+		c.staticPeerMap = make(map[string]*dialer.DialerOpts)
+	}
+	c.staticPeerMap[id] = opts
+	c.mtx.Unlock()
 }
 
 // Execute executes the transport controller and the transport.
@@ -204,8 +220,8 @@ func (c *Controller) HandleDirective(ctx context.Context, di directive.Instance)
 // HandleLinkEstablished is called by the transport when a link is established.
 func (c *Controller) HandleLinkEstablished(lnk link.Link) {
 	le := c.loggerForLink(lnk)
-	c.linksMtx.Lock()
-	defer c.linksMtx.Unlock()
+	c.mtx.Lock()
+	defer c.mtx.Unlock()
 
 	pidStr := lnk.GetRemotePeer().Pretty()
 	for k, d := range c.linkDialers {
@@ -338,8 +354,8 @@ func (c *Controller) HandleIncomingStream(
 
 // HandleLinkLost is called when a link is lost.
 func (c *Controller) HandleLinkLost(lnk link.Link) {
-	c.linksMtx.Lock()
-	defer c.linksMtx.Unlock()
+	c.mtx.Lock()
+	defer c.mtx.Unlock()
 
 	// fast path: clear by uuid
 	luuid := lnk.GetUUID()
@@ -396,7 +412,7 @@ func (c *Controller) startLinkDialer(
 	opts *dialer.DialerOpts,
 	tptDialer transport.TransportDialer,
 ) {
-	c.linksMtx.Lock()
+	c.mtx.Lock()
 	_, ok := c.linkDialers[key]
 	if !ok {
 		dialer := dialer.NewDialer(c.le, tptDialer, opts, peerID, key.dialAddress)
@@ -408,7 +424,7 @@ func (c *Controller) startLinkDialer(
 		c.linkDialers[key] = ld
 		go c.executeDialer(ctx, key, ld)
 	}
-	c.linksMtx.Unlock()
+	c.mtx.Unlock()
 }
 
 // flushEstablishedLink closes an established link and cleans it up.

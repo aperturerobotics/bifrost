@@ -30,9 +30,9 @@ func (c *Controller) executeDialer(
 	if err != nil && err != context.Canceled {
 		c.le.WithError(err).Warn("dialer exited with error")
 	}
-	c.linksMtx.Lock()
+	c.mtx.Lock()
 	if d := c.linkDialers[key]; d == ld {
 		delete(c.linkDialers, key)
 	}
-	c.linksMtx.Unlock()
+	c.mtx.Unlock()
 }

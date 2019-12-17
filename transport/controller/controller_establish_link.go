@@ -25,7 +25,9 @@ func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.R
 	peerIDConst := o.dir.EstablishLinkWPIDConstraint()
 	peerIDPretty := peerIDConst.Pretty()
 
-	if spm := c.staticPeerMap; spm != nil {
+	c.mtx.Lock()
+	spm := c.staticPeerMap
+	if spm != nil {
 		if dOpts, ok := spm[peerIDPretty]; ok && dOpts.GetAddress() != "" {
 			go func() {
 				_ = c.PushDialer(ctx, peerIDConst, dOpts)
@@ -34,7 +36,6 @@ func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.R
 	}
 
 	linkIDs := make(map[link.Link]uint32)
-	c.linksMtx.Lock()
 	lw := o.c.pushLinkWaiter(peerIDConst, false, func(lnk link.Link, added bool) {
 		if added {
 			if _, ok := linkIDs[lnk]; !ok {
@@ -49,12 +50,12 @@ func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.R
 			}
 		}
 	})
-	c.linksMtx.Unlock()
+	c.mtx.Unlock()
 
 	defer func() {
-		c.linksMtx.Lock()
+		c.mtx.Lock()
 		o.c.clearLinkWaiter(lw)
-		c.linksMtx.Unlock()
+		c.mtx.Unlock()
 	}()
 
 	<-ctx.Done()

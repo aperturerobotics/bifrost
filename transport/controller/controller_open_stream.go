@@ -43,7 +43,7 @@ func (o *openStreamResolver) Resolve(ctx context.Context, handler directive.Reso
 	errCh := make(chan error, 1)
 	strmCh := make(chan link.MountedStream, 1)
 
-	c.linksMtx.Lock()
+	c.mtx.Lock()
 	lw := c.pushLinkWaiter(
 		o.dir.OpenStreamWPTargetPeerID(),
 		true,
@@ -79,13 +79,13 @@ func (o *openStreamResolver) Resolve(ctx context.Context, handler directive.Reso
 			strmCh <- newMountedStream(strm, openOpts, protocolID, lnk)
 		},
 	)
-	c.linksMtx.Unlock()
+	c.mtx.Unlock()
 
 	if lw != nil {
 		defer func() {
-			c.linksMtx.Lock()
+			c.mtx.Lock()
 			c.clearLinkWaiter(lw)
-			c.linksMtx.Unlock()
+			c.mtx.Unlock()
 		}()
 	}
 

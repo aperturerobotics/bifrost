@@ -50,7 +50,7 @@ func (o *openStreamViaLinkResolver) Resolve(ctx context.Context, handler directi
 	var mtx sync.Mutex
 	var done bool
 
-	c.linksMtx.Lock()
+	c.mtx.Lock()
 	lw := c.pushLinkWaiter(
 		peer.ID(""),
 		false,
@@ -101,13 +101,13 @@ func (o *openStreamViaLinkResolver) Resolve(ctx context.Context, handler directi
 			}
 		},
 	)
-	c.linksMtx.Unlock()
+	c.mtx.Unlock()
 
 	if lw != nil {
 		defer func() {
-			c.linksMtx.Lock()
+			c.mtx.Lock()
 			c.clearLinkWaiter(lw)
-			c.linksMtx.Unlock()
+			c.mtx.Unlock()
 		}()
 	}
 

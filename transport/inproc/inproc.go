@@ -115,3 +115,6 @@ func (t *Inproc) writeToAddr(ctx context.Context, p []byte, addr net.Addr) (int,
 
 // _ is a type assertion.
 var _ transport.Transport = ((*Inproc)(nil))
+
+// _ is a type assertion.
+var _ transport.TransportDialer = ((*Inproc)(nil))

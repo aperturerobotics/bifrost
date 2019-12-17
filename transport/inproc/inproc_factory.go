@@ -74,7 +74,7 @@ func (t *Factory) Construct(
 		},
 		TransportID,
 		Version,
-		nil,
+		cc.GetDialers(),
 	), nil
 }
 
