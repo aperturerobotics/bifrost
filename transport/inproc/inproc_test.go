@@ -6,6 +6,8 @@ import (
 
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/peer"
+	"github.com/aperturerobotics/bifrost/stream"
+	"github.com/aperturerobotics/bifrost/stream/echo"
 	"github.com/aperturerobotics/bifrost/testbed"
 	"github.com/aperturerobotics/bifrost/transport/common/dialer"
 	"github.com/aperturerobotics/bifrost/transport/controller"
@@ -107,6 +109,39 @@ func TestEstablishLink(t *testing.T) {
 		"opened link from 2 -> 1 with id %v",
 		lnk2to1.GetValue().(link.Link).GetUUID(),
 	)
+
+	msv1, ms1Ref, err := bus.ExecOneOff(
+		ctx,
+		tb1.Bus,
+		link.NewOpenStreamWithPeer(
+			stream_echo.DefaultProtocolID,
+			peerId1,
+			peerId2,
+			0,
+			stream.OpenOpts{Reliable: true, Encrypted: true},
+		),
+		nil,
+	)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	defer ms1Ref.Release()
+
+	mns1 := msv1.GetValue().(link.MountedStream)
+	ms1 := mns1.GetStream()
+	data := []byte("testing 1234")
+	ms1.Write(data)
+	outData := make([]byte, len(data)*2)
+	on, oe := ms1.Read(outData)
+	if oe != nil {
+		t.Fatal(oe.Error())
+	}
+	if on != len(data) {
+		t.Fatalf("length incorrect received %v != %v", on, len(data))
+	}
+	outData = outData[:on]
+	le1.Infof("echoed data successfully: %v", string(outData))
+	ms1Ref.Release()
 
 	_ = tpc1
 	_ = tpc2

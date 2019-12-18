@@ -6,6 +6,7 @@ import (
 	core "github.com/aperturerobotics/bifrost/core/test"
 	"github.com/aperturerobotics/bifrost/keypem"
 	"github.com/aperturerobotics/bifrost/peer/controller"
+	"github.com/aperturerobotics/bifrost/stream/echo"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
 	srr "github.com/aperturerobotics/controllerbus/controller/resolver/static"
@@ -35,6 +36,8 @@ type TestbedOpts struct {
 	PrivKey crypto.PrivKey
 	// NoPeer disables generating + starting the peer and filling PrivKey.
 	NoPeer bool
+	// NoEcho disables starting the echo listener.
+	NoEcho bool
 }
 
 // NewTestbed constructs a new core bus with a attached kvtx in-memory volume,
@@ -58,6 +61,7 @@ func NewTestbed(ctx context.Context, le *logrus.Entry, opts TestbedOpts) (*Testb
 	}
 	t.StaticResolver = sr
 	t.Bus = b
+	sr.AddFactory(stream_echo.NewFactory(t.Bus))
 
 	if !opts.NoPeer && t.PrivKey == nil {
 		t.PrivKey, _, err = keypem.GeneratePrivKey()
@@ -83,6 +87,20 @@ func NewTestbed(ctx context.Context, le *logrus.Entry, opts TestbedOpts) (*Testb
 			return nil, err
 		}
 		rels = append(rels, peerRef.Release)
+	}
+
+	if !opts.NoEcho {
+		_, echoRef, err := bus.ExecOneOff(
+			ctx,
+			t.Bus,
+			resolver.NewLoadControllerWithConfig(&stream_echo.Config{}),
+			nil,
+		)
+		if err != nil {
+			t.Release()
+			return nil, err
+		}
+		rels = append(rels, echoRef.Release)
 	}
 
 	return t, nil

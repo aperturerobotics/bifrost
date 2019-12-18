@@ -7,7 +7,7 @@ import (
 	"github.com/blang/semver"
 )
 
-// ControllerID identifies the API controller.
+// ControllerID identifies the forwarding controller.
 const ControllerID = "bifrost/stream/forwarding/1"
 
 // Version is the controller version.

@@ -1,0 +1,11 @@
+syntax = "proto3";
+package stream.echo;
+
+// Config configures the echo controller.
+message Config {
+  // PeerId is the peer ID to echo for.
+  // Can be empty.
+  string peer_id = 1;
+  // ProtocolId is the protocol ID to echo on.
+  string protocol_id = 2;
+}

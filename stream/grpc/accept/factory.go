@@ -7,7 +7,7 @@ import (
 	"github.com/blang/semver"
 )
 
-// ControllerID identifies the API controller.
+// ControllerID identifies the GRPC accept controller.
 const ControllerID = "bifrost/stream/grpcaccept/1"
 
 // Version is the controller version.

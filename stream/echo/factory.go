@@ -1,4 +1,4 @@
-package stream_listening
+package stream_echo
 
 import (
 	"github.com/aperturerobotics/controllerbus/bus"
@@ -7,19 +7,19 @@ import (
 	"github.com/blang/semver"
 )
 
-// ControllerID identifies the listening controller.
-const ControllerID = "bifrost/stream/listening/1"
+// ControllerID identifies the echo controller.
+const ControllerID = "bifrost/stream/echo/1"
 
 // Version is the controller version.
 var Version = semver.MustParse("0.0.1")
 
-// Factory constructs a listening controller
+// Factory constructs a forwarding controller
 type Factory struct {
 	// bus is the controller bus
 	bus bus.Bus
 }
 
-// NewFactory builds a listening factory.
+// NewFactory builds a forwarding factory.
 func NewFactory(bus bus.Bus) *Factory {
 	return &Factory{bus: bus}
 }
@@ -48,7 +48,7 @@ func (t *Factory) Construct(
 	cc := conf.(*Config)
 
 	// Construct the controller.
-	return NewController(le, cc, t.bus)
+	return NewController(le, t.bus, cc)
 }
 
 // GetVersion returns the version of this controller.
