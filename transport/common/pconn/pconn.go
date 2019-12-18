@@ -52,6 +52,8 @@ type Transport struct {
 	// dialers is the dialers map
 	// maps address to dialer
 	dialers map[string]*dialer
+	// sessionCounter is incremented when a link is created.
+	sessionCounter uint32
 }
 
 // New constructs a new packet-conn based transport.
@@ -278,12 +280,16 @@ func (u *Transport) handleLinkLost(addrStr string, lnk *Link) {
 
 // handleSession handles a new session.
 func (t *Transport) handleSession(ctx context.Context, sess quic.Session) (*Link, error) {
+	t.linksMtx.Lock()
+	sessID := t.sessionCounter
+	t.sessionCounter++
+	t.linksMtx.Unlock()
 	var lnk *Link
 	var err error
 	as := sess.RemoteAddr().String()
 	lnk, err = NewLink(
 		ctx,
-		t.le,
+		t.le.WithField("session-id", sessID),
 		&t.opts,
 		t.GetUUID(),
 		t.peerID,
