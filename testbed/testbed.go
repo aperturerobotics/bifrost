@@ -29,13 +29,22 @@ type Testbed struct {
 	Release func()
 }
 
+// TestbedOpts are extra options to construct the testbed.
+type TestbedOpts struct {
+	// PrivKey overrides the private key.
+	PrivKey crypto.PrivKey
+	// NoPeer disables generating + starting the peer and filling PrivKey.
+	NoPeer bool
+}
+
 // NewTestbed constructs a new core bus with a attached kvtx in-memory volume,
 // logger, and other core controllers required for a test to function.
-func NewTestbed(ctx context.Context, le *logrus.Entry) (*Testbed, error) {
+func NewTestbed(ctx context.Context, le *logrus.Entry, opts TestbedOpts) (*Testbed, error) {
 	var rels []func()
 	t := &Testbed{
 		Context: ctx,
 		Logger:  le,
+		PrivKey: opts.PrivKey,
 		Release: func() {
 			for _, rel := range rels {
 				rel()
@@ -49,27 +58,32 @@ func NewTestbed(ctx context.Context, le *logrus.Entry) (*Testbed, error) {
 	}
 	t.StaticResolver = sr
 	t.Bus = b
-	t.PrivKey, _, err = keypem.GeneratePrivKey()
-	if err != nil {
-		return nil, err
+
+	if !opts.NoPeer && t.PrivKey == nil {
+		t.PrivKey, _, err = keypem.GeneratePrivKey()
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	// start peer controller
-	peerConfig, err := peer_controller.NewConfigWithPrivKey(t.PrivKey)
-	if err != nil {
-		return nil, err
+	if !opts.NoPeer {
+		// start peer controller
+		peerConfig, err := peer_controller.NewConfigWithPrivKey(t.PrivKey)
+		if err != nil {
+			return nil, err
+		}
+		_, peerRef, err := bus.ExecOneOff(
+			ctx,
+			t.Bus,
+			resolver.NewLoadControllerWithConfig(peerConfig),
+			nil,
+		)
+		if err != nil {
+			t.Release()
+			return nil, err
+		}
+		rels = append(rels, peerRef.Release)
 	}
-	_, peerRef, err := bus.ExecOneOff(
-		ctx,
-		t.Bus,
-		resolver.NewLoadControllerWithConfig(peerConfig),
-		nil,
-	)
-	if err != nil {
-		t.Release()
-		return nil, err
-	}
-	rels = append(rels, peerRef.Release)
 
 	return t, nil
 }

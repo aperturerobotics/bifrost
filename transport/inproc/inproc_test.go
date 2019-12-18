@@ -21,7 +21,7 @@ func buildTestbed(t *testing.T, ctx context.Context) (*testbed.Testbed, *logrus.
 	log.SetLevel(logrus.DebugLevel)
 	le := logrus.NewEntry(log)
 
-	tb, err := testbed.NewTestbed(ctx, le)
+	tb, err := testbed.NewTestbed(ctx, le, testbed.TestbedOpts{})
 	if err != nil {
 		t.Fatal(err.Error())
 	}
