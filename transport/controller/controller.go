@@ -141,6 +141,19 @@ func (c *Controller) PushStaticPeer(id string, opts *dialer.DialerOpts) {
 	c.mtx.Unlock()
 }
 
+// GetPeerLinks returns all links with the peer.
+func (c *Controller) GetPeerLinks(peerID peer.ID) []link.Link {
+	var lnks []link.Link
+	c.mtx.Lock()
+	for _, lnk := range c.links {
+		if lnk.Link.GetRemotePeer() == peerID {
+			lnks = append(lnks, lnk.Link)
+		}
+	}
+	c.mtx.Unlock()
+	return lnks
+}
+
 // Execute executes the transport controller and the transport.
 // Returning nil ends execution.
 // Returning an error triggers a retry with backoff.

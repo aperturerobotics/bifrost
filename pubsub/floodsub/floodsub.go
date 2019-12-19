@@ -47,7 +47,7 @@ type FloodSub struct {
 	// peers are the complete set of executing remote peer streams that we can
 	// use to contact next-hop peers. this is the "working set" of peers.
 	peers map[pubsub.PeerLinkTuple]*streamHandler
-	// channels are active channel subscriptions.
+	// channels are active local channel subscriptions.
 	// key: channel ID
 	channels map[string]map[*subscription]struct{}
 	// peerChannels tracks which topics each peer is subscribed to
@@ -251,7 +251,6 @@ func (m *FloodSub) AddSubscription(ctx context.Context, channelID string) (pubsu
 }
 
 // AddPeerStream adds a negotiated peer stream.
-// Two streams will be negotiated, one outgoing, one incoming.
 // The pubsub should communicate over the stream.
 func (m *FloodSub) AddPeerStream(
 	tpl pubsub.PeerLinkTuple,

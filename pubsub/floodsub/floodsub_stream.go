@@ -142,7 +142,9 @@ func (s *streamHandler) handleSubscriptions(subs []*SubscriptionOpts) {
 				s.m.peerChannels[chid] = cm
 			}
 			if _, ok := cm[s.tpl]; !ok {
-				le.Debug("peer subscribed to channel")
+				le.
+					WithField("tpl-peer-id", s.tpl.PeerID.Pretty()).
+					Debug("peer subscribed to channel")
 				cm[s.tpl] = struct{}{}
 			}
 		} else {
