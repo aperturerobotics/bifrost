@@ -1,0 +1,9 @@
+syntax = "proto3";
+package pubsub.relay;
+
+// Config is the pubsub relay configuration.
+// The relay controller subscribes to a pubsub topic to ensure the peer relays messages.
+message Config {
+  // TopicIds are the list of topic IDs to subscribe to.
+  repeated string topic_ids = 1;
+}
