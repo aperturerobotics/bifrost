@@ -2,10 +2,14 @@ package transport_controller
 
 import (
 	"context"
+	"time"
 
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/controllerbus/directive"
 )
+
+// crossDialWaitDur is the default amount of time to wait to avoid cross-dial.
+var crossDialWaitDur = time.Second
 
 // establishLinkResolver resolves establishLink directives
 type establishLinkResolver struct {
@@ -25,8 +29,8 @@ func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.R
 	peerIDConst := o.dir.EstablishLinkWPIDConstraint()
 	peerIDPretty := peerIDConst.Pretty()
 
-	wakeDialer := make(chan struct{}, 1)
-	wakeDialer <- struct{}{}
+	wakeDialer := make(chan time.Time, 1)
+	wakeDialer <- time.Now()
 
 	linkIDs := make(map[link.Link]uint32)
 	c.mtx.Lock()
@@ -42,8 +46,12 @@ func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.R
 				handler.RemoveValue(vid)
 				delete(linkIDs, lnk)
 				if len(linkIDs) == 0 {
+					var extraWaitDur time.Duration
+					if lnk.GetLocalPeer() < lnk.GetRemotePeer() {
+						extraWaitDur = crossDialWaitDur
+					}
 					select {
-					case wakeDialer <- struct{}{}:
+					case wakeDialer <- time.Now().Add(extraWaitDur):
 					default:
 					}
 				}
@@ -62,7 +70,17 @@ func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.R
 		select {
 		case <-ctx.Done():
 			return nil
-		case <-wakeDialer:
+		case waitUntil := <-wakeDialer:
+			tu := time.Until(waitUntil)
+			if tu > time.Millisecond*50 {
+				tt := time.NewTimer(tu)
+				select {
+				case <-ctx.Done():
+					tt.Stop()
+					return nil
+				case <-tt.C:
+				}
+			}
 		}
 
 		c.mtx.Lock()
