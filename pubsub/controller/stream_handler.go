@@ -28,6 +28,8 @@ func newStreamHandler(
 // This function should return as soon as possible, and start
 // additional goroutines to manage the lifecycle of the stream.
 func (s *streamHandler) HandleMountedStream(ctx context.Context, ms link.MountedStream) error {
+	s.c.le.WithField("protocol-id", ms.GetProtocolID()).
+		Info("pubsub stream opened (by them)")
 	s.ps.AddPeerStream(pubsub.NewPeerLinkTuple(ms.GetLink()), false, ms)
 	return nil
 }

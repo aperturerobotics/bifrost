@@ -171,7 +171,7 @@ func (m *FloodSub) Execute(ctx context.Context) error {
 			}
 		}
 		m.mtx.Unlock()
-		for _, p := range xmitPeers {
+		for _, p := range xmitPeers { // xmitPeers is usually nil
 			p.writePacket(&Packet{Subscriptions: subChanges})
 		}
 

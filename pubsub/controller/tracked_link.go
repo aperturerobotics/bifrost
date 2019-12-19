@@ -23,6 +23,7 @@ type trackedLink struct {
 func (t *trackedLink) trackLink(ctx context.Context) error {
 	// hack: decide which side opens stream using whoever's peer id is greater
 	if t.lnk.GetLocalPeer().Pretty() > t.lnk.GetRemotePeer().Pretty() {
+		t.le.Debug("expecting peer to open stream")
 		return nil
 	}
 	t.le.Debug("link tracking starting")
@@ -53,7 +54,7 @@ func (t *trackedLink) trackLink(ctx context.Context) error {
 	}
 
 	t.le.WithField("protocol-id", mtStrm.GetProtocolID()).
-		Info("stream opened")
+		Info("pubsub stream opened (by us)")
 	ps.AddPeerStream(t.tpl, true, mtStrm)
 	return nil
 }
