@@ -339,7 +339,9 @@ func (m *FloodSub) Publish(
 func (m *FloodSub) Close() {
 	m.mtx.Lock()
 	for pid, s := range m.peers {
-		s.ctxCancel()
+		if s.ctxCancel != nil {
+			s.ctxCancel()
+		}
 		delete(m.peers, pid)
 	}
 	for _, s := range m.incSessions {
