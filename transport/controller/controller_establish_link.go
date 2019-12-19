@@ -66,7 +66,14 @@ func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.R
 		}
 
 		c.mtx.Lock()
-		if spm := c.staticPeerMap; spm != nil {
+		var hasLink bool
+		for _, lnk := range c.links {
+			if lnk.Link.GetRemotePeer() == peerIDConst {
+				hasLink = true
+				break
+			}
+		}
+		if spm := c.staticPeerMap; spm != nil && !hasLink {
 			if dOpts, ok := spm[peerIDPretty]; ok && dOpts.GetAddress() != "" {
 				go func() {
 					_ = c.PushDialer(ctx, peerIDConst, dOpts)
