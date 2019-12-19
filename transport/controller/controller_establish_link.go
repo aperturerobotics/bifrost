@@ -25,17 +25,11 @@ func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.R
 	peerIDConst := o.dir.EstablishLinkWPIDConstraint()
 	peerIDPretty := peerIDConst.Pretty()
 
-	c.mtx.Lock()
-	spm := c.staticPeerMap
-	if spm != nil {
-		if dOpts, ok := spm[peerIDPretty]; ok && dOpts.GetAddress() != "" {
-			go func() {
-				_ = c.PushDialer(ctx, peerIDConst, dOpts)
-			}()
-		}
-	}
+	wakeDialer := make(chan struct{}, 1)
+	wakeDialer <- struct{}{}
 
 	linkIDs := make(map[link.Link]uint32)
+	c.mtx.Lock()
 	lw := o.c.pushLinkWaiter(peerIDConst, false, func(lnk link.Link, added bool) {
 		if added {
 			if _, ok := linkIDs[lnk]; !ok {
@@ -47,6 +41,12 @@ func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.R
 			if vid, ok := linkIDs[lnk]; ok {
 				handler.RemoveValue(vid)
 				delete(linkIDs, lnk)
+				if len(linkIDs) == 0 {
+					select {
+					case wakeDialer <- struct{}{}:
+					default:
+					}
+				}
 			}
 		}
 	})
@@ -58,8 +58,23 @@ func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.R
 		c.mtx.Unlock()
 	}()
 
-	<-ctx.Done()
-	return nil
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-wakeDialer:
+		}
+
+		c.mtx.Lock()
+		if spm := c.staticPeerMap; spm != nil {
+			if dOpts, ok := spm[peerIDPretty]; ok && dOpts.GetAddress() != "" {
+				go func() {
+					_ = c.PushDialer(ctx, peerIDConst, dOpts)
+				}()
+			}
+		}
+		c.mtx.Unlock()
+	}
 }
 
 // resolveEstablishLink returns a resolver for opening a stream.
