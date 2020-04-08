@@ -26,19 +26,22 @@ func (a *API) GetBusInfo(
 
 	directives := a.bus.GetDirectives()
 	directiveInfo := make([]*controllerbus_grpc.DirectiveInfo, len(directives))
-	for i, directive := range directives {
+	for i, diri := range directives {
 		dv := &controllerbus_grpc.DirectiveInfo{}
-		dir := directive.GetDirective()
-		debugVals := dir.GetDebugVals()
-		if debugVals != nil {
-			for key, vals := range debugVals {
-				dv.DebugVals = append(
-					dv.DebugVals,
-					&controllerbus_grpc.DebugValue{
-						Key:    key,
-						Values: vals,
-					},
-				)
+		dir := diri.GetDirective()
+		debugDir, debugDirOk := dir.(directive.Debuggable)
+		if debugDirOk {
+			debugVals := debugDir.GetDebugVals()
+			if debugVals != nil {
+				for key, vals := range debugVals {
+					dv.DebugVals = append(
+						dv.DebugVals,
+						&controllerbus_grpc.DebugValue{
+							Key:    key,
+							Values: vals,
+						},
+					)
+				}
 			}
 		}
 		dv.Name = dir.GetName()
