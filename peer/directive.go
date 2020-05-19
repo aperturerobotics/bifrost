@@ -14,6 +14,9 @@ type GetPeer interface {
 	GetPeerIDConstraint() ID
 }
 
+// GetPeerValue is the result of the GetPeer directive.
+type GetPeerValue = Peer
+
 // getPeer implements GetPeer with a optional peer ID constraint.
 type getPeer struct {
 	peerIDConstraint ID
