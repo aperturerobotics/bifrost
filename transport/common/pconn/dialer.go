@@ -62,11 +62,9 @@ func (d *dialer) execute() (*Link, error) {
 	select {
 	case remotePubKey = <-keyCh:
 	case <-ctx.Done():
-		sess.Close()
 		return nil, ctx.Err()
 	}
 	if remotePubKey == nil {
-		sess.Close()
 		return nil, errors.New("expected remote pub key to be set")
 	}
 

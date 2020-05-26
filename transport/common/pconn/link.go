@@ -150,9 +150,11 @@ func (l *Link) Close() error {
 			closed()
 		}
 		l.ctxCancel()
-		if l.sess != nil {
-			_ = l.sess.Close()
-		}
+		/*
+			if l.sess != nil {
+				_ = l.sess.Close()
+			}
+		*/
 	})
 	return nil
 }
