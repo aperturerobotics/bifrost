@@ -1,6 +1,7 @@
 package cli
 
 import (
+	link_establish_controller "github.com/aperturerobotics/bifrost/link/establish"
 	"github.com/aperturerobotics/bifrost/link/hold-open"
 	"github.com/aperturerobotics/bifrost/transport/common/kcp"
 	"github.com/aperturerobotics/bifrost/transport/common/pconn"
@@ -25,6 +26,9 @@ type DaemonArgs struct {
 	XBeePath string
 	XBeeBaud int
 
+	// EstablishPeers is a list of peers to establish
+	// peer-id comma separated
+	EstablishPeers cli.StringSlice
 	// UDPPeers is a static peer list
 	// peer-id@address
 	UDPPeers cli.StringSlice
@@ -71,6 +75,12 @@ func (a *DaemonArgs) BuildFlags() []cli.Flag {
 			Value:       115200,
 		},
 		cli.StringSliceFlag{
+			Name:   "establish-peers",
+			Usage:  "if set, request establish links to list of peer ids",
+			EnvVar: "BIFROST_ESTABLISH_PEERS",
+			Value:  &a.EstablishPeers,
+		},
+		cli.StringSliceFlag{
 			Name:   "xbee-peers",
 			Usage:  "list of peer-id@address known XBee peers",
 			EnvVar: "BIFROST_XBEE_PEERS",
@@ -103,6 +113,19 @@ func (a *DaemonArgs) ApplyToConfigSet(confSet configset.ConfigSet, overwrite boo
 		}
 		confSet[id] = configset.NewControllerConfig(1, conf)
 	}
+	if len(a.EstablishPeers) != 0 {
+		establishConf := &link_establish_controller.Config{
+			PeerIds: []string(a.EstablishPeers),
+		}
+		if err := establishConf.Validate(); err != nil {
+			return errors.Wrap(err, "establish-peers")
+		}
+		apply("establish-peers", establishConf)
+	}
+	if a.HoldOpenLinks {
+		apply("hold-open", &link_holdopen_controller.Config{})
+	}
+
 	if a.WebsocketListen != "" {
 		staticPeers, err := parseDialerAddrs(a.WebsocketPeers)
 		if err != nil {
@@ -155,10 +178,6 @@ func (a *DaemonArgs) ApplyToConfigSet(confSet configset.ConfigSet, overwrite boo
 			ListenAddr: a.UDPListen,
 			PacketOpts: &pconn.Opts{},
 		})
-	}
-
-	if a.HoldOpenLinks {
-		apply("hold-open", &link_holdopen_controller.Config{})
 	}
 
 	return nil
