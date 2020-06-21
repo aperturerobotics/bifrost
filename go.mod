@@ -5,7 +5,7 @@ go 1.13
 replace github.com/multiformats/go-multihash => github.com/paralin/go-multihash v0.0.11-0.20200526102400-a989a5c6678b // gopherjs-compat
 
 require (
-	github.com/aperturerobotics/controllerbus v0.3.0
+	github.com/aperturerobotics/controllerbus v0.4.0
 	github.com/aperturerobotics/entitygraph v0.1.2
 	github.com/aperturerobotics/timestamp v0.2.3
 	github.com/blang/semver v3.5.1+incompatible
@@ -18,9 +18,9 @@ require (
 	github.com/gorilla/websocket v1.4.2
 	github.com/hashicorp/yamux v0.0.0-20190923154419-df201c70410d
 	github.com/klauspost/compress v1.10.6
-	github.com/libp2p/go-libp2p-core v0.5.6
+	github.com/libp2p/go-libp2p-core v0.6.0
 	github.com/libp2p/go-libp2p-tls v0.1.3
-	github.com/lucas-clemente/quic-go v0.7.1-0.20200527030632-85c19fbb5ae3
+	github.com/lucas-clemente/quic-go v0.7.1-0.20200617095230-c956ca4447b3
 	github.com/mmcloughlin/avo v0.0.0-20200523190732-4439b6b2c061 // indirect
 	github.com/mr-tron/base58 v1.1.3
 	github.com/multiformats/go-multiaddr v0.2.2
@@ -30,13 +30,13 @@ require (
 	github.com/pauleyj/gobee v0.0.0-20190212035730-6270c53072a4
 	github.com/pierrec/lz4 v2.3.0+incompatible
 	github.com/pkg/errors v0.9.1
-	github.com/sirupsen/logrus v1.5.0
+	github.com/sirupsen/logrus v1.6.0
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
-	github.com/templexxx/xor v0.0.0-20181023030647-4e92f724b73b
+	github.com/templexxx/xor v0.0.0-20191217153810-f85b25db303b
 	github.com/tjfoc/gmsm v1.0.1
 	github.com/urfave/cli v1.22.4
 	github.com/xtaci/smux v1.5.14
 	golang.org/x/crypto v0.0.0-20200423211502-4bdfaf469ed5
-	google.golang.org/grpc v1.28.0
+	google.golang.org/grpc v1.29.1
 	gortc.io/stun v1.22.2
 )
