@@ -4,6 +4,9 @@ go 1.13
 
 replace github.com/multiformats/go-multihash => github.com/paralin/go-multihash v0.0.11-0.20200526102400-a989a5c6678b // gopherjs-compat
 
+// aperture: use 1.3.x based fork for compatibility
+replace github.com/golang/protobuf => github.com/aperturerobotics/go-protobuf-1.3.x v0.0.0-20200705233748-404297258551 // aperture-1.3.x
+
 require (
 	github.com/aperturerobotics/controllerbus v0.4.1
 	github.com/aperturerobotics/entitygraph v0.1.2
