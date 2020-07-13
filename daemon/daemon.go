@@ -11,6 +11,7 @@ import (
 	"github.com/aperturerobotics/bifrost/pubsub/floodsub/controller"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
+	"github.com/aperturerobotics/controllerbus/controller/loader"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
 	"github.com/aperturerobotics/controllerbus/controller/resolver/static"
 	"github.com/libp2p/go-libp2p-core/crypto"
@@ -81,7 +82,7 @@ func NewDaemon(
 	dir := resolver.NewLoadControllerWithConfig(&nctr.Config{
 		PrivKey: string(nodePrivKeyPem),
 	})
-	_, ncRef, err := bus.ExecOneOff(ctx, b, dir, nil)
+	_, _, ncRef, err := loader.WaitExecResolverRunning(ctx, b, dir, nil)
 	if err != nil {
 		return nil, err
 	}

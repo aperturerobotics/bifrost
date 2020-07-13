@@ -1,9 +1,9 @@
 package bifrost_api_controller
 
 import (
-	"github.com/aperturerobotics/bifrost/stream/grpc"
-	"github.com/aperturerobotics/bifrost/stream/grpc/accept"
-	"github.com/aperturerobotics/controllerbus/bus"
+	stream_grpc "github.com/aperturerobotics/bifrost/stream/grpc"
+	stream_grpc_accept "github.com/aperturerobotics/bifrost/stream/grpc/accept"
+	"github.com/aperturerobotics/controllerbus/controller/loader"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
 )
 
@@ -25,12 +25,12 @@ func (a *API) AcceptStream(serv stream_grpc.StreamService_AcceptStreamServer) er
 
 	// executeController will execute the grpcaccept controller
 	// wait until it's ready
-	val, valRef, err := bus.ExecOneOff(ctx, a.bus, dir, nil)
+	val, _, valRef, err := loader.WaitExecResolverRunning(ctx, a.bus, dir, nil)
 	if err != nil {
 		return err
 	}
 	defer valRef.Release()
 
-	ctrl := val.GetValue().(*stream_grpc_accept.Controller)
+	ctrl := val.(*stream_grpc_accept.Controller)
 	return ctrl.AttachRPC(stream_grpc.NewAcceptServerRPC(serv))
 }

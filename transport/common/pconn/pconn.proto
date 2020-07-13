@@ -18,4 +18,6 @@ message Opts {
   //
   // If unset or negative, defaults to 100000.
   int32 max_incoming_streams = 2;
+  // Verbose turns on verbose debug logging.
+  bool verbose = 3;
 }

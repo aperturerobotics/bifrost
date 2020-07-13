@@ -13,28 +13,27 @@ import (
 	"github.com/aperturerobotics/bifrost/daemon"
 	api_controller "github.com/aperturerobotics/bifrost/daemon/api/controller"
 	egctr "github.com/aperturerobotics/bifrost/entitygraph"
-	"github.com/aperturerobotics/bifrost/keypem"
+	"github.com/aperturerobotics/bifrost/keypem/keyfile"
 	stream_forwarding "github.com/aperturerobotics/bifrost/stream/forwarding"
 	stream_grpc_accept "github.com/aperturerobotics/bifrost/stream/grpc/accept"
 	stream_listening "github.com/aperturerobotics/bifrost/stream/listening"
 	xbtpt "github.com/aperturerobotics/bifrost/transport/xbee"
-	"github.com/aperturerobotics/controllerbus/bus"
 	configset "github.com/aperturerobotics/controllerbus/controller/configset"
 	configset_controller "github.com/aperturerobotics/controllerbus/controller/configset/controller"
 	configset_json "github.com/aperturerobotics/controllerbus/controller/configset/json"
+	"github.com/aperturerobotics/controllerbus/controller/loader"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
-	"github.com/aperturerobotics/controllerbus/directive"
 	egc "github.com/aperturerobotics/entitygraph/controller"
 	entitygraph_logger "github.com/aperturerobotics/entitygraph/logger"
-	crypto "github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 	"google.golang.org/grpc"
-)
 
-// _ enables the profiling endpoints
-import _ "net/http/pprof"
+	// _ enables the profiling endpoints
+
+	_ "net/http/pprof"
+)
 
 var daemonFlags struct {
 	bcli.DaemonArgs
@@ -102,32 +101,9 @@ func runDaemon(c *cli.Context) error {
 	grpc.EnableTracing = daemonFlags.ProfListen != ""
 
 	// Load private key.
-	var peerPriv crypto.PrivKey
-	peerPrivDat, err := ioutil.ReadFile(daemonFlags.PeerPrivPath)
+	peerPriv, err := keyfile.OpenOrWritePrivKey(le, daemonFlags.PeerPrivPath)
 	if err != nil {
-		if os.IsNotExist(err) {
-			le.Debug("generating daemon node private key")
-			peerPriv, _, err = keypem.GeneratePrivKey()
-			if err != nil {
-				return errors.Wrap(err, "generate priv key")
-			}
-		} else {
-			return errors.Wrap(err, "read priv key")
-		}
-
-		peerPrivDat, err = keypem.MarshalPrivKeyPem(peerPriv)
-		if err != nil {
-			return errors.Wrap(err, "marshal priv key")
-		}
-
-		if err := ioutil.WriteFile(daemonFlags.PeerPrivPath, peerPrivDat, 0644); err != nil {
-			return errors.Wrap(err, "write priv key")
-		}
-	} else {
-		peerPriv, err = keypem.ParsePrivKeyPem(peerPrivDat)
-		if err != nil {
-			return errors.Wrap(err, "parse node priv key")
-		}
+		return err
 	}
 
 	d, err := daemon.NewDaemon(ctx, peerPriv, daemon.ConstructOpts{
@@ -177,18 +153,19 @@ func runDaemon(c *cli.Context) error {
 
 	// Daemon API
 	if daemonFlags.APIListen != "" {
-		_, apiRef, err := b.AddDirective(
+		_, _, apiRef, err := loader.WaitExecResolverRunning(
+			ctx,
+			b,
 			resolver.NewLoadControllerWithConfig(&api_controller.Config{
 				ListenAddr: daemonFlags.APIListen,
 			}),
-			bus.NewCallbackHandler(func(val directive.AttachedValue) {
-				le.Infof("grpc api listening on: %s", daemonFlags.APIListen)
-			}, nil, nil),
+			nil,
 		)
 		if err != nil {
 			return errors.Wrap(err, "listen on grpc api")
 		}
 		defer apiRef.Release()
+		le.Infof("grpc api listening on: %s", daemonFlags.APIListen)
 	}
 
 	// ConfigSet controller
@@ -211,27 +188,25 @@ func runDaemon(c *cli.Context) error {
 	{
 		_, egRef, err := b.AddDirective(
 			resolver.NewLoadControllerWithConfig(&egc.Config{}),
-			bus.NewCallbackHandler(func(val directive.AttachedValue) {
-				le.Info("entity graph controller running")
-			}, nil, nil),
+			nil,
 		)
 		if err != nil {
 			return errors.Wrap(err, "start entity graph controller")
 		}
 		defer egRef.Release()
+		le.Info("entity graph controller running")
 	}
 
 	// Entity graph reporter for bifrost
 	{
 		_, _, err = b.AddDirective(
 			resolver.NewLoadControllerWithConfig(&egctr.Config{}),
-			bus.NewCallbackHandler(func(val directive.AttachedValue) {
-				le.Info("entitygraph bifrost reporter running")
-			}, nil, nil),
+			nil,
 		)
 		if err != nil {
 			return errors.Wrap(err, "start entitygraph bifrost reporter")
 		}
+		le.Info("entitygraph bifrost reporter running")
 	}
 
 	_, err = entitygraph_logger.AttachBasicLogger(b, le)

@@ -5,16 +5,13 @@ import (
 	"crypto/rand"
 	"net"
 	"sync"
-	"time"
 
 	"github.com/aperturerobotics/bifrost/daemon"
 	"github.com/aperturerobotics/bifrost/peer"
-	"github.com/aperturerobotics/bifrost/transport"
 	tptc "github.com/aperturerobotics/bifrost/transport/controller"
 	udptpt "github.com/aperturerobotics/bifrost/transport/udp"
-	"github.com/aperturerobotics/controllerbus/bus"
+	"github.com/aperturerobotics/controllerbus/controller/loader"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
-	"github.com/aperturerobotics/controllerbus/directive"
 	crypto "github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -68,41 +65,36 @@ func execute() error {
 	wg.Add(2)
 
 	// Execute the UDP transport on the first daemon.
-	var tpt1 transport.Transport
-	_, udpRef1, err := bus1.AddDirective(
+	tptc1, _, udpRef1, err := loader.WaitExecResolverRunning(
+		ctx,
+		bus1,
 		resolver.NewLoadControllerWithConfig(&udptpt.Config{
 			ListenAddr: ":5553",
 		}),
-		bus.NewCallbackHandler(func(val directive.AttachedValue) {
-			le.Info("UDP listening on: :5553")
-			<-time.After(time.Millisecond * 500)
-			tpt1, _ = val.GetValue().(*tptc.Controller).GetTransport(ctx)
-			wg.Done()
-		}, nil, nil),
+		nil,
 	)
 	if err != nil {
 		return errors.Wrap(err, "listen on udp 1")
 	}
 	defer udpRef1.Release()
+	le.Info("UDP listening on: :5553")
+	tpt1, _ := tptc1.(*tptc.Controller).GetTransport(ctx)
 
 	// Execute the UDP transport on the second daemon.
-	_, udpRef2, err := bus2.AddDirective(
+	tptc2, _, udpRef2, err := loader.WaitExecResolverRunning(
+		ctx,
+		bus2,
 		resolver.NewLoadControllerWithConfig(&udptpt.Config{
 			ListenAddr: ":5554",
 		}),
-		bus.NewCallbackHandler(func(val directive.AttachedValue) {
-			le.Info("UDP listening on: :5554")
-			// <-time.After(time.Millisecond * 500)
-			// tpt2, _ = val.GetValue().(*tptc.Controller).GetTransport(ctx)
-			wg.Done()
-		}, nil, nil),
+		nil,
 	)
 	if err != nil {
 		return errors.Wrap(err, "listen on udp 2")
 	}
 	defer udpRef2.Release()
-
-	wg.Wait()
+	le.Info("UDP listening on: :5554")
+	_, _ = tptc2.(*tptc.Controller).GetTransport(ctx)
 
 	tpt1.(*udptpt.UDP).DialPeer(ctx, p2, (&net.UDPAddr{
 		IP:   net.IP{127, 0, 0, 1},

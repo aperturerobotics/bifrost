@@ -1,12 +1,13 @@
-package floodsub_controller
+package nats_controller
 
 import (
 	"context"
+	"errors"
 
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/pubsub"
-	pubsub_controller "github.com/aperturerobotics/bifrost/pubsub/controller"
-	"github.com/aperturerobotics/bifrost/pubsub/floodsub"
+	"github.com/aperturerobotics/bifrost/pubsub/controller"
+	"github.com/aperturerobotics/bifrost/pubsub/nats"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/config"
 	"github.com/aperturerobotics/controllerbus/controller"
@@ -49,24 +50,34 @@ func (t *Factory) Construct(
 	le := opts.GetLogger()
 	cc := conf.(*Config)
 
+	pid, err := cc.ParsePeerID()
+	if err != nil {
+		return nil, err
+	}
+
+	if len(pid) == 0 {
+		return nil, errors.New("nats requires a peer id to be set")
+	}
+
 	// Construct the EntityGraph controller.
 	return pubsub_controller.NewController(
 		le,
 		t.bus,
-		controller.NewInfo(ControllerID, Version, "floodsub controller"),
-		peer.ID(""), // floodsub does not bind to a specific peer id (yet)
-		floodsub.FloodSubID,
+		controller.NewInfo(ControllerID, Version, "nats controller"),
+		pid,
+		nats.NatsRouterID,
 		func(
 			ctx context.Context,
 			le *logrus.Entry,
 			peer peer.Peer,
 			handler pubsub.PubSubHandler,
 		) (pubsub.PubSub, error) {
-			return floodsub.NewFloodSub(
+			return nats.NewNats(
 				ctx,
 				le,
 				handler,
-				cc.GetFloodsubConfig(),
+				cc.GetNatsConfig(),
+				peer,
 			)
 		},
 	), nil

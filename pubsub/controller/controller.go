@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/aperturerobotics/bifrost/link"
+	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/protocol"
 	"github.com/aperturerobotics/bifrost/pubsub"
 	"github.com/aperturerobotics/controllerbus/bus"
@@ -17,6 +18,7 @@ import (
 type Constructor func(
 	ctx context.Context,
 	le *logrus.Entry,
+	peer peer.Peer,
 	handler pubsub.PubSubHandler,
 ) (pubsub.PubSub, error)
 
@@ -35,9 +37,13 @@ type Controller struct {
 	info controller.Info
 	// protocolID is the protocol id
 	protocolID protocol.ID
+	// peerID is the peer ID to use
+	peerID peer.ID
 
 	// pubSubCh holds the PubSub like a bucket
 	pubSubCh chan pubsub.PubSub
+	// peerCh holds the Peer like a bucket
+	peerCh chan peer.Peer
 	// wakeCh wakes the controller
 	wakeCh chan struct{}
 
@@ -55,18 +61,21 @@ func NewController(
 	le *logrus.Entry,
 	bus bus.Bus,
 	controllerInfo controller.Info,
+	peerID peer.ID,
 	protocolID protocol.ID,
 	ctor Constructor,
 ) *Controller {
 	return &Controller{
-		le:   le,
-		bus:  bus,
-		ctor: ctor,
-		info: controllerInfo,
+		le:     le,
+		bus:    bus,
+		ctor:   ctor,
+		info:   controllerInfo,
+		peerID: peerID,
 
 		protocolID: protocolID,
 		pubSubCh:   make(chan pubsub.PubSub, 1),
 		wakeCh:     make(chan struct{}, 1),
+		peerCh:     make(chan peer.Peer, 1),
 		links:      make(map[pubsub.PeerLinkTuple]*trackedLink),
 	}
 }
@@ -85,10 +94,30 @@ func (c *Controller) GetControllerInfo() controller.Info {
 // Returning nil ends execution.
 // Returning an error triggers a retry with backoff.
 func (c *Controller) Execute(ctx context.Context) error {
+	// Fetch the peer if the peer ID is set.
+	var cpeer peer.Peer
+	var err error
+	if len(c.peerID) != 0 {
+		var ref directive.Reference
+		cpeer, ref, err = peer.GetPeerWithID(ctx, c.bus, c.peerID)
+		if err != nil {
+			return err
+		}
+		if ref != nil {
+			defer ref.Release()
+		}
+	}
+
+	c.peerCh <- cpeer
+	defer func() {
+		<-c.peerCh
+	}()
+
 	// Construct the PubSub
 	ps, err := c.ctor(
 		ctx,
 		c.le,
+		cpeer,
 		c,
 	)
 	if err != nil {
@@ -151,13 +180,23 @@ func (c *Controller) Execute(ctx context.Context) error {
 }
 
 // GetPubSub returns the controlled PubSub.
-// This may be nil until the PubSub is constructed.
 func (c *Controller) GetPubSub(ctx context.Context) (pubsub.PubSub, error) {
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	case tpt := <-c.pubSubCh:
 		c.pubSubCh <- tpt
+		return tpt, nil
+	}
+}
+
+// GetPeer returns the controlled peer ID.
+func (c *Controller) GetPeer(ctx context.Context) (peer.Peer, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case tpt := <-c.peerCh:
+		c.peerCh <- tpt
 		return tpt, nil
 	}
 }

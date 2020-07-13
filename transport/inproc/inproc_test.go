@@ -12,6 +12,7 @@ import (
 	"github.com/aperturerobotics/bifrost/transport/common/dialer"
 	"github.com/aperturerobotics/bifrost/transport/controller"
 	"github.com/aperturerobotics/controllerbus/bus"
+	"github.com/aperturerobotics/controllerbus/controller/loader"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/sirupsen/logrus"
@@ -46,7 +47,7 @@ func execPeer(ctx context.Context, t *testing.T, tb *testbed.Testbed, conf *Conf
 	}
 	conf.TransportPeerId = peerId.Pretty()
 
-	tp1, tp1Ref, err := bus.ExecOneOff(
+	tpci1, _, tp1Ref, err := loader.WaitExecResolverRunning(
 		ctx,
 		tb.Bus,
 		resolver.NewLoadControllerWithConfig(conf),
@@ -55,7 +56,7 @@ func execPeer(ctx context.Context, t *testing.T, tb *testbed.Testbed, conf *Conf
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	tpc1 := tp1.GetValue().(*transport_controller.Controller)
+	tpc1 := tpci1.(*transport_controller.Controller)
 	tpt1, err := tpc1.GetTransport(ctx)
 	if err != nil {
 		t.Fatal(err.Error())
@@ -79,7 +80,7 @@ func TestEstablishLink(t *testing.T) {
 
 	tpc2, tp2, tp2Ref := execPeer(ctx, t, tb2, &Config{
 		Dialers: map[string]*dialer.DialerOpts{
-			peerId1.Pretty(): &dialer.DialerOpts{
+			peerId1.Pretty(): {
 				Address: tp1.LocalAddr().String(),
 			},
 		},

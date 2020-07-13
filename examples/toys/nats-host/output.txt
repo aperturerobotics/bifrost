@@ -1,0 +1,380 @@
+time="2020-07-27T17:47:32-07:00" level=debug msg="processing 4 nodes in graph"
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="LoadControllerWithConfig<config-id=bifrost/peer/1>" sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="ExecController<config-id=bifrost/peer/1>" sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="starting controller" controller=bifrost/peer/1 sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="peer mounted" controller=bifrost/peer/1 peer-id=12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="controller exited normally" controller=bifrost/peer/1 exec-time="49.288µs" sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="LoadControllerWithConfig<config-id=bifrost/stream/echo/1>" sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="ExecController<config-id=bifrost/stream/echo/1>" sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="starting controller" controller=bifrost/stream/echo/1 sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="controller exited normally" controller=bifrost/stream/echo/1 exec-time="5.142µs" sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="LoadControllerWithConfig<config-id=bifrost/inproc/1>" sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="ExecController<config-id=bifrost/inproc/1>" sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="starting controller" controller=bifrost/inproc/1 sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="looking up peer with ID" controller=bifrost/inproc/1 peer-id=12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="GetPeer<peer-id=12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK>" sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="executing transport" controller=bifrost/inproc/1 sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=info msg="starting to listen with quic + tls" controller=bifrost/inproc/1 laddr="inproc://12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK" sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="Listening for inproc connections on inproc://12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK"
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="LoadControllerWithConfig<config-id=controllerbus/configset/1>" sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="ExecController<config-id=controllerbus/configset/1>" sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="starting controller" controller=controllerbus/configset/1 sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="ApplyConfigSet<controller-keys=pubsub@1&controller-keys=pubsub-relay@1>" sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="peer 12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK has 2 linked peers"
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="LoadControllerWithConfig<config-id=bifrost/peer/1>" sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=info msg="executing controller" config-key=pubsub-relay controller=controllerbus/configset/1 sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="ExecController<config-id=bifrost/peer/1>" sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=info msg="executing controller" config-key=pubsub controller=controllerbus/configset/1 sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="EstablishLinkWithPeer<peer-id=12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP>" sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="starting controller" controller=bifrost/peer/1 sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=info msg="establishing link with configured peer" peer-id=12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="LoadControllerWithConfig<config-id=bifrost/stream/echo/1>" sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="peer mounted" controller=bifrost/peer/1 peer-id=12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="controller exited normally" controller=bifrost/peer/1 exec-time="183.409µs" sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="LoadControllerWithConfig<config-id=bifrost/pubsub/relay/1>" sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="ExecController<config-id=bifrost/stream/echo/1>" sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="LoadControllerWithConfig<config-id=bifrost/nats/1>" sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="EstablishLinkWithPeer<peer-id=12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b>" sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=info msg="establishing link with configured peer" peer-id=12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="ExecController<config-id=bifrost/pubsub/relay/1>" sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="ExecController<config-id=bifrost/nats/1>" sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="LoadControllerWithConfig<config-id=bifrost/inproc/1>" sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="starting controller" controller=bifrost/stream/echo/1 sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="starting controller" controller=bifrost/nats/1 sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="ExecController<config-id=bifrost/inproc/1>" sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="controller exited normally" controller=bifrost/stream/echo/1 exec-time="124.194µs" sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="starting controller" controller=bifrost/pubsub/relay/1 sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="starting controller" controller=bifrost/inproc/1 sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="looking up peer with ID" controller=bifrost/inproc/1 peer-id=12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="GetPeer<peer-id=12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b>" sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="BuildChannelSubscription<channel-id=test-topic-1>" sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=info msg="establishing pubsub subscription" controller=bifrost/pubsub/relay/1 sim-peer=0 topic=test-topic-1
+time="2020-07-27T17:47:32-07:00" level=warning msg="resolver exited with error" directive="BuildChannelSubscription<channel-id=test-topic-1>" error="TODO implement nats add subscription" sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="executing pubsub" controller=bifrost/nats/1 sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="nats router starting" controller=bifrost/nats/1 sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=info msg="Starting nats-server version 2.2.0-beta.19" controller=bifrost/nats/1 peer-id=12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=info msg="Git commit [not set]" controller=bifrost/nats/1 peer-id=12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="executing transport" controller=bifrost/inproc/1 sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=info msg="starting to listen with quic + tls" controller=bifrost/inproc/1 laddr="inproc://12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b" sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="LoadControllerWithConfig<config-id=controllerbus/configset/1>" sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="Listening for inproc connections on inproc://12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b"
+time="2020-07-27T17:47:32-07:00" level=info msg="Starting http monitor on internal mux" controller=bifrost/nats/1 peer-id=12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=info msg="Listening for leafnode connections on internal mux" controller=bifrost/nats/1 peer-id=12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="ExecController<config-id=controllerbus/configset/1>" sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=info msg="Server id is 12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK" controller=bifrost/nats/1 peer-id=12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=info msg="Server is ready" controller=bifrost/nats/1 peer-id=12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="starting controller" controller=controllerbus/configset/1 sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="ApplyConfigSet<controller-keys=pubsub@1&controller-keys=pubsub-relay@1>" sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="peer 12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b has 2 linked peers"
+time="2020-07-27T17:47:32-07:00" level=debug msg="dialing 12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK from 12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b"
+time="2020-07-27T17:47:32-07:00" level=info msg="executing controller" config-key=pubsub-relay controller=controllerbus/configset/1 sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=info msg="executing controller" config-key=pubsub controller=controllerbus/configset/1 sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="EstablishLinkWithPeer<peer-id=12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP>" sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=info msg="establishing link with configured peer" peer-id=12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="LoadControllerWithConfig<config-id=bifrost/pubsub/relay/1>" sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="LoadControllerWithConfig<config-id=bifrost/nats/1>" sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="EstablishLinkWithPeer<peer-id=12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK>" sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=info msg="establishing link with configured peer" peer-id=12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="LoadControllerWithConfig<config-id=bifrost/peer/1>" sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="ExecController<config-id=bifrost/pubsub/relay/1>" sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="ExecController<config-id=bifrost/nats/1>" sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="attempting to dial peer" controller=bifrost/inproc/1 dial-peer-addr="inproc://12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK" dial-peer-id=12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="ExecController<config-id=bifrost/peer/1>" sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="quic dialing peer address: inproc://12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK" controller=bifrost/inproc/1 laddr="inproc://12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b" sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=info msg="Starting new connection to inproc (inproc://12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b -> inproc://12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK), source connection ID 0x3e3cc2f2, destination connection ID 0x18fe89c417946667e106bd95155f, version TLS dev version (WIP)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="starting controller" controller=bifrost/nats/1 sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="Adding connection ID 0x3e3cc2f2."
+time="2020-07-27T17:47:32-07:00" level=debug msg="starting controller" controller=bifrost/pubsub/relay/1 sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="starting controller" controller=bifrost/peer/1 sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="BuildChannelSubscription<channel-id=test-topic-1>" sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="Not doing 0-RTT."
+time="2020-07-27T17:47:32-07:00" level=debug msg="executing pubsub" controller=bifrost/nats/1 sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="nats router starting" controller=bifrost/nats/1 sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="<- Received Initial packet."
+time="2020-07-27T17:47:32-07:00" level=info msg="Starting nats-server version 2.2.0-beta.19" controller=bifrost/nats/1 peer-id=12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="Changing connection ID to 0x0cce8c42."
+time="2020-07-27T17:47:32-07:00" level=info msg="Git commit [not set]" controller=bifrost/nats/1 peer-id=12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="Adding connection IDs 0x18fe89c417946667e106bd95155f and 0x0cce8c42 for a new session."
+time="2020-07-27T17:47:32-07:00" level=info msg="establishing pubsub subscription" controller=bifrost/pubsub/relay/1 sim-peer=1 topic=test-topic-1
+time="2020-07-27T17:47:32-07:00" level=warning msg="resolver exited with error" directive="BuildChannelSubscription<channel-id=test-topic-1>" error="TODO implement nats add subscription" sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="Received ClientHello message (262 bytes, encryption level: Initial)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="LoadControllerWithConfig<config-id=bifrost/stream/echo/1>" sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="peer mounted" controller=bifrost/peer/1 peer-id=12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="controller exited normally" controller=bifrost/peer/1 exec-time="779.67µs" sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=info msg="Starting http monitor on internal mux" controller=bifrost/nats/1 peer-id=12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=info msg="Listening for leafnode connections on internal mux" controller=bifrost/nats/1 peer-id=12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="Installed Handshake Read keys (using TLS_AES_128_GCM_SHA256)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="Adding connection ID 0xa3649911."
+time="2020-07-27T17:47:32-07:00" level=info msg="Server id is 12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b" controller=bifrost/nats/1 peer-id=12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="Adding connection ID 0x8b3acaf3."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Adding connection ID 0x6605af7b."
+time="2020-07-27T17:47:32-07:00" level=info msg="Server is ready" controller=bifrost/nats/1 peer-id=12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="Installed Handshake Write keys (using TLS_AES_128_GCM_SHA256)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="ExecController<config-id=bifrost/stream/echo/1>" sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="starting controller" controller=bifrost/stream/echo/1 sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="LoadControllerWithConfig<config-id=bifrost/inproc/1>" sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="Installed 1-RTT Write keys (using TLS_AES_128_GCM_SHA256)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="controller exited normally" controller=bifrost/stream/echo/1 exec-time="38.903µs" sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="Done with encryption level Initial."
+time="2020-07-27T17:47:32-07:00" level=debug msg="\tQueueing ACK because the first packet should be acknowledged."
+time="2020-07-27T17:47:32-07:00" level=debug msg="error parsing packet: not a QUIC packet"
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="ExecController<config-id=bifrost/inproc/1>" sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="starting controller" controller=bifrost/inproc/1 sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="looking up peer with ID" controller=bifrost/inproc/1 peer-id=12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="GetPeer<peer-id=12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP>" sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="Received first packet. Switching destination connection ID to: 0x0cce8c42"
+time="2020-07-27T17:47:32-07:00" level=debug msg="Received ServerHello message (90 bytes, encryption level: Initial)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="Installed Handshake Write keys (using TLS_AES_128_GCM_SHA256)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="Installed Handshake Read keys (using TLS_AES_128_GCM_SHA256)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="Done with encryption level Initial."
+time="2020-07-27T17:47:32-07:00" level=debug msg="\tQueueing ACK because the first packet should be acknowledged."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Received EncryptedExtensions message (127 bytes, encryption level: Handshake)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="executing transport" controller=bifrost/inproc/1 sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="Adding connection ID 0xc45c7113."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Adding connection ID 0x1d20c54b."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Adding connection ID 0xec187f15."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Received CertificateRequest message (45 bytes, encryption level: Handshake)"
+time="2020-07-27T17:47:32-07:00" level=info msg="starting to listen with quic + tls" controller=bifrost/inproc/1 laddr="inproc://12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP" sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="Listening for inproc connections on inproc://12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP"
+time="2020-07-27T17:47:32-07:00" level=debug msg="Received Certificate message (392 bytes, encryption level: Handshake)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="LoadControllerWithConfig<config-id=controllerbus/configset/1>" sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="Received CertificateVerify message (80 bytes, encryption level: Handshake)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="Received Finished message (36 bytes, encryption level: Handshake)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="ExecController<config-id=controllerbus/configset/1>" sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="starting controller" controller=controllerbus/configset/1 sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="ApplyConfigSet<controller-keys=pubsub@1&controller-keys=pubsub-relay@1>" sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="peer 12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP has 2 linked peers"
+time="2020-07-27T17:47:32-07:00" level=debug msg="dialing 12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b from 12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP"
+time="2020-07-27T17:47:32-07:00" level=debug msg="dialing 12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK from 12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP"
+time="2020-07-27T17:47:32-07:00" level=info msg="simulator startup complete"
+time="2020-07-27T17:47:32-07:00" level=debug msg="Installed 1-RTT Read keys (using TLS_AES_128_GCM_SHA256)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="OpenStreamWithPeer<protocol-id=bifrost/echo/1&source-peer=12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK&target-peer=12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b>" sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="EstablishLinkWithPeer<peer-id=12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b>" sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="Installed 1-RTT Write keys (using TLS_AES_128_GCM_SHA256)"
+time="2020-07-27T17:47:32-07:00" level=info msg="executing controller" config-key=pubsub-relay controller=controllerbus/configset/1 sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="LoadControllerWithConfig<config-id=bifrost/pubsub/relay/1>" sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="Done with encryption level Handshake."
+time="2020-07-27T17:47:32-07:00" level=debug msg="\tQueueing ACK because the first packet should be acknowledged."
+time="2020-07-27T17:47:32-07:00" level=debug msg="\tQueueing ACK because the first packet should be acknowledged."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Dropping Initial keys."
+time="2020-07-27T17:47:32-07:00" level=info msg="establishing link with configured peer" peer-id=12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b
+time="2020-07-27T17:47:32-07:00" level=debug msg="Dropping Initial keys."
+time="2020-07-27T17:47:32-07:00" level=info msg="executing controller" config-key=pubsub controller=controllerbus/configset/1 sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="Received Certificate message (390 bytes, encryption level: Handshake)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="attempting to dial peer" controller=bifrost/inproc/1 dial-peer-addr="inproc://12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b" dial-peer-id=12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="Received CertificateVerify message (80 bytes, encryption level: Handshake)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="Received Finished message (36 bytes, encryption level: Handshake)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="quic dialing peer address: inproc://12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b" controller=bifrost/inproc/1 laddr="inproc://12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP" sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=info msg="Starting new connection to inproc (inproc://12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP -> inproc://12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b), source connection ID 0xdc640dd4, destination connection ID 0x117c03fb65052e80205e6c29e3d5, version TLS dev version (WIP)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="ExecController<config-id=bifrost/pubsub/relay/1>" sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="EstablishLinkWithPeer<peer-id=12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK>" sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="Installed 1-RTT Read keys (using TLS_AES_128_GCM_SHA256)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="Retiring connection ID 0x18fe89c417946667e106bd95155f in 5s."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Adding connection ID 0xdc640dd4."
+time="2020-07-27T17:47:32-07:00" level=info msg="establishing link with configured peer" peer-id=12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK
+time="2020-07-27T17:47:32-07:00" level=info msg="link established" controller=bifrost/inproc/1 link-peer=12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK link-uuid=1258905200049620943 sim-peer=1 tpt-uuid=6996879839151848962
+time="2020-07-27T17:47:32-07:00" level=debug msg="got link with uuid 1258905200049620943" controller=bifrost/nats/1 sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="Not doing 0-RTT."
+time="2020-07-27T17:47:32-07:00" level=debug msg="<- Received Initial packet."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Changing connection ID to 0xc4c0be98."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Adding connection IDs 0x117c03fb65052e80205e6c29e3d5 and 0xc4c0be98 for a new session."
+time="2020-07-27T17:47:32-07:00" level=debug msg="link tracking starting" controller=bifrost/nats/1 link-remote-peer=12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK link-uuid=1258905200049620943 sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="OpenStreamViaLink<link-uuid=1258905200049620943&protocol-id=nats.io/2/router&transport=6996879839151848962>" sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="Done with encryption level Handshake."
+time="2020-07-27T17:47:32-07:00" level=debug msg="\tQueueing ACK because the first packet should be acknowledged."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Dropping 1-RTT packet (615 bytes) that could not be unpacked. Error: decryption failed"
+time="2020-07-27T17:47:32-07:00" level=debug msg="Retiring connection ID 0x18fe89c417946667e106bd95155f in 5s."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Dropping Handshake keys."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Dropping Handshake packet (39 bytes) because we already dropped the keys."
+time="2020-07-27T17:47:32-07:00" level=debug msg="\tQueueing ACK because the first packet should be acknowledged."
+time="2020-07-27T17:47:32-07:00" level=info msg="link established" controller=bifrost/inproc/1 link-peer=12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b link-uuid=7057765025457344552 sim-peer=0 tpt-uuid=15691649567162174533
+time="2020-07-27T17:47:32-07:00" level=debug msg="starting controller" controller=bifrost/pubsub/relay/1 sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="Peer doesn't await address validation any longer."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Dropping Handshake keys."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Received ClientHello message (263 bytes, encryption level: Initial)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="Retiring connection ID 0x0cce8c42 in 5s."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Retiring connection ID 0x3e3cc2f2 in 5s."
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="LoadControllerWithConfig<config-id=bifrost/nats/1>" sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="BuildChannelSubscription<channel-id=test-topic-1>" sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="Installed Handshake Read keys (using TLS_AES_128_GCM_SHA256)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="Adding connection ID 0x2e79f593."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Adding connection ID 0x0e3fab7b."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Adding connection ID 0xcfa24ca7."
+time="2020-07-27T17:47:32-07:00" level=info msg="establishing pubsub subscription" controller=bifrost/pubsub/relay/1 sim-peer=2 topic=test-topic-1
+time="2020-07-27T17:47:32-07:00" level=debug msg="Installed Handshake Write keys (using TLS_AES_128_GCM_SHA256)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="attempting to dial peer" controller=bifrost/inproc/1 dial-peer-addr="inproc://12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK" dial-peer-id=12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="quic dialing peer address: inproc://12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK" controller=bifrost/inproc/1 laddr="inproc://12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP" sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="Installed 1-RTT Write keys (using TLS_AES_128_GCM_SHA256)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="Done with encryption level Initial."
+time="2020-07-27T17:47:32-07:00" level=debug msg="\tQueueing ACK because the first packet should be acknowledged."
+time="2020-07-27T17:47:32-07:00" level=debug msg="opened stream with peer" controller=bifrost/inproc/1 link-id=7057765025457344552 protocol-id=bifrost/echo/1 sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=info msg="Starting new connection to inproc (inproc://12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP -> inproc://12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK), source connection ID 0xc7fc8000, destination connection ID 0x6d412181a019faacd32d24, version TLS dev version (WIP)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="error parsing packet: not a QUIC packet"
+time="2020-07-27T17:47:32-07:00" level=debug msg="Adding connection ID 0xc7fc8000."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Received first packet. Switching destination connection ID to: 0xc4c0be98"
+time="2020-07-27T17:47:32-07:00" level=debug msg="got link with uuid 7057765025457344552" controller=bifrost/nats/1 sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="Received ServerHello message (90 bytes, encryption level: Initial)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="Not doing 0-RTT."
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="ExecController<config-id=bifrost/nats/1>" sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="<- Received Initial packet."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Changing connection ID to 0xf74930ba."
+time="2020-07-27T17:47:32-07:00" level=debug msg="opened stream with peer" controller=bifrost/inproc/1 link-id=1258905200049620943 protocol-id=nats.io/2/router sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="Installed Handshake Write keys (using TLS_AES_128_GCM_SHA256)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="accepted stream" controller=bifrost/inproc/1 link-peer=12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK link-uuid=1258905200049620943 protocol-id=bifrost/echo/1 remote-peer=12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK sim-peer=1 stream-encrypted=true stream-reliable=true tpt-uuid=6996879839151848962
+time="2020-07-27T17:47:32-07:00" level=debug msg="Adding connection IDs 0x6d412181a019faacd32d24 and 0xf74930ba for a new session."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Installed Handshake Read keys (using TLS_AES_128_GCM_SHA256)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="accepted stream" controller=bifrost/inproc/1 link-peer=12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b link-uuid=7057765025457344552 protocol-id=nats.io/2/router remote-peer=12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b sim-peer=0 stream-encrypted=true stream-reliable=true tpt-uuid=15691649567162174533
+time="2020-07-27T17:47:32-07:00" level=debug msg="Received ClientHello message (263 bytes, encryption level: Initial)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="Done with encryption level Initial."
+time="2020-07-27T17:47:32-07:00" level=debug msg="\tQueueing ACK because the first packet should be acknowledged."
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="HandleMountedStream<local-peer=12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK&protocol-id=nats.io/2/router&remote-peer=12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b>" sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="Received EncryptedExtensions message (118 bytes, encryption level: Handshake)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="Installed Handshake Read keys (using TLS_AES_128_GCM_SHA256)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="Adding connection ID 0x3da0abf9."
+time="2020-07-27T17:47:32-07:00" level=info msg="pubsub stream opened (by us)" controller=bifrost/nats/1 link-remote-peer=12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK link-uuid=1258905200049620943 protocol-id=nats.io/2/router sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="Adding connection ID 0x612063e1."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Adding connection ID 0x8fd55880."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Adding connection ID 0x73929460."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Received CertificateRequest message (45 bytes, encryption level: Handshake)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="Adding connection ID 0xf9ddb293."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Adding connection ID 0x90b99b9c."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Installed Handshake Write keys (using TLS_AES_128_GCM_SHA256)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="Received Certificate message (390 bytes, encryption level: Handshake)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="Received CertificateVerify message (79 bytes, encryption level: Handshake)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="HandleMountedStream<local-peer=12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b&protocol-id=bifrost/echo/1&remote-peer=12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK>" sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="Installed 1-RTT Write keys (using TLS_AES_128_GCM_SHA256)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="Received Finished message (36 bytes, encryption level: Handshake)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="starting controller" controller=bifrost/nats/1 sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="Done with encryption level Initial."
+time="2020-07-27T17:47:32-07:00" level=debug msg="\tQueueing ACK because the first packet should be acknowledged."
+time="2020-07-27T17:47:32-07:00" level=debug msg="error parsing packet: not a QUIC packet"
+time="2020-07-27T17:47:32-07:00" level=info msg="pubsub stream opened (by them)" controller=bifrost/nats/1 protocol-id=nats.io/2/router sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="Received first packet. Switching destination connection ID to: 0xf74930ba"
+time="2020-07-27T17:47:32-07:00" level=debug msg="Received ServerHello message (90 bytes, encryption level: Initial)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="executing session" controller=bifrost/nats/1 initiator=true nats-stream-type=NatsConnType_ROUTER peer=12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=info msg="12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK - rid:2 - Route connection created" controller=bifrost/nats/1 peer-id=12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="executing session" controller=bifrost/nats/1 initiator=false nats-stream-type=NatsConnType_ROUTER peer=12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="Installed 1-RTT Read keys (using TLS_AES_128_GCM_SHA256)"
+time="2020-07-27T17:47:32-07:00" level=info msg="12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b - rid:2 - Route connection created" controller=bifrost/nats/1 peer-id=12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="echoing stream" controller=bifrost/stream/echo/1 sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="Installed 1-RTT Write keys (using TLS_AES_128_GCM_SHA256)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="Installed Handshake Write keys (using TLS_AES_128_GCM_SHA256)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="removed directive" directive="HandleMountedStream<local-peer=12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b&protocol-id=bifrost/echo/1&remote-peer=12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK>" sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="expecting peer to open stream" controller=bifrost/nats/1 link-remote-peer=12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b link-uuid=7057765025457344552 sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="Installed Handshake Read keys (using TLS_AES_128_GCM_SHA256)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="Done with encryption level Handshake."
+time="2020-07-27T17:47:32-07:00" level=debug msg="\tQueueing ACK because the first packet should be acknowledged."
+time="2020-07-27T17:47:32-07:00" level=debug msg="\tQueueing ACK because the first packet should be acknowledged."
+time="2020-07-27T17:47:32-07:00" level=debug msg="executing pubsub" controller=bifrost/nats/1 sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="Done with encryption level Initial."
+time="2020-07-27T17:47:32-07:00" level=debug msg="\tQueueing ACK because the first packet should be acknowledged."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Dropping Initial keys."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Received EncryptedExtensions message (112 bytes, encryption level: Handshake)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="nats router starting" controller=bifrost/nats/1 sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="Dropping Initial keys."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Received Certificate message (390 bytes, encryption level: Handshake)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="Received CertificateVerify message (79 bytes, encryption level: Handshake)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="Received Finished message (36 bytes, encryption level: Handshake)"
+time="2020-07-27T17:47:32-07:00" level=warning msg="resolver exited with error" directive="BuildChannelSubscription<channel-id=test-topic-1>" error="TODO implement nats add subscription" sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="Adding connection ID 0x6bf66b48."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Adding connection ID 0x61cba672."
+time="2020-07-27T17:47:32-07:00" level=info msg="Starting nats-server version 2.2.0-beta.19" controller=bifrost/nats/1 peer-id=12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="Adding connection ID 0x2074b15c."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Received CertificateRequest message (45 bytes, encryption level: Handshake)"
+time="2020-07-27T17:47:32-07:00" level=info msg="successful connectivity test between 12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK and 12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b"
+time="2020-07-27T17:47:32-07:00" level=debug msg="Received Certificate message (392 bytes, encryption level: Handshake)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="Received CertificateVerify message (78 bytes, encryption level: Handshake)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="Received Finished message (36 bytes, encryption level: Handshake)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="OpenStreamWithPeer<protocol-id=bifrost/echo/1&source-peer=12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b&target-peer=12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP>" sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="Installed 1-RTT Read keys (using TLS_AES_128_GCM_SHA256)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="removed directive" directive="HandleMountedStream<local-peer=12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK&protocol-id=nats.io/2/router&remote-peer=12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b>" sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="Retiring connection ID 0x117c03fb65052e80205e6c29e3d5 in 5s."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Done with encryption level Handshake."
+time="2020-07-27T17:47:32-07:00" level=debug msg="\tQueueing ACK because the first packet should be acknowledged."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Dropping 1-RTT packet (616 bytes) that could not be unpacked. Error: decryption failed"
+time="2020-07-27T17:47:32-07:00" level=debug msg="Retiring connection ID 0x117c03fb65052e80205e6c29e3d5 in 5s."
+time="2020-07-27T17:47:32-07:00" level=info msg="link established" controller=bifrost/inproc/1 link-peer=12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b link-uuid=4539615315634581859 sim-peer=2 tpt-uuid=7353327918605444436
+time="2020-07-27T17:47:32-07:00" level=debug msg="Peer doesn't await address validation any longer."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Dropping Handshake keys."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Dropping Handshake packet (39 bytes) because we already dropped the keys."
+time="2020-07-27T17:47:32-07:00" level=debug msg="\tQueueing ACK because the first packet should be acknowledged."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Installed 1-RTT Read keys (using TLS_AES_128_GCM_SHA256)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="Dropping Handshake keys."
+time="2020-07-27T17:47:32-07:00" level=debug msg="got link with uuid 4539615315634581859" controller=bifrost/nats/1 sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="Installed 1-RTT Write keys (using TLS_AES_128_GCM_SHA256)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="removed directive" directive="OpenStreamViaLink<link-uuid=1258905200049620943&protocol-id=nats.io/2/router&transport=6996879839151848962>" sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="Done with encryption level Handshake."
+time="2020-07-27T17:47:32-07:00" level=debug msg="\tQueueing ACK because the first packet should be acknowledged."
+time="2020-07-27T17:47:32-07:00" level=debug msg="\tQueueing ACK because the first packet should be acknowledged."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Dropping Initial keys."
+time="2020-07-27T17:47:32-07:00" level=debug msg="link tracking starting" controller=bifrost/nats/1 link-remote-peer=12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b link-uuid=4539615315634581859 sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="Dropping Initial keys."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Received Certificate message (390 bytes, encryption level: Handshake)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="Received CertificateVerify message (80 bytes, encryption level: Handshake)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="Received Finished message (36 bytes, encryption level: Handshake)"
+time="2020-07-27T17:47:32-07:00" level=info msg="link established" controller=bifrost/inproc/1 link-peer=12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP link-uuid=1805386074870901405 sim-peer=1 tpt-uuid=6996879839151848962
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="OpenStreamViaLink<link-uuid=4539615315634581859&protocol-id=nats.io/2/router&transport=7353327918605444436>" sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="removed directive" directive="OpenStreamWithPeer<protocol-id=bifrost/echo/1&source-peer=12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK&target-peer=12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b>" sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="opened stream with peer" controller=bifrost/inproc/1 link-id=1805386074870901405 protocol-id=bifrost/echo/1 sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=info msg="link established" controller=bifrost/inproc/1 link-peer=12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK link-uuid=13257081552098632878 sim-peer=2 tpt-uuid=7353327918605444436
+time="2020-07-27T17:47:32-07:00" level=debug msg="got link with uuid 1805386074870901405" controller=bifrost/nats/1 sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="got link with uuid 13257081552098632878" controller=bifrost/nats/1 sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="link tracking starting" controller=bifrost/nats/1 link-remote-peer=12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK link-uuid=13257081552098632878 sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="Retiring connection ID 0xc4c0be98 in 5s."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Installed 1-RTT Read keys (using TLS_AES_128_GCM_SHA256)"
+time="2020-07-27T17:47:32-07:00" level=debug msg="accepted stream" controller=bifrost/inproc/1 link-peer=12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP link-uuid=1805386074870901405 protocol-id=nats.io/2/router remote-peer=12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP sim-peer=1 stream-encrypted=true stream-reliable=true tpt-uuid=6996879839151848962
+time="2020-07-27T17:47:32-07:00" level=debug msg="Retiring connection ID 0xdc640dd4 in 5s."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Retiring connection ID 0x6d412181a019faacd32d24 in 5s."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Done with encryption level Handshake."
+time="2020-07-27T17:47:32-07:00" level=debug msg="\tQueueing ACK because the first packet should be acknowledged."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Dropping 1-RTT packet (615 bytes) that could not be unpacked. Error: decryption failed"
+time="2020-07-27T17:47:32-07:00" level=debug msg="Retiring connection ID 0x6d412181a019faacd32d24 in 5s."
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="HandleMountedStream<local-peer=12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b&protocol-id=nats.io/2/router&remote-peer=12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP>" sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="Dropping Handshake keys."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Dropping Handshake packet (39 bytes) because we already dropped the keys."
+time="2020-07-27T17:47:32-07:00" level=debug msg="\tQueueing ACK because the first packet should be acknowledged."
+time="2020-07-27T17:47:32-07:00" level=debug msg="expecting peer to open stream" controller=bifrost/nats/1 link-remote-peer=12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP link-uuid=1805386074870901405 sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="OpenStreamViaLink<link-uuid=13257081552098632878&protocol-id=nats.io/2/router&transport=7353327918605444436>" sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="Peer doesn't await address validation any longer."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Dropping Handshake keys."
+time="2020-07-27T17:47:32-07:00" level=debug msg="opened stream with peer" controller=bifrost/inproc/1 link-id=4539615315634581859 protocol-id=nats.io/2/router sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="Retiring connection ID 0xf74930ba in 5s."
+time="2020-07-27T17:47:32-07:00" level=debug msg="Retiring connection ID 0xc7fc8000 in 5s."
+time="2020-07-27T17:47:32-07:00" level=debug msg="accepted stream" controller=bifrost/inproc/1 link-peer=12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b link-uuid=4539615315634581859 protocol-id=bifrost/echo/1 remote-peer=12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b sim-peer=2 stream-encrypted=true stream-reliable=true tpt-uuid=7353327918605444436
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="HandleMountedStream<local-peer=12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP&protocol-id=bifrost/echo/1&remote-peer=12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b>" sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="accepted stream" controller=bifrost/inproc/1 link-peer=12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP link-uuid=16177453319799744695 protocol-id=nats.io/2/router remote-peer=12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP sim-peer=0 stream-encrypted=true stream-reliable=true tpt-uuid=15691649567162174533
+time="2020-07-27T17:47:32-07:00" level=debug msg="added directive" directive="HandleMountedStream<local-peer=12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK&protocol-id=nats.io/2/router&remote-peer=12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP>" sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="echoing stream" controller=bifrost/stream/echo/1 sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=info msg="pubsub stream opened (by them)" controller=bifrost/nats/1 protocol-id=nats.io/2/router sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=info msg="successful connectivity test between 12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b and 12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP"
+time="2020-07-27T17:47:32-07:00" level=debug msg="removed directive" directive="HandleMountedStream<local-peer=12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK&protocol-id=nats.io/2/router&remote-peer=12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP>" sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=info msg="pubsub stream opened (by us)" controller=bifrost/nats/1 link-remote-peer=12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b link-uuid=4539615315634581859 protocol-id=nats.io/2/router sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="removed directive" directive="HandleMountedStream<local-peer=12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP&protocol-id=bifrost/echo/1&remote-peer=12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b>" sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="removed directive" directive="OpenStreamViaLink<link-uuid=4539615315634581859&protocol-id=nats.io/2/router&transport=7353327918605444436>" sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=info msg="link established" controller=bifrost/inproc/1 link-peer=12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP link-uuid=16177453319799744695 sim-peer=0 tpt-uuid=15691649567162174533
+time="2020-07-27T17:47:32-07:00" level=debug msg="removed directive" directive="OpenStreamWithPeer<protocol-id=bifrost/echo/1&source-peer=12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b&target-peer=12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP>" sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="got link with uuid 16177453319799744695" controller=bifrost/nats/1 sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=info msg="Git commit [not set]" controller=bifrost/nats/1 peer-id=12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="executing session" controller=bifrost/nats/1 initiator=true nats-stream-type=NatsConnType_ROUTER peer=12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="executing session" controller=bifrost/nats/1 initiator=false nats-stream-type=NatsConnType_ROUTER peer=12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="opened stream with peer" controller=bifrost/inproc/1 link-id=13257081552098632878 protocol-id=nats.io/2/router sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=info msg="12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b - rid:2 - Route connection created" controller=bifrost/nats/1 peer-id=12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=info msg="pubsub stream opened (by us)" controller=bifrost/nats/1 link-remote-peer=12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK link-uuid=13257081552098632878 protocol-id=nats.io/2/router sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=info msg="12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP - rid:3 - Route connection created" controller=bifrost/nats/1 peer-id=12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=info msg="pubsub stream opened (by them)" controller=bifrost/nats/1 protocol-id=nats.io/2/router sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="removed directive" directive="OpenStreamViaLink<link-uuid=13257081552098632878&protocol-id=nats.io/2/router&transport=7353327918605444436>" sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="expecting peer to open stream" controller=bifrost/nats/1 link-remote-peer=12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP link-uuid=16177453319799744695 sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=debug msg="executing session" controller=bifrost/nats/1 initiator=false nats-stream-type=NatsConnType_ROUTER peer=12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=info msg="12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP - rid:3 - Route connection created" controller=bifrost/nats/1 peer-id=12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=debug msg="executing session" controller=bifrost/nats/1 initiator=true nats-stream-type=NatsConnType_ROUTER peer=12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=info msg="12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK - rid:3 - Route connection created" controller=bifrost/nats/1 peer-id=12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=debug msg="removed directive" directive="HandleMountedStream<local-peer=12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b&protocol-id=nats.io/2/router&remote-peer=12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP>" sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=info msg="12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK - rid:3 - Router connection closed: Duplicate Route" controller=bifrost/nats/1 peer-id=12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=info msg="12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP - rid:3 - Router connection closed: Duplicate Route" controller=bifrost/nats/1 peer-id=12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b sim-peer=1
+time="2020-07-27T17:47:32-07:00" level=info msg="12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP - rid:3 - Router connection closed: Duplicate Route" controller=bifrost/nats/1 peer-id=12D3KooWQpAEnsh5cspBRDhDMD9DCiFNSe2gng5WNsRQQG8wgKwK sim-peer=0
+time="2020-07-27T17:47:32-07:00" level=info msg="12D3KooWHvAQAek3guV6kb8Ad1g2fVGvFPKPLcbHCPN6mfDPKm3b - rid:2 - Router connection closed: Client Closed" controller=bifrost/nats/1 peer-id=12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=info msg="Starting http monitor on internal mux" controller=bifrost/nats/1 peer-id=12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=info msg="Listening for leafnode connections on internal mux" controller=bifrost/nats/1 peer-id=12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=info msg="Server id is 12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP" controller=bifrost/nats/1 peer-id=12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=info msg="Server is ready" controller=bifrost/nats/1 peer-id=12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP sim-peer=2
+time="2020-07-27T17:47:32-07:00" level=error msg="Error trying to connect to route (attempt 1): BIFROST TODO EstablishLink to Route connectToRoute in nats" controller=bifrost/nats/1 peer-id=12D3KooWAK7ad6hyyddKi7MM5P2jaciEMSknRfKoAywrJNF2sidP sim-peer=2

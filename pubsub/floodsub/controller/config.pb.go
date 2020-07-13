@@ -23,7 +23,7 @@ const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 // Config is the floodsub controller config.
 type Config struct {
-	// FloodsubConfig are mesh-sub specific configuration variables.
+	// FloodsubConfig are pubsub provider specific configuration variables.
 	FloodsubConfig       *floodsub.Config `protobuf:"bytes,1,opt,name=floodsub_config,json=floodsubConfig,proto3" json:"floodsub_config,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
 	XXX_unrecognized     []byte           `json:"-"`

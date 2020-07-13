@@ -109,7 +109,7 @@ func newTransportUUID(localAddr net.Addr, peerID peer.ID) uint64 {
 }
 
 // buildQuicConfig constructs the quic config.
-func buildQuicConfig(opts *Opts) *quic.Config {
+func buildQuicConfig(le *logrus.Entry, opts *Opts) *quic.Config {
 	maxIdleTimeout := time.Second * 40
 	if ntDur := opts.GetMaxIdleTimeoutDur(); ntDur != "" {
 		nt, err := time.ParseDuration(ntDur)
@@ -123,6 +123,13 @@ func buildQuicConfig(opts *Opts) *quic.Config {
 		maxIncStreams = int(mis)
 	}
 
+	ple := le.WithField("pconn", "quic")
+	if opts.GetVerbose() {
+		ple.Level = logrus.DebugLevel
+	} else {
+		ple.Level = logrus.InfoLevel
+	}
+
 	return &quic.Config{
 		AcceptToken: func(clientAddr net.Addr, _ *quic.Token) bool {
 			// TODO(#6): require source address validation when under load
@@ -134,6 +141,7 @@ func buildQuicConfig(opts *Opts) *quic.Config {
 		MaxIncomingUniStreams: -1, // disable unidirectional streams
 		// MaxReceiveStreamFlowControlWindow:     3 * (1 << 20),   // 3 MB
 		// MaxReceiveConnectionFlowControlWindow: 4.5 * (1 << 20), // 4.5 MB
+		Logger: ple,
 	}
 }
 
@@ -234,7 +242,7 @@ func (t *Transport) Execute(ctx context.Context) error {
 		conf, _ := t.identity.ConfigForAny()
 		return conf, nil
 	}
-	quicConfig := buildQuicConfig(&t.opts)
+	quicConfig := buildQuicConfig(t.le, &t.opts)
 	t.le.Info("starting to listen with quic + tls")
 	ln, err := quic.Listen(t.pc, &tlsConf, quicConfig)
 	if err != nil {

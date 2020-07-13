@@ -5,6 +5,6 @@ import "github.com/aperturerobotics/bifrost/pubsub/floodsub/floodsub.proto";
 
 // Config is the floodsub controller config.
 message Config {
-  // FloodsubConfig are mesh-sub specific configuration variables.
+  // FloodsubConfig are pubsub provider specific configuration variables.
   floodsub.Config floodsub_config = 1;
 }

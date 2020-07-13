@@ -29,6 +29,8 @@ const (
 )
 
 // FloodSub implements the FloodSub router.
+//
+// TODO bind to a specific peer
 type FloodSub struct {
 	// conf is the config
 	conf *Config
