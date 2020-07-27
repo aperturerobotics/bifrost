@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"net"
 	"sync"
+	"time"
 
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/transport"
@@ -107,18 +108,32 @@ func newTransportUUID(localAddr net.Addr, peerID peer.ID) uint64 {
 	)
 }
 
-// defaultQuicConfig constructs the default quic config.
-func defaultQuicConfig() *quic.Config {
+// buildQuicConfig constructs the quic config.
+func buildQuicConfig(opts *Opts) *quic.Config {
+	maxIdleTimeout := time.Second * 40
+	if ntDur := opts.GetMaxIdleTimeoutDur(); ntDur != "" {
+		nt, err := time.ParseDuration(ntDur)
+		if err == nil && nt != time.Duration(0) && nt < time.Hour*2 {
+			maxIdleTimeout = nt
+		}
+	}
+
+	maxIncStreams := 100000
+	if mis := opts.GetMaxIncomingStreams(); mis <= 0 {
+		maxIncStreams = int(mis)
+	}
+
 	return &quic.Config{
-		MaxIncomingStreams:                    1000,
-		MaxIncomingUniStreams:                 -1,              // disable unidirectional streams
-		MaxReceiveStreamFlowControlWindow:     3 * (1 << 20),   // 3 MB
-		MaxReceiveConnectionFlowControlWindow: 4.5 * (1 << 20), // 4.5 MB
 		AcceptToken: func(clientAddr net.Addr, _ *quic.Token) bool {
 			// TODO(#6): require source address validation when under load
 			return true
 		},
-		KeepAlive: true,
+		KeepAlive:             true,
+		MaxIdleTimeout:        maxIdleTimeout,
+		MaxIncomingStreams:    maxIncStreams,
+		MaxIncomingUniStreams: -1, // disable unidirectional streams
+		// MaxReceiveStreamFlowControlWindow:     3 * (1 << 20),   // 3 MB
+		// MaxReceiveConnectionFlowControlWindow: 4.5 * (1 << 20), // 4.5 MB
 	}
 }
 
@@ -219,7 +234,7 @@ func (t *Transport) Execute(ctx context.Context) error {
 		conf, _ := t.identity.ConfigForAny()
 		return conf, nil
 	}
-	quicConfig := defaultQuicConfig()
+	quicConfig := buildQuicConfig(&t.opts)
 	t.le.Info("starting to listen with quic + tls")
 	ln, err := quic.Listen(t.pc, &tlsConf, quicConfig)
 	if err != nil {

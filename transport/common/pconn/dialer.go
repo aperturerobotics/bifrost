@@ -52,7 +52,7 @@ func (d *dialer) execute() (*Link, error) {
 	ctx := d.ctx
 	defer d.ctxCancel()
 	tlsConf, keyCh := d.t.identity.ConfigForPeer(d.peerID)
-	quicConfig := defaultQuicConfig()
+	quicConfig := buildQuicConfig(&d.t.opts)
 	d.t.le.Debugf("quic dialing peer address: %s", d.address)
 	sess, err := quic.DialContext(ctx, d.t.pc, d.addr, d.address, tlsConf, quicConfig)
 	if err != nil {
