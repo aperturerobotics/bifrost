@@ -65,7 +65,7 @@ func execute() error {
 	wg.Add(2)
 
 	// Execute the UDP transport on the first daemon.
-	tptc1, _, udpRef1, err := loader.WaitExecResolverRunning(
+	tptc1, _, udpRef1, err := loader.WaitExecControllerRunning(
 		ctx,
 		bus1,
 		resolver.NewLoadControllerWithConfig(&udptpt.Config{
@@ -81,7 +81,7 @@ func execute() error {
 	tpt1, _ := tptc1.(*tptc.Controller).GetTransport(ctx)
 
 	// Execute the UDP transport on the second daemon.
-	tptc2, _, udpRef2, err := loader.WaitExecResolverRunning(
+	tptc2, _, udpRef2, err := loader.WaitExecControllerRunning(
 		ctx,
 		bus2,
 		resolver.NewLoadControllerWithConfig(&udptpt.Config{

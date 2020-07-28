@@ -153,7 +153,7 @@ func runDaemon(c *cli.Context) error {
 
 	// Daemon API
 	if daemonFlags.APIListen != "" {
-		_, _, apiRef, err := loader.WaitExecResolverRunning(
+		_, _, apiRef, err := loader.WaitExecControllerRunning(
 			ctx,
 			b,
 			resolver.NewLoadControllerWithConfig(&api_controller.Config{

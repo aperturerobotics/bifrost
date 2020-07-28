@@ -82,7 +82,7 @@ func NewDaemon(
 	dir := resolver.NewLoadControllerWithConfig(&nctr.Config{
 		PrivKey: string(nodePrivKeyPem),
 	})
-	_, _, ncRef, err := loader.WaitExecResolverRunning(ctx, b, dir, nil)
+	_, _, ncRef, err := loader.WaitExecControllerRunning(ctx, b, dir, nil)
 	if err != nil {
 		return nil, err
 	}

@@ -47,7 +47,7 @@ func execPeer(ctx context.Context, t *testing.T, tb *testbed.Testbed, conf *Conf
 	}
 	conf.TransportPeerId = peerId.Pretty()
 
-	tpci1, _, tp1Ref, err := loader.WaitExecResolverRunning(
+	tpci1, _, tp1Ref, err := loader.WaitExecControllerRunning(
 		ctx,
 		tb.Bus,
 		resolver.NewLoadControllerWithConfig(conf),

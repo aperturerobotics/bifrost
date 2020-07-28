@@ -25,7 +25,7 @@ func (a *API) AcceptStream(serv stream_grpc.StreamService_AcceptStreamServer) er
 
 	// executeController will execute the grpcaccept controller
 	// wait until it's ready
-	val, _, valRef, err := loader.WaitExecResolverRunning(ctx, a.bus, dir, nil)
+	val, _, valRef, err := loader.WaitExecControllerRunning(ctx, a.bus, dir, nil)
 	if err != nil {
 		return err
 	}
