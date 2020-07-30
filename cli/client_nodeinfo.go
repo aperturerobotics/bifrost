@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/aperturerobotics/bifrost/peer/grpc"
-	"github.com/aperturerobotics/controllerbus/grpc"
+	controllerbus_grpc "github.com/aperturerobotics/controllerbus/bus/api"
 	"github.com/urfave/cli"
 )
 

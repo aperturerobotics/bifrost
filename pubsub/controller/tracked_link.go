@@ -21,9 +21,10 @@ type trackedLink struct {
 
 // trackLink executes tracking the link.
 func (t *trackedLink) trackLink(ctx context.Context) error {
-	// hack: decide which side opens stream using whoever's peer id is greater
+	// decide which side opens stream using whoever's peer id is greater
+	// this is deterministic enough, as long as everyone uses the same
+	// Pretty() implementation.
 	if t.lnk.GetLocalPeer().Pretty() > t.lnk.GetRemotePeer().Pretty() {
-		t.le.Debug("expecting peer to open stream")
 		return nil
 	}
 	t.le.Debug("link tracking starting")

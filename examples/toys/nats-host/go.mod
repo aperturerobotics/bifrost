@@ -16,10 +16,10 @@ replace (
 replace github.com/nats-io/nats-server/v2 => github.com/aperturerobotics/bifrost-nats-server/v2 v2.0.0-20200728011410-af6fb29263b2 // aperture-2.0
 
 require (
-	github.com/aperturerobotics/bifrost v0.0.0-20200726220035-04af5ca69efd
-	github.com/aperturerobotics/controllerbus v0.6.2-0.20200726214934-146905389e3d
-	github.com/aperturerobotics/hydra v0.0.0-20200727061519-d87463f3e1d6
-	github.com/aperturerobotics/network-sim v0.0.0-20200727052937-fc0fec4a5bea
+	github.com/aperturerobotics/bifrost v0.0.0-20200728210917-e78147c3a9dd
+	github.com/aperturerobotics/controllerbus v0.7.1-0.20200729041112-99c388e5c35a
+	github.com/aperturerobotics/hydra v0.0.0-20200729004213-b1dda6b62e4b
+	github.com/aperturerobotics/network-sim v0.0.0-20200729022251-c98cf1113722
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/libp2p/go-libp2p-core v0.6.0
 	github.com/sirupsen/logrus v1.6.0

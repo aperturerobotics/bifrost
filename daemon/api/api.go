@@ -1,10 +1,10 @@
 package api
 
 import (
-	"github.com/aperturerobotics/bifrost/peer/grpc"
-	"github.com/aperturerobotics/bifrost/pubsub/grpc"
-	"github.com/aperturerobotics/bifrost/stream/grpc"
-	"github.com/aperturerobotics/controllerbus/grpc"
+	peer_grpc "github.com/aperturerobotics/bifrost/peer/grpc"
+	pubsub_grpc "github.com/aperturerobotics/bifrost/pubsub/grpc"
+	stream_grpc "github.com/aperturerobotics/bifrost/stream/grpc"
+	bus_grpc "github.com/aperturerobotics/controllerbus/bus/api"
 	"google.golang.org/grpc"
 )
 
@@ -12,7 +12,7 @@ import (
 type BifrostDaemonServer interface {
 	stream_grpc.StreamServiceServer
 	peer_grpc.PeerServiceServer
-	controllerbus_grpc.ControllerBusServiceServer
+	bus_grpc.ControllerBusServiceServer
 	pubsub_grpc.PubSubServiceServer
 }
 
@@ -20,7 +20,7 @@ type BifrostDaemonServer interface {
 func RegisterAsGRPCServer(s BifrostDaemonServer, grpcServer *grpc.Server) {
 	stream_grpc.RegisterStreamServiceServer(grpcServer, s)
 	peer_grpc.RegisterPeerServiceServer(grpcServer, s)
-	controllerbus_grpc.RegisterControllerBusServiceServer(grpcServer, s)
+	bus_grpc.RegisterControllerBusServiceServer(grpcServer, s)
 	pubsub_grpc.RegisterPubSubServiceServer(grpcServer, s)
 }
 
@@ -28,7 +28,7 @@ func RegisterAsGRPCServer(s BifrostDaemonServer, grpcServer *grpc.Server) {
 type BifrostDaemonClient interface {
 	stream_grpc.StreamServiceClient
 	peer_grpc.PeerServiceClient
-	controllerbus_grpc.ControllerBusServiceClient
+	bus_grpc.ControllerBusServiceClient
 	pubsub_grpc.PubSubServiceClient
 }
 
@@ -36,7 +36,7 @@ type BifrostDaemonClient interface {
 type bifrostDaemonClient struct {
 	stream_grpc.StreamServiceClient
 	peer_grpc.PeerServiceClient
-	controllerbus_grpc.ControllerBusServiceClient
+	bus_grpc.ControllerBusServiceClient
 	pubsub_grpc.PubSubServiceClient
 }
 
@@ -45,7 +45,7 @@ func NewBifrostDaemonClient(cc *grpc.ClientConn) BifrostDaemonClient {
 	return &bifrostDaemonClient{
 		StreamServiceClient:        stream_grpc.NewStreamServiceClient(cc),
 		PeerServiceClient:          peer_grpc.NewPeerServiceClient(cc),
-		ControllerBusServiceClient: controllerbus_grpc.NewControllerBusServiceClient(cc),
+		ControllerBusServiceClient: bus_grpc.NewControllerBusServiceClient(cc),
 		PubSubServiceClient:        pubsub_grpc.NewPubSubServiceClient(cc),
 	}
 }

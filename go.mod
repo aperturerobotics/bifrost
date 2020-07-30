@@ -16,7 +16,7 @@ replace (
 replace github.com/nats-io/nats-server/v2 => github.com/aperturerobotics/bifrost-nats-server/v2 v2.0.0-20200728011410-af6fb29263b2 // aperture-2.0
 
 require (
-	github.com/aperturerobotics/controllerbus v0.7.1-0.20200728210743-99f784613088
+	github.com/aperturerobotics/controllerbus v0.7.1-0.20200729041112-99c388e5c35a
 	github.com/aperturerobotics/entitygraph v0.1.2
 	github.com/aperturerobotics/timestamp v0.2.3
 	github.com/blang/semver v3.5.1+incompatible

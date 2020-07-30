@@ -14,6 +14,8 @@ github.com/aperturerobotics/bifrost-nats-server/v2 v2.0.0-20200728011410-af6fb29
 github.com/aperturerobotics/controllerbus v0.1.5/go.mod h1:q/6uzbezwwmXGnJjmOxB6jvYIRWIGgXkZ2wD2ojMoAY=
 github.com/aperturerobotics/controllerbus v0.7.1-0.20200728210743-99f784613088 h1:ZM7wNiajWyuuidKTxK1ljVexyBY54NxW/eUchF61knc=
 github.com/aperturerobotics/controllerbus v0.7.1-0.20200728210743-99f784613088/go.mod h1:WY3CFB3QTC2r0FHuSHtpKPHu3HocVlpKPQw5mFyqUOo=
+github.com/aperturerobotics/controllerbus v0.7.1-0.20200729041112-99c388e5c35a h1:OvDUogfM0eH0YaFIG+BVDCXtfh7a+9aFmtNcTCMfuz4=
+github.com/aperturerobotics/controllerbus v0.7.1-0.20200729041112-99c388e5c35a/go.mod h1:arN3OBl8jGOdG4+J4hlz9phj8GJ20fr2dHQniIN1aH0=
 github.com/aperturerobotics/entitygraph v0.1.2 h1:tK5vYz899PZlvZw3JZecEZRQfnNROVm5409Y8DC1E10=
 github.com/aperturerobotics/entitygraph v0.1.2/go.mod h1:yUD2SZgzkqUMLepq5CY1Sh717E1aQmWDQIIJSPFTgNI=
 github.com/aperturerobotics/go-protobuf-1.3.x v0.0.0-20200706003739-05fb54d407a9 h1:y89/xbjBdA0BFgSKnmduAPJChtTgxBH+zdlG5Bm07Ho=

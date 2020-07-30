@@ -182,13 +182,15 @@ func runNatsExample(c *cli.Context) error {
 		px0 := sim.GetPeerByID(p0.GetPeerID())
 		px1 := sim.GetPeerByID(p1.GetPeerID())
 		if err := simulate.TestConnectivity(ctx, px0, px1); err != nil {
-			t.Fatal(err.Error())
+			le.WithError(err).Error("unsuccessful connectivity test from 0 to 1")
+			// t.Fatal(err.Error())
+		} else {
+			le.Infof(
+				"successful connectivity test between %s and %s",
+				p0.GetPeerID().Pretty(),
+				p1.GetPeerID().Pretty(),
+			)
 		}
-		le.Infof(
-			"successful connectivity test between %s and %s",
-			p0.GetPeerID().Pretty(),
-			p1.GetPeerID().Pretty(),
-		)
 	}
 	assertConnectivity(p0, p1)
 	assertConnectivity(p1, p2)
