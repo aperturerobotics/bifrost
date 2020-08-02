@@ -49,7 +49,7 @@ func (t *Factory) Construct(
 		le,
 		t.bus,
 		cc.GetListenAddr(),
-		cc.GetApiConfig(),
+		cc,
 	), nil
 }
 

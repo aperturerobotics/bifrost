@@ -17,19 +17,13 @@ type ControllerBusAPI = bus_api.API
 
 // API implements the GRPC API.
 type API struct {
-	*ControllerBusAPI
 	bus bus.Bus
 }
 
 // NewAPI constructs a new instance of the API.
 func NewAPI(bus bus.Bus, conf *Config) (*API, error) {
-	bapi, err := bus_api.NewAPI(bus, conf.GetBusApiConfig())
-	if err != nil {
-		return nil, err
-	}
 	return &API{
-		ControllerBusAPI: bapi,
-		bus:              bus,
+		bus: bus,
 	}, nil
 }
 

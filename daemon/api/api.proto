@@ -1,12 +1,10 @@
 syntax = "proto3";
 package bifrost.api;
 
-import "github.com/aperturerobotics/controllerbus/bus/api/api.proto";
+// import "github.com/aperturerobotics/controllerbus/bus/api/api.proto";
 
 // Config configures the GRPC API.
 message Config {
-  // BusApiConfig are options for controller bus api.
-  bus.api.Config bus_api_config = 1;
 }
 
 /* API implements:

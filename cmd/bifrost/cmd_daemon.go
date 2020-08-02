@@ -160,10 +160,9 @@ func runDaemon(c *cli.Context) error {
 			b,
 			resolver.NewLoadControllerWithConfig(&api_controller.Config{
 				ListenAddr: daemonFlags.APIListen,
-				ApiConfig: &bifrost_api.Config{
-					BusApiConfig: &bus_api.Config{
-						EnableExecController: true,
-					},
+				ApiConfig:  &bifrost_api.Config{},
+				BusApiConfig: &bus_api.Config{
+					EnableExecController: true,
 				},
 			}),
 			nil,

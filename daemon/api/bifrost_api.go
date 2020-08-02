@@ -12,15 +12,16 @@ import (
 type BifrostAPIServer interface {
 	stream_grpc.StreamServiceServer
 	peer_grpc.PeerServiceServer
-	bus_grpc.ControllerBusServiceServer
 	pubsub_grpc.PubSubServiceServer
 }
+
+// bus_grpc.ControllerBusServiceServer
 
 // RegisterAsGRPCServer registers a server with a grpc server.
 func RegisterAsGRPCServer(s BifrostAPIServer, grpcServer *grpc.Server) {
 	stream_grpc.RegisterStreamServiceServer(grpcServer, s)
 	peer_grpc.RegisterPeerServiceServer(grpcServer, s)
-	bus_grpc.RegisterControllerBusServiceServer(grpcServer, s)
+	// bus_grpc.RegisterControllerBusServiceServer(grpcServer, s)
 	pubsub_grpc.RegisterPubSubServiceServer(grpcServer, s)
 }
 

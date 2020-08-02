@@ -8,6 +8,7 @@ import (
 
 	"github.com/aperturerobotics/bifrost/daemon/api"
 	"github.com/aperturerobotics/controllerbus/bus"
+	cbapi "github.com/aperturerobotics/controllerbus/bus/api"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/blang/semver"
@@ -28,8 +29,8 @@ type Controller struct {
 	bus bus.Bus
 	// listenAddr is the listen address
 	listenAddr string
-	// bifrostConfig is the bifrost api config
-	bifrostConfig *bifrost_api.Config
+	// conf is the config
+	conf *Config
 }
 
 // NewController constructs a new API controller.
@@ -37,13 +38,13 @@ func NewController(
 	le *logrus.Entry,
 	bus bus.Bus,
 	listenAddr string,
-	bifrostConfig *bifrost_api.Config,
+	conf *Config,
 ) *Controller {
 	return &Controller{
-		le:            le,
-		bus:           bus,
-		listenAddr:    listenAddr,
-		bifrostConfig: bifrostConfig,
+		le:         le,
+		bus:        bus,
+		listenAddr: listenAddr,
+		conf:       conf,
 	}
 }
 
@@ -62,7 +63,7 @@ func (c *Controller) GetControllerInfo() controller.Info {
 func (c *Controller) Execute(ctx context.Context) error {
 	c.le.Debug("constructing api")
 	// Construct the API
-	api, err := bifrost_api.NewAPI(c.bus, c.bifrostConfig)
+	api, err := bifrost_api.NewAPI(c.bus, c.conf.GetApiConfig())
 	if err != nil {
 		return err
 	}
@@ -70,6 +71,15 @@ func (c *Controller) Execute(ctx context.Context) error {
 	c.le.Debug("registering grpc server")
 	server := grpc.NewServer()
 	api.RegisterAsGRPCServer(server)
+
+	// controllerbus api
+	if !c.conf.GetDisableBusApi() {
+		bapi, err := cbapi.NewAPI(c.bus, c.conf.GetBusApiConfig())
+		if err != nil {
+			return err
+		}
+		bapi.RegisterAsGRPCServer(server)
+	}
 
 	c.le.Debug("starting listener")
 	lis, err := net.Listen("tcp", c.listenAddr)
