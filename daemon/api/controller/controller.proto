@@ -1,8 +1,12 @@
 syntax = "proto3";
 package bifrost.api.controller;
 
+import "github.com/aperturerobotics/bifrost/daemon/api/api.proto";
+
 // Config configures the GRPC API.
 message Config {
   // ListenAddr is the address to listen on for connections.
   string listen_addr = 1;
+  // ApiConfig are api config options.
+  bifrost.api.Config api_config = 2;
 }

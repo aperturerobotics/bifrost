@@ -1,58 +1,14 @@
-package bifrost_api_controller
+package bifrost_api
 
 import (
 	"context"
 
 	"github.com/aperturerobotics/bifrost/peer"
-	"github.com/aperturerobotics/bifrost/peer/grpc"
+	peer_grpc "github.com/aperturerobotics/bifrost/peer/grpc"
 	"github.com/aperturerobotics/controllerbus/bus"
-	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
-	"github.com/aperturerobotics/controllerbus/bus/api"
 	"github.com/pkg/errors"
 )
-
-// GetBusInfo returns the bus information
-func (a *API) GetBusInfo(
-	ctx context.Context,
-	req *controllerbus_grpc.GetBusInfoRequest,
-) (*controllerbus_grpc.GetBusInfoResponse, error) {
-	var controllerInfos []*controller.Info
-	controllers := a.bus.GetControllers()
-	for _, controller := range controllers {
-		ci := controller.GetControllerInfo()
-		controllerInfos = append(controllerInfos, &ci)
-	}
-
-	directives := a.bus.GetDirectives()
-	directiveInfo := make([]*controllerbus_grpc.DirectiveInfo, len(directives))
-	for i, diri := range directives {
-		dv := &controllerbus_grpc.DirectiveInfo{}
-		dir := diri.GetDirective()
-		debugDir, debugDirOk := dir.(directive.Debuggable)
-		if debugDirOk {
-			debugVals := debugDir.GetDebugVals()
-			if debugVals != nil {
-				for key, vals := range debugVals {
-					dv.DebugVals = append(
-						dv.DebugVals,
-						&controllerbus_grpc.DebugValue{
-							Key:    key,
-							Values: vals,
-						},
-					)
-				}
-			}
-		}
-		dv.Name = dir.GetName()
-		directiveInfo[i] = dv
-	}
-
-	return &controllerbus_grpc.GetBusInfoResponse{
-		RunningControllers: controllerInfos,
-		RunningDirectives:  directiveInfo,
-	}, nil
-}
 
 // GetPeerInfo returns the peer information
 func (a *API) GetPeerInfo(

@@ -5,13 +5,14 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/aperturerobotics/bifrost/daemon/api"
-	"github.com/aperturerobotics/bifrost/peer/controller"
-	"github.com/aperturerobotics/bifrost/pubsub/grpc"
-	"github.com/aperturerobotics/bifrost/stream/forwarding"
-	"github.com/aperturerobotics/bifrost/stream/grpc/accept"
-	"github.com/aperturerobotics/bifrost/stream/grpc/dial"
-	"github.com/aperturerobotics/bifrost/stream/listening"
+	bifrost_api "github.com/aperturerobotics/bifrost/daemon/api"
+	peer_controller "github.com/aperturerobotics/bifrost/peer/controller"
+	pubsub_grpc "github.com/aperturerobotics/bifrost/pubsub/grpc"
+	stream_forwarding "github.com/aperturerobotics/bifrost/stream/forwarding"
+	stream_grpc_accept "github.com/aperturerobotics/bifrost/stream/grpc/accept"
+	stream_grpc_dial "github.com/aperturerobotics/bifrost/stream/grpc/dial"
+	stream_listening "github.com/aperturerobotics/bifrost/stream/listening"
+	cbus_cli "github.com/aperturerobotics/controllerbus/cli"
 	"github.com/urfave/cli"
 	"google.golang.org/grpc"
 )
@@ -30,11 +31,13 @@ type ClientArgs struct {
 	AcceptConf stream_grpc_accept.Config
 	// ListeningConf is the listening configuration.
 	ListeningConf stream_listening.Config
+	// CbusConf is the controller-bus configuration.
+	CbusConf cbus_cli.ClientArgs
 
 	// ctx is the context
 	ctx context.Context
 	// client is the client instance
-	client api.BifrostDaemonClient
+	client bifrost_api.BifrostAPIClient
 
 	// DialAddr is the address to dial.
 	DialAddr string
@@ -72,12 +75,12 @@ func (a *ClientArgs) BuildFlags() []cli.Flag {
 }
 
 // SetClient sets the client instance.
-func (a *ClientArgs) SetClient(client api.BifrostDaemonClient) {
+func (a *ClientArgs) SetClient(client bifrost_api.BifrostAPIClient) {
 	a.client = client
 }
 
 // BuildClient builds the client or returns it if it has been set.
-func (a *ClientArgs) BuildClient() (api.BifrostDaemonClient, error) {
+func (a *ClientArgs) BuildClient() (bifrost_api.BifrostAPIClient, error) {
 	if a.client != nil {
 		return a.client, nil
 	}
@@ -90,7 +93,7 @@ func (a *ClientArgs) BuildClient() (api.BifrostDaemonClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	a.client = api.NewBifrostDaemonClient(clientConn)
+	a.client = bifrost_api.NewBifrostAPIClient(clientConn)
 	return a.client, nil
 }
 
@@ -101,11 +104,6 @@ func (a *ClientArgs) BuildCommands() []cli.Command {
 			Name:   "local-peers",
 			Usage:  "returns local peer info",
 			Action: a.RunPeerInfo,
-		},
-		cli.Command{
-			Name:   "bus-info",
-			Usage:  "returns bus information",
-			Action: a.RunBusInfo,
 		},
 		cli.Command{
 			Name:   "identify",

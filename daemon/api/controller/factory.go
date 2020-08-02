@@ -45,7 +45,12 @@ func (t *Factory) Construct(
 	cc := conf.(*Config)
 
 	// Construct the API controller.
-	return NewController(le, cc.GetListenAddr(), t.bus), nil
+	return NewController(
+		le,
+		t.bus,
+		cc.GetListenAddr(),
+		cc.GetApiConfig(),
+	), nil
 }
 
 // GetVersion returns the version of this controller.

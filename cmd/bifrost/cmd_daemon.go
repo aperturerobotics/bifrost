@@ -11,6 +11,7 @@ import (
 
 	bcli "github.com/aperturerobotics/bifrost/cli"
 	"github.com/aperturerobotics/bifrost/daemon"
+	bifrost_api "github.com/aperturerobotics/bifrost/daemon/api"
 	api_controller "github.com/aperturerobotics/bifrost/daemon/api/controller"
 	egctr "github.com/aperturerobotics/bifrost/entitygraph"
 	"github.com/aperturerobotics/bifrost/keypem/keyfile"
@@ -18,6 +19,7 @@ import (
 	stream_grpc_accept "github.com/aperturerobotics/bifrost/stream/grpc/accept"
 	stream_listening "github.com/aperturerobotics/bifrost/stream/listening"
 	xbtpt "github.com/aperturerobotics/bifrost/transport/xbee"
+	"github.com/aperturerobotics/controllerbus/bus/api"
 	configset "github.com/aperturerobotics/controllerbus/controller/configset"
 	configset_controller "github.com/aperturerobotics/controllerbus/controller/configset/controller"
 	configset_json "github.com/aperturerobotics/controllerbus/controller/configset/json"
@@ -145,7 +147,7 @@ func runDaemon(c *cli.Context) error {
 			}
 		}
 
-		err = configset_json.UnmarshalYAML(ctx, b, confDat, confSet, true)
+		_, err = configset_json.UnmarshalYAML(ctx, b, confDat, confSet, true)
 		if err != nil {
 			return errors.Wrap(err, "unmarshal config yaml")
 		}
@@ -158,6 +160,11 @@ func runDaemon(c *cli.Context) error {
 			b,
 			resolver.NewLoadControllerWithConfig(&api_controller.Config{
 				ListenAddr: daemonFlags.APIListen,
+				ApiConfig: &bifrost_api.Config{
+					BusApiConfig: &bus_api.Config{
+						EnableExecController: true,
+					},
+				},
 			}),
 			nil,
 		)

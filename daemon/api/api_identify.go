@@ -1,4 +1,4 @@
-package bifrost_api_controller
+package bifrost_api
 
 import (
 	"context"

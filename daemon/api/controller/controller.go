@@ -6,6 +6,7 @@ import (
 	"context"
 	"net"
 
+	"github.com/aperturerobotics/bifrost/daemon/api"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
@@ -27,18 +28,22 @@ type Controller struct {
 	bus bus.Bus
 	// listenAddr is the listen address
 	listenAddr string
+	// bifrostConfig is the bifrost api config
+	bifrostConfig *bifrost_api.Config
 }
 
 // NewController constructs a new API controller.
 func NewController(
 	le *logrus.Entry,
-	listenAddr string,
 	bus bus.Bus,
+	listenAddr string,
+	bifrostConfig *bifrost_api.Config,
 ) *Controller {
 	return &Controller{
-		le:         le,
-		bus:        bus,
-		listenAddr: listenAddr,
+		le:            le,
+		bus:           bus,
+		listenAddr:    listenAddr,
+		bifrostConfig: bifrostConfig,
 	}
 }
 
@@ -57,7 +62,7 @@ func (c *Controller) GetControllerInfo() controller.Info {
 func (c *Controller) Execute(ctx context.Context) error {
 	c.le.Debug("constructing api")
 	// Construct the API
-	api, err := NewAPI(c.bus)
+	api, err := bifrost_api.NewAPI(c.bus, c.bifrostConfig)
 	if err != nil {
 		return err
 	}

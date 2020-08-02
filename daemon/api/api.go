@@ -1,51 +1,119 @@
-package api
+package bifrost_api
 
 import (
-	peer_grpc "github.com/aperturerobotics/bifrost/peer/grpc"
-	pubsub_grpc "github.com/aperturerobotics/bifrost/pubsub/grpc"
-	stream_grpc "github.com/aperturerobotics/bifrost/stream/grpc"
-	bus_grpc "github.com/aperturerobotics/controllerbus/bus/api"
+	"context"
+	"time"
+
+	"github.com/aperturerobotics/bifrost/peer"
+	"github.com/aperturerobotics/bifrost/stream/grpc"
+	"github.com/aperturerobotics/controllerbus/bus"
+	bus_api "github.com/aperturerobotics/controllerbus/bus/api"
+	"github.com/aperturerobotics/controllerbus/controller/exec"
+	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 )
 
-// BifrostDaemonServer is the bifrost daemon server interface.
-type BifrostDaemonServer interface {
-	stream_grpc.StreamServiceServer
-	peer_grpc.PeerServiceServer
-	bus_grpc.ControllerBusServiceServer
-	pubsub_grpc.PubSubServiceServer
+type ControllerBusAPI = bus_api.API
+
+// API implements the GRPC API.
+type API struct {
+	*ControllerBusAPI
+	bus bus.Bus
 }
 
-// RegisterAsGRPCServer registers a server with a grpc server.
-func RegisterAsGRPCServer(s BifrostDaemonServer, grpcServer *grpc.Server) {
-	stream_grpc.RegisterStreamServiceServer(grpcServer, s)
-	peer_grpc.RegisterPeerServiceServer(grpcServer, s)
-	bus_grpc.RegisterControllerBusServiceServer(grpcServer, s)
-	pubsub_grpc.RegisterPubSubServiceServer(grpcServer, s)
-}
-
-// BifrostDaemonClient is the bifrost daemon client interface.
-type BifrostDaemonClient interface {
-	stream_grpc.StreamServiceClient
-	peer_grpc.PeerServiceClient
-	bus_grpc.ControllerBusServiceClient
-	pubsub_grpc.PubSubServiceClient
-}
-
-// bifrostDaemonClient implements BifrostDaemonClient.
-type bifrostDaemonClient struct {
-	stream_grpc.StreamServiceClient
-	peer_grpc.PeerServiceClient
-	bus_grpc.ControllerBusServiceClient
-	pubsub_grpc.PubSubServiceClient
-}
-
-// NewBifrostDaemonClient constructs a new bifrost daemon client.
-func NewBifrostDaemonClient(cc *grpc.ClientConn) BifrostDaemonClient {
-	return &bifrostDaemonClient{
-		StreamServiceClient:        stream_grpc.NewStreamServiceClient(cc),
-		PeerServiceClient:          peer_grpc.NewPeerServiceClient(cc),
-		ControllerBusServiceClient: bus_grpc.NewControllerBusServiceClient(cc),
-		PubSubServiceClient:        pubsub_grpc.NewPubSubServiceClient(cc),
+// NewAPI constructs a new instance of the API.
+func NewAPI(bus bus.Bus, conf *Config) (*API, error) {
+	bapi, err := bus_api.NewAPI(bus, conf.GetBusApiConfig())
+	if err != nil {
+		return nil, err
 	}
+	return &API{
+		ControllerBusAPI: bapi,
+		bus:              bus,
+	}, nil
 }
+
+// ForwardStreams forwards streams to the target multiaddress.
+// Handles HandleMountedStream directives by contacting the target.
+func (a *API) ForwardStreams(
+	req *stream_grpc.ForwardStreamsRequest,
+	serv stream_grpc.StreamService_ForwardStreamsServer,
+) error {
+	ctx := serv.Context()
+	conf := req.GetForwardingConfig()
+	if err := conf.Validate(); err != nil {
+		return err
+	}
+
+	targetPeerID, err := req.GetForwardingConfig().ParsePeerID()
+	if err != nil {
+		return err
+	}
+
+	reqCtx, reqCtxCancel := context.WithCancel(ctx)
+	defer reqCtxCancel()
+
+	plCtx, plCtxCancel := context.WithTimeout(reqCtx, time.Second*3)
+	defer plCtxCancel()
+
+	// if the peer is unloaded the request will be canceled.
+	_, peerRef, err := bus.ExecOneOff(
+		plCtx,
+		a.bus,
+		peer.NewGetPeer(targetPeerID),
+		reqCtxCancel,
+	)
+	if err != nil {
+		return errors.Errorf("peer not loaded: %s", targetPeerID.Pretty())
+	}
+	defer peerRef.Release()
+
+	return controller_exec.ExecuteController(
+		reqCtx,
+		a.bus,
+		conf,
+		func(status controller_exec.ControllerStatus) {
+			_ = serv.Send(
+				&stream_grpc.ForwardStreamsResponse{
+					ControllerStatus: status,
+				},
+			)
+		},
+	)
+}
+
+// ListenStreams listens for streams on the multiaddress.
+func (a *API) ListenStreams(
+	req *stream_grpc.ListenStreamsRequest,
+	serv stream_grpc.StreamService_ListenStreamsServer,
+) error {
+	ctx := serv.Context()
+	conf := req.GetListeningConfig()
+	if err := conf.Validate(); err != nil {
+		return err
+	}
+
+	reqCtx, reqCtxCancel := context.WithCancel(ctx)
+	defer reqCtxCancel()
+
+	return controller_exec.ExecuteController(
+		reqCtx,
+		a.bus,
+		conf,
+		func(status controller_exec.ControllerStatus) {
+			_ = serv.Send(
+				&stream_grpc.ListenStreamsResponse{
+					ControllerStatus: status,
+				},
+			)
+		},
+	)
+}
+
+// RegisterAsGRPCServer registers the API to the GRPC instance.
+func (a *API) RegisterAsGRPCServer(grpcServer *grpc.Server) {
+	RegisterAsGRPCServer(a, grpcServer)
+}
+
+// _ is a type assertion
+var _ BifrostAPIServer = ((*API)(nil))

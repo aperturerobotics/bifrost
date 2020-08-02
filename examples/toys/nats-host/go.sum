@@ -36,12 +36,18 @@ github.com/aperturerobotics/controllerbus v0.6.2-0.20200726214934-146905389e3d/g
 github.com/aperturerobotics/controllerbus v0.7.1-0.20200728210743-99f784613088/go.mod h1:WY3CFB3QTC2r0FHuSHtpKPHu3HocVlpKPQw5mFyqUOo=
 github.com/aperturerobotics/controllerbus v0.7.1-0.20200729041112-99c388e5c35a h1:OvDUogfM0eH0YaFIG+BVDCXtfh7a+9aFmtNcTCMfuz4=
 github.com/aperturerobotics/controllerbus v0.7.1-0.20200729041112-99c388e5c35a/go.mod h1:arN3OBl8jGOdG4+J4hlz9phj8GJ20fr2dHQniIN1aH0=
+github.com/aperturerobotics/controllerbus v0.7.1-0.20200730095023-f4b6f2cb357e h1:unh4zucJC+KGP0mPvK1sa2RDEX/D6lzsRwYLVCpFToM=
+github.com/aperturerobotics/controllerbus v0.7.1-0.20200730095023-f4b6f2cb357e/go.mod h1:arN3OBl8jGOdG4+J4hlz9phj8GJ20fr2dHQniIN1aH0=
+github.com/aperturerobotics/controllerbus v0.7.1-0.20200802004708-d87753f5646f h1:DgQ11BBubJtVnQCthyD0L9v9xJSqS52xC3/GiHXQ8Aw=
+github.com/aperturerobotics/controllerbus v0.7.1-0.20200802004708-d87753f5646f/go.mod h1:arN3OBl8jGOdG4+J4hlz9phj8GJ20fr2dHQniIN1aH0=
 github.com/aperturerobotics/entitygraph v0.1.2 h1:tK5vYz899PZlvZw3JZecEZRQfnNROVm5409Y8DC1E10=
 github.com/aperturerobotics/entitygraph v0.1.2/go.mod h1:yUD2SZgzkqUMLepq5CY1Sh717E1aQmWDQIIJSPFTgNI=
 github.com/aperturerobotics/entitygraph v0.1.3 h1:nru96DmxL3krsLfSw+Iw/hbep9OBeSovZotoSLluYyo=
 github.com/aperturerobotics/entitygraph v0.1.3/go.mod h1:OsgkKAjIK52Tqixc4P4OIUY530Y05o+Kkm4sSOTTMp4=
 github.com/aperturerobotics/go-protobuf-1.3.x v0.0.0-20200706003739-05fb54d407a9 h1:y89/xbjBdA0BFgSKnmduAPJChtTgxBH+zdlG5Bm07Ho=
 github.com/aperturerobotics/go-protobuf-1.3.x v0.0.0-20200706003739-05fb54d407a9/go.mod h1:nKsjlNGNvnm2dB+eJ6xcZ7mtfehEbJbGFlytXZINgUQ=
+github.com/aperturerobotics/go-protobuf-1.3.x v0.0.0-20200726220404-fa7f51c52df0 h1:Y5JLnZkOxbRqnr7V1KKscUklYAuYx1dqIYdgUctpt5M=
+github.com/aperturerobotics/go-protobuf-1.3.x v0.0.0-20200726220404-fa7f51c52df0/go.mod h1:nKsjlNGNvnm2dB+eJ6xcZ7mtfehEbJbGFlytXZINgUQ=
 github.com/aperturerobotics/hydra v0.0.0-20200726220444-6e4f46b50586/go.mod h1:tqphfAtskErxEi+ngHlx5pV9jnOB2n8vNsUmYtlAANA=
 github.com/aperturerobotics/hydra v0.0.0-20200727061519-d87463f3e1d6 h1:VEjakexrD6Aw6E5mawDiHwG+d8RkKIVlRFnWDvy9Bd0=
 github.com/aperturerobotics/hydra v0.0.0-20200727061519-d87463f3e1d6/go.mod h1:tqphfAtskErxEi+ngHlx5pV9jnOB2n8vNsUmYtlAANA=
@@ -132,6 +138,7 @@ github.com/frankban/quicktest v1.10.0/go.mod h1:ui7WezCLWMWxVWr1GETZY3smRy0G4KWq
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
 github.com/fsnotify/fsnotify v1.4.9 h1:hsms1Qyu0jgnwNXIxa+/V/PDsU6CfLf6CNO8H7IWoS4=
 github.com/fsnotify/fsnotify v1.4.9/go.mod h1:znqG4EE+3YCdAaPaxE2ZRY/06pZUdp0tY4IgpuI1SZQ=
+github.com/ghodss/yaml v1.0.0 h1:wQHKEahhL6wmXdzwWG11gIVCkOv05bNOh+Rxn0yngAk=
 github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
 github.com/gliderlabs/ssh v0.1.1/go.mod h1:U7qILu1NlMHj9FlMhZLlkCdDnU1DBEAqr0aevW3Awn0=
 github.com/go-errors/errors v1.0.1/go.mod h1:f4zRHt4oKfwPJE5k8C9vpYG+aDHdBFUsgrm6/TyX73Q=

@@ -4,8 +4,7 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/aperturerobotics/bifrost/peer/grpc"
-	controllerbus_grpc "github.com/aperturerobotics/controllerbus/bus/api"
+	peer_grpc "github.com/aperturerobotics/bifrost/peer/grpc"
 	"github.com/urfave/cli"
 )
 
@@ -26,29 +25,6 @@ func (a *ClientArgs) RunPeerInfo(_ *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	os.Stdout.WriteString(string(dat))
-	os.Stdout.WriteString("\n")
-	return nil
-}
-
-// RunBusInfo runs the bus information command.
-func (a *ClientArgs) RunBusInfo(_ *cli.Context) error {
-	ctx := a.GetContext()
-	c, err := a.BuildClient()
-	if err != nil {
-		return err
-	}
-
-	ni, err := c.GetBusInfo(ctx, &controllerbus_grpc.GetBusInfoRequest{})
-	if err != nil {
-		return err
-	}
-
-	dat, err := json.MarshalIndent(ni, "", "\t")
-	if err != nil {
-		return err
-	}
-
 	os.Stdout.WriteString(string(dat))
 	os.Stdout.WriteString("\n")
 	return nil
