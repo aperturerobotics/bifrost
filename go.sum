@@ -30,6 +30,8 @@ github.com/aperturerobotics/controllerbus v0.7.1-0.20200802050531-a42c7e334e8f h
 github.com/aperturerobotics/controllerbus v0.7.1-0.20200802050531-a42c7e334e8f/go.mod h1:arN3OBl8jGOdG4+J4hlz9phj8GJ20fr2dHQniIN1aH0=
 github.com/aperturerobotics/controllerbus v0.8.0 h1:mcU4nllXNN4VCXxF7/idBlQyM7bP2/89+3QE+guNrs0=
 github.com/aperturerobotics/controllerbus v0.8.0/go.mod h1:arN3OBl8jGOdG4+J4hlz9phj8GJ20fr2dHQniIN1aH0=
+github.com/aperturerobotics/controllerbus v0.8.1-0.20200802060256-360612dc3698 h1:ywjMSb4LsYlkeY2WQ6fTPaBs11XcCxNWRCXsYRr2MAk=
+github.com/aperturerobotics/controllerbus v0.8.1-0.20200802060256-360612dc3698/go.mod h1:arN3OBl8jGOdG4+J4hlz9phj8GJ20fr2dHQniIN1aH0=
 github.com/aperturerobotics/entitygraph v0.1.2 h1:tK5vYz899PZlvZw3JZecEZRQfnNROVm5409Y8DC1E10=
 github.com/aperturerobotics/entitygraph v0.1.2/go.mod h1:yUD2SZgzkqUMLepq5CY1Sh717E1aQmWDQIIJSPFTgNI=
 github.com/aperturerobotics/go-protobuf-1.3.x v0.0.0-20200706003739-05fb54d407a9 h1:y89/xbjBdA0BFgSKnmduAPJChtTgxBH+zdlG5Bm07Ho=

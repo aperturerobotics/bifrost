@@ -97,15 +97,25 @@ func (a *ClientArgs) BuildClient() (bifrost_api.BifrostAPIClient, error) {
 	return a.client, nil
 }
 
+// BuildBifrostCommand returns the controller-bus sub-command set.
+func (a *ClientArgs) BuildBifrostCommand() cli.Command {
+	bifrostCmds := a.BuildCommands()
+	return cli.Command{
+		Name:        "bifrost",
+		Usage:       "Bifrost network-router sub-commands.",
+		Subcommands: bifrostCmds,
+	}
+}
+
 // BuildCommands attaches the commands.
 func (a *ClientArgs) BuildCommands() []cli.Command {
 	return []cli.Command{
-		cli.Command{
+		{
 			Name:   "local-peers",
 			Usage:  "returns local peer info",
 			Action: a.RunPeerInfo,
 		},
-		cli.Command{
+		{
 			Name:   "identify",
 			Usage:  "Private key will be loaded with a peer controller",
 			Action: a.RunIdentifyController,
@@ -122,7 +132,7 @@ func (a *ClientArgs) BuildCommands() []cli.Command {
 				},
 			},
 		},
-		cli.Command{
+		{
 			Name:   "subscribe",
 			Usage:  "Subscribe to a pubsub channel and publish with identified peers",
 			Action: a.RunSubscribe,
@@ -134,7 +144,7 @@ func (a *ClientArgs) BuildCommands() []cli.Command {
 				},
 			},
 		},
-		cli.Command{
+		{
 			Name:   "forward",
 			Usage:  "Protocol ID will be forwarded to the target multiaddress",
 			Action: a.RunForwarding,
@@ -156,7 +166,7 @@ func (a *ClientArgs) BuildCommands() []cli.Command {
 				},
 			},
 		},
-		cli.Command{
+		{
 			Name:   "accept",
 			Usage:  "Single incoming stream with Protocol ID will be accepted",
 			Action: a.RunAccept,
@@ -183,7 +193,7 @@ func (a *ClientArgs) BuildCommands() []cli.Command {
 				},
 			},
 		},
-		cli.Command{
+		{
 			Name:   "dial",
 			Usage:  "Single outgoing stream with Protocol ID will be dialed",
 			Action: a.RunDial,
@@ -220,7 +230,7 @@ func (a *ClientArgs) BuildCommands() []cli.Command {
 				},
 			},
 		},
-		cli.Command{
+		{
 			Name:   "listen",
 			Usage:  "Listen on the multiaddress and forward the connection to a remote stream.",
 			Action: a.RunListen,
