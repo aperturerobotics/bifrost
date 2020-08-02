@@ -24,6 +24,12 @@ github.com/aperturerobotics/controllerbus v0.7.1-0.20200802005950-14e59ca09f0b h
 github.com/aperturerobotics/controllerbus v0.7.1-0.20200802005950-14e59ca09f0b/go.mod h1:arN3OBl8jGOdG4+J4hlz9phj8GJ20fr2dHQniIN1aH0=
 github.com/aperturerobotics/controllerbus v0.7.1-0.20200802010302-614035097a08 h1:Q2Thr79nV7jTlWnebj8O2tJKIE4isYPJW50NHKwVwO0=
 github.com/aperturerobotics/controllerbus v0.7.1-0.20200802010302-614035097a08/go.mod h1:arN3OBl8jGOdG4+J4hlz9phj8GJ20fr2dHQniIN1aH0=
+github.com/aperturerobotics/controllerbus v0.7.1-0.20200802050310-4d1aa8a0693e h1:MS3F+muP5ODNowg0Xdz0Gmr6e6ACvV3iL1Py/mAKx7c=
+github.com/aperturerobotics/controllerbus v0.7.1-0.20200802050310-4d1aa8a0693e/go.mod h1:arN3OBl8jGOdG4+J4hlz9phj8GJ20fr2dHQniIN1aH0=
+github.com/aperturerobotics/controllerbus v0.7.1-0.20200802050531-a42c7e334e8f h1:3f9Mr4x/C8w2TIaXZITguXn1x8IljZmQp3QEson0yZg=
+github.com/aperturerobotics/controllerbus v0.7.1-0.20200802050531-a42c7e334e8f/go.mod h1:arN3OBl8jGOdG4+J4hlz9phj8GJ20fr2dHQniIN1aH0=
+github.com/aperturerobotics/controllerbus v0.8.0 h1:mcU4nllXNN4VCXxF7/idBlQyM7bP2/89+3QE+guNrs0=
+github.com/aperturerobotics/controllerbus v0.8.0/go.mod h1:arN3OBl8jGOdG4+J4hlz9phj8GJ20fr2dHQniIN1aH0=
 github.com/aperturerobotics/entitygraph v0.1.2 h1:tK5vYz899PZlvZw3JZecEZRQfnNROVm5409Y8DC1E10=
 github.com/aperturerobotics/entitygraph v0.1.2/go.mod h1:yUD2SZgzkqUMLepq5CY1Sh717E1aQmWDQIIJSPFTgNI=
 github.com/aperturerobotics/go-protobuf-1.3.x v0.0.0-20200706003739-05fb54d407a9 h1:y89/xbjBdA0BFgSKnmduAPJChtTgxBH+zdlG5Bm07Ho=
