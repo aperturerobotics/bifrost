@@ -17,7 +17,7 @@ replace github.com/nats-io/nats-server/v2 => github.com/aperturerobotics/bifrost
 
 require (
 	github.com/aperturerobotics/bifrost v0.0.0-20200728210917-e78147c3a9dd
-	github.com/aperturerobotics/controllerbus v0.7.1-0.20200802004708-d87753f5646f
+	github.com/aperturerobotics/controllerbus v0.8.1-0.20200802060256-360612dc3698
 	github.com/aperturerobotics/hydra v0.0.0-20200729004213-b1dda6b62e4b
 	github.com/aperturerobotics/network-sim v0.0.0-20200729022251-c98cf1113722
 	github.com/blang/semver v3.5.1+incompatible
