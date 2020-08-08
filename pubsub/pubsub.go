@@ -12,6 +12,9 @@ import (
 // PubSub is an implementation of a pub-sub message router.
 // The PubSub controller provides a common implementation for pub-sub routers.
 // The PubSub interface declares the requirements for a router.
+// The router is constructed with a private key which is used for communications.
+// Each subscription also has a private key to identify the publisher/subscriber.
+// Publishing is performed by first subscribing and then publishing to the subscription.
 type PubSub interface {
 	// Execute executes the PubSub routines.
 	Execute(ctx context.Context) error
@@ -20,7 +23,7 @@ type PubSub interface {
 	// The pubsub should communicate over the stream.
 	AddPeerStream(tpl PeerLinkTuple, initiator bool, mstrm link.MountedStream)
 	// AddSubscription adds a channel subscription, returning a subscription handle.
-	AddSubscription(ctx context.Context, channelID string) (Subscription, error)
+	AddSubscription(ctx context.Context, privKey crypto.PrivKey, channelID string) (Subscription, error)
 	// Close closes the pubsub.
 	Close()
 }
@@ -66,10 +69,12 @@ type Controller interface {
 
 // Subscription is a pubsub channel subscription handle.
 type Subscription interface {
+	// GetPeerId returns the peer ID for this subscription derived from private key.
+	GetPeerId() peer.ID
 	// GetChannelId returns the channel id.
 	GetChannelId() string
-	// Publish writes to the channel with a private key.
-	Publish(privKey crypto.PrivKey, data []byte) error
+	// Publish writes to the channel using the subscription's private key.
+	Publish(data []byte) error
 	// AddHandler adds a callback that is called with each received message.
 	// The callback should not block.
 	// Returns a remove function.

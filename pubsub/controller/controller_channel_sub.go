@@ -51,7 +51,7 @@ func (r *resolveBuildChannelSub) Resolve(
 		return err
 	}
 
-	sub, err := ps.AddSubscription(r.ctx, r.d.BuildChannelSubscriptionChannelID())
+	sub, err := ps.AddSubscription(r.ctx, r.d.BuildChannelSubscriptionPrivKey(), r.d.BuildChannelSubscriptionChannelID())
 	if err != nil {
 		return err
 	}

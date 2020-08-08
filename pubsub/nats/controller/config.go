@@ -32,6 +32,9 @@ func (c *Config) EqualsConfig(other config.Config) bool {
 
 // ParsePeerID parses the peer ID if it is not empty.
 func (c *Config) ParsePeerID() (peer.ID, error) {
+	if c.GetPeerId() == "any" {
+		return peer.ID("any"), nil
+	}
 	return confparse.ParsePeerID(c.GetPeerId())
 }
 

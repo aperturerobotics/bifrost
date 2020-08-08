@@ -41,7 +41,12 @@ func (t *Factory) Construct(
 	le := opts.GetLogger()
 	cc := conf.(*Config)
 
-	return NewController(t.bus, le, cc.GetTopicIds()), nil
+	peerID, err := cc.ParsePeerID()
+	if err != nil {
+		return nil, err
+	}
+
+	return NewController(t.bus, le, peerID, cc.GetTopicIds()), nil
 }
 
 // GetVersion returns the version of this controller.

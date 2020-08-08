@@ -7,21 +7,23 @@ message SubscribeRequest {
   // Must be sent before / with publish.
   // Cannot change the channel ID after first transmission.
   string channel_id = 1;
+  // PeerId is the peer identifier of the publisher/subscriber.
+  // The peer ID will be used to acquire the peer private key.
+	string peer_id = 2;
+  // PrivKeyPem is an alternate to PeerId, specify private key inline.
+  // Overrides PeerId if set.
+  string priv_key_pem = 3;
   // PublishRequest contains a publish message request.
-  PublishRequest publish_request = 2;
+  PublishRequest publish_request = 4;
 }
 
 // PublishRequest is a message published via the subscribe channel.
 message PublishRequest {
-  // FromPeerId is the peer identifier of the sender.
-  // The peer ID will be used to acquire the peer private key and sign the mesasge.
-  // The peer should be loaded with Identify in the peer service.
-	string from_peer_id = 1;
   // Data is the published data.
-  bytes data = 2;
+  bytes data = 1;
   // Identifier is a uint32 identifier to use for outgoing status.
   // If zero, no outgoing status response will be sent.
-  uint32 identifier = 3;
+  uint32 identifier = 2;
 }
 
 // SubcribeResponse is a pubsub subscription response message.

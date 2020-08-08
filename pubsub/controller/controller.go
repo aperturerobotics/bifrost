@@ -98,6 +98,11 @@ func (c *Controller) Execute(ctx context.Context) error {
 	var cpeer peer.Peer
 	var err error
 	if len(c.peerID) != 0 {
+		// special value: "any"
+		if c.peerID == peer.ID("any") {
+			c.peerID = peer.ID("")
+		}
+
 		var ref directive.Reference
 		cpeer, ref, err = peer.GetPeerWithID(ctx, c.bus, c.peerID)
 		if err != nil {
@@ -106,6 +111,7 @@ func (c *Controller) Execute(ctx context.Context) error {
 		if ref != nil {
 			defer ref.Release()
 		}
+		c.peerID = cpeer.GetPeerID()
 	}
 
 	c.peerCh <- cpeer

@@ -3,6 +3,7 @@ package pubsub_relay
 import (
 	"context"
 
+	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/pubsub"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
@@ -24,15 +25,18 @@ type Controller struct {
 	le *logrus.Entry
 	// bus is the controller bus
 	bus bus.Bus
+	// peerID is the peer id
+	peerID peer.ID
 	// topics is the list of topics
 	topics []string
 }
 
 // NewController constructs a new relay controllr.
-func NewController(b bus.Bus, le *logrus.Entry, topics []string) *Controller {
+func NewController(b bus.Bus, le *logrus.Entry, peerID peer.ID, topics []string) *Controller {
 	return &Controller{
 		le:     le,
 		bus:    b,
+		peerID: peerID,
 		topics: topics,
 	}
 }
@@ -41,10 +45,19 @@ func NewController(b bus.Bus, le *logrus.Entry, topics []string) *Controller {
 // Returning nil ends execution.
 // Returning an error triggers a retry with backoff.
 func (c *Controller) Execute(ctx context.Context) error {
+	cpeer, ref, err := peer.GetPeerWithID(ctx, c.bus, c.peerID)
+	if err != nil {
+		return err
+	}
+	if ref != nil {
+		defer ref.Release()
+	}
+
+	privKey := cpeer.GetPrivKey()
 	for _, topic := range c.topics {
 		le := c.le.WithField("topic", topic)
 		_, diRef, err := c.bus.AddDirective(
-			pubsub.NewBuildChannelSubscription(topic),
+			pubsub.NewBuildChannelSubscription(topic, privKey),
 			nil,
 		)
 		if err != nil {

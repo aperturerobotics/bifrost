@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 
+	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/pubsub"
 	"github.com/libp2p/go-libp2p-core/crypto"
 )
@@ -18,6 +19,10 @@ type subscription struct {
 	m *FloodSub
 	// channelID is the channel identifier
 	channelID string
+	// privKey is the private key for the sub
+	privKey crypto.PrivKey
+	// peerID is the peer ID for the sub
+	peerID peer.ID
 
 	// mtx guards handlers
 	mtx sync.Mutex
@@ -25,14 +30,19 @@ type subscription struct {
 	handlers map[*subscriptionHandler]struct{}
 }
 
+// GetPeerId returns the peer ID for this subscription derived from private key.
+func (s *subscription) GetPeerId() peer.ID {
+	return s.peerID
+}
+
 // GetChannelId returns the channel id.
 func (s *subscription) GetChannelId() string {
 	return s.channelID
 }
 
-// Publish writes to the channel with a private key.
-func (s *subscription) Publish(privKey crypto.PrivKey, data []byte) error {
-	return s.m.Publish(s.ctx, s.channelID, privKey, data)
+// Publish writes to the channel.
+func (s *subscription) Publish(data []byte) error {
+	return s.m.Publish(s.ctx, s.channelID, s.privKey, data)
 }
 
 // AddHandler adds a callback that is called with each received message.

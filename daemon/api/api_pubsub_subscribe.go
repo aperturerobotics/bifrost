@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/aperturerobotics/bifrost/keypem"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/pubsub"
 	"github.com/aperturerobotics/bifrost/pubsub/grpc"
@@ -13,16 +14,20 @@ import (
 )
 
 var (
-	// publishTimeout is the timeout for acquiring private key and publishing
-	publishTimeout = time.Second * 5
+	// acquirePeerTimeout is the timeout for acquiring private key
+	acquirePeerTimeout = time.Second * 10
+	// publishTimeout is the timeout for publishing
+	publishTimeout = time.Second * 10
 )
 
 // Subscribe subscribes to a pubsub channel.
+//
+// TODO: move this code to pubsub/grpc/grpc.go under API
 func (a *API) Subscribe(serv pubsub_grpc.PubSubService_SubscribeServer) error {
 	ctx := serv.Context()
 
 	var channelID string
-	var handlePeerID string
+	var handlePeerID peer.ID
 	var handlePeer peer.Peer
 	var sub pubsub.Subscription
 	var handlePeerRef directive.Reference
@@ -36,16 +41,51 @@ func (a *API) Subscribe(serv pubsub_grpc.PubSubService_SubscribeServer) error {
 		if err != nil {
 			return err
 		}
+		if msgPrivKey := msg.GetPrivKeyPem(); msgPrivKey != "" {
+			if len(handlePeerID) != 0 {
+				return errors.New("peer id or private key cannot be specified twice")
+			}
+			pkey, err := keypem.ParsePrivKeyPem([]byte(msgPrivKey))
+			if err != nil {
+				return err
+			}
+			handlePeer, err = peer.NewPeer(pkey)
+			if err != nil {
+				return err
+			}
+			handlePeerID, err = peer.IDFromPrivateKey(pkey)
+			if err != nil {
+				return err
+			}
+		}
+		if msgPeerID := msg.GetPeerId(); msgPeerID != "" && len(msg.GetPrivKeyPem()) == 0 {
+			if len(handlePeerID) != 0 {
+				return errors.New("peer id cannot be specified twice")
+			}
+			handlePeerID, err = peer.IDB58Decode(msgPeerID)
+			if err != nil {
+				return err
+			}
+			pubCtx, pubCtxCancel := context.WithTimeout(ctx, acquirePeerTimeout)
+			handlePeer, handlePeerRef, err = peer.GetPeerWithID(pubCtx, a.bus, handlePeerID)
+			pubCtxCancel()
+			if err != nil || handlePeer == nil {
+				return errors.Errorf("peer not identified locally: %s", msgPeerID)
+			}
+		}
 		if chid := msg.GetChannelId(); chid != "" {
 			if channelID != "" {
 				return errors.New("channel id cannot be specified twice")
+			}
+			if handlePeer == nil || len(handlePeerID) == 0 {
+				return errors.New("peer id must be specified before or with channel id")
 			}
 			channelID = chid
 			// acquire channel
 			av, subRef, err := bus.ExecOneOff(
 				ctx,
 				a.bus,
-				pubsub.NewBuildChannelSubscription(channelID),
+				pubsub.NewBuildChannelSubscription(channelID, handlePeer.GetPrivKey()),
 				nil,
 			)
 			if err != nil {
@@ -65,6 +105,7 @@ func (a *API) Subscribe(serv pubsub_grpc.PubSubService_SubscribeServer) error {
 			if err != nil {
 				return err
 			}
+			// note: the defer call is for releasing the handler.
 			defer val.AddHandler(func(m pubsub.Message) {
 				go func() {
 					_ = serv.Send(&pubsub_grpc.SubscribeResponse{
@@ -77,41 +118,26 @@ func (a *API) Subscribe(serv pubsub_grpc.PubSubService_SubscribeServer) error {
 				}()
 			})()
 		}
-		if channelID == "" {
+		if channelID == "" || sub == nil {
 			return errors.New("channel id must be specified in first message")
 		}
 
 		pubReqData := msg.GetPublishRequest().GetData()
-		if len(pubReqData) == 0 {
-			continue
-		}
-		peerID := msg.GetPublishRequest().GetFromPeerId()
-		if peerID == "" {
-			return errors.New("publish request: peer id cannot be empty")
-		}
-		if handlePeerID != peerID {
-			if handlePeerRef != nil {
-				handlePeerRef.Release()
-				handlePeerRef = nil
-				// handlePeerID = ""
-				handlePeer = nil
-			}
-
-			npid, err := peer.IDB58Decode(peerID)
-			if err != nil {
+		if len(pubReqData) != 0 {
+			if err := sub.Publish(pubReqData); err != nil {
 				return err
 			}
-			pubCtx, pubCtxCancel := context.WithTimeout(ctx, publishTimeout)
-			handlePeerID = peerID
-			handlePeer, handlePeerRef, err = peer.GetPeerWithID(pubCtx, a.bus, npid)
-			pubCtxCancel()
-			if err != nil || handlePeer == nil {
-				return errors.Errorf("peer not identified locally: %s", npid.Pretty())
+			if mid := msg.GetPublishRequest().GetIdentifier(); mid != 0 {
+				err = serv.Send(&pubsub_grpc.SubscribeResponse{
+					OutgoingStatus: &pubsub_grpc.OutgoingStatus{
+						Identifier: mid,
+						Sent:       true,
+					},
+				})
+				if err != nil {
+					return err
+				}
 			}
-		}
-
-		if err := sub.Publish(handlePeer.GetPrivKey(), pubReqData); err != nil {
-			return err
 		}
 	}
 }

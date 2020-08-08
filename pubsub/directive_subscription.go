@@ -4,7 +4,9 @@ import (
 	"errors"
 	"time"
 
+	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/controllerbus/directive"
+	"github.com/libp2p/go-libp2p-core/crypto"
 )
 
 // BuildChannelSubscription is a directive to subscribe to a channel.
@@ -15,6 +17,9 @@ type BuildChannelSubscription interface {
 	// BuildChannelSubscriptionChannelID returns the channel ID constraint.
 	// Cannot be empty.
 	BuildChannelSubscriptionChannelID() string
+	// BuildChannelSubscriptionPrivKey returns the private key to use to subscribe.
+	// Cannot be empty.
+	BuildChannelSubscriptionPrivKey() crypto.PrivKey
 }
 
 // BuildChannelSubscriptionValue is the result type for BuildChannelSubscription.
@@ -24,11 +29,12 @@ type BuildChannelSubscriptionValue = Subscription
 // buildChannelSubscription implements BuildChannelSubscription
 type buildChannelSubscription struct {
 	channelID string
+	privKey   crypto.PrivKey
 }
 
 // NewBuildChannelSubscription constructs a new BuildChannelSubscription directive.
-func NewBuildChannelSubscription(channelID string) BuildChannelSubscription {
-	return &buildChannelSubscription{channelID: channelID}
+func NewBuildChannelSubscription(channelID string, privKey crypto.PrivKey) BuildChannelSubscription {
+	return &buildChannelSubscription{channelID: channelID, privKey: privKey}
 }
 
 // Validate validates the directive.
@@ -36,6 +42,9 @@ func NewBuildChannelSubscription(channelID string) BuildChannelSubscription {
 func (d *buildChannelSubscription) Validate() error {
 	if d.channelID == "" {
 		return errors.New("channel id cannot be empty")
+	}
+	if d.privKey == nil {
+		return errors.New("priv key cannot be empty")
 	}
 
 	return nil
@@ -55,6 +64,11 @@ func (d *buildChannelSubscription) BuildChannelSubscriptionChannelID() string {
 	return d.channelID
 }
 
+// BuildChannelSubscriptionPrivKey returns the private key.
+func (d *buildChannelSubscription) BuildChannelSubscriptionPrivKey() crypto.PrivKey {
+	return d.privKey
+}
+
 // IsEquivalent checks if the other directive is equivalent. If two
 // directives are equivalent, and the new directive does not superceed the
 // old, then the new directive will be merged (de-duplicated) into the old.
@@ -64,7 +78,8 @@ func (d *buildChannelSubscription) IsEquivalent(other directive.Directive) bool 
 		return false
 	}
 
-	return d.BuildChannelSubscriptionChannelID() == od.BuildChannelSubscriptionChannelID()
+	return d.BuildChannelSubscriptionChannelID() != od.BuildChannelSubscriptionChannelID() &&
+		od.BuildChannelSubscriptionPrivKey().GetPublic().Equals(d.BuildChannelSubscriptionPrivKey().GetPublic())
 }
 
 // Superceeds checks if the directive overrides another.
@@ -85,6 +100,13 @@ func (d *buildChannelSubscription) GetName() string {
 func (d *buildChannelSubscription) GetDebugVals() directive.DebugValues {
 	vals := directive.DebugValues{}
 	vals["channel-id"] = []string{d.BuildChannelSubscriptionChannelID()}
+	pkey := d.BuildChannelSubscriptionPrivKey()
+	if pkey != nil {
+		pid, _ := peer.IDFromPrivateKey(pkey)
+		if len(pid) != 0 {
+			vals["peer-id"] = []string{pid.Pretty()}
+		}
+	}
 	return vals
 }
 

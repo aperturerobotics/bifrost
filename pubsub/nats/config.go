@@ -9,9 +9,15 @@ func (c *Config) Validate() error { return nil }
 
 // ApplyOptions applies the nats server options.
 func (c *Config) ApplyOptions(opts *nats_server.Options) error {
-	if c.GetTrace() {
-		opts.Trace = true
+	switch {
+	case c.GetLogTraceVerbose():
 		opts.TraceVerbose = true
+		fallthrough
+	case c.GetLogTrace():
+		opts.Trace = true
+		fallthrough
+	case c.GetLogDebug():
+		opts.Debug = true
 	}
 
 	// TODO implement remaining options

@@ -6,7 +6,8 @@ import "github.com/aperturerobotics/bifrost/pubsub/nats/nats.proto";
 // Config is the nats controller config.
 message Config {
   // PeerID sets the peer ID to attach the server to.
-  // Passes an empty private key to the server if unset.
+  // Must be set.
+  // If set to special value: "any" - binds to any peer.
   string peer_id = 1;
   // NatsConfig configures nats.
   nats.Config nats_config = 2;

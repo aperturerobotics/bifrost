@@ -1,8 +1,14 @@
 package cli
 
 import (
+	"strings"
+
 	link_establish_controller "github.com/aperturerobotics/bifrost/link/establish"
-	"github.com/aperturerobotics/bifrost/link/hold-open"
+	link_holdopen_controller "github.com/aperturerobotics/bifrost/link/hold-open"
+	"github.com/aperturerobotics/bifrost/pubsub/floodsub"
+	"github.com/aperturerobotics/bifrost/pubsub/floodsub/controller"
+	"github.com/aperturerobotics/bifrost/pubsub/nats"
+	nats_controller "github.com/aperturerobotics/bifrost/pubsub/nats/controller"
 	"github.com/aperturerobotics/bifrost/transport/common/kcp"
 	"github.com/aperturerobotics/bifrost/transport/common/pconn"
 	udptpt "github.com/aperturerobotics/bifrost/transport/udp"
@@ -22,6 +28,7 @@ type DaemonArgs struct {
 	WebsocketListen string
 	UDPListen       string
 	HoldOpenLinks   bool
+	Pubsub          string
 
 	XBeePath string
 	XBeeBaud int
@@ -97,6 +104,12 @@ func (a *DaemonArgs) BuildFlags() []cli.Flag {
 			Usage:  "list of peer-id@address known WebSocket peers",
 			EnvVar: "BIFROST_WS_PEERS",
 			Value:  &a.WebsocketPeers,
+		},
+		cli.StringFlag{
+			Name:        "pubsub",
+			Usage:       "if set, will configure pubsub from options: [nats, floodsub]",
+			EnvVar:      "BIFROST_PUBSUB",
+			Destination: &a.Pubsub,
 		},
 	}
 
@@ -178,6 +191,24 @@ func (a *DaemonArgs) ApplyToConfigSet(confSet configset.ConfigSet, overwrite boo
 			ListenAddr: a.UDPListen,
 			PacketOpts: &pconn.Opts{},
 		})
+	}
+
+	if a.Pubsub != "" {
+		switch strings.ToLower(a.Pubsub) {
+		case "nats":
+			apply("pubsub", &nats_controller.Config{
+				PeerId: "any",
+				NatsConfig: &nats.Config{
+					ClusterName: "bifrost-cli-default",
+				},
+			})
+		case "floodsub":
+			apply("pubsub", &floodsub_controller.Config{
+				FloodsubConfig: &floodsub.Config{},
+			})
+		default:
+			return errors.Errorf("unknown pubsub provider: %s", a.Pubsub)
+		}
 	}
 
 	return nil

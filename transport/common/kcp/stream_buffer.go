@@ -27,7 +27,6 @@ type PacketBuffer struct {
 
 	// remoteStreamID is the remote stream id
 	remoteStreamID uint32
-
 	// headerVarint is the header varint
 	// the bytes are reversed.
 	// empty until remote stream ID is known

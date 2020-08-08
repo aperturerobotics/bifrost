@@ -2,7 +2,6 @@ package floodsub
 
 import (
 	"context"
-	"math/rand"
 	"sync"
 	"time"
 
@@ -11,9 +10,8 @@ import (
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/protocol"
 	"github.com/aperturerobotics/bifrost/pubsub"
-	"github.com/aperturerobotics/bifrost/stream/packet"
-	"github.com/aperturerobotics/timestamp"
-	"github.com/golang/protobuf/proto"
+	pubmessage "github.com/aperturerobotics/bifrost/pubsub/util/pubmessage"
+	stream_packet "github.com/aperturerobotics/bifrost/stream/packet"
 	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
@@ -62,7 +60,7 @@ type FloodSub struct {
 
 // publishChMsg is a message queued for publishing
 type publishChMsg struct {
-	msg         *PubMessage
+	msg         *pubmessage.PubMessage
 	prevHopPeer peer.ID
 	channelID   string
 }
@@ -200,7 +198,7 @@ func (m *FloodSub) Execute(ctx context.Context) error {
 // execPublish executes publishing a message
 func (m *FloodSub) execPublish(prevHopPeerID peer.ID, pubMsg *publishChMsg) {
 	pkt := &Packet{
-		Publish: []*PubMessage{
+		Publish: []*pubmessage.PubMessage{
 			pubMsg.msg,
 		},
 	}
@@ -228,9 +226,14 @@ func (m *FloodSub) execPublish(prevHopPeerID peer.ID, pubMsg *publishChMsg) {
 }
 
 // AddSubscription adds a channel subscription, returning a subscription handle.
-func (m *FloodSub) AddSubscription(ctx context.Context, channelID string) (pubsub.Subscription, error) {
+func (m *FloodSub) AddSubscription(ctx context.Context, privKey crypto.PrivKey, channelID string) (pubsub.Subscription, error) {
 	if channelID == "" {
 		return nil, errors.New("channel id must be specified")
+	}
+
+	peerID, err := peer.IDFromPrivateKey(privKey)
+	if err != nil {
+		return nil, err
 	}
 
 	ns := &subscription{
@@ -238,6 +241,8 @@ func (m *FloodSub) AddSubscription(ctx context.Context, channelID string) (pubsu
 		m:         m,
 		channelID: channelID,
 		handlers:  make(map[*subscriptionHandler]struct{}),
+		privKey:   privKey,
+		peerID:    peerID,
 	}
 	m.mtx.Lock()
 	subs := m.channels[channelID]
@@ -245,7 +250,10 @@ func (m *FloodSub) AddSubscription(ctx context.Context, channelID string) (pubsu
 		subs = make(map[*subscription]struct{})
 		defer m.wake()
 		m.channels[channelID] = subs
-		m.le.WithField("channel-id", channelID).Info("subscribed to channel")
+		m.le.
+			WithField("channel-id", channelID).
+			WithField("sub-peer-id", peerID.Pretty()).
+			Info("subscribed to channel")
 	}
 	subs[ns] = struct{}{}
 	m.mtx.Unlock()
@@ -301,38 +309,16 @@ func (m *FloodSub) Publish(
 		pht = hash.HashType_HashType_SHA256
 	}
 
+	msg, inner, err := pubmessage.NewPubMessage(channelID, privKey, pht, data)
+	if err != nil {
+		return err
+	}
+
 	pid, err := peer.IDFromPrivateKey(privKey)
 	if err != nil {
 		return err
 	}
 
-	tsNow := timestamp.Now()
-	inner := &PubMessageInner{
-		Data:      data,
-		Channel:   channelID,
-		Timestamp: &tsNow,
-		Salt:      rand.Uint32(),
-	}
-	innerData, err := proto.Marshal(inner)
-	if err != nil {
-		return err
-	}
-
-	sig, err := peer.NewSignature(
-		privKey,
-		pht,
-		innerData,
-		false,
-	)
-	if err != nil {
-		return err
-	}
-
-	msg := &PubMessage{
-		FromPeerId: peer.IDB58Encode(pid),
-		Signature:  sig,
-		Data:       innerData,
-	}
 	m.handleValidMessage(ctx, pid, msg, inner)
 	return nil
 }
@@ -359,11 +345,11 @@ func (m *FloodSub) Close() {
 func (m *FloodSub) handleValidMessage(
 	ctx context.Context,
 	prevHopPeer peer.ID,
-	pkt *PubMessage,
-	pktInner *PubMessageInner,
+	pkt *pubmessage.PubMessage,
+	pktInner *pubmessage.PubMessageInner,
 ) {
 	channelID := pktInner.GetChannel()
-	msgId := computeMessageID(pkt)
+	msgId := pkt.ComputeMessageID()
 	if _, ok := m.seenMessages.Get(msgId); ok {
 		return
 	}
@@ -373,7 +359,7 @@ func (m *FloodSub) handleValidMessage(
 	if err != nil {
 		return
 	}
-	msg := newMessage(pid, pktInner)
+	msg := pubmessage.NewMessage(pid, pktInner)
 	m.mtx.Lock()
 	subs := m.channels[channelID]
 	for sub := range subs {

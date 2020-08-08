@@ -1,0 +1,28 @@
+syntax = "proto3";
+package pubmessage;
+
+import "github.com/aperturerobotics/bifrost/peer/peer.proto";
+import "github.com/aperturerobotics/timestamp/timestamp.proto";
+
+// PubMessageInner is the signed inner portion of the message.
+message PubMessageInner {
+  // Data is the message data.
+	bytes data = 1;
+  // Channel is the channel.
+  string channel = 2;
+  // Timestamp is the message timestamp.
+  timestamp.Timestamp timestamp = 3;
+  // Salt is a random int32.
+  fixed32 salt = 4;
+}
+
+// PubMessage is a message published via the pubsub channel.
+message PubMessage {
+  // FromPeerId is the peer identifier of the sender.
+	string from_peer_id = 1;
+  // Signature is the sender signature.
+  // Should not contain PubKey, which is inferred from peer id.
+  peer.Signature signature = 2;
+  // Data is the PubMessageInner data.
+  bytes data = 3;
+}

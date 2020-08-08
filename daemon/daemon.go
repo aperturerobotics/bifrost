@@ -8,7 +8,6 @@ import (
 	"github.com/aperturerobotics/bifrost/keypem"
 	"github.com/aperturerobotics/bifrost/peer"
 	nctr "github.com/aperturerobotics/bifrost/peer/controller"
-	"github.com/aperturerobotics/bifrost/pubsub/floodsub/controller"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/controller/loader"
@@ -88,20 +87,11 @@ func NewDaemon(
 	}
 	le.Debugf("node controller resolved w/ ID: %s", peerIDPretty)
 
-	dir = resolver.NewLoadControllerWithConfig(&floodsub_controller.Config{})
-	_, fsRef, err := bus.ExecOneOff(ctx, b, dir, nil)
-	if err != nil {
-		ncRef.Release()
-		return nil, err
-	}
-	le.Info("pubsub controller resolved")
-
 	return &Daemon{
 		bus: b,
 
 		closeCbs: []func(){
 			ncRef.Release,
-			fsRef.Release,
 		},
 		nodePriv:         nodePriv,
 		nodePeerID:       peerID,

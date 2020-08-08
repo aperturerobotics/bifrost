@@ -1,6 +1,8 @@
 package pubsub_relay
 
 import (
+	"github.com/aperturerobotics/bifrost/peer"
+	"github.com/aperturerobotics/bifrost/util/confparse"
 	"github.com/aperturerobotics/controllerbus/config"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
@@ -29,5 +31,18 @@ func (c *Config) Validate() error {
 	if len(c.GetTopicIds()) == 0 {
 		return errors.New("at least one topic id required")
 	}
+	peerID, err := c.ParsePeerID()
+	if err != nil {
+		return err
+	}
+	if peerID == "" {
+		return errors.New("peer id must be specified")
+	}
+
 	return nil
+}
+
+// ParsePeerID parses the peer ID if it is not empty.
+func (c *Config) ParsePeerID() (peer.ID, error) {
+	return confparse.ParsePeerID(c.GetPeerId())
 }

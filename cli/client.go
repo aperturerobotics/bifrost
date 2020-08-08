@@ -3,9 +3,12 @@ package cli
 import (
 	"context"
 	"errors"
+	"io/ioutil"
+	"os"
 	"strings"
 
 	bifrost_api "github.com/aperturerobotics/bifrost/daemon/api"
+	"github.com/aperturerobotics/bifrost/keypem"
 	peer_controller "github.com/aperturerobotics/bifrost/peer/controller"
 	pubsub_grpc "github.com/aperturerobotics/bifrost/pubsub/grpc"
 	stream_forwarding "github.com/aperturerobotics/bifrost/stream/forwarding"
@@ -13,6 +16,7 @@ import (
 	stream_grpc_dial "github.com/aperturerobotics/bifrost/stream/grpc/dial"
 	stream_listening "github.com/aperturerobotics/bifrost/stream/listening"
 	cbus_cli "github.com/aperturerobotics/controllerbus/cli"
+	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/urfave/cli"
 	"google.golang.org/grpc"
 )
@@ -25,7 +29,7 @@ type ClientArgs struct {
 	ForwardingConf stream_forwarding.Config
 	// IdentifyConf is the identify configuration
 	IdentifyConf peer_controller.Config
-	// SubscribeConf is the configuration for the subscribe call.
+	// SubscribeConf is the configuration for the publish or subscribe call.
 	SubscribeConf pubsub_grpc.SubscribeRequest
 	// AcceptConf is the accept configuration.
 	AcceptConf stream_grpc_accept.Config
@@ -134,9 +138,24 @@ func (a *ClientArgs) BuildCommands() []cli.Command {
 		},
 		{
 			Name:   "subscribe",
-			Usage:  "Subscribe to a pubsub channel and publish with identified peers",
+			Usage:  "Subscribe to a pubsub channel with a private key or mounted peer and publish base64 w/ newline delim from stdin.",
 			Action: a.RunSubscribe,
 			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:        "peer-priv",
+					Usage:       "path to private key file, specify this or peer-id",
+					Destination: &a.IdentifyKeyPath,
+				},
+				&cli.BoolFlag{
+					Name:        "generate-priv",
+					Usage:       "if set with peer-priv, generate private key if file does not exist",
+					Destination: &a.IdentifyGenKey,
+				},
+				&cli.StringFlag{
+					Name:        "peer-id",
+					Usage:       "peer identifier to lookup and use, specify this or peer-priv",
+					Destination: &a.SubscribeConf.PeerId,
+				},
 				&cli.StringFlag{
 					Name:        "channel-id",
 					Usage:       "channel id",
@@ -281,4 +300,47 @@ func (a *ClientArgs) GetContext() context.Context {
 		return c
 	}
 	return context.TODO()
+}
+
+// LoadOrGenerateIdentifyKey loads or generates the IdentifyKeyPath.
+func (a *ClientArgs) LoadOrGenerateIdentifyKey() ([]byte, crypto.PrivKey, error) {
+	if a.IdentifyKeyPath == "" {
+		return nil, nil, errors.New("identification private key path not set")
+	}
+
+	var privKey crypto.PrivKey
+	var dat []byte
+	var err error
+	if a.IdentifyGenKey {
+		if _, err := os.Stat(a.IdentifyKeyPath); os.IsNotExist(err) {
+			privKey, _, err = keypem.GeneratePrivKey()
+			if err != nil {
+				return nil, nil, err
+			}
+			dat, err = keypem.MarshalPrivKeyPem(privKey)
+			if err != nil {
+				return nil, nil, err
+			}
+			if err := ioutil.WriteFile(a.IdentifyKeyPath, dat, 0600); err != nil {
+				return nil, nil, err
+			}
+		}
+	}
+
+	if len(dat) == 0 {
+		dat, err = ioutil.ReadFile(a.IdentifyKeyPath)
+		if err != nil {
+			return nil, nil, err
+		}
+		privKey = nil
+	}
+
+	if privKey == nil {
+		privKey, err = keypem.ParsePrivKeyPem(dat)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
+	return dat, privKey, nil
 }

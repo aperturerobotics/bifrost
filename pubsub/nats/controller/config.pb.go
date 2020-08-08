@@ -24,7 +24,8 @@ const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 // Config is the nats controller config.
 type Config struct {
 	// PeerID sets the peer ID to attach the server to.
-	// Passes an empty private key to the server if unset.
+	// Must be set.
+	// If set to special value: "any" - binds to any peer.
 	PeerId string `protobuf:"bytes,1,opt,name=peer_id,json=peerId,proto3" json:"peer_id,omitempty"`
 	// NatsConfig configures nats.
 	NatsConfig           *nats.Config `protobuf:"bytes,2,opt,name=nats_config,json=natsConfig,proto3" json:"nats_config,omitempty"`

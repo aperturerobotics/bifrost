@@ -8,24 +8,15 @@ import (
 	"time"
 
 	"github.com/blang/semver"
-	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
 	bcli "github.com/aperturerobotics/bifrost/cli"
-	bcore "github.com/aperturerobotics/bifrost/core"
-	"github.com/aperturerobotics/bifrost/keypem"
-	"github.com/aperturerobotics/bifrost/keypem/keyfile"
-	"github.com/aperturerobotics/bifrost/peer"
-	peer_controller "github.com/aperturerobotics/bifrost/peer/controller"
+	nats "github.com/aperturerobotics/bifrost/pubsub/nats"
 	nats_controller "github.com/aperturerobotics/bifrost/pubsub/nats/controller"
 	"github.com/aperturerobotics/controllerbus/bus"
-	"github.com/aperturerobotics/controllerbus/controller/resolver"
-	"github.com/aperturerobotics/controllerbus/directive"
-	"github.com/aperturerobotics/hydra/core"
 	"github.com/aperturerobotics/network-sim/tests"
 
-	// transform_snappy "github.com/aperturerobotics/hydra/block/transform/snappy"
 	"github.com/aperturerobotics/bifrost/pubsub"
 	pubsub_relay "github.com/aperturerobotics/bifrost/pubsub/relay"
 	"github.com/aperturerobotics/controllerbus/controller"
@@ -67,83 +58,11 @@ func main() {
 	}
 }
 
-// buildNatsNode builds a new nats node
-func buildNatsNode(
-	ctx context.Context,
-	le *logrus.Entry,
-	privKeyPath string,
-) (bus.Bus, crypto.PrivKey, directive.Reference, error) {
-	var privKey crypto.PrivKey
-	var err error
-	if privKeyPath != "" {
-		le.WithField("priv-key-path", privKeyPath).Debug("opening private key")
-		privKey, err = keyfile.OpenOrWritePrivKey(le, privKeyPath)
-	} else {
-		le.Debug("generating private key")
-		privKey, _, err = keypem.GeneratePrivKey()
-	}
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	b, sr, err := core.NewCoreBus(ctx, le)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	sr.AddFactory(nats_controller.NewFactory(b))
-	bcore.AddFactories(b, sr)
-
-	pid, err := peer.IDFromPrivateKey(privKey)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	le.WithField("peer-id", pid.Pretty()).Info("starting with peer id")
-
-	peerCtrl, err := peer_controller.NewController(le, privKey)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	go b.ExecuteController(ctx, peerCtrl)
-
-	// execute the pubsub controller
-	_, pubsubRef, err := bus.ExecOneOff(
-		ctx,
-		b,
-		resolver.NewLoadControllerWithConfig(&nats_controller.Config{
-			PeerId: pid.Pretty(),
-		}),
-		nil,
-	)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	// defer pubsubRef.Release()
-	return b, privKey, pubsubRef, nil
-}
-
 func runNatsExample(c *cli.Context) error {
 	ctx := context.Background()
 	log := logrus.New()
 	log.SetLevel(logrus.DebugLevel)
 	le := logrus.NewEntry(log)
-
-	/*
-		peers := make([]bus.Bus, 3)
-		peerPrivs := make([]crypto.PrivKey, len(peers))
-		for i := range peers {
-			var peerRef directive.Reference
-			var err error
-			peers[i], peerPrivs[i], peerRef, err = buildNatsNode(
-				ctx,
-				le.WithField("peer", i),
-				fmt.Sprintf("peer-%d.pem", i),
-			)
-			if err != nil {
-				return err
-			}
-			defer peerRef.Release()
-		}
-	*/
 
 	g := graph.NewGraph()
 
@@ -168,6 +87,9 @@ func runNatsExample(c *cli.Context) error {
 		peer.AddFactory(func(b bus.Bus) controller.Factory { return nats_controller.NewFactory(b) })
 		peer.AddConfig("pubsub", &nats_controller.Config{
 			PeerId: peer.GetPeerID().Pretty(),
+			NatsConfig: &nats.Config{
+				LogTrace: true,
+			},
 		})
 		peer.AddFactory(func(b bus.Bus) controller.Factory { return pubsub_relay.NewFactory(b) })
 		peer.AddConfig("pubsub-relay", &pubsub_relay.Config{
@@ -203,7 +125,7 @@ func runNatsExample(c *cli.Context) error {
 		tpv2, tpv2Ref, err := bus.ExecOneOff(
 			ctx,
 			lp2tb.Bus,
-			pubsub.NewBuildChannelSubscription(channelID),
+			pubsub.NewBuildChannelSubscription(channelID, lp2tb.PrivKey),
 			nil,
 		)
 		if err != nil {
@@ -217,7 +139,7 @@ func runNatsExample(c *cli.Context) error {
 		tpv0, tpv0Ref, err := bus.ExecOneOff(
 			ctx,
 			lp0tb.Bus,
-			pubsub.NewBuildChannelSubscription(channelID),
+			pubsub.NewBuildChannelSubscription(channelID, lp0tb.PrivKey),
 			nil,
 		)
 		if err != nil {
@@ -235,10 +157,10 @@ func runNatsExample(c *cli.Context) error {
 		})
 
 		// TODO: remove this delay... needs a little time to "settle"
-		<-time.After(time.Millisecond * 100)
+		<-time.After(time.Millisecond * 200)
 		testReplicate := func() {
 			le.Infof("publishing data on p2 with peer %s", p2.GetPeerID().Pretty())
-			s2.Publish(p2.GetPeerPriv(), testingData)
+			s2.Publish(testingData)
 			rmsg := <-msgRx
 			if bytes.Compare(rmsg.GetData(), testingData) != 0 {
 				t.Fatalf("pubsub data mismatch %v != expected %v", rmsg.GetData(), testingData)

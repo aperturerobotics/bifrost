@@ -1,7 +1,5 @@
 package nats
 
-// TODO - WIP
-
 import (
 	"context"
 	"sync"
@@ -10,8 +8,11 @@ import (
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/protocol"
 	"github.com/aperturerobotics/bifrost/pubsub"
+	"github.com/aperturerobotics/bifrost/pubsub/util/pubmessage"
+	"github.com/libp2p/go-libp2p-core/crypto"
 
 	nats_server "github.com/nats-io/nats-server/v2/server"
+	nats_client "github.com/nats-io/nats.go"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -37,8 +38,6 @@ func ProtocolIDToStreamType(id protocol.ID) NatsConnType {
 	}
 }
 
-// TODO: move this code into a common "next-hop stream solicitation" package
-
 // Nats implements the nats router.
 type Nats struct {
 	// conf is the config
@@ -58,11 +57,13 @@ type Nats struct {
 
 	mtx         sync.Mutex
 	incSessions []*streamHandler
+	// natsClients contains all active nats clients keyed by peer id
+	natsClients map[string]*natsClient
 }
 
 // publishChMsg is a message queued for publishing
 type publishChMsg struct {
-	msg         *PubMessage
+	msg         *pubmessage.PubMessage
 	prevHopPeer peer.ID
 	channelID   string
 }
@@ -75,6 +76,9 @@ func NewNats(
 	cc *Config,
 	peer peer.Peer,
 ) (pubsub.PubSub, error) {
+	if peer == nil {
+		return nil, errors.New("nats server requires a peer with a private key")
+	}
 	kpair, err := NewKeyPair(peer.GetPrivKey(), peer.GetPubKey())
 	if err != nil {
 		return nil, err
@@ -92,16 +96,14 @@ func NewNats(
 	}
 
 	serverOpts := &nats_server.Options{
+		Cluster:    nats_server.ClusterOpts{Name: clusterName},
+		Logger:     le.WithField("peer-id", serverName),
 		ServerName: serverName,
-		Cluster: nats_server.ClusterOpts{
-			Name: clusterName,
-		},
-		Debug: true,
-		Trace: true,
-		Logger: le.WithFields(logrus.Fields{
-			"peer-id": serverName,
-		}),
+
+		CustomClientAuthentication: newClientAuth(),
+		CustomRouterAuthentication: newRouterAuth(),
 	}
+
 	if err := cc.ApplyOptions(serverOpts); err != nil {
 		return nil, err
 	}
@@ -122,8 +124,9 @@ func NewNats(
 		peer:       peer,
 		natsServer: natsServer,
 
-		wakeCh:    make(chan struct{}, 1),
-		publishCh: make(chan *publishChMsg, 16),
+		wakeCh:      make(chan struct{}, 1),
+		publishCh:   make(chan *publishChMsg, 16),
+		natsClients: make(map[string]*natsClient),
 	}, nil
 }
 
@@ -153,41 +156,10 @@ func (m *Nats) Execute(ctx context.Context) error {
 	}
 }
 
-// execPublish executes publishing a message
-func (m *Nats) execPublish(prevHopPeerID peer.ID, pubMsg *publishChMsg) {
-	// chid := pubMsg.channelID
-	// tosend := make(map[pubsub.PeerLinkTuple]struct{})
-	/*
-		m.mtx.Lock()
-		if peerChannels, ok := m.peerChannels[chid]; ok {
-			for p := range peerChannels {
-				tosend[p] = struct{}{}
-			}
-		}
-		for pid := range tosend {
-			pidPretty := pid.PeerID.Pretty()
-			if pidPretty == pubMsg.msg.GetFromPeerId() ||
-				pid.PeerID == prevHopPeerID {
-				continue
-			}
-
-			peer, ok := m.peers[pid]
-			if ok {
-				peer.writePacket(pkt)
-			}
-		}
-		m.mtx.Unlock()
-	*/
-}
-
 // AddPeerStream adds a negotiated peer stream.
 // Two streams will be negotiated, one outgoing, one incoming.
 // The pubsub should communicate over the stream.
-func (m *Nats) AddPeerStream(
-	tpl pubsub.PeerLinkTuple,
-	initiator bool,
-	mstrm link.MountedStream,
-) {
+func (m *Nats) AddPeerStream(tpl pubsub.PeerLinkTuple, initiator bool, mstrm link.MountedStream) {
 	le := m.le.WithField("peer", tpl.PeerID.Pretty())
 	if !mstrm.GetOpenOpts().Encrypted || !mstrm.GetOpenOpts().Reliable {
 		le.Warn("rejecting unencrypted or unreliable pubsub stream")
@@ -220,6 +192,121 @@ func (m *Nats) AddPeerStream(
 	m.wake()
 }
 
+// BuildClient builds a client for the nats server, creating a client connection.
+//
+// Note: the servers list & dialer will be overwritten.
+func (n *Nats) BuildClient(ctx context.Context, privKey crypto.PrivKey, opts ...nats_client.Option) (*nats_client.Conn, error) {
+	nk, err := NewKeyPair(privKey, privKey.GetPublic())
+	if err != nil {
+		return nil, err
+	}
+	nkPub, err := nk.PublicKey()
+	if err != nil {
+		return nil, err
+	}
+	copts := nats_client.GetDefaultOptions()
+	for _, opt := range opts {
+		if err := opt(&copts); err != nil {
+			return nil, err
+		}
+	}
+	copts.CustomDialer = newLocalNatsDialer(n, nk)
+	copts.Servers = []string{localNatsAddress}
+	if err := nats_client.Nkey(nkPub, nats_client.SignatureHandler(nk.Sign))(&copts); err != nil {
+		return nil, err
+	}
+	return copts.Connect()
+}
+
+// AddSubscription adds a channel subscription, returning a subscription handle.
+//
+// Uses the router peer private key.
+//
+// An alternate approach is to use a client connection.
+func (n *Nats) AddSubscription(ctx context.Context, privKey crypto.PrivKey, channelID string) (pubsub.Subscription, error) {
+	n.mtx.Lock()
+	nc, ncRel, err := n.getOrBuildClient(ctx, privKey)
+	n.mtx.Unlock()
+	if err != nil {
+		return nil, err
+	}
+
+	nsub, err := nc.Conn.SubscribeSync(channelID)
+	if err != nil {
+		ncRel()
+		return nil, err
+	}
+	return newSubscription(ctx, n, nc, ncRel, nsub, privKey, channelID), nil
+}
+
+// GetOrBuildCommonClient returns the common nats client.
+func (n *Nats) GetOrBuildCommonClient(ctx context.Context) (*nats_client.Conn, error) {
+	npeerID := n.peer.GetPeerID()
+	npeerPriv := n.peer.GetPrivKey()
+	npeerPretty := npeerID.Pretty()
+
+	n.mtx.Lock()
+	defer n.mtx.Unlock()
+
+	// we create the common client with 1 ref that is never released.
+	nc, ncOk := n.natsClients[npeerPretty]
+	if ncOk {
+		return nc.Conn, nil
+	}
+	nc, ncRel, err := n.getOrBuildClient(ctx, npeerPriv)
+	if err != nil {
+		return nil, err
+	}
+	_ = ncRel // never release the common client
+	return nc.Conn, nil
+}
+
+// getOrBuildClient gets or builds a client adding a reference.
+// caller must lock mtx
+func (n *Nats) getOrBuildClient(ctx context.Context, privKey crypto.PrivKey) (*natsClient, func(), error) {
+	npeer, err := peer.IDFromPrivateKey(privKey)
+	if err != nil {
+		return nil, nil, err
+	}
+	npeerPretty := npeer.Pretty()
+	nc, ncOk := n.natsClients[npeerPretty]
+	if ncOk {
+		if !nc.Conn.IsClosed() {
+			return nc, nc.addRef(), nil
+		}
+
+		nc = nil
+		ncOk = false
+		delete(n.natsClients, npeerPretty)
+	}
+
+	nconn, err := n.BuildClient(ctx, privKey)
+	if err != nil {
+		return nil, nil, err
+	}
+	nc = newNatsClient(npeer, nconn)
+	n.natsClients[npeerPretty] = nc
+	return nc, nc.addRef(), nil
+}
+
+// SubscribeSync passes through to the nats client SubscribeSync call.
+func (n *Nats) SubscribeSync(
+	ctx context.Context,
+	channelID string,
+) (*nats_client.Subscription, *nats_client.Conn, error) {
+	// TODO: do we need to augment this?
+	nclient, err := n.GetOrBuildCommonClient(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	sub, err := nclient.SubscribeSync(channelID)
+	if err != nil {
+		return nil, nclient, err
+	}
+	return sub, nclient, nil
+}
+
 // Close closes the pubsub.
 func (m *Nats) Close() {
 	m.natsServer.Shutdown()
@@ -231,51 +318,11 @@ func (m *Nats) Close() {
 		}
 	}
 	m.incSessions = nil
-	m.mtx.Unlock()
-}
-
-// handleValidMessage handles a valid message, repeating it to other peers and handlers.
-func (m *Nats) handleValidMessage(
-	ctx context.Context,
-	prevHopPeer peer.ID,
-	pkt *PubMessage,
-	pktInner *PubMessageInner,
-) {
-	channelID := pktInner.GetChannel()
-	msgId := computeMessageID(pkt)
-
-	pid, err := peer.IDB58Decode(pkt.GetFromPeerId())
-	if err != nil {
-		return
+	for id, client := range m.natsClients {
+		client.Close()
+		delete(m.natsClients, id)
 	}
-	msg := newMessage(pid, pktInner)
-	_ = channelID
-	_ = msg
-	_ = msgId
-	// TODO
-	/*
-		m.mtx.Lock()
-		subs := m.channels[channelID]
-		for sub := range subs {
-			ss := sub
-			go func() {
-				ss.mtx.Lock()
-				for s := range ss.handlers {
-					s.cb(msg)
-				}
-				ss.mtx.Unlock()
-			}()
-		}
-		m.mtx.Unlock()
-		select {
-		case m.publishCh <- &publishChMsg{
-			msg:         pkt,
-			channelID:   channelID,
-			prevHopPeer: prevHopPeer,
-		}:
-		case <-ctx.Done():
-		}
-	*/
+	m.mtx.Unlock()
 }
 
 // wake wakes the controller
@@ -284,15 +331,6 @@ func (m *Nats) wake() {
 	case m.wakeCh <- struct{}{}:
 	default:
 	}
-}
-
-// AddSubscription adds a channel subscription, returning a subscription handle.
-//
-// Uses the router peer private key.
-//
-// An alternate approach is to use a client connection.
-func (n *Nats) AddSubscription(ctx context.Context, channelID string) (pubsub.Subscription, error) {
-	return nil, errors.New("TODO implement nats add subscription")
 }
 
 // _ is a type assertion

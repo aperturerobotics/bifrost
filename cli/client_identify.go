@@ -1,11 +1,9 @@
 package cli
 
 import (
-	"io/ioutil"
 	"os"
 
-	"github.com/aperturerobotics/bifrost/keypem"
-	"github.com/aperturerobotics/bifrost/peer/grpc"
+	peer_grpc "github.com/aperturerobotics/bifrost/peer/grpc"
 	"github.com/urfave/cli"
 )
 
@@ -16,30 +14,7 @@ func (a *ClientArgs) RunIdentifyController(_ *cli.Context) error {
 		return err
 	}
 
-	var dat []byte
-	if a.IdentifyGenKey {
-		if _, err := os.Stat(a.IdentifyKeyPath); os.IsNotExist(err) {
-			privKey, _, err := keypem.GeneratePrivKey()
-			if err != nil {
-				return err
-			}
-			dat, err = keypem.MarshalPrivKeyPem(privKey)
-			if err != nil {
-				return err
-			}
-			if err := ioutil.WriteFile(a.IdentifyKeyPath, dat, 0600); err != nil {
-				return err
-			}
-		}
-	}
-
-	if len(dat) == 0 {
-		dat, err = ioutil.ReadFile(a.IdentifyKeyPath)
-		if err != nil {
-			return err
-		}
-	}
-
+	dat, _, err := a.LoadOrGenerateIdentifyKey()
 	a.IdentifyConf.PrivKey = string(dat)
 	if err := a.IdentifyConf.Validate(); err != nil {
 		return err

@@ -1,16 +1,13 @@
 package floodsub
 
 import (
-	"bytes"
 	"context"
-	"crypto/sha1"
-	"encoding/hex"
 	"io"
 
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/pubsub"
+	pubmessage "github.com/aperturerobotics/bifrost/pubsub/util/pubmessage"
 	stream_packet "github.com/aperturerobotics/bifrost/stream/packet"
-	"github.com/golang/protobuf/proto"
 	"github.com/sirupsen/logrus"
 )
 
@@ -67,52 +64,18 @@ func (s *streamHandler) processPacket(msg *Packet) {
 	}
 }
 
-// computeMessageID computes a message id for a packet
-func computeMessageID(pkt *PubMessage) string {
-	inner := bytes.Join([][]byte{
-		pkt.GetSignature().GetSigData(),
-		[]byte(pkt.GetFromPeerId()),
-	}, nil)
-	s := sha1.Sum(inner)
-	return hex.EncodeToString(s[:])
-}
-
 // handlePublish handles incoming published packets
-func (s *streamHandler) handlePublish(pkts []*PubMessage) {
+func (s *streamHandler) handlePublish(pkts []*pubmessage.PubMessage) {
 	for _, pkt := range pkts {
-		pid, err := peer.IDB58Decode(pkt.GetFromPeerId())
-		if err != nil {
-			s.le.WithError(err).Warnf("cannot decode peer id: %s", pkt.GetFromPeerId())
-			continue
-		}
-		pubKey, err := pid.ExtractPublicKey()
+		pktInner, _, _, err := pkt.ExtractAndVerify()
 		if err != nil {
 			s.le.WithError(err).Warnf(
-				"unable to extract pub key from peer id: %s",
+				"invalid message from peer id: %q",
 				pkt.GetFromPeerId(),
 			)
 			continue
 		}
-		// validate signature
-		sigOk, sigErr := pkt.GetSignature().VerifyWithPublic(pubKey, pkt.GetData())
-		if sigErr != nil {
-			s.le.WithError(sigErr).Warn("unable to validate signature, dropping")
-			continue
-		}
-		if !sigOk {
-			s.le.Warn("invalid signature, dropping")
-			continue
-		}
-		pktInner := &PubMessageInner{}
-		if err := proto.Unmarshal(pkt.GetData(), pktInner); err != nil {
-			s.le.WithError(err).Warn("cannot unmarshal inner data")
-			continue
-		}
 		chid := pktInner.GetChannel()
-		if chid == "" {
-			s.le.Warn("channel id in inner was empty")
-			continue
-		}
 		s.m.mtx.Lock()
 		_, chOk := s.m.channels[chid]
 		s.m.mtx.Unlock()

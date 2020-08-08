@@ -13,15 +13,17 @@ replace (
 )
 
 // aperture: use aperture-2.0 branch of fork
-replace github.com/nats-io/nats-server/v2 => github.com/aperturerobotics/bifrost-nats-server/v2 v2.0.0-20200728011410-af6fb29263b2 // aperture-2.0
+replace (
+	github.com/nats-io/nats-server/v2 => github.com/aperturerobotics/bifrost-nats-server/v2 v2.1.8-0.20200831100512-248bd2ddb696 // aperture-2.0
+	github.com/nats-io/nats.go => github.com/aperturerobotics/bifrost-nats-client v0.0.0-20200828220730-1cfd0cf50367 // aperture-2.0
+)
 
 require (
-	github.com/aperturerobotics/bifrost v0.0.0-20200728210917-e78147c3a9dd
+	github.com/aperturerobotics/bifrost v0.0.0-20200823084156-e28df1d443b1
 	github.com/aperturerobotics/controllerbus v0.8.1-0.20200802060256-360612dc3698
-	github.com/aperturerobotics/hydra v0.0.0-20200729004213-b1dda6b62e4b
 	github.com/aperturerobotics/network-sim v0.0.0-20200729022251-c98cf1113722
 	github.com/blang/semver v3.5.1+incompatible
-	github.com/libp2p/go-libp2p-core v0.6.0
+	github.com/libp2p/go-libp2p-core v0.6.1
 	github.com/sirupsen/logrus v1.6.0
 	github.com/urfave/cli v1.22.4
 )
