@@ -137,7 +137,7 @@ func buildQuicConfig(le *logrus.Entry, opts *Opts) *quic.Config {
 		},
 		KeepAlive:             true,
 		MaxIdleTimeout:        maxIdleTimeout,
-		MaxIncomingStreams:    maxIncStreams,
+		MaxIncomingStreams:    int64(maxIncStreams),
 		MaxIncomingUniStreams: -1, // disable unidirectional streams
 		// MaxReceiveStreamFlowControlWindow:     3 * (1 << 20),   // 3 MB
 		// MaxReceiveConnectionFlowControlWindow: 4.5 * (1 << 20), // 4.5 MB
