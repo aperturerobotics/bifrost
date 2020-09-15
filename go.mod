@@ -31,7 +31,7 @@ require (
 	github.com/gopherjs/websocket v0.0.0-20191103002815-9a42957e2b3a
 	github.com/gorilla/websocket v1.4.2
 	github.com/hashicorp/yamux v0.0.0-20200609203250-aecfd211c9ce
-	github.com/klauspost/compress v1.10.11
+	github.com/klauspost/compress v1.11.0
 	github.com/libp2p/go-libp2p-core v0.6.1
 	github.com/libp2p/go-libp2p-tls v0.1.3
 	github.com/lucas-clemente/quic-go v0.7.1-0.20200727093036-a854a4ace995

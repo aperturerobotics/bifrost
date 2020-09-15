@@ -10,6 +10,9 @@ import (
 	"github.com/aperturerobotics/bifrost/pubsub/floodsub/controller"
 	"github.com/aperturerobotics/bifrost/pubsub/nats/controller"
 	"github.com/aperturerobotics/bifrost/pubsub/relay"
+	"github.com/aperturerobotics/bifrost/stream/echo"
+	"github.com/aperturerobotics/bifrost/stream/forwarding"
+	"github.com/aperturerobotics/bifrost/stream/listening"
 	iproctpt "github.com/aperturerobotics/bifrost/transport/inproc"
 	udptpt "github.com/aperturerobotics/bifrost/transport/udp"
 	wtpt "github.com/aperturerobotics/bifrost/transport/websocket"
@@ -49,4 +52,7 @@ func AddFactories(b bus.Bus, sr *static.Resolver) {
 	sr.AddFactory(pubsub_relay.NewFactory(b))
 	sr.AddFactory(link_holdopen_controller.NewFactory(b))
 	sr.AddFactory(link_establish_controller.NewFactory(b))
+	sr.AddFactory(stream_forwarding.NewFactory(b))
+	sr.AddFactory(stream_echo.NewFactory(b))
+	sr.AddFactory(stream_listening.NewFactory(b))
 }
