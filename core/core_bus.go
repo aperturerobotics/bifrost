@@ -8,7 +8,6 @@ import (
 	"github.com/aperturerobotics/bifrost/link/hold-open"
 	nctr "github.com/aperturerobotics/bifrost/peer/controller"
 	"github.com/aperturerobotics/bifrost/pubsub/floodsub/controller"
-	"github.com/aperturerobotics/bifrost/pubsub/nats/controller"
 	"github.com/aperturerobotics/bifrost/pubsub/relay"
 	"github.com/aperturerobotics/bifrost/stream/echo"
 	"github.com/aperturerobotics/bifrost/stream/forwarding"
@@ -48,7 +47,6 @@ func AddFactories(b bus.Bus, sr *static.Resolver) {
 	sr.AddFactory(egc.NewFactory(b))
 	sr.AddFactory(bifrosteg.NewFactory(b))
 	sr.AddFactory(floodsub_controller.NewFactory(b))
-	sr.AddFactory(nats_controller.NewFactory(b))
 	sr.AddFactory(pubsub_relay.NewFactory(b))
 	sr.AddFactory(link_holdopen_controller.NewFactory(b))
 	sr.AddFactory(link_establish_controller.NewFactory(b))
