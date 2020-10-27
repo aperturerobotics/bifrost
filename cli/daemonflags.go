@@ -5,10 +5,6 @@ import (
 
 	link_establish_controller "github.com/aperturerobotics/bifrost/link/establish"
 	link_holdopen_controller "github.com/aperturerobotics/bifrost/link/hold-open"
-	"github.com/aperturerobotics/bifrost/pubsub/floodsub"
-	"github.com/aperturerobotics/bifrost/pubsub/floodsub/controller"
-	"github.com/aperturerobotics/bifrost/pubsub/nats"
-	nats_controller "github.com/aperturerobotics/bifrost/pubsub/nats/controller"
 	"github.com/aperturerobotics/bifrost/transport/common/kcp"
 	"github.com/aperturerobotics/bifrost/transport/common/pconn"
 	udptpt "github.com/aperturerobotics/bifrost/transport/udp"
@@ -17,8 +13,10 @@ import (
 	"github.com/aperturerobotics/bifrost/util/backoff"
 	"github.com/aperturerobotics/bifrost/util/blockcompress"
 	"github.com/aperturerobotics/bifrost/util/blockcrypt"
+	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/config"
 	configset "github.com/aperturerobotics/controllerbus/controller/configset"
+	"github.com/aperturerobotics/controllerbus/controller/resolver/static"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli"
 )
@@ -107,12 +105,19 @@ func (a *DaemonArgs) BuildFlags() []cli.Flag {
 		},
 		cli.StringFlag{
 			Name:        "pubsub",
-			Usage:       "if set, will configure pubsub from options: [nats, floodsub]",
+			Usage:       buildPubsubUsage(),
 			EnvVar:      "BIFROST_PUBSUB",
 			Destination: &a.Pubsub,
 		},
 	}
 
+}
+
+// ApplyFactories applies any extra factories necessary on top of the core set.
+func (a *DaemonArgs) ApplyFactories(b bus.Bus, sr *static.Resolver) {
+	for _, f := range pubsubFactories {
+		sr.AddFactory(f(b))
+	}
 }
 
 // ApplyToConfigSet applies controller configurations to a config set.
@@ -194,22 +199,21 @@ func (a *DaemonArgs) ApplyToConfigSet(confSet configset.ConfigSet, overwrite boo
 	}
 
 	if a.Pubsub != "" {
-		switch strings.ToLower(a.Pubsub) {
-		case "nats":
-			apply("pubsub", &nats_controller.Config{
-				PeerId: "any",
-				NatsConfig: &nats.Config{
-					ClusterName: "bifrost-cli-default",
-				},
-			})
-		case "floodsub":
-			apply("pubsub", &floodsub_controller.Config{
-				FloodsubConfig: &floodsub.Config{},
-			})
-		default:
-			return errors.Errorf("unknown pubsub provider: %s", a.Pubsub)
+		conf, err := a.callPubsubProvider(strings.ToLower(a.Pubsub))
+		if err != nil {
+			return err
 		}
+		apply("pubsub", conf)
 	}
 
 	return nil
+}
+
+// callPubsubProvider calls a pubsub provider preset by id or returns an error
+func (a *DaemonArgs) callPubsubProvider(id string) (config.Config, error) {
+	prov, ok := pubsubProviders[id]
+	if !ok {
+		return nil, errors.Errorf("unknown pubsub provider: %s", id)
+	}
+	return prov(a)
 }

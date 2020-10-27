@@ -15,7 +15,6 @@ import (
 	api_controller "github.com/aperturerobotics/bifrost/daemon/api/controller"
 	egctr "github.com/aperturerobotics/bifrost/entitygraph"
 	"github.com/aperturerobotics/bifrost/keypem/keyfile"
-	"github.com/aperturerobotics/bifrost/pubsub/nats/controller"
 	stream_forwarding "github.com/aperturerobotics/bifrost/stream/forwarding"
 	stream_grpc_accept "github.com/aperturerobotics/bifrost/stream/grpc/accept"
 	stream_listening "github.com/aperturerobotics/bifrost/stream/listening"
@@ -124,7 +123,6 @@ func runDaemon(c *cli.Context) error {
 	sr.AddFactory(stream_forwarding.NewFactory(b))
 	sr.AddFactory(stream_listening.NewFactory(b))
 	sr.AddFactory(stream_grpc_accept.NewFactory(b))
-	sr.AddFactory(nats_controller.NewFactory(b))
 
 	// Construct config set.
 	confSet := configset.ConfigSet{}
@@ -188,6 +186,7 @@ func runDaemon(c *cli.Context) error {
 
 	// TODO: Load these from CLI/yaml configuration.
 	// For now, hardcode it.
+	daemonFlags.ApplyFactories(b, sr)
 	if err := daemonFlags.ApplyToConfigSet(confSet, true); err != nil {
 		return err
 	}
