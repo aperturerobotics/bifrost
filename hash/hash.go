@@ -2,6 +2,7 @@ package hash
 
 import (
 	"bytes"
+	"crypto/sha1"
 	"crypto/sha256"
 	"github.com/golang/protobuf/proto"
 	b58 "github.com/mr-tron/base58/base58"
@@ -12,12 +13,23 @@ import (
 // ErrHashMismatch is returned when hashes mismatch.
 var ErrHashMismatch = errors.New("hash mismatch")
 
+// SupportedHashTypes is the list of built-in hash types.
+var SupportedHashTypes = []HashType{
+	// HashType_SHA256 is the sha256 hash type.
+	HashType_HashType_SHA256,
+	// HashType_SHA1 is the sha1 hash type.
+	// Note: this is not recommended for use outside of backwards-compat.
+	HashType_HashType_SHA1,
+}
+
 // Validate validates the hash type.
 func (h HashType) Validate() error {
 	switch h {
 	case HashType_HashType_UNKNOWN:
 		return nil
 	case HashType_HashType_SHA256:
+		return nil
+	case HashType_HashType_SHA1:
 		return nil
 	default:
 		return errors.Errorf("hash type unknown: %v", h.String())
@@ -29,6 +41,8 @@ func (h HashType) GetHashLen() int {
 	switch h {
 	case HashType_HashType_SHA256:
 		return sha256.Size
+	case HashType_HashType_SHA1:
+		return sha1.Size
 	}
 	return 0
 }
@@ -38,6 +52,9 @@ func (h HashType) Sum(data []byte) ([]byte, error) {
 	switch h {
 	case HashType_HashType_SHA256:
 		h := sha256.Sum256(data)
+		return h[:], nil
+	case HashType_HashType_SHA1:
+		h := sha1.Sum(data)
 		return h[:], nil
 	default:
 		return nil, errors.Errorf("hash type unknown: %v", h.String())

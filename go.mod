@@ -13,12 +13,12 @@ replace (
 
 // aperture: use aperture-2.0 branch of fork
 replace (
-	github.com/nats-io/nats-server/v2 => github.com/aperturerobotics/bifrost-nats-server/v2 aperture-2.0 // aperture-2.0
-	github.com/nats-io/nats.go => github.com/aperturerobotics/bifrost-nats-client aperture-2.0 // aperture-2.0
+	github.com/nats-io/nats-server/v2 => github.com/aperturerobotics/bifrost-nats-server/v2 v2.1.8-0.20200831101324-59acc8fe7f74 // aperture-2.0
+	github.com/nats-io/nats.go => github.com/aperturerobotics/bifrost-nats-client v1.10.1-0.20200831103200-24c3d0464e58 // aperture-2.0
 )
 
 require (
-	github.com/aperturerobotics/controllerbus v0.8.1-0.20200802060256-360612dc3698
+	github.com/aperturerobotics/controllerbus v0.8.1-0.20210228012617-50317d57e0e4
 	github.com/aperturerobotics/entitygraph v0.1.3
 	github.com/aperturerobotics/timestamp v0.2.3
 	github.com/blang/semver v3.5.1+incompatible
@@ -52,7 +52,7 @@ require (
 	github.com/tjfoc/gmsm v1.0.1
 	github.com/urfave/cli v1.22.4
 	github.com/xtaci/smux v1.5.14
-	golang.org/x/crypto v0.0.0-20201016220609-9e8e0b390897
+	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
 	google.golang.org/grpc v1.30.0
 	gortc.io/stun v1.22.2
 )

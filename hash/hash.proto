@@ -5,8 +5,11 @@ package hash;
 enum HashType {
   // HashType_UNKNOWN is an unknown hash type.
   HashType_UNKNOWN = 0;
-  // HashType_SHA256 is a sha256 hash type.
+  // HashType_SHA256 is the sha256 hash type.
   HashType_SHA256 = 1;
+  // HashType_SHA1 is the sha1 hash type.
+  // Note: this is not recommended for use outside of backwards-compat.
+  HashType_SHA1 = 2;
 }
 
 // Hash is a hash of a binary blob.
