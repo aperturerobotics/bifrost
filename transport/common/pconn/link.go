@@ -59,7 +59,9 @@ func NewLink(
 	// Since we don't have any way of knowing which tls.Config was used though,
 	// we have to re-determine the peer's identity here.
 	// Therefore, this is expected to never fail.
-	remotePubKey, err := p2ptls.PubKeyFromCertChain(sess.ConnectionState().PeerCertificates)
+	connState := sess.ConnectionState()
+	certs := connState.TLS.ConnectionState.PeerCertificates
+	remotePubKey, err := p2ptls.PubKeyFromCertChain(certs)
 	if err != nil {
 		return nil, err
 	}
