@@ -67,9 +67,8 @@ func (r *resolveBuildChannelSub) Resolve(
 		val.Release()
 		return nil
 	}
-	defer val.Release()
-
 	<-subCtx.Done()
+	val.Release()
 	return nil
 }
 

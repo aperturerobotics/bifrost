@@ -73,13 +73,18 @@ func (d *buildChannelSubscription) BuildChannelSubscriptionPrivKey() crypto.Priv
 // directives are equivalent, and the new directive does not superceed the
 // old, then the new directive will be merged (de-duplicated) into the old.
 func (d *buildChannelSubscription) IsEquivalent(other directive.Directive) bool {
+	// Note: for ChannelSubscription, we want a unique handle for each directive.
+	return false
+
+	/* If we wanted to de-duplicate (can't due to Release()):
 	od, ok := other.(BuildChannelSubscription)
 	if !ok {
 		return false
 	}
 
-	return d.BuildChannelSubscriptionChannelID() != od.BuildChannelSubscriptionChannelID() &&
+	return d.BuildChannelSubscriptionChannelID() == od.BuildChannelSubscriptionChannelID() &&
 		od.BuildChannelSubscriptionPrivKey().GetPublic().Equals(d.BuildChannelSubscriptionPrivKey().GetPublic())
+	*/
 }
 
 // Superceeds checks if the directive overrides another.
