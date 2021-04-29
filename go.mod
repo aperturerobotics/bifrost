@@ -5,7 +5,7 @@ go 1.13
 // aperture: use protobuf 1.3.x based fork for compatibility
 replace (
 	github.com/golang/protobuf => github.com/aperturerobotics/go-protobuf-1.3.x v0.0.0-20200726220404-fa7f51c52df0 // aperture-1.3.x
-	github.com/lucas-clemente/quic-go => github.com/aperturerobotics/quic-go v0.20.1-0.20210421020426-89c6269f84e7 // aperture-protobuf-1.3.x
+	github.com/lucas-clemente/quic-go => github.com/aperturerobotics/quic-go v0.7.1-0.20210429025630-117fb792ec96 // aperture-protobuf-1.3.x
 	github.com/multiformats/go-multihash => github.com/paralin/go-multihash v0.0.11-0.20200526102400-a989a5c6678b // gopherjs-compat
 	google.golang.org/genproto => google.golang.org/genproto v0.0.0-20190819201941-24fa4b261c55
 	google.golang.org/grpc => google.golang.org/grpc v1.30.0
@@ -18,7 +18,7 @@ replace (
 )
 
 require (
-	github.com/aperturerobotics/controllerbus v0.8.1-0.20210228012617-50317d57e0e4
+	github.com/aperturerobotics/controllerbus v0.8.1-0.20210429010621-987b39651326
 	github.com/aperturerobotics/entitygraph v0.1.3
 	github.com/aperturerobotics/timestamp v0.2.3
 	github.com/blang/semver v3.5.1+incompatible
@@ -27,9 +27,9 @@ require (
 	github.com/frankban/quicktest v1.10.2 // indirect
 	github.com/golang/protobuf v1.4.2
 	github.com/golang/snappy v0.0.3
-	github.com/gopherjs/gopherjs v0.0.0-20210413103415-7d3cbed7d026
+	github.com/gopherjs/gopherjs v0.0.0-20210420193930-a4630ec28c79
 	github.com/gopherjs/websocket v0.0.0-20191103002815-9a42957e2b3a
-	github.com/gorilla/websocket v1.4.3-0.20200912193213-c3dd95aea977
+	github.com/gorilla/websocket v1.4.3-0.20210424162022-e8629af678b7
 	github.com/hashicorp/yamux v0.0.0-20210316155119-a95892c5f864
 	github.com/klauspost/compress v1.11.0
 	github.com/libp2p/go-libp2p-core v0.8.5
@@ -50,9 +50,9 @@ require (
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
 	github.com/templexxx/xor v0.0.0-20191217153810-f85b25db303b
 	github.com/tjfoc/gmsm v1.0.1
-	github.com/urfave/cli v1.22.4
+	github.com/urfave/cli v1.22.5
 	github.com/xtaci/smux v1.5.15
-	golang.org/x/crypto v0.0.0-20210415154028-4f45737414dc
+	golang.org/x/crypto v0.0.0-20210421170649-83a5a9bb288b
 	google.golang.org/grpc v1.30.0
 	gortc.io/stun v1.23.0
 )
