@@ -1,13 +1,13 @@
 package stream_listening
 
 import (
-	"errors"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/protocol"
 	"github.com/aperturerobotics/bifrost/util/confparse"
 	"github.com/aperturerobotics/controllerbus/config"
 	"github.com/golang/protobuf/proto"
 	ma "github.com/multiformats/go-multiaddr"
+	"github.com/pkg/errors"
 )
 
 // ConfigID is the string used to identify this config object.
@@ -18,14 +18,14 @@ const ConfigID = ControllerID
 func (c *Config) Validate() error {
 	if c.GetLocalPeerId() != "" {
 		if _, err := c.ParseLocalPeerID(); err != nil {
-			return err
+			return errors.Wrap(err, "local")
 		}
 	}
 	if c.GetRemotePeerId() == "" {
-		return errors.New("remote peer id cannot be empty")
+		return errors.Wrap(peer.ErrPeerIDEmpty, "remote")
 	}
 	if _, err := c.ParseRemotePeerID(); err != nil {
-		return err
+		return errors.Wrap(err, "remote")
 	}
 	if c.GetListenMultiaddr() == "" {
 		return errors.New("listen multiaddr cannot be empty")

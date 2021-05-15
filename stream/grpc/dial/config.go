@@ -1,7 +1,6 @@
 package stream_grpc_dial
 
 import (
-	"errors"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/protocol"
 	"github.com/aperturerobotics/bifrost/util/confparse"
@@ -11,7 +10,7 @@ import (
 // This is a cursory validation to see if the values "look correct."
 func (c *Config) Validate() error {
 	if c.GetPeerId() == "" {
-		return errors.New("peer id cannot be empty")
+		return peer.ErrPeerIDEmpty
 	}
 
 	if _, err := c.ParseLocalPeerID(); err != nil {

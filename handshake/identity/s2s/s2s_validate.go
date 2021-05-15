@@ -1,6 +1,7 @@
 package s2s
 
 import (
+	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/nacl/box"
 )
@@ -8,7 +9,7 @@ import (
 // Validate validates the message.
 func (m *Packet_Init) Validate() error {
 	if len(m.GetSenderPeerId()) == 0 {
-		return errors.New("peer id empty")
+		return errors.Wrap(peer.ErrPeerIDEmpty, "sender")
 	}
 
 	if len(m.GetSenderEphPub()) != 32 {
