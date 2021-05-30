@@ -283,6 +283,8 @@ func (c *Controller) HandleLinkEstablished(lnk link.Link) {
 // the protocol for the stream, acquires a handler for the protocol, and hands
 // the stream to the protocol handler, then returns. Uses the ctx for
 // cancellation.
+//
+// rctx is the link Context, which is canceled when the link is closed.
 func (c *Controller) HandleIncomingStream(
 	rctx context.Context,
 	lnk link.Link,
