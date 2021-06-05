@@ -7,7 +7,10 @@ import (
 
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/transport"
+	dialer "github.com/aperturerobotics/bifrost/transport/common/dialer"
 	"github.com/aperturerobotics/bifrost/transport/common/pconn"
+	"github.com/aperturerobotics/bifrost/transport/controller"
+	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/blang/semver"
 	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/sirupsen/logrus"
@@ -79,6 +82,37 @@ func NewInproc(
 	}
 	ip.packetConn = npc
 	return ip, nil
+}
+
+// BuildInprocController constructs the in-proc transport controller.
+func BuildInprocController(
+	le *logrus.Entry,
+	b bus.Bus,
+	peerIDConstraint peer.ID,
+	conf *Config,
+) *transport_controller.Controller {
+	return transport_controller.NewController(
+		le,
+		b,
+		peerIDConstraint,
+		func(
+			ctx context.Context,
+			le *logrus.Entry,
+			pkey crypto.PrivKey,
+			handler transport.TransportHandler,
+		) (transport.Transport, error) {
+			return NewInproc(
+				ctx,
+				le,
+				conf,
+				pkey,
+				handler,
+			)
+		},
+		ControllerID,
+		Version,
+		map[string]*dialer.DialerOpts{},
+	)
 }
 
 // ConnectToInproc connects the inproc to a remote inproc.
