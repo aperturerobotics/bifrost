@@ -1,6 +1,6 @@
 module github.com/aperturerobotics/bifrost
 
-go 1.13
+go 1.15
 
 // aperture: use protobuf 1.3.x based fork for compatibility
 replace (
@@ -18,7 +18,7 @@ replace (
 )
 
 require (
-	github.com/aperturerobotics/controllerbus v0.8.1-0.20210503093825-eb22ea57dce4
+	github.com/aperturerobotics/controllerbus v0.8.2-0.20210604070940-5696853dc7ad
 	github.com/aperturerobotics/entitygraph v0.1.3
 	github.com/aperturerobotics/timestamp v0.2.3
 	github.com/blang/semver v3.5.1+incompatible
@@ -27,11 +27,11 @@ require (
 	github.com/frankban/quicktest v1.10.2 // indirect
 	github.com/golang/protobuf v1.4.2
 	github.com/golang/snappy v0.0.3
-	github.com/gopherjs/gopherjs v0.0.0-20210503212227-fb464eba2686
+	github.com/gopherjs/gopherjs v0.0.0-20210603182125-eeedf4a0e899
 	github.com/gopherjs/websocket v0.0.0-20191103002815-9a42957e2b3a
 	github.com/gorilla/websocket v1.4.3-0.20210424162022-e8629af678b7
 	github.com/hashicorp/yamux v0.0.0-20210316155119-a95892c5f864
-	github.com/klauspost/compress v1.12.3-0.20210511091518-2748482b33e2
+	github.com/klauspost/compress v1.13.1-0.20210605133555-1d8faa84ceeb
 	github.com/libp2p/go-libp2p-core v0.8.5
 	github.com/libp2p/go-libp2p-tls v0.1.3
 	github.com/lucas-clemente/quic-go v0.20.1
