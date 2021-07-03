@@ -6,7 +6,6 @@ go 1.16
 replace (
 	github.com/golang/protobuf => github.com/aperturerobotics/go-protobuf-1.3.x v0.0.0-20200726220404-fa7f51c52df0 // aperture-1.3.x
 	github.com/lucas-clemente/quic-go => github.com/aperturerobotics/quic-go v0.7.1-0.20210518124640-25c39ec20d1d // aperture-protobuf-1.3.x
-	github.com/multiformats/go-multihash => github.com/paralin/go-multihash v0.0.11-0.20200526102400-a989a5c6678b // gopherjs-compat
 	google.golang.org/genproto => google.golang.org/genproto v0.0.0-20190819201941-24fa4b261c55
 	google.golang.org/grpc => google.golang.org/grpc v1.30.0
 )
@@ -18,11 +17,11 @@ replace (
 )
 
 require (
-	github.com/aperturerobotics/controllerbus v0.8.2-0.20210604070940-5696853dc7ad
-	github.com/aperturerobotics/entitygraph v0.1.3
-	github.com/aperturerobotics/timestamp v0.2.3
+	github.com/aperturerobotics/controllerbus v0.8.2
+	github.com/aperturerobotics/entitygraph v0.1.4-0.20210530040557-f19da9c2be6d
+	github.com/aperturerobotics/timestamp v0.2.4-0.20210530040952-1422410fbd4a
 	github.com/blang/semver v3.5.1+incompatible
-	github.com/cenkalti/backoff v2.2.1+incompatible
+	github.com/cenkalti/backoff v1.1.1-0.20190506075156-2146c9339422
 	github.com/djherbis/buffer v1.1.0
 	github.com/frankban/quicktest v1.10.2 // indirect
 	github.com/golang/protobuf v1.4.2
@@ -38,9 +37,9 @@ require (
 	github.com/mr-tron/base58 v1.2.0
 	github.com/multiformats/go-multiaddr v0.3.1
 	github.com/multiformats/go-multiaddr-net v0.2.0
-	github.com/nats-io/nats-server/v2 v2.1.9
-	github.com/nats-io/nats.go v1.10.0
-	github.com/nats-io/nkeys v0.2.0
+	github.com/nats-io/nats-server/v2 v2.3.1
+	github.com/nats-io/nats.go v1.11.0
+	github.com/nats-io/nkeys v0.3.0
 	github.com/paralin/kcp-go-lite v1.0.2-0.20190927004254-2be397fe467b
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pauleyj/gobee v0.0.0-20190212035730-6270c53072a4
@@ -53,6 +52,6 @@ require (
 	github.com/urfave/cli v1.22.5
 	github.com/xtaci/smux v1.5.15
 	golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e
-	google.golang.org/grpc v1.31.0
+	google.golang.org/grpc v1.39.0
 	gortc.io/stun v1.23.0
 )
