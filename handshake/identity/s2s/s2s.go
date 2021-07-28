@@ -193,7 +193,7 @@ func (h *Handshaker) Execute(ctx context.Context) (*identity.Result, error) {
 		// Check sending the public key
 		cipher.ReceiverKeyKnown = true
 		if sendPubKey {
-			b, err := h.privKey.GetPublic().Bytes()
+			b, err := crypto.MarshalPublicKey(h.privKey.GetPublic())
 			if err != nil {
 				return nil, errors.Wrap(err, "marshal local public key")
 			}
@@ -251,7 +251,7 @@ func (h *Handshaker) Execute(ctx context.Context) (*identity.Result, error) {
 		// Check the peer id
 		sendPubKey := !bytes.Equal(initMsg.GetReceiverPeerId(), []byte(h.localPeerID))
 		if sendPubKey {
-			b, err := h.privKey.GetPublic().Bytes()
+			b, err := crypto.MarshalPublicKey(h.privKey.GetPublic())
 			if err != nil {
 				return nil, errors.Wrap(err, "marshal local public key")
 			}
