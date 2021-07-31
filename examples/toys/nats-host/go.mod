@@ -20,7 +20,7 @@ replace (
 
 require (
 	github.com/aperturerobotics/bifrost v0.0.0-20210518124802-ee5cb0d80eb3
-	github.com/aperturerobotics/controllerbus v0.8.1-0.20210530041705-07db80f9adfe
+	github.com/aperturerobotics/controllerbus v0.8.2
 	github.com/aperturerobotics/network-sim v0.0.0-20210518125026-4fc2522f78e6
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/sirupsen/logrus v1.8.1

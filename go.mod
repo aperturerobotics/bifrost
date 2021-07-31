@@ -5,7 +5,8 @@ go 1.16
 // aperture: use protobuf 1.3.x based fork for compatibility
 replace (
 	github.com/golang/protobuf => github.com/aperturerobotics/go-protobuf-1.3.x v0.0.0-20200726220404-fa7f51c52df0 // aperture-1.3.x
-	github.com/lucas-clemente/quic-go => github.com/aperturerobotics/quic-go v0.7.1-0.20210518124640-25c39ec20d1d // aperture-protobuf-1.3.x
+	github.com/lucas-clemente/quic-go => github.com/aperturerobotics/quic-go v0.22.1-0.20210728081144-c7bd4637cac2 // aperture-protobuf-1.3.x
+	github.com/sirupsen/logrus => github.com/paralin/logrus v1.0.6-0.20201109071409-0c5b7319eff6 // gopherjs-compat
 	google.golang.org/genproto => google.golang.org/genproto v0.0.0-20190819201941-24fa4b261c55
 	google.golang.org/grpc => google.golang.org/grpc v1.30.0
 )
@@ -24,7 +25,7 @@ require (
 	github.com/cenkalti/backoff v1.1.1-0.20190506075156-2146c9339422
 	github.com/djherbis/buffer v1.1.0
 	github.com/frankban/quicktest v1.10.2 // indirect
-	github.com/golang/protobuf v1.4.2
+	github.com/golang/protobuf v1.5.2
 	github.com/golang/snappy v0.0.3
 	github.com/gopherjs/gopherjs v0.0.0-20210722203344-69c5ea87048d
 	github.com/gopherjs/websocket v0.0.0-20191103002815-9a42957e2b3a
@@ -34,10 +35,8 @@ require (
 	github.com/libp2p/go-libp2p-core v0.9.0
 	github.com/libp2p/go-libp2p-tls v0.1.3
 	github.com/lucas-clemente/quic-go v0.22.0
-	github.com/minio/sha256-simd v0.1.1
 	github.com/mr-tron/base58 v1.2.0
 	github.com/multiformats/go-multiaddr v0.3.0
-	github.com/multiformats/go-multiaddr-net v0.2.0
 	github.com/nats-io/nats-server/v2 v2.3.1
 	github.com/nats-io/nats.go v1.11.0
 	github.com/nats-io/nkeys v0.3.0

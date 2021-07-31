@@ -7,7 +7,7 @@ import (
 	"github.com/aperturerobotics/bifrost/stream/proxy"
 	"github.com/aperturerobotics/controllerbus/bus"
 	ma "github.com/multiformats/go-multiaddr"
-	manet "github.com/multiformats/go-multiaddr-net"
+	manet "github.com/multiformats/go-multiaddr/net"
 	"github.com/sirupsen/logrus"
 )
 
