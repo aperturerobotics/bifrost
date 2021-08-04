@@ -18,7 +18,7 @@ replace (
 )
 
 require (
-	github.com/aperturerobotics/controllerbus v0.8.2
+	github.com/aperturerobotics/controllerbus v0.8.4-0.20210729091933-eb89d362c5c2
 	github.com/aperturerobotics/entitygraph v0.1.4-0.20210530040557-f19da9c2be6d
 	github.com/aperturerobotics/timestamp v0.2.4-0.20210530040952-1422410fbd4a
 	github.com/blang/semver v3.5.1+incompatible
@@ -27,11 +27,11 @@ require (
 	github.com/frankban/quicktest v1.10.2 // indirect
 	github.com/golang/protobuf v1.5.2
 	github.com/golang/snappy v0.0.3
-	github.com/gopherjs/gopherjs v0.0.0-20210722203344-69c5ea87048d
+	github.com/gopherjs/gopherjs v0.0.0-20210803090616-8f023c250c89
 	github.com/gopherjs/websocket v0.0.0-20191103002815-9a42957e2b3a
-	github.com/gorilla/websocket v1.4.3-0.20210424162022-e8629af678b7
-	github.com/hashicorp/yamux v0.0.0-20210316155119-a95892c5f864
-	github.com/klauspost/compress v1.13.2-0.20210622115932-09f13c9b23f1
+	github.com/gorilla/websocket v1.4.2
+	github.com/hashicorp/yamux v0.0.0-20210707203944-259a57b3608c
+	github.com/klauspost/compress v1.13.4-0.20210803092036-c208c1579aaa
 	github.com/libp2p/go-libp2p-core v0.9.0
 	github.com/libp2p/go-libp2p-tls v0.1.3
 	github.com/lucas-clemente/quic-go v0.22.0

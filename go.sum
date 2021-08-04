@@ -23,6 +23,8 @@ github.com/aperturerobotics/bifrost-nats-server/v2 v2.1.8-0.20200831101324-59acc
 github.com/aperturerobotics/controllerbus v0.8.1-0.20210530040219-cdd42a4372ef/go.mod h1:npQ3IhxFB8t0XNsYs3xkE/FslYltoQUXPKrJVc5ywio=
 github.com/aperturerobotics/controllerbus v0.8.2 h1:7lSht68pjkQVUkzgHJEERsJ+skODvru5kTNIM2cvW/4=
 github.com/aperturerobotics/controllerbus v0.8.2/go.mod h1:npQ3IhxFB8t0XNsYs3xkE/FslYltoQUXPKrJVc5ywio=
+github.com/aperturerobotics/controllerbus v0.8.4-0.20210729091933-eb89d362c5c2 h1:P5eZOnutFd/yArrLSbm03cZVZ57erfzWhtWdOmcjFtg=
+github.com/aperturerobotics/controllerbus v0.8.4-0.20210729091933-eb89d362c5c2/go.mod h1:2ZfnmjRXCR25kEZOjaTgGOEiE+Qmd3PuIrwvuGUBoMI=
 github.com/aperturerobotics/entitygraph v0.1.4-0.20210530040557-f19da9c2be6d h1:vHKhqXuidPouSpXQI2//iUhIJvbzx/92poJRNjMsNWA=
 github.com/aperturerobotics/entitygraph v0.1.4-0.20210530040557-f19da9c2be6d/go.mod h1:i4f9QEOAmkzfF1ndNlD1Lbxkk1zB+MdLglHXa6BiYMg=
 github.com/aperturerobotics/go-protobuf-1.3.x v0.0.0-20200726220404-fa7f51c52df0 h1:Y5JLnZkOxbRqnr7V1KKscUklYAuYx1dqIYdgUctpt5M=
@@ -122,8 +124,11 @@ github.com/googleapis/gax-go/v2 v2.0.5/go.mod h1:DWXyrwAJ9X0FpwwEdw+IPEYBICEFu5m
 github.com/gopherjs/gopherjs v0.0.0-20181017120253-0766667cb4d1/go.mod h1:wJfORRmW1u3UXTncJ5qlYoELFm8eSnnEO6hX4iZ3EWY=
 github.com/gopherjs/gopherjs v0.0.0-20210722203344-69c5ea87048d h1:LSs05f5e9Fxnmjku4RZg+7kQlMM8hiNKv6lCDF1eers=
 github.com/gopherjs/gopherjs v0.0.0-20210722203344-69c5ea87048d/go.mod h1:MtKwTfDNYAP5EtbQSMYjTSqvj1aXJKQRASWq3bwaP+g=
+github.com/gopherjs/gopherjs v0.0.0-20210803090616-8f023c250c89 h1:cuZTXJQ2J5mpT2gioa6NRVnuNsbisCGG5tRBG0tZpI4=
+github.com/gopherjs/gopherjs v0.0.0-20210803090616-8f023c250c89/go.mod h1:0RnbP5ioI0nqRf3R9iK3iQaUJgsn0htlZEHCMn8FSfw=
 github.com/gopherjs/websocket v0.0.0-20191103002815-9a42957e2b3a h1:AG0ZwOFfTjzk5n1PXhWttuw3i7i0TeqypKSqCXhMlyM=
 github.com/gopherjs/websocket v0.0.0-20191103002815-9a42957e2b3a/go.mod h1:jd+zY81Fx2lC4bfw58+Rflg1srqmedQjbBUejKOjYNY=
+github.com/gorilla/websocket v1.4.2 h1:+/TMaTYc4QFitKJxsQ7Yye35DkWvkdLcvGKqM+x0Ufc=
 github.com/gorilla/websocket v1.4.2/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
 github.com/gorilla/websocket v1.4.3-0.20210424162022-e8629af678b7 h1:L89uC9ATI61/V2eNgZYtQHyjjyjEplemB+aky4HdyzQ=
 github.com/gorilla/websocket v1.4.3-0.20210424162022-e8629af678b7/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
@@ -154,6 +159,8 @@ github.com/hashicorp/memberlist v0.1.3/go.mod h1:ajVTdAv/9Im8oMAAj5G31PhhMCZJV2p
 github.com/hashicorp/serf v0.8.2/go.mod h1:6hOLApaqBFA1NXqRQAsxw9QxuDEvNxSQRwA/JwenrHc=
 github.com/hashicorp/yamux v0.0.0-20210316155119-a95892c5f864 h1:Y4V+SFe7d3iH+9pJCoeWIOS5/xBJIFsltS7E+KJSsJY=
 github.com/hashicorp/yamux v0.0.0-20210316155119-a95892c5f864/go.mod h1:CtWFDAQgb7dxtzFs4tWbplKIe2jSi3+5vKbgIO0SLnQ=
+github.com/hashicorp/yamux v0.0.0-20210707203944-259a57b3608c h1:nqkErwUGfpZZMqj29WZ9U/wz2OpJVDuiokLhE/3Y7IQ=
+github.com/hashicorp/yamux v0.0.0-20210707203944-259a57b3608c/go.mod h1:CtWFDAQgb7dxtzFs4tWbplKIe2jSi3+5vKbgIO0SLnQ=
 github.com/hpcloud/tail v1.0.0/go.mod h1:ab1qPbhIpdTxEkNHXyeSf5vhxWSCs/tWer42PpOxQnU=
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
 github.com/ipfs/go-cid v0.0.1/go.mod h1:GHWU/WuQdMPmIosc4Yn1bcCT7dSeX4lBafM7iqUPQvM=
@@ -176,6 +183,8 @@ github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+o
 github.com/kkdai/bstream v0.0.0-20161212061736-f391b8402d23/go.mod h1:J+Gs4SYgM6CZQHDETBtE9HaSEkGmuNXF86RwHhHUvq4=
 github.com/klauspost/compress v1.13.2-0.20210622115932-09f13c9b23f1 h1:lu+lTnA1TVgNVfean3EAL8WlP8KOAx7gNhhNqldC/2I=
 github.com/klauspost/compress v1.13.2-0.20210622115932-09f13c9b23f1/go.mod h1:8dP1Hq4DHOhN9w426knH3Rhby4rFm6D8eO+e+Dq5Gzg=
+github.com/klauspost/compress v1.13.4-0.20210803092036-c208c1579aaa h1:5euWPOK+ry7Vs7L4czbHPqySyUql/ffzF0kbrWg6Cs8=
+github.com/klauspost/compress v1.13.4-0.20210803092036-c208c1579aaa/go.mod h1:8dP1Hq4DHOhN9w426knH3Rhby4rFm6D8eO+e+Dq5Gzg=
 github.com/klauspost/cpuid v1.2.1 h1:vJi+O/nMdFt0vqm8NZBI6wzALWdA2X+egi0ogNyrC/w=
 github.com/klauspost/cpuid v1.2.1/go.mod h1:Pj4uuM528wm8OyEC2QMXAi2YiTZ96dNQPGgoMS4s3ek=
 github.com/klauspost/reedsolomon v1.9.2 h1:E9CMS2Pqbv+C7tsrYad4YC9MfhnMVWhMRsTi7U0UB18=
