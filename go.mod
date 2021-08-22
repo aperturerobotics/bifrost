@@ -27,14 +27,14 @@ require (
 	github.com/frankban/quicktest v1.10.2 // indirect
 	github.com/golang/protobuf v1.5.2
 	github.com/golang/snappy v0.0.3
-	github.com/gopherjs/gopherjs v0.0.0-20210803090616-8f023c250c89
+	github.com/gopherjs/gopherjs v0.0.0-20210821201017-0d7b41766e00
 	github.com/gopherjs/websocket v0.0.0-20191103002815-9a42957e2b3a
 	github.com/gorilla/websocket v1.4.2
 	github.com/hashicorp/yamux v0.0.0-20210707203944-259a57b3608c
-	github.com/klauspost/compress v1.13.4-0.20210803092036-c208c1579aaa
+	github.com/klauspost/compress v1.13.5-0.20210819102241-290f4cfacb3e
 	github.com/libp2p/go-libp2p-core v0.9.0
-	github.com/libp2p/go-libp2p-tls v0.1.3
-	github.com/lucas-clemente/quic-go v0.22.0
+	github.com/libp2p/go-libp2p-tls v0.2.0
+	github.com/lucas-clemente/quic-go v0.23.0
 	github.com/mr-tron/base58 v1.2.0
 	github.com/multiformats/go-multiaddr v0.3.0
 	github.com/nats-io/nats-server/v2 v2.3.1
@@ -51,7 +51,7 @@ require (
 	github.com/tjfoc/gmsm v1.4.0
 	github.com/urfave/cli v1.22.5
 	github.com/xtaci/smux v1.5.15
-	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97
+	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
 	google.golang.org/grpc v1.39.0
 	gortc.io/stun v1.23.0
 )
