@@ -51,13 +51,16 @@ func newDialer(
 func (d *dialer) execute() (*Link, error) {
 	ctx := d.ctx
 	defer d.ctxCancel()
-	tlsConf, keyCh := d.t.identity.ConfigForPeer(d.peerID)
-	quicConfig := buildQuicConfig(d.t.le, &d.t.opts)
+
 	d.t.le.Debugf("quic dialing peer address: %s", d.address)
+	tlsConf, keyCh := d.t.identity.ConfigForPeer(d.peerID)
+	tlsConf.NextProtos = []string{alpn}
+	quicConfig := buildQuicConfig(d.t.le, &d.t.opts)
 	sess, err := quic.DialContext(ctx, d.t.pc, d.addr, d.address, tlsConf, quicConfig)
 	if err != nil {
 		return nil, err
 	}
+
 	var remotePubKey crypto.PubKey
 	select {
 	case remotePubKey = <-keyCh:

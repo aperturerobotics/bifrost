@@ -16,6 +16,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// alpn is set to ensure quic does not talk to non-bifrost peers
+const alpn = "bifrost"
+
 // Transport implements a bifrost transport with a Quic-based packet conn.
 // Transport UUIDs are deterministic and based on the LocalAddr() of the pconn.
 type Transport struct {
@@ -234,12 +237,14 @@ func (t *Transport) DialPeer(ctx context.Context, peerID peer.ID, as string) (bo
 func (t *Transport) Execute(ctx context.Context) error {
 	// Listen
 	var tlsConf tls.Config
+	tlsConf.NextProtos = []string{alpn}
 	tlsConf.GetConfigForClient = func(_ *tls.ClientHelloInfo) (*tls.Config, error) {
 		// return a tls.Config that verifies the peer's certificate chain.
 		// Note that since we have no way of associating an incoming QUIC connection with
 		// the peer ID calculated here, we don't actually receive the peer's public key
 		// from the key chan.
 		conf, _ := t.identity.ConfigForAny()
+		conf.NextProtos = []string{alpn}
 		return conf, nil
 	}
 	quicConfig := buildQuicConfig(t.le, &t.opts)

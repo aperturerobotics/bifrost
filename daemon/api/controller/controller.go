@@ -1,5 +1,3 @@
-//+build !js
-
 package bifrost_api_controller
 
 import (
