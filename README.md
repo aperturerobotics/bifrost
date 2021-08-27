@@ -83,7 +83,15 @@ Bifrost can be used as either a Go library or a command-line / daemon.
 GO111MODULE=on go install -v github.com/aperturerobotics/bifrost/cmd/bifrost
 ```
 
-Most Bifrost functionality is optionally exposed on the client CLI and GRPC API:
+Access help by adding the "-h" tag or running "bifrost help."
+
+As a basic example, launch the daemon:
+
+```
+bifrost daemon --write-config --hold-open-links --pubsub floodsub --api-listen :5110 --udp-listen :5112
+```
+
+Most Bifrost functionality is exposed on the client CLI and GRPC API:
 
  - Mount a peer by loading a private key into the daemon.
  - Forward incoming streams with a protocol ID to a multiaddress
@@ -111,9 +119,6 @@ With the above operations, all stream handling and interaction with the network
 is exposed to the API and command line. Some examples:
 
 ```
-  # Run the daemon
-  bifrost daemon --write-config --hold-open-links --pubsub floodsub --udp-listen :5112
-  
   # Note: you can edit bifrost_daemon.yaml to change settings.
   # Once the daemon configuration exists, you can now just run:
   bifrost daemon
