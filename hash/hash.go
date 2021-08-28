@@ -22,6 +22,24 @@ var SupportedHashTypes = []HashType{
 	HashType_HashType_SHA1,
 }
 
+// Clone clones the hash object.
+func (h *Hash) Clone() *Hash {
+	if h == nil {
+		return nil
+	}
+
+	var data []byte
+	if hd := h.GetHash(); len(hd) != 0 {
+		data = make([]byte, len(hd))
+		copy(data, hd)
+	}
+
+	return &Hash{
+		HashType: h.GetHashType(),
+		Hash:     data,
+	}
+}
+
 // Validate validates the hash type.
 func (h HashType) Validate() error {
 	switch h {
