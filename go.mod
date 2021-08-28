@@ -18,7 +18,7 @@ replace (
 )
 
 require (
-	github.com/aperturerobotics/controllerbus v0.8.4-0.20210729091933-eb89d362c5c2
+	github.com/aperturerobotics/controllerbus v0.8.4
 	github.com/aperturerobotics/entitygraph v0.1.4-0.20210530040557-f19da9c2be6d
 	github.com/aperturerobotics/timestamp v0.2.4-0.20210530040952-1422410fbd4a
 	github.com/blang/semver v3.5.1+incompatible
