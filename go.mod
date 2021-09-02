@@ -18,20 +18,20 @@ replace (
 )
 
 require (
-	github.com/aperturerobotics/controllerbus v0.8.4
+	github.com/aperturerobotics/controllerbus v0.8.6-0.20210902104809-9f0fc115965e
 	github.com/aperturerobotics/entitygraph v0.1.4-0.20210530040557-f19da9c2be6d
 	github.com/aperturerobotics/timestamp v0.2.4-0.20210530040952-1422410fbd4a
 	github.com/blang/semver v3.5.1+incompatible
-	github.com/cenkalti/backoff v1.1.1-0.20190506075156-2146c9339422
+	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/djherbis/buffer v1.1.0
 	github.com/frankban/quicktest v1.10.2 // indirect
 	github.com/golang/protobuf v1.5.2
 	github.com/golang/snappy v0.0.3
-	github.com/gopherjs/gopherjs v0.0.0-20210821201017-0d7b41766e00
+	github.com/gopherjs/gopherjs v0.0.0-20210901121439-eee08aaf2717
 	github.com/gopherjs/websocket v0.0.0-20191103002815-9a42957e2b3a
 	github.com/gorilla/websocket v1.4.2
-	github.com/hashicorp/yamux v0.0.0-20210707203944-259a57b3608c
-	github.com/klauspost/compress v1.13.5-0.20210819102241-290f4cfacb3e
+	github.com/hashicorp/yamux v0.0.0-20210826001029-26ff87cf9493
+	github.com/klauspost/compress v1.13.6-0.20210902084336-00a2d6db8ee0
 	github.com/libp2p/go-libp2p-core v0.9.0
 	github.com/libp2p/go-libp2p-tls v0.2.0
 	github.com/lucas-clemente/quic-go v0.23.0
