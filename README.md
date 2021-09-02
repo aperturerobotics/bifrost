@@ -1,20 +1,33 @@
-# Bifrost
-
-> Peer-to-peer communications framework with pluggable network transports.
+![Bifrost](./doc/img/bifrost-logo.png)
 
 ## Introduction
 
-Bifrost is a set of components for robust communication between peers. It has:
+**Bifrost** is a peer-to-peer communications engine with pluggable transports:
 
  - **Cross-platform**: supports web browsers, servers, desktop, mobile, ...
+ - **Efficient**: multiplex many simultaneous streams over a single Link.
  - **Encryption**: identify, authenticate, and encrypt each Link between peers.
- - **Pluggable Transports**: use multiple modes of communication simultaneously.
- - **Mesh Routing**: multi-hop routing to a desired target peer.
+ - **Flexible**: use multiple transports, protocols, simultaneously.
+ - **Meshing**: supports multi-hop routing to a desired target peer w/ circuits.
  - **PubSub**: publish/subscribe channels with pluggable implementations.
+ - **Robust**: uses Quic for reliable connections over lossy transports.
 
-Bifrost provides [controllerbus] controllers and directives to manage links
+Bifrost provides [ControllerBus] controllers and directives to manage links
 between peers, transports, routing, and other higher-level processes. It has
 extensive and flexible configuration. Connections are created on-demand.
+
+[ControllerBus]: https://github.com/aperturerobotics/controllerbus
+
+## Overview
+
+Bifrost is designed around the following core concepts:
+
+ - Peer: a routable process or device with an identity.
+ - Transport: protocol or hardware for communication Link between two Peer.
+ - Link: a connection between two peers over a Transport.
+ - Stream: channel of packets between two Peer with a configured protocol type.
+ - PubSub: at-least-once delivery of messages to named topics.
+ - Route: a multi-hop path through the network between two Peer.
 
 Wrappers are provided for interop with and support for other networking and
 pubsub libraries and systems like [libp2p] and [noise], [nats], and more. These
@@ -28,21 +41,6 @@ restart of the entire process. (see: ControllerBus plugins & hot reload).
 [libp2p]: https://libp2p.io/
 [noise]: https://github.com/perlin-network/noise
 [nats]: https://nats.io
-
-## Overview
-
-Bifrost is designed around the following core concepts:
-
- - Peer: a routable process or device with an identity.
- - Transport: protocol or hardware for communication Link between two Peer.
- - Link: a connection between two peers over a Transport.
- - Stream: channel of packets between two Peer with a configured protocol type.
- - PubSub: at-least-once delivery of messages to named topics.
- - Route: a multi-hop path through the network between two Peer.
-
-Bifrost is built on the ControllerBus framework, which defines the Config,
-Controller, Directive structures and behaviors. All components are implemented
-as controllers, and have associated factories.
 
 An EntityGraph controller is provided. EntityGraph exposes the internal state
 representation of Bifrost to visualizers and instrumentation via a graph-based
@@ -67,13 +65,10 @@ and handles the incoming stream. This decouples the communication from the app.
 ### PubSub
 
 A PubSub is a controller that supports topic-based at-least-once message
-delivery to a network of interested peers. Optimizations of interest are
-minimum-spanning-tree transmission path building algorithms, where wasted
-bandwidth is minimized. 
+delivery to a network of interested peers.
 
-Nats is supported as a communications protocol and controllers, and is
-protocol-compatible with existing Nats 2.0 clients. There is also a simpler
-"floodsub" implementation, and support for libp2p pubsub algorithms.
+Nats is also supported as PubSub protocol. There is also a simpler "floodsub"
+implementation, and support for libp2p pubsub algorithms.
 
 ## Examples
 
@@ -90,6 +85,27 @@ As a basic example, launch the daemon:
 ```
 bifrost daemon --write-config --hold-open-links --pubsub floodsub --api-listen :5110 --udp-listen :5112
 ```
+
+### YAML Configuration
+
+An example of a ConfigSet in YAML format for the daemon: `bifrost_daemon.yaml`:
+
+```yaml
+# Start a UDP listener on port 5112.
+my-udp:
+  config:
+    listenAddr: :5112
+  id: bifrost/udp/1
+  revision: 1
+
+# Use the floodsub driver for PubSub.
+pubsub:
+  config: {}
+  id: bifrost/floodsub/1
+  revision: 1
+```
+
+### Client CLI
 
 Most Bifrost functionality is exposed on the client CLI and GRPC API:
 
