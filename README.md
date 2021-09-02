@@ -22,12 +22,13 @@ extensive and flexible configuration. Connections are created on-demand.
 
 Bifrost is designed around the following core concepts:
 
- - Peer: a routable process or device with an identity.
- - Transport: protocol or hardware for communication Link between two Peer.
- - Link: a connection between two peers over a Transport.
- - Stream: channel of packets between two Peer with a configured protocol type.
- - PubSub: at-least-once delivery of messages to named topics.
- - Route: a multi-hop path through the network between two Peer.
+ - **Peer**: a routable process or device with a keypair.
+ - **Transport**: protocol or hardware for communication Link between two Peer.
+ - **Link**: a connection between two peers over a Transport.
+ - **Stream**: channel of data between two Peer with a protocol type.
+ - **PubSub**: at-least-once delivery of messages to named topics.
+ - **Route**: a multi-hop path through the network between two Peer.
+ - **Circuit**: a type of Link which implements a multi-hop connection.
 
 Wrappers are provided for interop with and support for other networking and
 pubsub libraries and systems like [libp2p] and [noise], [nats], and more. These
