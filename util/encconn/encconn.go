@@ -1,4 +1,4 @@
-package websocket
+package encconn
 
 import (
 	"bytes"
@@ -9,8 +9,10 @@ import (
 	"golang.org/x/crypto/nacl/box"
 )
 
-// encConn wraps net.Conn with box encryption
-type encConn struct {
+// EncConn wraps net.Conn with box encryption
+//
+// NOTE: currently not working (as of August 2021)
+type EncConn struct {
 	net.Conn
 	sharedSecret [32]byte
 
@@ -19,8 +21,9 @@ type encConn struct {
 	rxNonce, txNonce [24]byte
 }
 
-func newEncConn(c net.Conn, sharedSecret [32]byte) *encConn {
-	ec := &encConn{
+// NewEncConn wraps a net.Conn with a shared secret.
+func NewEncConn(c net.Conn, sharedSecret [32]byte) *EncConn {
+	ec := &EncConn{
 		Conn:         c,
 		sharedSecret: sharedSecret,
 	}
@@ -34,7 +37,7 @@ func newEncConn(c net.Conn, sharedSecret [32]byte) *encConn {
 // Read reads data from the connection.
 // Read can be made to time out and return an Error with Timeout() == true
 // after a fixed time limit; see SetDeadline and SetReadDeadline.
-func (c *encConn) Read(b []byte) (int, error) {
+func (c *EncConn) Read(b []byte) (int, error) {
 	if c.rxBuf.Len() != 0 {
 		return c.rxBuf.Read(b)
 	}
@@ -58,7 +61,7 @@ func (c *encConn) Read(b []byte) (int, error) {
 // Write writes data to the connection.
 // Write can be made to time out and return an Error with Timeout() == true
 // after a fixed time limit; see SetDeadline and SetWriteDeadline.
-func (c *encConn) Write(b []byte) (n int, err error) {
+func (c *EncConn) Write(b []byte) (n int, err error) {
 	c.incNonce(&c.txN, c.txNonce[:])
 	encBuf := box.SealAfterPrecomputation(nil, b, &c.txNonce, &c.sharedSecret)
 	if wn, err := c.Conn.Write(encBuf); err != nil {
@@ -69,14 +72,14 @@ func (c *encConn) Write(b []byte) (n int, err error) {
 }
 
 // initNonce generates the initial nonce
-func (c *encConn) initNonce(buf []byte, xorBy byte) {
+func (c *EncConn) initNonce(buf []byte, xorBy byte) {
 	for i := 0; i < len(buf)-4; i++ {
 		buf[i] = c.sharedSecret[i] ^ xorBy
 	}
 }
 
 // incNonce increments a nonce
-func (c *encConn) incNonce(counter *int, buf []byte) {
+func (c *EncConn) incNonce(counter *int, buf []byte) {
 	v := *counter
 	v++
 	*counter = v

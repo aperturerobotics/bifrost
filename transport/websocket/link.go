@@ -9,13 +9,15 @@ import (
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/stream"
+	"github.com/aperturerobotics/bifrost/util/encconn"
 	"github.com/aperturerobotics/bifrost/util/scrc"
 	"github.com/sirupsen/logrus"
 	"github.com/xtaci/smux"
 )
 
 // Link represents a WebSocket-based connection/link.
-// This version is for the browser side of the connection.
+//
+// NOTE: currently broken as of August 2021
 type Link struct {
 	// ctx is the context for this link
 	ctx context.Context
@@ -62,9 +64,8 @@ func NewLink(
 	nctx, nctxCancel := context.WithCancel(ctx)
 	pid, _ := peer.IDFromPublicKey(neg.Peer)
 
-	// Construct the encrypted channel
-	// TODO: add support for unencryoted streams
-	conn = newEncConn(conn, sharedSecret)
+	// TODO: allow unencrypted channels
+	conn = encconn.NewEncConn(conn, sharedSecret)
 
 	var sess *smux.Session
 	if initiator {
