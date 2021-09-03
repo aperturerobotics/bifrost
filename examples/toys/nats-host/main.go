@@ -24,6 +24,8 @@ import (
 	"github.com/aperturerobotics/network-sim/simulate"
 )
 
+var logTrace = false
+
 var addPeer = tests.AddPeer
 var initSimulator = tests.InitSimulator
 
@@ -88,7 +90,7 @@ func runNatsExample(c *cli.Context) error {
 		peer.AddConfig("pubsub", &nats_controller.Config{
 			PeerId: peer.GetPeerID().Pretty(),
 			NatsConfig: &nats.Config{
-				LogTrace: true,
+				LogTrace: logTrace,
 			},
 		})
 		peer.AddFactory(func(b bus.Bus) controller.Factory { return pubsub_relay.NewFactory(b) })
