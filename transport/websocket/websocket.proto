@@ -1,9 +1,15 @@
 syntax = "proto3";
 package websocket;
 
+import "github.com/aperturerobotics/bifrost/transport/common/quic/quic.proto";
 import "github.com/aperturerobotics/bifrost/transport/common/dialer/dialer.proto";
 
-// Config is the configuration for the websocket transport.
+// Config is the configuration for the Websocket transport.
+//
+// Bifrost speaks Quic over the websocket. While this is not always necessary,
+// especially when using wss transports, we still need to ensure end-to-end
+// encryption to the peer that we handshake with on the other end, and to manage
+// stream congestion control, multiplexing,
 message Config {
   // TransportPeerID sets the peer ID to attach the transport to.
   // If unset, attaches to any running peer with a private key.
@@ -11,14 +17,15 @@ message Config {
   // ListenAddr contains the address to listen on.
   // Has no effect in the browser.
   string listen_addr = 2;
-  // Dialers maps peer IDs to websocket addresses.
-  map<string, dialer.DialerOpts> dialers = 5;
-}
+  // QuicOpts are the quic protocol options.
+  // 
+  // The WebSocket transport always disables FEC and several other UDP-centric
+  // features which are unnecessary due to the "reliable" nature of WebSockets.
+  .transport.quic.Opts quic = 3;
+  // Dialers maps peer IDs to dialers.
+  map<string, .dialer.DialerOpts> dialers = 4;
 
-// HandshakeExtraData contains the extra data field of the pconn handshake.
-message HandshakeExtraData {
-  // LocalTransportUuid is the transport uuid of the sender.
-  // This is used for monitoring / analysis at a later time.
-  // Coorelates the transport connections between two machines.
-  uint64 local_transport_uuid = 1;
+  // RestrictPeerId restricts all incoming peer IDs to the given ID.
+  // Any other peers trying to connect will be disconneted at handshake time.
+  string restrict_peer_id = 5;
 }

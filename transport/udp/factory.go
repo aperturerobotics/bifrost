@@ -65,11 +65,13 @@ func (t *Factory) Construct(
 			handler transport.TransportHandler,
 		) (transport.Transport, error) {
 			return NewUDP(
+				ctx,
 				le,
-				cc.GetListenAddr(),
 				pkey,
 				handler,
 				cc.GetPacketOpts(),
+				0,
+				cc.GetListenAddr(),
 			)
 		},
 		TransportID,

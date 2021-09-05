@@ -40,17 +40,30 @@ func NewCoreBus(
 
 // AddFactories adds factories to an existing static resolver.
 func AddFactories(b bus.Bus, sr *static.Resolver) {
-	sr.AddFactory(wtpt.NewFactory(b))
-	sr.AddFactory(udptpt.NewFactory(b))
-	sr.AddFactory(iproctpt.NewFactory(b))
+	// node controller
 	sr.AddFactory(nctr.NewFactory())
-	sr.AddFactory(egc.NewFactory(b))
-	sr.AddFactory(bifrosteg.NewFactory(b))
-	sr.AddFactory(floodsub_controller.NewFactory(b))
-	sr.AddFactory(pubsub_relay.NewFactory(b))
+
+	// link management controllers
 	sr.AddFactory(link_holdopen_controller.NewFactory(b))
 	sr.AddFactory(link_establish_controller.NewFactory(b))
+
+	// stream controllers
 	sr.AddFactory(stream_forwarding.NewFactory(b))
 	sr.AddFactory(stream_echo.NewFactory(b))
 	sr.AddFactory(stream_listening.NewFactory(b))
+
+	// in-proc transport
+	sr.AddFactory(iproctpt.NewFactory(b))
+	// udp transport
+	sr.AddFactory(udptpt.NewFactory(b))
+	// websocket transport
+	sr.AddFactory(wtpt.NewFactory(b))
+
+	// pubsub
+	sr.AddFactory(pubsub_relay.NewFactory(b))
+	sr.AddFactory(floodsub_controller.NewFactory(b))
+
+	// entity graph
+	sr.AddFactory(egc.NewFactory(b))
+	sr.AddFactory(bifrosteg.NewFactory(b))
 }

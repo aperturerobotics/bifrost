@@ -13,7 +13,6 @@ message Config {
   // Has no effect in the browser.
   string listen_addr = 2;
   // PacketOpts are options to set on the packet connection.
-  // On lossy transports, set the data shards for FEC.
   pconn.Opts packet_opts = 4;
   // Dialers maps peer IDs to dialers.
   map<string, dialer.DialerOpts> dialers = 5;

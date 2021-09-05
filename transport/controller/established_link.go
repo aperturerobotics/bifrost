@@ -76,17 +76,20 @@ func (e *establishedLink) acceptStreamPump(ctx context.Context) {
 	defer e.Cancel()
 
 	for {
-		// e.le.Debug("waiting to accept stream")
 		strm, strmOpts, err := lnk.AcceptStream()
 		if err != nil {
 			if err != context.Canceled {
-				e.le.WithError(err).Warn("link accept stream errored")
+				select {
+				case <-ctx.Done():
+					// don't log if the context was canceled
+				default:
+					e.le.WithError(err).Warn("link accept stream errored")
+				}
 			}
 			return
 		}
 
 		if strm != nil {
-			// e.le.Debug("accepted incoming stream")
 			go ctrl.HandleIncomingStream(ctx, lnk, strm, strmOpts)
 		}
 	}

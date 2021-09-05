@@ -1,6 +1,7 @@
 package udp
 
 import (
+	"context"
 	"net"
 
 	"github.com/aperturerobotics/bifrost/transport"
@@ -23,12 +24,16 @@ var ExtendedSockBuf = 16777217
 type UDP = pconn.Transport
 
 // NewUDP builds a new UDP transport, listening on the addr.
+//
+// uuid can be empty to generate based on peer id and local addr
 func NewUDP(
+	ctx context.Context,
 	le *logrus.Entry,
-	listenAddr string,
 	pKey crypto.PrivKey,
 	c transport.TransportHandler,
 	pconnOpts *pconn.Opts,
+	uuid uint64,
+	listenAddr string,
 ) (*UDP, error) {
 	pc, err := net.ListenPacket("udp", listenAddr)
 	if err != nil {
@@ -43,15 +48,17 @@ func NewUDP(
 		}
 	}
 
-	return pconn.New(
+	return pconn.NewTransport(
+		ctx,
 		le,
-		pc,
 		pKey,
+		c,
+		pconnOpts,
+		uuid,
+		pc,
 		func(addr string) (net.Addr, error) {
 			return net.ResolveUDPAddr("udp", addr)
 		},
-		c,
-		pconnOpts,
 	)
 }
 

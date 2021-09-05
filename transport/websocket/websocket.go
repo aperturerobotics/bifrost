@@ -1,185 +1,193 @@
-//+build !js
-
 package websocket
 
 import (
 	"context"
+	"net"
 	"net/http"
-	"sync"
-	"time"
 
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/transport"
-	"github.com/aperturerobotics/bifrost/util/scrc"
+	transport_quic "github.com/aperturerobotics/bifrost/transport/common/quic"
+	"github.com/aperturerobotics/bifrost/util/saddr"
 	"github.com/blang/semver"
-	"github.com/gorilla/websocket"
+	"github.com/golang/protobuf/proto"
 	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/sirupsen/logrus"
+	websocket "nhooyr.io/websocket"
 )
 
-// Version is the version of the websocket implementation.
+// TransportID is the transport identifier
+const TransportID = "websocket"
+
+// Version is the version of the implementation.
 var Version = semver.MustParse("0.0.1")
 
-// handshakeTimeout is the time after which a handshake expires
-var handshakeTimeout = time.Second * 8
-
-// upgrader is the websocket upgrader
-var upgrader = &websocket.Upgrader{
-	// Allow any origin
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
-}
-
-// Transport is a Websocket based transport.
-// This implements the non-browser end.
-type Transport struct {
+// WebSocket implements a WebSocket transport.
+type WebSocket struct {
+	// Transport implements the quic-backed transport type
+	*transport_quic.Transport
+	// ctx is the context
 	ctx context.Context
-
 	// le is the logger
 	le *logrus.Entry
-	// uuid is the unique id
-	uuid uint64
-	// privKey is the local priv key
-	privKey crypto.PrivKey
-	// peerID is the local peer id
-	peerID peer.ID
-	// handler is the transport handler
-	handler transport.TransportHandler
-
-	// listenErrCh is the listen error channel
-	listenErrCh chan error
-
-	// handshakesMtx guards the handshakes map
-	handshakesMtx sync.Mutex
-	// handshakes is the set of ongoing handshakes
-	handshakes map[string]*inflightHandshake
-
-	// linksMtx guards the links map
-	linksMtx sync.Mutex
-	// links is the set of active links
-	links map[string]*Link
-
-	// server is the http server
-	server *http.Server
+	// conf is the websocket config
+	conf *Config
+	// restrictPeerID restricts incoming conns to the peer ID given
+	// usually empty
+	restrictPeerID peer.ID
 }
 
-// New builds a new packet-conn based transport, listening on the addr.
-func New(
-	le *logrus.Entry,
-	listenStr string,
-	pKey crypto.PrivKey,
-	handler transport.TransportHandler,
-) *Transport {
-	uuid := scrc.Crc64([]byte(listenStr))
-
-	peerID, _ := peer.IDFromPrivateKey(pKey)
-	t := &Transport{
-		le:      le,
-		privKey: pKey,
-		peerID:  peerID,
-		uuid:    uuid,
-		handler: handler,
-
-		handshakes: make(map[string]*inflightHandshake),
-		links:      make(map[string]*Link),
-
-		listenErrCh: make(chan error, 1),
-	}
-
-	if listenStr != "" {
-		mux := http.NewServeMux()
-		mux.Handle("/ws/bifrost-0.1", t)
-		t.server = &http.Server{Addr: listenStr, Handler: mux}
-	}
-
-	return t
-}
-
-// GetUUID returns a host-unique ID for this transport.
-func (u *Transport) GetUUID() uint64 {
-	return u.uuid
-}
-
-// DialPeer dials a peer given an address. The yielded link should be
-// emitted to the transport handler. DialPeer should return nil if the link
-// was established. DialPeer will then not be called again for the same peer
-// ID and address tuple until the yielded link is lost.
-func (u *Transport) DialPeer(
+// NewWebSocket builds a new WebSocket transport.
+//
+// ServeHTTP is implemented and can be used with a standard HTTP mux.
+// Optionally listens on an address.
+func NewWebSocket(
 	ctx context.Context,
-	peerID peer.ID,
-	url string,
-) (bool, error) {
-	u.handshakesMtx.Lock()
-	defer u.handshakesMtx.Unlock()
-
-	if _, ok := u.handshakes[url]; !ok {
-		u.le.WithField("addr", url).Debug("pushing new handshaker [dial]")
-		_, err := u.pushHandshaker(ctx, url, nil)
-		return false, err
-	}
-
-	return false, nil
-}
-
-// ServeHTTP serves the bifrost-0.1 protocol.
-func (u *Transport) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	le := u.le.WithField("remote-addr", req.RemoteAddr)
-	conn, err := upgrader.Upgrade(rw, req, nil)
+	le *logrus.Entry,
+	conf *Config,
+	pKey crypto.PrivKey,
+	c transport.TransportHandler,
+) (*WebSocket, error) {
+	restrictPeerID, err := conf.ParseRestrictPeerID()
 	if err != nil {
-		le.WithError(err).Warn("unable to upgrade ws conn")
-		return
+		return nil, err
 	}
 
-	_, err = u.pushHandshaker(req.Context(), req.RemoteAddr, conn)
+	peerID, err := peer.IDFromPrivateKey(pKey)
 	if err != nil {
-		rw.WriteHeader(500)
-		_, _ = rw.Write([]byte(err.Error()))
-		_ = conn.Close()
-		return
+		return nil, err
 	}
 
-	// TODO: do something smarter than holding the conn open
-	<-req.Context().Done()
-	le.Info("link serve http exiting")
-}
-
-// Execute processes the transport.
-// Fatal errors are returned.
-func (u *Transport) Execute(ctx context.Context) error {
-	u.ctx = ctx
-
-	if u.server != nil {
-		go func() {
-			u.listenErrCh <- u.server.ListenAndServe()
-		}()
-	}
-
-	// TODO: when returning, close all links
-	select {
-	case <-ctx.Done():
-		if u.server != nil {
-			return u.server.Shutdown(ctx)
+	var dialFn transport_quic.DialFunc
+	dialFn = func(dctx context.Context, addr string) (net.PacketConn, net.Addr, error) {
+		conn, _, err := websocket.Dial(dctx, addr, &websocket.DialOptions{
+			// Negotiate the bifrost quic sub-protocol ID.
+			Subprotocols: []string{transport_quic.Alpn},
+		})
+		if err != nil {
+			return nil, nil, err
 		}
-
-		return ctx.Err()
-	case rerr := <-u.listenErrCh:
-		return rerr
+		laddr := peer.NewNetAddr(peerID)
+		raddr := saddr.NewStringAddr("ws", addr)
+		pc := NewPacketConn(ctx, conn, laddr, raddr)
+		return pc, raddr, nil
 	}
+
+	quicOpts := conf.GetQuic()
+	if quicOpts == nil {
+		quicOpts = &transport_quic.Opts{}
+	} else {
+		quicOpts = proto.Clone(quicOpts).(*transport_quic.Opts)
+	}
+
+	// set websocket-specific quic opts
+	quicOpts.DisableDatagrams = true
+	quicOpts.DisableKeepAlive = false
+	quicOpts.DisablePathMtuDiscovery = true
+
+	// quicOpts.Verbose = true
+	// quicOpts.MaxIdleTimeoutDur = "30s"
+
+	tconn, err := transport_quic.NewTransport(
+		ctx,
+		le,
+		0,
+		nil,
+		pKey,
+		c,
+		quicOpts,
+		dialFn,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &WebSocket{
+		Transport:      tconn,
+		ctx:            ctx,
+		le:             le,
+		conf:           conf,
+		restrictPeerID: restrictPeerID,
+	}, nil
 }
 
-// GetPeerID returns the peer ID.
-func (u *Transport) GetPeerID() peer.ID {
-	return u.peerID
+// Execute executes the transport as configured, returning any fatal error.
+func (w *WebSocket) Execute(ctx context.Context) error {
+	// note: w.Transport.Execute is unnecessary (no-op for quic)
+	listenAddr := w.conf.GetListenAddr()
+	if listenAddr == "" {
+		return nil
+	}
+
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- w.ListenHTTP(ctx, listenAddr)
+	}()
+
+	select {
+	case <-w.ctx.Done():
+	case <-ctx.Done():
+	case err := <-errCh:
+		return err
+	}
+
+	return nil
 }
 
-// Close closes the connection.
-func (u *Transport) Close() error {
-	return u.server.Shutdown(u.ctx)
+// ListenHTTP listens for incoming HTTP connections on an address.
+func (w *WebSocket) ListenHTTP(ctx context.Context, addr string) error {
+	w.le.Debugf("listening for http/ws on address: %s", addr)
+	server := &http.Server{
+		BaseContext: func(net.Listener) context.Context {
+			return ctx
+		},
+		Addr:    addr,
+		Handler: w,
+	}
+	err := http.ListenAndServe(addr, w)
+	if serr := server.Shutdown(ctx); serr != nil && serr != context.Canceled {
+		w.le.WithError(serr).Warn("graceful shutdown failed")
+	}
+	_ = server.Close()
+	return err
+}
+
+// ServeHTTP serves the websocket upgraded HTTP endpoint.
+func (w *WebSocket) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+	c, err := websocket.Accept(rw, req, &websocket.AcceptOptions{
+		// Negotiate the bifrost quic sub-protocol ID.
+		Subprotocols: []string{transport_quic.Alpn},
+		// We are trusting the Quic handshake, not the Websocket handshake.
+		InsecureSkipVerify: true,
+		// We compress on the quic layer instead.
+		CompressionMode: websocket.CompressionDisabled,
+	})
+	if err != nil {
+		w.le.WithError(err).Debug("failed to handle http request")
+		return
+	}
+
+	raddr := saddr.NewStringAddr("ws", req.RemoteAddr)
+	pc := NewPacketConn(req.Context(), c, w.Transport.LocalAddr(), raddr)
+	lnk, err := w.Transport.HandleConn(w.ctx, false, pc, raddr, "")
+	if err != nil {
+		w.le.WithError(err).Warn("unable to handle websocket conn")
+		c.Close(websocket.StatusInternalError, "unable to handle connection")
+		return
+	}
+
+	// hold the HTTP request open until something closes.
+	select {
+	case <-w.ctx.Done():
+	case <-lnk.GetContext().Done():
+	case <-req.Context().Done():
+	}
+	_ = pc.Close()
+	_ = lnk.Close()
 }
 
 // _ is a type assertion.
-var _ transport.Transport = ((*Transport)(nil))
-
-// _ is a type assertion
-var _ transport.TransportDialer = ((*Transport)(nil))
+var (
+	_ transport.Transport       = ((*WebSocket)(nil))
+	_ transport.TransportDialer = ((*WebSocket)(nil))
+	_ http.Handler              = ((*WebSocket)(nil))
+)

@@ -20,9 +20,13 @@ func (c *Config) ParseNodePeerID() (peer.ID, error) {
 	return confparse.ParsePeerID(c.GetTransportPeerId())
 }
 
+// ParseRestrictPeerID parses the remote peer ID restriction if it is not empty.
+func (c *Config) ParseRestrictPeerID() (peer.ID, error) {
+	return confparse.ParsePeerID(c.GetRestrictPeerId())
+}
+
 // GetConfigID returns the unique string for this configuration type.
 // This string is stored with the encoded config.
-// Example: bifrost/transport/udp/1
 func (c *Config) GetConfigID() string {
 	return ConfigID
 }
@@ -53,3 +57,6 @@ func (c *Config) GetDebugVals() config.DebugValues {
 
 // _ is a type assertion
 var _ transport.Config = ((*Config)(nil))
+
+// _ is a type assertion
+var _ config.Debuggable = ((*Config)(nil))

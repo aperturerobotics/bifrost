@@ -24,7 +24,7 @@ func init() {
 
 func main() {
 	ctx := context.Background()
-	b, privKey, err := common.BuildCommonBus(ctx)
+	b, privKey, err := common.BuildCommonBus(ctx, "websocket-browser-link/server")
 	if err != nil {
 		panic(err)
 	}

@@ -69,13 +69,15 @@ func NewInproc(
 		localAddr,
 		ip.writeToAddr,
 	)
-	ip.Transport, err = pconn.New(
+	ip.Transport, err = pconn.NewTransport(
+		ctx,
 		le,
-		npc,
 		pKey,
-		parseAddr,
 		c,
 		opts.GetPacketOpts(),
+		0,
+		npc,
+		parseAddr,
 	)
 	if err != nil {
 		return nil, err

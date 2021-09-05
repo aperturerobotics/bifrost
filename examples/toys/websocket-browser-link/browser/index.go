@@ -36,7 +36,7 @@ func main() {
 	ctx := context.Background()
 
 	le := common.GetLogEntry()
-	b, peerPrivKey, err := common.BuildCommonBus(ctx)
+	b, peerPrivKey, err := common.BuildCommonBus(ctx, "websocket-browser-link/client")
 	if err != nil {
 		panic(err)
 	}
@@ -47,7 +47,8 @@ func main() {
 		WithField("base-url", wsBaseURL).
 		Debug("contacting websocket peer")
 
-	peerIDStr := "12D3KooWKDHwreWoMwZH2oeijxawWPNvQaAf3zXZfVQW2sbCW21n"
+	// NOTE: deterministic due to the use of a prng to generate the key
+	peerIDStr := "12D3KooWCupw8xy9uxGzjhRnCbab3sGr7X67zS4KX64k38dm7XpW"
 	_, wsRef, err := b.AddDirective(
 		resolver.NewLoadControllerWithConfig(&wtpt.Config{
 			Dialers: map[string]*dialer.DialerOpts{

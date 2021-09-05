@@ -1,7 +1,7 @@
 websocket:
   config:
     dialers:
-      12D3KooWC9dBAEoTHbEXq2aaTeFit7QVdvPcb6Yf76oGQZ6dGf8N:
+      12D3KooWSh7WVJvEYkQeQFLwXysqrbSx4qZWsG4xfzT1pvSQtLBp:
         address: ws://127.0.0.1:5112/ws/bifrost-0.1
         backoff:
           backoffKind: BackoffKind_EXPONENTIAL
@@ -14,7 +14,7 @@ websocket:
   revision: 1
 listening:
   config:
-    remotePeerId: 12D3KooWC9dBAEoTHbEXq2aaTeFit7QVdvPcb6Yf76oGQZ6dGf8N
+    remotePeerId: 12D3KooWSh7WVJvEYkQeQFLwXysqrbSx4qZWsG4xfzT1pvSQtLBp
     protocolId: my/http/forwarding/1
     listenMultiaddr: "/ip4/127.0.0.1/tcp/8084"
     reliable: true

@@ -1,0 +1,24 @@
+syntax = "proto3";
+package transport.quic;
+
+message Opts {
+  // MaxIdleTimeoutDur is the duration of idle after which conn is closed.
+  //
+  // If unset, the max idle timeout will be disabled.
+  string max_idle_timeout_dur = 1;
+	// MaxIncomingStreams is the maximum number of concurrent bidirectional
+	// streams that a peer is allowed to open.
+  //
+  // If unset or negative, defaults to 100000.
+  int32 max_incoming_streams = 2;
+  // DisableKeepAlive disables the keep alive packets.
+  bool disable_keep_alive = 3;
+  // DisableDatagrams disables the unreliable datagrams feature.
+  // Both peers must support it for it to be enabled, regardless of this flag.
+  bool disable_datagrams = 4;
+  // DisablePathMtuDiscovery disables sending packets to discover max packet size.
+  bool disable_path_mtu_discovery = 5;
+  // Verbose indicates to use verbose logging.
+  // Note: this is VERY verbose, logs every packet sent.
+  bool verbose = 6;
+}

@@ -57,6 +57,7 @@ func (m *MountedStreamHandler) HandleMountedStream(
 		defer subCtxCancel()
 		proxy.ProxyStreams(conn, s, subCtxCancel)
 		<-subCtx.Done()
+		m.le.Debug("connection closing")
 		// wait to release EstablishLink ref
 	}()
 	return nil

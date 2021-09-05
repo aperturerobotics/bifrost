@@ -1,23 +1,12 @@
 syntax = "proto3";
 package pconn;
 
-// import "github.com/aperturerobotics/bifrost/util/blockcrypt/blockcrypt.proto";
-// import "github.com/aperturerobotics/bifrost/util/blockcompress/blockcompress.proto";
+import "github.com/aperturerobotics/bifrost/transport/common/quic/quic.proto";
 
 // Opts are extra options for the packet conn.
 message Opts {
-  // MaxIdleTimeoutDur is the duration of idle after which conn is closed.
-  //
-  // Default: "30s"
-  string max_idle_timeout_dur = 1;
-	// MaxIncomingStreams is the maximum number of concurrent bidirectional
-	// streams that a peer is allowed to open.
-  //
-  // If negative value, disallows incoming streams. Note: bifrost disallows
-  // negative values here.
-  //
-  // If unset or negative, defaults to 100000.
-  int32 max_incoming_streams = 2;
+  // Quic are the quic protocol options.
+  .transport.quic.Opts quic = 1;
   // Verbose turns on verbose debug logging.
-  bool verbose = 3;
+  bool verbose = 2;
 }

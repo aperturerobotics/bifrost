@@ -2,26 +2,23 @@ package pconn
 
 import (
 	"context"
-	"crypto/tls"
 	"net"
-	"sync"
-	"time"
 
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/transport"
-	"github.com/aperturerobotics/bifrost/util/scrc"
+	transport_quic "github.com/aperturerobotics/bifrost/transport/common/quic"
 	"github.com/libp2p/go-libp2p-core/crypto"
-	p2ptls "github.com/libp2p/go-libp2p-tls"
 	"github.com/lucas-clemente/quic-go"
 	"github.com/sirupsen/logrus"
 )
 
-// alpn is set to ensure quic does not talk to non-bifrost peers
-const alpn = "bifrost"
-
 // Transport implements a bifrost transport with a Quic-based packet conn.
 // Transport UUIDs are deterministic and based on the LocalAddr() of the pconn.
 type Transport struct {
+	// Transport is the underlying quic transport
+	*transport_quic.Transport
+	// ctx is the root context
+	ctx context.Context
 	// le is the logger
 	le *logrus.Entry
 	// peerID is the local peer id
@@ -30,44 +27,29 @@ type Transport struct {
 	privKey crypto.PrivKey
 	// pc is the underlying packet conn.
 	pc net.PacketConn
-	// uuid is the unique id
-	uuid uint64
-	// laddr is the local address
-	laddr net.Addr
 	// handler is the transport handler
 	handler transport.TransportHandler
 	// opts are extra options
-	opts Opts
+	opts *Opts
 	// addrParser parses an address from a string
 	// if nil, the dialer will not function
 	addrParser func(addr string) (net.Addr, error)
-	// identity is the p2ptls identity
-	identity *p2ptls.Identity
-	// ctxCh contains the ctx
-	ctxCh chan context.Context
-
-	// linksMtx guards links and dialers
-	linksMtx sync.Mutex
-	// links is the links map
-	// TODO: we can have multiple links for one remote peer on a transport
-	// TODO: key this by address instead
-	// maps peer.ID to Link
-	links map[string]*Link
-	// dialers is the dialers map
-	// maps address to dialer
-	dialers map[string]*dialer
-	// sessionCounter is incremented when a link is created.
-	sessionCounter uint32
 }
 
-// New constructs a new packet-conn based transport.
-func New(
+// NewTransport constructs a new packet-conn based transport.
+func NewTransport(
+	ctx context.Context,
 	le *logrus.Entry,
-	pc net.PacketConn,
 	privKey crypto.PrivKey,
-	addrParser func(addr string) (net.Addr, error),
 	tc transport.TransportHandler,
 	opts *Opts,
+	// if uuid is 0, generates a uuid based on the local address
+	uuid uint64,
+	// pc is the packet conn
+	pc net.PacketConn,
+	// addrParser parses addresses to net.Addr for dialing
+	// can be nil
+	addrParser func(addr string) (net.Addr, error),
 ) (*Transport, error) {
 	if opts == nil {
 		opts = &Opts{}
@@ -78,187 +60,57 @@ func New(
 		return nil, err
 	}
 
-	identity, err := p2ptls.NewIdentity(privKey)
+	var dialFn transport_quic.DialFunc
+	if addrParser != nil {
+		dialFn = func(ctx context.Context, addr string) (net.PacketConn, net.Addr, error) {
+			na, err := addrParser(addr)
+			return pc, na, err
+		}
+	}
+
+	tpt := &Transport{
+		ctx:        ctx,
+		le:         le,
+		pc:         pc,
+		handler:    tc,
+		opts:       opts,
+		peerID:     peerID,
+		privKey:    privKey,
+		addrParser: addrParser,
+	}
+	tpt.Transport, err = transport_quic.NewTransport(
+		ctx,
+		le,
+		uuid,
+		pc.LocalAddr(),
+		privKey,
+		tc,
+		opts.GetQuic(),
+		dialFn,
+	)
 	if err != nil {
 		return nil, err
 	}
-
-	laddr := pc.LocalAddr()
-	return &Transport{
-		le:         le.WithField("laddr", laddr.String()),
-		pc:         pc,
-		handler:    tc,
-		identity:   identity,
-		opts:       *opts,
-		peerID:     peerID,
-		laddr:      laddr,
-		privKey:    privKey,
-		uuid:       newTransportUUID(laddr, peerID),
-		links:      make(map[string]*Link),
-		dialers:    make(map[string]*dialer),
-		addrParser: addrParser,
-		ctxCh:      make(chan context.Context, 1),
-	}, nil
+	return tpt, nil
 }
 
-// newTransportUUID builds the UUID for a transport
-func newTransportUUID(localAddr net.Addr, peerID peer.ID) uint64 {
-	return scrc.Crc64(
-		[]byte("bifrost/pconn/"),
-		[]byte(localAddr.String()),
-		[]byte("/"),
-		[]byte(peerID.Pretty()),
-	)
-}
-
-// buildQuicConfig constructs the quic config.
-func buildQuicConfig(le *logrus.Entry, opts *Opts) *quic.Config {
-	maxIdleTimeout := time.Second * 40
-	if ntDur := opts.GetMaxIdleTimeoutDur(); ntDur != "" {
-		nt, err := time.ParseDuration(ntDur)
-		if err == nil && nt != time.Duration(0) && nt < time.Hour*2 {
-			maxIdleTimeout = nt
-		}
-	}
-
-	maxIncStreams := 100000
-	if mis := opts.GetMaxIncomingStreams(); mis <= 0 {
-		maxIncStreams = int(mis)
-	}
-
-	ple := le.WithField("pconn", "quic")
-	if opts.GetVerbose() {
-		ple.Level = logrus.DebugLevel
-	} else {
-		ple.Level = logrus.InfoLevel
-	}
-
-	return &quic.Config{
-		AcceptToken: func(clientAddr net.Addr, _ *quic.Token) bool {
-			// TODO(#6): require source address validation when under load
-			return true
-		},
-		KeepAlive:             true,
-		MaxIdleTimeout:        maxIdleTimeout,
-		MaxIncomingStreams:    int64(maxIncStreams),
-		MaxIncomingUniStreams: -1, // disable unidirectional streams
-		// MaxReceiveStreamFlowControlWindow:     3 * (1 << 20),   // 3 MB
-		// MaxReceiveConnectionFlowControlWindow: 4.5 * (1 << 20), // 4.5 MB
-		Logger: ple,
-	}
-}
-
-// LocalAddr returns the local address.
-func (t *Transport) LocalAddr() net.Addr {
-	return t.laddr
-}
-
-// DialPeer dials a peer given an address. The yielded link should be
-// emitted to the transport handler. DialPeer should return nil if the link
-// was established. DialPeer will then not be called again for the same peer
-// ID and address tuple until the yielded link is lost.
-func (t *Transport) DialPeer(ctx context.Context, peerID peer.ID, as string) (bool, error) {
-	if t.addrParser == nil {
-		t.le.WithField("dial-addr", as).Warn("nil addr parser, cannot dial peer")
-		return true, nil
-	}
-
-	addr, err := t.addrParser(as)
-	if err != nil {
-		return true, err
-	}
-	as = addr.String()
-	/*
-		if adrs := addr.String(); adrs != as {
-			return false, errors.Errorf("addr parser returned %s when input was %s", adrs, as)
-		}
-	*/
-
-	var rctx context.Context
-	select {
-	case <-ctx.Done():
-		return false, ctx.Err()
-	case rctx = <-t.ctxCh:
-		t.ctxCh <- rctx
-	}
-
-	// abort if we already have a peer with the same id connected
-	var dl *dialer
-	t.linksMtx.Lock()
-	defer t.linksMtx.Unlock()
-
-	if edl, dialerOk := t.dialers[as]; dialerOk {
-		if edl.peerID != peerID {
-			// TODO: possibly override the prior
-			return false, nil
-		}
-		dl = edl
-	} else {
-		if _, elnk := t.links[as]; elnk {
-			return false, nil
-		}
-	}
-	if dl == nil {
-		dl, err = newDialer(rctx, t, peerID, addr, as)
-		if err == nil {
-			t.dialers[as] = dl
-			// start a separate goroutine to execute the dialer.
-			go func() {
-				lnk, dlErr := dl.execute()
-				if dlErr != nil {
-					t.le.
-						WithError(dlErr).
-						WithField("remote-addr", as).
-						Warn("error dialing peer")
-				}
-				if lnk == nil {
-					t.linksMtx.Lock()
-					if odl, odlOk := t.dialers[as]; odlOk && odl == dl {
-						delete(t.dialers, as)
-					}
-					t.linksMtx.Unlock()
-				}
-			}()
-		}
-	}
-	if err != nil {
-		return false, err
-	}
-	return true, nil
-
-	// Add a reference to the dialer.
-	/*
-		nlnk, err := dl.waitForComplete(ctx)
-		return nlnk != nil, err
-	*/
+// GetPeerID returns the peer ID.
+func (t *Transport) GetPeerID() peer.ID {
+	return t.peerID
 }
 
 // Execute executes the transport as configured, returning any fatal error.
 func (t *Transport) Execute(ctx context.Context) error {
-	// Listen
-	var tlsConf tls.Config
-	tlsConf.NextProtos = []string{alpn}
-	tlsConf.GetConfigForClient = func(_ *tls.ClientHelloInfo) (*tls.Config, error) {
-		// return a tls.Config that verifies the peer's certificate chain.
-		// Note that since we have no way of associating an incoming QUIC connection with
-		// the peer ID calculated here, we don't actually receive the peer's public key
-		// from the key chan.
-		conf, _ := t.identity.ConfigForAny()
-		conf.NextProtos = []string{alpn}
-		return conf, nil
-	}
-	quicConfig := buildQuicConfig(t.le, &t.opts)
+	// Configure TLS to allow any incoming remote peer.
+	tlsConf := transport_quic.BuildIncomingTlsConf(t.Transport.GetIdentity(), "")
+	quicConfig := transport_quic.BuildQuicConfig(t.le, t.opts.GetQuic())
+
 	t.le.Info("starting to listen with quic + tls")
-	ln, err := quic.Listen(t.pc, &tlsConf, quicConfig)
+	ln, err := quic.Listen(t.pc, tlsConf, quicConfig)
 	if err != nil {
 		return err
 	}
 	defer ln.Close()
-
-	t.ctxCh <- ctx
-	defer func() {
-		<-t.ctxCh
-	}()
 
 	// accept new connections
 	for {
@@ -267,7 +119,7 @@ func (t *Transport) Execute(ctx context.Context) error {
 			return err
 		}
 
-		_, err = t.handleSession(ctx, sess)
+		_, err = t.HandleSession(ctx, sess)
 		if err != nil {
 			t.le.WithError(err).Warn("cannot build link for session")
 			_ = sess.CloseWithError(500, "cannot build link")
@@ -276,82 +128,9 @@ func (t *Transport) Execute(ctx context.Context) error {
 	}
 }
 
-// GetUUID returns a host-unique ID for this transport.
-func (t *Transport) GetUUID() uint64 {
-	return t.uuid
-}
-
-// GetPeerID returns the peer ID.
-func (t *Transport) GetPeerID() peer.ID {
-	return t.peerID
-}
-
 // Close closes the transport, returning any errors closing.
 func (t *Transport) Close() error {
 	return nil
-}
-
-// handleLinkLost is called when a link is lost.
-func (u *Transport) handleLinkLost(addrStr string, lnk *Link) {
-	u.linksMtx.Lock()
-	existing := u.links[addrStr]
-	rel := existing == lnk
-	if rel {
-		delete(u.links, addrStr)
-	}
-	u.linksMtx.Unlock()
-
-	if u.handler != nil && rel {
-		u.handler.HandleLinkLost(lnk)
-	}
-}
-
-// handleSession handles a new session.
-func (t *Transport) handleSession(ctx context.Context, sess quic.Session) (*Link, error) {
-	t.linksMtx.Lock()
-	sessID := t.sessionCounter
-	t.sessionCounter++
-	t.linksMtx.Unlock()
-	var lnk *Link
-	var err error
-	as := sess.RemoteAddr().String()
-	lnk, err = NewLink(
-		ctx,
-		t.le.WithField("session-id", sessID),
-		&t.opts,
-		t.GetUUID(),
-		t.peerID,
-		t.pc.LocalAddr(),
-		sess,
-		func() {
-			if lnk != nil {
-				go t.handleLinkLost(as, lnk)
-			}
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	t.linksMtx.Lock()
-	if dialer, dialerOk := t.dialers[as]; dialerOk {
-		// TODO fully cancel dialer
-		// TODO push link to dialer (to resolve it)
-		dialer.ctxCancel()
-		delete(t.dialers, as)
-	}
-	if elnk, elnkOk := t.links[as]; elnkOk {
-		rpeer := elnk.peerID
-		t.le.
-			WithField("remote-addr", as).
-			WithField("remote-peer", rpeer.Pretty()).
-			Warn("userping existing session with peer")
-		go elnk.Close()
-	}
-	t.links[as] = lnk
-	go t.handler.HandleLinkEstablished(lnk)
-	t.linksMtx.Unlock()
-	return lnk, nil
 }
 
 // _ is a type assertion

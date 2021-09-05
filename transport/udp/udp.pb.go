@@ -31,7 +31,6 @@ type Config struct {
 	// Has no effect in the browser.
 	ListenAddr string `protobuf:"bytes,2,opt,name=listen_addr,json=listenAddr,proto3" json:"listen_addr,omitempty"`
 	// PacketOpts are options to set on the packet connection.
-	// On lossy transports, set the data shards for FEC.
 	PacketOpts *pconn.Opts `protobuf:"bytes,4,opt,name=packet_opts,json=packetOpts,proto3" json:"packet_opts,omitempty"`
 	// Dialers maps peer IDs to dialers.
 	Dialers              map[string]*dialer.DialerOpts `protobuf:"bytes,5,rep,name=dialers,proto3" json:"dialers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
