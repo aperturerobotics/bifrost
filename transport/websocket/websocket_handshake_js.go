@@ -1,4 +1,5 @@
-//+build js
+//go:build js
+// +build js
 
 package websocket
 
@@ -7,7 +8,7 @@ import (
 	"io"
 
 	"github.com/aperturerobotics/bifrost/handshake/identity/s2s"
-	"github.com/gopherjs/websocket"
+	"nhooyr.io/websocket"
 )
 
 // inflightHandshake is an on-going handshake.
@@ -50,7 +51,7 @@ func (u *Transport) processHandshake(ctx, hsctx context.Context, hs *inflightHan
 	ule.Debug("dialing")
 	initiator := true
 	var err error
-	conn, err := websocket.Dial(hs.url)
+	conn, _, err := websocket.Dial(hsctx, hs.url, nil)
 	if err != nil {
 		ule.WithError(err).Warn("websocket dial errored")
 		return

@@ -1,4 +1,6 @@
-//+build js
+//go:build js
+// +build js
+
 //go:generate gopherjs build -o browser.js index.go
 
 package main
@@ -6,6 +8,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"syscall/js"
 
 	"github.com/aperturerobotics/bifrost/examples/toys/websocket-browser-link/common"
 	"github.com/aperturerobotics/bifrost/link"
@@ -15,11 +18,10 @@ import (
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
 	"github.com/aperturerobotics/controllerbus/directive"
-	"github.com/gopherjs/gopherjs/js"
 )
 
 func getWSBaseURL() string {
-	document := js.Global.Get("window").Get("document")
+	document := js.Global().Get("window").Get("document")
 	location := document.Get("location")
 
 	wsProtocol := "ws"
