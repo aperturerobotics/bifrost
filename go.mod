@@ -34,7 +34,7 @@ require (
 	github.com/nats-io/nats-server/v2 v2.3.1
 	github.com/nats-io/nats.go v1.11.0
 	github.com/nats-io/nkeys v0.3.0
-	github.com/paralin/kcp-go-lite v1.0.2-0.20210907042029-a4cf7baab73a // aperture
+	github.com/paralin/kcp-go-lite v1.0.2-0.20210907043027-271505668bd0 // aperture
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pauleyj/gobee v0.0.0-20190212035730-6270c53072a4
 	github.com/pierrec/lz4 v2.6.0+incompatible

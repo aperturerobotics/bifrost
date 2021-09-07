@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"io"
 	"net"
+	"runtime"
 	"sync"
 	"time"
 
@@ -41,6 +42,8 @@ type Link struct {
 	peerID peer.ID
 	// mux is the reliable stream multiplexer
 	mux streamMuxer
+	// sched is the kcp scheduler
+	sched *kcp.TimedSched
 	// sess is the kcp session
 	sess *kcp.UDPSession
 	// uuid is the link uuid
@@ -153,6 +156,7 @@ func NewLink(
 	}
 
 	var snmp *kcp.Snmp // if stats are desired, allocate this object.
+	l.sched = kcp.NewTimedSched(runtime.NumCPU())
 	l.sess = kcp.NewUDPSession(
 		func(b []byte) (n int, err error) {
 			b = append(b, byte(PacketType_PacketType_KCP_SMUX))
@@ -166,6 +170,7 @@ func NewLink(
 		int(dataShards),
 		int(parityShards),
 		bc,
+		l.sched,
 		snmp,
 	)
 
@@ -405,6 +410,7 @@ func (l *Link) handleRawPacket(data []byte) {
 // Close closes the connection.
 func (l *Link) Close() error {
 	l.closedOnce.Do(func() {
+		l.ctxCancel()
 		if l.writer != nil {
 			_, _ = l.writer(
 				[]byte{byte(PacketType_PacketType_CLOSE_LINK)},
@@ -414,7 +420,9 @@ func (l *Link) Close() error {
 		if closed := l.closed; closed != nil {
 			closed()
 		}
-		l.ctxCancel()
+		if l.sched != nil {
+			l.sched.Close()
+		}
 		if l.mux != nil {
 			_ = l.mux.Close()
 		}
