@@ -152,6 +152,7 @@ func NewLink(
 		return nil, err
 	}
 
+	var snmp *kcp.Snmp // if stats are desired, allocate this object.
 	l.sess = kcp.NewUDPSession(
 		func(b []byte) (n int, err error) {
 			b = append(b, byte(PacketType_PacketType_KCP_SMUX))
@@ -165,6 +166,7 @@ func NewLink(
 		int(dataShards),
 		int(parityShards),
 		bc,
+		snmp,
 	)
 
 	// l.sess.SetStreamMode(false)
@@ -403,8 +405,6 @@ func (l *Link) handleRawPacket(data []byte) {
 // Close closes the connection.
 func (l *Link) Close() error {
 	l.closedOnce.Do(func() {
-		l.le.Debugf("snmp stats: %#v", kcp.DefaultSnmp.Copy())
-		kcp.DefaultSnmp.Reset()
 		if l.writer != nil {
 			_, _ = l.writer(
 				[]byte{byte(PacketType_PacketType_CLOSE_LINK)},

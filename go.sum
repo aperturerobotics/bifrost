@@ -115,6 +115,8 @@ github.com/kkdai/bstream v0.0.0-20161212061736-f391b8402d23/go.mod h1:J+Gs4SYgM6
 github.com/klauspost/compress v1.10.3/go.mod h1:aoV0uJVorq1K+umq18yTdKaF57EivdYsUV+/s2qKfXs=
 github.com/klauspost/compress v1.13.6-0.20210902084336-00a2d6db8ee0 h1:O2MhP+053gIA7/WbSKU1dYQUAEtjIePdi5tZyUrHH2M=
 github.com/klauspost/compress v1.13.6-0.20210902084336-00a2d6db8ee0/go.mod h1:/3/Vjq9QcHkK5uEr5lBEmyoZ1iFhe47etQ6QUkpK6sk=
+github.com/klauspost/compress v1.13.6-0.20210906113219-38d4ba985ac1 h1:9gFqVsJwdRBAcHaB6MXLJ1BK54dhjwXORjY3ec0ie1Y=
+github.com/klauspost/compress v1.13.6-0.20210906113219-38d4ba985ac1/go.mod h1:/3/Vjq9QcHkK5uEr5lBEmyoZ1iFhe47etQ6QUkpK6sk=
 github.com/klauspost/cpuid v1.2.1 h1:vJi+O/nMdFt0vqm8NZBI6wzALWdA2X+egi0ogNyrC/w=
 github.com/klauspost/cpuid v1.2.1/go.mod h1:Pj4uuM528wm8OyEC2QMXAi2YiTZ96dNQPGgoMS4s3ek=
 github.com/klauspost/reedsolomon v1.9.2 h1:E9CMS2Pqbv+C7tsrYad4YC9MfhnMVWhMRsTi7U0UB18=
@@ -227,6 +229,8 @@ github.com/paralin/grpc-go v1.30.1-0.20210804030014-1587a7c16b66 h1:UCrVgaR8/T2e
 github.com/paralin/grpc-go v1.30.1-0.20210804030014-1587a7c16b66/go.mod h1:N36X2cJ7JwdamYAgDz+s+rVMFjt3numwzf/HckM8pak=
 github.com/paralin/kcp-go-lite v1.0.2-0.20210906043638-34bed3476dfd h1:tH44HW+NTQgSMQwYFw0F+Wol6pJd3GJg9afUj8U3PUQ=
 github.com/paralin/kcp-go-lite v1.0.2-0.20210906043638-34bed3476dfd/go.mod h1:qpN2SUjqd4vkr6PTZKwxgG0ggC5NTx0ugsFxOmyEKuE=
+github.com/paralin/kcp-go-lite v1.0.2-0.20210907042029-a4cf7baab73a h1:p++BJlgqZI6D4s2PemXrvUxKY6myy/YkhLILaSaTNVQ=
+github.com/paralin/kcp-go-lite v1.0.2-0.20210907042029-a4cf7baab73a/go.mod h1:qpN2SUjqd4vkr6PTZKwxgG0ggC5NTx0ugsFxOmyEKuE=
 github.com/patrickmn/go-cache v2.1.0+incompatible h1:HRMgzkcYKYpi3C8ajMPV8OFXaaRUnok+kx1WdO15EQc=
 github.com/patrickmn/go-cache v2.1.0+incompatible/go.mod h1:3Qf8kWWT7OJRJbdiICTKqZju1ZixQ/KpMGzzAfe6+WQ=
 github.com/pauleyj/gobee v0.0.0-20190212035730-6270c53072a4 h1:D1wvh563BGbtWk7dT0SurmXKT4ReVK+wH5waVshsiik=
