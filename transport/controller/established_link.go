@@ -2,6 +2,7 @@ package transport_controller
 
 import (
 	"context"
+	"io"
 
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/controllerbus/bus"
@@ -78,7 +79,7 @@ func (e *establishedLink) acceptStreamPump(ctx context.Context) {
 	for {
 		strm, strmOpts, err := lnk.AcceptStream()
 		if err != nil {
-			if err != context.Canceled {
+			if err != context.Canceled && err != io.EOF {
 				select {
 				case <-ctx.Done():
 					// don't log if the context was canceled

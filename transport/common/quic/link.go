@@ -3,6 +3,7 @@ package transport_quic
 import (
 	"context"
 	"crypto"
+	"io"
 	"net"
 	"sync"
 
@@ -143,6 +144,14 @@ func (l *Link) AcceptStream() (stream.Stream, stream.OpenOpts, error) {
 			// detect link shutdown, avoid logging unnecessary errors
 			err = context.Canceled
 		default:
+		}
+
+		qe, qeOk := err.(*quic.ApplicationError)
+		if qeOk && qe != nil {
+			// remote shutdown of connection normally
+			if qe.ErrorCode == 0 {
+				err = io.EOF
+			}
 		}
 
 		return nil, stream.OpenOpts{}, err
