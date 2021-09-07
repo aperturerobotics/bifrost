@@ -13,9 +13,9 @@ replace (
 )
 
 require (
-	github.com/aperturerobotics/controllerbus v0.8.6-0.20210902104809-9f0fc115965e
+	github.com/aperturerobotics/controllerbus v0.8.6
 	github.com/aperturerobotics/entitygraph v0.1.4-0.20210530040557-f19da9c2be6d
-	github.com/aperturerobotics/timestamp v0.2.4-0.20210530040952-1422410fbd4a
+	github.com/aperturerobotics/timestamp v0.3.0
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
