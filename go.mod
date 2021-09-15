@@ -15,7 +15,7 @@ replace (
 require (
 	github.com/aperturerobotics/controllerbus v0.8.6
 	github.com/aperturerobotics/entitygraph v0.1.4-0.20210530040557-f19da9c2be6d
-	github.com/aperturerobotics/timestamp v0.3.0
+	github.com/aperturerobotics/timestamp v0.3.1
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
@@ -49,6 +49,5 @@ require (
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
 	google.golang.org/genproto v0.0.0-20210903162649-d08c68adba83 // indirect
 	google.golang.org/grpc v1.39.0
-	gortc.io/stun v1.23.0
 	nhooyr.io/websocket v1.8.7
 )
