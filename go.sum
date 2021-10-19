@@ -225,6 +225,10 @@ github.com/onsi/gomega v1.9.0/go.mod h1:Ho0h+IUsWyvy1OpqCwxlQ/21gkhVunqlU8fDGcoT
 github.com/onsi/gomega v1.10.1/go.mod h1:iN09h71vgCQne3DLsj+A5owkum+a2tYe+TOCB1ybHNo=
 github.com/onsi/gomega v1.13.0 h1:7lLHu94wT9Ij0o6EWWclhu0aOh32VxhkwEJvzuWPeak=
 github.com/onsi/gomega v1.13.0/go.mod h1:lRk9szgn8TxENtWd0Tp4c3wjlRfMTMH27I+3Je41yGY=
+github.com/paralin/go-libp2p-core v0.11.1-0.20211019232004-d36b9fa4cd45 h1:sIqyLmm1pAPysJ1Ej1Jz+1f7kzVA9PkIQ1OvK1J34gI=
+github.com/paralin/go-libp2p-core v0.11.1-0.20211019232004-d36b9fa4cd45/go.mod h1:ECdxehoYosLYHgDDFa2N4yE8Y7aQRAMf0sX9mf2sbGg=
+github.com/paralin/go-libp2p-core v0.11.1-0.20211019232359-ba9a05478afe h1:vysTTk280za5xyl4YCNqYAmygTHbcgI1ErfiZadf3zU=
+github.com/paralin/go-libp2p-core v0.11.1-0.20211019232359-ba9a05478afe/go.mod h1:ECdxehoYosLYHgDDFa2N4yE8Y7aQRAMf0sX9mf2sbGg=
 github.com/paralin/grpc-go v1.30.1-0.20210804030014-1587a7c16b66 h1:UCrVgaR8/T2e5EgqqX8w3naQ12RcqIKl9dC+F8n1cD0=
 github.com/paralin/grpc-go v1.30.1-0.20210804030014-1587a7c16b66/go.mod h1:N36X2cJ7JwdamYAgDz+s+rVMFjt3numwzf/HckM8pak=
 github.com/paralin/kcp-go-lite v1.0.2-0.20210907043027-271505668bd0 h1:VFeHQ0ReW/8TwDWKkQkLdpw4H00o++k/EJcequ2znG4=
