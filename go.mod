@@ -25,9 +25,9 @@ require (
 	github.com/golang/snappy v0.0.3
 	github.com/google/go-cmp v0.5.5 // indirect
 	github.com/hashicorp/yamux v0.0.0-20210826001029-26ff87cf9493
-	github.com/klauspost/compress v1.13.6-0.20210906113219-38d4ba985ac1
-	github.com/libp2p/go-libp2p-core v0.9.0
-	github.com/libp2p/go-libp2p-tls v0.2.0
+	github.com/klauspost/compress v1.13.7-0.20211011124647-94ad1f0bf03c
+	github.com/libp2p/go-libp2p-core v0.11.0
+	github.com/libp2p/go-libp2p-tls v0.3.0
 	github.com/lucas-clemente/quic-go v0.23.0
 	github.com/mr-tron/base58 v1.2.0
 	github.com/multiformats/go-multiaddr v0.3.0
