@@ -22,6 +22,11 @@ var SupportedHashTypes = []HashType{
 	HashType_HashType_SHA1,
 }
 
+// IsEmpty checks if the hash is empty.
+func (h *Hash) IsEmpty() bool {
+	return h.GetHashType() == 0 || len(h.GetHash()) == 0
+}
+
 // Clone clones the hash object.
 func (h *Hash) Clone() *Hash {
 	if h == nil {
