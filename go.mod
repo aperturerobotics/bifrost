@@ -9,6 +9,7 @@ replace (
 	github.com/lucas-clemente/quic-go => github.com/aperturerobotics/quic-go v0.23.1-0.20210907061838-0a0338bd72f0 // aperture
 	github.com/nats-io/nats-server/v2 => github.com/aperturerobotics/bifrost-nats-server/v2 v2.1.8-0.20200831101324-59acc8fe7f74 // aperture-2.0
 	github.com/nats-io/nats.go => github.com/aperturerobotics/bifrost-nats-client v1.10.1-0.20200831103200-24c3d0464e58 // aperture-2.0
+	github.com/paralin/kcp-go-lite => github.com/paralin/kcp-go-lite v1.0.2-0.20210907043027-271505668bd0 // aperture
 	google.golang.org/genproto => google.golang.org/genproto v0.0.0-20190819201941-24fa4b261c55
 	google.golang.org/grpc => github.com/paralin/grpc-go v1.30.1-0.20210804030014-1587a7c16b66 // aperture
 )
@@ -19,36 +20,34 @@ require (
 	github.com/aperturerobotics/timestamp v0.3.4
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cenkalti/backoff v2.2.1+incompatible
-	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
-	github.com/djherbis/buffer v1.1.0
-	github.com/frankban/quicktest v1.10.2 // indirect
+	github.com/djherbis/buffer v1.2.0
+	github.com/frankban/quicktest v1.14.0 // indirect
 	github.com/golang/protobuf v1.5.2
-	github.com/golang/snappy v0.0.3
-	github.com/google/go-cmp v0.5.5 // indirect
-	github.com/hashicorp/yamux v0.0.0-20210826001029-26ff87cf9493
-	github.com/klauspost/compress v1.13.7-0.20211011124647-94ad1f0bf03c
-	github.com/libp2p/go-libp2p-core v0.11.0
-	github.com/libp2p/go-libp2p-tls v0.3.0
-	github.com/lucas-clemente/quic-go v0.23.0
+	github.com/golang/snappy v0.0.4
+	github.com/hashicorp/yamux v0.0.0-20211028200310-0bc27b27de87
+	github.com/klauspost/compress v1.13.6
+	github.com/klauspost/reedsolomon v1.9.15 // indirect
+	github.com/libp2p/go-libp2p-core v0.12.0
+	github.com/libp2p/go-libp2p-tls v0.0.0-00010101000000-000000000000
+	github.com/lucas-clemente/quic-go v0.0.0-00010101000000-000000000000
 	github.com/mr-tron/base58 v1.2.0
-	github.com/multiformats/go-multiaddr v0.3.0
-	github.com/nats-io/nats-server/v2 v2.3.1
-	github.com/nats-io/nats.go v1.11.0
+	github.com/multiformats/go-multiaddr v0.4.1
+	github.com/nats-io/nats-server/v2 v2.0.0-00010101000000-000000000000
+	github.com/nats-io/nats.go v0.0.0-00010101000000-000000000000
 	github.com/nats-io/nkeys v0.3.0
-	github.com/paralin/kcp-go-lite v1.0.2-0.20210907043027-271505668bd0 // aperture
+	github.com/paralin/kcp-go-lite v0.0.0-00010101000000-000000000000
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pauleyj/gobee v0.0.0-20190212035730-6270c53072a4
-	github.com/pierrec/lz4 v2.6.0+incompatible
+	github.com/pierrec/lz4 v2.6.1+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.8.1
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
 	github.com/templexxx/cpufeat v0.0.0-20180724012125-cef66df7f161 // indirect
 	github.com/templexxx/xor v0.0.0-20191217153810-f85b25db303b
-	github.com/tjfoc/gmsm v1.4.0
+	github.com/tjfoc/gmsm v1.4.1
 	github.com/urfave/cli v1.22.5
-	github.com/xtaci/smux v1.5.15
-	golang.org/x/crypto v0.0.0-20211117183948-ae814b36b871
-	google.golang.org/genproto v0.0.0-20210903162649-d08c68adba83 // indirect
-	google.golang.org/grpc v1.39.0
+	github.com/xtaci/smux v1.5.16
+	golang.org/x/crypto v0.0.0-20211202192323-5770296d904e
+	google.golang.org/grpc v1.31.0
 	nhooyr.io/websocket v1.8.7
 )
