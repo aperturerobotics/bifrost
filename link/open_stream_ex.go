@@ -20,7 +20,7 @@ func OpenStreamWithPeerEx(
 	openOpts stream.OpenOpts,
 ) (MountedStream, func(), error) {
 	_, estLinkInst, err := b.AddDirective(
-		NewEstablishLinkWithPeer(remotePeerID),
+		NewEstablishLinkWithPeer(localPeerID, remotePeerID),
 		nil,
 	)
 	if err != nil {

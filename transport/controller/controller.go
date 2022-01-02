@@ -293,7 +293,7 @@ func (c *Controller) HandleIncomingStream(
 ) {
 	// Assert EstablishLink to keep the stream open during the header exchange.
 	_, elRef, err := c.bus.AddDirective(
-		link.NewEstablishLinkWithPeer(lnk.GetRemotePeer()),
+		link.NewEstablishLinkWithPeer(lnk.GetLocalPeer(), lnk.GetRemotePeer()),
 		nil,
 	)
 	if err == nil {

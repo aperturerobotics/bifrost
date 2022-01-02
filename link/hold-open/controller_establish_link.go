@@ -13,7 +13,7 @@ func (c *Controller) handleEstablishLink(
 	di directive.Instance,
 	d link.EstablishLinkWithPeer,
 ) {
-	handler := newEstablishLinkHandler(c, c.le, di, d.EstablishLinkWPIDConstraint())
+	handler := newEstablishLinkHandler(c, c.le, di, d.EstablishLinkTargetPeerId())
 	ref := di.AddReference(handler, true)
 	if ref == nil {
 		return

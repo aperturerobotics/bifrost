@@ -26,7 +26,7 @@ type establishLinkResolver struct {
 // Values will be maintained from the previous call.
 func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.ResolverHandler) error {
 	c := o.c
-	peerIDConst := o.dir.EstablishLinkWPIDConstraint()
+	peerIDConst := o.dir.EstablishLinkTargetPeerId()
 	peerIDPretty := peerIDConst.Pretty()
 
 	wakeDialer := make(chan time.Time, 1)
@@ -113,7 +113,7 @@ func (c *Controller) resolveEstablishLink(
 	di directive.Instance,
 	dir link.EstablishLinkWithPeer,
 ) (directive.Resolver, error) {
-	if len(dir.EstablishLinkWPIDConstraint()) == 0 {
+	if len(dir.EstablishLinkTargetPeerId()) == 0 {
 		return nil, nil
 	}
 

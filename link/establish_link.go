@@ -16,31 +16,39 @@ type EstablishLinkWithPeer interface {
 	// Directive indicates EstablishLinkWithPeer is a directive.
 	directive.Directive
 
-	// EstablishLinkWPIDConstraint returns the target peer ID.
+	// EstablishLinkSourcePeerId returns the source peer ID.
+	// Can be empty to allow any.
+	EstablishLinkSourcePeerId() peer.ID
+	// EstablishLinkTargetPeerId returns the target peer ID.
 	// Cannot be empty.
-	EstablishLinkWPIDConstraint() peer.ID
+	EstablishLinkTargetPeerId() peer.ID
 }
 
 // establishLinkWithPeer implements EstablishLinkWithPeer with a peer ID constraint.
 type establishLinkWithPeer struct {
-	peerIDConstraint peer.ID
+	src, dest peer.ID
 }
 
 // NewEstablishLinkWithPeer constructs a new EstablishLinkWithPeer directive.
-func NewEstablishLinkWithPeer(peerID peer.ID) EstablishLinkWithPeer {
-	return &establishLinkWithPeer{peerIDConstraint: peerID}
+func NewEstablishLinkWithPeer(srcPeer, destPeer peer.ID) EstablishLinkWithPeer {
+	return &establishLinkWithPeer{src: srcPeer, dest: destPeer}
 }
 
-// EstablishLinkWPIDConstraint returns the target peer ID.
-func (d *establishLinkWithPeer) EstablishLinkWPIDConstraint() peer.ID {
-	return d.peerIDConstraint
+// EstablishLinkTargetPeerId returns the target peer ID.
+func (d *establishLinkWithPeer) EstablishLinkTargetPeerId() peer.ID {
+	return d.dest
+}
+
+// EstablishLinkSourcePeerId returns the src peer ID.
+func (d *establishLinkWithPeer) EstablishLinkSourcePeerId() peer.ID {
+	return d.src
 }
 
 // Validate validates the directive.
 // This is a cursory validation to see if the values "look correct."
 func (d *establishLinkWithPeer) Validate() error {
-	if len(d.peerIDConstraint) == 0 {
-		return errors.New("peer id constraint required")
+	if len(d.dest) == 0 {
+		return errors.New("peer id of destination required")
 	}
 
 	return nil
@@ -62,7 +70,8 @@ func (d *establishLinkWithPeer) IsEquivalent(other directive.Directive) bool {
 		return false
 	}
 
-	return d.peerIDConstraint == od.EstablishLinkWPIDConstraint()
+	return d.EstablishLinkTargetPeerId() == od.EstablishLinkTargetPeerId() &&
+		d.EstablishLinkSourcePeerId() == od.EstablishLinkSourcePeerId()
 }
 
 // Superceeds checks if the directive overrides another.
@@ -81,7 +90,10 @@ func (d *establishLinkWithPeer) GetName() string {
 // This is not necessarily unique, and is primarily intended for display.
 func (d *establishLinkWithPeer) GetDebugVals() directive.DebugValues {
 	vals := directive.NewDebugValues()
-	vals["peer-id"] = []string{d.peerIDConstraint.Pretty()}
+	vals["peer-id"] = []string{d.EstablishLinkTargetPeerId().Pretty()}
+	if src := d.EstablishLinkSourcePeerId(); len(src) != 0 {
+		vals["from-peer-id"] = []string{d.EstablishLinkSourcePeerId().Pretty()}
+	}
 	return vals
 }
 

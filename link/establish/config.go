@@ -2,6 +2,7 @@ package link_establish_controller
 
 import (
 	"github.com/aperturerobotics/bifrost/peer"
+	"github.com/aperturerobotics/bifrost/util/confparse"
 	"github.com/aperturerobotics/controllerbus/config"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
@@ -56,5 +57,14 @@ func (c *Config) Validate() error {
 	if _, err := c.ParsePeerIDs(); err != nil {
 		return errors.Wrap(err, "peer_ids")
 	}
+	if _, err := c.ParseSrcPeerId(); err != nil {
+		return errors.Wrap(err, "src_peer_id")
+	}
 	return nil
+}
+
+// ParseSrcPeerId parses the source peer id.
+// May return empty.
+func (c *Config) ParseSrcPeerId() (peer.ID, error) {
+	return confparse.ParsePeerID(c.GetSrcPeerId())
 }

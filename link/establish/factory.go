@@ -45,7 +45,13 @@ func (t *Factory) Construct(
 	if err != nil {
 		return nil, err
 	}
-	return NewController(t.bus, le, peers), nil
+
+	srcPeerID, err := cc.ParseSrcPeerId()
+	if err != nil {
+		return nil, err
+	}
+
+	return NewController(t.bus, le, peers, srcPeerID), nil
 }
 
 // GetVersion returns the version of this controller.

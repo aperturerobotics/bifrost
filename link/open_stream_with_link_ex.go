@@ -10,7 +10,6 @@ import (
 )
 
 // OpenStreamViaLinkEx executes a OpenStreamViaLink directive.
-// Returns a release function for the links used for the stream.
 func OpenStreamViaLinkEx(
 	ctx context.Context,
 	b bus.Bus,
@@ -19,15 +18,7 @@ func OpenStreamViaLinkEx(
 	linkUUID uint64,
 	transportID uint64,
 	openOpts stream.OpenOpts,
-) (MountedStream, func(), error) {
-	_, estLinkInst, err := b.AddDirective(
-		NewEstablishLinkWithPeer(remotePeerID),
-		nil,
-	)
-	if err != nil {
-		return nil, func() {}, err
-	}
-
+) (MountedStream, error) {
 	val, inst, err := bus.ExecOneOff(
 		ctx,
 		b,
@@ -40,11 +31,10 @@ func OpenStreamViaLinkEx(
 		nil,
 	)
 	if err != nil {
-		estLinkInst.Release()
-		return nil, func() {}, err
+		return nil, err
 	}
 	inst.Release()
 
 	mstrm := val.GetValue().(MountedStream)
-	return mstrm, estLinkInst.Release, nil
+	return mstrm, nil
 }

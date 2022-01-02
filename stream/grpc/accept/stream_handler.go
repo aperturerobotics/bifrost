@@ -40,7 +40,7 @@ func (m *MountedStreamHandler) HandleMountedStream(
 	rpc := m.rpc.rpc
 	s := strm.GetStream()
 	_, estLinkInst, err := m.b.AddDirective(
-		link.NewEstablishLinkWithPeer(strm.GetPeerID()),
+		link.NewEstablishLinkWithPeer(strm.GetLink().GetLocalPeer(), strm.GetPeerID()),
 		nil,
 	)
 	if err != nil {

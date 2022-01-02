@@ -98,7 +98,7 @@ func TestEstablishLink(t *testing.T) {
 	lnk2to1, lnk1Ref, err := bus.ExecOneOff(
 		ctx,
 		tb2.Bus,
-		link.NewEstablishLinkWithPeer(peerId1),
+		link.NewEstablishLinkWithPeer("", peerId1),
 		nil,
 	)
 	if err != nil {

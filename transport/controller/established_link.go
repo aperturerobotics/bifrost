@@ -38,7 +38,7 @@ func newEstablishedLink(
 	// Close the reference after a hold-open time.
 	// Close the link when the directive expires.
 	di, dir, err := b.AddDirective(
-		link.NewEstablishLinkWithPeer(lnk.GetRemotePeer()),
+		link.NewEstablishLinkWithPeer(lnk.GetLocalPeer(), lnk.GetRemotePeer()),
 		nil,
 	)
 	if err != nil {

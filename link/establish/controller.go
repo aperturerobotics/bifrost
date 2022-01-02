@@ -27,15 +27,21 @@ type Controller struct {
 	bus bus.Bus
 	// peers is the list of peers
 	peers []peer.ID
+
+	// srcPeerID is the src peer id
+	// can be empty
+	srcPeerID peer.ID
 }
 
 // NewController constructs a new peer controller.
 // If privKey is nil, one will be generated.
-func NewController(b bus.Bus, le *logrus.Entry, peers []peer.ID) *Controller {
+func NewController(b bus.Bus, le *logrus.Entry, peers []peer.ID, srcID peer.ID) *Controller {
 	return &Controller{
 		le:    le,
 		bus:   b,
 		peers: peers,
+
+		srcPeerID: srcID,
 	}
 }
 
@@ -45,7 +51,10 @@ func NewController(b bus.Bus, le *logrus.Entry, peers []peer.ID) *Controller {
 func (c *Controller) Execute(ctx context.Context) error {
 	for _, peerID := range c.peers {
 		le := c.le.WithField("peer-id", peerID.Pretty())
-		_, diRef, err := c.bus.AddDirective(link.NewEstablishLinkWithPeer(peerID), nil)
+		_, diRef, err := c.bus.AddDirective(
+			link.NewEstablishLinkWithPeer(c.srcPeerID, peerID),
+			nil,
+		)
 		if err != nil {
 			le.WithError(err).Warn("cannot establish link with configured peer")
 			continue
