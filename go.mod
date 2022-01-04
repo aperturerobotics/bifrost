@@ -51,4 +51,5 @@ require (
 	golang.org/x/crypto v0.0.0-20211202192323-5770296d904e
 	google.golang.org/grpc v1.31.0
 	nhooyr.io/websocket v1.8.7
+	storj.io/drpc v0.0.26
 )
