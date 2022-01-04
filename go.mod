@@ -13,6 +13,7 @@ replace (
 	github.com/paralin/kcp-go-lite => github.com/paralin/kcp-go-lite v1.0.2-0.20210907043027-271505668bd0 // aperture
 	google.golang.org/genproto => google.golang.org/genproto v0.0.0-20190819201941-24fa4b261c55
 	google.golang.org/grpc => github.com/paralin/grpc-go v1.30.1-0.20210804030014-1587a7c16b66 // aperture
+	storj.io/drpc => github.com/paralin/drpc v0.0.27-0.20220104045627-466c7ca18e92 // aperture
 )
 
 require (
@@ -50,6 +51,7 @@ require (
 	github.com/xtaci/smux v1.5.16
 	golang.org/x/crypto v0.0.0-20211202192323-5770296d904e
 	google.golang.org/grpc v1.31.0
+	google.golang.org/protobuf v1.27.1 // indirect
 	nhooyr.io/websocket v1.8.7
 	storj.io/drpc v0.0.26
 )
