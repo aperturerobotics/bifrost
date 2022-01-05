@@ -105,7 +105,9 @@ func (t *Transport) Execute(ctx context.Context) error {
 	tlsConf := transport_quic.BuildIncomingTlsConf(t.Transport.GetIdentity(), "")
 	quicConfig := transport_quic.BuildQuicConfig(t.le, t.opts.GetQuic())
 
-	t.le.Info("starting to listen with quic + tls")
+	t.le.
+		WithField("local-addr", t.LocalAddr().String()).
+		Info("starting to listen with quic + tls")
 	ln, err := quic.Listen(t.pc, tlsConf, quicConfig)
 	if err != nil {
 		return err
