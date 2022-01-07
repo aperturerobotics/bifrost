@@ -49,7 +49,9 @@ require (
 	github.com/tjfoc/gmsm v1.4.1
 	github.com/urfave/cli v1.22.5
 	github.com/xtaci/smux v1.5.16
-	golang.org/x/crypto v0.0.0-20211202192323-5770296d904e
+	github.com/zeebo/blake3 v0.2.1
+	github.com/zeebo/xxh3 v1.0.2-0.20211113223132-d10cc761c3ac // indirect
+	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3
 	google.golang.org/grpc v1.31.0
 	google.golang.org/protobuf v1.27.1 // indirect
 	nhooyr.io/websocket v1.8.7

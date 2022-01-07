@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"crypto/sha1"
 	"crypto/sha256"
+	"hash"
+
 	"github.com/golang/protobuf/proto"
 	b58 "github.com/mr-tron/base58/base58"
 	"github.com/pkg/errors"
-	"hash"
+	"github.com/zeebo/blake3"
 )
 
 // ErrHashMismatch is returned when hashes mismatch.
@@ -15,11 +17,9 @@ var ErrHashMismatch = errors.New("hash mismatch")
 
 // SupportedHashTypes is the list of built-in hash types.
 var SupportedHashTypes = []HashType{
-	// HashType_SHA256 is the sha256 hash type.
 	HashType_HashType_SHA256,
-	// HashType_SHA1 is the sha1 hash type.
-	// Note: this is not recommended for use outside of backwards-compat.
 	HashType_HashType_SHA1,
+	HashType_HashType_BLAKE3,
 }
 
 // IsEmpty checks if the hash is empty.
@@ -54,6 +54,8 @@ func (h HashType) Validate() error {
 		return nil
 	case HashType_HashType_SHA1:
 		return nil
+	case HashType_HashType_BLAKE3:
+		return nil
 	default:
 		return errors.Errorf("hash type unknown: %v", h.String())
 	}
@@ -66,6 +68,8 @@ func (h HashType) GetHashLen() int {
 		return sha256.Size
 	case HashType_HashType_SHA1:
 		return sha1.Size
+	case HashType_HashType_BLAKE3:
+		return 32
 	}
 	return 0
 }
@@ -78,6 +82,9 @@ func (h HashType) Sum(data []byte) ([]byte, error) {
 		return h[:], nil
 	case HashType_HashType_SHA1:
 		h := sha1.Sum(data)
+		return h[:], nil
+	case HashType_HashType_BLAKE3:
+		h := blake3.Sum256(data)
 		return h[:], nil
 	default:
 		return nil, errors.Errorf("hash type unknown: %v", h.String())
@@ -109,6 +116,10 @@ func (h HashType) BuildHasher() (hash.Hash, error) {
 	switch h {
 	case HashType_HashType_SHA256:
 		return sha256.New(), nil
+	case HashType_HashType_SHA1:
+		return sha1.New(), nil
+	case HashType_HashType_BLAKE3:
+		return blake3.New(), nil
 	default:
 		return nil, errors.Errorf("hash type unknown: %v", h.String())
 	}

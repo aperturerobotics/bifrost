@@ -10,6 +10,9 @@ enum HashType {
   // HashType_SHA1 is the sha1 hash type.
   // Note: this is not recommended for use outside of backwards-compat.
   HashType_SHA1 = 2;
+  // HashType_BLAKE3 is the blake3 hash type.
+  // Uses a 32-byte digest size.
+  HashType_BLAKE3 = 3;
 }
 
 // Hash is a hash of a binary blob.
