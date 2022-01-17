@@ -1,4 +1,4 @@
-package stream_drpc
+package stream_drpc_server
 
 import (
 	"context"

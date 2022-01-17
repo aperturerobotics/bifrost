@@ -1,10 +1,11 @@
-package stream_drpc
+package stream_drpc_server
 
 import (
 	"context"
 
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/protocol"
+	"github.com/aperturerobotics/bifrost/stream/drpc"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/directive"
 
@@ -21,7 +22,7 @@ type Server struct {
 	// b is the bus
 	b bus.Bus
 	// drpcOpts are opts passed to drpc
-	drpcOpts *DrpcOpts
+	drpcOpts *stream_drpc.DrpcOpts
 	// protocolIDs is list of protocol id to listen on.
 	// cannot be empty
 	protocolIDs []protocol.ID
@@ -39,7 +40,7 @@ type Server struct {
 // If peerIDs and/or domainIDs are empty, matches any.
 func NewServer(
 	b bus.Bus,
-	opts *DrpcOpts,
+	opts *stream_drpc.DrpcOpts,
 	protocolIDs []protocol.ID,
 	peerIDs []string,
 	registerFns []RegisterFn,
