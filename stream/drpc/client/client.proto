@@ -1,0 +1,25 @@
+syntax = "proto3";
+package stream.drpc.client;
+
+import "github.com/aperturerobotics/bifrost/util/backoff/backoff.proto";
+import "github.com/aperturerobotics/bifrost/stream/drpc/drpc.proto";
+
+// Config configures a client for a drpc service.
+message Config {
+  // ServerPeerIds are the static list of peer IDs to contact.
+  repeated string server_peer_ids = 1;
+  // PerServerBackoff is the server peer error backoff configuration.
+  // Can be empty.
+  .backoff.Backoff per_server_backoff = 2;
+  // SrcPeerId is the source peer id to contact from.
+  // Can be empty.
+  string src_peer_id = 3;
+  // TransportId restricts which transport we can dial out from.
+  uint64 transport_id = 4;
+  // DrpcOpts are options passed to drpc.
+  DrpcOpts drpc_opts = 5;
+  // TimeoutDur sets the per-server establish timeout.
+  // If unset, no timeout.
+  // Example: 15s
+  string timeout_dur = 6;
+}

@@ -26,3 +26,4 @@ message StreamOpts {
 	// SplitSize controls the default size we split packets into frames.
   uint32 split_size = 1;
 }
+

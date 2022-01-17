@@ -1,9 +1,7 @@
 syntax = "proto3";
 package nats;
 
-import "github.com/aperturerobotics/bifrost/peer/peer.proto";
 import "github.com/aperturerobotics/bifrost/hash/hash.proto";
-import "github.com/aperturerobotics/timestamp/timestamp.proto";
 
 // NatsConnType indicates the type of nats conn a stream represents.
 enum NatsConnType {
