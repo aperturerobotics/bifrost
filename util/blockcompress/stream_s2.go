@@ -1,8 +1,9 @@
 package blockcompress
 
 import (
-	snappy "github.com/klauspost/compress/s2"
 	"io"
+
+	snappy "github.com/klauspost/compress/s2"
 )
 
 // S2Stream implements a s2 compression backed stream.

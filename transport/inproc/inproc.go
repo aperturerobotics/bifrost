@@ -9,7 +9,7 @@ import (
 	"github.com/aperturerobotics/bifrost/transport"
 	dialer "github.com/aperturerobotics/bifrost/transport/common/dialer"
 	"github.com/aperturerobotics/bifrost/transport/common/pconn"
-	"github.com/aperturerobotics/bifrost/transport/controller"
+	transport_controller "github.com/aperturerobotics/bifrost/transport/controller"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/blang/semver"
 	"github.com/libp2p/go-libp2p-core/crypto"

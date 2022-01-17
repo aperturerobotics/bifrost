@@ -6,7 +6,7 @@ import (
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/protocol"
-	"github.com/aperturerobotics/bifrost/stream/grpc/rpc"
+	stream_grpc_rpc "github.com/aperturerobotics/bifrost/stream/grpc/rpc"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"

@@ -2,8 +2,9 @@ package kcp
 
 import (
 	"context"
-	"github.com/aperturerobotics/bifrost/stream"
 	"io"
+
+	"github.com/aperturerobotics/bifrost/stream"
 )
 
 // smuxAcceptPump accepts streams from the stream muxer.

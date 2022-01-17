@@ -6,13 +6,14 @@ package peer_grpc
 import (
 	context "context"
 	fmt "fmt"
+	math "math"
+
 	controller "github.com/aperturerobotics/bifrost/peer/controller"
 	exec "github.com/aperturerobotics/controllerbus/controller/exec"
 	proto "github.com/golang/protobuf/proto"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.

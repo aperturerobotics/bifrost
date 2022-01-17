@@ -1,8 +1,8 @@
 package bifrost_api
 
 import (
-	"github.com/aperturerobotics/bifrost/stream/grpc"
-	"github.com/aperturerobotics/bifrost/stream/grpc/dial"
+	stream_grpc "github.com/aperturerobotics/bifrost/stream/grpc"
+	stream_grpc_dial "github.com/aperturerobotics/bifrost/stream/grpc/dial"
 )
 
 // DialStream dials a outgoing stream.

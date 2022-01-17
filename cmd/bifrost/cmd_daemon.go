@@ -1,4 +1,5 @@
-//+build !js
+//go:build !js
+// +build !js
 
 package main
 
@@ -19,7 +20,7 @@ import (
 	stream_grpc_accept "github.com/aperturerobotics/bifrost/stream/grpc/accept"
 	stream_listening "github.com/aperturerobotics/bifrost/stream/listening"
 	xbtpt "github.com/aperturerobotics/bifrost/transport/xbee"
-	"github.com/aperturerobotics/controllerbus/bus/api"
+	bus_api "github.com/aperturerobotics/controllerbus/bus/api"
 	configset "github.com/aperturerobotics/controllerbus/controller/configset"
 	configset_controller "github.com/aperturerobotics/controllerbus/controller/configset/controller"
 	configset_json "github.com/aperturerobotics/controllerbus/controller/configset/json"

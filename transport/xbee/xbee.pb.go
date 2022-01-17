@@ -5,10 +5,11 @@ package xbee
 
 import (
 	fmt "fmt"
+	math "math"
+
 	dialer "github.com/aperturerobotics/bifrost/transport/common/dialer"
 	kcp "github.com/aperturerobotics/bifrost/transport/common/kcp"
 	proto "github.com/golang/protobuf/proto"
-	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.

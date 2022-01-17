@@ -5,10 +5,10 @@ import (
 	"time"
 
 	"github.com/aperturerobotics/bifrost/peer"
-	"github.com/aperturerobotics/bifrost/stream/grpc"
+	stream_grpc "github.com/aperturerobotics/bifrost/stream/grpc"
 	"github.com/aperturerobotics/controllerbus/bus"
 	bus_api "github.com/aperturerobotics/controllerbus/bus/api"
-	"github.com/aperturerobotics/controllerbus/controller/exec"
+	controller_exec "github.com/aperturerobotics/controllerbus/controller/exec"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 )

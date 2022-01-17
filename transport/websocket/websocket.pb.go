@@ -5,10 +5,11 @@ package websocket
 
 import (
 	fmt "fmt"
+	math "math"
+
 	dialer "github.com/aperturerobotics/bifrost/transport/common/dialer"
 	quic "github.com/aperturerobotics/bifrost/transport/common/quic"
 	proto "github.com/golang/protobuf/proto"
-	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.

@@ -6,7 +6,7 @@ import (
 
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/pubsub"
-	"github.com/aperturerobotics/bifrost/pubsub/controller"
+	pubsub_controller "github.com/aperturerobotics/bifrost/pubsub/controller"
 	"github.com/aperturerobotics/bifrost/pubsub/nats"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/config"

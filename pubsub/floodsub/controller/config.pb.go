@@ -5,9 +5,10 @@ package floodsub_controller
 
 import (
 	fmt "fmt"
+	math "math"
+
 	floodsub "github.com/aperturerobotics/bifrost/pubsub/floodsub"
 	proto "github.com/golang/protobuf/proto"
-	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.

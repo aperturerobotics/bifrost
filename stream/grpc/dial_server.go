@@ -1,8 +1,6 @@
 package stream_grpc
 
-import (
-	"github.com/aperturerobotics/bifrost/stream/grpc/rpc"
-)
+import stream_grpc_rpc "github.com/aperturerobotics/bifrost/stream/grpc/rpc"
 
 // DialServerRPC fulfills grpc RPC on the server side.
 type DialServerRPC struct {

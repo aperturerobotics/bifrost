@@ -1,7 +1,7 @@
 package nats_controller
 
 import (
-	"github.com/aperturerobotics/bifrost/pubsub/controller"
+	pubsub_controller "github.com/aperturerobotics/bifrost/pubsub/controller"
 	"github.com/blang/semver"
 )
 

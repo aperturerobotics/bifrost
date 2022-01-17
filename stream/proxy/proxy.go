@@ -1,8 +1,9 @@
 package proxy
 
 import (
-	"github.com/aperturerobotics/bifrost/stream"
 	"io"
+
+	"github.com/aperturerobotics/bifrost/stream"
 )
 
 func proxyStreamTo(s1, s2 stream.Stream, cb func()) {

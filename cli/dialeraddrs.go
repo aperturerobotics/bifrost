@@ -1,11 +1,12 @@
 package cli
 
 import (
+	"strings"
+
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/transport/common/dialer"
 	"github.com/aperturerobotics/bifrost/util/confparse"
 	"github.com/urfave/cli"
-	"strings"
 )
 
 // parseDialerAddrs parses a dialer map from a string slice

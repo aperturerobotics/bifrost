@@ -3,7 +3,7 @@ package cli
 import (
 	"os"
 
-	"github.com/aperturerobotics/bifrost/stream/grpc"
+	stream_grpc "github.com/aperturerobotics/bifrost/stream/grpc"
 	"github.com/urfave/cli"
 )
 

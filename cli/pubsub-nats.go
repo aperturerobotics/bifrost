@@ -1,4 +1,5 @@
-//+build bifrost_pubsub_nats
+//go:build bifrost_pubsub_nats
+// +build bifrost_pubsub_nats
 
 package cli
 

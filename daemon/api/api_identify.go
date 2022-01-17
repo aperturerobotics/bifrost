@@ -3,8 +3,8 @@ package bifrost_api
 import (
 	"context"
 
-	"github.com/aperturerobotics/bifrost/peer/grpc"
-	"github.com/aperturerobotics/controllerbus/controller/exec"
+	peer_grpc "github.com/aperturerobotics/bifrost/peer/grpc"
+	controller_exec "github.com/aperturerobotics/controllerbus/controller/exec"
 )
 
 // Identify loads and manages a private key identity.

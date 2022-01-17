@@ -2,6 +2,7 @@ package peer_controller
 
 import (
 	"errors"
+
 	"github.com/aperturerobotics/controllerbus/config"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/blang/semver"

@@ -1,11 +1,12 @@
 package link_holdopen_controller
 
 import (
+	"sync"
+
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/sirupsen/logrus"
-	"sync"
 )
 
 // establishLinkHandler handles EstablishLink values

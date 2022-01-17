@@ -2,6 +2,7 @@ package stream_forwarding
 
 import (
 	"errors"
+
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/protocol"
 	"github.com/aperturerobotics/bifrost/util/confparse"

@@ -7,7 +7,7 @@ import (
 	"github.com/aperturerobotics/bifrost/keypem"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/pubsub"
-	"github.com/aperturerobotics/bifrost/pubsub/grpc"
+	pubsub_grpc "github.com/aperturerobotics/bifrost/pubsub/grpc"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/pkg/errors"

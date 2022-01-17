@@ -5,10 +5,11 @@ package kcp
 
 import (
 	fmt "fmt"
+	math "math"
+
 	blockcompress "github.com/aperturerobotics/bifrost/util/blockcompress"
 	blockcrypt "github.com/aperturerobotics/bifrost/util/blockcrypt"
 	proto "github.com/golang/protobuf/proto"
-	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.

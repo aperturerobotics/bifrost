@@ -5,8 +5,8 @@ import (
 
 	core "github.com/aperturerobotics/bifrost/core/test"
 	"github.com/aperturerobotics/bifrost/keypem"
-	"github.com/aperturerobotics/bifrost/peer/controller"
-	"github.com/aperturerobotics/bifrost/stream/echo"
+	peer_controller "github.com/aperturerobotics/bifrost/peer/controller"
+	stream_echo "github.com/aperturerobotics/bifrost/stream/echo"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
 	srr "github.com/aperturerobotics/controllerbus/controller/resolver/static"

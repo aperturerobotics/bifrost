@@ -5,10 +5,11 @@ package inproc
 
 import (
 	fmt "fmt"
+	math "math"
+
 	dialer "github.com/aperturerobotics/bifrost/transport/common/dialer"
 	pconn "github.com/aperturerobotics/bifrost/transport/common/pconn"
 	proto "github.com/golang/protobuf/proto"
-	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.

@@ -5,10 +5,11 @@ package bifrost_api_controller
 
 import (
 	fmt "fmt"
+	math "math"
+
 	api "github.com/aperturerobotics/bifrost/daemon/api"
 	api1 "github.com/aperturerobotics/controllerbus/bus/api"
 	proto "github.com/golang/protobuf/proto"
-	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.

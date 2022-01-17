@@ -1,7 +1,7 @@
 package stream_grpc
 
 import (
-	"github.com/aperturerobotics/bifrost/stream/grpc/rpc"
+	stream_grpc_rpc "github.com/aperturerobotics/bifrost/stream/grpc/rpc"
 )
 
 // AcceptStreamClientRPC fulfills grpc RPC on the client side.

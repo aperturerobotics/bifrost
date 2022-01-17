@@ -1,6 +1,6 @@
 module github.com/aperturerobotics/genproto/tools
 
-go 1.13
+go 1.16
 
 // aperture: use protobuf 1.3.x based fork for compatibility
 replace (

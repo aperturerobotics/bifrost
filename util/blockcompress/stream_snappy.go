@@ -1,8 +1,9 @@
 package blockcompress
 
 import (
-	"github.com/golang/snappy"
 	"io"
+
+	"github.com/golang/snappy"
 )
 
 // SnappyStream implements a snappy compression backed stream.

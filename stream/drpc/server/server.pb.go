@@ -5,9 +5,10 @@ package stream_drpc_server
 
 import (
 	fmt "fmt"
+	math "math"
+
 	drpc "github.com/aperturerobotics/bifrost/stream/drpc"
 	proto "github.com/golang/protobuf/proto"
-	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.

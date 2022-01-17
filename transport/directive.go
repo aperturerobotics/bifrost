@@ -1,9 +1,10 @@
 package transport
 
 import (
+	"strconv"
+
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/controllerbus/directive"
-	"strconv"
 )
 
 // LookupTransport is a directive to lookup running transports.

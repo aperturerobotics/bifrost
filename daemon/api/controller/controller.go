@@ -4,7 +4,7 @@ import (
 	"context"
 	"net"
 
-	"github.com/aperturerobotics/bifrost/daemon/api"
+	bifrost_api "github.com/aperturerobotics/bifrost/daemon/api"
 	"github.com/aperturerobotics/controllerbus/bus"
 	cbapi "github.com/aperturerobotics/controllerbus/bus/api"
 	"github.com/aperturerobotics/controllerbus/controller"

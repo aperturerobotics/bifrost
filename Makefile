@@ -1,9 +1,10 @@
 PROTOWRAP=hack/bin/protowrap
 PROTOC_GEN_GO=hack/bin/protoc-gen-go
 PROTOC_GEN_GO_DRPC=hack/bin/protoc-gen-go-drpc
+GOIMPORTS=hack/bin/goimports
 GOLANGCI_LINT=hack/bin/golangci-lint
-export GO111MODULE=on
 GOLIST=go list -f "{{ .Dir }}" -m
+export GO111MODULE=on
 
 all:
 
@@ -15,6 +16,12 @@ $(PROTOC_GEN_GO):
 	go build -v \
 		-o ./bin/protoc-gen-go \
 		github.com/golang/protobuf/protoc-gen-go
+
+$(GOIMPORTS):
+	cd ./hack; \
+	go build -v \
+		-o ./bin/goimports \
+		golang.org/x/tools/cmd/goimports
 
 $(PROTOC_GEN_GO_DRPC):
 	cd ./hack; \
@@ -34,7 +41,7 @@ $(GOLANGCI_LINT):
 		-o ./bin/golangci-lint \
 		github.com/golangci/golangci-lint/cmd/golangci-lint
 
-gengo: $(PROTOWRAP) $(PROTOC_GEN_GO) $(PROTOC_GEN_GO_DRPC) vendor
+gengo: $(GOIMPORTS) $(PROTOWRAP) $(PROTOC_GEN_GO) $(PROTOC_GEN_GO_DRPC) vendor
 	shopt -s globstar; \
 	set -eo pipefail; \
 	export PROJECT=$$(go list -m); \
@@ -57,6 +64,8 @@ gengo: $(PROTOWRAP) $(PROTOC_GEN_GO) $(PROTOC_GEN_GO_DRPC) vendor
 				xargs printf -- \
 				"$$(pwd)/vendor/$${PROJECT}/%s "); \
 	rm $$(pwd)/vendor/$${PROJECT} || true
+	go mod vendor
+	$(GOIMPORTS) -w ./
 
 lint: $(GOLANGCI_LINT)
 	$(GOLANGCI_LINT) run ./...

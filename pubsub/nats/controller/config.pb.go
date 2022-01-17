@@ -5,9 +5,10 @@ package nats_controller
 
 import (
 	fmt "fmt"
+	math "math"
+
 	nats "github.com/aperturerobotics/bifrost/pubsub/nats"
 	proto "github.com/golang/protobuf/proto"
-	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.

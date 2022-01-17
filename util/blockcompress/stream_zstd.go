@@ -1,8 +1,9 @@
 package blockcompress
 
 import (
-	cmp "github.com/klauspost/compress/zstd"
 	"io"
+
+	cmp "github.com/klauspost/compress/zstd"
 )
 
 // ZStdStream implements a zstd compression backed stream.
