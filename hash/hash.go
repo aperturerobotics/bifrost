@@ -22,6 +22,10 @@ var SupportedHashTypes = []HashType{
 	HashType_HashType_BLAKE3,
 }
 
+// RecommendedHashType is the hash type recommended to use.
+// Note: not guaranteed to stay the same between Bifrost versions.
+const RecommendedHashType = HashType_HashType_BLAKE3
+
 // IsEmpty checks if the hash is empty.
 func (h *Hash) IsEmpty() bool {
 	return h.GetHashType() == 0 || len(h.GetHash()) == 0

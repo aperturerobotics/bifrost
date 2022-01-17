@@ -1,10 +1,9 @@
 package peer
 
 import (
-	"errors"
-
 	"github.com/aperturerobotics/bifrost/hash"
 	"github.com/libp2p/go-libp2p-core/crypto"
+	"github.com/pkg/errors"
 )
 
 // NewSignature constructs a signature.
@@ -33,6 +32,22 @@ func NewSignature(
 	return s, nil
 }
 
+// Validate checks the signature object (but not the signature itself).
+func (s *Signature) Validate() error {
+	if err := s.GetHashType().Validate(); err != nil {
+		return err
+	}
+	if len(s.GetSigData()) == 0 {
+		return ErrSignatureInvalid
+	}
+	if len(s.GetPubKey()) != 0 {
+		if _, err := s.ParsePubKey(); err != nil {
+			return errors.Wrap(err, "pub_key")
+		}
+	}
+	return nil
+}
+
 // VerifyWithPublic checks a signature with a public key, hashing the data.
 // Returns ok and any error interpeting the signature.
 func (s *Signature) VerifyWithPublic(pubKey crypto.PubKey, data []byte) (bool, error) {
@@ -55,6 +70,11 @@ func (s *Signature) VerifyWithPublic(pubKey crypto.PubKey, data []byte) (bool, e
 }
 
 // ParsePubKey parses the incldued public key.
+// Returns nil, nil if the pub key field was not set.
 func (s *Signature) ParsePubKey() (crypto.PubKey, error) {
-	return crypto.UnmarshalPublicKey(s.GetPubKey())
+	pubKey := s.GetPubKey()
+	if len(pubKey) == 0 {
+		return nil, nil
+	}
+	return crypto.UnmarshalPublicKey(pubKey)
 }

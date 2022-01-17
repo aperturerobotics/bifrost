@@ -176,16 +176,16 @@ func (s *subscription) executeSubscription() {
 
 // handleNatsMessage handles an incoming nats.Msg
 func (s *subscription) handleNatsMessage(msg *nats.Msg) error {
-	// decode nats.msg to PubMessage.
-	pm := &pubmessage.PubMessage{}
-	if err := proto.Unmarshal(msg.Data, pm); err != nil {
+	// decode nats.msg to SignedMsg.
+	pm := &peer.SignedMsg{}
+	pm, err := peer.UnmarshalSignedMsg(msg.Data)
+	if err != nil {
 		return errors.Wrap(err, "unmarshal nats message data")
 	}
-	inner, pubKey, peerID, err := pm.ExtractAndVerify()
+	inner, _, peerID, err := pubmessage.ExtractAndVerify(pm)
 	if err != nil {
 		return err
 	}
-	_ = pubKey
 	s.handlePubMessages([]*pubmessage.Message{
 		pubmessage.NewMessage(peerID, inner),
 	})

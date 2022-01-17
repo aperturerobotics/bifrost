@@ -60,7 +60,7 @@ type FloodSub struct {
 
 // publishChMsg is a message queued for publishing
 type publishChMsg struct {
-	msg         *pubmessage.PubMessage
+	msg         *peer.SignedMsg
 	prevHopPeer peer.ID
 	channelID   string
 }
@@ -198,7 +198,7 @@ func (m *FloodSub) Execute(ctx context.Context) error {
 // execPublish executes publishing a message
 func (m *FloodSub) execPublish(prevHopPeerID peer.ID, pubMsg *publishChMsg) {
 	pkt := &Packet{
-		Publish: []*pubmessage.PubMessage{
+		Publish: []*peer.SignedMsg{
 			pubMsg.msg,
 		},
 	}
@@ -345,7 +345,7 @@ func (m *FloodSub) Close() {
 func (m *FloodSub) handleValidMessage(
 	ctx context.Context,
 	prevHopPeer peer.ID,
-	pkt *pubmessage.PubMessage,
+	pkt *peer.SignedMsg,
 	pktInner *pubmessage.PubMessageInner,
 ) {
 	channelID := pktInner.GetChannel()

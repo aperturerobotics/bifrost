@@ -32,6 +32,7 @@ const (
 	// Note: this is not recommended for use outside of backwards-compat.
 	HashType_HashType_SHA1 HashType = 2
 	// HashType_BLAKE3 is the blake3 hash type.
+	// Uses a 32-byte digest size.
 	HashType_HashType_BLAKE3 HashType = 3
 )
 

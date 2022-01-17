@@ -6,7 +6,7 @@ import (
 
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/pubsub"
-	pubmessage "github.com/aperturerobotics/bifrost/pubsub/util/pubmessage"
+	"github.com/aperturerobotics/bifrost/pubsub/util/pubmessage"
 	stream_packet "github.com/aperturerobotics/bifrost/stream/packet"
 	"github.com/sirupsen/logrus"
 )
@@ -65,9 +65,9 @@ func (s *streamHandler) processPacket(msg *Packet) {
 }
 
 // handlePublish handles incoming published packets
-func (s *streamHandler) handlePublish(pkts []*pubmessage.PubMessage) {
+func (s *streamHandler) handlePublish(pkts []*peer.SignedMsg) {
 	for _, pkt := range pkts {
-		pktInner, _, _, err := pkt.ExtractAndVerify()
+		pktInner, _, _, err := pubmessage.ExtractAndVerify(pkt)
 		if err != nil {
 			s.le.WithError(err).Warnf(
 				"invalid message from peer id: %q",

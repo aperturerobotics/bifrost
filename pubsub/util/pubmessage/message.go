@@ -5,7 +5,7 @@ import (
 	"github.com/aperturerobotics/bifrost/pubsub"
 )
 
-// Message fulfills the Message type
+// Message fulfills the Message type with a PubMessageInner.
 type Message struct {
 	pktInner *PubMessageInner
 	peerID   peer.ID

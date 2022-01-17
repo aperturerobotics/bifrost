@@ -8,7 +8,6 @@ import (
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/protocol"
 	"github.com/aperturerobotics/bifrost/pubsub"
-	"github.com/aperturerobotics/bifrost/pubsub/util/pubmessage"
 	"github.com/libp2p/go-libp2p-core/crypto"
 
 	nats_server "github.com/nats-io/nats-server/v2/server"
@@ -63,7 +62,7 @@ type Nats struct {
 
 // publishChMsg is a message queued for publishing
 type publishChMsg struct {
-	msg         *pubmessage.PubMessage
+	msg         *peer.SignedMsg
 	prevHopPeer peer.ID
 	channelID   string
 }
