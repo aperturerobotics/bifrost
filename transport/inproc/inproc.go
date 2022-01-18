@@ -7,7 +7,6 @@ import (
 
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/transport"
-	dialer "github.com/aperturerobotics/bifrost/transport/common/dialer"
 	"github.com/aperturerobotics/bifrost/transport/common/pconn"
 	transport_controller "github.com/aperturerobotics/bifrost/transport/controller"
 	"github.com/aperturerobotics/controllerbus/bus"
@@ -113,7 +112,7 @@ func BuildInprocController(
 		},
 		ControllerID,
 		Version,
-		map[string]*dialer.DialerOpts{},
+		conf.GetDialers(),
 	)
 }
 
