@@ -58,7 +58,7 @@ func NewInproc(
 		return nil, err
 	}
 
-	localAddr := newAddr(peerID)
+	localAddr := NewAddr(peerID)
 	ip := &Inproc{
 		le:        le,
 		localAddr: localAddr,
@@ -77,7 +77,7 @@ func NewInproc(
 		opts.GetPacketOpts(),
 		0,
 		npc,
-		parseAddr,
+		ParseAddr,
 	)
 	if err != nil {
 		return nil, err

@@ -10,20 +10,21 @@ import (
 
 var scheme = "inproc://"
 
-type addr struct {
+type Addr struct {
 	peerID peer.ID
 	str    string
 }
 
-// newAddr builds a new addr
-func newAddr(peerID peer.ID) *addr {
-	return &addr{
+// NewAddr builds a new Addr
+func NewAddr(peerID peer.ID) *Addr {
+	return &Addr{
 		peerID: peerID,
 		str:    scheme + peerID.Pretty(),
 	}
 }
 
-func parseAddr(addr string) (net.Addr, error) {
+// ParseAddr parses an address.
+func ParseAddr(addr string) (net.Addr, error) {
 	if !strings.HasPrefix(addr, scheme) {
 		return nil, errors.Errorf("expected inproc prefix: %s", addr)
 	}
@@ -31,16 +32,16 @@ func parseAddr(addr string) (net.Addr, error) {
 	if err != nil {
 		return nil, err
 	}
-	return newAddr(pid), nil
+	return NewAddr(pid), nil
 }
 
-func (a *addr) Network() string {
+func (a *Addr) Network() string {
 	return "inproc"
 }
 
-func (a *addr) String() string {
+func (a *Addr) String() string {
 	return a.str
 }
 
 // _ is a type assertion
-var _ net.Addr = ((*addr)(nil))
+var _ net.Addr = ((*Addr)(nil))
