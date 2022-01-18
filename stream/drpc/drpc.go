@@ -12,8 +12,12 @@ import (
 )
 
 // NewDrpcConn constructs a new dprc conn from a stream.
-func NewDrpcConn(ctx context.Context, strm stream.Stream, opts *DrpcOpts) *drpcconn.Conn {
-	return drpcconn.NewWithOptions(strm, opts.BuildOpts())
+func NewDrpcConn(ctx context.Context, strm stream.Stream, opts *DrpcOpts) (*drpcconn.Conn, error) {
+	opt, err := opts.BuildOpts()
+	if err != nil {
+		return nil, err
+	}
+	return drpcconn.NewWithOptions(strm, opt), nil
 }
 
 // EstablishDrpcConn establishes a drpc connection with a peer.
@@ -27,6 +31,10 @@ func EstablishDrpcConn(
 	srcPeer, destPeer peer.ID,
 	transportID uint64,
 ) (*drpcconn.Conn, func(), error) {
+	if err := opts.Validate(); err != nil {
+		return nil, nil, err
+	}
+
 	ms, msRef, err := link.OpenStreamWithPeerEx(
 		ctx,
 		b,
@@ -41,6 +49,10 @@ func EstablishDrpcConn(
 		return nil, nil, err
 	}
 
-	conn := NewDrpcConn(ctx, ms.GetStream(), opts)
-	return conn, msRef, nil
+	conn, err := NewDrpcConn(ctx, ms.GetStream(), opts)
+	if err != nil {
+		msRef()
+		return nil, nil, err
+	}
+	return conn, msRef, err
 }

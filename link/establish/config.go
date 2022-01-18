@@ -28,16 +28,7 @@ func (c *Config) EqualsConfig(c2 config.Config) bool {
 
 // ParsePeerIDs parses the peer ids field.
 func (c *Config) ParsePeerIDs() ([]peer.ID, error) {
-	sl := c.GetPeerIds()
-	pids := make([]peer.ID, len(sl))
-	var err error
-	for i, pidStr := range sl {
-		pids[i], err = peer.IDB58Decode(pidStr)
-		if err != nil {
-			return nil, errors.Wrapf(err, "peer_ids[%d]", i)
-		}
-	}
-	return pids, nil
+	return confparse.ParsePeerIDs(c.GetPeerIds(), false)
 }
 
 // SetPeerIDs sets the peer ids field.
