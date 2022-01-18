@@ -5,7 +5,25 @@ import (
 
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/util/confparse"
+	"github.com/pkg/errors"
 )
+
+// Validate validates the config.
+func (c *Config) Validate() error {
+	if err := c.GetDrpcOpts().Validate(); err != nil {
+		return err
+	}
+	if _, err := c.ParseSrcPeerId(); err != nil {
+		return errors.Wrap(err, "src_peer_id")
+	}
+	if _, err := c.ParseServerPeerIds(); err != nil {
+		return errors.Wrap(err, "server_peer_ids")
+	}
+	if _, err := c.ParseTimeoutDur(); err != nil {
+		return errors.Wrap(err, "timeout_dur")
+	}
+	return nil
+}
 
 // ParseSrcPeerId parses the source peer id, if set.
 func (c *Config) ParseSrcPeerId() (peer.ID, error) {
@@ -14,16 +32,7 @@ func (c *Config) ParseSrcPeerId() (peer.ID, error) {
 
 // ParseServerPeerIds parses the destination peer ids
 func (c *Config) ParseServerPeerIds() ([]peer.ID, error) {
-	serverPeerIDs := c.GetServerPeerIds()
-	ids := make([]peer.ID, len(serverPeerIDs))
-	for i, serverPeerID := range serverPeerIDs {
-		var err error
-		ids[i], err = confparse.ParsePeerID(serverPeerID)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return ids, nil
+	return confparse.ParsePeerIDs(c.GetServerPeerIds(), false)
 }
 
 // ParseTimeoutDur parses the timeout duration.

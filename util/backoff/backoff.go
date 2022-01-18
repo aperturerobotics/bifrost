@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff"
+	"github.com/pkg/errors"
 )
 
 // Construct constructs the backoff.
