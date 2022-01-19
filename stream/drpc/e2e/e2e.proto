@@ -1,0 +1,20 @@
+syntax = "proto3";
+package drpc.e2e;
+
+// MockRequest is the mock request.
+message MockRequest {
+  // Body is the body of the request.
+  string body = 1;
+}
+
+// MockResponse is the mock response.
+message MockResponse {
+  // ReqBody is the echoed request body.
+  string req_body = 1;
+}
+
+// EndToEnd is a end to end test service.
+service EndToEnd {
+  // Mock performs the mock request.
+  rpc Mock(MockRequest) returns (MockResponse) {}
+}

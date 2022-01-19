@@ -5,8 +5,9 @@ import (
 
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/protocol"
-	"github.com/aperturerobotics/bifrost/stream/drpc"
+	stream_drpc "github.com/aperturerobotics/bifrost/stream/drpc"
 	"github.com/aperturerobotics/controllerbus/bus"
+	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
 
 	"storj.io/drpc"
@@ -21,6 +22,8 @@ type RegisterFn func(mux drpc.Mux) error
 type Server struct {
 	// b is the bus
 	b bus.Bus
+	// info is the controller info
+	info controller.Info
 	// drpcOpts are opts passed to drpc
 	drpcOpts *stream_drpc.DrpcOpts
 	// protocolIDs is list of protocol id to listen on.
@@ -40,6 +43,7 @@ type Server struct {
 // If peerIDs and/or domainIDs are empty, matches any.
 func NewServer(
 	b bus.Bus,
+	info controller.Info,
 	opts *stream_drpc.DrpcOpts,
 	protocolIDs []protocol.ID,
 	peerIDs []string,
@@ -55,6 +59,7 @@ func NewServer(
 	server := drpcserver.New(mux)
 	return &Server{
 		b:           b,
+		info:        info,
 		drpcOpts:    opts,
 		protocolIDs: protocolIDs,
 		peerIDs:     peerIDs,
@@ -62,6 +67,18 @@ func NewServer(
 		mux:    mux,
 		server: server,
 	}, nil
+}
+
+// GetControllerInfo returns information about the controller.
+func (s *Server) GetControllerInfo() controller.Info {
+	return s.info
+}
+
+// Execute executes the given controller.
+// Returning nil ends execution.
+// Returning an error triggers a retry with backoff.
+func (s *Server) Execute(ctx context.Context) error {
+	return nil
 }
 
 // HandleDirective asks if the handler can resolve the directive.
@@ -76,7 +93,7 @@ func (s *Server) HandleDirective(ctx context.Context, di directive.Instance) (di
 	return nil, nil
 }
 
-// ResolveHandleMountedStream resolves a HandleMountedStream directive by dialing a target.
+// ResolveHandleMountedStream resolves a HandleMountedStream directive.
 func (s *Server) ResolveHandleMountedStream(
 	ctx context.Context,
 	di directive.Instance,
@@ -136,5 +153,14 @@ func (s *Server) HandleMountedStream(ctx context.Context, ms link.MountedStream)
 	return nil
 }
 
+// Close releases any resources used by the controller.
+// Error indicates any issue encountered releasing.
+func (s *Server) Close() error {
+	return nil
+}
+
 // _ is a type assertion
-var _ link.MountedStreamHandler = ((*Server)(nil))
+var (
+	_ link.MountedStreamHandler = ((*Server)(nil))
+	_ controller.Controller     = ((*Server)(nil))
+)
