@@ -14,7 +14,7 @@ func GetPeerWithID(
 	b bus.Bus,
 	peerIDConstraint ID,
 ) (Peer, directive.Reference, error) {
-	v, ref, err := bus.ExecOneOff(ctx, b, NewGetPeer(peerIDConstraint), nil)
+	v, ref, err := bus.ExecOneOff(ctx, b, NewGetPeer(peerIDConstraint), false, nil)
 	if err != nil {
 		return nil, nil, err
 	}

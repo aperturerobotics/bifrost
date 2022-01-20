@@ -55,6 +55,7 @@ func (a *API) ForwardStreams(
 		plCtx,
 		a.bus,
 		peer.NewGetPeer(targetPeerID),
+		false,
 		reqCtxCancel,
 	)
 	if err != nil {

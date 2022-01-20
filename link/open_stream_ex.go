@@ -36,6 +36,7 @@ func OpenStreamWithPeerEx(
 			transportID,
 			openOpts,
 		),
+		false,
 		nil,
 	)
 	if err != nil {

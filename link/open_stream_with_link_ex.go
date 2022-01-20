@@ -28,6 +28,7 @@ func OpenStreamViaLinkEx(
 			openOpts,
 			transportID,
 		),
+		false,
 		nil,
 	)
 	if err != nil {

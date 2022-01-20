@@ -337,7 +337,7 @@ func (c *Controller) HandleIncomingStream(
 		WithField("remote-peer", lnk.GetRemotePeer().Pretty()).
 		Debug("accepted stream")
 	dir := link.NewHandleMountedStream(pid, c.localPeerID, mstrm.GetPeerID())
-	dval, dref, err := bus.ExecOneOff(ctx, c.bus, dir, nil)
+	dval, dref, err := bus.ExecOneOff(ctx, c.bus, dir, false, nil)
 	if err != nil {
 		le.WithError(err).Warn("error retrieving stream handler for stream")
 		strm.Close()

@@ -86,6 +86,7 @@ func (a *API) Subscribe(serv pubsub_grpc.PubSubService_SubscribeServer) error {
 				ctx,
 				a.bus,
 				pubsub.NewBuildChannelSubscription(channelID, handlePeer.GetPrivKey()),
+				false,
 				nil,
 			)
 			if err != nil {
