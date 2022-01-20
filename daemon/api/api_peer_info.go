@@ -59,7 +59,16 @@ func (a *API) GetPeerInfo(
 	}
 	defer dir.Release()
 
-	rcb := di.AddIdleCallback(func() {
+	errCh := make(chan error, 1)
+	rcb := di.AddIdleCallback(func(errs []error) {
+		if len(errs) != 0 {
+			select {
+			case errCh <- errs[0]:
+				return
+			default:
+			}
+		}
+
 		subCtxCancel()
 	})
 	if rcb != nil {
@@ -69,6 +78,8 @@ func (a *API) GetPeerInfo(
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err()
+	case err := <-errCh:
+		return nil, err
 	case <-subCtx.Done():
 	}
 

@@ -17,7 +17,7 @@ replace (
 )
 
 require (
-	github.com/aperturerobotics/controllerbus v0.8.7-0.20211017055653-c2791257a7c4
+	github.com/aperturerobotics/controllerbus v0.8.7-0.20220120083918-73c808e9d611
 	github.com/aperturerobotics/entitygraph v0.1.4-0.20210530040557-f19da9c2be6d
 	github.com/aperturerobotics/timestamp v0.3.4
 	github.com/blang/semver v3.5.1+incompatible
@@ -51,7 +51,7 @@ require (
 	github.com/xtaci/smux v1.5.16
 	github.com/zeebo/blake3 v0.2.1
 	github.com/zeebo/xxh3 v1.0.2-0.20211113223132-d10cc761c3ac // indirect
-	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3
+	golang.org/x/crypto v0.0.0-20220112180741-5e0467b6c7ce
 	google.golang.org/grpc v1.31.0
 	google.golang.org/protobuf v1.27.1 // indirect
 	nhooyr.io/websocket v1.8.7

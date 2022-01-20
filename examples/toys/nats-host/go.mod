@@ -22,7 +22,7 @@ replace (
 
 require (
 	github.com/aperturerobotics/bifrost v0.0.0-20220107035548-249f4b1b999f
-	github.com/aperturerobotics/controllerbus v0.8.7-0.20220106073925-e71421571a60
+	github.com/aperturerobotics/controllerbus v0.8.7-0.20220120083918-73c808e9d611
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/sirupsen/logrus v1.8.1
 	github.com/urfave/cli v1.22.5
