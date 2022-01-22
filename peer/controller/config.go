@@ -1,10 +1,8 @@
 package peer_controller
 
 import (
-	"github.com/aperturerobotics/bifrost/keypem"
 	"github.com/aperturerobotics/bifrost/util/confparse"
 	"github.com/aperturerobotics/controllerbus/config"
-	"github.com/golang/protobuf/proto"
 	"github.com/libp2p/go-libp2p-core/crypto"
 )
 
@@ -13,13 +11,13 @@ const ConfigID = ControllerID
 
 // NewConfigWithPrivKey builds a new configuration with a private key
 func NewConfigWithPrivKey(pk crypto.PrivKey) (*Config, error) {
-	privKeyPem, err := keypem.MarshalPrivKeyPem(pk)
+	privKeyStr, err := confparse.MarshalPrivateKey(pk)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Config{
-		PrivKey: string(privKeyPem),
+		PrivKey: privKeyStr,
 	}, nil
 }
 
@@ -35,7 +33,21 @@ func (c *Config) EqualsConfig(c2 config.Config) bool {
 		return false
 	}
 
-	return proto.Equal(c, oc)
+	if c.GetPrivKey() == oc.GetPrivKey() {
+		return true
+	}
+
+	pk1, err := c.ParsePrivateKey()
+	if err != nil {
+		return false
+	}
+
+	pk2, err := oc.ParsePrivateKey()
+	if err != nil {
+		return false
+	}
+
+	return pk2.Equals(pk1)
 }
 
 // Validate validates the configuration.
@@ -49,6 +61,5 @@ func (c *Config) Validate() error {
 
 // ParsePrivateKey parses the private key from the configuration.
 func (c *Config) ParsePrivateKey() (crypto.PrivKey, error) {
-	privKeyDat := []byte(c.GetPrivKey())
-	return confparse.ParsePrivateKey(privKeyDat)
+	return confparse.ParsePrivateKey(c.GetPrivKey())
 }

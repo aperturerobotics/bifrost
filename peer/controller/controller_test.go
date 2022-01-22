@@ -3,7 +3,6 @@ package peer_controller
 import (
 	"testing"
 
-	"github.com/aperturerobotics/bifrost/keypem"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/sirupsen/logrus"
@@ -14,8 +13,13 @@ func TestPrivKeyIntegrity(t *testing.T) {
 	log.SetLevel(logrus.DebugLevel)
 	le := logrus.NewEntry(log)
 
-	privKey, _, _ := keypem.GeneratePrivKey()
-	privKeyID, _ := peer.IDFromPrivateKey(privKey)
+	npeer, err := peer.NewPeer(nil)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	privKey := npeer.GetPrivKey()
+	privKeyID := npeer.GetPeerID()
 	peerControllerConf, err := NewConfigWithPrivKey(privKey)
 	if err != nil {
 		t.Fatal(err.Error())

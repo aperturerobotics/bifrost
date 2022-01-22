@@ -1,7 +1,6 @@
 package agent_controller
 
 import (
-	"github.com/aperturerobotics/bifrost/keypem"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/config"
 	"github.com/aperturerobotics/controllerbus/controller"
@@ -46,14 +45,6 @@ func (t *Factory) Construct(
 	privKey, err := cc.ParsePrivateKey()
 	if err != nil {
 		return nil, err
-	}
-
-	if privKey == nil {
-		le.Info("generating private key, none configured")
-		privKey, _, err = keypem.GeneratePrivKey()
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	return NewController(le, privKey)

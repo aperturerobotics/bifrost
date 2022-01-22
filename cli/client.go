@@ -8,13 +8,14 @@ import (
 	"strings"
 
 	bifrost_api "github.com/aperturerobotics/bifrost/daemon/api"
-	"github.com/aperturerobotics/bifrost/keypem"
+	"github.com/aperturerobotics/bifrost/peer"
 	peer_controller "github.com/aperturerobotics/bifrost/peer/controller"
 	pubsub_grpc "github.com/aperturerobotics/bifrost/pubsub/grpc"
 	stream_forwarding "github.com/aperturerobotics/bifrost/stream/forwarding"
 	stream_grpc_accept "github.com/aperturerobotics/bifrost/stream/grpc/accept"
 	stream_grpc_dial "github.com/aperturerobotics/bifrost/stream/grpc/dial"
 	stream_listening "github.com/aperturerobotics/bifrost/stream/listening"
+	"github.com/aperturerobotics/bifrost/util/confparse"
 	cbus_cli "github.com/aperturerobotics/controllerbus/cli"
 	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/urfave/cli"
@@ -313,11 +314,12 @@ func (a *ClientArgs) LoadOrGenerateIdentifyKey() ([]byte, crypto.PrivKey, error)
 	var err error
 	if a.IdentifyGenKey {
 		if _, err := os.Stat(a.IdentifyKeyPath); os.IsNotExist(err) {
-			privKey, _, err = keypem.GeneratePrivKey()
+			npeer, err := peer.NewPeer(nil)
 			if err != nil {
 				return nil, nil, err
 			}
-			dat, err = keypem.MarshalPrivKeyPem(privKey)
+			privKey := npeer.GetPrivKey()
+			dat, err = confparse.MarshalPrivateKeyPEM(privKey)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -336,7 +338,7 @@ func (a *ClientArgs) LoadOrGenerateIdentifyKey() ([]byte, crypto.PrivKey, error)
 	}
 
 	if privKey == nil {
-		privKey, err = keypem.ParsePrivKeyPem(dat)
+		privKey, err = confparse.ParsePrivateKey(string(dat))
 		if err != nil {
 			return nil, nil, err
 		}

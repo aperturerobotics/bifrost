@@ -1,6 +1,7 @@
 package keyfile
 
 import (
+	"crypto/rand"
 	"io/ioutil"
 	"os"
 
@@ -10,9 +11,7 @@ import (
 )
 
 // OpenOrWritePrivKey opens or generates a private key at a path.
-// Uses PEM format, defaults for GeneratePrivKey that Bifrost uses.
-// Note: this will be the latest form we use, and is backwards compat.
-// Ex: both RSA and Ed25518 are key types
+// Uses PEM format and ed25519 keys.
 // May return a private key + an error.
 func OpenOrWritePrivKey(le *logrus.Entry, privKeyPath string) (crypto.PrivKey, error) {
 	var privKey crypto.PrivKey
@@ -22,7 +21,7 @@ func OpenOrWritePrivKey(le *logrus.Entry, privKeyPath string) (crypto.PrivKey, e
 			if le != nil {
 				le.Debug("generating priv key")
 			}
-			privKey, _, err = keypem.GeneratePrivKey()
+			privKey, _, err = crypto.GenerateEd25519Key(rand.Reader)
 			if err != nil {
 				return privKey, err
 			}

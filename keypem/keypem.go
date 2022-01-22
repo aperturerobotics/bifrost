@@ -1,7 +1,6 @@
 package keypem
 
 import (
-	"crypto/rand"
 	"encoding/pem"
 	"errors"
 
@@ -68,10 +67,4 @@ func MarshalPubKeyPem(key crypto.PubKey) ([]byte, error) {
 		Type:  PubPemType,
 		Bytes: dat,
 	}), nil
-}
-
-// GeneratePrivKey generates a new private key to use.
-// The kind of private key is not specified.
-func GeneratePrivKey() (crypto.PrivKey, crypto.PubKey, error) {
-	return crypto.GenerateEd25519Key(rand.Reader)
 }

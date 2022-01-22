@@ -4,7 +4,7 @@ import (
 	"context"
 
 	core "github.com/aperturerobotics/bifrost/core/test"
-	"github.com/aperturerobotics/bifrost/keypem"
+	"github.com/aperturerobotics/bifrost/peer"
 	peer_controller "github.com/aperturerobotics/bifrost/peer/controller"
 	stream_echo "github.com/aperturerobotics/bifrost/stream/echo"
 	"github.com/aperturerobotics/controllerbus/bus"
@@ -64,10 +64,11 @@ func NewTestbed(ctx context.Context, le *logrus.Entry, opts TestbedOpts) (*Testb
 	sr.AddFactory(stream_echo.NewFactory(t.Bus))
 
 	if !opts.NoPeer && t.PrivKey == nil {
-		t.PrivKey, _, err = keypem.GeneratePrivKey()
+		npeer, err := peer.NewPeer(nil)
 		if err != nil {
 			return nil, err
 		}
+		t.PrivKey = npeer.GetPrivKey()
 	}
 
 	if !opts.NoPeer {

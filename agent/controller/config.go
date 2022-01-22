@@ -37,8 +37,7 @@ func (c *Config) Validate() error {
 
 // ParsePrivateKey parses the private key from the configuration.
 func (c *Config) ParsePrivateKey() (crypto.PrivKey, error) {
-	privKeyDat := []byte(c.GetPrivKey())
-	return confparse.ParsePrivateKey(privKeyDat)
+	return confparse.ParsePrivateKey(c.GetPrivKey())
 }
 
 // ParseNodePeerID parses the node peer ID if it is not empty.

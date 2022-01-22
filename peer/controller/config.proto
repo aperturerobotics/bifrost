@@ -3,8 +3,7 @@ package peer.controller;
 
 // Config is the node controller config.
 message Config {
-  // PrivKey is the node private key, pem format.
-  // The libp2p key is in the bytes field.
-  // --- BEGIN LIBP2P PRIVATE KEY ---
+  // PrivKey is the peer private key in either b58 or PEM format.
+  // See confparse.MarshalPrivateKey.
   string priv_key = 1;
 }

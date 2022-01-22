@@ -1,7 +1,10 @@
 package peer
 
-import "testing"
-import b58 "github.com/mr-tron/base58/base58"
+import (
+	"testing"
+
+	b58 "github.com/mr-tron/base58/base58"
+)
 
 // TestDerive tests deriving a context-specific key from crypto keys.
 func TestDerive(t *testing.T) {
