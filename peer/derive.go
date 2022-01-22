@@ -71,3 +71,17 @@ func DeriveKey(context string, privKey crypto.PrivKey, out []byte) error {
 	blake3.DeriveKey(context, material, out)
 	return nil
 }
+
+// DeriveEd25519Key derives a ed25519 private key from an existing private key.
+//
+// The context string will be mixed to determine which key is generated.
+// Not all private key types are supported.
+func DeriveEd25519Key(context string, privKey crypto.PrivKey) (crypto.PrivKey, crypto.PubKey, error) {
+	seed := make([]byte, ed25519.SeedSize)
+	if err := DeriveKey(context, privKey, seed); err != nil {
+		return nil, nil, err
+	}
+
+	key := ed25519.NewKeyFromSeed(seed)
+	return crypto.KeyPairFromStdKey(&key)
+}
