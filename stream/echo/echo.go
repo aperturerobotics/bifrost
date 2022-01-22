@@ -56,7 +56,7 @@ func (c *Controller) GetControllerInfo() controller.Info {
 	return controller.NewInfo(
 		ControllerID,
 		Version,
-		"forwarding controller",
+		"echo controller",
 	)
 }
 
@@ -64,7 +64,6 @@ func (c *Controller) GetControllerInfo() controller.Info {
 // Returning nil ends execution.
 // Returning an error triggers a retry with backoff.
 func (c *Controller) Execute(ctx context.Context) error {
-	// For forwarding, we just handle directives directly.
 	return nil
 }
 
@@ -74,7 +73,6 @@ func (c *Controller) Execute(ctx context.Context) error {
 // It is safe to add a reference to the directive during this call.
 func (c *Controller) HandleDirective(ctx context.Context, di directive.Instance) (directive.Resolver, error) {
 	dir := di.GetDirective()
-	// HandleMountedStream handler.
 	if d, ok := dir.(link.HandleMountedStream); ok {
 		return c.resolveHandleMountedStream(ctx, di, d)
 	}

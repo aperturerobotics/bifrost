@@ -44,8 +44,9 @@ func (m *MountedStreamHandler) HandleMountedStream(
 		subCtx, subCtxCancel := context.WithCancel(ctx)
 		defer subCtxCancel()
 		proxy.ProxyStreams(s, s, subCtxCancel)
-		<-subCtx.Done()
+
 		// wait to release EstablishLink ref
+		<-subCtx.Done()
 	}()
 	return nil
 }

@@ -7,7 +7,7 @@ import (
 )
 
 func proxyStreamTo(s1, s2 stream.Stream, cb func()) {
-	buf := make([]byte, 10000)
+	buf := make([]byte, 8192)
 	_, _ = io.CopyBuffer(s2, s1, buf)
 	// io.Copy(s2, s1)
 	s1.Close()
