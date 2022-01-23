@@ -18,13 +18,19 @@ func TestEncrypt(t *testing.T) {
 
 		// super-secret message
 		msg := "Hello to " + peerID.Pretty() + "!"
-		dat, err := EncryptToPubKey(pubKey, []byte(msg))
+		context := "bifrost/peer/encrypt_test super-duper-secret"
+		dat, err := EncryptToPubKey(pubKey, context, []byte(msg))
 		if err != nil {
 			t.Fatal(err.Error())
 		}
-		t.Logf("keys[%d]: encrypted len: %d", ki, len(dat))
+		t.Logf(
+			"keys[%d]: encrypted: len %d -> %d",
+			ki,
+			len(msg),
+			len(dat),
+		)
 
-		dec, err := DecryptWithPrivKey(privKey, dat)
+		dec, err := DecryptWithPrivKey(privKey, context, dat)
 		if err != nil {
 			t.Fatal(err.Error())
 		}

@@ -9,4 +9,6 @@ var (
 	ErrBodyEmpty = errors.New("message body cannot be empty")
 	// ErrSignatureInvalid is returned for an invalid signature.
 	ErrSignatureInvalid = errors.New("message signature invalid")
+	// ErrShortMessage is returned if a message is too short.
+	ErrShortMessage = errors.New("message too short")
 )
