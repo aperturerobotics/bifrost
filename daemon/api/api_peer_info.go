@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/aperturerobotics/bifrost/peer"
-	peer_grpc "github.com/aperturerobotics/bifrost/peer/grpc"
+	peer_grpc "github.com/aperturerobotics/bifrost/peer/rpc"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/pkg/errors"

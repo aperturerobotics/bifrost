@@ -1,7 +1,7 @@
 package bifrost_api
 
 import (
-	peer_grpc "github.com/aperturerobotics/bifrost/peer/grpc"
+	peer_grpc "github.com/aperturerobotics/bifrost/peer/rpc"
 	pubsub_grpc "github.com/aperturerobotics/bifrost/pubsub/grpc"
 	stream_grpc "github.com/aperturerobotics/bifrost/stream/grpc"
 	bus_grpc "github.com/aperturerobotics/controllerbus/bus/api"

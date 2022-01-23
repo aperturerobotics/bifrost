@@ -8,7 +8,6 @@ message Config {
 }
 
 /* API implements:
-
 	peer_grpc "github.com/aperturerobotics/bifrost/peer/grpc"
 	pubsub_grpc "github.com/aperturerobotics/bifrost/pubsub/grpc"
 	stream_grpc "github.com/aperturerobotics/bifrost/stream/grpc"

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"os"
 
-	peer_grpc "github.com/aperturerobotics/bifrost/peer/grpc"
+	peer_grpc "github.com/aperturerobotics/bifrost/peer/rpc"
 	"github.com/urfave/cli"
 )
 

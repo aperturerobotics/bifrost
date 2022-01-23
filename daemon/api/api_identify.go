@@ -3,7 +3,7 @@ package bifrost_api
 import (
 	"context"
 
-	peer_grpc "github.com/aperturerobotics/bifrost/peer/grpc"
+	peer_grpc "github.com/aperturerobotics/bifrost/peer/rpc"
 	controller_exec "github.com/aperturerobotics/controllerbus/controller/exec"
 )
 
