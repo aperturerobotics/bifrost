@@ -42,6 +42,7 @@ require (
 	github.com/pauleyj/gobee v0.0.0-20190212035730-6270c53072a4
 	github.com/pierrec/lz4 v2.6.1+incompatible
 	github.com/pkg/errors v0.9.1
+	github.com/sasha-s/go-deadlock v0.3.1
 	github.com/sirupsen/logrus v1.8.1
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
 	github.com/templexxx/cpufeat v0.0.0-20180724012125-cef66df7f161 // indirect
@@ -52,6 +53,7 @@ require (
 	github.com/zeebo/blake3 v0.2.1
 	github.com/zeebo/xxh3 v1.0.2-0.20211113223132-d10cc761c3ac // indirect
 	golang.org/x/crypto v0.0.0-20220112180741-5e0467b6c7ce
+	gonum.org/v1/gonum v0.9.3
 	google.golang.org/grpc v1.31.0
 	google.golang.org/protobuf v1.27.1 // indirect
 	nhooyr.io/websocket v1.8.7

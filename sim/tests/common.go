@@ -1,0 +1,32 @@
+package tests
+
+import (
+	"context"
+	"testing"
+
+	"github.com/aperturerobotics/bifrost/sim/graph"
+	"github.com/aperturerobotics/bifrost/sim/simulate"
+	"github.com/sirupsen/logrus"
+)
+
+func AddPeer(t *testing.T, g *graph.Graph) *graph.Peer {
+	p, err := graph.GenerateAddPeer(g)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	return p
+}
+
+func InitSimulator(
+	t *testing.T,
+	ctx context.Context,
+	le *logrus.Entry,
+	g *graph.Graph,
+) *simulate.Simulator {
+	sim, err := simulate.NewSimulator(ctx, le, g)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	le.Info("simulator startup complete")
+	return sim
+}

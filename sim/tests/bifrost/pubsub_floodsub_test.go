@@ -1,120 +1,75 @@
-package main
+//go:build bifrost_floodsub
+// +build bifrost_floodsub
+
+package bifrost
 
 import (
 	"bytes"
 	"context"
-	"os"
 	"testing"
 	"time"
 
-	"github.com/blang/semver"
-	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
-
-	bcli "github.com/aperturerobotics/bifrost/cli"
-	nats "github.com/aperturerobotics/bifrost/pubsub/nats"
-	nats_controller "github.com/aperturerobotics/bifrost/pubsub/nats/controller"
-	"github.com/aperturerobotics/bifrost/sim/tests"
-	"github.com/aperturerobotics/controllerbus/bus"
-
 	"github.com/aperturerobotics/bifrost/pubsub"
+	floodsub_controller "github.com/aperturerobotics/bifrost/pubsub/floodsub/controller"
 	pubsub_relay "github.com/aperturerobotics/bifrost/pubsub/relay"
+	"github.com/aperturerobotics/controllerbus/bus"
+	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/bifrost/sim/graph"
 	"github.com/aperturerobotics/bifrost/sim/simulate"
-	"github.com/aperturerobotics/controllerbus/controller"
+	"github.com/aperturerobotics/bifrost/sim/tests"
+	"github.com/sirupsen/logrus"
 )
-
-var logTrace = false
 
 var addPeer = tests.AddPeer
 var initSimulator = tests.InitSimulator
 
-var privKeyPath string
-
-var bDaemonArgs bcli.DaemonArgs
-
-// Version is the version of the controller implementation.
-var Version = semver.MustParse("0.0.1")
-
-func main() {
-	app := cli.NewApp()
-	app.Name = "nats-host"
-	app.Usage = "bifrost with embedded nats router example"
-	app.HideVersion = true
-	app.Action = runNatsExample
-	app.Flags = []cli.Flag{
-		cli.StringFlag{
-			Name:        "priv-key",
-			Usage:       "path to private key to use",
-			Value:       "priv-key.pem",
-			Destination: &privKeyPath,
-		},
-	}
-	app.Flags = append(
-		app.Flags,
-		(&bDaemonArgs).BuildFlags()...,
-	)
-
-	if err := app.Run(os.Args); err != nil {
-		logrus.Fatal(err.Error())
-	}
-}
-
-func runNatsExample(c *cli.Context) error {
-	ctx := context.Background()
+// TestPubsubFloodsub performs a simple pubsub / floodsub test.
+func TestPubsubFloodsub(t *testing.T) {
+	ctx, ctxCancel := context.WithCancel(context.Background())
+	defer ctxCancel()
 	log := logrus.New()
 	log.SetLevel(logrus.DebugLevel)
 	le := logrus.NewEntry(log)
 
 	g := graph.NewGraph()
 
-	p0 := addPeer(nil, g)
-	p1 := addPeer(nil, g)
-	p2 := addPeer(nil, g)
+	p0 := addPeer(t, g)
+	p1 := addPeer(t, g)
+	p2 := addPeer(t, g)
 
 	lan1 := graph.AddLAN(g)
 	lan1.AddPeer(g, p0)
-	lan1.AddPeer(g, p1) // XXX
-
-	// lan2 := graph.AddLAN(g)
-	// lan2.AddPeer(g, p1)
-	// lan2.AddPeer(g, p2)
-	lan1.AddPeer(g, p2)
+	lan1.AddPeer(g, p1)
+	lan2 := graph.AddLAN(g)
+	lan2.AddPeer(g, p1)
+	lan2.AddPeer(g, p2)
 
 	// replicate p2 -> [lan2] -> p1 -> [lan1] -> p0
 
 	// Add pubsub configurations.
 	topics := []string{"test-topic-1"}
 	for _, peer := range g.AllPeers() {
-		peer.AddFactory(func(b bus.Bus) controller.Factory { return nats_controller.NewFactory(b) })
-		peer.AddConfig("pubsub", &nats_controller.Config{
-			PeerId: peer.GetPeerID().Pretty(),
-			NatsConfig: &nats.Config{
-				LogTrace: logTrace,
-			},
-		})
+		peer.AddFactory(func(b bus.Bus) controller.Factory { return floodsub_controller.NewFactory(b) })
+		peer.AddConfig("pubsub", &floodsub_controller.Config{})
 		peer.AddFactory(func(b bus.Bus) controller.Factory { return pubsub_relay.NewFactory(b) })
 		peer.AddConfig("pubsub-relay", &pubsub_relay.Config{
 			TopicIds: topics,
 		})
 	}
 
-	sim := initSimulator(nil, ctx, le, g)
+	sim := initSimulator(t, ctx, le, g)
 
-	var t *testing.T
 	assertConnectivity := func(p0, p1 *graph.Peer) {
 		px0 := sim.GetPeerByID(p0.GetPeerID())
 		px1 := sim.GetPeerByID(p1.GetPeerID())
 		if err := simulate.TestConnectivity(ctx, px0, px1); err != nil {
-			le.WithError(err).Error("unsuccessful connectivity test from 0 to 1")
-			// t.Fatal(err.Error())
-		} else {
-			le.Infof(
-				"successful connectivity test between %s and %s",
-				p0.GetPeerID().Pretty(),
-				p1.GetPeerID().Pretty(),
-			)
+			t.Fatal(err.Error())
 		}
+		le.Infof(
+			"successful connectivity test between %s and %s",
+			p0.GetPeerID().Pretty(),
+			p1.GetPeerID().Pretty(),
+		)
 	}
 	assertConnectivity(p0, p1)
 	assertConnectivity(p1, p2)
@@ -128,7 +83,6 @@ func runNatsExample(c *cli.Context) error {
 			ctx,
 			lp2tb.Bus,
 			pubsub.NewBuildChannelSubscription(channelID, lp2tb.PrivKey),
-			true,
 			nil,
 		)
 		if err != nil {
@@ -143,7 +97,6 @@ func runNatsExample(c *cli.Context) error {
 			ctx,
 			lp0tb.Bus,
 			pubsub.NewBuildChannelSubscription(channelID, lp0tb.PrivKey),
-			true,
 			nil,
 		)
 		if err != nil {
@@ -161,7 +114,7 @@ func runNatsExample(c *cli.Context) error {
 		})
 
 		// TODO: remove this delay... needs a little time to "settle"
-		<-time.After(time.Millisecond * 200)
+		<-time.After(time.Millisecond * 100)
 		testReplicate := func() {
 			le.Infof("publishing data on p2 with peer %s", p2.GetPeerID().Pretty())
 			s2.Publish(testingData)
@@ -188,5 +141,4 @@ func runNatsExample(c *cli.Context) error {
 	}
 
 	le.Info("tests successful")
-	return nil
 }

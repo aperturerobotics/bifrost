@@ -30,22 +30,30 @@ Bifrost is designed around the following core concepts:
  - **Route**: a multi-hop path through the network between two Peer.
  - **Circuit**: a type of Link which implements a multi-hop connection.
 
-Wrappers are provided for interop with and support for other networking and
-pubsub libraries and systems like [libp2p] and [noise], [nats], and more. These
-projects have been simplified by replacing all connections and crypto management
-with bindings to the Bifrost abstractions.
+Integrates and interoperates with other networking, pubsub, RPC libraries like
+[libp2p], [noise], [drpc], and [nats].
 
-In practice, this makes it trivial to mix-and-match communications hardware and
-software, often hot-loading support for new functionality without requiring a
-restart of the entire process. (see: ControllerBus plugins & hot reload).
-
+[drpc]: https://github.com/storj/drpc
 [libp2p]: https://libp2p.io/
 [noise]: https://github.com/perlin-network/noise
 [nats]: https://nats.io
 
-An EntityGraph controller is provided. EntityGraph exposes the internal state
-representation of Bifrost to visualizers and instrumentation via a graph-based
-inter-connected entity model.
+In practice, this makes it easy to mix-and-match communications hardware and
+software in a configurable and reproducible way, often hot-loading support for
+new functionality without requiring a restart of the entire process.
+
+The [network simulator], [testbed], and [in-proc transport] can be used to write
+end-to-end tests as Go unit tests. The mock transports use identical code to the
+real transports, and appear the same to the application code.
+
+[network simulator]: ./sim
+[testbed]: ./testbed
+[in-proc transport]: ./transport/inproc
+
+[EntityGraph] exposes the internal state representation of Bifrost to
+visualizers and instrumentation via a graph-based inter-connected entity model.
+
+[EntityGraph]: https://github.com/aperturerobotics/entitygraph
 
 ### Transports and Links
 

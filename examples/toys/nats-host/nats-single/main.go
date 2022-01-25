@@ -12,12 +12,12 @@ import (
 	nats "github.com/aperturerobotics/bifrost/pubsub/nats"
 	nats_controller "github.com/aperturerobotics/bifrost/pubsub/nats/controller"
 	"github.com/aperturerobotics/controllerbus/bus"
-	"github.com/aperturerobotics/network-sim/tests"
+	"github.com/aperturerobotics/bifrost/sim/tests"
 
 	"github.com/aperturerobotics/bifrost/pubsub"
 	pubsub_relay "github.com/aperturerobotics/bifrost/pubsub/relay"
 	"github.com/aperturerobotics/controllerbus/controller"
-	"github.com/aperturerobotics/network-sim/graph"
+	"github.com/aperturerobotics/bifrost/sim/graph"
 )
 
 var addPeer = tests.AddPeer

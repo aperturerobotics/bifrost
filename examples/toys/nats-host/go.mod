@@ -4,8 +4,6 @@ go 1.16
 
 replace github.com/aperturerobotics/bifrost => ../../../
 
-require github.com/aperturerobotics/network-sim v0.0.0-20220108104750-72cf864be658
-
 // aperture: use compatibility forks
 replace (
 	github.com/golang/protobuf => github.com/aperturerobotics/go-protobuf-1.3.x v0.0.0-20200726220404-fa7f51c52df0 // aperture-1.3.x
@@ -22,7 +20,7 @@ replace (
 
 require (
 	github.com/aperturerobotics/bifrost v0.0.0-20220107035548-249f4b1b999f
-	github.com/aperturerobotics/controllerbus v0.8.7-0.20220120083918-73c808e9d611
+	github.com/aperturerobotics/controllerbus v0.8.7-0.20220120091329-a050987b33ee
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/sirupsen/logrus v1.8.1
 	github.com/urfave/cli v1.22.5
