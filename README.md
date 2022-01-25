@@ -20,6 +20,8 @@ extensive and flexible configuration. Connections are created on-demand.
 
 ## Overview
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/aperturerobotics/bifrost.svg)](https://pkg.go.dev/github.com/aperturerobotics/bifrost)
+
 Bifrost is designed around the following core concepts:
 
  - **Peer**: a routable process or device with a keypair.
@@ -193,3 +195,7 @@ Bifrost is built & supported by Aperture Robotics, LLC.
 Please open a [GitHub issue] with any questions / issues.
 
 [GitHub issue]: https://github.com/aperturerobotics/bifrost/issues/new
+
+... or feel free to reach out on [Matrix Chat].
+
+[Matrix Chat]: https://matrix.to/#/#aperture-robotics:matrix.org
