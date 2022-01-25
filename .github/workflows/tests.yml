@@ -1,0 +1,23 @@
+name: Tests
+
+on:
+  push:
+    branches: [master, next]
+
+# Builds images for target boards.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go: ['1.17']
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
+      - name: Run go tests
+        run: |
+          go test -v ./...
