@@ -17,13 +17,14 @@ replace (
 )
 
 require (
-	github.com/aperturerobotics/controllerbus v0.8.7-0.20220120091329-a050987b33ee
+	github.com/aperturerobotics/controllerbus v0.8.7-0.20220125031950-8e9092b8dc8a
 	github.com/aperturerobotics/entitygraph v0.1.4-0.20210530040557-f19da9c2be6d
 	github.com/aperturerobotics/timestamp v0.3.4
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/djherbis/buffer v1.2.0
 	github.com/frankban/quicktest v1.14.0 // indirect
+	github.com/gin-gonic/gin v1.7.2-0.20220120143335-580e7da6eed0 // indirect
 	github.com/golang/protobuf v1.5.2
 	github.com/golang/snappy v0.0.4
 	github.com/hashicorp/yamux v0.0.0-20211028200310-0bc27b27de87
@@ -56,6 +57,6 @@ require (
 	gonum.org/v1/gonum v0.9.3
 	google.golang.org/grpc v1.31.0
 	google.golang.org/protobuf v1.27.1 // indirect
-	nhooyr.io/websocket v1.8.7
+	nhooyr.io/websocket v1.8.8-0.20210410000328-8dee580a7f74
 	storj.io/drpc v0.0.26
 )

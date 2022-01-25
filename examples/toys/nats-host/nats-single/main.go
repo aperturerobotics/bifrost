@@ -11,13 +11,13 @@ import (
 	bcli "github.com/aperturerobotics/bifrost/cli"
 	nats "github.com/aperturerobotics/bifrost/pubsub/nats"
 	nats_controller "github.com/aperturerobotics/bifrost/pubsub/nats/controller"
-	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/bifrost/sim/tests"
+	"github.com/aperturerobotics/controllerbus/bus"
 
 	"github.com/aperturerobotics/bifrost/pubsub"
 	pubsub_relay "github.com/aperturerobotics/bifrost/pubsub/relay"
-	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/bifrost/sim/graph"
+	"github.com/aperturerobotics/controllerbus/controller"
 )
 
 var addPeer = tests.AddPeer
@@ -90,6 +90,7 @@ func runNatsExample(c *cli.Context) error {
 		ctx,
 		lp0tb.Bus,
 		pubsub.NewBuildChannelSubscription(channelID, lp0tb.PrivKey),
+		false,
 		nil,
 	)
 	if err != nil {
