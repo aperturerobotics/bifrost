@@ -30,8 +30,8 @@ Bifrost is designed around the following core concepts:
  - **Route**: a multi-hop path through the network between two Peer.
  - **Circuit**: a type of Link which implements a multi-hop connection.
 
-Integrates and interoperates with other networking, pubsub, RPC libraries like
-[libp2p], [noise], [drpc], and [nats].
+Integrates with networking, pubsub, and RPC libraries like [libp2p], [noise],
+[drpc], and [nats].
 
 [drpc]: https://github.com/storj/drpc
 [libp2p]: https://libp2p.io/
