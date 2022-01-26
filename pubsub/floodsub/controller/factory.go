@@ -14,13 +14,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Factory constructs a GossipSub controller.
+// Factory constructs a floodsub controller.
 type Factory struct {
 	// bus is the controller bus
 	bus bus.Bus
 }
 
-// NewFactory builds a GossipSub controller factory.
+// NewFactory builds a FloodSub controller factory.
+// Similar to libp2p floodsub: sends messages to neighbors.
 func NewFactory(bus bus.Bus) *Factory {
 	return &Factory{bus: bus}
 }

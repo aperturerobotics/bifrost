@@ -6,6 +6,7 @@ import (
 
 	"github.com/aperturerobotics/bifrost/pubsub/floodsub"
 	floodsub_controller "github.com/aperturerobotics/bifrost/pubsub/floodsub/controller"
+	nats_controller "github.com/aperturerobotics/bifrost/pubsub/nats/controller"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/config"
 	"github.com/aperturerobotics/controllerbus/controller"
@@ -19,6 +20,12 @@ var pubsubProviders = map[string](func(args *DaemonArgs) (config.Config, error))
 	"floodsub": func(args *DaemonArgs) (config.Config, error) {
 		return &floodsub_controller.Config{
 			FloodsubConfig: &floodsub.Config{},
+		}, nil
+	},
+	"nats": func(args *DaemonArgs) (config.Config, error) {
+		return &nats_controller.Config{
+			PeerId: "any",
+			// NatsConfig: &nats.Config{},
 		}, nil
 	},
 }

@@ -1,6 +1,16 @@
+hold-open:
+  config: {}
+  id: bifrost/link/hold-open/1
+  revision: 1
+pubsub:
+  config:
+    peerId: any
+  id: bifrost/nats/1
+  revision: 1
 udp:
   config:
     dialers: {}
     listenAddr: :5112
+    packetOpts: {}
   id: bifrost/udp/1
   revision: 1

@@ -15,13 +15,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Factory constructs a GossipSub controller.
+// Factory constructs a NATS pubsub controller.
 type Factory struct {
 	// bus is the controller bus
 	bus bus.Bus
 }
 
-// NewFactory builds a GossipSub controller factory.
+// NewFactory builds a NATS pubsub controller factory.
 func NewFactory(bus bus.Bus) *Factory {
 	return &Factory{bus: bus}
 }

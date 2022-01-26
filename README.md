@@ -85,8 +85,21 @@ implementation, and support for libp2p pubsub algorithms.
 
 Bifrost can be used as either a Go library or a command-line / daemon.
 
+The [examples](./examples) directory contains yaml files to configure the
+daemon, as well as "toys" which are self-contained Go program examples.
+
+To install the CLI and daemon:
+
 ```bash
-GO111MODULE=on go install -v github.com/aperturerobotics/bifrost/cmd/bifrost
+# Clone the repo and install.
+git clone https://github.com/aperturerobotics/bifrost
+cd ./bifrost/cmd/bifrost
+go install -v
+
+# Alternatively:
+# Note: this currently fails on go >= 1.16 due to replace directives.
+# See: https://github.com/golang/go/issues/44840
+GO111MODULE=on go install -v github.com/aperturerobotics/bifrost/cmd/bifrost@master
 ```
 
 Access help by adding the "-h" tag or running "bifrost help."
@@ -94,7 +107,12 @@ Access help by adding the "-h" tag or running "bifrost help."
 As a basic example, launch the daemon:
 
 ```
-bifrost daemon --write-config --hold-open-links --pubsub floodsub --api-listen :5110 --udp-listen :5112
+bifrost daemon \
+  --write-config \
+  --hold-open-links \
+  --pubsub nats  \
+  --api-listen :5110 \
+  --udp-listen :5112
 ```
 
 ### YAML Configuration
@@ -115,6 +133,37 @@ pubsub:
   id: bifrost/floodsub/1
   revision: 1
 ```
+
+### Daemon CLI
+
+The Bifrost daemon is configured with a YAML ConfigSet and/or via the API.
+
+```
+NAME:
+   bifrost daemon - run a bifrost daemon
+
+OPTIONS:
+   --hold-open-links         if set, hold open links without an inactivity timeout [$BIFROST_HOLD_OPEN_LINKS]
+   --websocket-listen value  if set, will listen on address for websocket connections, ex :5111 [$BIFROST_WS_LISTEN]
+   --udp-listen value        if set, will listen on address for udp connections, ex :5112 [$BIFROST_UDP_LISTEN]
+   --xbee-device-path value  xbee device path to open, if set [$BIFROST_XBEE_PATH]
+   --xbee-device-baud value  xbee device baudrate to use, defaults to 115200 (default: 115200) [$BIFROST_XBEE_BAUD]
+   --establish-peers value   if set, request establish links to list of peer ids [$BIFROST_ESTABLISH_PEERS]
+   --xbee-peers value        list of peer-id@address known XBee peers [$BIFROST_XBEE_PEERS]
+   --udp-peers value         list of peer-id@address known UDP peers [$BIFROST_UDP_PEERS]
+   --websocket-peers value   list of peer-id@address known WebSocket peers [$BIFROST_WS_PEERS]
+   --pubsub value            if set, will configure pubsub from options: [floodsub] [$BIFROST_PUBSUB]
+   --config value, -c value  path to configuration yaml file (default: "bifrost_daemon.yaml") [$BIFROST_CONFIG]
+   --write-config            write the daemon config file on startup [$BIFROST_WRITE_CONFIG]
+   --node-priv value         path to node private key, will be generated if doesn't exist (default: "bifrost_daemon.pem") [$BIFROST_NODE_PRIV]
+   --api-listen value        if set, will listen on address for API grpc connections, ex :5110 (default: ":5110") [$BIFROST_API_LISTEN]
+   --prof-listen value       if set, debug profiler will be hosted on the port, ex :8080 [$BIFROST_PROF_LISTEN]
+```
+
+These CLI flags are provided for convenience to quickly configure a daemon, and
+the resulting config can be written to a file with `--write-config` for further
+adjustments to be made. Note, however, that additional controllers are available
+which are not yet exposed via these flags.
 
 ### Client CLI
 
