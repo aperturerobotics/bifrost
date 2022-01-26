@@ -152,7 +152,7 @@ OPTIONS:
    --xbee-peers value        list of peer-id@address known XBee peers [$BIFROST_XBEE_PEERS]
    --udp-peers value         list of peer-id@address known UDP peers [$BIFROST_UDP_PEERS]
    --websocket-peers value   list of peer-id@address known WebSocket peers [$BIFROST_WS_PEERS]
-   --pubsub value            if set, will configure pubsub from options: [floodsub] [$BIFROST_PUBSUB]
+   --pubsub value            if set, will configure pubsub from options: [floodsub, nats] [$BIFROST_PUBSUB]
    --config value, -c value  path to configuration yaml file (default: "bifrost_daemon.yaml") [$BIFROST_CONFIG]
    --write-config            write the daemon config file on startup [$BIFROST_WRITE_CONFIG]
    --node-priv value         path to node private key, will be generated if doesn't exist (default: "bifrost_daemon.pem") [$BIFROST_NODE_PRIV]
