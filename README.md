@@ -194,7 +194,7 @@ COMMANDS:
 With the above operations, all stream handling and interaction with the network
 is exposed to the API and command line. Some examples:
 
-```
+```sh
   # Note: you can edit bifrost_daemon.yaml to change settings.
   # Once the daemon configuration exists, you can now just run:
   bifrost daemon
@@ -236,6 +236,60 @@ is exposed to the API and command line. Some examples:
     --local-peer-id <local-peer-id> \
     --protocol-id /x/myproto
 ```
+
+### Example: forward HTTP traffic between peers
+
+The following is a basic example of using the CLI to forward encrypted traffic
+between a local port and a remote peer port, similar to SSH port forwarding:
+
+```sh
+  # note the peer id in the logs
+  ./bifrost daemon \
+            --write-config \
+            --udp-listen :5000 \
+            --node-priv daemon_node_priv_2.pem \
+            --websocket-listen ":5111" \
+            --prof-listen ":6201"
+  
+  # forward incoming connections to port 8000
+  # example: "python3 -m http.server 8080"
+  ./bifrost client forward --protocol-id "test/protocol/1" --target /ip4/127.0.0.1/tcp/8000
+  
+  # replace PEER-ID-HERE with the peer ID from the first daemon.
+  # start a second daemon (in a new shell).
+  ./bifrost daemon \
+            --udp-listen :5001 \
+            --udp-peers "PEER-ID-HERE@127.0.0.1:5000" \
+            --api-listen ":5112"
+  
+  # tell it to listen on port 8082 and forward to the other peer.
+  # try browsing to http://localhost:8082
+  ./bifrost client --dial-addr 127.0.0.1:5112 listen \
+            --peer-id "PEER-ID-HERE" \
+            --protocol-id test/protocol/1 \
+            --listen /ip4/127.0.0.1/tcp/8002
+  
+  # Dial via CLI
+  # stdin will be routed to the remote stream.
+  ./bifrost client \
+            --dial-addr 127.0.0.1:5112  \
+            dial \
+            --peer-id PEER-ID-HERE \
+            --protocol-id test/protocol/1 
+  
+  # example: list running directives
+  ./bifrost client cbus bus-info
+  ./bifrost client --dial-addr 127.0.0.1:5112 cbus bus-info
+```
+
+This example shows how to run two daemons with information on how to contact
+each other, and then "tell" the second daemon to listen on port 8002 and forward
+any incoming connections to the remote peer with the given peer ID. 
+
+When someone connects to port 8002 the EstablishLinkWithPeer directive is added
+and the UDP transport opens the connection with the peer (on-demand.) The stream
+is then negotiated. The remote daemon uses HandleMountedStream which is handled
+by the "forwarding" controller, which forwards the stream to localhost at 8000.
 
 ## Support
 
