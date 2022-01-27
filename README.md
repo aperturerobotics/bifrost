@@ -253,7 +253,9 @@ between a local port and a remote peer port, similar to SSH port forwarding:
   
   # forward incoming connections to port 8000
   # example: "python3 -m http.server 8080"
-  ./bifrost client forward --protocol-id "test/protocol/1" --target /ip4/127.0.0.1/tcp/8000
+  ./bifrost client forward \
+            --protocol-id "test/protocol/1" \
+            --target /ip4/127.0.0.1/tcp/8000
   
   # replace PEER-ID-HERE with the peer ID from the first daemon.
   # start a second daemon (in a new shell).
@@ -268,18 +270,6 @@ between a local port and a remote peer port, similar to SSH port forwarding:
             --peer-id "PEER-ID-HERE" \
             --protocol-id test/protocol/1 \
             --listen /ip4/127.0.0.1/tcp/8002
-  
-  # Dial via CLI
-  # stdin will be routed to the remote stream.
-  ./bifrost client \
-            --dial-addr 127.0.0.1:5112  \
-            dial \
-            --peer-id PEER-ID-HERE \
-            --protocol-id test/protocol/1 
-  
-  # example: list running directives
-  ./bifrost client cbus bus-info
-  ./bifrost client --dial-addr 127.0.0.1:5112 cbus bus-info
 ```
 
 This example shows how to run two daemons with information on how to contact
