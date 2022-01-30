@@ -40,9 +40,11 @@ Integrates with networking, pubsub, and RPC libraries like [libp2p], [noise],
 [noise]: https://github.com/perlin-network/noise
 [nats]: https://nats.io
 
-In practice, this makes it easy to mix-and-match communications hardware and
-software in a configurable and reproducible way, often hot-loading support for
-new functionality without requiring a restart of the entire process.
+Configuring each component as an independent controller makes it easy to
+mix-and-match communications hardware and software in a configurable and
+reproducible way. Links between peers are built on-demand and multiplex many
+streams over the same connection. Resources are released when no longer needed.
+Components can be reconfigured dynamically without restarting the process.
 
 The [network simulator], [testbed], and [in-proc transport] can be used to write
 end-to-end tests as Go unit tests. The mock transports use identical code to the
