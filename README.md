@@ -12,12 +12,12 @@
  - **PubSub**: publish/subscribe channels with pluggable implementations.
  - **Robust**: uses Quic for reliable connections over lossy transports.
 
-Bifrost provides [ControllerBus] controllers and directives to manage links
-between peers, transports, routing, and other higher-level processes. It has
-extensive and flexible configuration. Connections are created on-demand.
+Bifrost uses [ControllerBus] controllers and directives to manage links between
+peers, transports, routing, and other higher-level processes with extensive and
+flexible configuration.
 
 [ControllerBus]: https://github.com/aperturerobotics/controllerbus
-
+ 
 ## Overview
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/aperturerobotics/bifrost.svg)](https://pkg.go.dev/github.com/aperturerobotics/bifrost)
@@ -25,12 +25,11 @@ extensive and flexible configuration. Connections are created on-demand.
 Bifrost is designed around the following core concepts:
 
  - **Peer**: a routable process or device with a keypair.
- - **Transport**: protocol or hardware for communication Link between two Peer.
+ - **Transport**: a protocol which can create Links with other peers.
  - **Link**: a connection between two peers over a Transport.
  - **Stream**: channel of data between two Peer with a protocol type.
+ - **RPC**: request/reply and bidirectional streaming remote calls.
  - **PubSub**: at-least-once delivery of messages to named topics.
- - **Route**: a multi-hop path through the network between two Peer.
- - **Circuit**: a type of Link which implements a multi-hop connection.
 
 Integrates with networking, pubsub, and RPC libraries like [libp2p], [noise],
 [drpc], and [nats].
@@ -39,12 +38,6 @@ Integrates with networking, pubsub, and RPC libraries like [libp2p], [noise],
 [libp2p]: https://libp2p.io/
 [noise]: https://github.com/perlin-network/noise
 [nats]: https://nats.io
-
-Configuring each component as an independent controller makes it easy to
-mix-and-match communications hardware and software in a configurable and
-reproducible way. Links between peers are built on-demand and multiplex many
-streams over the same connection. Resources are released when no longer needed.
-Components can be reconfigured dynamically without restarting the process.
 
 The [network simulator], [testbed], and [in-proc transport] can be used to write
 end-to-end tests as Go unit tests. The mock transports use identical code to the
@@ -59,29 +52,8 @@ visualizers and instrumentation via a graph-based inter-connected entity model.
 
 [EntityGraph]: https://github.com/aperturerobotics/entitygraph
 
-### Transports and Links
-
-A Link is a packet stream between two Peer. Links are created by Transports,
-which are associated with a local private keypair.
-
-Transports are responsible for handshaking their identity and providing stream
-multiplexing, encryption, and ordering. The Bifrost codebase contains common
-implementations for packet-based and stream-based transports, based primarily on
-the [quic-go] implementation of the Quic UDP protocol.
-
-[quic-go]: https://github.com/lucas-clemente/quic-go
-
-The Transport controller creates a HandleStream directive with the protocol and
-peer info. The appropriate controller for the protocol responds to the directive
-and handles the incoming stream. This decouples the communication from the app.
-
-### PubSub
-
-A PubSub is a controller that supports topic-based at-least-once message
-delivery to a network of interested peers.
-
-Nats is also supported as PubSub protocol. There is also a simpler "floodsub"
-implementation, and support for libp2p pubsub algorithms.
+Configuring each component as an independent controller makes it easy to adapt
+application code to different operating environments and protocols.
 
 ## Examples
 
@@ -282,6 +254,28 @@ When someone connects to port 8002 the EstablishLinkWithPeer directive is added
 and the UDP transport opens the connection with the peer (on-demand.) The stream
 is then negotiated. The remote daemon uses HandleMountedStream which is handled
 by the "forwarding" controller, which forwards the stream to localhost at 8000.
+
+## Transports and Links
+
+A Link is a packet stream between two Peer. Links are created by Transports,
+which are associated with a local private keypair.
+
+Transports are responsible for handshaking their identity and providing stream
+multiplexing, encryption, and ordering. The Bifrost codebase contains common
+implementations for packet-based and stream-based transports, based primarily on
+the [quic-go] implementation of the Quic UDP protocol.
+
+[quic-go]: https://github.com/lucas-clemente/quic-go
+
+The HandleMounedStream directive contains incoming protocol and peer info. The
+appropriate controller for the protocol responds to the directive and handles
+the incoming stream. This decouples the transport layers from the protocols.
+
+## PubSub
+
+A PubSub is a controller that supports topic-based at-least-once delivery.
+
+Nats and floodsub are currently supported as PubSub protocols.
 
 ## Support
 
