@@ -279,8 +279,6 @@ Nats and floodsub are currently supported as PubSub protocols.
 
 ## Support
 
-[![Support Server](https://img.shields.io/discord/941326356082479104.svg?label=Discord&logo=Discord&colorB=7289da&style=for-the-badge)](https://discord.gg/EmeEENhKkg)
-
 Bifrost is built & supported by Aperture Robotics, LLC.
 
 Please open a [GitHub issue] with any questions / issues.
