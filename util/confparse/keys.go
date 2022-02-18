@@ -1,11 +1,12 @@
 package confparse
 
 import (
-	"errors"
 	"strings"
 
+	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/libp2p/go-libp2p-core/crypto"
 	b58 "github.com/mr-tron/base58/base58"
+	"github.com/pkg/errors"
 )
 
 // ParsePublicKey parses the public key from a string.
@@ -81,7 +82,7 @@ func MarshalPrivateKey(key crypto.PrivKey) (string, error) {
 //
 // if the peer id is given, checks if it matches
 func ValidatePubKey(id string, peerID peer.ID) error {
-	pkey, err := confparse.ParsePublicKey(id)
+	pkey, err := ParsePublicKey(id)
 	if err == nil && pkey == nil {
 		err = errors.New("pub_key cannot be empty")
 	}
