@@ -32,3 +32,12 @@ func ParsePeerIDs(ids []string, allowEmpty bool) ([]peer.ID, error) {
 	}
 	return pids, nil
 }
+
+// ValidatePeerID checks if a peer ID is valid and set.
+func ValidatePeerID(id string) error {
+	pid, err := ParsePeerID(id)
+	if err == nil && len(pid) == 0 {
+		err = peer.ErrPeerIDEmpty
+	}
+	return err
+}
