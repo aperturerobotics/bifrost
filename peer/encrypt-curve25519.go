@@ -80,8 +80,17 @@ func EncryptToEd25519(
 	// compress the message
 	msg := s2.EncodeBetter(nil, msgSrc)
 
-	// use the first 24 bytes of msg pubkey curve25519 as 24-byte nonce
-	msgNonce := msgPubKey[:chacha20poly1305.NonceSizeX]
+	// blake3 hash the msg pubkey
+	msgPubKeyHash := blake3.Sum256(msgPubKey[:])
+
+	// use the first 24 bytes of msg pubkey hash as 24-byte nonce
+	msgNonce := msgPubKeyHash[:chacha20poly1305.NonceSizeX]
+
+	// xor the remaining 8 bytes of the hash with the nonce
+	xorHash := msgPubKeyHash[chacha20poly1305.NonceSizeX:]
+	for i := range msgNonce {
+		msgNonce[i] ^= xorHash[(i+2)%len(xorHash)]
+	}
 
 	// encrypt with chacha20poly1305 cipher
 	// prepend the 32-byte curve25519 one-time message key
@@ -137,11 +146,20 @@ func DecryptWithEd25519(
 		return nil, err
 	}
 
-	// use the first 24 bytes of msg pubkey curve25519 as 24-byte nonce
-	msgNonce := msgPubKey[:chacha20poly1305.NonceSizeX]
-	msgEnc := ciphertext[32:]
+	// blake3 hash the msg pubkey
+	msgPubKeyHash := blake3.Sum256(msgPubKey[:])
+
+	// use the first 24 bytes of msg pubkey hash as 24-byte nonce
+	msgNonce := msgPubKeyHash[:chacha20poly1305.NonceSizeX]
+
+	// xor the remaining 8 bytes of the hash with the nonce
+	xorHash := msgPubKeyHash[chacha20poly1305.NonceSizeX:]
+	for i := range msgNonce {
+		msgNonce[i] ^= xorHash[(i+2)%len(xorHash)]
+	}
 
 	// decrypt message with shared secret
+	msgEnc := ciphertext[32:]
 	cipher, err := chacha20poly1305.NewX(sharedSecret)
 	if err != nil {
 		return nil, err
