@@ -22,6 +22,12 @@ const TransportID = "xbee"
 // Version is the version of the xbee implementation.
 var Version = semver.MustParse("0.0.1")
 
+// ControllerID is the xbee controller ID.
+const ControllerID = "bifrost/xbee/1"
+
+// Link represents a xbee-based connection/link.
+type Link = pconn.Link
+
 // XBee implements a XBee transport.
 type XBee struct {
 	*pconn.Transport
