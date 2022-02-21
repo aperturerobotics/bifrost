@@ -1,13 +1,4 @@
-udp:
-  config:
-    dialers: {}
-    listenAddr: :5111
-    packetOpts:
-      blockCompress: BlockCompress_NONE
-      blockCrypt: BlockCrypt_SALSA20
-      kcpMode: KCPMode_SLOW1
-  id: bifrost/udp/1
-  revision: 1
+# Note: the peer IDs and xbee serial no may need to be updated.
 xbee:
   config:
     device_path: /dev/ttyUSB0
