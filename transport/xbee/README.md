@@ -22,3 +22,11 @@ Reset the xbees to default values, then set:
  
 This will be automatic eventually.
 
+
+## E2E Test
+
+Testing basic communications between two xbees connected via USB or another
+serial port is easily done with [xbe2e](./toys/xbe2e). The tool accepts CLI
+arguments to set the baudrates and serial ports. It opens + configures both xbee
+using the xbserial common code, reads the local addresses, and transmits some
+data between them (unencrypted) as a basic test.
