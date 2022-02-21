@@ -5,7 +5,7 @@ import (
 
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/stream"
-	"github.com/aperturerobotics/bifrost/stream/echo"
+	stream_echo "github.com/aperturerobotics/bifrost/stream/echo"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/pkg/errors"
 )
@@ -55,7 +55,10 @@ func TestConnectivity(ctx context.Context, px0, px1 *Peer) error {
 	}
 
 	data := []byte("testing 1234")
-	ms1.Write(data)
+	_, err = ms1.Write(data)
+	if err != nil {
+		return err
+	}
 
 	// expect remote to echo back exactly len(data) bytes
 	outData := make([]byte, len(data)*2)

@@ -4,15 +4,15 @@ import (
 	"context"
 
 	bp "github.com/aperturerobotics/bifrost/peer"
+	"github.com/aperturerobotics/bifrost/sim/graph"
 	"github.com/aperturerobotics/bifrost/testbed"
-	"github.com/aperturerobotics/bifrost/transport/controller"
+	transport_controller "github.com/aperturerobotics/bifrost/transport/controller"
 	"github.com/aperturerobotics/bifrost/transport/inproc"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller/configset"
-	"github.com/aperturerobotics/controllerbus/controller/configset/controller"
+	configset_controller "github.com/aperturerobotics/controllerbus/controller/configset/controller"
 	"github.com/aperturerobotics/controllerbus/controller/loader"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
-	"github.com/aperturerobotics/bifrost/sim/graph"
 	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/sirupsen/logrus"
 )

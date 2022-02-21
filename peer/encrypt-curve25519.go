@@ -45,8 +45,14 @@ func EncryptToEd25519(
 
 	// mix pub key into 32-byte seed: blake3(context + msgSrc + encPubKey)
 	seedHasher := blake3.NewDeriveKey("bifrost/peer encrypt curve25519 " + context)
-	seedHasher.Write(msgSrc)
-	seedHasher.Write(encPubKey[:])
+	_, err := seedHasher.Write(msgSrc)
+	if err != nil {
+		return nil, err
+	}
+	_, err = seedHasher.Write(encPubKey[:])
+	if err != nil {
+		return nil, err
+	}
 	msgSeed := seedHasher.Sum(nil)
 
 	// generate the message priv key (ed25519) from seed
@@ -72,7 +78,7 @@ func EncryptToEd25519(
 	}
 
 	// sharedSecret is 32 bytes with (msgPrivKey, encPubKey) or (encPrivKey, msgPubKey)
-	sharedSecret, err := curve25519_ecdh.ComputeSharedSecret(&msgPrivKey, &encPubKey)
+	sharedSecret, err := curve25519_ecdh.ComputeSharedSecret(msgPrivKey[:], encPubKey[:])
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +147,7 @@ func DecryptWithEd25519(
 	copy(msgPubKey[:], ciphertext[:32])
 
 	// sharedSecret is 32 bytes with (encPrivKey, msgPubKey)
-	sharedSecret, err := curve25519_ecdh.ComputeSharedSecret(&encPrivKey, &msgPubKey)
+	sharedSecret, err := curve25519_ecdh.ComputeSharedSecret(encPrivKey[:], msgPubKey[:])
 	if err != nil {
 		return nil, err
 	}
@@ -189,8 +195,14 @@ func DecryptWithEd25519(
 	// verify message: re-generate ed25519 private key
 	// mix pub key into 32-byte seed: blake3(context + msgSrc + encPubKey)
 	seedHasher := blake3.NewDeriveKey("bifrost/peer encrypt curve25519 " + context)
-	seedHasher.Write(msgSrc)
-	seedHasher.Write(encPubKey[:])
+	_, err = seedHasher.Write(msgSrc)
+	if err != nil {
+		return nil, err
+	}
+	_, err = seedHasher.Write(encPubKey[:])
+	if err != nil {
+		return nil, err
+	}
 	msgSeed := seedHasher.Sum(nil)
 
 	// generate the message priv key (ed25519) from seed

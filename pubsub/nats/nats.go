@@ -16,10 +16,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// maxMessageSize constrains the message buffer allocation size.
-// currently set to 2MB
-const maxMessageSize = 2000000
-
 const (
 	NatsRouterID = protocol.ID("nats.io/2/router") // nats 2.0 router
 	NatsClientID = protocol.ID("nats.io/2/client") // nats 2.0 client API
@@ -49,8 +45,6 @@ type Nats struct {
 	handler pubsub.PubSubHandler
 	// wakeCh wakes the execute loop
 	wakeCh chan struct{}
-	// publishCh is for publishing messages
-	publishCh chan *publishChMsg
 	// natsServer is the embedded nats server.
 	natsServer *nats_server.Server
 
@@ -58,13 +52,6 @@ type Nats struct {
 	incSessions []*streamHandler
 	// natsClients contains all active nats clients keyed by peer id
 	natsClients map[string]*natsClient
-}
-
-// publishChMsg is a message queued for publishing
-type publishChMsg struct {
-	msg         *peer.SignedMsg
-	prevHopPeer peer.ID
-	channelID   string
 }
 
 // NewNats constructs a new Nats PubSub router.
@@ -124,7 +111,6 @@ func NewNats(
 		natsServer: natsServer,
 
 		wakeCh:      make(chan struct{}, 1),
-		publishCh:   make(chan *publishChMsg, 16),
 		natsClients: make(map[string]*natsClient),
 	}, nil
 }
@@ -268,14 +254,13 @@ func (n *Nats) getOrBuildClient(ctx context.Context, privKey crypto.PrivKey) (*n
 		return nil, nil, err
 	}
 	npeerPretty := npeer.Pretty()
-	nc, ncOk := n.natsClients[npeerPretty]
-	if ncOk {
+	nc := n.natsClients[npeerPretty]
+	if nc != nil {
 		if !nc.Conn.IsClosed() {
 			return nc, nc.addRef(), nil
 		}
 
 		nc = nil
-		ncOk = false
 		delete(n.natsClients, npeerPretty)
 	}
 

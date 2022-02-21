@@ -2,9 +2,10 @@ package tests
 
 import (
 	"context"
+	"testing"
+
 	"github.com/aperturerobotics/bifrost/sim/graph"
 	"github.com/sirupsen/logrus"
-	"testing"
 )
 
 var addPeer = AddPeer

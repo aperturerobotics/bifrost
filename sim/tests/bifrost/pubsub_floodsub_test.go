@@ -12,11 +12,11 @@ import (
 	"github.com/aperturerobotics/bifrost/pubsub"
 	floodsub_controller "github.com/aperturerobotics/bifrost/pubsub/floodsub/controller"
 	pubsub_relay "github.com/aperturerobotics/bifrost/pubsub/relay"
-	"github.com/aperturerobotics/controllerbus/bus"
-	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/bifrost/sim/graph"
 	"github.com/aperturerobotics/bifrost/sim/simulate"
 	"github.com/aperturerobotics/bifrost/sim/tests"
+	"github.com/aperturerobotics/controllerbus/bus"
+	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/sirupsen/logrus"
 )
 

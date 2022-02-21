@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"crypto/ed25519"
+
 	"golang.org/x/crypto/curve25519"
 )
 
@@ -37,7 +38,9 @@ func TestElligator(t *testing.T) {
 	var publicKey, publicKey2, publicKey3, representative, privateKey [32]byte
 
 	for i := 0; i < 1000; i++ {
-		rand.Reader.Read(privateKey[:])
+		if _, err := rand.Reader.Read(privateKey[:]); err != nil {
+			t.Fatal(err.Error())
+		}
 
 		if !ScalarBaseMult(&publicKey, &representative, &privateKey) {
 			continue
@@ -59,7 +62,9 @@ func BenchmarkKeyGeneration(b *testing.B) {
 
 	// Find the private key that results in a point that's in the image of the map.
 	for {
-		rand.Reader.Read(privateKey[:])
+		if _, err := rand.Reader.Read(privateKey[:]); err != nil {
+			b.Fatal(err.Error())
+		}
 		if ScalarBaseMult(&publicKey, &representative, &privateKey) {
 			break
 		}
@@ -73,7 +78,9 @@ func BenchmarkKeyGeneration(b *testing.B) {
 
 func BenchmarkMap(b *testing.B) {
 	var publicKey, representative [32]byte
-	rand.Reader.Read(representative[:])
+	if _, err := rand.Reader.Read(representative[:]); err != nil {
+		b.Fatal(err.Error())
+	}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

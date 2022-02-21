@@ -34,7 +34,7 @@ func TestEncrypt(t *testing.T) {
 		if err != nil {
 			t.Fatal(err.Error())
 		}
-		if bytes.Compare(dec, []byte(msg)) != 0 {
+		if !bytes.Equal(dec, []byte(msg)) {
 			t.Fatalf("keys[%d]: data did not match: %v != expected %v", ki, dec, []byte(msg))
 		}
 	}

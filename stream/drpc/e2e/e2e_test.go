@@ -50,7 +50,9 @@ func TestDrpc(t *testing.T) {
 	tp2 := inproc.BuildInprocController(tb2.Logger, tb2.Bus, tb2PeerID, &inproc.Config{
 		TransportPeerId: tb2PeerID.Pretty(),
 	})
-	go tb2.Bus.ExecuteController(ctx, tp2)
+	go func() {
+		_ = tb2.Bus.ExecuteController(ctx, tp2)
+	}()
 
 	// tb2 -> tb1 inproc
 	tpt2dialer := &dialer.DialerOpts{
@@ -62,7 +64,9 @@ func TestDrpc(t *testing.T) {
 			tb2PeerID.Pretty(): tpt2dialer,
 		},
 	})
-	go tb1.Bus.ExecuteController(ctx, tp1)
+	go func() {
+		_ = tb1.Bus.ExecuteController(ctx, tp1)
+	}()
 
 	// connect tb1 <-> tb2
 	tpt2, _ := tp2.GetTransport(ctx)
@@ -87,7 +91,9 @@ func TestDrpc(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	go tb2.Bus.ExecuteController(ctx, server)
+	go func() {
+		_ = tb2.Bus.ExecuteController(ctx, server)
+	}()
 
 	// tb1: construct client
 	cl, err := stream_drpc_client.NewClient(tb1.Logger, tb1.Bus, &stream_drpc_client.Config{

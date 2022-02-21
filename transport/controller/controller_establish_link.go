@@ -85,7 +85,7 @@ func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.R
 
 		c.mtx.Lock()
 		// Check the Static Peer Map for a address, push a dialer if exists.
-		if spm := c.staticPeerMap; spm != nil && len(spm) > 0 {
+		if spm := c.staticPeerMap; len(spm) > 0 {
 			var hasLink bool
 			for _, lnk := range c.links {
 				if lnk.Link.GetRemotePeer() == peerIDConst {

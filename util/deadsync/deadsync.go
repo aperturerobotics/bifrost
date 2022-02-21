@@ -1,8 +1,9 @@
 package sync
 
 import (
-	"github.com/sasha-s/go-deadlock"
 	ssync "sync"
+
+	"github.com/sasha-s/go-deadlock"
 )
 
 // Pool is the sync.Pool.

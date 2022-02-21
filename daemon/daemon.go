@@ -8,7 +8,7 @@ import (
 	"github.com/aperturerobotics/bifrost/keypem"
 	"github.com/aperturerobotics/bifrost/peer"
 	nctr "github.com/aperturerobotics/bifrost/peer/controller"
-	"github.com/aperturerobotics/bifrost/pubsub/nats/controller"
+	nats_controller "github.com/aperturerobotics/bifrost/pubsub/nats/controller"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/controller/loader"

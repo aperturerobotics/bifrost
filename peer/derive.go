@@ -53,7 +53,7 @@ func DeriveKey(context string, privKey crypto.PrivKey, out []byte) error {
 		}
 
 		// derive a shared secret w/ ephemeral & private key
-		material, err = curve25519_ecdh.ComputeSharedSecret(&recvPrivKey, &msgPubKey)
+		material, err = curve25519_ecdh.ComputeSharedSecret(recvPrivKey[:], msgPubKey[:])
 		if err != nil {
 			return err
 		}

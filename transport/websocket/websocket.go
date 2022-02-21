@@ -58,8 +58,7 @@ func NewWebSocket(
 		return nil, err
 	}
 
-	var dialFn transport_quic.DialFunc
-	dialFn = func(dctx context.Context, addr string) (net.PacketConn, net.Addr, error) {
+	var dialFn transport_quic.DialFunc = func(dctx context.Context, addr string) (net.PacketConn, net.Addr, error) {
 		conn, _, err := websocket.Dial(dctx, addr, &websocket.DialOptions{
 			// Negotiate the bifrost quic sub-protocol ID.
 			Subprotocols: []string{transport_quic.Alpn},

@@ -1,4 +1,5 @@
-//+build bifrost_relay
+//go:build bifrost_relay
+// +build bifrost_relay
 
 package bifrost
 

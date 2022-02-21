@@ -23,9 +23,8 @@ const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 // Config is the node controller config.
 type Config struct {
-	// PrivKey is the node private key, pem format.
-	// The libp2p key is in the bytes field.
-	// --- BEGIN LIBP2P PRIVATE KEY ---
+	// PrivKey is the peer private key in either b58 or PEM format.
+	// See confparse.MarshalPrivateKey.
 	PrivKey              string   `protobuf:"bytes,1,opt,name=priv_key,json=privKey,proto3" json:"priv_key,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`

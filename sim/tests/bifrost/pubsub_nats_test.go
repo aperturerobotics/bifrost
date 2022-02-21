@@ -10,11 +10,11 @@ import (
 	"github.com/aperturerobotics/bifrost/pubsub/nats"
 	nats_controller "github.com/aperturerobotics/bifrost/pubsub/nats/controller"
 	pubsub_relay "github.com/aperturerobotics/bifrost/pubsub/relay"
-	"github.com/aperturerobotics/controllerbus/bus"
-	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/bifrost/sim/graph"
 	"github.com/aperturerobotics/bifrost/sim/simulate"
 	"github.com/aperturerobotics/bifrost/sim/tests"
+	"github.com/aperturerobotics/controllerbus/bus"
+	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/sirupsen/logrus"
 )
 
@@ -119,6 +119,7 @@ func TestPubsubNATS(t *testing.T) {
 			ctx, ctxCancel := context.WithCancel(ctx)
 			defer ctxCancel()
 
+			errCh := make(chan error, 1)
 			go func() {
 				le.Infof("publishing data on p1 with peer %s", p1.GetPeerID().Pretty())
 				for {
@@ -126,15 +127,23 @@ func TestPubsubNATS(t *testing.T) {
 					case <-ctx.Done():
 						return
 					case <-time.After(time.Second):
-						s1.Publish(testingData)
+						err := s1.Publish(testingData)
+						if err != nil {
+							errCh <- err
+						}
 					}
 				}
 			}()
 
-			rmsg := <-msgRx
-			if bytes.Compare(rmsg.GetData(), testingData) != 0 {
-				t.Fatalf("pubsub data mismatch %v != expected %v", rmsg.GetData(), testingData)
+			select {
+			case rmsg := <-msgRx:
+				if !bytes.Equal(rmsg.GetData(), testingData) {
+					t.Fatalf("pubsub data mismatch %v != expected %v", rmsg.GetData(), testingData)
+				}
+			case err := <-errCh:
+				t.Fatal(err.Error())
 			}
+
 			le.Info("successful pubsub replication from p2 -> [lan2] -> p1")
 		}
 

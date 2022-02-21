@@ -1,6 +1,8 @@
 package confparse
 
 import (
+	"strings"
+
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/pkg/errors"
 )
@@ -31,6 +33,30 @@ func ParsePeerIDs(ids []string, allowEmpty bool) ([]peer.ID, error) {
 		pids = append(pids, v)
 	}
 	return pids, nil
+}
+
+// ParsePeerIDsUnique parses a list of peer IDs and dedupes.
+func ParsePeerIDsUnique(ids []string, allowEmpty bool) ([]peer.ID, error) {
+	m := make(map[peer.ID]struct{})
+	o := make([]peer.ID, 0, len(ids))
+	for i, s := range ids {
+		pid, err := ParsePeerID(strings.TrimSpace(s))
+		if err != nil {
+			return nil, err
+		}
+		if pid == peer.ID("") {
+			if !allowEmpty {
+				return nil, errors.Wrapf(peer.ErrPeerIDEmpty, "peer_ids[%d]", i)
+			}
+			continue
+		}
+		if _, ok := m[pid]; ok {
+			continue
+		}
+		m[pid] = struct{}{}
+		o = append(o, pid)
+	}
+	return o, nil
 }
 
 // ValidatePeerID checks if a peer ID is valid and set.

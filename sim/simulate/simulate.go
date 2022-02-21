@@ -4,10 +4,10 @@ import (
 	"context"
 	"sync"
 
-	"github.com/aperturerobotics/bifrost/link/establish"
+	link_establish_controller "github.com/aperturerobotics/bifrost/link/establish"
 	bpeer "github.com/aperturerobotics/bifrost/peer"
-	"github.com/aperturerobotics/bifrost/transport/common/dialer"
 	"github.com/aperturerobotics/bifrost/sim/graph"
+	"github.com/aperturerobotics/bifrost/transport/common/dialer"
 	"github.com/sirupsen/logrus"
 )
 
@@ -76,15 +76,17 @@ func NewSimulator(
 			}
 
 			// push the peer establish controller
-			go pushedPeer.testbed.Bus.ExecuteController(
-				s.ctx,
-				link_establish_controller.NewController(
-					pushedPeer.testbed.Bus,
-					le,
-					linkedPeerIDs,
-					"",
-				),
-			)
+			go func() {
+				_ = pushedPeer.testbed.Bus.ExecuteController(
+					s.ctx,
+					link_establish_controller.NewController(
+						pushedPeer.testbed.Bus,
+						le,
+						linkedPeerIDs,
+						"",
+					),
+				)
+			}()
 
 			continue
 		}
@@ -109,8 +111,7 @@ func (s *Simulator) pushPeer(peer *graph.Peer) (*Peer, error) {
 func (s *Simulator) GetPeerByID(id bpeer.ID) *Peer {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
-	p, _ := s.peers[id.Pretty()]
-	return p
+	return s.peers[id.Pretty()]
 }
 
 // Close closes the simulator.

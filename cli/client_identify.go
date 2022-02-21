@@ -15,6 +15,9 @@ func (a *ClientArgs) RunIdentifyController(_ *cli.Context) error {
 	}
 
 	dat, _, err := a.LoadOrGenerateIdentifyKey()
+	if err != nil {
+		return err
+	}
 	a.IdentifyConf.PrivKey = string(dat)
 	if err := a.IdentifyConf.Validate(); err != nil {
 		return err

@@ -133,7 +133,10 @@ func TestEstablishLink(t *testing.T) {
 	mns1 := msv1.GetValue().(link.MountedStream)
 	ms1 := mns1.GetStream()
 	data := []byte("testing 1234")
-	ms1.Write(data)
+	_, err = ms1.Write(data)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
 	outData := make([]byte, len(data)*2)
 	on, oe := ms1.Read(outData)
 	if oe != nil {

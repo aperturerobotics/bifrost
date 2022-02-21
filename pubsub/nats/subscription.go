@@ -177,7 +177,6 @@ func (s *subscription) executeSubscription() {
 // handleNatsMessage handles an incoming nats.Msg
 func (s *subscription) handleNatsMessage(msg *nats.Msg) error {
 	// decode nats.msg to SignedMsg.
-	pm := &peer.SignedMsg{}
 	pm, err := peer.UnmarshalSignedMsg(msg.Data)
 	if err != nil {
 		return errors.Wrap(err, "unmarshal nats message data")

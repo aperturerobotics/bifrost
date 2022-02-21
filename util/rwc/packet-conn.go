@@ -49,16 +49,6 @@ func NewPacketConn(
 		bufferPacketN = 10
 	}
 
-	defBufSize := 2048
-	if s := int(maxPacketSize); s < defBufSize {
-		defBufSize = s
-	}
-	ar := sync.Pool{
-		New: func() interface{} {
-			return make([]byte, defBufSize)
-		},
-	}
-
 	c := &PacketConn{
 		ctx:           ctx,
 		ctxCancel:     ctxCancel,
@@ -66,10 +56,11 @@ func NewPacketConn(
 		laddr:         laddr,
 		raddr:         raddr,
 		maxPacketSize: maxPacketSize,
-		ar:            ar,
 		packetCh:      make(chan []byte, bufferPacketN),
 	}
-	go c.rxPump()
+	go func() {
+		_ = c.rxPump()
+	}()
 	return c
 }
 
@@ -118,7 +109,7 @@ func (p *PacketConn) ReadFrom(pk []byte) (n int, addr net.Addr, err error) {
 
 	pl := len(pkt)
 	copy(pk, pkt)
-	p.ar.Put(pkt)
+	p.ar.Put(&pkt)
 	if len(pk) < pl {
 		return len(pk), p.raddr, io.ErrShortBuffer
 	}
@@ -150,7 +141,7 @@ func (p *PacketConn) WriteTo(pkt []byte, addr net.Addr) (n int, err error) {
 	if err == nil && n < len(buf) {
 		err = errors.Errorf("expected conn to write %d bytes in one call but wrote %d", len(buf), n)
 	}
-	p.ar.Put(buf)
+	p.ar.Put(&buf)
 	if err != nil {
 		return n, err
 	}
@@ -210,7 +201,11 @@ func (p *PacketConn) Close() error {
 
 // getArenaBuf returns a buf from the packet arena with at least the given size
 func (p *PacketConn) getArenaBuf(size int) []byte {
-	buf := p.ar.Get().([]byte)
+	var buf []byte
+	bufp := p.ar.Get()
+	if bufp != nil {
+		buf = *bufp.(*[]byte)
+	}
 	if size != 0 {
 		if cap(buf) < size {
 			buf = make([]byte, size)

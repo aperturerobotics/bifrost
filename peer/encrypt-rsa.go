@@ -38,20 +38,26 @@ func EncryptToRSA(
 
 	// derive message key with blake3(context + msgSrc + pubPkix)
 	seedHasher := blake3.NewDeriveKey("bifrost/peer encrypt rsa " + context)
-	seedHasher.Write(msgSrc)
-	seedHasher.Write(pubPkix)
+	_, err = seedHasher.Write(msgSrc)
+	if err != nil {
+		return nil, err
+	}
+	_, err = seedHasher.Write(pubPkix)
+	if err != nil {
+		return nil, err
+	}
 	msgKey := seedHasher.Sum(nil)
 
 	// derive message nonce with blake3(context + msgKey + pubPkix)
 	nonceHasher := blake3.NewDeriveKey("bifrost/peer nonce rsa " + context)
-	nonceHasher.Write(msgKey)
-	nonceHasher.Write(pubPkix)
+	_, _ = nonceHasher.Write(msgKey)
+	_, _ = nonceHasher.Write(pubPkix)
 	msgNonce := nonceHasher.Sum(nil)[:chacha20poly1305.NonceSizeX]
 
 	// seed a random generator for oaep with blake3(message key + pubPkix)
 	oaepRnd := blake3.New()
-	oaepRnd.Write(msgKey)
-	oaepRnd.Write(pubPkix)
+	_, _ = oaepRnd.Write(msgKey)
+	_, _ = oaepRnd.Write(pubPkix)
 	oaepSeed := oaepRnd.Digest()
 
 	// encrypt message key with oaep(message-key)
@@ -108,8 +114,8 @@ func DecryptWithRSA(
 
 	// derive message nonce with blake3(context + msgKey + pubPkix)
 	nonceHasher := blake3.NewDeriveKey("bifrost/peer nonce rsa " + context)
-	nonceHasher.Write(msgKey)
-	nonceHasher.Write(pubPkix)
+	_, _ = nonceHasher.Write(msgKey)
+	_, _ = nonceHasher.Write(pubPkix)
 	msgNonce := nonceHasher.Sum(nil)[:chacha20poly1305.NonceSizeX]
 
 	// decrypt message with chacha20poly1305

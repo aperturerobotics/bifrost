@@ -4,8 +4,9 @@ package labels
 // https://github.com/kubernetes/kubernetes/blob/0cd75e8fec/staging/src/k8s.io/apimachinery/pkg/util/validation/validation.go
 
 import (
-	"github.com/pkg/errors"
 	"regexp"
+
+	"github.com/pkg/errors"
 )
 
 const dns1123LabelFmt string = "[a-z0-9]([-a-z0-9]*[a-z0-9])?"

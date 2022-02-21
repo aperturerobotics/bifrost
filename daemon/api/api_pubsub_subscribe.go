@@ -16,8 +16,6 @@ import (
 var (
 	// acquirePeerTimeout is the timeout for acquiring private key
 	acquirePeerTimeout = time.Second * 10
-	// publishTimeout is the timeout for publishing
-	publishTimeout = time.Second * 10
 )
 
 // Subscribe subscribes to a pubsub channel.
