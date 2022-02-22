@@ -130,7 +130,9 @@ func (c *PacketConn) WriteTo(p []byte, addr net.Addr) (n int, err error) {
 		return 0, errors.New("address is not valid")
 	}
 
-	if err := c.xb.TxToAddr(c.ctx, uint64(xbAddr), 0, 0, 0, 0, 0, 0, 0, p); err != nil {
+	// no retries + extended transmit timeout
+	var options byte = 0x01 | 0x40
+	if err := c.xb.TxToAddr(c.ctx, uint64(xbAddr), 0, 0, 0, 0, 0, 0, options, p); err != nil {
 		return 0, err
 	}
 

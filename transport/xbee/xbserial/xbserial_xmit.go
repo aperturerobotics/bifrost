@@ -29,7 +29,13 @@ func (f *XmitToAddr) Bytes() ([]byte, error) {
 }
 
 // TxToAddr transmits data to a 64 bit peer address.
-// Use either addr64 or uint16.
+//
+// Use addr64 or addr16, not both.
+// Special addr values:
+// - 0x0 - Coordinator address
+// - 0x000000000000FFFF - Broadcast address (64-bit only)
+//
+// https://www.digi.com/resources/documentation/Digidocs/90001942-13/reference/r_zigbee_frame_examples.htm
 func (x *XBeeSerial) TxToAddr(
 	ctx context.Context,
 	addr64 uint64, addr16 uint16,
@@ -42,8 +48,11 @@ func (x *XBeeSerial) TxToAddr(
 	// profileID defaults to C1 05
 	profileID uint16,
 	// broadcastRadius defaults to 00
+	// limits the maximum number of retransmission hops.
 	broadcastRadius byte,
+	// options defaults to 00 (none)
 	options byte,
+	// data is the packet to transmit to the peer
 	data []byte,
 ) error {
 	f := &XmitToAddr{}
@@ -58,7 +67,6 @@ func (x *XBeeSerial) TxToAddr(
 	f.data[1] = frameID
 	// write 64 bit destination address (8 bytes)
 	binary.BigEndian.PutUint64(f.data[2:], addr64)
-	// shuffle the bytes a little bit
 	// write 16 bit destination address (2)
 	if addr16 == 0 {
 		f.data[10] = 0xFF
@@ -91,11 +99,14 @@ func (x *XBeeSerial) TxToAddr(
 		f.data[17] = 0x05
 	}
 	// write broadcast radius (max hops) (1 byte)
-	f.data[18] = 0
+	if broadcastRadius >= 0 {
+		f.data[18] = broadcastRadius
+	}
 	// write options (1) (1 byte)
-	// 0x01 = no ack
-	// f.data[19] = 0x01
-	f.data[19] = 0x01 | 0x02 | 0x40
+	// 0x01: no retries
+	// 0x20: enable aps encrypt (if EE = 1)
+	// 0x40: use extended transmission timeout
+	f.data[19] = options
 	// write data len(data)
 	copy(f.data[20:], data)
 
