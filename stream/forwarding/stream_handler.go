@@ -43,14 +43,16 @@ func (m *MountedStreamHandler) HandleMountedStream(
 		return err
 	}
 	go func() {
-		defer elRef.Release()
-		// Attempt to dial the target.
-		// TODO: use context here
-		m.le.Debug("dialing to forward stream")
 		s := strm.GetStream()
-		conn, err := manet.Dial(m.dialMa)
-		if err != nil {
+		defer func() {
+			elRef.Release()
 			s.Close()
+		}()
+
+		// Attempt to dial the target.
+		m.le.Debug("dialing to forward stream")
+		conn, err := (&manet.Dialer{}).DialContext(ctx, m.dialMa)
+		if err != nil {
 			m.le.WithError(err).Warn("unable to dial to forward stream")
 			return
 		}
@@ -61,7 +63,8 @@ func (m *MountedStreamHandler) HandleMountedStream(
 		proxy.ProxyStreams(conn, s, subCtxCancel)
 		<-subCtx.Done()
 		m.le.Debug("connection closing")
-		// wait to release EstablishLink ref
+
+		// note: establishlink is released in defer above.
 	}()
 	return nil
 }
