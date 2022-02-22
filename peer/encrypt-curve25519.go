@@ -22,7 +22,7 @@ import (
 // generate the message priv key (ed25519) from seed
 // derive the curve25519 public key from the message priv key
 // use blake3(msgPubkeyCurve25519)[:24] as the message nonce
-// generate msgPubKey ase256 key: blake3(context + encPubKey + msgNonce[:4])
+// generate msgPubKey aes256 key: blake3(context + encPubKey + msgNonce[:4])
 //
 // ciphertext: msgNonce[:4] + aes256(msgPubKey) + chacha20poly1305(s2(message))
 // context and destination public key must be the same when decrypting
@@ -149,7 +149,7 @@ func EncryptToEd25519(
 
 // DecryptWithEd25519 decrypts with a ed25519 key using curve25519.
 //
-// generate msgPubKey ase256 key: blake3(context + encPubKey + ciphertext[:4])
+// generate msgPubKey aes256 key: blake3(context + encPubKey + ciphertext[:4])
 // decrypt msgPubKey from ciphertext[4:][:32]
 // convert privKey to curve25519 public + private
 // derive the shared secret with (privKey, msgPubKey)

@@ -100,6 +100,11 @@ func (c *Controller) resolveHandleMountedStream(
 			return nil, nil
 		}
 	}
+	c.le.
+		WithField("local-peer", dir.HandleMountedStreamLocalPeerID().Pretty()).
+		WithField("remote-peer", dir.HandleMountedStreamRemotePeerID().Pretty()).
+		WithField("protocol-id", dir.HandleMountedStreamProtocolID()).
+		Debug("starting echo stream handler")
 	return NewEchoResolver(c.le, c.bus)
 }
 

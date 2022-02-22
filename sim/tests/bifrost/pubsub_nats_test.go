@@ -9,7 +9,6 @@ import (
 	"github.com/aperturerobotics/bifrost/pubsub"
 	"github.com/aperturerobotics/bifrost/pubsub/nats"
 	nats_controller "github.com/aperturerobotics/bifrost/pubsub/nats/controller"
-	pubsub_relay "github.com/aperturerobotics/bifrost/pubsub/relay"
 	"github.com/aperturerobotics/bifrost/sim/graph"
 	"github.com/aperturerobotics/bifrost/sim/simulate"
 	"github.com/aperturerobotics/bifrost/sim/tests"
@@ -49,10 +48,13 @@ func TestPubsubNATS(t *testing.T) {
 				LogTrace: logTrace,
 			},
 		})
-		peer.AddFactory(func(b bus.Bus) controller.Factory { return pubsub_relay.NewFactory(b) })
-		peer.AddConfig("pubsub-relay", &pubsub_relay.Config{
-			TopicIds: topics,
-		})
+		/*
+			peer.AddFactory(func(b bus.Bus) controller.Factory { return pubsub_relay.NewFactory(b) })
+			peer.AddConfig("pubsub-relay", &pubsub_relay.Config{
+				PeerId:   peer.GetPeerID().Pretty(),
+				TopicIds: topics,
+			})
+		*/
 	}
 
 	sim := initSimulator(t, ctx, le, g)

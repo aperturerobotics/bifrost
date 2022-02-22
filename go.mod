@@ -3,9 +3,9 @@ module github.com/aperturerobotics/bifrost
 go 1.16
 
 require (
-	github.com/aperturerobotics/controllerbus v0.8.7-0.20220131003346-4ec75f6375a7
+	github.com/aperturerobotics/controllerbus v0.8.7
 	github.com/aperturerobotics/entitygraph v0.1.4-0.20210530040557-f19da9c2be6d
-	github.com/aperturerobotics/timestamp v0.3.4
+	github.com/aperturerobotics/timestamp v0.3.5-0.20220213044437-f05ee80e5e45
 )
 
 // aperture: use compatibility forks
@@ -54,7 +54,7 @@ require (
 	github.com/tjfoc/gmsm v1.4.1
 	github.com/urfave/cli v1.22.5
 	github.com/xtaci/smux v1.5.16
-	github.com/zeebo/blake3 v0.2.1
+	github.com/zeebo/blake3 v0.2.2
 	github.com/zeebo/xxh3 v1.0.2-0.20211113223132-d10cc761c3ac // indirect
 	golang.org/x/crypto v0.0.0-20220112180741-5e0467b6c7ce
 	gonum.org/v1/gonum v0.9.3
