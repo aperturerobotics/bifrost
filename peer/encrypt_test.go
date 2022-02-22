@@ -37,5 +37,10 @@ func TestEncrypt(t *testing.T) {
 		if !bytes.Equal(dec, []byte(msg)) {
 			t.Fatalf("keys[%d]: data did not match: %v != expected %v", ki, dec, []byte(msg))
 		}
+		t.Logf(
+			"keys[%d]: decrypted correctly: len %d",
+			ki,
+			len(dec),
+		)
 	}
 }
