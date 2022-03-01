@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/aperturerobotics/bifrost/peer"
-	pubsub_grpc "github.com/aperturerobotics/bifrost/pubsub/grpc"
+	pubsub_api "github.com/aperturerobotics/bifrost/pubsub/api"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli"
 )
@@ -56,8 +56,8 @@ func (a *ClientArgs) RunSubscribe(_ *cli.Context) error {
 	publishAckCh := make(chan uint32, 10)
 	go func() {
 		scan := bufio.NewScanner(input)
-		spubMsg := &pubsub_grpc.SubscribeRequest{}
-		pubMsg := &pubsub_grpc.PublishRequest{}
+		spubMsg := &pubsub_api.SubscribeRequest{}
+		pubMsg := &pubsub_api.PublishRequest{}
 		spubMsg.PublishRequest = pubMsg
 		var sendIdentifier uint32
 		var dataRecv bool
@@ -101,7 +101,7 @@ func (a *ClientArgs) RunSubscribe(_ *cli.Context) error {
 		}
 	}()
 
-	recvCh := make(chan *pubsub_grpc.SubscribeResponse, 10)
+	recvCh := make(chan *pubsub_api.SubscribeResponse, 10)
 	go func() {
 		for {
 			msg, err := client.Recv()

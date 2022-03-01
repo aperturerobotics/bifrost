@@ -130,7 +130,7 @@ OPTIONS:
    --config value, -c value  path to configuration yaml file (default: "bifrost_daemon.yaml") [$BIFROST_CONFIG]
    --write-config            write the daemon config file on startup [$BIFROST_WRITE_CONFIG]
    --node-priv value         path to node private key, will be generated if doesn't exist (default: "bifrost_daemon.pem") [$BIFROST_NODE_PRIV]
-   --api-listen value        if set, will listen on address for API grpc connections, ex :5110 (default: ":5110") [$BIFROST_API_LISTEN]
+   --api-listen value        if set, will listen on address for API connections, ex :5110 (default: ":5110") [$BIFROST_API_LISTEN]
    --prof-listen value       if set, debug profiler will be hosted on the port, ex :8080 [$BIFROST_PROF_LISTEN]
 ```
 
@@ -141,7 +141,7 @@ which are not yet exposed via these flags.
 
 ### Client CLI
 
-Most Bifrost functionality is exposed on the client CLI and GRPC API:
+Most Bifrost functionality is exposed on the client CLI and DRPC API:
 
  - Mount a peer by loading a private key into the daemon.
  - Forward incoming streams with a protocol ID to a multiaddress

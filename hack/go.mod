@@ -6,7 +6,6 @@ go 1.16
 replace (
 	github.com/golang/protobuf => github.com/aperturerobotics/go-protobuf-1.3.x v0.0.0-20200726220404-fa7f51c52df0 // aperture-1.3.x
 	google.golang.org/genproto => google.golang.org/genproto v0.0.0-20190819201941-24fa4b261c55
-	google.golang.org/grpc => google.golang.org/grpc v1.30.0
 	google.golang.org/protobuf => github.com/paralin/protobuf-go v1.27.2-0.20220104043425-56bf363d0a34 // aperture
 )
 

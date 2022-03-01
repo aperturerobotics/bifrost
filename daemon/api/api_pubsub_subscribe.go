@@ -7,7 +7,7 @@ import (
 	"github.com/aperturerobotics/bifrost/keypem"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/pubsub"
-	pubsub_grpc "github.com/aperturerobotics/bifrost/pubsub/grpc"
+	pubsub_api "github.com/aperturerobotics/bifrost/pubsub/api"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/pkg/errors"
@@ -20,8 +20,8 @@ var (
 
 // Subscribe subscribes to a pubsub channel.
 //
-// TODO: move this code to pubsub/grpc/grpc.go under API
-func (a *API) Subscribe(serv pubsub_grpc.PubSubService_SubscribeServer) error {
+// TODO: move this code to pubsub/api
+func (a *API) Subscribe(serv pubsub_api.DRPCPubSubService_SubscribeStream) error {
 	ctx := serv.Context()
 
 	var channelID string
@@ -96,8 +96,8 @@ func (a *API) Subscribe(serv pubsub_grpc.PubSubService_SubscribeServer) error {
 				return errors.New("build channel subscription returned invalid value")
 			}
 			sub = val
-			err = serv.Send(&pubsub_grpc.SubscribeResponse{
-				SubscriptionStatus: &pubsub_grpc.SubscriptionStatus{
+			err = serv.Send(&pubsub_api.SubscribeResponse{
+				SubscriptionStatus: &pubsub_api.SubscriptionStatus{
 					Subscribed: true,
 				},
 			})
@@ -107,8 +107,8 @@ func (a *API) Subscribe(serv pubsub_grpc.PubSubService_SubscribeServer) error {
 			// note: the defer call is for releasing the handler.
 			defer val.AddHandler(func(m pubsub.Message) {
 				go func() {
-					_ = serv.Send(&pubsub_grpc.SubscribeResponse{
-						IncomingMessage: &pubsub_grpc.IncomingMessage{
+					_ = serv.Send(&pubsub_api.SubscribeResponse{
+						IncomingMessage: &pubsub_api.IncomingMessage{
 							FromPeerId:    m.GetFrom().Pretty(),
 							Data:          m.GetData(),
 							Authenticated: m.GetAuthenticated(),
@@ -127,8 +127,8 @@ func (a *API) Subscribe(serv pubsub_grpc.PubSubService_SubscribeServer) error {
 				return err
 			}
 			if mid := msg.GetPublishRequest().GetIdentifier(); mid != 0 {
-				err = serv.Send(&pubsub_grpc.SubscribeResponse{
-					OutgoingStatus: &pubsub_grpc.OutgoingStatus{
+				err = serv.Send(&pubsub_api.SubscribeResponse{
+					OutgoingStatus: &pubsub_api.OutgoingStatus{
 						Identifier: mid,
 						Sent:       true,
 					},

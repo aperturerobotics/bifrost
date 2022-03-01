@@ -16,8 +16,8 @@ import (
 	api_controller "github.com/aperturerobotics/bifrost/daemon/api/controller"
 	egctr "github.com/aperturerobotics/bifrost/entitygraph"
 	"github.com/aperturerobotics/bifrost/keypem/keyfile"
+	stream_api_accept "github.com/aperturerobotics/bifrost/stream/api/accept"
 	stream_forwarding "github.com/aperturerobotics/bifrost/stream/forwarding"
-	stream_grpc_accept "github.com/aperturerobotics/bifrost/stream/grpc/accept"
 	stream_listening "github.com/aperturerobotics/bifrost/stream/listening"
 	xbtpt "github.com/aperturerobotics/bifrost/transport/xbee"
 	bus_api "github.com/aperturerobotics/controllerbus/bus/api"
@@ -31,7 +31,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
-	"google.golang.org/grpc"
 
 	// _ enables the profiling endpoints
 
@@ -79,7 +78,7 @@ func init() {
 				},
 				cli.StringFlag{
 					Name:        "api-listen",
-					Usage:       "if set, will listen on address for API grpc connections, ex :5110",
+					Usage:       "if set, will listen on address for API drpc connections, ex :5110",
 					EnvVar:      "BIFROST_API_LISTEN",
 					Value:       ":5110",
 					Destination: &daemonFlags.APIListen,
@@ -101,7 +100,6 @@ func runDaemon(c *cli.Context) error {
 	log := logrus.New()
 	log.SetLevel(logrus.DebugLevel)
 	le := logrus.NewEntry(log)
-	grpc.EnableTracing = daemonFlags.ProfListen != ""
 
 	// Load private key.
 	peerPriv, err := keyfile.OpenOrWritePrivKey(le, daemonFlags.PeerPrivPath)
@@ -123,7 +121,7 @@ func runDaemon(c *cli.Context) error {
 	sr.AddFactory(api_controller.NewFactory(b))
 	sr.AddFactory(stream_forwarding.NewFactory(b))
 	sr.AddFactory(stream_listening.NewFactory(b))
-	sr.AddFactory(stream_grpc_accept.NewFactory(b))
+	sr.AddFactory(stream_api_accept.NewFactory(b))
 
 	// Construct config set.
 	confSet := configset.ConfigSet{}
@@ -169,10 +167,10 @@ func runDaemon(c *cli.Context) error {
 			nil,
 		)
 		if err != nil {
-			return errors.Wrap(err, "listen on grpc api")
+			return errors.Wrap(err, "listen on api")
 		}
 		defer apiRef.Release()
-		le.Infof("grpc api listening on: %s", daemonFlags.APIListen)
+		le.Infof("api listening on: %s", daemonFlags.APIListen)
 	}
 
 	// ConfigSet controller

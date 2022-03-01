@@ -3,7 +3,7 @@ package cli
 import (
 	"os"
 
-	peer_grpc "github.com/aperturerobotics/bifrost/peer/rpc"
+	peer_api "github.com/aperturerobotics/bifrost/peer/api"
 	"github.com/urfave/cli"
 )
 
@@ -23,7 +23,7 @@ func (a *ClientArgs) RunIdentifyController(_ *cli.Context) error {
 		return err
 	}
 
-	req, err := c.Identify(a.GetContext(), &peer_grpc.IdentifyRequest{
+	req, err := c.Identify(a.GetContext(), &peer_api.IdentifyRequest{
 		Config: &a.IdentifyConf,
 	})
 	if err != nil {

@@ -3,14 +3,14 @@ package bifrost_api
 import (
 	"context"
 
-	peer_grpc "github.com/aperturerobotics/bifrost/peer/rpc"
+	peer_api "github.com/aperturerobotics/bifrost/peer/api"
 	controller_exec "github.com/aperturerobotics/controllerbus/controller/exec"
 )
 
 // Identify loads and manages a private key identity.
 func (a *API) Identify(
-	req *peer_grpc.IdentifyRequest,
-	serv peer_grpc.PeerService_IdentifyServer,
+	req *peer_api.IdentifyRequest,
+	serv peer_api.DRPCPeerService_IdentifyStream,
 ) error {
 	ctx := serv.Context()
 	conf := req.GetConfig()
@@ -26,7 +26,7 @@ func (a *API) Identify(
 		a.bus,
 		conf,
 		func(status controller_exec.ControllerStatus) {
-			_ = serv.Send(&peer_grpc.IdentifyResponse{
+			_ = serv.Send(&peer_api.IdentifyResponse{
 				ControllerStatus: status,
 			})
 		},

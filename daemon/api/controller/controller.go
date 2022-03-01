@@ -11,15 +11,15 @@ import (
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/blang/semver"
 	"github.com/sirupsen/logrus"
-	"google.golang.org/grpc"
+	"storj.io/drpc/drpcmux"
+	"storj.io/drpc/drpcserver"
 )
 
 // Version is the API version.
 var Version = semver.MustParse("0.0.1")
 
 // Controller implements the API controller. The controller looks up the Node,
-// acquires its identity, constructs the GRPC listener, and responds to incoming
-// API calls.
+// acquires its identity, listens and responds to incoming API calls.
 type Controller struct {
 	// le is the logger
 	le *logrus.Entry
@@ -51,7 +51,7 @@ func (c *Controller) GetControllerInfo() controller.Info {
 	return controller.NewInfo(
 		ControllerID,
 		Version,
-		"grpc api controller",
+		"api controller",
 	)
 }
 
@@ -59,24 +59,19 @@ func (c *Controller) GetControllerInfo() controller.Info {
 // Returning nil ends execution.
 // Returning an error triggers a retry with backoff.
 func (c *Controller) Execute(ctx context.Context) error {
-	c.le.Debug("constructing api")
 	// Construct the API
 	api, err := bifrost_api.NewAPI(c.bus, c.conf.GetApiConfig())
 	if err != nil {
 		return err
 	}
 
-	c.le.Debug("registering grpc server")
-	server := grpc.NewServer()
-	api.RegisterAsGRPCServer(server)
+	mux := drpcmux.New()
+	api.RegisterAsDRPCServer(mux)
 
 	// controllerbus api
 	if !c.conf.GetDisableBusApi() {
-		bapi, err := cbapi.NewAPI(c.bus, c.conf.GetBusApiConfig())
-		if err != nil {
-			return err
-		}
-		bapi.RegisterAsGRPCServer(server)
+		bapi := cbapi.NewAPI(c.bus, c.conf.GetBusApiConfig())
+		bapi.RegisterAsDRPCServer(mux)
 	}
 
 	c.le.Debug("starting listener")
@@ -86,16 +81,17 @@ func (c *Controller) Execute(ctx context.Context) error {
 	}
 	c.le.Debugf("api listening: %s", lis.Addr().String())
 
+	srv := drpcserver.New(mux)
+
 	errCh := make(chan error, 1)
 	go func() {
-		c.le.Debug("server listening start")
-		errCh <- server.Serve(lis)
-		c.le.Debug("server listener closed")
+		errCh <- srv.Serve(ctx, lis)
+		_ = lis.Close()
 	}()
 
 	select {
 	case <-ctx.Done():
-		server.Stop()
+		_ = lis.Close()
 		return nil
 	case err := <-errCh:
 		return err

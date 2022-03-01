@@ -3,7 +3,7 @@ module github.com/aperturerobotics/bifrost
 go 1.16
 
 require (
-	github.com/aperturerobotics/controllerbus v0.8.8
+	github.com/aperturerobotics/controllerbus v0.8.9-0.20220301033355-22779b01af1a
 	github.com/aperturerobotics/entitygraph v0.1.4-0.20210530040557-f19da9c2be6d
 	github.com/aperturerobotics/timestamp v0.3.5-0.20220213044437-f05ee80e5e45
 )
@@ -18,20 +18,19 @@ replace (
 	github.com/nats-io/nats.go => github.com/aperturerobotics/bifrost-nats-client v1.10.1-0.20200831103200-24c3d0464e58 // aperture-2.0
 	github.com/paralin/kcp-go-lite => github.com/paralin/kcp-go-lite v1.0.2-0.20210907043027-271505668bd0 // aperture
 	google.golang.org/genproto => google.golang.org/genproto v0.0.0-20190819201941-24fa4b261c55
-	google.golang.org/grpc => github.com/paralin/grpc-go v1.30.1-0.20210804030014-1587a7c16b66 // aperture
-	storj.io/drpc => github.com/paralin/drpc v0.0.27-0.20220104045627-466c7ca18e92 // aperture
+	storj.io/drpc => github.com/paralin/drpc v0.0.30-0.20220301023015-b1e9d6bd9478 // aperture
 )
 
 require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/djherbis/buffer v1.2.0
-	github.com/frankban/quicktest v1.14.0 // indirect
 	github.com/gin-gonic/gin v1.7.2-0.20220120143335-580e7da6eed0 // indirect
 	github.com/golang/protobuf v1.5.2
 	github.com/golang/snappy v0.0.4
 	github.com/hashicorp/yamux v0.0.0-20211028200310-0bc27b27de87
 	github.com/klauspost/compress v1.13.6
+	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
 	github.com/klauspost/reedsolomon v1.9.15 // indirect
 	github.com/libp2p/go-libp2p-core v0.12.0
 	github.com/libp2p/go-libp2p-tls v0.0.0-00010101000000-000000000000
@@ -55,11 +54,8 @@ require (
 	github.com/urfave/cli v1.22.5
 	github.com/xtaci/smux v1.5.16
 	github.com/zeebo/blake3 v0.2.2
-	github.com/zeebo/xxh3 v1.0.2-0.20211113223132-d10cc761c3ac // indirect
-	golang.org/x/crypto v0.0.0-20220112180741-5e0467b6c7ce
+	golang.org/x/crypto v0.0.0-20220214200702-86341886e292
 	gonum.org/v1/gonum v0.9.3
-	google.golang.org/grpc v1.31.0
-	google.golang.org/protobuf v1.27.1 // indirect
 	nhooyr.io/websocket v1.8.8-0.20210410000328-8dee580a7f74
-	storj.io/drpc v0.0.26
+	storj.io/drpc v0.0.29
 )

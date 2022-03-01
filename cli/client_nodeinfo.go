@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"os"
 
-	peer_grpc "github.com/aperturerobotics/bifrost/peer/rpc"
+	peer_api "github.com/aperturerobotics/bifrost/peer/api"
 	"github.com/urfave/cli"
 )
 
@@ -16,7 +16,7 @@ func (a *ClientArgs) RunPeerInfo(_ *cli.Context) error {
 		return err
 	}
 
-	ni, err := c.GetPeerInfo(ctx, &peer_grpc.GetPeerInfoRequest{})
+	ni, err := c.GetPeerInfo(ctx, &peer_api.GetPeerInfoRequest{})
 	if err != nil {
 		return err
 	}

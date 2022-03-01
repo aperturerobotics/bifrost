@@ -3,7 +3,7 @@ package cli
 import (
 	"os"
 
-	stream_grpc "github.com/aperturerobotics/bifrost/stream/grpc"
+	stream_api "github.com/aperturerobotics/bifrost/stream/api"
 	"github.com/urfave/cli"
 )
 
@@ -14,7 +14,7 @@ func (a *ClientArgs) RunListen(*cli.Context) error {
 	if err != nil {
 		return err
 	}
-	req, err := c.ListenStreams(ctx, &stream_grpc.ListenStreamsRequest{
+	req, err := c.ListenStreams(ctx, &stream_api.ListenStreamsRequest{
 		ListeningConfig: &a.ListeningConf,
 	})
 	if err != nil {

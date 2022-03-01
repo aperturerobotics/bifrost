@@ -1,0 +1,17 @@
+syntax = "proto3";
+package stream.api.accept;
+
+// Config configures the accept controller.
+message Config {
+  // LocalPeerId is the peer ID to accept incoming connections with.
+  // Can be empty to accept any peer.
+  string local_peer_id = 1;
+  // RemotePeerIds are peer IDs to accept incoming connections from.
+  // Can be empty to accept any remote peer IDs.
+  repeated string remote_peer_ids = 2;
+  // ProtocolId is the protocol ID to accept.
+  string protocol_id = 3;
+  // TransportId constrains the transport ID to accept from.
+  // Can be empty.
+  uint64 transport_id = 4;
+}

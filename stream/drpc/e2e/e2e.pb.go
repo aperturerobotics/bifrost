@@ -4,14 +4,10 @@
 package drpc_e2e
 
 import (
-	context "context"
 	fmt "fmt"
 	math "math"
 
 	proto "github.com/golang/protobuf/proto"
-	grpc "google.golang.org/grpc"
-	codes "google.golang.org/grpc/codes"
-	status "google.golang.org/grpc/status"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -131,86 +127,4 @@ var fileDescriptor_165eff7d5088d010 = []byte{
 	0xce, 0xf8, 0x4c, 0x7c, 0x64, 0x62, 0x64, 0x5a, 0xcd, 0xbf, 0xe3, 0xe1, 0x7b, 0xfc, 0xa3, 0x7e,
 	0xfb, 0x8e, 0xfb, 0x77, 0x00, 0x00, 0x00, 0xff, 0xff, 0x61, 0x2f, 0x40, 0x77, 0xe4, 0x00, 0x00,
 	0x00,
-}
-
-// Reference imports to suppress errors if they are not otherwise used.
-var _ context.Context
-var _ grpc.ClientConnInterface
-
-// This is a compile-time assertion to ensure that this generated file
-// is compatible with the grpc package it is being compiled against.
-const _ = grpc.SupportPackageIsVersion6
-
-// EndToEndClient is the client API for EndToEnd service.
-//
-// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
-type EndToEndClient interface {
-	// Mock performs the mock request.
-	Mock(ctx context.Context, in *MockRequest, opts ...grpc.CallOption) (*MockResponse, error)
-}
-
-type endToEndClient struct {
-	cc grpc.ClientConnInterface
-}
-
-func NewEndToEndClient(cc grpc.ClientConnInterface) EndToEndClient {
-	return &endToEndClient{cc}
-}
-
-func (c *endToEndClient) Mock(ctx context.Context, in *MockRequest, opts ...grpc.CallOption) (*MockResponse, error) {
-	out := new(MockResponse)
-	err := c.cc.Invoke(ctx, "/drpc.e2e.EndToEnd/Mock", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// EndToEndServer is the server API for EndToEnd service.
-type EndToEndServer interface {
-	// Mock performs the mock request.
-	Mock(context.Context, *MockRequest) (*MockResponse, error)
-}
-
-// UnimplementedEndToEndServer can be embedded to have forward compatible implementations.
-type UnimplementedEndToEndServer struct {
-}
-
-func (*UnimplementedEndToEndServer) Mock(ctx context.Context, req *MockRequest) (*MockResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Mock not implemented")
-}
-
-func RegisterEndToEndServer(s *grpc.Server, srv EndToEndServer) {
-	s.RegisterService(&_EndToEnd_serviceDesc, srv)
-}
-
-func _EndToEnd_Mock_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MockRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(EndToEndServer).Mock(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/drpc.e2e.EndToEnd/Mock",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(EndToEndServer).Mock(ctx, req.(*MockRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-var _EndToEnd_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "drpc.e2e.EndToEnd",
-	HandlerType: (*EndToEndServer)(nil),
-	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "Mock",
-			Handler:    _EndToEnd_Mock_Handler,
-		},
-	},
-	Streams:  []grpc.StreamDesc{},
-	Metadata: "github.com/aperturerobotics/bifrost/stream/drpc/e2e/e2e.proto",
 }

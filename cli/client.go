@@ -4,36 +4,37 @@ import (
 	"context"
 	"errors"
 	"io/ioutil"
+	"net"
 	"os"
 	"strings"
 
 	bifrost_api "github.com/aperturerobotics/bifrost/daemon/api"
 	"github.com/aperturerobotics/bifrost/peer"
 	peer_controller "github.com/aperturerobotics/bifrost/peer/controller"
-	pubsub_grpc "github.com/aperturerobotics/bifrost/pubsub/grpc"
+	pubsub_api "github.com/aperturerobotics/bifrost/pubsub/api"
+	stream_api_accept "github.com/aperturerobotics/bifrost/stream/api/accept"
+	stream_api_dial "github.com/aperturerobotics/bifrost/stream/api/dial"
 	stream_forwarding "github.com/aperturerobotics/bifrost/stream/forwarding"
-	stream_grpc_accept "github.com/aperturerobotics/bifrost/stream/grpc/accept"
-	stream_grpc_dial "github.com/aperturerobotics/bifrost/stream/grpc/dial"
 	stream_listening "github.com/aperturerobotics/bifrost/stream/listening"
 	"github.com/aperturerobotics/bifrost/util/confparse"
 	cbus_cli "github.com/aperturerobotics/controllerbus/cli"
 	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/urfave/cli"
-	"google.golang.org/grpc"
+	"storj.io/drpc/drpcconn"
 )
 
 // ClientArgs contains the client arguments and functions.
 type ClientArgs struct {
 	// DialConf is the dialing configuration.
-	DialConf stream_grpc_dial.Config
+	DialConf stream_api_dial.Config
 	// ForwardingConf is the forwarding configuration.
 	ForwardingConf stream_forwarding.Config
 	// IdentifyConf is the identify configuration
 	IdentifyConf peer_controller.Config
 	// SubscribeConf is the configuration for the publish or subscribe call.
-	SubscribeConf pubsub_grpc.SubscribeRequest
+	SubscribeConf pubsub_api.SubscribeRequest
 	// AcceptConf is the accept configuration.
-	AcceptConf stream_grpc_accept.Config
+	AcceptConf stream_api_accept.Config
 	// ListeningConf is the listening configuration.
 	ListeningConf stream_listening.Config
 	// CbusConf is the controller-bus configuration.
@@ -94,11 +95,13 @@ func (a *ClientArgs) BuildClient() (bifrost_api.BifrostAPIClient, error) {
 		return nil, errors.New("dial address is not set")
 	}
 
-	clientConn, err := grpc.Dial(a.DialAddr, grpc.WithInsecure())
+	nconn, err := net.Dial("tcp", a.DialAddr)
 	if err != nil {
 		return nil, err
 	}
-	a.client = bifrost_api.NewBifrostAPIClient(clientConn)
+
+	conn := drpcconn.New(nconn)
+	a.client = bifrost_api.NewBifrostAPIClient(conn)
 	return a.client, nil
 }
 

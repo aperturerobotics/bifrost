@@ -4,14 +4,10 @@
 package pb
 
 import (
-	context "context"
 	fmt "fmt"
 	math "math"
 
 	proto "github.com/golang/protobuf/proto"
-	grpc "google.golang.org/grpc"
-	codes "google.golang.org/grpc/codes"
-	status "google.golang.org/grpc/status"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -130,84 +126,4 @@ var fileDescriptor_e16b7f8b4640523a = []byte{
 	0xb9, 0x13, 0xf9, 0xf6, 0x29, 0x2e, 0x31, 0x5c, 0x9c, 0x45, 0xb9, 0x16, 0xdf, 0x2f, 0x35, 0x29,
 	0x35, 0x83, 0x1e, 0xba, 0x26, 0x7f, 0xa3, 0x2c, 0xb2, 0x7a, 0x83, 0xcf, 0xc7, 0xbe, 0xd5, 0x3d,
 	0x00, 0x00, 0xff, 0xff, 0x16, 0x9c, 0x70, 0x6b, 0xef, 0x00, 0x00, 0x00,
-}
-
-// Reference imports to suppress errors if they are not otherwise used.
-var _ context.Context
-var _ grpc.ClientConnInterface
-
-// This is a compile-time assertion to ensure that this generated file
-// is compatible with the grpc package it is being compiled against.
-const _ = grpc.SupportPackageIsVersion6
-
-// ExampleServiceClient is the client API for ExampleService service.
-//
-// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
-type ExampleServiceClient interface {
-	DoSomething(ctx context.Context, in *DoSomethingReq, opts ...grpc.CallOption) (*DoSomethingResp, error)
-}
-
-type exampleServiceClient struct {
-	cc grpc.ClientConnInterface
-}
-
-func NewExampleServiceClient(cc grpc.ClientConnInterface) ExampleServiceClient {
-	return &exampleServiceClient{cc}
-}
-
-func (c *exampleServiceClient) DoSomething(ctx context.Context, in *DoSomethingReq, opts ...grpc.CallOption) (*DoSomethingResp, error) {
-	out := new(DoSomethingResp)
-	err := c.cc.Invoke(ctx, "/pb.ExampleService/DoSomething", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// ExampleServiceServer is the server API for ExampleService service.
-type ExampleServiceServer interface {
-	DoSomething(context.Context, *DoSomethingReq) (*DoSomethingResp, error)
-}
-
-// UnimplementedExampleServiceServer can be embedded to have forward compatible implementations.
-type UnimplementedExampleServiceServer struct {
-}
-
-func (*UnimplementedExampleServiceServer) DoSomething(ctx context.Context, req *DoSomethingReq) (*DoSomethingResp, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DoSomething not implemented")
-}
-
-func RegisterExampleServiceServer(s *grpc.Server, srv ExampleServiceServer) {
-	s.RegisterService(&_ExampleService_serviceDesc, srv)
-}
-
-func _ExampleService_DoSomething_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DoSomethingReq)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ExampleServiceServer).DoSomething(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/pb.ExampleService/DoSomething",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ExampleServiceServer).DoSomething(ctx, req.(*DoSomethingReq))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-var _ExampleService_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "pb.ExampleService",
-	HandlerType: (*ExampleServiceServer)(nil),
-	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "DoSomething",
-			Handler:    _ExampleService_DoSomething_Handler,
-		},
-	},
-	Streams:  []grpc.StreamDesc{},
-	Metadata: "github.com/aperturerobotics/bifrost/examples/toys/drpc-demo/pb/pb.drpc.proto",
 }

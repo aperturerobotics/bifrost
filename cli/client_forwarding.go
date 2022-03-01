@@ -3,7 +3,7 @@ package cli
 import (
 	"os"
 
-	stream_grpc "github.com/aperturerobotics/bifrost/stream/grpc"
+	stream_api "github.com/aperturerobotics/bifrost/stream/api"
 	"github.com/urfave/cli"
 )
 
@@ -15,7 +15,7 @@ func (a *ClientArgs) RunForwarding(_ *cli.Context) error {
 		return err
 	}
 
-	req, err := c.ForwardStreams(ctx, &stream_grpc.ForwardStreamsRequest{
+	req, err := c.ForwardStreams(ctx, &stream_api.ForwardStreamsRequest{
 		ForwardingConfig: &a.ForwardingConf,
 	})
 	if err != nil {

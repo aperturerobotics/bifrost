@@ -99,9 +99,7 @@ func (x *XBeeSerial) TxToAddr(
 		f.data[17] = 0x05
 	}
 	// write broadcast radius (max hops) (1 byte)
-	if broadcastRadius >= 0 {
-		f.data[18] = broadcastRadius
-	}
+	f.data[18] = broadcastRadius
 	// write options (1) (1 byte)
 	// 0x01: no retries
 	// 0x20: enable aps encrypt (if EE = 1)

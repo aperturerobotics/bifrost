@@ -5,33 +5,40 @@ import (
 	"time"
 
 	"github.com/aperturerobotics/bifrost/peer"
-	stream_grpc "github.com/aperturerobotics/bifrost/stream/grpc"
+	stream_api "github.com/aperturerobotics/bifrost/stream/api"
 	"github.com/aperturerobotics/controllerbus/bus"
 	bus_api "github.com/aperturerobotics/controllerbus/bus/api"
 	controller_exec "github.com/aperturerobotics/controllerbus/controller/exec"
 	"github.com/pkg/errors"
-	"google.golang.org/grpc"
+	"storj.io/drpc"
 )
 
-type ControllerBusAPI = bus_api.API
+// BusAPI implements the controller bus api.
+type BusAPI = bus_api.API
 
-// API implements the GRPC API.
+// API implements the daemon API.
 type API struct {
-	bus bus.Bus
+	*BusAPI
+
+	bus  bus.Bus
+	conf *Config
 }
 
 // NewAPI constructs a new instance of the API.
 func NewAPI(bus bus.Bus, conf *Config) (*API, error) {
 	return &API{
-		bus: bus,
+		BusAPI: bus_api.NewAPI(bus, conf.GetBusConfig()),
+
+		bus:  bus,
+		conf: conf,
 	}, nil
 }
 
 // ForwardStreams forwards streams to the target multiaddress.
 // Handles HandleMountedStream directives by contacting the target.
 func (a *API) ForwardStreams(
-	req *stream_grpc.ForwardStreamsRequest,
-	serv stream_grpc.StreamService_ForwardStreamsServer,
+	req *stream_api.ForwardStreamsRequest,
+	serv stream_api.DRPCStreamService_ForwardStreamsStream,
 ) error {
 	ctx := serv.Context()
 	conf := req.GetForwardingConfig()
@@ -69,7 +76,7 @@ func (a *API) ForwardStreams(
 		conf,
 		func(status controller_exec.ControllerStatus) {
 			_ = serv.Send(
-				&stream_grpc.ForwardStreamsResponse{
+				&stream_api.ForwardStreamsResponse{
 					ControllerStatus: status,
 				},
 			)
@@ -79,8 +86,8 @@ func (a *API) ForwardStreams(
 
 // ListenStreams listens for streams on the multiaddress.
 func (a *API) ListenStreams(
-	req *stream_grpc.ListenStreamsRequest,
-	serv stream_grpc.StreamService_ListenStreamsServer,
+	req *stream_api.ListenStreamsRequest,
+	serv stream_api.DRPCStreamService_ListenStreamsStream,
 ) error {
 	ctx := serv.Context()
 	conf := req.GetListeningConfig()
@@ -97,7 +104,7 @@ func (a *API) ListenStreams(
 		conf,
 		func(status controller_exec.ControllerStatus) {
 			_ = serv.Send(
-				&stream_grpc.ListenStreamsResponse{
+				&stream_api.ListenStreamsResponse{
 					ControllerStatus: status,
 				},
 			)
@@ -105,9 +112,9 @@ func (a *API) ListenStreams(
 	)
 }
 
-// RegisterAsGRPCServer registers the API to the GRPC instance.
-func (a *API) RegisterAsGRPCServer(grpcServer *grpc.Server) {
-	RegisterAsGRPCServer(a, grpcServer)
+// RegisterAsDRPCServer registers the API to the DRPC mux.
+func (a *API) RegisterAsDRPCServer(mux drpc.Mux) {
+	RegisterAsDRPCServer(a, mux)
 }
 
 // _ is a type assertion

@@ -1,0 +1,69 @@
+syntax = "proto3";
+package pubsub.api;
+
+// SubcribeRequest is a pubsub subscription request message.
+message SubscribeRequest {
+  // ChannelId is the channel id to subscribe to.
+  // Must be sent before / with publish.
+  // Cannot change the channel ID after first transmission.
+  string channel_id = 1;
+  // PeerId is the peer identifier of the publisher/subscriber.
+  // The peer ID will be used to acquire the peer private key.
+	string peer_id = 2;
+  // PrivKeyPem is an alternate to PeerId, specify private key inline.
+  // Overrides PeerId if set.
+  string priv_key_pem = 3;
+  // PublishRequest contains a publish message request.
+  PublishRequest publish_request = 4;
+}
+
+// PublishRequest is a message published via the subscribe channel.
+message PublishRequest {
+  // Data is the published data.
+  bytes data = 1;
+  // Identifier is a uint32 identifier to use for outgoing status.
+  // If zero, no outgoing status response will be sent.
+  uint32 identifier = 2;
+}
+
+// SubcribeResponse is a pubsub subscription response message.
+message SubscribeResponse {
+  // IncomingMessage is an incoming message.
+  IncomingMessage incoming_message = 1;
+  // OutgoingStatus is status of an outgoing message.
+  // Sent when a Publish request finishes.
+  OutgoingStatus outgoing_status = 2;
+  // SubscriptionStatus is the status of the subscription
+  SubscriptionStatus subscription_status = 3;
+}
+
+// SubscripionStatus is the status of the subscription handle.
+message SubscriptionStatus {
+  // Subscribed indicates the subscription is established.
+  bool subscribed = 1;
+}
+
+// OutgoingStatus is status of an outgoing message.
+message OutgoingStatus {
+  // Identifier is the request-provided identifier for the message.
+  uint32 identifier = 1;
+  // Sent indicates if the message was sent.
+  bool sent = 2;
+}
+
+// IncomingMessage implements Message with a proto object.
+message IncomingMessage {
+  // FromPeerId is the peer identifier of the sender.
+	string from_peer_id = 1;
+  // Authenticated indicates if the message is verified to be from the sender.
+  bool authenticated = 2;
+  // Data is the inner data.
+  bytes data = 3;
+}
+
+// PubSubService is the bifrost pubsub service.
+service PubSubService {
+  // Subscribe subscribes to a channel, allowing the subscriber to publish
+  // messages over the same channel.
+  rpc Subscribe(stream SubscribeRequest) returns (stream SubscribeResponse) {}
+}

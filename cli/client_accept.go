@@ -3,8 +3,8 @@ package cli
 import (
 	"os"
 
-	stream_grpc "github.com/aperturerobotics/bifrost/stream/grpc"
-	stream_grpc_rpc "github.com/aperturerobotics/bifrost/stream/grpc/rpc"
+	stream_api "github.com/aperturerobotics/bifrost/stream/api"
+	stream_api_rpc "github.com/aperturerobotics/bifrost/stream/api/rpc"
 	"github.com/aperturerobotics/bifrost/util/rwc"
 	"github.com/urfave/cli"
 )
@@ -25,15 +25,15 @@ func (a *ClientArgs) RunAccept(*cli.Context) error {
 	if len(a.RemotePeerIdsCsv) != 0 {
 		a.AcceptConf.RemotePeerIds = a.ParseRemotePeerIdsCsv()
 	}
-	err = client.Send(&stream_grpc.AcceptStreamRequest{
+	err = client.Send(&stream_api.AcceptStreamRequest{
 		Config: &a.AcceptConf,
 	})
 	if err != nil {
 		return err
 	}
 
-	drpc := stream_grpc.NewAcceptStreamClientRPC(client)
-	return stream_grpc_rpc.AttachRPCToStream(
+	drpc := stream_api.NewAcceptStreamClientRPC(client)
+	return stream_api_rpc.AttachRPCToStream(
 		drpc,
 		rwc.NewReadWriteCloser(os.Stdin, os.Stdout),
 		nil,
