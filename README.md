@@ -287,5 +287,5 @@ Please open a [GitHub issue] with any questions / issues.
 
 ... or feel free to reach out on [Matrix Chat] or [Discord].
 
-[Discord]: https://discord.gg/EmeEENhKkg
+[Discord]: https://discord.gg/KJutMESRsT
 [Matrix Chat]: https://matrix.to/#/#aperture-robotics:matrix.org
