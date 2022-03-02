@@ -57,6 +57,8 @@ application code to different operating environments and protocols.
 
 ## Examples
 
+[![Support Server](https://img.shields.io/discord/803825858599059487.svg?label=Discord&logo=Discord&colorB=7289da&style=for-the-badge)](https://discord.gg/KJutMESRsT)
+
 Bifrost can be used as either a Go library or a command-line / daemon.
 
 The [examples](./examples) directory contains yaml files to configure the
