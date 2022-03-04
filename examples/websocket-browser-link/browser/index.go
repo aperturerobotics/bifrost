@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"syscall/js"
 
-	"github.com/aperturerobotics/bifrost/examples/toys/websocket-browser-link/common"
+	"github.com/aperturerobotics/bifrost/examples/websocket-browser-link/common"
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/transport/common/dialer"
@@ -65,7 +65,7 @@ func main() {
 
 	pid, _ := peer.IDB58Decode(peerIDStr)
 	_, dialRef, err := b.AddDirective(
-		link.NewEstablishLinkWithPeer(pid),
+		link.NewEstablishLinkWithPeer("", pid),
 		nil,
 	)
 	if err != nil {

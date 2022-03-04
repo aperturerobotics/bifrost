@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 
-	"github.com/aperturerobotics/bifrost/examples/toys/websocket-browser-link/common"
+	"github.com/aperturerobotics/bifrost/examples/websocket-browser-link/common"
 	"github.com/aperturerobotics/bifrost/peer"
 	wtpt "github.com/aperturerobotics/bifrost/transport/websocket"
 	"github.com/aperturerobotics/controllerbus/bus"

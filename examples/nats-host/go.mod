@@ -1,8 +1,8 @@
-module github.com/aperturerobotics/bifrost/examples/toys/nats-host
+module github.com/aperturerobotics/bifrost/examples/nats-host
 
 go 1.16
 
-replace github.com/aperturerobotics/bifrost => ../../../
+replace github.com/aperturerobotics/bifrost => ../../
 
 // aperture: use compatibility forks
 replace (
@@ -18,8 +18,8 @@ replace (
 )
 
 require (
-	github.com/aperturerobotics/bifrost v0.1.1-0.20220210135340-1bc19e41b611
-	github.com/aperturerobotics/controllerbus v0.8.9-0.20220301023817-9bf244146cc6
+	github.com/aperturerobotics/bifrost v0.1.1-0.20220302112113-c4d9be6aee46
+	github.com/aperturerobotics/controllerbus v0.8.9-0.20220302112603-00cd479c3d0a
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/sirupsen/logrus v1.8.1
 	github.com/urfave/cli v1.22.5
