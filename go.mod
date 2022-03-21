@@ -14,10 +14,13 @@ replace (
 	github.com/libp2p/go-libp2p-core => github.com/paralin/go-libp2p-core v0.14.1-0.20220321111733-8010b7b24680 // aperture
 	github.com/libp2p/go-libp2p-tls => github.com/paralin/go-libp2p-tls v0.3.2-0.20220321112951-db0cab39ed18 // js-compat
 	github.com/lucas-clemente/quic-go => github.com/aperturerobotics/quic-go v0.23.1-0.20220321112440-8295926e98d6 // aperture
+	github.com/marten-seemann/qtls-go1-16 => github.com/paralin/qtls-go1-16 v0.1.5-0.20210728071944-419a2c247411 // gopherjs-compat
+	github.com/marten-seemann/qtls-go1-17 => github.com/paralin/qtls-go1-17 v0.1.1-0.20220321132518-c12ea7282574 // gopherjs-compat
 	github.com/nats-io/nats-server/v2 => github.com/aperturerobotics/bifrost-nats-server/v2 v2.1.8-0.20200831101324-59acc8fe7f74 // aperture-2.0
 	github.com/nats-io/nats.go => github.com/aperturerobotics/bifrost-nats-client v1.10.1-0.20200831103200-24c3d0464e58 // aperture-2.0
 	github.com/paralin/kcp-go-lite => github.com/paralin/kcp-go-lite v1.0.2-0.20210907043027-271505668bd0 // aperture
 	github.com/zeebo/blake3 => github.com/paralin/go-blake3 v0.2.3-0.20220321123929-a1d1fabeda71 // js-compat
+	golang.org/x/crypto => github.com/aperturerobotics/golang-x-crypto v0.0.0-20220321111526-87c0d0398f72 // gopherjs-compat
 	google.golang.org/genproto => google.golang.org/genproto v0.0.0-20190819201941-24fa4b261c55
 	nhooyr.io/websocket => github.com/paralin/nhooyr-websocket v1.8.8-0.20220321125022-7defdf942f07 // aperture
 	storj.io/drpc => github.com/paralin/drpc v0.0.30-0.20220301023015-b1e9d6bd9478 // aperture
