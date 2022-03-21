@@ -3,8 +3,8 @@ module github.com/aperturerobotics/bifrost
 go 1.16
 
 require (
-	github.com/aperturerobotics/controllerbus v0.8.9-0.20220302112603-00cd479c3d0a
-	github.com/aperturerobotics/entitygraph v0.1.4-0.20210530040557-f19da9c2be6d
+	github.com/aperturerobotics/controllerbus v0.9.0
+	github.com/aperturerobotics/entitygraph v0.2.0
 	github.com/aperturerobotics/timestamp v0.4.0
 )
 
@@ -19,6 +19,7 @@ replace (
 	github.com/paralin/kcp-go-lite => github.com/paralin/kcp-go-lite v1.0.2-0.20210907043027-271505668bd0 // aperture
 	github.com/zeebo/blake3 => github.com/paralin/go-blake3 v0.2.3-0.20220321123929-a1d1fabeda71 // js-compat
 	google.golang.org/genproto => google.golang.org/genproto v0.0.0-20190819201941-24fa4b261c55
+	nhooyr.io/websocket => github.com/paralin/nhooyr-websocket v1.8.8-0.20220321125022-7defdf942f07 // aperture
 	storj.io/drpc => github.com/paralin/drpc v0.0.30-0.20220301023015-b1e9d6bd9478 // aperture
 )
 
@@ -54,6 +55,6 @@ require (
 	github.com/zeebo/blake3 v0.2.2
 	golang.org/x/crypto v0.0.0-20220315160706-3147a52a75dd
 	gonum.org/v1/gonum v0.11.0
-	nhooyr.io/websocket v1.8.7
-	storj.io/drpc v0.0.29
+	nhooyr.io/websocket v1.8.8-0.20210410000328-8dee580a7f74
+	storj.io/drpc v0.0.30
 )
