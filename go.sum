@@ -224,6 +224,8 @@ github.com/onsi/gomega v1.13.0 h1:7lLHu94wT9Ij0o6EWWclhu0aOh32VxhkwEJvzuWPeak=
 github.com/onsi/gomega v1.13.0/go.mod h1:lRk9szgn8TxENtWd0Tp4c3wjlRfMTMH27I+3Je41yGY=
 github.com/paralin/drpc v0.0.30-0.20220301023015-b1e9d6bd9478 h1:zLstwPEebWpStLwf+Dg6fJrJJ1+Odx85yz4fazdp6nM=
 github.com/paralin/drpc v0.0.30-0.20220301023015-b1e9d6bd9478/go.mod h1:opUwvtQEv6hbheTyWeDgvb8CrqPHp8ggJetOOiAQODI=
+github.com/paralin/go-blake3 v0.2.3-0.20220321123929-a1d1fabeda71 h1:MvoI31bD5CYisBTvOG6prMusoZPyGKncMNGB6jE8EKc=
+github.com/paralin/go-blake3 v0.2.3-0.20220321123929-a1d1fabeda71/go.mod h1:TSQ0KjMH+pht+bRyvVooJ1rBpvvngSGaPISafq9MxJk=
 github.com/paralin/go-libp2p-core v0.14.1-0.20220321111733-8010b7b24680 h1:8RIrX7wS6L1nFwOFpdpfRINqKGFZiW1z0xwWiLcSMfE=
 github.com/paralin/go-libp2p-core v0.14.1-0.20220321111733-8010b7b24680/go.mod h1:DGXuN6HHRx8ZxHN4kuoF5JuoPyqySurcjydYFPqLNuc=
 github.com/paralin/go-libp2p-tls v0.3.2-0.20220321112951-db0cab39ed18 h1:k/DG83KlF5NXnFXLV/gl17Mnm6Nb95R9T+SLCXRjVWU=
@@ -305,8 +307,6 @@ github.com/yuin/goldmark v1.4.1/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1
 github.com/zeebo/assert v1.1.0/go.mod h1:Pq9JiuJQpG8JLJdtkwrJESF0Foym2/D9XMU5ciN/wJ0=
 github.com/zeebo/assert v1.3.0 h1:g7C04CbJuIDKNPFHmsk4hwZDO5O+kntRxzaUoNXj+IQ=
 github.com/zeebo/assert v1.3.0/go.mod h1:Pq9JiuJQpG8JLJdtkwrJESF0Foym2/D9XMU5ciN/wJ0=
-github.com/zeebo/blake3 v0.2.2 h1:ddH9fUIlef5r+pqvJShGgSXFd6c7k54eQXZ48hNjotQ=
-github.com/zeebo/blake3 v0.2.2/go.mod h1:TSQ0KjMH+pht+bRyvVooJ1rBpvvngSGaPISafq9MxJk=
 github.com/zeebo/errs v1.2.2 h1:5NFypMTuSdoySVTqlNs1dEoU21QVamMQJxW/Fii5O7g=
 github.com/zeebo/errs v1.2.2/go.mod h1:sgbWHsvVuTPHcqJJGQ1WhI5KbWlHYz+2+2C/LSEtCw4=
 github.com/zeebo/pcg v1.0.1 h1:lyqfGeWiv4ahac6ttHs+I5hwtH/+1mrhlCtVNQM2kHo=
