@@ -79,7 +79,7 @@ list: $(GO_MOD_OUTDATED)
 	go list -mod=mod -u -m -json all | $(GO_MOD_OUTDATED)
 
 outdated: $(GO_MOD_OUTDATED)
-	go list -mod=mod -u -m -json all | $(GO_MOD_OUTDATED) -update
+	go list -mod=mod -u -m -json all | $(GO_MOD_OUTDATED) -update -direct
 
 lint: $(GOLANGCI_LINT)
 	$(GOLANGCI_LINT) run

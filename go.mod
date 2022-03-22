@@ -28,8 +28,9 @@ replace (
 
 require (
 	github.com/blang/semver v3.5.1+incompatible
-	github.com/cenkalti/backoff v1.1.1-0.20190506075156-2146c9339422
+	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/djherbis/buffer v1.2.0
+	github.com/frankban/quicktest v1.14.2 // indirect
 	github.com/golang/protobuf v1.5.2
 	github.com/golang/snappy v0.0.4
 	github.com/hashicorp/yamux v0.0.0-20211028200310-0bc27b27de87
@@ -56,7 +57,9 @@ require (
 	github.com/urfave/cli v1.22.5
 	github.com/xtaci/smux v1.5.16
 	github.com/zeebo/blake3 v0.2.3
-	golang.org/x/crypto v0.0.0-20220315160706-3147a52a75dd
+	golang.org/x/crypto v0.0.0-20220321153916-2c7772ba3064
+	golang.org/x/sys v0.0.0-20220319134239-a9b59b0215f8 // indirect
+	golang.org/x/tools v0.1.10 // indirect
 	gonum.org/v1/gonum v0.11.0
 	nhooyr.io/websocket v1.8.8-0.20210410000328-8dee580a7f74
 	storj.io/drpc v0.0.30
