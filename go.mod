@@ -3,7 +3,7 @@ module github.com/aperturerobotics/bifrost
 go 1.16
 
 require (
-	github.com/aperturerobotics/controllerbus v0.9.0
+	github.com/aperturerobotics/controllerbus v0.9.1-0.20220322004716-ca57d2643bca
 	github.com/aperturerobotics/entitygraph v0.2.0
 	github.com/aperturerobotics/timestamp v0.4.0
 )
@@ -18,6 +18,7 @@ replace (
 	github.com/nats-io/nats.go => github.com/aperturerobotics/bifrost-nats-client v1.10.1-0.20200831103200-24c3d0464e58 // aperture-2.0
 	github.com/paralin/kcp-go-lite => github.com/paralin/kcp-go-lite v1.0.2-0.20210907043027-271505668bd0 // aperture
 	google.golang.org/genproto => google.golang.org/genproto v0.0.0-20190819201941-24fa4b261c55
+	google.golang.org/grpc => github.com/paralin/grpc-go v1.30.1-0.20210804030014-1587a7c16b66 // aperture
 	nhooyr.io/websocket => github.com/paralin/nhooyr-websocket v1.8.8-0.20220321125022-7defdf942f07 // aperture
 	storj.io/drpc => github.com/paralin/drpc v0.0.30-0.20220301023015-b1e9d6bd9478 // aperture
 )
@@ -26,7 +27,6 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/djherbis/buffer v1.2.0
-	github.com/frankban/quicktest v1.14.2 // indirect
 	github.com/golang/protobuf v1.5.2
 	github.com/golang/snappy v0.0.4
 	github.com/hashicorp/yamux v0.0.0-20211028200310-0bc27b27de87
@@ -54,7 +54,6 @@ require (
 	github.com/xtaci/smux v1.5.16
 	github.com/zeebo/blake3 v0.2.3
 	golang.org/x/crypto v0.0.0-20220321153916-2c7772ba3064
-	golang.org/x/tools v0.1.10 // indirect
 	gonum.org/v1/gonum v0.11.0
 	nhooyr.io/websocket v1.8.8-0.20210410000328-8dee580a7f74
 	storj.io/drpc v0.0.30
