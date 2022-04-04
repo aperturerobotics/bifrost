@@ -16,6 +16,9 @@ type BifrostAPIServer interface {
 	pubsub_api.DRPCPubSubServiceServer
 }
 
+// DRPCBifrostAPIServer is the bifrost daemon server interface.
+type DRPCBifrostAPIServer = BifrostAPIServer
+
 // RegisterAsDRPCServer registers a server with a DRPC mux.
 func RegisterAsDRPCServer(s BifrostAPIServer, mux drpc.Mux) {
 	_ = bus_api.DRPCRegisterControllerBusService(mux, s)
@@ -31,6 +34,9 @@ type BifrostAPIClient interface {
 	peer_api.DRPCPeerServiceClient
 	pubsub_api.DRPCPubSubServiceClient
 }
+
+// DRPCBifrostAPIClient is the bifrost daemon client interface.
+type DRPCBifrostAPIClient = BifrostAPIClient
 
 // bifrostAPIClient implements BifrostAPIClient.
 type bifrostAPIClient struct {
