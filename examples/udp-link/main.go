@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/aperturerobotics/bifrost/daemon"
+	link_holdopen_controller "github.com/aperturerobotics/bifrost/link/hold-open"
 	"github.com/aperturerobotics/bifrost/peer"
 	tptc "github.com/aperturerobotics/bifrost/transport/controller"
 	udptpt "github.com/aperturerobotics/bifrost/transport/udp"
@@ -60,9 +61,36 @@ func execute() error {
 
 	bus1 := d1.GetControllerBus()
 	bus2 := d2.GetControllerBus()
+	sr1 := d1.GetStaticResolver()
+	sr2 := d2.GetStaticResolver()
 
 	var wg sync.WaitGroup
 	wg.Add(2)
+
+	// Execute hold-open
+	sr1.AddFactory(link_holdopen_controller.NewFactory(bus1))
+	_, _, hr1, err := loader.WaitExecControllerRunning(
+		ctx,
+		bus1,
+		resolver.NewLoadControllerWithConfig(&link_holdopen_controller.Config{}),
+		nil,
+	)
+	if err != nil {
+		return err
+	}
+	defer hr1.Release()
+
+	sr2.AddFactory(link_holdopen_controller.NewFactory(bus2))
+	_, _, hr2, err := loader.WaitExecControllerRunning(
+		ctx,
+		bus2,
+		resolver.NewLoadControllerWithConfig(&link_holdopen_controller.Config{}),
+		nil,
+	)
+	if err != nil {
+		return err
+	}
+	defer hr2.Release()
 
 	// Execute the UDP transport on the first daemon.
 	tptc1, _, udpRef1, err := loader.WaitExecControllerRunning(

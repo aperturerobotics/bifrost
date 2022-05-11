@@ -5,14 +5,13 @@ import (
 	"io"
 	"sync"
 
-	"github.com/aperturerobotics/bifrost/stream"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 )
 
 // Session wraps a stream in a session.
 type Session struct {
-	stream.Stream
+	io.ReadWriteCloser
 	sendMtx        sync.Mutex
 	readMtx        sync.Mutex
 	maxMessageSize uint32
@@ -20,12 +19,12 @@ type Session struct {
 
 // NewSession builds a new session.
 func NewSession(
-	stream stream.Stream,
+	stream io.ReadWriteCloser,
 	maxMessageSize uint32,
 ) *Session {
 	return &Session{
-		Stream:         stream,
-		maxMessageSize: maxMessageSize,
+		ReadWriteCloser: stream,
+		maxMessageSize:  maxMessageSize,
 	}
 }
 
@@ -44,7 +43,7 @@ func (s *Session) SendMsg(msg proto.Message) error {
 	s.sendMtx.Lock()
 	defer s.sendMtx.Unlock()
 
-	if _, err := s.Stream.Write(pktBuf); err != nil {
+	if _, err := s.ReadWriteCloser.Write(pktBuf); err != nil {
 		return err
 	}
 	return nil
@@ -56,7 +55,7 @@ func (s *Session) RecvMsg(msg proto.Message) error {
 	s.readMtx.Lock()
 	defer s.readMtx.Unlock()
 
-	if _, err := io.ReadFull(s.Stream, data); err != nil {
+	if _, err := io.ReadFull(s.ReadWriteCloser, data); err != nil {
 		return err
 	}
 
@@ -67,7 +66,7 @@ func (s *Session) RecvMsg(msg proto.Message) error {
 		}
 
 		data = make([]byte, messageLen)
-		if _, err := io.ReadFull(s.Stream, data); err != nil {
+		if _, err := io.ReadFull(s.ReadWriteCloser, data); err != nil {
 			return err
 		}
 
