@@ -209,7 +209,7 @@ func (t *Transport) HandleConn(ctx context.Context, dial bool, pc net.PacketConn
 		raddr = peer.NewNetAddr(peerID)
 	}
 
-	var sess quic.Session
+	var sess quic.Connection
 	var err error
 
 	t.le.Debugf("negotiating quic session with: %s", raddr.String())
@@ -248,7 +248,7 @@ func (t *Transport) HandleConn(ctx context.Context, dial bool, pc net.PacketConn
 }
 
 // HandleSession handles a new Quic session, creating & registering a link.
-func (t *Transport) HandleSession(ctx context.Context, sess quic.Session) (*Link, error) {
+func (t *Transport) HandleSession(ctx context.Context, sess quic.Connection) (*Link, error) {
 	t.mtx.Lock()
 	sessID := t.sessionCounter
 	t.sessionCounter++

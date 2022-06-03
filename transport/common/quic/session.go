@@ -27,7 +27,7 @@ func DialSession(
 	identity *p2ptls.Identity,
 	addr net.Addr,
 	rpeer peer.ID,
-) (quic.Session, crypto.PubKey, error) {
+) (quic.Connection, crypto.PubKey, error) {
 	tlsConf, keyCh := identity.ConfigForPeer(rpeer)
 	tlsConf.NextProtos = []string{Alpn}
 	quicConfig := BuildQuicConfig(le, opts)
@@ -61,7 +61,7 @@ func ListenSession(
 	pconn net.PacketConn,
 	identity *p2ptls.Identity,
 	rpeer peer.ID,
-) (quic.Session, error) {
+) (quic.Connection, error) {
 	quicConfig := BuildQuicConfig(le, opts)
 	tlsConf := BuildIncomingTlsConf(identity, rpeer)
 
@@ -80,7 +80,7 @@ func ListenSession(
 }
 
 // DetermineSessionIdentity determines the identity from the session cert chain.
-func DetermineSessionIdentity(sess quic.Session) (peer.ID, crypto.PubKey, error) {
+func DetermineSessionIdentity(sess quic.Connection) (peer.ID, crypto.PubKey, error) {
 	// Determine the remote peer ID (public key) using the TLS cert chain.
 	connState := sess.ConnectionState()
 	certs := connState.TLS.ConnectionState.PeerCertificates

@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/aperturerobotics/bifrost/stream"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/encoding/protowire"
 )
 
 // rawStream implements a unencrypted stream.
@@ -39,7 +39,7 @@ func revSlice(vb []byte) {
 }
 
 func encodeRawStreamIDVarint(streamID uint32) []byte {
-	vb := proto.EncodeVarint(uint64(streamID))
+	vb := protowire.AppendVarint(nil, uint64(streamID))
 	// reverse array
 	revSlice(vb)
 	return vb
@@ -48,7 +48,7 @@ func encodeRawStreamIDVarint(streamID uint32) []byte {
 // decodeRawStreamIDVarint temporarily reverses the bytes and decodes the varint.
 func decodeRawStreamIDVarint(vb []byte) (x uint64, n int) {
 	revSlice(vb)
-	x, n = proto.DecodeVarint(vb)
+	x, n = protowire.ConsumeVarint(vb)
 	revSlice(vb)
 	return
 }

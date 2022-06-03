@@ -8,7 +8,7 @@ import (
 	"github.com/aperturerobotics/bifrost/handshake/identity"
 	"github.com/aperturerobotics/bifrost/handshake/identity/s2s"
 	"github.com/aperturerobotics/bifrost/peer"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 )
 
 // inflightHandshake is an on-going handshake.

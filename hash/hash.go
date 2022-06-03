@@ -6,10 +6,10 @@ import (
 	"crypto/sha256"
 	"hash"
 
-	"github.com/golang/protobuf/proto"
 	b58 "github.com/mr-tron/base58/base58"
 	"github.com/pkg/errors"
 	"github.com/zeebo/blake3"
+	"google.golang.org/protobuf/proto"
 )
 
 // ErrHashMismatch is returned when hashes mismatch.

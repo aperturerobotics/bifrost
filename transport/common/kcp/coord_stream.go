@@ -5,8 +5,8 @@ import (
 	"io"
 
 	"github.com/aperturerobotics/bifrost/stream"
-	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 )
 
 // maxCoordStreamPlen is the maximum length of a coordination stream packet.

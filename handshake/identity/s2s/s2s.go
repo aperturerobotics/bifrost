@@ -8,10 +8,10 @@ import (
 
 	"github.com/aperturerobotics/bifrost/handshake/identity"
 	"github.com/aperturerobotics/bifrost/peer"
-	"github.com/golang/protobuf/proto"
 	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/nacl/box"
+	"google.golang.org/protobuf/proto"
 	// "golang.org/x/crypto/nacl/secretbox"
 	// "golang.org/x/crypto/ripemd160"
 )

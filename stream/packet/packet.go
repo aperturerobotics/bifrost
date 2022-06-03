@@ -5,8 +5,8 @@ import (
 	"io"
 	"sync"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 )
 
 // Session wraps a stream in a session.
@@ -73,6 +73,6 @@ func (s *Session) RecvMsg(msg proto.Message) error {
 		return proto.Unmarshal(data, msg)
 	}
 
-	msg.Reset()
+	proto.Reset(msg)
 	return nil
 }

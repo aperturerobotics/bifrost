@@ -4,8 +4,8 @@ import (
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/util/confparse"
 	"github.com/aperturerobotics/controllerbus/config"
-	"github.com/golang/protobuf/proto"
 	"github.com/libp2p/go-libp2p-core/crypto"
+	"google.golang.org/protobuf/proto"
 )
 
 // ConfigID is the identifier for the config type.

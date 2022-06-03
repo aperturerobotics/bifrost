@@ -27,7 +27,7 @@ type Link struct {
 	// localAddr is the local address
 	localAddr net.Addr
 	// sess is the quic session
-	sess quic.Session
+	sess quic.Connection
 	// remotePeerID is the remote peer id
 	remotePeerID peer.ID
 	// remotePubKey is the remote public key
@@ -54,7 +54,7 @@ func NewLink(
 	localTransportUUID uint64,
 	localPeerID peer.ID,
 	localAddr net.Addr,
-	sess quic.Session,
+	sess quic.Connection,
 	closed func(),
 ) (*Link, error) {
 	remotePeerID, remotePubKey, err := DetermineSessionIdentity(sess)

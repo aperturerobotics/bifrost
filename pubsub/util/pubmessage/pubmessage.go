@@ -3,9 +3,9 @@ package pubmessage
 import (
 	"github.com/aperturerobotics/bifrost/hash"
 	"github.com/aperturerobotics/bifrost/peer"
-	timestamp "github.com/aperturerobotics/timestamp"
-	proto "github.com/golang/protobuf/proto"
 	crypto "github.com/libp2p/go-libp2p-core/crypto"
+	proto "google.golang.org/protobuf/proto"
+	timestamp "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // NewPubMessage constructs/signs/encodes a new pub-message and inner message.
@@ -21,7 +21,7 @@ func NewPubMessage(
 	inner := &PubMessageInner{
 		Data:      data,
 		Channel:   channelID,
-		Timestamp: &tsNow,
+		Timestamp: tsNow,
 	}
 	innerData, err := proto.Marshal(inner)
 	if err != nil {

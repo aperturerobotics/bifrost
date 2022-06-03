@@ -1,7 +1,7 @@
 syntax = "proto3";
 package pubmessage;
 
-import "github.com/aperturerobotics/timestamp/timestamp.proto";
+import "google/protobuf/timestamp.proto";
 
 // PubMessageInner is the signed inner portion of the message.
 message PubMessageInner {
@@ -10,5 +10,5 @@ message PubMessageInner {
   // Channel is the channel.
   string channel = 2;
   // Timestamp is the message timestamp.
-  .timestamp.Timestamp timestamp = 3;
+  .google.protobuf.Timestamp timestamp = 3;
 }
