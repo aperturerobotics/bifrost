@@ -3,17 +3,17 @@ package stream.drpc;
 
 // DprcOpts are drpc connection options.
 message DrpcOpts {
-  // ManagerOpts are drpc manager options.
-  ManagerOpts manager_opts = 1;
+	// ManagerOpts are drpc manager options.
+	ManagerOpts manager_opts = 1;
 }
 
 // ManagerOpts are drpc manager options.
 message ManagerOpts {
 	// WriterBufferSize controls the size of the buffer that we will fill before
 	// flushing. Normal writes to streams typically issue a flush explicitly.
-  uint32 writer_buffer_size = 1;
-  // StreamOpts are options for streams created by the manager.
-  StreamOpts stream_opts = 2;
+	uint32 writer_buffer_size = 1;
+	// StreamOpts are options for streams created by the manager.
+	StreamOpts stream_opts = 2;
 	// InactivityTimeout is the amount of time the manager will wait when creating
 	// a NewServerStream. It only includes the time it is reading packets from the
 	// remote client. In other words, it only includes the time that the client
@@ -24,6 +24,5 @@ message ManagerOpts {
 // StreamOpts are options for a drpc stream.
 message StreamOpts {
 	// SplitSize controls the default size we split packets into frames.
-  uint32 split_size = 1;
+	uint32 split_size = 1;
 }
-
