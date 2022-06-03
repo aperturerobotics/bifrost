@@ -7,13 +7,6 @@ require (
 	github.com/aperturerobotics/entitygraph v0.2.1
 )
 
-require (
-	github.com/frankban/quicktest v1.14.3 // indirect
-	github.com/golang/protobuf v1.5.2 // indirect
-	google.golang.org/grpc v1.47.0 // indirect
-	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
-)
-
 // aperture: use compatibility forks
 replace (
 	github.com/libp2p/go-libp2p-core => github.com/paralin/go-libp2p-core v0.14.1-0.20220321111733-8010b7b24680 // aperture
@@ -35,9 +28,11 @@ require (
 	github.com/cheekybits/genny v1.0.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.0-20190314233015-f79a8a8ca69d // indirect
 	github.com/djherbis/buffer v1.2.0
+	github.com/frankban/quicktest v1.14.3 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-task/slim-sprig v0.0.0-20210107165309-348f09dbbbc0 // indirect
+	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4
 	github.com/hashicorp/yamux v0.0.0-20211028200310-0bc27b27de87
 	github.com/ipfs/go-cid v0.0.7 // indirect
@@ -93,18 +88,20 @@ require (
 	github.com/xtaci/smux v1.5.16
 	github.com/zeebo/blake3 v0.2.3
 	github.com/zeebo/errs v1.2.2 // indirect
-	golang.org/x/crypto v0.0.0-20220321153916-2c7772ba3064
-	golang.org/x/exp v0.0.0-20191002040644-a1355ae1e2c3 // indirect
+	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e
+	golang.org/x/exp v0.0.0-20220602145555-4a0574d9293f // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3 // indirect
-	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
-	golang.org/x/sys v0.0.0-20220319134239-a9b59b0215f8 // indirect
+	golang.org/x/net v0.0.0-20220531201128-c960675eff93 // indirect
+	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
 	golang.org/x/text v0.3.7 // indirect
-	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1 // indirect
+	golang.org/x/time v0.0.0-20220411224347-583f2d630306 // indirect
 	golang.org/x/tools v0.1.10 // indirect
-	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
+	golang.org/x/xerrors v0.0.0-20220517211312-f3a8303e98df // indirect
 	gonum.org/v1/gonum v0.11.0
 	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013 // indirect
+	google.golang.org/grpc v1.47.0 // indirect
 	google.golang.org/protobuf v1.27.1
+	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	nhooyr.io/websocket v1.8.8-0.20210410000328-8dee580a7f74
