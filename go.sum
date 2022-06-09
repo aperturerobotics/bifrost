@@ -13,8 +13,8 @@ github.com/aperturerobotics/entitygraph v0.2.1 h1:gSfxEKeOO7O/RM6H7CXbkYbghK28/X
 github.com/aperturerobotics/entitygraph v0.2.1/go.mod h1:MubkFd3n1ScxydkDzzoHk2GgJYmdikpBtx89mG5qN98=
 github.com/aperturerobotics/logrus v1.8.2-0.20220322010420-77ab346a2cf8 h1:Op74irBctc7oEvEILdmoQ2FDkpqmoOqErxU6V/1eHG0=
 github.com/aperturerobotics/logrus v1.8.2-0.20220322010420-77ab346a2cf8/go.mod h1:x/wqQ2RFrvQZEw5sMa05JQ/UbAAIfbzwTyMeXz9S0YI=
-github.com/aperturerobotics/protobuf-go v1.27.2-0.20220603060022-78b627edc1c2 h1:u+Q6BDUHYnK8iZhx9qnf1dnR6V9yyKa0Q1K8reDhC9U=
-github.com/aperturerobotics/protobuf-go v1.27.2-0.20220603060022-78b627edc1c2/go.mod h1:HV8QOd/L58Z+nl8r43ehVNZIU/HEI6OcFqwMG9pJV4I=
+github.com/aperturerobotics/protobuf-go v1.27.2-0.20220603103816-349b2ae33224 h1:D8Moy0XH7BH4AAmHOsB8lmWr4TKQDO/hSWx605g1imo=
+github.com/aperturerobotics/protobuf-go v1.27.2-0.20220603103816-349b2ae33224/go.mod h1:HV8QOd/L58Z+nl8r43ehVNZIU/HEI6OcFqwMG9pJV4I=
 github.com/aperturerobotics/quic-go v0.27.1-0.20220603115201-69262d03f683 h1:25Ern+v8gCE6DQ3B2X1paCpI6acLtUEWnyptkZ+M3ts=
 github.com/aperturerobotics/quic-go v0.27.1-0.20220603115201-69262d03f683/go.mod h1:V+tqasmcc4il7QSddxqHKQWjuUye3TvAO/qBaCjuPM8=
 github.com/blang/semver v3.5.1+incompatible h1:cQNTCjp13qL8KC3Nbxr/y2Bqb63oX6wdnnjpJbkM4JQ=
