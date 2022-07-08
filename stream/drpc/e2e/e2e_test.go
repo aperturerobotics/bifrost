@@ -12,6 +12,7 @@ import (
 	"github.com/aperturerobotics/bifrost/transport/common/dialer"
 	"github.com/aperturerobotics/bifrost/transport/inproc"
 	"github.com/aperturerobotics/controllerbus/controller"
+	"github.com/blang/semver"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"storj.io/drpc/drpcconn"
@@ -78,11 +79,11 @@ func TestDrpc(t *testing.T) {
 	mockServer := NewServer()
 	server, err := stream_drpc_server.NewServer(
 		tb2.Bus,
-		controller.Info{
-			Id:          string(ProtocolID) + "/server",
-			Version:     "0.0.1",
-			Description: "test of drpc server",
-		},
+		controller.NewInfo(
+			string(ProtocolID)+"/server",
+			semver.MustParse("0.0.1"),
+			"test of drpc server",
+		),
 		nil,
 		[]protocol.ID{ProtocolID},
 		[]string{tb2PeerID.Pretty()},

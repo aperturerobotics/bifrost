@@ -47,7 +47,7 @@ func NewController(
 }
 
 // GetControllerInfo returns information about the controller.
-func (c *Controller) GetControllerInfo() controller.Info {
+func (c *Controller) GetControllerInfo() *controller.Info {
 	return controller.NewInfo(
 		ControllerID,
 		Version,
@@ -71,7 +71,7 @@ func (c *Controller) Execute(ctx context.Context) error {
 	// controllerbus api
 	if !c.conf.GetDisableBusApi() {
 		bapi := cbapi.NewAPI(c.bus, c.conf.GetBusApiConfig())
-		bapi.RegisterAsDRPCServer(mux)
+		_ = bapi.RegisterAsDRPCServer(mux)
 	}
 
 	c.le.Debug("starting listener")

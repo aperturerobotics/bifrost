@@ -34,7 +34,7 @@ type Controller struct {
 	// ctor is the constructor
 	ctor Constructor
 	// info is the controller info
-	info controller.Info
+	info *controller.Info
 	// protocolID is the protocol id
 	protocolID protocol.ID
 	// peerID is the peer ID to use
@@ -60,7 +60,7 @@ type Controller struct {
 func NewController(
 	le *logrus.Entry,
 	bus bus.Bus,
-	controllerInfo controller.Info,
+	controllerInfo *controller.Info,
 	peerID peer.ID,
 	protocolID protocol.ID,
 	ctor Constructor,
@@ -86,8 +86,8 @@ func (c *Controller) GetControllerID() string {
 }
 
 // GetControllerInfo returns information about the controller.
-func (c *Controller) GetControllerInfo() controller.Info {
-	return c.info
+func (c *Controller) GetControllerInfo() *controller.Info {
+	return c.info.Clone()
 }
 
 // Execute executes the transport controller and the transport.

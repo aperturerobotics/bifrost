@@ -23,7 +23,7 @@ type Server struct {
 	// b is the bus
 	b bus.Bus
 	// info is the controller info
-	info controller.Info
+	info *controller.Info
 	// drpcOpts are opts passed to drpc
 	drpcOpts *stream_drpc.DrpcOpts
 	// protocolIDs is list of protocol id to listen on.
@@ -43,7 +43,7 @@ type Server struct {
 // If peerIDs and/or domainIDs are empty, matches any.
 func NewServer(
 	b bus.Bus,
-	info controller.Info,
+	info *controller.Info,
 	opts *stream_drpc.DrpcOpts,
 	protocolIDs []protocol.ID,
 	peerIDs []string,
@@ -70,7 +70,7 @@ func NewServer(
 }
 
 // GetControllerInfo returns information about the controller.
-func (s *Server) GetControllerInfo() controller.Info {
+func (s *Server) GetControllerInfo() *controller.Info {
 	return s.info
 }
 

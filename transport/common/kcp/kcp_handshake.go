@@ -95,7 +95,7 @@ func (u *Transport) handleCompleteHandshake(
 	lnk, err = NewLink(
 		ctx,
 		le,
-		&u.opts,
+		u.opts,
 		u.peerID,
 		u.pc.LocalAddr(),
 		addr,
