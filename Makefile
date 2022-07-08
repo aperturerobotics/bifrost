@@ -23,7 +23,7 @@ $(PROTOC_GEN_GO):
 	cd ./hack; \
 	go build -v \
 		-o ./bin/protoc-gen-go \
-		github.com/golang/protobuf/protoc-gen-go
+		google.golang.org/protobuf/cmd/protoc-gen-go
 
 $(PROTOC_GEN_VTPROTO):
 	cd ./hack; \
@@ -84,7 +84,7 @@ gengo: $(GOIMPORTS) $(PROTOWRAP) $(PROTOC_GEN_GO) $(PROTOC_GEN_VTPROTO) $(PROTOC
 		-I $$(pwd)/vendor \
 		--go_out=$$(pwd)/vendor \
 		--go-vtproto_out=$$(pwd)/vendor \
-		--go-vtproto_opt=features=marshal+unmarshal+size+equal+copy \
+		--go-vtproto_opt=features=marshal+unmarshal+size+equal \
 		--go-drpc_out=$$(pwd)/vendor \
 		--go-drpc_opt=json=false \
 		--go-drpc_opt=protolib=github.com/golang/protobuf/proto \
