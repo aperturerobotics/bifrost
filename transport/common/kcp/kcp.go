@@ -38,7 +38,7 @@ type Transport struct {
 	// handler is the transport handler
 	handler transport.TransportHandler
 	// opts are extra options
-	opts Opts
+	opts *Opts
 
 	// readErrCh indicates a read error
 	readErrCh chan error
@@ -83,7 +83,7 @@ func New(
 		peerID:  pid,
 		uuid:    uuid,
 		handler: tc,
-		opts:    *opts,
+		opts:    opts,
 
 		handshakes: make(map[string]*inflightHandshake),
 		links:      make(map[string]*Link),
@@ -190,7 +190,7 @@ func (u *Transport) readPump(ctx context.Context) (readErr error) {
 
 		n, addr, err := u.pc.ReadFrom(buf)
 		if err != nil {
-			if e, ok := err.(net.Error); !ok || (!e.Timeout() || !e.Temporary()) {
+			if e, ok := err.(net.Error); !ok || !e.Timeout() {
 				return err
 			}
 

@@ -6,6 +6,9 @@ import (
 	crypto "github.com/libp2p/go-libp2p-core/crypto"
 	proto "google.golang.org/protobuf/proto"
 	timestamp "google.golang.org/protobuf/types/known/timestamppb"
+
+	// _ ensures the typescript version of google/protobuf/timestamp exists in vendor/.
+	_ "github.com/paralin/ts-proto-common-types/google/protobuf"
 )
 
 // NewPubMessage constructs/signs/encodes a new pub-message and inner message.
