@@ -6,21 +6,21 @@ import (
 
 // AcceptStreamClientRPC fulfills the RPC on the client side.
 type AcceptStreamClientRPC struct {
-	DRPCStreamService_AcceptStreamClient
+	SRPCStreamService_AcceptStreamClient
 }
 
 // NewAcceptStreamClientRPC builds a new AcceptStreamClient.
 func NewAcceptStreamClientRPC(
-	client DRPCStreamService_AcceptStreamClient,
+	client SRPCStreamService_AcceptStreamClient,
 ) stream_api_rpc.RPC {
 	return &AcceptStreamClientRPC{
-		DRPCStreamService_AcceptStreamClient: client,
+		SRPCStreamService_AcceptStreamClient: client,
 	}
 }
 
 // Send sends a packet.
 func (r *AcceptStreamClientRPC) Send(resp *stream_api_rpc.Data) error {
-	return r.DRPCStreamService_AcceptStreamClient.Send(
+	return r.SRPCStreamService_AcceptStreamClient.Send(
 		&AcceptStreamRequest{
 			Data: resp,
 		},
@@ -29,7 +29,7 @@ func (r *AcceptStreamClientRPC) Send(resp *stream_api_rpc.Data) error {
 
 // Recv receives a packet.
 func (r *AcceptStreamClientRPC) Recv() (*stream_api_rpc.Data, error) {
-	msg, err := r.DRPCStreamService_AcceptStreamClient.Recv()
+	msg, err := r.SRPCStreamService_AcceptStreamClient.Recv()
 	return msg.GetData(), err
 }
 

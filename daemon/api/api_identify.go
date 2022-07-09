@@ -10,7 +10,7 @@ import (
 // Identify loads and manages a private key identity.
 func (a *API) Identify(
 	req *peer_api.IdentifyRequest,
-	serv peer_api.DRPCPeerService_IdentifyStream,
+	serv peer_api.SRPCPeerService_IdentifyStream,
 ) error {
 	ctx := serv.Context()
 	conf := req.GetConfig()

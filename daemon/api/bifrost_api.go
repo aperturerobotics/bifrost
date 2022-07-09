@@ -5,58 +5,58 @@ import (
 	pubsub_api "github.com/aperturerobotics/bifrost/pubsub/api"
 	stream_api "github.com/aperturerobotics/bifrost/stream/api"
 	bus_api "github.com/aperturerobotics/controllerbus/bus/api"
-	"storj.io/drpc"
+	"github.com/aperturerobotics/starpc/srpc"
 )
 
 // BifrostAPIServer is the bifrost daemon server interface.
 type BifrostAPIServer interface {
-	bus_api.DRPCControllerBusServiceServer
-	stream_api.DRPCStreamServiceServer
-	peer_api.DRPCPeerServiceServer
-	pubsub_api.DRPCPubSubServiceServer
+	bus_api.SRPCControllerBusServiceServer
+	stream_api.SRPCStreamServiceServer
+	peer_api.SRPCPeerServiceServer
+	pubsub_api.SRPCPubSubServiceServer
 }
 
-// DRPCBifrostAPIServer is the bifrost daemon server interface.
-type DRPCBifrostAPIServer = BifrostAPIServer
+// SRPCBifrostAPIServer is the bifrost daemon server interface.
+type SRPCBifrostAPIServer = BifrostAPIServer
 
-// RegisterAsDRPCServer registers a server with a DRPC mux.
-func RegisterAsDRPCServer(s BifrostAPIServer, mux drpc.Mux) {
-	_ = bus_api.DRPCRegisterControllerBusService(mux, s)
-	_ = stream_api.DRPCRegisterStreamService(mux, s)
-	_ = peer_api.DRPCRegisterPeerService(mux, s)
-	_ = pubsub_api.DRPCRegisterPubSubService(mux, s)
+// RegisterAsSRPCServer registers a server with a SRPC mux.
+func RegisterAsSRPCServer(s BifrostAPIServer, mux srpc.Mux) {
+	_ = bus_api.SRPCRegisterControllerBusService(mux, s)
+	_ = stream_api.SRPCRegisterStreamService(mux, s)
+	_ = peer_api.SRPCRegisterPeerService(mux, s)
+	_ = pubsub_api.SRPCRegisterPubSubService(mux, s)
 }
 
 // BifrostAPIClient is the bifrost daemon client interface.
 type BifrostAPIClient interface {
-	bus_api.DRPCControllerBusServiceClient
-	stream_api.DRPCStreamServiceClient
-	peer_api.DRPCPeerServiceClient
-	pubsub_api.DRPCPubSubServiceClient
+	bus_api.SRPCControllerBusServiceClient
+	stream_api.SRPCStreamServiceClient
+	peer_api.SRPCPeerServiceClient
+	pubsub_api.SRPCPubSubServiceClient
 }
 
-// DRPCBifrostAPIClient is the bifrost daemon client interface.
-type DRPCBifrostAPIClient = BifrostAPIClient
+// SRPCBifrostAPIClient is the bifrost daemon client interface.
+type SRPCBifrostAPIClient = BifrostAPIClient
 
 // bifrostAPIClient implements BifrostAPIClient.
 type bifrostAPIClient struct {
-	bus_api.DRPCControllerBusServiceClient
-	stream_api.DRPCStreamServiceClient
-	peer_api.DRPCPeerServiceClient
-	pubsub_api.DRPCPubSubServiceClient
-	cc drpc.Conn
+	bus_api.SRPCControllerBusServiceClient
+	stream_api.SRPCStreamServiceClient
+	peer_api.SRPCPeerServiceClient
+	pubsub_api.SRPCPubSubServiceClient
+	cc srpc.Client
 }
 
 // NewBifrostAPIClient constructs a new bifrost api client.
-func NewBifrostAPIClient(cc drpc.Conn) BifrostAPIClient {
+func NewBifrostAPIClient(cc srpc.Client) BifrostAPIClient {
 	return &bifrostAPIClient{
-		DRPCControllerBusServiceClient: bus_api.NewDRPCControllerBusServiceClient(cc),
-		DRPCStreamServiceClient:        stream_api.NewDRPCStreamServiceClient(cc),
-		DRPCPeerServiceClient:          peer_api.NewDRPCPeerServiceClient(cc),
-		DRPCPubSubServiceClient:        pubsub_api.NewDRPCPubSubServiceClient(cc),
+		SRPCControllerBusServiceClient: bus_api.NewSRPCControllerBusServiceClient(cc),
+		SRPCStreamServiceClient:        stream_api.NewSRPCStreamServiceClient(cc),
+		SRPCPeerServiceClient:          peer_api.NewSRPCPeerServiceClient(cc),
+		SRPCPubSubServiceClient:        pubsub_api.NewSRPCPubSubServiceClient(cc),
 		cc:                             cc,
 	}
 }
 
-// DRPCConn returns the drpc connection.
-func (c *bifrostAPIClient) DRPCConn() drpc.Conn { return c.cc }
+// SRPCClient returns the srpc client.
+func (c *bifrostAPIClient) SRPCClient() srpc.Client { return c.cc }

@@ -9,7 +9,7 @@ import (
 
 // AcceptStream accepts an incoming stream.
 // Stream data is sent over the request / response streams.
-func (a *API) AcceptStream(serv stream_api.DRPCStreamService_AcceptStreamStream) error {
+func (a *API) AcceptStream(serv stream_api.SRPCStreamService_AcceptStreamStream) error {
 	ctx := serv.Context()
 	msg, err := serv.Recv()
 	if err != nil {

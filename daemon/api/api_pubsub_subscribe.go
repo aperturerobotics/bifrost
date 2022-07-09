@@ -21,7 +21,7 @@ var (
 // Subscribe subscribes to a pubsub channel.
 //
 // TODO: move this code to pubsub/api
-func (a *API) Subscribe(serv pubsub_api.DRPCPubSubService_SubscribeStream) error {
+func (a *API) Subscribe(serv pubsub_api.SRPCPubSubService_SubscribeStream) error {
 	ctx := serv.Context()
 
 	var channelID string

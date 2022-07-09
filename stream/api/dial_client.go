@@ -4,21 +4,21 @@ import stream_api_rpc "github.com/aperturerobotics/bifrost/stream/api/rpc"
 
 // DialStreamClientRPC fulfills stream RPC on the client side.
 type DialStreamClientRPC struct {
-	DRPCStreamService_DialStreamClient
+	SRPCStreamService_DialStreamClient
 }
 
 // NewDialStreamClientRPC builds a new DialStreamClientRPC.
 func NewDialStreamClientRPC(
-	client DRPCStreamService_DialStreamClient,
+	client SRPCStreamService_DialStreamClient,
 ) stream_api_rpc.RPC {
 	return &DialStreamClientRPC{
-		DRPCStreamService_DialStreamClient: client,
+		SRPCStreamService_DialStreamClient: client,
 	}
 }
 
 // Send sends a packet.
 func (r *DialStreamClientRPC) Send(resp *stream_api_rpc.Data) error {
-	return r.DRPCStreamService_DialStreamClient.Send(
+	return r.SRPCStreamService_DialStreamClient.Send(
 		&DialStreamRequest{
 			Data: resp,
 		},
@@ -27,7 +27,7 @@ func (r *DialStreamClientRPC) Send(resp *stream_api_rpc.Data) error {
 
 // Recv receives a packet.
 func (r *DialStreamClientRPC) Recv() (*stream_api_rpc.Data, error) {
-	msg, err := r.DRPCStreamService_DialStreamClient.Recv()
+	msg, err := r.SRPCStreamService_DialStreamClient.Recv()
 	return msg.GetData(), err
 }
 

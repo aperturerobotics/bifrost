@@ -9,10 +9,9 @@ import (
 	cbapi "github.com/aperturerobotics/controllerbus/bus/api"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
+	"github.com/aperturerobotics/starpc/srpc"
 	"github.com/blang/semver"
 	"github.com/sirupsen/logrus"
-	"storj.io/drpc/drpcmux"
-	"storj.io/drpc/drpcserver"
 )
 
 // Version is the API version.
@@ -65,13 +64,13 @@ func (c *Controller) Execute(ctx context.Context) error {
 		return err
 	}
 
-	mux := drpcmux.New()
-	api.RegisterAsDRPCServer(mux)
+	mux := srpc.NewMux()
+	api.RegisterAsSRPCServer(mux)
 
 	// controllerbus api
 	if !c.conf.GetDisableBusApi() {
 		bapi := cbapi.NewAPI(c.bus, c.conf.GetBusApiConfig())
-		_ = bapi.RegisterAsDRPCServer(mux)
+		_ = bapi.RegisterAsSRPCServer(mux)
 	}
 
 	c.le.Debug("starting listener")
@@ -81,11 +80,10 @@ func (c *Controller) Execute(ctx context.Context) error {
 	}
 	c.le.Debugf("api listening: %s", lis.Addr().String())
 
-	srv := drpcserver.New(mux)
-
+	srv := srpc.NewServer(mux)
 	errCh := make(chan error, 1)
 	go func() {
-		errCh <- srv.Serve(ctx, lis)
+		errCh <- srpc.AcceptMuxedListener(ctx, lis, srv)
 		_ = lis.Close()
 	}()
 

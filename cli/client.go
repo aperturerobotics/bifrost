@@ -18,9 +18,9 @@ import (
 	stream_listening "github.com/aperturerobotics/bifrost/stream/listening"
 	"github.com/aperturerobotics/bifrost/util/confparse"
 	cbus_cli "github.com/aperturerobotics/controllerbus/cli"
+	"github.com/aperturerobotics/starpc/srpc"
 	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/urfave/cli"
-	"storj.io/drpc/drpcconn"
 )
 
 // ClientArgs contains the client arguments and functions.
@@ -100,7 +100,11 @@ func (a *ClientArgs) BuildClient() (bifrost_api.BifrostAPIClient, error) {
 		return nil, err
 	}
 
-	conn := drpcconn.New(nconn)
+	muxedConn, err := srpc.NewMuxedConn(nconn, false)
+	if err != nil {
+		return nil, err
+	}
+	conn := srpc.NewClientWithMuxedConn(muxedConn)
 	a.client = bifrost_api.NewBifrostAPIClient(conn)
 	return a.client, nil
 }

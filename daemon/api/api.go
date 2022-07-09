@@ -9,8 +9,8 @@ import (
 	"github.com/aperturerobotics/controllerbus/bus"
 	bus_api "github.com/aperturerobotics/controllerbus/bus/api"
 	controller_exec "github.com/aperturerobotics/controllerbus/controller/exec"
+	"github.com/aperturerobotics/starpc/srpc"
 	"github.com/pkg/errors"
-	"storj.io/drpc"
 )
 
 // BusAPI implements the controller bus api.
@@ -38,7 +38,7 @@ func NewAPI(bus bus.Bus, conf *Config) (*API, error) {
 // Handles HandleMountedStream directives by contacting the target.
 func (a *API) ForwardStreams(
 	req *stream_api.ForwardStreamsRequest,
-	serv stream_api.DRPCStreamService_ForwardStreamsStream,
+	serv stream_api.SRPCStreamService_ForwardStreamsStream,
 ) error {
 	ctx := serv.Context()
 	conf := req.GetForwardingConfig()
@@ -87,7 +87,7 @@ func (a *API) ForwardStreams(
 // ListenStreams listens for streams on the multiaddress.
 func (a *API) ListenStreams(
 	req *stream_api.ListenStreamsRequest,
-	serv stream_api.DRPCStreamService_ListenStreamsStream,
+	serv stream_api.SRPCStreamService_ListenStreamsStream,
 ) error {
 	ctx := serv.Context()
 	conf := req.GetListeningConfig()
@@ -112,9 +112,9 @@ func (a *API) ListenStreams(
 	)
 }
 
-// RegisterAsDRPCServer registers the API to the DRPC mux.
-func (a *API) RegisterAsDRPCServer(mux drpc.Mux) {
-	RegisterAsDRPCServer(a, mux)
+// RegisterAsSRPCServer registers the API to the SRPC mux.
+func (a *API) RegisterAsSRPCServer(mux srpc.Mux) {
+	RegisterAsSRPCServer(a, mux)
 }
 
 // _ is a type assertion
