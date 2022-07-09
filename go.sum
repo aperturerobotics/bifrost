@@ -6,8 +6,8 @@ github.com/aperturerobotics/bifrost-nats-client v1.10.1-0.20200831103200-24c3d04
 github.com/aperturerobotics/bifrost-nats-client v1.10.1-0.20200831103200-24c3d0464e58/go.mod h1:ougcjYEZDYV8pVtaNbA5sgYDukkYHyKtSsW/T3B13j0=
 github.com/aperturerobotics/bifrost-nats-server/v2 v2.1.8-0.20200831101324-59acc8fe7f74 h1:/s0PAkmLK/mF+jxbTebcbjLIqXz/L6cOm8OovMyFEJs=
 github.com/aperturerobotics/bifrost-nats-server/v2 v2.1.8-0.20200831101324-59acc8fe7f74/go.mod h1:kIcZtLpq4UIZzOqduYLm1mYU1nuMBtN6XuDCtQ21QT8=
-github.com/aperturerobotics/controllerbus v0.11.1 h1:FPDPs01nUujFe5PyHL1+GexxXNMLzehTFuJ4wsOnctQ=
-github.com/aperturerobotics/controllerbus v0.11.1/go.mod h1:INB3xXr+MKS/5XYtKH3p6Ewu+gSQ32ht3isBErqKYKE=
+github.com/aperturerobotics/controllerbus v0.11.2-0.20220708015128-0a57ffac4ca2 h1:N27Oawz2eUugDKEUpmTa8XKPGV42vpEnrcf3KFn95ss=
+github.com/aperturerobotics/controllerbus v0.11.2-0.20220708015128-0a57ffac4ca2/go.mod h1:INB3xXr+MKS/5XYtKH3p6Ewu+gSQ32ht3isBErqKYKE=
 github.com/aperturerobotics/entitygraph v0.2.2 h1:g6bQPOBvwl/Ilm7nh7wbxk2k0iq1ysUZlfl7ARO/RGs=
 github.com/aperturerobotics/entitygraph v0.2.2/go.mod h1:vWUSQx2Kcgz65gD3LPPwHGhEqYRDFRFm6nNHlWmH23w=
 github.com/aperturerobotics/logrus v1.8.2-0.20220322010420-77ab346a2cf8 h1:Op74irBctc7oEvEILdmoQ2FDkpqmoOqErxU6V/1eHG0=
@@ -119,8 +119,6 @@ github.com/libp2p/go-buffer-pool v0.0.2/go.mod h1:MvaB6xw5vOrDl8rYZGLFdKAuk/hRoR
 github.com/libp2p/go-libp2p v0.20.1-0.20220622205512-3cf611ad8c9c h1:BTR12zXVGQtdk9bT5GLOmdzJrhyFO6YUH3/e8lnkjQ0=
 github.com/libp2p/go-libp2p v0.20.1-0.20220622205512-3cf611ad8c9c/go.mod h1:tqyre7jPbLfhzjQfpiFX6x7wj/sqt1074riPM0Xn/qI=
 github.com/libp2p/go-libp2p-testing v0.9.2 h1:dCpODRtRaDZKF8HXT9qqqgON+OMEB423Knrgeod8j84=
-github.com/libp2p/go-libp2p-tls v0.5.0 h1:aRNTeOI8Ljm1r4L2uMGxkMsVnyZoPwaqQqMw23qAsQs=
-github.com/libp2p/go-libp2p-tls v0.5.0/go.mod h1:1a4tq0xQSZ0kAkDkZVAppuP3SAIUHcnzi2djJ/2EN4I=
 github.com/libp2p/go-mplex v0.7.0 h1:BDhFZdlk5tbr0oyFq/xv/NPGfjbnrsDam1EvutpBDbY=
 github.com/libp2p/go-mplex v0.7.0/go.mod h1:rW8ThnRcYWft/Jb2jeORBmPd6xuG3dGxWN/W168L9EU=
 github.com/libp2p/go-openssl v0.0.7 h1:eCAzdLejcNVBzP/iZM9vqHnQm+XyCEbSSIheIPRGNsw=

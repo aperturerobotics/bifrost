@@ -3,8 +3,9 @@ module github.com/aperturerobotics/bifrost
 go 1.18
 
 require (
-	github.com/aperturerobotics/controllerbus v0.11.1
+	github.com/aperturerobotics/controllerbus v0.11.2-0.20220708015128-0a57ffac4ca2
 	github.com/aperturerobotics/entitygraph v0.2.2
+	github.com/aperturerobotics/starpc v0.8.1
 )
 
 // aperture: use compatibility forks
@@ -21,7 +22,6 @@ replace (
 )
 
 require (
-	github.com/aperturerobotics/starpc v0.8.1
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/djherbis/buffer v1.2.0
@@ -30,7 +30,6 @@ require (
 	github.com/klauspost/compress v1.15.6
 	github.com/libp2p/go-libp2p v0.20.1-0.20220622205512-3cf611ad8c9c
 	github.com/libp2p/go-libp2p-core v0.17.1-0.20220622081031-b399c77768bf
-	github.com/libp2p/go-libp2p-tls v0.5.0
 	github.com/lucas-clemente/quic-go v0.27.1
 	github.com/mr-tron/base58 v1.2.0
 	github.com/multiformats/go-multiaddr v0.5.0
