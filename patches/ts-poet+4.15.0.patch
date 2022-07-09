@@ -22,7 +22,7 @@ index b92bea3..0464ac9 100644
 +        if (ourModuleImportPath.startsWith(thisProject)) {
 +            ourModuleImportPath = './' + ourModuleImportPath.substr(thisProject.length + 1);
 +        } else {
-+            ourModuleImportPath = './vendor/' + ourModuleImportPath;
++            ourModuleImportPath = '@go/' + ourModuleImportPath;
 +        }
 +    }
      const augmentImports = lodash_1.default.groupBy(filterInstances(imports, Augmented), (a) => a.augmented);
@@ -40,7 +40,7 @@ index b92bea3..0464ac9 100644
 +                } else if (modulePath.startsWith('./google/protobuf')) {
 +                    modulePath = '@aperturerobotics/ts-proto-common-types/' + path.normalize(modulePath);
 +                } else {
-+                    modulePath = './vendor/' + path.normalize(modulePath);
++                    modulePath = '@go/' + path.normalize(modulePath);
 +                }
 +            }
 +        }

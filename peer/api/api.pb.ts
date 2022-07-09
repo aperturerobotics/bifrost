@@ -3,7 +3,7 @@ import {
   ControllerStatus,
   controllerStatusFromJSON,
   controllerStatusToJSON,
-} from '../../vendor/github.com/aperturerobotics/controllerbus/controller/exec/exec.pb.js'
+} from '@go/github.com/aperturerobotics/controllerbus/controller/exec/exec.pb.js'
 import Long from 'long'
 import { Config } from '../controller/config.pb.js'
 import * as _m0 from 'protobufjs/minimal'

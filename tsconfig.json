@@ -5,7 +5,9 @@
     "moduleResolution": "node",
     "jsx": "preserve",
     "baseUrl": "./",
-    "paths": {},
+    "paths": {
+      "@go/*": ["vendor/*"]
+    },
     "noEmit": true,
     "strict": true,
     "skipLibCheck": true,
