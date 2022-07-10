@@ -3,9 +3,9 @@ module github.com/aperturerobotics/bifrost
 go 1.18
 
 require (
-	github.com/aperturerobotics/controllerbus v0.11.2-0.20220709003231-eddf61b76ad2
+	github.com/aperturerobotics/controllerbus v0.12.0
 	github.com/aperturerobotics/entitygraph v0.2.2
-	github.com/aperturerobotics/starpc v0.8.1
+	github.com/aperturerobotics/starpc v0.8.4-0.20220709053112-70aee938a570
 )
 
 // aperture: use compatibility forks
@@ -29,10 +29,10 @@ require (
 	github.com/hashicorp/yamux v0.0.0-20211028200310-0bc27b27de87
 	github.com/klauspost/compress v1.15.6
 	github.com/libp2p/go-libp2p v0.20.1-0.20220622205512-3cf611ad8c9c
-	github.com/libp2p/go-libp2p-core v0.17.1-0.20220622081031-b399c77768bf
+	github.com/libp2p/go-libp2p-core v0.19.0
 	github.com/lucas-clemente/quic-go v0.27.1
 	github.com/mr-tron/base58 v1.2.0
-	github.com/multiformats/go-multiaddr v0.5.0
+	github.com/multiformats/go-multiaddr v0.6.0
 	github.com/nats-io/nats-server/v2 v2.7.4
 	github.com/nats-io/nats.go v1.13.0
 	github.com/nats-io/nkeys v0.3.0

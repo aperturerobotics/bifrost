@@ -2,15 +2,12 @@
 # yarn lockfile v1
 
 
-"@aperturerobotics/ts-common@^0.0.2":
-  version "0.0.2"
-  resolved "https://registry.yarnpkg.com/@aperturerobotics/ts-common/-/ts-common-0.0.2.tgz#1dfaa9c0d16f20134c5144e14cb579f91738c31b"
-  integrity sha512-lN+k9epXxnmHmiSqzSlBzLV2E4Bo+AXuTVwSLA1fNIb9g2yRi4cv0JI+7jjKGFMb4AewzS0XL4dz+8Y2p+Gqaw==
+"@aperturerobotics/ts-common@^0.0.3":
+  version "0.0.3"
+  resolved "https://registry.yarnpkg.com/@aperturerobotics/ts-common/-/ts-common-0.0.3.tgz#daf2701b15628dbb0a2ef1728c07b0f4005fa0e0"
+  integrity sha512-5W2A+NxkGvuj1oHJrn7NA1lLy344N7HHhLWnzdd7YPTYnoLvSCbfWtED5GZD9AsncAObzeQquE8vG+xjS2vTVA==
   dependencies:
-    "@aperturerobotics/ts-proto-common-types" "^0.1.0"
     bufferutil "^4.0.6"
-    long "^5.2.0"
-    protobufjs "^6.11.3"
     starpc "^0.8.1"
     utf-8-validate "^5.0.9"
 
