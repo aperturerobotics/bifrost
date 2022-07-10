@@ -158,6 +158,9 @@ lint: $(GOLANGCI_LINT)
 fix: $(GOLANGCI_LINT)
 	$(GOLANGCI_LINT) run --fix
 
+.PHONY: ci-tools
+ci-tools: $(GOLANGCI_LINT)
+
 .PHONY: test
 test:
 	go test -v ./...
