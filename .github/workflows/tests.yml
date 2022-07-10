@@ -44,6 +44,10 @@ jobs:
         with:
           path: ${{ steps.go-cache-paths.outputs.go-mod }}
           key: ${{ runner.os }}-go-mod-${{ hashFiles('**/go.sum') }}
+      - name: Lint Go
+        run: yarn run lint:go
+      - name: Test Go
+        run: make test
       - name: Yarn install
         run: yarn install
       - name: Build Go tools
@@ -54,9 +58,5 @@ jobs:
         run: yarn run lint:js
       - name: Test Js
         run: yarn test:js
-      - name: Lint Go
-        run: yarn run lint:go
-      - name: Test Go
-        run: make test
       - name: Depcheck
         run: yarn run deps
