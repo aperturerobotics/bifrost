@@ -11,7 +11,7 @@ require (
 // aperture: use compatibility forks
 replace (
 	github.com/libp2p/go-libp2p-core => github.com/paralin/go-libp2p-core v0.19.1-0.20220702014232-392fe0626689 // aperture
-	github.com/lucas-clemente/quic-go => github.com/aperturerobotics/quic-go v0.27.1-0.20220603115201-69262d03f683 // aperture
+	github.com/lucas-clemente/quic-go => github.com/aperturerobotics/quic-go v0.28.1-0.20220710071647-c608532b9a6e // aperture
 	github.com/nats-io/nats-server/v2 => github.com/aperturerobotics/bifrost-nats-server/v2 v2.1.8-0.20200831101324-59acc8fe7f74 // aperture-2.0
 	github.com/nats-io/nats.go => github.com/aperturerobotics/bifrost-nats-client v1.10.1-0.20200831103200-24c3d0464e58 // aperture-2.0
 	github.com/paralin/kcp-go-lite => github.com/paralin/kcp-go-lite v1.0.2-0.20210907043027-271505668bd0 // aperture
@@ -79,8 +79,9 @@ require (
 	github.com/libp2p/go-mplex v0.7.0 // indirect
 	github.com/libp2p/go-openssl v0.0.7 // indirect
 	github.com/marten-seemann/qtls-go1-16 v0.1.5 // indirect
-	github.com/marten-seemann/qtls-go1-17 v0.1.1 // indirect
-	github.com/marten-seemann/qtls-go1-18 v0.1.1 // indirect
+	github.com/marten-seemann/qtls-go1-17 v0.1.2 // indirect
+	github.com/marten-seemann/qtls-go1-18 v0.1.2 // indirect
+	github.com/marten-seemann/qtls-go1-19 v0.1.0-beta.1 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1 // indirect
 	github.com/minio/highwayhash v1.0.0 // indirect
@@ -109,7 +110,7 @@ require (
 	go.uber.org/zap v1.19.1 // indirect
 	golang.org/x/exp v0.0.0-20191002040644-a1355ae1e2c3 // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3 // indirect
-	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
+	golang.org/x/net v0.0.0-20220624214902-1bab6f366d9e // indirect
 	golang.org/x/sys v0.0.0-20220704084225-05e143d24a9e // indirect
 	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1 // indirect
 	golang.org/x/tools v0.1.10 // indirect

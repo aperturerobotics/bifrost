@@ -8,7 +8,7 @@ export interface Opts {
   /**
    * MaxIdleTimeoutDur is the duration of idle after which conn is closed.
    *
-   * If unset, the max idle timeout will be disabled.
+   * If unset, uses a default value of 30 seconds.
    */
   maxIdleTimeoutDur: string
   /**
@@ -20,6 +20,13 @@ export interface Opts {
   maxIncomingStreams: number
   /** DisableKeepAlive disables the keep alive packets. */
   disableKeepAlive: boolean
+  /**
+   * KeepAliveDur is the duration between keep-alive pings.
+   *
+   * If disable_keep_alive is set, this value is ignored.
+   * If unset, sets keep-alive to half of MaxIdleTimeout.
+   */
+  keepAliveDur: string
   /**
    * DisableDatagrams disables the unreliable datagrams feature.
    * Both peers must support it for it to be enabled, regardless of this flag.
@@ -39,6 +46,7 @@ function createBaseOpts(): Opts {
     maxIdleTimeoutDur: '',
     maxIncomingStreams: 0,
     disableKeepAlive: false,
+    keepAliveDur: '',
     disableDatagrams: false,
     disablePathMtuDiscovery: false,
     verbose: false,
@@ -55,6 +63,9 @@ export const Opts = {
     }
     if (message.disableKeepAlive === true) {
       writer.uint32(24).bool(message.disableKeepAlive)
+    }
+    if (message.keepAliveDur !== '') {
+      writer.uint32(58).string(message.keepAliveDur)
     }
     if (message.disableDatagrams === true) {
       writer.uint32(32).bool(message.disableDatagrams)
@@ -83,6 +94,9 @@ export const Opts = {
           break
         case 3:
           message.disableKeepAlive = reader.bool()
+          break
+        case 7:
+          message.keepAliveDur = reader.string()
           break
         case 4:
           message.disableDatagrams = reader.bool()
@@ -146,6 +160,9 @@ export const Opts = {
       disableKeepAlive: isSet(object.disableKeepAlive)
         ? Boolean(object.disableKeepAlive)
         : false,
+      keepAliveDur: isSet(object.keepAliveDur)
+        ? String(object.keepAliveDur)
+        : '',
       disableDatagrams: isSet(object.disableDatagrams)
         ? Boolean(object.disableDatagrams)
         : false,
@@ -164,6 +181,8 @@ export const Opts = {
       (obj.maxIncomingStreams = Math.round(message.maxIncomingStreams))
     message.disableKeepAlive !== undefined &&
       (obj.disableKeepAlive = message.disableKeepAlive)
+    message.keepAliveDur !== undefined &&
+      (obj.keepAliveDur = message.keepAliveDur)
     message.disableDatagrams !== undefined &&
       (obj.disableDatagrams = message.disableDatagrams)
     message.disablePathMtuDiscovery !== undefined &&
@@ -177,6 +196,7 @@ export const Opts = {
     message.maxIdleTimeoutDur = object.maxIdleTimeoutDur ?? ''
     message.maxIncomingStreams = object.maxIncomingStreams ?? 0
     message.disableKeepAlive = object.disableKeepAlive ?? false
+    message.keepAliveDur = object.keepAliveDur ?? ''
     message.disableDatagrams = object.disableDatagrams ?? false
     message.disablePathMtuDiscovery = object.disablePathMtuDiscovery ?? false
     message.verbose = object.verbose ?? false

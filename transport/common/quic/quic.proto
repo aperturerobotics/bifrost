@@ -4,7 +4,7 @@ package transport.quic;
 message Opts {
   // MaxIdleTimeoutDur is the duration of idle after which conn is closed.
   //
-  // If unset, the max idle timeout will be disabled.
+  // If unset, uses a default value of 30 seconds.
   string max_idle_timeout_dur = 1;
 	// MaxIncomingStreams is the maximum number of concurrent bidirectional
 	// streams that a peer is allowed to open.
@@ -12,7 +12,13 @@ message Opts {
   // If unset or negative, defaults to 100000.
   int32 max_incoming_streams = 2;
   // DisableKeepAlive disables the keep alive packets.
+  //
   bool disable_keep_alive = 3;
+  // KeepAliveDur is the duration between keep-alive pings.
+  //
+  // If disable_keep_alive is set, this value is ignored.
+  // If unset, sets keep-alive to half of MaxIdleTimeout.
+  string keep_alive_dur = 7;
   // DisableDatagrams disables the unreliable datagrams feature.
   // Both peers must support it for it to be enabled, regardless of this flag.
   bool disable_datagrams = 4;

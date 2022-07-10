@@ -14,10 +14,10 @@ import (
 // BuildQuicConfig constructs the quic config.
 func BuildQuicConfig(le *logrus.Entry, opts *Opts) *quic.Config {
 	var enableMaxIdleTimeout bool
-	maxIdleTimeout := time.Second * 40
+	maxIdleTimeout := time.Second * 30
 	if ntDur := opts.GetMaxIdleTimeoutDur(); ntDur != "" {
 		nt, err := time.ParseDuration(ntDur)
-		if err == nil && nt != time.Duration(0) && nt < time.Hour*2 {
+		if err == nil && nt > time.Duration(0) && nt < time.Hour*2 {
 			maxIdleTimeout = nt
 			enableMaxIdleTimeout = true
 		}
@@ -34,11 +34,21 @@ func BuildQuicConfig(le *logrus.Entry, opts *Opts) *quic.Config {
 		le.Level = logrus.InfoLevel
 	}
 
+	keepAlivePeriod := maxIdleTimeout / 2
+	if opts.GetDisableKeepAlive() {
+		keepAlivePeriod = 0
+	} else if keepAliveDur := opts.GetKeepAliveDur(); keepAliveDur != "" {
+		kaDur, err := time.ParseDuration(keepAliveDur)
+		if err == nil && kaDur > time.Duration(0) && kaDur < time.Hour*2 {
+			keepAlivePeriod = kaDur
+		}
+	}
+
 	return &quic.Config{
 		Logger: le,
 
 		EnableDatagrams:         !opts.GetDisableDatagrams(),
-		KeepAlive:               !opts.GetDisableKeepAlive(),
+		KeepAlivePeriod:         keepAlivePeriod,
 		DisablePathMTUDiscovery: opts.GetDisablePathMtuDiscovery(),
 
 		MaxIdleTimeout:        maxIdleTimeout,
