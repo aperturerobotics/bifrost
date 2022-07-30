@@ -6,7 +6,7 @@ import {
 } from '@go/github.com/aperturerobotics/controllerbus/controller/exec/exec.pb.js'
 import Long from 'long'
 import { Config } from '../controller/config.pb.js'
-import * as _m0 from 'protobufjs/minimal'
+import _m0 from 'protobufjs/minimal.js'
 
 export const protobufPackage = 'peer.api'
 

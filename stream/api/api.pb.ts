@@ -10,7 +10,7 @@ import { Config as Config1 } from '../listening/listening.pb.js'
 import { Config as Config2 } from './accept/accept.pb.js'
 import { Data } from './rpc/rpc.pb.js'
 import { Config as Config3 } from './dial/dial.pb.js'
-import * as _m0 from 'protobufjs/minimal'
+import _m0 from 'protobufjs/minimal.js'
 
 export const protobufPackage = 'stream.api'
 

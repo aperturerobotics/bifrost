@@ -1,7 +1,7 @@
 /* eslint-disable */
 import { Timestamp } from '@aperturerobotics/ts-proto-common-types/google/protobuf/timestamp.pb.js'
 import Long from 'long'
-import * as _m0 from 'protobufjs/minimal'
+import _m0 from 'protobufjs/minimal.js'
 
 export const protobufPackage = 'pubmessage'
 

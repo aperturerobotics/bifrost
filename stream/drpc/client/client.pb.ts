@@ -2,7 +2,7 @@
 import Long from 'long'
 import { Backoff } from '../../../util/backoff/backoff.pb.js'
 import { DrpcOpts } from '../drpc.pb.js'
-import * as _m0 from 'protobufjs/minimal'
+import _m0 from 'protobufjs/minimal.js'
 
 export const protobufPackage = 'stream.drpc.client'
 

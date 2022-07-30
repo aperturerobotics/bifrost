@@ -9,12 +9,6 @@ import (
 // ID is a peer identifier.
 type ID = ip.ID
 
-// IDFromString cast a string to ID type, and validate
-// the id to make sure it is a multihash.
-func IDFromString(s string) (ID, error) {
-	return ip.IDFromString(s)
-}
-
 // IDFromBytes cast a string to ID type, and validate
 // the id to make sure it is a multihash.
 func IDFromBytes(b []byte) (ID, error) {
