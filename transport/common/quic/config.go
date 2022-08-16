@@ -2,7 +2,6 @@ package transport_quic
 
 import (
 	"crypto/tls"
-	"net"
 	"time"
 
 	"github.com/aperturerobotics/bifrost/peer"
@@ -56,10 +55,11 @@ func BuildQuicConfig(le *logrus.Entry, opts *Opts) *quic.Config {
 		MaxIncomingStreams:    int64(maxIncStreams),
 		MaxIncomingUniStreams: -1, // disable unidirectional streams
 
-		AcceptToken: func(clientAddr net.Addr, _ *quic.Token) bool {
-			// unconditionally accept any quic token
-			return true
-		},
+		/*
+			AcceptToken: func(clientAddr net.Addr, _ *quic.Token) bool {
+				// unconditionally accept any quic token
+				return true
+			}, */
 
 		// MaxReceiveStreamFlowControlWindow:     3 * (1 << 20),   // 3 MB
 		// MaxReceiveConnectionFlowControlWindow: 4.5 * (1 << 20), // 4.5 MB

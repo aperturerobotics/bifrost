@@ -8,7 +8,7 @@ import (
 	timestamp "google.golang.org/protobuf/types/known/timestamppb"
 
 	// _ ensures the typescript version of google/protobuf/timestamp exists in vendor/.
-	_ "github.com/paralin/ts-proto-common-types/google/protobuf"
+	_ "github.com/aperturerobotics/ts-proto-common-types/google/protobuf"
 )
 
 // NewPubMessage constructs/signs/encodes a new pub-message and inner message.
