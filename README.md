@@ -17,7 +17,7 @@ peers, transports, routing, and other higher-level processes with extensive and
 flexible configuration.
 
 [ControllerBus]: https://github.com/aperturerobotics/controllerbus
- 
+
 ## Overview
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/aperturerobotics/bifrost.svg)](https://pkg.go.dev/github.com/aperturerobotics/bifrost)
@@ -269,7 +269,7 @@ the [quic-go] implementation of the Quic UDP protocol.
 
 [quic-go]: https://github.com/lucas-clemente/quic-go
 
-The HandleMounedStream directive contains incoming protocol and peer info. The
+The HandleMountedStream directive contains incoming protocol and peer info. The
 appropriate controller for the protocol responds to the directive and handles
 the incoming stream. This decouples the transport layers from the protocols.
 
