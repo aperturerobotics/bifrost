@@ -3,7 +3,6 @@ package cliutil
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"os"
 
 	"github.com/aperturerobotics/bifrost/keypem"
@@ -56,7 +55,7 @@ func (a *UtilArgs) readInputFile() ([]byte, error) {
 		return os.ReadFile(fp)
 	}
 
-	return ioutil.ReadAll(os.Stdin)
+	return io.ReadAll(os.Stdin)
 }
 
 // readInputFilePrivKey reads the input file path or stdin.

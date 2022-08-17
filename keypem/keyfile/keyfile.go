@@ -2,7 +2,6 @@ package keyfile
 
 import (
 	"crypto/rand"
-	"io/ioutil"
 	"os"
 
 	"github.com/aperturerobotics/bifrost/keypem"
@@ -29,7 +28,7 @@ func OpenOrWritePrivKey(le *logrus.Entry, privKeyPath string) (crypto.PrivKey, e
 			if err != nil {
 				return privKey, err
 			}
-			if err := ioutil.WriteFile(privKeyPath, dat, 0600); err != nil {
+			if err := os.WriteFile(privKeyPath, dat, 0600); err != nil {
 				return privKey, err
 			}
 			if le != nil {
@@ -37,7 +36,7 @@ func OpenOrWritePrivKey(le *logrus.Entry, privKeyPath string) (crypto.PrivKey, e
 			}
 		}
 	} else {
-		dat, err := ioutil.ReadFile(privKeyPath)
+		dat, err := os.ReadFile(privKeyPath)
 		if err != nil {
 			return privKey, err
 		}

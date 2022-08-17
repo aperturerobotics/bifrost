@@ -3,7 +3,6 @@ package cli
 import (
 	"context"
 	"errors"
-	"io/ioutil"
 	"net"
 	"os"
 	"strings"
@@ -330,14 +329,14 @@ func (a *ClientArgs) LoadOrGenerateIdentifyKey() ([]byte, crypto.PrivKey, error)
 			if err != nil {
 				return nil, nil, err
 			}
-			if err := ioutil.WriteFile(a.IdentifyKeyPath, dat, 0600); err != nil {
+			if err := os.WriteFile(a.IdentifyKeyPath, dat, 0600); err != nil {
 				return nil, nil, err
 			}
 		}
 	}
 
 	if len(dat) == 0 {
-		dat, err = ioutil.ReadFile(a.IdentifyKeyPath)
+		dat, err = os.ReadFile(a.IdentifyKeyPath)
 		if err != nil {
 			return nil, nil, err
 		}
