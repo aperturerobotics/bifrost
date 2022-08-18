@@ -9,7 +9,7 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
 	bcli "github.com/aperturerobotics/bifrost/cli"
 	nats "github.com/aperturerobotics/bifrost/pubsub/nats"

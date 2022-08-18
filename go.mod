@@ -3,7 +3,7 @@ module github.com/aperturerobotics/bifrost
 go 1.18
 
 require (
-	github.com/aperturerobotics/controllerbus v0.12.3
+	github.com/aperturerobotics/controllerbus v0.13.0
 	github.com/aperturerobotics/entitygraph v0.2.2
 	github.com/aperturerobotics/starpc v0.9.2
 )
@@ -60,7 +60,7 @@ require (
 
 require (
 	github.com/btcsuite/btcd/btcec/v2 v2.2.0 // indirect
-	github.com/cpuguy83/go-md2man/v2 v2.0.0-20190314233015-f79a8a8ca69d // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
 	github.com/frankban/quicktest v1.14.3 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
@@ -92,13 +92,14 @@ require (
 	github.com/nxadm/tail v1.4.8 // indirect
 	github.com/onsi/ginkgo v1.16.5 // indirect
 	github.com/petermattis/goid v0.0.0-20180202154549-b0b1615b78e5 // indirect
-	github.com/russross/blackfriday/v2 v2.0.1 // indirect
-	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
+	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/spacemonkeygo/spacelog v0.0.0-20180420211403-2296661a0572 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/templexxx/cpu v0.0.1 // indirect
 	github.com/templexxx/cpufeat v0.0.0-20180724012125-cef66df7f161 // indirect
 	github.com/templexxx/xorsimd v0.4.1 // indirect
+	github.com/urfave/cli/v2 v2.11.2 // indirect
+	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	github.com/zeebo/errs v1.2.2 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect

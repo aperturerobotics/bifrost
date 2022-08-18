@@ -13,7 +13,7 @@ import (
 	"github.com/aperturerobotics/bifrost/peer"
 	pubsub_api "github.com/aperturerobotics/bifrost/pubsub/api"
 	"github.com/pkg/errors"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 // publishTimeout is the timeout to wait for ack of publish

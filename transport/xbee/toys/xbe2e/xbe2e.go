@@ -7,7 +7,7 @@ import (
 	"github.com/aperturerobotics/bifrost/transport/xbee/xbserial"
 	"github.com/sirupsen/logrus"
 	"github.com/tarm/serial"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 var cmdArgs struct {
@@ -26,25 +26,25 @@ func main() {
 	app.Usage = "end to end test between two xbees"
 	app.Action = runE2E
 	app.Flags = []cli.Flag{
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:        "device-path-1",
 			Usage:       "open device 1 at `PATH`",
 			Destination: &cmdArgs.Device1.Name,
 			Value:       "/dev/ttyUSB0",
 		},
-		cli.IntFlag{
+		&cli.IntFlag{
 			Name:        "device-baud-1",
 			Usage:       "baudrate for the first device",
 			Destination: &cmdArgs.Device1.Baud,
 			Value:       115200,
 		},
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:        "device-path-2",
 			Usage:       "open device 2 at `PATH`",
 			Destination: &cmdArgs.Device2.Name,
 			Value:       "/dev/ttyUSB1",
 		},
-		cli.IntFlag{
+		&cli.IntFlag{
 			Name:        "device-baud-2",
 			Usage:       "baudrate for the second device",
 			Destination: &cmdArgs.Device2.Baud,

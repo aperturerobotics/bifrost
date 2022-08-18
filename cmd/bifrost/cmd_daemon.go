@@ -29,7 +29,7 @@ import (
 	entitygraph_logger "github.com/aperturerobotics/entitygraph/logger"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
 	// _ enables the profiling endpoints
 
@@ -49,43 +49,43 @@ var daemonFlags struct {
 func init() {
 	commands = append(
 		commands,
-		cli.Command{
+		&cli.Command{
 			Name:   "daemon",
 			Usage:  "run a bifrost daemon",
 			Action: runDaemon,
 			Flags: append(
 				(&daemonFlags.DaemonArgs).BuildFlags(),
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:        "config, c",
 					Usage:       "path to configuration yaml file",
-					EnvVar:      "BIFROST_CONFIG",
+					EnvVars:     []string{"BIFROST_CONFIG"},
 					Value:       "bifrost_daemon.yaml",
 					Destination: &daemonFlags.ConfigPath,
 				},
-				cli.BoolFlag{
+				&cli.BoolFlag{
 					Name:        "write-config",
 					Usage:       "write the daemon config file on startup",
-					EnvVar:      "BIFROST_WRITE_CONFIG",
+					EnvVars:     []string{"BIFROST_WRITE_CONFIG"},
 					Destination: &daemonFlags.WriteConfig,
 				},
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:        "node-priv",
 					Usage:       "path to node private key, will be generated if doesn't exist",
-					EnvVar:      "BIFROST_NODE_PRIV",
+					EnvVars:     []string{"BIFROST_NODE_PRIV"},
 					Value:       "bifrost_daemon.pem",
 					Destination: &daemonFlags.PeerPrivPath,
 				},
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:        "api-listen",
 					Usage:       "if set, will listen on address for API drpc connections, ex :5110",
-					EnvVar:      "BIFROST_API_LISTEN",
+					EnvVars:     []string{"BIFROST_API_LISTEN"},
 					Value:       ":5110",
 					Destination: &daemonFlags.APIListen,
 				},
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:        "prof-listen",
 					Usage:       "if set, debug profiler will be hosted on the port, ex :8080",
-					EnvVar:      "BIFROST_PROF_LISTEN",
+					EnvVars:     []string{"BIFROST_PROF_LISTEN"},
 					Destination: &daemonFlags.ProfListen,
 				},
 			),

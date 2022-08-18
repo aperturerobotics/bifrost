@@ -19,7 +19,7 @@ import (
 	cbus_cli "github.com/aperturerobotics/controllerbus/cli"
 	"github.com/aperturerobotics/starpc/srpc"
 	"github.com/libp2p/go-libp2p-core/crypto"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 // ClientArgs contains the client arguments and functions.
@@ -70,7 +70,7 @@ func (a *ClientArgs) ParseRemotePeerIdsCsv() []string {
 // BuildFlags attaches the flags to a flag set.
 func (a *ClientArgs) BuildFlags() []cli.Flag {
 	return []cli.Flag{
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:        "dial-addr",
 			Usage:       "address to dial API on",
 			Destination: &a.DialAddr,
@@ -109,9 +109,9 @@ func (a *ClientArgs) BuildClient() (bifrost_api.BifrostAPIClient, error) {
 }
 
 // BuildBifrostCommand returns the controller-bus sub-command set.
-func (a *ClientArgs) BuildBifrostCommand() cli.Command {
+func (a *ClientArgs) BuildBifrostCommand() *cli.Command {
 	bifrostCmds := a.BuildCommands()
-	return cli.Command{
+	return &cli.Command{
 		Name:        "bifrost",
 		Usage:       "Bifrost network-router sub-commands.",
 		Subcommands: bifrostCmds,
@@ -119,8 +119,8 @@ func (a *ClientArgs) BuildBifrostCommand() cli.Command {
 }
 
 // BuildCommands attaches the commands.
-func (a *ClientArgs) BuildCommands() []cli.Command {
-	return []cli.Command{
+func (a *ClientArgs) BuildCommands() []*cli.Command {
+	return []*cli.Command{
 		{
 			Name:   "local-peers",
 			Usage:  "returns local peer info",
@@ -244,15 +244,17 @@ func (a *ClientArgs) BuildCommands() []cli.Command {
 					Usage:       "if set, filter the transport id",
 					Destination: &a.DialConf.TransportId,
 				},
-				&cli.BoolTFlag{
+				&cli.BoolFlag{
 					Name:        "encrypted",
 					Usage:       "encrypted stream",
 					Destination: &a.DialConf.Encrypted,
+					Value:       true,
 				},
-				&cli.BoolTFlag{
+				&cli.BoolFlag{
 					Name:        "reliable",
 					Usage:       "reliable stream",
 					Destination: &a.DialConf.Reliable,
+					Value:       true,
 				},
 			},
 		},
@@ -281,15 +283,17 @@ func (a *ClientArgs) BuildCommands() []cli.Command {
 					Usage:       "listen multiaddr",
 					Destination: &a.ListeningConf.ListenMultiaddr,
 				},
-				&cli.BoolTFlag{
+				&cli.BoolFlag{
 					Name:        "encrypted",
 					Usage:       "encrypted stream",
 					Destination: &a.ListeningConf.Encrypted,
+					Value:       true,
 				},
-				&cli.BoolTFlag{
+				&cli.BoolFlag{
 					Name:        "reliable",
 					Usage:       "reliable stream",
 					Destination: &a.ListeningConf.Reliable,
+					Value:       true,
 				},
 			},
 		},

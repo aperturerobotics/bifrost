@@ -18,7 +18,7 @@ import (
 	configset "github.com/aperturerobotics/controllerbus/controller/configset"
 	"github.com/aperturerobotics/controllerbus/controller/resolver/static"
 	"github.com/pkg/errors"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 // DaemonArgs contains common flags for bifrost-powered daemons.
@@ -48,65 +48,65 @@ type DaemonArgs struct {
 // BuildFlags attaches the flags to a flag set.
 func (a *DaemonArgs) BuildFlags() []cli.Flag {
 	return []cli.Flag{
-		cli.BoolFlag{
+		&cli.BoolFlag{
 			Name:        "hold-open-links",
 			Usage:       "if set, hold open links without an inactivity timeout",
-			EnvVar:      "BIFROST_HOLD_OPEN_LINKS",
+			EnvVars:     []string{"BIFROST_HOLD_OPEN_LINKS"},
 			Destination: &a.HoldOpenLinks,
 		},
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:        "websocket-listen",
 			Usage:       "if set, will listen on address for websocket connections, ex :5111",
-			EnvVar:      "BIFROST_WS_LISTEN",
+			EnvVars:     []string{"BIFROST_WS_LISTEN"},
 			Destination: &a.WebsocketListen,
 		},
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:        "udp-listen",
 			Usage:       "if set, will listen on address for udp connections, ex :5112",
-			EnvVar:      "BIFROST_UDP_LISTEN",
+			EnvVars:     []string{"BIFROST_UDP_LISTEN"},
 			Destination: &a.UDPListen,
 		},
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:        "xbee-device-path",
 			Usage:       "xbee device path to open, if set",
-			EnvVar:      "BIFROST_XBEE_PATH",
+			EnvVars:     []string{"BIFROST_XBEE_PATH"},
 			Destination: &a.XBeePath,
 		},
-		cli.IntFlag{
+		&cli.IntFlag{
 			Name:        "xbee-device-baud",
 			Usage:       "xbee device baudrate to use, defaults to 115200",
-			EnvVar:      "BIFROST_XBEE_BAUD",
+			EnvVars:     []string{"BIFROST_XBEE_BAUD"},
 			Destination: &a.XBeeBaud,
 			Value:       115200,
 		},
-		cli.StringSliceFlag{
-			Name:   "establish-peers",
-			Usage:  "if set, request establish links to list of peer ids",
-			EnvVar: "BIFROST_ESTABLISH_PEERS",
-			Value:  &a.EstablishPeers,
+		&cli.StringSliceFlag{
+			Name:    "establish-peers",
+			Usage:   "if set, request establish links to list of peer ids",
+			EnvVars: []string{"BIFROST_ESTABLISH_PEERS"},
+			Value:   &a.EstablishPeers,
 		},
-		cli.StringSliceFlag{
-			Name:   "xbee-peers",
-			Usage:  "list of peer-id@address known XBee peers",
-			EnvVar: "BIFROST_XBEE_PEERS",
-			Value:  &a.XbeePeers,
+		&cli.StringSliceFlag{
+			Name:    "xbee-peers",
+			Usage:   "list of peer-id@address known XBee peers",
+			EnvVars: []string{"BIFROST_XBEE_PEERS"},
+			Value:   &a.XbeePeers,
 		},
-		cli.StringSliceFlag{
-			Name:   "udp-peers",
-			Usage:  "list of peer-id@address known UDP peers",
-			EnvVar: "BIFROST_UDP_PEERS",
-			Value:  &a.UDPPeers,
+		&cli.StringSliceFlag{
+			Name:    "udp-peers",
+			Usage:   "list of peer-id@address known UDP peers",
+			EnvVars: []string{"BIFROST_UDP_PEERS"},
+			Value:   &a.UDPPeers,
 		},
-		cli.StringSliceFlag{
-			Name:   "websocket-peers",
-			Usage:  "list of peer-id@address known WebSocket peers",
-			EnvVar: "BIFROST_WS_PEERS",
-			Value:  &a.WebsocketPeers,
+		&cli.StringSliceFlag{
+			Name:    "websocket-peers",
+			Usage:   "list of peer-id@address known WebSocket peers",
+			EnvVars: []string{"BIFROST_WS_PEERS"},
+			Value:   &a.WebsocketPeers,
 		},
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:        "pubsub",
 			Usage:       buildPubsubUsage(),
-			EnvVar:      "BIFROST_PUBSUB",
+			EnvVars:     []string{"BIFROST_PUBSUB"},
 			Destination: &a.Pubsub,
 		},
 	}
@@ -131,9 +131,9 @@ func (a *DaemonArgs) ApplyToConfigSet(confSet configset.ConfigSet, overwrite boo
 		}
 		confSet[id] = configset.NewControllerConfig(1, conf)
 	}
-	if len(a.EstablishPeers) != 0 {
+	if len(a.EstablishPeers.Value()) != 0 {
 		establishConf := &link_establish_controller.Config{
-			PeerIds: []string(a.EstablishPeers),
+			PeerIds: []string(a.EstablishPeers.Value()),
 		}
 		if err := establishConf.Validate(); err != nil {
 			return errors.Wrap(err, "establish-peers")

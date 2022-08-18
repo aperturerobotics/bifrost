@@ -2,7 +2,7 @@ package main
 
 import (
 	bcli "github.com/aperturerobotics/bifrost/cli"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 // cliArgs are the client arguments
@@ -23,7 +23,7 @@ func init() {
 	clientCommands = append(clientCommands, cbusCmd)
 	commands = append(
 		commands,
-		cli.Command{
+		&cli.Command{
 			Name:        "client",
 			Usage:       "client sub-commands",
 			Subcommands: clientCommands,

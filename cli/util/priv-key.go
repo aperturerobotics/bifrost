@@ -8,7 +8,7 @@ import (
 	"github.com/aperturerobotics/bifrost/keypem"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/pkg/errors"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 // RunGeneratePrivate runs the generate-private util command.

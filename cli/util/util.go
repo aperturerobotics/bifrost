@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/sirupsen/logrus"
-	ucli "github.com/urfave/cli"
+	ucli "github.com/urfave/cli/v2"
 )
 
 // UtilArgs contains the utility arguments and functions.
@@ -26,14 +26,14 @@ func (a *UtilArgs) BuildFlags() []ucli.Flag {
 }
 
 // BuildCommands attaches the commands.
-func (a *UtilArgs) BuildCommands() []ucli.Command {
-	return []ucli.Command{
+func (a *UtilArgs) BuildCommands() []*ucli.Command {
+	return []*ucli.Command{
 		{
 			Name:   "generate-private",
 			Usage:  "generates a private key .pem file",
 			Action: a.RunGeneratePrivate,
 			Flags: []ucli.Flag{
-				ucli.StringFlag{
+				&ucli.StringFlag{
 					Name:        "out, o",
 					Usage:       "file to store pem formatted private key",
 					Destination: &a.OutPath,
@@ -45,12 +45,12 @@ func (a *UtilArgs) BuildCommands() []ucli.Command {
 			Usage:  "loads a private key pem and writes a public key",
 			Action: a.RunDerivePublic,
 			Flags: []ucli.Flag{
-				ucli.StringFlag{
+				&ucli.StringFlag{
 					Name:        "file, f",
 					Usage:       "file to load pem formatted private key",
 					Destination: &a.FilePath,
 				},
-				ucli.StringFlag{
+				&ucli.StringFlag{
 					Name:        "out, o",
 					Usage:       "file to store pem formatted public key",
 					Destination: &a.OutPath,
