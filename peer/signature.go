@@ -2,7 +2,7 @@ package peer
 
 import (
 	"github.com/aperturerobotics/bifrost/hash"
-	"github.com/libp2p/go-libp2p-core/crypto"
+	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/pkg/errors"
 )
 

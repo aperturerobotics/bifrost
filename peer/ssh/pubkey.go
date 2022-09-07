@@ -1,7 +1,7 @@
 package peer_ssh
 
 import (
-	"github.com/libp2p/go-libp2p-core/crypto"
+	"github.com/libp2p/go-libp2p/core/crypto"
 	"golang.org/x/crypto/ssh"
 )
 

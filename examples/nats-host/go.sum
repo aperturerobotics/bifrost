@@ -620,8 +620,8 @@ github.com/openzipkin/zipkin-go v0.2.2/go.mod h1:NaW6tEwdmWMaCDZzg8sh+IBNOxHMPnh
 github.com/pact-foundation/pact-go v1.0.4/go.mod h1:uExwJY4kCzNPcHRj+hCR/HBbOOIwwtUjcrb0b5/5kLM=
 github.com/paralin/drpc v0.0.31-0.20220527065730-0e2a1370bccb h1:TovWNMdDXg+PcU/4EX9VFdnaC8IG3rLXJdmuk6A4EEo=
 github.com/paralin/drpc v0.0.31-0.20220527065730-0e2a1370bccb/go.mod h1:opUwvtQEv6hbheTyWeDgvb8CrqPHp8ggJetOOiAQODI=
-github.com/paralin/go-libp2p-core v0.19.1-0.20220702014232-392fe0626689 h1:5cdRCsPYyljrVJtoKX82VqP4M97kKwrv6ENpcfUQatU=
-github.com/paralin/go-libp2p-core v0.19.1-0.20220702014232-392fe0626689/go.mod h1:DLBsAth0oYpgArjSMwL2DbR1wheXHoTEHhnsb3zWw8E=
+github.com/paralin/go-libp2p/core v0.19.1-0.20220702014232-392fe0626689 h1:5cdRCsPYyljrVJtoKX82VqP4M97kKwrv6ENpcfUQatU=
+github.com/paralin/go-libp2p/core v0.19.1-0.20220702014232-392fe0626689/go.mod h1:DLBsAth0oYpgArjSMwL2DbR1wheXHoTEHhnsb3zWw8E=
 github.com/paralin/kcp-go-lite v1.0.2-0.20210907043027-271505668bd0 h1:VFeHQ0ReW/8TwDWKkQkLdpw4H00o++k/EJcequ2znG4=
 github.com/paralin/kcp-go-lite v1.0.2-0.20210907043027-271505668bd0/go.mod h1:qpN2SUjqd4vkr6PTZKwxgG0ggC5NTx0ugsFxOmyEKuE=
 github.com/paralin/nhooyr-websocket v1.8.8-0.20220321125022-7defdf942f07 h1:0NEvhfraMEkL7Y6jcy4kpm0P+/NmX/TaFFm2m8oYSTA=

@@ -6,7 +6,7 @@ import (
 
 	"github.com/aperturerobotics/bifrost/util/crypto/extra25519"
 	curve25519_ecdh "github.com/aperturerobotics/bifrost/util/crypto/extra25519/ecdh"
-	"github.com/libp2p/go-libp2p-core/crypto"
+	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/pkg/errors"
 	"github.com/zeebo/blake3"
 )

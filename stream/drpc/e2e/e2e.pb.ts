@@ -1,68 +1,63 @@
 /* eslint-disable */
-import Long from 'long'
-import _m0 from 'protobufjs/minimal.js'
+import Long from "long";
+import _m0 from "protobufjs/minimal.js";
 
-export const protobufPackage = 'drpc.e2e'
+export const protobufPackage = "drpc.e2e";
 
 /** MockRequest is the mock request. */
 export interface MockRequest {
   /** Body is the body of the request. */
-  body: string
+  body: string;
 }
 
 /** MockResponse is the mock response. */
 export interface MockResponse {
   /** ReqBody is the echoed request body. */
-  reqBody: string
+  reqBody: string;
 }
 
 function createBaseMockRequest(): MockRequest {
-  return { body: '' }
+  return { body: "" };
 }
 
 export const MockRequest = {
-  encode(
-    message: MockRequest,
-    writer: _m0.Writer = _m0.Writer.create()
-  ): _m0.Writer {
-    if (message.body !== '') {
-      writer.uint32(10).string(message.body)
+  encode(message: MockRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.body !== "") {
+      writer.uint32(10).string(message.body);
     }
-    return writer
+    return writer;
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): MockRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input)
-    let end = length === undefined ? reader.len : reader.pos + length
-    const message = createBaseMockRequest()
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMockRequest();
     while (reader.pos < end) {
-      const tag = reader.uint32()
+      const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.body = reader.string()
-          break
+          message.body = reader.string();
+          break;
         default:
-          reader.skipType(tag & 7)
-          break
+          reader.skipType(tag & 7);
+          break;
       }
     }
-    return message
+    return message;
   },
 
   // encodeTransform encodes a source of message objects.
   // Transform<MockRequest, Uint8Array>
   async *encodeTransform(
-    source:
-      | AsyncIterable<MockRequest | MockRequest[]>
-      | Iterable<MockRequest | MockRequest[]>
+    source: AsyncIterable<MockRequest | MockRequest[]> | Iterable<MockRequest | MockRequest[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
         for (const p of pkt) {
-          yield* [MockRequest.encode(p).finish()]
+          yield* [MockRequest.encode(p).finish()];
         }
       } else {
-        yield* [MockRequest.encode(pkt).finish()]
+        yield* [MockRequest.encode(pkt).finish()];
       }
     }
   },
@@ -70,89 +65,78 @@ export const MockRequest = {
   // decodeTransform decodes a source of encoded messages.
   // Transform<Uint8Array, MockRequest>
   async *decodeTransform(
-    source:
-      | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+    source: AsyncIterable<Uint8Array | Uint8Array[]> | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<MockRequest> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
         for (const p of pkt) {
-          yield* [MockRequest.decode(p)]
+          yield* [MockRequest.decode(p)];
         }
       } else {
-        yield* [MockRequest.decode(pkt)]
+        yield* [MockRequest.decode(pkt)];
       }
     }
   },
 
   fromJSON(object: any): MockRequest {
-    return {
-      body: isSet(object.body) ? String(object.body) : '',
-    }
+    return { body: isSet(object.body) ? String(object.body) : "" };
   },
 
   toJSON(message: MockRequest): unknown {
-    const obj: any = {}
-    message.body !== undefined && (obj.body = message.body)
-    return obj
+    const obj: any = {};
+    message.body !== undefined && (obj.body = message.body);
+    return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<MockRequest>, I>>(
-    object: I
-  ): MockRequest {
-    const message = createBaseMockRequest()
-    message.body = object.body ?? ''
-    return message
+  fromPartial<I extends Exact<DeepPartial<MockRequest>, I>>(object: I): MockRequest {
+    const message = createBaseMockRequest();
+    message.body = object.body ?? "";
+    return message;
   },
-}
+};
 
 function createBaseMockResponse(): MockResponse {
-  return { reqBody: '' }
+  return { reqBody: "" };
 }
 
 export const MockResponse = {
-  encode(
-    message: MockResponse,
-    writer: _m0.Writer = _m0.Writer.create()
-  ): _m0.Writer {
-    if (message.reqBody !== '') {
-      writer.uint32(10).string(message.reqBody)
+  encode(message: MockResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.reqBody !== "") {
+      writer.uint32(10).string(message.reqBody);
     }
-    return writer
+    return writer;
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): MockResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input)
-    let end = length === undefined ? reader.len : reader.pos + length
-    const message = createBaseMockResponse()
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMockResponse();
     while (reader.pos < end) {
-      const tag = reader.uint32()
+      const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.reqBody = reader.string()
-          break
+          message.reqBody = reader.string();
+          break;
         default:
-          reader.skipType(tag & 7)
-          break
+          reader.skipType(tag & 7);
+          break;
       }
     }
-    return message
+    return message;
   },
 
   // encodeTransform encodes a source of message objects.
   // Transform<MockResponse, Uint8Array>
   async *encodeTransform(
-    source:
-      | AsyncIterable<MockResponse | MockResponse[]>
-      | Iterable<MockResponse | MockResponse[]>
+    source: AsyncIterable<MockResponse | MockResponse[]> | Iterable<MockResponse | MockResponse[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
         for (const p of pkt) {
-          yield* [MockResponse.encode(p).finish()]
+          yield* [MockResponse.encode(p).finish()];
         }
       } else {
-        yield* [MockResponse.encode(pkt).finish()]
+        yield* [MockResponse.encode(pkt).finish()];
       }
     }
   },
@@ -160,70 +144,64 @@ export const MockResponse = {
   // decodeTransform decodes a source of encoded messages.
   // Transform<Uint8Array, MockResponse>
   async *decodeTransform(
-    source:
-      | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+    source: AsyncIterable<Uint8Array | Uint8Array[]> | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<MockResponse> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
         for (const p of pkt) {
-          yield* [MockResponse.decode(p)]
+          yield* [MockResponse.decode(p)];
         }
       } else {
-        yield* [MockResponse.decode(pkt)]
+        yield* [MockResponse.decode(pkt)];
       }
     }
   },
 
   fromJSON(object: any): MockResponse {
-    return {
-      reqBody: isSet(object.reqBody) ? String(object.reqBody) : '',
-    }
+    return { reqBody: isSet(object.reqBody) ? String(object.reqBody) : "" };
   },
 
   toJSON(message: MockResponse): unknown {
-    const obj: any = {}
-    message.reqBody !== undefined && (obj.reqBody = message.reqBody)
-    return obj
+    const obj: any = {};
+    message.reqBody !== undefined && (obj.reqBody = message.reqBody);
+    return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<MockResponse>, I>>(
-    object: I
-  ): MockResponse {
-    const message = createBaseMockResponse()
-    message.reqBody = object.reqBody ?? ''
-    return message
+  fromPartial<I extends Exact<DeepPartial<MockResponse>, I>>(object: I): MockResponse {
+    const message = createBaseMockResponse();
+    message.reqBody = object.reqBody ?? "";
+    return message;
   },
-}
+};
 
 /** EndToEnd is a end to end test service. */
 export interface EndToEnd {
   /** Mock performs the mock request. */
-  Mock(request: MockRequest): Promise<MockResponse>
+  Mock(request: MockRequest): Promise<MockResponse>;
 }
 
 export class EndToEndClientImpl implements EndToEnd {
-  private readonly rpc: Rpc
+  private readonly rpc: Rpc;
   constructor(rpc: Rpc) {
-    this.rpc = rpc
-    this.Mock = this.Mock.bind(this)
+    this.rpc = rpc;
+    this.Mock = this.Mock.bind(this);
   }
   Mock(request: MockRequest): Promise<MockResponse> {
-    const data = MockRequest.encode(request).finish()
-    const promise = this.rpc.request('drpc.e2e.EndToEnd', 'Mock', data)
-    return promise.then((data) => MockResponse.decode(new _m0.Reader(data)))
+    const data = MockRequest.encode(request).finish();
+    const promise = this.rpc.request("drpc.e2e.EndToEnd", "Mock", data);
+    return promise.then((data) => MockResponse.decode(new _m0.Reader(data)));
   }
 }
 
 /** EndToEnd is a end to end test service. */
-export type EndToEndDefinition = typeof EndToEndDefinition
+export type EndToEndDefinition = typeof EndToEndDefinition;
 export const EndToEndDefinition = {
-  name: 'EndToEnd',
-  fullName: 'drpc.e2e.EndToEnd',
+  name: "EndToEnd",
+  fullName: "drpc.e2e.EndToEnd",
   methods: {
     /** Mock performs the mock request. */
     mock: {
-      name: 'Mock',
+      name: "Mock",
       requestType: MockRequest,
       requestStream: false,
       responseType: MockResponse,
@@ -231,54 +209,30 @@ export const EndToEndDefinition = {
       options: {},
     },
   },
-} as const
+} as const;
 
 interface Rpc {
-  request(
-    service: string,
-    method: string,
-    data: Uint8Array
-  ): Promise<Uint8Array>
+  request(service: string, method: string, data: Uint8Array): Promise<Uint8Array>;
 }
 
-type Builtin =
-  | Date
-  | Function
-  | Uint8Array
-  | string
-  | number
-  | boolean
-  | undefined
+type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
-export type DeepPartial<T> = T extends Builtin
-  ? T
-  : T extends Long
-  ? string | number | Long
-  : T extends Array<infer U>
-  ? Array<DeepPartial<U>>
-  : T extends ReadonlyArray<infer U>
-  ? ReadonlyArray<DeepPartial<U>>
-  : T extends { $case: string }
-  ? { [K in keyof Omit<T, '$case'>]?: DeepPartial<T[K]> } & {
-      $case: T['$case']
-    }
-  : T extends {}
-  ? { [K in keyof T]?: DeepPartial<T[K]> }
-  : Partial<T>
+export type DeepPartial<T> = T extends Builtin ? T
+  : T extends Long ? string | number | Long : T extends Array<infer U> ? Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends { $case: string } ? { [K in keyof Omit<T, "$case">]?: DeepPartial<T[K]> } & { $case: T["$case"] }
+  : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
+  : Partial<T>;
 
-type KeysOfUnion<T> = T extends T ? keyof T : never
-export type Exact<P, I extends P> = P extends Builtin
-  ? P
-  : P & { [K in keyof P]: Exact<P[K], I[K]> } & Record<
-        Exclude<keyof I, KeysOfUnion<P>>,
-        never
-      >
+type KeysOfUnion<T> = T extends T ? keyof T : never;
+export type Exact<P, I extends P> = P extends Builtin ? P
+  : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
 
 if (_m0.util.Long !== Long) {
-  _m0.util.Long = Long as any
-  _m0.configure()
+  _m0.util.Long = Long as any;
+  _m0.configure();
 }
 
 function isSet(value: any): boolean {
-  return value !== null && value !== undefined
+  return value !== null && value !== undefined;
 }

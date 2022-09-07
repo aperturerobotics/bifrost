@@ -18,7 +18,7 @@ import (
 	"github.com/aperturerobotics/bifrost/util/confparse"
 	cbus_cli "github.com/aperturerobotics/controllerbus/cli"
 	"github.com/aperturerobotics/starpc/srpc"
-	"github.com/libp2p/go-libp2p-core/crypto"
+	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/urfave/cli/v2"
 )
 

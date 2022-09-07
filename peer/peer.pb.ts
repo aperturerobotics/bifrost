@@ -1,9 +1,9 @@
 /* eslint-disable */
-import { HashType, hashTypeFromJSON, hashTypeToJSON } from '../hash/hash.pb.js'
-import Long from 'long'
-import _m0 from 'protobufjs/minimal.js'
+import Long from "long";
+import _m0 from "protobufjs/minimal.js";
+import { HashType, hashTypeFromJSON, hashTypeToJSON } from "../hash/hash.pb.js";
 
-export const protobufPackage = 'peer'
+export const protobufPackage = "peer";
 
 /** Signature contains a signature by a peer. */
 export interface Signature {
@@ -11,91 +11,88 @@ export interface Signature {
    * PubKey is the public key of the peer.
    * May be empty if the public key is to be inferred from context.
    */
-  pubKey: Uint8Array
+  pubKey: Uint8Array;
   /**
    * HashType is the hash type used to hash the data.
    * The signature is then of the hash bytes (usually 32).
    */
-  hashType: HashType
+  hashType: HashType;
   /**
    * SigData contains the signature data.
    * The format is defined by the key type.
    */
-  sigData: Uint8Array
+  sigData: Uint8Array;
 }
 
 /** SignedMsg is a message from a peer with a signature. */
 export interface SignedMsg {
   /** FromPeerId is the peer identifier of the sender. */
-  fromPeerId: string
+  fromPeerId: string;
   /**
    * Signature is the sender signature.
    * Should not contain PubKey, which is inferred from peer id.
    */
-  signature: Signature | undefined
+  signature:
+    | Signature
+    | undefined;
   /** Data is the PubMessageInner data. */
-  data: Uint8Array
+  data: Uint8Array;
 }
 
 function createBaseSignature(): Signature {
-  return { pubKey: new Uint8Array(), hashType: 0, sigData: new Uint8Array() }
+  return { pubKey: new Uint8Array(), hashType: 0, sigData: new Uint8Array() };
 }
 
 export const Signature = {
-  encode(
-    message: Signature,
-    writer: _m0.Writer = _m0.Writer.create()
-  ): _m0.Writer {
+  encode(message: Signature, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.pubKey.length !== 0) {
-      writer.uint32(10).bytes(message.pubKey)
+      writer.uint32(10).bytes(message.pubKey);
     }
     if (message.hashType !== 0) {
-      writer.uint32(16).int32(message.hashType)
+      writer.uint32(16).int32(message.hashType);
     }
     if (message.sigData.length !== 0) {
-      writer.uint32(26).bytes(message.sigData)
+      writer.uint32(26).bytes(message.sigData);
     }
-    return writer
+    return writer;
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Signature {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input)
-    let end = length === undefined ? reader.len : reader.pos + length
-    const message = createBaseSignature()
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSignature();
     while (reader.pos < end) {
-      const tag = reader.uint32()
+      const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.pubKey = reader.bytes()
-          break
+          message.pubKey = reader.bytes();
+          break;
         case 2:
-          message.hashType = reader.int32() as any
-          break
+          message.hashType = reader.int32() as any;
+          break;
         case 3:
-          message.sigData = reader.bytes()
-          break
+          message.sigData = reader.bytes();
+          break;
         default:
-          reader.skipType(tag & 7)
-          break
+          reader.skipType(tag & 7);
+          break;
       }
     }
-    return message
+    return message;
   },
 
   // encodeTransform encodes a source of message objects.
   // Transform<Signature, Uint8Array>
   async *encodeTransform(
-    source:
-      | AsyncIterable<Signature | Signature[]>
-      | Iterable<Signature | Signature[]>
+    source: AsyncIterable<Signature | Signature[]> | Iterable<Signature | Signature[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
         for (const p of pkt) {
-          yield* [Signature.encode(p).finish()]
+          yield* [Signature.encode(p).finish()];
         }
       } else {
-        yield* [Signature.encode(pkt).finish()]
+        yield* [Signature.encode(pkt).finish()];
       }
     }
   },
@@ -103,118 +100,100 @@ export const Signature = {
   // decodeTransform decodes a source of encoded messages.
   // Transform<Uint8Array, Signature>
   async *decodeTransform(
-    source:
-      | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+    source: AsyncIterable<Uint8Array | Uint8Array[]> | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<Signature> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
         for (const p of pkt) {
-          yield* [Signature.decode(p)]
+          yield* [Signature.decode(p)];
         }
       } else {
-        yield* [Signature.decode(pkt)]
+        yield* [Signature.decode(pkt)];
       }
     }
   },
 
   fromJSON(object: any): Signature {
     return {
-      pubKey: isSet(object.pubKey)
-        ? bytesFromBase64(object.pubKey)
-        : new Uint8Array(),
+      pubKey: isSet(object.pubKey) ? bytesFromBase64(object.pubKey) : new Uint8Array(),
       hashType: isSet(object.hashType) ? hashTypeFromJSON(object.hashType) : 0,
-      sigData: isSet(object.sigData)
-        ? bytesFromBase64(object.sigData)
-        : new Uint8Array(),
-    }
+      sigData: isSet(object.sigData) ? bytesFromBase64(object.sigData) : new Uint8Array(),
+    };
   },
 
   toJSON(message: Signature): unknown {
-    const obj: any = {}
+    const obj: any = {};
     message.pubKey !== undefined &&
-      (obj.pubKey = base64FromBytes(
-        message.pubKey !== undefined ? message.pubKey : new Uint8Array()
-      ))
-    message.hashType !== undefined &&
-      (obj.hashType = hashTypeToJSON(message.hashType))
+      (obj.pubKey = base64FromBytes(message.pubKey !== undefined ? message.pubKey : new Uint8Array()));
+    message.hashType !== undefined && (obj.hashType = hashTypeToJSON(message.hashType));
     message.sigData !== undefined &&
-      (obj.sigData = base64FromBytes(
-        message.sigData !== undefined ? message.sigData : new Uint8Array()
-      ))
-    return obj
+      (obj.sigData = base64FromBytes(message.sigData !== undefined ? message.sigData : new Uint8Array()));
+    return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<Signature>, I>>(
-    object: I
-  ): Signature {
-    const message = createBaseSignature()
-    message.pubKey = object.pubKey ?? new Uint8Array()
-    message.hashType = object.hashType ?? 0
-    message.sigData = object.sigData ?? new Uint8Array()
-    return message
+  fromPartial<I extends Exact<DeepPartial<Signature>, I>>(object: I): Signature {
+    const message = createBaseSignature();
+    message.pubKey = object.pubKey ?? new Uint8Array();
+    message.hashType = object.hashType ?? 0;
+    message.sigData = object.sigData ?? new Uint8Array();
+    return message;
   },
-}
+};
 
 function createBaseSignedMsg(): SignedMsg {
-  return { fromPeerId: '', signature: undefined, data: new Uint8Array() }
+  return { fromPeerId: "", signature: undefined, data: new Uint8Array() };
 }
 
 export const SignedMsg = {
-  encode(
-    message: SignedMsg,
-    writer: _m0.Writer = _m0.Writer.create()
-  ): _m0.Writer {
-    if (message.fromPeerId !== '') {
-      writer.uint32(10).string(message.fromPeerId)
+  encode(message: SignedMsg, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.fromPeerId !== "") {
+      writer.uint32(10).string(message.fromPeerId);
     }
     if (message.signature !== undefined) {
-      Signature.encode(message.signature, writer.uint32(18).fork()).ldelim()
+      Signature.encode(message.signature, writer.uint32(18).fork()).ldelim();
     }
     if (message.data.length !== 0) {
-      writer.uint32(26).bytes(message.data)
+      writer.uint32(26).bytes(message.data);
     }
-    return writer
+    return writer;
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): SignedMsg {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input)
-    let end = length === undefined ? reader.len : reader.pos + length
-    const message = createBaseSignedMsg()
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSignedMsg();
     while (reader.pos < end) {
-      const tag = reader.uint32()
+      const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.fromPeerId = reader.string()
-          break
+          message.fromPeerId = reader.string();
+          break;
         case 2:
-          message.signature = Signature.decode(reader, reader.uint32())
-          break
+          message.signature = Signature.decode(reader, reader.uint32());
+          break;
         case 3:
-          message.data = reader.bytes()
-          break
+          message.data = reader.bytes();
+          break;
         default:
-          reader.skipType(tag & 7)
-          break
+          reader.skipType(tag & 7);
+          break;
       }
     }
-    return message
+    return message;
   },
 
   // encodeTransform encodes a source of message objects.
   // Transform<SignedMsg, Uint8Array>
   async *encodeTransform(
-    source:
-      | AsyncIterable<SignedMsg | SignedMsg[]>
-      | Iterable<SignedMsg | SignedMsg[]>
+    source: AsyncIterable<SignedMsg | SignedMsg[]> | Iterable<SignedMsg | SignedMsg[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
         for (const p of pkt) {
-          yield* [SignedMsg.encode(p).finish()]
+          yield* [SignedMsg.encode(p).finish()];
         }
       } else {
-        yield* [SignedMsg.encode(pkt).finish()]
+        yield* [SignedMsg.encode(pkt).finish()];
       }
     }
   },
@@ -222,133 +201,110 @@ export const SignedMsg = {
   // decodeTransform decodes a source of encoded messages.
   // Transform<Uint8Array, SignedMsg>
   async *decodeTransform(
-    source:
-      | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+    source: AsyncIterable<Uint8Array | Uint8Array[]> | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<SignedMsg> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
         for (const p of pkt) {
-          yield* [SignedMsg.decode(p)]
+          yield* [SignedMsg.decode(p)];
         }
       } else {
-        yield* [SignedMsg.decode(pkt)]
+        yield* [SignedMsg.decode(pkt)];
       }
     }
   },
 
   fromJSON(object: any): SignedMsg {
     return {
-      fromPeerId: isSet(object.fromPeerId) ? String(object.fromPeerId) : '',
-      signature: isSet(object.signature)
-        ? Signature.fromJSON(object.signature)
-        : undefined,
-      data: isSet(object.data)
-        ? bytesFromBase64(object.data)
-        : new Uint8Array(),
-    }
+      fromPeerId: isSet(object.fromPeerId) ? String(object.fromPeerId) : "",
+      signature: isSet(object.signature) ? Signature.fromJSON(object.signature) : undefined,
+      data: isSet(object.data) ? bytesFromBase64(object.data) : new Uint8Array(),
+    };
   },
 
   toJSON(message: SignedMsg): unknown {
-    const obj: any = {}
-    message.fromPeerId !== undefined && (obj.fromPeerId = message.fromPeerId)
+    const obj: any = {};
+    message.fromPeerId !== undefined && (obj.fromPeerId = message.fromPeerId);
     message.signature !== undefined &&
-      (obj.signature = message.signature
-        ? Signature.toJSON(message.signature)
-        : undefined)
+      (obj.signature = message.signature ? Signature.toJSON(message.signature) : undefined);
     message.data !== undefined &&
-      (obj.data = base64FromBytes(
-        message.data !== undefined ? message.data : new Uint8Array()
-      ))
-    return obj
+      (obj.data = base64FromBytes(message.data !== undefined ? message.data : new Uint8Array()));
+    return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<SignedMsg>, I>>(
-    object: I
-  ): SignedMsg {
-    const message = createBaseSignedMsg()
-    message.fromPeerId = object.fromPeerId ?? ''
-    message.signature =
-      object.signature !== undefined && object.signature !== null
-        ? Signature.fromPartial(object.signature)
-        : undefined
-    message.data = object.data ?? new Uint8Array()
-    return message
+  fromPartial<I extends Exact<DeepPartial<SignedMsg>, I>>(object: I): SignedMsg {
+    const message = createBaseSignedMsg();
+    message.fromPeerId = object.fromPeerId ?? "";
+    message.signature = (object.signature !== undefined && object.signature !== null)
+      ? Signature.fromPartial(object.signature)
+      : undefined;
+    message.data = object.data ?? new Uint8Array();
+    return message;
   },
-}
+};
 
-declare var self: any | undefined
-declare var window: any | undefined
-declare var global: any | undefined
+declare var self: any | undefined;
+declare var window: any | undefined;
+declare var global: any | undefined;
 var globalThis: any = (() => {
-  if (typeof globalThis !== 'undefined') return globalThis
-  if (typeof self !== 'undefined') return self
-  if (typeof window !== 'undefined') return window
-  if (typeof global !== 'undefined') return global
-  throw 'Unable to locate global object'
-})()
-
-const atob: (b64: string) => string =
-  globalThis.atob ||
-  ((b64) => globalThis.Buffer.from(b64, 'base64').toString('binary'))
-function bytesFromBase64(b64: string): Uint8Array {
-  const bin = atob(b64)
-  const arr = new Uint8Array(bin.length)
-  for (let i = 0; i < bin.length; ++i) {
-    arr[i] = bin.charCodeAt(i)
+  if (typeof globalThis !== "undefined") {
+    return globalThis;
   }
-  return arr
-}
+  if (typeof self !== "undefined") {
+    return self;
+  }
+  if (typeof window !== "undefined") {
+    return window;
+  }
+  if (typeof global !== "undefined") {
+    return global;
+  }
+  throw "Unable to locate global object";
+})();
 
-const btoa: (bin: string) => string =
-  globalThis.btoa ||
-  ((bin) => globalThis.Buffer.from(bin, 'binary').toString('base64'))
-function base64FromBytes(arr: Uint8Array): string {
-  const bin: string[] = []
-  arr.forEach((byte) => {
-    bin.push(String.fromCharCode(byte))
-  })
-  return btoa(bin.join(''))
-}
-
-type Builtin =
-  | Date
-  | Function
-  | Uint8Array
-  | string
-  | number
-  | boolean
-  | undefined
-
-export type DeepPartial<T> = T extends Builtin
-  ? T
-  : T extends Long
-  ? string | number | Long
-  : T extends Array<infer U>
-  ? Array<DeepPartial<U>>
-  : T extends ReadonlyArray<infer U>
-  ? ReadonlyArray<DeepPartial<U>>
-  : T extends { $case: string }
-  ? { [K in keyof Omit<T, '$case'>]?: DeepPartial<T[K]> } & {
-      $case: T['$case']
+function bytesFromBase64(b64: string): Uint8Array {
+  if (globalThis.Buffer) {
+    return Uint8Array.from(globalThis.Buffer.from(b64, "base64"));
+  } else {
+    const bin = globalThis.atob(b64);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; ++i) {
+      arr[i] = bin.charCodeAt(i);
     }
-  : T extends {}
-  ? { [K in keyof T]?: DeepPartial<T[K]> }
-  : Partial<T>
+    return arr;
+  }
+}
 
-type KeysOfUnion<T> = T extends T ? keyof T : never
-export type Exact<P, I extends P> = P extends Builtin
-  ? P
-  : P & { [K in keyof P]: Exact<P[K], I[K]> } & Record<
-        Exclude<keyof I, KeysOfUnion<P>>,
-        never
-      >
+function base64FromBytes(arr: Uint8Array): string {
+  if (globalThis.Buffer) {
+    return globalThis.Buffer.from(arr).toString("base64");
+  } else {
+    const bin: string[] = [];
+    arr.forEach((byte) => {
+      bin.push(String.fromCharCode(byte));
+    });
+    return globalThis.btoa(bin.join(""));
+  }
+}
+
+type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
+
+export type DeepPartial<T> = T extends Builtin ? T
+  : T extends Long ? string | number | Long : T extends Array<infer U> ? Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends { $case: string } ? { [K in keyof Omit<T, "$case">]?: DeepPartial<T[K]> } & { $case: T["$case"] }
+  : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
+  : Partial<T>;
+
+type KeysOfUnion<T> = T extends T ? keyof T : never;
+export type Exact<P, I extends P> = P extends Builtin ? P
+  : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
 
 if (_m0.util.Long !== Long) {
-  _m0.util.Long = Long as any
-  _m0.configure()
+  _m0.util.Long = Long as any;
+  _m0.configure();
 }
 
 function isSet(value: any): boolean {
-  return value !== null && value !== undefined
+  return value !== null && value !== undefined;
 }

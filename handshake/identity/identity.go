@@ -3,7 +3,7 @@ package identity
 import (
 	"context"
 
-	"github.com/libp2p/go-libp2p-core/crypto"
+	"github.com/libp2p/go-libp2p/core/crypto"
 )
 
 // Result is the outcome of the handshake.

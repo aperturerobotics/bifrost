@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/aperturerobotics/bifrost/keypem"
-	crypto "github.com/libp2p/go-libp2p-core/crypto"
+	crypto "github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/sirupsen/logrus"
 )
 

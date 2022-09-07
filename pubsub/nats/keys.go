@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/aperturerobotics/bifrost/peer"
-	"github.com/libp2p/go-libp2p-core/crypto"
+	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/nats-io/nkeys"
 )
 

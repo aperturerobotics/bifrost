@@ -3,7 +3,7 @@ package pubmessage
 import (
 	"github.com/aperturerobotics/bifrost/hash"
 	"github.com/aperturerobotics/bifrost/peer"
-	crypto "github.com/libp2p/go-libp2p-core/crypto"
+	crypto "github.com/libp2p/go-libp2p/core/crypto"
 	proto "google.golang.org/protobuf/proto"
 	timestamp "google.golang.org/protobuf/types/known/timestamppb"
 

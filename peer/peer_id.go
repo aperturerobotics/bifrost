@@ -1,8 +1,8 @@
 package peer
 
 import (
-	ic "github.com/libp2p/go-libp2p-core/crypto"
-	ip "github.com/libp2p/go-libp2p-core/peer"
+	ic "github.com/libp2p/go-libp2p/core/crypto"
+	ip "github.com/libp2p/go-libp2p/core/peer"
 	b58 "github.com/mr-tron/base58/base58"
 )
 

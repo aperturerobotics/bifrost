@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 
 	"github.com/aperturerobotics/bifrost/hash"
-	crypto "github.com/libp2p/go-libp2p-core/crypto"
+	crypto "github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/pkg/errors"
 	"github.com/zeebo/blake3"
 	"google.golang.org/protobuf/proto"

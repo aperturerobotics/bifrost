@@ -10,7 +10,7 @@ import (
 	"github.com/aperturerobotics/bifrost/transport/xbee/xbserial"
 	"github.com/aperturerobotics/bifrost/util/scrc"
 	"github.com/blang/semver"
-	"github.com/libp2p/go-libp2p-core/crypto"
+	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/tarm/serial"

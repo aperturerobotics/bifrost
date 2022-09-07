@@ -3,8 +3,8 @@ package peer
 import (
 	"crypto/rand"
 
-	"github.com/libp2p/go-libp2p-core/crypto"
-	lpeer "github.com/libp2p/go-libp2p-core/peer"
+	"github.com/libp2p/go-libp2p/core/crypto"
+	lpeer "github.com/libp2p/go-libp2p/core/peer"
 )
 
 // Peer implements common functionalities between peer types.

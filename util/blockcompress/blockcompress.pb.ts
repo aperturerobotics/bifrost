@@ -1,5 +1,6 @@
 /* eslint-disable */
-export const protobufPackage = 'blockcompress'
+
+export const protobufPackage = "blockcompress";
 
 /** BlockCompress sets the type of compression to use. */
 export enum BlockCompress {
@@ -38,41 +39,41 @@ export enum BlockCompress {
 export function blockCompressFromJSON(object: any): BlockCompress {
   switch (object) {
     case 0:
-    case 'BlockCompress_NONE':
-      return BlockCompress.BlockCompress_NONE
+    case "BlockCompress_NONE":
+      return BlockCompress.BlockCompress_NONE;
     case 1:
-    case 'BlockCompress_SNAPPY':
-      return BlockCompress.BlockCompress_SNAPPY
+    case "BlockCompress_SNAPPY":
+      return BlockCompress.BlockCompress_SNAPPY;
     case 2:
-    case 'BlockCompress_S2':
-      return BlockCompress.BlockCompress_S2
+    case "BlockCompress_S2":
+      return BlockCompress.BlockCompress_S2;
     case 3:
-    case 'BlockCompress_LZ4':
-      return BlockCompress.BlockCompress_LZ4
+    case "BlockCompress_LZ4":
+      return BlockCompress.BlockCompress_LZ4;
     case 4:
-    case 'BlockCompress_ZSTD':
-      return BlockCompress.BlockCompress_ZSTD
+    case "BlockCompress_ZSTD":
+      return BlockCompress.BlockCompress_ZSTD;
     case -1:
-    case 'UNRECOGNIZED':
+    case "UNRECOGNIZED":
     default:
-      return BlockCompress.UNRECOGNIZED
+      return BlockCompress.UNRECOGNIZED;
   }
 }
 
 export function blockCompressToJSON(object: BlockCompress): string {
   switch (object) {
     case BlockCompress.BlockCompress_NONE:
-      return 'BlockCompress_NONE'
+      return "BlockCompress_NONE";
     case BlockCompress.BlockCompress_SNAPPY:
-      return 'BlockCompress_SNAPPY'
+      return "BlockCompress_SNAPPY";
     case BlockCompress.BlockCompress_S2:
-      return 'BlockCompress_S2'
+      return "BlockCompress_S2";
     case BlockCompress.BlockCompress_LZ4:
-      return 'BlockCompress_LZ4'
+      return "BlockCompress_LZ4";
     case BlockCompress.BlockCompress_ZSTD:
-      return 'BlockCompress_ZSTD'
+      return "BlockCompress_ZSTD";
     case BlockCompress.UNRECOGNIZED:
     default:
-      return 'UNRECOGNIZED'
+      return "UNRECOGNIZED";
   }
 }

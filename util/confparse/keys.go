@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/aperturerobotics/bifrost/peer"
-	"github.com/libp2p/go-libp2p-core/crypto"
+	"github.com/libp2p/go-libp2p/core/crypto"
 	b58 "github.com/mr-tron/base58/base58"
 	"github.com/pkg/errors"
 )

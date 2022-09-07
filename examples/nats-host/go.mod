@@ -8,7 +8,7 @@ require github.com/aperturerobotics/controllerbus v0.11.2-0.20220709003231-eddf6
 
 // aperture: use compatibility forks
 replace (
-	github.com/libp2p/go-libp2p-core => github.com/paralin/go-libp2p-core v0.19.1-0.20220702014232-392fe0626689 // aperture
+	github.com/libp2p/go-libp2p/core => github.com/paralin/go-libp2p/core v0.19.1-0.20220702014232-392fe0626689 // aperture
 	github.com/lucas-clemente/quic-go => github.com/aperturerobotics/quic-go v0.28.1-0.20220710071647-c608532b9a6e // aperture
 	github.com/nats-io/nats-server/v2 => github.com/aperturerobotics/bifrost-nats-server/v2 v2.1.8-0.20200831101324-59acc8fe7f74 // aperture-2.0
 	github.com/nats-io/nats.go => github.com/aperturerobotics/bifrost-nats-client v1.10.1-0.20200831103200-24c3d0464e58 // aperture-2.0

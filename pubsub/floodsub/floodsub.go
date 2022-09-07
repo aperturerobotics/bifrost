@@ -12,7 +12,7 @@ import (
 	"github.com/aperturerobotics/bifrost/pubsub"
 	pubmessage "github.com/aperturerobotics/bifrost/pubsub/util/pubmessage"
 	stream_packet "github.com/aperturerobotics/bifrost/stream/packet"
-	"github.com/libp2p/go-libp2p-core/crypto"
+	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"

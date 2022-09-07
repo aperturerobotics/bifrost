@@ -1,8 +1,8 @@
 /* eslint-disable */
-import Long from 'long'
-import _m0 from 'protobufjs/minimal.js'
+import Long from "long";
+import _m0 from "protobufjs/minimal.js";
 
-export const protobufPackage = 'kcp'
+export const protobufPackage = "kcp";
 
 /** HandshakeExtraData contains the extra data field of the pconn handshake. */
 export interface HandshakeExtraData {
@@ -11,40 +11,37 @@ export interface HandshakeExtraData {
    * This is used for monitoring / analysis at a later time.
    * Coorelates the transport connections between two machines.
    */
-  localTransportUuid: Long
+  localTransportUuid: Long;
 }
 
 function createBaseHandshakeExtraData(): HandshakeExtraData {
-  return { localTransportUuid: Long.UZERO }
+  return { localTransportUuid: Long.UZERO };
 }
 
 export const HandshakeExtraData = {
-  encode(
-    message: HandshakeExtraData,
-    writer: _m0.Writer = _m0.Writer.create()
-  ): _m0.Writer {
+  encode(message: HandshakeExtraData, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (!message.localTransportUuid.isZero()) {
-      writer.uint32(8).uint64(message.localTransportUuid)
+      writer.uint32(8).uint64(message.localTransportUuid);
     }
-    return writer
+    return writer;
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): HandshakeExtraData {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input)
-    let end = length === undefined ? reader.len : reader.pos + length
-    const message = createBaseHandshakeExtraData()
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseHandshakeExtraData();
     while (reader.pos < end) {
-      const tag = reader.uint32()
+      const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.localTransportUuid = reader.uint64() as Long
-          break
+          message.localTransportUuid = reader.uint64() as Long;
+          break;
         default:
-          reader.skipType(tag & 7)
-          break
+          reader.skipType(tag & 7);
+          break;
       }
     }
-    return message
+    return message;
   },
 
   // encodeTransform encodes a source of message objects.
@@ -52,15 +49,15 @@ export const HandshakeExtraData = {
   async *encodeTransform(
     source:
       | AsyncIterable<HandshakeExtraData | HandshakeExtraData[]>
-      | Iterable<HandshakeExtraData | HandshakeExtraData[]>
+      | Iterable<HandshakeExtraData | HandshakeExtraData[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
         for (const p of pkt) {
-          yield* [HandshakeExtraData.encode(p).finish()]
+          yield* [HandshakeExtraData.encode(p).finish()];
         }
       } else {
-        yield* [HandshakeExtraData.encode(pkt).finish()]
+        yield* [HandshakeExtraData.encode(pkt).finish()];
       }
     }
   },
@@ -68,89 +65,59 @@ export const HandshakeExtraData = {
   // decodeTransform decodes a source of encoded messages.
   // Transform<Uint8Array, HandshakeExtraData>
   async *decodeTransform(
-    source:
-      | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+    source: AsyncIterable<Uint8Array | Uint8Array[]> | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<HandshakeExtraData> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
         for (const p of pkt) {
-          yield* [HandshakeExtraData.decode(p)]
+          yield* [HandshakeExtraData.decode(p)];
         }
       } else {
-        yield* [HandshakeExtraData.decode(pkt)]
+        yield* [HandshakeExtraData.decode(pkt)];
       }
     }
   },
 
   fromJSON(object: any): HandshakeExtraData {
     return {
-      localTransportUuid: isSet(object.localTransportUuid)
-        ? Long.fromValue(object.localTransportUuid)
-        : Long.UZERO,
-    }
+      localTransportUuid: isSet(object.localTransportUuid) ? Long.fromValue(object.localTransportUuid) : Long.UZERO,
+    };
   },
 
   toJSON(message: HandshakeExtraData): unknown {
-    const obj: any = {}
+    const obj: any = {};
     message.localTransportUuid !== undefined &&
-      (obj.localTransportUuid = (
-        message.localTransportUuid || Long.UZERO
-      ).toString())
-    return obj
+      (obj.localTransportUuid = (message.localTransportUuid || Long.UZERO).toString());
+    return obj;
   },
 
-  fromPartial<I extends Exact<DeepPartial<HandshakeExtraData>, I>>(
-    object: I
-  ): HandshakeExtraData {
-    const message = createBaseHandshakeExtraData()
-    message.localTransportUuid =
-      object.localTransportUuid !== undefined &&
-      object.localTransportUuid !== null
-        ? Long.fromValue(object.localTransportUuid)
-        : Long.UZERO
-    return message
+  fromPartial<I extends Exact<DeepPartial<HandshakeExtraData>, I>>(object: I): HandshakeExtraData {
+    const message = createBaseHandshakeExtraData();
+    message.localTransportUuid = (object.localTransportUuid !== undefined && object.localTransportUuid !== null)
+      ? Long.fromValue(object.localTransportUuid)
+      : Long.UZERO;
+    return message;
   },
-}
+};
 
-type Builtin =
-  | Date
-  | Function
-  | Uint8Array
-  | string
-  | number
-  | boolean
-  | undefined
+type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
-export type DeepPartial<T> = T extends Builtin
-  ? T
-  : T extends Long
-  ? string | number | Long
-  : T extends Array<infer U>
-  ? Array<DeepPartial<U>>
-  : T extends ReadonlyArray<infer U>
-  ? ReadonlyArray<DeepPartial<U>>
-  : T extends { $case: string }
-  ? { [K in keyof Omit<T, '$case'>]?: DeepPartial<T[K]> } & {
-      $case: T['$case']
-    }
-  : T extends {}
-  ? { [K in keyof T]?: DeepPartial<T[K]> }
-  : Partial<T>
+export type DeepPartial<T> = T extends Builtin ? T
+  : T extends Long ? string | number | Long : T extends Array<infer U> ? Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends { $case: string } ? { [K in keyof Omit<T, "$case">]?: DeepPartial<T[K]> } & { $case: T["$case"] }
+  : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
+  : Partial<T>;
 
-type KeysOfUnion<T> = T extends T ? keyof T : never
-export type Exact<P, I extends P> = P extends Builtin
-  ? P
-  : P & { [K in keyof P]: Exact<P[K], I[K]> } & Record<
-        Exclude<keyof I, KeysOfUnion<P>>,
-        never
-      >
+type KeysOfUnion<T> = T extends T ? keyof T : never;
+export type Exact<P, I extends P> = P extends Builtin ? P
+  : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
 
 if (_m0.util.Long !== Long) {
-  _m0.util.Long = Long as any
-  _m0.configure()
+  _m0.util.Long = Long as any;
+  _m0.configure();
 }
 
 function isSet(value: any): boolean {
-  return value !== null && value !== undefined
+  return value !== null && value !== undefined;
 }
