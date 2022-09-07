@@ -7,7 +7,7 @@ replace google.golang.org/protobuf => github.com/paralin/protobuf-go v1.28.2-0.2
 require github.com/planetscale/vtprotobuf v0.3.1-0.20220817155510-0ae748fd2007
 
 require (
-	github.com/aperturerobotics/starpc v0.10.0
+	github.com/aperturerobotics/starpc v0.10.1
 	github.com/evanw/esbuild v0.15.7
 	github.com/golangci/golangci-lint v1.49.0
 	github.com/psampaz/go-mod-outdated v0.8.0
