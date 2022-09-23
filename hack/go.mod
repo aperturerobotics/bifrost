@@ -10,6 +10,7 @@ require (
 	github.com/aperturerobotics/starpc v0.10.1
 	github.com/evanw/esbuild v0.15.7
 	github.com/golangci/golangci-lint v1.49.0
+	github.com/hajimehoshi/wasmserve v0.0.0-20210512070053-db8e7b58c3a0
 	github.com/psampaz/go-mod-outdated v0.8.0
 	github.com/square/goprotowrap v0.0.0-20220325193554-9257bb483144
 	google.golang.org/protobuf v1.28.1

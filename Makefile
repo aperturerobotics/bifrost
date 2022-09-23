@@ -8,6 +8,7 @@ PROTOC_GEN_VTPROTO=hack/bin/protoc-gen-go-vtproto
 GOIMPORTS=hack/bin/goimports
 GOLANGCI_LINT=hack/bin/golangci-lint
 GO_MOD_OUTDATED=hack/bin/go-mod-outdated
+WASMSERVE=hack/bin/wasmserve
 GOLIST=go list -f "{{ .Dir }}" -m
 
 export GO111MODULE=on
@@ -66,6 +67,12 @@ $(GO_MOD_OUTDATED):
 	go build -v \
 		-o ./bin/go-mod-outdated \
 		github.com/psampaz/go-mod-outdated
+
+$(WASMSERVE):
+	cd ./hack; \
+	go build -v \
+		-o ./bin/wasmserve \
+		github.com/hajimehoshi/wasmserve
 
 # Add --go-grpc_out=$$(pwd)/vendor to use the GRPC protoc generator.
 # .. and remove the "grpc" option from the vtprotobuf features list.
@@ -157,6 +164,9 @@ lint: $(GOLANGCI_LINT)
 .PHONY: fix
 fix: $(GOLANGCI_LINT)
 	$(GOLANGCI_LINT) run --fix
+
+serve-example: $(WASMSERVE)
+	$(WASMSERVE) ./examples/websocket-browser-link/browser
 
 .PHONY: test
 test:
