@@ -43,7 +43,7 @@ func main() {
 	app.HideVersion = true
 	app.Action = runNatsExample
 	app.Flags = []cli.Flag{
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:        "priv-key",
 			Usage:       "path to private key to use",
 			Value:       "priv-key.pem",

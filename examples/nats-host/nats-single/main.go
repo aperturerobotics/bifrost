@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"os"
+	"os/signal"
 
 	"github.com/blang/semver"
 	"github.com/sirupsen/logrus"
@@ -37,7 +38,7 @@ func main() {
 	app.HideVersion = true
 	app.Action = runNatsExample
 	app.Flags = []cli.Flag{
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:        "priv-key",
 			Usage:       "path to private key to use",
 			Value:       "priv-key.pem",
@@ -55,7 +56,9 @@ func main() {
 }
 
 func runNatsExample(c *cli.Context) error {
-	ctx := context.Background()
+	ctx, sctxCancel := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
+	defer sctxCancel()
+
 	log := logrus.New()
 	log.SetLevel(logrus.DebugLevel)
 	le := logrus.NewEntry(log)
@@ -105,7 +108,8 @@ func runNatsExample(c *cli.Context) error {
 	}
 
 	le.Info("tests successful")
+	le.Info("press ctrl+c to exit")
 	<-ctx.Done()
-	_ = s0
+
 	return nil
 }
