@@ -20,7 +20,13 @@ func NewLogReadCloser(le *logrus.Entry, underlying io.ReadCloser) *LogReadCloser
 }
 
 func (c *LogReadCloser) Close() error {
-	return c.underlying.Close()
+	err := c.underlying.Close()
+	if err != nil {
+		c.le.Warnf("close() => error %v", err.Error())
+	} else {
+		c.le.Debug("close()")
+	}
+	return err
 }
 
 // _ is a type assertion
