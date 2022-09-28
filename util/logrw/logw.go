@@ -23,7 +23,7 @@ func NewLogWriter(le *logrus.Entry, underlying io.Writer) *LogWriter {
 // Write can be made to time out and return an error after a fixed
 // time limit; see SetDeadline and SetWriteDeadline.
 func (c *LogWriter) Write(b []byte) (n int, err error) {
-	c.le.Debugf("write(%d): %v", len(b), string(b))
+	c.le.Debugf("write(%d): %v", len(b), b)
 	n, err = c.underlying.Write(b)
 	if err != nil {
 		c.le.Warnf("write(%d) => errored %v", len(b), err.Error())

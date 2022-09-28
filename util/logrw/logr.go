@@ -27,7 +27,7 @@ func (c *LogReader) Read(b []byte) (n int, err error) {
 	if err != nil {
 		c.le.Warnf("read(...) => error %v", err.Error())
 	} else {
-		c.le.Debugf("read(...) => %v", string(b[:n]))
+		c.le.Debugf("read(...) => %v", b[:n])
 	}
 	return
 }
