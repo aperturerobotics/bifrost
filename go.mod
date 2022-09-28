@@ -27,11 +27,11 @@ require (
 	github.com/djherbis/buffer v1.2.0
 	github.com/golang/snappy v0.0.4
 	github.com/hashicorp/yamux v0.1.1
-	github.com/klauspost/compress v1.15.9
-	github.com/libp2p/go-libp2p v0.22.0
-	github.com/lucas-clemente/quic-go v0.28.1
+	github.com/klauspost/compress v1.15.11
+	github.com/libp2p/go-libp2p v0.23.2
+	github.com/lucas-clemente/quic-go v0.29.1
 	github.com/mr-tron/base58 v1.2.0
-	github.com/multiformats/go-multiaddr v0.6.0
+	github.com/multiformats/go-multiaddr v0.7.0
 	github.com/nats-io/nats-server/v2 v2.7.4
 	github.com/nats-io/nats.go v1.13.0
 	github.com/nats-io/nkeys v0.3.0
@@ -49,7 +49,7 @@ require (
 	github.com/urfave/cli/v2 v2.16.3
 	github.com/xtaci/smux v1.5.16
 	github.com/zeebo/blake3 v0.2.3
-	golang.org/x/crypto v0.0.0-20220829220503-c86fa9a7ed90
+	golang.org/x/crypto v0.0.0-20220926161630-eccd6366d1be
 	gonum.org/v1/gonum v0.12.0
 	google.golang.org/protobuf v1.28.1
 	nhooyr.io/websocket v1.8.8-0.20210410000328-8dee580a7f74
@@ -66,10 +66,10 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/mock v1.6.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
-	github.com/ipfs/go-cid v0.2.0 // indirect
+	github.com/ipfs/go-cid v0.3.2 // indirect
 	github.com/ipfs/go-log/v2 v2.5.1 // indirect
 	github.com/klauspost/cpuid v1.2.1 // indirect
-	github.com/klauspost/cpuid/v2 v2.1.0 // indirect
+	github.com/klauspost/cpuid/v2 v2.1.1 // indirect
 	github.com/klauspost/reedsolomon v1.9.2 // indirect
 	github.com/libp2p/go-buffer-pool v0.1.0 // indirect
 	github.com/libp2p/go-mplex v0.7.1-0.20220825125536-a00a1352b54f // indirect
@@ -80,10 +80,10 @@ require (
 	github.com/mattn/go-pointer v0.0.1 // indirect
 	github.com/minio/highwayhash v1.0.0 // indirect
 	github.com/minio/sha256-simd v1.0.0 // indirect
-	github.com/multiformats/go-base32 v0.0.4 // indirect
+	github.com/multiformats/go-base32 v0.1.0 // indirect
 	github.com/multiformats/go-base36 v0.1.0 // indirect
 	github.com/multiformats/go-multibase v0.1.1 // indirect
-	github.com/multiformats/go-multicodec v0.5.0 // indirect
+	github.com/multiformats/go-multicodec v0.6.0 // indirect
 	github.com/multiformats/go-multihash v0.2.1 // indirect
 	github.com/multiformats/go-varint v0.0.6 // indirect
 	github.com/nats-io/jwt/v2 v2.0.0-20200820224411-1e751ff168ab // indirect
@@ -101,10 +101,10 @@ require (
 	github.com/zeebo/errs v1.2.2 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
-	go.uber.org/zap v1.22.0 // indirect
-	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e // indirect
+	go.uber.org/zap v1.23.0 // indirect
+	golang.org/x/exp v0.0.0-20220916125017-b168a2c6b86b // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220906170120-8f535f745b87 // indirect
-	golang.org/x/net v0.0.0-20220812174116-3211cb980234 // indirect
+	golang.org/x/net v0.0.0-20220920183852-bf014ff85ad5 // indirect
 	golang.org/x/sys v0.0.0-20220811171246-fbc7d0a398ab // indirect
 	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1 // indirect
 	golang.org/x/tools v0.1.12 // indirect
