@@ -19,6 +19,4 @@ import (
 	_ "github.com/aperturerobotics/starpc/cmd/protoc-gen-go-starpc"
 	// _ imports esbuild
 	_ "github.com/evanw/esbuild/cmd/esbuild"
-	// _ imports wasmserve
-	_ "github.com/hajimehoshi/wasmserve"
 )
