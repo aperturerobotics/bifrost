@@ -6,6 +6,11 @@ import (
 	"github.com/cenkalti/backoff"
 )
 
+// GetEmpty returns if the backoff config is empty.
+func (b *Backoff) GetEmpty() bool {
+	return b.GetBackoffKind() == 0
+}
+
 // Construct constructs the backoff.
 // Validates the options.
 func (b *Backoff) Construct() backoff.BackOff {
