@@ -9,7 +9,7 @@ import (
 // Validate validates the message.
 func (m *Packet_Init) Validate() error {
 	if len(m.GetSenderPeerId()) == 0 {
-		return errors.Wrap(peer.ErrPeerIDEmpty, "sender")
+		return errors.Wrap(peer.ErrEmptyPeerID, "sender")
 	}
 
 	if len(m.GetSenderEphPub()) != 32 {

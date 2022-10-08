@@ -124,7 +124,7 @@ func (m *SignedMsg) Validate() error {
 		return ErrBodyEmpty
 	}
 	if len(m.GetFromPeerId()) == 0 {
-		return ErrPeerIDEmpty
+		return ErrEmptyPeerID
 	}
 	if err := m.GetSignature().Validate(); err != nil {
 		return errors.Wrap(err, "message signature")

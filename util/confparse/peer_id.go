@@ -24,7 +24,7 @@ func ParsePeerIDs(ids []string, allowEmpty bool) ([]peer.ID, error) {
 			if allowEmpty {
 				continue
 			}
-			return nil, errors.Wrapf(peer.ErrPeerIDEmpty, "peer_ids[%d]", i)
+			return nil, errors.Wrapf(peer.ErrEmptyPeerID, "peer_ids[%d]", i)
 		}
 		v, err := peer.IDB58Decode(pidStr)
 		if err != nil {
@@ -46,7 +46,7 @@ func ParsePeerIDsUnique(ids []string, allowEmpty bool) ([]peer.ID, error) {
 		}
 		if pid == peer.ID("") {
 			if !allowEmpty {
-				return nil, errors.Wrapf(peer.ErrPeerIDEmpty, "peer_ids[%d]", i)
+				return nil, errors.Wrapf(peer.ErrEmptyPeerID, "peer_ids[%d]", i)
 			}
 			continue
 		}
@@ -63,7 +63,7 @@ func ParsePeerIDsUnique(ids []string, allowEmpty bool) ([]peer.ID, error) {
 func ValidatePeerID(id string) error {
 	pid, err := ParsePeerID(id)
 	if err == nil && len(pid) == 0 {
-		err = peer.ErrPeerIDEmpty
+		err = peer.ErrEmptyPeerID
 	}
 	return err
 }

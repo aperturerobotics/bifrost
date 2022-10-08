@@ -10,7 +10,7 @@ import (
 // This is a cursory validation to see if the values "look correct."
 func (c *Config) Validate() error {
 	if c.GetPeerId() == "" {
-		return peer.ErrPeerIDEmpty
+		return peer.ErrEmptyPeerID
 	}
 
 	if _, err := c.ParseLocalPeerID(); err != nil {

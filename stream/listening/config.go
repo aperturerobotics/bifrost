@@ -22,7 +22,7 @@ func (c *Config) Validate() error {
 		}
 	}
 	if c.GetRemotePeerId() == "" {
-		return errors.Wrap(peer.ErrPeerIDEmpty, "remote")
+		return errors.Wrap(peer.ErrEmptyPeerID, "remote")
 	}
 	if _, err := c.ParseRemotePeerID(); err != nil {
 		return errors.Wrap(err, "remote")
