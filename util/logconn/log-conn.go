@@ -1,6 +1,7 @@
 package logconn
 
 import (
+	"io"
 	"net"
 	"time"
 
@@ -25,7 +26,7 @@ func NewLogConn(le *logrus.Entry, underlying net.Conn) *LogConn {
 // time limit; see SetDeadline and SetReadDeadline.
 func (c *LogConn) Read(b []byte) (n int, err error) {
 	n, err = c.underlying.Read(b)
-	if err != nil {
+	if err != nil && !(err == io.EOF && n != 0) {
 		c.le.Warnf("read(...) => error %v", err.Error())
 	} else {
 		c.le.Debugf("read(...) => %v", string(b[:n]))
