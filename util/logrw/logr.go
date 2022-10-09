@@ -24,7 +24,7 @@ func NewLogReader(le *logrus.Entry, underlying io.Reader) *LogReader {
 // time limit; see SetDeadline and SetReadDeadline.
 func (c *LogReader) Read(b []byte) (n int, err error) {
 	n, err = c.underlying.Read(b)
-	if err != nil {
+	if err != nil && !(err == io.EOF && n != 0) {
 		c.le.Warnf("read(...) => error %v", err.Error())
 	} else {
 		c.le.Debugf("read(...) => %v", b[:n])
