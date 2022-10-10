@@ -32,12 +32,13 @@ Bifrost is designed around the following core concepts:
  - **PubSub**: at-least-once delivery of messages to named topics.
 
 Integrates with networking, pubsub, and RPC libraries like [libp2p], [noise],
-[drpc], and [nats].
+[drpc], [starpc] and [nats].
 
 [drpc]: https://github.com/storj/drpc
 [libp2p]: https://libp2p.io/
 [noise]: https://github.com/perlin-network/noise
 [nats]: https://nats.io
+[starpc]: https://github.com/aperturerobotics/starpc
 
 The [network simulator], [testbed], and [in-proc transport] can be used to write
 end-to-end tests as Go unit tests. The mock transports use identical code to the
@@ -143,7 +144,7 @@ which are not yet exposed via these flags.
 
 ### Client CLI
 
-Most Bifrost functionality is exposed on the client CLI and DRPC API:
+Most Bifrost functionality is exposed on the client CLI and RPC API:
 
  - Mount a peer by loading a private key into the daemon.
  - Forward incoming streams with a protocol ID to a multiaddress
