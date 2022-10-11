@@ -20,7 +20,12 @@ flexible configuration.
 
 ## Overview
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/aperturerobotics/bifrost.svg)](https://pkg.go.dev/github.com/aperturerobotics/bifrost)
+[![Go Reference Widget]][Go Reference] [![Go Report Card Widget]][Go Report Card]
+
+[Go Reference]: https://pkg.go.dev/github.com/aperturerobotics/bifrost
+[Go Reference Widget]:https://pkg.go.dev/badge/github.com/aperturerobotics/bifrost.svg
+[Go Report Card Widget]: https://goreportcard.com/badge/github.com/aperturerobotics/bifrost
+[Go Report Card]: https://goreportcard.com/report/github.com/aperturerobotics/bifrost
 
 Bifrost is designed around the following core concepts:
 
