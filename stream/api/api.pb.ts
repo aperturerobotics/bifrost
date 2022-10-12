@@ -778,7 +778,9 @@ export interface StreamService {
 
 export class StreamServiceClientImpl implements StreamService {
   private readonly rpc: Rpc;
-  constructor(rpc: Rpc) {
+  private readonly service: string;
+  constructor(rpc: Rpc, opts?: { service?: string }) {
+    this.service = opts?.service || "stream.api.StreamService";
     this.rpc = rpc;
     this.ForwardStreams = this.ForwardStreams.bind(this);
     this.ListenStreams = this.ListenStreams.bind(this);
@@ -787,25 +789,25 @@ export class StreamServiceClientImpl implements StreamService {
   }
   ForwardStreams(request: ForwardStreamsRequest): AsyncIterable<ForwardStreamsResponse> {
     const data = ForwardStreamsRequest.encode(request).finish();
-    const result = this.rpc.serverStreamingRequest("stream.api.StreamService", "ForwardStreams", data);
+    const result = this.rpc.serverStreamingRequest(this.service, "ForwardStreams", data);
     return ForwardStreamsResponse.decodeTransform(result);
   }
 
   ListenStreams(request: ListenStreamsRequest): AsyncIterable<ListenStreamsResponse> {
     const data = ListenStreamsRequest.encode(request).finish();
-    const result = this.rpc.serverStreamingRequest("stream.api.StreamService", "ListenStreams", data);
+    const result = this.rpc.serverStreamingRequest(this.service, "ListenStreams", data);
     return ListenStreamsResponse.decodeTransform(result);
   }
 
   AcceptStream(request: AsyncIterable<AcceptStreamRequest>): AsyncIterable<AcceptStreamResponse> {
     const data = AcceptStreamRequest.encodeTransform(request);
-    const result = this.rpc.bidirectionalStreamingRequest("stream.api.StreamService", "AcceptStream", data);
+    const result = this.rpc.bidirectionalStreamingRequest(this.service, "AcceptStream", data);
     return AcceptStreamResponse.decodeTransform(result);
   }
 
   DialStream(request: AsyncIterable<DialStreamRequest>): AsyncIterable<DialStreamResponse> {
     const data = DialStreamRequest.encodeTransform(request);
-    const result = this.rpc.bidirectionalStreamingRequest("stream.api.StreamService", "DialStream", data);
+    const result = this.rpc.bidirectionalStreamingRequest(this.service, "DialStream", data);
     return DialStreamResponse.decodeTransform(result);
   }
 }

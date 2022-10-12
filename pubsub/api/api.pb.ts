@@ -674,13 +674,15 @@ export interface PubSubService {
 
 export class PubSubServiceClientImpl implements PubSubService {
   private readonly rpc: Rpc;
-  constructor(rpc: Rpc) {
+  private readonly service: string;
+  constructor(rpc: Rpc, opts?: { service?: string }) {
+    this.service = opts?.service || "pubsub.api.PubSubService";
     this.rpc = rpc;
     this.Subscribe = this.Subscribe.bind(this);
   }
   Subscribe(request: AsyncIterable<SubscribeRequest>): AsyncIterable<SubscribeResponse> {
     const data = SubscribeRequest.encodeTransform(request);
-    const result = this.rpc.bidirectionalStreamingRequest("pubsub.api.PubSubService", "Subscribe", data);
+    const result = this.rpc.bidirectionalStreamingRequest(this.service, "Subscribe", data);
     return SubscribeResponse.decodeTransform(result);
   }
 }

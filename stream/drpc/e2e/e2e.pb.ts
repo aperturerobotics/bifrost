@@ -182,13 +182,15 @@ export interface EndToEnd {
 
 export class EndToEndClientImpl implements EndToEnd {
   private readonly rpc: Rpc;
-  constructor(rpc: Rpc) {
+  private readonly service: string;
+  constructor(rpc: Rpc, opts?: { service?: string }) {
+    this.service = opts?.service || "drpc.e2e.EndToEnd";
     this.rpc = rpc;
     this.Mock = this.Mock.bind(this);
   }
   Mock(request: MockRequest): Promise<MockResponse> {
     const data = MockRequest.encode(request).finish();
-    const promise = this.rpc.request("drpc.e2e.EndToEnd", "Mock", data);
+    const promise = this.rpc.request(this.service, "Mock", data);
     return promise.then((data) => MockResponse.decode(new _m0.Reader(data)));
   }
 }

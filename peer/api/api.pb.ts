@@ -457,20 +457,22 @@ export interface PeerService {
 
 export class PeerServiceClientImpl implements PeerService {
   private readonly rpc: Rpc;
-  constructor(rpc: Rpc) {
+  private readonly service: string;
+  constructor(rpc: Rpc, opts?: { service?: string }) {
+    this.service = opts?.service || "peer.api.PeerService";
     this.rpc = rpc;
     this.Identify = this.Identify.bind(this);
     this.GetPeerInfo = this.GetPeerInfo.bind(this);
   }
   Identify(request: IdentifyRequest): AsyncIterable<IdentifyResponse> {
     const data = IdentifyRequest.encode(request).finish();
-    const result = this.rpc.serverStreamingRequest("peer.api.PeerService", "Identify", data);
+    const result = this.rpc.serverStreamingRequest(this.service, "Identify", data);
     return IdentifyResponse.decodeTransform(result);
   }
 
   GetPeerInfo(request: GetPeerInfoRequest): Promise<GetPeerInfoResponse> {
     const data = GetPeerInfoRequest.encode(request).finish();
-    const promise = this.rpc.request("peer.api.PeerService", "GetPeerInfo", data);
+    const promise = this.rpc.request(this.service, "GetPeerInfo", data);
     return promise.then((data) => GetPeerInfoResponse.decode(new _m0.Reader(data)));
   }
 }
