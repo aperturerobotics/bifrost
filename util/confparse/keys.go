@@ -9,6 +9,47 @@ import (
 	"github.com/pkg/errors"
 )
 
+// ParsePeer parses one of privKey, pubKey, peerID to build a Peer.
+func ParsePeer(
+	// PrivKey is the peer private key in either b58 or PEM format.
+	// See confparse.MarshalPrivateKey.
+	// If not set, the peer private key will be unavailable.
+	privKey string,
+	// PubKey is the peer public key.
+	// Ignored if priv_key is set.
+	pubKey string,
+	// PeerId is the peer identifier.
+	// Ignored if priv_key or pub_key are set.
+	// The peer ID should contain the public key.
+	peerId string,
+) (peer.Peer, error) {
+	pkey, err := ParsePrivateKey(privKey)
+	if err != nil {
+		return nil, err
+	}
+	if pkey != nil {
+		return peer.NewPeer(pkey)
+	}
+
+	pub, err := ParsePublicKey(pubKey)
+	if err != nil {
+		return nil, err
+	}
+	if pub != nil {
+		return peer.NewPeerWithPubKey(pub)
+	}
+
+	peerID, err := ParsePeerID(peerId)
+	if err != nil {
+		return nil, err
+	}
+	if peerID == "" {
+		return nil, errors.New("one of priv_key, pub_key, peer_id must be set")
+	}
+
+	return peer.NewPeerWithID(peerID)
+}
+
 // ParsePublicKey parses the public key from a string.
 // If the string starts with "-----BEGIN" assumes it is PEM.
 // Otherwise: the string is a b58 encoded libp2p public key.

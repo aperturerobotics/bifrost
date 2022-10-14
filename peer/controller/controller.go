@@ -7,7 +7,6 @@ import (
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/blang/semver"
-	crypto "github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/sirupsen/logrus"
 )
 
@@ -29,19 +28,11 @@ type Controller struct {
 
 // NewController constructs a new peer controller.
 // If privKey is nil, one will be generated.
-func NewController(le *logrus.Entry, privKey crypto.PrivKey) (*Controller, error) {
-	var err error
-
-	p, err := peer.NewPeer(privKey)
-	if err != nil {
-		return nil, err
-	}
-
+func NewController(le *logrus.Entry, p peer.Peer) *Controller {
 	return &Controller{
 		Peer: p,
-
-		le: le,
-	}, nil
+		le:   le,
+	}
 }
 
 // Execute executes the given controller.

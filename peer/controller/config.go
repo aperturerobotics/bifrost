@@ -1,6 +1,7 @@
 package peer_controller
 
 import (
+	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/util/confparse"
 	"github.com/aperturerobotics/controllerbus/config"
 	"github.com/libp2p/go-libp2p/core/crypto"
@@ -52,7 +53,7 @@ func (c *Config) EqualsConfig(c2 config.Config) bool {
 
 // Validate validates the configuration.
 func (c *Config) Validate() error {
-	if _, err := c.ParsePrivateKey(); err != nil {
+	if _, err := c.ParseToPeer(); err != nil {
 		return err
 	}
 
@@ -60,6 +61,27 @@ func (c *Config) Validate() error {
 }
 
 // ParsePrivateKey parses the private key from the configuration.
+// Returns nil, nil if unset.
 func (c *Config) ParsePrivateKey() (crypto.PrivKey, error) {
 	return confparse.ParsePrivateKey(c.GetPrivKey())
 }
+
+// ParsePublicKey parses the public key from the configuration.
+// Returns nil, nil if unset.
+func (c *Config) ParsePublicKey() (crypto.PubKey, error) {
+	return confparse.ParsePublicKey(c.GetPubKey())
+}
+
+// ParsePeerID parses the peer ID.
+// may return nil.
+func (c *Config) ParsePeerID() (peer.ID, error) {
+	return confparse.ParsePeerID(c.GetPeerId())
+}
+
+// ParseToPeer parses the fields and builds the corresponding Peer.
+func (c *Config) ParseToPeer() (peer.Peer, error) {
+	return confparse.ParsePeer(c.GetPrivKey(), c.GetPubKey(), c.GetPeerId())
+}
+
+// _ is a type assertion
+var _ config.Config = ((*Config)(nil))

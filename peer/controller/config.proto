@@ -1,9 +1,17 @@
 syntax = "proto3";
 package peer.controller;
 
-// Config is the node controller config.
+// Config is the peer controller config.
 message Config {
   // PrivKey is the peer private key in either b58 or PEM format.
   // See confparse.MarshalPrivateKey.
+  // If not set, the peer private key will be unavailable.
   string priv_key = 1;
+  // PubKey is the peer public key.
+  // Ignored if priv_key is set.
+  string pub_key = 2;
+  // PeerId is the peer identifier.
+  // Ignored if priv_key or pub_key are set.
+  // The peer ID should contain the public key.
+  string peer_id = 3;
 }

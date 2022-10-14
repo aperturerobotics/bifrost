@@ -1,8 +1,6 @@
 package peer_controller
 
 import (
-	"errors"
-
 	"github.com/aperturerobotics/controllerbus/config"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/blang/semver"
@@ -40,23 +38,12 @@ func (t *Factory) Construct(
 	le := opts.GetLogger()
 	cc := conf.(*Config)
 
-	privKey, err := cc.ParsePrivateKey()
+	confPeer, err := cc.ParseToPeer()
 	if err != nil {
 		return nil, err
 	}
 
-	if privKey == nil {
-		return nil, errors.New("private key must be configured")
-		/*
-			le.Info("generating private key, none configured")
-			privKey, _, err = keypem.GeneratePrivKey()
-			if err != nil {
-				return nil, err
-			}
-		*/
-	}
-
-	return NewController(le, privKey)
+	return NewController(le, confPeer), nil
 }
 
 // GetVersion returns the version of this controller.

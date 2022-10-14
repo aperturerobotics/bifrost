@@ -4,23 +4,41 @@ import _m0 from "protobufjs/minimal.js";
 
 export const protobufPackage = "peer.controller";
 
-/** Config is the node controller config. */
+/** Config is the peer controller config. */
 export interface Config {
   /**
    * PrivKey is the peer private key in either b58 or PEM format.
    * See confparse.MarshalPrivateKey.
+   * If not set, the peer private key will be unavailable.
    */
   privKey: string;
+  /**
+   * PubKey is the peer public key.
+   * Ignored if priv_key is set.
+   */
+  pubKey: string;
+  /**
+   * PeerId is the peer identifier.
+   * Ignored if priv_key or pub_key are set.
+   * The peer ID should contain the public key.
+   */
+  peerId: string;
 }
 
 function createBaseConfig(): Config {
-  return { privKey: "" };
+  return { privKey: "", pubKey: "", peerId: "" };
 }
 
 export const Config = {
   encode(message: Config, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.privKey !== "") {
       writer.uint32(10).string(message.privKey);
+    }
+    if (message.pubKey !== "") {
+      writer.uint32(18).string(message.pubKey);
+    }
+    if (message.peerId !== "") {
+      writer.uint32(26).string(message.peerId);
     }
     return writer;
   },
@@ -34,6 +52,12 @@ export const Config = {
       switch (tag >>> 3) {
         case 1:
           message.privKey = reader.string();
+          break;
+        case 2:
+          message.pubKey = reader.string();
+          break;
+        case 3:
+          message.peerId = reader.string();
           break;
         default:
           reader.skipType(tag & 7);
@@ -76,18 +100,26 @@ export const Config = {
   },
 
   fromJSON(object: any): Config {
-    return { privKey: isSet(object.privKey) ? String(object.privKey) : "" };
+    return {
+      privKey: isSet(object.privKey) ? String(object.privKey) : "",
+      pubKey: isSet(object.pubKey) ? String(object.pubKey) : "",
+      peerId: isSet(object.peerId) ? String(object.peerId) : "",
+    };
   },
 
   toJSON(message: Config): unknown {
     const obj: any = {};
     message.privKey !== undefined && (obj.privKey = message.privKey);
+    message.pubKey !== undefined && (obj.pubKey = message.pubKey);
+    message.peerId !== undefined && (obj.peerId = message.peerId);
     return obj;
   },
 
   fromPartial<I extends Exact<DeepPartial<Config>, I>>(object: I): Config {
     const message = createBaseConfig();
     message.privKey = object.privKey ?? "";
+    message.pubKey = object.pubKey ?? "";
+    message.peerId = object.peerId ?? "";
     return message;
   },
 };
