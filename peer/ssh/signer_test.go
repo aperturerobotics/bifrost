@@ -1,6 +1,7 @@
 package peer_ssh
 
 import (
+	"context"
 	"testing"
 
 	"github.com/aperturerobotics/bifrost/peer"
@@ -15,7 +16,12 @@ func TestSshKeys(t *testing.T) {
 	}
 
 	// create signer
-	_, err = NewSigner(p.GetPrivKey())
+	ctx := context.Background()
+	privKey, err := p.GetPrivKey(ctx)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	_, err = NewSigner(privKey)
 	if err != nil {
 		t.Fatal(err.Error())
 	}

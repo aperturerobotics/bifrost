@@ -80,10 +80,14 @@ func (a *API) Subscribe(serv pubsub_api.SRPCPubSubService_SubscribeStream) error
 			}
 			channelID = chid
 			// acquire channel
+			handlePeerPrivKey, err := handlePeer.GetPrivKey(ctx)
+			if err != nil {
+				return err
+			}
 			av, subRef, err := bus.ExecOneOff(
 				ctx,
 				a.bus,
-				pubsub.NewBuildChannelSubscription(channelID, handlePeer.GetPrivKey()),
+				pubsub.NewBuildChannelSubscription(channelID, handlePeerPrivKey),
 				false,
 				nil,
 			)

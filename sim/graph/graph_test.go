@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"context"
 	"testing"
 )
 
@@ -10,8 +11,9 @@ func TestSimpleGraph(t *testing.T) {
 	lan1 := AddLAN(g)
 	lan2 := AddLAN(g)
 
+	ctx := context.Background()
 	addPeer := func() *Peer {
-		p, err := GenerateAddPeer(g)
+		p, err := GenerateAddPeer(ctx, g)
 		if err != nil {
 			t.Fatal(err.Error())
 		}

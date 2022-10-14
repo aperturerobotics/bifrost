@@ -1,6 +1,8 @@
 package graph
 
 import (
+	"context"
+
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/config"
@@ -33,12 +35,16 @@ type Peer struct {
 }
 
 // GenerateAddPeer generates a peer private key and adds it.
-func GenerateAddPeer(g *Graph) (*Peer, error) {
+func GenerateAddPeer(ctx context.Context, g *Graph) (*Peer, error) {
 	npeer, err := peer.NewPeer(nil)
 	if err != nil {
 		return nil, err
 	}
-	return AddPeer(g, npeer.GetPrivKey())
+	peerPriv, err := npeer.GetPrivKey(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return AddPeer(g, peerPriv)
 }
 
 // AddPeer adds a peer to the network graph.
@@ -119,7 +125,7 @@ func (p *Peer) GetPeerPriv() crypto.PrivKey {
 func (p *Peer) GetLinkedPeers(g *Graph) []*Peer {
 	var stack []Node = g.FromNodes(p)
 	var peers []*Peer
-	seenNodes := map[Node]struct{}{p: struct{}{}}
+	seenNodes := map[Node]struct{}{p: {}}
 	for len(stack) != 0 {
 		nn := stack[len(stack)-1]
 		stack[len(stack)-1] = nil

@@ -18,7 +18,11 @@ func (a *UtilArgs) RunGeneratePrivate(_ *cli.Context) error {
 		return err
 	}
 
-	priv := npeer.GetPrivKey()
+	priv, err := npeer.GetPrivKey(a.GetContext())
+	if err != nil {
+		return err
+	}
+
 	pemd, err := keypem.MarshalPrivKeyPem(priv)
 	if err != nil {
 		return err

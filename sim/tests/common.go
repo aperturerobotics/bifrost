@@ -10,7 +10,8 @@ import (
 )
 
 func AddPeer(t *testing.T, g *graph.Graph) *graph.Peer {
-	p, err := graph.GenerateAddPeer(g)
+	ctx := context.Background()
+	p, err := graph.GenerateAddPeer(ctx, g)
 	if err != nil {
 		t.Fatal(err.Error())
 	}

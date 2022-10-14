@@ -1,6 +1,7 @@
 package peer
 
 import (
+	"context"
 	"crypto/rand"
 
 	"github.com/libp2p/go-libp2p/core/crypto"
@@ -16,8 +17,9 @@ type Peer interface {
 	GetPubKey() crypto.PubKey
 
 	// GetPrivKey returns the private key.
-	// Note: may be nil if privkey is unavailable.
-	GetPrivKey() crypto.PrivKey
+	// This may require an extra lookup operation.
+	// Returns ErrNoPrivKey if the private key is unavailable.
+	GetPrivKey(ctx context.Context) (crypto.PrivKey, error)
 }
 
 // NewPeer builds a new Peer object with a private key.
@@ -83,6 +85,9 @@ func (p *peer) GetPubKey() crypto.PubKey {
 
 // GetPrivKey returns the private key.
 // May be empty if peer private key is unavailable.
-func (p *peer) GetPrivKey() crypto.PrivKey {
-	return p.privKey
+func (p *peer) GetPrivKey(ctx context.Context) (crypto.PrivKey, error) {
+	if p.privKey == nil {
+		return nil, ErrNoPrivKey
+	}
+	return p.privKey, nil
 }

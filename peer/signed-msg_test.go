@@ -2,6 +2,7 @@ package peer
 
 import (
 	"bytes"
+	"context"
 	"testing"
 
 	"github.com/aperturerobotics/bifrost/hash"
@@ -13,7 +14,12 @@ func TestSignedMsg(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	exPeerID, privKey := p.GetPeerID(), p.GetPrivKey()
+	ctx := context.Background()
+	exPeerID := p.GetPeerID()
+	privKey, err := p.GetPrivKey(ctx)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
 
 	msg := "hello world from signed message test"
 	smsg, err := NewSignedMsg(privKey, hash.RecommendedHashType, []byte(msg))

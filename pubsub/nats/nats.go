@@ -65,16 +65,16 @@ func NewNats(
 	if peer == nil {
 		return nil, errors.New("nats server requires a peer with a private key")
 	}
-	kpair, err := NewKeyPair(peer.GetPrivKey(), peer.GetPubKey())
+	peerPrivKey, err := peer.GetPrivKey(ctx)
+	if err != nil {
+		return nil, err
+	}
+	kpair, err := NewKeyPair(peerPrivKey, peer.GetPubKey())
 	if err != nil {
 		return nil, err
 	}
 	peerID := peer.GetPeerID()
 	serverName := peerID.Pretty()
-
-	if peer.GetPrivKey() == nil {
-		return nil, errors.New("peer must have priv key")
-	}
 
 	clusterName := cc.GetClusterName()
 	if clusterName == "" {
@@ -227,7 +227,10 @@ func (n *Nats) AddSubscription(ctx context.Context, privKey crypto.PrivKey, chan
 // GetOrBuildCommonClient returns the common nats client.
 func (n *Nats) GetOrBuildCommonClient(ctx context.Context) (*nats_client.Conn, error) {
 	npeerID := n.peer.GetPeerID()
-	npeerPriv := n.peer.GetPrivKey()
+	npeerPriv, err := n.peer.GetPrivKey(ctx)
+	if err != nil {
+		return nil, err
+	}
 	npeerPretty := npeerID.Pretty()
 
 	n.mtx.Lock()

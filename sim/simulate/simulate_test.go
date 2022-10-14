@@ -19,7 +19,7 @@ func TestSimpleSimulate(t *testing.T) {
 	g := graph.NewGraph()
 
 	addPeer := func() *graph.Peer {
-		p, err := graph.GenerateAddPeer(g)
+		p, err := graph.GenerateAddPeer(ctx, g)
 		if err != nil {
 			t.Fatal(err.Error())
 		}

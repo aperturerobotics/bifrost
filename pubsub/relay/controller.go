@@ -53,7 +53,11 @@ func (c *Controller) Execute(ctx context.Context) error {
 		defer ref.Release()
 	}
 
-	privKey := cpeer.GetPrivKey()
+	privKey, err := cpeer.GetPrivKey(ctx)
+	if err != nil {
+		return err
+	}
+
 	for _, topic := range c.topics {
 		le := c.le.WithField("topic", topic)
 		_, diRef, err := c.bus.AddDirective(

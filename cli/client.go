@@ -328,7 +328,10 @@ func (a *ClientArgs) LoadOrGenerateIdentifyKey() ([]byte, crypto.PrivKey, error)
 			if err != nil {
 				return nil, nil, err
 			}
-			privKey := npeer.GetPrivKey()
+			privKey, err := npeer.GetPrivKey(a.ctx)
+			if err != nil {
+				return nil, nil, err
+			}
 			dat, err = confparse.MarshalPrivateKeyPEM(privKey)
 			if err != nil {
 				return nil, nil, err

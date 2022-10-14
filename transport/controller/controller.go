@@ -170,7 +170,10 @@ func (c *Controller) Execute(ctx context.Context) error {
 	defer nRef.Release()
 
 	// Get the priv key
-	privKey := n.GetPrivKey()
+	privKey, err := n.GetPrivKey(ctx)
+	if err != nil {
+		return err
+	}
 	c.localPeerID, err = peer.IDFromPrivateKey(privKey)
 	if err != nil {
 		return err

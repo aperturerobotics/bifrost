@@ -68,7 +68,10 @@ func NewTestbed(ctx context.Context, le *logrus.Entry, opts TestbedOpts) (*Testb
 		if err != nil {
 			return nil, err
 		}
-		t.PrivKey = npeer.GetPrivKey()
+		t.PrivKey, err = npeer.GetPrivKey(ctx)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if !opts.NoPeer {

@@ -1,6 +1,7 @@
 package peer_controller
 
 import (
+	"context"
 	"testing"
 
 	"github.com/aperturerobotics/bifrost/peer"
@@ -18,7 +19,12 @@ func TestPrivKeyIntegrity(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	privKey := npeer.GetPrivKey()
+	ctx := context.Background()
+	privKey, err := npeer.GetPrivKey(ctx)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
 	privKeyID := npeer.GetPeerID()
 	peerControllerConf, err := NewConfigWithPrivKey(privKey)
 	if err != nil {
