@@ -83,7 +83,7 @@ func (s *Server) Execute(ctx context.Context) error {
 
 // HandleDirective asks if the handler can resolve the directive.
 // If it can, it returns a resolver. If not, returns nil.
-func (s *Server) HandleDirective(ctx context.Context, di directive.Instance) (directive.Resolver, error) {
+func (s *Server) HandleDirective(ctx context.Context, di directive.Instance) ([]directive.Resolver, error) {
 	dir := di.GetDirective()
 	switch d := dir.(type) {
 	case link.HandleMountedStream:
@@ -98,7 +98,7 @@ func (s *Server) ResolveHandleMountedStream(
 	ctx context.Context,
 	di directive.Instance,
 	dir link.HandleMountedStream,
-) (directive.Resolver, error) {
+) ([]directive.Resolver, error) {
 	inProtocol := dir.HandleMountedStreamProtocolID()
 	var match bool
 	for _, pr := range s.protocolIDs {
@@ -125,7 +125,7 @@ func (s *Server) ResolveHandleMountedStream(
 		}
 	}
 
-	return newMountedStreamResolver(s), nil
+	return directive.Resolvers(newMountedStreamResolver(s)), nil
 }
 
 // HandleMountedStream handles an incoming mounted stream.

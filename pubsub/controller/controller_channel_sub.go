@@ -32,9 +32,14 @@ func (c *Controller) resolveBuildChannelSub(
 	ctx context.Context,
 	di directive.Instance,
 	d pubsub.BuildChannelSubscription,
-) (directive.Resolver, error) {
+) ([]directive.Resolver, error) {
 	// accept directive always
-	return &resolveBuildChannelSub{ctx: ctx, c: c, di: di, d: d}, nil
+	return directive.Resolvers(&resolveBuildChannelSub{
+		ctx: ctx,
+		c:   c,
+		di:  di,
+		d:   d,
+	}), nil
 }
 
 // Resolve resolves the values, emitting them to the handler.

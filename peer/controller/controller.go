@@ -51,7 +51,7 @@ func (c *Controller) Execute(ctx context.Context) error {
 func (c *Controller) HandleDirective(
 	ctx context.Context,
 	di directive.Instance,
-) (directive.Resolver, error) {
+) ([]directive.Resolver, error) {
 	dir := di.GetDirective()
 	switch d := dir.(type) {
 	case peer.GetPeer:
@@ -71,12 +71,12 @@ func (c *Controller) GetControllerInfo() *controller.Info {
 }
 
 // resolveGetPeer resolves the GetPeer directive
-func (c *Controller) resolveGetPeer(d peer.GetPeer) directive.Resolver {
+func (c *Controller) resolveGetPeer(d peer.GetPeer) []directive.Resolver {
 	res := peer.NewGetPeerResolver(d, c)
 	if res == nil {
 		return nil
 	}
-	return res
+	return directive.Resolvers(res)
 }
 
 // Close releases any resources used by the controller.
@@ -86,7 +86,7 @@ func (c *Controller) Close() error {
 }
 
 // _ is a type assertion
-var _ controller.Controller = ((*Controller)(nil))
-
-// _ is a type assertion
-var _ peer.Peer = ((*Controller)(nil))
+var (
+	_ controller.Controller = ((*Controller)(nil))
+	_ peer.Peer             = ((*Controller)(nil))
+)

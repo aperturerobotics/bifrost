@@ -126,7 +126,7 @@ func (c *Controller) resolveOpenStreamWithPeer(
 	ctx context.Context,
 	di directive.Instance,
 	dir link.OpenStreamWithPeer,
-) (directive.Resolver, error) {
+) ([]directive.Resolver, error) {
 	// opportune moment: if tpt is already available, filter
 	select {
 	case tpt := <-c.tptCh:
@@ -139,7 +139,12 @@ func (c *Controller) resolveOpenStreamWithPeer(
 
 	// Check transport constraint
 	// Return resolver.
-	return &openStreamResolver{c: c, ctx: ctx, di: di, dir: dir}, nil
+	return directive.Resolvers(&openStreamResolver{
+		c:   c,
+		ctx: ctx,
+		di:  di,
+		dir: dir,
+	}), nil
 }
 
 // _ is a type assertion

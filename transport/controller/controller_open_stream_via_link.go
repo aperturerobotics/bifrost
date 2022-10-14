@@ -130,7 +130,7 @@ func (c *Controller) resolveOpenStreamViaLink(
 	ctx context.Context,
 	di directive.Instance,
 	dir link.OpenStreamViaLink,
-) (directive.Resolver, error) {
+) ([]directive.Resolver, error) {
 	// opportune moment: if tpt is already available, filter
 	tptID := dir.OpenStreamViaLinkTransportConstraint()
 	if tptID != 0 {
@@ -146,7 +146,12 @@ func (c *Controller) resolveOpenStreamViaLink(
 
 	// Check transport constraint
 	// Return resolver.
-	return &openStreamViaLinkResolver{c: c, ctx: ctx, di: di, dir: dir}, nil
+	return directive.Resolvers(&openStreamViaLinkResolver{
+		c:   c,
+		ctx: ctx,
+		di:  di,
+		dir: dir,
+	}), nil
 }
 
 // _ is a type assertion

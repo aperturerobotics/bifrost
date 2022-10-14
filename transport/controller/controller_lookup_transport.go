@@ -57,7 +57,7 @@ func (c *Controller) resolveLookupTransport(
 	ctx context.Context,
 	di directive.Instance,
 	dir transport.LookupTransport,
-) (directive.Resolver, error) {
+) ([]directive.Resolver, error) {
 	select {
 	case tpt := <-c.tptCh:
 		c.tptCh <- tpt
@@ -68,7 +68,11 @@ func (c *Controller) resolveLookupTransport(
 	}
 
 	// Return resolver.
-	return &lookupTransportResolver{c: c, ctx: ctx, dir: dir}, nil
+	return directive.Resolvers(&lookupTransportResolver{
+		c:   c,
+		ctx: ctx,
+		dir: dir,
+	}), nil
 }
 
 // _ is a type assertion

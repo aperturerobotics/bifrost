@@ -112,13 +112,18 @@ func (c *Controller) resolveEstablishLink(
 	ctx context.Context,
 	di directive.Instance,
 	dir link.EstablishLinkWithPeer,
-) (directive.Resolver, error) {
+) ([]directive.Resolver, error) {
 	if len(dir.EstablishLinkTargetPeerId()) == 0 {
 		return nil, nil
 	}
 
 	// Return resolver.
-	return &establishLinkResolver{c: c, ctx: ctx, di: di, dir: dir}, nil
+	return directive.Resolvers(&establishLinkResolver{
+		c:   c,
+		ctx: ctx,
+		di:  di,
+		dir: dir,
+	}), nil
 }
 
 // _ is a type assertion

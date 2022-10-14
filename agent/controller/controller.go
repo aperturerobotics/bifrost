@@ -59,7 +59,7 @@ func (c *Controller) Execute(ctx context.Context) error {
 func (c *Controller) HandleDirective(
 	ctx context.Context,
 	di directive.Instance,
-) (directive.Resolver, error) {
+) ([]directive.Resolver, error) {
 	return nil, nil
 }
 
@@ -79,7 +79,7 @@ func (c *Controller) Close() error {
 }
 
 // _ is a type assertion
-var _ controller.Controller = ((*Controller)(nil))
-
-// _ is a type assertion
-var _ agent.Agent = ((*Controller)(nil))
+var (
+	_ controller.Controller = ((*Controller)(nil))
+	_ agent.Agent           = ((*Controller)(nil))
+)

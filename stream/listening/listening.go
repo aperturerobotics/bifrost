@@ -160,7 +160,7 @@ func (c *Controller) handleConn(ctx context.Context, conn manet.Conn) {
 }
 
 // HandleDirective asks if the handler can resolve the directive.
-func (c *Controller) HandleDirective(ctx context.Context, di directive.Instance) (directive.Resolver, error) {
+func (c *Controller) HandleDirective(ctx context.Context, di directive.Instance) ([]directive.Resolver, error) {
 	return nil, nil
 }
 

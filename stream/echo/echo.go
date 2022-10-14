@@ -71,7 +71,7 @@ func (c *Controller) Execute(ctx context.Context) error {
 // If it can, it returns a resolver. If not, returns nil.
 // Any exceptional errors are returned for logging.
 // It is safe to add a reference to the directive during this call.
-func (c *Controller) HandleDirective(ctx context.Context, di directive.Instance) (directive.Resolver, error) {
+func (c *Controller) HandleDirective(ctx context.Context, di directive.Instance) ([]directive.Resolver, error) {
 	dir := di.GetDirective()
 	if d, ok := dir.(link.HandleMountedStream); ok {
 		return c.resolveHandleMountedStream(ctx, di, d)
@@ -85,7 +85,7 @@ func (c *Controller) resolveHandleMountedStream(
 	ctx context.Context,
 	di directive.Instance,
 	dir link.HandleMountedStream,
-) (directive.Resolver, error) {
+) ([]directive.Resolver, error) {
 	if c.conf.GetProtocolId() != "" &&
 		c.conf.GetProtocolId() != string(dir.HandleMountedStreamProtocolID()) {
 		return nil, nil
@@ -105,7 +105,11 @@ func (c *Controller) resolveHandleMountedStream(
 		WithField("remote-peer", dir.HandleMountedStreamRemotePeerID().Pretty()).
 		WithField("protocol-id", dir.HandleMountedStreamProtocolID()).
 		Debug("starting echo stream handler")
-	return NewEchoResolver(c.le, c.bus)
+	res, err := NewEchoResolver(c.le, c.bus)
+	if err != nil {
+		return nil, err
+	}
+	return directive.Resolvers(res), nil
 }
 
 // Close releases any resources used by the controller.

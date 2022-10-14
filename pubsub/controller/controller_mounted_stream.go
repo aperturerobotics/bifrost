@@ -40,11 +40,11 @@ func (c *Controller) handleMountedStream(
 	ctx context.Context,
 	di directive.Instance,
 	dir link.HandleMountedStream,
-) (directive.Resolver, error) {
+) ([]directive.Resolver, error) {
 	if dir.HandleMountedStreamProtocolID() != c.protocolID {
 		return nil, nil
 	}
-	return newHandleMountedStreamResolver(c), nil
+	return directive.Resolvers(newHandleMountedStreamResolver(c)), nil
 }
 
 // _ is a type assertion
