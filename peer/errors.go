@@ -11,4 +11,6 @@ var (
 	ErrSignatureInvalid = errors.New("message signature invalid")
 	// ErrShortMessage is returned if a message is too short.
 	ErrShortMessage = errors.New("message too short")
+	// ErrNoPrivKey is returned if the private key is not available.
+	ErrNoPrivKey = errors.New("private key not available for peer")
 )

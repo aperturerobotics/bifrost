@@ -7,20 +7,20 @@ import (
 	lpeer "github.com/libp2p/go-libp2p/core/peer"
 )
 
-// Peer implements common functionalities between peer types.
-// Includes: identity.
+// Peer is the common interface for a keypair-based identity.
 type Peer interface {
+	// GetPeerID returns the peer ID.
+	GetPeerID() ID
+
 	// GetPubKey returns the public key of the peer.
 	GetPubKey() crypto.PubKey
 
 	// GetPrivKey returns the private key.
+	// Note: may be nil if privkey is unavailable.
 	GetPrivKey() crypto.PrivKey
-
-	// GetPeerID returns the peer ID.
-	GetPeerID() ID
 }
 
-// NewPeer builds a new Peer object.
+// NewPeer builds a new Peer object with a private key.
 // If privKey is nil, one will be generated.
 func NewPeer(privKey crypto.PrivKey) (Peer, error) {
 	if privKey == nil {
@@ -38,26 +38,51 @@ func NewPeer(privKey crypto.PrivKey) (Peer, error) {
 
 	return &peer{
 		privKey: privKey,
+		pubKey:  privKey.GetPublic(),
 		peerID:  id,
 	}, nil
 }
 
+// NewPeerWithPubKey builds a Peer with a public key.
+func NewPeerWithPubKey(pubKey crypto.PubKey) (Peer, error) {
+	id, err := lpeer.IDFromPublicKey(pubKey)
+	if err != nil {
+		return nil, err
+	}
+	return &peer{
+		pubKey: pubKey,
+		peerID: id,
+	}, nil
+}
+
+// NewPeerWithID constructs a new Peer by extracting the pubkey from the ID.
+func NewPeerWithID(id lpeer.ID) (Peer, error) {
+	pubKey, err := id.ExtractPublicKey()
+	if err != nil {
+		return nil, err
+	}
+	return NewPeerWithPubKey(pubKey)
+}
+
+// peer implements Peer with an in-memory struct.
 type peer struct {
 	privKey crypto.PrivKey
+	pubKey  crypto.PubKey
 	peerID  ID
-}
-
-// GetPubKey returns the public key of the node.
-func (p *peer) GetPubKey() crypto.PubKey {
-	return p.privKey.GetPublic()
-}
-
-// GetPrivKey returns the private key.
-func (p *peer) GetPrivKey() crypto.PrivKey {
-	return p.privKey
 }
 
 // GetPeerID returns the peer ID.
 func (p *peer) GetPeerID() ID {
 	return p.peerID
+}
+
+// GetPubKey returns the public key of the peer.
+func (p *peer) GetPubKey() crypto.PubKey {
+	return p.pubKey
+}
+
+// GetPrivKey returns the private key.
+// May be empty if peer private key is unavailable.
+func (p *peer) GetPrivKey() crypto.PrivKey {
+	return p.privKey
 }
