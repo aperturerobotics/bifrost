@@ -2,7 +2,7 @@ package hack
 
 import (
 	// _ imports protowrap
-	_ "github.com/square/goprotowrap"
+	_ "github.com/aperturerobotics/goprotowrap/cmd/protowrap"
 	// _ imports drpc
 	_ "storj.io/drpc/cmd/protoc-gen-go-drpc"
 	// _ imports protoc-gen-go
