@@ -6,6 +6,9 @@ import (
 	"github.com/cenkalti/backoff"
 )
 
+// Stop indicates that no more retries should be made for use in NextBackOff().
+const Stop = backoff.Stop
+
 // GetEmpty returns if the backoff config is empty.
 func (b *Backoff) GetEmpty() bool {
 	return b.GetBackoffKind() == 0
