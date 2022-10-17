@@ -8,12 +8,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func TestHTTPBusRefCountHandler(t *testing.T) {
+func TestHTTPHandler(t *testing.T) {
 	ctx := context.Background()
 	log := logrus.New()
 	log.SetLevel(logrus.DebugLevel)
 	le := logrus.NewEntry(log)
-
 	tb, err := testbed.NewTestbed(ctx, le, testbed.TestbedOpts{
 		NoEcho: true,
 		NoPeer: true,
@@ -23,9 +22,9 @@ func TestHTTPBusRefCountHandler(t *testing.T) {
 	}
 	defer startMockHandler(t, tb)()
 
-	// start the on-demand handler
-	rc := NewBusRefCountHandler(ctx, tb.Bus, "/foo", "test-client", false)
+	busHandler := NewBusHandler(tb.Bus, "test-client")
+	handler := NewHTTPHandler(ctx, NewHTTPHandlerBuilder(busHandler))
 
 	// perform a request
-	checkMockRequest(t, rc)
+	checkMockRequest(t, handler)
 }
