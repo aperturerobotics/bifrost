@@ -1,4 +1,4 @@
-package bldr_http
+package bifrost_http
 
 import (
 	"context"
