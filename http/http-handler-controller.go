@@ -23,6 +23,8 @@ type HTTPHandlerController struct {
 	// pathPrefixes is the list of URL path prefixes to match.
 	// ignores if empty
 	pathPrefixes []string
+	// stripPathPrefix removes the first matched pathPrefix from the URL.
+	stripPathPrefix bool
 	// pathRe is a regex to match URL paths.
 	// ignores if empty
 	pathRe *regexp.Regexp
@@ -32,17 +34,20 @@ type HTTPHandlerController struct {
 //
 // Responds if a URL matches either pathPrefixes OR pathRe.
 // pathPrefixes and pathRe can be empty.
+// if stripPathPrefix is set, removes the pathPrefix from the URL.
 func NewHTTPHandlerController(
 	info *controller.Info,
 	handler http.Handler,
 	pathPrefixes []string,
+	stripPathPrefix bool,
 	pathRe *regexp.Regexp,
 ) *HTTPHandlerController {
 	return &HTTPHandlerController{
-		info:         info,
-		handler:      handler,
-		pathPrefixes: pathPrefixes,
-		pathRe:       pathRe,
+		info:            info,
+		handler:         handler,
+		pathPrefixes:    pathPrefixes,
+		stripPathPrefix: stripPathPrefix,
+		pathRe:          pathRe,
 	}
 }
 
@@ -71,10 +76,12 @@ func (c *HTTPHandlerController) HandleDirective(
 		rpath := rurl.Path
 		// if we have no filters, match all.
 		matched := len(c.pathPrefixes) == 0 && c.pathRe == nil
+		var stripPrefix string
 		if !matched && len(c.pathPrefixes) != 0 {
 			for _, prefix := range c.pathPrefixes {
 				if strings.HasPrefix(rpath, prefix) {
 					matched = true
+					stripPrefix = prefix
 					break
 				}
 			}
@@ -82,9 +89,14 @@ func (c *HTTPHandlerController) HandleDirective(
 		if !matched && c.pathRe != nil {
 			matched = c.pathRe.MatchString(rpath)
 		}
-		if matched {
-			return directive.R(NewLookupHTTPHandlerResolver(c.handler), nil)
+		if !matched {
+			return nil, nil
 		}
+		handler := c.handler
+		if c.stripPathPrefix && len(stripPrefix) != 0 {
+			handler = http.StripPrefix(stripPrefix, handler)
+		}
+		return directive.R(NewLookupHTTPHandlerResolver(handler), nil)
 	}
 	return nil, nil
 }

@@ -32,7 +32,8 @@ func TestHTTPHandlerController(t *testing.T) {
 	// create a http handler
 	handler := http.NewServeMux()
 	expectedBody := "hello world\n"
-	handler.HandleFunc("/foo/bar", func(rw http.ResponseWriter, req *http.Request) {
+	handler.HandleFunc("/bar", func(rw http.ResponseWriter, req *http.Request) {
+		le.Debugf("got request at url: %s", req.URL.String())
 		rw.WriteHeader(200)
 		rw.Write([]byte(expectedBody))
 	})
@@ -42,6 +43,7 @@ func TestHTTPHandlerController(t *testing.T) {
 		controller.NewInfo("bifrost/http/test-handler", semver.MustParse("0.0.1"), "test handler"),
 		handler,
 		[]string{"/foo"},
+		true,
 		nil,
 	)
 	relHandler, err := tb.Bus.AddController(ctx, handlerCtrl, nil)
