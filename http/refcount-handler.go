@@ -36,16 +36,16 @@ func (h *RefCountHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	err := refcount.AccessRefCount(ctx, h.rc, func(handler *http.Handler) error {
 		if handler == nil || *handler == nil {
-			rw.Write([]byte("404 not found"))
 			rw.WriteHeader(404)
+			_, _ = rw.Write([]byte("404 not found"))
 			return nil
 		}
 		(*handler).ServeHTTP(rw, req)
 		return nil
 	})
 	if err != nil {
-		rw.Write([]byte(err.Error()))
 		rw.WriteHeader(500)
+		_, _ = rw.Write([]byte(err.Error()))
 	}
 }
 

@@ -44,7 +44,7 @@ func (h *HTTPHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	err := refcount.AccessRefCount(ctx, h.rc, func(access *http.Handler) error {
 		if access == nil {
 			rw.WriteHeader(404)
-			rw.Write([]byte("404 not found"))
+			_, _ = rw.Write([]byte("404 not found"))
 			return nil
 		}
 
@@ -53,7 +53,7 @@ func (h *HTTPHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	})
 	if err != nil {
 		rw.WriteHeader(500)
-		rw.Write([]byte(err.Error()))
+		_, _ = rw.Write([]byte(err.Error()))
 		return
 	}
 }
