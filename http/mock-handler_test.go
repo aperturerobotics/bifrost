@@ -26,7 +26,7 @@ func startMockHandler(t *testing.T, tb *testbed.Testbed) func() {
 	// attach it to the bus
 	handlerCtrl := NewHTTPHandlerController(
 		controller.NewInfo("bifrost/http/test-handler", semver.MustParse("0.0.1"), "test handler"),
-		handler,
+		NewHTTPHandlerBuilder(handler),
 		[]string{"/foo"},
 		true,
 		nil,

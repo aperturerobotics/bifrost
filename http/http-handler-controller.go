@@ -9,14 +9,20 @@ import (
 
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
+	"github.com/aperturerobotics/controllerbus/util/ccontainer"
+	"github.com/aperturerobotics/controllerbus/util/refcount"
 )
 
 // HTTPHandlerController resolves LookupHTTPHandler with a http.Handler.
 type HTTPHandlerController struct {
 	// info is the controller info
 	info *controller.Info
-	// handler is the http handler
-	handler http.Handler
+	// handleCtr is the refcount handle to the UnixFS
+	handleCtr *ccontainer.CContainer[*http.Handler]
+	// errCtr contains any error building FSHandle
+	errCtr *ccontainer.CContainer[*error]
+	// rc is the refcount container
+	rc *refcount.RefCount[*http.Handler]
 	// pathPrefixes is the list of URL path prefixes to match.
 	// ignores if empty
 	pathPrefixes []string
@@ -34,18 +40,21 @@ type HTTPHandlerController struct {
 // if stripPathPrefix is set, removes the pathPrefix from the URL.
 func NewHTTPHandlerController(
 	info *controller.Info,
-	handler http.Handler,
+	resolver HTTPHandlerBuilder,
 	pathPrefixes []string,
 	stripPathPrefix bool,
 	pathRe *regexp.Regexp,
 ) *HTTPHandlerController {
-	return &HTTPHandlerController{
+	h := &HTTPHandlerController{
 		info:            info,
-		handler:         handler,
+		handleCtr:       ccontainer.NewCContainer[*http.Handler](nil),
+		errCtr:          ccontainer.NewCContainer[*error](nil),
 		pathPrefixes:    pathPrefixes,
 		stripPathPrefix: stripPathPrefix,
 		pathRe:          pathRe,
 	}
+	h.rc = refcount.NewRefCount(nil, h.handleCtr, h.errCtr, resolver)
+	return h
 }
 
 // GetControllerInfo returns information about the controller.
@@ -54,8 +63,8 @@ func (c *HTTPHandlerController) GetControllerInfo() *controller.Info {
 }
 
 // Execute executes the controller.
-// Returning nil ends execution.
-func (c *HTTPHandlerController) Execute(rctx context.Context) (rerr error) {
+func (c *HTTPHandlerController) Execute(ctx context.Context) error {
+	c.rc.SetContext(ctx)
 	return nil
 }
 
@@ -89,13 +98,47 @@ func (c *HTTPHandlerController) HandleDirective(
 		if !matched {
 			return nil, nil
 		}
-		handler := c.handler
+		builder := c.HTTPHandleBuilder
 		if c.stripPathPrefix && len(stripPrefix) != 0 {
-			handler = http.StripPrefix(stripPrefix, handler)
+			builder = func(ctx context.Context) (*http.Handler, func(), error) {
+				handlerPtr, handlerRel, err := c.HTTPHandleBuilder(ctx)
+				if err != nil || handlerPtr == nil || *handlerPtr == nil {
+					return handlerPtr, handlerRel, err
+				}
+				handler := *handlerPtr
+				handler = http.StripPrefix(stripPrefix, handler)
+				return &handler, handlerRel, nil
+			}
 		}
-		return directive.R(NewLookupHTTPHandlerResolver(handler), nil)
+		return directive.R(NewLookupHTTPHandlerBuilderResolver(inst, builder), nil)
 	}
 	return nil, nil
+}
+
+// HTTPHandleBuilder builds a handle by adding a reference to the refcounter.
+func (c *HTTPHandlerController) HTTPHandleBuilder(ctx context.Context) (*http.Handler, func(), error) {
+	valCh := make(chan *http.Handler)
+	errCh := make(chan error)
+	ref := c.rc.AddRef(func(val *http.Handler, err error) {
+		if err != nil {
+			select {
+			case errCh <- err:
+			default:
+			}
+		} else if val != nil {
+			select {
+			case valCh <- val:
+			default:
+			}
+		}
+	})
+	select {
+	case err := <-errCh:
+		ref.Release()
+		return nil, nil, err
+	case val := <-valCh:
+		return val, ref.Release, nil
+	}
 }
 
 // Close releases any resources used by the controller.

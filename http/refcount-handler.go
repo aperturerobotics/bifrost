@@ -8,16 +8,8 @@ import (
 	"github.com/aperturerobotics/controllerbus/util/refcount"
 )
 
-// RefCountHandlerResolver is the resolver function for a RefCountHandler.
-//
-// returns the http handler and a release function
-// can return nil to indicate not found.
-type RefCountHandlerResolver func(ctx context.Context) (*http.Handler, func(), error)
-
 // RefCountHandler constructs a http.Handler when it has at least one reference.
 type RefCountHandler struct {
-	// resolver is the resolver function
-	resolver RefCountHandlerResolver
 	// handleCtr is the refcount handle to the UnixFS
 	handleCtr *ccontainer.CContainer[*http.Handler]
 	// errCtr contains any error building FSHandle
@@ -29,14 +21,13 @@ type RefCountHandler struct {
 // NewRefCountHandler constructs a new RefCountHandler.
 func NewRefCountHandler(
 	ctx context.Context,
-	resolver RefCountHandlerResolver,
+	resolver HTTPHandlerBuilder,
 ) *RefCountHandler {
 	h := &RefCountHandler{
-		resolver:  resolver,
 		handleCtr: ccontainer.NewCContainer[*http.Handler](nil),
 		errCtr:    ccontainer.NewCContainer[*error](nil),
 	}
-	h.rc = refcount.NewRefCount(ctx, h.handleCtr, h.errCtr, h.resolver)
+	h.rc = refcount.NewRefCount(ctx, h.handleCtr, h.errCtr, resolver)
 	return h
 }
 

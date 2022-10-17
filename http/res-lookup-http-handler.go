@@ -7,7 +7,7 @@ import (
 	"github.com/aperturerobotics/controllerbus/directive"
 )
 
-// LookupHTTPHandlerResolver resolves LookupHTTPHandler with a handler slice.
+// LookupHTTPHandlerResolver resolves LookupHTTPHandler with a handler.
 type LookupHTTPHandlerResolver struct {
 	handler http.Handler
 }
