@@ -2,14 +2,13 @@ package bifrost_http
 
 import (
 	"context"
-	"net/http"
 	"testing"
 
 	"github.com/aperturerobotics/bifrost/testbed"
 	"github.com/sirupsen/logrus"
 )
 
-func TestHTTPRefCountHandler(t *testing.T) {
+func TestHTTPBusHTTPHandler(t *testing.T) {
 	ctx := context.Background()
 	log := logrus.New()
 	log.SetLevel(logrus.DebugLevel)
@@ -25,11 +24,7 @@ func TestHTTPRefCountHandler(t *testing.T) {
 	defer startMockHandler(t, tb)()
 
 	// start the on-demand handler
-	rc := NewRefCountHandler(ctx, func(ctx context.Context) (*http.Handler, func(), error) {
-		busHandler := NewBusHandler(tb.Bus, "test-client")
-		httpHandler := http.Handler(busHandler)
-		return &httpHandler, nil, nil
-	})
+	rc := NewBusHTTPHandler(ctx, tb.Bus, "/foo", "test-client", false)
 
 	// perform a request
 	checkMockRequest(t, rc)

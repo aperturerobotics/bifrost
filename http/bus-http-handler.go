@@ -21,10 +21,21 @@ func NewBusHTTPHandlerBuilder(b bus.Bus, baseURL, clientID string, notFoundIfIdl
 	}
 }
 
-// NewBusRefCountHandler constructs a RefCountHandler which looks up the HTTP
+// NewBusHTTPHandler constructs a HTTPHandler which looks up the HTTP
 // handler on the bus when at least one request is active.
 //
 // baseURL is the URL to use for the client lookup.
-func NewBusRefCountHandler(ctx context.Context, b bus.Bus, baseURL, clientID string, notFoundIfIdle bool) *RefCountHandler {
-	return NewRefCountHandler(ctx, NewBusHTTPHandlerBuilder(b, baseURL, clientID, notFoundIfIdle))
+func NewBusHTTPHandler(
+	ctx context.Context,
+	b bus.Bus,
+	baseURL, clientID string,
+	notFoundIfIdle bool,
+) *HTTPHandler {
+	return NewHTTPHandler(
+		ctx,
+		NewBusHTTPHandlerBuilder(
+			b,
+			baseURL, clientID,
+			notFoundIfIdle,
+		))
 }
