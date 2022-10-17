@@ -9,13 +9,10 @@ import (
 
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
-	"github.com/sirupsen/logrus"
 )
 
 // HTTPHandlerController resolves LookupHTTPHandler with a http.Handler.
 type HTTPHandlerController struct {
-	// le is the root logger
-	le *logrus.Entry
 	// info is the controller info
 	info *controller.Info
 	// handler is the http handler

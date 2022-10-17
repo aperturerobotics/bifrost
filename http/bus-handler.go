@@ -28,12 +28,12 @@ func (h *BusHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	handler, handlerRef, err := ExLookupFirstHTTPHandler(ctx, h.b, req.URL.String(), "", true)
 	if err != nil {
 		rw.WriteHeader(500)
-		rw.Write([]byte(err.Error()))
+		_, _ = rw.Write([]byte(err.Error()))
 		return
 	}
 	if handlerRef == nil {
 		rw.WriteHeader(404)
-		rw.Write([]byte("bldr: handler not found for url"))
+		_, _ = rw.Write([]byte("bldr: handler not found for url"))
 		return
 	}
 

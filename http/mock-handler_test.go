@@ -20,7 +20,7 @@ func startMockHandler(t *testing.T, tb *testbed.Testbed) func() {
 	handler.HandleFunc("/bar", func(rw http.ResponseWriter, req *http.Request) {
 		tb.Logger.Debugf("got request at url: %s", req.URL.String())
 		rw.WriteHeader(200)
-		rw.Write(mockBody)
+		_, _ = rw.Write(mockBody)
 	})
 
 	// attach it to the bus
