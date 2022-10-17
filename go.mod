@@ -3,9 +3,9 @@ module github.com/aperturerobotics/bifrost
 go 1.18
 
 require (
-	github.com/aperturerobotics/controllerbus v0.17.1-0.20221017024501-91b25a571e35
+	github.com/aperturerobotics/controllerbus v0.17.1-0.20221017042241-b5c01f3c0847
 	github.com/aperturerobotics/entitygraph v0.3.1
-	github.com/aperturerobotics/starpc v0.12.3-0.20221016005912-7bacc93ac67f
+	github.com/aperturerobotics/starpc v0.12.3-0.20221016234110-4412537f4e8f
 )
 
 // aperture: use compatibility forks
