@@ -3,9 +3,9 @@ module github.com/aperturerobotics/bifrost
 go 1.18
 
 require (
-	github.com/aperturerobotics/controllerbus v0.18.2-0.20221019080900-fe522f5faeb9
+	github.com/aperturerobotics/controllerbus v0.18.2-0.20221019082518-c9323cca3baa
 	github.com/aperturerobotics/entitygraph v0.3.1
-	github.com/aperturerobotics/starpc v0.12.3-0.20221018185043-e5cfe4a62d43
+	github.com/aperturerobotics/starpc v0.13.2-0.20221102012118-4a398033e50b
 )
 
 // aperture: use compatibility forks
@@ -28,8 +28,8 @@ require (
 	github.com/golang/snappy v0.0.4
 	github.com/hashicorp/yamux v0.1.1
 	github.com/klauspost/compress v1.15.11
-	github.com/libp2p/go-libp2p v0.23.2
-	github.com/lucas-clemente/quic-go v0.29.1
+	github.com/libp2p/go-libp2p v0.23.3-0.20221025171119-7465a509d011
+	github.com/lucas-clemente/quic-go v0.30.0
 	github.com/mr-tron/base58 v1.2.0
 	github.com/multiformats/go-multiaddr v0.7.0
 	github.com/nats-io/nats-server/v2 v2.7.4
@@ -49,7 +49,7 @@ require (
 	github.com/urfave/cli/v2 v2.23.0
 	github.com/xtaci/smux v1.5.16
 	github.com/zeebo/blake3 v0.2.3
-	golang.org/x/crypto v0.1.0
+	golang.org/x/crypto v0.1.1-0.20221024173537-a3485e174077
 	gonum.org/v1/gonum v0.12.0
 	google.golang.org/protobuf v1.28.1
 	nhooyr.io/websocket v1.8.8-0.20210410000328-8dee580a7f74
@@ -72,10 +72,10 @@ require (
 	github.com/klauspost/cpuid/v2 v2.1.1 // indirect
 	github.com/klauspost/reedsolomon v1.9.2 // indirect
 	github.com/libp2p/go-buffer-pool v0.1.0 // indirect
-	github.com/libp2p/go-mplex v0.7.1-0.20220919134208-b0cc3e9c41a9 // indirect
 	github.com/libp2p/go-openssl v0.1.0 // indirect
-	github.com/marten-seemann/qtls-go1-18 v0.1.2 // indirect
-	github.com/marten-seemann/qtls-go1-19 v0.1.0 // indirect
+	github.com/libp2p/go-yamux/v4 v4.0.1-0.20220919134236-1c09f2ab3ec1 // indirect
+	github.com/marten-seemann/qtls-go1-18 v0.1.3 // indirect
+	github.com/marten-seemann/qtls-go1-19 v0.1.1 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect
 	github.com/mattn/go-pointer v0.0.1 // indirect
 	github.com/minio/highwayhash v1.0.0 // indirect
