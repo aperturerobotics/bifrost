@@ -117,8 +117,8 @@ func (c *HTTPHandlerController) HandleDirective(
 
 // HTTPHandleBuilder builds a handle by adding a reference to the refcounter.
 func (c *HTTPHandlerController) HTTPHandleBuilder(ctx context.Context) (*http.Handler, func(), error) {
-	valCh := make(chan *http.Handler)
-	errCh := make(chan error)
+	valCh := make(chan *http.Handler, 1)
+	errCh := make(chan error, 1)
 	ref := c.rc.AddRef(func(val *http.Handler, err error) {
 		if err != nil {
 			select {
