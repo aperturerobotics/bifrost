@@ -26,9 +26,9 @@ require (
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/djherbis/buffer v1.2.0
 	github.com/golang/snappy v0.0.4
-	github.com/hashicorp/yamux v0.1.1
 	github.com/klauspost/compress v1.15.11
-	github.com/libp2p/go-libp2p v0.23.3-0.20221025171119-7465a509d011
+	github.com/libp2p/go-libp2p v0.23.3-0.20221109121032-c334288f8fe4
+	github.com/libp2p/go-yamux/v4 v4.0.1-0.20220919134236-1c09f2ab3ec1
 	github.com/lucas-clemente/quic-go v0.30.0
 	github.com/mr-tron/base58 v1.2.0
 	github.com/multiformats/go-multiaddr v0.7.0
@@ -71,9 +71,8 @@ require (
 	github.com/klauspost/cpuid v1.2.1 // indirect
 	github.com/klauspost/cpuid/v2 v2.1.1 // indirect
 	github.com/klauspost/reedsolomon v1.9.2 // indirect
-	github.com/libp2p/go-buffer-pool v0.1.0 // indirect
-	github.com/libp2p/go-openssl v0.1.0 // indirect
-	github.com/libp2p/go-yamux/v4 v4.0.1-0.20220919134236-1c09f2ab3ec1 // indirect
+	github.com/libp2p/go-buffer-pool v0.1.1-0.20220919134021-a29bd39bcbb7 // indirect
+	github.com/libp2p/go-openssl v0.1.1-0.20220921181522-00b60808a1ac // indirect
 	github.com/marten-seemann/qtls-go1-18 v0.1.3 // indirect
 	github.com/marten-seemann/qtls-go1-19 v0.1.1 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect

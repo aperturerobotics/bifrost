@@ -1,6 +1,8 @@
 package kcp
 
 import (
+	"context"
+
 	"github.com/aperturerobotics/bifrost/stream"
 	"github.com/xtaci/smux"
 )
@@ -11,7 +13,7 @@ type smuxWrapper struct {
 }
 
 // OpenStream opens a stream.
-func (m *smuxWrapper) OpenStream() (stream.Stream, error) {
+func (m *smuxWrapper) OpenStream(ctx context.Context) (stream.Stream, error) {
 	return m.Session.OpenStream()
 }
 

@@ -6,7 +6,7 @@ replace github.com/aperturerobotics/bifrost => ../../
 
 require (
 	github.com/aperturerobotics/bifrost v0.7.9-0.20221017070424-77ff84bf6130
-	github.com/aperturerobotics/controllerbus v0.18.2-0.20221019080900-fe522f5faeb9
+	github.com/aperturerobotics/controllerbus v0.18.2-0.20221109213655-5770e80db3a0
 )
 
 // aperture: use compatibility forks
@@ -24,5 +24,5 @@ replace (
 require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/sirupsen/logrus v1.9.0
-	github.com/urfave/cli/v2 v2.17.1
+	github.com/urfave/cli/v2 v2.23.0
 )

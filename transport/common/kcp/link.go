@@ -14,8 +14,10 @@ import (
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/stream"
 	"github.com/aperturerobotics/bifrost/util/blockcrypt"
+	"github.com/aperturerobotics/bifrost/util/rwc"
 	"github.com/aperturerobotics/bifrost/util/scrc"
-	"github.com/hashicorp/yamux"
+	ymuxer "github.com/libp2p/go-libp2p/p2p/muxer/yamux"
+	yamux "github.com/libp2p/go-yamux/v4"
 	"github.com/paralin/kcp-go-lite"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -94,7 +96,7 @@ type acceptedStream struct {
 // streamMuxer is the generic stream muxer interface.
 type streamMuxer interface {
 	// OpenStream opens a stream.
-	OpenStream() (stream.Stream, error)
+	OpenStream(ctx context.Context) (stream.Stream, error)
 	// AcceptStream accepts a stream.
 	AcceptStream() (stream.Stream, error)
 	// Close closes the muxer.
@@ -220,6 +222,7 @@ func NewLink(
 		l.Close()
 		return nil, err
 	}
+	strmSessConn := rwc.NewRwcOverlay(strmSess, rwc.NewConnAddr(l.sess, localAddr, remoteAddr))
 
 	// TODO: Expose all settings in Config
 	// TODO: check muxertype
@@ -242,18 +245,16 @@ func NewLink(
 			l.mux = &smuxWrapper{Session: sess}
 		}
 	case StreamMuxer_StreamMuxer_YAMUX:
-		conf := yamux.DefaultConfig()
+		conf := *ymuxer.DefaultTransport.Config()
 		conf.KeepAliveInterval = time.Second * 10
-		// conf.AcceptBacklog = 10
 		conf.LogOutput = le.WriterLevel(logrus.DebugLevel)
 		conf.EnableKeepAlive = true
-		// conf.MaxStreamWindowSize = uint32(windowSize)
 
 		var sess *yamux.Session
 		if initiator {
-			sess, err = yamux.Server(strmSess, conf)
+			sess, err = yamux.Server(strmSessConn, &conf, nil)
 		} else {
-			sess, err = yamux.Client(strmSess, conf)
+			sess, err = yamux.Client(strmSessConn, &conf, nil)
 		}
 		if err == nil {
 			l.mux = &yamuxWrapper{Session: sess}
@@ -341,7 +342,7 @@ func (l *Link) OpenStream(opts stream.OpenOpts) (stream.Stream, error) {
 	}
 
 	if opts.Encrypted || opts.Reliable {
-		strm, err := l.mux.OpenStream()
+		strm, err := l.mux.OpenStream(l.ctx)
 		return strm, err
 	}
 

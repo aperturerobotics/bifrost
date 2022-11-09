@@ -14,7 +14,7 @@ func (l *Link) smuxAcceptPump(initiator bool) {
 	var coordStrm stream.Stream
 	var err error
 	if !initiator {
-		coordStrm, err = l.mux.OpenStream()
+		coordStrm, err = l.mux.OpenStream(l.ctx)
 	} else {
 		coordStrm, err = l.mux.AcceptStream()
 	}
