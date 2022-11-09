@@ -22,7 +22,7 @@ func TestHTTPHandler(t *testing.T) {
 	}
 	defer startMockHandler(t, tb)()
 
-	busHandler := NewBusHandler(tb.Bus, "test-client")
+	busHandler := NewBusHandler(tb.Bus, "test-client", true)
 	handler := NewHTTPHandler(ctx, NewHTTPHandlerBuilder(busHandler))
 
 	// perform a request

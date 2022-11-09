@@ -23,7 +23,10 @@ func TestHTTPHandlerController(t *testing.T) {
 	defer startMockHandler(t, tb)()
 
 	// start the http server
-	busHandler := NewBusHandler(tb.Bus, "test-client")
+	// note: we set not found if idle because AddController waits to return
+	// until the controller is added. therefore the resolution should never go
+	// idle before returning a value.
+	busHandler := NewBusHandler(tb.Bus, "test-client", true)
 
 	// perform a request
 	checkMockRequest(t, busHandler)

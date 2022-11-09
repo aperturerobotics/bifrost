@@ -12,20 +12,23 @@ type BusHandler struct {
 	b bus.Bus
 	// clientID is the client id to use for lookups
 	clientID string
+	// notFoundIfIdle indicates to return 404 not found if the lookup is idle
+	notFoundIfIdle bool
 }
 
 // NewBusHandler constructs a new bus-backed HTTP handler.
-func NewBusHandler(b bus.Bus, clientID string) *BusHandler {
+func NewBusHandler(b bus.Bus, clientID string, notFoundIfIdle bool) *BusHandler {
 	return &BusHandler{
-		b:        b,
-		clientID: clientID,
+		b:              b,
+		clientID:       clientID,
+		notFoundIfIdle: notFoundIfIdle,
 	}
 }
 
 // ServeHTTP serves the http request.
 func (h *BusHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
-	handler, handlerRef, err := ExLookupFirstHTTPHandler(ctx, h.b, req.URL.String(), "", true)
+	handler, handlerRef, err := ExLookupFirstHTTPHandler(ctx, h.b, req.URL.String(), "", h.notFoundIfIdle)
 	if err != nil {
 		rw.WriteHeader(500)
 		_, _ = rw.Write([]byte(err.Error()))

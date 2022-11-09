@@ -4,8 +4,8 @@ github.com/aperturerobotics/bifrost-nats-client v1.10.1-0.20200831103200-24c3d04
 github.com/aperturerobotics/bifrost-nats-client v1.10.1-0.20200831103200-24c3d0464e58/go.mod h1:ougcjYEZDYV8pVtaNbA5sgYDukkYHyKtSsW/T3B13j0=
 github.com/aperturerobotics/bifrost-nats-server/v2 v2.1.8-0.20200831101324-59acc8fe7f74 h1:/s0PAkmLK/mF+jxbTebcbjLIqXz/L6cOm8OovMyFEJs=
 github.com/aperturerobotics/bifrost-nats-server/v2 v2.1.8-0.20200831101324-59acc8fe7f74/go.mod h1:kIcZtLpq4UIZzOqduYLm1mYU1nuMBtN6XuDCtQ21QT8=
-github.com/aperturerobotics/controllerbus v0.18.2-0.20221109054429-52d0bd9d45f4 h1:mHFJC3CiMDSGXpPzhOg1HqVCpFteyY00aGQ4pwj+jus=
-github.com/aperturerobotics/controllerbus v0.18.2-0.20221109054429-52d0bd9d45f4/go.mod h1:R6ONvyOBbzNslJcEGClgHTuOJRyVLP/W7hj70iqCmdA=
+github.com/aperturerobotics/controllerbus v0.18.2-0.20221109213655-5770e80db3a0 h1:MW++Vi5EffwnlDSq2c/532IGHfeeSE1piNiYGyaIka4=
+github.com/aperturerobotics/controllerbus v0.18.2-0.20221109213655-5770e80db3a0/go.mod h1:R6ONvyOBbzNslJcEGClgHTuOJRyVLP/W7hj70iqCmdA=
 github.com/aperturerobotics/entitygraph v0.3.1 h1:LN4D73fUqXYGM0KPaU0mt5+7Pb/YlGj4O0bP7WPqo/o=
 github.com/aperturerobotics/entitygraph v0.3.1/go.mod h1:MFh660XcgNSljaIk/tGygJLP3HZXDbDrc/+o69F6SIw=
 github.com/aperturerobotics/logrus v1.8.2-0.20220322010420-77ab346a2cf8 h1:Op74irBctc7oEvEILdmoQ2FDkpqmoOqErxU6V/1eHG0=
