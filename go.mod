@@ -3,9 +3,9 @@ module github.com/aperturerobotics/bifrost
 go 1.18
 
 require (
-	github.com/aperturerobotics/controllerbus v0.18.2-0.20221109213655-5770e80db3a0
-	github.com/aperturerobotics/entitygraph v0.3.1
-	github.com/aperturerobotics/starpc v0.13.3-0.20221109044340-34435095d711
+	github.com/aperturerobotics/controllerbus v0.18.3-0.20221112044122-0886234aaa4b
+	github.com/aperturerobotics/entitygraph v0.3.2
+	github.com/aperturerobotics/starpc v0.14.1-0.20221112043226-bcbce6701f09
 )
 
 // aperture: use compatibility forks
@@ -27,7 +27,7 @@ require (
 	github.com/djherbis/buffer v1.2.0
 	github.com/golang/snappy v0.0.4
 	github.com/klauspost/compress v1.15.11
-	github.com/libp2p/go-libp2p v0.23.3-0.20221109121032-c334288f8fe4
+	github.com/libp2p/go-libp2p v0.23.3-0.20221111082328-c48e78f0733d
 	github.com/libp2p/go-yamux/v4 v4.0.1-0.20220919134236-1c09f2ab3ec1
 	github.com/lucas-clemente/quic-go v0.30.0
 	github.com/mr-tron/base58 v1.2.0
@@ -49,7 +49,7 @@ require (
 	github.com/urfave/cli/v2 v2.23.0
 	github.com/xtaci/smux v1.5.16
 	github.com/zeebo/blake3 v0.2.3
-	golang.org/x/crypto v0.1.1-0.20221024173537-a3485e174077
+	golang.org/x/crypto v0.2.1-0.20221109165004-21d60a152191
 	gonum.org/v1/gonum v0.12.0
 	google.golang.org/protobuf v1.28.1
 	nhooyr.io/websocket v1.8.8-0.20210410000328-8dee580a7f74
@@ -80,11 +80,11 @@ require (
 	github.com/minio/highwayhash v1.0.0 // indirect
 	github.com/minio/sha256-simd v1.0.0 // indirect
 	github.com/multiformats/go-base32 v0.1.0 // indirect
-	github.com/multiformats/go-base36 v0.1.0 // indirect
-	github.com/multiformats/go-multibase v0.1.1 // indirect
-	github.com/multiformats/go-multicodec v0.6.0 // indirect
-	github.com/multiformats/go-multihash v0.2.1 // indirect
-	github.com/multiformats/go-varint v0.0.6 // indirect
+	github.com/multiformats/go-base36 v0.1.1-0.20220823151017-f5af2eed4d9c // indirect
+	github.com/multiformats/go-multibase v0.1.2-0.20220823162309-7160a7347ed1 // indirect
+	github.com/multiformats/go-multicodec v0.7.1-0.20221017174837-a2baec7ca709 // indirect
+	github.com/multiformats/go-multihash v0.2.2-0.20221030163302-608669da49b6 // indirect
+	github.com/multiformats/go-varint v0.0.7-0.20220823162201-881f9a52d5d2 // indirect
 	github.com/nats-io/jwt/v2 v2.0.0-20200820224411-1e751ff168ab // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/nxadm/tail v1.4.8 // indirect
@@ -92,7 +92,7 @@ require (
 	github.com/petermattis/goid v0.0.0-20180202154549-b0b1615b78e5 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/spacemonkeygo/spacelog v0.0.0-20180420211403-2296661a0572 // indirect
-	github.com/spaolacci/murmur3 v1.1.0 // indirect
+	github.com/spaolacci/murmur3 v1.1.1-0.20190317074736-539464a789e9 // indirect
 	github.com/templexxx/cpu v0.0.1 // indirect
 	github.com/templexxx/cpufeat v0.0.0-20180724012125-cef66df7f161 // indirect
 	github.com/templexxx/xorsimd v0.4.1 // indirect
@@ -104,11 +104,11 @@ require (
 	go.uber.org/zap v1.23.0 // indirect
 	golang.org/x/exp v0.0.0-20221031165847-c99f073a8326 // indirect
 	golang.org/x/mod v0.6.0 // indirect
-	golang.org/x/net v0.1.1-0.20221101210122-c87783997501 // indirect
-	golang.org/x/sys v0.1.1-0.20221025174404-572649812736 // indirect
+	golang.org/x/net v0.2.0 // indirect
+	golang.org/x/sys v0.2.0 // indirect
 	golang.org/x/time v0.1.1-0.20221020023724-80b9fac54d29 // indirect
 	golang.org/x/tools v0.2.1-0.20221101210316-32e1cb7aeda1 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	lukechampine.com/blake3 v1.1.7 // indirect
+	lukechampine.com/blake3 v1.1.8-0.20220321170924-7afca5966e5e // indirect
 )
