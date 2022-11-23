@@ -5,8 +5,8 @@ go 1.16
 replace github.com/aperturerobotics/bifrost => ../../
 
 require (
-	github.com/aperturerobotics/bifrost v0.7.9-0.20221017070424-77ff84bf6130
-	github.com/aperturerobotics/controllerbus v0.18.2-0.20221109213655-5770e80db3a0
+	github.com/aperturerobotics/bifrost v0.8.1-0.20221122104831-bbe8df57aed7
+	github.com/aperturerobotics/controllerbus v0.18.3-0.20221122161121-e3dc439c0821
 )
 
 // aperture: use compatibility forks

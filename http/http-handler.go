@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/aperturerobotics/controllerbus/util/ccontainer"
-	"github.com/aperturerobotics/controllerbus/util/refcount"
+	"github.com/aperturerobotics/util/ccontainer"
+	"github.com/aperturerobotics/util/refcount"
 )
 
 // HTTPHandler implements a HTTP handler which deduplicates with a reference count.

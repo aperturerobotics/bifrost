@@ -1,8 +1,8 @@
 syntax = "proto3";
 package stream.drpc.client;
 
-import "github.com/aperturerobotics/bifrost/util/backoff/backoff.proto";
 import "github.com/aperturerobotics/bifrost/stream/drpc/drpc.proto";
+import "github.com/aperturerobotics/util/backoff/backoff.proto";
 
 // Config configures a client for a drpc service.
 message Config {

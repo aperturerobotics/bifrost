@@ -9,12 +9,12 @@ import (
 	"github.com/aperturerobotics/bifrost/peer"
 	nctr "github.com/aperturerobotics/bifrost/peer/controller"
 	wtpt "github.com/aperturerobotics/bifrost/transport/websocket"
-	"github.com/aperturerobotics/bifrost/util/prng"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller/loader"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
 	"github.com/aperturerobotics/controllerbus/core"
 	"github.com/aperturerobotics/controllerbus/directive"
+	"github.com/aperturerobotics/util/prng"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/sirupsen/logrus"
 )

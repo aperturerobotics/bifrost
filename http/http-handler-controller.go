@@ -9,8 +9,8 @@ import (
 
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
-	"github.com/aperturerobotics/controllerbus/util/ccontainer"
-	"github.com/aperturerobotics/controllerbus/util/refcount"
+	"github.com/aperturerobotics/util/ccontainer"
+	"github.com/aperturerobotics/util/refcount"
 )
 
 // HTTPHandlerController resolves LookupHTTPHandler with a http.Handler.

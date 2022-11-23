@@ -296,8 +296,6 @@ func (n *Nats) SubscribeSync(
 
 // Close closes the pubsub.
 func (m *Nats) Close() {
-	m.natsServer.Shutdown()
-	m.natsServer.WaitForShutdown()
 	m.mtx.Lock()
 	for _, s := range m.incSessions {
 		if s.mstrm != nil {

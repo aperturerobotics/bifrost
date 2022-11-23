@@ -27,6 +27,8 @@ func BuildQuicConfig(le *logrus.Entry, opts *Opts) *quic.Config {
 		maxIncStreams = int(mis)
 	}
 
+	// copy the logger
+	le = &logrus.Entry{Logger: le.Logger, Context: le.Context}
 	if opts.GetVerbose() {
 		le.Level = logrus.DebugLevel
 	} else {

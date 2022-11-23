@@ -9,7 +9,6 @@ import (
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/protocol"
 	"github.com/aperturerobotics/bifrost/stream"
-	"github.com/aperturerobotics/bifrost/util/timeout"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/starpc/srpc"
 	"github.com/sirupsen/logrus"
@@ -60,8 +59,13 @@ func NewMultiOpenStreamFunc(
 	) (srpc.Writer, error) {
 		var lastErr error
 		for _, destPeer := range destPeers {
-			estCtx, estCtxCancel := timeout.BuildTimeoutCtx(ctx, timeoutDur)
-			defer estCtxCancel()
+			var estCtx context.Context
+			var estCtxCancel context.CancelFunc
+			if timeoutDur > 0 {
+				estCtx, estCtxCancel = context.WithTimeout(ctx, timeoutDur)
+			} else {
+				estCtx, estCtxCancel = context.WithCancel(ctx)
+			}
 
 			le := le.WithField("server-peer-id", destPeer.Pretty())
 			writer, err := EstablishSrpcStream(
@@ -73,6 +77,7 @@ func NewMultiOpenStreamFunc(
 				msgHandler,
 				closeHandler,
 			)
+			estCtxCancel()
 			if err != nil {
 				le.WithError(err).Warn("unable to establish srpc conn")
 				lastErr = err

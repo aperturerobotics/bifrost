@@ -7,7 +7,7 @@ import (
 
 	"github.com/aperturerobotics/bifrost/util/crypto/extra25519"
 	curve25519_ecdh "github.com/aperturerobotics/bifrost/util/crypto/extra25519/ecdh"
-	"github.com/aperturerobotics/bifrost/util/scrub"
+	"github.com/aperturerobotics/util/scrub"
 	"github.com/klauspost/compress/s2"
 	b58 "github.com/mr-tron/base58/base58"
 	"github.com/pkg/errors"
