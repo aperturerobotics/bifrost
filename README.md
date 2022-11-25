@@ -287,10 +287,6 @@ Nats and floodsub are currently supported as PubSub protocols.
 
 ## Support
 
-Bifrost is built & supported by Aperture Robotics, LLC.
-
-Community contributions and discussion are welcomed!
-
 Please open a [GitHub issue] with any questions / issues.
 
 [GitHub issue]: https://github.com/aperturerobotics/bifrost/issues/new
@@ -299,3 +295,7 @@ Please open a [GitHub issue] with any questions / issues.
 
 [Discord]: https://discord.gg/KJutMESRsT
 [Matrix Chat]: https://matrix.to/#/#aperturerobotics:matrix.org
+
+## License
+
+Apache 2.0
