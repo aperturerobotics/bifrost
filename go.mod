@@ -3,9 +3,9 @@ module github.com/aperturerobotics/bifrost
 go 1.18
 
 require (
-	github.com/aperturerobotics/controllerbus v0.19.2-0.20221125033307-2c62ad63a9ed
+	github.com/aperturerobotics/controllerbus v0.19.2
 	github.com/aperturerobotics/entitygraph v0.3.2
-	github.com/aperturerobotics/starpc v0.14.1
+	github.com/aperturerobotics/starpc v0.15.0
 )
 
 // aperture: use compatibility forks
@@ -103,12 +103,12 @@ require (
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.23.0 // indirect
-	golang.org/x/exp v0.0.0-20221031165847-c99f073a8326 // indirect
-	golang.org/x/mod v0.6.0 // indirect
+	golang.org/x/exp v0.0.0-20221114191408-850992195362 // indirect
+	golang.org/x/mod v0.7.0 // indirect
 	golang.org/x/net v0.2.0 // indirect
 	golang.org/x/sys v0.2.0 // indirect
 	golang.org/x/time v0.1.1-0.20221020023724-80b9fac54d29 // indirect
-	golang.org/x/tools v0.2.1-0.20221101210316-32e1cb7aeda1 // indirect
+	golang.org/x/tools v0.3.1-0.20221123235330-f718365b8d68 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	lukechampine.com/blake3 v1.1.8-0.20220321170924-7afca5966e5e // indirect

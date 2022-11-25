@@ -2,7 +2,6 @@ package stream_srpc_server
 
 import (
 	"context"
-	"io"
 
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/protocol"
@@ -143,11 +142,7 @@ func (s *Server) HandleMountedStream(ctx context.Context, ms link.MountedStream)
 	go func() {
 		strm := ms.GetStream()
 		subCtx, subCtxCancel := context.WithCancel(ctx)
-		if err := s.server.HandleStream(subCtx, strm); err != nil &&
-			err != io.EOF &&
-			err != context.Canceled {
-			s.le.WithError(err).Warn("stream exited with error")
-		}
+		s.server.HandleStream(subCtx, strm)
 		subCtxCancel()
 		strm.Close()
 		elRef.Release()

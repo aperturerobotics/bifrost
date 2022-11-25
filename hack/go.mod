@@ -13,8 +13,8 @@ require (
 
 require (
 	github.com/aperturerobotics/goprotowrap v0.3.0
-	github.com/aperturerobotics/starpc v0.14.1-0.20221112043226-bcbce6701f09
-	github.com/evanw/esbuild v0.15.13
+	github.com/aperturerobotics/starpc v0.15.0
+	github.com/evanw/esbuild v0.15.15
 	storj.io/drpc v0.0.32
 )
 
