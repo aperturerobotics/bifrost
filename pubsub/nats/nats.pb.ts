@@ -1,9 +1,13 @@
 /* eslint-disable */
-import Long from "long";
-import _m0 from "protobufjs/minimal.js";
-import { HashType, hashTypeFromJSON, hashTypeToJSON } from "../../hash/hash.pb.js";
+import Long from 'long'
+import _m0 from 'protobufjs/minimal.js'
+import {
+  HashType,
+  hashTypeFromJSON,
+  hashTypeToJSON,
+} from '../../hash/hash.pb.js'
 
-export const protobufPackage = "nats";
+export const protobufPackage = 'nats'
 
 /** NatsConnType indicates the type of nats conn a stream represents. */
 export enum NatsConnType {
@@ -19,32 +23,32 @@ export enum NatsConnType {
 export function natsConnTypeFromJSON(object: any): NatsConnType {
   switch (object) {
     case 0:
-    case "NatsConnType_UNKNOWN":
-      return NatsConnType.NatsConnType_UNKNOWN;
+    case 'NatsConnType_UNKNOWN':
+      return NatsConnType.NatsConnType_UNKNOWN
     case 1:
-    case "NatsConnType_CLIENT":
-      return NatsConnType.NatsConnType_CLIENT;
+    case 'NatsConnType_CLIENT':
+      return NatsConnType.NatsConnType_CLIENT
     case 2:
-    case "NatsConnType_ROUTER":
-      return NatsConnType.NatsConnType_ROUTER;
+    case 'NatsConnType_ROUTER':
+      return NatsConnType.NatsConnType_ROUTER
     case -1:
-    case "UNRECOGNIZED":
+    case 'UNRECOGNIZED':
     default:
-      return NatsConnType.UNRECOGNIZED;
+      return NatsConnType.UNRECOGNIZED
   }
 }
 
 export function natsConnTypeToJSON(object: NatsConnType): string {
   switch (object) {
     case NatsConnType.NatsConnType_UNKNOWN:
-      return "NatsConnType_UNKNOWN";
+      return 'NatsConnType_UNKNOWN'
     case NatsConnType.NatsConnType_CLIENT:
-      return "NatsConnType_CLIENT";
+      return 'NatsConnType_CLIENT'
     case NatsConnType.NatsConnType_ROUTER:
-      return "NatsConnType_ROUTER";
+      return 'NatsConnType_ROUTER'
     case NatsConnType.UNRECOGNIZED:
     default:
-      return "UNRECOGNIZED";
+      return 'UNRECOGNIZED'
   }
 }
 
@@ -58,92 +62,101 @@ export interface Config {
    * This must be the same on all nodes.
    * If unset, uses the protocol ID.
    */
-  clusterName: string;
+  clusterName: string
   /**
    * PublishHashType is the hash type to use when signing published messages.
    * Defaults to sha256
    */
-  publishHashType: HashType;
+  publishHashType: HashType
   /** LogDebug turns on extended debugging logging. */
-  logDebug: boolean;
+  logDebug: boolean
   /**
    * LogTrace turns on tracing logging.
    * implies log_debug.
    */
-  logTrace: boolean;
+  logTrace: boolean
   /**
    * LogTraceVrebose turns on verbose tracing logging.
    * Implies log_trace and log_debug.
    */
-  logTraceVerbose: boolean;
+  logTraceVerbose: boolean
 }
 
 function createBaseConfig(): Config {
-  return { clusterName: "", publishHashType: 0, logDebug: false, logTrace: false, logTraceVerbose: false };
+  return {
+    clusterName: '',
+    publishHashType: 0,
+    logDebug: false,
+    logTrace: false,
+    logTraceVerbose: false,
+  }
 }
 
 export const Config = {
-  encode(message: Config, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.clusterName !== "") {
-      writer.uint32(10).string(message.clusterName);
+  encode(
+    message: Config,
+    writer: _m0.Writer = _m0.Writer.create()
+  ): _m0.Writer {
+    if (message.clusterName !== '') {
+      writer.uint32(10).string(message.clusterName)
     }
     if (message.publishHashType !== 0) {
-      writer.uint32(16).int32(message.publishHashType);
+      writer.uint32(16).int32(message.publishHashType)
     }
     if (message.logDebug === true) {
-      writer.uint32(24).bool(message.logDebug);
+      writer.uint32(24).bool(message.logDebug)
     }
     if (message.logTrace === true) {
-      writer.uint32(32).bool(message.logTrace);
+      writer.uint32(32).bool(message.logTrace)
     }
     if (message.logTraceVerbose === true) {
-      writer.uint32(40).bool(message.logTraceVerbose);
+      writer.uint32(40).bool(message.logTraceVerbose)
     }
-    return writer;
+    return writer
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Config {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseConfig();
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input)
+    let end = length === undefined ? reader.len : reader.pos + length
+    const message = createBaseConfig()
     while (reader.pos < end) {
-      const tag = reader.uint32();
+      const tag = reader.uint32()
       switch (tag >>> 3) {
         case 1:
-          message.clusterName = reader.string();
-          break;
+          message.clusterName = reader.string()
+          break
         case 2:
-          message.publishHashType = reader.int32() as any;
-          break;
+          message.publishHashType = reader.int32() as any
+          break
         case 3:
-          message.logDebug = reader.bool();
-          break;
+          message.logDebug = reader.bool()
+          break
         case 4:
-          message.logTrace = reader.bool();
-          break;
+          message.logTrace = reader.bool()
+          break
         case 5:
-          message.logTraceVerbose = reader.bool();
-          break;
+          message.logTraceVerbose = reader.bool()
+          break
         default:
-          reader.skipType(tag & 7);
-          break;
+          reader.skipType(tag & 7)
+          break
       }
     }
-    return message;
+    return message
   },
 
   // encodeTransform encodes a source of message objects.
   // Transform<Config, Uint8Array>
   async *encodeTransform(
-    source: AsyncIterable<Config | Config[]> | Iterable<Config | Config[]>,
+    source: AsyncIterable<Config | Config[]> | Iterable<Config | Config[]>
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
         for (const p of pkt) {
-          yield* [Config.encode(p).finish()];
+          yield* [Config.encode(p).finish()]
         }
       } else {
-        yield* [Config.encode(pkt).finish()];
+        yield* [Config.encode(pkt).finish()]
       }
     }
   },
@@ -151,68 +164,95 @@ export const Config = {
   // decodeTransform decodes a source of encoded messages.
   // Transform<Uint8Array, Config>
   async *decodeTransform(
-    source: AsyncIterable<Uint8Array | Uint8Array[]> | Iterable<Uint8Array | Uint8Array[]>,
+    source:
+      | AsyncIterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>
   ): AsyncIterable<Config> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
         for (const p of pkt) {
-          yield* [Config.decode(p)];
+          yield* [Config.decode(p)]
         }
       } else {
-        yield* [Config.decode(pkt)];
+        yield* [Config.decode(pkt)]
       }
     }
   },
 
   fromJSON(object: any): Config {
     return {
-      clusterName: isSet(object.clusterName) ? String(object.clusterName) : "",
-      publishHashType: isSet(object.publishHashType) ? hashTypeFromJSON(object.publishHashType) : 0,
+      clusterName: isSet(object.clusterName) ? String(object.clusterName) : '',
+      publishHashType: isSet(object.publishHashType)
+        ? hashTypeFromJSON(object.publishHashType)
+        : 0,
       logDebug: isSet(object.logDebug) ? Boolean(object.logDebug) : false,
       logTrace: isSet(object.logTrace) ? Boolean(object.logTrace) : false,
-      logTraceVerbose: isSet(object.logTraceVerbose) ? Boolean(object.logTraceVerbose) : false,
-    };
+      logTraceVerbose: isSet(object.logTraceVerbose)
+        ? Boolean(object.logTraceVerbose)
+        : false,
+    }
   },
 
   toJSON(message: Config): unknown {
-    const obj: any = {};
-    message.clusterName !== undefined && (obj.clusterName = message.clusterName);
-    message.publishHashType !== undefined && (obj.publishHashType = hashTypeToJSON(message.publishHashType));
-    message.logDebug !== undefined && (obj.logDebug = message.logDebug);
-    message.logTrace !== undefined && (obj.logTrace = message.logTrace);
-    message.logTraceVerbose !== undefined && (obj.logTraceVerbose = message.logTraceVerbose);
-    return obj;
+    const obj: any = {}
+    message.clusterName !== undefined && (obj.clusterName = message.clusterName)
+    message.publishHashType !== undefined &&
+      (obj.publishHashType = hashTypeToJSON(message.publishHashType))
+    message.logDebug !== undefined && (obj.logDebug = message.logDebug)
+    message.logTrace !== undefined && (obj.logTrace = message.logTrace)
+    message.logTraceVerbose !== undefined &&
+      (obj.logTraceVerbose = message.logTraceVerbose)
+    return obj
   },
 
   fromPartial<I extends Exact<DeepPartial<Config>, I>>(object: I): Config {
-    const message = createBaseConfig();
-    message.clusterName = object.clusterName ?? "";
-    message.publishHashType = object.publishHashType ?? 0;
-    message.logDebug = object.logDebug ?? false;
-    message.logTrace = object.logTrace ?? false;
-    message.logTraceVerbose = object.logTraceVerbose ?? false;
-    return message;
+    const message = createBaseConfig()
+    message.clusterName = object.clusterName ?? ''
+    message.publishHashType = object.publishHashType ?? 0
+    message.logDebug = object.logDebug ?? false
+    message.logTrace = object.logTrace ?? false
+    message.logTraceVerbose = object.logTraceVerbose ?? false
+    return message
   },
-};
+}
 
-type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
+type Builtin =
+  | Date
+  | Function
+  | Uint8Array
+  | string
+  | number
+  | boolean
+  | undefined
 
-export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Long ? string | number | Long : T extends Array<infer U> ? Array<DeepPartial<U>>
-  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
-  : T extends { $case: string } ? { [K in keyof Omit<T, "$case">]?: DeepPartial<T[K]> } & { $case: T["$case"] }
-  : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
-  : Partial<T>;
+export type DeepPartial<T> = T extends Builtin
+  ? T
+  : T extends Long
+  ? string | number | Long
+  : T extends Array<infer U>
+  ? Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U>
+  ? ReadonlyArray<DeepPartial<U>>
+  : T extends { $case: string }
+  ? { [K in keyof Omit<T, '$case'>]?: DeepPartial<T[K]> } & {
+      $case: T['$case']
+    }
+  : T extends {}
+  ? { [K in keyof T]?: DeepPartial<T[K]> }
+  : Partial<T>
 
-type KeysOfUnion<T> = T extends T ? keyof T : never;
-export type Exact<P, I extends P> = P extends Builtin ? P
-  : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
+type KeysOfUnion<T> = T extends T ? keyof T : never
+export type Exact<P, I extends P> = P extends Builtin
+  ? P
+  : P & { [K in keyof P]: Exact<P[K], I[K]> } & {
+      [K in Exclude<keyof I, KeysOfUnion<P>>]: never
+    }
 
 if (_m0.util.Long !== Long) {
-  _m0.util.Long = Long as any;
-  _m0.configure();
+  _m0.util.Long = Long as any
+  _m0.configure()
 }
 
 function isSet(value: any): boolean {
-  return value !== null && value !== undefined;
+  return value !== null && value !== undefined
 }

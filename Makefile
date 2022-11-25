@@ -140,7 +140,8 @@ gents: $(PROTOWRAP) node_modules
 			git \
 				ls-files "*.proto" |\
 				xargs printf -- \
-				"$$(pwd)/vendor/$${PROJECT}/%s "); \
+				"$$(pwd)/vendor/$${PROJECT}/%s ");
+	npm run format
 	go mod vendor
 
 .PHONY: genproto
