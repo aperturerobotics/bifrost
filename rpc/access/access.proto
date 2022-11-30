@@ -1,0 +1,34 @@
+syntax = "proto3";
+package bifrost.rpc.access;
+
+import "github.com/aperturerobotics/starpc/rpcstream/rpcstream.proto";
+
+// AccessRpcService exposes services with LookupRpcService via RPC.
+service AccessRpcService {
+  // LookupRpcService checks if a RPC service exists with the given info.
+  // Usually translates to accessing the LookupRpcService directive.
+  // If the service was not found (directive is idle) returns empty.
+  rpc LookupRpcService(LookupRpcServiceRequest) returns (stream LookupRpcServiceResponse);
+  // CallRpcService forwards an RPC call to the service with the component ID.
+  // Component ID: json encoded LookupRpcServiceRequest.
+  rpc CallRpcService(stream .rpcstream.RpcStreamPacket) returns (stream .rpcstream.RpcStreamPacket);
+}
+
+// LookupRpcServiceRequest is a request to lookup an rpc service.
+message LookupRpcServiceRequest {
+  // ServiceId is the service identifier.
+  string service_id = 1;
+  // ServerId is the identifier of the server requesting the service.
+  // Can be empty.
+  string server_id = 2;
+}
+
+// LookupRpcServiceResponse is a response to LookupRpcService
+message LookupRpcServiceResponse {
+  // Idle indicates the directive is now idle.
+  bool idle = 1;
+  // Exists indicates we found the service on the remote.
+  bool exists = 2;
+  // Removed indicates the value no longer exists.
+  bool removed = 3;
+}
