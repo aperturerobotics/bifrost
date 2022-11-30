@@ -10,6 +10,7 @@ import (
 	bits "math/bits"
 
 	hash "github.com/aperturerobotics/bifrost/hash"
+	proto "google.golang.org/protobuf/proto"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
@@ -19,6 +20,28 @@ const (
 	// Verify that runtime/protoimpl is sufficiently up-to-date.
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
+
+func (m *Config) CloneVT() *Config {
+	if m == nil {
+		return (*Config)(nil)
+	}
+	r := &Config{
+		ClusterName:     m.ClusterName,
+		PublishHashType: m.PublishHashType,
+		LogDebug:        m.LogDebug,
+		LogTrace:        m.LogTrace,
+		LogTraceVerbose: m.LogTraceVerbose,
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *Config) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
 
 func (this *Config) EqualVT(that *Config) bool {
 	if this == nil {

@@ -21,6 +21,31 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+func (m *Opts) CloneVT() *Opts {
+	if m == nil {
+		return (*Opts)(nil)
+	}
+	r := &Opts{
+		Verbose: m.Verbose,
+	}
+	if rhs := m.Quic; rhs != nil {
+		if vtpb, ok := interface{}(rhs).(interface{ CloneVT() *quic.Opts }); ok {
+			r.Quic = vtpb.CloneVT()
+		} else {
+			r.Quic = proto.Clone(rhs).(*quic.Opts)
+		}
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *Opts) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
+
 func (this *Opts) EqualVT(that *Opts) bool {
 	if this == nil {
 		return that == nil

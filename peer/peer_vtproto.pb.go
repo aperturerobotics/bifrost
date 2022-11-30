@@ -10,6 +10,7 @@ import (
 	bits "math/bits"
 
 	hash "github.com/aperturerobotics/bifrost/hash"
+	proto "google.golang.org/protobuf/proto"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
@@ -19,6 +20,58 @@ const (
 	// Verify that runtime/protoimpl is sufficiently up-to-date.
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
+
+func (m *Signature) CloneVT() *Signature {
+	if m == nil {
+		return (*Signature)(nil)
+	}
+	r := &Signature{
+		HashType: m.HashType,
+	}
+	if rhs := m.PubKey; rhs != nil {
+		tmpBytes := make([]byte, len(rhs))
+		copy(tmpBytes, rhs)
+		r.PubKey = tmpBytes
+	}
+	if rhs := m.SigData; rhs != nil {
+		tmpBytes := make([]byte, len(rhs))
+		copy(tmpBytes, rhs)
+		r.SigData = tmpBytes
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *Signature) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
+
+func (m *SignedMsg) CloneVT() *SignedMsg {
+	if m == nil {
+		return (*SignedMsg)(nil)
+	}
+	r := &SignedMsg{
+		FromPeerId: m.FromPeerId,
+		Signature:  m.Signature.CloneVT(),
+	}
+	if rhs := m.Data; rhs != nil {
+		tmpBytes := make([]byte, len(rhs))
+		copy(tmpBytes, rhs)
+		r.Data = tmpBytes
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *SignedMsg) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
 
 func (this *Signature) EqualVT(that *Signature) bool {
 	if this == nil {

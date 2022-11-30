@@ -9,6 +9,7 @@ import (
 	io "io"
 	bits "math/bits"
 
+	proto "google.golang.org/protobuf/proto"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
@@ -18,6 +19,62 @@ const (
 	// Verify that runtime/protoimpl is sufficiently up-to-date.
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
+
+func (m *DrpcOpts) CloneVT() *DrpcOpts {
+	if m == nil {
+		return (*DrpcOpts)(nil)
+	}
+	r := &DrpcOpts{
+		ManagerOpts: m.ManagerOpts.CloneVT(),
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *DrpcOpts) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
+
+func (m *ManagerOpts) CloneVT() *ManagerOpts {
+	if m == nil {
+		return (*ManagerOpts)(nil)
+	}
+	r := &ManagerOpts{
+		WriterBufferSize:  m.WriterBufferSize,
+		StreamOpts:        m.StreamOpts.CloneVT(),
+		InactivityTimeout: m.InactivityTimeout,
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *ManagerOpts) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
+
+func (m *StreamOpts) CloneVT() *StreamOpts {
+	if m == nil {
+		return (*StreamOpts)(nil)
+	}
+	r := &StreamOpts{
+		SplitSize: m.SplitSize,
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *StreamOpts) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
 
 func (this *DrpcOpts) EqualVT(that *DrpcOpts) bool {
 	if this == nil {

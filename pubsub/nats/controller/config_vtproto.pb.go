@@ -21,6 +21,31 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+func (m *Config) CloneVT() *Config {
+	if m == nil {
+		return (*Config)(nil)
+	}
+	r := &Config{
+		PeerId: m.PeerId,
+	}
+	if rhs := m.NatsConfig; rhs != nil {
+		if vtpb, ok := interface{}(rhs).(interface{ CloneVT() *nats.Config }); ok {
+			r.NatsConfig = vtpb.CloneVT()
+		} else {
+			r.NatsConfig = proto.Clone(rhs).(*nats.Config)
+		}
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *Config) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
+
 func (this *Config) EqualVT(that *Config) bool {
 	if this == nil {
 		return that == nil

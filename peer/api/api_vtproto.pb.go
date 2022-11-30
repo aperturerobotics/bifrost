@@ -22,6 +22,106 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+func (m *IdentifyRequest) CloneVT() *IdentifyRequest {
+	if m == nil {
+		return (*IdentifyRequest)(nil)
+	}
+	r := &IdentifyRequest{}
+	if rhs := m.Config; rhs != nil {
+		if vtpb, ok := interface{}(rhs).(interface{ CloneVT() *controller.Config }); ok {
+			r.Config = vtpb.CloneVT()
+		} else {
+			r.Config = proto.Clone(rhs).(*controller.Config)
+		}
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *IdentifyRequest) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
+
+func (m *IdentifyResponse) CloneVT() *IdentifyResponse {
+	if m == nil {
+		return (*IdentifyResponse)(nil)
+	}
+	r := &IdentifyResponse{
+		ControllerStatus: m.ControllerStatus,
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *IdentifyResponse) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
+
+func (m *GetPeerInfoRequest) CloneVT() *GetPeerInfoRequest {
+	if m == nil {
+		return (*GetPeerInfoRequest)(nil)
+	}
+	r := &GetPeerInfoRequest{
+		PeerId: m.PeerId,
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *GetPeerInfoRequest) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
+
+func (m *PeerInfo) CloneVT() *PeerInfo {
+	if m == nil {
+		return (*PeerInfo)(nil)
+	}
+	r := &PeerInfo{
+		PeerId: m.PeerId,
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *PeerInfo) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
+
+func (m *GetPeerInfoResponse) CloneVT() *GetPeerInfoResponse {
+	if m == nil {
+		return (*GetPeerInfoResponse)(nil)
+	}
+	r := &GetPeerInfoResponse{}
+	if rhs := m.LocalPeers; rhs != nil {
+		tmpContainer := make([]*PeerInfo, len(rhs))
+		for k, v := range rhs {
+			tmpContainer[k] = v.CloneVT()
+		}
+		r.LocalPeers = tmpContainer
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *GetPeerInfoResponse) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
+
 func (this *IdentifyRequest) EqualVT(that *IdentifyRequest) bool {
 	if this == nil {
 		return that == nil

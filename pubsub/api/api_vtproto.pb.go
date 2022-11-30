@@ -9,6 +9,7 @@ import (
 	io "io"
 	bits "math/bits"
 
+	proto "google.golang.org/protobuf/proto"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
@@ -18,6 +19,131 @@ const (
 	// Verify that runtime/protoimpl is sufficiently up-to-date.
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
+
+func (m *SubscribeRequest) CloneVT() *SubscribeRequest {
+	if m == nil {
+		return (*SubscribeRequest)(nil)
+	}
+	r := &SubscribeRequest{
+		ChannelId:      m.ChannelId,
+		PeerId:         m.PeerId,
+		PrivKeyPem:     m.PrivKeyPem,
+		PublishRequest: m.PublishRequest.CloneVT(),
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *SubscribeRequest) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
+
+func (m *PublishRequest) CloneVT() *PublishRequest {
+	if m == nil {
+		return (*PublishRequest)(nil)
+	}
+	r := &PublishRequest{
+		Identifier: m.Identifier,
+	}
+	if rhs := m.Data; rhs != nil {
+		tmpBytes := make([]byte, len(rhs))
+		copy(tmpBytes, rhs)
+		r.Data = tmpBytes
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *PublishRequest) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
+
+func (m *SubscribeResponse) CloneVT() *SubscribeResponse {
+	if m == nil {
+		return (*SubscribeResponse)(nil)
+	}
+	r := &SubscribeResponse{
+		IncomingMessage:    m.IncomingMessage.CloneVT(),
+		OutgoingStatus:     m.OutgoingStatus.CloneVT(),
+		SubscriptionStatus: m.SubscriptionStatus.CloneVT(),
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *SubscribeResponse) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
+
+func (m *SubscriptionStatus) CloneVT() *SubscriptionStatus {
+	if m == nil {
+		return (*SubscriptionStatus)(nil)
+	}
+	r := &SubscriptionStatus{
+		Subscribed: m.Subscribed,
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *SubscriptionStatus) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
+
+func (m *OutgoingStatus) CloneVT() *OutgoingStatus {
+	if m == nil {
+		return (*OutgoingStatus)(nil)
+	}
+	r := &OutgoingStatus{
+		Identifier: m.Identifier,
+		Sent:       m.Sent,
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *OutgoingStatus) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
+
+func (m *IncomingMessage) CloneVT() *IncomingMessage {
+	if m == nil {
+		return (*IncomingMessage)(nil)
+	}
+	r := &IncomingMessage{
+		FromPeerId:    m.FromPeerId,
+		Authenticated: m.Authenticated,
+	}
+	if rhs := m.Data; rhs != nil {
+		tmpBytes := make([]byte, len(rhs))
+		copy(tmpBytes, rhs)
+		r.Data = tmpBytes
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *IncomingMessage) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
 
 func (this *SubscribeRequest) EqualVT(that *SubscribeRequest) bool {
 	if this == nil {

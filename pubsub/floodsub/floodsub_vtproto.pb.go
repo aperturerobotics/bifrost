@@ -22,6 +22,77 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+func (m *Config) CloneVT() *Config {
+	if m == nil {
+		return (*Config)(nil)
+	}
+	r := &Config{
+		PublishHashType: m.PublishHashType,
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *Config) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
+
+func (m *Packet) CloneVT() *Packet {
+	if m == nil {
+		return (*Packet)(nil)
+	}
+	r := &Packet{}
+	if rhs := m.Subscriptions; rhs != nil {
+		tmpContainer := make([]*SubscriptionOpts, len(rhs))
+		for k, v := range rhs {
+			tmpContainer[k] = v.CloneVT()
+		}
+		r.Subscriptions = tmpContainer
+	}
+	if rhs := m.Publish; rhs != nil {
+		tmpContainer := make([]*peer.SignedMsg, len(rhs))
+		for k, v := range rhs {
+			if vtpb, ok := interface{}(v).(interface{ CloneVT() *peer.SignedMsg }); ok {
+				tmpContainer[k] = vtpb.CloneVT()
+			} else {
+				tmpContainer[k] = proto.Clone(v).(*peer.SignedMsg)
+			}
+		}
+		r.Publish = tmpContainer
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *Packet) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
+
+func (m *SubscriptionOpts) CloneVT() *SubscriptionOpts {
+	if m == nil {
+		return (*SubscriptionOpts)(nil)
+	}
+	r := &SubscriptionOpts{
+		Subscribe: m.Subscribe,
+		ChannelId: m.ChannelId,
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *SubscriptionOpts) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
+
 func (this *Config) EqualVT(that *Config) bool {
 	if this == nil {
 		return that == nil

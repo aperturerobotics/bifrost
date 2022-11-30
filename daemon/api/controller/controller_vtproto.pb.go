@@ -22,6 +22,39 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+func (m *Config) CloneVT() *Config {
+	if m == nil {
+		return (*Config)(nil)
+	}
+	r := &Config{
+		ListenAddr:    m.ListenAddr,
+		DisableBusApi: m.DisableBusApi,
+	}
+	if rhs := m.ApiConfig; rhs != nil {
+		if vtpb, ok := interface{}(rhs).(interface{ CloneVT() *api.Config }); ok {
+			r.ApiConfig = vtpb.CloneVT()
+		} else {
+			r.ApiConfig = proto.Clone(rhs).(*api.Config)
+		}
+	}
+	if rhs := m.BusApiConfig; rhs != nil {
+		if vtpb, ok := interface{}(rhs).(interface{ CloneVT() *api1.Config }); ok {
+			r.BusApiConfig = vtpb.CloneVT()
+		} else {
+			r.BusApiConfig = proto.Clone(rhs).(*api1.Config)
+		}
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *Config) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
+
 func (this *Config) EqualVT(that *Config) bool {
 	if this == nil {
 		return that == nil

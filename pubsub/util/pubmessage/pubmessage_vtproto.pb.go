@@ -21,6 +21,36 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+func (m *PubMessageInner) CloneVT() *PubMessageInner {
+	if m == nil {
+		return (*PubMessageInner)(nil)
+	}
+	r := &PubMessageInner{
+		Channel: m.Channel,
+	}
+	if rhs := m.Data; rhs != nil {
+		tmpBytes := make([]byte, len(rhs))
+		copy(tmpBytes, rhs)
+		r.Data = tmpBytes
+	}
+	if rhs := m.Timestamp; rhs != nil {
+		if vtpb, ok := interface{}(rhs).(interface{ CloneVT() *timestamppb.Timestamp }); ok {
+			r.Timestamp = vtpb.CloneVT()
+		} else {
+			r.Timestamp = proto.Clone(rhs).(*timestamppb.Timestamp)
+		}
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *PubMessageInner) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
+
 func (this *PubMessageInner) EqualVT(that *PubMessageInner) bool {
 	if this == nil {
 		return that == nil

@@ -8,6 +8,7 @@ import (
 	fmt "fmt"
 	io "io"
 
+	proto "google.golang.org/protobuf/proto"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
@@ -17,6 +18,24 @@ const (
 	// Verify that runtime/protoimpl is sufficiently up-to-date.
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
+
+func (m *HandshakeExtraData) CloneVT() *HandshakeExtraData {
+	if m == nil {
+		return (*HandshakeExtraData)(nil)
+	}
+	r := &HandshakeExtraData{
+		LocalTransportUuid: m.LocalTransportUuid,
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *HandshakeExtraData) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
 
 func (this *HandshakeExtraData) EqualVT(that *HandshakeExtraData) bool {
 	if this == nil {

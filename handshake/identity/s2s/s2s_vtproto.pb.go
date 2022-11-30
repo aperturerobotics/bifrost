@@ -9,6 +9,7 @@ import (
 	io "io"
 	bits "math/bits"
 
+	proto "google.golang.org/protobuf/proto"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
@@ -18,6 +19,138 @@ const (
 	// Verify that runtime/protoimpl is sufficiently up-to-date.
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
+
+func (m *Packet_Init) CloneVT() *Packet_Init {
+	if m == nil {
+		return (*Packet_Init)(nil)
+	}
+	r := &Packet_Init{}
+	if rhs := m.SenderPeerId; rhs != nil {
+		tmpBytes := make([]byte, len(rhs))
+		copy(tmpBytes, rhs)
+		r.SenderPeerId = tmpBytes
+	}
+	if rhs := m.ReceiverPeerId; rhs != nil {
+		tmpBytes := make([]byte, len(rhs))
+		copy(tmpBytes, rhs)
+		r.ReceiverPeerId = tmpBytes
+	}
+	if rhs := m.SenderEphPub; rhs != nil {
+		tmpBytes := make([]byte, len(rhs))
+		copy(tmpBytes, rhs)
+		r.SenderEphPub = tmpBytes
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *Packet_Init) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
+
+func (m *Packet_InitAck) CloneVT() *Packet_InitAck {
+	if m == nil {
+		return (*Packet_InitAck)(nil)
+	}
+	r := &Packet_InitAck{}
+	if rhs := m.SenderEphPub; rhs != nil {
+		tmpBytes := make([]byte, len(rhs))
+		copy(tmpBytes, rhs)
+		r.SenderEphPub = tmpBytes
+	}
+	if rhs := m.Ciphertext; rhs != nil {
+		tmpBytes := make([]byte, len(rhs))
+		copy(tmpBytes, rhs)
+		r.Ciphertext = tmpBytes
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *Packet_InitAck) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
+
+func (m *Packet_Complete) CloneVT() *Packet_Complete {
+	if m == nil {
+		return (*Packet_Complete)(nil)
+	}
+	r := &Packet_Complete{}
+	if rhs := m.Ciphertext; rhs != nil {
+		tmpBytes := make([]byte, len(rhs))
+		copy(tmpBytes, rhs)
+		r.Ciphertext = tmpBytes
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *Packet_Complete) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
+
+func (m *Packet_Ciphertext) CloneVT() *Packet_Ciphertext {
+	if m == nil {
+		return (*Packet_Ciphertext)(nil)
+	}
+	r := &Packet_Ciphertext{
+		ReceiverKeyKnown: m.ReceiverKeyKnown,
+	}
+	if rhs := m.TupleSignature; rhs != nil {
+		tmpBytes := make([]byte, len(rhs))
+		copy(tmpBytes, rhs)
+		r.TupleSignature = tmpBytes
+	}
+	if rhs := m.SenderPubKey; rhs != nil {
+		tmpBytes := make([]byte, len(rhs))
+		copy(tmpBytes, rhs)
+		r.SenderPubKey = tmpBytes
+	}
+	if rhs := m.ExtraInfo; rhs != nil {
+		tmpBytes := make([]byte, len(rhs))
+		copy(tmpBytes, rhs)
+		r.ExtraInfo = tmpBytes
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *Packet_Ciphertext) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
+
+func (m *Packet) CloneVT() *Packet {
+	if m == nil {
+		return (*Packet)(nil)
+	}
+	r := &Packet{
+		PacketType:  m.PacketType,
+		InitPkt:     m.InitPkt.CloneVT(),
+		InitAckPkt:  m.InitAckPkt.CloneVT(),
+		CompletePkt: m.CompletePkt.CloneVT(),
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *Packet) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
 
 func (this *Packet_Init) EqualVT(that *Packet_Init) bool {
 	if this == nil {

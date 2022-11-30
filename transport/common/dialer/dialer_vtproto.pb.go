@@ -21,6 +21,31 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+func (m *DialerOpts) CloneVT() *DialerOpts {
+	if m == nil {
+		return (*DialerOpts)(nil)
+	}
+	r := &DialerOpts{
+		Address: m.Address,
+	}
+	if rhs := m.Backoff; rhs != nil {
+		if vtpb, ok := interface{}(rhs).(interface{ CloneVT() *backoff.Backoff }); ok {
+			r.Backoff = vtpb.CloneVT()
+		} else {
+			r.Backoff = proto.Clone(rhs).(*backoff.Backoff)
+		}
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *DialerOpts) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
+
 func (this *DialerOpts) EqualVT(that *DialerOpts) bool {
 	if this == nil {
 		return that == nil

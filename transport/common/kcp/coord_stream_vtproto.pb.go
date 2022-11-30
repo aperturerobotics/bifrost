@@ -9,6 +9,7 @@ import (
 	io "io"
 	bits "math/bits"
 
+	proto "google.golang.org/protobuf/proto"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
@@ -18,6 +19,84 @@ const (
 	// Verify that runtime/protoimpl is sufficiently up-to-date.
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
+
+func (m *CoordinationStreamPacket) CloneVT() *CoordinationStreamPacket {
+	if m == nil {
+		return (*CoordinationStreamPacket)(nil)
+	}
+	r := &CoordinationStreamPacket{
+		PacketType:         m.PacketType,
+		RawStreamEstablish: m.RawStreamEstablish.CloneVT(),
+		RawStreamAck:       m.RawStreamAck.CloneVT(),
+		RawStreamClose:     m.RawStreamClose.CloneVT(),
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *CoordinationStreamPacket) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
+
+func (m *RawStreamEstablish) CloneVT() *RawStreamEstablish {
+	if m == nil {
+		return (*RawStreamEstablish)(nil)
+	}
+	r := &RawStreamEstablish{
+		InitiatorStreamId: m.InitiatorStreamId,
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *RawStreamEstablish) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
+
+func (m *RawStreamAck) CloneVT() *RawStreamAck {
+	if m == nil {
+		return (*RawStreamAck)(nil)
+	}
+	r := &RawStreamAck{
+		InitiatorStreamId: m.InitiatorStreamId,
+		AckStreamId:       m.AckStreamId,
+		AckError:          m.AckError,
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *RawStreamAck) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
+
+func (m *RawStreamClose) CloneVT() *RawStreamClose {
+	if m == nil {
+		return (*RawStreamClose)(nil)
+	}
+	r := &RawStreamClose{
+		StreamId:   m.StreamId,
+		CloseError: m.CloseError,
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *RawStreamClose) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
 
 func (this *CoordinationStreamPacket) EqualVT(that *CoordinationStreamPacket) bool {
 	if this == nil {

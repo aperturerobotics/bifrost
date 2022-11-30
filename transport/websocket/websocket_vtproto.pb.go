@@ -22,6 +22,44 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+func (m *Config) CloneVT() *Config {
+	if m == nil {
+		return (*Config)(nil)
+	}
+	r := &Config{
+		TransportPeerId: m.TransportPeerId,
+		ListenAddr:      m.ListenAddr,
+		RestrictPeerId:  m.RestrictPeerId,
+	}
+	if rhs := m.Quic; rhs != nil {
+		if vtpb, ok := interface{}(rhs).(interface{ CloneVT() *quic.Opts }); ok {
+			r.Quic = vtpb.CloneVT()
+		} else {
+			r.Quic = proto.Clone(rhs).(*quic.Opts)
+		}
+	}
+	if rhs := m.Dialers; rhs != nil {
+		tmpContainer := make(map[string]*dialer.DialerOpts, len(rhs))
+		for k, v := range rhs {
+			if vtpb, ok := interface{}(v).(interface{ CloneVT() *dialer.DialerOpts }); ok {
+				tmpContainer[k] = vtpb.CloneVT()
+			} else {
+				tmpContainer[k] = proto.Clone(v).(*dialer.DialerOpts)
+			}
+		}
+		r.Dialers = tmpContainer
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *Config) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
+
 func (this *Config) EqualVT(that *Config) bool {
 	if this == nil {
 		return that == nil

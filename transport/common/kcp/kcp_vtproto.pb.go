@@ -10,6 +10,7 @@ import (
 
 	blockcompress "github.com/aperturerobotics/bifrost/util/blockcompress"
 	blockcrypt "github.com/aperturerobotics/bifrost/util/blockcrypt"
+	proto "google.golang.org/protobuf/proto"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
@@ -19,6 +20,30 @@ const (
 	// Verify that runtime/protoimpl is sufficiently up-to-date.
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
+
+func (m *Opts) CloneVT() *Opts {
+	if m == nil {
+		return (*Opts)(nil)
+	}
+	r := &Opts{
+		DataShards:    m.DataShards,
+		ParityShards:  m.ParityShards,
+		Mtu:           m.Mtu,
+		KcpMode:       m.KcpMode,
+		BlockCrypt:    m.BlockCrypt,
+		BlockCompress: m.BlockCompress,
+		StreamMuxer:   m.StreamMuxer,
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *Opts) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
 
 func (this *Opts) EqualVT(that *Opts) bool {
 	if this == nil {

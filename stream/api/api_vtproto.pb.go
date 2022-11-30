@@ -26,6 +26,194 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+func (m *ForwardStreamsRequest) CloneVT() *ForwardStreamsRequest {
+	if m == nil {
+		return (*ForwardStreamsRequest)(nil)
+	}
+	r := &ForwardStreamsRequest{}
+	if rhs := m.ForwardingConfig; rhs != nil {
+		if vtpb, ok := interface{}(rhs).(interface{ CloneVT() *forwarding.Config }); ok {
+			r.ForwardingConfig = vtpb.CloneVT()
+		} else {
+			r.ForwardingConfig = proto.Clone(rhs).(*forwarding.Config)
+		}
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *ForwardStreamsRequest) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
+
+func (m *ForwardStreamsResponse) CloneVT() *ForwardStreamsResponse {
+	if m == nil {
+		return (*ForwardStreamsResponse)(nil)
+	}
+	r := &ForwardStreamsResponse{
+		ControllerStatus: m.ControllerStatus,
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *ForwardStreamsResponse) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
+
+func (m *ListenStreamsRequest) CloneVT() *ListenStreamsRequest {
+	if m == nil {
+		return (*ListenStreamsRequest)(nil)
+	}
+	r := &ListenStreamsRequest{}
+	if rhs := m.ListeningConfig; rhs != nil {
+		if vtpb, ok := interface{}(rhs).(interface{ CloneVT() *listening.Config }); ok {
+			r.ListeningConfig = vtpb.CloneVT()
+		} else {
+			r.ListeningConfig = proto.Clone(rhs).(*listening.Config)
+		}
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *ListenStreamsRequest) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
+
+func (m *ListenStreamsResponse) CloneVT() *ListenStreamsResponse {
+	if m == nil {
+		return (*ListenStreamsResponse)(nil)
+	}
+	r := &ListenStreamsResponse{
+		ControllerStatus: m.ControllerStatus,
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *ListenStreamsResponse) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
+
+func (m *AcceptStreamRequest) CloneVT() *AcceptStreamRequest {
+	if m == nil {
+		return (*AcceptStreamRequest)(nil)
+	}
+	r := &AcceptStreamRequest{}
+	if rhs := m.Config; rhs != nil {
+		if vtpb, ok := interface{}(rhs).(interface{ CloneVT() *accept.Config }); ok {
+			r.Config = vtpb.CloneVT()
+		} else {
+			r.Config = proto.Clone(rhs).(*accept.Config)
+		}
+	}
+	if rhs := m.Data; rhs != nil {
+		if vtpb, ok := interface{}(rhs).(interface{ CloneVT() *rpc.Data }); ok {
+			r.Data = vtpb.CloneVT()
+		} else {
+			r.Data = proto.Clone(rhs).(*rpc.Data)
+		}
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *AcceptStreamRequest) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
+
+func (m *AcceptStreamResponse) CloneVT() *AcceptStreamResponse {
+	if m == nil {
+		return (*AcceptStreamResponse)(nil)
+	}
+	r := &AcceptStreamResponse{}
+	if rhs := m.Data; rhs != nil {
+		if vtpb, ok := interface{}(rhs).(interface{ CloneVT() *rpc.Data }); ok {
+			r.Data = vtpb.CloneVT()
+		} else {
+			r.Data = proto.Clone(rhs).(*rpc.Data)
+		}
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *AcceptStreamResponse) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
+
+func (m *DialStreamRequest) CloneVT() *DialStreamRequest {
+	if m == nil {
+		return (*DialStreamRequest)(nil)
+	}
+	r := &DialStreamRequest{}
+	if rhs := m.Config; rhs != nil {
+		if vtpb, ok := interface{}(rhs).(interface{ CloneVT() *dial.Config }); ok {
+			r.Config = vtpb.CloneVT()
+		} else {
+			r.Config = proto.Clone(rhs).(*dial.Config)
+		}
+	}
+	if rhs := m.Data; rhs != nil {
+		if vtpb, ok := interface{}(rhs).(interface{ CloneVT() *rpc.Data }); ok {
+			r.Data = vtpb.CloneVT()
+		} else {
+			r.Data = proto.Clone(rhs).(*rpc.Data)
+		}
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *DialStreamRequest) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
+
+func (m *DialStreamResponse) CloneVT() *DialStreamResponse {
+	if m == nil {
+		return (*DialStreamResponse)(nil)
+	}
+	r := &DialStreamResponse{}
+	if rhs := m.Data; rhs != nil {
+		if vtpb, ok := interface{}(rhs).(interface{ CloneVT() *rpc.Data }); ok {
+			r.Data = vtpb.CloneVT()
+		} else {
+			r.Data = proto.Clone(rhs).(*rpc.Data)
+		}
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *DialStreamResponse) CloneGenericVT() proto.Message {
+	return m.CloneVT()
+}
+
 func (this *ForwardStreamsRequest) EqualVT(that *ForwardStreamsRequest) bool {
 	if this == nil {
 		return that == nil
