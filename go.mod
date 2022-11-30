@@ -27,7 +27,7 @@ require (
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/djherbis/buffer v1.2.0
 	github.com/golang/snappy v0.0.4
-	github.com/klauspost/compress v1.15.11
+	github.com/klauspost/compress v1.15.12
 	github.com/libp2p/go-libp2p v0.24.0-dev.0.20221129195325-dc7f64e4807a
 	github.com/libp2p/go-yamux/v4 v4.0.1-0.20220919134236-1c09f2ab3ec1
 	github.com/lucas-clemente/quic-go v0.31.0
@@ -47,10 +47,10 @@ require (
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
 	github.com/templexxx/xor v0.0.0-20191217153810-f85b25db303b
 	github.com/tjfoc/gmsm v1.4.1
-	github.com/urfave/cli/v2 v2.23.0
+	github.com/urfave/cli/v2 v2.23.5
 	github.com/xtaci/smux v1.5.16
 	github.com/zeebo/blake3 v0.2.3
-	golang.org/x/crypto v0.2.1-0.20221109165004-21d60a152191
+	golang.org/x/crypto v0.3.1-0.20221117191849-2c476679df9a
 	gonum.org/v1/gonum v0.12.0
 	google.golang.org/protobuf v1.28.1
 	nhooyr.io/websocket v1.8.8-0.20210410000328-8dee580a7f74
