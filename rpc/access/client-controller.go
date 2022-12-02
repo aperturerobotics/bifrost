@@ -74,7 +74,7 @@ func (c *ClientController) HandleDirective(ctx context.Context, di directive.Ins
 		}
 		if c.serverIDRe != nil {
 			serverID := dir.LookupRpcServerID()
-			if serverID != "" && !c.serviceIDRe.MatchString(serverID) {
+			if serverID != "" && !c.serverIDRe.MatchString(serverID) {
 				return nil, nil
 			}
 		}
