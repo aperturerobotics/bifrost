@@ -2,6 +2,7 @@ package bifrost_rpc_access
 
 import (
 	"context"
+	"regexp"
 
 	bifrost_rpc "github.com/aperturerobotics/bifrost/rpc"
 	"github.com/aperturerobotics/controllerbus/controller"
@@ -10,13 +11,26 @@ import (
 
 // ClientController resolves LookupRpcService with an AccessRpcService client.
 type ClientController struct {
-	info *controller.Info
-	svc  SRPCAccessRpcServiceClient
+	info        *controller.Info
+	svc         SRPCAccessRpcServiceClient
+	serviceIDRe *regexp.Regexp
+	serverIDRe  *regexp.Regexp
 }
 
 // NewClientController constructs the controller.
-func NewClientController(info *controller.Info, svc SRPCAccessRpcServiceClient) *ClientController {
-	return &ClientController{info: info, svc: svc}
+// The regex fields can both be nil to accept any.
+func NewClientController(
+	info *controller.Info,
+	svc SRPCAccessRpcServiceClient,
+	serviceIDRe *regexp.Regexp,
+	serverIDRe *regexp.Regexp,
+) *ClientController {
+	return &ClientController{
+		info:        info,
+		svc:         svc,
+		serviceIDRe: serviceIDRe,
+		serverIDRe:  serverIDRe,
+	}
 }
 
 // GetControllerInfo returns the controller info.
@@ -33,7 +47,19 @@ func (c *ClientController) Execute(ctx context.Context) error {
 func (c *ClientController) HandleDirective(ctx context.Context, di directive.Instance) ([]directive.Resolver, error) {
 	switch dir := di.GetDirective().(type) {
 	case bifrost_rpc.LookupRpcService:
-		// TODO: filter by regex?
+		// filter by regex
+		if c.serviceIDRe != nil {
+			serviceID := dir.LookupRpcServiceID()
+			if serviceID != "" && !c.serviceIDRe.MatchString(serviceID) {
+				return nil, nil
+			}
+		}
+		if c.serverIDRe != nil {
+			serverID := dir.LookupRpcServerID()
+			if serverID != "" && !c.serviceIDRe.MatchString(serverID) {
+				return nil, nil
+			}
+		}
 		return directive.R(NewLookupRpcServiceResolver(dir, c.svc), nil)
 	}
 	return nil, nil

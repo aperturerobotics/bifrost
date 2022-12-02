@@ -64,6 +64,8 @@ func TestAccessRpcService(t *testing.T) {
 	clientCtrl := NewClientController(
 		controller.NewInfo("bifrost/rpc/access/client", semver.MustParse("0.0.1"), ""),
 		NewSRPCAccessRpcServiceClient(client),
+		nil,
+		nil,
 	)
 	clientRel, err := clientBus.AddController(ctx, clientCtrl, nil)
 	if err != nil {
