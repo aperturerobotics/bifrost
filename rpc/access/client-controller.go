@@ -7,7 +7,6 @@ import (
 	bifrost_rpc "github.com/aperturerobotics/bifrost/rpc"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
-	"github.com/aperturerobotics/util/ccontainer"
 	"github.com/aperturerobotics/util/refcount"
 )
 
@@ -16,9 +15,7 @@ type ClientController struct {
 	info *controller.Info
 	svc  BuildClientFunc
 
-	clientCtr *ccontainer.CContainer[*SRPCAccessRpcServiceClient]
-	clientRc  *refcount.RefCount[*SRPCAccessRpcServiceClient]
-	clientErr *ccontainer.CContainer[*error]
+	clientRc *refcount.RefCount[*SRPCAccessRpcServiceClient]
 
 	serviceIDRe *regexp.Regexp
 	serverIDRe  *regexp.Regexp
@@ -49,9 +46,7 @@ func NewClientController(
 		serviceIDRe: serviceIDRe,
 		serverIDRe:  serverIDRe,
 	}
-	c.clientCtr = ccontainer.NewCContainer[*SRPCAccessRpcServiceClient](nil)
-	c.clientErr = ccontainer.NewCContainer[*error](nil)
-	c.clientRc = refcount.NewRefCount[*SRPCAccessRpcServiceClient](nil, c.clientCtr, c.clientErr, svc)
+	c.clientRc = refcount.NewRefCount[*SRPCAccessRpcServiceClient](nil, nil, nil, svc)
 	return c
 }
 
