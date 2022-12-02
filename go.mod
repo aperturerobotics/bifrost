@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/aperturerobotics/controllerbus v0.20.1-0.20221202093235-7687ed81677e
 	github.com/aperturerobotics/entitygraph v0.3.2
-	github.com/aperturerobotics/starpc v0.15.2-0.20221202005525-702e2fb770bf
+	github.com/aperturerobotics/starpc v0.15.2
 )
 
 // aperture: use compatibility forks
@@ -28,7 +28,7 @@ require (
 	github.com/djherbis/buffer v1.2.0
 	github.com/golang/snappy v0.0.4
 	github.com/klauspost/compress v1.15.12
-	github.com/libp2p/go-libp2p v0.24.0-dev.0.20221129195325-dc7f64e4807a
+	github.com/libp2p/go-libp2p v0.24.0-dev.0.20221202071826-2cc4de512664
 	github.com/libp2p/go-yamux/v4 v4.0.1-0.20220919134236-1c09f2ab3ec1
 	github.com/lucas-clemente/quic-go v0.31.0
 	github.com/mr-tron/base58 v1.2.0
