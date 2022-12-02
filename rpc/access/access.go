@@ -1,7 +1,9 @@
 package bifrost_rpc_access
 
-import bifrost_rpc "github.com/aperturerobotics/bifrost/rpc"
-import b58 "github.com/mr-tron/base58/base58"
+import (
+	bifrost_rpc "github.com/aperturerobotics/bifrost/rpc"
+	b58 "github.com/mr-tron/base58/base58"
+)
 
 // NewLookupRpcServiceRequest constructs a new LookupRpcServiceRequest.
 func NewLookupRpcServiceRequest(serviceID, serverID string) *LookupRpcServiceRequest {
