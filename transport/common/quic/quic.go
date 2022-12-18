@@ -134,18 +134,14 @@ func (t *Transport) DialPeer(ctx context.Context, peerID peer.ID, as string) (bo
 	// abort if we already have a peer with the same addr connected
 	ok, err := CheckAlreadyConnected(t, as, peerID)
 	if ok || err != nil {
-		return ok, err
+		// returns an error if already connected w/ different peer id
+		return false, err
 	}
 
 	var dl *Dialer
 	t.mtx.Lock()
-	defer t.mtx.Unlock()
-
 	if edl, dialerOk := t.dialers[as]; dialerOk {
-		if edl.peerID != peerID {
-			// TODO: possibly override the prior
-			return false, nil
-		}
+		// TODO: possibly override the prior if edl.peerID != peerID
 		dl = edl
 	}
 	if dl == nil {
@@ -153,27 +149,17 @@ func (t *Transport) DialPeer(ctx context.Context, peerID peer.ID, as string) (bo
 		if err == nil {
 			t.dialers[as] = dl
 			// start a separate goroutine to execute the dialer.
-			go func() {
-				_, dlErr := dl.Execute()
-				if dlErr != nil {
-					t.le.
-						WithError(dlErr).
-						WithField("remote-addr", as).
-						Warn("error dialing peer")
-				}
-				t.mtx.Lock()
-				if odl, odlOk := t.dialers[as]; odlOk && odl == dl {
-					delete(t.dialers, as)
-				}
-				t.mtx.Unlock()
-			}()
+			go dl.Execute()
 		}
 	}
+	t.mtx.Unlock()
 	if err != nil {
 		return false, err
 	}
-	// TODO: wait for dialer before returning
-	return true, nil
+
+	// wait for dialer to finish
+	_, err = dl.result.Await(ctx)
+	return false, err
 }
 
 // CancelDialer cancels the dialer to a given address.

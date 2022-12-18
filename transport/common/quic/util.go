@@ -15,7 +15,7 @@ func CheckAlreadyConnected(t *Transport, addr string, peerID peer.ID) (bool, err
 	desiredPeer := peerID.Pretty()
 	if lnkPeer != desiredPeer {
 		return false, errors.Errorf(
-			"already connected to %s with different peer: %s != requested %s",
+			"already connected to %s with different peer id: %s != requested %s",
 			addr,
 			lnkPeer,
 			desiredPeer,

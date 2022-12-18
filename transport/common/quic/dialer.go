@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/aperturerobotics/bifrost/peer"
+	"github.com/aperturerobotics/util/promise"
 )
 
 // Dialer represents a ongoing attempt to dial an address
@@ -22,6 +23,8 @@ type Dialer struct {
 	peerID peer.ID
 	// addr is the address
 	addr string
+	// result is the result promise
+	result *promise.Promise[*Link]
 }
 
 // NewDialer constructs a new dialer.
@@ -36,20 +39,35 @@ func NewDialer(
 		rootCtx: rctx,
 		peerID:  peerID,
 		addr:    addr,
+		result:  promise.NewPromise[*Link](),
 	}
 	d.ctx, d.ctxCancel = context.WithCancel(rctx)
 	return d, nil
 }
 
 // Execute executes the dialer, yielding a Link.
-func (d *Dialer) Execute() (*Link, error) {
+func (d *Dialer) Execute() {
 	ctx := d.ctx
 	defer d.ctxCancel()
+	defer func() {
+		d.t.mtx.Lock()
+		if odl, odlOk := d.t.dialers[d.addr]; odlOk && odl == d {
+			delete(d.t.dialers, d.addr)
+		}
+		d.t.mtx.Unlock()
+	}()
 
-	d.t.le.Debugf("quic dialing peer address: %s", d.addr)
+	le := d.t.le.WithField("remote-addr", d.addr)
+	if d.peerID != "" {
+		le = le.WithField("remote-peer", d.peerID.Pretty())
+	}
+	le.Debug("quic: dialing peer")
 	pc, raddr, err := d.t.dialFn(ctx, d.addr)
 	if err != nil {
-		return nil, err
+		le.WithError(err).Warn("quic: failed to dial peer")
+		d.result.SetResult(nil, err)
+		return
 	}
-	return d.t.HandleConn(ctx, true, pc, raddr, d.peerID)
+
+	d.result.SetResult(d.t.HandleConn(ctx, true, pc, raddr, d.peerID))
 }
