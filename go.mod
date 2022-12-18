@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/aperturerobotics/controllerbus v0.20.1-0.20221202093235-7687ed81677e
 	github.com/aperturerobotics/entitygraph v0.3.2
-	github.com/aperturerobotics/starpc v0.15.2
+	github.com/aperturerobotics/starpc v0.16.0
 )
 
 // aperture: use compatibility forks
@@ -22,15 +22,15 @@ replace (
 
 require (
 	github.com/aperturerobotics/ts-proto-common-types v0.2.0
-	github.com/aperturerobotics/util v0.0.0-20221203235149-410cf94c0590
+	github.com/aperturerobotics/util v0.0.0-20221216001155-e34519cd1e5c
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/djherbis/buffer v1.2.0
 	github.com/golang/snappy v0.0.4
 	github.com/klauspost/compress v1.15.12
-	github.com/libp2p/go-libp2p v0.24.0-dev.0.20221202071826-2cc4de512664
+	github.com/libp2p/go-libp2p v0.24.1
 	github.com/libp2p/go-yamux/v4 v4.0.1-0.20220919134236-1c09f2ab3ec1
-	github.com/lucas-clemente/quic-go v0.31.0
+	github.com/lucas-clemente/quic-go v0.31.1
 	github.com/mr-tron/base58 v1.2.0
 	github.com/multiformats/go-multiaddr v0.8.0
 	github.com/nats-io/nats-server/v2 v2.7.4
@@ -41,7 +41,7 @@ require (
 	github.com/pauleyj/gobee v0.0.0-20190212035730-6270c53072a4
 	github.com/pierrec/lz4 v2.6.1+incompatible
 	github.com/pkg/errors v0.9.1
-	github.com/planetscale/vtprotobuf v0.3.0
+	github.com/planetscale/vtprotobuf v0.3.1-0.20220817155510-0ae748fd2007
 	github.com/sasha-s/go-deadlock v0.3.1
 	github.com/sirupsen/logrus v1.9.0
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
@@ -50,10 +50,10 @@ require (
 	github.com/urfave/cli/v2 v2.23.5
 	github.com/xtaci/smux v1.5.16
 	github.com/zeebo/blake3 v0.2.3
-	golang.org/x/crypto v0.3.1-0.20221117191849-2c476679df9a
+	golang.org/x/crypto v0.4.1-0.20221212223212-23edec0b383a
 	gonum.org/v1/gonum v0.12.0
 	google.golang.org/protobuf v1.28.1
-	nhooyr.io/websocket v1.8.8-0.20210410000328-8dee580a7f74
+	nhooyr.io/websocket v1.8.8-0.20221213223501-14fb98eba64e
 	storj.io/drpc v0.0.30
 )
 
@@ -72,7 +72,7 @@ require (
 	github.com/ipfs/go-log/v2 v2.5.1 // indirect
 	github.com/jbenet/go-temp-err-catcher v0.1.0 // indirect
 	github.com/klauspost/cpuid v1.2.1 // indirect
-	github.com/klauspost/cpuid/v2 v2.1.1 // indirect
+	github.com/klauspost/cpuid/v2 v2.2.1 // indirect
 	github.com/klauspost/reedsolomon v1.9.2 // indirect
 	github.com/libp2p/go-buffer-pool v0.1.1-0.20220919134021-a29bd39bcbb7 // indirect
 	github.com/libp2p/go-openssl v0.1.1-0.20220921181522-00b60808a1ac // indirect
@@ -83,12 +83,12 @@ require (
 	github.com/minio/highwayhash v1.0.0 // indirect
 	github.com/minio/sha256-simd v1.0.0 // indirect
 	github.com/multiformats/go-base32 v0.1.0 // indirect
-	github.com/multiformats/go-base36 v0.1.1-0.20220823151017-f5af2eed4d9c // indirect
+	github.com/multiformats/go-base36 v0.2.0 // indirect
 	github.com/multiformats/go-multibase v0.1.2-0.20220823162309-7160a7347ed1 // indirect
 	github.com/multiformats/go-multicodec v0.7.1-0.20221017174837-a2baec7ca709 // indirect
 	github.com/multiformats/go-multihash v0.2.2-0.20221030163302-608669da49b6 // indirect
 	github.com/multiformats/go-multistream v0.3.3 // indirect
-	github.com/multiformats/go-varint v0.0.7-0.20220823162201-881f9a52d5d2 // indirect
+	github.com/multiformats/go-varint v0.0.7 // indirect
 	github.com/nats-io/jwt/v2 v2.0.0-20200820224411-1e751ff168ab // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/nxadm/tail v1.4.8 // indirect
@@ -105,11 +105,11 @@ require (
 	github.com/zeebo/errs v1.2.2 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
-	go.uber.org/zap v1.23.0 // indirect
-	golang.org/x/exp v0.0.0-20221126150942-6ab00d035af9 // indirect
+	go.uber.org/zap v1.24.0 // indirect
+	golang.org/x/exp v0.0.0-20221205204356-47842c84f3db // indirect
 	golang.org/x/mod v0.7.0 // indirect
-	golang.org/x/net v0.2.0 // indirect
-	golang.org/x/sys v0.2.0 // indirect
+	golang.org/x/net v0.3.0 // indirect
+	golang.org/x/sys v0.3.0 // indirect
 	golang.org/x/time v0.1.1-0.20221020023724-80b9fac54d29 // indirect
 	golang.org/x/tools v0.3.1-0.20221201230950-47a82463d369 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
