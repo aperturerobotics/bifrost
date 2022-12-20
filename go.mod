@@ -3,7 +3,7 @@ module github.com/aperturerobotics/bifrost
 go 1.18
 
 require (
-	github.com/aperturerobotics/controllerbus v0.20.1
+	github.com/aperturerobotics/controllerbus v0.20.2
 	github.com/aperturerobotics/entitygraph v0.3.2
 	github.com/aperturerobotics/starpc v0.16.0
 )
@@ -22,7 +22,7 @@ replace (
 
 require (
 	github.com/aperturerobotics/ts-proto-common-types v0.2.0
-	github.com/aperturerobotics/util v0.0.0-20221216001155-e34519cd1e5c
+	github.com/aperturerobotics/util v0.0.0-20221219050225-3081033d019b
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/djherbis/buffer v1.2.0
