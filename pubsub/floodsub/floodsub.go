@@ -40,7 +40,7 @@ type FloodSub struct {
 	wakeCh chan struct{}
 	// publishCh is for publishing messages
 	publishCh chan *publishChMsg
-	// seenMessages is a rainbow table for recently seen messages
+	// seenMessages is a map with recently seen messages
 	seenMessages *cache.Cache
 
 	mtx sync.Mutex

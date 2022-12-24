@@ -3,7 +3,7 @@ module github.com/aperturerobotics/bifrost
 go 1.18
 
 require (
-	github.com/aperturerobotics/controllerbus v0.20.4-0.20221224094810-f5a1b056d715
+	github.com/aperturerobotics/controllerbus v0.20.4
 	github.com/aperturerobotics/entitygraph v0.3.2
 	github.com/aperturerobotics/starpc v0.16.0
 )
@@ -14,7 +14,7 @@ replace (
 	github.com/nats-io/nats-server/v2 => github.com/aperturerobotics/bifrost-nats-server/v2 v2.1.8-0.20200831101324-59acc8fe7f74 // aperture-2.0
 	github.com/nats-io/nats.go => github.com/aperturerobotics/bifrost-nats-client v1.10.1-0.20200831103200-24c3d0464e58 // aperture-2.0
 	github.com/paralin/kcp-go-lite => github.com/paralin/kcp-go-lite v1.0.2-0.20210907043027-271505668bd0 // aperture
-	github.com/sirupsen/logrus => github.com/aperturerobotics/logrus v1.8.2-0.20220322010420-77ab346a2cf8 // aperture
+	github.com/sirupsen/logrus => github.com/aperturerobotics/logrus v1.9.1-0.20221224130652-ff61cbb763af // aperture
 	google.golang.org/protobuf => github.com/aperturerobotics/protobuf-go v1.28.2-0.20221202092004-7e5a6a8cf680 // aperture
 	nhooyr.io/websocket => github.com/paralin/nhooyr-websocket v1.8.8-0.20220321125022-7defdf942f07 // aperture
 	storj.io/drpc => github.com/paralin/drpc v0.0.31-0.20220527065730-0e2a1370bccb // aperture
@@ -105,12 +105,12 @@ require (
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
-	golang.org/x/exp v0.0.0-20221205204356-47842c84f3db // indirect
+	golang.org/x/exp v0.0.0-20221217163422-3c43f8badb15 // indirect
 	golang.org/x/mod v0.7.0 // indirect
 	golang.org/x/net v0.3.0 // indirect
 	golang.org/x/sys v0.3.0 // indirect
 	golang.org/x/time v0.1.1-0.20221020023724-80b9fac54d29 // indirect
-	golang.org/x/tools v0.3.1-0.20221201230950-47a82463d369 // indirect
+	golang.org/x/tools v0.4.1-0.20221222182244-6546d82b229a // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	lukechampine.com/blake3 v1.1.8-0.20220321170924-7afca5966e5e // indirect
 )
