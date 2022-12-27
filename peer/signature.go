@@ -17,7 +17,21 @@ func NewSignature(
 	if err != nil {
 		return nil, err
 	}
-	sd, err := privKey.Sign(h.GetHash())
+	return NewSignatureWithHashedData(privKey, hashType, h.GetHash(), inclPubKey)
+}
+
+// NewSignatureWithHashedData builds a new signature with already-hashed data.
+// Skips the hash step.
+func NewSignatureWithHashedData(
+	privKey crypto.PrivKey,
+	hashType hash.HashType,
+	hashData []byte,
+	inclPubKey bool,
+) (*Signature, error) {
+	if err := hashType.Validate(); err != nil {
+		return nil, err
+	}
+	sd, err := privKey.Sign(hashData)
 	if err != nil {
 		return nil, err
 	}
