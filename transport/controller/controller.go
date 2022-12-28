@@ -64,7 +64,7 @@ type Controller struct {
 
 	// mtx guards the below fields
 	mtx sync.Mutex
-	// links is the links set, keyed by link uuid
+	// links is the set of active links, keyed by link uuid
 	links map[uint64]*establishedLink
 	// linkWaiters is a set of callbacks waiting for connections with peers.
 	linkWaiters map[peer.ID][]*linkWaiter
@@ -146,8 +146,8 @@ func (c *Controller) GetPeerLinks(peerID peer.ID) []link.Link {
 	var lnks []link.Link
 	c.mtx.Lock()
 	for _, lnk := range c.links {
-		if lnk.Link.GetRemotePeer() == peerID {
-			lnks = append(lnks, lnk.Link)
+		if lnk.lnk.GetRemotePeer() == peerID {
+			lnks = append(lnks, lnk.lnk)
 		}
 	}
 	c.mtx.Unlock()
@@ -257,7 +257,7 @@ func (c *Controller) HandleLinkEstablished(lnk link.Link) {
 	luuid := lnk.GetUUID()
 	el, elOk := c.links[luuid]
 	if elOk {
-		if el.Link == lnk {
+		if el.lnk == lnk {
 			// duplicate HandleLinkEstablished call
 			le.Debug("duplicate handle-link-established call")
 			return
@@ -279,7 +279,7 @@ func (c *Controller) HandleLinkEstablished(lnk link.Link) {
 	le.Info("link established")
 
 	// flush any relevant link waiters
-	c.resolveLinkWaiters(el.Link, true)
+	c.resolveLinkWaiters(el.lnk, true)
 }
 
 // HandleIncomingStream handles an incoming stream from a link. It negotiates
@@ -385,7 +385,7 @@ func (c *Controller) HandleLinkLost(lnk link.Link) {
 
 	// slow path: equality check to be sure
 	for k, l := range c.links {
-		if l.Link == lnk {
+		if l.lnk == lnk {
 			delete(c.links, k)
 			c.flushEstablishedLink(l)
 			break
@@ -457,11 +457,11 @@ func (c *Controller) flushEstablishedLink(el *establishedLink) {
 		}
 	*/
 
-	le := c.loggerForLink(el.Link)
+	le := c.loggerForLink(el.lnk)
 	le.Info("link lost/closed")
-	c.resolveLinkWaiters(el.Link, false)
-	el.Cancel()
-	el.Link.Close()
+	c.resolveLinkWaiters(el.lnk, false)
+	el.cancel()
+	el.lnk.Close()
 }
 
 // loggerForLink wraps a logger with fields identifying the link.

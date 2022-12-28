@@ -91,7 +91,7 @@ func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.R
 		if spm := c.staticPeerMap; len(spm) > 0 {
 			var hasLink bool
 			for _, lnk := range c.links {
-				if lnk.Link.GetRemotePeer() == peerIDConst {
+				if lnk.lnk.GetRemotePeer() == peerIDConst {
 					hasLink = true
 					break
 				}

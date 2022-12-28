@@ -25,8 +25,8 @@ func (c *Controller) pushLinkWaiter(
 ) *linkWaiter {
 	peerIDEmpty := peerID == peer.ID("")
 	for _, lnk := range c.links {
-		if peerIDEmpty || lnk.Link.GetRemotePeer() == peerID {
-			go cb(lnk.Link, true)
+		if peerIDEmpty || lnk.lnk.GetRemotePeer() == peerID {
+			go cb(lnk.lnk, true)
 			if cbOnce {
 				return nil
 			}
