@@ -1,6 +1,8 @@
 package hack
 
 import (
+	// _ imports wasmserve
+	_ "github.com/hajimehoshi/wasmserve"
 	// _ imports protowrap
 	_ "github.com/aperturerobotics/goprotowrap/cmd/protowrap"
 	// _ imports drpc

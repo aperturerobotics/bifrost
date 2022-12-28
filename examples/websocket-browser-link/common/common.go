@@ -8,9 +8,10 @@ import (
 	link_holdopen_controller "github.com/aperturerobotics/bifrost/link/hold-open"
 	"github.com/aperturerobotics/bifrost/peer"
 	nctr "github.com/aperturerobotics/bifrost/peer/controller"
+	"github.com/aperturerobotics/bifrost/pubsub/nats"
+	nats_controller "github.com/aperturerobotics/bifrost/pubsub/nats/controller"
 	wtpt "github.com/aperturerobotics/bifrost/transport/websocket"
 	"github.com/aperturerobotics/controllerbus/bus"
-	"github.com/aperturerobotics/controllerbus/controller/loader"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
 	"github.com/aperturerobotics/controllerbus/core"
 	"github.com/aperturerobotics/controllerbus/directive"
@@ -46,18 +47,19 @@ func BuildCommonBus(ctx context.Context, peerSeed string) (bus.Bus, crypto.PrivK
 
 	peerPrivKeyPem, err := keypem.MarshalPrivKeyPem(peerPrivKey)
 	if err != nil {
-		panic(err)
+		return nil, nil, err
 	}
 	fmt.Println(string(peerPrivKeyPem))
 
 	// Construct the bus with the websocket transport and node factory attached.
 	b, sr, err := core.NewCoreBus(ctx, le)
 	if err != nil {
-		panic(err)
+		return nil, nil, err
 	}
 	sr.AddFactory(wtpt.NewFactory(b))
 	sr.AddFactory(nctr.NewFactory())
 	sr.AddFactory(link_holdopen_controller.NewFactory(b))
+	sr.AddFactory(nats_controller.NewFactory(b))
 
 	le = le.WithField("peer-id", peerID.Pretty())
 	le.Debug("constructing node")
@@ -73,16 +75,24 @@ func BuildCommonBus(ctx context.Context, peerSeed string) (bus.Bus, crypto.PrivK
 		return nil, nil, err
 	}
 
-	_, _, href, err := loader.WaitExecControllerRunning(
-		ctx,
-		b,
-		resolver.NewLoadControllerWithConfig(&link_holdopen_controller.Config{}),
-		nil,
-	)
+	// keep links open
+	holdOpen, err := link_holdopen_controller.NewController(b, le)
 	if err != nil {
-		panic(err)
+		return nil, nil, err
 	}
-	defer href.Release()
+	_, err = b.AddController(ctx, holdOpen, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// use pubsub: nats
+	_, _, err = b.AddDirective(resolver.NewLoadControllerWithConfig(&nats_controller.Config{
+		PeerId:     peerID.Pretty(),
+		NatsConfig: &nats.Config{LogTrace: true},
+	}), nil)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	return b, peerPrivKey, nil
 }

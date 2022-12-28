@@ -399,13 +399,13 @@ func (c *Controller) PushDialer(
 	peerID peer.ID,
 	opts *dialer.DialerOpts,
 ) error {
-	var tptDialer transport.TransportDialer
-	if tpt := c.tptCtr.GetValue(); tpt != nil {
-		var ok bool
-		tptDialer, ok = (*tpt).(transport.TransportDialer)
-		if !ok {
-			return nil
-		}
+	tpt, err := c.GetTransport(ctx)
+	if err != nil {
+		return err
+	}
+	tptDialer, ok := tpt.(transport.TransportDialer)
+	if !ok {
+		return nil
 	}
 
 	key := linkDialerKey{
