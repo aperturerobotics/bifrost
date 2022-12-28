@@ -28,12 +28,9 @@ func (o *openStreamResolver) Resolve(ctx context.Context, handler directive.Reso
 	protocolID := o.dir.OpenStreamWPProtocolID()
 	estMsg := NewStreamEstablish(protocolID)
 
-	var tpt transport.Transport
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case tpt = <-c.tptCh:
-		c.tptCh <- tpt
+	tpt, err := o.c.GetTransport(ctx)
+	if err != nil {
+		return err
 	}
 
 	if !checkOpenStreamMatchesTpt(o.dir, tpt) {
@@ -127,14 +124,10 @@ func (c *Controller) resolveOpenStreamWithPeer(
 	di directive.Instance,
 	dir link.OpenStreamWithPeer,
 ) ([]directive.Resolver, error) {
-	// opportune moment: if tpt is already available, filter
-	select {
-	case tpt := <-c.tptCh:
-		c.tptCh <- tpt
-		if !checkOpenStreamMatchesTpt(dir, tpt) {
+	if tpt := c.tptCtr.GetValue(); tpt != nil {
+		if !checkOpenStreamMatchesTpt(dir, *tpt) {
 			return nil, nil
 		}
-	default:
 	}
 
 	// Check transport constraint

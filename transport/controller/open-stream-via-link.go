@@ -7,7 +7,6 @@ import (
 
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/peer"
-	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/aperturerobotics/controllerbus/directive"
 )
 
@@ -33,12 +32,9 @@ func (o *openStreamViaLinkResolver) Resolve(ctx context.Context, handler directi
 	tptID := o.dir.OpenStreamViaLinkTransportConstraint()
 
 	if tptID != 0 {
-		var tpt transport.Transport
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case tpt = <-c.tptCh:
-			c.tptCh <- tpt
+		tpt, err := o.c.GetTransport(ctx)
+		if err != nil {
+			return err
 		}
 		if tpt.GetUUID() != tptID {
 			return nil
@@ -134,13 +130,10 @@ func (c *Controller) resolveOpenStreamViaLink(
 	// opportune moment: if tpt is already available, filter
 	tptID := dir.OpenStreamViaLinkTransportConstraint()
 	if tptID != 0 {
-		select {
-		case tpt := <-c.tptCh:
-			c.tptCh <- tpt
-			if tpt.GetUUID() != tptID {
+		if tpt := c.tptCtr.GetValue(); tpt != nil {
+			if (*tpt).GetUUID() != tptID {
 				return nil, nil
 			}
-		default:
 		}
 	}
 

@@ -16,6 +16,7 @@ import (
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
+	"github.com/aperturerobotics/util/ccontainer"
 	"github.com/blang/semver"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/sirupsen/logrus"
@@ -54,8 +55,8 @@ type Controller struct {
 	// localPeerID contains the node peer ID
 	localPeerID peer.ID
 
-	// tptCh holds the transport like a bucket
-	tptCh chan transport.Transport
+	// tptCtr contains the transport
+	tptCtr *ccontainer.CContainer[*transport.Transport]
 
 	// transportID is the transport identifier.
 	transportID string
@@ -93,7 +94,8 @@ func NewController(
 
 		links:       make(map[uint64]*establishedLink),
 		linkWaiters: make(map[peer.ID][]*linkWaiter),
-		tptCh:       make(chan transport.Transport, 1),
+
+		tptCtr: ccontainer.NewCContainer[*transport.Transport](nil),
 
 		peerIDConstraint: nodePeerIDConstraint,
 		localPeerID:      nodePeerIDConstraint,
@@ -190,27 +192,22 @@ func (c *Controller) Execute(ctx context.Context) error {
 		return err
 	}
 	defer tpt.Close()
-	c.tptCh <- tpt
 
 	c.le.Debug("executing transport")
+	c.tptCtr.SetValue(&tpt)
 	err = tpt.Execute(ctx)
-	select {
-	case <-c.tptCh:
-	default:
-	}
+	c.tptCtr.SetValue(nil)
 	return err
 }
 
 // GetTransport returns the controlled transport.
 // This may be nil until the transport is constructed.
 func (c *Controller) GetTransport(ctx context.Context) (transport.Transport, error) {
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case tpt := <-c.tptCh:
-		c.tptCh <- tpt
-		return tpt, nil
+	tptv, err := c.tptCtr.WaitValue(ctx, nil)
+	if err != nil {
+		return nil, err
 	}
+	return *tptv, nil
 }
 
 // HandleDirective asks if the handler can resolve the directive.
@@ -403,13 +400,9 @@ func (c *Controller) PushDialer(
 	opts *dialer.DialerOpts,
 ) error {
 	var tptDialer transport.TransportDialer
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case tpt := <-c.tptCh:
-		c.tptCh <- tpt
+	if tpt := c.tptCtr.GetValue(); tpt != nil {
 		var ok bool
-		tptDialer, ok = tpt.(transport.TransportDialer)
+		tptDialer, ok = (*tpt).(transport.TransportDialer)
 		if !ok {
 			return nil
 		}
@@ -475,18 +468,12 @@ func (c *Controller) loggerForLink(lnk link.Link) *logrus.Entry {
 // Close releases any resources used by the controller.
 // Error indicates any issue encountered releasing.
 func (c *Controller) Close() error {
-	// nil references to help GC along
-	c.ctor = nil
-	c.le = nil
-	c.bus = nil
-	c.peerIDConstraint = ""
-
-	select {
-	case tpt := <-c.tptCh:
-		tpt.Close()
-	default:
-	}
-
+	_ = c.tptCtr.SwapValue(func(val *transport.Transport) *transport.Transport {
+		if val != nil {
+			_ = (*val).Close()
+		}
+		return nil
+	})
 	return nil
 }
 

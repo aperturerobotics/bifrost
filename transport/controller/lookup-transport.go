@@ -20,12 +20,9 @@ type lookupTransportResolver struct {
 // The resolver will not be retried after returning an error.
 // Values will be maintained from the previous call.
 func (o *lookupTransportResolver) Resolve(ctx context.Context, handler directive.ResolverHandler) error {
-	var tpt transport.Transport
-	select {
-	case tpt = <-o.c.tptCh:
-		o.c.tptCh <- tpt
-	case <-ctx.Done():
-		return ctx.Err()
+	tpt, err := o.c.GetTransport(ctx)
+	if err != nil {
+		return err
 	}
 
 	if !checkLookupMatchesTpt(o.dir, tpt) {
@@ -58,13 +55,10 @@ func (c *Controller) resolveLookupTransport(
 	di directive.Instance,
 	dir transport.LookupTransport,
 ) ([]directive.Resolver, error) {
-	select {
-	case tpt := <-c.tptCh:
-		c.tptCh <- tpt
-		if !checkLookupMatchesTpt(dir, tpt) {
+	if tpt := c.tptCtr.GetValue(); tpt != nil {
+		if !checkLookupMatchesTpt(dir, *tpt) {
 			return nil, nil
 		}
-	default:
 	}
 
 	// Return resolver.
