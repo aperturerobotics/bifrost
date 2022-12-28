@@ -6,6 +6,7 @@ import (
 
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/controllerbus/bus"
+	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/sirupsen/logrus"
 )
 
@@ -17,6 +18,8 @@ type establishedLink struct {
 	c *Controller
 	// lnk is the link.
 	lnk link.Link
+	// di is the directive instance
+	di directive.Instance
 	// cancel closes any goroutines related to the link
 	cancel context.CancelFunc
 }
@@ -46,6 +49,7 @@ func newEstablishedLink(
 	el := &establishedLink{
 		le:     le.WithField("peer-id", lnk.GetRemotePeer().Pretty()),
 		lnk:    lnk,
+		di:     di,
 		cancel: ctxCancel,
 		c:      ctrl,
 	}
@@ -68,6 +72,9 @@ func (e *establishedLink) acceptStreamPump(ctx context.Context) {
 	// accept streams
 	lnk, ctrl := e.lnk, e.c
 	defer func() {
+		// close the directive instance early if there are no non-weak refs.
+		// this skips the hold-open (unref dispose dur) timer.
+		_ = e.di.CloseIfUnreferenced(false)
 		e.cancel()
 		lnk.Close()
 	}()
