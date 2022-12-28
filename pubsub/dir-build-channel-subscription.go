@@ -46,10 +46,17 @@ func NewBuildChannelSubscription(channelID string, privKey crypto.PrivKey) Build
 func ExBuildChannelSubscription(
 	ctx context.Context,
 	b bus.Bus,
+	returnIfIdle bool,
 	channelID string,
 	privKey crypto.PrivKey,
 ) (BuildChannelSubscriptionValue, directive.Reference, error) {
-	val, valRef, err := bus.ExecOneOff(ctx, b, NewBuildChannelSubscription(channelID, privKey), false, nil)
+	val, valRef, err := bus.ExecOneOff(
+		ctx,
+		b,
+		NewBuildChannelSubscription(channelID, privKey),
+		returnIfIdle,
+		nil,
+	)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -5,6 +5,7 @@ import (
 
 	"github.com/aperturerobotics/bifrost/pubsub"
 	"github.com/aperturerobotics/controllerbus/directive"
+	"github.com/aperturerobotics/util/backoff"
 )
 
 // resolveBuildChannelSub is the BuildChannelSubscription resolver.
@@ -35,12 +36,19 @@ func (c *Controller) resolveBuildChannelSub(
 	d pubsub.BuildChannelSubscription,
 ) ([]directive.Resolver, error) {
 	// accept directive always
-	return directive.Resolvers(&resolveBuildChannelSub{
+	backoffConf := &backoff.Backoff{
+		BackoffKind: backoff.BackoffKind_BackoffKind_EXPONENTIAL,
+		Exponential: &backoff.Exponential{
+			MaxInterval:         5000,
+			RandomizationFactor: 0.1,
+		},
+	}
+	return directive.R(directive.NewRetryResolver(c.le, &resolveBuildChannelSub{
 		ctx: ctx,
 		c:   c,
 		di:  di,
 		d:   d,
-	}), nil
+	}, backoffConf.Construct()), nil)
 }
 
 // Resolve resolves the values, emitting them to the handler.
@@ -58,10 +66,14 @@ func (r *resolveBuildChannelSub) Resolve(
 		return err
 	}
 
+	le := r.c.le.WithField("channel-id", r.d.BuildChannelSubscriptionChannelID())
+	le.Debug("adding subscription to channel")
 	sub, err := ps.AddSubscription(r.ctx, r.d.BuildChannelSubscriptionPrivKey(), r.d.BuildChannelSubscriptionChannelID())
 	if err != nil {
+		le.WithError(err).Warn("unable to add subscription to channel")
 		return err
 	}
+	le.Info("successfully added subscription to channel")
 
 	var valueID uint32
 	var accepted bool

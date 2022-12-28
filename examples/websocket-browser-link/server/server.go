@@ -54,7 +54,7 @@ func run() error {
 
 	// accept & echo the pubsub channel
 	channelID := "test-channel"
-	channelSub, channelSubRef, err := pubsub.ExBuildChannelSubscription(ctx, b, channelID, privKey)
+	channelSub, channelSubRef, err := pubsub.ExBuildChannelSubscription(ctx, b, false, channelID, privKey)
 	if err != nil {
 		return err
 	}

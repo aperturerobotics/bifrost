@@ -221,6 +221,7 @@ func (n *Nats) AddSubscription(ctx context.Context, privKey crypto.PrivKey, chan
 		ncRel()
 		return nil, err
 	}
+
 	return newSubscription(ctx, n, nc, ncRel, nsub, privKey, channelID), nil
 }
 
