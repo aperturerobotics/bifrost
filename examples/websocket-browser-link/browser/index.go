@@ -56,7 +56,7 @@ func main() {
 			},
 		}),
 		bus.NewCallbackHandler(func(val directive.AttachedValue) {
-			le.Infof("websocket transport resolved: %#v", val)
+			le.Infof("websocket transport resolved: %#v", val.GetValue())
 		}, nil, nil),
 	)
 	defer wsRef.Release()

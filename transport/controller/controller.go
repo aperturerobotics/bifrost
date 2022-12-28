@@ -196,7 +196,9 @@ func (c *Controller) Execute(ctx context.Context) error {
 	c.le.Debug("executing transport")
 	c.tptCtr.SetValue(&tpt)
 	err = tpt.Execute(ctx)
-	c.tptCtr.SetValue(nil)
+	if err != nil {
+		c.tptCtr.SetValue(nil)
+	}
 	return err
 }
 
@@ -405,6 +407,7 @@ func (c *Controller) PushDialer(
 	}
 	tptDialer, ok := tpt.(transport.TransportDialer)
 	if !ok {
+		c.le.Warn("ignoring dial attempt: transport is not a TransportDialer")
 		return nil
 	}
 
