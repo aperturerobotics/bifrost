@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"os"
 
 	"github.com/aperturerobotics/bifrost/examples/websocket-browser-link/common"
 	"github.com/aperturerobotics/bifrost/peer"
+	"github.com/aperturerobotics/bifrost/pubsub"
 	wtpt "github.com/aperturerobotics/bifrost/transport/websocket"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
@@ -23,13 +25,23 @@ func init() {
 }
 
 func main() {
+	if err := run(); err != nil {
+		os.Stderr.WriteString(err.Error() + "\n")
+		os.Exit(1)
+	}
+}
+
+func run() error {
 	ctx := context.Background()
 	b, privKey, err := common.BuildCommonBus(ctx, "websocket-browser-link/server")
 	if err != nil {
-		panic(err)
+		return err
+	}
+	localPeerID, err := peer.IDFromPrivateKey(privKey)
+	if err != nil {
+		return err
 	}
 
-	_ = privKey
 	_, wsRef, err := b.AddDirective(
 		resolver.NewLoadControllerWithConfig(&wtpt.Config{
 			ListenAddr: ":2015",
@@ -40,5 +52,25 @@ func main() {
 	)
 	defer wsRef.Release()
 
+	// accept & echo the pubsub channel
+	channelID := "test-channel"
+	channelSub, channelSubRef, err := pubsub.ExBuildChannelSubscription(ctx, b, channelID, privKey)
+	if err != nil {
+		return err
+	}
+	defer channelSubRef.Release()
+	le.Infof("built channel subscription for channel %s", channelID)
+
+	relHandler := channelSub.AddHandler(func(m pubsub.Message) {
+		from := m.GetFrom()
+		// ignore unauthenticated and/or from ourselves
+		if !m.GetAuthenticated() || from == localPeerID {
+			return
+		}
+		le.Infof("got pubsub message from %s: %s", from.Pretty(), string(m.GetData()))
+	})
+	defer relHandler()
+
 	<-ctx.Done()
+	return nil
 }

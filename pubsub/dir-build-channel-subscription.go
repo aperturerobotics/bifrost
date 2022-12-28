@@ -1,10 +1,12 @@
 package pubsub
 
 import (
+	"context"
 	"errors"
 	"time"
 
 	"github.com/aperturerobotics/bifrost/peer"
+	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/libp2p/go-libp2p/core/crypto"
 )
@@ -35,6 +37,28 @@ type buildChannelSubscription struct {
 // NewBuildChannelSubscription constructs a new BuildChannelSubscription directive.
 func NewBuildChannelSubscription(channelID string, privKey crypto.PrivKey) BuildChannelSubscription {
 	return &buildChannelSubscription{channelID: channelID, privKey: privKey}
+}
+
+// ExBuildChannelSubscription executes the BuildChannelSubscription directive.
+// Waits for the channel subscription to be built.
+// If values are returned, returns vals, valsRef, nil
+// Otherwise returns nil, nil, err
+func ExBuildChannelSubscription(
+	ctx context.Context,
+	b bus.Bus,
+	channelID string,
+	privKey crypto.PrivKey,
+) (BuildChannelSubscriptionValue, directive.Reference, error) {
+	val, valRef, err := bus.ExecOneOff(ctx, b, NewBuildChannelSubscription(channelID, privKey), false, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+	out, ok := val.GetValue().(BuildChannelSubscriptionValue)
+	if !ok {
+		valRef.Release()
+		return nil, nil, errors.New("build channel subscription returned invalid value")
+	}
+	return out, valRef, nil
 }
 
 // Validate validates the directive.

@@ -11,6 +11,8 @@ import (
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
+	"github.com/aperturerobotics/util/broadcast"
+	"github.com/aperturerobotics/util/ccontainer"
 	"github.com/sirupsen/logrus"
 )
 
@@ -40,14 +42,15 @@ type Controller struct {
 	// peerID is the peer ID to use
 	peerID peer.ID
 
-	// pubSubCh holds the PubSub like a bucket
-	pubSubCh chan pubsub.PubSub
-	// peerCh holds the Peer like a bucket
-	peerCh chan peer.Peer
-	// wakeCh wakes the controller
-	wakeCh chan struct{}
+	// pubSubCtr holds the PubSub
+	pubSubCtr *ccontainer.CContainer[*pubsub.PubSub]
+	// peerCtr holds the peer
+	peerCtr *ccontainer.CContainer[*peer.Peer]
 
+	// mtx guards below fields
 	mtx sync.Mutex
+	// bcast wakes the controller
+	bcast broadcast.Broadcast
 	// cleanupRefs are the refs to cleanup
 	cleanupRefs []directive.Reference
 	// incLinks are links that need to be established
@@ -73,9 +76,8 @@ func NewController(
 		peerID: peerID,
 
 		protocolID: protocolID,
-		pubSubCh:   make(chan pubsub.PubSub, 1),
-		wakeCh:     make(chan struct{}, 1),
-		peerCh:     make(chan peer.Peer, 1),
+		pubSubCtr:  ccontainer.NewCContainer[*pubsub.PubSub](nil),
+		peerCtr:    ccontainer.NewCContainer[*peer.Peer](nil),
 		links:      make(map[pubsub.PeerLinkTuple]*trackedLink),
 	}
 }
@@ -114,10 +116,8 @@ func (c *Controller) Execute(ctx context.Context) error {
 		c.peerID = cpeer.GetPeerID()
 	}
 
-	c.peerCh <- cpeer
-	defer func() {
-		<-c.peerCh
-	}()
+	c.peerCtr.SetValue(&cpeer)
+	defer c.peerCtr.SetValue(nil)
 
 	// Construct the PubSub
 	ps, err := c.ctor(
@@ -130,12 +130,11 @@ func (c *Controller) Execute(ctx context.Context) error {
 		return err
 	}
 	defer ps.Close()
-	c.pubSubCh <- ps
+	c.pubSubCtr.SetValue(&ps)
 
 	psErr := make(chan error, 1)
 	go func() {
 		c.le.Debug("executing pubsub")
-		defer ps.Close()
 		if err := ps.Execute(ctx); err != nil {
 			psErr <- err
 		}
@@ -173,6 +172,7 @@ func (c *Controller) Execute(ctx context.Context) error {
 			}()
 		}
 		c.incLinks = nil
+		wake := c.bcast.GetWaitCh()
 		c.mtx.Unlock()
 
 		select {
@@ -180,31 +180,27 @@ func (c *Controller) Execute(ctx context.Context) error {
 			return ctx.Err()
 		case err := <-psErr:
 			return err
-		case <-c.wakeCh:
+		case <-wake:
 		}
 	}
 }
 
 // GetPubSub returns the controlled PubSub.
 func (c *Controller) GetPubSub(ctx context.Context) (pubsub.PubSub, error) {
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case tpt := <-c.pubSubCh:
-		c.pubSubCh <- tpt
-		return tpt, nil
+	val, err := c.pubSubCtr.WaitValue(ctx, nil)
+	if err != nil {
+		return nil, err
 	}
+	return *val, nil
 }
 
 // GetPeer returns the controlled peer ID.
 func (c *Controller) GetPeer(ctx context.Context) (peer.Peer, error) {
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case tpt := <-c.peerCh:
-		c.peerCh <- tpt
-		return tpt, nil
+	val, err := c.peerCtr.WaitValue(ctx, nil)
+	if err != nil {
+		return nil, err
 	}
+	return *val, nil
 }
 
 // HandleDirective asks if the handler can resolve the directive.
@@ -228,11 +224,6 @@ func (c *Controller) HandleDirective(ctx context.Context, di directive.Instance)
 // Close releases any resources used by the controller.
 // Error indicates any issue encountered releasing.
 func (c *Controller) Close() error {
-	// nil references to help GC along
-	c.ctor = nil
-	c.le = nil
-	c.bus = nil
-
 	c.mtx.Lock()
 	for _, ref := range c.cleanupRefs {
 		ref.Release()
@@ -244,21 +235,19 @@ func (c *Controller) Close() error {
 	}
 	c.mtx.Unlock()
 
-	select {
-	case ps := <-c.pubSubCh:
-		ps.Close()
-	default:
-	}
+	_ = c.pubSubCtr.SwapValue(func(val *pubsub.PubSub) *pubsub.PubSub {
+		if val != nil {
+			(*val).Close()
+		}
+		return nil
+	})
 
 	return nil
 }
 
 // wake wakes the controller
 func (c *Controller) wake() {
-	select {
-	case c.wakeCh <- struct{}{}:
-	default:
-	}
+	c.bcast.Broadcast()
 }
 
 // _ is a type assertion

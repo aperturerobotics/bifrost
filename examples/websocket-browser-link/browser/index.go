@@ -7,15 +7,18 @@ import (
 	"context"
 	"fmt"
 	"syscall/js"
+	"time"
 
 	"github.com/aperturerobotics/bifrost/examples/websocket-browser-link/common"
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/peer"
+	"github.com/aperturerobotics/bifrost/pubsub"
 	"github.com/aperturerobotics/bifrost/transport/common/dialer"
 	wtpt "github.com/aperturerobotics/bifrost/transport/websocket"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
 	"github.com/aperturerobotics/controllerbus/directive"
+	"github.com/sirupsen/logrus"
 )
 
 func getWSBaseURL() string {
@@ -32,14 +35,19 @@ func getWSBaseURL() string {
 
 func main() {
 	ctx := context.Background()
-
 	le := common.GetLogEntry()
-	b, peerPrivKey, err := common.BuildCommonBus(ctx, "websocket-browser-link/client")
+	if err := run(ctx, le); err != nil {
+		le.WithError(err).Fatal("error running demo")
+	}
+}
+
+// run runs the demo.
+func run(ctx context.Context, le *logrus.Entry) error {
+	b, privKey, err := common.BuildCommonBus(ctx, "websocket-browser-link/client")
 	if err != nil {
-		panic(err)
+		return err
 	}
 
-	_ = peerPrivKey
 	wsBaseURL := getWSBaseURL()
 	le.
 		WithField("base-url", wsBaseURL).
@@ -67,9 +75,32 @@ func main() {
 		nil,
 	)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	defer dialRef.Release()
 
+	// open a pubsub channel
+	channelID := "test-channel"
+	channelSub, channelSubRef, err := pubsub.ExBuildChannelSubscription(ctx, b, channelID, privKey)
+	if err != nil {
+		return err
+	}
+	defer channelSubRef.Release()
+	le.Infof("built channel subscription for channel %s", channelID)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-time.After(time.Second):
+		}
+
+		msg := fmt.Sprintf("Hello from browser: %s", time.Now().String())
+		if err := channelSub.Publish([]byte(msg)); err != nil {
+			le.WithError(err).Warn("unable to publish pubsub message")
+		}
+	}
+
 	<-ctx.Done()
+	return nil
 }

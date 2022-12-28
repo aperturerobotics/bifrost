@@ -18,13 +18,14 @@ type resolveBuildChannelSub struct {
 // emittedSubscription is a wrapped subscription with proxied calls
 type emittedSubscription struct {
 	pubsub.Subscription
-	ctxCancel context.CancelFunc
+	relFunc func()
 }
 
 // Release releases the subscription handle, clearing the handlers.
 func (e *emittedSubscription) Release() {
-	e.ctxCancel()
-	e.Subscription.Release()
+	if e.relFunc != nil {
+		e.relFunc()
+	}
 }
 
 // resolveBuildChannelSub resolves building a channel subscription.
@@ -51,6 +52,7 @@ func (r *resolveBuildChannelSub) Resolve(
 	ctx context.Context,
 	handler directive.ResolverHandler,
 ) error {
+	handler.ClearValues()
 	ps, err := r.c.GetPubSub(ctx)
 	if err != nil {
 		return err
@@ -61,19 +63,23 @@ func (r *resolveBuildChannelSub) Resolve(
 		return err
 	}
 
-	subCtx, subCtxCancel := context.WithCancel(r.ctx)
-	defer subCtxCancel()
-
+	var valueID uint32
+	var accepted bool
 	var val pubsub.BuildChannelSubscriptionValue = &emittedSubscription{
-		ctxCancel:    subCtxCancel,
 		Subscription: sub,
+		relFunc: func() {
+			_, _ = handler.RemoveValue(valueID)
+			sub.Release()
+		},
 	}
-	if _, accepted := handler.AddValue(val); !accepted {
+	valueID, accepted = handler.AddValue(val)
+	if !accepted {
 		val.Release()
 		return nil
 	}
-	<-subCtx.Done()
-	val.Release()
+	r.di.AddDisposeCallback(func() {
+		val.Release()
+	})
 	return nil
 }
 
