@@ -9,7 +9,7 @@ import (
 )
 
 // crossDialWaitDur is the default amount of time to wait to avoid cross-dial.
-var crossDialWaitDur = time.Second
+var crossDialWaitDur = time.Millisecond * 250
 
 // establishLinkResolver resolves establishLink directives
 type establishLinkResolver struct {
@@ -30,8 +30,6 @@ func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.R
 	peerIDPretty := peerIDConst.Pretty()
 
 	wakeDialer := make(chan time.Time, 1)
-	wakeDialer <- time.Now()
-
 	linkIDs := make(map[link.Link]uint32)
 	c.mtx.Lock()
 	lw := o.c.pushLinkWaiter(peerIDConst, false, func(lnk link.Link, added bool) {
@@ -66,21 +64,26 @@ func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.R
 		c.mtx.Unlock()
 	}()
 
+	var waitWake bool
 	for {
-		select {
-		case <-ctx.Done():
-			return nil
-		case waitUntil := <-wakeDialer:
-			tu := time.Until(waitUntil)
-			if tu > time.Millisecond*50 {
-				tt := time.NewTimer(tu)
-				select {
-				case <-ctx.Done():
-					tt.Stop()
-					return nil
-				case <-tt.C:
+		if waitWake {
+			select {
+			case <-ctx.Done():
+				return nil
+			case waitUntil := <-wakeDialer:
+				tu := time.Until(waitUntil)
+				if tu > time.Millisecond*50 {
+					tt := time.NewTimer(tu)
+					select {
+					case <-ctx.Done():
+						tt.Stop()
+						return nil
+					case <-tt.C:
+					}
 				}
 			}
+		} else {
+			waitWake = true
 		}
 
 		c.mtx.Lock()
