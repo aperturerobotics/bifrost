@@ -76,6 +76,7 @@ func ExLookupFirstHTTPHandler(
 		NewLookupHTTPHandler(handlerURL, clientID),
 		returnIfIdle,
 		nil,
+		nil,
 	)
 }
 
