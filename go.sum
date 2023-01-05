@@ -18,8 +18,8 @@ github.com/aperturerobotics/starpc v0.16.0 h1:5ildwMsYteXqWPArkHpDxwlUZeQJNc8mVz
 github.com/aperturerobotics/starpc v0.16.0/go.mod h1:i0XdPBwDzqWt/TiUD5OBplVzKKJsYvPeNQd9ZFRFkFs=
 github.com/aperturerobotics/ts-proto-common-types v0.2.0 h1:OtlIxcXjfRDvgY2OQC6dZSiAAXral6kaZ+kD+JviZo0=
 github.com/aperturerobotics/ts-proto-common-types v0.2.0/go.mod h1:8QXVbEzjPvsaxWQ5RgZtAA9CcOdhWDyMaYdWVKZo8To=
-github.com/aperturerobotics/util v0.0.0-20230104042253-9c130514e665 h1:dKm5BdoJfgAShPyDd94n0QNugEkFTADmaav3RosPA1A=
-github.com/aperturerobotics/util v0.0.0-20230104042253-9c130514e665/go.mod h1:up2AYcp62UgmFVTm7QhM4USXAKGv73gpb5dHraKmzxQ=
+github.com/aperturerobotics/util v0.0.0-20230105015752-3e6dd02b20c6 h1:YCg1Eyh5M5SvWCpJmdM62iInd0yfZXSGFld10GQIIPA=
+github.com/aperturerobotics/util v0.0.0-20230105015752-3e6dd02b20c6/go.mod h1:up2AYcp62UgmFVTm7QhM4USXAKGv73gpb5dHraKmzxQ=
 github.com/benbjohnson/clock v1.1.0/go.mod h1:J11/hYXuz8f4ySSvYwY0FKfm+ezbsZBKZxNJlLklBHA=
 github.com/benbjohnson/clock v1.3.0 h1:ip6w0uFQkncKQ979AypyG0ER7mqUSBdKLOgAle/AT8A=
 github.com/blang/semver v3.5.1+incompatible h1:cQNTCjp13qL8KC3Nbxr/y2Bqb63oX6wdnnjpJbkM4JQ=
