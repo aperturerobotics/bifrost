@@ -2,7 +2,10 @@ module hack
 
 go 1.18
 
-replace google.golang.org/protobuf => github.com/paralin/protobuf-go v1.28.2-0.20221202092004-7e5a6a8cf680 // aperture
+replace (
+	github.com/sirupsen/logrus => github.com/aperturerobotics/logrus v1.9.1-0.20221224130652-ff61cbb763af // aperture
+	google.golang.org/protobuf => github.com/aperturerobotics/protobuf-go v1.28.2-0.20221202092004-7e5a6a8cf680 // aperture
+)
 
 require (
 	github.com/golangci/golangci-lint v1.50.1
@@ -13,9 +16,9 @@ require (
 
 require (
 	github.com/aperturerobotics/goprotowrap v0.3.0
-	github.com/aperturerobotics/starpc v0.16.0
-	github.com/evanw/esbuild v0.16.13
-	github.com/hajimehoshi/wasmserve v0.0.0-20221128151022-689d7ac772c6
+	github.com/aperturerobotics/starpc v0.16.1
+	github.com/evanw/esbuild v0.16.16
+	github.com/hajimehoshi/wasmserve v0.0.0-20210512070053-db8e7b58c3a0
 	storj.io/drpc v0.0.32
 )
 
