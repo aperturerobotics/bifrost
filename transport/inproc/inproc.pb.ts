@@ -146,6 +146,10 @@ export const Config = {
     return obj
   },
 
+  create<I extends Exact<DeepPartial<Config>, I>>(base?: I): Config {
+    return Config.fromPartial(base ?? {})
+  },
+
   fromPartial<I extends Exact<DeepPartial<Config>, I>>(object: I): Config {
     const message = createBaseConfig()
     message.transportPeerId = object.transportPeerId ?? ''
@@ -255,6 +259,12 @@ export const Config_DialersEntry = {
     message.value !== undefined &&
       (obj.value = message.value ? DialerOpts.toJSON(message.value) : undefined)
     return obj
+  },
+
+  create<I extends Exact<DeepPartial<Config_DialersEntry>, I>>(
+    base?: I
+  ): Config_DialersEntry {
+    return Config_DialersEntry.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<Config_DialersEntry>, I>>(

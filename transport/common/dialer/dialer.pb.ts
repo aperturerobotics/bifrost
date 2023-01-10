@@ -110,6 +110,10 @@ export const DialerOpts = {
     return obj
   },
 
+  create<I extends Exact<DeepPartial<DialerOpts>, I>>(base?: I): DialerOpts {
+    return DialerOpts.fromPartial(base ?? {})
+  },
+
   fromPartial<I extends Exact<DeepPartial<DialerOpts>, I>>(
     object: I
   ): DialerOpts {

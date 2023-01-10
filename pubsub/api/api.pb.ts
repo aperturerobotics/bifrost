@@ -195,6 +195,12 @@ export const SubscribeRequest = {
     return obj
   },
 
+  create<I extends Exact<DeepPartial<SubscribeRequest>, I>>(
+    base?: I
+  ): SubscribeRequest {
+    return SubscribeRequest.fromPartial(base ?? {})
+  },
+
   fromPartial<I extends Exact<DeepPartial<SubscribeRequest>, I>>(
     object: I
   ): SubscribeRequest {
@@ -303,6 +309,12 @@ export const PublishRequest = {
     message.identifier !== undefined &&
       (obj.identifier = Math.round(message.identifier))
     return obj
+  },
+
+  create<I extends Exact<DeepPartial<PublishRequest>, I>>(
+    base?: I
+  ): PublishRequest {
+    return PublishRequest.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<PublishRequest>, I>>(
@@ -449,6 +461,12 @@ export const SubscribeResponse = {
     return obj
   },
 
+  create<I extends Exact<DeepPartial<SubscribeResponse>, I>>(
+    base?: I
+  ): SubscribeResponse {
+    return SubscribeResponse.fromPartial(base ?? {})
+  },
+
   fromPartial<I extends Exact<DeepPartial<SubscribeResponse>, I>>(
     object: I
   ): SubscribeResponse {
@@ -551,6 +569,12 @@ export const SubscriptionStatus = {
     return obj
   },
 
+  create<I extends Exact<DeepPartial<SubscriptionStatus>, I>>(
+    base?: I
+  ): SubscriptionStatus {
+    return SubscriptionStatus.fromPartial(base ?? {})
+  },
+
   fromPartial<I extends Exact<DeepPartial<SubscriptionStatus>, I>>(
     object: I
   ): SubscriptionStatus {
@@ -648,6 +672,12 @@ export const OutgoingStatus = {
       (obj.identifier = Math.round(message.identifier))
     message.sent !== undefined && (obj.sent = message.sent)
     return obj
+  },
+
+  create<I extends Exact<DeepPartial<OutgoingStatus>, I>>(
+    base?: I
+  ): OutgoingStatus {
+    return OutgoingStatus.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<OutgoingStatus>, I>>(
@@ -763,6 +793,12 @@ export const IncomingMessage = {
         message.data !== undefined ? message.data : new Uint8Array()
       ))
     return obj
+  },
+
+  create<I extends Exact<DeepPartial<IncomingMessage>, I>>(
+    base?: I
+  ): IncomingMessage {
+    return IncomingMessage.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<IncomingMessage>, I>>(

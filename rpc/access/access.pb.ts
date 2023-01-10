@@ -118,6 +118,12 @@ export const LookupRpcServiceRequest = {
     return obj
   },
 
+  create<I extends Exact<DeepPartial<LookupRpcServiceRequest>, I>>(
+    base?: I
+  ): LookupRpcServiceRequest {
+    return LookupRpcServiceRequest.fromPartial(base ?? {})
+  },
+
   fromPartial<I extends Exact<DeepPartial<LookupRpcServiceRequest>, I>>(
     object: I
   ): LookupRpcServiceRequest {
@@ -226,6 +232,12 @@ export const LookupRpcServiceResponse = {
     message.exists !== undefined && (obj.exists = message.exists)
     message.removed !== undefined && (obj.removed = message.removed)
     return obj
+  },
+
+  create<I extends Exact<DeepPartial<LookupRpcServiceResponse>, I>>(
+    base?: I
+  ): LookupRpcServiceResponse {
+    return LookupRpcServiceResponse.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<LookupRpcServiceResponse>, I>>(

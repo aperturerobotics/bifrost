@@ -159,6 +159,12 @@ export const ForwardStreamsRequest = {
     return obj
   },
 
+  create<I extends Exact<DeepPartial<ForwardStreamsRequest>, I>>(
+    base?: I
+  ): ForwardStreamsRequest {
+    return ForwardStreamsRequest.fromPartial(base ?? {})
+  },
+
   fromPartial<I extends Exact<DeepPartial<ForwardStreamsRequest>, I>>(
     object: I
   ): ForwardStreamsRequest {
@@ -256,6 +262,12 @@ export const ForwardStreamsResponse = {
     message.controllerStatus !== undefined &&
       (obj.controllerStatus = controllerStatusToJSON(message.controllerStatus))
     return obj
+  },
+
+  create<I extends Exact<DeepPartial<ForwardStreamsResponse>, I>>(
+    base?: I
+  ): ForwardStreamsResponse {
+    return ForwardStreamsResponse.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<ForwardStreamsResponse>, I>>(
@@ -356,6 +368,12 @@ export const ListenStreamsRequest = {
     return obj
   },
 
+  create<I extends Exact<DeepPartial<ListenStreamsRequest>, I>>(
+    base?: I
+  ): ListenStreamsRequest {
+    return ListenStreamsRequest.fromPartial(base ?? {})
+  },
+
   fromPartial<I extends Exact<DeepPartial<ListenStreamsRequest>, I>>(
     object: I
   ): ListenStreamsRequest {
@@ -453,6 +471,12 @@ export const ListenStreamsResponse = {
     message.controllerStatus !== undefined &&
       (obj.controllerStatus = controllerStatusToJSON(message.controllerStatus))
     return obj
+  },
+
+  create<I extends Exact<DeepPartial<ListenStreamsResponse>, I>>(
+    base?: I
+  ): ListenStreamsResponse {
+    return ListenStreamsResponse.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<ListenStreamsResponse>, I>>(
@@ -557,6 +581,12 @@ export const AcceptStreamRequest = {
     return obj
   },
 
+  create<I extends Exact<DeepPartial<AcceptStreamRequest>, I>>(
+    base?: I
+  ): AcceptStreamRequest {
+    return AcceptStreamRequest.fromPartial(base ?? {})
+  },
+
   fromPartial<I extends Exact<DeepPartial<AcceptStreamRequest>, I>>(
     object: I
   ): AcceptStreamRequest {
@@ -654,6 +684,12 @@ export const AcceptStreamResponse = {
     message.data !== undefined &&
       (obj.data = message.data ? Data.toJSON(message.data) : undefined)
     return obj
+  },
+
+  create<I extends Exact<DeepPartial<AcceptStreamResponse>, I>>(
+    base?: I
+  ): AcceptStreamResponse {
+    return AcceptStreamResponse.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<AcceptStreamResponse>, I>>(
@@ -761,6 +797,12 @@ export const DialStreamRequest = {
     return obj
   },
 
+  create<I extends Exact<DeepPartial<DialStreamRequest>, I>>(
+    base?: I
+  ): DialStreamRequest {
+    return DialStreamRequest.fromPartial(base ?? {})
+  },
+
   fromPartial<I extends Exact<DeepPartial<DialStreamRequest>, I>>(
     object: I
   ): DialStreamRequest {
@@ -855,6 +897,12 @@ export const DialStreamResponse = {
     message.data !== undefined &&
       (obj.data = message.data ? Data.toJSON(message.data) : undefined)
     return obj
+  },
+
+  create<I extends Exact<DeepPartial<DialStreamResponse>, I>>(
+    base?: I
+  ): DialStreamResponse {
+    return DialStreamResponse.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<DialStreamResponse>, I>>(

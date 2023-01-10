@@ -235,6 +235,10 @@ export const Packet = {
     return obj
   },
 
+  create<I extends Exact<DeepPartial<Packet>, I>>(base?: I): Packet {
+    return Packet.fromPartial(base ?? {})
+  },
+
   fromPartial<I extends Exact<DeepPartial<Packet>, I>>(object: I): Packet {
     const message = createBasePacket()
     message.packetType = object.packetType ?? 0
@@ -376,6 +380,10 @@ export const Packet_Init = {
     return obj
   },
 
+  create<I extends Exact<DeepPartial<Packet_Init>, I>>(base?: I): Packet_Init {
+    return Packet_Init.fromPartial(base ?? {})
+  },
+
   fromPartial<I extends Exact<DeepPartial<Packet_Init>, I>>(
     object: I
   ): Packet_Init {
@@ -488,6 +496,12 @@ export const Packet_InitAck = {
     return obj
   },
 
+  create<I extends Exact<DeepPartial<Packet_InitAck>, I>>(
+    base?: I
+  ): Packet_InitAck {
+    return Packet_InitAck.fromPartial(base ?? {})
+  },
+
   fromPartial<I extends Exact<DeepPartial<Packet_InitAck>, I>>(
     object: I
   ): Packet_InitAck {
@@ -582,6 +596,12 @@ export const Packet_Complete = {
         message.ciphertext !== undefined ? message.ciphertext : new Uint8Array()
       ))
     return obj
+  },
+
+  create<I extends Exact<DeepPartial<Packet_Complete>, I>>(
+    base?: I
+  ): Packet_Complete {
+    return Packet_Complete.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<Packet_Complete>, I>>(
@@ -723,6 +743,12 @@ export const Packet_Ciphertext = {
         message.extraInfo !== undefined ? message.extraInfo : new Uint8Array()
       ))
     return obj
+  },
+
+  create<I extends Exact<DeepPartial<Packet_Ciphertext>, I>>(
+    base?: I
+  ): Packet_Ciphertext {
+    return Packet_Ciphertext.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<Packet_Ciphertext>, I>>(

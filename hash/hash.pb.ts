@@ -158,6 +158,10 @@ export const Hash = {
     return obj
   },
 
+  create<I extends Exact<DeepPartial<Hash>, I>>(base?: I): Hash {
+    return Hash.fromPartial(base ?? {})
+  },
+
   fromPartial<I extends Exact<DeepPartial<Hash>, I>>(object: I): Hash {
     const message = createBaseHash()
     message.hashType = object.hashType ?? 0

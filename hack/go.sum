@@ -69,8 +69,8 @@ github.com/aperturerobotics/goprotowrap v0.3.0 h1:JLQ/1zVRdm2qwfeK7bPxWPg5fpTLlz
 github.com/aperturerobotics/goprotowrap v0.3.0/go.mod h1:ehsRFLviAKk5oiZK+i5oL4juhTYaGhaMrURiqY+ttLo=
 github.com/aperturerobotics/logrus v1.9.1-0.20221224130652-ff61cbb763af h1:nRveANX8PK0j+6M+d6Hyl45W+fQpg6BDBfcrrFMbbrw=
 github.com/aperturerobotics/logrus v1.9.1-0.20221224130652-ff61cbb763af/go.mod h1:naHLuLoDiP4jHNo9R0sCBMtWGeIprob74mVsIT4qYEQ=
-github.com/aperturerobotics/protobuf-go v1.28.2-0.20221202092004-7e5a6a8cf680 h1:Xr5vsLuZPeRr7aNWN7ma8VD1Jh0uTMiUDHhu9rLVhto=
-github.com/aperturerobotics/protobuf-go v1.28.2-0.20221202092004-7e5a6a8cf680/go.mod h1:HV8QOd/L58Z+nl8r43ehVNZIU/HEI6OcFqwMG9pJV4I=
+github.com/aperturerobotics/protobuf-go v1.28.2-0.20230110194655-55a09796292e h1:1YRjY02qy9TJqHE//OrX2nnIJour9mmMTJbjrSMdrbY=
+github.com/aperturerobotics/protobuf-go v1.28.2-0.20230110194655-55a09796292e/go.mod h1:HV8QOd/L58Z+nl8r43ehVNZIU/HEI6OcFqwMG9pJV4I=
 github.com/aperturerobotics/starpc v0.16.1 h1:wuDPCMTpodQkC18MVrBGq3pq5CBXdzQFJFA31RqcdCM=
 github.com/aperturerobotics/starpc v0.16.1/go.mod h1:n9cZsXlCZOwjnkuyLDUijeIIxjlsN+DvlqKYnLhCR04=
 github.com/ashanbrown/forbidigo v1.3.0 h1:VkYIwb/xxdireGAdJNZoo24O4lmnEWkactplBlWTShc=

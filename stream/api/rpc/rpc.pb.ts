@@ -148,6 +148,10 @@ export const Data = {
     return obj
   },
 
+  create<I extends Exact<DeepPartial<Data>, I>>(base?: I): Data {
+    return Data.fromPartial(base ?? {})
+  },
+
   fromPartial<I extends Exact<DeepPartial<Data>, I>>(object: I): Data {
     const message = createBaseData()
     message.data = object.data ?? new Uint8Array()

@@ -125,6 +125,12 @@ export const PubMessageInner = {
     return obj
   },
 
+  create<I extends Exact<DeepPartial<PubMessageInner>, I>>(
+    base?: I
+  ): PubMessageInner {
+    return PubMessageInner.fromPartial(base ?? {})
+  },
+
   fromPartial<I extends Exact<DeepPartial<PubMessageInner>, I>>(
     object: I
   ): PubMessageInner {

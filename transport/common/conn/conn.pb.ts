@@ -126,6 +126,10 @@ export const Opts = {
     return obj
   },
 
+  create<I extends Exact<DeepPartial<Opts>, I>>(base?: I): Opts {
+    return Opts.fromPartial(base ?? {})
+  },
+
   fromPartial<I extends Exact<DeepPartial<Opts>, I>>(object: I): Opts {
     const message = createBaseOpts()
     message.quic =

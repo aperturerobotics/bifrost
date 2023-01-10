@@ -95,6 +95,10 @@ export const MockRequest = {
     return obj
   },
 
+  create<I extends Exact<DeepPartial<MockRequest>, I>>(base?: I): MockRequest {
+    return MockRequest.fromPartial(base ?? {})
+  },
+
   fromPartial<I extends Exact<DeepPartial<MockRequest>, I>>(
     object: I
   ): MockRequest {
@@ -181,6 +185,12 @@ export const MockResponse = {
     const obj: any = {}
     message.reqBody !== undefined && (obj.reqBody = message.reqBody)
     return obj
+  },
+
+  create<I extends Exact<DeepPartial<MockResponse>, I>>(
+    base?: I
+  ): MockResponse {
+    return MockResponse.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<MockResponse>, I>>(

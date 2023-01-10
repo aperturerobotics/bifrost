@@ -120,6 +120,10 @@ export const DrpcOpts = {
     return obj
   },
 
+  create<I extends Exact<DeepPartial<DrpcOpts>, I>>(base?: I): DrpcOpts {
+    return DrpcOpts.fromPartial(base ?? {})
+  },
+
   fromPartial<I extends Exact<DeepPartial<DrpcOpts>, I>>(object: I): DrpcOpts {
     const message = createBaseDrpcOpts()
     message.managerOpts =
@@ -238,6 +242,10 @@ export const ManagerOpts = {
     return obj
   },
 
+  create<I extends Exact<DeepPartial<ManagerOpts>, I>>(base?: I): ManagerOpts {
+    return ManagerOpts.fromPartial(base ?? {})
+  },
+
   fromPartial<I extends Exact<DeepPartial<ManagerOpts>, I>>(
     object: I
   ): ManagerOpts {
@@ -330,6 +338,10 @@ export const StreamOpts = {
     message.splitSize !== undefined &&
       (obj.splitSize = Math.round(message.splitSize))
     return obj
+  },
+
+  create<I extends Exact<DeepPartial<StreamOpts>, I>>(base?: I): StreamOpts {
+    return StreamOpts.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<StreamOpts>, I>>(
