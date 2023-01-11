@@ -7,13 +7,14 @@ import (
 	bifrost_rpc "github.com/aperturerobotics/bifrost/rpc"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
+	"github.com/aperturerobotics/util/promise"
 	"github.com/aperturerobotics/util/refcount"
 )
 
 // ClientController resolves LookupRpcService with an AccessRpcService client.
 type ClientController struct {
 	info *controller.Info
-	svc  BuildClientFunc
+	svc  AccessClientFunc
 
 	clientRc *refcount.RefCount[*SRPCAccessRpcServiceClient]
 
@@ -21,14 +22,18 @@ type ClientController struct {
 	serverIDRe  *regexp.Regexp
 }
 
-// BuildClientFunc is a function to build the AccessRpcServiceClient.
-// Returns the client, optional release function, and error.
-type BuildClientFunc func(ctx context.Context) (*SRPCAccessRpcServiceClient, func(), error)
+// AccessClientFunc is a function to access the AccessRpcServiceClient.
+// The client should be released after the function returns.
+// If the client is no longer valid, cancel the context.
+type AccessClientFunc func(
+	ctx context.Context,
+	cb func(ctx context.Context, client SRPCAccessRpcServiceClient) error,
+) error
 
-// NewBuildClientFunc constructs a BuildClientFunc with a static client.
-func NewBuildClientFunc(svc SRPCAccessRpcServiceClient) BuildClientFunc {
-	return func(ctx context.Context) (*SRPCAccessRpcServiceClient, func(), error) {
-		return &svc, nil, nil
+// NewAccessClientFunc constructs a AccessClientFunc with a static client.
+func NewAccessClientFunc(svc SRPCAccessRpcServiceClient) AccessClientFunc {
+	return func(ctx context.Context, cb func(ctx context.Context, client SRPCAccessRpcServiceClient) error) error {
+		return cb(ctx, svc)
 	}
 }
 
@@ -36,7 +41,7 @@ func NewBuildClientFunc(svc SRPCAccessRpcServiceClient) BuildClientFunc {
 // The regex fields can both be nil to accept any.
 func NewClientController(
 	info *controller.Info,
-	svc BuildClientFunc,
+	svc AccessClientFunc,
 	serviceIDRe *regexp.Regexp,
 	serverIDRe *regexp.Regexp,
 ) *ClientController {
@@ -46,7 +51,30 @@ func NewClientController(
 		serviceIDRe: serviceIDRe,
 		serverIDRe:  serverIDRe,
 	}
-	c.clientRc = refcount.NewRefCount[*SRPCAccessRpcServiceClient](nil, nil, nil, svc)
+	c.clientRc = refcount.NewRefCount[*SRPCAccessRpcServiceClient](
+		nil, nil, nil,
+		func(ctx context.Context, released func()) (*SRPCAccessRpcServiceClient, func(), error) {
+			clientCtx, clientCtxCancel := context.WithCancel(ctx)
+			value := promise.NewPromise[*SRPCAccessRpcServiceClient]()
+			go func() {
+				err := svc(clientCtx, func(ctx context.Context, client SRPCAccessRpcServiceClient) error {
+					value.SetResult(&client, nil)
+					<-ctx.Done()
+					released()
+					return context.Canceled
+				})
+				if err != nil {
+					value.SetResult(nil, err)
+				}
+			}()
+			client, err := value.Await(ctx)
+			if err != nil {
+				clientCtxCancel()
+				return nil, nil, err
+			}
+			return client, clientCtxCancel, nil
+		},
+	)
 	return c
 }
 
@@ -78,18 +106,20 @@ func (c *ClientController) HandleDirective(ctx context.Context, di directive.Ins
 				return nil, nil
 			}
 		}
-		return directive.R(NewLookupRpcServiceResolver(dir, c.BuildClient), nil)
+		return directive.R(NewLookupRpcServiceResolver(dir, c.AccessClient), nil)
 	}
 	return nil, nil
 }
 
-// BuildClient adds a reference to the client and waits for it to be built.
-func (c *ClientController) BuildClient(ctx context.Context) (*SRPCAccessRpcServiceClient, func(), error) {
-	client, ref, err := c.clientRc.Wait(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-	return client, ref.Release, nil
+// AccessClient adds a reference to the client and waits for it to be built.
+// Releases the client when the function returns.
+func (c *ClientController) AccessClient(
+	ctx context.Context,
+	cb func(ctx context.Context, client SRPCAccessRpcServiceClient) error,
+) error {
+	return c.clientRc.Access(ctx, func(ctx context.Context, val *SRPCAccessRpcServiceClient) error {
+		return cb(ctx, *val)
+	})
 }
 
 // Close releases any resources used by the controller.
@@ -98,7 +128,5 @@ func (c *ClientController) Close() error {
 }
 
 // _ is a type assertion
-var (
-	_ controller.Controller = ((*ClientController)(nil))
-	_ BuildClientFunc       = ((*ClientController)(nil).BuildClient)
-)
+var _ controller.Controller = ((*ClientController)(nil))
+var _ AccessClientFunc = ((*ClientController)(nil)).AccessClient

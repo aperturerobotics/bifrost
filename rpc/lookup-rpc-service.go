@@ -56,16 +56,9 @@ func ExLookupRpcService(
 	b bus.Bus,
 	serviceID, serverID string,
 ) ([]LookupRpcServiceValue, directive.Reference, error) {
-	vals, valsRef, err := bus.ExecCollectValues(ctx, b, NewLookupRpcService(serviceID, serverID), nil)
+	out, valsRef, err := bus.ExecCollectValues[LookupRpcServiceValue](ctx, b, NewLookupRpcService(serviceID, serverID), nil)
 	if err != nil {
 		return nil, nil, err
-	}
-	out := make([]LookupRpcServiceValue, 0, len(vals))
-	for _, val := range vals {
-		v, ok := val.(LookupRpcServiceValue)
-		if ok {
-			out = append(out, v)
-		}
 	}
 	if len(out) == 0 {
 		valsRef.Release()

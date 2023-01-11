@@ -98,47 +98,18 @@ func (c *HTTPHandlerController) HandleDirective(
 		if !matched {
 			return nil, nil
 		}
-		builder := c.HTTPHandleBuilder
-		if c.stripPathPrefix && len(stripPrefix) != 0 {
-			builder = func(ctx context.Context) (*http.Handler, func(), error) {
-				handlerPtr, handlerRel, err := c.HTTPHandleBuilder(ctx)
-				if err != nil || handlerPtr == nil || *handlerPtr == nil {
-					return handlerPtr, handlerRel, err
-				}
-				handler := *handlerPtr
-				handler = http.StripPrefix(stripPrefix, handler)
-				return &handler, handlerRel, nil
+		return directive.R(directive.NewRefCountResolver(c.rc, func(val *http.Handler) (directive.Value, error) {
+			if val == nil {
+				return nil, nil
 			}
-		}
-		return directive.R(NewLookupHTTPHandlerBuilderResolver(inst, builder), nil)
+			handler := *val
+			if c.stripPathPrefix && len(stripPrefix) != 0 {
+				handler = http.StripPrefix(stripPrefix, handler)
+			}
+			return LookupHTTPHandlerValue(handler), nil
+		}), nil)
 	}
 	return nil, nil
-}
-
-// HTTPHandleBuilder builds a handle by adding a reference to the refcounter.
-func (c *HTTPHandlerController) HTTPHandleBuilder(ctx context.Context) (*http.Handler, func(), error) {
-	valCh := make(chan *http.Handler, 1)
-	errCh := make(chan error, 1)
-	ref := c.rc.AddRef(func(val *http.Handler, err error) {
-		if err != nil {
-			select {
-			case errCh <- err:
-			default:
-			}
-		} else if val != nil {
-			select {
-			case valCh <- val:
-			default:
-			}
-		}
-	})
-	select {
-	case err := <-errCh:
-		ref.Release()
-		return nil, nil, err
-	case val := <-valCh:
-		return val, ref.Release, nil
-	}
 }
 
 // Close releases any resources used by the controller.

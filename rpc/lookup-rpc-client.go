@@ -56,22 +56,15 @@ func ExLookupRpcClient(
 	b bus.Bus,
 	serviceID, clientID string,
 ) ([]LookupRpcClientValue, directive.Reference, error) {
-	vals, valsRef, err := bus.ExecCollectValues(ctx, b, NewLookupRpcClient(serviceID, clientID), nil)
+	vals, valsRef, err := bus.ExecCollectValues[LookupRpcClientValue](ctx, b, NewLookupRpcClient(serviceID, clientID), nil)
 	if err != nil {
 		return nil, nil, err
 	}
-	out := make([]LookupRpcClientValue, 0, len(vals))
-	for _, val := range vals {
-		v, ok := val.(LookupRpcClientValue)
-		if ok {
-			out = append(out, v)
-		}
-	}
-	if len(out) == 0 {
+	if len(vals) == 0 {
 		valsRef.Release()
 		return nil, nil, nil
 	}
-	return out, valsRef, nil
+	return vals, valsRef, nil
 }
 
 // ExLookupRpcClientSet executes the LookupRpcClient directive returning a ClientSet.

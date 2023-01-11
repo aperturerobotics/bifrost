@@ -41,14 +41,14 @@ func (h *HTTPHandler) SetContext(ctx context.Context) {
 // ServeHTTP serves a http request.
 func (h *HTTPHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
-	err := h.rc.Access(ctx, func(access *http.Handler) error {
+	err := h.rc.Access(ctx, func(ctx context.Context, access *http.Handler) error {
 		if access == nil {
 			rw.WriteHeader(404)
 			_, _ = rw.Write([]byte("404 not found"))
 			return nil
 		}
 
-		(*access).ServeHTTP(rw, req)
+		(*access).ServeHTTP(rw, req.WithContext(ctx))
 		return nil
 	})
 	if err != nil {
