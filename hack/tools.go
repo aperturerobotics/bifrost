@@ -4,6 +4,10 @@
 package hack
 
 import (
+	// _ imports the parent project.
+	// this forces the versions in hack to be at least the versions in ..
+	_ "github.com/aperturerobotics/bifrost/core"
+
 	// _ imports wasmserve
 	_ "github.com/hajimehoshi/wasmserve"
 	// _ imports protowrap

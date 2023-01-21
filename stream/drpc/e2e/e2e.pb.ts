@@ -205,7 +205,7 @@ export const MockResponse = {
 /** EndToEnd is a end to end test service. */
 export interface EndToEnd {
   /** Mock performs the mock request. */
-  Mock(request: MockRequest): Promise<MockResponse>
+  Mock(request: MockRequest, abortSignal?: AbortSignal): Promise<MockResponse>
 }
 
 export class EndToEndClientImpl implements EndToEnd {
@@ -216,9 +216,14 @@ export class EndToEndClientImpl implements EndToEnd {
     this.rpc = rpc
     this.Mock = this.Mock.bind(this)
   }
-  Mock(request: MockRequest): Promise<MockResponse> {
+  Mock(request: MockRequest, abortSignal?: AbortSignal): Promise<MockResponse> {
     const data = MockRequest.encode(request).finish()
-    const promise = this.rpc.request(this.service, 'Mock', data)
+    const promise = this.rpc.request(
+      this.service,
+      'Mock',
+      data,
+      abortSignal || undefined
+    )
     return promise.then((data) => MockResponse.decode(new _m0.Reader(data)))
   }
 }
@@ -245,7 +250,8 @@ interface Rpc {
   request(
     service: string,
     method: string,
-    data: Uint8Array
+    data: Uint8Array,
+    abortSignal?: AbortSignal
   ): Promise<Uint8Array>
 }
 

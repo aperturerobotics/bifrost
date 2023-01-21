@@ -1,11 +1,11 @@
 module github.com/aperturerobotics/bifrost
 
-go 1.18
+go 1.19
 
 require (
-	github.com/aperturerobotics/controllerbus v0.22.1-0.20230111044904-a87429e77a8d
+	github.com/aperturerobotics/controllerbus v0.22.1
 	github.com/aperturerobotics/entitygraph v0.3.3
-	github.com/aperturerobotics/starpc v0.16.1
+	github.com/aperturerobotics/starpc v0.17.1
 )
 
 // aperture: use compatibility forks
@@ -22,7 +22,7 @@ replace (
 
 require (
 	github.com/aperturerobotics/ts-proto-common-types v0.2.0
-	github.com/aperturerobotics/util v0.0.0-20230111030137-bd066f6c8b4a
+	github.com/aperturerobotics/util v0.0.0-20230118015318-d6ec15aa38d7
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/djherbis/buffer v1.2.0

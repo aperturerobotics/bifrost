@@ -51,7 +51,7 @@ func NewClientController(
 		serviceIDRe: serviceIDRe,
 		serverIDRe:  serverIDRe,
 	}
-	c.clientRc = refcount.NewRefCount[*SRPCAccessRpcServiceClient](
+	c.clientRc = refcount.NewRefCount(
 		nil, nil, nil,
 		func(ctx context.Context, released func()) (*SRPCAccessRpcServiceClient, func(), error) {
 			clientCtx, clientCtxCancel := context.WithCancel(ctx)

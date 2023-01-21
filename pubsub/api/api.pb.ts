@@ -819,7 +819,8 @@ export interface PubSubService {
    * messages over the same channel.
    */
   Subscribe(
-    request: AsyncIterable<SubscribeRequest>
+    request: AsyncIterable<SubscribeRequest>,
+    abortSignal?: AbortSignal
   ): AsyncIterable<SubscribeResponse>
 }
 
@@ -832,13 +833,15 @@ export class PubSubServiceClientImpl implements PubSubService {
     this.Subscribe = this.Subscribe.bind(this)
   }
   Subscribe(
-    request: AsyncIterable<SubscribeRequest>
+    request: AsyncIterable<SubscribeRequest>,
+    abortSignal?: AbortSignal
   ): AsyncIterable<SubscribeResponse> {
     const data = SubscribeRequest.encodeTransform(request)
     const result = this.rpc.bidirectionalStreamingRequest(
       this.service,
       'Subscribe',
-      data
+      data,
+      abortSignal || undefined
     )
     return SubscribeResponse.decodeTransform(result)
   }
@@ -869,22 +872,26 @@ interface Rpc {
   request(
     service: string,
     method: string,
-    data: Uint8Array
+    data: Uint8Array,
+    abortSignal?: AbortSignal
   ): Promise<Uint8Array>
   clientStreamingRequest(
     service: string,
     method: string,
-    data: AsyncIterable<Uint8Array>
+    data: AsyncIterable<Uint8Array>,
+    abortSignal?: AbortSignal
   ): Promise<Uint8Array>
   serverStreamingRequest(
     service: string,
     method: string,
-    data: Uint8Array
+    data: Uint8Array,
+    abortSignal?: AbortSignal
   ): AsyncIterable<Uint8Array>
   bidirectionalStreamingRequest(
     service: string,
     method: string,
-    data: AsyncIterable<Uint8Array>
+    data: AsyncIterable<Uint8Array>,
+    abortSignal?: AbortSignal
   ): AsyncIterable<Uint8Array>
 }
 

@@ -924,28 +924,32 @@ export interface StreamService {
    * Handles HandleMountedStream directives by contacting the target.
    */
   ForwardStreams(
-    request: ForwardStreamsRequest
+    request: ForwardStreamsRequest,
+    abortSignal?: AbortSignal
   ): AsyncIterable<ForwardStreamsResponse>
   /**
    * ListenStreams listens for connections to the multiaddress.
    * Forwards the connections to a remote peer with a protocol ID.
    */
   ListenStreams(
-    request: ListenStreamsRequest
+    request: ListenStreamsRequest,
+    abortSignal?: AbortSignal
   ): AsyncIterable<ListenStreamsResponse>
   /**
    * AcceptStream accepts an incoming stream.
    * Stream data is sent over the request / response streams.
    */
   AcceptStream(
-    request: AsyncIterable<AcceptStreamRequest>
+    request: AsyncIterable<AcceptStreamRequest>,
+    abortSignal?: AbortSignal
   ): AsyncIterable<AcceptStreamResponse>
   /**
    * DialStream dials a outgoing stream.
    * Stream data is sent over the request / response streams.
    */
   DialStream(
-    request: AsyncIterable<DialStreamRequest>
+    request: AsyncIterable<DialStreamRequest>,
+    abortSignal?: AbortSignal
   ): AsyncIterable<DialStreamResponse>
 }
 
@@ -961,49 +965,57 @@ export class StreamServiceClientImpl implements StreamService {
     this.DialStream = this.DialStream.bind(this)
   }
   ForwardStreams(
-    request: ForwardStreamsRequest
+    request: ForwardStreamsRequest,
+    abortSignal?: AbortSignal
   ): AsyncIterable<ForwardStreamsResponse> {
     const data = ForwardStreamsRequest.encode(request).finish()
     const result = this.rpc.serverStreamingRequest(
       this.service,
       'ForwardStreams',
-      data
+      data,
+      abortSignal || undefined
     )
     return ForwardStreamsResponse.decodeTransform(result)
   }
 
   ListenStreams(
-    request: ListenStreamsRequest
+    request: ListenStreamsRequest,
+    abortSignal?: AbortSignal
   ): AsyncIterable<ListenStreamsResponse> {
     const data = ListenStreamsRequest.encode(request).finish()
     const result = this.rpc.serverStreamingRequest(
       this.service,
       'ListenStreams',
-      data
+      data,
+      abortSignal || undefined
     )
     return ListenStreamsResponse.decodeTransform(result)
   }
 
   AcceptStream(
-    request: AsyncIterable<AcceptStreamRequest>
+    request: AsyncIterable<AcceptStreamRequest>,
+    abortSignal?: AbortSignal
   ): AsyncIterable<AcceptStreamResponse> {
     const data = AcceptStreamRequest.encodeTransform(request)
     const result = this.rpc.bidirectionalStreamingRequest(
       this.service,
       'AcceptStream',
-      data
+      data,
+      abortSignal || undefined
     )
     return AcceptStreamResponse.decodeTransform(result)
   }
 
   DialStream(
-    request: AsyncIterable<DialStreamRequest>
+    request: AsyncIterable<DialStreamRequest>,
+    abortSignal?: AbortSignal
   ): AsyncIterable<DialStreamResponse> {
     const data = DialStreamRequest.encodeTransform(request)
     const result = this.rpc.bidirectionalStreamingRequest(
       this.service,
       'DialStream',
-      data
+      data,
+      abortSignal || undefined
     )
     return DialStreamResponse.decodeTransform(result)
   }
@@ -1070,22 +1082,26 @@ interface Rpc {
   request(
     service: string,
     method: string,
-    data: Uint8Array
+    data: Uint8Array,
+    abortSignal?: AbortSignal
   ): Promise<Uint8Array>
   clientStreamingRequest(
     service: string,
     method: string,
-    data: AsyncIterable<Uint8Array>
+    data: AsyncIterable<Uint8Array>,
+    abortSignal?: AbortSignal
   ): Promise<Uint8Array>
   serverStreamingRequest(
     service: string,
     method: string,
-    data: Uint8Array
+    data: Uint8Array,
+    abortSignal?: AbortSignal
   ): AsyncIterable<Uint8Array>
   bidirectionalStreamingRequest(
     service: string,
     method: string,
-    data: AsyncIterable<Uint8Array>
+    data: AsyncIterable<Uint8Array>,
+    abortSignal?: AbortSignal
   ): AsyncIterable<Uint8Array>
 }
 

@@ -259,14 +259,16 @@ export interface AccessRpcService {
    * If the service was not found (directive is idle) returns empty.
    */
   LookupRpcService(
-    request: LookupRpcServiceRequest
+    request: LookupRpcServiceRequest,
+    abortSignal?: AbortSignal
   ): AsyncIterable<LookupRpcServiceResponse>
   /**
    * CallRpcService forwards an RPC call to the service with the component ID.
    * Component ID: json encoded LookupRpcServiceRequest.
    */
   CallRpcService(
-    request: AsyncIterable<RpcStreamPacket>
+    request: AsyncIterable<RpcStreamPacket>,
+    abortSignal?: AbortSignal
   ): AsyncIterable<RpcStreamPacket>
 }
 
@@ -280,25 +282,29 @@ export class AccessRpcServiceClientImpl implements AccessRpcService {
     this.CallRpcService = this.CallRpcService.bind(this)
   }
   LookupRpcService(
-    request: LookupRpcServiceRequest
+    request: LookupRpcServiceRequest,
+    abortSignal?: AbortSignal
   ): AsyncIterable<LookupRpcServiceResponse> {
     const data = LookupRpcServiceRequest.encode(request).finish()
     const result = this.rpc.serverStreamingRequest(
       this.service,
       'LookupRpcService',
-      data
+      data,
+      abortSignal || undefined
     )
     return LookupRpcServiceResponse.decodeTransform(result)
   }
 
   CallRpcService(
-    request: AsyncIterable<RpcStreamPacket>
+    request: AsyncIterable<RpcStreamPacket>,
+    abortSignal?: AbortSignal
   ): AsyncIterable<RpcStreamPacket> {
     const data = RpcStreamPacket.encodeTransform(request)
     const result = this.rpc.bidirectionalStreamingRequest(
       this.service,
       'CallRpcService',
-      data
+      data,
+      abortSignal || undefined
     )
     return RpcStreamPacket.decodeTransform(result)
   }
@@ -342,22 +348,26 @@ interface Rpc {
   request(
     service: string,
     method: string,
-    data: Uint8Array
+    data: Uint8Array,
+    abortSignal?: AbortSignal
   ): Promise<Uint8Array>
   clientStreamingRequest(
     service: string,
     method: string,
-    data: AsyncIterable<Uint8Array>
+    data: AsyncIterable<Uint8Array>,
+    abortSignal?: AbortSignal
   ): Promise<Uint8Array>
   serverStreamingRequest(
     service: string,
     method: string,
-    data: Uint8Array
+    data: Uint8Array,
+    abortSignal?: AbortSignal
   ): AsyncIterable<Uint8Array>
   bidirectionalStreamingRequest(
     service: string,
     method: string,
-    data: AsyncIterable<Uint8Array>
+    data: AsyncIterable<Uint8Array>,
+    abortSignal?: AbortSignal
   ): AsyncIterable<Uint8Array>
 }
 

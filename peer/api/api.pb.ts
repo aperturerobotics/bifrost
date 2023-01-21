@@ -531,9 +531,15 @@ export const GetPeerInfoResponse = {
 /** PeerService implements a bifrost peer service. */
 export interface PeerService {
   /** Identify loads and manages a private key identity. */
-  Identify(request: IdentifyRequest): AsyncIterable<IdentifyResponse>
+  Identify(
+    request: IdentifyRequest,
+    abortSignal?: AbortSignal
+  ): AsyncIterable<IdentifyResponse>
   /** GetPeerInfo returns information about attached peers. */
-  GetPeerInfo(request: GetPeerInfoRequest): Promise<GetPeerInfoResponse>
+  GetPeerInfo(
+    request: GetPeerInfoRequest,
+    abortSignal?: AbortSignal
+  ): Promise<GetPeerInfoResponse>
 }
 
 export class PeerServiceClientImpl implements PeerService {
@@ -545,19 +551,31 @@ export class PeerServiceClientImpl implements PeerService {
     this.Identify = this.Identify.bind(this)
     this.GetPeerInfo = this.GetPeerInfo.bind(this)
   }
-  Identify(request: IdentifyRequest): AsyncIterable<IdentifyResponse> {
+  Identify(
+    request: IdentifyRequest,
+    abortSignal?: AbortSignal
+  ): AsyncIterable<IdentifyResponse> {
     const data = IdentifyRequest.encode(request).finish()
     const result = this.rpc.serverStreamingRequest(
       this.service,
       'Identify',
-      data
+      data,
+      abortSignal || undefined
     )
     return IdentifyResponse.decodeTransform(result)
   }
 
-  GetPeerInfo(request: GetPeerInfoRequest): Promise<GetPeerInfoResponse> {
+  GetPeerInfo(
+    request: GetPeerInfoRequest,
+    abortSignal?: AbortSignal
+  ): Promise<GetPeerInfoResponse> {
     const data = GetPeerInfoRequest.encode(request).finish()
-    const promise = this.rpc.request(this.service, 'GetPeerInfo', data)
+    const promise = this.rpc.request(
+      this.service,
+      'GetPeerInfo',
+      data,
+      abortSignal || undefined
+    )
     return promise.then((data) =>
       GetPeerInfoResponse.decode(new _m0.Reader(data))
     )
@@ -595,22 +613,26 @@ interface Rpc {
   request(
     service: string,
     method: string,
-    data: Uint8Array
+    data: Uint8Array,
+    abortSignal?: AbortSignal
   ): Promise<Uint8Array>
   clientStreamingRequest(
     service: string,
     method: string,
-    data: AsyncIterable<Uint8Array>
+    data: AsyncIterable<Uint8Array>,
+    abortSignal?: AbortSignal
   ): Promise<Uint8Array>
   serverStreamingRequest(
     service: string,
     method: string,
-    data: Uint8Array
+    data: Uint8Array,
+    abortSignal?: AbortSignal
   ): AsyncIterable<Uint8Array>
   bidirectionalStreamingRequest(
     service: string,
     method: string,
-    data: AsyncIterable<Uint8Array>
+    data: AsyncIterable<Uint8Array>,
+    abortSignal?: AbortSignal
   ): AsyncIterable<Uint8Array>
 }
 
