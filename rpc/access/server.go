@@ -28,22 +28,24 @@ func (s *AccessRpcServiceServer) LookupRpcService(
 	req *LookupRpcServiceRequest,
 	strm SRPCAccessRpcService_LookupRpcServiceStream,
 ) error {
-	dir := req.ToDirective()
-
 	var mtx sync.Mutex
 	var bcast broadcast.Broadcast
-	vals := make(map[uint32]struct{})
 	var sendQueue []*LookupRpcServiceResponse
 	var disposed bool
 	var resErr error
+
+	waitCh := bcast.GetWaitCh()
+	dir := req.ToDirective()
+	vals := make(map[uint32]struct{})
+
 	di, ref, err := s.b.AddDirective(dir, bus.NewCallbackHandler(
 		func(av directive.AttachedValue) {
-			mtx.Lock()
-			defer mtx.Unlock()
 			_, ok := av.GetValue().(bifrost_rpc.LookupRpcServiceValue)
 			if !ok {
 				return
 			}
+			mtx.Lock()
+			defer mtx.Unlock()
 			vals[av.GetValueID()] = struct{}{}
 			if len(vals) == 1 {
 				sendQueue = append(sendQueue, &LookupRpcServiceResponse{
@@ -67,8 +69,10 @@ func (s *AccessRpcServiceServer) LookupRpcService(
 			}
 		}, func() {
 			mtx.Lock()
-			disposed = true
-			bcast.Broadcast()
+			if !disposed {
+				disposed = true
+				bcast.Broadcast()
+			}
 			mtx.Unlock()
 		},
 	))
@@ -98,10 +102,11 @@ func (s *AccessRpcServiceServer) LookupRpcService(
 		select {
 		case <-strm.Context().Done():
 			return context.Canceled
-		case <-bcast.GetWaitCh():
+		case <-waitCh:
 		}
 
 		mtx.Lock()
+		waitCh = bcast.GetWaitCh()
 		currSendQueue, currIsDisposed := sendQueue, disposed
 		sendQueue = nil
 		mtx.Unlock()
