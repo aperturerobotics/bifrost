@@ -27,7 +27,7 @@ require (
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/djherbis/buffer v1.2.0
 	github.com/golang/snappy v0.0.4
-	github.com/klauspost/compress v1.15.12
+	github.com/klauspost/compress v1.15.15
 	github.com/libp2p/go-libp2p v0.24.2
 	github.com/libp2p/go-yamux/v4 v4.0.1-0.20220919134236-1c09f2ab3ec1
 	github.com/lucas-clemente/quic-go v0.31.1
