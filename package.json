@@ -59,6 +59,6 @@
     "long": "^5.2.1",
     "protobufjs": "^7.1.2",
     "starpc": "^0.17.1",
-    "utf-8-validate": "^6.0.0"
+    "utf-8-validate": "^6.0.1"
   }
 }
