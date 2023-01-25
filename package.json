@@ -57,7 +57,7 @@
     "@aperturerobotics/ts-proto-common-types": "^0.2.0",
     "bufferutil": "^4.0.7",
     "long": "^5.2.1",
-    "protobufjs": "^7.1.2",
+    "protobufjs": "^7.2.0",
     "starpc": "^0.17.1",
     "utf-8-validate": "^6.0.1"
   }
