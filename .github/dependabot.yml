@@ -8,3 +8,7 @@ updates:
     directory: "/hack"
     schedule:
       interval: "weekly"
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "daily"
