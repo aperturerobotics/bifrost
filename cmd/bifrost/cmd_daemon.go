@@ -57,7 +57,7 @@ func init() {
 				(&daemonFlags.DaemonArgs).BuildFlags(),
 				&cli.StringFlag{
 					Name:        "config",
-					Alias:       []string{"c"},
+					Aliases:     []string{"c"},
 					Usage:       "path to configuration yaml file",
 					EnvVars:     []string{"BIFROST_CONFIG"},
 					Value:       "bifrost_daemon.yaml",
