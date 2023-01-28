@@ -34,7 +34,8 @@ func (a *UtilArgs) BuildCommands() []*ucli.Command {
 			Action: a.RunGeneratePrivate,
 			Flags: []ucli.Flag{
 				&ucli.StringFlag{
-					Name:        "out, o",
+					Name:        "out",
+					Aliases:     []string{"o"},
 					Usage:       "file to store pem formatted private key",
 					Destination: &a.OutPath,
 				},
@@ -46,12 +47,14 @@ func (a *UtilArgs) BuildCommands() []*ucli.Command {
 			Action: a.RunDerivePublic,
 			Flags: []ucli.Flag{
 				&ucli.StringFlag{
-					Name:        "file, f",
+					Name:        "file",
+					Aliases:     []string{"f"},
 					Usage:       "file to load pem formatted private key",
 					Destination: &a.FilePath,
 				},
 				&ucli.StringFlag{
-					Name:        "out, o",
+					Name:        "out",
+					Aliases:     []string{"o"},
 					Usage:       "file to store pem formatted public key",
 					Destination: &a.OutPath,
 				},
