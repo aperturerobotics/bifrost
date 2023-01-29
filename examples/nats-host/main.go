@@ -124,7 +124,7 @@ func runNatsExample(c *cli.Context) error {
 	for _, channelID := range topics {
 		lp2 := sim.GetPeerByID(p2.GetPeerID())
 		lp2tb := lp2.GetTestbed()
-		tpv2, tpv2Ref, err := bus.ExecOneOff(
+		tpv2, _, tpv2Ref, err := bus.ExecOneOff(
 			ctx,
 			lp2tb.Bus,
 			pubsub.NewBuildChannelSubscription(channelID, lp2tb.PrivKey),
@@ -139,7 +139,7 @@ func runNatsExample(c *cli.Context) error {
 
 		lp0 := sim.GetPeerByID(p0.GetPeerID())
 		lp0tb := lp0.GetTestbed()
-		tpv0, tpv0Ref, err := bus.ExecOneOff(
+		tpv0, _, tpv0Ref, err := bus.ExecOneOff(
 			ctx,
 			lp0tb.Bus,
 			pubsub.NewBuildChannelSubscription(channelID, lp0tb.PrivKey),

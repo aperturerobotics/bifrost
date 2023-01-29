@@ -78,7 +78,7 @@ func TestPubsubNATS(t *testing.T) {
 	for _, channelID := range topics {
 		lp1 := sim.GetPeerByID(p1.GetPeerID())
 		lp1tb := lp1.GetTestbed()
-		tpv1, tpv1Ref, err := bus.ExecOneOff(
+		tpv1, _, tpv1Ref, err := bus.ExecOneOff(
 			ctx,
 			lp1tb.Bus,
 			pubsub.NewBuildChannelSubscription(channelID, lp1tb.PrivKey),
@@ -93,7 +93,7 @@ func TestPubsubNATS(t *testing.T) {
 
 		lp0 := sim.GetPeerByID(p0.GetPeerID())
 		lp0tb := lp0.GetTestbed()
-		tpv0, tpv0Ref, err := bus.ExecOneOff(
+		tpv0, _, tpv0Ref, err := bus.ExecOneOff(
 			ctx,
 			lp0tb.Bus,
 			pubsub.NewBuildChannelSubscription(channelID, lp0tb.PrivKey),

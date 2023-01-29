@@ -80,7 +80,7 @@ func NewTestbed(ctx context.Context, le *logrus.Entry, opts TestbedOpts) (*Testb
 		if err != nil {
 			return nil, err
 		}
-		_, peerRef, err := bus.ExecOneOff(
+		_, _, peerRef, err := bus.ExecOneOff(
 			ctx,
 			t.Bus,
 			resolver.NewLoadControllerWithConfig(peerConfig),
@@ -95,7 +95,7 @@ func NewTestbed(ctx context.Context, le *logrus.Entry, opts TestbedOpts) (*Testb
 	}
 
 	if !opts.NoEcho {
-		_, echoRef, err := bus.ExecOneOff(
+		_, _, echoRef, err := bus.ExecOneOff(
 			ctx,
 			t.Bus,
 			resolver.NewLoadControllerWithConfig(&stream_echo.Config{}),

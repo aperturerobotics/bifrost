@@ -106,7 +106,7 @@ func (c *Controller) Execute(ctx context.Context) error {
 		}
 
 		var ref directive.Reference
-		cpeer, ref, err = peer.GetPeerWithID(ctx, c.bus, c.peerID)
+		cpeer, _, ref, err = peer.GetPeerWithID(ctx, c.bus, c.peerID, false, nil)
 		if err != nil {
 			return err
 		}

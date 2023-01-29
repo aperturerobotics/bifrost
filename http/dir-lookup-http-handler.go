@@ -46,8 +46,13 @@ func ExLookupHTTPHandlers(
 	b bus.Bus,
 	handlerURL,
 	clientID string,
-) ([]LookupHTTPHandlerValue, directive.Reference, error) {
-	return bus.ExecCollectValues[LookupHTTPHandlerValue](ctx, b, NewLookupHTTPHandler(handlerURL, clientID), nil)
+) ([]LookupHTTPHandlerValue, directive.Instance, directive.Reference, error) {
+	return bus.ExecCollectValues[LookupHTTPHandlerValue](
+		ctx,
+		b,
+		NewLookupHTTPHandler(handlerURL, clientID),
+		nil,
+	)
 }
 
 // ExLookupFirstHTTPHandler waits for the first HTTP handler to be returned.
@@ -59,7 +64,7 @@ func ExLookupFirstHTTPHandler(
 	clientID string,
 	returnIfIdle bool,
 	valDisposeCb func(),
-) (LookupHTTPHandlerValue, directive.Reference, error) {
+) (LookupHTTPHandlerValue, directive.Instance, directive.Reference, error) {
 	return bus.ExecWaitValue[LookupHTTPHandlerValue](
 		ctx,
 		b,

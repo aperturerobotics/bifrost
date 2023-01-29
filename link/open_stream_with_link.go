@@ -31,6 +31,9 @@ type OpenStreamViaLink interface {
 	OpenStreamViaLinkTransportConstraint() uint64
 }
 
+// OpenStreamViaLinkValue is the value of OpenStreamViaLink.
+type OpenStreamViaLinkValue = MountedStream
+
 // openStreamViaLink implements OpenStreamViaLink with a peer ID constraint.
 // Value: link.MountedStream
 type openStreamViaLink struct {

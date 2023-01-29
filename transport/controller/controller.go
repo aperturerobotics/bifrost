@@ -5,6 +5,7 @@ import (
 	"io"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/aperturerobotics/bifrost/link"
@@ -41,9 +42,7 @@ type Constructor func(
 // transport, and manages the lifecycle of dialing and accepting links.
 type Controller struct {
 	// ctx is the controller context
-	// set in the execute() function
-	// ensure not used before execute sets it.
-	ctx context.Context
+	ctx atomic.Pointer[context.Context]
 	// le is the logger
 	le *logrus.Entry
 	// bus is the controller bus
@@ -160,12 +159,12 @@ func (c *Controller) GetPeerLinks(peerID peer.ID) []link.Link {
 // Returning nil ends execution.
 // Returning an error triggers a retry with backoff.
 func (c *Controller) Execute(ctx context.Context) error {
-	c.ctx = ctx
+	c.ctx.Store(&ctx)
 	// Acquire a handle to the node.
 	c.le.
 		WithField("peer-id", c.peerIDConstraint.Pretty()).
 		Debug("looking up peer with ID")
-	n, nRef, err := peer.GetPeerWithID(ctx, c.bus, c.peerIDConstraint)
+	n, _, nRef, err := peer.GetPeerWithID(ctx, c.bus, c.peerIDConstraint, false, nil)
 	if err != nil {
 		return err
 	}
@@ -269,9 +268,17 @@ func (c *Controller) HandleLinkEstablished(lnk link.Link) {
 	}
 
 	// construct new established link
-	el, err := newEstablishedLink(c.le, c.ctx, c.bus, lnk, c)
+	ctxPtr := c.ctx.Load()
+	if ctxPtr == nil {
+		c.le.Warn("dropping link: handle established link called before execute")
+		go lnk.Close()
+		return
+	}
+
+	el, err := newEstablishedLink(c.le, *c.ctx.Load(), c.bus, lnk, c)
 	if err != nil {
 		c.le.WithError(err).Warn("unable to construct established link")
+		go lnk.Close()
 		return
 	}
 	c.links[luuid] = el
@@ -339,7 +346,7 @@ func (c *Controller) HandleIncomingStream(
 		WithField("remote-peer", lnk.GetRemotePeer().Pretty()).
 		Debug("accepted stream")
 	dir := link.NewHandleMountedStream(pid, c.localPeerID, mstrm.GetPeerID())
-	dval, dref, err := bus.ExecOneOff(ctx, c.bus, dir, false, nil)
+	dval, _, dref, err := bus.ExecOneOff(ctx, c.bus, dir, false, nil)
 	if err != nil {
 		le.WithError(err).Warn("error retrieving stream handler for stream")
 		strm.Close()
@@ -426,11 +433,16 @@ func (c *Controller) startLinkDialer(
 	opts *dialer.DialerOpts,
 	tptDialer transport.TransportDialer,
 ) {
+	ctxPtr := c.ctx.Load()
+	if ctxPtr == nil {
+		return
+	}
+	ctx := *ctxPtr
 	c.mtx.Lock()
 	_, ok := c.linkDialers[key]
 	if !ok {
 		dialer := dialer.NewDialer(c.le, tptDialer, opts, peerID, key.dialAddress)
-		ctx, ctxCancel := context.WithCancel(c.ctx)
+		ctx, ctxCancel := context.WithCancel(ctx)
 		ld := &linkDialer{
 			dialer: dialer,
 			cancel: ctxCancel,

@@ -8,7 +8,6 @@ import (
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/pubsub"
 	pubsub_api "github.com/aperturerobotics/bifrost/pubsub/api"
-	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/pkg/errors"
 )
@@ -65,7 +64,7 @@ func (a *API) Subscribe(serv pubsub_api.SRPCPubSubService_SubscribeStream) error
 				return err
 			}
 			pubCtx, pubCtxCancel := context.WithTimeout(ctx, acquirePeerTimeout)
-			handlePeer, handlePeerRef, err = peer.GetPeerWithID(pubCtx, a.bus, handlePeerID)
+			handlePeer, _, handlePeerRef, err = peer.GetPeerWithID(pubCtx, a.bus, handlePeerID, false, nil)
 			pubCtxCancel()
 			if err != nil || handlePeer == nil {
 				return errors.Errorf("peer not identified locally: %s", msgPeerID)
@@ -84,21 +83,18 @@ func (a *API) Subscribe(serv pubsub_api.SRPCPubSubService_SubscribeStream) error
 			if err != nil {
 				return err
 			}
-			av, subRef, err := bus.ExecOneOff(
+			val, _, subRef, err := pubsub.ExBuildChannelSubscription(
 				ctx,
 				a.bus,
-				pubsub.NewBuildChannelSubscription(channelID, handlePeerPrivKey),
 				false,
+				channelID,
+				handlePeerPrivKey,
 				nil,
 			)
 			if err != nil {
 				return err
 			}
 			defer subRef.Release()
-			val, ok := av.GetValue().(pubsub.BuildChannelSubscriptionValue)
-			if !ok {
-				return errors.New("build channel subscription returned invalid value")
-			}
 			sub = val
 			err = serv.Send(&pubsub_api.SubscribeResponse{
 				SubscriptionStatus: &pubsub_api.SubscriptionStatus{

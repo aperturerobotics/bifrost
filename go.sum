@@ -4,8 +4,8 @@ github.com/aperturerobotics/bifrost-nats-client v1.10.1-0.20200831103200-24c3d04
 github.com/aperturerobotics/bifrost-nats-client v1.10.1-0.20200831103200-24c3d0464e58/go.mod h1:ougcjYEZDYV8pVtaNbA5sgYDukkYHyKtSsW/T3B13j0=
 github.com/aperturerobotics/bifrost-nats-server/v2 v2.1.8-0.20221228081037-b7c2df0c151f h1:bmScByQNGDPPy9T+zdwu816XaCbFtD5UDyqZMRiHJ80=
 github.com/aperturerobotics/bifrost-nats-server/v2 v2.1.8-0.20221228081037-b7c2df0c151f/go.mod h1:kIcZtLpq4UIZzOqduYLm1mYU1nuMBtN6XuDCtQ21QT8=
-github.com/aperturerobotics/controllerbus v0.22.3 h1:TPu/k2CfYnSFeaZ21I+2E2tZTzhNuwSXM2/ijspgn5k=
-github.com/aperturerobotics/controllerbus v0.22.3/go.mod h1:itoKqDRVPivize1gj4hdGkUhYaE01mHx6gWWd7OoPKs=
+github.com/aperturerobotics/controllerbus v0.23.1 h1:n2fcpGmoq/kjJjBA7cwaSnRdKkK3QOKgDa5g6lRchL8=
+github.com/aperturerobotics/controllerbus v0.23.1/go.mod h1:AZZuOT7EULksowW/aJSBm/CpfR9g9LjIc3KgwWsNBRA=
 github.com/aperturerobotics/entitygraph v0.3.3 h1:Ce0rTx5qyKF0rzRC0VP1cebgTqQ4Y4FCYl1rj7mrJKw=
 github.com/aperturerobotics/entitygraph v0.3.3/go.mod h1:hjXb16BQyXXEaxtp7emo2bGAK0qf5NlxoJ0pidSONak=
 github.com/aperturerobotics/logrus v1.9.1-0.20221224130652-ff61cbb763af h1:nRveANX8PK0j+6M+d6Hyl45W+fQpg6BDBfcrrFMbbrw=
@@ -18,8 +18,8 @@ github.com/aperturerobotics/starpc v0.17.1 h1:EdQ8VN3XNDPOegRdi69XGpLDTYbo8MHB+W
 github.com/aperturerobotics/starpc v0.17.1/go.mod h1:n9cZsXlCZOwjnkuyLDUijeIIxjlsN+DvlqKYnLhCR04=
 github.com/aperturerobotics/ts-proto-common-types v0.2.0 h1:OtlIxcXjfRDvgY2OQC6dZSiAAXral6kaZ+kD+JviZo0=
 github.com/aperturerobotics/ts-proto-common-types v0.2.0/go.mod h1:8QXVbEzjPvsaxWQ5RgZtAA9CcOdhWDyMaYdWVKZo8To=
-github.com/aperturerobotics/util v0.0.0-20230118015318-d6ec15aa38d7 h1:P+bYF0QHjtwDlqhp4PF6WJtLxm68yFalX9NIzsxTezc=
-github.com/aperturerobotics/util v0.0.0-20230118015318-d6ec15aa38d7/go.mod h1:up2AYcp62UgmFVTm7QhM4USXAKGv73gpb5dHraKmzxQ=
+github.com/aperturerobotics/util v1.0.2 h1:em0sy/SHQge7vK2IYR9ZrjF/a5M3/rKR7uk6NelRNfo=
+github.com/aperturerobotics/util v1.0.2/go.mod h1:gFLdglkzXYEWP/iYrOGeJEKzfjarlMDPrLNLgwDHC1o=
 github.com/benbjohnson/clock v1.1.0/go.mod h1:J11/hYXuz8f4ySSvYwY0FKfm+ezbsZBKZxNJlLklBHA=
 github.com/benbjohnson/clock v1.3.0 h1:ip6w0uFQkncKQ979AypyG0ER7mqUSBdKLOgAle/AT8A=
 github.com/blang/semver v3.5.1+incompatible h1:cQNTCjp13qL8KC3Nbxr/y2Bqb63oX6wdnnjpJbkM4JQ=

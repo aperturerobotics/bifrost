@@ -45,7 +45,7 @@ func NewController(b bus.Bus, le *logrus.Entry, peerID peer.ID, topics []string)
 // Returning nil ends execution.
 // Returning an error triggers a retry with backoff.
 func (c *Controller) Execute(ctx context.Context) error {
-	cpeer, ref, err := peer.GetPeerWithID(ctx, c.bus, c.peerID)
+	cpeer, _, ref, err := peer.GetPeerWithID(ctx, c.bus, c.peerID, false, nil)
 	if err != nil {
 		return err
 	}

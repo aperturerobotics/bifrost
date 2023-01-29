@@ -9,14 +9,22 @@ import (
 
 // GetPeerWithID gets a peer.
 // If peer ID is empty, selects any peer.
+// returnIfIdle if set, will return if the directive becomes idle.
+// valDisposeCallback is called when the value is no longer valid.
+// valDisposeCallback can be nil.
 func GetPeerWithID(
 	ctx context.Context,
 	b bus.Bus,
 	peerIDConstraint ID,
-) (Peer, directive.Reference, error) {
-	v, ref, err := bus.ExecOneOff(ctx, b, NewGetPeer(peerIDConstraint), false, nil)
-	if err != nil {
-		return nil, nil, err
-	}
-	return v.GetValue().(Peer), ref, nil
+	returnIfIdle bool,
+	valDisposeCallback func(),
+) (Peer, directive.Instance, directive.Reference, error) {
+	return bus.ExecWaitValue[Peer](
+		ctx,
+		b,
+		NewGetPeer(peerIDConstraint),
+		returnIfIdle,
+		valDisposeCallback,
+		nil,
+	)
 }

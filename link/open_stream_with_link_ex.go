@@ -19,7 +19,7 @@ func OpenStreamViaLinkEx(
 	transportID uint64,
 	openOpts stream.OpenOpts,
 ) (MountedStream, error) {
-	val, inst, err := bus.ExecOneOff(
+	mstrm, _, ref, err := bus.ExecWaitValue[MountedStream](
 		ctx,
 		b,
 		NewOpenStreamViaLink(
@@ -30,12 +30,10 @@ func OpenStreamViaLinkEx(
 		),
 		false,
 		nil,
+		nil,
 	)
-	if err != nil {
-		return nil, err
+	if ref != nil {
+		ref.Release()
 	}
-	inst.Release()
-
-	mstrm := val.GetValue().(MountedStream)
-	return mstrm, nil
+	return mstrm, err
 }

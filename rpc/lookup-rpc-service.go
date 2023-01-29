@@ -55,16 +55,16 @@ func ExLookupRpcService(
 	ctx context.Context,
 	b bus.Bus,
 	serviceID, serverID string,
-) ([]LookupRpcServiceValue, directive.Reference, error) {
-	out, valsRef, err := bus.ExecCollectValues[LookupRpcServiceValue](ctx, b, NewLookupRpcService(serviceID, serverID), nil)
+) ([]LookupRpcServiceValue, directive.Instance, directive.Reference, error) {
+	out, di, valsRef, err := bus.ExecCollectValues[LookupRpcServiceValue](ctx, b, NewLookupRpcService(serviceID, serverID), nil)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	if len(out) == 0 {
 		valsRef.Release()
-		return nil, nil, nil
+		return nil, nil, nil, nil
 	}
-	return out, valsRef, nil
+	return out, di, valsRef, nil
 }
 
 // Validate validates the directive.

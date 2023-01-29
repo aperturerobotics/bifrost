@@ -58,7 +58,7 @@ func (a *API) ForwardStreams(
 	defer plCtxCancel()
 
 	// if the peer is unloaded the request will be canceled.
-	_, peerRef, err := bus.ExecOneOff(
+	_, _, peerRef, err := bus.ExecOneOff(
 		plCtx,
 		a.bus,
 		peer.NewGetPeer(targetPeerID),

@@ -90,7 +90,7 @@ func newPeer(ctx context.Context, le *logrus.Entry, gp *graph.Peer) (*Peer, erro
 	}
 	np.inproc = tp.(*inproc.Inproc)
 	np.transportController = tpc
-	_, tp2Ref, err := bus.ExecOneOff(
+	_, _, tp2Ref, err := bus.ExecOneOff(
 		np.ctx,
 		np.testbed.Bus,
 		resolver.NewLoadControllerWithConfig(&configset_controller.Config{}),

@@ -2,7 +2,6 @@ package pubsub_controller
 
 import (
 	"context"
-	"errors"
 
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/pubsub"
@@ -33,7 +32,7 @@ func (t *trackedLink) trackLink(ctx context.Context) error {
 		return err
 	}
 
-	av, avRef, err := bus.ExecOneOff(
+	mtStrm, _, avRef, err := bus.ExecWaitValue[link.OpenStreamViaLinkValue](
 		ctx,
 		t.c.bus,
 		link.NewOpenStreamViaLink(
@@ -44,16 +43,12 @@ func (t *trackedLink) trackLink(ctx context.Context) error {
 		),
 		false,
 		nil,
+		nil,
 	)
 	if err != nil {
 		return err
 	}
 	defer avRef.Release()
-
-	mtStrm, ok := av.GetValue().(link.MountedStream)
-	if !ok {
-		return errors.New("open stream via link returned non-stream value")
-	}
 
 	t.le.WithField("protocol-id", mtStrm.GetProtocolID()).
 		Info("pubsub stream opened (by us)")

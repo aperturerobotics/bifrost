@@ -19,7 +19,7 @@ func OpenStreamWithPeerEx(
 	transportID uint64,
 	openOpts stream.OpenOpts,
 ) (MountedStream, func(), error) {
-	_, estLinkInst, err := b.AddDirective(
+	_, estLinkRef, err := b.AddDirective(
 		NewEstablishLinkWithPeer(localPeerID, remotePeerID),
 		nil,
 	)
@@ -27,7 +27,7 @@ func OpenStreamWithPeerEx(
 		return nil, func() {}, err
 	}
 
-	val, inst, err := bus.ExecOneOff(
+	mstrm, _, ref, err := bus.ExecWaitValue[MountedStream](
 		ctx,
 		b,
 		NewOpenStreamWithPeer(
@@ -38,13 +38,13 @@ func OpenStreamWithPeerEx(
 		),
 		false,
 		nil,
+		nil,
 	)
 	if err != nil {
-		estLinkInst.Release()
+		estLinkRef.Release()
 		return nil, func() {}, err
 	}
-	inst.Release()
+	ref.Release()
 
-	mstrm := val.GetValue().(MountedStream)
-	return mstrm, estLinkInst.Release, nil
+	return mstrm, estLinkRef.Release, nil
 }

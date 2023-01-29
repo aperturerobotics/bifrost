@@ -15,7 +15,7 @@ import (
 func TestConnectivity(ctx context.Context, px0, px1 *Peer) error {
 	tb0 := px0.testbed
 
-	msv1, ms1Ref, err := bus.ExecOneOff(
+	msv1, _, ms1Ref, err := bus.ExecOneOff(
 		ctx,
 		tb0.Bus,
 		link.NewOpenStreamWithPeer(

@@ -55,29 +55,29 @@ func ExLookupRpcClient(
 	ctx context.Context,
 	b bus.Bus,
 	serviceID, clientID string,
-) ([]LookupRpcClientValue, directive.Reference, error) {
-	vals, valsRef, err := bus.ExecCollectValues[LookupRpcClientValue](ctx, b, NewLookupRpcClient(serviceID, clientID), nil)
+) ([]LookupRpcClientValue, directive.Instance, directive.Reference, error) {
+	vals, di, valsRef, err := bus.ExecCollectValues[LookupRpcClientValue](ctx, b, NewLookupRpcClient(serviceID, clientID), nil)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	if len(vals) == 0 {
 		valsRef.Release()
-		return nil, nil, nil
+		return nil, nil, nil, nil
 	}
-	return vals, valsRef, nil
+	return vals, di, valsRef, nil
 }
 
 // ExLookupRpcClientSet executes the LookupRpcClient directive returning a ClientSet.
 // Returns ErrServiceClientUnavailable if no clients are returned.
-func ExLookupRpcClientSet(ctx context.Context, b bus.Bus, serviceID, clientID string) (*srpc.ClientSet, directive.Reference, error) {
-	clients, clientsRef, err := ExLookupRpcClient(ctx, b, serviceID, clientID)
+func ExLookupRpcClientSet(ctx context.Context, b bus.Bus, serviceID, clientID string) (*srpc.ClientSet, directive.Instance, directive.Reference, error) {
+	clients, di, clientsRef, err := ExLookupRpcClient(ctx, b, serviceID, clientID)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	if len(clients) == 0 {
-		return nil, nil, ErrServiceClientUnavailable
+		return nil, nil, nil, ErrServiceClientUnavailable
 	}
-	return srpc.NewClientSet(clients), clientsRef, nil
+	return srpc.NewClientSet(clients), di, clientsRef, nil
 }
 
 // Validate validates the directive.

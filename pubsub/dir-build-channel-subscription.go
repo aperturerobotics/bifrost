@@ -49,23 +49,16 @@ func ExBuildChannelSubscription(
 	returnIfIdle bool,
 	channelID string,
 	privKey crypto.PrivKey,
-) (BuildChannelSubscriptionValue, directive.Reference, error) {
-	val, valRef, err := bus.ExecOneOff(
+	valDisposeCallback func(),
+) (BuildChannelSubscriptionValue, directive.Instance, directive.Reference, error) {
+	return bus.ExecWaitValue[BuildChannelSubscriptionValue](
 		ctx,
 		b,
 		NewBuildChannelSubscription(channelID, privKey),
 		returnIfIdle,
+		valDisposeCallback,
 		nil,
 	)
-	if err != nil {
-		return nil, nil, err
-	}
-	out, ok := val.GetValue().(BuildChannelSubscriptionValue)
-	if !ok {
-		valRef.Release()
-		return nil, nil, errors.New("build channel subscription returned invalid value")
-	}
-	return out, valRef, nil
 }
 
 // Validate validates the directive.

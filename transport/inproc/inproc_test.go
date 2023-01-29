@@ -95,7 +95,7 @@ func TestEstablishLink(t *testing.T) {
 	tp1.ConnectToInproc(ctx, tp2)
 
 	// Attempt to open a link between them.
-	lnk2to1, lnk1Ref, err := bus.ExecOneOff(
+	lnk2to1, _, lnk1Ref, err := bus.ExecOneOff(
 		ctx,
 		tb2.Bus,
 		link.NewEstablishLinkWithPeer("", peerId1),
@@ -112,7 +112,7 @@ func TestEstablishLink(t *testing.T) {
 		lnk2to1.GetValue().(link.Link).GetUUID(),
 	)
 
-	msv1, ms1Ref, err := bus.ExecOneOff(
+	msv1, _, ms1Ref, err := bus.ExecOneOff(
 		ctx,
 		tb1.Bus,
 		link.NewOpenStreamWithPeer(

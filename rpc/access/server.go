@@ -133,7 +133,12 @@ func (s *AccessRpcServiceServer) CallRpcService(strm SRPCAccessRpcService_CallRp
 			return nil, nil, err
 		}
 		// lookup the rpc service invokers
-		invokers, invokerRef, err := bifrost_rpc.ExLookupRpcService(ctx, s.b, req.GetServiceId(), req.GetServerId())
+		invokers, _, invokerRef, err := bifrost_rpc.ExLookupRpcService(
+			ctx,
+			s.b,
+			req.GetServiceId(),
+			req.GetServerId(),
+		)
 		if err != nil || invokerRef == nil {
 			return nil, nil, err
 		}
