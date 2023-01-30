@@ -20,7 +20,7 @@ require (
 	github.com/aperturerobotics/bifrost v0.0.0-00010101000000-000000000000
 	github.com/aperturerobotics/goprotowrap v0.3.0
 	github.com/aperturerobotics/starpc v0.17.1
-	github.com/evanw/esbuild v0.17.4
+	github.com/evanw/esbuild v0.17.5
 	github.com/hajimehoshi/wasmserve v0.0.0-20210512070053-db8e7b58c3a0
 	storj.io/drpc v0.0.32
 )
@@ -219,7 +219,7 @@ require (
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/crypto v0.4.1-0.20221212223212-23edec0b383a // indirect
-	golang.org/x/exp v0.0.0-20230118134722-a68e582fa157 // indirect
+	golang.org/x/exp v0.0.0-20230127193734-31bee513bff7 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20220827204233-334a2380cb91 // indirect
 	golang.org/x/mod v0.7.0 // indirect
 	golang.org/x/net v0.5.0 // indirect
