@@ -13,8 +13,9 @@ import (
 
 // ClientController resolves LookupRpcService with an AccessRpcService client.
 type ClientController struct {
-	info *controller.Info
-	svc  AccessClientFunc
+	info    *controller.Info
+	svc     AccessClientFunc
+	waitAck bool
 
 	clientRc *refcount.RefCount[*SRPCAccessRpcServiceClient]
 
@@ -39,17 +40,22 @@ func NewAccessClientFunc(svc SRPCAccessRpcServiceClient) AccessClientFunc {
 
 // NewClientController constructs the controller.
 // The regex fields can both be nil to accept any.
+//
+// if waitAck is set, waits for ack from the remote before starting the proxied rpc.
+// note: usually you do not need waitAck set to true.
 func NewClientController(
 	info *controller.Info,
 	svc AccessClientFunc,
 	serviceIDRe *regexp.Regexp,
 	serverIDRe *regexp.Regexp,
+	waitAck bool,
 ) *ClientController {
 	c := &ClientController{
 		info:        info,
 		svc:         svc,
 		serviceIDRe: serviceIDRe,
 		serverIDRe:  serverIDRe,
+		waitAck:     waitAck,
 	}
 	c.clientRc = refcount.NewRefCount(
 		nil, nil, nil,
@@ -106,7 +112,7 @@ func (c *ClientController) HandleDirective(ctx context.Context, di directive.Ins
 				return nil, nil
 			}
 		}
-		return directive.R(NewLookupRpcServiceResolver(dir, c.AccessClient), nil)
+		return directive.R(NewLookupRpcServiceResolver(dir, c.AccessClient, c.waitAck), nil)
 	}
 	return nil, nil
 }

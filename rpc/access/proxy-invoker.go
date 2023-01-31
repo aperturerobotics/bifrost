@@ -11,13 +11,17 @@ import (
 
 // ProxyInvoker is an srpc.Invoker that invokes via the proxy client.
 type ProxyInvoker struct {
-	client SRPCAccessRpcServiceClient
-	req    *LookupRpcServiceRequest
+	client  SRPCAccessRpcServiceClient
+	req     *LookupRpcServiceRequest
+	waitAck bool
 }
 
 // NewProxyInvoker constructs a new srpc.Invoker with a client and request.
-func NewProxyInvoker(client SRPCAccessRpcServiceClient, req *LookupRpcServiceRequest) *ProxyInvoker {
-	return &ProxyInvoker{client: client, req: req}
+//
+// if waitAck is set, waits for ack from the remote before starting the proxied rpc.
+// note: usually you do not need waitAck set to true.
+func NewProxyInvoker(client SRPCAccessRpcServiceClient, req *LookupRpcServiceRequest, waitAck bool) *ProxyInvoker {
+	return &ProxyInvoker{client: client, req: req, waitAck: waitAck}
 }
 
 // InvokeMethod invokes the method matching the service & method ID.
@@ -35,7 +39,7 @@ func (r *ProxyInvoker) InvokeMethod(serviceID, methodID string, strm srpc.Stream
 	}
 
 	// Remote will lookup the service, then return either an error or ack.
-	prw, err := rpcstream.OpenRpcStream(strm.Context(), r.client.CallRpcService, componentID)
+	prw, err := rpcstream.OpenRpcStream(strm.Context(), r.client.CallRpcService, componentID, r.waitAck)
 	if err != nil {
 		return false, err
 	}

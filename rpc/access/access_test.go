@@ -66,6 +66,7 @@ func TestAccessRpcService(t *testing.T) {
 		NewAccessClientFunc(NewSRPCAccessRpcServiceClient(client)),
 		nil,
 		nil,
+		false,
 	)
 	clientRel, err := clientBus.AddController(ctx, clientCtrl, nil)
 	if err != nil {
