@@ -3,19 +3,24 @@ package bifrost_rpc_access
 import (
 	"context"
 	"regexp"
+	"time"
 
 	bifrost_rpc "github.com/aperturerobotics/bifrost/rpc"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/aperturerobotics/util/promise"
 	"github.com/aperturerobotics/util/refcount"
+	"github.com/cenkalti/backoff"
+	"github.com/sirupsen/logrus"
 )
 
 // ClientController resolves LookupRpcService with an AccessRpcService client.
 type ClientController struct {
+	le      *logrus.Entry
 	info    *controller.Info
 	svc     AccessClientFunc
 	waitAck bool
+	backoff backoff.BackOff
 
 	clientRc *refcount.RefCount[*SRPCAccessRpcServiceClient]
 
@@ -43,19 +48,31 @@ func NewAccessClientFunc(svc SRPCAccessRpcServiceClient) AccessClientFunc {
 //
 // if waitAck is set, waits for ack from the remote before starting the proxied rpc.
 // note: usually you do not need waitAck set to true.
+//
+// if backoff is nil, uses a default backoff for retrying the rpc call.
 func NewClientController(
+	le *logrus.Entry,
 	info *controller.Info,
 	svc AccessClientFunc,
 	serviceIDRe *regexp.Regexp,
 	serverIDRe *regexp.Regexp,
 	waitAck bool,
+	bo backoff.BackOff,
 ) *ClientController {
+	if bo == nil {
+		exb := backoff.NewExponentialBackOff()
+		exb.MaxElapsedTime = 0
+		exb.MaxInterval = time.Second * 5
+		bo = exb
+	}
 	c := &ClientController{
+		le:          le,
 		info:        info,
 		svc:         svc,
 		serviceIDRe: serviceIDRe,
 		serverIDRe:  serverIDRe,
 		waitAck:     waitAck,
+		backoff:     bo,
 	}
 	c.clientRc = refcount.NewRefCount(
 		nil, nil, nil,
@@ -112,7 +129,15 @@ func (c *ClientController) HandleDirective(ctx context.Context, di directive.Ins
 				return nil, nil
 			}
 		}
-		return directive.R(NewLookupRpcServiceResolver(dir, c.AccessClient, c.waitAck), nil)
+
+		// only returns an error if the RPC call failed.
+		// if the service doesn't exist on the remote, it does not return an error.
+		res := directive.NewRetryResolver(c.le, NewLookupRpcServiceResolver(
+			dir,
+			c.AccessClient,
+			c.waitAck,
+		), c.backoff)
+		return directive.R(res, nil)
 	}
 	return nil, nil
 }
