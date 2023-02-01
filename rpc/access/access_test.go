@@ -28,7 +28,7 @@ func TestAccessRpcService(t *testing.T) {
 
 	// construct the AccessRpcService server on serverBus
 	serverMux := srpc.NewMux()
-	accessServer := NewAccessRpcServiceServer(serverBus)
+	accessServer := NewAccessRpcServiceServer(serverBus, true)
 	if err := SRPCRegisterAccessRpcService(serverMux, accessServer); err != nil {
 		t.Fatal(err.Error())
 	}
@@ -77,7 +77,7 @@ func TestAccessRpcService(t *testing.T) {
 	defer clientRel()
 
 	// construct the srpc server running on clientBus
-	clientServer := srpc.NewServer(bifrost_rpc.NewInvoker(clientBus, "test-server"))
+	clientServer := srpc.NewServer(bifrost_rpc.NewInvoker(clientBus, "test-server", true))
 
 	// access the echo service via clientServer
 	clientClient := srpc.NewClient(srpc.NewServerPipe(clientServer))

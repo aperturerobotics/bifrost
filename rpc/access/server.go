@@ -14,13 +14,16 @@ import (
 )
 
 // AccessRpcServiceServer is the server for AccessRpcService.
+// If waitOne is set, waits for at least one value before returning.
 type AccessRpcServiceServer struct {
-	b bus.Bus
+	b       bus.Bus
+	waitOne bool
 }
 
 // NewAccessRpcServiceServer builds a AccessRpcService server with a bus.
-func NewAccessRpcServiceServer(b bus.Bus) *AccessRpcServiceServer {
-	return &AccessRpcServiceServer{b: b}
+// If waitOne is set, waits for at least one value before returning.
+func NewAccessRpcServiceServer(b bus.Bus, waitOne bool) *AccessRpcServiceServer {
+	return &AccessRpcServiceServer{b: b, waitOne: waitOne}
 }
 
 // LookupRpcService looks up the rpc service via the bus.
@@ -138,6 +141,7 @@ func (s *AccessRpcServiceServer) CallRpcService(strm SRPCAccessRpcService_CallRp
 			s.b,
 			req.GetServiceId(),
 			req.GetServerId(),
+			s.waitOne,
 		)
 		if err != nil || invokerRef == nil {
 			return nil, nil, err

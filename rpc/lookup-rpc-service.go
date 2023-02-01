@@ -51,12 +51,20 @@ func NewLookupRpcService(serviceID, serverID string) LookupRpcService {
 // If no values are returned, returns nil, nil, nil
 // If values are returned, returns vals, valsRef, nil
 // Otherwise returns nil, nil, err
+// If waitOne is set, waits for at least one value before returning.
 func ExLookupRpcService(
 	ctx context.Context,
 	b bus.Bus,
 	serviceID, serverID string,
+	waitOne bool,
 ) ([]LookupRpcServiceValue, directive.Instance, directive.Reference, error) {
-	out, di, valsRef, err := bus.ExecCollectValues[LookupRpcServiceValue](ctx, b, NewLookupRpcService(serviceID, serverID), nil)
+	out, di, valsRef, err := bus.ExecCollectValues[LookupRpcServiceValue](
+		ctx,
+		b,
+		NewLookupRpcService(serviceID, serverID),
+		waitOne,
+		nil,
+	)
 	if err != nil {
 		return nil, nil, nil, err
 	}

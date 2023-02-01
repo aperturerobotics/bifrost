@@ -51,12 +51,20 @@ func NewLookupRpcClient(serviceID, clientID string) LookupRpcClient {
 // If no values are returned, returns nil, nil, nil
 // If values are returned, returns vals, valsRef, nil
 // Otherwise returns nil, nil, err
+// If waitOne is set, waits for at least one value before returning.
 func ExLookupRpcClient(
 	ctx context.Context,
 	b bus.Bus,
 	serviceID, clientID string,
+	waitOne bool,
 ) ([]LookupRpcClientValue, directive.Instance, directive.Reference, error) {
-	vals, di, valsRef, err := bus.ExecCollectValues[LookupRpcClientValue](ctx, b, NewLookupRpcClient(serviceID, clientID), nil)
+	vals, di, valsRef, err := bus.ExecCollectValues[LookupRpcClientValue](
+		ctx,
+		b,
+		NewLookupRpcClient(serviceID, clientID),
+		waitOne,
+		nil,
+	)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -69,8 +77,14 @@ func ExLookupRpcClient(
 
 // ExLookupRpcClientSet executes the LookupRpcClient directive returning a ClientSet.
 // Returns ErrServiceClientUnavailable if no clients are returned.
-func ExLookupRpcClientSet(ctx context.Context, b bus.Bus, serviceID, clientID string) (*srpc.ClientSet, directive.Instance, directive.Reference, error) {
-	clients, di, clientsRef, err := ExLookupRpcClient(ctx, b, serviceID, clientID)
+// If waitOne is set, waits for at least one value before returning.
+func ExLookupRpcClientSet(
+	ctx context.Context,
+	b bus.Bus,
+	serviceID, clientID string,
+	waitOne bool,
+) (*srpc.ClientSet, directive.Instance, directive.Reference, error) {
+	clients, di, clientsRef, err := ExLookupRpcClient(ctx, b, serviceID, clientID, waitOne)
 	if err != nil {
 		return nil, nil, nil, err
 	}

@@ -41,16 +41,19 @@ func NewLookupHTTPHandler(handlerURL, clientID string) LookupHTTPHandler {
 }
 
 // ExLookupHTTPHandlers executes the LookupHTTPHandler directive.
+// If waitOne is set, waits for at least one value before returning.
 func ExLookupHTTPHandlers(
 	ctx context.Context,
 	b bus.Bus,
 	handlerURL,
 	clientID string,
+	waitOne bool,
 ) ([]LookupHTTPHandlerValue, directive.Instance, directive.Reference, error) {
 	return bus.ExecCollectValues[LookupHTTPHandlerValue](
 		ctx,
 		b,
 		NewLookupHTTPHandler(handlerURL, clientID),
+		waitOne,
 		nil,
 	)
 }

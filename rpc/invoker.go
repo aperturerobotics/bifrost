@@ -12,14 +12,19 @@ type Invoker struct {
 	// serverID is the server identifier.
 	// can be empty
 	serverID string
+	// wait waits for the rpc service to become available.
+	wait bool
 }
 
 // NewInvoker constructs a new rpc method invoker.
 // serverID can be empty, will be used for directives.
-func NewInvoker(b bus.Bus, serverID string) *Invoker {
+// if wait is set, waits for the rpc service to become available.
+// otherwise, returns "unimplemented" if the service is unavailable.
+func NewInvoker(b bus.Bus, serverID string, wait bool) *Invoker {
 	return &Invoker{
 		b:        b,
 		serverID: serverID,
+		wait:     wait,
 	}
 }
 
@@ -29,7 +34,7 @@ func NewInvoker(b bus.Bus, serverID string) *Invoker {
 func (i *Invoker) InvokeMethod(serviceID, methodID string, strm srpc.Stream) (bool, error) {
 	ctx := strm.Context()
 
-	invokers, _, invokerRef, err := ExLookupRpcService(ctx, i.b, serviceID, i.serverID)
+	invokers, _, invokerRef, err := ExLookupRpcService(ctx, i.b, serviceID, i.serverID, i.wait)
 	if err != nil || invokerRef == nil {
 		return false, err
 	}
