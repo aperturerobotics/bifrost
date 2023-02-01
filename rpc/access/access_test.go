@@ -62,11 +62,13 @@ func TestAccessRpcService(t *testing.T) {
 	openClientStream := srpc.NewServerPipe(server)
 	client := srpc.NewClient(openClientStream)
 	clientCtrl := NewClientController(
+		le,
 		controller.NewInfo("bifrost/rpc/access/client", semver.MustParse("0.0.1"), ""),
 		NewAccessClientFunc(NewSRPCAccessRpcServiceClient(client)),
 		nil,
 		nil,
 		false,
+		nil,
 	)
 	clientRel, err := clientBus.AddController(ctx, clientCtrl, nil)
 	if err != nil {
