@@ -5,7 +5,6 @@ import (
 
 	bifrost_rpc "github.com/aperturerobotics/bifrost/rpc"
 	"github.com/aperturerobotics/controllerbus/directive"
-	"github.com/sirupsen/logrus"
 )
 
 // LookupRpcServiceResolver resolves a LookupRpcService directive with a RPC service.
