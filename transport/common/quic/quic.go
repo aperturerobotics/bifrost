@@ -9,7 +9,7 @@ import (
 	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	p2ptls "github.com/libp2p/go-libp2p/p2p/security/tls"
-	"github.com/lucas-clemente/quic-go"
+	"github.com/quic-go/quic-go"
 	"github.com/sirupsen/logrus"
 )
 

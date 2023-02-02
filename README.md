@@ -273,7 +273,7 @@ multiplexing, encryption, and ordering. The Bifrost codebase contains common
 implementations for packet-based and stream-based transports, based primarily on
 the [quic-go] implementation of the Quic UDP protocol.
 
-[quic-go]: https://github.com/lucas-clemente/quic-go
+[quic-go]: https://github.com/quic-go/quic-go
 
 The HandleMountedStream directive contains incoming protocol and peer info. The
 appropriate controller for the protocol responds to the directive and handles

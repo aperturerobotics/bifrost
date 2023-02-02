@@ -6,7 +6,7 @@ import (
 
 	"github.com/aperturerobotics/bifrost/peer"
 	p2ptls "github.com/libp2p/go-libp2p/p2p/security/tls"
-	quic "github.com/lucas-clemente/quic-go"
+	quic "github.com/quic-go/quic-go"
 	"github.com/sirupsen/logrus"
 )
 
