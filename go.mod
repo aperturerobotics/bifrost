@@ -47,7 +47,7 @@ require (
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
 	github.com/templexxx/xor v0.0.0-20191217153810-f85b25db303b
 	github.com/tjfoc/gmsm v1.4.1
-	github.com/urfave/cli/v2 v2.24.2
+	github.com/urfave/cli/v2 v2.24.3
 	github.com/xtaci/smux v1.5.16
 	github.com/zeebo/blake3 v0.2.3
 	golang.org/x/crypto v0.4.1-0.20221212223212-23edec0b383a
