@@ -22,7 +22,7 @@ replace (
 
 require (
 	github.com/aperturerobotics/ts-proto-common-types v0.2.0
-	github.com/aperturerobotics/util v1.0.3
+	github.com/aperturerobotics/util v1.0.4
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/djherbis/buffer v1.2.0
