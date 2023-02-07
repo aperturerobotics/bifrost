@@ -97,7 +97,7 @@ func writeIfNotExists(outPath string, input io.Reader) error {
 		}
 		out = of
 		defer of.Close()
-		if pos, err := of.Seek(0, os.SEEK_END); err != nil || pos != 0 {
+		if pos, err := of.Seek(0, io.SeekEnd); err != nil || pos != 0 {
 			if err == nil {
 				// file must have existed
 				return errors.Wrap(os.ErrExist, outPath)
