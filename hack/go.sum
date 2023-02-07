@@ -67,8 +67,8 @@ github.com/alexkohler/prealloc v1.0.0 h1:Hbq0/3fJPQhNkN0dR95AVrr6R7tou91y0uHG5pO
 github.com/alexkohler/prealloc v1.0.0/go.mod h1:VetnK3dIgFBBKmg0YnD9F9x6Icjd+9cvfHR56wJVlKE=
 github.com/alingse/asasalint v0.0.11 h1:SFwnQXJ49Kx/1GghOFz1XGqHYKp21Kq1nHad/0WQRnw=
 github.com/alingse/asasalint v0.0.11/go.mod h1:nCaoMhw7a9kSJObvQyVzNTPBDbNpdocqrSP7t/cW5+I=
-github.com/aperturerobotics/controllerbus v0.23.5 h1:1SX4EsvxQmJTSUDlCWaExTXp9HgUzVug4JGY37srJ0s=
-github.com/aperturerobotics/controllerbus v0.23.5/go.mod h1:K4M8SYU+f+YlqJU73OS1rVuz1D3wjePXbxnakuyauhU=
+github.com/aperturerobotics/controllerbus v0.23.6 h1:3y2iMjZkTtbmlrqp6Hf1KmrbWDgSj5mBYfiPiHd7gCQ=
+github.com/aperturerobotics/controllerbus v0.23.6/go.mod h1:8Cm42ntJVRanIF4eYpJ9jobjBZd7MaWMhBcfO0f5dxM=
 github.com/aperturerobotics/entitygraph v0.3.3 h1:Ce0rTx5qyKF0rzRC0VP1cebgTqQ4Y4FCYl1rj7mrJKw=
 github.com/aperturerobotics/entitygraph v0.3.3/go.mod h1:hjXb16BQyXXEaxtp7emo2bGAK0qf5NlxoJ0pidSONak=
 github.com/aperturerobotics/goprotowrap v0.3.0 h1:JLQ/1zVRdm2qwfeK7bPxWPg5fpTLlzovDUom0vBgcgM=
