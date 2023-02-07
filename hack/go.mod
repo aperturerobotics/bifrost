@@ -21,7 +21,7 @@ require (
 	github.com/aperturerobotics/bifrost v0.0.0-00010101000000-000000000000
 	github.com/aperturerobotics/goprotowrap v0.3.0
 	github.com/aperturerobotics/starpc v0.18.0
-	github.com/evanw/esbuild v0.17.5
+	github.com/evanw/esbuild v0.17.6
 	github.com/hajimehoshi/wasmserve v0.0.0-20210512070053-db8e7b58c3a0
 	storj.io/drpc v0.0.32
 )
@@ -39,7 +39,7 @@ require (
 	github.com/OpenPeeDeeP/depguard v1.1.1 // indirect
 	github.com/alexkohler/prealloc v1.0.0 // indirect
 	github.com/alingse/asasalint v0.0.11 // indirect
-	github.com/aperturerobotics/controllerbus v0.23.6 // indirect
+	github.com/aperturerobotics/controllerbus v0.23.7 // indirect
 	github.com/aperturerobotics/entitygraph v0.3.3 // indirect
 	github.com/aperturerobotics/ts-proto-common-types v0.2.0 // indirect
 	github.com/aperturerobotics/util v1.0.4 // indirect
