@@ -17,9 +17,9 @@ import (
 type HTTPHandlerController struct {
 	// info is the controller info
 	info *controller.Info
-	// handleCtr is the refcount handle to the UnixFS
+	// handleCtr contains the http handler
 	handleCtr *ccontainer.CContainer[*http.Handler]
-	// errCtr contains any error building FSHandle
+	// errCtr contains any error building the handler
 	errCtr *ccontainer.CContainer[*error]
 	// rc is the refcount container
 	rc *refcount.RefCount[*http.Handler]
