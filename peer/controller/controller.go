@@ -14,7 +14,7 @@ import (
 var Version = semver.MustParse("0.0.1")
 
 // ControllerID is the ID of the controller.
-const ControllerID = "bifrost/peer/1"
+const ControllerID = "bifrost/peer"
 
 // Controller is the Peer controller.
 // It implements peer.Peer as a controller.

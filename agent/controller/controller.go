@@ -16,7 +16,7 @@ import (
 var Version = semver.MustParse("0.0.1")
 
 // ControllerID is the ID of the controller.
-const ControllerID = "bifrost/agent/1"
+const ControllerID = "bifrost/agent"
 
 // Controller is the Agent controller.
 // It implements agent.Agent as a controller.

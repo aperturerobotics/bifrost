@@ -8,7 +8,7 @@ import (
 )
 
 // ControllerID identifies the forwarding controller.
-const ControllerID = "bifrost/stream/forwarding/1"
+const ControllerID = "bifrost/stream/forwarding"
 
 // Version is the controller version.
 var Version = semver.MustParse("0.0.1")

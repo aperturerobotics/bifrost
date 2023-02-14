@@ -7,12 +7,12 @@ xbee:
       blockCompress: BlockCompress_NONE
       blockCrypt: BlockCrypt_SALSA20
       kcpMode: KCPMode_FAST3
-  id: bifrost/xbee/1
+  id: bifrost/xbee
   revision: 1
 forwarding:
   config:
-    protocolId: my/ssh/forwarding/1
+    protocolId: my/ssh/forwarding
     targetMultiaddr: "/ip4/127.0.0.1/tcp/22"
-  id: bifrost/stream/forwarding/1
+  id: bifrost/stream/forwarding
   revision: 1
 

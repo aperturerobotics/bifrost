@@ -8,7 +8,7 @@ import (
 )
 
 // ControllerID identifies the echo controller.
-const ControllerID = "bifrost/stream/echo/1"
+const ControllerID = "bifrost/stream/echo"
 
 // Version is the controller version.
 var Version = semver.MustParse("0.0.1")

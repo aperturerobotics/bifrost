@@ -9,7 +9,7 @@ import (
 var Version = semver.MustParse("0.0.1")
 
 // ControllerID is the ID of the controller.
-const ControllerID = "bifrost/nats/1"
+const ControllerID = "bifrost/nats"
 
 // Controller implements the Nats router controller.
 type Controller = pubsub_controller.Controller

@@ -16,7 +16,7 @@ import (
 var Version = semver.MustParse("0.0.1")
 
 // ControllerID is the ID of the controller.
-const ControllerID = "bifrost/link/establish/1"
+const ControllerID = "bifrost/link/establish"
 
 // Controller is the static Link establish controller.
 // It adds a EstablishLink for each configured peer.

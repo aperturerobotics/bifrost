@@ -8,7 +8,7 @@ import (
 )
 
 // ControllerID identifies the API controller.
-const ControllerID = "bifrost/daemon/api/1"
+const ControllerID = "bifrost/daemon/api"
 
 // Factory constructs a API.
 type Factory struct {

@@ -22,7 +22,6 @@ func (c *Config) ParseTransportPeerID() (peer.ID, error) {
 
 // GetConfigID returns the unique string for this configuration type.
 // This string is stored with the encoded config.
-// Example: bifrost/transport/xbee/1
 func (c *Config) GetConfigID() string {
 	return ConfigID
 }

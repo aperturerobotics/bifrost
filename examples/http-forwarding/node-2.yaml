@@ -1,18 +1,18 @@
 udp:
   config:
     dialers:
-      12D3KooWDBNxrxBnJef5znmc9FdYiqkEYfgRaxAGwQUrgr9L6XQN :
+      12D3KooWDBNxrxBnJef5znmc9FdYiqkEYfgRaxAGwQUrgr9L6XQN:
         address: 127.0.0.1:5112
     listenAddr: :5113
-  id: bifrost/udp/1
+  id: bifrost/udp
   revision: 1
 listening:
   config:
-    remotePeerId: 12D3KooWDBNxrxBnJef5znmc9FdYiqkEYfgRaxAGwQUrgr9L6XQN 
-    protocolId: my/http/forwarding/1
+    remotePeerId: 12D3KooWDBNxrxBnJef5znmc9FdYiqkEYfgRaxAGwQUrgr9L6XQN
+    protocolId: my/http/forwarding
     listenMultiaddr: "/ip4/127.0.0.1/tcp/8084"
     reliable: true
     encrypted: true
-  id: bifrost/stream/listening/1
+  id: bifrost/stream/listening
   revision: 1
 

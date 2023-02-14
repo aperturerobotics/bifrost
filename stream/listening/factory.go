@@ -8,7 +8,7 @@ import (
 )
 
 // ControllerID identifies the listening controller.
-const ControllerID = "bifrost/stream/listening/1"
+const ControllerID = "bifrost/stream/listening"
 
 // Version is the controller version.
 var Version = semver.MustParse("0.0.1")

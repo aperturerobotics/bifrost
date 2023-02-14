@@ -19,7 +19,7 @@ import (
 const TransportID = "inproc"
 
 // ControllerID is the controller identifier.
-const ControllerID = "bifrost/inproc/1"
+const ControllerID = "bifrost/inproc"
 
 // Version is the version of the inproc implementation.
 var Version = semver.MustParse("0.0.1")

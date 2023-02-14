@@ -1,4 +1,4 @@
 package websocket
 
 // ControllerID is the WebSocket controller ID.
-const ControllerID = "bifrost/websocket/1"
+const ControllerID = "bifrost/websocket"

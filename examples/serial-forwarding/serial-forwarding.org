@@ -36,7 +36,7 @@ This section describes the commands to execute on each device to run the demo.
   # to the socat instance.
   ./bifrost client \
             forward --peer-id <device-1-peer-id> \
-            --protocol-id "/serial-example/1" --target /ip4/127.0.0.1/tcp/51351
+            --protocol-id "/serport" --target /ip4/127.0.0.1/tcp/51351
 #+END_SRC
 
 ** Device 2
@@ -50,10 +50,10 @@ This section describes the commands to execute on each device to run the demo.
             --node-priv node_priv.pem \
             --udp-peers "<device-1-peer-id>@<device-1-ip-address>:5000"
   # Instruct the daemon to listen on port 51351 and forward connections to
-  # <device-1-peer-id> with protocol ID /serport/1.
+  # <device-1-peer-id> with protocol ID /serport.
   ./bifrost client listen \
           --peer-id "<device-1-peer-id>" \
-          --protocol-id "/serport/1" \
+          --protocol-id "/serport" \
           --listen /ip4/127.0.0.1/tcp/51351
   # Finally, map the localhost:51351 listener to a virtual serial modem.
    socat pty,link=$HOME/vmodem0,waitslave tcp:127.0.0.1:51351

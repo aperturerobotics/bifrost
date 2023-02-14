@@ -104,16 +104,14 @@ An example of a ConfigSet in YAML format for the daemon: `bifrost_daemon.yaml`:
 ```yaml
 # Start a UDP listener on port 5112.
 my-udp:
+  id: bifrost/udp
   config:
     listenAddr: :5112
-  id: bifrost/udp/1
-  revision: 1
 
 # Use the floodsub driver for PubSub.
 pubsub:
+  id: bifrost/floodsub
   config: {}
-  id: bifrost/floodsub/1
-  revision: 1
 ```
 
 ### Daemon CLI
@@ -232,25 +230,25 @@ between a local port and a remote peer port, similar to SSH port forwarding:
             --node-priv daemon_node_priv_2.pem \
             --websocket-listen ":5111" \
             --prof-listen ":6201"
-  
+
   # forward incoming connections to port 8000
   # example: "python3 -m http.server 8080"
   ./bifrost client forward \
-            --protocol-id "test/protocol/1" \
+            --protocol-id "test/protocol" \
             --target /ip4/127.0.0.1/tcp/8000
-  
+
   # replace PEER-ID-HERE with the peer ID from the first daemon.
   # start a second daemon (in a new shell).
   ./bifrost daemon \
             --udp-listen :5001 \
             --udp-peers "PEER-ID-HERE@127.0.0.1:5000" \
             --api-listen ":5112"
-  
+
   # tell it to listen on port 8082 and forward to the other peer.
   # try browsing to http://localhost:8082
   ./bifrost client --dial-addr 127.0.0.1:5112 listen \
             --peer-id "PEER-ID-HERE" \
-            --protocol-id test/protocol/1 \
+            --protocol-id test/protocol \
             --listen /ip4/127.0.0.1/tcp/8002
 ```
 

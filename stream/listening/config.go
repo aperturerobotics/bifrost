@@ -62,7 +62,6 @@ func (c *Config) ParseListenMultiaddr() (ma.Multiaddr, error) {
 
 // GetConfigID returns the unique string for this configuration type.
 // This string is stored with the encoded config.
-// Example: bifrost/transport/udp/1
 func (c *Config) GetConfigID() string {
 	return ConfigID
 }

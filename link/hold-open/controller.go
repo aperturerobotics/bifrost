@@ -17,7 +17,7 @@ import (
 var Version = semver.MustParse("0.0.1")
 
 // ControllerID is the ID of the controller.
-const ControllerID = "bifrost/link/hold-open/1"
+const ControllerID = "bifrost/link/hold-open"
 
 // Controller is the greedy Link hold-open controller.
 // It adds a reference to all EstablishLink directives with at least one Link.

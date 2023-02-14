@@ -8,7 +8,7 @@ import (
 )
 
 // ControllerID identifies the accept controller.
-const ControllerID = "bifrost/stream/accept/1"
+const ControllerID = "bifrost/stream/accept"
 
 // Version is the controller version.
 var Version = semver.MustParse("0.0.1")

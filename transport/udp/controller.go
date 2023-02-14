@@ -1,4 +1,4 @@
 package udp
 
 // ControllerID is the UDP controller ID.
-const ControllerID = "bifrost/udp/1"
+const ControllerID = "bifrost/udp"

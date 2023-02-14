@@ -9,7 +9,7 @@ import (
 var Version = semver.MustParse("0.0.1")
 
 // ControllerID is the ID of the controller.
-const ControllerID = "bifrost/floodsub/1"
+const ControllerID = "bifrost/floodsub"
 
 // Controller implements the FloodSub controller.
 type Controller = pubsub_controller.Controller

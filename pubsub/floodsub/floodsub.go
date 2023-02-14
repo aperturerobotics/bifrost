@@ -23,7 +23,7 @@ import (
 const maxMessageSize = 2000000
 
 const (
-	FloodSubID = protocol.ID("bifrost/floodsub/1")
+	FloodSubID = protocol.ID("bifrost/floodsub")
 )
 
 // FloodSub implements the FloodSub router.

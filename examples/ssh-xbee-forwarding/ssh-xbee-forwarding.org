@@ -23,7 +23,7 @@ When you execute the daemon, the address is printed:
 
 #+BEGIN_SRC text
 INFO[0000] opened xbee device successfully
-               controller=bifrost/xbee/1
+               controller=bifrost/xbee
                device-address=0013a20040db7492 
                device-baud=115200 device-path=/dev/ttyUSB0
 #+END_SRC
@@ -80,12 +80,12 @@ Examples:
 #+BEGIN_SRC bash
   # On node 1:
   python -m SimpleHTTPServer 8080 & # example workload
-  ./bifrost client forward --protocol-id "http-proxy/1" --target /ip4/127.0.0.1/tcp/8080
+  ./bifrost client forward --protocol-id "http-proxy" --target /ip4/127.0.0.1/tcp/8080
   # On node 2:
   # localhost:8084 is forwarded to localhost:8080 on node 1.
   ./bifrost client --dial-addr 127.0.0.1:5112 listen \
-             --peer-id "12D3KooWC9dBAEoTHbEXq2aaTeFit7QVdvPcb6Yf76oGQZ6dGf8N " \
-             --protocol-id http-proxy/1 \
+             --peer-id "12D3KooWC9dBAEoTHbEXq2aaTeFit7QVdvPcb6Yf76oGQZ6dGf8N" \
+             --protocol-id http-proxy \
              --listen /ip4/127.0.0.1/tcp/8084
 #+END_SRC
 
