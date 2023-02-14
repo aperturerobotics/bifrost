@@ -3,7 +3,6 @@ package transport_controller
 import (
 	"context"
 	"io"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -53,6 +52,8 @@ type Controller struct {
 	peerIDConstraint peer.ID
 	// localPeerID contains the node peer ID
 	localPeerID peer.ID
+	// info is the controller info
+	info *controller.Info
 
 	// tptCtr contains the transport
 	tptCtr *ccontainer.CContainer[*transport.Transport]
@@ -80,16 +81,16 @@ type Controller struct {
 func NewController(
 	le *logrus.Entry,
 	bus bus.Bus,
+	info *controller.Info,
 	nodePeerIDConstraint peer.ID,
 	ctor Constructor,
-	transportID string,
-	transportVersion semver.Version,
 	staticPeerMap map[string]*dialer.DialerOpts,
 ) *Controller {
 	return &Controller{
 		le:   le,
 		bus:  bus,
 		ctor: ctor,
+		info: info,
 
 		links:       make(map[uint64]*establishedLink),
 		linkWaiters: make(map[peer.ID][]*linkWaiter),
@@ -98,8 +99,6 @@ func NewController(
 
 		peerIDConstraint: nodePeerIDConstraint,
 		localPeerID:      nodePeerIDConstraint,
-		transportID:      transportID,
-		transportVersion: transportVersion,
 		linkDialers:      make(map[linkDialerKey]*linkDialer),
 
 		staticPeerMap: staticPeerMap,
@@ -108,21 +107,12 @@ func NewController(
 
 // GetControllerID returns the controller ID.
 func (c *Controller) GetControllerID() string {
-	return strings.Join([]string{
-		"bifrost",
-		"transport",
-		c.transportID,
-		c.transportVersion.String(),
-	}, "/")
+	return c.info.GetId()
 }
 
 // GetControllerInfo returns information about the controller.
 func (c *Controller) GetControllerInfo() *controller.Info {
-	return controller.NewInfo(
-		c.GetControllerID(),
-		c.transportVersion,
-		"transport controller "+c.transportID+"@"+c.transportVersion.String(),
-	)
+	return c.info.Clone()
 }
 
 // SetStaticPeerMap sets the static dialing peer map.

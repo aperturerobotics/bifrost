@@ -16,8 +16,8 @@ import (
 	websocket "nhooyr.io/websocket"
 )
 
-// TransportID is the transport identifier
-const TransportID = "websocket"
+// ControllerID is the WebSocket controller ID.
+const ControllerID = "bifrost/websocket"
 
 // Version is the version of the implementation.
 var Version = semver.MustParse("0.0.1")

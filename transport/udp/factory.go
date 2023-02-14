@@ -57,6 +57,7 @@ func (t *Factory) Construct(
 	return tc.NewController(
 		le,
 		t.bus,
+		controller.NewInfo(ControllerID, Version, "udp transport"),
 		peerIDConstraint,
 		func(
 			ctx context.Context,
@@ -74,8 +75,6 @@ func (t *Factory) Construct(
 				cc.GetListenAddr(),
 			)
 		},
-		TransportID,
-		Version,
 		cc.GetDialers(),
 	), nil
 }

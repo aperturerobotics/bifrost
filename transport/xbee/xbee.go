@@ -16,9 +16,6 @@ import (
 	"github.com/tarm/serial"
 )
 
-// TransportID is the transport identifier
-const TransportID = "xbee"
-
 // Version is the version of the xbee implementation.
 var Version = semver.MustParse("0.0.1")
 
@@ -69,7 +66,7 @@ func NewXBee(
 	}
 
 	uuid := scrc.Crc64([]byte(
-		strings.Join([]string{TransportID, pc.LocalAddr().String()}, "/"),
+		strings.Join([]string{ControllerID, pc.LocalAddr().String()}, "/"),
 	))
 	le.
 		WithField("device-address", pc.LocalAddr().String()).

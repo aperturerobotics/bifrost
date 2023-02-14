@@ -32,7 +32,7 @@ This section describes the commands to execute on each device to run the demo.
   # Start a socat instance listening on TCP port 51351 and forwarding data to
   # /dev/ttyS2 device.
   socat tcp-l:51351,reuseaddr file:/dev/ttyS2,nonblock,waitlock=/var/run/ttyS2.lock
-  # Instruct the local daemon to forward incoming streams with protocol /serial-example/1
+  # Instruct the local daemon to forward incoming streams with protocol /serport
   # to the socat instance.
   ./bifrost client \
             forward --peer-id <device-1-peer-id> \

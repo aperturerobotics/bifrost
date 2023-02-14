@@ -57,6 +57,7 @@ func (t *Factory) Construct(
 	return tc.NewController(
 		le,
 		t.bus,
+		controller.NewInfo(ControllerID, Version, "in-proc transport"),
 		peerIDConstraint,
 		func(
 			ctx context.Context,
@@ -72,8 +73,6 @@ func (t *Factory) Construct(
 				handler,
 			)
 		},
-		TransportID,
-		Version,
 		cc.GetDialers(),
 	), nil
 }

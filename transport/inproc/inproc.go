@@ -10,13 +10,11 @@ import (
 	"github.com/aperturerobotics/bifrost/transport/common/pconn"
 	transport_controller "github.com/aperturerobotics/bifrost/transport/controller"
 	"github.com/aperturerobotics/controllerbus/bus"
+	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/blang/semver"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/sirupsen/logrus"
 )
-
-// TransportID is the transport identifier
-const TransportID = "inproc"
 
 // ControllerID is the controller identifier.
 const ControllerID = "bifrost/inproc"
@@ -95,6 +93,7 @@ func BuildInprocController(
 	return transport_controller.NewController(
 		le,
 		b,
+		controller.NewInfo(ControllerID, Version, "in-proc transport"),
 		peerIDConstraint,
 		func(
 			ctx context.Context,
@@ -110,8 +109,6 @@ func BuildInprocController(
 				handler,
 			)
 		},
-		ControllerID,
-		Version,
 		conf.GetDialers(),
 	)
 }
