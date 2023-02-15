@@ -17,7 +17,6 @@ import (
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/aperturerobotics/util/ccontainer"
-	"github.com/blang/semver"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/sirupsen/logrus"
 )
@@ -57,11 +56,6 @@ type Controller struct {
 
 	// tptCtr contains the transport
 	tptCtr *ccontainer.CContainer[*transport.Transport]
-
-	// transportID is the transport identifier.
-	transportID string
-	// transportVersion is the transport version
-	transportVersion semver.Version
 
 	// mtx guards the below fields
 	mtx sync.Mutex
