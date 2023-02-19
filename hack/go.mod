@@ -11,7 +11,7 @@ replace (
 
 require (
 	github.com/golangci/golangci-lint v1.51.1
-	github.com/planetscale/vtprotobuf v0.3.1-0.20220817155510-0ae748fd2007
+	github.com/planetscale/vtprotobuf v0.4.0
 	github.com/psampaz/go-mod-outdated v0.8.0
 	github.com/quic-go/quic-go v0.32.0 // indirect
 	google.golang.org/protobuf v1.28.1
@@ -42,7 +42,7 @@ require (
 	github.com/aperturerobotics/controllerbus v0.23.9 // indirect
 	github.com/aperturerobotics/entitygraph v0.3.3 // indirect
 	github.com/aperturerobotics/ts-proto-common-types v0.2.0 // indirect
-	github.com/aperturerobotics/util v1.0.4 // indirect
+	github.com/aperturerobotics/util v1.0.5-0.20230213074559-38e8b127589a // indirect
 	github.com/ashanbrown/forbidigo v1.3.0 // indirect
 	github.com/ashanbrown/makezero v1.1.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -218,14 +218,14 @@ require (
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
-	golang.org/x/crypto v0.4.1-0.20221212223212-23edec0b383a // indirect
+	golang.org/x/crypto v0.6.0 // indirect
 	golang.org/x/exp v0.0.0-20230127193734-31bee513bff7 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20221208152030-732eee02a75a // indirect
 	golang.org/x/mod v0.8.0 // indirect
-	golang.org/x/net v0.5.0 // indirect
+	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/sys v0.4.1-0.20230131160137-e7d7f63158de // indirect
-	golang.org/x/text v0.6.0 // indirect
+	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/text v0.7.0 // indirect
 	golang.org/x/tools v0.5.1-0.20230121152742-1faecd32c985 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
