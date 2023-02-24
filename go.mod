@@ -28,7 +28,7 @@ require (
 	github.com/djherbis/buffer v1.2.0
 	github.com/golang/snappy v0.0.4
 	github.com/klauspost/compress v1.15.15
-	github.com/libp2p/go-libp2p v0.25.1
+	github.com/libp2p/go-libp2p v0.26.0
 	github.com/libp2p/go-yamux/v4 v4.0.1-0.20220919134236-1c09f2ab3ec1
 	github.com/mr-tron/base58 v1.2.0
 	github.com/multiformats/go-multiaddr v0.8.0
@@ -41,7 +41,7 @@ require (
 	github.com/pierrec/lz4 v2.6.1+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/planetscale/vtprotobuf v0.4.0
-	github.com/quic-go/quic-go v0.32.0
+	github.com/quic-go/quic-go v0.33.0
 	github.com/sasha-s/go-deadlock v0.3.1
 	github.com/sirupsen/logrus v1.9.0
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
@@ -89,8 +89,8 @@ require (
 	github.com/onsi/ginkgo/v2 v2.5.1 // indirect
 	github.com/petermattis/goid v0.0.0-20180202154549-b0b1615b78e5 // indirect
 	github.com/quic-go/qtls-go1-18 v0.2.0 // indirect
-	github.com/quic-go/qtls-go1-19 v0.2.0 // indirect
-	github.com/quic-go/qtls-go1-20 v0.1.0 // indirect
+	github.com/quic-go/qtls-go1-19 v0.2.1 // indirect
+	github.com/quic-go/qtls-go1-20 v0.1.1 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/spaolacci/murmur3 v1.1.1-0.20190317074736-539464a789e9 // indirect
 	github.com/templexxx/cpu v0.0.1 // indirect
