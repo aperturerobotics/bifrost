@@ -3,7 +3,7 @@ module github.com/aperturerobotics/bifrost
 go 1.19
 
 require (
-	github.com/aperturerobotics/controllerbus v0.23.9
+	github.com/aperturerobotics/controllerbus v0.23.10-0.20230217050506-f14ebb76c178
 	github.com/aperturerobotics/entitygraph v0.3.3
 	github.com/aperturerobotics/starpc v0.18.1
 )
@@ -38,7 +38,7 @@ require (
 	github.com/paralin/kcp-go-lite v4.3.4+incompatible
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pauleyj/gobee v0.0.0-20190212035730-6270c53072a4
-	github.com/pierrec/lz4 v2.6.1+incompatible
+	github.com/pierrec/lz4/v4 v4.1.17
 	github.com/pkg/errors v0.9.1
 	github.com/planetscale/vtprotobuf v0.4.0
 	github.com/quic-go/quic-go v0.33.0
@@ -61,7 +61,6 @@ require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/davidlazar/go-crypto v0.0.0-20200604182044-b73af7476f6c // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0 // indirect
-	github.com/frankban/quicktest v1.14.4 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-task/slim-sprig v0.0.0-20210107165309-348f09dbbbc0 // indirect
 	github.com/golang/mock v1.6.0 // indirect
@@ -73,6 +72,7 @@ require (
 	github.com/klauspost/cpuid v1.2.1 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.1 // indirect
 	github.com/klauspost/reedsolomon v1.9.2 // indirect
+	github.com/kr/text v0.2.0 // indirect
 	github.com/libp2p/go-buffer-pool v0.1.0 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect
 	github.com/minio/highwayhash v1.0.0 // indirect
@@ -91,6 +91,7 @@ require (
 	github.com/quic-go/qtls-go1-18 v0.2.0 // indirect
 	github.com/quic-go/qtls-go1-19 v0.2.1 // indirect
 	github.com/quic-go/qtls-go1-20 v0.1.1 // indirect
+	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/spaolacci/murmur3 v1.1.1-0.20190317074736-539464a789e9 // indirect
 	github.com/templexxx/cpu v0.0.1 // indirect

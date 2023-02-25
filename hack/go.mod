@@ -13,14 +13,14 @@ require (
 	github.com/golangci/golangci-lint v1.51.2
 	github.com/planetscale/vtprotobuf v0.4.0
 	github.com/psampaz/go-mod-outdated v0.9.0
-	github.com/quic-go/quic-go v0.32.0 // indirect
+	github.com/quic-go/quic-go v0.33.0 // indirect
 	google.golang.org/protobuf v1.28.1
 )
 
 require (
-	github.com/aperturerobotics/bifrost v0.0.0-00010101000000-000000000000
+	github.com/aperturerobotics/bifrost v0.12.1-0.20230220055746-c775baab9344
 	github.com/aperturerobotics/goprotowrap v0.3.0
-	github.com/aperturerobotics/starpc v0.18.0
+	github.com/aperturerobotics/starpc v0.18.1
 	github.com/evanw/esbuild v0.17.9
 	github.com/hajimehoshi/wasmserve v0.0.0-20210512070053-db8e7b58c3a0
 	storj.io/drpc v0.0.32
@@ -39,10 +39,10 @@ require (
 	github.com/OpenPeeDeeP/depguard v1.1.1 // indirect
 	github.com/alexkohler/prealloc v1.0.0 // indirect
 	github.com/alingse/asasalint v0.0.11 // indirect
-	github.com/aperturerobotics/controllerbus v0.23.9 // indirect
+	github.com/aperturerobotics/controllerbus v0.23.10-0.20230217050506-f14ebb76c178 // indirect
 	github.com/aperturerobotics/entitygraph v0.3.3 // indirect
 	github.com/aperturerobotics/ts-proto-common-types v0.2.0 // indirect
-	github.com/aperturerobotics/util v1.0.5-0.20230213074559-38e8b127589a // indirect
+	github.com/aperturerobotics/util v1.0.5 // indirect
 	github.com/ashanbrown/forbidigo v1.4.0 // indirect
 	github.com/ashanbrown/makezero v1.1.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -126,7 +126,7 @@ require (
 	github.com/ldez/tagliatelle v0.4.0 // indirect
 	github.com/leonklingele/grouper v1.1.1 // indirect
 	github.com/libp2p/go-buffer-pool v0.1.1-0.20220919134021-a29bd39bcbb7 // indirect
-	github.com/libp2p/go-libp2p v0.25.1 // indirect
+	github.com/libp2p/go-libp2p v0.26.0 // indirect
 	github.com/lufeee/execinquery v1.2.1 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/maratori/testableexamples v1.0.0 // indirect
@@ -172,9 +172,8 @@ require (
 	github.com/quasilyte/gogrep v0.5.0 // indirect
 	github.com/quasilyte/regex/syntax v0.0.0-20200407221936-30656e2c4a95 // indirect
 	github.com/quasilyte/stdinfo v0.0.0-20220114132959-f7386bf02567 // indirect
-	github.com/quic-go/qtls-go1-18 v0.2.0 // indirect
-	github.com/quic-go/qtls-go1-19 v0.2.0 // indirect
-	github.com/quic-go/qtls-go1-20 v0.1.0 // indirect
+	github.com/quic-go/qtls-go1-19 v0.2.1 // indirect
+	github.com/quic-go/qtls-go1-20 v0.1.1 // indirect
 	github.com/rivo/uniseg v0.4.3 // indirect
 	github.com/ryancurrah/gomodguard v1.3.0 // indirect
 	github.com/ryanrolds/sqlclosecheck v0.4.0 // indirect

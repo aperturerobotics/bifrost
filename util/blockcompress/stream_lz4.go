@@ -3,7 +3,7 @@ package blockcompress
 import (
 	"io"
 
-	cmp "github.com/pierrec/lz4"
+	cmp "github.com/pierrec/lz4/v4"
 )
 
 // Lz4Stream implements a lz4 compression backed stream.
