@@ -131,10 +131,10 @@
   resolved "https://registry.yarnpkg.com/@chainsafe/is-ip/-/is-ip-2.0.1.tgz#62cb285669d91f88fd9fa285048dde3882f0993b"
   integrity sha512-nqSJ8u2a1Rv9FYbyI8qpDhTYujaKEyLknNrTejLYoSWmdeg+2WB7R6BZqPZYfrJzDxVi3rl6ZQuoaEvpKRZWgQ==
 
-"@chainsafe/libp2p-yamux@^3.0.5":
-  version "3.0.5"
-  resolved "https://registry.yarnpkg.com/@chainsafe/libp2p-yamux/-/libp2p-yamux-3.0.5.tgz#203148c08dcfc02197a9c67dccd4a8838f1ff84e"
-  integrity sha512-7glE71hJ+QnlB7ADcevQSufCOofeVx1ZHp5xPUagjWBfJ+nLLfjwQmI+yAAKemmkw4BN767zH2nW5O/PJpJ2EA==
+"@chainsafe/libp2p-yamux@^3.0.5", "@chainsafe/libp2p-yamux@^3.0.6":
+  version "3.0.6"
+  resolved "https://registry.yarnpkg.com/@chainsafe/libp2p-yamux/-/libp2p-yamux-3.0.6.tgz#84af56211237d5e0506c5fe5bb563adb2d00ab66"
+  integrity sha512-9RFSx1XSvFkt0Q5WZRTyg8AEoHAHSK4XSIJ/dakKNSz/SM1+c0OziSsw10sewzi3KVzGiOvLXW4kl555N46LyA==
   dependencies:
     "@libp2p/interface-connection" "^3.0.1"
     "@libp2p/interface-stream-muxer" "^3.0.0"
@@ -2045,12 +2045,12 @@ starpc@^0.17.1:
     uint8arraylist "^2.4.3"
     ws "^8.12.0"
 
-starpc@^0.18.1:
-  version "0.18.1"
-  resolved "https://registry.yarnpkg.com/starpc/-/starpc-0.18.1.tgz#05a9b2bb39141846e8540cbe9b7de0d2cc726b26"
-  integrity sha512-NVbaxebLzzqkcLTftLJ5mhpqCyD0Hx3EqxnHUxtnWJMnnM9bNmVyUahcNh7bBC9pDXHzrpxW4NsLIm06pHozlQ==
+starpc@^0.18.2:
+  version "0.18.2"
+  resolved "https://registry.yarnpkg.com/starpc/-/starpc-0.18.2.tgz#5632ac375979c7cba28665ff2f93f50531b95dc6"
+  integrity sha512-LE0hDC7cuoMZSkQ0nrAQlK7ZWUdNL2alWHrNwJJRiHlzSrnVc0T96tWrFigCRlsfB5ylA+5hpkXHnbPPPQoWBA==
   dependencies:
-    "@chainsafe/libp2p-yamux" "^3.0.5"
+    "@chainsafe/libp2p-yamux" "^3.0.6"
     "@libp2p/interface-connection" "^3.0.7"
     "@libp2p/interface-stream-muxer" "^3.0.4"
     event-iterator "^2.0.0"
