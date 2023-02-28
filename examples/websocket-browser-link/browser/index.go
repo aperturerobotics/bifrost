@@ -81,7 +81,7 @@ func run(ctx context.Context, le *logrus.Entry) error {
 
 	// open a pubsub channel
 	channelID := "test-channel"
-	channelSub, channelSubRef, err := pubsub.ExBuildChannelSubscription(ctx, b, false, channelID, privKey)
+	channelSub, _, channelSubRef, err := pubsub.ExBuildChannelSubscription(ctx, b, false, channelID, privKey, nil)
 	if err != nil {
 		return err
 	}
