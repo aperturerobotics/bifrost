@@ -57,6 +57,8 @@ require (
 	storj.io/drpc v0.0.30
 )
 
+require github.com/valyala/fastjson v1.6.4
+
 require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/davidlazar/go-crypto v0.0.0-20200604182044-b73af7476f6c // indirect
@@ -97,7 +99,6 @@ require (
 	github.com/templexxx/cpu v0.0.1 // indirect
 	github.com/templexxx/cpufeat v0.0.0-20180724012125-cef66df7f161 // indirect
 	github.com/templexxx/xorsimd v0.4.1 // indirect
-	github.com/valyala/fastjson v1.6.4 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	github.com/zeebo/errs v1.2.2 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
