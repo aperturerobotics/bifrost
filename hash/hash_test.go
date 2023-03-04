@@ -23,3 +23,23 @@ func TestVerifyData(t *testing.T) {
 		t.Logf("OK: %s", ht.String())
 	}
 }
+
+// TestJSON tests marshal and unmarshal hash from json.
+func TestJSON(t *testing.T) {
+	h, err := Sum(HashType_HashType_SHA256, []byte("hello world"))
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	jdata, err := h.MarshalJSON()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	t.Log(string(jdata))
+	outHash, err := UnmarshalHashJSON(jdata)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	if !outHash.EqualVT(h) {
+		t.Fail()
+	}
+}

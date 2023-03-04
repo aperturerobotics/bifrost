@@ -18,7 +18,7 @@ enum HashType {
 // Hash is a hash of a binary blob.
 message Hash {
   // HashType is the hash type in use.
-  hash.HashType hash_type = 1;
+  HashType hash_type = 1;
   // Hash is the hash value.
   bytes hash = 2;
 }
