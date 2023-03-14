@@ -81,8 +81,8 @@ github.com/aperturerobotics/starpc v0.18.2 h1:yAdSTd5oUFaN0HEBBjOSHJLpPWTVLRSawG
 github.com/aperturerobotics/starpc v0.18.2/go.mod h1:PCgjtWZDDSQ1qIuWONRZoci0y7L57Ey0Ao0x7x7JcMM=
 github.com/aperturerobotics/ts-proto-common-types v0.2.0 h1:OtlIxcXjfRDvgY2OQC6dZSiAAXral6kaZ+kD+JviZo0=
 github.com/aperturerobotics/ts-proto-common-types v0.2.0/go.mod h1:8QXVbEzjPvsaxWQ5RgZtAA9CcOdhWDyMaYdWVKZo8To=
-github.com/aperturerobotics/util v1.0.5 h1:gxDjQ31MHXthwkiRuG6LiwwU2g+E1neIuuBGI71QsP0=
-github.com/aperturerobotics/util v1.0.5/go.mod h1:45zfYCir2T5/KE+O9CyYdZPrsXZtOEAuA4UU79rRMN4=
+github.com/aperturerobotics/util v1.0.6-0.20230313071030-6260e05b62e5 h1:SVQsecow4oFN4ra6SURikAJROdvSYY2lI0vujic5veU=
+github.com/aperturerobotics/util v1.0.6-0.20230313071030-6260e05b62e5/go.mod h1:45zfYCir2T5/KE+O9CyYdZPrsXZtOEAuA4UU79rRMN4=
 github.com/ashanbrown/forbidigo v1.4.0 h1:spdPbupaSqtWORq1Q4eHBoPBmHtwVyLKwaedbSLc5Sw=
 github.com/ashanbrown/forbidigo v1.4.0/go.mod h1:IvgwB5Y4fzqSAj/WVXKWigoTkB0dzI2FBbpKWuh7ph8=
 github.com/ashanbrown/makezero v1.1.1 h1:iCQ87C0V0vSyO+M9E/FZYbu65auqH0lnsOkf5FcB28s=
