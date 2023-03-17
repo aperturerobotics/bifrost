@@ -35,7 +35,7 @@ require (
 	github.com/nats-io/jwt/v2 v2.0.0-20200820224411-1e751ff168ab // indirect; iused by bifrost-nats-server
 	github.com/nats-io/nats-server/v2 v2.7.4
 	github.com/nats-io/nats.go v1.13.0
-	github.com/nats-io/nkeys v0.3.0
+	github.com/nats-io/nkeys v0.4.4
 	github.com/paralin/kcp-go-lite v4.3.4+incompatible
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pauleyj/gobee v0.0.0-20190212035730-6270c53072a4
