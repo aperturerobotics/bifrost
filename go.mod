@@ -3,7 +3,7 @@ module github.com/aperturerobotics/bifrost
 go 1.19
 
 require (
-	github.com/aperturerobotics/controllerbus v0.24.3-0.20230321080215-8e8b2646ba47 // master
+	github.com/aperturerobotics/controllerbus v0.24.3-0.20230321115018-68613b9988e5 // master
 	github.com/aperturerobotics/entitygraph v0.4.0
 	github.com/aperturerobotics/starpc v0.18.3 // latest
 )
