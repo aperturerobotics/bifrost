@@ -23,7 +23,7 @@ replace (
 
 require (
 	github.com/aperturerobotics/ts-proto-common-types v0.2.0 // latest
-	github.com/aperturerobotics/util v1.0.6-0.20230321071259-3f530eb27b68 // master
+	github.com/aperturerobotics/util v1.0.6-0.20230321080419-5cda68c3fec6 // master
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/djherbis/buffer v1.2.0
@@ -33,10 +33,10 @@ require (
 	github.com/libp2p/go-yamux/v4 v4.0.1-0.20220919134236-1c09f2ab3ec1
 	github.com/mr-tron/base58 v1.2.0
 	github.com/multiformats/go-multiaddr v0.8.0
-	github.com/nats-io/nats-server/v2 v2.7.4
+	github.com/nats-io/nats-server/v2 v2.9.15
 	github.com/nats-io/nats.go v1.24.0
-	github.com/nats-io/nkeys v0.3.0
-	github.com/paralin/kcp-go-lite v4.3.4+incompatible
+	github.com/nats-io/nkeys v0.4.4
+	github.com/paralin/kcp-go-lite v5.4.20+incompatible
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pauleyj/gobee v0.0.0-20190212035730-6270c53072a4
 	github.com/pierrec/lz4/v4 v4.1.17
@@ -53,7 +53,7 @@ require (
 	gonum.org/v1/gonum v0.12.0
 	google.golang.org/protobuf v1.30.0
 	nhooyr.io/websocket v1.8.8-0.20221213223501-14fb98eba64e
-	storj.io/drpc v0.0.30
+	storj.io/drpc v0.0.32
 )
 
 require (
@@ -81,7 +81,7 @@ require (
 	github.com/kr/text v0.2.0 // indirect
 	github.com/libp2p/go-buffer-pool v0.1.0 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect
-	github.com/minio/highwayhash v1.0.0 // indirect
+	github.com/minio/highwayhash v1.0.2 // indirect
 	github.com/minio/sha256-simd v1.0.0 // indirect
 	github.com/multiformats/go-base32 v0.1.0 // indirect
 	github.com/multiformats/go-base36 v0.2.0 // indirect
@@ -90,7 +90,7 @@ require (
 	github.com/multiformats/go-multihash v0.2.2-0.20221030163302-608669da49b6 // indirect
 	github.com/multiformats/go-multistream v0.4.1 // indirect
 	github.com/multiformats/go-varint v0.0.7 // indirect
-	github.com/nats-io/jwt/v2 v2.0.0-20200820224411-1e751ff168ab // indirect
+	github.com/nats-io/jwt/v2 v2.3.0 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/onsi/ginkgo/v2 v2.5.1 // indirect
 	github.com/petermattis/goid v0.0.0-20180202154549-b0b1615b78e5 // indirect
@@ -113,7 +113,7 @@ require (
 	golang.org/x/mod v0.9.0 // indirect
 	golang.org/x/net v0.8.0 // indirect
 	golang.org/x/sys v0.6.0 // indirect
-	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1 // indirect
+	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.7.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
