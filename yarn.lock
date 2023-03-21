@@ -2,15 +2,15 @@
 # yarn lockfile v1
 
 
-"@aperturerobotics/ts-common@0.3.3":
-  version "0.3.3"
-  resolved "https://registry.yarnpkg.com/@aperturerobotics/ts-common/-/ts-common-0.3.3.tgz#8d8e5a4686d06056087e204635e0c8d203709172"
-  integrity sha512-uZ1AwQfvK9T7cbvcOk+di0l9OveGLRD02GMbAzCJczJi2qGvzFzOmKD3+jvnSZzS1qdhqUmIw9cRUQ/87N6otw==
+"@aperturerobotics/ts-common@0.3.4":
+  version "0.3.4"
+  resolved "https://registry.yarnpkg.com/@aperturerobotics/ts-common/-/ts-common-0.3.4.tgz#1a8bd3ec2491d409fbd13917542d6083e4675817"
+  integrity sha512-C/eEf5B2UjAFsltsvmVrAsA/QOUQ8j/rbiLFI860dm92GrvLB28DHYHLfTXZEgvAzSGdkLvMrXWuVSUBpgA9Jw==
   dependencies:
     bufferutil "^4.0.7"
     long "^5.2.1"
-    starpc "^0.17.1"
-    utf-8-validate "^6.0.0"
+    starpc "^0.18.2"
+    utf-8-validate "^6.0.3"
 
 "@aperturerobotics/ts-proto-common-types@^0.2.0":
   version "0.2.0"
@@ -131,7 +131,7 @@
   resolved "https://registry.yarnpkg.com/@chainsafe/is-ip/-/is-ip-2.0.1.tgz#62cb285669d91f88fd9fa285048dde3882f0993b"
   integrity sha512-nqSJ8u2a1Rv9FYbyI8qpDhTYujaKEyLknNrTejLYoSWmdeg+2WB7R6BZqPZYfrJzDxVi3rl6ZQuoaEvpKRZWgQ==
 
-"@chainsafe/libp2p-yamux@^3.0.5", "@chainsafe/libp2p-yamux@^3.0.6":
+"@chainsafe/libp2p-yamux@^3.0.6":
   version "3.0.6"
   resolved "https://registry.yarnpkg.com/@chainsafe/libp2p-yamux/-/libp2p-yamux-3.0.6.tgz#84af56211237d5e0506c5fe5bb563adb2d00ab66"
   integrity sha512-9RFSx1XSvFkt0Q5WZRTyg8AEoHAHSK4XSIJ/dakKNSz/SM1+c0OziSsw10sewzi3KVzGiOvLXW4kl555N46LyA==
@@ -2016,30 +2016,6 @@ sprintf-js@~1.0.2:
   resolved "https://registry.yarnpkg.com/sprintf-js/-/sprintf-js-1.0.3.tgz#04e6926f662895354f3dd015203633b857297e2c"
   integrity sha512-D9cPgkvLlV3t3IzL0D0YLvGA9Ahk4PcvVwUbN0dSGr1aP0Nrt4AEnTUbuGvquEC0mA64Gqt1fzirlRs5ibXx8g==
 
-starpc@^0.17.1:
-  version "0.17.1"
-  resolved "https://registry.yarnpkg.com/starpc/-/starpc-0.17.1.tgz#834f722cf300243e4a15e05357a543c0722993af"
-  integrity sha512-FRGYJU3pm7L+iXC8jEzJ0u5kVx7M8qI31TqfQGaV8c1oFdp0dEyQlE5sommrFi/vQr5OnULn+fo3gTMkzNI9wg==
-  dependencies:
-    "@chainsafe/libp2p-yamux" "^3.0.5"
-    "@libp2p/interface-connection" "^3.0.7"
-    "@libp2p/interface-stream-muxer" "^3.0.4"
-    event-iterator "^2.0.0"
-    is-promise "^4.0.0"
-    isomorphic-ws "^5.0.0"
-    it-first "^2.0.0"
-    it-length-prefixed "^8.0.4"
-    it-pipe "^2.0.5"
-    it-pushable "^3.1.2"
-    it-stream-types "^1.0.5"
-    it-ws "^5.0.6"
-    long "^5.2.1"
-    memoize-one "^6.0.0"
-    patch-package "^6.5.1"
-    protobufjs "^7.1.2"
-    uint8arraylist "^2.4.3"
-    ws "^8.12.0"
-
 starpc@^0.18.2:
   version "0.18.2"
   resolved "https://registry.yarnpkg.com/starpc/-/starpc-0.18.2.tgz#5632ac375979c7cba28665ff2f93f50531b95dc6"
@@ -2233,7 +2209,7 @@ uri-js@^4.2.2:
   dependencies:
     punycode "^2.1.0"
 
-utf-8-validate@^6.0.0, utf-8-validate@^6.0.3:
+utf-8-validate@^6.0.3:
   version "6.0.3"
   resolved "https://registry.yarnpkg.com/utf-8-validate/-/utf-8-validate-6.0.3.tgz#7d8c936d854e86b24d1d655f138ee27d2636d777"
   integrity sha512-uIuGf9TWQ/y+0Lp+KGZCMuJWc3N9BHA+l/UmHd/oUHwJJDeysyTRxNQVkbzsIWfGFbRe3OcgML/i0mvVRPOyDA==
