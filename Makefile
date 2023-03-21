@@ -74,9 +74,6 @@ $(WASMSERVE):
 		-o ./bin/wasmserve \
 		github.com/hajimehoshi/wasmserve
 
-# Add --go-grpc_out=$$(pwd)/vendor to use the GRPC protoc generator.
-# .. and remove the "grpc" option from the vtprotobuf features list.
-
 .PHONY: gengo
 gengo: $(GOIMPORTS) $(PROTOWRAP) $(PROTOC_GEN_GO) $(PROTOC_GEN_VTPROTO) $(PROTOC_GEN_GO_DRPC) $(PROTOC_GEN_STARPC)
 	shopt -s globstar; \
