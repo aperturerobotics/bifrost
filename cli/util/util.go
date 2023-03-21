@@ -1,92 +1,158 @@
 package cliutil
 
 import (
-	"context"
+	"bytes"
+	"io"
+	"os"
 
-	"github.com/sirupsen/logrus"
-	ucli "github.com/urfave/cli/v2"
+	"github.com/aperturerobotics/bifrost/keypem"
+	"github.com/aperturerobotics/bifrost/peer"
+	"github.com/aperturerobotics/bifrost/peer/ssh"
+	"github.com/pkg/errors"
+	"github.com/urfave/cli/v2"
+	"golang.org/x/crypto/ssh"
 )
 
-// UtilArgs contains the utility arguments and functions.
-type UtilArgs struct {
-	// le is the logger entry
-	le *logrus.Entry
-	// ctx is the context
-	ctx context.Context
-
-	// FilePath is the file path to operate on.
-	FilePath string
-	// OutPath is the file path to write to.
-	OutPath string
-}
-
-// BuildFlags attaches the flags to a flag set.
-func (a *UtilArgs) BuildFlags() []ucli.Flag {
-	return []ucli.Flag{}
-}
-
-// BuildCommands attaches the commands.
-func (a *UtilArgs) BuildCommands() []*ucli.Command {
-	return []*ucli.Command{
-		{
-			Name:   "generate-private",
-			Usage:  "generates a private key .pem file",
-			Action: a.RunGeneratePrivate,
-			Flags: []ucli.Flag{
-				&ucli.StringFlag{
-					Name:        "out",
-					Aliases:     []string{"o"},
-					Usage:       "file to store pem formatted private key",
-					Destination: &a.OutPath,
-				},
-			},
-		},
-		{
-			Name:   "derive-public",
-			Usage:  "loads a private key pem and writes a public key",
-			Action: a.RunDerivePublic,
-			Flags: []ucli.Flag{
-				&ucli.StringFlag{
-					Name:        "file",
-					Aliases:     []string{"f"},
-					Usage:       "file to load pem formatted private key",
-					Destination: &a.FilePath,
-				},
-				&ucli.StringFlag{
-					Name:        "out",
-					Aliases:     []string{"o"},
-					Usage:       "file to store pem formatted public key",
-					Destination: &a.OutPath,
-				},
-			},
-		},
+// RunGeneratePrivate runs the generate-private util command.
+func (a *UtilArgs) RunGeneratePrivate(_ *cli.Context) error {
+	npeer, err := peer.NewPeer(nil)
+	if err != nil {
+		return err
 	}
-}
 
-// SetContext sets the context.
-func (a *UtilArgs) SetContext(c context.Context) {
-	a.ctx = c
-}
-
-// GetContext returns the context.
-func (a *UtilArgs) GetContext() context.Context {
-	if c := a.ctx; c != nil {
-		return c
+	priv, err := npeer.GetPrivKey(a.GetContext())
+	if err != nil {
+		return err
 	}
-	return context.TODO()
-}
 
-// SetLogger sets the root log entry.
-func (a *UtilArgs) SetLogger(le *logrus.Entry) {
-	a.le = le
-}
-
-// GetLogger returns the log entry
-func (a *UtilArgs) GetLogger() *logrus.Entry {
-	if le := a.le; le != nil {
-		return le
+	pemd, err := keypem.MarshalPrivKeyPem(priv)
+	if err != nil {
+		return err
 	}
-	log := logrus.New()
-	log.SetLevel(logrus.DebugLevel)
-	return logrus.NewEntry(log)
+	err = writeIfNotExists(a.OutPath, bytes.NewReader(pemd))
+	if err != nil {
+		return err
+	}
+	le := a.GetLogger()
+	le.Debugf("generated private key: %s", npeer.GetPeerID().Pretty())
+	return nil
+}
+
+// RunDerivePublic derives the public key from a private pem.
+func (a *UtilArgs) RunDerivePublic(_ *cli.Context) error {
+	rp, err := a.readInputFilePrivKey()
+	if err != nil {
+		return err
+	}
+	pemd, err := keypem.MarshalPubKeyPem(rp.GetPubKey())
+	if err != nil {
+		return err
+	}
+	err = writeIfNotExists(a.OutPath, bytes.NewReader(pemd))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// RunDerivePublic derives the ssh public key from a private or public pem.
+func (a *UtilArgs) RunDeriveSshPublic(_ *cli.Context) error {
+	rp, err := a.readInputFilePubKey()
+	if err != nil {
+		return err
+	}
+	pkey, err := peer_ssh.NewPublicKey(rp.GetPubKey())
+	if err != nil {
+		return err
+	}
+	dat := ssh.MarshalAuthorizedKey(pkey)
+	err = writeIfNotExists(a.OutPath, bytes.NewReader(dat))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// readInputFile reads the input file path or stdin.
+func (a *UtilArgs) readInputFile() ([]byte, error) {
+	if fp := a.FilePath; fp != "" {
+		return os.ReadFile(fp)
+	}
+
+	return io.ReadAll(os.Stdin)
+}
+
+// readInputFilePrivKey reads the input file path or stdin.
+func (a *UtilArgs) readInputFilePrivKey() (peer.Peer, error) {
+	dat, err := a.readInputFile()
+	if err != nil {
+		return nil, err
+	}
+
+	key, err := keypem.ParsePrivKeyPem(dat)
+	if err != nil {
+		return nil, err
+	}
+
+	le := a.GetLogger()
+	npeer, err := peer.NewPeer(key)
+	if err != nil {
+		return nil, err
+	}
+	le.Debugf("loaded private key: %s", npeer.GetPeerID().Pretty())
+	return npeer, nil
+}
+
+// readInputFilePubKey reads the input file path or stdin.
+func (a *UtilArgs) readInputFilePubKey() (peer.Peer, error) {
+	dat, err := a.readInputFile()
+	if err != nil {
+		return nil, err
+	}
+
+	key, err := keypem.ParsePubKeyPem(dat)
+	if err != nil {
+		return nil, err
+	}
+
+	le := a.GetLogger()
+	npeer, err := peer.NewPeerWithPubKey(key)
+	if err != nil {
+		return nil, err
+	}
+	le.Debugf("loaded public key: %s", npeer.GetPeerID().Pretty())
+	return npeer, nil
+}
+
+func writeIfNotExists(outPath string, input io.Reader) error {
+	var of *os.File
+	var out io.Writer
+	if outPath != "" {
+		_, err := os.Stat(outPath)
+		if !os.IsNotExist(err) {
+			return errors.Wrap(os.ErrExist, outPath)
+		}
+		of, err = os.OpenFile(outPath, os.O_CREATE|os.O_RDWR, 0600)
+		if err != nil {
+			return err
+		}
+		out = of
+		defer of.Close()
+		if pos, err := of.Seek(0, io.SeekEnd); err != nil || pos != 0 {
+			if err == nil {
+				// file must have existed
+				return errors.Wrap(os.ErrExist, outPath)
+			}
+			return err
+		}
+	} else {
+		out = os.Stdout
+	}
+	if _, err := io.Copy(out, input); err != nil {
+		return err
+	}
+	if of != nil {
+		return of.Close()
+	}
+	return nil
 }

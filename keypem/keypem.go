@@ -2,9 +2,9 @@ package keypem
 
 import (
 	"encoding/pem"
-	"errors"
 
 	"github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/pkg/errors"
 )
 
 // PrivPemType is the expected header type on private keys.
@@ -12,6 +12,34 @@ const PrivPemType = "LIBP2P PRIVATE KEY"
 
 // PubPemType is the expected header type on public keys.
 const PubPemType = "LIBP2P PUBLIC KEY"
+
+// ParseKeyPem parses a private or public key in pem format.
+// Derives the public key from the private key.
+// Returns nil for the private key if not set.
+// Returns nil, nil, nil if nothing found in the pem.
+func ParseKeyPem(pemDat []byte) (crypto.PrivKey, crypto.PubKey, error) {
+	b, _ := pem.Decode(pemDat)
+	if b == nil {
+		return nil, nil, nil
+	}
+
+	switch b.Type {
+	case PrivPemType:
+		pkey, err := crypto.UnmarshalPrivateKey(b.Bytes)
+		if err != nil {
+			return nil, nil, err
+		}
+		return pkey, pkey.GetPublic(), nil
+	case PubPemType:
+		pkey, err := crypto.UnmarshalPublicKey(b.Bytes)
+		if err != nil {
+			return nil, nil, err
+		}
+		return nil, pkey, nil
+	default:
+		return nil, nil, errors.Wrap(ErrUnexpectedPemType, b.Type)
+	}
+}
 
 // ParsePrivKeyPem parses a private key in pem format.
 // If none is found returns nil
@@ -22,7 +50,7 @@ func ParsePrivKeyPem(pemDat []byte) (crypto.PrivKey, error) {
 	}
 
 	if b.Type != PrivPemType {
-		return nil, errors.New("unexpected pem type for private key")
+		return nil, errors.Wrap(ErrUnexpectedPemType, b.Type)
 	}
 
 	return crypto.UnmarshalPrivateKey(b.Bytes)
@@ -42,18 +70,14 @@ func MarshalPrivKeyPem(key crypto.PrivKey) ([]byte, error) {
 }
 
 // ParsePubKeyPem parses a public key in pem format.
+// Accepts either a private key or a public key.
 // If none is found returns nil
 func ParsePubKeyPem(pemDat []byte) (crypto.PubKey, error) {
-	b, _ := pem.Decode(pemDat)
-	if b == nil {
-		return nil, nil
+	_, pub, err := ParseKeyPem(pemDat)
+	if err != nil {
+		return nil, err
 	}
-
-	if b.Type != PubPemType {
-		return nil, errors.New("unexpected pem type for public key")
-	}
-
-	return crypto.UnmarshalPublicKey(b.Bytes)
+	return pub, nil
 }
 
 // MarshalPubKeyPem marshals a public key to pem.
