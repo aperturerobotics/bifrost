@@ -7,7 +7,7 @@ import (
 	"crypto/sha1"
 
 	"github.com/templexxx/xor"
-	"github.com/tjfoc/gmsm/sm4"
+	"github.com/tjfoc/gmsm/v2/sm4"
 
 	"golang.org/x/crypto/pbkdf2"
 	"golang.org/x/crypto/salsa20"

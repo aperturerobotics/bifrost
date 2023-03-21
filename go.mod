@@ -47,7 +47,6 @@ require (
 	github.com/sirupsen/logrus v1.9.0
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
 	github.com/templexxx/xor v0.0.0-20191217153810-f85b25db303b
-	github.com/tjfoc/gmsm v1.4.1
 	github.com/urfave/cli/v2 v2.25.0
 	github.com/zeebo/blake3 v0.2.3
 	golang.org/x/crypto v0.7.0
@@ -58,6 +57,7 @@ require (
 )
 
 require (
+	github.com/tjfoc/gmsm/v2 v2.0.0
 	github.com/valyala/fastjson v1.6.4
 	github.com/xtaci/smux/v2 v2.1.0
 )
@@ -103,6 +103,7 @@ require (
 	github.com/templexxx/cpu v0.0.1 // indirect
 	github.com/templexxx/cpufeat v0.0.0-20180724012125-cef66df7f161 // indirect
 	github.com/templexxx/xorsimd v0.4.1 // indirect
+	github.com/tjfoc/gmsm v1.0.1 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	github.com/zeebo/errs v1.2.2 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
