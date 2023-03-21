@@ -14,13 +14,13 @@ require (
 	github.com/planetscale/vtprotobuf v0.4.0
 	github.com/psampaz/go-mod-outdated v0.9.0
 	github.com/quic-go/quic-go v0.33.0 // indirect
-	google.golang.org/protobuf v1.29.0
+	google.golang.org/protobuf v1.30.0
 )
 
 require (
 	github.com/aperturerobotics/bifrost v0.12.1-0.20230220055746-c775baab9344
 	github.com/aperturerobotics/goprotowrap v0.3.0
-	github.com/aperturerobotics/starpc v0.18.2
+	github.com/aperturerobotics/starpc v0.18.3
 	github.com/evanw/esbuild v0.17.12
 	github.com/hajimehoshi/wasmserve v0.0.0-20210512070053-db8e7b58c3a0
 	storj.io/drpc v0.0.32
@@ -39,7 +39,7 @@ require (
 	github.com/OpenPeeDeeP/depguard v1.1.1 // indirect
 	github.com/alexkohler/prealloc v1.0.0 // indirect
 	github.com/alingse/asasalint v0.0.11 // indirect
-	github.com/aperturerobotics/controllerbus v0.24.1 // indirect
+	github.com/aperturerobotics/controllerbus v0.24.2 // indirect
 	github.com/aperturerobotics/entitygraph v0.3.3 // indirect
 	github.com/aperturerobotics/ts-proto-common-types v0.2.0 // indirect
 	github.com/aperturerobotics/util v1.0.6-0.20230313071030-6260e05b62e5 // indirect
@@ -126,7 +126,7 @@ require (
 	github.com/ldez/tagliatelle v0.4.0 // indirect
 	github.com/leonklingele/grouper v1.1.1 // indirect
 	github.com/libp2p/go-buffer-pool v0.1.1-0.20220919134021-a29bd39bcbb7 // indirect
-	github.com/libp2p/go-libp2p v0.26.2 // indirect
+	github.com/libp2p/go-libp2p v0.26.3 // indirect
 	github.com/lufeee/execinquery v1.2.1 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/maratori/testableexamples v1.0.0 // indirect
@@ -219,7 +219,7 @@ require (
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/crypto v0.7.0 // indirect
-	golang.org/x/exp v0.0.0-20230127193734-31bee513bff7 // indirect
+	golang.org/x/exp v0.0.0-20230321023759-10a507213a29 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20230224173230-c95f2b4c22f2 // indirect
 	golang.org/x/mod v0.9.0 // indirect
 	golang.org/x/net v0.8.0 // indirect
