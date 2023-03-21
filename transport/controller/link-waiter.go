@@ -6,6 +6,7 @@ import (
 )
 
 // linkWaiter waits for a link from a specific peer to be opened.
+// cb is NOT called concurrently (mtx will be locked while calling)
 type linkWaiter struct {
 	peerID peer.ID
 	cb     func(link.Link, bool)
@@ -17,7 +18,7 @@ type linkWaiter struct {
 // returns nil if callback was called immediately and cbOnce is set
 // if cbOnce, only added events will be sent, and only one cb() will be called
 // cb added indicates if it is an add or remove event.
-// linksMtx should be locked.
+// mtx should be locked.
 func (c *Controller) pushLinkWaiter(
 	peerID peer.ID,
 	cbOnce bool,
@@ -26,7 +27,7 @@ func (c *Controller) pushLinkWaiter(
 	peerIDEmpty := peerID == peer.ID("")
 	for _, lnk := range c.links {
 		if peerIDEmpty || lnk.lnk.GetRemotePeer() == peerID {
-			go cb(lnk.lnk, true)
+			cb(lnk.lnk, true)
 			if cbOnce {
 				return nil
 			}
@@ -41,7 +42,7 @@ func (c *Controller) pushLinkWaiter(
 }
 
 // clearLinkWaiter removes waiter for a link
-// linksMtx should be locked.
+// mtx should be locked.
 // returns if the waiter was found
 func (c *Controller) clearLinkWaiter(w *linkWaiter) bool {
 	if w == nil {
@@ -73,7 +74,7 @@ func (c *Controller) clearLinkWaiter(w *linkWaiter) bool {
 }
 
 // resolveLinkWaiters resolves waiters with a link.
-// linksMtx should be locked.
+// mtx should be locked.
 func (c *Controller) resolveLinkWaiters(lnk link.Link, added bool) {
 	peerID := lnk.GetRemotePeer()
 	if pw, ok := c.linkWaiters[peerID]; ok {
@@ -82,7 +83,7 @@ func (c *Controller) resolveLinkWaiters(lnk link.Link, added bool) {
 			if w.cbOnce && !added {
 				continue
 			}
-			go w.cb(lnk, added)
+			w.cb(lnk, added)
 			if w.cbOnce {
 				pw[i] = pw[len(pw)-1]
 				pw[len(pw)-1] = nil
