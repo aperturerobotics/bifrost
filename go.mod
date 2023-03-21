@@ -10,6 +10,7 @@ require (
 
 // aperture: use compatibility forks
 replace (
+	github.com/nats-io/jwt/v2 => github.com/nats-io/jwt/v2 v2.0.0-20200820224411-1e751ff168ab // indirect: used by bifrost-nats-server
 	github.com/nats-io/nats-server/v2 => github.com/aperturerobotics/bifrost-nats-server/v2 v2.1.8-0.20221228081037-b7c2df0c151f // aperture-2.0
 	github.com/nats-io/nats.go => github.com/aperturerobotics/bifrost-nats-client v1.10.1-0.20200831103200-24c3d0464e58 // aperture-2.0
 	github.com/paralin/kcp-go-lite => github.com/paralin/kcp-go-lite v1.0.2-0.20210907043027-271505668bd0 // aperture
@@ -22,7 +23,7 @@ replace (
 
 require (
 	github.com/aperturerobotics/ts-proto-common-types v0.2.0 // latest
-	github.com/aperturerobotics/util v1.0.6-0.20230313071030-6260e05b62e5 // master
+	github.com/aperturerobotics/util v1.0.6-0.20230321071259-3f530eb27b68 // master
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/djherbis/buffer v1.2.0
@@ -32,9 +33,8 @@ require (
 	github.com/libp2p/go-yamux/v4 v4.0.1-0.20220919134236-1c09f2ab3ec1
 	github.com/mr-tron/base58 v1.2.0
 	github.com/multiformats/go-multiaddr v0.8.0
-	github.com/nats-io/jwt/v2 v2.0.0-20200820224411-1e751ff168ab // indirect; iused by bifrost-nats-server
 	github.com/nats-io/nats-server/v2 v2.7.4
-	github.com/nats-io/nats.go v1.13.0
+	github.com/nats-io/nats.go v1.24.0
 	github.com/nats-io/nkeys v0.3.0
 	github.com/paralin/kcp-go-lite v4.3.4+incompatible
 	github.com/patrickmn/go-cache v2.1.0+incompatible
@@ -49,7 +49,6 @@ require (
 	github.com/templexxx/xor v0.0.0-20191217153810-f85b25db303b
 	github.com/tjfoc/gmsm v1.4.1
 	github.com/urfave/cli/v2 v2.25.0
-	github.com/xtaci/smux v1.5.21
 	github.com/zeebo/blake3 v0.2.3
 	golang.org/x/crypto v0.7.0
 	gonum.org/v1/gonum v0.12.0
@@ -58,7 +57,10 @@ require (
 	storj.io/drpc v0.0.30
 )
 
-require github.com/valyala/fastjson v1.6.4
+require (
+	github.com/valyala/fastjson v1.6.4
+	github.com/xtaci/smux/v2 v2.1.0
+)
 
 require (
 	github.com/Jeffail/gabs/v2 v2.7.0 // indirect
@@ -88,6 +90,7 @@ require (
 	github.com/multiformats/go-multihash v0.2.2-0.20221030163302-608669da49b6 // indirect
 	github.com/multiformats/go-multistream v0.4.1 // indirect
 	github.com/multiformats/go-varint v0.0.7 // indirect
+	github.com/nats-io/jwt/v2 v2.0.0-20200820224411-1e751ff168ab // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/onsi/ginkgo/v2 v2.5.1 // indirect
 	github.com/petermattis/goid v0.0.0-20180202154549-b0b1615b78e5 // indirect
