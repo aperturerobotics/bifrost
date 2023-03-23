@@ -99,7 +99,7 @@ func (a *ClientArgs) BuildClient() (bifrost_api.BifrostAPIClient, error) {
 		return nil, err
 	}
 
-	muxedConn, err := srpc.NewMuxedConn(nconn, false, nil)
+	muxedConn, err := srpc.NewMuxedConn(nconn, true, nil)
 	if err != nil {
 		return nil, err
 	}
