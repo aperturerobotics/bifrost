@@ -39,10 +39,10 @@ require (
 	github.com/OpenPeeDeeP/depguard v1.1.1 // indirect
 	github.com/alexkohler/prealloc v1.0.0 // indirect
 	github.com/alingse/asasalint v0.0.11 // indirect
-	github.com/aperturerobotics/controllerbus v0.24.2 // indirect
-	github.com/aperturerobotics/entitygraph v0.3.3 // indirect
+	github.com/aperturerobotics/controllerbus v0.24.3-0.20230321115018-68613b9988e5 // indirect
+	github.com/aperturerobotics/entitygraph v0.4.0 // indirect
 	github.com/aperturerobotics/ts-proto-common-types v0.2.0 // indirect
-	github.com/aperturerobotics/util v1.0.6-0.20230321071259-3f530eb27b68 // indirect
+	github.com/aperturerobotics/util v1.0.6-0.20230321114828-c9773e8773fd // indirect
 	github.com/ashanbrown/forbidigo v1.5.1 // indirect
 	github.com/ashanbrown/makezero v1.1.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
