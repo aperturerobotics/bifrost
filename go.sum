@@ -30,6 +30,8 @@ github.com/aperturerobotics/util v1.0.6-0.20230321080419-5cda68c3fec6 h1:etXnY+P
 github.com/aperturerobotics/util v1.0.6-0.20230321080419-5cda68c3fec6/go.mod h1:VB5a5FURpm7EujJsErIY8UZrhrLPN/bj84H8FxN0gD4=
 github.com/aperturerobotics/util v1.0.6-0.20230321114828-c9773e8773fd h1:spXvarSPv2TIzR7KaQSDmtS5irDp6feitMHRyMKRfvw=
 github.com/aperturerobotics/util v1.0.6-0.20230321114828-c9773e8773fd/go.mod h1:VB5a5FURpm7EujJsErIY8UZrhrLPN/bj84H8FxN0gD4=
+github.com/aperturerobotics/util v1.0.6-0.20230323062226-da54b4635cd6 h1:YvP4Lep3yeLX6AuuzzzAuIDcfJ5Ta4YKowGL9D7tZHs=
+github.com/aperturerobotics/util v1.0.6-0.20230323062226-da54b4635cd6/go.mod h1:VB5a5FURpm7EujJsErIY8UZrhrLPN/bj84H8FxN0gD4=
 github.com/benbjohnson/clock v1.1.0/go.mod h1:J11/hYXuz8f4ySSvYwY0FKfm+ezbsZBKZxNJlLklBHA=
 github.com/benbjohnson/clock v1.3.0 h1:ip6w0uFQkncKQ979AypyG0ER7mqUSBdKLOgAle/AT8A=
 github.com/blang/semver v3.5.1+incompatible h1:cQNTCjp13qL8KC3Nbxr/y2Bqb63oX6wdnnjpJbkM4JQ=
