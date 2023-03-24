@@ -21,7 +21,7 @@ require (
 	github.com/aperturerobotics/bifrost v0.12.4
 	github.com/aperturerobotics/goprotowrap v0.3.0
 	github.com/aperturerobotics/starpc v0.18.3
-	github.com/evanw/esbuild v0.17.12
+	github.com/evanw/esbuild v0.17.13
 	github.com/hajimehoshi/wasmserve v0.0.0-20221128151022-689d7ac772c6
 	storj.io/drpc v0.0.32
 )
