@@ -3,7 +3,7 @@ module github.com/aperturerobotics/bifrost
 go 1.19
 
 require (
-	github.com/aperturerobotics/controllerbus v0.24.3 // master
+	github.com/aperturerobotics/controllerbus v0.25.0 // master
 	github.com/aperturerobotics/entitygraph v0.4.0
 	github.com/aperturerobotics/starpc v0.18.3 // latest
 )
@@ -24,7 +24,7 @@ replace (
 
 require (
 	github.com/aperturerobotics/ts-proto-common-types v0.2.0 // latest
-	github.com/aperturerobotics/util v1.0.6-0.20230323123147-d1b8fef6a782 // master
+	github.com/aperturerobotics/util v1.0.6-0.20230330052120-01ef88c14497 // master
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/djherbis/buffer v1.2.0
@@ -48,7 +48,7 @@ require (
 	github.com/sirupsen/logrus v1.9.0
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
 	github.com/templexxx/xor v0.0.0-20191217153810-f85b25db303b
-	github.com/urfave/cli/v2 v2.25.0
+	github.com/urfave/cli/v2 v2.25.1
 	github.com/zeebo/blake3 v0.2.3
 	golang.org/x/crypto v0.7.0
 	gonum.org/v1/gonum v0.12.0
