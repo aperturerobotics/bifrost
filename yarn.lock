@@ -392,7 +392,7 @@
   resolved "https://registry.yarnpkg.com/@types/semver/-/semver-7.3.13.tgz#da4bfd73f49bd541d28920ab0e2bf0ee80f71c91"
   integrity sha512-21cFJr9z3g5dW8B0CVI9g2O9beqaThGQ6ZFBqHfwhzLDKUxaqTIy3vnfah/UPkfOiF2pLq+tGz+W8RyCskuslw==
 
-"@typescript-eslint/eslint-plugin@^5.56.0":
+"@typescript-eslint/eslint-plugin@^5.57.1":
   version "5.57.1"
   resolved "https://registry.yarnpkg.com/@typescript-eslint/eslint-plugin/-/eslint-plugin-5.57.1.tgz#d1ab162a3cd2671b8a1c9ddf6e2db73b14439735"
   integrity sha512-1MeobQkQ9tztuleT3v72XmY0XuKXVXusAhryoLuU5YZ+mXoYKZP9SQ7Flulh1NX4DTjpGTc2b/eMu4u7M7dhnQ==
@@ -408,7 +408,7 @@
     semver "^7.3.7"
     tsutils "^3.21.0"
 
-"@typescript-eslint/parser@^5.56.0":
+"@typescript-eslint/parser@^5.57.1":
   version "5.57.1"
   resolved "https://registry.yarnpkg.com/@typescript-eslint/parser/-/parser-5.57.1.tgz#af911234bd4401d09668c5faf708a0570a17a748"
   integrity sha512-hlA0BLeVSA/wBPKdPGxoVr9Pp6GutGoY380FEhbVi0Ph4WNe8kLvqIRx76RSQt1lynZKfrXKs0/XeEk4zZycuA==
@@ -1376,7 +1376,7 @@ it-first@^2.0.1:
   resolved "https://registry.yarnpkg.com/it-first/-/it-first-2.0.1.tgz#75d66b254c385ae3a1906def060a69006a437cef"
   integrity sha512-noC1oEQcWZZMUwq7VWxHNLML43dM+5bviZpfmkxkXlvBe60z7AFRqpZSga9uQBo792jKv9otnn1IjA4zwgNARw==
 
-it-length-prefixed@^8.0.4:
+it-length-prefixed@^8.0.0, it-length-prefixed@^8.0.4:
   version "8.0.4"
   resolved "https://registry.yarnpkg.com/it-length-prefixed/-/it-length-prefixed-8.0.4.tgz#80bd356d93d77a8989a71200f8ca0860db040404"
   integrity sha512-5OJ1lxH+IaqJB7lxe8IAIwt9UfSfsmjKJoAI/RO9djYoBDt1Jfy9PeVHUmOfqhqyu/4kJvWBFAJUaG1HhLQ12A==
@@ -1394,7 +1394,7 @@ it-merge@^2.0.0:
   dependencies:
     it-pushable "^3.1.0"
 
-it-pipe@^2.0.4, it-pipe@^2.0.5:
+it-pipe@^2.0.0, it-pipe@^2.0.4, it-pipe@^2.0.5:
   version "2.0.5"
   resolved "https://registry.yarnpkg.com/it-pipe/-/it-pipe-2.0.5.tgz#9caf7993dcbbc3824bc6ef64ee8b94574f65afa7"
   integrity sha512-y85nW1N6zoiTnkidr2EAyC+ZVzc7Mwt2p+xt2a2ooG1ThFakSpNw1Kxm+7F13Aivru96brJhjQVRQNU+w0yozw==
@@ -1828,7 +1828,7 @@ protobufjs@^6.11.3, protobufjs@^6.8.8:
     "@types/node" ">=13.7.0"
     long "^4.0.0"
 
-protobufjs@^7.1.2, protobufjs@^7.2.2:
+protobufjs@^7.1.2, protobufjs@^7.2.0, protobufjs@^7.2.2:
   version "7.2.3"
   resolved "https://registry.yarnpkg.com/protobufjs/-/protobufjs-7.2.3.tgz#01af019e40d9c6133c49acbb3ff9e30f4f0f70b2"
   integrity sha512-TtpvOqwB5Gdz/PQmOjgsrGH1nHjAQVCN7JG4A6r1sXRWESL5rNMAiRcBQlCAdKxZcAbstExQePYG8xof/JVRgg==
@@ -2040,6 +2040,30 @@ starpc@^0.18.2:
     uint8arraylist "^2.4.3"
     ws "^8.13.0"
 
+starpc@^0.19.0:
+  version "0.19.0"
+  resolved "https://registry.yarnpkg.com/starpc/-/starpc-0.19.0.tgz#1def528a52edf9a9b722c0c83d91103db7c4ae3c"
+  integrity sha512-i2YoHay0oPKexYlzDxV1cfFWBDi5U1YvvX6o5mS0YqP1eJxADRVjrNmfVxZyDa8cbcvBnXwx60VDSDRb1LLlDw==
+  dependencies:
+    "@chainsafe/libp2p-yamux" "^3.0.7"
+    "@libp2p/interface-connection" "^3.1.1"
+    "@libp2p/interface-stream-muxer" "^3.0.4"
+    event-iterator "^2.0.0"
+    is-promise "^4.0.0"
+    isomorphic-ws "^5.0.0"
+    it-first "^2.0.1"
+    it-length-prefixed "^8.0.0"
+    it-pipe "^2.0.0"
+    it-pushable "^3.1.2"
+    it-stream-types "^1.0.5"
+    it-ws "^5.0.6"
+    long "^5.2.1"
+    memoize-one "^6.0.0"
+    patch-package "^6.5.1"
+    protobufjs "^7.2.0"
+    uint8arraylist "^2.4.3"
+    ws "^8.13.0"
+
 streamsearch@^1.1.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/streamsearch/-/streamsearch-1.1.0.tgz#404dd1e2247ca94af554e841a8ef0eaa238da764"
@@ -2124,7 +2148,7 @@ ts-proto-descriptors@1.8.0:
     long "^4.0.0"
     protobufjs "^6.8.8"
 
-ts-proto@^1.143.0:
+ts-proto@^1.146.0:
   version "1.146.0"
   resolved "https://registry.yarnpkg.com/ts-proto/-/ts-proto-1.146.0.tgz#4017c700976d3657009c4e7e741377a4272ffc27"
   integrity sha512-OyBZRjmqqw+aatLEUbRooWO6VKTtOLJQyaQFMciigEZPNgTsWtApqHpQDtqDMQFWEXhIARqEV+B7ZJx8cljhZA==

@@ -39,16 +39,19 @@ func (r *ProxyInvoker) InvokeMethod(serviceID, methodID string, strm srpc.Stream
 	}
 
 	// Remote will lookup the service, then return either an error or ack.
-	prw, err := rpcstream.OpenRpcStream(strm.Context(), r.client.CallRpcService, componentID, r.waitAck)
+	rpcStream, err := rpcstream.OpenRpcStream(strm.Context(), r.client.CallRpcService, componentID, r.waitAck)
 	if err != nil {
 		return false, err
 	}
-	defer prw.Close()
+	defer rpcStream.Close()
+
+	// each packet in rpcStream is now either an Ack or a Body packet.
+	// each Body packet contains a *srpc.Packet from the remote service.
 
 	// Start the RPC with the remote
-	packetRw := srpc.NewPacketReadWriter(prw)
 	startPkt := srpc.NewCallStartPacket(serviceID, methodID, nil, false)
-	if err := packetRw.WritePacket(startPkt); err != nil {
+	packetWriter := rpcstream.NewRpcStreamWriter(rpcStream)
+	if err := packetWriter.WritePacket(startPkt); err != nil {
 		return false, err
 	}
 
@@ -57,7 +60,10 @@ func (r *ProxyInvoker) InvokeMethod(serviceID, methodID string, strm srpc.Stream
 	// Read messages from prw -> write to invoker stream.
 	go func() {
 		proxyMsg := srpc.NewRawMessage(nil, false) // zero-copy mode
-		errCh <- packetRw.ReadToHandler(func(pkt *srpc.Packet) error {
+
+		// We have to handle the Packet here because srpc.Stream MsgSend will be
+		// encoded and wrapped in a Body packet.
+		handler := srpc.NewPacketDataHandler(func(pkt *srpc.Packet) error {
 			switch body := pkt.GetBody().(type) {
 			case *srpc.Packet_CallCancel:
 				// unexpected from server -> client but handle anyway
@@ -81,6 +87,7 @@ func (r *ProxyInvoker) InvokeMethod(serviceID, methodID string, strm srpc.Stream
 			}
 			return nil
 		})
+		errCh <- rpcstream.ReadToHandler(rpcStream, handler)
 	}()
 
 	// Write messages from invoker stream -> rpc client.
@@ -90,17 +97,17 @@ func (r *ProxyInvoker) InvokeMethod(serviceID, methodID string, strm srpc.Stream
 			err := strm.MsgRecv(readMsg)
 			if err == io.EOF {
 				// EOF = normal exit
-				err = packetRw.WritePacket(srpc.NewCallDataPacket(nil, false, true, nil))
+				err = packetWriter.WritePacket(srpc.NewCallDataPacket(nil, false, true, nil))
 				errCh <- err
 				return
 			}
 			if err == nil {
 				callData := readMsg.GetData()
-				err = packetRw.WritePacket(srpc.NewCallDataPacket(callData, len(callData) == 0, false, nil))
+				err = packetWriter.WritePacket(srpc.NewCallDataPacket(callData, len(callData) == 0, false, nil))
 			}
 			if err != nil {
 				// attempt to write the error back to the client rpc
-				_ = packetRw.WritePacket(srpc.NewCallDataPacket(nil, false, true, err))
+				_ = packetWriter.WritePacket(srpc.NewCallDataPacket(nil, false, true, err))
 				errCh <- err
 				return
 			}

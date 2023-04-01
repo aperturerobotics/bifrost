@@ -27,7 +27,7 @@ func NewOpenStreamFunc(
 ) srpc.OpenStreamFunc {
 	return func(
 		ctx context.Context,
-		msgHandler srpc.PacketHandler,
+		msgHandler srpc.PacketDataHandler,
 		closeHandler srpc.CloseHandler,
 	) (srpc.Writer, error) {
 		return EstablishSrpcStream(
@@ -54,7 +54,7 @@ func NewMultiOpenStreamFunc(
 ) srpc.OpenStreamFunc {
 	return func(
 		ctx context.Context,
-		msgHandler srpc.PacketHandler,
+		msgHandler srpc.PacketDataHandler,
 		closeHandler srpc.CloseHandler,
 	) (srpc.Writer, error) {
 		var lastErr error
@@ -104,7 +104,7 @@ func EstablishSrpcStream(
 	protocolID protocol.ID,
 	srcPeer, destPeer peer.ID,
 	transportID uint64,
-	msgHandler srpc.PacketHandler,
+	msgHandler srpc.PacketDataHandler,
 	closeHandler srpc.CloseHandler,
 ) (srpc.Writer, error) {
 	ms, msRel, err := link.OpenStreamWithPeerEx(

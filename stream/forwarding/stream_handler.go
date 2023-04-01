@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/aperturerobotics/bifrost/link"
-	"github.com/aperturerobotics/bifrost/stream/proxy"
 	"github.com/aperturerobotics/controllerbus/bus"
+	"github.com/aperturerobotics/util/ioproxy"
 	ma "github.com/multiformats/go-multiaddr"
 	manet "github.com/multiformats/go-multiaddr/net"
 	"github.com/sirupsen/logrus"
@@ -60,7 +60,7 @@ func (m *MountedStreamHandler) HandleMountedStream(
 		m.le.Debug("connection opened")
 		subCtx, subCtxCancel := context.WithCancel(ctx)
 		defer subCtxCancel()
-		proxy.ProxyStreams(conn, s, subCtxCancel)
+		ioproxy.ProxyStreams(conn, s, subCtxCancel)
 		<-subCtx.Done()
 		m.le.Debug("connection closing")
 

@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/aperturerobotics/bifrost/link"
-	"github.com/aperturerobotics/bifrost/stream/proxy"
 	"github.com/aperturerobotics/controllerbus/bus"
+	"github.com/aperturerobotics/util/ioproxy"
 	"github.com/sirupsen/logrus"
 )
 
@@ -43,7 +43,7 @@ func (m *MountedStreamHandler) HandleMountedStream(
 		s := strm.GetStream()
 		subCtx, subCtxCancel := context.WithCancel(ctx)
 		defer subCtxCancel()
-		proxy.ProxyStreams(s, s, subCtxCancel)
+		ioproxy.ProxyStreams(s, s, subCtxCancel)
 
 		// wait to release EstablishLink ref
 		<-subCtx.Done()
