@@ -8,10 +8,10 @@ import (
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/protocol"
 	"github.com/aperturerobotics/bifrost/stream"
-	"github.com/aperturerobotics/bifrost/stream/proxy"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
+	"github.com/aperturerobotics/util/ioproxy"
 	ma "github.com/multiformats/go-multiaddr"
 	manet "github.com/multiformats/go-multiaddr/net"
 	"github.com/sirupsen/logrus"
@@ -153,7 +153,7 @@ func (c *Controller) handleConn(ctx context.Context, conn manet.Conn) {
 	}
 
 	strm := mstrm.GetStream()
-	proxy.ProxyStreams(conn, strm, func() {
+	ioproxy.ProxyStreams(conn, strm, func() {
 		rel()
 		conn.Close()
 	})
