@@ -18,7 +18,7 @@ require (
 )
 
 require (
-	github.com/aperturerobotics/bifrost v0.12.4
+	github.com/aperturerobotics/bifrost v0.12.5
 	github.com/aperturerobotics/goprotowrap v0.3.0
 	github.com/aperturerobotics/starpc v0.18.3
 	github.com/evanw/esbuild v0.17.14
@@ -42,7 +42,7 @@ require (
 	github.com/aperturerobotics/controllerbus v0.25.1 // indirect
 	github.com/aperturerobotics/entitygraph v0.4.0 // indirect
 	github.com/aperturerobotics/ts-proto-common-types v0.2.0 // indirect
-	github.com/aperturerobotics/util v1.1.0 // indirect
+	github.com/aperturerobotics/util v1.1.1 // indirect
 	github.com/ashanbrown/forbidigo v1.5.1 // indirect
 	github.com/ashanbrown/makezero v1.1.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
