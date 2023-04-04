@@ -28,7 +28,7 @@ func TestAccessRpcService(t *testing.T) {
 
 	// construct the AccessRpcService server on serverBus
 	serverMux := srpc.NewMux()
-	accessServer := NewAccessRpcServiceServer(serverBus, true)
+	accessServer := NewAccessRpcServiceServer(serverBus, true, nil)
 	if err := SRPCRegisterAccessRpcService(serverMux, accessServer); err != nil {
 		t.Fatal(err.Error())
 	}

@@ -18,12 +18,20 @@ import (
 type AccessRpcServiceServer struct {
 	b       bus.Bus
 	waitOne bool
+
+	// serverIdCb is an optional callback to override the ServerID.
+	serverIdCb func(remoteServerID string) (string, error)
 }
 
 // NewAccessRpcServiceServer builds a AccessRpcService server with a bus.
 // If waitOne is set, waits for at least one value before returning.
-func NewAccessRpcServiceServer(b bus.Bus, waitOne bool) *AccessRpcServiceServer {
-	return &AccessRpcServiceServer{b: b, waitOne: waitOne}
+// serverIdCb is an optional callback to override the ServerID.
+func NewAccessRpcServiceServer(
+	b bus.Bus,
+	waitOne bool,
+	serverIdCb func(remoteServerID string) (string, error),
+) *AccessRpcServiceServer {
+	return &AccessRpcServiceServer{b: b, waitOne: waitOne, serverIdCb: serverIdCb}
 }
 
 // LookupRpcService looks up the rpc service via the bus.
@@ -37,10 +45,18 @@ func (s *AccessRpcServiceServer) LookupRpcService(
 	var disposed bool
 	var resErr error
 
-	waitCh := bcast.GetWaitCh()
-	dir := req.ToDirective()
-	vals := make(map[uint32]struct{})
+	serverID := req.GetServerId()
+	if s.serverIdCb != nil {
+		var err error
+		serverID, err = s.serverIdCb(serverID)
+		if err != nil {
+			return err
+		}
+	}
 
+	dir := bifrost_rpc.NewLookupRpcService(req.GetServiceId(), serverID)
+	waitCh := bcast.GetWaitCh()
+	vals := make(map[uint32]struct{})
 	di, ref, err := s.b.AddDirective(dir, bus.NewCallbackHandler(
 		func(av directive.AttachedValue) {
 			_, ok := av.GetValue().(bifrost_rpc.LookupRpcServiceValue)
@@ -135,12 +151,20 @@ func (s *AccessRpcServiceServer) CallRpcService(strm SRPCAccessRpcService_CallRp
 		if err := req.Validate(); err != nil {
 			return nil, nil, err
 		}
+		serverID := req.GetServerId()
+		if s.serverIdCb != nil {
+			var err error
+			serverID, err = s.serverIdCb(serverID)
+			if err != nil {
+				return nil, nil, err
+			}
+		}
 		// lookup the rpc service invokers
 		invokers, _, invokerRef, err := bifrost_rpc.ExLookupRpcService(
 			ctx,
 			s.b,
 			req.GetServiceId(),
-			req.GetServerId(),
+			serverID,
 			s.waitOne,
 		)
 		if err != nil || invokerRef == nil {
