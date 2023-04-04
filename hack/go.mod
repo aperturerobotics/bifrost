@@ -21,7 +21,7 @@ require (
 	github.com/aperturerobotics/bifrost v0.12.5
 	github.com/aperturerobotics/goprotowrap v0.3.0
 	github.com/aperturerobotics/starpc v0.18.3
-	github.com/evanw/esbuild v0.17.14
+	github.com/evanw/esbuild v0.17.15
 	github.com/hajimehoshi/wasmserve v0.0.0-20221128151022-689d7ac772c6
 	storj.io/drpc v0.0.32
 )
@@ -145,7 +145,7 @@ require (
 	github.com/mr-tron/base58 v1.2.0 // indirect
 	github.com/multiformats/go-base32 v0.1.0 // indirect
 	github.com/multiformats/go-base36 v0.2.0 // indirect
-	github.com/multiformats/go-multiaddr v0.8.0 // indirect
+	github.com/multiformats/go-multiaddr v0.9.0 // indirect
 	github.com/multiformats/go-multibase v0.1.2-0.20220823162309-7160a7347ed1 // indirect
 	github.com/multiformats/go-multicodec v0.7.1-0.20221017174837-a2baec7ca709 // indirect
 	github.com/multiformats/go-multihash v0.2.2-0.20221030163302-608669da49b6 // indirect
