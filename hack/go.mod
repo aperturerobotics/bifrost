@@ -18,7 +18,7 @@ require (
 )
 
 require (
-	github.com/aperturerobotics/bifrost v0.12.5
+	github.com/aperturerobotics/bifrost v0.13.0
 	github.com/aperturerobotics/goprotowrap v0.3.0
 	github.com/aperturerobotics/starpc v0.19.0
 	github.com/evanw/esbuild v0.17.15
