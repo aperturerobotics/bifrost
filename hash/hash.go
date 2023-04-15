@@ -80,6 +80,11 @@ func UnmarshalHashFastJSON(val *fastjson.Value) (*Hash, error) {
 	return out, nil
 }
 
+// IsNil checks if the object is nil.
+func (h *Hash) IsNil() bool {
+	return h == nil
+}
+
 // IsEmpty checks if the hash is empty.
 func (h *Hash) IsEmpty() bool {
 	return h.GetHashType() == 0 || len(h.GetHash()) == 0
