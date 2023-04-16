@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/valyala/fastjson"
 	"github.com/zeebo/blake3"
+	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -96,15 +97,9 @@ func (h *Hash) Clone() *Hash {
 		return nil
 	}
 
-	var data []byte
-	if hd := h.GetHash(); len(hd) != 0 {
-		data = make([]byte, len(hd))
-		copy(data, hd)
-	}
-
 	return &Hash{
 		HashType: h.GetHashType(),
-		Hash:     data,
+		Hash:     slices.Clone(h.GetHash()),
 	}
 }
 
