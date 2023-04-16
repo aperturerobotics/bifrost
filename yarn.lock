@@ -1526,9 +1526,9 @@ long@^4.0.0:
   integrity sha512-XsP+KhQif4bjX1kbuSiySJFNAehNxgLb6hPRGJ9QsUr8ajHkuXGdrHmFUTUUXhDwVX2R5bY4JNZEwbUiMhV+MA==
 
 long@^5.0.0, long@^5.2.0, long@^5.2.1:
-  version "5.2.1"
-  resolved "https://registry.yarnpkg.com/long/-/long-5.2.1.tgz#e27595d0083d103d2fa2c20c7699f8e0c92b897f"
-  integrity sha512-GKSNGeNAtw8IryjjkhZxuKB3JzlcLTwjtiQCHKvqQet81I93kXslhDQruGI/QsddO83mcDToBVy7GqGS/zYf/A==
+  version "5.2.2"
+  resolved "https://registry.yarnpkg.com/long/-/long-5.2.2.tgz#27afd2965a99275e1aafb42da092fdd19ad2c536"
+  integrity sha512-FcRNYR7XWu4a9dHZfBTTpRy66IJgAg1dkRSQHQfrLKbTi8I7Awop0fUNqvcWPOSwu0/VX0CSDWlCcQz1LFUdoA==
 
 longbits@^1.1.0:
   version "1.1.0"
