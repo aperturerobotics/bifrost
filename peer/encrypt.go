@@ -11,7 +11,12 @@ import (
 // EncryptToPubKey encrypts a message to a public key.
 //
 // Supported types: Ed25519, RSA
-// Context must be same whem decrypting, optional.
+// Context must be same when decrypting.
+//
+// Context should be globally unique, and application-specific.
+// A good format for ctx strings is: [application] [commit timestamp] [purpose]
+// e.g., "example.com 2019-12-25 16:18:03 session tokens v1"
+// The purpose of these requirements is to ensure that an attacker cannot trick two different applications into using the same context string.
 func EncryptToPubKey(pubKey crypto.PubKey, context string, msgSrc []byte) ([]byte, error) {
 	spKey, err := crypto.PubKeyToStdKey(pubKey)
 	if err != nil {

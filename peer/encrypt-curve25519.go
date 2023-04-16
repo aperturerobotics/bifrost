@@ -25,7 +25,12 @@ import (
 // generate msgPubKey aes256 key: blake3(context + encPubKey + msgNonce[:4])
 //
 // ciphertext: msgNonce[:4] + aes256(msgPubKey) + chacha20poly1305(s2(message))
+//
 // context and destination public key must be the same when decrypting
+// context should be globally unique, and application-specific.
+// A good format for ctx strings is: [application] [commit timestamp] [purpose]
+// e.g., "example.com 2019-12-25 16:18:03 session tokens v1"
+// the purpose of these requirements is to ensure that an attacker cannot trick two different applications into using the same context string.
 func EncryptToEd25519(
 	t ed25519.PublicKey,
 	context string,

@@ -26,6 +26,11 @@ const rsaOaepLen = 256
 // ciphertext: oaep(message-key) + chacha20poly1305(s2(msgSrc))
 //
 // context must be the same at decrypt time
+//
+// context should be globally unique, and application-specific.
+// A good format for ctx strings is: [application] [commit timestamp] [purpose]
+// e.g., "example.com 2019-12-25 16:18:03 session tokens v1"
+// the purpose of these requirements is to ensure that an attacker cannot trick two different applications into using the same context string.
 func EncryptToRSA(
 	t *rsa.PublicKey,
 	context string,
