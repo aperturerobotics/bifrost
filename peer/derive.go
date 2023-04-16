@@ -14,8 +14,12 @@ import (
 // DeriveKey derives a crypto key using a private key.
 //
 // Not all private key types are supported.
-// Context string must be unique to the situation.
 // Data is written to out.
+//
+// context should be globally unique, and application-specific.
+// A good format for ctx strings is: [application] [commit timestamp] [purpose]
+// e.g., "example.com 2019-12-25 16:18:03 session tokens v1"
+// the purpose of these requirements is to ensure that an attacker cannot trick two different applications into using the same context string.
 func DeriveKey(context string, privKey crypto.PrivKey, out []byte) error {
 	spKey, err := crypto.PrivKeyToStdKey(privKey)
 	if err != nil {
