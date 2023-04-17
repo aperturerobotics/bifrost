@@ -1,11 +1,12 @@
 package peer
 
 import (
+	"crypto/ecdh"
 	"crypto/ed25519"
 	"crypto/rsa"
 
-	"github.com/aperturerobotics/bifrost/util/crypto/extra25519"
-	curve25519_ecdh "github.com/aperturerobotics/bifrost/util/crypto/extra25519/ecdh"
+	"github.com/aperturerobotics/bifrost/util/extra25519"
+	"github.com/aperturerobotics/util/scrub"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/pkg/errors"
 	"github.com/zeebo/blake3"
@@ -36,28 +37,36 @@ func DeriveKey(context string, privKey crypto.PrivKey, out []byte) error {
 		rawKeyHash := blake3.Sum512(rawKey)
 		material = rawKeyHash[:]
 	case *ed25519.PrivateKey:
-		// convert private key to curve25519
-		var recvPrivKey [32]byte
-		var tPrivKey [64]byte
-		copy(tPrivKey[:], (*t)[:])
-		extra25519.PrivateKeyToCurve25519(&recvPrivKey, &tPrivKey)
+		tPrivKeyCurve25519 := extra25519.PrivateKeyToCurve25519(*t)
+		tPrivKeyEcdh, err := ecdh.X25519().NewPrivateKey(tPrivKeyCurve25519[:32])
+		if err != nil {
+			scrub.Scrub(tPrivKeyCurve25519[:])
+			return err
+		}
 
 		// hash the context + the curve25519 key
-		secret := append(tPrivKey[:], []byte(context)...)
+		secret := append(tPrivKeyCurve25519[:], []byte(context)...)
 		seed := blake3.Sum256(secret)
+		scrub.Scrub(secret)
+		scrub.Scrub(tPrivKeyCurve25519[:])
 
 		// generate a new ephemeral private / public key
 		ephPrivKey := ed25519.NewKeyFromSeed(seed[:])
-		var ephPubKey [32]byte
-		copy(ephPubKey[:], ephPrivKey[32:])
-		var msgPubKey [32]byte
-		valid := extra25519.PublicKeyToCurve25519(&msgPubKey, &ephPubKey)
+		defer scrub.Scrub(ephPrivKey)
+		ephPubKey := ephPrivKey.Public().(ed25519.PublicKey)
+		defer scrub.Scrub(ephPubKey)
+		ephPubKeyCurve25519, valid := extra25519.PublicKeyToCurve25519(ephPubKey)
 		if !valid {
-			return errors.New("generated invalid ed25519 key")
+			return ErrInvalidEd25519PubKeyForCurve25519
+		}
+		echPubKey, err := ecdh.X25519().NewPublicKey(ephPubKeyCurve25519[:])
+		defer scrub.Scrub(ephPubKeyCurve25519[:])
+		if err != nil {
+			return err
 		}
 
 		// derive a shared secret w/ ephemeral & private key
-		material, err = curve25519_ecdh.ComputeSharedSecret(recvPrivKey[:], msgPubKey[:])
+		material, err = tPrivKeyEcdh.ECDH(echPubKey)
 		if err != nil {
 			return err
 		}

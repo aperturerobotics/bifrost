@@ -2,11 +2,12 @@ package peer
 
 import (
 	"bytes"
+
 	"crypto/aes"
+	"crypto/ecdh"
 	"crypto/ed25519"
 
-	"github.com/aperturerobotics/bifrost/util/crypto/extra25519"
-	curve25519_ecdh "github.com/aperturerobotics/bifrost/util/crypto/extra25519/ecdh"
+	"github.com/aperturerobotics/bifrost/util/extra25519"
 	"github.com/aperturerobotics/util/scrub"
 	"github.com/klauspost/compress/s2"
 	b58 "github.com/mr-tron/base58/base58"
@@ -17,12 +18,16 @@ import (
 
 // EncryptToEd25519 encrypts to a ed25519 key using curve25519.
 //
-// convert destination key to curve25519
-// mix pub key into seed: blake3(context + msgSrc + encPubKey)
-// generate the message priv key (ed25519) from seed
-// derive the curve25519 public key from the message priv key
-// use blake3(msgPubkeyCurve25519)[:24] as the message nonce
-// generate msgPubKey aes256 key: blake3(context + encPubKey + msgNonce[:4])
+// t is the target ed25519 public key.
+//
+// mix pub key into seed: blake3(context + msgSrc + tPubKey)
+// generate the one-time use message priv key (ed25519) from seed
+// convert the target public key to a curve25519 point
+// convert the message private key to a curve25519 scalar
+// generate the nonce with blake3(context + msgPubKeyEd25519 + msgPubKeyCurve25519)[:24]
+// xor the nonce with blake3(msgPubKeyEd25519 + msgPubKeyCurve25519)[24:] (8 bytes long)
+// generate msgPubKey aes256 key: blake3(context + tPubKey + msgNonce[:4])
+// generate key for chacha20poly1305 with ecdh(msgPrivKeyCurve25519, tPubKeyCurve25519)
 //
 // ciphertext: msgNonce[:4] + aes256(msgPubKey) + chacha20poly1305(s2(message))
 //
@@ -32,69 +37,49 @@ import (
 // e.g., "example.com 2019-12-25 16:18:03 session tokens v1"
 // the purpose of these requirements is to ensure that an attacker cannot trick two different applications into using the same context string.
 func EncryptToEd25519(
-	t ed25519.PublicKey,
+	tPubKey ed25519.PublicKey,
 	context string,
 	msgSrc []byte,
 ) ([]byte, error) {
-	if len(t) != 32 {
-		return nil, errors.Errorf("unexpected ed25519 public key len: %d", len(t))
+	if len(tPubKey) != 32 {
+		return nil, errors.Errorf("unexpected ed25519 public key len: %d", len(tPubKey))
 	}
 
-	// initialize pubKey from ed25519 public key
-	var pubKey [32]byte
-	copy(pubKey[:], t)
-	// convert pubKey to curve15529 public key encPubKey
-	var encPubKey [32]byte
-	valid := extra25519.PublicKeyToCurve25519(&encPubKey, &pubKey)
-	scrub.Scrub(pubKey[:])
-	defer scrub.Scrub(encPubKey[:])
-	if !valid {
-		return nil, errors.New("invalid ed25519 key")
-	}
-
-	// mix pub key and msg src into 32-byte seed: blake3(context + msgSrc + encPubKey)
+	// mix pub key and msg src into 32-byte seed: blake3(context + msgSrc + tPubKey)
 	seedHasher := blake3.NewDeriveKey("bifrost/peer encrypt curve25519 " + context)
 	_, err := seedHasher.Write(msgSrc)
 	if err != nil {
 		return nil, err
 	}
-	_, err = seedHasher.Write(encPubKey[:])
+	_, err = seedHasher.Write(tPubKey)
 	if err != nil {
 		return nil, err
 	}
 	msgSeed := seedHasher.Sum(nil)
+	seedHasher.Reset()
 
 	// generate the message priv key (ed25519) from seed
-	msgEdPrivKey := ed25519.NewKeyFromSeed(msgSeed[:])
+	msgPrivKey := ed25519.NewKeyFromSeed(msgSeed[:])
 	scrub.Scrub(msgSeed[:])
+	msgPubKey := msgPrivKey.Public().(ed25519.PublicKey)
+	defer scrub.Scrub(msgPubKey)
 
-	// convert msg ed25519 key to [64]byte
-	var msgEdPrivKeyArr [64]byte
-	copy(msgEdPrivKeyArr[:], msgEdPrivKey)
-	// convert message priv key to curve25519 msg private key
-	var msgPrivKey [32]byte
-	extra25519.PrivateKeyToCurve25519(&msgPrivKey, &msgEdPrivKeyArr)
-	scrub.Scrub(msgEdPrivKeyArr[:])
-
-	// convert msg ed25519 pubkey to [32]byte
-	var msgEdPubKey [32]byte
-	copy(msgEdPubKey[:], msgEdPrivKey[32:])
-	scrub.Scrub(msgEdPrivKey)
-	// convert message pub key to curve25519 msg pub key
-	var msgPubKey [32]byte
-	valid = extra25519.PublicKeyToCurve25519(&msgPubKey, &msgEdPubKey)
-	scrub.Scrub(msgEdPubKey[:])
-	defer scrub.Scrub(msgPubKey[:])
-	if !valid {
-		return nil, errors.New("generated invalid ed25519 key")
+	// See: https://words.filippo.io/using-ed25519-keys-for-encryption/
+	msgPrivKeyCurve25519 := extra25519.PrivateKeyToCurve25519(msgPrivKey)
+	scrub.Scrub(msgPrivKey)
+	msgPrivKeyEcdh, err := ecdh.X25519().NewPrivateKey(msgPrivKeyCurve25519[:32])
+	scrub.Scrub(msgPrivKeyCurve25519)
+	if err != nil {
+		return nil, err
 	}
 
-	// compress the message
-	msg := s2.EncodeBetter(nil, msgSrc)
-
-	// blake3 hash the msg pubkey
-	msgPubKeyHash := blake3.Sum256(msgPubKey[:])
-	defer scrub.Scrub(msgPubKeyHash[:])
+	// generate the nonce
+	msgNonceHasher := blake3.NewDeriveKey("bifrost/peer encrypt curve25519 nonce " + context)
+	_, err = msgNonceHasher.Write(msgPubKey)
+	if err != nil {
+		return nil, err
+	}
+	msgPubKeyHash := msgNonceHasher.Sum(nil)
 
 	// use the first 24 bytes of msg pubkey hash as 24-byte nonce
 	msgNonce := msgPubKeyHash[:chacha20poly1305.NonceSizeX]
@@ -105,9 +90,23 @@ func EncryptToEd25519(
 		msgNonce[i] ^= xorHash[(i+2)%len(xorHash)]
 	}
 
-	// build the seed for the message prefix: blake3(context+" prefix", encPubKey+msgNonce[:4])
+	// convert public key to curve25519 montgomery point
+	tPubKeyCurve25519, valid := extra25519.PublicKeyToCurve25519(tPubKey)
+	if !valid {
+		return nil, ErrInvalidEd25519PubKeyForCurve25519
+	}
+	tPubKeyEcdh, err := ecdh.X25519().NewPublicKey(tPubKeyCurve25519[:])
+	scrub.Scrub(tPubKeyCurve25519[:])
+	if err != nil {
+		return nil, err
+	}
+
+	// compress the message
+	msg := s2.EncodeBetter(nil, msgSrc)
+
+	// build the seed for the message prefix: blake3(context, tPubKey+msgNonce[:4])
 	seedHasher = blake3.NewDeriveKey("bifrost/peer encrypt curve25519 prefix " + context)
-	_, err = seedHasher.Write(encPubKey[:])
+	_, err = seedHasher.Write(tPubKey[:])
 	if err != nil {
 		return nil, err
 	}
@@ -115,23 +114,23 @@ func EncryptToEd25519(
 	if err != nil {
 		return nil, err
 	}
-	prefixSeed := seedHasher.Sum(nil)
+	aes256Seed := seedHasher.Sum(nil)
 
 	// encrypt the message prefix with aes256
 	// allocate enough space for the ciphertext as well
 	prefix := make([]byte, 4+32, len(msgPubKey)+chacha20poly1305.Overhead+len(msg)+8)
 	copy(prefix[:4], msgNonce[:4])
 	copy(prefix[4:], msgPubKey[:])
-	prefixCipher, err := aes.NewCipher(prefixSeed[:32])
+	prefixCipher, err := aes.NewCipher(aes256Seed[:32])
 	if err != nil {
-		scrub.Scrub(prefixSeed)
+		scrub.Scrub(aes256Seed)
 		return nil, err
 	}
 	prefixCipher.Encrypt(prefix[4:], prefix[4:])
-	scrub.Scrub(prefixSeed)
+	scrub.Scrub(aes256Seed)
 
-	// sharedSecret is 32 bytes with (msgPrivKey, encPubKey) or (encPrivKey, msgPubKey)
-	sharedSecret, err := curve25519_ecdh.ComputeSharedSecret(msgPrivKey[:], encPubKey[:])
+	// sharedSecret is 32 bytes with ecdh(msgPrivKey, tPubKey)
+	sharedSecret, err := msgPrivKeyEcdh.ECDH(tPubKeyEcdh)
 	if err != nil {
 		return nil, err
 	}
@@ -154,42 +153,39 @@ func EncryptToEd25519(
 
 // DecryptWithEd25519 decrypts with a ed25519 key using curve25519.
 //
-// generate msgPubKey aes256 key: blake3(context + encPubKey + ciphertext[:4])
-// decrypt msgPubKey from ciphertext[4:][:32]
-// convert privKey to curve25519 public + private
-// derive the shared secret with (privKey, msgPubKey)
-// use blake3(msgPubKey)[:24] as the message nonce
+// tPrivKey is the target (destination) private key.
+//
+// derive aes256 key: blake3(context + tPubKey + ciphertext[:4])
+// decrypt msgPubKey with aes256 from ciphertext[4:][:32]
+// convert the message public key to a curve25519 point
+// convert the target private key to a curve25519 scalar
+// derive key for chacha20poly1305 with ecdh(privKeyCurve25519, msgPubKeyCurve25519)
+// derive nonce with blake3(context, msgPubKey)[:24]
+// xor the nonce with blake3(context, msgPubKey)[24:] (8 bytes long)
 //
 // ciphertext: msgNonce[:4] + aes256(msgPubKey) + chacha20poly1305(s2(message))
-// context and destination public key must be the same as when encrypting
+//
+// context and destination key must be the same as when encrypting
 func DecryptWithEd25519(
-	t ed25519.PrivateKey,
+	tPrivKey ed25519.PrivateKey,
 	context string,
 	ciphertext []byte,
 ) ([]byte, error) {
-	if len(t) != 64 {
-		return nil, errors.Errorf("unexpected ed25519 private key len: %d", len(t))
+	if len(tPrivKey) != 64 {
+		return nil, errors.Errorf("unexpected ed25519 private key len: %d", len(tPrivKey))
 	}
 	if len(ciphertext) < 34 {
 		return nil, ErrShortMessage
 	}
 
-	// initialize pubKey from ed25519 public key
-	var pubKey [32]byte
-	copy(pubKey[:], t[32:])
-	defer scrub.Scrub(pubKey[:])
+	// initialize tPubKey with ed25519 public key
+	tPubKey := tPrivKey.Public().(ed25519.PublicKey)
+	defer scrub.Scrub(tPubKey[:])
 
-	// convert pubKey to curve15529 public key encPubKey
-	var encPubKey [32]byte
-	defer scrub.Scrub(encPubKey[:])
-	valid := extra25519.PublicKeyToCurve25519(&encPubKey, &pubKey)
-	if !valid {
-		return nil, errors.New("invalid ed25519 key")
-	}
-
-	// build the seed for the message prefix: blake3(context+" prefix", encPubKey+prefix[:4])
+	// build the seed for the aes256 key
+	// ciphertext[:4] is msgNonce[:4]
 	seedHasher := blake3.NewDeriveKey("bifrost/peer encrypt curve25519 prefix " + context)
-	_, err := seedHasher.Write(encPubKey[:])
+	_, err := seedHasher.Write(tPubKey)
 	if err != nil {
 		return nil, err
 	}
@@ -197,42 +193,56 @@ func DecryptWithEd25519(
 	if err != nil {
 		return nil, err
 	}
-	prefixSeed := seedHasher.Sum(nil)
+	aes256Seed := seedHasher.Sum(nil)
 
-	// msgPubKey is the 32-byte per-message curve25519 pub key
+	// msgPubKey is the 32-byte per-message ed25519 pub key
 	var msgPubKey [32]byte
 	copy(msgPubKey[:], ciphertext[4:])
 	defer scrub.Scrub(msgPubKey[:])
 
 	// decrypt the message prefix (msg pub key) with aes256
-	prefixCipher, err := aes.NewCipher(prefixSeed[:32])
+	prefixCipher, err := aes.NewCipher(aes256Seed[:32])
 	if err == nil {
 		prefixCipher.Decrypt(msgPubKey[:], msgPubKey[:])
 	}
-	scrub.Scrub(prefixSeed)
+	scrub.Scrub(aes256Seed)
 	if err != nil {
 		return nil, err
 	}
 
-	// initialize privKey from ed25519 private key
-	var privKey [64]byte
-	copy(privKey[:], t)
-	var encPrivKey [32]byte
-	// convert privKey to curve15529 private key encPrivKey
-	extra25519.PrivateKeyToCurve25519(&encPrivKey, &privKey)
-	scrub.Scrub(privKey[:])
+	// build msgPubKeyEcdh
+	msgPubKeyCurve25519, valid := extra25519.PublicKeyToCurve25519(msgPubKey[:])
+	if !valid {
+		return nil, ErrInvalidEd25519PubKeyForCurve25519
+	}
+	msgPubKeyEcdh, err := ecdh.X25519().NewPublicKey(msgPubKeyCurve25519[:])
+	defer scrub.Scrub(msgPubKeyCurve25519[:])
+	if err != nil {
+		return nil, err
+	}
 
-	// sharedSecret is 32 bytes with (encPrivKey, msgPubKey)
-	sharedSecret, err := curve25519_ecdh.ComputeSharedSecret(encPrivKey[:], msgPubKey[:])
-	scrub.Scrub(encPrivKey[:])
+	// build tPrivKeyEcdh
+	tPrivKeyCurve25519 := extra25519.PrivateKeyToCurve25519(tPrivKey)
+	tPrivKeyEcdh, err := ecdh.X25519().NewPrivateKey(tPrivKeyCurve25519[:32])
+	scrub.Scrub(tPrivKeyCurve25519[:])
+	if err != nil {
+		return nil, err
+	}
+
+	// sharedSecret is 32 bytes with (tPrivKeyCurve25519, msgPubKeyCurve25519)
+	sharedSecret, err := tPrivKeyEcdh.ECDH(msgPubKeyEcdh)
 	if err != nil {
 		scrub.Scrub(sharedSecret)
 		return nil, err
 	}
 
-	// blake3 hash the msg pubkey
-	msgPubKeyHash := blake3.Sum256(msgPubKey[:])
-	defer scrub.Scrub(msgPubKeyHash[:])
+	// generate the nonce
+	msgNonceHasher := blake3.NewDeriveKey("bifrost/peer encrypt curve25519 nonce " + context)
+	_, err = msgNonceHasher.Write(msgPubKey[:])
+	if err != nil {
+		return nil, err
+	}
+	msgPubKeyHash := msgNonceHasher.Sum(nil)
 
 	// use the first 24 bytes of msg pubkey hash as 24-byte nonce
 	msgNonce := msgPubKeyHash[:chacha20poly1305.NonceSizeX]
@@ -244,12 +254,12 @@ func DecryptWithEd25519(
 	}
 
 	// decrypt message with shared secret
-	msgEnc := ciphertext[32+4:]
 	cipher, err := chacha20poly1305.NewX(sharedSecret)
 	if err != nil {
 		scrub.Scrub(sharedSecret)
 		return nil, err
 	}
+	msgEnc := ciphertext[32+4:]
 	msgDec, err := cipher.Open(nil, msgNonce, msgEnc, msgPubKey[:])
 	scrub.Scrub(sharedSecret)
 	if err != nil {
@@ -263,13 +273,13 @@ func DecryptWithEd25519(
 	}
 
 	// verify message: re-generate ed25519 private key
-	// mix pub key into 32-byte seed: blake3(context + msgSrc + encPubKey)
+	// mix pub key into 32-byte seed: blake3(context + msgSrc + tPubKey)
 	seedHasher = blake3.NewDeriveKey("bifrost/peer encrypt curve25519 " + context)
 	_, err = seedHasher.Write(msgSrc)
 	if err != nil {
 		return nil, err
 	}
-	_, err = seedHasher.Write(encPubKey[:])
+	_, err = seedHasher.Write(tPubKey[:])
 	if err != nil {
 		return nil, err
 	}
@@ -278,27 +288,24 @@ func DecryptWithEd25519(
 	// generate the message priv key (ed25519) from seed
 	msgEdPrivKey := ed25519.NewKeyFromSeed(msgSeed[:])
 	scrub.Scrub(msgSeed)
-
-	// convert msg ed25519 key to [32]byte pub key
-	var msgEdPubKeyArr [32]byte
-	copy(msgEdPubKeyArr[:], msgEdPrivKey[32:])
+	msgEdPubKey := msgEdPrivKey.Public().(ed25519.PublicKey)
 	scrub.Scrub(msgEdPrivKey)
+	defer scrub.Scrub(msgEdPubKey)
 
 	// convert message pub key to curve25519 msg pub key
-	var expectedMsgPubKey [32]byte
-	valid = extra25519.PublicKeyToCurve25519(&expectedMsgPubKey, &msgEdPubKeyArr)
-	scrub.Scrub(msgEdPubKeyArr[:])
-	defer scrub.Scrub(expectedMsgPubKey[:])
+	expectedMsgPubKeyCurve25519, valid := extra25519.PublicKeyToCurve25519(msgEdPubKey)
+	scrub.Scrub(msgEdPubKey)
 	if !valid {
-		return nil, errors.New("generated invalid curve25519 pubkey")
+		return nil, ErrInvalidEd25519PubKeyForCurve25519
 	}
+	defer scrub.Scrub(expectedMsgPubKeyCurve25519[:])
 
 	// check that they match
-	if !bytes.Equal(expectedMsgPubKey[:], msgPubKey[:]) {
+	if !bytes.Equal(expectedMsgPubKeyCurve25519[:], msgPubKeyCurve25519[:]) {
 		return nil, errors.Errorf(
 			"message pubkey %s does not match expected pubkey %s",
-			b58.Encode(msgPubKey[:]),
-			b58.Encode(expectedMsgPubKey[:]),
+			b58.Encode(expectedMsgPubKeyCurve25519[:]),
+			b58.Encode(msgPubKeyCurve25519[:]),
 		)
 	}
 
