@@ -1,11 +1,10 @@
 package peer
 
 import (
-	"bytes"
-
 	"crypto/aes"
 	"crypto/ecdh"
 	"crypto/ed25519"
+	"crypto/subtle"
 
 	"github.com/aperturerobotics/bifrost/util/extra25519"
 	"github.com/aperturerobotics/util/scrub"
@@ -134,12 +133,12 @@ func EncryptToEd25519(
 	if err != nil {
 		return nil, err
 	}
-	defer scrub.Scrub(sharedSecret)
 
 	// encrypt with chacha20poly1305 cipher
 	// prepend the 32-byte curve25519 one-time message key
 	// re-use the prefix buf
 	cipher, err := chacha20poly1305.NewX(sharedSecret)
+	scrub.Scrub(sharedSecret)
 	if err != nil {
 		return nil, err
 	}
@@ -255,18 +254,17 @@ func DecryptWithEd25519(
 
 	// decrypt message with shared secret
 	cipher, err := chacha20poly1305.NewX(sharedSecret)
-	if err != nil {
-		scrub.Scrub(sharedSecret)
-		return nil, err
-	}
-	msgEnc := ciphertext[32+4:]
-	msgDec, err := cipher.Open(nil, msgNonce, msgEnc, msgPubKey[:])
 	scrub.Scrub(sharedSecret)
 	if err != nil {
 		return nil, err
 	}
+	msgEnc := ciphertext[32+4:]
+	msgDec, err := cipher.Open(nil, msgNonce, msgEnc, msgPubKey[:])
+	if err != nil {
+		return nil, err
+	}
 
-	// decompress message, re-use shared secret buffer
+	// decompress message, re-use scrubbed shared secret buffer
 	msgSrc, err := s2.Decode(sharedSecret, msgDec)
 	if err != nil {
 		return nil, err
@@ -301,7 +299,7 @@ func DecryptWithEd25519(
 	defer scrub.Scrub(expectedMsgPubKeyCurve25519[:])
 
 	// check that they match
-	if !bytes.Equal(expectedMsgPubKeyCurve25519[:], msgPubKeyCurve25519[:]) {
+	if subtle.ConstantTimeCompare(expectedMsgPubKeyCurve25519, msgPubKeyCurve25519) == 0 {
 		return nil, errors.Errorf(
 			"message pubkey %s does not match expected pubkey %s",
 			b58.Encode(expectedMsgPubKeyCurve25519[:]),
