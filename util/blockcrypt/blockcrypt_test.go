@@ -5,6 +5,8 @@ import (
 	"crypto/rand"
 	"errors"
 	"testing"
+
+	"golang.org/x/exp/slices"
 )
 
 func TestBlockCrypt(t *testing.T) {
@@ -16,6 +18,9 @@ func TestBlockCrypt(t *testing.T) {
 	}
 	randomize(pass[:])
 	for i := BlockCrypt_BlockCrypt_AES256; i <= BlockCrypt_BlockCrypt_MAX; i++ {
+		if slices.Contains(RemovedBlockCrypt, i) {
+			continue
+		}
 		if err := func() error {
 			c, err := BuildBlockCrypt(i, pass[:])
 			if err != nil {

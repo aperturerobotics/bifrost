@@ -8,6 +8,9 @@ import (
 // BlockCrypt_BlockCrypt_MAX is the maximum value for BlockCrypt.
 const BlockCrypt_BlockCrypt_MAX = BlockCrypt_BlockCrypt_SALSA20
 
+// RemovedBlockCrypt is the list of deprecated block crypt IDs.
+var RemovedBlockCrypt = []BlockCrypt{BlockCrypt(5)}
+
 // Crypt defines encryption/decryption methods for a given byte slice.
 // Notes on implementing: the data to be encrypted contains a builtin
 // nonce at the first 16 bytes
