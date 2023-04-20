@@ -1,4 +1,4 @@
-package stream_echo
+package tptaddr_controller
 
 import (
 	"github.com/aperturerobotics/controllerbus/bus"
@@ -7,13 +7,7 @@ import (
 	"github.com/blang/semver"
 )
 
-// ControllerID identifies the echo controller.
-const ControllerID = "bifrost/stream/echo"
-
-// Version is the controller version.
-var Version = semver.MustParse("0.0.1")
-
-// Factory constructs a controller
+// Factory constructs the controller.
 type Factory struct {
 	// bus is the controller bus
 	bus bus.Bus
@@ -48,7 +42,7 @@ func (t *Factory) Construct(
 	cc := conf.(*Config)
 
 	// Construct the controller.
-	return NewController(le, t.bus, cc)
+	return NewController(le, t.bus, cc), nil
 }
 
 // GetVersion returns the version of this controller.

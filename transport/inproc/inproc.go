@@ -16,6 +16,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// TransportType is the transport type string for dial addresses.
+const TransportType = "inproc"
+
 // ControllerID is the controller identifier.
 const ControllerID = "bifrost/inproc"
 
@@ -111,6 +114,13 @@ func BuildInprocController(
 		},
 		conf.GetDialers(),
 	)
+}
+
+// MatchTransportType checks if the given transport type ID matches this transport.
+// If returns true, the transport controller will call DialPeer with that tptaddr.
+// E.x.: "udp-quic" or "ws"
+func (t *Inproc) MatchTransportType(transportType string) bool {
+	return transportType == TransportType
 }
 
 // ConnectToInproc connects the inproc to a remote inproc.

@@ -60,7 +60,7 @@ func (c *Controller) GetControllerInfo() *controller.Info {
 	)
 }
 
-// Execute executes the forwarding controller.
+// Execute executes the echo controller.
 // Returning nil ends execution.
 // Returning an error triggers a retry with backoff.
 func (c *Controller) Execute(ctx context.Context) error {

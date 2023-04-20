@@ -1,17 +1,19 @@
 package link
 
 import (
-	"errors"
 	"time"
 
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/controllerbus/directive"
+	"github.com/pkg/errors"
 )
 
 // holdOpenDur is the default hold open duration
 var holdOpenDur = time.Second * 10
 
 // EstablishLinkWithPeer is a directive to establish a link with a peer.
+//
+// Value: Link
 type EstablishLinkWithPeer interface {
 	// Directive indicates EstablishLinkWithPeer is a directive.
 	directive.Directive
@@ -23,6 +25,9 @@ type EstablishLinkWithPeer interface {
 	// Cannot be empty.
 	EstablishLinkTargetPeerId() peer.ID
 }
+
+// EstablishLinkWithPeerValue is the type emitted when resolving EstablishLinkWithPeer.
+type EstablishLinkWithPeerValue = Link
 
 // establishLinkWithPeer implements EstablishLinkWithPeer with a peer ID constraint.
 type establishLinkWithPeer struct {
@@ -48,7 +53,7 @@ func (d *establishLinkWithPeer) EstablishLinkSourcePeerId() peer.ID {
 // This is a cursory validation to see if the values "look correct."
 func (d *establishLinkWithPeer) Validate() error {
 	if len(d.dest) == 0 {
-		return errors.New("peer id of destination required")
+		return errors.Wrap(peer.ErrEmptyPeerID, "destination")
 	}
 
 	return nil

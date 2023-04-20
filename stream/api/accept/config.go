@@ -5,7 +5,6 @@ import (
 	"github.com/aperturerobotics/bifrost/protocol"
 	"github.com/aperturerobotics/bifrost/util/confparse"
 	"github.com/aperturerobotics/controllerbus/config"
-	"google.golang.org/protobuf/proto"
 )
 
 // ConfigID is the string used to identify this config object.
@@ -55,7 +54,7 @@ func (c *Config) EqualsConfig(other config.Config) bool {
 		return false
 	}
 
-	return proto.Equal(ot, c)
+	return ot.EqualVT(c)
 }
 
 var _ config.Config = ((*Config)(nil))

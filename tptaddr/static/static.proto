@@ -1,0 +1,13 @@
+syntax = "proto3";
+package tptaddr.static;
+
+// Config configures the static controller.
+//
+// Handles LookupTptAddr directives with a static list of addresses.
+message Config {
+  // Addresses is the mapping of peer id to address list.
+  //
+  // Format: {peer-id}|{transport-id}|{address}
+  // Anything after the second | is treated as part of the address.
+  repeated string addresses = 1;
+}

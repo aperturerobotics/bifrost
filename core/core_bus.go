@@ -12,6 +12,8 @@ import (
 	stream_echo "github.com/aperturerobotics/bifrost/stream/echo"
 	stream_forwarding "github.com/aperturerobotics/bifrost/stream/forwarding"
 	stream_listening "github.com/aperturerobotics/bifrost/stream/listening"
+	tptaddr_controller "github.com/aperturerobotics/bifrost/tptaddr/controller"
+	tptaddr_static "github.com/aperturerobotics/bifrost/tptaddr/static"
 	iproctpt "github.com/aperturerobotics/bifrost/transport/inproc"
 	udptpt "github.com/aperturerobotics/bifrost/transport/udp"
 	wtpt "github.com/aperturerobotics/bifrost/transport/websocket"
@@ -65,4 +67,8 @@ func AddFactories(b bus.Bus, sr *static.Resolver) {
 	// entity graph
 	sr.AddFactory(egc.NewFactory(b))
 	sr.AddFactory(bifrosteg.NewFactory(b))
+
+	// tptaddr
+	sr.AddFactory(tptaddr_controller.NewFactory(b))
+	sr.AddFactory(tptaddr_static.NewFactory(b))
 }

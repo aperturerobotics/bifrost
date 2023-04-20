@@ -11,6 +11,7 @@ import (
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/protocol"
 	"github.com/aperturerobotics/bifrost/stream"
+	"github.com/aperturerobotics/bifrost/tptaddr"
 	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/aperturerobotics/bifrost/transport/common/dialer"
 	"github.com/aperturerobotics/controllerbus/bus"
@@ -210,6 +211,8 @@ func (c *Controller) HandleDirective(ctx context.Context, di directive.Instance)
 		return c.resolveEstablishLink(ctx, di, d)
 	case transport.LookupTransport:
 		return c.resolveLookupTransport(ctx, di, d)
+	case tptaddr.DialTptAddr:
+		return c.resolveDialTptAddr(ctx, di, d)
 	}
 
 	return nil, nil

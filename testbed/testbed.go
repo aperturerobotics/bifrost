@@ -26,6 +26,8 @@ type Testbed struct {
 	Bus bus.Bus
 	// PrivKey is the private key.
 	PrivKey crypto.PrivKey
+	// PeerID is the peer id for private key.
+	PeerID peer.ID
 	// Release releases the testbed.
 	Release func()
 }
@@ -72,6 +74,13 @@ func NewTestbed(ctx context.Context, le *logrus.Entry, opts TestbedOpts) (*Testb
 		if err != nil {
 			return nil, err
 		}
+	}
+	if t.PrivKey != nil {
+		pid, err := peer.IDFromPrivateKey(t.PrivKey)
+		if err != nil {
+			return nil, err
+		}
+		t.PeerID = pid
 	}
 
 	if !opts.NoPeer {

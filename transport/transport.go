@@ -24,6 +24,10 @@ type Transport interface {
 // addresses. The Transport controller will call Dial if provided an address for
 // the transport, and directed to connect to the peer.
 type TransportDialer interface {
+	// MatchTransportType checks if the given transport type ID matches this transport.
+	// If returns true, the transport controller will call DialPeer with that tptaddr.
+	// E.x.: "udp-quic" or "ws"
+	MatchTransportType(transportType string) bool
 	// DialPeer dials a peer given an address. The yielded link should be
 	// emitted to the transport handler. DialPeer should return nil if the link
 	// was established. DialPeer will then not be called again for the same peer
