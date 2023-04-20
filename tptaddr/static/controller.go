@@ -36,7 +36,7 @@ func ParsePeerAddressMap(addressesWithPeerIDs []string) (map[string][]string, []
 	for _, addr := range addressesWithPeerIDs {
 		peerIDStr, tptaddr, found := strings.Cut(addr, "|")
 		tptaddr = strings.TrimSpace(tptaddr)
-		if !found || strings.Index(tptaddr, "|") == -1 {
+		if !found || !strings.Contains(tptaddr, "|") {
 			errs = append(errs, errors.New("invalid peer address: format is {peer-id}|{transport-type}|{address}"))
 			continue
 		}
