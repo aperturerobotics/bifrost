@@ -103,7 +103,7 @@ type SignedMsg struct {
 	// Signature is the sender signature.
 	// Should not contain PubKey, which is inferred from peer id.
 	Signature *Signature `protobuf:"bytes,2,opt,name=signature,proto3" json:"signature,omitempty"`
-	// Data is the PubMessageInner data.
+	// Data is the signed data.
 	Data []byte `protobuf:"bytes,3,opt,name=data,proto3" json:"data,omitempty"`
 }
 

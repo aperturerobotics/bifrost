@@ -33,7 +33,7 @@ export interface SignedMsg {
    * Should not contain PubKey, which is inferred from peer id.
    */
   signature: Signature | undefined
-  /** Data is the PubMessageInner data. */
+  /** Data is the signed data. */
   data: Uint8Array
 }
 

@@ -14,8 +14,6 @@ export enum BlockCrypt {
   BlockCrypt_AES128 = 3,
   /** BlockCrypt_AES192 - BlockCrypt_AES192 is AES 192-bit block encryption. */
   BlockCrypt_AES192 = 4,
-  /** BlockCrypt_SM4_16 - BlockCrypt_SM4_16 is SM4 16-bit block encryption. */
-  BlockCrypt_SM4_16 = 5,
   /** BlockCrypt_XOR - BlockCrypt_XOR is simple XOR block encryption. */
   BlockCrypt_XOR = 6,
   /** BlockCrypt_3DES - BlockCrypt_3DES is 3des 24-bit block encryption. */
@@ -42,9 +40,6 @@ export function blockCryptFromJSON(object: any): BlockCrypt {
     case 4:
     case 'BlockCrypt_AES192':
       return BlockCrypt.BlockCrypt_AES192
-    case 5:
-    case 'BlockCrypt_SM4_16':
-      return BlockCrypt.BlockCrypt_SM4_16
     case 6:
     case 'BlockCrypt_XOR':
       return BlockCrypt.BlockCrypt_XOR
@@ -73,8 +68,6 @@ export function blockCryptToJSON(object: BlockCrypt): string {
       return 'BlockCrypt_AES128'
     case BlockCrypt.BlockCrypt_AES192:
       return 'BlockCrypt_AES192'
-    case BlockCrypt.BlockCrypt_SM4_16:
-      return 'BlockCrypt_SM4_16'
     case BlockCrypt.BlockCrypt_XOR:
       return 'BlockCrypt_XOR'
     case BlockCrypt.BlockCrypt_3DES:

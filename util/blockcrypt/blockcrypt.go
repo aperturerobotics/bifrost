@@ -24,8 +24,6 @@ type Crypt interface {
 // BuildBlockCrypt builds block crypt from known types.
 func BuildBlockCrypt(crypt BlockCrypt, pass []byte) (Crypt, error) {
 	switch crypt {
-	case BlockCrypt_BlockCrypt_SM4_16:
-		return kcrypt.NewSM4BlockCrypt(pass[:16])
 	case BlockCrypt_BlockCrypt_XOR:
 		return kcrypt.NewSimpleXORBlockCrypt(pass)
 	case BlockCrypt_BlockCrypt_NONE:

@@ -59,7 +59,6 @@ require (
 
 require (
 	filippo.io/edwards25519 v1.0.0
-	github.com/tjfoc/gmsm/v2 v2.0.0
 	github.com/valyala/fastjson v1.6.4
 	github.com/xtaci/smux/v2 v2.1.0
 	golang.org/x/exp v0.0.0-20230418202329-0354be287a23

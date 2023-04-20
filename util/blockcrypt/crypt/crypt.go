@@ -7,8 +7,6 @@ import (
 	"crypto/sha1"
 
 	"github.com/templexxx/xor"
-	"github.com/tjfoc/gmsm/v2/sm4"
-
 	"golang.org/x/crypto/pbkdf2"
 	"golang.org/x/crypto/salsa20"
 )
@@ -50,26 +48,6 @@ func (c *salsa20BlockCrypt) Decrypt(dst, src []byte) {
 	salsa20.XORKeyStream(dst[8:], src[8:], src[:8], &c.key)
 	copy(dst[:8], src[:8])
 }
-
-type sm4BlockCrypt struct {
-	encbuf [sm4.BlockSize]byte
-	decbuf [2 * sm4.BlockSize]byte
-	block  cipher.Block
-}
-
-// NewSM4BlockCrypt https://github.com/tjfoc/gmsm/tree/master/sm4
-func NewSM4BlockCrypt(key []byte) (BlockCrypt, error) {
-	c := new(sm4BlockCrypt)
-	block, err := sm4.NewCipher(key)
-	if err != nil {
-		return nil, err
-	}
-	c.block = block
-	return c, nil
-}
-
-func (c *sm4BlockCrypt) Encrypt(dst, src []byte) { encrypt(c.block, dst, src, c.encbuf[:]) }
-func (c *sm4BlockCrypt) Decrypt(dst, src []byte) { decrypt(c.block, dst, src, c.decbuf[:]) }
 
 type tripleDESBlockCrypt struct {
 	encbuf [des.BlockSize]byte

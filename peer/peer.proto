@@ -23,6 +23,6 @@ message SignedMsg {
   // Signature is the sender signature.
   // Should not contain PubKey, which is inferred from peer id.
   peer.Signature signature = 2;
-  // Data is the PubMessageInner data.
+  // Data is the signed data.
   bytes data = 3;
 }
