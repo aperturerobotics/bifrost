@@ -65,6 +65,9 @@ func (m *SignedMsg) ExtractPubKey() (crypto.PubKey, ID, error) {
 	if err != nil {
 		return nil, ID(""), err
 	}
+	if len(fromPeerID) == 0 {
+		return nil, ID(""), ErrEmptyPeerID
+	}
 	pubKey, err := fromPeerID.ExtractPublicKey()
 	if err != nil {
 		return nil, fromPeerID, err
