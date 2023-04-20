@@ -19,7 +19,7 @@ func TestHTTPLogServer(t *testing.T) {
 	handler := http.NewServeMux()
 	handler.HandleFunc("/test", func(rw http.ResponseWriter, req *http.Request) {
 		rw.WriteHeader(200)
-		rw.Write([]byte("hello world!\n"))
+		_, _ = rw.Write([]byte("hello world!\n"))
 	})
 
 	srv := httptest.NewServer(LoggingMiddleware(handler, le))
