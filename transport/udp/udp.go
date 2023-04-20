@@ -11,6 +11,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// TransportType is the transport type identifier.
+const TransportType = "udp"
+
 // ControllerID is the UDP controller ID.
 const ControllerID = "bifrost/udp"
 
@@ -21,7 +24,9 @@ var Version = semver.MustParse("0.0.1")
 var ExtendedSockBuf = 16777217
 
 // UDP implements a UDP transport.
-type UDP = pconn.Transport
+type UDP struct {
+	*pconn.Transport
+}
 
 // NewUDP builds a new UDP transport, listening on the addr.
 //
@@ -48,7 +53,7 @@ func NewUDP(
 		}
 	}
 
-	return pconn.NewTransport(
+	pct, err := pconn.NewTransport(
 		ctx,
 		le,
 		pKey,
@@ -60,6 +65,19 @@ func NewUDP(
 			return net.ResolveUDPAddr("udp", addr)
 		},
 	)
+	if err != nil {
+		return nil, err
+	}
+	return &UDP{
+		Transport: pct,
+	}, nil
+}
+
+// MatchTransportType checks if the given transport type ID matches this transport.
+// If returns true, the transport controller will call DialPeer with that tptaddr.
+// E.x.: "udp-quic" or "ws"
+func (u *UDP) MatchTransportType(transportType string) bool {
+	return TransportType == transportType
 }
 
 // _ is a type assertion.

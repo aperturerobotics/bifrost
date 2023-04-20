@@ -16,6 +16,9 @@ import (
 	websocket "nhooyr.io/websocket"
 )
 
+// TransportType is the transport type identifier for this transport.
+const TransportType = "ws"
+
 // ControllerID is the WebSocket controller ID.
 const ControllerID = "bifrost/websocket"
 
@@ -107,6 +110,13 @@ func NewWebSocket(
 		conf:           conf,
 		restrictPeerID: restrictPeerID,
 	}, nil
+}
+
+// MatchTransportType checks if the given transport type ID matches this transport.
+// If returns true, the transport controller will call DialPeer with that tptaddr.
+// E.x.: "udp-quic" or "ws"
+func (w *WebSocket) MatchTransportType(transportType string) bool {
+	return transportType == TransportType
 }
 
 // Execute executes the transport as configured, returning any fatal error.

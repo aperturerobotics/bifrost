@@ -19,6 +19,9 @@ import (
 // Version is the version of the xbee implementation.
 var Version = semver.MustParse("0.0.1")
 
+// TransportType is the transport type identifier for this transport.
+const TransportType = "xbee"
+
 // ControllerID is the xbee controller ID.
 const ControllerID = "bifrost/xbee"
 
@@ -83,6 +86,13 @@ func NewXBee(
 		opts.GetPacketOpts(),
 	)
 	return &XBee{Transport: conn, xbs: xbs}, nil
+}
+
+// MatchTransportType checks if the given transport type ID matches this transport.
+// If returns true, the transport controller will call DialPeer with that tptaddr.
+// E.x.: "udp-quic" or "ws"
+func (c *XBee) MatchTransportType(transportType string) bool {
+	return transportType == TransportType
 }
 
 // Execute executes the transport as configured, returning any fatal error.
