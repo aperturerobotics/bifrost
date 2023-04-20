@@ -139,28 +139,46 @@ export const Packet = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Packet {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input)
+    const reader =
+      input instanceof _m0.Reader ? input : _m0.Reader.create(input)
     let end = length === undefined ? reader.len : reader.pos + length
     const message = createBasePacket()
     while (reader.pos < end) {
       const tag = reader.uint32()
       switch (tag >>> 3) {
         case 1:
+          if (tag != 8) {
+            break
+          }
+
           message.packetType = reader.int32() as any
-          break
+          continue
         case 2:
+          if (tag != 18) {
+            break
+          }
+
           message.initPkt = Packet_Init.decode(reader, reader.uint32())
-          break
+          continue
         case 3:
+          if (tag != 26) {
+            break
+          }
+
           message.initAckPkt = Packet_InitAck.decode(reader, reader.uint32())
-          break
+          continue
         case 4:
+          if (tag != 34) {
+            break
+          }
+
           message.completePkt = Packet_Complete.decode(reader, reader.uint32())
-          break
-        default:
-          reader.skipType(tag & 7)
-          break
+          continue
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break
+      }
+      reader.skipType(tag & 7)
     }
     return message
   },
@@ -284,25 +302,39 @@ export const Packet_Init = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Packet_Init {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input)
+    const reader =
+      input instanceof _m0.Reader ? input : _m0.Reader.create(input)
     let end = length === undefined ? reader.len : reader.pos + length
     const message = createBasePacket_Init()
     while (reader.pos < end) {
       const tag = reader.uint32()
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break
+          }
+
           message.senderPeerId = reader.bytes()
-          break
+          continue
         case 2:
+          if (tag != 18) {
+            break
+          }
+
           message.receiverPeerId = reader.bytes()
-          break
+          continue
         case 3:
+          if (tag != 26) {
+            break
+          }
+
           message.senderEphPub = reader.bytes()
-          break
-        default:
-          reader.skipType(tag & 7)
-          break
+          continue
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break
+      }
+      reader.skipType(tag & 7)
     }
     return message
   },
@@ -414,22 +446,32 @@ export const Packet_InitAck = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Packet_InitAck {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input)
+    const reader =
+      input instanceof _m0.Reader ? input : _m0.Reader.create(input)
     let end = length === undefined ? reader.len : reader.pos + length
     const message = createBasePacket_InitAck()
     while (reader.pos < end) {
       const tag = reader.uint32()
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break
+          }
+
           message.senderEphPub = reader.bytes()
-          break
+          continue
         case 2:
+          if (tag != 18) {
+            break
+          }
+
           message.ciphertext = reader.bytes()
-          break
-        default:
-          reader.skipType(tag & 7)
-          break
+          continue
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break
+      }
+      reader.skipType(tag & 7)
     }
     return message
   },
@@ -528,19 +570,25 @@ export const Packet_Complete = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Packet_Complete {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input)
+    const reader =
+      input instanceof _m0.Reader ? input : _m0.Reader.create(input)
     let end = length === undefined ? reader.len : reader.pos + length
     const message = createBasePacket_Complete()
     while (reader.pos < end) {
       const tag = reader.uint32()
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break
+          }
+
           message.ciphertext = reader.bytes()
-          break
-        default:
-          reader.skipType(tag & 7)
-          break
+          continue
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break
+      }
+      reader.skipType(tag & 7)
     }
     return message
   },
@@ -643,28 +691,46 @@ export const Packet_Ciphertext = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Packet_Ciphertext {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input)
+    const reader =
+      input instanceof _m0.Reader ? input : _m0.Reader.create(input)
     let end = length === undefined ? reader.len : reader.pos + length
     const message = createBasePacket_Ciphertext()
     while (reader.pos < end) {
       const tag = reader.uint32()
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break
+          }
+
           message.tupleSignature = reader.bytes()
-          break
+          continue
         case 2:
+          if (tag != 18) {
+            break
+          }
+
           message.senderPubKey = reader.bytes()
-          break
+          continue
         case 3:
+          if (tag != 24) {
+            break
+          }
+
           message.receiverKeyKnown = reader.bool()
-          break
+          continue
         case 4:
+          if (tag != 34) {
+            break
+          }
+
           message.extraInfo = reader.bytes()
-          break
-        default:
-          reader.skipType(tag & 7)
-          break
+          continue
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break
+      }
+      reader.skipType(tag & 7)
     }
     return message
   },

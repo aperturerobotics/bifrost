@@ -107,31 +107,49 @@ export const SubscribeRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): SubscribeRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input)
+    const reader =
+      input instanceof _m0.Reader ? input : _m0.Reader.create(input)
     let end = length === undefined ? reader.len : reader.pos + length
     const message = createBaseSubscribeRequest()
     while (reader.pos < end) {
       const tag = reader.uint32()
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break
+          }
+
           message.channelId = reader.string()
-          break
+          continue
         case 2:
+          if (tag != 18) {
+            break
+          }
+
           message.peerId = reader.string()
-          break
+          continue
         case 3:
+          if (tag != 26) {
+            break
+          }
+
           message.privKeyPem = reader.string()
-          break
+          continue
         case 4:
+          if (tag != 34) {
+            break
+          }
+
           message.publishRequest = PublishRequest.decode(
             reader,
             reader.uint32()
           )
-          break
-        default:
-          reader.skipType(tag & 7)
-          break
+          continue
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break
+      }
+      reader.skipType(tag & 7)
     }
     return message
   },
@@ -235,22 +253,32 @@ export const PublishRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): PublishRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input)
+    const reader =
+      input instanceof _m0.Reader ? input : _m0.Reader.create(input)
     let end = length === undefined ? reader.len : reader.pos + length
     const message = createBasePublishRequest()
     while (reader.pos < end) {
       const tag = reader.uint32()
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break
+          }
+
           message.data = reader.bytes()
-          break
+          continue
         case 2:
+          if (tag != 16) {
+            break
+          }
+
           message.identifier = reader.uint32()
-          break
-        default:
-          reader.skipType(tag & 7)
-          break
+          continue
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break
+      }
+      reader.skipType(tag & 7)
     }
     return message
   },
@@ -362,34 +390,48 @@ export const SubscribeResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): SubscribeResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input)
+    const reader =
+      input instanceof _m0.Reader ? input : _m0.Reader.create(input)
     let end = length === undefined ? reader.len : reader.pos + length
     const message = createBaseSubscribeResponse()
     while (reader.pos < end) {
       const tag = reader.uint32()
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break
+          }
+
           message.incomingMessage = IncomingMessage.decode(
             reader,
             reader.uint32()
           )
-          break
+          continue
         case 2:
+          if (tag != 18) {
+            break
+          }
+
           message.outgoingStatus = OutgoingStatus.decode(
             reader,
             reader.uint32()
           )
-          break
+          continue
         case 3:
+          if (tag != 26) {
+            break
+          }
+
           message.subscriptionStatus = SubscriptionStatus.decode(
             reader,
             reader.uint32()
           )
-          break
-        default:
-          reader.skipType(tag & 7)
-          break
+          continue
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break
+      }
+      reader.skipType(tag & 7)
     }
     return message
   },
@@ -504,19 +546,25 @@ export const SubscriptionStatus = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): SubscriptionStatus {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input)
+    const reader =
+      input instanceof _m0.Reader ? input : _m0.Reader.create(input)
     let end = length === undefined ? reader.len : reader.pos + length
     const message = createBaseSubscriptionStatus()
     while (reader.pos < end) {
       const tag = reader.uint32()
       switch (tag >>> 3) {
         case 1:
+          if (tag != 8) {
+            break
+          }
+
           message.subscribed = reader.bool()
-          break
-        default:
-          reader.skipType(tag & 7)
-          break
+          continue
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break
+      }
+      reader.skipType(tag & 7)
     }
     return message
   },
@@ -603,22 +651,32 @@ export const OutgoingStatus = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): OutgoingStatus {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input)
+    const reader =
+      input instanceof _m0.Reader ? input : _m0.Reader.create(input)
     let end = length === undefined ? reader.len : reader.pos + length
     const message = createBaseOutgoingStatus()
     while (reader.pos < end) {
       const tag = reader.uint32()
       switch (tag >>> 3) {
         case 1:
+          if (tag != 8) {
+            break
+          }
+
           message.identifier = reader.uint32()
-          break
+          continue
         case 2:
+          if (tag != 16) {
+            break
+          }
+
           message.sent = reader.bool()
-          break
-        default:
-          reader.skipType(tag & 7)
-          break
+          continue
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break
+      }
+      reader.skipType(tag & 7)
     }
     return message
   },
@@ -712,25 +770,39 @@ export const IncomingMessage = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): IncomingMessage {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input)
+    const reader =
+      input instanceof _m0.Reader ? input : _m0.Reader.create(input)
     let end = length === undefined ? reader.len : reader.pos + length
     const message = createBaseIncomingMessage()
     while (reader.pos < end) {
       const tag = reader.uint32()
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break
+          }
+
           message.fromPeerId = reader.string()
-          break
+          continue
         case 2:
+          if (tag != 16) {
+            break
+          }
+
           message.authenticated = reader.bool()
-          break
+          continue
         case 3:
+          if (tag != 26) {
+            break
+          }
+
           message.data = reader.bytes()
-          break
-        default:
-          reader.skipType(tag & 7)
-          break
+          continue
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break
+      }
+      reader.skipType(tag & 7)
     }
     return message
   },

@@ -83,34 +83,56 @@ export const Config = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Config {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input)
+    const reader =
+      input instanceof _m0.Reader ? input : _m0.Reader.create(input)
     let end = length === undefined ? reader.len : reader.pos + length
     const message = createBaseConfig()
     while (reader.pos < end) {
       const tag = reader.uint32()
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break
+          }
+
           message.transportPeerId = reader.string()
-          break
+          continue
         case 2:
+          if (tag != 18) {
+            break
+          }
+
           message.listenAddr = reader.string()
-          break
+          continue
         case 3:
+          if (tag != 26) {
+            break
+          }
+
           message.quic = Opts.decode(reader, reader.uint32())
-          break
+          continue
         case 4:
+          if (tag != 34) {
+            break
+          }
+
           const entry4 = Config_DialersEntry.decode(reader, reader.uint32())
           if (entry4.value !== undefined) {
             message.dialers[entry4.key] = entry4.value
           }
-          break
+          continue
         case 5:
+          if (tag != 42) {
+            break
+          }
+
           message.restrictPeerId = reader.string()
-          break
-        default:
-          reader.skipType(tag & 7)
-          break
+          continue
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break
+      }
+      reader.skipType(tag & 7)
     }
     return message
   },
@@ -233,22 +255,32 @@ export const Config_DialersEntry = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Config_DialersEntry {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input)
+    const reader =
+      input instanceof _m0.Reader ? input : _m0.Reader.create(input)
     let end = length === undefined ? reader.len : reader.pos + length
     const message = createBaseConfig_DialersEntry()
     while (reader.pos < end) {
       const tag = reader.uint32()
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break
+          }
+
           message.key = reader.string()
-          break
+          continue
         case 2:
+          if (tag != 18) {
+            break
+          }
+
           message.value = DialerOpts.decode(reader, reader.uint32())
-          break
-        default:
-          reader.skipType(tag & 7)
-          break
+          continue
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break
+      }
+      reader.skipType(tag & 7)
     }
     return message
   },

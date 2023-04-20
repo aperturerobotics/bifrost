@@ -59,25 +59,39 @@ export const Signature = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Signature {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input)
+    const reader =
+      input instanceof _m0.Reader ? input : _m0.Reader.create(input)
     let end = length === undefined ? reader.len : reader.pos + length
     const message = createBaseSignature()
     while (reader.pos < end) {
       const tag = reader.uint32()
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break
+          }
+
           message.pubKey = reader.bytes()
-          break
+          continue
         case 2:
+          if (tag != 16) {
+            break
+          }
+
           message.hashType = reader.int32() as any
-          break
+          continue
         case 3:
+          if (tag != 26) {
+            break
+          }
+
           message.sigData = reader.bytes()
-          break
-        default:
-          reader.skipType(tag & 7)
-          break
+          continue
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break
+      }
+      reader.skipType(tag & 7)
     }
     return message
   },
@@ -182,25 +196,39 @@ export const SignedMsg = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): SignedMsg {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input)
+    const reader =
+      input instanceof _m0.Reader ? input : _m0.Reader.create(input)
     let end = length === undefined ? reader.len : reader.pos + length
     const message = createBaseSignedMsg()
     while (reader.pos < end) {
       const tag = reader.uint32()
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break
+          }
+
           message.fromPeerId = reader.string()
-          break
+          continue
         case 2:
+          if (tag != 18) {
+            break
+          }
+
           message.signature = Signature.decode(reader, reader.uint32())
-          break
+          continue
         case 3:
+          if (tag != 26) {
+            break
+          }
+
           message.data = reader.bytes()
-          break
-        default:
-          reader.skipType(tag & 7)
-          break
+          continue
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break
+      }
+      reader.skipType(tag & 7)
     }
     return message
   },

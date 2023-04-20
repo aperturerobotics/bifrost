@@ -233,37 +233,67 @@ export const Opts = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Opts {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input)
+    const reader =
+      input instanceof _m0.Reader ? input : _m0.Reader.create(input)
     let end = length === undefined ? reader.len : reader.pos + length
     const message = createBaseOpts()
     while (reader.pos < end) {
       const tag = reader.uint32()
       switch (tag >>> 3) {
         case 1:
+          if (tag != 8) {
+            break
+          }
+
           message.dataShards = reader.uint32()
-          break
+          continue
         case 2:
+          if (tag != 16) {
+            break
+          }
+
           message.parityShards = reader.uint32()
-          break
+          continue
         case 3:
+          if (tag != 24) {
+            break
+          }
+
           message.mtu = reader.uint32()
-          break
+          continue
         case 4:
+          if (tag != 32) {
+            break
+          }
+
           message.kcpMode = reader.int32() as any
-          break
+          continue
         case 5:
+          if (tag != 40) {
+            break
+          }
+
           message.blockCrypt = reader.int32() as any
-          break
+          continue
         case 6:
+          if (tag != 48) {
+            break
+          }
+
           message.blockCompress = reader.int32() as any
-          break
+          continue
         case 7:
+          if (tag != 56) {
+            break
+          }
+
           message.streamMuxer = reader.int32() as any
-          break
-        default:
-          reader.skipType(tag & 7)
-          break
+          continue
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break
+      }
+      reader.skipType(tag & 7)
     }
     return message
   },

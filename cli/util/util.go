@@ -7,7 +7,7 @@ import (
 
 	"github.com/aperturerobotics/bifrost/keypem"
 	"github.com/aperturerobotics/bifrost/peer"
-	"github.com/aperturerobotics/bifrost/peer/ssh"
+	peer_ssh "github.com/aperturerobotics/bifrost/peer/ssh"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/crypto/ssh"
