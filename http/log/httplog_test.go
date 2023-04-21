@@ -22,7 +22,7 @@ func TestHTTPLogServer(t *testing.T) {
 		_, _ = rw.Write([]byte("hello world!\n"))
 	})
 
-	srv := httptest.NewServer(LoggingMiddleware(handler, le))
+	srv := httptest.NewServer(LoggingMiddleware(handler, le, LoggingMiddlewareOpts{UserAgent: true}))
 	defer srv.Close()
 	baseURL, _ := url.Parse(srv.URL)
 	baseURL = baseURL.JoinPath("test")
