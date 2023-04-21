@@ -18,7 +18,7 @@ message Config {
   // Has no effect in the browser.
   string listen_addr = 2;
   // QuicOpts are the quic protocol options.
-  // 
+  //
   // The WebSocket transport always disables FEC and several other UDP-centric
   // features which are unnecessary due to the "reliable" nature of WebSockets.
   .transport.quic.Opts quic = 3;
