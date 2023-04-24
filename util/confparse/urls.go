@@ -23,3 +23,23 @@ func ValidateURL(uri string, allowEmpty bool) error {
 	}
 	return err
 }
+
+// ParseURLs parses a list of urls.
+//
+// Removes any empty values.
+func ParseURLs(urlStrs []string, allowEmpty bool) ([]*url.URL, error) {
+	urls := make([]*url.URL, 0, len(urlStrs))
+	for i, urlStr := range urlStrs {
+		v, err := ParseURL(urlStr)
+		if v == nil && err == nil && !allowEmpty {
+			err = errors.Wrapf(errors.New("empty url"), "urls[%d]", i)
+		}
+		if err != nil {
+			return nil, errors.Wrapf(err, "urls[%d]", i)
+		}
+		if v != nil {
+			urls = append(urls, v)
+		}
+	}
+	return urls, nil
+}
