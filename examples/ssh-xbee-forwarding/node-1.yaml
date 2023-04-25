@@ -8,11 +8,11 @@ xbee:
       blockCrypt: BlockCrypt_SALSA20
       kcpMode: KCPMode_FAST3
   id: bifrost/xbee
-  revision: 1
+  rev: 1
 forwarding:
   config:
     protocolId: my/ssh/forwarding
     targetMultiaddr: "/ip4/127.0.0.1/tcp/22"
   id: bifrost/stream/forwarding
-  revision: 1
+  rev: 1
 

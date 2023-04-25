@@ -3,11 +3,11 @@ udp:
     dialers: {}
     listenAddr: :5112
   id: bifrost/udp
-  revision: 1
+  rev: 1
 forwarding:
   config:
     protocolId: my/http/forwarding
     targetMultiaddr: "/ip4/127.0.0.1/tcp/8000"
   id: bifrost/stream/forwarding
-  revision: 1
+  rev: 1
 

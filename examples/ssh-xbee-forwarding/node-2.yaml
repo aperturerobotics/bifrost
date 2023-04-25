@@ -15,7 +15,7 @@ xbee:
       blockCrypt: BlockCrypt_SALSA20
       kcpMode: KCPMode_FAST3
   id: bifrost/xbee
-  revision: 1
+  rev: 1
 listening:
   config:
     remotePeerId: 12D3KooWAuEBeRTQPZumrHV6oWfwvF93GHoWi95t7MLfRkWqH6Ez
@@ -24,4 +24,4 @@ listening:
     reliable: true
     encrypted: true
   id: bifrost/stream/listening
-  revision: 1
+  rev: 1
