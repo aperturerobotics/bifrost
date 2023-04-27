@@ -53,6 +53,12 @@ real transports, and appear the same to the application code.
 [testbed]: ./testbed
 [in-proc transport]: ./transport/inproc
 
+The [http] packages provide a http server and a mechanism for attaching http
+handlers to the controller bus and using them to serve requests. There is also
+an implementation of attaching and looking up http clients on the bus.
+
+[http]: ./http
+
 [EntityGraph] exposes the internal state representation of Bifrost to
 visualizers and instrumentation via a graph-based inter-connected entity model.
 
