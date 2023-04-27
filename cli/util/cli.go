@@ -18,6 +18,9 @@ type UtilArgs struct {
 	FilePath string
 	// OutPath is the file path to write to.
 	OutPath string
+
+	// KeySize is the key size to generate.
+	KeySize int
 }
 
 // BuildFlags attaches the flags to a flag set.
@@ -75,6 +78,26 @@ func (a *UtilArgs) BuildCommands() []*ucli.Command {
 					Name:        "out",
 					Aliases:     []string{"o"},
 					Usage:       "file to store SSH pem formatted public key",
+					Destination: &a.OutPath,
+				},
+			},
+		},
+		{
+			Name:   "generate-crypto-key",
+			Usage:  "generates a base64 crypto key",
+			Action: a.RunGenerateCryptoKey,
+			Flags: []ucli.Flag{
+				&ucli.IntFlag{
+					Name:        "key-size",
+					Aliases:     []string{"size", "s"},
+					Usage:       "bytes size of the key to generate",
+					Destination: &a.KeySize,
+					Value:       32,
+				},
+				&ucli.StringFlag{
+					Name:        "out",
+					Aliases:     []string{"o"},
+					Usage:       "file to store base64 formatted key",
 					Destination: &a.OutPath,
 				},
 			},

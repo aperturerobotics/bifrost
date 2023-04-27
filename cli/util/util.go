@@ -2,6 +2,8 @@ package cliutil
 
 import (
 	"bytes"
+	"crypto/rand"
+	"encoding/base64"
 	"io"
 	"os"
 
@@ -34,7 +36,7 @@ func (a *UtilArgs) RunGeneratePrivate(_ *cli.Context) error {
 		return err
 	}
 	le := a.GetLogger()
-	le.Debugf("generated private key: %s", npeer.GetPeerID().Pretty())
+	le.Infof("generated private key: %s", npeer.GetPeerID().Pretty())
 	return nil
 }
 
@@ -70,6 +72,28 @@ func (a *UtilArgs) RunDeriveSshPublic(_ *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+// RunGenerateCryptoKey runs the generate-crypto-key util command.
+func (a *UtilArgs) RunGenerateCryptoKey(_ *cli.Context) error {
+	keySize := a.KeySize
+	if keySize == 0 {
+		keySize = 32
+	}
+
+	buf := make([]byte, keySize)
+	if _, err := rand.Read(buf); err != nil {
+		return err
+	}
+
+	bufB64 := base64.StdEncoding.EncodeToString(buf) + "\n"
+	err := writeIfNotExists(a.OutPath, bytes.NewReader([]byte(bufB64)))
+	if err != nil {
+		return err
+	}
+	le := a.GetLogger()
+	le.Infof("generated crypto key of length %v", keySize)
 	return nil
 }
 
