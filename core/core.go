@@ -4,6 +4,7 @@ import (
 	"context"
 
 	bifrosteg "github.com/aperturerobotics/bifrost/entitygraph"
+	http_listener "github.com/aperturerobotics/bifrost/http/listener"
 	link_establish_controller "github.com/aperturerobotics/bifrost/link/establish"
 	link_holdopen_controller "github.com/aperturerobotics/bifrost/link/hold-open"
 	nctr "github.com/aperturerobotics/bifrost/peer/controller"
@@ -71,4 +72,7 @@ func AddFactories(b bus.Bus, sr *static.Resolver) {
 	// tptaddr
 	sr.AddFactory(tptaddr_controller.NewFactory(b))
 	sr.AddFactory(tptaddr_static.NewFactory(b))
+
+	// http listener
+	sr.AddFactory(http_listener.NewFactory(b))
 }
