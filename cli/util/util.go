@@ -10,10 +10,30 @@ import (
 	"github.com/aperturerobotics/bifrost/keypem"
 	"github.com/aperturerobotics/bifrost/peer"
 	peer_ssh "github.com/aperturerobotics/bifrost/peer/ssh"
+	"github.com/aperturerobotics/bifrost/util/confparse"
+	"github.com/aperturerobotics/timestamp"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/crypto/ssh"
 )
+
+// RunTimestamp runs the timestamp util command.
+func (a *UtilArgs) RunTimestamp(_ *cli.Context) error {
+	var ts *timestamp.Timestamp
+	if a.Timestamp != "" {
+		var err error
+		ts, err = confparse.ParseTimestamp(a.Timestamp)
+		if err != nil {
+			return err
+		}
+	} else {
+		now := timestamp.Now()
+		ts = &now
+	}
+
+	formatted := ts.ToRFC3339() + "\n"
+	return writeIfNotExists(a.OutPath, bytes.NewReader([]byte(formatted)))
+}
 
 // RunGeneratePrivate runs the generate-private util command.
 func (a *UtilArgs) RunGeneratePrivate(_ *cli.Context) error {

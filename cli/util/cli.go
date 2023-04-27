@@ -21,6 +21,9 @@ type UtilArgs struct {
 
 	// KeySize is the key size to generate.
 	KeySize int
+
+	// Timestamp is the input timestamp string
+	Timestamp string
 }
 
 // BuildFlags attaches the flags to a flag set.
@@ -99,6 +102,19 @@ func (a *UtilArgs) BuildCommands() []*ucli.Command {
 					Aliases:     []string{"o"},
 					Usage:       "file to store base64 formatted key",
 					Destination: &a.OutPath,
+				},
+			},
+		},
+		{
+			Name:   "timestamp",
+			Usage:  "prints a timestamp in RFC3339 format",
+			Action: a.RunTimestamp,
+			Flags: []ucli.Flag{
+				&ucli.StringFlag{
+					Name:        "timestamp",
+					Aliases:     []string{"t"},
+					Usage:       "RFC3339 timestamp or unix milliseconds: if empty, uses current utc time",
+					Destination: &a.Timestamp,
 				},
 			},
 		},
