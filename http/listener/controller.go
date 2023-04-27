@@ -82,7 +82,7 @@ func (c *Controller) Execute(rctx context.Context) (rerr error) {
 		protocol = "https"
 	}
 	if c.srv.Addr == "" {
-		c.le.Debugf("starting http server", protocol)
+		c.le.Debugf("starting %s server", protocol)
 	} else {
 		c.le.Debugf("starting %s server with addr %q", protocol, c.srv.Addr)
 	}
