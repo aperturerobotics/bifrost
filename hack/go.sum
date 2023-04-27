@@ -70,6 +70,7 @@ github.com/alexkohler/prealloc v1.0.0/go.mod h1:VetnK3dIgFBBKmg0YnD9F9x6Icjd+9cv
 github.com/alingse/asasalint v0.0.11 h1:SFwnQXJ49Kx/1GghOFz1XGqHYKp21Kq1nHad/0WQRnw=
 github.com/alingse/asasalint v0.0.11/go.mod h1:nCaoMhw7a9kSJObvQyVzNTPBDbNpdocqrSP7t/cW5+I=
 github.com/aperturerobotics/bifrost v0.14.1/go.mod h1:5sZqhxnWkwuKP+lzCHstJtqT+6dSUMnr3RiY8z5Eb00=
+github.com/aperturerobotics/bifrost v0.14.2/go.mod h1:epKMxBSSTgLc9/FeApHXC/eMeJRDSuc0ZCoUqFiWyMo=
 github.com/aperturerobotics/controllerbus v0.26.0 h1:HJBPhRvHacsyEWWHeBOSETtd3mrvVfz/v0UOBF7+axI=
 github.com/aperturerobotics/controllerbus v0.26.0/go.mod h1:TejJD+kIw5oAV3GrcFHp5HX1g1ZECjEWSJ5LbUzAyoo=
 github.com/aperturerobotics/entitygraph v0.4.0 h1:V73zfiFrF6f8tBQ6Lg3YoptciPMFvfO0XySFRODWEuo=
