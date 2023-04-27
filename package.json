@@ -48,7 +48,7 @@
     "depcheck": "^1.4.3",
     "eslint": "^8.36.0",
     "eslint-config-prettier": "^8.8.0",
-    "patch-package": "^6.5.1",
+    "patch-package": "^7.0.0",
     "prettier": "^2.8.5",
     "ts-proto": "^1.146.0",
     "typescript": "^5.0.2"
