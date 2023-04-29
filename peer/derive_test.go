@@ -13,15 +13,16 @@ func TestDerive(t *testing.T) {
 	keys := BuildMockKeys(t)
 	for ki, key := range keys {
 		var secret [32]byte
+		salt := []byte("peer/derive test salt")
 		cryptoCtx := fmt.Sprintf("bifrost/peer/derive_test keys[%d]", ki)
-		err := DeriveKey(cryptoCtx, key, secret[:])
+		err := DeriveKey(cryptoCtx, salt, key, secret[:])
 		if err != nil {
 			t.Fatal(err.Error())
 		}
 		t.Logf("keys[%d]: derived key: %s", ki, b58.Encode(secret[:]))
 
 		// derive private key
-		derivPriv, _, err := DeriveEd25519Key(cryptoCtx+" ed25519", key)
+		derivPriv, _, err := DeriveEd25519Key(cryptoCtx+" ed25519", salt, key)
 		if err == nil && derivPriv == nil {
 			err = errors.New("derived empty private key")
 		}

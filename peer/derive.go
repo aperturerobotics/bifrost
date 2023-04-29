@@ -12,16 +12,20 @@ import (
 	"github.com/zeebo/blake3"
 )
 
-// DeriveKey derives a crypto key using a private key.
+// DeriveKey derives a secret using a private key.
 //
 // Not all private key types are supported.
 // Data is written to out.
 //
 // context should be globally unique, and application-specific.
+// salt is any additional data to mix with the private key.
+//
 // A good format for ctx strings is: [application] [commit timestamp] [purpose]
 // e.g., "example.com 2019-12-25 16:18:03 session tokens v1"
-// the purpose of these requirements is to ensure that an attacker cannot trick two different applications into using the same context string.
-func DeriveKey(context string, privKey crypto.PrivKey, out []byte) error {
+//
+// the purpose of these requirements is to ensure that an attacker cannot trick
+// two different applications into using the same context string.
+func DeriveKey(context string, salt []byte, privKey crypto.PrivKey, out []byte) error {
 	spKey, err := crypto.PrivKeyToStdKey(privKey)
 	if err != nil {
 		return err
@@ -81,17 +85,41 @@ func DeriveKey(context string, privKey crypto.PrivKey, out []byte) error {
 	}
 
 	// derive key with blake3
-	blake3.DeriveKey(context, material, out)
+	dkh := blake3.NewDeriveKey(context)
+	_, err = dkh.Write([]byte("bifrost/peer/derive-key"))
+	if err != nil {
+		return err
+	}
+	if len(salt) != 0 {
+		_, err = dkh.Write(salt) // never returns an error
+		if err != nil {
+			return err
+		}
+	}
+	_, err = dkh.Write(material) // never returns an error
+	if err != nil {
+		return err
+	}
+	_, err = dkh.Digest().Read(out)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 // DeriveEd25519Key derives a ed25519 private key from an existing private key.
 //
-// The context string will be mixed to determine which key is generated.
-// Not all private key types are supported.
-func DeriveEd25519Key(context string, privKey crypto.PrivKey) (crypto.PrivKey, crypto.PubKey, error) {
+// context should be globally unique, and application-specific.
+// salt is any additional data to mix with the private key.
+//
+// A good format for ctx strings is: [application] [commit timestamp] [purpose]
+// e.g., "example.com 2019-12-25 16:18:03 session tokens v1"
+//
+// the purpose of these requirements is to ensure that an attacker cannot trick
+// two different applications into using the same context string.
+func DeriveEd25519Key(context string, salt []byte, privKey crypto.PrivKey) (crypto.PrivKey, crypto.PubKey, error) {
 	seed := make([]byte, ed25519.SeedSize)
-	if err := DeriveKey(context, privKey, seed); err != nil {
+	if err := DeriveKey(context, salt, privKey, seed); err != nil {
 		return nil, nil, err
 	}
 
