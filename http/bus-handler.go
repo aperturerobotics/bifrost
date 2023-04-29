@@ -29,6 +29,9 @@ func NewBusHandler(b bus.Bus, clientID string, notFoundIfIdle bool) *BusHandler 
 func (h *BusHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	handler, _, handlerRef, err := ExLookupFirstHTTPHandler(ctx, h.b, req.URL.String(), "", h.notFoundIfIdle, nil)
+	if handlerRef != nil {
+		defer handlerRef.Release()
+	}
 	if err != nil {
 		rw.WriteHeader(500)
 		_, _ = rw.Write([]byte(err.Error()))
@@ -40,7 +43,6 @@ func (h *BusHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	defer handlerRef.Release()
 	handler.ServeHTTP(rw, req)
 }
 
