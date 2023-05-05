@@ -23,7 +23,7 @@ require (
 	github.com/aperturerobotics/starpc v0.19.1
 	github.com/evanw/esbuild v0.17.18
 	github.com/hajimehoshi/wasmserve v0.0.0-20230504031707-cd7d23533341
-	storj.io/drpc v0.0.32
+	storj.io/drpc v0.0.33
 )
 
 require (
