@@ -54,7 +54,7 @@ require (
 	gonum.org/v1/gonum v0.13.0
 	google.golang.org/protobuf v1.30.0
 	nhooyr.io/websocket v1.8.8-0.20221213223501-14fb98eba64e
-	storj.io/drpc v0.0.32
+	storj.io/drpc v0.0.33
 )
 
 require (
