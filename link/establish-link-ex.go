@@ -21,7 +21,7 @@ func EstablishLinkWithPeerEx(
 		NewEstablishLinkWithPeer(
 			localPeerID, remotePeerID,
 		),
-		returnIfIdle,
+		bus.ReturnIfIdle(returnIfIdle),
 		nil,
 		nil,
 	)

@@ -41,7 +41,7 @@ func (t *trackedLink) trackLink(ctx context.Context) error {
 			stream.OpenOpts{Reliable: true, Encrypted: true},
 			t.lnk.GetTransportUUID(),
 		),
-		false,
+		nil,
 		nil,
 		nil,
 	)

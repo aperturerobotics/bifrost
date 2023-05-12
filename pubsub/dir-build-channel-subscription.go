@@ -55,7 +55,7 @@ func ExBuildChannelSubscription(
 		ctx,
 		b,
 		NewBuildChannelSubscription(channelID, privKey),
-		returnIfIdle,
+		bus.ReturnIfIdle(returnIfIdle),
 		valDisposeCallback,
 		nil,
 	)

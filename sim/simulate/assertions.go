@@ -25,7 +25,7 @@ func TestConnectivity(ctx context.Context, px0, px1 *Peer) error {
 			0,
 			stream.OpenOpts{Reliable: true, Encrypted: true},
 		),
-		false,
+		nil,
 		nil,
 	)
 	if err != nil {

@@ -9,7 +9,6 @@ import (
 
 // GetPeerWithID gets a peer.
 // If peer ID is empty, selects any peer.
-// returnIfIdle if set, will return if the directive becomes idle.
 // valDisposeCallback is called when the value is no longer valid.
 // valDisposeCallback can be nil.
 func GetPeerWithID(
@@ -19,11 +18,15 @@ func GetPeerWithID(
 	returnIfIdle bool,
 	valDisposeCallback func(),
 ) (Peer, directive.Instance, directive.Reference, error) {
+	var idleCb bus.ExecIdleCallback
+	if returnIfIdle {
+		idleCb = bus.ReturnWhenIdle()
+	}
 	return bus.ExecWaitValue[Peer](
 		ctx,
 		b,
 		NewGetPeer(peerIDConstraint),
-		returnIfIdle,
+		idleCb,
 		valDisposeCallback,
 		nil,
 	)

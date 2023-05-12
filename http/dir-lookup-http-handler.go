@@ -72,7 +72,7 @@ func ExLookupFirstHTTPHandler(
 		ctx,
 		b,
 		NewLookupHTTPHandler(handlerURL, clientID),
-		returnIfIdle,
+		bus.ReturnIfIdle(returnIfIdle),
 		valDisposeCb,
 		nil,
 	)

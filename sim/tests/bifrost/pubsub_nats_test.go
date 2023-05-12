@@ -82,7 +82,7 @@ func TestPubsubNATS(t *testing.T) {
 			ctx,
 			lp1tb.Bus,
 			pubsub.NewBuildChannelSubscription(channelID, lp1tb.PrivKey),
-			false,
+			nil,
 			nil,
 		)
 		if err != nil {
@@ -97,7 +97,7 @@ func TestPubsubNATS(t *testing.T) {
 			ctx,
 			lp0tb.Bus,
 			pubsub.NewBuildChannelSubscription(channelID, lp0tb.PrivKey),
-			false,
+			nil,
 			nil,
 		)
 		if err != nil {

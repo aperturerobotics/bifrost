@@ -93,7 +93,7 @@ func NewTestbed(ctx context.Context, le *logrus.Entry, opts TestbedOpts) (*Testb
 			ctx,
 			t.Bus,
 			resolver.NewLoadControllerWithConfig(peerConfig),
-			false,
+			nil,
 			nil,
 		)
 		if err != nil {
@@ -108,7 +108,7 @@ func NewTestbed(ctx context.Context, le *logrus.Entry, opts TestbedOpts) (*Testb
 			ctx,
 			t.Bus,
 			resolver.NewLoadControllerWithConfig(&stream_echo.Config{}),
-			false,
+			nil,
 			nil,
 		)
 		if err != nil {

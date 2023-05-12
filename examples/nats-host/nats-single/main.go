@@ -93,7 +93,7 @@ func runNatsExample(c *cli.Context) error {
 		ctx,
 		lp0tb.Bus,
 		pubsub.NewBuildChannelSubscription(channelID, lp0tb.PrivKey),
-		false,
+		nil,
 		nil,
 	)
 	if err != nil {

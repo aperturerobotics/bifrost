@@ -99,7 +99,7 @@ func TestEstablishLink(t *testing.T) {
 		ctx,
 		tb2.Bus,
 		link.NewEstablishLinkWithPeer("", peerId1),
-		false,
+		nil,
 		nil,
 	)
 	if err != nil {
@@ -122,7 +122,7 @@ func TestEstablishLink(t *testing.T) {
 			0,
 			stream.OpenOpts{Reliable: true, Encrypted: true},
 		),
-		false,
+		nil,
 		nil,
 	)
 	if err != nil {

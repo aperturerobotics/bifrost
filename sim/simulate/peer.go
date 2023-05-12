@@ -94,7 +94,7 @@ func newPeer(ctx context.Context, le *logrus.Entry, gp *graph.Peer) (*Peer, erro
 		np.ctx,
 		np.testbed.Bus,
 		resolver.NewLoadControllerWithConfig(&configset_controller.Config{}),
-		false,
+		nil,
 		nil,
 	)
 	if err != nil {

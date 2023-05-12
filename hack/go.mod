@@ -40,7 +40,7 @@ require (
 	github.com/OpenPeeDeeP/depguard v1.1.1 // indirect
 	github.com/alexkohler/prealloc v1.0.0 // indirect
 	github.com/alingse/asasalint v0.0.11 // indirect
-	github.com/aperturerobotics/controllerbus v0.27.0 // indirect
+	github.com/aperturerobotics/controllerbus v0.27.1-0.20230512225029-073bdff7defe // indirect
 	github.com/aperturerobotics/entitygraph v0.4.0 // indirect
 	github.com/aperturerobotics/timestamp v0.7.2 // indirect
 	github.com/aperturerobotics/ts-proto-common-types v0.2.0 // indirect
