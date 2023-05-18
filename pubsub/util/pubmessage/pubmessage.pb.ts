@@ -48,21 +48,21 @@ export const PubMessageInner = {
       const tag = reader.uint32()
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break
           }
 
           message.data = reader.bytes()
           continue
         case 2:
-          if (tag != 18) {
+          if (tag !== 18) {
             break
           }
 
           message.channel = reader.string()
           continue
         case 3:
-          if (tag != 26) {
+          if (tag !== 26) {
             break
           }
 
@@ -71,7 +71,7 @@ export const PubMessageInner = {
           )
           continue
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break
       }
       reader.skipType(tag & 7)
@@ -239,8 +239,8 @@ function toTimestamp(date: Date): Timestamp {
 }
 
 function fromTimestamp(t: Timestamp): Date {
-  let millis = t.seconds.toNumber() * 1_000
-  millis += t.nanos / 1_000_000
+  let millis = (t.seconds.toNumber() || 0) * 1_000
+  millis += (t.nanos || 0) / 1_000_000
   return new Date(millis)
 }
 

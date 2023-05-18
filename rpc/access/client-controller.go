@@ -148,7 +148,7 @@ func (c *ClientController) AccessClient(
 	ctx context.Context,
 	cb func(ctx context.Context, client SRPCAccessRpcServiceClient) error,
 ) error {
-	return c.clientRc.Access(ctx, func(ctx context.Context, val *SRPCAccessRpcServiceClient) error {
+	return c.clientRc.Access(ctx, true, func(ctx context.Context, val *SRPCAccessRpcServiceClient) error {
 		return cb(ctx, *val)
 	})
 }

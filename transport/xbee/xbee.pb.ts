@@ -76,35 +76,35 @@ export const Config = {
       const tag = reader.uint32()
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break
           }
 
           message.transportPeerId = reader.string()
           continue
         case 2:
-          if (tag != 18) {
+          if (tag !== 18) {
             break
           }
 
           message.devicePath = reader.string()
           continue
         case 3:
-          if (tag != 24) {
+          if (tag !== 24) {
             break
           }
 
           message.deviceBaud = reader.int32()
           continue
         case 4:
-          if (tag != 34) {
+          if (tag !== 34) {
             break
           }
 
           message.packetOpts = Opts.decode(reader, reader.uint32())
           continue
         case 5:
-          if (tag != 42) {
+          if (tag !== 42) {
             break
           }
 
@@ -114,7 +114,7 @@ export const Config = {
           }
           continue
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break
       }
       reader.skipType(tag & 7)
@@ -250,21 +250,21 @@ export const Config_DialersEntry = {
       const tag = reader.uint32()
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break
           }
 
           message.key = reader.string()
           continue
         case 2:
-          if (tag != 18) {
+          if (tag !== 18) {
             break
           }
 
           message.value = DialerOpts.decode(reader, reader.uint32())
           continue
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break
       }
       reader.skipType(tag & 7)

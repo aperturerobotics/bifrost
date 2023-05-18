@@ -32,7 +32,7 @@ func DialSession(
 	tlsConf.NextProtos = []string{Alpn}
 	quicConfig := BuildQuicConfig(le, opts)
 
-	sess, err := quic.DialContext(ctx, pconn, addr, "", tlsConf, quicConfig)
+	sess, err := quic.Dial(ctx, pconn, addr, tlsConf, quicConfig)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -78,56 +78,56 @@ export const Config = {
       const tag = reader.uint32()
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break
           }
 
           message.localPeerId = reader.string()
           continue
         case 2:
-          if (tag != 18) {
+          if (tag !== 18) {
             break
           }
 
           message.remotePeerId = reader.string()
           continue
         case 3:
-          if (tag != 26) {
+          if (tag !== 26) {
             break
           }
 
           message.protocolId = reader.string()
           continue
         case 4:
-          if (tag != 34) {
+          if (tag !== 34) {
             break
           }
 
           message.listenMultiaddr = reader.string()
           continue
         case 5:
-          if (tag != 40) {
+          if (tag !== 40) {
             break
           }
 
           message.transportId = reader.uint64() as Long
           continue
         case 6:
-          if (tag != 48) {
+          if (tag !== 48) {
             break
           }
 
           message.reliable = reader.bool()
           continue
         case 7:
-          if (tag != 56) {
+          if (tag !== 56) {
             break
           }
 
           message.encrypted = reader.bool()
           continue
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break
       }
       reader.skipType(tag & 7)

@@ -3,7 +3,7 @@ module github.com/aperturerobotics/bifrost
 go 1.19
 
 require (
-	github.com/aperturerobotics/controllerbus v0.27.1 // latest
+	github.com/aperturerobotics/controllerbus v0.27.2 // latest
 	github.com/aperturerobotics/entitygraph v0.4.0
 	github.com/aperturerobotics/starpc v0.19.1 // latest
 )
@@ -15,7 +15,7 @@ replace (
 	github.com/nats-io/nats.go => github.com/aperturerobotics/bifrost-nats-client v1.10.1-0.20200831103200-24c3d0464e58 // aperture-2.0
 	github.com/nats-io/nkeys => github.com/nats-io/nkeys v0.3.0 // indirect: used by bifrost-nats-server
 	github.com/paralin/kcp-go-lite => github.com/paralin/kcp-go-lite v1.0.2-0.20210907043027-271505668bd0 // aperture
-	github.com/quic-go/quic-go => github.com/aperturerobotics/quic-go v0.34.1-0.20230420223227-a4d7c78be640 // aperture
+	github.com/quic-go/quic-go => github.com/aperturerobotics/quic-go v0.34.1-0.20230519055415-8ef37917a48f // aperture
 	github.com/sirupsen/logrus => github.com/aperturerobotics/logrus v1.9.1-0.20221224130652-ff61cbb763af // aperture
 	google.golang.org/protobuf => github.com/aperturerobotics/protobuf-go v1.30.1-0.20230428014030-7089409cbc63 // aperture
 	nhooyr.io/websocket => github.com/paralin/nhooyr-websocket v1.8.8-0.20220321125022-7defdf942f07 // aperture
@@ -24,17 +24,17 @@ replace (
 
 require (
 	github.com/aperturerobotics/ts-proto-common-types v0.2.0 // latest
-	github.com/aperturerobotics/util v1.3.1 // master
+	github.com/aperturerobotics/util v1.3.2 // master
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/djherbis/buffer v1.2.0
 	github.com/golang/snappy v0.0.4
 	github.com/klauspost/compress v1.16.5
 	github.com/libp2p/go-libp2p v0.27.3
-	github.com/libp2p/go-yamux/v4 v4.0.1-0.20220919134236-1c09f2ab3ec1
+	github.com/libp2p/go-yamux/v4 v4.0.1-0.20230515105331-4d6262328ec5
 	github.com/mr-tron/base58 v1.2.0
 	github.com/multiformats/go-multiaddr v0.9.0
-	github.com/nats-io/nats-server/v2 v2.9.16
+	github.com/nats-io/nats-server/v2 v2.9.17
 	github.com/nats-io/nats.go v1.25.0
 	github.com/nats-io/nkeys v0.4.4
 	github.com/paralin/kcp-go-lite v5.4.20+incompatible
@@ -45,7 +45,7 @@ require (
 	github.com/planetscale/vtprotobuf v0.4.0
 	github.com/quic-go/quic-go v0.34.0
 	github.com/sasha-s/go-deadlock v0.3.1
-	github.com/sirupsen/logrus v1.9.0
+	github.com/sirupsen/logrus v1.9.2
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
 	github.com/templexxx/xor v0.0.0-20191217153810-f85b25db303b
 	github.com/urfave/cli/v2 v2.25.3
@@ -62,7 +62,7 @@ require (
 	github.com/aperturerobotics/timestamp v0.7.2
 	github.com/valyala/fastjson v1.6.4
 	github.com/xtaci/smux/v2 v2.1.0
-	golang.org/x/exp v0.0.0-20230510235704-dd950f8aeaea
+	golang.org/x/exp v0.0.0-20230515195305-f3d0a9c9a5cc
 )
 
 require (

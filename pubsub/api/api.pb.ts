@@ -115,28 +115,28 @@ export const SubscribeRequest = {
       const tag = reader.uint32()
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break
           }
 
           message.channelId = reader.string()
           continue
         case 2:
-          if (tag != 18) {
+          if (tag !== 18) {
             break
           }
 
           message.peerId = reader.string()
           continue
         case 3:
-          if (tag != 26) {
+          if (tag !== 26) {
             break
           }
 
           message.privKeyPem = reader.string()
           continue
         case 4:
-          if (tag != 34) {
+          if (tag !== 34) {
             break
           }
 
@@ -146,7 +146,7 @@ export const SubscribeRequest = {
           )
           continue
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break
       }
       reader.skipType(tag & 7)
@@ -261,21 +261,21 @@ export const PublishRequest = {
       const tag = reader.uint32()
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break
           }
 
           message.data = reader.bytes()
           continue
         case 2:
-          if (tag != 16) {
+          if (tag !== 16) {
             break
           }
 
           message.identifier = reader.uint32()
           continue
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break
       }
       reader.skipType(tag & 7)
@@ -398,7 +398,7 @@ export const SubscribeResponse = {
       const tag = reader.uint32()
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break
           }
 
@@ -408,7 +408,7 @@ export const SubscribeResponse = {
           )
           continue
         case 2:
-          if (tag != 18) {
+          if (tag !== 18) {
             break
           }
 
@@ -418,7 +418,7 @@ export const SubscribeResponse = {
           )
           continue
         case 3:
-          if (tag != 26) {
+          if (tag !== 26) {
             break
           }
 
@@ -428,7 +428,7 @@ export const SubscribeResponse = {
           )
           continue
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break
       }
       reader.skipType(tag & 7)
@@ -554,14 +554,14 @@ export const SubscriptionStatus = {
       const tag = reader.uint32()
       switch (tag >>> 3) {
         case 1:
-          if (tag != 8) {
+          if (tag !== 8) {
             break
           }
 
           message.subscribed = reader.bool()
           continue
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break
       }
       reader.skipType(tag & 7)
@@ -659,21 +659,21 @@ export const OutgoingStatus = {
       const tag = reader.uint32()
       switch (tag >>> 3) {
         case 1:
-          if (tag != 8) {
+          if (tag !== 8) {
             break
           }
 
           message.identifier = reader.uint32()
           continue
         case 2:
-          if (tag != 16) {
+          if (tag !== 16) {
             break
           }
 
           message.sent = reader.bool()
           continue
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break
       }
       reader.skipType(tag & 7)
@@ -778,28 +778,28 @@ export const IncomingMessage = {
       const tag = reader.uint32()
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break
           }
 
           message.fromPeerId = reader.string()
           continue
         case 2:
-          if (tag != 16) {
+          if (tag !== 16) {
             break
           }
 
           message.authenticated = reader.bool()
           continue
         case 3:
-          if (tag != 26) {
+          if (tag !== 26) {
             break
           }
 
           message.data = reader.bytes()
           continue
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break
       }
       reader.skipType(tag & 7)

@@ -241,56 +241,56 @@ export const Opts = {
       const tag = reader.uint32()
       switch (tag >>> 3) {
         case 1:
-          if (tag != 8) {
+          if (tag !== 8) {
             break
           }
 
           message.dataShards = reader.uint32()
           continue
         case 2:
-          if (tag != 16) {
+          if (tag !== 16) {
             break
           }
 
           message.parityShards = reader.uint32()
           continue
         case 3:
-          if (tag != 24) {
+          if (tag !== 24) {
             break
           }
 
           message.mtu = reader.uint32()
           continue
         case 4:
-          if (tag != 32) {
+          if (tag !== 32) {
             break
           }
 
           message.kcpMode = reader.int32() as any
           continue
         case 5:
-          if (tag != 40) {
+          if (tag !== 40) {
             break
           }
 
           message.blockCrypt = reader.int32() as any
           continue
         case 6:
-          if (tag != 48) {
+          if (tag !== 48) {
             break
           }
 
           message.blockCompress = reader.int32() as any
           continue
         case 7:
-          if (tag != 56) {
+          if (tag !== 56) {
             break
           }
 
           message.streamMuxer = reader.int32() as any
           continue
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break
       }
       reader.skipType(tag & 7)

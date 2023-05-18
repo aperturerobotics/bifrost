@@ -147,35 +147,35 @@ export const Packet = {
       const tag = reader.uint32()
       switch (tag >>> 3) {
         case 1:
-          if (tag != 8) {
+          if (tag !== 8) {
             break
           }
 
           message.packetType = reader.int32() as any
           continue
         case 2:
-          if (tag != 18) {
+          if (tag !== 18) {
             break
           }
 
           message.initPkt = Packet_Init.decode(reader, reader.uint32())
           continue
         case 3:
-          if (tag != 26) {
+          if (tag !== 26) {
             break
           }
 
           message.initAckPkt = Packet_InitAck.decode(reader, reader.uint32())
           continue
         case 4:
-          if (tag != 34) {
+          if (tag !== 34) {
             break
           }
 
           message.completePkt = Packet_Complete.decode(reader, reader.uint32())
           continue
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break
       }
       reader.skipType(tag & 7)
@@ -310,28 +310,28 @@ export const Packet_Init = {
       const tag = reader.uint32()
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break
           }
 
           message.senderPeerId = reader.bytes()
           continue
         case 2:
-          if (tag != 18) {
+          if (tag !== 18) {
             break
           }
 
           message.receiverPeerId = reader.bytes()
           continue
         case 3:
-          if (tag != 26) {
+          if (tag !== 26) {
             break
           }
 
           message.senderEphPub = reader.bytes()
           continue
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break
       }
       reader.skipType(tag & 7)
@@ -454,21 +454,21 @@ export const Packet_InitAck = {
       const tag = reader.uint32()
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break
           }
 
           message.senderEphPub = reader.bytes()
           continue
         case 2:
-          if (tag != 18) {
+          if (tag !== 18) {
             break
           }
 
           message.ciphertext = reader.bytes()
           continue
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break
       }
       reader.skipType(tag & 7)
@@ -578,14 +578,14 @@ export const Packet_Complete = {
       const tag = reader.uint32()
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break
           }
 
           message.ciphertext = reader.bytes()
           continue
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break
       }
       reader.skipType(tag & 7)
@@ -699,35 +699,35 @@ export const Packet_Ciphertext = {
       const tag = reader.uint32()
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break
           }
 
           message.tupleSignature = reader.bytes()
           continue
         case 2:
-          if (tag != 18) {
+          if (tag !== 18) {
             break
           }
 
           message.senderPubKey = reader.bytes()
           continue
         case 3:
-          if (tag != 24) {
+          if (tag !== 24) {
             break
           }
 
           message.receiverKeyKnown = reader.bool()
           continue
         case 4:
-          if (tag != 34) {
+          if (tag !== 34) {
             break
           }
 
           message.extraInfo = reader.bytes()
           continue
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break
       }
       reader.skipType(tag & 7)

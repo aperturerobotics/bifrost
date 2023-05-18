@@ -41,7 +41,7 @@ func (h *HTTPHandler) SetContext(ctx context.Context) {
 // ServeHTTP serves a http request.
 func (h *HTTPHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
-	err := h.rc.Access(ctx, func(ctx context.Context, access *http.Handler) error {
+	err := h.rc.Access(ctx, true, func(ctx context.Context, access *http.Handler) error {
 		if access == nil {
 			rw.WriteHeader(404)
 			_, _ = rw.Write([]byte("404 not found"))

@@ -3,7 +3,7 @@ package bifrost_http_listener
 import (
 	"net/http"
 
-	"github.com/aperturerobotics/bifrost/http"
+	bifrost_http "github.com/aperturerobotics/bifrost/http"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/config"
 	"github.com/aperturerobotics/controllerbus/controller"

@@ -55,35 +55,35 @@ export const Opts = {
       const tag = reader.uint32()
       switch (tag >>> 3) {
         case 1:
-          if (tag != 10) {
+          if (tag !== 10) {
             break
           }
 
           message.quic = Opts1.decode(reader, reader.uint32())
           continue
         case 2:
-          if (tag != 16) {
+          if (tag !== 16) {
             break
           }
 
           message.verbose = reader.bool()
           continue
         case 3:
-          if (tag != 24) {
+          if (tag !== 24) {
             break
           }
 
           message.mtu = reader.uint32()
           continue
         case 4:
-          if (tag != 32) {
+          if (tag !== 32) {
             break
           }
 
           message.bufSize = reader.uint32()
           continue
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break
       }
       reader.skipType(tag & 7)

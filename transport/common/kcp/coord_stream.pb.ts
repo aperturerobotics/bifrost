@@ -148,14 +148,14 @@ export const CoordinationStreamPacket = {
       const tag = reader.uint32()
       switch (tag >>> 3) {
         case 1:
-          if (tag != 8) {
+          if (tag !== 8) {
             break
           }
 
           message.packetType = reader.int32() as any
           continue
         case 2:
-          if (tag != 18) {
+          if (tag !== 18) {
             break
           }
 
@@ -165,14 +165,14 @@ export const CoordinationStreamPacket = {
           )
           continue
         case 3:
-          if (tag != 26) {
+          if (tag !== 26) {
             break
           }
 
           message.rawStreamAck = RawStreamAck.decode(reader, reader.uint32())
           continue
         case 4:
-          if (tag != 34) {
+          if (tag !== 34) {
             break
           }
 
@@ -182,7 +182,7 @@ export const CoordinationStreamPacket = {
           )
           continue
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break
       }
       reader.skipType(tag & 7)
@@ -314,14 +314,14 @@ export const RawStreamEstablish = {
       const tag = reader.uint32()
       switch (tag >>> 3) {
         case 1:
-          if (tag != 8) {
+          if (tag !== 8) {
             break
           }
 
           message.initiatorStreamId = reader.uint32()
           continue
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break
       }
       reader.skipType(tag & 7)
@@ -425,28 +425,28 @@ export const RawStreamAck = {
       const tag = reader.uint32()
       switch (tag >>> 3) {
         case 1:
-          if (tag != 8) {
+          if (tag !== 8) {
             break
           }
 
           message.initiatorStreamId = reader.uint32()
           continue
         case 2:
-          if (tag != 16) {
+          if (tag !== 16) {
             break
           }
 
           message.ackStreamId = reader.uint32()
           continue
         case 3:
-          if (tag != 26) {
+          if (tag !== 26) {
             break
           }
 
           message.ackError = reader.string()
           continue
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break
       }
       reader.skipType(tag & 7)
@@ -554,21 +554,21 @@ export const RawStreamClose = {
       const tag = reader.uint32()
       switch (tag >>> 3) {
         case 1:
-          if (tag != 8) {
+          if (tag !== 8) {
             break
           }
 
           message.streamId = reader.uint32()
           continue
         case 2:
-          if (tag != 18) {
+          if (tag !== 18) {
             break
           }
 
           message.closeError = reader.string()
           continue
       }
-      if ((tag & 7) == 4 || tag == 0) {
+      if ((tag & 7) === 4 || tag === 0) {
         break
       }
       reader.skipType(tag & 7)
