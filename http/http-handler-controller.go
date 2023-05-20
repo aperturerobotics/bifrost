@@ -53,7 +53,7 @@ func NewHTTPHandlerController(
 		stripPathPrefix: stripPathPrefix,
 		pathRe:          pathRe,
 	}
-	h.rc = refcount.NewRefCount(nil, h.handleCtr, h.errCtr, resolver)
+	h.rc = refcount.NewRefCount(nil, false, h.handleCtr, h.errCtr, resolver)
 	return h
 }
 

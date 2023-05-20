@@ -29,7 +29,7 @@ func NewHTTPHandler(
 		handleCtr: ccontainer.NewCContainer[*http.Handler](nil),
 		errCtr:    ccontainer.NewCContainer[*error](nil),
 	}
-	h.rc = refcount.NewRefCount(ctx, h.handleCtr, h.errCtr, builder)
+	h.rc = refcount.NewRefCount(ctx, false, h.handleCtr, h.errCtr, builder)
 	return h
 }
 

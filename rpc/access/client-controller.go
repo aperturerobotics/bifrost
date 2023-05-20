@@ -75,7 +75,7 @@ func NewClientController(
 		backoff:     bo,
 	}
 	c.clientRc = refcount.NewRefCount(
-		nil, nil, nil,
+		nil, false, nil, nil,
 		func(ctx context.Context, released func()) (*SRPCAccessRpcServiceClient, func(), error) {
 			clientCtx, clientCtxCancel := context.WithCancel(ctx)
 			value := promise.NewPromise[*SRPCAccessRpcServiceClient]()
