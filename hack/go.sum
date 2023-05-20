@@ -69,8 +69,8 @@ github.com/alexkohler/prealloc v1.0.0 h1:Hbq0/3fJPQhNkN0dR95AVrr6R7tou91y0uHG5pO
 github.com/alexkohler/prealloc v1.0.0/go.mod h1:VetnK3dIgFBBKmg0YnD9F9x6Icjd+9cvfHR56wJVlKE=
 github.com/alingse/asasalint v0.0.11 h1:SFwnQXJ49Kx/1GghOFz1XGqHYKp21Kq1nHad/0WQRnw=
 github.com/alingse/asasalint v0.0.11/go.mod h1:nCaoMhw7a9kSJObvQyVzNTPBDbNpdocqrSP7t/cW5+I=
-github.com/aperturerobotics/controllerbus v0.27.3 h1:grKDOOogEQ/7bCPaBoKgzwgp58JEjf350gWBYzA2rI8=
-github.com/aperturerobotics/controllerbus v0.27.3/go.mod h1:f+m2JqgIpX7LGPdL9ozAZCrCTIyN5WQNai8f4OxY1zM=
+github.com/aperturerobotics/controllerbus v0.27.4 h1:Tqb6soiUZHmYDpyhMcOR4hNJH/YWkHnHG+6q+a/lIRI=
+github.com/aperturerobotics/controllerbus v0.27.4/go.mod h1:Pj6feQsmrCXGq4RwzuK+utFBZrJ+gI0MliVQWNx+m1k=
 github.com/aperturerobotics/entitygraph v0.4.0 h1:V73zfiFrF6f8tBQ6Lg3YoptciPMFvfO0XySFRODWEuo=
 github.com/aperturerobotics/entitygraph v0.4.0/go.mod h1:k3re4TkpTDmCA2PVkZ/bGdq5GSG/OFLkeviainSQKFQ=
 github.com/aperturerobotics/goprotowrap v0.3.0 h1:JLQ/1zVRdm2qwfeK7bPxWPg5fpTLlzovDUom0vBgcgM=
@@ -85,8 +85,8 @@ github.com/aperturerobotics/timestamp v0.7.2 h1:4XfGTlqqm1446E5lWeppiGMbX7Q4QAFi
 github.com/aperturerobotics/timestamp v0.7.2/go.mod h1:YaAs7+vux5LeXCeWxucuFelqz6K+HcSyTMQySRxb3qk=
 github.com/aperturerobotics/ts-proto-common-types v0.2.0 h1:OtlIxcXjfRDvgY2OQC6dZSiAAXral6kaZ+kD+JviZo0=
 github.com/aperturerobotics/ts-proto-common-types v0.2.0/go.mod h1:8QXVbEzjPvsaxWQ5RgZtAA9CcOdhWDyMaYdWVKZo8To=
-github.com/aperturerobotics/util v1.4.0 h1:MfZPHi35sIxqSicIQQOBHr0bTC1ACGmlyTQKCQXLGkw=
-github.com/aperturerobotics/util v1.4.0/go.mod h1:HeYXEiCZ4TqMHqZo2ryPbRXiIM1N/i55Q3AAHFWprI4=
+github.com/aperturerobotics/util v1.5.0 h1:ZqmclaEU3cGI4VlvJTccVVcTpiLuRWOQBVX7iKkLEuE=
+github.com/aperturerobotics/util v1.5.0/go.mod h1:HeYXEiCZ4TqMHqZo2ryPbRXiIM1N/i55Q3AAHFWprI4=
 github.com/ashanbrown/forbidigo v1.5.1 h1:WXhzLjOlnuDYPYQo/eFlcFMi8X/kLfvWLYu6CSoebis=
 github.com/ashanbrown/forbidigo v1.5.1/go.mod h1:Y8j9jy9ZYAEHXdu723cUlraTqbzjKF1MUyfOKL+AjcU=
 github.com/ashanbrown/makezero v1.1.1 h1:iCQ87C0V0vSyO+M9E/FZYbu65auqH0lnsOkf5FcB28s=
