@@ -108,10 +108,12 @@ func (t *Transport) Execute(ctx context.Context) error {
 	t.le.
 		WithField("local-addr", t.LocalAddr().String()).
 		Info("starting to listen with quic + tls")
-	ln, err := quic.Listen(t.pc, tlsConf, quicConfig)
+	tr := &quic.Transport{Conn: t.pc}
+	ln, err := tr.Listen(tlsConf, quicConfig)
 	if err != nil {
 		return err
 	}
+	defer t.pc.Close()
 	defer ln.Close()
 
 	// accept new connections

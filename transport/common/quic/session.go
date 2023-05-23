@@ -32,6 +32,7 @@ func DialSession(
 	tlsConf.NextProtos = []string{Alpn}
 	quicConfig := BuildQuicConfig(le, opts)
 
+	le.Debug("sending handshake with quic + tls")
 	sess, err := quic.Dial(ctx, pconn, addr, tlsConf, quicConfig)
 	if err != nil {
 		return nil, nil, err
@@ -76,6 +77,7 @@ func ListenSession(
 		_ = ln.Close()
 		return nil, err
 	}
+
 	return sess, nil
 }
 
