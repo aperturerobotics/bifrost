@@ -10,6 +10,7 @@ import (
 	transport_quic "github.com/aperturerobotics/bifrost/transport/common/quic"
 	"github.com/aperturerobotics/bifrost/util/rwc"
 	"github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/quic-go/quic-go"
 	"github.com/sirupsen/logrus"
 )
 
@@ -59,6 +60,8 @@ func NewTransport(
 ) (*Transport, error) {
 	if opts == nil {
 		opts = &Opts{}
+	} else {
+		opts = opts.CloneVT()
 	}
 
 	mtu := opts.GetMtu()
@@ -71,17 +74,12 @@ func NewTransport(
 		bufSize = 10
 	}
 
-	var dialFn transport_quic.DialFunc
-	if addrDialer != nil {
-		dialFn = func(dctx context.Context, addr string) (net.PacketConn, net.Addr, error) {
-			c, na, err := addrDialer(dctx, addr)
-			if err != nil {
-				return nil, nil, err
-			}
-			pc := rwc.NewPacketConn(ctx, c, laddr, na, mtu, int(bufSize))
-			return pc, na, err
-		}
+	if opts.Quic == nil {
+		opts.Quic = &transport_quic.Opts{}
 	}
+
+	// override some quic opts
+	opts.Quic.DisablePathMtuDiscovery = true // known mtu
 
 	tpt := &Transport{
 		ctx:     ctx,
@@ -91,6 +89,25 @@ func NewTransport(
 		mtu:     mtu,
 		bufSize: bufSize,
 	}
+
+	var dialFn transport_quic.DialFunc
+	if addrDialer != nil {
+		dialFn = func(dctx context.Context, addr string) (quic.Connection, net.Addr, error) {
+			c, na, err := addrDialer(dctx, addr)
+			if err != nil {
+				return nil, nil, err
+			}
+
+			pc := rwc.NewPacketConn(ctx, c, laddr, na, mtu, int(bufSize))
+			conn, _, err := transport_quic.DialSession(ctx, le, opts.GetQuic(), pc, tpt.Transport.GetIdentity(), na, "")
+			if err != nil {
+				_ = c.Close()
+				return nil, na, err
+			}
+			return conn, na, err
+		}
+	}
+
 	var err error
 	tpt.Transport, err = transport_quic.NewTransport(
 		ctx,

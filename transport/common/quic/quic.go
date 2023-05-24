@@ -51,7 +51,8 @@ type Transport struct {
 }
 
 // DialFunc is a function to dial a peer with a string address.
-type DialFunc func(ctx context.Context, addr string) (net.PacketConn, net.Addr, error)
+// The function should parse the addr to a net.Addr.
+type DialFunc func(ctx context.Context, addr string) (quic.Connection, net.Addr, error)
 
 // NewTransport constructs a new quic-backed based transport.
 func NewTransport(
@@ -185,7 +186,7 @@ func (t *Transport) Execute(ctx context.Context) error {
 //
 // dial indicates if this is the originator (outgoing) conn or not
 // ctx is used for the negotiation phase only
-// if peerID is empty, allows any peer ID on the other end
+// if peerID is empty, allows any peer ID on the remote end
 // raddr can be nil if peerID is NOT empty
 func (t *Transport) HandleConn(ctx context.Context, dial bool, pc net.PacketConn, raddr net.Addr, peerID peer.ID) (*Link, error) {
 	if raddr == nil {

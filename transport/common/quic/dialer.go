@@ -62,12 +62,12 @@ func (d *Dialer) Execute() {
 		le = le.WithField("remote-peer", d.peerID.Pretty())
 	}
 	le.Debug("quic: dialing peer")
-	pc, raddr, err := d.t.dialFn(ctx, d.addr)
+	rconn, _, err := d.t.dialFn(ctx, d.addr)
 	if err != nil {
 		le.WithError(err).Warn("quic: failed to dial peer")
 		d.result.SetResult(nil, err)
 		return
 	}
 
-	d.result.SetResult(d.t.HandleConn(ctx, true, pc, raddr, d.peerID))
+	d.result.SetResult(d.t.HandleSession(ctx, rconn))
 }
