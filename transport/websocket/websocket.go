@@ -11,8 +11,8 @@ import (
 	"github.com/aperturerobotics/bifrost/util/saddr"
 	"github.com/blang/semver"
 	"github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/quic-go/quic-go"
 	"github.com/sirupsen/logrus"
-	"google.golang.org/protobuf/proto"
 	websocket "nhooyr.io/websocket"
 )
 
@@ -61,7 +61,26 @@ func NewWebSocket(
 		return nil, err
 	}
 
-	var dialFn transport_quic.DialFunc = func(dctx context.Context, addr string) (net.PacketConn, net.Addr, error) {
+	quicOpts := conf.GetQuic()
+	if quicOpts == nil {
+		quicOpts = &transport_quic.Opts{}
+	} else {
+		quicOpts = quicOpts.CloneVT()
+	}
+
+	// set websocket-specific quic opts
+	quicOpts.DisableDatagrams = true
+	quicOpts.DisableKeepAlive = false
+	quicOpts.DisablePathMtuDiscovery = true
+
+	tpt := &WebSocket{
+		ctx:            ctx,
+		le:             le,
+		conf:           conf,
+		restrictPeerID: restrictPeerID,
+	}
+
+	var dialFn transport_quic.DialFunc = func(dctx context.Context, addr string) (quic.Connection, net.Addr, error) {
 		conn, _, err := websocket.Dial(dctx, addr, &websocket.DialOptions{
 			// Negotiate the bifrost quic sub-protocol ID.
 			Subprotocols: []string{transport_quic.Alpn},
@@ -72,25 +91,15 @@ func NewWebSocket(
 		laddr := peer.NewNetAddr(peerID)
 		raddr := saddr.NewStringAddr("ws", addr)
 		pc := NewPacketConn(ctx, conn, laddr, raddr)
-		return pc, raddr, nil
+		// Negotiate quic session.
+		qconn, _, err := transport_quic.DialSession(ctx, le, quicOpts, pc, tpt.Transport.GetIdentity(), raddr, "")
+		if err != nil {
+			return nil, raddr, err
+		}
+		return qconn, raddr, nil
 	}
 
-	quicOpts := conf.GetQuic()
-	if quicOpts == nil {
-		quicOpts = &transport_quic.Opts{}
-	} else {
-		quicOpts = proto.Clone(quicOpts).(*transport_quic.Opts)
-	}
-
-	// set websocket-specific quic opts
-	quicOpts.DisableDatagrams = true
-	quicOpts.DisableKeepAlive = false
-	quicOpts.DisablePathMtuDiscovery = true
-
-	// quicOpts.Verbose = true
-	// quicOpts.MaxIdleTimeoutDur = "30s"
-
-	tconn, err := transport_quic.NewTransport(
+	tpt.Transport, err = transport_quic.NewTransport(
 		ctx,
 		le,
 		0,
@@ -103,13 +112,8 @@ func NewWebSocket(
 	if err != nil {
 		return nil, err
 	}
-	return &WebSocket{
-		Transport:      tconn,
-		ctx:            ctx,
-		le:             le,
-		conf:           conf,
-		restrictPeerID: restrictPeerID,
-	}, nil
+
+	return tpt, nil
 }
 
 // MatchTransportType checks if the given transport type ID matches this transport.

@@ -32,8 +32,44 @@ func DialSession(
 	tlsConf.NextProtos = []string{Alpn}
 	quicConfig := BuildQuicConfig(le, opts)
 
-	le.Debug("sending handshake with quic + tls")
+	// le.Debug("sending handshake with quic + tls")
 	sess, err := quic.Dial(ctx, pconn, addr, tlsConf, quicConfig)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var remotePubKey crypto.PubKey
+	select {
+	case remotePubKey = <-keyCh:
+	case <-ctx.Done():
+		return nil, nil, ctx.Err()
+	}
+	if remotePubKey == nil {
+		return nil, nil, errors.New("expected remote pub key to be set")
+	}
+
+	return sess, remotePubKey, nil
+}
+
+// DialSessionViaTransport dials a remote addr on a quic transport to create a session.
+//
+// Negotiates a TLS session. Specify a empty peer ID to allow any.
+// Dial indicates this is the originator of the conn.
+func DialSessionViaTransport(
+	ctx context.Context,
+	le *logrus.Entry,
+	opts *Opts,
+	tpt *quic.Transport,
+	identity *p2ptls.Identity,
+	addr net.Addr,
+	rpeer peer.ID,
+) (quic.Connection, crypto.PubKey, error) {
+	tlsConf, keyCh := identity.ConfigForPeer(rpeer)
+	tlsConf.NextProtos = []string{Alpn}
+	quicConfig := BuildQuicConfig(le, opts)
+
+	// le.Debugf("dialing with quic + tls: %s", addr.String())
+	sess, err := tpt.Dial(ctx, addr, tlsConf, quicConfig)
 	if err != nil {
 		return nil, nil, err
 	}
