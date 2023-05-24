@@ -1,34 +1,5 @@
 package extra25519
 
-// IsLowOrder checks if the passed group element is of low order.
-// Algorithm translated from the same source as the blacklist (see above).
-func IsEdLowOrder(ge []byte) bool {
-	var (
-		c    [7]byte
-		k    int
-		i, j int
-	)
-
-	// cases j = 0..30
-	for j = 0; j < 31; j++ {
-		for i = 0; i < len(edBlacklist); i++ {
-			c[i] |= ge[j] ^ edBlacklist[i][j]
-		}
-	}
-
-	// case j = 31, ignore highest bit
-	for i = 0; i < len(edBlacklist); i++ {
-		c[i] |= (ge[j] & 0x7f) ^ edBlacklist[i][j]
-	}
-
-	k = 0
-	for i = 0; i < len(edBlacklist); i++ {
-		k |= int(c[i]) - 1
-	}
-
-	return ((k >> 8) & 1) == 1
-}
-
 // edBlacklist is a list of elements of the ed25519 curve that have low order.
 // The list was copied from https://github.com/jedisct1/libsodium/blob/141288535127c22162944e12fcadb8bc269671cc/src/libsodium/crypto_core/ed25519/ref10/ed25519_ref10.c
 var edBlacklist = [7][32]byte{
@@ -62,4 +33,33 @@ var edBlacklist = [7][32]byte{
 	{0xee, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 		0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 		0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f},
+}
+
+// IsLowOrder checks if the passed group element is of low order.
+// Algorithm translated from the same source as the blacklist (see above).
+func IsEdLowOrder(ge []byte) bool {
+	var (
+		c    [7]byte
+		k    int
+		i, j int
+	)
+
+	// cases j = 0..30
+	for j = 0; j < 31; j++ {
+		for i = 0; i < len(edBlacklist); i++ {
+			c[i] |= ge[j] ^ edBlacklist[i][j]
+		}
+	}
+
+	// case j = 31, ignore highest bit
+	for i = 0; i < len(edBlacklist); i++ {
+		c[i] |= (ge[j] & 0x7f) ^ edBlacklist[i][j]
+	}
+
+	k = 0
+	for i = 0; i < len(edBlacklist); i++ {
+		k |= int(c[i]) - 1
+	}
+
+	return ((k >> 8) & 1) == 1
 }
