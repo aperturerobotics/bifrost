@@ -399,9 +399,9 @@
   integrity sha512-Klz949h02Gz2uZCMGwDUSDS1YBlTdDDgbWHi+81l29tQALUtvz4rAYi5uoVhE5Lagoq6DeqAUlbrHvW/mXDgdQ==
 
 "@types/node@>=13.7.0":
-  version "20.2.3"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.2.3.tgz#b31eb300610c3835ac008d690de6f87e28f9b878"
-  integrity sha512-pg9d0yC4rVNWQzX8U7xb4olIOFuuVL9za3bzMT2pu2SU0SNEi66i2qrvhE2qt0HvkhuCaWJu7pLNOt/Pj8BIrw==
+  version "20.2.4"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.2.4.tgz#e6c3345f7ed9c6df41fdc288a94e2633167bc15d"
+  integrity sha512-ni5f8Xlf4PwnT/Z3f0HURc3ZSw8UyrqMqmM3L5ysa7VjHu8c3FOmIo1nKCcLrV/OAmtf3N4kFna/aJqxsfEtnA==
 
 "@types/object-hash@^1.3.0":
   version "1.3.4"
@@ -719,9 +719,9 @@ camelcase@^6.2.0:
   integrity sha512-Gmy6FhYlCY7uOElZUSbxo2UCDH8owEk996gkbrpsgGtrJLM3J7jGxl9Ic7Qwwj4ivOE5AWZWRMecDdF7hqGjFA==
 
 case-anything@^2.1.10:
-  version "2.1.12"
-  resolved "https://registry.yarnpkg.com/case-anything/-/case-anything-2.1.12.tgz#836628abf6d33c4587f5f53387433d6b24a88eaf"
-  integrity sha512-EKzcjF1KmtgL2aqW4Xi/aTAXBaQhbTL6StFmjzdm75cW9z6Cq0WU6DiejhbETlxY4SS3Dll5GYVxwDWc0BqEDg==
+  version "2.1.13"
+  resolved "https://registry.yarnpkg.com/case-anything/-/case-anything-2.1.13.tgz#0cdc16278cb29a7fcdeb072400da3f342ba329e9"
+  integrity sha512-zlOQ80VrQ2Ue+ymH5OuM/DlDq64mEm+B9UTdHULv5osUMD6HalNTblf2b1u/m6QecjsnOkBpqVZ+XPwIVsy7Ng==
 
 chalk@^2.0.0:
   version "2.4.2"
@@ -2248,9 +2248,9 @@ ts-proto-descriptors@1.9.0:
     protobufjs "^6.8.8"
 
 ts-proto@^1.147.2:
-  version "1.148.0"
-  resolved "https://registry.yarnpkg.com/ts-proto/-/ts-proto-1.148.0.tgz#e5bec6d0db9065e92ec230b660994e4f41ee0283"
-  integrity sha512-zeo2iae+67e7Ji/DxIIqIUHWWrjZwMEcu9uzloKYJqb5ElDUjdLFeKf9rKkdptYoCu+Fokb71SRoTA7k3VStXw==
+  version "1.148.1"
+  resolved "https://registry.yarnpkg.com/ts-proto/-/ts-proto-1.148.1.tgz#b8145efc12862d6a1e8535a867b31006fd8bce85"
+  integrity sha512-EHUlhllqRMjZHHq0+iaVwBYHw3UVrv5nea/Fpa/jepxCmO/ob1o0uImtWKmUnXlG+m8A3tQhykak9epRf6wGzw==
   dependencies:
     "@types/object-hash" "^1.3.0"
     case-anything "^2.1.10"
