@@ -29,13 +29,13 @@ require (
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/djherbis/buffer v1.2.0
 	github.com/golang/snappy v0.0.4
-	github.com/klauspost/compress v1.16.5
+	github.com/klauspost/compress v1.16.6
 	github.com/libp2p/go-libp2p v0.28.0
 	github.com/libp2p/go-yamux/v4 v4.0.1
 	github.com/mr-tron/base58 v1.2.0
 	github.com/multiformats/go-multiaddr v0.9.0
-	github.com/nats-io/nats-server/v2 v2.9.17
-	github.com/nats-io/nats.go v1.26.0
+	github.com/nats-io/nats-server/v2 v2.9.18
+	github.com/nats-io/nats.go v1.27.0
 	github.com/nats-io/nkeys v0.4.4
 	github.com/paralin/kcp-go-lite v5.4.20+incompatible
 	github.com/patrickmn/go-cache v2.1.0+incompatible
@@ -48,9 +48,9 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
 	github.com/templexxx/xor v0.0.0-20191217153810-f85b25db303b
-	github.com/urfave/cli/v2 v2.25.5
+	github.com/urfave/cli/v2 v2.25.6
 	github.com/zeebo/blake3 v0.2.3
-	golang.org/x/crypto v0.9.0
+	golang.org/x/crypto v0.10.0
 	gonum.org/v1/gonum v0.13.0
 	google.golang.org/protobuf v1.30.0
 	nhooyr.io/websocket v1.8.8-0.20221213223501-14fb98eba64e
@@ -113,7 +113,7 @@ require (
 	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/mod v0.10.0 // indirect
 	golang.org/x/net v0.10.0 // indirect
-	golang.org/x/sys v0.8.0 // indirect
+	golang.org/x/sys v0.9.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.9.1 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
