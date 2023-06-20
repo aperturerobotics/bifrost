@@ -1009,11 +1009,12 @@ export interface StreamService {
   ): AsyncIterable<DialStreamResponse>
 }
 
+export const StreamServiceServiceName = 'stream.api.StreamService'
 export class StreamServiceClientImpl implements StreamService {
   private readonly rpc: Rpc
   private readonly service: string
   constructor(rpc: Rpc, opts?: { service?: string }) {
-    this.service = opts?.service || 'stream.api.StreamService'
+    this.service = opts?.service || StreamServiceServiceName
     this.rpc = rpc
     this.ForwardStreams = this.ForwardStreams.bind(this)
     this.ListenStreams = this.ListenStreams.bind(this)

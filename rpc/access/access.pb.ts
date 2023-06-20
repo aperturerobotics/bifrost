@@ -296,11 +296,12 @@ export interface AccessRpcService {
   ): AsyncIterable<RpcStreamPacket>
 }
 
+export const AccessRpcServiceServiceName = 'bifrost.rpc.access.AccessRpcService'
 export class AccessRpcServiceClientImpl implements AccessRpcService {
   private readonly rpc: Rpc
   private readonly service: string
   constructor(rpc: Rpc, opts?: { service?: string }) {
-    this.service = opts?.service || 'bifrost.rpc.access.AccessRpcService'
+    this.service = opts?.service || AccessRpcServiceServiceName
     this.rpc = rpc
     this.LookupRpcService = this.LookupRpcService.bind(this)
     this.CallRpcService = this.CallRpcService.bind(this)

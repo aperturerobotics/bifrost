@@ -16,7 +16,7 @@ export interface PubMessageInner {
 }
 
 function createBasePubMessageInner(): PubMessageInner {
-  return { data: new Uint8Array(), channel: '', timestamp: undefined }
+  return { data: new Uint8Array(0), channel: '', timestamp: undefined }
 }
 
 export const PubMessageInner = {
@@ -119,7 +119,7 @@ export const PubMessageInner = {
     return {
       data: isSet(object.data)
         ? bytesFromBase64(object.data)
-        : new Uint8Array(),
+        : new Uint8Array(0),
       channel: isSet(object.channel) ? String(object.channel) : '',
       timestamp: isSet(object.timestamp)
         ? fromJsonTimestamp(object.timestamp)
@@ -131,7 +131,7 @@ export const PubMessageInner = {
     const obj: any = {}
     message.data !== undefined &&
       (obj.data = base64FromBytes(
-        message.data !== undefined ? message.data : new Uint8Array()
+        message.data !== undefined ? message.data : new Uint8Array(0)
       ))
     message.channel !== undefined && (obj.channel = message.channel)
     message.timestamp !== undefined &&
@@ -149,7 +149,7 @@ export const PubMessageInner = {
     object: I
   ): PubMessageInner {
     const message = createBasePubMessageInner()
-    message.data = object.data ?? new Uint8Array()
+    message.data = object.data ?? new Uint8Array(0)
     message.channel = object.channel ?? ''
     message.timestamp = object.timestamp ?? undefined
     return message

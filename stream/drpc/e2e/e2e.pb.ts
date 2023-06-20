@@ -220,11 +220,12 @@ export interface EndToEnd {
   Mock(request: MockRequest, abortSignal?: AbortSignal): Promise<MockResponse>
 }
 
+export const EndToEndServiceName = 'drpc.e2e.EndToEnd'
 export class EndToEndClientImpl implements EndToEnd {
   private readonly rpc: Rpc
   private readonly service: string
   constructor(rpc: Rpc, opts?: { service?: string }) {
-    this.service = opts?.service || 'drpc.e2e.EndToEnd'
+    this.service = opts?.service || EndToEndServiceName
     this.rpc = rpc
     this.Mock = this.Mock.bind(this)
   }

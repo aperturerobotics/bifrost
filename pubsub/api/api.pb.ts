@@ -235,7 +235,7 @@ export const SubscribeRequest = {
 }
 
 function createBasePublishRequest(): PublishRequest {
-  return { data: new Uint8Array(), identifier: 0 }
+  return { data: new Uint8Array(0), identifier: 0 }
 }
 
 export const PublishRequest = {
@@ -323,7 +323,7 @@ export const PublishRequest = {
     return {
       data: isSet(object.data)
         ? bytesFromBase64(object.data)
-        : new Uint8Array(),
+        : new Uint8Array(0),
       identifier: isSet(object.identifier) ? Number(object.identifier) : 0,
     }
   },
@@ -332,7 +332,7 @@ export const PublishRequest = {
     const obj: any = {}
     message.data !== undefined &&
       (obj.data = base64FromBytes(
-        message.data !== undefined ? message.data : new Uint8Array()
+        message.data !== undefined ? message.data : new Uint8Array(0)
       ))
     message.identifier !== undefined &&
       (obj.identifier = Math.round(message.identifier))
@@ -349,7 +349,7 @@ export const PublishRequest = {
     object: I
   ): PublishRequest {
     const message = createBasePublishRequest()
-    message.data = object.data ?? new Uint8Array()
+    message.data = object.data ?? new Uint8Array(0)
     message.identifier = object.identifier ?? 0
     return message
   },
@@ -749,7 +749,7 @@ export const OutgoingStatus = {
 }
 
 function createBaseIncomingMessage(): IncomingMessage {
-  return { fromPeerId: '', authenticated: false, data: new Uint8Array() }
+  return { fromPeerId: '', authenticated: false, data: new Uint8Array(0) }
 }
 
 export const IncomingMessage = {
@@ -851,7 +851,7 @@ export const IncomingMessage = {
         : false,
       data: isSet(object.data)
         ? bytesFromBase64(object.data)
-        : new Uint8Array(),
+        : new Uint8Array(0),
     }
   },
 
@@ -862,7 +862,7 @@ export const IncomingMessage = {
       (obj.authenticated = message.authenticated)
     message.data !== undefined &&
       (obj.data = base64FromBytes(
-        message.data !== undefined ? message.data : new Uint8Array()
+        message.data !== undefined ? message.data : new Uint8Array(0)
       ))
     return obj
   },
@@ -879,7 +879,7 @@ export const IncomingMessage = {
     const message = createBaseIncomingMessage()
     message.fromPeerId = object.fromPeerId ?? ''
     message.authenticated = object.authenticated ?? false
-    message.data = object.data ?? new Uint8Array()
+    message.data = object.data ?? new Uint8Array(0)
     return message
   },
 }
@@ -896,11 +896,12 @@ export interface PubSubService {
   ): AsyncIterable<SubscribeResponse>
 }
 
+export const PubSubServiceServiceName = 'pubsub.api.PubSubService'
 export class PubSubServiceClientImpl implements PubSubService {
   private readonly rpc: Rpc
   private readonly service: string
   constructor(rpc: Rpc, opts?: { service?: string }) {
-    this.service = opts?.service || 'pubsub.api.PubSubService'
+    this.service = opts?.service || PubSubServiceServiceName
     this.rpc = rpc
     this.Subscribe = this.Subscribe.bind(this)
   }

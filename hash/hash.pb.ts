@@ -69,7 +69,7 @@ export interface Hash {
 }
 
 function createBaseHash(): Hash {
-  return { hashType: 0, hash: new Uint8Array() }
+  return { hashType: 0, hash: new Uint8Array(0) }
 }
 
 export const Hash = {
@@ -153,7 +153,7 @@ export const Hash = {
       hashType: isSet(object.hashType) ? hashTypeFromJSON(object.hashType) : 0,
       hash: isSet(object.hash)
         ? bytesFromBase64(object.hash)
-        : new Uint8Array(),
+        : new Uint8Array(0),
     }
   },
 
@@ -163,7 +163,7 @@ export const Hash = {
       (obj.hashType = hashTypeToJSON(message.hashType))
     message.hash !== undefined &&
       (obj.hash = base64FromBytes(
-        message.hash !== undefined ? message.hash : new Uint8Array()
+        message.hash !== undefined ? message.hash : new Uint8Array(0)
       ))
     return obj
   },
@@ -175,7 +175,7 @@ export const Hash = {
   fromPartial<I extends Exact<DeepPartial<Hash>, I>>(object: I): Hash {
     const message = createBaseHash()
     message.hashType = object.hashType ?? 0
-    message.hash = object.hash ?? new Uint8Array()
+    message.hash = object.hash ?? new Uint8Array(0)
     return message
   },
 }

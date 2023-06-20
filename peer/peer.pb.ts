@@ -38,7 +38,7 @@ export interface SignedMsg {
 }
 
 function createBaseSignature(): Signature {
-  return { pubKey: new Uint8Array(), hashType: 0, sigData: new Uint8Array() }
+  return { pubKey: new Uint8Array(0), hashType: 0, sigData: new Uint8Array(0) }
 }
 
 export const Signature = {
@@ -136,11 +136,11 @@ export const Signature = {
     return {
       pubKey: isSet(object.pubKey)
         ? bytesFromBase64(object.pubKey)
-        : new Uint8Array(),
+        : new Uint8Array(0),
       hashType: isSet(object.hashType) ? hashTypeFromJSON(object.hashType) : 0,
       sigData: isSet(object.sigData)
         ? bytesFromBase64(object.sigData)
-        : new Uint8Array(),
+        : new Uint8Array(0),
     }
   },
 
@@ -148,13 +148,13 @@ export const Signature = {
     const obj: any = {}
     message.pubKey !== undefined &&
       (obj.pubKey = base64FromBytes(
-        message.pubKey !== undefined ? message.pubKey : new Uint8Array()
+        message.pubKey !== undefined ? message.pubKey : new Uint8Array(0)
       ))
     message.hashType !== undefined &&
       (obj.hashType = hashTypeToJSON(message.hashType))
     message.sigData !== undefined &&
       (obj.sigData = base64FromBytes(
-        message.sigData !== undefined ? message.sigData : new Uint8Array()
+        message.sigData !== undefined ? message.sigData : new Uint8Array(0)
       ))
     return obj
   },
@@ -167,15 +167,15 @@ export const Signature = {
     object: I
   ): Signature {
     const message = createBaseSignature()
-    message.pubKey = object.pubKey ?? new Uint8Array()
+    message.pubKey = object.pubKey ?? new Uint8Array(0)
     message.hashType = object.hashType ?? 0
-    message.sigData = object.sigData ?? new Uint8Array()
+    message.sigData = object.sigData ?? new Uint8Array(0)
     return message
   },
 }
 
 function createBaseSignedMsg(): SignedMsg {
-  return { fromPeerId: '', signature: undefined, data: new Uint8Array() }
+  return { fromPeerId: '', signature: undefined, data: new Uint8Array(0) }
 }
 
 export const SignedMsg = {
@@ -277,7 +277,7 @@ export const SignedMsg = {
         : undefined,
       data: isSet(object.data)
         ? bytesFromBase64(object.data)
-        : new Uint8Array(),
+        : new Uint8Array(0),
     }
   },
 
@@ -290,7 +290,7 @@ export const SignedMsg = {
         : undefined)
     message.data !== undefined &&
       (obj.data = base64FromBytes(
-        message.data !== undefined ? message.data : new Uint8Array()
+        message.data !== undefined ? message.data : new Uint8Array(0)
       ))
     return obj
   },
@@ -308,7 +308,7 @@ export const SignedMsg = {
       object.signature !== undefined && object.signature !== null
         ? Signature.fromPartial(object.signature)
         : undefined
-    message.data = object.data ?? new Uint8Array()
+    message.data = object.data ?? new Uint8Array(0)
     return message
   },
 }

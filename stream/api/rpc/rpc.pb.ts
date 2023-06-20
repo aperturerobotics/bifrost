@@ -59,7 +59,7 @@ export interface Data {
 }
 
 function createBaseData(): Data {
-  return { data: new Uint8Array(), state: 0 }
+  return { data: new Uint8Array(0), state: 0 }
 }
 
 export const Data = {
@@ -142,7 +142,7 @@ export const Data = {
     return {
       data: isSet(object.data)
         ? bytesFromBase64(object.data)
-        : new Uint8Array(),
+        : new Uint8Array(0),
       state: isSet(object.state) ? streamStateFromJSON(object.state) : 0,
     }
   },
@@ -151,7 +151,7 @@ export const Data = {
     const obj: any = {}
     message.data !== undefined &&
       (obj.data = base64FromBytes(
-        message.data !== undefined ? message.data : new Uint8Array()
+        message.data !== undefined ? message.data : new Uint8Array(0)
       ))
     message.state !== undefined &&
       (obj.state = streamStateToJSON(message.state))
@@ -164,7 +164,7 @@ export const Data = {
 
   fromPartial<I extends Exact<DeepPartial<Data>, I>>(object: I): Data {
     const message = createBaseData()
-    message.data = object.data ?? new Uint8Array()
+    message.data = object.data ?? new Uint8Array(0)
     message.state = object.state ?? 0
     return message
   },

@@ -572,11 +572,12 @@ export interface PeerService {
   ): Promise<GetPeerInfoResponse>
 }
 
+export const PeerServiceServiceName = 'peer.api.PeerService'
 export class PeerServiceClientImpl implements PeerService {
   private readonly rpc: Rpc
   private readonly service: string
   constructor(rpc: Rpc, opts?: { service?: string }) {
-    this.service = opts?.service || 'peer.api.PeerService'
+    this.service = opts?.service || PeerServiceServiceName
     this.rpc = rpc
     this.Identify = this.Identify.bind(this)
     this.GetPeerInfo = this.GetPeerInfo.bind(this)

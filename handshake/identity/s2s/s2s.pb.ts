@@ -278,9 +278,9 @@ export const Packet = {
 
 function createBasePacket_Init(): Packet_Init {
   return {
-    senderPeerId: new Uint8Array(),
-    receiverPeerId: new Uint8Array(),
-    senderEphPub: new Uint8Array(),
+    senderPeerId: new Uint8Array(0),
+    receiverPeerId: new Uint8Array(0),
+    senderEphPub: new Uint8Array(0),
   }
 }
 
@@ -379,13 +379,13 @@ export const Packet_Init = {
     return {
       senderPeerId: isSet(object.senderPeerId)
         ? bytesFromBase64(object.senderPeerId)
-        : new Uint8Array(),
+        : new Uint8Array(0),
       receiverPeerId: isSet(object.receiverPeerId)
         ? bytesFromBase64(object.receiverPeerId)
-        : new Uint8Array(),
+        : new Uint8Array(0),
       senderEphPub: isSet(object.senderEphPub)
         ? bytesFromBase64(object.senderEphPub)
-        : new Uint8Array(),
+        : new Uint8Array(0),
     }
   },
 
@@ -395,19 +395,19 @@ export const Packet_Init = {
       (obj.senderPeerId = base64FromBytes(
         message.senderPeerId !== undefined
           ? message.senderPeerId
-          : new Uint8Array()
+          : new Uint8Array(0)
       ))
     message.receiverPeerId !== undefined &&
       (obj.receiverPeerId = base64FromBytes(
         message.receiverPeerId !== undefined
           ? message.receiverPeerId
-          : new Uint8Array()
+          : new Uint8Array(0)
       ))
     message.senderEphPub !== undefined &&
       (obj.senderEphPub = base64FromBytes(
         message.senderEphPub !== undefined
           ? message.senderEphPub
-          : new Uint8Array()
+          : new Uint8Array(0)
       ))
     return obj
   },
@@ -420,15 +420,15 @@ export const Packet_Init = {
     object: I
   ): Packet_Init {
     const message = createBasePacket_Init()
-    message.senderPeerId = object.senderPeerId ?? new Uint8Array()
-    message.receiverPeerId = object.receiverPeerId ?? new Uint8Array()
-    message.senderEphPub = object.senderEphPub ?? new Uint8Array()
+    message.senderPeerId = object.senderPeerId ?? new Uint8Array(0)
+    message.receiverPeerId = object.receiverPeerId ?? new Uint8Array(0)
+    message.senderEphPub = object.senderEphPub ?? new Uint8Array(0)
     return message
   },
 }
 
 function createBasePacket_InitAck(): Packet_InitAck {
-  return { senderEphPub: new Uint8Array(), ciphertext: new Uint8Array() }
+  return { senderEphPub: new Uint8Array(0), ciphertext: new Uint8Array(0) }
 }
 
 export const Packet_InitAck = {
@@ -516,10 +516,10 @@ export const Packet_InitAck = {
     return {
       senderEphPub: isSet(object.senderEphPub)
         ? bytesFromBase64(object.senderEphPub)
-        : new Uint8Array(),
+        : new Uint8Array(0),
       ciphertext: isSet(object.ciphertext)
         ? bytesFromBase64(object.ciphertext)
-        : new Uint8Array(),
+        : new Uint8Array(0),
     }
   },
 
@@ -529,11 +529,13 @@ export const Packet_InitAck = {
       (obj.senderEphPub = base64FromBytes(
         message.senderEphPub !== undefined
           ? message.senderEphPub
-          : new Uint8Array()
+          : new Uint8Array(0)
       ))
     message.ciphertext !== undefined &&
       (obj.ciphertext = base64FromBytes(
-        message.ciphertext !== undefined ? message.ciphertext : new Uint8Array()
+        message.ciphertext !== undefined
+          ? message.ciphertext
+          : new Uint8Array(0)
       ))
     return obj
   },
@@ -548,14 +550,14 @@ export const Packet_InitAck = {
     object: I
   ): Packet_InitAck {
     const message = createBasePacket_InitAck()
-    message.senderEphPub = object.senderEphPub ?? new Uint8Array()
-    message.ciphertext = object.ciphertext ?? new Uint8Array()
+    message.senderEphPub = object.senderEphPub ?? new Uint8Array(0)
+    message.ciphertext = object.ciphertext ?? new Uint8Array(0)
     return message
   },
 }
 
 function createBasePacket_Complete(): Packet_Complete {
-  return { ciphertext: new Uint8Array() }
+  return { ciphertext: new Uint8Array(0) }
 }
 
 export const Packet_Complete = {
@@ -633,7 +635,7 @@ export const Packet_Complete = {
     return {
       ciphertext: isSet(object.ciphertext)
         ? bytesFromBase64(object.ciphertext)
-        : new Uint8Array(),
+        : new Uint8Array(0),
     }
   },
 
@@ -641,7 +643,9 @@ export const Packet_Complete = {
     const obj: any = {}
     message.ciphertext !== undefined &&
       (obj.ciphertext = base64FromBytes(
-        message.ciphertext !== undefined ? message.ciphertext : new Uint8Array()
+        message.ciphertext !== undefined
+          ? message.ciphertext
+          : new Uint8Array(0)
       ))
     return obj
   },
@@ -656,17 +660,17 @@ export const Packet_Complete = {
     object: I
   ): Packet_Complete {
     const message = createBasePacket_Complete()
-    message.ciphertext = object.ciphertext ?? new Uint8Array()
+    message.ciphertext = object.ciphertext ?? new Uint8Array(0)
     return message
   },
 }
 
 function createBasePacket_Ciphertext(): Packet_Ciphertext {
   return {
-    tupleSignature: new Uint8Array(),
-    senderPubKey: new Uint8Array(),
+    tupleSignature: new Uint8Array(0),
+    senderPubKey: new Uint8Array(0),
     receiverKeyKnown: false,
-    extraInfo: new Uint8Array(),
+    extraInfo: new Uint8Array(0),
   }
 }
 
@@ -775,16 +779,16 @@ export const Packet_Ciphertext = {
     return {
       tupleSignature: isSet(object.tupleSignature)
         ? bytesFromBase64(object.tupleSignature)
-        : new Uint8Array(),
+        : new Uint8Array(0),
       senderPubKey: isSet(object.senderPubKey)
         ? bytesFromBase64(object.senderPubKey)
-        : new Uint8Array(),
+        : new Uint8Array(0),
       receiverKeyKnown: isSet(object.receiverKeyKnown)
         ? Boolean(object.receiverKeyKnown)
         : false,
       extraInfo: isSet(object.extraInfo)
         ? bytesFromBase64(object.extraInfo)
-        : new Uint8Array(),
+        : new Uint8Array(0),
     }
   },
 
@@ -794,19 +798,19 @@ export const Packet_Ciphertext = {
       (obj.tupleSignature = base64FromBytes(
         message.tupleSignature !== undefined
           ? message.tupleSignature
-          : new Uint8Array()
+          : new Uint8Array(0)
       ))
     message.senderPubKey !== undefined &&
       (obj.senderPubKey = base64FromBytes(
         message.senderPubKey !== undefined
           ? message.senderPubKey
-          : new Uint8Array()
+          : new Uint8Array(0)
       ))
     message.receiverKeyKnown !== undefined &&
       (obj.receiverKeyKnown = message.receiverKeyKnown)
     message.extraInfo !== undefined &&
       (obj.extraInfo = base64FromBytes(
-        message.extraInfo !== undefined ? message.extraInfo : new Uint8Array()
+        message.extraInfo !== undefined ? message.extraInfo : new Uint8Array(0)
       ))
     return obj
   },
@@ -821,10 +825,10 @@ export const Packet_Ciphertext = {
     object: I
   ): Packet_Ciphertext {
     const message = createBasePacket_Ciphertext()
-    message.tupleSignature = object.tupleSignature ?? new Uint8Array()
-    message.senderPubKey = object.senderPubKey ?? new Uint8Array()
+    message.tupleSignature = object.tupleSignature ?? new Uint8Array(0)
+    message.senderPubKey = object.senderPubKey ?? new Uint8Array(0)
     message.receiverKeyKnown = object.receiverKeyKnown ?? false
-    message.extraInfo = object.extraInfo ?? new Uint8Array()
+    message.extraInfo = object.extraInfo ?? new Uint8Array(0)
     return message
   },
 }
