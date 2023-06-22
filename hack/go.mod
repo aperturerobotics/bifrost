@@ -18,10 +18,10 @@ require (
 )
 
 require (
-	github.com/aperturerobotics/bifrost v0.17.3
+	github.com/aperturerobotics/bifrost v0.17.4
 	github.com/aperturerobotics/goprotowrap v0.3.0
 	github.com/aperturerobotics/starpc v0.19.2
-	github.com/evanw/esbuild v0.18.5
+	github.com/evanw/esbuild v0.18.6
 	github.com/hajimehoshi/wasmserve v0.0.0-20230504031707-cd7d23533341
 	storj.io/drpc v0.0.33
 )
