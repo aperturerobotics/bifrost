@@ -107,7 +107,7 @@ export const Data = {
   // encodeTransform encodes a source of message objects.
   // Transform<Data, Uint8Array>
   async *encodeTransform(
-    source: AsyncIterable<Data | Data[]> | Iterable<Data | Data[]>
+    source: AsyncIterable<Data | Data[]> | Iterable<Data | Data[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -125,7 +125,7 @@ export const Data = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<Data> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -151,7 +151,7 @@ export const Data = {
     const obj: any = {}
     message.data !== undefined &&
       (obj.data = base64FromBytes(
-        message.data !== undefined ? message.data : new Uint8Array(0)
+        message.data !== undefined ? message.data : new Uint8Array(0),
       ))
     message.state !== undefined &&
       (obj.state = streamStateToJSON(message.state))

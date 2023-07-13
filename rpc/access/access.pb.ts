@@ -33,7 +33,7 @@ function createBaseLookupRpcServiceRequest(): LookupRpcServiceRequest {
 export const LookupRpcServiceRequest = {
   encode(
     message: LookupRpcServiceRequest,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.serviceId !== '') {
       writer.uint32(10).string(message.serviceId)
@@ -46,7 +46,7 @@ export const LookupRpcServiceRequest = {
 
   decode(
     input: _m0.Reader | Uint8Array,
-    length?: number
+    length?: number,
   ): LookupRpcServiceRequest {
     const reader =
       input instanceof _m0.Reader ? input : _m0.Reader.create(input)
@@ -83,7 +83,7 @@ export const LookupRpcServiceRequest = {
   async *encodeTransform(
     source:
       | AsyncIterable<LookupRpcServiceRequest | LookupRpcServiceRequest[]>
-      | Iterable<LookupRpcServiceRequest | LookupRpcServiceRequest[]>
+      | Iterable<LookupRpcServiceRequest | LookupRpcServiceRequest[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -101,7 +101,7 @@ export const LookupRpcServiceRequest = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<LookupRpcServiceRequest> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -129,13 +129,13 @@ export const LookupRpcServiceRequest = {
   },
 
   create<I extends Exact<DeepPartial<LookupRpcServiceRequest>, I>>(
-    base?: I
+    base?: I,
   ): LookupRpcServiceRequest {
     return LookupRpcServiceRequest.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<LookupRpcServiceRequest>, I>>(
-    object: I
+    object: I,
   ): LookupRpcServiceRequest {
     const message = createBaseLookupRpcServiceRequest()
     message.serviceId = object.serviceId ?? ''
@@ -151,7 +151,7 @@ function createBaseLookupRpcServiceResponse(): LookupRpcServiceResponse {
 export const LookupRpcServiceResponse = {
   encode(
     message: LookupRpcServiceResponse,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.idle === true) {
       writer.uint32(8).bool(message.idle)
@@ -167,7 +167,7 @@ export const LookupRpcServiceResponse = {
 
   decode(
     input: _m0.Reader | Uint8Array,
-    length?: number
+    length?: number,
   ): LookupRpcServiceResponse {
     const reader =
       input instanceof _m0.Reader ? input : _m0.Reader.create(input)
@@ -211,7 +211,7 @@ export const LookupRpcServiceResponse = {
   async *encodeTransform(
     source:
       | AsyncIterable<LookupRpcServiceResponse | LookupRpcServiceResponse[]>
-      | Iterable<LookupRpcServiceResponse | LookupRpcServiceResponse[]>
+      | Iterable<LookupRpcServiceResponse | LookupRpcServiceResponse[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -229,7 +229,7 @@ export const LookupRpcServiceResponse = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<LookupRpcServiceResponse> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -259,13 +259,13 @@ export const LookupRpcServiceResponse = {
   },
 
   create<I extends Exact<DeepPartial<LookupRpcServiceResponse>, I>>(
-    base?: I
+    base?: I,
   ): LookupRpcServiceResponse {
     return LookupRpcServiceResponse.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<LookupRpcServiceResponse>, I>>(
-    object: I
+    object: I,
   ): LookupRpcServiceResponse {
     const message = createBaseLookupRpcServiceResponse()
     message.idle = object.idle ?? false
@@ -284,7 +284,7 @@ export interface AccessRpcService {
    */
   LookupRpcService(
     request: LookupRpcServiceRequest,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
   ): AsyncIterable<LookupRpcServiceResponse>
   /**
    * CallRpcService forwards an RPC call to the service with the component ID.
@@ -292,7 +292,7 @@ export interface AccessRpcService {
    */
   CallRpcService(
     request: AsyncIterable<RpcStreamPacket>,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
   ): AsyncIterable<RpcStreamPacket>
 }
 
@@ -308,28 +308,28 @@ export class AccessRpcServiceClientImpl implements AccessRpcService {
   }
   LookupRpcService(
     request: LookupRpcServiceRequest,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
   ): AsyncIterable<LookupRpcServiceResponse> {
     const data = LookupRpcServiceRequest.encode(request).finish()
     const result = this.rpc.serverStreamingRequest(
       this.service,
       'LookupRpcService',
       data,
-      abortSignal || undefined
+      abortSignal || undefined,
     )
     return LookupRpcServiceResponse.decodeTransform(result)
   }
 
   CallRpcService(
     request: AsyncIterable<RpcStreamPacket>,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
   ): AsyncIterable<RpcStreamPacket> {
     const data = RpcStreamPacket.encodeTransform(request)
     const result = this.rpc.bidirectionalStreamingRequest(
       this.service,
       'CallRpcService',
       data,
-      abortSignal || undefined
+      abortSignal || undefined,
     )
     return RpcStreamPacket.decodeTransform(result)
   }
@@ -374,25 +374,25 @@ interface Rpc {
     service: string,
     method: string,
     data: Uint8Array,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
   ): Promise<Uint8Array>
   clientStreamingRequest(
     service: string,
     method: string,
     data: AsyncIterable<Uint8Array>,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
   ): Promise<Uint8Array>
   serverStreamingRequest(
     service: string,
     method: string,
     data: Uint8Array,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
   ): AsyncIterable<Uint8Array>
   bidirectionalStreamingRequest(
     service: string,
     method: string,
     data: AsyncIterable<Uint8Array>,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
   ): AsyncIterable<Uint8Array>
 }
 

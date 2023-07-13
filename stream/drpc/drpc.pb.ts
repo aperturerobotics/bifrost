@@ -41,7 +41,7 @@ function createBaseDrpcOpts(): DrpcOpts {
 export const DrpcOpts = {
   encode(
     message: DrpcOpts,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.managerOpts !== undefined) {
       ManagerOpts.encode(message.managerOpts, writer.uint32(10).fork()).ldelim()
@@ -78,7 +78,7 @@ export const DrpcOpts = {
   async *encodeTransform(
     source:
       | AsyncIterable<DrpcOpts | DrpcOpts[]>
-      | Iterable<DrpcOpts | DrpcOpts[]>
+      | Iterable<DrpcOpts | DrpcOpts[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -96,7 +96,7 @@ export const DrpcOpts = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<DrpcOpts> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -147,7 +147,7 @@ function createBaseManagerOpts(): ManagerOpts {
 export const ManagerOpts = {
   encode(
     message: ManagerOpts,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.writerBufferSize !== 0) {
       writer.uint32(8).uint32(message.writerBufferSize)
@@ -204,7 +204,7 @@ export const ManagerOpts = {
   async *encodeTransform(
     source:
       | AsyncIterable<ManagerOpts | ManagerOpts[]>
-      | Iterable<ManagerOpts | ManagerOpts[]>
+      | Iterable<ManagerOpts | ManagerOpts[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -222,7 +222,7 @@ export const ManagerOpts = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<ManagerOpts> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -267,7 +267,7 @@ export const ManagerOpts = {
   },
 
   fromPartial<I extends Exact<DeepPartial<ManagerOpts>, I>>(
-    object: I
+    object: I,
   ): ManagerOpts {
     const message = createBaseManagerOpts()
     message.writerBufferSize = object.writerBufferSize ?? 0
@@ -287,7 +287,7 @@ function createBaseStreamOpts(): StreamOpts {
 export const StreamOpts = {
   encode(
     message: StreamOpts,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.splitSize !== 0) {
       writer.uint32(8).uint32(message.splitSize)
@@ -324,7 +324,7 @@ export const StreamOpts = {
   async *encodeTransform(
     source:
       | AsyncIterable<StreamOpts | StreamOpts[]>
-      | Iterable<StreamOpts | StreamOpts[]>
+      | Iterable<StreamOpts | StreamOpts[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -342,7 +342,7 @@ export const StreamOpts = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<StreamOpts> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -371,7 +371,7 @@ export const StreamOpts = {
   },
 
   fromPartial<I extends Exact<DeepPartial<StreamOpts>, I>>(
-    object: I
+    object: I,
   ): StreamOpts {
     const message = createBaseStreamOpts()
     message.splitSize = object.splitSize ?? 0

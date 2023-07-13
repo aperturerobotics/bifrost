@@ -115,7 +115,7 @@ function createBasePacket(): Packet {
 export const Packet = {
   encode(
     message: Packet,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.packetType !== 0) {
       writer.uint32(8).int32(message.packetType)
@@ -126,13 +126,13 @@ export const Packet = {
     if (message.initAckPkt !== undefined) {
       Packet_InitAck.encode(
         message.initAckPkt,
-        writer.uint32(26).fork()
+        writer.uint32(26).fork(),
       ).ldelim()
     }
     if (message.completePkt !== undefined) {
       Packet_Complete.encode(
         message.completePkt,
-        writer.uint32(34).fork()
+        writer.uint32(34).fork(),
       ).ldelim()
     }
     return writer
@@ -186,7 +186,7 @@ export const Packet = {
   // encodeTransform encodes a source of message objects.
   // Transform<Packet, Uint8Array>
   async *encodeTransform(
-    source: AsyncIterable<Packet | Packet[]> | Iterable<Packet | Packet[]>
+    source: AsyncIterable<Packet | Packet[]> | Iterable<Packet | Packet[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -204,7 +204,7 @@ export const Packet = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<Packet> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -287,7 +287,7 @@ function createBasePacket_Init(): Packet_Init {
 export const Packet_Init = {
   encode(
     message: Packet_Init,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.senderPeerId.length !== 0) {
       writer.uint32(10).bytes(message.senderPeerId)
@@ -344,7 +344,7 @@ export const Packet_Init = {
   async *encodeTransform(
     source:
       | AsyncIterable<Packet_Init | Packet_Init[]>
-      | Iterable<Packet_Init | Packet_Init[]>
+      | Iterable<Packet_Init | Packet_Init[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -362,7 +362,7 @@ export const Packet_Init = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<Packet_Init> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -395,19 +395,19 @@ export const Packet_Init = {
       (obj.senderPeerId = base64FromBytes(
         message.senderPeerId !== undefined
           ? message.senderPeerId
-          : new Uint8Array(0)
+          : new Uint8Array(0),
       ))
     message.receiverPeerId !== undefined &&
       (obj.receiverPeerId = base64FromBytes(
         message.receiverPeerId !== undefined
           ? message.receiverPeerId
-          : new Uint8Array(0)
+          : new Uint8Array(0),
       ))
     message.senderEphPub !== undefined &&
       (obj.senderEphPub = base64FromBytes(
         message.senderEphPub !== undefined
           ? message.senderEphPub
-          : new Uint8Array(0)
+          : new Uint8Array(0),
       ))
     return obj
   },
@@ -417,7 +417,7 @@ export const Packet_Init = {
   },
 
   fromPartial<I extends Exact<DeepPartial<Packet_Init>, I>>(
-    object: I
+    object: I,
   ): Packet_Init {
     const message = createBasePacket_Init()
     message.senderPeerId = object.senderPeerId ?? new Uint8Array(0)
@@ -434,7 +434,7 @@ function createBasePacket_InitAck(): Packet_InitAck {
 export const Packet_InitAck = {
   encode(
     message: Packet_InitAck,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.senderEphPub.length !== 0) {
       writer.uint32(10).bytes(message.senderEphPub)
@@ -481,7 +481,7 @@ export const Packet_InitAck = {
   async *encodeTransform(
     source:
       | AsyncIterable<Packet_InitAck | Packet_InitAck[]>
-      | Iterable<Packet_InitAck | Packet_InitAck[]>
+      | Iterable<Packet_InitAck | Packet_InitAck[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -499,7 +499,7 @@ export const Packet_InitAck = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<Packet_InitAck> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -529,25 +529,25 @@ export const Packet_InitAck = {
       (obj.senderEphPub = base64FromBytes(
         message.senderEphPub !== undefined
           ? message.senderEphPub
-          : new Uint8Array(0)
+          : new Uint8Array(0),
       ))
     message.ciphertext !== undefined &&
       (obj.ciphertext = base64FromBytes(
         message.ciphertext !== undefined
           ? message.ciphertext
-          : new Uint8Array(0)
+          : new Uint8Array(0),
       ))
     return obj
   },
 
   create<I extends Exact<DeepPartial<Packet_InitAck>, I>>(
-    base?: I
+    base?: I,
   ): Packet_InitAck {
     return Packet_InitAck.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<Packet_InitAck>, I>>(
-    object: I
+    object: I,
   ): Packet_InitAck {
     const message = createBasePacket_InitAck()
     message.senderEphPub = object.senderEphPub ?? new Uint8Array(0)
@@ -563,7 +563,7 @@ function createBasePacket_Complete(): Packet_Complete {
 export const Packet_Complete = {
   encode(
     message: Packet_Complete,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.ciphertext.length !== 0) {
       writer.uint32(10).bytes(message.ciphertext)
@@ -600,7 +600,7 @@ export const Packet_Complete = {
   async *encodeTransform(
     source:
       | AsyncIterable<Packet_Complete | Packet_Complete[]>
-      | Iterable<Packet_Complete | Packet_Complete[]>
+      | Iterable<Packet_Complete | Packet_Complete[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -618,7 +618,7 @@ export const Packet_Complete = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<Packet_Complete> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -645,19 +645,19 @@ export const Packet_Complete = {
       (obj.ciphertext = base64FromBytes(
         message.ciphertext !== undefined
           ? message.ciphertext
-          : new Uint8Array(0)
+          : new Uint8Array(0),
       ))
     return obj
   },
 
   create<I extends Exact<DeepPartial<Packet_Complete>, I>>(
-    base?: I
+    base?: I,
   ): Packet_Complete {
     return Packet_Complete.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<Packet_Complete>, I>>(
-    object: I
+    object: I,
   ): Packet_Complete {
     const message = createBasePacket_Complete()
     message.ciphertext = object.ciphertext ?? new Uint8Array(0)
@@ -677,7 +677,7 @@ function createBasePacket_Ciphertext(): Packet_Ciphertext {
 export const Packet_Ciphertext = {
   encode(
     message: Packet_Ciphertext,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.tupleSignature.length !== 0) {
       writer.uint32(10).bytes(message.tupleSignature)
@@ -744,7 +744,7 @@ export const Packet_Ciphertext = {
   async *encodeTransform(
     source:
       | AsyncIterable<Packet_Ciphertext | Packet_Ciphertext[]>
-      | Iterable<Packet_Ciphertext | Packet_Ciphertext[]>
+      | Iterable<Packet_Ciphertext | Packet_Ciphertext[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -762,7 +762,7 @@ export const Packet_Ciphertext = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<Packet_Ciphertext> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -798,31 +798,31 @@ export const Packet_Ciphertext = {
       (obj.tupleSignature = base64FromBytes(
         message.tupleSignature !== undefined
           ? message.tupleSignature
-          : new Uint8Array(0)
+          : new Uint8Array(0),
       ))
     message.senderPubKey !== undefined &&
       (obj.senderPubKey = base64FromBytes(
         message.senderPubKey !== undefined
           ? message.senderPubKey
-          : new Uint8Array(0)
+          : new Uint8Array(0),
       ))
     message.receiverKeyKnown !== undefined &&
       (obj.receiverKeyKnown = message.receiverKeyKnown)
     message.extraInfo !== undefined &&
       (obj.extraInfo = base64FromBytes(
-        message.extraInfo !== undefined ? message.extraInfo : new Uint8Array(0)
+        message.extraInfo !== undefined ? message.extraInfo : new Uint8Array(0),
       ))
     return obj
   },
 
   create<I extends Exact<DeepPartial<Packet_Ciphertext>, I>>(
-    base?: I
+    base?: I,
   ): Packet_Ciphertext {
     return Packet_Ciphertext.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<Packet_Ciphertext>, I>>(
-    object: I
+    object: I,
   ): Packet_Ciphertext {
     const message = createBasePacket_Ciphertext()
     message.tupleSignature = object.tupleSignature ?? new Uint8Array(0)

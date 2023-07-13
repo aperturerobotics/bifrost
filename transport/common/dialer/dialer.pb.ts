@@ -23,7 +23,7 @@ function createBaseDialerOpts(): DialerOpts {
 export const DialerOpts = {
   encode(
     message: DialerOpts,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.address !== '') {
       writer.uint32(10).string(message.address)
@@ -70,7 +70,7 @@ export const DialerOpts = {
   async *encodeTransform(
     source:
       | AsyncIterable<DialerOpts | DialerOpts[]>
-      | Iterable<DialerOpts | DialerOpts[]>
+      | Iterable<DialerOpts | DialerOpts[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -88,7 +88,7 @@ export const DialerOpts = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<DialerOpts> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -125,7 +125,7 @@ export const DialerOpts = {
   },
 
   fromPartial<I extends Exact<DeepPartial<DialerOpts>, I>>(
-    object: I
+    object: I,
   ): DialerOpts {
     const message = createBaseDialerOpts()
     message.address = object.address ?? ''

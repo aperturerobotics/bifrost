@@ -21,7 +21,7 @@ function createBaseHandshakeExtraData(): HandshakeExtraData {
 export const HandshakeExtraData = {
   encode(
     message: HandshakeExtraData,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (!message.localTransportUuid.isZero()) {
       writer.uint32(8).uint64(message.localTransportUuid)
@@ -58,7 +58,7 @@ export const HandshakeExtraData = {
   async *encodeTransform(
     source:
       | AsyncIterable<HandshakeExtraData | HandshakeExtraData[]>
-      | Iterable<HandshakeExtraData | HandshakeExtraData[]>
+      | Iterable<HandshakeExtraData | HandshakeExtraData[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -76,7 +76,7 @@ export const HandshakeExtraData = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<HandshakeExtraData> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -107,13 +107,13 @@ export const HandshakeExtraData = {
   },
 
   create<I extends Exact<DeepPartial<HandshakeExtraData>, I>>(
-    base?: I
+    base?: I,
   ): HandshakeExtraData {
     return HandshakeExtraData.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<HandshakeExtraData>, I>>(
-    object: I
+    object: I,
   ): HandshakeExtraData {
     const message = createBaseHandshakeExtraData()
     message.localTransportUuid =

@@ -86,7 +86,7 @@ function createBaseSubscribeRequest(): SubscribeRequest {
 export const SubscribeRequest = {
   encode(
     message: SubscribeRequest,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.channelId !== '') {
       writer.uint32(10).string(message.channelId)
@@ -100,7 +100,7 @@ export const SubscribeRequest = {
     if (message.publishRequest !== undefined) {
       PublishRequest.encode(
         message.publishRequest,
-        writer.uint32(34).fork()
+        writer.uint32(34).fork(),
       ).ldelim()
     }
     return writer
@@ -142,7 +142,7 @@ export const SubscribeRequest = {
 
           message.publishRequest = PublishRequest.decode(
             reader,
-            reader.uint32()
+            reader.uint32(),
           )
           continue
       }
@@ -159,7 +159,7 @@ export const SubscribeRequest = {
   async *encodeTransform(
     source:
       | AsyncIterable<SubscribeRequest | SubscribeRequest[]>
-      | Iterable<SubscribeRequest | SubscribeRequest[]>
+      | Iterable<SubscribeRequest | SubscribeRequest[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -177,7 +177,7 @@ export const SubscribeRequest = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<SubscribeRequest> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -214,13 +214,13 @@ export const SubscribeRequest = {
   },
 
   create<I extends Exact<DeepPartial<SubscribeRequest>, I>>(
-    base?: I
+    base?: I,
   ): SubscribeRequest {
     return SubscribeRequest.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<SubscribeRequest>, I>>(
-    object: I
+    object: I,
   ): SubscribeRequest {
     const message = createBaseSubscribeRequest()
     message.channelId = object.channelId ?? ''
@@ -241,7 +241,7 @@ function createBasePublishRequest(): PublishRequest {
 export const PublishRequest = {
   encode(
     message: PublishRequest,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.data.length !== 0) {
       writer.uint32(10).bytes(message.data)
@@ -288,7 +288,7 @@ export const PublishRequest = {
   async *encodeTransform(
     source:
       | AsyncIterable<PublishRequest | PublishRequest[]>
-      | Iterable<PublishRequest | PublishRequest[]>
+      | Iterable<PublishRequest | PublishRequest[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -306,7 +306,7 @@ export const PublishRequest = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<PublishRequest> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -332,7 +332,7 @@ export const PublishRequest = {
     const obj: any = {}
     message.data !== undefined &&
       (obj.data = base64FromBytes(
-        message.data !== undefined ? message.data : new Uint8Array(0)
+        message.data !== undefined ? message.data : new Uint8Array(0),
       ))
     message.identifier !== undefined &&
       (obj.identifier = Math.round(message.identifier))
@@ -340,13 +340,13 @@ export const PublishRequest = {
   },
 
   create<I extends Exact<DeepPartial<PublishRequest>, I>>(
-    base?: I
+    base?: I,
   ): PublishRequest {
     return PublishRequest.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<PublishRequest>, I>>(
-    object: I
+    object: I,
   ): PublishRequest {
     const message = createBasePublishRequest()
     message.data = object.data ?? new Uint8Array(0)
@@ -366,24 +366,24 @@ function createBaseSubscribeResponse(): SubscribeResponse {
 export const SubscribeResponse = {
   encode(
     message: SubscribeResponse,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.incomingMessage !== undefined) {
       IncomingMessage.encode(
         message.incomingMessage,
-        writer.uint32(10).fork()
+        writer.uint32(10).fork(),
       ).ldelim()
     }
     if (message.outgoingStatus !== undefined) {
       OutgoingStatus.encode(
         message.outgoingStatus,
-        writer.uint32(18).fork()
+        writer.uint32(18).fork(),
       ).ldelim()
     }
     if (message.subscriptionStatus !== undefined) {
       SubscriptionStatus.encode(
         message.subscriptionStatus,
-        writer.uint32(26).fork()
+        writer.uint32(26).fork(),
       ).ldelim()
     }
     return writer
@@ -404,7 +404,7 @@ export const SubscribeResponse = {
 
           message.incomingMessage = IncomingMessage.decode(
             reader,
-            reader.uint32()
+            reader.uint32(),
           )
           continue
         case 2:
@@ -414,7 +414,7 @@ export const SubscribeResponse = {
 
           message.outgoingStatus = OutgoingStatus.decode(
             reader,
-            reader.uint32()
+            reader.uint32(),
           )
           continue
         case 3:
@@ -424,7 +424,7 @@ export const SubscribeResponse = {
 
           message.subscriptionStatus = SubscriptionStatus.decode(
             reader,
-            reader.uint32()
+            reader.uint32(),
           )
           continue
       }
@@ -441,7 +441,7 @@ export const SubscribeResponse = {
   async *encodeTransform(
     source:
       | AsyncIterable<SubscribeResponse | SubscribeResponse[]>
-      | Iterable<SubscribeResponse | SubscribeResponse[]>
+      | Iterable<SubscribeResponse | SubscribeResponse[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -459,7 +459,7 @@ export const SubscribeResponse = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<SubscribeResponse> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -504,13 +504,13 @@ export const SubscribeResponse = {
   },
 
   create<I extends Exact<DeepPartial<SubscribeResponse>, I>>(
-    base?: I
+    base?: I,
   ): SubscribeResponse {
     return SubscribeResponse.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<SubscribeResponse>, I>>(
-    object: I
+    object: I,
   ): SubscribeResponse {
     const message = createBaseSubscribeResponse()
     message.incomingMessage =
@@ -537,7 +537,7 @@ function createBaseSubscriptionStatus(): SubscriptionStatus {
 export const SubscriptionStatus = {
   encode(
     message: SubscriptionStatus,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.subscribed === true) {
       writer.uint32(8).bool(message.subscribed)
@@ -574,7 +574,7 @@ export const SubscriptionStatus = {
   async *encodeTransform(
     source:
       | AsyncIterable<SubscriptionStatus | SubscriptionStatus[]>
-      | Iterable<SubscriptionStatus | SubscriptionStatus[]>
+      | Iterable<SubscriptionStatus | SubscriptionStatus[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -592,7 +592,7 @@ export const SubscriptionStatus = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<SubscriptionStatus> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -618,13 +618,13 @@ export const SubscriptionStatus = {
   },
 
   create<I extends Exact<DeepPartial<SubscriptionStatus>, I>>(
-    base?: I
+    base?: I,
   ): SubscriptionStatus {
     return SubscriptionStatus.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<SubscriptionStatus>, I>>(
-    object: I
+    object: I,
   ): SubscriptionStatus {
     const message = createBaseSubscriptionStatus()
     message.subscribed = object.subscribed ?? false
@@ -639,7 +639,7 @@ function createBaseOutgoingStatus(): OutgoingStatus {
 export const OutgoingStatus = {
   encode(
     message: OutgoingStatus,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.identifier !== 0) {
       writer.uint32(8).uint32(message.identifier)
@@ -686,7 +686,7 @@ export const OutgoingStatus = {
   async *encodeTransform(
     source:
       | AsyncIterable<OutgoingStatus | OutgoingStatus[]>
-      | Iterable<OutgoingStatus | OutgoingStatus[]>
+      | Iterable<OutgoingStatus | OutgoingStatus[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -704,7 +704,7 @@ export const OutgoingStatus = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<OutgoingStatus> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -733,13 +733,13 @@ export const OutgoingStatus = {
   },
 
   create<I extends Exact<DeepPartial<OutgoingStatus>, I>>(
-    base?: I
+    base?: I,
   ): OutgoingStatus {
     return OutgoingStatus.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<OutgoingStatus>, I>>(
-    object: I
+    object: I,
   ): OutgoingStatus {
     const message = createBaseOutgoingStatus()
     message.identifier = object.identifier ?? 0
@@ -755,7 +755,7 @@ function createBaseIncomingMessage(): IncomingMessage {
 export const IncomingMessage = {
   encode(
     message: IncomingMessage,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.fromPeerId !== '') {
       writer.uint32(10).string(message.fromPeerId)
@@ -812,7 +812,7 @@ export const IncomingMessage = {
   async *encodeTransform(
     source:
       | AsyncIterable<IncomingMessage | IncomingMessage[]>
-      | Iterable<IncomingMessage | IncomingMessage[]>
+      | Iterable<IncomingMessage | IncomingMessage[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -830,7 +830,7 @@ export const IncomingMessage = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<IncomingMessage> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -862,19 +862,19 @@ export const IncomingMessage = {
       (obj.authenticated = message.authenticated)
     message.data !== undefined &&
       (obj.data = base64FromBytes(
-        message.data !== undefined ? message.data : new Uint8Array(0)
+        message.data !== undefined ? message.data : new Uint8Array(0),
       ))
     return obj
   },
 
   create<I extends Exact<DeepPartial<IncomingMessage>, I>>(
-    base?: I
+    base?: I,
   ): IncomingMessage {
     return IncomingMessage.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<IncomingMessage>, I>>(
-    object: I
+    object: I,
   ): IncomingMessage {
     const message = createBaseIncomingMessage()
     message.fromPeerId = object.fromPeerId ?? ''
@@ -892,7 +892,7 @@ export interface PubSubService {
    */
   Subscribe(
     request: AsyncIterable<SubscribeRequest>,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
   ): AsyncIterable<SubscribeResponse>
 }
 
@@ -907,14 +907,14 @@ export class PubSubServiceClientImpl implements PubSubService {
   }
   Subscribe(
     request: AsyncIterable<SubscribeRequest>,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
   ): AsyncIterable<SubscribeResponse> {
     const data = SubscribeRequest.encodeTransform(request)
     const result = this.rpc.bidirectionalStreamingRequest(
       this.service,
       'Subscribe',
       data,
-      abortSignal || undefined
+      abortSignal || undefined,
     )
     return SubscribeResponse.decodeTransform(result)
   }
@@ -946,25 +946,25 @@ interface Rpc {
     service: string,
     method: string,
     data: Uint8Array,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
   ): Promise<Uint8Array>
   clientStreamingRequest(
     service: string,
     method: string,
     data: AsyncIterable<Uint8Array>,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
   ): Promise<Uint8Array>
   serverStreamingRequest(
     service: string,
     method: string,
     data: Uint8Array,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
   ): AsyncIterable<Uint8Array>
   bidirectionalStreamingRequest(
     service: string,
     method: string,
     data: AsyncIterable<Uint8Array>,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
   ): AsyncIterable<Uint8Array>
 }
 

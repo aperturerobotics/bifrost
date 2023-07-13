@@ -31,7 +31,7 @@ function createBaseConfig(): Config {
 export const Config = {
   encode(
     message: Config,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.transportPeerId !== '') {
       writer.uint32(10).string(message.transportPeerId)
@@ -42,7 +42,7 @@ export const Config = {
     Object.entries(message.dialers).forEach(([key, value]) => {
       Config_DialersEntry.encode(
         { key: key as any, value },
-        writer.uint32(26).fork()
+        writer.uint32(26).fork(),
       ).ldelim()
     })
     return writer
@@ -92,7 +92,7 @@ export const Config = {
   // encodeTransform encodes a source of message objects.
   // Transform<Config, Uint8Array>
   async *encodeTransform(
-    source: AsyncIterable<Config | Config[]> | Iterable<Config | Config[]>
+    source: AsyncIterable<Config | Config[]> | Iterable<Config | Config[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -110,7 +110,7 @@ export const Config = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<Config> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -137,7 +137,7 @@ export const Config = {
               acc[key] = DialerOpts.fromJSON(value)
               return acc
             },
-            {}
+            {},
           )
         : {},
     }
@@ -190,7 +190,7 @@ function createBaseConfig_DialersEntry(): Config_DialersEntry {
 export const Config_DialersEntry = {
   encode(
     message: Config_DialersEntry,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.key !== '') {
       writer.uint32(10).string(message.key)
@@ -237,7 +237,7 @@ export const Config_DialersEntry = {
   async *encodeTransform(
     source:
       | AsyncIterable<Config_DialersEntry | Config_DialersEntry[]>
-      | Iterable<Config_DialersEntry | Config_DialersEntry[]>
+      | Iterable<Config_DialersEntry | Config_DialersEntry[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -255,7 +255,7 @@ export const Config_DialersEntry = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<Config_DialersEntry> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -286,13 +286,13 @@ export const Config_DialersEntry = {
   },
 
   create<I extends Exact<DeepPartial<Config_DialersEntry>, I>>(
-    base?: I
+    base?: I,
   ): Config_DialersEntry {
     return Config_DialersEntry.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<Config_DialersEntry>, I>>(
-    object: I
+    object: I,
   ): Config_DialersEntry {
     const message = createBaseConfig_DialersEntry()
     message.key = object.key ?? ''

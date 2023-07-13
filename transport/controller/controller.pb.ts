@@ -21,7 +21,7 @@ function createBaseStreamEstablish(): StreamEstablish {
 export const StreamEstablish = {
   encode(
     message: StreamEstablish,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.protocolId !== '') {
       writer.uint32(10).string(message.protocolId)
@@ -58,7 +58,7 @@ export const StreamEstablish = {
   async *encodeTransform(
     source:
       | AsyncIterable<StreamEstablish | StreamEstablish[]>
-      | Iterable<StreamEstablish | StreamEstablish[]>
+      | Iterable<StreamEstablish | StreamEstablish[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -76,7 +76,7 @@ export const StreamEstablish = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<StreamEstablish> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -102,13 +102,13 @@ export const StreamEstablish = {
   },
 
   create<I extends Exact<DeepPartial<StreamEstablish>, I>>(
-    base?: I
+    base?: I,
   ): StreamEstablish {
     return StreamEstablish.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<StreamEstablish>, I>>(
-    object: I
+    object: I,
   ): StreamEstablish {
     const message = createBaseStreamEstablish()
     message.protocolId = object.protocolId ?? ''

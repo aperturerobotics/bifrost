@@ -22,7 +22,7 @@ function createBasePubMessageInner(): PubMessageInner {
 export const PubMessageInner = {
   encode(
     message: PubMessageInner,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.data.length !== 0) {
       writer.uint32(10).bytes(message.data)
@@ -33,7 +33,7 @@ export const PubMessageInner = {
     if (message.timestamp !== undefined) {
       Timestamp.encode(
         toTimestamp(message.timestamp),
-        writer.uint32(26).fork()
+        writer.uint32(26).fork(),
       ).ldelim()
     }
     return writer
@@ -67,7 +67,7 @@ export const PubMessageInner = {
           }
 
           message.timestamp = fromTimestamp(
-            Timestamp.decode(reader, reader.uint32())
+            Timestamp.decode(reader, reader.uint32()),
           )
           continue
       }
@@ -84,7 +84,7 @@ export const PubMessageInner = {
   async *encodeTransform(
     source:
       | AsyncIterable<PubMessageInner | PubMessageInner[]>
-      | Iterable<PubMessageInner | PubMessageInner[]>
+      | Iterable<PubMessageInner | PubMessageInner[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -102,7 +102,7 @@ export const PubMessageInner = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<PubMessageInner> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -131,7 +131,7 @@ export const PubMessageInner = {
     const obj: any = {}
     message.data !== undefined &&
       (obj.data = base64FromBytes(
-        message.data !== undefined ? message.data : new Uint8Array(0)
+        message.data !== undefined ? message.data : new Uint8Array(0),
       ))
     message.channel !== undefined && (obj.channel = message.channel)
     message.timestamp !== undefined &&
@@ -140,13 +140,13 @@ export const PubMessageInner = {
   },
 
   create<I extends Exact<DeepPartial<PubMessageInner>, I>>(
-    base?: I
+    base?: I,
   ): PubMessageInner {
     return PubMessageInner.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<PubMessageInner>, I>>(
-    object: I
+    object: I,
   ): PubMessageInner {
     const message = createBasePubMessageInner()
     message.data = object.data ?? new Uint8Array(0)

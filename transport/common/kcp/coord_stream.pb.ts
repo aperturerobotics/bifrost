@@ -110,7 +110,7 @@ function createBaseCoordinationStreamPacket(): CoordinationStreamPacket {
 export const CoordinationStreamPacket = {
   encode(
     message: CoordinationStreamPacket,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.packetType !== 0) {
       writer.uint32(8).int32(message.packetType)
@@ -118,19 +118,19 @@ export const CoordinationStreamPacket = {
     if (message.rawStreamEstablish !== undefined) {
       RawStreamEstablish.encode(
         message.rawStreamEstablish,
-        writer.uint32(18).fork()
+        writer.uint32(18).fork(),
       ).ldelim()
     }
     if (message.rawStreamAck !== undefined) {
       RawStreamAck.encode(
         message.rawStreamAck,
-        writer.uint32(26).fork()
+        writer.uint32(26).fork(),
       ).ldelim()
     }
     if (message.rawStreamClose !== undefined) {
       RawStreamClose.encode(
         message.rawStreamClose,
-        writer.uint32(34).fork()
+        writer.uint32(34).fork(),
       ).ldelim()
     }
     return writer
@@ -138,7 +138,7 @@ export const CoordinationStreamPacket = {
 
   decode(
     input: _m0.Reader | Uint8Array,
-    length?: number
+    length?: number,
   ): CoordinationStreamPacket {
     const reader =
       input instanceof _m0.Reader ? input : _m0.Reader.create(input)
@@ -161,7 +161,7 @@ export const CoordinationStreamPacket = {
 
           message.rawStreamEstablish = RawStreamEstablish.decode(
             reader,
-            reader.uint32()
+            reader.uint32(),
           )
           continue
         case 3:
@@ -178,7 +178,7 @@ export const CoordinationStreamPacket = {
 
           message.rawStreamClose = RawStreamClose.decode(
             reader,
-            reader.uint32()
+            reader.uint32(),
           )
           continue
       }
@@ -195,7 +195,7 @@ export const CoordinationStreamPacket = {
   async *encodeTransform(
     source:
       | AsyncIterable<CoordinationStreamPacket | CoordinationStreamPacket[]>
-      | Iterable<CoordinationStreamPacket | CoordinationStreamPacket[]>
+      | Iterable<CoordinationStreamPacket | CoordinationStreamPacket[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -213,7 +213,7 @@ export const CoordinationStreamPacket = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<CoordinationStreamPacket> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -263,13 +263,13 @@ export const CoordinationStreamPacket = {
   },
 
   create<I extends Exact<DeepPartial<CoordinationStreamPacket>, I>>(
-    base?: I
+    base?: I,
   ): CoordinationStreamPacket {
     return CoordinationStreamPacket.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<CoordinationStreamPacket>, I>>(
-    object: I
+    object: I,
   ): CoordinationStreamPacket {
     const message = createBaseCoordinationStreamPacket()
     message.packetType = object.packetType ?? 0
@@ -297,7 +297,7 @@ function createBaseRawStreamEstablish(): RawStreamEstablish {
 export const RawStreamEstablish = {
   encode(
     message: RawStreamEstablish,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.initiatorStreamId !== 0) {
       writer.uint32(8).uint32(message.initiatorStreamId)
@@ -334,7 +334,7 @@ export const RawStreamEstablish = {
   async *encodeTransform(
     source:
       | AsyncIterable<RawStreamEstablish | RawStreamEstablish[]>
-      | Iterable<RawStreamEstablish | RawStreamEstablish[]>
+      | Iterable<RawStreamEstablish | RawStreamEstablish[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -352,7 +352,7 @@ export const RawStreamEstablish = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<RawStreamEstablish> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -381,13 +381,13 @@ export const RawStreamEstablish = {
   },
 
   create<I extends Exact<DeepPartial<RawStreamEstablish>, I>>(
-    base?: I
+    base?: I,
   ): RawStreamEstablish {
     return RawStreamEstablish.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<RawStreamEstablish>, I>>(
-    object: I
+    object: I,
   ): RawStreamEstablish {
     const message = createBaseRawStreamEstablish()
     message.initiatorStreamId = object.initiatorStreamId ?? 0
@@ -402,7 +402,7 @@ function createBaseRawStreamAck(): RawStreamAck {
 export const RawStreamAck = {
   encode(
     message: RawStreamAck,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.initiatorStreamId !== 0) {
       writer.uint32(8).uint32(message.initiatorStreamId)
@@ -459,7 +459,7 @@ export const RawStreamAck = {
   async *encodeTransform(
     source:
       | AsyncIterable<RawStreamAck | RawStreamAck[]>
-      | Iterable<RawStreamAck | RawStreamAck[]>
+      | Iterable<RawStreamAck | RawStreamAck[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -477,7 +477,7 @@ export const RawStreamAck = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<RawStreamAck> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -511,13 +511,13 @@ export const RawStreamAck = {
   },
 
   create<I extends Exact<DeepPartial<RawStreamAck>, I>>(
-    base?: I
+    base?: I,
   ): RawStreamAck {
     return RawStreamAck.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<RawStreamAck>, I>>(
-    object: I
+    object: I,
   ): RawStreamAck {
     const message = createBaseRawStreamAck()
     message.initiatorStreamId = object.initiatorStreamId ?? 0
@@ -534,7 +534,7 @@ function createBaseRawStreamClose(): RawStreamClose {
 export const RawStreamClose = {
   encode(
     message: RawStreamClose,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.streamId !== 0) {
       writer.uint32(8).uint32(message.streamId)
@@ -581,7 +581,7 @@ export const RawStreamClose = {
   async *encodeTransform(
     source:
       | AsyncIterable<RawStreamClose | RawStreamClose[]>
-      | Iterable<RawStreamClose | RawStreamClose[]>
+      | Iterable<RawStreamClose | RawStreamClose[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -599,7 +599,7 @@ export const RawStreamClose = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<RawStreamClose> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -628,13 +628,13 @@ export const RawStreamClose = {
   },
 
   create<I extends Exact<DeepPartial<RawStreamClose>, I>>(
-    base?: I
+    base?: I,
   ): RawStreamClose {
     return RawStreamClose.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<RawStreamClose>, I>>(
-    object: I
+    object: I,
   ): RawStreamClose {
     const message = createBaseRawStreamClose()
     message.streamId = object.streamId ?? 0

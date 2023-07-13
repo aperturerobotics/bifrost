@@ -62,7 +62,7 @@ export const Opts = {
   // encodeTransform encodes a source of message objects.
   // Transform<Opts, Uint8Array>
   async *encodeTransform(
-    source: AsyncIterable<Opts | Opts[]> | Iterable<Opts | Opts[]>
+    source: AsyncIterable<Opts | Opts[]> | Iterable<Opts | Opts[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -80,7 +80,7 @@ export const Opts = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<Opts> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {

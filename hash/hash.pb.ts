@@ -117,7 +117,7 @@ export const Hash = {
   // encodeTransform encodes a source of message objects.
   // Transform<Hash, Uint8Array>
   async *encodeTransform(
-    source: AsyncIterable<Hash | Hash[]> | Iterable<Hash | Hash[]>
+    source: AsyncIterable<Hash | Hash[]> | Iterable<Hash | Hash[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -135,7 +135,7 @@ export const Hash = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<Hash> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -163,7 +163,7 @@ export const Hash = {
       (obj.hashType = hashTypeToJSON(message.hashType))
     message.hash !== undefined &&
       (obj.hash = base64FromBytes(
-        message.hash !== undefined ? message.hash : new Uint8Array(0)
+        message.hash !== undefined ? message.hash : new Uint8Array(0),
       ))
     return obj
   },

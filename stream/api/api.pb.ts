@@ -77,7 +77,7 @@ function createBaseForwardStreamsRequest(): ForwardStreamsRequest {
 export const ForwardStreamsRequest = {
   encode(
     message: ForwardStreamsRequest,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.forwardingConfig !== undefined) {
       Config.encode(message.forwardingConfig, writer.uint32(10).fork()).ldelim()
@@ -87,7 +87,7 @@ export const ForwardStreamsRequest = {
 
   decode(
     input: _m0.Reader | Uint8Array,
-    length?: number
+    length?: number,
   ): ForwardStreamsRequest {
     const reader =
       input instanceof _m0.Reader ? input : _m0.Reader.create(input)
@@ -117,7 +117,7 @@ export const ForwardStreamsRequest = {
   async *encodeTransform(
     source:
       | AsyncIterable<ForwardStreamsRequest | ForwardStreamsRequest[]>
-      | Iterable<ForwardStreamsRequest | ForwardStreamsRequest[]>
+      | Iterable<ForwardStreamsRequest | ForwardStreamsRequest[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -135,7 +135,7 @@ export const ForwardStreamsRequest = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<ForwardStreamsRequest> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -166,13 +166,13 @@ export const ForwardStreamsRequest = {
   },
 
   create<I extends Exact<DeepPartial<ForwardStreamsRequest>, I>>(
-    base?: I
+    base?: I,
   ): ForwardStreamsRequest {
     return ForwardStreamsRequest.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<ForwardStreamsRequest>, I>>(
-    object: I
+    object: I,
   ): ForwardStreamsRequest {
     const message = createBaseForwardStreamsRequest()
     message.forwardingConfig =
@@ -190,7 +190,7 @@ function createBaseForwardStreamsResponse(): ForwardStreamsResponse {
 export const ForwardStreamsResponse = {
   encode(
     message: ForwardStreamsResponse,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.controllerStatus !== 0) {
       writer.uint32(8).int32(message.controllerStatus)
@@ -200,7 +200,7 @@ export const ForwardStreamsResponse = {
 
   decode(
     input: _m0.Reader | Uint8Array,
-    length?: number
+    length?: number,
   ): ForwardStreamsResponse {
     const reader =
       input instanceof _m0.Reader ? input : _m0.Reader.create(input)
@@ -230,7 +230,7 @@ export const ForwardStreamsResponse = {
   async *encodeTransform(
     source:
       | AsyncIterable<ForwardStreamsResponse | ForwardStreamsResponse[]>
-      | Iterable<ForwardStreamsResponse | ForwardStreamsResponse[]>
+      | Iterable<ForwardStreamsResponse | ForwardStreamsResponse[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -248,7 +248,7 @@ export const ForwardStreamsResponse = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<ForwardStreamsResponse> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -277,13 +277,13 @@ export const ForwardStreamsResponse = {
   },
 
   create<I extends Exact<DeepPartial<ForwardStreamsResponse>, I>>(
-    base?: I
+    base?: I,
   ): ForwardStreamsResponse {
     return ForwardStreamsResponse.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<ForwardStreamsResponse>, I>>(
-    object: I
+    object: I,
   ): ForwardStreamsResponse {
     const message = createBaseForwardStreamsResponse()
     message.controllerStatus = object.controllerStatus ?? 0
@@ -298,7 +298,7 @@ function createBaseListenStreamsRequest(): ListenStreamsRequest {
 export const ListenStreamsRequest = {
   encode(
     message: ListenStreamsRequest,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.listeningConfig !== undefined) {
       Config1.encode(message.listeningConfig, writer.uint32(10).fork()).ldelim()
@@ -308,7 +308,7 @@ export const ListenStreamsRequest = {
 
   decode(
     input: _m0.Reader | Uint8Array,
-    length?: number
+    length?: number,
   ): ListenStreamsRequest {
     const reader =
       input instanceof _m0.Reader ? input : _m0.Reader.create(input)
@@ -338,7 +338,7 @@ export const ListenStreamsRequest = {
   async *encodeTransform(
     source:
       | AsyncIterable<ListenStreamsRequest | ListenStreamsRequest[]>
-      | Iterable<ListenStreamsRequest | ListenStreamsRequest[]>
+      | Iterable<ListenStreamsRequest | ListenStreamsRequest[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -356,7 +356,7 @@ export const ListenStreamsRequest = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<ListenStreamsRequest> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -387,13 +387,13 @@ export const ListenStreamsRequest = {
   },
 
   create<I extends Exact<DeepPartial<ListenStreamsRequest>, I>>(
-    base?: I
+    base?: I,
   ): ListenStreamsRequest {
     return ListenStreamsRequest.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<ListenStreamsRequest>, I>>(
-    object: I
+    object: I,
   ): ListenStreamsRequest {
     const message = createBaseListenStreamsRequest()
     message.listeningConfig =
@@ -411,7 +411,7 @@ function createBaseListenStreamsResponse(): ListenStreamsResponse {
 export const ListenStreamsResponse = {
   encode(
     message: ListenStreamsResponse,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.controllerStatus !== 0) {
       writer.uint32(8).int32(message.controllerStatus)
@@ -421,7 +421,7 @@ export const ListenStreamsResponse = {
 
   decode(
     input: _m0.Reader | Uint8Array,
-    length?: number
+    length?: number,
   ): ListenStreamsResponse {
     const reader =
       input instanceof _m0.Reader ? input : _m0.Reader.create(input)
@@ -451,7 +451,7 @@ export const ListenStreamsResponse = {
   async *encodeTransform(
     source:
       | AsyncIterable<ListenStreamsResponse | ListenStreamsResponse[]>
-      | Iterable<ListenStreamsResponse | ListenStreamsResponse[]>
+      | Iterable<ListenStreamsResponse | ListenStreamsResponse[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -469,7 +469,7 @@ export const ListenStreamsResponse = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<ListenStreamsResponse> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -498,13 +498,13 @@ export const ListenStreamsResponse = {
   },
 
   create<I extends Exact<DeepPartial<ListenStreamsResponse>, I>>(
-    base?: I
+    base?: I,
   ): ListenStreamsResponse {
     return ListenStreamsResponse.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<ListenStreamsResponse>, I>>(
-    object: I
+    object: I,
   ): ListenStreamsResponse {
     const message = createBaseListenStreamsResponse()
     message.controllerStatus = object.controllerStatus ?? 0
@@ -519,7 +519,7 @@ function createBaseAcceptStreamRequest(): AcceptStreamRequest {
 export const AcceptStreamRequest = {
   encode(
     message: AcceptStreamRequest,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.config !== undefined) {
       Config2.encode(message.config, writer.uint32(10).fork()).ldelim()
@@ -566,7 +566,7 @@ export const AcceptStreamRequest = {
   async *encodeTransform(
     source:
       | AsyncIterable<AcceptStreamRequest | AcceptStreamRequest[]>
-      | Iterable<AcceptStreamRequest | AcceptStreamRequest[]>
+      | Iterable<AcceptStreamRequest | AcceptStreamRequest[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -584,7 +584,7 @@ export const AcceptStreamRequest = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<AcceptStreamRequest> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -616,13 +616,13 @@ export const AcceptStreamRequest = {
   },
 
   create<I extends Exact<DeepPartial<AcceptStreamRequest>, I>>(
-    base?: I
+    base?: I,
   ): AcceptStreamRequest {
     return AcceptStreamRequest.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<AcceptStreamRequest>, I>>(
-    object: I
+    object: I,
   ): AcceptStreamRequest {
     const message = createBaseAcceptStreamRequest()
     message.config =
@@ -644,7 +644,7 @@ function createBaseAcceptStreamResponse(): AcceptStreamResponse {
 export const AcceptStreamResponse = {
   encode(
     message: AcceptStreamResponse,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.data !== undefined) {
       Data.encode(message.data, writer.uint32(10).fork()).ldelim()
@@ -654,7 +654,7 @@ export const AcceptStreamResponse = {
 
   decode(
     input: _m0.Reader | Uint8Array,
-    length?: number
+    length?: number,
   ): AcceptStreamResponse {
     const reader =
       input instanceof _m0.Reader ? input : _m0.Reader.create(input)
@@ -684,7 +684,7 @@ export const AcceptStreamResponse = {
   async *encodeTransform(
     source:
       | AsyncIterable<AcceptStreamResponse | AcceptStreamResponse[]>
-      | Iterable<AcceptStreamResponse | AcceptStreamResponse[]>
+      | Iterable<AcceptStreamResponse | AcceptStreamResponse[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -702,7 +702,7 @@ export const AcceptStreamResponse = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<AcceptStreamResponse> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -727,13 +727,13 @@ export const AcceptStreamResponse = {
   },
 
   create<I extends Exact<DeepPartial<AcceptStreamResponse>, I>>(
-    base?: I
+    base?: I,
   ): AcceptStreamResponse {
     return AcceptStreamResponse.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<AcceptStreamResponse>, I>>(
-    object: I
+    object: I,
   ): AcceptStreamResponse {
     const message = createBaseAcceptStreamResponse()
     message.data =
@@ -751,7 +751,7 @@ function createBaseDialStreamRequest(): DialStreamRequest {
 export const DialStreamRequest = {
   encode(
     message: DialStreamRequest,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.config !== undefined) {
       Config3.encode(message.config, writer.uint32(10).fork()).ldelim()
@@ -798,7 +798,7 @@ export const DialStreamRequest = {
   async *encodeTransform(
     source:
       | AsyncIterable<DialStreamRequest | DialStreamRequest[]>
-      | Iterable<DialStreamRequest | DialStreamRequest[]>
+      | Iterable<DialStreamRequest | DialStreamRequest[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -816,7 +816,7 @@ export const DialStreamRequest = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<DialStreamRequest> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -848,13 +848,13 @@ export const DialStreamRequest = {
   },
 
   create<I extends Exact<DeepPartial<DialStreamRequest>, I>>(
-    base?: I
+    base?: I,
   ): DialStreamRequest {
     return DialStreamRequest.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<DialStreamRequest>, I>>(
-    object: I
+    object: I,
   ): DialStreamRequest {
     const message = createBaseDialStreamRequest()
     message.config =
@@ -876,7 +876,7 @@ function createBaseDialStreamResponse(): DialStreamResponse {
 export const DialStreamResponse = {
   encode(
     message: DialStreamResponse,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.data !== undefined) {
       Data.encode(message.data, writer.uint32(10).fork()).ldelim()
@@ -913,7 +913,7 @@ export const DialStreamResponse = {
   async *encodeTransform(
     source:
       | AsyncIterable<DialStreamResponse | DialStreamResponse[]>
-      | Iterable<DialStreamResponse | DialStreamResponse[]>
+      | Iterable<DialStreamResponse | DialStreamResponse[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -931,7 +931,7 @@ export const DialStreamResponse = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<DialStreamResponse> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -956,13 +956,13 @@ export const DialStreamResponse = {
   },
 
   create<I extends Exact<DeepPartial<DialStreamResponse>, I>>(
-    base?: I
+    base?: I,
   ): DialStreamResponse {
     return DialStreamResponse.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<DialStreamResponse>, I>>(
-    object: I
+    object: I,
   ): DialStreamResponse {
     const message = createBaseDialStreamResponse()
     message.data =
@@ -981,7 +981,7 @@ export interface StreamService {
    */
   ForwardStreams(
     request: ForwardStreamsRequest,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
   ): AsyncIterable<ForwardStreamsResponse>
   /**
    * ListenStreams listens for connections to the multiaddress.
@@ -989,7 +989,7 @@ export interface StreamService {
    */
   ListenStreams(
     request: ListenStreamsRequest,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
   ): AsyncIterable<ListenStreamsResponse>
   /**
    * AcceptStream accepts an incoming stream.
@@ -997,7 +997,7 @@ export interface StreamService {
    */
   AcceptStream(
     request: AsyncIterable<AcceptStreamRequest>,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
   ): AsyncIterable<AcceptStreamResponse>
   /**
    * DialStream dials a outgoing stream.
@@ -1005,7 +1005,7 @@ export interface StreamService {
    */
   DialStream(
     request: AsyncIterable<DialStreamRequest>,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
   ): AsyncIterable<DialStreamResponse>
 }
 
@@ -1023,56 +1023,56 @@ export class StreamServiceClientImpl implements StreamService {
   }
   ForwardStreams(
     request: ForwardStreamsRequest,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
   ): AsyncIterable<ForwardStreamsResponse> {
     const data = ForwardStreamsRequest.encode(request).finish()
     const result = this.rpc.serverStreamingRequest(
       this.service,
       'ForwardStreams',
       data,
-      abortSignal || undefined
+      abortSignal || undefined,
     )
     return ForwardStreamsResponse.decodeTransform(result)
   }
 
   ListenStreams(
     request: ListenStreamsRequest,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
   ): AsyncIterable<ListenStreamsResponse> {
     const data = ListenStreamsRequest.encode(request).finish()
     const result = this.rpc.serverStreamingRequest(
       this.service,
       'ListenStreams',
       data,
-      abortSignal || undefined
+      abortSignal || undefined,
     )
     return ListenStreamsResponse.decodeTransform(result)
   }
 
   AcceptStream(
     request: AsyncIterable<AcceptStreamRequest>,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
   ): AsyncIterable<AcceptStreamResponse> {
     const data = AcceptStreamRequest.encodeTransform(request)
     const result = this.rpc.bidirectionalStreamingRequest(
       this.service,
       'AcceptStream',
       data,
-      abortSignal || undefined
+      abortSignal || undefined,
     )
     return AcceptStreamResponse.decodeTransform(result)
   }
 
   DialStream(
     request: AsyncIterable<DialStreamRequest>,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
   ): AsyncIterable<DialStreamResponse> {
     const data = DialStreamRequest.encodeTransform(request)
     const result = this.rpc.bidirectionalStreamingRequest(
       this.service,
       'DialStream',
       data,
-      abortSignal || undefined
+      abortSignal || undefined,
     )
     return DialStreamResponse.decodeTransform(result)
   }
@@ -1140,25 +1140,25 @@ interface Rpc {
     service: string,
     method: string,
     data: Uint8Array,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
   ): Promise<Uint8Array>
   clientStreamingRequest(
     service: string,
     method: string,
     data: AsyncIterable<Uint8Array>,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
   ): Promise<Uint8Array>
   serverStreamingRequest(
     service: string,
     method: string,
     data: Uint8Array,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
   ): AsyncIterable<Uint8Array>
   bidirectionalStreamingRequest(
     service: string,
     method: string,
     data: AsyncIterable<Uint8Array>,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
   ): AsyncIterable<Uint8Array>
 }
 

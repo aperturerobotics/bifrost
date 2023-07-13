@@ -23,7 +23,7 @@ function createBaseMockRequest(): MockRequest {
 export const MockRequest = {
   encode(
     message: MockRequest,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.body !== '') {
       writer.uint32(10).string(message.body)
@@ -60,7 +60,7 @@ export const MockRequest = {
   async *encodeTransform(
     source:
       | AsyncIterable<MockRequest | MockRequest[]>
-      | Iterable<MockRequest | MockRequest[]>
+      | Iterable<MockRequest | MockRequest[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -78,7 +78,7 @@ export const MockRequest = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<MockRequest> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -106,7 +106,7 @@ export const MockRequest = {
   },
 
   fromPartial<I extends Exact<DeepPartial<MockRequest>, I>>(
-    object: I
+    object: I,
   ): MockRequest {
     const message = createBaseMockRequest()
     message.body = object.body ?? ''
@@ -121,7 +121,7 @@ function createBaseMockResponse(): MockResponse {
 export const MockResponse = {
   encode(
     message: MockResponse,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.reqBody !== '') {
       writer.uint32(10).string(message.reqBody)
@@ -158,7 +158,7 @@ export const MockResponse = {
   async *encodeTransform(
     source:
       | AsyncIterable<MockResponse | MockResponse[]>
-      | Iterable<MockResponse | MockResponse[]>
+      | Iterable<MockResponse | MockResponse[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -176,7 +176,7 @@ export const MockResponse = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<MockResponse> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -200,13 +200,13 @@ export const MockResponse = {
   },
 
   create<I extends Exact<DeepPartial<MockResponse>, I>>(
-    base?: I
+    base?: I,
   ): MockResponse {
     return MockResponse.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<MockResponse>, I>>(
-    object: I
+    object: I,
   ): MockResponse {
     const message = createBaseMockResponse()
     message.reqBody = object.reqBody ?? ''
@@ -235,7 +235,7 @@ export class EndToEndClientImpl implements EndToEnd {
       this.service,
       'Mock',
       data,
-      abortSignal || undefined
+      abortSignal || undefined,
     )
     return promise.then((data) => MockResponse.decode(_m0.Reader.create(data)))
   }
@@ -264,7 +264,7 @@ interface Rpc {
     service: string,
     method: string,
     data: Uint8Array,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
   ): Promise<Uint8Array>
 }
 

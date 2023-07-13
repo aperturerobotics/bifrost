@@ -47,7 +47,7 @@ function createBaseIdentifyRequest(): IdentifyRequest {
 export const IdentifyRequest = {
   encode(
     message: IdentifyRequest,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.config !== undefined) {
       Config.encode(message.config, writer.uint32(10).fork()).ldelim()
@@ -84,7 +84,7 @@ export const IdentifyRequest = {
   async *encodeTransform(
     source:
       | AsyncIterable<IdentifyRequest | IdentifyRequest[]>
-      | Iterable<IdentifyRequest | IdentifyRequest[]>
+      | Iterable<IdentifyRequest | IdentifyRequest[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -102,7 +102,7 @@ export const IdentifyRequest = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<IdentifyRequest> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -129,13 +129,13 @@ export const IdentifyRequest = {
   },
 
   create<I extends Exact<DeepPartial<IdentifyRequest>, I>>(
-    base?: I
+    base?: I,
   ): IdentifyRequest {
     return IdentifyRequest.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<IdentifyRequest>, I>>(
-    object: I
+    object: I,
   ): IdentifyRequest {
     const message = createBaseIdentifyRequest()
     message.config =
@@ -153,7 +153,7 @@ function createBaseIdentifyResponse(): IdentifyResponse {
 export const IdentifyResponse = {
   encode(
     message: IdentifyResponse,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.controllerStatus !== 0) {
       writer.uint32(8).int32(message.controllerStatus)
@@ -190,7 +190,7 @@ export const IdentifyResponse = {
   async *encodeTransform(
     source:
       | AsyncIterable<IdentifyResponse | IdentifyResponse[]>
-      | Iterable<IdentifyResponse | IdentifyResponse[]>
+      | Iterable<IdentifyResponse | IdentifyResponse[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -208,7 +208,7 @@ export const IdentifyResponse = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<IdentifyResponse> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -237,13 +237,13 @@ export const IdentifyResponse = {
   },
 
   create<I extends Exact<DeepPartial<IdentifyResponse>, I>>(
-    base?: I
+    base?: I,
   ): IdentifyResponse {
     return IdentifyResponse.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<IdentifyResponse>, I>>(
-    object: I
+    object: I,
   ): IdentifyResponse {
     const message = createBaseIdentifyResponse()
     message.controllerStatus = object.controllerStatus ?? 0
@@ -258,7 +258,7 @@ function createBaseGetPeerInfoRequest(): GetPeerInfoRequest {
 export const GetPeerInfoRequest = {
   encode(
     message: GetPeerInfoRequest,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.peerId !== '') {
       writer.uint32(10).string(message.peerId)
@@ -295,7 +295,7 @@ export const GetPeerInfoRequest = {
   async *encodeTransform(
     source:
       | AsyncIterable<GetPeerInfoRequest | GetPeerInfoRequest[]>
-      | Iterable<GetPeerInfoRequest | GetPeerInfoRequest[]>
+      | Iterable<GetPeerInfoRequest | GetPeerInfoRequest[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -313,7 +313,7 @@ export const GetPeerInfoRequest = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<GetPeerInfoRequest> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -337,13 +337,13 @@ export const GetPeerInfoRequest = {
   },
 
   create<I extends Exact<DeepPartial<GetPeerInfoRequest>, I>>(
-    base?: I
+    base?: I,
   ): GetPeerInfoRequest {
     return GetPeerInfoRequest.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<GetPeerInfoRequest>, I>>(
-    object: I
+    object: I,
   ): GetPeerInfoRequest {
     const message = createBaseGetPeerInfoRequest()
     message.peerId = object.peerId ?? ''
@@ -358,7 +358,7 @@ function createBasePeerInfo(): PeerInfo {
 export const PeerInfo = {
   encode(
     message: PeerInfo,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.peerId !== '') {
       writer.uint32(10).string(message.peerId)
@@ -395,7 +395,7 @@ export const PeerInfo = {
   async *encodeTransform(
     source:
       | AsyncIterable<PeerInfo | PeerInfo[]>
-      | Iterable<PeerInfo | PeerInfo[]>
+      | Iterable<PeerInfo | PeerInfo[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -413,7 +413,7 @@ export const PeerInfo = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<PeerInfo> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -454,7 +454,7 @@ function createBaseGetPeerInfoResponse(): GetPeerInfoResponse {
 export const GetPeerInfoResponse = {
   encode(
     message: GetPeerInfoResponse,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     for (const v of message.localPeers) {
       PeerInfo.encode(v!, writer.uint32(10).fork()).ldelim()
@@ -491,7 +491,7 @@ export const GetPeerInfoResponse = {
   async *encodeTransform(
     source:
       | AsyncIterable<GetPeerInfoResponse | GetPeerInfoResponse[]>
-      | Iterable<GetPeerInfoResponse | GetPeerInfoResponse[]>
+      | Iterable<GetPeerInfoResponse | GetPeerInfoResponse[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -509,7 +509,7 @@ export const GetPeerInfoResponse = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<GetPeerInfoResponse> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -534,7 +534,7 @@ export const GetPeerInfoResponse = {
     const obj: any = {}
     if (message.localPeers) {
       obj.localPeers = message.localPeers.map((e) =>
-        e ? PeerInfo.toJSON(e) : undefined
+        e ? PeerInfo.toJSON(e) : undefined,
       )
     } else {
       obj.localPeers = []
@@ -543,13 +543,13 @@ export const GetPeerInfoResponse = {
   },
 
   create<I extends Exact<DeepPartial<GetPeerInfoResponse>, I>>(
-    base?: I
+    base?: I,
   ): GetPeerInfoResponse {
     return GetPeerInfoResponse.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<GetPeerInfoResponse>, I>>(
-    object: I
+    object: I,
   ): GetPeerInfoResponse {
     const message = createBaseGetPeerInfoResponse()
     message.localPeers =
@@ -563,12 +563,12 @@ export interface PeerService {
   /** Identify loads and manages a private key identity. */
   Identify(
     request: IdentifyRequest,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
   ): AsyncIterable<IdentifyResponse>
   /** GetPeerInfo returns information about attached peers. */
   GetPeerInfo(
     request: GetPeerInfoRequest,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
   ): Promise<GetPeerInfoResponse>
 }
 
@@ -584,31 +584,31 @@ export class PeerServiceClientImpl implements PeerService {
   }
   Identify(
     request: IdentifyRequest,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
   ): AsyncIterable<IdentifyResponse> {
     const data = IdentifyRequest.encode(request).finish()
     const result = this.rpc.serverStreamingRequest(
       this.service,
       'Identify',
       data,
-      abortSignal || undefined
+      abortSignal || undefined,
     )
     return IdentifyResponse.decodeTransform(result)
   }
 
   GetPeerInfo(
     request: GetPeerInfoRequest,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
   ): Promise<GetPeerInfoResponse> {
     const data = GetPeerInfoRequest.encode(request).finish()
     const promise = this.rpc.request(
       this.service,
       'GetPeerInfo',
       data,
-      abortSignal || undefined
+      abortSignal || undefined,
     )
     return promise.then((data) =>
-      GetPeerInfoResponse.decode(_m0.Reader.create(data))
+      GetPeerInfoResponse.decode(_m0.Reader.create(data)),
     )
   }
 }
@@ -645,25 +645,25 @@ interface Rpc {
     service: string,
     method: string,
     data: Uint8Array,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
   ): Promise<Uint8Array>
   clientStreamingRequest(
     service: string,
     method: string,
     data: AsyncIterable<Uint8Array>,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
   ): Promise<Uint8Array>
   serverStreamingRequest(
     service: string,
     method: string,
     data: Uint8Array,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
   ): AsyncIterable<Uint8Array>
   bidirectionalStreamingRequest(
     service: string,
     method: string,
     data: AsyncIterable<Uint8Array>,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
   ): AsyncIterable<Uint8Array>
 }
 

@@ -44,7 +44,7 @@ function createBaseSignature(): Signature {
 export const Signature = {
   encode(
     message: Signature,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.pubKey.length !== 0) {
       writer.uint32(10).bytes(message.pubKey)
@@ -101,7 +101,7 @@ export const Signature = {
   async *encodeTransform(
     source:
       | AsyncIterable<Signature | Signature[]>
-      | Iterable<Signature | Signature[]>
+      | Iterable<Signature | Signature[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -119,7 +119,7 @@ export const Signature = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<Signature> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -148,13 +148,13 @@ export const Signature = {
     const obj: any = {}
     message.pubKey !== undefined &&
       (obj.pubKey = base64FromBytes(
-        message.pubKey !== undefined ? message.pubKey : new Uint8Array(0)
+        message.pubKey !== undefined ? message.pubKey : new Uint8Array(0),
       ))
     message.hashType !== undefined &&
       (obj.hashType = hashTypeToJSON(message.hashType))
     message.sigData !== undefined &&
       (obj.sigData = base64FromBytes(
-        message.sigData !== undefined ? message.sigData : new Uint8Array(0)
+        message.sigData !== undefined ? message.sigData : new Uint8Array(0),
       ))
     return obj
   },
@@ -164,7 +164,7 @@ export const Signature = {
   },
 
   fromPartial<I extends Exact<DeepPartial<Signature>, I>>(
-    object: I
+    object: I,
   ): Signature {
     const message = createBaseSignature()
     message.pubKey = object.pubKey ?? new Uint8Array(0)
@@ -181,7 +181,7 @@ function createBaseSignedMsg(): SignedMsg {
 export const SignedMsg = {
   encode(
     message: SignedMsg,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.fromPeerId !== '') {
       writer.uint32(10).string(message.fromPeerId)
@@ -238,7 +238,7 @@ export const SignedMsg = {
   async *encodeTransform(
     source:
       | AsyncIterable<SignedMsg | SignedMsg[]>
-      | Iterable<SignedMsg | SignedMsg[]>
+      | Iterable<SignedMsg | SignedMsg[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -256,7 +256,7 @@ export const SignedMsg = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<SignedMsg> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -290,7 +290,7 @@ export const SignedMsg = {
         : undefined)
     message.data !== undefined &&
       (obj.data = base64FromBytes(
-        message.data !== undefined ? message.data : new Uint8Array(0)
+        message.data !== undefined ? message.data : new Uint8Array(0),
       ))
     return obj
   },
@@ -300,7 +300,7 @@ export const SignedMsg = {
   },
 
   fromPartial<I extends Exact<DeepPartial<SignedMsg>, I>>(
-    object: I
+    object: I,
   ): SignedMsg {
     const message = createBaseSignedMsg()
     message.fromPeerId = object.fromPeerId ?? ''

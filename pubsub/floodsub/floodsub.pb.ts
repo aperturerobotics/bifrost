@@ -42,7 +42,7 @@ function createBaseConfig(): Config {
 export const Config = {
   encode(
     message: Config,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.publishHashType !== 0) {
       writer.uint32(8).int32(message.publishHashType)
@@ -77,7 +77,7 @@ export const Config = {
   // encodeTransform encodes a source of message objects.
   // Transform<Config, Uint8Array>
   async *encodeTransform(
-    source: AsyncIterable<Config | Config[]> | Iterable<Config | Config[]>
+    source: AsyncIterable<Config | Config[]> | Iterable<Config | Config[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -95,7 +95,7 @@ export const Config = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<Config> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -141,7 +141,7 @@ function createBasePacket(): Packet {
 export const Packet = {
   encode(
     message: Packet,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     for (const v of message.subscriptions) {
       SubscriptionOpts.encode(v!, writer.uint32(10).fork()).ldelim()
@@ -166,7 +166,7 @@ export const Packet = {
           }
 
           message.subscriptions.push(
-            SubscriptionOpts.decode(reader, reader.uint32())
+            SubscriptionOpts.decode(reader, reader.uint32()),
           )
           continue
         case 2:
@@ -188,7 +188,7 @@ export const Packet = {
   // encodeTransform encodes a source of message objects.
   // Transform<Packet, Uint8Array>
   async *encodeTransform(
-    source: AsyncIterable<Packet | Packet[]> | Iterable<Packet | Packet[]>
+    source: AsyncIterable<Packet | Packet[]> | Iterable<Packet | Packet[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -206,7 +206,7 @@ export const Packet = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<Packet> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -234,14 +234,14 @@ export const Packet = {
     const obj: any = {}
     if (message.subscriptions) {
       obj.subscriptions = message.subscriptions.map((e) =>
-        e ? SubscriptionOpts.toJSON(e) : undefined
+        e ? SubscriptionOpts.toJSON(e) : undefined,
       )
     } else {
       obj.subscriptions = []
     }
     if (message.publish) {
       obj.publish = message.publish.map((e) =>
-        e ? SignedMsg.toJSON(e) : undefined
+        e ? SignedMsg.toJSON(e) : undefined,
       )
     } else {
       obj.publish = []
@@ -269,7 +269,7 @@ function createBaseSubscriptionOpts(): SubscriptionOpts {
 export const SubscriptionOpts = {
   encode(
     message: SubscriptionOpts,
-    writer: _m0.Writer = _m0.Writer.create()
+    writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.subscribe === true) {
       writer.uint32(8).bool(message.subscribe)
@@ -316,7 +316,7 @@ export const SubscriptionOpts = {
   async *encodeTransform(
     source:
       | AsyncIterable<SubscriptionOpts | SubscriptionOpts[]>
-      | Iterable<SubscriptionOpts | SubscriptionOpts[]>
+      | Iterable<SubscriptionOpts | SubscriptionOpts[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -334,7 +334,7 @@ export const SubscriptionOpts = {
   async *decodeTransform(
     source:
       | AsyncIterable<Uint8Array | Uint8Array[]>
-      | Iterable<Uint8Array | Uint8Array[]>
+      | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<SubscriptionOpts> {
     for await (const pkt of source) {
       if (Array.isArray(pkt)) {
@@ -362,13 +362,13 @@ export const SubscriptionOpts = {
   },
 
   create<I extends Exact<DeepPartial<SubscriptionOpts>, I>>(
-    base?: I
+    base?: I,
   ): SubscriptionOpts {
     return SubscriptionOpts.fromPartial(base ?? {})
   },
 
   fromPartial<I extends Exact<DeepPartial<SubscriptionOpts>, I>>(
-    object: I
+    object: I,
   ): SubscriptionOpts {
     const message = createBaseSubscriptionOpts()
     message.subscribe = object.subscribe ?? false
