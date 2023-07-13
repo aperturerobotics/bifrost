@@ -7,13 +7,15 @@
     "workarounds:all"
   ],
   "branchConcurrentLimit": 0,
-  "postUpdateOptions": ["gomodMassage"],
   "packageRules": [{
     "matchManagers": ["gomod"],
     "matchDepTypes": ["replace"],
     "enabled": false
   }, {
-    "matchPackageNames": ["github.com/libp2p/go-libp2p"],
+    "matchPackageNames": [
+      "github.com/libp2p/go-libp2p",
+      "github.com/pauleyj/gobee"
+    ],
     "allowedVersions": ["^v0.*"]
   }]
 }
