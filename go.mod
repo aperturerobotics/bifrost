@@ -59,7 +59,7 @@ require (
 require (
 	filippo.io/edwards25519 v1.0.1-0.20220803165937-8c58ed0e3550
 	github.com/aperturerobotics/timestamp v0.7.2
-	github.com/pauleyj/gobee v0.0.0-20190212035730-6270c53072a4
+	github.com/pauleyj/gobee v0.1
 	github.com/valyala/fastjson v1.6.4
 	github.com/xtaci/smux/v2 v2.1.0
 	golang.org/x/exp v0.0.0-20230711153332-06a737ee72cb
