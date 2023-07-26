@@ -2,6 +2,7 @@ package transport_quic
 
 import (
 	"crypto/tls"
+	"net"
 	"time"
 
 	"github.com/aperturerobotics/bifrost/peer"
@@ -48,6 +49,7 @@ func BuildQuicConfig(le *logrus.Entry, opts *Opts) *quic.Config {
 	return &quic.Config{
 		Logger: le,
 
+		// We don't use datagrams (yet), but this is necessary for WebTransport
 		EnableDatagrams:         !opts.GetDisableDatagrams(),
 		KeepAlivePeriod:         keepAlivePeriod,
 		DisablePathMTUDiscovery: opts.GetDisablePathMtuDiscovery(),
@@ -57,14 +59,23 @@ func BuildQuicConfig(le *logrus.Entry, opts *Opts) *quic.Config {
 		MaxIncomingStreams:    int64(maxIncStreams),
 		MaxIncomingUniStreams: -1, // disable unidirectional streams
 
+		// MaxStreamReceiveWindow:     10 * (1 << 20), // 10 MB
+		// MaxConnectionReceiveWindow: 15 * (1 << 20), // 15 MB
+
+		RequireAddressValidation: func(net.Addr) bool {
+			// TODO
+			return false
+		},
+
+		Versions: []quic.VersionNumber{quic.Version2}, // {quic.Version1},
+		// DisableVersionNegotiationPackets: true,
+
 		/*
 			AcceptToken: func(clientAddr net.Addr, _ *quic.Token) bool {
 				// unconditionally accept any quic token
 				return true
 			}, */
 
-		// MaxReceiveStreamFlowControlWindow:     3 * (1 << 20),   // 3 MB
-		// MaxReceiveConnectionFlowControlWindow: 4.5 * (1 << 20), // 4.5 MB
 	}
 }
 
@@ -78,7 +89,12 @@ func BuildIncomingTlsConf(identity *p2ptls.Identity, rpeer peer.ID) *tls.Config 
 		// note: if rpeer is empty, allows any incoming peer id.
 		conf, _ := identity.ConfigForPeer(rpeer)
 		conf.NextProtos = []string{Alpn}
+		// TODO: https://github.com/golang/go/issues/60506
+		conf.SessionTicketsDisabled = true
 		return conf, nil
 	}
+
+	// TODO: https://github.com/golang/go/issues/60506
+	tlsConf.SessionTicketsDisabled = true
 	return &tlsConf
 }

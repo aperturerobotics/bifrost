@@ -121,7 +121,7 @@ func ListenSession(
 func DetermineSessionIdentity(sess quic.Connection) (peer.ID, crypto.PubKey, error) {
 	// Determine the remote peer ID (public key) using the TLS cert chain.
 	connState := sess.ConnectionState()
-	certs := connState.TLS.ConnectionState.PeerCertificates
+	certs := connState.TLS.PeerCertificates
 	remotePubKey, err := p2ptls.PubKeyFromCertChain(certs)
 	if err != nil {
 		return "", nil, err
