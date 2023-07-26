@@ -102,10 +102,8 @@ export const Config = {
 
   toJSON(message: Config): unknown {
     const obj: any = {}
-    if (message.addresses) {
-      obj.addresses = message.addresses.map((e) => e)
-    } else {
-      obj.addresses = []
+    if (message.addresses?.length) {
+      obj.addresses = message.addresses
     }
     return obj
   },

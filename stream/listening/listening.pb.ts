@@ -189,16 +189,27 @@ export const Config = {
 
   toJSON(message: Config): unknown {
     const obj: any = {}
-    message.localPeerId !== undefined && (obj.localPeerId = message.localPeerId)
-    message.remotePeerId !== undefined &&
-      (obj.remotePeerId = message.remotePeerId)
-    message.protocolId !== undefined && (obj.protocolId = message.protocolId)
-    message.listenMultiaddr !== undefined &&
-      (obj.listenMultiaddr = message.listenMultiaddr)
-    message.transportId !== undefined &&
-      (obj.transportId = (message.transportId || Long.UZERO).toString())
-    message.reliable !== undefined && (obj.reliable = message.reliable)
-    message.encrypted !== undefined && (obj.encrypted = message.encrypted)
+    if (message.localPeerId !== '') {
+      obj.localPeerId = message.localPeerId
+    }
+    if (message.remotePeerId !== '') {
+      obj.remotePeerId = message.remotePeerId
+    }
+    if (message.protocolId !== '') {
+      obj.protocolId = message.protocolId
+    }
+    if (message.listenMultiaddr !== '') {
+      obj.listenMultiaddr = message.listenMultiaddr
+    }
+    if (!message.transportId.isZero()) {
+      obj.transportId = (message.transportId || Long.UZERO).toString()
+    }
+    if (message.reliable === true) {
+      obj.reliable = message.reliable
+    }
+    if (message.encrypted === true) {
+      obj.encrypted = message.encrypted
+    }
     return obj
   },
 

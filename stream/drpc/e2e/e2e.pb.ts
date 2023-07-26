@@ -97,7 +97,9 @@ export const MockRequest = {
 
   toJSON(message: MockRequest): unknown {
     const obj: any = {}
-    message.body !== undefined && (obj.body = message.body)
+    if (message.body !== '') {
+      obj.body = message.body
+    }
     return obj
   },
 
@@ -195,7 +197,9 @@ export const MockResponse = {
 
   toJSON(message: MockResponse): unknown {
     const obj: any = {}
-    message.reqBody !== undefined && (obj.reqBody = message.reqBody)
+    if (message.reqBody !== '') {
+      obj.reqBody = message.reqBody
+    }
     return obj
   },
 

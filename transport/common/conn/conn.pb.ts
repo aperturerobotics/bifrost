@@ -136,11 +136,18 @@ export const Opts = {
 
   toJSON(message: Opts): unknown {
     const obj: any = {}
-    message.quic !== undefined &&
-      (obj.quic = message.quic ? Opts1.toJSON(message.quic) : undefined)
-    message.verbose !== undefined && (obj.verbose = message.verbose)
-    message.mtu !== undefined && (obj.mtu = Math.round(message.mtu))
-    message.bufSize !== undefined && (obj.bufSize = Math.round(message.bufSize))
+    if (message.quic !== undefined) {
+      obj.quic = Opts1.toJSON(message.quic)
+    }
+    if (message.verbose === true) {
+      obj.verbose = message.verbose
+    }
+    if (message.mtu !== 0) {
+      obj.mtu = Math.round(message.mtu)
+    }
+    if (message.bufSize !== 0) {
+      obj.bufSize = Math.round(message.bufSize)
+    }
     return obj
   },
 

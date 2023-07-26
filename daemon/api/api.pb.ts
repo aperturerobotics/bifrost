@@ -94,10 +94,9 @@ export const Config = {
 
   toJSON(message: Config): unknown {
     const obj: any = {}
-    message.busConfig !== undefined &&
-      (obj.busConfig = message.busConfig
-        ? Config1.toJSON(message.busConfig)
-        : undefined)
+    if (message.busConfig !== undefined) {
+      obj.busConfig = Config1.toJSON(message.busConfig)
+    }
     return obj
   },
 

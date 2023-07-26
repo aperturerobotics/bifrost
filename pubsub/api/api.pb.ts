@@ -203,13 +203,18 @@ export const SubscribeRequest = {
 
   toJSON(message: SubscribeRequest): unknown {
     const obj: any = {}
-    message.channelId !== undefined && (obj.channelId = message.channelId)
-    message.peerId !== undefined && (obj.peerId = message.peerId)
-    message.privKeyPem !== undefined && (obj.privKeyPem = message.privKeyPem)
-    message.publishRequest !== undefined &&
-      (obj.publishRequest = message.publishRequest
-        ? PublishRequest.toJSON(message.publishRequest)
-        : undefined)
+    if (message.channelId !== '') {
+      obj.channelId = message.channelId
+    }
+    if (message.peerId !== '') {
+      obj.peerId = message.peerId
+    }
+    if (message.privKeyPem !== '') {
+      obj.privKeyPem = message.privKeyPem
+    }
+    if (message.publishRequest !== undefined) {
+      obj.publishRequest = PublishRequest.toJSON(message.publishRequest)
+    }
     return obj
   },
 
@@ -330,12 +335,12 @@ export const PublishRequest = {
 
   toJSON(message: PublishRequest): unknown {
     const obj: any = {}
-    message.data !== undefined &&
-      (obj.data = base64FromBytes(
-        message.data !== undefined ? message.data : new Uint8Array(0),
-      ))
-    message.identifier !== undefined &&
-      (obj.identifier = Math.round(message.identifier))
+    if (message.data.length !== 0) {
+      obj.data = base64FromBytes(message.data)
+    }
+    if (message.identifier !== 0) {
+      obj.identifier = Math.round(message.identifier)
+    }
     return obj
   },
 
@@ -488,18 +493,17 @@ export const SubscribeResponse = {
 
   toJSON(message: SubscribeResponse): unknown {
     const obj: any = {}
-    message.incomingMessage !== undefined &&
-      (obj.incomingMessage = message.incomingMessage
-        ? IncomingMessage.toJSON(message.incomingMessage)
-        : undefined)
-    message.outgoingStatus !== undefined &&
-      (obj.outgoingStatus = message.outgoingStatus
-        ? OutgoingStatus.toJSON(message.outgoingStatus)
-        : undefined)
-    message.subscriptionStatus !== undefined &&
-      (obj.subscriptionStatus = message.subscriptionStatus
-        ? SubscriptionStatus.toJSON(message.subscriptionStatus)
-        : undefined)
+    if (message.incomingMessage !== undefined) {
+      obj.incomingMessage = IncomingMessage.toJSON(message.incomingMessage)
+    }
+    if (message.outgoingStatus !== undefined) {
+      obj.outgoingStatus = OutgoingStatus.toJSON(message.outgoingStatus)
+    }
+    if (message.subscriptionStatus !== undefined) {
+      obj.subscriptionStatus = SubscriptionStatus.toJSON(
+        message.subscriptionStatus,
+      )
+    }
     return obj
   },
 
@@ -613,7 +617,9 @@ export const SubscriptionStatus = {
 
   toJSON(message: SubscriptionStatus): unknown {
     const obj: any = {}
-    message.subscribed !== undefined && (obj.subscribed = message.subscribed)
+    if (message.subscribed === true) {
+      obj.subscribed = message.subscribed
+    }
     return obj
   },
 
@@ -726,9 +732,12 @@ export const OutgoingStatus = {
 
   toJSON(message: OutgoingStatus): unknown {
     const obj: any = {}
-    message.identifier !== undefined &&
-      (obj.identifier = Math.round(message.identifier))
-    message.sent !== undefined && (obj.sent = message.sent)
+    if (message.identifier !== 0) {
+      obj.identifier = Math.round(message.identifier)
+    }
+    if (message.sent === true) {
+      obj.sent = message.sent
+    }
     return obj
   },
 
@@ -857,13 +866,15 @@ export const IncomingMessage = {
 
   toJSON(message: IncomingMessage): unknown {
     const obj: any = {}
-    message.fromPeerId !== undefined && (obj.fromPeerId = message.fromPeerId)
-    message.authenticated !== undefined &&
-      (obj.authenticated = message.authenticated)
-    message.data !== undefined &&
-      (obj.data = base64FromBytes(
-        message.data !== undefined ? message.data : new Uint8Array(0),
-      ))
+    if (message.fromPeerId !== '') {
+      obj.fromPeerId = message.fromPeerId
+    }
+    if (message.authenticated === true) {
+      obj.authenticated = message.authenticated
+    }
+    if (message.data.length !== 0) {
+      obj.data = base64FromBytes(message.data)
+    }
     return obj
   },
 

@@ -123,8 +123,9 @@ export const IdentifyRequest = {
 
   toJSON(message: IdentifyRequest): unknown {
     const obj: any = {}
-    message.config !== undefined &&
-      (obj.config = message.config ? Config.toJSON(message.config) : undefined)
+    if (message.config !== undefined) {
+      obj.config = Config.toJSON(message.config)
+    }
     return obj
   },
 
@@ -231,8 +232,9 @@ export const IdentifyResponse = {
 
   toJSON(message: IdentifyResponse): unknown {
     const obj: any = {}
-    message.controllerStatus !== undefined &&
-      (obj.controllerStatus = controllerStatusToJSON(message.controllerStatus))
+    if (message.controllerStatus !== 0) {
+      obj.controllerStatus = controllerStatusToJSON(message.controllerStatus)
+    }
     return obj
   },
 
@@ -332,7 +334,9 @@ export const GetPeerInfoRequest = {
 
   toJSON(message: GetPeerInfoRequest): unknown {
     const obj: any = {}
-    message.peerId !== undefined && (obj.peerId = message.peerId)
+    if (message.peerId !== '') {
+      obj.peerId = message.peerId
+    }
     return obj
   },
 
@@ -432,7 +436,9 @@ export const PeerInfo = {
 
   toJSON(message: PeerInfo): unknown {
     const obj: any = {}
-    message.peerId !== undefined && (obj.peerId = message.peerId)
+    if (message.peerId !== '') {
+      obj.peerId = message.peerId
+    }
     return obj
   },
 
@@ -532,12 +538,8 @@ export const GetPeerInfoResponse = {
 
   toJSON(message: GetPeerInfoResponse): unknown {
     const obj: any = {}
-    if (message.localPeers) {
-      obj.localPeers = message.localPeers.map((e) =>
-        e ? PeerInfo.toJSON(e) : undefined,
-      )
-    } else {
-      obj.localPeers = []
+    if (message.localPeers?.length) {
+      obj.localPeers = message.localPeers.map((e) => PeerInfo.toJSON(e))
     }
     return obj
   },

@@ -94,10 +94,9 @@ export const Config = {
 
   toJSON(message: Config): unknown {
     const obj: any = {}
-    message.floodsubConfig !== undefined &&
-      (obj.floodsubConfig = message.floodsubConfig
-        ? Config1.toJSON(message.floodsubConfig)
-        : undefined)
+    if (message.floodsubConfig !== undefined) {
+      obj.floodsubConfig = Config1.toJSON(message.floodsubConfig)
+    }
     return obj
   },
 

@@ -112,11 +112,12 @@ export const DialerOpts = {
 
   toJSON(message: DialerOpts): unknown {
     const obj: any = {}
-    message.address !== undefined && (obj.address = message.address)
-    message.backoff !== undefined &&
-      (obj.backoff = message.backoff
-        ? Backoff.toJSON(message.backoff)
-        : undefined)
+    if (message.address !== '') {
+      obj.address = message.address
+    }
+    if (message.backoff !== undefined) {
+      obj.backoff = Backoff.toJSON(message.backoff)
+    }
     return obj
   },
 

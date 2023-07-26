@@ -217,13 +217,21 @@ export const Config = {
 
   toJSON(message: Config): unknown {
     const obj: any = {}
-    message.clusterName !== undefined && (obj.clusterName = message.clusterName)
-    message.publishHashType !== undefined &&
-      (obj.publishHashType = hashTypeToJSON(message.publishHashType))
-    message.logDebug !== undefined && (obj.logDebug = message.logDebug)
-    message.logTrace !== undefined && (obj.logTrace = message.logTrace)
-    message.logTraceVerbose !== undefined &&
-      (obj.logTraceVerbose = message.logTraceVerbose)
+    if (message.clusterName !== '') {
+      obj.clusterName = message.clusterName
+    }
+    if (message.publishHashType !== 0) {
+      obj.publishHashType = hashTypeToJSON(message.publishHashType)
+    }
+    if (message.logDebug === true) {
+      obj.logDebug = message.logDebug
+    }
+    if (message.logTrace === true) {
+      obj.logTrace = message.logTrace
+    }
+    if (message.logTraceVerbose === true) {
+      obj.logTraceVerbose = message.logTraceVerbose
+    }
     return obj
   },
 

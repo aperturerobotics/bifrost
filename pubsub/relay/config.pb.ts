@@ -109,11 +109,11 @@ export const Config = {
 
   toJSON(message: Config): unknown {
     const obj: any = {}
-    message.peerId !== undefined && (obj.peerId = message.peerId)
-    if (message.topicIds) {
-      obj.topicIds = message.topicIds.map((e) => e)
-    } else {
-      obj.topicIds = []
+    if (message.peerId !== '') {
+      obj.peerId = message.peerId
+    }
+    if (message.topicIds?.length) {
+      obj.topicIds = message.topicIds
     }
     return obj
   },

@@ -97,7 +97,9 @@ export const StreamEstablish = {
 
   toJSON(message: StreamEstablish): unknown {
     const obj: any = {}
-    message.protocolId !== undefined && (obj.protocolId = message.protocolId)
+    if (message.protocolId !== '') {
+      obj.protocolId = message.protocolId
+    }
     return obj
   },
 

@@ -96,10 +96,8 @@ export const Config = {
 
   toJSON(message: Config): unknown {
     const obj: any = {}
-    if (message.peerIds) {
-      obj.peerIds = message.peerIds.map((e) => e)
-    } else {
-      obj.peerIds = []
+    if (message.peerIds?.length) {
+      obj.peerIds = message.peerIds
     }
     return obj
   },

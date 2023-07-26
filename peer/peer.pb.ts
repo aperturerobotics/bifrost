@@ -146,16 +146,15 @@ export const Signature = {
 
   toJSON(message: Signature): unknown {
     const obj: any = {}
-    message.pubKey !== undefined &&
-      (obj.pubKey = base64FromBytes(
-        message.pubKey !== undefined ? message.pubKey : new Uint8Array(0),
-      ))
-    message.hashType !== undefined &&
-      (obj.hashType = hashTypeToJSON(message.hashType))
-    message.sigData !== undefined &&
-      (obj.sigData = base64FromBytes(
-        message.sigData !== undefined ? message.sigData : new Uint8Array(0),
-      ))
+    if (message.pubKey.length !== 0) {
+      obj.pubKey = base64FromBytes(message.pubKey)
+    }
+    if (message.hashType !== 0) {
+      obj.hashType = hashTypeToJSON(message.hashType)
+    }
+    if (message.sigData.length !== 0) {
+      obj.sigData = base64FromBytes(message.sigData)
+    }
     return obj
   },
 
@@ -283,15 +282,15 @@ export const SignedMsg = {
 
   toJSON(message: SignedMsg): unknown {
     const obj: any = {}
-    message.fromPeerId !== undefined && (obj.fromPeerId = message.fromPeerId)
-    message.signature !== undefined &&
-      (obj.signature = message.signature
-        ? Signature.toJSON(message.signature)
-        : undefined)
-    message.data !== undefined &&
-      (obj.data = base64FromBytes(
-        message.data !== undefined ? message.data : new Uint8Array(0),
-      ))
+    if (message.fromPeerId !== '') {
+      obj.fromPeerId = message.fromPeerId
+    }
+    if (message.signature !== undefined) {
+      obj.signature = Signature.toJSON(message.signature)
+    }
+    if (message.data.length !== 0) {
+      obj.data = base64FromBytes(message.data)
+    }
     return obj
   },
 

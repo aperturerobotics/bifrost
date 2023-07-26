@@ -171,13 +171,24 @@ export const Config = {
 
   toJSON(message: Config): unknown {
     const obj: any = {}
-    message.peerId !== undefined && (obj.peerId = message.peerId)
-    message.localPeerId !== undefined && (obj.localPeerId = message.localPeerId)
-    message.protocolId !== undefined && (obj.protocolId = message.protocolId)
-    message.transportId !== undefined &&
-      (obj.transportId = (message.transportId || Long.UZERO).toString())
-    message.encrypted !== undefined && (obj.encrypted = message.encrypted)
-    message.reliable !== undefined && (obj.reliable = message.reliable)
+    if (message.peerId !== '') {
+      obj.peerId = message.peerId
+    }
+    if (message.localPeerId !== '') {
+      obj.localPeerId = message.localPeerId
+    }
+    if (message.protocolId !== '') {
+      obj.protocolId = message.protocolId
+    }
+    if (!message.transportId.isZero()) {
+      obj.transportId = (message.transportId || Long.UZERO).toString()
+    }
+    if (message.encrypted === true) {
+      obj.encrypted = message.encrypted
+    }
+    if (message.reliable === true) {
+      obj.reliable = message.reliable
+    }
     return obj
   },
 

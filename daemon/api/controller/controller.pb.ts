@@ -146,17 +146,18 @@ export const Config = {
 
   toJSON(message: Config): unknown {
     const obj: any = {}
-    message.listenAddr !== undefined && (obj.listenAddr = message.listenAddr)
-    message.apiConfig !== undefined &&
-      (obj.apiConfig = message.apiConfig
-        ? Config1.toJSON(message.apiConfig)
-        : undefined)
-    message.disableBusApi !== undefined &&
-      (obj.disableBusApi = message.disableBusApi)
-    message.busApiConfig !== undefined &&
-      (obj.busApiConfig = message.busApiConfig
-        ? Config2.toJSON(message.busApiConfig)
-        : undefined)
+    if (message.listenAddr !== '') {
+      obj.listenAddr = message.listenAddr
+    }
+    if (message.apiConfig !== undefined) {
+      obj.apiConfig = Config1.toJSON(message.apiConfig)
+    }
+    if (message.disableBusApi === true) {
+      obj.disableBusApi = message.disableBusApi
+    }
+    if (message.busApiConfig !== undefined) {
+      obj.busApiConfig = Config2.toJSON(message.busApiConfig)
+    }
     return obj
   },
 

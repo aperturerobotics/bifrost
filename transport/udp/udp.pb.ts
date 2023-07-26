@@ -166,18 +166,23 @@ export const Config = {
 
   toJSON(message: Config): unknown {
     const obj: any = {}
-    message.transportPeerId !== undefined &&
-      (obj.transportPeerId = message.transportPeerId)
-    message.listenAddr !== undefined && (obj.listenAddr = message.listenAddr)
-    message.packetOpts !== undefined &&
-      (obj.packetOpts = message.packetOpts
-        ? Opts.toJSON(message.packetOpts)
-        : undefined)
-    obj.dialers = {}
+    if (message.transportPeerId !== '') {
+      obj.transportPeerId = message.transportPeerId
+    }
+    if (message.listenAddr !== '') {
+      obj.listenAddr = message.listenAddr
+    }
+    if (message.packetOpts !== undefined) {
+      obj.packetOpts = Opts.toJSON(message.packetOpts)
+    }
     if (message.dialers) {
-      Object.entries(message.dialers).forEach(([k, v]) => {
-        obj.dialers[k] = DialerOpts.toJSON(v)
-      })
+      const entries = Object.entries(message.dialers)
+      if (entries.length > 0) {
+        obj.dialers = {}
+        entries.forEach(([k, v]) => {
+          obj.dialers[k] = DialerOpts.toJSON(v)
+        })
+      }
     }
     return obj
   },
@@ -302,9 +307,12 @@ export const Config_DialersEntry = {
 
   toJSON(message: Config_DialersEntry): unknown {
     const obj: any = {}
-    message.key !== undefined && (obj.key = message.key)
-    message.value !== undefined &&
-      (obj.value = message.value ? DialerOpts.toJSON(message.value) : undefined)
+    if (message.key !== '') {
+      obj.key = message.key
+    }
+    if (message.value !== undefined) {
+      obj.value = DialerOpts.toJSON(message.value)
+    }
     return obj
   },
 

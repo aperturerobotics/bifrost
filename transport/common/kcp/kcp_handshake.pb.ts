@@ -99,10 +99,11 @@ export const HandshakeExtraData = {
 
   toJSON(message: HandshakeExtraData): unknown {
     const obj: any = {}
-    message.localTransportUuid !== undefined &&
-      (obj.localTransportUuid = (
+    if (!message.localTransportUuid.isZero()) {
+      obj.localTransportUuid = (
         message.localTransportUuid || Long.UZERO
-      ).toString())
+      ).toString()
+    }
     return obj
   },
 

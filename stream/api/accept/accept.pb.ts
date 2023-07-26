@@ -148,15 +148,18 @@ export const Config = {
 
   toJSON(message: Config): unknown {
     const obj: any = {}
-    message.localPeerId !== undefined && (obj.localPeerId = message.localPeerId)
-    if (message.remotePeerIds) {
-      obj.remotePeerIds = message.remotePeerIds.map((e) => e)
-    } else {
-      obj.remotePeerIds = []
+    if (message.localPeerId !== '') {
+      obj.localPeerId = message.localPeerId
     }
-    message.protocolId !== undefined && (obj.protocolId = message.protocolId)
-    message.transportId !== undefined &&
-      (obj.transportId = (message.transportId || Long.UZERO).toString())
+    if (message.remotePeerIds?.length) {
+      obj.remotePeerIds = message.remotePeerIds
+    }
+    if (message.protocolId !== '') {
+      obj.protocolId = message.protocolId
+    }
+    if (!message.transportId.isZero()) {
+      obj.transportId = (message.transportId || Long.UZERO).toString()
+    }
     return obj
   },
 

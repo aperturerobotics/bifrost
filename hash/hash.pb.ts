@@ -159,12 +159,12 @@ export const Hash = {
 
   toJSON(message: Hash): unknown {
     const obj: any = {}
-    message.hashType !== undefined &&
-      (obj.hashType = hashTypeToJSON(message.hashType))
-    message.hash !== undefined &&
-      (obj.hash = base64FromBytes(
-        message.hash !== undefined ? message.hash : new Uint8Array(0),
-      ))
+    if (message.hashType !== 0) {
+      obj.hashType = hashTypeToJSON(message.hashType)
+    }
+    if (message.hash.length !== 0) {
+      obj.hash = base64FromBytes(message.hash)
+    }
     return obj
   },
 

@@ -158,10 +158,9 @@ export const ForwardStreamsRequest = {
 
   toJSON(message: ForwardStreamsRequest): unknown {
     const obj: any = {}
-    message.forwardingConfig !== undefined &&
-      (obj.forwardingConfig = message.forwardingConfig
-        ? Config.toJSON(message.forwardingConfig)
-        : undefined)
+    if (message.forwardingConfig !== undefined) {
+      obj.forwardingConfig = Config.toJSON(message.forwardingConfig)
+    }
     return obj
   },
 
@@ -271,8 +270,9 @@ export const ForwardStreamsResponse = {
 
   toJSON(message: ForwardStreamsResponse): unknown {
     const obj: any = {}
-    message.controllerStatus !== undefined &&
-      (obj.controllerStatus = controllerStatusToJSON(message.controllerStatus))
+    if (message.controllerStatus !== 0) {
+      obj.controllerStatus = controllerStatusToJSON(message.controllerStatus)
+    }
     return obj
   },
 
@@ -379,10 +379,9 @@ export const ListenStreamsRequest = {
 
   toJSON(message: ListenStreamsRequest): unknown {
     const obj: any = {}
-    message.listeningConfig !== undefined &&
-      (obj.listeningConfig = message.listeningConfig
-        ? Config1.toJSON(message.listeningConfig)
-        : undefined)
+    if (message.listeningConfig !== undefined) {
+      obj.listeningConfig = Config1.toJSON(message.listeningConfig)
+    }
     return obj
   },
 
@@ -492,8 +491,9 @@ export const ListenStreamsResponse = {
 
   toJSON(message: ListenStreamsResponse): unknown {
     const obj: any = {}
-    message.controllerStatus !== undefined &&
-      (obj.controllerStatus = controllerStatusToJSON(message.controllerStatus))
+    if (message.controllerStatus !== 0) {
+      obj.controllerStatus = controllerStatusToJSON(message.controllerStatus)
+    }
     return obj
   },
 
@@ -608,10 +608,12 @@ export const AcceptStreamRequest = {
 
   toJSON(message: AcceptStreamRequest): unknown {
     const obj: any = {}
-    message.config !== undefined &&
-      (obj.config = message.config ? Config2.toJSON(message.config) : undefined)
-    message.data !== undefined &&
-      (obj.data = message.data ? Data.toJSON(message.data) : undefined)
+    if (message.config !== undefined) {
+      obj.config = Config2.toJSON(message.config)
+    }
+    if (message.data !== undefined) {
+      obj.data = Data.toJSON(message.data)
+    }
     return obj
   },
 
@@ -721,8 +723,9 @@ export const AcceptStreamResponse = {
 
   toJSON(message: AcceptStreamResponse): unknown {
     const obj: any = {}
-    message.data !== undefined &&
-      (obj.data = message.data ? Data.toJSON(message.data) : undefined)
+    if (message.data !== undefined) {
+      obj.data = Data.toJSON(message.data)
+    }
     return obj
   },
 
@@ -840,10 +843,12 @@ export const DialStreamRequest = {
 
   toJSON(message: DialStreamRequest): unknown {
     const obj: any = {}
-    message.config !== undefined &&
-      (obj.config = message.config ? Config3.toJSON(message.config) : undefined)
-    message.data !== undefined &&
-      (obj.data = message.data ? Data.toJSON(message.data) : undefined)
+    if (message.config !== undefined) {
+      obj.config = Config3.toJSON(message.config)
+    }
+    if (message.data !== undefined) {
+      obj.data = Data.toJSON(message.data)
+    }
     return obj
   },
 
@@ -950,8 +955,9 @@ export const DialStreamResponse = {
 
   toJSON(message: DialStreamResponse): unknown {
     const obj: any = {}
-    message.data !== undefined &&
-      (obj.data = message.data ? Data.toJSON(message.data) : undefined)
+    if (message.data !== undefined) {
+      obj.data = Data.toJSON(message.data)
+    }
     return obj
   },
 

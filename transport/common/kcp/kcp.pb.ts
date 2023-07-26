@@ -354,19 +354,27 @@ export const Opts = {
 
   toJSON(message: Opts): unknown {
     const obj: any = {}
-    message.dataShards !== undefined &&
-      (obj.dataShards = Math.round(message.dataShards))
-    message.parityShards !== undefined &&
-      (obj.parityShards = Math.round(message.parityShards))
-    message.mtu !== undefined && (obj.mtu = Math.round(message.mtu))
-    message.kcpMode !== undefined &&
-      (obj.kcpMode = kCPModeToJSON(message.kcpMode))
-    message.blockCrypt !== undefined &&
-      (obj.blockCrypt = blockCryptToJSON(message.blockCrypt))
-    message.blockCompress !== undefined &&
-      (obj.blockCompress = blockCompressToJSON(message.blockCompress))
-    message.streamMuxer !== undefined &&
-      (obj.streamMuxer = streamMuxerToJSON(message.streamMuxer))
+    if (message.dataShards !== 0) {
+      obj.dataShards = Math.round(message.dataShards)
+    }
+    if (message.parityShards !== 0) {
+      obj.parityShards = Math.round(message.parityShards)
+    }
+    if (message.mtu !== 0) {
+      obj.mtu = Math.round(message.mtu)
+    }
+    if (message.kcpMode !== 0) {
+      obj.kcpMode = kCPModeToJSON(message.kcpMode)
+    }
+    if (message.blockCrypt !== 0) {
+      obj.blockCrypt = blockCryptToJSON(message.blockCrypt)
+    }
+    if (message.blockCompress !== 0) {
+      obj.blockCompress = blockCompressToJSON(message.blockCompress)
+    }
+    if (message.streamMuxer !== 0) {
+      obj.streamMuxer = streamMuxerToJSON(message.streamMuxer)
+    }
     return obj
   },
 

@@ -236,20 +236,18 @@ export const Packet = {
 
   toJSON(message: Packet): unknown {
     const obj: any = {}
-    message.packetType !== undefined &&
-      (obj.packetType = packetTypeToJSON(message.packetType))
-    message.initPkt !== undefined &&
-      (obj.initPkt = message.initPkt
-        ? Packet_Init.toJSON(message.initPkt)
-        : undefined)
-    message.initAckPkt !== undefined &&
-      (obj.initAckPkt = message.initAckPkt
-        ? Packet_InitAck.toJSON(message.initAckPkt)
-        : undefined)
-    message.completePkt !== undefined &&
-      (obj.completePkt = message.completePkt
-        ? Packet_Complete.toJSON(message.completePkt)
-        : undefined)
+    if (message.packetType !== 0) {
+      obj.packetType = packetTypeToJSON(message.packetType)
+    }
+    if (message.initPkt !== undefined) {
+      obj.initPkt = Packet_Init.toJSON(message.initPkt)
+    }
+    if (message.initAckPkt !== undefined) {
+      obj.initAckPkt = Packet_InitAck.toJSON(message.initAckPkt)
+    }
+    if (message.completePkt !== undefined) {
+      obj.completePkt = Packet_Complete.toJSON(message.completePkt)
+    }
     return obj
   },
 
@@ -391,24 +389,15 @@ export const Packet_Init = {
 
   toJSON(message: Packet_Init): unknown {
     const obj: any = {}
-    message.senderPeerId !== undefined &&
-      (obj.senderPeerId = base64FromBytes(
-        message.senderPeerId !== undefined
-          ? message.senderPeerId
-          : new Uint8Array(0),
-      ))
-    message.receiverPeerId !== undefined &&
-      (obj.receiverPeerId = base64FromBytes(
-        message.receiverPeerId !== undefined
-          ? message.receiverPeerId
-          : new Uint8Array(0),
-      ))
-    message.senderEphPub !== undefined &&
-      (obj.senderEphPub = base64FromBytes(
-        message.senderEphPub !== undefined
-          ? message.senderEphPub
-          : new Uint8Array(0),
-      ))
+    if (message.senderPeerId.length !== 0) {
+      obj.senderPeerId = base64FromBytes(message.senderPeerId)
+    }
+    if (message.receiverPeerId.length !== 0) {
+      obj.receiverPeerId = base64FromBytes(message.receiverPeerId)
+    }
+    if (message.senderEphPub.length !== 0) {
+      obj.senderEphPub = base64FromBytes(message.senderEphPub)
+    }
     return obj
   },
 
@@ -525,18 +514,12 @@ export const Packet_InitAck = {
 
   toJSON(message: Packet_InitAck): unknown {
     const obj: any = {}
-    message.senderEphPub !== undefined &&
-      (obj.senderEphPub = base64FromBytes(
-        message.senderEphPub !== undefined
-          ? message.senderEphPub
-          : new Uint8Array(0),
-      ))
-    message.ciphertext !== undefined &&
-      (obj.ciphertext = base64FromBytes(
-        message.ciphertext !== undefined
-          ? message.ciphertext
-          : new Uint8Array(0),
-      ))
+    if (message.senderEphPub.length !== 0) {
+      obj.senderEphPub = base64FromBytes(message.senderEphPub)
+    }
+    if (message.ciphertext.length !== 0) {
+      obj.ciphertext = base64FromBytes(message.ciphertext)
+    }
     return obj
   },
 
@@ -641,12 +624,9 @@ export const Packet_Complete = {
 
   toJSON(message: Packet_Complete): unknown {
     const obj: any = {}
-    message.ciphertext !== undefined &&
-      (obj.ciphertext = base64FromBytes(
-        message.ciphertext !== undefined
-          ? message.ciphertext
-          : new Uint8Array(0),
-      ))
+    if (message.ciphertext.length !== 0) {
+      obj.ciphertext = base64FromBytes(message.ciphertext)
+    }
     return obj
   },
 
@@ -794,24 +774,18 @@ export const Packet_Ciphertext = {
 
   toJSON(message: Packet_Ciphertext): unknown {
     const obj: any = {}
-    message.tupleSignature !== undefined &&
-      (obj.tupleSignature = base64FromBytes(
-        message.tupleSignature !== undefined
-          ? message.tupleSignature
-          : new Uint8Array(0),
-      ))
-    message.senderPubKey !== undefined &&
-      (obj.senderPubKey = base64FromBytes(
-        message.senderPubKey !== undefined
-          ? message.senderPubKey
-          : new Uint8Array(0),
-      ))
-    message.receiverKeyKnown !== undefined &&
-      (obj.receiverKeyKnown = message.receiverKeyKnown)
-    message.extraInfo !== undefined &&
-      (obj.extraInfo = base64FromBytes(
-        message.extraInfo !== undefined ? message.extraInfo : new Uint8Array(0),
-      ))
+    if (message.tupleSignature.length !== 0) {
+      obj.tupleSignature = base64FromBytes(message.tupleSignature)
+    }
+    if (message.senderPubKey.length !== 0) {
+      obj.senderPubKey = base64FromBytes(message.senderPubKey)
+    }
+    if (message.receiverKeyKnown === true) {
+      obj.receiverKeyKnown = message.receiverKeyKnown
+    }
+    if (message.extraInfo.length !== 0) {
+      obj.extraInfo = base64FromBytes(message.extraInfo)
+    }
     return obj
   },
 

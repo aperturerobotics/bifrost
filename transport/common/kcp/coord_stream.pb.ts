@@ -245,20 +245,20 @@ export const CoordinationStreamPacket = {
 
   toJSON(message: CoordinationStreamPacket): unknown {
     const obj: any = {}
-    message.packetType !== undefined &&
-      (obj.packetType = coordPacketTypeToJSON(message.packetType))
-    message.rawStreamEstablish !== undefined &&
-      (obj.rawStreamEstablish = message.rawStreamEstablish
-        ? RawStreamEstablish.toJSON(message.rawStreamEstablish)
-        : undefined)
-    message.rawStreamAck !== undefined &&
-      (obj.rawStreamAck = message.rawStreamAck
-        ? RawStreamAck.toJSON(message.rawStreamAck)
-        : undefined)
-    message.rawStreamClose !== undefined &&
-      (obj.rawStreamClose = message.rawStreamClose
-        ? RawStreamClose.toJSON(message.rawStreamClose)
-        : undefined)
+    if (message.packetType !== 0) {
+      obj.packetType = coordPacketTypeToJSON(message.packetType)
+    }
+    if (message.rawStreamEstablish !== undefined) {
+      obj.rawStreamEstablish = RawStreamEstablish.toJSON(
+        message.rawStreamEstablish,
+      )
+    }
+    if (message.rawStreamAck !== undefined) {
+      obj.rawStreamAck = RawStreamAck.toJSON(message.rawStreamAck)
+    }
+    if (message.rawStreamClose !== undefined) {
+      obj.rawStreamClose = RawStreamClose.toJSON(message.rawStreamClose)
+    }
     return obj
   },
 
@@ -375,8 +375,9 @@ export const RawStreamEstablish = {
 
   toJSON(message: RawStreamEstablish): unknown {
     const obj: any = {}
-    message.initiatorStreamId !== undefined &&
-      (obj.initiatorStreamId = Math.round(message.initiatorStreamId))
+    if (message.initiatorStreamId !== 0) {
+      obj.initiatorStreamId = Math.round(message.initiatorStreamId)
+    }
     return obj
   },
 
@@ -502,11 +503,15 @@ export const RawStreamAck = {
 
   toJSON(message: RawStreamAck): unknown {
     const obj: any = {}
-    message.initiatorStreamId !== undefined &&
-      (obj.initiatorStreamId = Math.round(message.initiatorStreamId))
-    message.ackStreamId !== undefined &&
-      (obj.ackStreamId = Math.round(message.ackStreamId))
-    message.ackError !== undefined && (obj.ackError = message.ackError)
+    if (message.initiatorStreamId !== 0) {
+      obj.initiatorStreamId = Math.round(message.initiatorStreamId)
+    }
+    if (message.ackStreamId !== 0) {
+      obj.ackStreamId = Math.round(message.ackStreamId)
+    }
+    if (message.ackError !== '') {
+      obj.ackError = message.ackError
+    }
     return obj
   },
 
@@ -621,9 +626,12 @@ export const RawStreamClose = {
 
   toJSON(message: RawStreamClose): unknown {
     const obj: any = {}
-    message.streamId !== undefined &&
-      (obj.streamId = Math.round(message.streamId))
-    message.closeError !== undefined && (obj.closeError = message.closeError)
+    if (message.streamId !== 0) {
+      obj.streamId = Math.round(message.streamId)
+    }
+    if (message.closeError !== '') {
+      obj.closeError = message.closeError
+    }
     return obj
   },
 

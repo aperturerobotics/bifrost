@@ -161,11 +161,21 @@ export const Config = {
 
   toJSON(message: Config): unknown {
     const obj: any = {}
-    message.addr !== undefined && (obj.addr = message.addr)
-    message.clientId !== undefined && (obj.clientId = message.clientId)
-    message.certFile !== undefined && (obj.certFile = message.certFile)
-    message.keyFile !== undefined && (obj.keyFile = message.keyFile)
-    message.wait !== undefined && (obj.wait = message.wait)
+    if (message.addr !== '') {
+      obj.addr = message.addr
+    }
+    if (message.clientId !== '') {
+      obj.clientId = message.clientId
+    }
+    if (message.certFile !== '') {
+      obj.certFile = message.certFile
+    }
+    if (message.keyFile !== '') {
+      obj.keyFile = message.keyFile
+    }
+    if (message.wait === true) {
+      obj.wait = message.wait
+    }
     return obj
   },
 

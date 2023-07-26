@@ -118,8 +118,9 @@ export const Config = {
 
   toJSON(message: Config): unknown {
     const obj: any = {}
-    message.publishHashType !== undefined &&
-      (obj.publishHashType = hashTypeToJSON(message.publishHashType))
+    if (message.publishHashType !== 0) {
+      obj.publishHashType = hashTypeToJSON(message.publishHashType)
+    }
     return obj
   },
 
@@ -232,19 +233,13 @@ export const Packet = {
 
   toJSON(message: Packet): unknown {
     const obj: any = {}
-    if (message.subscriptions) {
+    if (message.subscriptions?.length) {
       obj.subscriptions = message.subscriptions.map((e) =>
-        e ? SubscriptionOpts.toJSON(e) : undefined,
+        SubscriptionOpts.toJSON(e),
       )
-    } else {
-      obj.subscriptions = []
     }
-    if (message.publish) {
-      obj.publish = message.publish.map((e) =>
-        e ? SignedMsg.toJSON(e) : undefined,
-      )
-    } else {
-      obj.publish = []
+    if (message.publish?.length) {
+      obj.publish = message.publish.map((e) => SignedMsg.toJSON(e))
     }
     return obj
   },
@@ -356,8 +351,12 @@ export const SubscriptionOpts = {
 
   toJSON(message: SubscriptionOpts): unknown {
     const obj: any = {}
-    message.subscribe !== undefined && (obj.subscribe = message.subscribe)
-    message.channelId !== undefined && (obj.channelId = message.channelId)
+    if (message.subscribe === true) {
+      obj.subscribe = message.subscribe
+    }
+    if (message.channelId !== '') {
+      obj.channelId = message.channelId
+    }
     return obj
   },
 

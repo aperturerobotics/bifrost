@@ -129,13 +129,15 @@ export const PubMessageInner = {
 
   toJSON(message: PubMessageInner): unknown {
     const obj: any = {}
-    message.data !== undefined &&
-      (obj.data = base64FromBytes(
-        message.data !== undefined ? message.data : new Uint8Array(0),
-      ))
-    message.channel !== undefined && (obj.channel = message.channel)
-    message.timestamp !== undefined &&
-      (obj.timestamp = message.timestamp.toISOString())
+    if (message.data.length !== 0) {
+      obj.data = base64FromBytes(message.data)
+    }
+    if (message.channel !== '') {
+      obj.channel = message.channel
+    }
+    if (message.timestamp !== undefined) {
+      obj.timestamp = message.timestamp.toISOString()
+    }
     return obj
   },
 

@@ -186,23 +186,24 @@ export const Config = {
 
   toJSON(message: Config): unknown {
     const obj: any = {}
-    if (message.serverPeerIds) {
-      obj.serverPeerIds = message.serverPeerIds.map((e) => e)
-    } else {
-      obj.serverPeerIds = []
+    if (message.serverPeerIds?.length) {
+      obj.serverPeerIds = message.serverPeerIds
     }
-    message.perServerBackoff !== undefined &&
-      (obj.perServerBackoff = message.perServerBackoff
-        ? Backoff.toJSON(message.perServerBackoff)
-        : undefined)
-    message.srcPeerId !== undefined && (obj.srcPeerId = message.srcPeerId)
-    message.transportId !== undefined &&
-      (obj.transportId = (message.transportId || Long.UZERO).toString())
-    message.drpcOpts !== undefined &&
-      (obj.drpcOpts = message.drpcOpts
-        ? DrpcOpts.toJSON(message.drpcOpts)
-        : undefined)
-    message.timeoutDur !== undefined && (obj.timeoutDur = message.timeoutDur)
+    if (message.perServerBackoff !== undefined) {
+      obj.perServerBackoff = Backoff.toJSON(message.perServerBackoff)
+    }
+    if (message.srcPeerId !== '') {
+      obj.srcPeerId = message.srcPeerId
+    }
+    if (!message.transportId.isZero()) {
+      obj.transportId = (message.transportId || Long.UZERO).toString()
+    }
+    if (message.drpcOpts !== undefined) {
+      obj.drpcOpts = DrpcOpts.toJSON(message.drpcOpts)
+    }
+    if (message.timeoutDur !== '') {
+      obj.timeoutDur = message.timeoutDur
+    }
     return obj
   },
 

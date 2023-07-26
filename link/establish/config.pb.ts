@@ -112,12 +112,12 @@ export const Config = {
 
   toJSON(message: Config): unknown {
     const obj: any = {}
-    if (message.peerIds) {
-      obj.peerIds = message.peerIds.map((e) => e)
-    } else {
-      obj.peerIds = []
+    if (message.peerIds?.length) {
+      obj.peerIds = message.peerIds
     }
-    message.srcPeerId !== undefined && (obj.srcPeerId = message.srcPeerId)
+    if (message.srcPeerId !== '') {
+      obj.srcPeerId = message.srcPeerId
+    }
     return obj
   },
 

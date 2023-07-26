@@ -102,9 +102,12 @@ export const Opts = {
 
   toJSON(message: Opts): unknown {
     const obj: any = {}
-    message.quic !== undefined &&
-      (obj.quic = message.quic ? Opts1.toJSON(message.quic) : undefined)
-    message.verbose !== undefined && (obj.verbose = message.verbose)
+    if (message.quic !== undefined) {
+      obj.quic = Opts1.toJSON(message.quic)
+    }
+    if (message.verbose === true) {
+      obj.verbose = message.verbose
+    }
     return obj
   },
 

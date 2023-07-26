@@ -149,12 +149,12 @@ export const Data = {
 
   toJSON(message: Data): unknown {
     const obj: any = {}
-    message.data !== undefined &&
-      (obj.data = base64FromBytes(
-        message.data !== undefined ? message.data : new Uint8Array(0),
-      ))
-    message.state !== undefined &&
-      (obj.state = streamStateToJSON(message.state))
+    if (message.data.length !== 0) {
+      obj.data = base64FromBytes(message.data)
+    }
+    if (message.state !== 0) {
+      obj.state = streamStateToJSON(message.state)
+    }
     return obj
   },
 

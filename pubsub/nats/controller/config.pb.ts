@@ -111,11 +111,12 @@ export const Config = {
 
   toJSON(message: Config): unknown {
     const obj: any = {}
-    message.peerId !== undefined && (obj.peerId = message.peerId)
-    message.natsConfig !== undefined &&
-      (obj.natsConfig = message.natsConfig
-        ? Config1.toJSON(message.natsConfig)
-        : undefined)
+    if (message.peerId !== '') {
+      obj.peerId = message.peerId
+    }
+    if (message.natsConfig !== undefined) {
+      obj.natsConfig = Config1.toJSON(message.natsConfig)
+    }
     return obj
   },
 

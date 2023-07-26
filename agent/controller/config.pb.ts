@@ -111,8 +111,12 @@ export const Config = {
 
   toJSON(message: Config): unknown {
     const obj: any = {}
-    message.privKey !== undefined && (obj.privKey = message.privKey)
-    message.nodePeerId !== undefined && (obj.nodePeerId = message.nodePeerId)
+    if (message.privKey !== '') {
+      obj.privKey = message.privKey
+    }
+    if (message.nodePeerId !== '') {
+      obj.nodePeerId = message.nodePeerId
+    }
     return obj
   },
 

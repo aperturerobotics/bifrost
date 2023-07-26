@@ -119,10 +119,9 @@ export const DrpcOpts = {
 
   toJSON(message: DrpcOpts): unknown {
     const obj: any = {}
-    message.managerOpts !== undefined &&
-      (obj.managerOpts = message.managerOpts
-        ? ManagerOpts.toJSON(message.managerOpts)
-        : undefined)
+    if (message.managerOpts !== undefined) {
+      obj.managerOpts = ManagerOpts.toJSON(message.managerOpts)
+    }
     return obj
   },
 
@@ -251,14 +250,15 @@ export const ManagerOpts = {
 
   toJSON(message: ManagerOpts): unknown {
     const obj: any = {}
-    message.writerBufferSize !== undefined &&
-      (obj.writerBufferSize = Math.round(message.writerBufferSize))
-    message.streamOpts !== undefined &&
-      (obj.streamOpts = message.streamOpts
-        ? StreamOpts.toJSON(message.streamOpts)
-        : undefined)
-    message.inactivityTimeout !== undefined &&
-      (obj.inactivityTimeout = message.inactivityTimeout)
+    if (message.writerBufferSize !== 0) {
+      obj.writerBufferSize = Math.round(message.writerBufferSize)
+    }
+    if (message.streamOpts !== undefined) {
+      obj.streamOpts = StreamOpts.toJSON(message.streamOpts)
+    }
+    if (message.inactivityTimeout !== '') {
+      obj.inactivityTimeout = message.inactivityTimeout
+    }
     return obj
   },
 
@@ -361,8 +361,9 @@ export const StreamOpts = {
 
   toJSON(message: StreamOpts): unknown {
     const obj: any = {}
-    message.splitSize !== undefined &&
-      (obj.splitSize = Math.round(message.splitSize))
+    if (message.splitSize !== 0) {
+      obj.splitSize = Math.round(message.splitSize)
+    }
     return obj
   },
 

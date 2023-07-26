@@ -123,8 +123,12 @@ export const LookupRpcServiceRequest = {
 
   toJSON(message: LookupRpcServiceRequest): unknown {
     const obj: any = {}
-    message.serviceId !== undefined && (obj.serviceId = message.serviceId)
-    message.serverId !== undefined && (obj.serverId = message.serverId)
+    if (message.serviceId !== '') {
+      obj.serviceId = message.serviceId
+    }
+    if (message.serverId !== '') {
+      obj.serverId = message.serverId
+    }
     return obj
   },
 
@@ -252,9 +256,15 @@ export const LookupRpcServiceResponse = {
 
   toJSON(message: LookupRpcServiceResponse): unknown {
     const obj: any = {}
-    message.idle !== undefined && (obj.idle = message.idle)
-    message.exists !== undefined && (obj.exists = message.exists)
-    message.removed !== undefined && (obj.removed = message.removed)
+    if (message.idle === true) {
+      obj.idle = message.idle
+    }
+    if (message.exists === true) {
+      obj.exists = message.exists
+    }
+    if (message.removed === true) {
+      obj.removed = message.removed
+    }
     return obj
   },
 

@@ -205,19 +205,27 @@ export const Opts = {
 
   toJSON(message: Opts): unknown {
     const obj: any = {}
-    message.maxIdleTimeoutDur !== undefined &&
-      (obj.maxIdleTimeoutDur = message.maxIdleTimeoutDur)
-    message.maxIncomingStreams !== undefined &&
-      (obj.maxIncomingStreams = Math.round(message.maxIncomingStreams))
-    message.disableKeepAlive !== undefined &&
-      (obj.disableKeepAlive = message.disableKeepAlive)
-    message.keepAliveDur !== undefined &&
-      (obj.keepAliveDur = message.keepAliveDur)
-    message.disableDatagrams !== undefined &&
-      (obj.disableDatagrams = message.disableDatagrams)
-    message.disablePathMtuDiscovery !== undefined &&
-      (obj.disablePathMtuDiscovery = message.disablePathMtuDiscovery)
-    message.verbose !== undefined && (obj.verbose = message.verbose)
+    if (message.maxIdleTimeoutDur !== '') {
+      obj.maxIdleTimeoutDur = message.maxIdleTimeoutDur
+    }
+    if (message.maxIncomingStreams !== 0) {
+      obj.maxIncomingStreams = Math.round(message.maxIncomingStreams)
+    }
+    if (message.disableKeepAlive === true) {
+      obj.disableKeepAlive = message.disableKeepAlive
+    }
+    if (message.keepAliveDur !== '') {
+      obj.keepAliveDur = message.keepAliveDur
+    }
+    if (message.disableDatagrams === true) {
+      obj.disableDatagrams = message.disableDatagrams
+    }
+    if (message.disablePathMtuDiscovery === true) {
+      obj.disablePathMtuDiscovery = message.disablePathMtuDiscovery
+    }
+    if (message.verbose === true) {
+      obj.verbose = message.verbose
+    }
     return obj
   },
 

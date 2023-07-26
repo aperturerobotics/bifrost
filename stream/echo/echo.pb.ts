@@ -107,8 +107,12 @@ export const Config = {
 
   toJSON(message: Config): unknown {
     const obj: any = {}
-    message.peerId !== undefined && (obj.peerId = message.peerId)
-    message.protocolId !== undefined && (obj.protocolId = message.protocolId)
+    if (message.peerId !== '') {
+      obj.peerId = message.peerId
+    }
+    if (message.protocolId !== '') {
+      obj.protocolId = message.protocolId
+    }
     return obj
   },
 
