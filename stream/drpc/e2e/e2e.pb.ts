@@ -104,9 +104,8 @@ export const MockRequest = {
   },
 
   create<I extends Exact<DeepPartial<MockRequest>, I>>(base?: I): MockRequest {
-    return MockRequest.fromPartial(base ?? {})
+    return MockRequest.fromPartial(base ?? ({} as any))
   },
-
   fromPartial<I extends Exact<DeepPartial<MockRequest>, I>>(
     object: I,
   ): MockRequest {
@@ -206,9 +205,8 @@ export const MockResponse = {
   create<I extends Exact<DeepPartial<MockResponse>, I>>(
     base?: I,
   ): MockResponse {
-    return MockResponse.fromPartial(base ?? {})
+    return MockResponse.fromPartial(base ?? ({} as any))
   },
-
   fromPartial<I extends Exact<DeepPartial<MockResponse>, I>>(
     object: I,
   ): MockResponse {

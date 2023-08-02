@@ -265,9 +265,8 @@ export const CoordinationStreamPacket = {
   create<I extends Exact<DeepPartial<CoordinationStreamPacket>, I>>(
     base?: I,
   ): CoordinationStreamPacket {
-    return CoordinationStreamPacket.fromPartial(base ?? {})
+    return CoordinationStreamPacket.fromPartial(base ?? ({} as any))
   },
-
   fromPartial<I extends Exact<DeepPartial<CoordinationStreamPacket>, I>>(
     object: I,
   ): CoordinationStreamPacket {
@@ -384,9 +383,8 @@ export const RawStreamEstablish = {
   create<I extends Exact<DeepPartial<RawStreamEstablish>, I>>(
     base?: I,
   ): RawStreamEstablish {
-    return RawStreamEstablish.fromPartial(base ?? {})
+    return RawStreamEstablish.fromPartial(base ?? ({} as any))
   },
-
   fromPartial<I extends Exact<DeepPartial<RawStreamEstablish>, I>>(
     object: I,
   ): RawStreamEstablish {
@@ -518,9 +516,8 @@ export const RawStreamAck = {
   create<I extends Exact<DeepPartial<RawStreamAck>, I>>(
     base?: I,
   ): RawStreamAck {
-    return RawStreamAck.fromPartial(base ?? {})
+    return RawStreamAck.fromPartial(base ?? ({} as any))
   },
-
   fromPartial<I extends Exact<DeepPartial<RawStreamAck>, I>>(
     object: I,
   ): RawStreamAck {
@@ -638,9 +635,8 @@ export const RawStreamClose = {
   create<I extends Exact<DeepPartial<RawStreamClose>, I>>(
     base?: I,
   ): RawStreamClose {
-    return RawStreamClose.fromPartial(base ?? {})
+    return RawStreamClose.fromPartial(base ?? ({} as any))
   },
-
   fromPartial<I extends Exact<DeepPartial<RawStreamClose>, I>>(
     object: I,
   ): RawStreamClose {

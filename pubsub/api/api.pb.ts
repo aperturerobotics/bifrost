@@ -221,9 +221,8 @@ export const SubscribeRequest = {
   create<I extends Exact<DeepPartial<SubscribeRequest>, I>>(
     base?: I,
   ): SubscribeRequest {
-    return SubscribeRequest.fromPartial(base ?? {})
+    return SubscribeRequest.fromPartial(base ?? ({} as any))
   },
-
   fromPartial<I extends Exact<DeepPartial<SubscribeRequest>, I>>(
     object: I,
   ): SubscribeRequest {
@@ -347,9 +346,8 @@ export const PublishRequest = {
   create<I extends Exact<DeepPartial<PublishRequest>, I>>(
     base?: I,
   ): PublishRequest {
-    return PublishRequest.fromPartial(base ?? {})
+    return PublishRequest.fromPartial(base ?? ({} as any))
   },
-
   fromPartial<I extends Exact<DeepPartial<PublishRequest>, I>>(
     object: I,
   ): PublishRequest {
@@ -510,9 +508,8 @@ export const SubscribeResponse = {
   create<I extends Exact<DeepPartial<SubscribeResponse>, I>>(
     base?: I,
   ): SubscribeResponse {
-    return SubscribeResponse.fromPartial(base ?? {})
+    return SubscribeResponse.fromPartial(base ?? ({} as any))
   },
-
   fromPartial<I extends Exact<DeepPartial<SubscribeResponse>, I>>(
     object: I,
   ): SubscribeResponse {
@@ -626,9 +623,8 @@ export const SubscriptionStatus = {
   create<I extends Exact<DeepPartial<SubscriptionStatus>, I>>(
     base?: I,
   ): SubscriptionStatus {
-    return SubscriptionStatus.fromPartial(base ?? {})
+    return SubscriptionStatus.fromPartial(base ?? ({} as any))
   },
-
   fromPartial<I extends Exact<DeepPartial<SubscriptionStatus>, I>>(
     object: I,
   ): SubscriptionStatus {
@@ -744,9 +740,8 @@ export const OutgoingStatus = {
   create<I extends Exact<DeepPartial<OutgoingStatus>, I>>(
     base?: I,
   ): OutgoingStatus {
-    return OutgoingStatus.fromPartial(base ?? {})
+    return OutgoingStatus.fromPartial(base ?? ({} as any))
   },
-
   fromPartial<I extends Exact<DeepPartial<OutgoingStatus>, I>>(
     object: I,
   ): OutgoingStatus {
@@ -881,9 +876,8 @@ export const IncomingMessage = {
   create<I extends Exact<DeepPartial<IncomingMessage>, I>>(
     base?: I,
   ): IncomingMessage {
-    return IncomingMessage.fromPartial(base ?? {})
+    return IncomingMessage.fromPartial(base ?? ({} as any))
   },
-
   fromPartial<I extends Exact<DeepPartial<IncomingMessage>, I>>(
     object: I,
   ): IncomingMessage {

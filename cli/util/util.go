@@ -27,8 +27,7 @@ func (a *UtilArgs) RunTimestamp(_ *cli.Context) error {
 			return err
 		}
 	} else {
-		now := timestamp.Now()
-		ts = &now
+		ts = timestamp.Now()
 	}
 
 	formatted := ts.ToRFC3339() + "\n"

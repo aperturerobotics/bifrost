@@ -230,9 +230,8 @@ export const Opts = {
   },
 
   create<I extends Exact<DeepPartial<Opts>, I>>(base?: I): Opts {
-    return Opts.fromPartial(base ?? {})
+    return Opts.fromPartial(base ?? ({} as any))
   },
-
   fromPartial<I extends Exact<DeepPartial<Opts>, I>>(object: I): Opts {
     const message = createBaseOpts()
     message.maxIdleTimeoutDur = object.maxIdleTimeoutDur ?? ''

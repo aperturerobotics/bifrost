@@ -135,9 +135,8 @@ export const LookupRpcServiceRequest = {
   create<I extends Exact<DeepPartial<LookupRpcServiceRequest>, I>>(
     base?: I,
   ): LookupRpcServiceRequest {
-    return LookupRpcServiceRequest.fromPartial(base ?? {})
+    return LookupRpcServiceRequest.fromPartial(base ?? ({} as any))
   },
-
   fromPartial<I extends Exact<DeepPartial<LookupRpcServiceRequest>, I>>(
     object: I,
   ): LookupRpcServiceRequest {
@@ -271,9 +270,8 @@ export const LookupRpcServiceResponse = {
   create<I extends Exact<DeepPartial<LookupRpcServiceResponse>, I>>(
     base?: I,
   ): LookupRpcServiceResponse {
-    return LookupRpcServiceResponse.fromPartial(base ?? {})
+    return LookupRpcServiceResponse.fromPartial(base ?? ({} as any))
   },
-
   fromPartial<I extends Exact<DeepPartial<LookupRpcServiceResponse>, I>>(
     object: I,
   ): LookupRpcServiceResponse {

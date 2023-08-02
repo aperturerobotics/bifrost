@@ -106,9 +106,8 @@ export const StreamEstablish = {
   create<I extends Exact<DeepPartial<StreamEstablish>, I>>(
     base?: I,
   ): StreamEstablish {
-    return StreamEstablish.fromPartial(base ?? {})
+    return StreamEstablish.fromPartial(base ?? ({} as any))
   },
-
   fromPartial<I extends Exact<DeepPartial<StreamEstablish>, I>>(
     object: I,
   ): StreamEstablish {

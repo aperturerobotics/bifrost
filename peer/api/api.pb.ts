@@ -132,9 +132,8 @@ export const IdentifyRequest = {
   create<I extends Exact<DeepPartial<IdentifyRequest>, I>>(
     base?: I,
   ): IdentifyRequest {
-    return IdentifyRequest.fromPartial(base ?? {})
+    return IdentifyRequest.fromPartial(base ?? ({} as any))
   },
-
   fromPartial<I extends Exact<DeepPartial<IdentifyRequest>, I>>(
     object: I,
   ): IdentifyRequest {
@@ -241,9 +240,8 @@ export const IdentifyResponse = {
   create<I extends Exact<DeepPartial<IdentifyResponse>, I>>(
     base?: I,
   ): IdentifyResponse {
-    return IdentifyResponse.fromPartial(base ?? {})
+    return IdentifyResponse.fromPartial(base ?? ({} as any))
   },
-
   fromPartial<I extends Exact<DeepPartial<IdentifyResponse>, I>>(
     object: I,
   ): IdentifyResponse {
@@ -343,9 +341,8 @@ export const GetPeerInfoRequest = {
   create<I extends Exact<DeepPartial<GetPeerInfoRequest>, I>>(
     base?: I,
   ): GetPeerInfoRequest {
-    return GetPeerInfoRequest.fromPartial(base ?? {})
+    return GetPeerInfoRequest.fromPartial(base ?? ({} as any))
   },
-
   fromPartial<I extends Exact<DeepPartial<GetPeerInfoRequest>, I>>(
     object: I,
   ): GetPeerInfoRequest {
@@ -443,9 +440,8 @@ export const PeerInfo = {
   },
 
   create<I extends Exact<DeepPartial<PeerInfo>, I>>(base?: I): PeerInfo {
-    return PeerInfo.fromPartial(base ?? {})
+    return PeerInfo.fromPartial(base ?? ({} as any))
   },
-
   fromPartial<I extends Exact<DeepPartial<PeerInfo>, I>>(object: I): PeerInfo {
     const message = createBasePeerInfo()
     message.peerId = object.peerId ?? ''
@@ -547,9 +543,8 @@ export const GetPeerInfoResponse = {
   create<I extends Exact<DeepPartial<GetPeerInfoResponse>, I>>(
     base?: I,
   ): GetPeerInfoResponse {
-    return GetPeerInfoResponse.fromPartial(base ?? {})
+    return GetPeerInfoResponse.fromPartial(base ?? ({} as any))
   },
-
   fromPartial<I extends Exact<DeepPartial<GetPeerInfoResponse>, I>>(
     object: I,
   ): GetPeerInfoResponse {

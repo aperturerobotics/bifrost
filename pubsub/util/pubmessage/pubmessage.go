@@ -20,11 +20,10 @@ func NewPubMessage(
 	hashType hash.HashType,
 	data []byte,
 ) (*peer.SignedMsg, *PubMessageInner, error) {
-	tsNow := timestamp.Now()
 	inner := &PubMessageInner{
 		Data:      data,
 		Channel:   channelID,
-		Timestamp: tsNow,
+		Timestamp: timestamp.Now(),
 	}
 	innerData, err := proto.Marshal(inner)
 	if err != nil {

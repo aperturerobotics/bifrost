@@ -252,9 +252,8 @@ export const Packet = {
   },
 
   create<I extends Exact<DeepPartial<Packet>, I>>(base?: I): Packet {
-    return Packet.fromPartial(base ?? {})
+    return Packet.fromPartial(base ?? ({} as any))
   },
-
   fromPartial<I extends Exact<DeepPartial<Packet>, I>>(object: I): Packet {
     const message = createBasePacket()
     message.packetType = object.packetType ?? 0
@@ -402,9 +401,8 @@ export const Packet_Init = {
   },
 
   create<I extends Exact<DeepPartial<Packet_Init>, I>>(base?: I): Packet_Init {
-    return Packet_Init.fromPartial(base ?? {})
+    return Packet_Init.fromPartial(base ?? ({} as any))
   },
-
   fromPartial<I extends Exact<DeepPartial<Packet_Init>, I>>(
     object: I,
   ): Packet_Init {
@@ -526,9 +524,8 @@ export const Packet_InitAck = {
   create<I extends Exact<DeepPartial<Packet_InitAck>, I>>(
     base?: I,
   ): Packet_InitAck {
-    return Packet_InitAck.fromPartial(base ?? {})
+    return Packet_InitAck.fromPartial(base ?? ({} as any))
   },
-
   fromPartial<I extends Exact<DeepPartial<Packet_InitAck>, I>>(
     object: I,
   ): Packet_InitAck {
@@ -633,9 +630,8 @@ export const Packet_Complete = {
   create<I extends Exact<DeepPartial<Packet_Complete>, I>>(
     base?: I,
   ): Packet_Complete {
-    return Packet_Complete.fromPartial(base ?? {})
+    return Packet_Complete.fromPartial(base ?? ({} as any))
   },
-
   fromPartial<I extends Exact<DeepPartial<Packet_Complete>, I>>(
     object: I,
   ): Packet_Complete {
@@ -792,9 +788,8 @@ export const Packet_Ciphertext = {
   create<I extends Exact<DeepPartial<Packet_Ciphertext>, I>>(
     base?: I,
   ): Packet_Ciphertext {
-    return Packet_Ciphertext.fromPartial(base ?? {})
+    return Packet_Ciphertext.fromPartial(base ?? ({} as any))
   },
-
   fromPartial<I extends Exact<DeepPartial<Packet_Ciphertext>, I>>(
     object: I,
   ): Packet_Ciphertext {

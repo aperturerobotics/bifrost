@@ -125,9 +125,8 @@ export const Config = {
   },
 
   create<I extends Exact<DeepPartial<Config>, I>>(base?: I): Config {
-    return Config.fromPartial(base ?? {})
+    return Config.fromPartial(base ?? ({} as any))
   },
-
   fromPartial<I extends Exact<DeepPartial<Config>, I>>(object: I): Config {
     const message = createBaseConfig()
     message.publishHashType = object.publishHashType ?? 0
@@ -245,9 +244,8 @@ export const Packet = {
   },
 
   create<I extends Exact<DeepPartial<Packet>, I>>(base?: I): Packet {
-    return Packet.fromPartial(base ?? {})
+    return Packet.fromPartial(base ?? ({} as any))
   },
-
   fromPartial<I extends Exact<DeepPartial<Packet>, I>>(object: I): Packet {
     const message = createBasePacket()
     message.subscriptions =
@@ -363,9 +361,8 @@ export const SubscriptionOpts = {
   create<I extends Exact<DeepPartial<SubscriptionOpts>, I>>(
     base?: I,
   ): SubscriptionOpts {
-    return SubscriptionOpts.fromPartial(base ?? {})
+    return SubscriptionOpts.fromPartial(base ?? ({} as any))
   },
-
   fromPartial<I extends Exact<DeepPartial<SubscriptionOpts>, I>>(
     object: I,
   ): SubscriptionOpts {

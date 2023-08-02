@@ -159,9 +159,8 @@ export const Signature = {
   },
 
   create<I extends Exact<DeepPartial<Signature>, I>>(base?: I): Signature {
-    return Signature.fromPartial(base ?? {})
+    return Signature.fromPartial(base ?? ({} as any))
   },
-
   fromPartial<I extends Exact<DeepPartial<Signature>, I>>(
     object: I,
   ): Signature {
@@ -295,9 +294,8 @@ export const SignedMsg = {
   },
 
   create<I extends Exact<DeepPartial<SignedMsg>, I>>(base?: I): SignedMsg {
-    return SignedMsg.fromPartial(base ?? {})
+    return SignedMsg.fromPartial(base ?? ({} as any))
   },
-
   fromPartial<I extends Exact<DeepPartial<SignedMsg>, I>>(
     object: I,
   ): SignedMsg {

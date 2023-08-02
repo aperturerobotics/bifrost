@@ -110,9 +110,8 @@ export const HandshakeExtraData = {
   create<I extends Exact<DeepPartial<HandshakeExtraData>, I>>(
     base?: I,
   ): HandshakeExtraData {
-    return HandshakeExtraData.fromPartial(base ?? {})
+    return HandshakeExtraData.fromPartial(base ?? ({} as any))
   },
-
   fromPartial<I extends Exact<DeepPartial<HandshakeExtraData>, I>>(
     object: I,
   ): HandshakeExtraData {
