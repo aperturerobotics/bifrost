@@ -3,7 +3,7 @@ module github.com/aperturerobotics/bifrost
 go 1.19
 
 require (
-	github.com/aperturerobotics/controllerbus v0.28.6 // latest
+	github.com/aperturerobotics/controllerbus v0.28.7-0.20230811212143-b5ce5a64708e // latest
 	github.com/aperturerobotics/entitygraph v0.4.0
 	github.com/aperturerobotics/starpc v0.19.2 // latest
 )
@@ -25,17 +25,17 @@ replace (
 
 require (
 	github.com/aperturerobotics/ts-proto-common-types v0.2.0 // latest
-	github.com/aperturerobotics/util v1.5.9 // master
+	github.com/aperturerobotics/util v1.5.10-0.20230811212154-d8e6b35d5721 // master
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/djherbis/buffer v1.2.0
 	github.com/golang/snappy v0.0.4
 	github.com/klauspost/compress v1.16.7
-	github.com/libp2p/go-libp2p v0.29.1-0.20230801004700-f6fb4f555ba2
+	github.com/libp2p/go-libp2p v0.29.2
 	github.com/libp2p/go-yamux/v4 v4.0.1
 	github.com/mr-tron/base58 v1.2.0
-	github.com/multiformats/go-multiaddr v0.10.1
-	github.com/nats-io/nats-server/v2 v2.9.20
+	github.com/multiformats/go-multiaddr v0.11.0
+	github.com/nats-io/nats-server/v2 v2.9.21
 	github.com/nats-io/nats.go v1.28.0
 	github.com/nats-io/nkeys v0.4.4
 	github.com/paralin/kcp-go-lite v5.4.20+incompatible
@@ -43,14 +43,14 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.18
 	github.com/pkg/errors v0.9.1
 	github.com/planetscale/vtprotobuf v0.4.0
-	github.com/quic-go/quic-go v0.37.1
+	github.com/quic-go/quic-go v0.37.4
 	github.com/sasha-s/go-deadlock v0.3.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
 	github.com/templexxx/xor v0.0.0-20191217153810-f85b25db303b
 	github.com/urfave/cli/v2 v2.25.7
 	github.com/zeebo/blake3 v0.2.3
-	golang.org/x/crypto v0.11.0
+	golang.org/x/crypto v0.12.0
 	gonum.org/v1/gonum v0.13.0
 	google.golang.org/protobuf v1.31.0
 	nhooyr.io/websocket v1.8.8-0.20221213223501-14fb98eba64e
@@ -63,7 +63,7 @@ require (
 	github.com/pauleyj/gobee v0.0.0-20190212035730-6270c53072a4
 	github.com/valyala/fastjson v1.6.4
 	github.com/xtaci/smux/v2 v2.1.0
-	golang.org/x/exp v0.0.0-20230801115018-d63ba01acd4b
+	golang.org/x/exp v0.0.0-20230811145659-89c5cff77bcb
 )
 
 require (
@@ -111,10 +111,10 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/mod v0.12.0 // indirect
-	golang.org/x/net v0.12.0 // indirect
-	golang.org/x/sys v0.10.0 // indirect
+	golang.org/x/net v0.14.0 // indirect
+	golang.org/x/sys v0.11.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
-	golang.org/x/tools v0.11.0 // indirect
+	golang.org/x/tools v0.12.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	lukechampine.com/blake3 v1.2.1 // indirect
