@@ -111,7 +111,7 @@ func (c *RpcServiceController) HandleDirective(
 		if !matched {
 			return nil, nil
 		}
-		return directive.R(directive.NewRefCountResolver(c.rc, true, func(val *srpc.Invoker) (directive.Value, error) {
+		return directive.R(directive.NewRefCountResolver(c.rc, true, func(ctx context.Context, val *srpc.Invoker) (directive.Value, error) {
 			if val == nil {
 				return nil, nil
 			}
