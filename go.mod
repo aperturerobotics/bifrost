@@ -1,11 +1,11 @@
 module github.com/aperturerobotics/bifrost
 
-go 1.19
+go 1.20
 
 require (
 	github.com/aperturerobotics/controllerbus v0.28.7-0.20230811212143-b5ce5a64708e // latest
 	github.com/aperturerobotics/entitygraph v0.4.0
-	github.com/aperturerobotics/starpc v0.19.2 // latest
+	github.com/aperturerobotics/starpc v0.19.3 // latest
 )
 
 // aperture: use compatibility forks
@@ -25,7 +25,7 @@ replace (
 
 require (
 	github.com/aperturerobotics/ts-proto-common-types v0.2.0 // latest
-	github.com/aperturerobotics/util v1.5.10-0.20230811212154-d8e6b35d5721 // master
+	github.com/aperturerobotics/util v1.7.0 // master
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/djherbis/buffer v1.2.0
@@ -43,7 +43,7 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.18
 	github.com/pkg/errors v0.9.1
 	github.com/planetscale/vtprotobuf v0.4.0
-	github.com/quic-go/quic-go v0.37.4
+	github.com/quic-go/quic-go v0.37.5
 	github.com/sasha-s/go-deadlock v0.3.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
@@ -63,7 +63,7 @@ require (
 	github.com/pauleyj/gobee v0.0.0-20190212035730-6270c53072a4
 	github.com/valyala/fastjson v1.6.4
 	github.com/xtaci/smux/v2 v2.1.0
-	golang.org/x/exp v0.0.0-20230811145659-89c5cff77bcb
+	golang.org/x/exp v0.0.0-20230817173708-d852ddb80c63
 )
 
 require (
@@ -114,7 +114,7 @@ require (
 	golang.org/x/net v0.14.0 // indirect
 	golang.org/x/sys v0.11.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
-	golang.org/x/tools v0.12.0 // indirect
+	golang.org/x/tools v0.12.1-0.20230815132531-74c255bcf846 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	lukechampine.com/blake3 v1.2.1 // indirect
