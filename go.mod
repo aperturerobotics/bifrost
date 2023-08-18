@@ -3,7 +3,7 @@ module github.com/aperturerobotics/bifrost
 go 1.20
 
 require (
-	github.com/aperturerobotics/controllerbus v0.29.1 // latest
+	github.com/aperturerobotics/controllerbus v0.30.2 // latest
 	github.com/aperturerobotics/entitygraph v0.4.0
 	github.com/aperturerobotics/starpc v0.19.3 // latest
 )
@@ -25,7 +25,7 @@ replace (
 
 require (
 	github.com/aperturerobotics/ts-proto-common-types v0.2.0 // latest
-	github.com/aperturerobotics/util v1.7.2 // master
+	github.com/aperturerobotics/util v1.7.3 // master
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/djherbis/buffer v1.2.0
@@ -114,7 +114,7 @@ require (
 	golang.org/x/net v0.14.0 // indirect
 	golang.org/x/sys v0.11.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
-	golang.org/x/tools v0.12.1-0.20230816192654-b225aa0590e7 // indirect
+	golang.org/x/tools v0.12.1-0.20230818012651-9f2e103e08d2 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	lukechampine.com/blake3 v1.2.1 // indirect
