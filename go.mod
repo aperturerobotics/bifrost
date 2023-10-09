@@ -35,7 +35,7 @@ require (
 	github.com/libp2p/go-yamux/v4 v4.0.1
 	github.com/mr-tron/base58 v1.2.0
 	github.com/multiformats/go-multiaddr v0.11.0
-	github.com/nats-io/nats-server/v2 v2.10.1
+	github.com/nats-io/nats-server/v2 v2.10.2
 	github.com/nats-io/nats.go v1.30.2
 	github.com/nats-io/nkeys v0.4.5
 	github.com/paralin/kcp-go-lite v5.4.20+incompatible
