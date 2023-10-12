@@ -65,12 +65,12 @@ export const Opts = {
     source: AsyncIterable<Opts | Opts[]> | Iterable<Opts | Opts[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [Opts.encode(p).finish()]
         }
       } else {
-        yield* [Opts.encode(pkt).finish()]
+        yield* [Opts.encode(pkt as any).finish()]
       }
     }
   },
@@ -83,12 +83,12 @@ export const Opts = {
       | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<Opts> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [Opts.decode(p)]
         }
       } else {
-        yield* [Opts.decode(pkt)]
+        yield* [Opts.decode(pkt as any)]
       }
     }
   },
@@ -96,7 +96,9 @@ export const Opts = {
   fromJSON(object: any): Opts {
     return {
       quic: isSet(object.quic) ? Opts1.fromJSON(object.quic) : undefined,
-      verbose: isSet(object.verbose) ? Boolean(object.verbose) : false,
+      verbose: isSet(object.verbose)
+        ? globalThis.Boolean(object.verbose)
+        : false,
     }
   },
 
@@ -138,8 +140,8 @@ export type DeepPartial<T> = T extends Builtin
   ? T
   : T extends Long
   ? string | number | Long
-  : T extends Array<infer U>
-  ? Array<DeepPartial<U>>
+  : T extends globalThis.Array<infer U>
+  ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U>
   ? ReadonlyArray<DeepPartial<U>>
   : T extends { $case: string }

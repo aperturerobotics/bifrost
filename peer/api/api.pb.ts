@@ -87,12 +87,12 @@ export const IdentifyRequest = {
       | Iterable<IdentifyRequest | IdentifyRequest[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [IdentifyRequest.encode(p).finish()]
         }
       } else {
-        yield* [IdentifyRequest.encode(pkt).finish()]
+        yield* [IdentifyRequest.encode(pkt as any).finish()]
       }
     }
   },
@@ -105,12 +105,12 @@ export const IdentifyRequest = {
       | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<IdentifyRequest> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [IdentifyRequest.decode(p)]
         }
       } else {
-        yield* [IdentifyRequest.decode(pkt)]
+        yield* [IdentifyRequest.decode(pkt as any)]
       }
     }
   },
@@ -193,12 +193,12 @@ export const IdentifyResponse = {
       | Iterable<IdentifyResponse | IdentifyResponse[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [IdentifyResponse.encode(p).finish()]
         }
       } else {
-        yield* [IdentifyResponse.encode(pkt).finish()]
+        yield* [IdentifyResponse.encode(pkt as any).finish()]
       }
     }
   },
@@ -211,12 +211,12 @@ export const IdentifyResponse = {
       | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<IdentifyResponse> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [IdentifyResponse.decode(p)]
         }
       } else {
-        yield* [IdentifyResponse.decode(pkt)]
+        yield* [IdentifyResponse.decode(pkt as any)]
       }
     }
   },
@@ -298,12 +298,12 @@ export const GetPeerInfoRequest = {
       | Iterable<GetPeerInfoRequest | GetPeerInfoRequest[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [GetPeerInfoRequest.encode(p).finish()]
         }
       } else {
-        yield* [GetPeerInfoRequest.encode(pkt).finish()]
+        yield* [GetPeerInfoRequest.encode(pkt as any).finish()]
       }
     }
   },
@@ -316,18 +316,20 @@ export const GetPeerInfoRequest = {
       | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<GetPeerInfoRequest> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [GetPeerInfoRequest.decode(p)]
         }
       } else {
-        yield* [GetPeerInfoRequest.decode(pkt)]
+        yield* [GetPeerInfoRequest.decode(pkt as any)]
       }
     }
   },
 
   fromJSON(object: any): GetPeerInfoRequest {
-    return { peerId: isSet(object.peerId) ? String(object.peerId) : '' }
+    return {
+      peerId: isSet(object.peerId) ? globalThis.String(object.peerId) : '',
+    }
   },
 
   toJSON(message: GetPeerInfoRequest): unknown {
@@ -399,12 +401,12 @@ export const PeerInfo = {
       | Iterable<PeerInfo | PeerInfo[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [PeerInfo.encode(p).finish()]
         }
       } else {
-        yield* [PeerInfo.encode(pkt).finish()]
+        yield* [PeerInfo.encode(pkt as any).finish()]
       }
     }
   },
@@ -417,18 +419,20 @@ export const PeerInfo = {
       | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<PeerInfo> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [PeerInfo.decode(p)]
         }
       } else {
-        yield* [PeerInfo.decode(pkt)]
+        yield* [PeerInfo.decode(pkt as any)]
       }
     }
   },
 
   fromJSON(object: any): PeerInfo {
-    return { peerId: isSet(object.peerId) ? String(object.peerId) : '' }
+    return {
+      peerId: isSet(object.peerId) ? globalThis.String(object.peerId) : '',
+    }
   },
 
   toJSON(message: PeerInfo): unknown {
@@ -496,12 +500,12 @@ export const GetPeerInfoResponse = {
       | Iterable<GetPeerInfoResponse | GetPeerInfoResponse[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [GetPeerInfoResponse.encode(p).finish()]
         }
       } else {
-        yield* [GetPeerInfoResponse.encode(pkt).finish()]
+        yield* [GetPeerInfoResponse.encode(pkt as any).finish()]
       }
     }
   },
@@ -514,19 +518,19 @@ export const GetPeerInfoResponse = {
       | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<GetPeerInfoResponse> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [GetPeerInfoResponse.decode(p)]
         }
       } else {
-        yield* [GetPeerInfoResponse.decode(pkt)]
+        yield* [GetPeerInfoResponse.decode(pkt as any)]
       }
     }
   },
 
   fromJSON(object: any): GetPeerInfoResponse {
     return {
-      localPeers: Array.isArray(object?.localPeers)
+      localPeers: globalThis.Array.isArray(object?.localPeers)
         ? object.localPeers.map((e: any) => PeerInfo.fromJSON(e))
         : [],
     }
@@ -677,8 +681,8 @@ export type DeepPartial<T> = T extends Builtin
   ? T
   : T extends Long
   ? string | number | Long
-  : T extends Array<infer U>
-  ? Array<DeepPartial<U>>
+  : T extends globalThis.Array<infer U>
+  ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U>
   ? ReadonlyArray<DeepPartial<U>>
   : T extends { $case: string }

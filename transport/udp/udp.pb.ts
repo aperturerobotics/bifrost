@@ -115,12 +115,12 @@ export const Config = {
     source: AsyncIterable<Config | Config[]> | Iterable<Config | Config[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [Config.encode(p).finish()]
         }
       } else {
-        yield* [Config.encode(pkt).finish()]
+        yield* [Config.encode(pkt as any).finish()]
       }
     }
   },
@@ -133,12 +133,12 @@ export const Config = {
       | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<Config> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [Config.decode(p)]
         }
       } else {
-        yield* [Config.decode(pkt)]
+        yield* [Config.decode(pkt as any)]
       }
     }
   },
@@ -146,9 +146,11 @@ export const Config = {
   fromJSON(object: any): Config {
     return {
       transportPeerId: isSet(object.transportPeerId)
-        ? String(object.transportPeerId)
+        ? globalThis.String(object.transportPeerId)
         : '',
-      listenAddr: isSet(object.listenAddr) ? String(object.listenAddr) : '',
+      listenAddr: isSet(object.listenAddr)
+        ? globalThis.String(object.listenAddr)
+        : '',
       packetOpts: isSet(object.packetOpts)
         ? Opts.fromJSON(object.packetOpts)
         : undefined,
@@ -267,12 +269,12 @@ export const Config_DialersEntry = {
       | Iterable<Config_DialersEntry | Config_DialersEntry[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [Config_DialersEntry.encode(p).finish()]
         }
       } else {
-        yield* [Config_DialersEntry.encode(pkt).finish()]
+        yield* [Config_DialersEntry.encode(pkt as any).finish()]
       }
     }
   },
@@ -285,19 +287,19 @@ export const Config_DialersEntry = {
       | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<Config_DialersEntry> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [Config_DialersEntry.decode(p)]
         }
       } else {
-        yield* [Config_DialersEntry.decode(pkt)]
+        yield* [Config_DialersEntry.decode(pkt as any)]
       }
     }
   },
 
   fromJSON(object: any): Config_DialersEntry {
     return {
-      key: isSet(object.key) ? String(object.key) : '',
+      key: isSet(object.key) ? globalThis.String(object.key) : '',
       value: isSet(object.value)
         ? DialerOpts.fromJSON(object.value)
         : undefined,
@@ -346,8 +348,8 @@ export type DeepPartial<T> = T extends Builtin
   ? T
   : T extends Long
   ? string | number | Long
-  : T extends Array<infer U>
-  ? Array<DeepPartial<U>>
+  : T extends globalThis.Array<infer U>
+  ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U>
   ? ReadonlyArray<DeepPartial<U>>
   : T extends { $case: string }

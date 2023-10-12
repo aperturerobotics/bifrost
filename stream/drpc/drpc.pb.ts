@@ -81,12 +81,12 @@ export const DrpcOpts = {
       | Iterable<DrpcOpts | DrpcOpts[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [DrpcOpts.encode(p).finish()]
         }
       } else {
-        yield* [DrpcOpts.encode(pkt).finish()]
+        yield* [DrpcOpts.encode(pkt as any).finish()]
       }
     }
   },
@@ -99,12 +99,12 @@ export const DrpcOpts = {
       | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<DrpcOpts> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [DrpcOpts.decode(p)]
         }
       } else {
-        yield* [DrpcOpts.decode(pkt)]
+        yield* [DrpcOpts.decode(pkt as any)]
       }
     }
   },
@@ -205,12 +205,12 @@ export const ManagerOpts = {
       | Iterable<ManagerOpts | ManagerOpts[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [ManagerOpts.encode(p).finish()]
         }
       } else {
-        yield* [ManagerOpts.encode(pkt).finish()]
+        yield* [ManagerOpts.encode(pkt as any).finish()]
       }
     }
   },
@@ -223,12 +223,12 @@ export const ManagerOpts = {
       | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<ManagerOpts> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [ManagerOpts.decode(p)]
         }
       } else {
-        yield* [ManagerOpts.decode(pkt)]
+        yield* [ManagerOpts.decode(pkt as any)]
       }
     }
   },
@@ -236,13 +236,13 @@ export const ManagerOpts = {
   fromJSON(object: any): ManagerOpts {
     return {
       writerBufferSize: isSet(object.writerBufferSize)
-        ? Number(object.writerBufferSize)
+        ? globalThis.Number(object.writerBufferSize)
         : 0,
       streamOpts: isSet(object.streamOpts)
         ? StreamOpts.fromJSON(object.streamOpts)
         : undefined,
       inactivityTimeout: isSet(object.inactivityTimeout)
-        ? String(object.inactivityTimeout)
+        ? globalThis.String(object.inactivityTimeout)
         : '',
     }
   },
@@ -325,12 +325,12 @@ export const StreamOpts = {
       | Iterable<StreamOpts | StreamOpts[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [StreamOpts.encode(p).finish()]
         }
       } else {
-        yield* [StreamOpts.encode(pkt).finish()]
+        yield* [StreamOpts.encode(pkt as any).finish()]
       }
     }
   },
@@ -343,18 +343,22 @@ export const StreamOpts = {
       | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<StreamOpts> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [StreamOpts.decode(p)]
         }
       } else {
-        yield* [StreamOpts.decode(pkt)]
+        yield* [StreamOpts.decode(pkt as any)]
       }
     }
   },
 
   fromJSON(object: any): StreamOpts {
-    return { splitSize: isSet(object.splitSize) ? Number(object.splitSize) : 0 }
+    return {
+      splitSize: isSet(object.splitSize)
+        ? globalThis.Number(object.splitSize)
+        : 0,
+    }
   },
 
   toJSON(message: StreamOpts): unknown {
@@ -390,8 +394,8 @@ export type DeepPartial<T> = T extends Builtin
   ? T
   : T extends Long
   ? string | number | Long
-  : T extends Array<infer U>
-  ? Array<DeepPartial<U>>
+  : T extends globalThis.Array<infer U>
+  ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U>
   ? ReadonlyArray<DeepPartial<U>>
   : T extends { $case: string }

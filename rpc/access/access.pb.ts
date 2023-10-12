@@ -86,12 +86,12 @@ export const LookupRpcServiceRequest = {
       | Iterable<LookupRpcServiceRequest | LookupRpcServiceRequest[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [LookupRpcServiceRequest.encode(p).finish()]
         }
       } else {
-        yield* [LookupRpcServiceRequest.encode(pkt).finish()]
+        yield* [LookupRpcServiceRequest.encode(pkt as any).finish()]
       }
     }
   },
@@ -104,20 +104,24 @@ export const LookupRpcServiceRequest = {
       | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<LookupRpcServiceRequest> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [LookupRpcServiceRequest.decode(p)]
         }
       } else {
-        yield* [LookupRpcServiceRequest.decode(pkt)]
+        yield* [LookupRpcServiceRequest.decode(pkt as any)]
       }
     }
   },
 
   fromJSON(object: any): LookupRpcServiceRequest {
     return {
-      serviceId: isSet(object.serviceId) ? String(object.serviceId) : '',
-      serverId: isSet(object.serverId) ? String(object.serverId) : '',
+      serviceId: isSet(object.serviceId)
+        ? globalThis.String(object.serviceId)
+        : '',
+      serverId: isSet(object.serverId)
+        ? globalThis.String(object.serverId)
+        : '',
     }
   },
 
@@ -217,12 +221,12 @@ export const LookupRpcServiceResponse = {
       | Iterable<LookupRpcServiceResponse | LookupRpcServiceResponse[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [LookupRpcServiceResponse.encode(p).finish()]
         }
       } else {
-        yield* [LookupRpcServiceResponse.encode(pkt).finish()]
+        yield* [LookupRpcServiceResponse.encode(pkt as any).finish()]
       }
     }
   },
@@ -235,21 +239,23 @@ export const LookupRpcServiceResponse = {
       | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<LookupRpcServiceResponse> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [LookupRpcServiceResponse.decode(p)]
         }
       } else {
-        yield* [LookupRpcServiceResponse.decode(pkt)]
+        yield* [LookupRpcServiceResponse.decode(pkt as any)]
       }
     }
   },
 
   fromJSON(object: any): LookupRpcServiceResponse {
     return {
-      idle: isSet(object.idle) ? Boolean(object.idle) : false,
-      exists: isSet(object.exists) ? Boolean(object.exists) : false,
-      removed: isSet(object.removed) ? Boolean(object.removed) : false,
+      idle: isSet(object.idle) ? globalThis.Boolean(object.idle) : false,
+      exists: isSet(object.exists) ? globalThis.Boolean(object.exists) : false,
+      removed: isSet(object.removed)
+        ? globalThis.Boolean(object.removed)
+        : false,
     }
   },
 
@@ -417,8 +423,8 @@ export type DeepPartial<T> = T extends Builtin
   ? T
   : T extends Long
   ? string | number | Long
-  : T extends Array<infer U>
-  ? Array<DeepPartial<U>>
+  : T extends globalThis.Array<infer U>
+  ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U>
   ? ReadonlyArray<DeepPartial<U>>
   : T extends { $case: string }

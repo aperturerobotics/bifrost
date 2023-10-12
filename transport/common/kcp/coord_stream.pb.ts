@@ -198,12 +198,12 @@ export const CoordinationStreamPacket = {
       | Iterable<CoordinationStreamPacket | CoordinationStreamPacket[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [CoordinationStreamPacket.encode(p).finish()]
         }
       } else {
-        yield* [CoordinationStreamPacket.encode(pkt).finish()]
+        yield* [CoordinationStreamPacket.encode(pkt as any).finish()]
       }
     }
   },
@@ -216,12 +216,12 @@ export const CoordinationStreamPacket = {
       | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<CoordinationStreamPacket> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [CoordinationStreamPacket.decode(p)]
         }
       } else {
-        yield* [CoordinationStreamPacket.decode(pkt)]
+        yield* [CoordinationStreamPacket.decode(pkt as any)]
       }
     }
   },
@@ -336,12 +336,12 @@ export const RawStreamEstablish = {
       | Iterable<RawStreamEstablish | RawStreamEstablish[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [RawStreamEstablish.encode(p).finish()]
         }
       } else {
-        yield* [RawStreamEstablish.encode(pkt).finish()]
+        yield* [RawStreamEstablish.encode(pkt as any).finish()]
       }
     }
   },
@@ -354,12 +354,12 @@ export const RawStreamEstablish = {
       | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<RawStreamEstablish> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [RawStreamEstablish.decode(p)]
         }
       } else {
-        yield* [RawStreamEstablish.decode(pkt)]
+        yield* [RawStreamEstablish.decode(pkt as any)]
       }
     }
   },
@@ -367,7 +367,7 @@ export const RawStreamEstablish = {
   fromJSON(object: any): RawStreamEstablish {
     return {
       initiatorStreamId: isSet(object.initiatorStreamId)
-        ? Number(object.initiatorStreamId)
+        ? globalThis.Number(object.initiatorStreamId)
         : 0,
     }
   },
@@ -461,12 +461,12 @@ export const RawStreamAck = {
       | Iterable<RawStreamAck | RawStreamAck[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [RawStreamAck.encode(p).finish()]
         }
       } else {
-        yield* [RawStreamAck.encode(pkt).finish()]
+        yield* [RawStreamAck.encode(pkt as any).finish()]
       }
     }
   },
@@ -479,12 +479,12 @@ export const RawStreamAck = {
       | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<RawStreamAck> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [RawStreamAck.decode(p)]
         }
       } else {
-        yield* [RawStreamAck.decode(pkt)]
+        yield* [RawStreamAck.decode(pkt as any)]
       }
     }
   },
@@ -492,10 +492,14 @@ export const RawStreamAck = {
   fromJSON(object: any): RawStreamAck {
     return {
       initiatorStreamId: isSet(object.initiatorStreamId)
-        ? Number(object.initiatorStreamId)
+        ? globalThis.Number(object.initiatorStreamId)
         : 0,
-      ackStreamId: isSet(object.ackStreamId) ? Number(object.ackStreamId) : 0,
-      ackError: isSet(object.ackError) ? String(object.ackError) : '',
+      ackStreamId: isSet(object.ackStreamId)
+        ? globalThis.Number(object.ackStreamId)
+        : 0,
+      ackError: isSet(object.ackError)
+        ? globalThis.String(object.ackError)
+        : '',
     }
   },
 
@@ -586,12 +590,12 @@ export const RawStreamClose = {
       | Iterable<RawStreamClose | RawStreamClose[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [RawStreamClose.encode(p).finish()]
         }
       } else {
-        yield* [RawStreamClose.encode(pkt).finish()]
+        yield* [RawStreamClose.encode(pkt as any).finish()]
       }
     }
   },
@@ -604,20 +608,22 @@ export const RawStreamClose = {
       | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<RawStreamClose> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [RawStreamClose.decode(p)]
         }
       } else {
-        yield* [RawStreamClose.decode(pkt)]
+        yield* [RawStreamClose.decode(pkt as any)]
       }
     }
   },
 
   fromJSON(object: any): RawStreamClose {
     return {
-      streamId: isSet(object.streamId) ? Number(object.streamId) : 0,
-      closeError: isSet(object.closeError) ? String(object.closeError) : '',
+      streamId: isSet(object.streamId) ? globalThis.Number(object.streamId) : 0,
+      closeError: isSet(object.closeError)
+        ? globalThis.String(object.closeError)
+        : '',
     }
   },
 
@@ -660,8 +666,8 @@ export type DeepPartial<T> = T extends Builtin
   ? T
   : T extends Long
   ? string | number | Long
-  : T extends Array<infer U>
-  ? Array<DeepPartial<U>>
+  : T extends globalThis.Array<infer U>
+  ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U>
   ? ReadonlyArray<DeepPartial<U>>
   : T extends { $case: string }

@@ -120,12 +120,12 @@ export const ForwardStreamsRequest = {
       | Iterable<ForwardStreamsRequest | ForwardStreamsRequest[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [ForwardStreamsRequest.encode(p).finish()]
         }
       } else {
-        yield* [ForwardStreamsRequest.encode(pkt).finish()]
+        yield* [ForwardStreamsRequest.encode(pkt as any).finish()]
       }
     }
   },
@@ -138,12 +138,12 @@ export const ForwardStreamsRequest = {
       | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<ForwardStreamsRequest> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [ForwardStreamsRequest.decode(p)]
         }
       } else {
-        yield* [ForwardStreamsRequest.decode(pkt)]
+        yield* [ForwardStreamsRequest.decode(pkt as any)]
       }
     }
   },
@@ -231,12 +231,12 @@ export const ForwardStreamsResponse = {
       | Iterable<ForwardStreamsResponse | ForwardStreamsResponse[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [ForwardStreamsResponse.encode(p).finish()]
         }
       } else {
-        yield* [ForwardStreamsResponse.encode(pkt).finish()]
+        yield* [ForwardStreamsResponse.encode(pkt as any).finish()]
       }
     }
   },
@@ -249,12 +249,12 @@ export const ForwardStreamsResponse = {
       | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<ForwardStreamsResponse> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [ForwardStreamsResponse.decode(p)]
         }
       } else {
-        yield* [ForwardStreamsResponse.decode(pkt)]
+        yield* [ForwardStreamsResponse.decode(pkt as any)]
       }
     }
   },
@@ -339,12 +339,12 @@ export const ListenStreamsRequest = {
       | Iterable<ListenStreamsRequest | ListenStreamsRequest[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [ListenStreamsRequest.encode(p).finish()]
         }
       } else {
-        yield* [ListenStreamsRequest.encode(pkt).finish()]
+        yield* [ListenStreamsRequest.encode(pkt as any).finish()]
       }
     }
   },
@@ -357,12 +357,12 @@ export const ListenStreamsRequest = {
       | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<ListenStreamsRequest> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [ListenStreamsRequest.decode(p)]
         }
       } else {
-        yield* [ListenStreamsRequest.decode(pkt)]
+        yield* [ListenStreamsRequest.decode(pkt as any)]
       }
     }
   },
@@ -450,12 +450,12 @@ export const ListenStreamsResponse = {
       | Iterable<ListenStreamsResponse | ListenStreamsResponse[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [ListenStreamsResponse.encode(p).finish()]
         }
       } else {
-        yield* [ListenStreamsResponse.encode(pkt).finish()]
+        yield* [ListenStreamsResponse.encode(pkt as any).finish()]
       }
     }
   },
@@ -468,12 +468,12 @@ export const ListenStreamsResponse = {
       | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<ListenStreamsResponse> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [ListenStreamsResponse.decode(p)]
         }
       } else {
-        yield* [ListenStreamsResponse.decode(pkt)]
+        yield* [ListenStreamsResponse.decode(pkt as any)]
       }
     }
   },
@@ -565,12 +565,12 @@ export const AcceptStreamRequest = {
       | Iterable<AcceptStreamRequest | AcceptStreamRequest[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [AcceptStreamRequest.encode(p).finish()]
         }
       } else {
-        yield* [AcceptStreamRequest.encode(pkt).finish()]
+        yield* [AcceptStreamRequest.encode(pkt as any).finish()]
       }
     }
   },
@@ -583,12 +583,12 @@ export const AcceptStreamRequest = {
       | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<AcceptStreamRequest> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [AcceptStreamRequest.decode(p)]
         }
       } else {
-        yield* [AcceptStreamRequest.decode(pkt)]
+        yield* [AcceptStreamRequest.decode(pkt as any)]
       }
     }
   },
@@ -684,12 +684,12 @@ export const AcceptStreamResponse = {
       | Iterable<AcceptStreamResponse | AcceptStreamResponse[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [AcceptStreamResponse.encode(p).finish()]
         }
       } else {
-        yield* [AcceptStreamResponse.encode(pkt).finish()]
+        yield* [AcceptStreamResponse.encode(pkt as any).finish()]
       }
     }
   },
@@ -702,12 +702,12 @@ export const AcceptStreamResponse = {
       | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<AcceptStreamResponse> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [AcceptStreamResponse.decode(p)]
         }
       } else {
-        yield* [AcceptStreamResponse.decode(pkt)]
+        yield* [AcceptStreamResponse.decode(pkt as any)]
       }
     }
   },
@@ -798,12 +798,12 @@ export const DialStreamRequest = {
       | Iterable<DialStreamRequest | DialStreamRequest[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [DialStreamRequest.encode(p).finish()]
         }
       } else {
-        yield* [DialStreamRequest.encode(pkt).finish()]
+        yield* [DialStreamRequest.encode(pkt as any).finish()]
       }
     }
   },
@@ -816,12 +816,12 @@ export const DialStreamRequest = {
       | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<DialStreamRequest> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [DialStreamRequest.decode(p)]
         }
       } else {
-        yield* [DialStreamRequest.decode(pkt)]
+        yield* [DialStreamRequest.decode(pkt as any)]
       }
     }
   },
@@ -914,12 +914,12 @@ export const DialStreamResponse = {
       | Iterable<DialStreamResponse | DialStreamResponse[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [DialStreamResponse.encode(p).finish()]
         }
       } else {
-        yield* [DialStreamResponse.encode(pkt).finish()]
+        yield* [DialStreamResponse.encode(pkt as any).finish()]
       }
     }
   },
@@ -932,12 +932,12 @@ export const DialStreamResponse = {
       | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<DialStreamResponse> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [DialStreamResponse.decode(p)]
         }
       } else {
-        yield* [DialStreamResponse.decode(pkt)]
+        yield* [DialStreamResponse.decode(pkt as any)]
       }
     }
   },
@@ -1173,8 +1173,8 @@ export type DeepPartial<T> = T extends Builtin
   ? T
   : T extends Long
   ? string | number | Long
-  : T extends Array<infer U>
-  ? Array<DeepPartial<U>>
+  : T extends globalThis.Array<infer U>
+  ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U>
   ? ReadonlyArray<DeepPartial<U>>
   : T extends { $case: string }

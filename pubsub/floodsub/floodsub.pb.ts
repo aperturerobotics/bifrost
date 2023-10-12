@@ -80,12 +80,12 @@ export const Config = {
     source: AsyncIterable<Config | Config[]> | Iterable<Config | Config[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [Config.encode(p).finish()]
         }
       } else {
-        yield* [Config.encode(pkt).finish()]
+        yield* [Config.encode(pkt as any).finish()]
       }
     }
   },
@@ -98,12 +98,12 @@ export const Config = {
       | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<Config> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [Config.decode(p)]
         }
       } else {
-        yield* [Config.decode(pkt)]
+        yield* [Config.decode(pkt as any)]
       }
     }
   },
@@ -191,12 +191,12 @@ export const Packet = {
     source: AsyncIterable<Packet | Packet[]> | Iterable<Packet | Packet[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [Packet.encode(p).finish()]
         }
       } else {
-        yield* [Packet.encode(pkt).finish()]
+        yield* [Packet.encode(pkt as any).finish()]
       }
     }
   },
@@ -209,22 +209,22 @@ export const Packet = {
       | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<Packet> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [Packet.decode(p)]
         }
       } else {
-        yield* [Packet.decode(pkt)]
+        yield* [Packet.decode(pkt as any)]
       }
     }
   },
 
   fromJSON(object: any): Packet {
     return {
-      subscriptions: Array.isArray(object?.subscriptions)
+      subscriptions: globalThis.Array.isArray(object?.subscriptions)
         ? object.subscriptions.map((e: any) => SubscriptionOpts.fromJSON(e))
         : [],
-      publish: Array.isArray(object?.publish)
+      publish: globalThis.Array.isArray(object?.publish)
         ? object.publish.map((e: any) => SignedMsg.fromJSON(e))
         : [],
     }
@@ -312,12 +312,12 @@ export const SubscriptionOpts = {
       | Iterable<SubscriptionOpts | SubscriptionOpts[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [SubscriptionOpts.encode(p).finish()]
         }
       } else {
-        yield* [SubscriptionOpts.encode(pkt).finish()]
+        yield* [SubscriptionOpts.encode(pkt as any).finish()]
       }
     }
   },
@@ -330,20 +330,24 @@ export const SubscriptionOpts = {
       | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<SubscriptionOpts> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [SubscriptionOpts.decode(p)]
         }
       } else {
-        yield* [SubscriptionOpts.decode(pkt)]
+        yield* [SubscriptionOpts.decode(pkt as any)]
       }
     }
   },
 
   fromJSON(object: any): SubscriptionOpts {
     return {
-      subscribe: isSet(object.subscribe) ? Boolean(object.subscribe) : false,
-      channelId: isSet(object.channelId) ? String(object.channelId) : '',
+      subscribe: isSet(object.subscribe)
+        ? globalThis.Boolean(object.subscribe)
+        : false,
+      channelId: isSet(object.channelId)
+        ? globalThis.String(object.channelId)
+        : '',
     }
   },
 
@@ -386,8 +390,8 @@ export type DeepPartial<T> = T extends Builtin
   ? T
   : T extends Long
   ? string | number | Long
-  : T extends Array<infer U>
-  ? Array<DeepPartial<U>>
+  : T extends globalThis.Array<infer U>
+  ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U>
   ? ReadonlyArray<DeepPartial<U>>
   : T extends { $case: string }

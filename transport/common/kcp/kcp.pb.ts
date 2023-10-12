@@ -304,12 +304,12 @@ export const Opts = {
     source: AsyncIterable<Opts | Opts[]> | Iterable<Opts | Opts[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [Opts.encode(p).finish()]
         }
       } else {
-        yield* [Opts.encode(pkt).finish()]
+        yield* [Opts.encode(pkt as any).finish()]
       }
     }
   },
@@ -322,23 +322,25 @@ export const Opts = {
       | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<Opts> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [Opts.decode(p)]
         }
       } else {
-        yield* [Opts.decode(pkt)]
+        yield* [Opts.decode(pkt as any)]
       }
     }
   },
 
   fromJSON(object: any): Opts {
     return {
-      dataShards: isSet(object.dataShards) ? Number(object.dataShards) : 0,
-      parityShards: isSet(object.parityShards)
-        ? Number(object.parityShards)
+      dataShards: isSet(object.dataShards)
+        ? globalThis.Number(object.dataShards)
         : 0,
-      mtu: isSet(object.mtu) ? Number(object.mtu) : 0,
+      parityShards: isSet(object.parityShards)
+        ? globalThis.Number(object.parityShards)
+        : 0,
+      mtu: isSet(object.mtu) ? globalThis.Number(object.mtu) : 0,
       kcpMode: isSet(object.kcpMode) ? kCPModeFromJSON(object.kcpMode) : 0,
       blockCrypt: isSet(object.blockCrypt)
         ? blockCryptFromJSON(object.blockCrypt)
@@ -407,8 +409,8 @@ export type DeepPartial<T> = T extends Builtin
   ? T
   : T extends Long
   ? string | number | Long
-  : T extends Array<infer U>
-  ? Array<DeepPartial<U>>
+  : T extends globalThis.Array<infer U>
+  ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U>
   ? ReadonlyArray<DeepPartial<U>>
   : T extends { $case: string }

@@ -61,12 +61,12 @@ export const HandshakeExtraData = {
       | Iterable<HandshakeExtraData | HandshakeExtraData[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [HandshakeExtraData.encode(p).finish()]
         }
       } else {
-        yield* [HandshakeExtraData.encode(pkt).finish()]
+        yield* [HandshakeExtraData.encode(pkt as any).finish()]
       }
     }
   },
@@ -79,12 +79,12 @@ export const HandshakeExtraData = {
       | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<HandshakeExtraData> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [HandshakeExtraData.decode(p)]
         }
       } else {
-        yield* [HandshakeExtraData.decode(pkt)]
+        yield* [HandshakeExtraData.decode(pkt as any)]
       }
     }
   },
@@ -138,8 +138,8 @@ export type DeepPartial<T> = T extends Builtin
   ? T
   : T extends Long
   ? string | number | Long
-  : T extends Array<infer U>
-  ? Array<DeepPartial<U>>
+  : T extends globalThis.Array<infer U>
+  ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U>
   ? ReadonlyArray<DeepPartial<U>>
   : T extends { $case: string }

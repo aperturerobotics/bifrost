@@ -6,7 +6,7 @@ replace github.com/aperturerobotics/bifrost => ../
 
 replace (
 	github.com/sirupsen/logrus => github.com/aperturerobotics/logrus v1.9.1-0.20221224130652-ff61cbb763af // aperture
-	google.golang.org/protobuf => github.com/aperturerobotics/protobuf-go v1.31.1-0.20231004004114-bf10d4f3cd42 // aperture
+	google.golang.org/protobuf => github.com/aperturerobotics/protobuf-go v1.31.1-0.20231012212426-9cf9f0f94f47 // aperture
 )
 
 require (
@@ -42,7 +42,7 @@ require (
 	github.com/alexkohler/nakedret/v2 v2.0.2 // indirect
 	github.com/alexkohler/prealloc v1.0.0 // indirect
 	github.com/alingse/asasalint v0.0.11 // indirect
-	github.com/aperturerobotics/controllerbus v0.30.5 // indirect
+	github.com/aperturerobotics/controllerbus v0.30.6 // indirect
 	github.com/aperturerobotics/entitygraph v0.4.0 // indirect
 	github.com/aperturerobotics/timestamp v0.8.0 // indirect
 	github.com/aperturerobotics/ts-proto-common-types v0.2.0 // indirect

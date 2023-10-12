@@ -61,12 +61,12 @@ export const StreamEstablish = {
       | Iterable<StreamEstablish | StreamEstablish[]>,
   ): AsyncIterable<Uint8Array> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [StreamEstablish.encode(p).finish()]
         }
       } else {
-        yield* [StreamEstablish.encode(pkt).finish()]
+        yield* [StreamEstablish.encode(pkt as any).finish()]
       }
     }
   },
@@ -79,19 +79,21 @@ export const StreamEstablish = {
       | Iterable<Uint8Array | Uint8Array[]>,
   ): AsyncIterable<StreamEstablish> {
     for await (const pkt of source) {
-      if (Array.isArray(pkt)) {
-        for (const p of pkt) {
+      if (globalThis.Array.isArray(pkt)) {
+        for (const p of pkt as any) {
           yield* [StreamEstablish.decode(p)]
         }
       } else {
-        yield* [StreamEstablish.decode(pkt)]
+        yield* [StreamEstablish.decode(pkt as any)]
       }
     }
   },
 
   fromJSON(object: any): StreamEstablish {
     return {
-      protocolId: isSet(object.protocolId) ? String(object.protocolId) : '',
+      protocolId: isSet(object.protocolId)
+        ? globalThis.String(object.protocolId)
+        : '',
     }
   },
 
@@ -130,8 +132,8 @@ export type DeepPartial<T> = T extends Builtin
   ? T
   : T extends Long
   ? string | number | Long
-  : T extends Array<infer U>
-  ? Array<DeepPartial<U>>
+  : T extends globalThis.Array<infer U>
+  ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U>
   ? ReadonlyArray<DeepPartial<U>>
   : T extends { $case: string }
