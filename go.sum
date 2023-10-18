@@ -20,6 +20,8 @@ github.com/aperturerobotics/starpc v0.21.2 h1:v5P5VttYDeoXlVWKDwEMo9v29dcJEV9dW7
 github.com/aperturerobotics/starpc v0.21.2/go.mod h1:Q3T2anjw2P6gkJq7gp3vAO+pniPgv3Qx1uaX/mOuzWk=
 github.com/aperturerobotics/timestamp v0.8.0 h1:33HLje1vrCWCOfLLaUi7Lgyz/1U9xTasNCw0PtLiDGc=
 github.com/aperturerobotics/timestamp v0.8.0/go.mod h1:nrwzlUGvxs244CIBjDWHZ8qRudqk8m/SQ5n5GKXaFVw=
+github.com/aperturerobotics/timestamp v0.8.2 h1:+HA/uI9ZGz8qqim+kkXqz3cijR8kMcQ4/ZRTw5fW7yI=
+github.com/aperturerobotics/timestamp v0.8.2/go.mod h1:nrwzlUGvxs244CIBjDWHZ8qRudqk8m/SQ5n5GKXaFVw=
 github.com/aperturerobotics/ts-proto-common-types v0.2.0 h1:OtlIxcXjfRDvgY2OQC6dZSiAAXral6kaZ+kD+JviZo0=
 github.com/aperturerobotics/ts-proto-common-types v0.2.0/go.mod h1:8QXVbEzjPvsaxWQ5RgZtAA9CcOdhWDyMaYdWVKZo8To=
 github.com/aperturerobotics/util v1.7.6 h1:vCjDOjBfL9AHGXlBmPvb42cURyWkGS8FdFjp0m5NqEM=
