@@ -73,8 +73,8 @@ github.com/alexkohler/prealloc v1.0.0 h1:Hbq0/3fJPQhNkN0dR95AVrr6R7tou91y0uHG5pO
 github.com/alexkohler/prealloc v1.0.0/go.mod h1:VetnK3dIgFBBKmg0YnD9F9x6Icjd+9cvfHR56wJVlKE=
 github.com/alingse/asasalint v0.0.11 h1:SFwnQXJ49Kx/1GghOFz1XGqHYKp21Kq1nHad/0WQRnw=
 github.com/alingse/asasalint v0.0.11/go.mod h1:nCaoMhw7a9kSJObvQyVzNTPBDbNpdocqrSP7t/cW5+I=
-github.com/aperturerobotics/controllerbus v0.30.6 h1:7OtoeCkvd4AVWpNk+8/2fZ+/EOa6mtoOSqmIjxWZv8g=
-github.com/aperturerobotics/controllerbus v0.30.6/go.mod h1:jPA4/F6dT3ZvzaOHt0QMSA1RWeL7CdzVQ4DOiVYyK6g=
+github.com/aperturerobotics/controllerbus v0.30.7 h1:94/No6ARaXGhJwVYvgbRtjGsmD7EVctoCAX4FEsohlA=
+github.com/aperturerobotics/controllerbus v0.30.7/go.mod h1:CEXMg8NviAfKQAIf7Td6MSZTl9dFB3Pw6aBuejE7pCQ=
 github.com/aperturerobotics/entitygraph v0.4.0 h1:V73zfiFrF6f8tBQ6Lg3YoptciPMFvfO0XySFRODWEuo=
 github.com/aperturerobotics/entitygraph v0.4.0/go.mod h1:k3re4TkpTDmCA2PVkZ/bGdq5GSG/OFLkeviainSQKFQ=
 github.com/aperturerobotics/goprotowrap v0.3.0 h1:JLQ/1zVRdm2qwfeK7bPxWPg5fpTLlzovDUom0vBgcgM=
@@ -85,8 +85,8 @@ github.com/aperturerobotics/protobuf-go v1.31.1-0.20231012212426-9cf9f0f94f47 h1
 github.com/aperturerobotics/protobuf-go v1.31.1-0.20231012212426-9cf9f0f94f47/go.mod h1:HV8QOd/L58Z+nl8r43ehVNZIU/HEI6OcFqwMG9pJV4I=
 github.com/aperturerobotics/starpc v0.21.2 h1:v5P5VttYDeoXlVWKDwEMo9v29dcJEV9dW7n4MeWUbVs=
 github.com/aperturerobotics/starpc v0.21.2/go.mod h1:Q3T2anjw2P6gkJq7gp3vAO+pniPgv3Qx1uaX/mOuzWk=
-github.com/aperturerobotics/timestamp v0.8.0 h1:33HLje1vrCWCOfLLaUi7Lgyz/1U9xTasNCw0PtLiDGc=
-github.com/aperturerobotics/timestamp v0.8.0/go.mod h1:nrwzlUGvxs244CIBjDWHZ8qRudqk8m/SQ5n5GKXaFVw=
+github.com/aperturerobotics/timestamp v0.8.2 h1:+HA/uI9ZGz8qqim+kkXqz3cijR8kMcQ4/ZRTw5fW7yI=
+github.com/aperturerobotics/timestamp v0.8.2/go.mod h1:nrwzlUGvxs244CIBjDWHZ8qRudqk8m/SQ5n5GKXaFVw=
 github.com/aperturerobotics/ts-proto-common-types v0.2.0 h1:OtlIxcXjfRDvgY2OQC6dZSiAAXral6kaZ+kD+JviZo0=
 github.com/aperturerobotics/ts-proto-common-types v0.2.0/go.mod h1:8QXVbEzjPvsaxWQ5RgZtAA9CcOdhWDyMaYdWVKZo8To=
 github.com/aperturerobotics/util v1.7.6 h1:vCjDOjBfL9AHGXlBmPvb42cURyWkGS8FdFjp0m5NqEM=
