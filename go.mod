@@ -30,7 +30,7 @@ require (
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/djherbis/buffer v1.2.0
 	github.com/golang/snappy v0.0.4
-	github.com/klauspost/compress v1.17.1
+	github.com/klauspost/compress v1.17.2
 	github.com/libp2p/go-libp2p v0.31.0
 	github.com/libp2p/go-yamux/v4 v4.0.1
 	github.com/mr-tron/base58 v1.2.0
@@ -53,7 +53,7 @@ require (
 	golang.org/x/crypto v0.14.0
 	gonum.org/v1/gonum v0.14.0
 	google.golang.org/protobuf v1.31.0
-	nhooyr.io/websocket v1.8.8-0.20221213223501-14fb98eba64e
+	nhooyr.io/websocket v1.8.9
 	storj.io/drpc v0.0.33
 )
 
