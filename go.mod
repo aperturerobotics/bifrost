@@ -43,7 +43,7 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.18
 	github.com/pkg/errors v0.9.1
 	github.com/planetscale/vtprotobuf v0.5.0
-	github.com/quic-go/quic-go v0.39.1
+	github.com/quic-go/quic-go v0.39.2
 	github.com/sasha-s/go-deadlock v0.3.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
@@ -53,7 +53,7 @@ require (
 	golang.org/x/crypto v0.14.0
 	gonum.org/v1/gonum v0.14.0
 	google.golang.org/protobuf v1.31.0
-	nhooyr.io/websocket v1.8.9
+	nhooyr.io/websocket v1.8.10
 	storj.io/drpc v0.0.33
 )
 
