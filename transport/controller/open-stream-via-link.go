@@ -47,56 +47,63 @@ func (o *openStreamViaLinkResolver) Resolve(ctx context.Context, handler directi
 	var done bool
 
 	c.mtx.Lock()
-	lw := c.pushLinkWaiter(
-		peer.ID(""),
-		false,
-		func(lnk link.Link, added bool) {
-			select {
-			case <-ctx.Done():
-				return
-			default:
-			}
-			if lnk.GetUUID() != lnkUUID || !added {
-				return
-			}
+	linkWaiterCallback := func(establishedLink link.Link, successfullyAdded bool) {
+		correctLink := establishedLink.GetUUID() == lnkUUID
+		if !correctLink || !successfullyAdded || ctx.Err() != nil {
+			return
+		}
 
-			mtx.Lock()
-			isDone := done
-			mtx.Unlock()
-			if isDone {
-				return
-			}
+		// Check if the operation was already completed.
+		mtx.Lock()
+		operationAlreadyCompleted := done
+		mtx.Unlock()
 
-			strm, err := lnk.OpenStream(openOpts)
-			if err != nil {
-				errCh <- err
-				return
-			}
-			_ = strm.SetWriteDeadline(time.Now().Add(streamEstablishTimeout))
-			if _, err := writeStreamEstablishHeader(strm, estMsg); err != nil {
-				errCh <- err
-				strm.Close()
-				return
-			}
+		// If so, no further action is needed.
+		if operationAlreadyCompleted {
+			return
+		}
 
-			_ = strm.SetDeadline(time.Time{})
-			mtx.Lock()
-			if done {
-				strm.Close()
-				isDone = true
-			} else {
-				done = true
-			}
-			mtx.Unlock()
-			if !isDone {
-				o.c.le.
-					WithField("link-id", lnk.GetUUID()).
-					WithField("protocol-id", protocolID).
-					Debug("opened stream with peer")
-				strmCh <- newMountedStream(strm, openOpts, protocolID, lnk)
-			}
-		},
-	)
+		// Attempt to open a stream with the link.
+		stream, streamErr := establishedLink.OpenStream(openOpts)
+		if streamErr != nil {
+			errCh <- streamErr
+			return
+		}
+
+		_ = stream.SetWriteDeadline(time.Now().Add(streamEstablishTimeout))
+
+		_, headerWriteErr := writeStreamEstablishHeader(stream, estMsg)
+		if headerWriteErr != nil {
+			errCh <- headerWriteErr
+			stream.Close()
+			return
+		}
+
+		_ = stream.SetDeadline(time.Time{})
+
+		mtx.Lock()
+		if done {
+			stream.Close()
+			operationAlreadyCompleted = true
+		} else {
+			done = true
+		}
+		mtx.Unlock()
+
+		if !operationAlreadyCompleted {
+			o.c.le.
+				WithField("link-id", establishedLink.GetUUID()).
+				WithField("protocol-id", protocolID).
+				Debug("opened stream with peer")
+
+			strmCh <- newMountedStream(stream, openOpts, protocolID, establishedLink)
+		}
+	}
+
+	// Register the callback and wait for the link to establish.
+	lw := c.pushLinkWaiter(peer.ID(""), false, linkWaiterCallback)
+
+	// Unlock mutex
 	c.mtx.Unlock()
 
 	if lw != nil {
