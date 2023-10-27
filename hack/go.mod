@@ -13,7 +13,7 @@ require (
 	github.com/golangci/golangci-lint v1.53.3
 	github.com/planetscale/vtprotobuf v0.5.0
 	github.com/psampaz/go-mod-outdated v0.9.0
-	github.com/quic-go/quic-go v0.39.1 // indirect
+	github.com/quic-go/quic-go v0.39.3 // indirect
 	google.golang.org/protobuf v1.31.0
 )
 
@@ -98,7 +98,7 @@ require (
 	github.com/golangci/revgrep v0.0.0-20220804021717-745bb2f7c2e6 // indirect
 	github.com/golangci/unconvert v0.0.0-20180507085042-28b1c447d1f4 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
-	github.com/google/pprof v0.0.0-20230817174616-7a8ec2ada47b // indirect
+	github.com/google/pprof v0.0.0-20231023181126-ff6d637d2a7b // indirect
 	github.com/gordonklaus/ineffassign v0.0.0-20230610083614-0e73809eb601 // indirect
 	github.com/gostaticanalysis/analysisutil v0.7.1 // indirect
 	github.com/gostaticanalysis/comment v1.4.2 // indirect
@@ -129,14 +129,14 @@ require (
 	github.com/ldez/tagliatelle v0.5.0 // indirect
 	github.com/leonklingele/grouper v1.1.1 // indirect
 	github.com/libp2p/go-buffer-pool v0.1.1-0.20220919134021-a29bd39bcbb7 // indirect
-	github.com/libp2p/go-libp2p v0.31.0 // indirect
+	github.com/libp2p/go-libp2p v0.32.0 // indirect
 	github.com/lufeee/execinquery v1.2.1 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/maratori/testableexamples v1.0.0 // indirect
 	github.com/maratori/testpackage v1.1.1 // indirect
 	github.com/matoous/godox v0.0.0-20230222163458-006bad1f9d26 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-isatty v0.0.19 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.14 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/mbilski/exhaustivestruct v1.2.0 // indirect
@@ -152,7 +152,7 @@ require (
 	github.com/multiformats/go-multibase v0.2.0 // indirect
 	github.com/multiformats/go-multicodec v0.9.0 // indirect
 	github.com/multiformats/go-multihash v0.2.3 // indirect
-	github.com/multiformats/go-multistream v0.4.1 // indirect
+	github.com/multiformats/go-multistream v0.5.0 // indirect
 	github.com/multiformats/go-varint v0.0.7 // indirect
 	github.com/nakabonne/nestif v0.3.1 // indirect
 	github.com/nbutton23/zxcvbn-go v0.0.0-20210217022336-fa2cb2858354 // indirect
@@ -160,7 +160,7 @@ require (
 	github.com/nishanths/predeclared v0.2.2 // indirect
 	github.com/nunnatsa/ginkgolinter v0.12.1 // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
-	github.com/onsi/ginkgo/v2 v2.11.0 // indirect
+	github.com/onsi/ginkgo/v2 v2.13.0 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.5 // indirect
@@ -222,7 +222,7 @@ require (
 	go.tmz.dev/musttag v0.7.0 // indirect
 	go.uber.org/mock v0.3.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.25.0 // indirect
+	go.uber.org/zap v1.26.0 // indirect
 	golang.org/x/crypto v0.14.0 // indirect
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d // indirect
 	golang.org/x/exp/typeparams v0.0.0-20230224173230-c95f2b4c22f2 // indirect
@@ -241,5 +241,5 @@ require (
 	mvdan.cc/interfacer v0.0.0-20180901003855-c20040233aed // indirect
 	mvdan.cc/lint v0.0.0-20170908181259-adc824a0674b // indirect
 	mvdan.cc/unparam v0.0.0-20221223090309-7455f1af531d // indirect
-	nhooyr.io/websocket v1.8.9 // indirect
+	nhooyr.io/websocket v1.8.10 // indirect
 )
