@@ -109,11 +109,11 @@ func (s *Server) ResolveHandleMountedStream(
 	}
 
 	inPeerID := dir.HandleMountedStreamLocalPeerID()
-	inPeerIDPretty := inPeerID.Pretty()
+	inPeerIDString := inPeerID.String()
 	if len(s.peerIDs) != 0 {
 		match = false
 		for _, pid := range s.peerIDs {
-			if pid == inPeerIDPretty {
+			if pid == inPeerIDString {
 				match = true
 			}
 		}

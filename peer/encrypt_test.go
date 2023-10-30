@@ -17,7 +17,7 @@ func TestEncrypt(t *testing.T) {
 		}
 
 		// super-secret message
-		msg := "Hello to " + peerID.Pretty() + "!"
+		msg := "Hello to " + peerID.String() + "!"
 		context := "bifrost/peer/encrypt_test super-duper-secret"
 		dat, err := EncryptToPubKey(pubKey, context, []byte(msg))
 		if err != nil {

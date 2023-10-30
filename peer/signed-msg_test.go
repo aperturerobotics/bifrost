@@ -35,7 +35,7 @@ func TestSignedMsg(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 	if peerID != exPeerID {
-		t.Fatalf("peer id mismatch: %s != %s", exPeerID.Pretty(), peerID.Pretty())
+		t.Fatalf("peer id mismatch: %s != %s", exPeerID.String(), peerID.String())
 	}
 
 	if !bytes.Equal(smsg.Data, []byte(msg)) {

@@ -66,7 +66,7 @@ func (a *API) ForwardStreams(
 		reqCtxCancel,
 	)
 	if err != nil {
-		return errors.Errorf("peer not loaded: %s", targetPeerID.Pretty())
+		return errors.Errorf("peer not loaded: %s", targetPeerID.String())
 	}
 	defer peerRef.Release()
 

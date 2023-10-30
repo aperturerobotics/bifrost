@@ -38,7 +38,7 @@ func (a *ClientArgs) RunSubscribe(_ *cli.Context) error {
 		if err != nil {
 			return err
 		}
-		a.SubscribeConf.PeerId = pid.Pretty()
+		a.SubscribeConf.PeerId = pid.String()
 		a.SubscribeConf.PrivKeyPem = string(pkdat)
 	}
 

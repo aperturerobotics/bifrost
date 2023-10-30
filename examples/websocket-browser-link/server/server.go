@@ -67,7 +67,7 @@ func run() error {
 		if !m.GetAuthenticated() || from == localPeerID {
 			return
 		}
-		le.Infof("got pubsub message from %s: %s", from.Pretty(), string(m.GetData()))
+		le.Infof("got pubsub message from %s: %s", from.String(), string(m.GetData()))
 	})
 	defer relHandler()
 

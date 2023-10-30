@@ -33,6 +33,6 @@ func TestDerive(t *testing.T) {
 		if err != nil {
 			t.Fatal(err.Error())
 		}
-		t.Logf("keys[%d]: derived private key: %s", ki, derivPrivID.Pretty())
+		t.Logf("keys[%d]: derived private key: %s", ki, derivPrivID.String())
 	}
 }

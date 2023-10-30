@@ -51,7 +51,7 @@ func TestStarpc(t *testing.T) {
 
 	// tb1 -> tb2 inproc
 	tp2 := inproc.BuildInprocController(tb2.Logger, tb2.Bus, tb2PeerID, &inproc.Config{
-		TransportPeerId: tb2PeerID.Pretty(),
+		TransportPeerId: tb2PeerID.String(),
 	})
 	go func() {
 		_ = tb2.Bus.ExecuteController(ctx, tp2)
@@ -62,9 +62,9 @@ func TestStarpc(t *testing.T) {
 		Address: inproc.NewAddr(tb2PeerID).String(),
 	}
 	tp1 := inproc.BuildInprocController(tb1.Logger, tb1.Bus, tb1PeerID, &inproc.Config{
-		TransportPeerId: tb1PeerID.Pretty(),
+		TransportPeerId: tb1PeerID.String(),
 		Dialers: map[string]*dialer.DialerOpts{
-			tb2PeerID.Pretty(): tpt2dialer,
+			tb2PeerID.String(): tpt2dialer,
 		},
 	})
 	go func() {
@@ -88,7 +88,7 @@ func TestStarpc(t *testing.T) {
 			"test of srpc server",
 		),
 		[]protocol.ID{ProtocolID},
-		[]string{tb2PeerID.Pretty()},
+		[]string{tb2PeerID.String()},
 		[]stream_srpc_server.RegisterFn{mockServer.Register},
 	)
 	if err != nil {
@@ -100,8 +100,8 @@ func TestStarpc(t *testing.T) {
 
 	// tb1: construct client
 	cl, err := stream_srpc_client.NewClient(tb1.Logger, tb1.Bus, &stream_srpc_client.Config{
-		ServerPeerIds: []string{tb2PeerID.Pretty()},
-		SrcPeerId:     tb1PeerID.Pretty(),
+		ServerPeerIds: []string{tb2PeerID.String()},
+		SrcPeerId:     tb1PeerID.String(),
 	}, ProtocolID)
 	if err != nil {
 		t.Fatal(err.Error())

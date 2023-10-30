@@ -67,7 +67,7 @@ func NewMultiOpenStreamFunc(
 				estCtx, estCtxCancel = context.WithCancel(ctx)
 			}
 
-			le := le.WithField("server-peer-id", destPeer.Pretty())
+			le := le.WithField("server-peer-id", destPeer.String())
 			writer, err := EstablishSrpcStream(
 				estCtx,
 				b,

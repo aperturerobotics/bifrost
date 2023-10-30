@@ -74,7 +74,7 @@ func (d *getPeer) GetName() string {
 func (d *getPeer) GetDebugVals() directive.DebugValues {
 	vals := directive.DebugValues{}
 	if pid := d.GetPeerIDConstraint(); pid != ID("") {
-		vals["peer-id"] = []string{pid.Pretty()}
+		vals["peer-id"] = []string{pid.String()}
 	}
 	return vals
 }

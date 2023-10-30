@@ -74,7 +74,7 @@ func runNatsExample(c *cli.Context) error {
 	for _, peer := range g.AllPeers() {
 		peer.AddFactory(func(b bus.Bus) controller.Factory { return nats_controller.NewFactory(b) })
 		peer.AddConfig("pubsub", &nats_controller.Config{
-			PeerId: peer.GetPeerID().Pretty(),
+			PeerId: peer.GetPeerID().String(),
 			NatsConfig: &nats.Config{
 				LogTrace: true,
 			},

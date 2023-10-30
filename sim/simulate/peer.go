@@ -47,7 +47,7 @@ func newPeer(ctx context.Context, le *logrus.Entry, gp *graph.Peer) (*Peer, erro
 		graphPeer: gp,
 		rel:       rel,
 		le:        le.WithField("sim-peer", gp.ID()),
-		// WithField("sim-peer", gp.GetPeerID().Pretty()).
+		// WithField("sim-peer", gp.GetPeerID().String()).
 	}
 	var ctxCancel func()
 	np.ctx, ctxCancel = context.WithCancel(ctx)
@@ -73,7 +73,7 @@ func newPeer(ctx context.Context, le *logrus.Entry, gp *graph.Peer) (*Peer, erro
 		np.ctx,
 		np.testbed.Bus,
 		resolver.NewLoadControllerWithConfig(&inproc.Config{
-			TransportPeerId: np.GetPeerID().Pretty(),
+			TransportPeerId: np.GetPeerID().String(),
 		}),
 		nil,
 	)

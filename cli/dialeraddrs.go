@@ -24,7 +24,7 @@ func parseDialerAddrs(ss cli.StringSlice) (map[string]*dialer.DialerOpts, error)
 		if pid == peer.ID("") {
 			continue
 		}
-		m[pid.Pretty()] = &dialer.DialerOpts{
+		m[pid.String()] = &dialer.DialerOpts{
 			Address: strings.TrimSpace(pair[1]),
 		}
 	}

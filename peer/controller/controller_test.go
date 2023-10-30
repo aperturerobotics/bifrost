@@ -39,7 +39,7 @@ func TestPrivKeyIntegrity(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 	cctrl := ctrl.(*Controller)
-	if privKeyID.Pretty() != cctrl.GetPeerID().Pretty() {
-		t.Fatalf("priv key id mismatch: %s != %s", privKeyID.Pretty(), cctrl.GetPeerID().Pretty())
+	if privKeyID.String() != cctrl.GetPeerID().String() {
+		t.Fatalf("priv key id mismatch: %s != %s", privKeyID.String(), cctrl.GetPeerID().String())
 	}
 }

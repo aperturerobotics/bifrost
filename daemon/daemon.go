@@ -29,8 +29,8 @@ type Daemon struct {
 	nodePriv crypto.PrivKey
 	// nodePeerID is the primary node ID
 	nodePeerID peer.ID
-	// nodePeerIDPretty is the node peer ID as a b58 address
-	nodePeerIDPretty string
+	// nodePeerIDString is the node peer ID as a b58 address
+	nodePeerIDString string
 
 	// closeCbs are funcs to call when we close the daemon
 	closeCbs []func()
@@ -79,7 +79,7 @@ func NewDaemon(
 		return nil, err
 	}
 
-	peerIDPretty := peerID.Pretty()
+	peerIDString := peerID.String()
 	nodePrivKeyPem, err := keypem.MarshalPrivKeyPem(nodePriv)
 	if err != nil {
 		return nil, err
@@ -92,7 +92,7 @@ func NewDaemon(
 	if err != nil {
 		return nil, err
 	}
-	le.Debugf("node controller resolved w/ ID: %s", peerIDPretty)
+	le.Debugf("node controller resolved w/ ID: %s", peerIDString)
 
 	return &Daemon{
 		bus: b,
@@ -103,7 +103,7 @@ func NewDaemon(
 		nodePriv:         nodePriv,
 		nodePeerID:       peerID,
 		staticResolver:   sr,
-		nodePeerIDPretty: peerIDPretty,
+		nodePeerIDString: peerIDString,
 	}, nil
 }
 

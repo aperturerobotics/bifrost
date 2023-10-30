@@ -74,7 +74,7 @@ func NewNats(
 		return nil, err
 	}
 	peerID := peer.GetPeerID()
-	serverName := peerID.Pretty()
+	serverName := peerID.String()
 
 	clusterName := cc.GetClusterName()
 	if clusterName == "" {
@@ -145,7 +145,7 @@ func (m *Nats) Execute(ctx context.Context) error {
 // Two streams will be negotiated, one outgoing, one incoming.
 // The pubsub should communicate over the stream.
 func (m *Nats) AddPeerStream(tpl pubsub.PeerLinkTuple, initiator bool, mstrm link.MountedStream) {
-	le := m.le.WithField("peer", tpl.PeerID.Pretty())
+	le := m.le.WithField("peer", tpl.PeerID.String())
 	if !mstrm.GetOpenOpts().Encrypted || !mstrm.GetOpenOpts().Reliable {
 		le.Warn("rejecting unencrypted or unreliable pubsub stream")
 		mstrm.GetStream().Close()
@@ -232,13 +232,13 @@ func (n *Nats) GetOrBuildCommonClient(ctx context.Context) (*nats_client.Conn, e
 	if err != nil {
 		return nil, err
 	}
-	npeerPretty := npeerID.Pretty()
+	npeerString := npeerID.String()
 
 	n.mtx.Lock()
 	defer n.mtx.Unlock()
 
 	// we create the common client with 1 ref that is never released.
-	nc, ncOk := n.natsClients[npeerPretty]
+	nc, ncOk := n.natsClients[npeerString]
 	if ncOk {
 		return nc.Conn, nil
 	}
@@ -257,15 +257,15 @@ func (n *Nats) getOrBuildClient(ctx context.Context, privKey crypto.PrivKey) (*n
 	if err != nil {
 		return nil, nil, err
 	}
-	npeerPretty := npeer.Pretty()
-	nc := n.natsClients[npeerPretty]
+	npeerString := npeer.String()
+	nc := n.natsClients[npeerString]
 	if nc != nil {
 		if !nc.Conn.IsClosed() {
 			return nc, nc.addRef(), nil
 		}
 
 		nc = nil
-		delete(n.natsClients, npeerPretty)
+		delete(n.natsClients, npeerString)
 	}
 
 	nconn, err := n.BuildClient(ctx, privKey)
@@ -273,7 +273,7 @@ func (n *Nats) getOrBuildClient(ctx context.Context, privKey crypto.PrivKey) (*n
 		return nil, nil, err
 	}
 	nc = newNatsClient(npeer, nconn)
-	n.natsClients[npeerPretty] = nc
+	n.natsClients[npeerString] = nc
 	return nc, nc.addRef(), nil
 }
 

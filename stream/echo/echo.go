@@ -94,15 +94,15 @@ func (c *Controller) resolveHandleMountedStream(
 		if lid := dir.HandleMountedStreamLocalPeerID(); lid != localPeerID {
 			c.le.Debugf(
 				"incoming stream %s != filtered %s",
-				lid.Pretty(),
-				localPeerID.Pretty(),
+				lid.String(),
+				localPeerID.String(),
 			)
 			return nil, nil
 		}
 	}
 	c.le.
-		WithField("local-peer", dir.HandleMountedStreamLocalPeerID().Pretty()).
-		WithField("remote-peer", dir.HandleMountedStreamRemotePeerID().Pretty()).
+		WithField("local-peer", dir.HandleMountedStreamLocalPeerID().String()).
+		WithField("remote-peer", dir.HandleMountedStreamRemotePeerID().String()).
 		WithField("protocol-id", dir.HandleMountedStreamProtocolID()).
 		Debug("starting echo stream handler")
 	res, err := NewEchoResolver(c.le, c.bus)

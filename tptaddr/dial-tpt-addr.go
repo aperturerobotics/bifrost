@@ -105,10 +105,10 @@ func (d *dialTptAddr) GetName() string {
 // This is not necessarily unique, and is primarily intended for display.
 func (d *dialTptAddr) GetDebugVals() directive.DebugValues {
 	vals := directive.NewDebugValues()
-	vals["peer-id"] = []string{d.DialTptAddrTargetPeerId().Pretty()}
+	vals["peer-id"] = []string{d.DialTptAddrTargetPeerId().String()}
 	vals["tpt-addr"] = []string{d.DialTptAddr()}
 	if src := d.DialTptAddrSourcePeerId(); len(src) != 0 {
-		vals["from-peer-id"] = []string{d.DialTptAddrSourcePeerId().Pretty()}
+		vals["from-peer-id"] = []string{d.DialTptAddrSourcePeerId().String()}
 	}
 	return vals
 }

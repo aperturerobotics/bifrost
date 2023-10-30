@@ -46,7 +46,7 @@ func TestTptAddr(t *testing.T) {
 
 	// tb1 -> tb2 inproc
 	tp2 := inproc.BuildInprocController(tb2.Logger, tb2.Bus, tb2PeerID, &inproc.Config{
-		TransportPeerId: tb2PeerID.Pretty(),
+		TransportPeerId: tb2PeerID.String(),
 	})
 	relTp2, err := tb2.Bus.AddController(ctx, tp2, nil)
 	if err != nil {
@@ -59,10 +59,10 @@ func TestTptAddr(t *testing.T) {
 		Address: inproc.NewAddr(tb2PeerID).String(),
 	}
 	tp1 := inproc.BuildInprocController(tb1.Logger, tb1.Bus, tb1PeerID, &inproc.Config{
-		TransportPeerId: tb1PeerID.Pretty(),
+		TransportPeerId: tb1PeerID.String(),
 		/* Using tptaddr instead.
 		Dialers: map[string]*dialer.DialerOpts{
-			tb2PeerID.Pretty(): tpt2dialer,
+			tb2PeerID.String(): tpt2dialer,
 		},
 		*/
 	})
@@ -80,7 +80,7 @@ func TestTptAddr(t *testing.T) {
 
 	// register the tpt address
 	tptaddrStatic, err := tptaddr_static.NewController(&tptaddr_static.Config{
-		Addresses: []string{strings.Join([]string{tb2PeerID.Pretty(), "inproc", tpt2dialer.GetAddress()}, "|")},
+		Addresses: []string{strings.Join([]string{tb2PeerID.String(), "inproc", tpt2dialer.GetAddress()}, "|")},
 	})
 	if err != nil {
 		t.Fatal(err.Error())

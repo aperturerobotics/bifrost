@@ -34,7 +34,7 @@ func NewDialer(
 	address string,
 ) *Dialer {
 	return &Dialer{
-		le: le.WithField("dial-peer-id", peerID.Pretty()).
+		le: le.WithField("dial-peer-id", peerID.String()).
 			WithField("dial-peer-addr", address),
 		tptDialer: tptDialer,
 		backoff:   opts.GetBackoff().Construct(),

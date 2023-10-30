@@ -39,9 +39,9 @@ func (s *streamHandler) executeSession() {
 	peerInfo := s.mstrm.GetPeerID()
 	switch s.strmType {
 	case NatsConnType_NatsConnType_CLIENT:
-		_ = s.m.natsServer.HandleClientConnection(nconn, peerInfo.Pretty())
+		_ = s.m.natsServer.HandleClientConnection(nconn, peerInfo.String())
 	case NatsConnType_NatsConnType_ROUTER:
-		s.m.natsServer.HandleRouterConnection(nconn, peerInfo.Pretty())
+		s.m.natsServer.HandleRouterConnection(nconn, peerInfo.String())
 	default:
 		// err := errors.Errorf("unknown nats conn type: %v", s.strmType.String())
 		le.Warn("rejecting session with unknown nats conn type")

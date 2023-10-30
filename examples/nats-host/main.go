@@ -88,7 +88,7 @@ func runNatsExample(c *cli.Context) error {
 	for _, peer := range g.AllPeers() {
 		peer.AddFactory(func(b bus.Bus) controller.Factory { return nats_controller.NewFactory(b) })
 		peer.AddConfig("pubsub", &nats_controller.Config{
-			PeerId: peer.GetPeerID().Pretty(),
+			PeerId: peer.GetPeerID().String(),
 			NatsConfig: &nats.Config{
 				LogTrace: logTrace,
 			},
@@ -111,8 +111,8 @@ func runNatsExample(c *cli.Context) error {
 		} else {
 			le.Infof(
 				"successful connectivity test between %s and %s",
-				p0.GetPeerID().Pretty(),
-				p1.GetPeerID().Pretty(),
+				p0.GetPeerID().String(),
+				p1.GetPeerID().String(),
 			)
 		}
 	}
@@ -163,7 +163,7 @@ func runNatsExample(c *cli.Context) error {
 		// TODO: remove this delay... needs a little time to "settle"
 		<-time.After(time.Millisecond * 200)
 		testReplicate := func() {
-			le.Infof("publishing data on p2 with peer %s", p2.GetPeerID().Pretty())
+			le.Infof("publishing data on p2 with peer %s", p2.GetPeerID().String())
 			s2.Publish(testingData)
 			rmsg := <-msgRx
 			if bytes.Compare(rmsg.GetData(), testingData) != 0 {

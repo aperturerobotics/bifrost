@@ -147,7 +147,7 @@ func (c *Controller) Execute(ctx context.Context) error {
 	c.ctx.Store(&ctx)
 	// Acquire a handle to the node.
 	c.le.
-		WithField("peer-id", c.peerIDConstraint.Pretty()).
+		WithField("peer-id", c.peerIDConstraint.String()).
 		Debug("looking up peer with ID")
 	n, _, nRef, err := peer.GetPeerWithID(ctx, c.bus, c.peerIDConstraint, false, nil)
 	if err != nil {
@@ -224,7 +224,7 @@ func (c *Controller) HandleLinkEstablished(lnk link.Link) {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 
-	pidStr := lnk.GetRemotePeer().Pretty()
+	pidStr := lnk.GetRemotePeer().String()
 	for k, d := range c.linkDialers {
 		if k.peerID == pidStr {
 			delete(c.linkDialers, k)
@@ -330,7 +330,7 @@ func (c *Controller) HandleIncomingStream(
 	le.
 		WithField("stream-reliable", strmOpts.Reliable).
 		WithField("stream-encrypted", strmOpts.Encrypted).
-		WithField("remote-peer", lnk.GetRemotePeer().Pretty()).
+		WithField("remote-peer", lnk.GetRemotePeer().String()).
 		Debug("accepted stream")
 	dir := link.NewHandleMountedStream(pid, c.localPeerID, mstrm.GetPeerID())
 	dval, _, dref, err := bus.ExecOneOff(ctx, c.bus, dir, nil, nil)
@@ -406,7 +406,7 @@ func (c *Controller) PushDialer(
 	}
 
 	key := linkDialerKey{
-		peerID:      peerID.Pretty(),
+		peerID:      peerID.String(),
 		dialAddress: opts.GetAddress(),
 	}
 	go c.startLinkDialer(peerID, key, opts, tptDialer)
@@ -444,7 +444,7 @@ func (c *Controller) startLinkDialer(
 // linksmtx is locked by caller
 func (c *Controller) flushEstablishedLink(el *establishedLink) {
 	/*
-		peerIDStr := el.Link.GetLocalPeer().Pretty()
+		peerIDStr := el.Link.GetLocalPeer().String()
 		for ldk := range c.linkDialers {
 			if ldk.peerID == peerIDStr {
 				c.linkDialers[ldk].dialer.
@@ -463,7 +463,7 @@ func (c *Controller) flushEstablishedLink(el *establishedLink) {
 func (c *Controller) loggerForLink(lnk link.Link) *logrus.Entry {
 	return c.le.
 		WithField("link-uuid", lnk.GetUUID()).
-		WithField("link-peer", lnk.GetRemotePeer().Pretty()).
+		WithField("link-peer", lnk.GetRemotePeer().String()).
 		WithField("tpt-uuid", lnk.GetTransportUUID())
 }
 

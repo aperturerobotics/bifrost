@@ -11,13 +11,13 @@ import (
 type natsClient struct {
 	*nats.Conn
 	npeerID              peer.ID
-	npeerIDPretty        string
+	npeerIDString        string
 	subscriptionRefCount int
 }
 
 // newNatsClient builds a new nats client.
 func newNatsClient(npeerID peer.ID, nc *nats.Conn) *natsClient {
-	return &natsClient{npeerID: npeerID, npeerIDPretty: npeerID.Pretty(), Conn: nc}
+	return &natsClient{npeerID: npeerID, npeerIDString: npeerID.String(), Conn: nc}
 }
 
 // addRef adds a reference to the nats client.

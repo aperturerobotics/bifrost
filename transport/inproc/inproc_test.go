@@ -45,7 +45,7 @@ func execPeer(ctx context.Context, t *testing.T, tb *testbed.Testbed, conf *Conf
 	if conf == nil {
 		conf = &Config{}
 	}
-	conf.TransportPeerId = peerId.Pretty()
+	conf.TransportPeerId = peerId.String()
 
 	tpci1, _, tp1Ref, err := loader.WaitExecControllerRunning(
 		ctx,
@@ -80,7 +80,7 @@ func TestEstablishLink(t *testing.T) {
 
 	tpc2, tp2, tp2Ref := execPeer(ctx, t, tb2, &Config{
 		Dialers: map[string]*dialer.DialerOpts{
-			peerId1.Pretty(): {
+			peerId1.String(): {
 				Address: tp1.LocalAddr().String(),
 			},
 		},
@@ -88,8 +88,8 @@ func TestEstablishLink(t *testing.T) {
 	peerId2 := tp2.GetPeerID()
 	defer tp2Ref.Release()
 
-	le1.Infof("constructed peer 1 with id %s", peerId1.Pretty())
-	le2.Infof("constructed peer 2 with id %s", peerId2.Pretty())
+	le1.Infof("constructed peer 1 with id %s", peerId1.String())
+	le2.Infof("constructed peer 2 with id %s", peerId2.String())
 
 	tp2.ConnectToInproc(ctx, tp1)
 	tp1.ConnectToInproc(ctx, tp2)

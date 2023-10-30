@@ -92,7 +92,7 @@ func (d *lookupTransport) GetDebugVals() directive.DebugValues {
 		vals["transport-id"] = []string{strconv.FormatUint(tpt, 10)}
 	}
 	if nod := d.LookupTransportPeerIDConstraint(); nod != peer.ID("") {
-		peerID := d.LookupTransportPeerIDConstraint().Pretty()
+		peerID := d.LookupTransportPeerIDConstraint().String()
 		vals["peer-id"] = []string{peerID}
 	}
 	return vals

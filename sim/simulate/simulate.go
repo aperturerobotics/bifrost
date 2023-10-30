@@ -44,7 +44,7 @@ func NewSimulator(
 		peer, isPeer := node.(*graph.Peer)
 		if isPeer {
 			peerID := peer.GetPeerID()
-			peerIDStr := peerID.Pretty()
+			peerIDStr := peerID.String()
 			if _, epOk := s.peers[peerIDStr]; epOk {
 				continue
 			}
@@ -58,7 +58,7 @@ func NewSimulator(
 			var linkedPeerIDs []bpeer.ID
 			le.Debugf("peer %s has %d linked peers", peerIDStr, len(linkedPeers))
 			for _, lpeer := range linkedPeers {
-				lpeerPeerIDStr := lpeer.GetPeerID().Pretty()
+				lpeerPeerIDStr := lpeer.GetPeerID().String()
 				linkedPeerIDs = append(linkedPeerIDs, lpeer.GetPeerID())
 				op, ok := s.peers[lpeerPeerIDStr]
 				if !ok {
@@ -102,7 +102,7 @@ func (s *Simulator) pushPeer(peer *graph.Peer) (*Peer, error) {
 	if err != nil {
 		return nil, err
 	}
-	peerIDStr := p.GetPeerID().Pretty()
+	peerIDStr := p.GetPeerID().String()
 	s.peers[peerIDStr] = p
 	return p, nil
 }
@@ -111,7 +111,7 @@ func (s *Simulator) pushPeer(peer *graph.Peer) (*Peer, error) {
 func (s *Simulator) GetPeerByID(id bpeer.ID) *Peer {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
-	return s.peers[id.Pretty()]
+	return s.peers[id.String()]
 }
 
 // Close closes the simulator.

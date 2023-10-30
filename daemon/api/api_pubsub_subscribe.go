@@ -109,7 +109,7 @@ func (a *API) Subscribe(serv pubsub_api.SRPCPubSubService_SubscribeStream) error
 				go func() {
 					_ = serv.Send(&pubsub_api.SubscribeResponse{
 						IncomingMessage: &pubsub_api.IncomingMessage{
-							FromPeerId:    m.GetFrom().Pretty(),
+							FromPeerId:    m.GetFrom().String(),
 							Data:          m.GetData(),
 							Authenticated: m.GetAuthenticated(),
 						},

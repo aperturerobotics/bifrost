@@ -148,8 +148,8 @@ func (c *Controller) resolveHandleMountedStream(
 		if lid := dir.HandleMountedStreamLocalPeerID(); lid != localPeerID {
 			c.le.Debugf(
 				"incoming stream %s != filtered %s",
-				lid.Pretty(),
-				localPeerID.Pretty(),
+				lid.String(),
+				localPeerID.String(),
 			)
 			return nil, nil
 		}
@@ -166,7 +166,7 @@ func (c *Controller) resolveHandleMountedStream(
 		if !found {
 			c.le.Debugf(
 				"incoming stream %s != filtered %v",
-				remoteID.Pretty(),
+				remoteID.String(),
 				c.conf.GetRemotePeerIds(),
 			)
 			return nil, nil

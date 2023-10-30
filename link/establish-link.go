@@ -95,9 +95,9 @@ func (d *establishLinkWithPeer) GetName() string {
 // This is not necessarily unique, and is primarily intended for display.
 func (d *establishLinkWithPeer) GetDebugVals() directive.DebugValues {
 	vals := directive.NewDebugValues()
-	vals["peer-id"] = []string{d.EstablishLinkTargetPeerId().Pretty()}
+	vals["peer-id"] = []string{d.EstablishLinkTargetPeerId().String()}
 	if src := d.EstablishLinkSourcePeerId(); len(src) != 0 {
-		vals["from-peer-id"] = []string{d.EstablishLinkSourcePeerId().Pretty()}
+		vals["from-peer-id"] = []string{d.EstablishLinkSourcePeerId().String()}
 	}
 	return vals
 }

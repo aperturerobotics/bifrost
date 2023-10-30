@@ -15,7 +15,7 @@ type PeerEntity struct {
 
 // NewPeerEntityRef constructs a new entity ref to a node.
 func NewPeerEntityRef(peerID peer.ID) entity.Ref {
-	return entity.NewEntityRefWithID(peerID.Pretty(), PeerEntityTypeName)
+	return entity.NewEntityRefWithID(peerID.String(), PeerEntityTypeName)
 }
 
 // NewPeerEntity constructs a new PeerEntity.

@@ -47,7 +47,7 @@ func newEstablishedLink(
 	// Start the close goroutine
 	ctx, ctxCancel := context.WithCancel(rctx)
 	el := &establishedLink{
-		le:     le.WithField("peer-id", lnk.GetRemotePeer().Pretty()),
+		le:     le.WithField("peer-id", lnk.GetRemotePeer().String()),
 		lnk:    lnk,
 		di:     di,
 		cancel: ctxCancel,

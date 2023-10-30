@@ -133,7 +133,7 @@ func (d *buildChannelSubscription) GetDebugVals() directive.DebugValues {
 	if pkey != nil {
 		pid, _ := peer.IDFromPrivateKey(pkey)
 		if len(pid) != 0 {
-			vals["peer-id"] = []string{pid.Pretty()}
+			vals["peer-id"] = []string{pid.String()}
 		}
 	}
 	return vals

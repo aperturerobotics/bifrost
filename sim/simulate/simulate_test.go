@@ -51,8 +51,8 @@ func TestSimpleSimulate(t *testing.T) {
 		}
 		le.Infof(
 			"successful connectivity test between %s and %s",
-			p0.GetPeerID().Pretty(),
-			p1.GetPeerID().Pretty(),
+			p0.GetPeerID().String(),
+			p1.GetPeerID().String(),
 		)
 	}
 

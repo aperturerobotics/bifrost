@@ -55,7 +55,7 @@ func (a *UtilArgs) RunGeneratePrivate(_ *cli.Context) error {
 		return err
 	}
 	le := a.GetLogger()
-	le.Infof("generated private key: %s", npeer.GetPeerID().Pretty())
+	le.Infof("generated private key: %s", npeer.GetPeerID().String())
 	return nil
 }
 
@@ -142,7 +142,7 @@ func (a *UtilArgs) readInputFilePrivKey() (peer.Peer, error) {
 	if err != nil {
 		return nil, err
 	}
-	le.Debugf("loaded private key: %s", npeer.GetPeerID().Pretty())
+	le.Debugf("loaded private key: %s", npeer.GetPeerID().String())
 	return npeer, nil
 }
 
@@ -163,7 +163,7 @@ func (a *UtilArgs) readInputFilePubKey() (peer.Peer, error) {
 	if err != nil {
 		return nil, err
 	}
-	le.Debugf("loaded public key: %s", npeer.GetPeerID().Pretty())
+	le.Debugf("loaded public key: %s", npeer.GetPeerID().String())
 	return npeer, nil
 }
 

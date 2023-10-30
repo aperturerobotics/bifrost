@@ -51,7 +51,7 @@ func (k *KeyPair) PublicKey() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return peerID.Pretty(), nil
+	return peerID.String(), nil
 }
 
 // PrivateKey will return an error since this is not available for public key only KeyPairs.

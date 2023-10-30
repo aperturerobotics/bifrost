@@ -28,7 +28,7 @@ func TestSimpleGraph(t *testing.T) {
 				"expected %d but got %d peers linked to %s",
 				count,
 				len(lp),
-				p1.GetPeerID().Pretty(),
+				p1.GetPeerID().String(),
 			)
 		}
 	}
@@ -67,14 +67,14 @@ func TestSimpleGraph(t *testing.T) {
 			if ir {
 				t.Fatalf(
 					"did not expect reachability between %s and %s",
-					p1.GetPeerID().Pretty(),
-					p2.GetPeerID().Pretty(),
+					p1.GetPeerID().String(),
+					p2.GetPeerID().String(),
 				)
 			} else {
 				t.Fatalf(
 					"expected reachability between %s and %s",
-					p1.GetPeerID().Pretty(),
-					p2.GetPeerID().Pretty(),
+					p1.GetPeerID().String(),
+					p2.GetPeerID().String(),
 				)
 			}
 		}

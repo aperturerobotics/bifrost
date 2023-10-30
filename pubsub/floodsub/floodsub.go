@@ -211,8 +211,8 @@ func (m *FloodSub) execPublish(prevHopPeerID peer.ID, pubMsg *publishChMsg) {
 		}
 	}
 	for pid := range tosend {
-		pidPretty := pid.PeerID.Pretty()
-		if pidPretty == pubMsg.msg.GetFromPeerId() ||
+		pidString := pid.PeerID.String()
+		if pidString == pubMsg.msg.GetFromPeerId() ||
 			pid.PeerID == prevHopPeerID {
 			continue
 		}
@@ -252,7 +252,7 @@ func (m *FloodSub) AddSubscription(ctx context.Context, privKey crypto.PrivKey, 
 		m.channels[channelID] = subs
 		m.le.
 			WithField("channel-id", channelID).
-			WithField("sub-peer-id", peerID.Pretty()).
+			WithField("sub-peer-id", peerID.String()).
 			Info("subscribed to channel")
 	}
 	subs[ns] = struct{}{}
@@ -267,7 +267,7 @@ func (m *FloodSub) AddPeerStream(
 	initiator bool,
 	mstrm link.MountedStream,
 ) {
-	le := m.le.WithField("peer", tpl.PeerID.Pretty())
+	le := m.le.WithField("peer", tpl.PeerID.String())
 	if !mstrm.GetOpenOpts().Encrypted || !mstrm.GetOpenOpts().Reliable {
 		le.Warn("rejecting unencrypted or unreliable pubsub stream")
 		mstrm.GetStream().Close()

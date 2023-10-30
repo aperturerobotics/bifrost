@@ -43,7 +43,7 @@ func TestPubsubNATS(t *testing.T) {
 	for _, peer := range g.AllPeers() {
 		peer.AddFactory(func(b bus.Bus) controller.Factory { return nats_controller.NewFactory(b) })
 		peer.AddConfig("pubsub", &nats_controller.Config{
-			PeerId: peer.GetPeerID().Pretty(),
+			PeerId: peer.GetPeerID().String(),
 			NatsConfig: &nats.Config{
 				LogTrace: logTrace,
 			},
@@ -51,7 +51,7 @@ func TestPubsubNATS(t *testing.T) {
 		/*
 			peer.AddFactory(func(b bus.Bus) controller.Factory { return pubsub_relay.NewFactory(b) })
 			peer.AddConfig("pubsub-relay", &pubsub_relay.Config{
-				PeerId:   peer.GetPeerID().Pretty(),
+				PeerId:   peer.GetPeerID().String(),
 				TopicIds: topics,
 			})
 		*/
@@ -67,8 +67,8 @@ func TestPubsubNATS(t *testing.T) {
 		}
 		le.Infof(
 			"successful connectivity test between %s and %s",
-			p0.GetPeerID().Pretty(),
-			p1.GetPeerID().Pretty(),
+			p0.GetPeerID().String(),
+			p1.GetPeerID().String(),
 		)
 	}
 	assertConnectivity(p0, p1)
@@ -123,7 +123,7 @@ func TestPubsubNATS(t *testing.T) {
 
 			errCh := make(chan error, 1)
 			go func() {
-				le.Infof("publishing data on p1 with peer %s", p1.GetPeerID().Pretty())
+				le.Infof("publishing data on p1 with peer %s", p1.GetPeerID().String())
 				for {
 					select {
 					case <-ctx.Done():

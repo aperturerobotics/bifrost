@@ -272,7 +272,7 @@ func (t *Transport) HandleSession(ctx context.Context, sess quic.Connection) (*L
 		rpeer := elnk.GetRemotePeer()
 		t.le.
 			WithField("remote-addr", as).
-			WithField("remote-peer", rpeer.Pretty()).
+			WithField("remote-peer", rpeer.String()).
 			Warn("userping existing session with peer")
 		go elnk.Close()
 	}

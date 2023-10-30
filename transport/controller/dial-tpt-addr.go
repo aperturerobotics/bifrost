@@ -114,7 +114,7 @@ func (o *dialTptAddrResolver) Resolve(ctx context.Context, handler directive.Res
 		if !hasLink {
 			go func() {
 				key := linkDialerKey{
-					peerID:      peerIDConst.Pretty(),
+					peerID:      peerIDConst.String(),
 					dialAddress: dialAddr,
 				}
 				go c.startLinkDialer(peerIDConst, key, &dialer.DialerOpts{

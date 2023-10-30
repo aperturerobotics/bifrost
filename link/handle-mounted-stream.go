@@ -121,8 +121,8 @@ func (d *handleMountedStream) GetName() string {
 func (d *handleMountedStream) GetDebugVals() directive.DebugValues {
 	vals := directive.DebugValues{}
 	vals["protocol-id"] = []string{string(d.HandleMountedStreamProtocolID())}
-	vals["local-peer"] = []string{d.HandleMountedStreamLocalPeerID().Pretty()}
-	vals["remote-peer"] = []string{d.HandleMountedStreamRemotePeerID().Pretty()}
+	vals["local-peer"] = []string{d.HandleMountedStreamLocalPeerID().String()}
+	vals["remote-peer"] = []string{d.HandleMountedStreamRemotePeerID().String()}
 	return vals
 }
 

@@ -102,7 +102,7 @@ func (d *lookupTptAddr) GetName() string {
 // This is not necessarily unique, and is primarily intended for display.
 func (d *lookupTptAddr) GetDebugVals() directive.DebugValues {
 	vals := directive.NewDebugValues()
-	vals["peer-id"] = []string{d.LookupTptAddrTargetPeerId().Pretty()}
+	vals["peer-id"] = []string{d.LookupTptAddrTargetPeerId().String()}
 	return vals
 }
 

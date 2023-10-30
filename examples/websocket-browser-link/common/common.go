@@ -35,7 +35,7 @@ func genPeerIdentity(peerSeed string) (peer.ID, crypto.PrivKey) {
 		log.Fatal(err)
 	}
 	pid1, _ := peer.IDFromPrivateKey(pk1)
-	log.Debugf("generated insecure peer id: %s", pid1.Pretty())
+	log.Debugf("generated insecure peer id: %s", pid1.String())
 
 	return pid1, pk1
 }
@@ -61,7 +61,7 @@ func BuildCommonBus(ctx context.Context, peerSeed string) (bus.Bus, crypto.PrivK
 	sr.AddFactory(link_holdopen_controller.NewFactory(b))
 	sr.AddFactory(nats_controller.NewFactory(b))
 
-	le = le.WithField("peer-id", peerID.Pretty())
+	le = le.WithField("peer-id", peerID.String())
 	le.Debug("constructing node")
 	_, _, err = b.AddDirective(
 		resolver.NewLoadControllerWithConfig(&nctr.Config{
@@ -87,7 +87,7 @@ func BuildCommonBus(ctx context.Context, peerSeed string) (bus.Bus, crypto.PrivK
 
 	// use pubsub: nats
 	_, _, err = b.AddDirective(resolver.NewLoadControllerWithConfig(&nats_controller.Config{
-		PeerId:     peerID.Pretty(),
+		PeerId:     peerID.String(),
 		NatsConfig: &nats.Config{LogTrace: true},
 	}), nil)
 	if err != nil {

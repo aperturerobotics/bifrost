@@ -83,7 +83,7 @@ func (c *Client) ExecuteConnection(
 		estCtx, estCtxCancel := c.BuildTimeoutCtx(ctx)
 		defer estCtxCancel()
 
-		le := c.le.WithField("server-peer-id", destPeer.Pretty())
+		le := c.le.WithField("server-peer-id", destPeer.String())
 		conn, connRel, err := stream_drpc.EstablishDrpcConn(
 			estCtx,
 			c.b,

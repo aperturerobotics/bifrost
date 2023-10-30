@@ -39,7 +39,7 @@ func NewController(le *logrus.Entry, p peer.Peer) *Controller {
 // Returning nil ends execution.
 // Returning an error triggers a retry with backoff.
 func (c *Controller) Execute(ctx context.Context) error {
-	c.le.WithField("peer-id", c.GetPeerID().Pretty()).Debug("peer mounted")
+	c.le.WithField("peer-id", c.GetPeerID().String()).Debug("peer mounted")
 	// TODO: loopback controller
 	return nil
 }
@@ -66,7 +66,7 @@ func (c *Controller) GetControllerInfo() *controller.Info {
 	return controller.NewInfo(
 		ControllerID,
 		Version,
-		"peer controller "+c.GetPeerID().Pretty(),
+		"peer controller "+c.GetPeerID().String(),
 	)
 }
 

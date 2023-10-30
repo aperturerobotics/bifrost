@@ -45,8 +45,8 @@ func ParsePeerAddressMap(addressesWithPeerIDs []string) (map[string][]string, []
 			errs = append(errs, err)
 			continue
 		}
-		pidPretty := pid.Pretty()
-		peers[pidPretty] = append(peers[pidPretty], tptaddr)
+		pidString := pid.String()
+		peers[pidString] = append(peers[pidString], tptaddr)
 	}
 	for k, sl := range peers {
 		sort.Strings(sl)
@@ -104,8 +104,8 @@ func (c *Controller) resolveLookupTptAddr(
 	dir tptaddr.LookupTptAddr,
 ) ([]directive.Resolver, error) {
 	targetPeerID := dir.LookupTptAddrTargetPeerId()
-	targetPeerIDPretty := targetPeerID.Pretty()
-	addrs := c.peers[targetPeerIDPretty]
+	targetPeerIDString := targetPeerID.String()
+	addrs := c.peers[targetPeerIDString]
 	if len(addrs) != 0 {
 		return []directive.Resolver{directive.NewValueResolver(addrs)}, nil
 	}

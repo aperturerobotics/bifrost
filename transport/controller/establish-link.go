@@ -27,7 +27,7 @@ type establishLinkResolver struct {
 func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.ResolverHandler) error {
 	c := o.c
 	peerIDConst := o.dir.EstablishLinkTargetPeerId()
-	peerIDPretty := peerIDConst.Pretty()
+	peerIDString := peerIDConst.String()
 
 	wakeDialer := make(chan time.Time, 1)
 	linkIDs := make(map[link.Link]uint32)
@@ -98,7 +98,7 @@ func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.R
 			}
 			// Skip pushing dialer if a link already exists.
 			if !hasLink {
-				if dOpts, ok := spm[peerIDPretty]; ok && dOpts.GetAddress() != "" {
+				if dOpts, ok := spm[peerIDString]; ok && dOpts.GetAddress() != "" {
 					go func() {
 						_ = c.PushDialer(ctx, peerIDConst, dOpts)
 					}()

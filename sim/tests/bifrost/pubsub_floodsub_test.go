@@ -67,8 +67,8 @@ func TestPubsubFloodsub(t *testing.T) {
 		}
 		le.Infof(
 			"successful connectivity test between %s and %s",
-			p0.GetPeerID().Pretty(),
-			p1.GetPeerID().Pretty(),
+			p0.GetPeerID().String(),
+			p1.GetPeerID().String(),
 		)
 	}
 	assertConnectivity(p0, p1)
@@ -116,7 +116,7 @@ func TestPubsubFloodsub(t *testing.T) {
 		// TODO: remove this delay... needs a little time to "settle"
 		<-time.After(time.Millisecond * 100)
 		testReplicate := func() {
-			le.Infof("publishing data on p2 with peer %s", p2.GetPeerID().Pretty())
+			le.Infof("publishing data on p2 with peer %s", p2.GetPeerID().String())
 			s2.Publish(testingData)
 			rmsg := <-msgRx
 			if bytes.Compare(rmsg.GetData(), testingData) != 0 {

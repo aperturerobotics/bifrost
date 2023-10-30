@@ -50,7 +50,7 @@ func NewController(b bus.Bus, le *logrus.Entry, peers []peer.ID, srcID peer.ID) 
 // Returning an error triggers a retry with backoff.
 func (c *Controller) Execute(ctx context.Context) error {
 	for _, peerID := range c.peers {
-		le := c.le.WithField("peer-id", peerID.Pretty())
+		le := c.le.WithField("peer-id", peerID.String())
 		_, diRef, err := c.bus.AddDirective(
 			link.NewEstablishLinkWithPeer(c.srcPeerID, peerID),
 			nil,

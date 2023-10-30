@@ -67,7 +67,7 @@ func (u *Transport) handleCompleteHandshake(
 	pid, _ := peer.IDFromPublicKey(result.Peer)
 
 	le := u.le.
-		WithField("remote-id", pid.Pretty()).
+		WithField("remote-id", pid.String()).
 		WithField("remote-addr", as)
 
 	exd := &HandshakeExtraData{}

@@ -155,7 +155,7 @@ func (c *Controller) Execute(ctx context.Context) error {
 				lnk:       vl,
 				le: c.le.
 					WithField("link-uuid", vl.GetUUID()).
-					WithField("link-remote-peer", vl.GetRemotePeer().Pretty()),
+					WithField("link-remote-peer", vl.GetRemotePeer().String()),
 			}
 			c.links[tpl] = tl
 			go func() {

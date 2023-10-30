@@ -139,8 +139,8 @@ func ValidatePubKey(id string, peerID peer.ID) error {
 
 		return errors.Errorf(
 			"pub_key id %s does not match peer_id %s",
-			pkeyID.Pretty(),
-			peerID.Pretty(),
+			pkeyID.String(),
+			peerID.String(),
 		)
 	}
 

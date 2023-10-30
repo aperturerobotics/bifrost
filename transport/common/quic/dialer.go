@@ -59,7 +59,7 @@ func (d *Dialer) Execute() {
 
 	le := d.t.le.WithField("remote-addr", d.addr)
 	if d.peerID != "" {
-		le = le.WithField("remote-peer", d.peerID.Pretty())
+		le = le.WithField("remote-peer", d.peerID.String())
 	}
 	le.Debug("quic: dialing peer")
 	rconn, _, err := d.t.dialFn(ctx, d.addr)

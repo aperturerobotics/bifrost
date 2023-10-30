@@ -31,7 +31,7 @@ func genPeerIdentity() (peer.ID, crypto.PrivKey) {
 		log.Fatal(err)
 	}
 	pid1, _ := peer.IDFromPrivateKey(pk1)
-	log.Debugf("generated peer id: %s", pid1.Pretty())
+	log.Debugf("generated peer id: %s", pid1.String())
 
 	return pid1, pk1
 }

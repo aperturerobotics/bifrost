@@ -146,7 +146,7 @@ func (s *subscription) Release() {
 
 // logger attaches additional logging fields.
 func (s *subscription) logger() *logrus.Entry {
-	npp := s.client.npeerIDPretty
+	npp := s.client.npeerIDString
 	return s.m.le.
 		WithField("channel-id", s.channelID).
 		WithField("peer-id", npp)

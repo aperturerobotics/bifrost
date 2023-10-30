@@ -68,7 +68,7 @@ func (c *Controller) GetControllerInfo() *controller.Info {
 	return controller.NewInfo(
 		ControllerID,
 		Version,
-		"agent controller "+c.GetPeerID().Pretty(),
+		"agent controller "+c.GetPeerID().String(),
 	)
 }
 

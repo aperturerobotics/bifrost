@@ -40,7 +40,7 @@ func newEstablishLinkHandler(
 	return &establishLinkHandler{
 		c:      c,
 		di:     di,
-		le:     le.WithField("peer-id", peerID.Pretty()),
+		le:     le.WithField("peer-id", peerID.String()),
 		peerID: peerID,
 	}
 }
@@ -59,7 +59,7 @@ func (e *establishLinkHandler) HandleValueAdded(inst directive.Instance, val dir
 	if nrr {
 		e.le.
 			WithField("link-uuid", vl.GetUUID()).
-			WithField("local-peer", vl.GetLocalPeer().Pretty()).
+			WithField("local-peer", vl.GetLocalPeer().String()).
 			Debug("starting peer hold-open tracking")
 		go func() {
 			e.mtx.Lock()

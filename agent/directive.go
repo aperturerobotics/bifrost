@@ -72,7 +72,7 @@ func (d *AttachAgentToNodeSingleton) GetName() string {
 func (d *AttachAgentToNodeSingleton) GetDebugVals() directive.DebugValues {
 	vals := directive.DebugValues{}
 	if pid := d.AttachAgentToNodeID(); pid != peer.ID("") {
-		vals["node-id"] = []string{pid.Pretty()}
+		vals["node-id"] = []string{pid.String()}
 	}
 	return vals
 }

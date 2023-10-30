@@ -19,7 +19,7 @@ type Addr struct {
 func NewAddr(peerID peer.ID) *Addr {
 	return &Addr{
 		peerID: peerID,
-		str:    scheme + peerID.Pretty(),
+		str:    scheme + peerID.String(),
 	}
 }
 

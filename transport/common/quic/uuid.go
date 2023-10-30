@@ -13,7 +13,7 @@ func NewTransportUUID(localAddr string, peerID peer.ID) uint64 {
 		[]byte("bifrost/quic/"),
 		[]byte(localAddr),
 		[]byte("/"),
-		[]byte(peerID.Pretty()),
+		[]byte(peerID.String()),
 	)
 }
 
