@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/aperturerobotics/controllerbus v0.30.11 // latest
-	github.com/aperturerobotics/entitygraph v0.4.0
+	github.com/aperturerobotics/entitygraph v0.5.0
 	github.com/aperturerobotics/starpc v0.21.3 // latest
 )
 
