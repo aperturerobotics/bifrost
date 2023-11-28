@@ -24,13 +24,13 @@ replace (
 )
 
 require (
-	github.com/aperturerobotics/ts-proto-common-types v0.2.0 // latest
+	github.com/aperturerobotics/ts-proto-common-types v0.20.2 // latest
 	github.com/aperturerobotics/util v1.7.8 // master
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/djherbis/buffer v1.2.0
 	github.com/golang/snappy v0.0.4
-	github.com/klauspost/compress v1.17.2
+	github.com/klauspost/compress v1.17.3
 	github.com/libp2p/go-libp2p v0.32.1
 	github.com/libp2p/go-yamux/v4 v4.0.1
 	github.com/mr-tron/base58 v1.2.0
