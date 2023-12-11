@@ -40,7 +40,7 @@ require (
 	github.com/nats-io/nkeys v0.4.6
 	github.com/paralin/kcp-go-lite v5.4.20+incompatible
 	github.com/patrickmn/go-cache v2.1.0+incompatible
-	github.com/pierrec/lz4/v4 v4.1.18
+	github.com/pierrec/lz4/v4 v4.1.19
 	github.com/pkg/errors v0.9.1
 	github.com/planetscale/vtprotobuf v0.5.0
 	github.com/quic-go/quic-go v0.40.0
@@ -58,7 +58,7 @@ require (
 )
 
 require (
-	filippo.io/edwards25519 v1.0.1-0.20220803165937-8c58ed0e3550
+	filippo.io/edwards25519 v1.1.0
 	github.com/aperturerobotics/timestamp v0.8.2
 	github.com/pauleyj/gobee v0.0.0-20190212035730-6270c53072a4
 	github.com/valyala/fastjson v1.6.4
