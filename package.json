@@ -42,11 +42,11 @@
     "singleQuote": true
   },
   "devDependencies": {
-    "@aperturerobotics/ts-common": "0.6.7",
-    "@typescript-eslint/eslint-plugin": "^6.7.5",
-    "@typescript-eslint/parser": "^6.7.5",
+    "@aperturerobotics/ts-common": "0.7.0",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
     "depcheck": "^1.4.6",
-    "eslint": "^8.51.0",
+    "eslint": "^8.56.0",
     "eslint-config-prettier": "^9.0.0",
     "patch-package": "^8.0.0",
     "prettier": "^3.1.1",
@@ -59,7 +59,7 @@
     "bufferutil": "^4.0.7",
     "long": "^5.2.3",
     "protobufjs": "^7.2.4",
-    "starpc": "^0.21.3",
+    "starpc": "^0.22.0",
     "utf-8-validate": "^6.0.3"
   }
 }
