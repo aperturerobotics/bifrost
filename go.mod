@@ -50,7 +50,7 @@ require (
 	github.com/templexxx/xor v0.0.0-20191217153810-f85b25db303b
 	github.com/urfave/cli/v2 v2.26.0
 	github.com/zeebo/blake3 v0.2.3
-	golang.org/x/crypto v0.16.0
+	golang.org/x/crypto v0.17.0
 	gonum.org/v1/gonum v0.14.0
 	google.golang.org/protobuf v1.31.0
 	nhooyr.io/websocket v1.8.10
