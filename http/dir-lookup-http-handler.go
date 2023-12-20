@@ -93,7 +93,8 @@ func (d *lookupHTTPHandler) Validate() error {
 // GetValueLookupHTTPHandlerOptions returns options relating to value handling.
 func (d *lookupHTTPHandler) GetValueOptions() directive.ValueOptions {
 	return directive.ValueOptions{
-		UnrefDisposeDur: time.Second,
+		UnrefDisposeDur:            time.Millisecond * 250,
+		UnrefDisposeEmptyImmediate: true,
 	}
 }
 
