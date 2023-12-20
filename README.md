@@ -103,23 +103,6 @@ bifrost daemon \
   --udp-listen :5112
 ```
 
-### YAML Configuration
-
-An example of a ConfigSet in YAML format for the daemon: `bifrost_daemon.yaml`:
-
-```yaml
-# Start a UDP listener on port 5112.
-my-udp:
-  id: bifrost/udp
-  config:
-    listenAddr: :5112
-
-# Use the floodsub driver for PubSub.
-pubsub:
-  id: bifrost/floodsub
-  config: {}
-```
-
 ### Daemon CLI
 
 The Bifrost daemon is configured with a YAML ConfigSet and/or via the API.
@@ -267,7 +250,26 @@ and the UDP transport opens the connection with the peer (on-demand.) The stream
 is then negotiated. The remote daemon uses HandleMountedStream which is handled
 by the "forwarding" controller, which forwards the stream to localhost at 8000.
 
-## Transports and Links
+### YAML Configuration
+
+An example of a ConfigSet in YAML format for the daemon: `bifrost_daemon.yaml`:
+
+```yaml
+# Start a UDP listener on port 5112.
+my-udp:
+  id: bifrost/udp
+  config:
+    listenAddr: :5112
+
+# Use the floodsub driver for PubSub.
+pubsub:
+  id: bifrost/floodsub
+  config: {}
+```
+
+## Concepts
+
+### Transports and Links
 
 A Link is a packet stream between two Peer. Links are created by Transports,
 which are associated with a local private keypair.
@@ -283,11 +285,29 @@ The HandleMountedStream directive contains incoming protocol and peer info. The
 appropriate controller for the protocol responds to the directive and handles
 the incoming stream. This decouples the transport layers from the protocols.
 
-## PubSub
+### PubSub
 
 A PubSub is a controller that supports topic-based at-least-once delivery.
 
 Nats and floodsub are currently supported as PubSub protocols.
+
+## Developing on MacOS
+
+On MacOS, some homebrew packages are required for `yarn gen`:
+
+```
+brew install bash make coreutils gnu-sed findutils protobuf
+brew link --overwrite protobuf
+```
+
+Add to your .bashrc or .zshrc:
+
+```
+export PATH="/opt/homebrew/opt/coreutils/libexec/gnubin:$PATH"
+export PATH="/opt/homebrew/opt/gnu-sed/libexec/gnubin:$PATH"
+export PATH="/opt/homebrew/opt/findutils/libexec/gnubin:$PATH"
+export PATH="/opt/homebrew/opt/make/libexec/gnubin:$PATH"
+```
 
 ## Support
 
