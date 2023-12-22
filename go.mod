@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/aperturerobotics/controllerbus v0.31.0 // latest
 	github.com/aperturerobotics/entitygraph v0.5.0
-	github.com/aperturerobotics/starpc v0.22.0 // latest
+	github.com/aperturerobotics/starpc v0.22.1 // latest
 )
 
 // aperture: use compatibility forks
@@ -52,7 +52,7 @@ require (
 	github.com/zeebo/blake3 v0.2.3
 	golang.org/x/crypto v0.17.0
 	gonum.org/v1/gonum v0.14.0
-	google.golang.org/protobuf v1.31.0
+	google.golang.org/protobuf v1.32.0
 	nhooyr.io/websocket v1.8.10
 	storj.io/drpc v0.0.33
 )

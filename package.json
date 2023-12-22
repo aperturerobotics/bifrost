@@ -42,7 +42,7 @@
     "singleQuote": true
   },
   "devDependencies": {
-    "@aperturerobotics/ts-common": "0.7.0",
+    "@aperturerobotics/ts-common": "0.8.1",
     "@typescript-eslint/eslint-plugin": "^6.15.0",
     "@typescript-eslint/parser": "^6.15.0",
     "depcheck": "^1.4.6",

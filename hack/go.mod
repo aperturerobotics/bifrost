@@ -14,13 +14,13 @@ require (
 	github.com/planetscale/vtprotobuf v0.5.0
 	github.com/psampaz/go-mod-outdated v0.9.0
 	github.com/quic-go/quic-go v0.40.1 // indirect
-	google.golang.org/protobuf v1.31.0
+	google.golang.org/protobuf v1.32.0
 )
 
 require (
 	github.com/aperturerobotics/bifrost v0.17.4
 	github.com/aperturerobotics/goprotowrap v0.3.0
-	github.com/aperturerobotics/starpc v0.22.0
+	github.com/aperturerobotics/starpc v0.22.1
 	github.com/evanw/esbuild v0.18.12
 	github.com/hajimehoshi/wasmserve v0.0.0-20230504031707-cd7d23533341
 	storj.io/drpc v0.0.33
@@ -46,7 +46,7 @@ require (
 	github.com/aperturerobotics/entitygraph v0.5.0 // indirect
 	github.com/aperturerobotics/timestamp v0.8.2 // indirect
 	github.com/aperturerobotics/ts-proto-common-types v0.20.2 // indirect
-	github.com/aperturerobotics/util v1.8.2 // indirect
+	github.com/aperturerobotics/util v1.8.3 // indirect
 	github.com/ashanbrown/forbidigo v1.5.3 // indirect
 	github.com/ashanbrown/makezero v1.1.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
