@@ -18,6 +18,8 @@ github.com/aperturerobotics/quic-go v0.40.1-0.20231219224819-14aac6234606 h1:Dkq
 github.com/aperturerobotics/quic-go v0.40.1-0.20231219224819-14aac6234606/go.mod h1:nBd5e4NvdDauDcHc7EhorOEO+UP+6gIZa6f/ZWyVQl8=
 github.com/aperturerobotics/starpc v0.22.1 h1:aBhKMk7Dwg6Y20R64t+3L3AKH1GlrJVPKDo2pRWbPvo=
 github.com/aperturerobotics/starpc v0.22.1/go.mod h1:yR9hgDuSlV5iWg1yLYk2Wqm+owpy5ogWugbmPBvD0pg=
+github.com/aperturerobotics/starpc v0.22.4 h1:w4+S0RffEdZ2WTDTSGTvknCKFS/g1QxkxAsXdcB90+c=
+github.com/aperturerobotics/starpc v0.22.4/go.mod h1:yR9hgDuSlV5iWg1yLYk2Wqm+owpy5ogWugbmPBvD0pg=
 github.com/aperturerobotics/timestamp v0.8.2 h1:+HA/uI9ZGz8qqim+kkXqz3cijR8kMcQ4/ZRTw5fW7yI=
 github.com/aperturerobotics/timestamp v0.8.2/go.mod h1:nrwzlUGvxs244CIBjDWHZ8qRudqk8m/SQ5n5GKXaFVw=
 github.com/aperturerobotics/ts-proto-common-types v0.20.2 h1:xFy3ErasS5PNWV0ABdlJxqfUsZGL2OLlc0Kio5aIm2s=
