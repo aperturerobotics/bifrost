@@ -2,6 +2,7 @@ package bifrost_rpc_access
 
 import (
 	context "context"
+	"sync"
 
 	bifrost_rpc "github.com/aperturerobotics/bifrost/rpc"
 	"github.com/aperturerobotics/controllerbus/directive"
@@ -30,10 +31,56 @@ func NewLookupRpcServiceResolver(
 func (r *LookupRpcServiceResolver) Resolve(ctx context.Context, handler directive.ResolverHandler) error {
 	req := RequestFromDirective(r.dir)
 	defer handler.ClearValues()
-	return r.svc(ctx, func(ctx context.Context, client SRPCAccessRpcServiceClient) error {
+
+	var mtx sync.Mutex
+	var clientCtx context.Context
+	var clientCtxCancel context.CancelFunc
+	var nonce uint64
+ClientLoop:
+	for {
+		if ctx.Err() != nil {
+			return context.Canceled
+		}
+
+		var currNonce uint64
+		clientReleased := func() {
+			mtx.Lock()
+			if clientCtxCancel != nil {
+				clientCtxCancel()
+				clientCtxCancel = nil
+			}
+			nonce++
+			currNonce = nonce
+			mtx.Unlock()
+		}
+
 		handler.ClearValues()
-		strm, err := client.LookupRpcService(ctx, req)
+		nextClient, relNextClient, err := r.svc(ctx, clientReleased)
 		if err != nil {
+			return err
+		}
+
+		mtx.Lock()
+		nextClientOk := currNonce == nonce
+		if nextClientOk {
+			if clientCtxCancel != nil {
+				clientCtxCancel()
+			}
+			clientCtx, clientCtxCancel = context.WithCancel(ctx)
+		}
+		mtx.Unlock()
+		if !nextClientOk {
+			// client was released already
+			if relNextClient != nil {
+				relNextClient()
+			}
+			continue
+		}
+
+		strm, err := nextClient.LookupRpcService(clientCtx, req)
+		if err != nil {
+			relNextClient()
+			clientReleased()
 			return err
 		}
 
@@ -41,23 +88,24 @@ func (r *LookupRpcServiceResolver) Resolve(ctx context.Context, handler directiv
 		for {
 			resp, err := strm.Recv()
 			if err != nil {
-				handler.ClearValues()
-				return err
+				relNextClient()
+				clientReleased()
+				continue ClientLoop
 			}
 
-			if exists := resp.GetExists(); exists && valID == 0 {
-				var val bifrost_rpc.LookupRpcServiceValue = NewProxyInvoker(client, req, r.waitAck)
-				valID, _ = handler.AddValue(val)
-			}
 			if removed := resp.GetRemoved(); removed && valID != 0 {
 				_, _ = handler.RemoveValue(valID)
+				valID = 0
+			}
+			if exists := resp.GetExists(); exists && valID == 0 {
+				var val bifrost_rpc.LookupRpcServiceValue = NewProxyInvoker(nextClient, req, r.waitAck)
+				valID, _ = handler.AddValue(val)
 			}
 			if resp.GetIdle() {
 				handler.MarkIdle()
 			}
 		}
-	})
-
+	}
 }
 
 // _ is a type assertion

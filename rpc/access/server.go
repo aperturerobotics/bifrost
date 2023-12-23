@@ -3,7 +3,6 @@ package bifrost_rpc_access
 import (
 	"context"
 	"errors"
-	"sync"
 
 	bifrost_rpc "github.com/aperturerobotics/bifrost/rpc"
 	"github.com/aperturerobotics/controllerbus/bus"
@@ -11,6 +10,7 @@ import (
 	"github.com/aperturerobotics/starpc/rpcstream"
 	srpc "github.com/aperturerobotics/starpc/srpc"
 	"github.com/aperturerobotics/util/broadcast"
+	"github.com/sirupsen/logrus"
 )
 
 // AccessRpcServiceServer is the server for AccessRpcService.
@@ -39,7 +39,6 @@ func (s *AccessRpcServiceServer) LookupRpcService(
 	req *LookupRpcServiceRequest,
 	strm SRPCAccessRpcService_LookupRpcServiceStream,
 ) error {
-	var mtx sync.Mutex
 	var bcast broadcast.Broadcast
 	var sendQueue []*LookupRpcServiceResponse
 	var disposed bool
@@ -63,36 +62,36 @@ func (s *AccessRpcServiceServer) LookupRpcService(
 			if !ok {
 				return
 			}
-			mtx.Lock()
-			defer mtx.Unlock()
-			vals[av.GetValueID()] = struct{}{}
-			if len(vals) == 1 {
-				sendQueue = append(sendQueue, &LookupRpcServiceResponse{
-					Exists: true,
-				})
-				bcast.Broadcast()
-			}
+			bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
+				vals[av.GetValueID()] = struct{}{}
+				if len(vals) == 1 {
+					sendQueue = append(sendQueue, &LookupRpcServiceResponse{
+						Exists: true,
+					})
+					broadcast()
+				}
+			})
 		}, func(av directive.AttachedValue) {
-			mtx.Lock()
-			defer mtx.Unlock()
-			_, exists := vals[av.GetValueID()]
-			if !exists {
-				return
-			}
-			delete(vals, av.GetValueID())
-			if len(vals) == 0 {
-				sendQueue = append(sendQueue, &LookupRpcServiceResponse{
-					Removed: true,
-				})
-				bcast.Broadcast()
-			}
+			bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
+				_, exists := vals[av.GetValueID()]
+				if !exists {
+					return
+				}
+				delete(vals, av.GetValueID())
+				if len(vals) == 0 {
+					sendQueue = append(sendQueue, &LookupRpcServiceResponse{
+						Removed: true,
+					})
+					broadcast()
+				}
+			})
 		}, func() {
-			mtx.Lock()
-			if !disposed {
-				disposed = true
-				bcast.Broadcast()
-			}
-			mtx.Unlock()
+			bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
+				if !disposed {
+					disposed = true
+					broadcast()
+				}
+			})
 		},
 	))
 	if err != nil {
@@ -101,20 +100,20 @@ func (s *AccessRpcServiceServer) LookupRpcService(
 	defer ref.Release()
 
 	defer di.AddIdleCallback(func(resErrs []error) {
-		mtx.Lock()
-		if resErr == nil {
-			for _, err := range resErrs {
-				if err != nil {
-					resErr = err
-					break
+		bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
+			if resErr == nil {
+				for _, err := range resErrs {
+					if err != nil {
+						resErr = err
+						break
+					}
 				}
 			}
-		}
-		sendQueue = append(sendQueue, &LookupRpcServiceResponse{
-			Idle: true,
+			sendQueue = append(sendQueue, &LookupRpcServiceResponse{
+				Idle: true,
+			})
+			broadcast()
 		})
-		bcast.Broadcast()
-		mtx.Unlock()
 	})()
 
 	for {
@@ -124,17 +123,19 @@ func (s *AccessRpcServiceServer) LookupRpcService(
 		case <-waitCh:
 		}
 
-		mtx.Lock()
-		waitCh = bcast.GetWaitCh()
-		currSendQueue, currIsDisposed := sendQueue, disposed
-		sendQueue = nil
-		mtx.Unlock()
+		var currSendQueue []*LookupRpcServiceResponse
+		var currDisposed bool
+		bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
+			waitCh = getWaitCh()
+			currSendQueue, currDisposed = sendQueue, disposed
+			sendQueue = nil
+		})
 		for _, msg := range currSendQueue {
 			if err := strm.Send(msg); err != nil {
 				return err
 			}
 		}
-		if currIsDisposed {
+		if currDisposed {
 			return errors.New("directive disposed")
 		}
 	}
@@ -160,6 +161,7 @@ func (s *AccessRpcServiceServer) CallRpcService(strm SRPCAccessRpcService_CallRp
 			}
 		}
 		// lookup the rpc service invokers
+		logrus.Infof("LookupRpcServiceServer -> start %s", req.GetServiceId())
 		invokers, _, invokerRef, err := bifrost_rpc.ExLookupRpcService(
 			ctx,
 			s.b,
@@ -167,6 +169,7 @@ func (s *AccessRpcServiceServer) CallRpcService(strm SRPCAccessRpcService_CallRp
 			serverID,
 			s.waitOne,
 		)
+		logrus.Infof("LookupRpcServiceServer -> %s -> len(%v) - %v", req.GetServiceId(), len(invokers), err)
 		if err != nil || invokerRef == nil {
 			return nil, nil, err
 		}

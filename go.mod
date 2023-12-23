@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/aperturerobotics/controllerbus v0.31.1 // latest
 	github.com/aperturerobotics/entitygraph v0.5.0
-	github.com/aperturerobotics/starpc v0.22.4 // latest
+	github.com/aperturerobotics/starpc v0.22.5-0.20231223070228-835ffe09e3e7 // latest
 )
 
 // aperture: use compatibility forks

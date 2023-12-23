@@ -8,7 +8,6 @@ import (
 	bifrost_rpc "github.com/aperturerobotics/bifrost/rpc"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
-	"github.com/aperturerobotics/util/promise"
 	"github.com/aperturerobotics/util/refcount"
 	"github.com/cenkalti/backoff"
 	"github.com/sirupsen/logrus"
@@ -22,7 +21,7 @@ type ClientController struct {
 	waitAck bool
 	backoff backoff.BackOff
 
-	clientRc *refcount.RefCount[*SRPCAccessRpcServiceClient]
+	clientRc *refcount.RefCount[SRPCAccessRpcServiceClient]
 
 	serviceIDRe *regexp.Regexp
 	serverIDRe  *regexp.Regexp
@@ -30,16 +29,21 @@ type ClientController struct {
 
 // AccessClientFunc is a function to access the AccessRpcServiceClient.
 // The client should be released after the function returns.
-// If the client is no longer valid, cancel the context.
+// Released is a function to call when the value is no longer valid.
+// Returns a release function.
+// If the client is nil, an err must be returned.
 type AccessClientFunc func(
 	ctx context.Context,
-	cb func(ctx context.Context, client SRPCAccessRpcServiceClient) error,
-) error
+	released func(),
+) (SRPCAccessRpcServiceClient, func(), error)
 
 // NewAccessClientFunc constructs a AccessClientFunc with a static client.
 func NewAccessClientFunc(svc SRPCAccessRpcServiceClient) AccessClientFunc {
-	return func(ctx context.Context, cb func(ctx context.Context, client SRPCAccessRpcServiceClient) error) error {
-		return cb(ctx, svc)
+	return func(
+		ctx context.Context,
+		released func(),
+	) (SRPCAccessRpcServiceClient, func(), error) {
+		return svc, nil, nil
 	}
 }
 
@@ -76,26 +80,12 @@ func NewClientController(
 	}
 	c.clientRc = refcount.NewRefCount(
 		nil, false, nil, nil,
-		func(ctx context.Context, released func()) (*SRPCAccessRpcServiceClient, func(), error) {
-			clientCtx, clientCtxCancel := context.WithCancel(ctx)
-			value := promise.NewPromise[*SRPCAccessRpcServiceClient]()
-			go func() {
-				err := svc(clientCtx, func(ctx context.Context, client SRPCAccessRpcServiceClient) error {
-					value.SetResult(&client, nil)
-					<-ctx.Done()
-					released()
-					return context.Canceled
-				})
-				if err != nil {
-					value.SetResult(nil, err)
-				}
-			}()
-			client, err := value.Await(ctx)
-			if err != nil {
-				clientCtxCancel()
+		func(ctx context.Context, released func()) (SRPCAccessRpcServiceClient, func(), error) {
+			val, rel, err := svc(ctx, released)
+			if err != nil || val == nil {
 				return nil, nil, err
 			}
-			return client, clientCtxCancel, nil
+			return val, rel, nil
 		},
 	)
 	return c
@@ -143,14 +133,12 @@ func (c *ClientController) HandleDirective(ctx context.Context, di directive.Ins
 }
 
 // AccessClient adds a reference to the client and waits for it to be built.
-// Releases the client when the function returns.
+// The released function will be called if the value was released.
 func (c *ClientController) AccessClient(
 	ctx context.Context,
-	cb func(ctx context.Context, client SRPCAccessRpcServiceClient) error,
-) error {
-	return c.clientRc.Access(ctx, true, func(ctx context.Context, val *SRPCAccessRpcServiceClient) error {
-		return cb(ctx, *val)
-	})
+	released func(),
+) (SRPCAccessRpcServiceClient, func(), error) {
+	return c.clientRc.ResolveWithReleased(ctx, released)
 }
 
 // Close releases any resources used by the controller.
