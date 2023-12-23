@@ -10,7 +10,6 @@ import (
 	"github.com/aperturerobotics/starpc/rpcstream"
 	srpc "github.com/aperturerobotics/starpc/srpc"
 	"github.com/aperturerobotics/util/broadcast"
-	"github.com/sirupsen/logrus"
 )
 
 // AccessRpcServiceServer is the server for AccessRpcService.

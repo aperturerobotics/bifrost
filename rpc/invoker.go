@@ -3,7 +3,6 @@ package bifrost_rpc
 import (
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/starpc/srpc"
-	"github.com/sirupsen/logrus"
 )
 
 // Invoker implements the RPC invoker with a directive.
