@@ -83,8 +83,8 @@ github.com/aperturerobotics/logrus v1.9.1-0.20221224130652-ff61cbb763af h1:nRveA
 github.com/aperturerobotics/logrus v1.9.1-0.20221224130652-ff61cbb763af/go.mod h1:naHLuLoDiP4jHNo9R0sCBMtWGeIprob74mVsIT4qYEQ=
 github.com/aperturerobotics/protobuf-go v1.31.1-0.20231012212426-9cf9f0f94f47 h1:ileI5MiwnrcVzZDUV62Ts0Q+TZt8Cgl1E+Ncr60YLeY=
 github.com/aperturerobotics/protobuf-go v1.31.1-0.20231012212426-9cf9f0f94f47/go.mod h1:HV8QOd/L58Z+nl8r43ehVNZIU/HEI6OcFqwMG9pJV4I=
-github.com/aperturerobotics/starpc v0.22.1 h1:aBhKMk7Dwg6Y20R64t+3L3AKH1GlrJVPKDo2pRWbPvo=
-github.com/aperturerobotics/starpc v0.22.1/go.mod h1:yR9hgDuSlV5iWg1yLYk2Wqm+owpy5ogWugbmPBvD0pg=
+github.com/aperturerobotics/starpc v0.22.4 h1:w4+S0RffEdZ2WTDTSGTvknCKFS/g1QxkxAsXdcB90+c=
+github.com/aperturerobotics/starpc v0.22.4/go.mod h1:yR9hgDuSlV5iWg1yLYk2Wqm+owpy5ogWugbmPBvD0pg=
 github.com/aperturerobotics/timestamp v0.8.2 h1:+HA/uI9ZGz8qqim+kkXqz3cijR8kMcQ4/ZRTw5fW7yI=
 github.com/aperturerobotics/timestamp v0.8.2/go.mod h1:nrwzlUGvxs244CIBjDWHZ8qRudqk8m/SQ5n5GKXaFVw=
 github.com/aperturerobotics/ts-proto-common-types v0.20.2 h1:xFy3ErasS5PNWV0ABdlJxqfUsZGL2OLlc0Kio5aIm2s=
