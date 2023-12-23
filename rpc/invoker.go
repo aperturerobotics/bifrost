@@ -35,16 +35,13 @@ func NewInvoker(b bus.Bus, serverID string, wait bool) *Invoker {
 func (i *Invoker) InvokeMethod(serviceID, methodID string, strm srpc.Stream) (bool, error) {
 	ctx := strm.Context()
 
-	logrus.Infof("InvokeMethod(%s, %s) => LookupRpcService start", serviceID, methodID)
 	invokers, _, invokerRef, err := ExLookupRpcService(ctx, i.b, serviceID, i.serverID, i.wait)
-	logrus.Infof("InvokeMethod(%s, %s) => LookupRpcService finish -> error(%v)", serviceID, methodID, err)
 	if err != nil || invokerRef == nil {
 		return false, err
 	}
 	defer invokerRef.Release()
 
 	var sl srpc.InvokerSlice = invokers
-	logrus.Infof("InvokeMethod(%s, %s) => LookupRpcService finished -> invoking method", serviceID, methodID)
 	return sl.InvokeMethod(serviceID, methodID, strm)
 }
 

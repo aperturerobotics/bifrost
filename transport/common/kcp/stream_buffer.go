@@ -49,7 +49,6 @@ func NewPacketBuffer(
 func (s *PacketBuffer) PushPacket(packet []byte) {
 	s.packetMtx.Lock()
 	_, _ = s.packetBuf.Write(packet)
-	// logrus.Infof("pushPacket: %v len(buf): %d", packet, s.packetBuf.Len())
 	s.packetMtx.Unlock()
 
 	select {

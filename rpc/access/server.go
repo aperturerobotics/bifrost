@@ -161,7 +161,6 @@ func (s *AccessRpcServiceServer) CallRpcService(strm SRPCAccessRpcService_CallRp
 			}
 		}
 		// lookup the rpc service invokers
-		logrus.Infof("LookupRpcServiceServer -> start %s", req.GetServiceId())
 		invokers, _, invokerRef, err := bifrost_rpc.ExLookupRpcService(
 			ctx,
 			s.b,
@@ -169,7 +168,6 @@ func (s *AccessRpcServiceServer) CallRpcService(strm SRPCAccessRpcService_CallRp
 			serverID,
 			s.waitOne,
 		)
-		logrus.Infof("LookupRpcServiceServer -> %s -> len(%v) - %v", req.GetServiceId(), len(invokers), err)
 		if err != nil || invokerRef == nil {
 			return nil, nil, err
 		}

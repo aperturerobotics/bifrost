@@ -72,7 +72,6 @@ func readStreamEstablishHeader(r io.Reader) (*StreamEstablish, error) {
 		return nil, err
 	}
 
-	// logrus.Infof("read stream establish: %v", headerBuf)
 	// decode stream establish header
 	estHeader := &StreamEstablish{}
 	if err := proto.Unmarshal(headerBuf, estHeader); err != nil {
