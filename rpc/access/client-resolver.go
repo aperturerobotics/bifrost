@@ -39,6 +39,9 @@ func (r *LookupRpcServiceResolver) Resolve(ctx context.Context, handler directiv
 ClientLoop:
 	for {
 		if ctx.Err() != nil {
+			if clientCtxCancel != nil {
+				clientCtxCancel()
+			}
 			return context.Canceled
 		}
 
@@ -79,6 +82,9 @@ ClientLoop:
 
 		strm, err := nextClient.LookupRpcService(clientCtx, req)
 		if err != nil {
+			if clientCtxCancel != nil {
+				clientCtxCancel()
+			}
 			relNextClient()
 			clientReleased()
 			return err
