@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/aperturerobotics/controllerbus v0.31.1 // latest
 	github.com/aperturerobotics/entitygraph v0.5.0
-	github.com/aperturerobotics/starpc v0.22.5-0.20231225191734-dd751bfc3fca // latest
+	github.com/aperturerobotics/starpc v0.22.5-0.20231227005941-f9649d8c2a3d // latest
 )
 
 // aperture: use compatibility forks
@@ -48,7 +48,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
 	github.com/templexxx/xor v0.0.0-20191217153810-f85b25db303b
-	github.com/urfave/cli/v2 v2.26.0
+	github.com/urfave/cli/v2 v2.27.0
 	github.com/zeebo/blake3 v0.2.3
 	golang.org/x/crypto v0.17.0
 	gonum.org/v1/gonum v0.14.0
@@ -63,7 +63,7 @@ require (
 	github.com/pauleyj/gobee v0.0.0-20190212035730-6270c53072a4
 	github.com/valyala/fastjson v1.6.4
 	github.com/xtaci/smux/v2 v2.1.0
-	golang.org/x/exp v0.0.0-20231219180239-dc181d75b848
+	golang.org/x/exp v0.0.0-20231226003508-02704c960a9b
 )
 
 require (
