@@ -63,7 +63,7 @@ require (
 	github.com/pauleyj/gobee v0.0.0-20190212035730-6270c53072a4
 	github.com/valyala/fastjson v1.6.4
 	github.com/xtaci/smux v1.5.24
-	golang.org/x/exp v0.0.0-20231219180239-dc181d75b848
+	golang.org/x/exp v0.0.0-20231226003508-02704c960a9b
 )
 
 require (
