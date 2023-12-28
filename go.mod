@@ -37,7 +37,7 @@ require (
 	github.com/multiformats/go-multiaddr v0.12.0
 	github.com/nats-io/nats-server/v2 v2.10.7
 	github.com/nats-io/nats.go v1.31.0
-	github.com/nats-io/nkeys v0.4.6
+	github.com/nats-io/nkeys v0.4.7
 	github.com/paralin/kcp-go-lite v5.4.20+incompatible
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pierrec/lz4/v4 v4.1.19
