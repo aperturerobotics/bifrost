@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/aperturerobotics/bifrost/stream"
-	"github.com/xtaci/smux/v2"
+	"github.com/xtaci/smux"
 )
 
 // smuxWrapper wraps smux.

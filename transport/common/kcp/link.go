@@ -21,7 +21,7 @@ import (
 	"github.com/paralin/kcp-go-lite"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/xtaci/smux/v2"
+	"github.com/xtaci/smux"
 )
 
 // Link represents a KCP-based connection/link.

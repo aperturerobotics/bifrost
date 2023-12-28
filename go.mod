@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/aperturerobotics/controllerbus v0.31.1 // latest
 	github.com/aperturerobotics/entitygraph v0.5.0
-	github.com/aperturerobotics/starpc v0.22.5-0.20231227005941-f9649d8c2a3d // latest
+	github.com/aperturerobotics/starpc v0.22.4 // latest
 )
 
 // aperture: use compatibility forks
@@ -62,8 +62,8 @@ require (
 	github.com/aperturerobotics/timestamp v0.8.2
 	github.com/pauleyj/gobee v0.0.0-20190212035730-6270c53072a4
 	github.com/valyala/fastjson v1.6.4
-	github.com/xtaci/smux/v2 v2.1.0
-	golang.org/x/exp v0.0.0-20231226003508-02704c960a9b
+	github.com/xtaci/smux v1.5.24
+	golang.org/x/exp v0.0.0-20231219180239-dc181d75b848
 )
 
 require (
