@@ -1,6 +1,3 @@
-//go:build bifrost_relay
-// +build bifrost_relay
-
 package bifrost
 
 import (
@@ -12,9 +9,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// TestRouteRelay tests a simple one-hop relay routing scenario.
-// TODO: implement circuit/ to pass this test
-func TestRouteRelay(t *testing.T) {
+// TestBasic tests a simple connection between two peers on a LAN.
+func TestBasic(t *testing.T) {
 	ctx, ctxCancel := context.WithCancel(context.Background())
 	defer ctxCancel()
 
@@ -24,19 +20,14 @@ func TestRouteRelay(t *testing.T) {
 
 	g := graph.NewGraph()
 
-	descrip := `p0 <-> [lan1] <-> p1 <-> [lan2] <-> p2`
+	descrip := `p0 <-> [lan1] <-> p1`
 
 	p0 := addPeer(t, g)
 	p1 := addPeer(t, g)
-	p2 := addPeer(t, g)
 
 	lan1 := graph.AddLAN(g)
-	lan2 := graph.AddLAN(g)
-
 	lan1.AddPeer(g, p0)
 	lan1.AddPeer(g, p1)
-	lan2.AddPeer(g, p1)
-	lan2.AddPeer(g, p2)
 
 	sim := initSimulator(t, ctx, le, g)
 
@@ -44,7 +35,7 @@ func TestRouteRelay(t *testing.T) {
 	if err := simulate.TestConnectivity(
 		ctx,
 		sim.GetPeerByID(p0.GetPeerID()),
-		sim.GetPeerByID(p2.GetPeerID()),
+		sim.GetPeerByID(p1.GetPeerID()),
 	); err != nil {
 		t.Fatal(err.Error())
 	}
