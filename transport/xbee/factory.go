@@ -48,7 +48,7 @@ func (t *Factory) Construct(
 	le := opts.GetLogger()
 	cc := conf.(*Config)
 
-	peerIDConstraint, err := cc.ParseNodePeerID()
+	peerIDConstraint, err := cc.ParseTransportPeerID()
 	if err != nil {
 		return nil, err
 	}

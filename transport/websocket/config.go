@@ -5,6 +5,7 @@ import (
 	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/aperturerobotics/bifrost/util/confparse"
 	"github.com/aperturerobotics/controllerbus/config"
+	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -13,10 +14,18 @@ const ConfigID = ControllerID
 
 // Validate validates the configuration.
 // This is a cursory validation to see if the values "look correct."
-func (c *Config) Validate() error { return nil }
+func (c *Config) Validate() error {
+	if _, err := c.ParseTransportPeerID(); err != nil {
+		return errors.Wrap(err, "node_peer_id")
+	}
+	if _, err := c.ParseRestrictPeerID(); err != nil {
+		return errors.Wrap(err, "restrict_peer_id")
+	}
+	return nil
+}
 
-// ParseNodePeerID parses the node peer ID if it is not empty.
-func (c *Config) ParseNodePeerID() (peer.ID, error) {
+// ParseTransportPeerID parses the node peer ID if it is not empty.
+func (c *Config) ParseTransportPeerID() (peer.ID, error) {
 	return confparse.ParsePeerID(c.GetTransportPeerId())
 }
 

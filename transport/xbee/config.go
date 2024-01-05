@@ -17,8 +17,8 @@ const ConfigID = ControllerID
 // This is a cursory validation to see if the values "look correct."
 func (c *Config) Validate() error { return nil }
 
-// ParseNodePeerID parses the node peer ID if it is not empty.
-func (c *Config) ParseNodePeerID() (peer.ID, error) {
+// ParseTransportPeerID parses the node peer ID if it is not empty.
+func (c *Config) ParseTransportPeerID() (peer.ID, error) {
 	return confparse.ParsePeerID(c.GetTransportPeerId())
 }
 

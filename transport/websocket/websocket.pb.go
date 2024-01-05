@@ -40,7 +40,7 @@ type Config struct {
 	// ListenAddr contains the address to listen on.
 	// Has no effect in the browser.
 	ListenAddr string `protobuf:"bytes,2,opt,name=listen_addr,json=listenAddr,proto3" json:"listen_addr,omitempty"`
-	// QuicOpts are the quic protocol options.
+	// Quic contains the quic protocol options.
 	//
 	// The WebSocket transport always disables FEC and several other UDP-centric
 	// features which are unnecessary due to the "reliable" nature of WebSockets.

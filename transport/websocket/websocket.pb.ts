@@ -26,7 +26,7 @@ export interface Config {
    */
   listenAddr: string
   /**
-   * QuicOpts are the quic protocol options.
+   * Quic contains the quic protocol options.
    *
    * The WebSocket transport always disables FEC and several other UDP-centric
    * features which are unnecessary due to the "reliable" nature of WebSockets.
