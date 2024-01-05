@@ -1,3 +1,6 @@
+//go:build bifrost_floodsub
+// +build bifrost_floodsub
+
 package bifrost
 
 import (

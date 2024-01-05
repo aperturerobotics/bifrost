@@ -267,6 +267,44 @@ pubsub:
   config: {}
 ```
 
+### Simulator and End-to-end Testing
+
+```go
+// g is the graph of peers and LANs.
+g := graph.NewGraph()
+
+// Add two peers to the graph.
+p0 := addPeer(t, g)
+p1 := addPeer(t, g)
+
+// Connect them together with a LAN.
+lan1 := graph.AddLAN(g)
+lan1.AddPeer(g, p0)
+lan1.AddPeer(g, p1)
+
+// Run the simulator
+sim := initSimulator(t, ctx, le, g)
+
+// Test connecting p0 and p1 together!
+simulate.TestConnectivity(ctx, p0, p1)
+```
+
+The simulator enables writing end-to-end tests of running controllers on peers
+and validating that everything works with the full Bifrost stack in the loop. It
+uses in-memory pipes to simulate local-area-network connections between peers.
+
+Try the [example end-to-end test](./sim/tests/bifrost/basic_test.go) yourself:
+
+```
+go test -v -run Basic github.com/aperturerobotics/bifrost/sim/tests/bifrost
+```
+
+You will see the debug and quic logging followed by the success message:
+
+```
+INFO successful connectivity test: p0 <-> [lan1] <-> p1
+```
+
 ## Concepts
 
 ### Transports and Links

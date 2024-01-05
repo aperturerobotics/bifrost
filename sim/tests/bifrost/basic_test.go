@@ -40,6 +40,5 @@ func TestBasic(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	le.Info("tests successful")
-	_ = sim
+	le.Infof("successful connectivity test: %v", descrip)
 }
