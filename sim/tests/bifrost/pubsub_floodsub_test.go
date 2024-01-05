@@ -1,6 +1,3 @@
-//go:build bifrost_floodsub
-// +build bifrost_floodsub
-
 package bifrost
 
 import (
@@ -14,14 +11,10 @@ import (
 	pubsub_relay "github.com/aperturerobotics/bifrost/pubsub/relay"
 	"github.com/aperturerobotics/bifrost/sim/graph"
 	"github.com/aperturerobotics/bifrost/sim/simulate"
-	"github.com/aperturerobotics/bifrost/sim/tests"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/sirupsen/logrus"
 )
-
-var addPeer = tests.AddPeer
-var initSimulator = tests.InitSimulator
 
 // TestPubsubFloodsub performs a simple pubsub / floodsub test.
 func TestPubsubFloodsub(t *testing.T) {
@@ -79,10 +72,11 @@ func TestPubsubFloodsub(t *testing.T) {
 	for _, channelID := range topics {
 		lp2 := sim.GetPeerByID(p2.GetPeerID())
 		lp2tb := lp2.GetTestbed()
-		tpv2, tpv2Ref, err := bus.ExecOneOff(
+		tpv2, _, tpv2Ref, err := bus.ExecOneOff(
 			ctx,
 			lp2tb.Bus,
 			pubsub.NewBuildChannelSubscription(channelID, lp2tb.PrivKey),
+			nil,
 			nil,
 		)
 		if err != nil {
@@ -93,10 +87,11 @@ func TestPubsubFloodsub(t *testing.T) {
 
 		lp0 := sim.GetPeerByID(p0.GetPeerID())
 		lp0tb := lp0.GetTestbed()
-		tpv0, tpv0Ref, err := bus.ExecOneOff(
+		tpv0, _, tpv0Ref, err := bus.ExecOneOff(
 			ctx,
 			lp0tb.Bus,
 			pubsub.NewBuildChannelSubscription(channelID, lp0tb.PrivKey),
+			nil,
 			nil,
 		)
 		if err != nil {

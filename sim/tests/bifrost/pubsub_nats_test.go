@@ -11,14 +11,11 @@ import (
 	nats_controller "github.com/aperturerobotics/bifrost/pubsub/nats/controller"
 	"github.com/aperturerobotics/bifrost/sim/graph"
 	"github.com/aperturerobotics/bifrost/sim/simulate"
-	"github.com/aperturerobotics/bifrost/sim/tests"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/sirupsen/logrus"
 )
 
-var addPeer = tests.AddPeer
-var initSimulator = tests.InitSimulator
 var logTrace = false
 
 // TestPubsubNATS performs a simple pubsub test using nats protocol.
