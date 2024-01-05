@@ -8,7 +8,6 @@ import (
 	"github.com/aperturerobotics/bifrost/util/confparse"
 	"github.com/aperturerobotics/controllerbus/config"
 	ma "github.com/multiformats/go-multiaddr"
-	"google.golang.org/protobuf/proto"
 )
 
 // ConfigID is the string used to identify this config object.
@@ -55,13 +54,8 @@ func (c *Config) GetConfigID() string {
 }
 
 // EqualsConfig checks if the config is equal to another.
-func (c *Config) EqualsConfig(other config.Config) bool {
-	ot, ok := other.(*Config)
-	if !ok {
-		return false
-	}
-
-	return proto.Equal(ot, c)
+func (c *Config) EqualsConfig(c2 config.Config) bool {
+	return config.EqualsConfig[*Config](c, c2)
 }
 
 var _ config.Config = ((*Config)(nil))

@@ -4,7 +4,6 @@ import (
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/util/confparse"
 	"github.com/aperturerobotics/controllerbus/config"
-	"google.golang.org/protobuf/proto"
 )
 
 // ConfigID is the string used to identify this config object.
@@ -26,8 +25,8 @@ func (c *Config) GetConfigID() string {
 }
 
 // EqualsConfig checks if the other config is equal.
-func (c *Config) EqualsConfig(other config.Config) bool {
-	return proto.Equal(c, other)
+func (c *Config) EqualsConfig(c2 config.Config) bool {
+	return config.EqualsConfig[*Config](c, c2)
 }
 
 // ParsePeerID parses the peer ID if it is not empty.

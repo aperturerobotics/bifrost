@@ -6,7 +6,6 @@ import (
 	"github.com/aperturerobotics/bifrost/util/confparse"
 	"github.com/aperturerobotics/controllerbus/config"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/proto"
 )
 
 // ConfigID is the string used to identify this config object.
@@ -41,8 +40,8 @@ func (c *Config) GetConfigID() string {
 }
 
 // EqualsConfig checks if the other config is equal.
-func (c *Config) EqualsConfig(other config.Config) bool {
-	return proto.Equal(c, other)
+func (c *Config) EqualsConfig(c2 config.Config) bool {
+	return config.EqualsConfig[*Config](c, c2)
 }
 
 // SetTransportPeerId sets the node peer ID field.
