@@ -8,13 +8,18 @@ export const protobufPackage = 'stream.srpc.server'
 export interface Config {
   /**
    * PeerIds are the list of peer IDs to listen on.
-   * If empty, allows any incoming peer id w/ the protocol id.
+   * If empty, allows any incoming peer id w/ the protocol id(s).
    */
   peerIds: string[]
+  /**
+   * ProtocolIds is the list of protocol ids to listen on.
+   * If empty, no incoming streams will be accepted.
+   */
+  protocolIds: string[]
 }
 
 function createBaseConfig(): Config {
-  return { peerIds: [] }
+  return { peerIds: [], protocolIds: [] }
 }
 
 export const Config = {
@@ -24,6 +29,9 @@ export const Config = {
   ): _m0.Writer {
     for (const v of message.peerIds) {
       writer.uint32(10).string(v!)
+    }
+    for (const v of message.protocolIds) {
+      writer.uint32(18).string(v!)
     }
     return writer
   },
@@ -42,6 +50,13 @@ export const Config = {
           }
 
           message.peerIds.push(reader.string())
+          continue
+        case 2:
+          if (tag !== 18) {
+            break
+          }
+
+          message.protocolIds.push(reader.string())
           continue
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -91,6 +106,9 @@ export const Config = {
       peerIds: globalThis.Array.isArray(object?.peerIds)
         ? object.peerIds.map((e: any) => globalThis.String(e))
         : [],
+      protocolIds: globalThis.Array.isArray(object?.protocolIds)
+        ? object.protocolIds.map((e: any) => globalThis.String(e))
+        : [],
     }
   },
 
@@ -98,6 +116,9 @@ export const Config = {
     const obj: any = {}
     if (message.peerIds?.length) {
       obj.peerIds = message.peerIds
+    }
+    if (message.protocolIds?.length) {
+      obj.protocolIds = message.protocolIds
     }
     return obj
   },
@@ -108,6 +129,7 @@ export const Config = {
   fromPartial<I extends Exact<DeepPartial<Config>, I>>(object: I): Config {
     const message = createBaseConfig()
     message.peerIds = object.peerIds?.map((e) => e) || []
+    message.protocolIds = object.protocolIds?.map((e) => e) || []
     return message
   },
 }

@@ -95,7 +95,7 @@ func (m *SignedMsg) ExtractAndVerify() (crypto.PubKey, ID, error) {
 func (m *SignedMsg) Sign(privKey crypto.PrivKey, hashType hash.HashType) error {
 	innerData := m.GetData()
 	if len(innerData) == 0 {
-		return ErrBodyEmpty
+		return ErrEmptyBody
 	}
 
 	sig, err := NewSignature(
@@ -124,7 +124,7 @@ func (m *SignedMsg) Verify(pubKey crypto.PubKey) error {
 // Validate checks the signed message.
 func (m *SignedMsg) Validate() error {
 	if len(m.GetData()) == 0 {
-		return ErrBodyEmpty
+		return ErrEmptyBody
 	}
 	if len(m.GetFromPeerId()) == 0 {
 		return ErrEmptyPeerID

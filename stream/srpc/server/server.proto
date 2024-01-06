@@ -4,6 +4,9 @@ package stream.srpc.server;
 // Config configures the server for the srpc service.
 message Config {
   // PeerIds are the list of peer IDs to listen on.
-  // If empty, allows any incoming peer id w/ the protocol id.
+  // If empty, allows any incoming peer id w/ the protocol id(s).
   repeated string peer_ids = 1;
+  // ProtocolIds is the list of protocol ids to listen on.
+  // If empty, no incoming streams will be accepted.
+  repeated string protocol_ids = 2;
 }

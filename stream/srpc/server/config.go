@@ -2,6 +2,7 @@ package stream_srpc_server
 
 import (
 	"github.com/aperturerobotics/bifrost/peer"
+	"github.com/aperturerobotics/bifrost/protocol"
 	"github.com/aperturerobotics/bifrost/util/confparse"
 )
 
@@ -16,4 +17,9 @@ func (c *Config) Validate() error {
 // ParsePeerIDs parses the peer ids field.
 func (c *Config) ParsePeerIDs() ([]peer.ID, error) {
 	return confparse.ParsePeerIDs(c.GetPeerIds(), false)
+}
+
+// ParseProtocolIDs parses the protocol ids field.
+func (c *Config) ParseProtocolIDs() ([]protocol.ID, error) {
+	return confparse.ParseProtocolIDs(c.GetPeerIds(), false)
 }

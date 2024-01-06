@@ -30,6 +30,11 @@ func (m *Config) CloneVT() *Config {
 		copy(tmpContainer, rhs)
 		r.PeerIds = tmpContainer
 	}
+	if rhs := m.ProtocolIds; rhs != nil {
+		tmpContainer := make([]string, len(rhs))
+		copy(tmpContainer, rhs)
+		r.ProtocolIds = tmpContainer
+	}
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = make([]byte, len(m.unknownFields))
 		copy(r.unknownFields, m.unknownFields)
@@ -52,6 +57,15 @@ func (this *Config) EqualVT(that *Config) bool {
 	}
 	for i, vx := range this.PeerIds {
 		vy := that.PeerIds[i]
+		if vx != vy {
+			return false
+		}
+	}
+	if len(this.ProtocolIds) != len(that.ProtocolIds) {
+		return false
+	}
+	for i, vx := range this.ProtocolIds {
+		vy := that.ProtocolIds[i]
 		if vx != vy {
 			return false
 		}
@@ -96,6 +110,15 @@ func (m *Config) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
 	}
+	if len(m.ProtocolIds) > 0 {
+		for iNdEx := len(m.ProtocolIds) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.ProtocolIds[iNdEx])
+			copy(dAtA[i:], m.ProtocolIds[iNdEx])
+			i = encodeVarint(dAtA, i, uint64(len(m.ProtocolIds[iNdEx])))
+			i--
+			dAtA[i] = 0x12
+		}
+	}
 	if len(m.PeerIds) > 0 {
 		for iNdEx := len(m.PeerIds) - 1; iNdEx >= 0; iNdEx-- {
 			i -= len(m.PeerIds[iNdEx])
@@ -127,6 +150,12 @@ func (m *Config) SizeVT() (n int) {
 	_ = l
 	if len(m.PeerIds) > 0 {
 		for _, s := range m.PeerIds {
+			l = len(s)
+			n += 1 + l + sov(uint64(l))
+		}
+	}
+	if len(m.ProtocolIds) > 0 {
+		for _, s := range m.ProtocolIds {
 			l = len(s)
 			n += 1 + l + sov(uint64(l))
 		}
@@ -201,6 +230,38 @@ func (m *Config) UnmarshalVT(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.PeerIds = append(m.PeerIds, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ProtocolIds", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLength
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLength
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ProtocolIds = append(m.ProtocolIds, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

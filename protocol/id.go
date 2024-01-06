@@ -1,17 +1,20 @@
 package protocol
 
-import (
-	"errors"
-)
+import "unicode/utf8"
 
 // ID is a protocol identifier.
 type ID string
 
 func (i ID) Validate() error {
 	if i == "" {
-		return errors.New("protocol id cannot be empty")
+		return ErrEmptyProtocolID
 	}
 
-	// TODO: validate protocol id
+	if !utf8.ValidString(string(i)) {
+		return ErrInvalidProtocolID
+	}
+
+	// TODO: additional constraints on the protocol id
+
 	return nil
 }
