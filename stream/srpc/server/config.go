@@ -11,6 +11,9 @@ func (c *Config) Validate() error {
 	if _, err := c.ParsePeerIDs(); err != nil {
 		return err
 	}
+	if _, err := c.ParseProtocolIDs(); err != nil {
+		return err
+	}
 	return nil
 }
 
