@@ -144,8 +144,9 @@ func (s *Server) HandleMountedStream(ctx context.Context, ms link.MountedStream)
 	}
 	go func() {
 		subCtx, subCtxCancel := context.WithCancel(ctx)
+		rpcCtx := link.WithMountedStreamContext(subCtx, ms)
 		strm := ms.GetStream()
-		_ = s.server.ServeOne(subCtx, strm)
+		_ = s.server.ServeOne(rpcCtx, strm)
 		subCtxCancel()
 		strm.Close()
 		elRef.Release()

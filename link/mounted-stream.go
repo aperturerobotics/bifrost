@@ -33,3 +33,29 @@ type MountedStreamHandler interface {
 	// Typically EstablishLink is asserted in HandleMountedStream.
 	HandleMountedStream(context.Context, MountedStream) error
 }
+
+// MountedStreamContext is the value attached to a Context containing
+// information about the current mounted stream.
+//
+// Used in several places to pass stream info via Context, for example:
+// - stream/srpc/server: attach stream info to RPC context
+// - stream/drpc/server: attach stream info to RPC context
+type MountedStreamContext = MountedStream
+
+// mountedStreamContextKey is the context key used for WithValue.
+type mountedStreamContextKey struct{}
+
+// WithMountedStreamContext attaches a MountedStreamContext to a Context.
+func WithMountedStreamContext(ctx context.Context, msc MountedStreamContext) context.Context {
+	return context.WithValue(ctx, mountedStreamContextKey{}, msc)
+}
+
+// GetMountedStreamContext returns the MountedStreamContext from the Context or nil if unset.
+func GetMountedStreamContext(ctx context.Context) MountedStreamContext {
+	val := ctx.Value(mountedStreamContextKey{})
+	msc, ok := val.(MountedStreamContext)
+	if !ok {
+		return nil
+	}
+	return msc
+}
