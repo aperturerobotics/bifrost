@@ -15,6 +15,10 @@ func (i ID) Validate() error {
 	}
 
 	// TODO: additional constraints on the protocol id
-
 	return nil
+}
+
+// String returns the ID as a string.
+func (i ID) String() string {
+	return string(i)
 }
