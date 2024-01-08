@@ -25,7 +25,7 @@ func (c *Config) ParsePeerIDs() ([]peer.ID, error) {
 
 // ParseProtocolIDs parses the protocol ids field.
 func (c *Config) ParseProtocolIDs() ([]protocol.ID, error) {
-	return confparse.ParseProtocolIDs(c.GetPeerIds(), false)
+	return confparse.ParseProtocolIDs(c.GetProtocolIds(), false)
 }
 
 // GetDebugVals returns the directive arguments as key/value pairs.
