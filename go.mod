@@ -40,7 +40,7 @@ require (
 	github.com/nats-io/nkeys v0.4.7
 	github.com/paralin/kcp-go-lite v5.4.20+incompatible
 	github.com/patrickmn/go-cache v2.1.0+incompatible
-	github.com/pierrec/lz4/v4 v4.1.19
+	github.com/pierrec/lz4/v4 v4.1.21
 	github.com/pkg/errors v0.9.1
 	github.com/planetscale/vtprotobuf v0.5.0
 	github.com/quic-go/quic-go v0.40.1
@@ -50,7 +50,7 @@ require (
 	github.com/templexxx/xor v0.0.0-20191217153810-f85b25db303b
 	github.com/urfave/cli/v2 v2.27.1
 	github.com/zeebo/blake3 v0.2.3
-	golang.org/x/crypto v0.17.0
+	golang.org/x/crypto v0.18.0
 	gonum.org/v1/gonum v0.14.0
 	google.golang.org/protobuf v1.32.0
 	nhooyr.io/websocket v1.8.10
@@ -109,7 +109,7 @@ require (
 	go.uber.org/zap v1.26.0 // indirect
 	golang.org/x/mod v0.14.0 // indirect
 	golang.org/x/net v0.19.0 // indirect
-	golang.org/x/sys v0.15.0 // indirect
+	golang.org/x/sys v0.16.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.16.1 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
