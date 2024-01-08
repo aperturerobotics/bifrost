@@ -330,7 +330,6 @@ func (c *Controller) HandleIncomingStream(
 	le.
 		WithField("stream-reliable", strmOpts.Reliable).
 		WithField("stream-encrypted", strmOpts.Encrypted).
-		WithField("remote-peer", lnk.GetRemotePeer().String()).
 		Debug("accepted stream")
 	dir := link.NewHandleMountedStream(pid, c.localPeerID, mstrm.GetPeerID())
 	dval, _, dref, err := bus.ExecOneOff(ctx, c.bus, dir, nil, nil)
