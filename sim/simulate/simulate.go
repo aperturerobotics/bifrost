@@ -76,17 +76,20 @@ func NewSimulator(
 			}
 
 			// push the peer establish controller
-			go func() {
-				_ = pushedPeer.testbed.Bus.ExecuteController(
-					s.ctx,
-					link_establish_controller.NewController(
-						pushedPeer.testbed.Bus,
-						le,
-						linkedPeerIDs,
-						"",
-					),
-				)
-			}()
+			_, err = pushedPeer.testbed.Bus.AddController(
+				s.ctx,
+				link_establish_controller.NewController(
+					pushedPeer.testbed.Bus,
+					pushedPeer.le,
+					linkedPeerIDs,
+					"",
+				),
+				nil,
+			)
+			if err != nil {
+				s.ctxCancel()
+				return nil, err
+			}
 
 			continue
 		}
