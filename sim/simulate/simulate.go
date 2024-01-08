@@ -48,15 +48,19 @@ func NewSimulator(
 			if _, epOk := s.peers[peerIDStr]; epOk {
 				continue
 			}
+
 			pushedPeer, err := s.pushPeer(peer)
 			if err != nil {
 				s.ctxCancel()
 				return nil, err
 			}
-			// setup the links
+
+			// get the list of linked peers
 			linkedPeers := peer.GetLinkedPeers(grp)
 			var linkedPeerIDs []bpeer.ID
 			le.Debugf("peer %s has %d linked peers", peerIDStr, len(linkedPeers))
+
+			// add each linked peer
 			for _, lpeer := range linkedPeers {
 				lpeerPeerIDStr := lpeer.GetPeerID().String()
 				linkedPeerIDs = append(linkedPeerIDs, lpeer.GetPeerID())
@@ -66,7 +70,7 @@ func NewSimulator(
 				}
 				op.inproc.ConnectToInproc(ctx, pushedPeer.inproc)
 				pushedPeer.inproc.ConnectToInproc(s.ctx, op.inproc)
-				le.Debugf("dialing %s from %s", lpeerPeerIDStr, peerIDStr)
+				le.Debugf("adding in-memory link from %s from %s", lpeerPeerIDStr, peerIDStr)
 				pushedPeer.transportController.PushStaticPeer(lpeerPeerIDStr, &dialer.DialerOpts{
 					Address: op.inproc.LocalAddr().String(),
 				})
@@ -75,7 +79,7 @@ func NewSimulator(
 				})
 			}
 
-			// push the peer establish controller
+			// push the peer establish controller to trigger the link
 			_, err = pushedPeer.testbed.Bus.AddController(
 				s.ctx,
 				link_establish_controller.NewController(
