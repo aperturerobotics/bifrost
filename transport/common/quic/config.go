@@ -14,7 +14,7 @@ import (
 // BuildQuicConfig constructs the quic config.
 func BuildQuicConfig(le *logrus.Entry, opts *Opts) *quic.Config {
 	var enableMaxIdleTimeout bool
-	maxIdleTimeout := time.Second * 30
+	maxIdleTimeout := time.Second * 15
 	if ntDur := opts.GetMaxIdleTimeoutDur(); ntDur != "" {
 		nt, err := time.ParseDuration(ntDur)
 		if err == nil && nt > time.Duration(0) && nt < time.Hour*2 {

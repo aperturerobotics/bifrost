@@ -34,7 +34,7 @@ func TestBasic(t *testing.T) {
 		ctx,
 		le,
 		g,
-		// simulate.WithVerbose(),
+		simulate.WithVerbose(),
 	)
 
 	le.Infof("attempting to dial %v", descrip)

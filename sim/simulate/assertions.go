@@ -15,6 +15,15 @@ import (
 func TestConnectivity(ctx context.Context, px0, px1 *Peer) error {
 	tb0 := px0.testbed
 
+	_, esRef, err := tb0.Bus.AddDirective(link.NewEstablishLinkWithPeer(
+		px0.GetPeerID(),
+		px1.GetPeerID(),
+	), nil)
+	if err != nil {
+		return err
+	}
+	defer esRef.Release()
+
 	msv1, _, ms1Ref, err := bus.ExecOneOff(
 		ctx,
 		tb0.Bus,

@@ -4,7 +4,6 @@ import (
 	"context"
 	"sync"
 
-	link_establish_controller "github.com/aperturerobotics/bifrost/link/establish"
 	bpeer "github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/sim/graph"
 	"github.com/aperturerobotics/bifrost/transport/common/dialer"
@@ -53,60 +52,44 @@ func NewSimulator(
 	le.Debugf("processing %d nodes in graph", len(allNodes))
 	for _, node := range allNodes {
 		peer, isPeer := node.(*graph.Peer)
-		if isPeer {
-			peerID := peer.GetPeerID()
-			peerIDStr := peerID.String()
-			if _, epOk := s.peers[peerIDStr]; epOk {
+		if !isPeer {
+			continue
+		}
+
+		peerID := peer.GetPeerID()
+		peerIDStr := peerID.String()
+		if _, epOk := s.peers[peerIDStr]; epOk {
+			continue
+		}
+
+		pushedPeer, err := s.pushPeer(peer)
+		if err != nil {
+			s.ctxCancel()
+			return nil, err
+		}
+
+		// get the list of linked peers
+		linkedPeers := peer.GetLinkedPeers(grp)
+		var linkedPeerIDs []bpeer.ID
+		le.Debugf("peer %s has %d linked peers", peerIDStr, len(linkedPeers))
+
+		// add each linked peer
+		for _, lpeer := range linkedPeers {
+			lpeerPeerIDStr := lpeer.GetPeerID().String()
+			linkedPeerIDs = append(linkedPeerIDs, lpeer.GetPeerID())
+			op, ok := s.peers[lpeerPeerIDStr]
+			if !ok {
 				continue
 			}
-
-			pushedPeer, err := s.pushPeer(peer)
-			if err != nil {
-				s.ctxCancel()
-				return nil, err
-			}
-
-			// get the list of linked peers
-			linkedPeers := peer.GetLinkedPeers(grp)
-			var linkedPeerIDs []bpeer.ID
-			le.Debugf("peer %s has %d linked peers", peerIDStr, len(linkedPeers))
-
-			// add each linked peer
-			for _, lpeer := range linkedPeers {
-				lpeerPeerIDStr := lpeer.GetPeerID().String()
-				linkedPeerIDs = append(linkedPeerIDs, lpeer.GetPeerID())
-				op, ok := s.peers[lpeerPeerIDStr]
-				if !ok {
-					continue
-				}
-				op.inproc.ConnectToInproc(ctx, pushedPeer.inproc)
-				pushedPeer.inproc.ConnectToInproc(s.ctx, op.inproc)
-				le.Debugf("adding in-memory link from %s from %s", lpeerPeerIDStr, peerIDStr)
-				pushedPeer.transportController.PushStaticPeer(lpeerPeerIDStr, &dialer.DialerOpts{
-					Address: op.inproc.LocalAddr().String(),
-				})
-				op.transportController.PushStaticPeer(peerIDStr, &dialer.DialerOpts{
-					Address: pushedPeer.inproc.LocalAddr().String(),
-				})
-			}
-
-			// push the peer establish controller to trigger the link
-			_, err = pushedPeer.testbed.Bus.AddController(
-				s.ctx,
-				link_establish_controller.NewController(
-					pushedPeer.testbed.Bus,
-					pushedPeer.le,
-					linkedPeerIDs,
-					"",
-				),
-				nil,
-			)
-			if err != nil {
-				s.ctxCancel()
-				return nil, err
-			}
-
-			continue
+			op.inproc.ConnectToInproc(ctx, pushedPeer.inproc)
+			pushedPeer.inproc.ConnectToInproc(s.ctx, op.inproc)
+			le.Debugf("adding in-memory link from %s from %s", lpeerPeerIDStr, peerIDStr)
+			pushedPeer.transportController.PushStaticPeer(lpeerPeerIDStr, &dialer.DialerOpts{
+				Address: op.inproc.LocalAddr().String(),
+			})
+			op.transportController.PushStaticPeer(peerIDStr, &dialer.DialerOpts{
+				Address: pushedPeer.inproc.LocalAddr().String(),
+			})
 		}
 	}
 

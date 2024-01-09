@@ -24,7 +24,7 @@ type establishedLink struct {
 	cancel context.CancelFunc
 }
 
-// newEstablishedLink constructs the new establishedLink object.
+// newEstablishedLink constructs the new EstablishedLink object.
 // The EstablishLink directive is fulfilled on the controller bus.
 func newEstablishedLink(
 	le *logrus.Entry,
@@ -65,6 +65,7 @@ func newEstablishedLink(
 	// were no other references, and AddDisposeCallback above will be called
 	// only when the directive is removed after the dispose timeout.
 	dir.Release()
+
 	return el, nil
 }
 

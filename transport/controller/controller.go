@@ -221,6 +221,7 @@ func (c *Controller) HandleDirective(ctx context.Context, di directive.Instance)
 // HandleLinkEstablished is called by the transport when a link is established.
 func (c *Controller) HandleLinkEstablished(lnk link.Link) {
 	le := c.loggerForLink(lnk)
+
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 
@@ -455,6 +456,7 @@ func (c *Controller) flushEstablishedLink(el *establishedLink) {
 	c.resolveLinkWaiters(el.lnk, false)
 	el.cancel()
 	el.lnk.Close()
+	_ = el.di.CloseIfUnreferenced(false)
 }
 
 // loggerForLink wraps a logger with fields identifying the link.
