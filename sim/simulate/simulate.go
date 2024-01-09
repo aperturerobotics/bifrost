@@ -70,13 +70,11 @@ func NewSimulator(
 
 		// get the list of linked peers
 		linkedPeers := peer.GetLinkedPeers(grp)
-		var linkedPeerIDs []bpeer.ID
 		le.Debugf("peer %s has %d linked peers", peerIDStr, len(linkedPeers))
 
 		// add each linked peer
 		for _, lpeer := range linkedPeers {
 			lpeerPeerIDStr := lpeer.GetPeerID().String()
-			linkedPeerIDs = append(linkedPeerIDs, lpeer.GetPeerID())
 			op, ok := s.peers[lpeerPeerIDStr]
 			if !ok {
 				continue
