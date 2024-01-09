@@ -29,7 +29,13 @@ func TestBasic(t *testing.T) {
 	lan1.AddPeer(g, p0)
 	lan1.AddPeer(g, p1)
 
-	sim := initSimulator(t, ctx, le, g)
+	sim := initSimulator(
+		t,
+		ctx,
+		le,
+		g,
+		// simulate.WithVerbose(),
+	)
 
 	le.Infof("attempting to dial %v", descrip)
 	if err := simulate.TestConnectivity(
@@ -41,4 +47,5 @@ func TestBasic(t *testing.T) {
 	}
 
 	le.Infof("successful connectivity test: %v", descrip)
+	// <-ctx.Done()
 }

@@ -17,6 +17,8 @@ type Simulator struct {
 	ctx context.Context
 	// ctxCancel cancels the context
 	ctxCancel context.CancelFunc
+	// verbose enables verbose mode
+	verbose bool
 	// le is the logger
 	le *logrus.Entry
 	// mtx guards below fields
@@ -30,12 +32,21 @@ func NewSimulator(
 	ctx context.Context,
 	le *logrus.Entry,
 	grp *graph.Graph,
+	opts ...SimulatorOption,
 ) (*Simulator, error) {
 	s := &Simulator{
 		le:    le,
 		peers: make(map[string]*Peer),
 	}
 	s.ctx, s.ctxCancel = context.WithCancel(ctx)
+
+	for _, opt := range opts {
+		if opt != nil {
+			if err := opt(s); err != nil {
+				return nil, err
+			}
+		}
+	}
 
 	// Instantiate the nodes
 	allNodes := grp.AllNodes()
@@ -105,7 +116,7 @@ func NewSimulator(
 // pushPeer creates and starts a peer in the simulator.
 // expects caller to hold lock on mtx
 func (s *Simulator) pushPeer(peer *graph.Peer) (*Peer, error) {
-	p, err := newPeer(s.ctx, s.le, peer)
+	p, err := newPeer(s.ctx, s.le, peer, s.verbose)
 	if err != nil {
 		return nil, err
 	}

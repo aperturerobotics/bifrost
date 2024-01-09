@@ -46,6 +46,7 @@ func BuildQuicConfig(le *logrus.Entry, opts *Opts) *quic.Config {
 		}
 	}
 
+	// _ = enableMaxIdleTimeout
 	return &quic.Config{
 		Logger: le,
 
@@ -68,14 +69,6 @@ func BuildQuicConfig(le *logrus.Entry, opts *Opts) *quic.Config {
 		},
 
 		Versions: []quic.VersionNumber{quic.Version2}, // {quic.Version1},
-		// DisableVersionNegotiationPackets: true,
-
-		/*
-			AcceptToken: func(clientAddr net.Addr, _ *quic.Token) bool {
-				// unconditionally accept any quic token
-				return true
-			}, */
-
 	}
 }
 

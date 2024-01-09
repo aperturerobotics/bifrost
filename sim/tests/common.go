@@ -23,8 +23,9 @@ func InitSimulator(
 	ctx context.Context,
 	le *logrus.Entry,
 	g *graph.Graph,
+	opts ...simulate.SimulatorOption,
 ) *simulate.Simulator {
-	sim, err := simulate.NewSimulator(ctx, le, g)
+	sim, err := simulate.NewSimulator(ctx, le, g, opts...)
 	if err != nil {
 		t.Fatal(err.Error())
 	}

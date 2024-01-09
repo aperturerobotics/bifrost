@@ -6,6 +6,8 @@ import (
 	bp "github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/sim/graph"
 	"github.com/aperturerobotics/bifrost/testbed"
+	"github.com/aperturerobotics/bifrost/transport/common/pconn"
+	transport_quic "github.com/aperturerobotics/bifrost/transport/common/quic"
 	transport_controller "github.com/aperturerobotics/bifrost/transport/controller"
 	"github.com/aperturerobotics/bifrost/transport/inproc"
 	"github.com/aperturerobotics/controllerbus/bus"
@@ -36,7 +38,7 @@ type Peer struct {
 }
 
 // newPeer constructs a new Peer.
-func newPeer(ctx context.Context, le *logrus.Entry, gp *graph.Peer) (*Peer, error) {
+func newPeer(ctx context.Context, le *logrus.Entry, gp *graph.Peer, verbose bool) (*Peer, error) {
 	var rels []func()
 	rel := func() {
 		for _, r := range rels {
@@ -74,6 +76,12 @@ func newPeer(ctx context.Context, le *logrus.Entry, gp *graph.Peer) (*Peer, erro
 		np.testbed.Bus,
 		resolver.NewLoadControllerWithConfig(&inproc.Config{
 			TransportPeerId: np.GetPeerID().String(),
+			PacketOpts: &pconn.Opts{
+				Verbose: verbose,
+				Quic: &transport_quic.Opts{
+					Verbose: verbose,
+				},
+			},
 		}),
 		nil,
 	)
@@ -117,6 +125,11 @@ func newPeer(ctx context.Context, le *logrus.Entry, gp *graph.Peer) (*Peer, erro
 // GetPeerID returns the Peer ID.
 func (p *Peer) GetPeerID() bp.ID {
 	return p.graphPeer.GetPeerID()
+}
+
+// GetLogger returns the logger for the peer.
+func (p *Peer) GetLogger() *logrus.Entry {
+	return p.le
 }
 
 // GetPeerPriv returns the Peer private key.
