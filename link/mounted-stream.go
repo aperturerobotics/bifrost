@@ -27,11 +27,14 @@ type MountedStream interface {
 // MountedStreamHandler handles an incoming mounted stream.
 type MountedStreamHandler interface {
 	// HandleMountedStream handles an incoming mounted stream.
-	// Any returned error indicates the stream should be closed.
+	//
 	// This function should return as soon as possible, and start
 	// additional goroutines to manage the lifecycle of the stream.
-	// Typically EstablishLink is asserted in HandleMountedStream.
-	HandleMountedStream(context.Context, MountedStream) error
+	//
+	// The context will be canceled when the Link closes.
+	// The context will /not/ be canceled when ms closes.
+	// Any returned error indicates the stream should be closed.
+	HandleMountedStream(ctx context.Context, ms MountedStream) error
 }
 
 // MountedStreamContext is the value attached to a Context containing

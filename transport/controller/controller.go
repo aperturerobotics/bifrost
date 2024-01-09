@@ -277,8 +277,7 @@ func (c *Controller) HandleLinkEstablished(lnk link.Link) {
 
 // HandleIncomingStream handles an incoming stream from a link. It negotiates
 // the protocol for the stream, acquires a handler for the protocol, and hands
-// the stream to the protocol handler, then returns. Uses the ctx for
-// cancellation.
+// the stream to the protocol handler, then returns.
 //
 // rctx is the link Context, which is canceled when the link is closed.
 func (c *Controller) HandleIncomingStream(
@@ -297,8 +296,6 @@ func (c *Controller) HandleIncomingStream(
 	}
 
 	readDeadline := time.Now().Add(streamEstablishTimeout)
-	ctx, ctxCancel := context.WithDeadline(rctx, readDeadline)
-	defer ctxCancel()
 	_ = strm.SetReadDeadline(readDeadline)
 
 	// process stream establish header;
@@ -332,7 +329,9 @@ func (c *Controller) HandleIncomingStream(
 		WithField("stream-encrypted", strmOpts.Encrypted).
 		Debug("accepted stream")
 	dir := link.NewHandleMountedStream(pid, c.localPeerID, mstrm.GetPeerID())
-	dval, _, dref, err := bus.ExecOneOff(ctx, c.bus, dir, nil, nil)
+	handleMsCtx, handleMsCtxCancel := context.WithDeadline(rctx, readDeadline)
+	dval, _, dref, err := bus.ExecOneOff(handleMsCtx, c.bus, dir, nil, nil)
+	handleMsCtxCancel()
 	if err != nil {
 		le.WithError(err).Warn("error retrieving stream handler for stream")
 		strm.Close()
