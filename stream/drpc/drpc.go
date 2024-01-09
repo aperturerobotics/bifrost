@@ -35,24 +35,40 @@ func EstablishDrpcConn(
 		return nil, nil, err
 	}
 
+	// TODO: EstablishLinkWithPeer via transport id?
+	_, lkRel, err := b.AddDirective(
+		link.NewEstablishLinkWithPeer(srcPeer, destPeer),
+		nil,
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	ms, msRef, err := link.OpenStreamWithPeerEx(
 		ctx,
 		b,
 		protocolID,
-		srcPeer, destPeer, 0,
+		srcPeer, destPeer, transportID,
 		stream.OpenOpts{
 			Reliable:  true,
 			Encrypted: true,
 		},
 	)
 	if err != nil {
+		lkRel.Release()
 		return nil, nil, err
+	}
+
+	rel := func() {
+		msRef()
+		lkRel.Release()
 	}
 
 	conn, err := NewDrpcConn(ctx, ms.GetStream(), opts)
 	if err != nil {
-		msRef()
+		rel()
 		return nil, nil, err
 	}
-	return conn, msRef, err
+
+	return conn, rel, err
 }
