@@ -64,7 +64,7 @@ require (
 	github.com/valyala/fastjson v1.6.4
 	github.com/xtaci/smux v1.5.24
 	go.bug.st/serial v1.6.1
-	golang.org/x/exp v0.0.0-20240103183307-be819d1f06fc
+	golang.org/x/exp v0.0.0-20240110193028-0dcbfd608b1e
 )
 
 require (
