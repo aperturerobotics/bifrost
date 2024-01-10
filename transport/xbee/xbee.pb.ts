@@ -6,7 +6,7 @@ import { Opts } from '../common/kcp/kcp.pb.js'
 
 export const protobufPackage = 'xbee'
 
-/** Config is the configuration for the udp transport. */
+/** Config is the configuration for the xbee transport. */
 export interface Config {
   /**
    * TransportPeerID sets the peer ID to attach the transport to.

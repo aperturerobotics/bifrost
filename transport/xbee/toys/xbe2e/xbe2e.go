@@ -6,15 +6,20 @@ import (
 
 	"github.com/aperturerobotics/bifrost/transport/xbee/xbserial"
 	"github.com/sirupsen/logrus"
-	"github.com/tarm/serial"
 	"github.com/urfave/cli/v2"
+	"go.bug.st/serial"
 )
 
 var cmdArgs struct {
 	// Device1 is the config for the first serial device.
-	Device1 serial.Config
+	Device1 deviceArgs
 	// Device1 is the config for the second serial device.
-	Device2 serial.Config
+	Device2 deviceArgs
+}
+
+type deviceArgs struct {
+	path string
+	baud int
 }
 
 // initially we will just try sending data between
@@ -29,25 +34,25 @@ func main() {
 		&cli.StringFlag{
 			Name:        "device-path-1",
 			Usage:       "open device 1 at `PATH`",
-			Destination: &cmdArgs.Device1.Name,
+			Destination: &cmdArgs.Device1.path,
 			Value:       "/dev/ttyUSB0",
 		},
 		&cli.IntFlag{
 			Name:        "device-baud-1",
 			Usage:       "baudrate for the first device",
-			Destination: &cmdArgs.Device1.Baud,
+			Destination: &cmdArgs.Device1.baud,
 			Value:       115200,
 		},
 		&cli.StringFlag{
 			Name:        "device-path-2",
 			Usage:       "open device 2 at `PATH`",
-			Destination: &cmdArgs.Device2.Name,
+			Destination: &cmdArgs.Device2.path,
 			Value:       "/dev/ttyUSB1",
 		},
 		&cli.IntFlag{
 			Name:        "device-baud-2",
 			Usage:       "baudrate for the second device",
-			Destination: &cmdArgs.Device2.Baud,
+			Destination: &cmdArgs.Device2.baud,
 			Value:       115200,
 		},
 	}
@@ -65,14 +70,18 @@ func runE2E(cctx *cli.Context) error {
 	le := logrus.NewEntry(log)
 
 	le.Info("starting test: opening device 1")
-	sp1, err := serial.OpenPort(&cmdArgs.Device1)
+	sp1, err := serial.Open(cmdArgs.Device1.path, &serial.Mode{
+		BaudRate: cmdArgs.Device1.baud,
+	})
 	if err != nil {
 		return err
 	}
 	defer sp1.Close()
 
 	le.Info("starting test: opening device 2")
-	sp2, err := serial.OpenPort(&cmdArgs.Device2)
+	sp2, err := serial.Open(cmdArgs.Device2.path, &serial.Mode{
+		BaudRate: cmdArgs.Device2.baud,
+	})
 	if err != nil {
 		return err
 	}

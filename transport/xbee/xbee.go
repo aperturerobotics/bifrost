@@ -13,7 +13,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/tarm/serial"
+	"go.bug.st/serial"
 )
 
 // Version is the version of the xbee implementation.
@@ -47,10 +47,8 @@ func NewXBee(
 		WithField("device-path", opts.GetDevicePath()).
 		WithField("device-baud", opts.GetDeviceBaud())
 	le.Debug("opening device")
-	sp, err := serial.OpenPort(&serial.Config{
-		Name: opts.GetDevicePath(),
-		Baud: int(opts.GetDeviceBaud()),
-		// ReadTimeout: time.Millisecond * 500,
+	sp, err := serial.Open(opts.GetDevicePath(), &serial.Mode{
+		BaudRate: int(opts.GetDeviceBaud()),
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "open xbee serial")

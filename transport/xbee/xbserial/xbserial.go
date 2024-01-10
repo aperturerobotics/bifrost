@@ -8,14 +8,14 @@ import (
 	"github.com/pauleyj/gobee/api/rx"
 	"github.com/pauleyj/gobee/api/tx"
 	"github.com/sirupsen/logrus"
-	"github.com/tarm/serial"
+	"go.bug.st/serial"
 )
 
 // XBeeSerial communicates with a xbee over a serial line.
 // Implements net.PacketConn
 type XBeeSerial struct {
 	le   *logrus.Entry
-	port *serial.Port
+	port serial.Port
 	xbee *gobee.XBee
 
 	// txMtx guards the transmission process
@@ -32,7 +32,7 @@ type XBeeSerial struct {
 // NewXBeeSerial builds a xbee serial wrapper from a serial port.
 func NewXBeeSerial(
 	le *logrus.Entry,
-	serialPort *serial.Port,
+	serialPort serial.Port,
 ) *XBeeSerial {
 	s := &XBeeSerial{le: le, port: serialPort}
 	s.atHandlers = make(map[byte]func(frame *rx.AT))
