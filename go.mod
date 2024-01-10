@@ -15,7 +15,7 @@ replace (
 	github.com/nats-io/nats-server/v2 => github.com/aperturerobotics/bifrost-nats-server/v2 v2.1.8-0.20221228081037-b7c2df0c151f // aperture-2.0
 	github.com/nats-io/nats.go => github.com/aperturerobotics/bifrost-nats-client v1.10.1-0.20200831103200-24c3d0464e58 // aperture-2.0
 	github.com/nats-io/nkeys => github.com/nats-io/nkeys v0.3.0 // indirect: used by bifrost-nats-server
-	github.com/paralin/kcp-go-lite => github.com/paralin/kcp-go-lite v1.0.2-0.20240110211900-b21a81a4212d // aperture
+	github.com/paralin/kcp-go-lite => github.com/paralin/kcp-go-lite v1.0.2-0.20240110212540-c015327ec623 // aperture
 	github.com/quic-go/quic-go => github.com/aperturerobotics/quic-go v0.40.1-0.20240109035914-688195c3878b // aperture
 	github.com/sirupsen/logrus => github.com/aperturerobotics/logrus v1.9.1-0.20221224130652-ff61cbb763af // aperture
 	go.bug.st/serial => github.com/bugst/go-serial v1.6.1 // master
@@ -39,7 +39,7 @@ require (
 	github.com/nats-io/nats-server/v2 v2.10.7
 	github.com/nats-io/nats.go v1.31.0
 	github.com/nats-io/nkeys v0.4.7
-	github.com/paralin/kcp-go-lite v1.0.2-0.20240110211900-b21a81a4212d
+	github.com/paralin/kcp-go-lite v1.0.2-0.20240110212540-c015327ec623
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pierrec/lz4/v4 v4.1.21
 	github.com/pkg/errors v0.9.1
@@ -102,7 +102,6 @@ require (
 	github.com/templexxx/cpu v0.1.0 // indirect
 	github.com/templexxx/cpufeat v0.0.0-20180724012125-cef66df7f161 // indirect
 	github.com/templexxx/xorsimd v0.4.2 // indirect
-	github.com/tjfoc/gmsm v1.4.1 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	github.com/zeebo/errs v1.2.2 // indirect
 	go.uber.org/mock v0.3.0 // indirect
