@@ -36,12 +36,11 @@ Bifrost is designed around the following core concepts:
  - **RPC**: request/reply and bidirectional streaming remote calls.
  - **PubSub**: at-least-once delivery of messages to named topics.
 
-Integrates with networking, pubsub, and RPC libraries like [libp2p], [noise],
-[drpc], [starpc] and [nats].
+Integrates with networking, pubsub, and RPC libraries like [libp2p], [drpc],
+[starpc] and [nats].
 
 [drpc]: https://github.com/storj/drpc
 [libp2p]: https://libp2p.io/
-[noise]: https://github.com/perlin-network/noise
 [nats]: https://nats.io
 [starpc]: https://github.com/aperturerobotics/starpc
 
