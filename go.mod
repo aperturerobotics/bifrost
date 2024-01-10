@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/aperturerobotics/controllerbus v0.31.6-0.20240108234614-dcbb53b669a9 // latest
 	github.com/aperturerobotics/entitygraph v0.5.0
-	github.com/aperturerobotics/starpc v0.22.5 // latest
+	github.com/aperturerobotics/starpc v0.22.6 // latest
 )
 
 // aperture: use compatibility forks
@@ -35,7 +35,7 @@ require (
 	github.com/libp2p/go-libp2p v0.32.2
 	github.com/libp2p/go-yamux/v4 v4.0.2-0.20231213140704-4c5812896512
 	github.com/mr-tron/base58 v1.2.0
-	github.com/multiformats/go-multiaddr v0.12.0
+	github.com/multiformats/go-multiaddr v0.12.1
 	github.com/nats-io/nats-server/v2 v2.10.7
 	github.com/nats-io/nats.go v1.31.0
 	github.com/nats-io/nkeys v0.4.7
