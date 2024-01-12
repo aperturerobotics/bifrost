@@ -328,7 +328,35 @@ A PubSub is a controller that supports topic-based at-least-once delivery.
 
 Nats and floodsub are currently supported as PubSub protocols.
 
-## Developing on MacOS
+## Developing
+
+If using Go only, you don't need `yarn` or `Node.JS`.
+
+Bifrost uses [Protobuf](https://protobuf.dev/) for message encoding.
+
+You can re-generate the protobufs after changing any `.proto` file:
+
+```
+# stage the .proto file so yarn gen sees it
+git add .
+# install deps
+yarn
+# generate the protobufs
+yarn gen
+```
+
+To run the test suite:
+
+```
+# Go tests only
+go test ./...
+# All tests
+yarn test
+# Lint
+yarn lint
+```
+
+### Developing on MacOS
 
 On MacOS, some homebrew packages are required for `yarn gen`:
 
