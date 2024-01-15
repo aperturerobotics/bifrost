@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/aperturerobotics/bifrost/link"
@@ -40,18 +39,12 @@ type Constructor func(
 // The controller looks up the Node, acquires its identity, constructs the
 // transport, and manages the lifecycle of dialing and accepting links.
 type Controller struct {
-	// ctx is the controller context
-	ctx atomic.Pointer[context.Context]
 	// le is the logger
 	le *logrus.Entry
 	// bus is the controller bus
 	bus bus.Bus
 	// ctor is the constructor
 	ctor Constructor
-	// peerIDConstraint constrains the node peer id constraint
-	peerIDConstraint peer.ID
-	// localPeerID contains the node peer ID
-	localPeerID peer.ID
 	// info is the controller info
 	info *controller.Info
 
@@ -59,16 +52,24 @@ type Controller struct {
 	tptCtr *ccontainer.CContainer[*transport.Transport]
 
 	// mtx guards the below fields
+	// TODO: refactor to use broadcast
 	mtx sync.Mutex
+	// ctx is the controller context
+	ctx context.Context
+	// localPeerID contains the node peer ID
+	localPeerID peer.ID
 	// links is the set of active links, keyed by link uuid
 	links map[uint64]*establishedLink
 	// linkWaiters is a set of callbacks waiting for connections with peers.
+	// TODO: refactor to use broadcast
 	linkWaiters map[peer.ID][]*linkWaiter
 	// linkDialers tracks ongoing dial attempts
+	// TODO: refactor to use keyed
 	linkDialers map[linkDialerKey]*linkDialer
 	// staticPeerMap maps a peer ID to a peermap.DialPeer
 	// when EstablishLink matches a peer ID in this map,
 	// the transport controller will dial the peer.
+	// TODO: refactor to use a callback instead of a map
 	staticPeerMap map[string]*dialer.DialerOpts
 }
 
@@ -77,7 +78,7 @@ func NewController(
 	le *logrus.Entry,
 	bus bus.Bus,
 	info *controller.Info,
-	nodePeerIDConstraint peer.ID,
+	peerID peer.ID,
 	ctor Constructor,
 	staticPeerMap map[string]*dialer.DialerOpts,
 ) *Controller {
@@ -92,9 +93,8 @@ func NewController(
 
 		tptCtr: ccontainer.NewCContainer[*transport.Transport](nil),
 
-		peerIDConstraint: nodePeerIDConstraint,
-		localPeerID:      nodePeerIDConstraint,
-		linkDialers:      make(map[linkDialerKey]*linkDialer),
+		localPeerID: peerID,
+		linkDialers: make(map[linkDialerKey]*linkDialer),
 
 		staticPeerMap: staticPeerMap,
 	}
@@ -144,12 +144,16 @@ func (c *Controller) GetPeerLinks(peerID peer.ID) []link.Link {
 // Returning nil ends execution.
 // Returning an error triggers a retry with backoff.
 func (c *Controller) Execute(ctx context.Context) error {
-	c.ctx.Store(&ctx)
+	c.mtx.Lock()
+	c.ctx = ctx
+	localPeerID := c.localPeerID
+	c.mtx.Unlock()
+
 	// Acquire a handle to the node.
 	c.le.
-		WithField("peer-id", c.peerIDConstraint.String()).
-		Debug("looking up peer with ID")
-	n, _, nRef, err := peer.GetPeerWithID(ctx, c.bus, c.peerIDConstraint, false, nil)
+		WithField("peer-id", localPeerID.String()).
+		Debug("waiting for peer private key")
+	n, _, nRef, err := peer.GetPeerWithID(ctx, c.bus, localPeerID, false, nil)
 	if err != nil {
 		return err
 	}
@@ -160,10 +164,14 @@ func (c *Controller) Execute(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	c.localPeerID, err = peer.IDFromPrivateKey(privKey)
+	localPeerID, err = peer.IDFromPrivateKey(privKey)
 	if err != nil {
 		return err
 	}
+
+	c.mtx.Lock()
+	c.localPeerID = localPeerID
+	c.mtx.Unlock()
 
 	// Construct the transport
 	tpt, err := c.ctor(
@@ -240,6 +248,13 @@ func (c *Controller) HandleLinkEstablished(lnk link.Link) {
 		return
 	}
 
+	ctx := c.ctx
+	if ctx == nil {
+		c.le.Warn("dropping link: handle established link called before execute")
+		go lnk.Close()
+		return
+	}
+
 	luuid := lnk.GetUUID()
 	el, elOk := c.links[luuid]
 	if elOk {
@@ -255,15 +270,7 @@ func (c *Controller) HandleLinkEstablished(lnk link.Link) {
 		delete(c.links, luuid)
 	}
 
-	// construct new established link
-	ctxPtr := c.ctx.Load()
-	if ctxPtr == nil {
-		c.le.Warn("dropping link: handle established link called before execute")
-		go lnk.Close()
-		return
-	}
-
-	el, err := newEstablishedLink(c.le, *c.ctx.Load(), c.bus, lnk, c)
+	el, err := newEstablishedLink(c.le, ctx, c.bus, lnk, c)
 	if err != nil {
 		c.le.WithError(err).Warn("unable to construct established link")
 		go lnk.Close()
@@ -419,12 +426,15 @@ func (c *Controller) startLinkDialer(
 	opts *dialer.DialerOpts,
 	tptDialer transport.TransportDialer,
 ) {
-	ctxPtr := c.ctx.Load()
-	if ctxPtr == nil {
+	c.mtx.Lock()
+	defer c.mtx.Unlock()
+
+	ctx := c.ctx
+	if ctx == nil {
+		// startLinkDialer called before Execute
 		return
 	}
-	ctx := *ctxPtr
-	c.mtx.Lock()
+
 	_, ok := c.linkDialers[key]
 	if !ok {
 		dialer := dialer.NewDialer(c.le, tptDialer, opts, peerID, key.dialAddress)
@@ -436,21 +446,11 @@ func (c *Controller) startLinkDialer(
 		c.linkDialers[key] = ld
 		go c.executeDialer(ctx, key, ld)
 	}
-	c.mtx.Unlock()
 }
 
 // flushEstablishedLink closes an established link and cleans it up.
 // linksmtx is locked by caller
 func (c *Controller) flushEstablishedLink(el *establishedLink) {
-	/*
-		peerIDStr := el.Link.GetLocalPeer().String()
-		for ldk := range c.linkDialers {
-			if ldk.peerID == peerIDStr {
-				c.linkDialers[ldk].dialer.
-			}
-		}
-	*/
-
 	le := c.loggerForLink(el.lnk)
 	le.Info("link lost/closed")
 	c.resolveLinkWaiters(el.lnk, false)

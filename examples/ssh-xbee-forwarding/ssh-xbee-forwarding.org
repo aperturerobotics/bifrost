@@ -6,7 +6,7 @@ Reset the xbees to default values, then set:
 
  - AP: 2 (API mode with escapes)
  - Baud: 115200
- 
+
 You may need to edit the yaml files to change the path to the serial device.
 
 ** Node 1
