@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/aperturerobotics/bifrost/link"
+	"github.com/aperturerobotics/bifrost/transport/common/dialer"
 	"github.com/aperturerobotics/controllerbus/directive"
 )
 
@@ -27,7 +28,6 @@ type establishLinkResolver struct {
 func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.ResolverHandler) error {
 	c := o.c
 	peerIDConst := o.dir.EstablishLinkTargetPeerId()
-	peerIDString := peerIDConst.String()
 
 	wakeDialer := make(chan time.Time, 1)
 	linkIDs := make(map[link.Link]uint32)
@@ -58,11 +58,36 @@ func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.R
 	})
 	c.mtx.Unlock()
 
+	// Remove the link waiter when the resolver exits.
 	defer func() {
 		c.mtx.Lock()
 		o.c.clearLinkWaiter(lw)
 		c.mtx.Unlock()
 	}()
+
+	// Attempt to dial the peer if no link is active and we have an address to dial.
+	tpt, err := o.c.GetTransport(ctx)
+	if err != nil {
+		return err
+	}
+
+	tptDialer, ok := tpt.(dialer.TransportDialer)
+	if !ok {
+		// No transport dialer, just wait for a link.
+		<-ctx.Done()
+		return nil
+	}
+
+	dialerOpts, err := tptDialer.GetPeerDialer(ctx, peerIDConst)
+	if err != nil {
+		return err
+	}
+
+	if dialerOpts.GetAddress() == "" {
+		// No address, wait for a link.
+		<-ctx.Done()
+		return nil
+	}
 
 	var waitWake bool
 	for {
@@ -86,26 +111,18 @@ func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.R
 			waitWake = true
 		}
 
-		c.mtx.Lock()
-		// Check the Static Peer Map for a address, push a dialer if exists.
-		if spm := c.staticPeerMap; len(spm) > 0 {
-			var hasLink bool
-			for _, lnk := range c.links {
-				if lnk.lnk.GetRemotePeer() == peerIDConst {
-					hasLink = true
-					break
-				}
-			}
-			// Skip pushing dialer if a link already exists.
-			if !hasLink {
-				if dOpts, ok := spm[peerIDString]; ok && dOpts.GetAddress() != "" {
-					go func() {
-						_ = c.PushDialer(ctx, peerIDConst, dOpts)
-					}()
-				}
+		var hasLink bool
+		for _, lnk := range c.links {
+			if lnk.lnk.GetRemotePeer() == peerIDConst {
+				hasLink = true
+				break
 			}
 		}
-		c.mtx.Unlock()
+		if !hasLink {
+			if err := c.PushDialer(ctx, peerIDConst, dialerOpts); err != nil {
+				return err
+			}
+		}
 	}
 }
 

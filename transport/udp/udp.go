@@ -5,6 +5,7 @@ import (
 	"net"
 
 	"github.com/aperturerobotics/bifrost/transport"
+	"github.com/aperturerobotics/bifrost/transport/common/dialer"
 	"github.com/aperturerobotics/bifrost/transport/common/pconn"
 	"github.com/blang/semver"
 	"github.com/libp2p/go-libp2p/core/crypto"
@@ -39,6 +40,7 @@ func NewUDP(
 	pconnOpts *pconn.Opts,
 	uuid uint64,
 	listenAddr string,
+	staticPeerMap map[string]*dialer.DialerOpts,
 ) (*UDP, error) {
 	pc, err := net.ListenPacket("udp", listenAddr)
 	if err != nil {
@@ -64,6 +66,7 @@ func NewUDP(
 		func(addr string) (net.Addr, error) {
 			return net.ResolveUDPAddr("udp", addr)
 		},
+		staticPeerMap,
 	)
 	if err != nil {
 		return nil, err
@@ -80,8 +83,10 @@ func (u *UDP) MatchTransportType(transportType string) bool {
 	return TransportType == transportType
 }
 
-// _ is a type assertion.
-var _ transport.Transport = ((*UDP)(nil))
+var (
+	// _ is a type assertion.
+	_ transport.Transport = ((*UDP)(nil))
 
-// _ is a type assertion
-var _ transport.TransportDialer = ((*UDP)(nil))
+	// _ is a type assertion
+	_ dialer.TransportDialer = ((*UDP)(nil))
+)

@@ -73,7 +73,6 @@ func (t *Factory) Construct(
 				handler,
 			)
 		},
-		cc.GetDialers(),
 	), nil
 }
 

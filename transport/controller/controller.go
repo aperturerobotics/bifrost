@@ -2,6 +2,7 @@ package transport_controller
 
 import (
 	"context"
+	"errors"
 	"io"
 	"sync"
 	"time"
@@ -35,6 +36,32 @@ type Constructor func(
 	handler transport.TransportHandler,
 ) (transport.Transport, error)
 
+// ResolvePeerDialer is a function to resolve an address for a peer.
+// Called when resolving EstablishLink.
+// Return nil, nil to indicate not found or unavailable.
+type ResolvePeerDialer func(
+	ctx context.Context,
+	le *logrus.Entry,
+	pkey crypto.PrivKey,
+	peerID peer.ID,
+) (*dialer.DialerOpts, error)
+
+// NewResolvePeerDialerWithStaticPeerMap builds a new ResolvePeerDialer from a peer map.
+func NewResolvePeerDialerWithStaticPeerMap(spm map[string]*dialer.DialerOpts) ResolvePeerDialer {
+	if spm == nil {
+		return nil
+	}
+
+	return func(
+		ctx context.Context,
+		le *logrus.Entry,
+		pkey crypto.PrivKey,
+		peerID peer.ID,
+	) (*dialer.DialerOpts, error) {
+		return spm[peerID.String()], nil
+	}
+}
+
 // Controller implements a common transport controller.
 // The controller looks up the Node, acquires its identity, constructs the
 // transport, and manages the lifecycle of dialing and accepting links.
@@ -66,11 +93,6 @@ type Controller struct {
 	// linkDialers tracks ongoing dial attempts
 	// TODO: refactor to use keyed
 	linkDialers map[linkDialerKey]*linkDialer
-	// staticPeerMap maps a peer ID to a peermap.DialPeer
-	// when EstablishLink matches a peer ID in this map,
-	// the transport controller will dial the peer.
-	// TODO: refactor to use a callback instead of a map
-	staticPeerMap map[string]*dialer.DialerOpts
 }
 
 // NewController constructs a new transport controller.
@@ -80,7 +102,6 @@ func NewController(
 	info *controller.Info,
 	peerID peer.ID,
 	ctor Constructor,
-	staticPeerMap map[string]*dialer.DialerOpts,
 ) *Controller {
 	return &Controller{
 		le:   le,
@@ -95,8 +116,6 @@ func NewController(
 
 		localPeerID: peerID,
 		linkDialers: make(map[linkDialerKey]*linkDialer),
-
-		staticPeerMap: staticPeerMap,
 	}
 }
 
@@ -108,23 +127,6 @@ func (c *Controller) GetControllerID() string {
 // GetControllerInfo returns information about the controller.
 func (c *Controller) GetControllerInfo() *controller.Info {
 	return c.info.Clone()
-}
-
-// SetStaticPeerMap sets the static dialing peer map.
-func (c *Controller) SetStaticPeerMap(m map[string]*dialer.DialerOpts) {
-	c.mtx.Lock()
-	c.staticPeerMap = m
-	c.mtx.Unlock()
-}
-
-// PushStaticPeer pushes a static peer dialer.
-func (c *Controller) PushStaticPeer(id string, opts *dialer.DialerOpts) {
-	c.mtx.Lock()
-	if c.staticPeerMap == nil {
-		c.staticPeerMap = make(map[string]*dialer.DialerOpts)
-	}
-	c.staticPeerMap[id] = opts
-	c.mtx.Unlock()
 }
 
 // GetPeerLinks returns all links with the peer.
@@ -409,7 +411,7 @@ func (c *Controller) PushDialer(
 	if err != nil {
 		return err
 	}
-	tptDialer, ok := tpt.(transport.TransportDialer)
+	tptDialer, ok := tpt.(dialer.TransportDialer)
 	if !ok {
 		c.le.Warn("ignoring dial attempt: transport is not a TransportDialer")
 		return nil
@@ -419,8 +421,7 @@ func (c *Controller) PushDialer(
 		peerID:      peerID.String(),
 		dialAddress: opts.GetAddress(),
 	}
-	go c.startLinkDialer(peerID, key, opts, tptDialer)
-	return nil
+	return c.startLinkDialer(peerID, key, opts, tptDialer)
 }
 
 // startLinkDialer starts a new link dialer.
@@ -428,21 +429,31 @@ func (c *Controller) startLinkDialer(
 	peerID peer.ID,
 	key linkDialerKey,
 	opts *dialer.DialerOpts,
-	tptDialer transport.TransportDialer,
-) {
+	tptDialer dialer.TransportDialer,
+) error {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 
-	ctx := c.ctx
-	if ctx == nil {
-		// startLinkDialer called before Execute
-		return
+	return c.startLinkDialerLocked(peerID, key, opts, tptDialer)
+}
+
+// startLinkDialerLocked starts a link dialer while mtx is locked.
+// mtx is locked by caller
+func (c *Controller) startLinkDialerLocked(
+	peerID peer.ID,
+	key linkDialerKey,
+	opts *dialer.DialerOpts,
+	tptDialer dialer.TransportDialer,
+) error {
+	if c.ctx == nil {
+		// dialer called before execute
+		return errors.New("cannot start link dialer before transport is executed")
 	}
 
 	_, ok := c.linkDialers[key]
 	if !ok {
 		dialer := dialer.NewDialer(c.le, tptDialer, opts, peerID, key.dialAddress)
-		ctx, ctxCancel := context.WithCancel(ctx)
+		ctx, ctxCancel := context.WithCancel(c.ctx)
 		ld := &linkDialer{
 			dialer: dialer,
 			cancel: ctxCancel,
@@ -450,10 +461,12 @@ func (c *Controller) startLinkDialer(
 		c.linkDialers[key] = ld
 		go c.executeDialer(ctx, key, ld)
 	}
+
+	return nil
 }
 
 // flushEstablishedLink closes an established link and cleans it up.
-// linksmtx is locked by caller
+// mtx is locked by caller
 func (c *Controller) flushEstablishedLink(el *establishedLink) {
 	le := c.loggerForLink(el.lnk)
 	le.Info("link lost/closed")

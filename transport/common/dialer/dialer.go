@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/aperturerobotics/bifrost/peer"
-	"github.com/aperturerobotics/bifrost/transport"
 	bo "github.com/cenkalti/backoff"
 	"github.com/sirupsen/logrus"
 )
@@ -16,7 +15,7 @@ type Dialer struct {
 	// le is the logger
 	le *logrus.Entry
 	// tptDialer is the transport dialer.
-	tptDialer transport.TransportDialer
+	tptDialer TransportDialer
 	// backoff is the dialer backoff
 	backoff bo.BackOff
 	// peerID is the peer id
@@ -28,7 +27,7 @@ type Dialer struct {
 // NewDialer constructs a new Dialer
 func NewDialer(
 	le *logrus.Entry,
-	tptDialer transport.TransportDialer,
+	tptDialer TransportDialer,
 	opts *DialerOpts,
 	peerID peer.ID,
 	address string,

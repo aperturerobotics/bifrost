@@ -6,6 +6,7 @@ import (
 	bp "github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/sim/graph"
 	"github.com/aperturerobotics/bifrost/testbed"
+	"github.com/aperturerobotics/bifrost/transport/common/dialer"
 	"github.com/aperturerobotics/bifrost/transport/common/pconn"
 	transport_quic "github.com/aperturerobotics/bifrost/transport/common/quic"
 	transport_controller "github.com/aperturerobotics/bifrost/transport/controller"
@@ -35,6 +36,8 @@ type Peer struct {
 	inproc *inproc.Inproc
 	// transportController is the transport controller
 	transportController *transport_controller.Controller
+	// staticPeerMap is the static peer map
+	staticPeerMap map[string]*dialer.DialerOpts
 }
 
 // newPeer constructs a new Peer.
@@ -45,15 +48,19 @@ func newPeer(ctx context.Context, le *logrus.Entry, gp *graph.Peer, verbose bool
 			r()
 		}
 	}
+
 	np := &Peer{
 		graphPeer: gp,
 		rel:       rel,
 		le:        le.WithField("sim-peer", gp.ID()),
 		// WithField("sim-peer", gp.GetPeerID().String()).
+		staticPeerMap: make(map[string]*dialer.DialerOpts),
 	}
+
 	var ctxCancel func()
 	np.ctx, ctxCancel = context.WithCancel(ctx)
 	rels = append(rels, ctxCancel)
+
 	var err error
 	np.testbed, err = testbed.NewTestbed(
 		np.ctx,
@@ -64,6 +71,7 @@ func newPeer(ctx context.Context, le *logrus.Entry, gp *graph.Peer, verbose bool
 		rel()
 		return nil, err
 	}
+
 	np.testbed.StaticResolver.AddFactory(inproc.NewFactory(np.testbed.Bus))
 	for _, extraFactoryCtor := range gp.GetExtraFactories() {
 		np.testbed.StaticResolver.AddFactory(extraFactoryCtor(np.testbed.Bus))
@@ -71,6 +79,7 @@ func newPeer(ctx context.Context, le *logrus.Entry, gp *graph.Peer, verbose bool
 	for _, extraFactoryCtor := range gp.GetExtraFactoryAdders() {
 		extraFactoryCtor(np.testbed.Bus, np.testbed.StaticResolver)
 	}
+
 	tp1, _, tp1Ref, err := loader.WaitExecControllerRunning(
 		np.ctx,
 		np.testbed.Bus,
@@ -82,6 +91,7 @@ func newPeer(ctx context.Context, le *logrus.Entry, gp *graph.Peer, verbose bool
 					Verbose: verbose,
 				},
 			},
+			Dialers: np.staticPeerMap,
 		}),
 		nil,
 	)
@@ -90,6 +100,7 @@ func newPeer(ctx context.Context, le *logrus.Entry, gp *graph.Peer, verbose bool
 		return nil, err
 	}
 	rels = append(rels, tp1Ref.Release)
+
 	tpc := tp1.(*transport_controller.Controller)
 	tp, err := tpc.GetTransport(np.ctx)
 	if err != nil {
@@ -98,6 +109,7 @@ func newPeer(ctx context.Context, le *logrus.Entry, gp *graph.Peer, verbose bool
 	}
 	np.inproc = tp.(*inproc.Inproc)
 	np.transportController = tpc
+
 	_, _, tp2Ref, err := bus.ExecOneOff(
 		np.ctx,
 		np.testbed.Bus,
@@ -110,6 +122,7 @@ func newPeer(ctx context.Context, le *logrus.Entry, gp *graph.Peer, verbose bool
 		return nil, err
 	}
 	rels = append(rels, tp2Ref.Release)
+
 	_, tp3Ref, err := np.testbed.Bus.AddDirective(
 		configset.NewApplyConfigSet(gp.GetConfigSet()),
 		nil,
@@ -119,6 +132,7 @@ func newPeer(ctx context.Context, le *logrus.Entry, gp *graph.Peer, verbose bool
 		return nil, err
 	}
 	rels = append(rels, tp3Ref.Release)
+
 	return np, nil
 }
 

@@ -7,6 +7,7 @@ import (
 
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/transport"
+	"github.com/aperturerobotics/bifrost/transport/common/dialer"
 	"github.com/aperturerobotics/bifrost/transport/common/pconn"
 	transport_controller "github.com/aperturerobotics/bifrost/transport/controller"
 	"github.com/aperturerobotics/controllerbus/bus"
@@ -78,6 +79,7 @@ func NewInproc(
 		0,
 		npc,
 		ParseAddr,
+		opts.GetDialers(),
 	)
 	if err != nil {
 		return nil, err
@@ -112,7 +114,6 @@ func BuildInprocController(
 				handler,
 			)
 		},
-		conf.GetDialers(),
 	)
 }
 
@@ -159,4 +160,4 @@ func (t *Inproc) writeToAddr(ctx context.Context, p []byte, addr net.Addr) (int,
 var _ transport.Transport = ((*Inproc)(nil))
 
 // _ is a type assertion.
-var _ transport.TransportDialer = ((*Inproc)(nil))
+var _ dialer.TransportDialer = ((*Inproc)(nil))

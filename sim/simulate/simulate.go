@@ -81,13 +81,14 @@ func NewSimulator(
 			}
 			op.inproc.ConnectToInproc(ctx, pushedPeer.inproc)
 			pushedPeer.inproc.ConnectToInproc(s.ctx, op.inproc)
+
 			le.Debugf("adding in-memory link from %s from %s", lpeerPeerIDStr, peerIDStr)
-			pushedPeer.transportController.PushStaticPeer(lpeerPeerIDStr, &dialer.DialerOpts{
+			pushedPeer.staticPeerMap[lpeerPeerIDStr] = &dialer.DialerOpts{
 				Address: op.inproc.LocalAddr().String(),
-			})
-			op.transportController.PushStaticPeer(peerIDStr, &dialer.DialerOpts{
+			}
+			op.staticPeerMap[peerIDStr] = &dialer.DialerOpts{
 				Address: pushedPeer.inproc.LocalAddr().String(),
-			})
+			}
 		}
 	}
 

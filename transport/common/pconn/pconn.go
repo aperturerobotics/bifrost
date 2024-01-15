@@ -6,6 +6,7 @@ import (
 
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/transport"
+	"github.com/aperturerobotics/bifrost/transport/common/dialer"
 	transport_quic "github.com/aperturerobotics/bifrost/transport/common/quic"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/quic-go/quic-go"
@@ -34,6 +35,9 @@ type Transport struct {
 	// addrParser parses an address from a string
 	// if nil, the dialer will not function
 	addrParser func(addr string) (net.Addr, error)
+	// staticPeerMap is a map of peer ids to dialing addresses
+	// may be nil
+	staticPeerMap map[string]*dialer.DialerOpts
 
 	// quicConfig is the quic configuration
 	quicConfig *quic.Config
@@ -55,6 +59,9 @@ func NewTransport(
 	// addrParser parses addresses to net.Addr for dialing
 	// can be nil
 	addrParser func(addr string) (net.Addr, error),
+	// staticPeerMap is a map of peer ids to dialing addresses
+	// may be nil
+	staticPeerMap map[string]*dialer.DialerOpts,
 ) (*Transport, error) {
 	if opts == nil {
 		opts = &Opts{}
@@ -66,14 +73,15 @@ func NewTransport(
 	}
 
 	tpt := &Transport{
-		ctx:        ctx,
-		le:         le,
-		pc:         pc,
-		handler:    tc,
-		opts:       opts,
-		peerID:     peerID,
-		privKey:    privKey,
-		addrParser: addrParser,
+		ctx:           ctx,
+		le:            le,
+		pc:            pc,
+		handler:       tc,
+		opts:          opts,
+		peerID:        peerID,
+		privKey:       privKey,
+		addrParser:    addrParser,
+		staticPeerMap: staticPeerMap,
 	}
 
 	var dialFn transport_quic.DialFunc
@@ -156,6 +164,13 @@ func (t *Transport) Execute(ctx context.Context) error {
 			continue
 		}
 	}
+}
+
+// GetPeerDialer returns the dialing information for a peer.
+// Called when resolving EstablishLink.
+// Return nil, nil to indicate not found or unavailable.
+func (t *Transport) GetPeerDialer(ctx context.Context, peerID peer.ID) (*dialer.DialerOpts, error) {
+	return t.staticPeerMap[peerID.String()], nil
 }
 
 // Close closes the transport, returning any errors closing.

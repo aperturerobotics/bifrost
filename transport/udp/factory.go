@@ -73,9 +73,9 @@ func (t *Factory) Construct(
 				cc.GetPacketOpts(),
 				0,
 				cc.GetListenAddr(),
+				cc.GetDialers(),
 			)
 		},
-		cc.GetDialers(),
 	), nil
 }
 

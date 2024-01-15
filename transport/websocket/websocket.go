@@ -7,6 +7,7 @@ import (
 
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/transport"
+	"github.com/aperturerobotics/bifrost/transport/common/dialer"
 	transport_quic "github.com/aperturerobotics/bifrost/transport/common/quic"
 	"github.com/aperturerobotics/bifrost/util/saddr"
 	"github.com/blang/semver"
@@ -123,6 +124,13 @@ func (w *WebSocket) MatchTransportType(transportType string) bool {
 	return transportType == TransportType
 }
 
+// GetPeerDialer returns the dialing information for a peer.
+// Called when resolving EstablishLink.
+// Return nil, nil to indicate not found or unavailable.
+func (w *WebSocket) GetPeerDialer(ctx context.Context, peerID peer.ID) (*dialer.DialerOpts, error) {
+	return w.conf.GetDialers()[peerID.String()], nil
+}
+
 // Execute executes the transport as configured, returning any fatal error.
 func (w *WebSocket) Execute(ctx context.Context) error {
 	// note: w.Transport.Execute is unnecessary (no-op for quic)
@@ -200,7 +208,7 @@ func (w *WebSocket) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 // _ is a type assertion.
 var (
-	_ transport.Transport       = ((*WebSocket)(nil))
-	_ transport.TransportDialer = ((*WebSocket)(nil))
-	_ http.Handler              = ((*WebSocket)(nil))
+	_ transport.Transport    = ((*WebSocket)(nil))
+	_ dialer.TransportDialer = ((*WebSocket)(nil))
+	_ http.Handler           = ((*WebSocket)(nil))
 )

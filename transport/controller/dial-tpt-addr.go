@@ -6,7 +6,6 @@ import (
 
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/tptaddr"
-	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/aperturerobotics/bifrost/transport/common/dialer"
 	"github.com/aperturerobotics/controllerbus/directive"
 )
@@ -29,7 +28,7 @@ func (o *dialTptAddrResolver) Resolve(ctx context.Context, handler directive.Res
 	if err != nil {
 		return err
 	}
-	tptDialer, ok := tpt.(transport.TransportDialer)
+	tptDialer, ok := tpt.(dialer.TransportDialer)
 	if !ok {
 		return nil
 	}

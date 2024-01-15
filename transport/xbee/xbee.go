@@ -5,8 +5,10 @@ import (
 	"net"
 	"strings"
 
+	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/transport"
-	pconn "github.com/aperturerobotics/bifrost/transport/common/kcp"
+	"github.com/aperturerobotics/bifrost/transport/common/dialer"
+	kcp "github.com/aperturerobotics/bifrost/transport/common/kcp"
 	"github.com/aperturerobotics/bifrost/transport/xbee/xbserial"
 	"github.com/aperturerobotics/bifrost/util/scrc"
 	"github.com/blang/semver"
@@ -26,13 +28,15 @@ const TransportType = "xbee"
 const ControllerID = "bifrost/xbee"
 
 // Link represents a xbee-based connection/link.
-type Link = pconn.Link
+type Link = kcp.Link
 
 // XBee implements a XBee transport.
 type XBee struct {
-	*pconn.Transport
+	*kcp.Transport
 
 	xbs *xbserial.XBeeSerial
+	// staticPeerMap is the static peer map
+	staticPeerMap map[string]*dialer.DialerOpts
 }
 
 // NewXBee builds a new XBee transport, opening the serial device.
@@ -72,7 +76,7 @@ func NewXBee(
 	le.
 		WithField("device-address", pc.LocalAddr().String()).
 		Info("opened xbee device successfully")
-	conn := pconn.New(
+	conn := kcp.New(
 		le,
 		uuid,
 		pc,
@@ -83,7 +87,7 @@ func NewXBee(
 		c,
 		opts.GetPacketOpts(),
 	)
-	return &XBee{Transport: conn, xbs: xbs}, nil
+	return &XBee{Transport: conn, xbs: xbs, staticPeerMap: opts.GetDialers()}, nil
 }
 
 // MatchTransportType checks if the given transport type ID matches this transport.
@@ -93,13 +97,22 @@ func (c *XBee) MatchTransportType(transportType string) bool {
 	return transportType == TransportType
 }
 
+// GetPeerDialer returns the dialing information for a peer.
+// Called when resolving EstablishLink.
+// Return nil, nil to indicate not found or unavailable.
+func (c *XBee) GetPeerDialer(ctx context.Context, peerID peer.ID) (*dialer.DialerOpts, error) {
+	return c.staticPeerMap[peerID.String()], nil
+}
+
 // Execute executes the transport as configured, returning any fatal error.
 func (c *XBee) Execute(ctx context.Context) error {
 	return c.Transport.Execute(ctx)
 }
 
-// _ is a type assertion.
-var _ transport.Transport = ((*XBee)(nil))
+var (
+	// _ is a type assertion.
+	_ transport.Transport = ((*XBee)(nil))
 
-// _ is a type assertion
-var _ transport.TransportDialer = ((*XBee)(nil))
+	// _ is a type assertion
+	_ dialer.TransportDialer = ((*XBee)(nil))
+)
