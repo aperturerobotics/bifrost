@@ -54,9 +54,9 @@ type Controller struct {
 	// mtx guards the below fields
 	// TODO: refactor to use broadcast
 	mtx sync.Mutex
-	// ctx is the controller context
+	// ctx is the controller context from Execute
 	ctx context.Context
-	// localPeerID contains the node peer ID
+	// localPeerID contains the transport peer ID
 	localPeerID peer.ID
 	// links is the set of active links, keyed by link uuid
 	links map[uint64]*establishedLink
@@ -95,8 +95,6 @@ func NewController(
 
 		localPeerID: peerID,
 		linkDialers: make(map[linkDialerKey]*linkDialer),
-
-		staticPeerMap: staticPeerMap,
 	}
 }
 
@@ -108,23 +106,6 @@ func (c *Controller) GetControllerID() string {
 // GetControllerInfo returns information about the controller.
 func (c *Controller) GetControllerInfo() *controller.Info {
 	return c.info.Clone()
-}
-
-// SetStaticPeerMap sets the static dialing peer map.
-func (c *Controller) SetStaticPeerMap(m map[string]*dialer.DialerOpts) {
-	c.mtx.Lock()
-	c.staticPeerMap = m
-	c.mtx.Unlock()
-}
-
-// PushStaticPeer pushes a static peer dialer.
-func (c *Controller) PushStaticPeer(id string, opts *dialer.DialerOpts) {
-	c.mtx.Lock()
-	if c.staticPeerMap == nil {
-		c.staticPeerMap = make(map[string]*dialer.DialerOpts)
-	}
-	c.staticPeerMap[id] = opts
-	c.mtx.Unlock()
 }
 
 // GetPeerLinks returns all links with the peer.
@@ -153,17 +134,18 @@ func (c *Controller) Execute(ctx context.Context) error {
 	c.le.
 		WithField("peer-id", localPeerID.String()).
 		Debug("waiting for peer private key")
-	n, _, nRef, err := peer.GetPeerWithID(ctx, c.bus, localPeerID, false, nil)
+	localPeer, _, localPeerRef, err := peer.GetPeerWithID(ctx, c.bus, localPeerID, false, nil)
 	if err != nil {
 		return err
 	}
-	defer nRef.Release()
 
-	// Get the priv key
-	privKey, err := n.GetPrivKey(ctx)
+	// Get the priv key and release the peer
+	privKey, err := localPeer.GetPrivKey(ctx)
+	localPeerRef.Release()
 	if err != nil {
 		return err
 	}
+
 	localPeerID, err = peer.IDFromPrivateKey(privKey)
 	if err != nil {
 		return err
@@ -183,15 +165,18 @@ func (c *Controller) Execute(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	defer tpt.Close()
 
 	c.le.Debug("executing transport")
 	c.tptCtr.SetValue(&tpt)
 	err = tpt.Execute(ctx)
 	if err != nil {
 		c.tptCtr.SetValue(nil)
+		tpt.Close()
+		return err
 	}
-	return err
+
+	// Transport exited w/o an error
+	return nil
 }
 
 // GetTransport returns the controlled transport.
