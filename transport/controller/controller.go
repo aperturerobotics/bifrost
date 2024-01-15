@@ -417,31 +417,25 @@ func (c *Controller) PushDialer(
 		return nil
 	}
 
-	key := linkDialerKey{
-		peerID:      peerID.String(),
-		dialAddress: opts.GetAddress(),
-	}
-	return c.startLinkDialer(peerID, key, opts, tptDialer)
+	return c.startLinkDialer(peerID, opts, tptDialer)
 }
 
 // startLinkDialer starts a new link dialer.
 func (c *Controller) startLinkDialer(
 	peerID peer.ID,
-	key linkDialerKey,
 	opts *dialer.DialerOpts,
 	tptDialer dialer.TransportDialer,
 ) error {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 
-	return c.startLinkDialerLocked(peerID, key, opts, tptDialer)
+	return c.startLinkDialerLocked(peerID, opts, tptDialer)
 }
 
 // startLinkDialerLocked starts a link dialer while mtx is locked.
 // mtx is locked by caller
 func (c *Controller) startLinkDialerLocked(
 	peerID peer.ID,
-	key linkDialerKey,
 	opts *dialer.DialerOpts,
 	tptDialer dialer.TransportDialer,
 ) error {
@@ -450,6 +444,10 @@ func (c *Controller) startLinkDialerLocked(
 		return errors.New("cannot start link dialer before transport is executed")
 	}
 
+	key := linkDialerKey{
+		peerID:      peerID.String(),
+		dialAddress: opts.GetAddress(),
+	}
 	_, ok := c.linkDialers[key]
 	if !ok {
 		dialer := dialer.NewDialer(c.le, tptDialer, opts, peerID, key.dialAddress)

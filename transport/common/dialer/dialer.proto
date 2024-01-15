@@ -9,6 +9,6 @@ message DialerOpts {
   string address = 1;
   // Backoff is the dialing backoff configuration.
   // Can be empty.
-  backoff.Backoff backoff = 2;
+  .backoff.Backoff backoff = 2;
 }
 

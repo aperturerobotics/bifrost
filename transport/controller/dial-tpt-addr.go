@@ -101,7 +101,7 @@ func (o *dialTptAddrResolver) Resolve(ctx context.Context, handler directive.Res
 		}
 
 		c.mtx.Lock()
-		// Check the Static Peer Map for a address, push a dialer if exists.
+		// If we already have a link, do nothing.
 		var hasLink bool
 		for _, lnk := range c.links {
 			if lnk.lnk.GetRemotePeer() == peerIDConst {
@@ -109,19 +109,15 @@ func (o *dialTptAddrResolver) Resolve(ctx context.Context, handler directive.Res
 				break
 			}
 		}
-		// Skip pushing dialer if a link already exists.
 		if !hasLink {
-			go func() {
-				key := linkDialerKey{
-					peerID:      peerIDConst.String(),
-					dialAddress: dialAddr,
-				}
-				go c.startLinkDialer(peerIDConst, key, &dialer.DialerOpts{
-					Address: dialAddr,
-				}, tptDialer)
-			}()
+			err = c.startLinkDialerLocked(peerIDConst, &dialer.DialerOpts{
+				Address: dialAddr,
+			}, tptDialer)
 		}
 		c.mtx.Unlock()
+		if err != nil {
+			return err
+		}
 	}
 }
 
