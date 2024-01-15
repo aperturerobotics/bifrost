@@ -50,6 +50,7 @@ func NewSimulator(
 	// Instantiate the nodes
 	allNodes := grp.AllNodes()
 	le.Debugf("processing %d nodes in graph", len(allNodes))
+	var allPeers []*Peer
 	for _, node := range allNodes {
 		peer, isPeer := node.(*graph.Peer)
 		if !isPeer {
@@ -67,6 +68,7 @@ func NewSimulator(
 			s.ctxCancel()
 			return nil, err
 		}
+		allPeers = append(allPeers, pushedPeer)
 
 		// get the list of linked peers
 		linkedPeers := peer.GetLinkedPeers(grp)
@@ -79,16 +81,25 @@ func NewSimulator(
 			if !ok {
 				continue
 			}
+
+			le.Debugf("added in-memory link from %s to %s", lpeerPeerIDStr, peerIDStr)
 			op.inproc.ConnectToInproc(ctx, pushedPeer.inproc)
 			pushedPeer.inproc.ConnectToInproc(s.ctx, op.inproc)
 
-			le.Debugf("adding in-memory link from %s from %s", lpeerPeerIDStr, peerIDStr)
 			pushedPeer.staticPeerMap[lpeerPeerIDStr] = &dialer.DialerOpts{
 				Address: op.inproc.LocalAddr().String(),
 			}
 			op.staticPeerMap[peerIDStr] = &dialer.DialerOpts{
 				Address: pushedPeer.inproc.LocalAddr().String(),
 			}
+		}
+	}
+
+	// Finish startup
+	for _, addedPeer := range allPeers {
+		if err := addedPeer.finishSetup(); err != nil {
+			s.ctxCancel()
+			return nil, err
 		}
 	}
 

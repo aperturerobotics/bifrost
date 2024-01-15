@@ -28,8 +28,8 @@ type Peer struct {
 	le *logrus.Entry
 	// ctx is the context for the peer
 	ctx context.Context
-	// rel releases all of this peer's resources
-	rel func()
+	// rels are functions to call to release this peer
+	rels []func()
 	// testbed is the peer's testbed.
 	testbed *testbed.Testbed
 	// inproc is the in-process transport instance.
@@ -51,7 +51,6 @@ func newPeer(ctx context.Context, le *logrus.Entry, gp *graph.Peer, verbose bool
 
 	np := &Peer{
 		graphPeer: gp,
-		rel:       rel,
 		le:        le.WithField("sim-peer", gp.ID()),
 		// WithField("sim-peer", gp.GetPeerID().String()).
 		staticPeerMap: make(map[string]*dialer.DialerOpts),
@@ -123,17 +122,23 @@ func newPeer(ctx context.Context, le *logrus.Entry, gp *graph.Peer, verbose bool
 	}
 	rels = append(rels, tp2Ref.Release)
 
-	_, tp3Ref, err := np.testbed.Bus.AddDirective(
-		configset.NewApplyConfigSet(gp.GetConfigSet()),
+	// Don't call ApplyConfigSet yet until the simulator is fully started.
+	np.rels = rels
+	return np, nil
+}
+
+// finishSetup applies the peer config set once simulator startup is complete.
+func (p *Peer) finishSetup() error {
+	_, applyRef, err := p.testbed.Bus.AddDirective(
+		configset.NewApplyConfigSet(p.graphPeer.GetConfigSet()),
 		nil,
 	)
 	if err != nil {
-		rel()
-		return nil, err
+		return err
 	}
-	rels = append(rels, tp3Ref.Release)
 
-	return np, nil
+	p.rels = append(p.rels, applyRef.Release)
+	return nil
 }
 
 // GetPeerID returns the Peer ID.
@@ -168,5 +173,9 @@ func (p *Peer) GetTransportController() *transport_controller.Controller {
 
 // Close cancels the Peer's subroutines.
 func (p *Peer) Close() {
-	p.rel()
+	rels := p.rels
+	p.rels = nil
+	for _, rel := range rels {
+		rel()
+	}
 }
