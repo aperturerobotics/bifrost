@@ -7,7 +7,7 @@ udp:
 forwarding:
   config:
     protocolId: my/http/forwarding
-    targetMultiaddr: "/ip4/127.0.0.1/tcp/8000"
+    targetMultiaddr: "/ip4/127.0.0.1/tcp/8080"
   id: bifrost/stream/forwarding
   rev: 1
 
