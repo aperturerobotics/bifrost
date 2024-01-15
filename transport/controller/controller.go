@@ -95,6 +95,8 @@ func NewController(
 
 		localPeerID: peerID,
 		linkDialers: make(map[linkDialerKey]*linkDialer),
+
+		staticPeerMap: staticPeerMap,
 	}
 }
 
@@ -106,6 +108,23 @@ func (c *Controller) GetControllerID() string {
 // GetControllerInfo returns information about the controller.
 func (c *Controller) GetControllerInfo() *controller.Info {
 	return c.info.Clone()
+}
+
+// SetStaticPeerMap sets the static dialing peer map.
+func (c *Controller) SetStaticPeerMap(m map[string]*dialer.DialerOpts) {
+	c.mtx.Lock()
+	c.staticPeerMap = m
+	c.mtx.Unlock()
+}
+
+// PushStaticPeer pushes a static peer dialer.
+func (c *Controller) PushStaticPeer(id string, opts *dialer.DialerOpts) {
+	c.mtx.Lock()
+	if c.staticPeerMap == nil {
+		c.staticPeerMap = make(map[string]*dialer.DialerOpts)
+	}
+	c.staticPeerMap[id] = opts
+	c.mtx.Unlock()
 }
 
 // GetPeerLinks returns all links with the peer.
