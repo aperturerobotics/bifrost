@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/aperturerobotics/controllerbus v0.31.6 // latest
 	github.com/aperturerobotics/entitygraph v0.5.0
-	github.com/aperturerobotics/starpc v0.22.6 // latest
+	github.com/aperturerobotics/starpc v0.22.7 // latest
 )
 
 // aperture: use compatibility forks
@@ -44,7 +44,7 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.21
 	github.com/pkg/errors v0.9.1
 	github.com/planetscale/vtprotobuf v0.5.0
-	github.com/quic-go/quic-go v0.40.1
+	github.com/quic-go/quic-go v0.41.0
 	github.com/sasha-s/go-deadlock v0.3.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/templexxx/xor v0.0.0-20191217153810-f85b25db303b
