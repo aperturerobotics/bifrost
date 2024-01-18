@@ -15,14 +15,14 @@ require (
 	github.com/golangci/golangci-lint v1.53.3
 	github.com/planetscale/vtprotobuf v0.5.0
 	github.com/psampaz/go-mod-outdated v0.9.0
-	github.com/quic-go/quic-go v0.40.1 // indirect
+	github.com/quic-go/quic-go v0.41.0 // indirect
 	google.golang.org/protobuf v1.32.0
 )
 
 require (
 	github.com/aperturerobotics/bifrost v0.17.4
 	github.com/aperturerobotics/goprotowrap v0.3.0
-	github.com/aperturerobotics/starpc v0.22.6
+	github.com/aperturerobotics/starpc v0.22.7
 	github.com/evanw/esbuild v0.18.12
 	github.com/hajimehoshi/wasmserve v0.0.0-20230504031707-cd7d23533341
 	storj.io/drpc v0.0.33
@@ -44,11 +44,11 @@ require (
 	github.com/alexkohler/nakedret/v2 v2.0.2 // indirect
 	github.com/alexkohler/prealloc v1.0.0 // indirect
 	github.com/alingse/asasalint v0.0.11 // indirect
-	github.com/aperturerobotics/controllerbus v0.31.6-0.20240108234614-dcbb53b669a9 // indirect
-	github.com/aperturerobotics/entitygraph v0.5.0 // indirect
+	github.com/aperturerobotics/controllerbus v0.31.6 // indirect
+	github.com/aperturerobotics/entitygraph v0.6.0 // indirect
 	github.com/aperturerobotics/timestamp v0.8.2 // indirect
 	github.com/aperturerobotics/ts-proto-common-types v0.20.2 // indirect
-	github.com/aperturerobotics/util v1.11.3 // indirect
+	github.com/aperturerobotics/util v1.12.0 // indirect
 	github.com/ashanbrown/forbidigo v1.5.3 // indirect
 	github.com/ashanbrown/makezero v1.1.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -177,7 +177,6 @@ require (
 	github.com/quasilyte/gogrep v0.5.0 // indirect
 	github.com/quasilyte/regex/syntax v0.0.0-20210819130434-b3f0c404a727 // indirect
 	github.com/quasilyte/stdinfo v0.0.0-20220114132959-f7386bf02567 // indirect
-	github.com/quic-go/qtls-go1-20 v0.4.1 // indirect
 	github.com/rivo/uniseg v0.4.3 // indirect
 	github.com/ryancurrah/gomodguard v1.3.0 // indirect
 	github.com/ryanrolds/sqlclosecheck v0.4.0 // indirect
@@ -226,14 +225,14 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
 	golang.org/x/crypto v0.18.0 // indirect
-	golang.org/x/exp v0.0.0-20240110193028-0dcbfd608b1e // indirect
+	golang.org/x/exp v0.0.0-20240112132812-db7319d0e0e3 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20230224173230-c95f2b4c22f2 // indirect
 	golang.org/x/mod v0.14.0 // indirect
 	golang.org/x/net v0.20.0 // indirect
-	golang.org/x/sync v0.5.0 // indirect
+	golang.org/x/sync v0.6.0 // indirect
 	golang.org/x/sys v0.16.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
-	golang.org/x/tools v0.16.1 // indirect
+	golang.org/x/tools v0.17.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
