@@ -66,6 +66,19 @@ func NewPeerWithID(id lpeer.ID) (Peer, error) {
 	return NewPeerWithPubKey(pubKey)
 }
 
+// ParsePeerIDWithPubKey parses the peer id and extracts the public key.
+func ParsePeerIDWithPubKey(peerIDStr string) (ID, crypto.PubKey, error) {
+	peerID, err := IDB58Decode(peerIDStr)
+	if err != nil {
+		return "", nil, err
+	}
+	peerPub, err := peerID.ExtractPublicKey()
+	if err != nil {
+		return peerID, nil, err
+	}
+	return peerID, peerPub, nil
+}
+
 // peer implements Peer with an in-memory struct.
 type peer struct {
 	privKey crypto.PrivKey
