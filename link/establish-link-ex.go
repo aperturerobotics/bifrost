@@ -9,6 +9,7 @@ import (
 
 // EstablishLinkWithPeerEx executes a EstablishLinkWithPeer directive.
 // Returns a release function.
+// if returnIfIdle: returns nil, nil, nil if not found (idle directive)
 func EstablishLinkWithPeerEx(
 	ctx context.Context,
 	b bus.Bus,
@@ -26,7 +27,11 @@ func EstablishLinkWithPeerEx(
 		nil,
 	)
 	if err != nil {
-		return nil, func() {}, err
+		return nil, nil, err
+	}
+	if estl == nil {
+		ref.Release()
+		return nil, nil, nil
 	}
 
 	return estl, ref.Release, nil
