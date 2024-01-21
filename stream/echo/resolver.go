@@ -17,7 +17,7 @@ type EchoResolver struct {
 	bus bus.Bus
 }
 
-// NewEchoResolver constructs a new dial resolver.
+// NewEchoResolver constructs a new mounted stream echo resolver.
 func NewEchoResolver(le *logrus.Entry, bus bus.Bus) (*EchoResolver, error) {
 	return &EchoResolver{le: le, bus: bus}, nil
 }
