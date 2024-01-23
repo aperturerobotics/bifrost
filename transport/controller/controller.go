@@ -63,8 +63,6 @@ func NewResolvePeerDialerWithStaticPeerMap(spm map[string]*dialer.DialerOpts) Re
 }
 
 // Controller implements a common transport controller.
-// The controller looks up the Node, acquires its identity, constructs the
-// transport, and manages the lifecycle of dialing and accepting links.
 type Controller struct {
 	// le is the logger
 	le *logrus.Entry

@@ -27,12 +27,27 @@ type establishLinkResolver struct {
 // Values will be maintained from the previous call.
 func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.ResolverHandler) error {
 	c := o.c
-	peerIDConst := o.dir.EstablishLinkTargetPeerId()
+	targetPeerID := o.dir.EstablishLinkTargetPeerId()
+
+	// If the directive filtered by source peer ID, add a EstablishLink
+	// directive for the destination as well to ensure there is a reference.
+	//
+	// XXX: the current approach to using EstablishLink to determine the
+	// lifecycle of the Link (when it is released) is a bit messy and
+	// counter-intuitive and could be improved by instead using a refcount
+	// mechanism to release links when no directives ask for them.
+	if o.dir.EstablishLinkSourcePeerId() != "" {
+		_, estLinkRef, err := o.c.bus.AddDirective(link.NewEstablishLinkWithPeer("", targetPeerID), nil)
+		if err != nil {
+			return err
+		}
+		defer estLinkRef.Release()
+	}
 
 	wakeDialer := make(chan time.Time, 1)
 	linkIDs := make(map[link.Link]uint32)
 	c.mtx.Lock()
-	lw := o.c.pushLinkWaiter(peerIDConst, false, func(lnk link.Link, added bool) {
+	lw := o.c.pushLinkWaiter(targetPeerID, false, func(lnk link.Link, added bool) {
 		if added {
 			if _, ok := linkIDs[lnk]; !ok {
 				if vid, ok := handler.AddValue(lnk); ok {
@@ -78,7 +93,7 @@ func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.R
 		return nil
 	}
 
-	dialerOpts, err := tptDialer.GetPeerDialer(ctx, peerIDConst)
+	dialerOpts, err := tptDialer.GetPeerDialer(ctx, targetPeerID)
 	if err != nil {
 		return err
 	}
@@ -113,13 +128,13 @@ func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.R
 
 		var hasLink bool
 		for _, lnk := range c.links {
-			if lnk.lnk.GetRemotePeer() == peerIDConst {
+			if lnk.lnk.GetRemotePeer() == targetPeerID {
 				hasLink = true
 				break
 			}
 		}
 		if !hasLink {
-			if err := c.PushDialer(ctx, peerIDConst, dialerOpts); err != nil {
+			if err := c.PushDialer(ctx, targetPeerID, dialerOpts); err != nil {
 				return err
 			}
 		}
