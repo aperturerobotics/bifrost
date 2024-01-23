@@ -4,7 +4,7 @@ package transport.quic;
 message Opts {
   // MaxIdleTimeoutDur is the duration of idle after which conn is closed.
   //
-  // If unset, uses a default value of 30 seconds.
+  // Defaults to 15s.
   string max_idle_timeout_dur = 1;
 	// MaxIncomingStreams is the maximum number of concurrent bidirectional
 	// streams that a peer is allowed to open.

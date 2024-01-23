@@ -8,7 +8,7 @@ export interface Opts {
   /**
    * MaxIdleTimeoutDur is the duration of idle after which conn is closed.
    *
-   * If unset, uses a default value of 30 seconds.
+   * Defaults to 15s.
    */
   maxIdleTimeoutDur: string
   /**

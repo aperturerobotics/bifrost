@@ -13,13 +13,13 @@ import (
 
 // BuildQuicConfig constructs the quic config.
 func BuildQuicConfig(le *logrus.Entry, opts *Opts) *quic.Config {
-	var enableMaxIdleTimeout bool
+	// var enableMaxIdleTimeout bool
 	maxIdleTimeout := time.Second * 15
 	if ntDur := opts.GetMaxIdleTimeoutDur(); ntDur != "" {
 		nt, err := time.ParseDuration(ntDur)
 		if err == nil && nt > time.Duration(0) && nt < time.Hour*2 {
 			maxIdleTimeout = nt
-			enableMaxIdleTimeout = true
+			// enableMaxIdleTimeout = true
 		}
 	}
 
@@ -55,8 +55,8 @@ func BuildQuicConfig(le *logrus.Entry, opts *Opts) *quic.Config {
 		KeepAlivePeriod:         keepAlivePeriod,
 		DisablePathMTUDiscovery: opts.GetDisablePathMtuDiscovery(),
 
-		MaxIdleTimeout:        maxIdleTimeout,
-		DisableIdleTimeout:    !enableMaxIdleTimeout,
+		MaxIdleTimeout: maxIdleTimeout,
+		// DisableIdleTimeout:    !enableMaxIdleTimeout,
 		MaxIncomingStreams:    int64(maxIncStreams),
 		MaxIncomingUniStreams: -1, // disable unidirectional streams
 
