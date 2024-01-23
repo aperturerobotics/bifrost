@@ -12,9 +12,8 @@
  - **PubSub**: publish/subscribe channels with pluggable implementations.
  - **Robust**: uses Quic for reliable connections over lossy transports.
 
-Bifrost uses [ControllerBus] controllers and directives to manage links between
-peers, transports, routing, and other higher-level processes with extensive and
-flexible configuration.
+Bifrost uses [ControllerBus] controllers and directives to manage sending any
+protocol over any transport with extensive and flexible configuration.
 
 [ControllerBus]: https://github.com/aperturerobotics/controllerbus
 
@@ -101,6 +100,8 @@ bifrost daemon \
   --api-listen :5110 \
   --udp-listen :5112
 ```
+
+Check out the [http forwarding example](./examples/http-forwarding) for a complete demo.
 
 ### Daemon CLI
 
@@ -205,6 +206,23 @@ is exposed to the API and command line. Some examples:
     --protocol-id /x/myproto
 ```
 
+### YAML Configuration
+
+An example of a ConfigSet in YAML format for the daemon: `bifrost_daemon.yaml`:
+
+```yaml
+# Start a UDP listener on port 5112.
+my-udp:
+  id: bifrost/udp
+  config:
+    listenAddr: :5112
+
+# Use the floodsub driver for PubSub.
+pubsub:
+  id: bifrost/floodsub
+  config: {}
+```
+
 ### Example: forward HTTP traffic between peers
 
 The following is a basic example of using the CLI to forward encrypted traffic
@@ -248,23 +266,6 @@ When someone connects to port 8002 the EstablishLinkWithPeer directive is added
 and the UDP transport opens the connection with the peer (on-demand.) The stream
 is then negotiated. The remote daemon uses HandleMountedStream which is handled
 by the "forwarding" controller, which forwards the stream to localhost at 8000.
-
-### YAML Configuration
-
-An example of a ConfigSet in YAML format for the daemon: `bifrost_daemon.yaml`:
-
-```yaml
-# Start a UDP listener on port 5112.
-my-udp:
-  id: bifrost/udp
-  config:
-    listenAddr: :5112
-
-# Use the floodsub driver for PubSub.
-pubsub:
-  id: bifrost/floodsub
-  config: {}
-```
 
 ### Simulator and End-to-end Testing
 
