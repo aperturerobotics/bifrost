@@ -1,11 +1,11 @@
 /* eslint-disable */
-import Long from 'long'
-import _m0 from 'protobufjs/minimal.js'
 import {
   ControllerStatus,
   controllerStatusFromJSON,
   controllerStatusToJSON,
-} from '../../../controllerbus/controller/exec/exec.pb.js'
+} from '@go/github.com/aperturerobotics/controllerbus/controller/exec/exec.pb.js'
+import Long from 'long'
+import _m0 from 'protobufjs/minimal.js'
 import { Config } from '../forwarding/forwarding.pb.js'
 import { Config as Config1 } from '../listening/listening.pb.js'
 import { Config as Config2 } from './accept/accept.pb.js'
