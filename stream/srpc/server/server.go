@@ -29,6 +29,8 @@ type Server struct {
 	// peerIDs is the list of local peer ids to listen on
 	// if empty, allows any
 	peerIDs []string
+	// disableEstablishLink disables adding an establish link directive
+	disableEstablishLink bool
 
 	// mux is the srpc mux
 	mux srpc.Mux
@@ -42,9 +44,10 @@ func NewServer(
 	b bus.Bus,
 	le *logrus.Entry,
 	info *controller.Info,
+	registerFns []RegisterFn,
 	protocolIDs []protocol.ID,
 	peerIDs []string,
-	registerFns []RegisterFn,
+	disableEstablishLink bool,
 ) (*Server, error) {
 	mux := srpc.NewMux()
 	for _, rf := range registerFns {
@@ -132,19 +135,25 @@ func (s *Server) ResolveHandleMountedStream(
 // Typically EstablishLink is asserted in HandleMountedStream.
 func (s *Server) HandleMountedStream(ctx context.Context, ms link.MountedStream) error {
 	// keep the link open
-	_, elRef, err := s.b.AddDirective(
-		link.NewEstablishLinkWithPeer(ms.GetLink().GetLocalPeer(), ms.GetPeerID()),
-		nil,
-	)
-	if err != nil {
-		return err
+	var elRef directive.Reference
+	var err error
+	if !s.disableEstablishLink {
+		_, elRef, err = s.b.AddDirective(
+			link.NewEstablishLinkWithPeer(ms.GetLink().GetLocalPeer(), ms.GetPeerID()),
+			nil,
+		)
+		if err != nil {
+			return err
+		}
 	}
 	go func() {
 		strm := ms.GetStream()
 		sctx := link.WithMountedStreamContext(ctx, ms)
 		s.server.HandleStream(sctx, strm)
 		strm.Close()
-		elRef.Release()
+		if elRef != nil {
+			elRef.Release()
+		}
 	}()
 	return nil
 }

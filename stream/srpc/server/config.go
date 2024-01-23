@@ -4,7 +4,10 @@ import (
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/protocol"
 	"github.com/aperturerobotics/bifrost/util/confparse"
+	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/config"
+	"github.com/aperturerobotics/controllerbus/controller"
+	"github.com/sirupsen/logrus"
 )
 
 // Validate checks the config.
@@ -36,4 +39,27 @@ func (c *Config) GetDebugVals() config.DebugValues {
 		"peer-ids":     c.GetPeerIds(),
 		"protocol-ids": c.GetProtocolIds(),
 	}
+}
+
+// BuildServer constructs the server from the args.
+func (c *Config) BuildServer(b bus.Bus, le *logrus.Entry, info *controller.Info, registerFns []RegisterFn) (*Server, error) {
+	protocolIDs, err := c.ParseProtocolIDs()
+	if err != nil {
+		return nil, err
+	}
+
+	peerIDs, err := c.ParsePeerIDs()
+	if err != nil {
+		return nil, err
+	}
+
+	return NewServer(
+		b,
+		le,
+		info,
+		registerFns,
+		protocolIDs,
+		peer.IDsToString(peerIDs),
+		c.GetDisableEstablishLink(),
+	)
 }

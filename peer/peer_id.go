@@ -34,3 +34,12 @@ func IDFromPublicKey(pk ic.PubKey) (ID, error) {
 func IDFromPrivateKey(sk ic.PrivKey) (ID, error) {
 	return ip.IDFromPrivateKey(sk)
 }
+
+// IDsToString converts a slice of IDs to strings.
+func IDsToString(ids []ID) []string {
+	out := make([]string, len(ids))
+	for i := range ids {
+		out[i] = ids[i].String()
+	}
+	return out
+}

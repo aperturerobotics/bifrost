@@ -16,10 +16,12 @@ export interface Config {
    * If empty, no incoming streams will be accepted.
    */
   protocolIds: string[]
+  /** DisableEstablishLink disables adding an EstablishLink directive for each incoming peer. */
+  disableEstablishLink: boolean
 }
 
 function createBaseConfig(): Config {
-  return { peerIds: [], protocolIds: [] }
+  return { peerIds: [], protocolIds: [], disableEstablishLink: false }
 }
 
 export const Config = {
@@ -32,6 +34,9 @@ export const Config = {
     }
     for (const v of message.protocolIds) {
       writer.uint32(18).string(v!)
+    }
+    if (message.disableEstablishLink === true) {
+      writer.uint32(24).bool(message.disableEstablishLink)
     }
     return writer
   },
@@ -57,6 +62,13 @@ export const Config = {
           }
 
           message.protocolIds.push(reader.string())
+          continue
+        case 3:
+          if (tag !== 24) {
+            break
+          }
+
+          message.disableEstablishLink = reader.bool()
           continue
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -109,6 +121,9 @@ export const Config = {
       protocolIds: globalThis.Array.isArray(object?.protocolIds)
         ? object.protocolIds.map((e: any) => globalThis.String(e))
         : [],
+      disableEstablishLink: isSet(object.disableEstablishLink)
+        ? globalThis.Boolean(object.disableEstablishLink)
+        : false,
     }
   },
 
@@ -120,6 +135,9 @@ export const Config = {
     if (message.protocolIds?.length) {
       obj.protocolIds = message.protocolIds
     }
+    if (message.disableEstablishLink === true) {
+      obj.disableEstablishLink = message.disableEstablishLink
+    }
     return obj
   },
 
@@ -130,6 +148,7 @@ export const Config = {
     const message = createBaseConfig()
     message.peerIds = object.peerIds?.map((e) => e) || []
     message.protocolIds = object.protocolIds?.map((e) => e) || []
+    message.disableEstablishLink = object.disableEstablishLink ?? false
     return message
   },
 }
@@ -169,4 +188,8 @@ export type Exact<P, I extends P> = P extends Builtin
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any
   _m0.configure()
+}
+
+function isSet(value: any): boolean {
+  return value !== null && value !== undefined
 }
