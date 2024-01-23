@@ -11,17 +11,26 @@ permissions:
 jobs:
   goreleaser:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go: ['1.21']
     steps:
-      -
-        name: Checkout
-        uses: actions/checkout@v4
+      - name: Harden Runner
+        uses: step-security/harden-runner@eb238b55efaa70779f274895e782ed17c84f2895 # v2.6.1
+        with:
+          egress-policy: block
+
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
-      -
-        name: Set up Go
-        uses: actions/setup-go@v5
-      -
-        name: Run GoReleaser
+
+      - name: Setup Go ${{ matrix.go }}
+        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: Release
         uses: goreleaser/goreleaser-action@v5
         with:
           distribution: goreleaser
