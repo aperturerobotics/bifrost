@@ -26,3 +26,5 @@ vendor/
 debug.test
 __debug*
 .aider*
+
+dist/
