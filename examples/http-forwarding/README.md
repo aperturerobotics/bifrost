@@ -85,7 +85,7 @@ listening:
 You can edit this yaml file and add unlimited additional controllers, for
 example, a Websocket server:
 
-```
+```yaml
 websocket:
   id: bifrost/websocket
   listenAddr: :50050
@@ -93,7 +93,7 @@ websocket:
 
 And a websocket client:
 
-```
+```yaml
 websocket:
   id: bifrost/websocket
   dialers:
