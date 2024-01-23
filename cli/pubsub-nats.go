@@ -1,5 +1,5 @@
-//go:build bifrost_pubsub_nats
-// +build bifrost_pubsub_nats
+//go:build !windows
+// +build !windows
 
 package cli
 
@@ -19,7 +19,7 @@ func init() {
 		return &nats_controller.Config{
 			PeerId: "any",
 			NatsConfig: &nats.Config{
-				ClusterName: "bifrost-cli-default",
+				ClusterName: "bifrost",
 			},
 		}, nil
 	}
