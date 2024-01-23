@@ -9,6 +9,7 @@ GOIMPORTS=hack/bin/goimports
 GOLANGCI_LINT=hack/bin/golangci-lint
 GO_MOD_OUTDATED=hack/bin/go-mod-outdated
 WASMSERVE=hack/bin/wasmserve
+GORELEASER=hack/bin/goreleaser
 GOLIST=go list -f "{{ .Dir }}" -m
 
 export GO111MODULE=on
@@ -73,6 +74,12 @@ $(WASMSERVE):
 	go build -v \
 		-o ./bin/wasmserve \
 		github.com/hajimehoshi/wasmserve
+
+$(GORELEASER):
+	cd ./hack; \
+	go build -v \
+		-o ./bin/goreleaser \
+		github.com/goreleaser/goreleaser
 
 .PHONY: gengo
 gengo: $(GOIMPORTS) $(PROTOWRAP) $(PROTOC_GEN_GO) $(PROTOC_GEN_VTPROTO) $(PROTOC_GEN_GO_DRPC) $(PROTOC_GEN_STARPC)
@@ -162,9 +169,15 @@ lint: $(GOLANGCI_LINT)
 fix: $(GOLANGCI_LINT)
 	$(GOLANGCI_LINT) run --fix --timeout=10m
 
+.PHONY: serve-example
 serve-example: $(WASMSERVE)
 	$(WASMSERVE) ./examples/websocket-browser-link/browser
 
 .PHONY: test
 test:
 	go test -v ./...
+
+.PHONY: release
+release: $(GORELEASER)
+	$(GORELEASER) release --clean
+

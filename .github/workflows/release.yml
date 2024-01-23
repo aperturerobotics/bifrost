@@ -31,10 +31,6 @@ jobs:
           go-version: ${{ matrix.go }}
 
       - name: Release
-        uses: goreleaser/goreleaser-action@v5
-        with:
-          distribution: goreleaser
-          version: latest
-          args: release --clean
+        run: make release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
