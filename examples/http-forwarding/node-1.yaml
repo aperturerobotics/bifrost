@@ -1,13 +1,10 @@
 udp:
-  config:
-    dialers: {}
-    listenAddr: :50042
   id: bifrost/udp
-  rev: 1
+  config:
+    listenAddr: :50042
+
 forwarding:
+  id: bifrost/stream/forwarding
   config:
     protocolId: my/http/forwarding
     targetMultiaddr: "/ip4/127.0.0.1/tcp/8080"
-  id: bifrost/stream/forwarding
-  rev: 1
-

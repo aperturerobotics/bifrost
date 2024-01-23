@@ -37,3 +37,68 @@ When opening a connection to the second node at port 8084, Bifrost will open a
 Quic-based Link with the other peer on-demand and proxy the traffic to the
 destination service over a stream. When the proxy becomes idle, Bifrost will
 close the Link after a short inactivity period.
+
+## Configuration
+
+The first node is configured to listen with Quic-over-UDP and forward incoming
+streams to the `my/http/forwarding` protocol ID to the target multiaddress
+`/ip4/127.0.0.1/tcp/8080`:
+
+```yaml
+udp:
+  id: bifrost/udp
+  config:
+    listenAddr: :50042
+
+forwarding:
+  id: bifrost/stream/forwarding
+  config:
+    protocolId: my/http/forwarding
+    targetMultiaddr: "/ip4/127.0.0.1/tcp/8080"
+```
+
+The second node is configured to dial the other node via Quic-over-UDP and
+forward incoming connections to `/ip4/127.0.0.1/tcp/8084` to the other node at
+the protocol ID `my/http/forwarding`:
+
+```yaml
+udp:
+  id: bifrost/udp
+  config:
+    dialers:
+      12D3KooWC9dBAEoTHbEXq2aaTeFit7QVdvPcb6Yf76oGQZ6dGf8N:
+        address: 127.0.0.1:50042
+    listenAddr: :50043
+
+listening:
+  id: bifrost/stream/listening
+  config:
+    remotePeerId: 12D3KooWC9dBAEoTHbEXq2aaTeFit7QVdvPcb6Yf76oGQZ6dGf8N
+    protocolId: my/http/forwarding
+    listenMultiaddr: "/ip4/127.0.0.1/tcp/8084"
+    reliable: true
+    encrypted: true
+```
+
+### Changing the transport
+
+You can edit this yaml file and add unlimited additional controllers, for
+example, a Websocket server:
+
+```
+websocket:
+  id: bifrost/websocket
+  listenAddr: :50050
+```
+
+And a websocket client:
+
+```
+websocket:
+  id: bifrost/websocket
+  dialers:
+    12D3KooWC9dBAEoTHbEXq2aaTeFit7QVdvPcb6Yf76oGQZ6dGf8N:
+      address: ws://127.0.0.1:50050/bifrost
+```
+
+...then the traffic will be forwarded via WebSocket instead of UDP.
