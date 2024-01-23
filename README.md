@@ -34,14 +34,16 @@ Bifrost is designed around the following core concepts:
  - **Stream**: channel of data between two Peer with a protocol type.
  - **RPC**: request/reply and bidirectional streaming remote calls.
  - **PubSub**: at-least-once delivery of messages to named topics.
+ - **Signaling**: exchanging messages between peers via a relay server.
 
 Integrates with networking, pubsub, and RPC libraries like [libp2p], [drpc],
-[starpc] and [nats].
+[starpc], [nats], and [pion webrtc].
 
 [drpc]: https://github.com/storj/drpc
 [libp2p]: https://libp2p.io/
 [nats]: https://nats.io
 [starpc]: https://github.com/aperturerobotics/starpc
+[pion webrtc]: https://github.com/pion/webrtc
 
 The [network simulator], [testbed], and [in-proc transport] can be used to write
 end-to-end tests as Go unit tests. The mock transports use identical code to the

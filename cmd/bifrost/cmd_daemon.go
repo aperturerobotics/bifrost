@@ -15,9 +15,6 @@ import (
 	api_controller "github.com/aperturerobotics/bifrost/daemon/api/controller"
 	egctr "github.com/aperturerobotics/bifrost/entitygraph"
 	"github.com/aperturerobotics/bifrost/keypem/keyfile"
-	stream_api_accept "github.com/aperturerobotics/bifrost/stream/api/accept"
-	stream_forwarding "github.com/aperturerobotics/bifrost/stream/forwarding"
-	stream_listening "github.com/aperturerobotics/bifrost/stream/listening"
 	xbtpt "github.com/aperturerobotics/bifrost/transport/xbee"
 	bus_api "github.com/aperturerobotics/controllerbus/bus/api"
 	configset "github.com/aperturerobotics/controllerbus/controller/configset"
@@ -115,12 +112,9 @@ func runDaemon(c *cli.Context) error {
 
 	b := d.GetControllerBus()
 	sr := d.GetStaticResolver()
-	sr.AddFactory(egctr.NewFactory(b))
+
+	// Add some additional factories.
 	sr.AddFactory(xbtpt.NewFactory(b))
-	sr.AddFactory(api_controller.NewFactory(b))
-	sr.AddFactory(stream_forwarding.NewFactory(b))
-	sr.AddFactory(stream_listening.NewFactory(b))
-	sr.AddFactory(stream_api_accept.NewFactory(b))
 
 	// Construct config set.
 	confSet := configset.ConfigSet{}

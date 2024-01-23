@@ -22,16 +22,24 @@ func LoggingMiddleware(next http.Handler, le *logrus.Entry, opts LoggingMiddlewa
 		next.ServeHTTP(wrappedWriter, r)
 
 		// Log the request and response status code
-		le = le.WithFields(logrus.Fields{
-			"method": r.Method,
-			"uri":    r.RequestURI,
-			"status": wrappedWriter.statusCode,
-		})
-		if opts.UserAgent {
-			le = le.WithField("user-agent", r.UserAgent())
-		}
-		le.Info("handled request")
+		WithLoggerFields(le, r, wrappedWriter.statusCode).
+			Debug("handled request")
 	})
+}
+
+// WithLoggerFields builds the log fields for a request.
+func WithLoggerFields(le *logrus.Entry, r *http.Request, status int) *logrus.Entry {
+	fields := logrus.Fields{
+		"method": r.Method,
+		"uri":    r.RequestURI,
+	}
+	if userAgent := r.UserAgent(); userAgent != "" {
+		fields["user-agent"] = userAgent
+	}
+	if status != 0 {
+		fields["status"] = status
+	}
+	return le.WithFields(fields)
 }
 
 type statusCapturingResponseWriter struct {

@@ -10,6 +10,7 @@ import (
 	nctr "github.com/aperturerobotics/bifrost/peer/controller"
 	floodsub_controller "github.com/aperturerobotics/bifrost/pubsub/floodsub/controller"
 	pubsub_relay "github.com/aperturerobotics/bifrost/pubsub/relay"
+	stream_api_accept "github.com/aperturerobotics/bifrost/stream/api/accept"
 	stream_echo "github.com/aperturerobotics/bifrost/stream/echo"
 	stream_forwarding "github.com/aperturerobotics/bifrost/stream/forwarding"
 	stream_listening "github.com/aperturerobotics/bifrost/stream/listening"
@@ -53,6 +54,7 @@ func AddFactories(b bus.Bus, sr *static.Resolver) {
 	sr.AddFactory(stream_forwarding.NewFactory(b))
 	sr.AddFactory(stream_echo.NewFactory(b))
 	sr.AddFactory(stream_listening.NewFactory(b))
+	sr.AddFactory(stream_api_accept.NewFactory(b))
 
 	// in-proc transport
 	sr.AddFactory(iproctpt.NewFactory(b))
