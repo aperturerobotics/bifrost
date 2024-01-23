@@ -22,3 +22,12 @@ func (i ID) Validate() error {
 func (i ID) String() string {
 	return string(i)
 }
+
+// IDsToString converts a slice of IDs to strings.
+func IDsToString(ids []ID) []string {
+	out := make([]string, len(ids))
+	for i := range ids {
+		out[i] = ids[i].String()
+	}
+	return out
+}

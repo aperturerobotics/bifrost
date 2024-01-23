@@ -50,7 +50,7 @@ func (c *Config) ApplyDefaults(protocolIds []protocol.ID) *Config {
 		srvConf = &Config{}
 	}
 	if len(srvConf.GetProtocolIds()) == 0 {
-		srvConf.ProtocolIds = append(srvConf.ProtocolIds, c.ProtocolIds...)
+		srvConf.ProtocolIds = append(srvConf.ProtocolIds, protocol.IDsToString(protocolIds)...)
 	}
 	return srvConf
 }
