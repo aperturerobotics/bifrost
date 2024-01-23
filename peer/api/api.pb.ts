@@ -1,11 +1,11 @@
 /* eslint-disable */
+import Long from 'long'
+import _m0 from 'protobufjs/minimal.js'
 import {
   ControllerStatus,
   controllerStatusFromJSON,
   controllerStatusToJSON,
-} from '@go/github.com/aperturerobotics/controllerbus/controller/exec/exec.pb.js'
-import Long from 'long'
-import _m0 from 'protobufjs/minimal.js'
+} from '../../../controllerbus/controller/exec/exec.pb.js'
 import { Config } from '../controller/config.pb.js'
 
 export const protobufPackage = 'peer.api'

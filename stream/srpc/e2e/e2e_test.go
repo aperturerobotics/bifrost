@@ -87,9 +87,10 @@ func TestStarpc(t *testing.T) {
 			semver.MustParse("0.0.1"),
 			"test of srpc server",
 		),
+		[]stream_srpc_server.RegisterFn{mockServer.Register},
 		[]protocol.ID{ProtocolID},
 		[]string{tb2PeerID.String()},
-		[]stream_srpc_server.RegisterFn{mockServer.Register},
+		false,
 	)
 	if err != nil {
 		t.Fatal(err.Error())
