@@ -28,6 +28,10 @@ type establishLinkResolver struct {
 func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.ResolverHandler) error {
 	c := o.c
 	targetPeerID := o.dir.EstablishLinkTargetPeerId()
+	tpt, err := o.c.GetTransport(ctx)
+	if err != nil {
+		return err
+	}
 
 	// If the directive filtered by source peer ID, add a EstablishLink
 	// directive for the destination as well to ensure there is a reference.
@@ -36,8 +40,9 @@ func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.R
 	// lifecycle of the Link (when it is released) is a bit messy and
 	// counter-intuitive and could be improved by instead using a refcount
 	// mechanism to release links when no directives ask for them.
-	if o.dir.EstablishLinkSourcePeerId() != "" {
-		_, estLinkRef, err := o.c.bus.AddDirective(link.NewEstablishLinkWithPeer("", targetPeerID), nil)
+	sourcePeerID := tpt.GetPeerID()
+	if o.dir.EstablishLinkSourcePeerId() != sourcePeerID {
+		_, estLinkRef, err := o.c.bus.AddDirective(link.NewEstablishLinkWithPeer(sourcePeerID, targetPeerID), nil)
 		if err != nil {
 			return err
 		}
@@ -81,11 +86,6 @@ func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.R
 	}()
 
 	// Attempt to dial the peer if no link is active and we have an address to dial.
-	tpt, err := o.c.GetTransport(ctx)
-	if err != nil {
-		return err
-	}
-
 	tptDialer, ok := tpt.(dialer.TransportDialer)
 	if !ok {
 		// No transport dialer, just wait for a link.
