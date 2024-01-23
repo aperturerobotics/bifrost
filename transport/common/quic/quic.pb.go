@@ -28,7 +28,7 @@ type Opts struct {
 
 	// MaxIdleTimeoutDur is the duration of idle after which conn is closed.
 	//
-	// Defaults to 15s.
+	// Defaults to 10s.
 	MaxIdleTimeoutDur string `protobuf:"bytes,1,opt,name=max_idle_timeout_dur,json=maxIdleTimeoutDur,proto3" json:"max_idle_timeout_dur,omitempty"`
 	// MaxIncomingStreams is the maximum number of concurrent bidirectional
 	// streams that a peer is allowed to open.
