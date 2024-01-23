@@ -151,6 +151,9 @@ func runDaemon(c *cli.Context) error {
 		}
 	}
 
+	// Apply factories
+	daemonFlags.ApplyFactories(b, sr)
+
 	// Daemon API
 	if daemonFlags.APIListen != "" {
 		_, _, apiRef, err := loader.WaitExecControllerRunning(
@@ -182,9 +185,7 @@ func runDaemon(c *cli.Context) error {
 	}
 	defer csRef.Release()
 
-	// TODO: Load these from CLI/yaml configuration.
-	// For now, hardcode it.
-	daemonFlags.ApplyFactories(b, sr)
+	// Load config sets and factories
 	if err := daemonFlags.ApplyToConfigSet(confSet, true); err != nil {
 		return err
 	}

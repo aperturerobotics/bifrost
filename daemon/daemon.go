@@ -8,7 +8,6 @@ import (
 	"github.com/aperturerobotics/bifrost/keypem"
 	"github.com/aperturerobotics/bifrost/peer"
 	nctr "github.com/aperturerobotics/bifrost/peer/controller"
-	nats_controller "github.com/aperturerobotics/bifrost/pubsub/nats/controller"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/controller/loader"
@@ -66,7 +65,6 @@ func NewDaemon(
 	}
 
 	sr.AddFactory(api_controller.NewFactory(b))
-	sr.AddFactory(nats_controller.NewFactory(b))
 	for _, ctor := range opts.ExtraControllerFactories {
 		if ctor != nil {
 			sr.AddFactory(ctor(b))

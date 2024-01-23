@@ -107,7 +107,6 @@ func (a *DaemonArgs) BuildFlags() []cli.Flag {
 			Name:        "pubsub",
 			Usage:       buildPubsubUsage(),
 			EnvVars:     []string{"BIFROST_PUBSUB"},
-			Value:       "floodsub",
 			Destination: &a.Pubsub,
 		},
 	}

@@ -3,9 +3,8 @@ hold-open:
   config: {}
 
 pubsub:
-  id: bifrost/nats
-  config:
-    peerId: any
+  id: bifrost/floodsub
+  config: {}
 
 udp:
   id: bifrost/udp

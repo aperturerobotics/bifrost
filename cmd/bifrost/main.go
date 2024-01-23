@@ -19,6 +19,11 @@ func main() {
 	app.Usage = "command-line node and tools for bifrost"
 	app.Commands = commands
 
+	// Metadata
+	app.Description = "Check out the docs and examples:\n\nhttps://github.com/aperturerobotics/bifrost"
+	app.Copyright = "Apache License, Version 2.0."
+
+	// Hide version if unset
 	if version == "" {
 		app.HideVersion = true
 	} else {
