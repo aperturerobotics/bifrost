@@ -53,3 +53,5 @@ jobs:
         run: yarn run lint:go
       - name: Depcheck JS
         run: yarn run deps
+      - name: Check goreleaser build
+        run: make hack/bin/goreleaser

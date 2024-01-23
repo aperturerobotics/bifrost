@@ -44,3 +44,5 @@ changelog:
       - "^docs:"
       - "^test:"
       - "^chore:"
+      - "^.github:"
+      - "^hack:"
