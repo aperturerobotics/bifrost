@@ -1,4 +1,4 @@
-# HTTP Forwarding
+# HTTP Forwarding Example
 
 Install Bifrost:
 
@@ -6,26 +6,34 @@ Install Bifrost:
 go install -v github.com/aperturerobotics/bifrost/cmd/bifrost
 ```
 
-This test includes two peers.
-
-## Node 1
-
-Peer ID: 12D3KooWC9dBAEoTHbEXq2aaTeFit7QVdvPcb6Yf76oGQZ6dGf8N 
+Start the destination service that we will proxy connections to:
 
 ```
 python3 -m http.server 8080
-# In a separate terminal:
+```
+
+Start the first peer, which forwards incoming streams to localhost:8080:
+
+```
 bifrost daemon --node-priv ../priv/node-1.pem -c node-1.yaml
 ```
 
-## Node 2
-
-Peer ID: 12D3KooWJukwYJ46o4uYSApGHAZrjrZPLHqt3EVy1etas2KVn9RP
-
-Port 8084 forwards through to port 8080 on node 1.
+Start the second peer, which listens on :8084 and forwards incoming traffic to
+the other peer via. Bifrost:
 
 ```
-bifrost daemon --api-listen :5111 --node-priv ../priv/node-2.pem -c node-2.yaml
+bifrost daemon --node-priv ../priv/node-2.pem -c node-2.yaml
+```
+
+Access the forwarded HTTP service via the proxy:
+
+```
 curl localhost:8084
 ```
 
+Or browse to http://localhost:8084 in a web browser.
+
+When opening a connection to the second node at port 8084, Bifrost will open a
+Quic-based Link with the other peer on-demand and proxy the traffic to the
+destination service over a stream. When the proxy becomes idle, Bifrost will
+close the Link after a short inactivity period.
