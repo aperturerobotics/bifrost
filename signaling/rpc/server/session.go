@@ -178,7 +178,9 @@ func (s *Server) Session(strm signaling.SRPCSignaling_SessionStream) error {
 			sess.seqno++
 			sess.broadcast()
 			// Maybe drop the session if there's no peers.
-			s.maybeReleaseSession(sessKey)
+			if s.maybeReleaseSession(sessKey) {
+				defer le.Debug("signaling: server: finished session")
+			}
 			// Delete the session want from the remote peer.
 			delete(dstPeer.wantPeers, srcPeerIDStr)
 			dstPeer.broadcast()

@@ -2,7 +2,6 @@ package transport_quic
 
 import (
 	"crypto/tls"
-	"net"
 	"time"
 
 	"github.com/aperturerobotics/bifrost/peer"
@@ -62,11 +61,6 @@ func BuildQuicConfig(le *logrus.Entry, opts *Opts) *quic.Config {
 
 		// MaxStreamReceiveWindow:     10 * (1 << 20), // 10 MB
 		// MaxConnectionReceiveWindow: 15 * (1 << 20), // 15 MB
-
-		RequireAddressValidation: func(net.Addr) bool {
-			// TODO
-			return false
-		},
 
 		Versions: []quic.VersionNumber{quic.Version2}, // {quic.Version1},
 	}

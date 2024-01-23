@@ -237,11 +237,11 @@ func (c *Controller) HandleLinkEstablished(lnk link.Link) {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 
+	// clear all dialers to that peer
 	pidStr := lnk.GetRemotePeer().String()
-	for k, d := range c.linkDialers {
+	for k := range c.linkDialers {
 		if k.peerID == pidStr {
-			delete(c.linkDialers, k)
-			d.cancel()
+			c.clearLinkDialerLocked(k)
 		}
 	}
 
@@ -459,6 +459,19 @@ func (c *Controller) startLinkDialerLocked(
 	}
 
 	return nil
+}
+
+// clearLinkDialerLocked clears a link dialer while mtx is locked.
+// returns if the dialer existed
+func (c *Controller) clearLinkDialerLocked(key linkDialerKey) bool {
+	dialer, ok := c.linkDialers[key]
+	if !ok {
+		return false
+	}
+
+	dialer.cancel()
+	delete(c.linkDialers, key)
+	return true
 }
 
 // flushEstablishedLink closes an established link and cleans it up.

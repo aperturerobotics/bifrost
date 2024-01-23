@@ -41,12 +41,12 @@ func (o *dialTptAddrResolver) Resolve(ctx context.Context, handler directive.Res
 	}
 
 	c := o.c
-	peerIDConst := o.dir.DialTptAddrTargetPeerId()
+	destPeerID := o.dir.DialTptAddrTargetPeerId()
 
 	wakeDialer := make(chan time.Time, 1)
 	linkIDs := make(map[link.Link]uint32)
 	c.mtx.Lock()
-	lw := o.c.pushLinkWaiter(peerIDConst, false, func(lnk link.Link, added bool) {
+	lw := o.c.pushLinkWaiter(destPeerID, false, func(lnk link.Link, added bool) {
 		if added {
 			if _, ok := linkIDs[lnk]; !ok {
 				if vid, ok := handler.AddValue(lnk); ok {
@@ -75,6 +75,10 @@ func (o *dialTptAddrResolver) Resolve(ctx context.Context, handler directive.Res
 	defer func() {
 		c.mtx.Lock()
 		o.c.clearLinkWaiter(lw)
+		_ = o.c.clearLinkDialerLocked(linkDialerKey{
+			peerID:      destPeerID.String(),
+			dialAddress: dialAddr,
+		})
 		c.mtx.Unlock()
 	}()
 
@@ -104,13 +108,13 @@ func (o *dialTptAddrResolver) Resolve(ctx context.Context, handler directive.Res
 		// If we already have a link, do nothing.
 		var hasLink bool
 		for _, lnk := range c.links {
-			if lnk.lnk.GetRemotePeer() == peerIDConst {
+			if lnk.lnk.GetRemotePeer() == destPeerID {
 				hasLink = true
 				break
 			}
 		}
 		if !hasLink {
-			err = c.startLinkDialerLocked(peerIDConst, &dialer.DialerOpts{
+			err = c.startLinkDialerLocked(destPeerID, &dialer.DialerOpts{
 				Address: dialAddr,
 			}, tptDialer)
 		}

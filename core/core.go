@@ -20,6 +20,7 @@ import (
 	tptaddr_static "github.com/aperturerobotics/bifrost/tptaddr/static"
 	iproctpt "github.com/aperturerobotics/bifrost/transport/inproc"
 	udptpt "github.com/aperturerobotics/bifrost/transport/udp"
+	"github.com/aperturerobotics/bifrost/transport/webrtc"
 	wtpt "github.com/aperturerobotics/bifrost/transport/websocket"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller/resolver/static"
@@ -64,6 +65,8 @@ func AddFactories(b bus.Bus, sr *static.Resolver) {
 	sr.AddFactory(udptpt.NewFactory(b))
 	// websocket transport
 	sr.AddFactory(wtpt.NewFactory(b))
+	// webrtc transport
+	sr.AddFactory(webrtc.NewFactory(b))
 
 	// pubsub
 	sr.AddFactory(pubsub_relay.NewFactory(b))

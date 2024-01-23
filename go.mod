@@ -16,7 +16,7 @@ replace (
 	github.com/nats-io/nats.go => github.com/aperturerobotics/bifrost-nats-client v1.10.1-0.20200831103200-24c3d0464e58 // aperture-2.0
 	github.com/nats-io/nkeys => github.com/nats-io/nkeys v0.3.0 // indirect: used by bifrost-nats-server
 	github.com/paralin/kcp-go-lite => github.com/paralin/kcp-go-lite v1.0.2-0.20240110212540-c015327ec623 // aperture
-	github.com/quic-go/quic-go => github.com/aperturerobotics/quic-go v0.41.1-0.20240123224539-6985f83a2178 // aperture
+	github.com/quic-go/quic-go => github.com/aperturerobotics/quic-go v0.41.1-0.20240125020437-d143f249fb5e // aperture
 	github.com/sirupsen/logrus => github.com/aperturerobotics/logrus v1.9.4-0.20240119050608-13332fb58195 // aperture
 	go.bug.st/serial => github.com/bugst/go-serial v1.6.1 // master
 	google.golang.org/protobuf => github.com/aperturerobotics/protobuf-go v1.32.1-0.20240118233629-6aeee82c476f // aperture
@@ -61,6 +61,9 @@ require (
 	filippo.io/edwards25519 v1.1.1-0.20231210192602-a7dfd8e4e6b4
 	github.com/aperturerobotics/timestamp v0.8.2
 	github.com/pauleyj/gobee v0.0.0-20190212035730-6270c53072a4
+	github.com/pion/datachannel v1.5.5
+	github.com/pion/sdp/v3 v3.0.6
+	github.com/pion/webrtc/v4 v4.0.0-beta.7
 	github.com/valyala/fastjson v1.6.4
 	github.com/xtaci/smux v1.5.24
 	go.bug.st/serial v1.6.1
@@ -71,12 +74,14 @@ require (
 	github.com/Jeffail/gabs/v2 v2.7.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/creack/goselect v0.1.2 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/davidlazar/go-crypto v0.0.0-20200604182044-b73af7476f6c // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/pprof v0.0.0-20231023181126-ff6d637d2a7b // indirect
+	github.com/google/uuid v1.3.1 // indirect
 	github.com/ipfs/go-cid v0.4.1 // indirect
 	github.com/ipfs/go-log/v2 v2.5.1 // indirect
 	github.com/jbenet/go-temp-err-catcher v0.1.0 // indirect
@@ -97,8 +102,24 @@ require (
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/onsi/ginkgo/v2 v2.13.0 // indirect
 	github.com/petermattis/goid v0.0.0-20180202154549-b0b1615b78e5 // indirect
+	github.com/pion/dtls/v2 v2.2.7 // indirect
+	github.com/pion/ice/v3 v3.0.2 // indirect
+	github.com/pion/interceptor v0.1.25 // indirect
+	github.com/pion/logging v0.2.2 // indirect
+	github.com/pion/mdns v0.0.9 // indirect
+	github.com/pion/randutil v0.1.0 // indirect
+	github.com/pion/rtcp v1.2.12 // indirect
+	github.com/pion/rtp v1.8.3 // indirect
+	github.com/pion/sctp v1.8.9 // indirect
+	github.com/pion/srtp/v3 v3.0.1 // indirect
+	github.com/pion/stun/v2 v2.0.0 // indirect
+	github.com/pion/transport/v2 v2.2.4 // indirect
+	github.com/pion/transport/v3 v3.0.1 // indirect
+	github.com/pion/turn/v3 v3.0.1 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/spaolacci/murmur3 v1.1.1-0.20190317074736-539464a789e9 // indirect
+	github.com/stretchr/testify v1.8.4 // indirect
 	github.com/templexxx/cpu v0.1.0 // indirect
 	github.com/templexxx/cpufeat v0.0.0-20180724012125-cef66df7f161 // indirect
 	github.com/templexxx/xorsimd v0.4.2 // indirect
@@ -114,5 +135,6 @@ require (
 	golang.org/x/tools v0.17.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 	lukechampine.com/blake3 v1.2.1 // indirect
 )

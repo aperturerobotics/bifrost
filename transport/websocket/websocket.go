@@ -154,7 +154,7 @@ func (w *WebSocket) ListenHTTP(ctx context.Context, addr string) error {
 			return ctx
 		},
 		Addr:    addr,
-		Handler: httplog.LoggingMiddleware(w, w.le, httplog.LoggingMiddlewareOpts{UserAgent: true}),
+		Handler: w,
 	}
 	err := server.ListenAndServe()
 	if serr := server.Shutdown(ctx); serr != nil && serr != context.Canceled {
@@ -171,6 +171,7 @@ func (w *WebSocket) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		if req.URL.Path != httpPath {
 			rw.WriteHeader(404)
 			_, _ = rw.Write([]byte("404 - Page not found\n"))
+			httplog.WithLoggerFields(w.le, req, 404).Debug("request not found")
 			return
 		}
 	}
@@ -185,7 +186,11 @@ func (w *WebSocket) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		CompressionMode: websocket.CompressionDisabled,
 	})
 	if err != nil {
-		w.le.WithError(err).Debug("failed to handle http request")
+		httplog.
+			WithLoggerFields(w.le, req, 500).
+			WithError(err).
+			Debug("failed to upgrade websocket")
+		rw.WriteHeader(500)
 		return
 	}
 
@@ -193,12 +198,18 @@ func (w *WebSocket) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	pc := NewPacketConn(req.Context(), c, w.Transport.LocalAddr(), raddr)
 	lnk, err := w.Transport.HandleConn(w.ctx, false, pc, raddr, "")
 	if err != nil {
-		w.le.WithError(err).Warn("unable to handle websocket conn")
+		httplog.
+			WithLoggerFields(w.le, req, 500).
+			WithError(err).
+			Debug("failed to handle websocket conn")
 		c.Close(websocket.StatusInternalError, "unable to handle connection")
 		return
 	}
 
 	// hold the HTTP request open until something closes.
+	httplog.
+		WithLoggerFields(w.le, req, 200).
+		Debug("started websocket conn")
 	select {
 	case <-w.ctx.Done():
 	case <-lnk.GetContext().Done():
