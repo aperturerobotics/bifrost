@@ -1,0 +1,9 @@
+syntax = "proto3";
+package signaling.echo;
+
+// Config configures the echo controller.
+message Config {
+  // SignalingId is the incoming signaling ID to handle and echo messages.
+  // Cannot be empty.
+  string signaling_id = 1;
+}
