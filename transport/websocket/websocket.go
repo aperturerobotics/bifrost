@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/http"
 
+	httplog "github.com/aperturerobotics/bifrost/http/log"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/aperturerobotics/bifrost/transport/common/dialer"
@@ -36,9 +37,6 @@ type WebSocket struct {
 	le *logrus.Entry
 	// conf is the websocket config
 	conf *Config
-	// restrictPeerID restricts incoming conns to the peer ID given
-	// usually empty
-	restrictPeerID peer.ID
 }
 
 // NewWebSocket builds a new WebSocket transport.
@@ -52,11 +50,6 @@ func NewWebSocket(
 	pKey crypto.PrivKey,
 	c transport.TransportHandler,
 ) (*WebSocket, error) {
-	restrictPeerID, err := conf.ParseRestrictPeerID()
-	if err != nil {
-		return nil, err
-	}
-
 	peerID, err := peer.IDFromPrivateKey(pKey)
 	if err != nil {
 		return nil, err
@@ -75,10 +68,9 @@ func NewWebSocket(
 	quicOpts.DisablePathMtuDiscovery = true
 
 	tpt := &WebSocket{
-		ctx:            ctx,
-		le:             le,
-		conf:           conf,
-		restrictPeerID: restrictPeerID,
+		ctx:  ctx,
+		le:   le,
+		conf: conf,
 	}
 
 	var dialFn transport_quic.DialFunc = func(dctx context.Context, addr string) (quic.Connection, net.Addr, error) {
@@ -162,9 +154,9 @@ func (w *WebSocket) ListenHTTP(ctx context.Context, addr string) error {
 			return ctx
 		},
 		Addr:    addr,
-		Handler: w,
+		Handler: httplog.LoggingMiddleware(w, w.le, httplog.LoggingMiddlewareOpts{UserAgent: true}),
 	}
-	err := http.ListenAndServe(addr, w)
+	err := server.ListenAndServe()
 	if serr := server.Shutdown(ctx); serr != nil && serr != context.Canceled {
 		w.le.WithError(serr).Warn("graceful shutdown failed")
 	}
@@ -174,6 +166,16 @@ func (w *WebSocket) ListenHTTP(ctx context.Context, addr string) error {
 
 // ServeHTTP serves the websocket upgraded HTTP endpoint.
 func (w *WebSocket) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+	// Filter http path if set
+	if httpPath := w.conf.GetHttpPath(); httpPath != "" {
+		if req.URL.Path != httpPath {
+			rw.WriteHeader(404)
+			_, _ = rw.Write([]byte("404 - Page not found\n"))
+			return
+		}
+	}
+
+	// Accept websocket
 	c, err := websocket.Accept(rw, req, &websocket.AcceptOptions{
 		// Negotiate the bifrost quic sub-protocol ID.
 		Subprotocols: []string{transport_quic.Alpn},

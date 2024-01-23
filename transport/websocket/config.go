@@ -17,20 +17,12 @@ func (c *Config) Validate() error {
 	if _, err := c.ParseTransportPeerID(); err != nil {
 		return errors.Wrap(err, "node_peer_id")
 	}
-	if _, err := c.ParseRestrictPeerID(); err != nil {
-		return errors.Wrap(err, "restrict_peer_id")
-	}
 	return nil
 }
 
 // ParseTransportPeerID parses the node peer ID if it is not empty.
 func (c *Config) ParseTransportPeerID() (peer.ID, error) {
 	return confparse.ParsePeerID(c.GetTransportPeerId())
-}
-
-// ParseRestrictPeerID parses the remote peer ID restriction if it is not empty.
-func (c *Config) ParseRestrictPeerID() (peer.ID, error) {
-	return confparse.ParsePeerID(c.GetRestrictPeerId())
 }
 
 // GetConfigID returns the unique string for this configuration type.

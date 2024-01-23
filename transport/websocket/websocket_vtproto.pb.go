@@ -29,7 +29,7 @@ func (m *Config) CloneVT() *Config {
 	r := &Config{
 		TransportPeerId: m.TransportPeerId,
 		ListenAddr:      m.ListenAddr,
-		RestrictPeerId:  m.RestrictPeerId,
+		HttpPath:        m.HttpPath,
 	}
 	if rhs := m.Quic; rhs != nil {
 		if vtpb, ok := interface{}(rhs).(interface{ CloneVT() *quic.Opts }); ok {
@@ -103,7 +103,7 @@ func (this *Config) EqualVT(that *Config) bool {
 			}
 		}
 	}
-	if this.RestrictPeerId != that.RestrictPeerId {
+	if this.HttpPath != that.HttpPath {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -146,10 +146,10 @@ func (m *Config) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
 	}
-	if len(m.RestrictPeerId) > 0 {
-		i -= len(m.RestrictPeerId)
-		copy(dAtA[i:], m.RestrictPeerId)
-		i = encodeVarint(dAtA, i, uint64(len(m.RestrictPeerId)))
+	if len(m.HttpPath) > 0 {
+		i -= len(m.HttpPath)
+		copy(dAtA[i:], m.HttpPath)
+		i = encodeVarint(dAtA, i, uint64(len(m.HttpPath)))
 		i--
 		dAtA[i] = 0x2a
 	}
@@ -280,7 +280,7 @@ func (m *Config) SizeVT() (n int) {
 			n += mapEntrySize + 1 + sov(uint64(mapEntrySize))
 		}
 	}
-	l = len(m.RestrictPeerId)
+	l = len(m.HttpPath)
 	if l > 0 {
 		n += 1 + l + sov(uint64(l))
 	}
@@ -570,7 +570,7 @@ func (m *Config) UnmarshalVT(dAtA []byte) error {
 			iNdEx = postIndex
 		case 5:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field RestrictPeerId", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field HttpPath", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -598,7 +598,7 @@ func (m *Config) UnmarshalVT(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.RestrictPeerId = string(dAtA[iNdEx:postIndex])
+			m.HttpPath = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

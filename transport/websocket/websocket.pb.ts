@@ -35,10 +35,10 @@ export interface Config {
   /** Dialers maps peer IDs to dialers. */
   dialers: { [key: string]: DialerOpts }
   /**
-   * RestrictPeerId restricts all incoming peer IDs to the given ID.
-   * Any other peers trying to connect will be disconneted at handshake time.
+   * HttpPath is the http path to expose the websocket.
+   * If unset, ignores the incoming request path.
    */
-  restrictPeerId: string
+  httpPath: string
 }
 
 export interface Config_DialersEntry {
@@ -52,7 +52,7 @@ function createBaseConfig(): Config {
     listenAddr: '',
     quic: undefined,
     dialers: {},
-    restrictPeerId: '',
+    httpPath: '',
   }
 }
 
@@ -76,8 +76,8 @@ export const Config = {
         writer.uint32(34).fork(),
       ).ldelim()
     })
-    if (message.restrictPeerId !== '') {
-      writer.uint32(42).string(message.restrictPeerId)
+    if (message.httpPath !== '') {
+      writer.uint32(42).string(message.httpPath)
     }
     return writer
   },
@@ -126,7 +126,7 @@ export const Config = {
             break
           }
 
-          message.restrictPeerId = reader.string()
+          message.httpPath = reader.string()
           continue
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -189,8 +189,8 @@ export const Config = {
             {},
           )
         : {},
-      restrictPeerId: isSet(object.restrictPeerId)
-        ? globalThis.String(object.restrictPeerId)
+      httpPath: isSet(object.httpPath)
+        ? globalThis.String(object.httpPath)
         : '',
     }
   },
@@ -215,8 +215,8 @@ export const Config = {
         })
       }
     }
-    if (message.restrictPeerId !== '') {
-      obj.restrictPeerId = message.restrictPeerId
+    if (message.httpPath !== '') {
+      obj.httpPath = message.httpPath
     }
     return obj
   },
@@ -240,7 +240,7 @@ export const Config = {
       }
       return acc
     }, {})
-    message.restrictPeerId = object.restrictPeerId ?? ''
+    message.httpPath = object.httpPath ?? ''
     return message
   },
 }

@@ -24,8 +24,7 @@ message Config {
   .transport.quic.Opts quic = 3;
   // Dialers maps peer IDs to dialers.
   map<string, .dialer.DialerOpts> dialers = 4;
-
-  // RestrictPeerId restricts all incoming peer IDs to the given ID.
-  // Any other peers trying to connect will be disconneted at handshake time.
-  string restrict_peer_id = 5;
+  // HttpPath is the http path to expose the websocket.
+  // If unset, ignores the incoming request path.
+  string http_path = 5;
 }
