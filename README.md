@@ -12,8 +12,8 @@
  - **PubSub**: publish/subscribe channels with pluggable implementations.
  - **Robust**: uses Quic for reliable connections over lossy transports.
 
-Bifrost uses [ControllerBus] controllers and directives to manage sending any
-protocol over any transport with extensive and flexible configuration.
+Bifrost uses [ControllerBus] controllers and directives to send any protocol
+over any transport with extensive and flexible configuration.
 
 [ControllerBus]: https://github.com/aperturerobotics/controllerbus
 
