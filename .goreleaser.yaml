@@ -8,8 +8,14 @@ before:
     - go mod tidy
 
 builds:
-  - env:
+  - id: "bifrost"
+    main: ./cmd/bifrost
+    binary: bifrost
+    env:
       - CGO_ENABLED=0
+    flags:
+      - -trimpath
+      - -ldflags "-s -w"
     goos:
       - linux
       - windows
