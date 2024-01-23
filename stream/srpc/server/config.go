@@ -41,6 +41,20 @@ func (c *Config) GetDebugVals() config.DebugValues {
 	}
 }
 
+// ApplyDefaults applies defaults to the config, returning a clone.
+//
+// If the fields are set, skips the defaults.
+func (c *Config) ApplyDefaults(protocolIds []protocol.ID) *Config {
+	srvConf := c.CloneVT()
+	if srvConf == nil {
+		srvConf = &Config{}
+	}
+	if len(srvConf.GetProtocolIds()) == 0 {
+		srvConf.ProtocolIds = append(srvConf.ProtocolIds, c.ProtocolIds...)
+	}
+	return srvConf
+}
+
 // BuildServer constructs the server from the args.
 func (c *Config) BuildServer(b bus.Bus, le *logrus.Entry, info *controller.Info, registerFns []RegisterFn) (*Server, error) {
 	protocolIDs, err := c.ParseProtocolIDs()
