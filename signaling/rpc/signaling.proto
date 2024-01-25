@@ -7,7 +7,7 @@ import "github.com/aperturerobotics/bifrost/peer/peer.proto";
 service Signaling {
   // Listen waits for messages to be available in our inbox from remote peers.
   rpc Listen(ListenRequest) returns (stream ListenResponse) {}
-  // Session signals a remote peer to initiate and maintain a WebRTC session.
+  // Session opens a signaling session to send and recv messages from a remote peer.
   rpc Session(stream SessionRequest) returns (stream SessionResponse) {}
 }
 
