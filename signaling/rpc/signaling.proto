@@ -1,11 +1,6 @@
 syntax = "proto3";
 package signaling.rpc;
 
-// TODO: Both sides should set a 32-byte random nonce for the session.
-// TODO: Hash both sides 32-byte nonce to get the session nonce.
-// TODO: Provide the session nonce, seqno, and timestamp as part of the signed body.
-// TODO: This will avoid replay attacks with the signed messages.
-
 import "github.com/aperturerobotics/bifrost/peer/peer.proto";
 
 // Signaling is a service which allows peers to signal each other via a RPC server.
