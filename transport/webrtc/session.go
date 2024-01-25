@@ -12,7 +12,6 @@ import (
 	transport_quic "github.com/aperturerobotics/bifrost/transport/common/quic"
 	"github.com/aperturerobotics/bifrost/util/rwc"
 	"github.com/aperturerobotics/util/broadcast"
-	"github.com/aperturerobotics/util/ccontainer"
 	"github.com/aperturerobotics/util/keyed"
 	"github.com/aperturerobotics/util/routine"
 	"github.com/aperturerobotics/util/scrub"
@@ -49,8 +48,9 @@ type sessionTracker struct {
 	xmitRoutine *routine.StateRoutineContainer[*outgoingSignal]
 	// linkRoutine is the routine that manages the Quic link when the session dcOpen.
 	linkRoutine *routine.StateRoutineContainer[datachannel.ReadWriteCloser]
-	// linkCtr contains the current link
-	linkCtr *ccontainer.CContainer[*transport_quic.Link]
+	// link contains the current link, if any
+	// w.bcast is broadcasted when this changes
+	link *transport_quic.Link
 }
 
 // newSessionTracker constructs a new sessionTracker.
@@ -71,7 +71,6 @@ func (w *WebRTC) newSessionTracker(peerIDStr string) (keyed.Routine, *sessionTra
 	}
 
 	sess.errCh = make(chan error, 1)
-	sess.linkCtr = ccontainer.NewCContainer[*transport_quic.Link](nil)
 
 	sess.linkRoutine = routine.NewStateRoutineContainer[datachannel.ReadWriteCloser](
 		func(t1, t2 datachannel.ReadWriteCloser) bool { return t1 == t2 },
@@ -192,11 +191,11 @@ func (s *sessionTracker) executeLink(ctx context.Context, dcRwc datachannel.Read
 		if wasClosed.Swap(true) {
 			return
 		}
-		s.linkCtr.SwapValue(func(v *transport_quic.Link) *transport_quic.Link {
-			if v == nextLink {
-				return nil
+		s.w.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
+			if s.link == nextLink {
+				s.link = nil
+				broadcast()
 			}
-			return v
 		})
 		go s.w.handler.HandleLinkLost(nextLink)
 		_ = dcRwc.Close()
@@ -218,7 +217,10 @@ func (s *sessionTracker) executeLink(ctx context.Context, dcRwc datachannel.Read
 	}
 
 	// Link established.
-	s.linkCtr.SetValue(nextLink)
+	s.w.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
+		s.link = nextLink
+		broadcast()
+	})
 	s.w.handler.HandleLinkEstablished(nextLink)
 
 	// Cleanup link on exit

@@ -234,27 +234,45 @@ func (w *WebRTC) DialPeer(
 		return false, nil
 	}
 
-	// Add the session reference.
-	ref, tkr, existed, err := w.addSessionTrackerRef(peerIDStr)
+	var ref *keyed.KeyedRef[string, *sessionTracker]
+	var waitCh <-chan struct{}
+	var tkr *sessionTracker
+	var lnk *transport_quic.Link
+
+	w.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
+		// Add the session reference.
+		var existed bool
+		ref, tkr, existed, err = w.addSessionTrackerRef(peerIDStr)
+		// Notify signal handlers if it didn't exist
+		if err == nil && !existed {
+			broadcast()
+		}
+		if tkr != nil {
+			lnk = tkr.link
+		}
+		waitCh = getWaitCh()
+	})
+	if ref != nil {
+		defer ref.Release()
+	}
 	if err != nil {
 		return false, err
 	}
-	defer ref.Release()
 
-	// Notify signal handlers if it didn't exist
-	if !existed {
-		w.bcast.Broadcast()
+	// Wait for the link to be established
+	for lnk == nil {
+		select {
+		case <-ctx.Done():
+			return false, context.Canceled
+		case <-waitCh:
+		}
+
+		w.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
+			lnk = tkr.link
+			waitCh = getWaitCh()
+		})
 	}
 
-	// Wait for the session to be established.
-	// TODO: what if the session tracker is disposed?
-	_, err = tkr.linkCtr.WaitValue(ctx, nil)
-	if err != nil {
-		return false, err
-	}
-
-	// Release the ref
-	ref.Release()
 	return false, nil
 }
 
