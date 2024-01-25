@@ -7,8 +7,7 @@ import (
 )
 
 // Factory constructs a Peer controller.
-type Factory struct {
-}
+type Factory struct{}
 
 // NewFactory builds a peer controller factory.
 func NewFactory() *Factory {

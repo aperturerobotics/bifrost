@@ -175,7 +175,7 @@ func writeIfNotExists(outPath string, input io.Reader) error {
 		if !os.IsNotExist(err) {
 			return errors.Wrap(os.ErrExist, outPath)
 		}
-		of, err = os.OpenFile(outPath, os.O_CREATE|os.O_RDWR, 0600)
+		of, err = os.OpenFile(outPath, os.O_CREATE|os.O_RDWR, 0o600)
 		if err != nil {
 			return err
 		}

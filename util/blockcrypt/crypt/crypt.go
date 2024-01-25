@@ -44,6 +44,7 @@ func (c *salsa20BlockCrypt) Encrypt(dst, src []byte) {
 	salsa20.XORKeyStream(dst[8:], src[8:], src[:8], &c.key)
 	copy(dst[:8], src[:8])
 }
+
 func (c *salsa20BlockCrypt) Decrypt(dst, src []byte) {
 	salsa20.XORKeyStream(dst[8:], src[8:], src[:8], &c.key)
 	copy(dst[:8], src[:8])

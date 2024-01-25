@@ -30,8 +30,7 @@ type PubSub interface {
 
 // PubSubHandler manages a PubSub and receives event callbacks.
 // This is typically fulfilled by the PubSub controller.
-type PubSubHandler interface {
-}
+type PubSubHandler interface{}
 
 // PeerLinkTuple is the peer-id link-id tuple.
 type PeerLinkTuple struct {

@@ -110,7 +110,6 @@ func (a *DaemonArgs) BuildFlags() []cli.Flag {
 			Destination: &a.Pubsub,
 		},
 	}
-
 }
 
 // ApplyFactories applies any extra factories necessary on top of the core set.

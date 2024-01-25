@@ -82,7 +82,6 @@ func (n *NetConn) RemoteAddr() net.Addr {
 	}
 
 	return peer.NewNetAddr(n.remotePeerID)
-
 }
 
 // SetDeadline sets the read and write deadlines associated

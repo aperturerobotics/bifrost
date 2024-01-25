@@ -39,13 +39,11 @@ func (m *mountedStream) GetStream() stream.Stream {
 // GetProtocolID returns the protocol ID of the stream.
 func (m *mountedStream) GetProtocolID() protocol.ID {
 	return m.protocolID
-
 }
 
 // GetOpenOpts returns the options used to open the stream.
 func (m *mountedStream) GetOpenOpts() stream.OpenOpts {
 	return m.strmOpenOpts
-
 }
 
 // GetPeerID returns the peer ID for the other end of the stream.

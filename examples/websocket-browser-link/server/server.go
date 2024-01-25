@@ -15,10 +15,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var log = logrus.New()
-var le = logrus.NewEntry(log)
-var localPrivKey crypto.PrivKey
-var localPeerID peer.ID
+var (
+	log          = logrus.New()
+	le           = logrus.NewEntry(log)
+	localPrivKey crypto.PrivKey
+	localPeerID  peer.ID
+)
 
 func init() {
 	log.SetLevel(logrus.DebugLevel)

@@ -5,8 +5,7 @@ import (
 )
 
 // routerAuth authenticates client connections.
-type routerAuth struct {
-}
+type routerAuth struct{}
 
 func newRouterAuth() *routerAuth {
 	return &routerAuth{}

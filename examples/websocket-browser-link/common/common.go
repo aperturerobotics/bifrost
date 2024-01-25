@@ -20,8 +20,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var log = logrus.New()
-var le = logrus.NewEntry(log)
+var (
+	log = logrus.New()
+	le  = logrus.NewEntry(log)
+)
 
 func init() {
 	log.SetLevel(logrus.DebugLevel)

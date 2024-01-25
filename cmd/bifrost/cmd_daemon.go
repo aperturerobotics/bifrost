@@ -219,7 +219,7 @@ func runDaemon(c *cli.Context) error {
 		if err != nil {
 			return errors.Wrap(err, "marshal config")
 		}
-		err = os.WriteFile(daemonFlags.ConfigPath, confDat, 0644)
+		err = os.WriteFile(daemonFlags.ConfigPath, confDat, 0o644)
 		if err != nil {
 			return errors.Wrap(err, "write config file")
 		}

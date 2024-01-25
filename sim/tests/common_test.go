@@ -8,8 +8,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var addPeer = AddPeer
-var initSimulator = InitSimulator
+var (
+	addPeer       = AddPeer
+	initSimulator = InitSimulator
+)
 
 func TestInitSimulator(t *testing.T) {
 	ctx, ctxCancel := context.WithCancel(context.Background())

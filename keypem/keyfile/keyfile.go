@@ -28,7 +28,7 @@ func OpenOrWritePrivKey(le *logrus.Entry, privKeyPath string) (crypto.PrivKey, e
 			if err != nil {
 				return privKey, err
 			}
-			if err := os.WriteFile(privKeyPath, dat, 0600); err != nil {
+			if err := os.WriteFile(privKeyPath, dat, 0o600); err != nil {
 				return privKey, err
 			}
 			if le != nil {

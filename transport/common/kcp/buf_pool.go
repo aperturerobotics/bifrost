@@ -4,11 +4,9 @@ import (
 	"sync"
 )
 
-var (
-	// global packet buffer
-	// shared among sending/receiving
-	xmitBuf sync.Pool
-)
+// global packet buffer
+// shared among sending/receiving
+var xmitBuf sync.Pool
 
 func init() {
 	xmitBuf.New = func() interface{} {

@@ -20,7 +20,6 @@ func TestDoRequest(t *testing.T) {
 	client := &http.Client{}
 	req, _ := http.NewRequest("GET", ts.URL, nil)
 	resp, err := DoRequest(entry, client, req, true)
-
 	if err != nil {
 		t.Errorf("Expected no error, got %v", err)
 	}

@@ -11,8 +11,7 @@ import (
 const ProtocolID protocol.ID = "bifrost/stream/drpc/e2e"
 
 // Server is the e2e server.
-type Server struct {
-}
+type Server struct{}
 
 // NewServer constructs the server.
 func NewServer() *Server {

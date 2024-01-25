@@ -6,8 +6,10 @@ import (
 	"sync"
 )
 
-var h64Mtx sync.Mutex
-var h64 hash.Hash64
+var (
+	h64Mtx sync.Mutex
+	h64    hash.Hash64
+)
 
 func init() {
 	h64 = crc64.New(crc64.MakeTable(crc64.ECMA))

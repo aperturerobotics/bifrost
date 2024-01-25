@@ -354,11 +354,13 @@ func (s *Server) Session(strm signaling.SRPCSignaling_SessionStream) error {
 			var err error
 			if currOpen != nil {
 				err = strm.Send(&signaling.SessionResponse{
-					Body: &signaling.SessionResponse_Opened{Opened: *currOpen}},
+					Body: &signaling.SessionResponse_Opened{Opened: *currOpen},
+				},
 				)
 			} else {
 				err = strm.Send(&signaling.SessionResponse{
-					Body: &signaling.SessionResponse_Closed{Closed: true}},
+					Body: &signaling.SessionResponse_Closed{Closed: true},
+				},
 				)
 			}
 			if err != nil {

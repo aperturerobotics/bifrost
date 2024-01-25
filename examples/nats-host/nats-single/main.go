@@ -21,8 +21,10 @@ import (
 	"github.com/aperturerobotics/controllerbus/controller"
 )
 
-var addPeer = tests.AddPeer
-var initSimulator = tests.InitSimulator
+var (
+	addPeer       = tests.AddPeer
+	initSimulator = tests.InitSimulator
+)
 
 var privKeyPath string
 

@@ -5,8 +5,7 @@ import (
 )
 
 // clientAuth authenticates client connections.
-type clientAuth struct {
-}
+type clientAuth struct{}
 
 func newClientAuth() *clientAuth {
 	return &clientAuth{}

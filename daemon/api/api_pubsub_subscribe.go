@@ -12,10 +12,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-var (
-	// acquirePeerTimeout is the timeout for acquiring private key
-	acquirePeerTimeout = time.Second * 10
-)
+// acquirePeerTimeout is the timeout for acquiring private key
+var acquirePeerTimeout = time.Second * 10
 
 // Subscribe subscribes to a pubsub channel.
 //

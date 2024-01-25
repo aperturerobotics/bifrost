@@ -16,7 +16,6 @@ func ParseProtocolID(protocolID string, allowEmpty bool) (protocol.ID, error) {
 		return "", err
 	}
 	return id, nil
-
 }
 
 // ParseProtocolIDs parses a list of peer IDs.
