@@ -31,11 +31,11 @@ require (
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/djherbis/buffer v1.2.0
 	github.com/golang/snappy v0.0.4
-	github.com/klauspost/compress v1.17.4
+	github.com/klauspost/compress v1.17.5
 	github.com/libp2p/go-libp2p v0.32.2
 	github.com/libp2p/go-yamux/v4 v4.0.2-0.20231213140704-4c5812896512
 	github.com/mr-tron/base58 v1.2.0
-	github.com/multiformats/go-multiaddr v0.12.1
+	github.com/multiformats/go-multiaddr v0.12.2
 	github.com/nats-io/nats-server/v2 v2.10.9
 	github.com/nats-io/nats.go v1.32.0
 	github.com/nats-io/nkeys v0.4.7
