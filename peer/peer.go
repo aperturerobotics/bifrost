@@ -45,6 +45,19 @@ func NewPeer(privKey crypto.PrivKey) (Peer, error) {
 	}, nil
 }
 
+// NewPeerWithGenerateED25519 generates an ED25519 key and returns it + the peer.
+func NewPeerWithGenerateED25519() (Peer, crypto.PrivKey, crypto.PubKey, error) {
+	privKey, pubKey, err := crypto.GenerateEd25519Key(rand.Reader)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	p, err := NewPeer(privKey)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	return p, privKey, pubKey, nil
+}
+
 // NewPeerWithPubKey builds a Peer with a public key.
 func NewPeerWithPubKey(pubKey crypto.PubKey) (Peer, error) {
 	id, err := lpeer.IDFromPublicKey(pubKey)
