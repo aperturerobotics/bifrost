@@ -127,6 +127,7 @@ func (c *ClientController) HandleDirective(ctx context.Context, di directive.Ins
 			c.AccessClient,
 			c.waitAck,
 		), c.backoff)
+
 		return directive.R(res, nil)
 	}
 	return nil, nil

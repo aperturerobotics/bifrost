@@ -31,9 +31,9 @@ require (
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/djherbis/buffer v1.2.0
 	github.com/golang/snappy v0.0.4
-	github.com/klauspost/compress v1.17.5
+	github.com/klauspost/compress v1.17.6
 	github.com/libp2p/go-libp2p v0.32.2
-	github.com/libp2p/go-yamux/v4 v4.0.2-0.20240131165134-13916cc02642
+	github.com/libp2p/go-yamux/v4 v4.0.2-0.20240206065824-7222fbc3459d
 	github.com/mr-tron/base58 v1.2.0
 	github.com/multiformats/go-multiaddr v0.12.2
 	github.com/nats-io/nats-server/v2 v2.10.10
@@ -67,7 +67,7 @@ require (
 	github.com/valyala/fastjson v1.6.4
 	github.com/xtaci/smux v1.5.24
 	go.bug.st/serial v1.6.1
-	golang.org/x/exp v0.0.0-20240119083558-1b970713d09a
+	golang.org/x/exp v0.0.0-20240205201215-2c58cdc269a3
 )
 
 require (
