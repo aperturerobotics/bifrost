@@ -10,20 +10,20 @@ replace (
 )
 
 require (
+	github.com/aperturerobotics/bifrost v0.24.5-0.20240207025706-295a96411e5d
+	github.com/aperturerobotics/goprotowrap v0.3.0
+	github.com/aperturerobotics/starpc v0.22.8
+)
+
+require (
+	github.com/evanw/esbuild v0.20.0
 	github.com/golangci/golangci-lint v1.53.3
+	github.com/goreleaser/goreleaser v1.24.1-0.20240206004344-ec8819a95c55 // main
+	github.com/hajimehoshi/wasmserve v0.0.0-20210512070053-db8e7b58c3a0
 	github.com/planetscale/vtprotobuf v0.6.0
 	github.com/psampaz/go-mod-outdated v0.9.0
 	github.com/quic-go/quic-go v0.41.0 // indirect
 	google.golang.org/protobuf v1.32.0
-)
-
-require (
-	github.com/aperturerobotics/bifrost v0.24.4-0.20240201224943-d11a27d8254a
-	github.com/aperturerobotics/goprotowrap v0.3.0
-	github.com/aperturerobotics/starpc v0.22.7
-	github.com/evanw/esbuild v0.20.0
-	github.com/goreleaser/goreleaser v1.23.1-0.20240201185617-cf997f7ac492 // main
-	github.com/hajimehoshi/wasmserve v0.0.0-20210512070053-db8e7b58c3a0
 	storj.io/drpc v0.0.33
 )
 
@@ -75,16 +75,16 @@ require (
 	github.com/alexkohler/nakedret/v2 v2.0.2 // indirect
 	github.com/alexkohler/prealloc v1.0.0 // indirect
 	github.com/alingse/asasalint v0.0.11 // indirect
-	github.com/aperturerobotics/controllerbus v0.33.2 // indirect
+	github.com/aperturerobotics/controllerbus v0.33.3 // indirect
 	github.com/aperturerobotics/entitygraph v0.6.1 // indirect
 	github.com/aperturerobotics/timestamp v0.8.2 // indirect
 	github.com/aperturerobotics/ts-proto-common-types v0.20.2 // indirect
-	github.com/aperturerobotics/util v1.13.2 // indirect
+	github.com/aperturerobotics/util v1.13.3 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
 	github.com/ashanbrown/forbidigo v1.5.3 // indirect
 	github.com/ashanbrown/makezero v1.1.1 // indirect
 	github.com/atc0005/go-teams-notify/v2 v2.9.0 // indirect
-	github.com/aws/aws-sdk-go v1.50.5 // indirect
+	github.com/aws/aws-sdk-go v1.50.10 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.24.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.5.4 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.26.1 // indirect
@@ -403,7 +403,7 @@ require (
 	github.com/vbatts/tar-split v0.11.5 // indirect
 	github.com/withfig/autocomplete-tools/integrations/cobra v1.2.1 // indirect
 	github.com/wk8/go-ordered-map/v2 v2.1.8 // indirect
-	github.com/xanzy/go-gitlab v0.96.0 // indirect
+	github.com/xanzy/go-gitlab v0.97.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/xen0n/gosmopolitan v1.2.1 // indirect
 	github.com/yagipy/maintidx v1.0.0 // indirect
