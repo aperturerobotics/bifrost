@@ -959,7 +959,7 @@ export interface Signaling {
     request: ListenRequest,
     abortSignal?: AbortSignal,
   ): AsyncIterable<ListenResponse>
-  /** Session signals a remote peer to initiate and maintain a WebRTC session. */
+  /** Session opens a signaling session to send and recv messages from a remote peer. */
   Session(
     request: AsyncIterable<SessionRequest>,
     abortSignal?: AbortSignal,
@@ -1020,7 +1020,7 @@ export const SignalingDefinition = {
       responseStream: true,
       options: {},
     },
-    /** Session signals a remote peer to initiate and maintain a WebRTC session. */
+    /** Session opens a signaling session to send and recv messages from a remote peer. */
     session: {
       name: 'Session',
       requestType: SessionRequest,
