@@ -16,8 +16,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: ['1.21']
-        node: [18.x, 21.x]
+        go: ['1.22']
+        node: [21.x]
     timeout-minutes: 10
     steps:
       - uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0

@@ -3,7 +3,7 @@ module github.com/aperturerobotics/bifrost
 go 1.21
 
 require (
-	github.com/aperturerobotics/controllerbus v0.33.3 // latest
+	github.com/aperturerobotics/controllerbus v0.34.0 // latest
 	github.com/aperturerobotics/entitygraph v0.6.1
 	github.com/aperturerobotics/starpc v0.22.8 // latest
 )
@@ -128,7 +128,7 @@ require (
 	go.uber.org/mock v0.3.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
-	golang.org/x/mod v0.14.0 // indirect
+	golang.org/x/mod v0.15.0 // indirect
 	golang.org/x/net v0.20.0 // indirect
 	golang.org/x/sys v0.16.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
