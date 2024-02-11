@@ -5,10 +5,10 @@ go 1.21
 require (
 	github.com/aperturerobotics/controllerbus v0.34.1 // latest
 	github.com/aperturerobotics/entitygraph v0.6.1
-	github.com/aperturerobotics/starpc v0.23.1 // latest
+	github.com/aperturerobotics/starpc v0.23.2 // latest
 	github.com/aperturerobotics/timestamp v0.8.2
 	github.com/aperturerobotics/ts-proto-common-types v0.20.2 // latest
-	github.com/aperturerobotics/util v1.13.3 // master
+	github.com/aperturerobotics/util v1.13.4 // master
 )
 
 // aperture: use compatibility forks
