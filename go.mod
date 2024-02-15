@@ -3,12 +3,12 @@ module github.com/aperturerobotics/bifrost
 go 1.21
 
 require (
-	github.com/aperturerobotics/controllerbus v0.34.2 // latest
+	github.com/aperturerobotics/controllerbus v0.34.3 // latest
 	github.com/aperturerobotics/entitygraph v0.6.1
-	github.com/aperturerobotics/starpc v0.23.2 // latest
+	github.com/aperturerobotics/starpc v0.25.4 // latest
 	github.com/aperturerobotics/timestamp v0.8.2
 	github.com/aperturerobotics/ts-proto-common-types v0.20.2 // latest
-	github.com/aperturerobotics/util v1.13.5 // master
+	github.com/aperturerobotics/util v1.13.6 // master
 )
 
 // aperture: use compatibility forks
@@ -38,7 +38,7 @@ require (
 	github.com/libp2p/go-yamux/v4 v4.0.2-0.20240206065824-7222fbc3459d
 	github.com/mr-tron/base58 v1.2.0
 	github.com/multiformats/go-multiaddr v0.12.2
-	github.com/nats-io/nats-server/v2 v2.10.10
+	github.com/nats-io/nats-server/v2 v2.10.11
 	github.com/nats-io/nats.go v1.32.0
 	github.com/nats-io/nkeys v0.4.7
 	github.com/paralin/kcp-go-lite v1.0.2-0.20240110212540-c015327ec623
@@ -60,7 +60,7 @@ require (
 	github.com/zeebo/blake3 v0.2.3
 	go.bug.st/serial v1.6.1
 	golang.org/x/crypto v0.19.0
-	golang.org/x/exp v0.0.0-20240205201215-2c58cdc269a3
+	golang.org/x/exp v0.0.0-20240213143201-ec583247a57a
 	gonum.org/v1/gonum v0.14.0
 	google.golang.org/protobuf v1.32.0
 	nhooyr.io/websocket v1.8.10
