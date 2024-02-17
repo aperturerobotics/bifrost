@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/aperturerobotics/controllerbus v0.34.3 // latest
 	github.com/aperturerobotics/entitygraph v0.6.1
-	github.com/aperturerobotics/starpc v0.25.4 // latest
+	github.com/aperturerobotics/starpc v0.25.5 // latest
 	github.com/aperturerobotics/timestamp v0.8.2
 	github.com/aperturerobotics/ts-proto-common-types v0.20.2 // latest
 	github.com/aperturerobotics/util v1.13.6 // master
@@ -39,7 +39,7 @@ require (
 	github.com/mr-tron/base58 v1.2.0
 	github.com/multiformats/go-multiaddr v0.12.2
 	github.com/nats-io/nats-server/v2 v2.10.11
-	github.com/nats-io/nats.go v1.32.0
+	github.com/nats-io/nats.go v1.33.1
 	github.com/nats-io/nkeys v0.4.7
 	github.com/paralin/kcp-go-lite v1.0.2-0.20240110212540-c015327ec623
 	github.com/patrickmn/go-cache v2.1.0+incompatible
@@ -58,7 +58,7 @@ require (
 	github.com/valyala/fastjson v1.6.4
 	github.com/xtaci/smux v1.5.24
 	github.com/zeebo/blake3 v0.2.3
-	go.bug.st/serial v1.6.1
+	go.bug.st/serial v1.6.2
 	golang.org/x/crypto v0.19.0
 	golang.org/x/exp v0.0.0-20240213143201-ec583247a57a
 	gonum.org/v1/gonum v0.14.0
