@@ -29,7 +29,7 @@ func NewOpenStreamFunc(
 		ctx context.Context,
 		msgHandler srpc.PacketDataHandler,
 		closeHandler srpc.CloseHandler,
-	) (srpc.Writer, error) {
+	) (srpc.PacketWriter, error) {
 		return EstablishSrpcStream(
 			ctx,
 			b,
@@ -56,7 +56,7 @@ func NewMultiOpenStreamFunc(
 		ctx context.Context,
 		msgHandler srpc.PacketDataHandler,
 		closeHandler srpc.CloseHandler,
-	) (srpc.Writer, error) {
+	) (srpc.PacketWriter, error) {
 		var lastErr error
 		for _, destPeer := range destPeers {
 			var estCtx context.Context
@@ -106,7 +106,7 @@ func EstablishSrpcStream(
 	transportID uint64,
 	msgHandler srpc.PacketDataHandler,
 	closeHandler srpc.CloseHandler,
-) (srpc.Writer, error) {
+) (srpc.PacketWriter, error) {
 	// TODO: EstablishLinkWithPeer via transport id?
 	_, lkRel, err := b.AddDirective(
 		link.NewEstablishLinkWithPeer(srcPeer, destPeer),
