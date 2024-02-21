@@ -91,7 +91,7 @@ func run(ctx context.Context, le *logrus.Entry) error {
 	for {
 		select {
 		case <-ctx.Done():
-			return nil
+			return context.Canceled
 		case <-time.After(time.Second):
 		}
 
@@ -100,7 +100,4 @@ func run(ctx context.Context, le *logrus.Entry) error {
 			le.WithError(err).Warn("unable to publish pubsub message")
 		}
 	}
-
-	<-ctx.Done()
-	return nil
 }
