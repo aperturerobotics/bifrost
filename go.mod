@@ -3,12 +3,12 @@ module github.com/aperturerobotics/bifrost
 go 1.21
 
 require (
-	github.com/aperturerobotics/controllerbus v0.34.4 // latest
+	github.com/aperturerobotics/controllerbus v0.34.5 // latest
 	github.com/aperturerobotics/entitygraph v0.6.1
-	github.com/aperturerobotics/starpc v0.26.0 // latest
+	github.com/aperturerobotics/starpc v0.26.1 // latest
 	github.com/aperturerobotics/timestamp v0.8.2
 	github.com/aperturerobotics/ts-proto-common-types v0.20.2 // latest
-	github.com/aperturerobotics/util v1.13.7 // master
+	github.com/aperturerobotics/util v1.13.8 // master
 )
 
 // aperture: use compatibility forks
@@ -60,7 +60,7 @@ require (
 	github.com/zeebo/blake3 v0.2.3
 	go.bug.st/serial v1.6.2
 	golang.org/x/crypto v0.19.0
-	golang.org/x/exp v0.0.0-20240213143201-ec583247a57a
+	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225
 	gonum.org/v1/gonum v0.14.0
 	google.golang.org/protobuf v1.32.0
 	nhooyr.io/websocket v1.8.10
