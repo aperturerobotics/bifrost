@@ -39,7 +39,7 @@ func (h *BusHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	}
 	if handlerRef == nil {
 		rw.WriteHeader(404)
-		_, _ = rw.Write([]byte("bldr: handler not found for url"))
+		_, _ = rw.Write([]byte("404 not found"))
 		return
 	}
 
