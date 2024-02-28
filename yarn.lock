@@ -1986,10 +1986,10 @@ starpc@^0.26.0:
     uint8arraylist "^2.4.7"
     ws "^8.15.1"
 
-starpc@^0.26.1:
-  version "0.26.2"
-  resolved "https://registry.yarnpkg.com/starpc/-/starpc-0.26.2.tgz#d8a320496b9b32e0c62c548fb53042ac63e4e9c2"
-  integrity sha512-GlO1bhhyD6DBjiUzhXXO3yaX/j/0rwCo7nNY+gu266au/VZoDgyVycvYDpjH3hsa1Dx9oGqIa8Y8paBJ976wBg==
+starpc@^0.27.0:
+  version "0.27.0"
+  resolved "https://registry.yarnpkg.com/starpc/-/starpc-0.27.0.tgz#a308fdc6cd5ea6c468c74a1cc5876aec010587e0"
+  integrity sha512-yQJAk0KTV52ZAucoRBDNWpsZyD6gjRqE2hgR7YGzOtJfz4yVl72mMEd6OJ4sjTokaevPGkpvm8WXDMAlPUafog==
   dependencies:
     "@aptre/it-ws" "^1.0.0"
     "@chainsafe/libp2p-yamux" "^6.0.2"
@@ -2094,9 +2094,9 @@ ts-proto-descriptors@1.15.0:
     protobufjs "^7.2.4"
 
 ts-proto@^1.167.8:
-  version "1.167.8"
-  resolved "https://registry.yarnpkg.com/ts-proto/-/ts-proto-1.167.8.tgz#32a9f39d667b6b9789a4889c1abb86497be23120"
-  integrity sha512-HHfwCN7MZgnQ7BhFfeLbg6mZIheqOZ3kGy6/BmBNVVzrk19bCoO6Wkzb5Gb5O7+NmiSd/CBrFh/MnZIoNXEvUw==
+  version "1.167.9"
+  resolved "https://registry.yarnpkg.com/ts-proto/-/ts-proto-1.167.9.tgz#b91df6a1db8f689efcac6a2e20d71cdd5c2af8ab"
+  integrity sha512-zqZ15CzqvupSpoTl/fzOs5gG7SFvj1ENmWeKMgD4Yl2BSx8I5F+qgYkr9EZYMu7Ho7u+QtwzfudROo+/jwM2pg==
   dependencies:
     case-anything "^2.1.13"
     protobufjs "^7.2.4"

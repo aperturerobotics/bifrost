@@ -3,12 +3,12 @@ module github.com/aperturerobotics/bifrost
 go 1.21
 
 require (
-	github.com/aperturerobotics/controllerbus v0.34.5 // latest
+	github.com/aperturerobotics/controllerbus v0.35.3 // latest
 	github.com/aperturerobotics/entitygraph v0.6.1
-	github.com/aperturerobotics/starpc v0.26.1 // latest
+	github.com/aperturerobotics/starpc v0.27.0 // latest
 	github.com/aperturerobotics/timestamp v0.8.2
 	github.com/aperturerobotics/ts-proto-common-types v0.20.2 // latest
-	github.com/aperturerobotics/util v1.13.8 // master
+	github.com/aperturerobotics/util v1.14.2 // master
 )
 
 // aperture: use compatibility forks
@@ -47,7 +47,7 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.21
 	github.com/pion/datachannel v1.5.5
 	github.com/pion/sdp/v3 v3.0.6
-	github.com/pion/webrtc/v4 v4.0.0-beta.9
+	github.com/pion/webrtc/v4 v4.0.0-beta.10
 	github.com/pkg/errors v0.9.1
 	github.com/planetscale/vtprotobuf v0.6.0
 	github.com/quic-go/quic-go v0.41.0
