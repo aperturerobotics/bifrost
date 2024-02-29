@@ -47,7 +47,7 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.21
 	github.com/pion/datachannel v1.5.5
 	github.com/pion/sdp/v3 v3.0.6
-	github.com/pion/webrtc/v4 v4.0.0-beta.10
+	github.com/pion/webrtc/v4 v4.0.0-beta.11
 	github.com/pkg/errors v0.9.1
 	github.com/planetscale/vtprotobuf v0.6.0
 	github.com/quic-go/quic-go v0.41.0
