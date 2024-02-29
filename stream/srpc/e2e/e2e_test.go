@@ -6,7 +6,9 @@ import (
 
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/protocol"
+	bifrost_rpc "github.com/aperturerobotics/bifrost/rpc"
 	stream_srpc_client "github.com/aperturerobotics/bifrost/stream/srpc/client"
+	stream_srpc_client_controller "github.com/aperturerobotics/bifrost/stream/srpc/client/controller"
 	stream_srpc_server "github.com/aperturerobotics/bifrost/stream/srpc/server"
 	"github.com/aperturerobotics/bifrost/testbed"
 	"github.com/aperturerobotics/bifrost/transport/common/dialer"
@@ -20,7 +22,7 @@ import (
 
 var ProtocolID = protocol.ID("bifrost/stream/srpc/e2e")
 
-// TestStarpc tests a srpc service end-to-end.
+// TestStarpc tests a srpc service end-to-end including LookupRpcClient.
 func TestStarpc(t *testing.T) {
 	ctx := context.Background()
 	log := logrus.New()
@@ -99,18 +101,31 @@ func TestStarpc(t *testing.T) {
 		_ = tb2.Bus.ExecuteController(ctx, server)
 	}()
 
-	// tb1: construct client
-	cl, err := stream_srpc_client.NewClient(tb1.Logger, tb1.Bus, &stream_srpc_client.Config{
-		ServerPeerIds: []string{tb2PeerID.String()},
-		SrcPeerId:     tb1PeerID.String(),
-	}, ProtocolID)
+	// tb1: construct client controller
+	clientCtrl, err := stream_srpc_client_controller.NewController(tb1.Logger, tb1.Bus, &stream_srpc_client_controller.Config{
+		Client: &stream_srpc_client.Config{
+			ServerPeerIds: []string{tb2PeerID.String()},
+			SrcPeerId:     tb1PeerID.String(),
+		},
+		ProtocolId:        ProtocolID.String(),
+		ServiceIdPrefixes: []string{"test-server/"},
+	})
 	if err != nil {
 		t.Fatal(err.Error())
 	}
+	go func() {
+		_ = tb1.Bus.ExecuteController(ctx, clientCtrl)
+	}()
+
+	// construct client which will use LookupRpcClient
+	tb1Client := bifrost_rpc.NewBusClient(tb1.Bus)
+
+	// prefix the service id so our controller forwards it to the remote
+	serviceID := "test-server/" + echo.SRPCEchoerServiceID
 
 	// run a request
 	mockMsg := "hello world 123"
-	serviceClient := echo.NewSRPCEchoerClient(cl)
+	serviceClient := echo.NewSRPCEchoerClientWithServiceID(tb1Client, serviceID)
 	resp, err := serviceClient.Echo(ctx, &echo.EchoMsg{
 		Body: mockMsg,
 	})
