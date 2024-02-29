@@ -1986,10 +1986,10 @@ starpc@^0.26.0:
     uint8arraylist "^2.4.7"
     ws "^8.15.1"
 
-starpc@^0.27.1:
-  version "0.27.1"
-  resolved "https://registry.yarnpkg.com/starpc/-/starpc-0.27.1.tgz#55c0d6eaf160f2a6736c1c1de127a1b19835a3ea"
-  integrity sha512-uPEq4TcAa3A88LXly6swONqcGFZFoU+Bpdd3ju0JoL9I2Aqaw6gqM7uRnxoMshznifPBBxUy1t9IA4gYzhzMGA==
+starpc@^0.27.2:
+  version "0.27.2"
+  resolved "https://registry.yarnpkg.com/starpc/-/starpc-0.27.2.tgz#03d57831d59cf904662731955540f63d9ed8b87d"
+  integrity sha512-YEHKJQvzjRKE5bFa665eFEsOoNo2XG2wzMuWqGUShs4RL3Zbr7X0rEXu5biZS85d+SNhPhRYErj/eGjmfXBdqw==
   dependencies:
     "@aptre/it-ws" "^1.0.0"
     "@chainsafe/libp2p-yamux" "^6.0.2"

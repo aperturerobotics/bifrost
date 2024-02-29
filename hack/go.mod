@@ -12,7 +12,7 @@ replace (
 require (
 	github.com/aperturerobotics/bifrost v0.24.5-0.20240207025706-295a96411e5d
 	github.com/aperturerobotics/goprotowrap v0.3.0
-	github.com/aperturerobotics/starpc v0.27.2-0.20240229060046-28d111bca538
+	github.com/aperturerobotics/starpc v0.27.2
 )
 
 require (
@@ -333,7 +333,7 @@ require (
 	github.com/pion/transport/v2 v2.2.4 // indirect
 	github.com/pion/transport/v3 v3.0.1 // indirect
 	github.com/pion/turn/v3 v3.0.1 // indirect
-	github.com/pion/webrtc/v4 v4.0.0-beta.10 // indirect
+	github.com/pion/webrtc/v4 v4.0.0-beta.11 // indirect
 	github.com/pjbgf/sha1cd v0.3.0 // indirect
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
