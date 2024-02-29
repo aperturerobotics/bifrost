@@ -1,10 +1,11 @@
 # https://github.com/aperturerobotics/protobuf-project
 
+SHELL:=bash
 PROTOWRAP=hack/bin/protowrap
 PROTOC_GEN_GO=hack/bin/protoc-gen-go
 PROTOC_GEN_STARPC=hack/bin/protoc-gen-go-starpc
-PROTOC_GEN_GO_DRPC=hack/bin/protoc-gen-go-drpc
 PROTOC_GEN_VTPROTO=hack/bin/protoc-gen-go-vtproto
+PROTOC_GEN_GO_DRPC=hack/bin/protoc-gen-go-drpc
 GOIMPORTS=hack/bin/goimports
 GOLANGCI_LINT=hack/bin/golangci-lint
 GO_MOD_OUTDATED=hack/bin/go-mod-outdated
