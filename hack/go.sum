@@ -161,8 +161,8 @@ github.com/alingse/asasalint v0.0.11 h1:SFwnQXJ49Kx/1GghOFz1XGqHYKp21Kq1nHad/0WQ
 github.com/alingse/asasalint v0.0.11/go.mod h1:nCaoMhw7a9kSJObvQyVzNTPBDbNpdocqrSP7t/cW5+I=
 github.com/anmitsu/go-shlex v0.0.0-20200514113438-38f4b401e2be h1:9AeTilPcZAjCFIImctFaOjnTIavg87rW78vTPkQqLI8=
 github.com/anmitsu/go-shlex v0.0.0-20200514113438-38f4b401e2be/go.mod h1:ySMOLuWl6zY27l47sB3qLNK6tF2fkHG55UZxx8oIVo4=
-github.com/aperturerobotics/controllerbus v0.36.0 h1:JplE0QMaktNXOpu+TARl8MAO3fmJhajQehW/rs+Kvx8=
-github.com/aperturerobotics/controllerbus v0.36.0/go.mod h1:eK7dcktJ8VfgtodsZtUFRpgtsjwzV22Kl+PEUY0moGA=
+github.com/aperturerobotics/controllerbus v0.36.1 h1:T3soc+n1jfFUXvfpkh8q3q4QmGgExbyqh+5kp4iQLVM=
+github.com/aperturerobotics/controllerbus v0.36.1/go.mod h1:eK7dcktJ8VfgtodsZtUFRpgtsjwzV22Kl+PEUY0moGA=
 github.com/aperturerobotics/entitygraph v0.6.1 h1:A+5dYE26dRkitSCE9Zn9vrp6j37Ms4C5VjBYlHFSuFc=
 github.com/aperturerobotics/entitygraph v0.6.1/go.mod h1:/XPtMCHH4VOqdL9VfckQd8lUmJVK1t8qspuPgob4rEo=
 github.com/aperturerobotics/goprotowrap v0.3.0 h1:JLQ/1zVRdm2qwfeK7bPxWPg5fpTLlzovDUom0vBgcgM=
