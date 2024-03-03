@@ -20,6 +20,8 @@ type ClientController struct {
 	info *controller.Info
 	// client is the prefix client
 	client *srpc.PrefixClient
+	// baseClient is the base client (not prefixed).
+	baseClient srpc.Client
 	// matchServicePrefixes is the list of service id prefixes to match.
 	// strips the prefix before calling invoke
 	// if empty, forwards all services
@@ -39,6 +41,7 @@ func NewClientController(
 		bus:                  bus,
 		info:                 info,
 		client:               srpc.NewPrefixClient(client, matchServicePrefixes),
+		baseClient:           client,
 		matchServicePrefixes: matchServicePrefixes,
 	}
 }
@@ -51,6 +54,11 @@ func (c *ClientController) GetControllerInfo() *controller.Info {
 // GetClient returns the prefixed client.
 func (c *ClientController) GetClient() *srpc.PrefixClient {
 	return c.client
+}
+
+// GetBaseClient returns the client without the prefix stripping.
+func (c *ClientController) GetBaseClient() srpc.Client {
+	return c.baseClient
 }
 
 // Execute executes the controller.
