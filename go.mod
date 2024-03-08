@@ -3,7 +3,7 @@ module github.com/aperturerobotics/bifrost
 go 1.21
 
 require (
-	github.com/aperturerobotics/controllerbus v0.36.1 // latest
+	github.com/aperturerobotics/controllerbus v0.36.4 // latest
 	github.com/aperturerobotics/entitygraph v0.6.1
 	github.com/aperturerobotics/starpc v0.27.2 // latest
 	github.com/aperturerobotics/timestamp v0.8.2
@@ -46,8 +46,8 @@ require (
 	github.com/pauleyj/gobee v0.0.0-20190212035730-6270c53072a4
 	github.com/pierrec/lz4/v4 v4.1.21
 	github.com/pion/datachannel v1.5.5
-	github.com/pion/sdp/v3 v3.0.6
-	github.com/pion/webrtc/v4 v4.0.0-beta.11
+	github.com/pion/sdp/v3 v3.0.8
+	github.com/pion/webrtc/v4 v4.0.0-beta.13
 	github.com/pkg/errors v0.9.1
 	github.com/planetscale/vtprotobuf v0.6.0
 	github.com/quic-go/quic-go v0.41.0
@@ -62,7 +62,7 @@ require (
 	golang.org/x/crypto v0.21.0
 	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225
 	gonum.org/v1/gonum v0.14.0
-	google.golang.org/protobuf v1.32.0
+	google.golang.org/protobuf v1.33.0
 	nhooyr.io/websocket v1.8.10
 	storj.io/drpc v0.0.33
 )
@@ -116,7 +116,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/spaolacci/murmur3 v1.1.1-0.20190317074736-539464a789e9 // indirect
-	github.com/stretchr/testify v1.8.4 // indirect
+	github.com/stretchr/testify v1.9.0 // indirect
 	github.com/templexxx/cpu v0.1.0 // indirect
 	github.com/templexxx/cpufeat v0.0.0-20180724012125-cef66df7f161 // indirect
 	github.com/templexxx/xorsimd v0.4.2 // indirect
@@ -125,11 +125,11 @@ require (
 	go.uber.org/mock v0.4.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
-	golang.org/x/mod v0.15.0 // indirect
-	golang.org/x/net v0.21.0 // indirect
+	golang.org/x/mod v0.16.0 // indirect
+	golang.org/x/net v0.22.0 // indirect
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
-	golang.org/x/tools v0.18.0 // indirect
+	golang.org/x/tools v0.19.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
