@@ -79,6 +79,10 @@ func NewMultiOpenStreamFunc(
 			)
 			estCtxCancel()
 			if err != nil {
+				// detect deadline exceeded
+				if err == context.Canceled && estCtx.Err() != nil && ctx.Err() == nil {
+					err = context.DeadlineExceeded
+				}
 				le.WithError(err).Warn("unable to establish srpc conn")
 				lastErr = err
 				continue
