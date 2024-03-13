@@ -8,7 +8,7 @@ require (
 	github.com/aperturerobotics/starpc v0.27.2 // latest
 	github.com/aperturerobotics/timestamp v0.8.2
 	github.com/aperturerobotics/ts-proto-common-types v0.20.2 // latest
-	github.com/aperturerobotics/util v1.15.0 // master
+	github.com/aperturerobotics/util v1.15.1 // master
 )
 
 // aperture: use compatibility forks
@@ -38,7 +38,7 @@ require (
 	github.com/libp2p/go-yamux/v4 v4.0.2-0.20240206065824-7222fbc3459d
 	github.com/mr-tron/base58 v1.2.0
 	github.com/multiformats/go-multiaddr v0.12.2
-	github.com/nats-io/nats-server/v2 v2.10.11
+	github.com/nats-io/nats-server/v2 v2.10.12
 	github.com/nats-io/nats.go v1.33.1
 	github.com/nats-io/nkeys v0.4.7
 	github.com/paralin/kcp-go-lite v1.0.2-0.20240110212540-c015327ec623
@@ -64,7 +64,7 @@ require (
 	gonum.org/v1/gonum v0.14.0
 	google.golang.org/protobuf v1.33.0
 	nhooyr.io/websocket v1.8.10
-	storj.io/drpc v0.0.33
+	storj.io/drpc v0.0.34
 )
 
 require (
