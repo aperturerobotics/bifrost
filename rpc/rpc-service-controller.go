@@ -44,7 +44,7 @@ type RpcServiceController struct {
 // Responds if a URL matches either serviceIdPrefixes OR serviceIdRe OR serviceIdList.
 // all filters can be empty
 // if no filters are set, resolves for any LookupRpcService directive.
-// serviceIdList is a list of service ids to match.
+// serverIdRe MUST match if set, regardless of the other filters.
 func NewRpcServiceController(
 	info *controller.Info,
 	resolver RpcServiceBuilder,
@@ -107,6 +107,10 @@ func (c *RpcServiceController) HandleDirective(
 					break
 				}
 			}
+		}
+		if matched && c.serverIdRe != nil {
+			serverID := d.LookupRpcServerID()
+			matched = c.serverIdRe.MatchString(serverID)
 		}
 		if !matched {
 			return nil, nil
