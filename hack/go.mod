@@ -22,9 +22,9 @@ require (
 	github.com/hajimehoshi/wasmserve v0.0.0-20210512070053-db8e7b58c3a0
 	github.com/planetscale/vtprotobuf v0.6.0
 	github.com/psampaz/go-mod-outdated v0.9.0
-	github.com/quic-go/quic-go v0.41.0 // indirect
+	github.com/quic-go/quic-go v0.42.0 // indirect
 	google.golang.org/protobuf v1.33.0
-	storj.io/drpc v0.0.33
+	storj.io/drpc v0.0.34
 )
 
 require (
@@ -75,11 +75,11 @@ require (
 	github.com/alexkohler/nakedret/v2 v2.0.2 // indirect
 	github.com/alexkohler/prealloc v1.0.0 // indirect
 	github.com/alingse/asasalint v0.0.11 // indirect
-	github.com/aperturerobotics/controllerbus v0.36.6 // indirect
+	github.com/aperturerobotics/controllerbus v0.36.7 // indirect
 	github.com/aperturerobotics/entitygraph v0.6.1 // indirect
 	github.com/aperturerobotics/timestamp v0.8.2 // indirect
 	github.com/aperturerobotics/ts-proto-common-types v0.20.2 // indirect
-	github.com/aperturerobotics/util v1.15.0 // indirect
+	github.com/aperturerobotics/util v1.15.2 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
 	github.com/ashanbrown/forbidigo v1.5.3 // indirect
 	github.com/ashanbrown/makezero v1.1.1 // indirect
@@ -268,8 +268,8 @@ require (
 	github.com/leonklingele/grouper v1.1.1 // indirect
 	github.com/letsencrypt/boulder v0.0.0-20231026200631-000cd05d5491 // indirect
 	github.com/libp2p/go-buffer-pool v0.1.0 // indirect
-	github.com/libp2p/go-libp2p v0.33.0 // indirect
-	github.com/libp2p/go-yamux/v4 v4.0.2-0.20240206065824-7222fbc3459d // indirect
+	github.com/libp2p/go-libp2p v0.33.1 // indirect
+	github.com/libp2p/go-yamux/v4 v4.0.2-0.20240314112558-188b1fda7dc9 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/lufeee/execinquery v1.2.1 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
@@ -421,7 +421,7 @@ require (
 	go.uber.org/zap v1.27.0 // indirect
 	gocloud.dev v0.36.0 // indirect
 	golang.org/x/crypto v0.21.0 // indirect
-	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225 // indirect
+	golang.org/x/exp v0.0.0-20240318143956-a85f2c67cd81 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20230224173230-c95f2b4c22f2 // indirect
 	golang.org/x/mod v0.16.0 // indirect
 	golang.org/x/net v0.22.0 // indirect
@@ -430,7 +430,7 @@ require (
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/term v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
-	golang.org/x/time v0.4.0 // indirect
+	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.19.0 // indirect
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
 	google.golang.org/api v0.151.0 // indirect

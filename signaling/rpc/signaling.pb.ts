@@ -291,7 +291,7 @@ export const SessionRequest = {
     message: SessionRequest,
     writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
-    if (!message.sessionSeqno.isZero()) {
+    if (!message.sessionSeqno.equals(Long.UZERO)) {
       writer.uint32(8).uint64(message.sessionSeqno)
     }
     switch (message.body?.$case) {
@@ -430,7 +430,7 @@ export const SessionRequest = {
 
   toJSON(message: SessionRequest): unknown {
     const obj: any = {}
-    if (!message.sessionSeqno.isZero()) {
+    if (!message.sessionSeqno.equals(Long.UZERO)) {
       obj.sessionSeqno = (message.sessionSeqno || Long.UZERO).toString()
     }
     if (message.body?.$case === 'init') {
@@ -618,7 +618,7 @@ export const SessionMsg = {
     if (message.signedMsg !== undefined) {
       SignedMsg.encode(message.signedMsg, writer.uint32(10).fork()).ldelim()
     }
-    if (!message.seqno.isZero()) {
+    if (!message.seqno.equals(Long.UZERO)) {
       writer.uint32(16).uint64(message.seqno)
     }
     return writer
@@ -705,7 +705,7 @@ export const SessionMsg = {
     if (message.signedMsg !== undefined) {
       obj.signedMsg = SignedMsg.toJSON(message.signedMsg)
     }
-    if (!message.seqno.isZero()) {
+    if (!message.seqno.equals(Long.UZERO)) {
       obj.seqno = (message.seqno || Long.UZERO).toString()
     }
     return obj

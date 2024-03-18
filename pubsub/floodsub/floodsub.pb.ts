@@ -264,7 +264,7 @@ export const SubscriptionOpts = {
     message: SubscriptionOpts,
     writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
-    if (message.subscribe === true) {
+    if (message.subscribe !== false) {
       writer.uint32(8).bool(message.subscribe)
     }
     if (message.channelId !== '') {
@@ -353,7 +353,7 @@ export const SubscriptionOpts = {
 
   toJSON(message: SubscriptionOpts): unknown {
     const obj: any = {}
-    if (message.subscribe === true) {
+    if (message.subscribe !== false) {
       obj.subscribe = message.subscribe
     }
     if (message.channelId !== '') {

@@ -56,7 +56,7 @@ export const Config = {
     if (message.srcPeerId !== '') {
       writer.uint32(26).string(message.srcPeerId)
     }
-    if (!message.transportId.isZero()) {
+    if (!message.transportId.equals(Long.UZERO)) {
       writer.uint32(32).uint64(message.transportId)
     }
     if (message.timeoutDur !== '') {
@@ -182,7 +182,7 @@ export const Config = {
     if (message.srcPeerId !== '') {
       obj.srcPeerId = message.srcPeerId
     }
-    if (!message.transportId.isZero()) {
+    if (!message.transportId.equals(Long.UZERO)) {
       obj.transportId = (message.transportId || Long.UZERO).toString()
     }
     if (message.timeoutDur !== '') {

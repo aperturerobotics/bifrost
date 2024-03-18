@@ -160,13 +160,13 @@ export const LookupRpcServiceResponse = {
     message: LookupRpcServiceResponse,
     writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
-    if (message.idle === true) {
+    if (message.idle !== false) {
       writer.uint32(8).bool(message.idle)
     }
-    if (message.exists === true) {
+    if (message.exists !== false) {
       writer.uint32(16).bool(message.exists)
     }
-    if (message.removed === true) {
+    if (message.removed !== false) {
       writer.uint32(24).bool(message.removed)
     }
     return writer
@@ -261,13 +261,13 @@ export const LookupRpcServiceResponse = {
 
   toJSON(message: LookupRpcServiceResponse): unknown {
     const obj: any = {}
-    if (message.idle === true) {
+    if (message.idle !== false) {
       obj.idle = message.idle
     }
-    if (message.exists === true) {
+    if (message.exists !== false) {
       obj.exists = message.exists
     }
-    if (message.removed === true) {
+    if (message.removed !== false) {
       obj.removed = message.removed
     }
     return obj

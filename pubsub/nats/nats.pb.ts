@@ -103,13 +103,13 @@ export const Config = {
     if (message.publishHashType !== 0) {
       writer.uint32(16).int32(message.publishHashType)
     }
-    if (message.logDebug === true) {
+    if (message.logDebug !== false) {
       writer.uint32(24).bool(message.logDebug)
     }
-    if (message.logTrace === true) {
+    if (message.logTrace !== false) {
       writer.uint32(32).bool(message.logTrace)
     }
-    if (message.logTraceVerbose === true) {
+    if (message.logTraceVerbose !== false) {
       writer.uint32(40).bool(message.logTraceVerbose)
     }
     return writer
@@ -229,13 +229,13 @@ export const Config = {
     if (message.publishHashType !== 0) {
       obj.publishHashType = hashTypeToJSON(message.publishHashType)
     }
-    if (message.logDebug === true) {
+    if (message.logDebug !== false) {
       obj.logDebug = message.logDebug
     }
-    if (message.logTrace === true) {
+    if (message.logTrace !== false) {
       obj.logTrace = message.logTrace
     }
-    if (message.logTraceVerbose === true) {
+    if (message.logTraceVerbose !== false) {
       obj.logTraceVerbose = message.logTraceVerbose
     }
     return obj

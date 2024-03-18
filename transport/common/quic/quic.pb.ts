@@ -61,19 +61,19 @@ export const Opts = {
     if (message.maxIncomingStreams !== 0) {
       writer.uint32(16).int32(message.maxIncomingStreams)
     }
-    if (message.disableKeepAlive === true) {
+    if (message.disableKeepAlive !== false) {
       writer.uint32(24).bool(message.disableKeepAlive)
     }
     if (message.keepAliveDur !== '') {
       writer.uint32(58).string(message.keepAliveDur)
     }
-    if (message.disableDatagrams === true) {
+    if (message.disableDatagrams !== false) {
       writer.uint32(32).bool(message.disableDatagrams)
     }
-    if (message.disablePathMtuDiscovery === true) {
+    if (message.disablePathMtuDiscovery !== false) {
       writer.uint32(40).bool(message.disablePathMtuDiscovery)
     }
-    if (message.verbose === true) {
+    if (message.verbose !== false) {
       writer.uint32(48).bool(message.verbose)
     }
     return writer
@@ -213,19 +213,19 @@ export const Opts = {
     if (message.maxIncomingStreams !== 0) {
       obj.maxIncomingStreams = Math.round(message.maxIncomingStreams)
     }
-    if (message.disableKeepAlive === true) {
+    if (message.disableKeepAlive !== false) {
       obj.disableKeepAlive = message.disableKeepAlive
     }
     if (message.keepAliveDur !== '') {
       obj.keepAliveDur = message.keepAliveDur
     }
-    if (message.disableDatagrams === true) {
+    if (message.disableDatagrams !== false) {
       obj.disableDatagrams = message.disableDatagrams
     }
-    if (message.disablePathMtuDiscovery === true) {
+    if (message.disablePathMtuDiscovery !== false) {
       obj.disablePathMtuDiscovery = message.disablePathMtuDiscovery
     }
-    if (message.verbose === true) {
+    if (message.verbose !== false) {
       obj.verbose = message.verbose
     }
     return obj

@@ -34,7 +34,7 @@ export const Opts = {
     if (message.quic !== undefined) {
       Opts1.encode(message.quic, writer.uint32(10).fork()).ldelim()
     }
-    if (message.verbose === true) {
+    if (message.verbose !== false) {
       writer.uint32(16).bool(message.verbose)
     }
     if (message.mtu !== 0) {
@@ -141,7 +141,7 @@ export const Opts = {
     if (message.quic !== undefined) {
       obj.quic = Opts1.toJSON(message.quic)
     }
-    if (message.verbose === true) {
+    if (message.verbose !== false) {
       obj.verbose = message.verbose
     }
     if (message.mtu !== 0) {

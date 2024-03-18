@@ -57,13 +57,13 @@ export const Config = {
     if (message.listenMultiaddr !== '') {
       writer.uint32(34).string(message.listenMultiaddr)
     }
-    if (!message.transportId.isZero()) {
+    if (!message.transportId.equals(Long.UZERO)) {
       writer.uint32(40).uint64(message.transportId)
     }
-    if (message.reliable === true) {
+    if (message.reliable !== false) {
       writer.uint32(48).bool(message.reliable)
     }
-    if (message.encrypted === true) {
+    if (message.encrypted !== false) {
       writer.uint32(56).bool(message.encrypted)
     }
     return writer
@@ -209,13 +209,13 @@ export const Config = {
     if (message.listenMultiaddr !== '') {
       obj.listenMultiaddr = message.listenMultiaddr
     }
-    if (!message.transportId.isZero()) {
+    if (!message.transportId.equals(Long.UZERO)) {
       obj.transportId = (message.transportId || Long.UZERO).toString()
     }
-    if (message.reliable === true) {
+    if (message.reliable !== false) {
       obj.reliable = message.reliable
     }
-    if (message.encrypted === true) {
+    if (message.encrypted !== false) {
       obj.encrypted = message.encrypted
     }
     return obj

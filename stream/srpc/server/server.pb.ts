@@ -35,7 +35,7 @@ export const Config = {
     for (const v of message.protocolIds) {
       writer.uint32(18).string(v!)
     }
-    if (message.disableEstablishLink === true) {
+    if (message.disableEstablishLink !== false) {
       writer.uint32(24).bool(message.disableEstablishLink)
     }
     return writer
@@ -135,7 +135,7 @@ export const Config = {
     if (message.protocolIds?.length) {
       obj.protocolIds = message.protocolIds
     }
-    if (message.disableEstablishLink === true) {
+    if (message.disableEstablishLink !== false) {
       obj.disableEstablishLink = message.disableEstablishLink
     }
     return obj

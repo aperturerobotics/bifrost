@@ -546,7 +546,7 @@ export const SubscriptionStatus = {
     message: SubscriptionStatus,
     writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
-    if (message.subscribed === true) {
+    if (message.subscribed !== false) {
       writer.uint32(8).bool(message.subscribed)
     }
     return writer
@@ -622,7 +622,7 @@ export const SubscriptionStatus = {
 
   toJSON(message: SubscriptionStatus): unknown {
     const obj: any = {}
-    if (message.subscribed === true) {
+    if (message.subscribed !== false) {
       obj.subscribed = message.subscribed
     }
     return obj
@@ -654,7 +654,7 @@ export const OutgoingStatus = {
     if (message.identifier !== 0) {
       writer.uint32(8).uint32(message.identifier)
     }
-    if (message.sent === true) {
+    if (message.sent !== false) {
       writer.uint32(16).bool(message.sent)
     }
     return writer
@@ -741,7 +741,7 @@ export const OutgoingStatus = {
     if (message.identifier !== 0) {
       obj.identifier = Math.round(message.identifier)
     }
-    if (message.sent === true) {
+    if (message.sent !== false) {
       obj.sent = message.sent
     }
     return obj
@@ -774,7 +774,7 @@ export const IncomingMessage = {
     if (message.fromPeerId !== '') {
       writer.uint32(10).string(message.fromPeerId)
     }
-    if (message.authenticated === true) {
+    if (message.authenticated !== false) {
       writer.uint32(16).bool(message.authenticated)
     }
     if (message.data.length !== 0) {
@@ -876,7 +876,7 @@ export const IncomingMessage = {
     if (message.fromPeerId !== '') {
       obj.fromPeerId = message.fromPeerId
     }
-    if (message.authenticated === true) {
+    if (message.authenticated !== false) {
       obj.authenticated = message.authenticated
     }
     if (message.data.length !== 0) {

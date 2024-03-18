@@ -661,7 +661,7 @@ export const Packet_Ciphertext = {
     if (message.senderPubKey.length !== 0) {
       writer.uint32(18).bytes(message.senderPubKey)
     }
-    if (message.receiverKeyKnown === true) {
+    if (message.receiverKeyKnown !== false) {
       writer.uint32(24).bool(message.receiverKeyKnown)
     }
     if (message.extraInfo.length !== 0) {
@@ -776,7 +776,7 @@ export const Packet_Ciphertext = {
     if (message.senderPubKey.length !== 0) {
       obj.senderPubKey = base64FromBytes(message.senderPubKey)
     }
-    if (message.receiverKeyKnown === true) {
+    if (message.receiverKeyKnown !== false) {
       obj.receiverKeyKnown = message.receiverKeyKnown
     }
     if (message.extraInfo.length !== 0) {

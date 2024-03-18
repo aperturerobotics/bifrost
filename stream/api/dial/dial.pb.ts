@@ -51,13 +51,13 @@ export const Config = {
     if (message.protocolId !== '') {
       writer.uint32(26).string(message.protocolId)
     }
-    if (!message.transportId.isZero()) {
+    if (!message.transportId.equals(Long.UZERO)) {
       writer.uint32(32).uint64(message.transportId)
     }
-    if (message.encrypted === true) {
+    if (message.encrypted !== false) {
       writer.uint32(40).bool(message.encrypted)
     }
-    if (message.reliable === true) {
+    if (message.reliable !== false) {
       writer.uint32(48).bool(message.reliable)
     }
     return writer
@@ -188,13 +188,13 @@ export const Config = {
     if (message.protocolId !== '') {
       obj.protocolId = message.protocolId
     }
-    if (!message.transportId.isZero()) {
+    if (!message.transportId.equals(Long.UZERO)) {
       obj.transportId = (message.transportId || Long.UZERO).toString()
     }
-    if (message.encrypted === true) {
+    if (message.encrypted !== false) {
       obj.encrypted = message.encrypted
     }
-    if (message.reliable === true) {
+    if (message.reliable !== false) {
       obj.reliable = message.reliable
     }
     return obj

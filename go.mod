@@ -3,12 +3,12 @@ module github.com/aperturerobotics/bifrost
 go 1.21
 
 require (
-	github.com/aperturerobotics/controllerbus v0.36.6 // latest
+	github.com/aperturerobotics/controllerbus v0.36.7 // latest
 	github.com/aperturerobotics/entitygraph v0.6.1
 	github.com/aperturerobotics/starpc v0.27.2 // latest
 	github.com/aperturerobotics/timestamp v0.8.2
 	github.com/aperturerobotics/ts-proto-common-types v0.20.2 // latest
-	github.com/aperturerobotics/util v1.15.1 // master
+	github.com/aperturerobotics/util v1.15.2 // master
 )
 
 // aperture: use compatibility forks
@@ -34,8 +34,8 @@ require (
 	github.com/djherbis/buffer v1.2.0
 	github.com/golang/snappy v0.0.4
 	github.com/klauspost/compress v1.17.7
-	github.com/libp2p/go-libp2p v0.33.0
-	github.com/libp2p/go-yamux/v4 v4.0.2-0.20240206065824-7222fbc3459d
+	github.com/libp2p/go-libp2p v0.33.1
+	github.com/libp2p/go-yamux/v4 v4.0.2-0.20240314112558-188b1fda7dc9
 	github.com/mr-tron/base58 v1.2.0
 	github.com/multiformats/go-multiaddr v0.12.2
 	github.com/nats-io/nats-server/v2 v2.10.12
@@ -50,7 +50,7 @@ require (
 	github.com/pion/webrtc/v4 v4.0.0-beta.13
 	github.com/pkg/errors v0.9.1
 	github.com/planetscale/vtprotobuf v0.6.0
-	github.com/quic-go/quic-go v0.41.0
+	github.com/quic-go/quic-go v0.42.0
 	github.com/sasha-s/go-deadlock v0.3.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/templexxx/xor v0.0.0-20191217153810-f85b25db303b
@@ -60,8 +60,8 @@ require (
 	github.com/zeebo/blake3 v0.2.3
 	go.bug.st/serial v1.6.2
 	golang.org/x/crypto v0.21.0
-	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225
-	gonum.org/v1/gonum v0.14.0
+	golang.org/x/exp v0.0.0-20240318143956-a85f2c67cd81
+	gonum.org/v1/gonum v0.15.0
 	google.golang.org/protobuf v1.33.0
 	nhooyr.io/websocket v1.8.10
 	storj.io/drpc v0.0.34

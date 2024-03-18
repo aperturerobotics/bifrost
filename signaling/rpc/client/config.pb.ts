@@ -81,7 +81,7 @@ export const Config = {
     if (message.backoff !== undefined) {
       Backoff.encode(message.backoff, writer.uint32(50).fork()).ldelim()
     }
-    if (message.disableListen === true) {
+    if (message.disableListen !== false) {
       writer.uint32(56).bool(message.disableListen)
     }
     return writer
@@ -231,7 +231,7 @@ export const Config = {
     if (message.backoff !== undefined) {
       obj.backoff = Backoff.toJSON(message.backoff)
     }
-    if (message.disableListen === true) {
+    if (message.disableListen !== false) {
       obj.disableListen = message.disableListen
     }
     return obj

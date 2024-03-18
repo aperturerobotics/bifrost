@@ -41,7 +41,7 @@ export const Config = {
     if (message.apiConfig !== undefined) {
       Config1.encode(message.apiConfig, writer.uint32(18).fork()).ldelim()
     }
-    if (message.disableBusApi === true) {
+    if (message.disableBusApi !== false) {
       writer.uint32(24).bool(message.disableBusApi)
     }
     if (message.busApiConfig !== undefined) {
@@ -154,7 +154,7 @@ export const Config = {
     if (message.apiConfig !== undefined) {
       obj.apiConfig = Config1.toJSON(message.apiConfig)
     }
-    if (message.disableBusApi === true) {
+    if (message.disableBusApi !== false) {
       obj.disableBusApi = message.disableBusApi
     }
     if (message.busApiConfig !== undefined) {

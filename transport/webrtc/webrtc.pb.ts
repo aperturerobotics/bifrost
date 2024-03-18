@@ -226,16 +226,16 @@ export const Config = {
         writer.uint32(58).fork(),
       ).ldelim()
     })
-    if (message.allPeers === true) {
+    if (message.allPeers !== false) {
       writer.uint32(64).bool(message.allPeers)
     }
-    if (message.disableListen === true) {
+    if (message.disableListen !== false) {
       writer.uint32(72).bool(message.disableListen)
     }
     for (const v of message.blockPeers) {
       writer.uint32(82).string(v!)
     }
-    if (message.verbose === true) {
+    if (message.verbose !== false) {
       writer.uint32(88).bool(message.verbose)
     }
     return writer
@@ -443,16 +443,16 @@ export const Config = {
         })
       }
     }
-    if (message.allPeers === true) {
+    if (message.allPeers !== false) {
       obj.allPeers = message.allPeers
     }
-    if (message.disableListen === true) {
+    if (message.disableListen !== false) {
       obj.disableListen = message.disableListen
     }
     if (message.blockPeers?.length) {
       obj.blockPeers = message.blockPeers
     }
-    if (message.verbose === true) {
+    if (message.verbose !== false) {
       obj.verbose = message.verbose
     }
     return obj
@@ -1266,7 +1266,7 @@ export const WebRtcSdp = {
     message: WebRtcSdp,
     writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
-    if (!message.txSeqno.isZero()) {
+    if (!message.txSeqno.equals(Long.UZERO)) {
       writer.uint32(8).uint64(message.txSeqno)
     }
     if (message.sdpType !== '') {
@@ -1364,7 +1364,7 @@ export const WebRtcSdp = {
 
   toJSON(message: WebRtcSdp): unknown {
     const obj: any = {}
-    if (!message.txSeqno.isZero()) {
+    if (!message.txSeqno.equals(Long.UZERO)) {
       obj.txSeqno = (message.txSeqno || Long.UZERO).toString()
     }
     if (message.sdpType !== '') {

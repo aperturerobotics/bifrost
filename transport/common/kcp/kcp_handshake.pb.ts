@@ -23,7 +23,7 @@ export const HandshakeExtraData = {
     message: HandshakeExtraData,
     writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
-    if (!message.localTransportUuid.isZero()) {
+    if (!message.localTransportUuid.equals(Long.UZERO)) {
       writer.uint32(8).uint64(message.localTransportUuid)
     }
     return writer
@@ -99,7 +99,7 @@ export const HandshakeExtraData = {
 
   toJSON(message: HandshakeExtraData): unknown {
     const obj: any = {}
-    if (!message.localTransportUuid.isZero()) {
+    if (!message.localTransportUuid.equals(Long.UZERO)) {
       obj.localTransportUuid = (
         message.localTransportUuid || Long.UZERO
       ).toString()

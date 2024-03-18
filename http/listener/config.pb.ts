@@ -57,7 +57,7 @@ export const Config = {
     if (message.keyFile !== '') {
       writer.uint32(34).string(message.keyFile)
     }
-    if (message.wait === true) {
+    if (message.wait !== false) {
       writer.uint32(40).bool(message.wait)
     }
     return writer
@@ -177,7 +177,7 @@ export const Config = {
     if (message.keyFile !== '') {
       obj.keyFile = message.keyFile
     }
-    if (message.wait === true) {
+    if (message.wait !== false) {
       obj.wait = message.wait
     }
     return obj
