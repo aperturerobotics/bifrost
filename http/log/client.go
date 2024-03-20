@@ -74,8 +74,8 @@ func DoRequestWithTransport(le *logrus.Entry, transport http.RoundTripper, req *
 }
 
 // ClientWithLogger wraps an http.Client with a logger.
-func ClientWithLogger(client http.Client, le *logrus.Entry) http.Client {
-	return http.Client{
+func ClientWithLogger(client *http.Client, le *logrus.Entry) *http.Client {
+	return &http.Client{
 		Transport:     NewLoggedRoundTripper(client.Transport, le),
 		CheckRedirect: client.CheckRedirect,
 		Jar:           client.Jar,
