@@ -46,6 +46,12 @@ func DoRequestWithTransport(le *logrus.Entry, transport http.RoundTripper, req *
 			"method": req.Method,
 			"url":    req.URL.String(),
 		})
+
+		// Parse and log the Range header from the request
+		if rangeHeader := req.Header.Get("Range"); rangeHeader != "" {
+			le = le.WithField("range", rangeHeader)
+		}
+
 		if verbose {
 			le.Debug("starting request")
 		}
@@ -62,7 +68,13 @@ func DoRequestWithTransport(le *logrus.Entry, transport http.RoundTripper, req *
 	if le != nil {
 		if resp != nil {
 			le = le.WithField("status", resp.StatusCode)
+
+			// Parse and log the Content-Range header from the response
+			if contentRangeHeader := resp.Header.Get("Content-Range"); contentRangeHeader != "" {
+				le = le.WithField("response-range", contentRangeHeader)
+			}
 		}
+
 		if err != nil {
 			le.WithError(err).Warn("request errored")
 		} else if resp.StatusCode >= 400 {
