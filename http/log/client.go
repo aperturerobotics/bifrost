@@ -10,19 +10,21 @@ import (
 type LoggedRoundTripper struct {
 	transport http.RoundTripper
 	le        *logrus.Entry
+	verbose   bool
 }
 
 // NewLoggedRoundTripper creates a new instance of LoggedRoundTripper.
-func NewLoggedRoundTripper(transport http.RoundTripper, le *logrus.Entry) *LoggedRoundTripper {
+func NewLoggedRoundTripper(transport http.RoundTripper, le *logrus.Entry, verbose bool) *LoggedRoundTripper {
 	return &LoggedRoundTripper{
 		transport: transport,
 		le:        le,
+		verbose:   verbose,
 	}
 }
 
 // RoundTrip implements the RoundTripper interface.
 func (t *LoggedRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	return DoRequestWithTransport(t.le, t.transport, req, false)
+	return DoRequestWithTransport(t.le, t.transport, req, t.verbose)
 }
 
 // DoRequest performs a request with logging.
@@ -74,9 +76,9 @@ func DoRequestWithTransport(le *logrus.Entry, transport http.RoundTripper, req *
 }
 
 // ClientWithLogger wraps an http.Client with a logger.
-func ClientWithLogger(client *http.Client, le *logrus.Entry) *http.Client {
+func ClientWithLogger(client *http.Client, le *logrus.Entry, verbose bool) *http.Client {
 	return &http.Client{
-		Transport:     NewLoggedRoundTripper(client.Transport, le),
+		Transport:     NewLoggedRoundTripper(client.Transport, le, verbose),
 		CheckRedirect: client.CheckRedirect,
 		Jar:           client.Jar,
 		Timeout:       client.Timeout,
