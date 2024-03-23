@@ -12,7 +12,7 @@ replace (
 require (
 	github.com/aperturerobotics/bifrost v0.24.5-0.20240207025706-295a96411e5d
 	github.com/aperturerobotics/goprotowrap v0.3.0
-	github.com/aperturerobotics/starpc v0.27.2
+	github.com/aperturerobotics/starpc v0.27.3
 )
 
 require (
@@ -76,7 +76,7 @@ require (
 	github.com/alexkohler/prealloc v1.0.0 // indirect
 	github.com/alingse/asasalint v0.0.11 // indirect
 	github.com/aperturerobotics/controllerbus v0.36.7 // indirect
-	github.com/aperturerobotics/entitygraph v0.6.1 // indirect
+	github.com/aperturerobotics/entitygraph v0.7.0 // indirect
 	github.com/aperturerobotics/timestamp v0.8.2 // indirect
 	github.com/aperturerobotics/ts-proto-common-types v0.20.2 // indirect
 	github.com/aperturerobotics/util v1.15.2 // indirect
@@ -154,7 +154,7 @@ require (
 	github.com/distribution/reference v0.5.0 // indirect
 	github.com/docker/cli v24.0.7+incompatible // indirect
 	github.com/docker/distribution v2.8.3+incompatible // indirect
-	github.com/docker/docker v24.0.7+incompatible // indirect
+	github.com/docker/docker v24.0.9+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.8.0 // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
