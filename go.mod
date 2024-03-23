@@ -35,11 +35,11 @@ require (
 	github.com/golang/snappy v0.0.4
 	github.com/klauspost/compress v1.17.7
 	github.com/libp2p/go-libp2p v0.33.1
-	github.com/libp2p/go-yamux/v4 v4.0.2-0.20240314112558-188b1fda7dc9
+	github.com/libp2p/go-yamux/v4 v4.0.2-0.20240322071716-53ef5820bd48
 	github.com/mr-tron/base58 v1.2.0
 	github.com/multiformats/go-multiaddr v0.12.2
 	github.com/nats-io/nats-server/v2 v2.10.12
-	github.com/nats-io/nats.go v1.33.1
+	github.com/nats-io/nats.go v1.34.0
 	github.com/nats-io/nkeys v0.4.7
 	github.com/paralin/kcp-go-lite v1.0.2-0.20240110212540-c015327ec623
 	github.com/patrickmn/go-cache v2.1.0+incompatible
