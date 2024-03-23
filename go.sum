@@ -114,6 +114,8 @@ github.com/libp2p/go-msgio v0.3.0 h1:mf3Z8B1xcFN314sWX+2vOTShIE0Mmn2TXn3YCUQGNj0
 github.com/libp2p/go-msgio v0.3.0/go.mod h1:nyRM819GmVaF9LX3l03RMh10QdOroF++NBbxAb0mmDM=
 github.com/libp2p/go-yamux/v4 v4.0.2-0.20240314112558-188b1fda7dc9 h1:8tAUqfDLYiZnTHlSQvA3wgGdqMSj8F5HBfAOnyARdR4=
 github.com/libp2p/go-yamux/v4 v4.0.2-0.20240314112558-188b1fda7dc9/go.mod h1:PGP+3py2ZWDKABvqstBZtMnixEHNC7U/odnGylzur5o=
+github.com/libp2p/go-yamux/v4 v4.0.2-0.20240322071716-53ef5820bd48 h1:KI65sCCL2h9IyCQwBhBXDgkKt3bmXoTu8T3rLVLZW4I=
+github.com/libp2p/go-yamux/v4 v4.0.2-0.20240322071716-53ef5820bd48/go.mod h1:PGP+3py2ZWDKABvqstBZtMnixEHNC7U/odnGylzur5o=
 github.com/mattn/go-isatty v0.0.14/go.mod h1:7GGIvUiUoEMVVmxf/4nioHXj79iQHKdU27kJ6hsGG94=
 github.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=
 github.com/mattn/go-isatty v0.0.20/go.mod h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D7dTCTo3Y=
