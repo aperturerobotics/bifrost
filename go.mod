@@ -60,7 +60,7 @@ require (
 	github.com/zeebo/blake3 v0.2.3
 	go.bug.st/serial v1.6.2
 	golang.org/x/crypto v0.21.0
-	golang.org/x/exp v0.0.0-20240318143956-a85f2c67cd81
+	golang.org/x/exp v0.0.0-20240325151524-a685a6edb6d8
 	gonum.org/v1/gonum v0.15.0
 	google.golang.org/protobuf v1.33.0
 	nhooyr.io/websocket v1.8.10
