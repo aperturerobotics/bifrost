@@ -10,7 +10,7 @@ replace (
 )
 
 require (
-	github.com/aperturerobotics/bifrost v0.24.5-0.20240207025706-295a96411e5d
+	github.com/aperturerobotics/bifrost v0.25.4-0.20240326075319-f485a4156a47
 	github.com/aperturerobotics/goprotowrap v0.3.1 // master
 	github.com/aperturerobotics/starpc v0.27.3
 )
@@ -75,11 +75,11 @@ require (
 	github.com/alexkohler/nakedret/v2 v2.0.2 // indirect
 	github.com/alexkohler/prealloc v1.0.0 // indirect
 	github.com/alingse/asasalint v0.0.11 // indirect
-	github.com/aperturerobotics/controllerbus v0.36.7 // indirect
+	github.com/aperturerobotics/controllerbus v0.36.8 // indirect
 	github.com/aperturerobotics/entitygraph v0.7.0 // indirect
 	github.com/aperturerobotics/timestamp v0.8.2 // indirect
 	github.com/aperturerobotics/ts-proto-common-types v0.20.2 // indirect
-	github.com/aperturerobotics/util v1.15.2 // indirect
+	github.com/aperturerobotics/util v1.15.3 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
 	github.com/ashanbrown/forbidigo v1.5.3 // indirect
 	github.com/ashanbrown/makezero v1.1.1 // indirect
@@ -269,7 +269,7 @@ require (
 	github.com/letsencrypt/boulder v0.0.0-20231026200631-000cd05d5491 // indirect
 	github.com/libp2p/go-buffer-pool v0.1.0 // indirect
 	github.com/libp2p/go-libp2p v0.33.1 // indirect
-	github.com/libp2p/go-yamux/v4 v4.0.2-0.20240314112558-188b1fda7dc9 // indirect
+	github.com/libp2p/go-yamux/v4 v4.0.2-0.20240322071716-53ef5820bd48 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/lufeee/execinquery v1.2.1 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
@@ -320,20 +320,20 @@ require (
 	github.com/pion/datachannel v1.5.5 // indirect
 	github.com/pion/dtls/v2 v2.2.10 // indirect
 	github.com/pion/ice/v3 v3.0.3 // indirect
-	github.com/pion/interceptor v0.1.25 // indirect
+	github.com/pion/interceptor v0.1.27 // indirect
 	github.com/pion/logging v0.2.2 // indirect
 	github.com/pion/mdns v0.0.12 // indirect
 	github.com/pion/randutil v0.1.0 // indirect
-	github.com/pion/rtcp v1.2.13 // indirect
-	github.com/pion/rtp v1.8.3 // indirect
-	github.com/pion/sctp v1.8.12 // indirect
+	github.com/pion/rtcp v1.2.14 // indirect
+	github.com/pion/rtp v1.8.4 // indirect
+	github.com/pion/sctp v1.8.13 // indirect
 	github.com/pion/sdp/v3 v3.0.8 // indirect
 	github.com/pion/srtp/v3 v3.0.1 // indirect
 	github.com/pion/stun/v2 v2.0.0 // indirect
 	github.com/pion/transport/v2 v2.2.4 // indirect
 	github.com/pion/transport/v3 v3.0.1 // indirect
 	github.com/pion/turn/v3 v3.0.1 // indirect
-	github.com/pion/webrtc/v4 v4.0.0-beta.13 // indirect
+	github.com/pion/webrtc/v4 v4.0.0-beta.14 // indirect
 	github.com/pjbgf/sha1cd v0.3.0 // indirect
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -421,7 +421,7 @@ require (
 	go.uber.org/zap v1.27.0 // indirect
 	gocloud.dev v0.36.0 // indirect
 	golang.org/x/crypto v0.21.0 // indirect
-	golang.org/x/exp v0.0.0-20240318143956-a85f2c67cd81 // indirect
+	golang.org/x/exp v0.0.0-20240325151524-a685a6edb6d8 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20230224173230-c95f2b4c22f2 // indirect
 	golang.org/x/mod v0.16.0 // indirect
 	golang.org/x/net v0.22.0 // indirect

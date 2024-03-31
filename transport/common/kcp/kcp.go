@@ -308,7 +308,7 @@ func (u *Transport) GetPeerID() peer.ID {
 
 // HandleDirective asks if the handler can resolve the directive.
 // If it can, it returns a resolver. If not, returns nil.
-// Any exceptional errors are returned for logging.
+// Any unexpected errors are returned for logging.
 // It is safe to add a reference to the directive during this call.
 func (c *Transport) HandleDirective(ctx context.Context, di directive.Instance) (directive.Resolver, error) {
 	// TODO
