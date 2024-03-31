@@ -34,10 +34,10 @@ require (
 	github.com/djherbis/buffer v1.2.0
 	github.com/golang/snappy v0.0.4
 	github.com/klauspost/compress v1.17.7
-	github.com/libp2p/go-libp2p v0.33.1
+	github.com/libp2p/go-libp2p v0.33.2
 	github.com/libp2p/go-yamux/v4 v4.0.2-0.20240322071716-53ef5820bd48
 	github.com/mr-tron/base58 v1.2.0
-	github.com/multiformats/go-multiaddr v0.12.2
+	github.com/multiformats/go-multiaddr v0.12.3
 	github.com/nats-io/nats-server/v2 v2.10.12
 	github.com/nats-io/nats.go v1.34.0
 	github.com/nats-io/nkeys v0.4.7
@@ -45,8 +45,8 @@ require (
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pauleyj/gobee v0.0.0-20190212035730-6270c53072a4
 	github.com/pierrec/lz4/v4 v4.1.21
-	github.com/pion/datachannel v1.5.5
-	github.com/pion/sdp/v3 v3.0.8
+	github.com/pion/datachannel v1.5.6
+	github.com/pion/sdp/v3 v3.0.9
 	github.com/pion/webrtc/v4 v4.0.0-beta.14
 	github.com/pkg/errors v0.9.1
 	github.com/planetscale/vtprotobuf v0.6.0
@@ -111,7 +111,7 @@ require (
 	github.com/pion/srtp/v3 v3.0.1 // indirect
 	github.com/pion/stun/v2 v2.0.0 // indirect
 	github.com/pion/transport/v2 v2.2.4 // indirect
-	github.com/pion/transport/v3 v3.0.1 // indirect
+	github.com/pion/transport/v3 v3.0.2 // indirect
 	github.com/pion/turn/v3 v3.0.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
