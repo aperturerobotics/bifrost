@@ -55,7 +55,7 @@ message Packet {
     // ReceiverKeyKnown indicates that A's public key is known.
     bool receiver_key_known = 3;
     // ExtraInfo contains extra information supplied by the transport.
-    // Example: in UDP this is information about what port to dial KCP on.
+    // Example: in UDP this is information about what port to dial.
     bytes extra_info = 4;
   }
 }

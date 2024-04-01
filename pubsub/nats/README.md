@@ -16,7 +16,7 @@ effectively integrated with the Aperture stack.
 The result is a highly automated Nats deployment which can work across arbitrary
 network transports, firewalls, air-gaps, compute architectures, even in the web
 browser. Nats is now communicating over QUIC-over-UDP instead of TCP, but could
-communicate over other exotic transports like Xbee or even sound (chirp.js).
+communicate over other exotic transports, even sound (like chirp.js).
 
 This fully supports all protocols for Nats. Previously, NATS would require
 manual configuration for TLS, accounts, and HTTP listeners. With Bifrost, these
