@@ -8,7 +8,7 @@ require (
 	github.com/aperturerobotics/starpc v0.27.3 // latest
 	github.com/aperturerobotics/timestamp v0.8.2
 	github.com/aperturerobotics/ts-proto-common-types v0.20.2 // latest
-	github.com/aperturerobotics/util v1.16.0 // master
+	github.com/aperturerobotics/util v1.16.1-0.20240402215409-f7905836a411 // master
 )
 
 // aperture: use compatibility forks
