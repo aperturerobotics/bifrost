@@ -6,11 +6,10 @@ package main
 import (
 	"context"
 	"net/http"
+	"net/http/pprof"
 	"os"
 	"runtime"
 	"time"
-
-	"net/http/pprof"
 
 	bcli "github.com/aperturerobotics/bifrost/cli"
 	"github.com/aperturerobotics/bifrost/daemon"
