@@ -115,16 +115,23 @@ func (c *RpcServiceController) HandleDirective(
 		if !matched {
 			return nil, nil
 		}
-		return directive.R(directive.NewRefCountResolver(c.rc, true, func(ctx context.Context, val srpc.Invoker) (directive.Value, error) {
-			if val == nil {
-				return nil, nil
-			}
-			var invoker LookupRpcServiceValue = val
-			if c.stripServiceIdPrefix {
-				invoker = srpc.NewPrefixInvoker(invoker, c.serviceIdPrefixes)
-			}
-			return invoker, nil
-		}), nil)
+		return directive.R(
+			directive.NewRefCountResolverWithXfrm(
+				c.rc,
+				true,
+				func(ctx context.Context, val srpc.Invoker) (directive.Value, error) {
+					if val == nil {
+						return nil, nil
+					}
+					var invoker LookupRpcServiceValue = val
+					if c.stripServiceIdPrefix {
+						invoker = srpc.NewPrefixInvoker(invoker, c.serviceIdPrefixes)
+					}
+					return invoker, nil
+				},
+			),
+			nil,
+		)
 	}
 	return nil, nil
 }

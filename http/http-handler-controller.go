@@ -98,16 +98,23 @@ func (c *HTTPHandlerController) HandleDirective(
 		if !matched {
 			return nil, nil
 		}
-		return directive.R(directive.NewRefCountResolver(c.rc, true, func(ctx context.Context, val http.Handler) (directive.Value, error) {
-			if val == nil {
-				return nil, nil
-			}
-			var handler LookupHTTPHandlerValue = val
-			if c.stripPathPrefix && len(stripPrefix) != 0 {
-				handler = http.StripPrefix(stripPrefix, handler)
-			}
-			return handler, nil
-		}), nil)
+		return directive.R(
+			directive.NewRefCountResolverWithXfrm(
+				c.rc,
+				true,
+				func(ctx context.Context, val http.Handler) (directive.Value, error) {
+					if val == nil {
+						return nil, nil
+					}
+					var handler LookupHTTPHandlerValue = val
+					if c.stripPathPrefix && len(stripPrefix) != 0 {
+						handler = http.StripPrefix(stripPrefix, handler)
+					}
+					return handler, nil
+				},
+			),
+			nil,
+		)
 	}
 	return nil, nil
 }
