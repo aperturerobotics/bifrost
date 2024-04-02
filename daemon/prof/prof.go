@@ -1,4 +1,4 @@
-package daemon
+package daemon_prof
 
 import (
 	"net/http"

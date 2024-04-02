@@ -11,6 +11,7 @@ import (
 	"github.com/aperturerobotics/bifrost/daemon"
 	bifrost_api "github.com/aperturerobotics/bifrost/daemon/api"
 	api_controller "github.com/aperturerobotics/bifrost/daemon/api/controller"
+	daemon_prof "github.com/aperturerobotics/bifrost/daemon/prof"
 	egctr "github.com/aperturerobotics/bifrost/entitygraph"
 	"github.com/aperturerobotics/bifrost/keypem/keyfile"
 	bus_api "github.com/aperturerobotics/controllerbus/bus/api"
@@ -226,7 +227,7 @@ func runDaemon(c *cli.Context) error {
 
 	if daemonFlags.ProfListen != "" {
 		go func() {
-			_ = daemon.ListenProf(le, daemonFlags.ProfListen)
+			_ = daemon_prof.ListenProf(le, daemonFlags.ProfListen)
 		}()
 	}
 
