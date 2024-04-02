@@ -6,7 +6,10 @@ package hack
 import (
 	// _ imports the parent project.
 	// this forces the versions in hack to be at least the versions in ..
-	_ "github.com/aperturerobotics/bifrost/core"
+	_ "github.com/aperturerobotics/controllerbus/core"
+
+	// _ imports goreleaser
+	_ "github.com/goreleaser/goreleaser"
 
 	// _ imports wasmserve
 	_ "github.com/hajimehoshi/wasmserve"
@@ -26,8 +29,8 @@ import (
 	_ "github.com/psampaz/go-mod-outdated"
 	// _ imports protoc-gen-starpc
 	_ "github.com/aperturerobotics/starpc/cmd/protoc-gen-go-starpc"
-	// _ imports esbuild
-	_ "github.com/evanw/esbuild/cmd/esbuild"
-	// _ imports goreleaser
-	_ "github.com/goreleaser/goreleaser"
+	// _ imports goimports
+	_ "golang.org/x/tools/cmd/goimports"
+	// _ imports gofumpt
+	_ "mvdan.cc/gofumpt"
 )

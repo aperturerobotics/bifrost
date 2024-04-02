@@ -17,11 +17,11 @@ type RpcServiceController struct {
 	// info is the controller info
 	info *controller.Info
 	// handleCtr contains the rpc handler
-	handleCtr *ccontainer.CContainer[*srpc.Invoker]
+	handleCtr *ccontainer.CContainer[srpc.Invoker]
 	// errCtr contains any error building the handler
 	errCtr *ccontainer.CContainer[*error]
 	// rc is the refcount container
-	rc *refcount.RefCount[*srpc.Invoker]
+	rc *refcount.RefCount[srpc.Invoker]
 	// serviceIdPrefixes is the list of service id prefixes to match.
 	// ignores if empty
 	serviceIdPrefixes []string
@@ -56,7 +56,7 @@ func NewRpcServiceController(
 ) *RpcServiceController {
 	h := &RpcServiceController{
 		info:                 info,
-		handleCtr:            ccontainer.NewCContainer[*srpc.Invoker](nil),
+		handleCtr:            ccontainer.NewCContainer[srpc.Invoker](nil),
 		errCtr:               ccontainer.NewCContainer[*error](nil),
 		serviceIdPrefixes:    serviceIdPrefixes,
 		stripServiceIdPrefix: stripServiceIdPrefix,
@@ -64,7 +64,7 @@ func NewRpcServiceController(
 		serviceIdList:        serviceIdList,
 		serverIdRe:           serverIdRe,
 	}
-	h.rc = refcount.NewRefCount[*srpc.Invoker](nil, false, h.handleCtr, h.errCtr, resolver)
+	h.rc = refcount.NewRefCount[srpc.Invoker](nil, false, h.handleCtr, h.errCtr, resolver)
 	return h
 }
 
@@ -115,15 +115,15 @@ func (c *RpcServiceController) HandleDirective(
 		if !matched {
 			return nil, nil
 		}
-		return directive.R(directive.NewRefCountResolver(c.rc, true, func(ctx context.Context, val *srpc.Invoker) (directive.Value, error) {
+		return directive.R(directive.NewRefCountResolver(c.rc, true, func(ctx context.Context, val srpc.Invoker) (directive.Value, error) {
 			if val == nil {
 				return nil, nil
 			}
-			invoker := *val
+			var invoker LookupRpcServiceValue = val
 			if c.stripServiceIdPrefix {
 				invoker = srpc.NewPrefixInvoker(invoker, c.serviceIdPrefixes)
 			}
-			return LookupRpcServiceValue(invoker), nil
+			return invoker, nil
 		}), nil)
 	}
 	return nil, nil

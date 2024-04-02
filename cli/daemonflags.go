@@ -102,7 +102,7 @@ func (a *DaemonArgs) ApplyToConfigSet(confSet configset.ConfigSet, overwrite boo
 	}
 	if len(a.EstablishPeers.Value()) != 0 {
 		establishConf := &link_establish_controller.Config{
-			PeerIds: []string(a.EstablishPeers.Value()),
+			PeerIds: a.EstablishPeers.Value(),
 		}
 		if err := establishConf.Validate(); err != nil {
 			return errors.Wrap(err, "establish-peers")

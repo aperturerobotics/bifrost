@@ -2,11 +2,13 @@ package hash
 
 import (
 	"bytes"
-	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/json"
 	"hash"
 	"strconv"
+
+	// We include sha1 for git support.
+	"crypto/sha1" //nolint:gosec
 
 	b58 "github.com/mr-tron/base58/base58"
 	"github.com/pkg/errors"
@@ -125,7 +127,7 @@ func (h HashType) GetHashLen() int {
 	case HashType_HashType_SHA256:
 		return sha256.Size
 	case HashType_HashType_SHA1:
-		return sha1.Size
+		return sha1.Size //nolint:gosec
 	case HashType_HashType_BLAKE3:
 		return 32
 	}
@@ -139,7 +141,7 @@ func (h HashType) Sum(data []byte) ([]byte, error) {
 		h := sha256.Sum256(data)
 		return h[:], nil
 	case HashType_HashType_SHA1:
-		h := sha1.Sum(data)
+		h := sha1.Sum(data) //nolint:gosec
 		return h[:], nil
 	case HashType_HashType_BLAKE3:
 		h := blake3.Sum256(data)
@@ -175,7 +177,7 @@ func (h HashType) BuildHasher() (hash.Hash, error) {
 	case HashType_HashType_SHA256:
 		return sha256.New(), nil
 	case HashType_HashType_SHA1:
-		return sha1.New(), nil
+		return sha1.New(), nil //nolint:gosec
 	case HashType_HashType_BLAKE3:
 		return blake3.New(), nil
 	default:

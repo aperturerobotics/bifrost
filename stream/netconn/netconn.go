@@ -16,7 +16,7 @@ type NetConn struct {
 	remotePeerID peer.ID
 }
 
-// NewNetConn constucts a net.Conn from a stream.
+// NewNetConn constructs a net.Conn from a stream.
 func NewNetConn(strm link.MountedStream) net.Conn {
 	return &NetConn{
 		Stream:       strm.GetStream(),

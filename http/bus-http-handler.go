@@ -9,7 +9,7 @@ import (
 
 // NewBusHTTPHandlerBuilder constructs a HTTPHandlerBuilder which looks up the handler on the bus.
 func NewBusHTTPHandlerBuilder(b bus.Bus, baseURL, clientID string, notFoundIfIdle bool) HTTPHandlerBuilder {
-	return func(ctx context.Context, released func()) (*http.Handler, func(), error) {
+	return func(ctx context.Context, released func()) (http.Handler, func(), error) {
 		handler, _, handlerRef, err := ExLookupFirstHTTPHandler(
 			ctx,
 			b,
@@ -24,7 +24,7 @@ func NewBusHTTPHandlerBuilder(b bus.Bus, baseURL, clientID string, notFoundIfIdl
 		if handlerRef == nil {
 			return nil, nil, nil
 		}
-		return &handler, handlerRef.Release, nil
+		return handler, handlerRef.Release, nil
 	}
 }
 

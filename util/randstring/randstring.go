@@ -1,9 +1,9 @@
 package randstring
 
 import (
-	"math/rand"
+	"crypto/rand"
+	mrand "math/rand/v2"
 	"strings"
-	"time"
 )
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -15,18 +15,21 @@ const (
 
 // RandString generates a random string with length n.
 // Not cryptographically safe.
+// Pass nil to use a random seed.
 // https://stackoverflow.com/questions/22892120
-func RandString(src *rand.Rand, n int) string {
+func RandString(src *mrand.Rand, n int) string {
 	if src == nil {
-		src = rand.New(rand.NewSource(time.Now().UnixNano()))
+		var seed [32]byte
+		_, _ = rand.Read(seed[:])
+		src = mrand.New(mrand.NewChaCha8(seed))
 	}
 
 	sb := strings.Builder{}
 	sb.Grow(n)
-	// A src.Int63() generates 63 random bits, enough for letterIdxMax characters!
-	for i, cache, remain := n-1, src.Int63(), letterIdxMax; i >= 0; {
+	// A src.Int64() generates 64 random bits, enough for letterIdxMax characters!
+	for i, cache, remain := n-1, src.Int64(), letterIdxMax; i >= 0; {
 		if remain == 0 {
-			cache, remain = src.Int63(), letterIdxMax
+			cache, remain = src.Int64(), letterIdxMax
 		}
 		if idx := int(cache & letterIdxMask); idx < len(letterBytes) {
 			sb.WriteByte(letterBytes[idx])

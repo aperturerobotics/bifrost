@@ -18,11 +18,11 @@ type HTTPHandlerController struct {
 	// info is the controller info
 	info *controller.Info
 	// handleCtr contains the http handler
-	handleCtr *ccontainer.CContainer[*http.Handler]
+	handleCtr *ccontainer.CContainer[http.Handler]
 	// errCtr contains any error building the handler
 	errCtr *ccontainer.CContainer[*error]
 	// rc is the refcount container
-	rc *refcount.RefCount[*http.Handler]
+	rc *refcount.RefCount[http.Handler]
 	// pathPrefixes is the list of URL path prefixes to match.
 	// ignores if empty
 	pathPrefixes []string
@@ -47,7 +47,7 @@ func NewHTTPHandlerController(
 ) *HTTPHandlerController {
 	h := &HTTPHandlerController{
 		info:            info,
-		handleCtr:       ccontainer.NewCContainer[*http.Handler](nil),
+		handleCtr:       ccontainer.NewCContainer[http.Handler](nil),
 		errCtr:          ccontainer.NewCContainer[*error](nil),
 		pathPrefixes:    pathPrefixes,
 		stripPathPrefix: stripPathPrefix,
@@ -98,15 +98,15 @@ func (c *HTTPHandlerController) HandleDirective(
 		if !matched {
 			return nil, nil
 		}
-		return directive.R(directive.NewRefCountResolver(c.rc, true, func(ctx context.Context, val *http.Handler) (directive.Value, error) {
+		return directive.R(directive.NewRefCountResolver(c.rc, true, func(ctx context.Context, val http.Handler) (directive.Value, error) {
 			if val == nil {
 				return nil, nil
 			}
-			handler := *val
+			var handler LookupHTTPHandlerValue = val
 			if c.stripPathPrefix && len(stripPrefix) != 0 {
 				handler = http.StripPrefix(stripPrefix, handler)
 			}
-			return LookupHTTPHandlerValue(handler), nil
+			return handler, nil
 		}), nil)
 	}
 	return nil, nil

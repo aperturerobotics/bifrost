@@ -11,14 +11,14 @@ import (
 //
 // returns the srpc invoker and an optional release function
 // can return nil to indicate not found.
-type RpcServiceBuilder = refcount.RefCountResolver[*srpc.Invoker]
+type RpcServiceBuilder = refcount.RefCountResolver[srpc.Invoker]
 
 // NewRpcServiceBuilder creates a new RpcServiceBuilder with a static invoker.
 func NewRpcServiceBuilder(handler srpc.Invoker) RpcServiceBuilder {
-	return func(ctx context.Context, released func()) (*srpc.Invoker, func(), error) {
+	return func(ctx context.Context, released func()) (srpc.Invoker, func(), error) {
 		if handler == nil {
 			return nil, nil, nil
 		}
-		return &handler, nil, nil
+		return handler, nil, nil
 	}
 }

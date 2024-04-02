@@ -30,7 +30,7 @@ const (
 	// HashType_SHA256 is the sha256 hash type.
 	HashType_HashType_SHA256 HashType = 1
 	// HashType_SHA1 is the sha1 hash type.
-	// Note: this is not recommended for use outside of backwards-compat.
+	// NOTE: Do not use SHA1 unless you absolutely have to for backwards compat! (Git)
 	HashType_HashType_SHA1 HashType = 2
 	// HashType_BLAKE3 is the blake3 hash type.
 	// Uses a 32-byte digest size.

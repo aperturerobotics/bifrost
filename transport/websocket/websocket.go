@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"time"
 
 	httplog "github.com/aperturerobotics/bifrost/http/log"
 	"github.com/aperturerobotics/bifrost/peer"
@@ -157,8 +158,9 @@ func (w *WebSocket) ListenHTTP(ctx context.Context, addr string) error {
 		BaseContext: func(net.Listener) context.Context {
 			return ctx
 		},
-		Addr:    addr,
-		Handler: w,
+		Addr:              addr,
+		Handler:           w,
+		ReadHeaderTimeout: time.Second * 10,
 	}
 	err := server.ListenAndServe()
 	if serr := server.Shutdown(ctx); serr != nil && serr != context.Canceled {

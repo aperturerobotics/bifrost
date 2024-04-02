@@ -2,6 +2,7 @@ package bifrost_http_listener
 
 import (
 	"net/http"
+	"time"
 
 	bifrost_http "github.com/aperturerobotics/bifrost/http"
 	"github.com/aperturerobotics/controllerbus/bus"
@@ -51,6 +52,7 @@ func (t *Factory) Construct(
 			cc.GetClientId(),
 			!cc.GetWait(),
 		),
+		ReadHeaderTimeout: time.Second * 10,
 	}
 
 	return NewController(le, srv), nil

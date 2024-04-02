@@ -11,11 +11,11 @@ import (
 // HTTPHandler implements a HTTP handler which deduplicates with a reference count.
 type HTTPHandler struct {
 	// handleCtr is the refcount handle to the UnixFS
-	handleCtr *ccontainer.CContainer[*http.Handler]
+	handleCtr *ccontainer.CContainer[http.Handler]
 	// errCtr contains any error building FSHandle
 	errCtr *ccontainer.CContainer[*error]
 	// rc is the refcount container
-	rc *refcount.RefCount[*http.Handler]
+	rc *refcount.RefCount[http.Handler]
 }
 
 // NewHTTPHandler constructs a new HTTPHandler.
@@ -26,7 +26,7 @@ func NewHTTPHandler(
 	builder HTTPHandlerBuilder,
 ) *HTTPHandler {
 	h := &HTTPHandler{
-		handleCtr: ccontainer.NewCContainer[*http.Handler](nil),
+		handleCtr: ccontainer.NewCContainer[http.Handler](nil),
 		errCtr:    ccontainer.NewCContainer[*error](nil),
 	}
 	h.rc = refcount.NewRefCount(ctx, false, h.handleCtr, h.errCtr, builder)
@@ -41,14 +41,14 @@ func (h *HTTPHandler) SetContext(ctx context.Context) {
 // ServeHTTP serves a http request.
 func (h *HTTPHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
-	err := h.rc.Access(ctx, true, func(ctx context.Context, access *http.Handler) error {
+	err := h.rc.Access(ctx, true, func(ctx context.Context, access http.Handler) error {
 		if access == nil {
 			rw.WriteHeader(404)
 			_, _ = rw.Write([]byte("404 not found"))
 			return nil
 		}
 
-		(*access).ServeHTTP(rw, req.WithContext(ctx))
+		access.ServeHTTP(rw, req.WithContext(ctx))
 		return nil
 	})
 	if err != nil {

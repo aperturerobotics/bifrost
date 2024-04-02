@@ -1,15 +1,23 @@
 package randstring
 
 import (
-	"math/rand"
+	"math/rand/v2"
+	"slices"
 	"testing"
+
+	"github.com/aperturerobotics/util/prng"
 )
 
 func TestRandString(t *testing.T) {
-	rnd := rand.New(rand.NewSource(518234812384))
-	str := RandString(rnd, 8)
-	t.Log(str)
-	if str != "NyUHvCmd" {
-		t.Fail()
+	rnd := rand.New(prng.BuildSeededRand([]byte("testing randstring")))
+	strs := make([]string, 10)
+	for i := range strs {
+		strs[i] = RandString(rnd, 8)
+	}
+	expected := []string{"EaTsEKPw", "nvvjMxQe", "JcnevYoi", "qhjIFzMl", "nIhGmfAT", "WCMJUZhe", "WAqmjYbL", "CgYZxfxR", "KphaTnzC", "iZDnLFYn"}
+	if !slices.Equal(strs, expected) {
+		t.Logf("expected: %#v", expected)
+		t.Logf("actual: %#v", strs)
+		t.FailNow()
 	}
 }

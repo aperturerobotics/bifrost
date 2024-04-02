@@ -18,13 +18,13 @@ func TestParseKeys(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	t.Logf("private key: %s", string(privStr))
+	t.Logf("private key: %s", privStr)
 
 	pubStr, err := MarshalPublicKey(keyPub)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	t.Logf("public key: %s", string(pubStr))
+	t.Logf("public key: %s", pubStr)
 
 	// parse
 	privOut, err := ParsePrivateKey(privStr)

@@ -8,6 +8,9 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"time"
+
+	"net/http/pprof"
 
 	bcli "github.com/aperturerobotics/bifrost/cli"
 	"github.com/aperturerobotics/bifrost/daemon"
@@ -26,10 +29,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
-
-	// _ enables the profiling endpoints
-
-	_ "net/http/pprof"
 )
 
 var daemonFlags struct {
@@ -235,7 +234,22 @@ func runDaemon(c *cli.Context) error {
 		runtime.SetMutexProfileFraction(1)
 		go func() {
 			le.Debugf("profiling listener running: %s", daemonFlags.ProfListen)
-			err := http.ListenAndServe(daemonFlags.ProfListen, nil)
+			mux := http.NewServeMux()
+
+			// Register pprof handlers
+			mux.HandleFunc("/debug/pprof/", pprof.Index)
+			mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+			mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+			mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+			mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+			// Manually add support for paths linked to by index page at /debug/pprof/
+			mux.Handle("/debug/pprof/goroutine", pprof.Handler("goroutine"))
+			mux.Handle("/debug/pprof/heap", pprof.Handler("heap"))
+			mux.Handle("/debug/pprof/threadcreate", pprof.Handler("threadcreate"))
+			mux.Handle("/debug/pprof/block", pprof.Handler("block"))
+
+			server := &http.Server{Addr: daemonFlags.ProfListen, Handler: mux, ReadHeaderTimeout: time.Second * 10}
+			err := server.ListenAndServe()
 			le.WithError(err).Warn("profiling listener exited")
 		}()
 	}
