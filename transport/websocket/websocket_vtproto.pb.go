@@ -30,6 +30,7 @@ func (m *Config) CloneVT() *Config {
 	r.TransportPeerId = m.TransportPeerId
 	r.ListenAddr = m.ListenAddr
 	r.HttpPath = m.HttpPath
+	r.DisableServePeerId = m.DisableServePeerId
 	if rhs := m.Quic; rhs != nil {
 		if vtpb, ok := interface{}(rhs).(interface{ CloneVT() *quic.Opts }); ok {
 			r.Quic = vtpb.CloneVT()
@@ -105,6 +106,9 @@ func (this *Config) EqualVT(that *Config) bool {
 	if this.HttpPath != that.HttpPath {
 		return false
 	}
+	if this.DisableServePeerId != that.DisableServePeerId {
+		return false
+	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
@@ -144,6 +148,16 @@ func (m *Config) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
+	}
+	if m.DisableServePeerId {
+		i--
+		if m.DisableServePeerId {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x30
 	}
 	if len(m.HttpPath) > 0 {
 		i -= len(m.HttpPath)
@@ -271,6 +285,9 @@ func (m *Config) SizeVT() (n int) {
 	l = len(m.HttpPath)
 	if l > 0 {
 		n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
+	}
+	if m.DisableServePeerId {
+		n += 2
 	}
 	n += len(m.unknownFields)
 	return n
@@ -582,6 +599,26 @@ func (m *Config) UnmarshalVT(dAtA []byte) error {
 			}
 			m.HttpPath = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DisableServePeerId", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protohelpers.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.DisableServePeerId = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := protohelpers.Skip(dAtA[iNdEx:])

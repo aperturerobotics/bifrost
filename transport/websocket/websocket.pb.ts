@@ -39,6 +39,12 @@ export interface Config {
    * If unset, ignores the incoming request path.
    */
   httpPath: string
+  /**
+   * DisableServePeerId disables serving the peer id.
+   * If this is unset the peer ID is available at http_path+"/peer"
+   * If http_path is unset the peer ID is available at /peer
+   */
+  disableServePeerId: boolean
 }
 
 export interface Config_DialersEntry {
@@ -53,6 +59,7 @@ function createBaseConfig(): Config {
     quic: undefined,
     dialers: {},
     httpPath: '',
+    disableServePeerId: false,
   }
 }
 
@@ -78,6 +85,9 @@ export const Config = {
     })
     if (message.httpPath !== '') {
       writer.uint32(42).string(message.httpPath)
+    }
+    if (message.disableServePeerId !== false) {
+      writer.uint32(48).bool(message.disableServePeerId)
     }
     return writer
   },
@@ -127,6 +137,13 @@ export const Config = {
           }
 
           message.httpPath = reader.string()
+          continue
+        case 6:
+          if (tag !== 48) {
+            break
+          }
+
+          message.disableServePeerId = reader.bool()
           continue
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -192,6 +209,9 @@ export const Config = {
       httpPath: isSet(object.httpPath)
         ? globalThis.String(object.httpPath)
         : '',
+      disableServePeerId: isSet(object.disableServePeerId)
+        ? globalThis.Boolean(object.disableServePeerId)
+        : false,
     }
   },
 
@@ -218,6 +238,9 @@ export const Config = {
     if (message.httpPath !== '') {
       obj.httpPath = message.httpPath
     }
+    if (message.disableServePeerId !== false) {
+      obj.disableServePeerId = message.disableServePeerId
+    }
     return obj
   },
 
@@ -241,6 +264,7 @@ export const Config = {
       return acc
     }, {})
     message.httpPath = object.httpPath ?? ''
+    message.disableServePeerId = object.disableServePeerId ?? false
     return message
   },
 }

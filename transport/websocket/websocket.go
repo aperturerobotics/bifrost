@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 	"net/http"
+	"strings"
 
 	httplog "github.com/aperturerobotics/bifrost/http/log"
 	"github.com/aperturerobotics/bifrost/peer"
@@ -23,6 +24,9 @@ const TransportType = "ws"
 
 // ControllerID is the WebSocket controller ID.
 const ControllerID = "bifrost/websocket"
+
+// PeerPathSuffix is the path suffix to use for the peer id.
+const PeerPathSuffix = "/peer"
 
 // Version is the version of the implementation.
 var Version = semver.MustParse("0.0.1")
@@ -166,14 +170,33 @@ func (w *WebSocket) ListenHTTP(ctx context.Context, addr string) error {
 
 // ServeHTTP serves the websocket upgraded HTTP endpoint.
 func (w *WebSocket) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	// Filter http path if set
-	if httpPath := w.conf.GetHttpPath(); httpPath != "" {
-		if req.URL.Path != httpPath {
-			rw.WriteHeader(404)
-			_, _ = rw.Write([]byte("404 - Page not found\n"))
-			httplog.WithLoggerFields(w.le, req, 404).Debug("request not found")
+	returnNotFound := func() {
+		rw.WriteHeader(404)
+		_, _ = rw.Write([]byte("404 - Page not found\n"))
+		httplog.WithLoggerFields(w.le, req, 404).Debug("request not found")
+	}
+
+	httpPath := req.URL.Path
+	confPath := w.conf.GetHttpPath()
+
+	// Serve peer ID if enabled
+	if !w.conf.GetDisableServePeerId() && strings.HasSuffix(httpPath, PeerPathSuffix) {
+		// Filter http path
+		if confPath != "" && httpPath != confPath+PeerPathSuffix {
+			returnNotFound()
 			return
 		}
+
+		// Serve peer ID
+		rw.WriteHeader(200)
+		_, _ = rw.Write([]byte(w.GetPeerID().String()))
+		return
+	}
+
+	// Filter http path if set
+	if confPath != "" && req.URL.Path != httpPath {
+		returnNotFound()
+		return
 	}
 
 	// Accept websocket

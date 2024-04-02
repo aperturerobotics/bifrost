@@ -2,7 +2,6 @@ package common
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/aperturerobotics/bifrost/keypem"
 	link_holdopen_controller "github.com/aperturerobotics/bifrost/link/hold-open"
@@ -15,7 +14,6 @@ import (
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
 	"github.com/aperturerobotics/controllerbus/core"
 	"github.com/aperturerobotics/controllerbus/directive"
-	"github.com/aperturerobotics/util/prng"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/sirupsen/logrus"
 )
@@ -29,29 +27,24 @@ func init() {
 	log.SetLevel(logrus.DebugLevel)
 }
 
-func genPeerIdentity(peerSeed string) (peer.ID, crypto.PrivKey) {
-	// NOT SECURE: for demo purposes only
-	r := prng.BuildSeededRand([]byte(peerSeed))
-	pk1, _, err := crypto.GenerateEd25519Key(r)
-	if err != nil {
-		log.Fatal(err)
-	}
-	pid1, _ := peer.IDFromPrivateKey(pk1)
-	log.Debugf("generated insecure peer id: %s", pid1.String())
-
-	return pid1, pk1
-}
-
 // BuildCommonBus builds a common bus.
 // Also returns a cancel function.
-func BuildCommonBus(ctx context.Context, peerSeed string) (bus.Bus, crypto.PrivKey, error) {
-	peerID, peerPrivKey := genPeerIdentity(peerSeed)
+func BuildCommonBus(ctx context.Context) (bus.Bus, crypto.PrivKey, error) {
+	p, err := peer.NewPeer(nil)
+	if err != nil {
+		return nil, nil, err
+	}
 
+	peerPrivKey, err := p.GetPrivKey(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	peerID := p.GetPeerID()
 	peerPrivKeyPem, err := keypem.MarshalPrivKeyPem(peerPrivKey)
 	if err != nil {
 		return nil, nil, err
 	}
-	fmt.Println(string(peerPrivKeyPem))
 
 	// Construct the bus with the websocket transport and node factory attached.
 	b, sr, err := core.NewCoreBus(ctx, le)

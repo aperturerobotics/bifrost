@@ -11,5 +11,5 @@ if [ ! -d ./hack ]; then
 fi
 
 # serve the example
-echo "Listening on port :8080"
+echo "Listening on port :8090"
 make serve-example

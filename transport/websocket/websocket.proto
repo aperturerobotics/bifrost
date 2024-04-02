@@ -27,4 +27,8 @@ message Config {
   // HttpPath is the http path to expose the websocket.
   // If unset, ignores the incoming request path.
   string http_path = 5;
+  // DisableServePeerId disables serving the peer id.
+  // If this is unset the peer ID is available at http_path+"/peer"
+  // If http_path is unset the peer ID is available at /peer
+  bool disable_serve_peer_id = 6;
 }

@@ -172,7 +172,7 @@ fix: $(GOLANGCI_LINT)
 
 .PHONY: serve-example
 serve-example: $(WASMSERVE)
-	$(WASMSERVE) ./examples/websocket-browser-link/browser
+	$(WASMSERVE) -http ":8090" ./examples/websocket-browser-link/browser
 
 .PHONY: test
 test:

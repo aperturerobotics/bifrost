@@ -35,10 +35,11 @@ func main() {
 
 func run() error {
 	ctx := context.Background()
-	b, privKey, err := common.BuildCommonBus(ctx, "websocket-browser-link/server")
+	b, privKey, err := common.BuildCommonBus(ctx)
 	if err != nil {
 		return err
 	}
+
 	localPeerID, err := peer.IDFromPrivateKey(privKey)
 	if err != nil {
 		return err

@@ -6,6 +6,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
+	"net/http"
 	"syscall/js"
 	"time"
 
@@ -21,6 +23,16 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+var port = 2015
+
+func getHTTPBaseURL() string {
+	document := js.Global().Get("window").Get("document")
+	location := document.Get("location")
+	proto := location.Get("protocol").String()
+
+	return fmt.Sprintf("%s//%s:%d", proto, location.Get("hostname"), port)
+}
+
 func getWSBaseURL() string {
 	document := js.Global().Get("window").Get("document")
 	location := document.Get("location")
@@ -30,7 +42,7 @@ func getWSBaseURL() string {
 		wsProtocol = "wss"
 	}
 
-	return fmt.Sprintf("%s://%s:%d/ws/", wsProtocol, location.Get("hostname"), 2015)
+	return fmt.Sprintf("%s://%s:%d/ws/", wsProtocol, location.Get("hostname"), port)
 }
 
 func main() {
@@ -43,18 +55,40 @@ func main() {
 
 // run runs the demo.
 func run(ctx context.Context, le *logrus.Entry) error {
-	b, privKey, err := common.BuildCommonBus(ctx, "websocket-browser-link/client")
+	b, privKey, err := common.BuildCommonBus(ctx)
 	if err != nil {
 		return err
 	}
 
+	// get the peer id from an http endpoint
+	peerIDURL := getHTTPBaseURL() + wtpt.PeerPathSuffix
+	le.
+		WithField("url", peerIDURL).
+		Debug("getting peer id")
+	resp, err := http.Get(peerIDURL)
+	if err != nil {
+		return err
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	_ = resp.Body.Close()
+
+	peerIDStr := string(body)
+	remotePeerID, err := peer.IDB58Decode(peerIDStr)
+	if err != nil {
+		return err
+	}
+	peerIDStr = remotePeerID.String()
+
 	wsBaseURL := getWSBaseURL()
 	le.
-		WithField("base-url", wsBaseURL).
+		WithField("url", wsBaseURL).
+		WithField("peer", peerIDStr).
 		Debug("contacting websocket peer")
 
 	// NOTE: deterministic due to the use of a prng to generate the key
-	peerIDStr := "12D3KooWCupw8xy9uxGzjhRnCbab3sGr7X67zS4KX64k38dm7XpW"
 	_, wsRef, err := b.AddDirective(
 		resolver.NewLoadControllerWithConfig(&wtpt.Config{
 			Dialers: map[string]*dialer.DialerOpts{
@@ -69,9 +103,8 @@ func run(ctx context.Context, le *logrus.Entry) error {
 	)
 	defer wsRef.Release()
 
-	pid, _ := peer.IDB58Decode(peerIDStr)
 	_, dialRef, err := b.AddDirective(
-		link.NewEstablishLinkWithPeer("", pid),
+		link.NewEstablishLinkWithPeer("", remotePeerID),
 		nil,
 	)
 	if err != nil {
