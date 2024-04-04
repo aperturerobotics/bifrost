@@ -4,7 +4,7 @@ go 1.22
 
 require (
 	github.com/aperturerobotics/controllerbus v0.38.0 // latest
-	github.com/aperturerobotics/entitygraph v0.7.0
+	github.com/aperturerobotics/entitygraph v0.7.1
 	github.com/aperturerobotics/starpc v0.28.0 // latest
 	github.com/aperturerobotics/timestamp v0.8.2
 	github.com/aperturerobotics/ts-proto-common-types v0.20.2 // latest
@@ -92,7 +92,6 @@ require (
 	github.com/pion/ice/v3 v3.0.5 // indirect
 	github.com/pion/interceptor v0.1.27 // indirect
 	github.com/pion/logging v0.2.2 // indirect
-	github.com/pion/mdns v0.0.12 // indirect
 	github.com/pion/mdns/v2 v2.0.7 // indirect
 	github.com/pion/randutil v0.1.0 // indirect
 	github.com/pion/rtcp v1.2.14 // indirect
