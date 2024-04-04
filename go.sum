@@ -6,10 +6,8 @@ github.com/aperturerobotics/bifrost-nats-client v1.10.1-0.20200831103200-24c3d04
 github.com/aperturerobotics/bifrost-nats-client v1.10.1-0.20200831103200-24c3d0464e58/go.mod h1:ougcjYEZDYV8pVtaNbA5sgYDukkYHyKtSsW/T3B13j0=
 github.com/aperturerobotics/bifrost-nats-server/v2 v2.1.8-0.20221228081037-b7c2df0c151f h1:bmScByQNGDPPy9T+zdwu816XaCbFtD5UDyqZMRiHJ80=
 github.com/aperturerobotics/bifrost-nats-server/v2 v2.1.8-0.20221228081037-b7c2df0c151f/go.mod h1:kIcZtLpq4UIZzOqduYLm1mYU1nuMBtN6XuDCtQ21QT8=
-github.com/aperturerobotics/controllerbus v0.38.0 h1:bOlWuxb84ZC45/qH9orxpj4JhVnQLq//w/K3cFAZ9w4=
-github.com/aperturerobotics/controllerbus v0.38.0/go.mod h1:63kbiV8sosp0mYO2vuUXOjYnUf04DScQM96Rq3nCWwo=
-github.com/aperturerobotics/entitygraph v0.7.1 h1:C4La65XLGimdyRk6GCB+enkPhjJeMmKKzWbz3qfCzrU=
-github.com/aperturerobotics/entitygraph v0.7.1/go.mod h1:RytxpoTEoSOGZFV6mc93rPlxw4pcFcXMl16FxNvQQ/U=
+github.com/aperturerobotics/controllerbus v0.38.1-0.20240404200601-a5d6ce4d901a h1:Q/ie1VPcbX3wHe5EaEVRid5kfoY/ickF7AT8c4U4x3s=
+github.com/aperturerobotics/controllerbus v0.38.1-0.20240404200601-a5d6ce4d901a/go.mod h1:bdu9olnPmETpX29HupgamOCAD/lOHo0pyWbk3CfasVs=
 github.com/aperturerobotics/entitygraph v0.8.0 h1:1tEsGPAk4kzJRLrwxn69JZbQreSOkqHgr3Ue5BGpE0M=
 github.com/aperturerobotics/entitygraph v0.8.0/go.mod h1:F9CfzYNTnIj9d7z79+2l0owNqsuVfz/U2cTPZbEcFTw=
 github.com/aperturerobotics/logrus v1.9.4-0.20240119050608-13332fb58195 h1:uyeD1J23j/kFiCFO7rx+GQA4tCqOEy3IJyMK4f6vamE=
@@ -263,8 +261,8 @@ golang.org/x/lint v0.0.0-20190930215403-16217165b5de/go.mod h1:6SW0HCj/g11FgYtHl
 golang.org/x/mod v0.4.2/go.mod h1:s0Qsj1ACt9ePp/hMypM3fl4fZqREWJwdYDEqhRiZZUA=
 golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4/go.mod h1:jJ57K6gSWd91VN4djpZkiMVwK6gcyfeH4XE8wZrZaV4=
 golang.org/x/mod v0.8.0/go.mod h1:iBbtSCu2XBx23ZKBPSOrRkjjQPZFPuis4dIYUhu/chs=
-golang.org/x/mod v0.16.0 h1:QX4fJ0Rr5cPQCF7O9lh9Se4pmwfwskqZfq5moyldzic=
-golang.org/x/mod v0.16.0/go.mod h1:hTbmBsO62+eylJbnUtE2MGJUyE7QWk4xUqPFrRgJ+7c=
+golang.org/x/mod v0.17.0 h1:zY54UmvipHiNd+pm+m0x9KhZ9hl1/7QNMyxXbc6ICqA=
+golang.org/x/mod v0.17.0/go.mod h1:hTbmBsO62+eylJbnUtE2MGJUyE7QWk4xUqPFrRgJ+7c=
 golang.org/x/net v0.0.0-20190311183353-d8887717615a/go.mod h1:t9HGtf8HONx5eT2rtn7q6eTqICYqUVnKs3thJo3Qplg=
 golang.org/x/net v0.0.0-20190404232315-eb5bcb51f2a3/go.mod h1:t9HGtf8HONx5eT2rtn7q6eTqICYqUVnKs3thJo3Qplg=
 golang.org/x/net v0.0.0-20190620200207-3b0461eec859/go.mod h1:z5CRVTTTmAJ677TzLLGU+0bjPO0LkuOLi4/5GtJWs/s=

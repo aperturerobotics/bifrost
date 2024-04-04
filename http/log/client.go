@@ -6,40 +6,55 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// LoggedRoundTripper is a custom RoundTripper that wraps an existing RoundTripper with a logger.
-type LoggedRoundTripper struct {
-	transport http.RoundTripper
-	le        *logrus.Entry
-	verbose   bool
-}
-
-// NewLoggedRoundTripper creates a new instance of LoggedRoundTripper.
-func NewLoggedRoundTripper(transport http.RoundTripper, le *logrus.Entry, verbose bool) *LoggedRoundTripper {
-	return &LoggedRoundTripper{
-		transport: transport,
-		le:        le,
-		verbose:   verbose,
-	}
-}
-
-// RoundTrip implements the RoundTripper interface.
-func (t *LoggedRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	return DoRequestWithTransport(t.le, t.transport, req, t.verbose)
-}
-
 // DoRequest performs a request with logging.
 //
 // If verbose=true, logs successful cases as well as errors.
 // le can be nil to disable logging
 func DoRequest(le *logrus.Entry, client *http.Client, req *http.Request, verbose bool) (*http.Response, error) {
-	return DoRequestWithTransport(le, client.Transport, req, verbose)
+	return DoRequestWithClient(le, client, req, verbose)
 }
+
+// roundTripperClient converts http.RoundTripper to HttpClient.
+type roundTripperClient struct {
+	rt http.RoundTripper
+}
+
+// Do performs the request.
+func (r *roundTripperClient) Do(req *http.Request) (*http.Response, error) {
+	return r.rt.RoundTrip(req)
+}
+
+// _ is a type assertion
+var _ HttpClient = (*roundTripperClient)(nil)
 
 // DoRequestWithTransport performs a request with logging.
 //
 // If verbose=true, logs successful cases as well as errors.
 // le can be nil to disable logging
 func DoRequestWithTransport(le *logrus.Entry, transport http.RoundTripper, req *http.Request, verbose bool) (*http.Response, error) {
+	return DoRequestWithClient(le, &roundTripperClient{rt: transport}, req, verbose)
+}
+
+// NewLoggedClient wraps an http.Client with a logger.
+func NewLoggedClient(client *http.Client, le *logrus.Entry, verbose bool) *http.Client {
+	return &http.Client{
+		Transport:     NewLoggedRoundTripper(client.Transport, le, verbose),
+		CheckRedirect: client.CheckRedirect,
+		Jar:           client.Jar,
+		Timeout:       client.Timeout,
+	}
+}
+
+// HttpClient can perform http requests.
+type HttpClient interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
+// DoRequestWithClient performs a request with logging.
+//
+// If verbose=true, logs successful cases as well as errors.
+// le can be nil to disable logging
+func DoRequestWithClient(le *logrus.Entry, client HttpClient, req *http.Request, verbose bool) (*http.Response, error) {
 	// Request details
 	if le != nil {
 		le = le.WithFields(logrus.Fields{
@@ -59,10 +74,10 @@ func DoRequestWithTransport(le *logrus.Entry, transport http.RoundTripper, req *
 
 	var resp *http.Response
 	var err error
-	if transport != nil {
-		resp, err = transport.RoundTrip(req)
+	if client != nil {
+		resp, err = client.Do(req)
 	} else {
-		resp, err = http.DefaultTransport.RoundTrip(req)
+		resp, err = http.DefaultClient.Do(req)
 	}
 
 	if le != nil {
@@ -87,12 +102,23 @@ func DoRequestWithTransport(le *logrus.Entry, transport http.RoundTripper, req *
 	return resp, err
 }
 
-// ClientWithLogger wraps an http.Client with a logger.
-func ClientWithLogger(client *http.Client, le *logrus.Entry, verbose bool) *http.Client {
-	return &http.Client{
-		Transport:     NewLoggedRoundTripper(client.Transport, le, verbose),
-		CheckRedirect: client.CheckRedirect,
-		Jar:           client.Jar,
-		Timeout:       client.Timeout,
+// LoggedRoundTripper is a custom RoundTripper that wraps an existing RoundTripper with a logger.
+type LoggedRoundTripper struct {
+	transport http.RoundTripper
+	le        *logrus.Entry
+	verbose   bool
+}
+
+// NewLoggedRoundTripper creates a new instance of LoggedRoundTripper.
+func NewLoggedRoundTripper(transport http.RoundTripper, le *logrus.Entry, verbose bool) *LoggedRoundTripper {
+	return &LoggedRoundTripper{
+		transport: transport,
+		le:        le,
+		verbose:   verbose,
 	}
+}
+
+// RoundTrip implements the RoundTripper interface.
+func (t *LoggedRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	return DoRequestWithTransport(t.le, t.transport, req, t.verbose)
 }
