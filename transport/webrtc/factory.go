@@ -42,6 +42,7 @@ func (t *Factory) ConstructConfig() config.Config {
 // Construct constructs the associated controller given configuration.
 // The transport's identity (private key) comes from a GetNode lookup.
 func (t *Factory) Construct(
+	ctx context.Context,
 	conf config.Config,
 	opts controller.ConstructOpts,
 ) (controller.Controller, error) {
