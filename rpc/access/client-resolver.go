@@ -108,7 +108,7 @@ ClientLoop:
 				valID, _ = handler.AddValue(val)
 			}
 			if resp.GetIdle() {
-				handler.MarkIdle()
+				handler.MarkIdle(true)
 			}
 		}
 	}

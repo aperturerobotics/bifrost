@@ -2,11 +2,12 @@ package bifrost_api
 
 import (
 	"context"
+	"slices"
+	"strings"
 
 	"github.com/aperturerobotics/bifrost/peer"
 	peer_api "github.com/aperturerobotics/bifrost/peer/api"
 	"github.com/aperturerobotics/controllerbus/bus"
-	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/pkg/errors"
 )
 
@@ -24,64 +25,23 @@ func (a *API) GetPeerInfo(
 		}
 	}
 
-	subCtx, subCtxCancel := context.WithCancel(ctx)
-	defer subCtxCancel()
-
-	resp := &peer_api.GetPeerInfoResponse{}
-	di, dir, err := a.bus.AddDirective(
-		peer.NewGetPeer(peerID),
-		bus.NewCallbackHandler(func(v directive.AttachedValue) {
-			pi, err := peer_api.NewPeerInfo(v.GetValue().(peer.Peer))
-			if err != nil {
-				return
-			}
-			resp.LocalPeers = append(resp.LocalPeers, pi)
-		}, func(v directive.AttachedValue) {
-			p := v.GetValue().(peer.Peer)
-			pi, err := peer_api.NewPeerInfo(p)
-			if err != nil {
-				return
-			}
-			for i, r := range resp.LocalPeers {
-				if pi.PeerId == r.PeerId {
-					resp.LocalPeers[i] = resp.LocalPeers[len(resp.LocalPeers)-1]
-					resp.LocalPeers[len(resp.LocalPeers)-1] = nil
-					resp.LocalPeers = resp.LocalPeers[:len(resp.LocalPeers)-1]
-					break
-				}
-			}
-		}, func() {
-			subCtxCancel()
-		}),
-	)
+	vals, _, ref, err := bus.ExecCollectValues[peer.GetPeerValue](ctx, a.bus, peer.NewGetPeer(peerID), false, nil)
 	if err != nil {
 		return nil, err
 	}
-	defer dir.Release()
+	ref.Release()
 
-	errCh := make(chan error, 1)
-	rcb := di.AddIdleCallback(func(errs []error) {
-		if len(errs) != 0 {
-			select {
-			case errCh <- errs[0]:
-				return
-			default:
-			}
-		}
+	resp := &peer_api.GetPeerInfoResponse{}
+	for _, val := range vals {
+		resp.LocalPeers = append(resp.LocalPeers, peer_api.NewPeerInfo(val))
+	}
 
-		subCtxCancel()
+	slices.SortFunc(resp.LocalPeers, func(a, b *peer_api.PeerInfo) int {
+		return strings.Compare(a.GetPeerId(), b.GetPeerId())
 	})
-	if rcb != nil {
-		defer rcb()
-	}
-
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case err := <-errCh:
-		return nil, err
-	case <-subCtx.Done():
-	}
+	resp.LocalPeers = slices.CompactFunc(resp.LocalPeers, func(a, b *peer_api.PeerInfo) bool {
+		return a.GetPeerId() == b.GetPeerId()
+	})
 
 	return resp, nil
 }

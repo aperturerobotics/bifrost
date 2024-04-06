@@ -42,6 +42,7 @@ func (s *AccessRpcServiceServer) LookupRpcService(
 	var sendQueue []*LookupRpcServiceResponse
 	var disposed bool
 	var resErr error
+	var resIdle bool
 
 	serverID := req.GetServerId()
 	if s.serverIdCb != nil {
@@ -98,18 +99,23 @@ func (s *AccessRpcServiceServer) LookupRpcService(
 	}
 	defer ref.Release()
 
-	defer di.AddIdleCallback(func(resErrs []error) {
+	defer di.AddIdleCallback(func(isIdle bool, resErrs []error) {
 		bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
 			if resErr == nil {
 				for _, err := range resErrs {
 					if err != nil {
 						resErr = err
+						broadcast()
 						break
 					}
 				}
 			}
+			if isIdle == resIdle {
+				return
+			}
+			resIdle = isIdle
 			sendQueue = append(sendQueue, &LookupRpcServiceResponse{
-				Idle: true,
+				Idle: isIdle,
 			})
 			broadcast()
 		})
@@ -124,11 +130,17 @@ func (s *AccessRpcServiceServer) LookupRpcService(
 
 		var currSendQueue []*LookupRpcServiceResponse
 		var currDisposed bool
+		var currResErr error
+		var currIdle bool
 		bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
 			waitCh = getWaitCh()
 			currSendQueue, currDisposed = sendQueue, disposed
+			currResErr, currIdle = resErr, resIdle
 			sendQueue = nil
 		})
+		if currIdle && currResErr != nil && currResErr != context.Canceled {
+			return currResErr
+		}
 		for _, msg := range currSendQueue {
 			if err := strm.Send(msg); err != nil {
 				return err
