@@ -35,13 +35,27 @@ func DoRequestWithTransport(le *logrus.Entry, transport http.RoundTripper, req *
 	return DoRequestWithClient(le, &roundTripperClient{rt: transport}, req, verbose)
 }
 
-// NewLoggedClient wraps an http.Client with a logger.
-func NewLoggedClient(client *http.Client, le *logrus.Entry, verbose bool) *http.Client {
-	return &http.Client{
-		Transport:     NewLoggedRoundTripper(client.Transport, le, verbose),
-		CheckRedirect: client.CheckRedirect,
-		Jar:           client.Jar,
-		Timeout:       client.Timeout,
+// loggedClient wraps http.Client to HttpClient with a logger.
+type loggedClient struct {
+	client  HttpClient
+	le      *logrus.Entry
+	verbose bool
+}
+
+// Do performs the request.
+func (l *loggedClient) Do(req *http.Request) (*http.Response, error) {
+	return DoRequestWithClient(l.le, l.client, req, l.verbose)
+}
+
+// _ is a type assertion
+var _ HttpClient = (*loggedClient)(nil)
+
+// NewLoggedClient wraps an HttpClient with a logger.
+func NewLoggedClient(le *logrus.Entry, client HttpClient, verbose bool) HttpClient {
+	return &loggedClient{
+		client:  client,
+		le:      le,
+		verbose: verbose,
 	}
 }
 
