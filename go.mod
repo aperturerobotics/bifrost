@@ -30,7 +30,7 @@ require (
 	filippo.io/edwards25519 v1.1.1-0.20231210192602-a7dfd8e4e6b4
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cenkalti/backoff v2.2.1+incompatible
-	github.com/klauspost/compress v1.17.7
+	github.com/klauspost/compress v1.17.8
 	github.com/libp2p/go-libp2p v0.33.2
 	github.com/mr-tron/base58 v1.2.0
 	github.com/multiformats/go-multiaddr v0.12.3
@@ -53,7 +53,7 @@ require (
 	golang.org/x/exp v0.0.0-20240409090435-93d18d7e34b8
 	gonum.org/v1/gonum v0.15.0
 	google.golang.org/protobuf v1.33.0
-	nhooyr.io/websocket v1.8.10
+	nhooyr.io/websocket v1.8.11
 	storj.io/drpc v0.0.34
 )
 
