@@ -6,6 +6,9 @@ import (
 	"github.com/aperturerobotics/controllerbus/config"
 )
 
+// ControllerID is the controller ID.
+const ControllerID = "bifrost/http/listener"
+
 // ConfigID is the string used to identify this config object.
 const ConfigID = ControllerID
 

@@ -3,17 +3,17 @@ module github.com/aperturerobotics/bifrost
 go 1.22
 
 require (
-	github.com/aperturerobotics/controllerbus v0.39.1 // latest
+	github.com/aperturerobotics/controllerbus v0.40.0 // latest
 	github.com/aperturerobotics/entitygraph v0.8.0
 	github.com/aperturerobotics/starpc v0.28.0 // latest
 	github.com/aperturerobotics/timestamp v0.8.2
 	github.com/aperturerobotics/ts-proto-common-types v0.20.2 // latest
-	github.com/aperturerobotics/util v1.16.1 // master
+	github.com/aperturerobotics/util v1.16.5 // master
 )
 
 // aperture: use compatibility forks
 replace (
-	github.com/multiformats/go-multiaddr => github.com/paralin/go-multiaddr v0.10.2-0.20230807174004-e1767541c061 // aperture
+	github.com/multiformats/go-multiaddr => github.com/paralin/go-multiaddr v0.12.4-0.20240407071906-6f0354cc6755 // aperture-4
 	github.com/nats-io/jwt/v2 => github.com/nats-io/jwt/v2 v2.0.0-20200820224411-1e751ff168ab // indirect: used by bifrost-nats-server
 	github.com/nats-io/nats-server/v2 => github.com/aperturerobotics/bifrost-nats-server/v2 v2.1.8-0.20221228081037-b7c2df0c151f // aperture-2.0
 	github.com/nats-io/nats.go => github.com/aperturerobotics/bifrost-nats-client v1.10.1-0.20200831103200-24c3d0464e58 // aperture-2.0
@@ -50,7 +50,7 @@ require (
 	github.com/valyala/fastjson v1.6.4
 	github.com/zeebo/blake3 v0.2.3
 	golang.org/x/crypto v0.22.0
-	golang.org/x/exp v0.0.0-20240404231335-c0f41cb1a7a0
+	golang.org/x/exp v0.0.0-20240409090435-93d18d7e34b8
 	gonum.org/v1/gonum v0.15.0
 	google.golang.org/protobuf v1.33.0
 	nhooyr.io/websocket v1.8.10

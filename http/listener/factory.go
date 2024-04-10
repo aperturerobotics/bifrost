@@ -1,3 +1,5 @@
+//go:build !tinygo
+
 package bifrost_http_listener
 
 import (

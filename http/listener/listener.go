@@ -1,3 +1,5 @@
+//go:build !tinygo
+
 package bifrost_http_listener
 
 import (
@@ -9,9 +11,6 @@ import (
 	"github.com/blang/semver"
 	"github.com/sirupsen/logrus"
 )
-
-// ControllerID is the controller ID.
-const ControllerID = "bifrost/http/listener"
 
 // Version is the version of this controller.
 var Version = semver.MustParse("0.0.1")
