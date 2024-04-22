@@ -10,6 +10,8 @@ GOLANGCI_LINT=hack/bin/golangci-lint
 GO_MOD_OUTDATED=hack/bin/go-mod-outdated
 GOLIST=go list -f "{{ .Dir }}" -m
 
+GORELEASER=hack/bin/goreleaser
+
 export GO111MODULE=on
 undefine GOARCH
 undefine GOOS
@@ -129,3 +131,13 @@ test:
 format: $(GOFUMPT) $(GOIMPORTS)
 	$(GOIMPORTS) -w ./
 	$(GOFUMPT) -w ./
+
+$(GORELEASER):
+	cd ./hack; \
+	go build -v \
+		-o ./bin/goreleaser \
+		github.com/goreleaser/goreleaser
+
+.PHONY: release
+release: $(GORELEASER)
+	$(GORELEASER) release --clean
