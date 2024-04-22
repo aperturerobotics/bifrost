@@ -5,8 +5,8 @@ import (
 	"io"
 	"sync"
 
+	protobuf_go_lite "github.com/aperturerobotics/protobuf-go-lite"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/proto"
 )
 
 // Session wraps a stream in a session.
@@ -29,8 +29,8 @@ func NewSession(
 }
 
 // SendMsg tries to send a message on the wire.
-func (s *Session) SendMsg(msg proto.Message) error {
-	data, err := proto.Marshal(msg)
+func (s *Session) SendMsg(msg protobuf_go_lite.Message) error {
+	data, err := msg.MarshalVT()
 	if err != nil {
 		return err
 	}
@@ -50,7 +50,7 @@ func (s *Session) SendMsg(msg proto.Message) error {
 }
 
 // RecvMsg tries to receive a message on the wire.
-func (s *Session) RecvMsg(msg proto.Message) error {
+func (s *Session) RecvMsg(msg protobuf_go_lite.Message) error {
 	data := make([]byte, 4)
 	s.readMtx.Lock()
 	defer s.readMtx.Unlock()
@@ -70,9 +70,9 @@ func (s *Session) RecvMsg(msg proto.Message) error {
 			return err
 		}
 
-		return proto.Unmarshal(data, msg)
+		return msg.UnmarshalVT(data)
 	}
 
-	proto.Reset(msg)
+	msg.Reset()
 	return nil
 }

@@ -3,14 +3,14 @@ package confparse
 import (
 	"testing"
 
-	"github.com/aperturerobotics/timestamp"
+	"github.com/aperturerobotics/protobuf-go-lite/types/known/timestamppb"
 )
 
 func TestParseTimestamp(t *testing.T) {
 	tests := []struct {
 		name        string
 		input       string
-		expected    *timestamp.Timestamp
+		expected    *timestamppb.Timestamp
 		expectError bool
 	}{
 		{
@@ -22,16 +22,16 @@ func TestParseTimestamp(t *testing.T) {
 		{
 			name:  "ValidUnixMilliseconds",
 			input: "1629048153000",
-			expected: &timestamp.Timestamp{
-				TimeUnixMs: 1629048153000,
+			expected: &timestamppb.Timestamp{
+				Seconds: 1629048153,
 			},
 			expectError: false,
 		},
 		{
 			name:  "ValidRFC3339",
 			input: "2021-08-15T15:49:13Z",
-			expected: &timestamp.Timestamp{
-				TimeUnixMs: 1629042553000,
+			expected: &timestamppb.Timestamp{
+				Seconds: 1629042553,
 			},
 			expectError: false,
 		},
@@ -55,7 +55,7 @@ func TestParseTimestamp(t *testing.T) {
 					t.Fatal(err.Error())
 				}
 			}
-			if !tt.expected.Equals(actual) {
+			if !tt.expected.EqualVT(actual) {
 				t.Fatalf("expected %q got %q", tt.expected, actual)
 			}
 		})

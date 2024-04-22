@@ -11,7 +11,7 @@ import (
 	"github.com/aperturerobotics/bifrost/peer"
 	peer_ssh "github.com/aperturerobotics/bifrost/peer/ssh"
 	"github.com/aperturerobotics/bifrost/util/confparse"
-	"github.com/aperturerobotics/timestamp"
+	"github.com/aperturerobotics/protobuf-go-lite/types/known/timestamppb"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/crypto/ssh"
@@ -19,7 +19,7 @@ import (
 
 // RunTimestamp runs the timestamp util command.
 func (a *UtilArgs) RunTimestamp(_ *cli.Context) error {
-	var ts *timestamp.Timestamp
+	var ts *timestamppb.Timestamp
 	if a.Timestamp != "" {
 		var err error
 		ts, err = confparse.ParseTimestamp(a.Timestamp)
@@ -27,10 +27,10 @@ func (a *UtilArgs) RunTimestamp(_ *cli.Context) error {
 			return err
 		}
 	} else {
-		ts = timestamp.Now()
+		ts = timestamppb.Now()
 	}
 
-	formatted := ts.ToRFC3339() + "\n"
+	formatted := ts.AsRFC3339() + "\n"
 	return writeIfNotExists(a.OutPath, bytes.NewReader([]byte(formatted)))
 }
 

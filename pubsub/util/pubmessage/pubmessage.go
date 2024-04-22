@@ -3,12 +3,8 @@ package pubmessage
 import (
 	"github.com/aperturerobotics/bifrost/hash"
 	"github.com/aperturerobotics/bifrost/peer"
+	timestamp "github.com/aperturerobotics/protobuf-go-lite/types/known/timestamppb"
 	crypto "github.com/libp2p/go-libp2p/core/crypto"
-	proto "google.golang.org/protobuf/proto"
-	timestamp "google.golang.org/protobuf/types/known/timestamppb"
-
-	// _ ensures the typescript version of google/protobuf/timestamp exists in vendor/.
-	_ "github.com/aperturerobotics/ts-proto-common-types/google/protobuf"
 )
 
 // NewPubMessage constructs/signs/encodes a new pub-message and inner message.
@@ -25,7 +21,7 @@ func NewPubMessage(
 		Channel:   channelID,
 		Timestamp: timestamp.Now(),
 	}
-	innerData, err := proto.Marshal(inner)
+	innerData, err := inner.MarshalVT()
 	if err != nil {
 		return nil, inner, err
 	}
@@ -42,7 +38,7 @@ func ExtractAndVerify(msg *peer.SignedMsg) (*PubMessageInner, crypto.PubKey, pee
 	}
 	data := msg.GetData()
 	out := &PubMessageInner{}
-	err = proto.Unmarshal(data, out)
+	err = out.UnmarshalVT(data)
 	if err == nil {
 		err = out.Validate()
 	}

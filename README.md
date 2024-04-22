@@ -36,10 +36,9 @@ Bifrost is designed around the following core concepts:
  - **PubSub**: at-least-once delivery of messages to named topics.
  - **Signaling**: exchanging messages between peers via a relay server.
 
-Integrates with networking, pubsub, and RPC libraries like [libp2p], [drpc],
-[starpc], [nats], and [pion webrtc].
+Integrates with networking, pubsub, and RPC libraries like [libp2p], [starpc],
+[nats], and [pion webrtc].
 
-[drpc]: https://github.com/storj/drpc
 [libp2p]: https://libp2p.io/
 [nats]: https://nats.io
 [starpc]: https://github.com/aperturerobotics/starpc

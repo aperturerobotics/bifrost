@@ -69,7 +69,7 @@ func init() {
 				},
 				&cli.StringFlag{
 					Name:        "api-listen",
-					Usage:       "if set, will listen on address for API drpc connections, ex :5110",
+					Usage:       "if set, will listen on address for API srpc connections, ex :5110",
 					EnvVars:     []string{"BIFROST_API_LISTEN"},
 					Destination: &daemonFlags.APIListen,
 				},

@@ -36,7 +36,7 @@ func NewWebRTCSignalHandler(t *WebRTC) *WebRTCSignalHandler {
 func (c *WebRTCSignalHandler) HandleDirective(ctx context.Context, di directive.Instance) ([]directive.Resolver, error) {
 	switch dir := di.GetDirective().(type) {
 	case signaling.HandleSignalPeer:
-		return c.resolveHandleSignalPeer(ctx, dir)
+		return c.resolveHandleSignalPeer(dir)
 	}
 	return nil, nil
 }
@@ -106,9 +106,11 @@ func (r *handleSignalPeerResolver) Resolve(ctx context.Context, handler directiv
 		if err != nil {
 			return err
 		}
-		if r.t.GetVerbose() {
-			r.t.le.Debugf("signal rx: %s", sig.String())
-		}
+		/*
+			if r.t.GetVerbose() {
+				r.t.le.Debugf("signal rx: %s", sig.String())
+			}
+		*/
 
 		// Loop until we manage to process this message.
 	ProcessLoop:
@@ -156,7 +158,7 @@ func (r *handleSignalPeerResolver) Resolve(ctx context.Context, handler directiv
 }
 
 // resolveHandleSignalPeer resolves the HandleSignalPeer directive.
-func (c *WebRTCSignalHandler) resolveHandleSignalPeer(ctx context.Context, dir signaling.HandleSignalPeer) ([]directive.Resolver, error) {
+func (c *WebRTCSignalHandler) resolveHandleSignalPeer(dir signaling.HandleSignalPeer) ([]directive.Resolver, error) {
 	// Check signaling id matches
 	if dir.HandleSignalingID() != c.t.conf.GetSignalingId() {
 		return nil, nil

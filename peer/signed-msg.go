@@ -8,7 +8,6 @@ import (
 	crypto "github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/pkg/errors"
 	"github.com/zeebo/blake3"
-	"google.golang.org/protobuf/proto"
 )
 
 // NewSignedMsg constructs/signs/encodes a new signed message.
@@ -34,7 +33,7 @@ func NewSignedMsg(
 // UnmarshalSignedMsg parses a signed message.
 func UnmarshalSignedMsg(data []byte) (*SignedMsg, error) {
 	m := &SignedMsg{}
-	err := proto.Unmarshal(data, m)
+	err := m.UnmarshalVT(data)
 	if err == nil {
 		err = m.Validate()
 	}

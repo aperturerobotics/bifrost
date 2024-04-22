@@ -20,33 +20,39 @@ jobs:
         node: [21.x]
     timeout-minutes: 10
     steps:
-      - uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
-        with:
-          disable-sudo: true
-          egress-policy: audit
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
       - name: Setup Go ${{ matrix.go }}
         uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
           go-version: ${{ matrix.go }}
+
       - name: Setup Node.JS ${{ matrix.node }}
         uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
         with:
           node-version: ${{ matrix.node }}
           cache: 'yarn'
+
       - name: Test Go
         run: make test
+
       - name: Yarn install
         run: yarn install
+
       - name: Build Javascript
         run: yarn run build
+
       - name: Test Js
         run: yarn test:js
+
       - name: Lint Javascript
         run: yarn run lint:js
+
       - name: Lint Go
         run: yarn run lint:go
+
       - name: Depcheck JS
         run: yarn run deps
+
       - name: Check goreleaser build
         run: make hack/bin/goreleaser

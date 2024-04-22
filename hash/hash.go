@@ -3,19 +3,15 @@ package hash
 import (
 	"bytes"
 	"crypto/sha256"
-	"encoding/json"
 	"hash"
-	"strconv"
 
 	// We include sha1 for git support.
 	"crypto/sha1" //nolint:gosec
 
 	b58 "github.com/mr-tron/base58/base58"
 	"github.com/pkg/errors"
-	"github.com/valyala/fastjson"
 	"github.com/zeebo/blake3"
 	"golang.org/x/exp/slices"
-	"google.golang.org/protobuf/proto"
 )
 
 // ErrHashMismatch is returned when hashes mismatch.
@@ -35,52 +31,13 @@ var SupportedHashTypes = []HashType{
 // Note: not guaranteed to stay the same between Bifrost versions.
 const RecommendedHashType = HashType_HashType_BLAKE3
 
-// UnmarshalHashTypeFastJSON unmarshals a HashType from FastJSON value.
-func UnmarshalHashTypeFastJSON(val *fastjson.Value) (HashType, error) {
-	if val == nil {
-		return 0, nil
-	}
-	switch val.Type() {
-	case fastjson.TypeString:
-		valStr := string(val.GetStringBytes())
-		if len(valStr) == 0 {
-			return 0, nil
-		}
-		val, ok := HashType_value[valStr]
-		if !ok {
-			return 0, errors.Wrap(ErrHashTypeUnknown, valStr)
-		}
-		return HashType(val), nil
-	case fastjson.TypeNumber:
-		ht := HashType(val.GetInt())
-		if err := ht.Validate(); err != nil {
-			return 0, err
-		}
-		return ht, nil
-	default:
-		return 0, errors.Errorf("unexpected json type for hash type: %v", val.Type().String())
-	}
-}
-
-// UnmarshalHashJSON unmarshals a Hash from JSON.
+// UnmarshalHashJSON unmarshals a hash from json.
 func UnmarshalHashJSON(data []byte) (*Hash, error) {
-	val, err := fastjson.Parse(string(data))
-	if err != nil {
+	h := &Hash{}
+	if err := h.UnmarshalJSON(data); err != nil {
 		return nil, err
 	}
-	return UnmarshalHashFastJSON(val)
-}
-
-// UnmarshalHashFastJSON unmarshals a Hash from FastJSON value.
-func UnmarshalHashFastJSON(val *fastjson.Value) (*Hash, error) {
-	out := &Hash{}
-	if val == nil {
-		return out, nil
-	}
-	if err := out.UnmarshalFastJSON(val); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return h, nil
 }
 
 // IsNil checks if the object is nil.
@@ -232,7 +189,7 @@ func (h *Hash) MarshalString() string {
 	if h == nil {
 		return ""
 	}
-	dat, err := proto.Marshal(h)
+	dat, err := h.MarshalVT()
 	if err != nil {
 		return ""
 	}
@@ -244,27 +201,8 @@ func (h *Hash) MarshalDigest() []byte {
 	if h == nil {
 		return nil
 	}
-	dat, _ := proto.Marshal(h)
+	dat, _ := h.MarshalVT()
 	return dat
-}
-
-// MarshalJSON marshals the hash to a JSON string.
-// Returns "" if the hash is nil.
-func (h *Hash) MarshalJSON() ([]byte, error) {
-	return []byte(strconv.Quote(h.MarshalString())), nil
-}
-
-// UnmarshalJSON unmarshals the reference from a JSON string or object.
-// Also accepts an object (in jsonpb format).
-func (h *Hash) UnmarshalJSON(data []byte) error {
-	if len(data) == 0 || h == nil {
-		return nil
-	}
-	val, err := fastjson.ParseBytes(data)
-	if err != nil {
-		return err
-	}
-	return h.UnmarshalFastJSON(val)
 }
 
 // ParseFromB58 parses the object ref from a base58 string.
@@ -275,47 +213,3 @@ func (h *Hash) ParseFromB58(ref string) error {
 	}
 	return h.UnmarshalVT(dat)
 }
-
-// UnmarshalFastJSON unmarshals the fast json container.
-// If the val or object ref are nil, does nothing.
-func (h *Hash) UnmarshalFastJSON(val *fastjson.Value) error {
-	if val == nil || h == nil {
-		return nil
-	}
-	switch val.Type() {
-	case fastjson.TypeString:
-		return h.ParseFromB58(string(val.GetStringBytes()))
-	case fastjson.TypeObject:
-
-	default:
-		return errors.Errorf("unexpected json type for hash: %v", val.Type().String())
-	}
-
-	if hashTypeVal := val.Get("hashType"); hashTypeVal != nil {
-		var err error
-		h.HashType, err = UnmarshalHashTypeFastJSON(hashTypeVal)
-		if err != nil {
-			return err
-		}
-	}
-
-	if hashVal := val.Get("hash"); hashVal != nil {
-		// expect b58 string
-		hashStr, err := hashVal.StringBytes()
-		if err != nil {
-			return errors.Wrap(err, "hash")
-		}
-		hashData, err := b58.Decode(string(hashStr))
-		if err != nil {
-			return errors.Wrap(err, "hash")
-		}
-		h.Hash = hashData
-	}
-
-	return nil
-}
-
-var (
-	_ json.Marshaler   = ((*Hash)(nil))
-	_ json.Unmarshaler = ((*Hash)(nil))
-)

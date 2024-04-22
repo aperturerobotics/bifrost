@@ -32,9 +32,9 @@ func (a *ClientArgs) RunAccept(*cli.Context) error {
 		return err
 	}
 
-	drpc := stream_api.NewAcceptStreamClientRPC(client)
+	rpcClient := stream_api.NewAcceptStreamClientRPC(client)
 	return stream_api_rpc.AttachRPCToStream(
-		drpc,
+		rpcClient,
 		rwc.NewReadWriteCloser(os.Stdin, os.Stdout),
 		nil,
 	)

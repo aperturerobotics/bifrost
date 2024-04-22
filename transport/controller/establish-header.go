@@ -4,9 +4,8 @@ import (
 	"io"
 
 	"github.com/aperturerobotics/bifrost/protocol"
+	protobuf_go_lite "github.com/aperturerobotics/protobuf-go-lite"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/encoding/protowire"
-	"google.golang.org/protobuf/proto"
 )
 
 // NewStreamEstablish constructs a new StreamEstablish message.
@@ -17,7 +16,7 @@ func NewStreamEstablish(protocolID protocol.ID) *StreamEstablish {
 func marshalStreamEstablishHeader(msg *StreamEstablish) []byte {
 	datLen := msg.SizeVT()
 	outBuf := make([]byte, 0, datLen+9)
-	outBuf = protowire.AppendVarint(outBuf, uint64(datLen))
+	outBuf = protobuf_go_lite.AppendVarint(outBuf, uint64(datLen))
 	prefixLen := len(outBuf)
 	outBuf = outBuf[:len(outBuf)+datLen]
 	msgFinalLen, _ := msg.MarshalToVT(outBuf[prefixLen:])
@@ -48,7 +47,7 @@ func readStreamEstablishHeader(r io.Reader) (*StreamEstablish, error) {
 	}
 
 	// Read the header length varint
-	headerLen, headerLenBytes := protowire.ConsumeVarint(b)
+	headerLen, headerLenBytes := protobuf_go_lite.ConsumeVarint(b)
 	if headerLenBytes <= 0 {
 		return nil, errors.New("invalid stream establish varint prefix")
 	}
@@ -74,7 +73,7 @@ func readStreamEstablishHeader(r io.Reader) (*StreamEstablish, error) {
 
 	// decode stream establish header
 	estHeader := &StreamEstablish{}
-	if err := proto.Unmarshal(headerBuf, estHeader); err != nil {
+	if err := estHeader.UnmarshalVT(headerBuf); err != nil {
 		return nil, err
 	}
 

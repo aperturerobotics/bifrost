@@ -13,7 +13,6 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"google.golang.org/protobuf/proto"
 )
 
 // subscription implements the pubsub subscription handle.
@@ -89,7 +88,7 @@ func (s *subscription) Publish(data []byte) error {
 		return err
 	}
 
-	enc, err := proto.Marshal(msg)
+	enc, err := msg.MarshalVT()
 	if err != nil {
 		return err
 	}

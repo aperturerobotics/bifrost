@@ -39,10 +39,6 @@ type MountedStreamHandler interface {
 
 // MountedStreamContext is the value attached to a Context containing
 // information about the current mounted stream.
-//
-// Used in several places to pass stream info via Context, for example:
-// - stream/srpc/server: attach stream info to RPC context
-// - stream/drpc/server: attach stream info to RPC context
 type MountedStreamContext = MountedStream
 
 // mountedStreamContextKey is the context key used for WithValue.

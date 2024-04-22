@@ -22,7 +22,7 @@
     "build": "tsc --project tsconfig.json --noEmit false --module ES6 --target es2022 --outDir ./dist/",
     "check": "npm run typecheck",
     "typecheck": "tsc --noEmit",
-    "deps": "depcheck --ignore-patterns=.eslintrc.js,package.json --ignores depcheck,patch-package,prettier,typescript,bufferutil,utf-8-validate,starpc,ts-proto,ts-poet,@aperturerobotics/ts-common,@go/github.com",
+    "deps": "depcheck --ignore-patterns=.eslintrc.js,package.json --ignores depcheck,prettier,typescript,starpc,@aperturerobotics/ts-common,@bufbuild/protoc-gen-es",
     "codegen": "npm run gen",
     "ci": "npm run build && npm run lint:js && npm run lint:go",
     "format": "npm run format:js && npm run format:go",
@@ -35,8 +35,7 @@
     "lint": "npm run lint:go && npm run lint:js",
     "lint:go": "make lint",
     "lint:js": "ESLINT_USE_FLAT_CONFIG=false eslint -c .eslintrc.js --ignore-pattern wasm_exec.js ./",
-    "patch": "patch-package --use-yarn --patch-dir ./node_modules/@aperturerobotics/ts-common/patches",
-    "prepare": "npm run patch && go mod vendor",
+    "prepare": "go mod vendor",
     "precommit": "npm run format"
   },
   "prettier": {
@@ -44,20 +43,14 @@
     "singleQuote": true
   },
   "devDependencies": {
-    "@aperturerobotics/ts-common": "0.9.1",
+    "@aperturerobotics/ts-common": "0.11.0",
+    "@bufbuild/protoc-gen-es": "^1.8.0",
     "depcheck": "^1.4.6",
-    "patch-package": "^8.0.0",
     "prettier": "^3.1.1",
-    "ts-poet": "6.8.0",
-    "ts-proto": "^1.171.0",
     "typescript": "^5.4.4"
   },
   "dependencies": {
-    "@aperturerobotics/ts-proto-common-types": "^0.3.0",
-    "bufferutil": "^4.0.7",
-    "long": "^5.2.3",
-    "protobufjs": "^7.2.4",
-    "starpc": "^0.28.0",
-    "utf-8-validate": "^6.0.3"
+    "@bufbuild/protobuf": "^1.8.0",
+    "starpc": "^0.31.2"
   }
 }
