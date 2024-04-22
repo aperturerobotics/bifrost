@@ -11,9 +11,9 @@ replace (
 
 require (
 	github.com/aperturerobotics/bifrost v0.29.0 // latest
-	github.com/aperturerobotics/controllerbus v0.41.2 // indirect; latest
+	github.com/aperturerobotics/controllerbus v0.42.0 // indirect; latest
 	github.com/aperturerobotics/goprotowrap v0.3.1 // master
-	github.com/aperturerobotics/protobuf-go-lite v0.4.8 // latest
+	github.com/aperturerobotics/protobuf-go-lite v0.5.0 // latest
 	github.com/aperturerobotics/starpc v0.31.2 // latest
 )
 
@@ -75,8 +75,8 @@ require (
 	github.com/alexkohler/nakedret/v2 v2.0.2 // indirect
 	github.com/alexkohler/prealloc v1.0.0 // indirect
 	github.com/alingse/asasalint v0.0.11 // indirect
-	github.com/aperturerobotics/entitygraph v0.8.1 // indirect
-	github.com/aperturerobotics/util v1.18.2-0.20240422064924-0aa0a8ef68ac // indirect
+	github.com/aperturerobotics/entitygraph v0.8.2 // indirect
+	github.com/aperturerobotics/util v1.19.1 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
 	github.com/ashanbrown/forbidigo v1.5.3 // indirect
 	github.com/ashanbrown/makezero v1.1.1 // indirect

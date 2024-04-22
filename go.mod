@@ -3,11 +3,11 @@ module github.com/aperturerobotics/bifrost
 go 1.22
 
 require (
-	github.com/aperturerobotics/controllerbus v0.41.2 // latest
-	github.com/aperturerobotics/entitygraph v0.8.1
-	github.com/aperturerobotics/protobuf-go-lite v0.4.8 // latest
+	github.com/aperturerobotics/controllerbus v0.42.0 // latest
+	github.com/aperturerobotics/entitygraph v0.8.2 // latest
+	github.com/aperturerobotics/protobuf-go-lite v0.5.0 // latest
 	github.com/aperturerobotics/starpc v0.31.2 // latest
-	github.com/aperturerobotics/util v1.18.2-0.20240422064924-0aa0a8ef68ac // master
+	github.com/aperturerobotics/util v1.19.1 // master
 )
 
 // aperture: use compatibility forks

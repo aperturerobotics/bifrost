@@ -80,7 +80,7 @@ genproto: vendor node_modules $(GOIMPORTS) $(PROTOWRAP) $(PROTOC_GEN_GO) $(PROTO
 			--plugin=./node_modules/.bin/protoc-gen-es \
 			--plugin=./node_modules/.bin/protoc-gen-es-starpc \
 			--go-lite_out=$${OUT} \
-			--go-lite_opt=features=marshal+unmarshal+size+equal+json+clone \
+			--go-lite_opt=features=marshal+unmarshal+size+equal+json+clone+text \
 			--go-starpc_out=$${OUT} \
 			--es_out=$${OUT} \
 			--es_opt target=ts \
