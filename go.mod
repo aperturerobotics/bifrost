@@ -4,11 +4,11 @@ go 1.22
 
 require (
 	github.com/aperturerobotics/common v0.12.5 // latest
-	github.com/aperturerobotics/controllerbus v0.42.0 // latest
+	github.com/aperturerobotics/controllerbus v0.43.0 // latest
 	github.com/aperturerobotics/entitygraph v0.8.2 // latest
 	github.com/aperturerobotics/protobuf-go-lite v0.5.0 // latest
-	github.com/aperturerobotics/starpc v0.31.2 // latest
-	github.com/aperturerobotics/util v1.19.1 // master
+	github.com/aperturerobotics/starpc v0.31.5 // latest
+	github.com/aperturerobotics/util v1.20.0 // master
 )
 
 // aperture: use compatibility forks
@@ -32,13 +32,13 @@ require (
 	github.com/libp2p/go-libp2p v0.33.2
 	github.com/mr-tron/base58 v1.2.0
 	github.com/multiformats/go-multiaddr v0.12.3
-	github.com/nats-io/nats-server/v2 v2.10.12
+	github.com/nats-io/nats-server/v2 v2.10.14
 	github.com/nats-io/nats.go v1.34.1
 	github.com/nats-io/nkeys v0.4.7
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pion/datachannel v1.5.6
 	github.com/pion/sdp/v3 v3.0.9
-	github.com/pion/webrtc/v4 v4.0.0-beta.16
+	github.com/pion/webrtc/v4 v4.0.0-beta.17
 	github.com/pkg/errors v0.9.1
 	github.com/quic-go/quic-go v0.42.0
 	github.com/sasha-s/go-deadlock v0.3.1
@@ -85,19 +85,19 @@ require (
 	github.com/onsi/ginkgo/v2 v2.15.0 // indirect
 	github.com/petermattis/goid v0.0.0-20180202154549-b0b1615b78e5 // indirect
 	github.com/pion/dtls/v2 v2.2.10 // indirect
-	github.com/pion/ice/v3 v3.0.5 // indirect
-	github.com/pion/interceptor v0.1.27 // indirect
+	github.com/pion/ice/v3 v3.0.6 // indirect
+	github.com/pion/interceptor v0.1.29 // indirect
 	github.com/pion/logging v0.2.2 // indirect
 	github.com/pion/mdns/v2 v2.0.7 // indirect
 	github.com/pion/randutil v0.1.0 // indirect
 	github.com/pion/rtcp v1.2.14 // indirect
 	github.com/pion/rtp v1.8.5 // indirect
-	github.com/pion/sctp v1.8.14 // indirect
+	github.com/pion/sctp v1.8.16 // indirect
 	github.com/pion/srtp/v3 v3.0.1 // indirect
 	github.com/pion/stun/v2 v2.0.0 // indirect
 	github.com/pion/transport/v2 v2.2.4 // indirect
 	github.com/pion/transport/v3 v3.0.2 // indirect
-	github.com/pion/turn/v3 v3.0.1 // indirect
+	github.com/pion/turn/v3 v3.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/spaolacci/murmur3 v1.1.1-0.20190317074736-539464a789e9 // indirect
