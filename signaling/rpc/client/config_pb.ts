@@ -12,7 +12,7 @@ import type {
 } from '@bufbuild/protobuf'
 import { Message, proto3 } from '@bufbuild/protobuf'
 import { Config as Config$1 } from '../../../stream/srpc/client/client_pb.js'
-import { Backoff } from '../../../../util/backoff/backoff_pb.js'
+import { Backoff } from '@go/github.com/aperturerobotics/util/backoff/backoff_pb.js'
 
 /**
  * Config configures a client for the Signaling SRPC service.

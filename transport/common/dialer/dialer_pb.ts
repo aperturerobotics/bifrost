@@ -11,7 +11,7 @@ import type {
   PlainMessage,
 } from '@bufbuild/protobuf'
 import { Message, proto3 } from '@bufbuild/protobuf'
-import { Backoff } from '../../../../util/backoff/backoff_pb.js'
+import { Backoff } from '@go/github.com/aperturerobotics/util/backoff/backoff_pb.js'
 
 /**
  * DialerOpts contains options relating to dialing a statically configured peer.

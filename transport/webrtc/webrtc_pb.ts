@@ -12,7 +12,7 @@ import type {
 } from '@bufbuild/protobuf'
 import { Message, proto3, protoInt64 } from '@bufbuild/protobuf'
 import { Opts } from '../common/quic/quic_pb.js'
-import { Backoff } from '../../../util/backoff/backoff_pb.js'
+import { Backoff } from '@go/github.com/aperturerobotics/util/backoff/backoff_pb.js'
 import { DialerOpts } from '../common/dialer/dialer_pb.js'
 
 /**

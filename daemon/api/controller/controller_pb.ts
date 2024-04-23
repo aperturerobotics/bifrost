@@ -12,7 +12,7 @@ import type {
 } from '@bufbuild/protobuf'
 import { Message, proto3 } from '@bufbuild/protobuf'
 import { Config as Config$1 } from '../api_pb.js'
-import { Config as Config$2 } from '../../../../controllerbus/bus/api/api_pb.js'
+import { Config as Config$2 } from '@go/github.com/aperturerobotics/controllerbus/bus/api/api_pb.js'
 
 /**
  * Config configures the API.

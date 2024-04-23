@@ -12,7 +12,7 @@ import type {
 } from '@bufbuild/protobuf'
 import { Message, proto3 } from '@bufbuild/protobuf'
 import { Config } from '../controller/config_pb.js'
-import { ControllerStatus } from '../../../controllerbus/controller/exec/exec_pb.js'
+import { ControllerStatus } from '@go/github.com/aperturerobotics/controllerbus/controller/exec/exec_pb.js'
 
 /**
  * IdentifyRequest is a request to load an identity.

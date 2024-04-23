@@ -12,7 +12,7 @@ import type {
 } from '@bufbuild/protobuf'
 import { Message, proto3 } from '@bufbuild/protobuf'
 import { Config } from '../forwarding/forwarding_pb.js'
-import { ControllerStatus } from '../../../controllerbus/controller/exec/exec_pb.js'
+import { ControllerStatus } from '@go/github.com/aperturerobotics/controllerbus/controller/exec/exec_pb.js'
 import { Config as Config$1 } from '../listening/listening_pb.js'
 import { Config as Config$2 } from './accept/accept_pb.js'
 import { Data } from './rpc/rpc_pb.js'
