@@ -43,15 +43,15 @@
     "singleQuote": true
   },
   "devDependencies": {
-    "@aperturerobotics/ts-common": "0.11.0",
-    "@bufbuild/protoc-gen-es": "^1.8.0",
+    "@aperturerobotics/ts-common": "0.11.1",
+    "@bufbuild/protoc-gen-es": "^1.9.0",
     "depcheck": "^1.4.6",
     "magicast": "^0.3.4",
     "prettier": "^3.1.1",
     "typescript": "^5.4.4"
   },
   "dependencies": {
-    "@bufbuild/protobuf": "^1.8.0",
-    "starpc": "^0.31.2"
+    "@bufbuild/protobuf": "^1.9.0",
+    "starpc": "^0.31.5"
   }
 }
