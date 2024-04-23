@@ -22,7 +22,7 @@
     "build": "tsc --project tsconfig.json --noEmit false --module ES6 --target es2022 --outDir ./dist/",
     "check": "npm run typecheck",
     "typecheck": "tsc --noEmit",
-    "deps": "depcheck --ignore-patterns=.eslintrc.js,package.json --ignores depcheck,prettier,typescript,starpc,@aperturerobotics/ts-common,@bufbuild/protoc-gen-es",
+    "deps": "depcheck --ignore-patterns=.eslintrc.js,package.json --ignores depcheck,prettier,typescript,starpc,@aperturerobotics/ts-common,@bufbuild/protoc-gen-es,@go/github.com",
     "codegen": "npm run gen",
     "ci": "npm run build && npm run lint:js && npm run lint:go",
     "format": "npm run format:js && npm run format:go",
@@ -46,7 +46,6 @@
     "@aperturerobotics/ts-common": "0.11.1",
     "@bufbuild/protoc-gen-es": "^1.9.0",
     "depcheck": "^1.4.6",
-    "magicast": "^0.3.4",
     "prettier": "^3.1.1",
     "typescript": "^5.4.4"
   },
