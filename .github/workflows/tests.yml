@@ -55,4 +55,4 @@ jobs:
         run: yarn run deps
 
       - name: Check goreleaser build
-        run: make build-release GORELEASER_OPTS="--rm-dist"
+        run: make release-check
