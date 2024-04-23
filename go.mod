@@ -3,6 +3,7 @@ module github.com/aperturerobotics/bifrost
 go 1.22
 
 require (
+	github.com/aperturerobotics/common v0.12.2 // latest
 	github.com/aperturerobotics/controllerbus v0.42.0 // latest
 	github.com/aperturerobotics/entitygraph v0.8.2 // latest
 	github.com/aperturerobotics/protobuf-go-lite v0.5.0 // latest
@@ -20,13 +21,11 @@ replace (
 	github.com/nats-io/nkeys => github.com/nats-io/nkeys v0.3.0 // indirect: used by bifrost-nats-server
 	github.com/quic-go/quic-go => github.com/aperturerobotics/quic-go v0.41.1-0.20240125035303-1093432c45e9 // aperture
 	github.com/sirupsen/logrus => github.com/aperturerobotics/logrus v1.9.4-0.20240119050608-13332fb58195 // aperture
-	go.bug.st/serial => github.com/paralin/go-serial v0.0.0-20240220235126-6223594b0314 // fix-wasm-1
 	nhooyr.io/websocket => github.com/paralin/nhooyr-websocket v1.8.8-0.20220321125022-7defdf942f07 // aperture
 )
 
 require (
 	filippo.io/edwards25519 v1.1.1-0.20231210192602-a7dfd8e4e6b4
-	github.com/aperturerobotics/common v0.12.0
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/klauspost/compress v1.17.8
