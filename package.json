@@ -46,6 +46,7 @@
     "@aperturerobotics/ts-common": "0.11.0",
     "@bufbuild/protoc-gen-es": "^1.8.0",
     "depcheck": "^1.4.6",
+    "magicast": "^0.3.4",
     "prettier": "^3.1.1",
     "typescript": "^5.4.4"
   },

@@ -26,6 +26,7 @@ replace (
 
 require (
 	filippo.io/edwards25519 v1.1.1-0.20231210192602-a7dfd8e4e6b4
+	github.com/aperturerobotics/common v0.12.0
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/klauspost/compress v1.17.8

@@ -98,7 +98,7 @@
     js-tokens "^4.0.0"
     picocolors "^1.0.0"
 
-"@babel/parser@^7.23.0", "@babel/parser@^7.24.0", "@babel/parser@^7.24.1":
+"@babel/parser@^7.23.0", "@babel/parser@^7.24.0", "@babel/parser@^7.24.1", "@babel/parser@^7.24.4":
   version "7.24.4"
   resolved "https://registry.yarnpkg.com/@babel/parser/-/parser-7.24.4.tgz#234487a110d89ad5a3ed4a8a566c36b9453e8c88"
   integrity sha512-zTvEBcghmeBma9QIGunWevvBAp4/Qu9Bdq+2k0Ot4fVMD6v3dsC9WOcRSKk7tRRyBM/53yKMJko9xOatGQAwSg==
@@ -1431,6 +1431,15 @@ magic-string@^0.30.8:
   integrity sha512-iIRwTIf0QKV3UAnYK4PU8uiEc4SRh5jX0mwpIwETPpHdhVM4f53RSwS/vXvN1JhGX+Cs7B8qIq3d6AH49O5fAQ==
   dependencies:
     "@jridgewell/sourcemap-codec" "^1.4.15"
+
+magicast@^0.3.4:
+  version "0.3.4"
+  resolved "https://registry.yarnpkg.com/magicast/-/magicast-0.3.4.tgz#bbda1791d03190a24b00ff3dd18151e7fd381d19"
+  integrity sha512-TyDF/Pn36bBji9rWKHlZe+PZb6Mx5V8IHCSxk7X4aljM4e/vyDvZZYwHewdVaqiA0nb3ghfHU/6AUpDxWoER2Q==
+  dependencies:
+    "@babel/parser" "^7.24.4"
+    "@babel/types" "^7.24.0"
+    source-map-js "^1.2.0"
 
 memoize-one@^6.0.0:
   version "6.0.0"
