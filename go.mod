@@ -3,12 +3,12 @@ module github.com/aperturerobotics/bifrost
 go 1.22
 
 require (
-	github.com/aperturerobotics/common v0.12.5 // latest
-	github.com/aperturerobotics/controllerbus v0.43.1 // latest
+	github.com/aperturerobotics/common v0.13.1 // latest
+	github.com/aperturerobotics/controllerbus v0.43.2 // latest
 	github.com/aperturerobotics/entitygraph v0.8.2 // latest
-	github.com/aperturerobotics/protobuf-go-lite v0.5.0 // latest
-	github.com/aperturerobotics/starpc v0.31.5 // latest
-	github.com/aperturerobotics/util v1.20.1 // master
+	github.com/aperturerobotics/protobuf-go-lite v0.6.0 // latest
+	github.com/aperturerobotics/starpc v0.31.6 // latest
+	github.com/aperturerobotics/util v1.20.3 // master
 )
 
 // aperture: use compatibility forks
@@ -52,7 +52,7 @@ require (
 )
 
 require (
-	github.com/Jeffail/gabs/v2 v2.7.0 // indirect
+	github.com/aperturerobotics/json-iterator-lite v1.0.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/davidlazar/go-crypto v0.0.0-20200604182044-b73af7476f6c // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0 // indirect
@@ -63,15 +63,12 @@ require (
 	github.com/ipfs/go-cid v0.4.1 // indirect
 	github.com/ipfs/go-log/v2 v2.5.1 // indirect
 	github.com/jbenet/go-temp-err-catcher v0.1.0 // indirect
-	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.7 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/libp2p/go-buffer-pool v0.1.0 // indirect
 	github.com/libp2p/go-yamux/v4 v4.0.2-0.20240322071716-53ef5820bd48 // indirect
 	github.com/minio/highwayhash v1.0.2 // indirect
 	github.com/minio/sha256-simd v1.0.1 // indirect
-	github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421 // indirect
-	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/multiformats/go-base32 v0.1.0 // indirect
 	github.com/multiformats/go-base36 v0.2.0 // indirect
 	github.com/multiformats/go-multibase v0.2.0 // indirect
@@ -99,7 +96,6 @@ require (
 	github.com/pion/turn/v3 v3.0.2 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/spaolacci/murmur3 v1.1.1-0.20190317074736-539464a789e9 // indirect
-	github.com/valyala/fastjson v1.6.4 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	go.uber.org/mock v0.4.0 // indirect
 	golang.org/x/mod v0.17.0 // indirect
