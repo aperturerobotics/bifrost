@@ -7,10 +7,10 @@
   resolved "https://registry.yarnpkg.com/@aashutoshrathi/word-wrap/-/word-wrap-1.2.6.tgz#bd9154aec9983f77b3a034ecaa015c2e4201f6cf"
   integrity sha512-1Yjs2SvM8TflER/OD3cOjhWWOZb58A2t7wpE2S9XfBYTiIl+XFhQG2bjy4Pu1I+EAlCNUzRDYDdFwFYUKvXcIA==
 
-"@aperturerobotics/ts-common@0.11.1":
-  version "0.11.1"
-  resolved "https://registry.yarnpkg.com/@aperturerobotics/ts-common/-/ts-common-0.11.1.tgz#b8382cf836f22b81c3ea30dcbe05bcd08ac83b61"
-  integrity sha512-NO5XnPshKklctmH2lH+bOAm8XrrI5p4+aVHhgV31htUVosWMzKZBwumS6uYZ/AvZj1QJ/3jk3OHSlCDsK1xIxg==
+"@aptre/common@^0.12.6":
+  version "0.12.6"
+  resolved "https://registry.yarnpkg.com/@aptre/common/-/common-0.12.6.tgz#5dceb3e6e04e22df30c08198bf72878088ccb44b"
+  integrity sha512-OEuwTAquZmvSL5gGbTCfAttHDavBHbmoqsgiCO4AYx999W8ZeKBXmHtxS6SRtLbapBCl1PddKZDVowplzVlzIA==
   dependencies:
     "@bufbuild/protobuf" "^1.8.0"
     "@typescript-eslint/eslint-plugin" "^7.7.0"
