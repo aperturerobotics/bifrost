@@ -12,8 +12,8 @@ import {
   ListenStreamsRequest,
   ListenStreamsResponse,
 } from './api_pb.js'
-import type { PartialMessage } from '@bufbuild/protobuf'
 import { MethodKind } from '@bufbuild/protobuf'
+import { Message } from '@aptre/protobuf-es-lite'
 import {
   buildDecodeMessageTransform,
   buildEncodeMessageTransform,
@@ -93,7 +93,7 @@ export interface StreamService {
    * @generated from rpc stream.api.StreamService.ForwardStreams
    */
   ForwardStreams(
-    request: PartialMessage<ForwardStreamsRequest>,
+    request: Message<ForwardStreamsRequest>,
     abortSignal?: AbortSignal,
   ): MessageStream<ForwardStreamsResponse>
 
@@ -104,7 +104,7 @@ export interface StreamService {
    * @generated from rpc stream.api.StreamService.ListenStreams
    */
   ListenStreams(
-    request: PartialMessage<ListenStreamsRequest>,
+    request: Message<ListenStreamsRequest>,
     abortSignal?: AbortSignal,
   ): MessageStream<ListenStreamsResponse>
 
@@ -151,14 +151,14 @@ export class StreamServiceClient implements StreamService {
    * @generated from rpc stream.api.StreamService.ForwardStreams
    */
   ForwardStreams(
-    request: PartialMessage<ForwardStreamsRequest>,
+    request: Message<ForwardStreamsRequest>,
     abortSignal?: AbortSignal,
   ): MessageStream<ForwardStreamsResponse> {
-    const requestMsg = new ForwardStreamsRequest(request)
+    const requestMsg = ForwardStreamsRequest.create(request)
     const result = this.rpc.serverStreamingRequest(
       this.service,
       StreamServiceDefinition.methods.ForwardStreams.name,
-      requestMsg.toBinary(),
+      ForwardStreamsRequest.toBinary(requestMsg),
       abortSignal || undefined,
     )
     return buildDecodeMessageTransform(ForwardStreamsResponse)(result)
@@ -171,14 +171,14 @@ export class StreamServiceClient implements StreamService {
    * @generated from rpc stream.api.StreamService.ListenStreams
    */
   ListenStreams(
-    request: PartialMessage<ListenStreamsRequest>,
+    request: Message<ListenStreamsRequest>,
     abortSignal?: AbortSignal,
   ): MessageStream<ListenStreamsResponse> {
-    const requestMsg = new ListenStreamsRequest(request)
+    const requestMsg = ListenStreamsRequest.create(request)
     const result = this.rpc.serverStreamingRequest(
       this.service,
       StreamServiceDefinition.methods.ListenStreams.name,
-      requestMsg.toBinary(),
+      ListenStreamsRequest.toBinary(requestMsg),
       abortSignal || undefined,
     )
     return buildDecodeMessageTransform(ListenStreamsResponse)(result)

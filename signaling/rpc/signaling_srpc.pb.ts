@@ -8,8 +8,8 @@ import {
   SessionRequest,
   SessionResponse,
 } from './signaling_pb.js'
-import type { PartialMessage } from '@bufbuild/protobuf'
 import { MethodKind } from '@bufbuild/protobuf'
+import { Message } from '@aptre/protobuf-es-lite'
 import {
   buildDecodeMessageTransform,
   buildEncodeMessageTransform,
@@ -62,7 +62,7 @@ export interface Signaling {
    * @generated from rpc signaling.rpc.Signaling.Listen
    */
   Listen(
-    request: PartialMessage<ListenRequest>,
+    request: Message<ListenRequest>,
     abortSignal?: AbortSignal,
   ): MessageStream<ListenResponse>
 
@@ -94,14 +94,14 @@ export class SignalingClient implements Signaling {
    * @generated from rpc signaling.rpc.Signaling.Listen
    */
   Listen(
-    request: PartialMessage<ListenRequest>,
+    request: Message<ListenRequest>,
     abortSignal?: AbortSignal,
   ): MessageStream<ListenResponse> {
-    const requestMsg = new ListenRequest(request)
+    const requestMsg = ListenRequest.create(request)
     const result = this.rpc.serverStreamingRequest(
       this.service,
       SignalingDefinition.methods.Listen.name,
-      requestMsg.toBinary(),
+      ListenRequest.toBinary(requestMsg),
       abortSignal || undefined,
     )
     return buildDecodeMessageTransform(ListenResponse)(result)

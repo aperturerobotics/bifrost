@@ -43,15 +43,15 @@
     "singleQuote": true
   },
   "devDependencies": {
-    "@aptre/common": "^0.12.6",
-    "@bufbuild/protoc-gen-es": "^1.9.0",
+    "@aptre/common": "^0.14.2",
     "depcheck": "^1.4.6",
     "prettier": "^3.1.1",
     "rimraf": "^5.0.5",
     "typescript": "^5.4.4"
   },
   "dependencies": {
+    "@aptre/protobuf-es-lite": "^0.2.6",
     "@bufbuild/protobuf": "^1.9.0",
-    "starpc": "^0.31.5"
+    "starpc": "^0.31.9"
   }
 }

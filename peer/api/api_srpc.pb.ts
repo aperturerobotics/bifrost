@@ -8,8 +8,8 @@ import {
   IdentifyRequest,
   IdentifyResponse,
 } from './api_pb.js'
-import type { PartialMessage } from '@bufbuild/protobuf'
 import { MethodKind } from '@bufbuild/protobuf'
+import { Message } from '@aptre/protobuf-es-lite'
 import { buildDecodeMessageTransform, MessageStream, ProtoRpc } from 'starpc'
 
 /**
@@ -57,7 +57,7 @@ export interface PeerService {
    * @generated from rpc peer.api.PeerService.Identify
    */
   Identify(
-    request: PartialMessage<IdentifyRequest>,
+    request: Message<IdentifyRequest>,
     abortSignal?: AbortSignal,
   ): MessageStream<IdentifyResponse>
 
@@ -67,9 +67,9 @@ export interface PeerService {
    * @generated from rpc peer.api.PeerService.GetPeerInfo
    */
   GetPeerInfo(
-    request: PartialMessage<GetPeerInfoRequest>,
+    request: Message<GetPeerInfoRequest>,
     abortSignal?: AbortSignal,
-  ): Promise<PartialMessage<GetPeerInfoResponse>>
+  ): Promise<Message<GetPeerInfoResponse>>
 }
 
 export const PeerServiceServiceName = PeerServiceDefinition.typeName
@@ -89,14 +89,14 @@ export class PeerServiceClient implements PeerService {
    * @generated from rpc peer.api.PeerService.Identify
    */
   Identify(
-    request: PartialMessage<IdentifyRequest>,
+    request: Message<IdentifyRequest>,
     abortSignal?: AbortSignal,
   ): MessageStream<IdentifyResponse> {
-    const requestMsg = new IdentifyRequest(request)
+    const requestMsg = IdentifyRequest.create(request)
     const result = this.rpc.serverStreamingRequest(
       this.service,
       PeerServiceDefinition.methods.Identify.name,
-      requestMsg.toBinary(),
+      IdentifyRequest.toBinary(requestMsg),
       abortSignal || undefined,
     )
     return buildDecodeMessageTransform(IdentifyResponse)(result)
@@ -108,14 +108,14 @@ export class PeerServiceClient implements PeerService {
    * @generated from rpc peer.api.PeerService.GetPeerInfo
    */
   async GetPeerInfo(
-    request: PartialMessage<GetPeerInfoRequest>,
+    request: Message<GetPeerInfoRequest>,
     abortSignal?: AbortSignal,
-  ): Promise<PartialMessage<GetPeerInfoResponse>> {
-    const requestMsg = new GetPeerInfoRequest(request)
+  ): Promise<Message<GetPeerInfoResponse>> {
+    const requestMsg = GetPeerInfoRequest.create(request)
     const result = await this.rpc.request(
       this.service,
       PeerServiceDefinition.methods.GetPeerInfo.name,
-      requestMsg.toBinary(),
+      GetPeerInfoRequest.toBinary(requestMsg),
       abortSignal || undefined,
     )
     return GetPeerInfoResponse.fromBinary(result)
