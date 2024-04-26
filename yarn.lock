@@ -7,12 +7,12 @@
   resolved "https://registry.yarnpkg.com/@aashutoshrathi/word-wrap/-/word-wrap-1.2.6.tgz#bd9154aec9983f77b3a034ecaa015c2e4201f6cf"
   integrity sha512-1Yjs2SvM8TflER/OD3cOjhWWOZb58A2t7wpE2S9XfBYTiIl+XFhQG2bjy4Pu1I+EAlCNUzRDYDdFwFYUKvXcIA==
 
-"@aptre/common@^0.14.2":
-  version "0.14.2"
-  resolved "https://registry.yarnpkg.com/@aptre/common/-/common-0.14.2.tgz#98413b20d9bc760caab533af4f777978cc5bdcad"
-  integrity sha512-Sb7JHukczhtI9YB4ZNf50tU153mZYbUU38qkk6IOa8cYZXGVZWR1o7tRhKkhP7UwD4DAVNrvBTDFmCxKzezKWA==
+"@aptre/common@^0.14.3":
+  version "0.14.3"
+  resolved "https://registry.yarnpkg.com/@aptre/common/-/common-0.14.3.tgz#410c3c5f7543c8252fea8f760ab8795d112cad95"
+  integrity sha512-tYhe86jvQUTnp7Jv4VyiDkqs79z59GiRyNJxvvqJI7UPgVMxQAiT4j9TOKQllFk1ZNzfqnRQH4EYme85TkD0fw==
   dependencies:
-    "@aptre/protobuf-es-lite" "^0.2.5"
+    "@aptre/protobuf-es-lite" "^0.2.6"
     "@bufbuild/protobuf" "^1.8.0"
     "@typescript-eslint/eslint-plugin" "^7.7.0"
     "@typescript-eslint/parser" "^7.7.0"
@@ -20,7 +20,7 @@
     eslint-config-prettier "^9.0.0"
     eslint-plugin-react-hooks "^4.6.1"
     eslint-plugin-unused-imports "^3.0.0"
-    starpc "^0.31.9"
+    starpc "^0.31.10"
 
 "@aptre/it-ws@^1.0.0":
   version "1.0.0"
@@ -32,14 +32,6 @@
     it-stream-types "^2.0.1"
     uint8arrays "^5.0.0"
     ws "^8.4.0"
-
-"@aptre/protobuf-es-lite@^0.2.5":
-  version "0.2.5"
-  resolved "https://registry.yarnpkg.com/@aptre/protobuf-es-lite/-/protobuf-es-lite-0.2.5.tgz#3113bab7b9cedeb61876d961aa487d81df1a168c"
-  integrity sha512-7UhvYNJfe5eoOxGvvrg++AWiwMGG4H3B+TX9BlSs/b4TyehbCtqBUdwhbwnhc6cTAvoTJ/dEr45qdbjTYsmq8g==
-  dependencies:
-    "@bufbuild/protobuf" "^1.9.0"
-    "@bufbuild/protoplugin" "1.9.0"
 
 "@aptre/protobuf-es-lite@^0.2.6":
   version "0.2.6"
@@ -1845,13 +1837,13 @@ sprintf-js@~1.0.2:
   resolved "https://registry.yarnpkg.com/sprintf-js/-/sprintf-js-1.0.3.tgz#04e6926f662895354f3dd015203633b857297e2c"
   integrity sha512-D9cPgkvLlV3t3IzL0D0YLvGA9Ahk4PcvVwUbN0dSGr1aP0Nrt4AEnTUbuGvquEC0mA64Gqt1fzirlRs5ibXx8g==
 
-starpc@^0.31.9:
-  version "0.31.9"
-  resolved "https://registry.yarnpkg.com/starpc/-/starpc-0.31.9.tgz#3aa3ddb3f9c55e9c43c823cd5cf601ae4e855a20"
-  integrity sha512-oH0R3UPbXNERK9ISqU0L/+AO3owYjqzZa8wGkcjRRopq7dMxKJJ3ZpcuFaJIqiuiUbR0XMjXV+W/5fN9uv+TOA==
+starpc@^0.31.10:
+  version "0.31.10"
+  resolved "https://registry.yarnpkg.com/starpc/-/starpc-0.31.10.tgz#384bc4593de6ab8ffb05edaa030cb2874122ceb9"
+  integrity sha512-vkesgDzoVE9WDEi5tCbi9rqX2ezvMMwCbUfHI1Pn2IBaAMLpO3qcAkMH6P87gKVbr8Ztdfk0asfIRnzeaQrQnA==
   dependencies:
     "@aptre/it-ws" "^1.0.0"
-    "@aptre/protobuf-es-lite" "^0.2.5"
+    "@aptre/protobuf-es-lite" "^0.2.6"
     "@bufbuild/protoplugin" "^1.9.0"
     "@chainsafe/libp2p-yamux" "^6.0.2"
     "@libp2p/interface" "^1.3.0"
