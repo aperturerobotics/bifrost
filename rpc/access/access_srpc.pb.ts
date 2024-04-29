@@ -5,10 +5,9 @@
 import {
   LookupRpcServiceRequest,
   LookupRpcServiceResponse,
-} from './access_pb.js'
-import { MethodKind } from '@bufbuild/protobuf'
-import { RpcStreamPacket } from '@go/github.com/aperturerobotics/starpc/rpcstream/rpcstream_pb.js'
-import { Message } from '@aptre/protobuf-es-lite'
+} from './access.pb.js'
+import { Message, MethodKind } from '@aptre/protobuf-es-lite'
+import { RpcStreamPacket } from '@go/github.com/aperturerobotics/starpc/rpcstream/rpcstream.pb.js'
 import {
   buildDecodeMessageTransform,
   buildEncodeMessageTransform,

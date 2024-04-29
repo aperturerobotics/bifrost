@@ -4,8 +4,8 @@ github.com/aperturerobotics/bifrost-nats-client v1.10.1-0.20200831103200-24c3d04
 github.com/aperturerobotics/bifrost-nats-client v1.10.1-0.20200831103200-24c3d0464e58/go.mod h1:ougcjYEZDYV8pVtaNbA5sgYDukkYHyKtSsW/T3B13j0=
 github.com/aperturerobotics/bifrost-nats-server/v2 v2.1.8-0.20221228081037-b7c2df0c151f h1:bmScByQNGDPPy9T+zdwu816XaCbFtD5UDyqZMRiHJ80=
 github.com/aperturerobotics/bifrost-nats-server/v2 v2.1.8-0.20221228081037-b7c2df0c151f/go.mod h1:kIcZtLpq4UIZzOqduYLm1mYU1nuMBtN6XuDCtQ21QT8=
-github.com/aperturerobotics/common v0.14.3 h1:CyIbsjlFcgjNBLT+XshDZcGH1nkrSUSakHMIsaTvm9g=
-github.com/aperturerobotics/common v0.14.3/go.mod h1:MkCLl9iUXglujvO9wAbrZ9bm72mesXaAq288HGnzshA=
+github.com/aperturerobotics/common v0.14.8 h1:FDbodPzWKdg99ZaCpYY2VOUK0qZatjbuZCW98pjur5M=
+github.com/aperturerobotics/common v0.14.8/go.mod h1:MkCLl9iUXglujvO9wAbrZ9bm72mesXaAq288HGnzshA=
 github.com/aperturerobotics/controllerbus v0.44.0 h1:JpUxy+H1fZkA4OaJWY2ehLM73Y189lMiRz27+W7ovGU=
 github.com/aperturerobotics/controllerbus v0.44.0/go.mod h1:yhjKBRCLWbaftgHb7xXLq49//VeewOtoLiUAF3zoFuI=
 github.com/aperturerobotics/entitygraph v0.8.2 h1:pNR5f6DJK+UF0IyXMJwtVXkjDI+KuoJdKiF2QuNH+iE=
@@ -18,10 +18,10 @@ github.com/aperturerobotics/protobuf-go-lite v0.6.0 h1:EE168e2oov6wmDv8AdSAlz2G1
 github.com/aperturerobotics/protobuf-go-lite v0.6.0/go.mod h1:6Bp+C+fI1uh0NmIKpxlxyHMkKtCP9Kb3PHkhOzxG4B8=
 github.com/aperturerobotics/quic-go v0.41.1-0.20240125035303-1093432c45e9 h1:QLhCPPV6tnQpbHqJLvU/aOdp9RNajGLDTAwFsKi7Kow=
 github.com/aperturerobotics/quic-go v0.41.1-0.20240125035303-1093432c45e9/go.mod h1:tY2LVzdNWloFW0Gbg9bK8L49s4UhyUe9uCZIOF6KtuI=
-github.com/aperturerobotics/starpc v0.31.9 h1:rx5TWujX97XnFTzCa/nZj2jAaNLYFjqhShxgQBXjino=
-github.com/aperturerobotics/starpc v0.31.9/go.mod h1:roNNOXrqxQmmj8gnBDzXNFJN/cvORApXNHRfaPApHAo=
-github.com/aperturerobotics/util v1.21.2 h1:8JWrknQX/De3UqWsQhD/GoP+ZejdVqhhqQPnzyxofvc=
-github.com/aperturerobotics/util v1.21.2/go.mod h1:recS+Q4YvyWXlJUSSkixLkf+AHxGcjNKHwebDbN0WiI=
+github.com/aperturerobotics/starpc v0.31.12 h1:Kpa5/NdTxKPMtIaJkW9ZevX0nOj4yi02wqpgC2JKArc=
+github.com/aperturerobotics/starpc v0.31.12/go.mod h1:EhZN09QG2fwCtpmZhVAqpl0I+2Mvu8vEBVR7lbIs5mc=
+github.com/aperturerobotics/util v1.21.3 h1:Leg1xpgA6u7rGORjfndlInJkkGoJ2bqQxudym5tsIwY=
+github.com/aperturerobotics/util v1.21.3/go.mod h1:pqLfG1F49Z+b9GVavx7RTAyTfkhaj4BZrEvTSuCg8xo=
 github.com/blang/semver v3.5.1+incompatible h1:cQNTCjp13qL8KC3Nbxr/y2Bqb63oX6wdnnjpJbkM4JQ=
 github.com/blang/semver v3.5.1+incompatible/go.mod h1:kRBLl5iJ+tD4TcOOxsy/0fnwebNt5EWlYSAyrTnjyyk=
 github.com/cenkalti/backoff v2.2.1+incompatible h1:tNowT99t7UNflLxfYYSlKYsBpXdEet03Pg2g16Swow4=
@@ -164,8 +164,6 @@ github.com/pion/rtcp v1.2.12/go.mod h1:sn6qjxvnwyAkkPzPULIbVqSKI5Dv54Rv7VG0kNxh9
 github.com/pion/rtcp v1.2.14 h1:KCkGV3vJ+4DAJmvP0vaQShsb0xkRfWkO540Gy102KyE=
 github.com/pion/rtcp v1.2.14/go.mod h1:sn6qjxvnwyAkkPzPULIbVqSKI5Dv54Rv7VG0kNxh9L4=
 github.com/pion/rtp v1.8.3/go.mod h1:pBGHaFt/yW7bf1jjWAoUjpSNoDnw98KTMg+jWWvziqU=
-github.com/pion/rtp v1.8.5 h1:uYzINfaK+9yWs7r537z/Rc1SvT8ILjBcmDOpJcTB+OU=
-github.com/pion/rtp v1.8.5/go.mod h1:pBGHaFt/yW7bf1jjWAoUjpSNoDnw98KTMg+jWWvziqU=
 github.com/pion/rtp v1.8.6 h1:MTmn/b0aWWsAzux2AmP8WGllusBVw4NPYPVFFd7jUPw=
 github.com/pion/rtp v1.8.6/go.mod h1:pBGHaFt/yW7bf1jjWAoUjpSNoDnw98KTMg+jWWvziqU=
 github.com/pion/sctp v1.8.13/go.mod h1:YKSgO/bO/6aOMP9LCie1DuD7m+GamiK2yIiPM6vH+GA=
@@ -185,8 +183,6 @@ github.com/pion/transport/v3 v3.0.2 h1:r+40RJR25S9w3jbA6/5uEPTzcdn7ncyU44RWCbHkL
 github.com/pion/transport/v3 v3.0.2/go.mod h1:nIToODoOlb5If2jF9y2Igfx3PFYWfuXi37m0IlWa/D0=
 github.com/pion/turn/v3 v3.0.2 h1:iBonAIIKRwkVUJBFiFd/kSjytP7FlX0HwCyBDJPRDdU=
 github.com/pion/turn/v3 v3.0.2/go.mod h1:vw0Dz420q7VYAF3J4wJKzReLHIo2LGp4ev8nXQexYsc=
-github.com/pion/webrtc/v4 v4.0.0-beta.17 h1:KdAbozM+lQ3Dz1NJ0JATRDQ4W02WUhWwIkvjyBRODL0=
-github.com/pion/webrtc/v4 v4.0.0-beta.17/go.mod h1:I/Z0MFtc6Ok7mN7kZmA1xqU7KA9ycZZx/6eXz5+yD+4=
 github.com/pion/webrtc/v4 v4.0.0-beta.18 h1:qCT7RrVomRu5LBxeoWz8WuJyD8Xt7AxXcJlj81/v4ik=
 github.com/pion/webrtc/v4 v4.0.0-beta.18/go.mod h1:S9LRG5LIld++K8jfPIlS40EmVVdXuotwEXSp20r+KPs=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=

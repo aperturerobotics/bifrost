@@ -7,9 +7,8 @@ import {
   GetPeerInfoResponse,
   IdentifyRequest,
   IdentifyResponse,
-} from './api_pb.js'
-import { MethodKind } from '@bufbuild/protobuf'
-import { Message } from '@aptre/protobuf-es-lite'
+} from './api.pb.js'
+import { Message, MethodKind } from '@aptre/protobuf-es-lite'
 import { buildDecodeMessageTransform, MessageStream, ProtoRpc } from 'starpc'
 
 /**

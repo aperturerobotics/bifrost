@@ -2,8 +2,8 @@
 // @generated from file github.com/aperturerobotics/bifrost/pubsub/api/api.proto (package pubsub.api, syntax proto3)
 /* eslint-disable */
 
-import { SubscribeRequest, SubscribeResponse } from './api_pb.js'
-import { MethodKind } from '@bufbuild/protobuf'
+import { SubscribeRequest, SubscribeResponse } from './api.pb.js'
+import { MethodKind } from '@aptre/protobuf-es-lite'
 import {
   buildDecodeMessageTransform,
   buildEncodeMessageTransform,

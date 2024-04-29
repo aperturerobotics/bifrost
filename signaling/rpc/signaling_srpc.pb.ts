@@ -7,9 +7,8 @@ import {
   ListenResponse,
   SessionRequest,
   SessionResponse,
-} from './signaling_pb.js'
-import { MethodKind } from '@bufbuild/protobuf'
-import { Message } from '@aptre/protobuf-es-lite'
+} from './signaling.pb.js'
+import { Message, MethodKind } from '@aptre/protobuf-es-lite'
 import {
   buildDecodeMessageTransform,
   buildEncodeMessageTransform,
