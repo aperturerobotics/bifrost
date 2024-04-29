@@ -2,10 +2,10 @@
 // @generated from file github.com/aperturerobotics/bifrost/pubsub/api/api.proto (package pubsub.api, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from "@aptre/protobuf-es-lite";
-import { createMessageType, Message } from "@aptre/protobuf-es-lite";
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType, Message } from '@aptre/protobuf-es-lite'
 
-export const protobufPackage = "pubsub.api";
+export const protobufPackage = 'pubsub.api'
 
 /**
  * PublishRequest is a message published via the subscribe channel.
@@ -18,27 +18,29 @@ export type PublishRequest = Message<{
    *
    * @generated from field: bytes data = 1;
    */
-  data?: Uint8Array;
+  data?: Uint8Array
   /**
    * Identifier is a uint32 identifier to use for outgoing status.
    * If zero, no outgoing status response will be sent.
    *
    * @generated from field: uint32 identifier = 2;
    */
-  identifier?: number;
+  identifier?: number
+}>
 
-}>;
-
-export const PublishRequest: MessageType<PublishRequest> = createMessageType(
-  {
-    typeName: "pubsub.api.PublishRequest",
-    fields: [
-        { no: 1, name: "data", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
-        { no: 2, name: "identifier", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    ] as readonly PartialFieldInfo[],
-    packedByDefault: true,
-  },
-);
+export const PublishRequest: MessageType<PublishRequest> = createMessageType({
+  typeName: 'pubsub.api.PublishRequest',
+  fields: [
+    { no: 1, name: 'data', kind: 'scalar', T: 12 /* ScalarType.BYTES */ },
+    {
+      no: 2,
+      name: 'identifier',
+      kind: 'scalar',
+      T: 13 /* ScalarType.UINT32 */,
+    },
+  ] as readonly PartialFieldInfo[],
+  packedByDefault: true,
+})
 
 /**
  * SubcribeRequest is a pubsub subscription request message.
@@ -53,42 +55,55 @@ export type SubscribeRequest = Message<{
    *
    * @generated from field: string channel_id = 1;
    */
-  channelId?: string;
+  channelId?: string
   /**
    * PeerId is the peer identifier of the publisher/subscriber.
    * The peer ID will be used to acquire the peer private key.
    *
    * @generated from field: string peer_id = 2;
    */
-  peerId?: string;
+  peerId?: string
   /**
    * PrivKeyPem is an alternate to PeerId, specify private key inline.
    * Overrides PeerId if set.
    *
    * @generated from field: string priv_key_pem = 3;
    */
-  privKeyPem?: string;
+  privKeyPem?: string
   /**
    * PublishRequest contains a publish message request.
    *
    * @generated from field: pubsub.api.PublishRequest publish_request = 4;
    */
-  publishRequest?: PublishRequest;
+  publishRequest?: PublishRequest
+}>
 
-}>;
-
-export const SubscribeRequest: MessageType<SubscribeRequest> = createMessageType(
-  {
-    typeName: "pubsub.api.SubscribeRequest",
+export const SubscribeRequest: MessageType<SubscribeRequest> =
+  createMessageType({
+    typeName: 'pubsub.api.SubscribeRequest',
     fields: [
-        { no: 1, name: "channel_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-        { no: 2, name: "peer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-        { no: 3, name: "priv_key_pem", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-        { no: 4, name: "publish_request", kind: "message", T: () => PublishRequest },
+      {
+        no: 1,
+        name: 'channel_id',
+        kind: 'scalar',
+        T: 9 /* ScalarType.STRING */,
+      },
+      { no: 2, name: 'peer_id', kind: 'scalar', T: 9 /* ScalarType.STRING */ },
+      {
+        no: 3,
+        name: 'priv_key_pem',
+        kind: 'scalar',
+        T: 9 /* ScalarType.STRING */,
+      },
+      {
+        no: 4,
+        name: 'publish_request',
+        kind: 'message',
+        T: () => PublishRequest,
+      },
     ] as readonly PartialFieldInfo[],
     packedByDefault: true,
-  },
-);
+  })
 
 /**
  * IncomingMessage implements Message with a proto object.
@@ -101,33 +116,40 @@ export type IncomingMessage = Message<{
    *
    * @generated from field: string from_peer_id = 1;
    */
-  fromPeerId?: string;
+  fromPeerId?: string
   /**
    * Authenticated indicates if the message is verified to be from the sender.
    *
    * @generated from field: bool authenticated = 2;
    */
-  authenticated?: boolean;
+  authenticated?: boolean
   /**
    * Data is the inner data.
    *
    * @generated from field: bytes data = 3;
    */
-  data?: Uint8Array;
+  data?: Uint8Array
+}>
 
-}>;
-
-export const IncomingMessage: MessageType<IncomingMessage> = createMessageType(
-  {
-    typeName: "pubsub.api.IncomingMessage",
-    fields: [
-        { no: 1, name: "from_peer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-        { no: 2, name: "authenticated", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-        { no: 3, name: "data", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
-    ] as readonly PartialFieldInfo[],
-    packedByDefault: true,
-  },
-);
+export const IncomingMessage: MessageType<IncomingMessage> = createMessageType({
+  typeName: 'pubsub.api.IncomingMessage',
+  fields: [
+    {
+      no: 1,
+      name: 'from_peer_id',
+      kind: 'scalar',
+      T: 9 /* ScalarType.STRING */,
+    },
+    {
+      no: 2,
+      name: 'authenticated',
+      kind: 'scalar',
+      T: 8 /* ScalarType.BOOL */,
+    },
+    { no: 3, name: 'data', kind: 'scalar', T: 12 /* ScalarType.BYTES */ },
+  ] as readonly PartialFieldInfo[],
+  packedByDefault: true,
+})
 
 /**
  * OutgoingStatus is status of an outgoing message.
@@ -140,26 +162,28 @@ export type OutgoingStatus = Message<{
    *
    * @generated from field: uint32 identifier = 1;
    */
-  identifier?: number;
+  identifier?: number
   /**
    * Sent indicates if the message was sent.
    *
    * @generated from field: bool sent = 2;
    */
-  sent?: boolean;
+  sent?: boolean
+}>
 
-}>;
-
-export const OutgoingStatus: MessageType<OutgoingStatus> = createMessageType(
-  {
-    typeName: "pubsub.api.OutgoingStatus",
-    fields: [
-        { no: 1, name: "identifier", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-        { no: 2, name: "sent", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    ] as readonly PartialFieldInfo[],
-    packedByDefault: true,
-  },
-);
+export const OutgoingStatus: MessageType<OutgoingStatus> = createMessageType({
+  typeName: 'pubsub.api.OutgoingStatus',
+  fields: [
+    {
+      no: 1,
+      name: 'identifier',
+      kind: 'scalar',
+      T: 13 /* ScalarType.UINT32 */,
+    },
+    { no: 2, name: 'sent', kind: 'scalar', T: 8 /* ScalarType.BOOL */ },
+  ] as readonly PartialFieldInfo[],
+  packedByDefault: true,
+})
 
 /**
  * SubscripionStatus is the status of the subscription handle.
@@ -172,19 +196,17 @@ export type SubscriptionStatus = Message<{
    *
    * @generated from field: bool subscribed = 1;
    */
-  subscribed?: boolean;
+  subscribed?: boolean
+}>
 
-}>;
-
-export const SubscriptionStatus: MessageType<SubscriptionStatus> = createMessageType(
-  {
-    typeName: "pubsub.api.SubscriptionStatus",
+export const SubscriptionStatus: MessageType<SubscriptionStatus> =
+  createMessageType({
+    typeName: 'pubsub.api.SubscriptionStatus',
     fields: [
-        { no: 1, name: "subscribed", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+      { no: 1, name: 'subscribed', kind: 'scalar', T: 8 /* ScalarType.BOOL */ },
     ] as readonly PartialFieldInfo[],
     packedByDefault: true,
-  },
-);
+  })
 
 /**
  * SubcribeResponse is a pubsub subscription response message.
@@ -197,32 +219,44 @@ export type SubscribeResponse = Message<{
    *
    * @generated from field: pubsub.api.IncomingMessage incoming_message = 1;
    */
-  incomingMessage?: IncomingMessage;
+  incomingMessage?: IncomingMessage
   /**
    * OutgoingStatus is status of an outgoing message.
    * Sent when a Publish request finishes.
    *
    * @generated from field: pubsub.api.OutgoingStatus outgoing_status = 2;
    */
-  outgoingStatus?: OutgoingStatus;
+  outgoingStatus?: OutgoingStatus
   /**
    * SubscriptionStatus is the status of the subscription
    *
    * @generated from field: pubsub.api.SubscriptionStatus subscription_status = 3;
    */
-  subscriptionStatus?: SubscriptionStatus;
+  subscriptionStatus?: SubscriptionStatus
+}>
 
-}>;
-
-export const SubscribeResponse: MessageType<SubscribeResponse> = createMessageType(
-  {
-    typeName: "pubsub.api.SubscribeResponse",
+export const SubscribeResponse: MessageType<SubscribeResponse> =
+  createMessageType({
+    typeName: 'pubsub.api.SubscribeResponse',
     fields: [
-        { no: 1, name: "incoming_message", kind: "message", T: () => IncomingMessage },
-        { no: 2, name: "outgoing_status", kind: "message", T: () => OutgoingStatus },
-        { no: 3, name: "subscription_status", kind: "message", T: () => SubscriptionStatus },
+      {
+        no: 1,
+        name: 'incoming_message',
+        kind: 'message',
+        T: () => IncomingMessage,
+      },
+      {
+        no: 2,
+        name: 'outgoing_status',
+        kind: 'message',
+        T: () => OutgoingStatus,
+      },
+      {
+        no: 3,
+        name: 'subscription_status',
+        kind: 'message',
+        T: () => SubscriptionStatus,
+      },
     ] as readonly PartialFieldInfo[],
     packedByDefault: true,
-  },
-);
-
+  })

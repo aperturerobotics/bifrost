@@ -2,10 +2,14 @@
 // @generated from file github.com/aperturerobotics/bifrost/stream/api/rpc/rpc.proto (package stream.api.rpc, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from "@aptre/protobuf-es-lite";
-import { createEnumType, createMessageType, Message } from "@aptre/protobuf-es-lite";
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import {
+  createEnumType,
+  createMessageType,
+  Message,
+} from '@aptre/protobuf-es-lite'
 
-export const protobufPackage = "stream.api.rpc";
+export const protobufPackage = 'stream.api.rpc'
 
 /**
  * StreamState is state for the stream related calls.
@@ -36,11 +40,11 @@ export enum StreamState {
 }
 
 // StreamState_Enum is the enum type for StreamState.
-export const StreamState_Enum = createEnumType("stream.api.rpc.StreamState", [
-  { no: 0, name: "StreamState_NONE" },
-  { no: 1, name: "StreamState_ESTABLISHING" },
-  { no: 2, name: "StreamState_ESTABLISHED" },
-]);
+export const StreamState_Enum = createEnumType('stream.api.rpc.StreamState', [
+  { no: 0, name: 'StreamState_NONE' },
+  { no: 1, name: 'StreamState_ESTABLISHING' },
+  { no: 2, name: 'StreamState_ESTABLISHED' },
+])
 
 /**
  * Data is a data packet.
@@ -54,24 +58,20 @@ export type Data = Message<{
    *
    * @generated from field: bytes data = 1;
    */
-  data?: Uint8Array;
+  data?: Uint8Array
   /**
    * State indicates the stream state.
    *
    * @generated from field: stream.api.rpc.StreamState state = 2;
    */
-  state?: StreamState;
+  state?: StreamState
+}>
 
-}>;
-
-export const Data: MessageType<Data> = createMessageType(
-  {
-    typeName: "stream.api.rpc.Data",
-    fields: [
-        { no: 1, name: "data", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
-        { no: 2, name: "state", kind: "enum", T: StreamState_Enum },
-    ] as readonly PartialFieldInfo[],
-    packedByDefault: true,
-  },
-);
-
+export const Data: MessageType<Data> = createMessageType({
+  typeName: 'stream.api.rpc.Data',
+  fields: [
+    { no: 1, name: 'data', kind: 'scalar', T: 12 /* ScalarType.BYTES */ },
+    { no: 2, name: 'state', kind: 'enum', T: StreamState_Enum },
+  ] as readonly PartialFieldInfo[],
+  packedByDefault: true,
+})

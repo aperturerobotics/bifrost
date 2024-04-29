@@ -2,10 +2,10 @@
 // @generated from file github.com/aperturerobotics/bifrost/peer/controller/config.proto (package peer.controller, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from "@aptre/protobuf-es-lite";
-import { createMessageType, Message } from "@aptre/protobuf-es-lite";
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType, Message } from '@aptre/protobuf-es-lite'
 
-export const protobufPackage = "peer.controller";
+export const protobufPackage = 'peer.controller'
 
 /**
  * Config is the peer controller config.
@@ -20,14 +20,14 @@ export type Config = Message<{
    *
    * @generated from field: string priv_key = 1;
    */
-  privKey?: string;
+  privKey?: string
   /**
    * PubKey is the peer public key.
    * Ignored if priv_key is set.
    *
    * @generated from field: string pub_key = 2;
    */
-  pubKey?: string;
+  pubKey?: string
   /**
    * PeerId is the peer identifier.
    * Ignored if priv_key or pub_key are set.
@@ -35,19 +35,15 @@ export type Config = Message<{
    *
    * @generated from field: string peer_id = 3;
    */
-  peerId?: string;
+  peerId?: string
+}>
 
-}>;
-
-export const Config: MessageType<Config> = createMessageType(
-  {
-    typeName: "peer.controller.Config",
-    fields: [
-        { no: 1, name: "priv_key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-        { no: 2, name: "pub_key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-        { no: 3, name: "peer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    ] as readonly PartialFieldInfo[],
-    packedByDefault: true,
-  },
-);
-
+export const Config: MessageType<Config> = createMessageType({
+  typeName: 'peer.controller.Config',
+  fields: [
+    { no: 1, name: 'priv_key', kind: 'scalar', T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: 'pub_key', kind: 'scalar', T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: 'peer_id', kind: 'scalar', T: 9 /* ScalarType.STRING */ },
+  ] as readonly PartialFieldInfo[],
+  packedByDefault: true,
+})

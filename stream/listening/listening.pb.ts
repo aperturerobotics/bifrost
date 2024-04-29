@@ -2,10 +2,10 @@
 // @generated from file github.com/aperturerobotics/bifrost/stream/listening/listening.proto (package stream.listening, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from "@aptre/protobuf-es-lite";
-import { createMessageType, Message } from "@aptre/protobuf-es-lite";
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType, Message } from '@aptre/protobuf-es-lite'
 
-export const protobufPackage = "stream.listening";
+export const protobufPackage = 'stream.listening'
 
 /**
  * Config configures the listening controller.
@@ -19,60 +19,81 @@ export type Config = Message<{
    *
    * @generated from field: string local_peer_id = 1;
    */
-  localPeerId?: string;
+  localPeerId?: string
   /**
    * RemotePeerId is the peer ID to forward incoming connections to.
    *
    * @generated from field: string remote_peer_id = 2;
    */
-  remotePeerId?: string;
+  remotePeerId?: string
   /**
    * ProtocolId is the protocol ID to assign to incoming connections.
    *
    * @generated from field: string protocol_id = 3;
    */
-  protocolId?: string;
+  protocolId?: string
   /**
    * ListenMultiaddr is the listening multiaddress.
    *
    * @generated from field: string listen_multiaddr = 4;
    */
-  listenMultiaddr?: string;
+  listenMultiaddr?: string
   /**
    * TransportId sets a transport ID constraint.
    * Can be empty.
    *
    * @generated from field: uint64 transport_id = 5;
    */
-  transportId?: bigint;
+  transportId?: bigint
   /**
    * Reliable indicates the stream should be reliable.
    *
    * @generated from field: bool reliable = 6;
    */
-  reliable?: boolean;
+  reliable?: boolean
   /**
    * Encrypted indicates the stream should be encrypted.
    *
    * @generated from field: bool encrypted = 7;
    */
-  encrypted?: boolean;
+  encrypted?: boolean
+}>
 
-}>;
-
-export const Config: MessageType<Config> = createMessageType(
-  {
-    typeName: "stream.listening.Config",
-    fields: [
-        { no: 1, name: "local_peer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-        { no: 2, name: "remote_peer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-        { no: 3, name: "protocol_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-        { no: 4, name: "listen_multiaddr", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-        { no: 5, name: "transport_id", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
-        { no: 6, name: "reliable", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-        { no: 7, name: "encrypted", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    ] as readonly PartialFieldInfo[],
-    packedByDefault: true,
-  },
-);
-
+export const Config: MessageType<Config> = createMessageType({
+  typeName: 'stream.listening.Config',
+  fields: [
+    {
+      no: 1,
+      name: 'local_peer_id',
+      kind: 'scalar',
+      T: 9 /* ScalarType.STRING */,
+    },
+    {
+      no: 2,
+      name: 'remote_peer_id',
+      kind: 'scalar',
+      T: 9 /* ScalarType.STRING */,
+    },
+    {
+      no: 3,
+      name: 'protocol_id',
+      kind: 'scalar',
+      T: 9 /* ScalarType.STRING */,
+    },
+    {
+      no: 4,
+      name: 'listen_multiaddr',
+      kind: 'scalar',
+      T: 9 /* ScalarType.STRING */,
+    },
+    {
+      no: 5,
+      name: 'transport_id',
+      kind: 'scalar',
+      T: 4 /* ScalarType.UINT64 */,
+    },
+    { no: 6, name: 'reliable', kind: 'scalar', T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: 'encrypted', kind: 'scalar', T: 8 /* ScalarType.BOOL */ },
+  ] as readonly PartialFieldInfo[],
+  packedByDefault: true,
+})

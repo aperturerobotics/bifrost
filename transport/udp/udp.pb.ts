@@ -2,12 +2,12 @@
 // @generated from file github.com/aperturerobotics/bifrost/transport/udp/udp.proto (package udp, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from "@aptre/protobuf-es-lite";
-import { createMessageType, Message } from "@aptre/protobuf-es-lite";
-import { Opts } from "../common/pconn/pconn.pb.js";
-import { DialerOpts } from "../common/dialer/dialer.pb.js";
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType, Message } from '@aptre/protobuf-es-lite'
+import { Opts } from '../common/pconn/pconn.pb.js'
+import { DialerOpts } from '../common/dialer/dialer.pb.js'
 
-export const protobufPackage = "udp";
+export const protobufPackage = 'udp'
 
 /**
  * Config is the configuration for the udp transport.
@@ -21,39 +21,51 @@ export type Config = Message<{
    *
    * @generated from field: string transport_peer_id = 1;
    */
-  transportPeerId?: string;
+  transportPeerId?: string
   /**
    * ListenAddr contains the address to listen on.
    * Has no effect in the browser.
    *
    * @generated from field: string listen_addr = 2;
    */
-  listenAddr?: string;
+  listenAddr?: string
   /**
    * PacketOpts are options to set on the packet connection.
    *
    * @generated from field: pconn.Opts packet_opts = 4;
    */
-  packetOpts?: Opts;
+  packetOpts?: Opts
   /**
    * Dialers maps peer IDs to dialers.
    *
    * @generated from field: map<string, dialer.DialerOpts> dialers = 5;
    */
-  dialers?: { [key: string]: DialerOpts };
+  dialers?: { [key: string]: DialerOpts }
+}>
 
-}>;
-
-export const Config: MessageType<Config> = createMessageType(
-  {
-    typeName: "udp.Config",
-    fields: [
-        { no: 1, name: "transport_peer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-        { no: 2, name: "listen_addr", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-        { no: 4, name: "packet_opts", kind: "message", T: () => Opts },
-        { no: 5, name: "dialers", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: () => DialerOpts} },
-    ] as readonly PartialFieldInfo[],
-    packedByDefault: true,
-  },
-);
-
+export const Config: MessageType<Config> = createMessageType({
+  typeName: 'udp.Config',
+  fields: [
+    {
+      no: 1,
+      name: 'transport_peer_id',
+      kind: 'scalar',
+      T: 9 /* ScalarType.STRING */,
+    },
+    {
+      no: 2,
+      name: 'listen_addr',
+      kind: 'scalar',
+      T: 9 /* ScalarType.STRING */,
+    },
+    { no: 4, name: 'packet_opts', kind: 'message', T: () => Opts },
+    {
+      no: 5,
+      name: 'dialers',
+      kind: 'map',
+      K: 9 /* ScalarType.STRING */,
+      V: { kind: 'message', T: () => DialerOpts },
+    },
+  ] as readonly PartialFieldInfo[],
+  packedByDefault: true,
+})

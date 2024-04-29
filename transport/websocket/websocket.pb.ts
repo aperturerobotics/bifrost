@@ -2,12 +2,12 @@
 // @generated from file github.com/aperturerobotics/bifrost/transport/websocket/websocket.proto (package websocket, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from "@aptre/protobuf-es-lite";
-import { createMessageType, Message } from "@aptre/protobuf-es-lite";
-import { Opts } from "../common/quic/quic.pb.js";
-import { DialerOpts } from "../common/dialer/dialer.pb.js";
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType, Message } from '@aptre/protobuf-es-lite'
+import { Opts } from '../common/quic/quic.pb.js'
+import { DialerOpts } from '../common/dialer/dialer.pb.js'
 
-export const protobufPackage = "websocket";
+export const protobufPackage = 'websocket'
 
 /**
  * Config is the configuration for the Websocket transport.
@@ -26,14 +26,14 @@ export type Config = Message<{
    *
    * @generated from field: string transport_peer_id = 1;
    */
-  transportPeerId?: string;
+  transportPeerId?: string
   /**
    * ListenAddr contains the address to listen on.
    * Has no effect in the browser.
    *
    * @generated from field: string listen_addr = 2;
    */
-  listenAddr?: string;
+  listenAddr?: string
   /**
    * Quic contains the quic protocol options.
    *
@@ -42,20 +42,20 @@ export type Config = Message<{
    *
    * @generated from field: transport.quic.Opts quic = 3;
    */
-  quic?: Opts;
+  quic?: Opts
   /**
    * Dialers maps peer IDs to dialers.
    *
    * @generated from field: map<string, dialer.DialerOpts> dialers = 4;
    */
-  dialers?: { [key: string]: DialerOpts };
+  dialers?: { [key: string]: DialerOpts }
   /**
    * HttpPath is the http path to expose the websocket.
    * If unset, ignores the incoming request path.
    *
    * @generated from field: string http_path = 5;
    */
-  httpPath?: string;
+  httpPath?: string
   /**
    * DisableServePeerId disables serving the peer id.
    * If this is unset the peer ID is available at http_path+"/peer"
@@ -63,22 +63,39 @@ export type Config = Message<{
    *
    * @generated from field: bool disable_serve_peer_id = 6;
    */
-  disableServePeerId?: boolean;
+  disableServePeerId?: boolean
+}>
 
-}>;
-
-export const Config: MessageType<Config> = createMessageType(
-  {
-    typeName: "websocket.Config",
-    fields: [
-        { no: 1, name: "transport_peer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-        { no: 2, name: "listen_addr", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-        { no: 3, name: "quic", kind: "message", T: () => Opts },
-        { no: 4, name: "dialers", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: () => DialerOpts} },
-        { no: 5, name: "http_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-        { no: 6, name: "disable_serve_peer_id", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    ] as readonly PartialFieldInfo[],
-    packedByDefault: true,
-  },
-);
-
+export const Config: MessageType<Config> = createMessageType({
+  typeName: 'websocket.Config',
+  fields: [
+    {
+      no: 1,
+      name: 'transport_peer_id',
+      kind: 'scalar',
+      T: 9 /* ScalarType.STRING */,
+    },
+    {
+      no: 2,
+      name: 'listen_addr',
+      kind: 'scalar',
+      T: 9 /* ScalarType.STRING */,
+    },
+    { no: 3, name: 'quic', kind: 'message', T: () => Opts },
+    {
+      no: 4,
+      name: 'dialers',
+      kind: 'map',
+      K: 9 /* ScalarType.STRING */,
+      V: { kind: 'message', T: () => DialerOpts },
+    },
+    { no: 5, name: 'http_path', kind: 'scalar', T: 9 /* ScalarType.STRING */ },
+    {
+      no: 6,
+      name: 'disable_serve_peer_id',
+      kind: 'scalar',
+      T: 8 /* ScalarType.BOOL */,
+    },
+  ] as readonly PartialFieldInfo[],
+  packedByDefault: true,
+})

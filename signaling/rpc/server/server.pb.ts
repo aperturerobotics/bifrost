@@ -2,11 +2,11 @@
 // @generated from file github.com/aperturerobotics/bifrost/signaling/rpc/server/server.proto (package signaling.rpc.server, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from "@aptre/protobuf-es-lite";
-import { createMessageType, Message } from "@aptre/protobuf-es-lite";
-import { Config as Config$1 } from "../../../stream/srpc/server/server.pb.js";
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType, Message } from '@aptre/protobuf-es-lite'
+import { Config as Config$1 } from '../../../stream/srpc/server/server.pb.js'
 
-export const protobufPackage = "signaling.rpc.server";
+export const protobufPackage = 'signaling.rpc.server'
 
 /**
  * Config is the configuration for the Signaling RPC server.
@@ -19,17 +19,13 @@ export type Config = Message<{
    *
    * @generated from field: stream.srpc.server.Config server = 1;
    */
-  server?: Config$1;
+  server?: Config$1
+}>
 
-}>;
-
-export const Config: MessageType<Config> = createMessageType(
-  {
-    typeName: "signaling.rpc.server.Config",
-    fields: [
-        { no: 1, name: "server", kind: "message", T: () => Config$1 },
-    ] as readonly PartialFieldInfo[],
-    packedByDefault: true,
-  },
-);
-
+export const Config: MessageType<Config> = createMessageType({
+  typeName: 'signaling.rpc.server.Config',
+  fields: [
+    { no: 1, name: 'server', kind: 'message', T: () => Config$1 },
+  ] as readonly PartialFieldInfo[],
+  packedByDefault: true,
+})

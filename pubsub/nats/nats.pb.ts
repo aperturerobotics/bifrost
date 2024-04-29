@@ -2,12 +2,16 @@
 // @generated from file github.com/aperturerobotics/bifrost/pubsub/nats/nats.proto (package nats, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from "@aptre/protobuf-es-lite";
-import { createEnumType, createMessageType, Message } from "@aptre/protobuf-es-lite";
-import type { HashType } from "../../hash/hash.pb.js";
-import { HashType_Enum } from "../../hash/hash.pb.js";
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import {
+  createEnumType,
+  createMessageType,
+  Message,
+} from '@aptre/protobuf-es-lite'
+import type { HashType } from '../../hash/hash.pb.js'
+import { HashType_Enum } from '../../hash/hash.pb.js'
 
-export const protobufPackage = "nats";
+export const protobufPackage = 'nats'
 
 /**
  * NatsConnType indicates the type of nats conn a stream represents.
@@ -40,11 +44,11 @@ export enum NatsConnType {
 }
 
 // NatsConnType_Enum is the enum type for NatsConnType.
-export const NatsConnType_Enum = createEnumType("nats.NatsConnType", [
-  { no: 0, name: "NatsConnType_UNKNOWN" },
-  { no: 1, name: "NatsConnType_CLIENT" },
-  { no: 2, name: "NatsConnType_ROUTER" },
-]);
+export const NatsConnType_Enum = createEnumType('nats.NatsConnType', [
+  { no: 0, name: 'NatsConnType_UNKNOWN' },
+  { no: 1, name: 'NatsConnType_CLIENT' },
+  { no: 2, name: 'NatsConnType_ROUTER' },
+])
 
 /**
  * Config configures the nats router, hosting a nats.io routing node.
@@ -60,48 +64,54 @@ export type Config = Message<{
    *
    * @generated from field: string cluster_name = 1;
    */
-  clusterName?: string;
+  clusterName?: string
   /**
    * PublishHashType is the hash type to use when signing published messages.
    * Defaults to sha256
    *
    * @generated from field: hash.HashType publish_hash_type = 2;
    */
-  publishHashType?: HashType;
+  publishHashType?: HashType
   /**
    * LogDebug turns on extended debugging logging.
    *
    * @generated from field: bool log_debug = 3;
    */
-  logDebug?: boolean;
+  logDebug?: boolean
   /**
    * LogTrace turns on tracing logging.
    * implies log_debug.
    *
    * @generated from field: bool log_trace = 4;
    */
-  logTrace?: boolean;
+  logTrace?: boolean
   /**
    * LogTraceVrebose turns on verbose tracing logging.
    * Implies log_trace and log_debug.
    *
    * @generated from field: bool log_trace_verbose = 5;
    */
-  logTraceVerbose?: boolean;
+  logTraceVerbose?: boolean
+}>
 
-}>;
-
-export const Config: MessageType<Config> = createMessageType(
-  {
-    typeName: "nats.Config",
-    fields: [
-        { no: 1, name: "cluster_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-        { no: 2, name: "publish_hash_type", kind: "enum", T: HashType_Enum },
-        { no: 3, name: "log_debug", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-        { no: 4, name: "log_trace", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-        { no: 5, name: "log_trace_verbose", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    ] as readonly PartialFieldInfo[],
-    packedByDefault: true,
-  },
-);
-
+export const Config: MessageType<Config> = createMessageType({
+  typeName: 'nats.Config',
+  fields: [
+    {
+      no: 1,
+      name: 'cluster_name',
+      kind: 'scalar',
+      T: 9 /* ScalarType.STRING */,
+    },
+    { no: 2, name: 'publish_hash_type', kind: 'enum', T: HashType_Enum },
+    { no: 3, name: 'log_debug', kind: 'scalar', T: 8 /* ScalarType.BOOL */ },
+    { no: 4, name: 'log_trace', kind: 'scalar', T: 8 /* ScalarType.BOOL */ },
+    {
+      no: 5,
+      name: 'log_trace_verbose',
+      kind: 'scalar',
+      T: 8 /* ScalarType.BOOL */,
+    },
+  ] as readonly PartialFieldInfo[],
+  packedByDefault: true,
+})

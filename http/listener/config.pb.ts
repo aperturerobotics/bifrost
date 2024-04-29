@@ -2,10 +2,10 @@
 // @generated from file github.com/aperturerobotics/bifrost/http/listener/config.proto (package bifrost.http.listener, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from "@aptre/protobuf-es-lite";
-import { createMessageType, Message } from "@aptre/protobuf-es-lite";
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType, Message } from '@aptre/protobuf-es-lite'
 
-export const protobufPackage = "bifrost.http.listener";
+export const protobufPackage = 'bifrost.http.listener'
 
 /**
  * Config configures a http server that listens on a port.
@@ -22,20 +22,20 @@ export type Config = Message<{
    *
    * @generated from field: string addr = 1;
    */
-  addr?: string;
+  addr?: string
   /**
    * ClientId is the client id to set on LookupHTTPHandler.
    *
    * @generated from field: string client_id = 2;
    */
-  clientId?: string;
+  clientId?: string
   /**
    * CertFile is the path to the certificate file to use for https.
    * Can be unset to use HTTP.
    *
    * @generated from field: string cert_file = 3;
    */
-  certFile?: string;
+  certFile?: string
   /**
    * KeyFile is the path to the key file to use for https.
    * Cannot be unset if cert_file is set.
@@ -43,28 +43,24 @@ export type Config = Message<{
    *
    * @generated from field: string key_file = 4;
    */
-  keyFile?: string;
+  keyFile?: string
   /**
    * Wait indicates to wait for LookupHTTPHandler even if it becomes idle.
    * If false: returns 404 not found if LookupHTTPHandler becomes idle.
    *
    * @generated from field: bool wait = 5;
    */
-  wait?: boolean;
+  wait?: boolean
+}>
 
-}>;
-
-export const Config: MessageType<Config> = createMessageType(
-  {
-    typeName: "bifrost.http.listener.Config",
-    fields: [
-        { no: 1, name: "addr", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-        { no: 2, name: "client_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-        { no: 3, name: "cert_file", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-        { no: 4, name: "key_file", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-        { no: 5, name: "wait", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    ] as readonly PartialFieldInfo[],
-    packedByDefault: true,
-  },
-);
-
+export const Config: MessageType<Config> = createMessageType({
+  typeName: 'bifrost.http.listener.Config',
+  fields: [
+    { no: 1, name: 'addr', kind: 'scalar', T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: 'client_id', kind: 'scalar', T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: 'cert_file', kind: 'scalar', T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: 'key_file', kind: 'scalar', T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: 'wait', kind: 'scalar', T: 8 /* ScalarType.BOOL */ },
+  ] as readonly PartialFieldInfo[],
+  packedByDefault: true,
+})

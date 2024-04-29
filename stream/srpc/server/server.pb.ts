@@ -2,10 +2,10 @@
 // @generated from file github.com/aperturerobotics/bifrost/stream/srpc/server/server.proto (package stream.srpc.server, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from "@aptre/protobuf-es-lite";
-import { createMessageType, Message } from "@aptre/protobuf-es-lite";
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType, Message } from '@aptre/protobuf-es-lite'
 
-export const protobufPackage = "stream.srpc.server";
+export const protobufPackage = 'stream.srpc.server'
 
 /**
  * Config configures the server for the srpc service.
@@ -19,32 +19,45 @@ export type Config = Message<{
    *
    * @generated from field: repeated string peer_ids = 1;
    */
-  peerIds?: string[];
+  peerIds?: string[]
   /**
    * ProtocolIds is the list of protocol ids to listen on.
    * If empty, no incoming streams will be accepted.
    *
    * @generated from field: repeated string protocol_ids = 2;
    */
-  protocolIds?: string[];
+  protocolIds?: string[]
   /**
    * DisableEstablishLink disables adding an EstablishLink directive for each incoming peer.
    *
    * @generated from field: bool disable_establish_link = 3;
    */
-  disableEstablishLink?: boolean;
+  disableEstablishLink?: boolean
+}>
 
-}>;
-
-export const Config: MessageType<Config> = createMessageType(
-  {
-    typeName: "stream.srpc.server.Config",
-    fields: [
-        { no: 1, name: "peer_ids", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-        { no: 2, name: "protocol_ids", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-        { no: 3, name: "disable_establish_link", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    ] as readonly PartialFieldInfo[],
-    packedByDefault: true,
-  },
-);
-
+export const Config: MessageType<Config> = createMessageType({
+  typeName: 'stream.srpc.server.Config',
+  fields: [
+    {
+      no: 1,
+      name: 'peer_ids',
+      kind: 'scalar',
+      T: 9 /* ScalarType.STRING */,
+      repeated: true,
+    },
+    {
+      no: 2,
+      name: 'protocol_ids',
+      kind: 'scalar',
+      T: 9 /* ScalarType.STRING */,
+      repeated: true,
+    },
+    {
+      no: 3,
+      name: 'disable_establish_link',
+      kind: 'scalar',
+      T: 8 /* ScalarType.BOOL */,
+    },
+  ] as readonly PartialFieldInfo[],
+  packedByDefault: true,
+})

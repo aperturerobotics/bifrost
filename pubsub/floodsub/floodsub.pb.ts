@@ -2,13 +2,13 @@
 // @generated from file github.com/aperturerobotics/bifrost/pubsub/floodsub/floodsub.proto (package floodsub, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from "@aptre/protobuf-es-lite";
-import { createMessageType, Message } from "@aptre/protobuf-es-lite";
-import type { HashType } from "../../hash/hash.pb.js";
-import { HashType_Enum } from "../../hash/hash.pb.js";
-import { SignedMsg } from "../../peer/peer.pb.js";
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType, Message } from '@aptre/protobuf-es-lite'
+import type { HashType } from '../../hash/hash.pb.js'
+import { HashType_Enum } from '../../hash/hash.pb.js'
+import { SignedMsg } from '../../peer/peer.pb.js'
 
-export const protobufPackage = "floodsub";
+export const protobufPackage = 'floodsub'
 
 /**
  * Config configures the floodsub router.
@@ -22,19 +22,16 @@ export type Config = Message<{
    *
    * @generated from field: hash.HashType publish_hash_type = 1;
    */
-  publishHashType?: HashType;
+  publishHashType?: HashType
+}>
 
-}>;
-
-export const Config: MessageType<Config> = createMessageType(
-  {
-    typeName: "floodsub.Config",
-    fields: [
-        { no: 1, name: "publish_hash_type", kind: "enum", T: HashType_Enum },
-    ] as readonly PartialFieldInfo[],
-    packedByDefault: true,
-  },
-);
+export const Config: MessageType<Config> = createMessageType({
+  typeName: 'floodsub.Config',
+  fields: [
+    { no: 1, name: 'publish_hash_type', kind: 'enum', T: HashType_Enum },
+  ] as readonly PartialFieldInfo[],
+  packedByDefault: true,
+})
 
 /**
  * SubscriptionOpts are subscription options.
@@ -47,26 +44,29 @@ export type SubscriptionOpts = Message<{
    *
    * @generated from field: bool subscribe = 1;
    */
-  subscribe?: boolean;
+  subscribe?: boolean
   /**
    * ChannelId is the channel to subscribe to.
    *
    * @generated from field: string channel_id = 2;
    */
-  channelId?: string;
+  channelId?: string
+}>
 
-}>;
-
-export const SubscriptionOpts: MessageType<SubscriptionOpts> = createMessageType(
-  {
-    typeName: "floodsub.SubscriptionOpts",
+export const SubscriptionOpts: MessageType<SubscriptionOpts> =
+  createMessageType({
+    typeName: 'floodsub.SubscriptionOpts',
     fields: [
-        { no: 1, name: "subscribe", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-        { no: 2, name: "channel_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+      { no: 1, name: 'subscribe', kind: 'scalar', T: 8 /* ScalarType.BOOL */ },
+      {
+        no: 2,
+        name: 'channel_id',
+        kind: 'scalar',
+        T: 9 /* ScalarType.STRING */,
+      },
     ] as readonly PartialFieldInfo[],
     packedByDefault: true,
-  },
-);
+  })
 
 /**
  * Packet is the floodsub packet.
@@ -79,24 +79,32 @@ export type Packet = Message<{
    *
    * @generated from field: repeated floodsub.SubscriptionOpts subscriptions = 1;
    */
-  subscriptions?: SubscriptionOpts[];
+  subscriptions?: SubscriptionOpts[]
   /**
    * Publish contains messages we are publishing.
    *
    * @generated from field: repeated peer.SignedMsg publish = 2;
    */
-  publish?: SignedMsg[];
+  publish?: SignedMsg[]
+}>
 
-}>;
-
-export const Packet: MessageType<Packet> = createMessageType(
-  {
-    typeName: "floodsub.Packet",
-    fields: [
-        { no: 1, name: "subscriptions", kind: "message", T: () => SubscriptionOpts, repeated: true },
-        { no: 2, name: "publish", kind: "message", T: () => SignedMsg, repeated: true },
-    ] as readonly PartialFieldInfo[],
-    packedByDefault: true,
-  },
-);
-
+export const Packet: MessageType<Packet> = createMessageType({
+  typeName: 'floodsub.Packet',
+  fields: [
+    {
+      no: 1,
+      name: 'subscriptions',
+      kind: 'message',
+      T: () => SubscriptionOpts,
+      repeated: true,
+    },
+    {
+      no: 2,
+      name: 'publish',
+      kind: 'message',
+      T: () => SignedMsg,
+      repeated: true,
+    },
+  ] as readonly PartialFieldInfo[],
+  packedByDefault: true,
+})

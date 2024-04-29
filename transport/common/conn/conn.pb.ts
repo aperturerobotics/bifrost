@@ -2,11 +2,11 @@
 // @generated from file github.com/aperturerobotics/bifrost/transport/common/conn/conn.proto (package conn, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from "@aptre/protobuf-es-lite";
-import { createMessageType, Message } from "@aptre/protobuf-es-lite";
-import { Opts as Opts$1 } from "../quic/quic.pb.js";
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType, Message } from '@aptre/protobuf-es-lite'
+import { Opts as Opts$1 } from '../quic/quic.pb.js'
 
-export const protobufPackage = "conn";
+export const protobufPackage = 'conn'
 
 /**
  * Opts are extra options for the reliable conn.
@@ -19,20 +19,20 @@ export type Opts = Message<{
    *
    * @generated from field: transport.quic.Opts quic = 1;
    */
-  quic?: Opts$1;
+  quic?: Opts$1
   /**
    * Verbose turns on verbose debug logging.
    *
    * @generated from field: bool verbose = 2;
    */
-  verbose?: boolean;
+  verbose?: boolean
   /**
    * Mtu sets the maximum size for a single packet.
    * Defaults to 65000.
    *
    * @generated from field: uint32 mtu = 3;
    */
-  mtu?: number;
+  mtu?: number
   /**
    * BufSize is the number of packets to buffer.
    *
@@ -41,20 +41,16 @@ export type Opts = Message<{
    *
    * @generated from field: uint32 buf_size = 4;
    */
-  bufSize?: number;
+  bufSize?: number
+}>
 
-}>;
-
-export const Opts: MessageType<Opts> = createMessageType(
-  {
-    typeName: "conn.Opts",
-    fields: [
-        { no: 1, name: "quic", kind: "message", T: () => Opts$1 },
-        { no: 2, name: "verbose", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-        { no: 3, name: "mtu", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-        { no: 4, name: "buf_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    ] as readonly PartialFieldInfo[],
-    packedByDefault: true,
-  },
-);
-
+export const Opts: MessageType<Opts> = createMessageType({
+  typeName: 'conn.Opts',
+  fields: [
+    { no: 1, name: 'quic', kind: 'message', T: () => Opts$1 },
+    { no: 2, name: 'verbose', kind: 'scalar', T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: 'mtu', kind: 'scalar', T: 13 /* ScalarType.UINT32 */ },
+    { no: 4, name: 'buf_size', kind: 'scalar', T: 13 /* ScalarType.UINT32 */ },
+  ] as readonly PartialFieldInfo[],
+  packedByDefault: true,
+})

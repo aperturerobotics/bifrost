@@ -2,10 +2,14 @@
 // @generated from file github.com/aperturerobotics/bifrost/hash/hash.proto (package hash, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from "@aptre/protobuf-es-lite";
-import { createEnumType, createMessageType, Message } from "@aptre/protobuf-es-lite";
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import {
+  createEnumType,
+  createMessageType,
+  Message,
+} from '@aptre/protobuf-es-lite'
 
-export const protobufPackage = "hash";
+export const protobufPackage = 'hash'
 
 /**
  * HashType identifies the hash type in use.
@@ -45,12 +49,12 @@ export enum HashType {
 }
 
 // HashType_Enum is the enum type for HashType.
-export const HashType_Enum = createEnumType("hash.HashType", [
-  { no: 0, name: "HashType_UNKNOWN" },
-  { no: 1, name: "HashType_SHA256" },
-  { no: 2, name: "HashType_SHA1" },
-  { no: 3, name: "HashType_BLAKE3" },
-]);
+export const HashType_Enum = createEnumType('hash.HashType', [
+  { no: 0, name: 'HashType_UNKNOWN' },
+  { no: 1, name: 'HashType_SHA256' },
+  { no: 2, name: 'HashType_SHA1' },
+  { no: 3, name: 'HashType_BLAKE3' },
+])
 
 /**
  * Hash is a hash of a binary blob.
@@ -63,24 +67,20 @@ export type Hash = Message<{
    *
    * @generated from field: hash.HashType hash_type = 1;
    */
-  hashType?: HashType;
+  hashType?: HashType
   /**
    * Hash is the hash value.
    *
    * @generated from field: bytes hash = 2;
    */
-  hash?: Uint8Array;
+  hash?: Uint8Array
+}>
 
-}>;
-
-export const Hash: MessageType<Hash> = createMessageType(
-  {
-    typeName: "hash.Hash",
-    fields: [
-        { no: 1, name: "hash_type", kind: "enum", T: HashType_Enum },
-        { no: 2, name: "hash", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
-    ] as readonly PartialFieldInfo[],
-    packedByDefault: true,
-  },
-);
-
+export const Hash: MessageType<Hash> = createMessageType({
+  typeName: 'hash.Hash',
+  fields: [
+    { no: 1, name: 'hash_type', kind: 'enum', T: HashType_Enum },
+    { no: 2, name: 'hash', kind: 'scalar', T: 12 /* ScalarType.BYTES */ },
+  ] as readonly PartialFieldInfo[],
+  packedByDefault: true,
+})

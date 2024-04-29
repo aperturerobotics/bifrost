@@ -2,11 +2,11 @@
 // @generated from file github.com/aperturerobotics/bifrost/transport/common/pconn/pconn.proto (package pconn, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from "@aptre/protobuf-es-lite";
-import { createMessageType, Message } from "@aptre/protobuf-es-lite";
-import { Opts as Opts$1 } from "../quic/quic.pb.js";
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType, Message } from '@aptre/protobuf-es-lite'
+import { Opts as Opts$1 } from '../quic/quic.pb.js'
 
-export const protobufPackage = "pconn";
+export const protobufPackage = 'pconn'
 
 /**
  * Opts are extra options for the packet conn.
@@ -19,24 +19,20 @@ export type Opts = Message<{
    *
    * @generated from field: transport.quic.Opts quic = 1;
    */
-  quic?: Opts$1;
+  quic?: Opts$1
   /**
    * Verbose turns on verbose debug logging.
    *
    * @generated from field: bool verbose = 2;
    */
-  verbose?: boolean;
+  verbose?: boolean
+}>
 
-}>;
-
-export const Opts: MessageType<Opts> = createMessageType(
-  {
-    typeName: "pconn.Opts",
-    fields: [
-        { no: 1, name: "quic", kind: "message", T: () => Opts$1 },
-        { no: 2, name: "verbose", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    ] as readonly PartialFieldInfo[],
-    packedByDefault: true,
-  },
-);
-
+export const Opts: MessageType<Opts> = createMessageType({
+  typeName: 'pconn.Opts',
+  fields: [
+    { no: 1, name: 'quic', kind: 'message', T: () => Opts$1 },
+    { no: 2, name: 'verbose', kind: 'scalar', T: 8 /* ScalarType.BOOL */ },
+  ] as readonly PartialFieldInfo[],
+  packedByDefault: true,
+})

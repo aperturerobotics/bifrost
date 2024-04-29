@@ -2,10 +2,10 @@
 // @generated from file github.com/aperturerobotics/bifrost/signaling/echo/echo.proto (package signaling.echo, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from "@aptre/protobuf-es-lite";
-import { createMessageType, Message } from "@aptre/protobuf-es-lite";
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType, Message } from '@aptre/protobuf-es-lite'
 
-export const protobufPackage = "signaling.echo";
+export const protobufPackage = 'signaling.echo'
 
 /**
  * Config configures the echo controller.
@@ -19,17 +19,18 @@ export type Config = Message<{
    *
    * @generated from field: string signaling_id = 1;
    */
-  signalingId?: string;
+  signalingId?: string
+}>
 
-}>;
-
-export const Config: MessageType<Config> = createMessageType(
-  {
-    typeName: "signaling.echo.Config",
-    fields: [
-        { no: 1, name: "signaling_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    ] as readonly PartialFieldInfo[],
-    packedByDefault: true,
-  },
-);
-
+export const Config: MessageType<Config> = createMessageType({
+  typeName: 'signaling.echo.Config',
+  fields: [
+    {
+      no: 1,
+      name: 'signaling_id',
+      kind: 'scalar',
+      T: 9 /* ScalarType.STRING */,
+    },
+  ] as readonly PartialFieldInfo[],
+  packedByDefault: true,
+})

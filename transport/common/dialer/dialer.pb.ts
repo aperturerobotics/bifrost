@@ -2,11 +2,11 @@
 // @generated from file github.com/aperturerobotics/bifrost/transport/common/dialer/dialer.proto (package dialer, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from "@aptre/protobuf-es-lite";
-import { createMessageType, Message } from "@aptre/protobuf-es-lite";
-import { Backoff } from "../../../../util/backoff/backoff.pb.js";
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType, Message } from '@aptre/protobuf-es-lite'
+import { Backoff } from '@go/github.com/aperturerobotics/util/backoff/backoff.pb.js'
 
-export const protobufPackage = "dialer";
+export const protobufPackage = 'dialer'
 
 /**
  * DialerOpts contains options relating to dialing a statically configured peer.
@@ -19,25 +19,21 @@ export type DialerOpts = Message<{
    *
    * @generated from field: string address = 1;
    */
-  address?: string;
+  address?: string
   /**
    * Backoff is the dialing backoff configuration.
    * Can be empty.
    *
    * @generated from field: backoff.Backoff backoff = 2;
    */
-  backoff?: Backoff;
+  backoff?: Backoff
+}>
 
-}>;
-
-export const DialerOpts: MessageType<DialerOpts> = createMessageType(
-  {
-    typeName: "dialer.DialerOpts",
-    fields: [
-        { no: 1, name: "address", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-        { no: 2, name: "backoff", kind: "message", T: () => Backoff },
-    ] as readonly PartialFieldInfo[],
-    packedByDefault: true,
-  },
-);
-
+export const DialerOpts: MessageType<DialerOpts> = createMessageType({
+  typeName: 'dialer.DialerOpts',
+  fields: [
+    { no: 1, name: 'address', kind: 'scalar', T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: 'backoff', kind: 'message', T: () => Backoff },
+  ] as readonly PartialFieldInfo[],
+  packedByDefault: true,
+})

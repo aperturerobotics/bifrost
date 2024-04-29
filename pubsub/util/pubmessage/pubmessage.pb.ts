@@ -2,10 +2,10 @@
 // @generated from file github.com/aperturerobotics/bifrost/pubsub/util/pubmessage/pubmessage.proto (package pubmessage, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from "@aptre/protobuf-es-lite";
-import { createMessageType, Message, Timestamp } from "@aptre/protobuf-es-lite";
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType, Message, Timestamp } from '@aptre/protobuf-es-lite'
 
-export const protobufPackage = "pubmessage";
+export const protobufPackage = 'pubmessage'
 
 /**
  * PubMessageInner is the signed inner portion of the message.
@@ -18,31 +18,27 @@ export type PubMessageInner = Message<{
    *
    * @generated from field: bytes data = 1;
    */
-  data?: Uint8Array;
+  data?: Uint8Array
   /**
    * Channel is the channel.
    *
    * @generated from field: string channel = 2;
    */
-  channel?: string;
+  channel?: string
   /**
    * Timestamp is the message timestamp.
    *
    * @generated from field: google.protobuf.Timestamp timestamp = 3;
    */
-  timestamp?: Timestamp;
+  timestamp?: Timestamp
+}>
 
-}>;
-
-export const PubMessageInner: MessageType<PubMessageInner> = createMessageType(
-  {
-    typeName: "pubmessage.PubMessageInner",
-    fields: [
-        { no: 1, name: "data", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
-        { no: 2, name: "channel", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-        { no: 3, name: "timestamp", kind: "message", T: () => Timestamp },
-    ] as readonly PartialFieldInfo[],
-    packedByDefault: true,
-  },
-);
-
+export const PubMessageInner: MessageType<PubMessageInner> = createMessageType({
+  typeName: 'pubmessage.PubMessageInner',
+  fields: [
+    { no: 1, name: 'data', kind: 'scalar', T: 12 /* ScalarType.BYTES */ },
+    { no: 2, name: 'channel', kind: 'scalar', T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: 'timestamp', kind: 'message', T: () => Timestamp },
+  ] as readonly PartialFieldInfo[],
+  packedByDefault: true,
+})

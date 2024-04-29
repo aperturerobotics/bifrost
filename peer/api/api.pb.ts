@@ -2,13 +2,13 @@
 // @generated from file github.com/aperturerobotics/bifrost/peer/api/api.proto (package peer.api, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from "@aptre/protobuf-es-lite";
-import { createMessageType, Message } from "@aptre/protobuf-es-lite";
-import { Config } from "../controller/config.pb.js";
-import type { ControllerStatus } from "../../../controllerbus/controller/exec/exec.pb.js";
-import { ControllerStatus_Enum } from "../../../controllerbus/controller/exec/exec.pb.js";
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType, Message } from '@aptre/protobuf-es-lite'
+import { Config } from '../controller/config.pb.js'
+import type { ControllerStatus } from '@go/github.com/aperturerobotics/controllerbus/controller/exec/exec.pb.js'
+import { ControllerStatus_Enum } from '@go/github.com/aperturerobotics/controllerbus/controller/exec/exec.pb.js'
 
-export const protobufPackage = "peer.api";
+export const protobufPackage = 'peer.api'
 
 /**
  * IdentifyRequest is a request to load an identity.
@@ -21,19 +21,16 @@ export type IdentifyRequest = Message<{
    *
    * @generated from field: peer.controller.Config config = 1;
    */
-  config?: Config;
+  config?: Config
+}>
 
-}>;
-
-export const IdentifyRequest: MessageType<IdentifyRequest> = createMessageType(
-  {
-    typeName: "peer.api.IdentifyRequest",
-    fields: [
-        { no: 1, name: "config", kind: "message", T: () => Config },
-    ] as readonly PartialFieldInfo[],
-    packedByDefault: true,
-  },
-);
+export const IdentifyRequest: MessageType<IdentifyRequest> = createMessageType({
+  typeName: 'peer.api.IdentifyRequest',
+  fields: [
+    { no: 1, name: 'config', kind: 'message', T: () => Config },
+  ] as readonly PartialFieldInfo[],
+  packedByDefault: true,
+})
 
 /**
  * IdentifyResponse is a response to an identify request.
@@ -46,19 +43,22 @@ export type IdentifyResponse = Message<{
    *
    * @generated from field: controller.exec.ControllerStatus controller_status = 1;
    */
-  controllerStatus?: ControllerStatus;
+  controllerStatus?: ControllerStatus
+}>
 
-}>;
-
-export const IdentifyResponse: MessageType<IdentifyResponse> = createMessageType(
-  {
-    typeName: "peer.api.IdentifyResponse",
+export const IdentifyResponse: MessageType<IdentifyResponse> =
+  createMessageType({
+    typeName: 'peer.api.IdentifyResponse',
     fields: [
-        { no: 1, name: "controller_status", kind: "enum", T: ControllerStatus_Enum },
+      {
+        no: 1,
+        name: 'controller_status',
+        kind: 'enum',
+        T: ControllerStatus_Enum,
+      },
     ] as readonly PartialFieldInfo[],
     packedByDefault: true,
-  },
-);
+  })
 
 /**
  * GetPeerInfoRequest is the request type for GetPeerInfo.
@@ -71,19 +71,17 @@ export type GetPeerInfoRequest = Message<{
    *
    * @generated from field: string peer_id = 1;
    */
-  peerId?: string;
+  peerId?: string
+}>
 
-}>;
-
-export const GetPeerInfoRequest: MessageType<GetPeerInfoRequest> = createMessageType(
-  {
-    typeName: "peer.api.GetPeerInfoRequest",
+export const GetPeerInfoRequest: MessageType<GetPeerInfoRequest> =
+  createMessageType({
+    typeName: 'peer.api.GetPeerInfoRequest',
     fields: [
-        { no: 1, name: "peer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+      { no: 1, name: 'peer_id', kind: 'scalar', T: 9 /* ScalarType.STRING */ },
     ] as readonly PartialFieldInfo[],
     packedByDefault: true,
-  },
-);
+  })
 
 /**
  * PeerInfo is basic information about a peer.
@@ -96,19 +94,16 @@ export type PeerInfo = Message<{
    *
    * @generated from field: string peer_id = 1;
    */
-  peerId?: string;
+  peerId?: string
+}>
 
-}>;
-
-export const PeerInfo: MessageType<PeerInfo> = createMessageType(
-  {
-    typeName: "peer.api.PeerInfo",
-    fields: [
-        { no: 1, name: "peer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    ] as readonly PartialFieldInfo[],
-    packedByDefault: true,
-  },
-);
+export const PeerInfo: MessageType<PeerInfo> = createMessageType({
+  typeName: 'peer.api.PeerInfo',
+  fields: [
+    { no: 1, name: 'peer_id', kind: 'scalar', T: 9 /* ScalarType.STRING */ },
+  ] as readonly PartialFieldInfo[],
+  packedByDefault: true,
+})
 
 /**
  * GetPeerInfoResponse is the response type for GetPeerInfo.
@@ -121,17 +116,20 @@ export type GetPeerInfoResponse = Message<{
    *
    * @generated from field: repeated peer.api.PeerInfo local_peers = 1;
    */
-  localPeers?: PeerInfo[];
+  localPeers?: PeerInfo[]
+}>
 
-}>;
-
-export const GetPeerInfoResponse: MessageType<GetPeerInfoResponse> = createMessageType(
-  {
-    typeName: "peer.api.GetPeerInfoResponse",
+export const GetPeerInfoResponse: MessageType<GetPeerInfoResponse> =
+  createMessageType({
+    typeName: 'peer.api.GetPeerInfoResponse',
     fields: [
-        { no: 1, name: "local_peers", kind: "message", T: () => PeerInfo, repeated: true },
+      {
+        no: 1,
+        name: 'local_peers',
+        kind: 'message',
+        T: () => PeerInfo,
+        repeated: true,
+      },
     ] as readonly PartialFieldInfo[],
     packedByDefault: true,
-  },
-);
-
+  })

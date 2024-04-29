@@ -2,10 +2,10 @@
 // @generated from file github.com/aperturerobotics/bifrost/stream/api/dial/dial.proto (package stream.api.dial, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from "@aptre/protobuf-es-lite";
-import { createMessageType, Message } from "@aptre/protobuf-es-lite";
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType, Message } from '@aptre/protobuf-es-lite'
 
-export const protobufPackage = "stream.api.dial";
+export const protobufPackage = 'stream.api.dial'
 
 /**
  * Config configures the dial controller.
@@ -18,54 +18,65 @@ export type Config = Message<{
    *
    * @generated from field: string peer_id = 1;
    */
-  peerId?: string;
+  peerId?: string
   /**
    * LocalPeerId is the peer ID to dial with.
    * Can be empty to accept any loaded peer.
    *
    * @generated from field: string local_peer_id = 2;
    */
-  localPeerId?: string;
+  localPeerId?: string
   /**
    * ProtocolId is the protocol ID to dial with.
    *
    * @generated from field: string protocol_id = 3;
    */
-  protocolId?: string;
+  protocolId?: string
   /**
    * TransportId constrains the transport ID to dial with.
    * Can be empty.
    *
    * @generated from field: uint64 transport_id = 4;
    */
-  transportId?: bigint;
+  transportId?: bigint
   /**
    * Encrypted indicates the stream should be encrypted.
    *
    * @generated from field: bool encrypted = 5;
    */
-  encrypted?: boolean;
+  encrypted?: boolean
   /**
    * Reliable indicates the stream should be reliable.
    *
    * @generated from field: bool reliable = 6;
    */
-  reliable?: boolean;
+  reliable?: boolean
+}>
 
-}>;
-
-export const Config: MessageType<Config> = createMessageType(
-  {
-    typeName: "stream.api.dial.Config",
-    fields: [
-        { no: 1, name: "peer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-        { no: 2, name: "local_peer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-        { no: 3, name: "protocol_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-        { no: 4, name: "transport_id", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
-        { no: 5, name: "encrypted", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-        { no: 6, name: "reliable", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    ] as readonly PartialFieldInfo[],
-    packedByDefault: true,
-  },
-);
-
+export const Config: MessageType<Config> = createMessageType({
+  typeName: 'stream.api.dial.Config',
+  fields: [
+    { no: 1, name: 'peer_id', kind: 'scalar', T: 9 /* ScalarType.STRING */ },
+    {
+      no: 2,
+      name: 'local_peer_id',
+      kind: 'scalar',
+      T: 9 /* ScalarType.STRING */,
+    },
+    {
+      no: 3,
+      name: 'protocol_id',
+      kind: 'scalar',
+      T: 9 /* ScalarType.STRING */,
+    },
+    {
+      no: 4,
+      name: 'transport_id',
+      kind: 'scalar',
+      T: 4 /* ScalarType.UINT64 */,
+    },
+    { no: 5, name: 'encrypted', kind: 'scalar', T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: 'reliable', kind: 'scalar', T: 8 /* ScalarType.BOOL */ },
+  ] as readonly PartialFieldInfo[],
+  packedByDefault: true,
+})

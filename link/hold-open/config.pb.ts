@@ -2,10 +2,10 @@
 // @generated from file github.com/aperturerobotics/bifrost/link/hold-open/config.proto (package link.holdopen.controller, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from "@aptre/protobuf-es-lite";
-import { createMessageType, Message } from "@aptre/protobuf-es-lite";
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType, Message } from '@aptre/protobuf-es-lite'
 
-export const protobufPackage = "link.holdopen.controller";
+export const protobufPackage = 'link.holdopen.controller'
 
 /**
  * Config is the hold-open controller config.
@@ -14,16 +14,10 @@ export const protobufPackage = "link.holdopen.controller";
  *
  * @generated from message link.holdopen.controller.Config
  */
-export type Config = Message<{
+export type Config = Message<{}>
 
-}>;
-
-export const Config: MessageType<Config> = createMessageType(
-  {
-    typeName: "link.holdopen.controller.Config",
-    fields: [
-    ] as readonly PartialFieldInfo[],
-    packedByDefault: true,
-  },
-);
-
+export const Config: MessageType<Config> = createMessageType({
+  typeName: 'link.holdopen.controller.Config',
+  fields: [] as readonly PartialFieldInfo[],
+  packedByDefault: true,
+})

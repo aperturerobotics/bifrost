@@ -2,10 +2,10 @@
 // @generated from file github.com/aperturerobotics/bifrost/pubsub/relay/config.proto (package pubsub.relay, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from "@aptre/protobuf-es-lite";
-import { createMessageType, Message } from "@aptre/protobuf-es-lite";
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType, Message } from '@aptre/protobuf-es-lite'
 
-export const protobufPackage = "pubsub.relay";
+export const protobufPackage = 'pubsub.relay'
 
 /**
  * Config is the pubsub relay configuration.
@@ -19,24 +19,26 @@ export type Config = Message<{
    *
    * @generated from field: string peer_id = 1;
    */
-  peerId?: string;
+  peerId?: string
   /**
    * TopicIds are the list of topic IDs to subscribe to.
    *
    * @generated from field: repeated string topic_ids = 2;
    */
-  topicIds?: string[];
+  topicIds?: string[]
+}>
 
-}>;
-
-export const Config: MessageType<Config> = createMessageType(
-  {
-    typeName: "pubsub.relay.Config",
-    fields: [
-        { no: 1, name: "peer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-        { no: 2, name: "topic_ids", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    ] as readonly PartialFieldInfo[],
-    packedByDefault: true,
-  },
-);
-
+export const Config: MessageType<Config> = createMessageType({
+  typeName: 'pubsub.relay.Config',
+  fields: [
+    { no: 1, name: 'peer_id', kind: 'scalar', T: 9 /* ScalarType.STRING */ },
+    {
+      no: 2,
+      name: 'topic_ids',
+      kind: 'scalar',
+      T: 9 /* ScalarType.STRING */,
+      repeated: true,
+    },
+  ] as readonly PartialFieldInfo[],
+  packedByDefault: true,
+})

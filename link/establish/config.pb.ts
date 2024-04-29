@@ -2,10 +2,10 @@
 // @generated from file github.com/aperturerobotics/bifrost/link/establish/config.proto (package link.establish.controller, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from "@aptre/protobuf-es-lite";
-import { createMessageType, Message } from "@aptre/protobuf-es-lite";
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType, Message } from '@aptre/protobuf-es-lite'
 
-export const protobufPackage = "link.establish.controller";
+export const protobufPackage = 'link.establish.controller'
 
 /**
  * Config is the link establish controller config.
@@ -19,25 +19,32 @@ export type Config = Message<{
    *
    * @generated from field: repeated string peer_ids = 1;
    */
-  peerIds?: string[];
+  peerIds?: string[]
   /**
    * SrcPeerId is the source peer id to establish links from.
    * Can be empty.
    *
    * @generated from field: string src_peer_id = 2;
    */
-  srcPeerId?: string;
+  srcPeerId?: string
+}>
 
-}>;
-
-export const Config: MessageType<Config> = createMessageType(
-  {
-    typeName: "link.establish.controller.Config",
-    fields: [
-        { no: 1, name: "peer_ids", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-        { no: 2, name: "src_peer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    ] as readonly PartialFieldInfo[],
-    packedByDefault: true,
-  },
-);
-
+export const Config: MessageType<Config> = createMessageType({
+  typeName: 'link.establish.controller.Config',
+  fields: [
+    {
+      no: 1,
+      name: 'peer_ids',
+      kind: 'scalar',
+      T: 9 /* ScalarType.STRING */,
+      repeated: true,
+    },
+    {
+      no: 2,
+      name: 'src_peer_id',
+      kind: 'scalar',
+      T: 9 /* ScalarType.STRING */,
+    },
+  ] as readonly PartialFieldInfo[],
+  packedByDefault: true,
+})

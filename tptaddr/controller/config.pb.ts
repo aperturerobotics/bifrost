@@ -2,10 +2,10 @@
 // @generated from file github.com/aperturerobotics/bifrost/tptaddr/controller/config.proto (package tptaddr.controller, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from "@aptre/protobuf-es-lite";
-import { createMessageType, Message } from "@aptre/protobuf-es-lite";
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType, Message } from '@aptre/protobuf-es-lite'
 
-export const protobufPackage = "tptaddr.controller";
+export const protobufPackage = 'tptaddr.controller'
 
 /**
  * Config configures the tptaddr dialer controller.
@@ -15,16 +15,10 @@ export const protobufPackage = "tptaddr.controller";
  *
  * @generated from message tptaddr.controller.Config
  */
-export type Config = Message<{
+export type Config = Message<{}>
 
-}>;
-
-export const Config: MessageType<Config> = createMessageType(
-  {
-    typeName: "tptaddr.controller.Config",
-    fields: [
-    ] as readonly PartialFieldInfo[],
-    packedByDefault: true,
-  },
-);
-
+export const Config: MessageType<Config> = createMessageType({
+  typeName: 'tptaddr.controller.Config',
+  fields: [] as readonly PartialFieldInfo[],
+  packedByDefault: true,
+})

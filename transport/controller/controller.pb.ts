@@ -2,10 +2,10 @@
 // @generated from file github.com/aperturerobotics/bifrost/transport/controller/controller.proto (package transport.controller, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from "@aptre/protobuf-es-lite";
-import { createMessageType, Message } from "@aptre/protobuf-es-lite";
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType, Message } from '@aptre/protobuf-es-lite'
 
-export const protobufPackage = "transport.controller";
+export const protobufPackage = 'transport.controller'
 
 /**
  * StreamEstablish is the first message sent by the initiator of a stream.
@@ -20,17 +20,18 @@ export type StreamEstablish = Message<{
    *
    * @generated from field: string protocol_id = 1;
    */
-  protocolId?: string;
+  protocolId?: string
+}>
 
-}>;
-
-export const StreamEstablish: MessageType<StreamEstablish> = createMessageType(
-  {
-    typeName: "transport.controller.StreamEstablish",
-    fields: [
-        { no: 1, name: "protocol_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    ] as readonly PartialFieldInfo[],
-    packedByDefault: true,
-  },
-);
-
+export const StreamEstablish: MessageType<StreamEstablish> = createMessageType({
+  typeName: 'transport.controller.StreamEstablish',
+  fields: [
+    {
+      no: 1,
+      name: 'protocol_id',
+      kind: 'scalar',
+      T: 9 /* ScalarType.STRING */,
+    },
+  ] as readonly PartialFieldInfo[],
+  packedByDefault: true,
+})

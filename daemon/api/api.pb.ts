@@ -2,11 +2,11 @@
 // @generated from file github.com/aperturerobotics/bifrost/daemon/api/api.proto (package bifrost.api, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from "@aptre/protobuf-es-lite";
-import { createMessageType, Message } from "@aptre/protobuf-es-lite";
-import { Config as Config$1 } from "../../../controllerbus/bus/api/api.pb.js";
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType, Message } from '@aptre/protobuf-es-lite'
+import { Config as Config$1 } from '@go/github.com/aperturerobotics/controllerbus/bus/api/api.pb.js'
 
-export const protobufPackage = "bifrost.api";
+export const protobufPackage = 'bifrost.api'
 
 /**
  * Config configures the API.
@@ -19,17 +19,13 @@ export type Config = Message<{
    *
    * @generated from field: bus.api.Config bus_config = 1;
    */
-  busConfig?: Config$1;
+  busConfig?: Config$1
+}>
 
-}>;
-
-export const Config: MessageType<Config> = createMessageType(
-  {
-    typeName: "bifrost.api.Config",
-    fields: [
-        { no: 1, name: "bus_config", kind: "message", T: () => Config$1 },
-    ] as readonly PartialFieldInfo[],
-    packedByDefault: true,
-  },
-);
-
+export const Config: MessageType<Config> = createMessageType({
+  typeName: 'bifrost.api.Config',
+  fields: [
+    { no: 1, name: 'bus_config', kind: 'message', T: () => Config$1 },
+  ] as readonly PartialFieldInfo[],
+  packedByDefault: true,
+})

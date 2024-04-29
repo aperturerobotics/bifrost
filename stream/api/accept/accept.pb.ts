@@ -2,10 +2,10 @@
 // @generated from file github.com/aperturerobotics/bifrost/stream/api/accept/accept.proto (package stream.api.accept, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from "@aptre/protobuf-es-lite";
-import { createMessageType, Message } from "@aptre/protobuf-es-lite";
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType, Message } from '@aptre/protobuf-es-lite'
 
-export const protobufPackage = "stream.api.accept";
+export const protobufPackage = 'stream.api.accept'
 
 /**
  * Config configures the accept controller.
@@ -19,40 +19,57 @@ export type Config = Message<{
    *
    * @generated from field: string local_peer_id = 1;
    */
-  localPeerId?: string;
+  localPeerId?: string
   /**
    * RemotePeerIds are peer IDs to accept incoming connections from.
    * Can be empty to accept any remote peer IDs.
    *
    * @generated from field: repeated string remote_peer_ids = 2;
    */
-  remotePeerIds?: string[];
+  remotePeerIds?: string[]
   /**
    * ProtocolId is the protocol ID to accept.
    *
    * @generated from field: string protocol_id = 3;
    */
-  protocolId?: string;
+  protocolId?: string
   /**
    * TransportId constrains the transport ID to accept from.
    * Can be empty.
    *
    * @generated from field: uint64 transport_id = 4;
    */
-  transportId?: bigint;
+  transportId?: bigint
+}>
 
-}>;
-
-export const Config: MessageType<Config> = createMessageType(
-  {
-    typeName: "stream.api.accept.Config",
-    fields: [
-        { no: 1, name: "local_peer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-        { no: 2, name: "remote_peer_ids", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-        { no: 3, name: "protocol_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-        { no: 4, name: "transport_id", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
-    ] as readonly PartialFieldInfo[],
-    packedByDefault: true,
-  },
-);
-
+export const Config: MessageType<Config> = createMessageType({
+  typeName: 'stream.api.accept.Config',
+  fields: [
+    {
+      no: 1,
+      name: 'local_peer_id',
+      kind: 'scalar',
+      T: 9 /* ScalarType.STRING */,
+    },
+    {
+      no: 2,
+      name: 'remote_peer_ids',
+      kind: 'scalar',
+      T: 9 /* ScalarType.STRING */,
+      repeated: true,
+    },
+    {
+      no: 3,
+      name: 'protocol_id',
+      kind: 'scalar',
+      T: 9 /* ScalarType.STRING */,
+    },
+    {
+      no: 4,
+      name: 'transport_id',
+      kind: 'scalar',
+      T: 4 /* ScalarType.UINT64 */,
+    },
+  ] as readonly PartialFieldInfo[],
+  packedByDefault: true,
+})
