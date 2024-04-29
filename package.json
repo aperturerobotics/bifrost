@@ -23,7 +23,7 @@
     "build": "tsc --project tsconfig.json --noEmit false --outDir ./dist/",
     "check": "npm run typecheck",
     "typecheck": "tsc --noEmit",
-    "deps": "depcheck --ignore-patterns=.eslintrc.js,package.json --ignores depcheck,prettier,typescript,starpc,@aperturerobotics/ts-common,@bufbuild/protoc-gen-es,@go/github.com",
+    "deps": "depcheck --ignore-patterns=.eslintrc.cjs,package.json --ignores depcheck,prettier,typescript,rimraf,starpc,@aptre/common,@go/github.com",
     "codegen": "npm run gen",
     "ci": "npm run build && npm run lint:js && npm run lint:go",
     "format": "npm run format:js && npm run format:go",
