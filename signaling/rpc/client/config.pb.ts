@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message } from '@aptre/protobuf-es-lite'
+import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
 import { Config as Config$1 } from '../../../stream/srpc/client/client.pb.js'
 import { Backoff } from '@go/github.com/aperturerobotics/util/backoff/backoff.pb.js'
 
@@ -67,31 +67,17 @@ export type Config = Message<{
   disableListen?: boolean
 }>
 
+// Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({
   typeName: 'signaling.rpc.client.Config',
   fields: [
-    {
-      no: 1,
-      name: 'signaling_id',
-      kind: 'scalar',
-      T: 9 /* ScalarType.STRING */,
-    },
-    { no: 2, name: 'peer_id', kind: 'scalar', T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: 'signaling_id', kind: 'scalar', T: ScalarType.STRING },
+    { no: 2, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
     { no: 3, name: 'client', kind: 'message', T: () => Config$1 },
-    {
-      no: 4,
-      name: 'protocol_id',
-      kind: 'scalar',
-      T: 9 /* ScalarType.STRING */,
-    },
-    { no: 5, name: 'service_id', kind: 'scalar', T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: 'protocol_id', kind: 'scalar', T: ScalarType.STRING },
+    { no: 5, name: 'service_id', kind: 'scalar', T: ScalarType.STRING },
     { no: 6, name: 'backoff', kind: 'message', T: () => Backoff },
-    {
-      no: 7,
-      name: 'disable_listen',
-      kind: 'scalar',
-      T: 8 /* ScalarType.BOOL */,
-    },
+    { no: 7, name: 'disable_listen', kind: 'scalar', T: ScalarType.BOOL },
   ] as readonly PartialFieldInfo[],
   packedByDefault: true,
 })

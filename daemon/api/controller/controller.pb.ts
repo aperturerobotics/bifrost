@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message } from '@aptre/protobuf-es-lite'
+import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
 import { Config as Config$1 } from '../api.pb.js'
 import { Config as Config$2 } from '@go/github.com/aperturerobotics/controllerbus/bus/api/api.pb.js'
 
@@ -42,22 +42,13 @@ export type Config = Message<{
   busApiConfig?: Config$2
 }>
 
+// Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({
   typeName: 'bifrost.api.controller.Config',
   fields: [
-    {
-      no: 1,
-      name: 'listen_addr',
-      kind: 'scalar',
-      T: 9 /* ScalarType.STRING */,
-    },
+    { no: 1, name: 'listen_addr', kind: 'scalar', T: ScalarType.STRING },
     { no: 2, name: 'api_config', kind: 'message', T: () => Config$1 },
-    {
-      no: 3,
-      name: 'disable_bus_api',
-      kind: 'scalar',
-      T: 8 /* ScalarType.BOOL */,
-    },
+    { no: 3, name: 'disable_bus_api', kind: 'scalar', T: ScalarType.BOOL },
     { no: 4, name: 'bus_api_config', kind: 'message', T: () => Config$2 },
   ] as readonly PartialFieldInfo[],
   packedByDefault: true,

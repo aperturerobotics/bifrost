@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message } from '@aptre/protobuf-es-lite'
+import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
 import { Backoff } from '@go/github.com/aperturerobotics/util/backoff/backoff.pb.js'
 
 export const protobufPackage = 'dialer'
@@ -29,10 +29,11 @@ export type DialerOpts = Message<{
   backoff?: Backoff
 }>
 
+// DialerOpts contains the message type declaration for DialerOpts.
 export const DialerOpts: MessageType<DialerOpts> = createMessageType({
   typeName: 'dialer.DialerOpts',
   fields: [
-    { no: 1, name: 'address', kind: 'scalar', T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: 'address', kind: 'scalar', T: ScalarType.STRING },
     { no: 2, name: 'backoff', kind: 'message', T: () => Backoff },
   ] as readonly PartialFieldInfo[],
   packedByDefault: true,

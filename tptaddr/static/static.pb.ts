@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message } from '@aptre/protobuf-es-lite'
+import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
 
 export const protobufPackage = 'tptaddr.static'
 
@@ -26,6 +26,7 @@ export type Config = Message<{
   addresses?: string[]
 }>
 
+// Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({
   typeName: 'tptaddr.static.Config',
   fields: [
@@ -33,7 +34,7 @@ export const Config: MessageType<Config> = createMessageType({
       no: 1,
       name: 'addresses',
       kind: 'scalar',
-      T: 9 /* ScalarType.STRING */,
+      T: ScalarType.STRING,
       repeated: true,
     },
   ] as readonly PartialFieldInfo[],

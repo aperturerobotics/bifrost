@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message } from '@aptre/protobuf-es-lite'
+import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
 import { Opts } from '../common/quic/quic.pb.js'
 import { DialerOpts } from '../common/dialer/dialer.pb.js'
 
@@ -66,35 +66,26 @@ export type Config = Message<{
   disableServePeerId?: boolean
 }>
 
+// Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({
   typeName: 'websocket.Config',
   fields: [
-    {
-      no: 1,
-      name: 'transport_peer_id',
-      kind: 'scalar',
-      T: 9 /* ScalarType.STRING */,
-    },
-    {
-      no: 2,
-      name: 'listen_addr',
-      kind: 'scalar',
-      T: 9 /* ScalarType.STRING */,
-    },
+    { no: 1, name: 'transport_peer_id', kind: 'scalar', T: ScalarType.STRING },
+    { no: 2, name: 'listen_addr', kind: 'scalar', T: ScalarType.STRING },
     { no: 3, name: 'quic', kind: 'message', T: () => Opts },
     {
       no: 4,
       name: 'dialers',
       kind: 'map',
-      K: 9 /* ScalarType.STRING */,
+      K: ScalarType.STRING,
       V: { kind: 'message', T: () => DialerOpts },
     },
-    { no: 5, name: 'http_path', kind: 'scalar', T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: 'http_path', kind: 'scalar', T: ScalarType.STRING },
     {
       no: 6,
       name: 'disable_serve_peer_id',
       kind: 'scalar',
-      T: 8 /* ScalarType.BOOL */,
+      T: ScalarType.BOOL,
     },
   ] as readonly PartialFieldInfo[],
   packedByDefault: true,

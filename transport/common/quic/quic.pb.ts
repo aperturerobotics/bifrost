@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message } from '@aptre/protobuf-es-lite'
+import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
 
 export const protobufPackage = 'transport.quic'
 
@@ -66,6 +66,7 @@ export type Opts = Message<{
   verbose?: boolean
 }>
 
+// Opts contains the message type declaration for Opts.
 export const Opts: MessageType<Opts> = createMessageType({
   typeName: 'transport.quic.Opts',
   fields: [
@@ -73,39 +74,24 @@ export const Opts: MessageType<Opts> = createMessageType({
       no: 1,
       name: 'max_idle_timeout_dur',
       kind: 'scalar',
-      T: 9 /* ScalarType.STRING */,
+      T: ScalarType.STRING,
     },
     {
       no: 2,
       name: 'max_incoming_streams',
       kind: 'scalar',
-      T: 5 /* ScalarType.INT32 */,
+      T: ScalarType.INT32,
     },
-    {
-      no: 3,
-      name: 'disable_keep_alive',
-      kind: 'scalar',
-      T: 8 /* ScalarType.BOOL */,
-    },
-    {
-      no: 7,
-      name: 'keep_alive_dur',
-      kind: 'scalar',
-      T: 9 /* ScalarType.STRING */,
-    },
-    {
-      no: 4,
-      name: 'disable_datagrams',
-      kind: 'scalar',
-      T: 8 /* ScalarType.BOOL */,
-    },
+    { no: 3, name: 'disable_keep_alive', kind: 'scalar', T: ScalarType.BOOL },
+    { no: 7, name: 'keep_alive_dur', kind: 'scalar', T: ScalarType.STRING },
+    { no: 4, name: 'disable_datagrams', kind: 'scalar', T: ScalarType.BOOL },
     {
       no: 5,
       name: 'disable_path_mtu_discovery',
       kind: 'scalar',
-      T: 8 /* ScalarType.BOOL */,
+      T: ScalarType.BOOL,
     },
-    { no: 6, name: 'verbose', kind: 'scalar', T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: 'verbose', kind: 'scalar', T: ScalarType.BOOL },
   ] as readonly PartialFieldInfo[],
   packedByDefault: true,
 })

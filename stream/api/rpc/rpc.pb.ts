@@ -7,6 +7,7 @@ import {
   createEnumType,
   createMessageType,
   Message,
+  ScalarType,
 } from '@aptre/protobuf-es-lite'
 
 export const protobufPackage = 'stream.api.rpc'
@@ -67,10 +68,11 @@ export type Data = Message<{
   state?: StreamState
 }>
 
+// Data contains the message type declaration for Data.
 export const Data: MessageType<Data> = createMessageType({
   typeName: 'stream.api.rpc.Data',
   fields: [
-    { no: 1, name: 'data', kind: 'scalar', T: 12 /* ScalarType.BYTES */ },
+    { no: 1, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
     { no: 2, name: 'state', kind: 'enum', T: StreamState_Enum },
   ] as readonly PartialFieldInfo[],
   packedByDefault: true,

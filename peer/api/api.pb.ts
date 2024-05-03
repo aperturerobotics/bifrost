@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message } from '@aptre/protobuf-es-lite'
+import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
 import { Config } from '../controller/config.pb.js'
 import type { ControllerStatus } from '@go/github.com/aperturerobotics/controllerbus/controller/exec/exec.pb.js'
 import { ControllerStatus_Enum } from '@go/github.com/aperturerobotics/controllerbus/controller/exec/exec.pb.js'
@@ -24,6 +24,7 @@ export type IdentifyRequest = Message<{
   config?: Config
 }>
 
+// IdentifyRequest contains the message type declaration for IdentifyRequest.
 export const IdentifyRequest: MessageType<IdentifyRequest> = createMessageType({
   typeName: 'peer.api.IdentifyRequest',
   fields: [
@@ -46,6 +47,7 @@ export type IdentifyResponse = Message<{
   controllerStatus?: ControllerStatus
 }>
 
+// IdentifyResponse contains the message type declaration for IdentifyResponse.
 export const IdentifyResponse: MessageType<IdentifyResponse> =
   createMessageType({
     typeName: 'peer.api.IdentifyResponse',
@@ -74,11 +76,12 @@ export type GetPeerInfoRequest = Message<{
   peerId?: string
 }>
 
+// GetPeerInfoRequest contains the message type declaration for GetPeerInfoRequest.
 export const GetPeerInfoRequest: MessageType<GetPeerInfoRequest> =
   createMessageType({
     typeName: 'peer.api.GetPeerInfoRequest',
     fields: [
-      { no: 1, name: 'peer_id', kind: 'scalar', T: 9 /* ScalarType.STRING */ },
+      { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
     ] as readonly PartialFieldInfo[],
     packedByDefault: true,
   })
@@ -97,10 +100,11 @@ export type PeerInfo = Message<{
   peerId?: string
 }>
 
+// PeerInfo contains the message type declaration for PeerInfo.
 export const PeerInfo: MessageType<PeerInfo> = createMessageType({
   typeName: 'peer.api.PeerInfo',
   fields: [
-    { no: 1, name: 'peer_id', kind: 'scalar', T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
   ] as readonly PartialFieldInfo[],
   packedByDefault: true,
 })
@@ -119,6 +123,7 @@ export type GetPeerInfoResponse = Message<{
   localPeers?: PeerInfo[]
 }>
 
+// GetPeerInfoResponse contains the message type declaration for GetPeerInfoResponse.
 export const GetPeerInfoResponse: MessageType<GetPeerInfoResponse> =
   createMessageType({
     typeName: 'peer.api.GetPeerInfoResponse',

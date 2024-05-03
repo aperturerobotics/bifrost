@@ -3,7 +3,12 @@
 /* eslint-disable */
 
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message, Timestamp } from '@aptre/protobuf-es-lite'
+import {
+  createMessageType,
+  Message,
+  ScalarType,
+  Timestamp,
+} from '@aptre/protobuf-es-lite'
 
 export const protobufPackage = 'pubmessage'
 
@@ -30,14 +35,15 @@ export type PubMessageInner = Message<{
    *
    * @generated from field: google.protobuf.Timestamp timestamp = 3;
    */
-  timestamp?: Timestamp
+  timestamp?: Date
 }>
 
+// PubMessageInner contains the message type declaration for PubMessageInner.
 export const PubMessageInner: MessageType<PubMessageInner> = createMessageType({
   typeName: 'pubmessage.PubMessageInner',
   fields: [
-    { no: 1, name: 'data', kind: 'scalar', T: 12 /* ScalarType.BYTES */ },
-    { no: 2, name: 'channel', kind: 'scalar', T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
+    { no: 2, name: 'channel', kind: 'scalar', T: ScalarType.STRING },
     { no: 3, name: 'timestamp', kind: 'message', T: () => Timestamp },
   ] as readonly PartialFieldInfo[],
   packedByDefault: true,

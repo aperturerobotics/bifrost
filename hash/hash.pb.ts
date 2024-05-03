@@ -7,6 +7,7 @@ import {
   createEnumType,
   createMessageType,
   Message,
+  ScalarType,
 } from '@aptre/protobuf-es-lite'
 
 export const protobufPackage = 'hash'
@@ -76,11 +77,12 @@ export type Hash = Message<{
   hash?: Uint8Array
 }>
 
+// Hash contains the message type declaration for Hash.
 export const Hash: MessageType<Hash> = createMessageType({
   typeName: 'hash.Hash',
   fields: [
     { no: 1, name: 'hash_type', kind: 'enum', T: HashType_Enum },
-    { no: 2, name: 'hash', kind: 'scalar', T: 12 /* ScalarType.BYTES */ },
+    { no: 2, name: 'hash', kind: 'scalar', T: ScalarType.BYTES },
   ] as readonly PartialFieldInfo[],
   packedByDefault: true,
 })

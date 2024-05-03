@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message } from '@aptre/protobuf-es-lite'
+import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
 
 export const protobufPackage = 'bifrost.rpc.access'
 
@@ -28,22 +28,13 @@ export type LookupRpcServiceRequest = Message<{
   serverId?: string
 }>
 
+// LookupRpcServiceRequest contains the message type declaration for LookupRpcServiceRequest.
 export const LookupRpcServiceRequest: MessageType<LookupRpcServiceRequest> =
   createMessageType({
     typeName: 'bifrost.rpc.access.LookupRpcServiceRequest',
     fields: [
-      {
-        no: 1,
-        name: 'service_id',
-        kind: 'scalar',
-        T: 9 /* ScalarType.STRING */,
-      },
-      {
-        no: 2,
-        name: 'server_id',
-        kind: 'scalar',
-        T: 9 /* ScalarType.STRING */,
-      },
+      { no: 1, name: 'service_id', kind: 'scalar', T: ScalarType.STRING },
+      { no: 2, name: 'server_id', kind: 'scalar', T: ScalarType.STRING },
     ] as readonly PartialFieldInfo[],
     packedByDefault: true,
   })
@@ -74,13 +65,14 @@ export type LookupRpcServiceResponse = Message<{
   removed?: boolean
 }>
 
+// LookupRpcServiceResponse contains the message type declaration for LookupRpcServiceResponse.
 export const LookupRpcServiceResponse: MessageType<LookupRpcServiceResponse> =
   createMessageType({
     typeName: 'bifrost.rpc.access.LookupRpcServiceResponse',
     fields: [
-      { no: 1, name: 'idle', kind: 'scalar', T: 8 /* ScalarType.BOOL */ },
-      { no: 2, name: 'exists', kind: 'scalar', T: 8 /* ScalarType.BOOL */ },
-      { no: 3, name: 'removed', kind: 'scalar', T: 8 /* ScalarType.BOOL */ },
+      { no: 1, name: 'idle', kind: 'scalar', T: ScalarType.BOOL },
+      { no: 2, name: 'exists', kind: 'scalar', T: ScalarType.BOOL },
+      { no: 3, name: 'removed', kind: 'scalar', T: ScalarType.BOOL },
     ] as readonly PartialFieldInfo[],
     packedByDefault: true,
   })

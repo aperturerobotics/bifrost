@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message } from '@aptre/protobuf-es-lite'
+import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
 import { SignedMsg } from '../../peer/peer.pb.js'
 
 export const protobufPackage = 'signaling.rpc'
@@ -15,6 +15,7 @@ export const protobufPackage = 'signaling.rpc'
  */
 export type ListenRequest = Message<{}>
 
+// ListenRequest contains the message type declaration for ListenRequest.
 export const ListenRequest: MessageType<ListenRequest> = createMessageType({
   typeName: 'signaling.rpc.ListenRequest',
   fields: [] as readonly PartialFieldInfo[],
@@ -59,6 +60,7 @@ export type ListenResponse = Message<{
       }
 }>
 
+// ListenResponse contains the message type declaration for ListenResponse.
 export const ListenResponse: MessageType<ListenResponse> = createMessageType({
   typeName: 'signaling.rpc.ListenResponse',
   fields: [
@@ -66,14 +68,14 @@ export const ListenResponse: MessageType<ListenResponse> = createMessageType({
       no: 1,
       name: 'set_peer',
       kind: 'scalar',
-      T: 9 /* ScalarType.STRING */,
+      T: ScalarType.STRING,
       oneof: 'body',
     },
     {
       no: 2,
       name: 'clear_peer',
       kind: 'scalar',
-      T: 9 /* ScalarType.STRING */,
+      T: ScalarType.STRING,
       oneof: 'body',
     },
   ] as readonly PartialFieldInfo[],
@@ -94,10 +96,11 @@ export type SessionInit = Message<{
   peerId?: string
 }>
 
+// SessionInit contains the message type declaration for SessionInit.
 export const SessionInit: MessageType<SessionInit> = createMessageType({
   typeName: 'signaling.rpc.SessionInit',
   fields: [
-    { no: 1, name: 'peer_id', kind: 'scalar', T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
   ] as readonly PartialFieldInfo[],
   packedByDefault: true,
 })
@@ -122,11 +125,12 @@ export type SessionMsg = Message<{
   seqno?: bigint
 }>
 
+// SessionMsg contains the message type declaration for SessionMsg.
 export const SessionMsg: MessageType<SessionMsg> = createMessageType({
   typeName: 'signaling.rpc.SessionMsg',
   fields: [
     { no: 1, name: 'signed_msg', kind: 'message', T: () => SignedMsg },
-    { no: 2, name: 'seqno', kind: 'scalar', T: 4 /* ScalarType.UINT64 */ },
+    { no: 2, name: 'seqno', kind: 'scalar', T: ScalarType.UINT64 },
   ] as readonly PartialFieldInfo[],
   packedByDefault: true,
 })
@@ -200,15 +204,11 @@ export type SessionRequest = Message<{
       }
 }>
 
+// SessionRequest contains the message type declaration for SessionRequest.
 export const SessionRequest: MessageType<SessionRequest> = createMessageType({
   typeName: 'signaling.rpc.SessionRequest',
   fields: [
-    {
-      no: 1,
-      name: 'session_seqno',
-      kind: 'scalar',
-      T: 4 /* ScalarType.UINT64 */,
-    },
+    { no: 1, name: 'session_seqno', kind: 'scalar', T: ScalarType.UINT64 },
     {
       no: 2,
       name: 'init',
@@ -227,14 +227,14 @@ export const SessionRequest: MessageType<SessionRequest> = createMessageType({
       no: 4,
       name: 'clear_msg',
       kind: 'scalar',
-      T: 4 /* ScalarType.UINT64 */,
+      T: ScalarType.UINT64,
       oneof: 'body',
     },
     {
       no: 5,
       name: 'ack_msg',
       kind: 'scalar',
-      T: 4 /* ScalarType.UINT64 */,
+      T: ScalarType.UINT64,
       oneof: 'body',
     },
   ] as readonly PartialFieldInfo[],
@@ -309,6 +309,7 @@ export type SessionResponse = Message<{
       }
 }>
 
+// SessionResponse contains the message type declaration for SessionResponse.
 export const SessionResponse: MessageType<SessionResponse> = createMessageType({
   typeName: 'signaling.rpc.SessionResponse',
   fields: [
@@ -316,14 +317,14 @@ export const SessionResponse: MessageType<SessionResponse> = createMessageType({
       no: 1,
       name: 'opened',
       kind: 'scalar',
-      T: 4 /* ScalarType.UINT64 */,
+      T: ScalarType.UINT64,
       oneof: 'body',
     },
     {
       no: 2,
       name: 'closed',
       kind: 'scalar',
-      T: 8 /* ScalarType.BOOL */,
+      T: ScalarType.BOOL,
       oneof: 'body',
     },
     {
@@ -337,14 +338,14 @@ export const SessionResponse: MessageType<SessionResponse> = createMessageType({
       no: 4,
       name: 'clear_msg',
       kind: 'scalar',
-      T: 4 /* ScalarType.UINT64 */,
+      T: ScalarType.UINT64,
       oneof: 'body',
     },
     {
       no: 5,
       name: 'ack_msg',
       kind: 'scalar',
-      T: 4 /* ScalarType.UINT64 */,
+      T: ScalarType.UINT64,
       oneof: 'body',
     },
   ] as readonly PartialFieldInfo[],

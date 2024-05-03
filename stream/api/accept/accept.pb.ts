@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message } from '@aptre/protobuf-es-lite'
+import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
 
 export const protobufPackage = 'stream.api.accept'
 
@@ -42,34 +42,20 @@ export type Config = Message<{
   transportId?: bigint
 }>
 
+// Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({
   typeName: 'stream.api.accept.Config',
   fields: [
-    {
-      no: 1,
-      name: 'local_peer_id',
-      kind: 'scalar',
-      T: 9 /* ScalarType.STRING */,
-    },
+    { no: 1, name: 'local_peer_id', kind: 'scalar', T: ScalarType.STRING },
     {
       no: 2,
       name: 'remote_peer_ids',
       kind: 'scalar',
-      T: 9 /* ScalarType.STRING */,
+      T: ScalarType.STRING,
       repeated: true,
     },
-    {
-      no: 3,
-      name: 'protocol_id',
-      kind: 'scalar',
-      T: 9 /* ScalarType.STRING */,
-    },
-    {
-      no: 4,
-      name: 'transport_id',
-      kind: 'scalar',
-      T: 4 /* ScalarType.UINT64 */,
-    },
+    { no: 3, name: 'protocol_id', kind: 'scalar', T: ScalarType.STRING },
+    { no: 4, name: 'transport_id', kind: 'scalar', T: ScalarType.UINT64 },
   ] as readonly PartialFieldInfo[],
   packedByDefault: true,
 })

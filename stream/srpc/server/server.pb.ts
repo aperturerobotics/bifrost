@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message } from '@aptre/protobuf-es-lite'
+import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
 
 export const protobufPackage = 'stream.srpc.server'
 
@@ -35,6 +35,7 @@ export type Config = Message<{
   disableEstablishLink?: boolean
 }>
 
+// Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({
   typeName: 'stream.srpc.server.Config',
   fields: [
@@ -42,21 +43,21 @@ export const Config: MessageType<Config> = createMessageType({
       no: 1,
       name: 'peer_ids',
       kind: 'scalar',
-      T: 9 /* ScalarType.STRING */,
+      T: ScalarType.STRING,
       repeated: true,
     },
     {
       no: 2,
       name: 'protocol_ids',
       kind: 'scalar',
-      T: 9 /* ScalarType.STRING */,
+      T: ScalarType.STRING,
       repeated: true,
     },
     {
       no: 3,
       name: 'disable_establish_link',
       kind: 'scalar',
-      T: 8 /* ScalarType.BOOL */,
+      T: ScalarType.BOOL,
     },
   ] as readonly PartialFieldInfo[],
   packedByDefault: true,

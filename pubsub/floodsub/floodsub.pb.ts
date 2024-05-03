@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message } from '@aptre/protobuf-es-lite'
+import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
 import type { HashType } from '../../hash/hash.pb.js'
 import { HashType_Enum } from '../../hash/hash.pb.js'
 import { SignedMsg } from '../../peer/peer.pb.js'
@@ -25,6 +25,7 @@ export type Config = Message<{
   publishHashType?: HashType
 }>
 
+// Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({
   typeName: 'floodsub.Config',
   fields: [
@@ -53,17 +54,13 @@ export type SubscriptionOpts = Message<{
   channelId?: string
 }>
 
+// SubscriptionOpts contains the message type declaration for SubscriptionOpts.
 export const SubscriptionOpts: MessageType<SubscriptionOpts> =
   createMessageType({
     typeName: 'floodsub.SubscriptionOpts',
     fields: [
-      { no: 1, name: 'subscribe', kind: 'scalar', T: 8 /* ScalarType.BOOL */ },
-      {
-        no: 2,
-        name: 'channel_id',
-        kind: 'scalar',
-        T: 9 /* ScalarType.STRING */,
-      },
+      { no: 1, name: 'subscribe', kind: 'scalar', T: ScalarType.BOOL },
+      { no: 2, name: 'channel_id', kind: 'scalar', T: ScalarType.STRING },
     ] as readonly PartialFieldInfo[],
     packedByDefault: true,
   })
@@ -88,6 +85,7 @@ export type Packet = Message<{
   publish?: SignedMsg[]
 }>
 
+// Packet contains the message type declaration for Packet.
 export const Packet: MessageType<Packet> = createMessageType({
   typeName: 'floodsub.Packet',
   fields: [

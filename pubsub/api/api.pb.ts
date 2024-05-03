@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message } from '@aptre/protobuf-es-lite'
+import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
 
 export const protobufPackage = 'pubsub.api'
 
@@ -28,16 +28,12 @@ export type PublishRequest = Message<{
   identifier?: number
 }>
 
+// PublishRequest contains the message type declaration for PublishRequest.
 export const PublishRequest: MessageType<PublishRequest> = createMessageType({
   typeName: 'pubsub.api.PublishRequest',
   fields: [
-    { no: 1, name: 'data', kind: 'scalar', T: 12 /* ScalarType.BYTES */ },
-    {
-      no: 2,
-      name: 'identifier',
-      kind: 'scalar',
-      T: 13 /* ScalarType.UINT32 */,
-    },
+    { no: 1, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
+    { no: 2, name: 'identifier', kind: 'scalar', T: ScalarType.UINT32 },
   ] as readonly PartialFieldInfo[],
   packedByDefault: true,
 })
@@ -78,23 +74,14 @@ export type SubscribeRequest = Message<{
   publishRequest?: PublishRequest
 }>
 
+// SubscribeRequest contains the message type declaration for SubscribeRequest.
 export const SubscribeRequest: MessageType<SubscribeRequest> =
   createMessageType({
     typeName: 'pubsub.api.SubscribeRequest',
     fields: [
-      {
-        no: 1,
-        name: 'channel_id',
-        kind: 'scalar',
-        T: 9 /* ScalarType.STRING */,
-      },
-      { no: 2, name: 'peer_id', kind: 'scalar', T: 9 /* ScalarType.STRING */ },
-      {
-        no: 3,
-        name: 'priv_key_pem',
-        kind: 'scalar',
-        T: 9 /* ScalarType.STRING */,
-      },
+      { no: 1, name: 'channel_id', kind: 'scalar', T: ScalarType.STRING },
+      { no: 2, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
+      { no: 3, name: 'priv_key_pem', kind: 'scalar', T: ScalarType.STRING },
       {
         no: 4,
         name: 'publish_request',
@@ -131,22 +118,13 @@ export type IncomingMessage = Message<{
   data?: Uint8Array
 }>
 
+// IncomingMessage contains the message type declaration for IncomingMessage.
 export const IncomingMessage: MessageType<IncomingMessage> = createMessageType({
   typeName: 'pubsub.api.IncomingMessage',
   fields: [
-    {
-      no: 1,
-      name: 'from_peer_id',
-      kind: 'scalar',
-      T: 9 /* ScalarType.STRING */,
-    },
-    {
-      no: 2,
-      name: 'authenticated',
-      kind: 'scalar',
-      T: 8 /* ScalarType.BOOL */,
-    },
-    { no: 3, name: 'data', kind: 'scalar', T: 12 /* ScalarType.BYTES */ },
+    { no: 1, name: 'from_peer_id', kind: 'scalar', T: ScalarType.STRING },
+    { no: 2, name: 'authenticated', kind: 'scalar', T: ScalarType.BOOL },
+    { no: 3, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
   ] as readonly PartialFieldInfo[],
   packedByDefault: true,
 })
@@ -171,16 +149,12 @@ export type OutgoingStatus = Message<{
   sent?: boolean
 }>
 
+// OutgoingStatus contains the message type declaration for OutgoingStatus.
 export const OutgoingStatus: MessageType<OutgoingStatus> = createMessageType({
   typeName: 'pubsub.api.OutgoingStatus',
   fields: [
-    {
-      no: 1,
-      name: 'identifier',
-      kind: 'scalar',
-      T: 13 /* ScalarType.UINT32 */,
-    },
-    { no: 2, name: 'sent', kind: 'scalar', T: 8 /* ScalarType.BOOL */ },
+    { no: 1, name: 'identifier', kind: 'scalar', T: ScalarType.UINT32 },
+    { no: 2, name: 'sent', kind: 'scalar', T: ScalarType.BOOL },
   ] as readonly PartialFieldInfo[],
   packedByDefault: true,
 })
@@ -199,11 +173,12 @@ export type SubscriptionStatus = Message<{
   subscribed?: boolean
 }>
 
+// SubscriptionStatus contains the message type declaration for SubscriptionStatus.
 export const SubscriptionStatus: MessageType<SubscriptionStatus> =
   createMessageType({
     typeName: 'pubsub.api.SubscriptionStatus',
     fields: [
-      { no: 1, name: 'subscribed', kind: 'scalar', T: 8 /* ScalarType.BOOL */ },
+      { no: 1, name: 'subscribed', kind: 'scalar', T: ScalarType.BOOL },
     ] as readonly PartialFieldInfo[],
     packedByDefault: true,
   })
@@ -235,6 +210,7 @@ export type SubscribeResponse = Message<{
   subscriptionStatus?: SubscriptionStatus
 }>
 
+// SubscribeResponse contains the message type declaration for SubscribeResponse.
 export const SubscribeResponse: MessageType<SubscribeResponse> =
   createMessageType({
     typeName: 'pubsub.api.SubscribeResponse',

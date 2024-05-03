@@ -17,6 +17,7 @@ export const protobufPackage = 'tptaddr.controller'
  */
 export type Config = Message<{}>
 
+// Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({
   typeName: 'tptaddr.controller.Config',
   fields: [] as readonly PartialFieldInfo[],

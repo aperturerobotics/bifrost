@@ -7,6 +7,7 @@ import {
   createEnumType,
   createMessageType,
   Message,
+  ScalarType,
 } from '@aptre/protobuf-es-lite'
 import { Opts } from '../common/quic/quic.pb.js'
 import { Backoff } from '@go/github.com/aperturerobotics/util/backoff/backoff.pb.js'
@@ -64,17 +65,13 @@ export type IceServerConfig_OauthCredential = Message<{
   accessToken?: string
 }>
 
+// IceServerConfig_OauthCredential contains the message type declaration for IceServerConfig_OauthCredential.
 export const IceServerConfig_OauthCredential: MessageType<IceServerConfig_OauthCredential> =
   createMessageType({
     typeName: 'webrtc.IceServerConfig.OauthCredential',
     fields: [
-      { no: 1, name: 'mac_key', kind: 'scalar', T: 9 /* ScalarType.STRING */ },
-      {
-        no: 2,
-        name: 'access_token',
-        kind: 'scalar',
-        T: 9 /* ScalarType.STRING */,
-      },
+      { no: 1, name: 'mac_key', kind: 'scalar', T: ScalarType.STRING },
+      { no: 2, name: 'access_token', kind: 'scalar', T: ScalarType.STRING },
     ] as readonly PartialFieldInfo[],
     packedByDefault: true,
   })
@@ -134,6 +131,7 @@ export type IceServerConfig = Message<{
       }
 }>
 
+// IceServerConfig contains the message type declaration for IceServerConfig.
 export const IceServerConfig: MessageType<IceServerConfig> = createMessageType({
   typeName: 'webrtc.IceServerConfig',
   fields: [
@@ -141,15 +139,15 @@ export const IceServerConfig: MessageType<IceServerConfig> = createMessageType({
       no: 1,
       name: 'urls',
       kind: 'scalar',
-      T: 9 /* ScalarType.STRING */,
+      T: ScalarType.STRING,
       repeated: true,
     },
-    { no: 2, name: 'username', kind: 'scalar', T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: 'username', kind: 'scalar', T: ScalarType.STRING },
     {
       no: 3,
       name: 'password',
       kind: 'scalar',
-      T: 9 /* ScalarType.STRING */,
+      T: ScalarType.STRING,
       oneof: 'credential',
     },
     {
@@ -191,6 +189,7 @@ export type WebRtcConfig = Message<{
   iceCandidatePoolSize?: number
 }>
 
+// WebRtcConfig contains the message type declaration for WebRtcConfig.
 export const WebRtcConfig: MessageType<WebRtcConfig> = createMessageType({
   typeName: 'webrtc.WebRtcConfig',
   fields: [
@@ -211,7 +210,7 @@ export const WebRtcConfig: MessageType<WebRtcConfig> = createMessageType({
       no: 3,
       name: 'ice_candidate_pool_size',
       kind: 'scalar',
-      T: 13 /* ScalarType.UINT32 */,
+      T: ScalarType.UINT32,
     },
   ] as readonly PartialFieldInfo[],
   packedByDefault: true,
@@ -304,27 +303,13 @@ export type Config = Message<{
   verbose?: boolean
 }>
 
+// Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({
   typeName: 'webrtc.Config',
   fields: [
-    {
-      no: 1,
-      name: 'signaling_id',
-      kind: 'scalar',
-      T: 9 /* ScalarType.STRING */,
-    },
-    {
-      no: 2,
-      name: 'transport_peer_id',
-      kind: 'scalar',
-      T: 9 /* ScalarType.STRING */,
-    },
-    {
-      no: 3,
-      name: 'transport_type',
-      kind: 'scalar',
-      T: 9 /* ScalarType.STRING */,
-    },
+    { no: 1, name: 'signaling_id', kind: 'scalar', T: ScalarType.STRING },
+    { no: 2, name: 'transport_peer_id', kind: 'scalar', T: ScalarType.STRING },
+    { no: 3, name: 'transport_type', kind: 'scalar', T: ScalarType.STRING },
     { no: 4, name: 'quic', kind: 'message', T: () => Opts },
     { no: 5, name: 'web_rtc', kind: 'message', T: () => WebRtcConfig },
     { no: 6, name: 'backoff', kind: 'message', T: () => Backoff },
@@ -332,24 +317,19 @@ export const Config: MessageType<Config> = createMessageType({
       no: 7,
       name: 'dialers',
       kind: 'map',
-      K: 9 /* ScalarType.STRING */,
+      K: ScalarType.STRING,
       V: { kind: 'message', T: () => DialerOpts },
     },
-    { no: 8, name: 'all_peers', kind: 'scalar', T: 8 /* ScalarType.BOOL */ },
-    {
-      no: 9,
-      name: 'disable_listen',
-      kind: 'scalar',
-      T: 8 /* ScalarType.BOOL */,
-    },
+    { no: 8, name: 'all_peers', kind: 'scalar', T: ScalarType.BOOL },
+    { no: 9, name: 'disable_listen', kind: 'scalar', T: ScalarType.BOOL },
     {
       no: 10,
       name: 'block_peers',
       kind: 'scalar',
-      T: 9 /* ScalarType.STRING */,
+      T: ScalarType.STRING,
       repeated: true,
     },
-    { no: 11, name: 'verbose', kind: 'scalar', T: 8 /* ScalarType.BOOL */ },
+    { no: 11, name: 'verbose', kind: 'scalar', T: ScalarType.BOOL },
   ] as readonly PartialFieldInfo[],
   packedByDefault: true,
 })
@@ -382,12 +362,13 @@ export type WebRtcSdp = Message<{
   sdp?: string
 }>
 
+// WebRtcSdp contains the message type declaration for WebRtcSdp.
 export const WebRtcSdp: MessageType<WebRtcSdp> = createMessageType({
   typeName: 'webrtc.WebRtcSdp',
   fields: [
-    { no: 1, name: 'tx_seqno', kind: 'scalar', T: 4 /* ScalarType.UINT64 */ },
-    { no: 2, name: 'sdp_type', kind: 'scalar', T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: 'sdp', kind: 'scalar', T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: 'tx_seqno', kind: 'scalar', T: ScalarType.UINT64 },
+    { no: 2, name: 'sdp_type', kind: 'scalar', T: ScalarType.STRING },
+    { no: 3, name: 'sdp', kind: 'scalar', T: ScalarType.STRING },
   ] as readonly PartialFieldInfo[],
   packedByDefault: true,
 })
@@ -406,10 +387,11 @@ export type WebRtcIce = Message<{
   candidate?: string
 }>
 
+// WebRtcIce contains the message type declaration for WebRtcIce.
 export const WebRtcIce: MessageType<WebRtcIce> = createMessageType({
   typeName: 'webrtc.WebRtcIce',
   fields: [
-    { no: 1, name: 'candidate', kind: 'scalar', T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: 'candidate', kind: 'scalar', T: ScalarType.STRING },
   ] as readonly PartialFieldInfo[],
   packedByDefault: true,
 })
@@ -460,6 +442,7 @@ export type WebRtcSignal = Message<{
       }
 }>
 
+// WebRtcSignal contains the message type declaration for WebRtcSignal.
 export const WebRtcSignal: MessageType<WebRtcSignal> = createMessageType({
   typeName: 'webrtc.WebRtcSignal',
   fields: [
@@ -467,7 +450,7 @@ export const WebRtcSignal: MessageType<WebRtcSignal> = createMessageType({
       no: 1,
       name: 'request_offer',
       kind: 'scalar',
-      T: 4 /* ScalarType.UINT64 */,
+      T: ScalarType.UINT64,
       oneof: 'body',
     },
     { no: 2, name: 'sdp', kind: 'message', T: () => WebRtcSdp, oneof: 'body' },

@@ -22,6 +22,7 @@ export type Config = Message<{
   busConfig?: Config$1
 }>
 
+// Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({
   typeName: 'bifrost.api.Config',
   fields: [

@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message } from '@aptre/protobuf-es-lite'
+import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
 import { Opts as Opts$1 } from '../quic/quic.pb.js'
 
 export const protobufPackage = 'pconn'
@@ -28,11 +28,12 @@ export type Opts = Message<{
   verbose?: boolean
 }>
 
+// Opts contains the message type declaration for Opts.
 export const Opts: MessageType<Opts> = createMessageType({
   typeName: 'pconn.Opts',
   fields: [
     { no: 1, name: 'quic', kind: 'message', T: () => Opts$1 },
-    { no: 2, name: 'verbose', kind: 'scalar', T: 8 /* ScalarType.BOOL */ },
+    { no: 2, name: 'verbose', kind: 'scalar', T: ScalarType.BOOL },
   ] as readonly PartialFieldInfo[],
   packedByDefault: true,
 })

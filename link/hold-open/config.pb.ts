@@ -16,6 +16,7 @@ export const protobufPackage = 'link.holdopen.controller'
  */
 export type Config = Message<{}>
 
+// Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({
   typeName: 'link.holdopen.controller.Config',
   fields: [] as readonly PartialFieldInfo[],

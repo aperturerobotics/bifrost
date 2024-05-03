@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message } from '@aptre/protobuf-es-lite'
+import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
 import { Backoff } from '@go/github.com/aperturerobotics/util/backoff/backoff.pb.js'
 
 export const protobufPackage = 'stream.srpc.client'
@@ -50,6 +50,7 @@ export type Config = Message<{
   timeoutDur?: string
 }>
 
+// Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({
   typeName: 'stream.srpc.client.Config',
   fields: [
@@ -57,28 +58,13 @@ export const Config: MessageType<Config> = createMessageType({
       no: 1,
       name: 'server_peer_ids',
       kind: 'scalar',
-      T: 9 /* ScalarType.STRING */,
+      T: ScalarType.STRING,
       repeated: true,
     },
     { no: 2, name: 'per_server_backoff', kind: 'message', T: () => Backoff },
-    {
-      no: 3,
-      name: 'src_peer_id',
-      kind: 'scalar',
-      T: 9 /* ScalarType.STRING */,
-    },
-    {
-      no: 4,
-      name: 'transport_id',
-      kind: 'scalar',
-      T: 4 /* ScalarType.UINT64 */,
-    },
-    {
-      no: 5,
-      name: 'timeout_dur',
-      kind: 'scalar',
-      T: 9 /* ScalarType.STRING */,
-    },
+    { no: 3, name: 'src_peer_id', kind: 'scalar', T: ScalarType.STRING },
+    { no: 4, name: 'transport_id', kind: 'scalar', T: ScalarType.UINT64 },
+    { no: 5, name: 'timeout_dur', kind: 'scalar', T: ScalarType.STRING },
   ] as readonly PartialFieldInfo[],
   packedByDefault: true,
 })

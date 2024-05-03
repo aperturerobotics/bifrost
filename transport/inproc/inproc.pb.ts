@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message } from '@aptre/protobuf-es-lite'
+import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
 import { Opts } from '../common/pconn/pconn.pb.js'
 import { DialerOpts } from '../common/dialer/dialer.pb.js'
 
@@ -36,21 +36,17 @@ export type Config = Message<{
   dialers?: { [key: string]: DialerOpts }
 }>
 
+// Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({
   typeName: 'inproc.Config',
   fields: [
-    {
-      no: 1,
-      name: 'transport_peer_id',
-      kind: 'scalar',
-      T: 9 /* ScalarType.STRING */,
-    },
+    { no: 1, name: 'transport_peer_id', kind: 'scalar', T: ScalarType.STRING },
     { no: 2, name: 'packet_opts', kind: 'message', T: () => Opts },
     {
       no: 3,
       name: 'dialers',
       kind: 'map',
-      K: 9 /* ScalarType.STRING */,
+      K: ScalarType.STRING,
       V: { kind: 'message', T: () => DialerOpts },
     },
   ] as readonly PartialFieldInfo[],

@@ -26,6 +26,7 @@ export type ForwardStreamsRequest = Message<{
   forwardingConfig?: Config
 }>
 
+// ForwardStreamsRequest contains the message type declaration for ForwardStreamsRequest.
 export const ForwardStreamsRequest: MessageType<ForwardStreamsRequest> =
   createMessageType({
     typeName: 'stream.api.ForwardStreamsRequest',
@@ -49,6 +50,7 @@ export type ForwardStreamsResponse = Message<{
   controllerStatus?: ControllerStatus
 }>
 
+// ForwardStreamsResponse contains the message type declaration for ForwardStreamsResponse.
 export const ForwardStreamsResponse: MessageType<ForwardStreamsResponse> =
   createMessageType({
     typeName: 'stream.api.ForwardStreamsResponse',
@@ -75,6 +77,7 @@ export type ListenStreamsRequest = Message<{
   listeningConfig?: Config$1
 }>
 
+// ListenStreamsRequest contains the message type declaration for ListenStreamsRequest.
 export const ListenStreamsRequest: MessageType<ListenStreamsRequest> =
   createMessageType({
     typeName: 'stream.api.ListenStreamsRequest',
@@ -98,6 +101,7 @@ export type ListenStreamsResponse = Message<{
   controllerStatus?: ControllerStatus
 }>
 
+// ListenStreamsResponse contains the message type declaration for ListenStreamsResponse.
 export const ListenStreamsResponse: MessageType<ListenStreamsResponse> =
   createMessageType({
     typeName: 'stream.api.ListenStreamsResponse',
@@ -133,6 +137,7 @@ export type AcceptStreamRequest = Message<{
   data?: Data
 }>
 
+// AcceptStreamRequest contains the message type declaration for AcceptStreamRequest.
 export const AcceptStreamRequest: MessageType<AcceptStreamRequest> =
   createMessageType({
     typeName: 'stream.api.AcceptStreamRequest',
@@ -157,6 +162,7 @@ export type AcceptStreamResponse = Message<{
   data?: Data
 }>
 
+// AcceptStreamResponse contains the message type declaration for AcceptStreamResponse.
 export const AcceptStreamResponse: MessageType<AcceptStreamResponse> =
   createMessageType({
     typeName: 'stream.api.AcceptStreamResponse',
@@ -187,6 +193,7 @@ export type DialStreamRequest = Message<{
   data?: Data
 }>
 
+// DialStreamRequest contains the message type declaration for DialStreamRequest.
 export const DialStreamRequest: MessageType<DialStreamRequest> =
   createMessageType({
     typeName: 'stream.api.DialStreamRequest',
@@ -211,6 +218,7 @@ export type DialStreamResponse = Message<{
   data?: Data
 }>
 
+// DialStreamResponse contains the message type declaration for DialStreamResponse.
 export const DialStreamResponse: MessageType<DialStreamResponse> =
   createMessageType({
     typeName: 'stream.api.DialStreamResponse',
