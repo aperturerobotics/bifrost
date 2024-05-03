@@ -4,8 +4,8 @@ go 1.22
 
 require (
 	github.com/aperturerobotics/common v0.15.2 // latest
-	github.com/aperturerobotics/controllerbus v0.44.5 // latest
-	github.com/aperturerobotics/entitygraph v0.9.0 // latest
+	github.com/aperturerobotics/controllerbus v0.44.6-0.20240504050347-2116a715a7ff // latest
+	github.com/aperturerobotics/entitygraph v0.9.1 // latest
 	github.com/aperturerobotics/protobuf-go-lite v0.6.1 // latest
 	github.com/aperturerobotics/starpc v0.32.2 // latest
 	github.com/aperturerobotics/util v1.23.0 // master
