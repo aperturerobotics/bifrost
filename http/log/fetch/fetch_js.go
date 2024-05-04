@@ -5,6 +5,7 @@ package httplog_fetch
 import (
 	"slices"
 	"strings"
+	"time"
 
 	fetch "github.com/aperturerobotics/bifrost/util/js-fetch"
 	"github.com/sirupsen/logrus"
@@ -44,15 +45,19 @@ func Fetch(le *logrus.Entry, url string, opts *fetch.Opts, verbose bool) (*fetch
 		}
 	}
 
+	startTime := time.Now()
 	resp, err := fetch.Fetch(url, opts)
+	duration := time.Since(startTime)
 
 	if le != nil {
+		fields := make(logrus.Fields, 2+len(resp.Headers))
+		fields["dur"] = duration.String()
 		if resp != nil {
-			le = le.WithField("status", resp.Status)
+			fields["status"] = resp.Status
 			for hdr, hdrVal := range resp.Headers {
 				hdr = strings.ToLower(hdr)
 				if slices.Contains(logHeaders, hdr) {
-					le = le.WithField(hdr, hdrVal)
+					fields[hdr] = hdrVal
 				}
 			}
 		}

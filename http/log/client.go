@@ -2,6 +2,7 @@ package httplog
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/sirupsen/logrus"
 )
@@ -88,22 +89,27 @@ func DoRequestWithClient(le *logrus.Entry, client HttpClient, req *http.Request,
 
 	var resp *http.Response
 	var err error
+	startTime := time.Now()
 	if client != nil {
 		resp, err = client.Do(req)
 	} else {
 		resp, err = http.DefaultClient.Do(req)
 	}
+	duration := time.Since(startTime)
 
 	if le != nil {
+		fields := make(logrus.Fields, 3)
+		fields["dur"] = duration.String()
 		if resp != nil {
-			le = le.WithField("status", resp.StatusCode)
+			fields["status"] = resp.StatusCode
 
 			// Parse and log the Content-Range header from the response
 			if contentRangeHeader := resp.Header.Get("Content-Range"); contentRangeHeader != "" {
-				le = le.WithField("response-range", contentRangeHeader)
+				fields["response-range"] = contentRangeHeader
 			}
 		}
 
+		le := le.WithFields(fields)
 		if err != nil {
 			le.WithError(err).Warn("request errored")
 		} else if resp.StatusCode >= 400 {
