@@ -6,6 +6,8 @@ github.com/aperturerobotics/bifrost-nats-server/v2 v2.1.8-0.20221228081037-b7c2d
 github.com/aperturerobotics/bifrost-nats-server/v2 v2.1.8-0.20221228081037-b7c2df0c151f/go.mod h1:kIcZtLpq4UIZzOqduYLm1mYU1nuMBtN6XuDCtQ21QT8=
 github.com/aperturerobotics/common v0.15.5 h1:6imQU3QlLFR2NW4HrJUmc1fqb9kHArtgf0FP9Ag10XI=
 github.com/aperturerobotics/common v0.15.5/go.mod h1:R76WABZ3PDLrAhScLVjnzsI8S0rhIVNowxbzv4f8ZdM=
+github.com/aperturerobotics/common v0.15.6 h1:HsGGKilMGaDsDgjcU7/JAII6JEvAvf6APD3rUv0PeDs=
+github.com/aperturerobotics/common v0.15.6/go.mod h1:R76WABZ3PDLrAhScLVjnzsI8S0rhIVNowxbzv4f8ZdM=
 github.com/aperturerobotics/controllerbus v0.45.1 h1:tMno+Lx4gZVJRp0XUJ7zEcxKJPGntKatoHqYNNLBz0c=
 github.com/aperturerobotics/controllerbus v0.45.1/go.mod h1:3SfYY1M8jBcfmmegutxfd/+M/aqBqdbhaqTYWrM3G7E=
 github.com/aperturerobotics/entitygraph v0.9.1 h1:bCl0Q9N1hkQnOtdCYz7pNSYqH+5CY3EUCuD19dQmJeI=
@@ -24,6 +26,8 @@ github.com/aperturerobotics/starpc v0.32.4 h1:d72BujyBGz5+v3ruDRRyqr6/Gl2W7BLPyU
 github.com/aperturerobotics/starpc v0.32.4/go.mod h1:55y+i/Rjh69+CxZQ3MlFu1qmmjQ0iCU2RSFAO7EXVp0=
 github.com/aperturerobotics/util v1.23.0 h1:MW2klko8UN+t1baHiwy0RsEbpz+ZSleSmvZ9M26AQgA=
 github.com/aperturerobotics/util v1.23.0/go.mod h1:NaPbGzquoyVaaCLcdxorXjDYrI9Y+FoRNqOfKGUl9EY=
+github.com/aperturerobotics/util v1.23.1 h1:pEeBrN5UUNy83OFyv9d7BQod8O++j5ZwIkEuYGdpRXw=
+github.com/aperturerobotics/util v1.23.1/go.mod h1:dO8P8Ut5xNPpLrPPpn7kM/aJL+qT20C5Ppcs1GE0VNg=
 github.com/blang/semver v3.5.1+incompatible h1:cQNTCjp13qL8KC3Nbxr/y2Bqb63oX6wdnnjpJbkM4JQ=
 github.com/blang/semver v3.5.1+incompatible/go.mod h1:kRBLl5iJ+tD4TcOOxsy/0fnwebNt5EWlYSAyrTnjyyk=
 github.com/cenkalti/backoff v2.2.1+incompatible h1:tNowT99t7UNflLxfYYSlKYsBpXdEet03Pg2g16Swow4=
