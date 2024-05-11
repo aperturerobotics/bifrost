@@ -64,7 +64,7 @@ func Fetch(le *logrus.Entry, url string, opts *fetch.Opts, verbose bool) (*fetch
 
 		if err != nil {
 			le.WithError(err).Warn("request errored")
-		} else if resp.Status >= 400 {
+		} else if resp == nil || resp.Status >= 400 {
 			le.Warn("request failed")
 		} else if verbose {
 			le.Debug("request succeeded")

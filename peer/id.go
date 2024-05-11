@@ -15,7 +15,7 @@ func IDFromBytes(b []byte) (ID, error) {
 	return ip.IDFromBytes(b)
 }
 
-// IDB58Decode returns a b58-decoded Peer
+// IDB58Decode returns a b58-decoded Peer ID.
 func IDB58Decode(s string) (ID, error) {
 	return ip.Decode(s)
 }

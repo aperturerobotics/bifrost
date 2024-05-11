@@ -2,7 +2,7 @@
 # yarn lockfile v1
 
 
-"@aptre/common@^0.15.5":
+"@aptre/common@^0.15.6":
   version "0.15.6"
   resolved "https://registry.yarnpkg.com/@aptre/common/-/common-0.15.6.tgz#b608667d2329f02cd383761c98669cbe7c48e160"
   integrity sha512-0NY2BwDMlxrlsWNGdust+Ik6R/igHgWHfm1mqjuUiq5XNgf/UvTVv/c+1ZVtwXZ78/c/5jKvsQZeFH/omZr43A==
@@ -1828,7 +1828,7 @@ reusify@^1.0.4:
   resolved "https://registry.yarnpkg.com/reusify/-/reusify-1.0.4.tgz#90da382b1e126efc02146e90845a88db12925d76"
   integrity sha512-U9nH88a3fc/ekCF1l0/UP1IosiuIjyTh7hBvXVMHYgVcfGvt897Xguj2UOLDeI5BG2m7/uwyaLVT6fbtCwTyzw==
 
-rimraf@^5.0.5:
+rimraf@^5.0.6:
   version "5.0.6"
   resolved "https://registry.yarnpkg.com/rimraf/-/rimraf-5.0.6.tgz#f13b90af1794a2e8e1ecd052263bcf688742af88"
   integrity sha512-X72SgyOf+1lFnGM6gYcmZ4+jMOwuT4E4SajKQzUIlI7EoR5eFHMhS/wf8Ll0mN+w2bxcIVldrJQ6xT7HFQywjg==
@@ -1884,10 +1884,29 @@ sprintf-js@~1.0.2:
   resolved "https://registry.yarnpkg.com/sprintf-js/-/sprintf-js-1.0.3.tgz#04e6926f662895354f3dd015203633b857297e2c"
   integrity sha512-D9cPgkvLlV3t3IzL0D0YLvGA9Ahk4PcvVwUbN0dSGr1aP0Nrt4AEnTUbuGvquEC0mA64Gqt1fzirlRs5ibXx8g==
 
-starpc@^0.32.3, starpc@^0.32.4:
-  version "0.32.4"
-  resolved "https://registry.yarnpkg.com/starpc/-/starpc-0.32.4.tgz#5973a277d2505b5aef648280fddc5d3c29166b00"
-  integrity sha512-l9+GiC1W6zegdIJPw2g+pM2dyn99zc5qQxkB+0Ww0K13PbKdeprGUvz3nbutQJE8Mtc42kLRvdnJAOu3ZWl0Wg==
+starpc@^0.32.3:
+  version "0.32.6"
+  resolved "https://registry.yarnpkg.com/starpc/-/starpc-0.32.6.tgz#c5c8149393d1e61467317122c00afa428f58fe27"
+  integrity sha512-wm1X/PmaGVxz9Uw88wX0SNewXUXX/X9CnGjwfGe0euxwSRuj2PTsAs6/8ar69BYhZ65SqAhxCxYo84v0hre4mQ==
+  dependencies:
+    "@aptre/it-ws" "^1.0.0"
+    "@aptre/protobuf-es-lite" "^0.4.3"
+    "@chainsafe/libp2p-yamux" "^6.0.2"
+    "@libp2p/interface" "^1.3.1"
+    "@libp2p/logger" "^4.0.12"
+    event-iterator "^2.0.0"
+    isomorphic-ws "^5.0.0"
+    it-first "^3.0.6"
+    it-pipe "^3.0.1"
+    it-pushable "^3.2.3"
+    it-stream-types "^2.0.1"
+    uint8arraylist "^2.4.7"
+    ws "^8.17.0"
+
+starpc@^0.32.7:
+  version "0.32.7"
+  resolved "https://registry.yarnpkg.com/starpc/-/starpc-0.32.7.tgz#775aba6daad31f91553eec4639dbca372a97234e"
+  integrity sha512-2riwKMZvWa5pmiYxo6hHPOYoWzmmIXtkvMZsfXMDyky1A33LExwUwfPIuCteT8T0iZ/7WKdq6Wk2/JO/r9IFAw==
   dependencies:
     "@aptre/it-ws" "^1.0.0"
     "@aptre/protobuf-es-lite" "^0.4.3"
@@ -2030,9 +2049,9 @@ uint8arraylist@^2.0.0, uint8arraylist@^2.4.3, uint8arraylist@^2.4.7, uint8arrayl
     uint8arrays "^5.0.1"
 
 uint8arrays@^5.0.0, uint8arrays@^5.0.1, uint8arrays@^5.0.2, uint8arrays@^5.0.3:
-  version "5.0.3"
-  resolved "https://registry.yarnpkg.com/uint8arrays/-/uint8arrays-5.0.3.tgz#92b894d9c4269ba97c51544d6e1f279fe6f80d1f"
-  integrity sha512-6LBuKji28kHjgPJMkQ6GDaBb1lRwIhyOYq6pDGwYMoDPfImE9SkuYENVmR0yu9yGgs2clHUSY9fKDukR+AXfqQ==
+  version "5.1.0"
+  resolved "https://registry.yarnpkg.com/uint8arrays/-/uint8arrays-5.1.0.tgz#14047c9bdf825d025b7391299436e5e50e7270f1"
+  integrity sha512-vA6nFepEmlSKkMBnLBaUMVvAC4G3CTmO58C12y4sq6WPDOR7mOFYOi7GlrQ4djeSbP6JG9Pv9tJDM97PedRSww==
   dependencies:
     multiformats "^13.0.0"
 

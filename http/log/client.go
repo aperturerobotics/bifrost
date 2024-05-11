@@ -112,7 +112,7 @@ func DoRequestWithClient(le *logrus.Entry, client HttpClient, req *http.Request,
 		le := le.WithFields(fields)
 		if err != nil {
 			le.WithError(err).Warn("request errored")
-		} else if resp.StatusCode >= 400 {
+		} else if resp == nil || resp.StatusCode >= 400 {
 			le.Warn("request failed")
 		} else if verbose {
 			le.Debug("request succeeded")
