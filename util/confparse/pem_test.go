@@ -1,7 +1,6 @@
 package confparse
 
 import (
-	"crypto/rand"
 	"testing"
 
 	"github.com/aperturerobotics/bifrost/keypem"
@@ -10,11 +9,10 @@ import (
 
 // TestParseKeysPEM tests parsing public and private key pems.
 func TestParseKeysPEM(t *testing.T) {
-	keyPriv, keyPub, err := crypto.GenerateEd25519Key(rand.Reader)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
+	testKeyTypes(t, testParseKeysPEM)
+}
 
+func testParseKeysPEM(t *testing.T, keyPriv crypto.PrivKey, keyPub crypto.PubKey) {
 	privPEM, err := keypem.MarshalPrivKeyPem(keyPriv)
 	if err != nil {
 		t.Fatal(err.Error())
