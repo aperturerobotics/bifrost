@@ -7,7 +7,7 @@ require (
 	github.com/aperturerobotics/controllerbus v0.45.1 // latest
 	github.com/aperturerobotics/entitygraph v0.9.1 // latest
 	github.com/aperturerobotics/protobuf-go-lite v0.6.3 // latest
-	github.com/aperturerobotics/starpc v0.32.7 // latest
+	github.com/aperturerobotics/starpc v0.32.8 // latest
 	github.com/aperturerobotics/util v1.23.1 // master
 )
 

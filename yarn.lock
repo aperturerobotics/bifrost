@@ -1903,10 +1903,10 @@ starpc@^0.32.3:
     uint8arraylist "^2.4.7"
     ws "^8.17.0"
 
-starpc@^0.32.7:
-  version "0.32.7"
-  resolved "https://registry.yarnpkg.com/starpc/-/starpc-0.32.7.tgz#775aba6daad31f91553eec4639dbca372a97234e"
-  integrity sha512-2riwKMZvWa5pmiYxo6hHPOYoWzmmIXtkvMZsfXMDyky1A33LExwUwfPIuCteT8T0iZ/7WKdq6Wk2/JO/r9IFAw==
+starpc@^0.32.8:
+  version "0.32.8"
+  resolved "https://registry.yarnpkg.com/starpc/-/starpc-0.32.8.tgz#a5d0ace194240d54dbd3c654adf8a1080bbfd760"
+  integrity sha512-pKD1x9YW54PI278T+b6KrqS63P7y/pojGgACgNC+RsE9QLrN1B8+fldKPZaY8ec9OEvbd0G+A7AF386GzRbRLA==
   dependencies:
     "@aptre/it-ws" "^1.0.0"
     "@aptre/protobuf-es-lite" "^0.4.3"
