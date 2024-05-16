@@ -39,16 +39,6 @@ jobs:
       with:
         go-version: ${{ matrix.go }}
 
-    - name: Cache Go modules
-      uses: actions/cache/restore@v4
-      with:
-        path: |
-          ~/.cache/go-build
-          ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
-
     - name: Setup Node.JS ${{ matrix.node }}
       uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
       with:
@@ -60,7 +50,6 @@ jobs:
       with:
         languages: ${{ matrix.language }}
 
-        
     - name: Autobuild
       uses: github/codeql-action/autobuild@b7cec7526559c32f1616476ff32d17ba4c59b2d6 # v3.25.5
 
