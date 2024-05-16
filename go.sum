@@ -4,8 +4,8 @@ github.com/aperturerobotics/bifrost-nats-client v1.10.1-0.20200831103200-24c3d04
 github.com/aperturerobotics/bifrost-nats-client v1.10.1-0.20200831103200-24c3d0464e58/go.mod h1:ougcjYEZDYV8pVtaNbA5sgYDukkYHyKtSsW/T3B13j0=
 github.com/aperturerobotics/bifrost-nats-server/v2 v2.1.8-0.20221228081037-b7c2df0c151f h1:bmScByQNGDPPy9T+zdwu816XaCbFtD5UDyqZMRiHJ80=
 github.com/aperturerobotics/bifrost-nats-server/v2 v2.1.8-0.20221228081037-b7c2df0c151f/go.mod h1:kIcZtLpq4UIZzOqduYLm1mYU1nuMBtN6XuDCtQ21QT8=
-github.com/aperturerobotics/common v0.15.6 h1:HsGGKilMGaDsDgjcU7/JAII6JEvAvf6APD3rUv0PeDs=
-github.com/aperturerobotics/common v0.15.6/go.mod h1:R76WABZ3PDLrAhScLVjnzsI8S0rhIVNowxbzv4f8ZdM=
+github.com/aperturerobotics/common v0.16.1 h1:+Ei4oSZo+3QTI38YHGDe8MhkW/FXwpA8DTSs3JJPAC4=
+github.com/aperturerobotics/common v0.16.1/go.mod h1:zjDs8xIZYFHbElcM5l2wOoNu3a3xyy4+u3mQELzK7ss=
 github.com/aperturerobotics/controllerbus v0.45.2 h1:JhLEwMqm+RhZnmlMDO7XLPQ8ktDlf9THHjoREV7ALKk=
 github.com/aperturerobotics/controllerbus v0.45.2/go.mod h1:43diBmMA6fwU6whhGvjedaQP9egcNdmp3wzDuQnr/e0=
 github.com/aperturerobotics/entitygraph v0.9.1 h1:bCl0Q9N1hkQnOtdCYz7pNSYqH+5CY3EUCuD19dQmJeI=
@@ -18,8 +18,8 @@ github.com/aperturerobotics/json-iterator-lite v1.0.0 h1:cihbrYWoK/S2RYXhJLpDZd+
 github.com/aperturerobotics/json-iterator-lite v1.0.0/go.mod h1:snaApCEDtrHHP6UWSLKiYNOZU9A5NyzccKenx9oZEzg=
 github.com/aperturerobotics/logrus v1.9.4-0.20240119050608-13332fb58195 h1:uyeD1J23j/kFiCFO7rx+GQA4tCqOEy3IJyMK4f6vamE=
 github.com/aperturerobotics/logrus v1.9.4-0.20240119050608-13332fb58195/go.mod h1:naHLuLoDiP4jHNo9R0sCBMtWGeIprob74mVsIT4qYEQ=
-github.com/aperturerobotics/protobuf-go-lite v0.6.3 h1:AZ821ntYqzCpq6jE5rWJwJLikYbaa63Nka7YfW9EJdE=
-github.com/aperturerobotics/protobuf-go-lite v0.6.3/go.mod h1:YTbfnUj3feSULhs8VgepAHFnF3wUc0CPj4jd2axy21I=
+github.com/aperturerobotics/protobuf-go-lite v0.6.4 h1:zFak5xuNuiiEnF8d+pewYE9giyPtMLvSiusBq/FLEjA=
+github.com/aperturerobotics/protobuf-go-lite v0.6.4/go.mod h1:YTbfnUj3feSULhs8VgepAHFnF3wUc0CPj4jd2axy21I=
 github.com/aperturerobotics/quic-go v0.43.1-0.20240504081906-25e38f065e10 h1:xtQ4K5XBgTSO47KbLYYEy9Y3HWLGeVNlbJXw1RfAXt4=
 github.com/aperturerobotics/quic-go v0.43.1-0.20240504081906-25e38f065e10/go.mod h1:IWwvw/rjosC5aPDuEgzbRPNlZSHC4b4ABztoalIe59g=
 github.com/aperturerobotics/starpc v0.32.8 h1:ZDKVV/NxGbk0TVfBUk7NvHC8EEoV2xzd/jgQaQuR5No=
