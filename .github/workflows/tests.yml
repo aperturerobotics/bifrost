@@ -26,6 +26,18 @@ jobs:
         uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
         with:
           go-version: ${{ matrix.go }}
+          cache: ${{ runner.os }}-go-${{ hashFiles('**/go.mod') }}
+          cache-dependency-path: ${{ github.workspace }}/.tools
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
 
       - name: Setup Node.JS ${{ matrix.node }}
         uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
@@ -33,25 +45,34 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: 'yarn'
 
-      - name: Test Go
-        run: make test
-
       - name: Yarn install
         run: yarn install
+
+      - name: Cache tools
+        uses: actions/cache@v4
+        with:
+          path: |
+            ./.tools
+          key: ${{ runner.os }}-aptre-tools-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-aptre-tools-
 
       - name: Build Javascript
         run: yarn run build
 
+      - name: Test Go
+        run: make test
+
       - name: Test Js
         run: yarn test:js
 
-      - name: Lint Javascript
+      - name: Lint Js
         run: yarn run lint:js
 
       - name: Lint Go
         run: yarn run lint:go
 
-      - name: Depcheck JS
+      - name: Depcheck Js
         run: yarn run deps
 
       - name: Check goreleaser build
