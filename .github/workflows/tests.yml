@@ -26,8 +26,6 @@ jobs:
         uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
         with:
           go-version: ${{ matrix.go }}
-          cache: ${{ runner.os }}-go-${{ hashFiles('**/go.mod') }}
-          cache-dependency-path: ${{ github.workspace }}/.tools
 
       - name: Cache Go modules
         uses: actions/cache@v4
