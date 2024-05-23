@@ -196,7 +196,7 @@ func (w *WebSocket) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	// Filter http path if set
-	if confPath != "" && req.URL.Path != httpPath {
+	if confPath != "" && req.URL.Path != confPath {
 		returnNotFound()
 		return
 	}
