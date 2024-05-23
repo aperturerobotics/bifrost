@@ -6,14 +6,18 @@ github.com/aperturerobotics/bifrost-nats-server/v2 v2.1.8-0.20221228081037-b7c2d
 github.com/aperturerobotics/bifrost-nats-server/v2 v2.1.8-0.20221228081037-b7c2df0c151f/go.mod h1:kIcZtLpq4UIZzOqduYLm1mYU1nuMBtN6XuDCtQ21QT8=
 github.com/aperturerobotics/common v0.16.6 h1:xSeQAJkari6JHNwycngVNP5t59CSVDrpqm9xvIsVo48=
 github.com/aperturerobotics/common v0.16.6/go.mod h1:CNUQ4LRn9e2zwKKrWMZiKoywhWV9+Wpn3QPn9uE2E7Y=
-github.com/aperturerobotics/controllerbus v0.45.4 h1:tn0DiGmo30T64xWY6h4QSoDGvaMwoSeQX+Jy/Vq0Sdg=
-github.com/aperturerobotics/controllerbus v0.45.4/go.mod h1:48s2IHA9WCyP31wiAf3EjDu6FzOb6DQJnIc5RNwvRq0=
+github.com/aperturerobotics/controllerbus v0.45.5 h1:2gxMGx/TrelhGd8Fv1+lZ2JxNiJAN4zz98JHzB572oM=
+github.com/aperturerobotics/controllerbus v0.45.5/go.mod h1:Xa8bH9OF61SsghTXh6jxUDG71xWAXwOQGest+oI0ChI=
 github.com/aperturerobotics/entitygraph v0.9.1 h1:bCl0Q9N1hkQnOtdCYz7pNSYqH+5CY3EUCuD19dQmJeI=
 github.com/aperturerobotics/entitygraph v0.9.1/go.mod h1:40VoNXSslWQieSS4V3HyzqOOZnRiGxItj/qZYSHg8Rw=
 github.com/aperturerobotics/go-libp2p v0.33.1-0.20240511072027-002c32698a19 h1:ZpnWhPCmYo//h1Jx9iOGPGG1cbFRM7Ij+ms+mCK6RUo=
 github.com/aperturerobotics/go-libp2p v0.33.1-0.20240511072027-002c32698a19/go.mod h1:/TIElEA8TzmHQTgGJQyzg0zHNZRCMYbdKyOsKwn9i6E=
 github.com/aperturerobotics/go-libp2p-msgio v0.0.0-20240511033615-1b69178aa5c8 h1:S9prTCDvkYfJ9ATV+B1yoNESE5w5dbFM5GmriXRG0Lk=
 github.com/aperturerobotics/go-libp2p-msgio v0.0.0-20240511033615-1b69178aa5c8/go.mod h1:fK2s0Xpx0LYL2YQpYGJ7H+QwrC8+EgZ4Dd4G/vaLMW8=
+github.com/aperturerobotics/go-multiaddr v0.12.4-0.20240407071906-6f0354cc6755 h1:VWOdcRKb6Y+N2SvBT9UmgxllGJTud4ya0AIc0/JVGxw=
+github.com/aperturerobotics/go-multiaddr v0.12.4-0.20240407071906-6f0354cc6755/go.mod h1:sBXrNzucqkFJhvKOiwwLyqamGa/P5EIXNPLovyhQCII=
+github.com/aperturerobotics/go-multihash v0.2.3 h1:/dzKxmtr0eadFUcG/8uJdKtcQ5yHwmhwx6oqe1PoMMU=
+github.com/aperturerobotics/go-multihash v0.2.3/go.mod h1:jEGfK9IqlKuD9BaFHgadXORk3i9Rw7DmVOOM6UgauGU=
 github.com/aperturerobotics/json-iterator-lite v1.0.0 h1:cihbrYWoK/S2RYXhJLpDZd+GUjVvFJN+D3w1VOqqHRI=
 github.com/aperturerobotics/json-iterator-lite v1.0.0/go.mod h1:snaApCEDtrHHP6UWSLKiYNOZU9A5NyzccKenx9oZEzg=
 github.com/aperturerobotics/logrus v1.9.4-0.20240119050608-13332fb58195 h1:uyeD1J23j/kFiCFO7rx+GQA4tCqOEy3IJyMK4f6vamE=
@@ -88,8 +92,6 @@ github.com/libp2p/go-yamux/v4 v4.0.2-0.20240322071716-53ef5820bd48/go.mod h1:PGP
 github.com/minio/highwayhash v1.0.0/go.mod h1:xQboMTeM9nY9v/LlAOxFctujiv5+Aq2hR5dxBpaMbdc=
 github.com/minio/highwayhash v1.0.2 h1:Aak5U0nElisjDCfPSG79Tgzkn2gl66NxOMspRrKnA/g=
 github.com/minio/highwayhash v1.0.2/go.mod h1:BQskDq+xkJ12lmlUUi7U0M5Swg3EWR+dLTk+kldvVxY=
-github.com/minio/sha256-simd v1.0.1 h1:6kaan5IFmwTNynnKKpDHe6FWHohJOHhCPchzK49dzMM=
-github.com/minio/sha256-simd v1.0.1/go.mod h1:Pz6AKMiUdngCLpeTL/RJY1M9rUuPMYujV5xJjtbRSN8=
 github.com/mr-tron/base58 v1.2.0 h1:T/HDJBh4ZCPbU39/+c3rRvE0uKBQlU27+QI8LJ4t64o=
 github.com/mr-tron/base58 v1.2.0/go.mod h1:BinMc/sQntlIE1frQmRFPUoPA1Zkr8VRgBdjWI2mNwc=
 github.com/multiformats/go-base32 v0.1.0 h1:pVx9xoSPqEIQG8o+UbAe7DNi51oej1NtK+aGkbLYxPE=
@@ -98,8 +100,6 @@ github.com/multiformats/go-base36 v0.2.0 h1:lFsAbNOGeKtuKozrtBsAkSVhv1p9D0/qedU9
 github.com/multiformats/go-base36 v0.2.0/go.mod h1:qvnKE++v+2MWCfePClUEjE78Z7P2a1UV0xHgWc0hkp4=
 github.com/multiformats/go-multibase v0.2.0 h1:isdYCVLvksgWlMW9OZRYJEa9pZETFivncJHmHnnd87g=
 github.com/multiformats/go-multibase v0.2.0/go.mod h1:bFBZX4lKCA/2lyOFSAoKH5SS6oPyjtnzK/XTFDPkNuk=
-github.com/multiformats/go-multihash v0.2.3 h1:7Lyc8XfX/IY2jWb/gI7JP+o7JEq9hOa7BFvVU9RSh+U=
-github.com/multiformats/go-multihash v0.2.3/go.mod h1:dXgKXCXjBzdscBLk9JkjINiEsCKRVch90MdaGiKsvSM=
 github.com/multiformats/go-multistream v0.5.0 h1:5htLSLl7lvJk3xx3qT/8Zm9J4K8vEOf/QGkvOGQAyiE=
 github.com/multiformats/go-multistream v0.5.0/go.mod h1:n6tMZiwiP2wUsR8DgfDWw1dydlEqV3l6N3/GBsX6ILA=
 github.com/multiformats/go-varint v0.0.7 h1:sWSGR+f/eu5ABZA2ZpYKBILXTTs9JWpdEM/nEGOHFS8=
@@ -117,8 +117,6 @@ github.com/onsi/ginkgo/v2 v2.15.0 h1:79HwNRBAZHOEwrczrgSOPy+eFTTlIGELKy5as+ClttY
 github.com/onsi/ginkgo/v2 v2.15.0/go.mod h1:HlxMHtYF57y6Dpf+mc5529KKmSq9h2FpCF+/ZkwUxKM=
 github.com/onsi/gomega v1.30.0 h1:hvMK7xYz4D3HapigLTeGdId/NcfQx1VHMJc60ew99+8=
 github.com/onsi/gomega v1.30.0/go.mod h1:9sxs+SwGrKI0+PWe4Fxa9tFQQBG5xSsSbMXOI8PPpoQ=
-github.com/paralin/go-multiaddr v0.12.4-0.20240407071906-6f0354cc6755 h1:xxzUX1AaOQWbYq/LCoJIWfju2xByAw/nWrWXMTI5O8Y=
-github.com/paralin/go-multiaddr v0.12.4-0.20240407071906-6f0354cc6755/go.mod h1:sBXrNzucqkFJhvKOiwwLyqamGa/P5EIXNPLovyhQCII=
 github.com/paralin/ipfs-go-logrus v0.0.0-20240410105224-e24cb05f9e98 h1:8VijFMz4qJ70+ObyaByu6XZctKPhjllz/XfEoVZDQGo=
 github.com/paralin/ipfs-go-logrus v0.0.0-20240410105224-e24cb05f9e98/go.mod h1:8oFwKpIFewIJ9LrnO8dib4kQjKQQx7Ukq9sNZ+k50QU=
 github.com/patrickmn/go-cache v2.1.0+incompatible h1:HRMgzkcYKYpi3C8ajMPV8OFXaaRUnok+kx1WdO15EQc=
