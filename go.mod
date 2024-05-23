@@ -30,18 +30,18 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/klauspost/compress v1.17.8
-	github.com/libp2p/go-libp2p v0.33.2
+	github.com/libp2p/go-libp2p v0.34.0
 	github.com/mr-tron/base58 v1.2.0
-	github.com/multiformats/go-multiaddr v0.12.3
-	github.com/nats-io/nats-server/v2 v2.10.14
-	github.com/nats-io/nats.go v1.34.1
+	github.com/multiformats/go-multiaddr v0.12.4
+	github.com/nats-io/nats-server/v2 v2.10.16
+	github.com/nats-io/nats.go v1.35.0
 	github.com/nats-io/nkeys v0.4.7
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pion/datachannel v1.5.6
 	github.com/pion/sdp/v3 v3.0.9
 	github.com/pion/webrtc/v4 v4.0.0-beta.19
 	github.com/pkg/errors v0.9.1
-	github.com/quic-go/quic-go v0.43.1
+	github.com/quic-go/quic-go v0.44.0
 	github.com/sasha-s/go-deadlock v0.3.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/urfave/cli/v2 v2.27.2
