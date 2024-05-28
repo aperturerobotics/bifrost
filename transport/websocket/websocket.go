@@ -153,7 +153,10 @@ func (w *WebSocket) Execute(ctx context.Context) error {
 
 // ListenHTTP listens for incoming HTTP connections on an address.
 func (w *WebSocket) ListenHTTP(ctx context.Context, addr string) error {
-	w.le.Debugf("listening for http/ws on address: %s", addr)
+	w.le.WithFields(logrus.Fields{
+		"addr":    addr,
+		"peer-id": w.GetPeerID().String(),
+	}).Debug("listening for http/ws")
 	server := &http.Server{
 		BaseContext: func(net.Listener) context.Context {
 			return ctx
