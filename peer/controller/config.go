@@ -53,6 +53,10 @@ func (c *Config) EqualsConfig(c2 config.Config) bool {
 
 // Validate validates the configuration.
 func (c *Config) Validate() error {
+	if c.SizeVT() == 0 {
+		return nil
+	}
+
 	if _, err := c.ParseToPeer(); err != nil {
 		return err
 	}
@@ -80,6 +84,9 @@ func (c *Config) ParsePeerID() (peer.ID, error) {
 
 // ParseToPeer parses the fields and builds the corresponding Peer.
 func (c *Config) ParseToPeer() (peer.Peer, error) {
+	if c.SizeVT() == 0 {
+		return peer.NewPeer(nil)
+	}
 	return confparse.ParsePeer(c.GetPrivKey(), c.GetPubKey(), c.GetPeerId())
 }
 
