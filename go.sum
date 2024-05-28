@@ -28,6 +28,8 @@ github.com/aperturerobotics/quic-go v0.43.1-0.20240504081906-25e38f065e10 h1:xtQ
 github.com/aperturerobotics/quic-go v0.43.1-0.20240504081906-25e38f065e10/go.mod h1:IWwvw/rjosC5aPDuEgzbRPNlZSHC4b4ABztoalIe59g=
 github.com/aperturerobotics/starpc v0.32.10 h1:Z9Y0XVMSUSg8oMywjAba2eM2N2KaFWrg2tp88kSt8Pg=
 github.com/aperturerobotics/starpc v0.32.10/go.mod h1:nc3qveJAMZJlRpHZyHm0yvESvCbU0xx38mc/nMvpb0o=
+github.com/aperturerobotics/starpc v0.32.11 h1:u7YdybGmhJI8yBUvEHxyBOh19j6KgxAkSLltTkvIFI4=
+github.com/aperturerobotics/starpc v0.32.11/go.mod h1:CVH9wMjd4jjsD5xo/SCQu2vFv8u1etYG7+7FVDavH6w=
 github.com/aperturerobotics/util v1.23.4 h1:IXkVoN3Cc+5U5Rhd5hC00VGgL1PainhpaTyz5IPkc8I=
 github.com/aperturerobotics/util v1.23.4/go.mod h1:y/BGl05icfllBf7l51IMJ6UOjpsDscAPt3ynhDZrwZ4=
 github.com/blang/semver v3.5.1+incompatible h1:cQNTCjp13qL8KC3Nbxr/y2Bqb63oX6wdnnjpJbkM4JQ=
