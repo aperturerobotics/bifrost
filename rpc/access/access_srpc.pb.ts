@@ -6,7 +6,7 @@ import {
   LookupRpcServiceRequest,
   LookupRpcServiceResponse,
 } from './access.pb.js'
-import { Message, MethodKind } from '@aptre/protobuf-es-lite'
+import { MethodKind } from '@aptre/protobuf-es-lite'
 import { RpcStreamPacket } from '@go/github.com/aperturerobotics/starpc/rpcstream/rpcstream.pb.js'
 import {
   buildDecodeMessageTransform,
@@ -65,7 +65,7 @@ export interface AccessRpcService {
    * @generated from rpc bifrost.rpc.access.AccessRpcService.LookupRpcService
    */
   LookupRpcService(
-    request: Message<LookupRpcServiceRequest>,
+    request: LookupRpcServiceRequest,
     abortSignal?: AbortSignal,
   ): MessageStream<LookupRpcServiceResponse>
 
@@ -100,7 +100,7 @@ export class AccessRpcServiceClient implements AccessRpcService {
    * @generated from rpc bifrost.rpc.access.AccessRpcService.LookupRpcService
    */
   LookupRpcService(
-    request: Message<LookupRpcServiceRequest>,
+    request: LookupRpcServiceRequest,
     abortSignal?: AbortSignal,
   ): MessageStream<LookupRpcServiceResponse> {
     const requestMsg = LookupRpcServiceRequest.create(request)

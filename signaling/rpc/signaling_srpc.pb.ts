@@ -8,7 +8,7 @@ import {
   SessionRequest,
   SessionResponse,
 } from './signaling.pb.js'
-import { Message, MethodKind } from '@aptre/protobuf-es-lite'
+import { MethodKind } from '@aptre/protobuf-es-lite'
 import {
   buildDecodeMessageTransform,
   buildEncodeMessageTransform,
@@ -61,7 +61,7 @@ export interface Signaling {
    * @generated from rpc signaling.rpc.Signaling.Listen
    */
   Listen(
-    request: Message<ListenRequest>,
+    request: ListenRequest,
     abortSignal?: AbortSignal,
   ): MessageStream<ListenResponse>
 
@@ -93,7 +93,7 @@ export class SignalingClient implements Signaling {
    * @generated from rpc signaling.rpc.Signaling.Listen
    */
   Listen(
-    request: Message<ListenRequest>,
+    request: ListenRequest,
     abortSignal?: AbortSignal,
   ): MessageStream<ListenResponse> {
     const requestMsg = ListenRequest.create(request)

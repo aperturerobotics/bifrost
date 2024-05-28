@@ -8,7 +8,7 @@ import {
   IdentifyRequest,
   IdentifyResponse,
 } from './api.pb.js'
-import { Message, MethodKind } from '@aptre/protobuf-es-lite'
+import { MethodKind } from '@aptre/protobuf-es-lite'
 import { buildDecodeMessageTransform, MessageStream, ProtoRpc } from 'starpc'
 
 /**
@@ -56,7 +56,7 @@ export interface PeerService {
    * @generated from rpc peer.api.PeerService.Identify
    */
   Identify(
-    request: Message<IdentifyRequest>,
+    request: IdentifyRequest,
     abortSignal?: AbortSignal,
   ): MessageStream<IdentifyResponse>
 
@@ -66,9 +66,9 @@ export interface PeerService {
    * @generated from rpc peer.api.PeerService.GetPeerInfo
    */
   GetPeerInfo(
-    request: Message<GetPeerInfoRequest>,
+    request: GetPeerInfoRequest,
     abortSignal?: AbortSignal,
-  ): Promise<Message<GetPeerInfoResponse>>
+  ): Promise<GetPeerInfoResponse>
 }
 
 export const PeerServiceServiceName = PeerServiceDefinition.typeName
@@ -88,7 +88,7 @@ export class PeerServiceClient implements PeerService {
    * @generated from rpc peer.api.PeerService.Identify
    */
   Identify(
-    request: Message<IdentifyRequest>,
+    request: IdentifyRequest,
     abortSignal?: AbortSignal,
   ): MessageStream<IdentifyResponse> {
     const requestMsg = IdentifyRequest.create(request)
@@ -107,9 +107,9 @@ export class PeerServiceClient implements PeerService {
    * @generated from rpc peer.api.PeerService.GetPeerInfo
    */
   async GetPeerInfo(
-    request: Message<GetPeerInfoRequest>,
+    request: GetPeerInfoRequest,
     abortSignal?: AbortSignal,
-  ): Promise<Message<GetPeerInfoResponse>> {
+  ): Promise<GetPeerInfoResponse> {
     const requestMsg = GetPeerInfoRequest.create(request)
     const result = await this.rpc.request(
       this.service,

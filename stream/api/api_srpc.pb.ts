@@ -12,7 +12,7 @@ import {
   ListenStreamsRequest,
   ListenStreamsResponse,
 } from './api.pb.js'
-import { Message, MethodKind } from '@aptre/protobuf-es-lite'
+import { MethodKind } from '@aptre/protobuf-es-lite'
 import {
   buildDecodeMessageTransform,
   buildEncodeMessageTransform,
@@ -92,7 +92,7 @@ export interface StreamService {
    * @generated from rpc stream.api.StreamService.ForwardStreams
    */
   ForwardStreams(
-    request: Message<ForwardStreamsRequest>,
+    request: ForwardStreamsRequest,
     abortSignal?: AbortSignal,
   ): MessageStream<ForwardStreamsResponse>
 
@@ -103,7 +103,7 @@ export interface StreamService {
    * @generated from rpc stream.api.StreamService.ListenStreams
    */
   ListenStreams(
-    request: Message<ListenStreamsRequest>,
+    request: ListenStreamsRequest,
     abortSignal?: AbortSignal,
   ): MessageStream<ListenStreamsResponse>
 
@@ -150,7 +150,7 @@ export class StreamServiceClient implements StreamService {
    * @generated from rpc stream.api.StreamService.ForwardStreams
    */
   ForwardStreams(
-    request: Message<ForwardStreamsRequest>,
+    request: ForwardStreamsRequest,
     abortSignal?: AbortSignal,
   ): MessageStream<ForwardStreamsResponse> {
     const requestMsg = ForwardStreamsRequest.create(request)
@@ -170,7 +170,7 @@ export class StreamServiceClient implements StreamService {
    * @generated from rpc stream.api.StreamService.ListenStreams
    */
   ListenStreams(
-    request: Message<ListenStreamsRequest>,
+    request: ListenStreamsRequest,
     abortSignal?: AbortSignal,
   ): MessageStream<ListenStreamsResponse> {
     const requestMsg = ListenStreamsRequest.create(request)
