@@ -52,7 +52,7 @@ func BuildCommonBus(ctx context.Context) (bus.Bus, crypto.PrivKey, error) {
 		return nil, nil, err
 	}
 	sr.AddFactory(wtpt.NewFactory(b))
-	sr.AddFactory(nctr.NewFactory())
+	sr.AddFactory(nctr.NewFactory(b))
 	sr.AddFactory(link_holdopen_controller.NewFactory(b))
 	sr.AddFactory(nats_controller.NewFactory(b))
 

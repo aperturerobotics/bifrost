@@ -31,7 +31,7 @@ func TestPrivKeyIntegrity(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	f := NewFactory()
+	f := NewFactory(nil)
 	ctrl, err := f.Construct(ctx, peerControllerConf, controller.ConstructOpts{Logger: le})
 	if err != nil {
 		t.Fatal(err.Error())

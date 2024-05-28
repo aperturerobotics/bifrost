@@ -3,6 +3,7 @@ package peer_controller
 import (
 	"context"
 
+	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/config"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/blang/semver"
@@ -12,7 +13,7 @@ import (
 type Factory struct{}
 
 // NewFactory builds a peer controller factory.
-func NewFactory() *Factory {
+func NewFactory(b bus.Bus) *Factory {
 	return &Factory{}
 }
 

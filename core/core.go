@@ -47,7 +47,7 @@ func NewCoreBus(
 // AddFactories adds factories to an existing static resolver.
 func AddFactories(b bus.Bus, sr *static.Resolver) {
 	// node controller
-	sr.AddFactory(nctr.NewFactory())
+	sr.AddFactory(nctr.NewFactory(b))
 
 	// link management controllers
 	sr.AddFactory(link_holdopen_controller.NewFactory(b))
