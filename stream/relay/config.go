@@ -61,7 +61,7 @@ func (c *Config) GetConfigID() string {
 
 // EqualsConfig checks if the config is equal to another.
 func (c *Config) EqualsConfig(c2 config.Config) bool {
-	return config.EqualsConfig[*Config](c, c2)
+	return config.EqualsConfig(c, c2)
 }
 
 var _ config.Config = ((*Config)(nil))

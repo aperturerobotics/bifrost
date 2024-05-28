@@ -48,6 +48,7 @@ func (m *MountedStreamHandler) HandleMountedStream(
 	if err != nil {
 		return err
 	}
+
 	go func() {
 		s := strm.GetStream()
 		defer func() {
@@ -57,24 +58,12 @@ func (m *MountedStreamHandler) HandleMountedStream(
 
 		// Emit directive to relay stream to target peer
 		m.le.Debug("relaying stream to target peer")
-		outMstrm, _, ref, err := bus.ExecWaitValue[link.MountedStream](
-			ctx,
-			m.bus,
-			link.NewOpenStreamWithPeer(
-				m.targetProtocolID,
-				localPeerID, remotePeerID,
-				0,
-				strm.GetOpenOpts(),
-			),
-			nil,
-			nil,
-			nil,
-		)
+		outMstrm, rel, err := link.OpenStreamWithPeerEx(ctx, m.bus, m.targetProtocolID, localPeerID, m.targetPeerID, 0, strm.GetOpenOpts())
 		if err != nil {
 			m.le.WithError(err).Warn("unable to relay stream to target peer")
 			return
 		}
-		ref.Release()
+		rel()
 
 		outStrm := outMstrm.GetStream()
 		defer outStrm.Close()
