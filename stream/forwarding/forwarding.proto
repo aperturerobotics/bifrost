@@ -3,10 +3,11 @@ package stream.forwarding;
 
 // Config configures the forwarding controller.
 message Config {
-  // PeerId is the peer ID to forward for.
-  // Can be empty.
+  // PeerId is the peer ID to listen for incoming streams.
+  // Can be empty to accept any.
   string peer_id = 1;
-  // ProtocolId is the protocol ID to forward for.
+  // ProtocolId is the protocol ID to filter incoming streams.
+  // Cannot be empty.
   string protocol_id = 2;
   // TargetMultiaddr is the target multiaddress to dial.
   string target_multiaddr = 3;

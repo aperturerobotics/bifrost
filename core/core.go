@@ -16,6 +16,7 @@ import (
 	stream_echo "github.com/aperturerobotics/bifrost/stream/echo"
 	stream_forwarding "github.com/aperturerobotics/bifrost/stream/forwarding"
 	stream_listening "github.com/aperturerobotics/bifrost/stream/listening"
+	stream_relay "github.com/aperturerobotics/bifrost/stream/relay"
 	tptaddr_controller "github.com/aperturerobotics/bifrost/tptaddr/controller"
 	tptaddr_static "github.com/aperturerobotics/bifrost/tptaddr/static"
 	iproctpt "github.com/aperturerobotics/bifrost/transport/inproc"
@@ -55,6 +56,7 @@ func AddFactories(b bus.Bus, sr *static.Resolver) {
 
 	// stream controllers
 	sr.AddFactory(stream_forwarding.NewFactory(b))
+	sr.AddFactory(stream_relay.NewFactory(b))
 	sr.AddFactory(stream_echo.NewFactory(b))
 	sr.AddFactory(stream_listening.NewFactory(b))
 	sr.AddFactory(stream_api_accept.NewFactory(b))
