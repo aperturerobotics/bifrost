@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
+import { createMessageType, ScalarType } from '@aptre/protobuf-es-lite'
 
 export const protobufPackage = 'stream.api.dial'
 
@@ -12,7 +12,7 @@ export const protobufPackage = 'stream.api.dial'
  *
  * @generated from message stream.api.dial.Config
  */
-export type Config = Message<{
+export interface Config {
   /**
    * PeerId is the remote peer ID to dial.
    *
@@ -51,7 +51,7 @@ export type Config = Message<{
    * @generated from field: bool reliable = 6;
    */
   reliable?: boolean
-}>
+}
 
 // Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({

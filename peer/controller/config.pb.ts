@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
+import { createMessageType, ScalarType } from '@aptre/protobuf-es-lite'
 
 export const protobufPackage = 'peer.controller'
 
@@ -12,7 +12,7 @@ export const protobufPackage = 'peer.controller'
  *
  * @generated from message peer.controller.Config
  */
-export type Config = Message<{
+export interface Config {
   /**
    * PrivKey is the peer private key in either b58 or PEM format.
    * See confparse.MarshalPrivateKey.
@@ -36,7 +36,7 @@ export type Config = Message<{
    * @generated from field: string peer_id = 3;
    */
   peerId?: string
-}>
+}
 
 // Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({

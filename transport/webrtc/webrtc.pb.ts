@@ -6,7 +6,6 @@ import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
 import {
   createEnumType,
   createMessageType,
-  Message,
   ScalarType,
 } from '@aptre/protobuf-es-lite'
 import { Opts } from '../common/quic/quic.pb.js'
@@ -50,7 +49,7 @@ export const IceTransportPolicy_Enum = createEnumType(
  *
  * @generated from message webrtc.IceServerConfig.OauthCredential
  */
-export type IceServerConfig_OauthCredential = Message<{
+export interface IceServerConfig_OauthCredential {
   /**
    * MacKey is a base64-url format.
    *
@@ -63,7 +62,7 @@ export type IceServerConfig_OauthCredential = Message<{
    * @generated from field: string access_token = 2;
    */
   accessToken?: string
-}>
+}
 
 // IceServerConfig_OauthCredential contains the message type declaration for IceServerConfig_OauthCredential.
 export const IceServerConfig_OauthCredential: MessageType<IceServerConfig_OauthCredential> =
@@ -81,7 +80,7 @@ export const IceServerConfig_OauthCredential: MessageType<IceServerConfig_OauthC
  *
  * @generated from message webrtc.IceServerConfig
  */
-export type IceServerConfig = Message<{
+export interface IceServerConfig {
   /**
    * Urls is the list of URLs for the ICE server.
    *
@@ -129,7 +128,7 @@ export type IceServerConfig = Message<{
         value: IceServerConfig_OauthCredential
         case: 'oauth'
       }
-}>
+}
 
 // IceServerConfig contains the message type declaration for IceServerConfig.
 export const IceServerConfig: MessageType<IceServerConfig> = createMessageType({
@@ -166,7 +165,7 @@ export const IceServerConfig: MessageType<IceServerConfig> = createMessageType({
  *
  * @generated from message webrtc.WebRtcConfig
  */
-export type WebRtcConfig = Message<{
+export interface WebRtcConfig {
   /**
    * IceServers contains the list of ICE servers to use.
    *
@@ -187,7 +186,7 @@ export type WebRtcConfig = Message<{
    * @generated from field: uint32 ice_candidate_pool_size = 3;
    */
   iceCandidatePoolSize?: number
-}>
+}
 
 // WebRtcConfig contains the message type declaration for WebRtcConfig.
 export const WebRtcConfig: MessageType<WebRtcConfig> = createMessageType({
@@ -221,7 +220,7 @@ export const WebRtcConfig: MessageType<WebRtcConfig> = createMessageType({
  *
  * @generated from message webrtc.Config
  */
-export type Config = Message<{
+export interface Config {
   /**
    * SignalingId is the signaling channel identifier.
    * Cannot be empty.
@@ -301,7 +300,7 @@ export type Config = Message<{
    * @generated from field: bool verbose = 11;
    */
   verbose?: boolean
-}>
+}
 
 // Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({
@@ -339,7 +338,7 @@ export const Config: MessageType<Config> = createMessageType({
  *
  * @generated from message webrtc.WebRtcSdp
  */
-export type WebRtcSdp = Message<{
+export interface WebRtcSdp {
   /**
    * TxSeqno is the sequence number of the transmitting peer.
    * The receiver should update the local seqno to match.
@@ -360,7 +359,7 @@ export type WebRtcSdp = Message<{
    * @generated from field: string sdp = 3;
    */
   sdp?: string
-}>
+}
 
 // WebRtcSdp contains the message type declaration for WebRtcSdp.
 export const WebRtcSdp: MessageType<WebRtcSdp> = createMessageType({
@@ -378,14 +377,14 @@ export const WebRtcSdp: MessageType<WebRtcSdp> = createMessageType({
  *
  * @generated from message webrtc.WebRtcIce
  */
-export type WebRtcIce = Message<{
+export interface WebRtcIce {
   /**
    * Candidate contains the JSON-encoded ICE candidate.
    *
    * @generated from field: string candidate = 1;
    */
   candidate?: string
-}>
+}
 
 // WebRtcIce contains the message type declaration for WebRtcIce.
 export const WebRtcIce: MessageType<WebRtcIce> = createMessageType({
@@ -401,7 +400,7 @@ export const WebRtcIce: MessageType<WebRtcIce> = createMessageType({
  *
  * @generated from message webrtc.WebRtcSignal
  */
-export type WebRtcSignal = Message<{
+export interface WebRtcSignal {
   /**
    * Body is the body of the message.
    *
@@ -440,7 +439,7 @@ export type WebRtcSignal = Message<{
         value: WebRtcIce
         case: 'ice'
       }
-}>
+}
 
 // WebRtcSignal contains the message type declaration for WebRtcSignal.
 export const WebRtcSignal: MessageType<WebRtcSignal> = createMessageType({

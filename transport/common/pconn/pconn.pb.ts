@@ -2,9 +2,9 @@
 // @generated from file github.com/aperturerobotics/bifrost/transport/common/pconn/pconn.proto (package pconn, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
 import { Opts as Opts$1 } from '../quic/quic.pb.js'
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType, ScalarType } from '@aptre/protobuf-es-lite'
 
 export const protobufPackage = 'pconn'
 
@@ -13,7 +13,7 @@ export const protobufPackage = 'pconn'
  *
  * @generated from message pconn.Opts
  */
-export type Opts = Message<{
+export interface Opts {
   /**
    * Quic are the quic protocol options.
    *
@@ -26,7 +26,7 @@ export type Opts = Message<{
    * @generated from field: bool verbose = 2;
    */
   verbose?: boolean
-}>
+}
 
 // Opts contains the message type declaration for Opts.
 export const Opts: MessageType<Opts> = createMessageType({

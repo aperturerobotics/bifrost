@@ -6,7 +6,6 @@ import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
 import {
   createEnumType,
   createMessageType,
-  Message,
   ScalarType,
 } from '@aptre/protobuf-es-lite'
 
@@ -52,7 +51,7 @@ export const StreamState_Enum = createEnumType('stream.api.rpc.StreamState', [
  *
  * @generated from message stream.api.rpc.Data
  */
-export type Data = Message<{
+export interface Data {
   /**
    * State indicates stream state in-band.
    * Data is packet data from the remote.
@@ -66,7 +65,7 @@ export type Data = Message<{
    * @generated from field: stream.api.rpc.StreamState state = 2;
    */
   state?: StreamState
-}>
+}
 
 // Data contains the message type declaration for Data.
 export const Data: MessageType<Data> = createMessageType({

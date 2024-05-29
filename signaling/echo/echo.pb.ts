@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
+import { createMessageType, ScalarType } from '@aptre/protobuf-es-lite'
 
 export const protobufPackage = 'signaling.echo'
 
@@ -12,7 +12,7 @@ export const protobufPackage = 'signaling.echo'
  *
  * @generated from message signaling.echo.Config
  */
-export type Config = Message<{
+export interface Config {
   /**
    * SignalingId is the incoming signaling ID to handle and echo messages.
    * Cannot be empty.
@@ -20,7 +20,7 @@ export type Config = Message<{
    * @generated from field: string signaling_id = 1;
    */
   signalingId?: string
-}>
+}
 
 // Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({

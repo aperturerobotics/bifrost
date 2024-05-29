@@ -2,10 +2,10 @@
 // @generated from file github.com/aperturerobotics/bifrost/signaling/rpc/client/config.proto (package signaling.rpc.client, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
 import { Config as Config$1 } from '../../../stream/srpc/client/client.pb.js'
 import { Backoff } from '@go/github.com/aperturerobotics/util/backoff/backoff.pb.js'
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType, ScalarType } from '@aptre/protobuf-es-lite'
 
 export const protobufPackage = 'signaling.rpc.client'
 
@@ -14,7 +14,7 @@ export const protobufPackage = 'signaling.rpc.client'
  *
  * @generated from message signaling.rpc.client.Config
  */
-export type Config = Message<{
+export interface Config {
   /**
    * SignalingId is the signaling channel ID.
    * Filters which SignalPeer directives will be handled.
@@ -65,7 +65,7 @@ export type Config = Message<{
    * @generated from field: bool disable_listen = 7;
    */
   disableListen?: boolean
-}>
+}
 
 // Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({

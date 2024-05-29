@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
+import { createMessageType, ScalarType } from '@aptre/protobuf-es-lite'
 
 export const protobufPackage = 'stream.forwarding'
 
@@ -12,7 +12,7 @@ export const protobufPackage = 'stream.forwarding'
  *
  * @generated from message stream.forwarding.Config
  */
-export type Config = Message<{
+export interface Config {
   /**
    * PeerId is the peer ID to listen for incoming streams.
    * Can be empty to accept any.
@@ -33,7 +33,7 @@ export type Config = Message<{
    * @generated from field: string target_multiaddr = 3;
    */
   targetMultiaddr?: string
-}>
+}
 
 // Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({

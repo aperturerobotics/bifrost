@@ -2,10 +2,10 @@
 // @generated from file github.com/aperturerobotics/bifrost/transport/websocket/websocket.proto (package websocket, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
 import { Opts } from '../common/quic/quic.pb.js'
 import { DialerOpts } from '../common/dialer/dialer.pb.js'
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType, ScalarType } from '@aptre/protobuf-es-lite'
 
 export const protobufPackage = 'websocket'
 
@@ -19,7 +19,7 @@ export const protobufPackage = 'websocket'
  *
  * @generated from message websocket.Config
  */
-export type Config = Message<{
+export interface Config {
   /**
    * TransportPeerID sets the peer ID to attach the transport to.
    * If unset, attaches to any running peer with a private key.
@@ -64,7 +64,7 @@ export type Config = Message<{
    * @generated from field: bool disable_serve_peer_id = 6;
    */
   disableServePeerId?: boolean
-}>
+}
 
 // Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({

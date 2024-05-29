@@ -2,9 +2,9 @@
 // @generated from file github.com/aperturerobotics/bifrost/stream/srpc/client/client.proto (package stream.srpc.client, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
 import { Backoff } from '@go/github.com/aperturerobotics/util/backoff/backoff.pb.js'
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType, ScalarType } from '@aptre/protobuf-es-lite'
 
 export const protobufPackage = 'stream.srpc.client'
 
@@ -13,7 +13,7 @@ export const protobufPackage = 'stream.srpc.client'
  *
  * @generated from message stream.srpc.client.Config
  */
-export type Config = Message<{
+export interface Config {
   /**
    * ServerPeerIds are the static list of peer IDs to contact.
    *
@@ -48,7 +48,7 @@ export type Config = Message<{
    * @generated from field: string timeout_dur = 5;
    */
   timeoutDur?: string
-}>
+}
 
 // Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({

@@ -2,9 +2,9 @@
 // @generated from file github.com/aperturerobotics/bifrost/stream/srpc/client/controller/config.proto (package stream.srpc.client.controller, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
 import { Config as Config$1 } from '../client.pb.js'
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType, ScalarType } from '@aptre/protobuf-es-lite'
 
 export const protobufPackage = 'stream.srpc.client.controller'
 
@@ -14,7 +14,7 @@ export const protobufPackage = 'stream.srpc.client.controller'
  *
  * @generated from message stream.srpc.client.controller.Config
  */
-export type Config = Message<{
+export interface Config {
   /**
    * Client contains srpc.client configuration for the RPC client.
    *
@@ -39,7 +39,7 @@ export type Config = Message<{
    * @generated from field: repeated string service_id_prefixes = 3;
    */
   serviceIdPrefixes?: string[]
-}>
+}
 
 // Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({

@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
+import { createMessageType, ScalarType } from '@aptre/protobuf-es-lite'
 
 export const protobufPackage = 'pubsub.relay'
 
@@ -13,7 +13,7 @@ export const protobufPackage = 'pubsub.relay'
  *
  * @generated from message pubsub.relay.Config
  */
-export type Config = Message<{
+export interface Config {
   /**
    * PeerId is the peer ID to look up and use private key for.
    *
@@ -26,7 +26,7 @@ export type Config = Message<{
    * @generated from field: repeated string topic_ids = 2;
    */
   topicIds?: string[]
-}>
+}
 
 // Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({

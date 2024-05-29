@@ -2,10 +2,10 @@
 // @generated from file github.com/aperturerobotics/bifrost/pubsub/floodsub/floodsub.proto (package floodsub, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
 import type { HashType } from '../../hash/hash.pb.js'
 import { HashType_Enum } from '../../hash/hash.pb.js'
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType, ScalarType } from '@aptre/protobuf-es-lite'
 import { SignedMsg } from '../../peer/peer.pb.js'
 
 export const protobufPackage = 'floodsub'
@@ -15,7 +15,7 @@ export const protobufPackage = 'floodsub'
  *
  * @generated from message floodsub.Config
  */
-export type Config = Message<{
+export interface Config {
   /**
    * PublishHashType is the hash type to use when signing published messages.
    * Defaults to sha256
@@ -23,7 +23,7 @@ export type Config = Message<{
    * @generated from field: hash.HashType publish_hash_type = 1;
    */
   publishHashType?: HashType
-}>
+}
 
 // Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({
@@ -39,7 +39,7 @@ export const Config: MessageType<Config> = createMessageType({
  *
  * @generated from message floodsub.SubscriptionOpts
  */
-export type SubscriptionOpts = Message<{
+export interface SubscriptionOpts {
   /**
    * Subscribe indicates if we are subscribing to this channel ID.
    *
@@ -52,7 +52,7 @@ export type SubscriptionOpts = Message<{
    * @generated from field: string channel_id = 2;
    */
   channelId?: string
-}>
+}
 
 // SubscriptionOpts contains the message type declaration for SubscriptionOpts.
 export const SubscriptionOpts: MessageType<SubscriptionOpts> =
@@ -70,7 +70,7 @@ export const SubscriptionOpts: MessageType<SubscriptionOpts> =
  *
  * @generated from message floodsub.Packet
  */
-export type Packet = Message<{
+export interface Packet {
   /**
    * Subscriptions contains any new subscription changes.
    *
@@ -83,7 +83,7 @@ export type Packet = Message<{
    * @generated from field: repeated peer.SignedMsg publish = 2;
    */
   publish?: SignedMsg[]
-}>
+}
 
 // Packet contains the message type declaration for Packet.
 export const Packet: MessageType<Packet> = createMessageType({

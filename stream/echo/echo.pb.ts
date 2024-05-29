@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
+import { createMessageType, ScalarType } from '@aptre/protobuf-es-lite'
 
 export const protobufPackage = 'stream.echo'
 
@@ -12,7 +12,7 @@ export const protobufPackage = 'stream.echo'
  *
  * @generated from message stream.echo.Config
  */
-export type Config = Message<{
+export interface Config {
   /**
    * PeerId is the peer ID to echo for.
    * Can be empty.
@@ -26,7 +26,7 @@ export type Config = Message<{
    * @generated from field: string protocol_id = 2;
    */
   protocolId?: string
-}>
+}
 
 // Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({

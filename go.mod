@@ -3,18 +3,18 @@ module github.com/aperturerobotics/bifrost
 go 1.22
 
 require (
-	github.com/aperturerobotics/common v0.16.6 // latest
-	github.com/aperturerobotics/controllerbus v0.45.5 // latest
+	github.com/aperturerobotics/common v0.16.8 // latest
+	github.com/aperturerobotics/controllerbus v0.45.6 // latest
 	github.com/aperturerobotics/entitygraph v0.9.1 // latest
 	github.com/aperturerobotics/protobuf-go-lite v0.6.5 // latest
-	github.com/aperturerobotics/starpc v0.32.11 // latest
-	github.com/aperturerobotics/util v1.23.4 // master
+	github.com/aperturerobotics/starpc v0.32.12 // latest
+	github.com/aperturerobotics/util v1.23.5 // master
 )
 
 // aperture: use compatibility forks
 replace (
 	github.com/ipfs/go-log/v2 => github.com/paralin/ipfs-go-logrus v0.0.0-20240410105224-e24cb05f9e98 // master
-	github.com/libp2p/go-libp2p => github.com/aperturerobotics/go-libp2p v0.33.1-0.20240511072027-002c32698a19 // aperture
+	github.com/libp2p/go-libp2p => github.com/aperturerobotics/go-libp2p v0.33.1-0.20240511223728-e0b67c111765 // aperture
 	github.com/libp2p/go-msgio => github.com/aperturerobotics/go-libp2p-msgio v0.0.0-20240511033615-1b69178aa5c8 // aperture
 	github.com/multiformats/go-multiaddr => github.com/aperturerobotics/go-multiaddr v0.12.4-0.20240407071906-6f0354cc6755 // aperture
 	github.com/multiformats/go-multihash => github.com/aperturerobotics/go-multihash v0.2.3 // aperture

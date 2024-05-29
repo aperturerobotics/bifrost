@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
+import { createMessageType, ScalarType } from '@aptre/protobuf-es-lite'
 
 export const protobufPackage = 'link.establish.controller'
 
@@ -13,7 +13,7 @@ export const protobufPackage = 'link.establish.controller'
  *
  * @generated from message link.establish.controller.Config
  */
-export type Config = Message<{
+export interface Config {
   /**
    * PeerIds is the list of peer IDs to attempt to establish links to.
    *
@@ -27,7 +27,7 @@ export type Config = Message<{
    * @generated from field: string src_peer_id = 2;
    */
   srcPeerId?: string
-}>
+}
 
 // Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({

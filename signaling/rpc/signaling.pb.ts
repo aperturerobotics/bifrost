@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
+import { createMessageType, ScalarType } from '@aptre/protobuf-es-lite'
 import { SignedMsg } from '../../peer/peer.pb.js'
 
 export const protobufPackage = 'signaling.rpc'
@@ -13,7 +13,7 @@ export const protobufPackage = 'signaling.rpc'
  *
  * @generated from message signaling.rpc.ListenRequest
  */
-export type ListenRequest = Message<{}>
+export interface ListenRequest {}
 
 // ListenRequest contains the message type declaration for ListenRequest.
 export const ListenRequest: MessageType<ListenRequest> = createMessageType({
@@ -27,7 +27,7 @@ export const ListenRequest: MessageType<ListenRequest> = createMessageType({
  *
  * @generated from message signaling.rpc.ListenResponse
  */
-export type ListenResponse = Message<{
+export interface ListenResponse {
   /**
    * Body is the body of the response.
    *
@@ -58,7 +58,7 @@ export type ListenResponse = Message<{
         value: string
         case: 'clearPeer'
       }
-}>
+}
 
 // ListenResponse contains the message type declaration for ListenResponse.
 export const ListenResponse: MessageType<ListenResponse> = createMessageType({
@@ -87,14 +87,14 @@ export const ListenResponse: MessageType<ListenResponse> = createMessageType({
  *
  * @generated from message signaling.rpc.SessionInit
  */
-export type SessionInit = Message<{
+export interface SessionInit {
   /**
    * PeerId is the remote peer id we want to contact.
    *
    * @generated from field: string peer_id = 1;
    */
   peerId?: string
-}>
+}
 
 // SessionInit contains the message type declaration for SessionInit.
 export const SessionInit: MessageType<SessionInit> = createMessageType({
@@ -110,7 +110,7 @@ export const SessionInit: MessageType<SessionInit> = createMessageType({
  *
  * @generated from message signaling.rpc.SessionMsg
  */
-export type SessionMsg = Message<{
+export interface SessionMsg {
   /**
    * SignedMsg is the signed message body.
    *
@@ -123,7 +123,7 @@ export type SessionMsg = Message<{
    * @generated from field: uint64 seqno = 2;
    */
   seqno?: bigint
-}>
+}
 
 // SessionMsg contains the message type declaration for SessionMsg.
 export const SessionMsg: MessageType<SessionMsg> = createMessageType({
@@ -140,7 +140,7 @@ export const SessionMsg: MessageType<SessionMsg> = createMessageType({
  *
  * @generated from message signaling.rpc.SessionRequest
  */
-export type SessionRequest = Message<{
+export interface SessionRequest {
   /**
    * SessionSeqno is the session sequence number.
    * If this doesn't match the current session no, this pkt will be dropped.
@@ -202,7 +202,7 @@ export type SessionRequest = Message<{
         value: bigint
         case: 'ackMsg'
       }
-}>
+}
 
 // SessionRequest contains the message type declaration for SessionRequest.
 export const SessionRequest: MessageType<SessionRequest> = createMessageType({
@@ -246,7 +246,7 @@ export const SessionRequest: MessageType<SessionRequest> = createMessageType({
  *
  * @generated from message signaling.rpc.SessionResponse
  */
-export type SessionResponse = Message<{
+export interface SessionResponse {
   /**
    * Body is the body of the request.
    *
@@ -307,7 +307,7 @@ export type SessionResponse = Message<{
         value: bigint
         case: 'ackMsg'
       }
-}>
+}
 
 // SessionResponse contains the message type declaration for SessionResponse.
 export const SessionResponse: MessageType<SessionResponse> = createMessageType({

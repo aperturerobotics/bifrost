@@ -2,9 +2,9 @@
 // @generated from file github.com/aperturerobotics/bifrost/daemon/api/api.proto (package bifrost.api, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message } from '@aptre/protobuf-es-lite'
 import { Config as Config$1 } from '@go/github.com/aperturerobotics/controllerbus/bus/api/api.pb.js'
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType } from '@aptre/protobuf-es-lite'
 
 export const protobufPackage = 'bifrost.api'
 
@@ -13,14 +13,14 @@ export const protobufPackage = 'bifrost.api'
  *
  * @generated from message bifrost.api.Config
  */
-export type Config = Message<{
+export interface Config {
   /**
    * BusConfig configures the bus api.
    *
    * @generated from field: bus.api.Config bus_config = 1;
    */
   busConfig?: Config$1
-}>
+}
 
 // Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({

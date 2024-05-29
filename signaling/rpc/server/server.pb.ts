@@ -2,9 +2,9 @@
 // @generated from file github.com/aperturerobotics/bifrost/signaling/rpc/server/server.proto (package signaling.rpc.server, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message } from '@aptre/protobuf-es-lite'
 import { Config as Config$1 } from '../../../stream/srpc/server/server.pb.js'
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType } from '@aptre/protobuf-es-lite'
 
 export const protobufPackage = 'signaling.rpc.server'
 
@@ -13,14 +13,14 @@ export const protobufPackage = 'signaling.rpc.server'
  *
  * @generated from message signaling.rpc.server.Config
  */
-export type Config = Message<{
+export interface Config {
   /**
    * Server configures the peer ids and protocol ids to listen on.
    *
    * @generated from field: stream.srpc.server.Config server = 1;
    */
   server?: Config$1
-}>
+}
 
 // Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({

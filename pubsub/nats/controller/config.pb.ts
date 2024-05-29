@@ -2,9 +2,9 @@
 // @generated from file github.com/aperturerobotics/bifrost/pubsub/nats/controller/config.proto (package nats.controller, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
 import { Config as Config$1 } from '../nats.pb.js'
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType, ScalarType } from '@aptre/protobuf-es-lite'
 
 export const protobufPackage = 'nats.controller'
 
@@ -13,7 +13,7 @@ export const protobufPackage = 'nats.controller'
  *
  * @generated from message nats.controller.Config
  */
-export type Config = Message<{
+export interface Config {
   /**
    * PeerID sets the peer ID to attach the server to.
    * Must be set.
@@ -28,7 +28,7 @@ export type Config = Message<{
    * @generated from field: nats.Config nats_config = 2;
    */
   natsConfig?: Config$1
-}>
+}
 
 // Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({

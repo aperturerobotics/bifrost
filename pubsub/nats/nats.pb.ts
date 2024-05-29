@@ -6,7 +6,6 @@ import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
 import {
   createEnumType,
   createMessageType,
-  Message,
   ScalarType,
 } from '@aptre/protobuf-es-lite'
 import type { HashType } from '../../hash/hash.pb.js'
@@ -57,7 +56,7 @@ export const NatsConnType_Enum = createEnumType('nats.NatsConnType', [
  *
  * @generated from message nats.Config
  */
-export type Config = Message<{
+export interface Config {
   /**
    * ClusterName is the cluster ID string to use.
    * This must be the same on all nodes.
@@ -93,7 +92,7 @@ export type Config = Message<{
    * @generated from field: bool log_trace_verbose = 5;
    */
   logTraceVerbose?: boolean
-}>
+}
 
 // Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({

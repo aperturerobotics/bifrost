@@ -2,10 +2,10 @@
 // @generated from file github.com/aperturerobotics/bifrost/transport/udp/udp.proto (package udp, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
 import { Opts } from '../common/pconn/pconn.pb.js'
 import { DialerOpts } from '../common/dialer/dialer.pb.js'
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType, ScalarType } from '@aptre/protobuf-es-lite'
 
 export const protobufPackage = 'udp'
 
@@ -14,7 +14,7 @@ export const protobufPackage = 'udp'
  *
  * @generated from message udp.Config
  */
-export type Config = Message<{
+export interface Config {
   /**
    * TransportPeerID sets the peer ID to attach the transport to.
    * If unset, attaches to any running peer with a private key.
@@ -41,7 +41,7 @@ export type Config = Message<{
    * @generated from field: map<string, dialer.DialerOpts> dialers = 5;
    */
   dialers?: { [key: string]: DialerOpts }
-}>
+}
 
 // Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({

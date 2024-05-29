@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
+import { createMessageType, ScalarType } from '@aptre/protobuf-es-lite'
 
 export const protobufPackage = 'transport.controller'
 
@@ -14,14 +14,14 @@ export const protobufPackage = 'transport.controller'
  *
  * @generated from message transport.controller.StreamEstablish
  */
-export type StreamEstablish = Message<{
+export interface StreamEstablish {
   /**
    * ProtocolID is the protocol identifier string for the stream.
    *
    * @generated from field: string protocol_id = 1;
    */
   protocolId?: string
-}>
+}
 
 // StreamEstablish contains the message type declaration for StreamEstablish.
 export const StreamEstablish: MessageType<StreamEstablish> = createMessageType({

@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
+import { createMessageType, ScalarType } from '@aptre/protobuf-es-lite'
 
 export const protobufPackage = 'stream.relay'
 
@@ -12,7 +12,7 @@ export const protobufPackage = 'stream.relay'
  *
  * @generated from message stream.relay.Config
  */
-export type Config = Message<{
+export interface Config {
   /**
    * PeerId is the peer ID to listen for incoming streams.
    * Can be empty to accept any.
@@ -41,7 +41,7 @@ export type Config = Message<{
    * @generated from field: string target_protocol_id = 4;
    */
   targetProtocolId?: string
-}>
+}
 
 // Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({

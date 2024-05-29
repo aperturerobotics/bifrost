@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
+import { createMessageType, ScalarType } from '@aptre/protobuf-es-lite'
 
 export const protobufPackage = 'stream.listening'
 
@@ -12,7 +12,7 @@ export const protobufPackage = 'stream.listening'
  *
  * @generated from message stream.listening.Config
  */
-export type Config = Message<{
+export interface Config {
   /**
    * LocalPeerId is the peer ID to forward incoming connections with.
    * Can be empty.
@@ -57,7 +57,7 @@ export type Config = Message<{
    * @generated from field: bool encrypted = 7;
    */
   encrypted?: boolean
-}>
+}
 
 // Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({

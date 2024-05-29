@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message } from '@aptre/protobuf-es-lite'
+import { createMessageType } from '@aptre/protobuf-es-lite'
 
 export const protobufPackage = 'tptaddr.controller'
 
@@ -15,7 +15,7 @@ export const protobufPackage = 'tptaddr.controller'
  *
  * @generated from message tptaddr.controller.Config
  */
-export type Config = Message<{}>
+export interface Config {}
 
 // Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({

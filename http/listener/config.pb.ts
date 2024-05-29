@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
+import { createMessageType, ScalarType } from '@aptre/protobuf-es-lite'
 
 export const protobufPackage = 'bifrost.http.listener'
 
@@ -14,7 +14,7 @@ export const protobufPackage = 'bifrost.http.listener'
  *
  * @generated from message bifrost.http.listener.Config
  */
-export type Config = Message<{
+export interface Config {
   /**
    * Addr is the address to listen.
    *
@@ -51,7 +51,7 @@ export type Config = Message<{
    * @generated from field: bool wait = 5;
    */
   wait?: boolean
-}>
+}
 
 // Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({

@@ -2,9 +2,9 @@
 // @generated from file github.com/aperturerobotics/bifrost/transport/common/dialer/dialer.proto (package dialer, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
 import { Backoff } from '@go/github.com/aperturerobotics/util/backoff/backoff.pb.js'
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType, ScalarType } from '@aptre/protobuf-es-lite'
 
 export const protobufPackage = 'dialer'
 
@@ -13,7 +13,7 @@ export const protobufPackage = 'dialer'
  *
  * @generated from message dialer.DialerOpts
  */
-export type DialerOpts = Message<{
+export interface DialerOpts {
   /**
    * Address is the address of the peer, in the format expected by the transport.
    *
@@ -27,7 +27,7 @@ export type DialerOpts = Message<{
    * @generated from field: backoff.Backoff backoff = 2;
    */
   backoff?: Backoff
-}>
+}
 
 // DialerOpts contains the message type declaration for DialerOpts.
 export const DialerOpts: MessageType<DialerOpts> = createMessageType({

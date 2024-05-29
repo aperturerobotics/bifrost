@@ -2,9 +2,9 @@
 // @generated from file github.com/aperturerobotics/bifrost/pubsub/floodsub/controller/config.proto (package floodsub.controller, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message } from '@aptre/protobuf-es-lite'
 import { Config as Config$1 } from '../floodsub.pb.js'
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType } from '@aptre/protobuf-es-lite'
 
 export const protobufPackage = 'floodsub.controller'
 
@@ -13,14 +13,14 @@ export const protobufPackage = 'floodsub.controller'
  *
  * @generated from message floodsub.controller.Config
  */
-export type Config = Message<{
+export interface Config {
   /**
    * FloodsubConfig are pubsub provider specific configuration variables.
    *
    * @generated from field: floodsub.Config floodsub_config = 1;
    */
   floodsubConfig?: Config$1
-}>
+}
 
 // Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({

@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
+import { createMessageType, ScalarType } from '@aptre/protobuf-es-lite'
 
 export const protobufPackage = 'stream.srpc.server'
 
@@ -12,7 +12,7 @@ export const protobufPackage = 'stream.srpc.server'
  *
  * @generated from message stream.srpc.server.Config
  */
-export type Config = Message<{
+export interface Config {
   /**
    * PeerIds are the list of peer IDs to listen on.
    * If empty, allows any incoming peer id w/ the protocol id(s).
@@ -33,7 +33,7 @@ export type Config = Message<{
    * @generated from field: bool disable_establish_link = 3;
    */
   disableEstablishLink?: boolean
-}>
+}
 
 // Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({

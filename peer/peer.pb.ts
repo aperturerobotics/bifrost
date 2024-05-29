@@ -2,10 +2,10 @@
 // @generated from file github.com/aperturerobotics/bifrost/peer/peer.proto (package peer, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
 import type { HashType } from '../hash/hash.pb.js'
 import { HashType_Enum } from '../hash/hash.pb.js'
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType, ScalarType } from '@aptre/protobuf-es-lite'
 
 export const protobufPackage = 'peer'
 
@@ -14,7 +14,7 @@ export const protobufPackage = 'peer'
  *
  * @generated from message peer.Signature
  */
-export type Signature = Message<{
+export interface Signature {
   /**
    * PubKey is the public key of the peer.
    * May be empty if the public key is to be inferred from context.
@@ -36,7 +36,7 @@ export type Signature = Message<{
    * @generated from field: bytes sig_data = 3;
    */
   sigData?: Uint8Array
-}>
+}
 
 // Signature contains the message type declaration for Signature.
 export const Signature: MessageType<Signature> = createMessageType({
@@ -54,7 +54,7 @@ export const Signature: MessageType<Signature> = createMessageType({
  *
  * @generated from message peer.SignedMsg
  */
-export type SignedMsg = Message<{
+export interface SignedMsg {
   /**
    * FromPeerId is the peer identifier of the sender.
    *
@@ -74,7 +74,7 @@ export type SignedMsg = Message<{
    * @generated from field: bytes data = 3;
    */
   data?: Uint8Array
-}>
+}
 
 // SignedMsg contains the message type declaration for SignedMsg.
 export const SignedMsg: MessageType<SignedMsg> = createMessageType({

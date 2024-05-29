@@ -3,14 +3,14 @@
 /* eslint-disable */
 
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
+import { createMessageType, ScalarType } from '@aptre/protobuf-es-lite'
 
 export const protobufPackage = 'transport.quic'
 
 /**
  * @generated from message transport.quic.Opts
  */
-export type Opts = Message<{
+export interface Opts {
   /**
    * MaxIdleTimeoutDur is the duration of idle after which conn is closed.
    *
@@ -64,7 +64,7 @@ export type Opts = Message<{
    * @generated from field: bool verbose = 6;
    */
   verbose?: boolean
-}>
+}
 
 // Opts contains the message type declaration for Opts.
 export const Opts: MessageType<Opts> = createMessageType({

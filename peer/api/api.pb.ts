@@ -2,9 +2,9 @@
 // @generated from file github.com/aperturerobotics/bifrost/peer/api/api.proto (package peer.api, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
 import { Config } from '../controller/config.pb.js'
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType, ScalarType } from '@aptre/protobuf-es-lite'
 import type { ControllerStatus } from '@go/github.com/aperturerobotics/controllerbus/controller/exec/exec.pb.js'
 import { ControllerStatus_Enum } from '@go/github.com/aperturerobotics/controllerbus/controller/exec/exec.pb.js'
 
@@ -15,14 +15,14 @@ export const protobufPackage = 'peer.api'
  *
  * @generated from message peer.api.IdentifyRequest
  */
-export type IdentifyRequest = Message<{
+export interface IdentifyRequest {
   /**
    * Config is the request to configure the peer controller.
    *
    * @generated from field: peer.controller.Config config = 1;
    */
   config?: Config
-}>
+}
 
 // IdentifyRequest contains the message type declaration for IdentifyRequest.
 export const IdentifyRequest: MessageType<IdentifyRequest> = createMessageType({
@@ -38,14 +38,14 @@ export const IdentifyRequest: MessageType<IdentifyRequest> = createMessageType({
  *
  * @generated from message peer.api.IdentifyResponse
  */
-export type IdentifyResponse = Message<{
+export interface IdentifyResponse {
   /**
    * ControllerStatus is the status of the peer controller.
    *
    * @generated from field: controller.exec.ControllerStatus controller_status = 1;
    */
   controllerStatus?: ControllerStatus
-}>
+}
 
 // IdentifyResponse contains the message type declaration for IdentifyResponse.
 export const IdentifyResponse: MessageType<IdentifyResponse> =
@@ -67,14 +67,14 @@ export const IdentifyResponse: MessageType<IdentifyResponse> =
  *
  * @generated from message peer.api.GetPeerInfoRequest
  */
-export type GetPeerInfoRequest = Message<{
+export interface GetPeerInfoRequest {
   /**
    * PeerId restricts the response to a specific peer ID.
    *
    * @generated from field: string peer_id = 1;
    */
   peerId?: string
-}>
+}
 
 // GetPeerInfoRequest contains the message type declaration for GetPeerInfoRequest.
 export const GetPeerInfoRequest: MessageType<GetPeerInfoRequest> =
@@ -91,14 +91,14 @@ export const GetPeerInfoRequest: MessageType<GetPeerInfoRequest> =
  *
  * @generated from message peer.api.PeerInfo
  */
-export type PeerInfo = Message<{
+export interface PeerInfo {
   /**
    * PeerId is the b58 peer ID.
    *
    * @generated from field: string peer_id = 1;
    */
   peerId?: string
-}>
+}
 
 // PeerInfo contains the message type declaration for PeerInfo.
 export const PeerInfo: MessageType<PeerInfo> = createMessageType({
@@ -114,14 +114,14 @@ export const PeerInfo: MessageType<PeerInfo> = createMessageType({
  *
  * @generated from message peer.api.GetPeerInfoResponse
  */
-export type GetPeerInfoResponse = Message<{
+export interface GetPeerInfoResponse {
   /**
    * LocalPeers is the set of peers loaded.
    *
    * @generated from field: repeated peer.api.PeerInfo local_peers = 1;
    */
   localPeers?: PeerInfo[]
-}>
+}
 
 // GetPeerInfoResponse contains the message type declaration for GetPeerInfoResponse.
 export const GetPeerInfoResponse: MessageType<GetPeerInfoResponse> =

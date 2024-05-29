@@ -2,10 +2,10 @@
 // @generated from file github.com/aperturerobotics/bifrost/daemon/api/controller/controller.proto (package bifrost.api.controller, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
 import { Config as Config$1 } from '../api.pb.js'
 import { Config as Config$2 } from '@go/github.com/aperturerobotics/controllerbus/bus/api/api.pb.js'
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType, ScalarType } from '@aptre/protobuf-es-lite'
 
 export const protobufPackage = 'bifrost.api.controller'
 
@@ -14,7 +14,7 @@ export const protobufPackage = 'bifrost.api.controller'
  *
  * @generated from message bifrost.api.controller.Config
  */
-export type Config = Message<{
+export interface Config {
   /**
    * ListenAddr is the address to listen on for connections.
    *
@@ -40,7 +40,7 @@ export type Config = Message<{
    * @generated from field: bus.api.Config bus_api_config = 4;
    */
   busApiConfig?: Config$2
-}>
+}
 
 // Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({

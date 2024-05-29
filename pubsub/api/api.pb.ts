@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
+import { createMessageType, ScalarType } from '@aptre/protobuf-es-lite'
 
 export const protobufPackage = 'pubsub.api'
 
@@ -12,7 +12,7 @@ export const protobufPackage = 'pubsub.api'
  *
  * @generated from message pubsub.api.PublishRequest
  */
-export type PublishRequest = Message<{
+export interface PublishRequest {
   /**
    * Data is the published data.
    *
@@ -26,7 +26,7 @@ export type PublishRequest = Message<{
    * @generated from field: uint32 identifier = 2;
    */
   identifier?: number
-}>
+}
 
 // PublishRequest contains the message type declaration for PublishRequest.
 export const PublishRequest: MessageType<PublishRequest> = createMessageType({
@@ -43,7 +43,7 @@ export const PublishRequest: MessageType<PublishRequest> = createMessageType({
  *
  * @generated from message pubsub.api.SubscribeRequest
  */
-export type SubscribeRequest = Message<{
+export interface SubscribeRequest {
   /**
    * ChannelId is the channel id to subscribe to.
    * Must be sent before / with publish.
@@ -72,7 +72,7 @@ export type SubscribeRequest = Message<{
    * @generated from field: pubsub.api.PublishRequest publish_request = 4;
    */
   publishRequest?: PublishRequest
-}>
+}
 
 // SubscribeRequest contains the message type declaration for SubscribeRequest.
 export const SubscribeRequest: MessageType<SubscribeRequest> =
@@ -97,7 +97,7 @@ export const SubscribeRequest: MessageType<SubscribeRequest> =
  *
  * @generated from message pubsub.api.IncomingMessage
  */
-export type IncomingMessage = Message<{
+export interface IncomingMessage {
   /**
    * FromPeerId is the peer identifier of the sender.
    *
@@ -116,7 +116,7 @@ export type IncomingMessage = Message<{
    * @generated from field: bytes data = 3;
    */
   data?: Uint8Array
-}>
+}
 
 // IncomingMessage contains the message type declaration for IncomingMessage.
 export const IncomingMessage: MessageType<IncomingMessage> = createMessageType({
@@ -134,7 +134,7 @@ export const IncomingMessage: MessageType<IncomingMessage> = createMessageType({
  *
  * @generated from message pubsub.api.OutgoingStatus
  */
-export type OutgoingStatus = Message<{
+export interface OutgoingStatus {
   /**
    * Identifier is the request-provided identifier for the message.
    *
@@ -147,7 +147,7 @@ export type OutgoingStatus = Message<{
    * @generated from field: bool sent = 2;
    */
   sent?: boolean
-}>
+}
 
 // OutgoingStatus contains the message type declaration for OutgoingStatus.
 export const OutgoingStatus: MessageType<OutgoingStatus> = createMessageType({
@@ -164,14 +164,14 @@ export const OutgoingStatus: MessageType<OutgoingStatus> = createMessageType({
  *
  * @generated from message pubsub.api.SubscriptionStatus
  */
-export type SubscriptionStatus = Message<{
+export interface SubscriptionStatus {
   /**
    * Subscribed indicates the subscription is established.
    *
    * @generated from field: bool subscribed = 1;
    */
   subscribed?: boolean
-}>
+}
 
 // SubscriptionStatus contains the message type declaration for SubscriptionStatus.
 export const SubscriptionStatus: MessageType<SubscriptionStatus> =
@@ -188,7 +188,7 @@ export const SubscriptionStatus: MessageType<SubscriptionStatus> =
  *
  * @generated from message pubsub.api.SubscribeResponse
  */
-export type SubscribeResponse = Message<{
+export interface SubscribeResponse {
   /**
    * IncomingMessage is an incoming message.
    *
@@ -208,7 +208,7 @@ export type SubscribeResponse = Message<{
    * @generated from field: pubsub.api.SubscriptionStatus subscription_status = 3;
    */
   subscriptionStatus?: SubscriptionStatus
-}>
+}
 
 // SubscribeResponse contains the message type declaration for SubscribeResponse.
 export const SubscribeResponse: MessageType<SubscribeResponse> =

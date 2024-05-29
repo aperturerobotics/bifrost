@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
+import { createMessageType, ScalarType } from '@aptre/protobuf-es-lite'
 
 export const protobufPackage = 'tptaddr.static'
 
@@ -14,7 +14,7 @@ export const protobufPackage = 'tptaddr.static'
  *
  * @generated from message tptaddr.static.Config
  */
-export type Config = Message<{
+export interface Config {
   /**
    * Addresses is the mapping of peer id to address list.
    *
@@ -24,7 +24,7 @@ export type Config = Message<{
    * @generated from field: repeated string addresses = 1;
    */
   addresses?: string[]
-}>
+}
 
 // Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({

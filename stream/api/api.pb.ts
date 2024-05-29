@@ -2,9 +2,9 @@
 // @generated from file github.com/aperturerobotics/bifrost/stream/api/api.proto (package stream.api, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message } from '@aptre/protobuf-es-lite'
 import { Config } from '../forwarding/forwarding.pb.js'
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType } from '@aptre/protobuf-es-lite'
 import type { ControllerStatus } from '@go/github.com/aperturerobotics/controllerbus/controller/exec/exec.pb.js'
 import { ControllerStatus_Enum } from '@go/github.com/aperturerobotics/controllerbus/controller/exec/exec.pb.js'
 import { Config as Config$1 } from '../listening/listening.pb.js'
@@ -19,12 +19,12 @@ export const protobufPackage = 'stream.api'
  *
  * @generated from message stream.api.ForwardStreamsRequest
  */
-export type ForwardStreamsRequest = Message<{
+export interface ForwardStreamsRequest {
   /**
    * @generated from field: stream.forwarding.Config forwarding_config = 1;
    */
   forwardingConfig?: Config
-}>
+}
 
 // ForwardStreamsRequest contains the message type declaration for ForwardStreamsRequest.
 export const ForwardStreamsRequest: MessageType<ForwardStreamsRequest> =
@@ -41,14 +41,14 @@ export const ForwardStreamsRequest: MessageType<ForwardStreamsRequest> =
  *
  * @generated from message stream.api.ForwardStreamsResponse
  */
-export type ForwardStreamsResponse = Message<{
+export interface ForwardStreamsResponse {
   /**
    * ControllerStatus is the status of the forwarding controller.
    *
    * @generated from field: controller.exec.ControllerStatus controller_status = 1;
    */
   controllerStatus?: ControllerStatus
-}>
+}
 
 // ForwardStreamsResponse contains the message type declaration for ForwardStreamsResponse.
 export const ForwardStreamsResponse: MessageType<ForwardStreamsResponse> =
@@ -70,12 +70,12 @@ export const ForwardStreamsResponse: MessageType<ForwardStreamsResponse> =
  *
  * @generated from message stream.api.ListenStreamsRequest
  */
-export type ListenStreamsRequest = Message<{
+export interface ListenStreamsRequest {
   /**
    * @generated from field: stream.listening.Config listening_config = 1;
    */
   listeningConfig?: Config$1
-}>
+}
 
 // ListenStreamsRequest contains the message type declaration for ListenStreamsRequest.
 export const ListenStreamsRequest: MessageType<ListenStreamsRequest> =
@@ -92,14 +92,14 @@ export const ListenStreamsRequest: MessageType<ListenStreamsRequest> =
  *
  * @generated from message stream.api.ListenStreamsResponse
  */
-export type ListenStreamsResponse = Message<{
+export interface ListenStreamsResponse {
   /**
    * ControllerStatus is the status of the forwarding controller.
    *
    * @generated from field: controller.exec.ControllerStatus controller_status = 1;
    */
   controllerStatus?: ControllerStatus
-}>
+}
 
 // ListenStreamsResponse contains the message type declaration for ListenStreamsResponse.
 export const ListenStreamsResponse: MessageType<ListenStreamsResponse> =
@@ -121,7 +121,7 @@ export const ListenStreamsResponse: MessageType<ListenStreamsResponse> =
  *
  * @generated from message stream.api.AcceptStreamRequest
  */
-export type AcceptStreamRequest = Message<{
+export interface AcceptStreamRequest {
   /**
    * Config is the configuration for the accept.
    * The first packet will contain this value.
@@ -135,7 +135,7 @@ export type AcceptStreamRequest = Message<{
    * @generated from field: stream.api.rpc.Data data = 2;
    */
   data?: Data
-}>
+}
 
 // AcceptStreamRequest contains the message type declaration for AcceptStreamRequest.
 export const AcceptStreamRequest: MessageType<AcceptStreamRequest> =
@@ -153,14 +153,14 @@ export const AcceptStreamRequest: MessageType<AcceptStreamRequest> =
  *
  * @generated from message stream.api.AcceptStreamResponse
  */
-export type AcceptStreamResponse = Message<{
+export interface AcceptStreamResponse {
   /**
    * Data is a data packet.
    *
    * @generated from field: stream.api.rpc.Data data = 1;
    */
   data?: Data
-}>
+}
 
 // AcceptStreamResponse contains the message type declaration for AcceptStreamResponse.
 export const AcceptStreamResponse: MessageType<AcceptStreamResponse> =
@@ -177,7 +177,7 @@ export const AcceptStreamResponse: MessageType<AcceptStreamResponse> =
  *
  * @generated from message stream.api.DialStreamRequest
  */
-export type DialStreamRequest = Message<{
+export interface DialStreamRequest {
   /**
    * Config is the configuration for the dial.
    * The first packet will contain this value.
@@ -191,7 +191,7 @@ export type DialStreamRequest = Message<{
    * @generated from field: stream.api.rpc.Data data = 2;
    */
   data?: Data
-}>
+}
 
 // DialStreamRequest contains the message type declaration for DialStreamRequest.
 export const DialStreamRequest: MessageType<DialStreamRequest> =
@@ -209,14 +209,14 @@ export const DialStreamRequest: MessageType<DialStreamRequest> =
  *
  * @generated from message stream.api.DialStreamResponse
  */
-export type DialStreamResponse = Message<{
+export interface DialStreamResponse {
   /**
    * Data is a data packet.
    *
    * @generated from field: stream.api.rpc.Data data = 1;
    */
   data?: Data
-}>
+}
 
 // DialStreamResponse contains the message type declaration for DialStreamResponse.
 export const DialStreamResponse: MessageType<DialStreamResponse> =

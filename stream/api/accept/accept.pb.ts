@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
+import { createMessageType, ScalarType } from '@aptre/protobuf-es-lite'
 
 export const protobufPackage = 'stream.api.accept'
 
@@ -12,7 +12,7 @@ export const protobufPackage = 'stream.api.accept'
  *
  * @generated from message stream.api.accept.Config
  */
-export type Config = Message<{
+export interface Config {
   /**
    * LocalPeerId is the peer ID to accept incoming connections with.
    * Can be empty to accept any peer.
@@ -40,7 +40,7 @@ export type Config = Message<{
    * @generated from field: uint64 transport_id = 4;
    */
   transportId?: bigint
-}>
+}
 
 // Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({

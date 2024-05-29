@@ -5,7 +5,6 @@
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
 import {
   createMessageType,
-  Message,
   ScalarType,
   Timestamp,
 } from '@aptre/protobuf-es-lite'
@@ -17,7 +16,7 @@ export const protobufPackage = 'pubmessage'
  *
  * @generated from message pubmessage.PubMessageInner
  */
-export type PubMessageInner = Message<{
+export interface PubMessageInner {
   /**
    * Data is the message data.
    *
@@ -36,7 +35,7 @@ export type PubMessageInner = Message<{
    * @generated from field: google.protobuf.Timestamp timestamp = 3;
    */
   timestamp?: Date
-}>
+}
 
 // PubMessageInner contains the message type declaration for PubMessageInner.
 export const PubMessageInner: MessageType<PubMessageInner> = createMessageType({

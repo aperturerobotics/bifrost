@@ -6,7 +6,6 @@ import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
 import {
   createEnumType,
   createMessageType,
-  Message,
   ScalarType,
 } from '@aptre/protobuf-es-lite'
 
@@ -62,7 +61,7 @@ export const HashType_Enum = createEnumType('hash.HashType', [
  *
  * @generated from message hash.Hash
  */
-export type Hash = Message<{
+export interface Hash {
   /**
    * HashType is the hash type in use.
    *
@@ -75,7 +74,7 @@ export type Hash = Message<{
    * @generated from field: bytes hash = 2;
    */
   hash?: Uint8Array
-}>
+}
 
 // Hash contains the message type declaration for Hash.
 export const Hash: MessageType<Hash> = createMessageType({

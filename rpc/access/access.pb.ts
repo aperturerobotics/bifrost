@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
-import { createMessageType, Message, ScalarType } from '@aptre/protobuf-es-lite'
+import { createMessageType, ScalarType } from '@aptre/protobuf-es-lite'
 
 export const protobufPackage = 'bifrost.rpc.access'
 
@@ -12,7 +12,7 @@ export const protobufPackage = 'bifrost.rpc.access'
  *
  * @generated from message bifrost.rpc.access.LookupRpcServiceRequest
  */
-export type LookupRpcServiceRequest = Message<{
+export interface LookupRpcServiceRequest {
   /**
    * ServiceId is the service identifier.
    *
@@ -26,7 +26,7 @@ export type LookupRpcServiceRequest = Message<{
    * @generated from field: string server_id = 2;
    */
   serverId?: string
-}>
+}
 
 // LookupRpcServiceRequest contains the message type declaration for LookupRpcServiceRequest.
 export const LookupRpcServiceRequest: MessageType<LookupRpcServiceRequest> =
@@ -44,7 +44,7 @@ export const LookupRpcServiceRequest: MessageType<LookupRpcServiceRequest> =
  *
  * @generated from message bifrost.rpc.access.LookupRpcServiceResponse
  */
-export type LookupRpcServiceResponse = Message<{
+export interface LookupRpcServiceResponse {
   /**
    * Idle indicates the directive is now idle.
    *
@@ -63,7 +63,7 @@ export type LookupRpcServiceResponse = Message<{
    * @generated from field: bool removed = 3;
    */
   removed?: boolean
-}>
+}
 
 // LookupRpcServiceResponse contains the message type declaration for LookupRpcServiceResponse.
 export const LookupRpcServiceResponse: MessageType<LookupRpcServiceResponse> =
