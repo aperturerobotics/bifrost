@@ -48,7 +48,7 @@ require (
 	github.com/urfave/cli/v2 v2.27.2
 	github.com/zeebo/blake3 v0.2.3
 	golang.org/x/crypto v0.23.0
-	golang.org/x/exp v0.0.0-20240525044651-4c93da0ed11d
+	golang.org/x/exp v0.0.0-20240531132922-fd00a4e0eefc
 	gonum.org/v1/gonum v0.15.0
 	nhooyr.io/websocket v1.8.11 // master
 )
