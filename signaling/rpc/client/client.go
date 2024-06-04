@@ -447,14 +447,9 @@ func (s *clientPeerTracker) execute(ctx context.Context) error {
 
 	// handleRecv handles when we got a valid remote message.
 	handleRecv := func(msg *signaling_rpc.SessionMsg) error {
-		// Validate the signed message.
+		// Validate the signed message (extract).
 		signedMsg := msg.GetSignedMsg()
-		if err := signedMsg.Validate(); err != nil {
-			return err
-		}
-
-		// Ensure the signed message peer id matches.
-		id, err := signedMsg.ParseFromPeerID()
+		_, id, err := signedMsg.ExtractAndVerify()
 		if err != nil {
 			return err
 		}

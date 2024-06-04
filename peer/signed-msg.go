@@ -34,9 +34,6 @@ func NewSignedMsg(
 func UnmarshalSignedMsg(data []byte) (*SignedMsg, error) {
 	m := &SignedMsg{}
 	err := m.UnmarshalVT(data)
-	if err == nil {
-		err = m.Validate()
-	}
 	if err != nil {
 		return nil, err
 	}
@@ -64,8 +61,8 @@ func (m *SignedMsg) ExtractPubKey() (crypto.PubKey, ID, error) {
 	if err != nil {
 		return nil, ID(""), err
 	}
-	if len(fromPeerID) == 0 {
-		return nil, ID(""), ErrEmptyPeerID
+	if err := fromPeerID.Validate(); err != nil {
+		return nil, ID(""), errors.Wrap(err, "message peer id")
 	}
 	pubKey, err := fromPeerID.ExtractPublicKey()
 	if err != nil {
@@ -76,6 +73,16 @@ func (m *SignedMsg) ExtractPubKey() (crypto.PubKey, ID, error) {
 
 // ExtractAndVerify extracts public key & uses it to verify message
 func (m *SignedMsg) ExtractAndVerify() (crypto.PubKey, ID, error) {
+	if len(m.GetData()) == 0 {
+		return nil, "", ErrEmptyBody
+	}
+	if len(m.GetFromPeerId()) == 0 {
+		return nil, "", ErrEmptyPeerID
+	}
+	if err := m.GetSignature().Validate(); err != nil {
+		return nil, "", errors.Wrap(err, "message signature")
+	}
+
 	pubKey, peerID, err := m.ExtractPubKey()
 	if err != nil {
 		return nil, peerID, err
@@ -122,21 +129,9 @@ func (m *SignedMsg) Verify(pubKey crypto.PubKey) error {
 
 // Validate checks the signed message.
 func (m *SignedMsg) Validate() error {
-	if len(m.GetData()) == 0 {
-		return ErrEmptyBody
-	}
-	if len(m.GetFromPeerId()) == 0 {
-		return ErrEmptyPeerID
-	}
-	if err := m.GetSignature().Validate(); err != nil {
-		return errors.Wrap(err, "message signature")
-	}
-	_, id, err := m.ExtractAndVerify()
+	_, _, err := m.ExtractAndVerify()
 	if err != nil {
 		return errors.Wrap(err, "message verify")
-	}
-	if err := id.Validate(); err != nil {
-		return errors.Wrap(err, "message peer id")
 	}
 	return nil
 }
