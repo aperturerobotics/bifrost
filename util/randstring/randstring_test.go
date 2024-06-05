@@ -9,7 +9,7 @@ import (
 )
 
 func TestRandString(t *testing.T) {
-	rnd := rand.New(prng.BuildSeededRand([]byte("testing randstring")))
+	rnd := rand.New(prng.BuildSeededRand([]byte("testing randstring"))) //nolint:gosec
 	strs := make([]string, 10)
 	for i := range strs {
 		strs[i] = RandString(rnd, 8)

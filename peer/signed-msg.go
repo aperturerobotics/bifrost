@@ -11,7 +11,12 @@ import (
 )
 
 // NewSignedMsg constructs/signs/encodes a new signed message.
+//
+// encContext strings must be hardcoded constants, and the recommended
+// format is "[application] [commit timestamp] [purpose]", e.g.,
+// "example.com 2019-12-25 16:18:03 session tokens v1".
 func NewSignedMsg(
+	encContext string,
 	privKey crypto.PrivKey,
 	hashType hash.HashType,
 	innerData []byte,
@@ -24,7 +29,7 @@ func NewSignedMsg(
 		FromPeerId: IDB58Encode(peerID),
 		Data:       innerData,
 	}
-	if err := msg.Sign(privKey, hashType); err != nil {
+	if err := msg.Sign(encContext, privKey, hashType); err != nil {
 		return nil, err
 	}
 	return msg, nil
@@ -72,7 +77,9 @@ func (m *SignedMsg) ExtractPubKey() (crypto.PubKey, ID, error) {
 }
 
 // ExtractAndVerify extracts public key & uses it to verify message
-func (m *SignedMsg) ExtractAndVerify() (crypto.PubKey, ID, error) {
+//
+// encContext must match the context used when creating the signature.
+func (m *SignedMsg) ExtractAndVerify(encContext string) (crypto.PubKey, ID, error) {
 	if len(m.GetData()) == 0 {
 		return nil, "", ErrEmptyBody
 	}
@@ -88,7 +95,7 @@ func (m *SignedMsg) ExtractAndVerify() (crypto.PubKey, ID, error) {
 		return nil, peerID, err
 	}
 
-	sigErr := m.Verify(pubKey)
+	sigErr := m.Verify(encContext, pubKey)
 	if sigErr != nil {
 		return pubKey, peerID, err
 	}
@@ -98,13 +105,18 @@ func (m *SignedMsg) ExtractAndVerify() (crypto.PubKey, ID, error) {
 
 // Sign signs the inner body with the private key.
 // Disallows empty message.
-func (m *SignedMsg) Sign(privKey crypto.PrivKey, hashType hash.HashType) error {
+//
+// encContext strings must be hardcoded constants, and the recommended
+// format is "[application] [commit timestamp] [purpose]", e.g.,
+// "example.com 2019-12-25 16:18:03 session tokens v1".
+func (m *SignedMsg) Sign(encContext string, privKey crypto.PrivKey, hashType hash.HashType) error {
 	innerData := m.GetData()
 	if len(innerData) == 0 {
 		return ErrEmptyBody
 	}
 
 	sig, err := NewSignature(
+		encContext,
 		privKey,
 		hashType,
 		innerData,
@@ -118,20 +130,13 @@ func (m *SignedMsg) Sign(privKey crypto.PrivKey, hashType hash.HashType) error {
 }
 
 // Verify verifies the signature against a public key.
-func (m *SignedMsg) Verify(pubKey crypto.PubKey) error {
+//
+// encContext must match the context used when creating the signature.
+func (m *SignedMsg) Verify(encContext string, pubKey crypto.PubKey) error {
 	// validate signature
-	sigOk, sigErr := m.GetSignature().VerifyWithPublic(pubKey, m.GetData())
+	sigOk, sigErr := m.GetSignature().VerifyWithPublic(encContext, pubKey, m.GetData())
 	if !sigOk && sigErr == nil {
 		sigErr = ErrSignatureInvalid
 	}
 	return sigErr
-}
-
-// Validate checks the signed message.
-func (m *SignedMsg) Validate() error {
-	_, _, err := m.ExtractAndVerify()
-	if err != nil {
-		return errors.Wrap(err, "message verify")
-	}
-	return nil
 }

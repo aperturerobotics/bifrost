@@ -21,16 +21,17 @@ func TestSignedMsg(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
+	encContext := "bifrost/peer TestSignedMsg"
 	msg := "hello world from signed message test"
-	smsg, err := NewSignedMsg(privKey, hash.RecommendedHashType, []byte(msg))
+	smsg, err := NewSignedMsg(encContext, privKey, hash.RecommendedHashType, []byte(msg))
 	if err == nil {
-		err = smsg.Validate()
+		_, _, err = smsg.ExtractAndVerify(encContext)
 	}
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	_, peerID, err := smsg.ExtractAndVerify()
+	_, peerID, err := smsg.ExtractAndVerify(encContext)
 	if err != nil {
 		t.Fatal(err.Error())
 	}

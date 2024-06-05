@@ -40,7 +40,7 @@ func (s *Session) Recv(ctx context.Context) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return msg.GetData(), nil
+	return msg.GetSignedMsg().GetData(), nil
 }
 
 // _ is a type assertion

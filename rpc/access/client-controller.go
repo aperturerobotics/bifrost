@@ -96,7 +96,7 @@ func (c *ClientController) GetControllerInfo() *controller.Info {
 	return c.info.Clone()
 }
 
-// Execute executes the given controller.
+// Execute executes the controller goroutine.
 func (c *ClientController) Execute(ctx context.Context) error {
 	c.clientRc.SetContext(ctx)
 	return nil

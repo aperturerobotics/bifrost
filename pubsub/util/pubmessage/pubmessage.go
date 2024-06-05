@@ -7,6 +7,8 @@ import (
 	crypto "github.com/libp2p/go-libp2p/core/crypto"
 )
 
+const pubMessageEncContext = "bifrost/pubsub/pubmessage 2024-06-05T02:38:47.55258Z channel/"
+
 // NewPubMessage constructs/signs/encodes a new pub-message and inner message.
 //
 // Uses time.Now() for the timestamp: not deterministic.
@@ -26,24 +28,26 @@ func NewPubMessage(
 		return nil, inner, err
 	}
 
-	sig, err := peer.NewSignedMsg(privKey, hashType, innerData)
+	sig, err := peer.NewSignedMsg(pubMessageEncContext+channelID, privKey, hashType, innerData)
 	return sig, inner, err
 }
 
 // ExtractAndVerify extracts the inner message from a signed message.
 func ExtractAndVerify(msg *peer.SignedMsg) (*PubMessageInner, crypto.PubKey, peer.ID, error) {
-	pubKey, peerID, err := msg.ExtractAndVerify()
-	if err != nil {
-		return nil, nil, "", err
-	}
 	data := msg.GetData()
+
 	out := &PubMessageInner{}
-	err = out.UnmarshalVT(data)
+	err := out.UnmarshalVT(data)
 	if err == nil {
 		err = out.Validate()
 	}
 	if err != nil {
-		return nil, pubKey, peerID, err
+		return nil, nil, "", err
+	}
+
+	pubKey, peerID, err := msg.ExtractAndVerify(pubMessageEncContext + out.GetChannel())
+	if err != nil {
+		return nil, nil, "", err
 	}
 	return out, pubKey, peerID, nil
 }

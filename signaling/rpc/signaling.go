@@ -3,13 +3,30 @@ package signaling_rpc
 import (
 	"errors"
 
+	"github.com/aperturerobotics/bifrost/hash"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/protocol"
 	"github.com/aperturerobotics/bifrost/util/confparse"
+	"github.com/libp2p/go-libp2p/core/crypto"
 )
 
 // ProtocolID is the default protocol ID for the signaling server.
 var ProtocolID = protocol.ID("bifrost/signaling")
+
+// encContext is the encryption context used for the signaling session messages.
+const encContext = "bifrost/signaling/rpc session msg 2024-06-05T02:45:07.208906Z"
+
+// NewSessionMsg creates a new SessionMsg with the provided data signed.
+func NewSessionMsg(privKey crypto.PrivKey, hashType hash.HashType, msg []byte, seqno uint64) (*SessionMsg, error) {
+	signedMsg, err := peer.NewSignedMsg(encContext, privKey, hashType, msg)
+	if err != nil {
+		return nil, err
+	}
+	return &SessionMsg{
+		SignedMsg: signedMsg,
+		Seqno:     seqno,
+	}, nil
+}
 
 // Validate validates the Listen request.
 func (r *ListenRequest) Validate() error {
@@ -59,7 +76,8 @@ func (r *SessionResponse) Validate() error {
 
 // Validate validates the SessionMsg.
 func (m *SessionMsg) Validate() error {
-	return m.GetSignedMsg().Validate()
+	_, _, err := m.GetSignedMsg().ExtractAndVerify(encContext)
+	return err
 }
 
 // Validate validates the SessionInit.
@@ -77,4 +95,9 @@ func (i *SessionInit) Validate() error {
 // ParsePeerID parses the peer ID.
 func (s *SessionInit) ParsePeerID() (peer.ID, error) {
 	return confparse.ParsePeerID(s.GetPeerId())
+}
+
+// ExtractAndVerify extracts the signed message and verifies the signature.
+func (m *SessionMsg) ExtractAndVerify() (crypto.PubKey, peer.ID, error) {
+	return m.GetSignedMsg().ExtractAndVerify(encContext)
 }

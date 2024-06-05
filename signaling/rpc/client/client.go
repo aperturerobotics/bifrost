@@ -204,16 +204,12 @@ func (r *ClientPeerRef) GetRemotePeerID() peer.ID {
 // Waits for the message to be acked
 //
 // If context is canceled the message will also be canceled.
-func (r *ClientPeerRef) Send(ctx context.Context, msg []byte) (_ *peer.SignedMsg, outErr error) {
+func (r *ClientPeerRef) Send(ctx context.Context, msg []byte) (_ *signaling_rpc.SessionMsg, outErr error) {
 	tkr := r.tkr
-	nonce := tkr.txNonce.Add(1)
-	signedMsg, err := peer.NewSignedMsg(r.c.privKey, hash.HashType_HashType_BLAKE3, msg)
+	seqno := tkr.txNonce.Add(1)
+	sessMsg, err := signaling_rpc.NewSessionMsg(r.c.privKey, hash.HashType_HashType_BLAKE3, msg, seqno)
 	if err != nil {
 		return nil, err
-	}
-	sessMsg := &signaling_rpc.SessionMsg{
-		Seqno:     nonce,
-		SignedMsg: signedMsg,
 	}
 
 	var txed, acked bool
@@ -226,7 +222,7 @@ func (r *ClientPeerRef) Send(ctx context.Context, msg []byte) (_ *peer.SignedMsg
 		}
 
 		tkr.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
-			if tkr.out != nil && tkr.out.Seqno == nonce {
+			if tkr.out != nil && tkr.out.Seqno == seqno {
 				// If the message was already acknowledged, clear it.
 				if !tkr.outSent || tkr.outAcked {
 					tkr.out, tkr.outSent, tkr.outAcked, tkr.outCancel = nil, false, false, false
@@ -261,7 +257,7 @@ func (r *ClientPeerRef) Send(ctx context.Context, msg []byte) (_ *peer.SignedMsg
 				if tkr.out == nil {
 					// No message is waiting. We can transmit now.
 					txed = false
-				} else if tkr.out.Seqno != nonce {
+				} else if tkr.out.Seqno != seqno {
 					// Some other message is now waiting.
 					txed = false
 					waitCh = getWaitCh()
@@ -295,7 +291,7 @@ func (r *ClientPeerRef) Send(ctx context.Context, msg []byte) (_ *peer.SignedMsg
 		})
 
 		if acked {
-			return signedMsg, nil
+			return sessMsg, nil
 		}
 
 		if waitCh != nil {
@@ -309,7 +305,7 @@ func (r *ClientPeerRef) Send(ctx context.Context, msg []byte) (_ *peer.SignedMsg
 }
 
 // Recv waits for and acks an incoming message from a remote peer.
-func (r *ClientPeerRef) Recv(ctx context.Context) (*peer.SignedMsg, error) {
+func (r *ClientPeerRef) Recv(ctx context.Context) (*signaling_rpc.SessionMsg, error) {
 	tkr := r.tkr
 
 	var recv *signaling_rpc.SessionMsg
@@ -330,7 +326,7 @@ func (r *ClientPeerRef) Recv(ctx context.Context) (*peer.SignedMsg, error) {
 		})
 
 		if recv != nil {
-			return recv.SignedMsg, nil
+			return recv, nil
 		}
 
 		select {
@@ -447,9 +443,8 @@ func (s *clientPeerTracker) execute(ctx context.Context) error {
 
 	// handleRecv handles when we got a valid remote message.
 	handleRecv := func(msg *signaling_rpc.SessionMsg) error {
-		// Validate the signed message (extract).
-		signedMsg := msg.GetSignedMsg()
-		_, id, err := signedMsg.ExtractAndVerify()
+		// Extract and verify the signed message.
+		_, id, err := msg.ExtractAndVerify()
 		if err != nil {
 			return err
 		}

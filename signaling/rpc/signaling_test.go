@@ -1,4 +1,4 @@
-package signaling_rpc_e2e
+package signaling_rpc_test
 
 import (
 	"bytes"
@@ -141,8 +141,9 @@ func TestSignaling(t *testing.T) {
 				return
 			}
 
-			le.Infof("p2: got message from peer %v: %v", pid.String(), string(sm.GetData()))
-			gotMsg <- string(sm.GetData())
+			dataStr := string(sm.GetSignedMsg().GetData())
+			le.Infof("p2: got message from peer %v: %v", pid.String(), dataStr)
+			gotMsg <- dataStr
 			ref.Release()
 		}()
 	})

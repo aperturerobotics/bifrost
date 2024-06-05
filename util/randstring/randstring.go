@@ -21,7 +21,7 @@ func RandString(src *mrand.Rand, n int) string {
 	if src == nil {
 		var seed [32]byte
 		_, _ = rand.Read(seed[:])
-		src = mrand.New(mrand.NewChaCha8(seed))
+		src = mrand.New(mrand.NewChaCha8(seed)) //nolint:gosec
 	}
 
 	sb := strings.Builder{}

@@ -1,13 +1,22 @@
 package peer
 
 import (
+	"bytes"
+	"strconv"
+
 	"github.com/aperturerobotics/bifrost/hash"
+	"github.com/aperturerobotics/util/scrub"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/pkg/errors"
 )
 
 // NewSignature constructs a signature.
+//
+// encContext strings must be hardcoded constants, and the recommended
+// format is "[application] [commit timestamp] [purpose]", e.g.,
+// "example.com 2019-12-25 16:18:03 session tokens v1".
 func NewSignature(
+	encContext string,
 	privKey crypto.PrivKey,
 	hashType hash.HashType,
 	data []byte,
@@ -17,12 +26,23 @@ func NewSignature(
 	if err != nil {
 		return nil, err
 	}
-	return NewSignatureWithHashedData(privKey, hashType, h.GetHash(), inclPubKey)
+	return NewSignatureWithHashedData(
+		encContext,
+		privKey,
+		hashType,
+		h.GetHash(),
+		inclPubKey,
+	)
 }
 
 // NewSignatureWithHashedData builds a new signature with already-hashed data.
 // Skips the hash step.
+//
+// encContext strings must be hardcoded constants, and the recommended
+// format is "[application] [commit timestamp] [purpose]", e.g.,
+// "example.com 2019-12-25 16:18:03 session tokens v1".
 func NewSignatureWithHashedData(
+	encContext string,
 	privKey crypto.PrivKey,
 	hashType hash.HashType,
 	hashData []byte,
@@ -31,10 +51,20 @@ func NewSignatureWithHashedData(
 	if err := hashType.Validate(); err != nil {
 		return nil, err
 	}
-	sd, err := privKey.Sign(hashData)
+
+	// prepend the encryption context and hash type
+	signBody := bytes.Join([][]byte{
+		[]byte(encContext),
+		[]byte(strconv.Itoa(int(hashType))),
+		hashData,
+	}, []byte(" - SIGN - "))
+	defer scrub.Scrub(signBody)
+
+	sd, err := privKey.Sign(signBody)
 	if err != nil {
 		return nil, err
 	}
+
 	s := &Signature{HashType: hashType, SigData: sd}
 	if inclPubKey {
 		pkey, err := crypto.MarshalPublicKey(privKey.GetPublic())
@@ -43,6 +73,7 @@ func NewSignatureWithHashedData(
 		}
 		s.PubKey = pkey
 	}
+
 	return s, nil
 }
 
@@ -64,7 +95,9 @@ func (s *Signature) Validate() error {
 
 // VerifyWithPublic checks a signature with a public key, hashing the data.
 // Returns ok and any error interpeting the signature.
-func (s *Signature) VerifyWithPublic(pubKey crypto.PubKey, data []byte) (bool, error) {
+//
+// encContext must match the context used when creating the signature.
+func (s *Signature) VerifyWithPublic(encContext string, pubKey crypto.PubKey, data []byte) (bool, error) {
 	ht := s.GetHashType()
 	if ht == hash.HashType_HashType_UNKNOWN {
 		return false, errors.New("hash type missing")
@@ -76,11 +109,22 @@ func (s *Signature) VerifyWithPublic(pubKey crypto.PubKey, data []byte) (bool, e
 		return false, err
 	}
 
+	// hash the data
 	dataHash, err := hash.Sum(ht, data)
 	if err != nil {
 		return false, err
 	}
-	return pubKey.Verify(dataHash.GetHash(), s.GetSigData())
+	defer scrub.Scrub(dataHash.Hash)
+
+	// prepend the encryption context and hash type
+	signBody := bytes.Join([][]byte{
+		[]byte(encContext),
+		[]byte(strconv.Itoa(int(ht))),
+		dataHash.Hash,
+	}, []byte(" - SIGN - "))
+	defer scrub.Scrub(signBody)
+
+	return pubKey.Verify(signBody, s.GetSigData())
 }
 
 // ParsePubKey parses the incldued public key.

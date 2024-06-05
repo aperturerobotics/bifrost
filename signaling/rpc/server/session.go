@@ -193,7 +193,7 @@ func (s *Server) Session(strm signaling.SRPCSignaling_SessionStream) error {
 	// Function to handle when our peer tries to send an outgoing message.
 	handleSendMsg := func(msgSessionSeqno uint64, sendMsg *signaling.SessionMsg) error {
 		// Verify signature on message and that the source peer matches.
-		_, msgPeerId, err := sendMsg.GetSignedMsg().ExtractAndVerify()
+		_, msgPeerId, err := sendMsg.ExtractAndVerify()
 		if err != nil {
 			return errors.Errorf("signaling: failed to verify signed msg: %v", err.Error())
 		}
