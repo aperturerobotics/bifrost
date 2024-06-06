@@ -8,6 +8,8 @@ github.com/aperturerobotics/common v0.16.8 h1:uKHIqQ+NMkn7G+dSUEvP/ZvjA0M5i/aXO/
 github.com/aperturerobotics/common v0.16.8/go.mod h1:CNUQ4LRn9e2zwKKrWMZiKoywhWV9+Wpn3QPn9uE2E7Y=
 github.com/aperturerobotics/controllerbus v0.46.1 h1:0akrbsgm8dl+KSTrwObgl1Qpkvj8sdOirTKfeCMqodY=
 github.com/aperturerobotics/controllerbus v0.46.1/go.mod h1:GTvrTd1ZAZ+ZdC51A5YQaZhr3tzuBBglPn70L51Coew=
+github.com/aperturerobotics/controllerbus v0.46.2 h1:+bxdw5zU3Nlj7bBE/7cjQFtO0thjxnDivoPsHOboVqo=
+github.com/aperturerobotics/controllerbus v0.46.2/go.mod h1:hf7JYmneQBJ4nLYugxqOchbOrAXF4ZCGIVD4eJiGg60=
 github.com/aperturerobotics/entitygraph v0.9.1 h1:bCl0Q9N1hkQnOtdCYz7pNSYqH+5CY3EUCuD19dQmJeI=
 github.com/aperturerobotics/entitygraph v0.9.1/go.mod h1:40VoNXSslWQieSS4V3HyzqOOZnRiGxItj/qZYSHg8Rw=
 github.com/aperturerobotics/go-libp2p v0.33.1-0.20240511223728-e0b67c111765 h1:KTSK6vPrh6gaT6CH0G2yAnmlcdjsc9Bk5JCqSeePrUw=
