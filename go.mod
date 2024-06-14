@@ -4,7 +4,7 @@ go 1.22
 
 require (
 	github.com/aperturerobotics/common v0.16.8 // latest
-	github.com/aperturerobotics/controllerbus v0.46.2 // latest
+	github.com/aperturerobotics/controllerbus v0.46.3 // latest
 	github.com/aperturerobotics/entitygraph v0.9.1 // latest
 	github.com/aperturerobotics/protobuf-go-lite v0.6.5 // latest
 	github.com/aperturerobotics/starpc v0.32.12 // latest
@@ -48,7 +48,7 @@ require (
 	github.com/urfave/cli/v2 v2.27.2
 	github.com/zeebo/blake3 v0.2.3
 	golang.org/x/crypto v0.24.0
-	golang.org/x/exp v0.0.0-20240604190554-fc45aab8b7f8
+	golang.org/x/exp v0.0.0-20240613232115-7f521ea00fb8
 	gonum.org/v1/gonum v0.15.0
 	nhooyr.io/websocket v1.8.11 // master
 )
