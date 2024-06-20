@@ -28,8 +28,8 @@ github.com/aperturerobotics/quic-go v0.43.1-0.20240504081906-25e38f065e10 h1:xtQ
 github.com/aperturerobotics/quic-go v0.43.1-0.20240504081906-25e38f065e10/go.mod h1:IWwvw/rjosC5aPDuEgzbRPNlZSHC4b4ABztoalIe59g=
 github.com/aperturerobotics/starpc v0.32.13 h1:Gpq+dbPHAuwQQLj8BqbJ4Q8QweGiFxKdNlUzAIUiPUc=
 github.com/aperturerobotics/starpc v0.32.13/go.mod h1:ToTY8p+eL3BP79JuX43EUGHoTtla3hH4lgbyPrGe74w=
-github.com/aperturerobotics/util v1.23.6 h1:+xLImSJS/DmSJLnuiSCD5X8JH0SARMZYlTUi1azeKQA=
-github.com/aperturerobotics/util v1.23.6/go.mod h1:xjOnypuh652ppDFFQ6L0q0svGr3fghxKn0kssEI+wt4=
+github.com/aperturerobotics/util v1.23.7 h1:DERV75zYLRn4BTS0vMFkitWJhUg7VGG5UyJq2Frf3iI=
+github.com/aperturerobotics/util v1.23.7/go.mod h1:wpjaPlljanWro3pyt7/9Ja0mvFH26XL6MKsJSzF8s2Q=
 github.com/blang/semver v3.5.1+incompatible h1:cQNTCjp13qL8KC3Nbxr/y2Bqb63oX6wdnnjpJbkM4JQ=
 github.com/blang/semver v3.5.1+incompatible/go.mod h1:kRBLl5iJ+tD4TcOOxsy/0fnwebNt5EWlYSAyrTnjyyk=
 github.com/cenkalti/backoff v2.2.1+incompatible h1:tNowT99t7UNflLxfYYSlKYsBpXdEet03Pg2g16Swow4=
