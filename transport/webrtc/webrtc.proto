@@ -18,7 +18,7 @@ message Config {
   // TransportType overrides the transport type id for dial addresses.
   // Defaults to "webrtc"
   // Configures the scheme for addr matching to this transport.
-	// E.x.: webrtc://
+  // E.x.: webrtc://
   string transport_type = 3;
   // Quic contains the quic protocol options.
   //
