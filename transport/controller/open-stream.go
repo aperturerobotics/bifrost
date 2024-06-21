@@ -7,6 +7,7 @@ import (
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/aperturerobotics/controllerbus/directive"
+	"github.com/sirupsen/logrus"
 )
 
 // openStreamResolver resolves OpenStream directives
@@ -70,8 +71,12 @@ func (o *openStreamResolver) Resolve(ctx context.Context, handler directive.Reso
 
 			_ = strm.SetDeadline(time.Time{})
 			o.c.le.
-				WithField("link-id", lnk.GetUUID()).
-				WithField("protocol-id", protocolID).
+				WithFields(logrus.Fields{
+					"link-id":     lnk.GetUUID(),
+					"protocol-id": protocolID,
+					"src-peer-id": lnk.GetLocalPeer().String(),
+					"dst-peer-id": lnk.GetRemotePeer().String(),
+				}).
 				Debug("opened stream with peer")
 			strmCh <- newMountedStream(strm, openOpts, protocolID, lnk)
 		},
