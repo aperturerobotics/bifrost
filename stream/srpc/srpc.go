@@ -111,15 +111,6 @@ func EstablishSrpcStream(
 	msgHandler srpc.PacketDataHandler,
 	closeHandler srpc.CloseHandler,
 ) (srpc.PacketWriter, error) {
-	// TODO: EstablishLinkWithPeer via transport id?
-	_, lkRel, err := b.AddDirective(
-		link.NewEstablishLinkWithPeer(srcPeer, destPeer),
-		nil,
-	)
-	if err != nil {
-		return nil, err
-	}
-
 	ms, msRel, err := link.OpenStreamWithPeerEx(
 		ctx,
 		b,
@@ -128,7 +119,6 @@ func EstablishSrpcStream(
 		stream.OpenOpts{},
 	)
 	if err != nil {
-		lkRel.Release()
 		return nil, err
 	}
 
@@ -136,7 +126,6 @@ func EstablishSrpcStream(
 	go func() {
 		rw.ReadPump(msgHandler, closeHandler)
 		msRel()
-		lkRel.Release()
 	}()
 
 	return rw, nil
