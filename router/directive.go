@@ -107,10 +107,10 @@ func (d *DiscoverRoutesWithPeerIDs) GetName() string {
 func (d *DiscoverRoutesWithPeerIDs) GetDebugVals() directive.DebugValues {
 	vals := directive.DebugValues{}
 	if pid := d.DiscoverRoutesLocalPeerID(); pid != peer.ID("") {
-		vals["local-peer-id"] = []string{pid.String()}
+		vals["src-peer"] = []string{pid.String()}
 	}
 	if pid := d.DiscoverRoutesRemotePeerID(); pid != peer.ID("") {
-		vals["remote-peer-id"] = []string{pid.String()}
+		vals["dst-peer"] = []string{pid.String()}
 	}
 	return vals
 }

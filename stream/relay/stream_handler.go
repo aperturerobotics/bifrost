@@ -26,8 +26,8 @@ type MountedStreamHandler struct {
 // NewMountedStreamHandler constructs the mounted stream handler.
 func NewMountedStreamHandler(le *logrus.Entry, bus bus.Bus, targetPeerID peer.ID, targetProtocolID protocol.ID) (*MountedStreamHandler, error) {
 	le = le.WithFields(logrus.Fields{
-		"target-peer-id":     targetPeerID.String(),
-		"target-protocol-id": targetProtocolID,
+		"dst-peer":        targetPeerID.String(),
+		"dst-protocol-id": targetProtocolID,
 	})
 	return &MountedStreamHandler{le: le, targetPeerID: targetPeerID, targetProtocolID: targetProtocolID, bus: bus}, nil
 }

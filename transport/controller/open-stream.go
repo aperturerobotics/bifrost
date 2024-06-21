@@ -74,8 +74,8 @@ func (o *openStreamResolver) Resolve(ctx context.Context, handler directive.Reso
 				WithFields(logrus.Fields{
 					"link-id":     lnk.GetUUID(),
 					"protocol-id": protocolID,
-					"src-peer-id": lnk.GetLocalPeer().String(),
-					"dst-peer-id": lnk.GetRemotePeer().String(),
+					"src-peer":    lnk.GetLocalPeer().String(),
+					"dst-peer":    lnk.GetRemotePeer().String(),
 				}).
 				Debug("opened stream with peer")
 			strmCh <- newMountedStream(strm, openOpts, protocolID, lnk)

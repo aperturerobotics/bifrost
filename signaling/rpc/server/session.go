@@ -99,7 +99,7 @@ func (s *Server) Session(strm signaling.SRPCSignaling_SessionStream) error {
 	srcPeerIDStr := srcPeerID.String()
 
 	// Wait for the init message.
-	le := s.le.WithField("src-peer-id", srcPeerIDStr)
+	le := s.le.WithField("src-peer", srcPeerIDStr)
 	req, err := strm.Recv()
 	if err == nil && req.GetSessionSeqno() != 0 {
 		err = errors.New("session seqno must be zero in init packet")
@@ -124,7 +124,7 @@ func (s *Server) Session(strm signaling.SRPCSignaling_SessionStream) error {
 		return errors.New("signaling: cannot open session with self")
 	}
 
-	le = le.WithField("dst-peer-id", dstPeerIDStr)
+	le = le.WithField("dst-peer", dstPeerIDStr)
 	le.Debug("signaling: server: starting session")
 	sessKey, localIsPeerA := newSessionKey(srcPeerIDStr, dstPeerIDStr)
 	ourPeerTkr := &sessionPeerTracker{}
