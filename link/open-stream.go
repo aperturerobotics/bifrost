@@ -132,8 +132,8 @@ func (d *openStreamWithPeer) GetName() string {
 func (d *openStreamWithPeer) GetDebugVals() directive.DebugValues {
 	vals := directive.NewDebugValues()
 	vals["protocol-id"] = []string{string(d.OpenStreamWPProtocolID())}
-	vals["target-peer"] = []string{d.OpenStreamWPTargetPeerID().String()}
-	vals["source-peer"] = []string{d.OpenStreamWPSourcePeerID().String()}
+	vals["dst-peer"] = []string{d.OpenStreamWPTargetPeerID().String()}
+	vals["src-peer"] = []string{d.OpenStreamWPSourcePeerID().String()}
 	if tpt := d.OpenStreamWPTransportConstraint(); tpt != 0 {
 		vals["transport"] = []string{strconv.FormatUint(tpt, 10)}
 	}
