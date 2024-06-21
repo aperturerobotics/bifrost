@@ -3,7 +3,6 @@ package bifrost_http
 import (
 	"context"
 	"net/http"
-	"net/url"
 	"regexp"
 	"strings"
 
@@ -75,11 +74,7 @@ func (c *HTTPHandlerController) HandleDirective(
 ) ([]directive.Resolver, error) {
 	switch d := inst.GetDirective().(type) {
 	case LookupHTTPHandler:
-		rurl, err := url.Parse(d.LookupHTTPHandlerURL())
-		if err != nil {
-			return nil, err
-		}
-		rpath := rurl.Path
+		rpath := d.LookupHTTPHandlerURL().Path
 		// if we have no filters, match all.
 		matched := len(c.pathPrefixes) == 0 && c.pathRe == nil
 		var stripPrefix string

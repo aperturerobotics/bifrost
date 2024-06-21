@@ -16,9 +16,12 @@ type LookupHTTPHandler interface {
 	// Directive indicates LookupHTTPHandler is a directive.
 	directive.Directive
 
-	// LookupHTTPHandlerURL is the URL string for the request.
-	// Cannot be empty.
-	LookupHTTPHandlerURL() string
+	// LookupHTTPHandlerMethod is the method string for the request.
+	// Can be empty to allow any.
+	LookupHTTPHandlerMethod() string
+
+	// LookupHTTPHandlerURL is the URL for the request.
+	LookupHTTPHandlerURL() *url.URL
 
 	// LookupHTTPHandlerClientID is a string identifying the client.
 	// Can be empty.
@@ -31,28 +34,32 @@ type LookupHTTPHandlerValue = http.Handler
 
 // lookupHTTPHandler implements LookupHTTPHandler
 type lookupHTTPHandler struct {
-	handlerURL string
-	clientID   string
+	handlerMethod string
+	handlerURL    *url.URL
+	clientID      string
 }
 
 // NewLookupHTTPHandler constructs a new LookupHTTPHandler directive.
-func NewLookupHTTPHandler(handlerURL, clientID string) LookupHTTPHandler {
-	return &lookupHTTPHandler{handlerURL: handlerURL, clientID: clientID}
+// handlerMethod can be empty to allow any.
+func NewLookupHTTPHandler(handlerMethod string, handlerURL *url.URL, clientID string) LookupHTTPHandler {
+	return &lookupHTTPHandler{handlerMethod: handlerMethod, handlerURL: handlerURL, clientID: clientID}
 }
 
 // ExLookupHTTPHandlers executes the LookupHTTPHandler directive.
 // If waitOne is set, waits for at least one value before returning.
+// handlerMethod can be empty to allow any.
 func ExLookupHTTPHandlers(
 	ctx context.Context,
 	b bus.Bus,
-	handlerURL,
+	handlerMethod string,
+	handlerURL *url.URL,
 	clientID string,
 	waitOne bool,
 ) ([]LookupHTTPHandlerValue, directive.Instance, directive.Reference, error) {
 	return bus.ExecCollectValues[LookupHTTPHandlerValue](
 		ctx,
 		b,
-		NewLookupHTTPHandler(handlerURL, clientID),
+		NewLookupHTTPHandler(handlerMethod, handlerURL, clientID),
 		waitOne,
 		nil,
 	)
@@ -60,10 +67,12 @@ func ExLookupHTTPHandlers(
 
 // ExLookupFirstHTTPHandler waits for the first HTTP handler to be returned.
 // if returnIfIdle is set and the directive becomes idle, returns nil, nil, nil,
+// handlerMethod can be empty to allow any.
 func ExLookupFirstHTTPHandler(
 	ctx context.Context,
 	b bus.Bus,
-	handlerURL,
+	handlerMethod string,
+	handlerURL *url.URL,
 	clientID string,
 	returnIfIdle bool,
 	valDisposeCb func(),
@@ -71,21 +80,27 @@ func ExLookupFirstHTTPHandler(
 	return bus.ExecWaitValue[LookupHTTPHandlerValue](
 		ctx,
 		b,
-		NewLookupHTTPHandler(handlerURL, clientID),
+		NewLookupHTTPHandler(handlerMethod, handlerURL, clientID),
 		bus.ReturnIfIdle(returnIfIdle),
 		valDisposeCb,
 		nil,
 	)
 }
 
+// MatchServeMuxPattern matches a LookupHTTPMethod against at ServeMux.
+func MatchServeMuxPattern(mux *http.ServeMux, dir LookupHTTPHandler) (handler http.Handler, pattern string) {
+	method := dir.LookupHTTPHandlerMethod()
+	if method == "" {
+		method = "OPTIONS"
+	}
+	return mux.Handler(&http.Request{Method: method, URL: dir.LookupHTTPHandlerURL()})
+}
+
 // Validate validates the directive.
 // This is a cursory validation to see if the values "look correct."
 func (d *lookupHTTPHandler) Validate() error {
-	if d.handlerURL == "" {
-		return errors.New("handler url cannot be empty")
-	}
-	if _, err := url.Parse(d.handlerURL); err != nil {
-		return errors.Wrap(err, "invalid handler url")
+	if d.handlerURL == nil {
+		return errors.New("handler url cannot be nil")
 	}
 	return nil
 }
@@ -98,9 +113,15 @@ func (d *lookupHTTPHandler) GetValueOptions() directive.ValueOptions {
 	}
 }
 
-// LookupHTTPHandlerURL is the URL string for the request.
+// LookupHTTPHandlerMethod is the method string for the request.
+// Can be empty.
+func (d *lookupHTTPHandler) LookupHTTPHandlerMethod() string {
+	return d.handlerMethod
+}
+
+// LookupHTTPHandlerURL is the URL for the request.
 // Cannot be empty.
-func (d *lookupHTTPHandler) LookupHTTPHandlerURL() string {
+func (d *lookupHTTPHandler) LookupHTTPHandlerURL() *url.URL {
 	return d.handlerURL
 }
 
@@ -119,7 +140,10 @@ func (d *lookupHTTPHandler) IsEquivalent(other directive.Directive) bool {
 		return false
 	}
 
-	if d.LookupHTTPHandlerURL() != od.LookupHTTPHandlerURL() {
+	if d.LookupHTTPHandlerMethod() != od.LookupHTTPHandlerMethod() {
+		return false
+	}
+	if d.LookupHTTPHandlerURL().String() != od.LookupHTTPHandlerURL().String() {
 		return false
 	}
 	if d.LookupHTTPHandlerClientID() != od.LookupHTTPHandlerClientID() {
@@ -145,7 +169,10 @@ func (d *lookupHTTPHandler) GetName() string {
 // This is not necessarily unique, and is primarily intended for display.
 func (d *lookupHTTPHandler) GetDebugVals() directive.DebugValues {
 	vals := directive.DebugValues{}
-	vals["url"] = []string{d.LookupHTTPHandlerURL()}
+	if method := d.LookupHTTPHandlerMethod(); method != "" {
+		vals["method"] = []string{method}
+	}
+	vals["url"] = []string{d.LookupHTTPHandlerURL().String()}
 	if clientID := d.LookupHTTPHandlerClientID(); clientID != "" {
 		vals["client-id"] = []string{clientID}
 	}

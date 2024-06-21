@@ -28,7 +28,15 @@ func NewBusHandler(b bus.Bus, clientID string, notFoundIfIdle bool) *BusHandler 
 // ServeHTTP serves the http request.
 func (h *BusHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
-	handler, _, handlerRef, err := ExLookupFirstHTTPHandler(ctx, h.b, req.URL.String(), "", h.notFoundIfIdle, nil)
+	handler, _, handlerRef, err := ExLookupFirstHTTPHandler(
+		ctx,
+		h.b,
+		req.Method,
+		req.URL,
+		"",
+		h.notFoundIfIdle,
+		nil,
+	)
 	if handlerRef != nil {
 		defer handlerRef.Release()
 	}

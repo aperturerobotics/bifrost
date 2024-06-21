@@ -2,6 +2,7 @@ package bifrost_http
 
 import (
 	"context"
+	"net/url"
 	"testing"
 
 	"github.com/aperturerobotics/bifrost/testbed"
@@ -24,7 +25,11 @@ func TestHTTPBusHTTPHandler(t *testing.T) {
 	defer startMockHandler(t, tb)()
 
 	// start the on-demand handler
-	rc := NewBusHTTPHandler(ctx, tb.Bus, "/foo", "test-client", false)
+	u, err := url.Parse("/foo")
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	rc := NewBusHTTPHandler(ctx, tb.Bus, "", u, "test-client", false)
 
 	// perform a request
 	checkMockRequest(t, rc)
