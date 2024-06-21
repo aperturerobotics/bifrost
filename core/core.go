@@ -23,6 +23,7 @@ import (
 	udptpt "github.com/aperturerobotics/bifrost/transport/udp"
 	"github.com/aperturerobotics/bifrost/transport/webrtc"
 	wtpt "github.com/aperturerobotics/bifrost/transport/websocket"
+	wtpt_http "github.com/aperturerobotics/bifrost/transport/websocket/http"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller/resolver/static"
 	cbc "github.com/aperturerobotics/controllerbus/core"
@@ -67,6 +68,7 @@ func AddFactories(b bus.Bus, sr *static.Resolver) {
 	sr.AddFactory(udptpt.NewFactory(b))
 	// websocket transport
 	sr.AddFactory(wtpt.NewFactory(b))
+	sr.AddFactory(wtpt_http.NewFactory(b))
 	// webrtc transport
 	sr.AddFactory(webrtc.NewFactory(b))
 
