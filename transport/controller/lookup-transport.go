@@ -56,7 +56,7 @@ func (c *Controller) resolveLookupTransport(
 	dir transport.LookupTransport,
 ) ([]directive.Resolver, error) {
 	if tpt := c.tptCtr.GetValue(); tpt != nil {
-		if !checkLookupMatchesTpt(dir, *tpt) {
+		if !checkLookupMatchesTpt(dir, tpt) {
 			return nil, nil
 		}
 	}

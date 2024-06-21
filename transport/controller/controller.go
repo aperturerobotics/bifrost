@@ -74,7 +74,7 @@ type Controller struct {
 	info *controller.Info
 
 	// tptCtr contains the transport
-	tptCtr *ccontainer.CContainer[*transport.Transport]
+	tptCtr *ccontainer.CContainer[transport.Transport]
 
 	// mtx guards the below fields
 	// TODO: refactor to use broadcast
@@ -110,7 +110,7 @@ func NewController(
 		links:       make(map[uint64]*establishedLink),
 		linkWaiters: make(map[peer.ID][]*linkWaiter),
 
-		tptCtr: ccontainer.NewCContainer[*transport.Transport](nil),
+		tptCtr: ccontainer.NewCContainer[transport.Transport](nil),
 
 		localPeerID: peerID,
 		linkDialers: make(map[linkDialerKey]*linkDialer),
@@ -186,7 +186,7 @@ func (c *Controller) Execute(ctx context.Context) error {
 	}
 
 	c.le.Debug("executing transport")
-	c.tptCtr.SetValue(&tpt)
+	c.tptCtr.SetValue(tpt)
 	err = tpt.Execute(ctx)
 	if err != nil {
 		c.tptCtr.SetValue(nil)
@@ -205,7 +205,7 @@ func (c *Controller) GetTransport(ctx context.Context) (transport.Transport, err
 	if err != nil {
 		return nil, err
 	}
-	return *tptv, nil
+	return tptv, nil
 }
 
 // HandleDirective asks if the handler can resolve the directive.
@@ -493,9 +493,9 @@ func (c *Controller) loggerForLink(lnk link.Link) *logrus.Entry {
 // Close releases any resources used by the controller.
 // Error indicates any issue encountered releasing.
 func (c *Controller) Close() error {
-	_ = c.tptCtr.SwapValue(func(val *transport.Transport) *transport.Transport {
+	_ = c.tptCtr.SwapValue(func(val transport.Transport) transport.Transport {
 		if val != nil {
-			_ = (*val).Close()
+			_ = val.Close()
 		}
 		return nil
 	})

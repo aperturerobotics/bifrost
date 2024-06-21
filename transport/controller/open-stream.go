@@ -125,7 +125,7 @@ func (c *Controller) resolveOpenStreamWithPeer(
 	dir link.OpenStreamWithPeer,
 ) ([]directive.Resolver, error) {
 	if tpt := c.tptCtr.GetValue(); tpt != nil {
-		if !checkOpenStreamMatchesTpt(dir, *tpt) {
+		if !checkOpenStreamMatchesTpt(dir, tpt) {
 			return nil, nil
 		}
 	}

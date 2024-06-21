@@ -33,20 +33,24 @@ func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.R
 		return err
 	}
 
-	// If the directive filtered by source peer ID, add a EstablishLink
-	// directive for the destination as well to ensure there is a reference.
-	//
-	// XXX: the current approach to using EstablishLink to determine the
-	// lifecycle of the Link (when it is released) is a bit messy and
-	// counter-intuitive and could be improved by instead using a refcount
-	// mechanism to release links when no directives ask for them.
-	sourcePeerID := tpt.GetPeerID()
-	if o.dir.EstablishLinkSourcePeerId() != sourcePeerID {
-		_, estLinkRef, err := o.c.bus.AddDirective(link.NewEstablishLinkWithPeer(sourcePeerID, targetPeerID), nil)
+	sourcePeerID := o.dir.EstablishLinkSourcePeerId()
+	tptSourcePeerID := tpt.GetPeerID()
+	if sourcePeerID == "" {
+		// If the directive filtered only by destination peer ID, add a EstablishLink
+		// directive for the source to ensure there is a reference.
+		//
+		// XXX: the current approach to using EstablishLink to determine the
+		// lifecycle of the Link (when it is released) is a bit messy and
+		// counter-intuitive and could be improved by instead using a refcount
+		// mechanism to release links when no directives ask for them.
+		_, estLinkRef, err := o.c.bus.AddDirective(link.NewEstablishLinkWithPeer(tptSourcePeerID, targetPeerID), nil)
 		if err != nil {
 			return err
 		}
 		defer estLinkRef.Release()
+	} else if sourcePeerID != tptSourcePeerID {
+		// The source peer id does not match our peer ID. Bail.
+		return nil
 	}
 
 	wakeDialer := make(chan time.Time, 1)
@@ -150,6 +154,14 @@ func (c *Controller) resolveEstablishLink(
 ) ([]directive.Resolver, error) {
 	if len(dir.EstablishLinkTargetPeerId()) == 0 {
 		return nil, nil
+	}
+
+	// if the transport is already ready we can check this here.
+	// otherwise it will be checked later in establishLinkResolver
+	if srcPeerID := dir.EstablishLinkSourcePeerId(); len(srcPeerID) != 0 {
+		if tpt := c.tptCtr.GetValue(); tpt != nil && tpt.GetPeerID() != srcPeerID {
+			return nil, nil
+		}
 	}
 
 	// Return resolver.

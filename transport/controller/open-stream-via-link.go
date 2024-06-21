@@ -138,7 +138,7 @@ func (c *Controller) resolveOpenStreamViaLink(
 	tptID := dir.OpenStreamViaLinkTransportConstraint()
 	if tptID != 0 {
 		if tpt := c.tptCtr.GetValue(); tpt != nil {
-			if (*tpt).GetUUID() != tptID {
+			if tpt.GetUUID() != tptID {
 				return nil, nil
 			}
 		}
