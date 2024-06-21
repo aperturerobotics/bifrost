@@ -38,7 +38,7 @@ func (t *trackedLink) trackLink(ctx context.Context) error {
 		link.NewOpenStreamViaLink(
 			t.lnk.GetUUID(),
 			t.c.protocolID,
-			stream.OpenOpts{Reliable: true, Encrypted: true},
+			stream.OpenOpts{},
 			t.lnk.GetTransportUUID(),
 		),
 		nil,

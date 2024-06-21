@@ -15,7 +15,7 @@ import (
 	json "github.com/aperturerobotics/protobuf-go-lite/json"
 )
 
-// Opts are extra options for the reliable conn.
+// Opts are extra options for the conn.
 type Opts struct {
 	unknownFields []byte
 	// Quic are the quic protocol options.

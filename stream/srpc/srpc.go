@@ -125,10 +125,7 @@ func EstablishSrpcStream(
 		b,
 		protocolID,
 		srcPeer, destPeer, transportID,
-		stream.OpenOpts{
-			Reliable:  true,
-			Encrypted: true,
-		},
+		stream.OpenOpts{},
 	)
 	if err != nil {
 		lkRel.Release()

@@ -27,10 +27,6 @@ type Config struct {
 	// TransportId constrains the transport ID to dial with.
 	// Can be empty.
 	TransportId uint64 `protobuf:"varint,4,opt,name=transport_id,json=transportId,proto3" json:"transportId,omitempty"`
-	// Encrypted indicates the stream should be encrypted.
-	Encrypted bool `protobuf:"varint,5,opt,name=encrypted,proto3" json:"encrypted,omitempty"`
-	// Reliable indicates the stream should be reliable.
-	Reliable bool `protobuf:"varint,6,opt,name=reliable,proto3" json:"reliable,omitempty"`
 }
 
 func (x *Config) Reset() {
@@ -67,20 +63,6 @@ func (x *Config) GetTransportId() uint64 {
 	return 0
 }
 
-func (x *Config) GetEncrypted() bool {
-	if x != nil {
-		return x.Encrypted
-	}
-	return false
-}
-
-func (x *Config) GetReliable() bool {
-	if x != nil {
-		return x.Reliable
-	}
-	return false
-}
-
 func (m *Config) CloneVT() *Config {
 	if m == nil {
 		return (*Config)(nil)
@@ -90,8 +72,6 @@ func (m *Config) CloneVT() *Config {
 	r.LocalPeerId = m.LocalPeerId
 	r.ProtocolId = m.ProtocolId
 	r.TransportId = m.TransportId
-	r.Encrypted = m.Encrypted
-	r.Reliable = m.Reliable
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = make([]byte, len(m.unknownFields))
 		copy(r.unknownFields, m.unknownFields)
@@ -119,12 +99,6 @@ func (this *Config) EqualVT(that *Config) bool {
 		return false
 	}
 	if this.TransportId != that.TransportId {
-		return false
-	}
-	if this.Encrypted != that.Encrypted {
-		return false
-	}
-	if this.Reliable != that.Reliable {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -166,16 +140,6 @@ func (x *Config) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("transportId")
 		s.WriteUint64(x.TransportId)
 	}
-	if x.Encrypted || s.HasField("encrypted") {
-		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("encrypted")
-		s.WriteBool(x.Encrypted)
-	}
-	if x.Reliable || s.HasField("reliable") {
-		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("reliable")
-		s.WriteBool(x.Reliable)
-	}
 	s.WriteObjectEnd()
 }
 
@@ -205,12 +169,6 @@ func (x *Config) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "transport_id", "transportId":
 			s.AddField("transport_id")
 			x.TransportId = s.ReadUint64()
-		case "encrypted":
-			s.AddField("encrypted")
-			x.Encrypted = s.ReadBool()
-		case "reliable":
-			s.AddField("reliable")
-			x.Reliable = s.ReadBool()
 		}
 	})
 }
@@ -249,26 +207,6 @@ func (m *Config) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
-	}
-	if m.Reliable {
-		i--
-		if m.Reliable {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x30
-	}
-	if m.Encrypted {
-		i--
-		if m.Encrypted {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x28
 	}
 	if m.TransportId != 0 {
 		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.TransportId))
@@ -320,12 +258,6 @@ func (m *Config) SizeVT() (n int) {
 	if m.TransportId != 0 {
 		n += 1 + protobuf_go_lite.SizeOfVarint(uint64(m.TransportId))
 	}
-	if m.Encrypted {
-		n += 2
-	}
-	if m.Reliable {
-		n += 2
-	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -348,14 +280,6 @@ func (x *Config) MarshalProtoText() string {
 	if x.TransportId != 0 {
 		sb.WriteString(" transport_id: ")
 		sb.WriteString(strconv.FormatUint(uint64(x.TransportId), 10))
-	}
-	if x.Encrypted {
-		sb.WriteString(" encrypted: ")
-		sb.WriteString(strconv.FormatBool(x.Encrypted))
-	}
-	if x.Reliable {
-		sb.WriteString(" reliable: ")
-		sb.WriteString(strconv.FormatBool(x.Reliable))
 	}
 	sb.WriteString("}")
 	return sb.String()
@@ -507,46 +431,6 @@ func (m *Config) UnmarshalVT(dAtA []byte) error {
 					break
 				}
 			}
-		case 5:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Encrypted", wireType)
-			}
-			var v int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return protobuf_go_lite.ErrIntOverflow
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				v |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.Encrypted = bool(v != 0)
-		case 6:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Reliable", wireType)
-			}
-			var v int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return protobuf_go_lite.ErrIntOverflow
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				v |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.Reliable = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

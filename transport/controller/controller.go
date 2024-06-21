@@ -336,10 +336,7 @@ func (c *Controller) HandleIncomingStream(
 
 	// bus is the controller bus
 	le := c.loggerForLink(lnk).WithField("protocol-id", pid)
-	le.
-		WithField("stream-reliable", strmOpts.Reliable).
-		WithField("stream-encrypted", strmOpts.Encrypted).
-		Debug("accepted stream")
+	le.Debug("accepted stream")
 	dir := link.NewHandleMountedStream(pid, c.localPeerID, mstrm.GetPeerID())
 	handleMsCtx, handleMsCtxCancel := context.WithDeadline(rctx, readDeadline)
 	dval, _, dref, err := bus.ExecOneOff(handleMsCtx, c.bus, dir, nil, nil)

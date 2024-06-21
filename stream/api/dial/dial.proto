@@ -13,8 +13,4 @@ message Config {
   // TransportId constrains the transport ID to dial with.
   // Can be empty.
   uint64 transport_id = 4;
-  // Encrypted indicates the stream should be encrypted.
-  bool encrypted = 5;
-  // Reliable indicates the stream should be reliable.
-  bool reliable = 6;
 }

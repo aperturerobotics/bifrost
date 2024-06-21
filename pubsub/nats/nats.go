@@ -146,11 +146,6 @@ func (m *Nats) Execute(ctx context.Context) error {
 // The pubsub should communicate over the stream.
 func (m *Nats) AddPeerStream(tpl pubsub.PeerLinkTuple, initiator bool, mstrm link.MountedStream) {
 	le := m.le.WithField("peer", tpl.PeerID.String())
-	if !mstrm.GetOpenOpts().Encrypted || !mstrm.GetOpenOpts().Reliable {
-		le.Warn("rejecting unencrypted or unreliable pubsub stream")
-		mstrm.GetStream().Close()
-		return
-	}
 	protocolID := mstrm.GetProtocolID()
 	streamType := ProtocolIDToStreamType(protocolID)
 	if streamType == NatsConnType_NatsConnType_UNKNOWN {

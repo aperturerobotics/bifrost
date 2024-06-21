@@ -39,18 +39,6 @@ export interface Config {
    * @generated from field: uint64 transport_id = 4;
    */
   transportId?: bigint
-  /**
-   * Encrypted indicates the stream should be encrypted.
-   *
-   * @generated from field: bool encrypted = 5;
-   */
-  encrypted?: boolean
-  /**
-   * Reliable indicates the stream should be reliable.
-   *
-   * @generated from field: bool reliable = 6;
-   */
-  reliable?: boolean
 }
 
 // Config contains the message type declaration for Config.
@@ -61,8 +49,6 @@ export const Config: MessageType<Config> = createMessageType({
     { no: 2, name: 'local_peer_id', kind: 'scalar', T: ScalarType.STRING },
     { no: 3, name: 'protocol_id', kind: 'scalar', T: ScalarType.STRING },
     { no: 4, name: 'transport_id', kind: 'scalar', T: ScalarType.UINT64 },
-    { no: 5, name: 'encrypted', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 6, name: 'reliable', kind: 'scalar', T: ScalarType.BOOL },
   ] as readonly PartialFieldInfo[],
   packedByDefault: true,
 })

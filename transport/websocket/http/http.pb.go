@@ -6,13 +6,14 @@ package websocket_http
 
 import (
 	fmt "fmt"
+	io "io"
+	strconv "strconv"
+	strings "strings"
+
 	dialer "github.com/aperturerobotics/bifrost/transport/common/dialer"
 	quic "github.com/aperturerobotics/bifrost/transport/common/quic"
 	protobuf_go_lite "github.com/aperturerobotics/protobuf-go-lite"
 	json "github.com/aperturerobotics/protobuf-go-lite/json"
-	io "io"
-	strconv "strconv"
-	strings "strings"
 )
 
 // Config is the configuration for the Websocket HTTP handler transport.

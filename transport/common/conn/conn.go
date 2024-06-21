@@ -17,7 +17,7 @@ import (
 // defaultMtu is the default max packet size to use
 const defaultMtu = 65000 // 65Kb
 
-// Transport implements a Bifrost transport with reliable conns.
+// Transport implements a Bifrost transport with ordered conns.
 //
 // An example is a TCP connection: the OS provides an ordered stream of data as
 // the interface for the Go program to use.

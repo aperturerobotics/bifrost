@@ -100,7 +100,7 @@ func (l *Link) GetTransportUUID() uint64 {
 }
 
 // GetRemoteTransportUUID returns the unique ID of the remote transport.
-// Reported by the remote peer. May be zero or unreliable value.
+// Reported by the remote peer. May be zero or unknown value.
 func (l *Link) GetRemoteTransportUUID() uint64 {
 	return l.remoteTransportUUID
 }
@@ -157,10 +157,7 @@ func (l *Link) AcceptStream() (stream.Stream, stream.OpenOpts, error) {
 		return nil, stream.OpenOpts{}, err
 	}
 
-	opts := stream.OpenOpts{
-		Reliable:  true,
-		Encrypted: true,
-	}
+	opts := stream.OpenOpts{}
 	return qstream, opts, nil
 }
 

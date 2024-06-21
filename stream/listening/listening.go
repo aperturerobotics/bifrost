@@ -133,10 +133,7 @@ func (c *Controller) handleConn(ctx context.Context, conn manet.Conn) {
 	openCtx, openCtxCancel := context.WithTimeout(ctx, openStreamTimeout)
 	defer openCtxCancel()
 
-	opts := stream.OpenOpts{
-		Reliable:  c.conf.GetReliable(),
-		Encrypted: c.conf.GetEncrypted(),
-	}
+	opts := stream.OpenOpts{}
 	mstrm, rel, err := link.OpenStreamWithPeerEx(
 		openCtx,
 		c.bus,

@@ -32,7 +32,7 @@ func TestConnectivity(ctx context.Context, px0, px1 *Peer) error {
 			px0.GetPeerID(),
 			px1.GetPeerID(),
 			0,
-			stream.OpenOpts{Reliable: true, Encrypted: true},
+			stream.OpenOpts{},
 		),
 		nil,
 		nil,

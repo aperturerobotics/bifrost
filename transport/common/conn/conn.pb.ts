@@ -9,7 +9,7 @@ import { createMessageType, ScalarType } from '@aptre/protobuf-es-lite'
 export const protobufPackage = 'conn'
 
 /**
- * Opts are extra options for the reliable conn.
+ * Opts are extra options for the conn.
  *
  * @generated from message conn.Opts
  */

@@ -2,12 +2,12 @@
 // @generated from file github.com/aperturerobotics/bifrost/transport/websocket/http/http.proto (package websocket.http, syntax proto3)
 /* eslint-disable */
 
-import { Opts } from "../../common/quic/quic.pb.js";
-import { DialerOpts } from "../../common/dialer/dialer.pb.js";
-import type { MessageType, PartialFieldInfo } from "@aptre/protobuf-es-lite";
-import { createMessageType, ScalarType } from "@aptre/protobuf-es-lite";
+import { Opts } from '../../common/quic/quic.pb.js'
+import { DialerOpts } from '../../common/dialer/dialer.pb.js'
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType, ScalarType } from '@aptre/protobuf-es-lite'
 
-export const protobufPackage = "websocket.http";
+export const protobufPackage = 'websocket.http'
 
 /**
  * Config is the configuration for the Websocket HTTP handler transport.
@@ -25,21 +25,21 @@ export interface Config {
    *
    * @generated from field: string transport_peer_id = 1;
    */
-  transportPeerId?: string;
+  transportPeerId?: string
   /**
    * HttpPatterns is the list of patterns to listen on.
    * Example: ["GET example.com/my/ws", "GET /other/path"]
    *
    * @generated from field: repeated string http_patterns = 2;
    */
-  httpPatterns?: string[];
+  httpPatterns?: string[]
   /**
    * PeerHttpPatterns is the list of patterns to serve the peer ID on.
    * Example: ["GET example.com/my/ws/peer-id", "GET /other/path/peer-id"]
    *
    * @generated from field: repeated string peer_http_patterns = 3;
    */
-  peerHttpPatterns?: string[];
+  peerHttpPatterns?: string[]
   /**
    * Quic contains the quic protocol options.
    *
@@ -48,26 +48,42 @@ export interface Config {
    *
    * @generated from field: transport.quic.Opts quic = 4;
    */
-  quic?: Opts;
+  quic?: Opts
   /**
    * Dialers maps peer IDs to dialers.
    *
    * @generated from field: map<string, dialer.DialerOpts> dialers = 5;
    */
-  dialers?: { [key: string]: DialerOpts };
-
-};
+  dialers?: { [key: string]: DialerOpts }
+}
 
 // Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({
-    typeName: "websocket.http.Config",
-    fields: [
-        { no: 1, name: "transport_peer_id", kind: "scalar", T: ScalarType.STRING },
-        { no: 2, name: "http_patterns", kind: "scalar", T: ScalarType.STRING, repeated: true },
-        { no: 3, name: "peer_http_patterns", kind: "scalar", T: ScalarType.STRING, repeated: true },
-        { no: 4, name: "quic", kind: "message", T: () => Opts },
-        { no: 5, name: "dialers", kind: "map", K: ScalarType.STRING, V: {kind: "message", T: () => DialerOpts} },
-    ] as readonly PartialFieldInfo[],
-    packedByDefault: true,
-});
-
+  typeName: 'websocket.http.Config',
+  fields: [
+    { no: 1, name: 'transport_peer_id', kind: 'scalar', T: ScalarType.STRING },
+    {
+      no: 2,
+      name: 'http_patterns',
+      kind: 'scalar',
+      T: ScalarType.STRING,
+      repeated: true,
+    },
+    {
+      no: 3,
+      name: 'peer_http_patterns',
+      kind: 'scalar',
+      T: ScalarType.STRING,
+      repeated: true,
+    },
+    { no: 4, name: 'quic', kind: 'message', T: () => Opts },
+    {
+      no: 5,
+      name: 'dialers',
+      kind: 'map',
+      K: ScalarType.STRING,
+      V: { kind: 'message', T: () => DialerOpts },
+    },
+  ] as readonly PartialFieldInfo[],
+  packedByDefault: true,
+})

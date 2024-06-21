@@ -76,8 +76,6 @@ listening:
     remotePeerId: 12D3KooWC9dBAEoTHbEXq2aaTeFit7QVdvPcb6Yf76oGQZ6dGf8N
     protocolId: my/http/forwarding
     listenMultiaddr: "/ip4/127.0.0.1/tcp/8084"
-    reliable: true
-    encrypted: true
 ```
 
 ### Changing the transport

@@ -120,7 +120,7 @@ func TestEstablishLink(t *testing.T) {
 			peerId1,
 			peerId2,
 			0,
-			stream.OpenOpts{Reliable: true, Encrypted: true},
+			stream.OpenOpts{},
 		),
 		nil,
 		nil,

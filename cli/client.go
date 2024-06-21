@@ -244,18 +244,6 @@ func (a *ClientArgs) BuildCommands() []*cli.Command {
 					Usage:       "if set, filter the transport id",
 					Destination: &a.DialConf.TransportId,
 				},
-				&cli.BoolFlag{
-					Name:        "encrypted",
-					Usage:       "encrypted stream",
-					Destination: &a.DialConf.Encrypted,
-					Value:       true,
-				},
-				&cli.BoolFlag{
-					Name:        "reliable",
-					Usage:       "reliable stream",
-					Destination: &a.DialConf.Reliable,
-					Value:       true,
-				},
 			},
 		},
 		{
@@ -282,18 +270,6 @@ func (a *ClientArgs) BuildCommands() []*cli.Command {
 					Name:        "listen",
 					Usage:       "listen multiaddr",
 					Destination: &a.ListeningConf.ListenMultiaddr,
-				},
-				&cli.BoolFlag{
-					Name:        "encrypted",
-					Usage:       "encrypted stream",
-					Destination: &a.ListeningConf.Encrypted,
-					Value:       true,
-				},
-				&cli.BoolFlag{
-					Name:        "reliable",
-					Usage:       "reliable stream",
-					Destination: &a.ListeningConf.Reliable,
-					Value:       true,
 				},
 			},
 		},

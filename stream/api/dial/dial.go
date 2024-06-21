@@ -43,10 +43,7 @@ func ProcessRPC(
 		protocol.ID(conf.GetProtocolId()),
 		localPeerID, remotePeerID,
 		conf.GetTransportId(),
-		stream.OpenOpts{
-			Reliable:  conf.GetReliable(),
-			Encrypted: conf.GetEncrypted(),
-		},
+		stream.OpenOpts{},
 	)
 	if err != nil {
 		return err

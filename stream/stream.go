@@ -5,14 +5,7 @@ import (
 )
 
 // OpenOpts are optional arguments when opening a stream.
-type OpenOpts struct {
-	// Encrypted indicates the stream MUST be encrypted.
-	// An error is returned if the stream cannot be encrypted.
-	Encrypted bool
-	// Reliable indicates the stream MUST be reliable / ordered.
-	// An error is returned if the stream cannot be reliable.
-	Reliable bool
-}
+type OpenOpts struct{}
 
 // Stream is a stream-based data channel between two peers over a link.
 type Stream interface {

@@ -268,11 +268,6 @@ func (m *FloodSub) AddPeerStream(
 	mstrm link.MountedStream,
 ) {
 	le := m.le.WithField("peer", tpl.PeerID.String())
-	if !mstrm.GetOpenOpts().Encrypted || !mstrm.GetOpenOpts().Reliable {
-		le.Warn("rejecting unencrypted or unreliable pubsub stream")
-		mstrm.GetStream().Close()
-		return
-	}
 	sh := &streamHandler{
 		m:      m,
 		le:     le,

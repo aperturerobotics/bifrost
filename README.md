@@ -10,7 +10,7 @@
  - **Flexible**: use multiple transports, protocols, simultaneously.
  - **Meshing**: supports multi-hop routing to a desired target peer w/ circuits.
  - **PubSub**: publish/subscribe channels with pluggable implementations.
- - **Robust**: uses Quic for reliable connections over lossy transports.
+ - **Robust**: uses Quic for lossless links over lossy transports.
 
 Bifrost uses [ControllerBus] controllers and directives to send any protocol
 over any transport with extensive and flexible configuration.

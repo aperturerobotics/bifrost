@@ -15,8 +15,4 @@ message Config {
   // TransportId sets a transport ID constraint.
   // Can be empty.
   uint64 transport_id = 5;
-  // Reliable indicates the stream should be reliable.
-  bool reliable = 6;
-  // Encrypted indicates the stream should be encrypted.
-  bool encrypted = 7;
 }
