@@ -12,10 +12,8 @@ export const protobufPackage = 'websocket'
 /**
  * Config is the configuration for the Websocket transport.
  *
- * Bifrost speaks Quic over the websocket. While this is not always necessary,
- * especially when using wss transports, we still need to ensure end-to-end
- * encryption to the peer that we handshake with on the other end, and to manage
- * stream congestion control, multiplexing,
+ * Quic is used for mTLS mutual authentication over the Websocket, as well as
+ * congestion control, stream multiplexing, and other performance features.
  *
  * @generated from message websocket.Config
  */

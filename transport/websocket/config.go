@@ -15,7 +15,7 @@ const ConfigID = ControllerID
 // This is a cursory validation to see if the values "look correct."
 func (c *Config) Validate() error {
 	if _, err := c.ParseTransportPeerID(); err != nil {
-		return errors.Wrap(err, "node_peer_id")
+		return errors.Wrap(err, "transport_peer_id")
 	}
 	return nil
 }
@@ -33,7 +33,7 @@ func (c *Config) GetConfigID() string {
 
 // EqualsConfig checks if the other config is equal.
 func (c *Config) EqualsConfig(c2 config.Config) bool {
-	return config.EqualsConfig[*Config](c, c2)
+	return config.EqualsConfig(c, c2)
 }
 
 // SetTransportPeerId sets the node peer ID field.
