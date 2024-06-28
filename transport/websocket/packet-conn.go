@@ -54,16 +54,9 @@ func (c *PacketConn) ReadFrom(p []byte) (n int, addr net.Addr, err error) {
 
 	data, err := c.ReadMessage()
 	if err != nil {
-		if err == context.Canceled {
+		// Detect EOF wrapped with "failed to get reader
+		if err == context.Canceled || errors.Is(err, context.Canceled) || errors.Is(err, io.EOF) {
 			err = io.EOF
-		} else {
-			// Detect EOF wrapped with "failed to get reader
-			for werr := errors.Unwrap(err); werr != nil; werr = errors.Unwrap(werr) {
-				if werr == io.EOF || err == context.Canceled {
-					err = io.EOF
-					break
-				}
-			}
 		}
 		return 0, nil, err
 	}
