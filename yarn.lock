@@ -28,10 +28,10 @@
     uint8arrays "^5.0.0"
     ws "^8.4.0"
 
-"@aptre/protobuf-es-lite@0.4.5", "@aptre/protobuf-es-lite@^0.4.5":
-  version "0.4.5"
-  resolved "https://registry.yarnpkg.com/@aptre/protobuf-es-lite/-/protobuf-es-lite-0.4.5.tgz#97ffb6abe822a1e5f59079561e86b65e6e9ce743"
-  integrity sha512-A8c20z5D22vvmcB40txZQMkz3EVtHmQdskX1V1mHAvBny99/jMJZmNqJFE0dqczrhAXdupr2162jX0Hiwt7LjQ==
+"@aptre/protobuf-es-lite@0.4.6", "@aptre/protobuf-es-lite@^0.4.5":
+  version "0.4.6"
+  resolved "https://registry.yarnpkg.com/@aptre/protobuf-es-lite/-/protobuf-es-lite-0.4.6.tgz#c0b49c370819a382d069a8e7b0ea46b99b33ee4f"
+  integrity sha512-VleuZGQ/ZQiowBn/BT7CuWaTeozmFuQnk4ryHMzuyHmAPXXH++/CoD7LnyqMzuHZhQfC1XtNFqK14zJH6fkcWg==
   dependencies:
     "@typescript/vfs" "^1.5.0"
     lz-string "^1.5.0"
