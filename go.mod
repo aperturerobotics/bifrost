@@ -3,12 +3,12 @@ module github.com/aperturerobotics/bifrost
 go 1.22
 
 require (
-	github.com/aperturerobotics/common v0.16.10 // latest
+	github.com/aperturerobotics/common v0.17.0 // latest
 	github.com/aperturerobotics/controllerbus v0.46.4 // latest
 	github.com/aperturerobotics/entitygraph v0.9.1 // latest
 	github.com/aperturerobotics/protobuf-go-lite v0.6.5 // latest
-	github.com/aperturerobotics/starpc v0.32.13 // latest
-	github.com/aperturerobotics/util v1.23.7 // master
+	github.com/aperturerobotics/starpc v0.32.15 // latest
+	github.com/aperturerobotics/util v1.23.8 // master
 )
 
 // aperture: use compatibility forks
@@ -22,7 +22,7 @@ replace (
 	github.com/nats-io/nats-server/v2 => github.com/aperturerobotics/bifrost-nats-server/v2 v2.1.8-0.20221228081037-b7c2df0c151f // aperture-2.0
 	github.com/nats-io/nats.go => github.com/aperturerobotics/bifrost-nats-client v1.10.1-0.20200831103200-24c3d0464e58 // aperture-2.0
 	github.com/nats-io/nkeys => github.com/nats-io/nkeys v0.3.0 // indirect: used by bifrost-nats-server
-	github.com/quic-go/quic-go => github.com/aperturerobotics/quic-go v0.45.1-0.20240701203707-0aef2ede4ea5 // aperture
+	github.com/quic-go/quic-go => github.com/aperturerobotics/quic-go v0.45.1-0.20240701204210-82dc570e7aa0 // aperture
 	github.com/sirupsen/logrus => github.com/aperturerobotics/logrus v1.9.4-0.20240119050608-13332fb58195 // aperture
 )
 
@@ -33,14 +33,14 @@ require (
 	github.com/klauspost/compress v1.17.9
 	github.com/libp2p/go-libp2p v0.35.1
 	github.com/mr-tron/base58 v1.2.0
-	github.com/multiformats/go-multiaddr v0.12.4
-	github.com/nats-io/nats-server/v2 v2.10.16
+	github.com/multiformats/go-multiaddr v0.13.0
+	github.com/nats-io/nats-server/v2 v2.10.17
 	github.com/nats-io/nats.go v1.36.0
 	github.com/nats-io/nkeys v0.4.7
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pion/datachannel v1.5.6
 	github.com/pion/sdp/v3 v3.0.9
-	github.com/pion/webrtc/v4 v4.0.0-beta.20
+	github.com/pion/webrtc/v4 v4.0.0-beta.21
 	github.com/pkg/errors v0.9.1
 	github.com/quic-go/quic-go v0.45.1
 	github.com/sasha-s/go-deadlock v0.3.1
