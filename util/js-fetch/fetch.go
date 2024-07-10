@@ -97,7 +97,7 @@ func Fetch(url string, opts *Opts) (*Response, error) {
 		e error
 	}
 	ch := make(chan *fetchResponse)
-	if opts.Signal != nil {
+	if opts != nil && opts.Signal != nil {
 		controller := js.Global().Get("AbortController").New()
 		signal := controller.Get("signal")
 		optsMap["signal"] = signal
@@ -181,6 +181,9 @@ func Fetch(url string, opts *Opts) (*Response, error) {
 // oof.
 func mapOpts(opts *Opts) (map[string]interface{}, error) {
 	mp := map[string]interface{}{}
+	if opts == nil {
+		return mp, nil
+	}
 
 	if opts.Method != "" {
 		mp["method"] = opts.Method

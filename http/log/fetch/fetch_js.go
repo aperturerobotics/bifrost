@@ -11,6 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// logHeaders is the set of headers to attach to the logger as fields.
 var logHeaders = []string{"range", "content-range", "content-type", "content-length", "accept"}
 
 // Fetch uses the JS Fetch API to make requests with logging.
@@ -50,7 +51,11 @@ func Fetch(le *logrus.Entry, url string, opts *fetch.Opts, verbose bool) (*fetch
 	duration := time.Since(startTime)
 
 	if le != nil {
-		fields := make(logrus.Fields, 2+len(resp.Headers))
+		mapSize := 1
+		if resp != nil {
+			mapSize += 1 + min(len(resp.Headers), len(logHeaders))
+		}
+		fields := make(logrus.Fields, mapSize)
 		fields["dur"] = duration.String()
 		if resp != nil {
 			fields["status"] = resp.Status
