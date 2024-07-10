@@ -1,4 +1,4 @@
-package srpc_e2e
+package stream_srpc_test
 
 import (
 	"context"

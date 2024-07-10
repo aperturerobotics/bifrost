@@ -1,4 +1,4 @@
-package webrtc_e2e
+package webrtc_test
 
 import (
 	"context"
