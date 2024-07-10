@@ -3,7 +3,6 @@ package webrtc_test
 import (
 	"context"
 	"testing"
-	"time"
 
 	signaling "github.com/aperturerobotics/bifrost/signaling/rpc"
 	signaling_rpc_client "github.com/aperturerobotics/bifrost/signaling/rpc/client"
@@ -111,9 +110,4 @@ func TestTransport(t *testing.T) {
 	}
 
 	le.Info("tests successful")
-
-	// Workaround for: https://github.com/agnivade/wasmbrowsertest/issues/60
-	// Wait for everything to exit fully.
-	ctxCancel()
-	<-time.After(time.Millisecond * 50)
 }

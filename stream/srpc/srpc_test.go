@@ -3,7 +3,6 @@ package stream_srpc_test
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/protocol"
@@ -141,9 +140,4 @@ func TestStarpc(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-
-	// Workaround for: https://github.com/agnivade/wasmbrowsertest/issues/60
-	// Wait for everything to exit fully.
-	ctxCancel()
-	<-time.After(time.Millisecond * 50)
 }

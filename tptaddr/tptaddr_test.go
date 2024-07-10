@@ -4,7 +4,6 @@ import (
 	"context"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/peer"
@@ -109,9 +108,4 @@ func TestTptAddr(t *testing.T) {
 	}
 	le.Infof("successfully opened link with uuid %v using tptaddr", lnk.GetUUID())
 	lnkRel()
-
-	// Workaround for: https://github.com/agnivade/wasmbrowsertest/issues/60
-	// Wait for everything to exit fully.
-	ctxCancel()
-	<-time.After(time.Millisecond * 50)
 }
