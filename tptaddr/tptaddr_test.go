@@ -1,9 +1,10 @@
-package tptaddr_e2e
+package tptaddr_test
 
 import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/peer"
@@ -17,7 +18,9 @@ import (
 
 // TestTptAddr tests the tpt addr controllers end-to-end.
 func TestTptAddr(t *testing.T) {
-	ctx := context.Background()
+	ctx, ctxCancel := context.WithCancel(context.Background())
+	defer ctxCancel()
+
 	log := logrus.New()
 	log.SetLevel(logrus.DebugLevel)
 	le := logrus.NewEntry(log)
@@ -106,4 +109,9 @@ func TestTptAddr(t *testing.T) {
 	}
 	le.Infof("successfully opened link with uuid %v using tptaddr", lnk.GetUUID())
 	lnkRel()
+
+	// Workaround for: https://github.com/agnivade/wasmbrowsertest/issues/60
+	// Wait for everything to exit fully.
+	ctxCancel()
+	<-time.After(time.Millisecond * 50)
 }
