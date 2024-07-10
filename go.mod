@@ -3,7 +3,7 @@ module github.com/aperturerobotics/bifrost
 go 1.22
 
 require (
-	github.com/aperturerobotics/common v0.17.1 // latest
+	github.com/aperturerobotics/common v0.17.2 // latest
 	github.com/aperturerobotics/controllerbus v0.46.5 // latest
 	github.com/aperturerobotics/entitygraph v0.9.1 // latest
 	github.com/aperturerobotics/protobuf-go-lite v0.6.5 // latest

@@ -10,10 +10,10 @@
     "@jridgewell/gen-mapping" "^0.3.5"
     "@jridgewell/trace-mapping" "^0.3.24"
 
-"@aptre/common@^0.17.1":
-  version "0.17.1"
-  resolved "https://registry.yarnpkg.com/@aptre/common/-/common-0.17.1.tgz#622d1387b0b639a49c65be4124999b468d74756c"
-  integrity sha512-5+SyJvtoFoNmYUtumBabC/ckQeN9qLIWn81fd2YBVoz4WJI77A1rC+d3eUSW/UuZzIfahSxFytgByz/8e4eH6Q==
+"@aptre/common@^0.17.2":
+  version "0.17.2"
+  resolved "https://registry.yarnpkg.com/@aptre/common/-/common-0.17.2.tgz#2fb9689329371ca056a83394bc9533566202b08f"
+  integrity sha512-XgnphoLDMkVY5/NzFgy0J0unvoz2SyA9y/EUhmxg6JArQ/ctvw/dRwx2mTwbP2uEgThnypqzT13j10PQTWmTRA==
   dependencies:
     "@aptre/protobuf-es-lite" "^0.4.5"
     "@typescript-eslint/eslint-plugin" "^7.15.0"

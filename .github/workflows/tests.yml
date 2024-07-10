@@ -42,8 +42,6 @@ jobs:
           path: |
             ./.tools
           key: ${{ runner.os }}-aptre-tools-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-aptre-tools-
 
       - name: Build Javascript
         run: yarn run build
