@@ -3,6 +3,7 @@ package stream_srpc_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/protocol"
@@ -24,7 +25,9 @@ var ProtocolID = protocol.ID("bifrost/stream/srpc/e2e")
 
 // TestStarpc tests a srpc service end-to-end including LookupRpcClient.
 func TestStarpc(t *testing.T) {
-	ctx := context.Background()
+	ctx, ctxCancel := context.WithCancel(context.Background())
+	defer ctxCancel()
+
 	log := logrus.New()
 	log.SetLevel(logrus.DebugLevel)
 	le := logrus.NewEntry(log)
@@ -138,4 +141,9 @@ func TestStarpc(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
+
+	// Workaround for: https://github.com/agnivade/wasmbrowsertest/issues/60
+	// Wait for everything to exit fully.
+	ctxCancel()
+	<-time.After(time.Millisecond * 50)
 }
