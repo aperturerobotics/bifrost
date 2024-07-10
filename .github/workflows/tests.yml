@@ -66,14 +66,8 @@ jobs:
       - name: Install chrome
         uses: browser-actions/setup-chrome@latest
 
-      - name: Test with wasmbrowsertest
-        env:
-          GOOS: js
-          GOARCH: wasm
-        run: |
-          make .tools/bin/wasmbrowsertest
-          cp .tools/bin/wasmbrowsertest $(go env GOPATH)/bin/go_js_wasm_exec
-          go test -tags "webtests" -v ./...
+      - name: Test with chrome
+        run: make test-browser
 
       - name: Check goreleaser build
         run: make release-check
