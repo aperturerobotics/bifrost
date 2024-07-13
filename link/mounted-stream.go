@@ -2,6 +2,7 @@ package link
 
 import (
 	"context"
+	"errors"
 
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/protocol"
@@ -53,8 +54,20 @@ func WithMountedStreamContext(ctx context.Context, msc MountedStreamContext) con
 func GetMountedStreamContext(ctx context.Context) MountedStreamContext {
 	val := ctx.Value(mountedStreamContextKey{})
 	msc, ok := val.(MountedStreamContext)
-	if !ok {
+	if !ok || msc == nil {
 		return nil
 	}
 	return msc
+}
+
+// ErrNoMountedStreamContext is returned if there was no MountedStreamContext.
+var ErrNoMountedStreamContext = errors.New("no mounted stream context")
+
+// MustGetMountedStreamContext returns the MountedStreamContext from the Context or an error if unset.
+func MustGetMountedStreamContext(ctx context.Context) (MountedStreamContext, error) {
+	msc := GetMountedStreamContext(ctx)
+	if msc == nil {
+		return nil, ErrNoMountedStreamContext
+	}
+	return msc, nil
 }
