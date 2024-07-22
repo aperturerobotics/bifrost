@@ -140,6 +140,7 @@ func (t *Transport) GetPeerID() peer.ID {
 func (t *Transport) Execute(ctx context.Context) error {
 	t.le.
 		WithField("local-addr", t.LocalAddr().String()).
+		WithField("peer-id", t.peerID.String()).
 		Info("starting to listen with quic + tls")
 	// Configure TLS to allow any incoming remote peer.
 	tlsConf := transport_quic.BuildIncomingTlsConf(t.Transport.GetIdentity(), "")
