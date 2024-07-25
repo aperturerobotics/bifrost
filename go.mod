@@ -7,8 +7,8 @@ require (
 	github.com/aperturerobotics/controllerbus v0.46.6 // latest
 	github.com/aperturerobotics/entitygraph v0.9.1 // latest
 	github.com/aperturerobotics/protobuf-go-lite v0.6.5 // latest
-	github.com/aperturerobotics/starpc v0.32.18 // latest
-	github.com/aperturerobotics/util v1.23.10 // master
+	github.com/aperturerobotics/starpc v0.33.0 // latest
+	github.com/aperturerobotics/util v1.24.0 // master
 )
 
 // aperture: use compatibility forks
@@ -40,12 +40,12 @@ require (
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pion/datachannel v1.5.8
 	github.com/pion/sdp/v3 v3.0.9
-	github.com/pion/webrtc/v4 v4.0.0-beta.24
+	github.com/pion/webrtc/v4 v4.0.0-beta.25
 	github.com/pkg/errors v0.9.1
 	github.com/quic-go/quic-go v0.45.1
 	github.com/sasha-s/go-deadlock v0.3.1
 	github.com/sirupsen/logrus v1.9.3
-	github.com/urfave/cli/v2 v2.27.2
+	github.com/urfave/cli/v2 v2.27.3
 	github.com/zeebo/blake3 v0.2.3
 	golang.org/x/crypto v0.25.0
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56
@@ -80,7 +80,8 @@ require (
 	github.com/onsi/ginkgo/v2 v2.15.0 // indirect
 	github.com/petermattis/goid v0.0.0-20180202154549-b0b1615b78e5 // indirect
 	github.com/pion/dtls/v2 v2.2.12 // indirect
-	github.com/pion/ice/v3 v3.0.10 // indirect
+	github.com/pion/dtls/v3 v3.0.0 // indirect
+	github.com/pion/ice/v3 v3.0.13 // indirect
 	github.com/pion/interceptor v0.1.29 // indirect
 	github.com/pion/logging v0.2.2 // indirect
 	github.com/pion/mdns/v2 v2.0.7 // indirect
@@ -90,12 +91,13 @@ require (
 	github.com/pion/sctp v1.8.19 // indirect
 	github.com/pion/srtp/v3 v3.0.3 // indirect
 	github.com/pion/stun/v2 v2.0.0 // indirect
-	github.com/pion/transport/v2 v2.2.5 // indirect
-	github.com/pion/transport/v3 v3.0.2 // indirect
+	github.com/pion/transport/v2 v2.2.8 // indirect
+	github.com/pion/transport/v3 v3.0.5 // indirect
 	github.com/pion/turn/v3 v3.0.3 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/spaolacci/murmur3 v1.1.1-0.20190317074736-539464a789e9 // indirect
-	github.com/xrash/smetrics v0.0.0-20240312152122-5f08fbb34913 // indirect
+	github.com/wlynxg/anet v0.0.3 // indirect
+	github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 // indirect
 	go.uber.org/mock v0.4.0 // indirect
 	golang.org/x/mod v0.19.0 // indirect
 	golang.org/x/net v0.27.0 // indirect

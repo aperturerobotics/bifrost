@@ -52,7 +52,7 @@
   },
   "dependencies": {
     "@aptre/protobuf-es-lite": "^0.4.5",
-    "starpc": "^0.32.16"
+    "starpc": "^0.33.0"
   },
   "resolutions": {
     "@aptre/protobuf-es-lite": "0.4.6"
