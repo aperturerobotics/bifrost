@@ -31,10 +31,10 @@ func Fetch(le *logrus.Entry, url string, opts *fetch.Opts, verbose bool) (*fetch
 			"url":    url,
 		})
 
-		if opts != nil && opts.Headers != nil {
+		if opts != nil && opts.Header != nil {
 			// Parse and log some headers from the request
-			for hdr, hdrVal := range opts.Headers {
-				hdr = strings.ToLower(hdr)
+			for hdr, hdrVal := range opts.Header {
+				hdr = fetch.CanonicalHeaderKey(hdr)
 				if slices.Contains(logHeaders, hdr) {
 					le = le.WithField(hdr, hdrVal)
 				}

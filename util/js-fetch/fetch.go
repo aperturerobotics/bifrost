@@ -21,10 +21,42 @@ type Opts struct {
 	// constants are copied from net/http to avoid import
 	Method string
 
-	// Headers is a map of http headers to send.
-	Headers map[string]string
+	// Header contains the request header fields.
+	//
+	// Example:
+	//
+	//	Host: example.com
+	//	accept-encoding: gzip, deflate
+	//	Accept-Language: en-us
+	//	fOO: Bar
+	//	foo: two
+	//
+	// then
+	//
+	//	Header = map[string][]string{
+	//		"Accept-Encoding": {"gzip, deflate"},
+	//		"Accept-Language": {"en-us"},
+	//		"Foo": {"Bar", "two"},
+	//	}
+	//
+	// HTTP defines that header names are case-insensitive. The
+	// request parser implements this by using CanonicalHeaderKey,
+	// making the first character and any characters following a
+	// hyphen uppercase and the rest lowercase.
+	//
+	// Certain headers such as Content-Length and Connection are automatically
+	// written when needed and values in Header may be ignored.
+	Header Header
 
-	// Body is the body request
+	// Body is the request's body.
+	//
+	// For client requests, a nil body means the request has no
+	// body, such as a GET request. The HTTP Client's Transport
+	// is responsible for calling the Close method.
+	//
+	// Body must allow Read to be called concurrently with Close.
+	// In particular, calling Close should unblock a Read waiting
+	// for input.
 	Body io.Reader
 
 	// Signal docs https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal
@@ -67,7 +99,7 @@ func (o *Opts) Clone() *Opts {
 	clone := &Opts{
 		CommonOpts: o.CommonOpts,
 		Method:     o.Method,
-		Headers:    maps.Clone(o.Headers),
+		Header:     maps.Clone(o.Header),
 		Signal:     o.Signal,
 	}
 
@@ -196,8 +228,8 @@ func mapOpts(opts *Opts) (map[string]interface{}, error) {
 	if opts.Method != "" {
 		mp["method"] = opts.Method
 	}
-	if opts.Headers != nil {
-		mp["headers"] = mapHeaders(opts.Headers)
+	if opts.Header != nil {
+		mp["headers"] = mapHeaders(opts.Header)
 	}
 	if opts.Mode != "" {
 		mp["mode"] = opts.Mode
@@ -236,7 +268,7 @@ func mapOpts(opts *Opts) (map[string]interface{}, error) {
 	return mp, nil
 }
 
-func mapHeaders(mp map[string]string) map[string]interface{} {
+func mapHeaders(mp Header) map[string]interface{} {
 	newMap := map[string]interface{}{}
 	for k, v := range mp {
 		newMap[k] = v
