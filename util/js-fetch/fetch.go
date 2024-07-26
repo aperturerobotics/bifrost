@@ -16,7 +16,9 @@ type Opts struct {
 	// CommonOpts are the common Fetch options.
 	CommonOpts
 
-	// Method is the http verb (constants are copied from net/http to avoid import)
+	// Method specifies the HTTP method (GET, POST, PUT, etc.).
+	// For client requests, an empty string means GET.
+	// constants are copied from net/http to avoid import
 	Method string
 
 	// Headers is a map of http headers to send.
