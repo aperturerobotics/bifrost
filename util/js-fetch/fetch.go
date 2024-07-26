@@ -13,6 +13,9 @@ import (
 
 // Opts are the options for Fetch.
 type Opts struct {
+	// CommonOpts are the common Fetch options.
+	CommonOpts
+
 	// Method is the http verb (constants are copied from net/http to avoid import)
 	Method string
 
@@ -22,6 +25,12 @@ type Opts struct {
 	// Body is the body request
 	Body io.Reader
 
+	// Signal docs https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal
+	Signal context.Context
+}
+
+// CommonOpts are opts for Fetch that can be reused between requests.
+type CommonOpts struct {
 	// Mode docs https://developer.mozilla.org/en-US/docs/Web/API/Request/mode
 	Mode string
 
@@ -45,9 +54,6 @@ type Opts struct {
 
 	// KeepAlive docs https://developer.mozilla.org/en-US/docs/Web/API/WindowOrWorkerGlobalScope/fetch
 	KeepAlive *bool
-
-	// Signal docs https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal
-	Signal context.Context
 }
 
 // Clone clones the opts, excluding the Body field.
@@ -56,19 +62,19 @@ func (o *Opts) Clone() *Opts {
 		return nil
 	}
 
-	return &Opts{
-		Method:         o.Method,
-		Headers:        maps.Clone(o.Headers),
-		Mode:           o.Mode,
-		Credentials:    o.Credentials,
-		Cache:          o.Cache,
-		Redirect:       o.Redirect,
-		Referrer:       o.Referrer,
-		ReferrerPolicy: o.ReferrerPolicy,
-		Integrity:      o.Integrity,
-		KeepAlive:      o.KeepAlive,
-		Signal:         o.Signal,
+	clone := &Opts{
+		CommonOpts: o.CommonOpts,
+		Method:     o.Method,
+		Headers:    maps.Clone(o.Headers),
+		Signal:     o.Signal,
 	}
+
+	if o.CommonOpts.KeepAlive != nil {
+		keepAliveValue := *o.CommonOpts.KeepAlive
+		clone.CommonOpts.KeepAlive = &keepAliveValue
+	}
+
+	return clone
 }
 
 // Response is the response that returns from the fetch promise.
