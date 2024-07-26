@@ -7,8 +7,6 @@ import (
 	"errors"
 	"io"
 	"syscall/js"
-
-	"golang.org/x/exp/maps"
 )
 
 // Opts are the options for Fetch.
@@ -99,7 +97,7 @@ func (o *Opts) Clone() *Opts {
 	clone := &Opts{
 		CommonOpts: o.CommonOpts,
 		Method:     o.Method,
-		Header:     maps.Clone(o.Header),
+		Header:     o.Header.Clone(),
 		Signal:     o.Signal,
 	}
 

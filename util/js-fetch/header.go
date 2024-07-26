@@ -5,6 +5,7 @@ package fetch
 import (
 	"io"
 	"net/textproto"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -58,12 +59,11 @@ func (h Header) write(w io.Writer) error {
 	return h.writeSubset(w, nil)
 }
 
-func (h Header) clone() Header {
+// Clone returns a deep copy of the header.
+func (h Header) Clone() Header {
 	h2 := make(Header, len(h))
 	for k, vv := range h {
-		vv2 := make([]string, len(vv))
-		copy(vv2, vv)
-		h2[k] = vv2
+		h2[k] = slices.Clone(vv)
 	}
 	return h2
 }
