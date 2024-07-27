@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	httplog "github.com/aperturerobotics/bifrost/http/log"
+	httplog "github.com/aperturerobotics/util/httplog"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/aperturerobotics/bifrost/transport/common/dialer"
