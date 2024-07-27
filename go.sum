@@ -6,8 +6,8 @@ github.com/aperturerobotics/bifrost-nats-server/v2 v2.1.8-0.20221228081037-b7c2d
 github.com/aperturerobotics/bifrost-nats-server/v2 v2.1.8-0.20221228081037-b7c2df0c151f/go.mod h1:kIcZtLpq4UIZzOqduYLm1mYU1nuMBtN6XuDCtQ21QT8=
 github.com/aperturerobotics/common v0.18.0 h1:AoeDkZcpg83+OjwUXGQD2VlUEDUl03IZBJiHW7pXtHE=
 github.com/aperturerobotics/common v0.18.0/go.mod h1:qLWqm2T9MQmxDtE1ddNdWCHnUj1Z66GzNxllkZ3Fj7Y=
-github.com/aperturerobotics/controllerbus v0.46.6 h1:qGLTLGioksH3ks4TulAId2mw0EbASHC7Fgs46+scTgc=
-github.com/aperturerobotics/controllerbus v0.46.6/go.mod h1:a/vcR8BVJEtZiZMV9MioZG864Pk/1kyELMTbLa2yuWY=
+github.com/aperturerobotics/controllerbus v0.46.7 h1:MqdjD4aLaBO7bioR8lWP4J7k5GERGHMNoL+U3tAv2qc=
+github.com/aperturerobotics/controllerbus v0.46.7/go.mod h1:pT96tRLE9bCk73Osc/DAhYr7rK4wDcypdy8FqAUunk8=
 github.com/aperturerobotics/entitygraph v0.9.1 h1:bCl0Q9N1hkQnOtdCYz7pNSYqH+5CY3EUCuD19dQmJeI=
 github.com/aperturerobotics/entitygraph v0.9.1/go.mod h1:40VoNXSslWQieSS4V3HyzqOOZnRiGxItj/qZYSHg8Rw=
 github.com/aperturerobotics/go-libp2p v0.33.1-0.20240511223728-e0b67c111765 h1:KTSK6vPrh6gaT6CH0G2yAnmlcdjsc9Bk5JCqSeePrUw=
@@ -28,8 +28,8 @@ github.com/aperturerobotics/quic-go v0.45.1-0.20240701204210-82dc570e7aa0 h1:KH1
 github.com/aperturerobotics/quic-go v0.45.1-0.20240701204210-82dc570e7aa0/go.mod h1:X095EBMI8M7riYQRvUgegHFkEkgM2QKLvyGHyAcOw/Q=
 github.com/aperturerobotics/starpc v0.33.6 h1:noc/MnmIMTek9bdEvd88QiD1p9KzEV8CUOBIoKmGgm0=
 github.com/aperturerobotics/starpc v0.33.6/go.mod h1:4IYcbulEzqhPT5jKaDeL1BJPFd8WVWZ7Ugu0/348/Is=
-github.com/aperturerobotics/util v1.25.2 h1:VaP+wLtb28wP1zlwd6idN77tNZJTHTJwswraHsBPJjg=
-github.com/aperturerobotics/util v1.25.2/go.mod h1:m/paprtgaTiGfc4X3LkXpeseK9hfQA7QBI3cKsE/h3Y=
+github.com/aperturerobotics/util v1.25.3 h1:8YwVRPnRYs/s8dRRhCPWCH0zF19fk8P4zVQtaIec73o=
+github.com/aperturerobotics/util v1.25.3/go.mod h1:m/paprtgaTiGfc4X3LkXpeseK9hfQA7QBI3cKsE/h3Y=
 github.com/blang/semver v3.5.1+incompatible h1:cQNTCjp13qL8KC3Nbxr/y2Bqb63oX6wdnnjpJbkM4JQ=
 github.com/blang/semver v3.5.1+incompatible/go.mod h1:kRBLl5iJ+tD4TcOOxsy/0fnwebNt5EWlYSAyrTnjyyk=
 github.com/cenkalti/backoff v2.2.1+incompatible h1:tNowT99t7UNflLxfYYSlKYsBpXdEet03Pg2g16Swow4=
