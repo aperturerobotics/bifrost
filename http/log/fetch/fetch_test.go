@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"testing"
 
-	fetch "github.com/aperturerobotics/bifrost/util/js-fetch"
+	fetch "github.com/aperturerobotics/util/js/fetch"
 	"github.com/sirupsen/logrus"
 )
 
