@@ -34,8 +34,8 @@ func TestFetch(t *testing.T) {
 			url:  "https://httpbin.org/post",
 			opts: &fetch.Opts{
 				Method: "POST",
-				Headers: map[string]string{
-					"Content-Type": "application/json",
+				Header: map[string][]string{
+					"Content-Type": []string{"application/json"},
 				},
 				Body: bytes.NewReader([]byte(`{"test": "data"}`)),
 			},
@@ -68,8 +68,8 @@ func TestFetch(t *testing.T) {
 				if resp == nil {
 					t.Fatalf("Expected non-nil response, but got nil")
 				}
-				if resp.Status != http.StatusOK {
-					t.Errorf("Expected status %d, but got %d", http.StatusOK, resp.Status)
+				if resp.StatusCode != http.StatusOK {
+					t.Errorf("Expected status %d, but got %v", http.StatusOK, resp.StatusCode)
 				}
 			}
 		})
@@ -84,7 +84,7 @@ func TestFetchWithNilLogger(t *testing.T) {
 	if resp == nil {
 		t.Fatal("Expected non-nil response, but got nil")
 	}
-	if resp.Status != http.StatusOK {
-		t.Errorf("Expected status %d, but got %d", http.StatusOK, resp.Status)
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Expected status %d, but got %d", http.StatusOK, resp.StatusCode)
 	}
 }

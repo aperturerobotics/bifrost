@@ -3,8 +3,8 @@
 package httplog_fetch
 
 import (
+	"net/textproto"
 	"slices"
-	"strings"
 	"time"
 
 	fetch "github.com/aperturerobotics/util/js/fetch"
@@ -53,14 +53,14 @@ func Fetch(le *logrus.Entry, url string, opts *fetch.Opts, verbose bool) (*fetch
 	if le != nil {
 		mapSize := 1
 		if resp != nil {
-			mapSize += 1 + min(len(resp.Headers), len(logHeaders))
+			mapSize += 1 + min(len(resp.Header), len(logHeaders))
 		}
 		fields := make(logrus.Fields, mapSize)
 		fields["dur"] = duration.String()
 		if resp != nil {
 			fields["status"] = resp.Status
-			for hdr, hdrVal := range resp.Headers {
-				hdr = strings.ToLower(hdr)
+			for hdr, hdrVal := range resp.Header {
+				hdr = textproto.CanonicalMIMEHeaderKey(hdr)
 				if slices.Contains(logHeaders, hdr) {
 					fields[hdr] = hdrVal
 				}
@@ -69,7 +69,7 @@ func Fetch(le *logrus.Entry, url string, opts *fetch.Opts, verbose bool) (*fetch
 
 		if err != nil {
 			le.WithError(err).Warn("request errored")
-		} else if resp == nil || resp.Status >= 400 {
+		} else if resp == nil || resp.StatusCode >= 400 {
 			le.Warn("request failed")
 		} else if verbose {
 			le.Debug("request succeeded")
