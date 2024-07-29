@@ -84,7 +84,7 @@ func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.R
 		handler.MarkIdle(isIdle)
 	})()
 	defer di.AddDisposeCallback(func() {
-		handleErr(bus.ErrDirectiveDisposed)
+		handleErr(directive.ErrDirectiveDisposed)
 	})()
 
 	select {
