@@ -145,14 +145,11 @@ func (c *Controller) GetPeerLinks(peerID peer.ID) []link.Link {
 // Returning nil ends execution.
 // Returning an error triggers a retry with backoff.
 func (c *Controller) Execute(ctx context.Context) error {
-	// lookup the peer id u
-	localPeerID := c.peerID
-
 	// Acquire a handle to the node.
 	c.le.
-		WithField("peer-id", localPeerID.String()).
+		WithField("peer-id", c.lookupPeerID.String()).
 		Debug("waiting for peer private key")
-	localPeer, _, localPeerRef, err := peer.GetPeerWithID(ctx, c.bus, localPeerID, false, nil)
+	localPeer, _, localPeerRef, err := peer.GetPeerWithID(ctx, c.bus, c.lookupPeerID, false, nil)
 	if err != nil {
 		return err
 	}
@@ -164,7 +161,7 @@ func (c *Controller) Execute(ctx context.Context) error {
 		return err
 	}
 
-	localPeerID, err = peer.IDFromPrivateKey(privKey)
+	localPeerID, err := peer.IDFromPrivateKey(privKey)
 	if err != nil {
 		return err
 	}
