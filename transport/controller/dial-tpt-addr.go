@@ -2,9 +2,7 @@ package transport_controller
 
 import (
 	"context"
-	"time"
 
-	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/tptaddr"
 	"github.com/aperturerobotics/bifrost/transport/common/dialer"
 	"github.com/aperturerobotics/controllerbus/directive"
@@ -28,11 +26,26 @@ func (o *dialTptAddrResolver) Resolve(ctx context.Context, handler directive.Res
 	if err != nil {
 		return err
 	}
+
 	tptDialer, ok := tpt.(dialer.TransportDialer)
 	if !ok {
 		return nil
 	}
-	transportID, dialAddr, err := tptaddr.ParseTptAddr(o.dir.DialTptAddr())
+
+	tptPeerID := tpt.GetPeerID()
+	if srcPeerID := o.dir.DialTptAddrSourcePeerId(); srcPeerID != tptPeerID {
+		// tpt peer id mismatch
+		return nil
+	}
+
+	destPeerID := o.dir.DialTptAddrTargetPeerId()
+	if tptPeerID == destPeerID {
+		// self dial
+		return nil
+	}
+
+	dialerOpts := o.dir.DialTptAddrDialerOpts()
+	transportID, dialAddr, err := tptaddr.ParseTptAddr(dialerOpts.GetAddress())
 	if err != nil {
 		return nil
 	}
@@ -41,88 +54,24 @@ func (o *dialTptAddrResolver) Resolve(ctx context.Context, handler directive.Res
 	}
 
 	c := o.c
-	destPeerID := o.dir.DialTptAddrTargetPeerId()
-
-	wakeDialer := make(chan time.Time, 1)
-	linkIDs := make(map[link.Link]uint32)
-	c.mtx.Lock()
-	lw := o.c.pushLinkWaiter(destPeerID, false, func(lnk link.Link, added bool) {
-		if added {
-			if _, ok := linkIDs[lnk]; !ok {
-				if vid, ok := handler.AddValue(lnk); ok {
-					linkIDs[lnk] = vid
-				}
-			}
-		} else {
-			if vid, ok := linkIDs[lnk]; ok {
-				handler.RemoveValue(vid)
-				delete(linkIDs, lnk)
-				if len(linkIDs) == 0 {
-					var extraWaitDur time.Duration
-					if lnk.GetLocalPeer() < lnk.GetRemotePeer() {
-						extraWaitDur = crossDialWaitDur
-					}
-					select {
-					case wakeDialer <- time.Now().Add(extraWaitDur):
-					default:
-					}
-				}
-			}
-		}
+	ref, dialer, _ := c.linkDialers.AddKeyRef(linkDialerKey{
+		peerID:      destPeerID,
+		dialAddress: dialAddr,
 	})
-	c.mtx.Unlock()
+	defer ref.Release()
 
-	defer func() {
-		c.mtx.Lock()
-		o.c.clearLinkWaiter(lw)
-		_ = o.c.clearLinkDialerLocked(linkDialerKey{
-			peerID:      destPeerID.String(),
-			dialAddress: dialAddr,
-		})
-		c.mtx.Unlock()
-	}()
+	dialer.opts.SetResult(dialerOpts, nil)
 
-	var waitWake bool
-	for {
-		if waitWake {
-			select {
-			case <-ctx.Done():
-				return nil
-			case waitUntil := <-wakeDialer:
-				tu := time.Until(waitUntil)
-				if tu > time.Millisecond*50 {
-					tt := time.NewTimer(tu)
-					select {
-					case <-ctx.Done():
-						tt.Stop()
-						return nil
-					case <-tt.C:
-					}
-				}
-			}
-		} else {
-			waitWake = true
-		}
-
-		c.mtx.Lock()
-		// If we already have a link, do nothing.
-		var hasLink bool
-		for _, lnk := range c.links {
-			if lnk.lnk.GetRemotePeer() == destPeerID {
-				hasLink = true
-				break
-			}
-		}
-		if !hasLink {
-			err = c.startLinkDialerLocked(destPeerID, &dialer.DialerOpts{
-				Address: dialAddr,
-			}, tptDialer)
-		}
-		c.mtx.Unlock()
-		if err != nil {
-			return err
-		}
+	// wait for dialer to finish
+	lnk, err := dialer.lnk.WaitValue(ctx, nil)
+	if err != nil {
+		return err
 	}
+
+	// push the result
+	var value tptaddr.DialTptAddrValue = lnk
+	_, _ = handler.AddValue(value)
+	return nil
 }
 
 // resolveDialTptAddr returns a resolver for dialing a transport address.
@@ -131,7 +80,22 @@ func (c *Controller) resolveDialTptAddr(
 	di directive.Instance,
 	dir tptaddr.DialTptAddr,
 ) ([]directive.Resolver, error) {
-	if len(dir.DialTptAddrTargetPeerId()) == 0 || dir.DialTptAddr() == "" {
+	srcPeerID := dir.DialTptAddrSourcePeerId()
+	destPeerID := dir.DialTptAddrTargetPeerId()
+	if len(destPeerID) == 0 || dir.DialTptAddrDialerOpts().GetAddress() == "" {
+		return nil, nil
+	}
+
+	// Try to skip this if it doesn't match this transport and we can lock.
+	// Otherwise return a resolver and check later.
+	var skip bool
+	_ = c.bcast.TryHoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
+		if c.tpt != nil {
+			tptPeerID := c.tpt.GetPeerID()
+			skip = (tptPeerID == destPeerID) || (srcPeerID != "" && tptPeerID != srcPeerID)
+		}
+	})
+	if skip {
 		return nil, nil
 	}
 

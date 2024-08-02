@@ -5,6 +5,7 @@ import (
 	"net"
 	"sync"
 
+	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/libp2p/go-libp2p/core/crypto"
@@ -127,16 +128,16 @@ func (t *Transport) LocalAddr() net.Addr {
 // emitted to the transport handler. DialPeer should return nil if the link
 // was established. DialPeer will then not be called again for the same peer
 // ID and address tuple until the yielded link is lost.
-func (t *Transport) DialPeer(ctx context.Context, peerID peer.ID, as string) (bool, error) {
+func (t *Transport) DialPeer(ctx context.Context, peerID peer.ID, as string) (link.Link, bool, error) {
 	if t.dialFn == nil {
-		return false, ErrDialUnimplemented
+		return nil, false, ErrDialUnimplemented
 	}
 
 	// abort if we already have a peer with the same addr connected
 	ok, err := CheckAlreadyConnected(t, as, peerID)
 	if ok || err != nil {
 		// returns an error if already connected w/ different peer id
-		return false, err
+		return nil, false, err
 	}
 
 	var dl *Dialer
@@ -155,12 +156,16 @@ func (t *Transport) DialPeer(ctx context.Context, peerID peer.ID, as string) (bo
 	}
 	t.mtx.Unlock()
 	if err != nil {
-		return false, err
+		return nil, false, err
 	}
 
 	// wait for dialer to finish
-	_, err = dl.result.Await(ctx)
-	return false, err
+	lnk, err := dl.result.Await(ctx)
+	if err != nil {
+		return nil, false, err
+	}
+
+	return lnk, false, err
 }
 
 // CancelDialer cancels the dialer to a given address.

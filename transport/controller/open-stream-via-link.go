@@ -2,11 +2,8 @@ package transport_controller
 
 import (
 	"context"
-	"sync"
-	"time"
 
 	"github.com/aperturerobotics/bifrost/link"
-	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/controllerbus/directive"
 )
 
@@ -28,100 +25,57 @@ func (o *openStreamViaLinkResolver) Resolve(ctx context.Context, handler directi
 	lnkUUID := o.dir.OpenStreamViaLinkUUID()
 	openOpts := o.dir.OpenStreamViaLinkOpenOpts()
 	protocolID := o.dir.OpenStreamViaLinkProtocolID()
-	estMsg := NewStreamEstablish(protocolID)
 	tptID := o.dir.OpenStreamViaLinkTransportConstraint()
 
-	if tptID != 0 {
-		tpt, err := o.c.GetTransport(ctx)
+	tpt, err := o.c.GetTransport(ctx)
+	if err != nil {
+		return err
+	}
+
+	if tptID != 0 && tpt.GetUUID() != tptID {
+		return nil
+	}
+
+	var lnk link.Link
+	for {
+		err = c.bcast.Wait(ctx, func(broadcast func(), getWaitCh func() <-chan struct{}) (bool, error) {
+			if c.execCtx == nil {
+				return false, nil
+			}
+
+			for _, el := range c.links {
+				if el.lnk.GetUUID() == lnkUUID {
+					lnk = el.lnk
+					return true, nil
+				}
+			}
+
+			// no matching link yet
+			return false, nil
+		})
+		if ctx.Err() != nil {
+			return context.Canceled
+		}
 		if err != nil {
 			return err
 		}
-		if tpt.GetUUID() != tptID {
-			return nil
+
+		mstrm, err := c.openStreamWithLink(lnk, openOpts, protocolID)
+		if ctx.Err() != nil {
+			if mstrm != nil {
+				_ = mstrm.GetStream().Close()
+			}
+			return context.Canceled
 		}
-	}
-
-	errCh := make(chan error, 1)
-	strmCh := make(chan link.MountedStream, 1)
-	var mtx sync.Mutex
-	var done bool
-
-	c.mtx.Lock()
-	linkWaiterCallback := func(establishedLink link.Link, successfullyAdded bool) {
-		correctLink := establishedLink.GetUUID() == lnkUUID
-		if !correctLink || !successfullyAdded || ctx.Err() != nil {
-			return
+		if err != nil {
+			c.loggerForLink(lnk).WithError(err).Warn("unable to open stream, closing link")
+			_ = lnk.Close()
+			continue
 		}
 
-		// Check if the operation was already completed.
-		mtx.Lock()
-		operationAlreadyCompleted := done
-		mtx.Unlock()
-
-		// If so, no further action is needed.
-		if operationAlreadyCompleted {
-			return
-		}
-
-		// Attempt to open a stream with the link.
-		stream, streamErr := establishedLink.OpenStream(openOpts)
-		if streamErr != nil {
-			errCh <- streamErr
-			return
-		}
-
-		_ = stream.SetWriteDeadline(time.Now().Add(streamEstablishTimeout))
-
-		_, headerWriteErr := writeStreamEstablishHeader(stream, estMsg)
-		if headerWriteErr != nil {
-			errCh <- headerWriteErr
-			stream.Close()
-			return
-		}
-
-		_ = stream.SetDeadline(time.Time{})
-
-		mtx.Lock()
-		if done {
-			stream.Close()
-			operationAlreadyCompleted = true
-		} else {
-			done = true
-		}
-		mtx.Unlock()
-
-		if !operationAlreadyCompleted {
-			o.c.le.
-				WithField("link-id", establishedLink.GetUUID()).
-				WithField("protocol-id", protocolID).
-				Debug("opened stream with peer")
-
-			strmCh <- newMountedStream(stream, openOpts, protocolID, establishedLink)
-		}
-	}
-
-	// Register the callback and wait for the link to establish.
-	lw := c.pushLinkWaiter(peer.ID(""), false, linkWaiterCallback)
-
-	// Unlock mutex
-	c.mtx.Unlock()
-
-	if lw != nil {
-		defer func() {
-			c.mtx.Lock()
-			c.clearLinkWaiter(lw)
-			c.mtx.Unlock()
-		}()
-	}
-
-	select {
-	case <-ctx.Done():
-		return nil
-	case err := <-errCh:
-		return err
-	case mstrm := <-strmCh:
+		// success
 		if _, accepted := handler.AddValue(mstrm); !accepted {
-			mstrm.GetStream().Close()
+			_ = mstrm.GetStream().Close()
 		}
 		return nil
 	}
@@ -134,13 +88,16 @@ func (c *Controller) resolveOpenStreamViaLink(
 	di directive.Instance,
 	dir link.OpenStreamViaLink,
 ) ([]directive.Resolver, error) {
-	// opportune moment: if tpt is already available, filter
+	// Try to skip this if it doesn't match this transport and we can lock.
+	// Otherwise return a resolver and check later.
 	tptID := dir.OpenStreamViaLinkTransportConstraint()
 	if tptID != 0 {
-		if tpt := c.tptCtr.GetValue(); tpt != nil {
-			if tpt.GetUUID() != tptID {
-				return nil, nil
-			}
+		var skip bool
+		_ = c.bcast.TryHoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
+			skip = c.tpt != nil && c.tpt.GetUUID() != tptID
+		})
+		if skip {
+			return nil, nil
 		}
 	}
 

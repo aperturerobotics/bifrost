@@ -1,8 +1,6 @@
 package pubsub_controller
 
 import (
-	"context"
-
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/pubsub"
 	"github.com/aperturerobotics/controllerbus/directive"
@@ -24,11 +22,7 @@ func newEstablishLinkHandler(c *Controller) *establishLinkHandler {
 }
 
 // handleEstablishLink handles an EstablishLink directive.
-func (c *Controller) handleEstablishLink(
-	ctx context.Context,
-	di directive.Instance,
-	d link.EstablishLinkWithPeer,
-) {
+func (c *Controller) handleEstablishLink(di directive.Instance) {
 	handler := newEstablishLinkHandler(c)
 	ref := di.AddReference(handler, true)
 	if ref == nil {
@@ -48,10 +42,10 @@ func (e *establishLinkHandler) HandleValueAdded(inst directive.Instance, val dir
 	e.c.le.Debugf("got link with uuid %v", vl.GetUUID())
 
 	// Attempt to open the stream.
-	e.c.mtx.Lock()
-	e.c.incLinks = append(e.c.incLinks, vl)
-	e.c.mtx.Unlock()
-	e.c.wake()
+	e.c.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
+		e.c.incLinks = append(e.c.incLinks, vl)
+		broadcast()
+	})
 }
 
 // HandleValueRemoved is called when a value is removed from the directive.
@@ -62,19 +56,19 @@ func (e *establishLinkHandler) HandleValueRemoved(inst directive.Instance, val d
 	}
 	e.c.le.Debugf("lost link with uuid %v", vl.GetUUID())
 	tpl := pubsub.NewPeerLinkTuple(vl)
-	e.c.mtx.Lock()
-	for i, l := range e.c.incLinks {
-		if l == vl {
-			e.c.incLinks[i] = e.c.incLinks[len(e.c.incLinks)-1]
-			e.c.incLinks[len(e.c.incLinks)-1] = nil
-			e.c.incLinks = e.c.incLinks[:len(e.c.incLinks)-1]
-			break
+	e.c.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
+		for i, l := range e.c.incLinks {
+			if l == vl {
+				e.c.incLinks[i] = e.c.incLinks[len(e.c.incLinks)-1]
+				e.c.incLinks[len(e.c.incLinks)-1] = nil
+				e.c.incLinks = e.c.incLinks[:len(e.c.incLinks)-1]
+				break
+			}
 		}
-	}
-	if v, ok := e.c.links[tpl]; ok {
-		v.ctxCancel()
-	}
-	e.c.mtx.Unlock()
+		if v, ok := e.c.links[tpl]; ok {
+			v.ctxCancel()
+		}
+	})
 }
 
 // HandleInstanceDisposed is called when a directive instance is disposed.
@@ -86,18 +80,18 @@ func (e *establishLinkHandler) HandleInstanceDisposed(inst directive.Instance) {
 	}
 	e.ref = nil
 
-	e.c.mtx.Lock()
-	for i, ref := range e.c.cleanupRefs {
-		if ref == eref {
-			a := e.c.cleanupRefs
-			a[i] = a[len(a)-1]
-			a[len(a)-1] = nil
-			a = a[:len(a)-1]
-			e.c.cleanupRefs = a
-			break
+	e.c.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
+		for i, ref := range e.c.cleanupRefs {
+			if ref == eref {
+				a := e.c.cleanupRefs
+				a[i] = a[len(a)-1]
+				a[len(a)-1] = nil
+				a = a[:len(a)-1]
+				e.c.cleanupRefs = a
+				break
+			}
 		}
-	}
-	e.c.mtx.Unlock()
+	})
 }
 
 var _ directive.ReferenceHandler = ((*establishLinkHandler)(nil))

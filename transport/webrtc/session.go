@@ -72,7 +72,7 @@ func (w *WebRTC) newSessionTracker(peerIDStr string) (keyed.Routine, *sessionTra
 
 	sess.errCh = make(chan error, 1)
 
-	sess.linkRoutine = routine.NewStateRoutineContainer[datachannel.ReadWriteCloser](
+	sess.linkRoutine = routine.NewStateRoutineContainer(
 		func(t1, t2 datachannel.ReadWriteCloser) bool { return t1 == t2 },
 		routine.WithExitCb(sess.failWithErr),
 	)
@@ -305,7 +305,11 @@ func (s *sessionTracker) newSession() (*session, <-chan struct{}, error) {
 	}
 
 	sess := &session{t: s, pc: pc, dc: dc}
-	waitCh := sess.bcast.GetWaitCh()
+
+	var waitCh <-chan struct{}
+	sess.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
+		waitCh = getWaitCh()
+	})
 
 	// DataChannel callbacks
 	dc.OnOpen(sess.onDataChannelOpen)

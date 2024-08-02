@@ -3,38 +3,73 @@ package transport_controller
 import (
 	"context"
 
+	"github.com/aperturerobotics/bifrost/link"
+	"github.com/aperturerobotics/bifrost/peer"
+	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/aperturerobotics/bifrost/transport/common/dialer"
+	"github.com/aperturerobotics/util/ccontainer"
+	"github.com/aperturerobotics/util/keyed"
+	"github.com/aperturerobotics/util/promise"
 )
 
 // linkDialerKey is the peer ID and link address tuple.
 type linkDialerKey struct {
-	peerID      string
+	peerID      peer.ID
 	dialAddress string
 }
 
 // linkDialer is a link dialer instance.
 type linkDialer struct {
-	// dialer is the dialer
-	dialer *dialer.Dialer
-	// cancel cancels the dialer
-	cancel context.CancelFunc
+	// c is the controller
+	c *Controller
+	// key is the link dialer key
+	key linkDialerKey
+	// opts contains the link dialer opts
+	// resolved by the caller who created this dialer
+	opts *promise.Promise[*dialer.DialerOpts]
+	// lnk is the link that resolved by this dialer
+	lnk *ccontainer.CContainer[link.Link]
 }
 
-// executeDialer executes the link dialer.
-func (c *Controller) executeDialer(
+// buildLinkDialer constructs a new link dialer.
+func (c *Controller) buildLinkDialer(key linkDialerKey) (keyed.Routine, *linkDialer) {
+	ld := &linkDialer{c: c, key: key, opts: promise.NewPromise[*dialer.DialerOpts]()}
+	ld.lnk = ccontainer.NewCContainer[link.Link](nil)
+	return ld.executeLinkDialer, ld
+}
+
+// executeLinkDialer executes the link dialer.
+func (l *linkDialer) executeLinkDialer(
 	ctx context.Context,
-	key linkDialerKey,
-	ld *linkDialer,
-) {
-	err := ld.dialer.Execute(ctx)
-	if err != nil && err != context.Canceled {
-		c.le.WithError(err).Warn("dialer exited with error")
+) error {
+	tpt, err := l.c.GetTransport(ctx)
+	if err != nil {
+		return err
 	}
-	ld.cancel()
 
-	c.mtx.Lock()
-	if d := c.linkDialers[key]; d == ld {
-		delete(c.linkDialers, key)
+	tptDialer, ok := tpt.(dialer.TransportDialer)
+	if !ok {
+		return transport.ErrNotTransportDialer
 	}
-	c.mtx.Unlock()
+
+	dialOpts, err := l.opts.Await(ctx)
+	if err != nil {
+		return err
+	}
+
+	subCtx, subCtxCancel := context.WithCancel(ctx)
+	defer subCtxCancel()
+
+	dialer := dialer.NewDialer(l.c.le, tptDialer, dialOpts, l.key.peerID, l.key.dialAddress)
+	lnk, err := dialer.Execute(subCtx)
+	if ctx.Err() != nil {
+		return context.Canceled
+	}
+
+	// success
+	l.lnk.SetValue(lnk)
+	return nil
 }
+
+// _ is a type assertion
+var _ keyed.Routine = ((*linkDialer)(nil)).executeLinkDialer

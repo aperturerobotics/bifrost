@@ -2,12 +2,10 @@ package transport_controller
 
 import (
 	"context"
-	"time"
 
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/aperturerobotics/controllerbus/directive"
-	"github.com/sirupsen/logrus"
 )
 
 // openStreamResolver resolves OpenStream directives
@@ -27,7 +25,7 @@ func (o *openStreamResolver) Resolve(ctx context.Context, handler directive.Reso
 	c := o.c
 	openOpts := o.dir.OpenStreamWPOpenOpts()
 	protocolID := o.dir.OpenStreamWPProtocolID()
-	estMsg := NewStreamEstablish(protocolID)
+	tgtPeerID := o.dir.OpenStreamWPTargetPeerID()
 
 	tpt, err := o.c.GetTransport(ctx)
 	if err != nil {
@@ -38,67 +36,52 @@ func (o *openStreamResolver) Resolve(ctx context.Context, handler directive.Reso
 		return nil
 	}
 
-	errCh := make(chan error, 1)
-	strmCh := make(chan link.MountedStream, 1)
-
-	c.mtx.Lock()
-	lw := c.pushLinkWaiter(
-		o.dir.OpenStreamWPTargetPeerID(),
-		true,
-		func(lnk link.Link, added bool) {
-			select {
-			case <-ctx.Done():
-				return
-			default:
+	var lnk link.Link
+	for {
+		err = c.bcast.Wait(ctx, func(broadcast func(), getWaitCh func() <-chan struct{}) (bool, error) {
+			if c.execCtx == nil {
+				return false, nil
 			}
 
-			strm, err := lnk.OpenStream(openOpts)
-			if err != nil {
-				errCh <- err
-				/*
-					if strm != nil {
-						strm.Close()
-					}
-				*/
-				return
-			}
-			_ = strm.SetWriteDeadline(time.Now().Add(streamEstablishTimeout))
-			if _, err := writeStreamEstablishHeader(strm, estMsg); err != nil {
-				errCh <- err
-				strm.Close()
-				return
+			peerLinks := c.linksByPeerID[tgtPeerID]
+			for _, peerLink := range peerLinks {
+				// if lnk == peerLink.lnk, that link already failed.
+				// flush it and continue
+				if lnk != nil && peerLink.lnk == lnk {
+					c.flushEstablishedLink(peerLink, false)
+					continue
+				}
+
+				lnk = peerLinks[0].lnk
+				return true, nil
 			}
 
-			_ = strm.SetDeadline(time.Time{})
-			o.c.le.
-				WithFields(logrus.Fields{
-					"link-id":     lnk.GetUUID(),
-					"protocol-id": protocolID,
-					"src-peer":    lnk.GetLocalPeer().String(),
-					"dst-peer":    lnk.GetRemotePeer().String(),
-				}).
-				Debug("opened stream with peer")
-			strmCh <- newMountedStream(strm, openOpts, protocolID, lnk)
-		},
-	)
-	c.mtx.Unlock()
+			// no matching link yet
+			return false, nil
+		})
+		if ctx.Err() != nil {
+			return context.Canceled
+		}
+		if err != nil {
+			return err
+		}
 
-	if lw != nil {
-		defer func() {
-			c.mtx.Lock()
-			c.clearLinkWaiter(lw)
-			c.mtx.Unlock()
-		}()
-	}
+		mstrm, err := c.openStreamWithLink(lnk, openOpts, protocolID)
+		if ctx.Err() != nil {
+			if mstrm != nil {
+				_ = mstrm.GetStream().Close()
+			}
+			return context.Canceled
+		}
+		if err != nil {
+			c.loggerForLink(lnk).WithError(err).Warn("unable to open stream, closing link")
+			_ = lnk.Close()
+			continue
+		}
 
-	select {
-	case <-ctx.Done():
-		return nil
-	case err := <-errCh:
-		return err
-	case mstrm := <-strmCh:
+		// success
 		if _, accepted := handler.AddValue(mstrm); !accepted {
-			mstrm.GetStream().Close()
+			_ = mstrm.GetStream().Close()
 		}
 		return nil
 	}
@@ -129,20 +112,22 @@ func (c *Controller) resolveOpenStreamWithPeer(
 	di directive.Instance,
 	dir link.OpenStreamWithPeer,
 ) ([]directive.Resolver, error) {
-	if tpt := c.tptCtr.GetValue(); tpt != nil {
-		if !checkOpenStreamMatchesTpt(dir, tpt) {
-			return nil, nil
-		}
+	// Try to skip this if it doesn't match this transport and we can lock.
+	// Otherwise return a resolver and check later.
+	var skip bool
+	_ = c.bcast.TryHoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
+		skip = c.tpt != nil && !checkOpenStreamMatchesTpt(dir, c.tpt)
+	})
+	if skip {
+		return nil, nil
 	}
 
-	// Check transport constraint
-	// Return resolver.
-	return directive.Resolvers(&openStreamResolver{
+	return directive.R(&openStreamResolver{
 		c:   c,
 		ctx: ctx,
 		di:  di,
 		dir: dir,
-	}), nil
+	}, nil)
 }
 
 // _ is a type assertion

@@ -2,9 +2,7 @@ package transport_controller
 
 import (
 	"context"
-	"errors"
 	"io"
-	"sync"
 	"time"
 
 	"github.com/aperturerobotics/bifrost/link"
@@ -17,7 +15,8 @@ import (
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
-	"github.com/aperturerobotics/util/ccontainer"
+	"github.com/aperturerobotics/util/broadcast"
+	"github.com/aperturerobotics/util/keyed"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/sirupsen/logrus"
 )
@@ -72,25 +71,29 @@ type Controller struct {
 	ctor Constructor
 	// info is the controller info
 	info *controller.Info
+	// lookupPeerID is the peer id to lookup on the bus
+	// may be empty
+	lookupPeerID peer.ID
 
-	// tptCtr contains the transport
-	tptCtr *ccontainer.CContainer[transport.Transport]
+	// linkDialers tracks ongoing dial attempts
+	// when a link is closed (removed from links) the associated dialer is restarted (if any).
+	linkDialers *keyed.KeyedRefCount[linkDialerKey, *linkDialer]
 
-	// mtx guards the below fields
-	// TODO: refactor to use broadcast
-	mtx sync.Mutex
-	// ctx is the controller context from Execute
-	ctx context.Context
-	// localPeerID contains the transport peer ID
-	localPeerID peer.ID
+	// bcast guards below fields
+	bcast broadcast.Broadcast
+	// execCtx is the controller execute context
+	// nil until resolved
+	execCtx context.Context
+	// peerID is the local peer id.
+	// empty until tpt is constructed
+	peerID peer.ID
+	// tpt is the transport
+	// nil until resolved
+	tpt transport.Transport
 	// links is the set of active links, keyed by link uuid
 	links map[uint64]*establishedLink
-	// linkWaiters is a set of callbacks waiting for connections with peers.
-	// TODO: refactor to use broadcast
-	linkWaiters map[peer.ID][]*linkWaiter
-	// linkDialers tracks ongoing dial attempts
-	// TODO: refactor to use keyed
-	linkDialers map[linkDialerKey]*linkDialer
+	// linksByPeerID is the set of links keyed by peer id
+	linksByPeerID map[peer.ID][]*establishedLink
 }
 
 // NewController constructs a new transport controller.
@@ -101,20 +104,18 @@ func NewController(
 	peerID peer.ID,
 	ctor Constructor,
 ) *Controller {
-	return &Controller{
-		le:   le,
-		bus:  bus,
-		ctor: ctor,
-		info: info,
+	c := &Controller{
+		le:           le,
+		bus:          bus,
+		ctor:         ctor,
+		info:         info,
+		lookupPeerID: peerID,
 
-		links:       make(map[uint64]*establishedLink),
-		linkWaiters: make(map[peer.ID][]*linkWaiter),
-
-		tptCtr: ccontainer.NewCContainer[transport.Transport](nil),
-
-		localPeerID: peerID,
-		linkDialers: make(map[linkDialerKey]*linkDialer),
+		links:         make(map[uint64]*establishedLink),
+		linksByPeerID: make(map[peer.ID][]*establishedLink),
 	}
+	c.linkDialers = keyed.NewKeyedRefCount(c.buildLinkDialer)
+	return c
 }
 
 // GetControllerID returns the controller ID.
@@ -130,13 +131,13 @@ func (c *Controller) GetControllerInfo() *controller.Info {
 // GetPeerLinks returns all links with the peer.
 func (c *Controller) GetPeerLinks(peerID peer.ID) []link.Link {
 	var lnks []link.Link
-	c.mtx.Lock()
-	for _, lnk := range c.links {
-		if lnk.lnk.GetRemotePeer() == peerID {
-			lnks = append(lnks, lnk.lnk)
+	c.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
+		for _, lnk := range c.links {
+			if lnk.lnk.GetRemotePeer() == peerID {
+				lnks = append(lnks, lnk.lnk)
+			}
 		}
-	}
-	c.mtx.Unlock()
+	})
 	return lnks
 }
 
@@ -144,10 +145,8 @@ func (c *Controller) GetPeerLinks(peerID peer.ID) []link.Link {
 // Returning nil ends execution.
 // Returning an error triggers a retry with backoff.
 func (c *Controller) Execute(ctx context.Context) error {
-	c.mtx.Lock()
-	c.ctx = ctx
-	localPeerID := c.localPeerID
-	c.mtx.Unlock()
+	// lookup the peer id u
+	localPeerID := c.peerID
 
 	// Acquire a handle to the node.
 	c.le.
@@ -170,10 +169,6 @@ func (c *Controller) Execute(ctx context.Context) error {
 		return err
 	}
 
-	c.mtx.Lock()
-	c.localPeerID = localPeerID
-	c.mtx.Unlock()
-
 	// Construct the transport
 	tpt, err := c.ctor(
 		ctx,
@@ -184,28 +179,57 @@ func (c *Controller) Execute(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	defer tpt.Close()
 
 	c.le.Debug("executing transport")
-	c.tptCtr.SetValue(tpt)
-	err = tpt.Execute(ctx)
+	execCtx, execCtxCancel := context.WithCancel(ctx)
+	defer execCtxCancel()
+
+	// set hadles
+	c.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
+		c.execCtx = execCtx
+		c.peerID = localPeerID
+		c.tpt = tpt
+		broadcast()
+	})
+
+	// clear on exit
+	defer func() {
+		c.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
+			c.execCtx = nil
+			c.peerID = ""
+			c.tpt = nil
+			for _, link := range c.links {
+				c.flushEstablishedLink(link, true)
+			}
+			broadcast()
+		})
+	}()
+
+	// start link dialers
+	c.linkDialers.SetContext(execCtx, true)
+	defer c.linkDialers.ClearContext()
+
+	// execute transport routine
+	err = tpt.Execute(execCtx)
 	if err != nil {
-		c.tptCtr.SetValue(nil)
-		tpt.Close()
 		return err
 	}
 
 	// Transport exited w/o an error
-	return nil
+	<-ctx.Done()
+	return context.Canceled
 }
 
 // GetTransport returns the controlled transport.
 // This may be nil until the transport is constructed.
 func (c *Controller) GetTransport(ctx context.Context) (transport.Transport, error) {
-	tptv, err := c.tptCtr.WaitValue(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	return tptv, nil
+	var tpt transport.Transport
+	err := c.bcast.Wait(ctx, func(_ func(), _ func() <-chan struct{}) (bool, error) {
+		tpt = c.tpt
+		return tpt != nil && c.peerID != "", nil
+	})
+	return tpt, err
 }
 
 // HandleDirective asks if the handler can resolve the directive.
@@ -222,7 +246,7 @@ func (c *Controller) HandleDirective(ctx context.Context, di directive.Instance)
 	case link.EstablishLinkWithPeer:
 		return c.resolveEstablishLink(ctx, di, d)
 	case transport.LookupTransport:
-		return c.resolveLookupTransport(ctx, di, d)
+		return c.resolveLookupTransport(ctx, d)
 	case tptaddr.DialTptAddr:
 		return c.resolveDialTptAddr(ctx, di, d)
 	}
@@ -234,57 +258,51 @@ func (c *Controller) HandleDirective(ctx context.Context, di directive.Instance)
 func (c *Controller) HandleLinkEstablished(lnk link.Link) {
 	le := c.loggerForLink(lnk)
 
-	c.mtx.Lock()
-	defer c.mtx.Unlock()
-
-	// clear all dialers to that peer
-	pidStr := lnk.GetRemotePeer().String()
-	for k := range c.linkDialers {
-		if k.peerID == pidStr {
-			c.clearLinkDialerLocked(k)
-		}
-	}
-
-	// quick sanity check
-	if lnk.GetRemotePeer() == c.localPeerID {
-		le.Warn("self-dial detected, closing link")
-		go lnk.Close()
-		return
-	}
-
-	ctx := c.ctx
-	if ctx == nil {
-		c.le.Warn("dropping link: handle established link called before execute")
-		go lnk.Close()
-		return
-	}
-
 	luuid := lnk.GetUUID()
-	el, elOk := c.links[luuid]
-	if elOk {
-		if el.lnk == lnk {
-			// duplicate HandleLinkEstablished call
-			le.Debug("duplicate handle-link-established call")
+	remotePeer := lnk.GetRemotePeer()
+
+	// use MaybeAsync to avoid deadlocks if the transport author was not careful.
+	c.bcast.HoldLockMaybeAsync(func(broadcast func(), getWaitCh func() <-chan struct{}) {
+		if c.execCtx == nil {
+			le.Warn("link established while transport exited, closing link")
+			go lnk.Close()
 			return
 		}
 
-		// close dupe
-		le.Debug("closing existing link identical to incoming link")
-		go c.flushEstablishedLink(el)
-		delete(c.links, luuid)
-	}
+		// quick sanity check
+		if remotePeer == c.peerID {
+			le.Warn("self-dial detected, closing link")
+			go lnk.Close()
+			return
+		}
 
-	el, err := newEstablishedLink(c.le, ctx, c.bus, lnk, c)
-	if err != nil {
-		c.le.WithError(err).Warn("unable to construct established link")
-		go lnk.Close()
-		return
-	}
-	c.links[luuid] = el
-	le.Info("link established")
+		el, elOk := c.links[luuid]
+		if elOk {
+			if el.lnk == lnk {
+				// duplicate HandleLinkEstablished call
+				le.Debug("duplicate handle-link-established call")
+				return
+			}
 
-	// flush any relevant link waiters
-	c.resolveLinkWaiters(el.lnk, true)
+			// close dupe
+			le.Debug("closing existing link identical to incoming link")
+			c.flushEstablishedLink(el, true)
+			broadcast()
+		}
+
+		el, err := newEstablishedLink(c.le, c.execCtx, c.bus, lnk, c)
+		if err != nil {
+			c.le.WithError(err).Warn("unable to construct established link")
+			go lnk.Close()
+			return
+		}
+
+		c.links[luuid] = el
+		c.linksByPeerID[remotePeer] = append(c.linksByPeerID[remotePeer], el)
+
+		le.Info("link established")
+		broadcast()
+	})
 }
 
 // HandleIncomingStream handles an incoming stream from a link. It negotiates
@@ -337,7 +355,9 @@ func (c *Controller) HandleIncomingStream(
 	// bus is the controller bus
 	le := c.loggerForLink(lnk).WithField("protocol-id", pid)
 	le.Debug("accepted stream")
-	dir := link.NewHandleMountedStream(pid, c.localPeerID, mstrm.GetPeerID())
+
+	dir := link.NewHandleMountedStream(pid, lnk.GetLocalPeer(), mstrm.GetPeerID())
+
 	handleMsCtx, handleMsCtxCancel := context.WithDeadline(rctx, readDeadline)
 	dval, _, dref, err := bus.ExecOneOff(handleMsCtx, c.bus, dir, nil, nil)
 	handleMsCtxCancel()
@@ -372,114 +392,80 @@ func (c *Controller) HandleIncomingStream(
 
 // HandleLinkLost is called when a link is lost.
 func (c *Controller) HandleLinkLost(lnk link.Link) {
-	c.mtx.Lock()
-	defer c.mtx.Unlock()
-
-	// fast path: clear by uuid
-	luuid := lnk.GetUUID()
-	if el, elOk := c.links[luuid]; elOk {
-		delete(c.links, luuid)
-		c.flushEstablishedLink(el)
-		return
-	}
-
-	// slow path: equality check to be sure
-	for k, l := range c.links {
-		if l.lnk == lnk {
-			delete(c.links, k)
-			c.flushEstablishedLink(l)
-			break
+	c.bcast.HoldLockMaybeAsync(func(broadcast func(), getWaitCh func() <-chan struct{}) {
+		// fast path: clear by uuid
+		luuid := lnk.GetUUID()
+		if el, elOk := c.links[luuid]; elOk {
+			delete(c.links, luuid)
+			c.flushEstablishedLink(el, false)
+			return
 		}
-	}
-}
 
-// PushDialer pushes a new dialer.
-// Waits for the transport to be constructed.
-// If the transport is not a TransportDialer, returns nil.
-// Returns after the dialer is pushed.
-func (c *Controller) PushDialer(
-	ctx context.Context,
-	peerID peer.ID,
-	opts *dialer.DialerOpts,
-) error {
-	tpt, err := c.GetTransport(ctx)
-	if err != nil {
-		return err
-	}
-	tptDialer, ok := tpt.(dialer.TransportDialer)
-	if !ok {
-		c.le.Warn("ignoring dial attempt: transport is not a TransportDialer")
-		return nil
-	}
-
-	return c.startLinkDialer(peerID, opts, tptDialer)
-}
-
-// startLinkDialer starts a new link dialer.
-func (c *Controller) startLinkDialer(
-	peerID peer.ID,
-	opts *dialer.DialerOpts,
-	tptDialer dialer.TransportDialer,
-) error {
-	c.mtx.Lock()
-	defer c.mtx.Unlock()
-
-	return c.startLinkDialerLocked(peerID, opts, tptDialer)
-}
-
-// startLinkDialerLocked starts a link dialer while mtx is locked.
-// mtx is locked by caller
-func (c *Controller) startLinkDialerLocked(
-	peerID peer.ID,
-	opts *dialer.DialerOpts,
-	tptDialer dialer.TransportDialer,
-) error {
-	if c.ctx == nil {
-		// dialer called before execute
-		return errors.New("cannot start link dialer before transport is executed")
-	}
-
-	key := linkDialerKey{
-		peerID:      peerID.String(),
-		dialAddress: opts.GetAddress(),
-	}
-	_, ok := c.linkDialers[key]
-	if !ok {
-		dialer := dialer.NewDialer(c.le, tptDialer, opts, peerID, key.dialAddress)
-		ctx, ctxCancel := context.WithCancel(c.ctx)
-		ld := &linkDialer{
-			dialer: dialer,
-			cancel: ctxCancel,
+		// slow path: equality check
+		// only taken if the uuid somehow changed on the link.
+		for k, l := range c.links {
+			if l.lnk == lnk {
+				delete(c.links, k)
+				c.flushEstablishedLink(l, false)
+				break
+			}
 		}
-		c.linkDialers[key] = ld
-		go c.executeDialer(ctx, key, ld)
-	}
-
-	return nil
-}
-
-// clearLinkDialerLocked clears a link dialer while mtx is locked.
-// returns if the dialer existed
-func (c *Controller) clearLinkDialerLocked(key linkDialerKey) bool {
-	dialer, ok := c.linkDialers[key]
-	if !ok {
-		return false
-	}
-
-	dialer.cancel()
-	delete(c.linkDialers, key)
-	return true
+	})
 }
 
 // flushEstablishedLink closes an established link and cleans it up.
 // mtx is locked by caller
-func (c *Controller) flushEstablishedLink(el *establishedLink) {
+func (c *Controller) flushEstablishedLink(el *establishedLink, hasNextLink bool) {
 	le := c.loggerForLink(el.lnk)
 	le.Info("link lost/closed")
-	c.resolveLinkWaiters(el.lnk, false)
+
+	delete(c.links, el.lnk.GetUUID())
+
+	peerID := el.lnk.GetRemotePeer()
+	peerLinks := c.linksByPeerID[peerID]
+	for i, plnk := range peerLinks {
+		if plnk == el {
+			if len(peerLinks) == 1 {
+				peerLinks = nil
+			} else {
+				peerLinks[i] = peerLinks[len(peerLinks)-1]
+				peerLinks[len(peerLinks)-1] = nil
+				peerLinks = peerLinks[:len(peerLinks)-1]
+			}
+			break
+		}
+	}
+	if len(peerLinks) == 0 {
+		delete(c.linksByPeerID, peerID)
+	} else {
+		c.linksByPeerID[peerID] = peerLinks
+	}
+
 	el.cancel()
-	el.lnk.Close()
-	_ = el.di.CloseIfUnreferenced(false)
+
+	// close the directive if unreferenced (skipping unref dispose dir)
+	if !hasNextLink {
+		_ = el.di.CloseIfUnreferenced(false)
+	}
+
+	// clear lnk from any dialers that were resolved with it.
+	c.linkDialers.RestartAllRoutines(func(lk linkDialerKey, ld *linkDialer) bool {
+		if lk.peerID != peerID {
+			return false
+		}
+		if ld.lnk.GetValue() != el.lnk {
+			return false
+		}
+
+		// clear the lnk value and restart if we dont already have a new link.
+		ld.lnk.SetValue(nil)
+		return !hasNextLink
+	})
+
+	// Call close on the link on a separate goroutine.
+	go func() {
+		_ = el.lnk.Close()
+	}()
 }
 
 // loggerForLink wraps a logger with fields identifying the link.
@@ -493,13 +479,38 @@ func (c *Controller) loggerForLink(lnk link.Link) *logrus.Entry {
 // Close releases any resources used by the controller.
 // Error indicates any issue encountered releasing.
 func (c *Controller) Close() error {
-	_ = c.tptCtr.SwapValue(func(val transport.Transport) transport.Transport {
-		if val != nil {
-			_ = val.Close()
-		}
-		return nil
-	})
 	return nil
+}
+
+// openStreamWithLink attempts to open a stream with the given link and protocol ID.
+func (c *Controller) openStreamWithLink(
+	lnk link.Link,
+	openOpts stream.OpenOpts,
+	protocolID protocol.ID,
+) (link.MountedStream, error) {
+	estMsg := NewStreamEstablish(protocolID)
+
+	strm, err := lnk.OpenStream(openOpts)
+	if err != nil {
+		return nil, err
+	}
+
+	_ = strm.SetWriteDeadline(time.Now().Add(streamEstablishTimeout))
+	if _, err := writeStreamEstablishHeader(strm, estMsg); err != nil {
+		_ = strm.Close()
+		return nil, err
+	}
+
+	_ = strm.SetDeadline(time.Time{})
+	c.le.
+		WithFields(logrus.Fields{
+			"link-id":     lnk.GetUUID(),
+			"protocol-id": protocolID,
+			"src-peer":    lnk.GetLocalPeer().String(),
+			"dst-peer":    lnk.GetRemotePeer().String(),
+		}).
+		Debug("opened stream with peer")
+	return newMountedStream(strm, openOpts, protocolID, lnk), nil
 }
 
 // _ is a type assertion

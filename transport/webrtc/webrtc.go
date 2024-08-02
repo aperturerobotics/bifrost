@@ -6,6 +6,7 @@ import (
 	"net"
 	"slices"
 
+	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/protocol"
 	signaling "github.com/aperturerobotics/bifrost/signaling/rpc"
@@ -226,12 +227,12 @@ func (w *WebRTC) DialPeer(
 	ctx context.Context,
 	peerID peer.ID,
 	addr string,
-) (fatal bool, err error) {
+) (olnk link.Link, fatal bool, err error) {
 	// Ignore the address, since there is no address associated w/ WebRTC connections.
 	// Get the peer ID string
 	peerIDStr := peerID.String()
 	if slices.Contains(w.conf.GetBlockPeers(), peerIDStr) {
-		return false, nil
+		return nil, false, nil
 	}
 
 	var ref *keyed.KeyedRef[string, *sessionTracker]
@@ -256,14 +257,14 @@ func (w *WebRTC) DialPeer(
 		defer ref.Release()
 	}
 	if err != nil {
-		return false, err
+		return nil, false, err
 	}
 
 	// Wait for the link to be established
 	for lnk == nil {
 		select {
 		case <-ctx.Done():
-			return false, context.Canceled
+			return nil, false, context.Canceled
 		case <-waitCh:
 		}
 
@@ -273,7 +274,7 @@ func (w *WebRTC) DialPeer(
 		})
 	}
 
-	return false, nil
+	return lnk, false, nil
 }
 
 // Close closes the transport, returning any errors closing.

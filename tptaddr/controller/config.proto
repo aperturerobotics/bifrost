@@ -1,8 +1,14 @@
 syntax = "proto3";
 package tptaddr.controller;
 
+import "github.com/aperturerobotics/util/backoff/backoff.proto";
+
 // Config configures the tptaddr dialer controller.
 //
 // Handles EstablishLinkWithPeer directives by creating LookupTptAddr and
 // DialTptAddr directives.
-message Config {}
+message Config {
+  // DialBackoff is the dial backoff configuration.
+  // If unset, defaults to reasonable defaults.
+  .backoff.Backoff dial_backoff = 1;
+}

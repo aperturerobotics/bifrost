@@ -3,12 +3,12 @@ module github.com/aperturerobotics/bifrost
 go 1.22
 
 require (
-	github.com/aperturerobotics/common v0.18.0 // latest
-	github.com/aperturerobotics/controllerbus v0.47.0 // latest
+	github.com/aperturerobotics/common v0.18.1 // latest
+	github.com/aperturerobotics/controllerbus v0.47.2 // latest
 	github.com/aperturerobotics/entitygraph v0.9.1 // latest
 	github.com/aperturerobotics/protobuf-go-lite v0.6.5 // latest
 	github.com/aperturerobotics/starpc v0.33.6 // latest
-	github.com/aperturerobotics/util v1.25.3 // latest
+	github.com/aperturerobotics/util v1.25.7-0.20240802075949-372f05d3a13f // latest
 )
 
 // aperture: use compatibility forks
@@ -22,7 +22,7 @@ replace (
 	github.com/nats-io/nats-server/v2 => github.com/aperturerobotics/bifrost-nats-server/v2 v2.1.8-0.20221228081037-b7c2df0c151f // aperture-2.0
 	github.com/nats-io/nats.go => github.com/aperturerobotics/bifrost-nats-client v1.10.1-0.20200831103200-24c3d0464e58 // aperture-2.0
 	github.com/nats-io/nkeys => github.com/nats-io/nkeys v0.3.0 // indirect: used by bifrost-nats-server
-	github.com/quic-go/quic-go => github.com/aperturerobotics/quic-go v0.45.1-0.20240701204210-82dc570e7aa0 // aperture
+	github.com/quic-go/quic-go => github.com/aperturerobotics/quic-go v0.45.1-0.20240802054753-f83427ffc2c6 // aperture
 	github.com/sirupsen/logrus => github.com/aperturerobotics/logrus v1.9.4-0.20240119050608-13332fb58195 // aperture
 )
 

@@ -2,7 +2,6 @@ package pubsub_controller
 
 import (
 	"context"
-	"sync"
 
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/peer"
@@ -47,9 +46,7 @@ type Controller struct {
 	// peerCtr holds the peer
 	peerCtr *ccontainer.CContainer[*peer.Peer]
 
-	// mtx guards below fields
-	mtx sync.Mutex
-	// bcast wakes the controller
+	// bcast guards below fields
 	bcast broadcast.Broadcast
 	// cleanupRefs are the refs to cleanup
 	cleanupRefs []directive.Reference
@@ -141,46 +138,47 @@ func (c *Controller) Execute(ctx context.Context) error {
 	}()
 
 	for {
-		c.mtx.Lock()
-		for _, vl := range c.incLinks {
-			tpl := pubsub.NewPeerLinkTuple(vl)
-			if e, ok := c.links[tpl]; ok {
-				e.ctxCancel()
-			}
-			tlCtx, tlCtxCancel := context.WithCancel(ctx)
-			tl := &trackedLink{
-				c:         c,
-				ctxCancel: tlCtxCancel,
-				tpl:       tpl,
-				lnk:       vl,
-				le: c.le.
-					WithField("link-uuid", vl.GetUUID()).
-					WithField("link-remote-peer", vl.GetRemotePeer().String()),
-			}
-			c.links[tpl] = tl
-			go func() {
-				err := tl.trackLink(tlCtx)
-				tlCtxCancel()
-				if err != context.Canceled && err != nil {
-					tl.le.WithError(err).Warn("link tracker returned fatal error")
+		var waitCh <-chan struct{}
+		c.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
+			for _, vl := range c.incLinks {
+				tpl := pubsub.NewPeerLinkTuple(vl)
+				if e, ok := c.links[tpl]; ok {
+					e.ctxCancel()
 				}
-				c.mtx.Lock()
-				if ol, ok := c.links[tpl]; ok && ol == tl {
-					delete(c.links, tpl)
+				tlCtx, tlCtxCancel := context.WithCancel(ctx)
+				tl := &trackedLink{
+					c:         c,
+					ctxCancel: tlCtxCancel,
+					tpl:       tpl,
+					lnk:       vl,
+					le: c.le.
+						WithField("link-uuid", vl.GetUUID()).
+						WithField("link-remote-peer", vl.GetRemotePeer().String()),
 				}
-				c.mtx.Unlock()
-			}()
-		}
-		c.incLinks = nil
-		wake := c.bcast.GetWaitCh()
-		c.mtx.Unlock()
+				c.links[tpl] = tl
+				go func() {
+					err := tl.trackLink(tlCtx)
+					tlCtxCancel()
+					if err != context.Canceled && err != nil {
+						tl.le.WithError(err).Warn("link tracker returned fatal error")
+					}
+					c.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
+						if ol, ok := c.links[tpl]; ok && ol == tl {
+							delete(c.links, tpl)
+						}
+					})
+				}()
+			}
+			c.incLinks = nil
+			waitCh = getWaitCh()
+		})
 
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		case err := <-psErr:
 			return err
-		case <-wake:
+		case <-waitCh:
 		}
 	}
 }
@@ -211,7 +209,7 @@ func (c *Controller) HandleDirective(ctx context.Context, di directive.Instance)
 	dir := di.GetDirective()
 	switch d := dir.(type) {
 	case link.EstablishLinkWithPeer:
-		c.handleEstablishLink(ctx, di, d)
+		c.handleEstablishLink(di)
 	case link.HandleMountedStream:
 		return c.handleMountedStream(ctx, di, d)
 	case pubsub.BuildChannelSubscription:
@@ -224,16 +222,16 @@ func (c *Controller) HandleDirective(ctx context.Context, di directive.Instance)
 // Close releases any resources used by the controller.
 // Error indicates any issue encountered releasing.
 func (c *Controller) Close() error {
-	c.mtx.Lock()
-	for _, ref := range c.cleanupRefs {
-		ref.Release()
-	}
-	c.cleanupRefs = nil
-	for k, l := range c.links {
-		l.ctxCancel()
-		delete(c.links, k)
-	}
-	c.mtx.Unlock()
+	c.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
+		for _, ref := range c.cleanupRefs {
+			ref.Release()
+		}
+		c.cleanupRefs = nil
+		for k, l := range c.links {
+			l.ctxCancel()
+			delete(c.links, k)
+		}
+	})
 
 	_ = c.pubSubCtr.SwapValue(func(val *pubsub.PubSub) *pubsub.PubSub {
 		if val != nil {
@@ -243,11 +241,6 @@ func (c *Controller) Close() error {
 	})
 
 	return nil
-}
-
-// wake wakes the controller
-func (c *Controller) wake() {
-	c.bcast.Broadcast()
 }
 
 // _ is a type assertion

@@ -2,15 +2,11 @@ package transport_controller
 
 import (
 	"context"
-	"time"
 
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/transport/common/dialer"
 	"github.com/aperturerobotics/controllerbus/directive"
 )
-
-// crossDialWaitDur is the default amount of time to wait to avoid cross-dial.
-var crossDialWaitDur = time.Millisecond * 250
 
 // establishLinkResolver resolves establishLink directives
 type establishLinkResolver struct {
@@ -26,7 +22,6 @@ type establishLinkResolver struct {
 // The resolver will not be retried after returning an error.
 // Values will be maintained from the previous call.
 func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.ResolverHandler) error {
-	c := o.c
 	targetPeerID := o.dir.EstablishLinkTargetPeerId()
 	tpt, err := o.c.GetTransport(ctx)
 	if err != nil {
@@ -38,11 +33,6 @@ func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.R
 	if sourcePeerID == "" {
 		// If the directive filtered only by destination peer ID, add a EstablishLink
 		// directive for the source to ensure there is a reference.
-		//
-		// XXX: the current approach to using EstablishLink to determine the
-		// lifecycle of the Link (when it is released) is a bit messy and
-		// counter-intuitive and could be improved by instead using a refcount
-		// mechanism to release links when no directives ask for them.
 		_, estLinkRef, err := o.c.bus.AddDirective(link.NewEstablishLinkWithPeer(tptSourcePeerID, targetPeerID), nil)
 		if err != nil {
 			return err
@@ -53,94 +43,64 @@ func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.R
 		return nil
 	}
 
-	wakeDialer := make(chan time.Time, 1)
-	linkIDs := make(map[link.Link]uint32)
-	c.mtx.Lock()
-	lw := o.c.pushLinkWaiter(targetPeerID, false, func(lnk link.Link, added bool) {
-		if added {
-			if _, ok := linkIDs[lnk]; !ok {
-				if vid, ok := handler.AddValue(lnk); ok {
-					linkIDs[lnk] = vid
-				}
-			}
-		} else {
-			if vid, ok := linkIDs[lnk]; ok {
-				handler.RemoveValue(vid)
-				delete(linkIDs, lnk)
-				if len(linkIDs) == 0 {
-					var extraWaitDur time.Duration
-					if lnk.GetLocalPeer() < lnk.GetRemotePeer() {
-						extraWaitDur = crossDialWaitDur
-					}
-					select {
-					case wakeDialer <- time.Now().Add(extraWaitDur):
-					default:
-					}
-				}
-			}
-		}
-	})
-	c.mtx.Unlock()
-
-	// Remove the link waiter when the resolver exits.
-	defer func() {
-		c.mtx.Lock()
-		o.c.clearLinkWaiter(lw)
-		c.mtx.Unlock()
-	}()
-
-	// Attempt to dial the peer if no link is active and we have an address to dial.
+	// Determine if we can dial the peer at a specific address.
+	var dialAddress string
 	tptDialer, ok := tpt.(dialer.TransportDialer)
-	if !ok {
-		// No transport dialer, just wait for a link.
-		<-ctx.Done()
-		return nil
+	if ok {
+		dialerOpts, err := tptDialer.GetPeerDialer(ctx, targetPeerID)
+		if err != nil {
+			return err
+		}
+
+		dialAddress = dialerOpts.GetAddress()
+		if dialerOpts.GetAddress() != "" {
+			// Add a reference to request that we dial that peer.
+			dialRef, dial, _ := o.c.linkDialers.AddKeyRef(linkDialerKey{peerID: targetPeerID, dialAddress: dialAddress})
+			defer dialRef.Release()
+
+			// Attempt to dial the peer at that address.
+			dial.opts.SetResult(dialerOpts, nil)
+		}
 	}
 
-	dialerOpts, err := tptDialer.GetPeerDialer(ctx, targetPeerID)
-	if err != nil {
-		return err
-	}
+	// Avoid churn by using a uniqueListResolver.
+	uniqueListResolver := directive.NewUniqueListXfrmResolver(
+		func(v *establishedLink) uint64 {
+			return v.lnk.GetUUID()
+		}, func(k uint64, a, b *establishedLink) bool {
+			return a == b
+		},
+		func(k uint64, v *establishedLink) (link.EstablishLinkWithPeerValue, bool) {
+			return v.lnk, true
+		},
+		handler,
+	)
 
-	if dialerOpts.GetAddress() == "" {
-		// No address, wait for a link.
-		<-ctx.Done()
-		return nil
-	}
-
-	var waitWake bool
+	// Wait for the link(s) to be resolved.
+	var waitCh <-chan struct{}
+	var values []*establishedLink
 	for {
-		if waitWake {
-			select {
-			case <-ctx.Done():
-				return nil
-			case waitUntil := <-wakeDialer:
-				tu := time.Until(waitUntil)
-				if tu > time.Millisecond*50 {
-					tt := time.NewTimer(tu)
-					select {
-					case <-ctx.Done():
-						tt.Stop()
-						return nil
-					case <-tt.C:
-					}
-				}
-			}
-		} else {
-			waitWake = true
+		if ctx.Err() != nil {
+			return context.Canceled
 		}
 
-		var hasLink bool
-		for _, lnk := range c.links {
-			if lnk.lnk.GetRemotePeer() == targetPeerID {
-				hasLink = true
-				break
-			}
-		}
-		if !hasLink {
-			if err := c.PushDialer(ctx, targetPeerID, dialerOpts); err != nil {
-				return err
-			}
+		// reuse slice
+		values = values[:0]
+		o.c.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
+			// get all links matching the target peer
+			values = append(values, o.c.linksByPeerID[targetPeerID]...)
+
+			// get wait ch to watch for changes
+			waitCh = getWaitCh()
+		})
+
+		// update unique list resolver, emitting values to the resolver handler.
+		uniqueListResolver.SetValues(values...)
+
+		select {
+		case <-ctx.Done():
+			return context.Canceled
+		case <-waitCh:
 		}
 	}
 }
@@ -156,10 +116,14 @@ func (c *Controller) resolveEstablishLink(
 		return nil, nil
 	}
 
-	// if the transport is already ready we can check this here.
-	// otherwise it will be checked later in establishLinkResolver
+	// Try to skip this if it doesn't match this transport and we can lock.
+	// Otherwise return a resolver and check later.
 	if srcPeerID := dir.EstablishLinkSourcePeerId(); len(srcPeerID) != 0 {
-		if tpt := c.tptCtr.GetValue(); tpt != nil && tpt.GetPeerID() != srcPeerID {
+		var skip bool
+		_ = c.bcast.TryHoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
+			skip = c.tpt != nil && c.tpt.GetPeerID() != srcPeerID
+		})
+		if skip {
 			return nil, nil
 		}
 	}

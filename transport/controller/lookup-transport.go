@@ -50,15 +50,15 @@ func checkLookupMatchesTpt(dir transport.LookupTransport, tpt transport.Transpor
 }
 
 // resolveLookupTransport returns a resolver for looking up a transport.
-func (c *Controller) resolveLookupTransport(
-	ctx context.Context,
-	di directive.Instance,
-	dir transport.LookupTransport,
-) ([]directive.Resolver, error) {
-	if tpt := c.tptCtr.GetValue(); tpt != nil {
-		if !checkLookupMatchesTpt(dir, tpt) {
-			return nil, nil
-		}
+func (c *Controller) resolveLookupTransport(ctx context.Context, dir transport.LookupTransport) ([]directive.Resolver, error) {
+	// Try to skip this if it doesn't match this transport and we can lock.
+	// Otherwise return a resolver and check later.
+	var skip bool
+	_ = c.bcast.TryHoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
+		skip = c.tpt != nil && !checkLookupMatchesTpt(dir, c.tpt)
+	})
+	if skip {
+		return nil, nil
 	}
 
 	// Return resolver.

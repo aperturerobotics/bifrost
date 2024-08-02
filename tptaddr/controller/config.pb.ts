@@ -2,6 +2,7 @@
 // @generated from file github.com/aperturerobotics/bifrost/tptaddr/controller/config.proto (package tptaddr.controller, syntax proto3)
 /* eslint-disable */
 
+import { Backoff } from '@go/github.com/aperturerobotics/util/backoff/backoff.pb.js'
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
 import { createMessageType } from '@aptre/protobuf-es-lite'
 
@@ -15,11 +16,21 @@ export const protobufPackage = 'tptaddr.controller'
  *
  * @generated from message tptaddr.controller.Config
  */
-export interface Config {}
+export interface Config {
+  /**
+   * DialBackoff is the dial backoff configuration.
+   * If unset, defaults to reasonable defaults.
+   *
+   * @generated from field: backoff.Backoff dial_backoff = 1;
+   */
+  dialBackoff?: Backoff
+}
 
 // Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({
   typeName: 'tptaddr.controller.Config',
-  fields: [] as readonly PartialFieldInfo[],
+  fields: [
+    { no: 1, name: 'dial_backoff', kind: 'message', T: () => Backoff },
+  ] as readonly PartialFieldInfo[],
   packedByDefault: true,
 })

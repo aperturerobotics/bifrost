@@ -5,6 +5,7 @@ import (
 
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/tptaddr"
+	"github.com/aperturerobotics/bifrost/transport/common/dialer"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/directive"
 )
@@ -39,15 +40,18 @@ func (c *Controller) resolveEstablishLinkWithPeer(
 func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.ResolverHandler) error {
 	// Create LookupTptAddr directive.
 	// When a new address is added, add a directive to dial that address.
-	di, ref, err := bus.ExecWatchTransformEffect[tptaddr.LookupTptAddrValue, tptaddr.DialTptAddr](
+	di, ref, err := bus.ExecWatchTransformEffect(
 		ctx,
 		func(ctx context.Context, val directive.TypedAttachedValue[tptaddr.LookupTptAddrValue]) (tptaddr.DialTptAddr, bool, error) {
-			return tptaddr.NewDialTptAddr(val.GetValue(), o.dir.EstablishLinkSourcePeerId(), o.dir.EstablishLinkTargetPeerId()), true, nil
+			return tptaddr.NewDialTptAddr(&dialer.DialerOpts{
+				Address: val.GetValue(),
+				Backoff: o.c.conf.GetDialBackoff(),
+			}, o.dir.EstablishLinkSourcePeerId(), o.dir.EstablishLinkTargetPeerId()), true, nil
 		},
 		func(val directive.TransformedAttachedValue[tptaddr.LookupTptAddrValue, tptaddr.DialTptAddr]) func() {
 			// spawn a new resolver for this
 			// note: we won't return any values to the directive. we expect the link controller to do this.
-			return handler.AddResolver(directive.NewTransformResolver[struct{}](
+			return handler.AddResolver(directive.NewTransformResolver(
 				o.c.bus,
 				val.GetTransformedValue(),
 				func(ctx context.Context, val directive.AttachedValue) (rval struct{}, rel func(), ok bool, err error) {

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/peer"
 	bo "github.com/cenkalti/backoff"
 	"github.com/sirupsen/logrus"
@@ -33,8 +34,7 @@ func NewDialer(
 	address string,
 ) *Dialer {
 	return &Dialer{
-		le: le.WithField("dial-peer-id", peerID.String()).
-			WithField("dial-peer-addr", address),
+		le:        le.WithFields(logrus.Fields{"dial-peer-id": peerID.String(), "dial-peer-addr": address}),
 		tptDialer: tptDialer,
 		backoff:   opts.GetBackoff().Construct(),
 		peerID:    peerID,
@@ -42,40 +42,42 @@ func NewDialer(
 	}
 }
 
+// GetLogger returns the dialer logger.
+func (d *Dialer) GetLogger() *logrus.Entry {
+	return d.le
+}
+
 // Execute executes the dialer, with backoff.
-func (d *Dialer) Execute(ctx context.Context) error {
+func (d *Dialer) Execute(ctx context.Context) (link.Link, error) {
 	for {
 		d.le.Debug("attempting to dial peer")
-		fatal, err := d.tptDialer.DialPeer(ctx, d.peerID, d.address)
+		lnk, fatal, err := d.tptDialer.DialPeer(ctx, d.peerID, d.address)
 		if err == nil {
 			d.backoff.Reset()
-			return nil
+			return lnk, nil
+		}
+		if ctx.Err() != nil {
+			return nil, context.Canceled
 		}
 
 		bo := d.backoff.NextBackOff()
-		if err != nil {
-			if err == context.Canceled {
-				return err
-			}
-
-			if fatal {
-				d.le.WithError(err).Warn("dialer errored fatally")
-				return err
-			}
-
-			d.le.
-				WithError(err).
-				WithField("backoff", bo.String()).
-				Warn("dialer errored")
+		if fatal {
+			d.le.WithError(err).Warn("dialer errored fatally")
+			return nil, err
 		}
 
+		d.le.
+			WithError(err).
+			WithField("backoff", bo.String()).
+			Warn("dialer errored")
+
 		if bo == -1 {
-			return errors.New("dial backoff max duration exceeded")
+			return nil, errors.New("dial backoff max duration exceeded")
 		}
 
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
+			return nil, context.Canceled
 		case <-time.After(bo):
 		}
 	}

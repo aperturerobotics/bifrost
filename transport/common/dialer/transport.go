@@ -3,6 +3,7 @@ package dialer
 import (
 	"context"
 
+	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/peer"
 )
 
@@ -27,10 +28,13 @@ type TransportDialer interface {
 	// emitted to the transport handler. DialPeer should return nil if the link
 	// was established. DialPeer will then not be called again for the same peer
 	// ID and address tuple until the yielded link is lost.
+	//
+	// ctx will be canceled once DialPeer returns. use ctx from Execute for long-lived routines.
+	//
 	// Returns fatal and error.
 	DialPeer(
 		ctx context.Context,
 		peerID peer.ID,
 		addr string,
-	) (fatal bool, err error)
+	) (lnk link.Link, fatal bool, err error)
 }

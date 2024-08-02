@@ -3,6 +3,7 @@ package tptaddr
 import (
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/peer"
+	"github.com/aperturerobotics/bifrost/transport/common/dialer"
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/pkg/errors"
 )
@@ -14,16 +15,16 @@ type DialTptAddr interface {
 	// Directive indicates DialTptAddr is a directive.
 	directive.Directive
 
-	// DialTptAddr returns the transport addr to dial.
-	// usually {transport-type-id}|{addr}
-	// Cannot be empty.
-	DialTptAddr() string
 	// DialTptAddrSourcePeerId returns the source peer ID.
 	// Can be empty to allow any.
 	DialTptAddrSourcePeerId() peer.ID
 	// DialTptAddrTargetPeerId returns the target peer ID.
 	// Cannot be empty.
 	DialTptAddrTargetPeerId() peer.ID
+	// DialTptAddrDialerOpts are options for the dialer.
+	// Address: usually {transport-type-id}|{addr}
+	// Addr cannot be empty.
+	DialTptAddrDialerOpts() *dialer.DialerOpts
 }
 
 // DialTptAddrValue is the type emitted when resolving DialTptAddr.
@@ -31,20 +32,18 @@ type DialTptAddrValue = link.Link
 
 // dialTptAddr implements DialTptAddr
 type dialTptAddr struct {
-	addr      string
-	src, dest peer.ID
+	dialerOpts *dialer.DialerOpts
+	src, dest  peer.ID
 }
 
 // NewDialTptAddr constructs a new DialTptAddr directive.
-func NewDialTptAddr(addr string, srcPeer, destPeer peer.ID) DialTptAddr {
-	return &dialTptAddr{addr: addr, src: srcPeer, dest: destPeer}
+func NewDialTptAddr(dialerOpts *dialer.DialerOpts, srcPeer, destPeer peer.ID) DialTptAddr {
+	return &dialTptAddr{dialerOpts: dialerOpts, src: srcPeer, dest: destPeer}
 }
 
-// DialTptAddr returns the transport addr to dial.
-// usually {transport-type-id}|{addr}
-// Cannot be empty.
-func (d *dialTptAddr) DialTptAddr() string {
-	return d.addr
+// DialTptAddrDialerOpts are options for the dialer.
+func (d *dialTptAddr) DialTptAddrDialerOpts() *dialer.DialerOpts {
+	return d.dialerOpts
 }
 
 // DialTptAddrTargetPeerId returns the target peer ID.
@@ -63,10 +62,12 @@ func (d *dialTptAddr) Validate() error {
 	if len(d.dest) == 0 {
 		return errors.Wrap(peer.ErrEmptyPeerID, "destination")
 	}
-	if _, _, err := ParseTptAddr(d.addr); err != nil {
-		return err
+	if d.dialerOpts == nil {
+		return errors.New("dialer options cannot be nil")
 	}
-
+	if d.dialerOpts.GetAddress() == "" {
+		return errors.New("dialer address cannot be empty")
+	}
 	return nil
 }
 
@@ -86,7 +87,7 @@ func (d *dialTptAddr) IsEquivalent(other directive.Directive) bool {
 
 	return d.DialTptAddrTargetPeerId() == od.DialTptAddrTargetPeerId() &&
 		d.DialTptAddrSourcePeerId() == od.DialTptAddrSourcePeerId() &&
-		d.DialTptAddr() == od.DialTptAddr()
+		d.DialTptAddrDialerOpts().GetAddress() == od.DialTptAddrDialerOpts().GetAddress()
 }
 
 // Superceeds checks if the directive overrides another.
@@ -106,7 +107,7 @@ func (d *dialTptAddr) GetName() string {
 func (d *dialTptAddr) GetDebugVals() directive.DebugValues {
 	vals := directive.NewDebugValues()
 	vals["peer-id"] = []string{d.DialTptAddrTargetPeerId().String()}
-	vals["tpt-addr"] = []string{d.DialTptAddr()}
+	vals["tpt-addr"] = []string{d.DialTptAddrDialerOpts().GetAddress()}
 	if src := d.DialTptAddrSourcePeerId(); len(src) != 0 {
 		vals["from-peer-id"] = []string{d.DialTptAddrSourcePeerId().String()}
 	}

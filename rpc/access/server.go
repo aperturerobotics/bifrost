@@ -53,8 +53,12 @@ func (s *AccessRpcServiceServer) LookupRpcService(
 		}
 	}
 
+	var waitCh <-chan struct{}
+	bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
+		waitCh = getWaitCh()
+	})
+
 	dir := bifrost_rpc.NewLookupRpcService(req.GetServiceId(), serverID)
-	waitCh := bcast.GetWaitCh()
 	vals := make(map[uint32]struct{})
 	di, ref, err := s.b.AddDirective(dir, bus.NewCallbackHandler(
 		func(av directive.AttachedValue) {

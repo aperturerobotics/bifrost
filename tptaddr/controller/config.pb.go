@@ -11,6 +11,7 @@ import (
 
 	protobuf_go_lite "github.com/aperturerobotics/protobuf-go-lite"
 	json "github.com/aperturerobotics/protobuf-go-lite/json"
+	backoff "github.com/aperturerobotics/util/backoff"
 )
 
 // Config configures the tptaddr dialer controller.
@@ -19,6 +20,9 @@ import (
 // DialTptAddr directives.
 type Config struct {
 	unknownFields []byte
+	// DialBackoff is the dial backoff configuration.
+	// If unset, defaults to reasonable defaults.
+	DialBackoff *backoff.Backoff `protobuf:"bytes,1,opt,name=dial_backoff,json=dialBackoff,proto3" json:"dialBackoff,omitempty"`
 }
 
 func (x *Config) Reset() {
@@ -27,11 +31,21 @@ func (x *Config) Reset() {
 
 func (*Config) ProtoMessage() {}
 
+func (x *Config) GetDialBackoff() *backoff.Backoff {
+	if x != nil {
+		return x.DialBackoff
+	}
+	return nil
+}
+
 func (m *Config) CloneVT() *Config {
 	if m == nil {
 		return (*Config)(nil)
 	}
 	r := new(Config)
+	if rhs := m.DialBackoff; rhs != nil {
+		r.DialBackoff = rhs.CloneVT()
+	}
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = make([]byte, len(m.unknownFields))
 		copy(r.unknownFields, m.unknownFields)
@@ -47,6 +61,9 @@ func (this *Config) EqualVT(that *Config) bool {
 	if this == that {
 		return true
 	} else if this == nil || that == nil {
+		return false
+	}
+	if !this.DialBackoff.EqualVT(that.DialBackoff) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -67,6 +84,12 @@ func (x *Config) MarshalProtoJSON(s *json.MarshalState) {
 		return
 	}
 	s.WriteObjectStart()
+	var wroteField bool
+	if x.DialBackoff != nil || s.HasField("dialBackoff") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("dialBackoff")
+		x.DialBackoff.MarshalProtoJSON(s.WithField("dialBackoff"))
+	}
 	s.WriteObjectEnd()
 }
 
@@ -80,6 +103,19 @@ func (x *Config) UnmarshalProtoJSON(s *json.UnmarshalState) {
 	if s.ReadNil() {
 		return
 	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "dial_backoff", "dialBackoff":
+			if s.ReadNil() {
+				x.DialBackoff = nil
+				return
+			}
+			x.DialBackoff = &backoff.Backoff{}
+			x.DialBackoff.UnmarshalProtoJSON(s.WithField("dial_backoff", true))
+		}
+	})
 }
 
 // UnmarshalJSON unmarshals the Config from JSON.
@@ -117,6 +153,16 @@ func (m *Config) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
 	}
+	if m.DialBackoff != nil {
+		size, err := m.DialBackoff.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0xa
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -126,6 +172,10 @@ func (m *Config) SizeVT() (n int) {
 	}
 	var l int
 	_ = l
+	if m.DialBackoff != nil {
+		l = m.DialBackoff.SizeVT()
+		n += 1 + l + protobuf_go_lite.SizeOfVarint(uint64(l))
+	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -133,6 +183,10 @@ func (m *Config) SizeVT() (n int) {
 func (x *Config) MarshalProtoText() string {
 	var sb strings.Builder
 	sb.WriteString("Config { ")
+	if x.DialBackoff != nil {
+		sb.WriteString(" dial_backoff: ")
+		sb.WriteString(x.DialBackoff.MarshalProtoText())
+	}
 	sb.WriteString("}")
 	return sb.String()
 }
@@ -168,6 +222,42 @@ func (m *Config) UnmarshalVT(dAtA []byte) error {
 			return fmt.Errorf("proto: Config: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DialBackoff", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protobuf_go_lite.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.DialBackoff == nil {
+				m.DialBackoff = &backoff.Backoff{}
+			}
+			if err := m.DialBackoff.UnmarshalVT(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
