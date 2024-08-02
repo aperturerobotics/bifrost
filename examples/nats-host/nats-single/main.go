@@ -5,7 +5,7 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 

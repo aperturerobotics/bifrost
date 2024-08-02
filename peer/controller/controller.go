@@ -6,7 +6,7 @@ import (
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	"github.com/sirupsen/logrus"
 )
 

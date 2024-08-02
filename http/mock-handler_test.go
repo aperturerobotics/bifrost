@@ -9,7 +9,7 @@ import (
 
 	"github.com/aperturerobotics/bifrost/testbed"
 	"github.com/aperturerobotics/controllerbus/controller"
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 )
 
 var mockBody = []byte("hello world")

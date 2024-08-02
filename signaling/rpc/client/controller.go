@@ -12,7 +12,7 @@ import (
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/aperturerobotics/util/ccontainer"
 	"github.com/aperturerobotics/util/keyed"
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	cbackoff "github.com/cenkalti/backoff"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"

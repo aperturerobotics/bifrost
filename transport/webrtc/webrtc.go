@@ -16,7 +16,7 @@ import (
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/util/broadcast"
 	"github.com/aperturerobotics/util/keyed"
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	cbackoff "github.com/cenkalti/backoff"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	p2ptls "github.com/libp2p/go-libp2p/p2p/security/tls"

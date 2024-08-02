@@ -12,7 +12,7 @@ import (
 	transport_controller "github.com/aperturerobotics/bifrost/transport/controller"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/sirupsen/logrus"
 )

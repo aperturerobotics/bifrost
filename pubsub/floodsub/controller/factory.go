@@ -10,7 +10,7 @@ import (
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/config"
 	"github.com/aperturerobotics/controllerbus/controller"
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	"github.com/sirupsen/logrus"
 )
 

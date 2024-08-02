@@ -2,7 +2,7 @@ package nats_controller
 
 import (
 	pubsub_controller "github.com/aperturerobotics/bifrost/pubsub/controller"
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 )
 
 // Version is the version of the controller implementation.

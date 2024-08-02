@@ -15,7 +15,7 @@ import (
 	"github.com/aperturerobotics/bifrost/transport/inproc"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/starpc/echo"
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )

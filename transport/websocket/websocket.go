@@ -13,7 +13,7 @@ import (
 	transport_quic "github.com/aperturerobotics/bifrost/transport/common/quic"
 	"github.com/aperturerobotics/bifrost/util/saddr"
 	httplog "github.com/aperturerobotics/util/httplog"
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/quic-go/quic-go"
 	"github.com/sirupsen/logrus"

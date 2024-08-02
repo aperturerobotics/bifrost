@@ -10,7 +10,7 @@ import (
 	"github.com/aperturerobotics/bifrost/tptaddr"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	"golang.org/x/exp/slices"
 )
 
