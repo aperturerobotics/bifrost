@@ -43,6 +43,9 @@ func (o *dialTptAddrResolver) Resolve(ctx context.Context, handler directive.Res
 		// self dial
 		return nil
 	}
+	if err := destPeerID.Validate(); err != nil {
+		return err
+	}
 
 	dialerOpts := o.dir.DialTptAddrDialerOpts()
 	transportID, dialAddr, err := tptaddr.ParseTptAddr(dialerOpts.GetAddress())

@@ -5,7 +5,6 @@ import (
 
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/peer"
-	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/aperturerobotics/bifrost/transport/common/dialer"
 	"github.com/aperturerobotics/util/ccontainer"
 	"github.com/aperturerobotics/util/keyed"
@@ -49,7 +48,7 @@ func (l *linkDialer) executeLinkDialer(
 
 	tptDialer, ok := tpt.(dialer.TransportDialer)
 	if !ok {
-		return transport.ErrNotTransportDialer
+		return dialer.ErrNotTransportDialer
 	}
 
 	dialOpts, err := l.opts.Await(ctx)

@@ -413,6 +413,37 @@ func (c *Controller) HandleLinkLost(lnk link.Link) {
 	})
 }
 
+// DialPeerAddr pushes a new dialer dialing a peer at an address.
+// Waits for the transport to be constructed.
+// Waits for the link to be established and returns the link.
+// If the transport is not a TransportDialer, returns ErrNotTransportDialer.
+func (c *Controller) DialPeerAddr(ctx context.Context, peerID peer.ID, opts *dialer.DialerOpts) (link.Link, error) {
+	if err := opts.Validate(); err != nil {
+		return nil, err
+	}
+	if err := peerID.Validate(); err != nil {
+		return nil, err
+	}
+
+	tpt, err := c.GetTransport(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	tptDialer, ok := tpt.(dialer.TransportDialer)
+	if !ok {
+		return nil, dialer.ErrNotTransportDialer
+	}
+	_ = tptDialer
+
+	ref, dial, _ := c.linkDialers.AddKeyRef(linkDialerKey{peerID: peerID, dialAddress: opts.GetAddress()})
+	defer ref.Release()
+
+	_ = dial.opts.SetResult(opts, nil)
+
+	return dial.lnk.WaitValue(ctx, nil)
+}
+
 // flushEstablishedLink closes an established link and cleans it up.
 // mtx is locked by caller
 func (c *Controller) flushEstablishedLink(el *establishedLink, hasNextLink bool) {
