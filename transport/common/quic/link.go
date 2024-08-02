@@ -132,20 +132,25 @@ func (l *Link) RemoteAddr() net.Addr {
 
 // OpenStream opens a stream on the link, with the given parameters.
 func (l *Link) OpenStream(opts stream.OpenOpts) (stream.Stream, error) {
-	return l.sess.OpenStreamSync(l.ctx)
+	// return l.sess.OpenStreamSync(l.ctx)
+
+	// OpenStream returns an error if we hit the stream limit.
+	// it is better to return an error and backoff / know something is wrong,
+	// than wait forever (potentially) while we are at the cap.
+	return l.sess.OpenStream()
 }
 
 // AcceptStream accepts a stream from the link.
 func (l *Link) AcceptStream() (stream.Stream, stream.OpenOpts, error) {
 	qstream, err := l.sess.AcceptStream(l.ctx)
-	if err != nil {
-		select {
-		case <-l.ctx.Done():
-			// detect link shutdown, avoid logging unnecessary errors
-			err = context.Canceled
-		default:
+	if l.ctx.Err() != nil {
+		// detect link shutdown, avoid logging unnecessary errors
+		if qstream != nil {
+			_ = qstream.Close()
 		}
-
+		return nil, stream.OpenOpts{}, context.Canceled
+	}
+	if err != nil {
 		qe, qeOk := err.(*quic.ApplicationError)
 		if qeOk && qe != nil {
 			// remote shutdown of connection normally
