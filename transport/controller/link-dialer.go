@@ -65,6 +65,9 @@ func (l *linkDialer) executeLinkDialer(
 	if ctx.Err() != nil {
 		return context.Canceled
 	}
+	if err != nil {
+		return err
+	}
 
 	// success
 	l.lnk.SetValue(lnk)
