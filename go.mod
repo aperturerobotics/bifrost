@@ -28,6 +28,7 @@ replace (
 
 require (
 	filippo.io/edwards25519 v1.1.1-0.20231210192602-a7dfd8e4e6b4
+	github.com/blang/semver/v4 v4.0.0 // latest
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/klauspost/compress v1.17.9
 	github.com/libp2p/go-libp2p v0.35.4
@@ -41,7 +42,7 @@ require (
 	github.com/pion/sdp/v3 v3.0.9
 	github.com/pion/webrtc/v4 v4.0.0-beta.26
 	github.com/pkg/errors v0.9.1
-	github.com/quic-go/quic-go v0.45.1
+	github.com/quic-go/quic-go v0.45.2 // latest
 	github.com/sasha-s/go-deadlock v0.3.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/urfave/cli/v2 v2.27.3
@@ -51,8 +52,6 @@ require (
 	gonum.org/v1/gonum v0.15.0
 	nhooyr.io/websocket v1.8.11 // master
 )
-
-require github.com/blang/semver/v4 v4.0.0
 
 require (
 	github.com/aperturerobotics/json-iterator-lite v1.0.0 // indirect
