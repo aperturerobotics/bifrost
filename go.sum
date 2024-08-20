@@ -8,6 +8,8 @@ github.com/aperturerobotics/common v0.18.4 h1:3P95nGGDZLzOuoI9EViOVJEZc4gzhAXza0
 github.com/aperturerobotics/common v0.18.4/go.mod h1:qLWqm2T9MQmxDtE1ddNdWCHnUj1Z66GzNxllkZ3Fj7Y=
 github.com/aperturerobotics/controllerbus v0.47.3 h1:aAV3V2AtNB9QPZLVt0EXFrDtx7b6wJY1Dn6tvDqTSBQ=
 github.com/aperturerobotics/controllerbus v0.47.3/go.mod h1:xC8DSXk0J5Q/Cc5G4MxAlseJEuJpoeuld6R44lYw074=
+github.com/aperturerobotics/controllerbus v0.47.4 h1:VlkHRvklAG4eqMbAeuFBwbTBw8akc1UjgCh6F2jxLE4=
+github.com/aperturerobotics/controllerbus v0.47.4/go.mod h1:yX/aocALwM/2itXHNxMBTdLuEnn59Sy0lnlBGu7pgto=
 github.com/aperturerobotics/entitygraph v0.10.0 h1:fotjtv+XWqWA6LbIrGsjiP/FLa/QdROfQ1/URAH2zhE=
 github.com/aperturerobotics/entitygraph v0.10.0/go.mod h1:wg3nnABfmWPasK0FZzwU2lSq3CD6bvDHf8eEqHrDuBc=
 github.com/aperturerobotics/go-libp2p v0.33.1-0.20240511223728-e0b67c111765 h1:KTSK6vPrh6gaT6CH0G2yAnmlcdjsc9Bk5JCqSeePrUw=
@@ -30,6 +32,8 @@ github.com/aperturerobotics/starpc v0.33.9 h1:+9NJFlk3Y/Th9eHggsEGEg0yfGhV4cTdKJ
 github.com/aperturerobotics/starpc v0.33.9/go.mod h1:TXShuOcrVFw4d8RCmN/h/el14Q4hz2Nbuco/F8z8P5Y=
 github.com/aperturerobotics/util v1.25.7 h1:e9fdF3W/E7IHdl7YAJC0jjuxGph7yzE3a5zZoLFJ3G0=
 github.com/aperturerobotics/util v1.25.7/go.mod h1:G5ybyxaL62Rdv0K5ZGqu+D1NfqlZCLYPQhdfiYhxlAg=
+github.com/aperturerobotics/util v1.25.8 h1:ERuWwwrtm1qKO/uIQOIlprmnVd5WRtm8YhDjlpJ0yV0=
+github.com/aperturerobotics/util v1.25.8/go.mod h1:Dx1gWoi21JgnWRXfMWjyhInQjulW3OfrcwEVwrxarQQ=
 github.com/blang/semver/v4 v4.0.0 h1:1PFHFE6yCCTv8C1TeyNNarDzntLi7wMI5i/pzqYIsAM=
 github.com/blang/semver/v4 v4.0.0/go.mod h1:IbckMUScFkM3pff0VJDNKRiT6TG/YpiHIM2yvyW5YoQ=
 github.com/cenkalti/backoff v2.2.1+incompatible h1:tNowT99t7UNflLxfYYSlKYsBpXdEet03Pg2g16Swow4=
