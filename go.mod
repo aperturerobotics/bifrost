@@ -4,11 +4,11 @@ go 1.22
 
 require (
 	github.com/aperturerobotics/common v0.18.4 // latest
-	github.com/aperturerobotics/controllerbus v0.47.3 // latest
+	github.com/aperturerobotics/controllerbus v0.47.4 // latest
 	github.com/aperturerobotics/entitygraph v0.10.0 // latest
 	github.com/aperturerobotics/protobuf-go-lite v0.6.5 // latest
 	github.com/aperturerobotics/starpc v0.33.9 // latest
-	github.com/aperturerobotics/util v1.25.7 // latest
+	github.com/aperturerobotics/util v1.25.8 // latest
 )
 
 // aperture: use compatibility forks
