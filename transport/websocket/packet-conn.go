@@ -6,8 +6,8 @@ import (
 	"net"
 	"time"
 
-	"github.com/pkg/errors"
 	websocket "github.com/coder/websocket"
+	"github.com/pkg/errors"
 )
 
 // PacketConn implements the PacketConn interface with a websocket.
