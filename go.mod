@@ -30,6 +30,7 @@ require (
 	filippo.io/edwards25519 v1.1.1-0.20231210192602-a7dfd8e4e6b4
 	github.com/blang/semver/v4 v4.0.0 // latest
 	github.com/cenkalti/backoff v2.2.1+incompatible
+	github.com/coder/websocket v1.8.13-0.20240815203528-e46e0200618d // master
 	github.com/klauspost/compress v1.17.9
 	github.com/libp2p/go-libp2p v0.36.2
 	github.com/mr-tron/base58 v1.2.0
@@ -50,7 +51,6 @@ require (
 	golang.org/x/crypto v0.26.0
 	golang.org/x/exp v0.0.0-20240808152545-0cdaa3abc0fa
 	gonum.org/v1/gonum v0.15.1
-	nhooyr.io/websocket v1.8.17 // master
 )
 
 require (
@@ -106,4 +106,5 @@ require (
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	lukechampine.com/blake3 v1.2.1 // indirect
+	nhooyr.io/websocket v1.8.17 // indirect
 )
