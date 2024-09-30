@@ -96,7 +96,6 @@ func (c *HTTPHandlerController) HandleDirective(
 		return directive.R(
 			directive.NewRefCountResolverWithXfrm(
 				c.rc,
-				true,
 				func(ctx context.Context, val http.Handler) (directive.Value, error) {
 					if val == nil {
 						return nil, nil

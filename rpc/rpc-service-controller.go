@@ -118,7 +118,6 @@ func (c *RpcServiceController) HandleDirective(
 		return directive.R(
 			directive.NewRefCountResolverWithXfrm(
 				c.rc,
-				true,
 				func(ctx context.Context, val srpc.Invoker) (directive.Value, error) {
 					if val == nil {
 						return nil, nil
