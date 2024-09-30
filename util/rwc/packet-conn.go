@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/binary"
 	"io"
+	"math"
 	"net"
 	"sync"
 	"time"
@@ -133,18 +134,26 @@ func (p *PacketConn) WriteTo(pkt []byte, addr net.Addr) (n int, err error) {
 		}
 	}
 
-	msgLen := uint32(len(pkt))
-	buf := p.getArenaBuf(int(msgLen) + 4)
-	binary.LittleEndian.PutUint32(buf, msgLen)
+	pktLen := len(pkt)
+	if pktLen > math.MaxUint32 {
+		return 0, errors.New("message too large: exceeds maximum uint32 value")
+	}
+
+	buf := p.getArenaBuf(pktLen + 4)
+	binary.LittleEndian.PutUint32(buf, uint32(pktLen))
+
 	copy(buf[4:], pkt)
+
 	n, err = p.rwc.Write(buf)
 	if err == nil && n < len(buf) {
 		err = errors.Errorf("expected conn to write %d bytes in one call but wrote %d", len(buf), n)
 	}
+
 	p.ar.Put(&buf)
 	if err != nil {
 		return n, err
 	}
+
 	return n - 4, nil
 }
 
