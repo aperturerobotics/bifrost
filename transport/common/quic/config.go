@@ -62,7 +62,7 @@ func BuildQuicConfig(le *logrus.Entry, opts *Opts) *quic.Config {
 		// MaxStreamReceiveWindow:     10 * (1 << 20), // 10 MB
 		// MaxConnectionReceiveWindow: 15 * (1 << 20), // 15 MB
 
-		Versions: []quic.VersionNumber{quic.Version2}, // {quic.Version1},
+		Versions: []quic.Version{quic.Version2}, // {quic.Version1},
 	}
 }
 
