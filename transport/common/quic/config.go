@@ -23,7 +23,7 @@ func BuildQuicConfig(le *logrus.Entry, opts *Opts) *quic.Config {
 	}
 
 	maxIncStreams := 100000
-	if mis := opts.GetMaxIncomingStreams(); mis <= 0 {
+	if mis := opts.GetMaxIncomingStreams(); mis > 0 {
 		maxIncStreams = int(mis)
 	}
 
