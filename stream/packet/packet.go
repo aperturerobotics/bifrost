@@ -3,6 +3,7 @@ package stream_packet
 import (
 	"encoding/binary"
 	"io"
+	"math"
 	"sync"
 
 	protobuf_go_lite "github.com/aperturerobotics/protobuf-go-lite"
@@ -37,7 +38,13 @@ func (s *Session) SendMsg(msg protobuf_go_lite.Message) error {
 
 	pktBuf := make([]byte, len(data)+4)
 	copy(pktBuf[4:], data)
-	msgLen := uint32(len(data))
+
+	dataLen := len(data)
+	if dataLen > math.MaxUint32 {
+		return errors.New("message too large: exceeds maximum uint32 value")
+	}
+
+	msgLen := uint32(dataLen)
 	binary.LittleEndian.PutUint32(pktBuf, msgLen)
 
 	s.sendMtx.Lock()
