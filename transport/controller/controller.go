@@ -25,7 +25,7 @@ import (
 var streamEstablishTimeout = time.Second * 5
 
 // streamEstablishMaxPacketSize is the maximum stream establish header size
-var streamEstablishMaxPacketSize = 100000
+var streamEstablishMaxPacketSize uint64 = 100000
 
 // Constructor constructs a transport with common parameters.
 type Constructor func(

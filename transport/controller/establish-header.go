@@ -2,6 +2,7 @@ package transport_controller
 
 import (
 	"io"
+	"math"
 
 	"github.com/aperturerobotics/bifrost/protocol"
 	protobuf_go_lite "github.com/aperturerobotics/protobuf-go-lite"
@@ -16,7 +17,8 @@ func NewStreamEstablish(protocolID protocol.ID) *StreamEstablish {
 func marshalStreamEstablishHeader(msg *StreamEstablish) []byte {
 	datLen := msg.SizeVT()
 	outBuf := make([]byte, 0, datLen+9)
-	outBuf = protobuf_go_lite.AppendVarint(outBuf, uint64(datLen))
+	// Ignore gosec linter here: SizeVT will never exceed uint64 max.
+	outBuf = protobuf_go_lite.AppendVarint(outBuf, uint64(datLen)) //nolint:gosec
 	prefixLen := len(outBuf)
 	outBuf = outBuf[:len(outBuf)+datLen]
 	msgFinalLen, _ := msg.MarshalToVT(outBuf[prefixLen:])
@@ -55,8 +57,12 @@ func readStreamEstablishHeader(r io.Reader) (*StreamEstablish, error) {
 		headerLenBytes = len(b)
 	}
 
+	if headerLen > math.MaxUint32 {
+		return nil, errors.New("header too large: exceeds maximum uint32 value")
+	}
+
 	// header len is at most 100,000 bytes
-	if int(headerLen) > streamEstablishMaxPacketSize || headerLen == 0 {
+	if headerLen > streamEstablishMaxPacketSize || headerLen == 0 {
 		return nil, errors.Errorf(
 			"stream establish header length invalid: %d (expected <= %d)",
 			headerLen,
