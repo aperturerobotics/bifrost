@@ -40,7 +40,7 @@ func (s *Session) SendMsg(msg protobuf_go_lite.Message) error {
 	copy(pktBuf[4:], data)
 
 	dataLen := len(data)
-	if dataLen > math.MaxUint32 {
+	if dataLen > math.MaxInt32 {
 		return errors.New("message too large: exceeds maximum uint32 value")
 	}
 

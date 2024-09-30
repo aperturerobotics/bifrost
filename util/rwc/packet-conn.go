@@ -135,7 +135,7 @@ func (p *PacketConn) WriteTo(pkt []byte, addr net.Addr) (n int, err error) {
 	}
 
 	pktLen := len(pkt)
-	if pktLen > math.MaxUint32 {
+	if pktLen > math.MaxInt32 {
 		return 0, errors.New("message too large: exceeds maximum uint32 value")
 	}
 

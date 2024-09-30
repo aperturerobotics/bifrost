@@ -57,7 +57,8 @@ func readStreamEstablishHeader(r io.Reader) (*StreamEstablish, error) {
 		headerLenBytes = len(b)
 	}
 
-	if headerLen > math.MaxUint32 {
+	// use MaxInt32 for compat with 32-bit systems
+	if headerLen > math.MaxInt32 {
 		return nil, errors.New("header too large: exceeds maximum uint32 value")
 	}
 
