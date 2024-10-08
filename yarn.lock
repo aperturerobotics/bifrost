@@ -130,6 +130,19 @@
     it-pushable "^3.2.3"
     uint8arraylist "^2.4.8"
 
+"@chainsafe/libp2p-yamux@^7.0.1":
+  version "7.0.1"
+  resolved "https://registry.yarnpkg.com/@chainsafe/libp2p-yamux/-/libp2p-yamux-7.0.1.tgz#ce938a9bcec90813f8c3e2f6b05287fc5e63204b"
+  integrity sha512-949MI0Ll0AsYq1gUETZmL/MijwX0jilOQ1i4s8wDEXGiMhuPWWiMsPgEnX6n+VzFmTrfNYyGaaJj5/MqxV9y/g==
+  dependencies:
+    "@libp2p/interface" "^2.0.0"
+    "@libp2p/utils" "^6.0.0"
+    get-iterator "^2.0.1"
+    it-foreach "^2.0.6"
+    it-pushable "^3.2.3"
+    it-stream-types "^2.0.1"
+    uint8arraylist "^2.4.8"
+
 "@chainsafe/netmask@^2.0.0":
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/@chainsafe/netmask/-/netmask-2.0.0.tgz#0d4a75f47919f65011da4327a3845c9661f1038a"
@@ -366,10 +379,36 @@
     uint8arraylist "^2.4.8"
     uint8arrays "^5.1.0"
 
+"@libp2p/crypto@^5.0.4":
+  version "5.0.4"
+  resolved "https://registry.yarnpkg.com/@libp2p/crypto/-/crypto-5.0.4.tgz#26f24025f3dd2be959360c6b58c94ccadb04ed63"
+  integrity sha512-v5xsngOlDu8JP3GQDvK+2YYzTELl7/aPfXPbIzKEcy7ON2hu79t1BZMuavjPsr+WWIPNg5yKst6IJfRilzwXRQ==
+  dependencies:
+    "@libp2p/interface" "^2.1.2"
+    "@noble/curves" "^1.4.0"
+    "@noble/hashes" "^1.4.0"
+    asn1js "^3.0.5"
+    multiformats "^13.1.0"
+    protons-runtime "^5.4.0"
+    uint8arraylist "^2.4.8"
+    uint8arrays "^5.1.0"
+
 "@libp2p/interface@^1.1.3", "@libp2p/interface@^1.3.1", "@libp2p/interface@^1.7.0":
   version "1.7.0"
   resolved "https://registry.yarnpkg.com/@libp2p/interface/-/interface-1.7.0.tgz#b75b6032a6b0d0d5a13e551dcf4d481a8ca9a88f"
   integrity sha512-/zFyaIaIGW0aihhsH7/93vQdpWInUzFocxF11RO/029Y6h0SVjs24HHbils+DqaFDTqN+L7oNlBx2rM2MnmTjA==
+  dependencies:
+    "@multiformats/multiaddr" "^12.2.3"
+    it-pushable "^3.2.3"
+    it-stream-types "^2.0.1"
+    multiformats "^13.1.0"
+    progress-events "^1.0.0"
+    uint8arraylist "^2.4.8"
+
+"@libp2p/interface@^2.0.0", "@libp2p/interface@^2.1.2":
+  version "2.1.2"
+  resolved "https://registry.yarnpkg.com/@libp2p/interface/-/interface-2.1.2.tgz#7b38047a7d2d35a6a4e0f0f22fbdeeec98b85321"
+  integrity sha512-uD4NapC+1qGX7RmgC1aehQm3pMs1MpO1DwuhUlAo1M6CyNxfs1Ha9jhg2T+G4u4CAJM6wffZTyPGnKnrR+M8Fw==
   dependencies:
     "@multiformats/multiaddr" "^12.2.3"
     it-pushable "^3.2.3"
@@ -386,6 +425,17 @@
     "@libp2p/interface" "^1.7.0"
     "@multiformats/multiaddr" "^12.2.3"
     interface-datastore "^8.2.11"
+    multiformats "^13.1.0"
+    weald "^1.0.2"
+
+"@libp2p/logger@^5.1.0":
+  version "5.1.0"
+  resolved "https://registry.yarnpkg.com/@libp2p/logger/-/logger-5.1.0.tgz#d580e2ee89e3f4224129cc12d727b45494aad6e5"
+  integrity sha512-hmkk1TONYRe+kKs5QTxkayIfj9qicp8hcrJ1Ac9QfTW/jdaUlnqd1uop4QcOD5GV6qNMq+v1qaMFWFYSN9RcPA==
+  dependencies:
+    "@libp2p/interface" "^2.1.2"
+    "@multiformats/multiaddr" "^12.2.3"
+    interface-datastore "^8.3.0"
     multiformats "^13.1.0"
     weald "^1.0.2"
 
@@ -406,6 +456,34 @@
     delay "^6.0.0"
     get-iterator "^2.0.1"
     is-loopback-addr "^2.0.2"
+    it-pushable "^3.2.3"
+    it-stream-types "^2.0.1"
+    murmurhash3js-revisited "^3.0.0"
+    netmask "^2.0.2"
+    p-defer "^4.0.1"
+    race-event "^1.3.0"
+    race-signal "^1.0.2"
+    uint8arraylist "^2.4.8"
+    uint8arrays "^5.1.0"
+
+"@libp2p/utils@^6.0.0":
+  version "6.1.0"
+  resolved "https://registry.yarnpkg.com/@libp2p/utils/-/utils-6.1.0.tgz#5ccece78a38bec2c2d759136ccc78494838c2b87"
+  integrity sha512-pxuUI8QgeS06bMZRpy0JnACPhrrCJS5/rVNTcnQK8lV1ag2bjwkGG/359AwjeEolzYQeLrmmqnZyawd1Y74wpw==
+  dependencies:
+    "@chainsafe/is-ip" "^2.0.2"
+    "@libp2p/crypto" "^5.0.4"
+    "@libp2p/interface" "^2.1.2"
+    "@libp2p/logger" "^5.1.0"
+    "@multiformats/multiaddr" "^12.2.3"
+    "@sindresorhus/fnv1a" "^3.1.0"
+    "@types/murmurhash3js-revisited" "^3.0.3"
+    any-signal "^4.1.1"
+    delay "^6.0.0"
+    get-iterator "^2.0.1"
+    is-loopback-addr "^2.0.2"
+    it-foreach "^2.1.1"
+    it-pipe "^3.0.1"
     it-pushable "^3.2.3"
     it-stream-types "^2.0.1"
     murmurhash3js-revisited "^3.0.0"
@@ -1601,7 +1679,7 @@ ini@^1.3.4:
   resolved "https://registry.yarnpkg.com/ini/-/ini-1.3.8.tgz#a29da425b48806f34767a4efce397269af28432c"
   integrity sha512-JV/yugV2uzW5iMRSiZAyDtQd+nxtUnjeLt0acNdw98kKLrvuRVyB80tsREOE7yvGVgalhZ6RNXCmEHkUKBKxew==
 
-interface-datastore@^8.2.11:
+interface-datastore@^8.2.11, interface-datastore@^8.3.0:
   version "8.3.1"
   resolved "https://registry.yarnpkg.com/interface-datastore/-/interface-datastore-8.3.1.tgz#c793f990c5cf078a24a8a2ded13f7e2099a2a282"
   integrity sha512-3r0ETmHIi6HmvM5sc09QQiCD3gUfwtEM/AAChOyAd/UAKT69uk8LXfTSUBufbUIO/dU65Vj8nb9O6QjwW8vDSQ==
@@ -1678,7 +1756,7 @@ it-first@^3.0.6:
   resolved "https://registry.yarnpkg.com/it-first/-/it-first-3.0.6.tgz#f532f0f36fe9bf0c291e0162b9d3375d59fe8f05"
   integrity sha512-ExIewyK9kXKNAplg2GMeWfgjUcfC1FnUXz/RPfAvIXby+w7U4b3//5Lic0NV03gXT8O/isj5Nmp6KiY0d45pIQ==
 
-it-foreach@^2.0.6:
+it-foreach@^2.0.6, it-foreach@^2.1.1:
   version "2.1.1"
   resolved "https://registry.yarnpkg.com/it-foreach/-/it-foreach-2.1.1.tgz#93e311a1057dd0ff7631f914dc9c2c963f27a4b8"
   integrity sha512-ID4Gxnavk/LVQLQESAQ9hR6dR63Ih6X+8VdxEktX8rpz2dCGAbZpey/eljTNbMfV2UKXHiu6UsneoNBZuac97g==
@@ -1713,7 +1791,7 @@ it-pushable@^3.1.2, it-pushable@^3.2.3:
   dependencies:
     p-defer "^4.0.0"
 
-it-stream-types@^2.0.1:
+it-stream-types@^2.0.1, it-stream-types@^2.0.2:
   version "2.0.2"
   resolved "https://registry.yarnpkg.com/it-stream-types/-/it-stream-types-2.0.2.tgz#60bbace90096796b4e6cc3bfab99cf9f2b86c152"
   integrity sha512-Rz/DEZ6Byn/r9+/SBCuJhpPATDF9D+dz5pbgSUyBsCDtza6wtNATrz/jz1gDyNanC3XdLboriHnOC925bZRBww==
@@ -2274,7 +2352,7 @@ stackback@0.0.2:
   resolved "https://registry.yarnpkg.com/stackback/-/stackback-0.0.2.tgz#1ac8a0d9483848d1695e418b6d031a3c3ce68e3b"
   integrity sha512-1XMJE5fQo1jGH6Y/7ebnwPOBEkIEnT4QF32d5R1+VXdXveM0IBMJt8zfaxX1P3QhVwrYe+576+jkANtSS2mBbw==
 
-starpc@^0.33.0, starpc@^0.33.10:
+starpc@^0.33.10:
   version "0.33.11"
   resolved "https://registry.yarnpkg.com/starpc/-/starpc-0.33.11.tgz#2689d9d99b1a8b99dade35ee6c233b66410485d5"
   integrity sha512-MAp/JnLKaav0Vj0YI0ehXSC66fvPiezDoMRAfNR8ANdWNqZdHigLCAfn53WqBbUhs1w6G5mVcCxW4dUlhF2lqg==
@@ -2290,6 +2368,25 @@ starpc@^0.33.0, starpc@^0.33.10:
     it-pipe "^3.0.1"
     it-pushable "^3.2.3"
     it-stream-types "^2.0.1"
+    uint8arraylist "^2.4.7"
+    ws "^8.17.0"
+
+starpc@^0.34.0:
+  version "0.34.0"
+  resolved "https://registry.yarnpkg.com/starpc/-/starpc-0.34.0.tgz#a551132a62ebb843fbaf6c007d9b9a94e5cce986"
+  integrity sha512-Sb9Toik3Y42ACa8dVqj58DJWjqDrKIq6ZpoLWw8rX3EkSn/ewIySurHFX0tVkCL9JdBBrfqDhl2Sa1N28PiagQ==
+  dependencies:
+    "@aptre/it-ws" "^1.0.1"
+    "@aptre/protobuf-es-lite" "^0.4.6"
+    "@chainsafe/libp2p-yamux" "^7.0.1"
+    "@libp2p/interface" "^2.1.2"
+    "@libp2p/logger" "^5.1.0"
+    event-iterator "^2.0.0"
+    isomorphic-ws "^5.0.0"
+    it-first "^3.0.6"
+    it-pipe "^3.0.1"
+    it-pushable "^3.2.3"
+    it-stream-types "^2.0.2"
     uint8arraylist "^2.4.7"
     ws "^8.17.0"
 
