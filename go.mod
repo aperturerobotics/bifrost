@@ -5,9 +5,9 @@ go 1.23
 toolchain go1.23.2
 
 require (
-	github.com/aperturerobotics/common v0.18.7 // latest
+	github.com/aperturerobotics/common v0.18.8 // latest
 	github.com/aperturerobotics/controllerbus v0.47.8 // latest
-	github.com/aperturerobotics/entitygraph v0.10.0 // latest
+	github.com/aperturerobotics/entitygraph v0.10.1 // latest
 	github.com/aperturerobotics/protobuf-go-lite v0.7.0 // latest
 	github.com/aperturerobotics/starpc v0.35.0 // latest
 	github.com/aperturerobotics/util v1.25.10 // latest
@@ -43,7 +43,7 @@ require (
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pion/datachannel v1.5.9
 	github.com/pion/sdp/v3 v3.0.9
-	github.com/pion/webrtc/v4 v4.0.0-beta.34
+	github.com/pion/webrtc/v4 v4.0.0
 	github.com/pkg/errors v0.9.1
 	github.com/quic-go/quic-go v0.47.0 // latest
 	github.com/sasha-s/go-deadlock v0.3.5
