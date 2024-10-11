@@ -6,10 +6,10 @@ toolchain go1.23.2
 
 require (
 	github.com/aperturerobotics/common v0.18.7 // latest
-	github.com/aperturerobotics/controllerbus v0.47.7 // latest
+	github.com/aperturerobotics/controllerbus v0.47.8 // latest
 	github.com/aperturerobotics/entitygraph v0.10.0 // latest
 	github.com/aperturerobotics/protobuf-go-lite v0.7.0 // latest
-	github.com/aperturerobotics/starpc v0.34.0 // latest
+	github.com/aperturerobotics/starpc v0.35.0 // latest
 	github.com/aperturerobotics/util v1.25.10 // latest
 )
 
@@ -51,7 +51,7 @@ require (
 	github.com/urfave/cli/v2 v2.27.4
 	github.com/zeebo/blake3 v0.2.4
 	golang.org/x/crypto v0.28.0
-	golang.org/x/exp v0.0.0-20241004190924-225e2abe05e6
+	golang.org/x/exp v0.0.0-20241009180824-f66d83c29e7c
 	gonum.org/v1/gonum v0.15.1
 )
 
