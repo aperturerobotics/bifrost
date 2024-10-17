@@ -9,8 +9,8 @@ require (
 	github.com/aperturerobotics/controllerbus v0.47.8 // latest
 	github.com/aperturerobotics/entitygraph v0.10.1 // latest
 	github.com/aperturerobotics/protobuf-go-lite v0.7.0 // latest
-	github.com/aperturerobotics/starpc v0.35.0 // latest
-	github.com/aperturerobotics/util v1.25.10 // latest
+	github.com/aperturerobotics/starpc v0.35.1 // latest
+	github.com/aperturerobotics/util v1.26.0 // latest
 )
 
 // aperture: use compatibility forks
@@ -33,22 +33,22 @@ require (
 	github.com/blang/semver/v4 v4.0.0 // latest
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/coder/websocket v1.8.13-0.20240919094401-cef8e11d00b0 // master
-	github.com/klauspost/compress v1.17.10
+	github.com/klauspost/compress v1.17.11
 	github.com/libp2p/go-libp2p v0.36.5
 	github.com/mr-tron/base58 v1.2.0
 	github.com/multiformats/go-multiaddr v0.13.0
-	github.com/nats-io/nats-server/v2 v2.10.21
+	github.com/nats-io/nats-server/v2 v2.10.22
 	github.com/nats-io/nats.go v1.37.0
 	github.com/nats-io/nkeys v0.4.7
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pion/datachannel v1.5.9
 	github.com/pion/sdp/v3 v3.0.9
-	github.com/pion/webrtc/v4 v4.0.0
+	github.com/pion/webrtc/v4 v4.0.1
 	github.com/pkg/errors v0.9.1
-	github.com/quic-go/quic-go v0.47.0 // latest
+	github.com/quic-go/quic-go v0.48.0 // latest
 	github.com/sasha-s/go-deadlock v0.3.5
 	github.com/sirupsen/logrus v1.9.3
-	github.com/urfave/cli/v2 v2.27.4
+	github.com/urfave/cli/v2 v2.27.5
 	github.com/zeebo/blake3 v0.2.4
 	golang.org/x/crypto v0.28.0
 	golang.org/x/exp v0.0.0-20241009180824-f66d83c29e7c
@@ -58,7 +58,7 @@ require (
 require (
 	github.com/aperturerobotics/json-iterator-lite v1.0.0 // indirect
 	github.com/cloudflare/circl v1.3.8 // indirect
-	github.com/cpuguy83/go-md2man/v2 v2.0.4 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.5 // indirect
 	github.com/davidlazar/go-crypto v0.0.0-20200604182044-b73af7476f6c // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
