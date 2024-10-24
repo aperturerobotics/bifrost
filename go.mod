@@ -34,7 +34,7 @@ require (
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/coder/websocket v1.8.13-0.20240919094401-cef8e11d00b0 // master
 	github.com/klauspost/compress v1.17.11
-	github.com/libp2p/go-libp2p v0.36.5
+	github.com/libp2p/go-libp2p v0.37.0
 	github.com/mr-tron/base58 v1.2.0
 	github.com/multiformats/go-multiaddr v0.13.0
 	github.com/nats-io/nats-server/v2 v2.10.22
@@ -45,7 +45,7 @@ require (
 	github.com/pion/sdp/v3 v3.0.9
 	github.com/pion/webrtc/v4 v4.0.1
 	github.com/pkg/errors v0.9.1
-	github.com/quic-go/quic-go v0.48.0 // latest
+	github.com/quic-go/quic-go v0.48.1 // latest
 	github.com/sasha-s/go-deadlock v0.3.5
 	github.com/sirupsen/logrus v1.9.3
 	github.com/urfave/cli/v2 v2.27.5
