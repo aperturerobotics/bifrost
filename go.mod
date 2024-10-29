@@ -5,12 +5,12 @@ go 1.23
 toolchain go1.23.2
 
 require (
-	github.com/aperturerobotics/common v0.18.8 // latest
-	github.com/aperturerobotics/controllerbus v0.47.8 // latest
+	github.com/aperturerobotics/common v0.19.1 // latest
+	github.com/aperturerobotics/controllerbus v0.48.0 // latest
 	github.com/aperturerobotics/entitygraph v0.10.1 // latest
-	github.com/aperturerobotics/protobuf-go-lite v0.7.0 // latest
-	github.com/aperturerobotics/starpc v0.35.1 // latest
-	github.com/aperturerobotics/util v1.26.0 // latest
+	github.com/aperturerobotics/protobuf-go-lite v0.8.0 // latest
+	github.com/aperturerobotics/starpc v0.35.2 // latest
+	github.com/aperturerobotics/util v1.26.1 // latest
 )
 
 // aperture: use compatibility forks
@@ -34,7 +34,7 @@ require (
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/coder/websocket v1.8.13-0.20240919094401-cef8e11d00b0 // master
 	github.com/klauspost/compress v1.17.11
-	github.com/libp2p/go-libp2p v0.36.5
+	github.com/libp2p/go-libp2p v0.37.0
 	github.com/mr-tron/base58 v1.2.0
 	github.com/multiformats/go-multiaddr v0.13.0
 	github.com/nats-io/nats-server/v2 v2.10.22
