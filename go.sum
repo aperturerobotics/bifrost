@@ -6,8 +6,8 @@ github.com/aperturerobotics/bifrost-nats-server/v2 v2.1.8-0.20221228081037-b7c2d
 github.com/aperturerobotics/bifrost-nats-server/v2 v2.1.8-0.20221228081037-b7c2df0c151f/go.mod h1:kIcZtLpq4UIZzOqduYLm1mYU1nuMBtN6XuDCtQ21QT8=
 github.com/aperturerobotics/common v0.19.1 h1:i5PqIcH7sZFmdwVPpotXQlsbDESD8mSGsFcjvzggTNs=
 github.com/aperturerobotics/common v0.19.1/go.mod h1:dBvVy6IqLEnPzPVZhL02d0z0oxxpNLXrq8txmUAHLzo=
-github.com/aperturerobotics/controllerbus v0.48.0 h1:UctVHF1QP+blLMZRttYpkedV/IQd9AVB+uQRrHEXALM=
-github.com/aperturerobotics/controllerbus v0.48.0/go.mod h1:QbQYhjB3eONkNAp6LzLhG9C0eX3AHMP/uRBKFjKbML4=
+github.com/aperturerobotics/controllerbus v0.48.1 h1:lLX0Q3t3HTwZkEZ0l+tFLvwj+8TWq7yL/UCLwiTAL9Y=
+github.com/aperturerobotics/controllerbus v0.48.1/go.mod h1:o7kO19f2QgTHKjWJ4Sk6nV0fIyYttoZ2dCuDiOiLZSU=
 github.com/aperturerobotics/entitygraph v0.10.1 h1:ShiCCeW4NtGo+TfMfP21mHCdvPoKW/1N27KXw4elGk0=
 github.com/aperturerobotics/entitygraph v0.10.1/go.mod h1:Cg1SNQFmTXo0TSfnouHrPZis2wgZSEgkpIyeld0loRg=
 github.com/aperturerobotics/go-libp2p v0.36.3-0.20241002070357-a2e1c3498dd3 h1:ccv8K5Q9zWO8patmC97DjSNU/1eMQ322dKbC1l9pLP4=
@@ -28,12 +28,12 @@ github.com/aperturerobotics/quic-go v0.48.2-0.20241029082227-fa76c393ee89 h1:MUX
 github.com/aperturerobotics/quic-go v0.48.2-0.20241029082227-fa76c393ee89/go.mod h1:vhhkHYq2i9lb0bOllqKhOdtg/3i7r4o/7zc8XI/T4lo=
 github.com/aperturerobotics/starpc v0.35.2 h1:ZoA5f4QuXQV2zYlrikE99js14DimZhp1PA7LEGjqQyQ=
 github.com/aperturerobotics/starpc v0.35.2/go.mod h1:+pq40XoDNQWsoi2HECCXSyn9RvM/jdSa4BVbSIG+fYA=
-github.com/aperturerobotics/util v1.26.1 h1:qP3aOgXyrkkgjgJ1CWJx9sx8lPd0f2dqkRelS9h7CLU=
-github.com/aperturerobotics/util v1.26.1/go.mod h1:wjh64quTQw1N5ZJzOwa+TMiIklAaOLvByNT432WSHUs=
+github.com/aperturerobotics/util v1.26.2 h1:PrBgJ3ydAwSD59o7s5zRfL+mbphIC6xo2Inor7/K+ok=
+github.com/aperturerobotics/util v1.26.2/go.mod h1:jp9+cf8cTlX5Jf0F9RlXmKtEw0yXC6gU92V9lXoZ74M=
 github.com/blang/semver/v4 v4.0.0 h1:1PFHFE6yCCTv8C1TeyNNarDzntLi7wMI5i/pzqYIsAM=
 github.com/blang/semver/v4 v4.0.0/go.mod h1:IbckMUScFkM3pff0VJDNKRiT6TG/YpiHIM2yvyW5YoQ=
-github.com/cenkalti/backoff v2.2.1+incompatible h1:tNowT99t7UNflLxfYYSlKYsBpXdEet03Pg2g16Swow4=
-github.com/cenkalti/backoff v2.2.1+incompatible/go.mod h1:90ReRw6GdpyfrHakVjL/QHaoyV4aDUVVkXQJJJ3NXXM=
+github.com/cenkalti/backoff/v4 v4.3.0 h1:MyRJ/UdXutAwSAT+s3wNd7MfTIcy71VQueUuFK343L8=
+github.com/cenkalti/backoff/v4 v4.3.0/go.mod h1:Y3VNntkOUPxTVeUxJ/G5vcM//AlwfmyYozVcomhLiZE=
 github.com/cloudflare/circl v1.3.8 h1:j+V8jJt09PoeMFIu2uh5JUyEaIHTXVOHslFoLNAKqwI=
 github.com/cloudflare/circl v1.3.8/go.mod h1:PDRU+oXvdD7KCtgKxW95M5Z8BpSCJXQORiZFnBQS5QU=
 github.com/coder/websocket v1.8.13-0.20240919094401-cef8e11d00b0 h1:wpaIJXUJcKWchOXVE9iPi2/1SoBb/24oWf//vkY2g88=
