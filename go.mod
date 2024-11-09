@@ -2,14 +2,14 @@ module github.com/aperturerobotics/bifrost
 
 go 1.23
 
-toolchain go1.23.2
+toolchain go1.23.3
 
 require (
 	github.com/aperturerobotics/common v0.19.1 // latest
 	github.com/aperturerobotics/controllerbus v0.48.1 // latest
 	github.com/aperturerobotics/entitygraph v0.10.1 // latest
 	github.com/aperturerobotics/protobuf-go-lite v0.8.0 // latest
-	github.com/aperturerobotics/starpc v0.35.2 // latest
+	github.com/aperturerobotics/starpc v0.35.3 // latest
 	github.com/aperturerobotics/util v1.26.2 // latest
 )
 
@@ -31,11 +31,11 @@ replace (
 require (
 	filippo.io/edwards25519 v1.1.1-0.20231210192602-a7dfd8e4e6b4
 	github.com/blang/semver/v4 v4.0.0 // latest
-	github.com/coder/websocket v1.8.13-0.20240919094401-cef8e11d00b0 // master
+	github.com/coder/websocket v1.8.13-0.20241107130731-1253b774ead7 // master
 	github.com/klauspost/compress v1.17.11
 	github.com/libp2p/go-libp2p v0.37.0
 	github.com/mr-tron/base58 v1.2.0
-	github.com/multiformats/go-multiaddr v0.13.0
+	github.com/multiformats/go-multiaddr v0.14.0
 	github.com/nats-io/nats-server/v2 v2.10.22
 	github.com/nats-io/nats.go v1.37.0
 	github.com/nats-io/nkeys v0.4.7
@@ -50,7 +50,7 @@ require (
 	github.com/urfave/cli/v2 v2.27.5
 	github.com/zeebo/blake3 v0.2.4
 	golang.org/x/crypto v0.29.0
-	golang.org/x/exp v0.0.0-20241009180824-f66d83c29e7c
+	golang.org/x/exp v0.0.0-20241108190413-2d47ceb2692f
 	gonum.org/v1/gonum v0.15.1
 )
 
@@ -104,7 +104,7 @@ require (
 	golang.org/x/sync v0.9.0 // indirect
 	golang.org/x/sys v0.27.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
-	golang.org/x/tools v0.26.0 // indirect
+	golang.org/x/tools v0.27.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	lukechampine.com/blake3 v1.3.0 // indirect
