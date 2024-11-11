@@ -51,13 +51,16 @@ func testParseKeys(t *testing.T, keyPriv crypto.PrivKey, keyPub crypto.PubKey) {
 }
 
 func testKeyTypes(t *testing.T, testFunc func(*testing.T, crypto.PrivKey, crypto.PubKey)) {
-	t.Run("RSA", func(t *testing.T) {
-		priv, pub, err := crypto.GenerateKeyPair(crypto.RSA, 2048)
-		if err != nil {
-			t.Fatal(err)
-		}
-		testFunc(t, priv, pub)
-	})
+	// see: https://github.com/aperturerobotics/go-libp2p/commit/5cfbb50b74e01ea817d007377342627d4ba9d3cb
+	/*
+		t.Run("RSA", func(t *testing.T) {
+			priv, pub, err := crypto.GenerateKeyPair(crypto.RSA, 2048)
+			if err != nil {
+				t.Fatal(err)
+			}
+			testFunc(t, priv, pub)
+		})
+	*/
 	t.Run("Ed25519", func(t *testing.T) {
 		priv, pub, err := crypto.GenerateKeyPair(crypto.Ed25519, 0)
 		if err != nil {
@@ -65,18 +68,20 @@ func testKeyTypes(t *testing.T, testFunc func(*testing.T, crypto.PrivKey, crypto
 		}
 		testFunc(t, priv, pub)
 	})
-	t.Run("EdDilithium2", func(t *testing.T) {
-		priv, pub, err := crypto.GenerateKeyPair(crypto.EdDilithium2, 0)
-		if err != nil {
-			t.Fatal(err)
-		}
-		testFunc(t, priv, pub)
-	})
-	t.Run("EdDilithium3", func(t *testing.T) {
-		priv, pub, err := crypto.GenerateKeyPair(crypto.EdDilithium3, 0)
-		if err != nil {
-			t.Fatal(err)
-		}
-		testFunc(t, priv, pub)
-	})
+	/*
+		t.Run("EdDilithium2", func(t *testing.T) {
+			priv, pub, err := crypto.GenerateKeyPair(crypto.EdDilithium2, 0)
+			if err != nil {
+				t.Fatal(err)
+			}
+			testFunc(t, priv, pub)
+		})
+		t.Run("EdDilithium3", func(t *testing.T) {
+			priv, pub, err := crypto.GenerateKeyPair(crypto.EdDilithium3, 0)
+			if err != nil {
+				t.Fatal(err)
+			}
+			testFunc(t, priv, pub)
+		})
+	*/
 }

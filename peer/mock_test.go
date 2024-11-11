@@ -17,11 +17,13 @@ func BuildMockKeys(t *testing.T) []crypto.PrivKey {
 	}
 	keys = append(keys, edPriv)
 
-	rPriv, _, err := crypto.GenerateRSAKeyPair(2048, rand.Reader)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-	keys = append(keys, rPriv)
+	/*
+		rPriv, _, err := crypto.GenerateRSAKeyPair(2048, rand.Reader)
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+		keys = append(keys, rPriv)
+	*/
 
 	return keys
 }
