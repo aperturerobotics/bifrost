@@ -42,7 +42,7 @@ require (
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pion/datachannel v1.5.9
 	github.com/pion/sdp/v3 v3.0.9
-	github.com/pion/webrtc/v4 v4.0.1
+	github.com/pion/webrtc/v4 v4.0.2
 	github.com/pkg/errors v0.9.1
 	github.com/quic-go/quic-go v0.48.1 // latest
 	github.com/sasha-s/go-deadlock v0.3.5
@@ -81,7 +81,7 @@ require (
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/onsi/ginkgo/v2 v2.20.2 // indirect
 	github.com/petermattis/goid v0.0.0-20240813172612-4fcff4a6cae7 // indirect
-	github.com/pion/dtls/v3 v3.0.3 // indirect
+	github.com/pion/dtls/v3 v3.0.4 // indirect
 	github.com/pion/ice/v4 v4.0.2 // indirect
 	github.com/pion/interceptor v0.1.37 // indirect
 	github.com/pion/logging v0.2.2 // indirect
