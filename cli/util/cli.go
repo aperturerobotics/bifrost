@@ -48,6 +48,32 @@ func (a *UtilArgs) BuildCommands() []*ucli.Command {
 			},
 		},
 		{
+			Name:   "read-private",
+			Usage:  "loads a private key pem and prints the peer id",
+			Action: a.RunReadPrivatePeerId,
+			Flags: []ucli.Flag{
+				&ucli.StringFlag{
+					Name:        "file",
+					Aliases:     []string{"f"},
+					Usage:       "file to load pem formatted private key",
+					Destination: &a.FilePath,
+				},
+			},
+		},
+		{
+			Name:   "read-public",
+			Usage:  "loads a public key pem and prints the peer id",
+			Action: a.RunReadPublicPeerId,
+			Flags: []ucli.Flag{
+				&ucli.StringFlag{
+					Name:        "file",
+					Aliases:     []string{"f"},
+					Usage:       "file to load pem formatted public key",
+					Destination: &a.FilePath,
+				},
+			},
+		},
+		{
 			Name:   "derive-public",
 			Usage:  "loads a private key pem and writes a public key",
 			Action: a.RunDerivePublic,

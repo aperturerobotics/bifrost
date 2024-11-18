@@ -120,8 +120,6 @@ github.com/petermattis/goid v0.0.0-20240813172612-4fcff4a6cae7 h1:Dx7Ovyv/SFnMFw
 github.com/petermattis/goid v0.0.0-20240813172612-4fcff4a6cae7/go.mod h1:pxMtw7cyUw6B2bRH0ZBANSPg+AoSud1I1iyJHI69jH4=
 github.com/pion/datachannel v1.5.9 h1:LpIWAOYPyDrXtU+BW7X0Yt/vGtYxtXQ8ql7dFfYUVZA=
 github.com/pion/datachannel v1.5.9/go.mod h1:kDUuk4CU4Uxp82NH4LQZbISULkX/HtzKa4P7ldf9izE=
-github.com/pion/dtls/v3 v3.0.3 h1:j5ajZbQwff7Z8k3pE3S+rQ4STvKvXUdKsi/07ka+OWM=
-github.com/pion/dtls/v3 v3.0.3/go.mod h1:weOTUyIV4z0bQaVzKe8kpaP17+us3yAuiQsEAG1STMU=
 github.com/pion/dtls/v3 v3.0.4 h1:44CZekewMzfrn9pmGrj5BNnTMDCFwr+6sLH+cCuLM7U=
 github.com/pion/dtls/v3 v3.0.4/go.mod h1:R373CsjxWqNPf6MEkfdy3aSe9niZvL/JaKlGeFphtMg=
 github.com/pion/ice/v4 v4.0.2 h1:1JhBRX8iQLi0+TfcavTjPjI6GO41MFn4CeTBX+Y9h5s=
@@ -150,8 +148,6 @@ github.com/pion/transport/v3 v3.0.7 h1:iRbMH05BzSNwhILHoBoAPxoB9xQgOaJk+591KC9P1
 github.com/pion/transport/v3 v3.0.7/go.mod h1:YleKiTZ4vqNxVwh77Z0zytYi7rXHl7j6uPLGhhz9rwo=
 github.com/pion/turn/v4 v4.0.0 h1:qxplo3Rxa9Yg1xXDxxH8xaqcyGUtbHYw4QSCvmFWvhM=
 github.com/pion/turn/v4 v4.0.0/go.mod h1:MuPDkm15nYSklKpN8vWJ9W2M0PlyQZqYt1McGuxG7mA=
-github.com/pion/webrtc/v4 v4.0.1 h1:6Unwc6JzoTsjxetcAIoWH81RUM4K5dBc1BbJGcF9WVE=
-github.com/pion/webrtc/v4 v4.0.1/go.mod h1:SfNn8CcFxR6OUVjLXVslAQ3a3994JhyE3Hw1jAuqEto=
 github.com/pion/webrtc/v4 v4.0.2 h1:fBwm5/hqSUybrCWl0DDBSTDrpbkcgkqpeLmXw9CsBQA=
 github.com/pion/webrtc/v4 v4.0.2/go.mod h1:moylBT2A4dNoEaYBCdV1nThM3TLwRHzWszIG+eSPaqQ=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=

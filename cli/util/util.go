@@ -59,6 +59,26 @@ func (a *UtilArgs) RunGeneratePrivate(_ *cli.Context) error {
 	return nil
 }
 
+// RunReadPublicPeerId loads a public key and prints the peer ID.
+func (a *UtilArgs) RunReadPublicPeerId(_ *cli.Context) error {
+	rp, err := a.readInputFilePubKey()
+	if err != nil {
+		return err
+	}
+	_, err = os.Stdout.WriteString(rp.GetPeerID().String() + "\n")
+	return err
+}
+
+// RunReadPrivatePeerId loads a private key and prints the peer ID.
+func (a *UtilArgs) RunReadPrivatePeerId(_ *cli.Context) error {
+	rp, err := a.readInputFilePrivKey()
+	if err != nil {
+		return err
+	}
+	_, err = os.Stdout.WriteString(rp.GetPeerID().String() + "\n")
+	return err
+}
+
 // RunDerivePublic derives the public key from a private pem.
 func (a *UtilArgs) RunDerivePublic(_ *cli.Context) error {
 	rp, err := a.readInputFilePrivKey()
@@ -75,6 +95,7 @@ func (a *UtilArgs) RunDerivePublic(_ *cli.Context) error {
 	}
 	return nil
 }
+
 
 // RunDerivePublic derives the ssh public key from a private or public pem.
 func (a *UtilArgs) RunDeriveSshPublic(_ *cli.Context) error {
