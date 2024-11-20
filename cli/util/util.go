@@ -96,7 +96,6 @@ func (a *UtilArgs) RunDerivePublic(_ *cli.Context) error {
 	return nil
 }
 
-
 // RunDerivePublic derives the ssh public key from a private or public pem.
 func (a *UtilArgs) RunDeriveSshPublic(_ *cli.Context) error {
 	rp, err := a.readInputFilePubKey()
