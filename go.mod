@@ -2,14 +2,14 @@ module github.com/aperturerobotics/bifrost
 
 go 1.23
 
-toolchain go1.23.3
+toolchain go1.23.4
 
 require (
 	github.com/aperturerobotics/common v0.19.1 // latest
 	github.com/aperturerobotics/controllerbus v0.48.1 // latest
 	github.com/aperturerobotics/entitygraph v0.10.1 // latest
 	github.com/aperturerobotics/protobuf-go-lite v0.8.0 // latest
-	github.com/aperturerobotics/starpc v0.35.4 // latest
+	github.com/aperturerobotics/starpc v0.35.5 // latest
 	github.com/aperturerobotics/util v1.26.3 // latest
 )
 
@@ -31,7 +31,7 @@ replace (
 require (
 	filippo.io/edwards25519 v1.1.1-0.20231210192602-a7dfd8e4e6b4
 	github.com/blang/semver/v4 v4.0.0 // latest
-	github.com/coder/websocket v1.8.13-0.20241107130731-1253b774ead7 // master
+	github.com/coder/websocket v1.8.13-0.20241204191143-11bda985bf5f // master
 	github.com/klauspost/compress v1.17.11
 	github.com/libp2p/go-libp2p v0.37.2
 	github.com/mr-tron/base58 v1.2.0
@@ -42,15 +42,15 @@ require (
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pion/datachannel v1.5.9
 	github.com/pion/sdp/v3 v3.0.9
-	github.com/pion/webrtc/v4 v4.0.3
+	github.com/pion/webrtc/v4 v4.0.5
 	github.com/pkg/errors v0.9.1
 	github.com/quic-go/quic-go v0.48.2 // latest
 	github.com/sasha-s/go-deadlock v0.3.5
 	github.com/sirupsen/logrus v1.9.3
 	github.com/urfave/cli/v2 v2.27.5
 	github.com/zeebo/blake3 v0.2.4
-	golang.org/x/crypto v0.29.0
-	golang.org/x/exp v0.0.0-20241108190413-2d47ceb2692f
+	golang.org/x/crypto v0.30.0
+	golang.org/x/exp v0.0.0-20241204233417-43b7b7cde48d
 	gonum.org/v1/gonum v0.15.1
 )
 
@@ -100,11 +100,11 @@ require (
 	github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 // indirect
 	go.uber.org/mock v0.5.0 // indirect
 	golang.org/x/mod v0.22.0 // indirect
-	golang.org/x/net v0.31.0 // indirect
-	golang.org/x/sync v0.9.0 // indirect
-	golang.org/x/sys v0.27.0 // indirect
+	golang.org/x/net v0.32.0 // indirect
+	golang.org/x/sync v0.10.0 // indirect
+	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
-	golang.org/x/tools v0.27.0 // indirect
+	golang.org/x/tools v0.28.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	lukechampine.com/blake3 v1.3.0 // indirect
