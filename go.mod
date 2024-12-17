@@ -5,11 +5,11 @@ go 1.23
 toolchain go1.23.4
 
 require (
-	github.com/aperturerobotics/common v0.19.1 // latest
+	github.com/aperturerobotics/common v0.20.2 // latest
 	github.com/aperturerobotics/controllerbus v0.48.1 // latest
 	github.com/aperturerobotics/entitygraph v0.10.1 // latest
 	github.com/aperturerobotics/protobuf-go-lite v0.8.0 // latest
-	github.com/aperturerobotics/starpc v0.35.5 // latest
+	github.com/aperturerobotics/starpc v0.36.0 // latest
 	github.com/aperturerobotics/util v1.26.3 // latest
 )
 
@@ -36,13 +36,13 @@ require (
 	github.com/libp2p/go-libp2p v0.37.2
 	github.com/mr-tron/base58 v1.2.0
 	github.com/multiformats/go-multiaddr v0.14.0
-	github.com/nats-io/nats-server/v2 v2.10.22
-	github.com/nats-io/nats.go v1.37.0
-	github.com/nats-io/nkeys v0.4.8
+	github.com/nats-io/nats-server/v2 v2.10.24
+	github.com/nats-io/nats.go v1.38.0
+	github.com/nats-io/nkeys v0.4.9
 	github.com/patrickmn/go-cache v2.1.0+incompatible
-	github.com/pion/datachannel v1.5.9
+	github.com/pion/datachannel v1.5.10
 	github.com/pion/sdp/v3 v3.0.9
-	github.com/pion/webrtc/v4 v4.0.5
+	github.com/pion/webrtc/v4 v4.0.6
 	github.com/pkg/errors v0.9.1
 	github.com/quic-go/quic-go v0.48.2 // latest
 	github.com/sasha-s/go-deadlock v0.3.5
@@ -50,14 +50,14 @@ require (
 	github.com/urfave/cli/v2 v2.27.5
 	github.com/zeebo/blake3 v0.2.4
 	golang.org/x/crypto v0.30.0
-	golang.org/x/exp v0.0.0-20241204233417-43b7b7cde48d
+	golang.org/x/exp v0.0.0-20241217172543-b2144cdd0a67
 	gonum.org/v1/gonum v0.15.1
 )
 
 require github.com/cenkalti/backoff/v4 v4.3.0
 
 require (
-	github.com/aperturerobotics/json-iterator-lite v1.0.0 // indirect
+	github.com/aperturerobotics/json-iterator-lite v1.0.1-0.20240713111131-be6bf89c3008 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.5 // indirect
 	github.com/davidlazar/go-crypto v0.0.0-20200604182044-b73af7476f6c // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
@@ -87,9 +87,9 @@ require (
 	github.com/pion/logging v0.2.2 // indirect
 	github.com/pion/mdns/v2 v2.0.7 // indirect
 	github.com/pion/randutil v0.1.0 // indirect
-	github.com/pion/rtcp v1.2.14 // indirect
+	github.com/pion/rtcp v1.2.15 // indirect
 	github.com/pion/rtp v1.8.9 // indirect
-	github.com/pion/sctp v1.8.34 // indirect
+	github.com/pion/sctp v1.8.35 // indirect
 	github.com/pion/srtp/v3 v3.0.4 // indirect
 	github.com/pion/stun/v3 v3.0.0 // indirect
 	github.com/pion/transport/v3 v3.0.7 // indirect
