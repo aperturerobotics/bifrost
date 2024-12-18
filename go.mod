@@ -6,11 +6,11 @@ toolchain go1.23.4
 
 require (
 	github.com/aperturerobotics/common v0.20.2 // latest
-	github.com/aperturerobotics/controllerbus v0.48.1 // latest
+	github.com/aperturerobotics/controllerbus v0.48.2 // latest
 	github.com/aperturerobotics/entitygraph v0.10.1 // latest
 	github.com/aperturerobotics/protobuf-go-lite v0.8.0 // latest
 	github.com/aperturerobotics/starpc v0.36.0 // latest
-	github.com/aperturerobotics/util v1.26.3 // latest
+	github.com/aperturerobotics/util v1.27.0 // latest
 )
 
 // aperture: use compatibility forks

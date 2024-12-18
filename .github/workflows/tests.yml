@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: ['1.22']
+        go: ['1.23']
         node: [22.x]
     timeout-minutes: 10
     steps:

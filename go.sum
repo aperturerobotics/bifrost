@@ -6,8 +6,8 @@ github.com/aperturerobotics/bifrost-nats-server/v2 v2.1.8-0.20221228081037-b7c2d
 github.com/aperturerobotics/bifrost-nats-server/v2 v2.1.8-0.20221228081037-b7c2df0c151f/go.mod h1:kIcZtLpq4UIZzOqduYLm1mYU1nuMBtN6XuDCtQ21QT8=
 github.com/aperturerobotics/common v0.20.2 h1:qUdAn4JyCqLnxX/Pqi83L+GJ48JFUC4BcasepciKaQE=
 github.com/aperturerobotics/common v0.20.2/go.mod h1:S2yc+bp5PoLn0PHOAt+XXGsC50sA0MU9GF3q6FyEs9U=
-github.com/aperturerobotics/controllerbus v0.48.1 h1:lLX0Q3t3HTwZkEZ0l+tFLvwj+8TWq7yL/UCLwiTAL9Y=
-github.com/aperturerobotics/controllerbus v0.48.1/go.mod h1:o7kO19f2QgTHKjWJ4Sk6nV0fIyYttoZ2dCuDiOiLZSU=
+github.com/aperturerobotics/controllerbus v0.48.2 h1:U97ZAsRGMVxyQQJEc54RHkZHhb7KnVCVRy/9aYC/VII=
+github.com/aperturerobotics/controllerbus v0.48.2/go.mod h1:W0Z/zh2LRWpDyTCtytohiG4xvaRiI9OAzfW4pvp5G9E=
 github.com/aperturerobotics/entitygraph v0.10.1 h1:ShiCCeW4NtGo+TfMfP21mHCdvPoKW/1N27KXw4elGk0=
 github.com/aperturerobotics/entitygraph v0.10.1/go.mod h1:Cg1SNQFmTXo0TSfnouHrPZis2wgZSEgkpIyeld0loRg=
 github.com/aperturerobotics/go-libp2p v0.37.1-0.20241111002741-5cfbb50b74e0 h1:tGwbeDoEeQCrUQL+ClUywldqvz9eRmhcVrGwGxz2xJg=
@@ -28,8 +28,8 @@ github.com/aperturerobotics/quic-go v0.48.2-0.20241029082227-fa76c393ee89 h1:MUX
 github.com/aperturerobotics/quic-go v0.48.2-0.20241029082227-fa76c393ee89/go.mod h1:vhhkHYq2i9lb0bOllqKhOdtg/3i7r4o/7zc8XI/T4lo=
 github.com/aperturerobotics/starpc v0.36.0 h1:HAJe6X6OZ+JPyq9jcSwlVo7utuMbXQD0kxLl2e7xmz4=
 github.com/aperturerobotics/starpc v0.36.0/go.mod h1:2wM79xmfJZrrXMgYxcteg7vLxhqSambS79+o159KGRI=
-github.com/aperturerobotics/util v1.26.3 h1:Z7pjEJX27FDUQyP8OHlBcyEc8MGl8z/ZS1vpRBsIU9E=
-github.com/aperturerobotics/util v1.26.3/go.mod h1:D/N1pG02cPukZtwGggCeb8R/wq11Iy76xjSEGFYa06c=
+github.com/aperturerobotics/util v1.27.0 h1:nNFFOQo1NcSfcMPjnzoqxOd7EXdTzLiCNugOm9aarHc=
+github.com/aperturerobotics/util v1.27.0/go.mod h1:8u36NK8OBQM2qxoRU7VVCfiiP5EJ+oV3gHsmnhQoPEY=
 github.com/blang/semver/v4 v4.0.0 h1:1PFHFE6yCCTv8C1TeyNNarDzntLi7wMI5i/pzqYIsAM=
 github.com/blang/semver/v4 v4.0.0/go.mod h1:IbckMUScFkM3pff0VJDNKRiT6TG/YpiHIM2yvyW5YoQ=
 github.com/cenkalti/backoff/v4 v4.3.0 h1:MyRJ/UdXutAwSAT+s3wNd7MfTIcy71VQueUuFK343L8=
