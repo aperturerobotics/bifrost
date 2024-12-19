@@ -33,7 +33,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0 // latest
 	github.com/coder/websocket v1.8.13-0.20241204191143-11bda985bf5f // master
 	github.com/klauspost/compress v1.17.11
-	github.com/libp2p/go-libp2p v0.37.2
+	github.com/libp2p/go-libp2p v0.38.1
 	github.com/mr-tron/base58 v1.2.0
 	github.com/multiformats/go-multiaddr v0.14.0
 	github.com/nats-io/nats-server/v2 v2.10.24
@@ -54,7 +54,10 @@ require (
 	gonum.org/v1/gonum v0.15.1
 )
 
-require github.com/cenkalti/backoff/v4 v4.3.0
+require (
+	github.com/cenkalti/backoff/v4 v4.3.0
+	github.com/cenkalti/backoff/v5 v5.0.0
+)
 
 require (
 	github.com/aperturerobotics/json-iterator-lite v1.0.1-0.20240713111131-be6bf89c3008 // indirect
