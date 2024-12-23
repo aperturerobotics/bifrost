@@ -9,7 +9,7 @@ import (
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/aperturerobotics/util/refcount"
-	"github.com/cenkalti/backoff/v4"
+	"github.com/aperturerobotics/util/backoff/cbackoff"
 	"github.com/sirupsen/logrus"
 )
 

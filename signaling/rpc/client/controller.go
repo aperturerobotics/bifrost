@@ -13,7 +13,7 @@ import (
 	"github.com/aperturerobotics/util/ccontainer"
 	"github.com/aperturerobotics/util/keyed"
 	"github.com/blang/semver/v4"
-	cbackoff "github.com/cenkalti/backoff/v4"
+	cbackoff "github.com/aperturerobotics/util/backoff/cbackoff"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )

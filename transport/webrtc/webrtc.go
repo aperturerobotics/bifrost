@@ -17,7 +17,7 @@ import (
 	"github.com/aperturerobotics/util/broadcast"
 	"github.com/aperturerobotics/util/keyed"
 	"github.com/blang/semver/v4"
-	cbackoff "github.com/cenkalti/backoff/v4"
+	cbackoff "github.com/aperturerobotics/util/backoff/cbackoff"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	p2ptls "github.com/libp2p/go-libp2p/p2p/security/tls"
 	"github.com/pion/webrtc/v4"

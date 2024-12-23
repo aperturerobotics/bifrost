@@ -14,7 +14,7 @@ import (
 	"github.com/aperturerobotics/util/broadcast"
 	"github.com/aperturerobotics/util/keyed"
 	"github.com/aperturerobotics/util/routine"
-	cbackoff "github.com/cenkalti/backoff/v4"
+	cbackoff "github.com/aperturerobotics/util/backoff/cbackoff"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"

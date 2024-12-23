@@ -7,7 +7,7 @@ import (
 
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/peer"
-	bo "github.com/cenkalti/backoff/v4"
+	bo "github.com/aperturerobotics/util/backoff/cbackoff"
 	"github.com/sirupsen/logrus"
 )
 

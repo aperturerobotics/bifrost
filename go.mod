@@ -6,11 +6,11 @@ toolchain go1.23.4
 
 require (
 	github.com/aperturerobotics/common v0.20.3 // latest
-	github.com/aperturerobotics/controllerbus v0.48.2 // latest
+	github.com/aperturerobotics/controllerbus v0.49.0 // latest
 	github.com/aperturerobotics/entitygraph v0.10.1 // latest
 	github.com/aperturerobotics/protobuf-go-lite v0.8.0 // latest
 	github.com/aperturerobotics/starpc v0.36.1 // latest
-	github.com/aperturerobotics/util v1.27.0 // latest
+	github.com/aperturerobotics/util v1.27.1 // latest
 )
 
 // aperture: use compatibility forks
@@ -53,8 +53,6 @@ require (
 	golang.org/x/exp v0.0.0-20241217172543-b2144cdd0a67
 	gonum.org/v1/gonum v0.15.1
 )
-
-require github.com/cenkalti/backoff/v4 v4.3.0
 
 require (
 	github.com/aperturerobotics/json-iterator-lite v1.0.1-0.20240713111131-be6bf89c3008 // indirect
