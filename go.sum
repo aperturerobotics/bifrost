@@ -10,6 +10,8 @@ github.com/aperturerobotics/controllerbus v0.49.0 h1:SgY2DOWhVb4A835tfWH14tjtziw
 github.com/aperturerobotics/controllerbus v0.49.0/go.mod h1:kBXmuNACfNpv/eFuVAiP42w83DsRSMBBaEQtD1yT2rg=
 github.com/aperturerobotics/entitygraph v0.10.1 h1:ShiCCeW4NtGo+TfMfP21mHCdvPoKW/1N27KXw4elGk0=
 github.com/aperturerobotics/entitygraph v0.10.1/go.mod h1:Cg1SNQFmTXo0TSfnouHrPZis2wgZSEgkpIyeld0loRg=
+github.com/aperturerobotics/entitygraph v0.11.0 h1:nPnT0SXsEMqsxmn/lWGR50JHbfmSd3pVanyJAm6v8rI=
+github.com/aperturerobotics/entitygraph v0.11.0/go.mod h1:/hiKxzHn0rF7Nhju/dTVBLI8FX2i8Om6cIbHED/jbOw=
 github.com/aperturerobotics/go-libp2p v0.37.1-0.20241111002741-5cfbb50b74e0 h1:tGwbeDoEeQCrUQL+ClUywldqvz9eRmhcVrGwGxz2xJg=
 github.com/aperturerobotics/go-libp2p v0.37.1-0.20241111002741-5cfbb50b74e0/go.mod h1:FJkAtQcP9XxqG1NNLNHKm+wLVIGSCQX2s6CEoD+w97g=
 github.com/aperturerobotics/go-libp2p-msgio v0.0.0-20240511033615-1b69178aa5c8 h1:S9prTCDvkYfJ9ATV+B1yoNESE5w5dbFM5GmriXRG0Lk=

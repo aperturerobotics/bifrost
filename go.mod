@@ -7,7 +7,7 @@ toolchain go1.23.4
 require (
 	github.com/aperturerobotics/common v0.20.3 // latest
 	github.com/aperturerobotics/controllerbus v0.49.0 // latest
-	github.com/aperturerobotics/entitygraph v0.10.1 // latest
+	github.com/aperturerobotics/entitygraph v0.11.0 // latest
 	github.com/aperturerobotics/protobuf-go-lite v0.8.0 // latest
 	github.com/aperturerobotics/starpc v0.36.1 // latest
 	github.com/aperturerobotics/util v1.27.1 // latest
