@@ -5,11 +5,11 @@ go 1.23
 toolchain go1.23.4
 
 require (
-	github.com/aperturerobotics/common v0.20.2 // latest
+	github.com/aperturerobotics/common v0.20.3 // latest
 	github.com/aperturerobotics/controllerbus v0.48.2 // latest
 	github.com/aperturerobotics/entitygraph v0.10.1 // latest
 	github.com/aperturerobotics/protobuf-go-lite v0.8.0 // latest
-	github.com/aperturerobotics/starpc v0.36.0 // latest
+	github.com/aperturerobotics/starpc v0.36.1 // latest
 	github.com/aperturerobotics/util v1.27.0 // latest
 )
 
@@ -33,7 +33,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0 // latest
 	github.com/coder/websocket v1.8.13-0.20241204191143-11bda985bf5f // master
 	github.com/klauspost/compress v1.17.11
-	github.com/libp2p/go-libp2p v0.37.2
+	github.com/libp2p/go-libp2p v0.38.1
 	github.com/mr-tron/base58 v1.2.0
 	github.com/multiformats/go-multiaddr v0.14.0
 	github.com/nats-io/nats-server/v2 v2.10.24
