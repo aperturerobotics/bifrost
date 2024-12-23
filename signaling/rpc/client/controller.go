@@ -10,10 +10,10 @@ import (
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
+	cbackoff "github.com/aperturerobotics/util/backoff/cbackoff"
 	"github.com/aperturerobotics/util/ccontainer"
 	"github.com/aperturerobotics/util/keyed"
 	"github.com/blang/semver/v4"
-	cbackoff "github.com/aperturerobotics/util/backoff/cbackoff"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
