@@ -1,16 +1,16 @@
 module github.com/aperturerobotics/bifrost
 
-go 1.23.0
+go 1.24
 
-toolchain go1.24.0
+toolchain go1.24.1
 
 require (
-	github.com/aperturerobotics/common v0.20.3 // latest
-	github.com/aperturerobotics/controllerbus v0.49.0 // latest
+	github.com/aperturerobotics/common v0.21.1 // latest
+	github.com/aperturerobotics/controllerbus v0.49.1 // latest
 	github.com/aperturerobotics/entitygraph v0.11.0 // latest
 	github.com/aperturerobotics/protobuf-go-lite v0.8.0 // latest
-	github.com/aperturerobotics/starpc v0.36.2 // latest
-	github.com/aperturerobotics/util v1.28.1 // latest
+	github.com/aperturerobotics/starpc v0.37.0 // latest
+	github.com/aperturerobotics/util v1.29.0 // latest
 )
 
 // aperture: use compatibility forks
@@ -42,20 +42,20 @@ require (
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pion/datachannel v1.5.10
 	github.com/pion/sdp/v3 v3.0.10
-	github.com/pion/webrtc/v4 v4.0.12
+	github.com/pion/webrtc/v4 v4.0.13
 	github.com/pkg/errors v0.9.1
 	github.com/quic-go/quic-go v0.50.0 // latest
 	github.com/sasha-s/go-deadlock v0.3.5
 	github.com/sirupsen/logrus v1.9.3
-	github.com/urfave/cli/v2 v2.27.5
+	github.com/urfave/cli/v2 v2.27.6
 	github.com/zeebo/blake3 v0.2.4
-	golang.org/x/crypto v0.35.0
-	golang.org/x/exp v0.0.0-20250228200357-dead58393ab7
+	golang.org/x/crypto v0.36.0
+	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394
 	gonum.org/v1/gonum v0.15.1
 )
 
 require (
-	github.com/aperturerobotics/json-iterator-lite v1.0.1-0.20240713111131-be6bf89c3008 // indirect
+	github.com/aperturerobotics/json-iterator-lite v1.0.1-0.20241223092408-d525fa878b3e // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.5 // indirect
 	github.com/davidlazar/go-crypto v0.0.0-20200604182044-b73af7476f6c // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
@@ -87,7 +87,7 @@ require (
 	github.com/pion/randutil v0.1.0 // indirect
 	github.com/pion/rtcp v1.2.15 // indirect
 	github.com/pion/rtp v1.8.12 // indirect
-	github.com/pion/sctp v1.8.36 // indirect
+	github.com/pion/sctp v1.8.37 // indirect
 	github.com/pion/srtp/v3 v3.0.4 // indirect
 	github.com/pion/stun/v3 v3.0.0 // indirect
 	github.com/pion/transport/v3 v3.0.7 // indirect
@@ -97,12 +97,12 @@ require (
 	github.com/wlynxg/anet v0.0.5 // indirect
 	github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 // indirect
 	go.uber.org/mock v0.5.0 // indirect
-	golang.org/x/mod v0.23.0 // indirect
-	golang.org/x/net v0.35.0 // indirect
-	golang.org/x/sync v0.11.0 // indirect
-	golang.org/x/sys v0.30.0 // indirect
+	golang.org/x/mod v0.24.0 // indirect
+	golang.org/x/net v0.37.0 // indirect
+	golang.org/x/sync v0.12.0 // indirect
+	golang.org/x/sys v0.31.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
-	golang.org/x/tools v0.30.0 // indirect
+	golang.org/x/tools v0.31.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	lukechampine.com/blake3 v1.3.0 // indirect
