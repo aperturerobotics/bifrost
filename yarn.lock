@@ -2201,9 +2201,9 @@ stackback@0.0.2:
   integrity sha512-1XMJE5fQo1jGH6Y/7ebnwPOBEkIEnT4QF32d5R1+VXdXveM0IBMJt8zfaxX1P3QhVwrYe+576+jkANtSS2mBbw==
 
 starpc@^0.37.0:
-  version "0.37.0"
-  resolved "https://registry.yarnpkg.com/starpc/-/starpc-0.37.0.tgz#e211066611f1684855e3a26fe4e0527ba7985372"
-  integrity sha512-zXjl5cYISkL9b/ynHJaDqbenri7Cakmmgn7za2tW6+8uyrlMVLzYlsC/eUOxmn1uCtAopNB+DcXVBXgSsNnIQg==
+  version "0.37.1"
+  resolved "https://registry.yarnpkg.com/starpc/-/starpc-0.37.1.tgz#33b65de543c1fbb0d51ec0f95cf2ca064045327a"
+  integrity sha512-cXHjtvg05dNtplgaOn4gjLYznPqJyYMtR+zbx1jpxWT9Q3HhTztu1ODmsaAPisjTpbxBMB0rnr615sdV5PiCrw==
   dependencies:
     "@aptre/it-ws" "^1.0.1"
     "@aptre/protobuf-es-lite" "^0.4.6"
