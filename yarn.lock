@@ -2,15 +2,15 @@
 # yarn lockfile v1
 
 
-"@aptre/common@^0.21.0":
-  version "0.21.1"
-  resolved "https://registry.yarnpkg.com/@aptre/common/-/common-0.21.1.tgz#c73acbf76f4c7eb586fea23cdf87ba685cb95de6"
-  integrity sha512-G6sHajqF8Q29QLAv308gbRSgT9pJ8li85j8viqhK+WSiZTAJB+4nd69IDT/1vb3M/Kex1H4zDyqDv//ZMgGKcw==
+"@aptre/common@^0.21.2":
+  version "0.21.2"
+  resolved "https://registry.yarnpkg.com/@aptre/common/-/common-0.21.2.tgz#0a6c0dec997829cc2d5d31c897ae6cf260abdb20"
+  integrity sha512-zqCq4jlBZXaqbY4Bqjl0XokLGcPuZCzvbyibPdCRqcDCIzYiBa3wMVuoAVr18M/TmlMYXXGf3eauctmq1AAp+g==
   dependencies:
     "@aptre/protobuf-es-lite" "^0.4.7"
     "@typescript-eslint/eslint-plugin" "^8.18.0"
     "@typescript-eslint/parser" "^8.18.0"
-    eslint "^9.19.0"
+    eslint "^9.22.0"
     eslint-config-prettier "^10.0.0"
     eslint-plugin-react-hooks "^5.1.0"
     eslint-plugin-unused-imports "^4.0.0"
@@ -1235,7 +1235,7 @@ eslint-visitor-keys@^4.2.0:
   resolved "https://registry.yarnpkg.com/eslint-visitor-keys/-/eslint-visitor-keys-4.2.0.tgz#687bacb2af884fcdda8a6e7d65c606f46a14cd45"
   integrity sha512-UyLnSehNt62FFhSwjZlHmeokpRK59rcz29j+F1/aDgbkbRTk7wIc9XzdoasMUbRNKDM0qQt/+BJ4BrpFeABemw==
 
-eslint@^9.19.0:
+eslint@^9.22.0:
   version "9.22.0"
   resolved "https://registry.yarnpkg.com/eslint/-/eslint-9.22.0.tgz#0760043809fbf836f582140345233984d613c552"
   integrity sha512-9V/QURhsRN40xuHXWjV64yvrzMjcz7ZyNoF2jJFmy9j/SLk0u1OLSZgXi28MrXjymnjEGSR80WCdab3RGMDveQ==
