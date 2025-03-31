@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"hash"
+	"slices"
 
 	// We include sha1 for git support.
 	"crypto/sha1" //nolint:gosec
@@ -11,7 +12,6 @@ import (
 	b58 "github.com/mr-tron/base58/base58"
 	"github.com/pkg/errors"
 	"github.com/zeebo/blake3"
-	"golang.org/x/exp/slices"
 )
 
 // ErrHashMismatch is returned when hashes mismatch.

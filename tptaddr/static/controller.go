@@ -3,6 +3,7 @@ package tptaddr_static
 import (
 	"context"
 	"errors"
+	"slices"
 	"sort"
 	"strings"
 
@@ -11,7 +12,6 @@ import (
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/blang/semver/v4"
-	"golang.org/x/exp/slices"
 )
 
 // ControllerID is the ID of the controller.
