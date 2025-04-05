@@ -2,13 +2,13 @@ module github.com/aperturerobotics/bifrost
 
 go 1.24
 
-toolchain go1.24.1
+toolchain go1.24.2
 
 require (
 	github.com/aperturerobotics/common v0.21.2 // latest
 	github.com/aperturerobotics/controllerbus v0.49.3 // latest
 	github.com/aperturerobotics/entitygraph v0.11.0 // latest
-	github.com/aperturerobotics/protobuf-go-lite v0.8.1 // latest
+	github.com/aperturerobotics/protobuf-go-lite v0.9.0 // latest
 	github.com/aperturerobotics/starpc v0.37.1 // latest
 	github.com/aperturerobotics/util v1.29.2 // latest
 )
@@ -37,7 +37,7 @@ require (
 	github.com/mr-tron/base58 v1.2.0
 	github.com/multiformats/go-multiaddr v0.15.0
 	github.com/nats-io/nats-server/v2 v2.11.0
-	github.com/nats-io/nats.go v1.40.1
+	github.com/nats-io/nats.go v1.41.0
 	github.com/nats-io/nkeys v0.4.10
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pion/datachannel v1.5.10
@@ -47,12 +47,14 @@ require (
 	github.com/quic-go/quic-go v0.50.1 // latest
 	github.com/sasha-s/go-deadlock v0.3.5
 	github.com/sirupsen/logrus v1.9.3
-	github.com/urfave/cli/v2 v2.27.6
+	github.com/urfave/cli/v3 v3.1.1
 	github.com/zeebo/blake3 v0.2.4
 	golang.org/x/crypto v0.36.0
 	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394
 	gonum.org/v1/gonum v0.16.0
 )
+
+require github.com/urfave/cli/v2 v2.27.6
 
 require (
 	github.com/aperturerobotics/json-iterator-lite v1.0.1-0.20241223092408-d525fa878b3e // indirect
