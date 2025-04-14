@@ -2,7 +2,7 @@ module github.com/aperturerobotics/bifrost
 
 go 1.24
 
-toolchain go1.24.1
+toolchain go1.24.2
 
 require (
 	github.com/aperturerobotics/common v0.21.2 // latest
@@ -36,13 +36,13 @@ require (
 	github.com/libp2p/go-libp2p v0.41.1
 	github.com/mr-tron/base58 v1.2.0
 	github.com/multiformats/go-multiaddr v0.15.0
-	github.com/nats-io/nats-server/v2 v2.11.0
-	github.com/nats-io/nats.go v1.40.1
+	github.com/nats-io/nats-server/v2 v2.11.1
+	github.com/nats-io/nats.go v1.41.1
 	github.com/nats-io/nkeys v0.4.10
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pion/datachannel v1.5.10
 	github.com/pion/sdp/v3 v3.0.11
-	github.com/pion/webrtc/v4 v4.0.14
+	github.com/pion/webrtc/v4 v4.0.15
 	github.com/pkg/errors v0.9.1
 	github.com/quic-go/quic-go v0.50.1 // latest
 	github.com/sasha-s/go-deadlock v0.3.5
@@ -79,15 +79,15 @@ require (
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/onsi/ginkgo/v2 v2.20.2 // indirect
 	github.com/petermattis/goid v0.0.0-20240813172612-4fcff4a6cae7 // indirect
-	github.com/pion/dtls/v3 v3.0.4 // indirect
-	github.com/pion/ice/v4 v4.0.8 // indirect
+	github.com/pion/dtls/v3 v3.0.6 // indirect
+	github.com/pion/ice/v4 v4.0.10 // indirect
 	github.com/pion/interceptor v0.1.37 // indirect
 	github.com/pion/logging v0.2.3 // indirect
 	github.com/pion/mdns/v2 v2.0.7 // indirect
 	github.com/pion/randutil v0.1.0 // indirect
 	github.com/pion/rtcp v1.2.15 // indirect
 	github.com/pion/rtp v1.8.13 // indirect
-	github.com/pion/sctp v1.8.37 // indirect
+	github.com/pion/sctp v1.8.38 // indirect
 	github.com/pion/srtp/v3 v3.0.4 // indirect
 	github.com/pion/stun/v3 v3.0.0 // indirect
 	github.com/pion/transport/v3 v3.0.7 // indirect
