@@ -8,12 +8,12 @@ import (
 	"github.com/aperturerobotics/bifrost/transport/common/pconn"
 	udptpt "github.com/aperturerobotics/bifrost/transport/udp"
 	wtpt "github.com/aperturerobotics/bifrost/transport/websocket"
+	"github.com/aperturerobotics/cli"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/config"
 	configset "github.com/aperturerobotics/controllerbus/controller/configset"
 	"github.com/aperturerobotics/controllerbus/controller/resolver/static"
 	"github.com/pkg/errors"
-	"github.com/aperturerobotics/cli"
 )
 
 // DaemonArgs contains common flags for bifrost-powered daemons.

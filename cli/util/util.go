@@ -11,9 +11,9 @@ import (
 	"github.com/aperturerobotics/bifrost/peer"
 	peer_ssh "github.com/aperturerobotics/bifrost/peer/ssh"
 	"github.com/aperturerobotics/bifrost/util/confparse"
+	"github.com/aperturerobotics/cli"
 	"github.com/aperturerobotics/protobuf-go-lite/types/known/timestamppb"
 	"github.com/pkg/errors"
-	"github.com/aperturerobotics/cli"
 	"golang.org/x/crypto/ssh"
 )
 

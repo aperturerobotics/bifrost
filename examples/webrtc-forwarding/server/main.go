@@ -11,10 +11,10 @@ import (
 	signaling_rpc_server "github.com/aperturerobotics/bifrost/signaling/rpc/server"
 	stream_srpc_server "github.com/aperturerobotics/bifrost/stream/srpc/server"
 	"github.com/aperturerobotics/bifrost/transport/websocket"
+	"github.com/aperturerobotics/cli"
 	"github.com/aperturerobotics/controllerbus/controller/loader"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
 	"github.com/sirupsen/logrus"
-	"github.com/aperturerobotics/cli"
 )
 
 // listenAddr is the listen address

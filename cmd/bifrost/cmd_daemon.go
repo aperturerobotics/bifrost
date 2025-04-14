@@ -14,6 +14,7 @@ import (
 	daemon_prof "github.com/aperturerobotics/bifrost/daemon/prof"
 	egctr "github.com/aperturerobotics/bifrost/entitygraph"
 	"github.com/aperturerobotics/bifrost/keypem/keyfile"
+	"github.com/aperturerobotics/cli"
 	bus_api "github.com/aperturerobotics/controllerbus/bus/api"
 	configset "github.com/aperturerobotics/controllerbus/controller/configset"
 	configset_controller "github.com/aperturerobotics/controllerbus/controller/configset/controller"
@@ -24,7 +25,6 @@ import (
 	entitygraph_logger "github.com/aperturerobotics/entitygraph/logger"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/aperturerobotics/cli"
 )
 
 var daemonFlags struct {

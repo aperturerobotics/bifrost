@@ -12,8 +12,8 @@ import (
 
 	"github.com/aperturerobotics/bifrost/peer"
 	pubsub_api "github.com/aperturerobotics/bifrost/pubsub/api"
-	"github.com/pkg/errors"
 	"github.com/aperturerobotics/cli"
+	"github.com/pkg/errors"
 )
 
 // publishTimeout is the timeout to wait for ack of publish
