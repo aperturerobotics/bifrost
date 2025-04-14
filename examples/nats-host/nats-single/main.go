@@ -7,7 +7,7 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli/v2"
+	"github.com/aperturerobotics/cli"
 
 	bcli "github.com/aperturerobotics/bifrost/cli"
 	nats "github.com/aperturerobotics/bifrost/pubsub/nats"

@@ -4,7 +4,7 @@ import (
 	"os"
 
 	stream_api "github.com/aperturerobotics/bifrost/stream/api"
-	"github.com/urfave/cli/v2"
+	"github.com/aperturerobotics/cli"
 )
 
 // RunForwarding runs the forwarding command.

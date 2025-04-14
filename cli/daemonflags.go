@@ -13,7 +13,7 @@ import (
 	configset "github.com/aperturerobotics/controllerbus/controller/configset"
 	"github.com/aperturerobotics/controllerbus/controller/resolver/static"
 	"github.com/pkg/errors"
-	"github.com/urfave/cli/v2"
+	"github.com/aperturerobotics/cli"
 )
 
 // DaemonArgs contains common flags for bifrost-powered daemons.

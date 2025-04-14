@@ -4,7 +4,7 @@ import (
 	"os"
 
 	peer_api "github.com/aperturerobotics/bifrost/peer/api"
-	"github.com/urfave/cli/v2"
+	"github.com/aperturerobotics/cli"
 )
 
 // RunIdentifyController runs an identify controller.

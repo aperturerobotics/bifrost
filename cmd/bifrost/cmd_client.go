@@ -2,7 +2,7 @@ package main
 
 import (
 	bcli "github.com/aperturerobotics/bifrost/cli"
-	"github.com/urfave/cli/v2"
+	"github.com/aperturerobotics/cli"
 )
 
 // cliArgs are the client arguments

@@ -2,7 +2,7 @@ package main
 
 import (
 	util "github.com/aperturerobotics/bifrost/cli/util"
-	"github.com/urfave/cli/v2"
+	"github.com/aperturerobotics/cli"
 )
 
 var utilArgs util.UtilArgs

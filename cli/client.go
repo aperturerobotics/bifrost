@@ -19,7 +19,7 @@ import (
 	cbus_cli "github.com/aperturerobotics/controllerbus/cli"
 	"github.com/aperturerobotics/starpc/srpc"
 	"github.com/libp2p/go-libp2p/core/crypto"
-	"github.com/urfave/cli/v2"
+	"github.com/aperturerobotics/cli"
 )
 
 // ClientArgs contains the client arguments and functions.

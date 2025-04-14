@@ -6,7 +6,7 @@ import (
 	stream_api "github.com/aperturerobotics/bifrost/stream/api"
 	stream_api_rpc "github.com/aperturerobotics/bifrost/stream/api/rpc"
 	"github.com/aperturerobotics/bifrost/util/rwc"
-	"github.com/urfave/cli/v2"
+	"github.com/aperturerobotics/cli"
 )
 
 // RunDial runs the dial command.

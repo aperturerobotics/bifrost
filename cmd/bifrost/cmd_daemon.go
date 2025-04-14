@@ -24,7 +24,7 @@ import (
 	entitygraph_logger "github.com/aperturerobotics/entitygraph/logger"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli/v2"
+	"github.com/aperturerobotics/cli"
 )
 
 var daemonFlags struct {

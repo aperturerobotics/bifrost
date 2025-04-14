@@ -13,7 +13,7 @@ import (
 	"github.com/aperturerobotics/bifrost/util/confparse"
 	"github.com/aperturerobotics/protobuf-go-lite/types/known/timestamppb"
 	"github.com/pkg/errors"
-	"github.com/urfave/cli/v2"
+	"github.com/aperturerobotics/cli"
 	"golang.org/x/crypto/ssh"
 )
 

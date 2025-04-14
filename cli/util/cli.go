@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/sirupsen/logrus"
-	ucli "github.com/urfave/cli/v2"
+	ucli "github.com/aperturerobotics/cli"
 )
 
 // UtilArgs contains the utility arguments and functions.
