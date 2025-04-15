@@ -100,7 +100,7 @@ func (c *HTTPHandlerController) HandleDirective(
 					if val == nil {
 						return nil, nil
 					}
-					var handler LookupHTTPHandlerValue = val
+					var handler LookupHTTPHandlerValue = val //nolint:staticcheck
 					if c.stripPathPrefix && len(stripPrefix) != 0 {
 						handler = http.StripPrefix(stripPrefix, handler)
 					}

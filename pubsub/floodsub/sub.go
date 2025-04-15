@@ -49,17 +49,17 @@ func (s *subscription) Publish(data []byte) error {
 // The callback should not block.
 // Returns a remove function.
 // The handler(s) are also removed when the subscription is released.
-func (b *subscription) AddHandler(cb func(m pubsub.Message)) func() {
+func (s *subscription) AddHandler(cb func(m pubsub.Message)) func() {
 	sh := &subscriptionHandler{cb: cb}
-	b.mtx.Lock()
-	b.handlers[sh] = struct{}{}
-	b.mtx.Unlock()
+	s.mtx.Lock()
+	s.handlers[sh] = struct{}{}
+	s.mtx.Unlock()
 	relOnce := sync.Once{}
 	return func() {
 		relOnce.Do(func() {
-			b.mtx.Lock()
-			delete(b.handlers, sh)
-			b.mtx.Unlock()
+			s.mtx.Lock()
+			delete(s.handlers, sh)
+			s.mtx.Unlock()
 		})
 	}
 }

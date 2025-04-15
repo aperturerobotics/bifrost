@@ -24,7 +24,7 @@ func (c *Config) EqualsConfig(other config.Config) bool {
 
 // Validate checks the config.
 func (c *Config) Validate() error {
-	var pid protocol.ID = protocol.ID(c.GetProtocolId())
+	var pid protocol.ID = protocol.ID(c.GetProtocolId()) //nolint:staticcheck
 	if err := pid.Validate(); err != nil {
 		return protocol.ErrEmptyProtocolID
 	}

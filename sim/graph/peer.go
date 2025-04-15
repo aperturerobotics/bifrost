@@ -123,7 +123,7 @@ func (p *Peer) GetPeerPriv() crypto.PrivKey {
 // GetLinkedPeers returns all peers that should have a link with the peer.
 // This includes other peers directly linked as well as those linked by a lan or multiple lans.
 func (p *Peer) GetLinkedPeers(g *Graph) []*Peer {
-	var stack []Node = g.FromNodes(p)
+	var stack []Node = g.FromNodes(p) //nolint:staticcheck
 	var peers []*Peer
 	seenNodes := map[Node]struct{}{p: {}}
 	for len(stack) != 0 {

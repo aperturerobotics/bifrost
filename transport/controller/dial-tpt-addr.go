@@ -72,7 +72,7 @@ func (o *dialTptAddrResolver) Resolve(ctx context.Context, handler directive.Res
 	}
 
 	// push the result
-	var value tptaddr.DialTptAddrValue = lnk
+	var value tptaddr.DialTptAddrValue = lnk //nolint:staticcheck
 	_, _ = handler.AddValue(value)
 	return nil
 }

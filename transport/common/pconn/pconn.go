@@ -99,7 +99,7 @@ func NewTransport(
 				le,
 				opts.GetQuic(),
 				tpt.quicTpt,
-				tpt.Transport.GetIdentity(),
+				tpt.GetIdentity(),
 				na,
 				"",
 			)
@@ -143,7 +143,7 @@ func (t *Transport) Execute(ctx context.Context) error {
 		WithField("peer-id", t.peerID.String()).
 		Info("starting to listen with quic + tls")
 	// Configure TLS to allow any incoming remote peer.
-	tlsConf := transport_quic.BuildIncomingTlsConf(t.Transport.GetIdentity(), "")
+	tlsConf := transport_quic.BuildIncomingTlsConf(t.GetIdentity(), "")
 	ln, err := t.quicTpt.Listen(tlsConf, t.quicConfig)
 	if err != nil {
 		return err

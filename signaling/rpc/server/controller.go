@@ -2,7 +2,6 @@ package signaling_rpc_server
 
 import (
 	"github.com/aperturerobotics/bifrost/protocol"
-	signaling "github.com/aperturerobotics/bifrost/signaling/rpc"
 	signaling_rpc "github.com/aperturerobotics/bifrost/signaling/rpc"
 	stream_srpc_server "github.com/aperturerobotics/bifrost/stream/srpc/server"
 	"github.com/aperturerobotics/controllerbus/bus"
@@ -38,7 +37,7 @@ func NewController(le *logrus.Entry, b bus.Bus, c *Config) (*Controller, error) 
 		controller.NewInfo(ControllerID, Version, "signaling server"),
 		[]stream_srpc_server.RegisterFn{
 			func(mux srpc.Mux) error {
-				return signaling.SRPCRegisterSignaling(mux, srv)
+				return signaling_rpc.SRPCRegisterSignaling(mux, srv)
 			},
 		},
 	)

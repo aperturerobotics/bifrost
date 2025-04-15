@@ -116,36 +116,36 @@ func NewNats(
 }
 
 // Execute executes the PubSub routines.
-func (m *Nats) Execute(ctx context.Context) error {
-	m.le.Debug("nats router starting")
+func (n *Nats) Execute(ctx context.Context) error {
+	n.le.Debug("nats router starting")
 
-	go m.natsServer.Start()
-	defer m.natsServer.WaitForShutdown()
-	defer m.natsServer.Shutdown()
+	go n.natsServer.Start()
+	defer n.natsServer.WaitForShutdown()
+	defer n.natsServer.Shutdown()
 	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case <-m.wakeCh:
+		case <-n.wakeCh:
 		}
 
-		m.mtx.Lock()
-		incSess := m.incSessions
-		m.incSessions = nil
+		n.mtx.Lock()
+		incSess := n.incSessions
+		n.incSessions = nil
 
 		for _, sess := range incSess {
 			sess.ctx, sess.ctxCancel = context.WithCancel(ctx)
 			go sess.executeSession()
 		}
-		m.mtx.Unlock()
+		n.mtx.Unlock()
 	}
 }
 
 // AddPeerStream adds a negotiated peer stream.
 // Two streams will be negotiated, one outgoing, one incoming.
 // The pubsub should communicate over the stream.
-func (m *Nats) AddPeerStream(tpl pubsub.PeerLinkTuple, initiator bool, mstrm link.MountedStream) {
-	le := m.le.WithField("peer", tpl.PeerID.String())
+func (n *Nats) AddPeerStream(tpl pubsub.PeerLinkTuple, initiator bool, mstrm link.MountedStream) {
+	le := n.le.WithField("peer", tpl.PeerID.String())
 	protocolID := mstrm.GetProtocolID()
 	streamType := ProtocolIDToStreamType(protocolID)
 	if streamType == NatsConnType_NatsConnType_UNKNOWN {
@@ -158,7 +158,7 @@ func (m *Nats) AddPeerStream(tpl pubsub.PeerLinkTuple, initiator bool, mstrm lin
 	}
 
 	sh := &streamHandler{
-		m:         m,
+		m:         n,
 		le:        le,
 		tpl:       tpl,
 		peerID:    mstrm.GetPeerID(),
@@ -166,10 +166,10 @@ func (m *Nats) AddPeerStream(tpl pubsub.PeerLinkTuple, initiator bool, mstrm lin
 		initiator: initiator,
 		strmType:  streamType,
 	}
-	m.mtx.Lock()
-	m.incSessions = append(m.incSessions, sh)
-	m.mtx.Unlock()
-	m.wake()
+	n.mtx.Lock()
+	n.incSessions = append(n.incSessions, sh)
+	n.mtx.Unlock()
+	n.wake()
 }
 
 // BuildClient builds a client for the nats server, creating a client connection.
@@ -211,7 +211,7 @@ func (n *Nats) AddSubscription(ctx context.Context, privKey crypto.PrivKey, chan
 		return nil, err
 	}
 
-	nsub, err := nc.Conn.SubscribeSync(channelID)
+	nsub, err := nc.SubscribeSync(channelID)
 	if err != nil {
 		ncRel()
 		return nil, err
@@ -255,7 +255,7 @@ func (n *Nats) getOrBuildClient(ctx context.Context, privKey crypto.PrivKey) (*n
 	npeerString := npeer.String()
 	nc := n.natsClients[npeerString]
 	if nc != nil {
-		if !nc.Conn.IsClosed() {
+		if !nc.IsClosed() {
 			return nc, nc.addRef(), nil
 		}
 
@@ -291,25 +291,25 @@ func (n *Nats) SubscribeSync(
 }
 
 // Close closes the pubsub.
-func (m *Nats) Close() {
-	m.mtx.Lock()
-	for _, s := range m.incSessions {
+func (n *Nats) Close() {
+	n.mtx.Lock()
+	for _, s := range n.incSessions {
 		if s.mstrm != nil {
 			s.mstrm.GetStream().Close()
 		}
 	}
-	m.incSessions = nil
-	for id, client := range m.natsClients {
+	n.incSessions = nil
+	for id, client := range n.natsClients {
 		client.Close()
-		delete(m.natsClients, id)
+		delete(n.natsClients, id)
 	}
-	m.mtx.Unlock()
+	n.mtx.Unlock()
 }
 
 // wake wakes the controller
-func (m *Nats) wake() {
+func (n *Nats) wake() {
 	select {
-	case m.wakeCh <- struct{}{}:
+	case n.wakeCh <- struct{}{}:
 	default:
 	}
 }

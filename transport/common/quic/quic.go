@@ -314,17 +314,17 @@ func (t *Transport) Close() error {
 }
 
 // handleLinkLost is called when a link is lost.
-func (u *Transport) handleLinkLost(addrStr string, lnk *Link) {
-	u.mtx.Lock()
-	existing := u.links[addrStr]
+func (t *Transport) handleLinkLost(addrStr string, lnk *Link) {
+	t.mtx.Lock()
+	existing := t.links[addrStr]
 	rel := existing == lnk
 	if rel {
-		delete(u.links, addrStr)
+		delete(t.links, addrStr)
 	}
-	u.mtx.Unlock()
+	t.mtx.Unlock()
 
-	if u.handler != nil && rel {
-		u.handler.HandleLinkLost(lnk)
+	if t.handler != nil && rel {
+		t.handler.HandleLinkLost(lnk)
 	}
 }
 

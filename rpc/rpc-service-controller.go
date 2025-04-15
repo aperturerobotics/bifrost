@@ -122,7 +122,7 @@ func (c *RpcServiceController) HandleDirective(
 					if val == nil {
 						return nil, nil
 					}
-					var invoker LookupRpcServiceValue = val
+					var invoker LookupRpcServiceValue = val //nolint:staticcheck
 					if c.stripServiceIdPrefix {
 						invoker = srpc.NewPrefixInvoker(invoker, c.serviceIdPrefixes)
 					}

@@ -90,7 +90,7 @@ func NewWebSocket(
 		raddr := saddr.NewStringAddr("ws", addr)
 		pc := NewPacketConn(ctx, conn, laddr, raddr)
 		// Negotiate quic session.
-		qconn, _, err := transport_quic.DialSession(ctx, le, quicOpts, pc, tpt.Transport.GetIdentity(), raddr, "")
+		qconn, _, err := transport_quic.DialSession(ctx, le, quicOpts, pc, tpt.GetIdentity(), raddr, "")
 		if err != nil {
 			return nil, raddr, err
 		}
@@ -223,8 +223,8 @@ func (w *WebSocket) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	raddr := saddr.NewStringAddr("ws", req.RemoteAddr)
-	pc := NewPacketConn(req.Context(), c, w.Transport.LocalAddr(), raddr)
-	lnk, err := w.Transport.HandleConn(w.ctx, false, pc, raddr, "")
+	pc := NewPacketConn(req.Context(), c, w.LocalAddr(), raddr)
+	lnk, err := w.HandleConn(w.ctx, false, pc, raddr, "")
 	if err != nil {
 		httplog.
 			WithLoggerFields(w.le, req, 500).

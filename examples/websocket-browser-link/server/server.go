@@ -11,15 +11,12 @@ import (
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
 	"github.com/aperturerobotics/controllerbus/directive"
-	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/sirupsen/logrus"
 )
 
 var (
-	log          = logrus.New()
-	le           = logrus.NewEntry(log)
-	localPrivKey crypto.PrivKey
-	localPeerID  peer.ID
+	log = logrus.New()
+	le  = logrus.NewEntry(log)
 )
 
 func init() {
@@ -53,6 +50,9 @@ func run() error {
 			le.Debug("websocket transport resolved")
 		}, nil, nil),
 	)
+	if err != nil {
+		return err
+	}
 	defer wsRef.Release()
 
 	// accept & echo the pubsub channel

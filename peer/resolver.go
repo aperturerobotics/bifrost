@@ -33,7 +33,7 @@ func NewGetPeerResolver(
 
 // Resolve resolves the values.
 func (c *GetPeerResolver) Resolve(ctx context.Context, valHandler directive.ResolverHandler) error {
-	var val Peer = c.peer
+	var val Peer = c.peer //nolint:staticcheck
 	_, _ = valHandler.AddValue(val)
 	return nil
 }

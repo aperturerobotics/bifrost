@@ -50,7 +50,7 @@ func (s *Session) SendMsg(msg protobuf_go_lite.Message) error {
 	s.sendMtx.Lock()
 	defer s.sendMtx.Unlock()
 
-	if _, err := s.ReadWriteCloser.Write(pktBuf); err != nil {
+	if _, err := s.Write(pktBuf); err != nil {
 		return err
 	}
 	return nil

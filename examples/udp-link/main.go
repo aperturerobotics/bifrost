@@ -20,7 +20,6 @@ import (
 
 var (
 	log = logrus.New()
-	le  = logrus.NewEntry(log)
 )
 
 func init() {

@@ -99,7 +99,7 @@ func NewTransport(
 			}
 
 			pc := rwc.NewPacketConn(ctx, c, laddr, na, mtu, int(bufSize))
-			conn, _, err := transport_quic.DialSession(ctx, le, opts.GetQuic(), pc, tpt.Transport.GetIdentity(), na, "")
+			conn, _, err := transport_quic.DialSession(ctx, le, opts.GetQuic(), pc, tpt.GetIdentity(), na, "")
 			if err != nil {
 				_ = c.Close()
 				return nil, na, err
@@ -148,7 +148,7 @@ func (t *Transport) HandleConn(
 	pc := rwc.NewPacketConn(
 		t.ctx,
 		c,
-		t.Transport.LocalAddr(),
+		t.LocalAddr(),
 		raddr,
 		t.mtu,
 		int(t.bufSize),

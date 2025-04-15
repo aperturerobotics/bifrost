@@ -168,7 +168,7 @@ func runNatsExample(c *cli.Context) error {
 			le.Infof("publishing data on p2 with peer %s", p2.GetPeerID().String())
 			s2.Publish(testingData)
 			rmsg := <-msgRx
-			if bytes.Compare(rmsg.GetData(), testingData) != 0 {
+			if !bytes.Equal(rmsg.GetData(), testingData) {
 				t.Fatalf("pubsub data mismatch %v != expected %v", rmsg.GetData(), testingData)
 			}
 			le.Info("successful pubsub replication from p2 -> [lan2] -> p1 -> [lan1] -> p0 ")

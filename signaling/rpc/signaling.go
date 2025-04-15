@@ -93,8 +93,8 @@ func (i *SessionInit) Validate() error {
 }
 
 // ParsePeerID parses the peer ID.
-func (s *SessionInit) ParsePeerID() (peer.ID, error) {
-	return confparse.ParsePeerID(s.GetPeerId())
+func (i *SessionInit) ParsePeerID() (peer.ID, error) {
+	return confparse.ParsePeerID(i.GetPeerId())
 }
 
 // ExtractAndVerify extracts the signed message and verifies the signature.
