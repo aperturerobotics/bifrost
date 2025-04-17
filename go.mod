@@ -9,7 +9,7 @@ require (
 	github.com/aperturerobotics/controllerbus v0.50.1 // latest
 	github.com/aperturerobotics/entitygraph v0.11.0 // latest
 	github.com/aperturerobotics/protobuf-go-lite v0.9.1 // latest
-	github.com/aperturerobotics/starpc v0.38.0 // latest
+	github.com/aperturerobotics/starpc v0.38.1 // latest
 	github.com/aperturerobotics/util v1.30.0 // latest
 )
 
@@ -37,8 +37,8 @@ require (
 	github.com/mr-tron/base58 v1.2.0
 	github.com/multiformats/go-multiaddr v0.15.0
 	github.com/nats-io/nats-server/v2 v2.11.1
-	github.com/nats-io/nats.go v1.41.1
-	github.com/nats-io/nkeys v0.4.10
+	github.com/nats-io/nats.go v1.41.2
+	github.com/nats-io/nkeys v0.4.11
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pion/datachannel v1.5.10
 	github.com/pion/sdp/v3 v3.0.11
