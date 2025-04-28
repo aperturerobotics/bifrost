@@ -61,6 +61,9 @@ jobs:
       - name: Depcheck Js
         run: yarn run deps
 
+      - name: Check goreleaser
+        run: make release-check
+
       # Issue: https://github.com/agnivade/wasmbrowsertest/pull/72/files
       # Issue: https://github.com/agnivade/wasmbrowsertest/issues/60
       # Remove the comment once fixed.
