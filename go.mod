@@ -9,7 +9,7 @@ require (
 	github.com/aperturerobotics/controllerbus v0.50.1 // latest
 	github.com/aperturerobotics/entitygraph v0.11.0 // latest
 	github.com/aperturerobotics/protobuf-go-lite v0.9.1 // latest
-	github.com/aperturerobotics/starpc v0.38.0 // latest
+	github.com/aperturerobotics/starpc v0.38.1 // latest
 	github.com/aperturerobotics/util v1.30.0 // latest
 )
 
@@ -36,15 +36,15 @@ require (
 	github.com/libp2p/go-libp2p v0.41.1
 	github.com/mr-tron/base58 v1.2.0
 	github.com/multiformats/go-multiaddr v0.15.0
-	github.com/nats-io/nats-server/v2 v2.11.1
-	github.com/nats-io/nats.go v1.41.1
-	github.com/nats-io/nkeys v0.4.10
+	github.com/nats-io/nats-server/v2 v2.11.2
+	github.com/nats-io/nats.go v1.41.2
+	github.com/nats-io/nkeys v0.4.11
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pion/datachannel v1.5.10
 	github.com/pion/sdp/v3 v3.0.11
-	github.com/pion/webrtc/v4 v4.0.15
+	github.com/pion/webrtc/v4 v4.1.0
 	github.com/pkg/errors v0.9.1
-	github.com/quic-go/quic-go v0.50.1 // latest
+	github.com/quic-go/quic-go v0.51.0 // latest
 	github.com/sasha-s/go-deadlock v0.3.5
 	github.com/sirupsen/logrus v1.9.3
 	github.com/zeebo/blake3 v0.2.4
@@ -86,8 +86,8 @@ require (
 	github.com/pion/mdns/v2 v2.0.7 // indirect
 	github.com/pion/randutil v0.1.0 // indirect
 	github.com/pion/rtcp v1.2.15 // indirect
-	github.com/pion/rtp v1.8.13 // indirect
-	github.com/pion/sctp v1.8.38 // indirect
+	github.com/pion/rtp v1.8.15 // indirect
+	github.com/pion/sctp v1.8.39 // indirect
 	github.com/pion/srtp/v3 v3.0.4 // indirect
 	github.com/pion/stun/v3 v3.0.0 // indirect
 	github.com/pion/transport/v3 v3.0.7 // indirect
