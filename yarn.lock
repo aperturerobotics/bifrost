@@ -2,10 +2,10 @@
 # yarn lockfile v1
 
 
-"@aptre/common@^0.22.1":
-  version "0.22.1"
-  resolved "https://registry.yarnpkg.com/@aptre/common/-/common-0.22.1.tgz#6706e2fd3134a60dc007eadd479268e2a82c3060"
-  integrity sha512-p22OJWf1jPxrnBOK0Rr2LZU+NjNDfTIAZwvgM8fOgoJXsbPN42WutouPEoumU//P9rCW5C1ATv+yOVXZbUm5Sw==
+"@aptre/common@^0.22.3":
+  version "0.22.3"
+  resolved "https://registry.yarnpkg.com/@aptre/common/-/common-0.22.3.tgz#228a2a165970b803bf087b5adcf73ba7d4cec6d6"
+  integrity sha512-S42h4Pj6lsiIpeS78DMbcKKAAvomdodvABHQpwQMIsX5QLah5JFctCONOrULUt8XN5Lb3aNNgxBNYLwcpMA05A==
   dependencies:
     "@aptre/protobuf-es-lite" "^0.4.7"
     "@typescript-eslint/eslint-plugin" "^8.18.0"
@@ -2231,6 +2231,25 @@ starpc@^0.38.1:
   version "0.38.1"
   resolved "https://registry.yarnpkg.com/starpc/-/starpc-0.38.1.tgz#298d360d5f638278b982f357e37acecdbecf5794"
   integrity sha512-YOukIetQ1wMMGiCyM+iPeCIRW5tFznkQkePZWC1iP6NL5JQLJJl3Ip75aT7DBTHOBDZgpnIRoPe/i1OclT6Vow==
+  dependencies:
+    "@aptre/it-ws" "^1.0.1"
+    "@aptre/protobuf-es-lite" "^0.4.6"
+    "@chainsafe/libp2p-yamux" "^7.0.1"
+    "@libp2p/interface" "^2.6.1"
+    "@libp2p/logger" "^5.1.11"
+    event-iterator "^2.0.0"
+    isomorphic-ws "^5.0.0"
+    it-first "^3.0.6"
+    it-pipe "^3.0.1"
+    it-pushable "^3.2.3"
+    it-stream-types "^2.0.2"
+    uint8arraylist "^2.4.7"
+    ws "^8.18.1"
+
+starpc@^0.39.0:
+  version "0.39.0"
+  resolved "https://registry.yarnpkg.com/starpc/-/starpc-0.39.0.tgz#49a34a6821257b6600198c942ef16d157a9f942e"
+  integrity sha512-WLIW5UP1EzjWl77X3vullv/cOL6Dm9iXXg1J0n9T+IdnzMm+ZMLbOIC3ufbowTjtEN/tDvbCflC11yNQkxpdOA==
   dependencies:
     "@aptre/it-ws" "^1.0.1"
     "@aptre/protobuf-es-lite" "^0.4.6"
