@@ -34,7 +34,7 @@ func NewInvoker(b bus.Bus, serverID string, wait bool) *Invoker {
 func (i *Invoker) InvokeMethod(serviceID, methodID string, strm srpc.Stream) (bool, error) {
 	ctx := strm.Context()
 
-	invokers, _, invokerRef, err := ExLookupRpcService(ctx, i.b, serviceID, i.serverID, i.wait)
+	invokers, _, invokerRef, err := ExLookupRpcService(ctx, i.b, serviceID, i.serverID, i.wait, nil)
 	if err != nil || invokerRef == nil {
 		return false, err
 	}

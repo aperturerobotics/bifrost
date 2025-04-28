@@ -52,18 +52,21 @@ func NewLookupRpcService(serviceID, serverID string) LookupRpcService {
 // If values are returned, returns vals, valsRef, nil
 // Otherwise returns nil, nil, err
 // If waitOne is set, waits for at least one value before returning.
+// valDisposeCb is called if any of the values are no longer valid.
+// valDisposeCb might be called multiple times.
 func ExLookupRpcService(
 	ctx context.Context,
 	b bus.Bus,
 	serviceID, serverID string,
 	waitOne bool,
+	valDisposeCb func(),
 ) ([]LookupRpcServiceValue, directive.Instance, directive.Reference, error) {
 	out, di, valsRef, err := bus.ExecCollectValues[LookupRpcServiceValue](
 		ctx,
 		b,
 		NewLookupRpcService(serviceID, serverID),
 		waitOne,
-		nil,
+		valDisposeCb,
 	)
 	if err != nil {
 		return nil, nil, nil, err

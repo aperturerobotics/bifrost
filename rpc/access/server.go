@@ -158,7 +158,7 @@ func (s *AccessRpcServiceServer) LookupRpcService(
 
 // CallRpcService looks up the rpc service with the request & invokes the RPC.
 func (s *AccessRpcServiceServer) CallRpcService(strm SRPCAccessRpcService_CallRpcServiceStream) error {
-	return rpcstream.HandleRpcStream(strm, func(ctx context.Context, componentID string) (srpc.Invoker, func(), error) {
+	return rpcstream.HandleRpcStream(strm, func(ctx context.Context, componentID string, released func()) (srpc.Invoker, func(), error) {
 		// parse component id json
 		req := &LookupRpcServiceRequest{}
 		if err := req.UnmarshalComponentID(componentID); err != nil {
@@ -182,6 +182,7 @@ func (s *AccessRpcServiceServer) CallRpcService(strm SRPCAccessRpcService_CallRp
 			req.GetServiceId(),
 			serverID,
 			s.waitOne,
+			released,
 		)
 		if err != nil || invokerRef == nil {
 			return nil, nil, err
