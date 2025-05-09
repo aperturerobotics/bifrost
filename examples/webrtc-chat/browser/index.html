@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Bifrost WebRTC Chat</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    
+    .chat-area {
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      overflow: hidden;
+    }
+    
+    .messages {
+      flex-grow: 1;
+      padding: 10px;
+      overflow-y: auto;
+      background-color: #f9f9f9;
+    }
+    
+    .message {
+      margin-bottom: 10px;
+      padding: 8px 12px;
+      border-radius: 5px;
+      max-width: 70%;
+    }
+    
+    .message.sent {
+      background-color: #dcf8c6;
+      align-self: flex-end;
+      margin-left: auto;
+    }
+    
+    .message.received {
+      background-color: #fff;
+      align-self: flex-start;
+    }
+    
+    .message .sender {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    
+    .message .time {
+      font-size: 0.8em;
+      color: #888;
+      text-align: right;
+    }
+    
+    .input-area {
+      display: flex;
+      padding: 10px;
+      background-color: #f0f0f0;
+    }
+    
+    .input-area input {
+      flex-grow: 1;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      margin-right: 10px;
+    }
+    
+    .input-area button {
+      padding: 8px 15px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    
+    .input-area button:hover {
+      background-color: #45a049;
+    }
+    
+    .status {
+      text-align: center;
+      margin-bottom: 10px;
+      color: #666;
+    }
+    
+    .username-container {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    
+    .username-container input {
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      margin-right: 10px;
+    }
+    
+    .username-container button {
+      padding: 8px 15px;
+      background-color: #2196F3;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Bifrost WebRTC Chat</h1>
+    </div>
+    
+    <div class="username-container" id="username-container">
+      <input type="text" id="username-input" placeholder="Enter your username" />
+      <button id="username-button">Join Chat</button>
+    </div>
+    
+    <div class="status" id="status">Disconnected</div>
+    
+    <div class="chat-area" id="chat-area" style="display: none;">
+      <div class="messages" id="messages"></div>
+      <div class="input-area">
+        <input type="text" id="message-input" placeholder="Type a message..." />
+        <button id="send-button">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="wasm_exec.js"></script>
+  <script>
+    // Will be implemented with WebAssembly and WebRTC
+    document.addEventListener('DOMContentLoaded', function() {
+      const usernameContainer = document.getElementById('username-container');
+      const usernameInput = document.getElementById('username-input');
+      const usernameButton = document.getElementById('username-button');
+      const chatArea = document.getElementById('chat-area');
+      const messagesContainer = document.getElementById('messages');
+      const messageInput = document.getElementById('message-input');
+      const sendButton = document.getElementById('send-button');
+      const statusElement = document.getElementById('status');
+      
+      let username = '';
+      
+      // Handle username submission
+      usernameButton.addEventListener('click', function() {
+        username = usernameInput.value.trim();
+        if (username) {
+          usernameContainer.style.display = 'none';
+          chatArea.style.display = 'flex';
+          statusElement.textContent = 'Connecting...';
+          
+          // Initialize WebRTC connection here
+          initWebRTC();
+        }
+      });
+      
+      // Handle message sending
+      sendButton.addEventListener('click', sendMessage);
+      messageInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          sendMessage();
+        }
+      });
+      
+      function sendMessage() {
+        const message = messageInput.value.trim();
+        if (message) {
+          // Send message via WebRTC
+          addMessage(username, message, true);
+          messageInput.value = '';
+        }
+      }
+      
+      function addMessage(sender, text, isSent) {
+        const messageElement = document.createElement('div');
+        messageElement.className = `message ${isSent ? 'sent' : 'received'}`;
+        
+        const senderElement = document.createElement('div');
+        senderElement.className = 'sender';
+        senderElement.textContent = sender;
+        
+        const textElement = document.createElement('div');
+        textElement.className = 'text';
+        textElement.textContent = text;
+        
+        const timeElement = document.createElement('div');
+        timeElement.className = 'time';
+        timeElement.textContent = new Date().toLocaleTimeString();
+        
+        messageElement.appendChild(senderElement);
+        messageElement.appendChild(textElement);
+        messageElement.appendChild(timeElement);
+        
+        messagesContainer.appendChild(messageElement);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      }
+      
+      function initWebRTC() {
+        // WebRTC initialization will be implemented
+        // This will connect to the signaling server and establish peer connections
+        statusElement.textContent = 'WebRTC implementation pending...';
+      }
+    });
+  </script>
+</body>
+</html>

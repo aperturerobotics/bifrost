@@ -1,0 +1,35 @@
+chat:
+  id: bifrost/stream/listening
+  config:
+    protocolId: webrtc-chat/message
+    listenMultiaddr: "/ip4/127.0.0.1/tcp/8081"
+
+signaling-websocket:
+  id: bifrost/websocket
+  config:
+    dialers:
+      12D3KooWQmkyHDLcNQh9wW4BAaohGbn2w5EQmxixXH6bJRhVVjc8:
+        address: ws://127.0.0.1:2253/bifrost-ws
+
+signaling:
+  id: bifrost/signaling/rpc/client
+  config:
+    signalingId: webrtc-chat
+    protocolId: webrtc-chat
+    client:
+      serverPeerIds:
+      - 12D3KooWQmkyHDLcNQh9wW4BAaohGbn2w5EQmxixXH6bJRhVVjc8
+
+webrtc:
+  id: bifrost/webrtc
+  config:
+    signalingId: webrtc-chat
+    webRtc:
+      iceServers:
+      - urls:
+        - stun:stun.l.google.com:19302
+        - stun:stun.stunprotocol.org:3478
+    allPeers: true
+    blockPeers:
+    - 12D3KooWQmkyHDLcNQh9wW4BAaohGbn2w5EQmxixXH6bJRhVVjc8
+    verbose: true
