@@ -8,6 +8,8 @@ github.com/aperturerobotics/cli v1.0.0 h1:s3xT2h7eBih4/4yZKTn/HQ6P+qpk6ygWZl2416
 github.com/aperturerobotics/cli v1.0.0/go.mod h1:wtlINjMcKuwyV1x4ftReuA6hHZcPB8kPMXHyQqGFCSc=
 github.com/aperturerobotics/common v0.22.4 h1:y0Xxsz0oau3/IEbFev8SPfiaA9ZKhMlizQmkn7936jM=
 github.com/aperturerobotics/common v0.22.4/go.mod h1:wsPfDVCTNpGHddg/MSfm84rKoO4GAvb+TQtATXz+pKY=
+github.com/aperturerobotics/common v0.22.5 h1:VhweXK3CVWfPdNXI2311EOMq9SUpdZAnWuinNYH7020=
+github.com/aperturerobotics/common v0.22.5/go.mod h1:wsPfDVCTNpGHddg/MSfm84rKoO4GAvb+TQtATXz+pKY=
 github.com/aperturerobotics/controllerbus v0.50.1 h1:QHxiRjK9kZWDJIsKoinwiMMMjZ2a9JCOdzNxdZXLVas=
 github.com/aperturerobotics/controllerbus v0.50.1/go.mod h1:3oHrC8yYjQEn1cbgFmLf8vhKMej8yjzI4ZspE0LRnTA=
 github.com/aperturerobotics/entitygraph v0.11.0 h1:nPnT0SXsEMqsxmn/lWGR50JHbfmSd3pVanyJAm6v8rI=
@@ -178,6 +180,8 @@ golang.org/x/crypto v0.0.0-20200602180216-279210d13fed/go.mod h1:LzIPMQfyMNhhGPh
 golang.org/x/crypto v0.0.0-20210314154223-e6e6c4f2bb5b/go.mod h1:T9bdIzuCu7OtxOm1hfPfRQxPLYneinmdGuTeoZ9dtd4=
 golang.org/x/crypto v0.37.0 h1:kJNSjF/Xp7kU0iB2Z+9viTPMW4EqqsrywMXLJOOsXSE=
 golang.org/x/crypto v0.37.0/go.mod h1:vg+k43peMZ0pUMhYmVAWysMK35e6ioLh3wB8ZCAfbVc=
+golang.org/x/crypto v0.38.0 h1:jt+WWG8IZlBnVbomuhg2Mdq0+BBQaHbtqHEFEigjUV8=
+golang.org/x/crypto v0.38.0/go.mod h1:MvrbAqul58NNYPKnOra203SB9vpuZW0e+RRZV+Ggqjw=
 golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0 h1:R84qjqJb5nVJMxqWYb3np9L5ZsaDtB+a39EqjV0JSUM=
 golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0/go.mod h1:S9Xr4PYopiDyqSyp5NjCrhFrqg6A5zA2E/iPHPhqnS8=
 golang.org/x/mod v0.24.0 h1:ZfthKaKaT4NrhGVZHO1/WDTwGES4De8KtWO0SIbNJMU=
@@ -198,6 +202,8 @@ golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8/go.mod h1:oPkhp1MJrh7nUepCBc
 golang.org/x/sys v0.5.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.32.0 h1:s77OFDvIQeibCmezSnk/q6iAfkdiQaJi4VzroCFrN20=
 golang.org/x/sys v0.32.0/go.mod h1:BJP2sWEmIv4KK5OTEluFJCKSidICx8ciO85XgH3Ak8k=
+golang.org/x/sys v0.33.0 h1:q3i8TbbEz+JRD9ywIRlyRAQbM0qF7hu24q3teo2hbuw=
+golang.org/x/sys v0.33.0/go.mod h1:BJP2sWEmIv4KK5OTEluFJCKSidICx8ciO85XgH3Ak8k=
 golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1/go.mod h1:bj7SfCRtBDWHUb9snDiAeCFNEtKQo2Wmx5Cou7ajbmo=
 golang.org/x/term v0.31.0 h1:erwDkOK1Msy6offm1mOgvspSkslFnIGsFnxOKoufg3o=
 golang.org/x/term v0.31.0/go.mod h1:R4BeIy7D95HzImkxGkTW1UQTtP54tio2RyHz7PwK0aw=
