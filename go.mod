@@ -2,14 +2,14 @@ module github.com/aperturerobotics/bifrost
 
 go 1.24
 
-toolchain go1.24.2
+toolchain go1.24.4
 
 require (
-	github.com/aperturerobotics/common v0.22.4 // latest
+	github.com/aperturerobotics/common v0.22.5 // latest
 	github.com/aperturerobotics/controllerbus v0.50.1 // latest
 	github.com/aperturerobotics/entitygraph v0.11.0 // latest
 	github.com/aperturerobotics/protobuf-go-lite v0.9.1 // latest
-	github.com/aperturerobotics/starpc v0.39.0 // latest
+	github.com/aperturerobotics/starpc v0.39.1 // latest
 	github.com/aperturerobotics/util v1.30.0 // latest
 )
 
@@ -35,20 +35,20 @@ require (
 	github.com/klauspost/compress v1.18.0
 	github.com/libp2p/go-libp2p v0.41.1
 	github.com/mr-tron/base58 v1.2.0
-	github.com/multiformats/go-multiaddr v0.15.0
-	github.com/nats-io/nats-server/v2 v2.11.2
-	github.com/nats-io/nats.go v1.41.2
+	github.com/multiformats/go-multiaddr v0.16.0
+	github.com/nats-io/nats-server/v2 v2.11.4
+	github.com/nats-io/nats.go v1.43.0
 	github.com/nats-io/nkeys v0.4.11
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pion/datachannel v1.5.10
-	github.com/pion/sdp/v3 v3.0.11
-	github.com/pion/webrtc/v4 v4.1.0
+	github.com/pion/sdp/v3 v3.0.13
+	github.com/pion/webrtc/v4 v4.1.1
 	github.com/pkg/errors v0.9.1
-	github.com/quic-go/quic-go v0.51.0 // latest
+	github.com/quic-go/quic-go v0.52.0 // latest
 	github.com/sasha-s/go-deadlock v0.3.5
 	github.com/sirupsen/logrus v1.9.3
 	github.com/zeebo/blake3 v0.2.4
-	golang.org/x/crypto v0.37.0
+	golang.org/x/crypto v0.39.0
 	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0 // indirect
 	gonum.org/v1/gonum v0.16.0
 )
@@ -99,7 +99,7 @@ require (
 	golang.org/x/mod v0.24.0 // indirect
 	golang.org/x/net v0.39.0 // indirect
 	golang.org/x/sync v0.13.0 // indirect
-	golang.org/x/sys v0.32.0 // indirect
+	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.32.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
