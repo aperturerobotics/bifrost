@@ -33,7 +33,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0 // latest
 	github.com/coder/websocket v1.8.13 // master
 	github.com/klauspost/compress v1.18.0
-	github.com/libp2p/go-libp2p v0.41.1
+	github.com/libp2p/go-libp2p v0.42.0
 	github.com/mr-tron/base58 v1.2.0
 	github.com/multiformats/go-multiaddr v0.16.0
 	github.com/nats-io/nats-server/v2 v2.11.4
@@ -41,8 +41,8 @@ require (
 	github.com/nats-io/nkeys v0.4.11
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pion/datachannel v1.5.10
-	github.com/pion/sdp/v3 v3.0.13
-	github.com/pion/webrtc/v4 v4.1.1
+	github.com/pion/sdp/v3 v3.0.14
+	github.com/pion/webrtc/v4 v4.1.2
 	github.com/pkg/errors v0.9.1
 	github.com/quic-go/quic-go v0.52.0 // latest
 	github.com/sasha-s/go-deadlock v0.3.5
@@ -81,14 +81,14 @@ require (
 	github.com/petermattis/goid v0.0.0-20240813172612-4fcff4a6cae7 // indirect
 	github.com/pion/dtls/v3 v3.0.6 // indirect
 	github.com/pion/ice/v4 v4.0.10 // indirect
-	github.com/pion/interceptor v0.1.39 // indirect
+	github.com/pion/interceptor v0.1.40 // indirect
 	github.com/pion/logging v0.2.3 // indirect
 	github.com/pion/mdns/v2 v2.0.7 // indirect
 	github.com/pion/randutil v0.1.0 // indirect
 	github.com/pion/rtcp v1.2.15 // indirect
 	github.com/pion/rtp v1.8.18 // indirect
 	github.com/pion/sctp v1.8.39 // indirect
-	github.com/pion/srtp/v3 v3.0.4 // indirect
+	github.com/pion/srtp/v3 v3.0.5 // indirect
 	github.com/pion/stun/v3 v3.0.0 // indirect
 	github.com/pion/transport/v3 v3.0.7 // indirect
 	github.com/pion/turn/v4 v4.0.0 // indirect
