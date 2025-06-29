@@ -109,5 +109,5 @@ func run() error {
 	mux.Handle("GET /test.wasm", fileServer)
 
 	le.Info("listening on :8080")
-	return http.ListenAndServe(":8080", mux)
+	return http.ListenAndServe(":8080", mux) //nolint:gosec
 }
