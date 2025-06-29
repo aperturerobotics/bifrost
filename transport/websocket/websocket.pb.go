@@ -36,12 +36,11 @@ type Config struct {
 	// Dialers maps peer IDs to dialers.
 	Dialers map[string]*dialer.DialerOpts `protobuf:"bytes,4,rep,name=dialers,proto3" json:"dialers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// HttpPath is the http path to expose the websocket.
-	// If unset, ignores the incoming request path.
+	// If unset, disables serving the websocket.
 	HttpPath string `protobuf:"bytes,5,opt,name=http_path,json=httpPath,proto3" json:"httpPath,omitempty"`
-	// DisableServePeerId disables serving the peer id.
-	// If this is unset the peer ID is available at http_path+"/peer"
-	// If http_path is unset the peer ID is available at /peer
-	DisableServePeerId bool `protobuf:"varint,6,opt,name=disable_serve_peer_id,json=disableServePeerId,proto3" json:"disableServePeerId,omitempty"`
+	// HttpPeerPath is the http path to expose the peer id.
+	// If unset, disables serving the websocket peer id.
+	HttpPeerPath string `protobuf:"bytes,6,opt,name=http_peer_path,json=httpPeerPath,proto3" json:"httpPeerPath,omitempty"`
 }
 
 func (x *Config) Reset() {
@@ -85,11 +84,11 @@ func (x *Config) GetHttpPath() string {
 	return ""
 }
 
-func (x *Config) GetDisableServePeerId() bool {
+func (x *Config) GetHttpPeerPath() string {
 	if x != nil {
-		return x.DisableServePeerId
+		return x.HttpPeerPath
 	}
-	return false
+	return ""
 }
 
 type Config_DialersEntry struct {
@@ -126,7 +125,7 @@ func (m *Config) CloneVT() *Config {
 	r.TransportPeerId = m.TransportPeerId
 	r.ListenAddr = m.ListenAddr
 	r.HttpPath = m.HttpPath
-	r.DisableServePeerId = m.DisableServePeerId
+	r.HttpPeerPath = m.HttpPeerPath
 	if rhs := m.Quic; rhs != nil {
 		r.Quic = rhs.CloneVT()
 	}
@@ -186,7 +185,7 @@ func (this *Config) EqualVT(that *Config) bool {
 	if this.HttpPath != that.HttpPath {
 		return false
 	}
-	if this.DisableServePeerId != that.DisableServePeerId {
+	if this.HttpPeerPath != that.HttpPeerPath {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -294,10 +293,10 @@ func (x *Config) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("httpPath")
 		s.WriteString(x.HttpPath)
 	}
-	if x.DisableServePeerId || s.HasField("disableServePeerId") {
+	if x.HttpPeerPath != "" || s.HasField("httpPeerPath") {
 		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("disableServePeerId")
-		s.WriteBool(x.DisableServePeerId)
+		s.WriteObjectField("httpPeerPath")
+		s.WriteString(x.HttpPeerPath)
 	}
 	s.WriteObjectEnd()
 }
@@ -344,9 +343,9 @@ func (x *Config) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "http_path", "httpPath":
 			s.AddField("http_path")
 			x.HttpPath = s.ReadString()
-		case "disable_serve_peer_id", "disableServePeerId":
-			s.AddField("disable_serve_peer_id")
-			x.DisableServePeerId = s.ReadBool()
+		case "http_peer_path", "httpPeerPath":
+			s.AddField("http_peer_path")
+			x.HttpPeerPath = s.ReadString()
 		}
 	})
 }
@@ -386,15 +385,12 @@ func (m *Config) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
 	}
-	if m.DisableServePeerId {
+	if len(m.HttpPeerPath) > 0 {
+		i -= len(m.HttpPeerPath)
+		copy(dAtA[i:], m.HttpPeerPath)
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(len(m.HttpPeerPath)))
 		i--
-		if m.DisableServePeerId {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x30
+		dAtA[i] = 0x32
 	}
 	if len(m.HttpPath) > 0 {
 		i -= len(m.HttpPath)
@@ -487,8 +483,9 @@ func (m *Config) SizeVT() (n int) {
 	if l > 0 {
 		n += 1 + l + protobuf_go_lite.SizeOfVarint(uint64(l))
 	}
-	if m.DisableServePeerId {
-		n += 2
+	l = len(m.HttpPeerPath)
+	if l > 0 {
+		n += 1 + l + protobuf_go_lite.SizeOfVarint(uint64(l))
 	}
 	n += len(m.unknownFields)
 	return n
@@ -562,12 +559,12 @@ func (x *Config) MarshalProtoText() string {
 		sb.WriteString("http_path: ")
 		sb.WriteString(strconv.Quote(x.HttpPath))
 	}
-	if x.DisableServePeerId != false {
+	if x.HttpPeerPath != "" {
 		if sb.Len() > 8 {
 			sb.WriteString(" ")
 		}
-		sb.WriteString("disable_serve_peer_id: ")
-		sb.WriteString(strconv.FormatBool(x.DisableServePeerId))
+		sb.WriteString("http_peer_path: ")
+		sb.WriteString(strconv.Quote(x.HttpPeerPath))
 	}
 	sb.WriteString("}")
 	return sb.String()
@@ -867,10 +864,10 @@ func (m *Config) UnmarshalVT(dAtA []byte) error {
 			m.HttpPath = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 6:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DisableServePeerId", wireType)
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field HttpPeerPath", wireType)
 			}
-			var v int
+			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return protobuf_go_lite.ErrIntOverflow
@@ -880,12 +877,24 @@ func (m *Config) UnmarshalVT(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			m.DisableServePeerId = bool(v != 0)
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.HttpPeerPath = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

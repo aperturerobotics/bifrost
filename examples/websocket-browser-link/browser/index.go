@@ -23,26 +23,32 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var port = 2015
-
 func getHTTPBaseURL() string {
-	document := js.Global().Get("window").Get("document")
-	location := document.Get("location")
+	location := js.Global().Get("location")
 	proto := location.Get("protocol").String()
+	hostname := location.Get("hostname").String()
+	port := location.Get("port").String()
 
-	return fmt.Sprintf("%s//%s:%d", proto, location.Get("hostname"), port)
+	if port != "" {
+		return fmt.Sprintf("%s//%s:%s", proto, hostname, port)
+	}
+	return fmt.Sprintf("%s//%s", proto, hostname)
 }
 
 func getWSBaseURL() string {
-	document := js.Global().Get("window").Get("document")
-	location := document.Get("location")
+	location := js.Global().Get("location")
+	hostname := location.Get("hostname").String()
+	port := location.Get("port").String()
 
 	wsProtocol := "ws"
 	if location.Get("protocol").String() == "https:" {
 		wsProtocol = "wss"
 	}
 
-	return fmt.Sprintf("%s://%s:%d/ws/", wsProtocol, location.Get("hostname"), port)
+	if port != "" {
+		return fmt.Sprintf("%s://%s:%s/bifrost.ws", wsProtocol, hostname, port)
+	}
+	return fmt.Sprintf("%s://%s/bifrost.ws", wsProtocol, hostname)
 }
 
 func main() {
@@ -55,13 +61,14 @@ func main() {
 
 // run runs the demo.
 func run(ctx context.Context, le *logrus.Entry) error {
-	b, privKey, err := common.BuildCommonBus(ctx)
+	b, sr, privKey, err := common.BuildCommonBus(ctx)
 	if err != nil {
 		return err
 	}
+	sr.AddFactory(wtpt.NewFactory(b))
 
 	// get the peer id from an http endpoint
-	peerIDURL := getHTTPBaseURL() + wtpt.PeerPathSuffix
+	peerIDURL := getHTTPBaseURL() + "/peer"
 	le.
 		WithField("url", peerIDURL).
 		Debug("getting peer id")
@@ -93,7 +100,7 @@ func run(ctx context.Context, le *logrus.Entry) error {
 		resolver.NewLoadControllerWithConfig(&wtpt.Config{
 			Dialers: map[string]*dialer.DialerOpts{
 				peerIDStr: {
-					Address: wsBaseURL + "bifrost-0.1",
+					Address: wsBaseURL,
 				},
 			},
 		}),

@@ -39,10 +39,9 @@ Bifrost is designed around the following core concepts:
  - **Signaling**: exchanging messages between peers via a relay server.
 
 Integrates with networking, pubsub, and RPC libraries like [libp2p], [starpc],
-[nats], and [pion webrtc].
+and [pion webrtc].
 
 [libp2p]: https://libp2p.io/
-[nats]: https://nats.io
 [starpc]: https://github.com/aperturerobotics/starpc
 [pion webrtc]: https://github.com/pion/webrtc
 
@@ -99,7 +98,7 @@ As a basic example, launch the daemon:
 bifrost daemon \
   --write-config \
   --hold-open-links \
-  --pubsub nats  \
+  --pubsub floodsub  \
   --api-listen :5110 \
   --udp-listen :5112
 ```
@@ -121,7 +120,7 @@ OPTIONS:
    --establish-peers value   if set, request establish links to list of peer ids [$BIFROST_ESTABLISH_PEERS]
    --udp-peers value         list of peer-id@address known UDP peers [$BIFROST_UDP_PEERS]
    --websocket-peers value   list of peer-id@address known WebSocket peers [$BIFROST_WS_PEERS]
-   --pubsub value            if set, will configure pubsub from options: [floodsub, nats] [$BIFROST_PUBSUB]
+   --pubsub value            if set, will configure pubsub from options: [floodsub] [$BIFROST_PUBSUB]
    --config value, -c value  path to configuration yaml file (default: "bifrost_daemon.yaml") [$BIFROST_CONFIG]
    --write-config            write the daemon config file on startup [$BIFROST_WRITE_CONFIG]
    --node-priv value         path to node private key, will be generated if doesn't exist (default: "bifrost_daemon.pem") [$BIFROST_NODE_PRIV]
@@ -327,7 +326,7 @@ the incoming stream. This decouples the transport layers from the protocols.
 
 A PubSub is a controller that supports topic-based at-least-once delivery.
 
-Nats and floodsub are currently supported as PubSub protocols.
+Floodsub is currently supported as a PubSub protocol.
 
 ## Developing
 

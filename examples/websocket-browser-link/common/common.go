@@ -6,12 +6,12 @@ import (
 	"github.com/aperturerobotics/bifrost/keypem"
 	link_holdopen_controller "github.com/aperturerobotics/bifrost/link/hold-open"
 	"github.com/aperturerobotics/bifrost/peer"
-	nctr "github.com/aperturerobotics/bifrost/peer/controller"
-	"github.com/aperturerobotics/bifrost/pubsub/nats"
-	nats_controller "github.com/aperturerobotics/bifrost/pubsub/nats/controller"
-	wtpt "github.com/aperturerobotics/bifrost/transport/websocket"
+	peer_controller "github.com/aperturerobotics/bifrost/peer/controller"
+	"github.com/aperturerobotics/bifrost/pubsub/floodsub"
+	floodsub_controller "github.com/aperturerobotics/bifrost/pubsub/floodsub/controller"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
+	"github.com/aperturerobotics/controllerbus/controller/resolver/static"
 	"github.com/aperturerobotics/controllerbus/core"
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/libp2p/go-libp2p/core/crypto"
@@ -29,37 +29,36 @@ func init() {
 
 // BuildCommonBus builds a common bus.
 // Also returns a cancel function.
-func BuildCommonBus(ctx context.Context) (bus.Bus, crypto.PrivKey, error) {
+func BuildCommonBus(ctx context.Context) (bus.Bus, *static.Resolver, crypto.PrivKey, error) {
 	p, err := peer.NewPeer(nil)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	peerPrivKey, err := p.GetPrivKey(ctx)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	peerID := p.GetPeerID()
 	peerPrivKeyPem, err := keypem.MarshalPrivKeyPem(peerPrivKey)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
-	// Construct the bus with the websocket transport and node factory attached.
+	// Construct the bus
 	b, sr, err := core.NewCoreBus(ctx, le)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
-	sr.AddFactory(wtpt.NewFactory(b))
-	sr.AddFactory(nctr.NewFactory(b))
+	sr.AddFactory(peer_controller.NewFactory(b))
 	sr.AddFactory(link_holdopen_controller.NewFactory(b))
-	sr.AddFactory(nats_controller.NewFactory(b))
+	sr.AddFactory(floodsub_controller.NewFactory(b))
 
 	le = le.WithField("peer-id", peerID.String())
-	le.Debug("constructing node")
+	le.Debug("constructing peer controller")
 	_, _, err = b.AddDirective(
-		resolver.NewLoadControllerWithConfig(&nctr.Config{
+		resolver.NewLoadControllerWithConfig(&peer_controller.Config{
 			PrivKey: string(peerPrivKeyPem),
 		}),
 		bus.NewCallbackHandler(func(val directive.AttachedValue) {
@@ -67,29 +66,28 @@ func BuildCommonBus(ctx context.Context) (bus.Bus, crypto.PrivKey, error) {
 		}, nil, nil),
 	)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	// keep links open
 	holdOpen, err := link_holdopen_controller.NewController(b, le)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	_, err = b.AddController(ctx, holdOpen, nil)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
-	// use pubsub: nats
-	_, _, err = b.AddDirective(resolver.NewLoadControllerWithConfig(&nats_controller.Config{
-		PeerId:     peerID.String(),
-		NatsConfig: &nats.Config{LogTrace: true},
+	// use pubsub: floodsub
+	_, _, err = b.AddDirective(resolver.NewLoadControllerWithConfig(&floodsub_controller.Config{
+		FloodsubConfig: &floodsub.Config{},
 	}), nil)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
-	return b, peerPrivKey, nil
+	return b, sr, peerPrivKey, nil
 }
 
 // GetLogEntry returns the root log entry.

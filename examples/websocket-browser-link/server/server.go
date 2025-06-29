@@ -2,15 +2,17 @@ package main
 
 import (
 	"context"
+	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/aperturerobotics/bifrost/examples/websocket-browser-link/common"
+	bifrost_http_listener "github.com/aperturerobotics/bifrost/http/listener"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/pubsub"
 	wtpt "github.com/aperturerobotics/bifrost/transport/websocket"
-	"github.com/aperturerobotics/controllerbus/bus"
+	"github.com/aperturerobotics/controllerbus/controller/loader"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
-	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/sirupsen/logrus"
 )
 
@@ -32,28 +34,17 @@ func main() {
 
 func run() error {
 	ctx := context.Background()
-	b, privKey, err := common.BuildCommonBus(ctx)
+	b, sr, privKey, err := common.BuildCommonBus(ctx)
 	if err != nil {
 		return err
 	}
+	sr.AddFactory(wtpt.NewFactory(b))
+	sr.AddFactory(bifrost_http_listener.NewFactory(b))
 
 	localPeerID, err := peer.IDFromPrivateKey(privKey)
 	if err != nil {
 		return err
 	}
-
-	_, wsRef, err := b.AddDirective(
-		resolver.NewLoadControllerWithConfig(&wtpt.Config{
-			ListenAddr: ":2015",
-		}),
-		bus.NewCallbackHandler(func(val directive.AttachedValue) {
-			le.Debug("websocket transport resolved")
-		}, nil, nil),
-	)
-	if err != nil {
-		return err
-	}
-	defer wsRef.Release()
 
 	// accept & echo the pubsub channel
 	channelID := "test-channel"
@@ -74,6 +65,49 @@ func run() error {
 	})
 	defer relHandler()
 
-	<-ctx.Done()
-	return nil
+	// start the websocket handler
+	wsHttpPath := "/bifrost.ws"
+	wsPeerPath := "/peer"
+	ws, _, wsRef, err := loader.WaitExecControllerRunningTyped[*wtpt.Controller](
+		ctx,
+		b,
+		resolver.NewLoadControllerWithConfig(&wtpt.Config{
+			HttpPath:     wsHttpPath,
+			HttpPeerPath: wsPeerPath,
+		}),
+		nil,
+	)
+	if err != nil {
+		return err
+	}
+	defer wsRef.Release()
+
+	// get transport
+	tpt, err := ws.GetTransport(ctx)
+	if err != nil {
+		return err
+	}
+	wsServer := tpt.(*wtpt.WebSocket)
+
+	// get current working directory
+	cwd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	// serve static files from ../browser/ relative to cwd
+	browserDir := filepath.Join(cwd, "..", "browser")
+	fileServer := http.FileServer(http.Dir(browserDir))
+
+	// start the http server
+	mux := http.NewServeMux()
+	mux.Handle("GET "+wsHttpPath, wsServer)
+	mux.Handle("GET "+wsPeerPath, wsServer)
+	mux.Handle("GET /", fileServer)
+	mux.Handle("GET /index.html", fileServer)
+	mux.Handle("GET /wasm_exec.js", fileServer)
+	mux.Handle("GET /test.wasm", fileServer)
+
+	le.Info("listening on :8080")
+	return http.ListenAndServe(":8080", mux)
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"net"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/aperturerobotics/bifrost/peer"
@@ -25,9 +24,6 @@ const TransportType = "ws"
 
 // ControllerID is the WebSocket controller ID.
 const ControllerID = "bifrost/websocket"
-
-// PeerPathSuffix is the path suffix to use for the peer id.
-const PeerPathSuffix = "/peer"
 
 // Version is the version of the implementation.
 var Version = semver.MustParse("0.0.1")
@@ -183,15 +179,10 @@ func (w *WebSocket) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 	httpPath := req.URL.Path
 	confPath := w.conf.GetHttpPath()
+	httpPeerPath := w.conf.GetHttpPeerPath()
 
 	// Serve peer ID if enabled
-	if !w.conf.GetDisableServePeerId() && strings.HasSuffix(httpPath, PeerPathSuffix) {
-		// Filter http path
-		if confPath != "" && httpPath != confPath+PeerPathSuffix {
-			returnNotFound()
-			return
-		}
-
+	if httpPeerPath != "" && httpPath == httpPeerPath {
 		// Serve peer ID
 		rw.WriteHeader(200)
 		_, _ = rw.Write([]byte(w.GetPeerID().String()))

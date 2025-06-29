@@ -13,6 +13,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Controller is the WebSocket transport controller type.
+type Controller = tc.Controller
+
 // Factory constructs a WebSocket transport.
 type Factory struct {
 	// bus is the controller bus

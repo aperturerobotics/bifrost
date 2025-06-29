@@ -1,4 +1,4 @@
 #!/bin/bash
 
-cp $(go env GOROOT)/misc/wasm/wasm_exec.js ./wasm_exec.js
-GOOS=js GOARCH=wasm go build -o example.wasm -v ./
+cp $(go env GOROOT)/lib/wasm/wasm_exec.js ./wasm_exec.js
+GOOS=js GOARCH=wasm go build -o test.wasm -v ./

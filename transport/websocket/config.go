@@ -52,6 +52,12 @@ func (c *Config) GetDebugVals() config.DebugValues {
 	if la := c.GetListenAddr(); la != "" {
 		vals["listen-addr"] = []string{la}
 	}
+	if hp := c.GetHttpPath(); hp != "" {
+		vals["http-path"] = []string{hp}
+	}
+	if hpp := c.GetHttpPeerPath(); hpp != "" {
+		vals["http-peer-path"] = []string{hpp}
+	}
 	return vals
 }
 

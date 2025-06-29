@@ -7,6 +7,15 @@ process via **Quic over WebSocket**.
 
 Quic features like stream multiplexing, mTLS, congestion control work correctly.
 
+## Building the client
+
+Build the client wasm:
+
+```sh
+cd ./browser/
+bash build.bash
+```
+
 ## Running the server
 
 Start the server with go run:
@@ -16,17 +25,9 @@ cd ./server
 go run -v ./
 ```
 
-The server listens on port 2015 for WebSocket connections.
+The server listens on port 8080.
 
-## Running the client
-
-Run a static web-server to listen on port 8000:
-
-```sh
-cd ./browser
-./build.bash
-python -m http.server
-```
+## Browsing to the client
 
 Browse to http://localhost:8000 in your web browser.
 

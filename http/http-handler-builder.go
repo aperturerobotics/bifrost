@@ -11,6 +11,8 @@ import (
 //
 // returns the http handler and an optional release function
 // can return nil to indicate not found.
+//
+// func(ctx context.Context, released func()) (http.Handler, func(), error)
 type HTTPHandlerBuilder = refcount.RefCountResolver[http.Handler]
 
 // NewHTTPHandlerBuilder creates a new HTTPHandlerBuilder with a static handler.

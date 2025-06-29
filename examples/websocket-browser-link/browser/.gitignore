@@ -1,2 +1,2 @@
-example.wasm
+*.wasm
 wasm_exec.js

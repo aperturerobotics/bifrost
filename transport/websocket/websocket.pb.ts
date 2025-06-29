@@ -49,19 +49,18 @@ export interface Config {
   dialers?: { [key: string]: DialerOpts }
   /**
    * HttpPath is the http path to expose the websocket.
-   * If unset, ignores the incoming request path.
+   * If unset, disables serving the websocket.
    *
    * @generated from field: string http_path = 5;
    */
   httpPath?: string
   /**
-   * DisableServePeerId disables serving the peer id.
-   * If this is unset the peer ID is available at http_path+"/peer"
-   * If http_path is unset the peer ID is available at /peer
+   * HttpPeerPath is the http path to expose the peer id.
+   * If unset, disables serving the websocket peer id.
    *
-   * @generated from field: bool disable_serve_peer_id = 6;
+   * @generated from field: string http_peer_path = 6;
    */
-  disableServePeerId?: boolean
+  httpPeerPath?: string
 }
 
 // Config contains the message type declaration for Config.
@@ -79,12 +78,7 @@ export const Config: MessageType<Config> = createMessageType({
       V: { kind: 'message', T: () => DialerOpts },
     },
     { no: 5, name: 'http_path', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 6,
-      name: 'disable_serve_peer_id',
-      kind: 'scalar',
-      T: ScalarType.BOOL,
-    },
+    { no: 6, name: 'http_peer_path', kind: 'scalar', T: ScalarType.STRING },
   ] as readonly PartialFieldInfo[],
   packedByDefault: true,
 })
