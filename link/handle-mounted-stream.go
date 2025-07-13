@@ -2,6 +2,7 @@ package link
 
 import (
 	"errors"
+	"time"
 
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/protocol"
@@ -10,6 +11,7 @@ import (
 
 // HandleMountedStream is a directive to return a mounted stream handler for a
 // protocol ID.
+//
 // Value is of type link.MountedStreamHandler.
 type HandleMountedStream interface {
 	// Directive indicates HandleMountedStream is a directive.
@@ -88,6 +90,9 @@ func (d *handleMountedStream) GetValueOptions() directive.ValueOptions {
 	return directive.ValueOptions{
 		MaxValueCount:   1,
 		MaxValueHardCap: true,
+
+		UnrefDisposeEmptyImmediate: true,
+		UnrefDisposeDur:            time.Second,
 	}
 }
 
