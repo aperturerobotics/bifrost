@@ -10,8 +10,10 @@ message Config {
   // If unset, attaches to any running peer with a private key.
   string transport_peer_id = 1;
   // PacketOpts are options to set on the packet connection.
-  pconn.Opts packet_opts = 2;
+  .pconn.Opts packet_opts = 2;
   // Dialers maps peer IDs to dialers.
   map<string, dialer.DialerOpts> dialers = 3;
+  // Verbose enables verbose logging.
+  bool verbose = 4;
 }
 

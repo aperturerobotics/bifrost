@@ -60,6 +60,7 @@ func (t *Factory) Construct(
 		t.bus,
 		controller.NewInfo(ControllerID, Version, "webrtc-signal-rpc transport"),
 		peerIDConstraint,
+		cc.GetVerbose(),
 		func(
 			ctx context.Context,
 			le *logrus.Entry,

@@ -41,6 +41,8 @@ type Config struct {
 	// HttpPeerPath is the http path to expose the peer id.
 	// If unset, disables serving the websocket peer id.
 	HttpPeerPath string `protobuf:"bytes,6,opt,name=http_peer_path,json=httpPeerPath,proto3" json:"httpPeerPath,omitempty"`
+	// Verbose enables verbose logging.
+	Verbose bool `protobuf:"varint,7,opt,name=verbose,proto3" json:"verbose,omitempty"`
 }
 
 func (x *Config) Reset() {
@@ -91,6 +93,13 @@ func (x *Config) GetHttpPeerPath() string {
 	return ""
 }
 
+func (x *Config) GetVerbose() bool {
+	if x != nil {
+		return x.Verbose
+	}
+	return false
+}
+
 type Config_DialersEntry struct {
 	unknownFields []byte
 	Key           string             `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
@@ -126,6 +135,7 @@ func (m *Config) CloneVT() *Config {
 	r.ListenAddr = m.ListenAddr
 	r.HttpPath = m.HttpPath
 	r.HttpPeerPath = m.HttpPeerPath
+	r.Verbose = m.Verbose
 	if rhs := m.Quic; rhs != nil {
 		r.Quic = rhs.CloneVT()
 	}
@@ -186,6 +196,9 @@ func (this *Config) EqualVT(that *Config) bool {
 		return false
 	}
 	if this.HttpPeerPath != that.HttpPeerPath {
+		return false
+	}
+	if this.Verbose != that.Verbose {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -298,6 +311,11 @@ func (x *Config) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("httpPeerPath")
 		s.WriteString(x.HttpPeerPath)
 	}
+	if x.Verbose || s.HasField("verbose") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("verbose")
+		s.WriteBool(x.Verbose)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -346,6 +364,9 @@ func (x *Config) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "http_peer_path", "httpPeerPath":
 			s.AddField("http_peer_path")
 			x.HttpPeerPath = s.ReadString()
+		case "verbose":
+			s.AddField("verbose")
+			x.Verbose = s.ReadBool()
 		}
 	})
 }
@@ -384,6 +405,16 @@ func (m *Config) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
+	}
+	if m.Verbose {
+		i--
+		if m.Verbose {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x38
 	}
 	if len(m.HttpPeerPath) > 0 {
 		i -= len(m.HttpPeerPath)
@@ -487,6 +518,9 @@ func (m *Config) SizeVT() (n int) {
 	if l > 0 {
 		n += 1 + l + protobuf_go_lite.SizeOfVarint(uint64(l))
 	}
+	if m.Verbose {
+		n += 2
+	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -565,6 +599,13 @@ func (x *Config) MarshalProtoText() string {
 		}
 		sb.WriteString("http_peer_path: ")
 		sb.WriteString(strconv.Quote(x.HttpPeerPath))
+	}
+	if x.Verbose != false {
+		if sb.Len() > 8 {
+			sb.WriteString(" ")
+		}
+		sb.WriteString("verbose: ")
+		sb.WriteString(strconv.FormatBool(x.Verbose))
 	}
 	sb.WriteString("}")
 	return sb.String()
@@ -895,6 +936,26 @@ func (m *Config) UnmarshalVT(dAtA []byte) error {
 			}
 			m.HttpPeerPath = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
+		case 7:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Verbose", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protobuf_go_lite.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Verbose = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

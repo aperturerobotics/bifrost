@@ -39,6 +39,8 @@ type Config struct {
 	Quic *quic.Opts `protobuf:"bytes,4,opt,name=quic,proto3" json:"quic,omitempty"`
 	// Dialers maps peer IDs to dialers.
 	Dialers map[string]*dialer.DialerOpts `protobuf:"bytes,5,rep,name=dialers,proto3" json:"dialers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	// Verbose enables verbose logging.
+	Verbose bool `protobuf:"varint,6,opt,name=verbose,proto3" json:"verbose,omitempty"`
 }
 
 func (x *Config) Reset() {
@@ -82,6 +84,13 @@ func (x *Config) GetDialers() map[string]*dialer.DialerOpts {
 	return nil
 }
 
+func (x *Config) GetVerbose() bool {
+	if x != nil {
+		return x.Verbose
+	}
+	return false
+}
+
 type Config_DialersEntry struct {
 	unknownFields []byte
 	Key           string             `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
@@ -114,6 +123,7 @@ func (m *Config) CloneVT() *Config {
 	}
 	r := new(Config)
 	r.TransportPeerId = m.TransportPeerId
+	r.Verbose = m.Verbose
 	if rhs := m.HttpPatterns; rhs != nil {
 		tmpContainer := make([]string, len(rhs))
 		copy(tmpContainer, rhs)
@@ -194,6 +204,9 @@ func (this *Config) EqualVT(that *Config) bool {
 				return false
 			}
 		}
+	}
+	if this.Verbose != that.Verbose {
+		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
@@ -300,6 +313,11 @@ func (x *Config) MarshalProtoJSON(s *json.MarshalState) {
 		}
 		s.WriteObjectEnd()
 	}
+	if x.Verbose || s.HasField("verbose") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("verbose")
+		s.WriteBool(x.Verbose)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -353,6 +371,9 @@ func (x *Config) UnmarshalProtoJSON(s *json.UnmarshalState) {
 				v.UnmarshalProtoJSON(s)
 				x.Dialers[key] = &v
 			})
+		case "verbose":
+			s.AddField("verbose")
+			x.Verbose = s.ReadBool()
 		}
 	})
 }
@@ -391,6 +412,16 @@ func (m *Config) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
+	}
+	if m.Verbose {
+		i--
+		if m.Verbose {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x30
 	}
 	if len(m.Dialers) > 0 {
 		for k := range m.Dialers {
@@ -491,6 +522,9 @@ func (m *Config) SizeVT() (n int) {
 			n += mapEntrySize + 1 + protobuf_go_lite.SizeOfVarint(uint64(mapEntrySize))
 		}
 	}
+	if m.Verbose {
+		n += 2
+	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -574,6 +608,13 @@ func (x *Config) MarshalProtoText() string {
 			sb.WriteString(v.MarshalProtoText())
 		}
 		sb.WriteString(" }")
+	}
+	if x.Verbose != false {
+		if sb.Len() > 8 {
+			sb.WriteString(" ")
+		}
+		sb.WriteString("verbose: ")
+		sb.WriteString(strconv.FormatBool(x.Verbose))
 	}
 	sb.WriteString("}")
 	return sb.String()
@@ -872,6 +913,26 @@ func (m *Config) UnmarshalVT(dAtA []byte) error {
 			}
 			m.Dialers[mapkey] = mapvalue
 			iNdEx = postIndex
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Verbose", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protobuf_go_lite.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Verbose = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

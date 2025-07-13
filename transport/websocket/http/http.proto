@@ -26,4 +26,6 @@ message Config {
   .transport.quic.Opts quic = 4;
   // Dialers maps peer IDs to dialers.
   map<string, .dialer.DialerOpts> dialers = 5;
+  // Verbose enables verbose logging.
+  bool verbose = 6;
 }

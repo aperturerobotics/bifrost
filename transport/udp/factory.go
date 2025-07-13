@@ -59,6 +59,7 @@ func (t *Factory) Construct(
 		t.bus,
 		controller.NewInfo(ControllerID, Version, "udp transport"),
 		peerIDConstraint,
+		cc.GetVerbose(),
 		func(
 			ctx context.Context,
 			le *logrus.Entry,

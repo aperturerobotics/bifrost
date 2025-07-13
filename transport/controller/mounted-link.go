@@ -78,14 +78,17 @@ func (l *mountedLink) OpenMountedStream(
 	}
 
 	_ = strm.SetDeadline(time.Time{})
-	l.c.le.
-		WithFields(logrus.Fields{
-			"link-id":     l.link.GetUUID(),
-			"protocol-id": protocolID,
-			"src-peer":    l.link.GetLocalPeer().String(),
-			"dst-peer":    l.link.GetRemotePeer().String(),
-		}).
-		Debug("opened stream with peer")
+	if l.c.verbose {
+		l.c.le.
+			WithFields(logrus.Fields{
+				"link-id":     l.link.GetUUID(),
+				"protocol-id": protocolID,
+				"src-peer":    l.link.GetLocalPeer().String(),
+				"dst-peer":    l.link.GetRemotePeer().String(),
+			}).
+			Debug("opened stream with peer")
+	}
+
 	return newMountedStream(strm, opts, protocolID, l), nil
 }
 

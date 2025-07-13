@@ -100,6 +100,7 @@ func BuildInprocController(
 		b,
 		controller.NewInfo(ControllerID, Version, "in-proc transport"),
 		peerIDConstraint,
+		conf.GetVerbose(),
 		func(
 			ctx context.Context,
 			le *logrus.Entry,

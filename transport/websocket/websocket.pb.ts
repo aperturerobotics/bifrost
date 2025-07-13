@@ -61,6 +61,12 @@ export interface Config {
    * @generated from field: string http_peer_path = 6;
    */
   httpPeerPath?: string
+  /**
+   * Verbose enables verbose logging.
+   *
+   * @generated from field: bool verbose = 7;
+   */
+  verbose?: boolean
 }
 
 // Config contains the message type declaration for Config.
@@ -79,6 +85,7 @@ export const Config: MessageType<Config> = createMessageType({
     },
     { no: 5, name: 'http_path', kind: 'scalar', T: ScalarType.STRING },
     { no: 6, name: 'http_peer_path', kind: 'scalar', T: ScalarType.STRING },
+    { no: 7, name: 'verbose', kind: 'scalar', T: ScalarType.BOOL },
   ] as readonly PartialFieldInfo[],
   packedByDefault: true,
 })

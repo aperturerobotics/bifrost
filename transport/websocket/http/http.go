@@ -75,6 +75,7 @@ func NewWebSocketHttp(le *logrus.Entry, b bus.Bus, conf *Config) (*WebSocketHttp
 		b,
 		controller.NewInfo(ControllerID, Version, "bifrost websocket http handler"),
 		peerID,
+		conf.GetVerbose(),
 		func(
 			ctx context.Context,
 			le *logrus.Entry,

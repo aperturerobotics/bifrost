@@ -13,7 +13,9 @@ message Config {
   // Has no effect in the browser.
   string listen_addr = 2;
   // PacketOpts are options to set on the packet connection.
-  pconn.Opts packet_opts = 4;
+  .pconn.Opts packet_opts = 4;
   // Dialers maps peer IDs to dialers.
   map<string, dialer.DialerOpts> dialers = 5;
+  // Verbose enables verbose logging.
+  bool verbose = 6;
 }

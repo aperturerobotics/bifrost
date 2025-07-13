@@ -62,6 +62,7 @@ func (t *Factory) Construct(
 		t.bus,
 		controller.NewInfo(ControllerID, Version, "websocket transport"),
 		peerIDConstraint,
+		cc.GetVerbose(),
 		func(
 			ctx context.Context,
 			le *logrus.Entry,

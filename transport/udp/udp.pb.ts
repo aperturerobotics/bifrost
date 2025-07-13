@@ -41,6 +41,12 @@ export interface Config {
    * @generated from field: map<string, dialer.DialerOpts> dialers = 5;
    */
   dialers?: { [key: string]: DialerOpts }
+  /**
+   * Verbose enables verbose logging.
+   *
+   * @generated from field: bool verbose = 6;
+   */
+  verbose?: boolean
 }
 
 // Config contains the message type declaration for Config.
@@ -57,6 +63,7 @@ export const Config: MessageType<Config> = createMessageType({
       K: ScalarType.STRING,
       V: { kind: 'message', T: () => DialerOpts },
     },
+    { no: 6, name: 'verbose', kind: 'scalar', T: ScalarType.BOOL },
   ] as readonly PartialFieldInfo[],
   packedByDefault: true,
 })

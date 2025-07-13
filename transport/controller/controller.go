@@ -74,6 +74,8 @@ type Controller struct {
 	// lookupPeerID is the peer id to lookup on the bus
 	// may be empty
 	lookupPeerID peer.ID
+	// verbose enables verbose logs
+	verbose bool
 
 	// linkDialers tracks ongoing dial attempts
 	// when a link is closed (removed from links) the associated dialer is restarted (if any).
@@ -102,6 +104,7 @@ func NewController(
 	bus bus.Bus,
 	info *controller.Info,
 	peerID peer.ID,
+	verbose bool,
 	ctor Constructor,
 ) *Controller {
 	c := &Controller{
@@ -110,6 +113,7 @@ func NewController(
 		ctor:         ctor,
 		info:         info,
 		lookupPeerID: peerID,
+		verbose:      verbose,
 
 		links:         make(map[uint64]*establishedLink),
 		linksByPeerID: make(map[peer.ID][]*establishedLink),
@@ -146,9 +150,6 @@ func (c *Controller) GetPeerLinks(peerID peer.ID) []link.Link {
 // Returning an error triggers a retry with backoff.
 func (c *Controller) Execute(ctx context.Context) error {
 	// Acquire a handle to the node.
-	c.le.
-		WithField("peer-id", c.lookupPeerID.String()).
-		Debug("waiting for peer private key")
 	localPeer, _, localPeerRef, err := peer.GetPeerWithID(ctx, c.bus, c.lookupPeerID, false, nil)
 	if err != nil {
 		return err
@@ -182,7 +183,9 @@ func (c *Controller) Execute(ctx context.Context) error {
 	// store the transport
 	handler.tpt.SetResult(tpt, nil)
 
-	c.le.Debug("executing transport")
+	if c.verbose {
+		c.le.Debug("executing transport")
+	}
 	execCtx, execCtxCancel := context.WithCancel(ctx)
 	defer execCtxCancel()
 
@@ -302,7 +305,9 @@ func (c *Controller) HandleIncomingStream(
 
 	// bus is the controller bus
 	le := c.loggerForLink(lnk).WithField("protocol-id", pid)
-	le.Debug("accepted stream")
+	if c.verbose {
+		le.Debug("accepted stream")
+	}
 
 	dir := link.NewHandleMountedStream(pid, lnk.GetLocalPeer(), mstrm.GetPeerID())
 

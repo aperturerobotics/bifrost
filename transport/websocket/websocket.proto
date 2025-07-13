@@ -28,4 +28,6 @@ message Config {
   // HttpPeerPath is the http path to expose the peer id.
   // If unset, disables serving the websocket peer id.
   string http_peer_path = 6;
+  // Verbose enables verbose logging.
+  bool verbose = 7;
 }
