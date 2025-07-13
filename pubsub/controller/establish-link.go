@@ -34,12 +34,12 @@ func (c *Controller) handleEstablishLink(di directive.Instance) {
 
 // HandleValueAdded is called when a value is added to the directive.
 func (e *establishLinkHandler) HandleValueAdded(inst directive.Instance, val directive.AttachedValue) {
-	vl, ok := val.GetValue().(link.Link)
+	vl, ok := val.GetValue().(link.MountedLink)
 	if !ok {
 		e.c.le.Warn("EstablishLink value was not a Link")
 		return
 	}
-	e.c.le.Debugf("got link with uuid %v", vl.GetUUID())
+	e.c.le.Debugf("got link with uuid %v", vl.GetLinkUUID())
 
 	// Attempt to open the stream.
 	e.c.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
@@ -50,11 +50,11 @@ func (e *establishLinkHandler) HandleValueAdded(inst directive.Instance, val dir
 
 // HandleValueRemoved is called when a value is removed from the directive.
 func (e *establishLinkHandler) HandleValueRemoved(inst directive.Instance, val directive.AttachedValue) {
-	vl, ok := val.GetValue().(link.Link)
+	vl, ok := val.GetValue().(link.MountedLink)
 	if !ok {
 		return
 	}
-	e.c.le.Debugf("lost link with uuid %v", vl.GetUUID())
+	e.c.le.Debugf("lost link with uuid %v", vl.GetLinkUUID())
 	tpl := pubsub.NewPeerLinkTuple(vl)
 	e.c.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
 		for i, l := range e.c.incLinks {

@@ -6,7 +6,6 @@ import (
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/stream"
 	stream_echo "github.com/aperturerobotics/bifrost/stream/echo"
-	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/pkg/errors"
 )
 
@@ -24,28 +23,22 @@ func TestConnectivity(ctx context.Context, px0, px1 *Peer) error {
 	}
 	defer esRef.Release()
 
-	msv1, _, ms1Ref, err := bus.ExecOneOff(
+	ms1, ms1Rel, err := link.OpenStreamWithPeerEx(
 		ctx,
 		tb0.Bus,
-		link.NewOpenStreamWithPeer(
-			stream_echo.DefaultProtocolID,
-			px0.GetPeerID(),
-			px1.GetPeerID(),
-			0,
-			stream.OpenOpts{},
-		),
-		nil,
-		nil,
+		stream_echo.DefaultProtocolID,
+		px0.GetPeerID(),
+		px1.GetPeerID(),
+		0,
+		stream.OpenOpts{},
 	)
 	if err != nil {
 		return err
 	}
-	defer ms1Ref.Release()
+	defer ms1Rel()
 
-	mns1 := msv1.GetValue().(link.MountedStream)
-	ms1 := mns1.GetStream()
 	// expect px0 stream remote peer to equal px1
-	mns1rp := mns1.GetLink().GetRemotePeer().String()
+	mns1rp := ms1.GetLink().GetRemotePeer().String()
 	if px1p := px1.GetPeerID().String(); px1p != mns1rp {
 		return errors.Errorf(
 			"stream on p0 remote peer id %s != expected %s",
@@ -54,7 +47,7 @@ func TestConnectivity(ctx context.Context, px0, px1 *Peer) error {
 		)
 	}
 	// expect px0 stream local peer to equal px0
-	mns1lp := mns1.GetLink().GetLocalPeer().String()
+	mns1lp := ms1.GetLink().GetLocalPeer().String()
 	if px0p := px0.GetPeerID().String(); px0p != mns1lp {
 		return errors.Errorf(
 			"stream on p0 local peer id %s != expected %s",
@@ -64,14 +57,14 @@ func TestConnectivity(ctx context.Context, px0, px1 *Peer) error {
 	}
 
 	data := []byte("testing 1234")
-	_, err = ms1.Write(data)
+	_, err = ms1.GetStream().Write(data)
 	if err != nil {
 		return err
 	}
 
 	// expect remote to echo back exactly len(data) bytes
 	outData := make([]byte, len(data)*2)
-	on, oe := ms1.Read(outData)
+	on, oe := ms1.GetStream().Read(outData)
 	if oe != nil {
 		return oe
 	}

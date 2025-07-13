@@ -27,7 +27,7 @@ type EstablishLinkWithPeer interface {
 }
 
 // EstablishLinkWithPeerValue is the type emitted when resolving EstablishLinkWithPeer.
-type EstablishLinkWithPeerValue = Link
+type EstablishLinkWithPeerValue = MountedLink
 
 // establishLinkWithPeer implements EstablishLinkWithPeer with a peer ID constraint.
 type establishLinkWithPeer struct {

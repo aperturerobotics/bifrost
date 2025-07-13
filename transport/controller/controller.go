@@ -167,16 +167,20 @@ func (c *Controller) Execute(ctx context.Context) error {
 	}
 
 	// Construct the transport
+	handler := newTransportHandler(ctx, c)
 	tpt, err := c.ctor(
 		ctx,
 		c.le,
 		privKey,
-		c,
+		handler,
 	)
 	if err != nil {
 		return err
 	}
 	defer tpt.Close()
+
+	// store the transport
+	handler.tpt.SetResult(tpt, nil)
 
 	c.le.Debug("executing transport")
 	execCtx, execCtxCancel := context.WithCancel(ctx)
@@ -236,10 +240,6 @@ func (c *Controller) GetTransport(ctx context.Context) (transport.Transport, err
 func (c *Controller) HandleDirective(ctx context.Context, di directive.Instance) ([]directive.Resolver, error) {
 	dir := di.GetDirective()
 	switch d := dir.(type) {
-	case link.OpenStreamWithPeer:
-		return c.resolveOpenStreamWithPeer(ctx, di, d)
-	case link.OpenStreamViaLink:
-		return c.resolveOpenStreamViaLink(ctx, di, d)
 	case link.EstablishLinkWithPeer:
 		return c.resolveEstablishLink(ctx, di, d)
 	case transport.LookupTransport:
@@ -251,57 +251,6 @@ func (c *Controller) HandleDirective(ctx context.Context, di directive.Instance)
 	return nil, nil
 }
 
-// HandleLinkEstablished is called by the transport when a link is established.
-func (c *Controller) HandleLinkEstablished(lnk link.Link) {
-	le := c.loggerForLink(lnk)
-
-	luuid := lnk.GetUUID()
-	remotePeer := lnk.GetRemotePeer()
-
-	// use MaybeAsync to avoid deadlocks if the transport author was not careful.
-	c.bcast.HoldLockMaybeAsync(func(broadcast func(), getWaitCh func() <-chan struct{}) {
-		if c.execCtx == nil {
-			le.Warn("link established while transport exited, closing link")
-			go lnk.Close()
-			return
-		}
-
-		// quick sanity check
-		if remotePeer == c.peerID {
-			le.Warn("self-dial detected, closing link")
-			go lnk.Close()
-			return
-		}
-
-		el, elOk := c.links[luuid]
-		if elOk {
-			if el.lnk == lnk {
-				// duplicate HandleLinkEstablished call
-				le.Debug("duplicate handle-link-established call")
-				return
-			}
-
-			// close dupe
-			le.Debug("closing existing link identical to incoming link")
-			c.flushEstablishedLink(el, true)
-			broadcast()
-		}
-
-		el, err := newEstablishedLink(c.le, c.execCtx, c.bus, lnk, c)
-		if err != nil {
-			c.le.WithError(err).Warn("unable to construct established link")
-			go lnk.Close()
-			return
-		}
-
-		c.links[luuid] = el
-		c.linksByPeerID[remotePeer] = append(c.linksByPeerID[remotePeer], el)
-
-		le.Info("link established")
-		broadcast()
-	})
-}
-
 // HandleIncomingStream handles an incoming stream from a link. It negotiates
 // the protocol for the stream, acquires a handler for the protocol, and hands
 // the stream to the protocol handler, then returns.
@@ -309,6 +258,7 @@ func (c *Controller) HandleLinkEstablished(lnk link.Link) {
 // rctx is the link Context, which is canceled when the link is closed.
 func (c *Controller) HandleIncomingStream(
 	rctx context.Context,
+	tpt transport.Transport,
 	lnk link.Link,
 	strm stream.Stream,
 	strmOpts stream.OpenOpts,
@@ -347,7 +297,8 @@ func (c *Controller) HandleIncomingStream(
 		return
 	}
 
-	var mstrm link.MountedStream = newMountedStream(strm, strmOpts, pid, lnk)
+	var mlnk link.MountedLink = newMountedLink(c, c.tpt, lnk)
+	var mstrm link.MountedStream = newMountedStream(strm, strmOpts, pid, mlnk)
 
 	// bus is the controller bus
 	le := c.loggerForLink(lnk).WithField("protocol-id", pid)
@@ -385,29 +336,6 @@ func (c *Controller) HandleIncomingStream(
 	}
 
 	// stream is now handled by the handler.
-}
-
-// HandleLinkLost is called when a link is lost.
-func (c *Controller) HandleLinkLost(lnk link.Link) {
-	c.bcast.HoldLockMaybeAsync(func(broadcast func(), getWaitCh func() <-chan struct{}) {
-		// fast path: clear by uuid
-		luuid := lnk.GetUUID()
-		if el, elOk := c.links[luuid]; elOk {
-			delete(c.links, luuid)
-			c.flushEstablishedLink(el, false)
-			return
-		}
-
-		// slow path: equality check
-		// only taken if the uuid somehow changed on the link.
-		for k, l := range c.links {
-			if l.lnk == lnk {
-				delete(c.links, k)
-				c.flushEstablishedLink(l, false)
-				break
-			}
-		}
-	})
 }
 
 // DialPeerAddr pushes a new dialer dialing a peer at an address.
@@ -508,37 +436,6 @@ func (c *Controller) loggerForLink(lnk link.Link) *logrus.Entry {
 // Error indicates any issue encountered releasing.
 func (c *Controller) Close() error {
 	return nil
-}
-
-// openStreamWithLink attempts to open a stream with the given link and protocol ID.
-func (c *Controller) openStreamWithLink(
-	lnk link.Link,
-	openOpts stream.OpenOpts,
-	protocolID protocol.ID,
-) (link.MountedStream, error) {
-	estMsg := NewStreamEstablish(protocolID)
-
-	strm, err := lnk.OpenStream(openOpts)
-	if err != nil {
-		return nil, err
-	}
-
-	_ = strm.SetWriteDeadline(time.Now().Add(streamEstablishTimeout))
-	if _, err := writeStreamEstablishHeader(strm, estMsg); err != nil {
-		_ = strm.Close()
-		return nil, err
-	}
-
-	_ = strm.SetDeadline(time.Time{})
-	c.le.
-		WithFields(logrus.Fields{
-			"link-id":     lnk.GetUUID(),
-			"protocol-id": protocolID,
-			"src-peer":    lnk.GetLocalPeer().String(),
-			"dst-peer":    lnk.GetRemotePeer().String(),
-		}).
-		Debug("opened stream with peer")
-	return newMountedStream(strm, openOpts, protocolID, lnk), nil
 }
 
 // _ is a type assertion

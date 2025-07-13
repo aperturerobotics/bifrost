@@ -51,7 +51,7 @@ type Controller struct {
 	// cleanupRefs are the refs to cleanup
 	cleanupRefs []directive.Reference
 	// incLinks are links that need to be established
-	incLinks []link.Link
+	incLinks []link.MountedLink
 	// links are tracked links
 	links map[pubsub.PeerLinkTuple]*trackedLink
 }
@@ -152,7 +152,7 @@ func (c *Controller) Execute(ctx context.Context) error {
 					tpl:       tpl,
 					lnk:       vl,
 					le: c.le.
-						WithField("link-uuid", vl.GetUUID()).
+						WithField("link-uuid", vl.GetLinkUUID()).
 						WithField("link-remote-peer", vl.GetRemotePeer().String()),
 				}
 				c.links[tpl] = tl

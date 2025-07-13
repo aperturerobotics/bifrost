@@ -39,10 +39,10 @@ type PeerLinkTuple struct {
 }
 
 // NewPeerLinkTuple constructs a new peer link tuple.
-func NewPeerLinkTuple(lnk link.Link) PeerLinkTuple {
+func NewPeerLinkTuple(lnk link.MountedLink) PeerLinkTuple {
 	return PeerLinkTuple{
 		PeerID: lnk.GetRemotePeer(),
-		LinkID: lnk.GetUUID(),
+		LinkID: lnk.GetLinkUUID(),
 	}
 }
 

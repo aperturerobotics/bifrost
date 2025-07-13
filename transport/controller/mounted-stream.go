@@ -13,14 +13,14 @@ type mountedStream struct {
 	strmOpenOpts stream.OpenOpts
 	protocolID   protocol.ID
 	linkPeer     peer.ID
-	link         link.Link
+	link         link.MountedLink
 }
 
 func newMountedStream(
 	strm stream.Stream,
 	strmOpenOpts stream.OpenOpts,
 	protocolID protocol.ID,
-	link link.Link,
+	link link.MountedLink,
 ) *mountedStream {
 	return &mountedStream{
 		strm:         strm,
@@ -52,7 +52,7 @@ func (m *mountedStream) GetPeerID() peer.ID {
 }
 
 // GetLink returns the associated link carrying the stream.
-func (m *mountedStream) GetLink() link.Link {
+func (m *mountedStream) GetLink() link.MountedLink {
 	return m.link
 }
 

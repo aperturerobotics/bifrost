@@ -11,7 +11,6 @@ import (
 	"github.com/aperturerobotics/bifrost/testbed"
 	"github.com/aperturerobotics/bifrost/transport/common/dialer"
 	transport_controller "github.com/aperturerobotics/bifrost/transport/controller"
-	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller/loader"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
 	"github.com/aperturerobotics/controllerbus/directive"
@@ -74,11 +73,11 @@ func TestEstablishLink(t *testing.T) {
 	tb2, le2 := buildTestbed(t, ctx)
 	le2 = le2.WithField("testbed", 1)
 
-	tpc1, tp1, tp1Ref := execPeer(ctx, t, tb1, nil)
+	_, tp1, tp1Ref := execPeer(ctx, t, tb1, nil)
 	peerId1 := tp1.GetPeerID()
 	defer tp1Ref.Release()
 
-	tpc2, tp2, tp2Ref := execPeer(ctx, t, tb2, &Config{
+	_, tp2, tp2Ref := execPeer(ctx, t, tb2, &Config{
 		Dialers: map[string]*dialer.DialerOpts{
 			peerId1.String(): {
 				Address: tp1.LocalAddr().String(),
@@ -95,50 +94,30 @@ func TestEstablishLink(t *testing.T) {
 	tp1.ConnectToInproc(ctx, tp2)
 
 	// Attempt to open a link between them.
-	lnk2to1, _, lnk1Ref, err := bus.ExecOneOff(
-		ctx,
-		tb2.Bus,
-		link.NewEstablishLinkWithPeer("", peerId1),
-		nil,
-		nil,
-	)
+	lnk2to1, lnk1Rel, err := link.EstablishLinkWithPeerEx(ctx, tb2.Bus, "", peerId1, false)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	defer lnk1Ref.Release()
+	defer lnk1Rel()
 
 	le1.Infof(
 		"opened link from 2 -> 1 with id %v",
-		lnk2to1.GetValue().(link.Link).GetUUID(),
+		lnk2to1.GetLinkUUID(),
 	)
 
-	msv1, _, ms1Ref, err := bus.ExecOneOff(
-		ctx,
-		tb1.Bus,
-		link.NewOpenStreamWithPeer(
-			stream_echo.DefaultProtocolID,
-			peerId1,
-			peerId2,
-			0,
-			stream.OpenOpts{},
-		),
-		nil,
-		nil,
-	)
+	ms1, err := lnk2to1.OpenMountedStream(ctx, stream_echo.DefaultProtocolID, stream.OpenOpts{})
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	defer ms1Ref.Release()
+	defer ms1.GetStream().Close()
 
-	mns1 := msv1.GetValue().(link.MountedStream)
-	ms1 := mns1.GetStream()
 	data := []byte("testing 1234")
-	_, err = ms1.Write(data)
+	_, err = ms1.GetStream().Write(data)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 	outData := make([]byte, len(data)*2)
-	on, oe := ms1.Read(outData)
+	on, oe := ms1.GetStream().Read(outData)
 	if oe != nil {
 		t.Fatal(oe.Error())
 	}
@@ -147,8 +126,4 @@ func TestEstablishLink(t *testing.T) {
 	}
 	outData = outData[:on]
 	le1.Infof("echoed data successfully: %v", string(outData))
-	ms1Ref.Release()
-
-	_ = tpc1
-	_ = tpc2
 }

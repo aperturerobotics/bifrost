@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/aperturerobotics/bifrost/link"
+	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/sirupsen/logrus"
@@ -18,6 +19,10 @@ type establishedLink struct {
 	c *Controller
 	// lnk is the link.
 	lnk link.Link
+	// mlnk is the mounted link
+	mlnk link.MountedLink
+	// tpt is the transport
+	tpt transport.Transport
 	// di is the directive instance
 	di directive.Instance
 	// cancel closes any goroutines related to the link
@@ -31,6 +36,8 @@ func newEstablishedLink(
 	rctx context.Context,
 	b bus.Bus,
 	lnk link.Link,
+	mlnk link.MountedLink,
+	tpt transport.Transport,
 	ctrl *Controller,
 ) (*establishedLink, error) {
 	// Construct EstablishLink directive.
@@ -49,6 +56,8 @@ func newEstablishedLink(
 	el := &establishedLink{
 		le:     le.WithField("peer-id", lnk.GetRemotePeer().String()),
 		lnk:    lnk,
+		mlnk:   mlnk,
+		tpt:    tpt,
 		di:     di,
 		cancel: ctxCancel,
 		c:      ctrl,
@@ -95,7 +104,7 @@ func (e *establishedLink) acceptStreamPump(ctx context.Context) {
 		}
 
 		if strm != nil {
-			go ctrl.HandleIncomingStream(ctx, lnk, strm, strmOpts)
+			go ctrl.HandleIncomingStream(ctx, e.tpt, lnk, strm, strmOpts)
 		}
 	}
 }

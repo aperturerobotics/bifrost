@@ -22,7 +22,7 @@ type MountedStream interface {
 	// GetPeerID returns the peer ID for the other end of the stream.
 	GetPeerID() peer.ID
 	// GetLink returns the associated link carrying the stream.
-	GetLink() Link
+	GetLink() MountedLink
 }
 
 // MountedStreamHandler handles an incoming mounted stream.

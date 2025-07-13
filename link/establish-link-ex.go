@@ -15,13 +15,11 @@ func EstablishLinkWithPeerEx(
 	b bus.Bus,
 	localPeerID, remotePeerID peer.ID,
 	returnIfIdle bool,
-) (Link, func(), error) {
+) (EstablishLinkWithPeerValue, func(), error) {
 	estl, _, ref, err := bus.ExecWaitValue[EstablishLinkWithPeerValue](
 		ctx,
 		b,
-		NewEstablishLinkWithPeer(
-			localPeerID, remotePeerID,
-		),
+		NewEstablishLinkWithPeer(localPeerID, remotePeerID),
 		bus.ReturnIfIdle(returnIfIdle),
 		nil,
 		nil,

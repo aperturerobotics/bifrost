@@ -71,7 +71,7 @@ func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.R
 			return a == b
 		},
 		func(k uint64, v *establishedLink) (link.EstablishLinkWithPeerValue, bool) {
-			return v.lnk, true
+			return v.mlnk, true
 		},
 		handler,
 	)

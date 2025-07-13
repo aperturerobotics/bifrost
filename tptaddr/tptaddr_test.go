@@ -106,6 +106,6 @@ func TestTptAddr(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	le.Infof("successfully opened link with uuid %v using tptaddr", lnk.GetUUID())
+	le.Infof("successfully opened link with uuid %v using tptaddr", lnk.GetLinkUUID())
 	lnkRel()
 }

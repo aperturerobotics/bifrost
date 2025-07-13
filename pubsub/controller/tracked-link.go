@@ -6,14 +6,13 @@ import (
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/pubsub"
 	"github.com/aperturerobotics/bifrost/stream"
-	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/sirupsen/logrus"
 )
 
 type trackedLink struct {
 	c         *Controller
 	tpl       pubsub.PeerLinkTuple
-	lnk       link.Link
+	lnk       link.MountedLink
 	le        *logrus.Entry
 	ctxCancel context.CancelFunc
 }
@@ -32,23 +31,10 @@ func (t *trackedLink) trackLink(ctx context.Context) error {
 		return err
 	}
 
-	mtStrm, _, avRef, err := bus.ExecWaitValue[link.OpenStreamViaLinkValue](
-		ctx,
-		t.c.bus,
-		link.NewOpenStreamViaLink(
-			t.lnk.GetUUID(),
-			t.c.protocolID,
-			stream.OpenOpts{},
-			t.lnk.GetTransportUUID(),
-		),
-		nil,
-		nil,
-		nil,
-	)
+	mtStrm, err := t.lnk.OpenMountedStream(ctx, t.c.protocolID, stream.OpenOpts{})
 	if err != nil {
 		return err
 	}
-	defer avRef.Release()
 
 	t.le.WithField("protocol-id", mtStrm.GetProtocolID()).
 		Info("pubsub stream opened (by us)")

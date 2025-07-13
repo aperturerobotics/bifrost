@@ -132,8 +132,6 @@ func (l *Link) RemoteAddr() net.Addr {
 
 // OpenStream opens a stream on the link, with the given parameters.
 func (l *Link) OpenStream(opts stream.OpenOpts) (stream.Stream, error) {
-	// return l.sess.OpenStreamSync(l.ctx)
-
 	// OpenStream returns an error if we hit the stream limit.
 	// it is better to return an error and backoff / know something is wrong,
 	// than wait forever (potentially) while we are at the cap.

@@ -1,8 +1,6 @@
 package stream
 
-import (
-	"time"
-)
+import "time"
 
 // OpenOpts are optional arguments when opening a stream.
 type OpenOpts struct{}

@@ -10,7 +10,7 @@ import (
 )
 
 // OpenStreamWithPeerEx executes a OpenStreamWithPeer directive.
-// Returns a release function for the links used for the stream.
+// Returns a release function for the reference to the link used for the stream.
 func OpenStreamWithPeerEx(
 	ctx context.Context,
 	b bus.Bus,
@@ -19,32 +19,26 @@ func OpenStreamWithPeerEx(
 	transportID uint64,
 	openOpts stream.OpenOpts,
 ) (MountedStream, func(), error) {
-	_, estLinkRef, err := b.AddDirective(
-		NewEstablishLinkWithPeer(localPeerID, remotePeerID),
-		nil,
-	)
-	if err != nil {
-		return nil, func() {}, err
-	}
-
-	mstrm, _, ref, err := bus.ExecWaitValue[MountedStream](
+	mlnk, _, ref, err := bus.ExecWaitValue[EstablishLinkWithPeerValue](
 		ctx,
 		b,
-		NewOpenStreamWithPeer(
-			protocolID,
-			localPeerID, remotePeerID,
-			transportID,
-			openOpts,
-		),
+		NewEstablishLinkWithPeer(localPeerID, remotePeerID),
 		nil,
 		nil,
 		nil,
 	)
 	if err != nil {
-		estLinkRef.Release()
+		if ref != nil {
+			ref.Release()
+		}
 		return nil, func() {}, err
 	}
-	ref.Release()
 
-	return mstrm, estLinkRef.Release, nil
+	mstrm, err := mlnk.OpenMountedStream(ctx, protocolID, openOpts)
+	if err != nil {
+		ref.Release()
+		return nil, func() {}, err
+	}
+
+	return mstrm, ref.Release, nil
 }
