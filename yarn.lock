@@ -506,9 +506,9 @@
     uint8arrays "^5.0.0"
 
 "@noble/curves@^1.9.1":
-  version "1.9.2"
-  resolved "https://registry.yarnpkg.com/@noble/curves/-/curves-1.9.2.tgz#73388356ce733922396214a933ff7c95afcef911"
-  integrity sha512-HxngEd2XUcg9xi20JkwlLCtYwfoFw4JGkuZpT+WlsPD4gB/cxkvTD8fSsoAnphGZhFdZYKeQIPCuFlWPm1uE0g==
+  version "1.9.4"
+  resolved "https://registry.yarnpkg.com/@noble/curves/-/curves-1.9.4.tgz#a748c6837ee7854a558cc3b951aedd87a5e7d6a5"
+  integrity sha512-2bKONnuM53lINoDrSmK8qP8W271ms7pygDhZt4SiLOoLwBtoHqeCFi6RG42V8zd3mLHuJFhU/Bmaqo4nX0/kBw==
   dependencies:
     "@noble/hashes" "1.8.0"
 
@@ -2301,9 +2301,9 @@ stackback@0.0.2:
   integrity sha512-1XMJE5fQo1jGH6Y/7ebnwPOBEkIEnT4QF32d5R1+VXdXveM0IBMJt8zfaxX1P3QhVwrYe+576+jkANtSS2mBbw==
 
 starpc@^0.39.0, starpc@^0.39.5:
-  version "0.39.5"
-  resolved "https://registry.yarnpkg.com/starpc/-/starpc-0.39.5.tgz#4e5da18e52c7679fedf097491606e1eb806e2ff5"
-  integrity sha512-ilMs3Ek5V5u4txKzhGD1SZEozT86wDHylz8xgOM/h0gv+XgY64B3PsSVn041zi4DYutcIOmnLDene+enzKz9Vg==
+  version "0.39.6"
+  resolved "https://registry.yarnpkg.com/starpc/-/starpc-0.39.6.tgz#7c9de997027099dfdcf170b756db6fd5eaa12584"
+  integrity sha512-SUsQzZ3iJ5dGswBJ6M72X4PM3VS53mv6QBjcVRbSuI50yGKFew5SLuYiok6W/WpHMmPWM8NpXyl2Wtln3v0jig==
   dependencies:
     "@aptre/it-ws" "^1.1.2"
     "@aptre/protobuf-es-lite" "^0.5.2"

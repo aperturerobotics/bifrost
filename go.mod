@@ -10,8 +10,8 @@ require (
 	github.com/aperturerobotics/controllerbus v0.50.3 // latest
 	github.com/aperturerobotics/entitygraph v0.11.0 // latest
 	github.com/aperturerobotics/protobuf-go-lite v0.9.1 // latest
-	github.com/aperturerobotics/starpc v0.39.5 // latest
-	github.com/aperturerobotics/util v1.30.1 // latest
+	github.com/aperturerobotics/starpc v0.39.6 // latest
+	github.com/aperturerobotics/util v1.31.0 // latest
 )
 
 // aperture: use compatibility forks
@@ -35,7 +35,7 @@ require (
 	github.com/multiformats/go-multiaddr v0.16.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pion/datachannel v1.5.10
-	github.com/pion/sdp/v3 v3.0.14
+	github.com/pion/sdp/v3 v3.0.15
 	github.com/pion/webrtc/v4 v4.1.3
 	github.com/pkg/errors v0.9.1
 	github.com/quic-go/quic-go v0.53.0 // latest
