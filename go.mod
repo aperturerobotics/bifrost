@@ -2,16 +2,16 @@ module github.com/aperturerobotics/bifrost
 
 go 1.24
 
-toolchain go1.24.6
+toolchain go1.25.0
 
 require (
 	github.com/aperturerobotics/cli v1.0.0 // latest
 	github.com/aperturerobotics/common v0.22.10 // latest
-	github.com/aperturerobotics/controllerbus v0.50.4 // latest
+	github.com/aperturerobotics/controllerbus v0.50.5 // latest
 	github.com/aperturerobotics/entitygraph v0.11.0 // latest
 	github.com/aperturerobotics/protobuf-go-lite v0.11.0 // latest
 	github.com/aperturerobotics/starpc v0.39.7 // latest
-	github.com/aperturerobotics/util v1.31.1 // latest
+	github.com/aperturerobotics/util v1.31.2 // latest
 )
 
 // aperture: use compatibility forks
@@ -30,9 +30,9 @@ require (
 	github.com/blang/semver/v4 v4.0.0 // latest
 	github.com/coder/websocket v1.8.13 // master
 	github.com/klauspost/compress v1.18.0
-	github.com/libp2p/go-libp2p v0.42.1
+	github.com/libp2p/go-libp2p v0.43.0
 	github.com/mr-tron/base58 v1.2.0
-	github.com/multiformats/go-multiaddr v0.16.0
+	github.com/multiformats/go-multiaddr v0.16.1
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pion/datachannel v1.5.10
 	github.com/pion/sdp/v3 v3.0.15
@@ -42,7 +42,7 @@ require (
 	github.com/sasha-s/go-deadlock v0.3.5
 	github.com/sirupsen/logrus v1.9.3
 	github.com/zeebo/blake3 v0.2.4
-	golang.org/x/crypto v0.40.0
+	golang.org/x/crypto v0.41.0
 	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0 // indirect
 	gonum.org/v1/gonum v0.16.0
 )
@@ -85,12 +85,12 @@ require (
 	github.com/wlynxg/anet v0.0.5 // indirect
 	github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 // indirect
 	go.uber.org/mock v0.5.0 // indirect
-	golang.org/x/mod v0.26.0 // indirect
-	golang.org/x/net v0.42.0 // indirect
+	golang.org/x/mod v0.27.0 // indirect
+	golang.org/x/net v0.43.0 // indirect
 	golang.org/x/sync v0.16.0 // indirect
-	golang.org/x/sys v0.34.0 // indirect
+	golang.org/x/sys v0.35.0 // indirect
 	golang.org/x/time v0.12.0 // indirect
-	golang.org/x/tools v0.35.0 // indirect
+	golang.org/x/tools v0.36.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	lukechampine.com/blake3 v1.3.0 // indirect
