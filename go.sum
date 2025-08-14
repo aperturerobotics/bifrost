@@ -28,6 +28,8 @@ github.com/aperturerobotics/starpc v0.39.7 h1:ztYLrVD5KfzBU6CP3rE0M4/K0lNx9S/I6E
 github.com/aperturerobotics/starpc v0.39.7/go.mod h1:2+rc+xB4EMF3StlJGyqO5Jaq7OyDFQR0J0McVtOA7CI=
 github.com/aperturerobotics/util v1.31.2 h1:ZDPmeQO502CgWAIXL55ZcsFNIJQ+yAXGXxGGCH0erSI=
 github.com/aperturerobotics/util v1.31.2/go.mod h1:Ff2UQHCBERfRsaRMBfmaukS4yUzQTNB6syNTLXzWmJo=
+github.com/aperturerobotics/util v1.31.3 h1:3irvlwlwwvOl4jD2lHg/N8bBp9B/3kx9Ec4qlJxQKEU=
+github.com/aperturerobotics/util v1.31.3/go.mod h1:G5yKUDojt6uzVvs7kGByey0lBfKdDg4O4jXmdkSqO6Y=
 github.com/blang/semver/v4 v4.0.0 h1:1PFHFE6yCCTv8C1TeyNNarDzntLi7wMI5i/pzqYIsAM=
 github.com/blang/semver/v4 v4.0.0/go.mod h1:IbckMUScFkM3pff0VJDNKRiT6TG/YpiHIM2yvyW5YoQ=
 github.com/coder/websocket v1.8.13 h1:f3QZdXy7uGVz+4uCJy2nTZyM0yTBj8yANEHhqlXZ9FE=
