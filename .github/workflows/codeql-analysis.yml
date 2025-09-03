@@ -26,7 +26,7 @@ jobs:
       matrix:
         language: [ 'go', 'javascript' ]
         go: ['1.24']
-        node: [23.x]
+        node: [24.x]
         # CodeQL supports [ 'cpp', 'csharp', 'go', 'java', 'javascript', 'python', 'ruby' ]
         # Learn more about CodeQL language support at https://aka.ms/codeql-docs/language-support
 
