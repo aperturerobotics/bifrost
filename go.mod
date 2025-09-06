@@ -26,7 +26,7 @@ replace (
 require (
 	filippo.io/edwards25519 v1.1.1-0.20250211130249-04b037b40df0
 	github.com/blang/semver/v4 v4.0.0 // latest
-	github.com/coder/websocket v1.8.13 // master
+	github.com/coder/websocket v1.8.14 // master
 	github.com/klauspost/compress v1.18.0
 	github.com/libp2p/go-libp2p v0.43.0
 	github.com/mr-tron/base58 v1.2.0
