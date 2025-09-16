@@ -5,10 +5,10 @@ go 1.24.0
 require (
 	github.com/aperturerobotics/cli v1.0.0 // latest
 	github.com/aperturerobotics/common v0.22.12 // latest
-	github.com/aperturerobotics/controllerbus v0.50.5 // latest
+	github.com/aperturerobotics/controllerbus v0.51.0 // latest
 	github.com/aperturerobotics/entitygraph v0.11.0 // latest
 	github.com/aperturerobotics/protobuf-go-lite v0.11.0 // latest
-	github.com/aperturerobotics/starpc v0.39.8 // latest
+	github.com/aperturerobotics/starpc v0.39.9 // latest
 	github.com/aperturerobotics/util v1.31.3 // latest
 )
 
@@ -83,12 +83,12 @@ require (
 	github.com/wlynxg/anet v0.0.5 // indirect
 	github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 // indirect
 	go.uber.org/mock v0.5.0 // indirect
-	golang.org/x/mod v0.27.0 // indirect
-	golang.org/x/net v0.43.0 // indirect
-	golang.org/x/sync v0.16.0 // indirect
+	golang.org/x/mod v0.28.0 // indirect
+	golang.org/x/net v0.44.0 // indirect
+	golang.org/x/sync v0.17.0 // indirect
 	golang.org/x/sys v0.36.0 // indirect
 	golang.org/x/time v0.12.0 // indirect
-	golang.org/x/tools v0.36.0 // indirect
+	golang.org/x/tools v0.37.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	lukechampine.com/blake3 v1.3.0 // indirect
