@@ -24,8 +24,8 @@ github.com/aperturerobotics/protobuf-go-lite v0.11.0 h1:IAaZISqrEpodqECYxk0yKWgR
 github.com/aperturerobotics/protobuf-go-lite v0.11.0/go.mod h1:c4kGy7Dkfz6B1m0t4QBIMQoNeQ7m+nYj3Qxxnlwhygo=
 github.com/aperturerobotics/quic-go v0.48.2-0.20241029082227-fa76c393ee89 h1:MUXLrLDjCw36dx8OeBwF/B7YP5akyoU6Ps+v50qR5Lo=
 github.com/aperturerobotics/quic-go v0.48.2-0.20241029082227-fa76c393ee89/go.mod h1:vhhkHYq2i9lb0bOllqKhOdtg/3i7r4o/7zc8XI/T4lo=
-github.com/aperturerobotics/starpc v0.39.9 h1:JsVrRVCrJFN3z1Xr/EufaqJLzDkJpTxDEWrnZpGNo8k=
-github.com/aperturerobotics/starpc v0.39.9/go.mod h1:rLC0m8lFh+oISGaRpJ6QuEP1z7ocbTLGb4QA8dijUWw=
+github.com/aperturerobotics/starpc v0.39.10-0.20250919171848-df418ca2447d h1:yH+c5Ooat/G9ssCIjuwf0qoJwtp+a6qKxiiGjM50bEs=
+github.com/aperturerobotics/starpc v0.39.10-0.20250919171848-df418ca2447d/go.mod h1:rLC0m8lFh+oISGaRpJ6QuEP1z7ocbTLGb4QA8dijUWw=
 github.com/aperturerobotics/util v1.31.3 h1:3irvlwlwwvOl4jD2lHg/N8bBp9B/3kx9Ec4qlJxQKEU=
 github.com/aperturerobotics/util v1.31.3/go.mod h1:G5yKUDojt6uzVvs7kGByey0lBfKdDg4O4jXmdkSqO6Y=
 github.com/blang/semver/v4 v4.0.0 h1:1PFHFE6yCCTv8C1TeyNNarDzntLi7wMI5i/pzqYIsAM=

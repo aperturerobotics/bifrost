@@ -61,12 +61,21 @@ func ExLookupRpcService(
 	waitOne bool,
 	valDisposeCb func(),
 ) ([]LookupRpcServiceValue, directive.Instance, directive.Reference, error) {
-	out, di, valsRef, err := bus.ExecCollectValues[LookupRpcServiceValue](
+	out, di, valsRef, err := bus.ExecCollectValuesWithFilter(
 		ctx,
 		b,
 		NewLookupRpcService(serviceID, serverID),
 		waitOne,
 		valDisposeCb,
+		func(val LookupRpcServiceValue) (bool, error) {
+			// If it's possible to query, do so.
+			queryable, ok := val.(srpc.QueryableInvoker)
+			if !ok {
+				// keep it if it's not queryable
+				return true, nil
+			}
+			return queryable.HasService(serviceID), nil
+		},
 	)
 	if err != nil {
 		return nil, nil, nil, err
