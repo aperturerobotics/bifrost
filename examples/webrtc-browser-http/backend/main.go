@@ -120,7 +120,7 @@ func run(ctx context.Context, le *logrus.Entry) error {
 
 	// Check if target is accessible
 	le.Infof("checking target service at %s", targetAddr)
-	resp, err := http.Get(targetAddr)
+	resp, err := http.Get(targetAddr) //nolint:gosec
 	if err != nil {
 		le.Warnf("target service not accessible: %v", err)
 		le.Warnf("make sure to start the HTTP service (e.g., python3 -m http.server 8080)")
