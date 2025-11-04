@@ -1,0 +1,262 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>WebRTC Browser HTTP Example</title>
+    <style>
+      body {
+        font-family: monospace;
+        padding: 20px;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      h1 {
+        color: #333;
+      }
+      .section {
+        margin: 20px 0;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        background-color: #f9f9f9;
+      }
+      .config-input {
+        display: block;
+        margin: 10px 0;
+      }
+      input[type='text'] {
+        width: 500px;
+        padding: 5px;
+        font-family: monospace;
+      }
+      button {
+        padding: 10px 20px;
+        margin: 5px;
+        cursor: pointer;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+      }
+      button:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+      }
+      button:hover:not(:disabled) {
+        background-color: #45a049;
+      }
+      #console {
+        background-color: #000;
+        color: #0f0;
+        padding: 10px;
+        margin-top: 20px;
+        height: 400px;
+        overflow-y: auto;
+        font-family: monospace;
+        font-size: 12px;
+        border-radius: 5px;
+      }
+      .log-entry {
+        margin: 2px 0;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>WebRTC Browser HTTP Example</h1>
+    <p>
+      This example demonstrates calling an HTTP service from a browser via a
+      WebRTC bridge.
+    </p>
+
+    <div class="section">
+      <h2>Configuration</h2>
+      <div class="config-input">
+        <label>Signaling Server Peer ID:</label>
+        <input
+          type="text"
+          id="signalingServerId"
+          value="12D3KooWNyn6cNNxHnLc5Nw8b7XkVaAWKB9vbfe921LuysEoY1Cz"
+          placeholder="Enter signaling server peer ID"
+        />
+      </div>
+      <div class="config-input">
+        <label>Backend Peer ID:</label>
+        <input
+          type="text"
+          id="backendPeerId"
+          value="12D3KooWADAL8c4BbWYWxjXZGNMRx4HJAJCtnu6wk6wmux7scvk7"
+          placeholder="Enter backend peer ID"
+        />
+      </div>
+      <button onclick="configure()">Set Configuration</button>
+    </div>
+
+    <div class="section">
+      <h2>Connection</h2>
+      <button onclick="connect()" id="connectButton">Connect WebRTC</button>
+      <button onclick="disconnect()" id="disconnectButton" disabled>
+        Disconnect
+      </button>
+    </div>
+
+    <div class="section">
+      <h2>HTTP Request</h2>
+      <div class="config-input">
+        <label>URL Path:</label>
+        <input type="text" id="urlPath" value="/" placeholder="/" />
+      </div>
+      <button onclick="doFetch()" id="fetchButton" disabled>
+        Fetch via WebRTC
+      </button>
+    </div>
+
+    <div class="section">
+      <h2>Console Output</h2>
+      <div id="console"></div>
+    </div>
+
+    <script src="wasm_exec.js"></script>
+    <script>
+      let consoleDiv = document.getElementById('console')
+      let connectButton = document.getElementById('connectButton')
+      let disconnectButton = document.getElementById('disconnectButton')
+      let fetchButton = document.getElementById('fetchButton')
+      let wasmReady = false
+
+      // Intercept console.log to display in the page
+      const originalLog = console.log
+      console.log = function (...args) {
+        originalLog.apply(console, args)
+        const entry = document.createElement('div')
+        entry.className = 'log-entry'
+        entry.textContent = args.join(' ')
+        consoleDiv.appendChild(entry)
+        consoleDiv.scrollTop = consoleDiv.scrollHeight
+      }
+
+      // WebAssembly polyfill
+      if (!WebAssembly.instantiateStreaming) {
+        WebAssembly.instantiateStreaming = async (resp, importObject) => {
+          const source = await (await resp).arrayBuffer()
+          return await WebAssembly.instantiate(source, importObject)
+        }
+      }
+
+      // Load and start the WASM module
+      const go = new Go()
+      let mod, inst
+      console.log('Loading WebAssembly module...')
+      WebAssembly.instantiateStreaming(fetch('index.wasm'), go.importObject)
+        .then(async (result) => {
+          mod = result.module
+          inst = result.instance
+          console.log('WebAssembly module loaded, starting Go runtime...')
+
+          // Run the Go program (this is async)
+          go.run(inst).then(() => {
+            console.log('Go runtime exited')
+          })
+
+          // Wait for Go functions to be available
+          await waitForWasm()
+          wasmReady = true
+          console.log('WASM functions ready!')
+        })
+        .catch((err) => {
+          console.error('Failed to load WebAssembly:', err)
+        })
+
+      // Wait for Go functions to be exposed
+      async function waitForWasm() {
+        let attempts = 0
+        const maxAttempts = 50 // 5 seconds max
+
+        while (attempts < maxAttempts) {
+          if (
+            typeof window.connectWebRTC !== 'undefined' &&
+            typeof window.fetchViaWebRTC !== 'undefined'
+          ) {
+            return true
+          }
+          await new Promise((resolve) => setTimeout(resolve, 100))
+          attempts++
+        }
+
+        console.error('Timeout waiting for WASM functions to load')
+        return false
+      }
+
+      function configure() {
+        if (!wasmReady) {
+          console.error('WASM module not ready yet. Please wait...')
+          return
+        }
+
+        const signalingId = document.getElementById('signalingServerId').value
+        const backendId = document.getElementById('backendPeerId').value
+
+        if (!signalingId || !backendId) {
+          alert('Please enter both peer IDs')
+          return
+        }
+
+        if (typeof window.setSignalingServer !== 'undefined') {
+          window.setSignalingServer(signalingId)
+        }
+        if (typeof window.setBackendPeer !== 'undefined') {
+          window.setBackendPeer(backendId)
+        }
+
+        console.log('Configuration set successfully')
+      }
+
+      function connect() {
+        if (!wasmReady) {
+          console.error('WASM module not ready yet. Please wait...')
+          return
+        }
+
+        if (typeof window.connectWebRTC === 'undefined') {
+          console.error(
+            'connectWebRTC function not available. WASM module may not be loaded.',
+          )
+          return
+        }
+
+        connectButton.disabled = true
+        console.log('Connecting...')
+        window.connectWebRTC()
+
+        // Enable other buttons after a delay (connection setup takes time)
+        setTimeout(() => {
+          disconnectButton.disabled = false
+          fetchButton.disabled = false
+          console.log('Connection buttons updated')
+        }, 5000)
+      }
+
+      function disconnect() {
+        // Reload the page to reset everything
+        location.reload()
+      }
+
+      function doFetch() {
+        if (!wasmReady) {
+          console.error('WASM module not ready yet. Please wait...')
+          return
+        }
+
+        const urlPath = document.getElementById('urlPath').value || '/'
+
+        if (typeof window.fetchViaWebRTC === 'undefined') {
+          console.error('fetchViaWebRTC function not available')
+          return
+        }
+
+        console.log('Fetching: ' + urlPath)
+        window.fetchViaWebRTC(urlPath)
+      }
+    </script>
+  </body>
+</html>
