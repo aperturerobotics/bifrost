@@ -1,15 +1,15 @@
 module github.com/aperturerobotics/bifrost
 
-go 1.24.0
+go 1.25
 
 require (
-	github.com/aperturerobotics/cli v1.0.0 // latest
-	github.com/aperturerobotics/common v0.22.12 // latest
-	github.com/aperturerobotics/controllerbus v0.51.0 // latest
+	github.com/aperturerobotics/cli v1.0.1 // latest
+	github.com/aperturerobotics/common v0.22.13 // latest
+	github.com/aperturerobotics/controllerbus v0.51.4-0.20251113002647-ff3f278bc709 // latest
 	github.com/aperturerobotics/entitygraph v0.11.0 // latest
 	github.com/aperturerobotics/protobuf-go-lite v0.11.0 // latest
 	github.com/aperturerobotics/starpc v0.39.10 // latest
-	github.com/aperturerobotics/util v1.31.3 // latest
+	github.com/aperturerobotics/util v1.31.4 // latest
 )
 
 // aperture: use compatibility forks
@@ -46,7 +46,7 @@ require (
 )
 
 require (
-	github.com/aperturerobotics/json-iterator-lite v1.0.1-0.20250712004945-4e5f8882b0b8 // indirect
+	github.com/aperturerobotics/json-iterator-lite v1.0.1-0.20251104042408-0c9eb8a3f726 // indirect
 	github.com/davidlazar/go-crypto v0.0.0-20200604182044-b73af7476f6c // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
@@ -81,14 +81,14 @@ require (
 	github.com/pion/turn/v4 v4.1.1 // indirect
 	github.com/spaolacci/murmur3 v1.1.1-0.20190317074736-539464a789e9 // indirect
 	github.com/wlynxg/anet v0.0.5 // indirect
-	github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 // indirect
+	github.com/xrash/smetrics v0.0.0-20250705151800-55b8f293f342 // indirect
 	go.uber.org/mock v0.5.0 // indirect
-	golang.org/x/mod v0.28.0 // indirect
-	golang.org/x/net v0.45.0 // indirect
+	golang.org/x/mod v0.30.0 // indirect
+	golang.org/x/net v0.46.0 // indirect
 	golang.org/x/sync v0.17.0 // indirect
 	golang.org/x/sys v0.37.0 // indirect
 	golang.org/x/time v0.12.0 // indirect
-	golang.org/x/tools v0.37.0 // indirect
+	golang.org/x/tools v0.38.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	lukechampine.com/blake3 v1.3.0 // indirect
