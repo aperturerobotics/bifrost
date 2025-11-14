@@ -4,6 +4,8 @@ github.com/aperturerobotics/cli v1.0.1 h1:9KsECHGESJ/iGU13Z4zNQzKFz5bMave4bA6lPX
 github.com/aperturerobotics/cli v1.0.1/go.mod h1:s1Gh4eTOGGlrPqpyi/q8aIQwk0T6yDCF7C2xPyBMtek=
 github.com/aperturerobotics/common v0.22.13 h1:smm17e4b8ubagiRVtkzk2M4pt8IFKSEGlkqlCugnF+g=
 github.com/aperturerobotics/common v0.22.13/go.mod h1:/86GyW6RWYxHByCFOhvI9IQgCchTnJznwV2k9Nz5lgk=
+github.com/aperturerobotics/common v0.22.14 h1:Z2OigJSCgaFFowQ9ydaLxMnZv3H+Vrh9tpvdLGLZ7hs=
+github.com/aperturerobotics/common v0.22.14/go.mod h1:/86GyW6RWYxHByCFOhvI9IQgCchTnJznwV2k9Nz5lgk=
 github.com/aperturerobotics/controllerbus v0.51.4-0.20251113002647-ff3f278bc709 h1:KynaSIWUK83xKN/UfWTIiiz0kyO2NZEm9/6EVQF/D+Y=
 github.com/aperturerobotics/controllerbus v0.51.4-0.20251113002647-ff3f278bc709/go.mod h1:DAfRBt/3mZi0y8cp76WA4VzizR63w0Do8m9R+YWVFIc=
 github.com/aperturerobotics/entitygraph v0.11.0 h1:nPnT0SXsEMqsxmn/lWGR50JHbfmSd3pVanyJAm6v8rI=

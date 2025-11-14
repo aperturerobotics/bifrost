@@ -3,9 +3,9 @@
 
 
 "@aptre/common@^0.22.13":
-  version "0.22.13"
-  resolved "https://registry.yarnpkg.com/@aptre/common/-/common-0.22.13.tgz#7439877b183ede0d72a96666ac74e9f2894c17b2"
-  integrity sha512-AI58e5jJv52PGaiCCko6FB0o1KH0UZLUQd1RroDmHDy2cYwagXCYynA85qGouYqcs77p3Ty/tdETygqObb3aUw==
+  version "0.22.14"
+  resolved "https://registry.yarnpkg.com/@aptre/common/-/common-0.22.14.tgz#cfcf1936f73bbb78add50c054a866cec09ad6966"
+  integrity sha512-PcPpH4ddfpAdq2IaSz/MSOx0m9bp89oiVby/3I2J8Iw7vAesK3aL62eg9+lrUTBUw1aRxHTxONQw1NmJ674z1A==
   dependencies:
     "@aptre/protobuf-es-lite" "^0.5.2"
     "@typescript-eslint/eslint-plugin" "^8.39.1"
@@ -1103,9 +1103,9 @@ base64-js@^1.3.1:
   integrity sha512-AKpaYlHn8t4SVbOHCy+b5+KKgvR4vrsD8vbvrbiQJps7fKDTkjkDry6ji0rUJjC0kzbNePLwzxq8iypo41qeWA==
 
 baseline-browser-mapping@^2.8.25:
-  version "2.8.27"
-  resolved "https://registry.yarnpkg.com/baseline-browser-mapping/-/baseline-browser-mapping-2.8.27.tgz#d15ab8face053137f8eb4c028455024787515d5d"
-  integrity sha512-2CXFpkjVnY2FT+B6GrSYxzYf65BJWEqz5tIRHCvNsZZ2F3CmsCB37h8SpYgKG7y9C4YAeTipIPWG7EmFmhAeXA==
+  version "2.8.28"
+  resolved "https://registry.yarnpkg.com/baseline-browser-mapping/-/baseline-browser-mapping-2.8.28.tgz#9ef511f5a7c19d74a94cafcbf951608398e9bdb3"
+  integrity sha512-gYjt7OIqdM0PcttNYP2aVrr2G0bMALkBaoehD4BuRGjAOtipg0b6wHg1yNL+s5zSnLZZrGHOw4IrND8CD+3oIQ==
 
 brace-expansion@^1.1.7:
   version "1.1.12"
