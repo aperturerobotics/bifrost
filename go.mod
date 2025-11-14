@@ -4,7 +4,7 @@ go 1.25
 
 require (
 	github.com/aperturerobotics/cli v1.0.1 // latest
-	github.com/aperturerobotics/common v0.22.13 // latest
+	github.com/aperturerobotics/common v0.22.14 // latest
 	github.com/aperturerobotics/controllerbus v0.51.4-0.20251113002647-ff3f278bc709 // latest
 	github.com/aperturerobotics/entitygraph v0.11.0 // latest
 	github.com/aperturerobotics/protobuf-go-lite v0.11.0 // latest
