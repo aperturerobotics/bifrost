@@ -40,7 +40,7 @@ require (
 	github.com/sasha-s/go-deadlock v0.3.6
 	github.com/sirupsen/logrus v1.9.4
 	github.com/zeebo/blake3 v0.2.4
-	golang.org/x/crypto v0.44.0
+	golang.org/x/crypto v0.45.0
 	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0 // indirect
 	gonum.org/v1/gonum v0.17.0
 )
