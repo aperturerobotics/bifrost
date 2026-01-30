@@ -47,7 +47,7 @@ func newEstablishLinkHandler(
 
 // HandleValueAdded is called when a value is added to the directive.
 func (e *establishLinkHandler) HandleValueAdded(inst directive.Instance, val directive.AttachedValue) {
-	vl, ok := val.GetValue().(link.Link)
+	vl, ok := val.GetValue().(link.MountedLink)
 	if !ok || vl == nil {
 		return
 	}
@@ -58,7 +58,7 @@ func (e *establishLinkHandler) HandleValueAdded(inst directive.Instance, val dir
 
 	if nrr {
 		e.le.
-			WithField("link-uuid", vl.GetUUID()).
+			WithField("link-uuid", vl.GetLinkUUID()).
 			WithField("local-peer", vl.GetLocalPeer().String()).
 			Debug("starting peer hold-open tracking")
 		go func() {
