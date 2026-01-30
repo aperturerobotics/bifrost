@@ -3,214 +3,216 @@
 // mesh-chat demonstrates decentralized peer-to-peer messaging.
 //
 // This example shows how Bifrost enables direct communication between peers
-// across any transport (UDP, WebSocket, WebRTC). The chat protocol automatically
-// routes messages through available links.
+// across any transport (UDP, WebSocket, WebRTC).
 //
 // Run with: go run ./mesh-chat/main.go -listen :5000 -dial <peerID>@<host>:<port>
-//
-// Features demonstrated:
-//   - Transport abstraction (works over any Bifrost transport)
-//   - Automatic peer discovery and link establishment
-//   - Bidirectional streaming between peers
-//
 package main
 
 import (
 	"bufio"
 	"context"
-	"crypto/rand"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/aperturerobotics/bifrost/daemon"
+	"github.com/aperturerobotics/bifrost/keypem/keyfile"
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/protocol"
 	"github.com/aperturerobotics/bifrost/stream"
-	stream_echo "github.com/aperturerobotics/bifrost/stream/echo"
-	"github.com/aperturerobotics/bifrost/transport"
-	"github.com/aperturerobotics/bifrost/transport/common/dialer"
+	tptc "github.com/aperturerobotics/bifrost/transport/controller"
 	udptpt "github.com/aperturerobotics/bifrost/transport/udp"
 	"github.com/aperturerobotics/cli"
-	"github.com/aperturerobotics/controllerbus/bus"
+	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/controller/loader"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
-	crypto "github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/aperturerobotics/controllerbus/directive"
+	"github.com/blang/semver/v4"
 	"github.com/sirupsen/logrus"
 )
 
-var (
-	chatProtocol = protocol.ID("demo/mesh-chat/v1")
-	log          = logrus.New()
-)
-
-func init() {
-	log.SetLevel(logrus.InfoLevel)
-}
+var chatProtocol = protocol.ID("demo/mesh-chat/v1")
 
 func main() {
-	var (
-		listenAddr string
-		dialAddr   string
-	)
+	var listenAddr, dialAddr, keyPath string
 
 	app := cli.NewApp()
 	app.Name = "mesh-chat"
-	app.Usage = "Decentralized peer-to-peer messaging demo"
+	app.Usage = "P2P chat demo"
 	app.HideHelpCommand = true
-
 	app.Flags = []cli.Flag{
 		&cli.StringFlag{
 			Name:        "listen",
 			Usage:       "UDP listen address",
-			EnvVars:     []string{"LISTEN_ADDR"},
+			EnvVars:     []string{"LISTEN"},
 			Value:       ":5000",
 			Destination: &listenAddr,
 		},
 		&cli.StringFlag{
 			Name:        "dial",
-			Usage:       "Peer address to dial (format: peerID@host:port)",
-			EnvVars:     []string{"DIAL_ADDR"},
+			Usage:       "Peer to dial (peerID@host:port)",
+			EnvVars:     []string{"DIAL"},
 			Destination: &dialAddr,
 		},
+		&cli.StringFlag{
+			Name:        "key",
+			Aliases:     []string{"k"},
+			Usage:       "Path to private key file (default: ./peer-{hash}.pem based on listen addr)",
+			EnvVars:     []string{"KEY"},
+			Destination: &keyPath,
+		},
 	}
-
 	app.Action = func(c *cli.Context) error {
-		return run(listenAddr, dialAddr)
+		return run(listenAddr, dialAddr, keyPath)
 	}
 
 	if err := app.Run(os.Args); err != nil {
-		os.Stderr.WriteString(err.Error() + "\n")
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 
-// run starts the chat node.
-func run(listenAddr, dialAddr string) error {
+// chatHandler handles incoming chat streams and tracks connected peers.
+type chatHandler struct {
+	mu     sync.Mutex
+	remote peer.ID
+}
+
+func (h *chatHandler) GetControllerInfo() *controller.Info {
+	return controller.NewInfo("mesh-chat/handler", semver.MustParse("0.0.1"), "chat handler")
+}
+
+func (h *chatHandler) Execute(ctx context.Context) error { return nil }
+func (h *chatHandler) Close() error                      { return nil }
+
+func (h *chatHandler) HandleDirective(ctx context.Context, di directive.Instance) ([]directive.Resolver, error) {
+	d, ok := di.GetDirective().(link.HandleMountedStream)
+	if !ok || d.HandleMountedStreamProtocolID() != chatProtocol {
+		return nil, nil
+	}
+	return directive.Resolvers(&chatResolver{h: h, remote: d.HandleMountedStreamRemotePeerID()}), nil
+}
+
+func (h *chatHandler) setRemote(p peer.ID) {
+	h.mu.Lock()
+	if h.remote == "" {
+		h.remote = p
+	}
+	h.mu.Unlock()
+}
+
+func (h *chatHandler) getRemote() peer.ID {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return h.remote
+}
+
+// chatResolver handles incoming streams.
+type chatResolver struct {
+	h      *chatHandler
+	remote peer.ID
+}
+
+func (r *chatResolver) Resolve(ctx context.Context, handler directive.ResolverHandler) error {
+	r.h.setRemote(r.remote)
+	handler.AddValue(link.MountedStreamHandler(r))
+	return nil
+}
+
+func (r *chatResolver) HandleMountedStream(ctx context.Context, ms link.MountedStream) error {
+	buf := make([]byte, 4096)
+	for {
+		n, err := ms.GetStream().Read(buf)
+		if n > 0 {
+			fmt.Printf("\r[%s]: %s\n> ", r.remote.String(), string(buf[:n]))
+		}
+		if err != nil {
+			return nil
+		}
+	}
+}
+
+func run(listenAddr, dialAddr, keyPath string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	log := logrus.New()
+	log.SetLevel(logrus.WarnLevel)
 	le := logrus.NewEntry(log)
 
-	// Generate peer identity
-	privKey, _, err := crypto.GenerateEd25519Key(rand.Reader)
+	// Determine key path: use provided path or derive from listen address
+	if keyPath == "" {
+		hash := sha256.Sum256([]byte(listenAddr))
+		hashHex := hex.EncodeToString(hash[:])
+		keyPath = fmt.Sprintf("./peer-%s.pem", hashHex[len(hashHex)-4:])
+	}
+
+	privKey, err := keyfile.OpenOrWritePrivKey(le, keyPath)
 	if err != nil {
-		return fmt.Errorf("generate key: %w", err)
+		return fmt.Errorf("load/generate key: %w", err)
 	}
 	peerID, _ := peer.IDFromPrivateKey(privKey)
 
-	fmt.Printf("Starting mesh chat node\n")
 	fmt.Printf("Peer ID: %s\n", peerID.String())
-	fmt.Printf("Type messages and press Enter to send\n")
-	fmt.Printf("Listening on %s\n\n", listenAddr)
+	fmt.Printf("Key: %s\n", keyPath)
+	fmt.Printf("Listening on %s\n", listenAddr)
+	if dialAddr == "" {
+		fmt.Printf("\nConnect with: %s --listen :5001 --dial %s@localhost%s\n", os.Args[0], peerID.String(), listenAddr)
+	}
 
-	// Create daemon with echo controller for chat
-	d, err := daemon.NewDaemon(ctx, privKey, daemon.ConstructOpts{
-		LogEntry: le,
-	})
+	d, err := daemon.NewDaemon(ctx, privKey, daemon.ConstructOpts{LogEntry: le})
 	if err != nil {
-		return fmt.Errorf("create daemon: %w", err)
+		return err
 	}
 
 	b := d.GetControllerBus()
-	sr := d.GetStaticResolver()
-
-	// Add echo controller to handle incoming chat streams
-	sr.AddFactory(stream_echo.NewFactory(b))
-	_, _, echoRef, err := loader.WaitExecControllerRunning(
-		ctx, b,
-		resolver.NewLoadControllerWithConfig(&stream_echo.Config{
-			ProtocolId: string(chatProtocol),
-		}),
-		nil,
-	)
-	if err != nil {
-		return fmt.Errorf("start echo controller: %w", err)
+	handler := &chatHandler{}
+	if _, err := b.AddController(ctx, handler, nil); err != nil {
+		return err
 	}
-	defer echoRef.Release()
 
-	// Start UDP transport
-	sr.AddFactory(udptpt.NewFactory(b))
-	udpCtrl, _, udpRef, err := loader.WaitExecControllerRunning(
-		ctx, b,
-		resolver.NewLoadControllerWithConfig(&udptpt.Config{
-			ListenAddr: listenAddr,
-		}),
-		nil,
-	)
+	udpCtrl, _, udpRef, err := loader.WaitExecControllerRunning(ctx, b,
+		resolver.NewLoadControllerWithConfig(&udptpt.Config{ListenAddr: listenAddr}), nil)
 	if err != nil {
-		return fmt.Errorf("start UDP transport: %w", err)
+		return err
 	}
 	defer udpRef.Release()
 
-	// Get transport for dialing
-	tptCtrl := udpCtrl.(transport.Controller)
-	tpt, err := tptCtrl.GetTransport(ctx)
-	if err != nil {
-		return fmt.Errorf("get transport: %w", err)
-	}
-	tptDialer := tpt.(dialer.TransportDialer)
+	tpt, _ := udpCtrl.(*tptc.Controller).GetTransport(ctx)
+	udp := tpt.(*udptpt.UDP)
 
-	// Dial peer if specified
-	var remotePeerID peer.ID
-	var dialAddrHost string
 	if dialAddr != "" {
 		parts := strings.Split(dialAddr, "@")
 		if len(parts) != 2 {
-			return fmt.Errorf("invalid dial format, expected peerID@host:port")
+			return fmt.Errorf("invalid dial format")
 		}
-
-		remotePeerID, err = peer.IDB58Decode(parts[0])
+		remotePeerID, err := peer.IDB58Decode(parts[0])
 		if err != nil {
-			return fmt.Errorf("parse peer ID: %w", err)
+			return err
 		}
-		dialAddrHost = parts[1]
-
-		fmt.Printf("Dialing %s at %s...\n", remotePeerID.String(), dialAddrHost)
-		_, _, err = tptDialer.DialPeer(ctx, remotePeerID, dialAddrHost)
-		if err != nil {
-			return fmt.Errorf("dial peer: %w", err)
+		handler.setRemote(remotePeerID)
+		fmt.Printf("Dialing %s...\n", parts[1])
+		if _, _, err := udp.DialPeer(ctx, remotePeerID, parts[1]); err != nil {
+			return err
 		}
-		fmt.Printf("Connected to %s\n\n", remotePeerID.String())
+		fmt.Println("Connected!")
 	}
 
-	// Start chat session
-	return chatSession(ctx, b, peerID, remotePeerID)
-}
-
-// chatSession runs an interactive chat with a remote peer.
-func chatSession(ctx context.Context, b bus.Bus, localPeer, remotePeer peer.ID) error {
-	fmt.Println("Chat session started")
-	if remotePeer != "" {
-		fmt.Printf("   Connected to: %s\n", remotePeer.String())
-	}
-	fmt.Println("   Type /quit to exit, /help for commands")
-	fmt.Println()
+	fmt.Println("\nType messages and press Enter. /quit to exit.")
 
 	reader := bufio.NewReader(os.Stdin)
-	var wg sync.WaitGroup
-
-	// Start goroutine to handle incoming messages
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		// In a real implementation, we would listen for incoming streams
-		// and print messages from peers
-		// For this demo, we rely on the echo controller which echoes back what we send
-	}()
-
-	// Handle outgoing messages
 	for {
 		fmt.Print("> ")
 		line, err := reader.ReadString('\n')
+		if err == io.EOF {
+			return nil
+		}
 		if err != nil {
-			if err == io.EOF {
-				fmt.Println("\nGoodbye!")
-				return nil
-			}
 			return err
 		}
 
@@ -218,65 +220,22 @@ func chatSession(ctx context.Context, b bus.Bus, localPeer, remotePeer peer.ID) 
 		if line == "" {
 			continue
 		}
-
-		// Handle commands
 		if line == "/quit" {
-			fmt.Println("Goodbye!")
 			return nil
 		}
 
-		if line == "/help" {
-			fmt.Println("Commands:")
-			fmt.Println("  /quit - Exit")
-			fmt.Println("  /help - Show this help")
-			fmt.Println("  <any text> - Send message to peer")
+		remote := handler.getRemote()
+		if remote == "" {
+			fmt.Println("No peer connected yet.")
 			continue
 		}
 
-		// Send message to peer if we have a remote peer
-		if remotePeer != "" {
-			if err := sendMessage(ctx, b, localPeer, remotePeer, line); err != nil {
-				fmt.Printf("Failed to send: %v\n", err)
-			} else {
-				fmt.Printf("Sent: %s\n", line)
-			}
-		} else {
-			fmt.Println("No peer connected. Waiting for incoming connections...")
+		ms, rel, err := link.OpenStreamWithPeerEx(ctx, b, chatProtocol, peerID, remote, 0, stream.OpenOpts{})
+		if err != nil {
+			fmt.Printf("Failed: %v\n", err)
+			continue
 		}
+		ms.GetStream().Write([]byte(line))
+		rel()
 	}
-}
-
-// sendMessage opens a stream and sends a message to the remote peer.
-func sendMessage(ctx context.Context, b bus.Bus, localPeer, remotePeer peer.ID, msg string) error {
-	// Open stream to remote peer
-	ms, msRel, err := link.OpenStreamWithPeerEx(
-		ctx,
-		b,
-		chatProtocol,
-		localPeer,
-		remotePeer,
-		0,
-		stream.OpenOpts{},
-	)
-	if err != nil {
-		return fmt.Errorf("open stream: %w", err)
-	}
-	defer msRel()
-
-	// Send the message
-	_, err = ms.GetStream().Write([]byte(msg))
-	if err != nil {
-		return fmt.Errorf("write message: %w", err)
-	}
-
-	// Read response (echoed back)
-	respBuf := make([]byte, len(msg)+100)
-	ms.GetStream().SetReadDeadline(time.Now().Add(2 * time.Second))
-	n, err := ms.GetStream().Read(respBuf)
-	if err == nil && n > 0 {
-		// Message echoed back successfully
-		_ = respBuf[:n]
-	}
-
-	return nil
 }
