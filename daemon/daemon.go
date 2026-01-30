@@ -114,3 +114,13 @@ func (d *Daemon) GetStaticResolver() *static.Resolver {
 func (d *Daemon) GetControllerBus() bus.Bus {
 	return d.bus
 }
+
+// GetNodePeerID returns the primary node peer ID.
+func (d *Daemon) GetNodePeerID() peer.ID {
+	return d.nodePeerID
+}
+
+// GetNodePeerIDString returns the primary node peer ID as a b58 string.
+func (d *Daemon) GetNodePeerIDString() string {
+	return d.nodePeerIDString
+}
