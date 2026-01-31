@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import { Config as Config$1 } from '../api.pb.js'
-import { Config as Config$2 } from '@go/github.com/aperturerobotics/controllerbus/bus/api/api.pb.js'
+import { Config as Config$2 } from '../../../../controllerbus/bus/api/api.pb.js'
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
 import { createMessageType, ScalarType } from '@aptre/protobuf-es-lite'
 

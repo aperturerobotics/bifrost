@@ -2,7 +2,7 @@
 // @generated from file github.com/aperturerobotics/bifrost/stream/srpc/client/client.proto (package stream.srpc.client, syntax proto3)
 /* eslint-disable */
 
-import { Backoff } from '@go/github.com/aperturerobotics/util/backoff/backoff.pb.js'
+import { Backoff } from '../../../../util/backoff/backoff.pb.js'
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
 import { createMessageType, ScalarType } from '@aptre/protobuf-es-lite'
 

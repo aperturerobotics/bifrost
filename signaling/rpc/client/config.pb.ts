@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import { Config as Config$1 } from '../../../stream/srpc/client/client.pb.js'
-import { Backoff } from '@go/github.com/aperturerobotics/util/backoff/backoff.pb.js'
+import { Backoff } from '../../../../util/backoff/backoff.pb.js'
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
 import { createMessageType, ScalarType } from '@aptre/protobuf-es-lite'
 

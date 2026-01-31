@@ -3,13 +3,13 @@ module github.com/aperturerobotics/bifrost
 go 1.25
 
 require (
-	github.com/aperturerobotics/cli v1.0.1 // latest
-	github.com/aperturerobotics/common v0.24.0 // latest
-	github.com/aperturerobotics/controllerbus v0.51.4-0.20260125102413-6b563ebda8b9 // latest
+	github.com/aperturerobotics/cli v1.1.0 // latest
+	github.com/aperturerobotics/common v0.26.8 // latest
+	github.com/aperturerobotics/controllerbus v0.52.0 // latest
 	github.com/aperturerobotics/entitygraph v0.11.0 // latest
-	github.com/aperturerobotics/protobuf-go-lite v0.11.0 // latest
+	github.com/aperturerobotics/protobuf-go-lite v0.12.0 // latest
 	github.com/aperturerobotics/starpc v0.42.0 // latest
-	github.com/aperturerobotics/util v1.32.0 // latest
+	github.com/aperturerobotics/util v1.32.3 // latest
 )
 
 // aperture: use compatibility forks
@@ -46,7 +46,10 @@ require (
 )
 
 require (
+	github.com/aperturerobotics/abseil-cpp v0.0.0-20260130220554-305ed0ea7006 // indirect
+	github.com/aperturerobotics/go-protoc-wasi v0.0.0-20260131050911-b5f94b044584 // indirect
 	github.com/aperturerobotics/json-iterator-lite v1.0.1-0.20251104042408-0c9eb8a3f726 // indirect
+	github.com/aperturerobotics/protobuf v0.0.0-20260131033322-bd4a2148b9c4 // indirect
 	github.com/davidlazar/go-crypto v0.0.0-20200604182044-b73af7476f6c // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
@@ -80,6 +83,7 @@ require (
 	github.com/pion/transport/v4 v4.0.1 // indirect
 	github.com/pion/turn/v4 v4.1.4 // indirect
 	github.com/spaolacci/murmur3 v1.1.1-0.20190317074736-539464a789e9 // indirect
+	github.com/tetratelabs/wazero v1.11.0 // indirect
 	github.com/wlynxg/anet v0.0.5 // indirect
 	github.com/xrash/smetrics v0.0.0-20250705151800-55b8f293f342 // indirect
 	go.uber.org/mock v0.5.0 // indirect

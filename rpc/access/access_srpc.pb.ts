@@ -7,7 +7,7 @@ import {
   LookupRpcServiceResponse,
 } from './access.pb.js'
 import { MethodKind } from '@aptre/protobuf-es-lite'
-import { RpcStreamPacket } from '@go/github.com/aperturerobotics/starpc/rpcstream/rpcstream.pb.js'
+import { RpcStreamPacket } from '../../../starpc/rpcstream/rpcstream.pb.js'
 import {
   buildDecodeMessageTransform,
   buildEncodeMessageTransform,

@@ -9,7 +9,7 @@ import {
   ScalarType,
 } from '@aptre/protobuf-es-lite'
 import { Opts } from '../common/quic/quic.pb.js'
-import { Backoff } from '@go/github.com/aperturerobotics/util/backoff/backoff.pb.js'
+import { Backoff } from '../../../util/backoff/backoff.pb.js'
 import { DialerOpts } from '../common/dialer/dialer.pb.js'
 
 export const protobufPackage = 'webrtc'

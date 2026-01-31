@@ -2,7 +2,7 @@
 // @generated from file github.com/aperturerobotics/bifrost/transport/common/dialer/dialer.proto (package dialer, syntax proto3)
 /* eslint-disable */
 
-import { Backoff } from '@go/github.com/aperturerobotics/util/backoff/backoff.pb.js'
+import { Backoff } from '../../../../util/backoff/backoff.pb.js'
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
 import { createMessageType, ScalarType } from '@aptre/protobuf-es-lite'
 

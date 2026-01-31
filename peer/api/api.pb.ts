@@ -5,8 +5,8 @@
 import { Config } from '../controller/config.pb.js'
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
 import { createMessageType, ScalarType } from '@aptre/protobuf-es-lite'
-import type { ControllerStatus } from '@go/github.com/aperturerobotics/controllerbus/controller/exec/exec.pb.js'
-import { ControllerStatus_Enum } from '@go/github.com/aperturerobotics/controllerbus/controller/exec/exec.pb.js'
+import type { ControllerStatus } from '../../../controllerbus/controller/exec/exec.pb.js'
+import { ControllerStatus_Enum } from '../../../controllerbus/controller/exec/exec.pb.js'
 
 export const protobufPackage = 'peer.api'
 

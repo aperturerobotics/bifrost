@@ -2,10 +2,10 @@ name: Tests
 
 on:
   push:
-    branches: [ "master" ]
+    branches: ['master']
   pull_request:
     # The branches below must be a subset of the branches above
-    branches: [ "master" ]
+    branches: ['master']
 
 # Builds images for target boards.
 permissions:
@@ -17,7 +17,6 @@ jobs:
     strategy:
       matrix:
         go: ['1.25']
-        node: [25.x]
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -27,14 +26,9 @@ jobs:
         with:
           go-version: ${{ matrix.go }}
 
-      - name: Setup Node.JS ${{ matrix.node }}
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
-        with:
-          node-version: ${{ matrix.node }}
-          cache: 'yarn'
+      - uses: oven-sh/setup-bun@v2
 
-      - name: Yarn install
-        run: yarn install
+      - run: bun install
 
       - name: Cache tools
         uses: actions/cache@v5
@@ -44,25 +38,25 @@ jobs:
           key: ${{ runner.os }}-aptre-tools-${{ hashFiles('**/go.sum') }}
 
       - name: Build Javascript
-        run: yarn run build
+        run: bun run build
 
       - name: Test Go
-        run: make test
+        run: bun run go:aptre -- test
 
       - name: Test Js
-        run: yarn test:js
+        run: bun run test:js
 
       - name: Lint Js
-        run: yarn run lint:js
+        run: bun run lint:js
 
       - name: Lint Go
-        run: yarn run lint:go
+        run: bun run lint:go
 
       - name: Depcheck Js
-        run: yarn run deps
+        run: bun run deps
 
       - name: Check goreleaser
-        run: make release-check
+        run: bun run go:aptre -- release check
 
       # Issue: https://github.com/agnivade/wasmbrowsertest/pull/72/files
       # Issue: https://github.com/agnivade/wasmbrowsertest/issues/60
@@ -71,4 +65,4 @@ jobs:
       # - name: Install chrome
       #   uses: browser-actions/setup-chrome@latest
       # - name: Test with chrome
-      #   run: make test-browser || true
+      #   run: bun run go:aptre -- test --browser || true

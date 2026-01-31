@@ -1,0 +1,715 @@
+{
+  "version": 2,
+  "protocFlagsHash": "a6e974dc68f87a9c0db7db1771515c53c762f5dc50883f1bfe9d803549b91190",
+  "toolVersions": "protoc=embedded,protobuf-go-lite=v0.12.0,starpc=v0.42.0,protobuf-es-lite=^0.5.2",
+  "packages": {
+    "github.com/aperturerobotics/bifrost/daemon/api": {
+      "hash": "a1ca4284fbd1464ab2af944dc6ec730b4db7741a96b948a8482b71f35b191896",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/daemon/api/api.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/daemon/api/api.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/daemon/api/api.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/daemon/api/api.pb.ts",
+        "daemon/api/api.pb.cc",
+        "daemon/api/api.pb.go",
+        "daemon/api/api.pb.h",
+        "daemon/api/api.pb.ts"
+      ],
+      "protoFiles": [
+        "daemon/api/api.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/daemon/api/controller": {
+      "hash": "8cac69dba577f8cbcf40610e74e6f0930be6b2a560b6ba034e3513a405afcb74",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/daemon/api/controller/controller.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/daemon/api/controller/controller.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/daemon/api/controller/controller.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/daemon/api/controller/controller.pb.ts",
+        "daemon/api/controller/controller.pb.cc",
+        "daemon/api/controller/controller.pb.go",
+        "daemon/api/controller/controller.pb.h",
+        "daemon/api/controller/controller.pb.ts"
+      ],
+      "protoFiles": [
+        "daemon/api/controller/controller.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/entitygraph": {
+      "hash": "8b42d15e8a60d3f4a725ab5c231755391038da599b82713f6d0f12554421af54",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/entitygraph/config.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/entitygraph/config.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/entitygraph/config.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/entitygraph/config.pb.ts",
+        "entitygraph/config.pb.cc",
+        "entitygraph/config.pb.go",
+        "entitygraph/config.pb.h",
+        "entitygraph/config.pb.ts"
+      ],
+      "protoFiles": [
+        "entitygraph/config.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/hash": {
+      "hash": "ca05b9b6ff16023787e07ee38bbb0ce1d3fb274997451758dc004ca1843e0b32",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/hash/hash.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/hash/hash.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/hash/hash.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/hash/hash.pb.ts",
+        "hash/hash.pb.cc",
+        "hash/hash.pb.go",
+        "hash/hash.pb.h",
+        "hash/hash.pb.ts"
+      ],
+      "protoFiles": [
+        "hash/hash.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/http/listener": {
+      "hash": "1a21b97b6c6d063e441ecde8e607fa41b6c955c556736b6061c45eeebe44ac34",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/http/listener/config.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/http/listener/config.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/http/listener/config.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/http/listener/config.pb.ts",
+        "http/listener/config.pb.cc",
+        "http/listener/config.pb.go",
+        "http/listener/config.pb.h",
+        "http/listener/config.pb.ts"
+      ],
+      "protoFiles": [
+        "http/listener/config.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/link/establish": {
+      "hash": "1539cac0751cff421dfbda27e48e253003c6998488684e23a83834fb4d4631fd",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/link/establish/config.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/link/establish/config.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/link/establish/config.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/link/establish/config.pb.ts",
+        "link/establish/config.pb.cc",
+        "link/establish/config.pb.go",
+        "link/establish/config.pb.h",
+        "link/establish/config.pb.ts"
+      ],
+      "protoFiles": [
+        "link/establish/config.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/link/hold-open": {
+      "hash": "8711c637c0657674eed783cbe00c272010b0dd392e0368ab33414624b287b336",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/link/hold-open/config.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/link/hold-open/config.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/link/hold-open/config.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/link/hold-open/config.pb.ts",
+        "link/hold-open/config.pb.cc",
+        "link/hold-open/config.pb.go",
+        "link/hold-open/config.pb.h",
+        "link/hold-open/config.pb.ts"
+      ],
+      "protoFiles": [
+        "link/hold-open/config.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/peer": {
+      "hash": "251817b8f3152e4104159de64f004ed7e97e7b4fa1bc412db98a885c85e48749",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/peer/peer.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/peer/peer.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/peer/peer.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/peer/peer.pb.ts",
+        "peer/peer.pb.cc",
+        "peer/peer.pb.go",
+        "peer/peer.pb.h",
+        "peer/peer.pb.ts"
+      ],
+      "protoFiles": [
+        "peer/peer.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/peer/api": {
+      "hash": "61c09874a62748f4aaaf65ed6dfc3241e121313dc7a8b589d589491afa0cd907",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/peer/api/api.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/peer/api/api.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/peer/api/api.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/peer/api/api.pb.ts",
+        "vendor/github.com/aperturerobotics/bifrost/peer/api/api_srpc.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/peer/api/api_srpc.pb.ts",
+        "peer/api/api.pb.cc",
+        "peer/api/api.pb.go",
+        "peer/api/api.pb.h",
+        "peer/api/api.pb.ts",
+        "peer/api/api_srpc.pb.go",
+        "peer/api/api_srpc.pb.ts"
+      ],
+      "protoFiles": [
+        "peer/api/api.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/peer/controller": {
+      "hash": "424f28acf36d44e88f5d14d2e5255ce96f33e19eea833ec32b34380385c6059a",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/peer/controller/config.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/peer/controller/config.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/peer/controller/config.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/peer/controller/config.pb.ts",
+        "peer/controller/config.pb.cc",
+        "peer/controller/config.pb.go",
+        "peer/controller/config.pb.h",
+        "peer/controller/config.pb.ts"
+      ],
+      "protoFiles": [
+        "peer/controller/config.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/pubsub/api": {
+      "hash": "e943e700a4844b81d7a508d3fc426d3cda701e7533c52c61129c63ae3790868d",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/pubsub/api/api.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/pubsub/api/api.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/pubsub/api/api.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/pubsub/api/api.pb.ts",
+        "vendor/github.com/aperturerobotics/bifrost/pubsub/api/api_srpc.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/pubsub/api/api_srpc.pb.ts",
+        "pubsub/api/api.pb.cc",
+        "pubsub/api/api.pb.go",
+        "pubsub/api/api.pb.h",
+        "pubsub/api/api.pb.ts",
+        "pubsub/api/api_srpc.pb.go",
+        "pubsub/api/api_srpc.pb.ts"
+      ],
+      "protoFiles": [
+        "pubsub/api/api.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/pubsub/floodsub": {
+      "hash": "9b118399c23e83f3ab75e98113c82aae4af4f3efd2cfc13b79b9b5d8340df9ce",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/pubsub/floodsub/floodsub.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/pubsub/floodsub/floodsub.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/pubsub/floodsub/floodsub.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/pubsub/floodsub/floodsub.pb.ts",
+        "pubsub/floodsub/floodsub.pb.cc",
+        "pubsub/floodsub/floodsub.pb.go",
+        "pubsub/floodsub/floodsub.pb.h",
+        "pubsub/floodsub/floodsub.pb.ts"
+      ],
+      "protoFiles": [
+        "pubsub/floodsub/floodsub.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/pubsub/floodsub/controller": {
+      "hash": "e3cecbb843818210296ce8f55211813d0bd20399ae6e9fc2c0677c3bc45ebe91",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/pubsub/floodsub/controller/config.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/pubsub/floodsub/controller/config.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/pubsub/floodsub/controller/config.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/pubsub/floodsub/controller/config.pb.ts",
+        "pubsub/floodsub/controller/config.pb.cc",
+        "pubsub/floodsub/controller/config.pb.go",
+        "pubsub/floodsub/controller/config.pb.h",
+        "pubsub/floodsub/controller/config.pb.ts"
+      ],
+      "protoFiles": [
+        "pubsub/floodsub/controller/config.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/pubsub/relay": {
+      "hash": "c132062c343ae074ab4b3c16401475d05820c2dbd0a13f816c53a31c0a594d98",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/pubsub/relay/config.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/pubsub/relay/config.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/pubsub/relay/config.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/pubsub/relay/config.pb.ts",
+        "pubsub/relay/config.pb.cc",
+        "pubsub/relay/config.pb.go",
+        "pubsub/relay/config.pb.h",
+        "pubsub/relay/config.pb.ts"
+      ],
+      "protoFiles": [
+        "pubsub/relay/config.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/pubsub/util/pubmessage": {
+      "hash": "b9d276ac923bc6cf6b371dd82308aa0084d8e135ca286cc3471482850f767de4",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/pubsub/util/pubmessage/pubmessage.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/pubsub/util/pubmessage/pubmessage.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/pubsub/util/pubmessage/pubmessage.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/pubsub/util/pubmessage/pubmessage.pb.ts",
+        "pubsub/util/pubmessage/pubmessage.pb.cc",
+        "pubsub/util/pubmessage/pubmessage.pb.go",
+        "pubsub/util/pubmessage/pubmessage.pb.h",
+        "pubsub/util/pubmessage/pubmessage.pb.ts"
+      ],
+      "protoFiles": [
+        "pubsub/util/pubmessage/pubmessage.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/rpc/access": {
+      "hash": "82572aaccf8a7395f93ede2b4543187ad3721b59870c30f40a9e504b0f0dda66",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/rpc/access/access.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/rpc/access/access.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/rpc/access/access.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/rpc/access/access.pb.ts",
+        "vendor/github.com/aperturerobotics/bifrost/rpc/access/access_srpc.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/rpc/access/access_srpc.pb.ts",
+        "rpc/access/access.pb.cc",
+        "rpc/access/access.pb.go",
+        "rpc/access/access.pb.h",
+        "rpc/access/access.pb.ts",
+        "rpc/access/access_srpc.pb.go",
+        "rpc/access/access_srpc.pb.ts"
+      ],
+      "protoFiles": [
+        "rpc/access/access.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/signaling/echo": {
+      "hash": "64d703001002f10bdc324c325cb506904e43078d3de898e134c8b5b8d9f8a96f",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/signaling/echo/echo.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/signaling/echo/echo.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/signaling/echo/echo.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/signaling/echo/echo.pb.ts",
+        "signaling/echo/echo.pb.cc",
+        "signaling/echo/echo.pb.go",
+        "signaling/echo/echo.pb.h",
+        "signaling/echo/echo.pb.ts"
+      ],
+      "protoFiles": [
+        "signaling/echo/echo.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/signaling/rpc": {
+      "hash": "6521046491f16f8dfe9b32b71005aa393021f3d28c949fa0be6e6f4b15e48257",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/signaling/rpc/signaling.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/signaling/rpc/signaling.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/signaling/rpc/signaling.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/signaling/rpc/signaling.pb.ts",
+        "vendor/github.com/aperturerobotics/bifrost/signaling/rpc/signaling_srpc.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/signaling/rpc/signaling_srpc.pb.ts",
+        "signaling/rpc/signaling.pb.cc",
+        "signaling/rpc/signaling.pb.go",
+        "signaling/rpc/signaling.pb.h",
+        "signaling/rpc/signaling.pb.ts",
+        "signaling/rpc/signaling_srpc.pb.go",
+        "signaling/rpc/signaling_srpc.pb.ts"
+      ],
+      "protoFiles": [
+        "signaling/rpc/signaling.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/signaling/rpc/client": {
+      "hash": "c5feefe248509f429ff563a7c9ed49cbbcc068159fb4b0269ff9656daa467b65",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/signaling/rpc/client/config.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/signaling/rpc/client/config.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/signaling/rpc/client/config.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/signaling/rpc/client/config.pb.ts",
+        "signaling/rpc/client/config.pb.cc",
+        "signaling/rpc/client/config.pb.go",
+        "signaling/rpc/client/config.pb.h",
+        "signaling/rpc/client/config.pb.ts"
+      ],
+      "protoFiles": [
+        "signaling/rpc/client/config.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/signaling/rpc/server": {
+      "hash": "92acdda90cf64a81768c4be9a567a1ce004c5c4ca0b7999d5a1d62f822b7d7a9",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/signaling/rpc/server/server.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/signaling/rpc/server/server.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/signaling/rpc/server/server.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/signaling/rpc/server/server.pb.ts",
+        "signaling/rpc/server/server.pb.cc",
+        "signaling/rpc/server/server.pb.go",
+        "signaling/rpc/server/server.pb.h",
+        "signaling/rpc/server/server.pb.ts"
+      ],
+      "protoFiles": [
+        "signaling/rpc/server/server.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/stream/api": {
+      "hash": "fce07b4f86585dfdcbcd0ff51a87d65aab3776630dcdf99d6aebb0d90783b79e",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/stream/api/api.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/stream/api/api.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/stream/api/api.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/stream/api/api.pb.ts",
+        "vendor/github.com/aperturerobotics/bifrost/stream/api/api_srpc.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/stream/api/api_srpc.pb.ts",
+        "stream/api/api.pb.cc",
+        "stream/api/api.pb.go",
+        "stream/api/api.pb.h",
+        "stream/api/api.pb.ts",
+        "stream/api/api_srpc.pb.go",
+        "stream/api/api_srpc.pb.ts"
+      ],
+      "protoFiles": [
+        "stream/api/api.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/stream/api/accept": {
+      "hash": "8f84c0d7f0a84a799a4d0103be4ac873c218b415a3cb5d5ab47a28027fa781c2",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/stream/api/accept/accept.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/stream/api/accept/accept.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/stream/api/accept/accept.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/stream/api/accept/accept.pb.ts",
+        "stream/api/accept/accept.pb.cc",
+        "stream/api/accept/accept.pb.go",
+        "stream/api/accept/accept.pb.h",
+        "stream/api/accept/accept.pb.ts"
+      ],
+      "protoFiles": [
+        "stream/api/accept/accept.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/stream/api/dial": {
+      "hash": "e827a6c7b3c35de9427fcc148f215ba484f41f6dfe93b8d4b24c63c508086096",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/stream/api/dial/dial.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/stream/api/dial/dial.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/stream/api/dial/dial.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/stream/api/dial/dial.pb.ts",
+        "stream/api/dial/dial.pb.cc",
+        "stream/api/dial/dial.pb.go",
+        "stream/api/dial/dial.pb.h",
+        "stream/api/dial/dial.pb.ts"
+      ],
+      "protoFiles": [
+        "stream/api/dial/dial.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/stream/api/rpc": {
+      "hash": "3a87d355a3b8b77a0effcda93f8ba77eeb8d1808e7eb3671657ab0226a500a09",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/stream/api/rpc/rpc.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/stream/api/rpc/rpc.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/stream/api/rpc/rpc.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/stream/api/rpc/rpc.pb.ts",
+        "stream/api/rpc/rpc.pb.cc",
+        "stream/api/rpc/rpc.pb.go",
+        "stream/api/rpc/rpc.pb.h",
+        "stream/api/rpc/rpc.pb.ts"
+      ],
+      "protoFiles": [
+        "stream/api/rpc/rpc.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/stream/echo": {
+      "hash": "9c4d1455611af6eea7f4ee3ec7bda4729d3a71edd82335c69fc383fb98f90a7e",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/stream/echo/echo.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/stream/echo/echo.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/stream/echo/echo.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/stream/echo/echo.pb.ts",
+        "stream/echo/echo.pb.cc",
+        "stream/echo/echo.pb.go",
+        "stream/echo/echo.pb.h",
+        "stream/echo/echo.pb.ts"
+      ],
+      "protoFiles": [
+        "stream/echo/echo.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/stream/forwarding": {
+      "hash": "a3e53434961f68ccfcc72ef4d719d4a8655f4b30b9ade33e915763e43e0501ea",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/stream/forwarding/forwarding.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/stream/forwarding/forwarding.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/stream/forwarding/forwarding.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/stream/forwarding/forwarding.pb.ts",
+        "stream/forwarding/forwarding.pb.cc",
+        "stream/forwarding/forwarding.pb.go",
+        "stream/forwarding/forwarding.pb.h",
+        "stream/forwarding/forwarding.pb.ts"
+      ],
+      "protoFiles": [
+        "stream/forwarding/forwarding.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/stream/listening": {
+      "hash": "11f5c54f154ca262273330320243bb55181a02391b808311097267e6d0a6cad7",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/stream/listening/listening.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/stream/listening/listening.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/stream/listening/listening.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/stream/listening/listening.pb.ts",
+        "stream/listening/listening.pb.cc",
+        "stream/listening/listening.pb.go",
+        "stream/listening/listening.pb.h",
+        "stream/listening/listening.pb.ts"
+      ],
+      "protoFiles": [
+        "stream/listening/listening.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/stream/relay": {
+      "hash": "cfa1ec084f5d0d9a1a74cc03f23ffb1b7c6d056784a07c2506a21908dad19ff5",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/stream/relay/relay.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/stream/relay/relay.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/stream/relay/relay.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/stream/relay/relay.pb.ts",
+        "stream/relay/relay.pb.cc",
+        "stream/relay/relay.pb.go",
+        "stream/relay/relay.pb.h",
+        "stream/relay/relay.pb.ts"
+      ],
+      "protoFiles": [
+        "stream/relay/relay.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/stream/srpc/client": {
+      "hash": "928df51997ae5bd685651591b15f05ba771c62380c4a25a325e941f84ce180a6",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/stream/srpc/client/client.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/stream/srpc/client/client.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/stream/srpc/client/client.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/stream/srpc/client/client.pb.ts",
+        "stream/srpc/client/client.pb.cc",
+        "stream/srpc/client/client.pb.go",
+        "stream/srpc/client/client.pb.h",
+        "stream/srpc/client/client.pb.ts"
+      ],
+      "protoFiles": [
+        "stream/srpc/client/client.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/stream/srpc/client/controller": {
+      "hash": "496c20e6623fef2c57ae4c596f325ce3801d3229c9f81e8f6291cb444c84532f",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/stream/srpc/client/controller/config.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/stream/srpc/client/controller/config.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/stream/srpc/client/controller/config.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/stream/srpc/client/controller/config.pb.ts",
+        "stream/srpc/client/controller/config.pb.cc",
+        "stream/srpc/client/controller/config.pb.go",
+        "stream/srpc/client/controller/config.pb.h",
+        "stream/srpc/client/controller/config.pb.ts"
+      ],
+      "protoFiles": [
+        "stream/srpc/client/controller/config.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/stream/srpc/server": {
+      "hash": "bfb146bfa9d85098c08de0977fca67620f718d36978b8ac677ceef46b76e9b5b",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/stream/srpc/server/server.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/stream/srpc/server/server.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/stream/srpc/server/server.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/stream/srpc/server/server.pb.ts",
+        "stream/srpc/server/server.pb.cc",
+        "stream/srpc/server/server.pb.go",
+        "stream/srpc/server/server.pb.h",
+        "stream/srpc/server/server.pb.ts"
+      ],
+      "protoFiles": [
+        "stream/srpc/server/server.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/tptaddr/controller": {
+      "hash": "6b938688415e228da3a63465d4b503d904c6faf30d7da548952cc9ffbc8562f0",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/tptaddr/controller/config.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/tptaddr/controller/config.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/tptaddr/controller/config.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/tptaddr/controller/config.pb.ts",
+        "tptaddr/controller/config.pb.cc",
+        "tptaddr/controller/config.pb.go",
+        "tptaddr/controller/config.pb.h",
+        "tptaddr/controller/config.pb.ts"
+      ],
+      "protoFiles": [
+        "tptaddr/controller/config.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/tptaddr/static": {
+      "hash": "17888b0ca2bc17d4fcbcab373c0d5a161739364dbc25a67fc237e731db6f36ef",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/tptaddr/static/static.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/tptaddr/static/static.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/tptaddr/static/static.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/tptaddr/static/static.pb.ts",
+        "tptaddr/static/static.pb.cc",
+        "tptaddr/static/static.pb.go",
+        "tptaddr/static/static.pb.h",
+        "tptaddr/static/static.pb.ts"
+      ],
+      "protoFiles": [
+        "tptaddr/static/static.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/transport/common/conn": {
+      "hash": "ac2cf8688a2f3ae577609b71f25d59fa6afe7e2a9a26964cf078dab7d6f49033",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/transport/common/conn/conn.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/transport/common/conn/conn.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/transport/common/conn/conn.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/transport/common/conn/conn.pb.ts",
+        "transport/common/conn/conn.pb.cc",
+        "transport/common/conn/conn.pb.go",
+        "transport/common/conn/conn.pb.h",
+        "transport/common/conn/conn.pb.ts"
+      ],
+      "protoFiles": [
+        "transport/common/conn/conn.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/transport/common/dialer": {
+      "hash": "075b2555db08ccf5f7ed16f369c0ce382295061022af9503e77b35f6d01caabf",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/transport/common/dialer/dialer.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/transport/common/dialer/dialer.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/transport/common/dialer/dialer.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/transport/common/dialer/dialer.pb.ts",
+        "transport/common/dialer/dialer.pb.cc",
+        "transport/common/dialer/dialer.pb.go",
+        "transport/common/dialer/dialer.pb.h",
+        "transport/common/dialer/dialer.pb.ts"
+      ],
+      "protoFiles": [
+        "transport/common/dialer/dialer.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/transport/common/pconn": {
+      "hash": "e653b3336497b0a5447c48748a40ae9445af30e57201ef7e58a7d79f572787cd",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/transport/common/pconn/pconn.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/transport/common/pconn/pconn.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/transport/common/pconn/pconn.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/transport/common/pconn/pconn.pb.ts",
+        "transport/common/pconn/pconn.pb.cc",
+        "transport/common/pconn/pconn.pb.go",
+        "transport/common/pconn/pconn.pb.h",
+        "transport/common/pconn/pconn.pb.ts"
+      ],
+      "protoFiles": [
+        "transport/common/pconn/pconn.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/transport/common/quic": {
+      "hash": "ec9f6fe303b0dbfc02738aa3aaa1e5013807e7d5b1ce33621498d0fbb5b20a4b",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/transport/common/quic/quic.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/transport/common/quic/quic.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/transport/common/quic/quic.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/transport/common/quic/quic.pb.ts",
+        "transport/common/quic/quic.pb.cc",
+        "transport/common/quic/quic.pb.go",
+        "transport/common/quic/quic.pb.h",
+        "transport/common/quic/quic.pb.ts"
+      ],
+      "protoFiles": [
+        "transport/common/quic/quic.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/transport/controller": {
+      "hash": "fcdb4fdf27bdf46038089a3e47dc68fc0da795bf5da396ae6b59e2b3f794ea59",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/transport/controller/controller.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/transport/controller/controller.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/transport/controller/controller.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/transport/controller/controller.pb.ts",
+        "transport/controller/controller.pb.cc",
+        "transport/controller/controller.pb.go",
+        "transport/controller/controller.pb.h",
+        "transport/controller/controller.pb.ts"
+      ],
+      "protoFiles": [
+        "transport/controller/controller.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/transport/inproc": {
+      "hash": "aac921b94edb0f42c2c108a3ae8e581d07e52e39011462d07f376bc3a3e3bbe7",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/transport/inproc/inproc.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/transport/inproc/inproc.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/transport/inproc/inproc.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/transport/inproc/inproc.pb.ts",
+        "transport/inproc/inproc.pb.cc",
+        "transport/inproc/inproc.pb.go",
+        "transport/inproc/inproc.pb.h",
+        "transport/inproc/inproc.pb.ts"
+      ],
+      "protoFiles": [
+        "transport/inproc/inproc.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/transport/udp": {
+      "hash": "8ce7befd54fc45e5c67da99676a4820491ea2be09358775aac8f408cd773502c",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/transport/udp/udp.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/transport/udp/udp.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/transport/udp/udp.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/transport/udp/udp.pb.ts",
+        "transport/udp/udp.pb.cc",
+        "transport/udp/udp.pb.go",
+        "transport/udp/udp.pb.h",
+        "transport/udp/udp.pb.ts"
+      ],
+      "protoFiles": [
+        "transport/udp/udp.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/transport/webrtc": {
+      "hash": "1206497c4daefdf943ca74173169f8f1a91ae15adbed8a71358c5ee1ef7686ee",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/transport/webrtc/webrtc.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/transport/webrtc/webrtc.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/transport/webrtc/webrtc.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/transport/webrtc/webrtc.pb.ts",
+        "transport/webrtc/webrtc.pb.cc",
+        "transport/webrtc/webrtc.pb.go",
+        "transport/webrtc/webrtc.pb.h",
+        "transport/webrtc/webrtc.pb.ts"
+      ],
+      "protoFiles": [
+        "transport/webrtc/webrtc.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/transport/websocket": {
+      "hash": "75ebb784cf20a35dc0db272d6dc00a2c408d8984562a8dd9cfc5639a79a36b1d",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/transport/websocket/websocket.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/transport/websocket/websocket.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/transport/websocket/websocket.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/transport/websocket/websocket.pb.ts",
+        "transport/websocket/websocket.pb.cc",
+        "transport/websocket/websocket.pb.go",
+        "transport/websocket/websocket.pb.h",
+        "transport/websocket/websocket.pb.ts"
+      ],
+      "protoFiles": [
+        "transport/websocket/websocket.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/transport/websocket/http": {
+      "hash": "f144379588c0fbbfcd9193e2e516bb8d4962c1171d3f51bfbc5aa261cfd3ab85",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/transport/websocket/http/http.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/transport/websocket/http/http.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/transport/websocket/http/http.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/transport/websocket/http/http.pb.ts",
+        "transport/websocket/http/http.pb.cc",
+        "transport/websocket/http/http.pb.go",
+        "transport/websocket/http/http.pb.h",
+        "transport/websocket/http/http.pb.ts"
+      ],
+      "protoFiles": [
+        "transport/websocket/http/http.proto"
+      ]
+    }
+  }
+}

@@ -2,7 +2,7 @@
 // @generated from file github.com/aperturerobotics/bifrost/daemon/api/api.proto (package bifrost.api, syntax proto3)
 /* eslint-disable */
 
-import { Config as Config$1 } from '@go/github.com/aperturerobotics/controllerbus/bus/api/api.pb.js'
+import { Config as Config$1 } from '../../../controllerbus/bus/api/api.pb.js'
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
 import { createMessageType } from '@aptre/protobuf-es-lite'
 

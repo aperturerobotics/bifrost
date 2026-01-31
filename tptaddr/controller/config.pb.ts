@@ -2,7 +2,7 @@
 // @generated from file github.com/aperturerobotics/bifrost/tptaddr/controller/config.proto (package tptaddr.controller, syntax proto3)
 /* eslint-disable */
 
-import { Backoff } from '@go/github.com/aperturerobotics/util/backoff/backoff.pb.js'
+import { Backoff } from '../../../util/backoff/backoff.pb.js'
 import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
 import { createMessageType } from '@aptre/protobuf-es-lite'
 
