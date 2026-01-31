@@ -4,13 +4,13 @@
 
 **Bifrost** is a peer-to-peer communications engine with pluggable transports:
 
- - **Cross-platform**: supports web browsers, servers, desktop, mobile, ...
- - **Efficient**: multiplex many simultaneous streams over a single Link.
- - **Encryption**: identify, authenticate, and encrypt each Link between peers.
- - **Flexible**: use multiple transports, protocols, simultaneously.
- - **Meshing**: supports multi-hop routing to a desired target peer w/ circuits.
- - **PubSub**: publish/subscribe channels with pluggable implementations.
- - **Robust**: uses Quic for lossless links over lossy transports.
+- **Cross-platform**: supports web browsers, servers, desktop, mobile, ...
+- **Efficient**: multiplex many simultaneous streams over a single Link.
+- **Encryption**: identify, authenticate, and encrypt each Link between peers.
+- **Flexible**: use multiple transports, protocols, simultaneously.
+- **Meshing**: supports multi-hop routing to a desired target peer w/ circuits.
+- **PubSub**: publish/subscribe channels with pluggable implementations.
+- **Robust**: uses Quic for lossless links over lossy transports.
 
 Bifrost uses [ControllerBus] controllers and directives to send any protocol
 over any transport with extensive and flexible configuration.
@@ -22,7 +22,7 @@ over any transport with extensive and flexible configuration.
 [![Go Reference Widget]][Go Reference] [![Go Report Card Widget]][Go Report Card] [![DeepWiki Widget]][DeepWiki]
 
 [Go Reference]: https://pkg.go.dev/github.com/aperturerobotics/bifrost
-[Go Reference Widget]:https://pkg.go.dev/badge/github.com/aperturerobotics/bifrost.svg
+[Go Reference Widget]: https://pkg.go.dev/badge/github.com/aperturerobotics/bifrost.svg
 [Go Report Card Widget]: https://goreportcard.com/badge/github.com/aperturerobotics/bifrost
 [Go Report Card]: https://goreportcard.com/report/github.com/aperturerobotics/bifrost
 [DeepWiki Widget]: https://img.shields.io/badge/DeepWiki-aperturerobotics%2Fbifrost-blue.svg?logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACwAAAAyCAYAAAAnWDnqAAAAAXNSR0IArs4c6QAAA05JREFUaEPtmUtyEzEQhtWTQyQLHNak2AB7ZnyXZMEjXMGeK/AIi+QuHrMnbChYY7MIh8g01fJoopFb0uhhEqqcbWTp06/uv1saEDv4O3n3dV60RfP947Mm9/SQc0ICFQgzfc4CYZoTPAswgSJCCUJUnAAoRHOAUOcATwbmVLWdGoH//PB8mnKqScAhsD0kYP3j/Yt5LPQe2KvcXmGvRHcDnpxfL2zOYJ1mFwrryWTz0advv1Ut4CJgf5uhDuDj5eUcAUoahrdY/56ebRWeraTjMt/00Sh3UDtjgHtQNHwcRGOC98BJEAEymycmYcWwOprTgcB6VZ5JK5TAJ+fXGLBm3FDAmn6oPPjR4rKCAoJCal2eAiQp2x0vxTPB3ALO2CRkwmDy5WohzBDwSEFKRwPbknEggCPB/imwrycgxX2NzoMCHhPkDwqYMr9tRcP5qNrMZHkVnOjRMWwLCcr8ohBVb1OMjxLwGCvjTikrsBOiA6fNyCrm8V1rP93iVPpwaE+gO0SsWmPiXB+jikdf6SizrT5qKasx5j8ABbHpFTx+vFXp9EnYQmLx02h1QTTrl6eDqxLnGjporxl3NL3agEvXdT0WmEost648sQOYAeJS9Q7bfUVoMGnjo4AZdUMQku50McDcMWcBPvr0SzbTAFDfvJqwLzgxwATnCgnp4wDl6Aa+Ax283gghmj+vj7feE2KBBRMW3FzOpLOADl0Isb5587h/U4gGvkt5v60Z1VLG8BhYjbzRwyQZemwAd6cCR5/XFWLYZRIMpX39AR0tjaGGiGzLVyhse5C9RKC6ai42ppWPKiBagOvaYk8lO7DajerabOZP46Lby5wKjw1HCRx7p9sVMOWGzb/vA1hwiWc6jm3MvQDTogQkiqIhJV0nBQBTU+3okKCFDy9WwferkHjtxib7t3xIUQtHxnIwtx4mpg26/HfwVNVDb4oI9RHmx5WGelRVlrtiw43zboCLaxv46AZeB3IlTkwouebTr1y2NjSpHz68WNFjHvupy3q8TFn3Hos2IAk4Ju5dCo8B3wP7VPr/FGaKiG+T+v+TQqIrOqMTL1VdWV1DdmcbO8KXBz6esmYWYKPwDL5b5FA1a0hwapHiom0r/cKaoqr+27/XcrS5UwSMbQAAAABJRU5ErkJggg==
@@ -30,13 +30,13 @@ over any transport with extensive and flexible configuration.
 
 Bifrost is designed around the following core concepts:
 
- - **Peer**: a routable process or device with a keypair.
- - **Transport**: a protocol which can create Links with other peers.
- - **Link**: a connection between two peers over a Transport.
- - **Stream**: channel of data between two Peer with a protocol type.
- - **RPC**: request/reply and bidirectional streaming remote calls.
- - **PubSub**: at-least-once delivery of messages to named topics.
- - **Signaling**: exchanging messages between peers via a relay server.
+- **Peer**: a routable process or device with a keypair.
+- **Transport**: a protocol which can create Links with other peers.
+- **Link**: a connection between two peers over a Transport.
+- **Stream**: channel of data between two Peer with a protocol type.
+- **RPC**: request/reply and bidirectional streaming remote calls.
+- **PubSub**: at-least-once delivery of messages to named topics.
+- **Signaling**: exchanging messages between peers via a relay server.
 
 Integrates with networking, pubsub, and RPC libraries like [libp2p], [starpc],
 and [pion webrtc].
@@ -137,11 +137,11 @@ which are not yet exposed via these flags.
 
 Most Bifrost functionality is exposed on the client CLI and RPC API:
 
- - Mount a peer by loading a private key into the daemon.
- - Forward incoming streams with a protocol ID to a multiaddress
- - Proxy incoming connections to a listener to a remote peer
- - Open a stream with a remote peer and a given protocol ID
- - Accept a stream for a local peer with a given protocol ID
+- Mount a peer by loading a private key into the daemon.
+- Forward incoming streams with a protocol ID to a multiaddress
+- Proxy incoming connections to a listener to a remote peer
+- Open a stream with a remote peer and a given protocol ID
+- Accept a stream for a local peer with a given protocol ID
 
 The client CLI has the following help output:
 
@@ -194,7 +194,7 @@ is exposed to the API and command line. Some examples:
   # Standard error is used for logging.
   bifrost client accept \
     --local-peer-id <peer-id> \
-    --protocol-id /x/myproto 
+    --protocol-id /x/myproto
 
   # Establish a stream.
   # Standard output is the incoming data stream, standard input is the outgoing data stream.
@@ -259,7 +259,7 @@ between a local port and a remote peer port, similar to SSH port forwarding:
 
 This example shows how to run two daemons with information on how to contact
 each other, and then "tell" the second daemon to listen on port 8002 and forward
-any incoming connections to the remote peer with the given peer ID. 
+any incoming connections to the remote peer with the given peer ID.
 
 When someone connects to port 8002 the EstablishLinkWithPeer directive is added
 and the UDP transport opens the connection with the peer (on-demand.) The stream
@@ -330,19 +330,19 @@ Floodsub is currently supported as a PubSub protocol.
 
 ## Developing
 
-If using Go only, you don't need `yarn` or `Node.JS`.
+If using Go only, you don't need `bun` or `Node.JS`.
 
 Bifrost uses [Protobuf](https://protobuf.dev/) for message encoding.
 
 You can re-generate the protobufs after changing any `.proto` file:
 
 ```
-# stage the .proto file so yarn gen sees it
+# stage the .proto file so bun gen sees it
 git add .
 # install deps
-yarn
+bun install
 # generate the protobufs
-yarn gen
+bun run gen
 ```
 
 To run the test suite:
@@ -351,28 +351,15 @@ To run the test suite:
 # Go tests only
 go test ./...
 # All tests
-yarn test
+bun run test
 # Lint
-yarn lint
+bun run lint
 ```
 
 ### Developing on MacOS
 
-On MacOS, some homebrew packages are required for `yarn gen`:
-
-```
-brew install bash make coreutils gnu-sed findutils protobuf
-brew link --overwrite protobuf
-```
-
-Add to your .bashrc or .zshrc:
-
-```
-export PATH="/opt/homebrew/opt/coreutils/libexec/gnubin:$PATH"
-export PATH="/opt/homebrew/opt/gnu-sed/libexec/gnubin:$PATH"
-export PATH="/opt/homebrew/opt/findutils/libexec/gnubin:$PATH"
-export PATH="/opt/homebrew/opt/make/libexec/gnubin:$PATH"
-```
+On MacOS, the `aptre` CLI handles all protobuf generation without requiring
+additional homebrew packages. Just run `bun run gen` after installing bun.
 
 ## Support
 

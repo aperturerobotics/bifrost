@@ -4,8 +4,8 @@ github.com/aperturerobotics/abseil-cpp v0.0.0-20260130220554-305ed0ea7006 h1:Uva
 github.com/aperturerobotics/abseil-cpp v0.0.0-20260130220554-305ed0ea7006/go.mod h1:lNSJTKECIUFAnfeSqy01kXYTYe1BHubW7198jNX3nEw=
 github.com/aperturerobotics/cli v1.1.0 h1:7a+YRC+EY3npAnTzhHV5gLCiw91KS0Ts3XwLILGOsT8=
 github.com/aperturerobotics/cli v1.1.0/go.mod h1:M7BFP9wow5ytTzMyJQOOO991fGfsUqdTI7gGEsHfTQ8=
-github.com/aperturerobotics/common v0.26.8 h1:2ZOp2fxAIi1VZrypNcJN1O7nXPYgQQjhknAPavmSPDE=
-github.com/aperturerobotics/common v0.26.8/go.mod h1:mSIaXBsZbPQP2Tw8CHl0CiAPCwq7QDsiFG3rVtof2ik=
+github.com/aperturerobotics/common v0.26.10 h1:Ze/SNDVLNsVWySVY9Jf9jq0/AzS+P6aTcsPr1w9lFNU=
+github.com/aperturerobotics/common v0.26.10/go.mod h1:mSIaXBsZbPQP2Tw8CHl0CiAPCwq7QDsiFG3rVtof2ik=
 github.com/aperturerobotics/controllerbus v0.52.0 h1:lPbPDKSDuNuKWJ7yMrXTTqyyBIn0oaDtYWXSwBXpy4w=
 github.com/aperturerobotics/controllerbus v0.52.0/go.mod h1:GJiTcPQ0TxSEqrwu5Kjg6G+VXiJ01CNQ95t0D33x6Fs=
 github.com/aperturerobotics/entitygraph v0.11.0 h1:nPnT0SXsEMqsxmn/lWGR50JHbfmSd3pVanyJAm6v8rI=
@@ -30,8 +30,8 @@ github.com/aperturerobotics/protobuf-go-lite v0.12.0 h1:ZPPokQtm/NPhgGv+vYD9AhIn
 github.com/aperturerobotics/protobuf-go-lite v0.12.0/go.mod h1:lGH3s5ArCTXKI4wJdlNpaybUtwSjfAG0vdWjxOfMcF8=
 github.com/aperturerobotics/quic-go v0.48.2-0.20241029082227-fa76c393ee89 h1:MUXLrLDjCw36dx8OeBwF/B7YP5akyoU6Ps+v50qR5Lo=
 github.com/aperturerobotics/quic-go v0.48.2-0.20241029082227-fa76c393ee89/go.mod h1:vhhkHYq2i9lb0bOllqKhOdtg/3i7r4o/7zc8XI/T4lo=
-github.com/aperturerobotics/starpc v0.42.0 h1:lc7NZ9hK+ZXXs2kZK3RC5oOxq7pi8odHDbtbbCEFzg8=
-github.com/aperturerobotics/starpc v0.42.0/go.mod h1:XcECz2GMPnWK1VRS+4CpBiC6O7iW7qWYbMgW/A2o6wQ=
+github.com/aperturerobotics/starpc v0.43.0 h1:ZrMzKn6/BRY9i68VCOrWCoBfTRZwPsnYxoJmNO6ur4w=
+github.com/aperturerobotics/starpc v0.43.0/go.mod h1:9tpMZvadVQ2XLgyHxeSOJNGg8dg+BpMXdMcHAcbKXh0=
 github.com/aperturerobotics/util v1.32.3 h1:wBc6L2guYMgLEzFwORH3CLMoMpfEqbV6pDqYervo3S0=
 github.com/aperturerobotics/util v1.32.3/go.mod h1:qfRZZUDn0sEfc43JRA6rKP8bwFxliqGqJZX+p1jeOnQ=
 github.com/blang/semver/v4 v4.0.0 h1:1PFHFE6yCCTv8C1TeyNNarDzntLi7wMI5i/pzqYIsAM=
@@ -73,8 +73,8 @@ github.com/libp2p/go-buffer-pool v0.1.0 h1:oK4mSFcQz7cTQIfqbe4MIj9gLW+mnanjyFtc6
 github.com/libp2p/go-buffer-pool v0.1.0/go.mod h1:N+vh8gMqimBzdKkSMVuydVDq+UV5QTWy5HSiZacSbPg=
 github.com/libp2p/go-libp2p-testing v0.12.0 h1:EPvBb4kKMWO29qP4mZGyhVzUyR25dvfUIK5WDu6iPUA=
 github.com/libp2p/go-libp2p-testing v0.12.0/go.mod h1:KcGDRXyN7sQCllucn1cOOS+Dmm7ujhfEyXQL5lvkcPg=
-github.com/libp2p/go-yamux/v4 v4.0.2-0.20240826150533-e92055b23e0e h1:Luuxp/lnfmJjQgGgAh5kmMZalC+8EVh/bYNQ8vS6d7I=
-github.com/libp2p/go-yamux/v4 v4.0.2-0.20240826150533-e92055b23e0e/go.mod h1:C808cCRgOs1iBwY4S71T5oxgMxgLmqUw56qh4AeBW2o=
+github.com/libp2p/go-yamux/v4 v4.0.2 h1:nrLh89LN/LEiqcFiqdKDRHjGstN300C1269K/EX0CPU=
+github.com/libp2p/go-yamux/v4 v4.0.2/go.mod h1:C808cCRgOs1iBwY4S71T5oxgMxgLmqUw56qh4AeBW2o=
 github.com/mr-tron/base58 v1.2.0 h1:T/HDJBh4ZCPbU39/+c3rRvE0uKBQlU27+QI8LJ4t64o=
 github.com/mr-tron/base58 v1.2.0/go.mod h1:BinMc/sQntlIE1frQmRFPUoPA1Zkr8VRgBdjWI2mNwc=
 github.com/multiformats/go-base32 v0.1.0 h1:pVx9xoSPqEIQG8o+UbAe7DNi51oej1NtK+aGkbLYxPE=
