@@ -9,7 +9,7 @@
         "starpc": "^0.42.0",
       },
       "devDependencies": {
-        "@aptre/common": "^0.26.10",
+        "@aptre/common": "^0.26.11",
         "depcheck": "^1.4.6",
         "prettier": "^3.1.1",
         "rimraf": "^6.0.0",
@@ -21,7 +21,7 @@
     "@aptre/protobuf-es-lite": "^0.5.2",
   },
   "packages": {
-    "@aptre/common": ["@aptre/common@0.26.10", "", { "dependencies": { "@aptre/protobuf-es-lite": "^0.5.2", "@typescript-eslint/eslint-plugin": "^8.39.1", "@typescript-eslint/parser": "^8.39.1", "eslint": "^9.39.2", "eslint-config-prettier": "^10.0.0", "eslint-plugin-react-hooks": "^7.0.0", "eslint-plugin-unused-imports": "^4.0.0", "starpc": "^0.42.0", "vitest": "^4.0.0" } }, "sha512-bWa/xj3sq55MjQmGxqvmAgpBjt1EWkk3ICuYV6VLoq4uMlF4ERzMPcOIGKOqp8trqp1Ddykae3bTSaztpRiBeA=="],
+    "@aptre/common": ["@aptre/common@0.26.11", "", { "dependencies": { "@aptre/protobuf-es-lite": "^0.5.2", "@typescript-eslint/eslint-plugin": "^8.39.1", "@typescript-eslint/parser": "^8.39.1", "eslint": "^9.39.2", "eslint-config-prettier": "^10.0.0", "eslint-plugin-react-hooks": "^7.0.0", "eslint-plugin-unused-imports": "^4.0.0", "starpc": "^0.42.0", "vitest": "^4.0.0" } }, "sha512-zXYjfzXtjNtxBjlV22ct3niGZISIzgKoxeAtHQ/B+FE++ibJEgx65ET8A48wydYfIZGc38XtEWXelH7Bs3VtXA=="],
 
     "@aptre/it-ws": ["@aptre/it-ws@1.1.2", "", { "dependencies": { "@types/ws": "^8.2.2", "event-iterator": "^2.0.0", "it-stream-types": "^2.0.1", "ws": "^8.17.1" } }, "sha512-llC/rTR1YXs3sNven2QRyHp3PoUwxpe0/iohiFNIfUTjbThlv1vGuq6GZysOGwCqEgbYRJGMhu4A4pTjwqztJQ=="],
 
