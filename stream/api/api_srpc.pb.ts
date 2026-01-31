@@ -2,9 +2,23 @@
 // @generated from file github.com/aperturerobotics/bifrost/stream/api/api.proto (package stream.api, syntax proto3)
 /* eslint-disable */
 
-import { AcceptStreamRequest, AcceptStreamResponse, DialStreamRequest, DialStreamResponse, ForwardStreamsRequest, ForwardStreamsResponse, ListenStreamsRequest, ListenStreamsResponse } from "./api.pb.js";
-import { MethodKind } from "@aptre/protobuf-es-lite";
-import { buildDecodeMessageTransform, buildEncodeMessageTransform, MessageStream, ProtoRpc } from "starpc";
+import {
+  AcceptStreamRequest,
+  AcceptStreamResponse,
+  DialStreamRequest,
+  DialStreamResponse,
+  ForwardStreamsRequest,
+  ForwardStreamsResponse,
+  ListenStreamsRequest,
+  ListenStreamsResponse,
+} from './api.pb.js'
+import { MethodKind } from '@aptre/protobuf-es-lite'
+import {
+  buildDecodeMessageTransform,
+  buildEncodeMessageTransform,
+  MessageStream,
+  ProtoRpc,
+} from 'starpc'
 
 /**
  * StreamService is the bifrost stream service.
@@ -12,7 +26,7 @@ import { buildDecodeMessageTransform, buildEncodeMessageTransform, MessageStream
  * @generated from service stream.api.StreamService
  */
 export const StreamServiceDefinition = {
-  typeName: "stream.api.StreamService",
+  typeName: 'stream.api.StreamService',
   methods: {
     /**
      * ForwardStreams forwards streams to the target multiaddress.
@@ -21,7 +35,7 @@ export const StreamServiceDefinition = {
      * @generated from rpc stream.api.StreamService.ForwardStreams
      */
     ForwardStreams: {
-      name: "ForwardStreams",
+      name: 'ForwardStreams',
       I: ForwardStreamsRequest,
       O: ForwardStreamsResponse,
       kind: MethodKind.ServerStreaming,
@@ -33,7 +47,7 @@ export const StreamServiceDefinition = {
      * @generated from rpc stream.api.StreamService.ListenStreams
      */
     ListenStreams: {
-      name: "ListenStreams",
+      name: 'ListenStreams',
       I: ListenStreamsRequest,
       O: ListenStreamsResponse,
       kind: MethodKind.ServerStreaming,
@@ -45,7 +59,7 @@ export const StreamServiceDefinition = {
      * @generated from rpc stream.api.StreamService.AcceptStream
      */
     AcceptStream: {
-      name: "AcceptStream",
+      name: 'AcceptStream',
       I: AcceptStreamRequest,
       O: AcceptStreamResponse,
       kind: MethodKind.BiDiStreaming,
@@ -57,13 +71,13 @@ export const StreamServiceDefinition = {
      * @generated from rpc stream.api.StreamService.DialStream
      */
     DialStream: {
-      name: "DialStream",
+      name: 'DialStream',
       I: DialStreamRequest,
       O: DialStreamResponse,
       kind: MethodKind.BiDiStreaming,
     },
-  }
-} as const;
+  },
+} as const
 
 /**
  * StreamService is the bifrost stream service.
@@ -77,7 +91,10 @@ export interface StreamService {
    *
    * @generated from rpc stream.api.StreamService.ForwardStreams
    */
-  ForwardStreams(request: ForwardStreamsRequest, abortSignal?: AbortSignal): MessageStream<ForwardStreamsResponse>;
+  ForwardStreams(
+    request: ForwardStreamsRequest,
+    abortSignal?: AbortSignal,
+  ): MessageStream<ForwardStreamsResponse>
 
   /**
    * ListenStreams listens for connections to the multiaddress.
@@ -85,7 +102,10 @@ export interface StreamService {
    *
    * @generated from rpc stream.api.StreamService.ListenStreams
    */
-  ListenStreams(request: ListenStreamsRequest, abortSignal?: AbortSignal): MessageStream<ListenStreamsResponse>;
+  ListenStreams(
+    request: ListenStreamsRequest,
+    abortSignal?: AbortSignal,
+  ): MessageStream<ListenStreamsResponse>
 
   /**
    * AcceptStream accepts an incoming stream.
@@ -93,7 +113,10 @@ export interface StreamService {
    *
    * @generated from rpc stream.api.StreamService.AcceptStream
    */
-  AcceptStream(request: MessageStream<AcceptStreamRequest>, abortSignal?: AbortSignal): MessageStream<AcceptStreamResponse>;
+  AcceptStream(
+    request: MessageStream<AcceptStreamRequest>,
+    abortSignal?: AbortSignal,
+  ): MessageStream<AcceptStreamResponse>
 
   /**
    * DialStream dials a outgoing stream.
@@ -101,7 +124,10 @@ export interface StreamService {
    *
    * @generated from rpc stream.api.StreamService.DialStream
    */
-  DialStream(request: MessageStream<DialStreamRequest>, abortSignal?: AbortSignal): MessageStream<DialStreamResponse>;
+  DialStream(
+    request: MessageStream<DialStreamRequest>,
+    abortSignal?: AbortSignal,
+  ): MessageStream<DialStreamResponse>
 }
 
 export const StreamServiceServiceName = StreamServiceDefinition.typeName
@@ -123,7 +149,10 @@ export class StreamServiceClient implements StreamService {
    *
    * @generated from rpc stream.api.StreamService.ForwardStreams
    */
-  ForwardStreams(request: ForwardStreamsRequest, abortSignal?: AbortSignal): MessageStream<ForwardStreamsResponse> {
+  ForwardStreams(
+    request: ForwardStreamsRequest,
+    abortSignal?: AbortSignal,
+  ): MessageStream<ForwardStreamsResponse> {
     const requestMsg = ForwardStreamsRequest.create(request)
     const result = this.rpc.serverStreamingRequest(
       this.service,
@@ -140,7 +169,10 @@ export class StreamServiceClient implements StreamService {
    *
    * @generated from rpc stream.api.StreamService.ListenStreams
    */
-  ListenStreams(request: ListenStreamsRequest, abortSignal?: AbortSignal): MessageStream<ListenStreamsResponse> {
+  ListenStreams(
+    request: ListenStreamsRequest,
+    abortSignal?: AbortSignal,
+  ): MessageStream<ListenStreamsResponse> {
     const requestMsg = ListenStreamsRequest.create(request)
     const result = this.rpc.serverStreamingRequest(
       this.service,
@@ -157,7 +189,10 @@ export class StreamServiceClient implements StreamService {
    *
    * @generated from rpc stream.api.StreamService.AcceptStream
    */
-  AcceptStream(request: MessageStream<AcceptStreamRequest>, abortSignal?: AbortSignal): MessageStream<AcceptStreamResponse> {
+  AcceptStream(
+    request: MessageStream<AcceptStreamRequest>,
+    abortSignal?: AbortSignal,
+  ): MessageStream<AcceptStreamResponse> {
     const result = this.rpc.bidirectionalStreamingRequest(
       this.service,
       StreamServiceDefinition.methods.AcceptStream.name,
@@ -173,7 +208,10 @@ export class StreamServiceClient implements StreamService {
    *
    * @generated from rpc stream.api.StreamService.DialStream
    */
-  DialStream(request: MessageStream<DialStreamRequest>, abortSignal?: AbortSignal): MessageStream<DialStreamResponse> {
+  DialStream(
+    request: MessageStream<DialStreamRequest>,
+    abortSignal?: AbortSignal,
+  ): MessageStream<DialStreamResponse> {
     const result = this.rpc.bidirectionalStreamingRequest(
       this.service,
       StreamServiceDefinition.methods.DialStream.name,

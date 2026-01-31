@@ -2,10 +2,10 @@
 // @generated from file github.com/aperturerobotics/bifrost/stream/relay/relay.proto (package stream.relay, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from "@aptre/protobuf-es-lite";
-import { createMessageType, ScalarType } from "@aptre/protobuf-es-lite";
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType, ScalarType } from '@aptre/protobuf-es-lite'
 
-export const protobufPackage = "stream.relay";
+export const protobufPackage = 'stream.relay'
 
 /**
  * Config configures the relay controller.
@@ -19,40 +19,38 @@ export interface Config {
    *
    * @generated from field: string peer_id = 1;
    */
-  peerId?: string;
+  peerId?: string
   /**
    * ProtocolId is the protocol ID to filter incoming streams.
    * Cannot be empty.
    *
    * @generated from field: string protocol_id = 2;
    */
-  protocolId?: string;
+  protocolId?: string
   /**
    * TargetPeerId is the destination peer ID to relay to.
    * Cannot be empty.
    *
    * @generated from field: string target_peer_id = 3;
    */
-  targetPeerId?: string;
+  targetPeerId?: string
   /**
    * TargetProtocolId is the destination protocol ID to relay to.
    * If unset, uses protocol_id.
    *
    * @generated from field: string target_protocol_id = 4;
    */
-  targetProtocolId?: string;
-
-};
+  targetProtocolId?: string
+}
 
 // Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({
-    typeName: "stream.relay.Config",
-    fields: [
-        { no: 1, name: "peer_id", kind: "scalar", T: ScalarType.STRING },
-        { no: 2, name: "protocol_id", kind: "scalar", T: ScalarType.STRING },
-        { no: 3, name: "target_peer_id", kind: "scalar", T: ScalarType.STRING },
-        { no: 4, name: "target_protocol_id", kind: "scalar", T: ScalarType.STRING },
-    ] as readonly PartialFieldInfo[],
-    packedByDefault: true,
-});
-
+  typeName: 'stream.relay.Config',
+  fields: [
+    { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
+    { no: 2, name: 'protocol_id', kind: 'scalar', T: ScalarType.STRING },
+    { no: 3, name: 'target_peer_id', kind: 'scalar', T: ScalarType.STRING },
+    { no: 4, name: 'target_protocol_id', kind: 'scalar', T: ScalarType.STRING },
+  ] as readonly PartialFieldInfo[],
+  packedByDefault: true,
+})

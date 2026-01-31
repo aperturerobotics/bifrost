@@ -2,10 +2,18 @@
 // @generated from file github.com/aperturerobotics/bifrost/rpc/access/access.proto (package bifrost.rpc.access, syntax proto3)
 /* eslint-disable */
 
-import { LookupRpcServiceRequest, LookupRpcServiceResponse } from "./access.pb.js";
-import { MethodKind } from "@aptre/protobuf-es-lite";
-import { RpcStreamPacket } from "@go/github.com/aperturerobotics/starpc/rpcstream/rpcstream.pb.js";
-import { buildDecodeMessageTransform, buildEncodeMessageTransform, MessageStream, ProtoRpc } from "starpc";
+import {
+  LookupRpcServiceRequest,
+  LookupRpcServiceResponse,
+} from './access.pb.js'
+import { MethodKind } from '@aptre/protobuf-es-lite'
+import { RpcStreamPacket } from '@go/github.com/aperturerobotics/starpc/rpcstream/rpcstream.pb.js'
+import {
+  buildDecodeMessageTransform,
+  buildEncodeMessageTransform,
+  MessageStream,
+  ProtoRpc,
+} from 'starpc'
 
 /**
  * AccessRpcService exposes services with LookupRpcService via RPC.
@@ -13,7 +21,7 @@ import { buildDecodeMessageTransform, buildEncodeMessageTransform, MessageStream
  * @generated from service bifrost.rpc.access.AccessRpcService
  */
 export const AccessRpcServiceDefinition = {
-  typeName: "bifrost.rpc.access.AccessRpcService",
+  typeName: 'bifrost.rpc.access.AccessRpcService',
   methods: {
     /**
      * LookupRpcService checks if a RPC service exists with the given info.
@@ -23,7 +31,7 @@ export const AccessRpcServiceDefinition = {
      * @generated from rpc bifrost.rpc.access.AccessRpcService.LookupRpcService
      */
     LookupRpcService: {
-      name: "LookupRpcService",
+      name: 'LookupRpcService',
       I: LookupRpcServiceRequest,
       O: LookupRpcServiceResponse,
       kind: MethodKind.ServerStreaming,
@@ -35,13 +43,13 @@ export const AccessRpcServiceDefinition = {
      * @generated from rpc bifrost.rpc.access.AccessRpcService.CallRpcService
      */
     CallRpcService: {
-      name: "CallRpcService",
+      name: 'CallRpcService',
       I: RpcStreamPacket,
       O: RpcStreamPacket,
       kind: MethodKind.BiDiStreaming,
     },
-  }
-} as const;
+  },
+} as const
 
 /**
  * AccessRpcService exposes services with LookupRpcService via RPC.
@@ -56,7 +64,10 @@ export interface AccessRpcService {
    *
    * @generated from rpc bifrost.rpc.access.AccessRpcService.LookupRpcService
    */
-  LookupRpcService(request: LookupRpcServiceRequest, abortSignal?: AbortSignal): MessageStream<LookupRpcServiceResponse>;
+  LookupRpcService(
+    request: LookupRpcServiceRequest,
+    abortSignal?: AbortSignal,
+  ): MessageStream<LookupRpcServiceResponse>
 
   /**
    * CallRpcService forwards an RPC call to the service with the component ID.
@@ -64,7 +75,10 @@ export interface AccessRpcService {
    *
    * @generated from rpc bifrost.rpc.access.AccessRpcService.CallRpcService
    */
-  CallRpcService(request: MessageStream<RpcStreamPacket>, abortSignal?: AbortSignal): MessageStream<RpcStreamPacket>;
+  CallRpcService(
+    request: MessageStream<RpcStreamPacket>,
+    abortSignal?: AbortSignal,
+  ): MessageStream<RpcStreamPacket>
 }
 
 export const AccessRpcServiceServiceName = AccessRpcServiceDefinition.typeName
@@ -85,7 +99,10 @@ export class AccessRpcServiceClient implements AccessRpcService {
    *
    * @generated from rpc bifrost.rpc.access.AccessRpcService.LookupRpcService
    */
-  LookupRpcService(request: LookupRpcServiceRequest, abortSignal?: AbortSignal): MessageStream<LookupRpcServiceResponse> {
+  LookupRpcService(
+    request: LookupRpcServiceRequest,
+    abortSignal?: AbortSignal,
+  ): MessageStream<LookupRpcServiceResponse> {
     const requestMsg = LookupRpcServiceRequest.create(request)
     const result = this.rpc.serverStreamingRequest(
       this.service,
@@ -102,7 +119,10 @@ export class AccessRpcServiceClient implements AccessRpcService {
    *
    * @generated from rpc bifrost.rpc.access.AccessRpcService.CallRpcService
    */
-  CallRpcService(request: MessageStream<RpcStreamPacket>, abortSignal?: AbortSignal): MessageStream<RpcStreamPacket> {
+  CallRpcService(
+    request: MessageStream<RpcStreamPacket>,
+    abortSignal?: AbortSignal,
+  ): MessageStream<RpcStreamPacket> {
     const result = this.rpc.bidirectionalStreamingRequest(
       this.service,
       AccessRpcServiceDefinition.methods.CallRpcService.name,

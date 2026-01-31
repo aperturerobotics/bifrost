@@ -2,10 +2,10 @@
 // @generated from file github.com/aperturerobotics/bifrost/tptaddr/static/static.proto (package tptaddr.static, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from "@aptre/protobuf-es-lite";
-import { createMessageType, ScalarType } from "@aptre/protobuf-es-lite";
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType, ScalarType } from '@aptre/protobuf-es-lite'
 
-export const protobufPackage = "tptaddr.static";
+export const protobufPackage = 'tptaddr.static'
 
 /**
  * Config configures the static controller.
@@ -23,16 +23,20 @@ export interface Config {
    *
    * @generated from field: repeated string addresses = 1;
    */
-  addresses?: string[];
-
-};
+  addresses?: string[]
+}
 
 // Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({
-    typeName: "tptaddr.static.Config",
-    fields: [
-        { no: 1, name: "addresses", kind: "scalar", T: ScalarType.STRING, repeated: true },
-    ] as readonly PartialFieldInfo[],
-    packedByDefault: true,
-});
-
+  typeName: 'tptaddr.static.Config',
+  fields: [
+    {
+      no: 1,
+      name: 'addresses',
+      kind: 'scalar',
+      T: ScalarType.STRING,
+      repeated: true,
+    },
+  ] as readonly PartialFieldInfo[],
+  packedByDefault: true,
+})

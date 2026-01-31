@@ -2,10 +2,10 @@
 // @generated from file github.com/aperturerobotics/bifrost/stream/echo/echo.proto (package stream.echo, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType, PartialFieldInfo } from "@aptre/protobuf-es-lite";
-import { createMessageType, ScalarType } from "@aptre/protobuf-es-lite";
+import type { MessageType, PartialFieldInfo } from '@aptre/protobuf-es-lite'
+import { createMessageType, ScalarType } from '@aptre/protobuf-es-lite'
 
-export const protobufPackage = "stream.echo";
+export const protobufPackage = 'stream.echo'
 
 /**
  * Config configures the echo controller.
@@ -19,23 +19,21 @@ export interface Config {
    *
    * @generated from field: string peer_id = 1;
    */
-  peerId?: string;
+  peerId?: string
   /**
    * ProtocolId is the protocol ID to echo on.
    *
    * @generated from field: string protocol_id = 2;
    */
-  protocolId?: string;
-
-};
+  protocolId?: string
+}
 
 // Config contains the message type declaration for Config.
 export const Config: MessageType<Config> = createMessageType({
-    typeName: "stream.echo.Config",
-    fields: [
-        { no: 1, name: "peer_id", kind: "scalar", T: ScalarType.STRING },
-        { no: 2, name: "protocol_id", kind: "scalar", T: ScalarType.STRING },
-    ] as readonly PartialFieldInfo[],
-    packedByDefault: true,
-});
-
+  typeName: 'stream.echo.Config',
+  fields: [
+    { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
+    { no: 2, name: 'protocol_id', kind: 'scalar', T: ScalarType.STRING },
+  ] as readonly PartialFieldInfo[],
+  packedByDefault: true,
+})

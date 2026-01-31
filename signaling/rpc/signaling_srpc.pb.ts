@@ -2,9 +2,19 @@
 // @generated from file github.com/aperturerobotics/bifrost/signaling/rpc/signaling.proto (package signaling.rpc, syntax proto3)
 /* eslint-disable */
 
-import { ListenRequest, ListenResponse, SessionRequest, SessionResponse } from "./signaling.pb.js";
-import { MethodKind } from "@aptre/protobuf-es-lite";
-import { buildDecodeMessageTransform, buildEncodeMessageTransform, MessageStream, ProtoRpc } from "starpc";
+import {
+  ListenRequest,
+  ListenResponse,
+  SessionRequest,
+  SessionResponse,
+} from './signaling.pb.js'
+import { MethodKind } from '@aptre/protobuf-es-lite'
+import {
+  buildDecodeMessageTransform,
+  buildEncodeMessageTransform,
+  MessageStream,
+  ProtoRpc,
+} from 'starpc'
 
 /**
  * Signaling is a service which allows peers to signal each other via a RPC server.
@@ -12,7 +22,7 @@ import { buildDecodeMessageTransform, buildEncodeMessageTransform, MessageStream
  * @generated from service signaling.rpc.Signaling
  */
 export const SignalingDefinition = {
-  typeName: "signaling.rpc.Signaling",
+  typeName: 'signaling.rpc.Signaling',
   methods: {
     /**
      * Listen waits for messages to be available in our inbox from remote peers.
@@ -20,7 +30,7 @@ export const SignalingDefinition = {
      * @generated from rpc signaling.rpc.Signaling.Listen
      */
     Listen: {
-      name: "Listen",
+      name: 'Listen',
       I: ListenRequest,
       O: ListenResponse,
       kind: MethodKind.ServerStreaming,
@@ -31,13 +41,13 @@ export const SignalingDefinition = {
      * @generated from rpc signaling.rpc.Signaling.Session
      */
     Session: {
-      name: "Session",
+      name: 'Session',
       I: SessionRequest,
       O: SessionResponse,
       kind: MethodKind.BiDiStreaming,
     },
-  }
-} as const;
+  },
+} as const
 
 /**
  * Signaling is a service which allows peers to signal each other via a RPC server.
@@ -50,14 +60,20 @@ export interface Signaling {
    *
    * @generated from rpc signaling.rpc.Signaling.Listen
    */
-  Listen(request: ListenRequest, abortSignal?: AbortSignal): MessageStream<ListenResponse>;
+  Listen(
+    request: ListenRequest,
+    abortSignal?: AbortSignal,
+  ): MessageStream<ListenResponse>
 
   /**
    * Session opens a signaling session to send and recv messages from a remote peer.
    *
    * @generated from rpc signaling.rpc.Signaling.Session
    */
-  Session(request: MessageStream<SessionRequest>, abortSignal?: AbortSignal): MessageStream<SessionResponse>;
+  Session(
+    request: MessageStream<SessionRequest>,
+    abortSignal?: AbortSignal,
+  ): MessageStream<SessionResponse>
 }
 
 export const SignalingServiceName = SignalingDefinition.typeName
@@ -76,7 +92,10 @@ export class SignalingClient implements Signaling {
    *
    * @generated from rpc signaling.rpc.Signaling.Listen
    */
-  Listen(request: ListenRequest, abortSignal?: AbortSignal): MessageStream<ListenResponse> {
+  Listen(
+    request: ListenRequest,
+    abortSignal?: AbortSignal,
+  ): MessageStream<ListenResponse> {
     const requestMsg = ListenRequest.create(request)
     const result = this.rpc.serverStreamingRequest(
       this.service,
@@ -92,7 +111,10 @@ export class SignalingClient implements Signaling {
    *
    * @generated from rpc signaling.rpc.Signaling.Session
    */
-  Session(request: MessageStream<SessionRequest>, abortSignal?: AbortSignal): MessageStream<SessionResponse> {
+  Session(
+    request: MessageStream<SessionRequest>,
+    abortSignal?: AbortSignal,
+  ): MessageStream<SessionResponse> {
     const result = this.rpc.bidirectionalStreamingRequest(
       this.service,
       SignalingDefinition.methods.Session.name,
