@@ -25,7 +25,9 @@ jobs:
         with:
           go-version: ${{ matrix.go }}
 
+      - uses: oven-sh/setup-bun@v2
+
       - name: Release
-        run: make release
+        run: bun run go:aptre -- release run
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,11 +1,11 @@
-name: "CodeQL"
+name: 'CodeQL'
 
 on:
   push:
-    branches: [ "master" ]
+    branches: ['master']
   pull_request:
     # The branches below must be a subset of the branches above
-    branches: [ "master" ]
+    branches: ['master']
   schedule:
     - cron: '41 13 * * 6'
 
@@ -24,34 +24,37 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [ 'go', 'javascript' ]
+        language: ['go', 'javascript']
         go: ['1.25']
         node: [25.x]
         # CodeQL supports [ 'cpp', 'csharp', 'go', 'java', 'javascript', 'python', 'ruby' ]
         # Learn more about CodeQL language support at https://aka.ms/codeql-docs/language-support
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-    - name: Setup Go ${{ matrix.go }}
-      uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
-      with:
-        go-version: ${{ matrix.go }}
+      - name: Setup Go ${{ matrix.go }}
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version: ${{ matrix.go }}
 
-    - name: Setup Node.JS ${{ matrix.node }}
-      uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
-      with:
-        node-version: ${{ matrix.node }}
-        cache: 'yarn'
+      - name: Setup Node.JS ${{ matrix.node }}
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+        with:
+          node-version: ${{ matrix.node }}
 
-    - name: Initialize CodeQL
-      uses: github/codeql-action/init@b20883b0cd1f46c72ae0ba6d1090936928f9fa30 # v4.32.0
-      with:
-        languages: ${{ matrix.language }}
+      - uses: oven-sh/setup-bun@v2
 
-    - name: Autobuild
-      uses: github/codeql-action/autobuild@b20883b0cd1f46c72ae0ba6d1090936928f9fa30 # v4.32.0
+      - run: bun install
 
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@b20883b0cd1f46c72ae0ba6d1090936928f9fa30 # v4.32.0
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@b20883b0cd1f46c72ae0ba6d1090936928f9fa30 # v4.32.0
+        with:
+          languages: ${{ matrix.language }}
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@b20883b0cd1f46c72ae0ba6d1090936928f9fa30 # v4.32.0
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@b20883b0cd1f46c72ae0ba6d1090936928f9fa30 # v4.32.0
