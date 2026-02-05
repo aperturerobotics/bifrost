@@ -3,12 +3,16 @@ module github.com/aperturerobotics/bifrost
 go 1.25
 
 require (
+	github.com/aperturerobotics/abseil-cpp v0.0.0-20260131110040-4bb56e2f9017 // indirect
 	github.com/aperturerobotics/cli v1.1.0 // latest
-	github.com/aperturerobotics/common v0.26.11 // latest
-	github.com/aperturerobotics/controllerbus v0.52.0 // latest
+	github.com/aperturerobotics/common v0.30.1 // latest
+	github.com/aperturerobotics/controllerbus v0.52.1 // latest
 	github.com/aperturerobotics/entitygraph v0.11.0 // latest
-	github.com/aperturerobotics/protobuf-go-lite v0.12.0 // latest
-	github.com/aperturerobotics/starpc v0.43.1 // latest
+	github.com/aperturerobotics/go-protoc-wasi v0.0.0-20260131050911-b5f94b044584 // indirect
+	github.com/aperturerobotics/json-iterator-lite v1.0.1-0.20251104042408-0c9eb8a3f726 // indirect
+	github.com/aperturerobotics/protobuf v0.0.0-20260203024654-8201686529c4 // indirect; wasi
+	github.com/aperturerobotics/protobuf-go-lite v0.12.1 // latest
+	github.com/aperturerobotics/starpc v0.46.1 // latest
 	github.com/aperturerobotics/util v1.32.3 // latest
 )
 
@@ -45,13 +49,11 @@ require (
 	gonum.org/v1/gonum v0.17.0
 )
 
+require github.com/cloudflare/circl v1.6.3
+
 require (
-	github.com/aperturerobotics/abseil-cpp v0.0.0-20260130220554-305ed0ea7006 // indirect
-	github.com/aperturerobotics/go-protoc-wasi v0.0.0-20260131050911-b5f94b044584 // indirect
-	github.com/aperturerobotics/json-iterator-lite v1.0.1-0.20251104042408-0c9eb8a3f726 // indirect
-	github.com/aperturerobotics/protobuf v0.0.0-20260131033322-bd4a2148b9c4 // indirect
+	github.com/aperturerobotics/go-protoc-gen-prost v0.0.0-20260203094828-3faf47d2c868 // indirect
 	github.com/bwesterb/go-ristretto v1.2.3 // indirect
-	github.com/cloudflare/circl v1.6.3 // indirect
 	github.com/davidlazar/go-crypto v0.0.0-20200604182044-b73af7476f6c // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
