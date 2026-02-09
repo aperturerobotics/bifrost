@@ -92,7 +92,7 @@ func NewTransport(
 
 	var dialFn transport_quic.DialFunc
 	if addrDialer != nil {
-		dialFn = func(dctx context.Context, addr string) (quic.Connection, net.Addr, error) {
+		dialFn = func(dctx context.Context, addr string) (*quic.Conn, net.Addr, error) {
 			c, na, err := addrDialer(dctx, addr)
 			if err != nil {
 				return nil, nil, err

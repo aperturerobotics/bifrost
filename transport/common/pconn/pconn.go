@@ -86,7 +86,7 @@ func NewTransport(
 
 	var dialFn transport_quic.DialFunc
 	if addrParser != nil {
-		dialFn = func(ctx context.Context, addr string) (quic.Connection, net.Addr, error) {
+		dialFn = func(ctx context.Context, addr string) (*quic.Conn, net.Addr, error) {
 			// parse the addr to a net.Addr
 			na, err := addrParser(addr)
 			if err != nil {
@@ -125,7 +125,7 @@ func NewTransport(
 		return nil, err
 	}
 
-	tpt.quicConfig = transport_quic.BuildQuicConfig(le, opts.GetQuic())
+	tpt.quicConfig = transport_quic.BuildQuicConfig(opts.GetQuic())
 	tpt.quicTpt = &quic.Transport{Conn: pc}
 
 	return tpt, nil

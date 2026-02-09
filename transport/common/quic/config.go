@@ -7,32 +7,21 @@ import (
 	"github.com/aperturerobotics/bifrost/peer"
 	p2ptls "github.com/libp2p/go-libp2p/p2p/security/tls"
 	quic "github.com/quic-go/quic-go"
-	"github.com/sirupsen/logrus"
 )
 
 // BuildQuicConfig constructs the quic config.
-func BuildQuicConfig(le *logrus.Entry, opts *Opts) *quic.Config {
-	// var enableMaxIdleTimeout bool
+func BuildQuicConfig(opts *Opts) *quic.Config {
 	maxIdleTimeout := time.Second * 10
 	if ntDur := opts.GetMaxIdleTimeoutDur(); ntDur != "" {
 		nt, err := time.ParseDuration(ntDur)
 		if err == nil && nt > time.Duration(0) && nt < time.Hour*2 {
 			maxIdleTimeout = nt
-			// enableMaxIdleTimeout = true
 		}
 	}
 
 	maxIncStreams := 100000
 	if mis := opts.GetMaxIncomingStreams(); mis > 0 {
 		maxIncStreams = int(mis)
-	}
-
-	// copy the logger
-	le = &logrus.Entry{Logger: le.Logger, Context: le.Context}
-	if opts.GetVerbose() {
-		le.Level = logrus.DebugLevel
-	} else {
-		le.Level = logrus.InfoLevel
 	}
 
 	keepAlivePeriod := maxIdleTimeout / 2
@@ -45,24 +34,17 @@ func BuildQuicConfig(le *logrus.Entry, opts *Opts) *quic.Config {
 		}
 	}
 
-	// _ = enableMaxIdleTimeout
 	return &quic.Config{
-		Logger: le,
-
 		// We don't use datagrams (yet), but this is necessary for WebTransport
 		EnableDatagrams:         !opts.GetDisableDatagrams(),
 		KeepAlivePeriod:         keepAlivePeriod,
 		DisablePathMTUDiscovery: opts.GetDisablePathMtuDiscovery(),
 
-		MaxIdleTimeout: maxIdleTimeout,
-		// DisableIdleTimeout:    !enableMaxIdleTimeout,
+		MaxIdleTimeout:       maxIdleTimeout,
 		MaxIncomingStreams:    int64(maxIncStreams),
 		MaxIncomingUniStreams: -1, // disable unidirectional streams
 
-		// MaxStreamReceiveWindow:     10 * (1 << 20), // 10 MB
-		// MaxConnectionReceiveWindow: 15 * (1 << 20), // 15 MB
-
-		Versions: []quic.Version{quic.Version2}, // {quic.Version1},
+		Versions: []quic.Version{quic.Version2},
 	}
 }
 

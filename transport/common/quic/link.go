@@ -27,7 +27,7 @@ type Link struct {
 	// localAddr is the local address
 	localAddr net.Addr
 	// sess is the quic session
-	sess quic.Connection
+	sess *quic.Conn
 	// remotePeerID is the remote peer id
 	remotePeerID peer.ID
 	// remotePubKey is the remote public key
@@ -54,7 +54,7 @@ func NewLink(
 	localTransportUUID uint64,
 	localPeerID peer.ID,
 	localAddr net.Addr,
-	sess quic.Connection,
+	sess *quic.Conn,
 	closed func(),
 ) (*Link, error) {
 	remotePeerID, remotePubKey, err := DetermineSessionIdentity(sess)
@@ -167,13 +167,12 @@ func (l *Link) AcceptStream() (stream.Stream, stream.OpenOpts, error) {
 // Close closes the connection.
 func (l *Link) Close() error {
 	l.closedOnce.Do(func() {
-		// _ = l.sess.CloseWithError(quic.ApplicationErrorCode(0), "goodbye")
 		l.ctxCancel()
 		if closed := l.closed; closed != nil {
 			closed()
 		}
 		if l.sess != nil {
-			l.sess.CloseNoError()
+			_ = l.sess.CloseWithError(0, "")
 		}
 	})
 	return nil

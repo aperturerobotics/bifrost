@@ -27,10 +27,10 @@ func DialSession(
 	identity *p2ptls.Identity,
 	addr net.Addr,
 	rpeer peer.ID,
-) (quic.Connection, crypto.PubKey, error) {
+) (*quic.Conn, crypto.PubKey, error) {
 	tlsConf, keyCh := identity.ConfigForPeer(rpeer)
 	tlsConf.NextProtos = []string{Alpn}
-	quicConfig := BuildQuicConfig(le, opts)
+	quicConfig := BuildQuicConfig(opts)
 
 	// le.Debug("sending handshake with quic + tls")
 	sess, err := quic.Dial(ctx, pconn, addr, tlsConf, quicConfig)
@@ -63,10 +63,10 @@ func DialSessionViaTransport(
 	identity *p2ptls.Identity,
 	addr net.Addr,
 	rpeer peer.ID,
-) (quic.Connection, crypto.PubKey, error) {
+) (*quic.Conn, crypto.PubKey, error) {
 	tlsConf, keyCh := identity.ConfigForPeer(rpeer)
 	tlsConf.NextProtos = []string{Alpn}
-	quicConfig := BuildQuicConfig(le, opts)
+	quicConfig := BuildQuicConfig(opts)
 
 	// le.Debugf("dialing with quic + tls: %s", addr.String())
 	sess, err := tpt.Dial(ctx, addr, tlsConf, quicConfig)
@@ -98,8 +98,8 @@ func ListenSession(
 	pconn net.PacketConn,
 	identity *p2ptls.Identity,
 	rpeer peer.ID,
-) (quic.Connection, error) {
-	quicConfig := BuildQuicConfig(le, opts)
+) (*quic.Conn, error) {
+	quicConfig := BuildQuicConfig(opts)
 	tlsConf := BuildIncomingTlsConf(identity, rpeer)
 
 	le.Debug("listening for incoming handshake with quic + tls")
@@ -118,7 +118,7 @@ func ListenSession(
 }
 
 // DetermineSessionIdentity determines the identity from the session cert chain.
-func DetermineSessionIdentity(sess quic.Connection) (peer.ID, crypto.PubKey, error) {
+func DetermineSessionIdentity(sess *quic.Conn) (peer.ID, crypto.PubKey, error) {
 	// Determine the remote peer ID (public key) using the TLS cert chain.
 	connState := sess.ConnectionState()
 	certs := connState.TLS.PeerCertificates

@@ -158,7 +158,7 @@ func (s *sessionTracker) executeLink(ctx context.Context, dcRwc datachannel.Read
 	// 4. B -> A: ICE candidate
 	// 5. B -> A: Dial quic (mTLS)
 	// 6. A -> B: Answer dial quic
-	var sess quic.Connection
+	var sess *quic.Conn
 	var err error
 	if s.offerer {
 		sess, err = transport_quic.ListenSession(

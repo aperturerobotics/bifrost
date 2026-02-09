@@ -53,7 +53,7 @@ type Transport struct {
 
 // DialFunc is a function to dial a peer with a string address.
 // The function should parse the addr to a net.Addr.
-type DialFunc func(ctx context.Context, addr string) (quic.Connection, net.Addr, error)
+type DialFunc func(ctx context.Context, addr string) (*quic.Conn, net.Addr, error)
 
 // NewTransport constructs a new quic-backed based transport.
 func NewTransport(
@@ -201,7 +201,7 @@ func (t *Transport) HandleConn(ctx context.Context, dial bool, pc net.PacketConn
 		raddr = peer.NewNetAddr(peerID)
 	}
 
-	var sess quic.Connection
+	var sess *quic.Conn
 	var err error
 
 	t.le.Debugf("negotiating quic session with: %s", raddr.String())
@@ -240,7 +240,7 @@ func (t *Transport) HandleConn(ctx context.Context, dial bool, pc net.PacketConn
 }
 
 // HandleSession handles a new Quic session, creating & registering a link.
-func (t *Transport) HandleSession(ctx context.Context, sess quic.Connection) (*Link, error) {
+func (t *Transport) HandleSession(ctx context.Context, sess *quic.Conn) (*Link, error) {
 	t.mtx.Lock()
 	sessID := t.sessionCounter
 	t.sessionCounter++
