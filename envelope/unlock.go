@@ -2,6 +2,7 @@ package envelope
 
 import (
 	"bytes"
+	"encoding/hex"
 
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/util/scrub"
@@ -44,8 +45,9 @@ func UnlockEnvelope(
 	sharesNeeded := threshold + 1
 	envelopeID := env.GetEnvelopeId()
 
-	// Decrypt grants and collect shares.
+	// Decrypt grants and collect shares, deduplicating by share ID.
 	var collected []secretsharing.Share
+	seen := make(map[string]struct{})
 	var unlockedIndexes []uint32
 
 	for gi, grant := range env.GetGrants() {
@@ -55,8 +57,8 @@ func UnlockEnvelope(
 			continue
 		}
 
+		// Try each matched keypair until one decrypts the grant.
 		encCtx := buildGrantEncContext(envelopeID, context, gi)
-
 		var innerData []byte
 		for ci, kpIdx := range kpIndexes {
 			priv, ok := matched[int(kpIdx)]
@@ -79,11 +81,16 @@ func UnlockEnvelope(
 		if err := inner.UnmarshalVT(innerData); err != nil {
 			continue
 		}
-
 		unlockedIndexes = append(unlockedIndexes, uint32(gi))
 
+		// Extract shares from the grant, deduplicating by ID.
 		g := group.Ristretto255
 		for _, s := range inner.GetShares() {
+			idKey := hex.EncodeToString(s.GetId())
+			if _, dup := seen[idKey]; dup {
+				continue
+			}
+
 			id := g.NewScalar()
 			if err := id.UnmarshalBinary(s.GetId()); err != nil {
 				continue
@@ -92,16 +99,17 @@ func UnlockEnvelope(
 			if err := val.UnmarshalBinary(s.GetValue()); err != nil {
 				continue
 			}
+
+			seen[idKey] = struct{}{}
 			collected = append(collected, secretsharing.Share{ID: id, Value: val})
 		}
 	}
 
 	result := &EnvelopeUnlockResult{
-		SharesAvailable:     uint32(len(collected)),
-		SharesNeeded:        sharesNeeded,
+		SharesAvailable:      uint32(len(collected)),
+		SharesNeeded:         sharesNeeded,
 		UnlockedGrantIndexes: unlockedIndexes,
 	}
-
 	if uint32(len(collected)) < sharesNeeded {
 		return nil, result, nil
 	}
@@ -120,7 +128,6 @@ func UnlockEnvelope(
 	// Derive encryption key and decrypt payload.
 	encKey := deriveEncKeyFromScalar(scalarBytes, envelopeID, context)
 	defer scrub.Scrub(encKey[:])
-
 	aead, err := chacha20poly1305.NewX(encKey[:])
 	if err != nil {
 		return nil, nil, err
@@ -130,7 +137,6 @@ func UnlockEnvelope(
 	if len(ct) < aead.NonceSize() {
 		return nil, nil, ErrDecryptionFailed
 	}
-
 	nonce := ct[:aead.NonceSize()]
 	payload, err := aead.Open(nil, nonce, ct[aead.NonceSize():], nil)
 	if err != nil {

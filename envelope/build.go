@@ -42,7 +42,7 @@ func BuildEnvelope(
 	threshold := config.GetThreshold()
 	grants := config.GetGrantConfigs()
 
-	// Validate keypair indexes and compute total shares needed.
+	// Validate keypair indexes and compute total shares.
 	var totalShares uint32
 	for _, gc := range grants {
 		sc := gc.GetShareCount()
@@ -59,13 +59,11 @@ func BuildEnvelope(
 	if config.GetTotalShares() > 0 {
 		totalShares = config.GetTotalShares()
 	}
-
-	// Validate threshold: need at least threshold+1 shares total.
 	if threshold > 0 && totalShares < threshold+1 {
 		return nil, ErrInvalidThreshold
 	}
 
-	// Generate random Ristretto255 scalar as master secret.
+	// Generate random Ristretto255 scalar as the master secret.
 	g := group.Ristretto255
 	secret := g.RandomNonZeroScalar(rnd)
 	secretBytes, err := secret.MarshalBinary()
@@ -74,7 +72,7 @@ func BuildEnvelope(
 	}
 	defer scrub.Scrub(secretBytes)
 
-	// Generate or derive envelope ID.
+	// Derive envelope ID from secret + context if not provided.
 	envelopeID := config.GetEnvelopeId()
 	if envelopeID == "" {
 		h := blake3.New()
@@ -85,11 +83,9 @@ func BuildEnvelope(
 		envelopeID = hex.EncodeToString(digest[:16])
 	}
 
-	// Derive encryption key from scalar.
+	// Derive encryption key and encrypt payload with XChaCha20-Poly1305.
 	encKey := deriveEncKeyFromScalar(secretBytes, envelopeID, context)
 	defer scrub.Scrub(encKey[:])
-
-	// Encrypt payload with XChaCha20-Poly1305.
 	aead, err := chacha20poly1305.NewX(encKey[:])
 	if err != nil {
 		return nil, err
@@ -101,12 +97,12 @@ func BuildEnvelope(
 	ciphertext := aead.Seal(nonce, nonce, payload, nil)
 
 	// Split secret into Shamir shares via CIRCL.
-	// threshold=0 means any single share suffices (degree-0 polynomial).
-	// threshold=N means N+1 shares are needed to recover.
+	// threshold=0: degree-0 polynomial, any single share suffices.
+	// threshold=N: N+1 shares needed to recover.
 	ss := secretsharing.New(rnd, uint(threshold), secret)
 	shares := ss.Share(uint(totalShares))
 
-	// Distribute shares across grants.
+	// Distribute shares across grants and encrypt each to its keypairs.
 	shareIdx := 0
 	envGrants := make([]*EnvelopeGrant, len(grants))
 	for gi, gc := range grants {
@@ -115,7 +111,6 @@ func BuildEnvelope(
 			sc = 1
 		}
 
-		// Collect shares for this grant.
 		inner := &EnvelopeGrantInner{}
 		for j := 0; j < sc && shareIdx < len(shares); j++ {
 			sid, err := shares[shareIdx].ID.MarshalBinary()
@@ -130,14 +125,12 @@ func BuildEnvelope(
 			shareIdx++
 		}
 
-		// Marshal the inner grant.
 		innerData, err := inner.MarshalVT()
 		if err != nil {
 			return nil, err
 		}
 		defer scrub.Scrub(innerData)
 
-		// Encrypt to each keypair.
 		kpIndexes := gc.GetKeypairIndexes()
 		ciphertexts := make([][]byte, len(kpIndexes))
 		encCtx := buildGrantEncContext(envelopeID, context, gi)
@@ -155,7 +148,7 @@ func BuildEnvelope(
 		}
 	}
 
-	// Build keypair entries.
+	// Build keypair entries and assemble the envelope.
 	envKeypairs := make([]*EnvelopeKeypair, len(keypairs))
 	for i, kp := range keypairs {
 		raw, err := keypem.MarshalPubKeyPem(kp)
@@ -165,16 +158,14 @@ func BuildEnvelope(
 		envKeypairs[i] = &EnvelopeKeypair{PubKey: raw}
 	}
 
-	env := &Envelope{
+	return &Envelope{
 		EnvelopeId:  envelopeID,
 		ContextHash: hashContext(context),
 		Threshold:   threshold,
 		Ciphertext:  ciphertext,
 		Grants:      envGrants,
 		Keypairs:    envKeypairs,
-	}
-
-	return env, nil
+	}, nil
 }
 
 // matchPrivKeys finds which envelope keypairs each private key corresponds to.
