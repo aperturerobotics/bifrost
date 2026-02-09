@@ -17,11 +17,13 @@ This will enable the `webtests` build tag and run all tests, including those tha
 This package can be tested in a browser environment using [`wasmbrowsertest`](https://github.com/agnivade/wasmbrowsertest).
 
 1. Install `wasmbrowsertest`:
+
    ```bash
    go install github.com/agnivade/wasmbrowsertest@latest
    ```
 
 2. Rename the `wasmbrowsertest` binary to `go_js_wasm_exec`:
+
    ```bash
    mv $(go env GOPATH)/bin/wasmbrowsertest $(go env GOPATH)/bin/go_js_wasm_exec
    ```
@@ -32,7 +34,6 @@ This package can be tested in a browser environment using [`wasmbrowsertest`](ht
    ```
 
 This will compile the tests to WebAssembly and run them in a headless browser environment.
-
 
 ## Skipping Web Tests
 

@@ -50,6 +50,8 @@ require (
 	github.com/aperturerobotics/go-protoc-wasi v0.0.0-20260131050911-b5f94b044584 // indirect
 	github.com/aperturerobotics/json-iterator-lite v1.0.1-0.20251104042408-0c9eb8a3f726 // indirect
 	github.com/aperturerobotics/protobuf v0.0.0-20260131033322-bd4a2148b9c4 // indirect
+	github.com/bwesterb/go-ristretto v1.2.3 // indirect
+	github.com/cloudflare/circl v1.6.3 // indirect
 	github.com/davidlazar/go-crypto v0.0.0-20200604182044-b73af7476f6c // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect

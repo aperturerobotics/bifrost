@@ -1,0 +1,104 @@
+syntax = "proto3";
+package envelope;
+
+// Envelope contains an encrypted message unlockable via secret sharing.
+//
+// The message is encrypted with a key derived from a Ristretto255 scalar.
+// The scalar is split into shares distributed across Grants.
+// At least threshold+1 shares are needed to reconstruct the scalar.
+message Envelope {
+  // EnvelopeId is the unique identifier of the envelope.
+  // If empty when building, generated from hash of secret + context.
+  string envelope_id = 1;
+  // ContextHash is the BLAKE3 hash of the context string.
+  // Used to verify the envelope matches the expected application context.
+  bytes context_hash = 2;
+  // Threshold is the CIRCL threshold parameter.
+  // Recovery requires threshold+1 shares.
+  // If zero, any single share suffices (no secret splitting).
+  uint32 threshold = 3;
+  // Ciphertext is the encrypted payload.
+  // Encrypted with XChaCha20-Poly1305 using a key derived from the scalar.
+  bytes ciphertext = 4;
+  // Grants is the list of encrypted share bundles.
+  repeated EnvelopeGrant grants = 5;
+  // Keypairs is the list of public keys used to encrypt grants.
+  repeated EnvelopeKeypair keypairs = 6;
+  // Contents is an optional plaintext description of what the envelope contains.
+  // Application-specific; not used in the unlock process.
+  bytes contents = 7;
+}
+
+// EnvelopeGrant is an encrypted bundle of shares.
+// The grant ciphertext contains a marshaled EnvelopeGrantInner.
+// Encrypted to one or more keypairs in the Envelope keypairs list.
+message EnvelopeGrant {
+  // KeypairIndexes lists which keypairs can decrypt this grant.
+  // Each value is an index into the Envelope.keypairs list.
+  repeated uint32 keypair_indexes = 1;
+  // Ciphertexts contains the encrypted EnvelopeGrantInner.
+  // One ciphertext per keypair index, in the same order.
+  // Each encrypted with peer.EncryptToPubKey to the corresponding keypair.
+  repeated bytes ciphertexts = 2;
+}
+
+// EnvelopeGrantInner is the decrypted contents of a grant.
+message EnvelopeGrantInner {
+  // Shares is the list of Shamir shares in this grant.
+  repeated EnvelopeShare shares = 1;
+}
+
+// EnvelopeShare is a single Shamir share (Ristretto255 scalar pair).
+message EnvelopeShare {
+  // Id is the share identifier (marshaled Ristretto255 scalar, 32 bytes).
+  bytes id = 1;
+  // Value is the share value (marshaled Ristretto255 scalar, 32 bytes).
+  bytes value = 2;
+}
+
+// EnvelopeKeypair is a public key entry in the envelope.
+message EnvelopeKeypair {
+  // PubKey is the marshaled public key in PEM format (via bifrost/keypem).
+  bytes pub_key = 1;
+  // AuthMethodId is an optional identifier for the auth method.
+  // Application-specific hint for how to derive the private key.
+  string auth_method_id = 2;
+  // AuthMethodParams is optional parameters for the auth method.
+  bytes auth_method_params = 3;
+}
+
+// EnvelopeConfig is the configuration for building an envelope.
+message EnvelopeConfig {
+  // EnvelopeId is the unique identifier. If empty, auto-generated.
+  string envelope_id = 1;
+  // Threshold is the CIRCL threshold parameter (need threshold+1 shares).
+  // If zero, any single share suffices.
+  uint32 threshold = 2;
+  // TotalShares is the total number of shares to create.
+  // If zero, defaults to sum of shares across all grant configs.
+  uint32 total_shares = 3;
+  // GrantConfigs defines how shares are distributed across grants.
+  repeated EnvelopeGrantConfig grant_configs = 4;
+}
+
+// EnvelopeGrantConfig configures a single grant in the envelope.
+message EnvelopeGrantConfig {
+  // ShareCount is the number of shares to include in this grant.
+  // If zero, defaults to 1.
+  uint32 share_count = 1;
+  // KeypairIndexes lists which keypairs can decrypt this grant.
+  // Indexes into the keypairs list provided to BuildEnvelope.
+  repeated uint32 keypair_indexes = 2;
+}
+
+// EnvelopeUnlockResult is the result of attempting to unlock an envelope.
+message EnvelopeUnlockResult {
+  // Success indicates whether the envelope was fully unlocked.
+  bool success = 1;
+  // SharesAvailable is the number of shares recovered from grants.
+  uint32 shares_available = 2;
+  // SharesNeeded is the number of shares needed (threshold+1).
+  uint32 shares_needed = 3;
+  // UnlockedGrantIndexes lists which grants were successfully decrypted.
+  repeated uint32 unlocked_grant_indexes = 4;
+}

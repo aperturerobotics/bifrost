@@ -30,3 +30,4 @@ __debug*
 dist/
 /.tools/
 .env
+.opencode/tool-output

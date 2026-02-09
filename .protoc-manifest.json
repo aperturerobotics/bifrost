@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "protocFlagsHash": "a6e974dc68f87a9c0db7db1771515c53c762f5dc50883f1bfe9d803549b91190",
+  "protocFlagsHash": "f9da23ecab083de04c06208e1371e30230c75877454e97b46cee6b250a8d4799",
   "toolVersions": "protoc=embedded,protobuf-go-lite=v0.12.0,starpc=v0.42.0,protobuf-es-lite=^0.5.2",
   "packages": {
     "github.com/aperturerobotics/bifrost/daemon/api": {
@@ -49,6 +49,22 @@
       ],
       "protoFiles": [
         "entitygraph/config.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/envelope": {
+      "hash": "c5f1d80196177a3c86f57b5b5c15169da69e20175a2ded1971e8c3099619ad3a",
+      "generatedFiles": [
+        "vendor/github.com/aperturerobotics/bifrost/envelope/envelope.pb.cc",
+        "vendor/github.com/aperturerobotics/bifrost/envelope/envelope.pb.go",
+        "vendor/github.com/aperturerobotics/bifrost/envelope/envelope.pb.h",
+        "vendor/github.com/aperturerobotics/bifrost/envelope/envelope.pb.ts",
+        "envelope/envelope.pb.cc",
+        "envelope/envelope.pb.go",
+        "envelope/envelope.pb.h",
+        "envelope/envelope.pb.ts"
+      ],
+      "protoFiles": [
+        "envelope/envelope.proto"
       ]
     },
     "github.com/aperturerobotics/bifrost/hash": {
