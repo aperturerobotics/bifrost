@@ -77,8 +77,8 @@ func (a *EnvelopeArgs) BuildCommands() []*cli.Command {
 			Flags:  a.BuildFlags(),
 		},
 		{
-			Name:  "unseal",
-			Usage: "unseal an envelope using the given private keys",
+			Name:   "unseal",
+			Usage:  "unseal an envelope using the given private keys",
 			Action: a.RunUnseal,
 			Flags: append(a.BuildFlags(), &cli.BoolFlag{
 				Name:  "info",
@@ -99,7 +99,7 @@ func (a *EnvelopeArgs) readInput() ([]byte, error) {
 // writeOutput writes output to the specified path or stdout.
 func (a *EnvelopeArgs) writeOutput(data []byte) error {
 	if a.OutputPath != "" {
-		return os.WriteFile(a.OutputPath, data, 0600)
+		return os.WriteFile(a.OutputPath, data, 0o600)
 	}
 	_, err := os.Stdout.Write(data)
 	return err
