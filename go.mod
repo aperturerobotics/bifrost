@@ -69,7 +69,7 @@ require (
 	github.com/multiformats/go-multistream v0.5.0 // indirect
 	github.com/multiformats/go-varint v0.0.7 // indirect
 	github.com/petermattis/goid v0.0.0-20250813065127-a731cc31b4fe // indirect
-	github.com/pion/dtls/v3 v3.0.10 // indirect
+	github.com/pion/dtls/v3 v3.1.0 // indirect
 	github.com/pion/ice/v4 v4.2.0 // indirect
 	github.com/pion/interceptor v0.1.43 // indirect
 	github.com/pion/logging v0.2.4 // indirect
