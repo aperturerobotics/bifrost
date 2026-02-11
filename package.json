@@ -35,7 +35,7 @@
     "test:js": "echo No JS tests.",
     "lint": "bun run lint:go && npm run lint:js",
     "lint:go": "bun run go:aptre -- lint",
-    "lint:js": "ESLINT_USE_FLAT_CONFIG=false eslint -c .eslintrc.cjs --ignore-pattern wasm_exec.js ./",
+    "lint:js": "eslint ./",
     "prepare": "go mod vendor && rimraf ./.tools",
     "go:aptre": "go run -mod=mod github.com/aperturerobotics/common/cmd/aptre",
     "release": "bun run release:version && npm run release:commit",
