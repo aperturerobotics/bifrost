@@ -356,11 +356,6 @@ bun run test
 bun run lint
 ```
 
-### Developing on MacOS
-
-On MacOS, the `aptre` CLI handles all protobuf generation without requiring
-additional homebrew packages. Just run `bun run gen` after installing bun.
-
 ## Support
 
 Please open a [GitHub issue] with any questions / issues.
