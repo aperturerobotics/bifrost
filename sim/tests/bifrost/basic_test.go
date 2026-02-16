@@ -1,7 +1,6 @@
 package bifrost
 
 import (
-	"context"
 	"testing"
 
 	"github.com/aperturerobotics/bifrost/sim/graph"
@@ -11,8 +10,7 @@ import (
 
 // TestBasic tests a simple connection between two peers on a LAN.
 func TestBasic(t *testing.T) {
-	ctx, ctxCancel := context.WithCancel(context.Background())
-	defer ctxCancel()
+	ctx := t.Context()
 
 	log := logrus.New()
 	log.SetLevel(logrus.DebugLevel)

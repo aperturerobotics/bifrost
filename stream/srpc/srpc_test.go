@@ -1,7 +1,6 @@
 package stream_srpc_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/aperturerobotics/bifrost/peer"
@@ -24,8 +23,7 @@ var ProtocolID = protocol.ID("bifrost/stream/srpc/e2e")
 
 // TestStarpc tests a srpc service end-to-end including LookupRpcClient.
 func TestStarpc(t *testing.T) {
-	ctx, ctxCancel := context.WithCancel(context.Background())
-	defer ctxCancel()
+	ctx := t.Context()
 
 	log := logrus.New()
 	log.SetLevel(logrus.DebugLevel)

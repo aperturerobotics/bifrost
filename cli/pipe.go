@@ -232,7 +232,7 @@ func pipeStream(strm io.ReadWriteCloser, stdin io.Reader, stdout io.Writer) erro
 }
 
 // logStatus prints a status message to stderr if not in quiet mode.
-func (a *PipeArgs) logStatus(format string, args ...interface{}) {
+func (a *PipeArgs) logStatus(format string, args ...any) {
 	if !a.Quiet {
 		fmt.Fprintf(os.Stderr, format+"\n", args...)
 	}

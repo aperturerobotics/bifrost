@@ -60,7 +60,7 @@ func IsEdLowOrder(ge []byte) bool {
 
 	// cases j = 0..30
 	for j = 0; j < 31; j++ {
-		for i = 0; i < len(edBlacklist); i++ {
+		for i = range len(edBlacklist) {
 			c[i] |= ge[j] ^ edBlacklist[i][j]
 		}
 	}
@@ -71,7 +71,7 @@ func IsEdLowOrder(ge []byte) bool {
 	}
 
 	k = 0
-	for i = 0; i < len(edBlacklist); i++ {
+	for i = range len(edBlacklist) {
 		k |= int(c[i]) - 1
 	}
 

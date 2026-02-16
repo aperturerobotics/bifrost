@@ -1,7 +1,6 @@
 package tptaddr_test
 
 import (
-	"context"
 	"strings"
 	"testing"
 
@@ -17,8 +16,7 @@ import (
 
 // TestTptAddr tests the tpt addr controllers end-to-end.
 func TestTptAddr(t *testing.T) {
-	ctx, ctxCancel := context.WithCancel(context.Background())
-	defer ctxCancel()
+	ctx := t.Context()
 
 	log := logrus.New()
 	log.SetLevel(logrus.DebugLevel)

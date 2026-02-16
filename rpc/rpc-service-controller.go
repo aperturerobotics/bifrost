@@ -3,6 +3,7 @@ package bifrost_rpc
 import (
 	"context"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/aperturerobotics/controllerbus/controller"
@@ -101,11 +102,8 @@ func (c *RpcServiceController) HandleDirective(
 			matched = c.serviceIdRe.MatchString(serviceID)
 		}
 		if !matched {
-			for _, mserviceID := range c.serviceIdList {
-				if mserviceID == serviceID {
-					matched = true
-					break
-				}
+			if slices.Contains(c.serviceIdList, serviceID) {
+				matched = true
 			}
 		}
 		if matched && c.serverIdRe != nil {

@@ -24,8 +24,7 @@ var initSimulator = tests.InitSimulator
 
 // TestTransport tests the webrtc transport end to end.
 func TestTransport(t *testing.T) {
-	ctx, ctxCancel := context.WithCancel(context.Background())
-	defer ctxCancel()
+	ctx := t.Context()
 
 	log := logrus.New()
 	log.SetLevel(logrus.DebugLevel)

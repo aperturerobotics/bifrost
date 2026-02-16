@@ -1,7 +1,6 @@
 package simulate
 
 import (
-	"context"
 	"testing"
 
 	"github.com/aperturerobotics/bifrost/sim/graph"
@@ -10,8 +9,7 @@ import (
 
 // TestSimpleSimulate tests a simple simulation.
 func TestSimpleSimulate(t *testing.T) {
-	ctx, ctxCancel := context.WithCancel(context.Background())
-	defer ctxCancel()
+	ctx := t.Context()
 	log := logrus.New()
 	log.SetLevel(logrus.DebugLevel)
 	le := logrus.NewEntry(log)

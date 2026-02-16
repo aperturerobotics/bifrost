@@ -217,7 +217,7 @@ func (a *EnvelopeArgs) RunUnseal(c *cli.Context) error {
 	}
 
 	if c.Bool("info") {
-		info := map[string]interface{}{
+		info := map[string]any{
 			"success":          result.GetSuccess(),
 			"shares_available": result.GetSharesAvailable(),
 			"shares_needed":    result.GetSharesNeeded(),

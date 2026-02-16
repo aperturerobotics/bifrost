@@ -65,8 +65,7 @@ func execPeer(ctx context.Context, t *testing.T, tb *testbed.Testbed, conf *Conf
 
 // TestEstablishLink tests creating a UDP link with two in-memory nodes.
 func TestEstablishLink(t *testing.T) {
-	ctx, ctxCancel := context.WithCancel(context.Background())
-	defer ctxCancel()
+	ctx := t.Context()
 
 	tb1, le1 := buildTestbed(t, ctx)
 	le1 = le1.WithField("testbed", 0)

@@ -2,6 +2,7 @@ package graph
 
 import (
 	"context"
+	"maps"
 
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/controllerbus/bus"
@@ -85,9 +86,7 @@ func (p *Peer) GetExtraFactoryAdders() []FactoryAdder {
 
 // MergeConfigSet merges in a configset to the extra controllers set.
 func (p *Peer) MergeConfigSet(other configset.ConfigSet) {
-	for k, v := range other {
-		p.extraControllers[k] = v
-	}
+	maps.Copy(p.extraControllers, other)
 }
 
 // AddConfig adds a controller configuration to the peer.

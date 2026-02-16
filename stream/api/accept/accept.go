@@ -2,6 +2,7 @@ package stream_api_accept
 
 import (
 	"context"
+	"slices"
 
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/peer"
@@ -157,11 +158,8 @@ func (c *Controller) resolveHandleMountedStream(
 	if len(c.remotePeerIDs) != 0 {
 		remoteID := dir.HandleMountedStreamRemotePeerID()
 		var found bool
-		for _, rpid := range c.remotePeerIDs {
-			if rpid == remoteID {
-				found = true
-				break
-			}
+		if slices.Contains(c.remotePeerIDs, remoteID) {
+			found = true
 		}
 		if !found {
 			c.le.Debugf(

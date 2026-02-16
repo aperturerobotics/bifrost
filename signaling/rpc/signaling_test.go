@@ -26,8 +26,7 @@ var initSimulator = tests.InitSimulator
 
 // TestSignaling tests the signaling server and client end to end.
 func TestSignaling(t *testing.T) {
-	ctx, ctxCancel := context.WithCancel(context.Background())
-	defer ctxCancel()
+	ctx := t.Context()
 
 	log := logrus.New()
 	log.SetLevel(logrus.DebugLevel)
@@ -171,8 +170,7 @@ func TestSignaling(t *testing.T) {
 
 // TestSignaling_ClientController tests the signaling client controller.
 func TestSignaling_ClientController(t *testing.T) {
-	ctx, ctxCancel := context.WithCancel(context.Background())
-	defer ctxCancel()
+	ctx := t.Context()
 
 	log := logrus.New()
 	log.SetLevel(logrus.DebugLevel)

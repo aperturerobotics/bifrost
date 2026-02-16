@@ -2,6 +2,7 @@ package stream_srpc_server
 
 import (
 	"context"
+	"slices"
 
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/protocol"
@@ -101,11 +102,8 @@ func (s *Server) ResolveHandleMountedStream(
 ) ([]directive.Resolver, error) {
 	inProtocol := dir.HandleMountedStreamProtocolID()
 	var match bool
-	for _, pr := range s.protocolIDs {
-		if pr == inProtocol {
-			match = true
-			break
-		}
+	if slices.Contains(s.protocolIDs, inProtocol) {
+		match = true
 	}
 	if !match {
 		return nil, nil

@@ -71,8 +71,7 @@ func execPeer(ctx context.Context, t *testing.T, tb *testbed.Testbed, conf *inpr
 // This verifies the fix for issue #276 where the type assertion for link.Link
 // failed because EstablishLinkWithPeerValue was changed to MountedLink.
 func TestHoldOpenWithMountedLink(t *testing.T) {
-	ctx, ctxCancel := context.WithCancel(context.Background())
-	defer ctxCancel()
+	ctx := t.Context()
 
 	tb1, le1 := buildTestbed(t, ctx)
 	le1 = le1.WithField("testbed", 0)
