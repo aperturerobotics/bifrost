@@ -75,12 +75,13 @@ func UnlockEnvelope(
 		if innerData == nil {
 			continue
 		}
-		defer scrub.Scrub(innerData)
 
 		inner := &EnvelopeGrantInner{}
 		if err := inner.UnmarshalVT(innerData); err != nil {
+			scrub.Scrub(innerData)
 			continue
 		}
+		scrub.Scrub(innerData)
 		unlockedIndexes = append(unlockedIndexes, uint32(gi)) //nolint:gosec // gi bounded by grants slice length
 
 		// Extract shares from the grant, deduplicating by ID.

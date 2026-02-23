@@ -129,7 +129,6 @@ func BuildEnvelope(
 		if err != nil {
 			return nil, err
 		}
-		defer scrub.Scrub(innerData)
 
 		kpIndexes := gc.GetKeypairIndexes()
 		ciphertexts := make([][]byte, len(kpIndexes))
@@ -137,10 +136,12 @@ func BuildEnvelope(
 		for ci, kpIdx := range kpIndexes {
 			ct, err := peer.EncryptToPubKey(keypairs[kpIdx], encCtx, innerData)
 			if err != nil {
+				scrub.Scrub(innerData)
 				return nil, err
 			}
 			ciphertexts[ci] = ct
 		}
+		scrub.Scrub(innerData)
 
 		envGrants[gi] = &EnvelopeGrant{
 			KeypairIndexes: kpIndexes,
@@ -171,26 +172,32 @@ func BuildEnvelope(
 // matchPrivKeys finds which envelope keypairs each private key corresponds to.
 // Returns a map from envelope keypair index to the matching private key.
 func matchPrivKeys(env *Envelope, privKeys []crypto.PrivKey) (map[int]crypto.PrivKey, error) {
-	result := make(map[int]crypto.PrivKey)
-	for ki, ekp := range env.GetKeypairs() {
-		pub, err := keypem.ParsePubKeyPem(ekp.GetPubKey())
-		if err != nil || pub == nil {
-			continue
-		}
-		pubBytes, err := keypem.MarshalPubKeyPem(pub)
+	// Pre-compute PEM bytes for each private key's public key.
+	type privEntry struct {
+		pem []byte
+		key crypto.PrivKey
+	}
+	privEntries := make([]privEntry, 0, len(privKeys))
+	for _, priv := range privKeys {
+		pem, err := keypem.MarshalPubKeyPem(priv.GetPublic())
 		if err != nil {
 			continue
 		}
-		for _, priv := range privKeys {
-			privPubBytes, err := keypem.MarshalPubKeyPem(priv.GetPublic())
-			if err != nil {
-				continue
-			}
-			if bytes.Equal(pubBytes, privPubBytes) {
-				result[ki] = priv
+		privEntries = append(privEntries, privEntry{pem: pem, key: priv})
+	}
+
+	result := make(map[int]crypto.PrivKey)
+	for ki, ekp := range env.GetKeypairs() {
+		pubBytes := ekp.GetPubKey()
+		for _, pe := range privEntries {
+			if bytes.Equal(pubBytes, pe.pem) {
+				result[ki] = pe.key
 				break
 			}
 		}
+	}
+	for i := range privEntries {
+		scrub.Scrub(privEntries[i].pem)
 	}
 	return result, nil
 }
