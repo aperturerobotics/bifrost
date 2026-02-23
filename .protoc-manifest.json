@@ -107,6 +107,32 @@
         "link/hold-open/config.proto"
       ]
     },
+    "github.com/aperturerobotics/bifrost/link/solicit": {
+      "hash": "6a8435ae20a6acd0e6d23d529fe8835cc27b32721b5362a3f018b1c5e5653b55",
+      "generatedFiles": [
+        "link/solicit/solicit.pb.cc",
+        "link/solicit/solicit.pb.go",
+        "link/solicit/solicit.pb.h",
+        "link/solicit/solicit.pb.rs",
+        "link/solicit/solicit.pb.ts"
+      ],
+      "protoFiles": [
+        "link/solicit/solicit.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/link/solicit/controller": {
+      "hash": "0a1da2840a22ce255449e8523eb7c60ffb9d617c5d76bced70a0983cd74b866d",
+      "generatedFiles": [
+        "link/solicit/controller/config.pb.cc",
+        "link/solicit/controller/config.pb.go",
+        "link/solicit/controller/config.pb.h",
+        "link/solicit/controller/config.pb.rs",
+        "link/solicit/controller/config.pb.ts"
+      ],
+      "protoFiles": [
+        "link/solicit/controller/config.proto"
+      ]
+    },
     "github.com/aperturerobotics/bifrost/peer": {
       "hash": "251817b8f3152e4104159de64f004ed7e97e7b4fa1bc412db98a885c85e48749",
       "generatedFiles": [

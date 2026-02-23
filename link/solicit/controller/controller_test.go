@@ -10,8 +10,8 @@ import (
 	"github.com/aperturerobotics/bifrost/protocol"
 	"github.com/aperturerobotics/bifrost/testbed"
 	"github.com/aperturerobotics/bifrost/transport/common/dialer"
-	"github.com/aperturerobotics/bifrost/transport/inproc"
 	transport_controller "github.com/aperturerobotics/bifrost/transport/controller"
+	"github.com/aperturerobotics/bifrost/transport/inproc"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller/loader"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
@@ -33,7 +33,7 @@ func buildTestbed(t *testing.T, ctx context.Context) *testbed.Testbed {
 
 	// Register inproc transport and solicitation controller factories.
 	tb.StaticResolver.AddFactory(inproc.NewFactory(tb.Bus))
-	tb.StaticResolver.AddFactory(NewFactory(tb.Bus))
+	tb.StaticResolver.AddFactory(NewFactory())
 
 	return tb
 }
@@ -142,25 +142,11 @@ func TestSolicitProtocolMatch(t *testing.T) {
 	ch2 := make(chan result, 1)
 
 	go func() {
-		sms, _, ref, err := bus.ExecWaitValue[link_solicit.SolicitMountedStream](
-			ctx,
-			tb1.Bus,
-			link_solicit.NewSolicitProtocol(testProto, nil, "", 0),
-			nil,
-			nil,
-			nil,
-		)
+		sms, _, ref, err := link_solicit.ExSolicitProtocol(ctx, tb1.Bus, testProto, nil, "", 0)
 		ch1 <- result{sms, ref, err}
 	}()
 	go func() {
-		sms, _, ref, err := bus.ExecWaitValue[link_solicit.SolicitMountedStream](
-			ctx,
-			tb2.Bus,
-			link_solicit.NewSolicitProtocol(testProto, nil, "", 0),
-			nil,
-			nil,
-			nil,
-		)
+		sms, _, ref, err := link_solicit.ExSolicitProtocol(ctx, tb2.Bus, testProto, nil, "", 0)
 		ch2 <- result{sms, ref, err}
 	}()
 
