@@ -58,10 +58,10 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
-    "@aptre/protobuf-es-lite": "^0.5.2",
+    "@aptre/protobuf-es-lite": "^1.0.0",
     "starpc": "^0.46.0"
   },
   "resolutions": {
-    "@aptre/protobuf-es-lite": "^0.5.2"
+    "@aptre/protobuf-es-lite": "^1.0.0"
   }
 }
