@@ -5,7 +5,7 @@ go 1.25
 require (
 	github.com/aperturerobotics/abseil-cpp v0.0.0-20260131110040-4bb56e2f9017 // indirect
 	github.com/aperturerobotics/cli v1.1.0 // latest
-	github.com/aperturerobotics/common v0.30.6 // latest
+	github.com/aperturerobotics/common v0.30.7 // latest
 	github.com/aperturerobotics/controllerbus v0.52.3 // latest
 	github.com/aperturerobotics/entitygraph v0.11.0 // latest
 	github.com/aperturerobotics/go-protoc-wasi v0.0.0-20260131050911-b5f94b044584 // indirect
