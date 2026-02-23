@@ -1,0 +1,9 @@
+syntax = "proto3";
+package link.solicit.controller;
+
+// Config is the solicitation controller config.
+message Config {
+  // MaxHashes is the maximum number of hashes per exchange.
+  // If 0, defaults to 256.
+  uint32 max_hashes = 1;
+}
