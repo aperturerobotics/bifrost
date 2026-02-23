@@ -92,7 +92,7 @@ func execute() error {
 	defer hr2.Release()
 
 	// Execute the UDP transport on the first daemon.
-	tptc1, _, udpRef1, err := loader.WaitExecControllerRunning(
+	tc1, _, udpRef1, err := loader.WaitExecControllerRunningTyped[*tptc.Controller](
 		ctx,
 		bus1,
 		resolver.NewLoadControllerWithConfig(&udptpt.Config{
@@ -105,10 +105,10 @@ func execute() error {
 	}
 	defer udpRef1.Release()
 	le.Info("UDP listening on: :5553")
-	tpt1, _ := tptc1.(*tptc.Controller).GetTransport(ctx)
+	tpt1, _ := tc1.GetTransport(ctx)
 
 	// Execute the UDP transport on the second daemon.
-	tptc2, _, udpRef2, err := loader.WaitExecControllerRunning(
+	tc2, _, udpRef2, err := loader.WaitExecControllerRunningTyped[*tptc.Controller](
 		ctx,
 		bus2,
 		resolver.NewLoadControllerWithConfig(&udptpt.Config{
@@ -121,7 +121,7 @@ func execute() error {
 	}
 	defer udpRef2.Release()
 	le.Info("UDP listening on: :5554")
-	_, _ = tptc2.(*tptc.Controller).GetTransport(ctx)
+	_, _ = tc2.GetTransport(ctx)
 
 	tpt1.(*udptpt.UDP).DialPeer(ctx, p2, (&net.UDPAddr{
 		IP:   net.IP{127, 0, 0, 1},

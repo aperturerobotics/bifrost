@@ -48,7 +48,7 @@ func execPeer(ctx context.Context, t *testing.T, tb *testbed.Testbed, conf *inpr
 	}
 	conf.TransportPeerId = peerId.String()
 
-	tpci1, _, tp1Ref, err := loader.WaitExecControllerRunning(
+	tpc1, _, tp1Ref, err := loader.WaitExecControllerRunningTyped[*transport_controller.Controller](
 		ctx,
 		tb.Bus,
 		resolver.NewLoadControllerWithConfig(conf),
@@ -57,7 +57,6 @@ func execPeer(ctx context.Context, t *testing.T, tb *testbed.Testbed, conf *inpr
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	tpc1 := tpci1.(*transport_controller.Controller)
 	tpt1, err := tpc1.GetTransport(ctx)
 	if err != nil {
 		t.Fatal(err.Error())

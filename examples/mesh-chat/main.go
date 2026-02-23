@@ -190,14 +190,14 @@ func run(listenAddr, dialAddr, keyPath string) error {
 	}
 
 	// Start the UDP transport.
-	udpCtrl, _, udpRef, err := loader.WaitExecControllerRunning(ctx, b,
+	tc, _, udpRef, err := loader.WaitExecControllerRunningTyped[*tptc.Controller](ctx, b,
 		resolver.NewLoadControllerWithConfig(&udptpt.Config{ListenAddr: listenAddr}), nil)
 	if err != nil {
 		return err
 	}
 	defer udpRef.Release()
 
-	tpt, _ := udpCtrl.(*tptc.Controller).GetTransport(ctx)
+	tpt, _ := tc.GetTransport(ctx)
 	udp := tpt.(*udptpt.UDP)
 
 	// Dial the remote peer if specified.

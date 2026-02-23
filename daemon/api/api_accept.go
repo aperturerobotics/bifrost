@@ -24,12 +24,11 @@ func (a *API) AcceptStream(serv stream_api.SRPCStreamService_AcceptStreamStream)
 	dir := resolver.NewLoadControllerWithConfig(conf)
 
 	// wait until it's ready
-	val, _, valRef, err := loader.WaitExecControllerRunning(ctx, a.bus, dir, nil)
+	ctrl, _, ctrlRef, err := loader.WaitExecControllerRunningTyped[*stream_api_accept.Controller](ctx, a.bus, dir, nil)
 	if err != nil {
 		return err
 	}
-	defer valRef.Release()
+	defer ctrlRef.Release()
 
-	ctrl := val.(*stream_api_accept.Controller)
 	return ctrl.AttachRPC(stream_api.NewAcceptServerRPC(serv))
 }

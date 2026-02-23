@@ -79,7 +79,7 @@ func newPeer(ctx context.Context, le *logrus.Entry, gp *graph.Peer, verbose bool
 		extraFactoryCtor(np.testbed.Bus, np.testbed.StaticResolver)
 	}
 
-	tp1, _, tp1Ref, err := loader.WaitExecControllerRunning(
+	tpc, _, tp1Ref, err := loader.WaitExecControllerRunningTyped[*transport_controller.Controller](
 		np.ctx,
 		np.testbed.Bus,
 		resolver.NewLoadControllerWithConfig(&inproc.Config{
@@ -99,8 +99,6 @@ func newPeer(ctx context.Context, le *logrus.Entry, gp *graph.Peer, verbose bool
 		return nil, err
 	}
 	rels = append(rels, tp1Ref.Release)
-
-	tpc := tp1.(*transport_controller.Controller)
 	tp, err := tpc.GetTransport(np.ctx)
 	if err != nil {
 		rel()
