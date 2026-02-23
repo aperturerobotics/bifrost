@@ -40,7 +40,7 @@ func BuildQuicConfig(opts *Opts) *quic.Config {
 		KeepAlivePeriod:         keepAlivePeriod,
 		DisablePathMTUDiscovery: opts.GetDisablePathMtuDiscovery(),
 
-		MaxIdleTimeout:       maxIdleTimeout,
+		MaxIdleTimeout:        maxIdleTimeout,
 		MaxIncomingStreams:    int64(maxIncStreams),
 		MaxIncomingUniStreams: -1, // disable unidirectional streams
 
