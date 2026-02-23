@@ -1,0 +1,31 @@
+syntax = "proto3";
+package crypto;
+
+// KeyType defines the list of supported crypto key types.
+// This is intended to be drop-in compatible with go-libp2p KeyType.
+enum KeyType {
+	RSA = 0;
+	Ed25519 = 1;
+
+  // reserved: 2, 3
+}
+
+// PrivateKey is the protobuf message for private keys.
+//
+// This is wire-compatible with the libp2p PrivateKey type.
+message PrivateKey {
+  // KeyType is the type of the key.
+	KeyType key_type = 1;
+  // Data is the data of the key.
+	bytes data = 2;
+}
+
+// PublicKey is the protobuf message for public keys.
+//
+// This is wire-compatible with the libp2p PublicKey type.
+message PublicKey {
+  // KeyType is the type of the key.
+	KeyType key_type = 1;
+  // Data is the data of the key.
+	bytes data = 2;
+}

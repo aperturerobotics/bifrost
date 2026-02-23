@@ -1,8 +1,21 @@
 {
   "version": 2,
-  "protocFlagsHash": "e4d6eea1d5234718a92078b32f5473aa6b3d4eab70e7de5b851f60da665fa299",
+  "protocFlagsHash": "fd073b82084edd1cb8480bbf571bfb57d076caef10bc38d3e1f72f3a2aece2bc",
   "toolVersions": "protoc=embedded,protobuf-go-lite=v0.12.1,starpc=v0.46.1,protobuf-es-lite=^1.0.0",
   "packages": {
+    "github.com/aperturerobotics/bifrost/crypto": {
+      "hash": "ef24fd15b2d2b5c6d8fd4b2931f8b111d8ae17d8c00841bee19471bfffb18916",
+      "generatedFiles": [
+        "crypto/crypto.pb.cc",
+        "crypto/crypto.pb.go",
+        "crypto/crypto.pb.h",
+        "crypto/crypto.pb.rs",
+        "crypto/crypto.pb.ts"
+      ],
+      "protoFiles": [
+        "crypto/crypto.proto"
+      ]
+    },
     "github.com/aperturerobotics/bifrost/daemon/api": {
       "hash": "a1ca4284fbd1464ab2af944dc6ec730b4db7741a96b948a8482b71f35b191896",
       "generatedFiles": [
