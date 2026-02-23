@@ -61,7 +61,7 @@ func IsEdLowOrder(ge []byte) bool {
 	// cases j = 0..30
 	for j = 0; j < 31; j++ {
 		for i = range len(edBlacklist) {
-			c[i] |= ge[j] ^ edBlacklist[i][j]
+			c[i] |= ge[j] ^ edBlacklist[i][j] //nolint:gosec // c and edBlacklist have matching fixed size [7]
 		}
 	}
 
@@ -72,7 +72,7 @@ func IsEdLowOrder(ge []byte) bool {
 
 	k = 0
 	for i = range len(edBlacklist) {
-		k |= int(c[i]) - 1
+		k |= int(c[i]) - 1 //nolint:gosec // c and edBlacklist have matching fixed size [7]
 	}
 
 	return ((k >> 8) & 1) == 1

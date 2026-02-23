@@ -81,7 +81,7 @@ func UnlockEnvelope(
 		if err := inner.UnmarshalVT(innerData); err != nil {
 			continue
 		}
-		unlockedIndexes = append(unlockedIndexes, uint32(gi))
+		unlockedIndexes = append(unlockedIndexes, uint32(gi)) //nolint:gosec // gi bounded by grants slice length
 
 		// Extract shares from the grant, deduplicating by ID.
 		g := group.Ristretto255
@@ -106,11 +106,11 @@ func UnlockEnvelope(
 	}
 
 	result := &EnvelopeUnlockResult{
-		SharesAvailable:      uint32(len(collected)),
+		SharesAvailable:      uint32(len(collected)), //nolint:gosec // bounded by grant share count
 		SharesNeeded:         sharesNeeded,
 		UnlockedGrantIndexes: unlockedIndexes,
 	}
-	if uint32(len(collected)) < sharesNeeded {
+	if uint32(len(collected)) < sharesNeeded { //nolint:gosec // bounded by grant share count
 		return nil, result, nil
 	}
 

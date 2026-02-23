@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"io"
+	"math"
 	"os"
 
 	"github.com/aperturerobotics/bifrost/envelope"
@@ -168,8 +169,12 @@ func (a *EnvelopeArgs) RunSeal(_ *cli.Context) error {
 	for i := range pubKeys {
 		grants[i] = &envelope.EnvelopeGrantConfig{
 			ShareCount:     1,
-			KeypairIndexes: []uint32{uint32(i)},
+			KeypairIndexes: []uint32{uint32(i)}, //nolint:gosec // i bounded by pubKeys slice length
 		}
+	}
+
+	if a.Threshold > math.MaxUint32 {
+		return errors.New("threshold exceeds maximum value")
 	}
 
 	env, err := envelope.BuildEnvelope(
@@ -178,7 +183,7 @@ func (a *EnvelopeArgs) RunSeal(_ *cli.Context) error {
 		payload,
 		pubKeys,
 		&envelope.EnvelopeConfig{
-			Threshold:    uint32(a.Threshold),
+			Threshold:    uint32(a.Threshold), //nolint:gosec // bounds checked above
 			GrantConfigs: grants,
 		},
 	)
