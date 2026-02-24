@@ -8,7 +8,7 @@ import (
 	"github.com/aperturerobotics/util/scrub"
 	"github.com/cloudflare/circl/group"
 	"github.com/cloudflare/circl/secretsharing"
-	"github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/aperturerobotics/bifrost/crypto"
 	"golang.org/x/crypto/chacha20poly1305"
 )
 

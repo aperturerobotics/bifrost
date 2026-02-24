@@ -3,11 +3,10 @@ package peer
 import (
 	"crypto/ecdh"
 	"crypto/ed25519"
-	"crypto/rsa"
 
+	"github.com/aperturerobotics/bifrost/crypto"
 	"github.com/aperturerobotics/bifrost/util/extra25519"
 	"github.com/aperturerobotics/util/scrub"
-	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/pkg/errors"
 	"github.com/zeebo/blake3"
 )
@@ -33,13 +32,6 @@ func DeriveKey(context string, salt []byte, privKey crypto.PrivKey, out []byte) 
 
 	var material []byte
 	switch t := spKey.(type) {
-	case *rsa.PrivateKey:
-		rawKey, err := privKey.Raw()
-		if err != nil {
-			return err
-		}
-		rawKeyHash := blake3.Sum512(rawKey)
-		material = rawKeyHash[:]
 	case *ed25519.PrivateKey:
 		tPrivKeyCurve25519 := extra25519.PrivateKeyToCurve25519(*t)
 		tPrivKeyEcdh, err := ecdh.X25519().NewPrivateKey(tPrivKeyCurve25519[:32])

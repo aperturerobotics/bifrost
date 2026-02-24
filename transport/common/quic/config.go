@@ -56,7 +56,7 @@ func BuildIncomingTlsConf(identity *p2ptls.Identity, rpeer peer.ID) *tls.Config 
 	tlsConf.NextProtos = []string{Alpn}
 	tlsConf.GetConfigForClient = func(_ *tls.ClientHelloInfo) (*tls.Config, error) {
 		// note: if rpeer is empty, allows any incoming peer id.
-		conf, _ := identity.ConfigForPeer(rpeer)
+		conf, _ := identity.ConfigForPeer(peerIDToLP2P(rpeer))
 		conf.NextProtos = []string{Alpn}
 		// TODO: https://github.com/golang/go/issues/60506
 		conf.SessionTicketsDisabled = true

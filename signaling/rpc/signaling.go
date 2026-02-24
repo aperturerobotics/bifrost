@@ -7,7 +7,7 @@ import (
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/protocol"
 	"github.com/aperturerobotics/bifrost/util/confparse"
-	"github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/aperturerobotics/bifrost/crypto"
 )
 
 // ProtocolID is the default protocol ID for the signaling server.

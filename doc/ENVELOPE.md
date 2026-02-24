@@ -88,7 +88,7 @@ The `--info` flag outputs JSON metadata about the envelope:
 import (
     "crypto/rand"
     "github.com/aperturerobotics/bifrost/envelope"
-    "github.com/libp2p/go-libp2p/core/crypto"
+    "github.com/aperturerobotics/bifrost/crypto"
 )
 
 env, err := envelope.BuildEnvelope(

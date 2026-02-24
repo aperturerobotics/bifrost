@@ -3,7 +3,7 @@ package keypem
 import (
 	"encoding/pem"
 
-	"github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/aperturerobotics/bifrost/crypto"
 	"github.com/pkg/errors"
 )
 

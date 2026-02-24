@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/aperturerobotics/bifrost/signaling"
-	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/aperturerobotics/bifrost/peer"
 )
 
 // Session implements signaling.Session.

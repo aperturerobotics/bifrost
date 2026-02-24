@@ -18,7 +18,7 @@ import (
 	"github.com/aperturerobotics/cli"
 	"github.com/aperturerobotics/controllerbus/controller/loader"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
-	"github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/aperturerobotics/bifrost/crypto"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )

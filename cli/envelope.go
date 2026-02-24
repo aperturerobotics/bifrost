@@ -11,7 +11,7 @@ import (
 	"github.com/aperturerobotics/bifrost/keypem"
 	"github.com/aperturerobotics/bifrost/keypem/keyfile"
 	"github.com/aperturerobotics/cli"
-	"github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/aperturerobotics/bifrost/crypto"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )

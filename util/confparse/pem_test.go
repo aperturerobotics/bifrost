@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/aperturerobotics/bifrost/keypem"
-	"github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/aperturerobotics/bifrost/crypto"
 )
 
 // TestParseKeysPEM tests parsing public and private key pems.

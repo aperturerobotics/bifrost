@@ -2,15 +2,14 @@ package peer
 
 import (
 	"crypto/ed25519"
-	"crypto/rsa"
 
-	"github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/aperturerobotics/bifrost/crypto"
 	"github.com/pkg/errors"
 )
 
 // EncryptToPubKey encrypts a message to a public key.
 //
-// Supported types: Ed25519, RSA
+// Supported types: Ed25519
 // Context must be same when decrypting.
 //
 // Context should be globally unique, and application-specific.
@@ -24,8 +23,6 @@ func EncryptToPubKey(pubKey crypto.PubKey, context string, msgSrc []byte) ([]byt
 	}
 
 	switch t := spKey.(type) {
-	case *rsa.PublicKey:
-		return EncryptToRSA(t, context, msgSrc)
 	case ed25519.PublicKey:
 		return EncryptToEd25519(t, context, msgSrc)
 	default:
@@ -35,7 +32,7 @@ func EncryptToPubKey(pubKey crypto.PubKey, context string, msgSrc []byte) ([]byt
 
 // DecryptWithPrivKey decrypts with the given private key.
 //
-// Supported types: Ed25519, RSA
+// Supported types: Ed25519
 // Context must be same as when encrypting.
 func DecryptWithPrivKey(privKey crypto.PrivKey, context string, ciphertext []byte) ([]byte, error) {
 	spKey, err := crypto.PrivKeyToStdKey(privKey)
@@ -44,8 +41,6 @@ func DecryptWithPrivKey(privKey crypto.PrivKey, context string, ciphertext []byt
 	}
 
 	switch t := spKey.(type) {
-	case *rsa.PrivateKey:
-		return DecryptWithRSA(t, context, ciphertext)
 	case *ed25519.PrivateKey:
 		return DecryptWithEd25519(*t, context, ciphertext)
 	default:

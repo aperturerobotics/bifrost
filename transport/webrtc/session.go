@@ -15,7 +15,7 @@ import (
 	"github.com/aperturerobotics/util/keyed"
 	"github.com/aperturerobotics/util/routine"
 	"github.com/aperturerobotics/util/scrub"
-	"github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/aperturerobotics/bifrost/crypto"
 	"github.com/pion/datachannel"
 	webrtc "github.com/pion/webrtc/v4"
 	"github.com/quic-go/quic-go"

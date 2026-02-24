@@ -6,7 +6,7 @@ import (
 	"net"
 
 	"github.com/aperturerobotics/bifrost/peer"
-	"github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/aperturerobotics/bifrost/crypto"
 	p2ptls "github.com/libp2p/go-libp2p/p2p/security/tls"
 	"github.com/quic-go/quic-go"
 	"github.com/sirupsen/logrus"
@@ -28,7 +28,7 @@ func DialSession(
 	addr net.Addr,
 	rpeer peer.ID,
 ) (*quic.Conn, crypto.PubKey, error) {
-	tlsConf, keyCh := identity.ConfigForPeer(rpeer)
+	tlsConf, keyCh := identity.ConfigForPeer(peerIDToLP2P(rpeer))
 	tlsConf.NextProtos = []string{Alpn}
 	quicConfig := BuildQuicConfig(opts)
 
@@ -40,7 +40,12 @@ func DialSession(
 
 	var remotePubKey crypto.PubKey
 	select {
-	case remotePubKey = <-keyCh:
+	case lp2pKey := <-keyCh:
+		remotePubKey, err = pubKeyFromLP2P(lp2pKey)
+		if err != nil {
+			_ = sess.CloseWithError(500, "failed to convert remote public key")
+			return nil, nil, err
+		}
 	case <-ctx.Done():
 		return nil, nil, ctx.Err()
 	}
@@ -64,7 +69,7 @@ func DialSessionViaTransport(
 	addr net.Addr,
 	rpeer peer.ID,
 ) (*quic.Conn, crypto.PubKey, error) {
-	tlsConf, keyCh := identity.ConfigForPeer(rpeer)
+	tlsConf, keyCh := identity.ConfigForPeer(peerIDToLP2P(rpeer))
 	tlsConf.NextProtos = []string{Alpn}
 	quicConfig := BuildQuicConfig(opts)
 
@@ -76,7 +81,12 @@ func DialSessionViaTransport(
 
 	var remotePubKey crypto.PubKey
 	select {
-	case remotePubKey = <-keyCh:
+	case lp2pKey := <-keyCh:
+		remotePubKey, err = pubKeyFromLP2P(lp2pKey)
+		if err != nil {
+			_ = sess.CloseWithError(500, "failed to convert remote public key")
+			return nil, nil, err
+		}
 	case <-ctx.Done():
 		return nil, nil, ctx.Err()
 	}
@@ -122,7 +132,11 @@ func DetermineSessionIdentity(sess *quic.Conn) (peer.ID, crypto.PubKey, error) {
 	// Determine the remote peer ID (public key) using the TLS cert chain.
 	connState := sess.ConnectionState()
 	certs := connState.TLS.PeerCertificates
-	remotePubKey, err := p2ptls.PubKeyFromCertChain(certs)
+	lp2pPubKey, err := p2ptls.PubKeyFromCertChain(certs)
+	if err != nil {
+		return "", nil, err
+	}
+	remotePubKey, err := pubKeyFromLP2P(lp2pPubKey)
 	if err != nil {
 		return "", nil, err
 	}

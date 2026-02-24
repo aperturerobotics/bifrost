@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"strconv"
 
+	"github.com/aperturerobotics/bifrost/crypto"
 	"github.com/aperturerobotics/bifrost/hash"
 	"github.com/aperturerobotics/util/scrub"
-	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/pkg/errors"
 )
 

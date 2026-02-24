@@ -14,7 +14,7 @@ import (
 	httplog "github.com/aperturerobotics/util/httplog"
 	"github.com/blang/semver/v4"
 	websocket "github.com/coder/websocket"
-	"github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/aperturerobotics/bifrost/crypto"
 	"github.com/quic-go/quic-go"
 	"github.com/sirupsen/logrus"
 )

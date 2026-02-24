@@ -8,7 +8,7 @@ import (
 	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/aperturerobotics/bifrost/transport/common/dialer"
 	transport_quic "github.com/aperturerobotics/bifrost/transport/common/quic"
-	"github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/aperturerobotics/bifrost/crypto"
 	"github.com/quic-go/quic-go"
 	"github.com/sirupsen/logrus"
 )

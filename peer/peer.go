@@ -4,8 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 
-	"github.com/libp2p/go-libp2p/core/crypto"
-	lpeer "github.com/libp2p/go-libp2p/core/peer"
+	"github.com/aperturerobotics/bifrost/crypto"
 )
 
 // Peer is the common interface for a keypair-based identity.
@@ -33,7 +32,7 @@ func NewPeer(privKey crypto.PrivKey) (Peer, error) {
 		}
 	}
 
-	id, err := lpeer.IDFromPrivateKey(privKey)
+	id, err := IDFromPrivateKey(privKey)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +59,7 @@ func NewPeerWithGenerateED25519() (Peer, crypto.PrivKey, crypto.PubKey, error) {
 
 // NewPeerWithPubKey builds a Peer with a public key.
 func NewPeerWithPubKey(pubKey crypto.PubKey) (Peer, error) {
-	id, err := lpeer.IDFromPublicKey(pubKey)
+	id, err := IDFromPublicKey(pubKey)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +70,7 @@ func NewPeerWithPubKey(pubKey crypto.PubKey) (Peer, error) {
 }
 
 // NewPeerWithID constructs a new Peer by extracting the pubkey from the ID.
-func NewPeerWithID(id lpeer.ID) (Peer, error) {
+func NewPeerWithID(id ID) (Peer, error) {
 	pubKey, err := id.ExtractPublicKey()
 	if err != nil {
 		return nil, err
