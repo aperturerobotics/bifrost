@@ -293,12 +293,8 @@ func (c *Controller) getSolicitEntries(ml link.MountedLink) []link_solicit.Solic
 	return entries
 }
 
-// computeLocalHashes computes sorted hashes for a link's active solicitations.
-func (c *Controller) computeLocalHashes(ls *linkState) [][]byte {
-	var entries []link_solicit.SolicitEntry
-	c.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
-		entries = c.getSolicitEntries(ls.ml)
-	})
+// computeHashes computes sorted hashes for the given entries.
+func (c *Controller) computeHashes(ls *linkState, entries []link_solicit.SolicitEntry) [][]byte {
 	if len(entries) == 0 {
 		return nil
 	}
@@ -387,6 +383,10 @@ func (c *Controller) handleIncomingSolicitedStream(
 }
 
 // runControlStream manages the control stream exchange for a link.
+//
+// The loop follows the standard broadcast wait pattern: all state is
+// read atomically with the wait channel so that any broadcast firing
+// after the lock release is guaranteed to wake the select.
 func (c *Controller) runControlStream(
 	ctx context.Context,
 	ls *linkState,
@@ -418,24 +418,43 @@ func (c *Controller) runControlStream(
 		}
 	}()
 
-	// Send initial local hashes.
-	localHashes := c.computeLocalHashes(ls)
-	le.WithField("hash-count", len(localHashes)).Debug("sending initial exchange")
-	if err := c.sendExchange(sess, localHashes); err != nil {
-		le.WithError(err).Debug("failed to send initial exchange")
-		return
-	}
-
+	var localHashes [][]byte
 	for {
+		// Snapshot all state and wait channel atomically.
+		// Any broadcast after this lock release closes ch.
 		var ch <-chan struct{}
+		var entries []link_solicit.SolicitEntry
+		var rh [][]byte
 		var linkRemoved bool
 		c.bcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
 			ch = getWaitCh()
-			_, linkRemoved = c.links[ls.ml.GetLinkUUID()]
-			linkRemoved = !linkRemoved
+			if _, ok := c.links[ls.ml.GetLinkUUID()]; !ok {
+				linkRemoved = true
+				return
+			}
+			entries = c.getSolicitEntries(ls.ml)
+			rh = ls.remoteHashes
 		})
 		if linkRemoved {
 			return
+		}
+
+		// Compute hashes outside the lock (pure computation).
+		newHashes := c.computeHashes(ls, entries)
+
+		// Send exchange if local hashes changed.
+		if !slices.EqualFunc(localHashes, newHashes, bytes.Equal) {
+			le.WithField("hash-count", len(newHashes)).Debug("sending exchange")
+			localHashes = newHashes
+			if err := c.sendExchange(sess, localHashes); err != nil {
+				le.WithError(err).Debug("failed to send exchange")
+				return
+			}
+		}
+
+		// Evaluate matches if we have remote hashes.
+		if rh != nil {
+			c.evaluateMatches(ctx, ls, localHashes, rh)
 		}
 
 		select {
@@ -449,28 +468,8 @@ func (c *Controller) runControlStream(
 			c.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
 				ls.remoteHashes = remoteHashes
 			})
-
 			c.evaluateMatches(ctx, ls, localHashes, remoteHashes)
 		case <-ch:
-			le.Debug("wake signal received")
-			newHashes := c.computeLocalHashes(ls)
-			if slices.EqualFunc(localHashes, newHashes, bytes.Equal) {
-				le.Debug("hash set unchanged, skipping re-send")
-				continue
-			}
-			le.WithField("hash-count", len(newHashes)).Debug("re-sending exchange")
-			localHashes = newHashes
-			if err := c.sendExchange(sess, localHashes); err != nil {
-				le.WithError(err).Debug("failed to re-send exchange")
-				return
-			}
-			var rh [][]byte
-			c.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
-				rh = ls.remoteHashes
-			})
-			if rh != nil {
-				c.evaluateMatches(ctx, ls, localHashes, rh)
-			}
 		}
 	}
 }
