@@ -30,8 +30,6 @@ github.com/aperturerobotics/protobuf v0.0.0-20260203024654-8201686529c4 h1:4Dy3B
 github.com/aperturerobotics/protobuf v0.0.0-20260203024654-8201686529c4/go.mod h1:tMgO7y6SJo/d9ZcvrpNqIQtdYT9de+QmYaHOZ4KnhOg=
 github.com/aperturerobotics/protobuf-go-lite v0.12.2 h1:ujwTKgpIYAVsv8VljB6PPMY5SI8i8m/NlIHAkkuxQcU=
 github.com/aperturerobotics/protobuf-go-lite v0.12.2/go.mod h1:lGH3s5ArCTXKI4wJdlNpaybUtwSjfAG0vdWjxOfMcF8=
-github.com/aperturerobotics/starpc v0.47.0 h1:zehfd70tmHq4jteV+5h6hL9gwzC+igMAMZCpMgfa0EI=
-github.com/aperturerobotics/starpc v0.47.0/go.mod h1:SCskS3mjIiRUGflIQ1uV3txzqSxvqdoQqYGcgXKoEys=
 github.com/aperturerobotics/starpc v0.47.1 h1:TxQon4lm3G3Hl4iKecFkrpv0sd7oFO7uQFrhRh27l5Q=
 github.com/aperturerobotics/starpc v0.47.1/go.mod h1:SCskS3mjIiRUGflIQ1uV3txzqSxvqdoQqYGcgXKoEys=
 github.com/aperturerobotics/util v1.32.4 h1:+f4rZuGC0AfgvA6bEwxSiW3Px9awyqr/CB2ltHyX4a8=
