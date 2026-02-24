@@ -6,8 +6,8 @@ import (
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/util/ioproxy"
-	ma "github.com/multiformats/go-multiaddr"
-	manet "github.com/multiformats/go-multiaddr/net"
+	ma "github.com/aperturerobotics/go-multiaddr"
+	manet "github.com/aperturerobotics/go-multiaddr/net"
 	"github.com/sirupsen/logrus"
 )
 

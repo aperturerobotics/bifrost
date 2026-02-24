@@ -5,7 +5,7 @@ import (
 	"github.com/aperturerobotics/bifrost/protocol"
 	"github.com/aperturerobotics/bifrost/util/confparse"
 	"github.com/aperturerobotics/controllerbus/config"
-	ma "github.com/multiformats/go-multiaddr"
+	ma "github.com/aperturerobotics/go-multiaddr"
 	"github.com/pkg/errors"
 )
 

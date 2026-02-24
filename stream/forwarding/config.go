@@ -7,7 +7,7 @@ import (
 	"github.com/aperturerobotics/bifrost/protocol"
 	"github.com/aperturerobotics/bifrost/util/confparse"
 	"github.com/aperturerobotics/controllerbus/config"
-	ma "github.com/multiformats/go-multiaddr"
+	ma "github.com/aperturerobotics/go-multiaddr"
 )
 
 // ConfigID is the string used to identify this config object.
