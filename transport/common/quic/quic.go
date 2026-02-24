@@ -9,7 +9,7 @@ import (
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/aperturerobotics/bifrost/crypto"
-	p2ptls "github.com/libp2p/go-libp2p/p2p/security/tls"
+	p2ptls "github.com/aperturerobotics/bifrost/crypto/tls"
 	"github.com/quic-go/quic-go"
 	"github.com/sirupsen/logrus"
 )
@@ -83,11 +83,7 @@ func NewTransport(
 		laddr = peer.NewNetAddr(peerID)
 	}
 
-	lp2pPrivKey, err := PrivKeyToLP2P(privKey)
-	if err != nil {
-		return nil, err
-	}
-	identity, err := p2ptls.NewIdentity(lp2pPrivKey)
+	identity, err := p2ptls.NewIdentity(privKey)
 	if err != nil {
 		return nil, err
 	}

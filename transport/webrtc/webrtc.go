@@ -19,7 +19,7 @@ import (
 	"github.com/aperturerobotics/util/keyed"
 	"github.com/blang/semver/v4"
 	"github.com/aperturerobotics/bifrost/crypto"
-	p2ptls "github.com/libp2p/go-libp2p/p2p/security/tls"
+	p2ptls "github.com/aperturerobotics/bifrost/crypto/tls"
 	"github.com/pion/webrtc/v4"
 	"github.com/sirupsen/logrus"
 )
@@ -101,11 +101,7 @@ func NewWebRTC(
 		return nil, err
 	}
 
-	lp2pPrivKey, err := transport_quic.PrivKeyToLP2P(pKey)
-	if err != nil {
-		return nil, err
-	}
-	identity, err := p2ptls.NewIdentity(lp2pPrivKey)
+	identity, err := p2ptls.NewIdentity(pKey)
 	if err != nil {
 		return nil, err
 	}
