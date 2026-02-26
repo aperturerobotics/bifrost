@@ -17,7 +17,6 @@ require (
 )
 
 // aperture: use compatibility forks
-replace github.com/sirupsen/logrus => github.com/aperturerobotics/logrus v1.9.5-0.20260224043555-98f902c31410 // master
 
 require (
 	filippo.io/edwards25519 v1.2.0
@@ -34,7 +33,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/quic-go/quic-go v0.59.0 // latest
 	github.com/sasha-s/go-deadlock v0.3.6
-	github.com/sirupsen/logrus v1.9.4
+	github.com/sirupsen/logrus v1.9.5-0.20260226151524-34027eac4204
 	github.com/zeebo/blake3 v0.2.4
 	golang.org/x/crypto v0.48.0
 	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0 // indirect
