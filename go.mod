@@ -5,16 +5,16 @@ go 1.25
 require (
 	github.com/aperturerobotics/abseil-cpp v0.0.0-20260131110040-4bb56e2f9017 // indirect
 	github.com/aperturerobotics/cli v1.1.0 // latest
-	github.com/aperturerobotics/common v0.31.2-0.20260228110227-ce5507ba2a1c // latest
-	github.com/aperturerobotics/controllerbus v0.52.5-0.20260228110225-41e149a72e38 // latest
+	github.com/aperturerobotics/common v0.32.0 // latest
+	github.com/aperturerobotics/controllerbus v0.52.5 // latest
 	github.com/aperturerobotics/entitygraph v0.11.0 // latest
 	github.com/aperturerobotics/go-protoc-wasi v0.0.0-20260219012250-c573f70e4509 // indirect
 	github.com/aperturerobotics/go-websocket v1.8.15-0.20260228104546-35e37959349c // master
 	github.com/aperturerobotics/json-iterator-lite v1.0.1-0.20260223122953-12a7c334f634 // indirect
 	github.com/aperturerobotics/protobuf v0.0.0-20260203024654-8201686529c4 // indirect; wasi
 	github.com/aperturerobotics/protobuf-go-lite v0.12.2 // latest
-	github.com/aperturerobotics/starpc v0.47.2-0.20260228105112-f1337c4314e9 // latest
-	github.com/aperturerobotics/util v1.32.4 // latest
+	github.com/aperturerobotics/starpc v0.48.0 // latest
+	github.com/aperturerobotics/util v1.32.5 // latest
 )
 
 // aperture: use compatibility forks
@@ -33,7 +33,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/quic-go/quic-go v0.59.0 // latest
 	github.com/sasha-s/go-deadlock v0.3.6
-	github.com/sirupsen/logrus v1.9.5-0.20260226151524-34027eac4204
+	github.com/sirupsen/logrus v1.9.5-0.20260227125846-00992ca6ba06
 	github.com/zeebo/blake3 v0.2.4
 	golang.org/x/crypto v0.48.0
 	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0 // indirect
