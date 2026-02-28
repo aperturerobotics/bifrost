@@ -13,7 +13,7 @@ import (
 	"github.com/aperturerobotics/bifrost/util/saddr"
 	httplog "github.com/aperturerobotics/util/httplog"
 	"github.com/blang/semver/v4"
-	websocket "github.com/coder/websocket"
+	websocket "github.com/aperturerobotics/go-websocket"
 	"github.com/aperturerobotics/bifrost/crypto"
 	"github.com/quic-go/quic-go"
 	"github.com/sirupsen/logrus"

@@ -6,7 +6,7 @@ import (
 	"net"
 	"time"
 
-	websocket "github.com/coder/websocket"
+	websocket "github.com/aperturerobotics/go-websocket"
 	"github.com/pkg/errors"
 )
 

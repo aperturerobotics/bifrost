@@ -5,14 +5,15 @@ go 1.25
 require (
 	github.com/aperturerobotics/abseil-cpp v0.0.0-20260131110040-4bb56e2f9017 // indirect
 	github.com/aperturerobotics/cli v1.1.0 // latest
-	github.com/aperturerobotics/common v0.31.0 // latest
-	github.com/aperturerobotics/controllerbus v0.52.4 // latest
+	github.com/aperturerobotics/common v0.31.2-0.20260228110227-ce5507ba2a1c // latest
+	github.com/aperturerobotics/controllerbus v0.52.5-0.20260228110225-41e149a72e38 // latest
 	github.com/aperturerobotics/entitygraph v0.11.0 // latest
 	github.com/aperturerobotics/go-protoc-wasi v0.0.0-20260219012250-c573f70e4509 // indirect
+	github.com/aperturerobotics/go-websocket v1.8.15-0.20260228104546-35e37959349c // master
 	github.com/aperturerobotics/json-iterator-lite v1.0.1-0.20260223122953-12a7c334f634 // indirect
 	github.com/aperturerobotics/protobuf v0.0.0-20260203024654-8201686529c4 // indirect; wasi
 	github.com/aperturerobotics/protobuf-go-lite v0.12.2 // latest
-	github.com/aperturerobotics/starpc v0.47.1 // latest
+	github.com/aperturerobotics/starpc v0.47.2-0.20260228105112-f1337c4314e9 // latest
 	github.com/aperturerobotics/util v1.32.4 // latest
 )
 
@@ -23,7 +24,6 @@ require (
 	github.com/aperturerobotics/go-multiaddr v0.16.2-0.20260224063833-8b0f11427d5e
 	github.com/blang/semver/v4 v4.0.0 // latest
 	github.com/cloudflare/circl v1.6.3
-	github.com/coder/websocket v1.8.14 // master
 	github.com/klauspost/compress v1.18.4
 	github.com/mr-tron/base58 v1.2.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
