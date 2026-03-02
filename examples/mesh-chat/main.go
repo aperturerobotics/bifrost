@@ -8,8 +8,8 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
 	"io"
+	"log"
 	"os"
 	"strings"
 	"sync"
@@ -28,6 +28,7 @@ import (
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/blang/semver/v4"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -68,8 +69,7 @@ func main() {
 	}
 
 	if err := app.Run(os.Args); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 }
 
@@ -138,7 +138,7 @@ func (r *chatResolver) HandleMountedStream(ctx context.Context, ms link.MountedS
 	for {
 		n, err := ms.GetStream().Read(buf)
 		if n > 0 {
-			fmt.Printf("\r[%s]: %s\n> ", r.remote.String(), string(buf[:n]))
+			os.Stdout.WriteString("\r[" + r.remote.String() + "]: " + string(buf[:n]) + "\n> ")
 		}
 		if err != nil {
 			return nil
@@ -159,21 +159,21 @@ func run(listenAddr, dialAddr, keyPath string) error {
 	if keyPath == "" {
 		hash := sha256.Sum256([]byte(listenAddr))
 		hashHex := hex.EncodeToString(hash[:])
-		keyPath = fmt.Sprintf("./peer-%s.pem", hashHex[len(hashHex)-4:])
+		keyPath = "./peer-" + hashHex[len(hashHex)-4:] + ".pem"
 	}
 
 	// Load or generate the private key.
 	privKey, err := keyfile.OpenOrWritePrivKey(le, keyPath)
 	if err != nil {
-		return fmt.Errorf("load/generate key: %w", err)
+		return errors.Wrap(err, "load/generate key")
 	}
 	peerID, _ := peer.IDFromPrivateKey(privKey)
 
-	fmt.Printf("Peer ID: %s\n", peerID.String())
-	fmt.Printf("Key: %s\n", keyPath)
-	fmt.Printf("Listening on %s\n", listenAddr)
+	log.Println("Peer ID: " + peerID.String())
+	log.Println("Key: " + keyPath)
+	log.Println("Listening on " + listenAddr)
 	if dialAddr == "" {
-		fmt.Printf("\nConnect with: %s --listen :5001 --dial %s@localhost%s\n", os.Args[0], peerID.String(), listenAddr)
+		log.Println("Connect with: " + os.Args[0] + " --listen :5001 --dial " + peerID.String() + "@localhost" + listenAddr)
 	}
 
 	// Create the daemon.
@@ -204,26 +204,26 @@ func run(listenAddr, dialAddr, keyPath string) error {
 	if dialAddr != "" {
 		parts := strings.Split(dialAddr, "@")
 		if len(parts) != 2 {
-			return fmt.Errorf("invalid dial format")
+			return errors.New("invalid dial format")
 		}
 		remotePeerID, err := peer.IDB58Decode(parts[0])
 		if err != nil {
 			return err
 		}
 		handler.setRemote(remotePeerID)
-		fmt.Printf("Dialing %s...\n", parts[1])
+		log.Println("Dialing " + parts[1] + "...")
 		if _, _, err := udp.DialPeer(ctx, remotePeerID, parts[1]); err != nil {
 			return err
 		}
-		fmt.Println("Connected!")
+		log.Println("Connected!")
 	}
 
-	fmt.Println("\nType messages and press Enter. /quit to exit.")
+	log.Println("Type messages and press Enter. /quit to exit.")
 
 	// Read input and send messages.
 	reader := bufio.NewReader(os.Stdin)
 	for {
-		fmt.Print("> ")
+		os.Stdout.WriteString("> ")
 		line, err := reader.ReadString('\n')
 		if err == io.EOF {
 			return nil
@@ -242,14 +242,14 @@ func run(listenAddr, dialAddr, keyPath string) error {
 
 		remote := handler.getRemote()
 		if remote == "" {
-			fmt.Println("No peer connected yet.")
+			log.Println("No peer connected yet.")
 			continue
 		}
 
 		// Open a stream and send the message.
 		ms, rel, err := link.OpenStreamWithPeerEx(ctx, b, chatProtocol, peerID, remote, 0, stream.OpenOpts{})
 		if err != nil {
-			fmt.Printf("Failed: %v\n", err)
+			log.Println("Failed: " + err.Error())
 			continue
 		}
 
@@ -257,7 +257,7 @@ func run(listenAddr, dialAddr, keyPath string) error {
 		rel()
 
 		if err != nil {
-			fmt.Printf("Write failed: %v\n", err)
+			log.Println("Write failed: " + err.Error())
 		}
 	}
 }
