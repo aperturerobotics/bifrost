@@ -99,7 +99,6 @@ func (c *pipeAcceptController) GetControllerInfo() *controller.Info {
 
 // Execute executes the controller.
 func (c *pipeAcceptController) Execute(ctx context.Context) error {
-	<-ctx.Done()
 	return nil
 }
 
