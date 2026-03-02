@@ -3,11 +3,11 @@ package cli
 import (
 	"context"
 	"crypto/rand"
-	"fmt"
 	"io"
-	"os"
+	"log"
 	"strings"
 
+	"github.com/aperturerobotics/bifrost/crypto"
 	"github.com/aperturerobotics/bifrost/daemon"
 	"github.com/aperturerobotics/bifrost/keypem/keyfile"
 	link_holdopen_controller "github.com/aperturerobotics/bifrost/link/hold-open"
@@ -18,7 +18,6 @@ import (
 	"github.com/aperturerobotics/cli"
 	"github.com/aperturerobotics/controllerbus/controller/loader"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
-	"github.com/aperturerobotics/bifrost/crypto"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -82,7 +81,7 @@ func (a *PipeArgs) BuildFlags() []cli.Flag {
 
 // Run executes the pipe command.
 func (a *PipeArgs) Run(c *cli.Context) error {
-	ctx := context.Background()
+	ctx := c.Context
 
 	// Validate arguments
 	if a.ListenAddr == "" && a.ConnectAddr == "" {
@@ -102,17 +101,12 @@ func (a *PipeArgs) Run(c *cli.Context) error {
 // Returns the daemon and a cleanup function that releases controller references.
 func (a *PipeArgs) setupDaemon(ctx context.Context, listenAddr string, dialers map[string]*dialer.DialerOpts) (*daemon.Daemon, func(), error) {
 	// Create logger (quiet mode uses a no-op logger)
-	var le *logrus.Entry
+	logger := logrus.New()
+	logger.SetLevel(logrus.WarnLevel)
 	if a.Quiet {
-		log := logrus.New()
-		log.SetOutput(io.Discard)
-		le = logrus.NewEntry(log)
-	} else {
-		log := logrus.New()
-		log.SetLevel(logrus.WarnLevel)
-		log.SetOutput(os.Stderr)
-		le = logrus.NewEntry(log)
+		logger.SetOutput(io.Discard)
 	}
+	le := logrus.NewEntry(logger)
 
 	// Generate or load private key
 	privKey, err := a.loadOrGenerateKey(le)
@@ -234,6 +228,6 @@ func pipeStream(strm io.ReadWriteCloser, stdin io.Reader, stdout io.Writer) erro
 // logStatus prints a status message to stderr if not in quiet mode.
 func (a *PipeArgs) logStatus(format string, args ...any) {
 	if !a.Quiet {
-		fmt.Fprintf(os.Stderr, format+"\n", args...)
+		log.Printf(format, args...)
 	}
 }
