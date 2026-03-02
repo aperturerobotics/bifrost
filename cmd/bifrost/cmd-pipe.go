@@ -7,7 +7,7 @@ import (
 	"github.com/aperturerobotics/cli"
 )
 
-// pipeArgs are the pipe command arguments
+// pipeArgs are the pipe command arguments.
 var pipeArgs bcli.PipeArgs
 
 func init() {
