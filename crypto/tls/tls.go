@@ -117,7 +117,7 @@ func (i *Identity) ConfigForPeer(remote peer.ID) (*tls.Config, <-chan crypto.Pub
 		defer close(keyCh)
 
 		chain := make([]*x509.Certificate, len(rawCerts))
-		for idx := 0; idx < len(rawCerts); idx++ {
+		for idx := range rawCerts {
 			cert, err := x509.ParseCertificate(rawCerts[idx])
 			if err != nil {
 				return err
