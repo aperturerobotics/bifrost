@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"context"
 	"testing"
-	"time"
 
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/protocol"
@@ -22,8 +21,7 @@ import (
 // TestDirectChat tests peer-to-peer messaging between directly connected peers.
 // This demonstrates the core functionality of opening a stream and sending messages.
 func TestDirectChat(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
+	ctx := t.Context()
 
 	log := logrus.New()
 	log.SetLevel(logrus.WarnLevel)
@@ -95,8 +93,7 @@ func TestDirectChat(t *testing.T) {
 
 // TestMultiPeerTopology tests communication in a multi-peer network.
 func TestMultiPeerTopology(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
+	ctx := t.Context()
 
 	log := logrus.New()
 	log.SetLevel(logrus.WarnLevel)
