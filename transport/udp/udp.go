@@ -4,11 +4,11 @@ import (
 	"context"
 	"net"
 
+	"github.com/aperturerobotics/bifrost/crypto"
 	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/aperturerobotics/bifrost/transport/common/dialer"
 	"github.com/aperturerobotics/bifrost/transport/common/pconn"
 	"github.com/blang/semver/v4"
-	"github.com/aperturerobotics/bifrost/crypto"
 	"github.com/sirupsen/logrus"
 )
 

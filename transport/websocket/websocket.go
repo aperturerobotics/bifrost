@@ -6,15 +6,15 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/aperturerobotics/bifrost/crypto"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/transport"
 	"github.com/aperturerobotics/bifrost/transport/common/dialer"
 	transport_quic "github.com/aperturerobotics/bifrost/transport/common/quic"
 	"github.com/aperturerobotics/bifrost/util/saddr"
+	websocket "github.com/aperturerobotics/go-websocket"
 	httplog "github.com/aperturerobotics/util/httplog"
 	"github.com/blang/semver/v4"
-	websocket "github.com/aperturerobotics/go-websocket"
-	"github.com/aperturerobotics/bifrost/crypto"
 	"github.com/quic-go/quic-go"
 	"github.com/sirupsen/logrus"
 )

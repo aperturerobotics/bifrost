@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync/atomic"
 
+	"github.com/aperturerobotics/bifrost/crypto"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/signaling"
 	transport_quic "github.com/aperturerobotics/bifrost/transport/common/quic"
@@ -15,7 +16,6 @@ import (
 	"github.com/aperturerobotics/util/keyed"
 	"github.com/aperturerobotics/util/routine"
 	"github.com/aperturerobotics/util/scrub"
-	"github.com/aperturerobotics/bifrost/crypto"
 	"github.com/pion/datachannel"
 	webrtc "github.com/pion/webrtc/v4"
 	"github.com/quic-go/quic-go"

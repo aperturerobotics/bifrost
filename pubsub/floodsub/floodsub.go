@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/aperturerobotics/bifrost/crypto"
 	"github.com/aperturerobotics/bifrost/hash"
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/peer"
@@ -12,7 +13,6 @@ import (
 	"github.com/aperturerobotics/bifrost/pubsub"
 	pubmessage "github.com/aperturerobotics/bifrost/pubsub/util/pubmessage"
 	stream_packet "github.com/aperturerobotics/bifrost/stream/packet"
-	"github.com/aperturerobotics/bifrost/crypto"
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"

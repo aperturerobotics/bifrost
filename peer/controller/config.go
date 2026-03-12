@@ -1,10 +1,10 @@
 package peer_controller
 
 import (
+	"github.com/aperturerobotics/bifrost/crypto"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/util/confparse"
 	"github.com/aperturerobotics/controllerbus/config"
-	"github.com/aperturerobotics/bifrost/crypto"
 )
 
 // ConfigID is the identifier for the config type.

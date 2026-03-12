@@ -3,6 +3,7 @@ package simulate
 import (
 	"context"
 
+	"github.com/aperturerobotics/bifrost/crypto"
 	bp "github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/sim/graph"
 	"github.com/aperturerobotics/bifrost/testbed"
@@ -16,7 +17,6 @@ import (
 	configset_controller "github.com/aperturerobotics/controllerbus/controller/configset/controller"
 	"github.com/aperturerobotics/controllerbus/controller/loader"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
-	"github.com/aperturerobotics/bifrost/crypto"
 	"github.com/sirupsen/logrus"
 )
 

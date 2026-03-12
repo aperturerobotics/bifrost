@@ -3,8 +3,8 @@ package confparse
 import (
 	"strings"
 
-	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/crypto"
+	"github.com/aperturerobotics/bifrost/peer"
 	b58 "github.com/mr-tron/base58/base58"
 	"github.com/pkg/errors"
 )

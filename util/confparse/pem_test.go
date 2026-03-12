@@ -3,8 +3,8 @@ package confparse
 import (
 	"testing"
 
-	"github.com/aperturerobotics/bifrost/keypem"
 	"github.com/aperturerobotics/bifrost/crypto"
+	"github.com/aperturerobotics/bifrost/keypem"
 )
 
 // TestParseKeysPEM tests parsing public and private key pems.

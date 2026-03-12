@@ -1,10 +1,10 @@
 package pubmessage
 
 import (
+	"github.com/aperturerobotics/bifrost/crypto"
 	"github.com/aperturerobotics/bifrost/hash"
 	"github.com/aperturerobotics/bifrost/peer"
 	timestamp "github.com/aperturerobotics/protobuf-go-lite/types/known/timestamppb"
-	"github.com/aperturerobotics/bifrost/crypto"
 )
 
 const pubMessageEncContext = "bifrost/pubsub/pubmessage 2024-06-05T02:38:47.55258Z channel/"

@@ -14,7 +14,7 @@ import (
 	"encoding/base64"
 	"io"
 
-	"github.com/aperturerobotics/protobuf-go-lite"
+	protobuf_go_lite "github.com/aperturerobotics/protobuf-go-lite"
 	"github.com/pkg/errors"
 )
 

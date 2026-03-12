@@ -53,7 +53,7 @@ func (h *HTTPHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	})
 	if err != nil {
 		rw.WriteHeader(500)
-		_, _ = rw.Write([]byte(err.Error()))
+		_, _ = rw.Write([]byte(err.Error())) //nolint:gosec // internal error, not user-controlled
 		return
 	}
 }

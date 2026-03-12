@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/aperturerobotics/bifrost/crypto"
 	bifrost_http "github.com/aperturerobotics/bifrost/http"
 	"github.com/aperturerobotics/bifrost/transport"
 	transport_controller "github.com/aperturerobotics/bifrost/transport/controller"
@@ -12,7 +13,6 @@ import (
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/blang/semver/v4"
-	"github.com/aperturerobotics/bifrost/crypto"
 	"github.com/sirupsen/logrus"
 )
 
@@ -124,7 +124,7 @@ func (t *WebSocketHttp) ServePeerHTTP(rw http.ResponseWriter, req *http.Request)
 	}
 
 	rw.WriteHeader(200)
-	_, _ = rw.Write([]byte(tpt.GetPeerID().String()))
+	_, _ = rw.Write([]byte(tpt.GetPeerID().String())) //nolint:gosec // peer ID is not user-controlled
 }
 
 // HandleDirective asks if the handler can resolve the directive.

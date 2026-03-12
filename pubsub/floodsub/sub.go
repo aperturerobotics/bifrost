@@ -4,9 +4,9 @@ import (
 	"context"
 	"sync"
 
+	"github.com/aperturerobotics/bifrost/crypto"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/pubsub"
-	"github.com/aperturerobotics/bifrost/crypto"
 )
 
 // subscription implements the pubsub subscription handle.

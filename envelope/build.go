@@ -5,12 +5,12 @@ import (
 	"encoding/hex"
 	"io"
 
+	"github.com/aperturerobotics/bifrost/crypto"
 	"github.com/aperturerobotics/bifrost/keypem"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/util/scrub"
 	"github.com/cloudflare/circl/group"
 	"github.com/cloudflare/circl/secretsharing"
-	"github.com/aperturerobotics/bifrost/crypto"
 	"github.com/zeebo/blake3"
 	"golang.org/x/crypto/chacha20poly1305"
 )

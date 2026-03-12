@@ -5,11 +5,11 @@ import (
 	"io"
 	"net"
 
+	"github.com/aperturerobotics/bifrost/crypto"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/transport"
 	transport_quic "github.com/aperturerobotics/bifrost/transport/common/quic"
 	"github.com/aperturerobotics/bifrost/util/rwc"
-	"github.com/aperturerobotics/bifrost/crypto"
 	"github.com/quic-go/quic-go"
 	"github.com/sirupsen/logrus"
 )

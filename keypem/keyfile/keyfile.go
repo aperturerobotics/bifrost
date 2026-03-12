@@ -4,8 +4,8 @@ import (
 	"crypto/rand"
 	"os"
 
-	"github.com/aperturerobotics/bifrost/keypem"
 	"github.com/aperturerobotics/bifrost/crypto"
+	"github.com/aperturerobotics/bifrost/keypem"
 	"github.com/sirupsen/logrus"
 )
 

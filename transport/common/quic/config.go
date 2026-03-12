@@ -4,8 +4,8 @@ import (
 	"crypto/tls"
 	"time"
 
-	"github.com/aperturerobotics/bifrost/peer"
 	p2ptls "github.com/aperturerobotics/bifrost/crypto/tls"
+	"github.com/aperturerobotics/bifrost/peer"
 	quic "github.com/quic-go/quic-go"
 )
 

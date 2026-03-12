@@ -11,9 +11,9 @@ import (
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
-	"github.com/aperturerobotics/util/ioproxy"
 	ma "github.com/aperturerobotics/go-multiaddr"
 	manet "github.com/aperturerobotics/go-multiaddr/net"
+	"github.com/aperturerobotics/util/ioproxy"
 	"github.com/sirupsen/logrus"
 )
 

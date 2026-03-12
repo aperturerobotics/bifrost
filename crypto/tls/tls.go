@@ -27,11 +27,15 @@ import (
 	"github.com/pkg/errors"
 )
 
-const certValidityPeriod = 100 * 365 * 24 * time.Hour // ~100 years
-const certificatePrefix = "libp2p-tls-handshake:"
+const (
+	certValidityPeriod = 100 * 365 * 24 * time.Hour // ~100 years
+	certificatePrefix  = "libp2p-tls-handshake:"
+)
 
-var extensionID = getPrefixedExtensionID([]int{1, 1})
-var extensionCritical bool // so we can mark the extension critical in tests
+var (
+	extensionID       = getPrefixedExtensionID([]int{1, 1})
+	extensionCritical bool // so we can mark the extension critical in tests
+)
 
 type signedKey struct {
 	PubKey    []byte
@@ -90,7 +94,7 @@ func NewIdentity(privKey crypto.PrivKey, opts ...IdentityOption) (*Identity, err
 	return &Identity{
 		config: tls.Config{
 			MinVersion:         tls.VersionTLS13,
-			InsecureSkipVerify: true, // Not insecure: we verify the cert chain ourselves.
+			InsecureSkipVerify: true, //nolint:gosec // Not insecure: we verify the cert chain ourselves.
 			ClientAuth:         tls.RequireAnyClientCert,
 			Certificates:       []tls.Certificate{*cert},
 			VerifyPeerCertificate: func(_ [][]byte, _ [][]*x509.Certificate) error {

@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/aperturerobotics/bifrost/crypto"
 	bifrost_api "github.com/aperturerobotics/bifrost/daemon/api"
 	"github.com/aperturerobotics/bifrost/peer"
 	peer_controller "github.com/aperturerobotics/bifrost/peer/controller"
@@ -19,7 +20,6 @@ import (
 	"github.com/aperturerobotics/cli"
 	cbus_cli "github.com/aperturerobotics/controllerbus/cli"
 	"github.com/aperturerobotics/starpc/srpc"
-	"github.com/aperturerobotics/bifrost/crypto"
 )
 
 // ClientArgs contains the client arguments and functions.

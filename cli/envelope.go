@@ -7,11 +7,11 @@ import (
 	"math"
 	"os"
 
+	"github.com/aperturerobotics/bifrost/crypto"
 	"github.com/aperturerobotics/bifrost/envelope"
 	"github.com/aperturerobotics/bifrost/keypem"
 	"github.com/aperturerobotics/bifrost/keypem/keyfile"
 	"github.com/aperturerobotics/cli"
-	"github.com/aperturerobotics/bifrost/crypto"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )

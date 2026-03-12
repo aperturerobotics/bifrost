@@ -3,11 +3,11 @@ package signaling_rpc
 import (
 	"errors"
 
+	"github.com/aperturerobotics/bifrost/crypto"
 	"github.com/aperturerobotics/bifrost/hash"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/protocol"
 	"github.com/aperturerobotics/bifrost/util/confparse"
-	"github.com/aperturerobotics/bifrost/crypto"
 )
 
 // ProtocolID is the default protocol ID for the signaling server.

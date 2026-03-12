@@ -5,11 +5,11 @@ import (
 	"net"
 	"sync"
 
+	"github.com/aperturerobotics/bifrost/crypto"
+	p2ptls "github.com/aperturerobotics/bifrost/crypto/tls"
 	"github.com/aperturerobotics/bifrost/link"
 	"github.com/aperturerobotics/bifrost/peer"
 	"github.com/aperturerobotics/bifrost/transport"
-	"github.com/aperturerobotics/bifrost/crypto"
-	p2ptls "github.com/aperturerobotics/bifrost/crypto/tls"
 	"github.com/quic-go/quic-go"
 	"github.com/sirupsen/logrus"
 )

@@ -3,8 +3,8 @@ package confparse
 import (
 	"errors"
 
-	"github.com/aperturerobotics/bifrost/keypem"
 	"github.com/aperturerobotics/bifrost/crypto"
+	"github.com/aperturerobotics/bifrost/keypem"
 )
 
 // ParsePublicKeyPEM parses the public key from a configuration.
