@@ -9,11 +9,11 @@ require (
 	github.com/aperturerobotics/controllerbus v0.52.5 // latest
 	github.com/aperturerobotics/entitygraph v0.11.0 // latest
 	github.com/aperturerobotics/go-protoc-wasi v0.0.0-20260219012250-c573f70e4509 // indirect
-	github.com/aperturerobotics/go-websocket v1.8.15-0.20260228104546-35e37959349c // master
+	github.com/aperturerobotics/go-websocket c5f88237fdf8 // master
 	github.com/aperturerobotics/json-iterator-lite v1.0.1-0.20260223122953-12a7c334f634 // indirect
 	github.com/aperturerobotics/protobuf v0.0.0-20260203024654-8201686529c4 // indirect; wasi
 	github.com/aperturerobotics/protobuf-go-lite v0.12.2 // latest
-	github.com/aperturerobotics/starpc v0.48.0 // latest
+	github.com/aperturerobotics/starpc v0.49.0 // latest
 	github.com/aperturerobotics/util v1.32.5 // latest
 )
 
@@ -21,7 +21,7 @@ require (
 
 require (
 	filippo.io/edwards25519 v1.2.0
-	github.com/aperturerobotics/go-multiaddr v0.16.2-0.20260224063833-8b0f11427d5e
+	github.com/aperturerobotics/go-multiaddr a1dc4da046c3
 	github.com/blang/semver/v4 v4.0.0 // latest
 	github.com/cloudflare/circl v1.6.3
 	github.com/klauspost/compress v1.18.4
@@ -32,10 +32,10 @@ require (
 	github.com/pion/webrtc/v4 v4.2.9
 	github.com/pkg/errors v0.9.1
 	github.com/quic-go/quic-go v0.59.0 // latest
-	github.com/sasha-s/go-deadlock v0.3.6
-	github.com/sirupsen/logrus v1.9.5-0.20260227125846-00992ca6ba06
+	github.com/sasha-s/go-deadlock v0.3.7
+	github.com/sirupsen/logrus 9f0600962f75
 	github.com/zeebo/blake3 v0.2.4
-	golang.org/x/crypto v0.48.0
+	golang.org/x/crypto v0.49.0
 	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0 // indirect
 	gonum.org/v1/gonum v0.17.0
 )
