@@ -127,6 +127,8 @@ github.com/rogpeppe/go-internal v1.10.0 h1:TMyTOH3F/DB16zRVcYyreMH6GnZZrwQVAoYjR
 github.com/rogpeppe/go-internal v1.10.0/go.mod h1:UQnix2H7Ngw/k4C5ijL5+65zddjncjaFoBhdsK/akog=
 github.com/sasha-s/go-deadlock v0.3.7 h1:i3KnHMAptD/cZ8JmDXQnD44luuRbOn+CFeXGnLnf+YU=
 github.com/sasha-s/go-deadlock v0.3.7/go.mod h1:KuZj51ZFmx42q/mPaYbRk0P1xcwe697zsJKE03vD4/Y=
+github.com/sasha-s/go-deadlock v0.3.8 h1:9O9Lmb3eKnYAY3/81FV+rJTQZMi1XHbAGKC7L3UjZrY=
+github.com/sasha-s/go-deadlock v0.3.8/go.mod h1:KuZj51ZFmx42q/mPaYbRk0P1xcwe697zsJKE03vD4/Y=
 github.com/sirupsen/logrus v1.9.5-0.20260309202648-9f0600962f75 h1:JeSpp4dH/b6DwynjIVL8YDlOSNrEtfhhPajrT3CUUTI=
 github.com/sirupsen/logrus v1.9.5-0.20260309202648-9f0600962f75/go.mod h1:FXZFonkDAnFozmO+5hGAFvB0Yg9/j2SIhA/QuIkP180=
 github.com/spaolacci/murmur3 v1.1.0 h1:7c1g84S4BPRrfL5Xrdp6fOJ206sU9y293DDHaoy0bLI=

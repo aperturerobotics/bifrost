@@ -32,7 +32,7 @@ require (
 	github.com/pion/webrtc/v4 v4.2.9
 	github.com/pkg/errors v0.9.1
 	github.com/quic-go/quic-go v0.59.0 // latest
-	github.com/sasha-s/go-deadlock v0.3.7
+	github.com/sasha-s/go-deadlock v0.3.8
 	github.com/sirupsen/logrus v1.9.5-0.20260309202648-9f0600962f75
 	github.com/zeebo/blake3 v0.2.4
 	golang.org/x/crypto v0.49.0
