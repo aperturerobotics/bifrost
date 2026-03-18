@@ -43,8 +43,6 @@ func BuildQuicConfig(opts *Opts) *quic.Config {
 		MaxIdleTimeout:        maxIdleTimeout,
 		MaxIncomingStreams:    int64(maxIncStreams),
 		MaxIncomingUniStreams: -1, // disable unidirectional streams
-
-		Versions: []quic.Version{quic.Version2},
 	}
 }
 
