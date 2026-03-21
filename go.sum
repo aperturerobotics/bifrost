@@ -26,6 +26,8 @@ github.com/aperturerobotics/protobuf-go-lite v0.12.2 h1:ujwTKgpIYAVsv8VljB6PPMY5
 github.com/aperturerobotics/protobuf-go-lite v0.12.2/go.mod h1:lGH3s5ArCTXKI4wJdlNpaybUtwSjfAG0vdWjxOfMcF8=
 github.com/aperturerobotics/starpc v0.49.0 h1:b3uRx2HF/OMEM47zzPFQumqR42PaOYvQQIhWMUU9RDQ=
 github.com/aperturerobotics/starpc v0.49.0/go.mod h1:WQTxkj5kfUkEfG+ewFC7OggKqgKQkutL76vTTZeXCwM=
+github.com/aperturerobotics/starpc v0.49.1 h1:Vjjb7z0B4Fq/WKOIloRv4frMcgtVK3DDrjFFk8A8W6E=
+github.com/aperturerobotics/starpc v0.49.1/go.mod h1:HjqsB5RcFiB2GDTvZ6KuDCbrICVoGD+1jJiKiOdWxyY=
 github.com/aperturerobotics/util v1.32.5 h1:5gr2Ft1rYGFA5yrSm3n18Ghu5Al2uyg7DTtljh1wLHI=
 github.com/aperturerobotics/util v1.32.5/go.mod h1:jXVTz1OQqM3VSrjy06qiCmJLaUm80NxVuKgweaRs5dg=
 github.com/blang/semver/v4 v4.0.0 h1:1PFHFE6yCCTv8C1TeyNNarDzntLi7wMI5i/pzqYIsAM=
@@ -46,6 +48,8 @@ github.com/ipfs/go-cid v0.0.7 h1:ysQJVJA3fNDF1qigJbsSQOdjhVLsOEoPdh0+R97k3jY=
 github.com/ipfs/go-cid v0.0.7/go.mod h1:6Ux9z5e+HpkQdckYoX1PG/6xqKspzlEIR5SDmgqgC/I=
 github.com/klauspost/compress v1.18.4 h1:RPhnKRAQ4Fh8zU2FY/6ZFDwTVTxgJ/EMydqSTzE9a2c=
 github.com/klauspost/compress v1.18.4/go.mod h1:R0h/fSBs8DE4ENlcrlib3PsXS61voFxhIs2DeRhCvJ4=
+github.com/klauspost/compress v1.18.5 h1:/h1gH5Ce+VWNLSWqPzOVn6XBO+vJbCNGvjoaGBFW2IE=
+github.com/klauspost/compress v1.18.5/go.mod h1:cwPg85FWrGar70rWktvGQj8/hthj3wpl0PGDogxkrSQ=
 github.com/klauspost/cpuid/v2 v2.2.10 h1:tBs3QSyvjDyFTq3uoc/9xFpCuOsJQFNPiAhYdw2skhE=
 github.com/klauspost/cpuid/v2 v2.2.10/go.mod h1:hqwkgyIinND0mEev00jJYCxPNVRVXFQeu1XKlok6oO0=
 github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=
@@ -129,6 +133,8 @@ github.com/sasha-s/go-deadlock v0.3.7 h1:i3KnHMAptD/cZ8JmDXQnD44luuRbOn+CFeXGnLn
 github.com/sasha-s/go-deadlock v0.3.7/go.mod h1:KuZj51ZFmx42q/mPaYbRk0P1xcwe697zsJKE03vD4/Y=
 github.com/sasha-s/go-deadlock v0.3.8 h1:9O9Lmb3eKnYAY3/81FV+rJTQZMi1XHbAGKC7L3UjZrY=
 github.com/sasha-s/go-deadlock v0.3.8/go.mod h1:KuZj51ZFmx42q/mPaYbRk0P1xcwe697zsJKE03vD4/Y=
+github.com/sasha-s/go-deadlock v0.3.9 h1:fiaT9rB7g5sr5ddNZvlwheclN9IP86eFW9WgqlEQV+w=
+github.com/sasha-s/go-deadlock v0.3.9/go.mod h1:KuZj51ZFmx42q/mPaYbRk0P1xcwe697zsJKE03vD4/Y=
 github.com/sirupsen/logrus v1.9.5-0.20260309202648-9f0600962f75 h1:JeSpp4dH/b6DwynjIVL8YDlOSNrEtfhhPajrT3CUUTI=
 github.com/sirupsen/logrus v1.9.5-0.20260309202648-9f0600962f75/go.mod h1:FXZFonkDAnFozmO+5hGAFvB0Yg9/j2SIhA/QuIkP180=
 github.com/spaolacci/murmur3 v1.1.0 h1:7c1g84S4BPRrfL5Xrdp6fOJ206sU9y293DDHaoy0bLI=
