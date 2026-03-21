@@ -14,7 +14,7 @@ require (
 	github.com/aperturerobotics/json-iterator-lite v1.0.1-0.20260223122953-12a7c334f634 // indirect
 	github.com/aperturerobotics/protobuf v0.0.0-20260203024654-8201686529c4 // indirect; wasi
 	github.com/aperturerobotics/protobuf-go-lite v0.12.2 // latest
-	github.com/aperturerobotics/starpc v0.49.0 // latest
+	github.com/aperturerobotics/starpc v0.49.1 // latest
 	github.com/aperturerobotics/util v1.32.5 // latest
 )
 
@@ -24,7 +24,7 @@ require (
 	filippo.io/edwards25519 v1.2.0
 	github.com/blang/semver/v4 v4.0.0 // latest
 	github.com/cloudflare/circl v1.6.3
-	github.com/klauspost/compress v1.18.4
+	github.com/klauspost/compress v1.18.5
 	github.com/mr-tron/base58 v1.2.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pion/datachannel v1.6.0
@@ -32,7 +32,7 @@ require (
 	github.com/pion/webrtc/v4 v4.2.9
 	github.com/pkg/errors v0.9.1
 	github.com/quic-go/quic-go v0.59.0 // latest
-	github.com/sasha-s/go-deadlock v0.3.8
+	github.com/sasha-s/go-deadlock v0.3.9
 	github.com/sirupsen/logrus v1.9.5-0.20260309202648-9f0600962f75
 	github.com/zeebo/blake3 v0.2.4
 	golang.org/x/crypto v0.49.0
