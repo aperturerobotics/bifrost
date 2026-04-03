@@ -1,7 +1,7 @@
 {
   "version": 2,
-  "protocFlagsHash": "fd073b82084edd1cb8480bbf571bfb57d076caef10bc38d3e1f72f3a2aece2bc",
-  "toolVersions": "protoc=embedded,protobuf-go-lite=v0.12.1,starpc=v0.46.1,protobuf-es-lite=^1.0.0",
+  "protocFlagsHash": "1087eb90d298d197cd35254de3ad07fb3882194aad888297cac01daedeed0caa",
+  "toolVersions": "protoc=embedded,protobuf-go-lite=v0.12.2,starpc=v0.47.1,protobuf-es-lite=^1.0.0",
   "packages": {
     "github.com/aperturerobotics/bifrost/crypto": {
       "hash": "ef24fd15b2d2b5c6d8fd4b2931f8b111d8ae17d8c00841bee19471bfffb18916",
@@ -481,6 +481,19 @@
       ],
       "protoFiles": [
         "stream/srpc/server/server.proto"
+      ]
+    },
+    "github.com/aperturerobotics/bifrost/stream/srpc/server/lookup": {
+      "hash": "29620363d63e2a8292690a6ec93a04a2a0a1a978f4cd404d469c306bc643306c",
+      "generatedFiles": [
+        "stream/srpc/server/lookup/lookup.pb.cc",
+        "stream/srpc/server/lookup/lookup.pb.go",
+        "stream/srpc/server/lookup/lookup.pb.h",
+        "stream/srpc/server/lookup/lookup.pb.rs",
+        "stream/srpc/server/lookup/lookup.pb.ts"
+      ],
+      "protoFiles": [
+        "stream/srpc/server/lookup/lookup.proto"
       ]
     },
     "github.com/aperturerobotics/bifrost/tptaddr/controller": {
