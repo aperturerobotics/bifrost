@@ -65,8 +65,11 @@ func NewWebSocket(
 
 	// set websocket-specific quic opts
 	quicOpts.DisableDatagrams = true
-	quicOpts.DisableKeepAlive = false
 	quicOpts.DisablePathMtuDiscovery = true
+
+	// websocket manages connection lifecycle, not quic
+	quicOpts.DisableKeepAlive = true
+	quicOpts.MaxIdleTimeoutDur = "24h"
 
 	tpt := &WebSocket{
 		ctx:  ctx,

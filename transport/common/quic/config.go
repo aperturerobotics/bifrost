@@ -14,7 +14,7 @@ func BuildQuicConfig(opts *Opts) *quic.Config {
 	maxIdleTimeout := time.Second * 10
 	if ntDur := opts.GetMaxIdleTimeoutDur(); ntDur != "" {
 		nt, err := time.ParseDuration(ntDur)
-		if err == nil && nt > time.Duration(0) && nt < time.Hour*2 {
+		if err == nil && nt > time.Duration(0) {
 			maxIdleTimeout = nt
 		}
 	}
@@ -29,7 +29,7 @@ func BuildQuicConfig(opts *Opts) *quic.Config {
 		keepAlivePeriod = 0
 	} else if keepAliveDur := opts.GetKeepAliveDur(); keepAliveDur != "" {
 		kaDur, err := time.ParseDuration(keepAliveDur)
-		if err == nil && kaDur > time.Duration(0) && kaDur < time.Hour*2 {
+		if err == nil && kaDur > time.Duration(0) {
 			keepAlivePeriod = kaDur
 		}
 	}
