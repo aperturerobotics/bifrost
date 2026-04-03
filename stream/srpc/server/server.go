@@ -65,9 +65,34 @@ func NewServer(
 		protocolIDs: protocolIDs,
 		peerIDs:     peerIDs,
 
-		mux:    mux,
-		server: server,
+		mux:                  mux,
+		server:               server,
+		disableEstablishLink: disableEstablishLink,
 	}, nil
+}
+
+// NewServerWithMux constructs a server with a pre-built mux. Use this when
+// the mux needs a fallback invoker or custom setup that RegisterFn cannot
+// express.
+func NewServerWithMux(
+	b bus.Bus,
+	le *logrus.Entry,
+	info *controller.Info,
+	mux srpc.Mux,
+	protocolIDs []protocol.ID,
+	peerIDs []string,
+	disableEstablishLink bool,
+) *Server {
+	return &Server{
+		b:                    b,
+		le:                   le,
+		info:                 info,
+		protocolIDs:          protocolIDs,
+		peerIDs:              peerIDs,
+		mux:                  mux,
+		server:               srpc.NewServer(mux),
+		disableEstablishLink: disableEstablishLink,
+	}
 }
 
 // GetControllerInfo returns information about the controller.
