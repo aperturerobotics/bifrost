@@ -24,6 +24,9 @@ import (
 // streamEstablishTimeout is the max time to wait for a stream header.
 var streamEstablishTimeout = time.Second * 5
 
+// streamHandleTimeout is the max time to wait for a HandleMountedStream handler.
+var streamHandleTimeout = time.Minute * 10
+
 // streamEstablishMaxPacketSize is the maximum stream establish header size
 var streamEstablishMaxPacketSize uint64 = 100000
 
@@ -275,6 +278,7 @@ func (c *Controller) HandleIncomingStream(
 		defer elRef.Release()
 	}
 
+	handleDeadline := time.Now().Add(streamHandleTimeout)
 	readDeadline := time.Now().Add(streamEstablishTimeout)
 	_ = strm.SetReadDeadline(readDeadline)
 
@@ -311,7 +315,7 @@ func (c *Controller) HandleIncomingStream(
 
 	dir := link.NewHandleMountedStream(pid, lnk.GetLocalPeer(), mstrm.GetPeerID())
 
-	handleMsCtx, handleMsCtxCancel := context.WithDeadline(rctx, readDeadline)
+	handleMsCtx, handleMsCtxCancel := context.WithDeadline(rctx, handleDeadline)
 	dval, _, dref, err := bus.ExecOneOff(handleMsCtx, c.bus, dir, nil, nil)
 	handleMsCtxCancel()
 	if err != nil {
