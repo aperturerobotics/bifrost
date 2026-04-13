@@ -106,7 +106,8 @@ func (d *handleMountedStream) IsEquivalent(other directive.Directive) bool {
 	}
 
 	return d.protocolID == od.HandleMountedStreamProtocolID() &&
-		d.localPeerID == od.HandleMountedStreamLocalPeerID()
+		d.localPeerID == od.HandleMountedStreamLocalPeerID() &&
+		d.remotePeerID == od.HandleMountedStreamRemotePeerID()
 }
 
 // Superceeds checks if the directive overrides another.
