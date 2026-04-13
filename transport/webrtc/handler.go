@@ -96,7 +96,6 @@ func (r *handleSignalPeerResolver) Resolve(ctx context.Context, handler directiv
 		if err != nil {
 			return err
 		}
-		r.t.le.Debugf("incoming signal bytes=%d from %v", len(data), remotePeerIDStr)
 
 		// The signature on the message was already verified.
 		sig, err := DecodeWebRtcSignal(data, r.t.privKey)
@@ -108,7 +107,6 @@ func (r *handleSignalPeerResolver) Resolve(ctx context.Context, handler directiv
 			r.t.le.WithError(err).Warnf("failed to decode incoming signal from %v", remotePeerIDStr)
 			return err
 		}
-		r.t.le.Debugf("decoded incoming signal from %v", remotePeerIDStr)
 		/*
 			if r.t.GetVerbose() {
 				r.t.le.Debugf("signal rx: %s", sig.String())
@@ -133,7 +131,6 @@ func (r *handleSignalPeerResolver) Resolve(ctx context.Context, handler directiv
 				if ref == nil {
 					ref, tkr, _, err = r.t.addSessionTrackerRef(remotePeerIDStr)
 					if err == nil && ref != nil {
-						r.t.le.Debugf("added incoming session tracker ref for %v", remotePeerIDStr)
 						r.t.incomingSessions[remotePeerIDStr] = ref
 						broadcast()
 					}
@@ -154,7 +151,6 @@ func (r *handleSignalPeerResolver) Resolve(ctx context.Context, handler directiv
 				// recheck
 				continue ProcessLoop
 			case tkr.rxSignal <- sig:
-				r.t.le.Debugf("forwarded incoming signal to tracker for %v", remotePeerIDStr)
 				// Received
 				break ProcessLoop
 			}
