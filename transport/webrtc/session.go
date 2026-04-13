@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"runtime/debug"
 	"strings"
 	"sync/atomic"
 
@@ -18,6 +19,7 @@ import (
 	"github.com/aperturerobotics/util/scrub"
 	"github.com/pion/datachannel"
 	webrtc "github.com/pion/webrtc/v4"
+	pkgerrors "github.com/pkg/errors"
 	"github.com/quic-go/quic-go"
 	"github.com/sirupsen/logrus"
 )
@@ -74,14 +76,22 @@ func (w *WebRTC) newSessionTracker(peerIDStr string) (keyed.Routine, *sessionTra
 
 	sess.linkRoutine = routine.NewStateRoutineContainer(
 		func(t1, t2 datachannel.ReadWriteCloser) bool { return t1 == t2 },
-		routine.WithExitCb(sess.failWithErr),
+		routine.WithExitCb(func(err error) {
+			if err != nil {
+				sess.failWithErr(pkgerrors.Wrap(err, "link routine"))
+			}
+		}),
 	)
 	_, _, _ = sess.linkRoutine.SetStateRoutine(sess.executeLink)
 
 	sess.rxSignal = make(chan *WebRtcSignal)
 	sess.xmitRoutine = routine.NewStateRoutineContainer[*outgoingSignal](
 		nil,
-		routine.WithExitCb(sess.failWithErr),
+		routine.WithExitCb(func(err error) {
+			if err != nil {
+				sess.failWithErr(pkgerrors.Wrap(err, "signal transmit routine"))
+			}
+		}),
 	)
 	_, _, _ = sess.xmitRoutine.SetStateRoutine(sess.executeXmitSignal)
 
@@ -116,14 +126,19 @@ func (s *outgoingSignal) markSent() bool {
 }
 
 // executeXmitSignal executes transmitting a signal to the remote peer.
-func (s *sessionTracker) executeXmitSignal(ctx context.Context, sig *outgoingSignal) error {
+func (s *sessionTracker) executeXmitSignal(ctx context.Context, sig *outgoingSignal) (err error) {
+	defer func() {
+		if e := recover(); e != nil {
+			err = pkgerrors.Errorf("xmit signal panic: %v\n%s", e, debug.Stack())
+		}
+	}()
 	msgEnc, err := EncodeWebRtcSignal(sig.sig, s.peerPub)
 	if err != nil {
-		return err
+		return pkgerrors.Wrap(err, "encode web rtc signal")
 	}
 	defer scrub.Scrub(msgEnc)
 	if err := sig.sess.Send(ctx, msgEnc); err != nil {
-		return err
+		return pkgerrors.Wrap(err, "send signaling message")
 	}
 	sig.markSent()
 	return nil
@@ -181,7 +196,7 @@ func (s *sessionTracker) executeLink(ctx context.Context, dcRwc datachannel.Read
 		)
 	}
 	if err != nil {
-		return err
+		return pkgerrors.Wrap(err, "construct quic session")
 	}
 
 	errCh := make(chan error, 1)
@@ -213,7 +228,7 @@ func (s *sessionTracker) executeLink(ctx context.Context, dcRwc datachannel.Read
 		closed,
 	)
 	if err != nil {
-		return err
+		return pkgerrors.Wrap(err, "construct quic link")
 	}
 
 	// Link established.
@@ -280,10 +295,24 @@ type session struct {
 
 // newSession constructs a new session.
 func (s *sessionTracker) newSession() (*session, <-chan struct{}, error) {
+	setCallback := func(name string, cb func()) (err error) {
+		defer func() {
+			if e := recover(); e != nil {
+				if recoveredErr, ok := e.(error); ok {
+					err = pkgerrors.Wrap(recoveredErr, name)
+					return
+				}
+				err = pkgerrors.Errorf("%s: recovered with non-error value: %v", name, e)
+			}
+		}()
+		cb()
+		return nil
+	}
+
 	// Create the peer connection.
 	pc, err := s.w.webrtcApi.NewPeerConnection(*s.w.webrtcConf)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, pkgerrors.Wrap(err, "create peer connection")
 	}
 
 	// Create the data channel in advance.
@@ -301,7 +330,7 @@ func (s *sessionTracker) newSession() (*session, <-chan struct{}, error) {
 	})
 	if err != nil {
 		_ = pc.Close()
-		return nil, nil, err
+		return nil, nil, pkgerrors.Wrap(err, "create data channel")
 	}
 
 	sess := &session{t: s, pc: pc, dc: dc}
@@ -312,17 +341,50 @@ func (s *sessionTracker) newSession() (*session, <-chan struct{}, error) {
 	})
 
 	// DataChannel callbacks
-	dc.OnOpen(sess.onDataChannelOpen)
-	dc.OnClose(sess.onDataChannelClose)
+	if err := setCallback("register data channel onopen", func() {
+		dc.OnOpen(sess.onDataChannelOpen)
+	}); err != nil {
+		_ = dc.Close()
+		_ = pc.Close()
+		return nil, nil, err
+	}
+	if err := setCallback("register data channel onclose", func() {
+		dc.OnClose(sess.onDataChannelClose)
+	}); err != nil {
+		_ = dc.Close()
+		_ = pc.Close()
+		return nil, nil, err
+	}
 
 	// When an ICE candidate is available send to the other Pion instance
 	// the other Pion instance will add this candidate by calling AddICECandidate
 	//
 	// This begins being called once SetRemoteDescription is called.
-	pc.OnConnectionStateChange(sess.onConnectionStateChange)
-	pc.OnNegotiationNeeded(sess.onNegotiationNeeded)
-	pc.OnICECandidate(sess.onIceCandidate)
+	if err := setCallback("register peer connection onconnectionstatechange", func() {
+		pc.OnConnectionStateChange(sess.onConnectionStateChange)
+	}); err != nil {
+		_ = dc.Close()
+		_ = pc.Close()
+		return nil, nil, err
+	}
+	if err := setCallback("register peer connection onnegotiationneeded", func() {
+		pc.OnNegotiationNeeded(sess.onNegotiationNeeded)
+	}); err != nil {
+		_ = dc.Close()
+		_ = pc.Close()
+		return nil, nil, err
+	}
+	if err := setCallback("register peer connection onicecandidate", func() {
+		pc.OnICECandidate(sess.onIceCandidate)
+	}); err != nil {
+		_ = dc.Close()
+		_ = pc.Close()
+		return nil, nil, err
+	}
 	// pc.OnDataChannel(sess.onDataChannel)
+	if s.w.GetVerbose() {
+		s.le.Debug("session constructed")
+	}
 
 	return sess, waitCh, nil
 }
@@ -407,18 +469,26 @@ func (s *session) close() {
 }
 
 // execute executes the sessionTracker.
-func (s *sessionTracker) execute(ctx context.Context) error {
+func (s *sessionTracker) execute(ctx context.Context) (err error) {
 	defer s.le.Warn("session tracker exited")
+	phase := "startup"
+	defer func() {
+		if e := recover(); e != nil {
+			err = pkgerrors.Errorf("%s: recovered panic: %v", phase, e)
+		}
+	}()
 	s.le.Info("session tracker starting")
 
 	// Construct the PeerConnection and attach the callbacks.
+	phase = "construct session"
 	sess, waitCh, err := s.newSession()
 	if err != nil {
-		return err
+		return pkgerrors.Wrap(err, phase)
 	}
 	defer sess.close()
 
 	// Set the context for the link routine.
+	phase = "bind routines"
 	s.linkRoutine.SetContext(ctx, true)
 	s.xmitRoutine.SetContext(ctx, true)
 
@@ -438,6 +508,7 @@ func (s *sessionTracker) execute(ctx context.Context) error {
 	}()
 
 	// Open the signaling session with the remote peer.
+	phase = "open signaling session"
 	signal, signalRel, err := signaling.ExSignalPeer(
 		ctx,
 		s.w.b,
@@ -447,7 +518,7 @@ func (s *sessionTracker) execute(ctx context.Context) error {
 		false,
 	)
 	if err != nil {
-		return err
+		return pkgerrors.Wrap(err, phase)
 	}
 	defer signalRel()
 
@@ -482,6 +553,7 @@ func (s *sessionTracker) execute(ctx context.Context) error {
 	var lastSentICE int
 
 	for {
+		phase = "wait for session change"
 		// Wait for something to change or for an incoming signal.
 		var currRxSignal *WebRtcSignal
 
@@ -512,6 +584,7 @@ func (s *sessionTracker) execute(ctx context.Context) error {
 		var currRxSdp *WebRtcSdp
 		var currRxIce *WebRtcIce
 		if currRxSignal != nil {
+			phase = "process incoming signal"
 			switch b := currRxSignal.GetBody().(type) {
 			case *WebRtcSignal_RequestOffer:
 				if !s.offerer {
@@ -536,6 +609,7 @@ func (s *sessionTracker) execute(ctx context.Context) error {
 		var currFatalErr error
 		var currTxICE []*webrtc.ICECandidateInit
 		var currDcRwc datachannel.ReadWriteCloser
+		phase = "snapshot session state"
 		sess.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
 			// check if negotiation is needed
 			currConnState = sess.connState
@@ -570,6 +644,7 @@ func (s *sessionTracker) execute(ctx context.Context) error {
 
 		// Construct or tear down link as necessary.
 		if currDcRwc != currLinkRwc {
+			phase = "update link routine"
 			// Update the link routine and wait for the old link to exit.
 			waitReturn, changed, _, _ := s.linkRoutine.SetState(currDcRwc)
 			if changed && waitReturn != nil {
@@ -585,6 +660,7 @@ func (s *sessionTracker) execute(ctx context.Context) error {
 		// Handle incoming offer.
 		sdpType := currRxSdp.GetSdpType()
 		if sdpType != "" {
+			phase = "handle remote sdp"
 			// Enforce offerer always does the offering.
 			if s.offerer {
 				if sdpType != "answer" {
@@ -600,7 +676,7 @@ func (s *sessionTracker) execute(ctx context.Context) error {
 			if sessDesc != nil {
 				// Set the remote description
 				if err := sess.pc.SetRemoteDescription(*sessDesc); err != nil {
-					return err
+					return pkgerrors.Wrap(err, "set remote description")
 				}
 
 				// Transmit an answer if applicable
@@ -610,10 +686,10 @@ func (s *sessionTracker) execute(ctx context.Context) error {
 					}
 					answer, err := sess.pc.CreateAnswer(nil)
 					if err != nil {
-						return err
+						return pkgerrors.Wrap(err, "create answer")
 					}
 					if err := sess.pc.SetLocalDescription(answer); err != nil {
-						return err
+						return pkgerrors.Wrap(err, "set local description(answer)")
 					}
 					xmitSignal(&WebRtcSignal{Body: &WebRtcSignal_Sdp{NewWebRtcSdp(
 						currLocalSeqno,
@@ -625,14 +701,15 @@ func (s *sessionTracker) execute(ctx context.Context) error {
 
 		// Handle incoming ICE.
 		if currRxIce.GetCandidate() != "" {
+			phase = "handle remote ice"
 			ice, err := currRxIce.ParseICECandidateInit()
 			if err != nil {
-				return err
+				return pkgerrors.Wrap(err, "parse remote ice candidate")
 			}
 			// If there is no remote description, drop the ICE candidate.
 			if ice != nil && sess.pc.RemoteDescription() != nil {
 				if err := sess.pc.AddICECandidate(*ice); err != nil {
-					return err
+					return pkgerrors.Wrap(err, "add remote ice candidate")
 				}
 			}
 		}
@@ -649,6 +726,7 @@ func (s *sessionTracker) execute(ctx context.Context) error {
 
 		// Transmit an offer or a request for one when local seqno changes.
 		if currLocalSeqno != lastLocalSeqno {
+			phase = "transmit local negotiation"
 			var xmit *WebRtcSignal
 
 			if s.offerer {
@@ -657,10 +735,10 @@ func (s *sessionTracker) execute(ctx context.Context) error {
 				}
 				localDesc, err := sess.pc.CreateOffer(nil)
 				if err != nil {
-					return err
+					return pkgerrors.Wrap(err, "create offer")
 				}
 				if err := sess.pc.SetLocalDescription(localDesc); err != nil {
-					return err
+					return pkgerrors.Wrap(err, "set local description(offer)")
 				}
 				xmit = &WebRtcSignal{
 					Body: &WebRtcSignal_Sdp{Sdp: NewWebRtcSdp(
@@ -690,6 +768,7 @@ func (s *sessionTracker) execute(ctx context.Context) error {
 		// Transmit ICE candidates, continue if waitCh is invalidated meanwhile
 		// Transmit at most once at a time, we need to make sure to process remote messages in a timely fashion.
 		if len(currTxICE) != 0 {
+			phase = "transmit local ice"
 			// make sure waitCh hasn't proced already
 			select {
 			case <-ctx.Done():
@@ -704,7 +783,7 @@ func (s *sessionTracker) execute(ctx context.Context) error {
 				}
 				ice, err := NewWebRtcIce(iceCandidate)
 				if err != nil {
-					return err
+					return pkgerrors.Wrap(err, "marshal local ice candidate")
 				}
 				xmitSignal(&WebRtcSignal{Body: &WebRtcSignal_Ice{Ice: ice}})
 				lastSentICE++

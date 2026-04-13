@@ -404,7 +404,7 @@ func (s *clientPeerTracker) execute(ctx context.Context) error {
 	// Initiate the Session RPC.
 	sess, err := s.c.client.Session(ctx)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "open signaling rpc session")
 	}
 
 	// errCh contains any errors
@@ -506,7 +506,7 @@ func (s *clientPeerTracker) execute(ctx context.Context) error {
 		},
 	})
 	if err != nil {
-		return err
+		return errors.Wrap(err, "send signaling init")
 	}
 
 	// Process incoming messages.
@@ -602,7 +602,7 @@ func (s *clientPeerTracker) execute(ctx context.Context) error {
 				},
 			})
 			if err != nil {
-				return err
+				return errors.Wrap(err, "send signaling ack")
 			}
 		}
 
@@ -615,7 +615,7 @@ func (s *clientPeerTracker) execute(ctx context.Context) error {
 				},
 			})
 			if err != nil {
-				return err
+				return errors.Wrap(err, "send signaling clear")
 			}
 		}
 
@@ -628,7 +628,7 @@ func (s *clientPeerTracker) execute(ctx context.Context) error {
 				},
 			})
 			if err != nil {
-				return err
+				return errors.Wrap(err, "send signaling payload")
 			}
 		}
 
