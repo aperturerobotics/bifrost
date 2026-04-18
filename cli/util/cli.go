@@ -35,6 +35,19 @@ func (a *UtilArgs) BuildFlags() []ucli.Flag {
 func (a *UtilArgs) BuildCommands() []*ucli.Command {
 	return []*ucli.Command{
 		{
+			Name:   "ulid",
+			Usage:  "generates a lowercase ulid",
+			Action: a.RunULID,
+			Flags: []ucli.Flag{
+				&ucli.StringFlag{
+					Name:        "out",
+					Aliases:     []string{"o"},
+					Usage:       "file to store the generated ulid",
+					Destination: &a.OutPath,
+				},
+			},
+		},
+		{
 			Name:   "generate-private",
 			Usage:  "generates a private key .pem file",
 			Action: a.RunGeneratePrivate,

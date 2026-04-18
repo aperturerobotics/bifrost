@@ -13,9 +13,15 @@ import (
 	"github.com/aperturerobotics/bifrost/util/confparse"
 	"github.com/aperturerobotics/cli"
 	"github.com/aperturerobotics/protobuf-go-lite/types/known/timestamppb"
+	util_ulid "github.com/aperturerobotics/util/ulid"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 )
+
+// RunULID runs the ulid util command.
+func (a *UtilArgs) RunULID(_ *cli.Context) error {
+	return writeIfNotExists(a.OutPath, bytes.NewReader([]byte(util_ulid.NewULID()+"\n")))
+}
 
 // RunTimestamp runs the timestamp util command.
 func (a *UtilArgs) RunTimestamp(_ *cli.Context) error {
