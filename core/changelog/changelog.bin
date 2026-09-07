@@ -1,4 +1,14 @@
 
+«
+0.57.4
+2026-09-07ñSpacewave 0.57.4 refreshes the loading screen, improves browser startup and offline recovery, and makes invitations and desktop updates more reliable."ñSpacewave 0.57.4 refreshes the loading screen, improves browser startup and offline recovery, and makes invitations and desktop updates more reliable.2Ú
+wBrowser updates preserve active sessions and recover more reliably when starting offline or retrying a failed download.wBrowser updates preserve active sessions and recover more reliably when starting offline or retrying a failed download.2™
+SJoining a Space now retains the accepted invitation state across session refreshes.SJoining a Space now retains the accepted invitation state across session refreshes.2é
+ESpaces added after sign-in now appear without restarting the session.ESpaces added after sign-in now appear without restarting the session.2†
+çDesktop updates preserve the installed application when replacement or relaunch fails, and retry temporary file-sharing conflicts on Windows.çDesktop updates preserve the installed application when replacement or relaunch fails, and retry temporary file-sharing conflicts on Windows.:≤
+÷Startup now shows animated artwork and clear progress through preparation, connection, and opening your Space. The screen respects reduced-motion preferences and keeps recovery actions available when loading fails.÷Startup now shows animated artwork and clear progress through preparation, connection, and opening your Space. The screen respects reduced-motion preferences and keeps recovery actions available when loading fails.:¥
+XBrowser startup downloads less data and moves more preparation work off the main thread.XBrowser startup downloads less data and moves more preparation work off the main thread.:º
+\Local file reads and writes use less copying and perform fewer redundant storage operations.\Local file reads and writes use less copying and perform fewer redundant storage operations.
 û	
 0.57.3
 2026-09-04íSpacewave 0.57.3 restores native command-line and browser build compatibility, improves browser reliability, and reduces memory use during builds."íSpacewave 0.57.3 restores native command-line and browser build compatibility, improves browser reliability, and reduces memory use during builds.2n

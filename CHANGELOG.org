@@ -1,5 +1,29 @@
 #+TITLE: Spacewave Changelog
 
+* v0.57.4
+<2026-09-07 Mon>
+
+Spacewave 0.57.4 refreshes the loading screen, improves browser startup and
+offline recovery, and makes invitations and desktop updates more reliable.
+
+** Improvements
+- Startup now shows animated artwork and clear progress through preparation,
+  connection, and opening your Space. The screen respects reduced-motion
+  preferences and keeps recovery actions available when loading fails.
+- Browser startup downloads less data and moves more preparation work off the
+  main thread.
+- Local file reads and writes use less copying and perform fewer redundant
+  storage operations.
+
+** Fixes
+- Browser updates preserve active sessions and recover more reliably when
+  starting offline or retrying a failed download.
+- Joining a Space now retains the accepted invitation state across session
+  refreshes.
+- Spaces added after sign-in now appear without restarting the session.
+- Desktop updates preserve the installed application when replacement or
+  relaunch fails, and retry temporary file-sharing conflicts on Windows.
+
 * v0.57.3
 <2026-09-04 Fri>
 
@@ -293,9 +317,9 @@ data loading.
 
 Spacewave 0.55.0 completes the on-demand SQL Database tools work behind the
 smaller browser startup download. It also restores the desktop Command Line
-terminal, serves the app shell before browser development startup checks
-finish, adds Space type glyphs to session lists, and makes developer builds
-more reliable under load.
+terminal, serves the app shell before browser development startup checks finish,
+adds Space type glyphs to session lists, and makes developer builds more
+reliable under load.
 
 ** Features
 - Session Space lists now show each Space's registered type glyph, making Drive,
@@ -797,12 +821,9 @@ Spacewave is open-source, private, self-hosted, multiplayer Spaces (apps) that
 store data wherever you want, work offline through peer-to-peer networking, and
 sync instantly with real-time streaming multiplayer. v0.51 is the public launch:
 a suite of first-party Spaces, a plugin SDK to build your own, and desktop, web,
-and CLI clients, all Apache-2.0 licensed. Try it at
-[[https://spacewave.app][spacewave.app]] in one click with no account required,
-read the [[https://spacewave.app/blog/2026/04/launch][launch announcement]],
-grab the code at
-[[https://github.com/s4wave/spacewave][github.com/s4wave/spacewave]], or
-[[https://discord.gg/KJutMESRsT][join the community on Discord]] and let us know
+and CLI clients, all Apache-2.0 licensed. Try it at [[https://spacewave.app][spacewave.app]] in one click
+with no account required, read the [[https://spacewave.app/blog/2026/04/launch][launch announcement]], grab the code at
+[[https://github.com/s4wave/spacewave][github.com/s4wave/spacewave]], or [[https://discord.gg/KJutMESRsT][join the community on Discord]] and let us know
 what you want added next.
 
 ** Features
