@@ -59,7 +59,6 @@ type cacheEntry struct {
 	lookup         *segment.LookupMeta
 	lookupResource *cacheResource
 	blocks         map[int64]*cachedBlock
-	blockSpans     int
 	fills          map[segmentFillRange]*segmentFill
 	leases         int
 	loading        chan struct{}
@@ -460,18 +459,6 @@ func (c *cacheCoordinator) finishSpanFill(
 		}
 	}
 
-	// Preserve the per-segment span count without evicting a pinned span.
-	if admit && entry.blockSpans >= maxCachedSegmentSpans {
-		resource := c.oldestSpanLocked(entry)
-		if resource == nil {
-			c.stats.Bypasses++
-			admit = false
-		}
-		if resource != nil {
-			c.removeResourceLocked(resource, true)
-		}
-	}
-
 	// Reserve the exact backing allocation through the engine byte budget.
 	charge := uint64(cap(span.data))
 	if admit {
@@ -498,7 +485,6 @@ func (c *cacheCoordinator) finishSpanFill(
 		for off := fill.key.start; off < fill.key.end; off += cachedSegmentBlockSize {
 			entry.blocks[off] = &cachedBlock{span: cached}
 		}
-		entry.blockSpans++
 		fill.resource = resource
 		c.addResourceLocked(resource)
 		c.pinResourceLocked(lease, resource)
@@ -665,15 +651,6 @@ func (c *cacheCoordinator) oldestEvictableLocked(forHandle bool) *cacheResource 
 	return nil
 }
 
-func (c *cacheCoordinator) oldestSpanLocked(entry *cacheEntry) *cacheResource {
-	for resource := c.lruHead; resource != nil; resource = resource.next {
-		if resource.entry == entry && resource.kind == cacheResourceSpan && resource.pins == 0 {
-			return resource
-		}
-	}
-	return nil
-}
-
 func (c *cacheCoordinator) addResourceLocked(resource *cacheResource) {
 	// Mark the resource resident and link it at the recency tail.
 	resource.resident = true
@@ -777,7 +754,6 @@ func (c *cacheCoordinator) removeResourceLocked(resource *cacheResource, evictio
 				delete(entry.blocks, off)
 			}
 		}
-		entry.blockSpans--
 		span.resource = nil
 		resource.span = nil
 		c.stats.BlockBytes -= resource.bytes

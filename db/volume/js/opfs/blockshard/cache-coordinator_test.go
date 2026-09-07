@@ -265,33 +265,93 @@ func TestCacheCoordinatorOpenFailureRollsBackHandle(t *testing.T) {
 	}
 }
 
-func TestCacheCoordinatorPerSegmentSpanLimitBypassesPinnedPressure(t *testing.T) {
-	// Build an immutable file spanning more fills than one segment admits.
-	data, meta := cacheCoordinatorLargeFixture(t)
-	cache := newCacheCoordinator(^uint64(0), 2)
-	lease, _ := acquireCoordinatorFixture(t, cache, 0, meta.Filename, data, meta)
+func TestCacheCoordinatorReusesSpansWithinGlobalByteBudget(t *testing.T) {
+	// Build one immutable file with a six-block working set that fits its cache.
+	const spanCount = 6
+	data := bytes.Repeat([]byte("reuse"), spanCount*cachedSegmentBlockSize/5)
+	reader := &cacheCoordinatorTestReader{data: data}
+	cache := newCacheCoordinator(uint64(len(data)), 1)
+	lease, key := newCoordinatorDataLease(cache, reader, int64(len(data)))
+	entry := lease.entry
 
-	// Pin more one-block spans than the shipping per-segment policy admits.
-	for i := range maxCachedSegmentSpans + 2 {
-		var dst [1]byte
-		if _, err := lease.ReadAt(dst[:], int64(i*cachedSegmentBlockSize)); err != nil {
-			t.Fatal(err)
+	// Read the working set twice through independent operation leases.
+	for pass := range 2 {
+		for i := range spanCount {
+			var dst [1]byte
+			if _, err := lease.ReadAt(dst[:], int64(i*cachedSegmentBlockSize)); err != nil {
+				t.Fatalf("pass %d span %d: %v", pass, i, err)
+			}
+			lease.Release()
+			if pass != 1 || i != spanCount-1 {
+				lease = newCoordinatorPeerLease(cache, entry)
+			}
 		}
 	}
+
+	// Require the second pass to reuse every globally admitted span.
 	stats := cache.snapshot()
-	if lease.entry.blockSpans > maxCachedSegmentSpans {
-		t.Fatalf("resident spans: got %d limit %d", lease.entry.blockSpans, maxCachedSegmentSpans)
+	wantBytes := uint64(len(data))
+	if reader.readCount() != spanCount || stats.ReadCalls != spanCount {
+		t.Fatalf("snapshot reads: reader=%d calls=%d want=%d", reader.readCount(), stats.ReadCalls, spanCount)
 	}
-	if len(lease.entry.blocks) > maxCachedSegmentSpans {
-		t.Fatalf("resident block views: got %d limit %d", len(lease.entry.blocks), maxCachedSegmentSpans)
+	if stats.FetchedBytes != wantBytes || stats.ChargedBytes != wantBytes || stats.BlockBytes != wantBytes {
+		t.Fatalf("resident bytes: fetched=%d charged=%d blocks=%d want=%d", stats.FetchedBytes, stats.ChargedBytes, stats.BlockBytes, wantBytes)
 	}
-	if stats.Bypasses == 0 {
-		t.Fatal("expected pinned span pressure to bypass admission")
+	if len(entry.blocks) != spanCount || stats.Evictions != 0 || stats.Bypasses != 0 {
+		t.Fatalf("resident spans: blocks=%d evictions=%d bypasses=%d", len(entry.blocks), stats.Evictions, stats.Bypasses)
 	}
 
-	// Release every retained resource after the pressure check.
+	// Retire the working set and release its reader.
+	cache.remove(key)
+	stats = cache.snapshot()
+	if stats.ChargedBytes != 0 || stats.PinnedBytes != 0 || stats.LiveHandles != 0 {
+		t.Fatalf("removed cache state: charged=%d pinned=%d handles=%d", stats.ChargedBytes, stats.PinnedBytes, stats.LiveHandles)
+	}
+	if reader.closeCount() != 1 {
+		t.Fatalf("removed reader closes: got %d want 1", reader.closeCount())
+	}
+}
+
+func TestCacheCoordinatorPinnedByteBudgetBypassesAdmission(t *testing.T) {
+	// Build an immutable file larger than the cache's four-block byte budget.
+	const admittedSpans = 4
+	const requestedSpans = admittedSpans + 2
+	data := bytes.Repeat([]byte("pinned"), requestedSpans*cachedSegmentBlockSize/6)
+	reader := &cacheCoordinatorTestReader{data: data}
+	byteLimit := uint64(admittedSpans * cachedSegmentBlockSize)
+	cache := newCacheCoordinator(byteLimit, 1)
+	lease, _ := newCoordinatorDataLease(cache, reader, int64(len(data)))
+
+	// Keep admitted spans pinned while later reads exceed the byte budget.
+	for i := range requestedSpans {
+		var dst [1]byte
+		if _, err := lease.ReadAt(dst[:], int64(i*cachedSegmentBlockSize)); err != nil {
+			t.Fatalf("span %d: %v", i, err)
+		}
+	}
+
+	// Require excess reads to succeed without exceeding the global budget.
+	stats := cache.snapshot()
+	if len(lease.entry.blocks) != admittedSpans {
+		t.Fatalf("resident block views: got %d want %d", len(lease.entry.blocks), admittedSpans)
+	}
+	if stats.ChargedBytes != byteLimit || stats.PinnedBytes != byteLimit {
+		t.Fatalf("pinned budget: charged=%d pinned=%d want=%d", stats.ChargedBytes, stats.PinnedBytes, byteLimit)
+	}
+	if stats.ReadCalls != requestedSpans || stats.Bypasses != requestedSpans-admittedSpans {
+		t.Fatalf("budget pressure: reads=%d bypasses=%d", stats.ReadCalls, stats.Bypasses)
+	}
+
+	// Release every pin and drain the admitted reader.
 	lease.Release()
 	cache.close()
+	stats = cache.snapshot()
+	if stats.ChargedBytes != 0 || stats.PinnedBytes != 0 || stats.LiveHandles != 0 {
+		t.Fatalf("closed cache state: charged=%d pinned=%d handles=%d", stats.ChargedBytes, stats.PinnedBytes, stats.LiveHandles)
+	}
+	if reader.closeCount() != 1 {
+		t.Fatalf("closed reader closes: got %d want 1", reader.closeCount())
+	}
 }
 
 func TestCacheCoordinatorChargesOneBackingAllocationPerSpan(t *testing.T) {
@@ -318,8 +378,8 @@ func TestCacheCoordinatorChargesOneBackingAllocationPerSpan(t *testing.T) {
 	if stats.ChargedBytes != wantCharge || stats.BlockBytes != wantCharge {
 		t.Fatalf("span charge: charged=%d blocks=%d want=%d", stats.ChargedBytes, stats.BlockBytes, wantCharge)
 	}
-	if lease.entry.blockSpans != 1 || len(lease.entry.blocks) != 3 {
-		t.Fatalf("resident span: spans=%d block_views=%d", lease.entry.blockSpans, len(lease.entry.blocks))
+	if len(lease.entry.blocks) != 3 {
+		t.Fatalf("resident block views: got %d want 3", len(lease.entry.blocks))
 	}
 	span := lease.entry.blocks[0].span
 	for off := int64(0); off < int64(len(data)); off += cachedSegmentBlockSize {
@@ -332,8 +392,8 @@ func TestCacheCoordinatorChargesOneBackingAllocationPerSpan(t *testing.T) {
 	lease.Release()
 	cache.remove(key)
 	stats = cache.snapshot()
-	if len(lease.entry.blocks) != 0 || lease.entry.blockSpans != 0 {
-		t.Fatalf("removed span: spans=%d block_views=%d", lease.entry.blockSpans, len(lease.entry.blocks))
+	if len(lease.entry.blocks) != 0 {
+		t.Fatalf("removed block views: got %d", len(lease.entry.blocks))
 	}
 	if stats.ChargedBytes != 0 || stats.BlockBytes != 0 || stats.LiveHandles != 0 {
 		t.Fatalf("removed charge: charged=%d blocks=%d handles=%d", stats.ChargedBytes, stats.BlockBytes, stats.LiveHandles)
@@ -427,8 +487,8 @@ func TestCacheCoordinatorSharesFailureAndAllowsRetry(t *testing.T) {
 	if stats.ChargedBytes != 0 || stats.BlockBytes != 0 || stats.Admissions != 0 {
 		t.Fatalf("failed fill residency: charged=%d blocks=%d admissions=%d", stats.ChargedBytes, stats.BlockBytes, stats.Admissions)
 	}
-	if len(leaseA.entry.fills) != 0 || len(leaseA.entry.blocks) != 0 || leaseA.entry.blockSpans != 0 {
-		t.Fatalf("failed fill state: fills=%d block_views=%d spans=%d", len(leaseA.entry.fills), len(leaseA.entry.blocks), leaseA.entry.blockSpans)
+	if len(leaseA.entry.fills) != 0 || len(leaseA.entry.blocks) != 0 {
+		t.Fatalf("failed fill state: fills=%d block_views=%d", len(leaseA.entry.fills), len(leaseA.entry.blocks))
 	}
 
 	// Start a new lease after failure and admit its successful retry.

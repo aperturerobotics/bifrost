@@ -15,9 +15,9 @@ import (
 )
 
 const (
-	cachedSegmentBlockSize = 64 * 1024
-	maxCachedSegmentSpans  = 4
-	maxCachedSegmentRead   = cachedSegmentBlockSize * maxCachedSegmentSpans
+	cachedSegmentBlockSize     = 64 * 1024
+	maxLocalCachedSegmentSpans = 4
+	maxCachedSegmentRead       = 4 * cachedSegmentBlockSize
 )
 
 type segmentReader interface {
@@ -233,7 +233,7 @@ func (f *cachedSegmentFile) getLocalSpan(blockOff, endBlock int64) (segmentDataS
 	fill.span = span
 	fill.err = err
 	if err == nil && !f.localRangeOverlapsLocked(key) {
-		if len(f.order) >= maxCachedSegmentSpans {
+		if len(f.order) >= maxLocalCachedSegmentSpans {
 			f.removeLocalSpanLocked(f.order[0])
 		}
 		cached := &localCachedSpan{segmentDataSpan: span}
