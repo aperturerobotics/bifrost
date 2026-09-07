@@ -189,6 +189,12 @@ func (s *Server) AcceptInvite(ctx context.Context, req *AcceptInviteRequest) (*A
 		return nil, errors.Wrap(err, "increment invite uses")
 	}
 
+	// Transfer the configuration after every acceptance mutation has completed.
+	ownerState, err = result.Host.GetHostState(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "read updated owner shared object state")
+	}
+
 	return &AcceptInviteResponse{
 		Grant:             grant,
 		SharedObjectId:    result.SharedObjectID,
