@@ -31,6 +31,8 @@ type ChatChannel struct {
 	// ReadPositions maps verified person peer identities to their shared read positions.
 	// Keys are external cryptographic identities, not World object references.
 	ReadPositions map[string]*state.ChatReadPosition `protobuf:"bytes,5,rep,name=read_positions,json=readPositions,proto3" json:"readPositions,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	// CreatorPeerId is the peer identity that created the channel.
+	CreatorPeerId string `protobuf:"bytes,6,opt,name=creator_peer_id,json=creatorPeerId,proto3" json:"creatorPeerId,omitempty"`
 }
 
 func (x *ChatChannel) Reset() {
@@ -72,6 +74,13 @@ func (x *ChatChannel) GetReadPositions() map[string]*state.ChatReadPosition {
 		return x.ReadPositions
 	}
 	return nil
+}
+
+func (x *ChatChannel) GetCreatorPeerId() string {
+	if x != nil {
+		return x.CreatorPeerId
+	}
+	return ""
 }
 
 // ChatMessage is a chat message world object linked to a channel.
@@ -270,6 +279,7 @@ func (m *ChatChannel) CloneVT() *ChatChannel {
 	r.Name = m.Name
 	r.Topic = m.Topic
 	r.MessageCount = m.MessageCount
+	r.CreatorPeerId = m.CreatorPeerId
 	r.CreatedAt = protobuf_go_lite.CloneVTValue(m.CreatedAt)
 	r.ReadPositions = protobuf_go_lite.CloneVTMap(m.ReadPositions)
 	if len(m.unknownFields) > 0 {
@@ -374,6 +384,9 @@ func (this *ChatChannel) EqualVT(that *ChatChannel) bool {
 		return false
 	}
 	if !protobuf_go_lite.EqualVTMapImplicit(this.ReadPositions, that.ReadPositions, func() *state.ChatReadPosition { return &state.ChatReadPosition{} }) {
+		return false
+	}
+	if this.CreatorPeerId != that.CreatorPeerId {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -588,6 +601,11 @@ func (x *ChatChannel) MarshalProtoJSON(s *json.MarshalState) {
 		}
 		s.WriteObjectEnd()
 	}
+	if x.CreatorPeerId != "" || s.HasField("creatorPeerId") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("creatorPeerId")
+		s.WriteString(x.CreatorPeerId)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -633,6 +651,9 @@ func (x *ChatChannel) UnmarshalProtoJSON(s *json.UnmarshalState) {
 				v.UnmarshalProtoJSON(s)
 				x.ReadPositions[key] = &v
 			})
+		case "creator_peer_id", "creatorPeerId":
+			s.AddField("creator_peer_id")
+			x.CreatorPeerId = s.ReadString()
 		}
 	})
 }
@@ -931,6 +952,11 @@ func (m *ChatChannel) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if len(m.CreatorPeerId) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.CreatorPeerId)
+		i--
+		dAtA[i] = 0x32
+	}
 	if len(m.ReadPositions) > 0 {
 		for k := range m.ReadPositions {
 			v := m.ReadPositions[k]
@@ -1217,6 +1243,7 @@ func (m *ChatChannel) SizeVT() (n int) {
 		mapEntrySize := protobuf_go_lite.SizeStringValue(1, k) + protobuf_go_lite.SizeMessage(1, l)
 		n += protobuf_go_lite.SizeMessage(1, mapEntrySize)
 	}
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.CreatorPeerId)
 	n += len(m.unknownFields)
 	return n
 }
@@ -1337,6 +1364,10 @@ func (x *ChatChannel) MarshalProtoText() string {
 			}
 		}
 		protobuf_go_lite.TextWriteMapEnd(&sb)
+	}
+	if x.CreatorPeerId != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "creator_peer_id")
+		protobuf_go_lite.TextWriteString(&sb, x.CreatorPeerId)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -1552,6 +1583,16 @@ func (m *ChatChannel) UnmarshalVT(dAtA []byte) error {
 			}
 			m.ReadPositions[mapkey] = mapvalue
 			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CreatorPeerId", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.CreatorPeerId = v
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

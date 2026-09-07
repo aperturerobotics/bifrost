@@ -21,6 +21,8 @@ message ChatChannel {
   // ReadPositions maps verified person peer identities to their shared read positions.
   // Keys are external cryptographic identities, not World object references.
   map<string, ChatReadPosition> read_positions = 5;
+  // CreatorPeerId is the peer identity that created the channel.
+  string creator_peer_id = 6;
 }
 
 // ChatMessage is a chat message world object linked to a channel.

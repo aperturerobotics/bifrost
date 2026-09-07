@@ -59,6 +59,8 @@ message GetChannelInfoResponse {
   uint64 message_count = 3;
   // CreatedAt is the channel creation timestamp.
   .google.protobuf.Timestamp created_at = 4;
+  // CreatorPeerId is the peer identity that created the channel.
+  string creator_peer_id = 5;
 }
 
 // GetMessageRequest identifies one channel message to read.

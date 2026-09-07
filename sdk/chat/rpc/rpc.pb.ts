@@ -130,6 +130,12 @@ export interface GetChannelInfoResponse {
    * @generated from field: google.protobuf.Timestamp created_at = 4;
    */
   createdAt?: Date
+  /**
+   * CreatorPeerId is the peer identity that created the channel.
+   *
+   * @generated from field: string creator_peer_id = 5;
+   */
+  creatorPeerId?: string
 }
 
 export const GetChannelInfoResponse: MessageType<GetChannelInfoResponse> =
@@ -140,6 +146,7 @@ export const GetChannelInfoResponse: MessageType<GetChannelInfoResponse> =
       { no: 2, name: 'topic', kind: 'scalar', T: ScalarType.STRING },
       { no: 3, name: 'message_count', kind: 'scalar', T: ScalarType.UINT64 },
       { no: 4, name: 'created_at', kind: 'message', T: () => Timestamp },
+      { no: 5, name: 'creator_peer_id', kind: 'scalar', T: ScalarType.STRING },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })

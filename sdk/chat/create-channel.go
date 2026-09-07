@@ -57,9 +57,10 @@ func (o *CreateChatChannelOp) ApplyWorldOp(
 
 	objKey := o.GetObjectKey()
 	channel := &ChatChannel{
-		Name:      o.GetName(),
-		Topic:     o.GetTopic(),
-		CreatedAt: o.GetTimestamp(),
+		Name:          o.GetName(),
+		Topic:         o.GetTopic(),
+		CreatedAt:     o.GetTimestamp(),
+		CreatorPeerId: sender.String(),
 	}
 
 	if _, _, err := world.CreateWorldObject(ctx, ws, objKey, func(bcs *block.Cursor) error {
