@@ -340,6 +340,25 @@ func TestLocalSpaceLinkDeviceEnrollmentEndToEnd(t *testing.T) {
 	if joinResult.SharedObjectState == nil {
 		t.Fatal("invite join returned no owner shared object state")
 	}
+
+	// The joined snapshot must include the owner's post-acceptance invite use
+	// count so native and projected views observe the same authoritative state.
+	foundInvite := false
+	for _, returnedInvite := range joinResult.SharedObjectState.GetInvites() {
+		if returnedInvite.GetInviteId() != invite.GetInviteId() {
+			continue
+		}
+		foundInvite = true
+		if returnedInvite.GetUses() != 1 {
+			t.Fatalf("joined invite uses = %d, want 1", returnedInvite.GetUses())
+		}
+		break
+	}
+	if !foundInvite {
+		t.Fatalf("joined state omitted invite %q", invite.GetInviteId())
+	}
+
+	// The originating owner retains decryption authority over the joined copy.
 	if _, err := joinResult.OwnerGrant.DecryptInnerData(ownerMountedSO.GetPrivKey(), spaceID); err != nil {
 		t.Fatalf("originating owner cannot decrypt joined state: %v", err)
 	}
