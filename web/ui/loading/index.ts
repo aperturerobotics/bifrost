@@ -5,7 +5,10 @@
 
 export { LoadingCard } from './LoadingCard.js'
 export { LoadingInline, type LoadingInlineTone } from './LoadingInline.js'
+export { LoadingArtwork, mountLoadingArtwork } from './LoadingArtwork.js'
+export { createLoadingArtwork } from './loading-artwork.js'
 export { LoadingScreen } from './LoadingScreen.js'
+export { LOADING_SCREEN_CSS } from './loading-screen-style.js'
 export { ProgressBar } from './ProgressBar.js'
 export { Spinner, type SpinnerSize } from './Spinner.js'
 export { useReducedMotion } from './useReducedMotion.js'

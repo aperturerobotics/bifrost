@@ -119,15 +119,6 @@ vi.mock('@s4wave/web/ui/ErrorState.js', () => ({
   ),
 }))
 
-vi.mock('@s4wave/web/ui/loading/LoadingCard.js', () => ({
-  LoadingCard: ({ view }: { view: { title: string; detail?: string } }) => (
-    <div>
-      <h1>{view.title}</h1>
-      <p>{view.detail}</p>
-    </div>
-  ),
-}))
-
 import { SpacewaveRuntimeProviders } from './SpacewaveRuntimeProviders.js'
 
 describe('SpacewaveRuntimeProviders', () => {
@@ -154,7 +145,9 @@ describe('SpacewaveRuntimeProviders', () => {
       </SpacewaveRuntimeProviders>,
     )
 
-    expect(screen.getByText('Initializing')).toBeDefined()
+    expect(
+      screen.getByRole('heading', { name: 'Starting Spacewave' }),
+    ).toBeDefined()
     expect(screen.getByText('Preparing the Spacewave runtime.')).toBeDefined()
     expect(screen.queryByText('ready')).toBeNull()
   })

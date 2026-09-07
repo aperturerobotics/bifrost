@@ -33,13 +33,16 @@ describe('QuickstartLoading', () => {
     renderQuickstartLoading()
 
     expect(
-      screen.getByText('Session connection: Fetching the runtime.'),
+      screen.getByText('Connect').parentElement?.getAttribute('aria-current'),
     ).toBeTruthy()
-    expect(screen.getByText('7%')).toBeTruthy()
-    expect(screen.getByText('Create a Drive')).toBeTruthy()
+    expect(screen.queryByText('7%')).toBeNull()
+    expect(screen.queryByRole('progressbar')).toBeNull()
+    expect(
+      screen.getByRole('heading', { name: 'Preparing your Drive' }),
+    ).toBeTruthy()
     expect(screen.getByLabelText('Startup phases')).toBeTruthy()
     for (const phase of browserStartupPhaseRail) {
-      expect(screen.getByText(phase.label)).toBeTruthy()
+      expect(screen.getAllByText(phase.label).length).toBeGreaterThan(0)
     }
   })
 
@@ -47,7 +50,7 @@ describe('QuickstartLoading', () => {
     renderQuickstartLoading()
 
     expect(
-      screen.getByText('Local initialization: Loading the app shell.'),
+      screen.getByText('Prepare').parentElement?.getAttribute('aria-current'),
     ).toBeTruthy()
   })
 

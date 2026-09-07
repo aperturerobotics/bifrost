@@ -27,7 +27,7 @@ import {
   type StateAtomAccessor,
 } from '@s4wave/web/state/index.js'
 import { ErrorState } from '@s4wave/web/ui/ErrorState.js'
-import { LoadingCard } from '@s4wave/web/ui/loading/LoadingCard.js'
+import { LoadingScreen } from '@s4wave/web/ui/loading/LoadingScreen.js'
 
 const defaultResourceService =
   'plugin/spacewave-core/' + ResourceServiceServiceName
@@ -145,17 +145,13 @@ function SpacewaveRuntimeRoot({
 
   if (!resourceClient || rootResource.loading || !rootResource.value) {
     return (
-      <div className="bg-background/80 flex h-full min-h-0 w-full flex-1 items-center justify-center p-6 backdrop-blur-sm">
-        <div className="w-full max-w-sm">
-          <LoadingCard
-            view={{
-              state: 'loading',
-              title: 'Initializing',
-              detail: 'Preparing the Spacewave runtime.',
-            }}
-          />
-        </div>
-      </div>
+      <LoadingScreen
+        view={{
+          state: 'loading',
+          title: 'Starting Spacewave',
+          detail: 'Preparing the Spacewave runtime.',
+        }}
+      />
     )
   }
 

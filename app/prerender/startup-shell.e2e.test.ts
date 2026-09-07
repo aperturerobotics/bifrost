@@ -19,8 +19,8 @@ afterEach(() => {
 })
 
 describe('initial startup HTML', () => {
-  it('keeps status updates inside details and preserves usable error recovery', async () => {
-    await page.viewport(1518, 1094)
+  it('updates actual startup phases and preserves usable error recovery', async () => {
+    await page.viewport(1440, 900)
     host = document.createElement('div')
     host.style.cssText = 'position:fixed;inset:0;display:flex'
     host.innerHTML = buildStartupShell(spacewaveIcon)
@@ -34,11 +34,11 @@ describe('initial startup HTML', () => {
       detail: 'Runtime channel opened.',
       progress: 0.6,
     })
-    await expect.element(page.getByText('Opening Spacewave')).toBeVisible()
-    expect(host.querySelector('details')?.open).toBe(false)
-    expect(
-      host.querySelector('[role="progressbar"]')?.getAttribute('aria-valuenow'),
-    ).toBeNull()
+    await expect
+      .element(page.getByRole('heading', { name: 'Preparing Spacewave' }))
+      .toBeVisible()
+    expect(host.querySelector('details')).toBeNull()
+    expect(host.querySelector('[role="progressbar"]')).toBeNull()
     expect(host.querySelector('[data-sw-boot-status]')?.textContent).toContain(
       'Connecting the Spacewave runtime.',
     )
@@ -46,15 +46,14 @@ describe('initial startup HTML', () => {
       path: '__screenshots__/browser-startup/initial-html-desktop.png',
     })
 
-    await page.getByText('Show details', { exact: true }).click()
-    await expect
-      .element(page.getByText(/Connecting the Spacewave runtime/))
-      .toBeVisible()
     writeBrowserBootStatus({
       phase: 'runtime-error',
       state: 'error',
       detail: 'Network unavailable.',
     })
+    await expect
+      .element(page.getByRole('heading', { name: 'Unable to open Spacewave' }))
+      .toBeVisible()
     await expect.element(page.getByRole('alert')).toBeVisible()
     await expect
       .element(page.getByRole('button', { name: 'Retry' }))
@@ -62,8 +61,10 @@ describe('initial startup HTML', () => {
     await expect
       .element(page.getByRole('button', { name: 'Back', exact: true }))
       .toBeVisible()
-    expect(getComputedStyle(host.querySelector('.swb-activity')!).display).toBe(
-      'none',
-    )
+    expect(
+      host
+        .querySelector('[data-sw-boot-phase=runtime]')
+        ?.getAttribute('data-sw-boot-phase-state'),
+    ).toBe('error')
   })
 })

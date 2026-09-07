@@ -23,7 +23,6 @@ describe('LoadingScreen', () => {
           onRetry,
           onCancel,
         }}
-        showShineBorder={false}
       />,
     )
 
@@ -42,7 +41,6 @@ describe('LoadingScreen', () => {
           title: 'Spacewave',
           detail: 'Runtime: Starting the Spacewave runtime.',
         }}
-        showShineBorder={false}
       />,
     )
 
@@ -50,7 +48,7 @@ describe('LoadingScreen', () => {
     expect(screen.queryByRole('button', { name: 'Back' })).toBeNull()
   })
 
-  it('disables the decorative shine border when reduced motion is requested', () => {
+  it('retains progress and details when reduced motion is requested', () => {
     vi.stubGlobal('matchMedia', (query: string) => ({
       matches: query === '(prefers-reduced-motion: reduce)',
       media: query,
@@ -74,7 +72,6 @@ describe('LoadingScreen', () => {
         .querySelector('[data-sw-reduced-motion]')
         ?.getAttribute('data-sw-reduced-motion'),
     ).toBe('true')
-    expect(container.querySelector('.shine-border-mask')).toBeNull()
     expect(
       screen.getByText('Runtime: Starting the Spacewave runtime.'),
     ).toBeDefined()

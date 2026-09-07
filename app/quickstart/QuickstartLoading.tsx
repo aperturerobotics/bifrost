@@ -7,10 +7,8 @@ import { LoadingScreen } from '@s4wave/web/ui/loading/LoadingScreen.js'
 import { PUBLIC_QUICKSTART_OPTIONS, type QuickstartOption } from './options.js'
 import { QuickstartUnavailable } from './QuickstartUnavailable.js'
 
-// QuickstartLoading is a static prerendered page for /quickstart/{id}.
-// Shows the quickstart metadata with a loading indicator. When the
-// entrypoint finishes background boot (WASM ready), hydrate.tsx
-// auto-transitions to the full app at #/quickstart/{id}.
+// QuickstartLoading presents browser preparation until hydration hands the
+// route to the app. The startup projection retains diagnostic progress.
 export function QuickstartLoading() {
   const path = usePath()
   const id = path.split('/').pop() ?? ''
@@ -25,34 +23,21 @@ export function QuickstartLoading() {
   return (
     <LoadingScreen
       view={{
-        ...startup.view,
-        title: option.name,
+        state: startup.view.state,
+        title:
+          startup.view.state === 'error'
+            ? 'Unable to open your space'
+            : option.id === 'drive'
+              ? 'Preparing your Drive'
+              : 'Preparing your workspace',
+        detail: startup.view.detail,
+        error: startup.view.error,
+        onRetry: startup.view.onRetry,
       }}
-      logo={<QuickstartIcon option={option} />}
-      showShineBorder={false}
+      footer={<a href={landingHref}>Back to home</a>}
     >
-      <div className="flex w-[min(30rem,calc(100vw-2rem))] flex-col items-center gap-5 text-center">
-        <p className="text-foreground-alt/70 max-w-md text-sm leading-relaxed">
-          {option.description}
-        </p>
-        <BrowserStartupPhaseRail phases={startup.phases} />
-        <a
-          href={landingHref}
-          className="text-foreground-alt hover:text-foreground text-sm transition-colors motion-reduce:transition-none"
-        >
-          Back to home
-        </a>
-      </div>
+      <BrowserStartupPhaseRail phases={startup.phases} />
     </LoadingScreen>
-  )
-}
-
-function QuickstartIcon(props: { option: QuickstartOption }) {
-  const Icon = props.option.icon
-  return (
-    <div className="flex size-16 items-center justify-center rounded-2xl bg-[var(--color-neutral-900)]">
-      <Icon className="size-8 text-[var(--color-neutral-300)]" />
-    </div>
   )
 }
 

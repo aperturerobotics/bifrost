@@ -6,6 +6,8 @@
 
 import { hydrateRoot, type Root } from 'react-dom/client'
 
+import { mountLoadingArtwork } from '@s4wave/web/ui/loading/LoadingArtwork.js'
+
 import '@s4wave/web/style/app.css'
 
 declare global {
@@ -88,6 +90,11 @@ function readBlogData(): Record<string, unknown> | null {
   if (!el?.textContent) return null
   return JSON.parse(el.textContent) as Record<string, unknown>
 }
+
+const startupArtwork = document.querySelector<HTMLElement>(
+  '#sw-loading .swl-artwork-host',
+)
+if (startupArtwork) mountLoadingArtwork(startupArtwork)
 
 const pathname = window.location.pathname
 

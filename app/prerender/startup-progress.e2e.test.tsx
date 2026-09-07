@@ -1,289 +1,119 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { page } from 'vitest/browser'
 import { cleanup, render } from 'vitest-browser-react'
-import type { ReactNode } from 'react'
 
-import {
-  markBrowserStartupBoundary,
-  resetBrowserStartupMarksForTest,
-} from './boot-status.js'
-import { resetBootDownloadsForTest, type BootDownload } from '@aptre/bldr'
+import { resetBootDownloadsForTest } from '@aptre/bldr'
 import { Pricing } from '@s4wave/app/landing/Pricing.js'
-import { AppLoadingScreen } from '@s4wave/app/loading/AppLoadingScreen.js'
-import { QuickstartLoading } from '@s4wave/app/quickstart/QuickstartLoading.js'
 import { RouterProvider } from '@s4wave/web/router/router.js'
 import { StaticProvider } from './StaticContext.js'
+import { AppLoadingScreen } from '@s4wave/app/loading/AppLoadingScreen.js'
+import { LoadingScreen as QuickstartSetupScreen } from '@s4wave/app/quickstart/LoadingScreen.js'
+import { LoadingScreen } from '@s4wave/web/ui/loading/LoadingScreen.js'
 
-function setRoute(path: string) {
-  window.history.replaceState({}, '', path)
-}
+import { resetBrowserStartupMarksForTest } from './boot-status.js'
 
-function setBootPhase(phase: string, state: 'loading' | 'error' = 'loading') {
-  globalThis.__swBootStatus = {
-    phase,
-    detail: `${phase} detail`,
-    state,
-  }
-}
+beforeEach(() => {
+  globalThis.__swBootStatus = undefined
+  resetBootDownloadsForTest()
+  resetBrowserStartupMarksForTest()
+})
 
-function setBootPhaseProgress(phase: string, progress: number) {
-  globalThis.__swBootStatus = {
-    phase,
-    detail: `${phase} detail`,
-    state: 'loading',
-    progress,
-  }
-}
+afterEach(async () => {
+  await cleanup()
+  globalThis.__swBootStatus = undefined
+  resetBootDownloadsForTest()
+  resetBrowserStartupMarksForTest()
+  vi.restoreAllMocks()
+})
 
-const MiB = 1024 * 1024
-
-function setBootDownloads(downloads: BootDownload[]) {
-  globalThis.__swBootDownloads = downloads
-}
-
-async function renderSurface(children: ReactNode) {
-  await render(
-    <div className="bg-background text-foreground h-screen min-h-screen">
-      {children}
-    </div>,
+describe('startup surfaces', () => {
+  it.each([
+    { width: 1440, height: 900 },
+    { width: 390, height: 844 },
+    { width: 320, height: 568 },
+  ])(
+    'shows actual phases and artwork at $width × $height',
+    async ({ width, height }) => {
+      await page.viewport(width, height)
+      globalThis.__swBootStatus = {
+        phase: 'wasm',
+        state: 'loading',
+        detail: '',
+      }
+      await render(
+        <div style={{ position: 'fixed', inset: 0, display: 'flex' }}>
+          <AppLoadingScreen />
+        </div>,
+      )
+      await expect.element(page.getByRole('heading')).toBeVisible()
+      await expect
+        .element(page.getByRole('list', { name: 'Startup phases' }))
+        .toBeVisible()
+      expect(document.querySelector('[aria-current="step"]')?.textContent).toBe(
+        'App',
+      )
+      expect(document.querySelector('details')).toBeNull()
+      expect(document.querySelector('[role="progressbar"]')).toBeNull()
+      await expect
+        .poll(() =>
+          document.querySelector('canvas')?.getAttribute('data-renderer'),
+        )
+        .toBe('three')
+      expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(width)
+      const consoleBounds = document
+        .querySelector('.swl-console')!
+        .getBoundingClientRect()
+      expect(consoleBounds.bottom).toBeLessThanOrEqual(height)
+      await page.screenshot({
+        path: `__screenshots__/browser-startup/current-pulse-${width}.png`,
+      })
+      const canvas = document.querySelector('canvas')!
+      await cleanup()
+      expect(canvas.hasAttribute('data-renderer')).toBe(false)
+    },
   )
-}
 
-async function renderStaticSurface(path: string, children: ReactNode) {
-  setRoute(path)
-  await renderSurface(
-    <RouterProvider path={path} onNavigate={() => {}}>
-      <StaticProvider>{children}</StaticProvider>
-    </RouterProvider>,
-  )
-}
-
-async function captureStartupEvidence(name: string) {
-  return page.screenshot({
-    path: `__screenshots__/browser-startup/${name}.png`,
-  })
-}
-
-function startupSurfaceBounds() {
-  const surface = document.querySelector('.swb-canvas')
-  if (!surface) return null
-  const rect = surface.getBoundingClientRect()
-  return {
-    width: rect.width,
-    height: rect.height,
-    viewportWidth: window.innerWidth,
-  }
-}
-
-describe('browser startup progress surfaces', () => {
-  const originalMatchMedia = window.matchMedia
-
-  beforeEach(async () => {
-    await cleanup()
-    localStorage.clear()
-    window.location.hash = ''
-    globalThis.__swBootStatus = undefined
-    globalThis.__swBootDownloads = undefined
-    resetBootDownloadsForTest()
-    resetBrowserStartupMarksForTest()
-    window.matchMedia = originalMatchMedia
-    await page.viewport(1518, 1094)
-  })
-
-  afterEach(async () => {
-    await cleanup()
-    localStorage.clear()
-    globalThis.__swBootStatus = undefined
-    globalThis.__swBootDownloads = undefined
-    resetBootDownloadsForTest()
-    resetBrowserStartupMarksForTest()
-    window.matchMedia = originalMatchMedia
-    setRoute('/')
-    vi.restoreAllMocks()
-  })
-
-  it('renders returning-user boot progress in the browser', async () => {
-    localStorage.setItem('spacewave-has-session', '1')
-    setBootPhase('runtime')
-
-    await renderSurface(<AppLoadingScreen />)
-
-    await expect.element(page.getByText('Opening Spacewave')).toBeVisible()
-    await expect.element(page.getByText('Starting the app')).toBeVisible()
-    expect(document.querySelector('details')?.open).toBe(false)
-    expect(
-      document.querySelector('.swb-activity')?.getAttribute('aria-valuenow'),
-    ).toBeNull()
-    const bounds = startupSurfaceBounds()
-    expect(typeof bounds?.width).toBe('number')
-    expect(typeof bounds?.height).toBe('number')
-
-    await captureStartupEvidence('returning-user-runtime-desktop')
-  })
-
-  it('does not display synthetic app-phase progress as downloaded bytes', async () => {
-    localStorage.setItem('spacewave-has-session', '1')
-    setBootPhaseProgress('app', 0.37)
-
-    await renderSurface(<AppLoadingScreen />)
-    await page.getByText('Show details', { exact: true }).click()
-
-    await expect
-      .element(page.getByText('Current app download: Opening the application.'))
-      .toBeInTheDocument()
-    expect(
-      document.querySelector('.swb-activity')?.getAttribute('aria-valuenow'),
-    ).toBeNull()
+  it('never presents a readiness milestone as downloaded bytes', async () => {
+    globalThis.__swBootStatus = {
+      phase: 'app',
+      state: 'loading',
+      detail: '',
+      progress: 0.37,
+    }
+    await render(<AppLoadingScreen />)
+    expect(document.querySelector('[role="progressbar"]')).toBeNull()
     await expect.element(page.getByText('87%')).not.toBeInTheDocument()
-
-    await captureStartupEvidence('frame-download-progress-desktop')
   })
 
-  it('renders a live per-asset download breakdown mid-boot', async () => {
-    localStorage.setItem('spacewave-has-session', '1')
-    setBootPhase('app')
-    setBootDownloads([
-      {
-        id: 'runtime',
-        label: 'Runtime',
-        loaded: 8 * MiB,
-        total: 8 * MiB,
-        state: 'complete',
-      },
-      {
-        id: 'app',
-        label: 'Application',
-        loaded: 3355443,
-        total: 8912896,
-        state: 'active',
-      },
-      {
-        id: '/b/pa/spacewave-app/v/b/fe/module.mjs',
-        label: 'spacewave-app',
-        loaded: 0,
-        state: 'active',
-      },
-    ])
-
-    await renderSurface(<AppLoadingScreen />)
-    await page.getByText('Show details', { exact: true }).click()
-
+  it('shows quickstart progress without requiring a disclosure', async () => {
+    await page.viewport(320, 568)
+    await render(
+      <div style={{ position: 'fixed', inset: 0, display: 'flex' }}>
+        <QuickstartSetupScreen
+          quickstartId="drive"
+          progress={{
+            step: 'content',
+            stepIndex: 4,
+            stepCount: 4,
+            detail: 'Adding starter content',
+          }}
+        />
+      </div>,
+    )
     await expect
-      .element(
-        page.getByText(
-          'Current app download: Loading the application interface.',
-        ),
-      )
-      .toBeInTheDocument()
-    // The plugin row's label is unique to the download list.
-    await expect
-      .element(page.getByText('spacewave-app', { exact: true }))
-      .toBeInTheDocument()
-    // App bundle shows streamed bytes against its known total.
-    await expect
-      .element(page.getByText('3.2 MiB / 8.5 MiB'))
-      .toBeInTheDocument()
-
-    // Completed downloads retire from the live list.
+      .element(page.getByRole('heading', { name: 'Creating your space' }))
+      .toBeVisible()
+    expect(document.querySelector('[aria-current="step"]')?.textContent).toBe(
+      'Add starter content',
+    )
     expect(
-      document.querySelectorAll('[data-sw-startup-download]'),
-    ).toHaveLength(2)
-    expect(
-      document.querySelector('[data-sw-startup-download="runtime"]'),
-    ).toBeNull()
-
-    await captureStartupEvidence('per-asset-download-breakdown-desktop')
+      document.querySelector('.swl-console')!.getBoundingClientRect().bottom,
+    ).toBeLessThanOrEqual(568)
   })
 
-  it('retains the actual ready handoff evidence without a completion estimate', async () => {
-    localStorage.setItem('spacewave-has-session', '1')
-    setBootPhase('app')
-    markBrowserStartupBoundary('webview.revealed', { startupRelevant: true })
-
-    await renderSurface(<AppLoadingScreen />)
-    await page.getByText('Show details', { exact: true }).click()
-
-    await expect
-      .element(page.getByText('Startup complete. Rendering the first view…'))
-      .toBeInTheDocument()
-    await expect.element(page.getByText('100%')).not.toBeInTheDocument()
-
-    await captureStartupEvidence('frame-ready-handoff-desktop')
-  })
-
-  it('renders an early prepare phase on the quickstart handoff', async () => {
-    setBootPhase('loading')
-
-    await renderStaticSurface('/quickstart/drive', <QuickstartLoading />)
-
-    await expect
-      .element(page.getByText('Local initialization: Loading the app shell.'))
-      .toBeInTheDocument()
-    await expect
-      .element(page.getByText('Prepare', { exact: true }))
-      .toBeInTheDocument()
-
-    await captureStartupEvidence('quickstart-prepare-early')
-  })
-
-  it('keeps static routes on their prerendered handoff surface', async () => {
-    await renderStaticSurface('/pricing', <Pricing />)
-
-    await expect
-      .element(page.getByText('Spacewave Pricing'))
-      .toBeInTheDocument()
-    expect(document.querySelector('[aria-label="Startup phases"]')).toBeNull()
-
-    await captureStartupEvidence('static-route-pricing-handoff')
-  })
-
-  it('renders public Quickstart handoff progress and marks the handoff boundary', async () => {
-    setBootPhase('entrypoint')
-
-    await renderStaticSurface('/quickstart/drive', <QuickstartLoading />)
-
-    await expect.element(page.getByText('Create a Drive')).toBeInTheDocument()
-    await expect
-      .element(
-        page.getByText('Session connection: Downloading the application.'),
-      )
-      .toBeInTheDocument()
-    await expect.element(page.getByText('Back to home')).toBeInTheDocument()
-
-    await captureStartupEvidence('quickstart-drive-handoff')
-  })
-
-  it('renders startup errors with recoverable actions', async () => {
-    localStorage.setItem('spacewave-has-session', '1')
-    setBootPhase('runtime-error', 'error')
-
-    await renderSurface(<AppLoadingScreen />)
-    await page.getByText('Show details', { exact: true }).click()
-
-    await expect
-      .element(
-        page.getByText(
-          'Runtime initialization: Loading the application interface.',
-        ),
-      )
-      .toBeInTheDocument()
-    await expect
-      .element(
-        page.getByText(
-          'Startup did not finish. Check the browser console or startup marks for details.',
-        ),
-      )
-      .toBeInTheDocument()
-    await expect.element(page.getByText('Retry')).toBeInTheDocument()
-    await expect.element(page.getByText('Back')).toBeInTheDocument()
-
-    await captureStartupEvidence('returning-user-error')
-  })
-
-  it('surfaces a failed frame download before the phase projection reaches error', async () => {
-    await page.viewport(390, 844)
-    setBootPhase('app')
-    setBootDownloads([
+  it('retains visible recovery when an interface download fails', async () => {
+    globalThis.__swBootStatus = { phase: 'app', state: 'loading', detail: '' }
+    globalThis.__swBootDownloads = [
       {
         id: 'frame',
         label: 'Interface frame',
@@ -291,80 +121,127 @@ describe('browser startup progress surfaces', () => {
         state: 'error',
         error: 'Interface did not become ready.',
       },
-    ])
-    await renderSurface(<AppLoadingScreen />)
+    ]
+    await render(<AppLoadingScreen />)
     await expect
       .element(page.getByRole('alert'))
       .toHaveTextContent('Interface did not become ready.')
     await expect
       .element(page.getByRole('button', { name: 'Retry' }))
       .toBeVisible()
-    expect(document.querySelector('.swb-activity')).toBeNull()
-    expect(document.querySelector('details')?.open).toBe(false)
-    await page.getByText('Show details', { exact: true }).click()
-    expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(
-      window.innerWidth,
-    )
-  })
-
-  it('keeps reduced-motion startup progress readable', async () => {
-    localStorage.setItem('spacewave-has-session', '1')
-    setBootPhase('runtime')
-    const reducedMatchMedia: typeof window.matchMedia = (query: string) => ({
-      matches: query === '(prefers-reduced-motion: reduce)',
-      media: query,
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-      onchange: null,
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
-      dispatchEvent: vi.fn(),
-    })
-    window.matchMedia = reducedMatchMedia
-
-    await renderSurface(<AppLoadingScreen />)
-    await page.getByText('Show details', { exact: true }).click()
-
     await expect
-      .element(
-        page.getByText(
-          'Current app download: Loading the application interface.',
-        ),
-      )
-      .toBeInTheDocument()
-    expect(
-      document
-        .querySelector('[data-sw-startup-reduced-motion]')
-        ?.getAttribute('data-sw-startup-reduced-motion'),
-    ).toBe('true')
-    expect(document.querySelector('.shine-border-mask')).toBeNull()
-
-    await captureStartupEvidence('returning-user-reduced-motion')
+      .element(page.getByRole('button', { name: 'Back', exact: true }))
+      .toBeVisible()
   })
 
-  it('fits the returning-user startup layout on a mobile viewport', async () => {
-    await page.viewport(390, 844)
-    localStorage.setItem('spacewave-has-session', '1')
-    setBootPhase('app')
-
-    await renderSurface(<AppLoadingScreen />)
-
-    await expect
-      .element(
-        page.getByText(
-          'Current app download: Loading the application interface.',
-        ),
-      )
-      .toBeInTheDocument()
-    await expect.element(page.getByText('Opening Spacewave')).toBeVisible()
-
-    const bounds = startupSurfaceBounds()
-    expect(bounds).not.toBeNull()
-    expect(bounds?.width).toBeLessThanOrEqual(bounds?.viewportWidth ?? 0)
-    expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(
-      window.innerWidth,
+  it('keeps recovery usable when WebGL is unavailable', async () => {
+    vi.stubGlobal('WebGL2RenderingContext', undefined)
+    const retry = vi.fn()
+    await render(
+      <div style={{ position: 'fixed', inset: 0, display: 'flex' }}>
+        <LoadingScreen
+          view={{
+            state: 'error',
+            title: 'Unable to open Spacewave',
+            error: 'Connection failed.',
+            onRetry: retry,
+          }}
+        />
+      </div>,
     )
-
-    await captureStartupEvidence('returning-user-frame-mobile')
+    await page.getByRole('button', { name: 'Retry' }).click()
+    expect(retry).toHaveBeenCalledOnce()
+    await expect.element(page.getByRole('alert')).toBeVisible()
+    vi.unstubAllGlobals()
   })
+})
+
+// App readiness can advance while a transfer is still active; percentages
+// describe the transfer's byte counters, independently of that phase.
+it('reports only measured current-download bytes', async () => {
+  globalThis.__swBootStatus = {
+    phase: 'app',
+    state: 'loading',
+    detail: '',
+    progress: 0.8,
+  }
+  globalThis.__swBootDownloads = [
+    {
+      id: 'app',
+      label: 'Application',
+      loaded: 42,
+      total: 100,
+      state: 'active',
+    },
+  ]
+  await render(
+    <div style={{ position: 'fixed', inset: 0, display: 'flex' }}>
+      <AppLoadingScreen />
+    </div>,
+  )
+  await expect
+    .element(page.getByRole('progressbar', { name: 'Current download' }))
+    .toHaveAttribute('aria-valuenow', '42')
+})
+
+it('keeps static routes on their prerendered surface', async () => {
+  await render(
+    <RouterProvider path="/pricing" onNavigate={() => {}}>
+      <StaticProvider>
+        <Pricing />
+      </StaticProvider>
+    </RouterProvider>,
+  )
+  await expect.element(page.getByText('Spacewave Pricing')).toBeVisible()
+  expect(document.querySelector('.swl-canvas')).toBeNull()
+})
+
+it('stops the decorative frame loop under reduced motion', async () => {
+  const originalMatchMedia = window.matchMedia.bind(window)
+  vi.spyOn(window, 'matchMedia').mockImplementation((query) => {
+    const media = originalMatchMedia(query)
+    if (query === '(prefers-reduced-motion: reduce)')
+      Object.defineProperty(media, 'matches', { value: true })
+    return media
+  })
+  await page.viewport(390, 844)
+  await render(
+    <div style={{ position: 'fixed', inset: 0, display: 'flex' }}>
+      <AppLoadingScreen />
+    </div>,
+  )
+  await expect
+    .poll(() => document.querySelector('canvas')?.getAttribute('data-renderer'))
+    .toBe('three')
+  await document.fonts.ready
+  const frame = window.requestAnimationFrame.bind(window)
+  await new Promise<void>((resolve) => frame(() => frame(() => resolve())))
+  const request = vi.spyOn(window, 'requestAnimationFrame')
+  await new Promise<void>((resolve) => frame(() => frame(() => resolve())))
+  expect(request).not.toHaveBeenCalled()
+  expect(
+    document
+      .querySelector('[data-sw-reduced-motion]')
+      ?.getAttribute('data-sw-reduced-motion'),
+  ).toBe('true')
+})
+
+it('keeps recovery reachable when an error wraps on a tiny screen', async () => {
+  await page.viewport(320, 568)
+  const back = vi.fn()
+  await render(
+    <div style={{ position: 'fixed', inset: 0, display: 'flex' }}>
+      <LoadingScreen
+        view={{
+          state: 'error',
+          title: 'Unable to open Spacewave',
+          error:
+            'The web view did not become ready within 90 seconds. The application interface could not finish loading. Retry to reconnect, or return to the home page.',
+          onCancel: back,
+        }}
+      />
+    </div>,
+  )
+  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  expect(back).toHaveBeenCalledOnce()
 })
