@@ -17,42 +17,67 @@ import (
 	"github.com/s4wave/spacewave/db/volume/js/opfs/segment"
 )
 
+// cachePolicyReplayEnv gates the destructive real-OPFS replay fixture.
 const cachePolicyReplayEnv = "SPACEWAVE_OPFS_CACHE_POLICY_REPLAY"
 
 // cachePolicyReplayFixture describes one immutable real-OPFS segment corpus.
 type cachePolicyReplayFixture struct {
+	// filename identifies the fixture within the replay directory.
 	filename string
-	data     []byte
-	meta     *SegmentMeta
-	keys     [][]byte
-	value    []byte
+	// data is the complete encoded segment.
+	data []byte
+	// meta describes the segment to the cache coordinator.
+	meta *SegmentMeta
+	// keys retain the encoded source order.
+	keys [][]byte
+	// value is the shared value expected from every lookup.
+	value []byte
 }
 
 // cachePolicyReplayWorkload fixes one request order over an immutable fixture.
 type cachePolicyReplayWorkload struct {
-	name    string
+	// name identifies samples in the replay output.
+	name string
+	// fixture supplies the immutable segment corpus.
 	fixture *cachePolicyReplayFixture
-	keys    [][]byte
+	// keys fixes the lookup order for every repetition.
+	keys [][]byte
+	// existsOnly selects existence lookup behavior.
+	existsOnly bool
 }
 
 // cachePolicyReplaySample retains one complete policy and workload observation.
 type cachePolicyReplaySample struct {
-	wall         time.Duration
-	goHeapDelta  int64
-	jsHeapDelta  int64
+	// wall is the elapsed lookup time.
+	wall time.Duration
+	// goHeapDelta is retained Go heap growth after collection.
+	goHeapDelta int64
+	// goTotalAllocDelta is total Go allocation during the replay.
+	goTotalAllocDelta uint64
+	// jsHeapDelta is sampled JavaScript heap growth when available.
+	jsHeapDelta int64
+	// jsHeapStatus describes JavaScript heap measurement availability.
 	jsHeapStatus string
-	stats        cacheStats
+	// stats is the cache state before coordinator shutdown.
+	stats cacheStats
 }
 
+// TestCachePolicyReplay measures cache behavior against deterministic segments
+// stored in real OPFS.
 func TestCachePolicyReplay(t *testing.T) {
 	// Keep the real-OPFS replay out of routine package checks.
 	if os.Getenv(cachePolicyReplayEnv) != "1" {
 		t.Skipf("set %s=1 to run the cache policy replay", cachePolicyReplayEnv)
 	}
 
-	// Create the point-scan and near-threshold immutable segment fixtures.
+	// Create the point-scan and window-size immutable segment fixtures.
 	point := newCachePolicyReplayFixture(t, "point.sst", 4096, 176)
-	window := newCachePolicyReplayFixture(t, "window.sst", 64, 12<<10)
+	window1K := newCachePolicyReplayFixture(t, "window-1k.sst", 64, 1<<10)
+	window4K := newCachePolicyReplayFixture(t, "window-4k.sst", 64, 4<<10)
+	window8K := newCachePolicyReplayFixture(t, "window-8k.sst", 64, 8<<10)
+	window12K := newCachePolicyReplayFixture(t, "window.sst", 64, 12<<10)
+
+	// Replace the replay directory and remove it after the run.
 	root, err := opfs.GetRoot()
 	if err != nil {
 		t.Fatal(err)
@@ -68,25 +93,44 @@ func TestCachePolicyReplay(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	for _, fixture := range []*cachePolicyReplayFixture{point, window} {
+	for _, fixture := range []*cachePolicyReplayFixture{point, window1K, window4K, window8K, window12K} {
 		if err := opfs.WriteFile(dir, fixture.filename, fixture.data); err != nil {
 			t.Fatal(err)
 		}
 	}
 
-	// Exercise fixed sequential, strided, hotset, and threshold-window orders.
+	// Exercise identical value and existence lookups over each fixed order.
+	pointStrided := cachePolicyReplayStridedKeys(point.keys, 2053)
+	pointHotset := cachePolicyReplayRepeatedKeys(point.keys[2048:2112], 64)
+	windowHot := cachePolicyReplayRepeatedKeys(window12K.keys[32:33], 64)
 	workloads := []cachePolicyReplayWorkload{
 		{name: "point-sequential", fixture: point, keys: point.keys},
-		{name: "point-strided", fixture: point, keys: cachePolicyReplayStridedKeys(point.keys, 2053)},
-		{name: "point-hotset", fixture: point, keys: cachePolicyReplayRepeatedKeys(point.keys[2048:2112], 64)},
-		{name: "window-hot", fixture: window, keys: cachePolicyReplayRepeatedKeys(window.keys[32:33], 64)},
+		{name: "point-strided", fixture: point, keys: pointStrided},
+		{name: "point-hotset", fixture: point, keys: pointHotset},
+		{name: "window-hot", fixture: window12K, keys: windowHot},
+		{name: "point-sequential-exists", fixture: point, keys: point.keys, existsOnly: true},
+		{name: "point-strided-exists", fixture: point, keys: pointStrided, existsOnly: true},
+		{name: "point-hotset-exists", fixture: point, keys: pointHotset, existsOnly: true},
+		{name: "window-hot-exists", fixture: window12K, keys: windowHot, existsOnly: true},
+		{name: "window-1k-first-exists", fixture: window1K, keys: cachePolicyReplayRepeatedKeys(window1K.keys[32:33], 64), existsOnly: true},
+		{name: "window-1k-middle-exists", fixture: window1K, keys: cachePolicyReplayRepeatedKeys(window1K.keys[40:41], 64), existsOnly: true},
+		{name: "window-1k-last-exists", fixture: window1K, keys: cachePolicyReplayRepeatedKeys(window1K.keys[47:48], 64), existsOnly: true},
+		{name: "window-4k-first-exists", fixture: window4K, keys: cachePolicyReplayRepeatedKeys(window4K.keys[32:33], 64), existsOnly: true},
+		{name: "window-4k-middle-exists", fixture: window4K, keys: cachePolicyReplayRepeatedKeys(window4K.keys[40:41], 64), existsOnly: true},
+		{name: "window-4k-last-exists", fixture: window4K, keys: cachePolicyReplayRepeatedKeys(window4K.keys[47:48], 64), existsOnly: true},
+		{name: "window-8k-first-exists", fixture: window8K, keys: cachePolicyReplayRepeatedKeys(window8K.keys[32:33], 64), existsOnly: true},
+		{name: "window-8k-middle-exists", fixture: window8K, keys: cachePolicyReplayRepeatedKeys(window8K.keys[40:41], 64), existsOnly: true},
+		{name: "window-8k-last-exists", fixture: window8K, keys: cachePolicyReplayRepeatedKeys(window8K.keys[47:48], 64), existsOnly: true},
+		{name: "window-12k-middle-exists", fixture: window12K, keys: cachePolicyReplayRepeatedKeys(window12K.keys[40:41], 64), existsOnly: true},
+		{name: "window-12k-last-exists", fixture: window12K, keys: cachePolicyReplayRepeatedKeys(window12K.keys[47:48], 64), existsOnly: true},
 	}
 	for _, workload := range workloads {
 		runCachePolicyReplayWorkload(t, dir, workload)
 	}
 }
 
-// runCachePolicyReplayWorkload records ten fresh-cache samples and one summary.
+// runCachePolicyReplayWorkload records ten fresh-cache samples, verifies each
+// coordinator drains, and reports nearest-rank latency.
 func runCachePolicyReplayWorkload(
 	t *testing.T,
 	dir js.Value,
@@ -118,16 +162,18 @@ func runCachePolicyReplayWorkload(
 			if err != nil {
 				t.Fatal(err)
 			}
-			value, found, err := lease.lookup.Get(lease, key)
+			value, found, _, err := lease.lookup.Locate(lease, key, !workload.existsOnly)
 			lease.Release()
 			if err != nil {
 				t.Fatal(err)
 			}
-			if !found || !bytes.Equal(value, workload.fixture.value) {
+			if !found || (!workload.existsOnly && !bytes.Equal(value, workload.fixture.value)) {
 				t.Fatalf("workload %s returned found=%t bytes=%d", workload.name, found, len(value))
 			}
 		}
 		wall := time.Since(started)
+		var goAllocated runtime.MemStats
+		runtime.ReadMemStats(&goAllocated)
 
 		// Capture retained cache and heap state before closing the coordinator.
 		runtime.GC()
@@ -142,11 +188,12 @@ func runCachePolicyReplayWorkload(
 			jsDelta = int64(jsAfter) - int64(jsBefore)
 		}
 		sample := cachePolicyReplaySample{
-			wall:         wall,
-			goHeapDelta:  int64(goAfter.HeapAlloc) - int64(goBefore.HeapAlloc),
-			jsHeapDelta:  jsDelta,
-			jsHeapStatus: jsStatus,
-			stats:        cache.snapshot(),
+			wall:              wall,
+			goHeapDelta:       int64(goAfter.HeapAlloc) - int64(goBefore.HeapAlloc),
+			goTotalAllocDelta: goAllocated.TotalAlloc - goBefore.TotalAlloc,
+			jsHeapDelta:       jsDelta,
+			jsHeapStatus:      jsStatus,
+			stats:             cache.snapshot(),
 		}
 
 		// Close every admitted resource and retain the drained counters.
@@ -193,9 +240,11 @@ func logCachePolicyReplaySample(
 	sample cachePolicyReplaySample,
 ) {
 	t.Helper()
+
+	// Emit the complete sample as one machine-readable row.
 	stats := sample.stats
 	t.Logf(
-		"cache-policy-sample block_bytes=%d byte_limit=%d handle_limit=%d threshold_bytes=%d workload=%s repetition=%d wall_us=%d retained_block_bytes=%d retained_metadata_bytes=%d retained_bytes=%d peak_retained_bytes=%d go_heap_delta_bytes=%d js_heap_delta_bytes=%d js_heap_status=%s live_handles=%d peak_handles=%d reads=%d fetched_bytes=%d hits=%d misses=%d admissions=%d evictions=%d bypasses=%d shared_fills=%d release_errors=%d",
+		"cache-policy-sample block_bytes=%d byte_limit=%d handle_limit=%d threshold_bytes=%d workload=%s repetition=%d wall_us=%d retained_block_bytes=%d retained_metadata_bytes=%d retained_bytes=%d peak_retained_bytes=%d go_heap_delta_bytes=%d go_total_alloc_delta_bytes=%d js_heap_delta_bytes=%d js_heap_status=%s live_handles=%d peak_handles=%d reads=%d fetched_bytes=%d hits=%d misses=%d admissions=%d evictions=%d bypasses=%d shared_fills=%d release_errors=%d",
 		cachedSegmentBlockSize,
 		defaultCacheByteLimit,
 		defaultCacheHandleLimit,
@@ -208,6 +257,7 @@ func logCachePolicyReplaySample(
 		stats.ChargedBytes,
 		stats.PeakChargedBytes,
 		sample.goHeapDelta,
+		sample.goTotalAllocDelta,
 		sample.jsHeapDelta,
 		sample.jsHeapStatus,
 		stats.LiveHandles,
@@ -232,6 +282,8 @@ func newCachePolicyReplayFixture(
 	valueSize int,
 ) *cachePolicyReplayFixture {
 	t.Helper()
+
+	// Encode ordered fixed-width keys with one shared immutable value.
 	entries := make([]segment.Entry, entryCount)
 	keys := make([][]byte, entryCount)
 	value := bytes.Repeat([]byte("v"), valueSize)
@@ -241,6 +293,8 @@ func newCachePolicyReplayFixture(
 		keys[i] = key
 		entries[i] = segment.Entry{Key: key, Value: value}
 	}
+
+	// Bind the encoded segment to the metadata consumed by the replay.
 	data := buildSegmentData(t, entries)
 	return &cachePolicyReplayFixture{
 		filename: filename,
