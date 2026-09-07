@@ -121,6 +121,8 @@ type GetChannelInfoResponse struct {
 	MessageCount uint64 `protobuf:"varint,3,opt,name=message_count,json=messageCount,proto3" json:"messageCount,omitempty"`
 	// CreatedAt is the channel creation timestamp.
 	CreatedAt *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=created_at,json=createdAt,proto3" json:"createdAt,omitempty"`
+	// CreatorPeerId is the peer identity that created the channel.
+	CreatorPeerId string `protobuf:"bytes,5,opt,name=creator_peer_id,json=creatorPeerId,proto3" json:"creatorPeerId,omitempty"`
 }
 
 func (x *GetChannelInfoResponse) Reset() {
@@ -155,6 +157,13 @@ func (x *GetChannelInfoResponse) GetCreatedAt() *timestamppb.Timestamp {
 		return x.CreatedAt
 	}
 	return nil
+}
+
+func (x *GetChannelInfoResponse) GetCreatorPeerId() string {
+	if x != nil {
+		return x.CreatorPeerId
+	}
+	return ""
 }
 
 // GetMessageRequest identifies one channel message to read.
@@ -516,6 +525,7 @@ func (m *GetChannelInfoResponse) CloneVT() *GetChannelInfoResponse {
 	r.Name = m.Name
 	r.Topic = m.Topic
 	r.MessageCount = m.MessageCount
+	r.CreatorPeerId = m.CreatorPeerId
 	r.CreatedAt = protobuf_go_lite.CloneVTValue(m.CreatedAt)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
@@ -798,6 +808,9 @@ func (this *GetChannelInfoResponse) EqualVT(that *GetChannelInfoResponse) bool {
 		return false
 	}
 	if !protobuf_go_lite.IsEqualVT(this.CreatedAt, that.CreatedAt) {
+		return false
+	}
+	if this.CreatorPeerId != that.CreatorPeerId {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -1230,6 +1243,11 @@ func (x *GetChannelInfoResponse) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("createdAt")
 		x.CreatedAt.MarshalProtoJSON(s.WithField("createdAt"))
 	}
+	if x.CreatorPeerId != "" || s.HasField("creatorPeerId") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("creatorPeerId")
+		s.WriteString(x.CreatorPeerId)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -1263,6 +1281,9 @@ func (x *GetChannelInfoResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
 			}
 			x.CreatedAt = &timestamppb.Timestamp{}
 			x.CreatedAt.UnmarshalProtoJSON(s.WithField("created_at", true))
+		case "creator_peer_id", "creatorPeerId":
+			s.AddField("creator_peer_id")
+			x.CreatorPeerId = s.ReadString()
 		}
 	})
 }
@@ -2085,6 +2106,11 @@ func (m *GetChannelInfoResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if len(m.CreatorPeerId) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.CreatorPeerId)
+		i--
+		dAtA[i] = 0x2a
+	}
 	if m.CreatedAt != nil {
 		size, err := m.CreatedAt.MarshalToSizedBufferVT(dAtA[:i])
 		if err != nil {
@@ -2673,6 +2699,7 @@ func (m *GetChannelInfoResponse) SizeVT() (n int) {
 		l = m.CreatedAt.SizeVT()
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.CreatorPeerId)
 	n += len(m.unknownFields)
 	return n
 }
@@ -2908,6 +2935,10 @@ func (x *GetChannelInfoResponse) MarshalProtoText() string {
 	if x.CreatedAt != nil {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "created_at")
 		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.CreatedAt)
+	}
+	if x.CreatorPeerId != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "creator_peer_id")
+		protobuf_go_lite.TextWriteString(&sb, x.CreatorPeerId)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -3388,6 +3419,16 @@ func (m *GetChannelInfoResponse) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CreatorPeerId", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.CreatorPeerId = v
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

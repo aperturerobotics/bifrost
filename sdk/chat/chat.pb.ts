@@ -50,6 +50,12 @@ export interface ChatChannel {
    * @generated from field: map<string, spacewave.chat.ChatReadPosition> read_positions = 5;
    */
   readPositions?: { [key: string]: ChatReadPosition }
+  /**
+   * CreatorPeerId is the peer identity that created the channel.
+   *
+   * @generated from field: string creator_peer_id = 6;
+   */
+  creatorPeerId?: string
 }
 
 export const ChatChannel: MessageType<ChatChannel> =
@@ -67,6 +73,7 @@ export const ChatChannel: MessageType<ChatChannel> =
         K: ScalarType.STRING,
         V: { kind: 'message', T: () => ChatReadPosition },
       },
+      { no: 6, name: 'creator_peer_id', kind: 'scalar', T: ScalarType.STRING },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })

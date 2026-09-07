@@ -414,6 +414,39 @@ func TestChatResourceAllowsAnonymousConstructionAndRead(t *testing.T) {
 	}
 }
 
+func TestChatResourceReportsChannelCreator(t *testing.T) {
+	ctx := t.Context()
+	wtb, err := db_world_testbed.Default(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer wtb.Release()
+
+	// Initialize a real World so the operation writes through engine-backed state.
+	ws := world.NewEngineWorldState(wtb.Engine, true)
+	sender := wtb.Volume.GetPeerID()
+
+	// Apply channel creation with the testbed peer as the authenticated sender.
+	_, _, err = ws.ApplyWorldOp(ctx, &CreateChatChannelOp{
+		ObjectKey: GeneralChannelKey,
+		Name:      "General",
+		Timestamp: timestamppb.Now(),
+	}, sender)
+	if err != nil {
+		t.Fatalf("ApplyWorldOp: %v", err)
+	}
+
+	// Verify the resource projects the persisted creator identity.
+	resource := NewChatResource(ws, wtb.Engine, GeneralChannelKey, "peer-local")
+	info, err := resource.GetChannelInfo(ctx, &spacewave_chat_rpc.GetChannelInfoRequest{})
+	if err != nil {
+		t.Fatalf("GetChannelInfo: %v", err)
+	}
+	if info.GetCreatorPeerId() != sender.String() {
+		t.Fatalf("channel creator peer ID = %q, want %q", info.GetCreatorPeerId(), sender.String())
+	}
+}
+
 func TestChatResourceRejectsAnonymousSender(t *testing.T) {
 	ctx := t.Context()
 	wtb, err := db_world_testbed.Default(ctx)
