@@ -1,10 +1,8 @@
 module github.com/s4wave/spacewave
 
-go 1.26.5
+go 1.27.0
 
 tool github.com/s4wave/goscript/cmd/goscript
-
-require github.com/s4wave/goscript v0.2.32-0.20260907174119-688ee01d1835
 
 replace (
 	// aperture: use compatibility forks
@@ -27,12 +25,15 @@ replace (
 )
 
 require (
-	github.com/aperturerobotics/abseil-cpp v0.0.0-20260131110040-4bb56e2f9017 // indirect
+	bazil.org/fuse v0.0.0-20230120002735-62a210ff1fd5
+	filippo.io/age v1.3.2
+	filippo.io/edwards25519 v1.2.0
+	github.com/Microsoft/go-winio v0.6.2
 	github.com/aperturerobotics/bbolt v0.0.0-20260905054723-c936b6834b13 // master
 	github.com/aperturerobotics/bldr-saucer v0.4.4
 	github.com/aperturerobotics/cayley v0.15.1-0.20260824110931-e6b102492e31 // master
 	github.com/aperturerobotics/cli v1.1.0 // v1.1.0
-	github.com/aperturerobotics/common v0.35.4-0.20260906182458-54b1eaa50d06 // master
+	github.com/aperturerobotics/common v0.35.4 // master
 	github.com/aperturerobotics/controllerbus v0.53.5-0.20260824183849-02413eacc3de // master
 	github.com/aperturerobotics/cpp-yamux v0.0.0-20260223122921-58339cfd0e5d
 	github.com/aperturerobotics/esbuild v0.24.1-0.20260219011422-6d4b923e2023 // https://github.com/evanw/esbuild/pull/3413 [rejected]
@@ -42,57 +43,14 @@ require (
 	github.com/aperturerobotics/go-indexeddb v0.2.4-0.20260329113533-333005693662 // master
 	github.com/aperturerobotics/go-kvfile v0.10.1-0.20260705010911-5c5ed949ddfe // master
 	github.com/aperturerobotics/go-multiaddr v0.17.1-0.20260514224402-c193991c3ce5
-	github.com/aperturerobotics/go-multibase v0.4.0 // indirect
-	github.com/aperturerobotics/go-protoc-gen-prost v0.0.0-20260705010911-9f53feac967b // indirect
-	github.com/aperturerobotics/go-protoc-wasi v0.0.0-20260808023521-7b1595380c3f // indirect
 	github.com/aperturerobotics/go-quickjs-wasi-reactor v0.15.1
 	github.com/aperturerobotics/go-quickjs-wasi-reactor/wazero-quickjs v0.0.0-20260705010951-74676ff0da98
 	github.com/aperturerobotics/go-websocket v1.8.15-0.20260619192713-a096778f08c1
 	github.com/aperturerobotics/go-winjob v0.0.0-20260705010911-656e088d1b05
 	github.com/aperturerobotics/json-iterator-lite v1.1.0 // latest
-	github.com/aperturerobotics/protobuf v0.0.0-20260203024654-8201686529c4 // indirect
 	github.com/aperturerobotics/protobuf-go-lite v0.18.1-0.20260826222423-298dca0e6eaf // master
-	github.com/aperturerobotics/saucer v0.0.0-20260317232052-4db05a4e0b4c // indirect
 	github.com/aperturerobotics/starpc v0.52.1
 	github.com/aperturerobotics/util v1.34.10-0.20260802062101-496aab6cefd2 // master
-)
-
-require (
-	filippo.io/age v1.3.2
-	filippo.io/edwards25519 v1.2.0
-)
-
-require (
-	golang.org/x/crypto v0.56.0
-	golang.org/x/mod v0.40.0 // latest
-	golang.org/x/sync v0.22.0
-	golang.org/x/sys v0.47.0
-	golang.org/x/term v0.45.0
-	golang.org/x/tools v0.49.0 // latest
-)
-
-require (
-	bazil.org/fuse v0.0.0-20230120002735-62a210ff1fd5
-	github.com/go-sql-driver/mysql v1.10.1
-	github.com/libp2p/go-yamux/v5 v5.1.0
-	github.com/pion/logging v0.2.4
-	github.com/pion/transport/v4 v4.1.0
-	go.starlark.net v0.0.0-20260904161901-6ecada49e42f
-	golang.org/x/exp v0.0.0-20260824195058-e88cd73687aa
-	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
-	gorm.io/gorm v1.31.2
-	gotest.tools/v3 v3.5.2
-	modernc.org/sqlite v1.58.0
-)
-
-require (
-	github.com/emirpasic/gods v1.18.1 // indirect
-	github.com/ncruces/go-sqlite3-wasm/v5 v5.0.35304 // indirect
-	github.com/xrash/smetrics v0.0.0-20250705151800-55b8f293f342 // indirect
-	go.yaml.in/yaml/v3 v3.0.5 // indirect
-)
-
-require (
 	github.com/cloudflare/circl v1.6.5
 	github.com/creack/pty v1.1.24
 	github.com/dgraph-io/badger/v4 v4.9.6
@@ -104,24 +62,30 @@ require (
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-git/go-billy/v6 v6.0.0-alpha.2.0.20260818093742-7bd059496705 // main
 	github.com/go-git/go-git/v6 v6.0.0-alpha.5.0.20260903224701-e9e5820fe0d2 // main
+	github.com/go-sql-driver/mysql v1.10.1
 	github.com/goccy/go-json v0.10.6
 	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/google/uuid v1.6.0
 	github.com/hack-pad/safejs v0.1.1
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/klauspost/compress v1.20.0
+	github.com/libp2p/go-yamux/v5 v5.1.0
 	github.com/manifoldco/promptui v0.9.0
 	github.com/mattn/go-isatty v0.0.24
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible
 	github.com/mr-tron/base58 v1.3.0
+	github.com/mxschmitt/playwright-go v0.6201.1
 	github.com/ncruces/go-sqlite3 v0.35.4
 	github.com/pierrec/lz4/v4 v4.1.29
 	github.com/pion/datachannel v1.6.2
+	github.com/pion/logging v0.2.4
 	github.com/pion/sdp/v3 v3.0.19
+	github.com/pion/transport/v4 v4.1.0
 	github.com/pion/webrtc/v4 v4.2.20
 	github.com/pkg/errors v0.9.1
 	github.com/quic-go/quic-go v0.62.0
 	github.com/restic/chunker v0.5.0
+	github.com/s4wave/goscript v0.2.32-0.20260907174119-688ee01d1835
 	github.com/sasha-s/go-deadlock v0.3.9
 	github.com/satori/go.uuid v1.2.0
 	github.com/sergi/go-diff v1.4.0
@@ -133,11 +97,28 @@ require (
 	github.com/vmihailenco/msgpack/v5 v5.4.1
 	github.com/whilp/git-urls v1.0.0
 	github.com/zeebo/blake3 v0.2.4
+	go.starlark.net v0.0.0-20260904161901-6ecada49e42f
+	golang.org/x/crypto v0.56.0
+	golang.org/x/exp v0.0.0-20260824195058-e88cd73687aa
+	golang.org/x/mod v0.40.0 // latest
+	golang.org/x/sync v0.22.0
+	golang.org/x/sys v0.47.0
+	golang.org/x/term v0.45.0
+	golang.org/x/tools v0.49.0 // latest
+	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
+	gorm.io/gorm v1.31.2
+	gotest.tools/v3 v3.5.2
+	modernc.org/sqlite v1.58.0
 )
 
 require (
 	filippo.io/hpke v0.4.0 // indirect
-	github.com/Microsoft/go-winio v0.6.2
+	github.com/aperturerobotics/abseil-cpp v0.0.0-20260131110040-4bb56e2f9017 // indirect
+	github.com/aperturerobotics/go-multibase v0.4.0 // indirect
+	github.com/aperturerobotics/go-protoc-gen-prost v0.0.0-20260705010911-9f53feac967b // indirect
+	github.com/aperturerobotics/go-protoc-wasi v0.0.0-20260808023521-7b1595380c3f // indirect
+	github.com/aperturerobotics/protobuf v0.0.0-20260203024654-8201686529c4 // indirect
+	github.com/aperturerobotics/saucer v0.0.0-20260317232052-4db05a4e0b4c // indirect
 	github.com/bwesterb/go-ristretto v1.2.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/chzyer/readline v1.5.1 // indirect
@@ -146,6 +127,7 @@ require (
 	github.com/dolthub/flatbuffers/v23 v23.3.3-dh.2 // indirect
 	github.com/dolthub/go-icu-regex v0.0.0-20260610153742-72563bc7ca83 // indirect
 	github.com/dolthub/jsonpath v0.0.2-0.20240227200619-19675ab05c71 // indirect
+	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/google/flatbuffers v25.2.10+incompatible // indirect
@@ -163,7 +145,7 @@ require (
 	github.com/minio/sha256-simd v1.0.1 // indirect
 	github.com/multiformats/go-multihash v0.2.3 // indirect
 	github.com/multiformats/go-varint v0.0.7 // indirect
-	github.com/mxschmitt/playwright-go v0.6201.1
+	github.com/ncruces/go-sqlite3-wasm/v5 v5.0.35304 // indirect
 	github.com/ncruces/go-strftime v1.0.0 // indirect
 	github.com/ncruces/julianday v1.0.0 // indirect
 	github.com/petermattis/goid v0.0.0-20250813065127-a731cc31b4fe // indirect
@@ -186,10 +168,12 @@ require (
 	github.com/stretchr/testify v1.12.1 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/wlynxg/anet v0.0.5 // indirect
+	github.com/xrash/smetrics v0.0.0-20250705151800-55b8f293f342 // indirect
 	github.com/zeebo/assert v1.3.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/otel v1.41.0 // indirect
 	go.opentelemetry.io/otel/trace v1.41.0 // indirect
+	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/net v0.58.0 // indirect
 	golang.org/x/telemetry v0.0.0-20260811182544-a038080d80e5 // indirect
 	golang.org/x/text v0.41.0 // indirect
