@@ -1,6 +1,5 @@
 import { LoadingScreen as BaseLoadingScreen } from '@s4wave/web/ui/loading/LoadingScreen.js'
 
-import AnimatedLogo from '@s4wave/app/landing/AnimatedLogo.js'
 import { PhaseChecklist } from '@s4wave/app/session/setup/PhaseChecklist.js'
 
 import type {
@@ -32,9 +31,8 @@ function buildQuickstartProgress(
   }
 }
 
-// LoadingScreen is the full-screen boot surface used while a quickstart
-// initializes a session. Drives the LoadingScreen primitive with a dynamic
-// quickstart-id-driven view.
+// LoadingScreen presents the quickstart's current setup phase. Phase boundaries
+// stay separate from measured download progress.
 export function LoadingScreen({
   quickstartId,
   progress,
@@ -58,13 +56,14 @@ export function LoadingScreen({
     <BaseLoadingScreen
       view={{
         state: 'active',
-        title: 'Initializing Spacewave',
+        title:
+          quickstartId === 'local'
+            ? 'Opening your workspace'
+            : 'Creating your space',
         detail: current.detail,
-        progress: (activeIndex + 0.5) / labels.length,
       }}
-      logo={<AnimatedLogo followMouse={false} />}
     >
-      <PhaseChecklist phases={phases} className="w-64" />
+      <PhaseChecklist phases={phases} />
     </BaseLoadingScreen>
   )
 }

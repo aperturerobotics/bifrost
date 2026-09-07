@@ -1,6 +1,5 @@
 import { LuRefreshCw } from 'react-icons/lu'
 
-import AnimatedLogo from '@s4wave/app/landing/AnimatedLogo.js'
 import { useRenderDelay } from '@s4wave/app/loading/useRenderDelay.js'
 import { cn } from '@s4wave/web/style/utils.js'
 import { BackButton } from '@s4wave/web/ui/BackButton.js'
@@ -19,8 +18,7 @@ interface SpaceMountingScreenProps {
   // detail is the live status line shown under the title. Updates as the
   // backing watch advances through stages.
   detail: string
-  // title overrides the default screen title. Defaults to "Mounting your
-  // space" so the user has a calm, confident anchor while the screen waits.
+  // title overrides the default "Opening your space" status.
   title?: string
   // onBack renders a floating Back button in the top-left when provided.
   onBack?: () => void
@@ -31,14 +29,12 @@ interface SpaceMountingScreenProps {
 
 const RETRY_DELAY_MS = 5_000
 
-// SpaceMountingScreen renders the route-level loader shown while a space is
-// being mounted. Uses the shared LoadingScreen primitive for the animated
-// logo and shine border, then layers a stage stepper, optional Back, and
-// optional Retry on top.
+// SpaceMountingScreen presents watched mount progress and delayed recovery
+// actions using the same composition as browser and quickstart startup.
 export function SpaceMountingScreen({
   stage,
   detail,
-  title = 'Mounting your space',
+  title = 'Opening your space',
   onBack,
   onRetry,
 }: SpaceMountingScreenProps) {
@@ -46,8 +42,6 @@ export function SpaceMountingScreen({
   return (
     <LoadingScreen
       view={{ state: 'active', title, detail }}
-      logo={<AnimatedLogo followMouse={false} />}
-      containerClassName="bg-background relative flex h-full min-h-[28rem] w-full flex-col items-center justify-center overflow-hidden"
       topLeftSlot={
         onBack ? (
           <BackButton floating onClick={onBack}>
@@ -55,25 +49,25 @@ export function SpaceMountingScreen({
           </BackButton>
         ) : undefined
       }
+      footer={
+        onRetry && allowRetry ? (
+          <div className="mt-2 flex justify-center">
+            <DashboardButton
+              icon={<LuRefreshCw className="size-3.5" />}
+              onClick={onRetry}
+            >
+              Retry
+            </DashboardButton>
+          </div>
+        ) : null
+      }
     >
       <SpaceMountStepper current={stage} />
-      {onRetry && allowRetry ? (
-        <div className="mt-2 flex justify-center">
-          <DashboardButton
-            icon={<LuRefreshCw className="size-3.5" />}
-            onClick={onRetry}
-          >
-            Retry
-          </DashboardButton>
-        </div>
-      ) : null}
     </LoadingScreen>
   )
 }
 
-// SpaceMountStepper renders the four stage dots and labels under the title.
-// Active dot pulses brand color; completed dots are filled muted brand;
-// future dots stay neutral. Read-only -- the stepper never accepts clicks.
+// SpaceMountStepper presents the four watched mount phases.
 function SpaceMountStepper({ current }: { current: SpaceMountStage }) {
   const currentIndex = spaceMountStageIndex(current)
   return (
@@ -93,7 +87,7 @@ function SpaceMountStepper({ current }: { current: SpaceMountStage }) {
               aria-hidden="true"
             >
               {isActive ? (
-                <span className="bg-brand/30 absolute inset-[-6px] animate-ping rounded-full" />
+                <span className="bg-brand/30 absolute inset-[-6px] animate-ping rounded-full motion-reduce:animate-none" />
               ) : null}
             </span>
             <span

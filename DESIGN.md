@@ -787,13 +787,11 @@ description.
 
 **`loading-screen`** owns route-level and boot loading.
 
-- Full viewport centered column on `{colors.background}`.
-- Optional animated logo slot.
-- Optional shine border using logo blue, pink, purple, and blue.
-- Title `text-2xl font-semibold tracking-tight`.
-- Detail `text-sm text-foreground-alt/70`.
-- Progress bar width `w-64`.
-- Retry and Back actions use compact icon buttons.
+- Full viewport dark canvas with violet and amber currents around the planet emblem. A soft pulse follows the current startup phase; pointer light changes ribbon color without moving the geometry.
+- Shared critical CSS keeps initial HTML and React handoffs styled before the application stylesheet arrives.
+- A centered heading and the operation's actual phase indicators sit directly on the canvas. Download percentages describe measured transfers, never readiness milestones.
+- Errors and compact Retry and Back actions remain visible.
+- The composition adapts to narrow and short viewports. Reduced motion freezes decorative animation and pointer response. Hidden or removed surfaces release their GPU scene; status and recovery remain usable without WebGL.
 
 ### Loading Card
 

@@ -29,7 +29,12 @@ export function BrowserStartupPhaseRail({
       </div>
       <ol className="swb-steps" aria-label="Startup phases">
         {phases.map((phase) => (
-          <li key={phase.id} className="swb-step" data-state={phase.state}>
+          <li
+            key={phase.id}
+            className="swb-step"
+            data-state={phase.state}
+            aria-current={phase.state === 'current' ? 'step' : undefined}
+          >
             <div className="swb-step-mark">
               {phase.state === 'current' ? (
                 <span className="swb-spinner" aria-hidden="true" />

@@ -28,7 +28,10 @@ export function PhaseChecklist({ phases, className }: PhaseChecklistProps) {
 
 function PhaseChecklistRow({ label, done, active }: PhaseChecklistItem) {
   return (
-    <div className="flex items-center gap-2">
+    <div
+      className="flex items-center gap-2"
+      aria-current={active ? 'step' : undefined}
+    >
       {done ? (
         <div className="bg-brand text-background flex size-4 items-center justify-center rounded-full">
           <LuCheck className="size-3" />
