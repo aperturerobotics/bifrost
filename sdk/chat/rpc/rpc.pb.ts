@@ -145,6 +145,52 @@ export const GetChannelInfoResponse: MessageType<GetChannelInfoResponse> =
   })
 
 /**
+ * GetMessageRequest identifies one channel message to read.
+ *
+ * @generated from message spacewave.chat.rpc.GetMessageRequest
+ */
+export interface GetMessageRequest {
+  /**
+   * MessageKey is the channel-scoped object key to read.
+   *
+   * @generated from field: string message_key = 1;
+   */
+  messageKey?: string
+}
+
+export const GetMessageRequest: MessageType<GetMessageRequest> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'spacewave.chat.rpc.GetMessageRequest',
+    fields: [
+      { no: 1, name: 'message_key', kind: 'scalar', T: ScalarType.STRING },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
+ * GetMessageResponse contains the selected channel message.
+ *
+ * @generated from message spacewave.chat.rpc.GetMessageResponse
+ */
+export interface GetMessageResponse {
+  /**
+   * Message is the selected message projection.
+   *
+   * @generated from field: spacewave.chat.rpc.ChatMessageInfo message = 1;
+   */
+  message?: ChatMessageInfo
+}
+
+export const GetMessageResponse: MessageType<GetMessageResponse> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'spacewave.chat.rpc.GetMessageResponse',
+    fields: [
+      { no: 1, name: 'message', kind: 'message', T: () => ChatMessageInfo },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
  * ListMessagesRequest is a request for paginated messages.
  *
  * @generated from message spacewave.chat.rpc.ListMessagesRequest

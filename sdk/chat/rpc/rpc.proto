@@ -11,6 +11,8 @@ option go_package = "github.com/s4wave/spacewave/sdk/chat/rpc;spacewave_chat_rpc
 service ChatResourceService {
   // GetChannelInfo returns channel metadata and its retained history extent.
   rpc GetChannelInfo(GetChannelInfoRequest) returns (GetChannelInfoResponse);
+  // GetMessage returns one message from this channel by object key.
+  rpc GetMessage(GetMessageRequest) returns (GetMessageResponse);
   // ListMessages returns a bounded page of channel history.
   rpc ListMessages(ListMessagesRequest) returns (ListMessagesResponse);
   // WatchMessages streams channel messages after each shared-state change.
@@ -57,6 +59,18 @@ message GetChannelInfoResponse {
   uint64 message_count = 3;
   // CreatedAt is the channel creation timestamp.
   .google.protobuf.Timestamp created_at = 4;
+}
+
+// GetMessageRequest identifies one channel message to read.
+message GetMessageRequest {
+  // MessageKey is the channel-scoped object key to read.
+  string message_key = 1;
+}
+
+// GetMessageResponse contains the selected channel message.
+message GetMessageResponse {
+  // Message is the selected message projection.
+  ChatMessageInfo message = 1;
 }
 
 // ListMessagesRequest is a request for paginated messages.

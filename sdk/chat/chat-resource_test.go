@@ -8,6 +8,7 @@ import (
 
 	"github.com/aperturerobotics/protobuf-go-lite/types/known/timestamppb"
 	"github.com/aperturerobotics/starpc/srpc"
+	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/world"
 	db_world_testbed "github.com/s4wave/spacewave/db/world/testbed"
@@ -151,6 +152,43 @@ func TestChatResourceSendsListsAndWatchesMessages(t *testing.T) {
 		}
 	case <-time.After(2 * time.Second):
 		t.Fatal("timed out waiting for WatchMessages to stop")
+	}
+}
+
+func TestChatResourceGetMessageValidatesChannelKey(t *testing.T) {
+	// Create one accepted event in the mounted channel.
+	ctx := t.Context()
+	wtb, err := db_world_testbed.Default(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer wtb.Release()
+
+	ws := world.NewEngineWorldState(wtb.Engine, true)
+	createChatChannel(t, ctx, ws, GeneralChannelKey, "General")
+	resource := NewChatResource(ws, wtb.Engine, GeneralChannelKey, "peer-local")
+	sendResp, err := resource.SendMessage(ctx, &spacewave_chat_rpc.SendMessageRequest{Text: "accepted"})
+	if err != nil {
+		t.Fatalf("SendMessage: %v", err)
+	}
+
+	// Read the accepted event through the channel-scoped lookup.
+	messageResp, err := resource.GetMessage(ctx, &spacewave_chat_rpc.GetMessageRequest{MessageKey: sendResp.GetMessageKey()})
+	if err != nil {
+		t.Fatalf("GetMessage accepted: %v", err)
+	}
+	if messageResp.GetMessage().GetObjectKey() != sendResp.GetMessageKey() {
+		t.Fatalf("GetMessage key = %q, want %q", messageResp.GetMessage().GetObjectKey(), sendResp.GetMessageKey())
+	}
+
+	// Preserve the missing-object result and reject a foreign-channel key.
+	_, err = resource.GetMessage(ctx, &spacewave_chat_rpc.GetMessageRequest{MessageKey: GeneralChannelKey + "/message/missing"})
+	if !errors.Is(err, world.ErrObjectNotFound) {
+		t.Fatalf("GetMessage missing error = %v, want %v", err, world.ErrObjectNotFound)
+	}
+	_, err = resource.GetMessage(ctx, &spacewave_chat_rpc.GetMessageRequest{MessageKey: "other/message/0"})
+	if err == nil {
+		t.Fatal("GetMessage accepted a foreign-channel key")
 	}
 }
 

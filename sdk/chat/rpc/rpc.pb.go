@@ -157,6 +157,46 @@ func (x *GetChannelInfoResponse) GetCreatedAt() *timestamppb.Timestamp {
 	return nil
 }
 
+// GetMessageRequest identifies one channel message to read.
+type GetMessageRequest struct {
+	unknownFields []byte
+	// MessageKey is the channel-scoped object key to read.
+	MessageKey string `protobuf:"bytes,1,opt,name=message_key,json=messageKey,proto3" json:"messageKey,omitempty"`
+}
+
+func (x *GetMessageRequest) Reset() {
+	*x = GetMessageRequest{}
+}
+
+func (*GetMessageRequest) ProtoMessage() {}
+
+func (x *GetMessageRequest) GetMessageKey() string {
+	if x != nil {
+		return x.MessageKey
+	}
+	return ""
+}
+
+// GetMessageResponse contains the selected channel message.
+type GetMessageResponse struct {
+	unknownFields []byte
+	// Message is the selected message projection.
+	Message *ChatMessageInfo `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
+}
+
+func (x *GetMessageResponse) Reset() {
+	*x = GetMessageResponse{}
+}
+
+func (*GetMessageResponse) ProtoMessage() {}
+
+func (x *GetMessageResponse) GetMessage() *ChatMessageInfo {
+	if x != nil {
+		return x.Message
+	}
+	return nil
+}
+
 // ListMessagesRequest is a request for paginated messages.
 type ListMessagesRequest struct {
 	unknownFields []byte
@@ -487,6 +527,38 @@ func (m *GetChannelInfoResponse) CloneMessageVT() protobuf_go_lite.CloneMessage 
 	return m.CloneVT()
 }
 
+func (m *GetMessageRequest) CloneVT() *GetMessageRequest {
+	if m == nil {
+		return (*GetMessageRequest)(nil)
+	}
+	r := new(GetMessageRequest)
+	r.MessageKey = m.MessageKey
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *GetMessageRequest) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *GetMessageResponse) CloneVT() *GetMessageResponse {
+	if m == nil {
+		return (*GetMessageResponse)(nil)
+	}
+	r := new(GetMessageResponse)
+	r.Message = protobuf_go_lite.CloneVTValue(m.Message)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *GetMessageResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
 func (m *ListMessagesRequest) CloneVT() *ListMessagesRequest {
 	if m == nil {
 		return (*ListMessagesRequest)(nil)
@@ -733,6 +805,46 @@ func (this *GetChannelInfoResponse) EqualVT(that *GetChannelInfoResponse) bool {
 
 func (this *GetChannelInfoResponse) EqualMessageVT(thatMsg any) bool {
 	that, ok := thatMsg.(*GetChannelInfoResponse)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *GetMessageRequest) EqualVT(that *GetMessageRequest) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.MessageKey != that.MessageKey {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *GetMessageRequest) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*GetMessageRequest)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *GetMessageResponse) EqualVT(that *GetMessageResponse) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.Message, that.Message) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *GetMessageResponse) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*GetMessageResponse)
 	if !ok {
 		return false
 	}
@@ -1157,6 +1269,94 @@ func (x *GetChannelInfoResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
 
 // UnmarshalJSON unmarshals the GetChannelInfoResponse from JSON.
 func (x *GetChannelInfoResponse) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the GetMessageRequest message to JSON.
+func (x *GetMessageRequest) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.MessageKey != "" || s.HasField("messageKey") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("messageKey")
+		s.WriteString(x.MessageKey)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the GetMessageRequest to JSON.
+func (x *GetMessageRequest) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the GetMessageRequest message from JSON.
+func (x *GetMessageRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "message_key", "messageKey":
+			s.AddField("message_key")
+			x.MessageKey = s.ReadString()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the GetMessageRequest from JSON.
+func (x *GetMessageRequest) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the GetMessageResponse message to JSON.
+func (x *GetMessageResponse) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Message != nil || s.HasField("message") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("message")
+		x.Message.MarshalProtoJSON(s.WithField("message"))
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the GetMessageResponse to JSON.
+func (x *GetMessageResponse) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the GetMessageResponse message from JSON.
+func (x *GetMessageResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "message":
+			if s.ReadNil() {
+				x.Message = nil
+				return
+			}
+			x.Message = &ChatMessageInfo{}
+			x.Message.UnmarshalProtoJSON(s.WithField("message", true))
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the GetMessageResponse from JSON.
+func (x *GetMessageResponse) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -1913,6 +2113,85 @@ func (m *GetChannelInfoResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error
 	return len(dAtA) - i, nil
 }
 
+func (m *GetMessageRequest) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetMessageRequest) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *GetMessageRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.MessageKey) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.MessageKey)
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetMessageResponse) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetMessageResponse) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *GetMessageResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.Message != nil {
+		size, err := m.Message.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *ListMessagesRequest) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -2398,6 +2677,31 @@ func (m *GetChannelInfoResponse) SizeVT() (n int) {
 	return n
 }
 
+func (m *GetMessageRequest) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.MessageKey)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *GetMessageResponse) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Message != nil {
+		l = m.Message.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
 func (m *ListMessagesRequest) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -2609,6 +2913,34 @@ func (x *GetChannelInfoResponse) MarshalProtoText() string {
 }
 
 func (x *GetChannelInfoResponse) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *GetMessageRequest) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "GetMessageRequest")
+	if x.MessageKey != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "message_key")
+		protobuf_go_lite.TextWriteString(&sb, x.MessageKey)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *GetMessageRequest) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *GetMessageResponse) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "GetMessageResponse")
+	if x.Message != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "message")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Message)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *GetMessageResponse) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -3053,6 +3385,117 @@ func (m *GetChannelInfoResponse) UnmarshalVT(dAtA []byte) error {
 				m.CreatedAt = &timestamppb.Timestamp{}
 			}
 			if err := m.CreatedAt.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *GetMessageRequest) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetMessageRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetMessageRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MessageKey", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.MessageKey = v
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *GetMessageResponse) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetMessageResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetMessageResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Message", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Message == nil {
+				m.Message = &ChatMessageInfo{}
+			}
+			if err := m.Message.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

@@ -16,6 +16,8 @@ type SRPCChatResourceServiceClient interface {
 
 	// GetChannelInfo returns channel metadata and its retained history extent.
 	GetChannelInfo(ctx context.Context, in *GetChannelInfoRequest) (*GetChannelInfoResponse, error)
+	// GetMessage returns one message from this channel by object key.
+	GetMessage(ctx context.Context, in *GetMessageRequest) (*GetMessageResponse, error)
 	// ListMessages returns a bounded page of channel history.
 	ListMessages(ctx context.Context, in *ListMessagesRequest) (*ListMessagesResponse, error)
 	// WatchMessages streams channel messages after each shared-state change.
@@ -49,6 +51,15 @@ func (c *srpcChatResourceServiceClient) SRPCClient() srpc.Client { return c.cc }
 func (c *srpcChatResourceServiceClient) GetChannelInfo(ctx context.Context, in *GetChannelInfoRequest) (*GetChannelInfoResponse, error) {
 	out := new(GetChannelInfoResponse)
 	err := c.cc.ExecCall(ctx, c.serviceID, "GetChannelInfo", in, out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *srpcChatResourceServiceClient) GetMessage(ctx context.Context, in *GetMessageRequest) (*GetMessageResponse, error) {
+	out := new(GetMessageResponse)
+	err := c.cc.ExecCall(ctx, c.serviceID, "GetMessage", in, out)
 	if err != nil {
 		return nil, err
 	}
@@ -128,6 +139,8 @@ func (c *srpcChatResourceServiceClient) UpdateReadPosition(ctx context.Context, 
 type SRPCChatResourceServiceServer interface {
 	// GetChannelInfo returns channel metadata and its retained history extent.
 	GetChannelInfo(context.Context, *GetChannelInfoRequest) (*GetChannelInfoResponse, error)
+	// GetMessage returns one message from this channel by object key.
+	GetMessage(context.Context, *GetMessageRequest) (*GetMessageResponse, error)
 	// ListMessages returns a bounded page of channel history.
 	ListMessages(context.Context, *ListMessagesRequest) (*ListMessagesResponse, error)
 	// WatchMessages streams channel messages after each shared-state change.
@@ -167,6 +180,7 @@ func (d *SRPCChatResourceServiceHandler) GetServiceID() string { return d.servic
 func (SRPCChatResourceServiceHandler) GetMethodIDs() []string {
 	return []string{
 		"GetChannelInfo",
+		"GetMessage",
 		"ListMessages",
 		"WatchMessages",
 		"SendMessage",
@@ -186,6 +200,8 @@ func (d *SRPCChatResourceServiceHandler) InvokeMethod(
 	switch methodID {
 	case "GetChannelInfo":
 		return true, d.InvokeMethod_GetChannelInfo(d.impl, strm)
+	case "GetMessage":
+		return true, d.InvokeMethod_GetMessage(d.impl, strm)
 	case "ListMessages":
 		return true, d.InvokeMethod_ListMessages(d.impl, strm)
 	case "WatchMessages":
@@ -207,6 +223,18 @@ func (SRPCChatResourceServiceHandler) InvokeMethod_GetChannelInfo(impl SRPCChatR
 		return err
 	}
 	out, err := impl.GetChannelInfo(strm.Context(), req)
+	if err != nil {
+		return err
+	}
+	return strm.MsgSend(out)
+}
+
+func (SRPCChatResourceServiceHandler) InvokeMethod_GetMessage(impl SRPCChatResourceServiceServer, strm srpc.Stream) error {
+	req := new(GetMessageRequest)
+	if err := strm.MsgRecv(req); err != nil {
+		return err
+	}
+	out, err := impl.GetMessage(strm.Context(), req)
 	if err != nil {
 		return err
 	}
@@ -275,6 +303,14 @@ type SRPCChatResourceService_GetChannelInfoStream interface {
 }
 
 type srpcChatResourceService_GetChannelInfoStream struct {
+	srpc.Stream
+}
+
+type SRPCChatResourceService_GetMessageStream interface {
+	srpc.Stream
+}
+
+type srpcChatResourceService_GetMessageStream struct {
 	srpc.Stream
 }
 
