@@ -409,12 +409,15 @@ func sharingStateToProto(state *sharingstate.SharingState) *s4wave_space.SpaceSh
 		return nil
 	}
 	return &s4wave_space.SpaceSharingState{
-		Participants:    state.Participants,
-		Invites:         state.Invites,
-		MailboxEntries:  sharingMailboxEntriesToProto(state.MailboxEntries),
-		ViewerRole:      state.ViewerRole,
-		CanManage:       state.CanManage,
-		ParticipantInfo: sharingParticipantInfoToProto(state.ParticipantInfo),
+		Participants:     state.Participants,
+		Invites:          state.Invites,
+		MailboxEntries:   sharingMailboxEntriesToProto(state.MailboxEntries),
+		ViewerRole:       state.ViewerRole,
+		CanManage:        state.CanManage,
+		ParticipantInfo:  sharingParticipantInfoToProto(state.ParticipantInfo),
+		ConfigChainHash:  state.ConfigChainHash,
+		ConfigChainSeqno: state.ConfigChainSeqno,
+		ViewerPeerId:     state.ViewerPeerID,
 	}
 }
 

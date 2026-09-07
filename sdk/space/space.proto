@@ -87,6 +87,12 @@ message SpaceSharingState {
   bool can_manage = 5;
   // ParticipantInfo is the app-facing participant presentation list.
   repeated SpaceParticipantInfo participant_info = 6;
+  // ConfigChainHash identifies the latest verified participant configuration.
+  bytes config_chain_hash = 7;
+  // ConfigChainSeqno is the sequence number of the latest participant configuration.
+  uint64 config_chain_seqno = 8;
+  // ViewerPeerId identifies the authenticated mounted shared-object participant peer.
+  string viewer_peer_id = 9;
 }
 
 // TransformInfo contains redacted transform configuration for display.

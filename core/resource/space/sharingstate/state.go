@@ -1,6 +1,7 @@
 package sharingstate
 
 import (
+	"bytes"
 	"context"
 	"slices"
 	"strings"
@@ -39,12 +40,24 @@ type ParticipantInfo struct {
 
 // SharingState contains the sharing snapshot for a space.
 type SharingState struct {
-	Participants    []*sobject.SOParticipantConfig
-	Invites         []*sobject.SOInvite
-	MailboxEntries  []*MailboxEntry
-	ViewerRole      sobject.SOParticipantRole
-	CanManage       bool
+	// Participants is the canonical SharedObject audience.
+	Participants []*sobject.SOParticipantConfig
+	// Invites contains the owner's current invitation records.
+	Invites []*sobject.SOInvite
+	// MailboxEntries contains pending invitation delivery metadata.
+	MailboxEntries []*MailboxEntry
+	// ViewerRole is the mounted participant's effective role.
+	ViewerRole sobject.SOParticipantRole
+	// CanManage indicates that the mounted participant may manage sharing.
+	CanManage bool
+	// ParticipantInfo groups participant presentation without conferring authority.
 	ParticipantInfo []*ParticipantInfo
+	// ConfigChainHash identifies the latest verified configuration entry.
+	ConfigChainHash []byte
+	// ConfigChainSeqno is the owner's configuration sequence number.
+	ConfigChainSeqno uint64
+	// ViewerPeerID is the authenticated participant of the mounted SharedObject.
+	ViewerPeerID string
 }
 
 // State carries every input snapshot the sharing watch reads per emission.
@@ -136,6 +149,7 @@ func (s *State) RunWatchLoop(
 				Participants:   s.soState.GetConfig().GetParticipants(),
 				Invites:        s.soState.GetInvites(),
 				MailboxEntries: s.mailboxEntries,
+				ViewerPeerID:   peerID,
 				ViewerRole:     viewerRole,
 				CanManage:      sobject.IsOwner(viewerRole),
 				ParticipantInfo: BuildParticipantInfo(
@@ -143,6 +157,8 @@ func (s *State) RunWatchLoop(
 					peerID,
 					s.participantPresentation,
 				),
+				ConfigChainHash:  s.soState.GetConfig().GetConfigChainHash(),
+				ConfigChainSeqno: s.soState.GetConfig().GetConfigChainSeqno(),
 			}
 			waitCh = getWaitCh()
 		})
@@ -275,6 +291,9 @@ func (s *SharingState) Equal(that *SharingState) bool {
 	}
 	return s.ViewerRole == that.ViewerRole &&
 		s.CanManage == that.CanManage &&
+		s.ViewerPeerID == that.ViewerPeerID &&
+		bytes.Equal(s.ConfigChainHash, that.ConfigChainHash) &&
+		s.ConfigChainSeqno == that.ConfigChainSeqno &&
 		slices.EqualFunc(s.Participants, that.Participants, func(a, b *sobject.SOParticipantConfig) bool {
 			return a.EqualVT(b)
 		}) &&
