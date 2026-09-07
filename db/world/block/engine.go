@@ -107,6 +107,12 @@ type Engine struct {
 	writeCoordKeyPrefix []byte
 	// writeHeadRefresh rereads the durable World head before transactions and revision reads.
 	writeHeadRefresh func(context.Context) (*bucket.ObjectRef, error)
+	// headWatchCancel stops the engine-owned external head subscription.
+	headWatchCancel context.CancelFunc
+	// headWatchDone closes after the subscription and its refresh have drained.
+	headWatchDone chan struct{}
+	// headWatchErr is the latest refresh failure, guarded by bcast.
+	headWatchErr error
 	// closed rejects new operations while Close drains resources.
 	closed bool
 }
@@ -133,6 +139,8 @@ func WithDeferredDurability() EngineOption {
 // WithWriteCoordinator requires write transactions to acquire a coordinator
 // lease and refresh the durable World head before mutation.
 // Read transactions and revision reads also refresh the durable head.
+// The engine watches external commits until Close. refreshHead must support
+// concurrent calls from the watcher and transactions.
 func WithWriteCoordinator(
 	coordinator coord.Coordinator,
 	scope coord.Scope,
@@ -162,6 +170,7 @@ func NewEngine(
 	ctx, task := trace.NewTask(ctx, "hydra/world-block/engine/new")
 	defer task.End()
 
+	// Keep the base cursor and published read head as separate authorities.
 	e := &Engine{
 		le:             le,
 		baseRoot:       root,
@@ -201,6 +210,15 @@ func NewEngine(
 		_ = e.Close()
 		return nil, err
 	}
+
+	// External head observation belongs to the engine's resource lifetime.
+	// Constructor cancellation does not invalidate retained engine handles.
+	if e.writeCoordinator != nil && e.writeHeadRefresh != nil {
+		watchCtx, cancel := context.WithCancel(context.WithoutCancel(ctx))
+		e.headWatchCancel = cancel
+		e.headWatchDone = make(chan struct{})
+		go e.watchCoordinatorHead(watchCtx)
+	}
 	return e, nil
 }
 
@@ -228,6 +246,7 @@ func (e *Engine) Sync(ctx context.Context) (bool, error) {
 	ctx, task := trace.NewTask(ctx, "hydra/world-block/engine/sync")
 	defer task.End()
 
+	// Hold the published root stable across the durability fence.
 	locked := e.bcast.Lock()
 	defer locked.Unlock()
 	if e.closed {
@@ -368,6 +387,7 @@ func (e *Engine) setRootRefLocked(
 		return engineRetirement{}, err
 	}
 
+	// Construct the replacement read transaction before changing the head.
 	taskCtx, subtask = trace.NewTask(ctx, "hydra/world-block/engine/set-root-ref/build-world-state")
 	nextWorld, err := e.buildWorldStateForRoot(taskCtx, true, nextRoot, nil)
 	subtask.End()
@@ -466,6 +486,7 @@ func (e *Engine) validateRootRefLocked(ctx context.Context, ref *bucket.ObjectRe
 	ctx, task := trace.NewTask(ctx, "hydra/world-block/engine/validate-root-ref")
 	defer task.End()
 
+	// Verify the candidate graph can be read from its durable store.
 	ws, err := e.worldStateForRootRefLocked(ctx, ref)
 	if err != nil {
 		return err
@@ -652,6 +673,7 @@ func (e *Engine) NewBlockEngineTransaction(ctx context.Context, write bool) (*En
 		return nil, ErrEngineClosed
 	}
 
+	// Apply the lease-refreshed head before constructing mutable state.
 	retirement, err := e.applyDurableHeadLocked(taskCtx, headRef)
 	if err != nil {
 		locked.Unlock()
@@ -742,6 +764,7 @@ func (e *Engine) ForkBlockTransaction(ctx context.Context, write bool) (*Tx, err
 	ctx, task := trace.NewTask(ctx, "hydra/world-block/engine/fork-block-transaction")
 	defer task.End()
 
+	// Prevent writes to the source snapshot while forking.
 	_, subtask := trace.NewTask(ctx, "hydra/world-block/engine/fork-block-transaction/read-lock")
 	locked := e.bcast.Lock()
 	subtask.End()
@@ -750,6 +773,7 @@ func (e *Engine) ForkBlockTransaction(ctx context.Context, write bool) (*Tx, err
 		return nil, ErrEngineClosed
 	}
 
+	// Build a distinct World state over the retained root.
 	taskCtx, subtask := trace.NewTask(ctx, "hydra/world-block/engine/fork-block-transaction/build-world-state")
 	// Buffer nested and root block writes per fork so they drain in one batch
 	// at Sync. Coordinator mode stays durable-on-write: its commit path
@@ -806,6 +830,7 @@ func (e *Engine) AccessWorldState(
 	locked.Unlock()
 	defer ncs.Release()
 
+	// Use the current root when no explicit reference was supplied.
 	if ref == nil {
 		return cb(ncs)
 	}
@@ -819,6 +844,7 @@ func (e *Engine) AccessWorldState(
 	}
 	defer followed.Release()
 
+	// Expose the followed cursor only for the callback lifetime.
 	return cb(followed)
 }
 
@@ -846,6 +872,7 @@ func (e *Engine) GetSeqno(ctx context.Context) (uint64, error) {
 		readTx := e.head.readTx
 		locked.Unlock()
 
+		// Retry a revision read if its shared head retired concurrently.
 		seqno, err := readTx.GetSeqno(ctx)
 		if readTx.state.discarded.Load() {
 			continue
@@ -858,58 +885,36 @@ func (e *Engine) GetSeqno(ctx context.Context) (uint64, error) {
 // Returns the seqno when the condition is reached.
 // If value == 0, this might return immediately unconditionally.
 func (e *Engine) WaitSeqno(ctx context.Context, value uint64) (uint64, error) {
-	if e.writeCoordinator != nil {
-		// In coordinator mode the local read snapshot does not advance on its
-		// own; new seqnos appear only after other writers commit. Wait on the
-		// coordinator's commit-generation events (BroadcastChannel-backed in the
-		// browser) rather than polling: any seqno advance is a commit that bumps
-		// the generation, so re-checking GetSeqno on each event is miss-free.
-		// Baseline at the current generation so a commit racing watch setup is
-		// still delivered.
-		snapshot, err := e.writeCoordinator.Snapshot(ctx, e.writeCoordScope)
+	// Discover durable commits that preceded this wait even if their advisory
+	// notification was lost. Subsequent events refresh the shared Engine head.
+	if e.writeHeadRefresh != nil {
+		seqno, err := e.GetSeqno(ctx)
 		if err != nil {
 			return 0, err
 		}
-		watch, err := e.writeCoordinator.Watch(ctx, e.writeCoordScope, snapshot.Generation)
-		if err != nil {
-			return 0, err
-		}
-		defer watch.Close()
-		for {
-			seqno, err := e.GetSeqno(ctx)
-			if err != nil {
-				return 0, err
-			}
-			if seqno >= value {
-				return seqno, nil
-			}
-			select {
-			case <-ctx.Done():
-				return 0, ctx.Err()
-			case _, ok := <-watch.Events():
-				if !ok {
-					// The coordinator closes the events channel only when this
-					// wait's context is canceled, so report cancellation rather
-					// than a spurious watch error.
-					if err := ctx.Err(); err != nil {
-						return 0, err
-					}
-					return 0, errors.New("world write coordinator watch closed")
-				}
-			}
+		if seqno >= value {
+			return seqno, nil
 		}
 	}
 
+	// Capture the head and its next publication event under the same lock.
 	for {
 		locked := e.bcast.Lock()
 		if e.closed {
 			locked.Unlock()
 			return 0, ErrEngineClosed
 		}
+		if err := e.initializeHeadReadTx(ctx); err != nil {
+			locked.Unlock()
+			return 0, err
+		}
 		readTx := e.head.readTx
+		watchErr := e.headWatchErr
+		wait := locked.WaitCh()
 		locked.Unlock()
 
-		seqno, err := readTx.WaitSeqno(ctx, value)
+		// Read the captured head without holding publication authority.
+		seqno, err := readTx.GetSeqno(ctx)
 		if readTx.state.discarded.Load() {
 			// readTxn was discarded, get the new one.
 			continue
@@ -918,8 +923,17 @@ func (e *Engine) WaitSeqno(ctx context.Context, value uint64) (uint64, error) {
 			return 0, err
 		}
 
+		// Return a satisfied revision before considering observation failure.
 		if seqno >= value {
 			return seqno, nil
+		}
+		if watchErr != nil {
+			return 0, watchErr
+		}
+		select {
+		case <-ctx.Done():
+			return 0, ctx.Err()
+		case <-wait:
 		}
 	}
 }
@@ -928,6 +942,12 @@ func (e *Engine) WaitSeqno(ctx context.Context, value uint64) (uint64, error) {
 func (e *Engine) Close() error {
 	if e == nil {
 		return nil
+	}
+
+	// Cancel before acquiring publication authority so an in-flight refresh can
+	// release I/O and locks that Close must join.
+	if e.headWatchCancel != nil {
+		e.headWatchCancel()
 	}
 
 	// Close publication or join the caller already draining it.
@@ -970,6 +990,9 @@ func (e *Engine) Close() error {
 	// Drain transaction and coordinator work after unlocking the Engine.
 	for _, retirement := range retirements {
 		e.drainRetirement(context.Background(), retirement)
+	}
+	if e.headWatchDone != nil {
+		<-e.headWatchDone
 	}
 
 	// Join detached work and in-flight commit publication before baseRoot release.
@@ -1039,6 +1062,7 @@ func (e *Engine) buildWorldStateForRoot(
 	ctx, task := trace.NewTask(ctx, "hydra/world-block/engine/build-world-state")
 	defer task.End()
 
+	// Read the bucket under the existing transaction authority.
 	_, subtask := trace.NewTask(ctx, "hydra/world-block/engine/build-world-state/get-bucket")
 	// Both read and write transactions read and write through writeBlockStore so
 	// that, in the single-writer deferred path, reads see blocks that are
