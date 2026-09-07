@@ -189,10 +189,6 @@ func BuildDistBundle(
 	}
 	defer nref.Release()
 
-	// workingID is a unique working id used to derive some at-rest crypto keys.
-	// XXX: may be replaced with something with more randomness later.
-	workingID := strings.Join([]string{ControllerID, meta.GetProjectId(), buildPlatform.GetPlatformID()}, "/")
-
 	// Start with a working db on-disk in the working dir.
 	workingDbVolID := "dist-working-vol"
 	workingDbVolConf, err := storage.BuildVolumeConfig("dist-working-vol", &volume_controller.Config{
@@ -203,6 +199,8 @@ func BuildDistBundle(
 		VolumeIdAlias:       []string{workingDbVolID, bldr_dist.StaticBlockStoreID},
 		DisablePeer:         true,
 		DisableEventBlockRm: true,
+		// GcIntervalDur disables collection because the scratch World has no durable root.
+		GcIntervalDur: "0",
 	})
 	if err != nil {
 		return err
@@ -229,7 +227,6 @@ func BuildDistBundle(
 
 	// Create the embedded manifests world.
 	embedWorldID := bldr_dist.DistWorldEngineID
-	embedObjStoreID := embedWorldID
 	bucketConf, err := bldr_dist.NewDistBucketConfig(meta.GetProjectId())
 	if err != nil {
 		return err
@@ -238,16 +235,18 @@ func BuildDistBundle(
 	if err != nil {
 		return err
 	}
-	embedXfrmConf, err := block_transform.NewConfig(buildEmbedTransformConf(workingID))
+	embedXfrmConf, err := block_transform.NewConfig(buildEmbedTransformConf(isWebPlatform && useGoScript))
 	if err != nil {
 		return err
 	}
 
+	// Reuse scratch blocks, but rebuild the head from this bundle's selected
+	// manifests and transform. A persisted head would restore an older codec.
 	embedEngineConf := world_block_engine.NewConfig(
 		embedWorldID,
 		workingDbVolID,
 		bucketConf.GetId(),
-		embedObjStoreID,
+		"",
 		&bucket.ObjectRef{TransformConf: embedXfrmConf.CloneVT()},
 		nil,
 		false,

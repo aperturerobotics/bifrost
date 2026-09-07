@@ -30,7 +30,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// TestBundleManifestsKvfileWorldRootLifetime checks standalone archive reads,
+// deferred writes, unrelated build history, and a missing root.
 func TestBundleManifestsKvfileWorldRootLifetime(t *testing.T) {
+	// Build a scratch volume with the real World and block storage components.
 	ctx := t.Context()
 	log := logrus.New()
 	le := logrus.NewEntry(log)
@@ -58,7 +61,7 @@ func TestBundleManifestsKvfileWorldRootLifetime(t *testing.T) {
 		baseCursor.GetOpArgs(),
 		nil,
 	)
-	eng, err := world_block.NewEngine(ctx, le, ocs, world_mock.LookupMockOp, nil, false)
+	eng, err := world_block.NewEngine(ctx, le, ocs, world_mock.LookupMockOp, nil, false, world_block.WithDeferredDurability())
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -68,6 +71,7 @@ func TestBundleManifestsKvfileWorldRootLifetime(t *testing.T) {
 		}
 	})
 
+	// Store a complete manifest DAG with enough data to require nested blocks.
 	assetData := bytes.Repeat([]byte("packaged asset contents"), 16*1024)
 	assetDir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(assetDir, "asset.bin"), assetData, 0o644); err != nil {
@@ -85,12 +89,13 @@ func TestBundleManifestsKvfileWorldRootLifetime(t *testing.T) {
 	manifestRef := ocs.GetRef().Clone()
 	manifestRef.RootRef = manifestRoot
 
+	// Leave the World update buffered so the packer must fence it before reading.
 	wtx, err := eng.NewTransaction(ctx, true)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
+	defer wtx.Discard()
 	if _, err := wtx.CreateObject(ctx, "bundle-root-closure-object", &bucket.ObjectRef{BucketId: tb.BucketId}); err != nil {
-		wtx.Discard()
 		t.Fatal(err.Error())
 	}
 	if _, err := wtx.CreateObject(ctx, "manifest-fixture", manifestRef); err != nil {
@@ -108,12 +113,14 @@ func TestBundleManifestsKvfileWorldRootLifetime(t *testing.T) {
 	}
 	rootRefStr := rootRef.MarshalString()
 
+	// Keep direct backing-store access for the history and missing-block checks.
 	kvtxVol, ok := tb.Volume.(volume_kvtx.KvtxVolume)
 	if !ok {
 		t.Fatalf("testbed volume type %T does not expose a kvtx store", tb.Volume)
 	}
 
 	t.Run("live world root", func(t *testing.T) {
+		// Pack accepted writes into an independent archive.
 		var buf bytes.Buffer
 		kvfileWriter := kvfile.NewWriter(&buf)
 		err := dist_compiler_bundle.BundleManifestsKvfile(
@@ -197,6 +204,7 @@ func TestBundleManifestsKvfileWorldRootLifetime(t *testing.T) {
 	})
 
 	t.Run("missing world root", func(t *testing.T) {
+		// Removing the durable root must fail packing instead of emitting an archive.
 		if err := ocs.GetBucket().RmBlock(ctx, rootRef); err != nil {
 			t.Fatal(err)
 		}
@@ -220,12 +228,15 @@ func TestBundleManifestsKvfileWorldRootLifetime(t *testing.T) {
 	})
 }
 
+// passthroughTransform keeps backing-store bytes directly readable by the fixture.
 type passthroughTransform struct{}
 
+// EncodeBlock preserves the input bytes.
 func (passthroughTransform) EncodeBlock(data []byte) ([]byte, error) {
 	return data, nil
 }
 
+// DecodeBlock preserves the encoded bytes.
 func (passthroughTransform) DecodeBlock(data []byte) ([]byte, error) {
 	return data, nil
 }
