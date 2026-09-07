@@ -113,9 +113,9 @@ type Engine struct {
 
 // CommitFn is a function to call with the updated root before confirming it.
 // Should be used to write the updated state back to storage.
-// Note: the Engine state guard is held while cb runs; do not block or call Engine methods.
+// The Engine state guard is held while commitFn runs; do not call Engine methods.
 // If an error is returned the change will be rolled back.
-// Do not change the nrootBcs during this call.
+// Do not mutate the supplied references during this call.
 type CommitFn func(ctx context.Context, baseRef, nref *bucket.ObjectRef) error
 
 // EngineOption configures optional Engine integrations.
@@ -307,6 +307,12 @@ func (e *Engine) AdoptRootRefFromWatch(ctx context.Context, ref *bucket.ObjectRe
 		return ErrEngineClosed
 	}
 	if e.writeTx != nil {
+		locked.Unlock()
+		return nil
+	}
+
+	// An identical DAG root already has the published revision and state.
+	if e.head.root.GetRef().EqualsRef(ref) {
 		locked.Unlock()
 		return nil
 	}
@@ -694,9 +700,17 @@ func (e *Engine) applyDurableHeadLocked(
 	ctx context.Context,
 	headRef *bucket.ObjectRef,
 ) (engineRetirement, error) {
+	// An absent durable head does not replace the initialized World.
 	if headRef == nil || headRef.GetRootRef().GetEmpty() {
 		return engineRetirement{}, nil
 	}
+
+	// Compare content identity before opening state to compare revisions.
+	if e.head.root.GetRef().EqualsRef(headRef) {
+		return engineRetirement{}, nil
+	}
+
+	// A distinct durable root may advance the revision but cannot roll it back.
 	currentSeqno, ok, err := e.currentRootSeqnoLocked(ctx)
 	if err != nil {
 		return engineRetirement{}, err
