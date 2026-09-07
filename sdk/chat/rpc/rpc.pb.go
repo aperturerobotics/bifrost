@@ -13,6 +13,7 @@ import (
 	json "github.com/aperturerobotics/protobuf-go-lite/json"
 	timestamppb "github.com/aperturerobotics/protobuf-go-lite/types/known/timestamppb"
 	content "github.com/s4wave/spacewave/sdk/chat/content"
+	state "github.com/s4wave/spacewave/sdk/chat/state"
 )
 
 // ChatMessageInfo contains flattened message info for the client.
@@ -32,6 +33,8 @@ type ChatMessageInfo struct {
 	Index uint64 `protobuf:"varint,6,opt,name=index,proto3" json:"index,omitempty"`
 	// Content is the full typed message content, including ciphertext envelopes.
 	Content *content.ChatMessageContent `protobuf:"bytes,7,opt,name=content,proto3" json:"content,omitempty"`
+	// PersonPeerId is the verified person identity associated with the sending device.
+	PersonPeerId string `protobuf:"bytes,8,opt,name=person_peer_id,json=personPeerId,proto3" json:"personPeerId,omitempty"`
 }
 
 func (x *ChatMessageInfo) Reset() {
@@ -87,6 +90,13 @@ func (x *ChatMessageInfo) GetContent() *content.ChatMessageContent {
 		return x.Content
 	}
 	return nil
+}
+
+func (x *ChatMessageInfo) GetPersonPeerId() string {
+	if x != nil {
+		return x.PersonPeerId
+	}
+	return ""
 }
 
 // GetChannelInfoRequest is a request for channel info.
@@ -154,6 +164,10 @@ type ListMessagesRequest struct {
 	BeforeKey string `protobuf:"bytes,1,opt,name=before_key,json=beforeKey,proto3" json:"beforeKey,omitempty"`
 	// Limit is the maximum number of messages to return.
 	Limit uint32 `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`
+	// BeforeIndex selects an exclusive upper bound for backwards pagination.
+	BeforeIndex *uint64 `protobuf:"varint,3,opt,name=before_index,json=beforeIndex,proto3,oneof" json:"beforeIndex,omitempty"`
+	// FromIndex selects an inclusive lower bound for forwards pagination.
+	FromIndex *uint64 `protobuf:"varint,4,opt,name=from_index,json=fromIndex,proto3,oneof" json:"fromIndex,omitempty"`
 }
 
 func (x *ListMessagesRequest) Reset() {
@@ -176,12 +190,26 @@ func (x *ListMessagesRequest) GetLimit() uint32 {
 	return 0
 }
 
+func (x *ListMessagesRequest) GetBeforeIndex() uint64 {
+	if x != nil && x.BeforeIndex != nil {
+		return *x.BeforeIndex
+	}
+	return 0
+}
+
+func (x *ListMessagesRequest) GetFromIndex() uint64 {
+	if x != nil && x.FromIndex != nil {
+		return *x.FromIndex
+	}
+	return 0
+}
+
 // ListMessagesResponse contains a page of messages.
 type ListMessagesResponse struct {
 	unknownFields []byte
 	// Messages is the list of messages.
 	Messages []*ChatMessageInfo `protobuf:"bytes,1,rep,name=messages,proto3" json:"messages,omitempty"`
-	// HasMore indicates more messages exist before the earliest returned.
+	// HasMore indicates more messages exist in the selected pagination direction.
 	HasMore bool `protobuf:"varint,2,opt,name=has_more,json=hasMore,proto3" json:"hasMore,omitempty"`
 }
 
@@ -305,6 +333,103 @@ func (x *SendMessageResponse) GetMessageKey() string {
 	return ""
 }
 
+// GetReadPositionsRequest selects shared receipt state for the mounted channel.
+type GetReadPositionsRequest struct {
+	unknownFields []byte
+}
+
+func (x *GetReadPositionsRequest) Reset() {
+	*x = GetReadPositionsRequest{}
+}
+
+func (*GetReadPositionsRequest) ProtoMessage() {}
+
+// GetReadPositionsResponse reports the canonical read positions for this channel.
+type GetReadPositionsResponse struct {
+	unknownFields []byte
+	// Positions maps external person peer identities to their monotonic read positions.
+	Positions map[string]*state.ChatReadPosition `protobuf:"bytes,1,rep,name=positions,proto3" json:"positions,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+}
+
+func (x *GetReadPositionsResponse) Reset() {
+	*x = GetReadPositionsResponse{}
+}
+
+func (*GetReadPositionsResponse) ProtoMessage() {}
+
+func (x *GetReadPositionsResponse) GetPositions() map[string]*state.ChatReadPosition {
+	if x != nil {
+		return x.Positions
+	}
+	return nil
+}
+
+// UpdateReadPositionRequest advances the person already authenticated by the host.
+type UpdateReadPositionRequest struct {
+	unknownFields []byte
+	// NextIndex is the first unread index, bounded by the channel's message count.
+	NextIndex uint64 `protobuf:"varint,1,opt,name=next_index,json=nextIndex,proto3" json:"nextIndex,omitempty"`
+}
+
+func (x *UpdateReadPositionRequest) Reset() {
+	*x = UpdateReadPositionRequest{}
+}
+
+func (*UpdateReadPositionRequest) ProtoMessage() {}
+
+func (x *UpdateReadPositionRequest) GetNextIndex() uint64 {
+	if x != nil {
+		return x.NextIndex
+	}
+	return 0
+}
+
+// UpdateReadPositionResponse reports the retained position, including unchanged retries.
+type UpdateReadPositionResponse struct {
+	unknownFields []byte
+	// Position is the authenticated person's current shared read position.
+	Position *state.ChatReadPosition `protobuf:"bytes,1,opt,name=position,proto3" json:"position,omitempty"`
+}
+
+func (x *UpdateReadPositionResponse) Reset() {
+	*x = UpdateReadPositionResponse{}
+}
+
+func (*UpdateReadPositionResponse) ProtoMessage() {}
+
+func (x *UpdateReadPositionResponse) GetPosition() *state.ChatReadPosition {
+	if x != nil {
+		return x.Position
+	}
+	return nil
+}
+
+type GetReadPositionsResponse_PositionsEntry struct {
+	unknownFields []byte
+	Key           string                  `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	Value         *state.ChatReadPosition `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+}
+
+func (x *GetReadPositionsResponse_PositionsEntry) Reset() {
+	*x = GetReadPositionsResponse_PositionsEntry{}
+}
+
+func (*GetReadPositionsResponse_PositionsEntry) ProtoMessage() {}
+
+func (x *GetReadPositionsResponse_PositionsEntry) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+func (x *GetReadPositionsResponse_PositionsEntry) GetValue() *state.ChatReadPosition {
+	if x != nil {
+		return x.Value
+	}
+	return nil
+}
+
 func (m *ChatMessageInfo) CloneVT() *ChatMessageInfo {
 	if m == nil {
 		return (*ChatMessageInfo)(nil)
@@ -315,6 +440,7 @@ func (m *ChatMessageInfo) CloneVT() *ChatMessageInfo {
 	r.Text = m.Text
 	r.ReplyToKey = m.ReplyToKey
 	r.Index = m.Index
+	r.PersonPeerId = m.PersonPeerId
 	r.CreatedAt = protobuf_go_lite.CloneVTValue(m.CreatedAt)
 	r.Content = protobuf_go_lite.CloneVTValue(m.Content)
 	if len(m.unknownFields) > 0 {
@@ -368,6 +494,8 @@ func (m *ListMessagesRequest) CloneVT() *ListMessagesRequest {
 	r := new(ListMessagesRequest)
 	r.BeforeKey = m.BeforeKey
 	r.Limit = m.Limit
+	r.BeforeIndex = protobuf_go_lite.ClonePtr(m.BeforeIndex)
+	r.FromIndex = protobuf_go_lite.ClonePtr(m.FromIndex)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -461,6 +589,69 @@ func (m *SendMessageResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
+func (m *GetReadPositionsRequest) CloneVT() *GetReadPositionsRequest {
+	if m == nil {
+		return (*GetReadPositionsRequest)(nil)
+	}
+	r := new(GetReadPositionsRequest)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *GetReadPositionsRequest) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *GetReadPositionsResponse) CloneVT() *GetReadPositionsResponse {
+	if m == nil {
+		return (*GetReadPositionsResponse)(nil)
+	}
+	r := new(GetReadPositionsResponse)
+	r.Positions = protobuf_go_lite.CloneVTMap(m.Positions)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *GetReadPositionsResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *UpdateReadPositionRequest) CloneVT() *UpdateReadPositionRequest {
+	if m == nil {
+		return (*UpdateReadPositionRequest)(nil)
+	}
+	r := new(UpdateReadPositionRequest)
+	r.NextIndex = m.NextIndex
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *UpdateReadPositionRequest) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *UpdateReadPositionResponse) CloneVT() *UpdateReadPositionResponse {
+	if m == nil {
+		return (*UpdateReadPositionResponse)(nil)
+	}
+	r := new(UpdateReadPositionResponse)
+	r.Position = protobuf_go_lite.CloneVTValue(m.Position)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *UpdateReadPositionResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
 func (this *ChatMessageInfo) EqualVT(that *ChatMessageInfo) bool {
 	if this == that {
 		return true
@@ -486,6 +677,9 @@ func (this *ChatMessageInfo) EqualVT(that *ChatMessageInfo) bool {
 		return false
 	}
 	if !protobuf_go_lite.IsEqualVT(this.Content, that.Content) {
+		return false
+	}
+	if this.PersonPeerId != that.PersonPeerId {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -555,6 +749,12 @@ func (this *ListMessagesRequest) EqualVT(that *ListMessagesRequest) bool {
 		return false
 	}
 	if this.Limit != that.Limit {
+		return false
+	}
+	if !protobuf_go_lite.EqualPtr(this.BeforeIndex, that.BeforeIndex) {
+		return false
+	}
+	if !protobuf_go_lite.EqualPtr(this.FromIndex, that.FromIndex) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -677,6 +877,83 @@ func (this *SendMessageResponse) EqualMessageVT(thatMsg any) bool {
 	return this.EqualVT(that)
 }
 
+func (this *GetReadPositionsRequest) EqualVT(that *GetReadPositionsRequest) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *GetReadPositionsRequest) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*GetReadPositionsRequest)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *GetReadPositionsResponse) EqualVT(that *GetReadPositionsResponse) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTMapImplicit(this.Positions, that.Positions, func() *state.ChatReadPosition { return &state.ChatReadPosition{} }) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *GetReadPositionsResponse) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*GetReadPositionsResponse)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *UpdateReadPositionRequest) EqualVT(that *UpdateReadPositionRequest) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.NextIndex != that.NextIndex {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *UpdateReadPositionRequest) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*UpdateReadPositionRequest)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *UpdateReadPositionResponse) EqualVT(that *UpdateReadPositionResponse) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.Position, that.Position) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *UpdateReadPositionResponse) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*UpdateReadPositionResponse)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
 // MarshalProtoJSON marshals the ChatMessageInfo message to JSON.
 func (x *ChatMessageInfo) MarshalProtoJSON(s *json.MarshalState) {
 	if x == nil {
@@ -719,6 +996,11 @@ func (x *ChatMessageInfo) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteMoreIf(&wroteField)
 		s.WriteObjectField("content")
 		x.Content.MarshalProtoJSON(s.WithField("content"))
+	}
+	if x.PersonPeerId != "" || s.HasField("personPeerId") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("personPeerId")
+		s.WriteString(x.PersonPeerId)
 	}
 	s.WriteObjectEnd()
 }
@@ -766,6 +1048,9 @@ func (x *ChatMessageInfo) UnmarshalProtoJSON(s *json.UnmarshalState) {
 			}
 			x.Content = &content.ChatMessageContent{}
 			x.Content.UnmarshalProtoJSON(s.WithField("content", true))
+		case "person_peer_id", "personPeerId":
+			s.AddField("person_peer_id")
+			x.PersonPeerId = s.ReadString()
 		}
 	})
 }
@@ -893,6 +1178,16 @@ func (x *ListMessagesRequest) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("limit")
 		s.WriteUint32(x.Limit)
 	}
+	if x.BeforeIndex != nil {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("beforeIndex")
+		s.WriteUint64(*x.BeforeIndex)
+	}
+	if x.FromIndex != nil {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("fromIndex")
+		s.WriteUint64(*x.FromIndex)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -916,6 +1211,22 @@ func (x *ListMessagesRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "limit":
 			s.AddField("limit")
 			x.Limit = s.ReadUint32()
+		case "before_index", "beforeIndex":
+			s.AddField("before_index")
+			if s.ReadNil() {
+				x.BeforeIndex = nil
+				return
+			}
+			t := s.ReadUint64()
+			x.BeforeIndex = &t
+		case "from_index", "fromIndex":
+			s.AddField("from_index")
+			if s.ReadNil() {
+				x.FromIndex = nil
+				return
+			}
+			t := s.ReadUint64()
+			x.FromIndex = &t
 		}
 	})
 }
@@ -1201,6 +1512,236 @@ func (x *SendMessageResponse) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
+// MarshalProtoJSON marshals the GetReadPositionsRequest message to JSON.
+func (x *GetReadPositionsRequest) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the GetReadPositionsRequest to JSON.
+func (x *GetReadPositionsRequest) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the GetReadPositionsRequest message from JSON.
+func (x *GetReadPositionsRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		// no fields
+	})
+}
+
+// UnmarshalJSON unmarshals the GetReadPositionsRequest from JSON.
+func (x *GetReadPositionsRequest) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the GetReadPositionsResponse_PositionsEntry message to JSON.
+func (x *GetReadPositionsResponse_PositionsEntry) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Key != "" || s.HasField("key") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("key")
+		s.WriteString(x.Key)
+	}
+	if x.Value != nil || s.HasField("value") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("value")
+		x.Value.MarshalProtoJSON(s.WithField("value"))
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the GetReadPositionsResponse_PositionsEntry to JSON.
+func (x *GetReadPositionsResponse_PositionsEntry) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the GetReadPositionsResponse_PositionsEntry message from JSON.
+func (x *GetReadPositionsResponse_PositionsEntry) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "key":
+			s.AddField("key")
+			x.Key = s.ReadString()
+		case "value":
+			if s.ReadNil() {
+				x.Value = nil
+				return
+			}
+			x.Value = &state.ChatReadPosition{}
+			x.Value.UnmarshalProtoJSON(s.WithField("value", true))
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the GetReadPositionsResponse_PositionsEntry from JSON.
+func (x *GetReadPositionsResponse_PositionsEntry) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the GetReadPositionsResponse message to JSON.
+func (x *GetReadPositionsResponse) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Positions != nil || s.HasField("positions") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("positions")
+		s.WriteObjectStart()
+		var wroteElement bool
+		for k, v := range x.Positions {
+			s.WriteMoreIf(&wroteElement)
+			s.WriteObjectStringField(k)
+			v.MarshalProtoJSON(s.WithField("positions"))
+		}
+		s.WriteObjectEnd()
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the GetReadPositionsResponse to JSON.
+func (x *GetReadPositionsResponse) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the GetReadPositionsResponse message from JSON.
+func (x *GetReadPositionsResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "positions":
+			s.AddField("positions")
+			if s.ReadNil() {
+				x.Positions = nil
+				return
+			}
+			x.Positions = make(map[string]*state.ChatReadPosition)
+			s.ReadStringMap(func(key string) {
+				var v state.ChatReadPosition
+				v.UnmarshalProtoJSON(s)
+				x.Positions[key] = &v
+			})
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the GetReadPositionsResponse from JSON.
+func (x *GetReadPositionsResponse) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the UpdateReadPositionRequest message to JSON.
+func (x *UpdateReadPositionRequest) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.NextIndex != 0 || s.HasField("nextIndex") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("nextIndex")
+		s.WriteUint64(x.NextIndex)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the UpdateReadPositionRequest to JSON.
+func (x *UpdateReadPositionRequest) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the UpdateReadPositionRequest message from JSON.
+func (x *UpdateReadPositionRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "next_index", "nextIndex":
+			s.AddField("next_index")
+			x.NextIndex = s.ReadUint64()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the UpdateReadPositionRequest from JSON.
+func (x *UpdateReadPositionRequest) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the UpdateReadPositionResponse message to JSON.
+func (x *UpdateReadPositionResponse) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Position != nil || s.HasField("position") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("position")
+		x.Position.MarshalProtoJSON(s.WithField("position"))
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the UpdateReadPositionResponse to JSON.
+func (x *UpdateReadPositionResponse) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the UpdateReadPositionResponse message from JSON.
+func (x *UpdateReadPositionResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "position":
+			if s.ReadNil() {
+				x.Position = nil
+				return
+			}
+			x.Position = &state.ChatReadPosition{}
+			x.Position.UnmarshalProtoJSON(s.WithField("position", true))
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the UpdateReadPositionResponse from JSON.
+func (x *UpdateReadPositionResponse) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
 func (m *ChatMessageInfo) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -1229,6 +1770,11 @@ func (m *ChatMessageInfo) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	_ = l
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.PersonPeerId) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.PersonPeerId)
+		i--
+		dAtA[i] = 0x42
 	}
 	if m.Content != nil {
 		size, err := m.Content.MarshalToSizedBufferVT(dAtA[:i])
@@ -1395,6 +1941,16 @@ func (m *ListMessagesRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	_ = l
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.FromIndex != nil {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(*m.FromIndex))
+		i--
+		dAtA[i] = 0x20
+	}
+	if m.BeforeIndex != nil {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(*m.BeforeIndex))
+		i--
+		dAtA[i] = 0x18
 	}
 	if m.Limit != 0 {
 		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Limit))
@@ -1628,6 +2184,169 @@ func (m *SendMessageResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *GetReadPositionsRequest) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetReadPositionsRequest) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *GetReadPositionsRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetReadPositionsResponse) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetReadPositionsResponse) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *GetReadPositionsResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.Positions) > 0 {
+		for k := range m.Positions {
+			v := m.Positions[k]
+			baseI := i
+			size, err := v.MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0x12
+			i = protobuf_go_lite.EncodeString(dAtA, i, k)
+			i--
+			dAtA[i] = 0xa
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *UpdateReadPositionRequest) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *UpdateReadPositionRequest) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *UpdateReadPositionRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.NextIndex != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.NextIndex))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *UpdateReadPositionResponse) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *UpdateReadPositionResponse) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *UpdateReadPositionResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.Position != nil {
+		size, err := m.Position.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *ChatMessageInfo) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -1647,6 +2366,7 @@ func (m *ChatMessageInfo) SizeVT() (n int) {
 		l = m.Content.SizeVT()
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.PersonPeerId)
 	n += len(m.unknownFields)
 	return n
 }
@@ -1686,6 +2406,8 @@ func (m *ListMessagesRequest) SizeVT() (n int) {
 	_ = l
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.BeforeKey)
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.Limit)
+	n += protobuf_go_lite.SizeVarintPtr(1, m.BeforeIndex)
+	n += protobuf_go_lite.SizeVarintPtr(1, m.FromIndex)
 	n += len(m.unknownFields)
 	return n
 }
@@ -1757,6 +2479,61 @@ func (m *SendMessageResponse) SizeVT() (n int) {
 	return n
 }
 
+func (m *GetReadPositionsRequest) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *GetReadPositionsResponse) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	for k, v := range m.Positions {
+		_ = k
+		_ = v
+		l = 0
+		if v != nil {
+			l = v.SizeVT()
+		}
+		mapEntrySize := protobuf_go_lite.SizeStringValue(1, k) + protobuf_go_lite.SizeMessage(1, l)
+		n += protobuf_go_lite.SizeMessage(1, mapEntrySize)
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *UpdateReadPositionRequest) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.NextIndex)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *UpdateReadPositionResponse) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Position != nil {
+		l = m.Position.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
 func (x *ChatMessageInfo) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "ChatMessageInfo")
@@ -1787,6 +2564,10 @@ func (x *ChatMessageInfo) MarshalProtoText() string {
 	if x.Content != nil {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "content")
 		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Content)
+	}
+	if x.PersonPeerId != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "person_peer_id")
+		protobuf_go_lite.TextWriteString(&sb, x.PersonPeerId)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -1841,6 +2622,14 @@ func (x *ListMessagesRequest) MarshalProtoText() string {
 	if x.Limit != 0 {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "limit")
 		protobuf_go_lite.TextWriteUint(&sb, x.Limit)
+	}
+	if x.BeforeIndex != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "before_index")
+		protobuf_go_lite.TextWriteUint(&sb, *x.BeforeIndex)
+	}
+	if x.FromIndex != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "from_index")
+		protobuf_go_lite.TextWriteUint(&sb, *x.FromIndex)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -1947,6 +2736,87 @@ func (x *SendMessageResponse) String() string {
 	return x.MarshalProtoText()
 }
 
+func (x *GetReadPositionsRequest) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	protobuf_go_lite.TextStartMessage(&sb, "GetReadPositionsRequest")
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *GetReadPositionsRequest) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *GetReadPositionsResponse_PositionsEntry) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "PositionsEntry")
+	if x.Key != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "key")
+		protobuf_go_lite.TextWriteString(&sb, x.Key)
+	}
+	if x.Value != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "value")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Value)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *GetReadPositionsResponse_PositionsEntry) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *GetReadPositionsResponse) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "GetReadPositionsResponse")
+	if len(x.Positions) > 0 {
+		protobuf_go_lite.TextWriteMapStart(&sb, initialLen, "positions")
+		for _, k := range protobuf_go_lite.TextSortedMapKeys(x.Positions) {
+			v := x.Positions[k]
+			protobuf_go_lite.TextWriteMapEntryPrefix(&sb)
+			protobuf_go_lite.TextWriteString(&sb, k)
+			protobuf_go_lite.TextWriteMapKeyValueSeparator(&sb)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &state.ChatReadPosition{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteMapEnd(&sb)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *GetReadPositionsResponse) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *UpdateReadPositionRequest) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "UpdateReadPositionRequest")
+	if x.NextIndex != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "next_index")
+		protobuf_go_lite.TextWriteUint(&sb, x.NextIndex)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *UpdateReadPositionRequest) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *UpdateReadPositionResponse) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "UpdateReadPositionResponse")
+	if x.Position != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "position")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Position)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *UpdateReadPositionResponse) String() string {
+	return x.MarshalProtoText()
+}
+
 func (m *ChatMessageInfo) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -2046,6 +2916,16 @@ func (m *ChatMessageInfo) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 8:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PersonPeerId", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.PersonPeerId = v
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
@@ -2238,6 +3118,26 @@ func (m *ListMessagesRequest) UnmarshalVT(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BeforeIndex", wireType)
+			}
+			var v uint64
+			v, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.BeforeIndex = &v
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FromIndex", wireType)
+			}
+			var v uint64
+			v, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.FromIndex = &v
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
@@ -2544,6 +3444,249 @@ func (m *SendMessageResponse) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.MessageKey = v
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *GetReadPositionsRequest) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetReadPositionsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetReadPositionsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *GetReadPositionsResponse) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetReadPositionsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetReadPositionsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Positions", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			iNdEx = msgStart
+			if m.Positions == nil {
+				m.Positions = make(map[string]*state.ChatReadPosition)
+			}
+			var mapkey string
+			var mapvalue *state.ChatReadPosition
+			for iNdEx < postIndex {
+				entryPreIndex := iNdEx
+				var wire uint64
+				wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+				if err != nil {
+					return err
+				}
+				fieldNum := int32(wire >> 3)
+				if fieldNum == 1 {
+					mapkey, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+					if err != nil {
+						return err
+					}
+				} else if fieldNum == 2 {
+					msgStartmapvalue, postmsgIndexmapvalue, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+					if err != nil {
+						return err
+					}
+					mapvalue = &state.ChatReadPosition{}
+					if err := mapvalue.UnmarshalVT(dAtA[msgStartmapvalue:postmsgIndexmapvalue]); err != nil {
+						return err
+					}
+					iNdEx = postmsgIndexmapvalue
+				} else {
+					iNdEx = entryPreIndex
+					iNdEx, err = protobuf_go_lite.SkipWithin(dAtA, iNdEx, postIndex)
+					if err != nil {
+						return err
+					}
+				}
+			}
+			m.Positions[mapkey] = mapvalue
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *UpdateReadPositionRequest) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: UpdateReadPositionRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: UpdateReadPositionRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field NextIndex", wireType)
+			}
+			m.NextIndex = 0
+			m.NextIndex, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *UpdateReadPositionResponse) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: UpdateReadPositionResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: UpdateReadPositionResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Position", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Position == nil {
+				m.Position = &state.ChatReadPosition{}
+			}
+			if err := m.Position.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

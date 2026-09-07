@@ -5,10 +5,14 @@
 import {
   GetChannelInfoRequest,
   GetChannelInfoResponse,
+  GetReadPositionsRequest,
+  GetReadPositionsResponse,
   ListMessagesRequest,
   ListMessagesResponse,
   SendMessageRequest,
   SendMessageResponse,
+  UpdateReadPositionRequest,
+  UpdateReadPositionResponse,
   WatchMessagesRequest,
   WatchMessagesResponse,
 } from './rpc.pb.js'
@@ -72,6 +76,28 @@ export const ChatResourceServiceDefinition = {
       O: SendMessageResponse,
       kind: MethodKind.Unary,
     },
+    /**
+     * GetReadPositions returns the channel's shared per-person read positions.
+     *
+     * @generated from rpc spacewave.chat.rpc.ChatResourceService.GetReadPositions
+     */
+    GetReadPositions: {
+      name: 'GetReadPositions',
+      I: GetReadPositionsRequest,
+      O: GetReadPositionsResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * UpdateReadPosition advances only the authenticated person's read position.
+     *
+     * @generated from rpc spacewave.chat.rpc.ChatResourceService.UpdateReadPosition
+     */
+    UpdateReadPosition: {
+      name: 'UpdateReadPosition',
+      I: UpdateReadPositionRequest,
+      O: UpdateReadPositionResponse,
+      kind: MethodKind.Unary,
+    },
   },
 } as const
 
@@ -120,6 +146,26 @@ export interface ChatResourceService {
     request: SendMessageRequest,
     abortSignal?: AbortSignal,
   ): Promise<SendMessageResponse>
+
+  /**
+   * GetReadPositions returns the channel's shared per-person read positions.
+   *
+   * @generated from rpc spacewave.chat.rpc.ChatResourceService.GetReadPositions
+   */
+  GetReadPositions(
+    request: GetReadPositionsRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<GetReadPositionsResponse>
+
+  /**
+   * UpdateReadPosition advances only the authenticated person's read position.
+   *
+   * @generated from rpc spacewave.chat.rpc.ChatResourceService.UpdateReadPosition
+   */
+  UpdateReadPosition(
+    request: UpdateReadPositionRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<UpdateReadPositionResponse>
 }
 
 /**
@@ -171,6 +217,28 @@ export interface ChatResourceServiceHandler {
     abortSignal: AbortSignal,
     context: ServerContext,
   ): Promise<SendMessageResponse>
+
+  /**
+   * GetReadPositions returns the channel's shared per-person read positions.
+   *
+   * @generated from rpc spacewave.chat.rpc.ChatResourceService.GetReadPositions
+   */
+  GetReadPositions(
+    request: GetReadPositionsRequest,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): Promise<GetReadPositionsResponse>
+
+  /**
+   * UpdateReadPosition advances only the authenticated person's read position.
+   *
+   * @generated from rpc spacewave.chat.rpc.ChatResourceService.UpdateReadPosition
+   */
+  UpdateReadPosition(
+    request: UpdateReadPositionRequest,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): Promise<UpdateReadPositionResponse>
 }
 
 export const ChatResourceServiceServiceName =
@@ -186,6 +254,8 @@ export class ChatResourceServiceClient implements ChatResourceService {
     this.ListMessages = this.ListMessages.bind(this)
     this.WatchMessages = this.WatchMessages.bind(this)
     this.SendMessage = this.SendMessage.bind(this)
+    this.GetReadPositions = this.GetReadPositions.bind(this)
+    this.UpdateReadPosition = this.UpdateReadPosition.bind(this)
   }
   /**
    * GetChannelInfo returns channel metadata and its retained history extent.
@@ -261,5 +331,43 @@ export class ChatResourceServiceClient implements ChatResourceService {
       abortSignal || undefined,
     )
     return SendMessageResponse.fromBinary(result)
+  }
+
+  /**
+   * GetReadPositions returns the channel's shared per-person read positions.
+   *
+   * @generated from rpc spacewave.chat.rpc.ChatResourceService.GetReadPositions
+   */
+  async GetReadPositions(
+    request: GetReadPositionsRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<GetReadPositionsResponse> {
+    const requestMsg = GetReadPositionsRequest.create(request)
+    const result = await this.rpc.request(
+      this.service,
+      ChatResourceServiceDefinition.methods.GetReadPositions.name,
+      GetReadPositionsRequest.toBinary(requestMsg),
+      abortSignal || undefined,
+    )
+    return GetReadPositionsResponse.fromBinary(result)
+  }
+
+  /**
+   * UpdateReadPosition advances only the authenticated person's read position.
+   *
+   * @generated from rpc spacewave.chat.rpc.ChatResourceService.UpdateReadPosition
+   */
+  async UpdateReadPosition(
+    request: UpdateReadPositionRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<UpdateReadPositionResponse> {
+    const requestMsg = UpdateReadPositionRequest.create(request)
+    const result = await this.rpc.request(
+      this.service,
+      ChatResourceServiceDefinition.methods.UpdateReadPosition.name,
+      UpdateReadPositionRequest.toBinary(requestMsg),
+      abortSignal || undefined,
+    )
+    return UpdateReadPositionResponse.fromBinary(result)
   }
 }

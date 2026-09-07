@@ -3,6 +3,7 @@ package spacewave.chat;
 
 import "google/protobuf/timestamp.proto";
 import "github.com/s4wave/spacewave/sdk/chat/content/content.proto";
+import "github.com/s4wave/spacewave/sdk/chat/state/state.proto";
 
 option go_package = "github.com/s4wave/spacewave/sdk/chat;spacewave_chat";
 
@@ -17,6 +18,9 @@ message ChatChannel {
   .google.protobuf.Timestamp created_at = 3;
   // MessageCount is the number of messages appended to the channel.
   uint64 message_count = 4;
+  // ReadPositions maps verified person peer identities to their shared read positions.
+  // Keys are external cryptographic identities, not World object references.
+  map<string, ChatReadPosition> read_positions = 5;
 }
 
 // ChatMessage is a chat message world object linked to a channel.
@@ -31,6 +35,9 @@ message ChatMessage {
   string reply_to_key = 4;
   // Index is the zero-based message index within the channel.
   uint64 index = 5;
+  // PersonPeerId is the verified person identity supplied by the authenticated host.
+  // Empty historical values identify the person by SenderPeerId.
+  string person_peer_id = 6;
 }
 
 // ChatMessagePage stores a bounded page of channel message keys.

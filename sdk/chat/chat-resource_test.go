@@ -2,7 +2,7 @@ package spacewave_chat
 
 import (
 	"context"
-	"fmt"
+	"strconv"
 	"testing"
 	"time"
 
@@ -236,8 +236,8 @@ func TestChatResourceListMessagesClampsLimitAcrossPages(t *testing.T) {
 			ctx,
 			ws,
 			GeneralChannelKey,
-			fmt.Sprintf("%s/message/%d", GeneralChannelKey, idx),
-			fmt.Sprintf("message-%02d", idx),
+			GeneralChannelKey+"/message/"+strconv.Itoa(idx),
+			"message-"+strconv.Itoa(idx),
 			"peer-local",
 		)
 	}
@@ -258,6 +258,90 @@ func TestChatResourceListMessagesClampsLimitAcrossPages(t *testing.T) {
 	}
 	if last := messages[len(messages)-1]; last.GetObjectKey() != GeneralChannelKey+"/message/69" || last.GetText() != "message-69" {
 		t.Fatalf("last clamped message = %q %q, want message 69", last.GetObjectKey(), last.GetText())
+	}
+}
+
+func TestChatResourceListMessagesSupportsIndexCursors(t *testing.T) {
+	ctx := t.Context()
+	wtb, err := db_world_testbed.Default(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer wtb.Release()
+
+	ws := world.NewEngineWorldState(wtb.Engine, true)
+	createChatChannel(t, ctx, ws, GeneralChannelKey, "General")
+	for idx := range 70 {
+		createChatMessage(
+			t,
+			ctx,
+			ws,
+			GeneralChannelKey,
+			GeneralChannelKey+"/message/"+strconv.Itoa(idx),
+			"message-"+strconv.Itoa(idx),
+			"peer-local",
+		)
+	}
+
+	resource := NewChatResource(ws, wtb.Engine, GeneralChannelKey, "peer-local")
+	checkPage := func(name string, req *spacewave_chat_rpc.ListMessagesRequest, first, last uint64, wantHasMore bool) {
+		t.Helper()
+		resp, err := resource.ListMessages(ctx, req)
+		if err != nil {
+			t.Fatalf("%s: ListMessages: %v", name, err)
+		}
+		messages := resp.GetMessages()
+		if len(messages) != int(last-first+1) {
+			t.Fatalf("%s: returned %d messages, want %d", name, len(messages), last-first+1)
+		}
+		for idx, message := range messages {
+			if want := first + uint64(idx); message.GetIndex() != want {
+				t.Fatalf("%s: message %d has index %d, want %d", name, idx, message.GetIndex(), want)
+			}
+		}
+		if resp.GetHasMore() != wantHasMore {
+			t.Fatalf("%s: hasMore = %t, want %t", name, resp.GetHasMore(), wantHasMore)
+		}
+	}
+	checkEmpty := func(name string, req *spacewave_chat_rpc.ListMessagesRequest) {
+		t.Helper()
+		resp, err := resource.ListMessages(ctx, req)
+		if err != nil {
+			t.Fatalf("%s: ListMessages: %v", name, err)
+		}
+		if len(resp.GetMessages()) != 0 || resp.GetHasMore() {
+			t.Fatalf("%s: returned %d messages with hasMore=%t, want empty terminal page", name, len(resp.GetMessages()), resp.GetHasMore())
+		}
+	}
+	checkPage("from 0", &spacewave_chat_rpc.ListMessagesRequest{FromIndex: new(uint64(0)), Limit: 20}, 0, 19, true)
+	checkPage("from 20", &spacewave_chat_rpc.ListMessagesRequest{FromIndex: new(uint64(20)), Limit: 20}, 20, 39, true)
+	checkPage("from 60", &spacewave_chat_rpc.ListMessagesRequest{FromIndex: new(uint64(60)), Limit: 20}, 60, 69, false)
+	checkEmpty("from terminal", &spacewave_chat_rpc.ListMessagesRequest{FromIndex: new(uint64(70)), Limit: 20})
+	checkPage("before 70", &spacewave_chat_rpc.ListMessagesRequest{BeforeIndex: new(uint64(70)), Limit: 20}, 50, 69, true)
+	checkPage("before 50", &spacewave_chat_rpc.ListMessagesRequest{BeforeIndex: new(uint64(50)), Limit: 20}, 30, 49, true)
+	checkPage("before 20", &spacewave_chat_rpc.ListMessagesRequest{BeforeIndex: new(uint64(20)), Limit: 20}, 0, 19, false)
+	checkEmpty("before terminal", &spacewave_chat_rpc.ListMessagesRequest{BeforeIndex: new(uint64(0)), Limit: 20})
+
+	conflictRequests := map[string]*spacewave_chat_rpc.ListMessagesRequest{
+		"index directions": {
+			BeforeIndex: new(uint64(20)),
+			FromIndex:   new(uint64(20)),
+		},
+		"before index and key": {
+			BeforeKey:   GeneralChannelKey + "/message/20",
+			BeforeIndex: new(uint64(20)),
+		},
+		"from index and key": {
+			BeforeKey: GeneralChannelKey + "/message/20",
+			FromIndex: new(uint64(20)),
+		},
+		"before index above count": {BeforeIndex: new(uint64(71))},
+		"from index above count":   {FromIndex: new(uint64(71))},
+	}
+	for name, req := range conflictRequests {
+		if _, err := resource.ListMessages(ctx, req); err == nil {
+			t.Errorf("%s: ListMessages succeeded, want error", name)
+		}
 	}
 }
 
@@ -381,7 +465,7 @@ func appendChatMessageKey(t *testing.T, ctx context.Context, ws world.WorldState
 	if err != nil {
 		t.Fatalf("increment channel message count(%s): %v", msgKey, err)
 	}
-	pageKey := fmt.Sprintf("%s/message-page/%d", channelKey, msgIndex/chatMessagePageSize)
+	pageKey := channelKey + "/message-page/" + strconv.FormatUint(msgIndex/chatMessagePageSize, 10)
 	pageObj, found, err := ws.GetObject(ctx, pageKey)
 	if err != nil {
 		t.Fatalf("GetObject(%s): %v", pageKey, err)

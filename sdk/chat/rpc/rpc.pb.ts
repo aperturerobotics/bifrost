@@ -11,6 +11,7 @@ import {
 import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
 import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { ChatReadPosition } from '../state/state.pb.js'
 
 export const protobufPackage = 'spacewave.chat.rpc'
 
@@ -62,6 +63,12 @@ export interface ChatMessageInfo {
    * @generated from field: spacewave.chat.ChatMessageContent content = 7;
    */
   content?: ChatMessageContent
+  /**
+   * PersonPeerId is the verified person identity associated with the sending device.
+   *
+   * @generated from field: string person_peer_id = 8;
+   */
+  personPeerId?: string
 }
 
 export const ChatMessageInfo: MessageType<ChatMessageInfo> =
@@ -75,6 +82,7 @@ export const ChatMessageInfo: MessageType<ChatMessageInfo> =
       { no: 5, name: 'reply_to_key', kind: 'scalar', T: ScalarType.STRING },
       { no: 6, name: 'index', kind: 'scalar', T: ScalarType.UINT64 },
       { no: 7, name: 'content', kind: 'message', T: () => ChatMessageContent },
+      { no: 8, name: 'person_peer_id', kind: 'scalar', T: ScalarType.STRING },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })
@@ -154,6 +162,18 @@ export interface ListMessagesRequest {
    * @generated from field: uint32 limit = 2;
    */
   limit?: number
+  /**
+   * BeforeIndex selects an exclusive upper bound for backwards pagination.
+   *
+   * @generated from field: optional uint64 before_index = 3;
+   */
+  beforeIndex?: bigint
+  /**
+   * FromIndex selects an inclusive lower bound for forwards pagination.
+   *
+   * @generated from field: optional uint64 from_index = 4;
+   */
+  fromIndex?: bigint
 }
 
 export const ListMessagesRequest: MessageType<ListMessagesRequest> =
@@ -162,6 +182,20 @@ export const ListMessagesRequest: MessageType<ListMessagesRequest> =
     fields: [
       { no: 1, name: 'before_key', kind: 'scalar', T: ScalarType.STRING },
       { no: 2, name: 'limit', kind: 'scalar', T: ScalarType.UINT32 },
+      {
+        no: 3,
+        name: 'before_index',
+        kind: 'scalar',
+        T: ScalarType.UINT64,
+        opt: true,
+      },
+      {
+        no: 4,
+        name: 'from_index',
+        kind: 'scalar',
+        T: ScalarType.UINT64,
+        opt: true,
+      },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })
@@ -179,7 +213,7 @@ export interface ListMessagesResponse {
    */
   messages?: ChatMessageInfo[]
   /**
-   * HasMore indicates more messages exist before the earliest returned.
+   * HasMore indicates more messages exist in the selected pagination direction.
    *
    * @generated from field: bool has_more = 2;
    */
@@ -309,6 +343,94 @@ export const SendMessageResponse: MessageType<SendMessageResponse> =
     typeName: 'spacewave.chat.rpc.SendMessageResponse',
     fields: [
       { no: 1, name: 'message_key', kind: 'scalar', T: ScalarType.STRING },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
+ * GetReadPositionsRequest selects shared receipt state for the mounted channel.
+ *
+ * @generated from message spacewave.chat.rpc.GetReadPositionsRequest
+ */
+export interface GetReadPositionsRequest {}
+
+export const GetReadPositionsRequest: MessageType<GetReadPositionsRequest> =
+  /* @__PURE__ */ createEmptyMessageType<GetReadPositionsRequest>(
+    'spacewave.chat.rpc.GetReadPositionsRequest',
+    true,
+  )
+
+/**
+ * GetReadPositionsResponse reports the canonical read positions for this channel.
+ *
+ * @generated from message spacewave.chat.rpc.GetReadPositionsResponse
+ */
+export interface GetReadPositionsResponse {
+  /**
+   * Positions maps external person peer identities to their monotonic read positions.
+   *
+   * @generated from field: map<string, spacewave.chat.ChatReadPosition> positions = 1;
+   */
+  positions?: { [key: string]: ChatReadPosition }
+}
+
+export const GetReadPositionsResponse: MessageType<GetReadPositionsResponse> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'spacewave.chat.rpc.GetReadPositionsResponse',
+    fields: [
+      {
+        no: 1,
+        name: 'positions',
+        kind: 'map',
+        K: ScalarType.STRING,
+        V: { kind: 'message', T: () => ChatReadPosition },
+      },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
+ * UpdateReadPositionRequest advances the person already authenticated by the host.
+ *
+ * @generated from message spacewave.chat.rpc.UpdateReadPositionRequest
+ */
+export interface UpdateReadPositionRequest {
+  /**
+   * NextIndex is the first unread index, bounded by the channel's message count.
+   *
+   * @generated from field: uint64 next_index = 1;
+   */
+  nextIndex?: bigint
+}
+
+export const UpdateReadPositionRequest: MessageType<UpdateReadPositionRequest> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'spacewave.chat.rpc.UpdateReadPositionRequest',
+    fields: [
+      { no: 1, name: 'next_index', kind: 'scalar', T: ScalarType.UINT64 },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
+ * UpdateReadPositionResponse reports the retained position, including unchanged retries.
+ *
+ * @generated from message spacewave.chat.rpc.UpdateReadPositionResponse
+ */
+export interface UpdateReadPositionResponse {
+  /**
+   * Position is the authenticated person's current shared read position.
+   *
+   * @generated from field: spacewave.chat.ChatReadPosition position = 1;
+   */
+  position?: ChatReadPosition
+}
+
+export const UpdateReadPositionResponse: MessageType<UpdateReadPositionResponse> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'spacewave.chat.rpc.UpdateReadPositionResponse',
+    fields: [
+      { no: 1, name: 'position', kind: 'message', T: () => ChatReadPosition },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })
