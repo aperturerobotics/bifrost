@@ -173,9 +173,10 @@ func runCachePolicyReplayWorkload(
 	median := walls[(len(walls)-1)/2]
 	p95 := walls[(95*len(walls)+99)/100-1]
 	t.Logf(
-		"cache-policy-summary block_bytes=%d max_spans=%d threshold_bytes=%d workload=%s repetitions=%d median_us=%d p95_us=%d",
+		"cache-policy-summary block_bytes=%d byte_limit=%d handle_limit=%d threshold_bytes=%d workload=%s repetitions=%d median_us=%d p95_us=%d",
 		cachedSegmentBlockSize,
-		maxCachedSegmentSpans,
+		defaultCacheByteLimit,
+		defaultCacheHandleLimit,
 		maxCachedSegmentRead,
 		workload.name,
 		len(samples),
@@ -194,9 +195,10 @@ func logCachePolicyReplaySample(
 	t.Helper()
 	stats := sample.stats
 	t.Logf(
-		"cache-policy-sample block_bytes=%d max_spans=%d threshold_bytes=%d workload=%s repetition=%d wall_us=%d retained_block_bytes=%d retained_metadata_bytes=%d retained_bytes=%d peak_retained_bytes=%d go_heap_delta_bytes=%d js_heap_delta_bytes=%d js_heap_status=%s live_handles=%d peak_handles=%d reads=%d fetched_bytes=%d hits=%d misses=%d admissions=%d evictions=%d bypasses=%d shared_fills=%d release_errors=%d",
+		"cache-policy-sample block_bytes=%d byte_limit=%d handle_limit=%d threshold_bytes=%d workload=%s repetition=%d wall_us=%d retained_block_bytes=%d retained_metadata_bytes=%d retained_bytes=%d peak_retained_bytes=%d go_heap_delta_bytes=%d js_heap_delta_bytes=%d js_heap_status=%s live_handles=%d peak_handles=%d reads=%d fetched_bytes=%d hits=%d misses=%d admissions=%d evictions=%d bypasses=%d shared_fills=%d release_errors=%d",
 		cachedSegmentBlockSize,
-		maxCachedSegmentSpans,
+		defaultCacheByteLimit,
+		defaultCacheHandleLimit,
 		maxCachedSegmentRead,
 		workload,
 		repetition,
