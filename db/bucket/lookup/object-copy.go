@@ -19,16 +19,15 @@ import (
 // The concurrency limit controls how many concurrent read/writes can be called.
 // If maxConcurrency <= 0, has no limit on concurrent read/writes.
 //
-// copies from srcCursor to destCursor using the transform from srcCursor
-// returns the updated object ref in the destination cursor.
-// sets the bucket id and transform config directly in the returned ref.
+// Copies use the source transform and return the destination object ref with
+// its bucket ID and transform configuration set explicitly.
 //
 // skipSubtreeExists skips a block ref tree if the block already existed in the
-// target storage. this assumes that a block existing in storage implies that
+// target storage. This assumes that a block existing in storage implies that
 // all blocks it references have also already been stored.
 //
 // cb is an optional callback to call with each block before copying.
-// if cb is nil and a block is not found, returns block.ErrNotFound.
+// If cb is nil and a block is not found, returns block.ErrNotFound.
 func CopyObjectToBucket(
 	ctx context.Context,
 	destCursor, srcCursor *Cursor,
@@ -93,6 +92,7 @@ func CopyObjectToBucketWithProgress(
 	)
 }
 
+// copyObjectToBucket copies each distinct source block and traverses its children once.
 func copyObjectToBucket(
 	ctx context.Context,
 	destCursor, srcCursor *Cursor,
@@ -102,7 +102,7 @@ func copyObjectToBucket(
 	cb WalkObjectBlocksCb,
 	progress ObjectCopyProgress,
 ) (*bucket.ObjectRef, ObjectCopyStats, error) {
-	// transform the destination object ref (for returning)
+	// Preserve the source encoding in the destination reference.
 	srcRef := srcCursor.GetRef()
 	destinationRef := srcRef.Clone()
 	destinationRef.BucketId = destCursor.GetOpArgs().GetBucketId()
@@ -131,7 +131,7 @@ func copyObjectToBucket(
 		destinationRef.TransformConfRef = transformConfRef
 	}
 
-	// if the cursors are located in the same bucket and volume, do nothing.
+	// Cursors in the same bucket and volume already share storage.
 	if srcCursor.GetOpArgs().EqualVT(destCursor.GetOpArgs()) {
 		return destinationRef, ObjectCopyStats{}, nil
 	}
@@ -152,11 +152,9 @@ func copyObjectToBucket(
 	}
 	writeBkt := writeCursor.GetBucket()
 
-	// Ensure we do not process duplicate blocks by tracking which blocks were seen.
-	// use a sync.Map since this is the exact situation it is meant for
-	// key: string (BlockRef)
-	// value: bool (seen)
-	var seenBlocks sync.Map
+	// seenMtx guards the set of block references claimed by copy workers.
+	var seenMtx sync.Mutex
+	seenBlocks := make(map[string]struct{})
 	var seenBlockCount atomic.Int64
 	var copiedBlocks atomic.Int64
 	var dedupedBlocks atomic.Int64
@@ -187,20 +185,20 @@ func copyObjectToBucket(
 		return err
 	}
 
-	// To copy the object fully, we have to traverse the block graph.
-	// We do this by recursively following the block refs.
-	// Note that GetBlockRefCtor must be implemented for this to work properly.
-	// TODO: handle garbage collection (set parent in PutOpts)
+	// GetBlockRefCtor supplies the decoder for each child in the block graph.
+	// TODO: handle garbage collection (set parent in PutOpts).
 	ctx = withCopyWorkerTrace(ctx)
 	err = WalkObjectBlocks(
 		ctx,
 		NewWalkObjectBlocksWithRef(srcRef.GetRootRef(), rootCtor),
-		func(ent *WalkObjectBlocksEntry) (cntu bool, err error) {
-			// call the callback if set
+		func(ent *WalkObjectBlocksEntry) (bool, error) {
+			var cntu bool
+			var err error
+
+			// The callback may recover a read error.
 			if cb != nil {
 				cntu, err = cb(ent)
 			} else {
-				// Note: we give the callback the chance to ignore the err above.
 				err = ent.Err
 				if err == nil && !ent.Found && !ent.IsSubBlock && !ent.Ref.GetEmpty() {
 					err = errors.Wrap(block.ErrNotFound, ent.Ref.MarshalString())
@@ -209,24 +207,27 @@ func copyObjectToBucket(
 			}
 
 			if err != nil || ent.IsSubBlock || !ent.Found || ent.Ref.GetEmpty() || len(ent.Data) == 0 {
-				// skip this block since it is not found or a sub-block or empty
+				// Inline sub-blocks are traversed without a separate storage write.
 				return cntu, err
 			}
 
-			// skip copying if we already saw this block
+			// Only the first worker traverses a shared block's descendants.
 			refStr := ent.Ref.MarshalString()
-			_, seen := seenBlocks.LoadOrStore(refStr, true)
+			seenMtx.Lock()
+			_, seen := seenBlocks[refStr]
+			seenBlocks[refStr] = struct{}{}
+			seenMtx.Unlock()
 			if seen {
 				dedupedBlocks.Add(1)
 				if err := reportProgress(); err != nil {
 					return false, err
 				}
-				return
+				return false, nil
 			}
 
 			seenBlockCount.Add(1)
 			logicalSourceBytes.Add(int64(len(ent.Data)))
-			// note: most implementations check Exists() inside PutBlock().
+			// Most implementations check existence inside PutBlock.
 			var writeRef *block.BlockRef
 			var writeExisted bool
 			writeRef, writeExisted, err = writeBkt.PutBlock(ctx, ent.Data, &block.PutOpts{
@@ -253,7 +254,6 @@ func copyObjectToBucket(
 				if err := reportProgress(); err != nil {
 					return false, err
 				}
-				// skip sub-tree
 				return false, nil
 			}
 
