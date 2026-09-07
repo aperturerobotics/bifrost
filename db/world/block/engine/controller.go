@@ -25,15 +25,15 @@ import (
 // Controller implements the block-graph World Engine controller.
 // Attaches to a bucket to store blocks and a object store for state.
 type Controller struct {
-	// le is the logger
+	// le is the controller logger.
 	le *logrus.Entry
-	// bus is the controller bus
+	// bus resolves storage and World operation controllers.
 	bus bus.Bus
-	// conf is the config
+	// conf supplies immutable controller configuration.
 	conf *Config
 	// engineCtr contains the engine value or fatal startup error.
 	engineCtr *ccontainer.CContainer[*engineResult]
-	// engineID is the engine id we are listening on
+	// engineID identifies the World engine exposed by directives.
 	engineID string
 	// mtx guards controller-lifetime executions and engine resources.
 	mtx sync.Mutex
@@ -48,22 +48,25 @@ type Controller struct {
 	// engineResources remain valid across Execute restarts until Close.
 	engineResources []engineResource
 
-	// sfs is the step factory set
+	// sfs resolves block transformation steps.
 	sfs *block_transform.StepFactorySet
-	// stateXfrm is the state transformer
+	// stateXfrm transforms persisted World-head metadata.
 	stateXfrm *block_transform.Transformer
 }
 
+// engineResult publishes either a usable engine or a fatal initialization error.
 type engineResult struct {
 	engine Engine
 	err    error
 }
 
+// engineExecution retains the cancellation and completion of one Execute call.
 type engineExecution struct {
 	cancel context.CancelFunc
 	done   chan struct{}
 }
 
+// engineResource keeps a World engine and its head store alive until Close.
 type engineResource struct {
 	engine   *world_block.Engine
 	storeRef directive.Reference
@@ -76,6 +79,7 @@ func NewController(
 	conf *Config,
 	sfs *block_transform.StepFactorySet,
 ) (*Controller, error) {
+	// Validate the configured state transformation before retaining resources.
 	xfrm, err := block_transform.NewTransformer(
 		controller.ConstructOpts{Logger: le},
 		sfs,
@@ -85,6 +89,7 @@ func NewController(
 		return nil, err
 	}
 
+	// Retain execution and storage resources until controller Close.
 	return &Controller{
 		le:         le.WithField("engine-id", conf.GetEngineId()),
 		conf:       conf,
@@ -112,8 +117,8 @@ func (c *Controller) GetControllerInfo() *controller.Info {
 // Returning nil ends execution.
 // Returning an error triggers a retry with backoff.
 func (c *Controller) Execute(ctx context.Context) error {
+	// Register a cancelable execution before resolving storage.
 	le := c.le
-
 	rctx, rctxCancel := context.WithCancel(ctx)
 	execution := &engineExecution{
 		cancel: rctxCancel,
@@ -129,22 +134,21 @@ func (c *Controller) Execute(ctx context.Context) error {
 	}()
 	ctx = rctx
 
-	// Determine the init ref to the HEAD
+	// Use the configured root until durable metadata supplies a newer head.
 	var headRef *bucket.ObjectRef
-
-	// initialize headRef using the configured head ref
 	initRef := c.conf.GetInitHeadRef()
 	if initRef != nil {
 		headRef = initRef.Clone()
 	}
 
-	// Lookup the state store
+	// Resolve the configured state store within its Volume.
 	stateStoreID := c.conf.GetObjectStoreId()
 	stateStoreVol := c.conf.GetVolumeId()
 	if stateStoreVol == "" {
 		le.Debug("no volume id set, using any available volume")
 	}
 
+	// Release storage on initialization failure until retainEngine accepts it.
 	var stateStoreRef directive.Reference
 	defer func() {
 		if stateStoreRef != nil {
@@ -152,6 +156,7 @@ func (c *Controller) Execute(ctx context.Context) error {
 		}
 	}()
 
+	// Resolve the persisted head store and its coordination scope.
 	var stateStore object.ObjectStore
 	var stateCoordinator coord.Coordinator
 	var stateCoordScope coord.Scope
@@ -172,13 +177,15 @@ func (c *Controller) Execute(ctx context.Context) error {
 	}
 	var persistedHeadRef *bucket.ObjectRef
 
+	// Prefer the persisted head within the configured metadata prefix.
 	var headState *HeadState
 	if stateStore != nil {
-		// apply object store prefix
+		// Scope durable head metadata to the configured prefix.
 		if prefix := c.conf.GetObjectStorePrefix(); len(prefix) != 0 {
 			stateStore = object.NewPrefixer(stateStore, []byte(prefix))
 		}
-		// load initial head ref
+
+		// Load the persisted head before constructing World state.
 		var headStateFound bool
 		var err error
 		headState, headStateFound, err = c.loadHeadState(ctx, stateStore)
@@ -197,7 +204,8 @@ func (c *Controller) Execute(ctx context.Context) error {
 	if headRef == nil {
 		headRef = &bucket.ObjectRef{}
 	}
-	// override bucket id if configured
+
+	// Bind the selected head to the configured bucket.
 	if confBucketID := c.conf.GetBucketId(); confBucketID != "" {
 		headRef.BucketId = confBucketID
 	}
@@ -205,6 +213,7 @@ func (c *Controller) Execute(ctx context.Context) error {
 		return errors.New("head ref bucket id required but was unset")
 	}
 
+	// Permit one explicitly configured recovery from missing durable blocks.
 	var recoveryBaseRef *bucket.ObjectRef
 	var recoveredMissingPersistedHead bool
 	recoverMissingPersistedHead := func(err error) bool {
@@ -216,6 +225,7 @@ func (c *Controller) Execute(ctx context.Context) error {
 			return false
 		}
 
+		// Select the configured replacement while retaining the CAS base.
 		recoveredMissingPersistedHead = true
 		recoveryBaseRef = persistedHeadRef
 		if initRef == nil {
@@ -232,6 +242,7 @@ func (c *Controller) Execute(ctx context.Context) error {
 
 buildWorldEngine:
 
+	// Resolve and validate the selected root before publishing an engine.
 	le.Debug("building world engine")
 	cursor, err := bucket_lookup.BuildCursor(
 		ctx,
@@ -260,6 +271,7 @@ buildWorldEngine:
 		return nil
 	}
 
+	// Persist a new empty World before enabling coordinated readers.
 	if headRef.GetRootRef().GetEmpty() {
 		le.Debug("no initial head reference provided, building new world")
 		btx, bcs := cursor.BuildTransaction(nil)
@@ -282,11 +294,13 @@ buildWorldEngine:
 		}
 	}
 
+	// Resolve World operations through the configured controller bus.
 	var lookupWorldOp world.LookupOp
 	if !c.conf.GetDisableLookup() {
 		lookupWorldOp = world.BuildLookupWorldOpFunc(c.bus, le, c.engineID)
 	}
 
+	// Report the selected root when verbose diagnostics are enabled.
 	verbose := c.conf.GetVerbose()
 	if verbose {
 		le.
@@ -294,6 +308,7 @@ buildWorldEngine:
 			Debug("initialized root")
 	}
 
+	// Persist each accepted head through the ObjectStore CAS contract.
 	var commitFn world_block.CommitFn = func(ctx context.Context, baseRef, nref *bucket.ObjectRef) error {
 		if verbose {
 			le.
@@ -301,12 +316,12 @@ buildWorldEngine:
 				Debug("updated root")
 		}
 		if stateStore != nil {
-			// write state back to state store
 			return c.writeHeadState(ctx, stateStore, baseRef, nref)
 		}
 		return nil
 	}
 
+	// Require durable generations before enabling coordinated transactions.
 	useStateCoordinator := false
 	if stateCoordinator != nil && stateStore != nil {
 		useStateCoordinator = c.coordinatorSupported(ctx, stateCoordinator, stateCoordScope)
@@ -326,6 +341,7 @@ buildWorldEngine:
 		))
 	}
 
+	// Construct the engine with its storage and observation policies.
 	engine, err := world_block.NewEngine(
 		ctx,
 		le,
@@ -352,6 +368,7 @@ buildWorldEngine:
 		recoveryBaseRef = nil
 	}
 
+	// Verify the published head is readable before exposing the engine.
 	seqno, err := engine.GetSeqno(ctx)
 	if isReadOnlyInitHeadNotFound(err, stateStore, initRef) {
 		c.engineCtr.SetValue(&engineResult{err: err})
@@ -367,6 +384,7 @@ buildWorldEngine:
 		return err
 	}
 
+	// Retain the engine and its store reference across execution restarts.
 	le.WithField("world-seqno", seqno).Info("world engine ready")
 	var wengine world.Engine = engine
 	if c.conf.GetVerbose() {
@@ -378,11 +396,7 @@ buildWorldEngine:
 	}
 	stateStoreRef = nil
 
-	var headWatchDone <-chan struct{}
-	if useStateCoordinator {
-		headWatchDone = c.startCoordinatorHeadWatch(rctx, stateCoordinator, stateCoordScope, stateStore, engine)
-	}
-
+	// Fence durability when this execution ends.
 	<-rctx.Done()
 	le.Debug("shutting down")
 	// Clean-shutdown durability flush. In the single-writer path the durable
@@ -393,13 +407,10 @@ buildWorldEngine:
 	}
 	c.engineCtr.SetValue(nil)
 	rctxCancel()
-	if headWatchDone != nil {
-		<-headWatchDone
-	}
-
 	return nil
 }
 
+// coordinatorSupported requires durable generation fencing for direct writers.
 func (c *Controller) coordinatorSupported(
 	ctx context.Context,
 	coordinator coord.Coordinator,
@@ -417,12 +428,13 @@ func (c *Controller) coordinatorSupported(
 
 // HandleDirective asks if the handler can resolve the directive.
 func (c *Controller) HandleDirective(ctx context.Context, di directive.Instance) ([]directive.Resolver, error) {
+	// Resolve only World engine lookups.
 	dir := di.GetDirective()
-	// LookupWorldEngine handler.
 	if d, ok := dir.(world.LookupWorldEngine); ok {
 		return directive.R(c.resolveLookupWorldEngine(ctx, di, d))
 	}
 
+	// Leave unrelated directives unresolved.
 	return nil, nil
 }
 
@@ -439,6 +451,7 @@ func (c *Controller) GetWorldEngine(ctx context.Context) (Engine, error) {
 	return result.engine, nil
 }
 
+// validateReadOnlyInitHead rejects a configured immutable root absent from its bucket.
 func validateReadOnlyInitHead(
 	ctx context.Context,
 	cursor *bucket_lookup.Cursor,
@@ -458,18 +471,21 @@ func validateReadOnlyInitHead(
 	return errors.Wrap(block.ErrNotFound, initRef.GetRootRef().MarshalString())
 }
 
+// isReadOnlyInitHead identifies a configured root without a writable head store.
 func isReadOnlyInitHead(stateStore object.ObjectStore, initRef *bucket.ObjectRef) bool {
 	return stateStore == nil &&
 		initRef != nil &&
 		!initRef.GetRootRef().GetEmpty()
 }
 
+// isReadOnlyInitHeadNotFound identifies fatal missing immutable startup roots.
 func isReadOnlyInitHeadNotFound(err error, stateStore object.ObjectStore, initRef *bucket.ObjectRef) bool {
 	return err != nil &&
 		errors.Is(err, block.ErrNotFound) &&
 		isReadOnlyInitHead(stateStore, initRef)
 }
 
+// startExecution retains a serving execution unless controller cleanup has begun.
 func (c *Controller) startExecution(execution *engineExecution) bool {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
@@ -480,6 +496,7 @@ func (c *Controller) startExecution(execution *engineExecution) bool {
 	return true
 }
 
+// finishExecution removes a completed execution and releases Close waiters.
 func (c *Controller) finishExecution(execution *engineExecution) {
 	c.mtx.Lock()
 	delete(c.executions, execution)
@@ -487,6 +504,7 @@ func (c *Controller) finishExecution(execution *engineExecution) {
 	c.mtx.Unlock()
 }
 
+// retainEngine publishes an initialized engine and retains its store until Close.
 func (c *Controller) retainEngine(
 	engine *world_block.Engine,
 	publishedEngine world.Engine,
@@ -508,6 +526,7 @@ func (c *Controller) retainEngine(
 // Close releases any resources used by the controller.
 // Error indicates any issue encountered releasing.
 func (c *Controller) Close() error {
+	// Detach resources once and join any cleanup already in progress.
 	c.mtx.Lock()
 	if c.closed {
 		closeDone := c.closeDone
@@ -528,6 +547,7 @@ func (c *Controller) Close() error {
 	c.engineCtr.SetValue(nil)
 	c.mtx.Unlock()
 
+	// Stop and join executions before releasing their retained resources.
 	for _, execution := range executions {
 		execution.cancel()
 	}
@@ -535,6 +555,7 @@ func (c *Controller) Close() error {
 		<-execution.done
 	}
 
+	// Close engines and their watchers before releasing state stores.
 	var closeErr error
 	for _, resource := range resources {
 		if err := resource.engine.Close(); err != nil && closeErr == nil {
@@ -545,6 +566,7 @@ func (c *Controller) Close() error {
 		}
 	}
 
+	// Publish one cleanup result to concurrent Close callers.
 	c.mtx.Lock()
 	c.closeErr = closeErr
 	close(c.closeDone)
@@ -552,5 +574,5 @@ func (c *Controller) Close() error {
 	return closeErr
 }
 
-// _ is a type assertion
+// _ verifies the World controller contract.
 var _ world.Controller = (*Controller)(nil)

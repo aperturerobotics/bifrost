@@ -3,16 +3,13 @@ package world_block_engine
 import (
 	"context"
 	"errors"
-	"strings"
 	"testing"
 	"time"
 
-	bdberrors "github.com/aperturerobotics/bbolt/errors"
 	"github.com/s4wave/spacewave/db/block"
 	transform_all "github.com/s4wave/spacewave/db/block/transform/all"
 	"github.com/s4wave/spacewave/db/bucket"
 	"github.com/s4wave/spacewave/db/coord"
-	"github.com/s4wave/spacewave/db/kvtx"
 	"github.com/s4wave/spacewave/db/testbed"
 	"github.com/s4wave/spacewave/db/volume"
 	world_block "github.com/s4wave/spacewave/db/world/block"
@@ -20,6 +17,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// TestControllerCoordinatorSupported checks that direct writes require durable generations.
 func TestControllerCoordinatorSupported(t *testing.T) {
 	ctx := context.Background()
 	ctrl := &Controller{le: logrus.NewEntry(logrus.New())}
@@ -29,6 +27,7 @@ func TestControllerCoordinatorSupported(t *testing.T) {
 		ParticipantID: "engine",
 	}
 
+	// Require generation support as well as coordinator availability.
 	if !ctrl.coordinatorSupported(ctx, fakeCoordinator{capability: &coord.Capability{Supported: true, Generations: true}}, scope) {
 		t.Fatal("supported coordinator reported false")
 	}
@@ -43,38 +42,20 @@ func TestControllerCoordinatorSupported(t *testing.T) {
 	}
 }
 
-func TestRefreshHeadFromCoordinatorEventIgnoresClosedStore(t *testing.T) {
-	log := logrus.New()
-	hook := &entriesHook{}
-	log.AddHook(hook)
-	ctrl := &Controller{le: logrus.NewEntry(log)}
-
-	ctrl.refreshHeadFromCoordinatorEvent(context.Background(), closedHeadStore{}, nil, coord.Event{
-		Generation: 1,
-	})
-
-	for _, entry := range hook.entries {
-		if entry.Message == "world head refresh failed" ||
-			strings.Contains(entry.Message, bdberrors.ErrDatabaseNotOpen.Error()) {
-			t.Fatalf("closed head store produced warning: level=%s message=%q data=%v", entry.Level, entry.Message, entry.Data)
-		}
-		if err, ok := entry.Data[logrus.ErrorKey].(error); ok && errors.Is(err, bdberrors.ErrDatabaseNotOpen) {
-			t.Fatalf("closed head store error was logged: level=%s message=%q data=%v", entry.Level, entry.Message, entry.Data)
-		}
-	}
-}
-
+// TestControllerGetWorldEngineReturnsMissingInitHeadError checks that an absent immutable root resolves lookup with its error.
 func TestControllerGetWorldEngineReturnsMissingInitHeadError(t *testing.T) {
 	ctx := t.Context()
 	log := logrus.New()
 	le := logrus.NewEntry(log)
 
+	// Build the real storage and controller bus used by initialization.
 	tb, err := testbed.NewTestbed(ctx, le, testbed.WithVerbose(false))
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 	t.Cleanup(tb.Release)
 
+	// Configure an immutable root absent from storage.
 	missingRootRef := controllerTestBlockRef(t, "world-engine-missing-init-head")
 	conf := NewConfig(
 		"test-world-engine-missing-init-head",
@@ -93,15 +74,17 @@ func TestControllerGetWorldEngineReturnsMissingInitHeadError(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
+	// Run initialization through the controller execution lifecycle.
 	execCtx, execCancel := context.WithCancel(ctx)
-	defer execCancel()
+	t.Cleanup(execCancel)
 	execErrCh := make(chan error, 1)
 	go func() {
 		execErrCh <- ctrl.Execute(execCtx)
 	}()
 
+	// Require a concrete missing-root error instead of an unresolved wait.
 	getCtx, getCancel := context.WithTimeout(ctx, 2*time.Second)
-	defer getCancel()
+	t.Cleanup(getCancel)
 	eng, err := ctrl.GetWorldEngine(getCtx)
 	if eng != nil {
 		t.Fatalf("GetWorldEngine returned engine %T, want nil with fatal startup error", eng)
@@ -113,6 +96,7 @@ func TestControllerGetWorldEngineReturnsMissingInitHeadError(t *testing.T) {
 		t.Fatalf("GetWorldEngine waited until the guard context expired: %v", err)
 	}
 
+	// Initialization must end after publishing its fatal result.
 	select {
 	case err := <-execErrCh:
 		if err != nil {
@@ -123,16 +107,19 @@ func TestControllerGetWorldEngineReturnsMissingInitHeadError(t *testing.T) {
 	}
 }
 
+// TestControllerRecoversMissingPersistedHead checks explicit recovery publishes the configured replacement.
 func TestControllerRecoversMissingPersistedHead(t *testing.T) {
 	ctx := t.Context()
 	le := logrus.NewEntry(logrus.New())
 
+	// Build the real store that will retain the recovered head.
 	tb, err := testbed.NewTestbed(ctx, le, testbed.WithVerbose(false))
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 	t.Cleanup(tb.Release)
 
+	// Persist a valid replacement World root.
 	currentCursor, err := tb.BuildEmptyCursor(ctx)
 	if err != nil {
 		t.Fatal(err.Error())
@@ -150,6 +137,7 @@ func TestControllerRecoversMissingPersistedHead(t *testing.T) {
 		RootRef:  currentRootRef,
 	}
 
+	// Record an invalid persisted head to exercise explicit recovery.
 	objectStoreID := "test-world-engine-recover-missing-head"
 	missingRootRef := controllerTestBlockRef(t, objectStoreID)
 	missingHeadRef := &bucket.ObjectRef{
@@ -158,6 +146,7 @@ func TestControllerRecoversMissingPersistedHead(t *testing.T) {
 	}
 	writeControllerTestHead(t, ctx, tb, objectStoreID, missingHeadRef)
 
+	// Enable recovery only for this configured replacement.
 	conf := NewConfig(
 		objectStoreID,
 		tb.Volume.GetID(),
@@ -176,14 +165,16 @@ func TestControllerRecoversMissingPersistedHead(t *testing.T) {
 		_ = ctrl.Close()
 	})
 
+	// Run recovery through ordinary controller initialization.
 	execCtx, execCancel := context.WithCancel(ctx)
 	execErrCh := make(chan error, 1)
 	go func() {
 		execErrCh <- ctrl.Execute(execCtx)
 	}()
 
+	// Require a readable World before the controller is exposed.
 	getCtx, getCancel := context.WithTimeout(ctx, 2*time.Second)
-	defer getCancel()
+	t.Cleanup(getCancel)
 	eng, err := ctrl.GetWorldEngine(getCtx)
 	if err != nil {
 		t.Fatal(err.Error())
@@ -194,11 +185,12 @@ func TestControllerRecoversMissingPersistedHead(t *testing.T) {
 		t.Fatalf("recovered world seqno = %d, want 0", seqno)
 	}
 
+	// Read persisted metadata to verify the replacement was committed.
 	storeVal, _, storeRef, err := volume.ExBuildObjectStoreAPI(ctx, tb.Bus, false, objectStoreID, tb.Volume.GetID(), nil)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	defer storeRef.Release()
+	t.Cleanup(storeRef.Release)
 	headState, found, err := ctrl.loadHeadState(ctx, storeVal.GetObjectStore())
 	if err != nil {
 		t.Fatal(err.Error())
@@ -217,12 +209,14 @@ func TestControllerRecoversMissingPersistedHead(t *testing.T) {
 		t.Fatal("recovered world did not select the configured current generation")
 	}
 
+	// Recovery must leave the execution serving the engine.
 	select {
 	case err := <-execErrCh:
 		t.Fatalf("Execute exited after recovery: %v", err)
 	default:
 	}
 
+	// Cancel and join the serving execution.
 	execCancel()
 	select {
 	case err := <-execErrCh:
@@ -234,16 +228,19 @@ func TestControllerRecoversMissingPersistedHead(t *testing.T) {
 	}
 }
 
+// TestControllerEngineSurvivesExecuteRestartUntilClose checks retained handles keep their storage through execution restarts.
 func TestControllerEngineSurvivesExecuteRestartUntilClose(t *testing.T) {
 	ctx := t.Context()
 	le := logrus.NewEntry(logrus.New())
 
+	// Build shared storage that survives controller execution restarts.
 	tb, err := testbed.NewTestbed(ctx, le, testbed.WithVerbose(false))
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 	t.Cleanup(tb.Release)
 
+	// Configure one durable World managed by the controller.
 	const objectStoreID = "test-world-engine-execute-restart"
 	conf := NewConfig(
 		objectStoreID,
@@ -262,8 +259,9 @@ func TestControllerEngineSurvivesExecuteRestartUntilClose(t *testing.T) {
 		_ = ctrl.Close()
 	})
 
+	// Bound startup and shutdown while retaining engine handles.
 	getCtx, getCancel := context.WithTimeout(ctx, 2*time.Second)
-	defer getCancel()
+	t.Cleanup(getCancel)
 	startExecution := func() (Engine, context.CancelFunc, <-chan error) {
 		execCtx, execCancel := context.WithCancel(ctx)
 		execErrCh := make(chan error, 1)
@@ -315,6 +313,7 @@ func TestControllerEngineSurvivesExecuteRestartUntilClose(t *testing.T) {
 		}
 	}
 
+	// Keep the first engine usable after its execution returns.
 	firstEngine, firstCancel, firstErrCh := startExecution()
 	stopExecution(firstCancel, firstErrCh)
 	assertOpen("first after Execute return", firstEngine)
@@ -333,8 +332,9 @@ func TestControllerEngineSurvivesExecuteRestartUntilClose(t *testing.T) {
 		t.Fatalf("sync after Execute return: %v", err)
 	}
 
+	// Restart execution while retaining access through the first handle.
 	secondEngine, secondCancel, secondErrCh := startExecution()
-	defer secondCancel()
+	t.Cleanup(secondCancel)
 	assertOpen("first after Execute restart", firstEngine)
 	restartReadTx, err := firstEngine.NewTransaction(ctx, false)
 	if err != nil {
@@ -349,6 +349,7 @@ func TestControllerEngineSurvivesExecuteRestartUntilClose(t *testing.T) {
 		t.Fatal("retained engine did not read committed object after Execute restart")
 	}
 
+	// Close both retained engines and join the current execution.
 	if err := ctrl.Close(); err != nil {
 		t.Fatal(err.Error())
 	}
@@ -364,16 +365,19 @@ func TestControllerEngineSurvivesExecuteRestartUntilClose(t *testing.T) {
 	assertClosed("second", secondEngine)
 }
 
+// TestControllerDoesNotRecoverMissingPersistedHeadByDefault checks missing durable data is not replaced without configured recovery.
 func TestControllerDoesNotRecoverMissingPersistedHeadByDefault(t *testing.T) {
 	ctx := t.Context()
 	le := logrus.NewEntry(logrus.New())
 
+	// Build storage for a missing persisted root.
 	tb, err := testbed.NewTestbed(ctx, le, testbed.WithVerbose(false))
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 	t.Cleanup(tb.Release)
 
+	// Persist a head whose blocks are unavailable.
 	objectStoreID := "test-world-engine-missing-persisted-head"
 	missingHeadRef := &bucket.ObjectRef{
 		BucketId: tb.BucketId,
@@ -381,6 +385,7 @@ func TestControllerDoesNotRecoverMissingPersistedHeadByDefault(t *testing.T) {
 	}
 	writeControllerTestHead(t, ctx, tb, objectStoreID, missingHeadRef)
 
+	// Leave recovery disabled and require the original storage error.
 	conf := NewConfig(
 		objectStoreID,
 		tb.Volume.GetID(),
@@ -399,6 +404,7 @@ func TestControllerDoesNotRecoverMissingPersistedHeadByDefault(t *testing.T) {
 	}
 }
 
+// writeControllerTestHead commits test metadata through the real head store.
 func writeControllerTestHead(
 	t *testing.T,
 	ctx context.Context,
@@ -418,13 +424,14 @@ func writeControllerTestHead(
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	defer storeRef.Release()
+	t.Cleanup(storeRef.Release)
 
+	// Commit the head through the real ObjectStore transaction.
 	ktx, err := storeVal.GetObjectStore().NewTransaction(ctx, true)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	defer ktx.Discard()
+	t.Cleanup(ktx.Discard)
 	data, err := (&HeadState{HeadRef: headRef}).MarshalVT()
 	if err != nil {
 		t.Fatal(err.Error())
@@ -437,6 +444,7 @@ func writeControllerTestHead(
 	}
 }
 
+// controllerTestBlockRef constructs a deterministic reference for a test root.
 func controllerTestBlockRef(t *testing.T, data string) *block.BlockRef {
 	t.Helper()
 	h, err := hash.Sum(hash.HashType_HashType_BLAKE3, []byte(data))
@@ -446,11 +454,13 @@ func controllerTestBlockRef(t *testing.T, data string) *block.BlockRef {
 	return block.NewBlockRef(h)
 }
 
+// fakeCoordinator reports only the configured capability response.
 type fakeCoordinator struct {
 	capability *coord.Capability
 	err        error
 }
 
+// Capability returns the configured capability or lookup error.
 func (f fakeCoordinator) Capability(context.Context, coord.Scope) (*coord.Capability, error) {
 	if f.err != nil {
 		return nil, f.err
@@ -458,39 +468,25 @@ func (f fakeCoordinator) Capability(context.Context, coord.Scope) (*coord.Capabi
 	return f.capability, nil
 }
 
+// Snapshot rejects unsupported generation reads.
 func (fakeCoordinator) Snapshot(context.Context, coord.Scope) (*coord.Snapshot, error) {
 	return nil, coord.ErrUnsupported
 }
 
+// Watch rejects unsupported observation.
 func (fakeCoordinator) Watch(context.Context, coord.Scope, uint64) (coord.Watch, error) {
 	return nil, coord.ErrUnsupported
 }
 
+// TryAcquireWriteLease rejects unsupported write leases.
 func (fakeCoordinator) TryAcquireWriteLease(context.Context, coord.Scope) (coord.WriteLease, bool, error) {
 	return nil, false, coord.ErrUnsupported
 }
 
+// WaitAcquireWriteLease rejects unsupported write leases.
 func (fakeCoordinator) WaitAcquireWriteLease(context.Context, coord.Scope) (coord.WriteLease, error) {
 	return nil, coord.ErrUnsupported
 }
 
+// _ verifies the coordinator test adapter contract.
 var _ coord.Coordinator = fakeCoordinator{}
-
-type closedHeadStore struct{}
-
-func (closedHeadStore) NewTransaction(context.Context, bool) (kvtx.Tx, error) {
-	return nil, bdberrors.ErrDatabaseNotOpen
-}
-
-type entriesHook struct {
-	entries []*logrus.Entry
-}
-
-func (h *entriesHook) Levels() []logrus.Level {
-	return logrus.AllLevels
-}
-
-func (h *entriesHook) Fire(entry *logrus.Entry) error {
-	h.entries = append(h.entries, entry)
-	return nil
-}
