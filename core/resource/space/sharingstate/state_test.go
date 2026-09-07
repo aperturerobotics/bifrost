@@ -160,6 +160,76 @@ func TestWatchStateEqualityGateSuppressesDuplicates(t *testing.T) {
 	}
 }
 
+// TestWatchStateConfigRevisionEmitsAndDeduplicates verifies that config-chain
+// metadata is part of the sharing projection and that an exact repeated
+// snapshot remains suppressed after the metadata change has been emitted.
+func TestWatchStateConfigRevisionEmitsAndDeduplicates(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	participants := []*sobject.SOParticipantConfig{{
+		PeerId: "peer-1",
+		Role:   sobject.SOParticipantRole_SOParticipantRole_OWNER,
+	}}
+	makeState := func(hash string, seqno uint64) *sobject.SOState {
+		return &sobject.SOState{Config: &sobject.SharedObjectConfig{
+			Participants:     participants,
+			ConfigChainHash:  []byte(hash),
+			ConfigChainSeqno: seqno,
+		}}
+	}
+
+	state := NewState(makeState("config-1", 1), nil, nil)
+	emitted := make(chan *SharingState, 4)
+	releaseFirst := make(chan struct{})
+	loopErr := make(chan error, 1)
+	emissions := 0
+	go func() {
+		loopErr <- state.RunWatchLoop(ctx, "peer-1", func(next *SharingState) error {
+			// Fold the revision and its exact duplicate while the initial
+			// response is in flight, matching the watch loop's coalescing path.
+			emissions++
+			emitted <- next
+			if next.ConfigChainSeqno == 1 {
+				<-releaseFirst
+			}
+			return nil
+		})
+	}()
+
+	first := <-emitted
+	if first.ConfigChainSeqno != 1 {
+		t.Fatalf("initial config seqno = %d, want 1", first.ConfigChainSeqno)
+	}
+	if first.ViewerPeerID != "peer-1" {
+		t.Fatalf("initial viewer peer id = %q, want peer-1", first.ViewerPeerID)
+	}
+	state.SetSOState(makeState("config-2", 2))
+	state.SetSOState(makeState("config-2", 2))
+	close(releaseFirst)
+	second := <-emitted
+	if second.ConfigChainSeqno != 2 || string(second.ConfigChainHash) != "config-2" {
+		t.Fatalf("revision snapshot = (%q, %d), want (config-2, 2)", second.ConfigChainHash, second.ConfigChainSeqno)
+	}
+
+	// Keep the loop alive long enough to observe the duplicate wakeup; a
+	// third emission would violate suppression of equal source snapshots.
+	state.SetSOState(makeState("config-2", 2))
+	select {
+	case <-emitted:
+		t.Fatal("exact duplicate config revision emitted a third snapshot")
+	case <-time.After(100 * time.Millisecond):
+	}
+
+	cancel()
+	if err := <-loopErr; err != context.Canceled {
+		t.Fatalf("watch loop error = %v, want context canceled", err)
+	}
+	if emissions != 2 {
+		t.Fatalf("emissions = %d, want initial plus one revision", emissions)
+	}
+}
+
 func TestBuildParticipantInfoUsesPresentationLabels(t *testing.T) {
 	info := BuildParticipantInfo(
 		&sobject.SOState{

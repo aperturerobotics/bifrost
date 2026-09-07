@@ -327,6 +327,24 @@ export interface SpaceSharingState {
    * @generated from field: repeated s4wave.space.SpaceParticipantInfo participant_info = 6;
    */
   participantInfo?: SpaceParticipantInfo[]
+  /**
+   * ConfigChainHash identifies the latest verified participant configuration.
+   *
+   * @generated from field: bytes config_chain_hash = 7;
+   */
+  configChainHash?: Uint8Array
+  /**
+   * ConfigChainSeqno is the sequence number of the latest participant configuration.
+   *
+   * @generated from field: uint64 config_chain_seqno = 8;
+   */
+  configChainSeqno?: bigint
+  /**
+   * ViewerPeerId identifies the authenticated mounted shared-object participant peer.
+   *
+   * @generated from field: string viewer_peer_id = 9;
+   */
+  viewerPeerId?: string
 }
 
 export const SpaceSharingState: MessageType<SpaceSharingState> =
@@ -363,6 +381,14 @@ export const SpaceSharingState: MessageType<SpaceSharingState> =
         T: () => SpaceParticipantInfo,
         repeated: true,
       },
+      { no: 7, name: 'config_chain_hash', kind: 'scalar', T: ScalarType.BYTES },
+      {
+        no: 8,
+        name: 'config_chain_seqno',
+        kind: 'scalar',
+        T: ScalarType.UINT64,
+      },
+      { no: 9, name: 'viewer_peer_id', kind: 'scalar', T: ScalarType.STRING },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })

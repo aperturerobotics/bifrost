@@ -221,6 +221,12 @@ type SpaceSharingState struct {
 	CanManage bool `protobuf:"varint,5,opt,name=can_manage,json=canManage,proto3" json:"canManage,omitempty"`
 	// ParticipantInfo is the app-facing participant presentation list.
 	ParticipantInfo []*SpaceParticipantInfo `protobuf:"bytes,6,rep,name=participant_info,json=participantInfo,proto3" json:"participantInfo,omitempty"`
+	// ConfigChainHash identifies the latest verified participant configuration.
+	ConfigChainHash []byte `protobuf:"bytes,7,opt,name=config_chain_hash,json=configChainHash,proto3" json:"configChainHash,omitempty"`
+	// ConfigChainSeqno is the sequence number of the latest participant configuration.
+	ConfigChainSeqno uint64 `protobuf:"varint,8,opt,name=config_chain_seqno,json=configChainSeqno,proto3" json:"configChainSeqno,omitempty"`
+	// ViewerPeerId identifies the authenticated mounted shared-object participant peer.
+	ViewerPeerId string `protobuf:"bytes,9,opt,name=viewer_peer_id,json=viewerPeerId,proto3" json:"viewerPeerId,omitempty"`
 }
 
 func (x *SpaceSharingState) Reset() {
@@ -269,6 +275,27 @@ func (x *SpaceSharingState) GetParticipantInfo() []*SpaceParticipantInfo {
 		return x.ParticipantInfo
 	}
 	return nil
+}
+
+func (x *SpaceSharingState) GetConfigChainHash() []byte {
+	if x != nil {
+		return x.ConfigChainHash
+	}
+	return nil
+}
+
+func (x *SpaceSharingState) GetConfigChainSeqno() uint64 {
+	if x != nil {
+		return x.ConfigChainSeqno
+	}
+	return 0
+}
+
+func (x *SpaceSharingState) GetViewerPeerId() string {
+	if x != nil {
+		return x.ViewerPeerId
+	}
+	return ""
 }
 
 // TransformInfo contains redacted transform configuration for display.
@@ -964,10 +991,13 @@ func (m *SpaceSharingState) CloneVT() *SpaceSharingState {
 	r := new(SpaceSharingState)
 	r.ViewerRole = m.ViewerRole
 	r.CanManage = m.CanManage
+	r.ConfigChainSeqno = m.ConfigChainSeqno
+	r.ViewerPeerId = m.ViewerPeerId
 	r.Participants = protobuf_go_lite.CloneVTSlice(m.Participants)
 	r.Invites = protobuf_go_lite.CloneVTSlice(m.Invites)
 	r.MailboxEntries = protobuf_go_lite.CloneVTSlice(m.MailboxEntries)
 	r.ParticipantInfo = protobuf_go_lite.CloneVTSlice(m.ParticipantInfo)
+	r.ConfigChainHash = protobuf_go_lite.CloneBytes(m.ConfigChainHash)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -1466,6 +1496,15 @@ func (this *SpaceSharingState) EqualVT(that *SpaceSharingState) bool {
 		return false
 	}
 	if !protobuf_go_lite.EqualVTSliceImplicit(this.ParticipantInfo, that.ParticipantInfo, func() *SpaceParticipantInfo { return &SpaceParticipantInfo{} }) {
+		return false
+	}
+	if !protobuf_go_lite.EqualBytes(this.ConfigChainHash, that.ConfigChainHash) {
+		return false
+	}
+	if this.ConfigChainSeqno != that.ConfigChainSeqno {
+		return false
+	}
+	if this.ViewerPeerId != that.ViewerPeerId {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -2294,6 +2333,21 @@ func (x *SpaceSharingState) MarshalProtoJSON(s *json.MarshalState) {
 		}
 		s.WriteArrayEnd()
 	}
+	if len(x.ConfigChainHash) > 0 || s.HasField("configChainHash") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("configChainHash")
+		s.WriteBytes(x.ConfigChainHash)
+	}
+	if x.ConfigChainSeqno != 0 || s.HasField("configChainSeqno") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("configChainSeqno")
+		s.WriteUint64(x.ConfigChainSeqno)
+	}
+	if x.ViewerPeerId != "" || s.HasField("viewerPeerId") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("viewerPeerId")
+		s.WriteString(x.ViewerPeerId)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -2389,6 +2443,15 @@ func (x *SpaceSharingState) UnmarshalProtoJSON(s *json.UnmarshalState) {
 				}
 				x.ParticipantInfo = append(x.ParticipantInfo, v)
 			})
+		case "config_chain_hash", "configChainHash":
+			s.AddField("config_chain_hash")
+			x.ConfigChainHash = s.ReadBytes()
+		case "config_chain_seqno", "configChainSeqno":
+			s.AddField("config_chain_seqno")
+			x.ConfigChainSeqno = s.ReadUint64()
+		case "viewer_peer_id", "viewerPeerId":
+			s.AddField("viewer_peer_id")
+			x.ViewerPeerId = s.ReadString()
 		}
 	})
 }
@@ -3765,6 +3828,21 @@ func (m *SpaceSharingState) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if len(m.ViewerPeerId) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.ViewerPeerId)
+		i--
+		dAtA[i] = 0x4a
+	}
+	if m.ConfigChainSeqno != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.ConfigChainSeqno))
+		i--
+		dAtA[i] = 0x40
+	}
+	if len(m.ConfigChainHash) > 0 {
+		i = protobuf_go_lite.EncodeBytes(dAtA, i, m.ConfigChainHash)
+		i--
+		dAtA[i] = 0x3a
+	}
 	if len(m.ParticipantInfo) > 0 {
 		for iNdEx := len(m.ParticipantInfo) - 1; iNdEx >= 0; iNdEx-- {
 			size, err := m.ParticipantInfo[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
@@ -4865,6 +4943,9 @@ func (m *SpaceSharingState) SizeVT() (n int) {
 		l = e.SizeVT()
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
+	n += protobuf_go_lite.SizeBytesNonEmpty(1, m.ConfigChainHash)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.ConfigChainSeqno)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.ViewerPeerId)
 	n += len(m.unknownFields)
 	return n
 }
@@ -5296,6 +5377,18 @@ func (x *SpaceSharingState) MarshalProtoText() string {
 			}
 		}
 		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	if len(x.ConfigChainHash) != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "config_chain_hash")
+		protobuf_go_lite.TextWriteBytes(&sb, x.ConfigChainHash)
+	}
+	if x.ConfigChainSeqno != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "config_chain_seqno")
+		protobuf_go_lite.TextWriteUint(&sb, x.ConfigChainSeqno)
+	}
+	if x.ViewerPeerId != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "viewer_peer_id")
+		protobuf_go_lite.TextWriteString(&sb, x.ViewerPeerId)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -6091,6 +6184,33 @@ func (m *SpaceSharingState) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ConfigChainHash", wireType)
+			}
+			m.ConfigChainHash, iNdEx, err = protobuf_go_lite.DecodeBytesAppend(m.ConfigChainHash, dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 8:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ConfigChainSeqno", wireType)
+			}
+			m.ConfigChainSeqno = 0
+			m.ConfigChainSeqno, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 9:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ViewerPeerId", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.ViewerPeerId = v
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
