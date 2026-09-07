@@ -19,6 +19,8 @@ import (
 // BundleManifestsKvfile packs the world and its manifests in traversal order
 // for read locality. Only reachable blocks are included; prior build history
 // in the backing store does not affect the result.
+// The caller must finish writing the World before packing; accepted writes
+// are fenced before the archive reads blocks from their backing store.
 func BundleManifestsKvfile(
 	ctx context.Context,
 	le *logrus.Entry,
@@ -26,7 +28,13 @@ func BundleManifestsKvfile(
 	kvfileBlockPrefix []byte,
 	blkEng *world_block.Engine,
 ) error {
+	// Raw block traversal must see every accepted write, including deferred ones.
+	if _, err := blkEng.Sync(ctx); err != nil {
+		return err
+	}
 	nextRootRef := blkEng.GetRootRef()
+
+	// Write each reachable block once in stable traversal order.
 	seen := make(map[string]struct{})
 	walkWriteBlocks := func(bls *bucket_lookup.Cursor, ref *block.BlockRef, ctor block.Ctor) error {
 		return bucket_lookup.WalkObjectBlocks(
@@ -57,6 +65,7 @@ func BundleManifestsKvfile(
 		)
 	}
 
+	// Pack the World root followed by the referenced manifest DAGs.
 	return blkEng.AccessWorldState(ctx, nextRootRef, func(bls *bucket_lookup.Cursor) error {
 		if err := walkWriteBlocks(bls, nextRootRef.GetRootRef(), world_block.NewWorldBlock); err != nil {
 			return err
