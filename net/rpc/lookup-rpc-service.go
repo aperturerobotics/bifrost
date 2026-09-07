@@ -35,7 +35,7 @@ func NewLookupRpcServiceResolver(invoker srpc.Invoker) LookupRpcServiceResolver 
 	return directive.NewValueResolver([]LookupRpcServiceValue{invoker})
 }
 
-// lookupRpcService implements LookupRpcService
+// lookupRpcService implements LookupRpcService.
 type lookupRpcService struct {
 	serviceID string
 	serverID  string
@@ -48,9 +48,9 @@ func NewLookupRpcService(serviceID, serverID string) LookupRpcService {
 
 // ExLookupRpcService executes the LookupRpcService directive.
 // Returns if the directive becomes idle (most likely: service not found).
-// If no values are returned, returns nil, nil, nil
-// If values are returned, returns vals, valsRef, nil
-// Otherwise returns nil, nil, err
+// With no values, all four results are nil.
+// With values, returns the values, instance, and a reference the caller releases.
+// On failure, only the error result is non-nil.
 // If waitOne is set, waits for at least one value before returning.
 // valDisposeCb is called if any of the values are no longer valid.
 // valDisposeCb might be called multiple times.
@@ -68,10 +68,9 @@ func ExLookupRpcService(
 		waitOne,
 		valDisposeCb,
 		func(val LookupRpcServiceValue) (bool, error) {
-			// If it's possible to query, do so.
+			// Queryable invokers must advertise the requested service.
 			queryable, ok := val.(srpc.QueryableInvoker)
 			if !ok {
-				// keep it if it's not queryable
 				return true, nil
 			}
 			return queryable.HasService(serviceID), nil
@@ -100,10 +99,9 @@ func (d *lookupRpcService) Validate() error {
 // GetValueOptions returns options relating to value handling.
 func (d *lookupRpcService) GetValueOptions() directive.ValueOptions {
 	return directive.ValueOptions{
-		// UnrefDisposeDur is the duration to wait to dispose a directive after all
-		// references have been released.
-		UnrefDisposeDur:            time.Millisecond * 100,
-		UnrefDisposeEmptyImmediate: true,
+		// Retain resolved and unresolved lookups between nearby RPC calls.
+		// The bus cancels disposal when a new reference arrives.
+		UnrefDisposeDur: time.Second,
 	}
 }
 
@@ -118,7 +116,7 @@ func (d *lookupRpcService) LookupRpcServerID() string {
 }
 
 // IsEquivalent checks if the other directive is equivalent. If two
-// directives are equivalent, and the new directive does not superceed the
+// directives are equivalent, and the new directive does not supersede the
 // old, then the new directive will be merged (de-duplicated) into the old.
 func (d *lookupRpcService) IsEquivalent(other directive.Directive) bool {
 	od, ok := other.(LookupRpcService)
@@ -138,7 +136,7 @@ func (d *lookupRpcService) IsEquivalent(other directive.Directive) bool {
 }
 
 // Superceeds checks if the directive overrides another.
-// The other directive will be canceled if superceded.
+// The other directive will be canceled if superseded.
 func (d *lookupRpcService) Superceeds(other directive.Directive) bool {
 	return false
 }
@@ -161,5 +159,5 @@ func (d *lookupRpcService) GetDebugVals() directive.DebugValues {
 	return vals
 }
 
-// _ is a type assertion
+// _ verifies the directive contract.
 var _ LookupRpcService = (*lookupRpcService)(nil)
