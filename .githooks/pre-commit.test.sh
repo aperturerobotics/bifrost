@@ -63,6 +63,10 @@ STUB
 	cat >"$test_dir/go" <<'STUB'
 #!/bin/sh
 printf 'go %s\n' "$*" >>"${HOOKTEST_LOG:?}"
+if [ "${1:-}" = env ] && [ "${2:-}" = GOMOD ]; then
+	prefix=$(git rev-parse --show-prefix)
+	printf '%s/go.mod\n' "${PWD%/${prefix%/}}"
+fi
 exit 0
 STUB
 
@@ -270,7 +274,7 @@ test_space_in_go_name_package_dirs() {
 	git -C "$test_dir/repo" add 'net/my pkg/a.go'
 	try_commit ok &&
 		log_has 'go list ./net/my pkg' &&
-		log_has 'go fix ./net/my pkg'
+		log_has 'go fix -embedlit=false ./net/my pkg'
 	note_result $? "$label"
 	cleanup
 }
@@ -293,7 +297,7 @@ test_go_pkg_dirs_unique_and_rooted() {
 		log_has 'go list ./.' &&
 		log_has 'go list ./net' &&
 		log_has 'go list ./svc/sub' &&
-		log_has 'go fix ./. ./net ./svc/sub'
+		log_has 'go fix -embedlit=false ./. ./net ./svc/sub'
 	note_result $? "$label"
 	cleanup
 }
