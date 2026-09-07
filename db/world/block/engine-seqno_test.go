@@ -2,13 +2,16 @@ package world_block
 
 import (
 	"context"
+	"sync/atomic"
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/db/block"
 	block_mock "github.com/s4wave/spacewave/db/block/mock"
 	"github.com/s4wave/spacewave/db/bucket"
 	"github.com/s4wave/spacewave/db/coord"
 	coord_inmem "github.com/s4wave/spacewave/db/coord/inmem"
+	"github.com/s4wave/spacewave/db/kvtx"
 	"github.com/s4wave/spacewave/db/world"
 	world_mock "github.com/s4wave/spacewave/db/world/mock"
 )
@@ -29,6 +32,7 @@ func TestEngineGetSeqnoRefreshesDurableHead(t *testing.T) {
 			if coordinated {
 				coordinator = coord_inmem.NewCoordinator()
 			}
+			var invalid atomic.Bool
 			root := writer.baseRoot.Clone()
 			t.Cleanup(root.Release)
 			reader, err := NewEngine(
@@ -39,7 +43,12 @@ func TestEngineGetSeqnoRefreshesDurableHead(t *testing.T) {
 				nil,
 				false,
 				WithWriteCoordinator(coordinator, coord.Scope{VolumeID: "seqno-volume", ObjectStoreID: "seqno-store"}, nil,
-					func(context.Context) (*bucket.ObjectRef, error) { return writer.GetRootRef(), nil }),
+					func(context.Context) (*bucket.ObjectRef, error) {
+						if invalid.Load() {
+							return nil, kvtx.ErrInvalidSnapshot
+						}
+						return writer.GetRootRef(), nil
+					}),
 			)
 			if err != nil {
 				t.Fatal(err)
@@ -78,6 +87,36 @@ func TestEngineGetSeqnoRefreshesDurableHead(t *testing.T) {
 			}
 			if got != want {
 				t.Fatalf("reader revision = %d, want %d", got, want)
+			}
+
+			// Repeated revision reads reuse the already published block state.
+			readCtx, counter := block.WithReadCounter(ctx)
+			for range 5 {
+				got, err := reader.GetSeqno(readCtx)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if got != want {
+					t.Fatalf("repeated revision = %d, want %d", got, want)
+				}
+			}
+			counts := counter.Snapshot()
+			if counts.BlockReadCount != 0 || counts.DecodedBlockCacheAttemptCount != 0 {
+				t.Fatalf("unchanged revision reopened block state: %+v", counts)
+			}
+
+			// A failed durable refresh invalidates the head until storage recovers.
+			invalid.Store(true)
+			if _, err := reader.GetSeqno(ctx); !errors.Is(err, kvtx.ErrInvalidSnapshot) {
+				t.Fatalf("invalid snapshot revision error = %v", err)
+			}
+			invalid.Store(false)
+			got, err = reader.GetSeqno(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got != want {
+				t.Fatalf("recovered revision = %d, want %d", got, want)
 			}
 		})
 	}

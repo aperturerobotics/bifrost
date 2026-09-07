@@ -560,51 +560,21 @@ func (e *Engine) NewBlockEngineTransaction(ctx context.Context, write bool) (*En
 	// Read-only transactions share the Engine head unless coordinator mode needs
 	// a dedicated snapshot.
 	if !write {
-		var headRef *bucket.ObjectRef
-		// Refresh the durable coordinator head before pinning local state.
-		if e.writeHeadRefresh != nil {
-			locked := e.bcast.Lock()
-			shouldRefresh := !e.closed && e.writeTx == nil
-			locked.Unlock()
-			if shouldRefresh {
-				var err error
-				headRef, err = e.writeHeadRefresh(ctx)
-				if err != nil {
-					var retirement engineRetirement
-					if isCoordinatedWriteSnapshotError(err) {
-						locked := e.bcast.Lock()
-						if !e.closed {
-							retirement = e.invalidateHeadReadTxLocked()
-						}
-						locked.Unlock()
-					}
-					e.drainRetirement(ctx, retirement)
-					return nil, err
-				}
-			}
+		if err := e.refreshReadHead(ctx); err != nil {
+			return nil, err
 		}
 
-		// Revalidate Engine state after the external head refresh.
+		// Pin the current head after refresh and retirement complete.
 		locked := e.bcast.Lock()
 		if e.closed {
 			locked.Unlock()
 			return nil, ErrEngineClosed
 		}
-		var retirement engineRetirement
-		var err error
-		if e.writeTx == nil {
-			retirement, err = e.applyDurableHeadLocked(ctx, headRef)
-			if err != nil {
-				locked.Unlock()
-				e.drainRetirement(ctx, retirement)
-				return nil, err
-			}
-		}
+
 		// Uncoordinated readers use the shared head through performOp retries.
 		if e.writeCoordinator == nil {
 			engTx := newEngineTx(e, nil)
 			locked.Unlock()
-			e.drainRetirement(ctx, retirement)
 			return engTx, nil
 		}
 
@@ -612,14 +582,12 @@ func (e *Engine) NewBlockEngineTransaction(ctx context.Context, write bool) (*En
 		world, err := e.buildWorldState(ctx, true)
 		if err != nil {
 			locked.Unlock()
-			e.drainRetirement(ctx, retirement)
 			return nil, err
 		}
 		engTx := newEngineTx(e, nil)
 		engTx.readTx = NewTx(world)
 		e.coordinatorTxs[engTx] = struct{}{}
 		locked.Unlock()
-		e.drainRetirement(ctx, retirement)
 		return engTx, nil
 	}
 
@@ -715,6 +683,51 @@ func (e *Engine) NewBlockEngineTransaction(ctx context.Context, write bool) (*En
 	locked.Unlock()
 	e.drainRetirement(ctx, retirement)
 	return engTx, nil
+}
+
+// refreshReadHead adopts the durable head when no local writer owns publication.
+// External I/O and retirement run without holding bcast.
+func (e *Engine) refreshReadHead(ctx context.Context) error {
+	if e.writeHeadRefresh == nil {
+		return nil
+	}
+
+	// Refresh the durable coordinator head before pinning local state.
+	var headRef *bucket.ObjectRef
+	locked := e.bcast.Lock()
+	shouldRefresh := !e.closed && e.writeTx == nil
+	locked.Unlock()
+	if shouldRefresh {
+		var err error
+		headRef, err = e.writeHeadRefresh(ctx)
+		if err != nil {
+			var retirement engineRetirement
+			if isCoordinatedWriteSnapshotError(err) {
+				locked := e.bcast.Lock()
+				if !e.closed {
+					retirement = e.invalidateHeadReadTxLocked()
+				}
+				locked.Unlock()
+			}
+			e.drainRetirement(ctx, retirement)
+			return err
+		}
+	}
+
+	// Revalidate writer ownership after external I/O before adopting the head.
+	locked = e.bcast.Lock()
+	if e.closed {
+		locked.Unlock()
+		return ErrEngineClosed
+	}
+	var retirement engineRetirement
+	var err error
+	if e.writeTx == nil {
+		retirement, err = e.applyDurableHeadLocked(ctx, headRef)
+	}
+	locked.Unlock()
+	e.drainRetirement(ctx, retirement)
+	return err
 }
 
 // applyDurableHeadLocked adopts a durable root without moving the revision backwards.
@@ -852,22 +865,21 @@ func (e *Engine) AccessWorldState(
 // This is also the sequence number of the most recent change.
 // Initializes at 0 for initial world state.
 func (e *Engine) GetSeqno(ctx context.Context) (uint64, error) {
-	// Refresh externally published heads through the transaction's snapshot rules.
-	if e.writeHeadRefresh != nil || e.writeCoordinator != nil {
-		tx, err := e.NewBlockEngineTransaction(ctx, false)
-		if err != nil {
-			return 0, err
-		}
-		defer tx.Discard()
-		return tx.GetSeqno(ctx)
+	// Preserve durable freshness without opening a dedicated transaction.
+	if err := e.refreshReadHead(ctx); err != nil {
+		return 0, err
 	}
 
-	// Reuse the shared head when this engine is the only publication authority.
+	// Reuse the shared head published by local commits or durable refresh.
 	for {
 		locked := e.bcast.Lock()
 		if e.closed {
 			locked.Unlock()
 			return 0, ErrEngineClosed
+		}
+		if err := e.initializeHeadReadTx(ctx); err != nil {
+			locked.Unlock()
+			return 0, err
 		}
 		readTx := e.head.readTx
 		locked.Unlock()
@@ -916,7 +928,6 @@ func (e *Engine) WaitSeqno(ctx context.Context, value uint64) (uint64, error) {
 		// Read the captured head without holding publication authority.
 		seqno, err := readTx.GetSeqno(ctx)
 		if readTx.state.discarded.Load() {
-			// readTxn was discarded, get the new one.
 			continue
 		}
 		if err != nil {
@@ -1019,8 +1030,8 @@ func (e *Engine) Close() error {
 	return nil
 }
 
-// initializeHeadReadTx constructs the shared read transaction before the
-// Engine escapes from NewEngine.
+// initializeHeadReadTx constructs or restores the shared read transaction.
+// The caller must hold bcast after construction.
 func (e *Engine) initializeHeadReadTx(ctx context.Context) error {
 	ctx, task := trace.NewTask(ctx, "hydra/world-block/engine/initialize-head-read-tx")
 	defer task.End()
@@ -1031,7 +1042,7 @@ func (e *Engine) initializeHeadReadTx(ctx context.Context) error {
 		return nil
 	}
 
-	// Build and publish the initial shared read transaction as one head.
+	// Publish the restored read transaction together with its root.
 	taskCtx, subtask := trace.NewTask(ctx, "hydra/world-block/engine/update-read-write-txns/build-world-state")
 	world, err := e.buildWorldState(taskCtx, true)
 	subtask.End()
@@ -1107,5 +1118,5 @@ func (e *Engine) buildWorldStateForRoot(
 	return ws, nil
 }
 
-// _ is a type assertion
+// Verify the World engine contract.
 var _ world.Engine = (*Engine)(nil)
