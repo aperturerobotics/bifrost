@@ -8,16 +8,16 @@ import (
 	"time"
 
 	"github.com/s4wave/spacewave/bldr/util/packedmsg"
-	"github.com/s4wave/spacewave/db/bucket"
-
 	alpha_cdn "github.com/s4wave/spacewave/core/cdn"
 	cdn_bstore "github.com/s4wave/spacewave/core/cdn/bstore"
 	packfile "github.com/s4wave/spacewave/core/provider/spacewave/packfile"
 	"github.com/s4wave/spacewave/core/sobject"
 	sobject_world_engine "github.com/s4wave/spacewave/core/sobject/world/engine"
+	"github.com/s4wave/spacewave/db/bucket"
 	"github.com/sirupsen/logrus"
 )
 
+// testSpaceID identifies the isolated CDN fixture.
 const testSpaceID = "01kpftest0000000000000001"
 
 // newTestSharedObject builds a CdnSharedObject wrapped around a CdnBlockStore
@@ -33,6 +33,7 @@ func newTestSharedObject(t *testing.T, seed *sobject.SORoot) *CdnSharedObject {
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Cleanup(bs.Close)
 	if seed != nil {
 		bs.SetPointer(&alpha_cdn.CdnRootPointer{
 			SpaceId: testSpaceID,
@@ -61,6 +62,7 @@ func setTestPointer(t *testing.T, so *CdnSharedObject, ptr *alpha_cdn.CdnRootPoi
 	bs.SetPointer(ptr)
 }
 
+// TestMetadataSurface exposes CDN identity and public-read metadata.
 func TestMetadataSurface(t *testing.T) {
 	so := newTestSharedObject(t, nil)
 	if got := so.GetSharedObjectID(); got != testSpaceID {
@@ -83,6 +85,7 @@ func TestMetadataSurface(t *testing.T) {
 	}
 }
 
+// TestWritePathsRejected rejects every SharedObject mutation surface.
 func TestWritePathsRejected(t *testing.T) {
 	ctx := context.Background()
 	so := newTestSharedObject(t, nil)
@@ -103,6 +106,7 @@ func TestWritePathsRejected(t *testing.T) {
 	}
 }
 
+// TestSnapshotBeforeAndAfterPointer distinguishes an absent head from a decoded published head.
 func TestSnapshotBeforeAndAfterPointer(t *testing.T) {
 	ctx := context.Background()
 	so := newTestSharedObject(t, nil)
@@ -164,6 +168,7 @@ func TestSnapshotBeforeAndAfterPointer(t *testing.T) {
 	}
 }
 
+// TestEmptyInitializedPointerHasNoHead treats an unpopulated CDN pointer as loading.
 func TestEmptyInitializedPointerHasNoHead(t *testing.T) {
 	ctx := context.Background()
 	so := newTestSharedObject(t, &sobject.SORoot{
@@ -191,6 +196,7 @@ func TestEmptyInitializedPointerHasNoHead(t *testing.T) {
 	}
 }
 
+// TestWorldEngineMissingPublishedHeadReturnsSharedObjectLoadingHealth reports retryable loading health before publication.
 func TestWorldEngineMissingPublishedHeadReturnsSharedObjectLoadingHealth(t *testing.T) {
 	ctx := context.Background()
 	ptr := &alpha_cdn.CdnRootPointer{
@@ -208,7 +214,7 @@ func TestWorldEngineMissingPublishedHeadReturnsSharedObjectLoadingHealth(t *test
 		_, _ = w.Write(encoded)
 	})
 	hs := httptest.NewServer(mux)
-	defer hs.Close()
+	t.Cleanup(hs.Close)
 
 	bs, err := cdn_bstore.NewCdnBlockStore(cdn_bstore.Options{
 		CdnBaseURL: hs.URL,
@@ -218,6 +224,7 @@ func TestWorldEngineMissingPublishedHeadReturnsSharedObjectLoadingHealth(t *test
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Cleanup(bs.Close)
 	so, err := NewCdnSharedObject(CdnSharedObjectOptions{
 		SpaceID:    testSpaceID,
 		BlockStore: bs,
@@ -226,7 +233,7 @@ func TestWorldEngineMissingPublishedHeadReturnsSharedObjectLoadingHealth(t *test
 		t.Fatal(err)
 	}
 
-	_, err = NewWorldEngine(ctx, logrus.NewEntry(logrus.New()), nil, so, nil)
+	_, err = NewWorldEngine(ctx, logrus.NewEntry(logrus.New()), nil, so)
 	if err == nil {
 		t.Fatal("expected missing published head to block world engine construction")
 	}
@@ -242,6 +249,7 @@ func TestWorldEngineMissingPublishedHeadReturnsSharedObjectLoadingHealth(t *test
 	}
 }
 
+// TestWorldEnginesBorrowBlockStoreDecodedCache shares decoded blocks without transferring cache ownership.
 func TestWorldEnginesBorrowBlockStoreDecodedCache(t *testing.T) {
 	ctx := context.Background()
 	head := &bucket.ObjectRef{}
@@ -262,11 +270,11 @@ func TestWorldEnginesBorrowBlockStoreDecodedCache(t *testing.T) {
 	}
 
 	le := logrus.NewEntry(logrus.New())
-	first, err := NewWorldEngine(ctx, le, nil, so, nil)
+	first, err := NewWorldEngine(ctx, le, nil, so)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer first.Release()
+	t.Cleanup(first.Release)
 	followed, err := first.Cursor.FollowRef(ctx, &bucket.ObjectRef{BucketId: "authoring-world"})
 	if err != nil {
 		t.Fatalf("follow authoring ref through CDN bucket override: %v", err)
@@ -276,11 +284,11 @@ func TestWorldEnginesBorrowBlockStoreDecodedCache(t *testing.T) {
 		t.Fatalf("followed bucket = %q, want %q", got, testSpaceID)
 	}
 	followed.Release()
-	second, err := NewWorldEngine(ctx, le, nil, so, nil)
+	second, err := NewWorldEngine(ctx, le, nil, so)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer second.Release()
+	t.Cleanup(second.Release)
 
 	if first.decodedBlocks != wantCache || second.decodedBlocks != wantCache {
 		t.Fatal("world engines did not borrow the block-store decoded cache")
@@ -294,6 +302,7 @@ func TestWorldEnginesBorrowBlockStoreDecodedCache(t *testing.T) {
 	}
 }
 
+// TestPackedPointerRejectsUndecodableRoot rejects corrupt metadata once packs are published.
 func TestPackedPointerRejectsUndecodableRoot(t *testing.T) {
 	so := newTestSharedObject(t, nil)
 	setTestPointer(t, so, &alpha_cdn.CdnRootPointer{
@@ -331,7 +340,7 @@ func TestRefreshSnapshotEmitsOnWatch(t *testing.T) {
 		_, _ = w.Write(encoded)
 	})
 	hs := httptest.NewServer(mux)
-	defer hs.Close()
+	t.Cleanup(hs.Close)
 
 	bs, err := cdn_bstore.NewCdnBlockStore(cdn_bstore.Options{
 		CdnBaseURL: hs.URL,
@@ -341,6 +350,7 @@ func TestRefreshSnapshotEmitsOnWatch(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Cleanup(bs.Close)
 	so, err := NewCdnSharedObject(CdnSharedObjectOptions{
 		SpaceID:    testSpaceID,
 		BlockStore: bs,
@@ -353,7 +363,7 @@ func TestRefreshSnapshotEmitsOnWatch(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer rel()
+	t.Cleanup(rel)
 
 	initial := watch.GetValue()
 	if initial == nil {
@@ -365,7 +375,7 @@ func TestRefreshSnapshotEmitsOnWatch(t *testing.T) {
 	}
 
 	waitCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
-	defer cancel()
+	t.Cleanup(cancel)
 	next, err := watch.WaitValueChange(waitCtx, initial, nil)
 	if err != nil {
 		t.Fatalf("WaitValueChange: %v", err)
@@ -378,6 +388,7 @@ func TestRefreshSnapshotEmitsOnWatch(t *testing.T) {
 	}
 }
 
+// TestHealthSurfaceTracksPointerLifecycle publishes loading and ready health as the CDN head changes.
 func TestHealthSurfaceTracksPointerLifecycle(t *testing.T) {
 	t.Parallel()
 
@@ -388,7 +399,7 @@ func TestHealthSurfaceTracksPointerLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer rel()
+	t.Cleanup(rel)
 
 	initial := healthCtr.GetValue()
 	if initial == nil {
@@ -405,7 +416,7 @@ func TestHealthSurfaceTracksPointerLifecycle(t *testing.T) {
 	so.setHealth(nil)
 
 	loadingCtx, loadingCancel := context.WithTimeout(ctx, 2*time.Second)
-	defer loadingCancel()
+	t.Cleanup(loadingCancel)
 	next, err := healthCtr.WaitValueChange(loadingCtx, initial, nil)
 	if err != nil {
 		t.Fatalf("WaitValueChange() = %v", err)
@@ -432,7 +443,7 @@ func TestHealthSurfaceTracksPointerLifecycle(t *testing.T) {
 	so.setHealth(nil)
 
 	readyCtx, readyCancel := context.WithTimeout(ctx, 2*time.Second)
-	defer readyCancel()
+	t.Cleanup(readyCancel)
 	next, err = healthCtr.WaitValueChange(readyCtx, next, nil)
 	if err != nil {
 		t.Fatalf("WaitValueChange() = %v", err)

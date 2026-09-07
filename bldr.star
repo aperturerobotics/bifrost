@@ -198,9 +198,6 @@ def release_world_config_set(
             "cdnBaseUrl": cdn_base_url,
             "cacheBlockStoreId": cache_block_store_id,
         }),
-        "release-world-ops": config_entry("space/world/ops", 1, {
-            "engineId": RELEASE_WORLD_ENGINE_ID,
-        }),
     }
     if include_fetch:
         configs["release-world-fetch"] = config_entry("bldr/manifest/fetch/world", 1, {
@@ -254,9 +251,6 @@ def release_world_reader_config_set(
             "spaceId": space_id,
             "cdnBaseUrl": cdn_base_url,
             "suppliedBlockStoreId": RELEASE_WORLD_BLOCK_STORE_ID,
-        }),
-        "release-world-ops": config_entry("space/world/ops", 1, {
-            "engineId": RELEASE_WORLD_ENGINE_ID,
         }),
     }
 

@@ -27,12 +27,15 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// TestBrowserReleaseLazyPluginFixtureIsNonEmbeddedAndPublished keeps runtime plugins in Release World while embedding the bootstrap.
 func TestBrowserReleaseLazyPluginFixtureIsNonEmbeddedAndPublished(t *testing.T) {
+	// Read the authoritative release composition before checking its ownership.
 	result, err := bldr_project_starlark.Evaluate(filepath.Join("..", "..", "..", "bldr.star"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	// Select the fixture that obtains ordinary plugins from Release World.
 	build := result.Config.GetBuild()["release-web-lazy-plugin-fixture"]
 	if build == nil {
 		t.Fatal("missing release-web-lazy-plugin-fixture build")
@@ -47,13 +50,15 @@ func TestBrowserReleaseLazyPluginFixtureIsNonEmbeddedAndPublished(t *testing.T) 
 		t.Fatalf("decode browser fixture dist config: %v", err)
 	}
 	embeds := distConf.GetEmbedManifests()
-	if len(embeds) != 1 || embeds[0].GetManifestId() != "spacewave-launcher" || embeds[0].GetPlatformId() != "js" {
-		t.Fatalf("browser release embeds = %#v, want spacewave-launcher@js only", embeds)
+	if len(embeds) != 2 || embeds[0].GetManifestId() != "spacewave-launcher" || embeds[0].GetPlatformId() != "js" ||
+		embeds[1].GetManifestId() != "bldr-materializer" || embeds[1].GetPlatformId() != "js" {
+		t.Fatalf("browser release embeds = %#v, want launcher and materializer on js", embeds)
 	}
 	if !slices.Contains(distConf.GetLoadPlugins(), "spacewave-cli-plugin") {
 		t.Fatal("lazy fixture does not request terminal plugin through LoadPlugin")
 	}
 
+	// Require the launcher to delegate published-state reads to its host.
 	launcherOverride := build.GetManifestOverrides()["spacewave-launcher"]
 	if launcherOverride == nil {
 		t.Fatal("missing launcher fixture manifest override")
@@ -64,7 +69,6 @@ func TestBrowserReleaseLazyPluginFixtureIsNonEmbeddedAndPublished(t *testing.T) 
 	}
 	for _, id := range []string{
 		"release-world",
-		"release-world-ops",
 		"release-world-fetch",
 		"release-world-cdn-bucket",
 	} {
@@ -99,11 +103,13 @@ func TestBrowserReleaseLazyPluginFixtureIsNonEmbeddedAndPublished(t *testing.T) 
 			cdnBucketConf.GetBucketConfig().GetId())
 	}
 
+	// Keep the terminal fixture available through the release publisher.
 	publish := result.Config.GetPublish()["spacewave-release"]
 	if publish == nil || !slices.Contains(publish.GetManifests(), "spacewave-cli-plugin") {
 		t.Fatal("Release World publication omits the lazy terminal plugin")
 	}
 
+	// Every ordinary startup tuple must have a single release producer.
 	pluginRelease := result.Config.GetBuild()["plugin-release-browser"]
 	if pluginRelease == nil {
 		t.Fatal("missing plugin-release-browser build")
@@ -136,7 +142,9 @@ func TestBrowserReleaseLazyPluginFixtureIsNonEmbeddedAndPublished(t *testing.T) 
 	}
 }
 
+// TestReleaseLauncherBrowserAndNativeAuthorityComposition checks the single CDN authority for each host composition.
 func TestReleaseLauncherBrowserAndNativeAuthorityComposition(t *testing.T) {
+	// Read the authoritative release composition before checking its ownership.
 	result, err := bldr_project_starlark.Evaluate(filepath.Join("..", "..", "..", "bldr.star"))
 	if err != nil {
 		t.Fatal(err)
@@ -168,10 +176,13 @@ func TestReleaseLauncherBrowserAndNativeAuthorityComposition(t *testing.T) {
 					t.Fatalf("browser worker mounts Release World config %q", id)
 				}
 			}
-			for _, id := range []string{"release-world", "release-world-ops", "release-world-fetch", "release-world-cdn-bucket"} {
+			for _, id := range []string{"release-world", "release-world-fetch", "release-world-cdn-bucket"} {
 				if conf.GetHostConfigSet()[id] == nil {
 					t.Fatalf("browser host config missing %q", id)
 				}
+			}
+			if conf.GetHostConfigSet()["release-world-ops"] != nil {
+				t.Fatal("browser host requires the application operation catalogue")
 			}
 			if conf.GetHostConfigSet()["release-world-cdn-store"] != nil || conf.GetHostConfigSet()["release-world-cdn-server"] != nil {
 				t.Fatal("browser host creates a duplicate CDN store or unused RPC bridge")
@@ -186,6 +197,7 @@ func TestReleaseLauncherBrowserAndNativeAuthorityComposition(t *testing.T) {
 		})
 	}
 
+	// Native launchers borrow the host transport through block-store RPC.
 	launcher := result.Config.GetManifests()["spacewave-launcher"]
 	if launcher == nil {
 		t.Fatal("missing native launcher manifest")
@@ -193,6 +205,9 @@ func TestReleaseLauncherBrowserAndNativeAuthorityComposition(t *testing.T) {
 	var native bldr_plugin_compiler_go.Config
 	if err := native.UnmarshalJSON(launcher.GetBuilder().GetConfig()); err != nil {
 		t.Fatal(err)
+	}
+	if native.GetConfigSet()["release-world-ops"] != nil || native.GetHostConfigSet()["release-world-ops"] != nil {
+		t.Fatal("Release World state readers require the application operation catalogue")
 	}
 	if native.GetConfigSet()["release-world-fetch"] != nil {
 		t.Fatal("native plugin bus mounts a second Release World fetcher")
@@ -226,7 +241,9 @@ func TestReleaseLauncherBrowserAndNativeAuthorityComposition(t *testing.T) {
 	}
 }
 
+// TestReleaseWorkflowsSeparateEntrypointAndPluginProducers prevents competing release artifact producers.
 func TestReleaseWorkflowsSeparateEntrypointAndPluginProducers(t *testing.T) {
+	// Entrypoint builds must not produce ordinary runtime plugin roots.
 	entrypointWorkflow, err := os.ReadFile(filepath.Join("..", "..", "..", ".github", "workflows", "entrypoint-release.yml"))
 	if err != nil {
 		t.Fatal(err)
@@ -258,6 +275,7 @@ func TestReleaseWorkflowsSeparateEntrypointAndPluginProducers(t *testing.T) {
 		t.Fatal("entrypoint release does not derive SOURCE_DATE_EPOCH from the checked-out commit")
 	}
 
+	// Plugin publication owns those roots and their reproducible timestamps.
 	pluginWorkflow, err := os.ReadFile(filepath.Join("..", "..", "..", ".github", "workflows", "plugin-release.yml"))
 	if err != nil {
 		t.Fatal(err)
@@ -276,18 +294,23 @@ func TestReleaseWorkflowsSeparateEntrypointAndPluginProducers(t *testing.T) {
 	}
 }
 
+// TestBrowserReleasePublishedWorldFetchManifestPreflight reads published manifests through the host CDN engine.
 func TestBrowserReleasePublishedWorldFetchManifestPreflight(t *testing.T) {
+	// Keep the live CDN read opt-in for ordinary offline package tests.
 	if os.Getenv("E2E_RELEASE_WORLD_PREFLIGHT") != "1" {
 		t.Skip("set E2E_RELEASE_WORLD_PREFLIGHT=1 to probe the promoted Release World")
 	}
+	// Read the authoritative release composition before checking its ownership.
 	result, err := bldr_project_starlark.Evaluate(filepath.Join("..", "..", "..", "bldr.star"))
 	if err != nil {
 		t.Fatal(err)
 	}
+	// Select the fixture that obtains ordinary plugins from Release World.
 	build := result.Config.GetBuild()["release-web-lazy-plugin-fixture"]
 	if build == nil {
 		t.Fatal("missing release-web-lazy-plugin-fixture build")
 	}
+	// Require the launcher to delegate published-state reads to its host.
 	launcherOverride := build.GetManifestOverrides()["spacewave-launcher"]
 	if launcherOverride == nil {
 		t.Fatal("missing launcher fixture manifest override")
@@ -306,8 +329,9 @@ func TestBrowserReleasePublishedWorldFetchManifestPreflight(t *testing.T) {
 	}
 	t.Logf("probing Release World space=%q base=%q", releaseWorldConf.GetSpaceId(), releaseWorldConf.GetCdnBaseUrl())
 
+	// Mount the published world with an isolated durable cache.
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-	defer cancel()
+	t.Cleanup(cancel)
 	b, _, err := NewCoreBus(ctx, logrus.NewEntry(logrus.New()))
 	if err != nil {
 		t.Fatal(err)
@@ -323,7 +347,7 @@ func TestBrowserReleasePublishedWorldFetchManifestPreflight(t *testing.T) {
 	if err != nil {
 		t.Fatalf("add default storage controller: %v", err)
 	}
-	defer storageCtrlRelease()
+	t.Cleanup(storageCtrlRelease)
 	_, _, distVolumeRef, err := loader.WaitExecControllerRunning(
 		ctx, b,
 		resolver.NewLoadControllerWithConfig(newDistStorageVolumeConfig(storageID, "spacewave")),
@@ -332,14 +356,14 @@ func TestBrowserReleasePublishedWorldFetchManifestPreflight(t *testing.T) {
 	if err != nil {
 		t.Fatalf("start dist storage volume: %v", err)
 	}
-	defer distVolumeRef.Release()
+	t.Cleanup(distVolumeRef.Release)
 	cdnCtrli, _, cdnRef, err := loader.WaitExecControllerRunning(
 		ctx, b, resolver.NewLoadControllerWithConfig(&releaseWorldConf), nil,
 	)
 	if err != nil {
 		t.Fatalf("mount Release World: %v", err)
 	}
-	defer cdnRef.Release()
+	t.Cleanup(cdnRef.Release)
 	cdnCtrl, ok := cdnCtrli.(*cdn_world_controller.Controller)
 	if !ok {
 		t.Fatalf("Release World controller type = %T", cdnCtrli)
@@ -355,12 +379,13 @@ func TestBrowserReleasePublishedWorldFetchManifestPreflight(t *testing.T) {
 	if err != nil {
 		t.Fatalf("start Release World FetchManifest resolver: %v", err)
 	}
-	defer fetchRef.Release()
+	t.Cleanup(fetchRef.Release)
 	engine, err := cdnCtrl.GetWorldEngine(ctx)
 	if err != nil {
 		t.Fatalf("get Release World engine: %v", err)
 	}
 
+	// Read each startup manifest and its first content block through the CDN engine.
 	for _, tuple := range []struct {
 		manifestID string
 		platformID string
@@ -383,7 +408,7 @@ func TestBrowserReleasePublishedWorldFetchManifestPreflight(t *testing.T) {
 			t.Fatalf("FetchManifest %s@%s: %v", tuple.manifestID, tuple.platformID, err)
 		}
 		if valueRef != nil {
-			defer valueRef.Release()
+			t.Cleanup(valueRef.Release)
 		}
 		if val == nil {
 			t.Fatalf("Release World preflight rejected tuple %s@%s: no provider value", tuple.manifestID, tuple.platformID)

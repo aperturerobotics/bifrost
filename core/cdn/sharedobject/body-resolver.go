@@ -8,7 +8,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/core/sobject"
 	"github.com/s4wave/spacewave/core/space"
-	space_world_optypes "github.com/s4wave/spacewave/core/space/world/optypes"
 	"github.com/sirupsen/logrus"
 )
 
@@ -19,12 +18,14 @@ func ResolveMountSharedObjectBody(
 	dir sobject.MountSharedObjectBody,
 ) ([]directive.Resolver, error) {
 	return directive.R(directive.NewAccessResolver(func(ctx context.Context, released func()) (space.MountSharedObjectBodyValue, func(), error) {
+		// Admit only the CDN object implementation for this body type.
 		cdnSO, ok := dir.MountSharedObjectBodySource().(*CdnSharedObject)
 		if !ok {
 			return nil, nil, errors.Errorf("cdn body type on non-cdn shared object: %T", dir.MountSharedObjectBodySource())
 		}
 
-		we, err := NewWorldEngine(ctx, le, b, cdnSO, space_world_optypes.LookupWorldOp)
+		// Tie the read-only engine to the mounted body reference.
+		we, err := NewWorldEngine(ctx, le, b, cdnSO)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "build cdn world engine")
 		}
@@ -36,6 +37,7 @@ func ResolveMountSharedObjectBody(
 			body,
 		)
 
+		// Release the engine when the mount is withdrawn.
 		return ret, we.Release, nil
 	}), nil)
 }

@@ -15,7 +15,9 @@ import (
 	bldr_plugin_compiler_go "github.com/s4wave/spacewave/bldr/plugin/compiler/go"
 )
 
+// TestEvaluateMinimal decodes a project, manifest, and build from Starlark.
 func TestEvaluateMinimal(t *testing.T) {
+	// Isolate the project and every file it may load.
 	dir := t.TempDir()
 	starFile := filepath.Join(dir, "bldr.star")
 	err := os.WriteFile(starFile, []byte(`
@@ -27,6 +29,7 @@ build("app", manifests=["test-manifest"], targets=["desktop"])
 		t.Fatal(err)
 	}
 
+	// Evaluate the fixture through the public project loader.
 	result, err := Evaluate(starFile)
 	if err != nil {
 		t.Fatal(err)
@@ -60,7 +63,9 @@ build("app", manifests=["test-manifest"], targets=["desktop"])
 	}
 }
 
+// TestEvaluateConfigEntry preserves controller configuration in the manifest builder.
 func TestEvaluateConfigEntry(t *testing.T) {
+	// Isolate the project and every file it may load.
 	dir := t.TempDir()
 	starFile := filepath.Join(dir, "bldr.star")
 	err := os.WriteFile(starFile, []byte(`
@@ -83,6 +88,7 @@ manifest("core",
 		t.Fatal(err)
 	}
 
+	// Evaluate the fixture through the public project loader.
 	result, err := Evaluate(starFile)
 	if err != nil {
 		t.Fatal(err)
@@ -93,7 +99,6 @@ manifest("core",
 		t.Fatal("manifest 'core' not found")
 	}
 
-	// The config should be valid JSON containing configSet.
 	configData := mc.GetBuilder().GetConfig()
 	if len(configData) == 0 {
 		t.Fatal("expected non-empty builder config")
@@ -101,7 +106,9 @@ manifest("core",
 	t.Logf("builder config JSON: %s", string(configData))
 }
 
+// TestEvaluateManifestOverrides retains platform-specific compiler overrides.
 func TestEvaluateManifestOverrides(t *testing.T) {
+	// Isolate the project and every file it may load.
 	dir := t.TempDir()
 	starFile := filepath.Join(dir, "bldr.star")
 	err := os.WriteFile(starFile, []byte(`
@@ -125,11 +132,13 @@ build("release-desktop-darwin-arm64",
 		t.Fatal(err)
 	}
 
+	// Evaluate the fixture through the public project loader.
 	result, err := Evaluate(starFile)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	// Validate native release selection and embedded startup requirements.
 	bc := result.Config.GetBuild()["release-desktop-darwin-arm64"]
 	if bc == nil {
 		t.Fatal("build target 'release-desktop-darwin-arm64' not found")
@@ -163,7 +172,9 @@ build("release-desktop-darwin-arm64",
 	}
 }
 
+// TestEvaluateRejectsRelativeLoadOutsideProject fences relative loads to the project root.
 func TestEvaluateRejectsRelativeLoadOutsideProject(t *testing.T) {
+	// Isolate the project and every file it may load.
 	dir := t.TempDir()
 	projectDir := filepath.Join(dir, "project")
 	if err := os.Mkdir(projectDir, 0o755); err != nil {
@@ -189,7 +200,9 @@ project(id="test")
 	}
 }
 
+// TestEvaluateRejectsGoVendorLoadOutsideVendor fences module loads to the vendor root.
 func TestEvaluateRejectsGoVendorLoadOutsideVendor(t *testing.T) {
+	// Isolate the project and every file it may load.
 	dir := t.TempDir()
 	vendorDir := filepath.Join(dir, "vendor")
 	if err := os.Mkdir(vendorDir, 0o755); err != nil {
@@ -215,7 +228,9 @@ project(id="test")
 	}
 }
 
+// TestEvaluateRejectsLoadSymlinkOutsideProject rejects symlinks that escape the project root.
 func TestEvaluateRejectsLoadSymlinkOutsideProject(t *testing.T) {
+	// Isolate the project and every file it may load.
 	dir := t.TempDir()
 	projectDir := filepath.Join(dir, "project")
 	if err := os.Mkdir(projectDir, 0o755); err != nil {
@@ -245,7 +260,9 @@ project(id="test")
 	}
 }
 
+// TestEvaluateRootDesktopReleaseBuildsJsEmbeds checks release producers, bootstrap tuples, and isolated browser fixtures.
 func TestEvaluateRootDesktopReleaseBuildsJsEmbeds(t *testing.T) {
+	// Check the repository's authoritative build graph.
 	starPath := "../../../bldr.star"
 	if _, err := os.Stat(starPath); err != nil {
 		t.Skipf("bldr.star not found at %s: %v", starPath, err)
@@ -256,6 +273,7 @@ func TestEvaluateRootDesktopReleaseBuildsJsEmbeds(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Require one native bootstrap producer for every supported host.
 	for _, host := range []struct {
 		name       string
 		platformID string
@@ -295,6 +313,7 @@ func TestEvaluateRootDesktopReleaseBuildsJsEmbeds(t *testing.T) {
 		}
 	}
 
+	// Check the application core's platform contract.
 	core := result.Config.GetManifests()["spacewave-core"]
 	if core == nil {
 		t.Fatal("spacewave-core manifest not found")
@@ -311,6 +330,8 @@ func TestEvaluateRootDesktopReleaseBuildsJsEmbeds(t *testing.T) {
 			t.Fatalf("spacewave-core config missing %s: %s", want, coreCfg)
 		}
 	}
+
+	// Keep release discovery on the configured host authority.
 	launcher := result.Config.GetManifests()["spacewave-launcher"]
 	if launcher == nil {
 		t.Fatal("spacewave-launcher manifest not found")
@@ -334,6 +355,8 @@ func TestEvaluateRootDesktopReleaseBuildsJsEmbeds(t *testing.T) {
 	if strings.Contains(launcherCfg, "staging.spacewave.app") {
 		t.Fatalf("spacewave-launcher public config contains staging endpoint: %s", launcherCfg)
 	}
+
+	// Preserve the installed app's background presence policy.
 	web := result.Config.GetManifests()["web"]
 	if web == nil {
 		t.Fatal("web manifest not found")
@@ -349,6 +372,7 @@ func TestEvaluateRootDesktopReleaseBuildsJsEmbeds(t *testing.T) {
 		}
 	}
 
+	// Keep split viewer backends outside the main application plugin.
 	app := result.Config.GetManifests()["spacewave-app"]
 	if app == nil {
 		t.Fatal("spacewave-app manifest not found")
@@ -367,6 +391,7 @@ func TestEvaluateRootDesktopReleaseBuildsJsEmbeds(t *testing.T) {
 		}
 	}
 
+	// Require all Notes entrypoints on their owning plugin.
 	notes := result.Config.GetManifests()["spacewave-notes"]
 	if notes == nil {
 		t.Fatal("notes manifest not found")
@@ -383,6 +408,7 @@ func TestEvaluateRootDesktopReleaseBuildsJsEmbeds(t *testing.T) {
 		}
 	}
 
+	// Keep VM viewers independently loadable from the startup group.
 	v86 := result.Config.GetManifests()["spacewave-v86"]
 	if v86 == nil {
 		t.Fatal("v86 manifest not found")
@@ -416,6 +442,7 @@ func TestEvaluateRootDesktopReleaseBuildsJsEmbeds(t *testing.T) {
 		}
 	}
 
+	// Validate native release selection and embedded startup requirements.
 	bc := result.Config.GetBuild()["release-desktop-darwin-arm64"]
 	if bc == nil {
 		t.Fatal("build target 'release-desktop-darwin-arm64' not found")
@@ -448,6 +475,7 @@ func TestEvaluateRootDesktopReleaseBuildsJsEmbeds(t *testing.T) {
 		}
 	}
 
+	// Require the CLI bootstrap without the desktop loader.
 	cliRelease := result.Config.GetBuild()["release-cli-darwin-arm64"]
 	if cliRelease == nil {
 		t.Fatal("build target 'release-cli-darwin-arm64' not found")
@@ -476,6 +504,7 @@ func TestEvaluateRootDesktopReleaseBuildsJsEmbeds(t *testing.T) {
 		t.Fatalf("release cli override unexpectedly includes desktop loader: %s", cliCfg)
 	}
 
+	// Keep production browser payloads separate from runtime plugin releases.
 	browserRelease := result.Config.GetBuild()["release-web"]
 	if browserRelease == nil {
 		t.Fatal("build target 'release-web' not found")
@@ -487,8 +516,8 @@ func TestEvaluateRootDesktopReleaseBuildsJsEmbeds(t *testing.T) {
 	if slices.Contains(browserRelease.GetManifests(), "spacewave-dist") {
 		t.Fatalf("browser release manifests unexpectedly include spacewave-dist: %v", browserRelease.GetManifests())
 	}
-	if got := browserRelease.GetManifests(); !slices.Equal(got, []string{"spacewave-launcher", "spacewave-browser"}) {
-		t.Fatalf("browser release manifests: got %v, want launcher and shell", got)
+	if got := browserRelease.GetManifests(); !slices.Equal(got, []string{"spacewave-launcher", "bldr-materializer", "spacewave-browser"}) {
+		t.Fatalf("browser release manifests: got %v, want launcher, materializer, and shell", got)
 	}
 	browserLauncherOverride := browserRelease.GetManifestOverrides()["spacewave-launcher"]
 	if browserLauncherOverride == nil {
@@ -530,14 +559,12 @@ func TestEvaluateRootDesktopReleaseBuildsJsEmbeds(t *testing.T) {
 		}
 	}
 
+	// Make the browser fixture self-contained and independent of production discovery.
 	e2eBrowserRelease := result.Config.GetBuild()["release-web-e2e"]
 	if e2eBrowserRelease == nil {
 		t.Fatal("build target 'release-web-e2e' not found")
 	}
-	if slices.Contains(e2eBrowserRelease.GetManifests(), "spacewave-notes") {
-		t.Fatalf("release-web-e2e should build Notes only through the js embed: %v", e2eBrowserRelease.GetManifests())
-	}
-	for _, want := range []string{"spacewave-launcher", "spacewave-core", "spacewave-web", "spacewave-app", "spacewave-cli-plugin", "web", "spacewave-browser"} {
+	for _, want := range []string{"spacewave-launcher", "bldr-materializer", "spacewave-core", "spacewave-web", "spacewave-app", "spacewave-notes", "spacewave-sql", "spacewave-cli-plugin", "web", "spacewave-browser"} {
 		if !slices.Contains(e2eBrowserRelease.GetManifests(), want) {
 			t.Fatalf("release-web-e2e manifests missing %s: %v", want, e2eBrowserRelease.GetManifests())
 		}
@@ -592,6 +619,10 @@ func TestEvaluateRootDesktopReleaseBuildsJsEmbeds(t *testing.T) {
 		"release-web-e2e",
 		e2eDistConf,
 		"web/js/wasm",
+		distEmbedManifestWant{manifestID: "spacewave-core", platformID: "web/js/wasm"},
+		distEmbedManifestWant{manifestID: "spacewave-web", platformID: "js"},
+		distEmbedManifestWant{manifestID: "spacewave-app", platformID: "js"},
+		distEmbedManifestWant{manifestID: "web", platformID: "web/js/wasm"},
 		distEmbedManifestWant{manifestID: "spacewave-notes", platformID: "js"},
 		distEmbedManifestWant{manifestID: "spacewave-notes", platformID: "web/js/wasm"},
 		distEmbedManifestWant{manifestID: "spacewave-sql", platformID: "js"},
@@ -607,16 +638,17 @@ func TestEvaluateRootDesktopReleaseBuildsJsEmbeds(t *testing.T) {
 		}
 	}
 
+	// Build fixture payloads before compiling the distribution that embeds them.
 	e2eAssetBuild := result.Config.GetBuild()["release-web-e2e-assets"]
 	if e2eAssetBuild == nil {
 		t.Fatal("build target 'release-web-e2e-assets' not found")
 	}
-	for _, want := range []string{"spacewave-launcher", "spacewave-core", "spacewave-web", "spacewave-app", "spacewave-cli-plugin", "web"} {
+	for _, want := range []string{"spacewave-launcher", "bldr-materializer", "spacewave-core", "spacewave-web", "spacewave-app", "spacewave-notes", "spacewave-sql", "spacewave-cli-plugin", "web"} {
 		if !slices.Contains(e2eAssetBuild.GetManifests(), want) {
 			t.Fatalf("release-web-e2e-assets manifests missing %s: %v", want, e2eAssetBuild.GetManifests())
 		}
 	}
-	for _, unexpected := range []string{"spacewave-browser", "spacewave-dist", "spacewave-notes"} {
+	for _, unexpected := range []string{"spacewave-browser", "spacewave-dist"} {
 		if slices.Contains(e2eAssetBuild.GetManifests(), unexpected) {
 			t.Fatalf("release-web-e2e-assets should not build %s: %v", unexpected, e2eAssetBuild.GetManifests())
 		}
@@ -636,6 +668,7 @@ func TestEvaluateRootDesktopReleaseBuildsJsEmbeds(t *testing.T) {
 		t.Fatalf("release-web-e2e-tinygo-assets manifests missing spacewave-cli-plugin: %v", tinygoE2EAssetBuild.GetManifests())
 	}
 
+	// Restrict the separate distribution phase to its JavaScript host output.
 	e2eDistBuild := result.Config.GetBuild()["release-web-e2e-dist"]
 	if e2eDistBuild == nil {
 		t.Fatal("build target 'release-web-e2e-dist' not found")
@@ -659,11 +692,16 @@ func TestEvaluateRootDesktopReleaseBuildsJsEmbeds(t *testing.T) {
 		"release-web-e2e-dist",
 		e2eDistOnlyConf,
 		"web/js/wasm",
+		distEmbedManifestWant{manifestID: "spacewave-core", platformID: "web/js/wasm"},
+		distEmbedManifestWant{manifestID: "spacewave-web", platformID: "js"},
+		distEmbedManifestWant{manifestID: "spacewave-app", platformID: "js"},
+		distEmbedManifestWant{manifestID: "web", platformID: "web/js/wasm"},
 		distEmbedManifestWant{manifestID: "spacewave-notes", platformID: "js"},
 		distEmbedManifestWant{manifestID: "spacewave-notes", platformID: "web/js/wasm"},
 		distEmbedManifestWant{manifestID: "spacewave-sql", platformID: "js"},
 	)
 
+	// Publish ordinary plugins for serving-origin runtime loading.
 	pluginReleaseBrowser := result.Config.GetBuild()["plugin-release-browser"]
 	if pluginReleaseBrowser == nil {
 		t.Fatal("build target 'plugin-release-browser' not found")
@@ -696,6 +734,7 @@ func TestEvaluateRootDesktopReleaseBuildsJsEmbeds(t *testing.T) {
 		}
 	}
 
+	// Keep independently loaded plugins reachable through release publication.
 	publish := result.Config.GetPublish()["spacewave-release"]
 	if publish == nil {
 		t.Fatal("publish target 'spacewave-release' not found")
@@ -707,7 +746,9 @@ func TestEvaluateRootDesktopReleaseBuildsJsEmbeds(t *testing.T) {
 	}
 }
 
+// TestEvaluateRootDesktopStatusProjectorPlatformBoundary keeps desktop services out of browser and CLI compositions.
 func TestEvaluateRootDesktopStatusProjectorPlatformBoundary(t *testing.T) {
+	// Check the repository's authoritative build graph.
 	starPath := "../../../bldr.star"
 	if _, err := os.Stat(starPath); err != nil {
 		t.Skipf("bldr.star not found at %s: %v", starPath, err)
@@ -718,6 +759,7 @@ func TestEvaluateRootDesktopStatusProjectorPlatformBoundary(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Check the application core's platform contract.
 	core := result.Config.GetManifests()["spacewave-core"]
 	if core == nil {
 		t.Fatal("spacewave-core manifest not found")
@@ -740,6 +782,7 @@ func TestEvaluateRootDesktopStatusProjectorPlatformBoundary(t *testing.T) {
 		t.Fatalf("js spacewave-core goCompiler: got %s, want GO_COMPILER_DEFAULT", jsConf.GetGoCompiler())
 	}
 
+	// Resolve the TinyGo proof lane without admitting native-only services.
 	tinygoBuild := result.Config.GetBuild()["plugin-release-browser-tinygo"]
 	if tinygoBuild == nil {
 		t.Fatal("build target 'plugin-release-browser-tinygo' not found")
@@ -755,6 +798,7 @@ func TestEvaluateRootDesktopStatusProjectorPlatformBoundary(t *testing.T) {
 		t.Fatalf("TinyGo web spacewave-core goCompiler: got %s, want GO_COMPILER_TINYGO", tinygoWebConf.GetGoCompiler())
 	}
 
+	// Match the TinyGo release host with its platform-specific core.
 	tinygoReleaseBuild := result.Config.GetBuild()["release-web-tinygo"]
 	if tinygoReleaseBuild == nil {
 		t.Fatal("build target 'release-web-tinygo' not found")
@@ -775,6 +819,7 @@ func TestEvaluateRootDesktopStatusProjectorPlatformBoundary(t *testing.T) {
 	tinygoReleaseDistConf := mustDistConfig(t, tinygoReleaseBrowserOverride.GetConfig())
 	assertDistBrowserStartupClosure(t, "release-web-tinygo", tinygoReleaseDistConf, "web/js/wasm")
 
+	// Require the complete embedded fixture on the TinyGo lane.
 	tinygoE2EReleaseBuild := result.Config.GetBuild()["release-web-e2e-tinygo"]
 	if tinygoE2EReleaseBuild == nil {
 		t.Fatal("build target 'release-web-e2e-tinygo' not found")
@@ -789,11 +834,16 @@ func TestEvaluateRootDesktopStatusProjectorPlatformBoundary(t *testing.T) {
 		"release-web-e2e-tinygo",
 		tinygoE2EDistConf,
 		"web/js/wasm",
+		distEmbedManifestWant{manifestID: "spacewave-core", platformID: "web/js/wasm"},
+		distEmbedManifestWant{manifestID: "spacewave-web", platformID: "js"},
+		distEmbedManifestWant{manifestID: "spacewave-app", platformID: "js"},
+		distEmbedManifestWant{manifestID: "web", platformID: "web/js/wasm"},
 		distEmbedManifestWant{manifestID: "spacewave-notes", platformID: "js"},
 		distEmbedManifestWant{manifestID: "spacewave-notes", platformID: "web/js/wasm"},
 		distEmbedManifestWant{manifestID: "spacewave-sql", platformID: "js"},
 	)
 
+	// Keep GoScript core, launcher, and embeds on the same selected compiler.
 	goscriptE2EReleaseBuild := result.Config.GetBuild()["release-web-e2e-goscript"]
 	if goscriptE2EReleaseBuild == nil {
 		t.Fatal("build target 'release-web-e2e-goscript' not found")
@@ -828,11 +878,16 @@ func TestEvaluateRootDesktopStatusProjectorPlatformBoundary(t *testing.T) {
 		"release-web-e2e-goscript",
 		goscriptE2EDistConf,
 		"js",
+		distEmbedManifestWant{manifestID: "spacewave-core", platformID: "js"},
+		distEmbedManifestWant{manifestID: "spacewave-web", platformID: "js"},
+		distEmbedManifestWant{manifestID: "spacewave-app", platformID: "js"},
+		distEmbedManifestWant{manifestID: "web", platformID: "web/js/wasm"},
 		distEmbedManifestWant{manifestID: "spacewave-notes", platformID: "js"},
 		distEmbedManifestWant{manifestID: "spacewave-notes", platformID: "web/js/wasm"},
 		distEmbedManifestWant{manifestID: "spacewave-sql", platformID: "js"},
 	)
 
+	// Exclude desktop presence services from the standalone CLI.
 	cli := result.Config.GetManifests()["spacewave"]
 	if cli == nil {
 		t.Fatal("spacewave CLI manifest not found")
@@ -841,6 +896,7 @@ func TestEvaluateRootDesktopStatusProjectorPlatformBoundary(t *testing.T) {
 	assertCliConfigOmitsDesktopStatusProjector(t, "spacewave CLI", cliConf)
 }
 
+// mustDistConfig decodes a distribution configuration or fails the test.
 func mustDistConfig(t *testing.T, data []byte) *bldr_dist_compiler.Config {
 	t.Helper()
 	conf := &bldr_dist_compiler.Config{}
@@ -850,6 +906,7 @@ func mustDistConfig(t *testing.T, data []byte) *bldr_dist_compiler.Config {
 	return conf
 }
 
+// assertDistEmbedPlatform requires a manifest tuple on the selected platform.
 func assertDistEmbedPlatform(
 	t *testing.T,
 	label string,
@@ -871,11 +928,15 @@ func assertDistEmbedPlatform(
 	t.Fatalf("%s embeds %s platforms %v, missing %q", label, manifestID, gotPlatformIDs, wantPlatformID)
 }
 
+// distEmbedManifestWant identifies one expected embedded executable tuple.
 type distEmbedManifestWant struct {
+	// manifestID names the executable producer.
 	manifestID string
+	// platformID selects its runtime artifact.
 	platformID string
 }
 
+// assertDistBrowserStartupClosure requires the browser startup plugins and their declared embeds.
 func assertDistBrowserStartupClosure(
 	t *testing.T,
 	label string,
@@ -898,6 +959,7 @@ func assertDistBrowserStartupClosure(
 
 	wantEmbedManifests := []distEmbedManifestWant{
 		{manifestID: "spacewave-launcher", platformID: goPlatformID},
+		{manifestID: "bldr-materializer", platformID: goPlatformID},
 	}
 	wantEmbedManifests = append(wantEmbedManifests, additionalEmbeds...)
 	for _, want := range wantEmbedManifests {
@@ -906,6 +968,7 @@ func assertDistBrowserStartupClosure(
 	assertDistEmbedManifests(t, label, conf, wantEmbedManifests)
 }
 
+// assertDistEmbedManifests compares the complete ordered embed tuple set.
 func assertDistEmbedManifests(
 	t *testing.T,
 	label string,
@@ -933,6 +996,7 @@ func assertDistEmbedManifests(
 	}
 }
 
+// distEmbedManifestTuples projects embedded manifests into tuple diagnostics.
 func distEmbedManifestTuples(embeds []*bldr_dist_compiler.EmbedManifest) []distEmbedManifestWant {
 	tuples := make([]distEmbedManifestWant, 0, len(embeds))
 	for _, embed := range embeds {
@@ -944,6 +1008,7 @@ func distEmbedManifestTuples(embeds []*bldr_dist_compiler.EmbedManifest) []distE
 	return tuples
 }
 
+// mustGoPluginConfig decodes a Go plugin configuration or fails the test.
 func mustGoPluginConfig(t *testing.T, data []byte) *bldr_plugin_compiler_go.Config {
 	t.Helper()
 	conf := bldr_plugin_compiler_go.NewConfig()
@@ -953,6 +1018,7 @@ func mustGoPluginConfig(t *testing.T, data []byte) *bldr_plugin_compiler_go.Conf
 	return conf
 }
 
+// assertBrowserLauncherOmitsReleaseWorld keeps Release World state ownership out of the browser launcher worker.
 func assertBrowserLauncherOmitsReleaseWorld(t *testing.T, label string, conf *bldr_plugin_compiler_go.Config) {
 	t.Helper()
 	for _, key := range []string{"release-world", "release-world-fetch", "release-world-ops"} {
@@ -971,6 +1037,7 @@ func assertBrowserLauncherOmitsReleaseWorld(t *testing.T, label string, conf *bl
 	}
 }
 
+// mustCliConfig decodes a CLI compiler configuration or fails the test.
 func mustCliConfig(t *testing.T, data []byte) *bldr_cli_compiler.Config {
 	t.Helper()
 	conf := &bldr_cli_compiler.Config{}
@@ -980,6 +1047,7 @@ func mustCliConfig(t *testing.T, data []byte) *bldr_cli_compiler.Config {
 	return conf
 }
 
+// flattenGoConfigForPlatform resolves platform overrides without modifying the base configuration.
 func flattenGoConfigForPlatform(
 	t *testing.T,
 	base *bldr_plugin_compiler_go.Config,
@@ -995,6 +1063,7 @@ func flattenGoConfigForPlatform(
 	return conf
 }
 
+// assertGoConfigHasDesktopStatusProjector requires the native status package and controller together.
 func assertGoConfigHasDesktopStatusProjector(
 	t *testing.T,
 	name string,
@@ -1013,6 +1082,7 @@ func assertGoConfigHasDesktopStatusProjector(
 	}
 }
 
+// assertGoConfigOmitsDesktopStatusProjector rejects native status packages and controllers on other platforms.
 func assertGoConfigOmitsDesktopStatusProjector(
 	t *testing.T,
 	name string,
@@ -1032,6 +1102,7 @@ func assertGoConfigOmitsDesktopStatusProjector(
 	}
 }
 
+// assertGoConfigIncludesHTTPExport requires the HTTP export package and controller together.
 func assertGoConfigIncludesHTTPExport(
 	t *testing.T,
 	name string,
@@ -1048,6 +1119,7 @@ func assertGoConfigIncludesHTTPExport(
 	}
 }
 
+// assertCliConfigOmitsDesktopStatusProjector keeps native status services out of CLI builds.
 func assertCliConfigOmitsDesktopStatusProjector(
 	t *testing.T,
 	name string,
@@ -1067,7 +1139,9 @@ func assertCliConfigOmitsDesktopStatusProjector(
 	}
 }
 
+// TestEvaluateManifestOverridesRejectsNonDict reports the offending manifest when an override is not a mapping.
 func TestEvaluateManifestOverridesRejectsNonDict(t *testing.T) {
+	// Isolate the project and every file it may load.
 	dir := t.TempDir()
 	starFile := filepath.Join(dir, "bldr.star")
 	err := os.WriteFile(starFile, []byte(`
@@ -1091,10 +1165,11 @@ build("bad",
 	}
 }
 
+// TestEvaluateLoad tracks the project and its loaded Starlark library.
 func TestEvaluateLoad(t *testing.T) {
+	// Isolate the project and every file it may load.
 	dir := t.TempDir()
 
-	// Write a library file.
 	libDir := filepath.Join(dir, "lib")
 	if err := os.MkdirAll(libDir, 0o755); err != nil {
 		t.Fatal(err)
@@ -1106,7 +1181,6 @@ SHARED_PKGS = ["./shared/pkg1", "./shared/pkg2"]
 		t.Fatal(err)
 	}
 
-	// Write the root file that loads the library.
 	starFile := filepath.Join(dir, "bldr.star")
 	err = os.WriteFile(starFile, []byte(`
 load("lib/common.star", "SHARED_PKGS")
@@ -1120,6 +1194,7 @@ manifest("core",
 		t.Fatal(err)
 	}
 
+	// Evaluate the fixture through the public project loader.
 	result, err := Evaluate(starFile)
 	if err != nil {
 		t.Fatal(err)

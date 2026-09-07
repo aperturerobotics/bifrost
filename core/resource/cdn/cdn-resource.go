@@ -11,21 +11,22 @@ import (
 	cdn_sharedobject "github.com/s4wave/spacewave/core/cdn/sharedobject"
 	resource_space "github.com/s4wave/spacewave/core/resource/space"
 	space_resolve "github.com/s4wave/spacewave/core/space/resolve"
-	space_world_optypes "github.com/s4wave/spacewave/core/space/world/optypes"
 	bucket_lookup "github.com/s4wave/spacewave/db/bucket/lookup"
 	"github.com/s4wave/spacewave/db/world"
 	s4wave_cdn "github.com/s4wave/spacewave/sdk/cdn"
 	"github.com/sirupsen/logrus"
 )
 
-// CdnResource is a per-mount handle implementing CdnResourceService for a
-// single CdnInstance. The resource does not own the instance; it is a thin
-// adapter so the root GetCdn RPC (added in a later iteration) can hand out
-// a resource reference without exposing the Registry directly.
+// CdnResource exposes one CDN instance through the resource protocol.
+// The instance outlives the resource and remains owned by its registry.
 type CdnResource struct {
-	le       *logrus.Entry
-	b        bus.Bus
-	mux      srpc.Invoker
+	// le records mount and copy failures.
+	le *logrus.Entry
+	// b resolves destination Spaces and their storage.
+	b bus.Bus
+	// mux serves this resource's RPC methods.
+	mux srpc.Invoker
+	// instance is borrowed from the CDN registry.
 	instance *CdnInstance
 }
 
@@ -64,19 +65,22 @@ func (r *CdnResource) MountCdnSpace(
 	ctx context.Context,
 	_ *s4wave_cdn.MountCdnSpaceRequest,
 ) (*s4wave_cdn.MountCdnSpaceResponse, error) {
+	// Bind the mount to the requesting resource client.
 	resourceCtx, err := resource_server.MustGetResourceClientContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
+	// Open the current published CDN head for this operation.
 	cdnSO := r.instance.GetSharedObject()
-	we, err := cdn_sharedobject.NewWorldEngine(ctx, r.le, r.b, cdnSO, space_world_optypes.LookupWorldOp)
+	we, err := cdn_sharedobject.NewWorldEngine(ctx, r.le, r.b, cdnSO)
 	if err != nil {
 		return nil, errors.Wrap(err, "build cdn world engine")
 	}
 	body := cdn_sharedobject.NewCdnSpaceBody(cdnSO, we)
 	spaceResource := resource_space.NewSpaceResource(r.le, r.b, body)
 
+	// Transfer engine release to the client resource reference.
 	id, err := resourceCtx.AddResource(spaceResource.GetMux(), we.Release)
 	if err != nil {
 		we.Release()
@@ -96,6 +100,7 @@ func (r *CdnResource) CopyV86ImageToSpace(
 	req *s4wave_cdn.CopyV86ImageToSpaceRequest,
 	strm s4wave_cdn.SRPCCdnResourceService_CopyV86ImageToSpaceStream,
 ) error {
+	// Validate both object identities before opening either Space.
 	ctx := strm.Context()
 	if req.GetDstSpaceId() == "" {
 		return errors.New("dst_space_id is required")
@@ -107,28 +112,33 @@ func (r *CdnResource) CopyV86ImageToSpace(
 		return errors.New("dst_object_key is required")
 	}
 
+	// Expose CDN acquisition progress before network reads begin.
 	if err := strm.Send(&s4wave_cdn.CopyV86ImageToSpaceProgress{
 		Stage: s4wave_cdn.CopyV86ImageToSpaceStage_CopyV86ImageToSpaceStage_FETCHING,
 	}); err != nil {
 		return err
 	}
 
+	// Open the current published CDN head for this operation.
 	cdnSO := r.instance.GetSharedObject()
-	srcEngine, err := cdn_sharedobject.NewWorldEngine(ctx, r.le, r.b, cdnSO, space_world_optypes.LookupWorldOp)
+	srcEngine, err := cdn_sharedobject.NewWorldEngine(ctx, r.le, r.b, cdnSO)
 	if err != nil {
 		return errors.Wrap(err, "build cdn source world engine")
 	}
 	defer srcEngine.Release()
 
+	// Resolve write authority through the caller's session.
 	resolved, dstCleanup, err := space_resolve.ResolveSpace(ctx, r.b, req.GetSessionIdx(), req.GetDstSpaceId())
 	if err != nil {
 		return errors.Wrap(err, "resolve destination space")
 	}
 	defer dstCleanup()
 
+	// Keep the CDN source read-only while allowing destination writes.
 	src := world.NewEngineWorldState(srcEngine.Engine, false)
 	dst := world.NewEngineWorldState(resolved.Engine, true)
 
+	// Delegate block traversal and progress accounting to the copy owner.
 	if err := strm.Send(&s4wave_cdn.CopyV86ImageToSpaceProgress{
 		Stage: s4wave_cdn.CopyV86ImageToSpaceStage_CopyV86ImageToSpaceStage_COPYING,
 	}); err != nil {
@@ -157,6 +167,7 @@ func (r *CdnResource) CopyV86ImageToSpace(
 	))
 }
 
+// copyV86ImageProgress projects block-copy counters into the RPC progress message.
 func copyV86ImageProgress(
 	stage s4wave_cdn.CopyV86ImageToSpaceStage,
 	stats bucket_lookup.ObjectCopyStats,
