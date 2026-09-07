@@ -3418,7 +3418,7 @@
       ]
     },
     "github.com/s4wave/spacewave/sdk/chat": {
-      "hash": "d44c60e85cb882f5a46a70d54bc127ce0073e7036d2f437d046b9c52be5c3d29",
+      "hash": "90fb7c0156607bc842b3677ae6dea26834d418fd4aeffa93f125e25e7eaadb5c",
       "generatedFiles": [
         "sdk/chat/chat.pb.go",
         "sdk/chat/chat.pb.ts"
@@ -3438,7 +3438,7 @@
       ]
     },
     "github.com/s4wave/spacewave/sdk/chat/rpc": {
-      "hash": "ae0b9a9dd651daed800804e2bd4333e6935147063ee8edba9013dffe3e443183",
+      "hash": "93f9ce287a43559f94fec61e3f7bfe9c4caaa580f551c4384afa52373542ec4a",
       "generatedFiles": [
         "sdk/chat/rpc/rpc.pb.go",
         "sdk/chat/rpc/rpc.pb.ts",
@@ -3447,6 +3447,16 @@
       ],
       "protoFiles": [
         "sdk/chat/rpc/rpc.proto"
+      ]
+    },
+    "github.com/s4wave/spacewave/sdk/chat/state": {
+      "hash": "8cbbed98341454fa96b731b207a96f2e31e5d8e97f844117286c65d3e2e89995",
+      "generatedFiles": [
+        "sdk/chat/state/state.pb.go",
+        "sdk/chat/state/state.pb.ts"
+      ],
+      "protoFiles": [
+        "sdk/chat/state/state.proto"
       ]
     },
     "github.com/s4wave/spacewave/sdk/cli/terminal": {

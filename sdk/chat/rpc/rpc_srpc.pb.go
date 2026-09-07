@@ -22,6 +22,10 @@ type SRPCChatResourceServiceClient interface {
 	WatchMessages(ctx context.Context, in *WatchMessagesRequest) (SRPCChatResourceService_WatchMessagesClient, error)
 	// SendMessage appends one message or resolves an identical retry.
 	SendMessage(ctx context.Context, in *SendMessageRequest) (*SendMessageResponse, error)
+	// GetReadPositions returns the channel's shared per-person read positions.
+	GetReadPositions(ctx context.Context, in *GetReadPositionsRequest) (*GetReadPositionsResponse, error)
+	// UpdateReadPosition advances only the authenticated person's read position.
+	UpdateReadPosition(ctx context.Context, in *UpdateReadPositionRequest) (*UpdateReadPositionResponse, error)
 }
 
 type srpcChatResourceServiceClient struct {
@@ -103,6 +107,24 @@ func (c *srpcChatResourceServiceClient) SendMessage(ctx context.Context, in *Sen
 	return out, nil
 }
 
+func (c *srpcChatResourceServiceClient) GetReadPositions(ctx context.Context, in *GetReadPositionsRequest) (*GetReadPositionsResponse, error) {
+	out := new(GetReadPositionsResponse)
+	err := c.cc.ExecCall(ctx, c.serviceID, "GetReadPositions", in, out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *srpcChatResourceServiceClient) UpdateReadPosition(ctx context.Context, in *UpdateReadPositionRequest) (*UpdateReadPositionResponse, error) {
+	out := new(UpdateReadPositionResponse)
+	err := c.cc.ExecCall(ctx, c.serviceID, "UpdateReadPosition", in, out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 type SRPCChatResourceServiceServer interface {
 	// GetChannelInfo returns channel metadata and its retained history extent.
 	GetChannelInfo(context.Context, *GetChannelInfoRequest) (*GetChannelInfoResponse, error)
@@ -112,6 +134,10 @@ type SRPCChatResourceServiceServer interface {
 	WatchMessages(*WatchMessagesRequest, SRPCChatResourceService_WatchMessagesStream) error
 	// SendMessage appends one message or resolves an identical retry.
 	SendMessage(context.Context, *SendMessageRequest) (*SendMessageResponse, error)
+	// GetReadPositions returns the channel's shared per-person read positions.
+	GetReadPositions(context.Context, *GetReadPositionsRequest) (*GetReadPositionsResponse, error)
+	// UpdateReadPosition advances only the authenticated person's read position.
+	UpdateReadPosition(context.Context, *UpdateReadPositionRequest) (*UpdateReadPositionResponse, error)
 }
 
 const SRPCChatResourceServiceServiceID = "spacewave.chat.rpc.ChatResourceService"
@@ -144,6 +170,8 @@ func (SRPCChatResourceServiceHandler) GetMethodIDs() []string {
 		"ListMessages",
 		"WatchMessages",
 		"SendMessage",
+		"GetReadPositions",
+		"UpdateReadPosition",
 	}
 }
 
@@ -164,6 +192,10 @@ func (d *SRPCChatResourceServiceHandler) InvokeMethod(
 		return true, d.InvokeMethod_WatchMessages(d.impl, strm)
 	case "SendMessage":
 		return true, d.InvokeMethod_SendMessage(d.impl, strm)
+	case "GetReadPositions":
+		return true, d.InvokeMethod_GetReadPositions(d.impl, strm)
+	case "UpdateReadPosition":
+		return true, d.InvokeMethod_UpdateReadPosition(d.impl, strm)
 	default:
 		return false, nil
 	}
@@ -214,6 +246,30 @@ func (SRPCChatResourceServiceHandler) InvokeMethod_SendMessage(impl SRPCChatReso
 	return strm.MsgSend(out)
 }
 
+func (SRPCChatResourceServiceHandler) InvokeMethod_GetReadPositions(impl SRPCChatResourceServiceServer, strm srpc.Stream) error {
+	req := new(GetReadPositionsRequest)
+	if err := strm.MsgRecv(req); err != nil {
+		return err
+	}
+	out, err := impl.GetReadPositions(strm.Context(), req)
+	if err != nil {
+		return err
+	}
+	return strm.MsgSend(out)
+}
+
+func (SRPCChatResourceServiceHandler) InvokeMethod_UpdateReadPosition(impl SRPCChatResourceServiceServer, strm srpc.Stream) error {
+	req := new(UpdateReadPositionRequest)
+	if err := strm.MsgRecv(req); err != nil {
+		return err
+	}
+	out, err := impl.UpdateReadPosition(strm.Context(), req)
+	if err != nil {
+		return err
+	}
+	return strm.MsgSend(out)
+}
+
 type SRPCChatResourceService_GetChannelInfoStream interface {
 	srpc.Stream
 }
@@ -258,5 +314,21 @@ type SRPCChatResourceService_SendMessageStream interface {
 }
 
 type srpcChatResourceService_SendMessageStream struct {
+	srpc.Stream
+}
+
+type SRPCChatResourceService_GetReadPositionsStream interface {
+	srpc.Stream
+}
+
+type srpcChatResourceService_GetReadPositionsStream struct {
+	srpc.Stream
+}
+
+type SRPCChatResourceService_UpdateReadPositionStream interface {
+	srpc.Stream
+}
+
+type srpcChatResourceService_UpdateReadPositionStream struct {
 	srpc.Stream
 }

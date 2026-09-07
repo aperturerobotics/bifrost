@@ -3,6 +3,7 @@ package spacewave.chat.rpc;
 
 import "google/protobuf/timestamp.proto";
 import "github.com/s4wave/spacewave/sdk/chat/content/content.proto";
+import "github.com/s4wave/spacewave/sdk/chat/state/state.proto";
 
 option go_package = "github.com/s4wave/spacewave/sdk/chat/rpc;spacewave_chat_rpc";
 
@@ -16,6 +17,10 @@ service ChatResourceService {
   rpc WatchMessages(WatchMessagesRequest) returns (stream WatchMessagesResponse);
   // SendMessage appends one message or resolves an identical retry.
   rpc SendMessage(SendMessageRequest) returns (SendMessageResponse);
+  // GetReadPositions returns the channel's shared per-person read positions.
+  rpc GetReadPositions(GetReadPositionsRequest) returns (GetReadPositionsResponse);
+  // UpdateReadPosition advances only the authenticated person's read position.
+  rpc UpdateReadPosition(UpdateReadPositionRequest) returns (UpdateReadPositionResponse);
 }
 
 // ChatMessageInfo contains flattened message info for the client.
@@ -34,6 +39,8 @@ message ChatMessageInfo {
   uint64 index = 6;
   // Content is the full typed message content, including ciphertext envelopes.
   .spacewave.chat.ChatMessageContent content = 7;
+  // PersonPeerId is the verified person identity associated with the sending device.
+  string person_peer_id = 8;
 }
 
 // GetChannelInfoRequest is a request for channel info.
@@ -58,13 +65,17 @@ message ListMessagesRequest {
   string before_key = 1;
   // Limit is the maximum number of messages to return.
   uint32 limit = 2;
+  // BeforeIndex selects an exclusive upper bound for backwards pagination.
+  optional uint64 before_index = 3;
+  // FromIndex selects an inclusive lower bound for forwards pagination.
+  optional uint64 from_index = 4;
 }
 
 // ListMessagesResponse contains a page of messages.
 message ListMessagesResponse {
   // Messages is the list of messages.
   repeated ChatMessageInfo messages = 1;
-  // HasMore indicates more messages exist before the earliest returned.
+  // HasMore indicates more messages exist in the selected pagination direction.
   bool has_more = 2;
 }
 
@@ -96,4 +107,26 @@ message SendMessageRequest {
 message SendMessageResponse {
   // MessageKey is the object key of the created message.
   string message_key = 1;
+}
+
+// GetReadPositionsRequest selects shared receipt state for the mounted channel.
+message GetReadPositionsRequest {
+}
+
+// GetReadPositionsResponse reports the canonical read positions for this channel.
+message GetReadPositionsResponse {
+  // Positions maps external person peer identities to their monotonic read positions.
+  map<string, .spacewave.chat.ChatReadPosition> positions = 1;
+}
+
+// UpdateReadPositionRequest advances the person already authenticated by the host.
+message UpdateReadPositionRequest {
+  // NextIndex is the first unread index, bounded by the channel's message count.
+  uint64 next_index = 1;
+}
+
+// UpdateReadPositionResponse reports the retained position, including unchanged retries.
+message UpdateReadPositionResponse {
+  // Position is the authenticated person's current shared read position.
+  .spacewave.chat.ChatReadPosition position = 1;
 }

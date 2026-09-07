@@ -2,6 +2,7 @@
 // @generated from file github.com/s4wave/spacewave/sdk/chat/chat.proto (package spacewave.chat, syntax proto3)
 /* eslint-disable */
 
+import { ChatReadPosition } from './state/state.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
@@ -42,6 +43,13 @@ export interface ChatChannel {
    * @generated from field: uint64 message_count = 4;
    */
   messageCount?: bigint
+  /**
+   * ReadPositions maps verified person peer identities to their shared read positions.
+   * Keys are external cryptographic identities, not World object references.
+   *
+   * @generated from field: map<string, spacewave.chat.ChatReadPosition> read_positions = 5;
+   */
+  readPositions?: { [key: string]: ChatReadPosition }
 }
 
 export const ChatChannel: MessageType<ChatChannel> =
@@ -52,6 +60,13 @@ export const ChatChannel: MessageType<ChatChannel> =
       { no: 2, name: 'topic', kind: 'scalar', T: ScalarType.STRING },
       { no: 3, name: 'created_at', kind: 'message', T: () => Timestamp },
       { no: 4, name: 'message_count', kind: 'scalar', T: ScalarType.UINT64 },
+      {
+        no: 5,
+        name: 'read_positions',
+        kind: 'map',
+        K: ScalarType.STRING,
+        V: { kind: 'message', T: () => ChatReadPosition },
+      },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })
@@ -92,6 +107,13 @@ export interface ChatMessage {
    * @generated from field: uint64 index = 5;
    */
   index?: bigint
+  /**
+   * PersonPeerId is the verified person identity supplied by the authenticated host.
+   * Empty historical values identify the person by SenderPeerId.
+   *
+   * @generated from field: string person_peer_id = 6;
+   */
+  personPeerId?: string
 }
 
 export const ChatMessage: MessageType<ChatMessage> =
@@ -103,6 +125,7 @@ export const ChatMessage: MessageType<ChatMessage> =
       { no: 3, name: 'created_at', kind: 'message', T: () => Timestamp },
       { no: 4, name: 'reply_to_key', kind: 'scalar', T: ScalarType.STRING },
       { no: 5, name: 'index', kind: 'scalar', T: ScalarType.UINT64 },
+      { no: 6, name: 'person_peer_id', kind: 'scalar', T: ScalarType.STRING },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })

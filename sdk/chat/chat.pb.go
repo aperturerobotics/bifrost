@@ -13,6 +13,7 @@ import (
 	json "github.com/aperturerobotics/protobuf-go-lite/json"
 	timestamppb "github.com/aperturerobotics/protobuf-go-lite/types/known/timestamppb"
 	content "github.com/s4wave/spacewave/sdk/chat/content"
+	state "github.com/s4wave/spacewave/sdk/chat/state"
 )
 
 // ChatChannel is a chat channel world object.
@@ -27,6 +28,9 @@ type ChatChannel struct {
 	CreatedAt *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=created_at,json=createdAt,proto3" json:"createdAt,omitempty"`
 	// MessageCount is the number of messages appended to the channel.
 	MessageCount uint64 `protobuf:"varint,4,opt,name=message_count,json=messageCount,proto3" json:"messageCount,omitempty"`
+	// ReadPositions maps verified person peer identities to their shared read positions.
+	// Keys are external cryptographic identities, not World object references.
+	ReadPositions map[string]*state.ChatReadPosition `protobuf:"bytes,5,rep,name=read_positions,json=readPositions,proto3" json:"readPositions,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
 func (x *ChatChannel) Reset() {
@@ -63,6 +67,13 @@ func (x *ChatChannel) GetMessageCount() uint64 {
 	return 0
 }
 
+func (x *ChatChannel) GetReadPositions() map[string]*state.ChatReadPosition {
+	if x != nil {
+		return x.ReadPositions
+	}
+	return nil
+}
+
 // ChatMessage is a chat message world object linked to a channel.
 type ChatMessage struct {
 	unknownFields []byte
@@ -76,6 +87,9 @@ type ChatMessage struct {
 	ReplyToKey string `protobuf:"bytes,4,opt,name=reply_to_key,json=replyToKey,proto3" json:"replyToKey,omitempty"`
 	// Index is the zero-based message index within the channel.
 	Index uint64 `protobuf:"varint,5,opt,name=index,proto3" json:"index,omitempty"`
+	// PersonPeerId is the verified person identity supplied by the authenticated host.
+	// Empty historical values identify the person by SenderPeerId.
+	PersonPeerId string `protobuf:"bytes,6,opt,name=person_peer_id,json=personPeerId,proto3" json:"personPeerId,omitempty"`
 }
 
 func (x *ChatMessage) Reset() {
@@ -117,6 +131,13 @@ func (x *ChatMessage) GetIndex() uint64 {
 		return x.Index
 	}
 	return 0
+}
+
+func (x *ChatMessage) GetPersonPeerId() string {
+	if x != nil {
+		return x.PersonPeerId
+	}
+	return ""
 }
 
 // ChatMessagePage stores a bounded page of channel message keys.
@@ -215,6 +236,32 @@ func (x *CreateChatChannelOp) GetTimestamp() *timestamppb.Timestamp {
 	return nil
 }
 
+type ChatChannel_ReadPositionsEntry struct {
+	unknownFields []byte
+	Key           string                  `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	Value         *state.ChatReadPosition `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+}
+
+func (x *ChatChannel_ReadPositionsEntry) Reset() {
+	*x = ChatChannel_ReadPositionsEntry{}
+}
+
+func (*ChatChannel_ReadPositionsEntry) ProtoMessage() {}
+
+func (x *ChatChannel_ReadPositionsEntry) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+func (x *ChatChannel_ReadPositionsEntry) GetValue() *state.ChatReadPosition {
+	if x != nil {
+		return x.Value
+	}
+	return nil
+}
+
 func (m *ChatChannel) CloneVT() *ChatChannel {
 	if m == nil {
 		return (*ChatChannel)(nil)
@@ -224,6 +271,7 @@ func (m *ChatChannel) CloneVT() *ChatChannel {
 	r.Topic = m.Topic
 	r.MessageCount = m.MessageCount
 	r.CreatedAt = protobuf_go_lite.CloneVTValue(m.CreatedAt)
+	r.ReadPositions = protobuf_go_lite.CloneVTMap(m.ReadPositions)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -242,6 +290,7 @@ func (m *ChatMessage) CloneVT() *ChatMessage {
 	r.SenderPeerId = m.SenderPeerId
 	r.ReplyToKey = m.ReplyToKey
 	r.Index = m.Index
+	r.PersonPeerId = m.PersonPeerId
 	r.Content = protobuf_go_lite.CloneVTValue(m.Content)
 	r.CreatedAt = protobuf_go_lite.CloneVTValue(m.CreatedAt)
 	if len(m.unknownFields) > 0 {
@@ -324,6 +373,9 @@ func (this *ChatChannel) EqualVT(that *ChatChannel) bool {
 	if this.MessageCount != that.MessageCount {
 		return false
 	}
+	if !protobuf_go_lite.EqualVTMapImplicit(this.ReadPositions, that.ReadPositions, func() *state.ChatReadPosition { return &state.ChatReadPosition{} }) {
+		return false
+	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
@@ -354,6 +406,9 @@ func (this *ChatMessage) EqualVT(that *ChatMessage) bool {
 		return false
 	}
 	if this.Index != that.Index {
+		return false
+	}
+	if this.PersonPeerId != that.PersonPeerId {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -439,6 +494,60 @@ func (this *CreateChatChannelOp) EqualMessageVT(thatMsg any) bool {
 	return this.EqualVT(that)
 }
 
+// MarshalProtoJSON marshals the ChatChannel_ReadPositionsEntry message to JSON.
+func (x *ChatChannel_ReadPositionsEntry) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Key != "" || s.HasField("key") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("key")
+		s.WriteString(x.Key)
+	}
+	if x.Value != nil || s.HasField("value") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("value")
+		x.Value.MarshalProtoJSON(s.WithField("value"))
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the ChatChannel_ReadPositionsEntry to JSON.
+func (x *ChatChannel_ReadPositionsEntry) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the ChatChannel_ReadPositionsEntry message from JSON.
+func (x *ChatChannel_ReadPositionsEntry) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "key":
+			s.AddField("key")
+			x.Key = s.ReadString()
+		case "value":
+			if s.ReadNil() {
+				x.Value = nil
+				return
+			}
+			x.Value = &state.ChatReadPosition{}
+			x.Value.UnmarshalProtoJSON(s.WithField("value", true))
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the ChatChannel_ReadPositionsEntry from JSON.
+func (x *ChatChannel_ReadPositionsEntry) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
 // MarshalProtoJSON marshals the ChatChannel message to JSON.
 func (x *ChatChannel) MarshalProtoJSON(s *json.MarshalState) {
 	if x == nil {
@@ -466,6 +575,18 @@ func (x *ChatChannel) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteMoreIf(&wroteField)
 		s.WriteObjectField("messageCount")
 		s.WriteUint64(x.MessageCount)
+	}
+	if x.ReadPositions != nil || s.HasField("readPositions") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("readPositions")
+		s.WriteObjectStart()
+		var wroteElement bool
+		for k, v := range x.ReadPositions {
+			s.WriteMoreIf(&wroteElement)
+			s.WriteObjectStringField(k)
+			v.MarshalProtoJSON(s.WithField("readPositions"))
+		}
+		s.WriteObjectEnd()
 	}
 	s.WriteObjectEnd()
 }
@@ -500,6 +621,18 @@ func (x *ChatChannel) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "message_count", "messageCount":
 			s.AddField("message_count")
 			x.MessageCount = s.ReadUint64()
+		case "read_positions", "readPositions":
+			s.AddField("read_positions")
+			if s.ReadNil() {
+				x.ReadPositions = nil
+				return
+			}
+			x.ReadPositions = make(map[string]*state.ChatReadPosition)
+			s.ReadStringMap(func(key string) {
+				var v state.ChatReadPosition
+				v.UnmarshalProtoJSON(s)
+				x.ReadPositions[key] = &v
+			})
 		}
 	})
 }
@@ -542,6 +675,11 @@ func (x *ChatMessage) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("index")
 		s.WriteUint64(x.Index)
 	}
+	if x.PersonPeerId != "" || s.HasField("personPeerId") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("personPeerId")
+		s.WriteString(x.PersonPeerId)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -582,6 +720,9 @@ func (x *ChatMessage) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "index":
 			s.AddField("index")
 			x.Index = s.ReadUint64()
+		case "person_peer_id", "personPeerId":
+			s.AddField("person_peer_id")
+			x.PersonPeerId = s.ReadString()
 		}
 	})
 }
@@ -790,6 +931,26 @@ func (m *ChatChannel) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if len(m.ReadPositions) > 0 {
+		for k := range m.ReadPositions {
+			v := m.ReadPositions[k]
+			baseI := i
+			size, err := v.MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0x12
+			i = protobuf_go_lite.EncodeString(dAtA, i, k)
+			i--
+			dAtA[i] = 0xa
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x2a
+		}
+	}
 	if m.MessageCount != 0 {
 		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.MessageCount))
 		i--
@@ -846,6 +1007,11 @@ func (m *ChatMessage) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	_ = l
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.PersonPeerId) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.PersonPeerId)
+		i--
+		dAtA[i] = 0x32
 	}
 	if m.Index != 0 {
 		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Index))
@@ -1041,6 +1207,16 @@ func (m *ChatChannel) SizeVT() (n int) {
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.MessageCount)
+	for k, v := range m.ReadPositions {
+		_ = k
+		_ = v
+		l = 0
+		if v != nil {
+			l = v.SizeVT()
+		}
+		mapEntrySize := protobuf_go_lite.SizeStringValue(1, k) + protobuf_go_lite.SizeMessage(1, l)
+		n += protobuf_go_lite.SizeMessage(1, mapEntrySize)
+	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -1062,6 +1238,7 @@ func (m *ChatMessage) SizeVT() (n int) {
 	}
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.ReplyToKey)
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.Index)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.PersonPeerId)
 	n += len(m.unknownFields)
 	return n
 }
@@ -1109,6 +1286,24 @@ func (m *CreateChatChannelOp) SizeVT() (n int) {
 	return n
 }
 
+func (x *ChatChannel_ReadPositionsEntry) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "ReadPositionsEntry")
+	if x.Key != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "key")
+		protobuf_go_lite.TextWriteString(&sb, x.Key)
+	}
+	if x.Value != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "value")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Value)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *ChatChannel_ReadPositionsEntry) String() string {
+	return x.MarshalProtoText()
+}
+
 func (x *ChatChannel) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "ChatChannel")
@@ -1127,6 +1322,21 @@ func (x *ChatChannel) MarshalProtoText() string {
 	if x.MessageCount != 0 {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "message_count")
 		protobuf_go_lite.TextWriteUint(&sb, x.MessageCount)
+	}
+	if len(x.ReadPositions) > 0 {
+		protobuf_go_lite.TextWriteMapStart(&sb, initialLen, "read_positions")
+		for _, k := range protobuf_go_lite.TextSortedMapKeys(x.ReadPositions) {
+			v := x.ReadPositions[k]
+			protobuf_go_lite.TextWriteMapEntryPrefix(&sb)
+			protobuf_go_lite.TextWriteString(&sb, k)
+			protobuf_go_lite.TextWriteMapKeyValueSeparator(&sb)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &state.ChatReadPosition{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteMapEnd(&sb)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -1157,6 +1367,10 @@ func (x *ChatMessage) MarshalProtoText() string {
 	if x.Index != 0 {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "index")
 		protobuf_go_lite.TextWriteUint(&sb, x.Index)
+	}
+	if x.PersonPeerId != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "person_peer_id")
+		protobuf_go_lite.TextWriteString(&sb, x.PersonPeerId)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -1291,6 +1505,53 @@ func (m *ChatChannel) UnmarshalVT(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ReadPositions", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			iNdEx = msgStart
+			if m.ReadPositions == nil {
+				m.ReadPositions = make(map[string]*state.ChatReadPosition)
+			}
+			var mapkey string
+			var mapvalue *state.ChatReadPosition
+			for iNdEx < postIndex {
+				entryPreIndex := iNdEx
+				var wire uint64
+				wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+				if err != nil {
+					return err
+				}
+				fieldNum := int32(wire >> 3)
+				if fieldNum == 1 {
+					mapkey, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+					if err != nil {
+						return err
+					}
+				} else if fieldNum == 2 {
+					msgStartmapvalue, postmsgIndexmapvalue, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+					if err != nil {
+						return err
+					}
+					mapvalue = &state.ChatReadPosition{}
+					if err := mapvalue.UnmarshalVT(dAtA[msgStartmapvalue:postmsgIndexmapvalue]); err != nil {
+						return err
+					}
+					iNdEx = postmsgIndexmapvalue
+				} else {
+					iNdEx = entryPreIndex
+					iNdEx, err = protobuf_go_lite.SkipWithin(dAtA, iNdEx, postIndex)
+					if err != nil {
+						return err
+					}
+				}
+			}
+			m.ReadPositions[mapkey] = mapvalue
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
@@ -1393,6 +1654,16 @@ func (m *ChatMessage) UnmarshalVT(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PersonPeerId", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.PersonPeerId = v
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
