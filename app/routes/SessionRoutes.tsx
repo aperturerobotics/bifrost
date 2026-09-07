@@ -1,7 +1,7 @@
-import { Route, useParams } from '@s4wave/web/router/router.js'
+import { lazy } from 'react'
 
+import { Route, useParams } from '@s4wave/web/router/router.js'
 import { CheckoutResultPage } from '@s4wave/app/provider/spacewave/CheckoutResultPage.js'
-import { PairCodePage } from '@s4wave/app/pair/PairCodePage.js'
 import { useSessionList } from '@s4wave/app/hooks/useSessionList.js'
 import { NavigatePath } from '@s4wave/web/router/NavigatePath.js'
 import { LoadingCard } from '@s4wave/web/ui/loading/LoadingCard.js'
@@ -10,6 +10,11 @@ import { AppQuickstart } from '../AppQuickstart.js'
 import { formatPendingJoin, storePendingJoin } from './pendingJoin.js'
 
 export { consumePendingJoin, storePendingJoin } from './pendingJoin.js'
+
+const LazyPairCodePage = lazy(async () => {
+  const { PairCodePage } = await import('@s4wave/app/pair/PairCodePage.js')
+  return { default: PairCodePage }
+})
 
 // JoinRedirect resolves the first available session and redirects to its join route.
 function JoinRedirect() {
@@ -66,10 +71,10 @@ export const SessionRoutes = (
       <JoinRedirect />
     </Route>
     <Route path="/pair/:code">
-      <PairCodePage />
+      <LazyPairCodePage />
     </Route>
     <Route path="/pair">
-      <PairCodePage />
+      <LazyPairCodePage />
     </Route>
     <Route path="/quickstart/:quickstartId">
       <AppQuickstart />

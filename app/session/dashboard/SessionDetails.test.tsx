@@ -1,13 +1,15 @@
-import React from 'react'
+import React, { Suspense } from 'react'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, cleanup, fireEvent, screen } from '@testing-library/react'
-import { SessionDetails } from './SessionDetails.js'
+
 import {
   SessionContext,
   SessionIndexContext,
   SessionRouteContext,
 } from '@s4wave/web/contexts/contexts.js'
-import { Session } from '@s4wave/sdk/session/session.js'
+import type { Session } from '@s4wave/sdk/session/session.js'
+
+import { SessionDetails } from './SessionDetails.js'
 
 const mockNavigate = vi.hoisted(() => vi.fn())
 
@@ -303,7 +305,7 @@ describe('SessionDetails', () => {
           }}
         >
           <SessionIndexContext.Provider value={1}>
-            {component}
+            <Suspense fallback={null}>{component}</Suspense>
           </SessionIndexContext.Provider>
         </SessionContext.Provider>
       </SessionRouteContext.Provider>,
@@ -618,10 +620,10 @@ describe('SessionDetails', () => {
       expect(screen.getByText('Security')).toBeDefined()
     })
 
-    it('routes linked-device actions inside the panel', () => {
+    it('routes linked-device actions inside the panel', async () => {
       renderWithContext(<SessionDetails />)
       fireEvent.click(screen.getByTestId('link-devices-trigger'))
-      expect(screen.getByText('Link Device Wizard')).toBeDefined()
+      expect(await screen.findByText('Link Device Wizard')).toBeDefined()
       expect(screen.queryByText('Identifiers')).toBeNull()
     })
 

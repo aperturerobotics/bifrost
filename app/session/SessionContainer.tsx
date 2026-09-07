@@ -1,4 +1,5 @@
 import {
+  lazy,
   useCallback,
   useEffect,
   useMemo,
@@ -6,46 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-
-import { usePromise } from '@s4wave/web/hooks/usePromise.js'
-import { useSessionInfo } from '@s4wave/web/hooks/useSessionInfo.js'
 import { useStreamingResource } from '@aptre/bldr-sdk/hooks/useStreamingResource.js'
-import { cn } from '@s4wave/web/style/utils.js'
-import { Session } from '@s4wave/sdk/session/session.js'
-import {
-  Route,
-  Routes,
-  useNavigate,
-  useParentPaths,
-  usePath,
-} from '@s4wave/web/router/router.js'
-import { Redirect } from '@s4wave/web/router/Redirect.js'
-import { SessionContext } from '@s4wave/web/contexts/contexts.js'
-import { LoadingInline } from '@s4wave/web/ui/loading/LoadingInline.js'
-import { SessionDashboardContainer } from './SessionDashboardContainer.js'
-import { SessionSharedObjectContainer } from './SessionSharedObjectContainer.js'
-import { SetupWizard } from './SetupWizard.js'
-import { ProviderSetup } from './setup/ProviderSetup.js'
-import { LocalSessionSetup } from './setup/LocalSessionSetup.js'
-import { LinkDeviceWizard } from './setup/LinkDeviceWizard.js'
-import { CommandLineSetupPage } from './settings/CommandLineSetupPage.js'
-import { CliTerminalPage } from './settings/CliTerminalPage.js'
-import { TransferWizard } from './settings/TransferWizard.js'
-import { StorageHealthPage } from './storage/StorageHealthPage.js'
-import { BillingAccountDetailRoute } from '@s4wave/app/billing/BillingAccountDetailRoute.js'
-import { BillingAccountsRoute } from '@s4wave/app/billing/BillingAccountsRoute.js'
-import { BillingCancelRoute } from '@s4wave/app/billing/BillingCancelRoute.js'
-import { OrgContainer } from '@s4wave/app/org/OrgContainer.js'
-import { JoinSpacePage } from '@s4wave/app/sobject/JoinSpacePage.js'
-import { consumePendingJoin } from '@s4wave/app/routes/pendingJoin.js'
-import { CreateSpaceRoute } from '@s4wave/app/quickstart/CreateSpaceRoute.js'
-import { PairCodePage } from '@s4wave/app/pair/PairCodePage.js'
-import { SpacewaveRootRouter } from '@s4wave/app/provider/spacewave/SpacewaveRootRouter.js'
-import { spacewaveSessionRoutes } from '@s4wave/app/provider/spacewave/SpacewaveSessionRoutes.js'
-import { SessionProviderContainer } from './SessionProviderContainer.js'
-import { BottomBarLevel } from '@s4wave/web/frame/bottom-bar-level.js'
-import { BottomBarItem } from '@s4wave/web/frame/bottom-bar-item.js'
-import { bottomBarIconProps } from '@s4wave/web/frame/bottom-icon-props.js'
 import {
   LuArrowLeft,
   LuArrowUp,
@@ -55,34 +17,74 @@ import {
   LuPersonStanding,
   LuX,
 } from 'react-icons/lu'
+import { type Resource } from '@aptre/bldr-sdk/hooks/useResource.js'
+import { DebugInfo } from '@aptre/bldr-react'
+
+import { useSessionInfo } from '@s4wave/web/hooks/useSessionInfo.js'
+import { cn } from '@s4wave/web/style/utils.js'
+import type { Session } from '@s4wave/sdk/session/session.js'
+import {
+  Route,
+  Routes,
+  useNavigate,
+  useParentPaths,
+  usePath,
+} from '@s4wave/web/router/router.js'
+import { Redirect } from '@s4wave/web/router/Redirect.js'
+import { SessionContext } from '@s4wave/web/contexts/contexts.js'
+import { BillingAccountDetailRoute } from '@s4wave/app/billing/BillingAccountDetailRoute.js'
+import { BillingAccountsRoute } from '@s4wave/app/billing/BillingAccountsRoute.js'
+import { BillingCancelRoute } from '@s4wave/app/billing/BillingCancelRoute.js'
+import { OrgContainer } from '@s4wave/app/org/OrgContainer.js'
+import { JoinSpacePage } from '@s4wave/app/sobject/JoinSpacePage.js'
+import { consumePendingJoin } from '@s4wave/app/routes/pendingJoin.js'
+import { CreateSpaceRoute } from '@s4wave/app/quickstart/CreateSpaceRoute.js'
+import { SpacewaveRootRouter } from '@s4wave/app/provider/spacewave/SpacewaveRootRouter.js'
+import { spacewaveSessionRoutes } from '@s4wave/app/provider/spacewave/SpacewaveSessionRoutes.js'
+import { BottomBarLevel } from '@s4wave/web/frame/bottom-bar-level.js'
+import { BottomBarItem } from '@s4wave/web/frame/bottom-bar-item.js'
+import { bottomBarIconProps } from '@s4wave/web/frame/bottom-icon-props.js'
 import { DashboardButton } from '@s4wave/web/ui/DashboardButton.js'
 import {
   StateNamespaceProvider,
   useStateNamespace,
   type StateAtomAccessor,
 } from '@s4wave/web/state/index.js'
-import { type Resource } from '@aptre/bldr-sdk/hooks/useResource.js'
 import type { SessionMetadata } from '@s4wave/core/session/session.pb.js'
-import { SessionCommands } from './SessionCommands.js'
-import { SessionDetails } from './dashboard/SessionDetails.js'
-import { DeletedAccountOverlay } from './DeletedAccountOverlay.js'
-import { DormantOverlay } from './DormantOverlay.js'
-import { ReAuthOverlay } from './ReAuthOverlay.js'
-import { SessionFlowFrame } from './SessionFlowFrame.js'
 import { ProviderAccountStatus } from '@s4wave/core/provider/provider.pb.js'
 import { SpacewaveProvider } from '@s4wave/sdk/provider/spacewave/spacewave.js'
 import type { ReauthenticateSessionRequest } from '@s4wave/sdk/provider/spacewave/spacewave.pb.js'
 import { useRootResource } from '@s4wave/web/hooks/useRootResource.js'
 import { useSessionIndex } from '@s4wave/web/contexts/contexts.js'
-import { DebugInfo } from '@aptre/bldr-react'
 import { useBottomBarSetOpenMenu } from '@s4wave/web/frame/bottom-bar-context.js'
-import { PinUnlockOverlay } from './PinUnlockOverlay.js'
 import {
   SessionLockMode,
   type EntityCredential,
 } from '@s4wave/core/session/session.pb.js'
 import { SystemStatusButton } from '@s4wave/app/system/SystemStatusButton.js'
 import { RecoveryStatusPublisher } from '@s4wave/app/system/RecoveryStatusPublisher.js'
+import {
+  TargetedInvitePurpose,
+  type TargetedInvitationInfo,
+} from '@s4wave/sdk/provider/spacewave/spacewave.pb.js'
+
+import { SessionDashboardContainer } from './SessionDashboardContainer.js'
+import { SessionSharedObjectContainer } from './SessionSharedObjectContainer.js'
+import { SetupWizard } from './SetupWizard.js'
+import { ProviderSetup } from './setup/ProviderSetup.js'
+import { LocalSessionSetup } from './setup/LocalSessionSetup.js'
+import { CommandLineSetupPage } from './settings/CommandLineSetupPage.js'
+import { CliTerminalPage } from './settings/CliTerminalPage.js'
+import { TransferWizard } from './settings/TransferWizard.js'
+import { StorageHealthPage } from './storage/StorageHealthPage.js'
+import { SessionProviderContainer } from './SessionProviderContainer.js'
+import { SessionCommands } from './SessionCommands.js'
+import { SessionDetails } from './dashboard/SessionDetails.js'
+import { DeletedAccountOverlay } from './DeletedAccountOverlay.js'
+import { DormantOverlay } from './DormantOverlay.js'
+import { ReAuthOverlay } from './ReAuthOverlay.js'
+import { SessionFlowFrame } from './SessionFlowFrame.js'
+import { PinUnlockOverlay } from './PinUnlockOverlay.js'
 import { SessionSyncStatusButton } from './SessionSyncStatusButton.js'
 import { SessionSyncStatusProvider } from './SessionSyncStatusContext.js'
 import { SessionStorageStatsProvider } from './SessionStorageStatsContext.js'
@@ -92,35 +94,16 @@ import {
   SessionUploadManagerProvider,
   SessionUploadIndicator,
 } from './SessionUploadManagerContext.js'
-import {
-  TargetedInvitePurpose,
-  type TargetedInvitationInfo,
-} from '@s4wave/sdk/provider/spacewave/spacewave.pb.js'
 
-// SessionInfoDebug displays the session info as JSON for debugging.
-export function SessionInfoDebug(props: { session: Session }) {
-  const {
-    data: sessionInfo,
-    loading,
-    error,
-  } = usePromise(
-    useCallback(() => props.session.getSessionInfo(), [props.session]),
-  )
+const LazyPairCodePage = lazy(async () => {
+  const { PairCodePage } = await import('@s4wave/app/pair/PairCodePage.js')
+  return { default: PairCodePage }
+})
 
-  if (loading) {
-    return (
-      <div className="flex items-center p-2">
-        <LoadingInline label="Loading session info" tone="muted" size="sm" />
-      </div>
-    )
-  }
-
-  if (error) {
-    return <div>Error loading session info: {error.message}</div>
-  }
-
-  return <div>Session mounted: {JSON.stringify(sessionInfo)}</div>
-}
+const LazyLinkDeviceWizard = lazy(async () => {
+  const { LinkDeviceWizard } = await import('./setup/LinkDeviceWizard.js')
+  return { default: LinkDeviceWizard }
+})
 
 // SessionRootRouter handles the root route redirect logic for a session.
 // Dispatches to SpacewaveRootRouter for cloud sessions.
@@ -336,8 +319,6 @@ function useSessionContainerController(props: SessionContainerProps) {
     navigate({ path: '/sessions' })
   }, [navigate])
 
-  // TODO: wire add auth method button in AuthMethodsSection
-
   const handleAccountBreadcrumb = useCallback(() => {
     navigate({ path: currentLevelPath })
   }, [navigate, currentLevelPath])
@@ -505,7 +486,7 @@ export function SessionContainer(props: SessionContainerProps) {
                         <JoinSpacePage />
                       </Route>
                       <Route path="/pair">
-                        <PairCodePage
+                        <LazyPairCodePage
                           session={session}
                           backPath="../"
                           donePath="../"
@@ -513,7 +494,7 @@ export function SessionContainer(props: SessionContainerProps) {
                       </Route>
                       <Route path="/setup/link-device">
                         <SessionFlowFrame fallbackPath={currentLevelPath}>
-                          <LinkDeviceWizard />
+                          <LazyLinkDeviceWizard />
                         </SessionFlowFrame>
                       </Route>
                       <Route path="/setup/provider">

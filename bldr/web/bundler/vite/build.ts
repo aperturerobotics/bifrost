@@ -7,14 +7,10 @@ import type {
   Rollup,
   UserConfig,
 } from 'vite'
-import { existsSync } from 'node:fs'
-import { promises as fs } from 'node:fs'
-import path from 'path'
+import { existsSync, promises as fs } from 'node:fs'
+import path from 'node:path'
 import type { ConfigEnv } from 'vitest/config'
 
-/**
- * Checks if an unknown error is a RollupError by checking for the watchFiles property
- */
 // isBundleError checks if an unknown error is a Vite 8 BundleError with an errors array.
 export function isBundleError(
   err: unknown,
@@ -63,7 +59,7 @@ export function createSilentViteLogger(): Logger {
   }
 }
 
-// Load and merge configuration from a specified path if it exists
+// loadOptionalConfig loads a configuration file when it exists.
 async function loadOptionalConfig(
   configEnv: ConfigEnv,
   configPath: string,
@@ -82,7 +78,7 @@ async function loadOptionalConfig(
   return loadedConfig?.config || null
 }
 
-// Builds a merged vite config from base config and optional additional configs
+// buildConfig merges configuration files in the supplied order.
 export async function buildConfig(
   configEnv: ConfigEnv,
   ...additionalConfigPaths: string[]
@@ -228,26 +224,24 @@ function resolveEscapedModuleId(
   return null
 }
 
-/**
- * Build a map of chunk fileName to its imported chunk fileNames.
- * This allows us to traverse the chunk dependency graph.
- */
+// buildChunkImportsMap includes static and dynamic dependencies for source tracking.
+// Lazy chunks remain build inputs even when they are not loaded at startup.
 function buildChunkImportsMap(
   outputChunks: (Rollup.OutputChunk | Rollup.OutputAsset)[],
 ): Map<string, string[]> {
   const chunkImports = new Map<string, string[]>()
   for (const chunk of outputChunks) {
     if (chunk.type === 'chunk' && chunk.fileName) {
-      chunkImports.set(chunk.fileName, chunk.imports || [])
+      chunkImports.set(chunk.fileName, [
+        ...(chunk.imports ?? []),
+        ...(chunk.dynamicImports ?? []),
+      ])
     }
   }
   return chunkImports
 }
 
-/**
- * Collect all modules from a chunk and all its imported chunks (transitive).
- * This ensures we track dependencies in shared/split chunks.
- */
+// collectAllModulesForChunk collects transitive source inputs without revisiting cycles.
 function collectAllModulesForChunk(
   chunkFileName: string,
   jsChunkToModules: Map<string, Set<string>>,
@@ -414,7 +408,7 @@ export async function analyzeManifest(
   }
 }
 
-// Run a Vite build with the specified config file
+// runBuild builds once using the supplied configuration file.
 export async function runBuild(
   configFile: string,
   mode: string = 'development',
@@ -429,7 +423,7 @@ export async function runBuild(
   })
 }
 
-// Build and analyze the output
+// buildAndAnalyze returns emitted files and the complete source dependency set.
 export async function buildAndAnalyze(
   config: UserConfig,
   rootDir: string,
@@ -515,28 +509,21 @@ export async function buildAndAnalyze(
     })),
   }
 
-  // drop some unnecessary detail from the result(s)
+  // Source text and module tables are unnecessary once input provenance is captured.
   for (const chunk of outputChunks) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const mutableChunk = chunk as Record<string, any> // otherwise typescript complains
     if (chunk.type === 'chunk') {
-      // the source code, too much info
+      const mutableChunk: Partial<Rollup.OutputChunk> = chunk
       delete mutableChunk.code
-      // sourcemap
       delete mutableChunk.map
-      // list of modules that were bundled (source files)
       delete mutableChunk.modules
-      // list of keys in the modules map
       delete mutableChunk.moduleIds
-      // could be useful to know which variables were imported from each module
-      delete mutableChunk.importedBindings
     }
     if (chunk.type === 'asset') {
+      const mutableChunk: Partial<Rollup.OutputAsset> = chunk
       delete mutableChunk.source
     }
   }
 
-  // Return the results
   return {
     viteOutput,
     outputChunks,
