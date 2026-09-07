@@ -1,15 +1,21 @@
 package publisher
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"path/filepath"
 	"testing"
 	"testing/fstest"
+	"time"
 
+	"github.com/aperturerobotics/go-kvfile"
 	bldr_manifest "github.com/s4wave/spacewave/bldr/manifest"
 	manifest_world "github.com/s4wave/spacewave/bldr/manifest/world"
 	cdn_publish "github.com/s4wave/spacewave/core/cdn/publish"
+	packfile "github.com/s4wave/spacewave/core/provider/spacewave/packfile"
 	"github.com/s4wave/spacewave/core/release"
 	"github.com/s4wave/spacewave/core/sobject"
 	"github.com/s4wave/spacewave/db/block"
@@ -25,16 +31,23 @@ type failingUpload struct {
 	uploads int
 	// roots counts attempted root replacement.
 	roots int
+	// existing is the cloud's committed pack inventory.
+	existing []*packfile.PackfileEntry
+	// data and entry retain the attempted immutable pack for the next check.
+	data  []byte
+	entry *packfile.PackfileEntry
 }
 
-// SyncPull starts with no previously published packs.
+// SyncPull returns the cloud pack inventory.
 func (c *failingUpload) SyncPull(context.Context, string, string) ([]byte, error) {
-	return nil, nil
+	return (&packfile.PullResponse{Entries: c.existing}).MarshalVT()
 }
 
 // SyncPushData fails before any release root may advance.
-func (c *failingUpload) SyncPushData(context.Context, string, string, int, []byte, []byte, []byte, uint32) error {
+func (c *failingUpload) SyncPushData(_ context.Context, _ string, id string, count int, data, _ []byte, bloom []byte, format uint32) error {
 	c.uploads++
+	c.data = bytes.Clone(data)
+	c.entry = &packfile.PackfileEntry{Id: id, BlockCount: uint64(count), SizeBytes: uint64(len(data)), BloomFilter: bytes.Clone(bloom), BloomFormatVersion: format}
 	return errors.New("upload failed")
 }
 
@@ -130,6 +143,43 @@ func TestPublishPreservesRootAfterUploadFailure(t *testing.T) {
 	_, err = Publish(ctx, w.Engine, metadata, cdn_publish.Options{Client: client, DstSpaceID: "test-space", ValidatorKeyPem: "must-not-read.pem", CdnBaseURL: "https://unused.example"})
 	if err == nil || client.uploads != 1 || client.roots != 0 {
 		t.Fatalf("publication: error=%v uploads=%d roots=%d", err, client.uploads, client.roots)
+	}
+
+	// After that pack becomes durable, changing channel metadata must upload
+	// only new blocks, even though it changes the release pack boundaries.
+	previousData := bytes.Clone(client.data)
+	previousEntry := client.entry
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.ServeContent(w, r, "release.kvf", time.Time{}, bytes.NewReader(previousData))
+	}))
+	t.Cleanup(server.Close)
+	tx, err = w.Engine.NewTransaction(ctx, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Discard()
+	metadata, err = StageChannel(ctx, tx, manifestKey, &release.ReleaseMetadata{ProjectId: "test", Version: "0.1.1", ChannelKey: "alpha", Rev: 3})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+	client.existing = []*packfile.PackfileEntry{previousEntry}
+	client.uploads = 0
+	_, err = Publish(ctx, w.Engine, metadata, cdn_publish.Options{Client: client, DstSpaceID: "test-space", ValidatorKeyPem: "must-not-read.pem", CdnBaseURL: server.URL})
+	if err == nil || client.uploads != 1 || client.roots != 0 {
+		t.Fatalf("incremental publication: error=%v uploads=%d roots=%d", err, client.uploads, client.roots)
+	}
+	reader, err := kvfile.BuildReader(bytes.NewReader(client.data), uint64(len(client.data)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, entry := range first {
+		_, found, err := reader.Get([]byte(entry.ref.GetHash().MarshalString()))
+		if err != nil || found {
+			t.Fatalf("republished existing release block: found=%v error=%v", found, err)
+		}
 	}
 
 	// Missing executable content must fail before even attempting a pack upload.

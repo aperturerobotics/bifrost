@@ -10,9 +10,11 @@ import (
 	"github.com/pkg/errors"
 	bldr_manifest "github.com/s4wave/spacewave/bldr/manifest"
 	manifest_world "github.com/s4wave/spacewave/bldr/manifest/world"
+	cdn_bstore "github.com/s4wave/spacewave/core/cdn/bstore"
 	cdn_publish "github.com/s4wave/spacewave/core/cdn/publish"
 	packfile "github.com/s4wave/spacewave/core/provider/spacewave/packfile"
 	"github.com/s4wave/spacewave/core/provider/spacewave/packfile/delta"
+	packfile_store "github.com/s4wave/spacewave/core/provider/spacewave/packfile/store"
 	"github.com/s4wave/spacewave/core/release"
 	"github.com/s4wave/spacewave/core/sobject"
 	"github.com/s4wave/spacewave/db/block"
@@ -48,9 +50,29 @@ func Publish(ctx context.Context, eng world.Engine, metadata *release.ReleaseMet
 	if err != nil {
 		return nil, err
 	}
-	existing := make(map[string]struct{}, len(entries))
-	for _, entry := range entries {
-		existing[entry.GetId()] = struct{}{}
+	// Exact pack indexes prove presence; Bloom filters only narrow the search.
+	remote := packfile_store.NewPackfileStore(cdn_bstore.NewAnonymousOpener(nil, opts.CdnBaseURL, opts.DstSpaceID), nil)
+	defer remote.Close()
+	remote.UpdateManifest(entries)
+	refs := make([]*block.BlockRef, len(blocks))
+	for i, entry := range blocks {
+		refs[i] = entry.ref
+	}
+	exists, err := remote.GetBlockExistsBatch(ctx, refs)
+	if err != nil {
+		return nil, errors.Wrap(err, "check published release blocks")
+	}
+	missing := blocks[:0]
+	var missingBytes uint64
+	for i, entry := range blocks {
+		if !exists[i] {
+			missing = append(missing, entry)
+			missingBytes += uint64(len(entry.data))
+		}
+	}
+	blocks = missing
+	if opts.Logger != nil {
+		opts.Logger.WithField("blocks", len(blocks)).WithField("bytes", missingBytes).Info("publishing missing release content")
 	}
 
 	// Use the standard pack writer and resource-scoped content identity.
@@ -63,9 +85,6 @@ func Publish(ctx context.Context, eng world.Engine, metadata *release.ReleaseMet
 		index++
 		return entry.ref.GetHash(), entry.data, nil
 	}, delta.DefaultMaxChunkBytes, func(ctx context.Context, chunk int, entry *packfile.PackfileEntry, data []byte) error {
-		if _, ok := existing[entry.GetId()]; ok {
-			return nil
-		}
 		if opts.Logger != nil {
 			opts.Logger.WithField("pack", chunk).WithField("bytes", len(data)).Info("uploading release content")
 		}
