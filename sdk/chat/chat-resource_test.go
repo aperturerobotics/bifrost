@@ -85,6 +85,13 @@ func TestChatResourceSendsListsAndWatchesMessages(t *testing.T) {
 	if info.GetName() != "General" {
 		t.Fatalf("channel name = %q, want General", info.GetName())
 	}
+	if info.GetMessageCount() != 0 {
+		t.Fatalf("channel message count = %d, want 0", info.GetMessageCount())
+	}
+	if info.GetCreatedAt() == nil {
+		t.Fatal("channel creation timestamp is nil")
+	}
+	createdAt := info.GetCreatedAt().CloneVT()
 
 	sendResp, err := resource.SendMessage(ctx, &spacewave_chat_rpc.SendMessageRequest{Text: "hello goscript chat"})
 	if err != nil {
@@ -92,6 +99,16 @@ func TestChatResourceSendsListsAndWatchesMessages(t *testing.T) {
 	}
 	if sendResp.GetMessageKey() == "" {
 		t.Fatal("SendMessage returned empty message key")
+	}
+	updatedInfo, err := resource.GetChannelInfo(ctx, &spacewave_chat_rpc.GetChannelInfoRequest{})
+	if err != nil {
+		t.Fatalf("GetChannelInfo after send: %v", err)
+	}
+	if updatedInfo.GetMessageCount() != 1 {
+		t.Fatalf("channel message count = %d, want 1", updatedInfo.GetMessageCount())
+	}
+	if !updatedInfo.GetCreatedAt().EqualVT(createdAt) {
+		t.Fatal("channel creation timestamp changed after sending a message")
 	}
 
 	listResp, err := resource.ListMessages(ctx, &spacewave_chat_rpc.ListMessagesRequest{})

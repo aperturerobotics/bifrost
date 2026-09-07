@@ -107,6 +107,10 @@ type GetChannelInfoResponse struct {
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// Topic is the channel topic.
 	Topic string `protobuf:"bytes,2,opt,name=topic,proto3" json:"topic,omitempty"`
+	// MessageCount is the number of messages retained in channel history.
+	MessageCount uint64 `protobuf:"varint,3,opt,name=message_count,json=messageCount,proto3" json:"messageCount,omitempty"`
+	// CreatedAt is the channel creation timestamp.
+	CreatedAt *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=created_at,json=createdAt,proto3" json:"createdAt,omitempty"`
 }
 
 func (x *GetChannelInfoResponse) Reset() {
@@ -127,6 +131,20 @@ func (x *GetChannelInfoResponse) GetTopic() string {
 		return x.Topic
 	}
 	return ""
+}
+
+func (x *GetChannelInfoResponse) GetMessageCount() uint64 {
+	if x != nil {
+		return x.MessageCount
+	}
+	return 0
+}
+
+func (x *GetChannelInfoResponse) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
 }
 
 // ListMessagesRequest is a request for paginated messages.
@@ -331,6 +349,8 @@ func (m *GetChannelInfoResponse) CloneVT() *GetChannelInfoResponse {
 	r := new(GetChannelInfoResponse)
 	r.Name = m.Name
 	r.Topic = m.Topic
+	r.MessageCount = m.MessageCount
+	r.CreatedAt = protobuf_go_lite.CloneVTValue(m.CreatedAt)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -506,6 +526,12 @@ func (this *GetChannelInfoResponse) EqualVT(that *GetChannelInfoResponse) bool {
 		return false
 	}
 	if this.Topic != that.Topic {
+		return false
+	}
+	if this.MessageCount != that.MessageCount {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.CreatedAt, that.CreatedAt) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -797,6 +823,16 @@ func (x *GetChannelInfoResponse) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("topic")
 		s.WriteString(x.Topic)
 	}
+	if x.MessageCount != 0 || s.HasField("messageCount") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("messageCount")
+		s.WriteUint64(x.MessageCount)
+	}
+	if x.CreatedAt != nil || s.HasField("createdAt") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("createdAt")
+		x.CreatedAt.MarshalProtoJSON(s.WithField("createdAt"))
+	}
 	s.WriteObjectEnd()
 }
 
@@ -820,6 +856,16 @@ func (x *GetChannelInfoResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "topic":
 			s.AddField("topic")
 			x.Topic = s.ReadString()
+		case "message_count", "messageCount":
+			s.AddField("message_count")
+			x.MessageCount = s.ReadUint64()
+		case "created_at", "createdAt":
+			if s.ReadNil() {
+				x.CreatedAt = nil
+				return
+			}
+			x.CreatedAt = &timestamppb.Timestamp{}
+			x.CreatedAt.UnmarshalProtoJSON(s.WithField("created_at", true))
 		}
 	})
 }
@@ -1293,6 +1339,21 @@ func (m *GetChannelInfoResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.CreatedAt != nil {
+		size, err := m.CreatedAt.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x22
+	}
+	if m.MessageCount != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.MessageCount))
+		i--
+		dAtA[i] = 0x18
+	}
 	if len(m.Topic) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.Topic)
 		i--
@@ -1608,6 +1669,11 @@ func (m *GetChannelInfoResponse) SizeVT() (n int) {
 	_ = l
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Name)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Topic)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.MessageCount)
+	if m.CreatedAt != nil {
+		l = m.CreatedAt.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -1749,6 +1815,14 @@ func (x *GetChannelInfoResponse) MarshalProtoText() string {
 	if x.Topic != "" {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "topic")
 		protobuf_go_lite.TextWriteString(&sb, x.Topic)
+	}
+	if x.MessageCount != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "message_count")
+		protobuf_go_lite.TextWriteUint(&sb, x.MessageCount)
+	}
+	if x.CreatedAt != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "created_at")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.CreatedAt)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -2078,6 +2152,30 @@ func (m *GetChannelInfoResponse) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.Topic = v
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MessageCount", wireType)
+			}
+			m.MessageCount = 0
+			m.MessageCount, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CreatedAt", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.CreatedAt == nil {
+				m.CreatedAt = &timestamppb.Timestamp{}
+			}
+			if err := m.CreatedAt.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

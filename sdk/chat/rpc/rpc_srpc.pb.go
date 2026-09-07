@@ -14,12 +14,13 @@ type SRPCChatResourceServiceClient interface {
 	// SRPCClient returns the underlying SRPC client.
 	SRPCClient() srpc.Client
 
+	// GetChannelInfo returns channel metadata and its retained history extent.
 	GetChannelInfo(ctx context.Context, in *GetChannelInfoRequest) (*GetChannelInfoResponse, error)
-
+	// ListMessages returns a bounded page of channel history.
 	ListMessages(ctx context.Context, in *ListMessagesRequest) (*ListMessagesResponse, error)
-
+	// WatchMessages streams channel messages after each shared-state change.
 	WatchMessages(ctx context.Context, in *WatchMessagesRequest) (SRPCChatResourceService_WatchMessagesClient, error)
-
+	// SendMessage appends one message or resolves an identical retry.
 	SendMessage(ctx context.Context, in *SendMessageRequest) (*SendMessageResponse, error)
 }
 
@@ -103,12 +104,13 @@ func (c *srpcChatResourceServiceClient) SendMessage(ctx context.Context, in *Sen
 }
 
 type SRPCChatResourceServiceServer interface {
+	// GetChannelInfo returns channel metadata and its retained history extent.
 	GetChannelInfo(context.Context, *GetChannelInfoRequest) (*GetChannelInfoResponse, error)
-
+	// ListMessages returns a bounded page of channel history.
 	ListMessages(context.Context, *ListMessagesRequest) (*ListMessagesResponse, error)
-
+	// WatchMessages streams channel messages after each shared-state change.
 	WatchMessages(*WatchMessagesRequest, SRPCChatResourceService_WatchMessagesStream) error
-
+	// SendMessage appends one message or resolves an identical retry.
 	SendMessage(context.Context, *SendMessageRequest) (*SendMessageResponse, error)
 }
 

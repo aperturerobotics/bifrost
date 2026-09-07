@@ -110,6 +110,18 @@ export interface GetChannelInfoResponse {
    * @generated from field: string topic = 2;
    */
   topic?: string
+  /**
+   * MessageCount is the number of messages retained in channel history.
+   *
+   * @generated from field: uint64 message_count = 3;
+   */
+  messageCount?: bigint
+  /**
+   * CreatedAt is the channel creation timestamp.
+   *
+   * @generated from field: google.protobuf.Timestamp created_at = 4;
+   */
+  createdAt?: Date
 }
 
 export const GetChannelInfoResponse: MessageType<GetChannelInfoResponse> =
@@ -118,6 +130,8 @@ export const GetChannelInfoResponse: MessageType<GetChannelInfoResponse> =
     fields: [
       { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
       { no: 2, name: 'topic', kind: 'scalar', T: ScalarType.STRING },
+      { no: 3, name: 'message_count', kind: 'scalar', T: ScalarType.UINT64 },
+      { no: 4, name: 'created_at', kind: 'message', T: () => Timestamp },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })
