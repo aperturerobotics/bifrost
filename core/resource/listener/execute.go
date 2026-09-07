@@ -181,6 +181,7 @@ func (c *Controller) serveOnce(
 	if err := prepare(parentCtx, le, absPath); err != nil {
 		return false, errors.Wrap(err, "prepare socket")
 	}
+
 	// Bind only after the socket parent has been made private.
 	lis, err := ListenProtectedUnix(absPath, managed)
 	if err != nil {
@@ -242,7 +243,7 @@ func (c *Controller) serveOnce(
 	serveCanceled := serveCtx.Err() != nil
 	serveCancel()
 	drainClients()
-	if err != nil && (serveCanceled || yielded || stderrors.Is(err, net.ErrClosed)) {
+	if serveCanceled || yielded || stderrors.Is(err, net.ErrClosed) {
 		err = nil
 	}
 	if err != nil {
