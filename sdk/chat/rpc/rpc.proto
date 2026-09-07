@@ -6,10 +6,15 @@ import "github.com/s4wave/spacewave/sdk/chat/content/content.proto";
 
 option go_package = "github.com/s4wave/spacewave/sdk/chat/rpc;spacewave_chat_rpc";
 
+// ChatResourceService serves authorized operations for one chat channel.
 service ChatResourceService {
+  // GetChannelInfo returns channel metadata and its retained history extent.
   rpc GetChannelInfo(GetChannelInfoRequest) returns (GetChannelInfoResponse);
+  // ListMessages returns a bounded page of channel history.
   rpc ListMessages(ListMessagesRequest) returns (ListMessagesResponse);
+  // WatchMessages streams channel messages after each shared-state change.
   rpc WatchMessages(WatchMessagesRequest) returns (stream WatchMessagesResponse);
+  // SendMessage appends one message or resolves an identical retry.
   rpc SendMessage(SendMessageRequest) returns (SendMessageResponse);
 }
 
@@ -32,7 +37,8 @@ message ChatMessageInfo {
 }
 
 // GetChannelInfoRequest is a request for channel info.
-message GetChannelInfoRequest {}
+message GetChannelInfoRequest {
+}
 
 // GetChannelInfoResponse contains channel metadata.
 message GetChannelInfoResponse {
@@ -40,6 +46,10 @@ message GetChannelInfoResponse {
   string name = 1;
   // Topic is the channel topic.
   string topic = 2;
+  // MessageCount is the number of messages retained in channel history.
+  uint64 message_count = 3;
+  // CreatedAt is the channel creation timestamp.
+  .google.protobuf.Timestamp created_at = 4;
 }
 
 // ListMessagesRequest is a request for paginated messages.
@@ -59,7 +69,8 @@ message ListMessagesResponse {
 }
 
 // WatchMessagesRequest is a request to stream messages.
-message WatchMessagesRequest {}
+message WatchMessagesRequest {
+}
 
 // WatchMessagesResponse contains a batch of new messages.
 message WatchMessagesResponse {

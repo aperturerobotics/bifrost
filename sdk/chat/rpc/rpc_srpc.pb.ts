@@ -21,12 +21,16 @@ import {
 } from 'starpc'
 
 /**
+ * ChatResourceService serves authorized operations for one chat channel.
+ *
  * @generated from service spacewave.chat.rpc.ChatResourceService
  */
 export const ChatResourceServiceDefinition = {
   typeName: 'spacewave.chat.rpc.ChatResourceService',
   methods: {
     /**
+     * GetChannelInfo returns channel metadata and its retained history extent.
+     *
      * @generated from rpc spacewave.chat.rpc.ChatResourceService.GetChannelInfo
      */
     GetChannelInfo: {
@@ -36,6 +40,8 @@ export const ChatResourceServiceDefinition = {
       kind: MethodKind.Unary,
     },
     /**
+     * ListMessages returns a bounded page of channel history.
+     *
      * @generated from rpc spacewave.chat.rpc.ChatResourceService.ListMessages
      */
     ListMessages: {
@@ -45,6 +51,8 @@ export const ChatResourceServiceDefinition = {
       kind: MethodKind.Unary,
     },
     /**
+     * WatchMessages streams channel messages after each shared-state change.
+     *
      * @generated from rpc spacewave.chat.rpc.ChatResourceService.WatchMessages
      */
     WatchMessages: {
@@ -54,6 +62,8 @@ export const ChatResourceServiceDefinition = {
       kind: MethodKind.ServerStreaming,
     },
     /**
+     * SendMessage appends one message or resolves an identical retry.
+     *
      * @generated from rpc spacewave.chat.rpc.ChatResourceService.SendMessage
      */
     SendMessage: {
@@ -66,10 +76,14 @@ export const ChatResourceServiceDefinition = {
 } as const
 
 /**
+ * ChatResourceService serves authorized operations for one chat channel.
+ *
  * @generated from service spacewave.chat.rpc.ChatResourceService
  */
 export interface ChatResourceService {
   /**
+   * GetChannelInfo returns channel metadata and its retained history extent.
+   *
    * @generated from rpc spacewave.chat.rpc.ChatResourceService.GetChannelInfo
    */
   GetChannelInfo(
@@ -78,6 +92,8 @@ export interface ChatResourceService {
   ): Promise<GetChannelInfoResponse>
 
   /**
+   * ListMessages returns a bounded page of channel history.
+   *
    * @generated from rpc spacewave.chat.rpc.ChatResourceService.ListMessages
    */
   ListMessages(
@@ -86,6 +102,8 @@ export interface ChatResourceService {
   ): Promise<ListMessagesResponse>
 
   /**
+   * WatchMessages streams channel messages after each shared-state change.
+   *
    * @generated from rpc spacewave.chat.rpc.ChatResourceService.WatchMessages
    */
   WatchMessages(
@@ -94,6 +112,8 @@ export interface ChatResourceService {
   ): MessageStream<WatchMessagesResponse>
 
   /**
+   * SendMessage appends one message or resolves an identical retry.
+   *
    * @generated from rpc spacewave.chat.rpc.ChatResourceService.SendMessage
    */
   SendMessage(
@@ -103,10 +123,14 @@ export interface ChatResourceService {
 }
 
 /**
+ * ChatResourceService serves authorized operations for one chat channel.
+ *
  * @generated from service spacewave.chat.rpc.ChatResourceService
  */
 export interface ChatResourceServiceHandler {
   /**
+   * GetChannelInfo returns channel metadata and its retained history extent.
+   *
    * @generated from rpc spacewave.chat.rpc.ChatResourceService.GetChannelInfo
    */
   GetChannelInfo(
@@ -116,6 +140,8 @@ export interface ChatResourceServiceHandler {
   ): Promise<GetChannelInfoResponse>
 
   /**
+   * ListMessages returns a bounded page of channel history.
+   *
    * @generated from rpc spacewave.chat.rpc.ChatResourceService.ListMessages
    */
   ListMessages(
@@ -125,6 +151,8 @@ export interface ChatResourceServiceHandler {
   ): Promise<ListMessagesResponse>
 
   /**
+   * WatchMessages streams channel messages after each shared-state change.
+   *
    * @generated from rpc spacewave.chat.rpc.ChatResourceService.WatchMessages
    */
   WatchMessages(
@@ -134,6 +162,8 @@ export interface ChatResourceServiceHandler {
   ): MessageStream<WatchMessagesResponse>
 
   /**
+   * SendMessage appends one message or resolves an identical retry.
+   *
    * @generated from rpc spacewave.chat.rpc.ChatResourceService.SendMessage
    */
   SendMessage(
@@ -158,6 +188,8 @@ export class ChatResourceServiceClient implements ChatResourceService {
     this.SendMessage = this.SendMessage.bind(this)
   }
   /**
+   * GetChannelInfo returns channel metadata and its retained history extent.
+   *
    * @generated from rpc spacewave.chat.rpc.ChatResourceService.GetChannelInfo
    */
   async GetChannelInfo(
@@ -175,6 +207,8 @@ export class ChatResourceServiceClient implements ChatResourceService {
   }
 
   /**
+   * ListMessages returns a bounded page of channel history.
+   *
    * @generated from rpc spacewave.chat.rpc.ChatResourceService.ListMessages
    */
   async ListMessages(
@@ -192,6 +226,8 @@ export class ChatResourceServiceClient implements ChatResourceService {
   }
 
   /**
+   * WatchMessages streams channel messages after each shared-state change.
+   *
    * @generated from rpc spacewave.chat.rpc.ChatResourceService.WatchMessages
    */
   WatchMessages(
@@ -209,6 +245,8 @@ export class ChatResourceServiceClient implements ChatResourceService {
   }
 
   /**
+   * SendMessage appends one message or resolves an identical retry.
+   *
    * @generated from rpc spacewave.chat.rpc.ChatResourceService.SendMessage
    */
   async SendMessage(

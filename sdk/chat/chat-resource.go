@@ -86,8 +86,10 @@ func (r *ChatResource) GetChannelInfo(
 
 	// Project the metadata for the client.
 	return &spacewave_chat_rpc.GetChannelInfoResponse{
-		Name:  channel.GetName(),
-		Topic: channel.GetTopic(),
+		Name:         channel.GetName(),
+		Topic:        channel.GetTopic(),
+		MessageCount: channel.GetMessageCount(),
+		CreatedAt:    channel.GetCreatedAt().CloneVT(),
 	}, nil
 }
 
