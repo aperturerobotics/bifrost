@@ -93,7 +93,7 @@ type cloudSOHost struct {
 	// onPeerRevoked is called when a peer is removed from the config chain with
 	// RevocationInfo. Called with the revoked peer ID string.
 	onPeerRevoked func(peerIDStr string)
-	// forceBlockSync flushes pending block-store writes before publishing roots.
+	// forceBlockSync uploads referenced blocks before publishing operations or roots.
 	forceBlockSync func(ctx context.Context) error
 	// refreshBlockManifest pulls remote packfile metadata before publishing
 	// remote SO state that may reference newly-pushed blocks.
@@ -1010,7 +1010,7 @@ func (h *cloudSOHost) applyConfigMutation(
 	return nil
 }
 
-// QueueOperation queues an operation to the cloud via the SOHost.
+// QueueOperation uploads pending blocks before submitting an operation to the cloud.
 func (h *cloudSOHost) QueueOperation(ctx context.Context, peerID peer.ID, cb func(nonce uint64) (*sobject.SOOperation, error)) error {
 	relLock, err := h.writeMu.Lock(ctx)
 	if err != nil {
@@ -1038,6 +1038,15 @@ func (h *cloudSOHost) QueueOperation(ctx context.Context, peerID peer.ID, cb fun
 		opData, err := op.MarshalVT()
 		if err != nil {
 			return errors.Wrap(err, "marshal operation")
+		}
+		// A remote validator must be able to read the operation's referenced
+		// blocks immediately, without waiting for the background upload timer.
+		if h.forceBlockSync != nil {
+			started := time.Now()
+			if err := h.forceBlockSync(ctx); err != nil {
+				return errors.Wrap(err, "upload blocks before operation")
+			}
+			h.le.WithField("duration", time.Since(started)).Debug("uploaded blocks before operation")
 		}
 		if err := h.client.PostOp(ctx, h.soID, opData); err != nil {
 			var ce *cloudError
