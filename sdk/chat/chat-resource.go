@@ -110,6 +110,31 @@ func (r *ChatResource) GetChannelInfo(
 	}, nil
 }
 
+// GetMessage reads one channel message by its channel-scoped object key.
+func (r *ChatResource) GetMessage(
+	ctx context.Context,
+	req *spacewave_chat_rpc.GetMessageRequest,
+) (*spacewave_chat_rpc.GetMessageResponse, error) {
+	// Validate the requested key against the mounted channel.
+	key := req.GetMessageKey()
+	suffix, matches := strings.CutPrefix(key, r.objectKey+"/message/")
+	if !matches || suffix == "" || strings.Contains(suffix, "/") {
+		return nil, errors.New("message key belongs to another channel")
+	}
+
+	// Read the validated message through the owner projection.
+	message, err := r.readMessage(ctx, key)
+	if err != nil {
+		return nil, err
+	}
+	if message == nil {
+		return nil, world.ErrObjectNotFound
+	}
+
+	// Return the selected message projection.
+	return &spacewave_chat_rpc.GetMessageResponse{Message: message}, nil
+}
+
 // ListMessages returns a page of channel messages.
 func (r *ChatResource) ListMessages(
 	ctx context.Context,
@@ -158,18 +183,11 @@ func (r *ChatResource) ListMessages(
 		startIndex = endIndex - count
 		hasMore = startIndex != 0
 	case beforeKey != "":
-		suffix, matches := strings.CutPrefix(beforeKey, r.objectKey+"/message/")
-		if !matches || suffix == "" || strings.Contains(suffix, "/") {
-			return nil, errors.New("message cursor belongs to another channel")
-		}
-		message, err := r.readMessage(ctx, beforeKey)
+		messageResponse, err := r.GetMessage(ctx, &spacewave_chat_rpc.GetMessageRequest{MessageKey: beforeKey})
 		if err != nil {
 			return nil, err
 		}
-		if message == nil {
-			return nil, world.ErrObjectNotFound
-		}
-		endIndex = min(message.GetIndex(), messageCount)
+		endIndex = min(messageResponse.GetMessage().GetIndex(), messageCount)
 		count := min(uint64(limit), endIndex)
 		startIndex = endIndex - count
 		hasMore = startIndex != 0

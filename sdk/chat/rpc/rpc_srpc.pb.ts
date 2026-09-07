@@ -5,6 +5,8 @@
 import {
   GetChannelInfoRequest,
   GetChannelInfoResponse,
+  GetMessageRequest,
+  GetMessageResponse,
   GetReadPositionsRequest,
   GetReadPositionsResponse,
   ListMessagesRequest,
@@ -41,6 +43,17 @@ export const ChatResourceServiceDefinition = {
       name: 'GetChannelInfo',
       I: GetChannelInfoRequest,
       O: GetChannelInfoResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * GetMessage returns one message from this channel by object key.
+     *
+     * @generated from rpc spacewave.chat.rpc.ChatResourceService.GetMessage
+     */
+    GetMessage: {
+      name: 'GetMessage',
+      I: GetMessageRequest,
+      O: GetMessageResponse,
       kind: MethodKind.Unary,
     },
     /**
@@ -118,6 +131,16 @@ export interface ChatResourceService {
   ): Promise<GetChannelInfoResponse>
 
   /**
+   * GetMessage returns one message from this channel by object key.
+   *
+   * @generated from rpc spacewave.chat.rpc.ChatResourceService.GetMessage
+   */
+  GetMessage(
+    request: GetMessageRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<GetMessageResponse>
+
+  /**
    * ListMessages returns a bounded page of channel history.
    *
    * @generated from rpc spacewave.chat.rpc.ChatResourceService.ListMessages
@@ -186,6 +209,17 @@ export interface ChatResourceServiceHandler {
   ): Promise<GetChannelInfoResponse>
 
   /**
+   * GetMessage returns one message from this channel by object key.
+   *
+   * @generated from rpc spacewave.chat.rpc.ChatResourceService.GetMessage
+   */
+  GetMessage(
+    request: GetMessageRequest,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): Promise<GetMessageResponse>
+
+  /**
    * ListMessages returns a bounded page of channel history.
    *
    * @generated from rpc spacewave.chat.rpc.ChatResourceService.ListMessages
@@ -251,6 +285,7 @@ export class ChatResourceServiceClient implements ChatResourceService {
     this.service = opts?.service || ChatResourceServiceServiceName
     this.rpc = rpc
     this.GetChannelInfo = this.GetChannelInfo.bind(this)
+    this.GetMessage = this.GetMessage.bind(this)
     this.ListMessages = this.ListMessages.bind(this)
     this.WatchMessages = this.WatchMessages.bind(this)
     this.SendMessage = this.SendMessage.bind(this)
@@ -274,6 +309,25 @@ export class ChatResourceServiceClient implements ChatResourceService {
       abortSignal || undefined,
     )
     return GetChannelInfoResponse.fromBinary(result)
+  }
+
+  /**
+   * GetMessage returns one message from this channel by object key.
+   *
+   * @generated from rpc spacewave.chat.rpc.ChatResourceService.GetMessage
+   */
+  async GetMessage(
+    request: GetMessageRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<GetMessageResponse> {
+    const requestMsg = GetMessageRequest.create(request)
+    const result = await this.rpc.request(
+      this.service,
+      ChatResourceServiceDefinition.methods.GetMessage.name,
+      GetMessageRequest.toBinary(requestMsg),
+      abortSignal || undefined,
+    )
+    return GetMessageResponse.fromBinary(result)
   }
 
   /**
