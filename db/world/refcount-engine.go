@@ -11,7 +11,7 @@ import (
 
 // RefCountEngine is an engine backed by a reference counter.
 type RefCountEngine struct {
-	// rc contains the engine reference counter
+	// rc retains the resolved engine while an operation or transaction uses it.
 	rc *refcount.RefCount[*Engine]
 }
 
@@ -19,7 +19,7 @@ type RefCountEngine struct {
 //
 // keepUnref sets if the engine should be kept if there are zero references.
 // ctx is used to resolve the value when a reference is added.
-// ctx can be nil and updated with SetContext or ClearContext
+// ctx can be nil and updated with SetContext or ClearContext.
 func NewRefCountEngine(ctx context.Context, keepUnref bool, resolver EngineResolver) *RefCountEngine {
 	return NewRefCountEngineWithCtr(ctx, keepUnref, resolver, nil, nil)
 }
@@ -56,11 +56,15 @@ func (e *RefCountEngine) ClearContext() {
 // Indicate write if the transaction will not be read-only.
 // Always call Discard() after you are done with the transaction.
 // Check GetReadOnly, might not return a write tx if write=true.
+// The returned transaction retains the resolved engine until Discard.
 func (e *RefCountEngine) NewTransaction(ctx context.Context, write bool) (Tx, error) {
+	// Retain the resolved engine for the transaction's lifetime.
 	engine, ref, err := e.rc.Wait(ctx)
 	if err != nil {
 		return nil, err
 	}
+
+	// Transfer the engine reference to the transaction after construction.
 	tx, err := (*engine).NewTransaction(ctx, write)
 	if err != nil {
 		ref.Release()
@@ -116,13 +120,13 @@ func (e *RefCountEngine) AccessWorldState(
 // This is also the sequence number of the most recent change.
 // Initializes at 0 for initial world state.
 func (e *RefCountEngine) GetSeqno(ctx context.Context) (uint64, error) {
-	tx, err := e.NewTransaction(ctx, false)
-	if err != nil {
-		return 0, err
-	}
-	defer tx.Discard()
-
-	return tx.GetSeqno(ctx)
+	var seqno uint64
+	err := e.rc.Access(ctx, func(ctx context.Context, val *Engine) error {
+		var err error
+		seqno, err = (*val).GetSeqno(ctx)
+		return err
+	})
+	return seqno, err
 }
 
 // WaitSeqno waits for the seqno of the world state to be >= value.
