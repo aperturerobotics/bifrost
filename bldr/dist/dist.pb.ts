@@ -74,6 +74,12 @@ export interface DistMeta {
    * @generated from field: uint64 manifest_rev = 9;
    */
   manifestRev?: bigint
+  /**
+   * UpdateGuardPluginIds name plugins that quiesce owned work before replacement.
+   *
+   * @generated from field: repeated string update_guard_plugin_ids = 10;
+   */
+  updateGuardPluginIds?: string[]
 }
 
 export const DistMeta: MessageType<DistMeta> =
@@ -95,6 +101,13 @@ export const DistMeta: MessageType<DistMeta> =
       { no: 7, name: 'channel_key', kind: 'scalar', T: ScalarType.STRING },
       { no: 8, name: 'manifest_id', kind: 'scalar', T: ScalarType.STRING },
       { no: 9, name: 'manifest_rev', kind: 'scalar', T: ScalarType.UINT64 },
+      {
+        no: 10,
+        name: 'update_guard_plugin_ids',
+        kind: 'scalar',
+        T: ScalarType.STRING,
+        repeated: true,
+      },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })

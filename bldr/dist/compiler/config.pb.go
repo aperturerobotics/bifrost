@@ -155,6 +155,9 @@ type Config struct {
 	// retain the external volume layout. Web distributions always ship the
 	// volume separately regardless of this option.
 	EmbedNativeVolume enabled.Enabled `protobuf:"varint,14,opt,name=embed_native_volume,json=embedNativeVolume,proto3" json:"embedNativeVolume,omitempty"`
+	// UpdateGuardPluginIds require the running plugin's UpdateGuard service to
+	// authorize hot replacement. Initial startup does not require approval.
+	UpdateGuardPluginIds []string `protobuf:"bytes,15,rep,name=update_guard_plugin_ids,json=updateGuardPluginIds,proto3" json:"updateGuardPluginIds,omitempty"`
 }
 
 func (x *Config) Reset() {
@@ -261,6 +264,13 @@ func (x *Config) GetEmbedNativeVolume() enabled.Enabled {
 	return enabled.Enabled(0)
 }
 
+func (x *Config) GetUpdateGuardPluginIds() []string {
+	if x != nil {
+		return x.UpdateGuardPluginIds
+	}
+	return nil
+}
+
 // PreBuildHookResult is the output of a pre-build hook.
 type PreBuildHookResult struct {
 	unknownFields []byte
@@ -362,6 +372,7 @@ func (m *Config) CloneVT() *Config {
 	r.HostConfigSet = protobuf_go_lite.CloneVTMap(m.HostConfigSet)
 	r.CliPkgs = protobuf_go_lite.CloneSlice(m.CliPkgs)
 	r.BrowserIceServers = protobuf_go_lite.CloneVTSlice(m.BrowserIceServers)
+	r.UpdateGuardPluginIds = protobuf_go_lite.CloneSlice(m.UpdateGuardPluginIds)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -483,6 +494,9 @@ func (this *Config) EqualVT(that *Config) bool {
 		return false
 	}
 	if this.EmbedNativeVolume != that.EmbedNativeVolume {
+		return false
+	}
+	if !protobuf_go_lite.EqualSlice(this.UpdateGuardPluginIds, that.UpdateGuardPluginIds) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -779,6 +793,11 @@ func (x *Config) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("embedNativeVolume")
 		x.EmbedNativeVolume.MarshalProtoJSON(s)
 	}
+	if len(x.UpdateGuardPluginIds) > 0 || s.HasField("updateGuardPluginIds") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("updateGuardPluginIds")
+		s.WriteStringArray(x.UpdateGuardPluginIds)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -885,6 +904,13 @@ func (x *Config) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "embed_native_volume", "embedNativeVolume":
 			s.AddField("embed_native_volume")
 			x.EmbedNativeVolume.UnmarshalProtoJSON(s)
+		case "update_guard_plugin_ids", "updateGuardPluginIds":
+			s.AddField("update_guard_plugin_ids")
+			if s.ReadNil() {
+				x.UpdateGuardPluginIds = nil
+				return
+			}
+			x.UpdateGuardPluginIds = s.ReadStringArray()
 		}
 	})
 }
@@ -1059,6 +1085,13 @@ func (m *Config) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	_ = l
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.UpdateGuardPluginIds) > 0 {
+		for iNdEx := len(m.UpdateGuardPluginIds) - 1; iNdEx >= 0; iNdEx-- {
+			i = protobuf_go_lite.EncodeString(dAtA, i, m.UpdateGuardPluginIds[iNdEx])
+			i--
+			dAtA[i] = 0x7a
+		}
 	}
 	if m.EmbedNativeVolume != 0 {
 		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.EmbedNativeVolume))
@@ -1268,6 +1301,7 @@ func (m *Config) SizeVT() (n int) {
 	}
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.BrowserIceServersEndpoint)
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.EmbedNativeVolume)
+	n += protobuf_go_lite.SizeStringSlice(1, m.UpdateGuardPluginIds)
 	n += len(m.unknownFields)
 	return n
 }
@@ -1441,6 +1475,14 @@ func (x *Config) MarshalProtoText() string {
 	if x.EmbedNativeVolume != 0 {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "embed_native_volume")
 		protobuf_go_lite.TextWriteStringer(&sb, enabled.Enabled(x.EmbedNativeVolume))
+	}
+	if len(x.UpdateGuardPluginIds) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "update_guard_plugin_ids")
+		for i, v := range x.UpdateGuardPluginIds {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			protobuf_go_lite.TextWriteString(&sb, v)
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -1806,6 +1848,16 @@ func (m *Config) UnmarshalVT(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
+		case 15:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UpdateGuardPluginIds", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.UpdateGuardPluginIds = append(m.UpdateGuardPluginIds, v)
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

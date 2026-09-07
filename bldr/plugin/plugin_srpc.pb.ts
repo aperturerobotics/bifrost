@@ -7,6 +7,8 @@ import {
   GetPluginInfoResponse,
   LoadPluginRequest,
   LoadPluginResponse,
+  PrepareUpdateRequest,
+  PrepareUpdateResponse,
 } from './plugin.pb.js'
 import { MethodKind } from '@aptre/protobuf-es-lite'
 import {
@@ -435,5 +437,98 @@ export class PluginClient implements Plugin {
       abortSignal || undefined,
     )
     return buildDecodeMessageTransform(RpcStreamPacket)(result)
+  }
+}
+/**
+ * UpdateGuard is implemented by plugins whose owned work must quiesce before
+ * replacement. Hosts call it only for explicitly configured guarded plugins.
+ *
+ * @generated from service bldr.plugin.UpdateGuard
+ */
+export const UpdateGuardDefinition = {
+  typeName: 'bldr.plugin.UpdateGuard',
+  methods: {
+    /**
+     * Prepare waits for owned work to finish and prevents new work from starting.
+     * Success authorizes replacement of this plugin generation.
+     *
+     * @generated from rpc bldr.plugin.UpdateGuard.Prepare
+     */
+    Prepare: {
+      name: 'Prepare',
+      I: PrepareUpdateRequest,
+      O: PrepareUpdateResponse,
+      kind: MethodKind.Unary,
+    },
+  },
+} as const
+
+/**
+ * UpdateGuard is implemented by plugins whose owned work must quiesce before
+ * replacement. Hosts call it only for explicitly configured guarded plugins.
+ *
+ * @generated from service bldr.plugin.UpdateGuard
+ */
+export interface UpdateGuard {
+  /**
+   * Prepare waits for owned work to finish and prevents new work from starting.
+   * Success authorizes replacement of this plugin generation.
+   *
+   * @generated from rpc bldr.plugin.UpdateGuard.Prepare
+   */
+  Prepare(
+    request: PrepareUpdateRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<PrepareUpdateResponse>
+}
+
+/**
+ * UpdateGuard is implemented by plugins whose owned work must quiesce before
+ * replacement. Hosts call it only for explicitly configured guarded plugins.
+ *
+ * @generated from service bldr.plugin.UpdateGuard
+ */
+export interface UpdateGuardHandler {
+  /**
+   * Prepare waits for owned work to finish and prevents new work from starting.
+   * Success authorizes replacement of this plugin generation.
+   *
+   * @generated from rpc bldr.plugin.UpdateGuard.Prepare
+   */
+  Prepare(
+    request: PrepareUpdateRequest,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): Promise<PrepareUpdateResponse>
+}
+
+export const UpdateGuardServiceName = UpdateGuardDefinition.typeName
+
+export class UpdateGuardClient implements UpdateGuard {
+  private readonly rpc: ProtoRpc
+  private readonly service: string
+  constructor(rpc: ProtoRpc, opts?: { service?: string }) {
+    this.service = opts?.service || UpdateGuardServiceName
+    this.rpc = rpc
+    this.Prepare = this.Prepare.bind(this)
+  }
+  /**
+   * Prepare waits for owned work to finish and prevents new work from starting.
+   * Success authorizes replacement of this plugin generation.
+   *
+   * @generated from rpc bldr.plugin.UpdateGuard.Prepare
+   */
+  async Prepare(
+    request: PrepareUpdateRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<PrepareUpdateResponse> {
+    const requestMsg = PrepareUpdateRequest.create(request)
+    const result = await this.rpc.request(
+      this.service,
+      UpdateGuardDefinition.methods.Prepare.name,
+      PrepareUpdateRequest.toBinary(requestMsg),
+      abortSignal || undefined,
+    )
+    return PrepareUpdateResponse.fromBinary(result)
   }
 }

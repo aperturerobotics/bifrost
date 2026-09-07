@@ -613,3 +613,111 @@ func (x *srpcPlugin_PluginRpcStream) Recv() (*rpcstream.RpcStreamPacket, error) 
 func (x *srpcPlugin_PluginRpcStream) RecvTo(m *rpcstream.RpcStreamPacket) error {
 	return x.MsgRecv(m)
 }
+
+type SRPCUpdateGuardClient interface {
+	// SRPCClient returns the underlying SRPC client.
+	SRPCClient() srpc.Client
+
+	// Prepare waits for owned work to finish and prevents new work from starting.
+	// Success authorizes replacement of this plugin generation.
+	Prepare(ctx context.Context, in *PrepareUpdateRequest) (*PrepareUpdateResponse, error)
+}
+
+type srpcUpdateGuardClient struct {
+	cc        srpc.Client
+	serviceID string
+}
+
+func NewSRPCUpdateGuardClient(cc srpc.Client) SRPCUpdateGuardClient {
+	return &srpcUpdateGuardClient{cc: cc, serviceID: SRPCUpdateGuardServiceID}
+}
+
+func NewSRPCUpdateGuardClientWithServiceID(cc srpc.Client, serviceID string) SRPCUpdateGuardClient {
+	if serviceID == "" {
+		serviceID = SRPCUpdateGuardServiceID
+	}
+	return &srpcUpdateGuardClient{cc: cc, serviceID: serviceID}
+}
+
+func (c *srpcUpdateGuardClient) SRPCClient() srpc.Client { return c.cc }
+
+func (c *srpcUpdateGuardClient) Prepare(ctx context.Context, in *PrepareUpdateRequest) (*PrepareUpdateResponse, error) {
+	out := new(PrepareUpdateResponse)
+	err := c.cc.ExecCall(ctx, c.serviceID, "Prepare", in, out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+type SRPCUpdateGuardServer interface {
+	// Prepare waits for owned work to finish and prevents new work from starting.
+	// Success authorizes replacement of this plugin generation.
+	Prepare(context.Context, *PrepareUpdateRequest) (*PrepareUpdateResponse, error)
+}
+
+const SRPCUpdateGuardServiceID = "bldr.plugin.UpdateGuard"
+
+type SRPCUpdateGuardHandler struct {
+	serviceID string
+	impl      SRPCUpdateGuardServer
+}
+
+// NewSRPCUpdateGuardHandler constructs a new RPC handler.
+// serviceID: if empty, uses default: bldr.plugin.UpdateGuard
+func NewSRPCUpdateGuardHandler(impl SRPCUpdateGuardServer, serviceID string) srpc.Handler {
+	if serviceID == "" {
+		serviceID = SRPCUpdateGuardServiceID
+	}
+	return &SRPCUpdateGuardHandler{impl: impl, serviceID: serviceID}
+}
+
+// SRPCRegisterUpdateGuard registers the implementation with the mux.
+// Uses the default serviceID: bldr.plugin.UpdateGuard
+func SRPCRegisterUpdateGuard(mux srpc.Mux, impl SRPCUpdateGuardServer) error {
+	return mux.Register(NewSRPCUpdateGuardHandler(impl, ""))
+}
+
+func (d *SRPCUpdateGuardHandler) GetServiceID() string { return d.serviceID }
+
+func (SRPCUpdateGuardHandler) GetMethodIDs() []string {
+	return []string{
+		"Prepare",
+	}
+}
+
+func (d *SRPCUpdateGuardHandler) InvokeMethod(
+	serviceID, methodID string,
+	strm srpc.Stream,
+) (bool, error) {
+	if serviceID != "" && serviceID != d.GetServiceID() {
+		return false, nil
+	}
+
+	switch methodID {
+	case "Prepare":
+		return true, d.InvokeMethod_Prepare(d.impl, strm)
+	default:
+		return false, nil
+	}
+}
+
+func (SRPCUpdateGuardHandler) InvokeMethod_Prepare(impl SRPCUpdateGuardServer, strm srpc.Stream) error {
+	req := new(PrepareUpdateRequest)
+	if err := strm.MsgRecv(req); err != nil {
+		return err
+	}
+	out, err := impl.Prepare(strm.Context(), req)
+	if err != nil {
+		return err
+	}
+	return strm.MsgSend(out)
+}
+
+type SRPCUpdateGuard_PrepareStream interface {
+	srpc.Stream
+}
+
+type srpcUpdateGuard_PrepareStream struct {
+	srpc.Stream
+}

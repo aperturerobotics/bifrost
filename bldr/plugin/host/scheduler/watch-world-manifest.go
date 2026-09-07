@@ -130,7 +130,7 @@ func (t *pluginInstance) processManifestWorldStateCore(
 		// Don't clear states that the fetch handler set.
 		if !t.c.conf.GetDisableStoreManifest() {
 			_, changed1, _, _ := t.downloadManifestRoutine.SetState(nil)
-			_, changed2, _, _ := t.executePluginRoutine.SetState(nil)
+			changed2 := t.setExecutePluginState(nil)
 			if changed1 || changed2 || !t.loggedNotFound.Swap(true) {
 				le.Debugf("no manifests for plugin found in world")
 			}
@@ -262,13 +262,13 @@ func (t *pluginInstance) processManifestWorldStateCore(
 			// execute the executeManifest
 			if executeManifest != nil {
 				// update the state container (which automatically diffs the manifest and restarts if changed)
-				_, changed, _, _ := t.executePluginRoutine.SetState(&executePluginArgs{
+				changed := t.setExecutePluginState(&executePluginArgs{
 					manifestSnapshot: executeManifest,
 					pluginHost:       executeManifestHost,
 				})
 				anyChanged = anyChanged || changed
 			} else {
-				_, changed, _, _ := t.executePluginRoutine.SetState(nil)
+				changed := t.setExecutePluginState(nil)
 				anyChanged = anyChanged || changed
 			}
 

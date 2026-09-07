@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller/configset"
@@ -393,6 +394,7 @@ func BuildDistBus(
 		vol.GetID(),
 		vol.GetPeerID().String(),
 	)
+	pluginSchedConf.UpdateGuardPluginIds = slices.Clone(distMeta.GetUpdateGuardPluginIds())
 	pluginSchedCtrl, _, pluginSchedCtrlRef, err := loader.WaitExecControllerRunningTyped[*plugin_host_scheduler.Controller](
 		ctx,
 		b,

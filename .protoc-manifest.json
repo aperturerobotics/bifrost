@@ -78,7 +78,7 @@
       ]
     },
     "github.com/s4wave/spacewave/bldr/dist": {
-      "hash": "1ae5c11222438d5788187e69954b6e9b8f3e4a1808d1b7b7fd593adecccb0f5f",
+      "hash": "53ff5251bde914796acc1a6f808d2cf284d4045fbcbb3d7a72fc896cdf933222",
       "generatedFiles": [
         "bldr/dist/dist.pb.go",
         "bldr/dist/dist.pb.ts"
@@ -88,7 +88,7 @@
       ]
     },
     "github.com/s4wave/spacewave/bldr/dist/compiler": {
-      "hash": "61f1251ed2413c36157a7508d3de9606845b8ee113d19921058826ceb10ea83a",
+      "hash": "33d3e0e40fbedd59a0f93141e62b7f7621199c39426edbd1950d6684c4a716f0",
       "generatedFiles": [
         "bldr/dist/compiler/config.pb.go",
         "bldr/dist/compiler/config.pb.ts"
@@ -215,7 +215,7 @@
       ]
     },
     "github.com/s4wave/spacewave/bldr/plugin": {
-      "hash": "51cdba28cb5cf4102481091a518a0913bb7eb697494180617580617d0407de56",
+      "hash": "4362a4911ef32c3554def4cdc1790f2f7ee9667bd0091513597fecf2ee23cff3",
       "generatedFiles": [
         "bldr/plugin/plugin.pb.go",
         "bldr/plugin/plugin.pb.ts",
@@ -317,7 +317,7 @@
       ]
     },
     "github.com/s4wave/spacewave/bldr/plugin/host/scheduler": {
-      "hash": "eda62d7c1847c7dcd860cf31589c0459df7e50efb2b322005d1582cd41a90604",
+      "hash": "f2b83794cf91c762ad7e4e5e3ad9ed3242037cd863d4932952e36faf106ca1de",
       "generatedFiles": [
         "bldr/plugin/host/scheduler/config.pb.go",
         "bldr/plugin/host/scheduler/config.pb.ts"
@@ -972,10 +972,12 @@
       ]
     },
     "github.com/s4wave/spacewave/core/cdn/world/controller": {
-      "hash": "552db5aacb56a7df71bd126110fb89a9d231546ba61988634719184163279fcb",
+      "hash": "db814c47d389239cd7b2a1f25c1d24981cc674ca46c3d175e03197cbbcd848af",
       "generatedFiles": [
         "core/cdn/world/controller/controller.pb.go",
-        "core/cdn/world/controller/controller.pb.ts"
+        "core/cdn/world/controller/controller.pb.ts",
+        "core/cdn/world/controller/controller_srpc.pb.go",
+        "core/cdn/world/controller/controller_srpc.pb.ts"
       ],
       "protoFiles": [
         "core/cdn/world/controller/controller.proto"

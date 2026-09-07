@@ -8,12 +8,15 @@ import (
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
+	"github.com/aperturerobotics/util/backoff"
 	"github.com/aperturerobotics/util/ccontainer"
+	"github.com/aperturerobotics/util/routine"
 	cdn_bstore "github.com/s4wave/spacewave/core/cdn/bstore"
 	cdn_sharedobject "github.com/s4wave/spacewave/core/cdn/sharedobject"
 	"github.com/s4wave/spacewave/core/sobject"
 	block_store "github.com/s4wave/spacewave/db/block/store"
 	"github.com/s4wave/spacewave/db/world"
+	rpc "github.com/s4wave/spacewave/net/rpc"
 	"github.com/sirupsen/logrus"
 )
 
@@ -47,6 +50,8 @@ type Controller struct {
 	ctr *ccontainer.CContainer[world.Engine]
 	// storeCtr publishes block-store authority while this controller owns it.
 	storeCtr *ccontainer.CContainer[*blockStoreAuthority]
+	// refresh coalesces invalidations under the active mount's lifetime.
+	refresh *routine.RoutineContainer
 }
 
 // NewController builds a new CDN world controller.
@@ -57,6 +62,7 @@ func NewController(le *logrus.Entry, b bus.Bus, conf *Config) *Controller {
 		conf:     conf,
 		ctr:      ccontainer.NewCContainer[world.Engine](nil),
 		storeCtr: ccontainer.NewCContainer[*blockStoreAuthority](nil),
+		refresh:  routine.NewRoutineContainerWithLogger(le, routine.WithRetry(&backoff.Backoff{})),
 	}
 }
 
@@ -140,6 +146,10 @@ func (c *Controller) Execute(ctx context.Context) error {
 		return err
 	}
 
+	c.refresh.SetRoutine(so.RefreshSnapshot)
+	c.refresh.SetContext(ctx, false)
+	defer c.refresh.ClearContext()
+
 	// Wait for a readable head, then publish one engine until cancellation.
 	for {
 		engine, err := cdn_sharedobject.NewWorldEngine(ctx, c.le, c.b, so)
@@ -159,6 +169,7 @@ func (c *Controller) Execute(ctx context.Context) error {
 		c.ctr.SetValue(engine.Engine)
 		c.le.Info("CDN world engine ready")
 		<-ctx.Done()
+		c.refresh.ClearContext()
 		engine.Release()
 		c.engine = nil
 		c.ctr.SetValue(nil)
@@ -169,6 +180,11 @@ func (c *Controller) Execute(ctx context.Context) error {
 // HandleDirective asks if the handler can resolve the directive.
 func (c *Controller) HandleDirective(_ context.Context, di directive.Instance) ([]directive.Resolver, error) {
 	switch dir := di.GetDirective().(type) {
+	case rpc.LookupRpcService:
+		if dir.LookupRpcServiceID() != WorldRefreshServiceID(c.conf.GetEngineId()) {
+			return nil, nil
+		}
+		return directive.R(rpc.NewLookupRpcServiceResolver(c), nil)
 	case world.LookupWorldEngine:
 		if id := dir.LookupWorldEngineID(); id != "" && id != c.conf.GetEngineId() {
 			return nil, nil

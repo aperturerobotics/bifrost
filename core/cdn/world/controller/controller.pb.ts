@@ -10,6 +10,52 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export const protobufPackage = 'cdn.world.controller'
 
 /**
+ * RefreshRequest optionally limits an invalidation to its published Space.
+ *
+ * @generated from message cdn.world.controller.RefreshRequest
+ */
+export interface RefreshRequest {
+  /**
+   * SpaceId is empty for an explicit refresh of the configured mount.
+   *
+   * @generated from field: string space_id = 1;
+   */
+  spaceId?: string
+}
+
+export const RefreshRequest: MessageType<RefreshRequest> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'cdn.world.controller.RefreshRequest',
+    fields: [
+      { no: 1, name: 'space_id', kind: 'scalar', T: ScalarType.STRING },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
+ * RefreshResponse confirms that a matching mount accepted the invalidation.
+ *
+ * @generated from message cdn.world.controller.RefreshResponse
+ */
+export interface RefreshResponse {
+  /**
+   * Accepted is true when the mount queued the requested refresh.
+   *
+   * @generated from field: bool accepted = 1;
+   */
+  accepted?: boolean
+}
+
+export const RefreshResponse: MessageType<RefreshResponse> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'cdn.world.controller.RefreshResponse',
+    fields: [
+      { no: 1, name: 'accepted', kind: 'scalar', T: ScalarType.BOOL },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
  * Config configures a read-only CDN-backed world engine controller.
  *
  * @generated from message cdn.world.controller.Config

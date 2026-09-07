@@ -64,6 +64,9 @@ message Config {
   // MaterializerPluginId is the plugin ID to route manifest materialization
   // through. If empty, the scheduler materializes manifests directly.
   string materializer_plugin_id = 16;
+  // UpdateGuardPluginIds require a successful UpdateGuard.Prepare call on the
+  // running generation before a different executable replaces it.
+  repeated string update_guard_plugin_ids = 17;
 }
 
 // PlatformSelectionPolicy restricts a plugin host platform to a plugin ID list.

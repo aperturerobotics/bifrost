@@ -1,6 +1,25 @@
 syntax = "proto3";
 package cdn.world.controller;
 
+// WorldRefresh invalidates a mounted CDN World's published snapshot.
+// The service is scoped by engine ID through WorldRefreshServiceID.
+service WorldRefresh {
+  // Refresh queues a root fetch under the mount's lifetime.
+  rpc Refresh(RefreshRequest) returns (RefreshResponse) {}
+}
+
+// RefreshRequest optionally limits an invalidation to its published Space.
+message RefreshRequest {
+  // SpaceId is empty for an explicit refresh of the configured mount.
+  string space_id = 1;
+}
+
+// RefreshResponse confirms that a matching mount accepted the invalidation.
+message RefreshResponse {
+  // Accepted is true when the mount queued the requested refresh.
+  bool accepted = 1;
+}
+
 // Config configures a read-only CDN-backed world engine controller.
 message Config {
   // EngineId is the world engine id exposed on the bus.

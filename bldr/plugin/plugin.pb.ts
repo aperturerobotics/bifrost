@@ -117,6 +117,32 @@ export const PluginStatus: MessageType<PluginStatus> =
   })
 
 /**
+ * PrepareUpdateRequest asks the current generation to relinquish its work.
+ *
+ * @generated from message bldr.plugin.PrepareUpdateRequest
+ */
+export interface PrepareUpdateRequest {}
+
+export const PrepareUpdateRequest: MessageType<PrepareUpdateRequest> =
+  /* @__PURE__ */ createEmptyMessageType<PrepareUpdateRequest>(
+    'bldr.plugin.PrepareUpdateRequest',
+    true,
+  )
+
+/**
+ * PrepareUpdateResponse confirms the generation is ready for replacement.
+ *
+ * @generated from message bldr.plugin.PrepareUpdateResponse
+ */
+export interface PrepareUpdateResponse {}
+
+export const PrepareUpdateResponse: MessageType<PrepareUpdateResponse> =
+  /* @__PURE__ */ createEmptyMessageType<PrepareUpdateResponse>(
+    'bldr.plugin.PrepareUpdateResponse',
+    true,
+  )
+
+/**
  * GetPluginInfoRequest is a request to return the information for the current plugin.
  *
  * @generated from message bldr.plugin.GetPluginInfoRequest

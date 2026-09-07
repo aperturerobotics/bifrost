@@ -76,6 +76,9 @@ type Config struct {
 	// MaterializerPluginId is the plugin ID to route manifest materialization
 	// through. If empty, the scheduler materializes manifests directly.
 	MaterializerPluginId string `protobuf:"bytes,16,opt,name=materializer_plugin_id,json=materializerPluginId,proto3" json:"materializerPluginId,omitempty"`
+	// UpdateGuardPluginIds require a successful UpdateGuard.Prepare call on the
+	// running generation before a different executable replaces it.
+	UpdateGuardPluginIds []string `protobuf:"bytes,17,rep,name=update_guard_plugin_ids,json=updateGuardPluginIds,proto3" json:"updateGuardPluginIds,omitempty"`
 }
 
 func (x *Config) Reset() {
@@ -196,6 +199,13 @@ func (x *Config) GetMaterializerPluginId() string {
 	return ""
 }
 
+func (x *Config) GetUpdateGuardPluginIds() []string {
+	if x != nil {
+		return x.UpdateGuardPluginIds
+	}
+	return nil
+}
+
 // PlatformSelectionPolicy restricts a plugin host platform to a plugin ID list.
 type PlatformSelectionPolicy struct {
 	unknownFields []byte
@@ -247,6 +257,7 @@ func (m *Config) CloneVT() *Config {
 	r.ExecBackoff = protobuf_go_lite.CloneVTValue(m.ExecBackoff)
 	r.PlatformSelectionPolicies = protobuf_go_lite.CloneVTSlice(m.PlatformSelectionPolicies)
 	r.NoCopyBucketIds = protobuf_go_lite.CloneSlice(m.NoCopyBucketIds)
+	r.UpdateGuardPluginIds = protobuf_go_lite.CloneSlice(m.UpdateGuardPluginIds)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -326,6 +337,9 @@ func (this *Config) EqualVT(that *Config) bool {
 		return false
 	}
 	if this.MaterializerPluginId != that.MaterializerPluginId {
+		return false
+	}
+	if !protobuf_go_lite.EqualSlice(this.UpdateGuardPluginIds, that.UpdateGuardPluginIds) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -456,6 +470,11 @@ func (x *Config) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("materializerPluginId")
 		s.WriteString(x.MaterializerPluginId)
 	}
+	if len(x.UpdateGuardPluginIds) > 0 || s.HasField("updateGuardPluginIds") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("updateGuardPluginIds")
+		s.WriteStringArray(x.UpdateGuardPluginIds)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -548,6 +567,13 @@ func (x *Config) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "materializer_plugin_id", "materializerPluginId":
 			s.AddField("materializer_plugin_id")
 			x.MaterializerPluginId = s.ReadString()
+		case "update_guard_plugin_ids", "updateGuardPluginIds":
+			s.AddField("update_guard_plugin_ids")
+			if s.ReadNil() {
+				x.UpdateGuardPluginIds = nil
+				return
+			}
+			x.UpdateGuardPluginIds = s.ReadStringArray()
 		}
 	})
 }
@@ -639,6 +665,15 @@ func (m *Config) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	_ = l
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.UpdateGuardPluginIds) > 0 {
+		for iNdEx := len(m.UpdateGuardPluginIds) - 1; iNdEx >= 0; iNdEx-- {
+			i = protobuf_go_lite.EncodeString(dAtA, i, m.UpdateGuardPluginIds[iNdEx])
+			i--
+			dAtA[i] = 0x1
+			i--
+			dAtA[i] = 0x8a
+		}
 	}
 	if len(m.MaterializerPluginId) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.MaterializerPluginId)
@@ -819,6 +854,7 @@ func (m *Config) SizeVT() (n int) {
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.InstanceKey)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.StartupWaitBudgetDur)
 	n += protobuf_go_lite.SizeStringNonEmpty(2, m.MaterializerPluginId)
+	n += protobuf_go_lite.SizeStringSlice(2, m.UpdateGuardPluginIds)
 	n += len(m.unknownFields)
 	return n
 }
@@ -913,6 +949,14 @@ func (x *Config) MarshalProtoText() string {
 	if x.MaterializerPluginId != "" {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "materializer_plugin_id")
 		protobuf_go_lite.TextWriteString(&sb, x.MaterializerPluginId)
+	}
+	if len(x.UpdateGuardPluginIds) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "update_guard_plugin_ids")
+		for i, v := range x.UpdateGuardPluginIds {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			protobuf_go_lite.TextWriteString(&sb, v)
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -1135,6 +1179,16 @@ func (m *Config) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.MaterializerPluginId = v
+		case 17:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UpdateGuardPluginIds", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.UpdateGuardPluginIds = append(m.UpdateGuardPluginIds, v)
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

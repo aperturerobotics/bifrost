@@ -249,7 +249,7 @@ func (t *pluginInstance) newDirectFetchHandler(ctx context.Context, hosts *plugi
 			snapshot := &bldr_manifest.ManifestSnapshot{
 				ManifestRef: best.ref.GetManifestRef(),
 			}
-			t.executePluginRoutine.SetState(&executePluginArgs{
+			t.setExecutePluginState(&executePluginArgs{
 				manifestSnapshot: snapshot,
 				pluginHost:       best.host,
 			})
@@ -264,7 +264,7 @@ func (t *pluginInstance) newDirectFetchHandler(ctx context.Context, hosts *plugi
 			return
 		}
 
-		t.executePluginRoutine.SetState(nil)
+		t.setExecutePluginState(nil)
 		t.setDownloadManifestState(ctx, nil, t.c.conf.GetEngineId())
 	}
 

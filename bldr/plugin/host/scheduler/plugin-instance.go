@@ -3,6 +3,7 @@ package plugin_host_scheduler
 import (
 	"context"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -63,6 +64,10 @@ type pluginInstance struct {
 	downloadManifestRoutine *routine.StateRoutineContainer[*bldr_manifest.ManifestSnapshot]
 	// manifestCopyStatus exposes this instance's copy class for tests and diagnostics.
 	manifestCopyStatus *ccontainer.CContainer[*manifestCopyStatus]
+	// pluginUpdateMtx serializes candidate selection and guarded replacement.
+	pluginUpdateMtx sync.Mutex
+	// updatePluginRoutine waits for the running plugin to permit replacement.
+	updatePluginRoutine *routine.StateRoutineContainer[*executePluginArgs]
 	// executePluginRoutine is the routine to execute a plugin with a manifest.
 	executePluginRoutine *routine.StateRoutineContainer[*executePluginArgs]
 }
@@ -125,6 +130,9 @@ func (c *Controller) newPluginInstance(key string) (keyed.Routine, *pluginInstan
 	)
 	tr.executePluginRoutine.SetStateRoutine(tr.execPlugin)
 
+	tr.updatePluginRoutine = routine.NewStateRoutineContainerWithLogger(executePluginArgsEqual, le, routine.WithRetry(fetchBackoff))
+	tr.updatePluginRoutine.SetStateRoutine(tr.execGuardedPluginUpdate)
+
 	return tr.execute, tr
 }
 
@@ -170,6 +178,9 @@ func (t *pluginInstance) execute(ctx context.Context) error {
 	// Set the context for the execute plugin routine.
 	t.executePluginRoutine.SetContext(ctx, true)
 	defer t.executePluginRoutine.ClearContext()
+
+	t.updatePluginRoutine.SetContext(ctx, true)
+	defer t.updatePluginRoutine.ClearContext()
 
 	distFsID := bldr_plugin.PluginDistFsId(t.pluginID)
 	distAccessCtrl := unixfs_access.NewController(

@@ -67,8 +67,24 @@ service Plugin {
   rpc PluginRpc(stream .rpcstream.RpcStreamPacket) returns (stream .rpcstream.RpcStreamPacket);
 }
 
+// UpdateGuard is implemented by plugins whose owned work must quiesce before
+// replacement. Hosts call it only for explicitly configured guarded plugins.
+service UpdateGuard {
+  // Prepare waits for owned work to finish and prevents new work from starting.
+  // Success authorizes replacement of this plugin generation.
+  rpc Prepare(PrepareUpdateRequest) returns (PrepareUpdateResponse) {}
+}
+
+// PrepareUpdateRequest asks the current generation to relinquish its work.
+message PrepareUpdateRequest {
+}
+// PrepareUpdateResponse confirms the generation is ready for replacement.
+message PrepareUpdateResponse {
+}
+
 // GetPluginInfoRequest is a request to return the information for the current plugin.
-message GetPluginInfoRequest {}
+message GetPluginInfoRequest {
+}
 
 // GetPluginInfoResponse is the response to the GetPluginInfo request.
 message GetPluginInfoResponse {

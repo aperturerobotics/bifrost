@@ -218,6 +218,13 @@ export interface Config {
    * @generated from field: enabled.Enabled embed_native_volume = 14;
    */
   embedNativeVolume?: Enabled
+  /**
+   * UpdateGuardPluginIds require the running plugin's UpdateGuard service to
+   * authorize hot replacement. Initial startup does not require approval.
+   *
+   * @generated from field: repeated string update_guard_plugin_ids = 15;
+   */
+  updateGuardPluginIds?: string[]
 }
 
 export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
@@ -272,6 +279,13 @@ export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
       T: ScalarType.STRING,
     },
     { no: 14, name: 'embed_native_volume', kind: 'enum', T: Enabled_Enum },
+    {
+      no: 15,
+      name: 'update_guard_plugin_ids',
+      kind: 'scalar',
+      T: ScalarType.STRING,
+      repeated: true,
+    },
   ] satisfies readonly PartialFieldInfo[],
   packedByDefault: true,
 })

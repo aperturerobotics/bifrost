@@ -176,6 +176,13 @@ export interface Config {
    * @generated from field: string materializer_plugin_id = 16;
    */
   materializerPluginId?: string
+  /**
+   * UpdateGuardPluginIds require a successful UpdateGuard.Prepare call on the
+   * running generation before a different executable replaces it.
+   *
+   * @generated from field: repeated string update_guard_plugin_ids = 17;
+   */
+  updateGuardPluginIds?: string[]
 }
 
 export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
@@ -228,6 +235,13 @@ export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
       name: 'materializer_plugin_id',
       kind: 'scalar',
       T: ScalarType.STRING,
+    },
+    {
+      no: 17,
+      name: 'update_guard_plugin_ids',
+      kind: 'scalar',
+      T: ScalarType.STRING,
+      repeated: true,
     },
   ] satisfies readonly PartialFieldInfo[],
   packedByDefault: true,

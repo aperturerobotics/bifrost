@@ -39,6 +39,8 @@ type DistMeta struct {
 	ManifestId string `protobuf:"bytes,8,opt,name=manifest_id,json=manifestId,proto3" json:"manifestId,omitempty"`
 	// ManifestRev is the Bldr Manifest revision for this entrypoint binary.
 	ManifestRev uint64 `protobuf:"varint,9,opt,name=manifest_rev,json=manifestRev,proto3" json:"manifestRev,omitempty"`
+	// UpdateGuardPluginIds name plugins that quiesce owned work before replacement.
+	UpdateGuardPluginIds []string `protobuf:"bytes,10,rep,name=update_guard_plugin_ids,json=updateGuardPluginIds,proto3" json:"updateGuardPluginIds,omitempty"`
 }
 
 func (x *DistMeta) Reset() {
@@ -110,6 +112,13 @@ func (x *DistMeta) GetManifestRev() uint64 {
 	return 0
 }
 
+func (x *DistMeta) GetUpdateGuardPluginIds() []string {
+	if x != nil {
+		return x.UpdateGuardPluginIds
+	}
+	return nil
+}
+
 func (m *DistMeta) CloneVT() *DistMeta {
 	if m == nil {
 		return (*DistMeta)(nil)
@@ -124,6 +133,7 @@ func (m *DistMeta) CloneVT() *DistMeta {
 	r.ManifestRev = m.ManifestRev
 	r.StartupPlugins = protobuf_go_lite.CloneSlice(m.StartupPlugins)
 	r.DistWorldRef = protobuf_go_lite.CloneVTValue(m.DistWorldRef)
+	r.UpdateGuardPluginIds = protobuf_go_lite.CloneSlice(m.UpdateGuardPluginIds)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -165,6 +175,9 @@ func (this *DistMeta) EqualVT(that *DistMeta) bool {
 		return false
 	}
 	if this.ManifestRev != that.ManifestRev {
+		return false
+	}
+	if !protobuf_go_lite.EqualSlice(this.UpdateGuardPluginIds, that.UpdateGuardPluginIds) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -231,6 +244,11 @@ func (x *DistMeta) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("manifestRev")
 		s.WriteUint64(x.ManifestRev)
 	}
+	if len(x.UpdateGuardPluginIds) > 0 || s.HasField("updateGuardPluginIds") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("updateGuardPluginIds")
+		s.WriteStringArray(x.UpdateGuardPluginIds)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -283,6 +301,13 @@ func (x *DistMeta) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "manifest_rev", "manifestRev":
 			s.AddField("manifest_rev")
 			x.ManifestRev = s.ReadUint64()
+		case "update_guard_plugin_ids", "updateGuardPluginIds":
+			s.AddField("update_guard_plugin_ids")
+			if s.ReadNil() {
+				x.UpdateGuardPluginIds = nil
+				return
+			}
+			x.UpdateGuardPluginIds = s.ReadStringArray()
 		}
 	})
 }
@@ -320,6 +345,13 @@ func (m *DistMeta) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	_ = l
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.UpdateGuardPluginIds) > 0 {
+		for iNdEx := len(m.UpdateGuardPluginIds) - 1; iNdEx >= 0; iNdEx-- {
+			i = protobuf_go_lite.EncodeString(dAtA, i, m.UpdateGuardPluginIds[iNdEx])
+			i--
+			dAtA[i] = 0x52
+		}
 	}
 	if m.ManifestRev != 0 {
 		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.ManifestRev))
@@ -394,6 +426,7 @@ func (m *DistMeta) SizeVT() (n int) {
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.ChannelKey)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.ManifestId)
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.ManifestRev)
+	n += protobuf_go_lite.SizeStringSlice(1, m.UpdateGuardPluginIds)
 	n += len(m.unknownFields)
 	return n
 }
@@ -440,6 +473,14 @@ func (x *DistMeta) MarshalProtoText() string {
 	if x.ManifestRev != 0 {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "manifest_rev")
 		protobuf_go_lite.TextWriteUint(&sb, x.ManifestRev)
+	}
+	if len(x.UpdateGuardPluginIds) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "update_guard_plugin_ids")
+		for i, v := range x.UpdateGuardPluginIds {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			protobuf_go_lite.TextWriteString(&sb, v)
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -562,6 +603,16 @@ func (m *DistMeta) UnmarshalVT(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
+		case 10:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UpdateGuardPluginIds", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.UpdateGuardPluginIds = append(m.UpdateGuardPluginIds, v)
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

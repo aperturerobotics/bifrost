@@ -27,4 +27,6 @@ message DistMeta {
   string manifest_id = 8;
   // ManifestRev is the Bldr Manifest revision for this entrypoint binary.
   uint64 manifest_rev = 9;
+  // UpdateGuardPluginIds name plugins that quiesce owned work before replacement.
+  repeated string update_guard_plugin_ids = 10;
 }

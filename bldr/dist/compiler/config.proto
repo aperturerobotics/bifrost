@@ -107,6 +107,9 @@ message Config {
   // retain the external volume layout. Web distributions always ship the
   // volume separately regardless of this option.
   .enabled.Enabled embed_native_volume = 14;
+  // UpdateGuardPluginIds require the running plugin's UpdateGuard service to
+  // authorize hot replacement. Initial startup does not require approval.
+  repeated string update_guard_plugin_ids = 15;
 }
 
 // PreBuildHookResult is the output of a pre-build hook.
