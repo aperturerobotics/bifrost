@@ -123,6 +123,9 @@ type GetChannelInfoResponse struct {
 	CreatedAt *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=created_at,json=createdAt,proto3" json:"createdAt,omitempty"`
 	// CreatorPeerId is the peer identity that created the channel.
 	CreatorPeerId string `protobuf:"bytes,5,opt,name=creator_peer_id,json=creatorPeerId,proto3" json:"creatorPeerId,omitempty"`
+	// EncryptionAlgorithm reports the immutable creation-time policy. Empty allows plaintext;
+	// otherwise sends require ciphertext using this algorithm.
+	EncryptionAlgorithm string `protobuf:"bytes,6,opt,name=encryption_algorithm,json=encryptionAlgorithm,proto3" json:"encryptionAlgorithm,omitempty"`
 }
 
 func (x *GetChannelInfoResponse) Reset() {
@@ -162,6 +165,13 @@ func (x *GetChannelInfoResponse) GetCreatedAt() *timestamppb.Timestamp {
 func (x *GetChannelInfoResponse) GetCreatorPeerId() string {
 	if x != nil {
 		return x.CreatorPeerId
+	}
+	return ""
+}
+
+func (x *GetChannelInfoResponse) GetEncryptionAlgorithm() string {
+	if x != nil {
+		return x.EncryptionAlgorithm
 	}
 	return ""
 }
@@ -526,6 +536,7 @@ func (m *GetChannelInfoResponse) CloneVT() *GetChannelInfoResponse {
 	r.Topic = m.Topic
 	r.MessageCount = m.MessageCount
 	r.CreatorPeerId = m.CreatorPeerId
+	r.EncryptionAlgorithm = m.EncryptionAlgorithm
 	r.CreatedAt = protobuf_go_lite.CloneVTValue(m.CreatedAt)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
@@ -811,6 +822,9 @@ func (this *GetChannelInfoResponse) EqualVT(that *GetChannelInfoResponse) bool {
 		return false
 	}
 	if this.CreatorPeerId != that.CreatorPeerId {
+		return false
+	}
+	if this.EncryptionAlgorithm != that.EncryptionAlgorithm {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -1248,6 +1262,11 @@ func (x *GetChannelInfoResponse) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("creatorPeerId")
 		s.WriteString(x.CreatorPeerId)
 	}
+	if x.EncryptionAlgorithm != "" || s.HasField("encryptionAlgorithm") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("encryptionAlgorithm")
+		s.WriteString(x.EncryptionAlgorithm)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -1284,6 +1303,9 @@ func (x *GetChannelInfoResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "creator_peer_id", "creatorPeerId":
 			s.AddField("creator_peer_id")
 			x.CreatorPeerId = s.ReadString()
+		case "encryption_algorithm", "encryptionAlgorithm":
+			s.AddField("encryption_algorithm")
+			x.EncryptionAlgorithm = s.ReadString()
 		}
 	})
 }
@@ -2106,6 +2128,11 @@ func (m *GetChannelInfoResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if len(m.EncryptionAlgorithm) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.EncryptionAlgorithm)
+		i--
+		dAtA[i] = 0x32
+	}
 	if len(m.CreatorPeerId) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.CreatorPeerId)
 		i--
@@ -2700,6 +2727,7 @@ func (m *GetChannelInfoResponse) SizeVT() (n int) {
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.CreatorPeerId)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.EncryptionAlgorithm)
 	n += len(m.unknownFields)
 	return n
 }
@@ -2939,6 +2967,10 @@ func (x *GetChannelInfoResponse) MarshalProtoText() string {
 	if x.CreatorPeerId != "" {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "creator_peer_id")
 		protobuf_go_lite.TextWriteString(&sb, x.CreatorPeerId)
+	}
+	if x.EncryptionAlgorithm != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "encryption_algorithm")
+		protobuf_go_lite.TextWriteString(&sb, x.EncryptionAlgorithm)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -3429,6 +3461,16 @@ func (m *GetChannelInfoResponse) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.CreatorPeerId = v
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EncryptionAlgorithm", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.EncryptionAlgorithm = v
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

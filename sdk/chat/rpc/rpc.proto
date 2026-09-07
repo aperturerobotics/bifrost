@@ -61,6 +61,9 @@ message GetChannelInfoResponse {
   .google.protobuf.Timestamp created_at = 4;
   // CreatorPeerId is the peer identity that created the channel.
   string creator_peer_id = 5;
+  // EncryptionAlgorithm reports the immutable creation-time policy. Empty allows plaintext;
+  // otherwise sends require ciphertext using this algorithm.
+  string encryption_algorithm = 6;
 }
 
 // GetMessageRequest identifies one channel message to read.

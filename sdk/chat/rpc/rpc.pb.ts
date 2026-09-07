@@ -136,6 +136,13 @@ export interface GetChannelInfoResponse {
    * @generated from field: string creator_peer_id = 5;
    */
   creatorPeerId?: string
+  /**
+   * EncryptionAlgorithm reports the immutable creation-time policy. Empty allows plaintext;
+   * otherwise sends require ciphertext using this algorithm.
+   *
+   * @generated from field: string encryption_algorithm = 6;
+   */
+  encryptionAlgorithm?: string
 }
 
 export const GetChannelInfoResponse: MessageType<GetChannelInfoResponse> =
@@ -147,6 +154,12 @@ export const GetChannelInfoResponse: MessageType<GetChannelInfoResponse> =
       { no: 3, name: 'message_count', kind: 'scalar', T: ScalarType.UINT64 },
       { no: 4, name: 'created_at', kind: 'message', T: () => Timestamp },
       { no: 5, name: 'creator_peer_id', kind: 'scalar', T: ScalarType.STRING },
+      {
+        no: 6,
+        name: 'encryption_algorithm',
+        kind: 'scalar',
+        T: ScalarType.STRING,
+      },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })

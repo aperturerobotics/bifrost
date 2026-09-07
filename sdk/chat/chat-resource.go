@@ -103,11 +103,12 @@ func (r *ChatResource) GetChannelInfo(
 
 	// Project the metadata for the client.
 	return &spacewave_chat_rpc.GetChannelInfoResponse{
-		Name:          channel.GetName(),
-		Topic:         channel.GetTopic(),
-		MessageCount:  channel.GetMessageCount(),
-		CreatedAt:     channel.GetCreatedAt().CloneVT(),
-		CreatorPeerId: channel.GetCreatorPeerId(),
+		Name:                channel.GetName(),
+		Topic:               channel.GetTopic(),
+		MessageCount:        channel.GetMessageCount(),
+		CreatedAt:           channel.GetCreatedAt().CloneVT(),
+		CreatorPeerId:       channel.GetCreatorPeerId(),
+		EncryptionAlgorithm: channel.GetEncryptionAlgorithm(),
 	}, nil
 }
 
@@ -304,7 +305,8 @@ func (r *ChatResource) commitMessage(ctx context.Context, req *spacewave_chat_rp
 		return nil, err
 	}
 	defer wtx.Discard()
-	if _, err := world.LookupObjectBody[*ChatChannel](ctx, wtx, r.objectKey, NewChatChannelBlock); err != nil {
+	channel, err := world.LookupObjectBody[*ChatChannel](ctx, wtx, r.objectKey, NewChatChannelBlock)
+	if err != nil {
 		return nil, err
 	}
 
@@ -312,6 +314,11 @@ func (r *ChatResource) commitMessage(ctx context.Context, req *spacewave_chat_rp
 	content, err := normalizeSendMessageContent(req)
 	if err != nil {
 		return nil, err
+	}
+
+	// Enforce the channel's immutable creation-time encryption policy.
+	if algorithm := channel.GetEncryptionAlgorithm(); algorithm != "" && content.GetCiphertext().GetAlgorithm() != algorithm {
+		return nil, errors.New("chat message ciphertext algorithm does not match channel")
 	}
 
 	// Resolve the sender-scoped retry before reserving a history position.

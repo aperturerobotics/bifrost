@@ -23,6 +23,9 @@ message ChatChannel {
   map<string, ChatReadPosition> read_positions = 5;
   // CreatorPeerId is the peer identity that created the channel.
   string creator_peer_id = 6;
+  // EncryptionAlgorithm is the immutable creation-time policy. Empty allows plaintext;
+  // otherwise sends require ciphertext using this algorithm.
+  string encryption_algorithm = 7;
 }
 
 // ChatMessage is a chat message world object linked to a channel.
@@ -66,4 +69,7 @@ message CreateChatChannelOp {
   string topic = 3;
   // Timestamp is the creation timestamp.
   .google.protobuf.Timestamp timestamp = 4;
+  // EncryptionAlgorithm is the immutable creation-time policy. Empty allows plaintext;
+  // otherwise sends require ciphertext using this algorithm.
+  string encryption_algorithm = 5;
 }
