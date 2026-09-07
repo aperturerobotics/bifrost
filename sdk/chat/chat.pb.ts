@@ -56,6 +56,13 @@ export interface ChatChannel {
    * @generated from field: string creator_peer_id = 6;
    */
   creatorPeerId?: string
+  /**
+   * EncryptionAlgorithm is the immutable creation-time policy. Empty allows plaintext;
+   * otherwise sends require ciphertext using this algorithm.
+   *
+   * @generated from field: string encryption_algorithm = 7;
+   */
+  encryptionAlgorithm?: string
 }
 
 export const ChatChannel: MessageType<ChatChannel> =
@@ -74,6 +81,12 @@ export const ChatChannel: MessageType<ChatChannel> =
         V: { kind: 'message', T: () => ChatReadPosition },
       },
       { no: 6, name: 'creator_peer_id', kind: 'scalar', T: ScalarType.STRING },
+      {
+        no: 7,
+        name: 'encryption_algorithm',
+        kind: 'scalar',
+        T: ScalarType.STRING,
+      },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })
@@ -231,6 +244,13 @@ export interface CreateChatChannelOp {
    * @generated from field: google.protobuf.Timestamp timestamp = 4;
    */
   timestamp?: Date
+  /**
+   * EncryptionAlgorithm is the immutable creation-time policy. Empty allows plaintext;
+   * otherwise sends require ciphertext using this algorithm.
+   *
+   * @generated from field: string encryption_algorithm = 5;
+   */
+  encryptionAlgorithm?: string
 }
 
 export const CreateChatChannelOp: MessageType<CreateChatChannelOp> =
@@ -241,6 +261,12 @@ export const CreateChatChannelOp: MessageType<CreateChatChannelOp> =
       { no: 2, name: 'name', kind: 'scalar', T: ScalarType.STRING },
       { no: 3, name: 'topic', kind: 'scalar', T: ScalarType.STRING },
       { no: 4, name: 'timestamp', kind: 'message', T: () => Timestamp },
+      {
+        no: 5,
+        name: 'encryption_algorithm',
+        kind: 'scalar',
+        T: ScalarType.STRING,
+      },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })

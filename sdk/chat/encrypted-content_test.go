@@ -4,10 +4,90 @@ import (
 	"context"
 	"testing"
 
+	"github.com/aperturerobotics/protobuf-go-lite/types/known/timestamppb"
 	"github.com/s4wave/spacewave/db/world"
 	db_world_testbed "github.com/s4wave/spacewave/db/world/testbed"
 	spacewave_chat_rpc "github.com/s4wave/spacewave/sdk/chat/rpc"
 )
+
+func TestEncryptedChannelRequiresConfiguredAlgorithm(t *testing.T) {
+	// Set up a real World and encrypted channel for policy checks.
+	ctx := t.Context()
+	tb, err := db_world_testbed.Default(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(tb.Release)
+	ws := world.NewEngineWorldState(tb.Engine, true)
+	const (
+		channelKey = "chat/channel/encrypted"
+		algorithm  = "m.megolm.v1.aes-sha2"
+	)
+
+	// Create the channel through its world operation with an immutable algorithm policy.
+	_, _, err = ws.ApplyWorldOp(ctx, &CreateChatChannelOp{
+		ObjectKey:           channelKey,
+		Name:                "Encrypted",
+		Timestamp:           timestamppb.Now(),
+		EncryptionAlgorithm: algorithm,
+	}, tb.Volume.GetPeerID())
+	if err != nil {
+		t.Fatalf("ApplyWorldOp: %v", err)
+	}
+	resource := NewChatResource(ws, tb.Engine, channelKey, "alice")
+	info, err := resource.GetChannelInfo(ctx, &spacewave_chat_rpc.GetChannelInfoRequest{})
+	if err != nil {
+		t.Fatalf("GetChannelInfo: %v", err)
+	}
+	if info.GetEncryptionAlgorithm() != algorithm {
+		t.Fatalf("channel encryption algorithm = %q, want %q", info.GetEncryptionAlgorithm(), algorithm)
+	}
+
+	// Reject plaintext and ciphertext using a different algorithm before creating history.
+	if _, err := resource.SendMessage(ctx, &spacewave_chat_rpc.SendMessageRequest{
+		TransactionId: "plaintext",
+		Text:          "must be encrypted",
+	}); err == nil {
+		t.Fatal("accepted plaintext on encrypted channel")
+	}
+	mismatched := &spacewave_chat_rpc.SendMessageRequest{
+		TransactionId: "mismatched",
+		Content: &ChatMessageContent{Content: &ChatMessageContent_Ciphertext{Ciphertext: &ChatCiphertext{
+			Algorithm: "other.algorithm", Ciphertext: "opaque", SenderKey: "sender", SessionId: "session",
+		}}},
+	}
+	if _, err := resource.SendMessage(ctx, mismatched); err == nil {
+		t.Fatal("accepted ciphertext with mismatched algorithm")
+	}
+
+	// Accept matching ciphertext and resolve an identical retry to the same event.
+	request := &spacewave_chat_rpc.SendMessageRequest{
+		TransactionId: "encrypted",
+		Content: &ChatMessageContent{Content: &ChatMessageContent_Ciphertext{Ciphertext: &ChatCiphertext{
+			Algorithm: algorithm, Ciphertext: "opaque", SenderKey: "sender", SessionId: "session",
+		}}},
+	}
+	accepted, err := resource.SendMessage(ctx, request)
+	if err != nil {
+		t.Fatalf("SendMessage encrypted: %v", err)
+	}
+	retry, err := resource.SendMessage(ctx, request)
+	if err != nil {
+		t.Fatalf("SendMessage retry: %v", err)
+	}
+	if retry.GetMessageKey() != accepted.GetMessageKey() {
+		t.Fatalf("encrypted retry key = %q, want %q", retry.GetMessageKey(), accepted.GetMessageKey())
+	}
+
+	// Confirm rejected attempts and the retry left one retained history entry.
+	info, err = resource.GetChannelInfo(ctx, &spacewave_chat_rpc.GetChannelInfoRequest{})
+	if err != nil {
+		t.Fatalf("GetChannelInfo after retry: %v", err)
+	}
+	if info.GetMessageCount() != 1 {
+		t.Fatalf("channel message count = %d, want 1", info.GetMessageCount())
+	}
+}
 
 // TestEncryptedContentRoundTrip preserves the exact envelope across retry, history, and watch.
 func TestEncryptedContentRoundTrip(t *testing.T) {
