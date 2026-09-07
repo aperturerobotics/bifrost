@@ -278,9 +278,9 @@ func CanonicalizeManifestObjectRef(
 // ManifestObjectRefsSameExecutable reports whether two manifest object refs
 // resolve to the same executable content. A manifest relocated between buckets
 // can also re-encode its transform configuration, so executable identity is the
-// root block alone. Store-side change accounting (SetManifest) and the
-// plugin-host scheduler executor share this comparison so they can never
-// disagree about what counts as a manifest change.
+// root block alone. The scheduler uses this comparison to avoid restarting
+// running content after a local copy. SetManifest also reports changes in
+// locality because they affect whether a waiting candidate can execute.
 //
 // If either ref has an empty root block, the refs are compared with full
 // equality including bucket id.
@@ -298,7 +298,8 @@ func ManifestObjectRefsSameExecutable(a, b *bucket.ObjectRef) bool {
 
 // SetManifest creates a Manifest object in the world.
 //
-// Checks if the object exists already, and updates it if so.
+// The returned change flag includes external-to-local copies so linked
+// schedulers reconsider candidates that have become executable.
 func SetManifest(
 	ctx context.Context,
 	ws world.WorldState,
@@ -331,6 +332,7 @@ func SetManifest(
 				nextLocal := rootRef.GetBucketId() == "" || rootRef.GetBucketId() == worldBucketID
 				if !currLocal && nextLocal {
 					_, err = obj.SetRootRef(ctx, rootRef)
+					changed = err == nil
 				}
 			} else {
 				_, err = obj.SetRootRef(ctx, rootRef)

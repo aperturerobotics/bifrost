@@ -2017,7 +2017,7 @@ func TestSetManifestBucketRelocationDoesNotBumpLinkedRev(t *testing.T) {
 	}
 }
 
-func TestSetManifestUpgradesExternalRefToIdentityEqualLocalWithoutBump(t *testing.T) {
+func TestSetManifestLocalCopyNotifiesLinkedStore(t *testing.T) {
 	ctx := context.Background()
 	le := logrus.NewEntry(logrus.New())
 
@@ -2098,8 +2098,8 @@ func TestSetManifestUpgradesExternalRefToIdentityEqualLocalWithoutBump(t *testin
 	if err := ExStoreManifestOp(ctx, ws, peer.ID("test"), manifestKey, []string{storeKey}, localRef); err != nil {
 		t.Fatal(err.Error())
 	}
-	if got := objectRev(t, ctx, ws, storeKey); got != seededRev {
-		t.Fatalf("linked store rev after identity-equal local upgrade = %d, want unchanged %d", got, seededRev)
+	if got := objectRev(t, ctx, ws, storeKey); got != seededRev+1 {
+		t.Fatalf("linked store rev after local copy = %d, want %d", got, seededRev+1)
 	}
 	storedRef = objectRootRef(t, ctx, ws, manifestKey)
 	if !storedRef.GetRootRef().EqualsRef(localManifestRef.GetRootRef()) {
