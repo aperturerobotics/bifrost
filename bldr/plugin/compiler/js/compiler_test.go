@@ -5,6 +5,7 @@ package bldr_plugin_compiler_js_test
 import (
 	"context"
 	"errors"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -415,7 +416,8 @@ func TestPreBuildHookProvenanceResolvesStartupInputs(t *testing.T) {
 }
 
 func TestCreateEntrypointsFromViteOutputsBackendImportPath(t *testing.T) {
-	backend, frontend := bldr_plugin_compiler_js.CreateEntrypointsFromViteOutputs(
+	backend, frontend, err := bldr_plugin_compiler_js.CreateEntrypointsFromViteOutputs(
+		t.TempDir(),
 		[]*bldr_plugin_compiler_js.JsModule{{
 			Kind:       bldr_plugin_compiler_js.JsModuleKind_JS_MODULE_KIND_BACKEND,
 			Path:       "./plugin/notes/backend.ts",
@@ -428,6 +430,9 @@ func TestCreateEntrypointsFromViteOutputsBackendImportPath(t *testing.T) {
 		nil,
 		nil,
 	)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	if len(frontend) != 0 {
 		t.Fatalf("expected no frontend entrypoints, got %d", len(frontend))
@@ -441,7 +446,11 @@ func TestCreateEntrypointsFromViteOutputsBackendImportPath(t *testing.T) {
 }
 
 func TestCreateEntrypointsFromViteOutputsQuickJSFrontendBoundary(t *testing.T) {
-	backend, frontend := bldr_plugin_compiler_js.CreateEntrypointsFromViteOutputs(
+	assetsDir := t.TempDir()
+	writeCompilerAsset(t, assetsDir, "v/b/fe/spacewave-app/App-def456.mjs", "export default function App() {}")
+
+	backend, frontend, err := bldr_plugin_compiler_js.CreateEntrypointsFromViteOutputs(
+		assetsDir,
 		[]*bldr_plugin_compiler_js.JsModule{
 			{
 				Kind:       bldr_plugin_compiler_js.JsModuleKind_JS_MODULE_KIND_BACKEND,
@@ -471,6 +480,9 @@ func TestCreateEntrypointsFromViteOutputsQuickJSFrontendBoundary(t *testing.T) {
 		nil,
 		nil,
 	)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	if len(backend) != 1 {
 		t.Fatalf("expected one backend entrypoint, got %d", len(backend))
@@ -490,8 +502,15 @@ func TestCreateEntrypointsFromViteOutputsQuickJSFrontendBoundary(t *testing.T) {
 	if setRenderMode.GetRenderMode() != web_view.RenderMode_RenderMode_REACT_COMPONENT {
 		t.Fatalf("unexpected render mode: %v", setRenderMode.GetRenderMode())
 	}
-	if got := setRenderMode.GetScriptPath(); got != "v/b/fe/spacewave-app/App-def456.mjs" {
-		t.Fatalf("unexpected frontend script path: %q", got)
+	scriptURL, err := url.Parse(setRenderMode.GetScriptPath())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := scriptURL.Path; got != "v/b/fe/spacewave-app/App-def456.mjs" {
+		t.Fatalf("unexpected frontend script URL path: %q", got)
+	}
+	if got := scriptURL.Query().Get("bldr_content"); len(got) != 64 {
+		t.Fatalf("unexpected frontend content identity: %q", got)
 	}
 	if strings.HasPrefix(setRenderMode.GetScriptPath(), "/assets/") {
 		t.Fatalf("frontend script path must remain WebView asset metadata, got %q", setRenderMode.GetScriptPath())
@@ -525,8 +544,94 @@ func TestPluginCompilerJsSupportedPlatforms(t *testing.T) {
 	}
 }
 
-func TestCreateEntrypointsFromViteOutputsFrontendIsIdempotent(t *testing.T) {
-	backend, frontend := bldr_plugin_compiler_js.CreateEntrypointsFromViteOutputs(
+func TestCreateEntrypointsFromViteOutputsFrontendContentIdentity(t *testing.T) {
+	assetsDir := t.TempDir()
+	const entryPath = "v/b/fe/app/App.mjs"
+	writeCompilerAsset(t, assetsDir, entryPath, `import "./chunk-old.mjs"`)
+
+	configured := &bldr_plugin_compiler_js.FrontendEntrypoint{
+		SetRenderMode: &web_view.SetRenderModeRequest{
+			RenderMode: web_view.RenderMode_RenderMode_REACT_COMPONENT,
+			ScriptPath: entryPath + "?configured=https://example.com",
+		},
+	}
+	absolute := &bldr_plugin_compiler_js.FrontendEntrypoint{
+		SetRenderMode: &web_view.SetRenderModeRequest{ScriptPath: "/b/pa/app/App.mjs"},
+	}
+	external := &bldr_plugin_compiler_js.FrontendEntrypoint{
+		SetRenderMode: &web_view.SetRenderModeRequest{ScriptPath: "https://example.com/App.mjs"},
+	}
+	backend, frontend, err := bldr_plugin_compiler_js.CreateEntrypointsFromViteOutputs(
+		assetsDir,
+		nil,
+		nil,
+		nil,
+		[]*bldr_plugin_compiler_js.FrontendEntrypoint{configured, absolute, external},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(backend) != 0 {
+		t.Fatalf("expected no backend entrypoints, got %d", len(backend))
+	}
+	if len(frontend) != 3 {
+		t.Fatalf("expected three frontend entrypoints, got %d", len(frontend))
+	}
+	firstScriptPath := frontend[0].GetSetRenderMode().GetScriptPath()
+	firstURL, err := url.Parse(firstScriptPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if firstURL.Path != entryPath {
+		t.Fatalf("unexpected stable frontend entry path: %q", firstURL.Path)
+	}
+	if firstURL.Query().Get("bldr_content") == "" {
+		t.Fatalf("frontend script URL has no content identity: %q", firstScriptPath)
+	}
+	if firstURL.Query().Get("configured") != "https://example.com" {
+		t.Fatalf("frontend script URL lost configured query: %q", firstScriptPath)
+	}
+	if frontend[0].GetSetRenderMode().GetRefresh() {
+		t.Fatal("frontend entrypoints should not force refresh for idempotent handler reattachment")
+	}
+	if configured.GetSetRenderMode().GetScriptPath() != entryPath+"?configured=https://example.com" {
+		t.Fatalf("configured frontend entrypoint was mutated: %q", configured.GetSetRenderMode().GetScriptPath())
+	}
+	if got := frontend[1].GetSetRenderMode().GetScriptPath(); got != absolute.GetSetRenderMode().GetScriptPath() {
+		t.Fatalf("absolute frontend script URL changed: %q", got)
+	}
+	if got := frontend[2].GetSetRenderMode().GetScriptPath(); got != external.GetSetRenderMode().GetScriptPath() {
+		t.Fatalf("external frontend script URL changed: %q", got)
+	}
+
+	writeCompilerAsset(t, assetsDir, entryPath, `import "./chunk-new.mjs"`)
+	_, changedFrontend, err := bldr_plugin_compiler_js.CreateEntrypointsFromViteOutputs(
+		assetsDir,
+		nil,
+		nil,
+		nil,
+		[]*bldr_plugin_compiler_js.FrontendEntrypoint{configured},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	changedScriptPath := changedFrontend[0].GetSetRenderMode().GetScriptPath()
+	changedURL, err := url.Parse(changedScriptPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if changedURL.Path != firstURL.Path {
+		t.Fatalf("frontend entry path changed with imported chunk: %q != %q", changedURL.Path, firstURL.Path)
+	}
+	if changedScriptPath == firstScriptPath {
+		t.Fatalf("frontend content URL did not change with imported chunk: %q", changedScriptPath)
+	}
+}
+
+func TestCreateEntrypointsFromViteOutputsMissingFrontendAsset(t *testing.T) {
+	_, _, err := bldr_plugin_compiler_js.CreateEntrypointsFromViteOutputs(
+		t.TempDir(),
 		[]*bldr_plugin_compiler_js.JsModule{{
 			Kind:       bldr_plugin_compiler_js.JsModuleKind_JS_MODULE_KIND_FRONTEND,
 			Path:       "./app/App.tsx",
@@ -534,28 +639,16 @@ func TestCreateEntrypointsFromViteOutputsFrontendIsIdempotent(t *testing.T) {
 		}},
 		[]*bldr_web_bundler_vite.ViteOutputMeta{{
 			EntrypointPath: "app/App.tsx",
-			Path:           "b/fe/app/App-abc123.mjs",
+			Path:           "b/fe/app/App.mjs",
 		}},
 		nil,
 		nil,
 	)
-
-	if len(backend) != 0 {
-		t.Fatalf("expected no backend entrypoints, got %d", len(backend))
+	if err == nil {
+		t.Fatal("expected missing frontend asset error")
 	}
-	if len(frontend) != 1 {
-		t.Fatalf("expected one frontend entrypoint, got %d", len(frontend))
-	}
-
-	setRenderMode := frontend[0].GetSetRenderMode()
-	if setRenderMode.GetRenderMode() != web_view.RenderMode_RenderMode_REACT_COMPONENT {
-		t.Fatalf("unexpected render mode: %v", setRenderMode.GetRenderMode())
-	}
-	if got := setRenderMode.GetScriptPath(); got != "v/b/fe/app/App-abc123.mjs" {
-		t.Fatalf("unexpected frontend script path: %q", got)
-	}
-	if setRenderMode.GetRefresh() {
-		t.Fatal("frontend entrypoints should not force refresh for idempotent handler reattachment")
+	if !strings.Contains(err.Error(), `v/b/fe/app/App.mjs`) {
+		t.Fatalf("missing frontend asset error did not name path: %v", err)
 	}
 }
 
@@ -577,7 +670,7 @@ func TestValidateFrontendEntrypointAssetClosure(t *testing.T) {
 	frontend := []*bldr_plugin_compiler_js.FrontendEntrypoint{{
 		SetRenderMode: &web_view.SetRenderModeRequest{
 			RenderMode: web_view.RenderMode_RenderMode_REACT_COMPONENT,
-			ScriptPath: "v/b/fe/app/App-abc123.mjs",
+			ScriptPath: "v/b/fe/app/App-abc123.mjs?bldr_content=0123456789abcdef",
 		},
 		SetHtmlLinks: &web_view.SetHtmlLinksRequest{
 			SetLinks: map[string]*web_view.HtmlLink{
@@ -596,5 +689,31 @@ func TestValidateFrontendEntrypointAssetClosure(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), `v/b/fe/app/Missing-abc123.mjs`) {
 		t.Fatalf("missing asset error did not name path: %v", err)
+	}
+
+	for _, scriptPath := range []string{
+		"/b/pa/app/v/b/fe/app/App.mjs?bldr_content=external",
+		"https://example.com/App.mjs?bldr_content=external",
+	} {
+		frontend[0].SetRenderMode.ScriptPath = scriptPath
+		if err := bldr_plugin_compiler_js.ValidateFrontendEntrypointAssetClosure(dir, frontend); err != nil {
+			t.Fatalf("external frontend asset %q failed validation: %v", scriptPath, err)
+		}
+	}
+
+	frontend[0].SetRenderMode.ScriptPath = "../App.mjs?bldr_content=escape"
+	if err := bldr_plugin_compiler_js.ValidateFrontendEntrypointAssetClosure(dir, frontend); err == nil {
+		t.Fatal("expected queried frontend traversal validation error")
+	}
+}
+
+func writeCompilerAsset(t *testing.T, assetsDir, assetPath, contents string) {
+	t.Helper()
+	fullPath := filepath.Join(assetsDir, filepath.FromSlash(assetPath))
+	if err := os.MkdirAll(filepath.Dir(fullPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(fullPath, []byte(contents), 0o644); err != nil {
+		t.Fatal(err)
 	}
 }

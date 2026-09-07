@@ -4,6 +4,8 @@ package bldr_plugin_compiler_js
 
 import (
 	"context"
+	"encoding/hex"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -444,14 +446,18 @@ func (c *Controller) BuildManifest(
 		viteOutputMeta = viteOutMeta
 		allWebPkgRefs = append(allWebPkgRefs, viteWebPkgRefs...)
 		startupInputPaths = append(startupInputPaths, viteSrcFiles...)
+	}
 
-		// Match outputs to the input modules and create entrypoints with actual hashed paths
-		backendEntrypoints, frontendEntrypoints = CreateEntrypointsFromViteOutputs(
-			buildCtrlConf.GetModules(),
-			viteOutputMeta,
-			backendEntrypoints,
-			frontendEntrypoints,
-		)
+	// Build backend paths and content-identified frontend paths from the emitted assets.
+	backendEntrypoints, frontendEntrypoints, err = CreateEntrypointsFromViteOutputs(
+		outAssetsPath,
+		buildCtrlConf.GetModules(),
+		viteOutputMeta,
+		backendEntrypoints,
+		frontendEntrypoints,
+	)
+	if err != nil {
+		return nil, err
 	}
 	if err := ValidateFrontendEntrypointAssetClosure(outAssetsPath, frontendEntrypoints); err != nil {
 		return nil, err
@@ -664,16 +670,20 @@ func (c *Controller) BuildManifest(
 	return builderResult, nil
 }
 
-// CreateEntrypointsFromViteOutputs matches Vite outputs to JS modules and creates backend/frontend entrypoints.
-// Returns the updated backend and frontend entrypoint slices.
+// CreateEntrypointsFromViteOutputs builds backend and frontend entrypoints from
+// Vite outputs. Local frontend script URLs identify the exact emitted bytes.
 func CreateEntrypointsFromViteOutputs(
+	assetsDir string,
 	modules []*JsModule,
 	viteOutputMeta []*bldr_web_bundler_vite.ViteOutputMeta,
 	existingBackendEntrypoints []*BackendEntrypoint,
 	existingFrontendEntrypoints []*FrontendEntrypoint,
-) ([]*BackendEntrypoint, []*FrontendEntrypoint) {
+) ([]*BackendEntrypoint, []*FrontendEntrypoint, error) {
 	backendEntrypoints := slices.Clone(existingBackendEntrypoints)
-	frontendEntrypoints := slices.Clone(existingFrontendEntrypoints)
+	frontendEntrypoints := make([]*FrontendEntrypoint, len(existingFrontendEntrypoints))
+	for idx, entrypoint := range existingFrontendEntrypoints {
+		frontendEntrypoints[idx] = entrypoint.CloneVT()
+	}
 
 	for _, mod := range modules {
 		inputPath := path.Clean(mod.GetPath())
@@ -747,7 +757,38 @@ func CreateEntrypointsFromViteOutputs(
 		}
 	}
 
-	return backendEntrypoints, frontendEntrypoints
+	// Bind every local frontend root URL to its emitted bytes while preserving
+	// stable Vite filenames, configured URL parameters, and external URLs.
+	for idx, entrypoint := range frontendEntrypoints {
+		setRenderMode := entrypoint.GetSetRenderMode()
+		if setRenderMode == nil {
+			continue
+		}
+		scriptPath, local, err := normalizeFrontendAssetPath(setRenderMode.GetScriptPath())
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "frontend entrypoint script[%d]", idx)
+		}
+		if !local {
+			continue
+		}
+
+		identity, err := bldr_manifest_builder.CaptureFileIdentity(
+			filepath.Join(assetsDir, filepath.FromSlash(scriptPath)),
+		)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "capture frontend entrypoint content identity %q", scriptPath)
+		}
+		scriptURL, err := url.Parse(setRenderMode.GetScriptPath())
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "parse frontend entrypoint script URL %q", setRenderMode.GetScriptPath())
+		}
+		query := scriptURL.Query()
+		query.Set("bldr_content", hex.EncodeToString(identity.GetSha256()))
+		scriptURL.RawQuery = query.Encode()
+		setRenderMode.ScriptPath = scriptURL.String()
+	}
+
+	return backendEntrypoints, frontendEntrypoints, nil
 }
 
 func ValidateFrontendEntrypointAssetClosure(
@@ -807,10 +848,14 @@ func normalizeFrontendAssetPath(assetPath string) (string, bool, error) {
 	if assetPath == "" {
 		return "", false, nil
 	}
-	if strings.Contains(assetPath, ":") || strings.HasPrefix(assetPath, "/") {
+	assetURL, err := url.Parse(assetPath)
+	if err != nil {
+		return "", false, errors.Wrap(err, "parse local plugin asset URL")
+	}
+	if assetURL.IsAbs() || assetURL.Host != "" || strings.HasPrefix(assetURL.Path, "/") {
 		return "", false, nil
 	}
-	cleanPath := path.Clean(assetPath)
+	cleanPath := path.Clean(assetURL.Path)
 	if cleanPath == "." || cleanPath == ".." || strings.HasPrefix(cleanPath, "../") {
 		return "", false, errors.Errorf("invalid local plugin asset path %q", assetPath)
 	}
