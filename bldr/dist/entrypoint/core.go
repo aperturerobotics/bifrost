@@ -16,7 +16,6 @@ import (
 	storage_volume "github.com/s4wave/spacewave/bldr/storage/volume"
 	cdn_bstore_controller "github.com/s4wave/spacewave/core/cdn/bstore/controller"
 	cdn_world_controller "github.com/s4wave/spacewave/core/cdn/world/controller"
-	space_world_optypes "github.com/s4wave/spacewave/core/space/world/optypes"
 	block_store_bucket "github.com/s4wave/spacewave/db/block/store/bucket"
 	block_store_rpc "github.com/s4wave/spacewave/db/block/store/rpc"
 	block_store_rpc_lookup "github.com/s4wave/spacewave/db/block/store/rpc/lookup"
@@ -37,11 +36,13 @@ func NewCoreBus(
 	le *logrus.Entry,
 	opts ...cbc.Option,
 ) (bus.Bus, *static.Resolver, error) {
+	// Establish the bus before registering its platform factories.
 	b, sr, err := cbc.NewCoreBus(ctx, le, opts...)
 	if err != nil {
 		return nil, nil, err
 	}
 
+	// Bind factory constructors to the bus they will serve.
 	AddFactories(b, sr)
 	return b, sr, nil
 }
@@ -50,35 +51,41 @@ func NewCoreBus(
 // NOTE: Only add a factory here if it is absolutely needed by the entrypoint.
 // NOTE: this list will differ depending on the platform.
 func AddFactories(b bus.Bus, sr *static.Resolver) {
+	// Resolve plugin loading, service forwarding, and backing nodes.
 	sr.AddFactory(bldr_plugin_load.NewFactory(b))
 	sr.AddFactory(handle_rpc_viaplugin.NewFactory(b))
 	sr.AddFactory(lookup_concurrent.NewFactory(b))
 	sr.AddFactory(node_controller.NewFactory(b))
 
+	// Keep scheduling and platform hosts on the entrypoint bus.
 	sr.AddFactory(plugin_host_scheduler.NewFactory(b))
 	for _, factory := range plugin_host_default.PluginHostControllerFactories {
 		sr.AddFactory(factory(b))
 	}
 	addDesktopFactories(b, sr)
 
+	// Read executable manifests and assets through their world engines.
 	sr.AddFactory(unixfs_world_access.NewFactory(b))
 	sr.AddFactory(world_block_engine.NewFactory(b))
 	sr.AddFactory(cdn_world_controller.NewFactory(b))
 	sr.AddFactory(cdn_bstore_controller.NewFactory(b))
-	sr.AddFactory(space_world_optypes.NewFactory(b))
 
+	// Share volumes across host and plugin boundaries.
 	sr.AddFactory(volume_rpc_client.NewFactory(b))
 	sr.AddFactory(volume_rpc_server.NewFactory(b))
 
+	// Discover manifests from plugins and the published Release World.
 	sr.AddFactory(manifest_fetch_viaplugin.NewFactory(b))
 	sr.AddFactory(manifest_fetch_viaworld.NewFactory(b))
 
+	// Resolve local and remote block-store transports.
 	sr.AddFactory(block_store_bucket.NewFactory(b))
 	sr.AddFactory(block_store_rpc.NewFactory(b))
 	sr.AddFactory(block_store_rpc_lookup.NewFactory(b))
 	sr.AddFactory(block_store_rpc_server.NewFactory(b))
 	sr.AddFactory(block_store_s3_lookup.NewFactory(b))
 
+	// Supply the durable storage used by the distribution.
 	sr.AddFactory(storage_volume.NewFactory(b))
 	for _, st := range storage_default.BuildStorage(b, "") {
 		st.AddFactories(b, sr)

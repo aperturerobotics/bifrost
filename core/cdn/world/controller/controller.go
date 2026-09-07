@@ -12,7 +12,6 @@ import (
 	cdn_bstore "github.com/s4wave/spacewave/core/cdn/bstore"
 	cdn_sharedobject "github.com/s4wave/spacewave/core/cdn/sharedobject"
 	"github.com/s4wave/spacewave/core/sobject"
-	space_world_optypes "github.com/s4wave/spacewave/core/space/world/optypes"
 	block_store "github.com/s4wave/spacewave/db/block/store"
 	"github.com/s4wave/spacewave/db/world"
 	"github.com/sirupsen/logrus"
@@ -24,8 +23,10 @@ const ControllerID = "spacewave/cdn/world"
 // Version is the version of the world implementation.
 var Version = controller.MustParseVersion("0.0.1")
 
+// missingHeadRetryDelay bounds retries while a CDN Space has no published head.
 const missingHeadRetryDelay = time.Second
 
+// releaseWorldEngineID selects the shared Release World block-store authority.
 const releaseWorldEngineID = "spacewave-release-world"
 
 // ReleaseBlockStoreID identifies the block store shared by Release World
@@ -34,11 +35,17 @@ const ReleaseBlockStoreID = "spacewave-release-cdn"
 
 // Controller exposes a read-only CDN-backed world engine.
 type Controller struct {
-	le       *logrus.Entry
-	b        bus.Bus
-	conf     *Config
-	engine   *cdn_sharedobject.WorldEngine
-	ctr      *ccontainer.CContainer[world.Engine]
+	// le records engine and CDN failures.
+	le *logrus.Entry
+	// b resolves the configured block store.
+	b bus.Bus
+	// conf is the immutable mount configuration.
+	conf *Config
+	// engine owns the active CDN cursor and refresh routine.
+	engine *cdn_sharedobject.WorldEngine
+	// ctr publishes the engine after the current head becomes readable.
+	ctr *ccontainer.CContainer[world.Engine]
+	// storeCtr publishes block-store authority while this controller owns it.
 	storeCtr *ccontainer.CContainer[*blockStoreAuthority]
 }
 
@@ -70,6 +77,7 @@ func (c *Controller) ownsBlockStore() bool {
 // no CDN transport is opened here; the root pointer is still fetched so the
 // mount can build its world head.
 func (c *Controller) newBlockStore(ctx context.Context) (cdn_bstore.RootBlockStore, func(), error) {
+	// Reuse the configured authority when another bus owns the CDN store.
 	if suppliedID := c.conf.GetSuppliedBlockStoreId(); suppliedID != "" {
 		suppliedStore, _, suppliedRef, err := block_store.ExLookupFirstBlockStore(ctx, c.b, suppliedID, false, nil)
 		if err != nil {
@@ -88,6 +96,7 @@ func (c *Controller) newBlockStore(ctx context.Context) (cdn_bstore.RootBlockSto
 		return store, suppliedRef.Release, nil
 	}
 
+	// Otherwise own the CDN transport and its durable writeback cache.
 	pointerTTL, _ := c.conf.ParsePointerTTLDur()
 	store, releaseStore, err := cdn_bstore.NewCachedBlockStore(ctx, c.b, cdn_bstore.CachedBlockStoreOptions{
 		CdnBaseURL:           c.conf.GetCdnBaseUrl(),
@@ -102,6 +111,7 @@ func (c *Controller) newBlockStore(ctx context.Context) (cdn_bstore.RootBlockSto
 
 // Execute builds the CDN world engine and holds it until shutdown.
 func (c *Controller) Execute(ctx context.Context) error {
+	// Hold the backing store until the mount is withdrawn.
 	store, releaseStore, err := c.newBlockStore(ctx)
 	if err != nil {
 		return err
@@ -120,6 +130,8 @@ func (c *Controller) Execute(ctx context.Context) error {
 			authority.wait()
 		}()
 	}
+
+	// Represent the published CDN Space without creating authored state.
 	so, err := cdn_sharedobject.NewCdnSharedObject(cdn_sharedobject.CdnSharedObjectOptions{
 		SpaceID:    c.conf.GetSpaceId(),
 		BlockStore: store,
@@ -127,8 +139,10 @@ func (c *Controller) Execute(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
+	// Wait for a readable head, then publish one engine until cancellation.
 	for {
-		engine, err := cdn_sharedobject.NewWorldEngine(ctx, c.le, c.b, so, space_world_optypes.LookupWorldOp)
+		engine, err := cdn_sharedobject.NewWorldEngine(ctx, c.le, c.b, so)
 		if err != nil {
 			if !shouldRetryMissingPublishedHead() || !isMissingPublishedHead(err) {
 				return err
@@ -191,6 +205,7 @@ func (c *Controller) Close() error {
 	return nil
 }
 
+// isMissingPublishedHead identifies the retryable absence of a CDN root.
 func isMissingPublishedHead(err error) bool {
 	health, ok := sobject.GetSharedObjectHealthFromError(err)
 	if !ok || health == nil {

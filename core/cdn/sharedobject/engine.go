@@ -14,16 +14,9 @@ import (
 	transform_all "github.com/s4wave/spacewave/db/block/transform/all"
 	"github.com/s4wave/spacewave/db/bucket"
 	bucket_lookup "github.com/s4wave/spacewave/db/bucket/lookup"
-	"github.com/s4wave/spacewave/db/world"
 	world_block "github.com/s4wave/spacewave/db/world/block"
 	"github.com/sirupsen/logrus"
 )
-
-// CdnEngineID is the world engine id used for the CDN Space. A
-// LookupOpController registered on the bus for this engine id resolves the
-// full alpha op surface so world RPCs against the CDN mount behave the same
-// as against an authored Space.
-const CdnEngineID = "cdn.spacewave/world"
 
 // WorldEngine is the read-only world engine constructed for a CdnSharedObject.
 // The engine supports SetRootRef for live refresh when the CDN root changes.
@@ -50,6 +43,7 @@ type WorldEngine struct {
 // Safe to call more than once; the cursor's own Release guards against
 // double-release.
 func (w *WorldEngine) Release() {
+	// Stop head updates before releasing their backing resources.
 	if w == nil {
 		return
 	}
@@ -57,10 +51,14 @@ func (w *WorldEngine) Release() {
 		w.refresh.ClearContext()
 		w.refresh = nil
 	}
+
+	// Drop the cursor reference held for this engine.
 	if w.Cursor != nil {
 		w.Cursor.Release()
 		w.Cursor = nil
 	}
+
+	// Borrowed caches remain owned by the block store.
 	if w.ownDecodedBlocks && w.decodedBlocks != nil {
 		w.decodedBlocks.Close()
 	}
@@ -75,8 +73,7 @@ func (w *WorldEngine) Release() {
 // wrapping in a resource.space SpaceSharedObjectBody.
 //
 // The caller owns the returned WorldEngine and must call Release when done.
-// lookupOp is supplied by the caller so the engine and any derived resource
-// surfaces share the same op lookup path.
+// Operation lookup belongs to the resource serving this engine.
 //
 // A background routine is started to watch the CdnSharedObject snapshot
 // container and advance the engine's root ref via SetRootRef whenever the
@@ -86,8 +83,8 @@ func NewWorldEngine(
 	le *logrus.Entry,
 	b bus.Bus,
 	so *CdnSharedObject,
-	lookupOp world.LookupOp,
 ) (*WorldEngine, error) {
+	// Require a published head before constructing a readable world.
 	inner, err := so.GetHeadInnerState()
 	if err != nil {
 		return nil, errors.Wrap(err, "load cdn head inner state")
@@ -109,10 +106,13 @@ func NewWorldEngine(
 			)
 		}
 	}
+
+	// Route authored bucket references through the CDN block store.
 	headRef := inner.GetHeadRef().CloneVT()
 	bucketID := so.GetBlockStore().GetID()
 	headRef.BucketId = bucketID
 
+	// Decode the published head with its declared transform chain.
 	sfs := transform_all.BuildFactorySet()
 	transformConf := headRef.GetTransformConf()
 	xfrm := block_transform.NewTransformerWithSteps(nil)
@@ -127,6 +127,7 @@ func NewWorldEngine(
 		}
 	}
 
+	// Share decoded blocks with sibling engines over this store.
 	blockStore := so.GetBlockStore()
 	decodedBlocks := blockStore.GetDecodedBlockCache()
 	ownDecodedBlocks := false
@@ -144,6 +145,7 @@ func NewWorldEngine(
 		}
 	}()
 
+	// Hold the CDN cursor for every read and subsequent head update.
 	cursor := bucket_lookup.NewCursor(
 		ctx,
 		b,
@@ -161,12 +163,14 @@ func NewWorldEngine(
 	cursor.SetBucketIDOverride(bucketID)
 	cursor.SetDecodedBlockCache(decodedBlocks)
 
-	bengine, err := world_block.NewEngine(ctx, le, cursor, lookupOp, nil, false)
+	// Build state access without importing application operation handlers.
+	bengine, err := world_block.NewEngine(ctx, le, cursor, nil, nil, false)
 	if err != nil {
 		cursor.Release()
 		return nil, errors.Wrap(err, "new world engine")
 	}
 
+	// Keep cursor and cache ownership together for release.
 	w := &WorldEngine{
 		Engine:           bengine,
 		Cursor:           cursor,
@@ -174,6 +178,7 @@ func NewWorldEngine(
 		ownDecodedBlocks: ownDecodedBlocks,
 	}
 
+	// Follow published heads for the lifetime of the returned engine.
 	watchable, _, _ := so.AccessSharedObjectState(ctx, nil)
 	w.refresh = routine.NewRoutineContainerWithLogger(le)
 	w.refresh.SetRoutine(func(rctx context.Context) error {
@@ -208,6 +213,7 @@ func NewWorldEngine(
 	})
 	w.refresh.SetContext(ctx, true)
 
+	// Transfer fallback-cache cleanup to the returned owner.
 	closeDecodedBlocks = false
 	return w, nil
 }

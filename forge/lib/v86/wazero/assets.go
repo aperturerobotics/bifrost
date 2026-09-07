@@ -12,7 +12,6 @@ import (
 	"github.com/pkg/errors"
 	cdn_bstore "github.com/s4wave/spacewave/core/cdn/bstore"
 	cdn_sharedobject "github.com/s4wave/spacewave/core/cdn/sharedobject"
-	space_world_optypes "github.com/s4wave/spacewave/core/space/world/optypes"
 	"github.com/s4wave/spacewave/db/unixfs"
 	unixfs_billy "github.com/s4wave/spacewave/db/unixfs/billy"
 	unixfs_world "github.com/s4wave/spacewave/db/unixfs/world"
@@ -22,60 +21,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const (
-	DefaultCdnBaseURL       = "https://cdn-staging.spacewave.app"
-	DefaultCdnSpaceID       = "01kpn3x0y79yr94ps1yae206vp"
-	DefaultV86ImageKey      = "v86image-01kszf4rsev1s7zkq2ms2y5r0w"
-	DefaultAssetCacheSubdir = ".tmp/v86-wazero"
-)
-
-// AssetSet is the materialized v86 boot image used by the wazero harness.
-type AssetSet struct {
-	Dir             string
-	ImageKey        string
-	Wasm            string
-	SeaBIOS         string
-	VGABIOS         string
-	Kernel          string
-	RootfsTar       string
-	RootfsJSON      string
-	RootfsFlatDir   string
-	RootfsObjectKey string
-}
-
-// AssetOptions configures where the harness finds the real v86 image.
-type AssetOptions struct {
-	// Le is the logger entry for asset hydration; may be nil.
-	Le *logrus.Entry
-
-	CacheDir string
-	AssetDir string
-	V86Dir   string
-	V86FSDir string
-
-	CdnBaseURL string
-	CdnSpaceID string
-	ImageKey   string
-	Refresh    bool
-}
-
-// OptionsFromEnv reads the V86_WAZERO_* and V86_DIR/V86FS_DIR environment
-func OptionsFromEnv() AssetOptions {
-	refresh := strings.EqualFold(strings.TrimSpace(os.Getenv("V86_WAZERO_REFRESH")), "true")
-	return AssetOptions{
-		CacheDir:   strings.TrimSpace(os.Getenv("V86_WAZERO_CACHE_DIR")),
-		AssetDir:   strings.TrimSpace(os.Getenv("V86_WAZERO_ASSET_DIR")),
-		V86Dir:     strings.TrimSpace(os.Getenv("V86_DIR")),
-		V86FSDir:   strings.TrimSpace(os.Getenv("V86FS_DIR")),
-		CdnBaseURL: strings.TrimSpace(os.Getenv("V86_WAZERO_CDN_BASE_URL")),
-		CdnSpaceID: strings.TrimSpace(os.Getenv("V86_WAZERO_CDN_SPACE_ID")),
-		ImageKey:   strings.TrimSpace(os.Getenv("V86_WAZERO_IMAGE_KEY")),
-		Refresh:    refresh,
-	}
-}
-
-// ResolveAssets locates the v86 image from the configured directories or
+// ResolveAssets locates a complete local v86 image or downloads it from the CDN.
 func ResolveAssets(ctx context.Context, opts AssetOptions) (*AssetSet, error) {
+	// Prefer explicitly supplied local images over downloaded cache entries.
 	opts = opts.withDefaults()
 	if opts.AssetDir != "" {
 		if assets, ok := assetSetFromDir(opts.AssetDir, opts.ImageKey); ok {
@@ -87,40 +35,28 @@ func ResolveAssets(ctx context.Context, opts AssetOptions) (*AssetSet, error) {
 			return assets, nil
 		}
 	}
+
+	// Reuse a complete cached image unless a refresh was requested.
 	if !opts.Refresh {
 		if assets, ok := assetSetFromDir(opts.CacheDir, opts.ImageKey); ok {
 			return assets, nil
 		}
 	}
+
+	// Materialize the published image when no local source is usable.
 	return hydrateAssetsFromCdn(ctx, opts)
 }
 
-// withDefaults fills unset options with the repo-standard values.
-func (o AssetOptions) withDefaults() AssetOptions {
-	if o.Le == nil {
-		o.Le = logrus.NewEntry(logrus.StandardLogger())
-	}
-	if o.CdnBaseURL == "" {
-		o.CdnBaseURL = DefaultCdnBaseURL
-	}
-	if o.CdnSpaceID == "" {
-		o.CdnSpaceID = DefaultCdnSpaceID
-	}
-	if o.ImageKey == "" {
-		o.ImageKey = DefaultV86ImageKey
-	}
-	if o.CacheDir == "" {
-		o.CacheDir = filepath.Join(repoRootOrCwd(), DefaultAssetCacheSubdir)
-	}
-	return o
-}
-
-// repoRootOrCwd walks up to the repository root (the directory holding both
+// repoRootOrCwd finds the ancestor containing go.mod and bldr.star, or returns
+// the current directory when no repository root is found.
 func repoRootOrCwd() string {
+	// Use the current directory as the search origin and fallback.
 	wd, err := os.Getwd()
 	if err != nil {
 		return "."
 	}
+
+	// Accept only an ancestor that owns both module and build configuration.
 	for dir := wd; ; dir = filepath.Dir(dir) {
 		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
 			if _, err := os.Stat(filepath.Join(dir, "bldr.star")); err == nil {
@@ -134,8 +70,9 @@ func repoRootOrCwd() string {
 	}
 }
 
-// assetSetFromDir builds an AssetSet from a directory when it holds the
+// assetSetFromDir returns the directory's boot files when the image is complete.
 func assetSetFromDir(dir, imageKey string) (*AssetSet, bool) {
+	// Resolve the conventional paths for a complete boot image.
 	assets := &AssetSet{
 		Dir:           dir,
 		ImageKey:      imageKey,
@@ -147,6 +84,8 @@ func assetSetFromDir(dir, imageKey string) (*AssetSet, bool) {
 		RootfsJSON:    filepath.Join(dir, "fs.json"),
 		RootfsFlatDir: filepath.Join(dir, "flat"),
 	}
+
+	// A CDN rootfs reference can replace the local filesystem archive.
 	if rootfsKey, err := os.ReadFile(filepath.Join(dir, "rootfs.object-key")); err == nil {
 		assets.RootfsObjectKey = strings.TrimSpace(string(rootfsKey))
 	}
@@ -157,12 +96,14 @@ func assetSetFromDir(dir, imageKey string) (*AssetSet, bool) {
 	return nil, false
 }
 
-// assetSetFromV86Dirs builds an AssetSet pointing at the upstream v86 and
+// assetSetFromV86Dirs resolves boot files from v86 and v86fs checkouts.
 func assetSetFromV86Dirs(v86Dir, v86fsDir, imageKey string) (*AssetSet, bool) {
+	// Prefer the release emulator, with the checkout's debug build as fallback.
 	wasm := filepath.Join(v86Dir, "build", "v86.wasm")
 	if _, err := os.Stat(wasm); err != nil {
 		wasm = filepath.Join(v86Dir, "build", "v86-debug.wasm")
 	}
+	// Resolve the conventional paths for a complete boot image.
 	assets := &AssetSet{
 		Dir:           filepath.Dir(filepath.Dir(wasm)),
 		ImageKey:      imageKey,
@@ -180,7 +121,7 @@ func assetSetFromV86Dirs(v86Dir, v86fsDir, imageKey string) (*AssetSet, bool) {
 	return nil, false
 }
 
-// filesExist reports whether every named file exists in dir.
+// filesExist reports whether every path names a nonempty file.
 func filesExist(paths ...string) bool {
 	for _, path := range paths {
 		info, err := os.Stat(path)
@@ -191,21 +132,27 @@ func filesExist(paths ...string) bool {
 	return true
 }
 
-// hydrateAssetsFromCdn downloads the v86 image objects from the CDN into
+// hydrateAssetsFromCdn materializes boot files and a rootfs object reference
+// in the configured cache directory.
 func hydrateAssetsFromCdn(ctx context.Context, opts AssetOptions) (*AssetSet, error) {
+	// Prepare an output directory before opening CDN resources.
 	if err := os.MkdirAll(opts.CacheDir, 0o755); err != nil {
 		return nil, errors.Wrap(err, "create v86 wazero cache dir")
 	}
+
+	// Hold one published world across image selection and file reads.
 	ws, release, err := mountCdnWorld(ctx, opts)
 	if err != nil {
 		return nil, err
 	}
 	defer release()
 
+	// Select a published V86Image before following its asset edges.
 	imageKey, err := resolveV86ImageKey(ctx, ws, opts.ImageKey)
 	if err != nil {
 		return nil, err
 	}
+	// Download boot files while leaving the large rootfs addressable by object key.
 	specs := []assetSpec{
 		{Pred: string(s4wave_vm.PredV86ImageWasm), FileName: "v86.wasm", OutName: "v86.wasm"},
 		{Pred: string(s4wave_vm.PredV86ImageBiosSeabios), FileName: "seabios.bin", OutName: "seabios.bin"},
@@ -217,6 +164,8 @@ func hydrateAssetsFromCdn(ctx context.Context, opts AssetOptions) (*AssetSet, er
 			return nil, err
 		}
 	}
+
+	// Retain the rootfs identity for lazy filesystem access.
 	rootfsKey, err := lookupEdge(ctx, ws, imageKey, string(s4wave_vm.PredV86ImageRootfs))
 	if err != nil {
 		return nil, err
@@ -227,6 +176,8 @@ func hydrateAssetsFromCdn(ctx context.Context, opts AssetOptions) (*AssetSet, er
 	if err := os.WriteFile(filepath.Join(opts.CacheDir, "rootfs.object-key"), []byte(rootfsKey+"\n"), 0o644); err != nil {
 		return nil, errors.Wrap(err, "write rootfs object key marker")
 	}
+
+	// Return only a cache entry with every required boot artifact.
 	assets, ok := assetSetFromDir(opts.CacheDir, imageKey)
 	if !ok {
 		return nil, errors.Errorf("hydrated v86 assets incomplete in %s", opts.CacheDir)
@@ -237,6 +188,7 @@ func hydrateAssetsFromCdn(ctx context.Context, opts AssetOptions) (*AssetSet, er
 
 // mountCdnWorld mounts the v86 image's shared object world for edge lookup.
 func mountCdnWorld(ctx context.Context, opts AssetOptions) (world_state.WorldState, func(), error) {
+	// Own the CDN transport until the mounted world is released.
 	store, err := cdn_bstore.NewCdnBlockStore(cdn_bstore.Options{
 		CdnBaseURL: opts.CdnBaseURL,
 		SpaceID:    opts.CdnSpaceID,
@@ -245,6 +197,8 @@ func mountCdnWorld(ctx context.Context, opts AssetOptions) (world_state.WorldSta
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "build cdn block store")
 	}
+
+	// Bind the published head to the transport's block store.
 	so, err := cdn_sharedobject.NewCdnSharedObject(cdn_sharedobject.CdnSharedObjectOptions{
 		SpaceID:    opts.CdnSpaceID,
 		BlockStore: store,
@@ -253,7 +207,9 @@ func mountCdnWorld(ctx context.Context, opts AssetOptions) (world_state.WorldSta
 		store.Close()
 		return nil, nil, errors.Wrap(err, "build cdn shared object")
 	}
-	we, err := cdn_sharedobject.NewWorldEngine(ctx, opts.Le, nil, so, space_world_optypes.LookupWorldOp)
+
+	// Keep the read engine and its backing transport under one release callback.
+	we, err := cdn_sharedobject.NewWorldEngine(ctx, opts.Le, nil, so)
 	if err != nil {
 		store.Close()
 		return nil, nil, errors.Wrap(err, "mount cdn world")
@@ -265,8 +221,10 @@ func mountCdnWorld(ctx context.Context, opts AssetOptions) (world_state.WorldSta
 	}, nil
 }
 
-// resolveV86ImageKey resolves the well-known image key to its canonical
+// resolveV86ImageKey prefers an existing requested image, otherwise selecting
+// the lexically greatest V86Image object key.
 func resolveV86ImageKey(ctx context.Context, ws world_state.WorldState, preferred string) (string, error) {
+	// Honor an existing explicit image before scanning the CDN catalogue.
 	if preferred != "" {
 		if _, found, err := ws.GetObject(ctx, preferred); err != nil {
 			return "", errors.Wrap(err, "probe preferred v86 image")
@@ -274,6 +232,8 @@ func resolveV86ImageKey(ctx context.Context, ws world_state.WorldState, preferre
 			return preferred, nil
 		}
 	}
+
+	// Choose deterministically when the preferred object is unavailable.
 	keys, err := world_types.ListObjectsWithType(ctx, ws, s4wave_vm.V86ImageTypeID)
 	if err != nil {
 		return "", errors.Wrap(err, "list cdn v86 images")
@@ -287,13 +247,17 @@ func resolveV86ImageKey(ctx context.Context, ws world_state.WorldState, preferre
 
 // assetSpec names one guest image file and the graph predicate linking it.
 type assetSpec struct {
-	Pred     string
+	// Pred identifies the image-to-file graph edge.
+	Pred string
+	// FileName selects the file inside the UnixFS object.
 	FileName string
-	OutName  string
+	// OutName names the materialized file in the cache.
+	OutName string
 }
 
-// writeCdnAsset resolves one image-file edge and writes the object bytes to
+// writeCdnAsset writes an image edge's UnixFS file into the cache directory.
 func writeCdnAsset(ctx context.Context, le *logrus.Entry, ws world_state.WorldState, imageKey string, spec assetSpec, dir string) error {
+	// Resolve the file object from the selected image's graph edge.
 	assetKey, err := lookupEdge(ctx, ws, imageKey, spec.Pred)
 	if err != nil {
 		return err
@@ -301,6 +265,8 @@ func writeCdnAsset(ctx context.Context, le *logrus.Entry, ws world_state.WorldSt
 	if assetKey == "" {
 		return errors.Errorf("v86 image %q missing %s edge", imageKey, spec.Pred)
 	}
+
+	// Materialize the selected file under its conventional boot name.
 	data, err := readUnixFSAsset(ctx, le, ws, assetKey, spec.FileName)
 	if err != nil {
 		return errors.Wrapf(err, "read %s asset object %q", spec.FileName, assetKey)
@@ -322,16 +288,20 @@ func lookupEdge(ctx context.Context, ws world_state.WorldState, subject, pred st
 
 // readUnixFSAsset extracts a single file from a unixfs object by name.
 func readUnixFSAsset(ctx context.Context, le *logrus.Entry, ws world_state.WorldState, objectKey, fileName string) ([]byte, error) {
+	// Hold the object's filesystem while reading its selected asset.
 	fsh, err := openFSHandleForObject(ctx, le, ws, objectKey)
 	if err != nil {
 		return nil, err
 	}
 	defer fsh.Release()
 
+	// Prefer the conventional filename over a single-file object fallback.
 	bfs := unixfs_billy.NewBillyFS(ctx, fsh, "", time.Time{})
 	if data, err := billy_util.ReadFile(bfs, fileName); err == nil {
 		return data, nil
 	}
+
+	// Accept an alternate name only when the object contains exactly one file.
 	entries, err := bfs.ReadDir(".")
 	if err != nil {
 		return nil, err
@@ -344,10 +314,13 @@ func readUnixFSAsset(ctx context.Context, le *logrus.Entry, ws world_state.World
 
 // openFSHandleForObject opens the unixfs handle rooted at an object key.
 func openFSHandleForObject(ctx context.Context, le *logrus.Entry, ws world_state.WorldState, objectKey string) (*unixfs.FSHandle, error) {
+	// Resolve the stored filesystem type before constructing its cursor.
 	fsType, _, err := unixfs_world.LookupFsType(ctx, ws, objectKey)
 	if err != nil {
 		return nil, errors.Wrap(err, "lookup fs type")
 	}
+
+	// Transfer cursor ownership into the filesystem handle.
 	fsCursor := unixfs_world.NewFSCursor(le, ws, objectKey, fsType, nil, false)
 	fsh, err := unixfs.NewFSHandle(fsCursor)
 	if err != nil {
