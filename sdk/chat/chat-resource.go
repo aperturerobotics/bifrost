@@ -316,9 +316,24 @@ func (r *ChatResource) commitMessage(ctx context.Context, req *spacewave_chat_rp
 		return nil, err
 	}
 
-	// Enforce the channel's immutable creation-time encryption policy.
-	if algorithm := channel.GetEncryptionAlgorithm(); algorithm != "" && content.GetCiphertext().GetAlgorithm() != algorithm {
+	// Encryption protects message bodies; typed annotations are public routing metadata.
+	if algorithm := channel.GetEncryptionAlgorithm(); algorithm != "" && content.GetAnnotation() == nil && content.GetCiphertext().GetAlgorithm() != algorithm {
 		return nil, errors.New("chat message ciphertext algorithm does not match channel")
+	}
+
+	// Resolve every public relationship inside this transaction and channel.
+	relation := content.GetCiphertext().GetRelation()
+	for _, key := range []string{relation.GetTargetKey(), relation.GetReplyToKey(), content.GetAnnotation().GetTargetKey()} {
+		if key == "" {
+			continue
+		}
+		suffix, found := strings.CutPrefix(key, r.objectKey+"/message/")
+		if !found || suffix == "" || strings.ContainsAny(suffix, "/\x00") {
+			return nil, errors.New("chat relation target belongs to another channel")
+		}
+		if _, err := world.LookupObjectBody[*ChatMessage](ctx, wtx, key, NewChatMessageBlock); err != nil {
+			return nil, errors.Wrap(err, "resolve chat relation target")
+		}
 	}
 
 	// Resolve the sender-scoped retry before reserving a history position.
@@ -659,6 +674,15 @@ func normalizeSendMessageContent(req *spacewave_chat_rpc.SendMessageRequest) (*C
 	case *ChatMessageContent_Ciphertext:
 		if value == nil || value.Ciphertext.GetAlgorithm() == "" || value.Ciphertext.GetCiphertext() == "" || value.Ciphertext.GetSenderKey() == "" || value.Ciphertext.GetSessionId() == "" {
 			return nil, errors.New("chat encrypted content is incomplete")
+		}
+		if relation := value.Ciphertext.GetRelation(); relation != nil {
+			if len(relation.GetType()) > 255 || len(relation.GetKey()) > 4096 || len(relation.GetTargetKey()) > 4096 || len(relation.GetReplyToKey()) > 4096 || (relation.GetType() == "") != (relation.GetTargetKey() == "") || relation.GetTargetKey() == "" && relation.GetReplyToKey() == "" {
+				return nil, errors.New("chat relationship is incomplete or exceeds its bounds")
+			}
+		}
+	case *ChatMessageContent_Annotation:
+		if value == nil || value.Annotation.GetTargetKey() == "" || len(value.Annotation.GetTargetKey()) > 4096 || value.Annotation.GetKey() == "" || len(value.Annotation.GetKey()) > 4096 {
+			return nil, errors.New("chat annotation requires a bounded target and key")
 		}
 	default:
 		return nil, errors.New("chat message content is missing")

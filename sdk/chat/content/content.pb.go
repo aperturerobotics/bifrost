@@ -26,6 +26,8 @@ type ChatCiphertext struct {
 	SessionId string `protobuf:"bytes,4,opt,name=session_id,json=sessionId,proto3" json:"sessionId,omitempty"`
 	// DeviceId is the identifier of the sending device.
 	DeviceId string `protobuf:"bytes,5,opt,name=device_id,json=deviceId,proto3" json:"deviceId,omitempty"`
+	// Relation is public routing metadata carried beside the encrypted body.
+	Relation *ChatRelation `protobuf:"bytes,6,opt,name=relation,proto3" json:"relation,omitempty"`
 }
 
 func (x *ChatCiphertext) Reset() {
@@ -69,12 +71,105 @@ func (x *ChatCiphertext) GetDeviceId() string {
 	return ""
 }
 
+func (x *ChatCiphertext) GetRelation() *ChatRelation {
+	if x != nil {
+		return x.Relation
+	}
+	return nil
+}
+
+// ChatRelation links a message to earlier messages in the same channel.
+type ChatRelation struct {
+	unknownFields []byte
+	// Type identifies the relationship, such as m.replace or m.thread.
+	Type string `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
+	// TargetKey identifies the message being edited or the thread root.
+	TargetKey string `protobuf:"bytes,2,opt,name=target_key,json=targetKey,proto3" json:"targetKey,omitempty"`
+	// ReplyToKey identifies an explicit reply or a thread's fallback reply.
+	ReplyToKey string `protobuf:"bytes,3,opt,name=reply_to_key,json=replyToKey,proto3" json:"replyToKey,omitempty"`
+	// IsFallingBack marks a reply used only for clients without thread support.
+	IsFallingBack bool `protobuf:"varint,4,opt,name=is_falling_back,json=isFallingBack,proto3" json:"isFallingBack,omitempty"`
+	// Key is an optional public annotation value.
+	Key string `protobuf:"bytes,5,opt,name=key,proto3" json:"key,omitempty"`
+}
+
+func (x *ChatRelation) Reset() {
+	*x = ChatRelation{}
+}
+
+func (*ChatRelation) ProtoMessage() {}
+
+func (x *ChatRelation) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *ChatRelation) GetTargetKey() string {
+	if x != nil {
+		return x.TargetKey
+	}
+	return ""
+}
+
+func (x *ChatRelation) GetReplyToKey() string {
+	if x != nil {
+		return x.ReplyToKey
+	}
+	return ""
+}
+
+func (x *ChatRelation) GetIsFallingBack() bool {
+	if x != nil {
+		return x.IsFallingBack
+	}
+	return false
+}
+
+func (x *ChatRelation) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+// ChatAnnotation is an attributed public reaction to a channel message.
+type ChatAnnotation struct {
+	unknownFields []byte
+	// TargetKey identifies the message receiving the annotation.
+	TargetKey string `protobuf:"bytes,1,opt,name=target_key,json=targetKey,proto3" json:"targetKey,omitempty"`
+	// Key is the reaction value, such as an emoji.
+	Key string `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
+}
+
+func (x *ChatAnnotation) Reset() {
+	*x = ChatAnnotation{}
+}
+
+func (*ChatAnnotation) ProtoMessage() {}
+
+func (x *ChatAnnotation) GetTargetKey() string {
+	if x != nil {
+		return x.TargetKey
+	}
+	return ""
+}
+
+func (x *ChatAnnotation) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
 // ChatMessageContent contains the message body.
 type ChatMessageContent struct {
 	unknownFields []byte
 	// Types that are assignable to Content:
 	//	*ChatMessageContent_Text
 	//	*ChatMessageContent_Ciphertext
+	//	*ChatMessageContent_Annotation
 	Content isChatMessageContent_Content `protobuf_oneof:"content"`
 }
 
@@ -105,6 +200,13 @@ func (x *ChatMessageContent) GetCiphertext() *ChatCiphertext {
 	return nil
 }
 
+func (x *ChatMessageContent) GetAnnotation() *ChatAnnotation {
+	if x, ok := x.GetContent().(*ChatMessageContent_Annotation); ok {
+		return x.Annotation
+	}
+	return nil
+}
+
 type isChatMessageContent_Content interface {
 	isChatMessageContent_Content()
 }
@@ -119,9 +221,16 @@ type ChatMessageContent_Ciphertext struct {
 	Ciphertext *ChatCiphertext `protobuf:"bytes,2,opt,name=ciphertext,proto3,oneof"`
 }
 
+type ChatMessageContent_Annotation struct {
+	// Annotation is public metadata even when message bodies require encryption.
+	Annotation *ChatAnnotation `protobuf:"bytes,3,opt,name=annotation,proto3,oneof"`
+}
+
 func (*ChatMessageContent_Text) isChatMessageContent_Content() {}
 
 func (*ChatMessageContent_Ciphertext) isChatMessageContent_Content() {}
+
+func (*ChatMessageContent_Annotation) isChatMessageContent_Content() {}
 
 func (m *ChatCiphertext) CloneVT() *ChatCiphertext {
 	if m == nil {
@@ -133,6 +242,7 @@ func (m *ChatCiphertext) CloneVT() *ChatCiphertext {
 	r.SenderKey = m.SenderKey
 	r.SessionId = m.SessionId
 	r.DeviceId = m.DeviceId
+	r.Relation = protobuf_go_lite.CloneVTValue(m.Relation)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -140,6 +250,43 @@ func (m *ChatCiphertext) CloneVT() *ChatCiphertext {
 }
 
 func (m *ChatCiphertext) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *ChatRelation) CloneVT() *ChatRelation {
+	if m == nil {
+		return (*ChatRelation)(nil)
+	}
+	r := new(ChatRelation)
+	r.Type = m.Type
+	r.TargetKey = m.TargetKey
+	r.ReplyToKey = m.ReplyToKey
+	r.IsFallingBack = m.IsFallingBack
+	r.Key = m.Key
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *ChatRelation) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *ChatAnnotation) CloneVT() *ChatAnnotation {
+	if m == nil {
+		return (*ChatAnnotation)(nil)
+	}
+	r := new(ChatAnnotation)
+	r.TargetKey = m.TargetKey
+	r.Key = m.Key
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *ChatAnnotation) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
@@ -189,6 +336,19 @@ func (m *ChatMessageContent_Ciphertext) CloneOneofVT() isChatMessageContent_Cont
 	return m.CloneVT()
 }
 
+func (m *ChatMessageContent_Annotation) CloneVT() *ChatMessageContent_Annotation {
+	if m == nil {
+		return (*ChatMessageContent_Annotation)(nil)
+	}
+	r := new(ChatMessageContent_Annotation)
+	r.Annotation = protobuf_go_lite.CloneVTValue(m.Annotation)
+	return r
+}
+
+func (m *ChatMessageContent_Annotation) CloneOneofVT() isChatMessageContent_Content {
+	return m.CloneVT()
+}
+
 func (this *ChatCiphertext) EqualVT(that *ChatCiphertext) bool {
 	if this == that {
 		return true
@@ -210,11 +370,69 @@ func (this *ChatCiphertext) EqualVT(that *ChatCiphertext) bool {
 	if this.DeviceId != that.DeviceId {
 		return false
 	}
+	if !protobuf_go_lite.IsEqualVT(this.Relation, that.Relation) {
+		return false
+	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
 func (this *ChatCiphertext) EqualMessageVT(thatMsg any) bool {
 	that, ok := thatMsg.(*ChatCiphertext)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *ChatRelation) EqualVT(that *ChatRelation) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.Type != that.Type {
+		return false
+	}
+	if this.TargetKey != that.TargetKey {
+		return false
+	}
+	if this.ReplyToKey != that.ReplyToKey {
+		return false
+	}
+	if this.IsFallingBack != that.IsFallingBack {
+		return false
+	}
+	if this.Key != that.Key {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *ChatRelation) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*ChatRelation)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *ChatAnnotation) EqualVT(that *ChatAnnotation) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.TargetKey != that.TargetKey {
+		return false
+	}
+	if this.Key != that.Key {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *ChatAnnotation) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*ChatAnnotation)
 	if !ok {
 		return false
 	}
@@ -284,6 +502,23 @@ func (this *ChatMessageContent_Ciphertext) EqualVT(thatIface isChatMessageConten
 	return true
 }
 
+func (this *ChatMessageContent_Annotation) EqualVT(thatIface isChatMessageContent_Content) bool {
+	that, ok := thatIface.(*ChatMessageContent_Annotation)
+	if !ok {
+		return false
+	}
+	if this == that {
+		return true
+	}
+	if this == nil && that != nil || this != nil && that == nil {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTImplicit(this.Annotation, that.Annotation, func() *ChatAnnotation { return &ChatAnnotation{} }) {
+		return false
+	}
+	return true
+}
+
 // MarshalProtoJSON marshals the ChatCiphertext message to JSON.
 func (x *ChatCiphertext) MarshalProtoJSON(s *json.MarshalState) {
 	if x == nil {
@@ -317,6 +552,11 @@ func (x *ChatCiphertext) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("deviceId")
 		s.WriteString(x.DeviceId)
 	}
+	if x.Relation != nil || s.HasField("relation") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("relation")
+		x.Relation.MarshalProtoJSON(s.WithField("relation"))
+	}
 	s.WriteObjectEnd()
 }
 
@@ -349,12 +589,143 @@ func (x *ChatCiphertext) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "device_id", "deviceId":
 			s.AddField("device_id")
 			x.DeviceId = s.ReadString()
+		case "relation":
+			if s.ReadNil() {
+				x.Relation = nil
+				return
+			}
+			x.Relation = &ChatRelation{}
+			x.Relation.UnmarshalProtoJSON(s.WithField("relation", true))
 		}
 	})
 }
 
 // UnmarshalJSON unmarshals the ChatCiphertext from JSON.
 func (x *ChatCiphertext) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the ChatRelation message to JSON.
+func (x *ChatRelation) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Type != "" || s.HasField("type") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("type")
+		s.WriteString(x.Type)
+	}
+	if x.TargetKey != "" || s.HasField("targetKey") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("targetKey")
+		s.WriteString(x.TargetKey)
+	}
+	if x.ReplyToKey != "" || s.HasField("replyToKey") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("replyToKey")
+		s.WriteString(x.ReplyToKey)
+	}
+	if x.IsFallingBack || s.HasField("isFallingBack") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("isFallingBack")
+		s.WriteBool(x.IsFallingBack)
+	}
+	if x.Key != "" || s.HasField("key") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("key")
+		s.WriteString(x.Key)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the ChatRelation to JSON.
+func (x *ChatRelation) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the ChatRelation message from JSON.
+func (x *ChatRelation) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "type":
+			s.AddField("type")
+			x.Type = s.ReadString()
+		case "target_key", "targetKey":
+			s.AddField("target_key")
+			x.TargetKey = s.ReadString()
+		case "reply_to_key", "replyToKey":
+			s.AddField("reply_to_key")
+			x.ReplyToKey = s.ReadString()
+		case "is_falling_back", "isFallingBack":
+			s.AddField("is_falling_back")
+			x.IsFallingBack = s.ReadBool()
+		case "key":
+			s.AddField("key")
+			x.Key = s.ReadString()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the ChatRelation from JSON.
+func (x *ChatRelation) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the ChatAnnotation message to JSON.
+func (x *ChatAnnotation) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.TargetKey != "" || s.HasField("targetKey") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("targetKey")
+		s.WriteString(x.TargetKey)
+	}
+	if x.Key != "" || s.HasField("key") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("key")
+		s.WriteString(x.Key)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the ChatAnnotation to JSON.
+func (x *ChatAnnotation) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the ChatAnnotation message from JSON.
+func (x *ChatAnnotation) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "target_key", "targetKey":
+			s.AddField("target_key")
+			x.TargetKey = s.ReadString()
+		case "key":
+			s.AddField("key")
+			x.Key = s.ReadString()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the ChatAnnotation from JSON.
+func (x *ChatAnnotation) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -376,6 +747,10 @@ func (x *ChatMessageContent) MarshalProtoJSON(s *json.MarshalState) {
 			s.WriteMoreIf(&wroteField)
 			s.WriteObjectField("ciphertext")
 			ov.Ciphertext.MarshalProtoJSON(s.WithField("ciphertext"))
+		case *ChatMessageContent_Annotation:
+			s.WriteMoreIf(&wroteField)
+			s.WriteObjectField("annotation")
+			ov.Annotation.MarshalProtoJSON(s.WithField("annotation"))
 		}
 	}
 	s.WriteObjectEnd()
@@ -409,6 +784,15 @@ func (x *ChatMessageContent) UnmarshalProtoJSON(s *json.UnmarshalState) {
 			}
 			ov.Ciphertext = &ChatCiphertext{}
 			ov.Ciphertext.UnmarshalProtoJSON(s.WithField("ciphertext", true))
+		case "annotation":
+			ov := &ChatMessageContent_Annotation{}
+			x.Content = ov
+			if s.ReadNil() {
+				ov.Annotation = nil
+				return
+			}
+			ov.Annotation = &ChatAnnotation{}
+			ov.Annotation.UnmarshalProtoJSON(s.WithField("annotation", true))
 		}
 	})
 }
@@ -447,6 +831,16 @@ func (m *ChatCiphertext) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.Relation != nil {
+		size, err := m.Relation.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x32
+	}
 	if len(m.DeviceId) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.DeviceId)
 		i--
@@ -469,6 +863,105 @@ func (m *ChatCiphertext) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	}
 	if len(m.Algorithm) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.Algorithm)
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ChatRelation) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ChatRelation) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *ChatRelation) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.Key) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.Key)
+		i--
+		dAtA[i] = 0x2a
+	}
+	if m.IsFallingBack {
+		i = protobuf_go_lite.EncodeBool(dAtA, i, m.IsFallingBack)
+		i--
+		dAtA[i] = 0x20
+	}
+	if len(m.ReplyToKey) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.ReplyToKey)
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.TargetKey) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.TargetKey)
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Type) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.Type)
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ChatAnnotation) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ChatAnnotation) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *ChatAnnotation) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.Key) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.Key)
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.TargetKey) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.TargetKey)
 		i--
 		dAtA[i] = 0xa
 	}
@@ -553,6 +1046,30 @@ func (m *ChatMessageContent_Ciphertext) MarshalToSizedBufferVT(dAtA []byte) (int
 	return len(dAtA) - i, nil
 }
 
+func (m *ChatMessageContent_Annotation) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *ChatMessageContent_Annotation) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.Annotation != nil {
+		size, err := m.Annotation.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x1a
+	} else {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, 0)
+		i--
+		dAtA[i] = 0x1a
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *ChatCiphertext) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -564,6 +1081,37 @@ func (m *ChatCiphertext) SizeVT() (n int) {
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.SenderKey)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.SessionId)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.DeviceId)
+	if m.Relation != nil {
+		l = m.Relation.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *ChatRelation) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Type)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.TargetKey)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.ReplyToKey)
+	n += protobuf_go_lite.SizeBoolNonZero(1, m.IsFallingBack)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Key)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *ChatAnnotation) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.TargetKey)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Key)
 	n += len(m.unknownFields)
 	return n
 }
@@ -606,6 +1154,21 @@ func (m *ChatMessageContent_Ciphertext) SizeVT() (n int) {
 	return n
 }
 
+func (m *ChatMessageContent_Annotation) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Annotation != nil {
+		l = m.Annotation.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	} else {
+		n += 2
+	}
+	return n
+}
+
 func (x *ChatCiphertext) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "ChatCiphertext")
@@ -629,10 +1192,62 @@ func (x *ChatCiphertext) MarshalProtoText() string {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "device_id")
 		protobuf_go_lite.TextWriteString(&sb, x.DeviceId)
 	}
+	if x.Relation != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "relation")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Relation)
+	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
 func (x *ChatCiphertext) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *ChatRelation) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "ChatRelation")
+	if x.Type != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "type")
+		protobuf_go_lite.TextWriteString(&sb, x.Type)
+	}
+	if x.TargetKey != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "target_key")
+		protobuf_go_lite.TextWriteString(&sb, x.TargetKey)
+	}
+	if x.ReplyToKey != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "reply_to_key")
+		protobuf_go_lite.TextWriteString(&sb, x.ReplyToKey)
+	}
+	if x.IsFallingBack != false {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "is_falling_back")
+		protobuf_go_lite.TextWriteBool(&sb, x.IsFallingBack)
+	}
+	if x.Key != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "key")
+		protobuf_go_lite.TextWriteString(&sb, x.Key)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *ChatRelation) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *ChatAnnotation) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "ChatAnnotation")
+	if x.TargetKey != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "target_key")
+		protobuf_go_lite.TextWriteString(&sb, x.TargetKey)
+	}
+	if x.Key != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "key")
+		protobuf_go_lite.TextWriteString(&sb, x.Key)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *ChatAnnotation) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -649,6 +1264,13 @@ func (x *ChatMessageContent) MarshalProtoText() string {
 			protobuf_go_lite.TextWriteTextMarshaler(&sb, &ChatCiphertext{})
 		} else {
 			protobuf_go_lite.TextWriteTextMarshaler(&sb, body.Ciphertext)
+		}
+	case *ChatMessageContent_Annotation:
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "annotation")
+		if body.Annotation == nil {
+			protobuf_go_lite.TextWriteTextMarshaler(&sb, &ChatAnnotation{})
+		} else {
+			protobuf_go_lite.TextWriteTextMarshaler(&sb, body.Annotation)
 		}
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
@@ -728,6 +1350,177 @@ func (m *ChatCiphertext) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.DeviceId = v
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Relation", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Relation == nil {
+				m.Relation = &ChatRelation{}
+			}
+			if err := m.Relation.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *ChatRelation) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ChatRelation: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ChatRelation: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Type = v
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TargetKey", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.TargetKey = v
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ReplyToKey", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.ReplyToKey = v
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field IsFallingBack", wireType)
+			}
+			var v bool
+			v, iNdEx, err = protobuf_go_lite.DecodeVarintBool(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.IsFallingBack = bool(v)
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Key = v
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *ChatAnnotation) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ChatAnnotation: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ChatAnnotation: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TargetKey", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.TargetKey = v
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Key = v
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
@@ -799,6 +1592,26 @@ func (m *ChatMessageContent) UnmarshalVT(dAtA []byte) error {
 					return err
 				}
 				m.Content = &ChatMessageContent_Ciphertext{Ciphertext: v}
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Annotation", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if oneof, ok := m.Content.(*ChatMessageContent_Annotation); ok {
+				if err := oneof.Annotation.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+					return err
+				}
+			} else {
+				v := &ChatAnnotation{}
+				if err := v.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+					return err
+				}
+				m.Content = &ChatMessageContent_Annotation{Annotation: v}
 			}
 			iNdEx = postIndex
 		default:

@@ -10,6 +10,57 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export const protobufPackage = 'spacewave.chat'
 
 /**
+ * ChatRelation links a message to earlier messages in the same channel.
+ *
+ * @generated from message spacewave.chat.ChatRelation
+ */
+export interface ChatRelation {
+  /**
+   * Type identifies the relationship, such as m.replace or m.thread.
+   *
+   * @generated from field: string type = 1;
+   */
+  type?: string
+  /**
+   * TargetKey identifies the message being edited or the thread root.
+   *
+   * @generated from field: string target_key = 2;
+   */
+  targetKey?: string
+  /**
+   * ReplyToKey identifies an explicit reply or a thread's fallback reply.
+   *
+   * @generated from field: string reply_to_key = 3;
+   */
+  replyToKey?: string
+  /**
+   * IsFallingBack marks a reply used only for clients without thread support.
+   *
+   * @generated from field: bool is_falling_back = 4;
+   */
+  isFallingBack?: boolean
+  /**
+   * Key is an optional public annotation value.
+   *
+   * @generated from field: string key = 5;
+   */
+  key?: string
+}
+
+export const ChatRelation: MessageType<ChatRelation> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'spacewave.chat.ChatRelation',
+    fields: [
+      { no: 1, name: 'type', kind: 'scalar', T: ScalarType.STRING },
+      { no: 2, name: 'target_key', kind: 'scalar', T: ScalarType.STRING },
+      { no: 3, name: 'reply_to_key', kind: 'scalar', T: ScalarType.STRING },
+      { no: 4, name: 'is_falling_back', kind: 'scalar', T: ScalarType.BOOL },
+      { no: 5, name: 'key', kind: 'scalar', T: ScalarType.STRING },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
  * ChatCiphertext is an opaque encrypted message body.
  *
  * @generated from message spacewave.chat.ChatCiphertext
@@ -45,6 +96,12 @@ export interface ChatCiphertext {
    * @generated from field: string device_id = 5;
    */
   deviceId?: string
+  /**
+   * Relation is public routing metadata carried beside the encrypted body.
+   *
+   * @generated from field: spacewave.chat.ChatRelation relation = 6;
+   */
+  relation?: ChatRelation
 }
 
 export const ChatCiphertext: MessageType<ChatCiphertext> =
@@ -56,6 +113,37 @@ export const ChatCiphertext: MessageType<ChatCiphertext> =
       { no: 3, name: 'sender_key', kind: 'scalar', T: ScalarType.STRING },
       { no: 4, name: 'session_id', kind: 'scalar', T: ScalarType.STRING },
       { no: 5, name: 'device_id', kind: 'scalar', T: ScalarType.STRING },
+      { no: 6, name: 'relation', kind: 'message', T: () => ChatRelation },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
+ * ChatAnnotation is an attributed public reaction to a channel message.
+ *
+ * @generated from message spacewave.chat.ChatAnnotation
+ */
+export interface ChatAnnotation {
+  /**
+   * TargetKey identifies the message receiving the annotation.
+   *
+   * @generated from field: string target_key = 1;
+   */
+  targetKey?: string
+  /**
+   * Key is the reaction value, such as an emoji.
+   *
+   * @generated from field: string key = 2;
+   */
+  key?: string
+}
+
+export const ChatAnnotation: MessageType<ChatAnnotation> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'spacewave.chat.ChatAnnotation',
+    fields: [
+      { no: 1, name: 'target_key', kind: 'scalar', T: ScalarType.STRING },
+      { no: 2, name: 'key', kind: 'scalar', T: ScalarType.STRING },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })
@@ -92,6 +180,15 @@ export interface ChatMessageContent {
         value: ChatCiphertext
         case: 'ciphertext'
       }
+    | {
+        /**
+         * Annotation is public metadata even when message bodies require encryption.
+         *
+         * @generated from field: spacewave.chat.ChatAnnotation annotation = 3;
+         */
+        value: ChatAnnotation
+        case: 'annotation'
+      }
 }
 
 export const ChatMessageContent: MessageType<ChatMessageContent> =
@@ -110,6 +207,13 @@ export const ChatMessageContent: MessageType<ChatMessageContent> =
         name: 'ciphertext',
         kind: 'message',
         T: () => ChatCiphertext,
+        oneof: 'content',
+      },
+      {
+        no: 3,
+        name: 'annotation',
+        kind: 'message',
+        T: () => ChatAnnotation,
         oneof: 'content',
       },
     ] satisfies readonly PartialFieldInfo[],

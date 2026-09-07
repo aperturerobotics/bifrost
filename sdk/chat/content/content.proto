@@ -15,6 +15,30 @@ message ChatCiphertext {
   string session_id = 4;
   // DeviceId is the identifier of the sending device.
   string device_id = 5;
+  // Relation is public routing metadata carried beside the encrypted body.
+  ChatRelation relation = 6;
+}
+
+// ChatRelation links a message to earlier messages in the same channel.
+message ChatRelation {
+  // Type identifies the relationship, such as m.replace or m.thread.
+  string type = 1;
+  // TargetKey identifies the message being edited or the thread root.
+  string target_key = 2;
+  // ReplyToKey identifies an explicit reply or a thread's fallback reply.
+  string reply_to_key = 3;
+  // IsFallingBack marks a reply used only for clients without thread support.
+  bool is_falling_back = 4;
+  // Key is an optional public annotation value.
+  string key = 5;
+}
+
+// ChatAnnotation is an attributed public reaction to a channel message.
+message ChatAnnotation {
+  // TargetKey identifies the message receiving the annotation.
+  string target_key = 1;
+  // Key is the reaction value, such as an emoji.
+  string key = 2;
 }
 
 // ChatMessageContent contains the message body.
@@ -24,5 +48,7 @@ message ChatMessageContent {
     string text = 1;
     // Ciphertext is an encrypted message body.
     ChatCiphertext ciphertext = 2;
+    // Annotation is public metadata even when message bodies require encryption.
+    ChatAnnotation annotation = 3;
   }
 }
