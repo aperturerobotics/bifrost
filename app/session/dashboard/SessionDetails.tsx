@@ -1,5 +1,13 @@
 /* eslint-disable react-doctor/no-giant-component */
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import {
+  lazy,
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import {
   LuCloud,
   LuChevronDown,
@@ -58,7 +66,6 @@ import {
 } from '@s4wave/sdk/session/local-session.pb.js'
 
 import { LogoutConfirmDialog } from '../LogoutConfirmDialog.js'
-import { LinkDeviceWizard } from '../setup/LinkDeviceWizard.js'
 import { AccountDashboardStateProvider } from './AccountDashboardStateContext.js'
 import { AuthMethodsSection } from './AuthMethodsSection.js'
 import { CryptoKeysSection } from './CryptoKeysSection.js'
@@ -71,6 +78,11 @@ import { SecuritySection } from './SecuritySection.js'
 import { SessionsSection } from './SessionsSection.js'
 import { SessionSyncStatusSummary } from './SessionSyncStatusSummary.js'
 import { StorageHealthSection } from '../storage/StorageHealthSection.js'
+
+const LazyLinkDeviceWizard = lazy(async () => {
+  const { LinkDeviceWizard } = await import('../setup/LinkDeviceWizard.js')
+  return { default: LinkDeviceWizard }
+})
 
 export interface SessionDetailsProps {
   onCloseClick?: () => void
@@ -376,7 +388,7 @@ export function SessionDetails({
     <Router path={detailsPath} onNavigate={handleDetailsNavigate}>
       <Routes fullPath>
         <Route path="/link-device">
-          <LinkDeviceWizard exitPath="/" />
+          <LazyLinkDeviceWizard exitPath="/" />
         </Route>
         <Route path="/">
           <div className="bg-background-primary relative flex h-full w-full flex-col overflow-hidden">

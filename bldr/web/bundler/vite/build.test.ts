@@ -1,10 +1,11 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest'
-import { analyzeManifest, buildConfig } from './build.js'
-import { makeModulePreloadHelperWorkerSafe } from './module-preload.js'
-import { promises as fs } from 'fs'
-import path from 'path'
-import os from 'os'
+import { promises as fs } from 'node:fs'
+import path from 'node:path'
+import os from 'node:os'
 import type { Rollup } from 'vite'
+
+import { analyzeManifest, buildAndAnalyze, buildConfig } from './build.js'
+import { makeModulePreloadHelperWorkerSafe } from './module-preload.js'
 
 describe('Vite Build - Transitive Dependency Tracking', () => {
   let testDir: string
@@ -507,39 +508,6 @@ describe('Vite Build - Transitive Dependency Tracking', () => {
       expect(entryA.outputs.css).toContain('assets/A-hash123.css')
     })
   })
-
-  describe('buildAndAnalyze integration', () => {
-    it('should return all input files including transitive dependencies', async () => {
-      // Note: This will actually run Vite build, which requires proper setup
-      // For now, we'll test the analysis part with mocked data
-      // In a real scenario, you'd need a complete vite setup
-      // TODO: Add full integration test that actually runs Vite build
-      // and verifies the complete flow including transitive dependencies
-    })
-  })
-
-  describe('Input file tracking verification', () => {
-    it('should verify that Rollup includes transitive moduleIds', async () => {
-      // This test documents what we expect from Rollup/Vite
-      // Rollup's OutputChunk.moduleIds should include ALL modules bundled into a chunk,
-      // not just direct imports
-
-      const mockChunk = {
-        type: 'chunk' as const,
-        fileName: 'test.mjs',
-        facadeModuleId: '/root/entry.tsx',
-        moduleIds: [
-          '/root/entry.tsx', // Direct entry
-          '/root/direct.tsx', // Direct import
-          '/root/transitive.tsx', // Transitive import (the key test)
-        ],
-      }
-
-      // This is what we rely on: moduleIds contains ALL modules in the chunk
-      expect(mockChunk.moduleIds).toContain('/root/transitive.tsx')
-      expect(mockChunk.moduleIds.length).toBeGreaterThanOrEqual(3)
-    })
-  })
 })
 
 describe('makeModulePreloadHelperWorkerSafe', () => {
@@ -579,28 +547,41 @@ var __vitePreload = function preload(baseModule, deps) {
   })
 })
 
-describe('Integration: Hot Reload Input File Tracking', () => {
-  it('should document the expected behavior for hot reload', () => {
-    // GIVEN: A.tsx imports B.tsx which imports C.tsx
-    // WHEN: The build completes successfully
-    // THEN: The inputFiles array returned to Go compiler should include:
-    //   - A.tsx (entry point)
-    //   - B.tsx (direct dependency)
-    //   - C.tsx (transitive dependency)
-    //
-    // This ensures that when C.tsx changes, the Go compiler knows to rebuild
+describe('Vite build input tracking', () => {
+  it('includes lazy chunks and their dependencies in the cache inputs', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'vite-lazy-inputs-'))
+    try {
+      const entry = path.join(root, 'entry.ts')
+      await fs.writeFile(entry, "export const load = () => import('./lazy')")
+      await fs.writeFile(
+        path.join(root, 'lazy.ts'),
+        "export { value } from './shared'",
+      )
+      await fs.writeFile(
+        path.join(root, 'shared.ts'),
+        'export const value = 42',
+      )
 
-    const expectedBehavior = {
-      scenario: 'A.tsx -> B.tsx -> C.tsx',
-      inputFiles: ['A.tsx', 'B.tsx', 'C.tsx'],
-      hotReloadTriggers: {
-        'A.tsx changes': 'should rebuild',
-        'B.tsx changes': 'should rebuild',
-        'C.tsx changes': 'should rebuild (currently failing)',
-      },
+      const { result } = await buildAndAnalyze(
+        {
+          root,
+          build: {
+            outDir: path.join(root, 'dist'),
+            lib: { entry, formats: ['es'] },
+            minify: false,
+          },
+        },
+        root,
+        new Map(),
+      )
+
+      expect(result.inputFiles.sort()).toEqual([
+        'entry.ts',
+        'lazy.ts',
+        'shared.ts',
+      ])
+    } finally {
+      await fs.rm(root, { recursive: true, force: true })
     }
-
-    // The issue is that C.tsx might not be in the inputFiles list
-    expect(expectedBehavior.inputFiles).toContain('C.tsx')
   })
 })

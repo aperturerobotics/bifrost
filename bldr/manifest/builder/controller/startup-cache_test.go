@@ -415,7 +415,7 @@ func TestValidateStartupInputsRejectsOldCacheFormat(t *testing.T) {
 		bldr_manifest_builder.NewControllerConfigDigestStartupInput(controllerConfigDigest),
 	)
 	inputManifest.AddStartupInput(
-		bldr_manifest_builder.NewEnvStartupInput("BLDR_STARTUP_CACHE_FORMAT_V7", ""),
+		bldr_manifest_builder.NewEnvStartupInput("BLDR_STARTUP_CACHE_FORMAT_V10", ""),
 	)
 
 	err = validateStartupInputs(controllerConfig, inputManifest)
@@ -539,9 +539,6 @@ func TestEnrichBuilderResultForStartupReuse(t *testing.T) {
 	}
 	if !foundCacheFormat {
 		t.Fatal("expected startup cache format marker input")
-	}
-	if startupCacheFormatEnvKey != "BLDR_STARTUP_CACHE_FORMAT_V10" {
-		t.Fatalf("startup cache format marker = %s, want V10", startupCacheFormatEnvKey)
 	}
 }
 

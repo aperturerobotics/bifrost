@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import {
   cleanup,
   fireEvent,
@@ -7,17 +8,17 @@ import {
 } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  SessionRoutes,
-  consumePendingJoin,
-  storePendingJoin,
-} from './SessionRoutes.js'
-
 import { JoinSpaceDialog } from '@s4wave/app/sobject/JoinSpaceDialog.js'
 import { SOInviteMessage } from '@s4wave/core/sobject/sobject.pb.js'
 import { JoinSpaceViaInviteResult } from '@s4wave/sdk/session/session.pb.js'
 import { base58Encode } from '@s4wave/app/provider/spacewave/keypair-utils.js'
 import { buildInviteLink } from '@s4wave/app/urls.js'
+
+import {
+  SessionRoutes,
+  consumePendingJoin,
+  storePendingJoin,
+} from './SessionRoutes.js'
 
 const mockLookupInviteCode = vi.hoisted(() => vi.fn())
 const mockJoinSpaceViaInvite = vi.hoisted(() => vi.fn())
@@ -25,6 +26,7 @@ const mockUseSessionInfo = vi.hoisted(() => vi.fn())
 const mockUseParams = vi.hoisted(() => vi.fn())
 const mockUseSessionList = vi.hoisted(() => vi.fn())
 const mockActiveRoutePath = vi.hoisted(() => ({ value: '/join/:code' }))
+const mockPairModuleLoaded = vi.hoisted(() => vi.fn())
 
 vi.mock('@s4wave/web/router/router.js', () => ({
   Route: ({ children, path }: { children?: React.ReactNode; path: string }) =>
@@ -49,16 +51,17 @@ vi.mock('@s4wave/web/router/NavigatePath.js', () => ({
 }))
 
 vi.mock('../AppQuickstart.js', () => ({
-  AppQuickstart: () => null,
+  AppQuickstart: () => <div>Quickstart</div>,
 }))
 
 vi.mock('@s4wave/app/provider/spacewave/CheckoutResultPage.js', () => ({
   CheckoutResultPage: () => null,
 }))
 
-vi.mock('@s4wave/app/pair/PairCodePage.js', () => ({
-  PairCodePage: () => null,
-}))
+vi.mock('@s4wave/app/pair/PairCodePage.js', () => {
+  mockPairModuleLoaded()
+  return { PairCodePage: () => <div>Pair another device</div> }
+})
 
 vi.mock('@aptre/bldr-sdk/hooks/useResource.js', () => ({
   useResourceValue: <T,>(res: { value: T | null }) => res.value,
@@ -128,6 +131,25 @@ describe('SessionRoutes join redirect', () => {
   afterEach(() => {
     cleanup()
     sessionStorage.clear()
+  })
+
+  it('loads pairing only after leaving quickstart for a pairing route', async () => {
+    mockActiveRoutePath.value = '/quickstart/:quickstartId'
+
+    render(<Suspense fallback={null}>{SessionRoutes}</Suspense>)
+
+    expect(screen.getByText('Quickstart')).toBeTruthy()
+    expect(mockPairModuleLoaded).not.toHaveBeenCalled()
+    cleanup()
+
+    for (const path of ['/pair', '/pair/:code']) {
+      mockActiveRoutePath.value = path
+
+      render(<Suspense fallback={null}>{SessionRoutes}</Suspense>)
+
+      expect(await screen.findByText('Pair another device')).toBeTruthy()
+      cleanup()
+    }
   })
 
   it('stores the invite code and redirects to root when no session exists yet', () => {
