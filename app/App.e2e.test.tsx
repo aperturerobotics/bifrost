@@ -1,10 +1,3 @@
-/**
- * E2E tests for the spacewave-app App.
- *
- * Tests the full application rendering in browser mode.
- * When no backend is available, tests verify the loading state.
- * When a backend is available (via VITE_E2E_SERVER_PORT), tests the full app.
- */
 import { describe, it, expect, beforeEach } from 'vitest'
 import { page } from 'vitest/browser'
 import { render, cleanup } from 'vitest-browser-react'
@@ -16,8 +9,8 @@ import { AppShell } from './AppShell.js'
 import { EditorShell } from './EditorShell.js'
 
 describe('App E2E', () => {
-  beforeEach(() => {
-    void cleanup()
+  beforeEach(async () => {
+    await cleanup()
     localStorage.clear()
     window.location.hash = ''
   })
@@ -25,8 +18,9 @@ describe('App E2E', () => {
   it('renders the App component and shows loading state without backend', async () => {
     await render(<App />)
 
-    // Without a backend connection, AppAPI shows the loading overlay
-    await expect.element(page.getByText('Initializing')).toBeInTheDocument()
+    await expect
+      .element(page.getByRole('heading', { name: 'Starting Spacewave' }))
+      .toBeInTheDocument()
   })
 
   it('renders AppShell with children', async () => {
@@ -43,8 +37,8 @@ describe('App E2E', () => {
 })
 
 describe('EditorShell E2E', () => {
-  beforeEach(() => {
-    void cleanup()
+  beforeEach(async () => {
+    await cleanup()
     localStorage.clear()
     window.location.hash = ''
   })
@@ -56,9 +50,6 @@ describe('EditorShell E2E', () => {
       </AppShell>,
     )
 
-    // EditorShell should render the shell layout
-    // In normal mode, it renders ShellTabStrip which includes the menu bar area
-    // The Home tab should be present
     await expect
       .element(page.getByRole('button', { name: 'Home' }).first(), {
         timeout: 5000,
@@ -73,7 +64,6 @@ describe('EditorShell E2E', () => {
       </AppShell>,
     )
 
-    // The landing page should show [SPACEWAVE] title
     await expect
       .element(page.getByRole('heading', { name: '[SPACEWAVE]' }).first(), {
         timeout: 5000,
@@ -104,15 +94,12 @@ describe('EditorShell E2E', () => {
       </AppShell>,
     )
 
-    // Wait for initial render - Home tab button should be present
     await expect
       .element(page.getByRole('button', { name: 'Home' }).first(), {
         timeout: 5000,
       })
       .toBeInTheDocument()
 
-    // Find and click the add tab button (has title="New tab")
-    // The button is inside the flexlayout tabset toolbar
     await expect
       .poll(
         () => {
@@ -128,12 +115,9 @@ describe('EditorShell E2E', () => {
     ) as HTMLElement
     addButton.click()
 
-    // After clicking, there should be two Home tabs
-    // Use a simpler check - just look for any additional tab buttons
     await expect
       .poll(
         () => {
-          // Count all tab buttons in the flexlayout tab strip
           const tabButtons = document.querySelectorAll(
             '.flexlayout__tab_button',
           )
@@ -145,7 +129,6 @@ describe('EditorShell E2E', () => {
   })
 
   it('navigates to grid mode when URL has /g/ prefix', async () => {
-    // Set hash to grid mode before rendering
     window.location.hash = '#/g/test'
 
     await render(
@@ -155,7 +138,6 @@ describe('EditorShell E2E', () => {
     )
 
     // In grid mode with invalid layout data, it should redirect to home
-    // Wait for the redirect to happen
     await expect
       .poll(
         () => {
@@ -176,7 +158,6 @@ describe('EditorShell E2E', () => {
       </AppShell>,
     )
 
-    // The landing page should show navigation links
     await expect
       .element(page.getByRole('button', { name: 'the community' }).first(), {
         timeout: 5000,
@@ -191,7 +172,6 @@ describe('EditorShell E2E', () => {
       </AppShell>,
     )
 
-    // The landing page should show a Get Started button (hero section)
     await expect
       .element(page.getByRole('button', { name: /get started \(free\)/i }), {
         timeout: 5000,

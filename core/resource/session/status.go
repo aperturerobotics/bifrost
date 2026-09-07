@@ -178,7 +178,7 @@ func (r *StatusResource) WatchPlugins(
 		if err := strm.Send(buildPluginsResponse(current)); err != nil {
 			return err
 		}
-		if err := ccontainer.WatchChanges(
+		err = ccontainer.WatchChanges(
 			ctx,
 			current,
 			statusCtr,
@@ -186,10 +186,9 @@ func (r *StatusResource) WatchPlugins(
 				return strm.Send(buildPluginsResponse(snapshot))
 			},
 			nil,
-		); err != nil {
-			if ctx.Err() != nil {
-				return err
-			}
+		)
+		if ctx.Err() != nil {
+			return err
 		}
 	}
 }
@@ -652,5 +651,5 @@ func pluginStateString(state bldr_plugin.PluginState) string {
 	}
 }
 
-// _ is a type assertion
+// _ verifies the status service contract.
 var _ s4wave_status.SRPCSystemStatusServiceServer = (*StatusResource)(nil)

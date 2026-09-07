@@ -77,53 +77,49 @@ afterEach(() => {
 })
 
 describe('AppLoadingScreen', () => {
-  it('keeps phase percentages out of the default screen and exposes diagnostics on demand', () => {
-    const { container } = render(<AppLoadingScreen />)
-    expect(screen.getByText('Opening Spacewave')).toBeDefined()
-    expect(screen.getByText('Starting the app')).toBeDefined()
+  it('shows projected phases without synthetic percentages', () => {
+    render(<AppLoadingScreen />)
     expect(
-      screen.getByRole('progressbar').getAttribute('aria-valuenow'),
-    ).toBeNull()
-    expect(screen.queryByText('58%')).toBeNull()
-    expect(screen.queryByLabelText('Startup phases')).toBeNull()
-    const details = container.querySelector('details')
-    expect(details?.open).toBe(false)
-    expect(details?.textContent).toContain(
-      'Runtime initialization: Connecting the Spacewave runtime.',
-    )
-    expect(
-      screen.getByText('Downloaded files are saved on this device.'),
+      screen.getByRole('heading', {
+        name: 'Starting the Spacewave runtime',
+      }),
     ).toBeDefined()
+    expect(screen.getByLabelText('Startup phases')).toBeDefined()
+    expect(
+      screen.getByText('Runtime').closest('li')?.getAttribute('aria-current'),
+    ).toBe('step')
+    expect(screen.queryByRole('progressbar')).toBeNull()
+    expect(screen.queryByText('58%')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Back to home' })).toBeDefined()
   })
 
-  it('retires a download when it completes while active and failed rows remain', () => {
+  it('advances measured download progress and exposes failed downloads', () => {
     beginBootDownload('app', 'Application', 100)
+    advanceBootDownload('app', 10, 100)
     beginBootDownload('plugin', 'Plugin', 200)
     advanceBootDownload('plugin', 50, 200)
     beginBootDownload('styles', 'Styles', 10)
 
-    const { container } = render(<AppLoadingScreen />)
-    expect(
-      container.querySelector('[data-sw-startup-download="app"]'),
-    ).not.toBeNull()
+    render(<AppLoadingScreen />)
+    expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe(
+      '10',
+    )
 
     act(() => {
       completeBootDownload('app')
+    })
+
+    expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe(
+      '25',
+    )
+
+    act(() => {
       failBootDownload('styles', 'network error')
     })
 
-    expect(
-      container.querySelector('[data-sw-startup-download="app"]'),
-    ).toBeNull()
-    expect(
-      container.querySelector('[data-sw-startup-download="plugin"]'),
-    ).not.toBeNull()
-    expect(
-      container.querySelector('[data-sw-startup-download="styles"]'),
-    ).not.toBeNull()
     expect(screen.getByRole('alert').textContent).toBe('network error')
     expect(screen.getByRole('button', { name: 'Retry' })).toBeDefined()
-    expect(container.querySelector('.swb-activity')).toBeNull()
+    expect(screen.queryByRole('progressbar')).toBeNull()
   })
 
   it('renders retry and back affordances for startup errors', () => {
@@ -152,7 +148,7 @@ describe('AppLoadingScreen', () => {
       })),
     }
 
-    const { container } = render(<AppLoadingScreen />)
+    render(<AppLoadingScreen />)
 
     expect(screen.getByText('Retry')).toBeDefined()
     expect(screen.getByText('Back')).toBeDefined()
@@ -162,10 +158,10 @@ describe('AppLoadingScreen', () => {
       ),
     ).toBeDefined()
     expect(screen.getByRole('alert')).toBeDefined()
-    expect(container.querySelector('.swb-activity')).toBeNull()
+    expect(screen.queryByRole('progressbar')).toBeNull()
   })
 
-  it('retains startup diagnostics with reduced motion', () => {
+  it('retains startup phases with reduced motion', () => {
     vi.stubGlobal('matchMedia', (query: string) => ({
       matches: query === '(prefers-reduced-motion: reduce)',
       media: query,
@@ -177,16 +173,10 @@ describe('AppLoadingScreen', () => {
 
     expect(
       container
-        .querySelector('[data-sw-startup-reduced-motion]')
-        ?.getAttribute('data-sw-startup-reduced-motion'),
+        .querySelector('[data-sw-reduced-motion]')
+        ?.getAttribute('data-sw-reduced-motion'),
     ).toBe('true')
-    expect(
-      screen.getByText(
-        'Runtime initialization: Connecting the Spacewave runtime.',
-      ),
-    ).toBeDefined()
-    expect(
-      screen.getByRole('progressbar').getAttribute('aria-valuenow'),
-    ).toBeNull()
+    expect(screen.getByLabelText('Startup phases')).toBeDefined()
+    expect(screen.queryByRole('progressbar')).toBeNull()
   })
 })

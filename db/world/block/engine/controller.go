@@ -342,6 +342,16 @@ buildWorldEngine:
 		return err
 	}
 
+	// NewEngine validates the replacement root before recovery publishes it.
+	// Publish before GetSeqno can refresh the coordinator's persisted head.
+	if recoveryBaseRef != nil {
+		if err := c.writeHeadState(ctx, stateStore, recoveryBaseRef, headRef.Clone()); err != nil {
+			_ = engine.Close()
+			return err
+		}
+		recoveryBaseRef = nil
+	}
+
 	seqno, err := engine.GetSeqno(ctx)
 	if isReadOnlyInitHeadNotFound(err, stateStore, initRef) {
 		c.engineCtr.SetValue(&engineResult{err: err})
@@ -355,13 +365,6 @@ buildWorldEngine:
 			goto buildWorldEngine
 		}
 		return err
-	}
-	if recoveryBaseRef != nil {
-		if err := c.writeHeadState(ctx, stateStore, recoveryBaseRef, headRef.Clone()); err != nil {
-			_ = engine.Close()
-			return err
-		}
-		recoveryBaseRef = nil
 	}
 
 	le.WithField("world-seqno", seqno).Info("world engine ready")

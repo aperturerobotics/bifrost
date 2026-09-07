@@ -453,7 +453,7 @@ jobs:
 
       - name: Validate SPDX allowlist
         run: |
-          allowed='["0bsd","apache-2.0","apache-2.0 or mit","bsd-2-clause","bsd-3-clause","cc0-1.0","isc","mit","mit-0","mpl-2.0"]'
+          allowed='["0bsd","apache-2.0","apache-2.0 or mit","bsd-2-clause","bsd-3-clause","cc0-1.0","isc","mit","mit-0","mpl-2.0","ofl-1.1"]'
           unknown=$(jq --argjson allowed "$allowed" -r \
             '[.entries[].spdx | ascii_downcase] | unique - $allowed | .[]' \
             app/licenses/licenses.json)

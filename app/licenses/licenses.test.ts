@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+
 import {
   licenseEntries,
   licenseStats,
@@ -24,6 +25,7 @@ const APPROVED_LICENSES = new Set([
   '0BSD',
   'Unlicense',
   'BlueOak-1.0.0',
+  'OFL-1.1',
 ])
 
 const APPROVED_LICENSE_KEYS = new Set(

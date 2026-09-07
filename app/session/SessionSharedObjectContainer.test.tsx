@@ -7,6 +7,7 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react'
+
 import {
   SharedObjectHealthCommonReason,
   SharedObjectHealthLayer,
@@ -14,6 +15,8 @@ import {
   SharedObjectHealthStatus,
 } from '@s4wave/core/sobject/sobject.pb.js'
 import { SharedObjectHealthError } from '@s4wave/sdk/sobject/sobject.js'
+
+import { SessionSharedObjectContainer } from './SessionSharedObjectContainer.js'
 
 const SPACE_ID = '01kpm6m5mg9ncme4ve3jraxv5n'
 
@@ -181,8 +184,6 @@ vi.mock('./SessionFrame.js', () => ({
     <div data-testid="session-frame">{children}</div>
   ),
 }))
-
-import { SessionSharedObjectContainer } from './SessionSharedObjectContainer.js'
 
 function setWatchMocks(resourcesList: unknown, health: unknown) {
   mockUseWatchStateRpc.mockReset()
@@ -424,10 +425,12 @@ describe('SessionSharedObjectContainer', () => {
 
     render(<SessionSharedObjectContainer />)
 
-    expect(screen.getByText('Mounting your space')).toBeTruthy()
     expect(
-      screen.getByText('Almost ready. Loading the space contents.'),
+      screen.getByRole('heading', { name: 'Opening your space' }),
     ).toBeTruthy()
+    expect(screen.getByText('Mount')).toBeTruthy()
+    expect(screen.queryByTestId('shared-object-body')).toBeNull()
+    expect(screen.queryByTestId('error-state')).toBeNull()
   })
 
   it('renders CDN pointer loading from a typed body response as shared-object loading', () => {
@@ -466,8 +469,11 @@ describe('SessionSharedObjectContainer', () => {
 
     render(<SessionSharedObjectContainer />)
 
-    expect(screen.getByText('Mounting your space')).toBeTruthy()
-    expect(screen.getByText('Mounting the space.')).toBeTruthy()
+    expect(
+      screen.getByRole('heading', { name: 'Opening your space' }),
+    ).toBeTruthy()
+    expect(screen.getByText('Resolve')).toBeTruthy()
+    expect(screen.queryByTestId('error-state')).toBeNull()
   })
 
   it('renders a body-layer health card for body mount errors', () => {

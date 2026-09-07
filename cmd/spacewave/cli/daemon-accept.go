@@ -4,11 +4,11 @@ package spacewave_cli
 
 import (
 	"context"
-	"errors"
 	"net"
 	"sync"
 
 	"github.com/aperturerobotics/starpc/srpc"
+	"github.com/pkg/errors"
 )
 
 // daemonConnCtxKey keys the accepting connection on each served stream context
@@ -56,11 +56,13 @@ func serveDaemonListener(
 	shutdownCh <-chan struct{},
 	idleTracker *daemonIdleTracker,
 ) error {
+	// Stop accepting when the serving context ends.
 	go func() {
 		<-serveCtx.Done()
 		_ = lis.Close()
 	}()
 
+	// Preserve the shutdown acknowledgement before draining clients.
 	closeClients, err := acceptDaemonListener(serveCtx, lis, srv, idleTracker)
 	serveCanceled := serveCtx.Err() != nil
 	select {
@@ -77,9 +79,11 @@ func serveDaemonListener(
 		}
 	default:
 	}
+
+	// Drain connections and normalize an expected listener shutdown.
 	closeClients()
 	serveCancel()
-	if err != nil && (serveCanceled || errors.Is(err, net.ErrClosed)) {
+	if serveCanceled || errors.Is(err, net.ErrClosed) {
 		return nil
 	}
 	return err
