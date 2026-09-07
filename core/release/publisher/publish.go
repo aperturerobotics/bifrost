@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"maps"
+	"reflect"
 	"slices"
 	"strings"
 
@@ -106,6 +107,18 @@ type packedBlock struct {
 	data []byte
 }
 
+// walkedBlock identifies a decoded subtree within its storage context.
+type walkedBlock struct {
+	// bucketID selects the storage used by child references.
+	bucketID string
+	// transform identifies the decoder configuration applied to stored bytes.
+	transform string
+	// ref identifies the immutable stored block.
+	ref string
+	// blockType distinguishes different reference layouts over the same bytes.
+	blockType reflect.Type
+}
+
 // collectBlocks checks the World, object roots, and manifest filesystem closures.
 // Manifest refs can cross object boundaries and must be walked explicitly.
 func collectBlocks(ctx context.Context, eng world.Engine, metadata *release.ReleaseMetadata) (*bucket.ObjectRef, []packedBlock, error) {
@@ -175,6 +188,7 @@ func collectBlocks(ctx context.Context, eng world.Engine, metadata *release.Rele
 	// their original meaning. Single-worker traversal owns the collected map.
 	var head *bucket.ObjectRef
 	blocks := map[string]struct{}{}
+	walked := map[walkedBlock]struct{}{}
 	var result []packedBlock
 	err = eng.AccessWorldState(ctx, nil, func(cursor *bucket_lookup.Cursor) error {
 		head = cursor.GetRefWithOpArgs()
@@ -193,6 +207,13 @@ func collectBlocks(ctx context.Context, eng world.Engine, metadata *release.Rele
 			if err != nil {
 				return err
 			}
+			transformData, err := walk.GetTransformConf().MarshalVT()
+			if err != nil {
+				walk.Release()
+				return err
+			}
+			transform := string(transformData)
+			bucketID := walk.GetOpArgs().GetBucketId()
 			transformer := walk.GetTransformer()
 			if transformer == nil {
 				transformer = block_transform.NewTransformerWithSteps(nil)
@@ -221,6 +242,14 @@ func collectBlocks(ctx context.Context, eng world.Engine, metadata *release.Rele
 						blocks[key] = struct{}{}
 						result = append(result, content)
 					}
+					// Reused filesystem trees need one complete traversal. Keep the
+					// decoder and storage context in the key so a differently typed
+					// or transformed root still exposes all of its references.
+					visit := walkedBlock{bucketID: bucketID, transform: transform, ref: key, blockType: reflect.TypeOf(entry.Blk)}
+					if _, seen := walked[visit]; seen {
+						return false, nil
+					}
+					walked[visit] = struct{}{}
 					return true, nil
 				}, walk.GetBucket(), transformer, 1, true)
 			walk.Release()
