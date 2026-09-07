@@ -173,7 +173,6 @@ func (x *WatchStateResponse) GetState() EstablishLinkState {
 type SignalRelayMessage struct {
 	unknownFields []byte
 	// Types that are assignable to Body:
-	//
 	//	*SignalRelayMessage_Init
 	//	*SignalRelayMessage_Data
 	Body isSignalRelayMessage_Body `protobuf_oneof:"body"`

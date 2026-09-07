@@ -200,7 +200,6 @@ type CommandBinding struct {
 	// Id is stable within a command's default bindings.
 	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	// Types that are assignable to Binding:
-	//
 	//	*CommandBinding_Combo
 	//	*CommandBinding_Sequence
 	Binding isCommandBinding_Binding `protobuf_oneof:"binding"`

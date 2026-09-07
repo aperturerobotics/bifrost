@@ -169,7 +169,6 @@ type FSCursorClientResponse struct {
 	// Body is the body of the event.
 	//
 	// Types that are assignable to Body:
-	//
 	//	*FSCursorClientResponse_Init
 	//	*FSCursorClientResponse_CursorChange
 	//	*FSCursorClientResponse_UnixfsError
@@ -984,7 +983,6 @@ func (x *OpsReaddirAllRequest) GetSkip() uint64 {
 type OpsReaddirAllResponse struct {
 	unknownFields []byte
 	// Types that are assignable to Body:
-	//
 	//	*OpsReaddirAllResponse_UnixfsError
 	//	*OpsReaddirAllResponse_Done
 	//	*OpsReaddirAllResponse_Dirent

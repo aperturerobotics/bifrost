@@ -19,7 +19,6 @@ type SOSyncMessage struct {
 	// Body is the message body.
 	//
 	// Types that are assignable to Body:
-	//
 	//	*SOSyncMessage_Snapshot
 	//	*SOSyncMessage_Op
 	//	*SOSyncMessage_Ack

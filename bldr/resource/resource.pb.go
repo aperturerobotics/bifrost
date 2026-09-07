@@ -21,7 +21,6 @@ type ResourceClientRequest struct {
 	// Init uses zero; every later control increments the identifier by one.
 	ControlId uint32 `protobuf:"varint,5,opt,name=control_id,json=controlId,proto3" json:"controlId,omitempty"`
 	// Types that are assignable to Body:
-	//
 	//	*ResourceClientRequest_Init
 	//	*ResourceClientRequest_Adopt
 	//	*ResourceClientRequest_Release
@@ -151,7 +150,6 @@ type ResourceClientResponse struct {
 	// Body is the body of the event.
 	//
 	// Types that are assignable to Body:
-	//
 	//	*ResourceClientResponse_Init
 	//	*ResourceClientResponse_ResourceReleased
 	//	*ResourceClientResponse_ControlAck
@@ -293,7 +291,6 @@ type ResourceAttachRequest struct {
 	// Body is the body of the request.
 	//
 	// Types that are assignable to Body:
-	//
 	//	*ResourceAttachRequest_Init
 	//	*ResourceAttachRequest_Add
 	//	*ResourceAttachRequest_Detach
@@ -380,7 +377,6 @@ type ResourceAttachResponse struct {
 	// Body is the body of the response.
 	//
 	// Types that are assignable to Body:
-	//
 	//	*ResourceAttachResponse_Ack
 	//	*ResourceAttachResponse_AddAck
 	//	*ResourceAttachResponse_DetachAck

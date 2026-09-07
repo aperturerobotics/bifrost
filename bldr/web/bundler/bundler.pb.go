@@ -146,10 +146,9 @@ type WebPkgEntrypoint struct {
 	// Path is the subpath export specifier relative to the package root.
 	//
 	// Examples:
-	//
-	//	"."           - the package root (index.ts / index.js)
-	//	"./object"    - a subpath directory or file (object/index.ts or object.ts)
-	//	"./hooks"     - another subpath
+	//   "."           - the package root (index.ts / index.js)
+	//   "./object"    - a subpath directory or file (object/index.ts or object.ts)
+	//   "./hooks"     - another subpath
 	//
 	// Follows Node.js subpath exports conventions.
 	Path string `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`

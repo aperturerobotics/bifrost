@@ -22,7 +22,6 @@ type V86FsMessage struct {
 	// body is the message payload.
 	//
 	// Types that are assignable to Body:
-	//
 	//	*V86FsMessage_MountRequest
 	//	*V86FsMessage_LookupRequest
 	//	*V86FsMessage_GetattrRequest

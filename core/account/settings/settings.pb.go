@@ -182,7 +182,6 @@ func (x *SessionPresentation) GetLocation() string {
 type AccountSettingsOp struct {
 	unknownFields []byte
 	// Types that are assignable to Op:
-	//
 	//	*AccountSettingsOp_UpdateDisplayName
 	//	*AccountSettingsOp_AddPairedDevice
 	//	*AccountSettingsOp_RemovePairedDevice

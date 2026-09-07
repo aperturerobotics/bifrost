@@ -23,8 +23,7 @@ type Config struct {
 	// Url is the HTTP base URL to call the S3 storage service.
 	// E.x: https://myservice.local/block
 	// Calls will then be, for example:
-	//   - GET /block/{block-ref}
-	//
+	//  - GET /block/{block-ref}
 	// Must be set and a valid http or https url.
 	Url string `protobuf:"bytes,2,opt,name=url,proto3" json:"url,omitempty"`
 	// SkipNotFound skips returning a value if the block was not found.

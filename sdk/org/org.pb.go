@@ -315,7 +315,6 @@ type UpdateOrgOp struct {
 	// Body is the mutation to apply.
 	//
 	// Types that are assignable to Body:
-	//
 	//	*UpdateOrgOp_UpdateDisplayName
 	//	*UpdateOrgOp_AddMember
 	//	*UpdateOrgOp_RemoveMember
@@ -705,7 +704,6 @@ type OrgSOOp struct {
 	// Body is the operation to apply.
 	//
 	// Types that are assignable to Body:
-	//
 	//	*OrgSOOp_InitOrg
 	//	*OrgSOOp_UpdateOrg
 	//	*OrgSOOp_DeleteOrg

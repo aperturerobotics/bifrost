@@ -338,7 +338,6 @@ func (x *EntityKeypair) GetAuthParams() []byte {
 type EntityCredential struct {
 	unknownFields []byte
 	// Types that are assignable to Credential:
-	//
 	//	*EntityCredential_Password
 	//	*EntityCredential_PemPrivateKey
 	Credential isEntityCredential_Credential `protobuf_oneof:"credential"`

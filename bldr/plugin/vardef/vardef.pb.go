@@ -44,7 +44,6 @@ type PluginVar struct {
 	// Body contains the variable value depending on the variable type.
 	//
 	// Types that are assignable to Body:
-	//
 	//	*PluginVar_StringValue
 	//	*PluginVar_WebBundlerOutput
 	Body isPluginVar_Body `protobuf_oneof:"body"`

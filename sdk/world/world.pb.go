@@ -483,7 +483,6 @@ func (x *CommitMutationsRequest) GetMutations() []*TransactionMutation {
 type TransactionMutation struct {
 	unknownFields []byte
 	// Types that are assignable to Mutation:
-	//
 	//	*TransactionMutation_CreateObject
 	//	*TransactionMutation_SetObjectRoot
 	//	*TransactionMutation_SetGraphQuad
@@ -582,7 +581,6 @@ func (x *SetObjectRootMutation) GetRootRef() *bucket.ObjectRef {
 type TransactionMutationResult struct {
 	unknownFields []byte
 	// Types that are assignable to Result:
-	//
 	//	*TransactionMutationResult_CreateObject
 	//	*TransactionMutationResult_SetObjectRoot
 	//	*TransactionMutationResult_SetGraphQuad

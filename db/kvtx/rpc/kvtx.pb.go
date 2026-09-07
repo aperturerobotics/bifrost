@@ -59,7 +59,6 @@ type KvtxTransactionRequest struct {
 	// Second message MUST contain Commit or Discard.
 	//
 	// Types that are assignable to Body:
-	//
 	//	*KvtxTransactionRequest_Init
 	//	*KvtxTransactionRequest_Commit
 	//	*KvtxTransactionRequest_Discard
@@ -154,7 +153,6 @@ type KvtxTransactionResponse struct {
 	// Final message MUST contain Complete.
 	//
 	// Types that are assignable to Body:
-	//
 	//	*KvtxTransactionResponse_Ack
 	//	*KvtxTransactionResponse_Complete
 	Body isKvtxTransactionResponse_Body `protobuf_oneof:"body"`
@@ -742,7 +740,6 @@ type KvtxIterateRequest struct {
 	// First message MUST contain Init.
 	//
 	// Types that are assignable to Body:
-	//
 	//	*KvtxIterateRequest_Init
 	//	*KvtxIterateRequest_LookupValue
 	//	*KvtxIterateRequest_Next
@@ -898,7 +895,6 @@ type KvtxIterateResponse struct {
 	// First message MUST contain Ack or IteratorError.
 	//
 	// Types that are assignable to Body:
-	//
 	//	*KvtxIterateResponse_Ack
 	//	*KvtxIterateResponse_ReqError
 	//	*KvtxIterateResponse_Status

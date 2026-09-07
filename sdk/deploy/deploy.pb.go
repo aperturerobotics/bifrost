@@ -19,7 +19,6 @@ import (
 type DeployManifestsMessage struct {
 	unknownFields []byte
 	// Types that are assignable to Body:
-	//
 	//	*DeployManifestsMessage_Request
 	//	*DeployManifestsMessage_BlockRequest
 	//	*DeployManifestsMessage_BlockResponse

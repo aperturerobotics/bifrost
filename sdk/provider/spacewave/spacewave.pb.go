@@ -526,7 +526,6 @@ type CreateAccountRequest struct {
 	// Credential is the authentication credential for key derivation.
 	//
 	// Types that are assignable to Credential:
-	//
 	//	*CreateAccountRequest_Password
 	//	*CreateAccountRequest_Pem
 	//	*CreateAccountRequest_Passkey
@@ -633,7 +632,6 @@ type LoginAccountRequest struct {
 	// Credential is the authentication credential for key derivation.
 	//
 	// Types that are assignable to Credential:
-	//
 	//	*LoginAccountRequest_Password
 	//	*LoginAccountRequest_Pem
 	//	*LoginAccountRequest_Passkey
@@ -716,7 +714,6 @@ type LoginAccountResponse struct {
 	// Result is the login outcome.
 	//
 	// Types that are assignable to Result:
-	//
 	//	*LoginAccountResponse_Session
 	//	*LoginAccountResponse_IsNewAccount
 	//	*LoginAccountResponse_ErrorCode
@@ -1727,7 +1724,6 @@ type StartDesktopPasskeyResponse struct {
 	// Result is the desktop passkey outcome.
 	//
 	// Types that are assignable to Result:
-	//
 	//	*StartDesktopPasskeyResponse_Linked
 	//	*StartDesktopPasskeyResponse_NewAccount
 	Result isStartDesktopPasskeyResponse_Result `protobuf_oneof:"result"`
@@ -2037,7 +2033,6 @@ type RelayDesktopPasskeyRequest struct {
 	// Result is the linked-login or new-account browser result.
 	//
 	// Types that are assignable to Result:
-	//
 	//	*RelayDesktopPasskeyRequest_Linked
 	//	*RelayDesktopPasskeyRequest_NewAccount
 	Result isRelayDesktopPasskeyRequest_Result `protobuf_oneof:"result"`
@@ -2533,7 +2528,6 @@ type StartDesktopSSOResponse struct {
 	// Result is the desktop SSO outcome.
 	//
 	// Types that are assignable to Result:
-	//
 	//	*StartDesktopSSOResponse_Linked
 	//	*StartDesktopSSOResponse_NewAccount
 	Result isStartDesktopSSOResponse_Result `protobuf_oneof:"result"`
@@ -3089,7 +3083,6 @@ type ReauthenticateSessionRequest struct {
 	// Credential is the entity credential for account ownership verification.
 	//
 	// Types that are assignable to Credential:
-	//
 	//	*ReauthenticateSessionRequest_Password
 	//	*ReauthenticateSessionRequest_Pem
 	Credential isReauthenticateSessionRequest_Credential `protobuf_oneof:"credential"`

@@ -214,7 +214,6 @@ func (x *AddTabResponse) GetTabId() string {
 type WatchLayoutModelRequest struct {
 	unknownFields []byte
 	// Types that are assignable to Body:
-	//
 	//	*WatchLayoutModelRequest_SetModel
 	Body isWatchLayoutModelRequest_Body `protobuf_oneof:"body"`
 }
@@ -543,7 +542,6 @@ func (x *TabSetDef) GetChildren() []*TabDef {
 type RowOrTabSetDef struct {
 	unknownFields []byte
 	// Types that are assignable to Node:
-	//
 	//	*RowOrTabSetDef_Row
 	//	*RowOrTabSetDef_TabSet
 	Node isRowOrTabSetDef_Node `protobuf_oneof:"node"`

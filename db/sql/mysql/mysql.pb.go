@@ -327,7 +327,6 @@ type TableColumn struct {
 	// Value contains the SQL value. If no field is set, the column is NULL.
 	//
 	// Types that are assignable to Value:
-	//
 	//	*TableColumn_BoolValue
 	//	*TableColumn_IntValue
 	//	*TableColumn_UintValue

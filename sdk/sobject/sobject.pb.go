@@ -62,7 +62,6 @@ type MountSharedObjectBodyResponse struct {
 	// Result is either the mounted body resource or typed body health.
 	//
 	// Types that are assignable to Result:
-	//
 	//	*MountSharedObjectBodyResponse_ResourceId
 	//	*MountSharedObjectBodyResponse_Health
 	Result isMountSharedObjectBodyResponse_Result `protobuf_oneof:"result"`

@@ -995,7 +995,6 @@ func (x *HandleUploadTreeFileStart) GetMode() uint32 {
 type HandleUploadTreeRequest struct {
 	unknownFields []byte
 	// Types that are assignable to Body:
-	//
 	//	*HandleUploadTreeRequest_Directory
 	//	*HandleUploadTreeRequest_FileStart
 	//	*HandleUploadTreeRequest_Data

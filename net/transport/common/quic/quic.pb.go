@@ -25,6 +25,7 @@ type Opts struct {
 	// If unset or negative, defaults to 100000.
 	MaxIncomingStreams int32 `protobuf:"varint,2,opt,name=max_incoming_streams,json=maxIncomingStreams,proto3" json:"maxIncomingStreams,omitempty"`
 	// DisableKeepAlive disables the keep alive packets.
+	//
 	DisableKeepAlive bool `protobuf:"varint,3,opt,name=disable_keep_alive,json=disableKeepAlive,proto3" json:"disableKeepAlive,omitempty"`
 	// KeepAliveDur is the duration between keep-alive pings.
 	//

@@ -127,7 +127,6 @@ type AuditEventMetadata struct {
 	// Body is the per-action metadata payload.
 	//
 	// Types that are assignable to Body:
-	//
 	//	*AuditEventMetadata_UserCreated
 	//	*AuditEventMetadata_EntityKeypairsChanged
 	//	*AuditEventMetadata_ResourceCreated

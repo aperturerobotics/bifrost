@@ -18,7 +18,6 @@ import (
 type HelperMessage struct {
 	unknownFields []byte
 	// Types that are assignable to Body:
-	//
 	//	*HelperMessage_Progress
 	//	*HelperMessage_Status
 	//	*HelperMessage_Dismiss
@@ -99,7 +98,6 @@ func (*HelperMessage_Error) isHelperMessage_Body() {}
 type HelperEvent struct {
 	unknownFields []byte
 	// Types that are assignable to Body:
-	//
 	//	*HelperEvent_Retry
 	//	*HelperEvent_Cancel
 	//	*HelperEvent_Ready

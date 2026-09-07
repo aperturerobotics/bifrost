@@ -62,7 +62,6 @@ func (x ObjectInfoType) String() string {
 type ObjectInfo struct {
 	unknownFields []byte
 	// Types that are assignable to Info:
-	//
 	//	*ObjectInfo_WorldObjectInfo
 	//	*ObjectInfo_UnixfsObjectInfo
 	Info isObjectInfo_Info `protobuf_oneof:"info"`

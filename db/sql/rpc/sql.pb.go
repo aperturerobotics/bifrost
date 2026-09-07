@@ -21,7 +21,6 @@ type SqlTransactionRequest struct {
 	// Body contains the message body.
 	//
 	// Types that are assignable to Body:
-	//
 	//	*SqlTransactionRequest_Init
 	//	*SqlTransactionRequest_Commit
 	//	*SqlTransactionRequest_Discard
@@ -122,7 +121,6 @@ type SqlTransactionResponse struct {
 	// Body contains the message body.
 	//
 	// Types that are assignable to Body:
-	//
 	//	*SqlTransactionResponse_Ack
 	//	*SqlTransactionResponse_Complete
 	Body isSqlTransactionResponse_Body `protobuf_oneof:"body"`
@@ -313,7 +311,6 @@ type SqlQueryRequest struct {
 	// Body contains the query stream request.
 	//
 	// Types that are assignable to Body:
-	//
 	//	*SqlQueryRequest_Init
 	//	*SqlQueryRequest_Next
 	//	*SqlQueryRequest_Close
@@ -414,7 +411,6 @@ type SqlQueryResponse struct {
 	// Body contains the response body.
 	//
 	// Types that are assignable to Body:
-	//
 	//	*SqlQueryResponse_Ack
 	//	*SqlQueryResponse_Batch
 	//	*SqlQueryResponse_ReqError

@@ -243,7 +243,6 @@ type IceServerConfig struct {
 	// Credential contains the ice server credential, if any.
 	//
 	// Types that are assignable to Credential:
-	//
 	//	*IceServerConfig_Password
 	//	*IceServerConfig_Oauth
 	Credential isIceServerConfig_Credential `protobuf_oneof:"credential"`
@@ -314,7 +313,6 @@ type WebRtcSignal struct {
 	// Body is the body of the message.
 	//
 	// Types that are assignable to Body:
-	//
 	//	*WebRtcSignal_RequestOffer
 	//	*WebRtcSignal_Sdp
 	//	*WebRtcSignal_Ice

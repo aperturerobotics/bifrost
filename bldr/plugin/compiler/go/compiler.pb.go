@@ -203,9 +203,8 @@ type Config struct {
 	HostConfigSet map[string]*proto.ControllerConfig `protobuf:"bytes,3,rep,name=host_config_set,json=hostConfigSet,proto3" json:"hostConfigSet,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// GoPkgs is a list of Go packages to scan for controller factories.
 	// Looks for package-level functions:
-	//   - NewFactory(b bus.Bus) controller.Factory
-	//   - BuildFactories(b bus.Bus) []controller.Factory
-	//
+	//  - NewFactory(b bus.Bus) controller.Factory
+	//  - BuildFactories(b bus.Bus) []controller.Factory
 	// Appended to the list set in the plugin compiler settings. Imported
 	// packages are not scanned for factories unless
 	// EnableImportedFactoryDiscovery is ENABLE.

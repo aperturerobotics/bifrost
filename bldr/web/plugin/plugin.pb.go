@@ -49,7 +49,6 @@ func (x *HandleWebViewViaPluginRequest) GetWebViewIdRe() string {
 type HandleWebViewViaPluginResponse struct {
 	unknownFields []byte
 	// Types that are assignable to Body:
-	//
 	//	*HandleWebViewViaPluginResponse_Ready
 	Body isHandleWebViewViaPluginResponse_Body `protobuf_oneof:"body"`
 }
@@ -141,7 +140,6 @@ func (x *HandleWebPkgViaPluginRequest) GetWebPkgIdList() []string {
 type HandleWebPkgViaPluginResponse struct {
 	unknownFields []byte
 	// Types that are assignable to Body:
-	//
 	//	*HandleWebPkgViaPluginResponse_Ready
 	Body isHandleWebPkgViaPluginResponse_Body `protobuf_oneof:"body"`
 }
@@ -231,7 +229,6 @@ func (x *HandleRpcViaPluginRequest) GetBackoff() *backoff.Backoff {
 type HandleRpcViaPluginResponse struct {
 	unknownFields []byte
 	// Types that are assignable to Body:
-	//
 	//	*HandleRpcViaPluginResponse_Ready
 	Body isHandleRpcViaPluginResponse_Body `protobuf_oneof:"body"`
 }
@@ -291,7 +288,6 @@ func (x *HandleWebViewViaHandlersRequest) GetConfig() *handler.WebViewHandlersCo
 type HandleWebViewViaHandlersResponse struct {
 	unknownFields []byte
 	// Types that are assignable to Body:
-	//
 	//	*HandleWebViewViaHandlersResponse_Ready
 	Body isHandleWebViewViaHandlersResponse_Body `protobuf_oneof:"body"`
 }
@@ -370,7 +366,6 @@ func (x *HandleWebPkgsViaPluginAssetsRequest) GetWebPkgIdList() []string {
 type HandleWebPkgsViaPluginAssetsResponse struct {
 	unknownFields []byte
 	// Types that are assignable to Body:
-	//
 	//	*HandleWebPkgsViaPluginAssetsResponse_Ready
 	Body isHandleWebPkgsViaPluginAssetsResponse_Body `protobuf_oneof:"body"`
 }

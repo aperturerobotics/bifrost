@@ -23,11 +23,10 @@ type Config struct {
 	// E.x: https://myservice.local/block
 	// Expects the block store http server to be served at the URL.
 	// Calls will then be, for example:
-	//   - GET /block/get/{block-ref}
-	//   - GET /block/exists/{block-ref}
-	//   - POST /block/put
-	//   - DELETE /block/rm
-	//
+	//  - GET /block/get/{block-ref}
+	//  - GET /block/exists/{block-ref}
+	//  - POST /block/put
+	//  - DELETE /block/rm
 	// Must be set and a valid http or https url.
 	Url string `protobuf:"bytes,2,opt,name=url,proto3" json:"url,omitempty"`
 	// SkipNotFound skips returning a value if the block was not found.

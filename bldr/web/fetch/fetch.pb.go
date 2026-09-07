@@ -19,7 +19,6 @@ import (
 type FetchRequest struct {
 	unknownFields []byte
 	// Types that are assignable to Body:
-	//
 	//	*FetchRequest_RequestInfo
 	//	*FetchRequest_RequestData
 	Body isFetchRequest_Body `protobuf_oneof:"body"`
@@ -233,7 +232,6 @@ func (x *FetchRequestData) GetDone() bool {
 type FetchResponse struct {
 	unknownFields []byte
 	// Types that are assignable to Body:
-	//
 	//	*FetchResponse_ResponseInfo
 	//	*FetchResponse_ResponseData
 	Body isFetchResponse_Body `protobuf_oneof:"body"`

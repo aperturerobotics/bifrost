@@ -1157,7 +1157,6 @@ type BootValue struct {
 	// Value contains exactly one scalar representation.
 	//
 	// Types that are assignable to Value:
-	//
 	//	*BootValue_StringValue
 	//	*BootValue_SignedValue
 	//	*BootValue_UnsignedValue

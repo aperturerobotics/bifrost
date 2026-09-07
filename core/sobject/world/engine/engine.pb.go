@@ -213,7 +213,6 @@ type SOWorldOp struct {
 	// Body is the body of the operation.
 	//
 	// Types that are assignable to Body:
-	//
 	//	*SOWorldOp_InitWorld
 	//	*SOWorldOp_ApplyTxOp
 	Body isSOWorldOp_Body `protobuf_oneof:"body"`

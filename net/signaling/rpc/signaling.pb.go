@@ -31,7 +31,6 @@ type ListenResponse struct {
 	// Body is the body of the response.
 	//
 	// Types that are assignable to Body:
-	//
 	//	*ListenResponse_SetPeer
 	//	*ListenResponse_ClearPeer
 	Body isListenResponse_Body `protobuf_oneof:"body"`
@@ -94,7 +93,6 @@ type SessionRequest struct {
 	// Body is the body of the request.
 	//
 	// Types that are assignable to Body:
-	//
 	//	*SessionRequest_Init
 	//	*SessionRequest_SendMsg
 	//	*SessionRequest_ClearMsg
@@ -243,7 +241,6 @@ type SessionResponse struct {
 	// Body is the body of the request.
 	//
 	// Types that are assignable to Body:
-	//
 	//	*SessionResponse_Opened
 	//	*SessionResponse_Closed
 	//	*SessionResponse_RecvMsg

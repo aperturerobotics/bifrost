@@ -63,7 +63,6 @@ type WebViewHandlerConfig struct {
 	// Handler configuration.
 	//
 	// Types that are assignable to Handler:
-	//
 	//	*WebViewHandlerConfig_SetRenderMode
 	//	*WebViewHandlerConfig_SetHtmlLinks
 	Handler isWebViewHandlerConfig_Handler `protobuf_oneof:"handler"`

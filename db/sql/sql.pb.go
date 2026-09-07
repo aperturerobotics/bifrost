@@ -18,7 +18,6 @@ import (
 type SqlValue struct {
 	unknownFields []byte
 	// Types that are assignable to Value:
-	//
 	//	*SqlValue_IntValue
 	//	*SqlValue_FloatValue
 	//	*SqlValue_StrValue
