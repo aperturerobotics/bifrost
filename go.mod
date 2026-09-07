@@ -4,7 +4,7 @@ go 1.26.5
 
 tool github.com/s4wave/goscript/cmd/goscript
 
-require github.com/s4wave/goscript v0.2.31-0.20260906123026-2a17599607ba
+require github.com/s4wave/goscript v0.2.31-0.20260907084143-7b3b13b6134b
 
 replace (
 	// aperture: use compatibility forks
@@ -32,7 +32,7 @@ require (
 	github.com/aperturerobotics/bldr-saucer v0.4.4
 	github.com/aperturerobotics/cayley v0.15.1-0.20260824110931-e6b102492e31 // master
 	github.com/aperturerobotics/cli v1.1.0 // v1.1.0
-	github.com/aperturerobotics/common v0.35.3 // master
+	github.com/aperturerobotics/common v0.35.4-0.20260906182458-54b1eaa50d06 // master
 	github.com/aperturerobotics/controllerbus v0.53.5-0.20260824183849-02413eacc3de // master
 	github.com/aperturerobotics/cpp-yamux v0.0.0-20260223122921-58339cfd0e5d
 	github.com/aperturerobotics/esbuild v0.24.1-0.20260219011422-6d4b923e2023 // https://github.com/evanw/esbuild/pull/3413 [rejected]
