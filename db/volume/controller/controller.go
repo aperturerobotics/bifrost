@@ -19,6 +19,7 @@ import (
 	volume "github.com/s4wave/spacewave/db/volume"
 	peer_controller "github.com/s4wave/spacewave/net/peer/controller"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/sync/errgroup"
 )
 
 // maxConstructionAttempts caps consecutive failed volume constructions before
@@ -151,11 +152,19 @@ func (c *Controller) Execute(ctx context.Context) error {
 		default:
 		}
 	}
-	go func() {
-		if err := v.Execute(volCtx); err != nil {
+	// Join volume execution and GC before closing their shared storage.
+	var routines errgroup.Group
+	defer func() {
+		volCtxCancel()
+		_ = routines.Wait()
+	}()
+	executeVolume := v.Execute
+	routines.Go(func() error {
+		if err := executeVolume(volCtx); err != nil {
 			pushErr(err)
 		}
-	}()
+		return nil
+	})
 
 	// Wrap the volume with the configured block-store overlay.
 	if blockStoreID := c.config.GetBlockStoreId(); blockStoreID != "" {
@@ -223,12 +232,13 @@ func (c *Controller) Execute(ctx context.Context) error {
 	publishTask.End()
 	c.bucketHandles.SetContext(ctx, true)
 
-	// Start GC sweep goroutine.
-	go func() {
+	// Run GC within the same joined volume lifetime.
+	routines.Go(func() error {
 		if err := c.runGCSweep(volCtx); err != nil {
 			pushErr(err)
 		}
-	}()
+		return nil
+	})
 
 	// Start garbage collection and wait for shutdown or execution failure.
 	select {
