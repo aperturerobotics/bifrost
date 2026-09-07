@@ -34,7 +34,7 @@ type ChatChannel struct {
 	// CreatorPeerId is the peer identity that created the channel.
 	CreatorPeerId string `protobuf:"bytes,6,opt,name=creator_peer_id,json=creatorPeerId,proto3" json:"creatorPeerId,omitempty"`
 	// EncryptionAlgorithm is the immutable creation-time policy. Empty allows plaintext;
-	// otherwise sends require ciphertext using this algorithm.
+	// otherwise message bodies require this algorithm; typed annotations remain public.
 	EncryptionAlgorithm string `protobuf:"bytes,7,opt,name=encryption_algorithm,json=encryptionAlgorithm,proto3" json:"encryptionAlgorithm,omitempty"`
 }
 
@@ -220,7 +220,7 @@ type CreateChatChannelOp struct {
 	// Timestamp is the creation timestamp.
 	Timestamp *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 	// EncryptionAlgorithm is the immutable creation-time policy. Empty allows plaintext;
-	// otherwise sends require ciphertext using this algorithm.
+	// otherwise message bodies require this algorithm; typed annotations remain public.
 	EncryptionAlgorithm string `protobuf:"bytes,5,opt,name=encryption_algorithm,json=encryptionAlgorithm,proto3" json:"encryptionAlgorithm,omitempty"`
 }
 

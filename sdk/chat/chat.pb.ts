@@ -58,7 +58,7 @@ export interface ChatChannel {
   creatorPeerId?: string
   /**
    * EncryptionAlgorithm is the immutable creation-time policy. Empty allows plaintext;
-   * otherwise sends require ciphertext using this algorithm.
+   * otherwise message bodies require this algorithm; typed annotations remain public.
    *
    * @generated from field: string encryption_algorithm = 7;
    */
@@ -246,7 +246,7 @@ export interface CreateChatChannelOp {
   timestamp?: Date
   /**
    * EncryptionAlgorithm is the immutable creation-time policy. Empty allows plaintext;
-   * otherwise sends require ciphertext using this algorithm.
+   * otherwise message bodies require this algorithm; typed annotations remain public.
    *
    * @generated from field: string encryption_algorithm = 5;
    */
