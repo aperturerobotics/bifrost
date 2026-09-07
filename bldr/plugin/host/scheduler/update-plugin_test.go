@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/aperturerobotics/starpc/srpc"
+	manifest "github.com/s4wave/spacewave/bldr/manifest"
 	plugin "github.com/s4wave/spacewave/bldr/plugin"
 	"github.com/sirupsen/logrus"
 )
@@ -71,5 +72,31 @@ func TestGuardedPluginReplacement(t *testing.T) {
 				t.Fatal("incorrect generation after guard returned")
 			}
 		})
+	}
+}
+
+// TestPluginCopyGapKeepsNewerGeneration prevents an older durable fallback from
+// replacing a newer embedded generation while the remote copy is pending.
+func TestPluginCopyGapKeepsNewerGeneration(t *testing.T) {
+	c := &Controller{conf: &Config{}, le: logrus.NewEntry(logrus.New())}
+	_, instance := c.newPluginInstance("app")
+	current := &executePluginArgs{manifestSnapshot: &manifest.ManifestSnapshot{
+		ManifestRef: newTestManifestRef("app", "desktop/linux/amd64", 12, "embedded").GetManifestRef(),
+		Manifest:    &manifest.Manifest{Meta: manifest.NewManifestMeta("app", manifest.BuildType_RELEASE, "desktop/linux/amd64", 12)},
+	}}
+	older := &executePluginArgs{manifestSnapshot: &manifest.ManifestSnapshot{
+		ManifestRef: newTestManifestRef("app", "desktop/linux/amd64", 10, "local").GetManifestRef(),
+		Manifest:    &manifest.Manifest{Meta: manifest.NewManifestMeta("app", manifest.BuildType_RELEASE, "desktop/linux/amd64", 10)},
+	}}
+	instance.setExecutePluginState(current)
+	if instance.setExecutePluginState(older) || instance.executePluginRoutine.GetState() != current {
+		t.Fatal("copy gap replaced the newer running generation")
+	}
+	newer := &executePluginArgs{manifestSnapshot: &manifest.ManifestSnapshot{
+		ManifestRef: newTestManifestRef("app", "desktop/linux/amd64", 13, "local").GetManifestRef(),
+		Manifest:    &manifest.Manifest{Meta: manifest.NewManifestMeta("app", manifest.BuildType_RELEASE, "desktop/linux/amd64", 13)},
+	}}
+	if !instance.setExecutePluginState(newer) || instance.executePluginRoutine.GetState() != newer {
+		t.Fatal("ready newer generation did not replace the current plugin")
 	}
 }

@@ -14,6 +14,20 @@ func (t *pluginInstance) setExecutePluginState(args *executePluginArgs) bool {
 	defer t.pluginUpdateMtx.Unlock()
 
 	current := t.executePluginRoutine.GetState()
+	if current != nil && args != nil {
+		currentMeta := current.manifestSnapshot.GetManifest().GetMeta()
+		nextMeta := args.manifestSnapshot.GetManifest().GetMeta()
+		if currentMeta != nil && nextMeta != nil &&
+			currentMeta.GetManifestId() == nextMeta.GetManifestId() &&
+			currentMeta.GetBuildType() == nextMeta.GetBuildType() &&
+			currentMeta.GetPlatformId() == nextMeta.GetPlatformId() &&
+			currentMeta.GetRev() > nextMeta.GetRev() {
+			// A remote copy can temporarily leave only an older local fallback.
+			// Retain the admitted generation until its replacement is ready.
+			return false
+		}
+	}
+
 	if args == nil || current == nil || executePluginArgsEqual(current, args) ||
 		!slices.Contains(t.c.conf.GetUpdateGuardPluginIds(), t.pluginID) {
 		if t.updatePluginRoutine != nil {
