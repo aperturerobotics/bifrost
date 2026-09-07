@@ -11,6 +11,7 @@ import (
 	"github.com/s4wave/spacewave/db/opfs/jsutil"
 )
 
+// readSnapshotDriver owns reads and release for one runtime snapshot.
 type readSnapshotDriver interface {
 	readSnapshotAt(snapshot *ReadSnapshot, p []byte, off int64) (int, error)
 	closeReadSnapshot(snapshot *ReadSnapshot) error
@@ -18,16 +19,22 @@ type readSnapshotDriver interface {
 
 // ReadSnapshot retains one immutable OPFS File and its resolved size.
 type ReadSnapshot struct {
-	// driver and runtime references select the direct, TinyGo, or remote path.
-	driver   readSnapshotDriver
-	name     string
-	handle   js.Value
+	// driver selects the direct, TinyGo, or remote operations.
+	driver readSnapshotDriver
+	// name identifies the source file in read errors.
+	name string
+	// handle retains the immutable File in the direct browser path.
+	handle js.Value
+	// tinyGoID identifies the retained File in the TinyGo reference table.
 	tinyGoID int
-	size     int64
+	// size is the immutable byte length recorded at open.
+	size int64
 
-	// mu serializes reads with exactly-once release.
-	mu       sync.Mutex
-	closed   bool
+	// mtx serializes reads with exactly-once release.
+	mtx sync.Mutex
+	// closed prevents reads after release and is guarded by mtx.
+	closed bool
+	// closeErr retains the release result and is guarded by mtx.
 	closeErr error
 }
 
@@ -63,8 +70,8 @@ func (d BrowserDriver) OpenReadSnapshot(dir js.Value, name string) (*ReadSnapsho
 // ReadAt reads immutable bytes starting at off.
 func (s *ReadSnapshot) ReadAt(p []byte, off int64) (int, error) {
 	// Serialize reads with release so the driver reference stays live.
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.mtx.Lock()
+	defer s.mtx.Unlock()
 	if s.closed {
 		return 0, errors.New("opfs read snapshot is closed")
 	}
@@ -95,6 +102,7 @@ func (s *ReadSnapshot) ReadAt(p []byte, off int64) (int, error) {
 	return n, nil
 }
 
+// classifyReadSnapshotError maps a reclaimed snapshot to a retryable missing file.
 func classifyReadSnapshotError(err error) error {
 	// Treat a reclaimed immutable File as missing so manifest refresh can retry.
 	var jsErr *JSError
@@ -104,14 +112,20 @@ func classifyReadSnapshotError(err error) error {
 	return err
 }
 
+// readSnapshotAt copies an in-bounds immutable range into p.
 func (BrowserDriver) readSnapshotAt(snapshot *ReadSnapshot, p []byte, off int64) (int, error) {
 	// Route TinyGo reads through the retained JavaScript reference table.
 	if jsutil.UseTinyGoHelpers() {
 		return snapshot.readAtWithTinyGoImport(p, off)
 	}
 
-	// Slice the retained File without resolving its directory entry again.
-	blob := jsutil.Call(snapshot.handle, "slice", off, off+int64(len(p)))
+	// Reuse the retained File for whole reads; slice only a partial range.
+	blob := snapshot.handle
+	if off != 0 || int64(len(p)) != snapshot.size {
+		blob = jsutil.Call(blob, "slice", off, off+int64(len(p)))
+	}
+
+	// Copy the selected immutable bytes into the caller's buffer.
 	buffer, err := AwaitPromise(jsutil.Call(blob, "arrayBuffer"))
 	if err != nil {
 		return 0, errors.Wrap(err, "arrayBuffer")
@@ -130,8 +144,8 @@ func (s *ReadSnapshot) Size() (int64, error) {
 // Close releases the retained File or runtime token exactly once.
 func (s *ReadSnapshot) Close() error {
 	// Mark release before calling the driver so failures cannot double-release.
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.mtx.Lock()
+	defer s.mtx.Unlock()
 	if s.closed {
 		return s.closeErr
 	}
@@ -140,6 +154,7 @@ func (s *ReadSnapshot) Close() error {
 	return s.closeErr
 }
 
+// closeReadSnapshot releases the retained runtime reference.
 func (BrowserDriver) closeReadSnapshot(snapshot *ReadSnapshot) error {
 	// Release TinyGo's explicit retained reference when present.
 	if jsutil.UseTinyGoHelpers() {
