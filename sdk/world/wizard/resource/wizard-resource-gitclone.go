@@ -1,6 +1,6 @@
 //go:build !tinygo
 
-package s4wave_wizard
+package wizard_resource
 
 import (
 	"context"
@@ -12,6 +12,7 @@ import (
 	git_world "github.com/s4wave/spacewave/db/git/world"
 	"github.com/s4wave/spacewave/db/world"
 	"github.com/s4wave/spacewave/net/util/confparse"
+	wizard "github.com/s4wave/spacewave/sdk/world/wizard"
 )
 
 // errGitCloneRequired reports a clone config that did not request a clone.
@@ -24,15 +25,15 @@ func (r *WizardResource) failGitClone(objectKey, message string, err error) {
 	if err != nil {
 		errMsg = err.Error()
 	}
-	r.setGitCloneProgress(&GitCloneProgress{
-		State:     GitCloneProgressState_GIT_CLONE_PROGRESS_STATE_FAILED,
+	r.setGitCloneProgress(&wizard.GitCloneProgress{
+		State:     wizard.GitCloneProgressState_GIT_CLONE_PROGRESS_STATE_FAILED,
 		Message:   message,
 		Error:     errMsg,
 		ObjectKey: objectKey,
 	})
 }
 
-func (r *WizardResource) runGitClone(ctx context.Context, req *StartGitCloneRequest) {
+func (r *WizardResource) runGitClone(ctx context.Context, req *wizard.StartGitCloneRequest) {
 	op := &s4wave_git.CreateGitRepoWizardOp{}
 	if err := op.UnmarshalVT(req.GetConfigData()); err != nil {
 		r.failGitClone(req.GetObjectKey(), "Clone configuration is invalid.", err)
@@ -97,8 +98,8 @@ func (r *WizardResource) runGitClone(ctx context.Context, req *StartGitCloneRequ
 		return
 	}
 
-	r.setGitCloneProgress(&GitCloneProgress{
-		State:     GitCloneProgressState_GIT_CLONE_PROGRESS_STATE_DONE,
+	r.setGitCloneProgress(&wizard.GitCloneProgress{
+		State:     wizard.GitCloneProgressState_GIT_CLONE_PROGRESS_STATE_DONE,
 		Message:   "Repository cloned.",
 		ObjectKey: req.GetObjectKey(),
 	})
@@ -112,8 +113,8 @@ type gitCloneProgressWriter struct {
 func (w *gitCloneProgressWriter) Write(p []byte) (int, error) {
 	message := strings.TrimSpace(string(p))
 	if message != "" {
-		w.resource.setGitCloneProgress(&GitCloneProgress{
-			State:     GitCloneProgressState_GIT_CLONE_PROGRESS_STATE_RUNNING,
+		w.resource.setGitCloneProgress(&wizard.GitCloneProgress{
+			State:     wizard.GitCloneProgressState_GIT_CLONE_PROGRESS_STATE_RUNNING,
 			Message:   message,
 			ObjectKey: w.objectKey,
 		})

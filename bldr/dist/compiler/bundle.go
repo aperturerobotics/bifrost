@@ -92,6 +92,7 @@ func BuildDistBundle(
 	embedNativeVolumeOpt enabled.Enabled,
 	browserIceServers []*IceServer,
 	browserIceServersEndpoint string,
+	goScriptDeferredFunctions []string,
 ) error {
 	// Resolve target-specific compilation and packaging policy.
 	isRelease := buildType.IsRelease()
@@ -474,6 +475,7 @@ func BuildDistBundle(
 				Env:                       goScriptEnv,
 				OverrideDirs:              goScriptOverrideDirs,
 				BindingRoots:              goScriptBindingRoots,
+				DeferredFunctions:         goScriptDeferredFunctions,
 				AllDependencies:           true,
 				ProtobufTypeScriptBinding: true,
 			}); err != nil {

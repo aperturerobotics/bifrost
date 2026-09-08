@@ -269,6 +269,7 @@ func (m *ModuleCompiler) CompilePluginGoScript(
 	cacheRoot string,
 	buildFlags []string,
 	overrideDirs []string,
+	deferredFunctions []string,
 ) (string, error) {
 	mainPackagePath, err := gocompiler.GoListImportPath(ctx, m.pluginCodegenPath, buildFlags, "GOOS=js", "GOARCH=wasm")
 	if err != nil {
@@ -286,6 +287,7 @@ func (m *ModuleCompiler) CompilePluginGoScript(
 		BuildFlags:                buildFlags,
 		OverrideDirs:              overrideDirs,
 		BindingRoots:              bindingRoots,
+		DeferredFunctions:         deferredFunctions,
 		AllDependencies:           true,
 		ProtobufTypeScriptBinding: true,
 	}); err != nil {

@@ -1029,6 +1029,7 @@ func (c *Controller) BuildPlugin(
 				goScriptCacheRoot,
 				goScriptBuildFlags,
 				goScriptOverrideDirs,
+				conf.GetGoscriptDeferredFunctions(),
 			)
 			if err != nil {
 				return err

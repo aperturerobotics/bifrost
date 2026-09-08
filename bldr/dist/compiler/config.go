@@ -137,6 +137,7 @@ func (c *Config) Merge(o *Config) {
 
 	// Merge plugin and CLI imports without duplicate startup work.
 	merge.MergeAndSortSlices(&c.LoadPlugins, o.GetLoadPlugins())
+	merge.MergeAndSortSlices(&c.GoscriptDeferredFunctions, o.GetGoscriptDeferredFunctions())
 	merge.MergeAndSortSlices(&c.CliPkgs, o.GetCliPkgs())
 
 	// Merge controller configuration through its existing override rules.
@@ -169,6 +170,8 @@ func (c *Config) Normalize() {
 	// Canonicalize plugin and command imports independently of input order.
 	slices.Sort(c.LoadPlugins)
 	c.LoadPlugins = slices.Compact(c.LoadPlugins)
+	slices.Sort(c.GoscriptDeferredFunctions)
+	c.GoscriptDeferredFunctions = slices.Compact(c.GoscriptDeferredFunctions)
 	slices.Sort(c.CliPkgs)
 	c.CliPkgs = slices.Compact(c.CliPkgs)
 }

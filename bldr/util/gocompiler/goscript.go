@@ -23,15 +23,27 @@ func GoScriptStartupCacheEnvKeys() []string {
 
 // GoScriptCompileOptions configures one goscript compile invocation.
 type GoScriptCompileOptions struct {
-	WorkDir                   string
-	OutputPath                string
-	CacheRoot                 string
-	Packages                  []string
-	BuildFlags                []string
-	Env                       []string
-	OverrideDirs              []string
-	BindingRoots              []string
-	AllDependencies           bool
+	// WorkDir is the module directory used for package loading.
+	WorkDir string
+	// OutputPath receives the generated TypeScript package tree.
+	OutputPath string
+	// CacheRoot selects the optional compiler cache directory.
+	CacheRoot string
+	// Packages names the package patterns to compile.
+	Packages []string
+	// BuildFlags selects Go package build constraints.
+	BuildFlags []string
+	// Env supplies environment overrides for package loading.
+	Env []string
+	// OverrideDirs supplies GoScript source override directories.
+	OverrideDirs []string
+	// BindingRoots supplies dependency roots containing TypeScript bindings.
+	BindingRoots []string
+	// DeferredFunctions names exported function boundaries loaded on first invocation.
+	DeferredFunctions []string
+	// AllDependencies includes the packages reachable from Packages.
+	AllDependencies bool
+	// ProtobufTypeScriptBinding uses generated TypeScript protobuf bindings.
 	ProtobufTypeScriptBinding bool
 }
 
@@ -203,6 +215,7 @@ func ExecGoScriptCompile(ctx context.Context, le *logrus.Entry, opts GoScriptCom
 
 	conf := &goscript_compiler.Config{
 		Dir:                       opts.WorkDir,
+		DeferredFunctions:         slices.Clone(opts.DeferredFunctions),
 		OutputPath:                opts.OutputPath,
 		AllDependencies:           opts.AllDependencies,
 		ProtobufTypeScriptBinding: opts.ProtobufTypeScriptBinding,

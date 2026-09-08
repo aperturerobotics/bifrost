@@ -93,3 +93,14 @@ func TestQuickstartRuntimeTraceDefaultsOffForChromium(t *testing.T) {
 		t.Fatalf("trace path exists or stat failed: %v", err)
 	}
 }
+
+func TestIsBrowserAbortedRequest(t *testing.T) {
+	for _, failure := range []string{"net::ERR_ABORTED", "cancelled"} {
+		if !isBrowserAbortedRequest(failure) {
+			t.Errorf("expected browser cancellation: %s", failure)
+		}
+	}
+	if isBrowserAbortedRequest("net::ERR_CONNECTION_REFUSED") {
+		t.Fatal("connection failure treated as cancellation")
+	}
+}

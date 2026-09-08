@@ -50,7 +50,7 @@ require (
 	github.com/aperturerobotics/json-iterator-lite v1.1.0 // latest
 	github.com/aperturerobotics/protobuf-go-lite v0.18.1-0.20260826222423-298dca0e6eaf // master
 	github.com/aperturerobotics/starpc v0.52.1
-	github.com/aperturerobotics/util v1.34.10-0.20260802062101-496aab6cefd2 // master
+	github.com/aperturerobotics/util v1.34.10-0.20260908041655-efde2b8a2bf7 // master
 	github.com/cloudflare/circl v1.6.5
 	github.com/creack/pty v1.1.24
 	github.com/dgraph-io/badger/v4 v4.9.6
@@ -61,7 +61,7 @@ require (
 	github.com/fatih/color v1.19.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-git/go-billy/v6 v6.0.0-alpha.2.0.20260818093742-7bd059496705 // main
-	github.com/go-git/go-git/v6 v6.0.0-alpha.5.0.20260903224701-e9e5820fe0d2 // main
+	github.com/go-git/go-git/v6 v6.0.0-alpha.5.0.20260907191556-57ed51864460 // main
 	github.com/go-sql-driver/mysql v1.10.1
 	github.com/goccy/go-json v0.10.6
 	github.com/gomodule/redigo v2.0.0+incompatible
@@ -85,7 +85,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/quic-go/quic-go v0.62.0
 	github.com/restic/chunker v0.5.0
-	github.com/s4wave/goscript v0.2.32-0.20260907174119-688ee01d1835
+	github.com/s4wave/goscript v0.2.32-0.20260908014732-84ecbeea3844
 	github.com/sasha-s/go-deadlock v0.3.9
 	github.com/satori/go.uuid v1.2.0
 	github.com/sergi/go-diff v1.4.0

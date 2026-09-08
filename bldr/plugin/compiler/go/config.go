@@ -141,6 +141,7 @@ func (c *Config) Merge(o *Config) {
 
 	// append and sort go packages list
 	merge.MergeAndSortSlices(&c.GoPkgs, o.GetGoPkgs())
+	merge.MergeAndSortSlices(&c.GoscriptDeferredFunctions, o.GetGoscriptDeferredFunctions())
 
 	// append and sort web packages list
 	for _, webPkgConfig := range o.GetWebPkgs() {

@@ -329,6 +329,7 @@ func (c *Controller) BuildManifest(
 		conf.GetEmbedNativeVolume(),
 		conf.GetBrowserIceServers(),
 		conf.GetBrowserIceServersEndpoint(),
+		conf.GetGoscriptDeferredFunctions(),
 	)
 	if err != nil {
 		return nil, err

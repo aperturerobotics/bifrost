@@ -119,6 +119,11 @@ def spacewave_core_config(
         }
     return {
         "goPkgs": core_go_pkgs(),
+        "goscriptDeferredFunctions": [
+            "github.com/s4wave/spacewave/core/git.LookupCreateGitRepoWizardOp",
+            "github.com/s4wave/spacewave/core/cdn/v86copy.CopyV86ImageFromCdnWithProgress",
+            "github.com/s4wave/spacewave/sdk/world/wizard/resource.LookupWizardObjectType",
+        ],
         "configSet": core_config_set(cloud_api_endpoint=cloud_api_endpoint),
         "buildTypes": {
             "dev": {
@@ -556,6 +561,10 @@ def dist_release_config(embed_manifests, load_plugins, entrypoint_role="desktop"
     )
     if go_compiler:
         conf["goCompiler"] = go_compiler
+    if entrypoint_role == "browser":
+        conf["goscriptDeferredFunctions"] = [
+            "github.com/s4wave/spacewave/core/cdn/v86copy.CopyV86ImageFromCdnWithProgress",
+        ]
     return conf
 
 manifest("spacewave-dist",

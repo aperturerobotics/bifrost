@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	"github.com/s4wave/spacewave/core/git/opids"
 	git_world "github.com/s4wave/spacewave/db/git/world"
 	unixfs_world "github.com/s4wave/spacewave/db/unixfs/world"
 	"github.com/s4wave/spacewave/db/world"
@@ -12,7 +13,7 @@ import (
 )
 
 // CreateGitRepoWizardOpId is the operation id for CreateGitRepoWizardOp.
-var CreateGitRepoWizardOpId = "spacewave/git/repo/create"
+var CreateGitRepoWizardOpId = opids.CreateRepoWizard
 
 // GetOperationTypeId returns the operation type identifier.
 func (o *CreateGitRepoWizardOp) GetOperationTypeId() string {

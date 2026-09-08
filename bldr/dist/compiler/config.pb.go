@@ -158,6 +158,9 @@ type Config struct {
 	// UpdateGuardPluginIds require the running plugin's UpdateGuard service to
 	// authorize hot replacement. Initial startup does not require approval.
 	UpdateGuardPluginIds []string `protobuf:"bytes,15,rep,name=update_guard_plugin_ids,json=updateGuardPluginIds,proto3" json:"updateGuardPluginIds,omitempty"`
+	// GoscriptDeferredFunctions lists exported package/path.Function boundaries
+	// whose modules initialize on first invocation in a GoScript dist build.
+	GoscriptDeferredFunctions []string `protobuf:"bytes,16,rep,name=goscript_deferred_functions,json=goscriptDeferredFunctions,proto3" json:"goscriptDeferredFunctions,omitempty"`
 }
 
 func (x *Config) Reset() {
@@ -271,6 +274,13 @@ func (x *Config) GetUpdateGuardPluginIds() []string {
 	return nil
 }
 
+func (x *Config) GetGoscriptDeferredFunctions() []string {
+	if x != nil {
+		return x.GoscriptDeferredFunctions
+	}
+	return nil
+}
+
 // PreBuildHookResult is the output of a pre-build hook.
 type PreBuildHookResult struct {
 	unknownFields []byte
@@ -373,6 +383,7 @@ func (m *Config) CloneVT() *Config {
 	r.CliPkgs = protobuf_go_lite.CloneSlice(m.CliPkgs)
 	r.BrowserIceServers = protobuf_go_lite.CloneVTSlice(m.BrowserIceServers)
 	r.UpdateGuardPluginIds = protobuf_go_lite.CloneSlice(m.UpdateGuardPluginIds)
+	r.GoscriptDeferredFunctions = protobuf_go_lite.CloneSlice(m.GoscriptDeferredFunctions)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -497,6 +508,9 @@ func (this *Config) EqualVT(that *Config) bool {
 		return false
 	}
 	if !protobuf_go_lite.EqualSlice(this.UpdateGuardPluginIds, that.UpdateGuardPluginIds) {
+		return false
+	}
+	if !protobuf_go_lite.EqualSlice(this.GoscriptDeferredFunctions, that.GoscriptDeferredFunctions) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -798,6 +812,11 @@ func (x *Config) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("updateGuardPluginIds")
 		s.WriteStringArray(x.UpdateGuardPluginIds)
 	}
+	if len(x.GoscriptDeferredFunctions) > 0 || s.HasField("goscriptDeferredFunctions") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("goscriptDeferredFunctions")
+		s.WriteStringArray(x.GoscriptDeferredFunctions)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -911,6 +930,13 @@ func (x *Config) UnmarshalProtoJSON(s *json.UnmarshalState) {
 				return
 			}
 			x.UpdateGuardPluginIds = s.ReadStringArray()
+		case "goscript_deferred_functions", "goscriptDeferredFunctions":
+			s.AddField("goscript_deferred_functions")
+			if s.ReadNil() {
+				x.GoscriptDeferredFunctions = nil
+				return
+			}
+			x.GoscriptDeferredFunctions = s.ReadStringArray()
 		}
 	})
 }
@@ -1085,6 +1111,15 @@ func (m *Config) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	_ = l
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.GoscriptDeferredFunctions) > 0 {
+		for iNdEx := len(m.GoscriptDeferredFunctions) - 1; iNdEx >= 0; iNdEx-- {
+			i = protobuf_go_lite.EncodeString(dAtA, i, m.GoscriptDeferredFunctions[iNdEx])
+			i--
+			dAtA[i] = 0x1
+			i--
+			dAtA[i] = 0x82
+		}
 	}
 	if len(m.UpdateGuardPluginIds) > 0 {
 		for iNdEx := len(m.UpdateGuardPluginIds) - 1; iNdEx >= 0; iNdEx-- {
@@ -1302,6 +1337,7 @@ func (m *Config) SizeVT() (n int) {
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.BrowserIceServersEndpoint)
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.EmbedNativeVolume)
 	n += protobuf_go_lite.SizeStringSlice(1, m.UpdateGuardPluginIds)
+	n += protobuf_go_lite.SizeStringSlice(2, m.GoscriptDeferredFunctions)
 	n += len(m.unknownFields)
 	return n
 }
@@ -1479,6 +1515,14 @@ func (x *Config) MarshalProtoText() string {
 	if len(x.UpdateGuardPluginIds) > 0 {
 		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "update_guard_plugin_ids")
 		for i, v := range x.UpdateGuardPluginIds {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			protobuf_go_lite.TextWriteString(&sb, v)
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	if len(x.GoscriptDeferredFunctions) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "goscript_deferred_functions")
+		for i, v := range x.GoscriptDeferredFunctions {
 			protobuf_go_lite.TextWriteListSeparator(&sb, i)
 			protobuf_go_lite.TextWriteString(&sb, v)
 		}
@@ -1858,6 +1902,16 @@ func (m *Config) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.UpdateGuardPluginIds = append(m.UpdateGuardPluginIds, v)
+		case 16:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field GoscriptDeferredFunctions", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.GoscriptDeferredFunctions = append(m.GoscriptDeferredFunctions, v)
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

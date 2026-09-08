@@ -733,7 +733,7 @@ func applyChangeLogEntry(
 				return nil
 			}
 		}
-		state.Ops = append(state.Ops, op)
+		state.Ops = sobject.FilterResolvedOperations(append(state.Ops, op), state.GetRoot().GetAccountNonces(), nil, state.GetOpRejections())
 		return nil
 
 	case "root":
