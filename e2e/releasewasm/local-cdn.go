@@ -23,8 +23,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// prepareLocalCDN builds incrementally with release selection and unminified
-// JavaScript, then exports a complete localhost CDN before browser navigation.
+// prepareLocalCDN builds minified release artifacts incrementally and exports
+// a complete localhost CDN before browser navigation.
 func prepareLocalCDN(ctx context.Context, le *logrus.Entry, repoRoot, baseURL string) (releaseWasmDistDirs, error) {
 	// Keep build state separate from release artifacts and shared development data.
 	stateDir := filepath.Join(repoRoot, localCDNState)
@@ -45,9 +45,11 @@ func prepareLocalCDN(ctx context.Context, le *logrus.Entry, repoRoot, baseURL st
 	}
 
 	// Bldr owns source invalidation and rebuilds only changed manifests.
-	le.Info("building local CDN startup artifacts without JavaScript minification")
-	args := []string{"run", "bldr", "--", "--config=" + configPath, "--state-path=" + localCDNState,
-		"--build-type=release", "--js-minification=disable", "--minify-entrypoint=false"}
+	le.Info("building local CDN startup artifacts with release JavaScript minification")
+	args := []string{
+		"run", "bldr", "--", "--config=" + configPath, "--state-path=" + localCDNState,
+		"--build-type=release", "--js-minification=enable", "--minify-entrypoint=true",
+	}
 	if err := runBun(ctx, repoRoot, append(args, "build", "-b", "local-startup-plugins,local-startup-web,release-web")...); err != nil {
 		return releaseWasmDistDirs{}, errors.Wrap(err, "build local CDN startup")
 	}
@@ -77,7 +79,7 @@ func prepareLocalCDN(ctx context.Context, le *logrus.Entry, repoRoot, baseURL st
 
 	// Use the same landing page and hydration composition as browser releases.
 	for _, config := range []string{"app/prerender/vite.hydrate.config.ts", "app/prerender/vite.ssr.config.ts"} {
-		if err := runBun(ctx, repoRoot, "run", "vite", "build", "--minify=false", "--config", config); err != nil {
+		if err := runBun(ctx, repoRoot, "run", "vite", "build", "--config", config); err != nil {
 			return releaseWasmDistDirs{}, err
 		}
 	}
