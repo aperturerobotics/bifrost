@@ -3,7 +3,6 @@ package link_solicit
 import (
 	"context"
 	"strconv"
-	"time"
 
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/directive"
@@ -11,9 +10,6 @@ import (
 	"github.com/s4wave/spacewave/net/peer"
 	"github.com/s4wave/spacewave/net/protocol"
 )
-
-// holdOpenDur is the default hold open duration for SolicitProtocol.
-var holdOpenDur = time.Second * 10
 
 // SolicitProtocol is a directive to solicit a protocol with peers.
 //
@@ -98,9 +94,7 @@ func (d *solicitProtocol) Validate() error {
 
 // GetValueOptions returns options relating to value handling.
 func (d *solicitProtocol) GetValueOptions() directive.ValueOptions {
-	return directive.ValueOptions{
-		UnrefDisposeDur: holdOpenDur,
-	}
+	return directive.ValueOptions{}
 }
 
 // IsEquivalent checks if the other directive is equivalent.

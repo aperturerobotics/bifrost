@@ -57,6 +57,36 @@ export const SolicitProtocolRequest: MessageType<SolicitProtocolRequest> =
   })
 
 /**
+ * SolicitationOffer binds a stable protocol hash to one directive incarnation.
+ *
+ * @generated from message link.solicit.SolicitationOffer
+ */
+export interface SolicitationOffer {
+  /**
+   * ProtocolHash identifies the solicited protocol and context for this link.
+   *
+   * @generated from field: bytes protocol_hash = 1;
+   */
+  protocolHash?: Uint8Array
+  /**
+   * Incarnation identifies the continuous lifetime of one solicitation offer.
+   *
+   * @generated from field: bytes incarnation = 2;
+   */
+  incarnation?: Uint8Array
+}
+
+export const SolicitationOffer: MessageType<SolicitationOffer> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'link.solicit.SolicitationOffer',
+    fields: [
+      { no: 1, name: 'protocol_hash', kind: 'scalar', T: ScalarType.BYTES },
+      { no: 2, name: 'incarnation', kind: 'scalar', T: ScalarType.BYTES },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
  * SolicitationExchange is sent on the control stream.
  * Full hash set, re-sent each time the local set changes.
  *
@@ -71,6 +101,30 @@ export interface SolicitationExchange {
    * @generated from field: repeated bytes protocol_hashes = 1;
    */
   protocolHashes?: Uint8Array[]
+  /**
+   * Offers binds each protocol hash to its current directive incarnation.
+   *
+   * @generated from field: repeated link.solicit.SolicitationOffer offers = 2;
+   */
+  offers?: SolicitationOffer[]
+  /**
+   * SupportsOfferIncarnations indicates that Offers governs match lifetimes.
+   *
+   * @generated from field: bool supports_offer_incarnations = 3;
+   */
+  supportsOfferIncarnations?: boolean
+  /**
+   * Generation identifies this side's current offer set.
+   *
+   * @generated from field: uint64 generation = 4;
+   */
+  generation?: bigint
+  /**
+   * AcknowledgedGeneration is the latest remote generation this side observed.
+   *
+   * @generated from field: uint64 acknowledged_generation = 5;
+   */
+  acknowledgedGeneration?: bigint
 }
 
 export const SolicitationExchange: MessageType<SolicitationExchange> =
@@ -83,6 +137,26 @@ export const SolicitationExchange: MessageType<SolicitationExchange> =
         kind: 'scalar',
         T: ScalarType.BYTES,
         repeated: true,
+      },
+      {
+        no: 2,
+        name: 'offers',
+        kind: 'message',
+        T: () => SolicitationOffer,
+        repeated: true,
+      },
+      {
+        no: 3,
+        name: 'supports_offer_incarnations',
+        kind: 'scalar',
+        T: ScalarType.BOOL,
+      },
+      { no: 4, name: 'generation', kind: 'scalar', T: ScalarType.UINT64 },
+      {
+        no: 5,
+        name: 'acknowledged_generation',
+        kind: 'scalar',
+        T: ScalarType.UINT64,
       },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,

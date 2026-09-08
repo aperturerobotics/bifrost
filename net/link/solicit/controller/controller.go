@@ -3,7 +3,9 @@ package link_solicit_controller
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"encoding/hex"
+	"math"
 	"slices"
 	"strings"
 
@@ -11,6 +13,7 @@ import (
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/aperturerobotics/util/broadcast"
 	"github.com/aperturerobotics/util/keyed"
+	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/net/link"
 	link_solicit "github.com/s4wave/spacewave/net/link/solicit"
 	"github.com/s4wave/spacewave/net/protocol"
@@ -31,8 +34,17 @@ const ControlProtocolID = protocol.ID("bifrost/solicit")
 // SolicitStreamPrefix is the protocol ID prefix for solicited streams.
 const SolicitStreamPrefix = "solicit:"
 
-// maxMessageSize is the max message size for packet session.
-const maxMessageSize = 256 * 32 * 2 // ~16KB, enough for 256 hashes
+// solicitationIncarnationSize is the number of random bytes in an offer incarnation.
+const solicitationIncarnationSize = 16
+
+const (
+	// encodedProtocolHashSize bounds one repeated 32-byte hash field.
+	encodedProtocolHashSize = 34
+	// encodedOfferSize bounds one repeated offer with hash and incarnation.
+	encodedOfferSize = 54
+	// exchangeMetadataSize bounds capability and generation fields.
+	exchangeMetadataSize = 32
+)
 
 // Controller is the solicitation controller.
 type Controller struct {
@@ -44,18 +56,29 @@ type Controller struct {
 	bcast broadcast.Broadcast
 	// linkRoutines manages per-link control stream goroutines.
 	linkRoutines *keyed.Keyed[uint64, struct{}]
+	// openRoutines manages solicited stream openings outside control loops.
+	openRoutines *keyed.Keyed[solicitationOpenKey, struct{}]
 	// solicitations tracks active SolicitProtocol directives.
 	// guarded by bcast
 	solicitations map[*solicitState]struct{}
 	// links tracks active link states.
 	// guarded by bcast
 	links map[uint64]*linkState // key: link UUID
+	// opens owns pending solicited stream openings.
+	// guarded by bcast
+	opens map[solicitationOpenKey]solicitationOpen
 }
 
 // solicitState tracks a single SolicitProtocol directive resolver.
 type solicitState struct {
-	dir     link_solicit.SolicitProtocol
+	// dir is the continuous solicitation directive represented by this state.
+	dir link_solicit.SolicitProtocol
+	// handler receives the stream produced for each bilateral incarnation.
 	handler directive.ResolverHandler
+	// incarnation distinguishes this lifetime from equivalent successors.
+	incarnation []byte
+	// disposed prevents publication after directive disposal.
+	disposed bool // guarded by Controller.bcast
 }
 
 // linkState tracks per-link solicitation state.
@@ -72,13 +95,72 @@ type linkState struct {
 	refCount int
 
 	// guarded by Controller.bcast
-	remoteHashes [][]byte
-	matched      map[string]struct{} // hex hash -> already matched
+	// remoteExchange is the peer's most recently advertised offer generation.
+	remoteExchange *solicitationExchange
+	// matched suppresses duplicate streams for each bilateral incarnation pair.
+	matched map[string]struct{}
 }
 
+// controlStreamLocalSnapshot captures one local offer-set observation.
 type controlStreamLocalSnapshot struct {
+	// linkRemoved indicates that this link state no longer owns its UUID.
 	linkRemoved bool
-	entries     []link_solicit.SolicitEntry
+	// offers contains the current local directive incarnations for the link.
+	offers []solicitationOffer
+}
+
+// solicitationOffer binds stable discovery identity to one directive lifetime.
+type solicitationOffer struct {
+	// protocolID identifies the requested application protocol.
+	protocolID protocol.ID
+	// context distinguishes independent uses of the same protocol.
+	context []byte
+	// hash is the stable link-scoped discovery identity.
+	hash []byte
+	// incarnation distinguishes equivalent offers across directive lifetimes.
+	incarnation []byte
+}
+
+// solicitationExchange is one complete control-stream offer generation.
+type solicitationExchange struct {
+	// hashes carries stable discovery identities for legacy peers.
+	hashes [][]byte
+	// offers carries incarnation-bound identities for upgraded peers.
+	offers []solicitationOffer
+	// supportsOfferIncarnations selects the incarnation-aware match contract.
+	supportsOfferIncarnations bool
+	// generation changes whenever this side's offer set changes.
+	generation uint64
+	// acknowledgedGeneration is the latest remote generation observed.
+	acknowledgedGeneration uint64
+}
+
+// solicitationMatch binds a stable hash to both participating offer lifetimes.
+type solicitationMatch struct {
+	// hash is the stable discovery identity shared by both peers.
+	hash []byte
+	// localIncarnation identifies the local offer lifetime.
+	localIncarnation []byte
+	// remoteIncarnation identifies the remote offer lifetime.
+	remoteIncarnation []byte
+	// incarnated distinguishes upgraded matches from legacy hash-only matches.
+	incarnated bool
+}
+
+// solicitationOpenKey identifies one pending open on one physical link.
+type solicitationOpenKey struct {
+	// linkUUID identifies the physical link that owns the pending open.
+	linkUUID uint64
+	// match is the canonical bilateral incarnation key.
+	match string
+}
+
+// solicitationOpen contains the state needed by a one-shot keyed open routine.
+type solicitationOpen struct {
+	// ls owns the physical link used to open the stream.
+	ls *linkState
+	// match binds the stream to the current bilateral offer lifetimes.
+	match solicitationMatch
 }
 
 // NewController constructs a new solicitation controller.
@@ -88,11 +170,38 @@ func NewController(le *logrus.Entry, conf *Config) (*Controller, error) {
 		maxHashes:     conf.GetMaxHashesOrDefault(),
 		solicitations: make(map[*solicitState]struct{}),
 		links:         make(map[uint64]*linkState),
+		opens:         make(map[solicitationOpenKey]solicitationOpen),
 	}
 	c.linkRoutines = keyed.NewKeyed(c.buildLinkRoutine,
 		keyed.WithExitLogger[uint64, struct{}](le),
 	)
+	c.openRoutines = keyed.NewKeyed(
+		c.buildOpenRoutine,
+		keyed.WithExitLogger[solicitationOpenKey, struct{}](le),
+		keyed.WithExitCb(func(
+			key solicitationOpenKey,
+			_ keyed.Routine,
+			_ struct{},
+			_ error,
+		) {
+			c.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
+				delete(c.opens, key)
+			})
+			c.openRoutines.RemoveKey(key)
+		}),
+	)
 	return c, nil
+}
+
+// maxExchangeMessageSize returns a packet bound for the configured maximum
+// stable hashes and incarnated offers, including exchange metadata.
+func maxExchangeMessageSize(maxHashes uint32) uint32 {
+	entrySize := max(encodedOfferSize, encodedProtocolHashSize)
+	size := uint64(maxHashes)*uint64(entrySize) + exchangeMetadataSize
+	if size > math.MaxUint32 {
+		return math.MaxUint32
+	}
+	return uint32(size)
 }
 
 // buildLinkRoutine constructs the keyed routine for a link UUID.
@@ -112,10 +221,26 @@ func (c *Controller) buildLinkRoutine(uuid uint64) (keyed.Routine, struct{}) {
 	}, struct{}{}
 }
 
+// buildOpenRoutine constructs a one-shot solicited stream opening routine.
+func (c *Controller) buildOpenRoutine(key solicitationOpenKey) (keyed.Routine, struct{}) {
+	var open solicitationOpen
+	c.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
+		open = c.opens[key]
+	})
+	if open.ls == nil {
+		return nil, struct{}{}
+	}
+	return func(ctx context.Context) error {
+		c.openSolicitedStream(ctx, open.ls, open.match)
+		return nil
+	}, struct{}{}
+}
+
 // Execute executes the controller goroutine.
 func (c *Controller) Execute(ctx context.Context) error {
 	c.le.Debug("solicitation controller running")
 	c.linkRoutines.SetContext(ctx, true)
+	c.openRoutines.SetContext(ctx, true)
 	return nil
 }
 
@@ -139,33 +264,51 @@ func (c *Controller) HandleDirective(
 // handleSolicitProtocol returns a resolver for a SolicitProtocol directive.
 func (c *Controller) handleSolicitProtocol(
 	_ context.Context,
-	_ directive.Instance,
+	di directive.Instance,
 	d link_solicit.SolicitProtocol,
 ) ([]directive.Resolver, error) {
+	incarnation := make([]byte, solicitationIncarnationSize)
+	if _, err := rand.Read(incarnation); err != nil {
+		return nil, errors.Wrap(err, "generate solicitation incarnation")
+	}
+
+	ss := &solicitState{dir: d, incarnation: incarnation}
+	di.AddDisposeCallback(func() {
+		c.removeSolicitation(ss)
+	})
+
 	return directive.Resolvers(directive.NewFuncResolver(func(
 		rctx context.Context,
 		rh directive.ResolverHandler,
 	) error {
-		// Register the solicitation while its resolver is active.
-		ss := &solicitState{dir: d, handler: rh}
+		// Register the incarnation while its directive remains active.
 		c.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+			if ss.disposed {
+				return
+			}
+			ss.handler = rh
 			c.solicitations[ss] = struct{}{}
 			broadcast()
 		})
-
-		// Remove the solicitation when the resolver is disposed.
-		defer func() {
-			c.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
-				delete(c.solicitations, ss)
-				broadcast()
-			})
-		}()
+		defer c.removeSolicitation(ss)
 
 		// Keep the resolver idle until its context is canceled.
 		rh.MarkIdle(true)
 		<-rctx.Done()
 		return nil
 	})), nil
+}
+
+// removeSolicitation synchronously and idempotently withdraws an offer.
+func (c *Controller) removeSolicitation(ss *solicitState) {
+	c.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+		ss.disposed = true
+		if _, exists := c.solicitations[ss]; !exists {
+			return
+		}
+		delete(c.solicitations, ss)
+		broadcast()
+	})
 }
 
 // handleMountedStream returns a resolver for HandleMountedStream directives
@@ -290,6 +433,29 @@ func (c *Controller) removeLink(uuid uint64) {
 	if ls != nil {
 		ls.le.Debug("link removed from solicitation")
 		c.linkRoutines.RemoveKey(uuid)
+		c.retireLinkOpens(uuid)
+	}
+}
+
+// retireLinkOpens removes pending metadata and cancels every open for a link.
+func (c *Controller) retireLinkOpens(uuid uint64) {
+	keys := make(map[solicitationOpenKey]struct{})
+	c.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
+		for key := range c.opens {
+			if key.linkUUID != uuid {
+				continue
+			}
+			delete(c.opens, key)
+			keys[key] = struct{}{}
+		}
+	})
+	for _, key := range c.openRoutines.GetKeys() {
+		if key.linkUUID == uuid {
+			keys[key] = struct{}{}
+		}
+	}
+	for key := range keys {
+		c.openRoutines.RemoveKey(key)
 	}
 }
 
@@ -303,19 +469,19 @@ func (c *Controller) initiateControlStream(ctx context.Context, ls *linkState) e
 		return err
 	}
 
-	sess := stream_packet.NewSession(ms.GetStream(), maxMessageSize)
+	sess := stream_packet.NewSession(ms.GetStream(), maxExchangeMessageSize(c.maxHashes))
 	c.runControlStream(ctx, ls, sess)
 	return nil
 }
 
-// getSolicitEntries returns the current set of solicit entries
-// for a given link, filtering by peer and transport constraints.
+// getSolicitationOffers returns the current offers for a link, filtering by
+// peer and transport constraints.
 // Caller must hold bcast lock.
-func (c *Controller) getSolicitEntries(ml link.MountedLink) []link_solicit.SolicitEntry {
+func (c *Controller) getSolicitationOffers(ml link.MountedLink) []solicitationOffer {
 	remotePeer := ml.GetRemotePeer()
 	transportUUID := ml.GetTransportUUID()
 
-	var entries []link_solicit.SolicitEntry
+	var offers []solicitationOffer
 	for ss := range c.solicitations {
 		if pid := ss.dir.SolicitProtocolPeerID(); len(pid) != 0 && pid != remotePeer {
 			continue
@@ -323,12 +489,13 @@ func (c *Controller) getSolicitEntries(ml link.MountedLink) []link_solicit.Solic
 		if tid := ss.dir.SolicitProtocolTransportID(); tid != 0 && tid != transportUUID {
 			continue
 		}
-		entries = append(entries, link_solicit.SolicitEntry{
-			ProtocolID: ss.dir.SolicitProtocolID(),
-			Context:    ss.dir.SolicitProtocolContext(),
+		offers = append(offers, solicitationOffer{
+			protocolID:  ss.dir.SolicitProtocolID(),
+			context:     ss.dir.SolicitProtocolContext(),
+			incarnation: ss.incarnation,
 		})
 	}
-	return entries
+	return offers
 }
 
 // watchControlStreamLocalSnapshots watches the local solicit snapshot for a
@@ -356,7 +523,7 @@ func (c *Controller) snapshotControlStreamLocalLocked(ls *linkState) *controlStr
 		return &controlStreamLocalSnapshot{linkRemoved: true}
 	}
 	return &controlStreamLocalSnapshot{
-		entries: cloneSolicitEntries(c.getSolicitEntries(ls.ml)),
+		offers: cloneSolicitationOffers(c.getSolicitationOffers(ls.ml)),
 	}
 }
 
@@ -369,28 +536,33 @@ func (c *Controller) currentControlStreamLocalSnapshot(ls *linkState) *controlSt
 	return c.snapshotControlStreamLocalLocked(ls)
 }
 
-// currentControlStreamRemoteHashes returns the remote hashes reported by a
+// currentControlStreamRemoteExchange returns the remote exchange reported by a
 // link, or true when the link is no longer active.
-func (c *Controller) currentControlStreamRemoteHashes(ls *linkState) ([][]byte, bool) {
+func (c *Controller) currentControlStreamRemoteExchange(
+	ls *linkState,
+) (*solicitationExchange, bool) {
 	locked := c.bcast.Lock()
 	defer locked.Unlock()
 
 	if !c.controlStreamLinkActiveLocked(ls) {
 		return nil, true
 	}
-	return cloneHashes(ls.remoteHashes), false
+	return cloneSolicitationExchange(ls.remoteExchange), false
 }
 
-// setControlStreamRemoteHashes stores the remote hashes reported by a link
+// setControlStreamRemoteExchange stores the remote exchange reported by a link
 // and returns false when the link is no longer active.
-func (c *Controller) setControlStreamRemoteHashes(ls *linkState, hashes [][]byte) bool {
+func (c *Controller) setControlStreamRemoteExchange(
+	ls *linkState,
+	exchange *solicitationExchange,
+) bool {
 	locked := c.bcast.Lock()
 	defer locked.Unlock()
 
 	if !c.controlStreamLinkActiveLocked(ls) {
 		return false
 	}
-	ls.remoteHashes = cloneHashes(hashes)
+	ls.remoteExchange = cloneSolicitationExchange(exchange)
 	return true
 }
 
@@ -401,7 +573,7 @@ func (c *Controller) controlStreamLinkActiveLocked(ls *linkState) bool {
 }
 
 // controlStreamLocalSnapshotsEqual returns true if two local snapshots hold
-// the same link-removed flag and solicit entries.
+// the same link-removed flag and offers.
 func controlStreamLocalSnapshotsEqual(a, b *controlStreamLocalSnapshot) bool {
 	if a == nil || b == nil {
 		return a == b
@@ -409,41 +581,66 @@ func controlStreamLocalSnapshotsEqual(a, b *controlStreamLocalSnapshot) bool {
 	if a.linkRemoved != b.linkRemoved {
 		return false
 	}
-	return solicitEntriesEqual(a.entries, b.entries)
+	return solicitationOffersEqual(a.offers, b.offers)
 }
 
-// cloneSolicitEntries deep-clones and canonically sorts solicit entries.
-func cloneSolicitEntries(entries []link_solicit.SolicitEntry) []link_solicit.SolicitEntry {
-	if len(entries) == 0 {
+// cloneSolicitationOffers deep-clones and canonically sorts offers.
+func cloneSolicitationOffers(offers []solicitationOffer) []solicitationOffer {
+	if len(offers) == 0 {
 		return nil
 	}
-	out := make([]link_solicit.SolicitEntry, len(entries))
-	for i, entry := range entries {
-		out[i] = link_solicit.SolicitEntry{
-			ProtocolID: entry.ProtocolID,
-			Context:    slices.Clone(entry.Context),
+	out := make([]solicitationOffer, len(offers))
+	for i, offer := range offers {
+		out[i] = solicitationOffer{
+			protocolID:  offer.protocolID,
+			context:     slices.Clone(offer.context),
+			hash:        slices.Clone(offer.hash),
+			incarnation: slices.Clone(offer.incarnation),
 		}
 	}
-	slices.SortFunc(out, func(a, b link_solicit.SolicitEntry) int {
-		if a.ProtocolID != b.ProtocolID {
-			return strings.Compare(string(a.ProtocolID), string(b.ProtocolID))
+	slices.SortFunc(out, func(a, b solicitationOffer) int {
+		if cmp := bytes.Compare(a.hash, b.hash); cmp != 0 {
+			return cmp
 		}
-		return bytes.Compare(a.Context, b.Context)
+		if a.protocolID != b.protocolID {
+			return strings.Compare(string(a.protocolID), string(b.protocolID))
+		}
+		if cmp := bytes.Compare(a.context, b.context); cmp != 0 {
+			return cmp
+		}
+		return bytes.Compare(a.incarnation, b.incarnation)
 	})
 	return out
 }
 
-// solicitEntriesEqual returns true if two entry lists match pairwise.
-func solicitEntriesEqual(a, b []link_solicit.SolicitEntry) bool {
+// solicitationOffersEqual returns true if two offer lists match pairwise.
+func solicitationOffersEqual(a, b []solicitationOffer) bool {
 	if len(a) != len(b) {
 		return false
 	}
 	for i := range a {
-		if a[i].ProtocolID != b[i].ProtocolID || !bytes.Equal(a[i].Context, b[i].Context) {
+		if a[i].protocolID != b[i].protocolID ||
+			!bytes.Equal(a[i].context, b[i].context) ||
+			!bytes.Equal(a[i].hash, b[i].hash) ||
+			!bytes.Equal(a[i].incarnation, b[i].incarnation) {
 			return false
 		}
 	}
 	return true
+}
+
+// cloneSolicitationExchange deep-clones an exchange.
+func cloneSolicitationExchange(exchange *solicitationExchange) *solicitationExchange {
+	if exchange == nil {
+		return nil
+	}
+	return &solicitationExchange{
+		hashes:                    cloneHashes(exchange.hashes),
+		offers:                    cloneSolicitationOffers(exchange.offers),
+		supportsOfferIncarnations: exchange.supportsOfferIncarnations,
+		generation:                exchange.generation,
+		acknowledgedGeneration:    exchange.acknowledgedGeneration,
+	}
 }
 
 // cloneHashes deep-clones a hash list.
@@ -458,25 +655,47 @@ func cloneHashes(hashes [][]byte) [][]byte {
 	return out
 }
 
-// computeHashes computes sorted hashes for the given entries.
-func (c *Controller) computeHashes(ls *linkState, entries []link_solicit.SolicitEntry) [][]byte {
-	if len(entries) == 0 {
-		return nil
+// computeExchange computes the stable hashes and incarnated offers sent for a link.
+func (c *Controller) computeExchange(
+	ls *linkState,
+	offers []solicitationOffer,
+) *solicitationExchange {
+	for i := range offers {
+		offers[i].hash = link_solicit.ComputeProtocolHash(
+			ls.sessionID,
+			offers[i].protocolID,
+			offers[i].context,
+		)
 	}
-	hashes := link_solicit.ComputeProtocolHashes(ls.sessionID, entries)
-	if len(hashes) > int(c.maxHashes) {
-		hashes = hashes[:c.maxHashes]
+	offers = cloneSolicitationOffers(offers)
+	if len(offers) > int(c.maxHashes) {
+		offers = offers[:c.maxHashes]
 	}
-	return hashes
+
+	hashes := make([][]byte, len(offers))
+	for i := range offers {
+		hashes[i] = slices.Clone(offers[i].hash)
+	}
+	return &solicitationExchange{
+		hashes:                    hashes,
+		offers:                    offers,
+		supportsOfferIncarnations: true,
+	}
 }
 
-// resolveMatch finds SolicitProtocol directives that match a given hash
-// on a link and emits SolicitMountedStream values.
-func (c *Controller) resolveMatch(ls *linkState, hashBytes []byte, ms link.MountedStream) {
-	hashHex := hex.EncodeToString(hashBytes)
-
+// resolveMatch emits a stream only to the currently active local incarnation
+// bound to the current remote incarnation.
+func (c *Controller) resolveMatch(
+	ls *linkState,
+	match solicitationMatch,
+	ms link.MountedStream,
+) bool {
 	var matches []*solicitState
 	c.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
+		if !c.controlStreamLinkActiveLocked(ls) ||
+			!remoteExchangeContainsMatch(ls, match) {
+			return
+		}
 		for ss := range c.solicitations {
 			if pid := ss.dir.SolicitProtocolPeerID(); len(pid) != 0 && pid != ls.ml.GetRemotePeer() {
 				continue
@@ -490,46 +709,115 @@ func (c *Controller) resolveMatch(ls *linkState, hashBytes []byte, ms link.Mount
 				ss.dir.SolicitProtocolID(),
 				ss.dir.SolicitProtocolContext(),
 			)
-			if bytes.Equal(h, hashBytes) {
-				matches = append(matches, ss)
+			if !bytes.Equal(h, match.hash) {
+				continue
 			}
+			if match.incarnated && !bytes.Equal(ss.incarnation, match.localIncarnation) {
+				continue
+			}
+			matches = append(matches, ss)
 		}
 	})
 
+	var emitted bool
 	for _, ss := range matches {
 		sms := link_solicit.NewSolicitMountedStream(ms)
 		if _, ok := ss.handler.AddValue(sms); ok {
-			ls.le.WithField("hash", hashHex).Debug("emitted SolicitMountedStream value")
+			emitted = true
+			ls.le.WithField("hash", hex.EncodeToString(match.hash)).
+				Debug("emitted SolicitMountedStream value")
 		}
 	}
+	return emitted
 }
 
-// openSolicitedStream opens a solicited stream for a matched hash.
-func (c *Controller) openSolicitedStream(ctx context.Context, ls *linkState, hashBytes []byte) {
-	hashHex := hex.EncodeToString(hashBytes)
-	pid := protocol.ID(SolicitStreamPrefix + hashHex)
+// remoteExchangeContainsMatch reports whether the remote side still advertises
+// the incarnation bound into match. Caller must hold the broadcast lock.
+func remoteExchangeContainsMatch(ls *linkState, match solicitationMatch) bool {
+	if !match.incarnated {
+		return ls.remoteExchange == nil ||
+			!ls.remoteExchange.supportsOfferIncarnations
+	}
+	if ls.remoteExchange == nil || !ls.remoteExchange.supportsOfferIncarnations {
+		return false
+	}
+	for _, offer := range ls.remoteExchange.offers {
+		if bytes.Equal(offer.hash, match.hash) &&
+			bytes.Equal(offer.incarnation, match.remoteIncarnation) {
+			return true
+		}
+	}
+	return false
+}
+
+// openSolicitedStream opens a stream bound to one bilateral offer pair.
+func (c *Controller) openSolicitedStream(
+	ctx context.Context,
+	ls *linkState,
+	match solicitationMatch,
+) {
+	pid := protocol.ID(SolicitStreamPrefix + encodeSolicitationMatch(ls, match))
 
 	ms, err := ls.ml.OpenMountedStream(ctx, pid, stream.OpenOpts{})
 	if err != nil {
-		ls.le.WithError(err).WithField("hash", hashHex).Warn("failed to open solicited stream")
+		ls.le.WithError(err).WithField("hash", hex.EncodeToString(match.hash)).
+			Warn("failed to open solicited stream")
 		return
 	}
 
-	c.resolveMatch(ls, hashBytes, ms)
+	if !c.resolveMatch(ls, match, ms) {
+		ms.GetStream().Close()
+	}
+}
+
+// encodeSolicitationMatch returns the stream protocol suffix for a match.
+func encodeSolicitationMatch(ls *linkState, match solicitationMatch) string {
+	hashHex := hex.EncodeToString(match.hash)
+	if !match.incarnated {
+		return hashHex
+	}
+	lower, higher := match.localIncarnation, match.remoteIncarnation
+	if !ls.localIsLower {
+		lower, higher = higher, lower
+	}
+	return hashHex + ":" + hex.EncodeToString(lower) + ":" + hex.EncodeToString(higher)
+}
+
+// decodeSolicitationMatch parses a stream protocol suffix for the receiving side.
+func decodeSolicitationMatch(ls *linkState, encoded string) (solicitationMatch, error) {
+	parts := strings.Split(encoded, ":")
+	if len(parts) != 1 && len(parts) != 3 {
+		return solicitationMatch{}, errors.New("invalid solicitation match field count")
+	}
+	hash, err := hex.DecodeString(parts[0])
+	if err != nil || len(hash) != link_solicit.HashSize {
+		return solicitationMatch{}, errors.New("invalid solicitation protocol hash")
+	}
+	match := solicitationMatch{hash: hash}
+	if len(parts) == 1 {
+		return match, nil
+	}
+	lower, err := hex.DecodeString(parts[1])
+	if err != nil || len(lower) != solicitationIncarnationSize {
+		return solicitationMatch{}, errors.New("invalid lower solicitation incarnation")
+	}
+	higher, err := hex.DecodeString(parts[2])
+	if err != nil || len(higher) != solicitationIncarnationSize {
+		return solicitationMatch{}, errors.New("invalid higher solicitation incarnation")
+	}
+	match.incarnated = true
+	match.localIncarnation, match.remoteIncarnation = higher, lower
+	if ls.localIsLower {
+		match.localIncarnation, match.remoteIncarnation = lower, higher
+	}
+	return match, nil
 }
 
 // handleIncomingSolicitedStream routes an incoming solicited stream.
 func (c *Controller) handleIncomingSolicitedStream(
-	hashHex string,
+	encodedMatch string,
 	ms link.MountedStream,
 ) {
-	hashBytes, err := hex.DecodeString(hashHex)
-	if err != nil {
-		c.le.WithError(err).Warn("invalid solicited stream hash")
-		ms.GetStream().Close()
-		return
-	}
-
 	lnk := ms.GetLink()
 	uuid := lnk.GetLinkUUID()
 
@@ -544,7 +832,15 @@ func (c *Controller) handleIncomingSolicitedStream(
 		return
 	}
 
-	c.resolveMatch(ls, hashBytes, ms)
+	match, err := decodeSolicitationMatch(ls, encodedMatch)
+	if err != nil {
+		c.le.WithError(err).Warn("invalid solicited stream match")
+		ms.GetStream().Close()
+		return
+	}
+	if !c.resolveMatch(ls, match, ms) {
+		ms.GetStream().Close()
+	}
 }
 
 // runControlStream manages the control stream exchange for a link.
@@ -564,7 +860,7 @@ func (c *Controller) runControlStream(
 	defer cancelWatch()
 
 	// Read incoming exchanges in a goroutine.
-	remoteCh := make(chan [][]byte, 1)
+	remoteCh := make(chan *solicitationExchange, 1)
 	go func() {
 		defer close(remoteCh)
 		for {
@@ -573,12 +869,9 @@ func (c *Controller) runControlStream(
 				le.WithError(err).Debug("control stream read ended")
 				return
 			}
-			hashes := msg.GetProtocolHashes()
-			if len(hashes) > int(c.maxHashes) {
-				hashes = hashes[:c.maxHashes]
-			}
+			exchange := c.decodeExchange(&msg)
 			select {
-			case remoteCh <- hashes:
+			case remoteCh <- exchange:
 			case <-watchCtx.Done():
 				return
 			}
@@ -606,27 +899,43 @@ func (c *Controller) runControlStream(
 		}
 	}()
 
-	var localHashes [][]byte
+	var localExchange *solicitationExchange
+	var peerSupportsOfferIncarnations bool
+	sendLocalExchange := func(exchange *solicitationExchange) bool {
+		le.WithField("hash-count", len(exchange.hashes)).Debug("sending exchange")
+		if err := c.sendExchange(sess, exchange, peerSupportsOfferIncarnations); err != nil {
+			le.WithError(err).Debug("failed to send exchange")
+			return false
+		}
+		localExchange = exchange
+		return true
+	}
 	handleLocalWake := func() bool {
 		snap := c.currentControlStreamLocalSnapshot(ls)
 		if snap.linkRemoved {
 			return false
 		}
-		remoteHashes, linkRemoved := c.currentControlStreamRemoteHashes(ls)
+		remoteExchange, linkRemoved := c.currentControlStreamRemoteExchange(ls)
 		if linkRemoved {
 			return false
 		}
-		newHashes := c.computeHashes(ls, snap.entries)
-		if !slices.EqualFunc(localHashes, newHashes, bytes.Equal) {
-			le.WithField("hash-count", len(newHashes)).Debug("sending exchange")
-			localHashes = newHashes
-			if err := c.sendExchange(sess, localHashes); err != nil {
-				le.WithError(err).Debug("failed to send exchange")
+		newExchange := c.computeExchange(ls, snap.offers)
+		newExchange.generation = 1
+		if localExchange != nil {
+			newExchange.generation = localExchange.generation
+			newExchange.acknowledgedGeneration = localExchange.acknowledgedGeneration
+			if !solicitationOfferSetsEqual(localExchange, newExchange) {
+				newExchange.generation++
+			}
+		}
+		c.pruneRetiredMatches(ls, newExchange, remoteExchange)
+		if !solicitationExchangesEqual(localExchange, newExchange) {
+			if !sendLocalExchange(newExchange) {
 				return false
 			}
 		}
-		if remoteHashes != nil {
-			c.evaluateMatches(ctx, ls, localHashes, remoteHashes)
+		if remoteExchange != nil {
+			c.evaluateMatches(ctx, ls, localExchange, remoteExchange)
 		}
 		return true
 	}
@@ -659,55 +968,254 @@ func (c *Controller) runControlStream(
 			if !handleLocalWake() {
 				return
 			}
-		case remoteHashes, ok := <-remoteCh:
+		case remoteExchange, ok := <-remoteCh:
 			if !ok {
 				return
 			}
-			le.WithField("remote-hash-count", len(remoteHashes)).Debug("received remote exchange")
-			if !c.setControlStreamRemoteHashes(ls, remoteHashes) {
+			le.WithField("remote-hash-count", len(remoteExchange.hashes)).
+				Debug("received remote exchange")
+			if !c.setControlStreamRemoteExchange(ls, remoteExchange) {
 				return
 			}
-			c.evaluateMatches(ctx, ls, localHashes, remoteHashes)
+			c.pruneRetiredMatches(ls, localExchange, remoteExchange)
+			peerSupportsOfferIncarnations = remoteExchange.supportsOfferIncarnations
+			if remoteExchange.supportsOfferIncarnations &&
+				localExchange.supportsOfferIncarnations &&
+				localExchange.acknowledgedGeneration != remoteExchange.generation {
+				acknowledged := cloneSolicitationExchange(localExchange)
+				acknowledged.acknowledgedGeneration = remoteExchange.generation
+				if !sendLocalExchange(acknowledged) {
+					return
+				}
+			}
+			c.evaluateMatches(ctx, ls, localExchange, remoteExchange)
 		}
 	}
 }
 
-// evaluateMatches finds the intersection and opens streams for new matches.
+// pruneRetiredMatches removes incarnated suppression and pending opens after
+// either offer leaves the current bilateral set. Legacy hash suppression stays
+// for the lifetime of the physical link.
+func (c *Controller) pruneRetiredMatches(
+	ls *linkState,
+	local, remote *solicitationExchange,
+) {
+	active := make(map[string]struct{})
+	if local != nil && remote != nil &&
+		local.supportsOfferIncarnations && remote.supportsOfferIncarnations {
+		for _, match := range findOfferPairs(local.offers, remote.offers) {
+			active[encodeSolicitationMatch(ls, match)] = struct{}{}
+		}
+	}
+
+	var retired []solicitationOpenKey
+	c.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
+		for matchKey := range ls.matched {
+			if strings.Count(matchKey, ":") != 2 {
+				continue
+			}
+			if _, exists := active[matchKey]; exists {
+				continue
+			}
+			delete(ls.matched, matchKey)
+			openKey := solicitationOpenKey{
+				linkUUID: ls.ml.GetLinkUUID(),
+				match:    matchKey,
+			}
+			if _, exists := c.opens[openKey]; exists {
+				delete(c.opens, openKey)
+				retired = append(retired, openKey)
+			}
+		}
+	})
+	for _, key := range retired {
+		c.openRoutines.RemoveKey(key)
+	}
+}
+
+// evaluateMatches finds the intersection and opens each bilateral incarnation once.
 func (c *Controller) evaluateMatches(
 	ctx context.Context,
 	ls *linkState,
-	localHashes, remoteHashes [][]byte,
+	local, remote *solicitationExchange,
 ) {
-	matches := link_solicit.FindMatchingHashes(localHashes, remoteHashes)
-	ls.le.WithField("local-count", len(localHashes)).
-		WithField("remote-count", len(remoteHashes)).
+	if local == nil || remote == nil {
+		return
+	}
+	matches := findSolicitationMatches(local, remote)
+	ls.le.WithField("local-count", len(local.hashes)).
+		WithField("remote-count", len(remote.hashes)).
 		WithField("match-count", len(matches)).
 		Debug("evaluated matches")
-	for _, h := range matches {
-		hashHex := hex.EncodeToString(h)
-		var exists bool
+	for _, match := range matches {
+		matchKey := encodeSolicitationMatch(ls, match)
+		var exists, linkActive bool
 		c.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
-			_, exists = ls.matched[hashHex]
+			linkActive = c.controlStreamLinkActiveLocked(ls)
+			if !linkActive {
+				return
+			}
+			_, exists = ls.matched[matchKey]
 			if !exists {
-				ls.matched[hashHex] = struct{}{}
+				ls.matched[matchKey] = struct{}{}
+				if ls.localIsLower {
+					key := solicitationOpenKey{
+						linkUUID: ls.ml.GetLinkUUID(),
+						match:    matchKey,
+					}
+					c.opens[key] = solicitationOpen{ls: ls, match: match}
+				}
 			}
 		})
-		if exists {
+		if !linkActive || exists {
 			continue
 		}
 
 		if ls.localIsLower {
-			go c.openSolicitedStream(ctx, ls, h)
+			key := solicitationOpenKey{
+				linkUUID: ls.ml.GetLinkUUID(),
+				match:    matchKey,
+			}
+			c.startOpenRoutine(key)
 		}
 	}
 }
 
+// startOpenRoutine registers an opening and removes the keyed entry if its
+// metadata or link was retired before registration completed.
+func (c *Controller) startOpenRoutine(key solicitationOpenKey) {
+	c.openRoutines.SetKey(key, true)
+
+	var retained bool
+	c.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
+		open, exists := c.opens[key]
+		retained = exists && c.links[key.linkUUID] == open.ls
+	})
+	if !retained {
+		c.openRoutines.RemoveKey(key)
+	}
+}
+
 // sendExchange sends a SolicitationExchange message.
-func (c *Controller) sendExchange(sess *stream_packet.Session, hashes [][]byte) error {
+func (c *Controller) sendExchange(
+	sess *stream_packet.Session,
+	exchange *solicitationExchange,
+	sendOffers bool,
+) error {
 	msg := &link_solicit.SolicitationExchange{
-		ProtocolHashes: hashes,
+		ProtocolHashes:            exchange.hashes,
+		SupportsOfferIncarnations: true,
+		Generation:                exchange.generation,
+		AcknowledgedGeneration:    exchange.acknowledgedGeneration,
+	}
+	if sendOffers {
+		msg.ProtocolHashes = nil
+		msg.Offers = make([]*link_solicit.SolicitationOffer, len(exchange.offers))
+		for i, offer := range exchange.offers {
+			msg.Offers[i] = &link_solicit.SolicitationOffer{
+				ProtocolHash: slices.Clone(offer.hash),
+				Incarnation:  slices.Clone(offer.incarnation),
+			}
+		}
 	}
 	return sess.SendMsg(msg)
+}
+
+// decodeExchange validates and normalizes a received exchange.
+func (c *Controller) decodeExchange(
+	msg *link_solicit.SolicitationExchange,
+) *solicitationExchange {
+	hashes := cloneHashes(msg.GetProtocolHashes())
+	if len(hashes) > int(c.maxHashes) {
+		hashes = hashes[:c.maxHashes]
+	}
+	link_solicit.SortHashes(hashes)
+
+	offers := make([]solicitationOffer, 0, len(msg.GetOffers()))
+	for _, wireOffer := range msg.GetOffers() {
+		if len(wireOffer.GetProtocolHash()) != link_solicit.HashSize ||
+			len(wireOffer.GetIncarnation()) != solicitationIncarnationSize {
+			continue
+		}
+		offers = append(offers, solicitationOffer{
+			hash:        slices.Clone(wireOffer.GetProtocolHash()),
+			incarnation: slices.Clone(wireOffer.GetIncarnation()),
+		})
+	}
+	offers = cloneSolicitationOffers(offers)
+	if len(offers) > int(c.maxHashes) {
+		offers = offers[:c.maxHashes]
+	}
+	if len(hashes) == 0 && msg.GetSupportsOfferIncarnations() {
+		hashes = make([][]byte, len(offers))
+		for i := range offers {
+			hashes[i] = slices.Clone(offers[i].hash)
+		}
+	}
+	return &solicitationExchange{
+		hashes:                    hashes,
+		offers:                    offers,
+		supportsOfferIncarnations: msg.GetSupportsOfferIncarnations(),
+		generation:                msg.GetGeneration(),
+		acknowledgedGeneration:    msg.GetAcknowledgedGeneration(),
+	}
+}
+
+// solicitationExchangesEqual reports whether exchanges advertise identical state.
+func solicitationExchangesEqual(a, b *solicitationExchange) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return a.supportsOfferIncarnations == b.supportsOfferIncarnations &&
+		a.generation == b.generation &&
+		a.acknowledgedGeneration == b.acknowledgedGeneration &&
+		slices.EqualFunc(a.hashes, b.hashes, bytes.Equal) &&
+		solicitationOffersEqual(a.offers, b.offers)
+}
+
+// solicitationOfferSetsEqual reports whether exchanges advertise the same offers.
+func solicitationOfferSetsEqual(a, b *solicitationExchange) bool {
+	return slices.EqualFunc(a.hashes, b.hashes, bytes.Equal) &&
+		solicitationOffersEqual(a.offers, b.offers)
+}
+
+// findSolicitationMatches returns incarnated matches when both peers support
+// them and stable-hash matches for legacy peers.
+func findSolicitationMatches(
+	local, remote *solicitationExchange,
+) []solicitationMatch {
+	if !local.supportsOfferIncarnations || !remote.supportsOfferIncarnations {
+		hashes := link_solicit.FindMatchingHashes(local.hashes, remote.hashes)
+		matches := make([]solicitationMatch, len(hashes))
+		for i, hash := range hashes {
+			matches[i] = solicitationMatch{hash: hash}
+		}
+		return matches
+	}
+	if local.acknowledgedGeneration != remote.generation ||
+		remote.acknowledgedGeneration != local.generation {
+		return nil
+	}
+	return findOfferPairs(local.offers, remote.offers)
+}
+
+// findOfferPairs returns every matching stable hash bound to both incarnations.
+func findOfferPairs(local, remote []solicitationOffer) []solicitationMatch {
+	var matches []solicitationMatch
+	for _, localOffer := range local {
+		for _, remoteOffer := range remote {
+			if !bytes.Equal(localOffer.hash, remoteOffer.hash) {
+				continue
+			}
+			matches = append(matches, solicitationMatch{
+				hash:              slices.Clone(localOffer.hash),
+				localIncarnation:  slices.Clone(localOffer.incarnation),
+				remoteIncarnation: slices.Clone(remoteOffer.incarnation),
+				incarnated:        true,
+			})
+		}
+	}
+	return matches
 }
 
 // GetControllerInfo returns information about the controller.
