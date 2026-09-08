@@ -24,6 +24,27 @@ func (h *SharedObjectHealth) WithSyncPeerAdmission(peerID string, accepted bool)
 	return next
 }
 
+// WithSyncPeerRecovery records a recovery requirement without closing local access.
+// The caller supplies an authenticated participant; only verified convergence clears it.
+func (h *SharedObjectHealth) WithSyncPeerRecovery(peerID string, required bool) *SharedObjectHealth {
+	if slices.Contains(h.GetSyncRecoveryPeerIds(), peerID) == required {
+		return h
+	}
+
+	// Keep source recovery separate from admission decisions and mount readiness.
+	next := h.CloneVT()
+	if next == nil {
+		next = NewSharedObjectLoadingHealth(SharedObjectHealthLayer_SHARED_OBJECT_HEALTH_LAYER_SHARED_OBJECT)
+	}
+	if !required {
+		next.SyncRecoveryPeerIds = slices.DeleteFunc(next.SyncRecoveryPeerIds, func(id string) bool { return id == peerID })
+		return next
+	}
+	next.SyncRecoveryPeerIds = append(next.SyncRecoveryPeerIds, peerID)
+	slices.Sort(next.SyncRecoveryPeerIds)
+	return next
+}
+
 // NewSharedObjectLoadingHealth constructs a loading SharedObjectHealth snapshot.
 func NewSharedObjectLoadingHealth(
 	layer SharedObjectHealthLayer,

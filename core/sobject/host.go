@@ -1,6 +1,7 @@
 package sobject
 
 import (
+	"bytes"
 	"context"
 
 	"github.com/aperturerobotics/util/ccontainer"
@@ -21,6 +22,8 @@ type SOHost struct {
 	watchFn SOStateWatchFunc
 	// lockFn is the function to call to lock and load the SOState.
 	lockFn SOStateLockFunc
+	// syncFuncs supplies provider-specific peer import and history reads.
+	syncFuncs SOHostSyncFuncs
 	// sharedObjectID is the id of the shared object.
 	sharedObjectID string
 	// soRc contains the shared object refcount instance.
@@ -30,8 +33,11 @@ type SOHost struct {
 // NewSOHost constructs a new shared object host.
 //
 // ctx can be nil.
-func NewSOHost(ctx context.Context, watchFn SOStateWatchFunc, lockFn SOStateLockFunc, sharedObjectID string) *SOHost {
+func NewSOHost(ctx context.Context, watchFn SOStateWatchFunc, lockFn SOStateLockFunc, sharedObjectID string, syncFuncs ...*SOHostSyncFuncs) *SOHost {
 	h := &SOHost{watchFn: watchFn, lockFn: lockFn, sharedObjectID: sharedObjectID}
+	if len(syncFuncs) != 0 && syncFuncs[0] != nil {
+		h.syncFuncs = *syncFuncs[0]
+	}
 	h.soRc = refcount.NewRefCount(ctx, false, nil, nil, func(ctx context.Context, released func()) (ccontainer.Watchable[*SOState], func(), error) {
 		stateCtr, relStateCtr, err := watchFn(ctx, sharedObjectID, released)
 		return stateCtr, relStateCtr, err
@@ -125,6 +131,173 @@ func (s *SOHost) UpdateSOState(ctx context.Context, fn func(state *SOState) erro
 		return err
 	}
 	return lk.WriteSOState(ctx, nextState)
+}
+
+// ReadConfigHistory returns retained transitions between exact configuration heads.
+func (s *SOHost) ReadConfigHistory(ctx context.Context, base, target []byte) ([]*SOConfigChange, error) {
+	if bytes.Equal(base, target) && len(base) != 0 {
+		return nil, nil
+	}
+	if s.syncFuncs.History == nil {
+		return nil, ErrConfigHistoryUnavailable
+	}
+	return s.syncFuncs.History(ctx, s.sharedObjectID, base, target)
+}
+
+// ImportPeerSnapshot verifies a candidate against held authority and commits it
+// with its lineage. Access validation runs under the provider lock and must not
+// reacquire host state. A committed local removal returns ErrParticipantRevoked.
+func (s *SOHost) ImportPeerSnapshot(
+	ctx context.Context,
+	candidate *SOState,
+	changes []*SOConfigChange,
+	localPeer peer.ID,
+	validateAccess func(context.Context, *SOState) error,
+) error {
+	// Bound untrusted work before acquiring the provider's write lock.
+	if candidate.SizeVT() > 10*1024*1024 || len(changes) > MaxConfigSuffixEntries {
+		return ErrConfigHistoryUnavailable
+	}
+	var historyBytes int
+	for _, change := range changes {
+		historyBytes += change.SizeVT()
+		if historyBytes > MaxConfigSuffixBytes {
+			return ErrConfigHistoryUnavailable
+		}
+	}
+
+	// Acquire the provider's import boundary, which never publishes remote roots.
+	lockFn := s.syncFuncs.Lock
+	if lockFn == nil {
+		lockFn = s.lockFn
+	}
+	lock, err := lockFn(ctx, s.sharedObjectID)
+	if err != nil {
+		return err
+	}
+	defer lock.Release()
+
+	// Authenticate the exact configuration using the checkpoint held by this lock.
+	previous := lock.GetSOState()
+	if err := VerifyConfigChainSuffix(previous.GetConfig(), candidate.GetConfig(), changes); err != nil {
+		return errors.Wrap(err, "peer snapshot configuration authority")
+	}
+	readable := false
+	for _, participant := range candidate.GetConfig().GetParticipants() {
+		if participant.GetPeerId() == localPeer.String() && CanReadState(participant.GetRole()) {
+			readable = true
+			break
+		}
+	}
+
+	// Apply proven revocation independently of root progress or access to new keys.
+	if !readable {
+		if len(changes) == 0 {
+			return ErrParticipantRevoked
+		}
+		next := previous.CloneVT()
+		next.Config = candidate.GetConfig().CloneVT()
+		next.RootGrants = nil
+		next.Ops = nil
+		next.QueuedAccountNonces = nil
+		next.OpRejections = nil
+		if err := lock.WriteSOState(ctx, next, changes...); err != nil {
+			return err
+		}
+		return ErrParticipantRevoked
+	}
+
+	// Authenticate root progress; unchanged accepted roots may carry role updates.
+	next := candidate.CloneVT()
+	seqno := next.GetRoot().GetInnerSeqno()
+	previousSeqno := previous.GetRoot().GetInnerSeqno()
+	if seqno < previousSeqno {
+		return errors.New("peer snapshot root rollback")
+	}
+	if seqno == previousSeqno && !next.GetRoot().EqualVT(previous.GetRoot()) {
+		return errors.New("peer snapshot conflicts with accepted root")
+	}
+	if seqno > previousSeqno {
+		validSigs, err := next.GetRoot().ValidateSignatures(s.sharedObjectID, next.GetConfig().GetParticipants())
+		if err != nil {
+			return errors.Wrap(err, "peer snapshot root authority")
+		}
+		if err := CheckConsensusAcceptance(next.GetConfig().GetConsensusMode(), validSigs); err != nil {
+			return errors.Wrap(err, "peer snapshot consensus")
+		}
+	}
+	if err := next.Validate(s.sharedObjectID); err != nil {
+		return errors.Wrap(err, "peer snapshot state")
+	}
+	if validateAccess != nil {
+		if err := validateAccess(ctx, next); err != nil {
+			return errors.Wrap(err, "inaccessible peer snapshot")
+		}
+	}
+
+	// Invitation capabilities are locally administered, not authenticated by a root.
+	next.Invites = previous.CloneVT().Invites
+	operations := next.Ops
+	next.Ops = nil
+	next.QueuedAccountNonces = nil
+	for _, operation := range operations {
+		if err := next.QueueOperation(s.sharedObjectID, operation); err != nil {
+			return errors.Wrap(err, "peer snapshot operation")
+		}
+	}
+
+	// Preserve unresolved local operations that remain admissible under new authority.
+	for _, operation := range previous.GetOps() {
+		inner, err := operation.UnmarshalInner()
+		if err != nil {
+			return err
+		}
+		existing, rejection, err := next.GetOperationStatus(inner.GetPeerId(), inner.GetLocalId())
+		if err != nil {
+			return err
+		}
+		if existing != nil || rejection != nil {
+			continue
+		}
+		// Committed, revoked or over-capacity local operations cannot be requeued.
+		if err := next.QueueOperation(s.sharedObjectID, operation); err != nil {
+			continue
+		}
+	}
+
+	// Avoid publishing unchanged snapshots back through watches or provider writes.
+	if next.EqualVT(previous) {
+		return nil
+	}
+	return lock.WriteSOState(ctx, next, changes...)
+}
+
+// InstallInviteSnapshot installs an explicit, externally authenticated invitation result.
+// The caller must have authenticated the invitation owner and its response before
+// calling this operation. Ordinary peer synchronization must use ImportPeerSnapshot.
+func (s *SOHost) InstallInviteSnapshot(ctx context.Context, candidate *SOState) error {
+	// Validate the new checkpoint before opening the provider's replacement boundary.
+	if s.syncFuncs.CheckpointLock == nil || len(candidate.GetConfig().GetConfigChainHash()) == 0 {
+		return ErrConfigHistoryUnavailable
+	}
+	if err := candidate.Validate(s.sharedObjectID); err != nil {
+		return err
+	}
+	signatures, err := candidate.GetRoot().ValidateSignatures(s.sharedObjectID, candidate.GetConfig().GetParticipants())
+	if err != nil {
+		return err
+	}
+	if err := CheckConsensusAcceptance(candidate.GetConfig().GetConsensusMode(), signatures); err != nil {
+		return err
+	}
+
+	// Commit state and its invitation-authenticated checkpoint under one provider lock.
+	lock, err := s.syncFuncs.CheckpointLock(ctx, s.sharedObjectID)
+	if err != nil {
+		return err
+	}
+	defer lock.Release()
+	return lock.WriteSOState(ctx, candidate.CloneVT())
 }
 
 // UpdateRootState locks the host state and applies the UpdateRootState operation.

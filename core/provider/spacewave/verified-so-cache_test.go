@@ -488,16 +488,10 @@ func TestApplyConfigMutationPersistsVerifiedStateCache(t *testing.T) {
 			ConfigChainSeqno: 3,
 		},
 	})
-	entry := &sobject.SOConfigChange{
-		ConfigSeqno: 4,
-		Config: &sobject.SharedObjectConfig{
-			Participants: []*sobject.SOParticipantConfig{{
-				PeerId: pid.String(),
-				Role:   sobject.SOParticipantRole_SOParticipantRole_OWNER,
-			}},
-		},
-		ChangeType:   sobject.SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_ADD_PARTICIPANT,
-		PreviousHash: []byte("old-hash"),
+	currentConfig := host.stateCtr.GetValue().GetConfig()
+	entry, err := sobject.BuildSOConfigChange(currentConfig, currentConfig, sobject.SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_ADD_PARTICIPANT, priv, nil)
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	if err := host.applyConfigMutation(context.Background(), entry, nil, nil); err != nil {

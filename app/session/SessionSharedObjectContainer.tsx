@@ -61,6 +61,7 @@ import {
   WatchResourcesListResponse,
 } from '@s4wave/sdk/session/session.pb.js'
 import { SharedObjectBodyContainer } from '@s4wave/app/sobject/SharedObjectBodyContainer.js'
+import { SharedObjectSyncNotice } from '@s4wave/app/sobject/SharedObjectSyncNotice.js'
 import { ErrorState } from '@s4wave/web/ui/ErrorState.js'
 import { useStaticHref } from '@s4wave/app/prerender/StaticContext.js'
 import { BackButton } from '@s4wave/web/ui/BackButton.js'
@@ -363,11 +364,10 @@ function RemediationActionButton({
       icon={icon}
       onClick={onClick}
       disabled={disabled || !!disabledReason}
-      className={
-        (active
-          ? 'border-foreground/15 bg-foreground/8 text-foreground '
-          : '') + className
-      }
+      className={cn(
+        active && 'border-foreground/15 bg-foreground/8 text-foreground',
+        className,
+      )}
     >
       {label}
     </DashboardButton>
@@ -1057,7 +1057,10 @@ export function SessionSharedObjectContainer() {
     <>
       {debugInfo}
       {sharedObjectResource.value && sharedObjectBodyResource.value ? (
-        <SharedObjectBodyContainer />
+        <>
+          <SharedObjectSyncNotice health={sharedObjectHealthResp?.health} />
+          <SharedObjectBodyContainer />
+        </>
       ) : needsSelfEnrollmentStepUp ? (
         <ErrorState
           variant="fullscreen"

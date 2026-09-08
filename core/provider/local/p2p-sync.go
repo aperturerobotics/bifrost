@@ -1003,7 +1003,7 @@ func (a *ProviderAccount) startSOSync(
 			localSO.localPriv,
 			localSO.localPid,
 		)
-		_, err := snapshot.GetTransformer(ctx)
+		_, err := snapshot.GetRootInner(ctx)
 		return err
 	}
 	soSync := sobject_sync.NewSOSync(
@@ -1020,6 +1020,11 @@ func (a *ProviderAccount) startSOSync(
 		},
 		validateSnapshotAccess,
 	)
+	soSync.SetPeerRecoveryObserver(func(remoteID peer.ID, required bool) {
+		localSO.tkr.healthCtr.SwapValue(func(health *sobject.SharedObjectHealth) *sobject.SharedObjectHealth {
+			return health.WithSyncPeerRecovery(remoteID.String(), required)
+		})
+	})
 	// Retain the mount for this generation while allowing an explicit invite to
 	// replace only the solicitation routine. RoutineContainer serializes the
 	// replacement behind the prior execution's exit.

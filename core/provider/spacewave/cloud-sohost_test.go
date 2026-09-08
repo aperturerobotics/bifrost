@@ -310,6 +310,17 @@ func TestCloudSOHostUsesInlineConfigChainWhenPulledStateHashChanges(t *testing.T
 		entityPriv,
 		1,
 	)
+	// The inline response advances a real trusted checkpoint rather than replacing a fork.
+	previousConfig := state.GetConfig().CloneVT()
+	change, err := sobject.BuildSOConfigChange(previousConfig, previousConfig, sobject.SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_ADD_INVITE, ownerPriv, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	state.Config, err = sobject.VerifyConfigChange(previousConfig, change)
+	if err != nil {
+		t.Fatal(err)
+	}
+	chainResp.ConfigChanges = append(chainResp.ConfigChanges, change)
 	stateData := mustMarshalVT(t, &api.SOStateMessage{
 		Seqno:       1,
 		ConfigChain: chainResp,
@@ -339,7 +350,7 @@ func TestCloudSOHostUsesInlineConfigChainWhenPulledStateHashChanges(t *testing.T
 		privKey:             ownerPriv,
 		peerID:              ownerPID,
 		stateCtr:            ccontainer.NewCContainer[*sobject.SOState](nil),
-		lastConfigChainHash: []byte("stale-config-hash"),
+		lastConfigChainHash: previousConfig.GetConfigChainHash(),
 	}
 	if err := host.pullState(context.Background(), SeedReasonColdSeed); err != nil {
 		t.Fatalf("pull state: %v", err)

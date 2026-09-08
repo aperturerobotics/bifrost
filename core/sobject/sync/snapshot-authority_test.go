@@ -1,7 +1,6 @@
 package sobject_sync
 
 import (
-	"context"
 	"strings"
 	"testing"
 
@@ -41,11 +40,8 @@ func TestSnapshotExchangeRequiresHeldAuthority(t *testing.T) {
 		mutate func(held, candidate *sobject.SOState)
 		// wantError names the decisive boundary rather than an unrelated earlier failure.
 		wantError string
-		// advanceHeld commits a local configuration change during the access check.
-		advanceHeld bool
 	}{
 		{name: "authorized sequence jump"},
-		{name: "configuration advances during access check", advanceHeld: true, wantError: "configuration authority"},
 		{name: "same head self promotion", mutate: func(_, candidate *sobject.SOState) {
 			candidate.Config.Participants[1].Role = sobject.SOParticipantRole_SOParticipantRole_OWNER
 			signSnapshotRoot(t, soID, candidate, reader)
@@ -53,7 +49,7 @@ func TestSnapshotExchangeRequiresHeldAuthority(t *testing.T) {
 		{name: "chainless different head", mutate: func(_, candidate *sobject.SOState) {
 			candidate.Config.ConfigChainHash[0] ^= 1
 			candidate.Config.ConfigChainSeqno++
-		}, wantError: "configuration authority"},
+		}, wantError: "requested history"},
 		{name: "empty held checkpoint", mutate: func(held, candidate *sobject.SOState) {
 			held.Config.ConfigChainHash = nil
 			candidate.Config = held.Config.CloneVT()
@@ -82,28 +78,14 @@ func TestSnapshotExchangeRequiresHeldAuthority(t *testing.T) {
 			before := held.CloneVT()
 			host, ctr := newMemHost(soID, held)
 			t.Cleanup(host.ClearContext)
-			var accessChecks []SnapshotAccessValidator
-			if test.advanceHeld {
-				accessChecks = append(accessChecks, func(ctx context.Context, _ *sobject.SOState) error {
-					entry, err := sobject.BuildSOConfigChange(held.GetConfig(), held.GetConfig(), sobject.SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_ADD_INVITE, owner, nil)
-					if err != nil {
-						return err
-					}
-					if err := host.ApplyConfigChange(ctx, entry, nil); err != nil {
-						return err
-					}
-					before = ctr.GetValue().CloneVT()
-					return nil
-				})
-			}
-			syncer := NewSOSync(gateLogger(), nil, soID, localID, local, host, nil, accessChecks...)
+			syncer := NewSOSync(gateLogger(), nil, soID, localID, local, host, nil)
 			data, err := candidate.MarshalVT()
 			if err != nil {
 				t.Fatal(err)
 			}
 			snapshot := &SOSyncSnapshot{SoState: data, RootSeqno: 5}
 			if len(held.GetConfig().GetConfigChainHash()) == 0 {
-				err = syncer.applyPeerSnapshot(t.Context(), gateLogger(), snapshot)
+				err = host.ImportPeerSnapshot(t.Context(), candidate, nil, localID, nil)
 			} else {
 				err = runSnapshotExchange(t, syncer, t.Context(), &SOSyncMessage{
 					Body: &SOSyncMessage_Snapshot{Snapshot: snapshot},

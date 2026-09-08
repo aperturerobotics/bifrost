@@ -21,6 +21,7 @@ import (
 func NewObjectStoreSOStateFuncs(rctx context.Context, objStore object.ObjectStore) (
 	watchFn sobject.SOStateWatchFunc,
 	lockFn sobject.SOStateLockFunc,
+	syncFuncs *sobject.SOHostSyncFuncs,
 ) {
 	// Keep each mounted state and its write lock under one reference-counted entry.
 	type soStateEntry struct {
@@ -99,7 +100,7 @@ func NewObjectStoreSOStateFuncs(rctx context.Context, objStore object.ObjectStor
 	}
 
 	// Retain the state entry until the locked write has completed.
-	lockFn = func(ctx context.Context, sharedObjectID string) (sobject.SOStateLock, error) {
+	newLock := func(ctx context.Context, sharedObjectID string, checkpoint, peerImport bool) (sobject.SOStateLock, error) {
 		ref, ent, _ := soRc.AddKeyRef(sharedObjectID)
 		_, err := ent.stateProm.Await(ctx)
 		if err != nil {
@@ -134,8 +135,19 @@ func NewObjectStoreSOStateFuncs(rctx context.Context, objStore object.ObjectStor
 						return objStore.NewTransaction(ctx, true)
 					},
 					func(ctx context.Context, tx kvtx.Tx) error {
-						if err := WriteSOConfigHistory(ctx, tx, sharedObjectID, initialState.GetConfig(), state.GetConfig(), changes); err != nil {
-							return err
+						if checkpoint || peerImport {
+							config := initialState.GetConfig()
+							if checkpoint {
+								config = state.GetConfig()
+							}
+							if err := WriteSOConfigCheckpoint(ctx, tx, sharedObjectID, config, checkpoint); err != nil {
+								return err
+							}
+						}
+						if !checkpoint {
+							if err := WriteSOConfigHistory(ctx, tx, sharedObjectID, initialState.GetConfig(), state.GetConfig(), changes); err != nil {
+								return err
+							}
 						}
 						return tx.Set(ctx, ent.key, data)
 					},
@@ -156,5 +168,16 @@ func NewObjectStoreSOStateFuncs(rctx context.Context, objStore object.ObjectStor
 		), nil
 	}
 
-	return watchFn, lockFn
+	// All three operations share the same retained state and serialization lock.
+	lockFn = func(ctx context.Context, id string) (sobject.SOStateLock, error) {
+		return newLock(ctx, id, false, false)
+	}
+	syncFuncs = NewSOHostSyncFuncs(objStore)
+	syncFuncs.Lock = func(ctx context.Context, id string) (sobject.SOStateLock, error) {
+		return newLock(ctx, id, false, true)
+	}
+	syncFuncs.CheckpointLock = func(ctx context.Context, id string) (sobject.SOStateLock, error) {
+		return newLock(ctx, id, true, false)
+	}
+	return watchFn, lockFn, syncFuncs
 }

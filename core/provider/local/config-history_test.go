@@ -72,8 +72,8 @@ func TestSOConfigHistoryRetainsHostChanges(t *testing.T) {
 	// Apply a real host change through the provider transaction and its retry boundary.
 	faults := kvtest.NewFaultStore(backend, kvtest.FaultBeforeCommit)
 	store := &configHistoryFaultStore{backend: backend, writes: faults}
-	watch, lock := NewObjectStoreSOStateFuncs(ctx, store)
-	host := sobject.NewSOHost(ctx, watch, lock, testSharedObjectID)
+	watch, lock, syncFuncs := NewObjectStoreSOStateFuncs(ctx, store)
+	host := sobject.NewSOHost(ctx, watch, lock, testSharedObjectID, syncFuncs)
 	t.Cleanup(host.ClearContext)
 	entry, err := sobject.BuildSOConfigChange(initial.GetConfig(), initial.GetConfig(), sobject.SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_GENESIS, priv, nil)
 	if err != nil {
@@ -124,8 +124,8 @@ func TestSOConfigHistoryRetainsHostChanges(t *testing.T) {
 	read.Discard()
 
 	// A fresh provider instance must recover exactly the committed host state.
-	watchAgain, lockAgain := NewObjectStoreSOStateFuncs(ctx, backend)
-	reopened := sobject.NewSOHost(ctx, watchAgain, lockAgain, testSharedObjectID)
+	watchAgain, lockAgain, syncAgain := NewObjectStoreSOStateFuncs(ctx, backend)
+	reopened := sobject.NewSOHost(ctx, watchAgain, lockAgain, testSharedObjectID, syncAgain)
 	t.Cleanup(reopened.ClearContext)
 	got, err := reopened.GetHostState(ctx)
 	if err != nil {

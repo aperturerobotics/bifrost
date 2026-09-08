@@ -5523,6 +5523,10 @@ type VerifiedSOStateCache struct {
 	KeyEpochs []*sobject.SOKeyEpoch `protobuf:"bytes,4,rep,name=key_epochs,json=keyEpochs,proto3" json:"keyEpochs,omitempty"`
 	// CurrentConfig is the latest trusted config from the verified chain.
 	CurrentConfig *sobject.SharedObjectConfig `protobuf:"bytes,5,opt,name=current_config,json=currentConfig,proto3" json:"currentConfig,omitempty"`
+	// PeerState is the last durably accepted peer snapshot, when present.
+	PeerState *sobject.SOState `protobuf:"bytes,6,opt,name=peer_state,json=peerState,proto3" json:"peerState,omitempty"`
+	// ConfigHistory retains authenticated transitions for peer catch-up.
+	ConfigHistory []*sobject.SOConfigChange `protobuf:"bytes,7,rep,name=config_history,json=configHistory,proto3" json:"configHistory,omitempty"`
 }
 
 func (x *VerifiedSOStateCache) Reset() {
@@ -5562,6 +5566,20 @@ func (x *VerifiedSOStateCache) GetKeyEpochs() []*sobject.SOKeyEpoch {
 func (x *VerifiedSOStateCache) GetCurrentConfig() *sobject.SharedObjectConfig {
 	if x != nil {
 		return x.CurrentConfig
+	}
+	return nil
+}
+
+func (x *VerifiedSOStateCache) GetPeerState() *sobject.SOState {
+	if x != nil {
+		return x.PeerState
+	}
+	return nil
+}
+
+func (x *VerifiedSOStateCache) GetConfigHistory() []*sobject.SOConfigChange {
+	if x != nil {
+		return x.ConfigHistory
 	}
 	return nil
 }
@@ -12829,6 +12847,8 @@ func (m *VerifiedSOStateCache) CloneVT() *VerifiedSOStateCache {
 	r.VerifiedConfigChainHash = protobuf_go_lite.CloneBytes(m.VerifiedConfigChainHash)
 	r.KeyEpochs = protobuf_go_lite.CloneVTSlice(m.KeyEpochs)
 	r.CurrentConfig = protobuf_go_lite.CloneVTValue(m.CurrentConfig)
+	r.PeerState = protobuf_go_lite.CloneVTValue(m.PeerState)
+	r.ConfigHistory = protobuf_go_lite.CloneVTSlice(m.ConfigHistory)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -19135,6 +19155,12 @@ func (this *VerifiedSOStateCache) EqualVT(that *VerifiedSOStateCache) bool {
 		return false
 	}
 	if !protobuf_go_lite.IsEqualVT(this.CurrentConfig, that.CurrentConfig) {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.PeerState, that.PeerState) {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.ConfigHistory, that.ConfigHistory, func() *sobject.SOConfigChange { return &sobject.SOConfigChange{} }) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -31156,6 +31182,22 @@ func (x *VerifiedSOStateCache) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("currentConfig")
 		x.CurrentConfig.MarshalProtoJSON(s.WithField("currentConfig"))
 	}
+	if x.PeerState != nil || s.HasField("peerState") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("peerState")
+		x.PeerState.MarshalProtoJSON(s.WithField("peerState"))
+	}
+	if len(x.ConfigHistory) > 0 || s.HasField("configHistory") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("configHistory")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.ConfigHistory {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s.WithField("configHistory"))
+		}
+		s.WriteArrayEnd()
+	}
 	s.WriteObjectEnd()
 }
 
@@ -31207,6 +31249,31 @@ func (x *VerifiedSOStateCache) UnmarshalProtoJSON(s *json.UnmarshalState) {
 			}
 			x.CurrentConfig = &sobject.SharedObjectConfig{}
 			x.CurrentConfig.UnmarshalProtoJSON(s.WithField("current_config", true))
+		case "peer_state", "peerState":
+			if s.ReadNil() {
+				x.PeerState = nil
+				return
+			}
+			x.PeerState = &sobject.SOState{}
+			x.PeerState.UnmarshalProtoJSON(s.WithField("peer_state", true))
+		case "config_history", "configHistory":
+			s.AddField("config_history")
+			if s.ReadNil() {
+				x.ConfigHistory = nil
+				return
+			}
+			s.ReadArray(func() {
+				if s.ReadNil() {
+					x.ConfigHistory = append(x.ConfigHistory, nil)
+					return
+				}
+				v := &sobject.SOConfigChange{}
+				v.UnmarshalProtoJSON(s.WithField("config_history", false))
+				if s.Err() != nil {
+					return
+				}
+				x.ConfigHistory = append(x.ConfigHistory, v)
+			})
 		}
 	})
 }
@@ -45644,6 +45711,28 @@ func (m *VerifiedSOStateCache) MarshalToSizedBufferVT(dAtA []byte) (int, error) 
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if len(m.ConfigHistory) > 0 {
+		for iNdEx := len(m.ConfigHistory) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.ConfigHistory[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0x3a
+		}
+	}
+	if m.PeerState != nil {
+		size, err := m.PeerState.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x32
+	}
 	if m.CurrentConfig != nil {
 		size, err := m.CurrentConfig.MarshalToSizedBufferVT(dAtA[:i])
 		if err != nil {
@@ -54364,6 +54453,14 @@ func (m *VerifiedSOStateCache) SizeVT() (n int) {
 		l = m.CurrentConfig.SizeVT()
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
+	if m.PeerState != nil {
+		l = m.PeerState.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	for _, e := range m.ConfigHistory {
+		l = e.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -59572,6 +59669,22 @@ func (x *VerifiedSOStateCache) MarshalProtoText() string {
 	if x.CurrentConfig != nil {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "current_config")
 		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.CurrentConfig)
+	}
+	if x.PeerState != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "peer_state")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.PeerState)
+	}
+	if len(x.ConfigHistory) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "config_history")
+		for i, v := range x.ConfigHistory {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &sobject.SOConfigChange{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -72328,6 +72441,34 @@ func (m *VerifiedSOStateCache) UnmarshalVT(dAtA []byte) error {
 				m.CurrentConfig = &sobject.SharedObjectConfig{}
 			}
 			if err := m.CurrentConfig.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PeerState", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.PeerState == nil {
+				m.PeerState = &sobject.SOState{}
+			}
+			if err := m.PeerState.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ConfigHistory", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.ConfigHistory = append(m.ConfigHistory, &sobject.SOConfigChange{})
+			if err := m.ConfigHistory[len(m.ConfigHistory)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

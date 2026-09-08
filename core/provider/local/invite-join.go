@@ -204,10 +204,7 @@ func (a *ProviderAccount) mountInvitedSO(
 		return errors.New("unexpected shared object type")
 	}
 
-	if err := localSO.soHost.UpdateSOState(ctx, func(state *sobject.SOState) error {
-		*state = *result.SharedObjectState.CloneVT()
-		return nil
-	}); err != nil {
+	if err := localSO.soHost.InstallInviteSnapshot(ctx, result.SharedObjectState); err != nil {
 		return errors.Wrap(err, "install owner shared object state")
 	}
 

@@ -82,7 +82,8 @@ func (s *SOSync) authenticate(ctx context.Context, sess *stream_packet.Session, 
 	if err != nil {
 		return "", err
 	}
-	accepted := s.authorizeParticipants(state, remoteID) == nil
+	admissionErr := s.authorizeParticipants(state, remoteID)
+	accepted := admissionErr == nil
 	incoming, err = exchangeMessage(sess, sendFirst, &SOSyncMessage{
 		Body: &SOSyncMessage_Authorization{Authorization: &SOSyncAuthorization{Accepted: accepted}},
 	})
@@ -96,7 +97,10 @@ func (s *SOSync) authenticate(ctx context.Context, sess *stream_packet.Session, 
 	if accepted && s.peerAdmission != nil {
 		s.peerAdmission(remoteID, authorization.GetAccepted())
 	}
-	if !accepted || !authorization.GetAccepted() {
+	if admissionErr != nil {
+		return remoteID, admissionErr
+	}
+	if !authorization.GetAccepted() {
 		return "", ErrAccessDenied
 	}
 	return remoteID, nil
@@ -125,9 +129,6 @@ func verifyParticipantProof(transcript *SOSyncAuthTranscript, proof *peer.Signat
 // authorizeParticipants evaluates both endpoint roles under the latest held authority.
 func (s *SOSync) authorizeParticipants(state *sobject.SOState, remoteID peer.ID) error {
 	cfg := state.GetConfig()
-	if len(cfg.GetConfigChainHash()) == 0 {
-		return ErrAccessDenied
-	}
 	var localReadable, remoteReadable bool
 	for _, participant := range cfg.GetParticipants() {
 		if !sobject.CanReadState(participant.GetRole()) {
@@ -138,6 +139,9 @@ func (s *SOSync) authorizeParticipants(state *sobject.SOState, remoteID peer.ID)
 	}
 	if !localReadable || !remoteReadable {
 		return ErrAccessDenied
+	}
+	if len(cfg.GetConfigChainHash()) == 0 {
+		return sobject.ErrConfigHistoryUnavailable
 	}
 	return nil
 }

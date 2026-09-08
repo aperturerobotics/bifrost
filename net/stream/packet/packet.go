@@ -10,6 +10,9 @@ import (
 	"github.com/pkg/errors"
 )
 
+// ErrMessageTooLarge reports a frame rejected before allocating its payload.
+var ErrMessageTooLarge = errors.New("packet message too large")
+
 // Session wraps a stream in a session.
 type Session struct {
 	io.ReadWriteCloser
@@ -71,7 +74,7 @@ func (s *Session) RecvMsg(msg protobuf_go_lite.Message) error {
 	messageLen := binary.LittleEndian.Uint32(hdr[:])
 	if messageLen > 0 {
 		if messageLen > s.maxMessageSize {
-			return errors.Errorf("invalid message len: %d", messageLen)
+			return errors.Wrapf(ErrMessageTooLarge, "message length %d exceeds limit %d", messageLen, s.maxMessageSize)
 		}
 
 		// Read and decode the payload bytes.
