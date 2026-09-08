@@ -1,4 +1,4 @@
-package cdn
+package v86copy
 
 import (
 	"bytes"

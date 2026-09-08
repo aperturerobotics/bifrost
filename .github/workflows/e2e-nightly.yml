@@ -398,6 +398,10 @@ jobs:
             run: '^(TestQuickstartForge(Route|Trace)|TestForge(ScenarioSequence|WorkerExecution)|TestBlog(CoexistenceScenario|QuickstartSetupProbe|QuickstartRetainedStateRegistrationProbe))$'
             timeout_minutes: 20
             job_timeout_minutes: 40
+          - name: startup-build-cache
+            run: '^TestStartupBuildCacheInvalidatesOnSourceChange$'
+            timeout_minutes: 40
+            job_timeout_minutes: 60
     timeout-minutes: ${{ matrix.slice.job_timeout_minutes }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

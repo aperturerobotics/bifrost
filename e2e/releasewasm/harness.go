@@ -57,6 +57,7 @@ type browserReleaseShellAssets struct {
 
 type harness struct {
 	artifactDir    string
+	distDirs       releaseWasmDistDirs
 	baseURL        string
 	browserName    string
 	repoRoot       string
@@ -98,6 +99,7 @@ func boot(ctx context.Context, le *logrus.Entry) (_ *harness, retErr error) {
 	}
 	h := &harness{
 		artifactDir:    artifactDir,
+		distDirs:       distDirs,
 		baseURL:        baseURL,
 		browserName:    browserName,
 		repoRoot:       repoRoot,
@@ -335,18 +337,32 @@ func (h *harness) newPage(t testing.TB) playwright.Page {
 	return page
 }
 
-func (h *harness) newPageWithDiagnosticsControl(t testing.TB) (playwright.Page, func()) {
+// newBrowserContext gives each test isolated storage. WebKit's ephemeral
+// contexts reject OPFS access, so its tests use a temporary persistent profile.
+func (h *harness) newBrowserContext(t testing.TB) playwright.BrowserContext {
 	t.Helper()
-
-	ctx, err := h.browser.NewContext(h.newContextOptions(t))
-	if err != nil {
-		t.Fatalf("new browser context: %v", err)
+	var ctx playwright.BrowserContext
+	if h.browserName == "webkit" {
+		ctx = h.newPersistentBrowserContext(t, t.TempDir())
+	} else {
+		var err error
+		ctx, err = h.browser.NewContext(h.newContextOptions(t))
+		if err != nil {
+			t.Fatalf("new browser context: %v", err)
+		}
 	}
 	t.Cleanup(func() {
 		if err := ctx.Close(); err != nil {
 			t.Logf("close browser context: %v", err)
 		}
 	})
+	return ctx
+}
+
+func (h *harness) newPageWithDiagnosticsControl(t testing.TB) (playwright.Page, func()) {
+	t.Helper()
+
+	ctx := h.newBrowserContext(t)
 
 	page, err := ctx.NewPage()
 	if err != nil {
@@ -360,15 +376,7 @@ func (h *harness) newPageWithDiagnosticsControl(t testing.TB) (playwright.Page, 
 func (h *harness) newDedicatedWorkerPage(t testing.TB) playwright.Page {
 	t.Helper()
 
-	ctx, err := h.browser.NewContext(h.newContextOptions(t))
-	if err != nil {
-		t.Fatalf("new browser context: %v", err)
-	}
-	t.Cleanup(func() {
-		if err := ctx.Close(); err != nil {
-			t.Logf("close browser context: %v", err)
-		}
-	})
+	ctx := h.newBrowserContext(t)
 
 	script := `
 Object.defineProperty(globalThis, 'SharedWorker', {
@@ -408,10 +416,15 @@ func (h *harness) newPersistentBrowserContext(t testing.TB, userDataDir string) 
 		t.Fatalf("resolve persistent release browser type: %v", err)
 	}
 	launchPersistent := func(gpu bool) (playwright.BrowserContext, error) {
-		return browserType.LaunchPersistentContext(
-			userDataDir,
-			persistentBrowserContextLaunchOptions(h.browserName, gpu),
-		)
+		options := persistentBrowserContextLaunchOptions(h.browserName, gpu)
+		device := h.newContextOptions(t)
+		options.Viewport = device.Viewport
+		options.Screen = device.Screen
+		options.UserAgent = device.UserAgent
+		options.DeviceScaleFactor = device.DeviceScaleFactor
+		options.IsMobile = device.IsMobile
+		options.HasTouch = device.HasTouch
+		return browserType.LaunchPersistentContext(userDataDir, options)
 	}
 	var ctx playwright.BrowserContext
 	switch h.browserName {
@@ -492,7 +505,7 @@ func (h *harness) attachPageDiagnostics(t testing.TB, page playwright.Page) func
 		worker.OnConsole(func(msg playwright.ConsoleMessage) {
 			switch msg.Type() {
 			case "error":
-				if !ignoreBrowserError(msg.Text()) {
+				if !ignoreBrowserError(msg.Text()) && !isExpectedReleaseWasmConsoleError(msg) {
 					recordBrowserError("worker console error: " + msg.Text())
 				}
 			case "warning":
@@ -514,7 +527,8 @@ func (h *harness) attachPageDiagnostics(t testing.TB, page playwright.Page) func
 	page.On("console", func(msg playwright.ConsoleMessage) {
 		switch msg.Type() {
 		case "error":
-			if !ignoreBrowserError(msg.Text()) {
+			if !ignoreBrowserError(msg.Text()) && !isExpectedReleaseWasmConsoleError(msg) {
+				t.Logf("browser console error location: %+v", msg.Location())
 				recordBrowserError("console error: " + msg.Text())
 			}
 		case "warning":
@@ -586,8 +600,16 @@ func isExpectedReleaseWasmHTTPError(url string) bool {
 	return strings.HasSuffix(url, "/api/auth/config")
 }
 
+// isExpectedReleaseWasmConsoleError recognizes the browser's resource error for
+// the auth probe when the static origin is unavailable during an offline test.
+func isExpectedReleaseWasmConsoleError(msg playwright.ConsoleMessage) bool {
+	location := msg.Location()
+	return location != nil && isExpectedReleaseWasmHTTPError(location.URL) &&
+		strings.HasPrefix(msg.Text(), "Failed to load resource:")
+}
+
 func isBrowserAbortedRequest(failure string) bool {
-	return strings.Contains(failure, "net::ERR_ABORTED")
+	return failure == "cancelled" || strings.Contains(failure, "net::ERR_ABORTED")
 }
 
 func (h *harness) newContextOptions(t testing.TB) playwright.BrowserNewContextOptions {

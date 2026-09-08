@@ -1,4 +1,4 @@
-package s4wave_wizard
+package wizard_resource
 
 import (
 	"context"
@@ -14,6 +14,7 @@ import (
 	"github.com/s4wave/spacewave/db/world"
 	world_types "github.com/s4wave/spacewave/db/world/types"
 	space_uri "github.com/s4wave/spacewave/sdk/space"
+	wizard "github.com/s4wave/spacewave/sdk/world/wizard"
 )
 
 // WizardResource implements the WizardResourceService SRPC interface.
@@ -24,11 +25,11 @@ type WizardResource struct {
 	ctxCancel     context.CancelFunc
 	cloneRoutine  *routine.RoutineContainer
 	stateWatch    *routine.RoutineContainer
-	state         *WizardState
+	state         *wizard.WizardState
 	stateRev      uint64
 	stateWatchErr error
 	stateClosed   bool
-	cloneProgress *GitCloneProgress
+	cloneProgress *wizard.GitCloneProgress
 	bcast         broadcast.Broadcast
 	mux           srpc.Mux
 }
@@ -42,7 +43,7 @@ var wizardStateWatchBackoff = &backoff.Backoff{
 }
 
 type wizardStateWatchSnapshot struct {
-	state *WizardState
+	state *wizard.WizardState
 	err   error
 }
 
@@ -51,9 +52,9 @@ type wizardReleasableObjectState interface {
 }
 
 // NewWizardResource creates a new WizardResource.
-func NewWizardResource(ws world.WorldState, engine world.Engine, objKey string, state *WizardState) *WizardResource {
+func NewWizardResource(ws world.WorldState, engine world.Engine, objKey string, state *wizard.WizardState) *WizardResource {
 	if state == nil {
-		state = &WizardState{}
+		state = &wizard.WizardState{}
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cloneRoutine := routine.NewRoutineContainer()
@@ -65,8 +66,8 @@ func NewWizardResource(ws world.WorldState, engine world.Engine, objKey string, 
 		ctxCancel:    cancel,
 		cloneRoutine: cloneRoutine,
 		state:        state,
-		cloneProgress: &GitCloneProgress{
-			State: GitCloneProgressState_GIT_CLONE_PROGRESS_STATE_IDLE,
+		cloneProgress: &wizard.GitCloneProgress{
+			State: wizard.GitCloneProgressState_GIT_CLONE_PROGRESS_STATE_IDLE,
 		},
 	}
 	if ws != nil && objKey != "" {
@@ -75,7 +76,7 @@ func NewWizardResource(ws world.WorldState, engine world.Engine, objKey string, 
 		r.stateWatch.SetContext(ctx, false)
 	}
 	r.mux = resource_server.NewResourceMux(func(mux srpc.Mux) error {
-		return SRPCRegisterWizardResourceService(mux, r)
+		return wizard.SRPCRegisterWizardResourceService(mux, r)
 	})
 	return r
 }
@@ -100,7 +101,7 @@ func (r *WizardResource) Close() {
 }
 
 // WatchWizardState streams wizard state changes.
-func (r *WizardResource) WatchWizardState(_ *WatchWizardStateRequest, strm SRPCWizardResourceService_WatchWizardStateStream) error {
+func (r *WizardResource) WatchWizardState(_ *wizard.WatchWizardStateRequest, strm wizard.SRPCWizardResourceService_WatchWizardStateStream) error {
 	return broadcast.WatchBroadcastWithEqual(
 		strm.Context(),
 		&r.bcast,
@@ -109,7 +110,7 @@ func (r *WizardResource) WatchWizardState(_ *WatchWizardStateRequest, strm SRPCW
 			if snap.err != nil {
 				return snap.err
 			}
-			return strm.Send(&WatchWizardStateResponse{State: snap.state.CloneVT()})
+			return strm.Send(&wizard.WatchWizardStateResponse{State: snap.state.CloneVT()})
 		},
 		wizardStateWatchSnapshotsEqual,
 	)
@@ -138,7 +139,7 @@ func (r *WizardResource) watchWizardWorld(ctx context.Context) error {
 			return world.ErrObjectNotFound
 		}
 
-		state, rev, err := func() (*WizardState, uint64, error) {
+		state, rev, err := func() (*wizard.WizardState, uint64, error) {
 			if rel, ok := objState.(wizardReleasableObjectState); ok {
 				defer rel.Release()
 			}
@@ -163,23 +164,23 @@ func (r *WizardResource) watchWizardWorld(ctx context.Context) error {
 	}
 }
 
-func (r *WizardResource) readWizardWorldState(ctx context.Context, objState world.ObjectState) (*WizardState, error) {
-	var state *WizardState
+func (r *WizardResource) readWizardWorldState(ctx context.Context, objState world.ObjectState) (*wizard.WizardState, error) {
+	var state *wizard.WizardState
 	_, _, err := world.AccessObjectState(ctx, objState, false, func(bcs *block.Cursor) error {
 		var uerr error
-		state, uerr = UnmarshalWizardState(ctx, bcs)
+		state, uerr = wizard.UnmarshalWizardState(ctx, bcs)
 		return uerr
 	})
 	if err != nil {
 		return nil, err
 	}
 	if state == nil {
-		state = &WizardState{}
+		state = &wizard.WizardState{}
 	}
 	return state, nil
 }
 
-func (r *WizardResource) setWizardStateWatchState(state *WizardState, rev uint64) {
+func (r *WizardResource) setWizardStateWatchState(state *wizard.WizardState, rev uint64) {
 	r.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
 		if r.stateClosed || rev < r.stateRev {
 			return
@@ -225,8 +226,8 @@ func wizardStateWatchSnapshotsEqual(a, b *wizardStateWatchSnapshot) bool {
 }
 
 // UpdateWizardState updates the wizard block state.
-func (r *WizardResource) UpdateWizardState(ctx context.Context, req *UpdateWizardStateRequest) (*UpdateWizardStateResponse, error) {
-	var updated *WizardState
+func (r *WizardResource) UpdateWizardState(ctx context.Context, req *wizard.UpdateWizardStateRequest) (*wizard.UpdateWizardStateResponse, error) {
+	var updated *wizard.WizardState
 	r.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
 		updated = r.state.CloneVT()
 	})
@@ -248,11 +249,11 @@ func (r *WizardResource) UpdateWizardState(ctx context.Context, req *UpdateWizar
 
 	r.setWizardStateWatchState(updated, rev)
 
-	return &UpdateWizardStateResponse{State: updated.CloneVT()}, nil
+	return &wizard.UpdateWizardStateResponse{State: updated.CloneVT()}, nil
 }
 
 // StartGitClone starts the Git repository clone workflow for this wizard.
-func (r *WizardResource) StartGitClone(ctx context.Context, req *StartGitCloneRequest) (*StartGitCloneResponse, error) {
+func (r *WizardResource) StartGitClone(ctx context.Context, req *wizard.StartGitCloneRequest) (*wizard.StartGitCloneResponse, error) {
 	if req.GetObjectKey() == "" {
 		return nil, errors.Wrap(world.ErrEmptyObjectKey, "object_key")
 	}
@@ -263,15 +264,15 @@ func (r *WizardResource) StartGitClone(ctx context.Context, req *StartGitCloneRe
 		return nil, errors.New("config_data is required")
 	}
 
-	var progress *GitCloneProgress
-	var cloneReq *StartGitCloneRequest
+	var progress *wizard.GitCloneProgress
+	var cloneReq *wizard.StartGitCloneRequest
 	r.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
-		if r.cloneProgress.GetState() == GitCloneProgressState_GIT_CLONE_PROGRESS_STATE_RUNNING {
+		if r.cloneProgress.GetState() == wizard.GitCloneProgressState_GIT_CLONE_PROGRESS_STATE_RUNNING {
 			return
 		}
 		cloneReq = req.CloneVT()
-		r.cloneProgress = &GitCloneProgress{
-			State:     GitCloneProgressState_GIT_CLONE_PROGRESS_STATE_RUNNING,
+		r.cloneProgress = &wizard.GitCloneProgress{
+			State:     wizard.GitCloneProgressState_GIT_CLONE_PROGRESS_STATE_RUNNING,
 			Message:   "Starting clone...",
 			ObjectKey: req.GetObjectKey(),
 		}
@@ -287,24 +288,24 @@ func (r *WizardResource) StartGitClone(ctx context.Context, req *StartGitCloneRe
 		return nil
 	})
 
-	return &StartGitCloneResponse{Progress: progress}, nil
+	return &wizard.StartGitCloneResponse{Progress: progress}, nil
 }
 
 // WatchGitCloneProgress streams Git clone progress for this wizard resource.
-func (r *WizardResource) WatchGitCloneProgress(_ *WatchGitCloneProgressRequest, strm SRPCWizardResourceService_WatchGitCloneProgressStream) error {
+func (r *WizardResource) WatchGitCloneProgress(_ *wizard.WatchGitCloneProgressRequest, strm wizard.SRPCWizardResourceService_WatchGitCloneProgressStream) error {
 	err := broadcast.WatchBroadcastVT(
 		strm.Context(),
 		&r.bcast,
-		func() *GitCloneProgress {
+		func() *wizard.GitCloneProgress {
 			return r.cloneProgress.CloneVT()
 		},
-		func(progress *GitCloneProgress) error {
-			if err := strm.Send(&WatchGitCloneProgressResponse{Progress: progress}); err != nil {
+		func(progress *wizard.GitCloneProgress) error {
+			if err := strm.Send(&wizard.WatchGitCloneProgressResponse{Progress: progress}); err != nil {
 				return err
 			}
 			switch progress.GetState() {
-			case GitCloneProgressState_GIT_CLONE_PROGRESS_STATE_DONE,
-				GitCloneProgressState_GIT_CLONE_PROGRESS_STATE_FAILED:
+			case wizard.GitCloneProgressState_GIT_CLONE_PROGRESS_STATE_DONE,
+				wizard.GitCloneProgressState_GIT_CLONE_PROGRESS_STATE_FAILED:
 				return errGitCloneProgressComplete
 			default:
 				return nil
@@ -357,7 +358,7 @@ func (r *WizardResource) replaceSpaceIndexIfWizardIsCurrent(
 	)
 }
 
-func (r *WizardResource) setGitCloneProgress(progress *GitCloneProgress) {
+func (r *WizardResource) setGitCloneProgress(progress *wizard.GitCloneProgress) {
 	r.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
 		r.cloneProgress = progress.CloneVT()
 		broadcast()
@@ -365,7 +366,7 @@ func (r *WizardResource) setGitCloneProgress(progress *GitCloneProgress) {
 }
 
 // persistState writes the wizard state to the world via a write transaction.
-func (r *WizardResource) persistState(ctx context.Context, state *WizardState) (uint64, error) {
+func (r *WizardResource) persistState(ctx context.Context, state *wizard.WizardState) (uint64, error) {
 	wtx, err := r.engine.NewTransaction(ctx, true)
 	if err != nil {
 		return 0, err
@@ -398,4 +399,4 @@ func (r *WizardResource) persistState(ctx context.Context, state *WizardState) (
 	return rev, nil
 }
 
-var _ SRPCWizardResourceServiceServer = (*WizardResource)(nil)
+var _ wizard.SRPCWizardResourceServiceServer = (*WizardResource)(nil)

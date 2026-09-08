@@ -214,6 +214,13 @@ export interface Config {
    */
   goPkgs?: string[]
   /**
+   * GoscriptDeferredFunctions lists exported package/path.Function boundaries
+   * whose modules initialize on first invocation in a GoScript plugin build.
+   *
+   * @generated from field: repeated string goscript_deferred_functions = 19;
+   */
+  goscriptDeferredFunctions?: string[]
+  /**
    * WebPkgs is the list of web packages to externalize and include in the bundle.
    *
    * Externalized web packages (npm modules) are imported separately from the web bundle.
@@ -360,6 +367,13 @@ export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
     {
       no: 4,
       name: 'go_pkgs',
+      kind: 'scalar',
+      T: ScalarType.STRING,
+      repeated: true,
+    },
+    {
+      no: 19,
+      name: 'goscript_deferred_functions',
       kind: 'scalar',
       T: ScalarType.STRING,
       repeated: true,

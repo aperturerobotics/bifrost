@@ -34,6 +34,7 @@ import (
 	"github.com/s4wave/spacewave/sdk/world/objecttype"
 	objecttype_controller "github.com/s4wave/spacewave/sdk/world/objecttype/controller"
 	s4wave_wizard "github.com/s4wave/spacewave/sdk/world/wizard"
+	wizard_resource "github.com/s4wave/spacewave/sdk/world/wizard/resource"
 	"github.com/sirupsen/logrus"
 )
 
@@ -92,7 +93,7 @@ func setupWizardWorldEngine(ctx context.Context, t *testing.T) (*resource_client
 	tb, resClient, tbCleanup := resource_testbed.SetupTestbedWithClient(ctx, t)
 
 	lookupFunc := func(ctx context.Context, typeID string) (objecttype.ObjectType, error) {
-		return s4wave_wizard.LookupWizardObjectType(ctx, typeID)
+		return wizard_resource.LookupWizardObjectType(ctx, typeID)
 	}
 	objectTypeCtrl := objecttype_controller.NewController(lookupFunc)
 	objectTypeCtrlRelease, err := tb.Bus.AddController(ctx, objectTypeCtrl, nil)
@@ -827,7 +828,7 @@ func TestWizardGitCloneProgressWatchSendsTerminalOnce(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	r := s4wave_wizard.NewWizardResource(nil, nil, "wizard/git/test", &s4wave_wizard.WizardState{})
+	r := wizard_resource.NewWizardResource(nil, nil, "wizard/git/test", &s4wave_wizard.WizardState{})
 	defer r.Close()
 
 	_, err := r.StartGitClone(ctx, &s4wave_wizard.StartGitCloneRequest{
@@ -874,7 +875,7 @@ func TestWizardGitCloneProgressWatchSendsTerminalOnce(t *testing.T) {
 
 func TestWizardGitCloneProgressWatchCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
-	r := s4wave_wizard.NewWizardResource(nil, nil, "wizard/git/cancel", &s4wave_wizard.WizardState{})
+	r := wizard_resource.NewWizardResource(nil, nil, "wizard/git/cancel", &s4wave_wizard.WizardState{})
 	defer r.Close()
 
 	strm := newGitCloneProgressStream(ctx)
@@ -905,7 +906,7 @@ func TestWizardResourceWatchSharesWorldUpdates(t *testing.T) {
 	ws, cleanup := setupWizardWatchWorld(t, ctx, objKey, initial)
 	t.Cleanup(cleanup)
 
-	resource := s4wave_wizard.NewWizardResource(ws, nil, objKey, initial)
+	resource := wizard_resource.NewWizardResource(ws, nil, objKey, initial)
 	t.Cleanup(resource.Close)
 	streamCtxA, cancelA := context.WithCancel(ctx)
 	defer cancelA()
@@ -954,7 +955,7 @@ func TestWizardResourceWatchSharesWorldUpdates(t *testing.T) {
 
 func TestWizardResourceCloseCancelsStateWatchersImmediately(t *testing.T) {
 	ctx := t.Context()
-	resource := s4wave_wizard.NewWizardResource(nil, nil, "", &s4wave_wizard.WizardState{Name: "Initial"})
+	resource := wizard_resource.NewWizardResource(nil, nil, "", &s4wave_wizard.WizardState{Name: "Initial"})
 	streamCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	strm := newWizardStateStream(streamCtx)

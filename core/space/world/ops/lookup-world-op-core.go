@@ -9,6 +9,7 @@ import (
 	forge_job_ops "github.com/s4wave/spacewave/core/forge/job"
 	forge_task_ops "github.com/s4wave/spacewave/core/forge/task"
 	s4wave_git "github.com/s4wave/spacewave/core/git"
+	"github.com/s4wave/spacewave/core/git/opids"
 	unixfs_world "github.com/s4wave/spacewave/db/unixfs/world"
 	"github.com/s4wave/spacewave/db/world"
 	forge_world "github.com/s4wave/spacewave/forge/world"
@@ -42,6 +43,14 @@ func lookupCoreWorldOp(ctx context.Context, opTypeID string) (world.Operation, e
 		forge_dashboard.LookupInitForgeQuickstartOp,
 		forge_job_ops.LookupForgeJobCreateOp,
 		forge_task_ops.LookupForgeTaskCreateOp,
-		s4wave_git.LookupCreateGitRepoWizardOp,
+		lookupGitWizardOp,
 	}).LookupOp(ctx, opTypeID)
+}
+
+// lookupGitWizardOp avoids loading Git for unrelated world operations.
+func lookupGitWizardOp(ctx context.Context, opTypeID string) (world.Operation, error) {
+	if opTypeID != opids.CreateRepoWizard {
+		return nil, nil
+	}
+	return s4wave_git.LookupCreateGitRepoWizardOp(ctx, opTypeID)
 }

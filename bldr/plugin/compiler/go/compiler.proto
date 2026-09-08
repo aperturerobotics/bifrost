@@ -48,6 +48,10 @@ message Config {
   // EnableImportedFactoryDiscovery is ENABLE.
   repeated string go_pkgs = 4;
 
+  // GoscriptDeferredFunctions lists exported package/path.Function boundaries
+  // whose modules initialize on first invocation in a GoScript plugin build.
+  repeated string goscript_deferred_functions = 19;
+
   // WebPkgs is the list of web packages to externalize and include in the bundle.
   //
   // Externalized web packages (npm modules) are imported separately from the web bundle.

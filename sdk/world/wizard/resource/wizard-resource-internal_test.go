@@ -1,18 +1,20 @@
 //go:build !js
 
-package s4wave_wizard
+package wizard_resource
 
 import (
 	"context"
 	"errors"
 	"testing"
+
+	wizard "github.com/s4wave/spacewave/sdk/world/wizard"
 )
 
 func TestWizardResourceClosePreventsLateStatePublish(t *testing.T) {
-	resource := NewWizardResource(nil, nil, "", &WizardState{Name: "Initial"})
+	resource := NewWizardResource(nil, nil, "", &wizard.WizardState{Name: "Initial"})
 	resource.Close()
 
-	resource.setWizardStateWatchState(&WizardState{Name: "Late"}, 1)
+	resource.setWizardStateWatchState(&wizard.WizardState{Name: "Late"}, 1)
 
 	var snap *wizardStateWatchSnapshot
 	resource.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
@@ -24,10 +26,10 @@ func TestWizardResourceClosePreventsLateStatePublish(t *testing.T) {
 }
 
 func TestWizardResourceRejectsStaleWorldStatePublish(t *testing.T) {
-	resource := NewWizardResource(nil, nil, "", &WizardState{Name: "Initial"})
+	resource := NewWizardResource(nil, nil, "", &wizard.WizardState{Name: "Initial"})
 
-	resource.setWizardStateWatchState(&WizardState{Name: "Current"}, 2)
-	resource.setWizardStateWatchState(&WizardState{Name: "Stale"}, 1)
+	resource.setWizardStateWatchState(&wizard.WizardState{Name: "Current"}, 2)
+	resource.setWizardStateWatchState(&wizard.WizardState{Name: "Stale"}, 1)
 
 	var snap *wizardStateWatchSnapshot
 	resource.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {

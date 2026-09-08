@@ -225,6 +225,13 @@ export interface Config {
    * @generated from field: repeated string update_guard_plugin_ids = 15;
    */
   updateGuardPluginIds?: string[]
+  /**
+   * GoscriptDeferredFunctions lists exported package/path.Function boundaries
+   * whose modules initialize on first invocation in a GoScript dist build.
+   *
+   * @generated from field: repeated string goscript_deferred_functions = 16;
+   */
+  goscriptDeferredFunctions?: string[]
 }
 
 export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
@@ -282,6 +289,13 @@ export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
     {
       no: 15,
       name: 'update_guard_plugin_ids',
+      kind: 'scalar',
+      T: ScalarType.STRING,
+      repeated: true,
+    },
+    {
+      no: 16,
+      name: 'goscript_deferred_functions',
       kind: 'scalar',
       T: ScalarType.STRING,
       repeated: true,

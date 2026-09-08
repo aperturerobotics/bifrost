@@ -1,4 +1,4 @@
-package s4wave_wizard
+package wizard_resource
 
 import (
 	"context"
@@ -9,11 +9,9 @@ import (
 	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/world"
 	"github.com/s4wave/spacewave/sdk/world/objecttype"
+	wizard "github.com/s4wave/spacewave/sdk/world/wizard"
 	"github.com/sirupsen/logrus"
 )
-
-// WizardTypePrefix is the prefix for all wizard object type IDs.
-const WizardTypePrefix = "wizard/"
 
 // WizardFactory creates a WizardResource from a world object.
 func WizardFactory(
@@ -28,7 +26,7 @@ func WizardFactory(
 		return nil, nil, objecttype.ErrWorldStateRequired
 	}
 
-	var state *WizardState
+	var state *wizard.WizardState
 	objState, found, err := ws.GetObject(ctx, objectKey)
 	if err != nil {
 		return nil, nil, err
@@ -39,7 +37,7 @@ func WizardFactory(
 
 	_, _, err = world.AccessObjectState(ctx, objState, false, func(bcs *block.Cursor) error {
 		var uerr error
-		state, uerr = UnmarshalWizardState(ctx, bcs)
+		state, uerr = wizard.UnmarshalWizardState(ctx, bcs)
 		return uerr
 	})
 	if err != nil {
@@ -47,7 +45,7 @@ func WizardFactory(
 	}
 
 	if state == nil {
-		state = &WizardState{}
+		state = &wizard.WizardState{}
 	}
 
 	resource := NewWizardResource(ws, engine, objectKey, state)
@@ -57,7 +55,7 @@ func WizardFactory(
 // LookupWizardObjectType looks up an ObjectType for wizard/* type IDs.
 // Returns nil if the type ID does not have the wizard/ prefix.
 func LookupWizardObjectType(ctx context.Context, typeID string) (objecttype.ObjectType, error) {
-	if !strings.HasPrefix(typeID, WizardTypePrefix) {
+	if !strings.HasPrefix(typeID, wizard.WizardTypePrefix) {
 		return nil, nil
 	}
 	return objecttype.NewObjectType(typeID, WizardFactory), nil

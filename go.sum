@@ -90,8 +90,8 @@ github.com/aperturerobotics/saucer v0.0.0-20260317232052-4db05a4e0b4c h1:32+9phq
 github.com/aperturerobotics/saucer v0.0.0-20260317232052-4db05a4e0b4c/go.mod h1:L9/rUdjzzI9mMWKJcbh7T8LSQ43JKwrxYv4I2i2YsY4=
 github.com/aperturerobotics/starpc v0.52.1 h1:oz8EpHO3SIPLLL6lx6di2IBlQNyhsumcEB3rI/KJUKg=
 github.com/aperturerobotics/starpc v0.52.1/go.mod h1:04caiWwOtqsuwiIc5aLoNtp6ega99V7AhFinALdfFXc=
-github.com/aperturerobotics/util v1.34.10-0.20260802062101-496aab6cefd2 h1:fIAb1MvcrFtw/6Bqg+mjOqiHjHPPcljvM53Sm8g/e5s=
-github.com/aperturerobotics/util v1.34.10-0.20260802062101-496aab6cefd2/go.mod h1:2uIQA8dHn5EQgEtRqcTS4zxJ51dEVehY9O++bJfU2hs=
+github.com/aperturerobotics/util v1.34.10-0.20260908041655-efde2b8a2bf7 h1:uBWpApT3fP38f6tPEywH0FjrWiNsKa+TuIcEJPUAxxY=
+github.com/aperturerobotics/util v1.34.10-0.20260908041655-efde2b8a2bf7/go.mod h1:2uIQA8dHn5EQgEtRqcTS4zxJ51dEVehY9O++bJfU2hs=
 github.com/aperturerobotics/vitess v0.0.0-20260628002426-ab1c68c3a83d h1:Agd8EZ86U0KSNxU+U7FhNKv7Rm9BWVgGeVRxS7aEqf4=
 github.com/aperturerobotics/vitess v0.0.0-20260628002426-ab1c68c3a83d/go.mod h1:BA7YZUS4BoNY+k1nl7A3TLJkLY4KfW4I0c+DbXblfis=
 github.com/aperturerobotics/wazero v0.0.0-20260304193718-46de011b30f6 h1:ZbKfJ4Qftk6XS8L05XgS6thW6hGadgeGN4KVmxwazvc=
@@ -366,9 +366,9 @@ github.com/restic/chunker v0.5.0/go.mod h1:z0cH2BejpW636LXw0R/BGyv+Ey8+m9QGiOanD
 github.com/rogpeppe/go-internal v1.9.0/go.mod h1:WtVeX8xhTBvf0smdhujwtBcq4Qrzq/fJaraNFVN+nFs=
 github.com/rogpeppe/go-internal v1.16.0 h1:O9DK+vNMDVGLr2BeZqmpLeMjiMNkuXfcqntWbZV6S5g=
 github.com/rogpeppe/go-internal v1.16.0/go.mod h1:DrUVZyrJU+txYW5/1kwtXQSMFio52ZOxX7yM1VHvnxs=
-github.com/s4wave/goscript v0.2.32-0.20260907174119-688ee01d1835 h1:L6Q8NkEckChjf4F5I2S5hjKg6FLOnqdMJGgPl04iv/I=
-github.com/s4wave/goscript v0.2.32-0.20260907174119-688ee01d1835/go.mod h1:2PkLvl4v5IXRzAh+HpOQymrS7Z6mNmAOKY89EoAhv8A=
 github.com/sagikazarmark/locafero v0.11.0/go.mod h1:nVIGvgyzw595SUSUE6tvCp3YYTeHs15MvlmU87WwIik=
+github.com/s4wave/goscript v0.2.32-0.20260908014732-84ecbeea3844 h1:CvcttNtLVbqzc/NY+1EtLVAmnCqr7at2JYnZOVF3nEk=
+github.com/s4wave/goscript v0.2.32-0.20260908014732-84ecbeea3844/go.mod h1:2PkLvl4v5IXRzAh+HpOQymrS7Z6mNmAOKY89EoAhv8A=
 github.com/sasha-s/go-deadlock v0.3.9 h1:fiaT9rB7g5sr5ddNZvlwheclN9IP86eFW9WgqlEQV+w=
 github.com/sasha-s/go-deadlock v0.3.9/go.mod h1:KuZj51ZFmx42q/mPaYbRk0P1xcwe697zsJKE03vD4/Y=
 github.com/satori/go.uuid v1.2.0 h1:0uYX9dsZ2yD7q2RtLRtPSdGDWzjeM3TbMJP9utgA0ww=

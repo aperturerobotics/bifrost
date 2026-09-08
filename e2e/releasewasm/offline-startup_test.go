@@ -3,6 +3,7 @@
 package releasewasm
 
 import (
+	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -17,13 +18,32 @@ func TestGoScriptOfflineStartup(t *testing.T) {
 	if compiler != releaseWasmCompilerGoScript {
 		t.Skip("requires the GoScript release build")
 	}
-	page := testHarness.newPage(t)
-	ctx := page.Context()
-	if _, err := page.Goto(testHarness.getBaseURL() + "/quickstart/drive"); err != nil {
+	// Own the origin so stopping it leaves the suite's server available. Browser
+	// offline emulation also disables WebKit service-worker cache responses.
+	h := *testHarness
+	origin := httptest.NewUnstartedServer(nil)
+	t.Cleanup(origin.Close)
+	h.baseURL = "http://" + origin.Listener.Addr().String()
+	origin.Config.Handler = releaseHandler(h.distDirs.releaseDist, h.distDirs.prerender, h.baseURL)
+	origin.Start()
+	// A persistent profile allows the whole browser runtime to stop without
+	// deleting the release cache or the user's Drive content.
+	profile := t.TempDir()
+	ctx := h.newPersistentBrowserContext(t, profile)
+	t.Cleanup(func() {
+		if err := ctx.Close(); err != nil {
+			t.Logf("close offline browser context: %v", err)
+		}
+	})
+	page := h.newPageInContext(t, ctx)
+	if _, err := page.Goto(h.getBaseURL() + "/quickstart/drive"); err != nil {
 		t.Fatal(err)
 	}
 	waitForLiveApp(t, page)
-	if err := page.Locator("[data-testid='unixfs-browser']:visible").First().WaitFor(); err != nil {
+	if err := page.Locator("[data-testid='unixfs-browser']:visible").First().WaitFor(playwright.LocatorWaitForOptions{
+		Timeout: playwright.Float(browserWaitMS),
+	}); err != nil {
+		dumpPageState(t, page)
 		t.Fatal(err)
 	}
 	waitForMaterializerPluginRunningMark(t, page)
@@ -34,7 +54,7 @@ func TestGoScriptOfflineStartup(t *testing.T) {
 	}`, nil, playwright.PageWaitForFunctionOptions{Timeout: playwright.Float(browserWaitMS)}); err != nil {
 		t.Fatalf("complete background offline cache: %v", err)
 	}
-	desc, err := testHarness.browserRelease(t.Context())
+	desc, err := h.browserRelease(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -48,9 +68,7 @@ func TestGoScriptOfflineStartup(t *testing.T) {
 	if packPath == "" {
 		t.Fatal("offline inventory has no kvfile")
 	}
-	if err := ctx.SetOffline(true); err != nil {
-		t.Fatal(err)
-	}
+	origin.Close()
 	if _, err := page.Evaluate(`async path => {
 		const response = await fetch(path, {headers: {Range: 'bytes=0-15'}})
 		const body = await response.arrayBuffer()
@@ -60,15 +78,19 @@ func TestGoScriptOfflineStartup(t *testing.T) {
 	}`, packPath); err != nil {
 		t.Fatal(err)
 	}
-	if err := page.Close(); err != nil {
+	// Closing the context terminates its shared workers before reopening.
+	if err := ctx.Close(); err != nil {
 		t.Fatal(err)
 	}
-	page = testHarness.newPageInContext(t, ctx)
-	if _, err := page.Goto(testHarness.getBaseURL() + "/quickstart/drive"); err != nil {
+	ctx = h.newPersistentBrowserContext(t, profile)
+	page = h.newPageInContext(t, ctx)
+	if _, err := page.Goto(h.getBaseURL() + "/quickstart/drive"); err != nil {
 		t.Fatal(err)
 	}
 	waitForLiveApp(t, page)
-	if err := page.Locator("[data-testid='unixfs-browser']:visible").First().WaitFor(); err != nil {
+	if err := page.Locator("[data-testid='unixfs-browser']:visible").First().WaitFor(playwright.LocatorWaitForOptions{
+		Timeout: playwright.Float(browserWaitMS),
+	}); err != nil {
 		dumpPageState(t, page)
 		t.Fatalf("restart Drive offline after terminating its runtime: %v", err)
 	}
@@ -76,6 +98,29 @@ func TestGoScriptOfflineStartup(t *testing.T) {
 		t.Fatalf("read persisted Drive content offline: %s", err)
 	}
 	waitForMaterializerPluginRunningMark(t, page)
+
+	// Git has not been used in this context. Its first operation must load the
+	// deferred implementation from the completed offline release inventory.
+	if _, err := page.Evaluate(`() => { location.hash = '/quickstart/git' }`); err != nil {
+		t.Fatal(err)
+	}
+	if err := page.GetByText("New Git Repository", playwright.PageGetByTextOptions{Exact: new(true)}).WaitFor(playwright.LocatorWaitForOptions{Timeout: playwright.Float(browserWaitMS)}); err != nil {
+		dumpPageState(t, page)
+		t.Fatalf("open Git wizard offline: %v", err)
+	}
+	if err := page.GetByRole("button", playwright.PageGetByRoleOptions{Name: "Next", Exact: new(true)}).Click(); err != nil {
+		t.Fatal(err)
+	}
+	if err := page.GetByPlaceholder("Enter repository name...").Fill("Offline repository"); err != nil {
+		t.Fatal(err)
+	}
+	if err := page.GetByRole("button", playwright.PageGetByRoleOptions{Name: "Create", Exact: new(true)}).Click(); err != nil {
+		t.Fatal(err)
+	}
+	if err := page.GetByText("This repository has no commits yet.", playwright.PageGetByTextOptions{Exact: new(true)}).WaitFor(playwright.LocatorWaitForOptions{Timeout: playwright.Float(browserWaitMS)}); err != nil {
+		dumpPageState(t, page)
+		t.Fatalf("create and open a Git repository on first use offline: %v", err)
+	}
 }
 
 // waitForMaterializerPluginRunningMark waits until the document startup marks

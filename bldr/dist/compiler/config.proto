@@ -110,6 +110,10 @@ message Config {
   // UpdateGuardPluginIds require the running plugin's UpdateGuard service to
   // authorize hot replacement. Initial startup does not require approval.
   repeated string update_guard_plugin_ids = 15;
+
+  // GoscriptDeferredFunctions lists exported package/path.Function boundaries
+  // whose modules initialize on first invocation in a GoScript dist build.
+  repeated string goscript_deferred_functions = 16;
 }
 
 // PreBuildHookResult is the output of a pre-build hook.

@@ -209,6 +209,9 @@ type Config struct {
 	// packages are not scanned for factories unless
 	// EnableImportedFactoryDiscovery is ENABLE.
 	GoPkgs []string `protobuf:"bytes,4,rep,name=go_pkgs,json=goPkgs,proto3" json:"goPkgs,omitempty"`
+	// GoscriptDeferredFunctions lists exported package/path.Function boundaries
+	// whose modules initialize on first invocation in a GoScript plugin build.
+	GoscriptDeferredFunctions []string `protobuf:"bytes,19,rep,name=goscript_deferred_functions,json=goscriptDeferredFunctions,proto3" json:"goscriptDeferredFunctions,omitempty"`
 	// WebPkgs is the list of web packages to externalize and include in the bundle.
 	//
 	// Externalized web packages (npm modules) are imported separately from the web bundle.
@@ -313,6 +316,13 @@ func (x *Config) GetHostConfigSet() map[string]*proto.ControllerConfig {
 func (x *Config) GetGoPkgs() []string {
 	if x != nil {
 		return x.GoPkgs
+	}
+	return nil
+}
+
+func (x *Config) GetGoscriptDeferredFunctions() []string {
+	if x != nil {
+		return x.GoscriptDeferredFunctions
 	}
 	return nil
 }
@@ -897,6 +907,7 @@ func (m *Config) CloneVT() *Config {
 	r.ConfigSet = protobuf_go_lite.CloneVTMap(m.ConfigSet)
 	r.HostConfigSet = protobuf_go_lite.CloneVTMap(m.HostConfigSet)
 	r.GoPkgs = protobuf_go_lite.CloneSlice(m.GoPkgs)
+	r.GoscriptDeferredFunctions = protobuf_go_lite.CloneSlice(m.GoscriptDeferredFunctions)
 	r.WebPkgs = protobuf_go_lite.CloneVTSlice(m.WebPkgs)
 	r.ViteConfigPaths = protobuf_go_lite.CloneSlice(m.ViteConfigPaths)
 	r.EsbuildFlags = protobuf_go_lite.CloneSlice(m.EsbuildFlags)
@@ -1104,6 +1115,9 @@ func (this *Config) EqualVT(that *Config) bool {
 		return false
 	}
 	if this.EnableImportedFactoryDiscovery != that.EnableImportedFactoryDiscovery {
+		return false
+	}
+	if !protobuf_go_lite.EqualSlice(this.GoscriptDeferredFunctions, that.GoscriptDeferredFunctions) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -1835,6 +1849,11 @@ func (x *Config) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("enableImportedFactoryDiscovery")
 		x.EnableImportedFactoryDiscovery.MarshalProtoJSON(s)
 	}
+	if len(x.GoscriptDeferredFunctions) > 0 || s.HasField("goscriptDeferredFunctions") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("goscriptDeferredFunctions")
+		s.WriteStringArray(x.GoscriptDeferredFunctions)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -1966,6 +1985,13 @@ func (x *Config) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "enable_imported_factory_discovery", "enableImportedFactoryDiscovery":
 			s.AddField("enable_imported_factory_discovery")
 			x.EnableImportedFactoryDiscovery.UnmarshalProtoJSON(s)
+		case "goscript_deferred_functions", "goscriptDeferredFunctions":
+			s.AddField("goscript_deferred_functions")
+			if s.ReadNil() {
+				x.GoscriptDeferredFunctions = nil
+				return
+			}
+			x.GoscriptDeferredFunctions = s.ReadStringArray()
 		}
 	})
 }
@@ -2698,6 +2724,15 @@ func (m *Config) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if len(m.GoscriptDeferredFunctions) > 0 {
+		for iNdEx := len(m.GoscriptDeferredFunctions) - 1; iNdEx >= 0; iNdEx-- {
+			i = protobuf_go_lite.EncodeString(dAtA, i, m.GoscriptDeferredFunctions[iNdEx])
+			i--
+			dAtA[i] = 0x1
+			i--
+			dAtA[i] = 0x9a
+		}
+	}
 	if m.EnableImportedFactoryDiscovery != 0 {
 		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.EnableImportedFactoryDiscovery))
 		i--
@@ -3389,6 +3424,7 @@ func (m *Config) SizeVT() (n int) {
 		n += protobuf_go_lite.SizeMessage(2, mapEntrySize)
 	}
 	n += protobuf_go_lite.SizeVarintNonZero(2, m.EnableImportedFactoryDiscovery)
+	n += protobuf_go_lite.SizeStringSlice(2, m.GoscriptDeferredFunctions)
 	n += len(m.unknownFields)
 	return n
 }
@@ -3747,6 +3783,14 @@ func (x *Config) MarshalProtoText() string {
 	if x.EnableImportedFactoryDiscovery != 0 {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "enable_imported_factory_discovery")
 		protobuf_go_lite.TextWriteStringer(&sb, enabled.Enabled(x.EnableImportedFactoryDiscovery))
+	}
+	if len(x.GoscriptDeferredFunctions) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "goscript_deferred_functions")
+		for i, v := range x.GoscriptDeferredFunctions {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			protobuf_go_lite.TextWriteString(&sb, v)
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -4386,6 +4430,16 @@ func (m *Config) UnmarshalVT(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
+		case 19:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field GoscriptDeferredFunctions", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.GoscriptDeferredFunctions = append(m.GoscriptDeferredFunctions, v)
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
