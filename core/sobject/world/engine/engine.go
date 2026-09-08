@@ -9,6 +9,7 @@ import (
 	"github.com/aperturerobotics/controllerbus/controller/loader"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
 	"github.com/aperturerobotics/controllerbus/directive"
+	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/core/sobject"
 	"github.com/s4wave/spacewave/db/block"
 	block_transform "github.com/s4wave/spacewave/db/block/transform"
@@ -43,11 +44,16 @@ func StartEngineWithConfig(
 
 // blkEngine contains a world state with engine.
 type blkEngine struct {
-	bengine          *world_block.Engine
-	cursor           *bucket_lookup.Cursor
-	decodedBlocks    *block.DecodedBlockCache
+	// bengine serves the World rooted at cursor.
+	bengine *world_block.Engine
+	// cursor retains the block store and root for this engine.
+	cursor *bucket_lookup.Cursor
+	// decodedBlocks shares decoded blocks across replay engines.
+	decodedBlocks *block.DecodedBlockCache
+	// ownDecodedBlocks requires Release to close a privately allocated cache.
 	ownDecodedBlocks bool
-	lookupOp         world.LookupOp
+	// lookupOp resolves operations supported by this World.
+	lookupOp world.LookupOp
 }
 
 // Release releases the engine resources.
@@ -173,11 +179,11 @@ func (c *Controller) buildBlkEngine(
 
 // soEngine implements the world engine logic for the shared object.
 type soEngine struct {
-	// c is the controller
+	// c serializes writes and accepted-root adoption.
 	c *Controller
-	// so is the shared object
+	// so supplies authority snapshots and accepts submitted operations.
 	so sobject.SharedObject
-	// bengine is the block engine used for reading
+	// bengine serves the accepted World and forks write candidates.
 	bengine *world_block.Engine
 }
 
@@ -202,16 +208,16 @@ func wrapReleaseWithTask(release func(), task *trace.Task) func() {
 	}
 }
 
-// NewTransaction returns a new transaction against the store.
-// Indicate write if the transaction will not be read-only.
-// Always call Discard() after you are done with the transaction.
-// Check GetReadOnly, might not return a write tx if write=true.
+// NewTransaction opens a read snapshot or a serialized write candidate.
+// Writes refresh from one accepted SharedObject snapshot before forking and
+// retain that authority base until Commit. Always call Discard when done.
 func (e *soEngine) NewTransaction(ctx context.Context, write bool) (world.Tx, error) {
 	// Read transaction.
 	if !write {
 		return e.bengine.NewBlockEngineTransaction(ctx, false)
 	}
 
+	// Serialize the write fork with other writes and accepted-root adoption.
 	ctx, task := trace.NewTask(ctx, "alpha/so-engine/new-transaction")
 	defer task.End()
 
@@ -223,6 +229,32 @@ func (e *soEngine) NewTransaction(ctx context.Context, write bool) (world.Tx, er
 	}
 	_, holdWriteMtxTask := trace.NewTask(ctx, "alpha/so-engine/write-tx/hold-write-mtx")
 	unlockWriteMtx = wrapReleaseWithTask(unlockWriteMtx, holdWriteMtxTask)
+
+	// Refresh both transaction bases from one accepted snapshot. The watcher
+	// may still be waiting for writeMtx after a remote root has advanced.
+	snapshot, err := e.so.GetSharedObjectState(ctx)
+	if err != nil {
+		unlockWriteMtx()
+		return nil, err
+	}
+	baseRoot, err := snapshot.GetRootState(ctx)
+	if err != nil {
+		unlockWriteMtx()
+		return nil, err
+	}
+	if baseRoot == nil {
+		unlockWriteMtx()
+		return nil, errors.New("base SharedObject root is missing")
+	}
+	head, err := finalizationWorldRoot(ctx, snapshot)
+	if err != nil {
+		unlockWriteMtx()
+		return nil, err
+	}
+	if err := e.updateEngineState(ctx, head); err != nil {
+		unlockWriteMtx()
+		return nil, err
+	}
 
 	// Construct the block engine txn.
 	var btx *world_block.Tx
@@ -252,7 +284,7 @@ func (e *soEngine) NewTransaction(ctx context.Context, write bool) (world.Tx, er
 	}
 
 	// Return the txn wrapper.
-	return newSoEngineWriteTx(ttx, btx, e, unlockWriteMtx), nil
+	return newSoEngineWriteTx(ttx, btx, e, baseRoot.CloneVT(), unlockWriteMtx), nil
 }
 
 // BuildStorageCursor builds a cursor to the world storage with an empty ref.
@@ -292,16 +324,14 @@ func (e *soEngine) WaitSeqno(ctx context.Context, value uint64) (uint64, error) 
 	return e.bengine.WaitSeqno(ctx, value)
 }
 
-// updateEngineState updates the engine's internal state with a new head ref
+// updateEngineState installs an accepted head using this participant's block store.
 func (e *soEngine) updateEngineState(ctx context.Context, headRef *bucket.ObjectRef) error {
 	ctx, task := trace.NewTask(ctx, "alpha/so-engine/update-engine-state")
 	defer task.End()
 
-	// Clone the ref to avoid mutations
+	// Preserve the authority reference while resolving its blocks locally.
 	ref := headRef.CloneVT()
-	// Set bucket ID to match the block store
 	ref.BucketId = e.so.GetBlockStore().GetID()
-	// Update the engine state
 	return e.bengine.SetRootRef(ctx, ref)
 }
 

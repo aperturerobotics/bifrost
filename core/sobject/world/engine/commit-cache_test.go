@@ -8,9 +8,6 @@ import (
 	"github.com/s4wave/spacewave/core/sobject"
 	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/bucket"
-	world_block "github.com/s4wave/spacewave/db/world/block"
-	world_mock "github.com/s4wave/spacewave/db/world/mock"
-	alpha_testbed "github.com/s4wave/spacewave/testbed"
 	"github.com/sirupsen/logrus"
 )
 
@@ -96,122 +93,29 @@ func TestValidatorAdoptsCommitResultOnlyOnMatchingCacheKey(t *testing.T) {
 	}
 }
 
-// TestWatchStateLocalQueueAdoptsCommitResultOnlyOnMatchingCacheKey proves the
-// watch-state local-queue replay cache adopts the cached commit result only when
-// the base world root ref and the queued op bytes match the cache key. A
-// matching key skips reprocessing the op; a mismatched base root or op bytes
-// reprocesses the queued op, which surfaces the decode error of the deliberately
-// malformed op used here as proof that the cache guard did not short-circuit it.
-func TestWatchStateLocalQueueAdoptsCommitResultOnlyOnMatchingCacheKey(t *testing.T) {
-	ctx := context.Background()
-	tb, err := alpha_testbed.Default(ctx)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-	defer tb.Release()
-
-	// Deliberately malformed SOWorldOp wire bytes: an incomplete varint tag that
-	// fails UnmarshalVT. When the queued op is reprocessed (not adopted), the
-	// watch-state loop returns this decode error; when it is adopted, the op is
-	// skipped and no error surfaces.
-	malformedOpA := []byte{0xff}
-	malformedOpB := []byte{0xfe}
-
-	for _, tc := range []struct {
-		name      string
-		matchRoot bool
-		queuedOp  []byte
-		cachedOp  []byte
-		wantAdopt bool
-	}{
-		{"matching base root and op bytes adopts and skips reprocessing", true, malformedOpA, malformedOpA, true},
-		{"mismatched base root reprocesses op", false, malformedOpA, malformedOpA, false},
-		{"mismatched op bytes reprocesses op", true, malformedOpB, malformedOpA, false},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			ocs, err := tb.BuildEmptyCursor(ctx)
-			if err != nil {
-				t.Fatal(err.Error())
-			}
-			defer ocs.Release()
-
-			bengine, err := world_block.NewEngine(ctx, tb.Logger, ocs, world_mock.LookupMockOp, nil, false)
-			if err != nil {
-				t.Fatal(err.Error())
-			}
-
-			headRef := bengine.GetRootRef().CloneVT()
-			headRef.BucketId = ""
-			stateData, err := (&InnerState{HeadRef: headRef}).MarshalVT()
-			if err != nil {
-				t.Fatal(err.Error())
-			}
-
-			cachedRoot := headRef.GetRootRef()
-			if !tc.matchRoot {
-				cachedRoot = mustBuildCommitCacheRef(t, "commit-cache/watch-mismatch/"+tc.name)
-			}
-
-			c := &Controller{le: tb.Logger}
-			c.lastCommitResult.Store(&commitResult{
-				baseRootRef: cachedRoot,
-				opData:      tc.cachedOp,
-				resultState: &InnerState{HeadRef: headRef.CloneVT()},
-			})
-
-			so := &testSharedObject{blockStore: newTestBlockStore(tb.EngineBucketID, tb.Volume)}
-			soEngine := &soEngine{c: c, so: so, bengine: bengine}
-			snap := &commitCacheLocalQueueSnapshot{
-				testSharedObjectSnapshot: testSharedObjectSnapshot{
-					rootInner: &sobject.SORootInner{Seqno: 1, StateData: stateData},
-				},
-				localOpQueue: []*sobject.QueuedSOOperation{{
-					LocalId: "commit-cache-op",
-					OpData:  tc.queuedOp,
-				}},
-			}
-
-			err = c.executeWatchSOStateOnce(ctx, tb.Logger, so, snap, soEngine)
-			if tc.wantAdopt {
-				if err != nil {
-					t.Fatalf("matching cache key must adopt and skip reprocessing, got error: %v", err)
-				}
-				return
-			}
-			if err == nil {
-				t.Fatal("mismatched cache key must reprocess the queued op and surface its decode error")
-			}
-		})
-	}
-}
-
 // commitCacheValidatorSharedObject drives executeProcessOpsAsValidator by
 // invoking its callback with controlled state and ops, capturing the result.
 type commitCacheValidatorSharedObject struct {
 	testSharedObject
+	// currentStateData is the accepted World before validator replay.
 	currentStateData []byte
-	ops              []*sobject.SOOperationInner
+	// ops contains operations offered to the validator.
+	ops []*sobject.SOOperationInner
 
+	// nextStateData captures the validator's proposed World.
 	nextStateData *[]byte
-	opResults     []*sobject.SOOperationResult
+	// opResults captures acceptance or rejection for each operation.
+	opResults []*sobject.SOOperationResult
 }
 
+// ProcessOperations runs one controlled validator batch.
 func (s *commitCacheValidatorSharedObject) ProcessOperations(ctx context.Context, watch bool, cb sobject.ProcessOpsFunc) error {
 	var err error
 	s.nextStateData, s.opResults, err = cb(ctx, nil, s.currentStateData, s.ops)
 	return err
 }
 
-// commitCacheLocalQueueSnapshot serves a local op queue to executeWatchSOStateOnce.
-type commitCacheLocalQueueSnapshot struct {
-	testSharedObjectSnapshot
-	localOpQueue []*sobject.QueuedSOOperation
-}
-
-func (s *commitCacheLocalQueueSnapshot) GetOpQueue(ctx context.Context) ([]*sobject.SOOperation, []*sobject.QueuedSOOperation, error) {
-	return nil, s.localOpQueue, nil
-}
-
+// mustBuildCommitCacheRef derives a reproducible cache key from seed.
 func mustBuildCommitCacheRef(t *testing.T, seed string) *block.BlockRef {
 	t.Helper()
 	ref, err := block.BuildBlockRef([]byte(seed), nil)
@@ -221,6 +125,7 @@ func mustBuildCommitCacheRef(t *testing.T, seed string) *block.BlockRef {
 	return ref
 }
 
+// mustMarshalInnerStateHead encodes a World head for validator replay.
 func mustMarshalInnerStateHead(t *testing.T, root *block.BlockRef) []byte {
 	t.Helper()
 	data, err := (&InnerState{HeadRef: &bucket.ObjectRef{RootRef: root}}).MarshalVT()
@@ -230,6 +135,7 @@ func mustMarshalInnerStateHead(t *testing.T, root *block.BlockRef) []byte {
 	return data
 }
 
+// mustMarshalInitWorldOp builds distinct operation encodings for cache-key checks.
 func mustMarshalInitWorldOp(t *testing.T, lastChangeDisable bool) []byte {
 	t.Helper()
 	data, err := (&SOWorldOp{

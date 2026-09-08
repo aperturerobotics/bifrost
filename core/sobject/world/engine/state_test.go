@@ -123,7 +123,7 @@ func TestExecuteWatchSOStateOnceSignalsGCSweepMaintenance(t *testing.T) {
 		waitCh = getWaitCh()
 	})
 
-	if err := c.executeWatchSOStateOnce(ctx, tb.Logger, so, snap, soEngine); err != nil {
+	if err := c.executeWatchSOStateOnce(ctx, snap, soEngine); err != nil {
 		t.Fatal(err.Error())
 	}
 
