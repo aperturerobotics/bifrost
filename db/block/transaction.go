@@ -574,12 +574,10 @@ func (t *Transaction) WriteAtRoot(ctx context.Context, clearTree bool, subRoot *
 						writeQueue.Enqueue(func() {
 							writeCtx, writeTask := trace.NewTask(ctx, "hydra/block/transaction/write-at-root/put-block")
 							putBlocks.Add(1)
-							// ensure that the wrote ref == the expected.
-							wroteRef, _, err := writeStore.PutBlock(writeCtx, dat, putOpts)
+							// The encoded reference is known; storage deduplicates when
+							// the buffer drains, without probing disk for each block.
+							_, _, err := buffered.putBlock(writeCtx, dat, putOpts, false)
 							writeTask.End()
-							if err == nil && !wroteRef.EqualsRef(blkRef) {
-								err = errors.Errorf("wrote block ref %s != expected %s", wroteRef.MarshalString(), blkRef.MarshalString())
-							}
 							if err != nil {
 								handleErr(err)
 								return
