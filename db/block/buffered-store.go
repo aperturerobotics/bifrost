@@ -147,7 +147,8 @@ func (s *BufferedStore) putBlock(ctx context.Context, data []byte, opts *PutOpts
 	}
 
 	var exists bool
-	if checkExists {
+	// A pending tombstone means this put must restore the block, even if it drains now.
+	if checkExists && existingPending == nil {
 		exists, err = s.inner.GetBlockExists(ctx, ref)
 		if err != nil {
 			return nil, false, err
@@ -176,7 +177,8 @@ func (s *BufferedStore) putBlock(ctx context.Context, data []byte, opts *PutOpts
 				done = true
 				return
 			}
-			if exists {
+			// A queued deletion takes precedence over the still-present durable block.
+			if exists && s.pending[key] == nil {
 				alreadyExists = true
 				done = true
 				return
