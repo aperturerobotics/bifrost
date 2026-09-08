@@ -2,7 +2,6 @@ package world_block
 
 import (
 	"context"
-	"io"
 
 	"github.com/aperturerobotics/cayley/graph"
 	"github.com/aperturerobotics/cayley/quad"
@@ -21,27 +20,18 @@ func (t *WorldState) accessCayleyGraph(ctx context.Context, write bool, cb func(
 	}
 
 	hd := t.graphHd
-	// TODO TODO: wrap the graph handle to update the changelog if writes are applied here.
+	// Direct graph mutations currently bypass the World changelog.
 	return cb(ctx, hd)
 }
 
 // LookupGraphQuads searches for graph quads in the store.
 func (t *WorldState) lookupGraphQuadsOnWorld(ctx context.Context, filter world.GraphQuad, limit uint32) ([]world.GraphQuad, error) {
-	if t.discarded.Load() {
-		return nil, tx.ErrDiscarded
+	filters := [1]world.GraphQuad{filter}
+	results, err := t.lookupGraphQuadsBatchOnWorld(ctx, filters[:], limit)
+	if err != nil {
+		return nil, err
 	}
-
-	if !t.write && t.store != nil {
-		store, release, err := t.store.BeginReadOperation(ctx)
-		if err != nil {
-			return nil, err
-		}
-		defer release()
-		ctx = block.WithReadOperationStore(ctx, store)
-	}
-
-	graphHd := world.NewReadOperationCayleyHandle(t.graphHd)
-	return lookupGraphQuads(ctx, graphHd, filter, limit)
+	return results[0], nil
 }
 
 // LookupGraphQuadsBatch searches for graph quads for each filter in one graph read.
@@ -58,36 +48,15 @@ func (t *WorldState) lookupGraphQuadsBatchOnWorld(ctx context.Context, filters [
 		ctx = block.WithReadOperationStore(ctx, store)
 	}
 
-	graphHd := world.NewReadOperationCayleyHandle(t.graphHd)
-	return lookupGraphQuadsBatch(ctx, graphHd, filters, limitPerFilter)
+	var graphHd world.CayleyHandle = t.graphHd
+	collector, _ := t.graphHd.QuadStore.(graphQuadBatchCollector)
+	if collector == nil || len(filters) != 1 {
+		graphHd = world.NewReadOperationCayleyHandle(graphHd)
+	}
+	return lookupGraphQuadsBatch(ctx, graphHd, filters, limitPerFilter, collector)
 }
 
-func lookupGraphQuads(ctx context.Context, h world.CayleyHandle, filter world.GraphQuad, limit uint32) ([]world.GraphQuad, error) {
-	// Treat nil filter as empty filter (matches all quads)
-	if filter == nil {
-		filter = world.NewGraphQuad("", "", "", "")
-	}
-
-	cq, err := world.GraphQuadToCayleyQuad(filter, false)
-	if err != nil {
-		return nil, err
-	}
-
-	var quads []world.GraphQuad
-	err = world.FilterIterateQuads(ctx, h, cq, func(q quad.Quad) error {
-		quads = append(quads, world.CayleyQuadToGraphQuad(q))
-		if limit != 0 && uint32(len(quads)) >= limit { //nolint:gosec
-			return io.EOF
-		}
-		return nil
-	})
-	if err == io.EOF {
-		err = nil
-	}
-	return quads, err
-}
-
-func lookupGraphQuadsBatch(ctx context.Context, h world.CayleyHandle, filters []world.GraphQuad, limitPerFilter uint32) ([][]world.GraphQuad, error) {
+func lookupGraphQuadsBatch(ctx context.Context, h world.CayleyHandle, filters []world.GraphQuad, limitPerFilter uint32, collector graphQuadBatchCollector) ([][]world.GraphQuad, error) {
 	cfilters := make([]quad.Quad, len(filters))
 	for i, filter := range filters {
 		if filter == nil {
@@ -99,7 +68,16 @@ func lookupGraphQuadsBatch(ctx context.Context, h world.CayleyHandle, filters []
 		}
 		cfilters[i] = cq
 	}
-	cresults, err := world.CollectFilteredFullQuadsBatch(ctx, h, cfilters, limitPerFilter)
+
+	// A single filter uses the native transaction; batches share cached iterator
+	// and name lookups across filters.
+	var cresults [][]quad.Quad
+	var err error
+	if collector != nil && len(cfilters) == 1 {
+		cresults, err = collector.CollectFilteredQuadsBatch(ctx, cfilters, limitPerFilter)
+	} else {
+		cresults, err = world.CollectFilteredFullQuadsBatch(ctx, h, cfilters, limitPerFilter)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -176,11 +154,17 @@ func (g *graphPathReadOperation) AccessCayleyGraph(ctx context.Context, write bo
 }
 
 func (g *graphPathReadOperation) LookupGraphQuads(ctx context.Context, filter world.GraphQuad, limit uint32) ([]world.GraphQuad, error) {
-	return lookupGraphQuads(ctx, g.graphHd, filter, limit)
+	filters := [1]world.GraphQuad{filter}
+	results, err := g.LookupGraphQuadsBatch(ctx, filters[:], limit)
+	if err != nil {
+		return nil, err
+	}
+	return results[0], nil
 }
 
 func (g *graphPathReadOperation) LookupGraphQuadsBatch(ctx context.Context, filters []world.GraphQuad, limitPerFilter uint32) ([][]world.GraphQuad, error) {
-	return lookupGraphQuadsBatch(ctx, g.graphHd, filters, limitPerFilter)
+	collector, _ := g.WorldState.graphHd.QuadStore.(graphQuadBatchCollector)
+	return lookupGraphQuadsBatch(ctx, g.graphHd, filters, limitPerFilter, collector)
 }
 
 func (g *graphPathReadOperation) QueryGraphPath(ctx context.Context, query *world.GraphPathQuery) (*world.GraphPathQueryResult, error) {
@@ -207,11 +191,10 @@ func (t *WorldState) setGraphQuad(ctx context.Context, q world.GraphQuad) error 
 		return err
 	}
 	if ex {
-		// already exists
 		return nil
 	}
 
-	// the ensureIsIRI already stripped the < > prefix / suffix
+	// Resolve both endpoints before adding the relationship.
 	subjKey, err := world.GraphValueToKey(q.GetSubject())
 	if err != nil {
 		return err
@@ -230,14 +213,12 @@ func (t *WorldState) setGraphQuad(ctx context.Context, q world.GraphQuad) error 
 		return err
 	}
 
-	// add quad
 	err = t.graphHd.AddQuad(ctx, cq)
 	if err != nil {
 		return err
 	}
 
-	// increment rev # on the affected objects
-	// note: does not add INCREMENT_REV to changelog
+	// Advance endpoint revisions without separate INCREMENT_REV changes.
 	_, err = subjRef.incrementRev(ctx, false)
 	if err != nil {
 		return err
@@ -247,7 +228,7 @@ func (t *WorldState) setGraphQuad(ctx context.Context, q world.GraphQuad) error 
 		return err
 	}
 
-	// update changelog with graph set
+	// Record the complete relationship change.
 	_, err = t.queueWorldChange(ctx, &WorldChange{
 		ChangeType: WorldChangeType_WorldChange_GRAPH_SET,
 		Quad:       world.GraphQuadToQuad(q),
@@ -310,7 +291,7 @@ func (t *WorldState) deleteGraphQuad(ctx context.Context, q world.GraphQuad, val
 		return err
 	}
 
-	// update changelog
+	// Record the removed relationship.
 	_, err = t.queueWorldChange(ctx, &WorldChange{
 		ChangeType: WorldChangeType_WorldChange_GRAPH_DELETE,
 		Quad:       world.GraphQuadToQuad(q),
@@ -333,19 +314,17 @@ func (t *WorldState) deleteGraphObject(ctx context.Context, objKey string) error
 
 	valueStr := world.KeyToGraphValue(objKey).String()
 
-	// find all matching quads where subject == value
+	// Collect outgoing and incoming relationships before deleting shared nodes.
 	subjQuads, err := t.LookupGraphQuads(ctx, world.NewGraphQuad(valueStr, "", "", ""), 0)
 	if err != nil {
 		return err
 	}
 
-	// find all matching quads where object == value
 	objQuads, err := t.LookupGraphQuads(ctx, world.NewGraphQuad("", "", valueStr, ""), 0)
 	if err != nil {
 		return err
 	}
 
-	// if no matches, stop here.
 	if len(subjQuads) == 0 && len(objQuads) == 0 {
 		return nil
 	}
@@ -400,7 +379,7 @@ func (t *WorldState) DeleteGraphObject(ctx context.Context, objKey string) error
 	return t.deleteGraphObject(ctx, objKey)
 }
 
-// _ is a type assertion
+// _ verifies the World graph contracts.
 var (
 	_ world.WorldStateGraph = (*WorldState)(nil)
 	_ world.WorldStateGraph = (*graphPathReadOperation)(nil)
