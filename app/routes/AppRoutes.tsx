@@ -3,6 +3,9 @@ import { lazy, Suspense, type ComponentType, type ReactNode } from 'react'
 import { Routes, Route } from '@s4wave/web/router/router.js'
 import { NavigatePath } from '@s4wave/web/router/NavigatePath.js'
 
+import { AppQuickstart } from '../AppQuickstart.js'
+
+// createRouteGroup gives a deferred route table its own full-path matcher.
 function createRouteGroup(routes: ReactNode): ComponentType {
   return function LazyRouteGroup() {
     return <Routes fullPath>{routes}</Routes>
@@ -49,6 +52,7 @@ const LazyDebugRoutes = lazy(async () => {
   return { default: createRouteGroup(DebugRoutes) }
 })
 
+// LazyRoute suspends a deferred route group until its module is available.
 function LazyRoute(props: { component: ComponentType }) {
   const Component = props.component
   return (
@@ -128,8 +132,8 @@ export function AppRoutes() {
       <Route path="/display/*">
         <LazyRoute component={LazyDisplayRoutes} />
       </Route>
-      <Route path="/quickstart/*">
-        <LazyRoute component={LazySessionRoutes} />
+      <Route path="/quickstart/:quickstartId">
+        <AppQuickstart />
       </Route>
       <Route path="/u/:sessionIndex/*">
         <LazyRoute component={LazyAppSession} />

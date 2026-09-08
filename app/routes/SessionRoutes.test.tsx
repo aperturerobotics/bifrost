@@ -50,12 +50,8 @@ vi.mock('@s4wave/web/router/NavigatePath.js', () => ({
   ),
 }))
 
-vi.mock('../AppQuickstart.js', () => ({
-  AppQuickstart: () => <div>Quickstart</div>,
-}))
-
 vi.mock('@s4wave/app/provider/spacewave/CheckoutResultPage.js', () => ({
-  CheckoutResultPage: () => null,
+  CheckoutResultPage: () => <div>Checkout result</div>,
 }))
 
 vi.mock('@s4wave/app/pair/PairCodePage.js', () => {
@@ -133,12 +129,12 @@ describe('SessionRoutes join redirect', () => {
     sessionStorage.clear()
   })
 
-  it('loads pairing only after leaving quickstart for a pairing route', async () => {
-    mockActiveRoutePath.value = '/quickstart/:quickstartId'
+  it('loads pairing only after leaving checkout for a pairing route', async () => {
+    mockActiveRoutePath.value = '/checkout/success'
 
     render(<Suspense fallback={null}>{SessionRoutes}</Suspense>)
 
-    expect(screen.getByText('Quickstart')).toBeTruthy()
+    expect(screen.getByText('Checkout result')).toBeTruthy()
     expect(mockPairModuleLoaded).not.toHaveBeenCalled()
     cleanup()
 
