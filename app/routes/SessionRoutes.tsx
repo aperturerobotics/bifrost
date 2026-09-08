@@ -6,7 +6,6 @@ import { useSessionList } from '@s4wave/app/hooks/useSessionList.js'
 import { NavigatePath } from '@s4wave/web/router/NavigatePath.js'
 import { LoadingCard } from '@s4wave/web/ui/loading/LoadingCard.js'
 
-import { AppQuickstart } from '../AppQuickstart.js'
 import { formatPendingJoin, storePendingJoin } from './pendingJoin.js'
 
 export { consumePendingJoin, storePendingJoin } from './pendingJoin.js'
@@ -52,10 +51,8 @@ function JoinRedirect() {
   return <NavigatePath to={target} replace />
 }
 
-// SessionRoutes contains routes for session entry: checkout, join, pair, and
-// quickstart. The mounted session surface at /u/:sessionIndex/* is owned by
-// AppRoutes (LazyAppSession) so the quickstart entry chunk stays free of the
-// AppSession bundle until a session is actually opened.
+// SessionRoutes contains checkout, join, and pairing entry routes.
+// AppRoutes owns Quickstart and the mounted session surface.
 export const SessionRoutes = (
   <>
     <Route path="/checkout/success">
@@ -75,9 +72,6 @@ export const SessionRoutes = (
     </Route>
     <Route path="/pair">
       <LazyPairCodePage />
-    </Route>
-    <Route path="/quickstart/:quickstartId">
-      <AppQuickstart />
     </Route>
   </>
 )
