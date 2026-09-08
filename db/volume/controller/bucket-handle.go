@@ -15,22 +15,31 @@ import (
 
 // bucketHandleTracker implements Bucket with a volume handle.
 type bucketHandleTracker struct {
-	c         *Controller
-	bucketID  string
+	// c resolves the volume and bucket configuration.
+	c *Controller
+	// bucketID identifies the tracked bucket.
+	bucketID string
+	// handleCtr publishes the current bucket handle or resolution error.
 	handleCtr *ccontainer.CContainer[*bucketHandle]
 }
 
 // bucketHandle contains state resolved by the bucket handle tracker.
 type bucketHandle struct {
-	t          *bucketHandleTracker
-	err        error
-	v          volume.Volume
+	// t tracks this bucket's configuration and lifetime.
+	t *bucketHandleTracker
+	// err records a failure resolving the bucket.
+	err error
+	// v provides the backing volume.
+	v volume.Volume
+	// bucketConf retains the resolved bucket configuration.
 	bucketConf *bucket.Config
-	gcOps      *block_gc.GCStoreOps
-	readOps    block.StoreOps
+	// gcOps tracks references for block mutations when GC is enabled.
+	gcOps *block_gc.GCStoreOps
+	// readOps confines block operations to an existing read snapshot when set.
+	readOps block.StoreOps
 }
 
-// clone copies the bucketHandle
+// clone copies the bucket handle without changing its retained dependencies.
 func (b *bucketHandle) clone() *bucketHandle {
 	if b == nil {
 		return b
@@ -53,6 +62,7 @@ func (c *Controller) newBucketHandleTracker(
 
 // execute executes the bucket handle management routine.
 func (b *bucketHandleTracker) execute(ctx context.Context) (exErr error) {
+	// Clear stale resolution and publish any new failure when this attempt ends.
 	b.handleCtr.SetValue(nil)
 	defer func() {
 		if exErr != nil {
@@ -64,16 +74,19 @@ func (b *bucketHandleTracker) execute(ctx context.Context) (exErr error) {
 		}
 	}()
 
+	// Resolve the backing volume and its current bucket configuration.
 	vol, err := b.c.GetVolume(ctx)
 	if err != nil {
 		return err
 	}
 
+	// Load the bucket configuration before constructing its handle.
 	bc, err := vol.GetBucketConfig(ctx, b.bucketID)
 	if err != nil {
 		return err
 	}
 
+	// Retain the resolved configuration independently of later updates.
 	handle := &bucketHandle{
 		t:          b,
 		v:          vol,
@@ -103,6 +116,7 @@ func (b *bucketHandleTracker) execute(ctx context.Context) (exErr error) {
 		}
 	}
 
+	// Publish the complete handle after its optional GC wrapper is ready.
 	b.handleCtr.SetValue(handle)
 
 	return nil
@@ -110,16 +124,17 @@ func (b *bucketHandleTracker) execute(ctx context.Context) (exErr error) {
 
 // updateBucketConfig overrides the bucket config in the current handle.
 //
-// if conf is nil, unsets the handle ctr and restarts the routine.
-// if there is a current handle set: returns the updated bucket handle.
-// if there is no handle set: restarts the routine and returns nil.
+// A nil configuration clears the handle and restarts resolution.
+// An existing handle receives the configuration; otherwise resolution restarts.
 func (b *bucketHandleTracker) updateBucketConfig(conf *bucket.Config) *bucketHandle {
+	// Restart resolution when the caller invalidates the configuration.
 	if conf == nil {
 		b.handleCtr.SetValue(nil)
 		b.restart()
 		return nil
 	}
 
+	// Update a resolved handle without mutating its previous snapshot.
 	conf = conf.CloneVT()
 	handle := b.handleCtr.SwapValue(func(val *bucketHandle) *bucketHandle {
 		if val == nil || val.bucketConf.EqualVT(conf) {
@@ -167,7 +182,7 @@ func (b *bucketHandle) GetExists() bool {
 
 // GetBucketConfig returns the bucket configuration.
 //
-// note: may be nil if this is the pin controller.
+// The configuration may be nil for the pin controller.
 func (b *bucketHandle) GetBucketConfig() *bucket.Config {
 	if !b.GetExists() {
 		return nil
@@ -178,6 +193,7 @@ func (b *bucketHandle) GetBucketConfig() *bucket.Config {
 // PutBlock puts a block into the store.
 // The ref should not be modified after return.
 func (b *bucketHandle) PutBlock(ctx context.Context, data []byte, opts *block.PutOpts) (*block.BlockRef, bool, error) {
+	// Trace the complete bucket write.
 	ctx, task := trace.NewTask(ctx, "hydra/volume/bucket-handle/put-block")
 	defer task.End()
 
@@ -187,8 +203,11 @@ func (b *bucketHandle) PutBlock(ctx context.Context, data []byte, opts *block.Pu
 	if b.bucketConf == nil {
 		return nil, false, bucket.ErrBucketNotFound
 	}
+	if b.readOps != nil {
+		return b.readOps.PutBlock(ctx, data, opts)
+	}
 
-	// set hash type if not set
+	// Fill the bucket's preferred hash type when the caller leaves it unset.
 	if opts.GetHashType() == 0 {
 		ht := opts.GetForceBlockRef().GetHash().GetHashType()
 		if ht == 0 {
@@ -205,7 +224,7 @@ func (b *bucketHandle) PutBlock(ctx context.Context, data []byte, opts *block.Pu
 	}
 	putOpts, syncRequested := block.PutOptsWithoutSync(opts)
 
-	// store will hash the data, route through GCStoreOps if available.
+	// Route the write through GC tracking when enabled.
 	// Bucket writes do not have a later commit hook, so bucket-level GC
 	// refs must be flushed before returning.
 	var (
@@ -248,6 +267,7 @@ func (b *bucketHandle) PutBlock(ctx context.Context, data []byte, opts *block.Pu
 // tracking is enabled, otherwise falls back to per-entry volume PutBlock.
 // FlushPending is called once for the entire batch.
 func (b *bucketHandle) PutBlockBatch(ctx context.Context, entries []*block.PutBatchEntry) error {
+	// Trace the complete bucket batch write.
 	ctx, task := trace.NewTask(ctx, "hydra/volume/bucket-handle/put-block-batch")
 	defer task.End()
 
@@ -259,6 +279,9 @@ func (b *bucketHandle) PutBlockBatch(ctx context.Context, entries []*block.PutBa
 	}
 	if len(entries) == 0 {
 		return nil
+	}
+	if b.readOps != nil {
+		return b.readOps.PutBlockBatch(ctx, entries)
 	}
 
 	if b.gcOps != nil {
@@ -310,37 +333,32 @@ func (b *bucketHandle) GetSupportedFeatures() block.StoreFeature {
 
 // BeginReadOperation opens a read scope for the bucket's volume reads.
 func (b *bucketHandle) BeginReadOperation(ctx context.Context) (block.StoreOps, func(), error) {
+	// Select the complete wrapper chain before opening its one read scope.
 	if b == nil || b.v == nil {
 		return b, func() {}, nil
 	}
-	scopedV, releaseV, err := b.v.BeginReadOperation(ctx)
+	store := block.StoreOps(b.v)
+	if b.gcOps != nil {
+		store = b.gcOps
+	}
+	if b.readOps != nil {
+		store = b.readOps
+	}
+	scopedOps, release, err := store.BeginReadOperation(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
+
+	// Keep the bucket's metadata while all block operations use the scoped store.
 	scoped := b.clone()
-	scoped.readOps = scopedV
-	if v, ok := scopedV.(volume.Volume); ok {
+	scoped.readOps = scopedOps
+	if v, ok := scopedOps.(volume.Volume); ok {
 		scoped.v = v
 	}
-	var releaseGC func()
-	if b.gcOps != nil {
-		scopedGC, release, err := b.gcOps.BeginReadOperation(ctx)
-		if err != nil {
-			releaseV()
-			return nil, nil, err
-		}
-		if gcOps, ok := scopedGC.(*block_gc.GCStoreOps); ok {
-			scoped.gcOps = gcOps
-			scoped.readOps = gcOps
-		}
-		releaseGC = release
+	if gcOps, ok := scopedOps.(*block_gc.GCStoreOps); ok {
+		scoped.gcOps = gcOps
 	}
-	return scoped, func() {
-		if releaseGC != nil {
-			releaseGC()
-		}
-		releaseV()
-	}, nil
+	return scoped, release, nil
 }
 
 // GetBlock gets a block with a cid reference.
@@ -406,11 +424,14 @@ func (b *bucketHandle) RmBlock(ctx context.Context, ref *block.BlockRef) error {
 	if b.bucketConf == nil {
 		return nil
 	}
+	if b.readOps != nil {
+		return b.readOps.RmBlock(ctx, ref)
+	}
 
 	if !b.t.c.config.GetDisableEventBlockRm() {
 		ok, err := b.v.GetBlockExists(ctx, ref)
 		if err == nil && !ok {
-			// skip, does not exist.
+			// An absent block needs no removal event.
 			return nil
 		}
 	}
@@ -431,6 +452,9 @@ func (b *bucketHandle) RmBlock(ctx context.Context, ref *block.BlockRef) error {
 
 // Sync makes bucket-level GC writes durable, then fences the volume.
 func (b *bucketHandle) Sync(ctx context.Context) (bool, error) {
+	if b.readOps != nil {
+		return b.readOps.Sync(ctx)
+	}
 	if b.gcOps != nil {
 		if err := b.gcOps.FlushPending(ctx); err != nil {
 			return false, err
@@ -456,7 +480,7 @@ func (b *bucketHandle) EndDeferFlush(ctx context.Context) error {
 	return nil
 }
 
-// _ is a type assertion
+// _ asserts the bucket and deferred-flush contracts.
 var (
 	_ bucket.Bucket       = (*bucketHandle)(nil)
 	_ bucket.BucketHandle = (*bucketHandle)(nil)
