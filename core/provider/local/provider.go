@@ -4,15 +4,15 @@ import (
 	"context"
 	"slices"
 
-	csync "github.com/aperturerobotics/util/csync"
-
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/util/backoff"
+	csync "github.com/aperturerobotics/util/csync"
 	"github.com/aperturerobotics/util/keyed"
 	"github.com/aperturerobotics/util/ulid"
 	"github.com/pkg/errors"
 	provider "github.com/s4wave/spacewave/core/provider"
 	"github.com/s4wave/spacewave/core/session"
+	"github.com/s4wave/spacewave/core/transport"
 	block_transform "github.com/s4wave/spacewave/db/block/transform"
 	transform_blockenc "github.com/s4wave/spacewave/db/block/transform/blockenc"
 	transform_gzip "github.com/s4wave/spacewave/db/block/transform/gzip"
@@ -39,6 +39,9 @@ type Provider struct {
 	info *provider.ProviderInfo
 	// sfs is the step factory set for block transforms
 	sfs *block_transform.StepFactorySet
+
+	// localNetwork connects native sessions within this provider lifetime.
+	localNetwork transport.SessionTransportOption
 
 	// accountRc is the keyed refcount for accounts.
 	accountRc *keyed.KeyedRefCount[string, *providerAccountTracker]
@@ -101,6 +104,7 @@ func NewProvider(
 		peer:               peer,
 		handler:            handler,
 		sfs:                sfs,
+		localNetwork:       newLocalSessionNetwork(),
 	}
 	p.linkedCloudAccountLoader = defaultLinkedCloudAccountLoader
 	p.accountRc = keyed.NewKeyedRefCountWithLogger(
@@ -260,7 +264,7 @@ func (a *ProviderAccount) writeLinkedCloudAccountID(ctx context.Context, session
 
 // AccessProviderAccount accesses a provider account.
 // If accountID is empty, it will use the default or prompt the user.
-// released may be nil
+// released may be nil.
 func (p *Provider) AccessProviderAccount(ctx context.Context, accountID string, released func()) (provider.ProviderAccount, func(), error) {
 	ref, providerAccTkr, _ := p.accountRc.AddKeyRef(accountID)
 	providerAcc, err := providerAccTkr.accCtr.WaitValue(ctx, nil)

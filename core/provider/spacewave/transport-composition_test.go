@@ -16,14 +16,14 @@ type compositionTestLinkSource struct {
 	links []transport_controller.LinkSnapshot
 }
 
-func (s *compositionTestLinkSource) GetLinkSnapshotsWithWait() ([]transport_controller.LinkSnapshot, <-chan struct{}) {
+func (s *compositionTestLinkSource) GetLinkSnapshotsWithWait() ([]transport_controller.LinkSnapshot, []<-chan struct{}) {
 	var links []transport_controller.LinkSnapshot
 	var waitCh <-chan struct{}
 	s.bcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
 		links = append([]transport_controller.LinkSnapshot(nil), s.links...)
 		waitCh = getWaitCh()
 	})
-	return links, waitCh
+	return links, []<-chan struct{}{waitCh}
 }
 
 func (s *compositionTestLinkSource) setLinkCount(count int) {

@@ -3,11 +3,13 @@ package inproc
 import (
 	"context"
 	"net"
-	"sync"
 
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
+	"github.com/aperturerobotics/util/broadcast"
+	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/net/crypto"
+	"github.com/s4wave/spacewave/net/link"
 	"github.com/s4wave/spacewave/net/peer"
 	"github.com/s4wave/spacewave/net/transport"
 	"github.com/s4wave/spacewave/net/transport/common/dialer"
@@ -25,23 +27,22 @@ const ControllerID = "bifrost/inproc"
 // Version is the version of the inproc implementation.
 var Version = controller.MustParseVersion("0.0.1")
 
-// Inproc implements a Inproc transport.
+// Inproc carries authenticated peer links over connected in-process packet endpoints.
 type Inproc struct {
-	// Transport is the packet transport
+	// Transport owns packet encryption and authenticated peer links.
 	*pconn.Transport
 
-	// le is the logger
+	// le records transport activity.
 	le *logrus.Entry
-	// packetConn is the packet conn
+	// packetConn receives packets for this endpoint.
 	packetConn *packetConn
-	// localAddr is the local addr
+	// localAddr identifies this endpoint.
 	localAddr net.Addr
 
-	// mtx guards below
-	mtx sync.Mutex
-	// remotes are the currently known remotes
-	// map is from string (net.addr.String()) to *packetConn
-	remotes map[string]*packetConn
+	// bcast guards remote endpoints and wakes pending dialers.
+	bcast broadcast.Broadcast
+	// remotes maps connected addresses to their receiving endpoints.
+	remotes map[string]*Inproc
 }
 
 // NewInproc builds a new Inproc transport.
@@ -64,7 +65,7 @@ func NewInproc(
 	ip := &Inproc{
 		le:        le,
 		localAddr: localAddr,
-		remotes:   make(map[string]*packetConn),
+		remotes:   make(map[string]*Inproc),
 	}
 
 	// Create the packet connection that routes to known remotes.
@@ -127,40 +128,102 @@ func BuildInprocController(
 
 // MatchTransportType checks if the given transport type ID matches this transport.
 // If returns true, the transport controller will call DialPeer with that tptaddr.
-// E.x.: "udp-quic" or "ws"
+// Examples include "udp-quic" and "ws".
 func (t *Inproc) MatchTransportType(transportType string) bool {
 	return transportType == TransportType
 }
 
 // ConnectToInproc connects the inproc to a remote inproc.
-// Will overwrite any existing connection
+// It replaces the existing route for the same peer.
 func (t *Inproc) ConnectToInproc(ctx context.Context, other *Inproc) {
 	// Record the remote packet endpoint under its address.
 	oa := other.localAddr.String()
-	t.mtx.Lock()
-	t.remotes[oa] = other.packetConn
-	t.mtx.Unlock()
+	t.bcast.HoldLock(func(notify func(), _ func() <-chan struct{}) {
+		t.remotes[oa] = other
+		notify()
+	})
 }
 
 // DisconnectInproc disconnects a previously connected inproc.
 func (t *Inproc) DisconnectInproc(ctx context.Context, other *Inproc) {
 	// Remove the remote packet endpoint from the routing table.
 	oa := other.localAddr.String()
-	t.mtx.Lock()
-	delete(t.remotes, oa)
-	t.mtx.Unlock()
+	t.bcast.HoldLock(func(notify func(), _ func() <-chan struct{}) {
+		if t.remotes[oa] == other {
+			delete(t.remotes, oa)
+			notify()
+		}
+	})
+}
+
+// GetPeerDialer waits for an attached peer unless an explicit dialer is configured.
+// Connection changes wake standing link requests without a polling loop.
+func (t *Inproc) GetPeerDialer(ctx context.Context, peerID peer.ID) (*dialer.DialerOpts, error) {
+	// Preserve explicitly configured dialing options.
+	if opts, err := t.Transport.GetPeerDialer(ctx, peerID); err != nil || opts != nil {
+		return opts, err
+	}
+	address := NewAddr(peerID).String()
+	for {
+		var remote *Inproc
+		var waitCh <-chan struct{}
+		t.bcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
+			remote = t.remotes[address]
+			waitCh = getWaitCh()
+		})
+		if remote != nil {
+			return &dialer.DialerOpts{Address: address}, nil
+		}
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-waitCh:
+		}
+	}
+}
+
+// DialPeer chooses one initiator for both directions of an in-process peer pair.
+// Concurrent callers share that transport's existing address dialer, so they cannot
+// replace each other's authenticated connection while streams are opening.
+func (t *Inproc) DialPeer(ctx context.Context, peerID peer.ID, address string) (link.Link, bool, error) {
+	// Wait for the endpoint addressed by the caller's standing link request.
+	var remote *Inproc
+	for remote == nil {
+		var waitCh <-chan struct{}
+		t.bcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
+			remote = t.remotes[address]
+			waitCh = getWaitCh()
+		})
+		if remote != nil {
+			break
+		}
+		select {
+		case <-ctx.Done():
+			return nil, false, ctx.Err()
+		case <-waitCh:
+		}
+	}
+	if peerID != "" && remote.GetPeerID() != peerID {
+		return nil, true, errors.New("in-process address does not match requested peer")
+	}
+
+	// Both sides delegate to the lower peer's authenticated QUIC dialer.
+	if t.GetPeerID() < remote.GetPeerID() {
+		return t.Transport.DialPeer(ctx, remote.GetPeerID(), address)
+	}
+	_, fatal, err := remote.Transport.DialPeer(ctx, t.GetPeerID(), t.localAddr.String())
+	return nil, fatal, err
 }
 
 // writeToAddr routes outgoing packets.
 func (t *Inproc) writeToAddr(ctx context.Context, p []byte, addr net.Addr) (int, error) {
 	// Resolve the remote endpoint while holding the routing mutex.
 	oa := addr.String()
-	t.mtx.Lock()
-	out, outOk := t.remotes[oa]
-	t.mtx.Unlock()
+	var out *Inproc
+	t.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) { out = t.remotes[oa] })
 
 	// Reject packets for an endpoint that is not connected.
-	if !outOk {
+	if out == nil {
 		return 0, &net.AddrError{
 			Addr: oa,
 			Err:  "remote transport not connected",
@@ -168,7 +231,7 @@ func (t *Inproc) writeToAddr(ctx context.Context, p []byte, addr net.Addr) (int,
 	}
 
 	// Deliver the packet to the remote in-process connection.
-	return out.HandlePacket(ctx, p, t.localAddr)
+	return out.packetConn.HandlePacket(ctx, p, t.localAddr)
 }
 
 // _ is a type assertion.

@@ -15,26 +15,40 @@ import (
 type TransportCompositionP2PState uint8
 
 const (
+	// TransportCompositionP2PStateUnknown has no reported lifecycle state.
 	TransportCompositionP2PStateUnknown TransportCompositionP2PState = iota
+	// TransportCompositionP2PStateDisabled has direct transport disabled.
 	TransportCompositionP2PStateDisabled
+	// TransportCompositionP2PStateStarting is starting direct transport.
 	TransportCompositionP2PStateStarting
+	// TransportCompositionP2PStateNoPeers has not established a peer link.
 	TransportCompositionP2PStateNoPeers
+	// TransportCompositionP2PStateIdle has peer links without active demand.
 	TransportCompositionP2PStateIdle
+	// TransportCompositionP2PStateActive has peer links serving active demand.
 	TransportCompositionP2PStateActive
+	// TransportCompositionP2PStateFallbackNoPeer has lost its established peer links.
 	TransportCompositionP2PStateFallbackNoPeer
+	// TransportCompositionP2PStateError could not keep direct transport running.
 	TransportCompositionP2PStateError
 )
 
 // TransportCompositionSnapshot is one Session's direct transport projection.
 type TransportCompositionSnapshot struct {
+	// DirectP2PEnabled records the session policy.
 	DirectP2PEnabled bool
-	P2PState         TransportCompositionP2PState
-	ActivePeerCount  uint32
-	LastError        string
+	// P2PState reports the current direct lifecycle.
+	P2PState TransportCompositionP2PState
+	// ActivePeerCount counts active transport links.
+	ActivePeerCount uint32
+	// LastError describes the most recent transport failure.
+	LastError string
 }
 
+// transportCompositionLinkSource exposes transport-owned link state and changes.
 type transportCompositionLinkSource interface {
-	GetLinkSnapshotsWithWait() ([]transport_controller.LinkSnapshot, <-chan struct{})
+	// GetLinkSnapshotsWithWait returns links and every channel that can change them.
+	GetLinkSnapshotsWithWait() ([]transport_controller.LinkSnapshot, []<-chan struct{})
 }
 
 type transportCompositionConfig struct {
@@ -114,6 +128,7 @@ func (o *transportCompositionOwner) init(account *ProviderAccount) {
 	}
 }
 
+// newTransportCompositionSession constructs the initial direct transport projection.
 func newTransportCompositionSession() *transportCompositionSession {
 	return &transportCompositionSession{
 		snapshot: TransportCompositionSnapshot{
@@ -123,6 +138,7 @@ func newTransportCompositionSession() *transportCompositionSession {
 	}
 }
 
+// sessionForConfigure returns the shared session state, creating it on first configuration.
 func (o *transportCompositionOwner) sessionForConfigure(sessionID string) *transportCompositionSession {
 	o.mtx.Lock()
 	defer o.mtx.Unlock()
@@ -134,6 +150,7 @@ func (o *transportCompositionOwner) sessionForConfigure(sessionID string) *trans
 	return state
 }
 
+// findSession reads the current session state under the owner lock.
 func (o *transportCompositionOwner) findSession(sessionID string) *transportCompositionSession {
 	o.mtx.Lock()
 	defer o.mtx.Unlock()
@@ -170,18 +187,21 @@ func (a *ProviderAccount) GetTransportCompositionSnapshotWithWait(sessionID stri
 	return o.snapshotWithWait(sessionID)
 }
 
+// directDemandStarted records direct work for the mounted session.
 func (a *ProviderAccount) directDemandStarted(sessionID string) {
 	o := &a.transportComposition
 	o.init(a)
 	o.demandStarted(sessionID)
 }
 
+// directDemandFinished releases direct work for the mounted session.
 func (a *ProviderAccount) directDemandFinished(sessionID string) {
 	o := &a.transportComposition
 	o.init(a)
 	o.demandFinished(sessionID)
 }
 
+// configure serializes configuration against session shutdown.
 func (o *transportCompositionOwner) configure(ctx context.Context, config *transportCompositionConfig) error {
 	state := o.sessionForConfigure(config.sessionID)
 	state.mtx.Lock()
@@ -195,6 +215,7 @@ func (o *transportCompositionOwner) configure(ctx context.Context, config *trans
 	return o.configureLocked(ctx, state, config)
 }
 
+// configureLocked reconciles direct transport and its watcher under the session lock.
 func (o *transportCompositionOwner) configureLocked(ctx context.Context, state *transportCompositionSession, config *transportCompositionConfig) error {
 	if state.config != nil && state.config.enabled == config.enabled &&
 		state.snapshotState() != TransportCompositionP2PStateError {
@@ -239,6 +260,7 @@ func (o *transportCompositionOwner) configureLocked(ctx context.Context, state *
 	return nil
 }
 
+// setEnabled updates the mounted session policy under its lifecycle lock.
 func (o *transportCompositionOwner) setEnabled(ctx context.Context, sessionID string, enabled bool) error {
 	state := o.findSession(sessionID)
 	if state == nil {
@@ -257,6 +279,7 @@ func (o *transportCompositionOwner) setEnabled(ctx context.Context, sessionID st
 	return o.configureLocked(ctx, state, &config)
 }
 
+// stop stops the session composition before removing its shared state.
 func (o *transportCompositionOwner) stop(sessionID string) {
 	state := o.findSession(sessionID)
 	if state == nil {
@@ -280,6 +303,7 @@ func (o *transportCompositionOwner) stop(sessionID string) {
 	o.removeSession(sessionID, state)
 }
 
+// removeSession removes only the session state being stopped.
 func (o *transportCompositionOwner) removeSession(sessionID string, target *transportCompositionSession) {
 	o.mtx.Lock()
 	if o.sessions[sessionID] == target {
@@ -307,6 +331,7 @@ func (o *transportCompositionOwner) awaitLinkExit(state *transportCompositionSes
 	}
 }
 
+// stopLocked cancels and joins the watcher before stopping direct transport.
 func (o *transportCompositionOwner) stopLocked(state *transportCompositionSession, clearConfig bool) {
 	state.nextGeneration()
 	if state.linkCancel != nil {
@@ -323,6 +348,7 @@ func (o *transportCompositionOwner) stopLocked(state *transportCompositionSessio
 	}
 }
 
+// watchLinks projects transport-owned snapshots until cancellation or transport exit.
 func (o *transportCompositionOwner) watchLinks(ctx context.Context, sessionID string, state *transportCompositionSession, generation uint64, source transportCompositionLinkSource) {
 	for {
 		running, transportWaitCh := o.transportState(sessionID)
@@ -330,20 +356,18 @@ func (o *transportCompositionOwner) watchLinks(ctx context.Context, sessionID st
 			o.setTransportExited(state, generation)
 			return
 		}
-		links, linkWaitCh := source.GetLinkSnapshotsWithWait()
+		links, linkWaitChs := source.GetLinkSnapshotsWithWait()
 		o.setLinks(state, generation, len(links))
-		if linkWaitCh == nil && transportWaitCh == nil {
+		if len(linkWaitChs) == 0 && transportWaitCh == nil {
 			return
 		}
-		select {
-		case <-ctx.Done():
+		if err := broadcast.WaitAny(ctx, append(linkWaitChs, transportWaitCh)...); err != nil {
 			return
-		case <-linkWaitCh:
-		case <-transportWaitCh:
 		}
 	}
 }
 
+// setLinks publishes links only for the current watcher generation.
 func (o *transportCompositionOwner) setLinks(state *transportCompositionSession, generation uint64, count int) {
 	state.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
 		if generation != state.generation {
@@ -368,6 +392,7 @@ func (o *transportCompositionOwner) setLinks(state *transportCompositionSession,
 	})
 }
 
+// setTransportExited records unexpected exit only for the current watcher generation.
 func (o *transportCompositionOwner) setTransportExited(state *transportCompositionSession, generation uint64) {
 	state.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
 		if generation != state.generation {
@@ -380,6 +405,7 @@ func (o *transportCompositionOwner) setTransportExited(state *transportCompositi
 	})
 }
 
+// demandStarted counts active demand while direct peer links exist.
 func (o *transportCompositionOwner) demandStarted(sessionID string) {
 	state := o.findSession(sessionID)
 	if state == nil {
@@ -395,6 +421,7 @@ func (o *transportCompositionOwner) demandStarted(sessionID string) {
 	})
 }
 
+// demandFinished returns linked transport to idle when its final demand ends.
 func (o *transportCompositionOwner) demandFinished(sessionID string) {
 	state := o.findSession(sessionID)
 	if state == nil {
@@ -412,6 +439,7 @@ func (o *transportCompositionOwner) demandFinished(sessionID string) {
 	})
 }
 
+// nextGeneration invalidates earlier watcher updates and resets demand history.
 func (state *transportCompositionSession) nextGeneration() uint64 {
 	var generation uint64
 	state.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
@@ -424,6 +452,7 @@ func (state *transportCompositionSession) nextGeneration() uint64 {
 	return generation
 }
 
+// setSnapshot publishes replacement lifecycle state and resets demand history.
 func (state *transportCompositionSession) setSnapshot(snapshot TransportCompositionSnapshot) {
 	state.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
 		state.snapshot = snapshot
@@ -433,6 +462,7 @@ func (state *transportCompositionSession) setSnapshot(snapshot TransportComposit
 	})
 }
 
+// snapshotState reads the projected direct lifecycle under its broadcast lock.
 func (state *transportCompositionSession) snapshotState() TransportCompositionP2PState {
 	var p2pState TransportCompositionP2PState
 	state.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
@@ -441,6 +471,7 @@ func (state *transportCompositionSession) snapshotState() TransportCompositionP2
 	return p2pState
 }
 
+// snapshotWithWait returns the current projection and its matching change channel.
 func (o *transportCompositionOwner) snapshotWithWait(sessionID string) (TransportCompositionSnapshot, <-chan struct{}) {
 	state := o.findSession(sessionID)
 	if state == nil {

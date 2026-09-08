@@ -2,6 +2,8 @@ package transport
 
 import (
 	"context"
+	"maps"
+	"slices"
 	"time"
 
 	"github.com/aperturerobotics/controllerbus/bus"
@@ -30,6 +32,7 @@ import (
 // SessionTransport manages a session-scoped child bus with bifrost
 // transport controllers bound to the session's peer identity.
 type SessionTransport struct {
+	// le records transport and startup activity.
 	le *logrus.Entry
 	// parentBus is the parent controller bus to bridge directives to.
 	parentBus bus.Bus
@@ -37,8 +40,10 @@ type SessionTransport struct {
 	bcast broadcast.Broadcast
 	// childBus is the session-scoped child bus.
 	childBus bus.Bus
-	// linkController is the active transport controller that owns link state.
-	linkController *transport_controller.Controller
+	// linkControllers owns the links exposed by each active transport.
+	linkControllers []*transport_controller.Controller
+	// startLocalTransport optionally attaches a native process-local network.
+	startLocalTransport func(context.Context, bus.Bus) (*transport_controller.Controller, func(), error)
 	// sessionKey is the session's Ed25519 private key.
 	sessionKey bifrost_crypto.PrivKey
 	// peerID is the peer ID derived from the session key.
@@ -171,6 +176,7 @@ func (t *SessionTransport) GetPeerID() peer.ID {
 	return t.peerID
 }
 
+// GetChildBus returns the active session bus, or nil outside Execute.
 func (t *SessionTransport) GetChildBus() bus.Bus {
 	var childBus bus.Bus
 	t.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
@@ -179,30 +185,45 @@ func (t *SessionTransport) GetChildBus() bus.Bus {
 	return childBus
 }
 
-// GetLinkedPeerIDsSnapshotWithWait returns linked peer IDs and a wait channel
-// that closes when the transport link set changes.
-func (t *SessionTransport) GetLinkedPeerIDsSnapshotWithWait(peerIDs []peer.ID) (map[peer.ID]struct{}, <-chan struct{}) {
-	var linkController *transport_controller.Controller
-	t.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
-		linkController = t.linkController
+// GetLinkedPeerIDsSnapshotWithWait returns linked peer IDs and their change channels.
+// Each controller retains its link state; callers wait on all returned channels.
+func (t *SessionTransport) GetLinkedPeerIDsSnapshotWithWait(peerIDs []peer.ID) (map[peer.ID]struct{}, []<-chan struct{}) {
+	// Snapshot controller membership together with its notification channel.
+	var controllers []*transport_controller.Controller
+	var waitChs []<-chan struct{}
+	t.bcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
+		controllers = slices.Clone(t.linkControllers)
+		waitChs = []<-chan struct{}{getWaitCh()}
 	})
-	if linkController == nil {
-		return nil, nil
+
+	// Read current links directly from each transport owner.
+	peers := make(map[peer.ID]struct{})
+	for _, controller := range controllers {
+		linked, waitCh := controller.GetLinkedPeerIDsSnapshotWithWait(peerIDs)
+		maps.Copy(peers, linked)
+		waitChs = append(waitChs, waitCh)
 	}
-	return linkController.GetLinkedPeerIDsSnapshotWithWait(peerIDs)
+	return peers, waitChs
 }
 
-// GetLinkSnapshotsWithWait returns live link snapshots and a wait channel that
-// closes when the transport link set changes.
-func (t *SessionTransport) GetLinkSnapshotsWithWait() ([]transport_controller.LinkSnapshot, <-chan struct{}) {
-	var linkController *transport_controller.Controller
-	t.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
-		linkController = t.linkController
+// GetLinkSnapshotsWithWait returns current links and all channels that can change them.
+func (t *SessionTransport) GetLinkSnapshotsWithWait() ([]transport_controller.LinkSnapshot, []<-chan struct{}) {
+	// Snapshot controller membership together with its notification channel.
+	var controllers []*transport_controller.Controller
+	var waitChs []<-chan struct{}
+	t.bcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
+		controllers = slices.Clone(t.linkControllers)
+		waitChs = []<-chan struct{}{getWaitCh()}
 	})
-	if linkController == nil {
-		return nil, nil
+
+	// Preserve individual links when more than one transport reaches the same peer.
+	var links []transport_controller.LinkSnapshot
+	for _, controller := range controllers {
+		current, waitCh := controller.GetLinkSnapshotsWithWait()
+		links = append(links, current...)
+		waitChs = append(waitChs, waitCh)
 	}
-	return linkController.GetLinkSnapshotsWithWait()
+	return links, waitChs
 }
 
 // Ready returns a channel that closes when the child bus and base controllers
@@ -466,6 +487,13 @@ func (t *SessionTransport) Execute(ctx context.Context) (err error) {
 	if err != nil {
 		return err
 	}
+	defer func() {
+		cancel()
+		closeErr := b.Close()
+		if err == nil {
+			err = closeErr
+		}
+	}()
 	t.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
 		t.childBus = b
 		broadcast()
@@ -473,7 +501,7 @@ func (t *SessionTransport) Execute(ctx context.Context) (err error) {
 	defer func() {
 		t.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
 			t.childBus = nil
-			t.linkController = nil
+			t.linkControllers = nil
 			broadcast()
 		})
 	}()
@@ -546,6 +574,20 @@ func (t *SessionTransport) Execute(ctx context.Context) (err error) {
 	}
 	defer solicitRef.Release()
 
+	// Attach process-local packet routes before announcing transport readiness.
+	if t.startLocalTransport != nil {
+		t.setStartupStage("local-transport")
+		localCtrl, releaseLocal, err := t.startLocalTransport(ctx, b)
+		if err != nil {
+			return err
+		}
+		defer releaseLocal()
+		t.bcast.HoldLock(func(notify func(), _ func() <-chan struct{}) {
+			t.linkControllers = append(t.linkControllers, localCtrl)
+			notify()
+		})
+	}
+
 	t.setStartupStage("webrtc-controllers")
 	rtcCtrl, releaseRTC, err := t.startWebRTCControllers(ctx, le, b)
 	if err != nil {
@@ -556,7 +598,7 @@ func (t *SessionTransport) Execute(ctx context.Context) (err error) {
 	}
 	if rtcCtrl != nil {
 		t.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
-			t.linkController = rtcCtrl
+			t.linkControllers = append(t.linkControllers, rtcCtrl)
 			broadcast()
 		})
 	}
