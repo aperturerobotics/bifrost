@@ -117,7 +117,7 @@ func runSnapshotExchange(t *testing.T, s *SOSync, ctx context.Context, peerSnap 
 
 	errCh := make(chan error, 1)
 	go func() {
-		errCh <- s.exchangeSnapshots(ctx, gateLogger(), localSess)
+		errCh <- s.exchangeSnapshots(ctx, gateLogger(), localSess, true, s.localObjectPeerID)
 	}()
 
 	// The local side sends its snapshot first; consume it.
@@ -161,11 +161,11 @@ func TestStreamOpsAppliesNewerSnapshot(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	syncer := NewSOSync(gateLogger(), nil, "stream-newer-snapshot", writerPeerID, host)
+	syncer := NewSOSync(gateLogger(), nil, "stream-newer-snapshot", writerPeerID, writerPriv, host)
 	localSess, remoteSess := pipeSessions(t)
 	streamDone := make(chan struct{})
 	go func() {
-		syncer.streamOps(ctx, gateLogger(), localSess)
+		syncer.streamOps(ctx, gateLogger(), localSess, writerPeerID)
 		close(streamDone)
 	}()
 
@@ -212,14 +212,23 @@ func TestSnapshotExchangeRejectsExcludedLocalPeer(t *testing.T) {
 	soID := "gate-object"
 	localPriv := mustKeyPair(t)
 	localPeerStr := mustPeerIDStr(t, localPriv)
+	localPeer, err := peer.IDFromPrivateKey(localPriv)
+	if err != nil {
+		t.Fatal(err)
+	}
 	ownerPriv := mustKeyPair(t)
 	ownerPeerStr := mustPeerIDStr(t, ownerPriv)
 
-	localHost, ctr := newMemHost(soID, &sobject.SOState{
-		Config: &sobject.SharedObjectConfig{},
-		Root:   &sobject.SORoot{InnerSeqno: 1},
-	})
-	s := NewSOSync(gateLogger(), nil, soID, peer.ID(localPeerStr), localHost)
+	held := &sobject.SOState{
+		Config: &sobject.SharedObjectConfig{Participants: []*sobject.SOParticipantConfig{
+			participantCfg(ownerPeerStr, sobject.SOParticipantRole_SOParticipantRole_OWNER),
+			participantCfg(localPeerStr, sobject.SOParticipantRole_SOParticipantRole_READER),
+		}},
+		Root: &sobject.SORoot{InnerSeqno: 1},
+	}
+	trustSnapshotConfig(t, held, ownerPriv)
+	localHost, ctr := newMemHost(soID, held)
+	s := NewSOSync(gateLogger(), nil, soID, localPeer, localPriv, localHost)
 
 	peerState := &sobject.SOState{
 		Config: &sobject.SharedObjectConfig{
@@ -250,11 +259,17 @@ func TestSnapshotExchangeRejectsSnapshotWithoutLocalGrant(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	ownerPeer := mustPeerIDStr(t, mustKeyPair(t))
-	localHost, ctr := newMemHost(soID, &sobject.SOState{
-		Config: &sobject.SharedObjectConfig{},
-		Root:   &sobject.SORoot{InnerSeqno: 1},
-	})
+	ownerPriv := mustKeyPair(t)
+	ownerPeer := mustPeerIDStr(t, ownerPriv)
+	held := &sobject.SOState{
+		Config: &sobject.SharedObjectConfig{Participants: []*sobject.SOParticipantConfig{
+			participantCfg(ownerPeer, sobject.SOParticipantRole_SOParticipantRole_OWNER),
+			participantCfg(localPeer.String(), sobject.SOParticipantRole_SOParticipantRole_READER),
+		}},
+		Root: &sobject.SORoot{InnerSeqno: 1},
+	}
+	trustSnapshotConfig(t, held, ownerPriv)
+	localHost, ctr := newMemHost(soID, held)
 	validateAccess := func(_ context.Context, state *sobject.SOState) error {
 		for _, grant := range state.GetRootGrants() {
 			if grant.GetPeerId() == localPeer.String() {
@@ -263,7 +278,7 @@ func TestSnapshotExchangeRejectsSnapshotWithoutLocalGrant(t *testing.T) {
 		}
 		return errors.New("no local root grant")
 	}
-	s := NewSOSync(gateLogger(), nil, soID, localPeer, localHost, validateAccess)
+	s := NewSOSync(gateLogger(), nil, soID, localPeer, localPriv, localHost, validateAccess)
 	peerState := &sobject.SOState{
 		Config: &sobject.SharedObjectConfig{Participants: []*sobject.SOParticipantConfig{
 			participantCfg(ownerPeer, sobject.SOParticipantRole_SOParticipantRole_OWNER),
@@ -300,11 +315,16 @@ func TestSnapshotExchangeRejectsTamperedGrant(t *testing.T) {
 	ownerPriv := mustKeyPair(t)
 	ownerPeerStr := mustPeerIDStr(t, ownerPriv)
 
-	localHost, ctr := newMemHost(soID, &sobject.SOState{
-		Config: &sobject.SharedObjectConfig{},
-		Root:   &sobject.SORoot{InnerSeqno: 1},
-	})
-	s := NewSOSync(gateLogger(), nil, soID, localPeer, localHost)
+	held := &sobject.SOState{
+		Config: &sobject.SharedObjectConfig{Participants: []*sobject.SOParticipantConfig{
+			participantCfg(ownerPeerStr, sobject.SOParticipantRole_SOParticipantRole_OWNER),
+			participantCfg(localPeer.String(), sobject.SOParticipantRole_SOParticipantRole_READER),
+		}},
+		Root: &sobject.SORoot{InnerSeqno: 1},
+	}
+	trustSnapshotConfig(t, held, ownerPriv)
+	localHost, ctr := newMemHost(soID, held)
+	s := NewSOSync(gateLogger(), nil, soID, localPeer, localPriv, localHost)
 
 	grant := buildGrant(t, soID, ownerPriv, localPub)
 	grant.InnerData[0] ^= 0xFF
@@ -371,7 +391,7 @@ func TestSnapshotExchangeAcceptsObjectPeerDistinctFromTransportPeer(t *testing.T
 		t.Fatal(err.Error())
 	}
 	localHost, ctr := newMemHost(soID, localState)
-	s := NewSOSync(gateLogger(), nil, soID, localPeer, localHost)
+	s := NewSOSync(gateLogger(), nil, soID, localPeer, localPriv, localHost)
 
 	peerState := &sobject.SOState{
 		Config:     localState.GetConfig().CloneVT(),
@@ -467,7 +487,7 @@ func TestRemoteOpNonparticipantRejected(t *testing.T) {
 		},
 		Root: &sobject.SORoot{InnerSeqno: 1},
 	})
-	s := NewSOSync(gateLogger(), nil, soID, localPeer, host)
+	s := NewSOSync(gateLogger(), nil, soID, localPeer, localPriv, host)
 
 	opLocalID := ulid.NewULID()
 	op, err := sobject.BuildSOOperation(soID, strangerPriv, []byte("op-data"), 1, opLocalID)
@@ -525,7 +545,7 @@ func TestRemoteOpReplayIsIdempotent(t *testing.T) {
 				}
 			}
 			host, ctr := newMemHost(soID, state)
-			s := NewSOSync(gateLogger(), nil, soID, writerPeer, host)
+			s := NewSOSync(gateLogger(), nil, soID, writerPeer, writerPriv, host)
 			opData, err := op.MarshalVT()
 			if err != nil {
 				t.Fatal(err.Error())
@@ -559,7 +579,7 @@ func TestRemoteOpTamperedSignatureRejected(t *testing.T) {
 		},
 		Root: &sobject.SORoot{InnerSeqno: 1},
 	})
-	s := NewSOSync(gateLogger(), nil, soID, writerPeer, host)
+	s := NewSOSync(gateLogger(), nil, soID, writerPeer, writerPriv, host)
 
 	opLocalID := ulid.NewULID()
 	op, err := sobject.BuildSOOperation(soID, writerPriv, []byte("op-data"), 1, opLocalID)

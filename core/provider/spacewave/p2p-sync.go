@@ -175,7 +175,7 @@ func (a *ProviderAccount) startP2PSyncForSession(ctx context.Context, sessionID 
 				return nil
 			}
 			defer state.endRoutine(&key)
-			return a.runP2PSpace(ctx, childBus, st, state, key)
+			return a.runP2PSpace(ctx, childBus, state, key)
 		}, struct{}{}
 	}, keyed.WithExitLogger[p2pSyncSpaceKey, struct{}](a.le), keyed.WithRetry[p2pSyncSpaceKey, struct{}](providerBackoff))
 	state.watcher.SetRoutine(func(ctx context.Context) error {
@@ -246,7 +246,7 @@ func (a *ProviderAccount) stopP2PSyncForSession(sessionID string) {
 }
 
 // runP2PSpace retains block exchange and signed state synchronization for one Space.
-func (a *ProviderAccount) runP2PSpace(ctx context.Context, childBus bus.Bus, st *transport.SessionTransport, state *p2pSyncState, key p2pSyncSpaceKey) error {
+func (a *ProviderAccount) runP2PSpace(ctx context.Context, childBus bus.Bus, state *p2pSyncState, key p2pSyncSpaceKey) error {
 	// Publish the direct read adapter only while its controller remains attached.
 	bucketID := BlockStoreBucketID(a.accountID, key.blockStoreID)
 	ctrl, _, dexRef, err := loader.WaitExecControllerRunningTyped[*dex_solicit.Controller](ctx, childBus, resolver.NewLoadControllerWithConfig(&dex_solicit.Config{
@@ -276,7 +276,7 @@ func (a *ProviderAccount) runP2PSpace(ctx context.Context, childBus bus.Bus, st 
 		_, err := snapshot.GetTransformer(ctx)
 		return err
 	}
-	return sobject_sync.NewSOSync(a.le, childBus, key.id, st.GetPeerID(), swSO.GetSOHost(), validateSnapshotAccess).Execute(ctx)
+	return sobject_sync.NewSOSync(a.le, childBus, key.id, swSO.localPid, swSO.privKey, swSO.GetSOHost(), validateSnapshotAccess).Execute(ctx)
 }
 
 // getSessionDEXStore reads the live adapter without retaining a stopped composition.

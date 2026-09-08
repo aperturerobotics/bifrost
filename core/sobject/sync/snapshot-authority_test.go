@@ -96,14 +96,19 @@ func TestSnapshotExchangeRequiresHeldAuthority(t *testing.T) {
 					return nil
 				})
 			}
-			syncer := NewSOSync(gateLogger(), nil, soID, localID, host, accessChecks...)
+			syncer := NewSOSync(gateLogger(), nil, soID, localID, local, host, accessChecks...)
 			data, err := candidate.MarshalVT()
 			if err != nil {
 				t.Fatal(err)
 			}
-			err = runSnapshotExchange(t, syncer, t.Context(), &SOSyncMessage{
-				Body: &SOSyncMessage_Snapshot{Snapshot: &SOSyncSnapshot{SoState: data, RootSeqno: 5}},
-			})
+			snapshot := &SOSyncSnapshot{SoState: data, RootSeqno: 5}
+			if len(held.GetConfig().GetConfigChainHash()) == 0 {
+				err = syncer.applyPeerSnapshot(t.Context(), gateLogger(), snapshot)
+			} else {
+				err = runSnapshotExchange(t, syncer, t.Context(), &SOSyncMessage{
+					Body: &SOSyncMessage_Snapshot{Snapshot: snapshot},
+				})
+			}
 			if test.wantError == "" {
 				if err != nil {
 					t.Fatal(err)
