@@ -19,10 +19,21 @@ type snapshot struct {
 
 // snapshot acquires file protection before resolving the durable root.
 func (e *Engine) snapshot(ctx context.Context) (*snapshot, error) {
+	// Keep the selected generation's immutable files alive through the read.
 	release, err := e.protect(ctx)
 	if err != nil {
 		return nil, err
 	}
+
+	// A retained browser File can become unreadable when its entry is replaced.
+	// Copy both roots under a shared root lock, after reclamation protection.
+	// Payload publication remains independent of this short critical section.
+	unlock, err := e.backend.Lock(ctx, "root", false)
+	if err != nil {
+		release()
+		return nil, err
+	}
+	defer unlock()
 	root, err := e.loadRoot(ctx)
 	if err != nil {
 		release()
@@ -33,6 +44,7 @@ func (e *Engine) snapshot(ctx context.Context) (*snapshot, error) {
 
 // get resolves a full key through one partition's bounded newest-first runs.
 func (s *snapshot) get(ctx context.Context, key []byte) ([]byte, bool, error) {
+	// Descend through catalogue bounds to the partition containing the key.
 	name := s.root.Catalogue
 	for {
 		page, err := s.engine.readCatalogue(ctx, name)
@@ -47,6 +59,8 @@ func (s *snapshot) get(ctx context.Context, key []byte) ([]byte, bool, error) {
 			name = page.Children[i].File
 			continue
 		}
+
+		// Search the selected partition's runs from newest to oldest.
 		i := sort.Search(len(page.Partitions), func(i int) bool { return bytes.Compare(page.Partitions[i].Lower, key) > 0 }) - 1
 		if i < 0 {
 			return nil, false, nil
@@ -69,11 +83,14 @@ func (s *snapshot) get(ctx context.Context, key []byte) ([]byte, bool, error) {
 
 // Get returns a caller-owned value and the generation that supplied it.
 func (e *Engine) Get(ctx context.Context, key []byte) ([]byte, bool, uint64, error) {
+	// Pin one durable generation for the complete lookup.
 	s, err := e.snapshot(ctx)
 	if err != nil {
 		return nil, false, 0, err
 	}
 	defer s.release()
+
+	// Return independent bytes with the revision that supplied them.
 	value, found, err := s.get(ctx, key)
 	return bytes.Clone(value), found, s.root.Revision, err
 }
