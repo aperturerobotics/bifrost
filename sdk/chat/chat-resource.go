@@ -2,8 +2,6 @@ package spacewave_chat
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"slices"
 	"strconv"
 	"strings"
@@ -374,7 +372,30 @@ func (r *ChatResource) appendMessage(ctx context.Context, wtx world.WorldState, 
 		return nil, errors.New("chat state write condition requires a state change")
 	}
 
-	// Resolve every public relationship inside this transaction and channel.
+	// Resolve the sender-scoped retry before reserving a history position.
+	msgKey := ""
+	if transactionID := req.GetTransactionId(); transactionID != "" {
+		msgKey, err = TransactionMessageKey(r.objectKey, r.localPeerID, transactionID)
+		if err != nil {
+			return nil, err
+		}
+		prior, err := world.LookupObjectBody[*ChatMessage](ctx, wtx, msgKey, NewChatMessageBlock)
+		if err != nil && !errors.Is(err, world.ErrObjectNotFound) {
+			return nil, err
+		}
+		if prior != nil {
+			personPeerID := prior.GetPersonPeerId()
+			if personPeerID == "" {
+				personPeerID = prior.GetSenderPeerId()
+			}
+			if prior.GetSenderPeerId() != r.localPeerID || personPeerID != r.personPeerID || !req.GetReuseAcceptedTransaction() && (!prior.GetContent().EqualVT(content) || prior.GetReplyToKey() != req.GetReplyToKey()) {
+				return nil, errors.New("chat send transaction conflicts with its accepted message")
+			}
+			return &spacewave_chat_rpc.SendMessageResponse{MessageKey: msgKey}, nil
+		}
+	}
+
+	// Resolve relationships only for new writes; accepted retries retain their original targets.
 	relation := content.GetCiphertext().GetRelation()
 	for _, key := range []string{relation.GetTargetKey(), relation.GetReplyToKey(), content.GetAnnotation().GetTargetKey()} {
 		if key == "" {
@@ -386,27 +407,6 @@ func (r *ChatResource) appendMessage(ctx context.Context, wtx world.WorldState, 
 		}
 		if _, err := world.LookupObjectBody[*ChatMessage](ctx, wtx, key, NewChatMessageBlock); err != nil {
 			return nil, errors.Wrap(err, "resolve chat relation target")
-		}
-	}
-
-	// Resolve the sender-scoped retry before reserving a history position.
-	msgKey := ""
-	if transactionID := req.GetTransactionId(); transactionID != "" {
-		digest := sha256.Sum256([]byte(strconv.Itoa(len(r.localPeerID)) + ":" + r.localPeerID + transactionID))
-		msgKey = r.objectKey + "/message/tx-" + hex.EncodeToString(digest[:])
-		prior, err := world.LookupObjectBody[*ChatMessage](ctx, wtx, msgKey, NewChatMessageBlock)
-		if err != nil && !errors.Is(err, world.ErrObjectNotFound) {
-			return nil, err
-		}
-		if prior != nil {
-			personPeerID := prior.GetPersonPeerId()
-			if personPeerID == "" {
-				personPeerID = prior.GetSenderPeerId()
-			}
-			if prior.GetSenderPeerId() != r.localPeerID || personPeerID != r.personPeerID || !prior.GetContent().EqualVT(content) || prior.GetReplyToKey() != req.GetReplyToKey() {
-				return nil, errors.New("chat send transaction conflicts with its accepted message")
-			}
-			return &spacewave_chat_rpc.SendMessageResponse{MessageKey: msgKey}, nil
 		}
 	}
 

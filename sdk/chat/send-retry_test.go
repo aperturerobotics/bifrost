@@ -23,9 +23,16 @@ func TestChatResourceSendRetryRetainsHistory(t *testing.T) {
 	createChatChannel(t, ctx, ws, GeneralChannelKey, "General")
 	first := NewChatResource(ws, tb.Engine, GeneralChannelKey, "alice")
 	request := &spacewave_chat_rpc.SendMessageRequest{Text: "retained", TransactionId: "device-a/send-1"}
+	messageKey, err := TransactionMessageKey(GeneralChannelKey, "alice", request.GetTransactionId())
+	if err != nil {
+		t.Fatal(err)
+	}
 	accepted, err := first.SendMessage(ctx, request)
 	if err != nil {
 		t.Fatal(err)
+	}
+	if accepted.GetMessageKey() != messageKey {
+		t.Fatal("send changed its precomputed transaction message identity")
 	}
 	seqno, err := ws.GetSeqno(ctx)
 	if err != nil {
@@ -53,6 +60,32 @@ func TestChatResourceSendRetryRetainsHistory(t *testing.T) {
 	conflict.Text = "changed"
 	if _, err := resumed.SendMessage(ctx, conflict); err == nil {
 		t.Fatal("accepted conflicting reuse of send identity")
+	}
+
+	// Opt-in replay ignores changed bodies and relationships without weakening author identity.
+	conflict.ReuseAcceptedTransaction = true
+	conflict.Text = ""
+	conflict.ReplyToKey = GeneralChannelKey + "/message/missing"
+	conflict.Content = &ChatMessageContent{Content: &ChatMessageContent_Annotation{
+		Annotation: &ChatAnnotation{TargetKey: conflict.ReplyToKey, Key: "changed"},
+	}}
+	replayed, err = resumed.SendMessage(ctx, conflict)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if replayed.GetMessageKey() != accepted.GetMessageKey() {
+		t.Fatal("opt-in replay changed the accepted message")
+	}
+	after, err = ws.GetSeqno(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if after != seqno {
+		t.Fatal("opt-in replay published a World revision")
+	}
+	otherPerson := NewChatResourceForPerson(ws, tb.Engine, GeneralChannelKey, "alice", "another-person")
+	if _, err := otherPerson.SendMessage(ctx, conflict); err == nil {
+		t.Fatal("opt-in replay accepted a different person under the same device identity")
 	}
 
 	// A second authenticated sender has an independent transaction namespace.

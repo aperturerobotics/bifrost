@@ -128,7 +128,7 @@ message SendMessageRequest {
   // ReplyToKey is the optional key of the message to reply to.
   string reply_to_key = 2;
   // TransactionId identifies a retryable send within the authenticated sender
-  // and channel. Reuse with different content is rejected; empty always appends.
+  // and channel. By default, differing content is rejected; empty always appends.
   string transaction_id = 3;
   // Content is the typed message content. When set, it is persisted as given
   // and the legacy text field is rejected if also supplied.
@@ -138,6 +138,10 @@ message SendMessageRequest {
   // Only state changes accept this condition. Accepted transaction retries retain
   // their original result even when current state has since changed.
   optional string expected_state_message_key = 5;
+  // ReuseAcceptedTransaction returns the original message for a valid retry
+  // even when its content or reply differs. The authenticated author must still
+  // match. It has no effect when TransactionId is empty.
+  bool reuse_accepted_transaction = 6;
 }
 
 // SendMessageResponse is the response after sending a message.

@@ -407,7 +407,7 @@ export interface SendMessageRequest {
   replyToKey?: string
   /**
    * TransactionId identifies a retryable send within the authenticated sender
-   * and channel. Reuse with different content is rejected; empty always appends.
+   * and channel. By default, differing content is rejected; empty always appends.
    *
    * @generated from field: string transaction_id = 3;
    */
@@ -428,6 +428,14 @@ export interface SendMessageRequest {
    * @generated from field: optional string expected_state_message_key = 5;
    */
   expectedStateMessageKey?: string
+  /**
+   * ReuseAcceptedTransaction returns the original message for a valid retry
+   * even when its content or reply differs. The authenticated author must still
+   * match. It has no effect when TransactionId is empty.
+   *
+   * @generated from field: bool reuse_accepted_transaction = 6;
+   */
+  reuseAcceptedTransaction?: boolean
 }
 
 export const SendMessageRequest: MessageType<SendMessageRequest> =
@@ -444,6 +452,12 @@ export const SendMessageRequest: MessageType<SendMessageRequest> =
         kind: 'scalar',
         T: ScalarType.STRING,
         opt: true,
+      },
+      {
+        no: 6,
+        name: 'reuse_accepted_transaction',
+        kind: 'scalar',
+        T: ScalarType.BOOL,
       },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,

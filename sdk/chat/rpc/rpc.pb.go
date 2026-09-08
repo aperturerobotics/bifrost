@@ -363,7 +363,7 @@ type SendMessageRequest struct {
 	// ReplyToKey is the optional key of the message to reply to.
 	ReplyToKey string `protobuf:"bytes,2,opt,name=reply_to_key,json=replyToKey,proto3" json:"replyToKey,omitempty"`
 	// TransactionId identifies a retryable send within the authenticated sender
-	// and channel. Reuse with different content is rejected; empty always appends.
+	// and channel. By default, differing content is rejected; empty always appends.
 	TransactionId string `protobuf:"bytes,3,opt,name=transaction_id,json=transactionId,proto3" json:"transactionId,omitempty"`
 	// Content is the typed message content. When set, it is persisted as given
 	// and the legacy text field is rejected if also supplied.
@@ -373,6 +373,10 @@ type SendMessageRequest struct {
 	// Only state changes accept this condition. Accepted transaction retries retain
 	// their original result even when current state has since changed.
 	ExpectedStateMessageKey *string `protobuf:"bytes,5,opt,name=expected_state_message_key,json=expectedStateMessageKey,proto3,oneof" json:"expectedStateMessageKey,omitempty"`
+	// ReuseAcceptedTransaction returns the original message for a valid retry
+	// even when its content or reply differs. The authenticated author must still
+	// match. It has no effect when TransactionId is empty.
+	ReuseAcceptedTransaction bool `protobuf:"varint,6,opt,name=reuse_accepted_transaction,json=reuseAcceptedTransaction,proto3" json:"reuseAcceptedTransaction,omitempty"`
 }
 
 func (x *SendMessageRequest) Reset() {
@@ -414,6 +418,13 @@ func (x *SendMessageRequest) GetExpectedStateMessageKey() string {
 		return *x.ExpectedStateMessageKey
 	}
 	return ""
+}
+
+func (x *SendMessageRequest) GetReuseAcceptedTransaction() bool {
+	if x != nil {
+		return x.ReuseAcceptedTransaction
+	}
+	return false
 }
 
 // SendMessageResponse is the response after sending a message.
@@ -730,6 +741,7 @@ func (m *SendMessageRequest) CloneVT() *SendMessageRequest {
 	r.Text = m.Text
 	r.ReplyToKey = m.ReplyToKey
 	r.TransactionId = m.TransactionId
+	r.ReuseAcceptedTransaction = m.ReuseAcceptedTransaction
 	r.Content = protobuf_go_lite.CloneVTValue(m.Content)
 	r.ExpectedStateMessageKey = protobuf_go_lite.ClonePtr(m.ExpectedStateMessageKey)
 	if len(m.unknownFields) > 0 {
@@ -1099,6 +1111,9 @@ func (this *SendMessageRequest) EqualVT(that *SendMessageRequest) bool {
 		return false
 	}
 	if !protobuf_go_lite.EqualPtr(this.ExpectedStateMessageKey, that.ExpectedStateMessageKey) {
+		return false
+	}
+	if this.ReuseAcceptedTransaction != that.ReuseAcceptedTransaction {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -1885,6 +1900,11 @@ func (x *SendMessageRequest) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("expectedStateMessageKey")
 		s.WriteString(*x.ExpectedStateMessageKey)
 	}
+	if x.ReuseAcceptedTransaction || s.HasField("reuseAcceptedTransaction") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("reuseAcceptedTransaction")
+		s.WriteBool(x.ReuseAcceptedTransaction)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -1926,6 +1946,9 @@ func (x *SendMessageRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
 			}
 			t := s.ReadString()
 			x.ExpectedStateMessageKey = &t
+		case "reuse_accepted_transaction", "reuseAcceptedTransaction":
+			s.AddField("reuse_accepted_transaction")
+			x.ReuseAcceptedTransaction = s.ReadBool()
 		}
 	})
 }
@@ -2749,6 +2772,11 @@ func (m *SendMessageRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.ReuseAcceptedTransaction {
+		i = protobuf_go_lite.EncodeBool(dAtA, i, m.ReuseAcceptedTransaction)
+		i--
+		dAtA[i] = 0x30
+	}
 	if m.ExpectedStateMessageKey != nil {
 		i = protobuf_go_lite.EncodeString(dAtA, i, *m.ExpectedStateMessageKey)
 		i--
@@ -3151,6 +3179,7 @@ func (m *SendMessageRequest) SizeVT() (n int) {
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
 	n += protobuf_go_lite.SizeStringPtr(1, m.ExpectedStateMessageKey)
+	n += protobuf_go_lite.SizeBoolNonZero(1, m.ReuseAcceptedTransaction)
 	n += len(m.unknownFields)
 	return n
 }
@@ -3473,6 +3502,10 @@ func (x *SendMessageRequest) MarshalProtoText() string {
 	if x.ExpectedStateMessageKey != nil {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "expected_state_message_key")
 		protobuf_go_lite.TextWriteString(&sb, *x.ExpectedStateMessageKey)
+	}
+	if x.ReuseAcceptedTransaction != false {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "reuse_accepted_transaction")
+		protobuf_go_lite.TextWriteBool(&sb, x.ReuseAcceptedTransaction)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -4390,6 +4423,16 @@ func (m *SendMessageRequest) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.ExpectedStateMessageKey = &v
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ReuseAcceptedTransaction", wireType)
+			}
+			var v bool
+			v, iNdEx, err = protobuf_go_lite.DecodeVarintBool(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.ReuseAcceptedTransaction = bool(v)
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
