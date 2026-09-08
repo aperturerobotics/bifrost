@@ -27,28 +27,50 @@ type p2pSyncState struct {
 	// bcast guards every lifecycle and resource field below.
 	bcast broadcast.Broadcast
 
-	ctx              context.Context
+	// ctx carries cancellation across startup and running workers.
+	ctx context.Context
+	// sessionTransport owns the child bus used by this sync generation.
 	sessionTransport *transport.SessionTransport
-	cancel           context.CancelFunc
-	owners           int
-	startComplete    bool
-	started          bool
-	startupExited    bool
-	stopping         bool
-	cleanupRunning   bool
-	cleanupDone      bool
-	restartPending   bool
-	startErr         error
-	lowerSource      *p2pSyncState
-	lowerSourceHeld  bool
-	workers          int
-	refs             []directive.Reference
-	peerRefs         map[string]directive.Reference
-	relFns           []func()
-	stores           map[string]block.StoreOps
-	soIDs            map[string]struct{}
+	// cancel ends ctx when the state enters retirement.
+	cancel context.CancelFunc
+	// owners counts callers and successor states retaining this generation.
+	owners int
+	// startComplete reports that startup published its final result.
+	startComplete bool
+	// started reports that startup completed successfully.
+	started bool
+	// startupExited reports that startup exited or became a registered worker.
+	startupExited bool
+	// stopping reports that cancellation and retirement have begun.
+	stopping bool
+	// cleanupRunning elects the goroutine responsible for cleanup.
+	cleanupRunning bool
+	// cleanupDone reports that all registered resources were released.
+	cleanupDone bool
+	// restartPending requests another startup pass before publishing success.
+	restartPending bool
+	// startErr records the final startup error.
+	startErr error
+	// lowerSource provides stores from the generation being replaced.
+	lowerSource *p2pSyncState
+	// lowerSourceHeld reports that this state owns a reference to lowerSource.
+	lowerSourceHeld bool
+	// workers counts registered background workers that cleanup must await.
+	workers int
+	// refs holds controllerbus references until cleanup.
+	refs []directive.Reference
+	// peerRefs indexes retained peer directives whose references also appear in refs.
+	peerRefs map[string]directive.Reference
+	// relFns holds non-directive resource releases until cleanup.
+	relFns []func()
+	// stores indexes DEX stores by bucket ID for this generation.
+	stores map[string]block.StoreOps
+	// soIDs records shared objects whose sync controllers were started.
+	soIDs map[string]struct{}
 }
 
+// retainP2PSyncStateLocked adds an owner while a.p2pSyncBcast is locked.
+// It returns false when either the owner or state lifetime has ended.
 func (a *ProviderAccount) retainP2PSyncStateLocked(ctx context.Context, state *p2pSyncState) bool {
 	if ctx.Err() != nil {
 		return false
@@ -66,6 +88,8 @@ func (a *ProviderAccount) retainP2PSyncStateLocked(ctx context.Context, state *p
 	return retained
 }
 
+// retainP2PSyncLowerSourceLocked retains a state as the store source for its
+// successor while a.p2pSyncBcast is locked.
 func (a *ProviderAccount) retainP2PSyncLowerSourceLocked(state *p2pSyncState) bool {
 	retained := false
 	state.bcast.HoldLock(func(bcast func(), _ func() <-chan struct{}) {
@@ -79,6 +103,8 @@ func (a *ProviderAccount) retainP2PSyncLowerSourceLocked(state *p2pSyncState) bo
 	return retained
 }
 
+// watchP2PSyncOwner releases one state owner when ctx ends. A context without a
+// cancellation channel leaves its owner retained until explicit retirement.
 func (a *ProviderAccount) watchP2PSyncOwner(ctx context.Context, state *p2pSyncState) {
 	// Ignore contexts that cannot signal cancellation.
 	if ctx.Done() == nil {
@@ -112,6 +138,7 @@ func (a *ProviderAccount) watchP2PSyncOwner(ctx context.Context, state *p2pSyncS
 	}()
 }
 
+// releaseP2PSyncState drops one owner and retires the state after the last one.
 func (a *ProviderAccount) releaseP2PSyncState(state *p2pSyncState) {
 	// Decrement ownership and mark the state for retirement.
 	retire := false
@@ -140,6 +167,7 @@ func (a *ProviderAccount) releaseP2PSyncState(state *p2pSyncState) {
 	}
 }
 
+// releaseP2PSyncLowerSource releases the predecessor retained by state.
 func (a *ProviderAccount) releaseP2PSyncLowerSource(state *p2pSyncState) {
 	var lower *p2pSyncState
 	state.bcast.HoldLock(func(bcast func(), _ func() <-chan struct{}) {
@@ -156,6 +184,7 @@ func (a *ProviderAccount) releaseP2PSyncLowerSource(state *p2pSyncState) {
 	}
 }
 
+// addStore registers a DEX store for lookup by bucket ID.
 func (s *p2pSyncState) addStore(bucketID string, store block.StoreOps) {
 	s.bcast.HoldLock(func(bcast func(), _ func() <-chan struct{}) {
 		if s.stores == nil {
@@ -166,6 +195,7 @@ func (s *p2pSyncState) addStore(bucketID string, store block.StoreOps) {
 	})
 }
 
+// hasStore reports whether this generation has registered bucketID.
 func (s *p2pSyncState) hasStore(bucketID string) bool {
 	var ok bool
 	s.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
@@ -174,6 +204,7 @@ func (s *p2pSyncState) hasStore(bucketID string) bool {
 	return ok
 }
 
+// hasSO reports whether this generation started sync for soID.
 func (s *p2pSyncState) hasSO(soID string) bool {
 	var ok bool
 	s.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
@@ -182,6 +213,7 @@ func (s *p2pSyncState) hasSO(soID string) bool {
 	return ok
 }
 
+// addSO records that this generation started sync for soID.
 func (s *p2pSyncState) addSO(soID string) {
 	s.bcast.HoldLock(func(bcast func(), _ func() <-chan struct{}) {
 		if s.soIDs == nil {
@@ -192,6 +224,7 @@ func (s *p2pSyncState) addSO(soID string) {
 	})
 }
 
+// addRef retains a controllerbus reference until state cleanup.
 func (s *p2pSyncState) addRef(ref directive.Reference) {
 	s.bcast.HoldLock(func(bcast func(), _ func() <-chan struct{}) {
 		s.refs = append(s.refs, ref)
@@ -199,6 +232,7 @@ func (s *p2pSyncState) addRef(ref directive.Reference) {
 	})
 }
 
+// addRelease retains a cleanup function until state cleanup.
 func (s *p2pSyncState) addRelease(rel func()) {
 	s.bcast.HoldLock(func(bcast func(), _ func() <-chan struct{}) {
 		s.relFns = append(s.relFns, rel)
@@ -206,6 +240,7 @@ func (s *p2pSyncState) addRelease(rel func()) {
 	})
 }
 
+// addWorker registers a background worker that cleanup must await.
 func (s *p2pSyncState) addWorker() {
 	s.bcast.HoldLock(func(bcast func(), _ func() <-chan struct{}) {
 		s.workers++
@@ -213,6 +248,7 @@ func (s *p2pSyncState) addWorker() {
 	})
 }
 
+// workerDone releases one background worker registration.
 func (s *p2pSyncState) workerDone() {
 	s.bcast.HoldLock(func(bcast func(), _ func() <-chan struct{}) {
 		if s.workers == 0 {
@@ -223,6 +259,7 @@ func (s *p2pSyncState) workerDone() {
 	})
 }
 
+// getStore returns this generation's store or its startup predecessor's store.
 func (s *p2pSyncState) getStore(bucketID string) block.StoreOps {
 	var store block.StoreOps
 	s.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
@@ -237,9 +274,8 @@ func (s *p2pSyncState) getStore(bucketID string) block.StoreOps {
 // StartP2PSync starts SO sync and DEX block exchange for all mounted
 // shared objects. Called when a P2P-linked device connects.
 //
-// childBus is the session transport's child bus where solicit
-// controllers run. The session transport must be running before
-// calling this method.
+// The method waits for sessionTransport readiness and starts sync controllers
+// on its child bus.
 func (a *ProviderAccount) StartP2PSync(ctx context.Context, sessionTransport *transport.SessionTransport) error {
 	return a.startP2PSync(ctx, ctx, sessionTransport)
 }
@@ -253,6 +289,8 @@ func (a *ProviderAccount) StartPersistentP2PSync(ctx context.Context, sessionTra
 	return a.startP2PSync(ctx, a.lifecycleCtx, sessionTransport)
 }
 
+// startP2PSync selects or replaces the current sync generation. ctx bounds the
+// readiness and startup wait; ownerCtx retains a new or in-progress generation.
 func (a *ProviderAccount) startP2PSync(ctx, ownerCtx context.Context, sessionTransport *transport.SessionTransport) error {
 	if err := sessionTransport.AwaitReady(ctx); err != nil {
 		return err
@@ -383,6 +421,7 @@ func (a *ProviderAccount) RetainP2PPeer(ctx context.Context, remotePeerID peer.I
 	return a.retainP2PPeerOnState(ctx, state, remotePeerID)
 }
 
+// retainP2PPeerOnState retains one peer-link directive for the state lifetime.
 func (a *ProviderAccount) retainP2PPeerOnState(
 	ctx context.Context,
 	state *p2pSyncState,
@@ -439,6 +478,7 @@ func (a *ProviderAccount) retainP2PPeerOnState(
 	return nil
 }
 
+// retainConfiguredP2PPeers retains every account peer on state.
 func (a *ProviderAccount) retainConfiguredP2PPeers(state *p2pSyncState) error {
 	var peers []peer.ID
 	a.p2pSyncBcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
@@ -525,6 +565,7 @@ func (s *p2pSyncState) finishStart(err error) bool {
 	return restart
 }
 
+// markStartupExited allows cleanup to proceed once registered workers finish.
 func (s *p2pSyncState) markStartupExited() {
 	s.bcast.HoldLock(func(bcast func(), _ func() <-chan struct{}) {
 		s.startupExited = true
@@ -594,6 +635,8 @@ func (a *ProviderAccount) runP2PSyncStart(
 	a.retireP2PSyncState(state)
 }
 
+// restoreP2PSyncAfterFailedStart reconciles the account state and predecessor
+// cleanup after state fails to start.
 func (a *ProviderAccount) restoreP2PSyncAfterFailedStart(
 	state *p2pSyncState,
 	previous *p2pSyncState,
@@ -622,6 +665,8 @@ func (a *ProviderAccount) restoreP2PSyncAfterFailedStart(
 	}
 }
 
+// startP2PSyncControllers reconciles peer, DEX, shared-object, and invite
+// controllers with soList for one sync generation.
 func (a *ProviderAccount) startP2PSyncControllers(
 	state *p2pSyncState,
 	sessionTransport *transport.SessionTransport,
@@ -709,6 +754,8 @@ func (a *ProviderAccount) StopP2PSync() {
 	a.retireP2PSyncState(nil)
 }
 
+// getP2PStore returns the active lifecycle's store for bucketID, including its
+// retained predecessor while replacement startup is incomplete.
 func (a *ProviderAccount) getP2PStore(bucketID string) block.StoreOps {
 	var state *p2pSyncState
 	a.p2pSyncBcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
@@ -738,6 +785,8 @@ func (a *ProviderAccount) retireP2PSyncState(state *p2pSyncState) {
 	a.stopP2PSyncState(state)
 }
 
+// stopP2PSyncState cancels state, waits for startup and registered workers, and
+// releases each resource exactly once. Concurrent callers wait for cleanup.
 func (a *ProviderAccount) stopP2PSyncState(state *p2pSyncState) {
 	if state == nil {
 		return
@@ -1050,7 +1099,10 @@ func (a *ProviderAccount) startDEXSolicit(ctx context.Context, childBus bus.Bus,
 		ctx,
 		childBus,
 		resolver.NewLoadControllerWithConfig(&dex_solicit.Config{
-			BucketId:        bucketID,
+			BucketId: bucketID,
+			// Allow a participant to read writer blocks through its shared immediate
+			// peer without requiring that peer to prefetch them.
+			MaxForwardHops:  1,
 			ProtocolContext: []byte(protocolContext),
 		}),
 		nil,
