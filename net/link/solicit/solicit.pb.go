@@ -63,6 +63,35 @@ func (x *SolicitProtocolRequest) GetTransportId() uint64 {
 	return 0
 }
 
+// SolicitationOffer binds a stable protocol hash to one directive incarnation.
+type SolicitationOffer struct {
+	unknownFields []byte
+	// ProtocolHash identifies the solicited protocol and context for this link.
+	ProtocolHash []byte `protobuf:"bytes,1,opt,name=protocol_hash,json=protocolHash,proto3" json:"protocolHash,omitempty"`
+	// Incarnation identifies the continuous lifetime of one solicitation offer.
+	Incarnation []byte `protobuf:"bytes,2,opt,name=incarnation,proto3" json:"incarnation,omitempty"`
+}
+
+func (x *SolicitationOffer) Reset() {
+	*x = SolicitationOffer{}
+}
+
+func (*SolicitationOffer) ProtoMessage() {}
+
+func (x *SolicitationOffer) GetProtocolHash() []byte {
+	if x != nil {
+		return x.ProtocolHash
+	}
+	return nil
+}
+
+func (x *SolicitationOffer) GetIncarnation() []byte {
+	if x != nil {
+		return x.Incarnation
+	}
+	return nil
+}
+
 // SolicitationExchange is sent on the control stream.
 // Full hash set, re-sent each time the local set changes.
 type SolicitationExchange struct {
@@ -71,6 +100,14 @@ type SolicitationExchange struct {
 	// Each hash is 32 bytes.
 	// Max 256 entries.
 	ProtocolHashes [][]byte `protobuf:"bytes,1,rep,name=protocol_hashes,json=protocolHashes,proto3" json:"protocolHashes,omitempty"`
+	// Offers binds each protocol hash to its current directive incarnation.
+	Offers []*SolicitationOffer `protobuf:"bytes,2,rep,name=offers,proto3" json:"offers,omitempty"`
+	// SupportsOfferIncarnations indicates that Offers governs match lifetimes.
+	SupportsOfferIncarnations bool `protobuf:"varint,3,opt,name=supports_offer_incarnations,json=supportsOfferIncarnations,proto3" json:"supportsOfferIncarnations,omitempty"`
+	// Generation identifies this side's current offer set.
+	Generation uint64 `protobuf:"varint,4,opt,name=generation,proto3" json:"generation,omitempty"`
+	// AcknowledgedGeneration is the latest remote generation this side observed.
+	AcknowledgedGeneration uint64 `protobuf:"varint,5,opt,name=acknowledged_generation,json=acknowledgedGeneration,proto3" json:"acknowledgedGeneration,omitempty"`
 }
 
 func (x *SolicitationExchange) Reset() {
@@ -84,6 +121,34 @@ func (x *SolicitationExchange) GetProtocolHashes() [][]byte {
 		return x.ProtocolHashes
 	}
 	return nil
+}
+
+func (x *SolicitationExchange) GetOffers() []*SolicitationOffer {
+	if x != nil {
+		return x.Offers
+	}
+	return nil
+}
+
+func (x *SolicitationExchange) GetSupportsOfferIncarnations() bool {
+	if x != nil {
+		return x.SupportsOfferIncarnations
+	}
+	return false
+}
+
+func (x *SolicitationExchange) GetGeneration() uint64 {
+	if x != nil {
+		return x.Generation
+	}
+	return 0
+}
+
+func (x *SolicitationExchange) GetAcknowledgedGeneration() uint64 {
+	if x != nil {
+		return x.AcknowledgedGeneration
+	}
+	return 0
 }
 
 func (m *SolicitProtocolRequest) CloneVT() *SolicitProtocolRequest {
@@ -105,12 +170,33 @@ func (m *SolicitProtocolRequest) CloneMessageVT() protobuf_go_lite.CloneMessage 
 	return m.CloneVT()
 }
 
+func (m *SolicitationOffer) CloneVT() *SolicitationOffer {
+	if m == nil {
+		return (*SolicitationOffer)(nil)
+	}
+	r := new(SolicitationOffer)
+	r.ProtocolHash = protobuf_go_lite.CloneBytes(m.ProtocolHash)
+	r.Incarnation = protobuf_go_lite.CloneBytes(m.Incarnation)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *SolicitationOffer) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
 func (m *SolicitationExchange) CloneVT() *SolicitationExchange {
 	if m == nil {
 		return (*SolicitationExchange)(nil)
 	}
 	r := new(SolicitationExchange)
+	r.SupportsOfferIncarnations = m.SupportsOfferIncarnations
+	r.Generation = m.Generation
+	r.AcknowledgedGeneration = m.AcknowledgedGeneration
 	r.ProtocolHashes = protobuf_go_lite.CloneBytesSlice(m.ProtocolHashes)
+	r.Offers = protobuf_go_lite.CloneVTSlice(m.Offers)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -150,6 +236,29 @@ func (this *SolicitProtocolRequest) EqualMessageVT(thatMsg any) bool {
 	return this.EqualVT(that)
 }
 
+func (this *SolicitationOffer) EqualVT(that *SolicitationOffer) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if !protobuf_go_lite.EqualBytes(this.ProtocolHash, that.ProtocolHash) {
+		return false
+	}
+	if !protobuf_go_lite.EqualBytes(this.Incarnation, that.Incarnation) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *SolicitationOffer) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*SolicitationOffer)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
 func (this *SolicitationExchange) EqualVT(that *SolicitationExchange) bool {
 	if this == that {
 		return true
@@ -157,6 +266,18 @@ func (this *SolicitationExchange) EqualVT(that *SolicitationExchange) bool {
 		return false
 	}
 	if !protobuf_go_lite.EqualBytesSlice(this.ProtocolHashes, that.ProtocolHashes) {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.Offers, that.Offers, func() *SolicitationOffer { return &SolicitationOffer{} }) {
+		return false
+	}
+	if this.SupportsOfferIncarnations != that.SupportsOfferIncarnations {
+		return false
+	}
+	if this.Generation != that.Generation {
+		return false
+	}
+	if this.AcknowledgedGeneration != that.AcknowledgedGeneration {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -236,6 +357,56 @@ func (x *SolicitProtocolRequest) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
+// MarshalProtoJSON marshals the SolicitationOffer message to JSON.
+func (x *SolicitationOffer) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if len(x.ProtocolHash) > 0 || s.HasField("protocolHash") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("protocolHash")
+		s.WriteBytes(x.ProtocolHash)
+	}
+	if len(x.Incarnation) > 0 || s.HasField("incarnation") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("incarnation")
+		s.WriteBytes(x.Incarnation)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the SolicitationOffer to JSON.
+func (x *SolicitationOffer) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the SolicitationOffer message from JSON.
+func (x *SolicitationOffer) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "protocol_hash", "protocolHash":
+			s.AddField("protocol_hash")
+			x.ProtocolHash = s.ReadBytes()
+		case "incarnation":
+			s.AddField("incarnation")
+			x.Incarnation = s.ReadBytes()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the SolicitationOffer from JSON.
+func (x *SolicitationOffer) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
 // MarshalProtoJSON marshals the SolicitationExchange message to JSON.
 func (x *SolicitationExchange) MarshalProtoJSON(s *json.MarshalState) {
 	if x == nil {
@@ -248,6 +419,32 @@ func (x *SolicitationExchange) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteMoreIf(&wroteField)
 		s.WriteObjectField("protocolHashes")
 		s.WriteBytesArray(x.ProtocolHashes)
+	}
+	if len(x.Offers) > 0 || s.HasField("offers") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("offers")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.Offers {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s.WithField("offers"))
+		}
+		s.WriteArrayEnd()
+	}
+	if x.SupportsOfferIncarnations || s.HasField("supportsOfferIncarnations") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("supportsOfferIncarnations")
+		s.WriteBool(x.SupportsOfferIncarnations)
+	}
+	if x.Generation != 0 || s.HasField("generation") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("generation")
+		s.WriteUint64(x.Generation)
+	}
+	if x.AcknowledgedGeneration != 0 || s.HasField("acknowledgedGeneration") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("acknowledgedGeneration")
+		s.WriteUint64(x.AcknowledgedGeneration)
 	}
 	s.WriteObjectEnd()
 }
@@ -273,6 +470,33 @@ func (x *SolicitationExchange) UnmarshalProtoJSON(s *json.UnmarshalState) {
 				return
 			}
 			x.ProtocolHashes = s.ReadBytesArray()
+		case "offers":
+			s.AddField("offers")
+			if s.ReadNil() {
+				x.Offers = nil
+				return
+			}
+			s.ReadArray(func() {
+				if s.ReadNil() {
+					x.Offers = append(x.Offers, nil)
+					return
+				}
+				v := &SolicitationOffer{}
+				v.UnmarshalProtoJSON(s.WithField("offers", false))
+				if s.Err() != nil {
+					return
+				}
+				x.Offers = append(x.Offers, v)
+			})
+		case "supports_offer_incarnations", "supportsOfferIncarnations":
+			s.AddField("supports_offer_incarnations")
+			x.SupportsOfferIncarnations = s.ReadBool()
+		case "generation":
+			s.AddField("generation")
+			x.Generation = s.ReadUint64()
+		case "acknowledged_generation", "acknowledgedGeneration":
+			s.AddField("acknowledged_generation")
+			x.AcknowledgedGeneration = s.ReadUint64()
 		}
 	})
 }
@@ -334,6 +558,48 @@ func (m *SolicitProtocolRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error
 	return len(dAtA) - i, nil
 }
 
+func (m *SolicitationOffer) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *SolicitationOffer) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *SolicitationOffer) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.Incarnation) > 0 {
+		i = protobuf_go_lite.EncodeBytes(dAtA, i, m.Incarnation)
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.ProtocolHash) > 0 {
+		i = protobuf_go_lite.EncodeBytes(dAtA, i, m.ProtocolHash)
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *SolicitationExchange) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -363,6 +629,33 @@ func (m *SolicitationExchange) MarshalToSizedBufferVT(dAtA []byte) (int, error) 
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.AcknowledgedGeneration != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.AcknowledgedGeneration))
+		i--
+		dAtA[i] = 0x28
+	}
+	if m.Generation != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Generation))
+		i--
+		dAtA[i] = 0x20
+	}
+	if m.SupportsOfferIncarnations {
+		i = protobuf_go_lite.EncodeBool(dAtA, i, m.SupportsOfferIncarnations)
+		i--
+		dAtA[i] = 0x18
+	}
+	if len(m.Offers) > 0 {
+		for iNdEx := len(m.Offers) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.Offers[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0x12
+		}
+	}
 	if len(m.ProtocolHashes) > 0 {
 		for iNdEx := len(m.ProtocolHashes) - 1; iNdEx >= 0; iNdEx-- {
 			i = protobuf_go_lite.EncodeBytes(dAtA, i, m.ProtocolHashes[iNdEx])
@@ -387,6 +680,18 @@ func (m *SolicitProtocolRequest) SizeVT() (n int) {
 	return n
 }
 
+func (m *SolicitationOffer) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeBytesNonEmpty(1, m.ProtocolHash)
+	n += protobuf_go_lite.SizeBytesNonEmpty(1, m.Incarnation)
+	n += len(m.unknownFields)
+	return n
+}
+
 func (m *SolicitationExchange) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -394,6 +699,13 @@ func (m *SolicitationExchange) SizeVT() (n int) {
 	var l int
 	_ = l
 	n += protobuf_go_lite.SizeBytesSlice(1, m.ProtocolHashes)
+	for _, e := range m.Offers {
+		l = e.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += protobuf_go_lite.SizeBoolNonZero(1, m.SupportsOfferIncarnations)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Generation)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.AcknowledgedGeneration)
 	n += len(m.unknownFields)
 	return n
 }
@@ -424,6 +736,24 @@ func (x *SolicitProtocolRequest) String() string {
 	return x.MarshalProtoText()
 }
 
+func (x *SolicitationOffer) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "SolicitationOffer")
+	if len(x.ProtocolHash) != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "protocol_hash")
+		protobuf_go_lite.TextWriteBytes(&sb, x.ProtocolHash)
+	}
+	if len(x.Incarnation) != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "incarnation")
+		protobuf_go_lite.TextWriteBytes(&sb, x.Incarnation)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *SolicitationOffer) String() string {
+	return x.MarshalProtoText()
+}
+
 func (x *SolicitationExchange) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "SolicitationExchange")
@@ -434,6 +764,30 @@ func (x *SolicitationExchange) MarshalProtoText() string {
 			protobuf_go_lite.TextWriteBytes(&sb, v)
 		}
 		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	if len(x.Offers) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "offers")
+		for i, v := range x.Offers {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &SolicitationOffer{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	if x.SupportsOfferIncarnations != false {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "supports_offer_incarnations")
+		protobuf_go_lite.TextWriteBool(&sb, x.SupportsOfferIncarnations)
+	}
+	if x.Generation != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "generation")
+		protobuf_go_lite.TextWriteUint(&sb, x.Generation)
+	}
+	if x.AcknowledgedGeneration != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "acknowledged_generation")
+		protobuf_go_lite.TextWriteUint(&sb, x.AcknowledgedGeneration)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -522,6 +876,65 @@ func (m *SolicitProtocolRequest) UnmarshalVT(dAtA []byte) error {
 	return nil
 }
 
+func (m *SolicitationOffer) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SolicitationOffer: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SolicitationOffer: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ProtocolHash", wireType)
+			}
+			m.ProtocolHash, iNdEx, err = protobuf_go_lite.DecodeBytesAppend(m.ProtocolHash, dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Incarnation", wireType)
+			}
+			m.Incarnation, iNdEx, err = protobuf_go_lite.DecodeBytesAppend(m.Incarnation, dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
 func (m *SolicitationExchange) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -552,6 +965,47 @@ func (m *SolicitationExchange) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.ProtocolHashes = append(m.ProtocolHashes, v)
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Offers", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Offers = append(m.Offers, &SolicitationOffer{})
+			if err := m.Offers[len(m.Offers)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SupportsOfferIncarnations", wireType)
+			}
+			var v bool
+			v, iNdEx, err = protobuf_go_lite.DecodeVarintBool(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.SupportsOfferIncarnations = bool(v)
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Generation", wireType)
+			}
+			m.Generation = 0
+			m.Generation, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AcknowledgedGeneration", wireType)
+			}
+			m.AcknowledgedGeneration = 0
+			m.AcknowledgedGeneration, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

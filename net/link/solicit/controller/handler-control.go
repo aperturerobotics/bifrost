@@ -38,7 +38,10 @@ func (h *controlStreamMountedHandler) HandleMountedStream(
 		}
 	}
 
-	sess := stream_packet.NewSession(ms.GetStream(), maxMessageSize)
+	sess := stream_packet.NewSession(
+		ms.GetStream(),
+		maxExchangeMessageSize(h.c.maxHashes),
+	)
 	go h.c.runControlStream(ctx, ls, sess)
 	return nil
 }

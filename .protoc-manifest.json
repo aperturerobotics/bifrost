@@ -2877,7 +2877,7 @@
       ]
     },
     "github.com/s4wave/spacewave/net/link/solicit": {
-      "hash": "78e9d5dcabd1de669bf8ab750e79af172016e20a2eb591469c78408ad39aba28",
+      "hash": "fe81e2810ab6b3b7154fed17dcc5357d8eb60626fa78460888943832e96d4366",
       "generatedFiles": [
         "net/link/solicit/solicit.pb.go",
         "net/link/solicit/solicit.pb.ts"

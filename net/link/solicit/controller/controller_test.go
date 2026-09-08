@@ -3,8 +3,11 @@ package link_solicit_controller
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
+	"io"
 	"net"
 	"slices"
+	"strconv"
 	"testing"
 	"time"
 
@@ -128,6 +131,28 @@ func newTestResolverHandler() *testResolverHandler {
 	return &testResolverHandler{values: make(chan directive.Value, 8)}
 }
 
+// legacySolicitationExchange constructs a stable-hash exchange from an old peer.
+func legacySolicitationExchange(hashes [][]byte) *solicitationExchange {
+	return &solicitationExchange{hashes: cloneHashes(hashes)}
+}
+
+// incarnatedSolicitationExchange constructs one synchronized upgraded offer.
+func incarnatedSolicitationExchange(
+	hash, incarnation []byte,
+	generation, acknowledgedGeneration uint64,
+) *solicitationExchange {
+	return &solicitationExchange{
+		hashes: [][]byte{slices.Clone(hash)},
+		offers: []solicitationOffer{{
+			hash:        slices.Clone(hash),
+			incarnation: slices.Clone(incarnation),
+		}},
+		supportsOfferIncarnations: true,
+		generation:                generation,
+		acknowledgedGeneration:    acknowledgedGeneration,
+	}
+}
+
 func (h *testResolverHandler) AddValue(val directive.Value) (uint32, bool) {
 	h.values <- val
 	return uint32(len(h.values)), true
@@ -236,6 +261,8 @@ func newTestSolicitController(t *testing.T) *Controller {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
+	c.openRoutines.SetContext(t.Context(), true)
+	t.Cleanup(c.openRoutines.ClearContext)
 	return c
 }
 
@@ -322,8 +349,8 @@ func TestControlStreamLocalSnapshotWatchDynamicAddRemove(t *testing.T) {
 	}()
 
 	initial := recvLocalSnapshot(t, snapCh)
-	if initial.linkRemoved || len(initial.entries) != 0 {
-		t.Fatalf("initial snapshot removed=%v entries=%d", initial.linkRemoved, len(initial.entries))
+	if initial.linkRemoved || len(initial.offers) != 0 {
+		t.Fatalf("initial snapshot removed=%v offers=%d", initial.linkRemoved, len(initial.offers))
 	}
 
 	ss := &solicitState{
@@ -334,11 +361,11 @@ func TestControlStreamLocalSnapshotWatchDynamicAddRemove(t *testing.T) {
 		broadcast()
 	})
 	added := recvLocalSnapshot(t, snapCh)
-	if len(added.entries) != 1 || added.entries[0].ProtocolID != protocol.ID("test/dynamic") {
-		t.Fatalf("added entries = %#v", added.entries)
+	if len(added.offers) != 1 || added.offers[0].protocolID != protocol.ID("test/dynamic") {
+		t.Fatalf("added offers = %#v", added.offers)
 	}
-	if string(added.entries[0].Context) != "ctx" {
-		t.Fatalf("added context = %q", added.entries[0].Context)
+	if string(added.offers[0].context) != "ctx" {
+		t.Fatalf("added context = %q", added.offers[0].context)
 	}
 
 	c.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
@@ -346,8 +373,8 @@ func TestControlStreamLocalSnapshotWatchDynamicAddRemove(t *testing.T) {
 		broadcast()
 	})
 	removed := recvLocalSnapshot(t, snapCh)
-	if removed.linkRemoved || len(removed.entries) != 0 {
-		t.Fatalf("removed snapshot removed=%v entries=%d", removed.linkRemoved, len(removed.entries))
+	if removed.linkRemoved || len(removed.offers) != 0 {
+		t.Fatalf("removed snapshot removed=%v offers=%d", removed.linkRemoved, len(removed.offers))
 	}
 
 	cancel()
@@ -440,18 +467,19 @@ func TestControlStreamLocalSnapshotRemoteHashesRefresh(t *testing.T) {
 	c.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
 		snap = c.snapshotControlStreamLocalLocked(ls)
 	})
-	if snap.linkRemoved || len(snap.entries) != 0 {
-		t.Fatalf("local snapshot removed=%v entries=%d", snap.linkRemoved, len(snap.entries))
+	if snap.linkRemoved || len(snap.offers) != 0 {
+		t.Fatalf("local snapshot removed=%v offers=%d", snap.linkRemoved, len(snap.offers))
 	}
 
-	if !c.setControlStreamRemoteHashes(ls, hashes) {
+	remote := legacySolicitationExchange(hashes)
+	if !c.setControlStreamRemoteExchange(ls, remote) {
 		t.Fatal("link should accept remote hashes")
 	}
-	current, linkRemoved := c.currentControlStreamRemoteHashes(ls)
+	current, linkRemoved := c.currentControlStreamRemoteExchange(ls)
 	if linkRemoved {
 		t.Fatal("link should still exist")
 	}
-	if !slices.EqualFunc(current, hashes, bytes.Equal) {
+	if !slices.EqualFunc(current.hashes, hashes, bytes.Equal) {
 		t.Fatalf("current remote hashes did not refresh")
 	}
 
@@ -459,7 +487,7 @@ func TestControlStreamLocalSnapshotRemoteHashesRefresh(t *testing.T) {
 		delete(c.links, ls.ml.GetLinkUUID())
 		broadcast()
 	})
-	if c.setControlStreamRemoteHashes(ls, hashes) {
+	if c.setControlStreamRemoteExchange(ls, remote) {
 		t.Fatal("removed link accepted remote hashes")
 	}
 }
@@ -480,8 +508,8 @@ func TestControlStreamLocalSnapshotRefreshesQueuedSolicitationState(t *testing.T
 	c.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
 		queued = c.snapshotControlStreamLocalLocked(ls)
 	})
-	if len(queued.entries) != 1 {
-		t.Fatalf("queued entries = %d, want 1", len(queued.entries))
+	if len(queued.offers) != 1 {
+		t.Fatalf("queued offers = %d, want 1", len(queued.offers))
 	}
 
 	c.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
@@ -489,8 +517,8 @@ func TestControlStreamLocalSnapshotRefreshesQueuedSolicitationState(t *testing.T
 		broadcast()
 	})
 	current := c.currentControlStreamLocalSnapshot(ls)
-	if current.linkRemoved || len(current.entries) != 0 {
-		t.Fatalf("current snapshot removed=%v entries=%d", current.linkRemoved, len(current.entries))
+	if current.linkRemoved || len(current.offers) != 0 {
+		t.Fatalf("current snapshot removed=%v offers=%d", current.linkRemoved, len(current.offers))
 	}
 }
 
@@ -519,13 +547,14 @@ func TestControlStreamLocalSnapshotRejectsReplacedLink(t *testing.T) {
 		}
 	})
 
-	if _, linkRemoved := c.currentControlStreamRemoteHashes(ls); !linkRemoved {
+	if _, linkRemoved := c.currentControlStreamRemoteExchange(ls); !linkRemoved {
 		t.Fatal("replaced link should hide old remote hashes")
 	}
-	if c.setControlStreamRemoteHashes(ls, hashes) {
+	remote := legacySolicitationExchange(hashes)
+	if c.setControlStreamRemoteExchange(ls, remote) {
 		t.Fatal("replaced link accepted old remote hashes")
 	}
-	if !c.setControlStreamRemoteHashes(replacement, hashes) {
+	if !c.setControlStreamRemoteExchange(replacement, remote) {
 		t.Fatal("replacement link should accept remote hashes")
 	}
 }
@@ -551,19 +580,255 @@ func TestEvaluateMatchesSuppressesDuplicateOpens(t *testing.T) {
 		broadcast()
 	})
 
-	c.evaluateMatches(ctx, ls, hashes, hashes)
+	exchange := legacySolicitationExchange(hashes)
+	c.evaluateMatches(ctx, ls, exchange, exchange)
 	recvTestValue(t, ls.ml.(*testMountedLink).openCh, "opened protocol")
 	recvTestValue(t, handler.values, "solicit value")
 	if len(ls.matched) != 1 {
 		t.Fatalf("matched count = %d, want 1", len(ls.matched))
 	}
 
-	c.evaluateMatches(ctx, ls, hashes, hashes)
+	c.evaluateMatches(ctx, ls, exchange, exchange)
 	if len(ls.matched) != 1 {
 		t.Fatalf("matched count after duplicate = %d, want 1", len(ls.matched))
 	}
 	assertNoTestValue(t, ls.ml.(*testMountedLink).openCh, "duplicate opened protocol")
 	assertNoTestValue(t, handler.values, "duplicate solicit value")
+}
+
+// TestEvaluateMatchesStreamCloseDoesNotRearmIncarnatedPair verifies that stream
+// lifetime does not control offer-pair suppression.
+func TestEvaluateMatchesStreamCloseDoesNotRearmIncarnatedPair(t *testing.T) {
+	c := newTestSolicitController(t)
+	ls := newTestLinkState(peer.ID("a"), peer.ID("b"))
+	handler := newTestResolverHandler()
+	entry := link_solicit.SolicitEntry{
+		ProtocolID: protocol.ID("test/incarnated"),
+		Context:    []byte("ctx"),
+	}
+	hash := link_solicit.ComputeProtocolHash(ls.sessionID, entry.ProtocolID, entry.Context)
+	localIncarnation := bytes.Repeat([]byte{1}, solicitationIncarnationSize)
+	remoteIncarnation := bytes.Repeat([]byte{2}, solicitationIncarnationSize)
+	ss := &solicitState{
+		dir:         link_solicit.NewSolicitProtocol(entry.ProtocolID, entry.Context, "", 0),
+		handler:     handler,
+		incarnation: localIncarnation,
+	}
+	local := incarnatedSolicitationExchange(hash, localIncarnation, 2, 3)
+	remote := incarnatedSolicitationExchange(hash, remoteIncarnation, 3, 2)
+	c.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+		c.links[ls.ml.GetLinkUUID()] = ls
+		c.solicitations[ss] = struct{}{}
+		ls.remoteExchange = remote
+		broadcast()
+	})
+
+	c.evaluateMatches(t.Context(), ls, local, remote)
+	recvTestValue(t, ls.ml.(*testMountedLink).openCh, "opened incarnated protocol")
+	value := recvTestValue(t, handler.values, "incarnated solicit value")
+	sms := value.(link_solicit.SolicitMountedStream)
+	ms, _, err := sms.AcceptMountedStream()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := ms.GetStream().Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	c.evaluateMatches(t.Context(), ls, local, remote)
+	assertNoTestValue(t, ls.ml.(*testMountedLink).openCh, "reopened closed protocol")
+	assertNoTestValue(t, handler.values, "replacement for closed stream")
+}
+
+// TestRetainedLinkPrunesRetiredIncarnationPairs verifies bounded suppression
+// across repeated local and remote offer rotations.
+func TestRetainedLinkPrunesRetiredIncarnationPairs(t *testing.T) {
+	c := newTestSolicitController(t)
+	ls := newTestLinkState(peer.ID("a"), peer.ID("b"))
+	handler := newTestResolverHandler()
+	entry := link_solicit.SolicitEntry{
+		ProtocolID: protocol.ID("test/rotating-incarnations"),
+		Context:    []byte("ctx"),
+	}
+	hash := link_solicit.ComputeProtocolHash(ls.sessionID, entry.ProtocolID, entry.Context)
+	ss := &solicitState{
+		dir:     link_solicit.NewSolicitProtocol(entry.ProtocolID, entry.Context, "", 0),
+		handler: handler,
+	}
+	c.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+		c.links[ls.ml.GetLinkUUID()] = ls
+		c.solicitations[ss] = struct{}{}
+		ls.matched[hex.EncodeToString(hash)] = struct{}{}
+		broadcast()
+	})
+
+	for generation := uint64(1); generation <= 8; generation++ {
+		localIncarnation := bytes.Repeat([]byte{byte(generation)}, solicitationIncarnationSize)
+		remoteIncarnation := bytes.Repeat([]byte{byte(generation + 16)}, solicitationIncarnationSize)
+		local := incarnatedSolicitationExchange(
+			hash,
+			localIncarnation,
+			generation,
+			generation,
+		)
+		remote := incarnatedSolicitationExchange(
+			hash,
+			remoteIncarnation,
+			generation,
+			generation,
+		)
+		c.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+			ss.incarnation = localIncarnation
+			broadcast()
+		})
+		if generation > 1 {
+			previousRemote, removed := c.currentControlStreamRemoteExchange(ls)
+			if removed {
+				t.Fatal("retained link was removed")
+			}
+			c.pruneRetiredMatches(ls, local, previousRemote)
+			if len(ls.matched) != 1 {
+				t.Fatalf("generation %d local rotation retained %d matches, want legacy only", generation, len(ls.matched))
+			}
+		}
+		c.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+			ls.remoteExchange = remote
+			broadcast()
+		})
+
+		c.pruneRetiredMatches(ls, local, remote)
+		c.evaluateMatches(t.Context(), ls, local, remote)
+		recvTestValue(t, ls.ml.(*testMountedLink).openCh, "rotated opened protocol")
+		recvTestValue(t, handler.values, "rotated solicitation value")
+		if len(ls.matched) != 2 {
+			t.Fatalf("generation %d matched entries = %d, want legacy plus current pair", generation, len(ls.matched))
+		}
+	}
+}
+
+// TestPruneRetiredMatchRemovesOpenBeforeRoutineStarts verifies withdrawal
+// cleanup when the keyed manager has no running context.
+func TestPruneRetiredMatchRemovesOpenBeforeRoutineStarts(t *testing.T) {
+	c, err := NewController(logrus.NewEntry(logrus.New()), &Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ls := newTestLinkState(peer.ID("a"), peer.ID("b"))
+	hash := link_solicit.ComputeProtocolHash(ls.sessionID, protocol.ID("test/pending"), nil)
+	localIncarnation := bytes.Repeat([]byte{1}, solicitationIncarnationSize)
+	remoteIncarnation := bytes.Repeat([]byte{2}, solicitationIncarnationSize)
+	match := solicitationMatch{
+		hash:              hash,
+		localIncarnation:  localIncarnation,
+		remoteIncarnation: remoteIncarnation,
+		incarnated:        true,
+	}
+	matchKey := encodeSolicitationMatch(ls, match)
+	openKey := solicitationOpenKey{linkUUID: ls.ml.GetLinkUUID(), match: matchKey}
+	c.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+		c.links[ls.ml.GetLinkUUID()] = ls
+		ls.matched[matchKey] = struct{}{}
+		c.opens[openKey] = solicitationOpen{ls: ls, match: match}
+		broadcast()
+	})
+	c.openRoutines.SetKey(openKey, true)
+
+	replacement := bytes.Repeat([]byte{3}, solicitationIncarnationSize)
+	local := incarnatedSolicitationExchange(hash, replacement, 2, 2)
+	remote := incarnatedSolicitationExchange(hash, replacement, 2, 2)
+	c.pruneRetiredMatches(ls, local, remote)
+
+	if len(ls.matched) != 0 {
+		t.Fatalf("matched entries = %d, want 0", len(ls.matched))
+	}
+	c.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
+		if _, exists := c.opens[openKey]; exists {
+			t.Fatal("retired open metadata remains")
+		}
+	})
+	if _, exists := c.openRoutines.GetKey(openKey); exists {
+		t.Fatal("retired open routine remains")
+	}
+}
+
+// TestStartOpenRoutineRejectsLinkRemovedBeforeRegistration covers link removal
+// between pending-open publication and keyed registration.
+func TestStartOpenRoutineRejectsLinkRemovedBeforeRegistration(t *testing.T) {
+	c, err := NewController(logrus.NewEntry(logrus.New()), &Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ls := newTestLinkState(peer.ID("a"), peer.ID("b"))
+	match := solicitationMatch{
+		hash:              bytes.Repeat([]byte{1}, link_solicit.HashSize),
+		localIncarnation:  bytes.Repeat([]byte{2}, solicitationIncarnationSize),
+		remoteIncarnation: bytes.Repeat([]byte{3}, solicitationIncarnationSize),
+		incarnated:        true,
+	}
+	matchKey := encodeSolicitationMatch(ls, match)
+	openKey := solicitationOpenKey{linkUUID: ls.ml.GetLinkUUID(), match: matchKey}
+	c.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+		ls.refCount = 1
+		c.links[ls.ml.GetLinkUUID()] = ls
+		ls.matched[matchKey] = struct{}{}
+		c.opens[openKey] = solicitationOpen{ls: ls, match: match}
+		broadcast()
+	})
+	c.removeLink(ls.ml.GetLinkUUID())
+	c.startOpenRoutine(openKey)
+
+	c.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
+		if _, exists := c.opens[openKey]; exists {
+			t.Fatal("removed link retained open metadata")
+		}
+	})
+	if _, exists := c.openRoutines.GetKey(openKey); exists {
+		t.Fatal("removed link retained open routine")
+	}
+}
+
+// TestIncomingSolicitedStreamRejectsStaleIncarnation verifies both stale-pair
+// and upgraded-peer downgrade rejection.
+func TestIncomingSolicitedStreamRejectsStaleIncarnation(t *testing.T) {
+	c := newTestSolicitController(t)
+	ls := newTestLinkState(peer.ID("b"), peer.ID("a"))
+	handler := newTestResolverHandler()
+	entry := link_solicit.SolicitEntry{
+		ProtocolID: protocol.ID("test/stale-incarnation"),
+		Context:    []byte("ctx"),
+	}
+	hash := link_solicit.ComputeProtocolHash(ls.sessionID, entry.ProtocolID, entry.Context)
+	lowerIncarnation := bytes.Repeat([]byte{1}, solicitationIncarnationSize)
+	higherIncarnation := bytes.Repeat([]byte{2}, solicitationIncarnationSize)
+	ss := &solicitState{
+		dir:         link_solicit.NewSolicitProtocol(entry.ProtocolID, entry.Context, "", 0),
+		handler:     handler,
+		incarnation: higherIncarnation,
+	}
+	remote := incarnatedSolicitationExchange(hash, lowerIncarnation, 3, 2)
+	c.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+		c.links[ls.ml.GetLinkUUID()] = ls
+		c.solicitations[ss] = struct{}{}
+		ls.remoteExchange = remote
+		broadcast()
+	})
+	newStream := func() link.MountedStream {
+		return &testMountedStream{link: ls.ml}
+	}
+
+	staleLower := bytes.Repeat([]byte{3}, solicitationIncarnationSize)
+	stalePair := hex.EncodeToString(hash) + ":" +
+		hex.EncodeToString(staleLower) + ":" + hex.EncodeToString(higherIncarnation)
+	c.handleIncomingSolicitedStream(stalePair, newStream())
+	assertNoTestValue(t, handler.values, "stale incarnation stream")
+
+	c.handleIncomingSolicitedStream(hex.EncodeToString(hash), newStream())
+	assertNoTestValue(t, handler.values, "hash-only stream from upgraded peer")
+
+	currentPair := hex.EncodeToString(hash) + ":" +
+		hex.EncodeToString(lowerIncarnation) + ":" + hex.EncodeToString(higherIncarnation)
+	c.handleIncomingSolicitedStream(currentPair, newStream())
+	recvTestValue(t, handler.values, "current incarnation stream")
 }
 
 func TestEvaluateMatchesHigherPeerDoesNotOpenStream(t *testing.T) {
@@ -587,7 +852,8 @@ func TestEvaluateMatchesHigherPeerDoesNotOpenStream(t *testing.T) {
 		broadcast()
 	})
 
-	c.evaluateMatches(ctx, ls, hashes, hashes)
+	exchange := legacySolicitationExchange(hashes)
+	c.evaluateMatches(ctx, ls, exchange, exchange)
 	if len(ls.matched) != 1 {
 		t.Fatalf("matched count = %d, want 1", len(ls.matched))
 	}
@@ -610,6 +876,7 @@ func TestControlStreamSendsFullHashSetAfterLocalChange(t *testing.T) {
 	defer localConn.Close()
 	defer remoteConn.Close()
 
+	maxMessageSize := maxExchangeMessageSize(c.maxHashes)
 	localSess := stream_packet.NewSession(localConn, maxMessageSize)
 	remoteSess := stream_packet.NewSession(remoteConn, maxMessageSize)
 	done := make(chan struct{})
@@ -660,6 +927,48 @@ func TestControlStreamSendsFullHashSetAfterLocalChange(t *testing.T) {
 	<-done
 }
 
+// TestControlStreamMaxExchangeFitsPacketBound verifies the configured offer
+// limit fits through the upgraded packet codec.
+func TestControlStreamMaxExchangeFitsPacketBound(t *testing.T) {
+	c := newTestSolicitController(t)
+	ls := newTestLinkState(peer.ID("a"), peer.ID("b"))
+	offers := make([]solicitationOffer, c.maxHashes)
+	for i := range offers {
+		offers[i] = solicitationOffer{
+			protocolID:  protocol.ID(strconv.Itoa(i)),
+			incarnation: bytes.Repeat([]byte{byte(i)}, solicitationIncarnationSize),
+		}
+	}
+	exchange := c.computeExchange(ls, offers)
+	exchange.generation = 1
+	exchange.acknowledgedGeneration = 1
+
+	localConn, remoteConn := net.Pipe()
+	defer localConn.Close()
+	defer remoteConn.Close()
+	maxMessageSize := maxExchangeMessageSize(c.maxHashes)
+	localSess := stream_packet.NewSession(localConn, maxMessageSize)
+	remoteSess := stream_packet.NewSession(remoteConn, maxMessageSize)
+	sendErr := make(chan error, 1)
+	go func() {
+		sendErr <- c.sendExchange(localSess, exchange, true)
+	}()
+
+	var received link_solicit.SolicitationExchange
+	if err := remoteSess.RecvMsg(&received); err != nil {
+		t.Fatal(err)
+	}
+	if err := recvTestValue(t, sendErr, "max exchange send"); err != nil {
+		t.Fatal(err)
+	}
+	if len(received.GetProtocolHashes()) != 0 {
+		t.Fatalf("protocol hashes = %d, want 0 in upgraded exchange", len(received.GetProtocolHashes()))
+	}
+	if len(received.GetOffers()) != int(c.maxHashes) {
+		t.Fatalf("offers = %d, want %d", len(received.GetOffers()), c.maxHashes)
+	}
+}
+
 func recvSolicitationExchange(t *testing.T, sess *stream_packet.Session) *link_solicit.SolicitationExchange {
 	t.Helper()
 
@@ -680,10 +989,11 @@ func recvSolicitationExchange(t *testing.T, sess *stream_packet.Session) *link_s
 	return nil
 }
 
-// TestSolicitProtocolMatch tests that two peers both soliciting the same
-// protocol get a SolicitMountedStream value.
-func TestSolicitProtocolMatch(t *testing.T) {
-	ctx := t.Context()
+// TestSolicitProtocolRestartsOnRetainedLink verifies that restarting both
+// consumers establishes a fresh stream over the existing link.
+func TestSolicitProtocolRestartsOnRetainedLink(t *testing.T) {
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
 
 	// Set up two testbeds with inproc transport and solicitation.
 	tb1 := buildTestbed(t, ctx)
@@ -712,7 +1022,7 @@ func TestSolicitProtocolMatch(t *testing.T) {
 
 	// Establish a link.
 	pid1 := tp1.GetPeerID()
-	_, lnkRel, err := link.EstablishLinkWithPeerEx(ctx, tb2.Bus, "", pid1, false)
+	heldLink, lnkRel, err := link.EstablishLinkWithPeerEx(ctx, tb2.Bus, "", pid1, false)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -729,75 +1039,93 @@ func TestSolicitProtocolMatch(t *testing.T) {
 		err error
 	}
 
-	ch1 := make(chan result, 1)
-	ch2 := make(chan result, 1)
+	runRound := func(marker string) (directive.Reference, directive.Reference, [2]uint64) {
+		t.Helper()
 
-	go func() {
-		sms, _, ref, err := link_solicit.ExSolicitProtocol(ctx, tb1.Bus, testProto, nil, "", 0)
-		ch1 <- result{sms, ref, err}
-	}()
-	go func() {
-		sms, _, ref, err := link_solicit.ExSolicitProtocol(ctx, tb2.Bus, testProto, nil, "", 0)
-		ch2 <- result{sms, ref, err}
-	}()
+		ch1 := make(chan result, 1)
+		ch2 := make(chan result, 1)
+		go func() {
+			sms, _, ref, err := link_solicit.ExSolicitProtocol(ctx, tb1.Bus, testProto, nil, "", 0)
+			ch1 <- result{sms, ref, err}
+		}()
+		go func() {
+			sms, _, ref, err := link_solicit.ExSolicitProtocol(ctx, tb2.Bus, testProto, nil, "", 0)
+			ch2 <- result{sms, ref, err}
+		}()
 
-	r1 := <-ch1
-	if r1.err != nil {
-		t.Fatalf("peer 1 solicit error: %v", r1.err)
-	}
-	defer r1.ref.Release()
+		await := func(ch <-chan result, peerNum int) result {
+			select {
+			case res := <-ch:
+				if res.err != nil {
+					t.Fatalf("peer %d solicit error: %v", peerNum, res.err)
+				}
+				return res
+			case <-ctx.Done():
+				t.Fatalf("peer %d solicitation did not resolve: %v", peerNum, ctx.Err())
+			}
+			return result{}
+		}
+		r1 := await(ch1, 1)
+		r2 := await(ch2, 2)
 
-	r2 := <-ch2
-	if r2.err != nil {
-		t.Fatalf("peer 2 solicit error: %v", r2.err)
-	}
-	defer r2.ref.Release()
+		accept := func(sms link_solicit.SolicitMountedStream, peerNum int) link.MountedStream {
+			ms, alreadyAccepted, err := sms.AcceptMountedStream()
+			if err != nil {
+				t.Fatalf("peer %d accept error: %v", peerNum, err)
+			}
+			if alreadyAccepted {
+				t.Fatalf("peer %d received the previously consumed stream", peerNum)
+			}
+			if ms == nil {
+				t.Fatalf("peer %d got nil MountedStream", peerNum)
+			}
+			return ms
+		}
+		ms1 := accept(r1.sms, 1)
+		defer ms1.GetStream().Close()
+		ms2 := accept(r2.sms, 2)
+		defer ms2.GetStream().Close()
 
-	sms1 := r1.sms
-	sms2 := r2.sms
+		deadline := time.Now().Add(time.Second)
+		if err := ms1.GetStream().SetDeadline(deadline); err != nil {
+			t.Fatalf("peer 1 stream deadline: %v", err)
+		}
+		if err := ms2.GetStream().SetDeadline(deadline); err != nil {
+			t.Fatalf("peer 2 stream deadline: %v", err)
+		}
 
-	// Accept both streams.
-	ms1, alreadyAccepted, err := sms1.AcceptMountedStream()
-	if err != nil {
-		t.Fatalf("peer 1 accept error: %v", err)
-	}
-	if alreadyAccepted {
-		t.Fatal("peer 1 stream already accepted")
-	}
-	if ms1 == nil {
-		t.Fatal("peer 1 got nil MountedStream")
-	}
-	defer ms1.GetStream().Close()
+		data := []byte(marker)
+		if _, err := ms1.GetStream().Write(data); err != nil {
+			t.Fatalf("write %q: %v", marker, err)
+		}
+		buf := make([]byte, len(data))
+		if _, err := io.ReadFull(ms2.GetStream(), buf); err != nil {
+			t.Fatalf("read %q: %v", marker, err)
+		}
+		if !bytes.Equal(buf, data) {
+			t.Fatalf("data mismatch: got %q, want %q", buf, data)
+		}
 
-	ms2, alreadyAccepted, err := sms2.AcceptMountedStream()
-	if err != nil {
-		t.Fatalf("peer 2 accept error: %v", err)
-	}
-	if alreadyAccepted {
-		t.Fatal("peer 2 stream already accepted")
-	}
-	if ms2 == nil {
-		t.Fatal("peer 2 got nil MountedStream")
-	}
-	defer ms2.GetStream().Close()
-
-	// Write data from one side and read on the other.
-	data := []byte("hello solicitation")
-	_, err = ms1.GetStream().Write(data)
-	if err != nil {
-		t.Fatalf("write error: %v", err)
-	}
-
-	buf := make([]byte, len(data)*2)
-	n, err := ms2.GetStream().Read(buf)
-	if err != nil {
-		t.Fatalf("read error: %v", err)
-	}
-	if string(buf[:n]) != string(data) {
-		t.Fatalf("data mismatch: got %q, want %q", buf[:n], data)
+		return r1.ref, r2.ref, [2]uint64{
+			ms1.GetLink().GetLinkUUID(),
+			ms2.GetLink().GetLinkUUID(),
+		}
 	}
 
-	t.Log("solicitation match successful, data exchanged")
+	round1Ref1, round1Ref2, round1Links := runRound("round one")
+	round1Ref1.Release()
+	round1Ref2.Release()
+
+	round2Ref1, round2Ref2, round2Links := runRound("round two")
+	defer round2Ref1.Release()
+	defer round2Ref2.Release()
+
+	if round2Links != round1Links {
+		t.Fatalf("link UUIDs changed: round 1 %v, round 2 %v", round1Links, round2Links)
+	}
+	if round2Links[1] != heldLink.GetLinkUUID() {
+		t.Fatalf("peer 2 link UUID = %d, held link UUID = %d", round2Links[1], heldLink.GetLinkUUID())
+	}
 }
 
 // TestSolicitProtocolNoMatch tests that disjoint protocol sets don't match.
