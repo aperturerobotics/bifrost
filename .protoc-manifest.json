@@ -3430,7 +3430,7 @@
       ]
     },
     "github.com/s4wave/spacewave/sdk/chat/content": {
-      "hash": "134d38b184c29cec20c5d6ff75496b1f49f92fdd886366b1a2a6c509f9f82061",
+      "hash": "95494bae906a1955bdf1ce5a20c548fd0da3f3d36716ee046125627f985c2859",
       "generatedFiles": [
         "sdk/chat/content/content.pb.go",
         "sdk/chat/content/content.pb.ts"

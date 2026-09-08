@@ -52,6 +52,15 @@ message ChatStateChange {
   string content_json = 3;
 }
 
+// ChatEvent retains a message from an extensible external protocol.
+message ChatEvent {
+  // Type is an open protocol vocabulary identifying the message schema.
+  string type = 1;
+  // ContentJson is a complete JSON object, bounded to 64 KiB.
+  // The producing protocol validates its schema and canonicalizes its encoding.
+  string content_json = 2;
+}
+
 // ChatMessageContent contains the message body.
 message ChatMessageContent {
   oneof content {
@@ -63,5 +72,7 @@ message ChatMessageContent {
     ChatAnnotation annotation = 3;
     // StateChange is public channel metadata retained in message history.
     ChatStateChange state_change = 4;
+    // Event is a protocol message body subject to channel encryption policy.
+    ChatEvent event = 5;
   }
 }

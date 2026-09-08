@@ -731,6 +731,9 @@ func (r *ChatResource) readMessage(ctx context.Context, key string) (*spacewave_
 		personPeerID = msg.GetSenderPeerId()
 	}
 	text := msg.GetContent().GetText()
+	if msg.GetContent().GetEvent() != nil {
+		text = "Unsupported message"
+	}
 	if state := msg.GetContent().GetStateChange(); state != nil {
 		text = "Channel settings updated"
 		if state.GetStateKey() == "" {
@@ -793,6 +796,13 @@ func normalizeSendMessageContent(req *spacewave_chat_rpc.SendMessageRequest) (*C
 			return nil, errors.New("chat state content is missing")
 		}
 		if err := value.StateChange.Validate(); err != nil {
+			return nil, err
+		}
+	case *ChatMessageContent_Event:
+		if value == nil {
+			return nil, errors.New("chat event content is missing")
+		}
+		if err := value.Event.Validate(); err != nil {
 			return nil, err
 		}
 	default:
