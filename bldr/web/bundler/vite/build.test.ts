@@ -548,7 +548,7 @@ var __vitePreload = function preload(baseModule, deps) {
 })
 
 describe('Vite build input tracking', () => {
-  it('includes lazy chunks and their dependencies in the cache inputs', async () => {
+  it('includes config dependencies and lazy chunks in the cache inputs', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'vite-lazy-inputs-'))
     try {
       const entry = path.join(root, 'entry.ts')
@@ -562,13 +562,28 @@ describe('Vite build input tracking', () => {
         'export const value = 42',
       )
 
+      const configPath = path.join(root, 'vite.config.mjs')
+      await fs.writeFile(
+        path.join(root, 'build-policy.mjs'),
+        'export const minify = false',
+      )
+      await fs.writeFile(
+        configPath,
+        "import { minify } from './build-policy.mjs'; export default { build: { minify } }",
+      )
+      const config = await buildConfig(
+        { mode: 'production', command: 'build' },
+        configPath,
+      )
+
       const { result } = await buildAndAnalyze(
         {
+          ...config,
           root,
           build: {
+            ...config.build,
             outDir: path.join(root, 'dist'),
             lib: { entry, formats: ['es'] },
-            minify: false,
           },
         },
         root,
@@ -576,9 +591,11 @@ describe('Vite build input tracking', () => {
       )
 
       expect(result.inputFiles.sort()).toEqual([
+        'build-policy.mjs',
         'entry.ts',
         'lazy.ts',
         'shared.ts',
+        'vite.config.mjs',
       ])
     } finally {
       await fs.rm(root, { recursive: true, force: true })

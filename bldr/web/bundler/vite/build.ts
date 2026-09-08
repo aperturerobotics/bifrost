@@ -32,6 +32,7 @@ export function isRollupError(err: unknown): err is Rollup.RollupError {
   )
 }
 
+// createSilentViteLogger suppresses build output while retaining warning state.
 export function createSilentViteLogger(): Logger {
   return {
     hasWarned: false,
@@ -59,7 +60,7 @@ export function createSilentViteLogger(): Logger {
   }
 }
 
-// loadOptionalConfig loads a configuration file when it exists.
+// loadOptionalConfig retains existing configuration files and their dependencies.
 async function loadOptionalConfig(
   configEnv: ConfigEnv,
   configPath: string,
@@ -75,7 +76,26 @@ async function loadOptionalConfig(
     'silent',
     createSilentViteLogger(),
   )
-  return loadedConfig?.config || null
+  if (!loadedConfig) {
+    return null
+  }
+
+  // Configuration imports affect output even when absent from the module graph.
+  return {
+    ...loadedConfig.config,
+    plugins: [
+      ...(loadedConfig.config.plugins ?? []),
+      {
+        name: 'bldr-config-inputs',
+        configResolved(config) {
+          config.configFileDependencies.push(
+            loadedConfig.path,
+            ...loadedConfig.dependencies,
+          )
+        },
+      },
+    ],
+  }
 }
 
 // buildConfig merges configuration files in the supplied order.
@@ -111,6 +131,7 @@ type ViteOutputChunkWithMetadata = Rollup.OutputChunk & {
   }
 }
 
+// collectReferencedFiles collects CSS dependencies without revisiting cycles.
 function collectReferencedFiles(
   entryKey: string,
   manifest: ViteManifest,
@@ -123,10 +144,8 @@ function collectReferencedFiles(
   const entry = manifest[entryKey]
   if (!entry) return { cssFiles }
 
-  // Collect CSS files
   entry.css?.forEach((c) => cssFiles.add(c))
 
-  // Recursively collect from imports
   entry.imports?.forEach((imp) =>
     collectReferencedFiles(imp, manifest, seen, cssFiles),
   )
@@ -134,6 +153,7 @@ function collectReferencedFiles(
   return { cssFiles }
 }
 
+// readManifest accepts both supported Vite manifest locations.
 async function readManifest(outDir: string): Promise<ViteManifest | null> {
   const manifestPaths = [
     path.join(outDir, '.vite/manifest.json'),
@@ -148,6 +168,7 @@ async function readManifest(outDir: string): Promise<ViteManifest | null> {
   return null
 }
 
+// synthesizeManifest derives entry metadata when Vite emits no manifest.
 function synthesizeManifest(
   outputChunks: (Rollup.OutputChunk | Rollup.OutputAsset)[],
   rootDir: string,
@@ -178,13 +199,7 @@ function synthesizeManifest(
   return manifest
 }
 
-/**
- * Normalize a module ID to a clean relative path.
- * - Strips query strings (e.g., ?commonjs-module)
- * - Strips null byte prefixes (Rollup virtual modules)
- * - Converts absolute paths to relative paths
- * - Returns null for virtual/special modules that shouldn't be watched
- */
+// normalizeModuleId returns a source-relative path and excludes virtual modules.
 function normalizeModuleId(id: string, rootDir: string): string | null {
   if (id.startsWith('\x00')) {
     return null
@@ -207,6 +222,7 @@ function normalizeModuleId(id: string, rootDir: string): string | null {
   return resolveEscapedModuleId(relPath, rootDir) ?? relPath
 }
 
+// resolveEscapedModuleId repairs emitted paths that traverse beyond the source root.
 function resolveEscapedModuleId(
   relPath: string,
   rootDir: string,
@@ -282,7 +298,6 @@ export async function analyzeManifest(
   const manifest =
     (await readManifest(outDir)) ?? synthesizeManifest(outputChunks, rootDir)
 
-  // 1. Map each JS chunk to its direct source modules.
   const jsChunkToModules = new Map<string, Set<string>>()
   for (const chunk of outputChunks) {
     if (chunk.type === 'chunk' && chunk.fileName) {
@@ -324,11 +339,8 @@ export async function analyzeManifest(
     }
   }
 
-  // 2. Build chunk import graph for traversing shared chunks.
   const chunkImports = buildChunkImportsMap(outputChunks)
 
-  // 3. Prepare the primary output structure for each entrypoint.
-  // Collect modules from the entry chunk AND all its imported chunks (transitive).
   const entrypointOutputs = Object.entries(manifest).flatMap(([key, value]) => {
     if (!value.isEntry) return []
     const allModules = collectAllModulesForChunk(
@@ -351,14 +363,12 @@ export async function analyzeManifest(
     ]
   })
 
-  // 4. Associate CSS assets with entrypoints using manifest data.
   const allCssAssets = new Set<string>()
   const handledCssAssets = new Set<string>()
   const entrypointOutputByEntrypoint = new Map(
     entrypointOutputs.map((entry) => [entry.entrypoint, entry]),
   )
 
-  // Collect all CSS assets
   for (const chunk of outputChunks) {
     if (chunk.type === 'asset' && chunk.fileName.endsWith('.css')) {
       allCssAssets.add(chunk.fileName)
@@ -373,7 +383,6 @@ export async function analyzeManifest(
 
     const { cssFiles } = collectReferencedFiles(key, manifest)
 
-    // Find the corresponding entrypoint output
     const entrypointPath = value.src ?? key
     const normalizedEntrypoint = path.isAbsolute(entrypointPath)
       ? path.relative(rootDir, entrypointPath)
@@ -388,7 +397,6 @@ export async function analyzeManifest(
     }
   }
 
-  // 5. Finalize the output structure.
   const finalEntrypointOutputs = entrypointOutputs.map((entry) => ({
     entrypoint: entry.entrypoint,
     outputs: {
@@ -429,9 +437,25 @@ export async function buildAndAnalyze(
   rootDir: string,
   webPkgRefs: Map<string, { root: string; subPaths: Set<string> }>,
 ) {
+  const allInputFiles = new Set<string>()
   const buildOptions: InlineConfig = {
     ...config,
     configFile: false,
+    plugins: [
+      ...(config.plugins ?? []),
+      {
+        name: 'bldr-build-inputs',
+        enforce: 'post',
+        configResolved(resolvedConfig) {
+          for (const file of resolvedConfig.configFileDependencies) {
+            const normalized = normalizeModuleId(file, rootDir)
+            if (normalized) {
+              allInputFiles.add(normalized)
+            }
+          }
+        },
+      },
+    ],
     build: {
       ...config.build,
       watch: null,
@@ -446,20 +470,15 @@ export async function buildAndAnalyze(
     ? viteOutput
     : [viteOutput]
 
-  // merge the output chunks into one array
   const outputChunks = rollupOutputs.flatMap((output) => output.output)
 
-  // determine the output directory
   const outDir = config.build?.outDir
   if (!outDir) {
     throw new Error('outDir is required')
   }
 
-  // Analyze the manifest to extract entrypoints and their corresponding files
-  // This must happen BEFORE cleanup since we need access to moduleIds
   const analysis = await analyzeManifest(outDir, outputChunks, rootDir)
 
-  // Map the analysis results to the response format and make paths relative to rootDir
   const entrypointOutputs = analysis.entrypointOutputs.map((entry) => ({
     entrypoint: entry.entrypoint
       ? path.isAbsolute(entry.entrypoint)
@@ -474,8 +493,6 @@ export async function buildAndAnalyze(
     cssOutputs: entry.outputs.css,
   }))
 
-  // Collect all input files (as relative paths)
-  const allInputFiles = new Set<string>()
   entrypointOutputs.forEach((entry) => {
     entry.inputFiles?.forEach((file) => allInputFiles.add(file))
   })
