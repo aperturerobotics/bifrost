@@ -74,7 +74,11 @@ export class Root extends Resource {
     abortSignal?: AbortSignal,
   ): Promise<Session> {
     const resp = await this.service.MountSession(request ?? {}, abortSignal)
-    return this.resourceRef.createResource(resp.resourceId ?? 0, Session)
+    return this.resourceRef.createResource(
+      resp.resourceId ?? 0,
+      Session,
+      request?.sessionRef,
+    )
   }
 
   // mountSessionByIdx mounts a session by index.
@@ -93,7 +97,11 @@ export class Root extends Resource {
       return null
     }
     return {
-      session: this.resourceRef.createResource(resp.resourceId ?? 0, Session),
+      session: this.resourceRef.createResource(
+        resp.resourceId ?? 0,
+        Session,
+        resp.sessionRef,
+      ),
       sessionRef: resp.sessionRef,
     }
   }

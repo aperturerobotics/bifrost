@@ -9,11 +9,12 @@ import type { WatchOnboardingStatusResponse } from '@s4wave/sdk/provider/spacewa
 // based on the session's provider ID. Spacewave sessions get Onboarding Status
 // route context and lapse banner; local sessions get the setup banner.
 export function SessionProviderContainer(props: {
+  providerId?: string
   metadata?: SessionMetadata
   spacewaveOnboarding?: WatchOnboardingStatusResponse | null
   children: ReactNode
 }) {
-  switch (props.metadata?.providerId) {
+  switch (props.providerId) {
     case 'spacewave':
       return (
         <SpacewaveSessionContent onboarding={props.spacewaveOnboarding ?? null}>
