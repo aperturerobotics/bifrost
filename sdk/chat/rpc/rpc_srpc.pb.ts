@@ -9,6 +9,8 @@ import {
   GetMessageResponse,
   GetReadPositionsRequest,
   GetReadPositionsResponse,
+  GetStateRequest,
+  GetStateResponse,
   ListMessagesRequest,
   ListMessagesResponse,
   SendMessageRequest,
@@ -43,6 +45,17 @@ export const ChatResourceServiceDefinition = {
       name: 'GetChannelInfo',
       I: GetChannelInfoRequest,
       O: GetChannelInfoResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * GetState returns the latest retained event for each channel state identity.
+     *
+     * @generated from rpc spacewave.chat.rpc.ChatResourceService.GetState
+     */
+    GetState: {
+      name: 'GetState',
+      I: GetStateRequest,
+      O: GetStateResponse,
       kind: MethodKind.Unary,
     },
     /**
@@ -131,6 +144,16 @@ export interface ChatResourceService {
   ): Promise<GetChannelInfoResponse>
 
   /**
+   * GetState returns the latest retained event for each channel state identity.
+   *
+   * @generated from rpc spacewave.chat.rpc.ChatResourceService.GetState
+   */
+  GetState(
+    request: GetStateRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<GetStateResponse>
+
+  /**
    * GetMessage returns one message from this channel by object key.
    *
    * @generated from rpc spacewave.chat.rpc.ChatResourceService.GetMessage
@@ -209,6 +232,17 @@ export interface ChatResourceServiceHandler {
   ): Promise<GetChannelInfoResponse>
 
   /**
+   * GetState returns the latest retained event for each channel state identity.
+   *
+   * @generated from rpc spacewave.chat.rpc.ChatResourceService.GetState
+   */
+  GetState(
+    request: GetStateRequest,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): Promise<GetStateResponse>
+
+  /**
    * GetMessage returns one message from this channel by object key.
    *
    * @generated from rpc spacewave.chat.rpc.ChatResourceService.GetMessage
@@ -285,6 +319,7 @@ export class ChatResourceServiceClient implements ChatResourceService {
     this.service = opts?.service || ChatResourceServiceServiceName
     this.rpc = rpc
     this.GetChannelInfo = this.GetChannelInfo.bind(this)
+    this.GetState = this.GetState.bind(this)
     this.GetMessage = this.GetMessage.bind(this)
     this.ListMessages = this.ListMessages.bind(this)
     this.WatchMessages = this.WatchMessages.bind(this)
@@ -309,6 +344,25 @@ export class ChatResourceServiceClient implements ChatResourceService {
       abortSignal || undefined,
     )
     return GetChannelInfoResponse.fromBinary(result)
+  }
+
+  /**
+   * GetState returns the latest retained event for each channel state identity.
+   *
+   * @generated from rpc spacewave.chat.rpc.ChatResourceService.GetState
+   */
+  async GetState(
+    request: GetStateRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<GetStateResponse> {
+    const requestMsg = GetStateRequest.create(request)
+    const result = await this.rpc.request(
+      this.service,
+      ChatResourceServiceDefinition.methods.GetState.name,
+      GetStateRequest.toBinary(requestMsg),
+      abortSignal || undefined,
+    )
+    return GetStateResponse.fromBinary(result)
   }
 
   /**

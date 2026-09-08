@@ -4,9 +4,11 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"slices"
 	"strconv"
 	"strings"
 
+	"github.com/aperturerobotics/fastjson"
 	"github.com/aperturerobotics/protobuf-go-lite/types/known/timestamppb"
 	"github.com/aperturerobotics/starpc/srpc"
 	"github.com/pkg/errors"
@@ -110,6 +112,42 @@ func (r *ChatResource) GetChannelInfo(
 		CreatorPeerId:       channel.GetCreatorPeerId(),
 		EncryptionAlgorithm: channel.GetEncryptionAlgorithm(),
 	}, nil
+}
+
+// GetState returns the latest retained event for each channel state identity.
+func (r *ChatResource) GetState(ctx context.Context, _ *spacewave_chat_rpc.GetStateRequest) (*spacewave_chat_rpc.GetStateResponse, error) {
+	// Require an existing mounted channel even when it has no retained state.
+	if _, err := r.readChannel(ctx); err != nil {
+		return nil, err
+	}
+
+	// Resolve graph references through the same projection used by history reads.
+	edges, err := r.ws.LookupGraphQuads(ctx, world.NewGraphQuadWithKeys(r.objectKey, PredChannelState.String(), "", ""), 0)
+	if err != nil {
+		return nil, err
+	}
+	keys := make([]string, 0, len(edges))
+	for _, edge := range edges {
+		key, err := world.GraphValueToKey(edge.GetObj())
+		if err != nil {
+			return nil, err
+		}
+		keys = append(keys, key)
+	}
+	messages, err := r.readMessages(ctx, keys)
+	if err != nil {
+		return nil, err
+	}
+
+	// State order is independent of graph index ordering and history position.
+	slices.SortFunc(messages, func(a, b *spacewave_chat_rpc.ChatMessageInfo) int {
+		left, right := a.GetContent().GetStateChange(), b.GetContent().GetStateChange()
+		if order := strings.Compare(left.GetType(), right.GetType()); order != 0 {
+			return order
+		}
+		return strings.Compare(left.GetStateKey(), right.GetStateKey())
+	})
+	return &spacewave_chat_rpc.GetStateResponse{Messages: messages}, nil
 }
 
 // GetMessage reads one channel message by its channel-scoped object key.
@@ -305,6 +343,20 @@ func (r *ChatResource) commitMessage(ctx context.Context, req *spacewave_chat_rp
 		return nil, err
 	}
 	defer wtx.Discard()
+	response, err := r.appendMessage(ctx, wtx, req, timestamppb.Now())
+	if err != nil {
+		return nil, err
+	}
+	if err := wtx.Commit(ctx); err != nil {
+		return nil, err
+	}
+	return response, nil
+}
+
+// appendMessage records a message inside the caller's World transaction.
+// Channel creation uses the same append path and supplies its operation timestamp.
+func (r *ChatResource) appendMessage(ctx context.Context, wtx world.WorldState, req *spacewave_chat_rpc.SendMessageRequest, timestamp *timestamppb.Timestamp) (*spacewave_chat_rpc.SendMessageResponse, error) {
+	// Read the policy and history extent inside the caller's transaction.
 	channel, err := world.LookupObjectBody[*ChatChannel](ctx, wtx, r.objectKey, NewChatChannelBlock)
 	if err != nil {
 		return nil, err
@@ -314,11 +366,6 @@ func (r *ChatResource) commitMessage(ctx context.Context, req *spacewave_chat_rp
 	content, err := normalizeSendMessageContent(req)
 	if err != nil {
 		return nil, err
-	}
-
-	// Encryption protects message bodies; typed annotations are public routing metadata.
-	if algorithm := channel.GetEncryptionAlgorithm(); algorithm != "" && content.GetAnnotation() == nil && content.GetCiphertext().GetAlgorithm() != algorithm {
-		return nil, errors.New("chat message ciphertext algorithm does not match channel")
 	}
 
 	// Resolve every public relationship inside this transaction and channel.
@@ -357,8 +404,39 @@ func (r *ChatResource) commitMessage(ctx context.Context, req *spacewave_chat_rp
 		}
 	}
 
+	// New bodies follow current encryption policy; accepted retries retain their original result.
+	if algorithm := channel.GetEncryptionAlgorithm(); algorithm != "" && content.GetAnnotation() == nil && content.GetStateChange() == nil && content.GetCiphertext().GetAlgorithm() != algorithm {
+		return nil, errors.New("chat message ciphertext algorithm does not match channel")
+	}
+
+	// Resolve current state after retry lookup so old retries cannot replace newer state.
+	var priorState []world.GraphQuad
+	state := content.GetStateChange()
+	if state != nil {
+		priorState, err = wtx.LookupGraphQuads(ctx, NewChatStateQuad(r.objectKey, "", state.GetType(), state.GetStateKey()), 0)
+		if err != nil {
+			return nil, err
+		}
+		for _, edge := range priorState {
+			key, err := world.GraphValueToKey(edge.GetObj())
+			if err != nil {
+				return nil, err
+			}
+			prior, err := world.LookupObjectBody[*ChatMessage](ctx, wtx, key, NewChatMessageBlock)
+			if err != nil {
+				return nil, err
+			}
+			if req.GetTransactionId() == "" && prior.GetContent().EqualVT(content) {
+				return &spacewave_chat_rpc.SendMessageResponse{MessageKey: key}, nil
+			}
+			if state.GetType() == "m.room.create" && state.GetStateKey() == "" {
+				return nil, errors.New("chat creation state cannot be replaced")
+			}
+		}
+	}
+
 	// Append the accepted message and its page entry in one World transaction.
-	index, msgKey, err := r.appendChannelMessageKey(ctx, wtx, msgKey)
+	index, msgKey, err := r.appendChannelMessageKey(ctx, wtx, msgKey, state)
 	if err != nil {
 		return nil, err
 	}
@@ -366,7 +444,7 @@ func (r *ChatResource) commitMessage(ctx context.Context, req *spacewave_chat_rp
 		SenderPeerId: r.localPeerID,
 		PersonPeerId: r.personPeerID,
 		Content:      content,
-		CreatedAt:    timestamppb.Now(),
+		CreatedAt:    timestamp.CloneVT(),
 		ReplyToKey:   req.GetReplyToKey(),
 		Index:        index,
 	}
@@ -402,9 +480,16 @@ func (r *ChatResource) commitMessage(ctx context.Context, req *spacewave_chat_rp
 		}
 	}
 
-	// Publish the message and its history position together.
-	if err := wtx.Commit(ctx); err != nil {
-		return nil, err
+	// Replace only the current-state edge; earlier messages remain in history.
+	if state != nil {
+		for _, edge := range priorState {
+			if err := wtx.DeleteGraphQuad(ctx, edge); err != nil {
+				return nil, err
+			}
+		}
+		if err := wtx.SetGraphQuad(ctx, NewChatStateQuad(r.objectKey, msgKey, state.GetType(), state.GetStateKey())); err != nil {
+			return nil, err
+		}
 	}
 	return &spacewave_chat_rpc.SendMessageResponse{MessageKey: msgKey}, nil
 }
@@ -486,7 +571,7 @@ func (r *ChatResource) commitReadPosition(ctx context.Context, req *spacewave_ch
 }
 
 // appendChannelMessageKey reserves one channel position and its stable message key.
-func (r *ChatResource) appendChannelMessageKey(ctx context.Context, ws world.WorldState, msgKey string) (uint64, string, error) {
+func (r *ChatResource) appendChannelMessageKey(ctx context.Context, ws world.WorldState, msgKey string, state *ChatStateChange) (uint64, string, error) {
 	// Acquire the mutable channel inside the caller's transaction.
 	obj, found, err := ws.GetObject(ctx, r.objectKey)
 	if err != nil {
@@ -506,6 +591,9 @@ func (r *ChatResource) appendChannelMessageKey(ctx context.Context, ws world.Wor
 		}
 		if channel == nil {
 			return world.ErrObjectNotFound
+		}
+		if err := applyChannelState(channel, state); err != nil {
+			return err
 		}
 		index = channel.GetMessageCount()
 		if msgKey == "" {
@@ -642,11 +730,27 @@ func (r *ChatResource) readMessage(ctx context.Context, key string) (*spacewave_
 	if personPeerID == "" {
 		personPeerID = msg.GetSenderPeerId()
 	}
+	text := msg.GetContent().GetText()
+	if state := msg.GetContent().GetStateChange(); state != nil {
+		text = "Channel settings updated"
+		if state.GetStateKey() == "" {
+			switch state.GetType() {
+			case "m.room.create":
+				text = "Channel created"
+			case "m.room.name":
+				text = "Channel name updated"
+			case "m.room.topic":
+				text = "Channel topic updated"
+			case "m.room.encryption":
+				text = "Channel encryption enabled"
+			}
+		}
+	}
 	return &spacewave_chat_rpc.ChatMessageInfo{
 		ObjectKey:    key,
 		SenderPeerId: msg.GetSenderPeerId(),
 		PersonPeerId: personPeerID,
-		Text:         msg.GetContent().GetText(),
+		Text:         text,
 		Content:      msg.GetContent().CloneVT(),
 		CreatedAt:    msg.GetCreatedAt().CloneVT(),
 		ReplyToKey:   msg.GetReplyToKey(),
@@ -684,10 +788,59 @@ func normalizeSendMessageContent(req *spacewave_chat_rpc.SendMessageRequest) (*C
 		if value == nil || value.Annotation.GetTargetKey() == "" || len(value.Annotation.GetTargetKey()) > 4096 || value.Annotation.GetKey() == "" || len(value.Annotation.GetKey()) > 4096 {
 			return nil, errors.New("chat annotation requires a bounded target and key")
 		}
+	case *ChatMessageContent_StateChange:
+		if value == nil {
+			return nil, errors.New("chat state content is missing")
+		}
+		if err := value.StateChange.Validate(); err != nil {
+			return nil, err
+		}
 	default:
 		return nil, errors.New("chat message content is missing")
 	}
 	return content.CloneVT(), nil
+}
+
+// applyChannelState keeps native channel metadata consistent with retained state.
+func applyChannelState(channel *ChatChannel, state *ChatStateChange) error {
+	// Named state keys and extension types do not replace channel-wide metadata.
+	if state == nil || state.GetStateKey() != "" {
+		return nil
+	}
+	var field string
+	switch state.GetType() {
+	case "m.room.name":
+		field = "name"
+	case "m.room.topic":
+		field = "topic"
+	case "m.room.encryption":
+		field = "algorithm"
+	default:
+		return nil
+	}
+
+	// These known values have native meaning and require their schema's string field.
+	value, err := fastjson.Parse(state.GetContentJson())
+	if err != nil {
+		return err
+	}
+	member := value.Get(field)
+	if member == nil || member.Type() != fastjson.TypeString {
+		return errors.New("chat state requires a string " + field)
+	}
+	text := string(member.GetStringBytes())
+	switch field {
+	case "name":
+		channel.Name = text
+	case "topic":
+		channel.Topic = text
+	case "algorithm":
+		if text == "" || channel.GetEncryptionAlgorithm() != "" && channel.GetEncryptionAlgorithm() != text {
+			return errors.New("chat encryption cannot be disabled or changed")
+		}
+		channel.EncryptionAlgorithm = text
+	}
+	return nil
 }
 
 // messageKey identifies a message sent without a transaction identity.

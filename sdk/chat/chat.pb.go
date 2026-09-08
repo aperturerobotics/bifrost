@@ -33,8 +33,8 @@ type ChatChannel struct {
 	ReadPositions map[string]*state.ChatReadPosition `protobuf:"bytes,5,rep,name=read_positions,json=readPositions,proto3" json:"readPositions,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// CreatorPeerId is the peer identity that created the channel.
 	CreatorPeerId string `protobuf:"bytes,6,opt,name=creator_peer_id,json=creatorPeerId,proto3" json:"creatorPeerId,omitempty"`
-	// EncryptionAlgorithm is the immutable creation-time policy. Empty allows plaintext;
-	// otherwise message bodies require this algorithm; typed annotations remain public.
+	// EncryptionAlgorithm is the channel encryption policy. Empty allows plaintext;
+	// once enabled it cannot change. Annotations and state changes remain public.
 	EncryptionAlgorithm string `protobuf:"bytes,7,opt,name=encryption_algorithm,json=encryptionAlgorithm,proto3" json:"encryptionAlgorithm,omitempty"`
 }
 
@@ -219,9 +219,11 @@ type CreateChatChannelOp struct {
 	Topic string `protobuf:"bytes,3,opt,name=topic,proto3" json:"topic,omitempty"`
 	// Timestamp is the creation timestamp.
 	Timestamp *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	// EncryptionAlgorithm is the immutable creation-time policy. Empty allows plaintext;
-	// otherwise message bodies require this algorithm; typed annotations remain public.
+	// EncryptionAlgorithm initializes the channel encryption policy. Empty allows plaintext;
+	// once enabled it cannot change. Annotations and state changes remain public.
 	EncryptionAlgorithm string `protobuf:"bytes,5,opt,name=encryption_algorithm,json=encryptionAlgorithm,proto3" json:"encryptionAlgorithm,omitempty"`
+	// InitialState is appended atomically in order with the channel creation timestamp.
+	InitialState []*content.ChatStateChange `protobuf:"bytes,6,rep,name=initial_state,json=initialState,proto3" json:"initialState,omitempty"`
 }
 
 func (x *CreateChatChannelOp) Reset() {
@@ -263,6 +265,13 @@ func (x *CreateChatChannelOp) GetEncryptionAlgorithm() string {
 		return x.EncryptionAlgorithm
 	}
 	return ""
+}
+
+func (x *CreateChatChannelOp) GetInitialState() []*content.ChatStateChange {
+	if x != nil {
+		return x.InitialState
+	}
+	return nil
 }
 
 type ChatChannel_ReadPositionsEntry struct {
@@ -377,6 +386,7 @@ func (m *CreateChatChannelOp) CloneVT() *CreateChatChannelOp {
 	r.Topic = m.Topic
 	r.EncryptionAlgorithm = m.EncryptionAlgorithm
 	r.Timestamp = protobuf_go_lite.CloneVTValue(m.Timestamp)
+	r.InitialState = protobuf_go_lite.CloneVTSlice(m.InitialState)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -522,6 +532,9 @@ func (this *CreateChatChannelOp) EqualVT(that *CreateChatChannelOp) bool {
 		return false
 	}
 	if this.EncryptionAlgorithm != that.EncryptionAlgorithm {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.InitialState, that.InitialState, func() *content.ChatStateChange { return &content.ChatStateChange{} }) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -922,6 +935,17 @@ func (x *CreateChatChannelOp) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("encryptionAlgorithm")
 		s.WriteString(x.EncryptionAlgorithm)
 	}
+	if len(x.InitialState) > 0 || s.HasField("initialState") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("initialState")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.InitialState {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s.WithField("initialState"))
+		}
+		s.WriteArrayEnd()
+	}
 	s.WriteObjectEnd()
 }
 
@@ -958,6 +982,24 @@ func (x *CreateChatChannelOp) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "encryption_algorithm", "encryptionAlgorithm":
 			s.AddField("encryption_algorithm")
 			x.EncryptionAlgorithm = s.ReadString()
+		case "initial_state", "initialState":
+			s.AddField("initial_state")
+			if s.ReadNil() {
+				x.InitialState = nil
+				return
+			}
+			s.ReadArray(func() {
+				if s.ReadNil() {
+					x.InitialState = append(x.InitialState, nil)
+					return
+				}
+				v := &content.ChatStateChange{}
+				v.UnmarshalProtoJSON(s.WithField("initial_state", false))
+				if s.Err() != nil {
+					return
+				}
+				x.InitialState = append(x.InitialState, v)
+			})
 		}
 	})
 }
@@ -1241,6 +1283,18 @@ func (m *CreateChatChannelOp) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if len(m.InitialState) > 0 {
+		for iNdEx := len(m.InitialState) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.InitialState[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0x32
+		}
+	}
 	if len(m.EncryptionAlgorithm) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.EncryptionAlgorithm)
 		i--
@@ -1365,6 +1419,10 @@ func (m *CreateChatChannelOp) SizeVT() (n int) {
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.EncryptionAlgorithm)
+	for _, e := range m.InitialState {
+		l = e.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -1528,6 +1586,18 @@ func (x *CreateChatChannelOp) MarshalProtoText() string {
 	if x.EncryptionAlgorithm != "" {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "encryption_algorithm")
 		protobuf_go_lite.TextWriteString(&sb, x.EncryptionAlgorithm)
+	}
+	if len(x.InitialState) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "initial_state")
+		for i, v := range x.InitialState {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &content.ChatStateChange{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -1998,6 +2068,19 @@ func (m *CreateChatChannelOp) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.EncryptionAlgorithm = v
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field InitialState", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.InitialState = append(m.InitialState, &content.ChatStateChange{})
+			if err := m.InitialState[len(m.InitialState)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
