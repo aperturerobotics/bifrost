@@ -86,6 +86,11 @@ a subdirectory.
   `protoc-gen-starpc-python` in `.venv`; Bun does not install Python tools. Use
   `bun run setup` only to repair stale `.bldr` exports or module resolution after
   dependencies are installed.
+- `bun install` already runs `go mod vendor` and `bun run setup`. Finish it
+  before starting builds, Go checks, or commits in that worktree. Do not run a
+  separate `go mod vendor` alongside it: vendoring replaces `vendor/` in place,
+  so concurrent writers can leave it incomplete and readers can see missing
+  files. Finish active builds and checks before repairing dependencies.
 - Keep large command output under `.tmp/` when needed, then inspect a short
   summary or tail. Do not commit `.tmp/`.
 - Do not use sleep loops for readiness, locks, files, ports, pids, or results.
