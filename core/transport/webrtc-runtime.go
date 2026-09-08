@@ -15,6 +15,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// sessionTransportFactories supplies the native session transport controllers.
 func sessionTransportFactories(b bus.Bus) []controller.Factory {
 	return []controller.Factory{
 		websocket.NewFactory(b),
@@ -22,6 +23,7 @@ func sessionTransportFactories(b bus.Bus) []controller.Factory {
 	}
 }
 
+// startWebRTCControllers starts authenticated signaling and its WebRTC transport.
 func (t *SessionTransport) startWebRTCControllers(
 	ctx context.Context,
 	le *logrus.Entry,
@@ -31,6 +33,8 @@ func (t *SessionTransport) startWebRTCControllers(
 		return nil, nil, nil
 	}
 
+	// Keep the initial ticket request synchronous so startup reports its
+	// existing signaling error at the webrtc-controllers stage.
 	ticket, err := acquireSignalTicket(ctx, t.signalingURL, t.sessionKey, t.peerID, t.signingEnvPfx)
 	if err != nil {
 		if ctxErr := ctx.Err(); ctxErr != nil {
@@ -38,19 +42,24 @@ func (t *SessionTransport) startWebRTCControllers(
 		}
 		return nil, nil, err
 	}
-
-	wsURL, err := signalWebSocketURL(t.signalingURL, ticket)
-	if err != nil {
+	if _, err := signalWebSocketURL(t.signalingURL, ticket); err != nil {
 		return nil, nil, err
 	}
 
+	// Refresh the short-lived ticket before each signaling connection attempt.
 	le.Debug("connecting to signaling")
-
-	sigCtrl := newWSSignalingCtrl(le, b, wsURL, t.sessionKey, "webrtc", t.peerID)
+	sigCtrl := newWSSignalingCtrl(le, b, func(ctx context.Context) (string, error) {
+		ticket, err := acquireSignalTicket(ctx, t.signalingURL, t.sessionKey, t.peerID, t.signingEnvPfx)
+		if err != nil {
+			return "", err
+		}
+		return signalWebSocketURL(t.signalingURL, ticket)
+	}, t.sessionKey, "webrtc", t.peerID)
 	if _, err := b.AddController(ctx, sigCtrl, nil); err != nil {
 		return nil, nil, err
 	}
 
+	// Keep the transport reference alive for the session transport lifetime.
 	rtcCtrl, _, rtcRef, err := loader.WaitExecControllerRunningTyped[*transport_controller.Controller](
 		ctx, b,
 		resolver.NewLoadControllerWithConfig(&webrtc.Config{
