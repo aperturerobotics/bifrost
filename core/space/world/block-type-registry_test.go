@@ -7,6 +7,23 @@ import (
 	space_world "github.com/s4wave/spacewave/core/space/world"
 )
 
+// TestLookupBlockTypeSpaceSettings resolves persisted settings by their block ID.
+func TestLookupBlockTypeSpaceSettings(t *testing.T) {
+	got, err := space_world.LookupBlockType(context.Background(), "space/settings")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got == nil {
+		t.Fatal("space/settings block type was not found")
+	}
+	if got.GetBlockTypeID() != "space/settings" {
+		t.Fatalf("block type ID = %q, want space/settings", got.GetBlockTypeID())
+	}
+	if _, ok := got.Constructor().(*space_world.SpaceSettings); !ok {
+		t.Fatal("space/settings constructor did not return SpaceSettings")
+	}
+}
+
 // TestLookupBlockTypeExcludesSQL checks that core does not own the SQL plugin's
 // block types. They resolve through the sql plugin's LookupBlockType directive
 // handler, so keeping them out of the core lookup is what keeps the sql

@@ -16,7 +16,7 @@ func LookupBlockType(
 	typeID string,
 ) (blocktype.BlockType, error) {
 	switch typeID {
-	case "github.com/s4wave/spacewave/core/space/world.SpaceSettings":
+	case SpaceSettingsBlockType.GetBlockTypeID():
 		return SpaceSettingsBlockType, nil
 	case s4wave_vm.V86ImageTypeID:
 		return s4wave_vm.V86ImageBlockType, nil
