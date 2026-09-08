@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"io/fs"
-	"strconv"
 	"sync"
 
 	"github.com/aperturerobotics/util/csync"
@@ -178,10 +177,23 @@ func (e *Engine) readCached(ctx context.Context, key, name string, offset int64,
 // loadRoot validates both fixed descriptors and each candidate's immediate page.
 // Deeper immutable files are validated on demand without a corpus-wide scan.
 func (e *Engine) loadRoot(ctx context.Context) (*Root, error) {
+	// Join both reads before returning so the caller keeps file protection
+	// until all descriptor bytes are owned, including when ctx is canceled.
+	first := promise.NewPromise[[]byte]()
+	go func() {
+		data, err := e.backend.Read(ctx, "root-0", 0, readAll)
+		first.SetResult(data, err)
+	}()
+	secondData, secondErr := e.backend.Read(ctx, "root-1", 0, readAll)
+	firstData, firstErr := first.Await(context.WithoutCancel(ctx))
+
 	var best *Root
 	var invalid error
 	for slot := range 2 {
-		data, err := e.backend.Read(ctx, "root-"+strconv.Itoa(slot), 0, readAll)
+		data, err := firstData, firstErr
+		if slot == 1 {
+			data, err = secondData, secondErr
+		}
 		if errors.Is(err, fs.ErrNotExist) || (err == nil && len(data) == 0) {
 			// A new slot remains empty if its first writable stream is interrupted.
 			continue
