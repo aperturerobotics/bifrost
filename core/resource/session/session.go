@@ -49,20 +49,29 @@ import (
 // The lifecycle context ctx scopes any background work owned by this
 // resource. It is canceled by Close when the mount is released.
 type SessionResource struct {
-	le           *logrus.Entry
-	b            bus.Bus
-	mux          srpc.Invoker
-	session      session.Session
+	// le provides diagnostics for this resource.
+	le *logrus.Entry
+	// b resolves the resource's native dependencies.
+	b bus.Bus
+	// mux dispatches calls to the mounted Session services.
+	mux srpc.Invoker
+	// session supplies the borrowed native Session authority.
+	session session.Session
+	// hostPluginID identifies the plugin serving this resource root.
 	hostPluginID string
-	transferMgr  transferManager
+	// transferMgr tracks transfers started through this resource.
+	transferMgr transferManager
 
 	// ctx is the lifecycle context for background work owned by this
 	// resource. Canceled by Close.
-	ctx       context.Context
+	ctx context.Context
+	// ctxCancel ends background work when Close releases the resource.
 	ctxCancel context.CancelFunc
 
+	// localPairingMu guards localPairing.
 	localPairingMu sync.Mutex
-	localPairing   *localPairingState
+	// localPairing retains the current local pairing exchange.
+	localPairing *localPairingState
 
 	// cdnMtx guards cdnRootChangedRelease. The session no longer owns the
 	// CDN SharedObject itself (that moved to core/resource/cdn.Registry);
@@ -86,7 +95,9 @@ type SessionResource struct {
 	cdnLookup func(sharedObjectID string) (sobject.SharedObject, *sobject.SharedObjectMeta)
 }
 
+// acceptedCloudInviteAccount refreshes discovery after accepting cloud admission.
 type acceptedCloudInviteAccount interface {
+	// RefreshSharedObjectList reloads the account's currently discoverable shared objects.
 	RefreshSharedObjectList(context.Context) error
 }
 
@@ -666,15 +677,23 @@ func filterOutCdnSpace(list []*space.SpaceSoListEntry) []*space.SpaceSoListEntry
 	return out
 }
 
+// resourcesListProjectionEvent carries one generation's Space index projection.
 type resourcesListProjectionEvent struct {
-	id         string
+	// id selects the shared object in the current resource list.
+	id string
+	// generation rejects output from a replaced projection worker.
 	generation uint64
+	// objectType is the projected index ObjectType, or empty when unavailable.
 	objectType string
-	initial    bool
+	// initial distinguishes the first projection from subsequent updates.
+	initial bool
 }
 
+// resourcesListProjectionWorker retains one generation's cancellation boundary.
 type resourcesListProjectionWorker struct {
-	cancel     context.CancelFunc
+	// cancel stops this worker when the resource list replaces it.
+	cancel context.CancelFunc
+	// generation identifies output admitted from this worker.
 	generation uint64
 }
 
@@ -918,6 +937,28 @@ func (r *SessionResource) DeleteSpace(ctx context.Context, req *s4wave_session.D
 	}
 
 	return &s4wave_session.DeleteSpaceResponse{}, nil
+}
+
+// LeaveSpace relinquishes the calling device and local storage identities through native authority.
+func (r *SessionResource) LeaveSpace(ctx context.Context, req *s4wave_session.LeaveSpaceRequest) (*s4wave_session.LeaveSpaceResponse, error) {
+	// Only a mounted, unlocked Session can produce the departure proofs.
+	if req.GetSharedObjectId() == "" {
+		return nil, errors.New("shared_object_id is required")
+	}
+	key := r.session.GetPrivKey()
+	if key == nil {
+		return nil, errors.New("session is locked")
+	}
+	account, ok := r.session.GetProviderAccount().(*provider_local.ProviderAccount)
+	if !ok {
+		return nil, errors.New("provider does not support voluntary departure")
+	}
+
+	// The provider owns both the remote acknowledgment and retained local access state.
+	if err := account.LeaveSharedObject(ctx, key, req.GetSharedObjectId()); err != nil {
+		return nil, err
+	}
+	return &s4wave_session.LeaveSpaceResponse{}, nil
 }
 
 // RenameSpace updates the display name metadata for a space.

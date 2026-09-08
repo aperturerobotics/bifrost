@@ -195,6 +195,16 @@ class DeleteSpaceResponse(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
 
+class LeaveSpaceRequest(_message.Message):
+    __slots__ = ("shared_object_id",)
+    SHARED_OBJECT_ID_FIELD_NUMBER: _ClassVar[int]
+    shared_object_id: str
+    def __init__(self, shared_object_id: _Optional[str] = ...) -> None: ...
+
+class LeaveSpaceResponse(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
+
 class RenameSpaceRequest(_message.Message):
     __slots__ = ("shared_object_id", "display_name")
     SHARED_OBJECT_ID_FIELD_NUMBER: _ClassVar[int]

@@ -12,8 +12,11 @@ import (
 //
 // This Go SDK implementation wraps SessionResourceService.
 type Session struct {
-	client  *resource_client.Client
-	ref     resource_client.ResourceRef
+	// client supplies the borrowed resource connection.
+	client *resource_client.Client
+	// ref retains the mounted Session until Release.
+	ref resource_client.ResourceRef
+	// service invokes the mounted Session resource.
 	service SRPCSessionResourceServiceClient
 }
 
@@ -59,6 +62,11 @@ func (s *Session) CreateSpace(ctx context.Context, spaceName, ownerType, ownerID
 // DeleteSpace deletes a space and its associated storage.
 func (s *Session) DeleteSpace(ctx context.Context, sharedObjectID string) (*DeleteSpaceResponse, error) {
 	return s.service.DeleteSpace(ctx, &DeleteSpaceRequest{SharedObjectId: sharedObjectID})
+}
+
+// LeaveSpace relinquishes native participation while retaining existing local data.
+func (s *Session) LeaveSpace(ctx context.Context, sharedObjectID string) (*LeaveSpaceResponse, error) {
+	return s.service.LeaveSpace(ctx, &LeaveSpaceRequest{SharedObjectId: sharedObjectID})
 }
 
 // DeleteAccount deletes the provider account for a session index, removing its

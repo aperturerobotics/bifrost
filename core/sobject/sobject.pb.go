@@ -926,6 +926,7 @@ func (x *SharedObjectHealth) GetSyncRecoveryPeerIds() []string {
 type SharedObjectConfig struct {
 	unknownFields []byte
 	// Participants is the list of shared object participants.
+	// An empty audience with a retained signed history head represents final departure.
 	Participants []*SOParticipantConfig `protobuf:"bytes,1,rep,name=participants,proto3" json:"participants,omitempty"`
 	// ConsensusMode is the consensus mechanism for validating root state updates.
 	// Default (zero value) is SINGLE_VALIDATOR.
@@ -972,6 +973,64 @@ func (x *SharedObjectConfig) GetConfigChainSeqno() uint64 {
 	return 0
 }
 
+// SOLeaveRequest relinquishes only the identities that sign this exact object and configuration head.
+type SOLeaveRequest struct {
+	unknownFields []byte
+	// SharedObjectId is the external shared object whose participation is relinquished.
+	SharedObjectId string `protobuf:"bytes,1,opt,name=shared_object_id,json=sharedObjectId,proto3" json:"sharedObjectId,omitempty"`
+	// ConfigHash binds consent to held authority so an old request cannot undo a later rejoin.
+	ConfigHash []byte `protobuf:"bytes,2,opt,name=config_hash,json=configHash,proto3" json:"configHash,omitempty"`
+	// Signatures prove each departing identity; each signs this message with Signatures cleared.
+	Signatures []*peer.Signature `protobuf:"bytes,3,rep,name=signatures,proto3" json:"signatures,omitempty"`
+}
+
+func (x *SOLeaveRequest) Reset() {
+	*x = SOLeaveRequest{}
+}
+
+func (*SOLeaveRequest) ProtoMessage() {}
+
+func (x *SOLeaveRequest) GetSharedObjectId() string {
+	if x != nil {
+		return x.SharedObjectId
+	}
+	return ""
+}
+
+func (x *SOLeaveRequest) GetConfigHash() []byte {
+	if x != nil {
+		return x.ConfigHash
+	}
+	return nil
+}
+
+func (x *SOLeaveRequest) GetSignatures() []*peer.Signature {
+	if x != nil {
+		return x.Signatures
+	}
+	return nil
+}
+
+// SOLeaveResponse proves the owner committed removal, without returning channel data or root grants.
+type SOLeaveResponse struct {
+	unknownFields []byte
+	// Changes is the signed configuration suffix from the request head through the first completed removal.
+	Changes []*SOConfigChange `protobuf:"bytes,1,rep,name=changes,proto3" json:"changes,omitempty"`
+}
+
+func (x *SOLeaveResponse) Reset() {
+	*x = SOLeaveResponse{}
+}
+
+func (*SOLeaveResponse) ProtoMessage() {}
+
+func (x *SOLeaveResponse) GetChanges() []*SOConfigChange {
+	if x != nil {
+		return x.Changes
+	}
+	return nil
+}
+
 // SORevocationInfo contains metadata about why a participant was removed.
 type SORevocationInfo struct {
 	unknownFields []byte
@@ -981,6 +1040,8 @@ type SORevocationInfo struct {
 	Timestamp *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 	// Nonce is a unique value to prevent replay of revocation entries.
 	Nonce uint64 `protobuf:"varint,3,opt,name=nonce,proto3" json:"nonce,omitempty"`
+	// LeaveRequestHash identifies the exact signed consent acknowledged by this removal.
+	LeaveRequestHash []byte `protobuf:"bytes,4,opt,name=leave_request_hash,json=leaveRequestHash,proto3" json:"leaveRequestHash,omitempty"`
 }
 
 func (x *SORevocationInfo) Reset() {
@@ -1008,6 +1069,13 @@ func (x *SORevocationInfo) GetNonce() uint64 {
 		return x.Nonce
 	}
 	return 0
+}
+
+func (x *SORevocationInfo) GetLeaveRequestHash() []byte {
+	if x != nil {
+		return x.LeaveRequestHash
+	}
+	return nil
 }
 
 // SOConfigChange represents a signed config change in the config chain.
@@ -3331,6 +3399,40 @@ func (m *SharedObjectConfig) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
+func (m *SOLeaveRequest) CloneVT() *SOLeaveRequest {
+	if m == nil {
+		return (*SOLeaveRequest)(nil)
+	}
+	r := new(SOLeaveRequest)
+	r.SharedObjectId = m.SharedObjectId
+	r.ConfigHash = protobuf_go_lite.CloneBytes(m.ConfigHash)
+	r.Signatures = protobuf_go_lite.CloneVTSlice(m.Signatures)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *SOLeaveRequest) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *SOLeaveResponse) CloneVT() *SOLeaveResponse {
+	if m == nil {
+		return (*SOLeaveResponse)(nil)
+	}
+	r := new(SOLeaveResponse)
+	r.Changes = protobuf_go_lite.CloneVTSlice(m.Changes)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *SOLeaveResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
 func (m *SORevocationInfo) CloneVT() *SORevocationInfo {
 	if m == nil {
 		return (*SORevocationInfo)(nil)
@@ -3339,6 +3441,7 @@ func (m *SORevocationInfo) CloneVT() *SORevocationInfo {
 	r.Reason = m.Reason
 	r.Nonce = m.Nonce
 	r.Timestamp = protobuf_go_lite.CloneVTValue(m.Timestamp)
+	r.LeaveRequestHash = protobuf_go_lite.CloneBytes(m.LeaveRequestHash)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -4373,6 +4476,52 @@ func (this *SharedObjectConfig) EqualMessageVT(thatMsg any) bool {
 	return this.EqualVT(that)
 }
 
+func (this *SOLeaveRequest) EqualVT(that *SOLeaveRequest) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.SharedObjectId != that.SharedObjectId {
+		return false
+	}
+	if !protobuf_go_lite.EqualBytes(this.ConfigHash, that.ConfigHash) {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.Signatures, that.Signatures, func() *peer.Signature { return &peer.Signature{} }) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *SOLeaveRequest) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*SOLeaveRequest)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *SOLeaveResponse) EqualVT(that *SOLeaveResponse) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.Changes, that.Changes, func() *SOConfigChange { return &SOConfigChange{} }) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *SOLeaveResponse) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*SOLeaveResponse)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
 func (this *SORevocationInfo) EqualVT(that *SORevocationInfo) bool {
 	if this == that {
 		return true
@@ -4386,6 +4535,9 @@ func (this *SORevocationInfo) EqualVT(that *SORevocationInfo) bool {
 		return false
 	}
 	if this.Nonce != that.Nonce {
+		return false
+	}
+	if !protobuf_go_lite.EqualBytes(this.LeaveRequestHash, that.LeaveRequestHash) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -6727,6 +6879,148 @@ func (x *SharedObjectConfig) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
+// MarshalProtoJSON marshals the SOLeaveRequest message to JSON.
+func (x *SOLeaveRequest) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.SharedObjectId != "" || s.HasField("sharedObjectId") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("sharedObjectId")
+		s.WriteString(x.SharedObjectId)
+	}
+	if len(x.ConfigHash) > 0 || s.HasField("configHash") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("configHash")
+		s.WriteBytes(x.ConfigHash)
+	}
+	if len(x.Signatures) > 0 || s.HasField("signatures") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("signatures")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.Signatures {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s.WithField("signatures"))
+		}
+		s.WriteArrayEnd()
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the SOLeaveRequest to JSON.
+func (x *SOLeaveRequest) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the SOLeaveRequest message from JSON.
+func (x *SOLeaveRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "shared_object_id", "sharedObjectId":
+			s.AddField("shared_object_id")
+			x.SharedObjectId = s.ReadString()
+		case "config_hash", "configHash":
+			s.AddField("config_hash")
+			x.ConfigHash = s.ReadBytes()
+		case "signatures":
+			s.AddField("signatures")
+			if s.ReadNil() {
+				x.Signatures = nil
+				return
+			}
+			s.ReadArray(func() {
+				if s.ReadNil() {
+					x.Signatures = append(x.Signatures, nil)
+					return
+				}
+				v := &peer.Signature{}
+				v.UnmarshalProtoJSON(s.WithField("signatures", false))
+				if s.Err() != nil {
+					return
+				}
+				x.Signatures = append(x.Signatures, v)
+			})
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the SOLeaveRequest from JSON.
+func (x *SOLeaveRequest) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the SOLeaveResponse message to JSON.
+func (x *SOLeaveResponse) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if len(x.Changes) > 0 || s.HasField("changes") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("changes")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.Changes {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s.WithField("changes"))
+		}
+		s.WriteArrayEnd()
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the SOLeaveResponse to JSON.
+func (x *SOLeaveResponse) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the SOLeaveResponse message from JSON.
+func (x *SOLeaveResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "changes":
+			s.AddField("changes")
+			if s.ReadNil() {
+				x.Changes = nil
+				return
+			}
+			s.ReadArray(func() {
+				if s.ReadNil() {
+					x.Changes = append(x.Changes, nil)
+					return
+				}
+				v := &SOConfigChange{}
+				v.UnmarshalProtoJSON(s.WithField("changes", false))
+				if s.Err() != nil {
+					return
+				}
+				x.Changes = append(x.Changes, v)
+			})
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the SOLeaveResponse from JSON.
+func (x *SOLeaveResponse) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
 // MarshalProtoJSON marshals the SORevocationInfo message to JSON.
 func (x *SORevocationInfo) MarshalProtoJSON(s *json.MarshalState) {
 	if x == nil {
@@ -6749,6 +7043,11 @@ func (x *SORevocationInfo) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteMoreIf(&wroteField)
 		s.WriteObjectField("nonce")
 		s.WriteUint64(x.Nonce)
+	}
+	if len(x.LeaveRequestHash) > 0 || s.HasField("leaveRequestHash") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("leaveRequestHash")
+		s.WriteBytes(x.LeaveRequestHash)
 	}
 	s.WriteObjectEnd()
 }
@@ -6780,6 +7079,9 @@ func (x *SORevocationInfo) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "nonce":
 			s.AddField("nonce")
 			x.Nonce = s.ReadUint64()
+		case "leave_request_hash", "leaveRequestHash":
+			s.AddField("leave_request_hash")
+			x.LeaveRequestHash = s.ReadBytes()
 		}
 	})
 }
@@ -10463,6 +10765,104 @@ func (m *SharedObjectConfig) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *SOLeaveRequest) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *SOLeaveRequest) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *SOLeaveRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.Signatures) > 0 {
+		for iNdEx := len(m.Signatures) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.Signatures[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0x1a
+		}
+	}
+	if len(m.ConfigHash) > 0 {
+		i = protobuf_go_lite.EncodeBytes(dAtA, i, m.ConfigHash)
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.SharedObjectId) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.SharedObjectId)
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *SOLeaveResponse) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *SOLeaveResponse) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *SOLeaveResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.Changes) > 0 {
+		for iNdEx := len(m.Changes) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.Changes[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *SORevocationInfo) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -10491,6 +10891,11 @@ func (m *SORevocationInfo) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	_ = l
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.LeaveRequestHash) > 0 {
+		i = protobuf_go_lite.EncodeBytes(dAtA, i, m.LeaveRequestHash)
+		i--
+		dAtA[i] = 0x22
 	}
 	if m.Nonce != 0 {
 		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Nonce))
@@ -13256,6 +13661,36 @@ func (m *SharedObjectConfig) SizeVT() (n int) {
 	return n
 }
 
+func (m *SOLeaveRequest) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.SharedObjectId)
+	n += protobuf_go_lite.SizeBytesNonEmpty(1, m.ConfigHash)
+	for _, e := range m.Signatures {
+		l = e.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *SOLeaveResponse) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	for _, e := range m.Changes {
+		l = e.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
 func (m *SORevocationInfo) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -13268,6 +13703,7 @@ func (m *SORevocationInfo) SizeVT() (n int) {
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.Nonce)
+	n += protobuf_go_lite.SizeBytesNonEmpty(1, m.LeaveRequestHash)
 	n += len(m.unknownFields)
 	return n
 }
@@ -14330,6 +14766,58 @@ func (x *SharedObjectConfig) String() string {
 	return x.MarshalProtoText()
 }
 
+func (x *SOLeaveRequest) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "SOLeaveRequest")
+	if x.SharedObjectId != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "shared_object_id")
+		protobuf_go_lite.TextWriteString(&sb, x.SharedObjectId)
+	}
+	if len(x.ConfigHash) != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "config_hash")
+		protobuf_go_lite.TextWriteBytes(&sb, x.ConfigHash)
+	}
+	if len(x.Signatures) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "signatures")
+		for i, v := range x.Signatures {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &peer.Signature{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *SOLeaveRequest) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *SOLeaveResponse) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "SOLeaveResponse")
+	if len(x.Changes) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "changes")
+		for i, v := range x.Changes {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &SOConfigChange{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *SOLeaveResponse) String() string {
+	return x.MarshalProtoText()
+}
+
 func (x *SORevocationInfo) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "SORevocationInfo")
@@ -14344,6 +14832,10 @@ func (x *SORevocationInfo) MarshalProtoText() string {
 	if x.Nonce != 0 {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "nonce")
 		protobuf_go_lite.TextWriteUint(&sb, x.Nonce)
+	}
+	if len(x.LeaveRequestHash) != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "leave_request_hash")
+		protobuf_go_lite.TextWriteBytes(&sb, x.LeaveRequestHash)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -16107,6 +16599,136 @@ func (m *SharedObjectConfig) UnmarshalVT(dAtA []byte) error {
 	return nil
 }
 
+func (m *SOLeaveRequest) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SOLeaveRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SOLeaveRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SharedObjectId", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.SharedObjectId = v
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ConfigHash", wireType)
+			}
+			m.ConfigHash, iNdEx, err = protobuf_go_lite.DecodeBytesAppend(m.ConfigHash, dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Signatures", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Signatures = append(m.Signatures, &peer.Signature{})
+			if err := m.Signatures[len(m.Signatures)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *SOLeaveResponse) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SOLeaveResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SOLeaveResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Changes", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Changes = append(m.Changes, &SOConfigChange{})
+			if err := m.Changes[len(m.Changes)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
 func (m *SORevocationInfo) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -16159,6 +16781,14 @@ func (m *SORevocationInfo) UnmarshalVT(dAtA []byte) error {
 			}
 			m.Nonce = 0
 			m.Nonce, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LeaveRequestHash", wireType)
+			}
+			m.LeaveRequestHash, iNdEx, err = protobuf_go_lite.DecodeBytesAppend(m.LeaveRequestHash, dAtA, iNdEx)
 			if err != nil {
 				return err
 			}

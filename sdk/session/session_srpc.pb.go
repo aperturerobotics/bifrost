@@ -29,6 +29,8 @@ type SRPCSessionResourceServiceClient interface {
 	WatchStorageStats(ctx context.Context, in *WatchStorageStatsRequest) (SRPCSessionResourceService_WatchStorageStatsClient, error)
 
 	DeleteSpace(ctx context.Context, in *DeleteSpaceRequest) (*DeleteSpaceResponse, error)
+	// LeaveSpace relinquishes native participation without deleting retained local data.
+	LeaveSpace(ctx context.Context, in *LeaveSpaceRequest) (*LeaveSpaceResponse, error)
 
 	RenameSpace(ctx context.Context, in *RenameSpaceRequest) (*RenameSpaceResponse, error)
 
@@ -279,6 +281,15 @@ func (x *srpcSessionResourceService_WatchStorageStatsClient) RecvTo(m *WatchStor
 func (c *srpcSessionResourceServiceClient) DeleteSpace(ctx context.Context, in *DeleteSpaceRequest) (*DeleteSpaceResponse, error) {
 	out := new(DeleteSpaceResponse)
 	err := c.cc.ExecCall(ctx, c.serviceID, "DeleteSpace", in, out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *srpcSessionResourceServiceClient) LeaveSpace(ctx context.Context, in *LeaveSpaceRequest) (*LeaveSpaceResponse, error) {
+	out := new(LeaveSpaceResponse)
+	err := c.cc.ExecCall(ctx, c.serviceID, "LeaveSpace", in, out)
 	if err != nil {
 		return nil, err
 	}
@@ -714,6 +725,8 @@ type SRPCSessionResourceServiceServer interface {
 	WatchStorageStats(*WatchStorageStatsRequest, SRPCSessionResourceService_WatchStorageStatsStream) error
 
 	DeleteSpace(context.Context, *DeleteSpaceRequest) (*DeleteSpaceResponse, error)
+	// LeaveSpace relinquishes native participation without deleting retained local data.
+	LeaveSpace(context.Context, *LeaveSpaceRequest) (*LeaveSpaceResponse, error)
 
 	RenameSpace(context.Context, *RenameSpaceRequest) (*RenameSpaceResponse, error)
 
@@ -814,6 +827,7 @@ func (SRPCSessionResourceServiceHandler) GetMethodIDs() []string {
 		"WatchSyncStatus",
 		"WatchStorageStats",
 		"DeleteSpace",
+		"LeaveSpace",
 		"RenameSpace",
 		"WatchLockState",
 		"SetLockMode",
@@ -874,6 +888,8 @@ func (d *SRPCSessionResourceServiceHandler) InvokeMethod(
 		return true, d.InvokeMethod_WatchStorageStats(d.impl, strm)
 	case "DeleteSpace":
 		return true, d.InvokeMethod_DeleteSpace(d.impl, strm)
+	case "LeaveSpace":
+		return true, d.InvokeMethod_LeaveSpace(d.impl, strm)
 	case "RenameSpace":
 		return true, d.InvokeMethod_RenameSpace(d.impl, strm)
 	case "WatchLockState":
@@ -1021,6 +1037,18 @@ func (SRPCSessionResourceServiceHandler) InvokeMethod_DeleteSpace(impl SRPCSessi
 		return err
 	}
 	out, err := impl.DeleteSpace(strm.Context(), req)
+	if err != nil {
+		return err
+	}
+	return strm.MsgSend(out)
+}
+
+func (SRPCSessionResourceServiceHandler) InvokeMethod_LeaveSpace(impl SRPCSessionResourceServiceServer, strm srpc.Stream) error {
+	req := new(LeaveSpaceRequest)
+	if err := strm.MsgRecv(req); err != nil {
+		return err
+	}
+	out, err := impl.LeaveSpace(strm.Context(), req)
 	if err != nil {
 		return err
 	}
@@ -1517,6 +1545,14 @@ type SRPCSessionResourceService_DeleteSpaceStream interface {
 }
 
 type srpcSessionResourceService_DeleteSpaceStream struct {
+	srpc.Stream
+}
+
+type SRPCSessionResourceService_LeaveSpaceStream interface {
+	srpc.Stream
+}
+
+type srpcSessionResourceService_LeaveSpaceStream struct {
 	srpc.Stream
 }
 

@@ -188,6 +188,7 @@ enum SOConsensusMode {
 // SharedObjectConfig configures the SharedObject.
 message SharedObjectConfig {
   // Participants is the list of shared object participants.
+  // An empty audience with a retained signed history head represents final departure.
   repeated SOParticipantConfig participants = 1;
   // ConsensusMode is the consensus mechanism for validating root state updates.
   // Default (zero value) is SINGLE_VALIDATOR.
@@ -199,6 +200,22 @@ message SharedObjectConfig {
   // The next entry must have config_seqno == config_chain_seqno + 1.
   // Zero means no config changes have been applied yet (genesis state).
   uint64 config_chain_seqno = 11;
+}
+
+// SOLeaveRequest relinquishes only the identities that sign this exact object and configuration head.
+message SOLeaveRequest {
+  // SharedObjectId is the external shared object whose participation is relinquished.
+  string shared_object_id = 1;
+  // ConfigHash binds consent to held authority so an old request cannot undo a later rejoin.
+  bytes config_hash = 2;
+  // Signatures prove each departing identity; each signs this message with Signatures cleared.
+  repeated .peer.Signature signatures = 3;
+}
+
+// SOLeaveResponse proves the owner committed removal, without returning channel data or root grants.
+message SOLeaveResponse {
+  // Changes is the signed configuration suffix from the request head through the first completed removal.
+  repeated SOConfigChange changes = 1;
 }
 
 // SOConfigChangeType describes the kind of mutation in a config chain entry.
@@ -243,6 +260,8 @@ message SORevocationInfo {
   .google.protobuf.Timestamp timestamp = 2;
   // Nonce is a unique value to prevent replay of revocation entries.
   uint64 nonce = 3;
+  // LeaveRequestHash identifies the exact signed consent acknowledged by this removal.
+  bytes leave_request_hash = 4;
 }
 
 // SOConfigChange represents a signed config change in the config chain.

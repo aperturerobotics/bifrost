@@ -4,15 +4,20 @@
 
 import { AcceptInviteRequest, AcceptInviteResponse } from './invite.pb.js'
 import { MethodKind } from '@aptre/protobuf-es-lite'
+import { SOLeaveRequest, SOLeaveResponse } from '../sobject.pb.js'
 import { ProtoRpc, ServerContext } from 'starpc'
 
 /**
+ * SOInviteService admits invitees and acknowledges voluntary departures through native authority.
+ *
  * @generated from service sobject.invite.SOInviteService
  */
 export const SOInviteServiceDefinition = {
   typeName: 'sobject.invite.SOInviteService',
   methods: {
     /**
+     * AcceptInvite verifies admission proofs and issues native participant grants.
+     *
      * @generated from rpc sobject.invite.SOInviteService.AcceptInvite
      */
     AcceptInvite: {
@@ -21,27 +26,56 @@ export const SOInviteServiceDefinition = {
       O: AcceptInviteResponse,
       kind: MethodKind.Unary,
     },
+    /**
+     * Leave verifies signed consent and returns the owner's committed removal proof.
+     *
+     * @generated from rpc sobject.invite.SOInviteService.Leave
+     */
+    Leave: {
+      name: 'Leave',
+      I: SOLeaveRequest,
+      O: SOLeaveResponse,
+      kind: MethodKind.Unary,
+    },
   },
 } as const
 
 /**
+ * SOInviteService admits invitees and acknowledges voluntary departures through native authority.
+ *
  * @generated from service sobject.invite.SOInviteService
  */
 export interface SOInviteService {
   /**
+   * AcceptInvite verifies admission proofs and issues native participant grants.
+   *
    * @generated from rpc sobject.invite.SOInviteService.AcceptInvite
    */
   AcceptInvite(
     request: AcceptInviteRequest,
     abortSignal?: AbortSignal,
   ): Promise<AcceptInviteResponse>
+
+  /**
+   * Leave verifies signed consent and returns the owner's committed removal proof.
+   *
+   * @generated from rpc sobject.invite.SOInviteService.Leave
+   */
+  Leave(
+    request: SOLeaveRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<SOLeaveResponse>
 }
 
 /**
+ * SOInviteService admits invitees and acknowledges voluntary departures through native authority.
+ *
  * @generated from service sobject.invite.SOInviteService
  */
 export interface SOInviteServiceHandler {
   /**
+   * AcceptInvite verifies admission proofs and issues native participant grants.
+   *
    * @generated from rpc sobject.invite.SOInviteService.AcceptInvite
    */
   AcceptInvite(
@@ -49,6 +83,17 @@ export interface SOInviteServiceHandler {
     abortSignal: AbortSignal,
     context: ServerContext,
   ): Promise<AcceptInviteResponse>
+
+  /**
+   * Leave verifies signed consent and returns the owner's committed removal proof.
+   *
+   * @generated from rpc sobject.invite.SOInviteService.Leave
+   */
+  Leave(
+    request: SOLeaveRequest,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): Promise<SOLeaveResponse>
 }
 
 export const SOInviteServiceServiceName = SOInviteServiceDefinition.typeName
@@ -60,8 +105,11 @@ export class SOInviteServiceClient implements SOInviteService {
     this.service = opts?.service || SOInviteServiceServiceName
     this.rpc = rpc
     this.AcceptInvite = this.AcceptInvite.bind(this)
+    this.Leave = this.Leave.bind(this)
   }
   /**
+   * AcceptInvite verifies admission proofs and issues native participant grants.
+   *
    * @generated from rpc sobject.invite.SOInviteService.AcceptInvite
    */
   async AcceptInvite(
@@ -76,5 +124,24 @@ export class SOInviteServiceClient implements SOInviteService {
       abortSignal || undefined,
     )
     return AcceptInviteResponse.fromBinary(result)
+  }
+
+  /**
+   * Leave verifies signed consent and returns the owner's committed removal proof.
+   *
+   * @generated from rpc sobject.invite.SOInviteService.Leave
+   */
+  async Leave(
+    request: SOLeaveRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<SOLeaveResponse> {
+    const requestMsg = SOLeaveRequest.create(request)
+    const result = await this.rpc.request(
+      this.service,
+      SOInviteServiceDefinition.methods.Leave.name,
+      SOLeaveRequest.toBinary(requestMsg),
+      abortSignal || undefined,
+    )
+    return SOLeaveResponse.fromBinary(result)
   }
 }

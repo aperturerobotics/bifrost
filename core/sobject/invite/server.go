@@ -4,42 +4,15 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"slices"
 
-	"github.com/aperturerobotics/controllerbus/bus"
-	"github.com/aperturerobotics/controllerbus/controller"
-	"github.com/aperturerobotics/starpc/srpc"
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/core/sobject"
 	"github.com/s4wave/spacewave/net/crypto"
 	"github.com/s4wave/spacewave/net/link"
 	"github.com/s4wave/spacewave/net/peer"
-	"github.com/s4wave/spacewave/net/protocol"
-	stream_srpc_server "github.com/s4wave/spacewave/net/stream/srpc/server"
 	"github.com/sirupsen/logrus"
 )
-
-// ProtocolID is the bifrost protocol ID for the SO invite handshake.
-const ProtocolID = protocol.ID("alpha/so-invite")
-
-// Version is the version of the controller implementation.
-var Version = controller.MustParseVersion("0.0.1")
-
-// ControllerID is the ID of the controller.
-const ControllerID = "alpha/so-invite/server"
-
-// InviteLookupResult contains the resolved invite and its context.
-type InviteLookupResult struct {
-	// Host is the SOHost managing the shared object.
-	Host *sobject.SOHost
-	// InviteMutator applies invite state mutations for this shared object.
-	InviteMutator sobject.InviteMutator
-	// Invite is the matching SOInvite.
-	Invite *sobject.SOInvite
-	// SharedObjectID is the ID of the shared object.
-	SharedObjectID string
-	// OwnerPrivKey is the owner's private key for signing config changes.
-	OwnerPrivKey crypto.PrivKey
-}
 
 // InviteLookupFn resolves an invite by token hash.
 // Returns nil result if no matching invite is found.
@@ -50,20 +23,48 @@ type InviteLookupFn func(ctx context.Context, tokenHash []byte) (*InviteLookupRe
 // Returns the SOGrant for the invitee.
 type EnrollFn func(ctx context.Context, result *InviteLookupResult, inviteePeerID peer.ID, inviteePubKey crypto.PubKey) (*sobject.SOGrant, error)
 
+// LeaveFn commits voluntary departure while retaining the selected native host through acknowledgment.
+type LeaveFn func(context.Context, *sobject.SOLeaveRequest) (*sobject.SOLeaveResponse, error)
+
 // Server implements the SOInviteService SRPC server.
 type Server struct {
-	le       *logrus.Entry
+	// le provides diagnostics for this service.
+	le *logrus.Entry
+	// lookupFn resolves the owner's invitation authority.
 	lookupFn InviteLookupFn
+	// enrollFn issues participant grants under the resolved owner.
 	enrollFn EnrollFn
+	// leaveFn commits authenticated voluntary departure.
+	leaveFn LeaveFn
 }
 
 // NewServer constructs a new SO invite server.
-func NewServer(le *logrus.Entry, lookupFn InviteLookupFn, enrollFn EnrollFn) *Server {
+func NewServer(le *logrus.Entry, lookupFn InviteLookupFn, enrollFn EnrollFn, leaveFn LeaveFn) *Server {
 	return &Server{
 		le:       le,
 		lookupFn: lookupFn,
 		enrollFn: enrollFn,
+		leaveFn:  leaveFn,
 	}
+}
+
+// Leave binds the transport to a departing identity before invoking the native owner.
+func (s *Server) Leave(ctx context.Context, request *sobject.SOLeaveRequest) (*sobject.SOLeaveResponse, error) {
+	// A valid proof from another connection cannot be relayed as fresh caller authority.
+	peers, err := request.Verify()
+	if err != nil {
+		return nil, err
+	}
+	stream := link.GetMountedStreamContext(ctx)
+	if stream == nil || !slices.Contains(peers, stream.GetPeerID().String()) {
+		return nil, errors.New("leave stream does not match a departing identity")
+	}
+
+	// The mounted provider retains and mutates its own host for the complete operation.
+	if s.leaveFn == nil {
+		return nil, errors.New("voluntary departure is unavailable")
+	}
+	return s.leaveFn(ctx, request)
 }
 
 // AcceptInvite processes a join request from an invitee.
@@ -203,41 +204,5 @@ func (s *Server) AcceptInvite(ctx context.Context, req *AcceptInviteRequest) (*A
 	}, nil
 }
 
-// InviteController wraps the SRPC server with the bifrost stream handler.
-type InviteController struct {
-	*stream_srpc_server.Server
-	srv *Server
-}
-
-// NewInviteController constructs an SO invite controller.
-func NewInviteController(
-	le *logrus.Entry,
-	b bus.Bus,
-	lookupFn InviteLookupFn,
-	enrollFn EnrollFn,
-	peerIDs []string,
-) (*InviteController, error) {
-	srv := NewServer(le, lookupFn, enrollFn)
-	ctrl := &InviteController{srv: srv}
-	var err error
-	ctrl.Server, err = stream_srpc_server.NewServer(
-		b,
-		le,
-		controller.NewInfo(ControllerID, Version, "so invite server"),
-		[]stream_srpc_server.RegisterFn{
-			func(mux srpc.Mux) error {
-				return SRPCRegisterSOInviteService(mux, srv)
-			},
-		},
-		[]protocol.ID{ProtocolID},
-		peerIDs,
-		false,
-	)
-	if err != nil {
-		return nil, err
-	}
-	return ctrl, nil
-}
-
-// _ is a type assertion
+// _ is a type assertion.
 var _ SRPCSOInviteServiceServer = (*Server)(nil)

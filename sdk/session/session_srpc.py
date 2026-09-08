@@ -71,6 +71,13 @@ SESSIONRESOURCESERVICE_SERVICE = ServiceDescriptor(
             False,
         ),
         MethodDescriptor(
+            "LeaveSpace",
+            _github_com_s4wave_spacewave_sdk_session_session_pb2.LeaveSpaceRequest,
+            _github_com_s4wave_spacewave_sdk_session_session_pb2.LeaveSpaceResponse,
+            False,
+            False,
+        ),
+        MethodDescriptor(
             "RenameSpace",
             _github_com_s4wave_spacewave_sdk_session_session_pb2.RenameSpaceRequest,
             _github_com_s4wave_spacewave_sdk_session_session_pb2.RenameSpaceResponse,
@@ -464,6 +471,25 @@ class SessionResourceServiceClient:
             if data is None:
                 raise CallProtocolError("missing unary response")
             response = _github_com_s4wave_spacewave_sdk_session_session_pb2.DeleteSpaceResponse()
+            response.ParseFromString(data)
+            if await call.receive() is not None:
+                raise CallProtocolError("extra unary response")
+            return response
+        finally:
+            await call.aclose()
+
+    async def leave_space(
+        self,
+        request: _github_com_s4wave_spacewave_sdk_session_session_pb2.LeaveSpaceRequest,
+    ) -> _github_com_s4wave_spacewave_sdk_session_session_pb2.LeaveSpaceResponse:
+        call = await self._client.open_call(
+            self._service, "LeaveSpace", request.SerializeToString(deterministic=True)
+        )
+        try:
+            data = await call.receive()
+            if data is None:
+                raise CallProtocolError("missing unary response")
+            response = _github_com_s4wave_spacewave_sdk_session_session_pb2.LeaveSpaceResponse()
             response.ParseFromString(data)
             if await call.receive() is not None:
                 raise CallProtocolError("extra unary response")
@@ -1192,6 +1218,10 @@ class SessionResourceServiceServer(Protocol):
         self,
         request: _github_com_s4wave_spacewave_sdk_session_session_pb2.DeleteSpaceRequest,
     ) -> _github_com_s4wave_spacewave_sdk_session_session_pb2.DeleteSpaceResponse: ...
+    async def leave_space(
+        self,
+        request: _github_com_s4wave_spacewave_sdk_session_session_pb2.LeaveSpaceRequest,
+    ) -> _github_com_s4wave_spacewave_sdk_session_session_pb2.LeaveSpaceResponse: ...
     async def rename_space(
         self,
         request: _github_com_s4wave_spacewave_sdk_session_session_pb2.RenameSpaceRequest,
@@ -1456,6 +1486,19 @@ def register_session_resource_service(
         await call.send(response.SerializeToString(deterministic=True))
 
     registry.register(service, "DeleteSpace", delete_space_handler)
+
+    async def leave_space_handler(call: Call) -> None:
+        first = await call.receive()
+        if first is None:
+            raise CallProtocolError("missing initial request")
+        request = (
+            _github_com_s4wave_spacewave_sdk_session_session_pb2.LeaveSpaceRequest()
+        )
+        request.ParseFromString(first)
+        response = await implementation.leave_space(request)
+        await call.send(response.SerializeToString(deterministic=True))
+
+    registry.register(service, "LeaveSpace", leave_space_handler)
 
     async def rename_space_handler(call: Call) -> None:
         first = await call.receive()

@@ -5,8 +5,12 @@ option go_package = "github.com/s4wave/spacewave/core/sobject/invite;sobject_inv
 
 import "github.com/s4wave/spacewave/core/sobject/sobject.proto";
 
+// SOInviteService admits invitees and acknowledges voluntary departures through native authority.
 service SOInviteService {
+  // AcceptInvite verifies admission proofs and issues native participant grants.
   rpc AcceptInvite(AcceptInviteRequest) returns (AcceptInviteResponse);
+  // Leave verifies signed consent and returns the owner's committed removal proof.
+  rpc Leave(.sobject.SOLeaveRequest) returns (.sobject.SOLeaveResponse);
 }
 
 // AcceptInviteRequest is sent by the invitee to the owner.

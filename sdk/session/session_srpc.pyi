@@ -56,6 +56,10 @@ class SessionResourceServiceClient:
         self,
         request: _github_com_s4wave_spacewave_sdk_session_session_pb2.DeleteSpaceRequest,
     ) -> _github_com_s4wave_spacewave_sdk_session_session_pb2.DeleteSpaceResponse: ...
+    async def leave_space(
+        self,
+        request: _github_com_s4wave_spacewave_sdk_session_session_pb2.LeaveSpaceRequest,
+    ) -> _github_com_s4wave_spacewave_sdk_session_session_pb2.LeaveSpaceResponse: ...
     async def rename_space(
         self,
         request: _github_com_s4wave_spacewave_sdk_session_session_pb2.RenameSpaceRequest,
@@ -264,6 +268,10 @@ class SessionResourceServiceServer(Protocol):
         self,
         request: _github_com_s4wave_spacewave_sdk_session_session_pb2.DeleteSpaceRequest,
     ) -> _github_com_s4wave_spacewave_sdk_session_session_pb2.DeleteSpaceResponse: ...
+    async def leave_space(
+        self,
+        request: _github_com_s4wave_spacewave_sdk_session_session_pb2.LeaveSpaceRequest,
+    ) -> _github_com_s4wave_spacewave_sdk_session_session_pb2.LeaveSpaceResponse: ...
     async def rename_space(
         self,
         request: _github_com_s4wave_spacewave_sdk_session_session_pb2.RenameSpaceRequest,

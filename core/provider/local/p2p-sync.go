@@ -1155,6 +1155,7 @@ func (a *ProviderAccount) startInviteServer(ctx context.Context, childBus bus.Bu
 		childBus,
 		lookupFn,
 		enrollFn,
+		a.acceptSharedObjectLeave,
 		[]string{localPeerID},
 	)
 	if err != nil {

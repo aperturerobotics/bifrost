@@ -2,6 +2,7 @@ package resource_sobject
 
 import (
 	"context"
+	"slices"
 
 	"github.com/aperturerobotics/starpc/srpc"
 	"github.com/pkg/errors"
@@ -34,6 +35,22 @@ func (r *SharedObjectResource) MountSharedObjectBody(ctx context.Context, req *s
 			sobject.SharedObjectHealthLayer_SHARED_OBJECT_HEALTH_LAYER_BODY,
 			errors.Errorf("unsupported shared object type: %v", bodyType),
 		)), nil
+	}
+
+	// Retained local data does not grant a departed participant a readable body.
+	if host, ok := r.sharedObject.(sobject.InviteHost); ok {
+		state, err := host.GetSOHost().GetHostState(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if !slices.ContainsFunc(state.GetConfig().GetParticipants(), func(participant *sobject.SOParticipantConfig) bool {
+			return participant.GetPeerId() == r.sharedObject.GetPeerID().String() && sobject.CanReadState(participant.GetRole())
+		}) {
+			return mountSharedObjectBodyHealthResponse(sobject.WrapSharedObjectHealthError(
+				sobject.SharedObjectHealthLayer_SHARED_OBJECT_HEALTH_LAYER_BODY,
+				sobject.ErrNotParticipant,
+			)), nil
+		}
 	}
 
 	mountedSpace, mountedSpaceRef, err := sobject.ExMountSharedObjectBodyWithSource[space.SpaceSharedObjectBody](
