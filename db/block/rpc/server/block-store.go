@@ -9,15 +9,22 @@ import (
 
 // BlockStore implements the BlockStore RPC service.
 type BlockStore struct {
-	// store is the underlying block store
+	// store owns block storage and its lifetime.
 	store block.StoreOps
+	// readAheadBytes sets the range-fetch hint on this service's reads.
+	readAheadBytes int
 }
 
 // NewBlockStore constructs a new BlockStore from a Store.
 func NewBlockStore(store block.StoreOps) *BlockStore {
-	return &BlockStore{
-		store: store,
-	}
+	return NewBlockStoreWithReadAhead(store, 0)
+}
+
+// NewBlockStoreWithReadAhead constructs a service whose reads request the
+// supplied range-fetch minimum. Configure it before publishing the service;
+// each incoming RPC retains its own cancellation and deadline.
+func NewBlockStoreWithReadAhead(store block.StoreOps, bytes int) *BlockStore {
+	return &BlockStore{store: store, readAheadBytes: max(0, bytes)}
 }
 
 // GetHashType returns the preferred hash type for the store.
@@ -57,6 +64,7 @@ func (s *BlockStore) PutBlockBatch(
 	ctx context.Context,
 	req *block_rpc.PutBlockBatchRequest,
 ) (*block_rpc.PutBlockBatchResponse, error) {
+	// Convert wire entries without dropping references or tombstones.
 	entries := make([]*block.PutBatchEntry, 0, len(req.GetEntries()))
 	for _, entry := range req.GetEntries() {
 		entries = append(entries, &block.PutBatchEntry{
@@ -67,6 +75,7 @@ func (s *BlockStore) PutBlockBatch(
 		})
 	}
 
+	// Report the store's batch result through the service response.
 	resp := &block_rpc.PutBlockBatchResponse{}
 	if err := s.store.PutBlockBatch(ctx, entries); err != nil {
 		resp.Error = err.Error()
@@ -79,6 +88,12 @@ func (s *BlockStore) GetBlock(
 	ctx context.Context,
 	req *block_rpc.GetBlockRequest,
 ) (*block_rpc.GetBlockResponse, error) {
+	// Attach this service's policy while retaining the incoming RPC lifetime.
+	if s.readAheadBytes > 0 {
+		ctx = block.WithReadAhead(ctx, s.readAheadBytes)
+	}
+
+	// Read through the underlying owner and encode its result.
 	data, existed, err := s.store.GetBlock(ctx, req.GetRef())
 	resp := &block_rpc.GetBlockResponse{}
 	if err != nil {
@@ -167,5 +182,5 @@ func (s *BlockStore) Sync(
 	return resp, nil
 }
 
-// _ is a type assertion
+// _ verifies the RPC service contract.
 var _ block_rpc.SRPCBlockStoreServer = (*BlockStore)(nil)

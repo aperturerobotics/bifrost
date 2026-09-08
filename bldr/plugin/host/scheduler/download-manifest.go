@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	bldr_manifest "github.com/s4wave/spacewave/bldr/manifest"
 	bldr_manifest_world "github.com/s4wave/spacewave/bldr/manifest/world"
+	"github.com/s4wave/spacewave/db/block"
 	bucket "github.com/s4wave/spacewave/db/bucket"
 	bucket_lookup "github.com/s4wave/spacewave/db/bucket/lookup"
 	trace "github.com/s4wave/spacewave/db/traceutil"
@@ -17,42 +18,63 @@ import (
 type manifestCopyClass string
 
 const (
-	manifestCopyClassImmediate              manifestCopyClass = "immediate"
-	manifestCopyClassAfterExecuteReady      manifestCopyClass = "after-execute-ready"
+	// manifestCopyClassImmediate permits copying without a readiness wait.
+	manifestCopyClassImmediate manifestCopyClass = "immediate"
+	// manifestCopyClassAfterExecuteReady waits for this plugin to start.
+	manifestCopyClassAfterExecuteReady manifestCopyClass = "after-execute-ready"
+	// manifestCopyClassAfterStartupGroupReady waits for the startup group.
 	manifestCopyClassAfterStartupGroupReady manifestCopyClass = "after-startup-group-ready"
-	manifestCopyClassSuppressed             manifestCopyClass = "suppressed"
+	// manifestCopyClassSuppressed excludes the source bucket from local copying.
+	manifestCopyClassSuppressed manifestCopyClass = "suppressed"
 )
 
 // manifestCopyPhase is the lifecycle phase of one manifest copy.
 type manifestCopyPhase string
 
 const (
-	manifestCopyPhaseSelected               manifestCopyPhase = "selected"
-	manifestCopyPhaseWaiting                manifestCopyPhase = "waiting-for-running"
+	// manifestCopyPhaseSelected identifies an accepted copy candidate.
+	manifestCopyPhaseSelected manifestCopyPhase = "selected"
+	// manifestCopyPhaseWaiting waits for the plugin's running capability.
+	manifestCopyPhaseWaiting manifestCopyPhase = "waiting-for-running"
+	// manifestCopyPhaseWaitingForStartupGroup waits for startup demand to settle.
 	manifestCopyPhaseWaitingForStartupGroup manifestCopyPhase = "waiting-for-startup-group"
-	manifestCopyPhaseWaitingForAdmission    manifestCopyPhase = "waiting-for-admission"
-	manifestCopyPhaseCopying                manifestCopyPhase = "copying"
-	manifestCopyPhaseDone                   manifestCopyPhase = "done"
-	manifestCopyPhaseFailed                 manifestCopyPhase = "failed"
-	manifestCopyPhaseSuppressed             manifestCopyPhase = "suppressed"
+	// manifestCopyPhaseWaitingForAdmission waits for the aggregate copy permit.
+	manifestCopyPhaseWaitingForAdmission manifestCopyPhase = "waiting-for-admission"
+	// manifestCopyPhaseCopying owns an active materialization attempt.
+	manifestCopyPhaseCopying manifestCopyPhase = "copying"
+	// manifestCopyPhaseDone reports completed copying and publication.
+	manifestCopyPhaseDone manifestCopyPhase = "done"
+	// manifestCopyPhaseFailed reports a failed attempt to the retry owner.
+	manifestCopyPhaseFailed manifestCopyPhase = "failed"
+	// manifestCopyPhaseSuppressed reports a configured copy exclusion.
+	manifestCopyPhaseSuppressed manifestCopyPhase = "suppressed"
 )
 
 // manifestCopyStatus tracks the copy state and identities for one
 // manifest.
 type manifestCopyStatus struct {
-	phase               manifestCopyPhase
-	class               manifestCopyClass
-	manifestRef         string
-	sourceBucketID      string
+	// phase describes the current copy attempt.
+	phase manifestCopyPhase
+	// class records the readiness or exclusion policy used for selection.
+	class manifestCopyClass
+	// manifestRef identifies the selected manifest snapshot.
+	manifestRef string
+	// sourceBucketID identifies the bucket supplying encoded source blocks.
+	sourceBucketID string
+	// destinationBucketID identifies the local copy destination.
 	destinationBucketID string
-	sourceIdentity      manifestCopyIdentity
+	// sourceIdentity distinguishes source account and storage ownership.
+	sourceIdentity manifestCopyIdentity
+	// destinationIdentity distinguishes destination account and ownership.
 	destinationIdentity manifestCopyIdentity
-	stats               bucket_lookup.ObjectCopyStats
+	// stats captures the most recently observed copy accounting.
+	stats bucket_lookup.ObjectCopyStats
 }
 
 // classifyManifestCopy decides the startup-copy class for a manifest
 // snapshot.
 func (t *pluginInstance) classifyManifestCopy(manifestSnapshot *bldr_manifest.ManifestSnapshot) manifestCopyClass {
+	// Honor explicit bucket exclusions before considering readiness gates.
 	if t == nil || manifestSnapshot == nil {
 		return manifestCopyClassImmediate
 	}
@@ -64,10 +86,14 @@ func (t *pluginInstance) classifyManifestCopy(manifestSnapshot *bldr_manifest.Ma
 			return manifestCopyClassSuppressed
 		}
 	}
+
+	// Startup-group readiness precedes the selected plugin's running state.
 	gate := t.c.getManifestCopyGate()
 	if gate != nil && !gate.IsReady() {
 		return manifestCopyClassAfterStartupGroupReady
 	}
+
+	// Wait only when this exact executable is selected but not running yet.
 	if t.executePluginRoutine == nil || t.runningPluginCtr == nil {
 		return manifestCopyClassImmediate
 	}
@@ -92,12 +118,15 @@ func (t *pluginInstance) setManifestCopyStatus(
 	accounting *manifestCopyAccounting,
 	stats bucket_lookup.ObjectCopyStats,
 ) {
+	// Discard observations belonging to a superseded accounting selection.
 	if t == nil ||
 		t.manifestCopyStatus == nil ||
 		accounting == nil ||
 		t.manifestCopyAccounting.Load() != accounting {
 		return
 	}
+
+	// Publish one immutable snapshot of identity and observed progress.
 	var ref string
 	if manifestSnapshot != nil && manifestSnapshot.GetManifestRef() != nil {
 		ref = manifestSnapshot.GetManifestRef().MarshalString()
@@ -121,6 +150,7 @@ func (t *pluginInstance) setDownloadManifestState(
 	manifestSnapshot *bldr_manifest.ManifestSnapshot,
 	destinationBucketID string,
 ) bool {
+	// Select the requested snapshot unless local copying is disabled.
 	if t.c.conf.GetDisableCopyManifest() {
 		return false
 	}
@@ -129,6 +159,7 @@ func (t *pluginInstance) setDownloadManifestState(
 		return changed
 	}
 
+	// A suppressed request clears demand and publishes its exclusion reason.
 	_, changed, _, _ := t.downloadManifestRoutine.SetState(nil)
 	ref := manifestSnapshot.GetManifestRef()
 	accounting := t.setManifestCopySelection(
@@ -214,6 +245,7 @@ func (t *pluginInstance) execDownloadManifest(
 	ctx context.Context,
 	manifestSnapshot *bldr_manifest.ManifestSnapshot,
 ) (rerr error) {
+	// Report every attempt's terminal error through the plugin status owner.
 	defer func() {
 		if rerr != nil {
 			trace.Log(ctx, "manifest-copy-phase", "error")
@@ -221,6 +253,7 @@ func (t *pluginInstance) execDownloadManifest(
 		t.c.recordPluginStatusError(t.pluginID, t.instanceKey, "download plugin manifest", rerr)
 	}()
 
+	// Ignore absent requests and configured exclusions without touching storage.
 	if t.c.conf.GetDisableCopyManifest() ||
 		manifestSnapshot == nil ||
 		manifestSnapshot.GetManifestRef() == nil ||
@@ -228,6 +261,7 @@ func (t *pluginInstance) execDownloadManifest(
 		return nil
 	}
 
+	// Validate the selected snapshot before acquiring copy resources.
 	ctx, task := trace.NewTask(ctx, "bldr/plugin-host-scheduler/download-manifest")
 	defer task.End()
 	le := t.le
@@ -243,6 +277,8 @@ func (t *pluginInstance) execDownloadManifest(
 			return errors.Wrap(err, "manifest snapshot metadata")
 		}
 	}
+
+	// Keep selection and failure accounting tied to this manifest generation.
 	class := t.classifyManifestCopy(manifestSnapshot)
 	accounting := t.manifestCopyAccountingForExecution(ctx, manifestSnapshot)
 	trace.Log(ctx, "manifest-copy-phase", "selection")
@@ -258,6 +294,7 @@ func (t *pluginInstance) execDownloadManifest(
 	trace.Log(ctx, "startup-fetch-kind", "background-manifest-dag-copy")
 	trace.Log(ctx, "manifest-copy-class", string(class))
 
+	// Preserve foreground startup priority before entering the copy queue.
 	if err := t.waitForManifestCopyReady(ctx, class, manifestSnapshot, accounting); err != nil {
 		return err
 	}
@@ -280,6 +317,7 @@ func (t *pluginInstance) execDownloadManifest(
 		return err
 	}
 
+	// Mark the admitted attempt and resolve its World storage owner.
 	materializerCtx, materializerTask := trace.NewTask(ctx, "bldr/plugin-host-scheduler/materializer")
 	trace.Log(materializerCtx, "materializer-phase", "start")
 	defer func() {
@@ -315,6 +353,7 @@ func (t *pluginInstance) execDownloadManifest(
 	// otherwise with the in-process copy engine. A failed RPC must not fall
 	// back to native copying; the scheduler routine owns retry.
 	copyCtx, copyTask := trace.NewTask(ctx, "bldr/plugin-host-scheduler/download-manifest/copy-dag")
+	copyCtx = block.WithReadAhead(copyCtx, materializerReadAhead)
 	trace.Log(copyCtx, "accounting-phase", "decode-verify-deserialize-block-publish")
 	var localRef *bucket.ObjectRef
 	var stats bucket_lookup.ObjectCopyStats
@@ -363,6 +402,7 @@ func (t *pluginInstance) execDownloadManifest(
 		storeTask.End()
 	}
 
+	// Fence copied blocks and the new manifest reference before reporting done.
 	syncCtx, syncTask := trace.NewTask(ctx, "bldr/plugin-host-scheduler/download-manifest/sync")
 	trace.Log(syncCtx, "accounting-phase", "world-sync-block-barrier-and-head-commit")
 	synced, syncErr := ws.Sync(syncCtx)
@@ -379,6 +419,7 @@ func (t *pluginInstance) execDownloadManifest(
 	trace.Log(syncCtx, "manifest-copy-phase", "sync-complete")
 	syncTask.End()
 
+	// Publish terminal accounting only after the storage fence succeeds.
 	copyStats = accounting.apply(copyStats)
 	t.setManifestCopyStatus(manifestCopyPhaseDone, class, manifestSnapshot, accounting, copyStats)
 	t.emitManifestCopyStartupMark(manifestCopyPhaseDone, copyStats, accounting)

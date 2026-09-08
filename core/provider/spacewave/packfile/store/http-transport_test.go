@@ -20,6 +20,7 @@ import (
 	"github.com/s4wave/spacewave/net/hash"
 )
 
+// TestHTTPRangeReaderDefaults verifies default and explicit transport sizing.
 func TestHTTPRangeReaderDefaults(t *testing.T) {
 	rd := NewHTTPRangeReader(nil, "https://example.com/pack", 1024, 0, 0, nil, nil)
 	if rd.maxBytes != defaultResidentBudget {
@@ -53,6 +54,7 @@ func TestHTTPRangeReaderDefaults(t *testing.T) {
 	}
 }
 
+// TestPackReaderPlanFetchLeftShiftsWithinGap preserves coverage near a gap end.
 func TestPackReaderPlanFetchLeftShiftsWithinGap(t *testing.T) {
 	eng := NewPackReader("shift-pack", 8<<20, TransportFunc(func(context.Context, int64, int) ([]byte, error) {
 		return nil, nil
@@ -64,12 +66,13 @@ func TestPackReaderPlanFetchLeftShiftsWithinGap(t *testing.T) {
 	eng.sparseReads = false
 	eng.spans = []*span{{off: 3 << 20, size: 1 << 20}}
 
-	key := eng.planFetchLocked(5<<19, (5<<19)+1)
+	key := eng.planFetchLocked(5<<19, (5<<19)+1, 0)
 	if key.off != 1<<20 || key.size != 2<<20 {
 		t.Fatalf("planFetchLocked() = [%d,%d), want [%d,%d)", key.off, key.end(), int64(1<<20), int64(3<<20))
 	}
 }
 
+// TestPackReaderSparsePlanCapsColdBackshift bounds speculative sparse reads.
 func TestPackReaderSparsePlanCapsColdBackshift(t *testing.T) {
 	eng := NewPackReader("sparse-shift-pack", 10<<20, TransportFunc(func(context.Context, int64, int) ([]byte, error) {
 		return nil, nil
@@ -83,12 +86,13 @@ func TestPackReaderSparsePlanCapsColdBackshift(t *testing.T) {
 	eng.sparseLocalityDistance = 512 << 10
 	eng.spans = []*span{{off: 8 << 20, size: 256 << 10}}
 
-	key := eng.planFetchLocked(5<<20, (5<<20)+1)
+	key := eng.planFetchLocked(5<<20, (5<<20)+1, 0)
 	if key.off != 5<<20 || key.size != 256<<10 {
 		t.Fatalf("sparse planFetchLocked() = [%d,%d), want [%d,%d)", key.off, key.end(), int64(5<<20), int64((5<<20)+(256<<10)))
 	}
 }
 
+// TestPackReaderSparsePlanPromotesNearbyReads verifies locality grows read-ahead.
 func TestPackReaderSparsePlanPromotesNearbyReads(t *testing.T) {
 	eng := NewPackReader("sparse-local-pack", 10<<20, TransportFunc(func(context.Context, int64, int) ([]byte, error) {
 		return nil, nil
@@ -101,16 +105,17 @@ func TestPackReaderSparsePlanPromotesNearbyReads(t *testing.T) {
 	eng.sparseColdWindow = 256 << 10
 	eng.sparseLocalityDistance = 512 << 10
 
-	first := eng.planFetchLocked(1<<20, (1<<20)+1)
+	first := eng.planFetchLocked(1<<20, (1<<20)+1, 0)
 	if first.size != 256<<10 {
 		t.Fatalf("first sparse fetch size = %d, want %d", first.size, 256<<10)
 	}
-	second := eng.planFetchLocked((1<<20)+(128<<10), (1<<20)+(128<<10)+1)
+	second := eng.planFetchLocked((1<<20)+(128<<10), (1<<20)+(128<<10)+1, 0)
 	if second.size <= first.size {
 		t.Fatalf("nearby sparse fetch size = %d, want promotion above %d", second.size, first.size)
 	}
 }
 
+// TestPackReaderPlanFetchShrinksWhenCoveredOnBothSides prevents resident overlap.
 func TestPackReaderPlanFetchShrinksWhenCoveredOnBothSides(t *testing.T) {
 	eng := NewPackReader("shrink-pack", 8<<20, TransportFunc(func(context.Context, int64, int) ([]byte, error) {
 		return nil, nil
@@ -124,12 +129,13 @@ func TestPackReaderPlanFetchShrinksWhenCoveredOnBothSides(t *testing.T) {
 		{off: 2 << 20, size: 1 << 20},
 	}
 
-	key := eng.planFetchLocked(3<<19, (3<<19)+1)
+	key := eng.planFetchLocked(3<<19, (3<<19)+1, 0)
 	if key.off != 1<<20 || key.size != 1<<20 {
 		t.Fatalf("planFetchLocked() = [%d,%d), want [%d,%d)", key.off, key.end(), int64(1<<20), int64(2<<20))
 	}
 }
 
+// TestPackReaderSnapshotStats verifies public cache and I/O accounting.
 func TestPackReaderSnapshotStats(t *testing.T) {
 	eng := NewPackReader("stats-pack", 1024, TransportFunc(func(context.Context, int64, int) ([]byte, error) {
 		return nil, nil
@@ -179,6 +185,7 @@ func TestPackReaderSnapshotStats(t *testing.T) {
 	}
 }
 
+// TestPackfileStoreAppliesTuningOverrides verifies newly opened readers inherit store policy.
 func TestPackfileStoreAppliesTuningOverrides(t *testing.T) {
 	store := NewPackfileStore(func(packID string, size int64) (*PackReader, error) {
 		return NewPackReader(packID, size, TransportFunc(func(context.Context, int64, int) ([]byte, error) {
@@ -209,6 +216,7 @@ func TestPackfileStoreAppliesTuningOverrides(t *testing.T) {
 	}
 }
 
+// TestPackReaderTransportFetchMaxBytesClampsTuning preserves platform fetch caps.
 func TestPackReaderTransportFetchMaxBytesClampsTuning(t *testing.T) {
 	eng := NewPackReader("cap-pack", 16<<20, TransportFunc(func(context.Context, int64, int) ([]byte, error) {
 		return nil, nil
@@ -231,12 +239,13 @@ func TestPackReaderTransportFetchMaxBytesClampsTuning(t *testing.T) {
 	if tuning.TransportFetchMaxBytes != 2<<20 {
 		t.Fatalf("transport fetch cap = %d, want %d", tuning.TransportFetchMaxBytes, 2<<20)
 	}
-	key := eng.planFetchLocked(0, 1)
+	key := eng.planFetchLocked(0, 1, 0)
 	if key.size > 2<<20 {
 		t.Fatalf("planned fetch size = %d, want <= %d", key.size, 2<<20)
 	}
 }
 
+// TestHTTPRangeReaderDedupesConcurrentFetch verifies readers share one HTTP request.
 func TestHTTPRangeReaderDedupesConcurrentFetch(t *testing.T) {
 	data := []byte("abcdefghijklmnopqrstuvwxyz")
 	var reqCount atomic.Int32
@@ -296,17 +305,23 @@ func TestHTTPRangeReaderDedupesConcurrentFetch(t *testing.T) {
 	}
 }
 
+// observedDoneContext signals when a reader starts observing cancellation.
 type observedDoneContext struct {
+	// Context supplies the underlying lifetime.
 	context.Context
+	// done closes on the first observation of Done.
 	done chan struct{}
+	// once serializes the observation signal across readers.
 	once sync.Once
 }
 
+// Done exposes cancellation and records that the caller can now wait on it.
 func (c *observedDoneContext) Done() <-chan struct{} {
 	c.once.Do(func() { close(c.done) })
 	return c.Context.Done()
 }
 
+// TestPackReaderCanceledLeaderDoesNotPoisonWaiter verifies shared transport survives caller cancellation.
 func TestPackReaderCanceledLeaderDoesNotPoisonWaiter(t *testing.T) {
 	data := []byte("abcdefgh")
 	started := make(chan struct{})
@@ -372,6 +387,7 @@ func TestPackReaderCanceledLeaderDoesNotPoisonWaiter(t *testing.T) {
 	}
 }
 
+// TestPackReaderCloseCancelsTransport verifies owner shutdown releases reads.
 func TestPackReaderCloseCancelsTransport(t *testing.T) {
 	started := make(chan struct{})
 	transportDone := make(chan struct{})
@@ -403,6 +419,7 @@ func TestPackReaderCloseCancelsTransport(t *testing.T) {
 	}
 }
 
+// TestHTTPRangeReaderRetainsMultipleRanges verifies nonadjacent cache reuse.
 func TestHTTPRangeReaderRetainsMultipleRanges(t *testing.T) {
 	data := bytes.Repeat([]byte("0123456789abcdef"), 8192)
 	var reqs int
@@ -446,6 +463,7 @@ func TestHTTPRangeReaderRetainsMultipleRanges(t *testing.T) {
 	}
 }
 
+// TestHTTPRangeReaderFullResponseFallbackStats accounts for servers that ignore Range.
 func TestHTTPRangeReaderFullResponseFallbackStats(t *testing.T) {
 	data := []byte("abcdefghijklmnopqrstuvwxyz")
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -485,6 +503,7 @@ func TestHTTPRangeReaderFullResponseFallbackStats(t *testing.T) {
 	}
 }
 
+// TestPackReaderRetriesIndexLoadAfterFailure verifies trailer errors do not poison the index.
 func TestPackReaderRetriesIndexLoadAfterFailure(t *testing.T) {
 	ctx := t.Context()
 	packBytes, _ := buildTestPackOrdered(t, []struct{ Name, Data string }{{"a", "alpha"}})
@@ -531,6 +550,7 @@ func TestPackReaderRetriesIndexLoadAfterFailure(t *testing.T) {
 	}
 }
 
+// TestBinarySearchEntriesByKeyUsesByteOrder preserves KVFile key ordering.
 func TestBinarySearchEntriesByKeyUsesByteOrder(t *testing.T) {
 	entries := []*kvfile.IndexEntry{
 		{Key: []byte("11")},
@@ -544,6 +564,7 @@ func TestBinarySearchEntriesByKeyUsesByteOrder(t *testing.T) {
 	}
 }
 
+// parseHTTPTestRangeHeader bounds a valid single HTTP range to the fixture.
 func parseHTTPTestRangeHeader(h string, size int64) (start, end int64, ok bool) {
 	var reqStart, reqEnd int64
 	if _, err := fmt.Sscanf(h, "bytes=%d-%d", &reqStart, &reqEnd); err != nil {
@@ -561,6 +582,7 @@ func parseHTTPTestRangeHeader(h string, size int64) (start, end int64, ok bool) 
 // TransportFunc adapts a function to Transport for tests.
 type TransportFunc func(ctx context.Context, off int64, length int) ([]byte, error)
 
+// Fetch invokes the fixture's transport operation with the caller's lifetime.
 func (f TransportFunc) Fetch(ctx context.Context, off int64, length int) ([]byte, error) {
 	return f(ctx, off, length)
 }

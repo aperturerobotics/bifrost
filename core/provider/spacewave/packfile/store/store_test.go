@@ -1719,30 +1719,30 @@ func TestPackfileStoreVerifyFailureAllowsRetry(t *testing.T) {
 	store.SetWriteback(ctx, nil, 0)
 
 	alphaHash, _ := hash.Sum(hash.HashType_HashType_SHA256, []byte("alpha"))
-	// First read returns corrupted bytes (verify happens in background so
-	// the first caller sees data). The background verify will mark the
-	// block failed.
+	// Background verification may reject the first response before this read
+	// returns, allowing it to retry and return valid data immediately.
 	if _, _, err := store.GetBlock(ctx, &block.BlockRef{Hash: alphaHash}); err != nil {
 		t.Fatalf("first GetBlock: %v", err)
 	}
 
-	// Wait for the failed record to be evicted.
+	// Observe rejection rather than transient catalog absence: a valid retry
+	// may already have installed its replacement record.
 	eng, err := store.getOrOpenEngine("retry-pack", int64(len(packBytes)), 1)
 	if err != nil {
 		t.Fatalf("getOrOpenEngine: %v", err)
 	}
 	if !waitFor(t, func() (bool, <-chan struct{}) {
-		var present bool
+		var rejected bool
 		var waitCh <-chan struct{}
 		eng.bcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
-			_, present = eng.blocks[alphaHash.MarshalString()]
-			if present {
+			rejected = eng.verifyFailures != 0
+			if !rejected {
 				waitCh = getWaitCh()
 			}
 		})
-		return !present, waitCh
+		return rejected, waitCh
 	}) {
-		t.Fatal("expected failed block to be evicted from catalog")
+		t.Fatal("expected corrupted response to fail verification")
 	}
 
 	got, found, err := store.GetBlock(ctx, &block.BlockRef{Hash: alphaHash})

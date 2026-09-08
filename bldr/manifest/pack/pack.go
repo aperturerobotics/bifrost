@@ -1,16 +1,16 @@
 package bldr_manifest_pack
 
 import (
+	"bytes"
 	"context"
 	"io"
-	"slices"
-	"strings"
 
 	"github.com/aperturerobotics/protobuf-go-lite/types/known/timestamppb"
 	"github.com/pkg/errors"
 	bldr_manifest "github.com/s4wave/spacewave/bldr/manifest"
 	packfile "github.com/s4wave/spacewave/core/provider/spacewave/packfile"
 	"github.com/s4wave/spacewave/core/provider/spacewave/packfile/identity"
+	"github.com/s4wave/spacewave/core/provider/spacewave/packfile/order"
 	"github.com/s4wave/spacewave/core/provider/spacewave/packfile/writer"
 	"github.com/s4wave/spacewave/db/block"
 	block_transform "github.com/s4wave/spacewave/db/block/transform"
@@ -28,15 +28,21 @@ func PackManifestBundle(
 	bundleRef *bucket.ObjectRef,
 	w io.Writer,
 ) (*packfile.PackfileEntry, []byte, error) {
+	// Pack only standalone references with fully specified source ownership.
 	if err := ValidateCleanObjectRef("manifest_bundle_ref", bundleRef); err != nil {
 		return nil, nil, err
 	}
-	var blocks []packBlock
-	seen := make(map[string]struct{})
+
+	// Retain structural edges while collecting encoded bytes. The walker may
+	// visit siblings before descendants; physical output follows each subtree.
+	blocks := make(map[string]packBlock)
+	graph := order.NewGraph()
+	var roots []*block.BlockRef
 	appendBlocks := func(rootRef *bucket.ObjectRef, ctor func() block.Block) error {
 		if err := ValidateCleanObjectRef("manifest_pack_root", rootRef); err != nil {
 			return err
 		}
+		roots = append(roots, rootRef.GetRootRef())
 		return ws.AccessWorldState(ctx, rootRef, func(bls *bucket_lookup.Cursor) error {
 			readXfrm := bls.GetTransformer()
 			if readXfrm == nil {
@@ -52,16 +58,21 @@ func PackManifestBundle(
 					if entry.Ref == nil || entry.Ref.GetEmpty() || !entry.Found || entry.IsSubBlock || len(entry.Data) == 0 {
 						return true, nil
 					}
-					key := entry.Ref.MarshalString()
-					if _, ok := seen[key]; ok {
+
+					// Capture each encoded payload and its structural edges once.
+					key := entry.Ref.GetHash().MarshalString()
+					if _, ok := blocks[key]; ok {
 						return true, nil
 					}
-					seen[key] = struct{}{}
-					blocks = append(blocks, packBlock{
-						key:  key,
-						hash: entry.Ref.GetHash().Clone(),
-						data: append([]byte(nil), entry.Data...),
-					})
+					children, err := block.ExtractBlockRefs(entry.Blk)
+					if err != nil {
+						return false, err
+					}
+					graph.Add(entry.Ref, children)
+					blocks[key] = packBlock{
+						hash: entry.Ref.GetHash().CloneVT(),
+						data: bytes.Clone(entry.Data),
+					}
 					return true, nil
 				},
 				bls.GetBucket(),
@@ -71,6 +82,8 @@ func PackManifestBundle(
 			)
 		})
 	}
+
+	// Include the bundle and every manifest filesystem reachable through it.
 	if err := appendBlocks(bundleRef, bldr_manifest.NewManifestBundleBlock); err != nil {
 		return nil, nil, err
 	}
@@ -83,15 +96,18 @@ func PackManifestBundle(
 			return nil, nil, errors.Wrapf(err, "manifest_refs[%d]", i)
 		}
 	}
-	slices.SortFunc(blocks, func(a, b packBlock) int {
-		return strings.Compare(a.key, b.key)
-	})
+
+	// Order before writing so related values remain adjacent in the pack.
+	refs, err := graph.Order(ctx, roots)
+	if err != nil {
+		return nil, nil, err
+	}
 	idx := 0
 	res, err := writer.PackBlocks(w, func() (*hash.Hash, []byte, error) {
-		if idx >= len(blocks) {
+		if idx >= len(refs) {
 			return nil, nil, nil
 		}
-		blk := blocks[idx]
+		blk := blocks[refs[idx].GetHash().MarshalString()]
 		idx++
 		return blk.hash, blk.data, nil
 	})
@@ -101,6 +117,8 @@ func PackManifestBundle(
 	if res.BlockCount == 0 {
 		return nil, nil, errors.New("manifest bundle pack contains no blocks")
 	}
+
+	// Derive immutable identity and metadata from the encoded physical bytes.
 	packID, err := identity.BuildPackID(resourceID, res)
 	if err != nil {
 		return nil, nil, err
@@ -128,6 +146,7 @@ func NewMetadata(
 	entry *packfile.PackfileEntry,
 	packSHA256 []byte,
 ) (*ManifestPackMetadata, error) {
+	// Own copies of all mutable artifact and manifest metadata.
 	meta := &ManifestPackMetadata{
 		FormatVersion:     MetadataFormatVersion,
 		GitSha:            gitSHA,
@@ -135,9 +154,9 @@ func NewMetadata(
 		ProducerTarget:    producerTarget,
 		ReactDev:          reactDev,
 		CacheSchema:       cacheSchema,
-		ManifestBundleRef: bundleRef.Clone(),
+		ManifestBundleRef: bundleRef.CloneVT(),
 		Pack:              entry.CloneVT(),
-		PackSha256:        append([]byte(nil), packSHA256...),
+		PackSha256:        bytes.Clone(packSHA256),
 	}
 	if len(tuples) != 0 {
 		meta.Manifests = make([]*ManifestTuple, len(tuples))
@@ -145,6 +164,8 @@ func NewMetadata(
 			meta.Manifests[i] = tuple.CloneVT()
 		}
 	}
+
+	// Return only metadata that satisfies the import contract.
 	if err := meta.Validate(); err != nil {
 		return nil, err
 	}
@@ -153,7 +174,8 @@ func NewMetadata(
 
 // packBlock is one block queued for the pack writer.
 type packBlock struct {
-	key  string
+	// hash identifies the encoded payload.
 	hash *hash.Hash
+	// data is the encoded payload copied from the source store.
 	data []byte
 }
