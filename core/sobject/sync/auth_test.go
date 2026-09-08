@@ -1,0 +1,253 @@
+package sobject_sync
+
+import (
+	"context"
+	"errors"
+	"net"
+	"testing"
+	"time"
+
+	"github.com/s4wave/spacewave/core/sobject"
+	"github.com/s4wave/spacewave/net/crypto"
+	"github.com/s4wave/spacewave/net/hash"
+	"github.com/s4wave/spacewave/net/peer"
+	stream_packet "github.com/s4wave/spacewave/net/stream/packet"
+)
+
+// authenticationStream records each complete outbound packet before transport admission.
+type authenticationStream struct {
+	// Conn supplies the real stream and its deadline and cancellation behavior.
+	net.Conn
+	// messages records the bounded test exchange, including a send blocked in transport.
+	messages chan *SOSyncMessage
+}
+
+// Write records a packet without changing the underlying stream's blocking behavior.
+func (s *authenticationStream) Write(data []byte) (int, error) {
+	message := &SOSyncMessage{}
+	if len(data) >= 4 && message.UnmarshalVT(data[4:]) == nil {
+		s.messages <- message
+	}
+	return s.Conn.Write(data)
+}
+
+// newAuthenticationPeer creates a host with a locally held shared checkpoint.
+func newAuthenticationPeer(t *testing.T, soID string, key crypto.PrivKey, state *sobject.SOState) *SOSync {
+	t.Helper()
+	id, err := peer.IDFromPrivateKey(key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	host, _ := newMemHost(soID, state.CloneVT())
+	t.Cleanup(host.ClearContext)
+	return NewSOSync(gateLogger(), nil, soID, id, key, host)
+}
+
+// authenticationState establishes the trusted participants before the stream exists.
+func authenticationState(t *testing.T, soID string, owner, reader crypto.PrivKey) *sobject.SOState {
+	t.Helper()
+	state := &sobject.SOState{
+		Config: &sobject.SharedObjectConfig{Participants: []*sobject.SOParticipantConfig{
+			participantCfg(mustPeerIDStr(t, owner), sobject.SOParticipantRole_SOParticipantRole_OWNER),
+			participantCfg(mustPeerIDStr(t, reader), sobject.SOParticipantRole_SOParticipantRole_READER),
+		}},
+		Root: &sobject.SORoot{InnerSeqno: 1},
+	}
+	trustSnapshotConfig(t, state, owner)
+	signSnapshotRoot(t, soID, state, owner)
+	return state
+}
+
+// TestParticipantAuthenticationRejectsReboundProof tests every signed binding field.
+func TestParticipantAuthenticationRejectsReboundProof(t *testing.T) {
+	key := mustKeyPair(t)
+	transcript := &SOSyncAuthTranscript{
+		SharedObjectId: "authentication-object", SenderTransport: []byte("sender"), ReceiverTransport: []byte("receiver"),
+		SenderNonce: []byte("sender-challenge"), ReceiverNonce: []byte("receiver-challenge"),
+	}
+	data, err := transcript.MarshalVT()
+	if err != nil {
+		t.Fatal(err)
+	}
+	proof, err := peer.NewSignature(authenticationContext, key, hash.RecommendedHashType, data, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := verifyParticipantProof(transcript, proof); err != nil {
+		t.Fatal(err)
+	}
+	for _, mutate := range []func(*SOSyncAuthTranscript){
+		func(v *SOSyncAuthTranscript) { v.SharedObjectId = "another-object" },
+		func(v *SOSyncAuthTranscript) { v.SenderTransport = []byte("another-sender") },
+		func(v *SOSyncAuthTranscript) { v.ReceiverTransport = []byte("another-receiver") },
+		func(v *SOSyncAuthTranscript) { v.SenderNonce = []byte("another-sender-challenge") },
+		func(v *SOSyncAuthTranscript) { v.ReceiverNonce = []byte("another-receiver-challenge") },
+		func(v *SOSyncAuthTranscript) {
+			v.SenderTransport, v.ReceiverTransport = v.ReceiverTransport, v.SenderTransport
+			v.SenderNonce, v.ReceiverNonce = v.ReceiverNonce, v.SenderNonce
+		},
+	} {
+		changed := transcript.CloneVT()
+		mutate(changed)
+		if _, err := verifyParticipantProof(changed, proof); err == nil {
+			t.Fatal("accepted a proof rebound to another stream, object, or direction")
+		}
+	}
+}
+
+// TestParticipantAuthenticationDeniesBeforeDisclosure runs both real stream owners.
+func TestParticipantAuthenticationDeniesBeforeDisclosure(t *testing.T) {
+	for _, test := range []struct {
+		// name identifies the admission state being exercised.
+		name string
+		// outsider signs with an identity absent from the held configuration.
+		outsider bool
+		// removed leaves the remote device on its old configuration after local removal.
+		removed bool
+	}{
+		{name: "authorized"},
+		{name: "outsider", outsider: true},
+		{name: "removed device reconnect", removed: true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
+			defer cancel()
+			const soID = "authentication-stream"
+			owner, reader := mustKeyPair(t), mustKeyPair(t)
+			state := authenticationState(t, soID, owner, reader)
+			remoteKey := reader
+			if test.outsider {
+				remoteKey = mustKeyPair(t)
+			}
+			local := newAuthenticationPeer(t, soID, owner, state)
+			remote := newAuthenticationPeer(t, soID, remoteKey, state)
+			if test.removed {
+				removed, err := sobject.RemoveSOParticipant(ctx, local.soHost, remote.localObjectPeerID.String(), owner, nil)
+				if err != nil || !removed {
+					t.Fatalf("remove before reconnect = %v, %v", removed, err)
+				}
+			}
+			denied := test.outsider || test.removed
+			left, right := net.Pipe()
+			t.Cleanup(func() { left.Close(); right.Close() })
+			observed := &authenticationStream{Conn: left, messages: make(chan *SOSyncMessage, 32)}
+			done := make(chan error, 2)
+			go func() { done <- local.runStream(ctx, gateLogger(), observed, "transport-a", "transport-b") }()
+			go func() { done <- remote.runStream(ctx, gateLogger(), right, "transport-b", "transport-a") }()
+			if !denied {
+				waitAuthenticationSnapshot(t, ctx, observed.messages)
+				cancel()
+			}
+			for range 2 {
+				select {
+				case err := <-done:
+					if denied && !errors.Is(err, ErrAccessDenied) {
+						t.Fatalf("denied participant result = %v", err)
+					}
+				case <-time.After(time.Second):
+					t.Fatal("stream owner failed to join")
+				}
+			}
+			if denied {
+				for len(observed.messages) > 0 {
+					message := <-observed.messages
+					if message.GetSnapshot() != nil || message.GetOp() != nil {
+						t.Fatal("unauthorized stream received object data")
+					}
+				}
+			}
+		})
+	}
+}
+
+// TestParticipantRevocationClosesBlockedSnapshot proves the authority watch can
+// stop a stream whose authorized initial send is blocked in the transport.
+func TestParticipantRevocationClosesBlockedSnapshot(t *testing.T) {
+	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
+	defer cancel()
+	const soID = "authentication-revocation"
+	owner, reader := mustKeyPair(t), mustKeyPair(t)
+	state := authenticationState(t, soID, owner, reader)
+	local := newAuthenticationPeer(t, soID, owner, state)
+	remote := newAuthenticationPeer(t, soID, reader, state)
+	left, right := net.Pipe()
+	t.Cleanup(func() { left.Close(); right.Close() })
+	observed := &authenticationStream{Conn: left, messages: make(chan *SOSyncMessage, 32)}
+	done := make(chan error, 1)
+	go func() { done <- local.runStream(ctx, gateLogger(), observed, "transport-a", "transport-b") }()
+	if _, err := remote.authenticate(ctx, stream_packet.NewSession(right, 64*1024), "transport-b", "transport-a"); err != nil {
+		t.Fatal(err)
+	}
+	waitAuthenticationSnapshot(t, ctx, observed.messages)
+	removed, err := sobject.RemoveSOParticipant(ctx, local.soHost, remote.localObjectPeerID.String(), owner, nil)
+	if err != nil || !removed {
+		t.Fatalf("remove = %v, %v", removed, err)
+	}
+	select {
+	case err := <-done:
+		if err == nil {
+			t.Fatal("blocked snapshot unexpectedly completed")
+		}
+	case <-time.After(time.Second):
+		t.Fatal("revocation did not close and join the blocked stream")
+	}
+}
+
+// waitAuthenticationSnapshot waits for admission of the first authenticated data frame.
+func waitAuthenticationSnapshot(t *testing.T, ctx context.Context, messages <-chan *SOSyncMessage) {
+	t.Helper()
+	for {
+		select {
+		case message := <-messages:
+			if message.GetSnapshot() != nil {
+				return
+			}
+		case <-ctx.Done():
+			t.Fatal("authenticated snapshot did not reach transport admission")
+		}
+	}
+}
+
+// TestParticipantAuthenticationRejectsPrematureData verifies no snapshot is
+// disclosed when the first remote message is data or a reflected challenge.
+func TestParticipantAuthenticationRejectsPrematureData(t *testing.T) {
+	for _, reflectChallenge := range []bool{false, true} {
+		t.Run(map[bool]string{false: "premature snapshot", true: "reflected challenge"}[reflectChallenge], func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
+			defer cancel()
+			const soID = "authentication-premature"
+			owner, reader := mustKeyPair(t), mustKeyPair(t)
+			local := newAuthenticationPeer(t, soID, owner, authenticationState(t, soID, owner, reader))
+			left, right := net.Pipe()
+			t.Cleanup(func() { left.Close(); right.Close() })
+			observed := &authenticationStream{Conn: left, messages: make(chan *SOSyncMessage, 32)}
+			done := make(chan error, 1)
+			go func() { done <- local.runStream(ctx, gateLogger(), observed, "transport-a", "transport-b") }()
+			remote := stream_packet.NewSession(right, 64*1024)
+			challenge := &SOSyncMessage{}
+			if err := remote.RecvMsg(challenge); err != nil {
+				t.Fatal(err)
+			}
+			reply := &SOSyncMessage{Body: &SOSyncMessage_Snapshot{Snapshot: &SOSyncSnapshot{SoState: []byte("premature")}}}
+			if reflectChallenge {
+				reply = challenge
+			}
+			if err := remote.SendMsg(reply); err != nil {
+				t.Fatal(err)
+			}
+			select {
+			case err := <-done:
+				if err == nil {
+					t.Fatal("accepted invalid authentication input")
+				}
+			case <-time.After(time.Second):
+				t.Fatal("invalid authentication did not close the stream")
+			}
+			for len(observed.messages) > 0 {
+				if message := <-observed.messages; message.GetChallenge() == nil {
+					t.Fatal("disclosed more than a challenge before authentication")
+				}
+			}
+		})
+	}
+}

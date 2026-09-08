@@ -3,20 +3,24 @@ package sobject_sync
 import (
 	"context"
 	"io"
+	"time"
 
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/directive"
+	"github.com/aperturerobotics/util/routine"
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/core/sobject"
+	"github.com/s4wave/spacewave/net/crypto"
 	link_solicit "github.com/s4wave/spacewave/net/link/solicit"
 	"github.com/s4wave/spacewave/net/peer"
 	"github.com/s4wave/spacewave/net/protocol"
+	"github.com/s4wave/spacewave/net/stream"
 	stream_packet "github.com/s4wave/spacewave/net/stream/packet"
 	"github.com/sirupsen/logrus"
 )
 
 // SyncProtocolID is the protocol ID used for SO sync solicitation.
-const SyncProtocolID = protocol.ID("alpha/so-sync")
+const SyncProtocolID = protocol.ID("alpha/so-sync/2")
 
 // maxMessageSize is the max message size for SO sync messages.
 const maxMessageSize = 10 * 1024 * 1024
@@ -35,6 +39,8 @@ type SOSync struct {
 	soID string
 	// localObjectPeerID is the participant identity, independent of transport identity.
 	localObjectPeerID peer.ID
+	// localObjectKey proves possession of the participant identity.
+	localObjectKey crypto.PrivKey
 	// soHost owns accepted state and its provider lock.
 	soHost *sobject.SOHost
 	// validateSnapshotAccess checks local decryption before acceptance.
@@ -45,12 +51,14 @@ type SOSync struct {
 //
 // localObjectPeerID is the local storage identity checked against inbound
 // state. The transport peer routes the sync stream but need not be a Space
-// participant.
+// participant. localObjectKey must belong to localObjectPeerID and remains
+// available for the SOSync lifetime. Authentication rejects a mismatched key.
 func NewSOSync(
 	le *logrus.Entry,
 	b bus.Bus,
 	soID string,
 	localObjectPeerID peer.ID,
+	localObjectKey crypto.PrivKey,
 	soHost *sobject.SOHost,
 	accessValidators ...SnapshotAccessValidator,
 ) *SOSync {
@@ -63,6 +71,7 @@ func NewSOSync(
 		b:                      b,
 		soID:                   soID,
 		localObjectPeerID:      localObjectPeerID,
+		localObjectKey:         localObjectKey,
 		soHost:                 soHost,
 		validateSnapshotAccess: validateSnapshotAccess,
 	}
@@ -104,66 +113,110 @@ func (s *SOSync) handleSolicitedStream(ctx context.Context, sms link_solicit.Sol
 		return
 	}
 
-	strm := ms.GetStream()
+	le := s.le.WithField("remote-peer", ms.GetPeerID().String())
+	if err := s.runStream(ctx, le, ms.GetStream(), ms.GetLink().GetLocalPeer(), ms.GetPeerID()); err != nil && ctx.Err() == nil {
+		le.WithError(err).Debug("shared object synchronization ended")
+	}
+}
+
+// runStream owns authentication, authorization watches, data exchange and stream cleanup.
+func (s *SOSync) runStream(ctx context.Context, le *logrus.Entry, strm stream.Stream, localTransport, remoteTransport peer.ID) error {
 	defer strm.Close()
+	stopClose := context.AfterFunc(ctx, func() { strm.Close() })
+	defer stopClose()
 
-	remotePeer := ms.GetPeerID().String()
-	le := s.le.WithField("remote-peer", remotePeer)
-	le.Debug("so sync stream accepted")
-
-	sess := stream_packet.NewSession(strm, maxMessageSize)
-
-	// Snapshot exchange: send our state, receive peer state.
-	if err := s.exchangeSnapshots(ctx, le, sess); err != nil {
-		if ctx.Err() == nil {
-			le.WithError(err).Debug("so sync snapshot exchange failed")
-		}
-		return
+	// Authentication has a short deadline and a smaller frame limit than object data.
+	deadline := time.Now().Add(30 * time.Second)
+	if contextDeadline, ok := ctx.Deadline(); ok && contextDeadline.Before(deadline) {
+		deadline = contextDeadline
+	}
+	if err := strm.SetDeadline(deadline); err != nil {
+		return err
+	}
+	remoteID, err := s.authenticate(ctx, stream_packet.NewSession(strm, 64*1024), localTransport, remoteTransport)
+	if err != nil {
+		return err
+	}
+	if err := strm.SetDeadline(time.Time{}); err != nil {
+		return err
 	}
 
-	// Bidirectional op streaming.
-	s.streamOps(ctx, le, sess)
+	// A separate watch can close a sender blocked in transport when membership is removed.
+	watcher := routine.NewRoutineContainer(routine.WithExitCb(func(error) { strm.Close() }))
+	watcher.SetRoutine(func(ctx context.Context) error {
+		states, release, err := s.soHost.GetSOStateCtr(ctx, nil)
+		if err != nil {
+			return err
+		}
+		defer release()
+		var previous *sobject.SOState
+		for {
+			current, err := states.WaitValueChange(ctx, previous, nil)
+			if err != nil {
+				return err
+			}
+			if err := s.authorizeParticipants(current, remoteID); err != nil {
+				return err
+			}
+			previous = current
+		}
+	})
+	watcher.SetContext(ctx, false)
+	defer func() {
+		strm.Close()
+		watcher.ClearContext()
+		_ = watcher.WaitExited(context.Background(), true, nil)
+	}()
+
+	sess := stream_packet.NewSession(strm, maxMessageSize)
+	if err := s.exchangeSnapshots(ctx, le, sess, localTransport < remoteTransport, remoteID); err != nil {
+		return err
+	}
+	s.streamOps(ctx, le, sess, remoteID)
+	return nil
 }
 
 // exchangeSnapshots performs the initial snapshot exchange on the stream.
-func (s *SOSync) exchangeSnapshots(ctx context.Context, le *logrus.Entry, sess *stream_packet.Session) error {
-	// Get local state snapshot.
-	localState, err := s.soHost.GetHostState(ctx)
-	if err != nil {
-		return err
+func (s *SOSync) exchangeSnapshots(ctx context.Context, le *logrus.Entry, sess *stream_packet.Session, sendFirst bool, remoteID peer.ID) error {
+	// Read and authorize at the send boundary, including after a receive wait.
+	send := func() error {
+		state, err := s.soHost.GetHostState(ctx)
+		if err != nil {
+			return err
+		}
+		if err := s.authorizeParticipants(state, remoteID); err != nil {
+			return err
+		}
+		data, err := state.MarshalVT()
+		if err != nil {
+			return err
+		}
+		return sess.SendMsg(&SOSyncMessage{
+			Body: &SOSyncMessage_Snapshot{Snapshot: &SOSyncSnapshot{
+				SoState: data, RootSeqno: state.GetRoot().GetInnerSeqno(),
+			}},
+		})
 	}
-
-	localStateData, err := localState.MarshalVT()
-	if err != nil {
-		return err
+	incoming := &SOSyncMessage{}
+	if sendFirst {
+		if err := send(); err != nil {
+			return err
+		}
+		if err := sess.RecvMsg(incoming); err != nil {
+			return err
+		}
+	} else {
+		if err := sess.RecvMsg(incoming); err != nil {
+			return err
+		}
+		if err := send(); err != nil {
+			return err
+		}
 	}
-
-	localSeqno := localState.GetRoot().GetInnerSeqno()
-
-	// Send our snapshot.
-	outMsg := &SOSyncMessage{
-		Body: &SOSyncMessage_Snapshot{
-			Snapshot: &SOSyncSnapshot{
-				SoState:   localStateData,
-				RootSeqno: localSeqno,
-			},
-		},
+	if incoming.GetSnapshot() == nil {
+		return errors.New("expected authenticated snapshot")
 	}
-	if err := sess.SendMsg(outMsg); err != nil {
-		return err
-	}
-
-	// Receive peer's snapshot.
-	inMsg := &SOSyncMessage{}
-	if err := sess.RecvMsg(inMsg); err != nil {
-		return err
-	}
-
-	peerSnap := inMsg.GetSnapshot()
-	if peerSnap == nil {
-		return nil
-	}
-	return s.applyPeerSnapshot(ctx, le, peerSnap)
+	return s.applyPeerSnapshot(ctx, le, incoming.GetSnapshot())
 }
 
 // applyPeerSnapshot validates and adopts a newer authoritative state.
@@ -302,12 +355,23 @@ func (s *SOSync) validateSnapshotElements(peerState *sobject.SOState) error {
 
 // streamOps runs bidirectional operation streaming until the context
 // is canceled or the stream is closed.
-func (s *SOSync) streamOps(ctx context.Context, le *logrus.Entry, sess *stream_packet.Session) {
+func (s *SOSync) streamOps(ctx context.Context, le *logrus.Entry, sess *stream_packet.Session, remoteID peer.ID) {
 	// Watch for local state changes and forward ops to peer.
 	sendCtx, sendCancel := context.WithCancel(ctx)
-	defer sendCancel()
 
-	go s.sendOps(sendCtx, le, sess)
+	sender := routine.NewRoutineContainer()
+	sender.SetRoutine(func(ctx context.Context) error {
+		defer sess.Close()
+		s.sendOps(ctx, le, sess, remoteID)
+		return nil
+	})
+	sender.SetContext(sendCtx, false)
+	defer func() {
+		sess.Close()
+		sendCancel()
+		sender.ClearContext()
+		_ = sender.WaitExited(context.Background(), true, nil)
+	}()
 
 	// Receive ops from peer and apply.
 	for {
@@ -319,6 +383,11 @@ func (s *SOSync) streamOps(ctx context.Context, le *logrus.Entry, sess *stream_p
 			return
 		}
 
+		// Recheck admission after a receive wait before processing any data.
+		current, err := s.soHost.GetHostState(ctx)
+		if err != nil || s.authorizeParticipants(current, remoteID) != nil {
+			return
+		}
 		switch body := inMsg.GetBody().(type) {
 		case *SOSyncMessage_Snapshot:
 			if err := s.applyPeerSnapshot(ctx, le, body.Snapshot); err != nil {
@@ -327,14 +396,16 @@ func (s *SOSync) streamOps(ctx context.Context, le *logrus.Entry, sess *stream_p
 		case *SOSyncMessage_Op:
 			s.handleRemoteOp(ctx, le, body.Op)
 		case *SOSyncMessage_Ack:
-			// Acknowledgment received, no action needed for MVP.
+			// Acknowledgments do not alter retained state.
+		default:
+			return
 		}
 	}
 }
 
 // sendOps watches for local state changes and sends new operations
 // to the peer over the stream.
-func (s *SOSync) sendOps(ctx context.Context, le *logrus.Entry, sess *stream_packet.Session) {
+func (s *SOSync) sendOps(ctx context.Context, le *logrus.Entry, sess *stream_packet.Session, remoteID peer.ID) {
 	stateCtr, relStateCtr, err := s.soHost.GetSOStateCtr(ctx, nil)
 	if err != nil {
 		return
@@ -346,12 +417,16 @@ func (s *SOSync) sendOps(ctx context.Context, le *logrus.Entry, sess *stream_pac
 		lastSnapshotSeqno uint64
 	)
 	for {
-		next, err := stateCtr.WaitValueChange(ctx, prev, nil)
-		if err != nil {
+		if _, err := stateCtr.WaitValueChange(ctx, prev, nil); err != nil {
 			le.WithError(err).Debug("shared object state watch ended")
 			return
 		}
 
+		// Admit each outbound batch against current authority, not a queued older snapshot.
+		next := stateCtr.GetValue()
+		if err := s.authorizeParticipants(next, remoteID); err != nil {
+			return
+		}
 		rootSeqno := next.GetRoot().GetInnerSeqno()
 		if rootSeqno > lastSnapshotSeqno {
 			stateData, err := next.MarshalVT()

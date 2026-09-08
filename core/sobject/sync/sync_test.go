@@ -161,15 +161,15 @@ func TestSOSyncMessageOneofDispatch(t *testing.T) {
 }
 
 func TestSyncProtocolID(t *testing.T) {
-	if SyncProtocolID != "alpha/so-sync" {
-		t.Errorf("expected alpha/so-sync, got %s", SyncProtocolID)
+	if SyncProtocolID != "alpha/so-sync/2" {
+		t.Errorf("expected alpha/so-sync/2, got %s", SyncProtocolID)
 	}
 }
 
 func TestNewSOSync(t *testing.T) {
 	le := logrus.NewEntry(logrus.New())
 	le.Logger.SetOutput(io.Discard)
-	s := NewSOSync(le, nil, "test-so-id", peer.ID("test-peer"), nil)
+	s := NewSOSync(le, nil, "test-so-id", peer.ID("test-peer"), nil, nil)
 	if s.soID != "test-so-id" {
 		t.Errorf("expected test-so-id, got %s", s.soID)
 	}

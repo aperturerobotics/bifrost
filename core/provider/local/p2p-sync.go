@@ -957,6 +957,7 @@ func (a *ProviderAccount) startSOSync(
 		childBus,
 		soID,
 		localSO.GetPeerID(),
+		localSO.localPriv,
 		localSO.soHost,
 		validateSnapshotAccess,
 	)

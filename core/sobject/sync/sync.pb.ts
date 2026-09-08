@@ -6,11 +6,12 @@ import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { Signature } from '../../../net/peer/peer.pb.js'
 
 export const protobufPackage = 'sobject.sync'
 
 /**
- * SOSyncSnapshot is a full SOState snapshot exchanged on stream connect.
+ * SOSyncSnapshot is a full SOState snapshot exchanged after mutual authentication.
  *
  * @generated from message sobject.sync.SOSyncSnapshot
  */
@@ -100,6 +101,52 @@ export const SOSyncAck: MessageType<SOSyncAck> =
   })
 
 /**
+ * SOSyncChallenge provides fresh entropy for one stream authentication.
+ *
+ * @generated from message sobject.sync.SOSyncChallenge
+ */
+export interface SOSyncChallenge {
+  /**
+   * Nonce is exactly 32 random bytes, newly generated for this stream.
+   *
+   * @generated from field: bytes nonce = 1;
+   */
+  nonce?: Uint8Array
+}
+
+export const SOSyncChallenge: MessageType<SOSyncChallenge> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'sobject.sync.SOSyncChallenge',
+    fields: [
+      { no: 1, name: 'nonce', kind: 'scalar', T: ScalarType.BYTES },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
+ * SOSyncAuthorization reports the receiver's current admission decision.
+ *
+ * @generated from message sobject.sync.SOSyncAuthorization
+ */
+export interface SOSyncAuthorization {
+  /**
+   * Accepted permits this authenticated participant to proceed to data exchange.
+   *
+   * @generated from field: bool accepted = 1;
+   */
+  accepted?: boolean
+}
+
+export const SOSyncAuthorization: MessageType<SOSyncAuthorization> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'sobject.sync.SOSyncAuthorization',
+    fields: [
+      { no: 1, name: 'accepted', kind: 'scalar', T: ScalarType.BOOL },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
  * SOSyncMessage is the bidirectional message on the solicit stream.
  *
  * @generated from message sobject.sync.SOSyncMessage
@@ -117,7 +164,7 @@ export interface SOSyncMessage {
       }
     | {
         /**
-         * Snapshot is a full SOState snapshot exchanged on stream connect.
+         * Snapshot is a full SOState snapshot exchanged after mutual authentication.
          *
          * @generated from field: sobject.sync.SOSyncSnapshot snapshot = 1;
          */
@@ -142,6 +189,33 @@ export interface SOSyncMessage {
         value: SOSyncAck
         case: 'ack'
       }
+    | {
+        /**
+         * Challenge begins authentication without disclosing object state.
+         *
+         * @generated from field: sobject.sync.SOSyncChallenge challenge = 4;
+         */
+        value: SOSyncChallenge
+        case: 'challenge'
+      }
+    | {
+        /**
+         * Proof binds the participant signing key to this transport exchange.
+         *
+         * @generated from field: peer.Signature proof = 5;
+         */
+        value: Signature
+        case: 'proof'
+      }
+    | {
+        /**
+         * Authorization reports acceptance without revealing configuration data.
+         *
+         * @generated from field: sobject.sync.SOSyncAuthorization authorization = 6;
+         */
+        value: SOSyncAuthorization
+        case: 'authorization'
+      }
 }
 
 export const SOSyncMessage: MessageType<SOSyncMessage> =
@@ -163,6 +237,83 @@ export const SOSyncMessage: MessageType<SOSyncMessage> =
         T: () => SOSyncAck,
         oneof: 'body',
       },
+      {
+        no: 4,
+        name: 'challenge',
+        kind: 'message',
+        T: () => SOSyncChallenge,
+        oneof: 'body',
+      },
+      {
+        no: 5,
+        name: 'proof',
+        kind: 'message',
+        T: () => Signature,
+        oneof: 'body',
+      },
+      {
+        no: 6,
+        name: 'authorization',
+        kind: 'message',
+        T: () => SOSyncAuthorization,
+        oneof: 'body',
+      },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
+ * SOSyncAuthTranscript is the canonical signed binding for one direction.
+ *
+ * @generated from message sobject.sync.SOSyncAuthTranscript
+ */
+export interface SOSyncAuthTranscript {
+  /**
+   * SharedObjectId binds the proof to one object.
+   *
+   * @generated from field: string shared_object_id = 1;
+   */
+  sharedObjectId?: string
+  /**
+   * SenderTransport is the authenticated transport identity producing the proof.
+   *
+   * @generated from field: bytes sender_transport = 2;
+   */
+  senderTransport?: Uint8Array
+  /**
+   * ReceiverTransport is the authenticated transport identity receiving the proof.
+   *
+   * @generated from field: bytes receiver_transport = 3;
+   */
+  receiverTransport?: Uint8Array
+  /**
+   * SenderNonce is the challenge produced by the signing endpoint.
+   *
+   * @generated from field: bytes sender_nonce = 4;
+   */
+  senderNonce?: Uint8Array
+  /**
+   * ReceiverNonce is the challenge produced by the verifying endpoint.
+   *
+   * @generated from field: bytes receiver_nonce = 5;
+   */
+  receiverNonce?: Uint8Array
+}
+
+export const SOSyncAuthTranscript: MessageType<SOSyncAuthTranscript> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'sobject.sync.SOSyncAuthTranscript',
+    fields: [
+      { no: 1, name: 'shared_object_id', kind: 'scalar', T: ScalarType.STRING },
+      { no: 2, name: 'sender_transport', kind: 'scalar', T: ScalarType.BYTES },
+      {
+        no: 3,
+        name: 'receiver_transport',
+        kind: 'scalar',
+        T: ScalarType.BYTES,
+      },
+      { no: 4, name: 'sender_nonce', kind: 'scalar', T: ScalarType.BYTES },
+      { no: 5, name: 'receiver_nonce', kind: 'scalar', T: ScalarType.BYTES },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })

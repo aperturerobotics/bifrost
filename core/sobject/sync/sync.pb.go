@@ -11,6 +11,7 @@ import (
 
 	protobuf_go_lite "github.com/aperturerobotics/protobuf-go-lite"
 	json "github.com/aperturerobotics/protobuf-go-lite/json"
+	peer "github.com/s4wave/spacewave/net/peer"
 )
 
 // SOSyncMessage is the bidirectional message on the solicit stream.
@@ -22,6 +23,9 @@ type SOSyncMessage struct {
 	//	*SOSyncMessage_Snapshot
 	//	*SOSyncMessage_Op
 	//	*SOSyncMessage_Ack
+	//	*SOSyncMessage_Challenge
+	//	*SOSyncMessage_Proof
+	//	*SOSyncMessage_Authorization
 	Body isSOSyncMessage_Body `protobuf_oneof:"body"`
 }
 
@@ -59,12 +63,33 @@ func (x *SOSyncMessage) GetAck() *SOSyncAck {
 	return nil
 }
 
+func (x *SOSyncMessage) GetChallenge() *SOSyncChallenge {
+	if x, ok := x.GetBody().(*SOSyncMessage_Challenge); ok {
+		return x.Challenge
+	}
+	return nil
+}
+
+func (x *SOSyncMessage) GetProof() *peer.Signature {
+	if x, ok := x.GetBody().(*SOSyncMessage_Proof); ok {
+		return x.Proof
+	}
+	return nil
+}
+
+func (x *SOSyncMessage) GetAuthorization() *SOSyncAuthorization {
+	if x, ok := x.GetBody().(*SOSyncMessage_Authorization); ok {
+		return x.Authorization
+	}
+	return nil
+}
+
 type isSOSyncMessage_Body interface {
 	isSOSyncMessage_Body()
 }
 
 type SOSyncMessage_Snapshot struct {
-	// Snapshot is a full SOState snapshot exchanged on stream connect.
+	// Snapshot is a full SOState snapshot exchanged after mutual authentication.
 	Snapshot *SOSyncSnapshot `protobuf:"bytes,1,opt,name=snapshot,proto3,oneof"`
 }
 
@@ -78,13 +103,34 @@ type SOSyncMessage_Ack struct {
 	Ack *SOSyncAck `protobuf:"bytes,3,opt,name=ack,proto3,oneof"`
 }
 
+type SOSyncMessage_Challenge struct {
+	// Challenge begins authentication without disclosing object state.
+	Challenge *SOSyncChallenge `protobuf:"bytes,4,opt,name=challenge,proto3,oneof"`
+}
+
+type SOSyncMessage_Proof struct {
+	// Proof binds the participant signing key to this transport exchange.
+	Proof *peer.Signature `protobuf:"bytes,5,opt,name=proof,proto3,oneof"`
+}
+
+type SOSyncMessage_Authorization struct {
+	// Authorization reports acceptance without revealing configuration data.
+	Authorization *SOSyncAuthorization `protobuf:"bytes,6,opt,name=authorization,proto3,oneof"`
+}
+
 func (*SOSyncMessage_Snapshot) isSOSyncMessage_Body() {}
 
 func (*SOSyncMessage_Op) isSOSyncMessage_Body() {}
 
 func (*SOSyncMessage_Ack) isSOSyncMessage_Body() {}
 
-// SOSyncSnapshot is a full SOState snapshot exchanged on stream connect.
+func (*SOSyncMessage_Challenge) isSOSyncMessage_Body() {}
+
+func (*SOSyncMessage_Proof) isSOSyncMessage_Body() {}
+
+func (*SOSyncMessage_Authorization) isSOSyncMessage_Body() {}
+
+// SOSyncSnapshot is a full SOState snapshot exchanged after mutual authentication.
 type SOSyncSnapshot struct {
 	unknownFields []byte
 	// SoState is the full SOState proto bytes (MarshalVT).
@@ -171,6 +217,102 @@ func (x *SOSyncAck) GetAckedSeqno() uint64 {
 	return 0
 }
 
+// SOSyncChallenge provides fresh entropy for one stream authentication.
+type SOSyncChallenge struct {
+	unknownFields []byte
+	// Nonce is exactly 32 random bytes, newly generated for this stream.
+	Nonce []byte `protobuf:"bytes,1,opt,name=nonce,proto3" json:"nonce,omitempty"`
+}
+
+func (x *SOSyncChallenge) Reset() {
+	*x = SOSyncChallenge{}
+}
+
+func (*SOSyncChallenge) ProtoMessage() {}
+
+func (x *SOSyncChallenge) GetNonce() []byte {
+	if x != nil {
+		return x.Nonce
+	}
+	return nil
+}
+
+// SOSyncAuthorization reports the receiver's current admission decision.
+type SOSyncAuthorization struct {
+	unknownFields []byte
+	// Accepted permits this authenticated participant to proceed to data exchange.
+	Accepted bool `protobuf:"varint,1,opt,name=accepted,proto3" json:"accepted,omitempty"`
+}
+
+func (x *SOSyncAuthorization) Reset() {
+	*x = SOSyncAuthorization{}
+}
+
+func (*SOSyncAuthorization) ProtoMessage() {}
+
+func (x *SOSyncAuthorization) GetAccepted() bool {
+	if x != nil {
+		return x.Accepted
+	}
+	return false
+}
+
+// SOSyncAuthTranscript is the canonical signed binding for one direction.
+type SOSyncAuthTranscript struct {
+	unknownFields []byte
+	// SharedObjectId binds the proof to one object.
+	SharedObjectId string `protobuf:"bytes,1,opt,name=shared_object_id,json=sharedObjectId,proto3" json:"sharedObjectId,omitempty"`
+	// SenderTransport is the authenticated transport identity producing the proof.
+	SenderTransport []byte `protobuf:"bytes,2,opt,name=sender_transport,json=senderTransport,proto3" json:"senderTransport,omitempty"`
+	// ReceiverTransport is the authenticated transport identity receiving the proof.
+	ReceiverTransport []byte `protobuf:"bytes,3,opt,name=receiver_transport,json=receiverTransport,proto3" json:"receiverTransport,omitempty"`
+	// SenderNonce is the challenge produced by the signing endpoint.
+	SenderNonce []byte `protobuf:"bytes,4,opt,name=sender_nonce,json=senderNonce,proto3" json:"senderNonce,omitempty"`
+	// ReceiverNonce is the challenge produced by the verifying endpoint.
+	ReceiverNonce []byte `protobuf:"bytes,5,opt,name=receiver_nonce,json=receiverNonce,proto3" json:"receiverNonce,omitempty"`
+}
+
+func (x *SOSyncAuthTranscript) Reset() {
+	*x = SOSyncAuthTranscript{}
+}
+
+func (*SOSyncAuthTranscript) ProtoMessage() {}
+
+func (x *SOSyncAuthTranscript) GetSharedObjectId() string {
+	if x != nil {
+		return x.SharedObjectId
+	}
+	return ""
+}
+
+func (x *SOSyncAuthTranscript) GetSenderTransport() []byte {
+	if x != nil {
+		return x.SenderTransport
+	}
+	return nil
+}
+
+func (x *SOSyncAuthTranscript) GetReceiverTransport() []byte {
+	if x != nil {
+		return x.ReceiverTransport
+	}
+	return nil
+}
+
+func (x *SOSyncAuthTranscript) GetSenderNonce() []byte {
+	if x != nil {
+		return x.SenderNonce
+	}
+	return nil
+}
+
+func (x *SOSyncAuthTranscript) GetReceiverNonce() []byte {
+	if x != nil {
+		return x.ReceiverNonce
+	}
+	return nil
+}
+
 func (m *SOSyncMessage) CloneVT() *SOSyncMessage {
 	if m == nil {
 		return (*SOSyncMessage)(nil)
@@ -228,6 +370,45 @@ func (m *SOSyncMessage_Ack) CloneOneofVT() isSOSyncMessage_Body {
 	return m.CloneVT()
 }
 
+func (m *SOSyncMessage_Challenge) CloneVT() *SOSyncMessage_Challenge {
+	if m == nil {
+		return (*SOSyncMessage_Challenge)(nil)
+	}
+	r := new(SOSyncMessage_Challenge)
+	r.Challenge = protobuf_go_lite.CloneVTValue(m.Challenge)
+	return r
+}
+
+func (m *SOSyncMessage_Challenge) CloneOneofVT() isSOSyncMessage_Body {
+	return m.CloneVT()
+}
+
+func (m *SOSyncMessage_Proof) CloneVT() *SOSyncMessage_Proof {
+	if m == nil {
+		return (*SOSyncMessage_Proof)(nil)
+	}
+	r := new(SOSyncMessage_Proof)
+	r.Proof = protobuf_go_lite.CloneVTValue(m.Proof)
+	return r
+}
+
+func (m *SOSyncMessage_Proof) CloneOneofVT() isSOSyncMessage_Body {
+	return m.CloneVT()
+}
+
+func (m *SOSyncMessage_Authorization) CloneVT() *SOSyncMessage_Authorization {
+	if m == nil {
+		return (*SOSyncMessage_Authorization)(nil)
+	}
+	r := new(SOSyncMessage_Authorization)
+	r.Authorization = protobuf_go_lite.CloneVTValue(m.Authorization)
+	return r
+}
+
+func (m *SOSyncMessage_Authorization) CloneOneofVT() isSOSyncMessage_Body {
+	return m.CloneVT()
+}
+
 func (m *SOSyncSnapshot) CloneVT() *SOSyncSnapshot {
 	if m == nil {
 		return (*SOSyncSnapshot)(nil)
@@ -276,6 +457,58 @@ func (m *SOSyncAck) CloneVT() *SOSyncAck {
 }
 
 func (m *SOSyncAck) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *SOSyncChallenge) CloneVT() *SOSyncChallenge {
+	if m == nil {
+		return (*SOSyncChallenge)(nil)
+	}
+	r := new(SOSyncChallenge)
+	r.Nonce = protobuf_go_lite.CloneBytes(m.Nonce)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *SOSyncChallenge) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *SOSyncAuthorization) CloneVT() *SOSyncAuthorization {
+	if m == nil {
+		return (*SOSyncAuthorization)(nil)
+	}
+	r := new(SOSyncAuthorization)
+	r.Accepted = m.Accepted
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *SOSyncAuthorization) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *SOSyncAuthTranscript) CloneVT() *SOSyncAuthTranscript {
+	if m == nil {
+		return (*SOSyncAuthTranscript)(nil)
+	}
+	r := new(SOSyncAuthTranscript)
+	r.SharedObjectId = m.SharedObjectId
+	r.SenderTransport = protobuf_go_lite.CloneBytes(m.SenderTransport)
+	r.ReceiverTransport = protobuf_go_lite.CloneBytes(m.ReceiverTransport)
+	r.SenderNonce = protobuf_go_lite.CloneBytes(m.SenderNonce)
+	r.ReceiverNonce = protobuf_go_lite.CloneBytes(m.ReceiverNonce)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *SOSyncAuthTranscript) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
@@ -359,6 +592,57 @@ func (this *SOSyncMessage_Ack) EqualVT(thatIface isSOSyncMessage_Body) bool {
 	return true
 }
 
+func (this *SOSyncMessage_Challenge) EqualVT(thatIface isSOSyncMessage_Body) bool {
+	that, ok := thatIface.(*SOSyncMessage_Challenge)
+	if !ok {
+		return false
+	}
+	if this == that {
+		return true
+	}
+	if this == nil && that != nil || this != nil && that == nil {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTImplicit(this.Challenge, that.Challenge, func() *SOSyncChallenge { return &SOSyncChallenge{} }) {
+		return false
+	}
+	return true
+}
+
+func (this *SOSyncMessage_Proof) EqualVT(thatIface isSOSyncMessage_Body) bool {
+	that, ok := thatIface.(*SOSyncMessage_Proof)
+	if !ok {
+		return false
+	}
+	if this == that {
+		return true
+	}
+	if this == nil && that != nil || this != nil && that == nil {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTImplicit(this.Proof, that.Proof, func() *peer.Signature { return &peer.Signature{} }) {
+		return false
+	}
+	return true
+}
+
+func (this *SOSyncMessage_Authorization) EqualVT(thatIface isSOSyncMessage_Body) bool {
+	that, ok := thatIface.(*SOSyncMessage_Authorization)
+	if !ok {
+		return false
+	}
+	if this == that {
+		return true
+	}
+	if this == nil && that != nil || this != nil && that == nil {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTImplicit(this.Authorization, that.Authorization, func() *SOSyncAuthorization { return &SOSyncAuthorization{} }) {
+		return false
+	}
+	return true
+}
+
 func (this *SOSyncSnapshot) EqualVT(that *SOSyncSnapshot) bool {
 	if this == that {
 		return true
@@ -428,6 +712,78 @@ func (this *SOSyncAck) EqualMessageVT(thatMsg any) bool {
 	return this.EqualVT(that)
 }
 
+func (this *SOSyncChallenge) EqualVT(that *SOSyncChallenge) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if !protobuf_go_lite.EqualBytes(this.Nonce, that.Nonce) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *SOSyncChallenge) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*SOSyncChallenge)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *SOSyncAuthorization) EqualVT(that *SOSyncAuthorization) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.Accepted != that.Accepted {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *SOSyncAuthorization) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*SOSyncAuthorization)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *SOSyncAuthTranscript) EqualVT(that *SOSyncAuthTranscript) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.SharedObjectId != that.SharedObjectId {
+		return false
+	}
+	if !protobuf_go_lite.EqualBytes(this.SenderTransport, that.SenderTransport) {
+		return false
+	}
+	if !protobuf_go_lite.EqualBytes(this.ReceiverTransport, that.ReceiverTransport) {
+		return false
+	}
+	if !protobuf_go_lite.EqualBytes(this.SenderNonce, that.SenderNonce) {
+		return false
+	}
+	if !protobuf_go_lite.EqualBytes(this.ReceiverNonce, that.ReceiverNonce) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *SOSyncAuthTranscript) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*SOSyncAuthTranscript)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
 // MarshalProtoJSON marshals the SOSyncMessage message to JSON.
 func (x *SOSyncMessage) MarshalProtoJSON(s *json.MarshalState) {
 	if x == nil {
@@ -450,6 +806,18 @@ func (x *SOSyncMessage) MarshalProtoJSON(s *json.MarshalState) {
 			s.WriteMoreIf(&wroteField)
 			s.WriteObjectField("ack")
 			ov.Ack.MarshalProtoJSON(s.WithField("ack"))
+		case *SOSyncMessage_Challenge:
+			s.WriteMoreIf(&wroteField)
+			s.WriteObjectField("challenge")
+			ov.Challenge.MarshalProtoJSON(s.WithField("challenge"))
+		case *SOSyncMessage_Proof:
+			s.WriteMoreIf(&wroteField)
+			s.WriteObjectField("proof")
+			ov.Proof.MarshalProtoJSON(s.WithField("proof"))
+		case *SOSyncMessage_Authorization:
+			s.WriteMoreIf(&wroteField)
+			s.WriteObjectField("authorization")
+			ov.Authorization.MarshalProtoJSON(s.WithField("authorization"))
 		}
 	}
 	s.WriteObjectEnd()
@@ -496,6 +864,33 @@ func (x *SOSyncMessage) UnmarshalProtoJSON(s *json.UnmarshalState) {
 			}
 			ov.Ack = &SOSyncAck{}
 			ov.Ack.UnmarshalProtoJSON(s.WithField("ack", true))
+		case "challenge":
+			ov := &SOSyncMessage_Challenge{}
+			x.Body = ov
+			if s.ReadNil() {
+				ov.Challenge = nil
+				return
+			}
+			ov.Challenge = &SOSyncChallenge{}
+			ov.Challenge.UnmarshalProtoJSON(s.WithField("challenge", true))
+		case "proof":
+			ov := &SOSyncMessage_Proof{}
+			x.Body = ov
+			if s.ReadNil() {
+				ov.Proof = nil
+				return
+			}
+			ov.Proof = &peer.Signature{}
+			ov.Proof.UnmarshalProtoJSON(s.WithField("proof", true))
+		case "authorization":
+			ov := &SOSyncMessage_Authorization{}
+			x.Body = ov
+			if s.ReadNil() {
+				ov.Authorization = nil
+				return
+			}
+			ov.Authorization = &SOSyncAuthorization{}
+			ov.Authorization.UnmarshalProtoJSON(s.WithField("authorization", true))
 		}
 	})
 }
@@ -655,6 +1050,164 @@ func (x *SOSyncAck) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
+// MarshalProtoJSON marshals the SOSyncChallenge message to JSON.
+func (x *SOSyncChallenge) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if len(x.Nonce) > 0 || s.HasField("nonce") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("nonce")
+		s.WriteBytes(x.Nonce)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the SOSyncChallenge to JSON.
+func (x *SOSyncChallenge) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the SOSyncChallenge message from JSON.
+func (x *SOSyncChallenge) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "nonce":
+			s.AddField("nonce")
+			x.Nonce = s.ReadBytes()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the SOSyncChallenge from JSON.
+func (x *SOSyncChallenge) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the SOSyncAuthorization message to JSON.
+func (x *SOSyncAuthorization) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Accepted || s.HasField("accepted") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("accepted")
+		s.WriteBool(x.Accepted)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the SOSyncAuthorization to JSON.
+func (x *SOSyncAuthorization) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the SOSyncAuthorization message from JSON.
+func (x *SOSyncAuthorization) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "accepted":
+			s.AddField("accepted")
+			x.Accepted = s.ReadBool()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the SOSyncAuthorization from JSON.
+func (x *SOSyncAuthorization) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the SOSyncAuthTranscript message to JSON.
+func (x *SOSyncAuthTranscript) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.SharedObjectId != "" || s.HasField("sharedObjectId") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("sharedObjectId")
+		s.WriteString(x.SharedObjectId)
+	}
+	if len(x.SenderTransport) > 0 || s.HasField("senderTransport") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("senderTransport")
+		s.WriteBytes(x.SenderTransport)
+	}
+	if len(x.ReceiverTransport) > 0 || s.HasField("receiverTransport") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("receiverTransport")
+		s.WriteBytes(x.ReceiverTransport)
+	}
+	if len(x.SenderNonce) > 0 || s.HasField("senderNonce") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("senderNonce")
+		s.WriteBytes(x.SenderNonce)
+	}
+	if len(x.ReceiverNonce) > 0 || s.HasField("receiverNonce") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("receiverNonce")
+		s.WriteBytes(x.ReceiverNonce)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the SOSyncAuthTranscript to JSON.
+func (x *SOSyncAuthTranscript) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the SOSyncAuthTranscript message from JSON.
+func (x *SOSyncAuthTranscript) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "shared_object_id", "sharedObjectId":
+			s.AddField("shared_object_id")
+			x.SharedObjectId = s.ReadString()
+		case "sender_transport", "senderTransport":
+			s.AddField("sender_transport")
+			x.SenderTransport = s.ReadBytes()
+		case "receiver_transport", "receiverTransport":
+			s.AddField("receiver_transport")
+			x.ReceiverTransport = s.ReadBytes()
+		case "sender_nonce", "senderNonce":
+			s.AddField("sender_nonce")
+			x.SenderNonce = s.ReadBytes()
+		case "receiver_nonce", "receiverNonce":
+			s.AddField("receiver_nonce")
+			x.ReceiverNonce = s.ReadBytes()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the SOSyncAuthTranscript from JSON.
+func (x *SOSyncAuthTranscript) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
 func (m *SOSyncMessage) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -764,6 +1317,78 @@ func (m *SOSyncMessage_Ack) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 		i = protobuf_go_lite.EncodeVarint(dAtA, i, 0)
 		i--
 		dAtA[i] = 0x1a
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *SOSyncMessage_Challenge) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *SOSyncMessage_Challenge) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.Challenge != nil {
+		size, err := m.Challenge.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x22
+	} else {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, 0)
+		i--
+		dAtA[i] = 0x22
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *SOSyncMessage_Proof) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *SOSyncMessage_Proof) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.Proof != nil {
+		size, err := m.Proof.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x2a
+	} else {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, 0)
+		i--
+		dAtA[i] = 0x2a
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *SOSyncMessage_Authorization) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *SOSyncMessage_Authorization) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.Authorization != nil {
+		size, err := m.Authorization.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x32
+	} else {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, 0)
+		i--
+		dAtA[i] = 0x32
 	}
 	return len(dAtA) - i, nil
 }
@@ -894,6 +1519,137 @@ func (m *SOSyncAck) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *SOSyncChallenge) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *SOSyncChallenge) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *SOSyncChallenge) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.Nonce) > 0 {
+		i = protobuf_go_lite.EncodeBytes(dAtA, i, m.Nonce)
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *SOSyncAuthorization) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *SOSyncAuthorization) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *SOSyncAuthorization) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.Accepted {
+		i = protobuf_go_lite.EncodeBool(dAtA, i, m.Accepted)
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *SOSyncAuthTranscript) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *SOSyncAuthTranscript) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *SOSyncAuthTranscript) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.ReceiverNonce) > 0 {
+		i = protobuf_go_lite.EncodeBytes(dAtA, i, m.ReceiverNonce)
+		i--
+		dAtA[i] = 0x2a
+	}
+	if len(m.SenderNonce) > 0 {
+		i = protobuf_go_lite.EncodeBytes(dAtA, i, m.SenderNonce)
+		i--
+		dAtA[i] = 0x22
+	}
+	if len(m.ReceiverTransport) > 0 {
+		i = protobuf_go_lite.EncodeBytes(dAtA, i, m.ReceiverTransport)
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.SenderTransport) > 0 {
+		i = protobuf_go_lite.EncodeBytes(dAtA, i, m.SenderTransport)
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.SharedObjectId) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.SharedObjectId)
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *SOSyncMessage) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -952,6 +1708,51 @@ func (m *SOSyncMessage_Ack) SizeVT() (n int) {
 	return n
 }
 
+func (m *SOSyncMessage_Challenge) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Challenge != nil {
+		l = m.Challenge.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	} else {
+		n += 2
+	}
+	return n
+}
+
+func (m *SOSyncMessage_Proof) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Proof != nil {
+		l = m.Proof.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	} else {
+		n += 2
+	}
+	return n
+}
+
+func (m *SOSyncMessage_Authorization) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Authorization != nil {
+		l = m.Authorization.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	} else {
+		n += 2
+	}
+	return n
+}
+
 func (m *SOSyncSnapshot) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -988,6 +1789,43 @@ func (m *SOSyncAck) SizeVT() (n int) {
 	return n
 }
 
+func (m *SOSyncChallenge) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeBytesNonEmpty(1, m.Nonce)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *SOSyncAuthorization) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeBoolNonZero(1, m.Accepted)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *SOSyncAuthTranscript) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.SharedObjectId)
+	n += protobuf_go_lite.SizeBytesNonEmpty(1, m.SenderTransport)
+	n += protobuf_go_lite.SizeBytesNonEmpty(1, m.ReceiverTransport)
+	n += protobuf_go_lite.SizeBytesNonEmpty(1, m.SenderNonce)
+	n += protobuf_go_lite.SizeBytesNonEmpty(1, m.ReceiverNonce)
+	n += len(m.unknownFields)
+	return n
+}
+
 func (x *SOSyncMessage) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "SOSyncMessage")
@@ -1012,6 +1850,27 @@ func (x *SOSyncMessage) MarshalProtoText() string {
 			protobuf_go_lite.TextWriteTextMarshaler(&sb, &SOSyncAck{})
 		} else {
 			protobuf_go_lite.TextWriteTextMarshaler(&sb, body.Ack)
+		}
+	case *SOSyncMessage_Challenge:
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "challenge")
+		if body.Challenge == nil {
+			protobuf_go_lite.TextWriteTextMarshaler(&sb, &SOSyncChallenge{})
+		} else {
+			protobuf_go_lite.TextWriteTextMarshaler(&sb, body.Challenge)
+		}
+	case *SOSyncMessage_Proof:
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "proof")
+		if body.Proof == nil {
+			protobuf_go_lite.TextWriteTextMarshaler(&sb, &peer.Signature{})
+		} else {
+			protobuf_go_lite.TextWriteTextMarshaler(&sb, body.Proof)
+		}
+	case *SOSyncMessage_Authorization:
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "authorization")
+		if body.Authorization == nil {
+			protobuf_go_lite.TextWriteTextMarshaler(&sb, &SOSyncAuthorization{})
+		} else {
+			protobuf_go_lite.TextWriteTextMarshaler(&sb, body.Authorization)
 		}
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
@@ -1072,6 +1931,64 @@ func (x *SOSyncAck) MarshalProtoText() string {
 }
 
 func (x *SOSyncAck) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *SOSyncChallenge) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "SOSyncChallenge")
+	if len(x.Nonce) != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "nonce")
+		protobuf_go_lite.TextWriteBytes(&sb, x.Nonce)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *SOSyncChallenge) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *SOSyncAuthorization) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "SOSyncAuthorization")
+	if x.Accepted != false {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "accepted")
+		protobuf_go_lite.TextWriteBool(&sb, x.Accepted)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *SOSyncAuthorization) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *SOSyncAuthTranscript) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "SOSyncAuthTranscript")
+	if x.SharedObjectId != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "shared_object_id")
+		protobuf_go_lite.TextWriteString(&sb, x.SharedObjectId)
+	}
+	if len(x.SenderTransport) != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "sender_transport")
+		protobuf_go_lite.TextWriteBytes(&sb, x.SenderTransport)
+	}
+	if len(x.ReceiverTransport) != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "receiver_transport")
+		protobuf_go_lite.TextWriteBytes(&sb, x.ReceiverTransport)
+	}
+	if len(x.SenderNonce) != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "sender_nonce")
+		protobuf_go_lite.TextWriteBytes(&sb, x.SenderNonce)
+	}
+	if len(x.ReceiverNonce) != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "receiver_nonce")
+		protobuf_go_lite.TextWriteBytes(&sb, x.ReceiverNonce)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *SOSyncAuthTranscript) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -1153,6 +2070,66 @@ func (m *SOSyncMessage) UnmarshalVT(dAtA []byte) error {
 					return err
 				}
 				m.Body = &SOSyncMessage_Ack{Ack: v}
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Challenge", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if oneof, ok := m.Body.(*SOSyncMessage_Challenge); ok {
+				if err := oneof.Challenge.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+					return err
+				}
+			} else {
+				v := &SOSyncChallenge{}
+				if err := v.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+					return err
+				}
+				m.Body = &SOSyncMessage_Challenge{Challenge: v}
+			}
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Proof", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if oneof, ok := m.Body.(*SOSyncMessage_Proof); ok {
+				if err := oneof.Proof.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+					return err
+				}
+			} else {
+				v := &peer.Signature{}
+				if err := v.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+					return err
+				}
+				m.Body = &SOSyncMessage_Proof{Proof: v}
+			}
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Authorization", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if oneof, ok := m.Body.(*SOSyncMessage_Authorization); ok {
+				if err := oneof.Authorization.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+					return err
+				}
+			} else {
+				v := &SOSyncAuthorization{}
+				if err := v.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+					return err
+				}
+				m.Body = &SOSyncMessage_Authorization{Authorization: v}
 			}
 			iNdEx = postIndex
 		default:
@@ -1332,6 +2309,195 @@ func (m *SOSyncAck) UnmarshalVT(dAtA []byte) error {
 			}
 			m.AckedSeqno = 0
 			m.AckedSeqno, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *SOSyncChallenge) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SOSyncChallenge: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SOSyncChallenge: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Nonce", wireType)
+			}
+			m.Nonce, iNdEx, err = protobuf_go_lite.DecodeBytesAppend(m.Nonce, dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *SOSyncAuthorization) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SOSyncAuthorization: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SOSyncAuthorization: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Accepted", wireType)
+			}
+			var v bool
+			v, iNdEx, err = protobuf_go_lite.DecodeVarintBool(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Accepted = bool(v)
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *SOSyncAuthTranscript) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SOSyncAuthTranscript: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SOSyncAuthTranscript: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SharedObjectId", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.SharedObjectId = v
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SenderTransport", wireType)
+			}
+			m.SenderTransport, iNdEx, err = protobuf_go_lite.DecodeBytesAppend(m.SenderTransport, dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ReceiverTransport", wireType)
+			}
+			m.ReceiverTransport, iNdEx, err = protobuf_go_lite.DecodeBytesAppend(m.ReceiverTransport, dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SenderNonce", wireType)
+			}
+			m.SenderNonce, iNdEx, err = protobuf_go_lite.DecodeBytesAppend(m.SenderNonce, dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ReceiverNonce", wireType)
+			}
+			m.ReceiverNonce, iNdEx, err = protobuf_go_lite.DecodeBytesAppend(m.ReceiverNonce, dAtA, iNdEx)
 			if err != nil {
 				return err
 			}
