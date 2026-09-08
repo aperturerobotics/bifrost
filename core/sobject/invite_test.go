@@ -19,7 +19,7 @@ func newTestSOHost(ctx context.Context, state *SOState) (*SOHost, **SOState) {
 			return ctr, func() {}, nil
 		},
 		func(_ context.Context, _ string) (SOStateLock, error) {
-			return NewSOStateLock(*statePtr, func(_ context.Context, s *SOState) error {
+			return NewSOStateLock(*statePtr, func(_ context.Context, s *SOState, _ ...*SOConfigChange) error {
 				*statePtr = s
 				ctr.SetValue(s)
 				return nil

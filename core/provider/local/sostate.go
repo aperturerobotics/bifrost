@@ -22,13 +22,19 @@ func NewObjectStoreSOStateFuncs(rctx context.Context, objStore object.ObjectStor
 	watchFn sobject.SOStateWatchFunc,
 	lockFn sobject.SOStateLockFunc,
 ) {
+	// Keep each mounted state and its write lock under one reference-counted entry.
 	type soStateEntry struct {
+		// stateProm completes after loading the persisted state.
 		stateProm *promise.PromiseContainer[*sobject.SOState]
-		stateCtr  *ccontainer.CContainer[*sobject.SOState]
-		writeMtx  csync.Mutex
-		key       []byte
+		// stateCtr publishes only committed state snapshots.
+		stateCtr *ccontainer.CContainer[*sobject.SOState]
+		// writeMtx serializes mutations while the state entry is retained.
+		writeMtx csync.Mutex
+		// key addresses the serialized SOState in the object store.
+		key []byte
 	}
 
+	// Load one state per retained object without reading its complete history.
 	soRc := keyed.NewKeyedRefCount(
 		func(sharedObjectID string) (keyed.Routine, *soStateEntry) {
 			ent := &soStateEntry{
@@ -37,6 +43,7 @@ func NewObjectStoreSOStateFuncs(rctx context.Context, objStore object.ObjectStor
 				key:       SobjectObjectStoreHostStateKey(sharedObjectID),
 			}
 			return func(ctx context.Context) error {
+				// Read the durable state through the store transaction boundary.
 				var data []byte
 				var found bool
 				err := kvtx.RunTransaction(ctx, false,
@@ -56,6 +63,7 @@ func NewObjectStoreSOStateFuncs(rctx context.Context, objStore object.ObjectStor
 					return world.ErrObjectNotFound
 				}
 
+				// Validate the persisted state before exposing it to consumers.
 				val := &sobject.SOState{}
 				if err := val.UnmarshalVT(data); err != nil {
 					return err
@@ -64,6 +72,7 @@ func NewObjectStoreSOStateFuncs(rctx context.Context, objStore object.ObjectStor
 					return err
 				}
 
+				// Publish the validated initial state to waiters and watches.
 				ent.stateProm.SetResult(val, nil)
 				ent.stateCtr.SetValue(val)
 				return nil
@@ -77,6 +86,7 @@ func NewObjectStoreSOStateFuncs(rctx context.Context, objStore object.ObjectStor
 	)
 	soRc.SetContext(rctx, true)
 
+	// Bind watched state to the caller's reference lifetime.
 	watchFn = func(ctx context.Context, sharedObjectID string, released func()) (ccontainer.Watchable[*sobject.SOState], func(), error) {
 		ref, ent, _ := soRc.AddKeyRef(sharedObjectID)
 		_, err := ent.stateProm.Await(ctx)
@@ -88,6 +98,7 @@ func NewObjectStoreSOStateFuncs(rctx context.Context, objStore object.ObjectStor
 		return ent.stateCtr, ref.Release, nil
 	}
 
+	// Retain the state entry until the locked write has completed.
 	lockFn = func(ctx context.Context, sharedObjectID string) (sobject.SOStateLock, error) {
 		ref, ent, _ := soRc.AddKeyRef(sharedObjectID)
 		_, err := ent.stateProm.Await(ctx)
@@ -96,16 +107,19 @@ func NewObjectStoreSOStateFuncs(rctx context.Context, objStore object.ObjectStor
 			return nil, err
 		}
 
+		// Serialize writes after the initial state load succeeds.
 		relLock, err := ent.writeMtx.Lock(ctx)
 		if err != nil {
 			ref.Release()
 			return nil, err
 		}
 
+		// Commit state and supplied configuration history before updating watchers.
 		initialState := ent.stateCtr.GetValue().CloneVT()
 		return sobject.NewSOStateLock(
 			initialState,
-			func(ctx context.Context, state *sobject.SOState) error {
+			func(ctx context.Context, state *sobject.SOState, changes ...*sobject.SOConfigChange) error {
+				// Serialize an independent state snapshot for replayable transaction writes.
 				ctx, task := trace.NewTask(ctx, "alpha/local-so/write-so-state")
 				defer task.End()
 				state = state.CloneVT()
@@ -113,11 +127,16 @@ func NewObjectStoreSOStateFuncs(rctx context.Context, objStore object.ObjectStor
 				if err != nil {
 					return err
 				}
+
+				// Retain signed changes and state under the same commit boundary.
 				err = kvtx.RunTransaction(ctx, true,
 					func(ctx context.Context) (kvtx.Tx, error) {
 						return objStore.NewTransaction(ctx, true)
 					},
 					func(ctx context.Context, tx kvtx.Tx) error {
+						if err := WriteSOConfigHistory(ctx, tx, sharedObjectID, initialState.GetConfig(), state.GetConfig(), changes); err != nil {
+							return err
+						}
 						return tx.Set(ctx, ent.key, data)
 					},
 				)
@@ -125,11 +144,15 @@ func NewObjectStoreSOStateFuncs(rctx context.Context, objStore object.ObjectStor
 					return err
 				}
 
+				// Make the committed snapshot visible only after the transaction succeeds.
 				ent.stateProm.SetResult(state, nil)
 				ent.stateCtr.SetValue(state)
 				return nil
 			},
-			relLock,
+			func() {
+				relLock()
+				ref.Release()
+			},
 		), nil
 	}
 

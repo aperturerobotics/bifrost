@@ -195,6 +195,7 @@ func (s *SOHost) ApplyConfigChange(ctx context.Context, entry *SOConfigChange, f
 	if entry == nil {
 		return errors.New("config change entry is nil")
 	}
+	entry = entry.CloneVT()
 
 	// Hold the provider lock through verification and persistence.
 	lk, err := s.lockFn(ctx, s.sharedObjectID)
@@ -220,7 +221,7 @@ func (s *SOHost) ApplyConfigChange(ctx context.Context, entry *SOConfigChange, f
 		}
 	}
 
-	return lk.WriteSOState(ctx, nextState)
+	return lk.WriteSOState(ctx, nextState, entry)
 }
 
 // QueueOperation locks the host state and applies the QueueOperation operation.
