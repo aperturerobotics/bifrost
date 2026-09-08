@@ -1,10 +1,7 @@
-import { useCallback, useState } from 'react'
-
 import type { ObjectViewerComponentProps } from '@s4wave/web/object/object.js'
 import { getObjectKey } from '@s4wave/web/object/object.js'
 import { useAccessTypedHandle } from '@s4wave/web/hooks/useAccessTypedHandle.js'
 import { ViewerStatusShell } from '@s4wave/web/object/ViewerStatusShell.js'
-import { useStateAtom, useStateNamespace } from '@s4wave/web/state/index.js'
 import { cn } from '@s4wave/web/style/utils.js'
 import { LuMenu, LuX } from 'react-icons/lu'
 
@@ -16,6 +13,7 @@ import { ConfirmActionDialog, SourceInputDialog } from './NoteDialogs.js'
 import NotebookSidebar from './NotebookSidebar.js'
 import NoteList from './NoteList.js'
 import NoteContentView from './NoteContentView.js'
+import { useNotebookViewerState } from './useNotebookViewerState.js'
 
 // NotebookViewer is the three-panel viewer for Notes Notebook objects.
 function NotebookViewer({
@@ -23,7 +21,6 @@ function NotebookViewer({
   worldState,
 }: ObjectViewerComponentProps) {
   const objectKey = getObjectKey(objectInfo)
-  const ns = useStateNamespace(['notes'])
 
   const resource = useAccessTypedHandle(
     worldState,
@@ -37,167 +34,37 @@ function NotebookViewer({
     Notebook.fromBinary,
   )
 
-  // Persisted state for selected source and note.
-  const [selectedSource, setSelectedSource] = useStateAtom<number>(
-    ns,
-    'selectedSource',
-    0,
-  )
-  const [selectedNote, setSelectedNote] = useStateAtom<string>(
-    ns,
-    'selectedNote',
-    '',
-  )
-  const [currentPath, setCurrentPath] = useStateAtom<string>(
-    ns,
-    'currentPath',
-    '',
-  )
-  const [editing, setEditing] = useStateAtom<boolean>(ns, 'editing', false)
-
-  // Tag filter state.
-  const [filterTag, setFilterTag] = useState<string | undefined>(undefined)
-  const [filterStatus, setFilterStatus] = useState<string | undefined>(
-    undefined,
-  )
-
-  // Responsive sidebar visibility.
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [addSourceOpen, setAddSourceOpen] = useState(false)
-  const [removeSourceIndex, setRemoveSourceIndex] = useState<number | null>(
-    null,
-  )
-
-  const currentSource = sources[selectedSource]
   const notebookHandle = resource.value
-
-  const handleSelectSource = useCallback(
-    (index: number) => {
-      setSelectedSource(index)
-      setCurrentPath('')
-      setSelectedNote('')
-      setEditing(false)
-      setFilterTag(undefined)
-      setFilterStatus(undefined)
-    },
-    [setSelectedSource, setCurrentPath, setSelectedNote, setEditing],
-  )
-
-  const handleAddSource = useCallback(() => {
-    setAddSourceOpen(true)
-  }, [])
-
-  const handleConfirmAddSource = useCallback(
-    async ({ name, ref }: { name: string; ref: string }) => {
-      if (!notebookHandle) return
-      if (!ref) return
-
-      await notebookHandle.addSource({ name, ref })
-      setAddSourceOpen(false)
-      setSelectedSource(sources.length)
-      setCurrentPath('')
-      setSelectedNote('')
-      setEditing(false)
-      setFilterTag(undefined)
-      setFilterStatus(undefined)
-    },
-    [
-      notebookHandle,
-      setSelectedSource,
-      setCurrentPath,
-      setSelectedNote,
-      setEditing,
-      sources.length,
-    ],
-  )
-
-  const handleRemoveSource = useCallback((index: number) => {
-    setRemoveSourceIndex(index)
-  }, [])
-
-  const handleConfirmRemoveSource = useCallback(async () => {
-    if (!notebookHandle || removeSourceIndex === null) return
-
-    const index = removeSourceIndex
-    await notebookHandle.removeSource(index)
-    setRemoveSourceIndex(null)
-    setSelectedSource((prev) => {
-      if (prev > index) return prev - 1
-      if (prev === index) return Math.max(0, prev - 1)
-      return prev
-    })
-    setCurrentPath('')
-    setSelectedNote('')
-    setEditing(false)
-    setFilterTag(undefined)
-    setFilterStatus(undefined)
-  }, [
-    notebookHandle,
+  const viewerState = useNotebookViewerState({ sources, notebookHandle })
+  const {
+    ns,
+    selectedSource,
+    selectedNote,
+    currentPath,
+    editing,
+    filterTag,
+    filterStatus,
+    sidebarOpen,
+    addSourceOpen,
     removeSourceIndex,
-    setSelectedSource,
-    setCurrentPath,
-    setSelectedNote,
-    setEditing,
-  ])
-
-  const handleMoveSource = useCallback(
-    async (index: number, delta: -1 | 1) => {
-      if (!notebookHandle) return
-      const nextIndex = index + delta
-      if (nextIndex < 0 || nextIndex >= sources.length) return
-
-      const order = sources.map((_, idx) => idx)
-      ;[order[index], order[nextIndex]] = [order[nextIndex], order[index]]
-      await notebookHandle.reorderSources(order)
-      setSelectedSource((prev) => {
-        if (prev === index) return nextIndex
-        if (prev === nextIndex) return index
-        return prev
-      })
-    },
-    [notebookHandle, sources, setSelectedSource],
-  )
-
-  const handleSelectNote = useCallback(
-    (path: string) => {
-      setCurrentPath(getParentPath(path))
-      setSelectedNote(path)
-      setEditing(false)
-      setSidebarOpen(false)
-    },
-    [setCurrentPath, setSelectedNote, setEditing],
-  )
-
-  const handleChangePath = useCallback(
-    (path: string) => {
-      setCurrentPath(path)
-      setSelectedNote('')
-      setEditing(false)
-    },
-    [setCurrentPath, setSelectedNote, setEditing],
-  )
-
-  const handleNoteRenamed = useCallback(
-    (prevPath: string, nextPath: string) => {
-      if (selectedNote === prevPath) {
-        setSelectedNote(nextPath)
-      }
-    },
-    [selectedNote, setSelectedNote],
-  )
-
-  const handleNoteDeleted = useCallback(
-    (path: string) => {
-      if (selectedNote !== path) return
-      setSelectedNote('')
-      setEditing(false)
-    },
-    [selectedNote, setSelectedNote, setEditing],
-  )
-
-  const handleToggleEdit = useCallback(() => {
-    setEditing((prev) => !prev)
-  }, [setEditing])
+    currentSource,
+    setFilterTag,
+    setFilterStatus,
+    setSidebarOpen,
+    setAddSourceOpen,
+    setRemoveSourceIndex,
+    handleSelectSource,
+    handleAddSource,
+    handleConfirmAddSource,
+    handleRemoveSource,
+    handleConfirmRemoveSource,
+    handleMoveSource,
+    handleSelectNote,
+    handleChangePath,
+    handleNoteRenamed,
+    handleNoteDeleted,
+    handleToggleEdit,
+  } = viewerState
 
   return (
     <ViewerStatusShell
@@ -318,12 +185,6 @@ function NotebookViewer({
       </div>
     </ViewerStatusShell>
   )
-}
-
-function getParentPath(path: string): string {
-  const parts = path.split('/').filter(Boolean)
-  parts.pop()
-  return parts.join('/')
 }
 
 export { NotebookViewer }

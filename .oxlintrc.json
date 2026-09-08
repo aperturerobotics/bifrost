@@ -151,7 +151,7 @@
         "react-doctor/rerender-defer-reads-hook": "error",
         "react-doctor/advanced-event-handler-refs": "error",
         "react-doctor/effect-needs-cleanup": "error",
-        "react-doctor/no-giant-component": "warn",
+        "react-doctor/no-giant-component": "error",
         "react-doctor/no-render-in-render": "error",
         "react-doctor/no-many-boolean-props": "error",
         "react-doctor/no-react19-deprecated-apis": "error",
