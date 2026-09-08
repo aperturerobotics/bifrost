@@ -63,8 +63,11 @@ func prepareLocalCDN(ctx context.Context, le *logrus.Entry, repoRoot, baseURL st
 	if err := os.MkdirAll(publicationDir, 0o755); err != nil {
 		return releaseWasmDistDirs{}, err
 	}
-	if err := runBun(ctx, repoRoot, append(args, "publish", "-p", "spacewave-release")...); err != nil {
-		return releaseWasmDistDirs{}, errors.Wrap(err, "publish local startup World")
+	// Publish sequentially because both selections write the same local World.
+	for _, selection := range []string{"spacewave-release", "spacewave-release-web"} {
+		if err := runBun(ctx, repoRoot, append(args, "publish", "-p", selection)...); err != nil {
+			return releaseWasmDistDirs{}, errors.Wrap(err, "publish local startup World")
+		}
 	}
 	dirs := releaseWasmDistDirs{
 		releaseDist: filepath.Join(stateDir, "build", "js", "spacewave-browser", "dist"),
