@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/aperturerobotics/util/csync"
+	"github.com/aperturerobotics/util/promise"
 	"github.com/s4wave/spacewave/db/kvtx"
 )
 
@@ -25,8 +26,10 @@ const (
 type Engine struct {
 	// backend owns storage and cross-runtime locks for this volume.
 	backend Backend
-	// mtx protects the instance lifecycle and immutable byte cache.
+	// mtx protects the lifecycle, immutable cache, and pending root read.
 	mtx sync.Mutex
+	// rootRead shares only an in-flight descriptor read under shared root locks.
+	rootRead *promise.Promise[*Root]
 	// pin serializes acquisition of the shared cross-runtime reader lease.
 	pin csync.Mutex
 	// readers counts active local operations sharing reclamation protection.
@@ -61,6 +64,7 @@ type cacheEntry struct {
 
 // Open validates the current root or creates an empty volume.
 func Open(ctx context.Context, backend Backend) (_ *Engine, retErr error) {
+	// Keep initialization locks and failed-open cleanup with this construction.
 	defer func() {
 		if retErr != nil {
 			retErr = errors.Join(retErr, backend.Close())
@@ -82,12 +86,14 @@ func Open(ctx context.Context, backend Backend) (_ *Engine, retErr error) {
 	if err := e.cleanIntent(ctx); err != nil {
 		return nil, err
 	}
-	if _, err := e.loadRoot(ctx); err == nil {
+	_, err = e.loadRoot(ctx)
+	if err == nil {
 		if err := e.ensureIdentity(ctx); err != nil {
 			return nil, err
 		}
 		return e, nil
-	} else if !errors.Is(err, fs.ErrNotExist) {
+	}
+	if !errors.Is(err, fs.ErrNotExist) {
 		return nil, err
 	}
 
@@ -139,6 +145,7 @@ func (e *Engine) readFile(ctx context.Context, name string) ([]byte, error) {
 
 // readCached charges one immutable file or payload window to the shared cache.
 func (e *Engine) readCached(ctx context.Context, key, name string, offset int64, length int) ([]byte, error) {
+	// Resolve resident immutable bytes while the cache remains open.
 	e.mtx.Lock()
 	if e.closed {
 		e.mtx.Unlock()
@@ -152,6 +159,7 @@ func (e *Engine) readCached(ctx context.Context, key, name string, offset int64,
 	}
 	e.mtx.Unlock()
 
+	// Read outside the cache lock, then reconcile any concurrent insertion.
 	data, err := e.backend.Read(ctx, name, offset, length)
 	if err != nil {
 		return nil, err
@@ -237,6 +245,7 @@ func (e *Engine) Apply(ctx context.Context, base *uint64, records []*Record) err
 
 // apply validates the caller's revision domain under the shared publication lock.
 func (e *Engine) apply(ctx context.Context, base *uint64, records []*Record, metadata bool) error {
+	// Serialize publication while protecting the generation's immutable files.
 	if err := validateRecords(records); err != nil {
 		return err
 	}
@@ -251,6 +260,7 @@ func (e *Engine) apply(ctx context.Context, base *uint64, records []*Record, met
 	}
 	defer unlock()
 
+	// Validate against the durable root after acquiring publication authority.
 	root, err := e.loadRoot(ctx)
 	if err != nil {
 		return err
@@ -265,6 +275,7 @@ func (e *Engine) apply(ctx context.Context, base *uint64, records []*Record, met
 	if len(records) == 0 {
 		return nil
 	}
+	// Build the next immutable generation before replacing either descriptor.
 	p := newPublication(e, root)
 	p.root.Revision++
 	for _, record := range records {
