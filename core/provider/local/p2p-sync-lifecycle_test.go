@@ -3,9 +3,162 @@ package provider_local
 import (
 	"context"
 	"errors"
+	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/aperturerobotics/util/routine"
 )
+
+// TestRetrySharedObjectSyncRestartsOnlySelectedSO verifies that retry replaces
+// one SO routine serially without disturbing its generation or sibling SOs.
+func TestRetrySharedObjectSyncRestartsOnlySelectedSO(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	newSyncRoutine := func(started chan<- struct{}, running *atomic.Int32) *routine.RoutineContainer {
+		rc := routine.NewRoutineContainer()
+		rc.SetRoutine(func(ctx context.Context) error {
+			if active := running.Add(1); active != 1 {
+				t.Errorf("SO sync overlapped %d executions", active)
+			}
+			started <- struct{}{}
+			<-ctx.Done()
+			running.Add(-1)
+			return ctx.Err()
+		})
+		rc.SetContext(ctx, false)
+		t.Cleanup(func() {
+			exitedCh, _ := rc.SetRoutine(nil)
+			if exitedCh != nil {
+				<-exitedCh
+			}
+		})
+		return rc
+	}
+
+	targetStarted := make(chan struct{}, 2)
+	otherStarted := make(chan struct{}, 2)
+	var targetRunning atomic.Int32
+	var otherRunning atomic.Int32
+	targetRoutine := newSyncRoutine(targetStarted, &targetRunning)
+	otherRoutine := newSyncRoutine(otherStarted, &otherRunning)
+	state := &p2pSyncState{
+		ctx:     ctx,
+		started: true,
+		soSync: map[string]*routine.RoutineContainer{
+			"target": targetRoutine,
+			"other":  otherRoutine,
+		},
+	}
+	account := &ProviderAccount{}
+	account.p2pSyncBcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
+		account.p2pSync = state
+	})
+
+	<-targetStarted
+	<-otherStarted
+	if !account.RetrySharedObjectSync("target") {
+		t.Fatal("target SO sync was not restarted")
+	}
+	<-targetStarted
+
+	select {
+	case <-otherStarted:
+		t.Fatal("retry restarted an unrelated SO sync")
+	default:
+	}
+	if targetRunning.Load() != 1 || otherRunning.Load() != 1 {
+		t.Fatalf("unexpected active routines: target=%d other=%d", targetRunning.Load(), otherRunning.Load())
+	}
+	if account.p2pSync != state {
+		t.Fatal("retry replaced the P2P transport generation")
+	}
+}
+
+// TestRetrySharedObjectSyncRejectsUnknownSOWithoutRestart verifies that list
+// reconciliation can still own initial startup when no routine exists yet.
+func TestRetrySharedObjectSyncRejectsUnknownSOWithoutRestart(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	started := make(chan struct{}, 2)
+	rc := routine.NewRoutineContainer()
+	rc.SetRoutine(func(ctx context.Context) error {
+		started <- struct{}{}
+		<-ctx.Done()
+		return ctx.Err()
+	})
+	rc.SetContext(ctx, false)
+	t.Cleanup(func() {
+		exitedCh, _ := rc.SetRoutine(nil)
+		if exitedCh != nil {
+			<-exitedCh
+		}
+	})
+	state := &p2pSyncState{
+		ctx:     ctx,
+		started: true,
+		soSync:  map[string]*routine.RoutineContainer{"known": rc},
+	}
+	account := &ProviderAccount{p2pSync: state}
+
+	<-started
+	if account.RetrySharedObjectSync("missing") {
+		t.Fatal("unknown SO sync was restarted")
+	}
+	select {
+	case <-started:
+		t.Fatal("failed retry restarted an existing SO sync")
+	default:
+	}
+}
+
+// TestRetireP2PSyncStateWaitsForSOSyncRoutine verifies that retirement joins
+// SO routines before completing generation cleanup.
+func TestRetireP2PSyncStateWaitsForSOSyncRoutine(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	routineStarted := make(chan struct{})
+	routineCanceled := make(chan struct{})
+	allowRoutineExit := make(chan struct{})
+	var routineExited atomic.Bool
+	rc := routine.NewRoutineContainer()
+	rc.SetRoutine(func(ctx context.Context) error {
+		close(routineStarted)
+		<-ctx.Done()
+		close(routineCanceled)
+		<-allowRoutineExit
+		routineExited.Store(true)
+		return ctx.Err()
+	})
+	rc.SetContext(ctx, false)
+	state := &p2pSyncState{
+		ctx:           ctx,
+		cancel:        cancel,
+		started:       true,
+		startComplete: true,
+		startupExited: true,
+		soSync:        map[string]*routine.RoutineContainer{"target": rc},
+	}
+	account := &ProviderAccount{p2pSync: state}
+
+	<-routineStarted
+	retired := make(chan struct{})
+	go func() {
+		account.retireP2PSyncState(nil)
+		close(retired)
+	}()
+	<-routineCanceled
+	select {
+	case <-retired:
+		t.Fatal("retirement completed before SO sync exited")
+	default:
+	}
+	close(allowRoutineExit)
+	<-retired
+	if !routineExited.Load() {
+		t.Fatal("retirement released resources before SO sync exited")
+	}
+}
 
 func TestP2PSyncStateFinishStartPublishesStableState(t *testing.T) {
 	ctx := t.Context()

@@ -9,6 +9,7 @@ import (
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/aperturerobotics/util/broadcast"
+	"github.com/aperturerobotics/util/routine"
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/core/sobject"
 	sobject_invite "github.com/s4wave/spacewave/core/sobject/invite"
@@ -65,8 +66,8 @@ type p2pSyncState struct {
 	relFns []func()
 	// stores indexes DEX stores by bucket ID for this generation.
 	stores map[string]block.StoreOps
-	// soIDs records shared objects whose sync controllers were started.
-	soIDs map[string]struct{}
+	// soSync indexes restartable shared-object sync routines.
+	soSync map[string]*routine.RoutineContainer
 }
 
 // retainP2PSyncStateLocked adds an owner while a.p2pSyncBcast is locked.
@@ -208,20 +209,29 @@ func (s *p2pSyncState) hasStore(bucketID string) bool {
 func (s *p2pSyncState) hasSO(soID string) bool {
 	var ok bool
 	s.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
-		_, ok = s.soIDs[soID]
+		_, ok = s.soSync[soID]
 	})
 	return ok
 }
 
-// addSO records that this generation started sync for soID.
-func (s *p2pSyncState) addSO(soID string) {
+// addSO registers the sync routine for soID while the generation is active.
+func (s *p2pSyncState) addSO(soID string, syncRoutine *routine.RoutineContainer) bool {
+	var added bool
 	s.bcast.HoldLock(func(bcast func(), _ func() <-chan struct{}) {
-		if s.soIDs == nil {
-			s.soIDs = make(map[string]struct{})
+		if s.stopping || s.ctx.Err() != nil {
+			return
 		}
-		s.soIDs[soID] = struct{}{}
+		if s.soSync == nil {
+			s.soSync = make(map[string]*routine.RoutineContainer)
+		}
+		if _, exists := s.soSync[soID]; exists {
+			return
+		}
+		s.soSync[soID] = syncRoutine
+		added = true
 		bcast()
 	})
+	return added
 }
 
 // addRef retains a controllerbus reference until state cleanup.
@@ -706,7 +716,6 @@ func (a *ProviderAccount) startP2PSyncControllers(
 			a.le.WithError(err).WithField("so-id", soID).Warn("failed to start so sync")
 			continue
 		}
-		state.addSO(soID)
 	}
 
 	if !*inviteStarted {
@@ -746,6 +755,35 @@ func (a *ProviderAccount) GetP2PSyncSnapshotWithWait() (bool, <-chan struct{}) {
 func (a *ProviderAccount) IsP2PSyncRunning() bool {
 	running, _ := a.GetP2PSyncSnapshotWithWait()
 	return running
+}
+
+// RetrySharedObjectSync replaces the running SO sync directive for soID while
+// preserving the active transport generation and every other controller. It
+// reports whether an existing routine was restarted.
+func (a *ProviderAccount) RetrySharedObjectSync(soID string) bool {
+	if soID == "" {
+		return false
+	}
+
+	// Hold both lifecycle locks through the restart decision so retirement or
+	// generation replacement cannot redirect the request to a stale routine.
+	var restarted bool
+	a.p2pSyncBcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
+		state := a.p2pSync
+		if state == nil {
+			return
+		}
+		state.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
+			if !state.started || state.stopping || state.ctx.Err() != nil {
+				return
+			}
+			syncRoutine := state.soSync[soID]
+			if syncRoutine != nil {
+				restarted = syncRoutine.RestartRoutine()
+			}
+		})
+	})
+	return restarted
 }
 
 // StopP2PSync stops all P2P sync controllers, waits for goroutines
@@ -844,6 +882,22 @@ func (a *ProviderAccount) stopP2PSyncState(state *p2pSyncState) {
 			break
 		}
 		<-waitCh
+	}
+
+	// Stop and join every SO sync before releasing the mounts and controller
+	// references on which those routines depend.
+	var syncRoutines []*routine.RoutineContainer
+	state.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
+		syncRoutines = make([]*routine.RoutineContainer, 0, len(state.soSync))
+		for _, syncRoutine := range state.soSync {
+			syncRoutines = append(syncRoutines, syncRoutine)
+		}
+	})
+	for _, syncRoutine := range syncRoutines {
+		exitedCh, _ := syncRoutine.SetRoutine(nil)
+		if exitedCh != nil {
+			<-exitedCh
+		}
 	}
 
 	var (
@@ -966,14 +1020,26 @@ func (a *ProviderAccount) startSOSync(
 		},
 		validateSnapshotAccess,
 	)
-	state.addWorker()
-	go func() {
-		defer state.workerDone()
-		defer relSO()
-		if err := soSync.Execute(ctx); err != nil && ctx.Err() == nil {
+	// Retain the mount for this generation while allowing an explicit invite to
+	// replace only the solicitation routine. RoutineContainer serializes the
+	// replacement behind the prior execution's exit.
+	syncRoutine := routine.NewRoutineContainer()
+	syncRoutine.SetRoutine(func(runCtx context.Context) error {
+		err := soSync.Execute(runCtx)
+		if err != nil && runCtx.Err() == nil {
 			a.le.WithError(err).WithField("so-id", soID).Warn("so sync exited with error")
 		}
-	}()
+		return err
+	})
+	if !state.addSO(soID, syncRoutine) {
+		relSO()
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		return errors.Errorf("shared object sync already started: %s", soID)
+	}
+	state.addRelease(relSO)
+	syncRoutine.SetContext(ctx, false)
 
 	return nil
 }

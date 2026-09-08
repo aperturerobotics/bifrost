@@ -118,6 +118,10 @@ func (a *ProviderAccount) JoinViaInvite(
 	// account and stops with the account, not with the enrollment request.
 	if err := a.StartPersistentP2PSync(ctx, st); err != nil {
 		a.le.WithError(err).Warn("failed to start P2P sync after invite join")
+	} else {
+		// Freshen a cached SO's solicitation after installing its new grant. A
+		// newly listed SO may still be waiting for normal list reconciliation.
+		a.RetrySharedObjectSync(result.SharedObjectID)
 	}
 	if err := a.RetainP2PPeer(ctx, ownerPeerID); err != nil {
 		return nil, errors.Wrap(err, "retain invite owner link")
