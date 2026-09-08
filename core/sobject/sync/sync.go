@@ -151,7 +151,8 @@ func (s *SOSync) runStream(ctx context.Context, le *logrus.Entry, strm stream.St
 		return err
 	}
 
-	// A separate watch can close a sender blocked in transport when membership is removed.
+	// A separate watch bounds revocation even while another sender is blocked.
+	sess := stream_packet.NewSession(strm, maxMessageSize)
 	watcher := routine.NewRoutineContainer()
 	watcher.SetRoutine(func(ctx context.Context) (rerr error) {
 		defer func() {
@@ -170,6 +171,10 @@ func (s *SOSync) runStream(ctx context.Context, le *logrus.Entry, strm stream.St
 				return err
 			}
 			if err := s.authorizeParticipants(current, remoteID); err != nil {
+				// A control frame exposes no state; a stalled transport still closes promptly.
+				if strm.SetWriteDeadline(time.Now().Add(250*time.Millisecond)) == nil {
+					_ = sendAccessDenied(sess)
+				}
 				return err
 			}
 			previous = current
@@ -186,7 +191,6 @@ func (s *SOSync) runStream(ctx context.Context, le *logrus.Entry, strm stream.St
 		}
 	}()
 
-	sess := stream_packet.NewSession(strm, maxMessageSize)
 	if err := s.exchangeSnapshots(ctx, le, sess, localTransport < remoteTransport, remoteID); err != nil {
 		return err
 	}
@@ -203,6 +207,7 @@ func (s *SOSync) exchangeSnapshots(ctx context.Context, le *logrus.Entry, sess *
 			return err
 		}
 		if err := s.authorizeParticipants(state, remoteID); err != nil {
+			_ = sendAccessDenied(sess)
 			return err
 		}
 		data, err := state.MarshalVT()
@@ -220,11 +225,11 @@ func (s *SOSync) exchangeSnapshots(ctx context.Context, le *logrus.Entry, sess *
 		if err := send(); err != nil {
 			return err
 		}
-		if err := sess.RecvMsg(incoming); err != nil {
+		if err := s.receiveSnapshot(ctx, sess, incoming, remoteID); err != nil {
 			return err
 		}
 	} else {
-		if err := sess.RecvMsg(incoming); err != nil {
+		if err := s.receiveSnapshot(ctx, sess, incoming, remoteID); err != nil {
 			return err
 		}
 		if err := send(); err != nil {
@@ -235,6 +240,36 @@ func (s *SOSync) exchangeSnapshots(ctx context.Context, le *logrus.Entry, sess *
 		return errors.New("expected authenticated snapshot")
 	}
 	return s.applyPeerSnapshot(ctx, le, incoming.GetSnapshot())
+}
+
+// receiveSnapshot recognizes a peer's revocation before disclosing another snapshot.
+func (s *SOSync) receiveSnapshot(ctx context.Context, sess *stream_packet.Session, incoming *SOSyncMessage, remoteID peer.ID) error {
+	if err := sess.RecvMsg(incoming); err != nil {
+		return err
+	}
+
+	// Recheck the held authority after the receive wait before observing peer decisions.
+	state, err := s.soHost.GetHostState(ctx)
+	if err != nil {
+		return err
+	}
+	if err := s.authorizeParticipants(state, remoteID); err != nil {
+		_ = sendAccessDenied(sess)
+		return err
+	}
+	if admission := incoming.GetAuthorization(); admission != nil && !admission.GetAccepted() {
+		if s.peerAdmission != nil {
+			s.peerAdmission(remoteID, false)
+		}
+		return ErrAccessDenied
+	}
+	return nil
+}
+
+// sendAccessDenied reports revocation without sending object state or history.
+// The stream's authority watch bounds this write before closing the transport.
+func sendAccessDenied(sess *stream_packet.Session) error {
+	return sess.SendMsg(&SOSyncMessage{Body: &SOSyncMessage_Authorization{Authorization: &SOSyncAuthorization{}}})
 }
 
 // applyPeerSnapshot validates and adopts a newer authoritative state.
@@ -404,10 +439,19 @@ func (s *SOSync) streamOps(ctx context.Context, le *logrus.Entry, sess *stream_p
 
 		// Recheck admission after a receive wait before processing any data.
 		current, err := s.soHost.GetHostState(ctx)
-		if err != nil || s.authorizeParticipants(current, remoteID) != nil {
+		if err != nil {
+			return
+		}
+		if s.authorizeParticipants(current, remoteID) != nil {
+			_ = sendAccessDenied(sess)
 			return
 		}
 		switch body := inMsg.GetBody().(type) {
+		case *SOSyncMessage_Authorization:
+			if !body.Authorization.GetAccepted() && s.peerAdmission != nil {
+				s.peerAdmission(remoteID, false)
+			}
+			return
 		case *SOSyncMessage_Snapshot:
 			if err := s.applyPeerSnapshot(ctx, le, body.Snapshot); err != nil {
 				return
@@ -444,6 +488,7 @@ func (s *SOSync) sendOps(ctx context.Context, le *logrus.Entry, sess *stream_pac
 		// Admit each outbound batch against current authority, not a queued older snapshot.
 		next := stateCtr.GetValue()
 		if err := s.authorizeParticipants(next, remoteID); err != nil {
+			_ = sendAccessDenied(sess)
 			return
 		}
 		rootSeqno := next.GetRoot().GetInnerSeqno()
