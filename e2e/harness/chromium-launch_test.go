@@ -66,10 +66,8 @@ func TestChromiumLaunchOptions(t *testing.T) {
 	gpuArgs := append(append([]string{}, baseArgs...),
 		"--headless=new",
 		"--ignore-gpu-blocklist",
-		"--use-angle=vulkan",
 		"--enable-gpu-rasterization",
 		"--enable-zero-copy",
-		"--enable-features=Vulkan",
 	)
 	channel := "chromium"
 

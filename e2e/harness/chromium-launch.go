@@ -65,8 +65,8 @@ func (p ChromiumGPUPreference) String() string {
 }
 
 // ChromiumLaunchOptions returns the Playwright launch options for one
-// Chromium launch mode. gpu selects the full-Chromium hardware-GPU launch;
-// otherwise the options are byte-identical to the legacy software launch.
+// Chromium launch mode. gpu requests acceleration in full Chromium using its
+// platform-selected backend; forcing Vulkan can select software on macOS.
 func ChromiumLaunchOptions(headless bool, gpu bool) playwright.BrowserTypeLaunchOptions {
 	opts := playwright.BrowserTypeLaunchOptions{
 		Headless: new(headless),
@@ -84,10 +84,8 @@ func ChromiumLaunchOptions(headless bool, gpu bool) playwright.BrowserTypeLaunch
 	opts.Args = append(opts.Args,
 		"--headless=new",
 		"--ignore-gpu-blocklist",
-		"--use-angle=vulkan",
 		"--enable-gpu-rasterization",
 		"--enable-zero-copy",
-		"--enable-features=Vulkan",
 	)
 	return opts
 }

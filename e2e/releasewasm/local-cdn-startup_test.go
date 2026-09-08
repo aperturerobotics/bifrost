@@ -23,6 +23,20 @@ func TestLocalCDNDriveStartup(t *testing.T) {
 
 	// Observe delivery without request interception, which disables HTTP caching.
 	page := testHarness.newPage(t)
+	if testHarness.browserName == "chromium" {
+		cdp, err := testHarness.browser.NewBrowserCDPSession()
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer cdp.Detach()
+		info, err := cdp.Send("SystemInfo.getInfo", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		gpu := info.(map[string]any)["gpu"].(map[string]any)
+		attributes, _ := gpu["auxAttributes"].(map[string]any)
+		t.Logf("Chromium renderer: %v", attributes["glRenderer"])
+	}
 	var mtx sync.Mutex
 	var external []string
 	var distribution, root, ranges int
