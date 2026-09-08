@@ -3,8 +3,12 @@ package engine
 import (
 	"bytes"
 	"context"
+	"errors"
 	"slices"
 	"sort"
+
+	"github.com/aperturerobotics/util/promise"
+	"github.com/s4wave/spacewave/db/traceutil"
 )
 
 // snapshot pins immutable files across one read operation.
@@ -34,12 +38,56 @@ func (e *Engine) snapshot(ctx context.Context) (*snapshot, error) {
 		return nil, err
 	}
 	defer unlock()
-	root, err := e.loadRoot(ctx)
+	root, err := e.readSnapshotRoot(ctx)
 	if err != nil {
 		release()
 		return nil, err
 	}
 	return &snapshot{engine: e, root: root, release: release}, nil
+}
+
+// readSnapshotRoot shares overlapping descriptor reads. Every caller holds its
+// own shared root lock, preventing publication while it joins or consumes the
+// pending read. The result is removed before any of those locks are released;
+// a later operation always rereads durable state.
+func (e *Engine) readSnapshotRoot(ctx context.Context) (*Root, error) {
+	for {
+		// Join an existing read or perform it in the caller's own lifetime.
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		e.mtx.Lock()
+		pending := e.rootRead
+		leader := pending == nil
+		if leader {
+			pending = promise.NewPromise[*Root]()
+			e.rootRead = pending
+		}
+		e.mtx.Unlock()
+		if leader {
+			traceutil.Log(ctx, "hydra/opfs-engine/root-read", "read")
+			root, err := e.loadRoot(ctx)
+			if ctx.Err() != nil {
+				root, err = nil, ctx.Err()
+			}
+			e.mtx.Lock()
+			e.rootRead = nil
+			e.mtx.Unlock()
+			pending.SetResult(root, err)
+			return root, err
+		}
+
+		// One caller's cancellation cannot cancel another caller's snapshot.
+		traceutil.Log(ctx, "hydra/opfs-engine/root-read", "joined")
+		root, err := pending.Await(ctx)
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			continue
+		}
+		return root, err
+	}
 }
 
 // get resolves a full key through one partition's bounded newest-first runs.

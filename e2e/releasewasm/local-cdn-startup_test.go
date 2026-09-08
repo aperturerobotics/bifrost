@@ -5,6 +5,7 @@ package releasewasm
 import (
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
@@ -69,6 +70,20 @@ func TestLocalCDNDriveStartup(t *testing.T) {
 		t.Fatal(failure)
 	}
 	logQuickstartTiming(t, page)
+	if releaseStartupTraceEnabled() {
+		data, err := captureReleaseStartupTrace(t.Context(), testHarness.browser)
+		if err != nil {
+			t.Fatal(err)
+		}
+		path := filepath.Join(testHarness.artifactDir, "local-cdn-startup.trace")
+		if err := os.MkdirAll(testHarness.artifactDir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, data, 0o644); err != nil {
+			t.Fatal(err)
+		}
+		t.Logf("startup runtime trace: %s (%d bytes)", path, len(data))
+	}
 
 	// A successful timing must include the remote-loading contract it measures.
 	mtx.Lock()
