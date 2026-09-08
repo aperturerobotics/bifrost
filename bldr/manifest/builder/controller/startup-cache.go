@@ -31,9 +31,9 @@ import (
 )
 
 // startupCacheFormatEnvKey is bumped when compiler-owned output policy changes
-// without changing a plugin source file. V12 binds the effective build policy
-// to the controller configuration fingerprint.
-const startupCacheFormatEnvKey = "BLDR_STARTUP_CACHE_FORMAT_V12"
+// without changing a plugin source file. V13 requires the Rolldown runner in
+// the compiler input manifest so bundling policy edits invalidate its outputs.
+const startupCacheFormatEnvKey = "BLDR_STARTUP_CACHE_FORMAT_V13"
 
 // startupValidationResult contains the startup cache validation result.
 type startupValidationResult struct {

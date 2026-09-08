@@ -195,6 +195,8 @@ func Build(ctx context.Context, le *logrus.Entry, stateDir, toolRoot string, req
 	runErr := bldr_exec.StartAndWait(ctx, le, cmd)
 	result, parseErr := readBuildResult(resultPath)
 	if result != nil {
+		// Track the runner so compiler policy edits invalidate cached bundles.
+		result.Inputs = append(result.Inputs, runnerPath)
 		sortBuildResult(result)
 	}
 	if ctxErr := ctx.Err(); ctxErr != nil {
