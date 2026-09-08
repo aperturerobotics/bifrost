@@ -13,6 +13,8 @@ materializer. The browser fetches a signed distribution fixture, the CDN root
 pointer, and plugin packs through the production loading path. Each run starts
 with an empty browser context and reports navigation-to-file and click-to-file
 times after reaching `getting-started.md` and checking the invitation dialog.
+The output records Chromium's actual renderer so hardware-accelerated and
+software-rendered runs can be distinguished.
 
 Build and publication state live in `.bldr-startup`. Bldr checks source changes
 on every run and reuses unchanged manifests. The build keeps the release
