@@ -25,6 +25,8 @@ import (
 func (t *pluginInstance) execWatchWorldManifest(ctx context.Context, hosts *pluginHostSet) error {
 	t.le.Debugf("starting watch world manifests")
 	engineID := t.c.conf.GetEngineId()
+	engine := world.NewBusEngine(ctx, t.c.bus, engineID)
+	ws := world.NewEngineWorldState(engine, false)
 	objLoop := world_control.NewWatchLoop(
 		t.le.WithFields(logrus.Fields{
 			"object-loop":        "watch-world-manifest",
@@ -32,18 +34,19 @@ func (t *pluginInstance) execWatchWorldManifest(ctx context.Context, hosts *plug
 			"plugin-host-objkey": t.c.objKey,
 		}),
 		t.c.objKey,
-		func(ctx context.Context, le *logrus.Entry, ws world.WorldState, obj world.ObjectState, _ *bucket.ObjectRef, _ uint64) (waitForChanges bool, err error) {
-			return t.processManifestWorldState(ctx, le, hosts, ws, obj)
+		func(ctx context.Context, le *logrus.Entry, _ world.WorldState, obj world.ObjectState, _ *bucket.ObjectRef, _ uint64) (waitForChanges bool, err error) {
+			// Share one read transaction across graph traversal and candidate reads.
+			// Release it before the watch loop waits for another object revision.
+			err = world.ExecTransaction(ctx, engine, false, func(ctx context.Context, snapshot world.WorldState) error {
+				var selectErr error
+				waitForChanges, selectErr = t.processManifestWorldState(ctx, le, hosts, snapshot, obj)
+				return selectErr
+			})
+			return waitForChanges, err
 		},
 	)
 
-	return world_control.ExecuteBusWatchLoop(
-		ctx,
-		t.c.bus,
-		engineID,
-		false,
-		objLoop,
-	)
+	return objLoop.Execute(ctx, ws)
 }
 
 // processManifestWorldState processes the state for the PluginManifest.
