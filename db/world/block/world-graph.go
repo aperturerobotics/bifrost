@@ -10,10 +10,19 @@ import (
 	"github.com/s4wave/spacewave/db/world"
 )
 
-// AccessCayleyGraph calls a callback with a temporary Cayley graph handle.
-// All accesses of the handle should complete before returning cb.
-// Try to make access (queries) as short as possible.
-// Write operations will fail if the store is read-only.
+// graphQuadBatchCollector resolves filters within one underlying transaction.
+type graphQuadBatchCollector interface {
+	CollectFilteredQuadsBatch(ctx context.Context, filters []quad.Quad, limitPerFilter uint32) ([][]quad.Quad, error)
+}
+
+// graphPathReadOperation shares graph lookups within one World read operation.
+type graphPathReadOperation struct {
+	*WorldState
+
+	graphHd world.CayleyHandle
+}
+
+// accessCayleyGraph lends the current handle for the callback's lifetime.
 func (t *WorldState) accessCayleyGraph(ctx context.Context, write bool, cb func(ctx context.Context, h world.CayleyHandle) error) error {
 	if t.discarded.Load() {
 		return tx.ErrDiscarded
@@ -24,7 +33,7 @@ func (t *WorldState) accessCayleyGraph(ctx context.Context, write bool, cb func(
 	return cb(ctx, hd)
 }
 
-// LookupGraphQuads searches for graph quads in the store.
+// lookupGraphQuadsOnWorld resolves one filter through the batch lookup path.
 func (t *WorldState) lookupGraphQuadsOnWorld(ctx context.Context, filter world.GraphQuad, limit uint32) ([]world.GraphQuad, error) {
 	filters := [1]world.GraphQuad{filter}
 	results, err := t.lookupGraphQuadsBatchOnWorld(ctx, filters[:], limit)
@@ -34,7 +43,7 @@ func (t *WorldState) lookupGraphQuadsOnWorld(ctx context.Context, filter world.G
 	return results[0], nil
 }
 
-// LookupGraphQuadsBatch searches for graph quads for each filter in one graph read.
+// lookupGraphQuadsBatchOnWorld shares a storage read scope for read-only Worlds.
 func (t *WorldState) lookupGraphQuadsBatchOnWorld(ctx context.Context, filters []world.GraphQuad, limitPerFilter uint32) ([][]world.GraphQuad, error) {
 	if t.discarded.Load() {
 		return nil, tx.ErrDiscarded
@@ -56,6 +65,7 @@ func (t *WorldState) lookupGraphQuadsBatchOnWorld(ctx context.Context, filters [
 	return lookupGraphQuadsBatch(ctx, graphHd, filters, limitPerFilter, collector)
 }
 
+// lookupGraphQuadsBatch preserves filter order and applies limits independently.
 func lookupGraphQuadsBatch(ctx context.Context, h world.CayleyHandle, filters []world.GraphQuad, limitPerFilter uint32, collector graphQuadBatchCollector) ([][]world.GraphQuad, error) {
 	cfilters := make([]quad.Quad, len(filters))
 	for i, filter := range filters {
@@ -91,31 +101,7 @@ func lookupGraphQuadsBatch(ctx context.Context, h world.CayleyHandle, filters []
 	return results, nil
 }
 
-type graphQuadBatchCollector interface {
-	CollectFilteredQuadsBatch(ctx context.Context, filters []quad.Quad, limitPerFilter uint32) ([][]quad.Quad, error)
-}
-
-func (t *WorldState) graphQuadExists(ctx context.Context, cq quad.Quad) (bool, error) {
-	if collector, ok := t.graphHd.QuadStore.(graphQuadBatchCollector); ok {
-		filters := [1]quad.Quad{cq}
-		results, err := collector.CollectFilteredQuadsBatch(ctx, filters[:], 1)
-		if err != nil {
-			return false, err
-		}
-		if len(results) == 0 {
-			return false, nil
-		}
-		for _, q := range results[0] {
-			if q.IsValid() && world.QuadEqual(q, cq) {
-				return true, nil
-			}
-		}
-		return false, nil
-	}
-	return world.CheckQuadExists(ctx, t.graphHd, cq)
-}
-
-// QueryGraphPath executes a bounded graph traversal.
+// queryGraphPathOnWorld retains one storage read scope for the traversal.
 func (t *WorldState) queryGraphPathOnWorld(ctx context.Context, query *world.GraphPathQuery) (*world.GraphPathQueryResult, error) {
 	if t.discarded.Load() {
 		return nil, tx.ErrDiscarded
@@ -131,6 +117,7 @@ func (t *WorldState) queryGraphPathOnWorld(ctx context.Context, query *world.Gra
 	return t.queryGraphPath(ctx, t.graphHd, query)
 }
 
+// queryGraphPath shares cached graph lookups throughout a bounded traversal.
 func (t *WorldState) queryGraphPath(ctx context.Context, graphHd world.CayleyHandle, query *world.GraphPathQuery) (*world.GraphPathQueryResult, error) {
 	graphHd = world.NewReadOperationCayleyHandle(graphHd)
 	graph := &graphPathReadOperation{
@@ -140,12 +127,7 @@ func (t *WorldState) queryGraphPath(ctx context.Context, graphHd world.CayleyHan
 	return world.QueryGraphPathWithLookups(ctx, graph, query)
 }
 
-type graphPathReadOperation struct {
-	*WorldState
-
-	graphHd world.CayleyHandle
-}
-
+// AccessCayleyGraph lends the scoped handle for read callbacks.
 func (g *graphPathReadOperation) AccessCayleyGraph(ctx context.Context, write bool, cb func(ctx context.Context, h world.CayleyHandle) error) error {
 	if write {
 		return g.WorldState.AccessCayleyGraph(ctx, write, cb)
@@ -153,6 +135,7 @@ func (g *graphPathReadOperation) AccessCayleyGraph(ctx context.Context, write bo
 	return cb(ctx, g.graphHd)
 }
 
+// LookupGraphQuads resolves one filter using the scoped handle.
 func (g *graphPathReadOperation) LookupGraphQuads(ctx context.Context, filter world.GraphQuad, limit uint32) ([]world.GraphQuad, error) {
 	filters := [1]world.GraphQuad{filter}
 	results, err := g.LookupGraphQuadsBatch(ctx, filters[:], limit)
@@ -162,17 +145,18 @@ func (g *graphPathReadOperation) LookupGraphQuads(ctx context.Context, filter wo
 	return results[0], nil
 }
 
+// LookupGraphQuadsBatch shares the scoped handle across filters.
 func (g *graphPathReadOperation) LookupGraphQuadsBatch(ctx context.Context, filters []world.GraphQuad, limitPerFilter uint32) ([][]world.GraphQuad, error) {
 	collector, _ := g.WorldState.graphHd.QuadStore.(graphQuadBatchCollector)
 	return lookupGraphQuadsBatch(ctx, g.graphHd, filters, limitPerFilter, collector)
 }
 
+// QueryGraphPath continues traversal within the existing read operation.
 func (g *graphPathReadOperation) QueryGraphPath(ctx context.Context, query *world.GraphPathQuery) (*world.GraphPathQueryResult, error) {
 	return world.QueryGraphPathWithLookups(ctx, g, query)
 }
 
-// SetGraphQuad sets a quad in the graph store.
-// If already exists, returns nil.
+// setGraphQuad validates endpoints and records newly inserted relationships.
 func (t *WorldState) setGraphQuad(ctx context.Context, q world.GraphQuad) error {
 	if !t.write {
 		return tx.ErrNotWrite
@@ -184,14 +168,6 @@ func (t *WorldState) setGraphQuad(ctx context.Context, q world.GraphQuad) error 
 	cq, err := world.GraphQuadToCayleyQuad(q, true)
 	if err != nil {
 		return err
-	}
-
-	ex, err := t.graphQuadExists(ctx, cq)
-	if err != nil {
-		return err
-	}
-	if ex {
-		return nil
 	}
 
 	// Resolve both endpoints before adding the relationship.
@@ -213,8 +189,14 @@ func (t *WorldState) setGraphQuad(ctx context.Context, q world.GraphQuad) error 
 		return err
 	}
 
-	err = t.graphHd.AddQuad(ctx, cq)
+	// The insertion result owns duplicate detection; duplicate relationships
+	// do not advance endpoint revisions or append World changes.
+	deltas := [1]graph.Delta{{Quad: cq, Action: graph.Add}}
+	err = t.graphHd.ApplyDeltas(ctx, deltas[:], graph.IgnoreOpts{})
 	if err != nil {
+		if graph.IsQuadExist(err) {
+			return nil
+		}
 		return err
 	}
 
@@ -236,12 +218,12 @@ func (t *WorldState) setGraphQuad(ctx context.Context, q world.GraphQuad) error 
 	return err
 }
 
-// DeleteGraphQuad deletes a quad from the graph store.
-// Note: if quad did not exist, returns nil.
+// deleteGraphQuadEntry validates a requested relationship before deletion.
 func (t *WorldState) deleteGraphQuadEntry(ctx context.Context, q world.GraphQuad) error {
 	return t.deleteGraphQuad(ctx, q, true)
 }
 
+// deleteGraphQuad removes a relationship and records the change when present.
 func (t *WorldState) deleteGraphQuad(ctx context.Context, q world.GraphQuad, validate bool) error {
 	if q == nil {
 		return world.ErrNilQuad
@@ -300,7 +282,7 @@ func (t *WorldState) deleteGraphQuad(ctx context.Context, q world.GraphQuad, val
 	return err
 }
 
-// DeleteGraphObject deletes all quads with Subject or Object set to value.
+// deleteGraphObject removes outgoing and incoming relationships for an object.
 func (t *WorldState) deleteGraphObject(ctx context.Context, objKey string) error {
 	if !t.write {
 		return tx.ErrNotWrite
