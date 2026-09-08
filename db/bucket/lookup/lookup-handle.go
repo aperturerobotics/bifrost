@@ -16,6 +16,8 @@ var ErrNotImplemented = errors.New("operation not implemented by lookup controll
 type lookupBucket struct {
 	// h resolves the bucket's lookup service.
 	h Handle
+	// lookup retains the local bucket scopes of a bounded read operation.
+	lookup Lookup
 	// localOnly excludes remote discovery from payload reads.
 	localOnly bool
 }
@@ -43,16 +45,40 @@ func (l *lookupBucket) GetSupportedFeatures() block.StoreFeature {
 	return block.StoreFeature_STORE_FEATURE_UNKNOWN
 }
 
-// BeginReadOperation returns the lookup bucket as a scoped read handle.
-func (l *lookupBucket) BeginReadOperation(context.Context) (block.StoreOps, func(), error) {
-	return l, func() {}, nil
+// BeginReadOperation retains the lookup's local bucket read scopes.
+func (l *lookupBucket) BeginReadOperation(ctx context.Context) (block.StoreOps, func(), error) {
+	if l.lookup != nil {
+		return l, func() {}, nil
+	}
+	lookup, err := l.h.GetLookup(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	if lookup == nil {
+		return nil, nil, bucket.ErrBucketNotFound
+	}
+	lookup, release, err := lookup.BeginReadOperation(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	scoped := *l
+	scoped.lookup = lookup
+	return &scoped, release, nil
+}
+
+// getLookup uses retained bucket scopes when the caller opened a read operation.
+func (l *lookupBucket) getLookup(ctx context.Context) (Lookup, error) {
+	if l.lookup != nil {
+		return l.lookup, nil
+	}
+	return l.h.GetLookup(ctx)
 }
 
 // PutBlock puts a block into the store.
 // The ref should not be modified after return.
 func (l *lookupBucket) PutBlock(ctx context.Context, data []byte, opts *block.PutOpts) (*block.BlockRef, bool, error) {
 	// Resolve the lookup handle before writing the block.
-	lb, err := l.h.GetLookup(ctx)
+	lb, err := l.getLookup(ctx)
 	if err != nil {
 		return nil, false, err
 	}
@@ -102,7 +128,7 @@ func (l *lookupBucket) PutBlockBatch(ctx context.Context, entries []*block.PutBa
 // The ref should not be modified or retained by GetBlock.
 // Note: the block may not be in the specified bucket.
 func (l *lookupBucket) GetBlock(ctx context.Context, ref *block.BlockRef) ([]byte, bool, error) {
-	lb, err := l.h.GetLookup(ctx)
+	lb, err := l.getLookup(ctx)
 	if err != nil {
 		return nil, false, err
 	}
@@ -127,7 +153,7 @@ func (l *lookupBucket) GetBlockExists(ctx context.Context, ref *block.BlockRef) 
 
 // GetBlockExistsBatch checks whether refs exist through the lookup controller.
 func (l *lookupBucket) GetBlockExistsBatch(ctx context.Context, refs []*block.BlockRef) ([]bool, error) {
-	lb, err := l.h.GetLookup(ctx)
+	lb, err := l.getLookup(ctx)
 	if err != nil {
 		return nil, err
 	}
