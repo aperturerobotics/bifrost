@@ -18,6 +18,8 @@ const (
 	maxPublicationBytes = 32 << 20
 	// maxPublicationFiles bounds intent and retirement records.
 	maxPublicationFiles = 8192
+	// maxReclaimGenerations bounds retirement reads within one exclusive batch.
+	maxReclaimGenerations = 16
 )
 
 // publication prepares bounded immutable output before acknowledging a root.
@@ -237,7 +239,7 @@ func (e *Engine) cleanIntent(ctx context.Context) error {
 	return e.backend.Remove(ctx, "intent")
 }
 
-// Reclaim deletes at most one publication's retired files, then checkpoints.
+// Reclaim deletes a bounded batch of retired files, then checkpoints once.
 // It never waits for readers while holding the publication lock.
 func (e *Engine) Reclaim(ctx context.Context) (bool, error) {
 	// Exclude readers before joining the publication queue.
@@ -265,32 +267,41 @@ func (e *Engine) Reclaim(ctx context.Context) (bool, error) {
 		return true, p.commit(ctx)
 	}
 
-	// Files retired before the preceding generation are absent from both roots.
-	name := "retire-" + strconv.FormatUint(root.ReclaimNext, 10)
-	data, err := e.backend.Read(ctx, name, 0, readAll)
-	if err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return false, err
-	}
-	if err == nil {
-		files := new(Files)
-		if err := decode(data, files); err != nil {
+	// Consume only retirements absent from both roots, bounding reads and deletes.
+	next := root.ReclaimNext
+	deleted := 0
+	for next < root.Generation && next <= root.RetireThrough && next-root.ReclaimNext < maxReclaimGenerations {
+		name := "retire-" + strconv.FormatUint(next, 10)
+		data, err := e.backend.Read(ctx, name, 0, readAll)
+		if err != nil && !errors.Is(err, fs.ErrNotExist) {
 			return false, err
 		}
-		if len(files.Names) > maxPublicationFiles {
-			return false, ErrCorrupt
-		}
-		for _, file := range files.Names {
-			if err := e.backend.Remove(ctx, file); err != nil {
+		if err == nil {
+			files := new(Files)
+			if err := decode(data, files); err != nil {
 				return false, err
 			}
+			if len(files.Names) > maxPublicationFiles {
+				return false, ErrCorrupt
+			}
+			if deleted+len(files.Names) > maxPublicationFiles {
+				break
+			}
+			for _, file := range files.Names {
+				if err := e.backend.Remove(ctx, file); err != nil {
+					return false, err
+				}
+			}
+			if err := e.backend.Remove(ctx, name); err != nil {
+				return false, err
+			}
+			deleted += len(files.Names)
 		}
-		if err := e.backend.Remove(ctx, name); err != nil {
-			return false, err
-		}
+		next++
 	}
 
 	// Checkpoint completed reclamation through the ordinary root publication.
 	p := newPublication(e, root)
-	p.root.ReclaimNext++
+	p.root.ReclaimNext = next
 	return true, p.commit(ctx)
 }
