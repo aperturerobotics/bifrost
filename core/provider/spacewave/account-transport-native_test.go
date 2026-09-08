@@ -4,8 +4,6 @@ package provider_spacewave
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -18,6 +16,7 @@ import (
 	"github.com/aperturerobotics/util/ccontainer"
 	"github.com/aperturerobotics/util/keyed"
 	"github.com/aperturerobotics/util/routine"
+	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/core/provider"
 	api "github.com/s4wave/spacewave/core/provider/spacewave/api"
 	"github.com/s4wave/spacewave/core/session"
@@ -33,7 +32,10 @@ import (
 // sessions obtain transport from the web runtime), so the signal-ticket
 // lifecycle does not exist there and these tests only apply to the native build.
 
+// TestCreateSessionTransportCancellationAfterReadyClearsCurrentTransport checks
+// that cancellation publishes exit and removes the ready transport.
 func TestCreateSessionTransportCancellationAfterReadyClearsCurrentTransport(t *testing.T) {
+	// Start a ready transport under a cancelable lifetime.
 	acc := NewTestProviderAccount(t, "http://example.invalid")
 	priv, _ := generateTestKeypair(t)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -43,6 +45,7 @@ func TestCreateSessionTransportCancellationAfterReadyClearsCurrentTransport(t *t
 		t.Fatalf("CreateSessionTransport: %v", err)
 	}
 
+	// Subscribe to both transport exit and account removal before cancellation.
 	var sts *sessionTransportState
 	acc.transportBcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
 		sts = acc.sessionTransports[""]
@@ -59,8 +62,8 @@ func TestCreateSessionTransportCancellationAfterReadyClearsCurrentTransport(t *t
 		t.Fatal("expected transport snapshot to report running")
 	}
 
+	// Cancel the transport and require both lifecycle notifications.
 	cancel()
-
 	select {
 	case <-stateWaitCh:
 	case <-time.After(time.Second):
@@ -72,6 +75,7 @@ func TestCreateSessionTransportCancellationAfterReadyClearsCurrentTransport(t *t
 		t.Fatal("transport removal was not published")
 	}
 
+	// Confirm that the notifications describe the settled state.
 	sts.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
 		if !sts.exited {
 			t.Fatal("expected canceled ready transport to publish exit")
@@ -86,19 +90,27 @@ func TestCreateSessionTransportCancellationAfterReadyClearsCurrentTransport(t *t
 	}
 }
 
+// testSessionTransportStatusError exposes HTTP status independently of its text.
 type testSessionTransportStatusError struct {
+	// statusCode is the response status preserved by wrappers.
 	statusCode int
 }
 
+// Error returns text that does not identify the response status.
 func (e *testSessionTransportStatusError) Error() string {
 	return "transport message changed"
 }
 
+// StatusCode returns the response status used for classification.
 func (e *testSessionTransportStatusError) StatusCode() int {
 	return e.statusCode
 }
 
+// TestMountedSessionReRegistersAfterUnauthorizedTransport checks that a mounted
+// Session renews its registration and transport after a rejected ticket even
+// when presentation metadata cannot be mirrored.
 func TestMountedSessionReRegistersAfterUnauthorizedTransport(t *testing.T) {
+	// Control the first rejected ticket and the replacement ticket independently.
 	ctx, cancel := context.WithTimeout(t.Context(), 8*time.Second)
 	defer cancel()
 
@@ -108,9 +120,12 @@ func TestMountedSessionReRegistersAfterUnauthorizedTransport(t *testing.T) {
 	reregistration := make(chan struct{})
 	secondTicketStarted := make(chan struct{})
 	permitSecondTicket := make(chan struct{})
+	websocketAccepted := make(chan struct{})
+	var websocketAcceptedOnce sync.Once
 	var registrations atomic.Int32
 	var tickets atomic.Int32
 
+	// Serve registration and signaling while leaving presentation endpoints absent.
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/api/account/session/register":
@@ -132,31 +147,36 @@ func TestMountedSessionReRegistersAfterUnauthorizedTransport(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write(response)
 		case "/api/signal/ticket":
-			switch tickets.Add(1) {
+			ticket := tickets.Add(1)
+			switch ticket {
 			case 1:
 				close(firstTicketStarted)
 				<-releaseFirstTicket
 				http.Error(w, "wrapped unauthorized response", http.StatusUnauthorized)
+				return
 			case 2:
 				close(secondTicketStarted)
 				<-permitSecondTicket
-				response, err := (&api.SignalTicketResponse{Token: "test-token"}).MarshalVT()
-				if err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-					return
-				}
-				w.Header().Set("Content-Type", "application/octet-stream")
-				w.WriteHeader(http.StatusOK)
-				_, _ = w.Write(response)
+			case 3:
 			default:
 				http.Error(w, "unexpected extra ticket", http.StatusInternalServerError)
+				return
 			}
+			response, err := (&api.SignalTicketResponse{Token: "test-token"}).MarshalVT()
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/octet-stream")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(response)
 		case "/api/signal/ws":
 			conn, err := websocket.Accept(w, r, nil)
 			if err != nil {
 				return
 			}
 			defer conn.Close(websocket.StatusNormalClosure, "")
+			websocketAcceptedOnce.Do(func() { close(websocketAccepted) })
 			<-r.Context().Done()
 		default:
 			http.NotFound(w, r)
@@ -164,6 +184,7 @@ func TestMountedSessionReRegistersAfterUnauthorizedTransport(t *testing.T) {
 	}))
 	defer srv.Close()
 
+	// Mount the real Session controller in the in-memory stack.
 	tb, err := testbed.Default(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -186,6 +207,7 @@ func TestMountedSessionReRegistersAfterUnauthorizedTransport(t *testing.T) {
 	}
 	defer sessionControllerRef.Release()
 
+	// Register the Session reference consumed by MountSession.
 	priv, pid := generateTestKeypair(t)
 	sessionID := "session-401"
 	sessionRef := &session.SessionRef{
@@ -199,6 +221,7 @@ func TestMountedSessionReRegistersAfterUnauthorizedTransport(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Let the keyed container own the tracker and observe its actual exit.
 	le := logrus.New().WithField("test", t.Name())
 	prov := NewProvider(le, tb.Bus, &Config{Endpoint: srv.URL}, NewProviderInfo("spacewave"), nil, nil)
 	acc := &ProviderAccount{
@@ -211,21 +234,16 @@ func TestMountedSessionReRegistersAfterUnauthorizedTransport(t *testing.T) {
 		soListCtr: ccontainer.NewCContainer[*sobject.SharedObjectList](nil),
 		entityCli: NewEntityClientDirect(prov.httpCli, srv.URL, DefaultSigningEnvPrefix, priv, pid),
 	}
-	acc.sessions = keyed.NewKeyedRefCount(acc.buildSessionTracker)
+	executing := make(chan error, 1)
+	acc.sessions = keyed.NewKeyedRefCount(acc.buildSessionTracker,
+		keyed.WithExitCb[string, *sessionTracker](func(_ string, _ keyed.Routine, _ *sessionTracker, err error) {
+			executing <- err
+		}),
+	)
 	acc.sessions.SetContext(ctx, false)
 	defer acc.sessions.ClearContext()
-	_, tkr, existed := acc.sessions.AddKeyRef(sessionID)
-	if existed {
-		t.Fatal("expected mounted Session tracker to be created")
-	}
-	defer acc.sessions.RemoveKey(sessionID)
-	tkr.ref.SetResult(sessionRef, nil)
 
-	executing := make(chan error, 1)
-	go func() {
-		executing <- tkr.executeSessionTracker(ctx)
-	}()
-
+	// Mount through the production API without launching a second tracker.
 	mounted, mountedRelease, err := acc.MountSession(ctx, sessionRef, nil)
 	if err != nil {
 		t.Fatalf("mount Session: %v", err)
@@ -235,6 +253,7 @@ func TestMountedSessionReRegistersAfterUnauthorizedTransport(t *testing.T) {
 		t.Fatal("mounted Session is nil")
 	}
 
+	// Reject the initial transport only after initial registration is observed.
 	select {
 	case <-firstTicketStarted:
 	case <-ctx.Done():
@@ -247,6 +266,7 @@ func TestMountedSessionReRegistersAfterUnauthorizedTransport(t *testing.T) {
 	}
 	close(releaseFirstTicket)
 
+	// Permit replacement signaling after the Session re-registers.
 	select {
 	case <-reregistration:
 	case <-ctx.Done():
@@ -258,7 +278,13 @@ func TestMountedSessionReRegistersAfterUnauthorizedTransport(t *testing.T) {
 	case <-ctx.Done():
 		t.Fatalf("second transport ticket did not start: %v", ctx.Err())
 	}
+	select {
+	case <-websocketAccepted:
+	case <-ctx.Done():
+		t.Fatalf("replacement signaling socket was not accepted: %v", ctx.Err())
+	}
 
+	// Require a recovered transport and the three native signaling ticket roles.
 	for {
 		snapshot, waitCh := acc.GetTransportCompositionSnapshotWithWait(sessionID)
 		if snapshot.P2PState == TransportCompositionP2PStateError {
@@ -278,10 +304,11 @@ func TestMountedSessionReRegistersAfterUnauthorizedTransport(t *testing.T) {
 	if got := registrations.Load(); got < 2 {
 		t.Fatalf("session registrations = %d, want initial registration and re-registration", got)
 	}
-	if got := tickets.Load(); got != 2 {
-		t.Fatalf("signal tickets = %d, want two", got)
+	if got := tickets.Load(); got != 3 {
+		t.Fatalf("signal tickets = %d, want rejected startup, replacement startup, and connection", got)
 	}
 
+	// Join the container-owned tracker after canceling its lifetime.
 	cancel()
 	select {
 	case err := <-executing:
@@ -293,7 +320,10 @@ func TestMountedSessionReRegistersAfterUnauthorizedTransport(t *testing.T) {
 	}
 }
 
+// TestSessionTransportReplacementReportsUncooperativeRoutine checks that a stop
+// cannot remove a transport whose routine has not exited.
 func TestSessionTransportReplacementReportsUncooperativeRoutine(t *testing.T) {
+	// Hold the old transport routine past cancellation until explicitly released.
 	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
 	defer cancel()
 	acc := NewTestProviderAccount(t, "")
@@ -317,6 +347,7 @@ func TestSessionTransportReplacementReportsUncooperativeRoutine(t *testing.T) {
 	}
 	acc.sessionTransports[""] = sts
 
+	// Attempt replacement while the old routine is still running.
 	select {
 	case <-started:
 	case <-ctx.Done():
@@ -332,6 +363,7 @@ func TestSessionTransportReplacementReportsUncooperativeRoutine(t *testing.T) {
 		t.Fatal("replacement removed current state after an unconfirmed stop")
 	}
 
+	// Release and join the deliberately uncooperative routine.
 	close(releaseRoutine)
 	select {
 	case <-routineExited:
@@ -340,16 +372,21 @@ func TestSessionTransportReplacementReportsUncooperativeRoutine(t *testing.T) {
 	}
 }
 
+// TestClassifySessionTransportErrorUsesStatusThroughWrappedMessage checks status
+// classification independently of wrapper text.
 func TestClassifySessionTransportErrorUsesStatusThroughWrappedMessage(t *testing.T) {
-	err := fmt.Errorf("message changed: %w", &testSessionTransportStatusError{
+	err := errors.Wrap(&testSessionTransportStatusError{
 		statusCode: http.StatusUnauthorized,
-	})
+	}, "message changed")
 	if !errors.Is(classifySessionTransportError(err), errSessionTransportUnauthorized) {
 		t.Fatalf("classification lost unauthorized status through wrapped message: %v", err)
 	}
 }
 
+// TestCreateSessionTransportConcurrentReplacementKeepsNewTransport checks that
+// an old startup cannot clear its ready replacement.
 func TestCreateSessionTransportConcurrentReplacementKeepsNewTransport(t *testing.T) {
+	// Hold the old signal-ticket request until its transport is canceled.
 	requested := make(chan struct{})
 	unexpectedPath := make(chan string, 1)
 	var once sync.Once
@@ -367,6 +404,7 @@ func TestCreateSessionTransportConcurrentReplacementKeepsNewTransport(t *testing
 	}))
 	defer srv.Close()
 
+	// Start the old transport and wait for its blocked request.
 	acc := NewTestProviderAccount(t, srv.URL)
 	oldPriv, _ := generateTestKeypair(t)
 	oldDone := make(chan error, 1)
@@ -375,6 +413,7 @@ func TestCreateSessionTransportConcurrentReplacementKeepsNewTransport(t *testing
 	}()
 	waitForSessionTransportSignal(t, requested, time.Second, "old signal ticket request")
 
+	// Replace it with a ready transport carrying a different peer identity.
 	newPriv, _ := generateTestKeypair(t)
 	if err := acc.CreateSessionTransport(context.Background(), newPriv, ""); err != nil {
 		t.Fatalf("new CreateSessionTransport: %v", err)
@@ -387,6 +426,7 @@ func TestCreateSessionTransportConcurrentReplacementKeepsNewTransport(t *testing
 		t.Fatalf("current transport peer = %q, want replacement peer", current.GetPeerID().String())
 	}
 
+	// Join old startup and confirm that its cleanup preserves the replacement.
 	select {
 	case err := <-oldDone:
 		if err == nil {
@@ -401,7 +441,10 @@ func TestCreateSessionTransportConcurrentReplacementKeepsNewTransport(t *testing
 	assertNoUnexpectedSessionTransportPath(t, unexpectedPath)
 }
 
+// TestCreateSessionTransportCancellationStopsStartup checks that cancellation
+// stops a pending signal-ticket request and clears its transport.
 func TestCreateSessionTransportCancellationStopsStartup(t *testing.T) {
+	// Keep the signal-ticket request pending until its context is canceled.
 	requested := make(chan struct{})
 	unexpectedPath := make(chan string, 1)
 	var once sync.Once
@@ -419,6 +462,7 @@ func TestCreateSessionTransportCancellationStopsStartup(t *testing.T) {
 	}))
 	defer srv.Close()
 
+	// Cancel startup only after the request has reached the endpoint.
 	acc := NewTestProviderAccount(t, srv.URL)
 	priv, _ := generateTestKeypair(t)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -429,6 +473,7 @@ func TestCreateSessionTransportCancellationStopsStartup(t *testing.T) {
 	waitForSessionTransportSignal(t, requested, time.Second, "signal ticket request")
 	cancel()
 
+	// Join startup and require the canceled transport to be removed.
 	select {
 	case err := <-done:
 		if !errors.Is(err, context.Canceled) {
@@ -443,6 +488,7 @@ func TestCreateSessionTransportCancellationStopsStartup(t *testing.T) {
 	assertNoUnexpectedSessionTransportPath(t, unexpectedPath)
 }
 
+// waitForSessionTransportSignal waits for a fixture event within the test bound.
 func waitForSessionTransportSignal(t *testing.T, ch <-chan struct{}, timeout time.Duration, name string) {
 	t.Helper()
 	select {
@@ -452,6 +498,7 @@ func waitForSessionTransportSignal(t *testing.T, ch <-chan struct{}, timeout tim
 	}
 }
 
+// assertNoUnexpectedSessionTransportPath rejects any recorded unexpected request.
 func assertNoUnexpectedSessionTransportPath(t *testing.T, ch <-chan string) {
 	t.Helper()
 	select {
