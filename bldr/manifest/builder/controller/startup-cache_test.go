@@ -17,8 +17,10 @@ import (
 	"github.com/aperturerobotics/controllerbus/controller/configset"
 	configset_proto "github.com/aperturerobotics/controllerbus/controller/configset/proto"
 	"github.com/aperturerobotics/controllerbus/directive"
+	"github.com/aperturerobotics/util/enabled"
 	"github.com/go-git/go-billy/v6/memfs"
 	bldr_manifest "github.com/s4wave/spacewave/bldr/manifest"
+	bldr_manifest_build "github.com/s4wave/spacewave/bldr/manifest/build"
 	bldr_manifest_builder "github.com/s4wave/spacewave/bldr/manifest/builder"
 	bldr_project "github.com/s4wave/spacewave/bldr/project"
 	"github.com/s4wave/spacewave/bldr/testbed"
@@ -363,7 +365,7 @@ func TestValidateStartupFilesEscapedBldrDistPath(t *testing.T) {
 func TestValidateStartupInputs(t *testing.T) {
 	t.Setenv("BLDR_TEST_ENV", "expected")
 	controllerConfig := &configset_proto.ControllerConfig{}
-	controllerConfigDigest, err := marshalControllerConfigDigest(controllerConfig)
+	controllerConfigDigest, err := marshalStartupConfigDigest(controllerConfig, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -377,19 +379,32 @@ func TestValidateStartupInputs(t *testing.T) {
 		bldr_manifest_builder.NewEnvStartupInput("BLDR_TEST_ENV", "expected"),
 	)
 
-	if err := validateStartupInputs(controllerConfig, inputManifest); err != nil {
+	if err := validateStartupInputs(controllerConfig, nil, inputManifest); err != nil {
 		t.Fatalf("validate startup inputs: %v", err)
 	}
 
+	policy := &bldr_manifest_build.BuildPolicy{JsMinification: enabled.Enabled_ENABLE}
+	if err := validateStartupInputs(controllerConfig, policy, inputManifest); err == nil {
+		t.Fatal("expected rebuild after build policy changed")
+	}
+	policyDigest, err := marshalStartupConfigDigest(controllerConfig, policy)
+	if err != nil {
+		t.Fatal(err)
+	}
+	inputManifest.StartupInputs[0] = bldr_manifest_builder.NewControllerConfigDigestStartupInput(policyDigest)
+	if err := validateStartupInputs(controllerConfig, policy, inputManifest); err != nil {
+		t.Fatalf("unchanged build policy: %v", err)
+	}
+
 	t.Setenv("BLDR_TEST_ENV", "changed")
-	if err := validateStartupInputs(controllerConfig, inputManifest); err == nil {
+	if err := validateStartupInputs(controllerConfig, policy, inputManifest); err == nil {
 		t.Fatal("expected env validation error")
 	}
 }
 
 func TestValidateStartupInputsRequiresCacheFormat(t *testing.T) {
 	controllerConfig := &configset_proto.ControllerConfig{}
-	controllerConfigDigest, err := marshalControllerConfigDigest(controllerConfig)
+	controllerConfigDigest, err := marshalStartupConfigDigest(controllerConfig, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -398,14 +413,14 @@ func TestValidateStartupInputsRequiresCacheFormat(t *testing.T) {
 	inputManifest.AddStartupInput(
 		bldr_manifest_builder.NewControllerConfigDigestStartupInput(controllerConfigDigest),
 	)
-	if err := validateStartupInputs(controllerConfig, inputManifest); err == nil {
+	if err := validateStartupInputs(controllerConfig, nil, inputManifest); err == nil {
 		t.Fatal("expected missing startup cache format marker error")
 	}
 }
 
 func TestValidateStartupInputsRejectsOldCacheFormat(t *testing.T) {
 	controllerConfig := &configset_proto.ControllerConfig{}
-	controllerConfigDigest, err := marshalControllerConfigDigest(controllerConfig)
+	controllerConfigDigest, err := marshalStartupConfigDigest(controllerConfig, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -418,7 +433,7 @@ func TestValidateStartupInputsRejectsOldCacheFormat(t *testing.T) {
 		bldr_manifest_builder.NewEnvStartupInput("BLDR_STARTUP_CACHE_FORMAT_V10", ""),
 	)
 
-	err = validateStartupInputs(controllerConfig, inputManifest)
+	err = validateStartupInputs(controllerConfig, nil, inputManifest)
 	if err == nil || !strings.Contains(err.Error(), "missing startup cache format marker") {
 		t.Fatalf("validate startup inputs error = %v, want missing current cache format", err)
 	}
@@ -463,7 +478,7 @@ func TestValidateStartupHookDeclaredProvenanceInvalidation(t *testing.T) {
 	if err := validateStartupFiles(tmpDir, inputManifest); err != nil {
 		t.Fatalf("unchanged declared file validation: %v", err)
 	}
-	if err := validateStartupInputs(controllerConfig, inputManifest); err != nil {
+	if err := validateStartupInputs(controllerConfig, nil, inputManifest); err != nil {
 		t.Fatalf("unchanged declared env validation: %v", err)
 	}
 
@@ -478,7 +493,7 @@ func TestValidateStartupHookDeclaredProvenanceInvalidation(t *testing.T) {
 	// A changed declared environment variable forces a rebuild.
 	fresh := buildInputManifest()
 	t.Setenv("BLDR_TEST_HOOK_ENV", "changed-value")
-	if err := validateStartupInputs(controllerConfig, fresh); err == nil {
+	if err := validateStartupInputs(controllerConfig, nil, fresh); err == nil {
 		t.Fatal("expected rebuild after declared env var changed")
 	}
 	// An unset declared environment variable still participates in identity.
@@ -487,7 +502,7 @@ func TestValidateStartupHookDeclaredProvenanceInvalidation(t *testing.T) {
 	}
 	unset := buildInputManifest()
 	t.Setenv("BLDR_TEST_HOOK_ENV", "set-after-unset")
-	if err := validateStartupInputs(controllerConfig, unset); err == nil {
+	if err := validateStartupInputs(controllerConfig, nil, unset); err == nil {
 		t.Fatal("expected rebuild after declared env var changed from unset")
 	}
 }

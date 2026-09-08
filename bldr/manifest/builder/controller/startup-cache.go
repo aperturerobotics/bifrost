@@ -16,6 +16,7 @@ import (
 	configset_proto "github.com/aperturerobotics/controllerbus/controller/configset/proto"
 	"github.com/pkg/errors"
 	bldr_manifest "github.com/s4wave/spacewave/bldr/manifest"
+	bldr_manifest_build "github.com/s4wave/spacewave/bldr/manifest/build"
 	bldr_manifest_builder "github.com/s4wave/spacewave/bldr/manifest/builder"
 	bldr_manifest_world "github.com/s4wave/spacewave/bldr/manifest/world"
 	"github.com/s4wave/spacewave/db/block"
@@ -30,9 +31,9 @@ import (
 )
 
 // startupCacheFormatEnvKey is bumped when compiler-owned output policy changes
-// without changing a plugin source file. V11 invalidates Vite results that
-// omitted dynamically imported chunks from their source dependencies.
-const startupCacheFormatEnvKey = "BLDR_STARTUP_CACHE_FORMAT_V11"
+// without changing a plugin source file. V12 binds the effective build policy
+// to the controller configuration fingerprint.
+const startupCacheFormatEnvKey = "BLDR_STARTUP_CACHE_FORMAT_V12"
 
 // startupValidationResult contains the startup cache validation result.
 type startupValidationResult struct {
@@ -83,7 +84,7 @@ func (c *Controller) validateStartupBuilderResult(
 	if err := validateStartupFiles(c.c.GetBuilderConfig().GetSourcePath(), inputManifest); err != nil {
 		return &startupValidationResult{reason: err.Error()}, nil
 	}
-	if err := validateStartupInputs(c.c.GetControllerConfig(), inputManifest); err != nil {
+	if err := validateStartupInputs(c.c.GetControllerConfig(), c.c.GetBuilderConfig().GetBuildPolicy(), inputManifest); err != nil {
 		return &startupValidationResult{reason: err.Error()}, nil
 	}
 
@@ -306,7 +307,7 @@ func enrichBuilderResultForStartupReuse(
 	}
 
 	// Bind startup reuse to the effective controller configuration and format.
-	controllerConfigDigest, err := marshalControllerConfigDigest(controllerConfig)
+	controllerConfigDigest, err := marshalStartupConfigDigest(controllerConfig, builderConfig.GetBuildPolicy())
 	if err != nil {
 		return err
 	}
@@ -387,21 +388,23 @@ func validateStartupFiles(sourcePath string, inputManifest *bldr_manifest_builde
 // validateStartupInputs validates typed non-file startup inputs.
 func validateStartupInputs(
 	controllerConfig *configset_proto.ControllerConfig,
+	buildPolicy *bldr_manifest_build.BuildPolicy,
 	inputManifest *bldr_manifest_builder.InputManifest,
 ) error {
-	return validateStartupInputsWithControllerConfig(controllerConfig, inputManifest, true)
+	return validateStartupInputsWithControllerConfig(controllerConfig, buildPolicy, inputManifest, true)
 }
 
 // validateNestedStartupInputs validates child inputs whose effective config is
 // derived from and covered by the validated parent controller config.
 func validateNestedStartupInputs(inputManifest *bldr_manifest_builder.InputManifest) error {
-	return validateStartupInputsWithControllerConfig(nil, inputManifest, false)
+	return validateStartupInputsWithControllerConfig(nil, nil, inputManifest, false)
 }
 
 // validateStartupInputsWithControllerConfig validates the startup input
 // manifest against the controller config digest and cache format.
 func validateStartupInputsWithControllerConfig(
 	controllerConfig *configset_proto.ControllerConfig,
+	buildPolicy *bldr_manifest_build.BuildPolicy,
 	inputManifest *bldr_manifest_builder.InputManifest,
 	validateControllerConfig bool,
 ) error {
@@ -424,14 +427,14 @@ func validateStartupInputsWithControllerConfig(
 				continue
 			}
 			if len(controllerConfigDigest) == 0 {
-				digest, err := marshalControllerConfigDigest(controllerConfig)
+				digest, err := marshalStartupConfigDigest(controllerConfig, buildPolicy)
 				if err != nil {
 					return err
 				}
 				controllerConfigDigest = digest
 			}
 			if !bytes.Equal(controllerConfigDigest, input.GetBytesValue()) {
-				return errors.New("builder controller config changed")
+				return errors.New("builder controller config or build policy changed")
 			}
 		default:
 			return errors.Errorf("unsupported startup input kind: %s", input.GetKind().String())
@@ -506,19 +509,31 @@ func resolveStartupInputPath(sourcePath, inputPath string) string {
 	return filePath
 }
 
-// marshalControllerConfigDigest marshals the controller config to a digest.
-func marshalControllerConfigDigest(controllerConfig *configset_proto.ControllerConfig) ([]byte, error) {
-	// Marshal the effective configuration using its generated codec.
-	if controllerConfig == nil {
-		return nil, nil
+// marshalStartupConfigDigest fingerprints compiler configuration and build policy.
+func marshalStartupConfigDigest(
+	controllerConfig *configset_proto.ControllerConfig,
+	buildPolicy *bldr_manifest_build.BuildPolicy,
+) ([]byte, error) {
+	var controllerConfigBin []byte
+	if controllerConfig != nil {
+		var err error
+		controllerConfigBin, err = controllerConfig.MarshalVT()
+		if err != nil {
+			return nil, err
+		}
 	}
-	controllerConfigBin, err := controllerConfig.MarshalVT()
-	if err != nil {
-		return nil, err
+	var buildPolicyBin []byte
+	if buildPolicy != nil {
+		var err error
+		buildPolicyBin, err = buildPolicy.MarshalVT()
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	// Hash serialized configuration for compact startup comparison.
-	digest := sha256.Sum256(controllerConfigBin)
+	// A fixed-width policy digest separates the two serialized inputs.
+	policyDigest := sha256.Sum256(buildPolicyBin)
+	digest := sha256.Sum256(append(controllerConfigBin, policyDigest[:]...))
 	return digest[:], nil
 }
 
