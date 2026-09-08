@@ -5,6 +5,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/s4wave/spacewave/db/block"
 	trace "github.com/s4wave/spacewave/db/traceutil"
 )
 
@@ -45,7 +46,7 @@ func (e *PackReader) fetchMiss(ctx context.Context, off, readEnd int64) error {
 			if load != nil {
 				return
 			}
-			key = e.planFetchLocked(off, readEnd)
+			key = e.planFetchLocked(off, readEnd, block.ReadAhead(ctx))
 			if key.size == 0 {
 				return
 			}
@@ -108,6 +109,7 @@ func (e *PackReader) fetchMiss(ctx context.Context, off, readEnd int64) error {
 	}
 }
 
+// ensureExactRangeResident fills missing bytes without speculative read-ahead.
 func (e *PackReader) ensureExactRangeResident(ctx context.Context, start, end int64) error {
 	if end <= start {
 		return nil
@@ -128,6 +130,8 @@ func (e *PackReader) ensureExactRangeResident(ctx context.Context, start, end in
 	return nil
 }
 
+// fetchExact shares resident and in-flight spans while loading only requested
+// index bytes. Transport lifetime remains owned by the PackReader.
 func (e *PackReader) fetchExact(ctx context.Context, off, readEnd int64) error {
 	ctx, task := trace.NewTask(ctx, "provider/spacewave/packfile/exact-range-fetch")
 	defer task.End()
@@ -279,7 +283,7 @@ func (e *PackReader) startFetch(key fetchKey, load *fetchLoad, indexTail bool) {
 // The planner also adapts the steady-state window against the measured
 // goodput so the request rate approaches targetInterval^-1 while staying
 // clamped to [minWindow, maxWindow].
-func (e *PackReader) planFetchLocked(off, readEnd int64) fetchKey {
+func (e *PackReader) planFetchLocked(off, readEnd int64, readAhead int) fetchKey {
 	gapStart, gapEnd, ok := e.findGapLocked(off)
 	if !ok || gapEnd <= gapStart {
 		return fetchKey{}
@@ -320,6 +324,16 @@ func (e *PackReader) planFetchLocked(off, readEnd int64) fetchKey {
 	}
 	e.recordSparseTargetLocked(off, mustEnd)
 
+	// Bulk-read hints affect this miss only. Keep transport bounds and the
+	// shared resident/in-flight gap rules without raising foreground defaults.
+	if readAhead > 0 {
+		readAhead = e.clampWindow(readAhead)
+		if e.maxBytes > 0 {
+			readAhead = int(min(int64(readAhead), e.maxBytes))
+		}
+		windowSize = max(windowSize, readAhead)
+	}
+
 	quantum := int64(max(1, e.transportQuantum))
 	gapSize := gapEnd - gapStart
 	fetchSize := min(int64(windowSize), gapSize)
@@ -339,6 +353,7 @@ func (e *PackReader) planFetchLocked(off, readEnd int64) fetchKey {
 	return fetchKey{off: start, size: int(end - start)}
 }
 
+// hasSparseLocalityLocked reports proximity to the preceding payload target.
 func (e *PackReader) hasSparseLocalityLocked(off, end int64) bool {
 	if !e.lastTargetSet {
 		return false
@@ -352,6 +367,7 @@ func (e *PackReader) hasSparseLocalityLocked(off, end int64) bool {
 	return dist <= e.sparseLocalityDistance
 }
 
+// recordSparseTargetLocked retains the latest target for locality detection.
 func (e *PackReader) recordSparseTargetLocked(off, end int64) {
 	if !e.sparseReads {
 		return
@@ -361,6 +377,7 @@ func (e *PackReader) recordSparseTargetLocked(off, end int64) {
 	e.lastTargetSet = true
 }
 
+// planExactFetchLocked clips index reads to the currently uncovered gap.
 func (e *PackReader) planExactFetchLocked(off, readEnd int64) fetchKey {
 	gapStart, gapEnd, ok := e.findGapLocked(off)
 	if !ok || gapEnd <= gapStart {
@@ -390,6 +407,7 @@ func (e *PackReader) recordFetchLocked(key fetchKey, responseBytes int) func() {
 	return e.statsChanged
 }
 
+// recordIndexTailFetchLocked accounts for index I/O separately from payloads.
 func (e *PackReader) recordIndexTailFetchLocked(key fetchKey, responseBytes int) func() {
 	e.lastFetchAt = time.Now()
 	e.lastFetchBytes = key.size
@@ -402,6 +420,7 @@ func (e *PackReader) recordIndexTailFetchLocked(key fetchKey, responseBytes int)
 	return e.statsChanged
 }
 
+// readResidentRange returns an owned copy only when every byte is resident.
 func (e *PackReader) readResidentRange(start, end int64) ([]byte, bool) {
 	if end <= start {
 		return nil, true
@@ -445,7 +464,7 @@ func (e *PackReader) findLoadingLocked(off int64) *fetchLoad {
 
 // findGapLocked returns the uncovered byte interval around off.
 //
-// If off is already covered by a resident span the gap is empty. Otherwise
+// If off is already covered by a resident or in-flight span the gap is empty. Otherwise
 // the gap is the widest [prevEnd, nextStart) that contains off, where
 // prevEnd is the end of the span before off (or 0) and nextStart is the
 // start of the next span (or the pack size).
@@ -453,19 +472,35 @@ func (e *PackReader) findGapLocked(off int64) (int64, int64, bool) {
 	if off < 0 {
 		return 0, 0, false
 	}
+
+	// Find the resident gap around this offset.
 	prevEnd := int64(0)
+	end := e.size
+	if end <= 0 {
+		end = int64(1 << 62)
+	}
 	for _, s := range e.spans {
 		if off < s.off {
-			return prevEnd, s.off, off >= prevEnd
+			end = s.off
+			break
 		}
 		if off < s.end() {
 			return 0, 0, false
 		}
 		prevEnd = s.end()
 	}
-	end := e.size
-	if end <= 0 {
-		end = int64(1 << 62)
+
+	// Reserve in-flight bytes too. A larger neighboring miss must not overlap
+	// a smaller request whose starting offset lies inside its preferred window.
+	for key := range e.loading {
+		if off >= key.off && off < key.end() {
+			return 0, 0, false
+		}
+		if key.end() <= off {
+			prevEnd = max(prevEnd, key.end())
+		} else if key.off > off {
+			end = min(end, key.off)
+		}
 	}
 	return prevEnd, end, off >= prevEnd && off < end
 }

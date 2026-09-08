@@ -18,6 +18,10 @@ import (
 	"github.com/s4wave/spacewave/net/util/randstring"
 )
 
+// materializerReadAhead amortizes bulk copying over 10 MiB range fetches.
+// The source store retains its cache, transport caps, and foreground policy.
+const materializerReadAhead = 10 << 20
+
 // materializeManifest copies the selected manifest from src to dest through
 // the materializer plugin's typed streaming service.
 //
@@ -53,7 +57,7 @@ func (c *Controller) materializeManifest(
 	sourceID := randstring.RandomIdentifier(16)
 	sourceMux := srpc.NewMux()
 	if err := sourceMux.Register(block_rpc.NewSRPCBlockStoreHandler(
-		block_rpc_server.NewBlockStore(src.GetBucket()),
+		block_rpc_server.NewBlockStoreWithReadAhead(src.GetBucket(), materializerReadAhead),
 		sourceID,
 	)); err != nil {
 		return nil, stats, errors.Wrap(err, "register source block store rpc handler")

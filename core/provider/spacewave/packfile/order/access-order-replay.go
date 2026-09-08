@@ -16,10 +16,45 @@ func ReplayAccessOrderRecord(
 	refs []*block.BlockRef,
 	resolver AccessOrderPathResolver,
 ) (*AccessOrderReplayResult, error) {
+	// Establish structural fallback before applying any access profile.
 	fallback, err := BlockRefs(ctx, graph, refs)
 	if err != nil {
 		return nil, err
 	}
+	return ReplayAccessOrderRecordWithFallback(ctx, identity, record, fallback, resolver)
+}
+
+// ReplayAccessOrderRecordWithFallback puts recorded reads first and retains
+// the caller's structural order for all other blocks. Each nonempty identity
+// is emitted once; the input order is also used when the record is stale.
+func ReplayAccessOrderRecordWithFallback(
+	ctx context.Context,
+	identity AccessOrderManifestIdentity,
+	record *AccessOrderRecord,
+	refs []*block.BlockRef,
+	resolver AccessOrderPathResolver,
+) (*AccessOrderReplayResult, error) {
+	// Honor cancellation before constructing a potentially large ordering.
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
+	// Normalize the supplied fallback without sorting away its locality.
+	fallback := make([]*block.BlockRef, 0, len(refs))
+	candidates := make(map[string]*block.BlockRef, len(refs))
+	for _, ref := range refs {
+		key := refKey(ref)
+		if key == "" {
+			continue
+		}
+		if _, ok := candidates[key]; ok {
+			continue
+		}
+		candidates[key] = ref
+		fallback = append(fallback, ref)
+	}
+
+	// A missing or mismatched profile cannot override producer locality.
 	res := &AccessOrderReplayResult{}
 	if record == nil || !identity.MatchesRecord(record) {
 		res.Refs = fallback
@@ -27,15 +62,7 @@ func ReplayAccessOrderRecord(
 		return res, nil
 	}
 
-	candidates := make(map[string]*block.BlockRef, len(refs))
-	for _, ref := range refs {
-		key := refKey(ref)
-		if key == "" {
-			continue
-		}
-		candidates[key] = ref
-	}
-
+	// Resolve hot entries first, then append every remaining subtree in order.
 	seen := make(map[string]struct{}, len(refs))
 	ordered := make([]*block.BlockRef, 0, len(refs))
 	for _, entry := range record.GetEntries() {
@@ -71,6 +98,7 @@ func ReplayAccessOrderRecord(
 		}
 	}
 
+	// Preserve all remaining blocks in the supplied structural order.
 	for _, ref := range fallback {
 		key := refKey(ref)
 		if key == "" {
@@ -85,6 +113,7 @@ func ReplayAccessOrderRecord(
 	return res, nil
 }
 
+// accessOrderEntryRefs resolves one file path or its captured block references.
 func accessOrderEntryRefs(ctx context.Context, entry *AccessOrderEntry, resolver AccessOrderPathResolver) ([]*block.BlockRef, bool, error) {
 	if entry == nil {
 		return nil, false, nil
