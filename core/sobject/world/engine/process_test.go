@@ -133,47 +133,6 @@ func TestProcessInitWorldOpWritesDisabledChangelogRoot(t *testing.T) {
 	}
 }
 
-func TestSOWorldOpSpeculativeLocalQueueSafeSkipsGCSweep(t *testing.T) {
-	gcTx, err := world_block_tx.NewMaintenanceTxGCSweep()
-	if err != nil {
-		t.Fatal(err)
-	}
-	gcOp := &SOWorldOp{
-		Body: &SOWorldOp_ApplyTxOp{
-			ApplyTxOp: &ApplyTxOp{Tx: gcTx},
-		},
-	}
-	if gcOp.speculativeLocalQueueSafe() {
-		t.Fatal("GC sweep should wait for authoritative processing")
-	}
-
-	createTx, err := world_block_tx.NewTxCreateObject("obj", &bucket.ObjectRef{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	createOp := &SOWorldOp{
-		Body: &SOWorldOp_ApplyTxOp{
-			ApplyTxOp: &ApplyTxOp{Tx: createTx},
-		},
-	}
-	if !createOp.speculativeLocalQueueSafe() {
-		t.Fatal("regular world transactions should still be speculative")
-	}
-
-	batchTx, err := world_block_tx.NewTxBatch(&world_block_tx.TxBatch{Txs: []*world_block_tx.Tx{createTx, gcTx}})
-	if err != nil {
-		t.Fatal(err)
-	}
-	batchOp := &SOWorldOp{
-		Body: &SOWorldOp_ApplyTxOp{
-			ApplyTxOp: &ApplyTxOp{Tx: batchTx},
-		},
-	}
-	if batchOp.speculativeLocalQueueSafe() {
-		t.Fatal("batched GC sweep should wait for authoritative processing")
-	}
-}
-
 func TestProcessOpRejectsDisabledMaintenanceGCSweepBeforeBlockEngine(t *testing.T) {
 	pid := newProcessTestPeerID(t)
 	headState, err := BuildInitialInnerState(nil)

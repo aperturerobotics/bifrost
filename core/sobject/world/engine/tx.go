@@ -14,11 +14,17 @@ import (
 	bifhash "github.com/s4wave/spacewave/net/hash"
 )
 
-// soEngineWriteTx is the write txn attached to the soEngine
+// soEngineWriteTx holds the write mutex until its candidate is accepted or discarded.
 type soEngineWriteTx struct {
+	// WorldState records the operations applied to the fork.
 	*world_block_tx.WorldState
-	btx            *world_block.Tx
-	eng            *soEngine
+	// btx contains the candidate World blocks.
+	btx *world_block.Tx
+	// eng publishes the candidate through SharedObject authority.
+	eng *soEngine
+	// baseRoot is the accepted SharedObject root captured before the write fork.
+	baseRoot *sobject.SORoot
+	// unlockWriteMtx releases the write mutex once, including repeated Discard calls.
 	unlockWriteMtx func()
 }
 
@@ -27,34 +33,27 @@ func newSoEngineWriteTx(
 	worldState *world_block_tx.WorldState,
 	btx *world_block.Tx,
 	eng *soEngine,
+	baseRoot *sobject.SORoot,
 	unlockWriteMtx func(),
 ) *soEngineWriteTx {
 	return &soEngineWriteTx{
 		WorldState:     worldState,
 		btx:            btx,
 		eng:            eng,
+		baseRoot:       baseRoot,
 		unlockWriteMtx: unlockWriteMtx,
 	}
 }
 
-// Commit commits the transaction to storage.
-// Can return an error to indicate tx failure.
+// Commit persists candidate blocks and waits for SharedObject acceptance.
+// A stale authority base rejects the candidate and refreshes the local World.
 func (t *soEngineWriteTx) Commit(ctx context.Context) error {
+	// Keep candidate cleanup and writer release bound to every return path.
 	ctx, task := trace.NewTask(ctx, "alpha/so-engine/write-tx/commit")
 	defer task.End()
+	defer t.Discard()
 
-	released := false
-	release := func() {
-		if released {
-			return
-		}
-		released = true
-		t.Discard()
-	}
-	defer release() // discard the underlying block txn and unlock the write mtx
-
-	// commit the upper world state so we can get the txns list
-	// world_block_tx.WorldState Commit just checks if discarded & marks as discarded
+	// Close the operation buffer before publishing its candidate blocks.
 	{
 		taskCtx, task := trace.NewTask(ctx, "alpha/so-engine/write-tx/world-state-commit")
 		err := t.WorldState.Commit(taskCtx)
@@ -87,13 +86,14 @@ func (t *soEngineWriteTx) Commit(ctx context.Context) error {
 		}
 	}
 
+	// Empty transactions have no operation to submit to authority.
 	txBatch := t.GetTxBatch()
 	txns := txBatch.GetTxs()
 	if len(txns) == 0 {
-		// no-op
 		return nil
 	}
 
+	// Serialize the complete mutation as one replayable transaction batch.
 	var tx *world_block_tx.Tx
 	{
 		_, task := trace.NewTask(ctx, "alpha/so-engine/write-tx/build-tx-batch")
@@ -105,20 +105,20 @@ func (t *soEngineWriteTx) Commit(ctx context.Context) error {
 		}
 	}
 
-	// apply world op
+	// Wrap the batch in the SharedObject World operation.
 	op := &SOWorldOp{
 		Body: &SOWorldOp_ApplyTxOp{
 			ApplyTxOp: &ApplyTxOp{Tx: tx},
 		},
 	}
 
-	// marshal op data
+	// Encode the operation for signing and validator replay.
 	opData, err := op.MarshalVT()
 	if err != nil {
 		return err
 	}
 
-	// build the next obj ref
+	// Keep the accepted base separate from the unpublished candidate root.
 	baseObjRef := t.eng.bengine.GetRootRef() // clone of current (pre-commit) root
 	nextObjRef := baseObjRef.CloneVT()
 	nextObjRef.RootRef = nroot
@@ -127,6 +127,7 @@ func (t *soEngineWriteTx) Commit(ctx context.Context) error {
 	nextStoredObjRef := nextObjRef.CloneVT()
 	nextStoredObjRef.BucketId = ""
 
+	// Bind the finalization packet to the encoded operation.
 	contentID, err := bifhash.Sum(bifhash.HashType_HashType_SHA256, opData)
 	if err != nil {
 		return err
@@ -136,23 +137,13 @@ func (t *soEngineWriteTx) Commit(ctx context.Context) error {
 		return err
 	}
 
-	baseSharedObjectState, err := t.eng.so.GetSharedObjectState(ctx)
-	if err != nil {
-		return err
-	}
-	baseSharedObjectRoot, err := baseSharedObjectState.GetRootState(ctx)
-	if err != nil {
-		return err
-	}
-	if baseSharedObjectRoot == nil {
-		return errors.New("base SharedObject root is missing")
-	}
+	// Submit both bases captured for this write and its available candidate.
 	candidateBlocksAvailable, err := t.eng.so.GetBlockStore().GetBlockExists(ctx, nextObjRef.GetRootRef())
 	if err != nil {
 		return err
 	}
 	packet := &SpaceWorldFinalizationPacket{
-		BaseSharedObjectRoot:  baseSharedObjectRoot,
+		BaseSharedObjectRoot:  t.baseRoot,
 		BaseWorldRoot:         baseStoredObjRef,
 		CandidateWorldRoot:    nextStoredObjRef,
 		CandidateContentId:    contentIDData,
@@ -161,11 +152,11 @@ func (t *soEngineWriteTx) Commit(ctx context.Context) error {
 		FollowerParticipantId: t.eng.so.GetPeerID().String(),
 		LocalOperationId:      sobject.NewSOOperationLocalID(),
 		StorageGeneration:     0,
-		AuthorityEpoch:        baseSharedObjectRoot.GetInnerSeqno(),
+		AuthorityEpoch:        t.baseRoot.GetInnerSeqno(),
 	}
 
-	// Cache the commit result for replay adoption. Watch-state and
-	// validator can adopt this instead of re-executing processOp when
+	// Cache the commit result for validator replay adoption. The validator
+	// can adopt this instead of re-executing processOp when
 	// the base root ref and op bytes match.
 	{
 		t.eng.c.lastCommitResult.Store(&commitResult{
@@ -175,6 +166,7 @@ func (t *soEngineWriteTx) Commit(ctx context.Context) error {
 		})
 	}
 
+	// Wait for authority without allowing the watcher to replace the write base.
 	var decision *SpaceWorldFinalizationDecision
 	{
 		taskCtx, task := trace.NewTask(ctx, "alpha/so-engine/write-tx/finalize-candidate")
@@ -204,11 +196,8 @@ func (t *soEngineWriteTx) Commit(ctx context.Context) error {
 		}
 	}
 
+	// Wake maintenance only after the accepted World is visible locally.
 	t.eng.c.notifyGCSweepMaintenance()
-
-	release()
-
-	// done
 	return nil
 }
 
@@ -223,9 +212,7 @@ func (t *soEngineWriteTx) Discard() {
 	t.unlockWriteMtx()
 }
 
-// _ is a type assertion
-var _ world.Tx = (*soEngineWriteTx)(nil)
-
+// finalizationDecisionError preserves the retryable stale-generation classification.
 func finalizationDecisionError(decision *SpaceWorldFinalizationDecision) error {
 	if decision.GetStatus() == SpaceWorldFinalizationStatus_SPACE_WORLD_FINALIZATION_STATUS_ACCEPTED {
 		return nil
@@ -235,3 +222,6 @@ func finalizationDecisionError(decision *SpaceWorldFinalizationDecision) error {
 	}
 	return errors.New(decision.GetError())
 }
+
+// _ is a type assertion
+var _ world.Tx = (*soEngineWriteTx)(nil)

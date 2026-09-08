@@ -26,15 +26,15 @@ import (
 // Uses MountSharedObject to mount and access the shared object and block store.
 // Stores the HEAD reference in the Shared Object.
 type Controller struct {
-	// le is the logger
+	// le is the logger.
 	le *logrus.Entry
-	// bus is the controller bus
+	// bus resolves World dependencies and operations.
 	bus bus.Bus
-	// conf is the config
+	// conf configures the mounted SharedObject and World engine.
 	conf *Config
-	// engineCtr contains the engine object
+	// engineCtr publishes the ready engine for this controller execution.
 	engineCtr *ccontainer.CContainer[*Engine]
-	// engineID is the engine id we are listening on
+	// engineID identifies the engine served by lookup directives.
 	engineID string
 
 	// processOpsAsValidator is the routine to process incoming operations as a validator.
@@ -42,12 +42,12 @@ type Controller struct {
 	// gcSweepMaintenance is the routine to periodically queue GC sweep txs.
 	gcSweepMaintenance *routine.RoutineContainer
 
-	// sfs is the step factory set
+	// sfs constructs the World block transformers.
 	sfs *block_transform.StepFactorySet
-	// staticLookupOp is an optional in-process lookup chain supplied by
-	// domain packages that know this engine's built-in operation surface.
+	// staticLookupOpMu guards staticLookupOp.
 	staticLookupOpMu sync.RWMutex
-	staticLookupOp   world.LookupOp
+	// staticLookupOp supplies built-in operations before bus lookup.
+	staticLookupOp world.LookupOp
 
 	// writeBcast is broadcast after local commits and authoritative state updates.
 	// Used by the GC sweep maintenance routine to detect world-state changes that
@@ -59,8 +59,8 @@ type Controller struct {
 	writeMtx csync.Mutex
 
 	// lastCommitResult caches the latest foreground commit for replay adoption.
-	// Written during foreground writes (under writeMtx), read by watch-state
-	// (under writeMtx) and validator (without writeMtx).
+	// Written during foreground writes under writeMtx and read by the
+	// validator without writeMtx.
 	lastCommitResult atomic.Pointer[commitResult]
 }
 
@@ -68,8 +68,11 @@ type Controller struct {
 // Replay consumers can adopt this result when the base root ref and
 // op bytes match, avoiding expensive re-execution of processOp.
 type commitResult struct {
+	// baseRootRef identifies the accepted World used to compute the candidate.
 	baseRootRef *block.BlockRef
-	opData      []byte
+	// opData is the exact encoded operation used to compute the candidate.
+	opData []byte
+	// resultState is immutable once published to the validator.
 	resultState *InnerState
 }
 
@@ -114,6 +117,7 @@ func (c *Controller) SetStaticLookupOp(lookupOp world.LookupOp) {
 	c.staticLookupOpMu.Unlock()
 }
 
+// buildLookupWorldOp composes the current built-in operations with bus lookup.
 func (c *Controller) buildLookupWorldOp(le *logrus.Entry) world.LookupOp {
 	var busLookupOp world.LookupOp
 	if !c.conf.GetDisableLookup() {
@@ -246,7 +250,7 @@ func (c *Controller) Execute(ctx context.Context) error {
 	defer c.gcSweepMaintenance.ClearContext()
 
 	// Watch the SOState for changes.
-	return c.executeWatchSOState(rctx, le, so, soStateCtr, engine)
+	return c.executeWatchSOState(rctx, soStateCtr, engine)
 }
 
 // HandleDirective asks if the handler can resolve the directive.

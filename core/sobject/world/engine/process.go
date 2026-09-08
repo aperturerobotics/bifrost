@@ -180,6 +180,7 @@ func (c *Controller) processInitWorldOp(
 	return finalState, opResult, nil
 }
 
+// writeInitialWorldRoot persists an initial World when changelog initialization is disabled.
 func (c *Controller) writeInitialWorldRoot(
 	ctx context.Context,
 	le *logrus.Entry,
@@ -298,15 +299,4 @@ func (c *Controller) processApplyTxOpWithEngine(
 		true,
 		nil,
 	), nil
-}
-
-func (o *SOWorldOp) speculativeLocalQueueSafe() bool {
-	body, ok := o.GetBody().(*SOWorldOp_ApplyTxOp)
-	if !ok {
-		return true
-	}
-	// GC sweeps are derived cleanup and must run only after authoritative
-	// processing chooses the head they sweep. Replaying them speculatively can
-	// collect data while later queued ops still depend on the old block graph.
-	return !world_block_tx.ContainsGCSweep(body.ApplyTxOp.GetTx())
 }
