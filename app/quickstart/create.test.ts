@@ -196,10 +196,19 @@ function buildQuickstartWorld(
       },
     ),
   )
+  const getObject = vi.fn().mockResolvedValue(null)
+  const createRef = vi.fn((resourceId: number) => ({ resourceId, client: {} }))
+  const newTransaction = vi.fn().mockResolvedValue({
+    applyWorldOp,
+    getObject,
+    commit: vi.fn().mockResolvedValue(undefined),
+    discard: vi.fn().mockResolvedValue(undefined),
+  })
   return {
     world: {
+      getEngine: vi.fn(() => ({ newTransaction })),
       applyWorldOp,
-      getObject: vi.fn().mockResolvedValue(null),
+      getObject,
       lookupGraphQuads: vi.fn().mockResolvedValue({ quads: [] }),
       deleteGraphQuad: vi.fn().mockResolvedValue(undefined),
       setGraphQuad,
@@ -215,13 +224,11 @@ function buildQuickstartWorld(
       createObject,
       accessTypedObject,
       getResourceRef: vi.fn(() => ({
-        createRef: vi.fn((resourceId: number) => ({
-          resourceId,
-          client: {},
-        })),
+        createRef,
       })),
     },
     applyWorldOp,
+    createRef,
     accessTypedObject,
     blockCursorSetBlock,
     createObject,
@@ -1027,39 +1034,11 @@ describe('quickstart create', () => {
   })
 
   it('creates Drive storage and indexes the Space at the files object', async () => {
-    const createRef = vi.fn((resourceId: number) => ({
-      resourceId,
-      client: {},
-    }))
-    const putBlock = vi.fn((_arg: { data: Uint8Array }) =>
-      Promise.resolve({ ref: {} }),
-    )
-    const getRef = vi.fn().mockResolvedValue({ ref: {} })
-    const releaseCursor = vi.fn()
-    const applyWorldOp = vi.fn<ApplyWorldOp>().mockResolvedValue({
-      seqno: 1n,
-      sysErr: false,
-    })
-    const spaceWorld = {
-      getObject: vi.fn(() => Promise.resolve(null)),
-      buildStorageCursor: vi.fn(() =>
-        Promise.resolve({
-          putBlock,
-          getRef,
-          release: releaseCursor,
-          [Symbol.dispose]: releaseCursor,
-        }),
-      ),
-      createObject: vi.fn().mockResolvedValue({}),
-      lookupGraphQuads: vi.fn().mockResolvedValue({ quads: [] }),
-      setGraphQuad: vi.fn().mockResolvedValue(undefined),
-      accessTypedObject: vi.fn().mockResolvedValue({
-        resourceId: 71,
-        typeId: 'unixfs/fs-node',
-      }),
-      getResourceRef: vi.fn(() => ({ createRef })),
+    const {
+      world: spaceWorld,
       applyWorldOp,
-    }
+      createRef,
+    } = buildQuickstartWorld()
 
     await createDrive(spaceWorld as never)
 
@@ -1248,6 +1227,7 @@ to try first.
     const discard = vi.fn().mockResolvedValue(undefined)
     const newTransaction = vi.fn().mockResolvedValue({
       applyWorldOp: txApplyWorldOp,
+      getObject: vi.fn().mockResolvedValue(null),
       commit,
       discard,
     })
@@ -1281,7 +1261,7 @@ to try first.
 
     await createDrive(spaceWorld as never, undefined, timing)
 
-    expect(newTransaction).toHaveBeenCalledTimes(2)
+    expect(newTransaction).toHaveBeenCalledTimes(1)
     expect(newTransaction).toHaveBeenCalledWith(true, undefined)
     expect(txApplyWorldOp).toHaveBeenNthCalledWith(
       1,
@@ -1297,24 +1277,22 @@ to try first.
       '',
       undefined,
     )
-    expect(commit).toHaveBeenCalledTimes(2)
-    expect(discard).toHaveBeenCalledTimes(2)
+    expect(commit).toHaveBeenCalledTimes(1)
+    expect(discard).toHaveBeenCalledTimes(1)
     expect(applyWorldOp).not.toHaveBeenCalled()
     expect(timing.phases.map((phase) => phase.name)).toEqual([
+      'init-drive-new-transaction',
       'init-drive-unixfs',
-      'init-drive-unixfs-new-transaction',
-      'init-drive-unixfs-apply-op',
-      'init-drive-unixfs-commit',
-      'init-drive-unixfs-discard',
-      'write-drive-starter-guide-access',
-      'write-drive-starter-guide-upload',
       'create-drive-settings',
       'create-drive-settings-get-object',
-      'create-drive-settings-new-transaction',
-      'create-drive-settings-apply-op',
-      'create-drive-settings-commit',
-      'create-drive-settings-discard',
+      'init-drive-commit',
+      'init-drive-discard',
+      'write-drive-starter-guide-access',
+      'write-drive-starter-guide-upload',
     ])
+    expect(commit.mock.invocationCallOrder[0]).toBeLessThan(
+      fsHandleMocks.uploadFile.mock.invocationCallOrder[0] ?? 0,
+    )
   })
 
   it('seeds the KV quickstart with examples and indexes the store', async () => {
