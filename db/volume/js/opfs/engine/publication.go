@@ -9,6 +9,8 @@ import (
 	"runtime/trace"
 	"strconv"
 	"strings"
+
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -108,10 +110,23 @@ func (p *publication) commit(ctx context.Context) error {
 	if err := p.engine.writeMessage(ctx, "intent", intent); err != nil {
 		return err
 	}
+	// Join bounded immutable writes before publishing or releasing protection.
+	// Failed writes cancel their siblings; the durable intent retains cleanup.
+	writes, writeCtx := errgroup.WithContext(ctx)
+	writes.SetLimit(4)
 	for _, output := range p.output {
-		if err := p.engine.backend.Write(ctx, output.name, output.data); err != nil {
-			return err
+		if writeCtx.Err() != nil {
+			break
 		}
+		writes.Go(func() error {
+			return p.engine.backend.Write(writeCtx, output.name, output.data)
+		})
+	}
+	if err := writes.Wait(); err != nil {
+		return err
+	}
+	if err := ctx.Err(); err != nil {
+		return err
 	}
 
 	// Record retirement before publication so a crash cannot lose cleanup work.
