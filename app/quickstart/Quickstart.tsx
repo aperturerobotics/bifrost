@@ -1,10 +1,4 @@
-/**
- * Quickstart Component
- *
- * Handles the automatic setup of a session and space for quick onboarding.
- * This component orchestrates the creation of a local provider account,
- * mounting a session, and creating a new space with a specific quickstart ID.
- */
+// Quickstart prepares a local session and opens the selected app.
 
 import { useCallback, useState } from 'react'
 
@@ -55,16 +49,7 @@ function QuickstartErrorState({ message, onRetry }: QuickstartErrorStateProps) {
   )
 }
 
-/**
- * Quickstart component that automatically sets up a session and space.
- *
- * Flow:
- * 1. Load the root resource
- * 2. Create a local provider account
- * 3. Mount a session using the account
- * 4. Create a space with the quickstart ID (unless 'local')
- * 5. Provide the session context to children
- */
+// Quickstart retains setup resources across the final route transition.
 export const Quickstart: React.FC<QuickstartProps> = ({ quickstartId }) => {
   // isCreate indicates this is an option that should call createQuickstartSetup.
   // otherwise we redirect below.
@@ -130,7 +115,8 @@ export const Quickstart: React.FC<QuickstartProps> = ({ quickstartId }) => {
             setup.sessionIndex,
             setup.session,
             spaceID,
-            getQuickstartInitialObjectRouteHandoff(quickstartId),
+            setup.initialObjectRoute ??
+              getQuickstartInitialObjectRouteHandoff(quickstartId),
           )
           if (spaceID) {
             markQuickstartStartupBoundary('quickstart.route-handoff-ready', {
@@ -202,6 +188,7 @@ export const Quickstart: React.FC<QuickstartProps> = ({ quickstartId }) => {
       to={buildQuickstartSpaceRoutePath(
         `/u/${setup.sessionIndex}/so/${spaceID}`,
         quickstartId,
+        setup.initialObjectRoute?.objectKey,
       )}
     />
   )

@@ -555,6 +555,7 @@ export interface LocalSessionSetup {
   session: Session
 }
 
+// QuickstartSetup retains mounted resources and a newly seeded initial route.
 export interface QuickstartSetup {
   root?: Root
   accountResp?: CreateAccountResponse
@@ -564,6 +565,7 @@ export interface QuickstartSetup {
   space: Space
   spaceContents?: SpaceContents
   spaceWorld: EngineWorldState
+  initialObjectRoute?: { objectKey: string; objectType: string }
 }
 
 // QuickstartSetupParams contains the parameters for creating a quickstart setup.
@@ -718,8 +720,7 @@ export async function createQuickstartSetup(
       mountContents: quickstartId !== 'drive',
     })
 
-    // Construct the result
-    const result = {
+    const result: QuickstartSetup = {
       root,
       accountResp,
       sessionIndex,
@@ -741,6 +742,13 @@ export async function createQuickstartSetup(
       await timeQuickstartPhase(timing, 'populate-space', () =>
         populateSpace(quickstartId, result, abortSignal, timing),
       )
+      if (quickstartId === 'drive') {
+        // Only a newly seeded Drive has a known index; reused Spaces keep theirs.
+        result.initialObjectRoute = {
+          objectKey: UNIXFS_OBJECT_KEY,
+          objectType: UnixFSTypeID,
+        }
+      }
     }
 
     markQuickstartProgressReady(timing)
@@ -779,8 +787,8 @@ export function getQuickstartInitialObjectRouteHandoff(
 export function buildQuickstartSpaceRoutePath(
   basePath: string,
   quickstartId: QuickstartSpaceCreateId,
+  objectKey = getQuickstartInitialObjectKey(quickstartId),
 ): string {
-  const objectKey = getQuickstartInitialObjectKey(quickstartId)
   if (!objectKey) {
     return basePath
   }

@@ -108,8 +108,8 @@ const LazyLinkDeviceWizard = lazy(async () => {
 // SessionRootRouter handles the root route redirect logic for a session.
 // Dispatches to SpacewaveRootRouter for cloud sessions.
 // Local sessions show the dashboard directly.
-function SessionRootRouter(props: { metadata?: SessionMetadata }) {
-  if (props.metadata?.providerId === 'spacewave') {
+function SessionRootRouter(props: { providerId?: string }) {
+  if (props.providerId === 'spacewave') {
     return <SpacewaveRootRouter />
   }
 
@@ -125,6 +125,9 @@ interface SessionContainerProps {
 // document state access, and navigation callbacks.
 function useSessionContainerController(props: SessionContainerProps) {
   const session = props.sessionResource.value
+  const providerId =
+    session?.sessionRef?.providerResourceRef?.providerId ??
+    props.metadata?.providerId
 
   // Signal to bootstrap.ts that this user has product state to return to.
   // Return visitors with hasSession see the loading screen instead of landing.
@@ -179,7 +182,7 @@ function useSessionContainerController(props: SessionContainerProps) {
 
   const spacewaveSessionResource = useMemo<Resource<Session>>(
     () =>
-      props.metadata?.providerId === 'spacewave'
+      providerId === 'spacewave'
         ? props.sessionResource
         : {
             value: null,
@@ -187,7 +190,7 @@ function useSessionContainerController(props: SessionContainerProps) {
             error: props.sessionResource.error,
             retry: props.sessionResource.retry,
           },
-    [props.metadata?.providerId, props.sessionResource],
+    [providerId, props.sessionResource],
   )
 
   const onboardingState = useStreamingResource(
@@ -271,7 +274,7 @@ function useSessionContainerController(props: SessionContainerProps) {
       })
   }, [handleRemoveSession, isDeleted, navigate, rootResource.value, sessionIdx])
 
-  const isCloudProvider = props.metadata?.providerId === 'spacewave'
+  const isCloudProvider = providerId === 'spacewave'
 
   const badgeLabel = isCloudProvider
     ? isDormant
@@ -347,6 +350,7 @@ function useSessionContainerController(props: SessionContainerProps) {
     isUnauthenticated,
     onboardingState,
     path,
+    providerId,
     session,
     sessionIdx,
     sessionStateAccessor,
@@ -378,6 +382,7 @@ export function SessionContainer(props: SessionContainerProps) {
     isUnauthenticated,
     onboardingState,
     path,
+    providerId,
     session,
     sessionIdx,
     sessionStateAccessor,
@@ -451,6 +456,7 @@ export function SessionContainer(props: SessionContainerProps) {
                   <SystemStatusButton />
                   <SessionUploadIndicator />
                   <SessionProviderContainer
+                    providerId={providerId}
                     metadata={props.metadata}
                     spacewaveOnboarding={onboardingState.value ?? null}
                   >
@@ -521,7 +527,7 @@ export function SessionContainer(props: SessionContainerProps) {
                         </SessionFlowFrame>
                       </Route>
                       <Route path="/">
-                        <SessionRootRouter metadata={props.metadata} />
+                        <SessionRootRouter providerId={providerId} />
                       </Route>
                       <Route path="/billing/:baId/cancel">
                         <BillingCancelRoute />

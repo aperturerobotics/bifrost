@@ -39,7 +39,7 @@ import {
   WatchSessionStateAtomsResponse,
   WatchTransferProgressResponse,
 } from './session.pb.js'
-import { SessionLockMode } from '../../core/session/session.pb.js'
+import { SessionLockMode, SessionRef } from '../../core/session/session.pb.js'
 import type {
   SOInviteMessage,
   SOParticipantRole,
@@ -54,7 +54,10 @@ import { StateAtom } from '@aptre/bldr-sdk/state/state.js'
 //
 // The MountSession directive will remain active until this resource is released.
 export class Session extends Resource {
-  // service is the session resource service
+  // sessionRef is the provider identity retained for this mounted resource.
+  public readonly sessionRef?: SessionRef
+
+  // service is the session resource service.
   private service: SessionResourceService
   // _spacewave is the lazy-initialized SpacewaveSession wrapper.
   private _spacewave: SpacewaveSession | null = null
@@ -63,8 +66,9 @@ export class Session extends Resource {
   // _systemStatus is the lazy-initialized SystemStatus wrapper.
   private _systemStatus: SystemStatus | null = null
 
-  constructor(resourceRef: ClientResourceRef) {
+  constructor(resourceRef: ClientResourceRef, sessionRef?: SessionRef) {
     super(resourceRef)
+    this.sessionRef = SessionRef.clone(sessionRef) ?? undefined
     this.service = new SessionResourceServiceClient(resourceRef.client)
   }
 

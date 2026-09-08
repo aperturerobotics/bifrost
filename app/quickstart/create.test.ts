@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { UnixFSTypeID } from '@s4wave/sdk/unixfs/type.js'
 import { TypePred, buildTypeObjectKey } from '@s4wave/sdk/world/types/types.js'
 import { keyToIRI } from '@s4wave/sdk/world/graph-utils.js'
 import { SET_SPACE_SETTINGS_OP_ID } from '@s4wave/core/space/world/ops/set-space-settings.js'
@@ -693,7 +694,7 @@ describe('quickstart create', () => {
 
     const progressEvents: QuickstartProgressState[] = []
 
-    await createQuickstartSetup(
+    const result = await createQuickstartSetup(
       root as never,
       'drive',
       abortSignal,
@@ -702,6 +703,18 @@ describe('quickstart create', () => {
         progressEvents.push(state)
       },
     )
+
+    expect(result.initialObjectRoute).toEqual({
+      objectKey: UNIXFS_OBJECT_KEY,
+      objectType: UnixFSTypeID,
+    })
+    expect(
+      buildQuickstartSpaceRoutePath(
+        '/u/3/so/space-1',
+        'drive',
+        result.initialObjectRoute?.objectKey,
+      ),
+    ).toBe('/u/3/so/space-1/-/files')
 
     const timing = globalThis.__s4waveQuickstartTiming
     expect(timing?.state).toBe('content-ready')
@@ -944,12 +957,12 @@ describe('quickstart create', () => {
                   ref: {
                     providerResourceRef: {
                       providerId: 'local',
-                      id: 'space-notebook',
+                      id: 'space-drive',
                     },
                   },
                   source: 'created',
                 },
-                spaceMeta: { name: 'My Notebook' },
+                spaceMeta: { name: 'My Drive' },
               },
             ],
           }),
@@ -966,13 +979,14 @@ describe('quickstart create', () => {
       }),
     }))
 
-    await createQuickstartSetup(
+    const result = await createQuickstartSetup(
       root as never,
-      'notebook',
+      'drive',
       new AbortController().signal,
       cleanup,
     )
 
+    expect(result.initialObjectRoute).toBeUndefined()
     expect(createSpace).not.toHaveBeenCalled()
     expect(quickstartRegistryMocks.ExecuteQuickstart).not.toHaveBeenCalled()
     expect(applyWorldOp).not.toHaveBeenCalled()
