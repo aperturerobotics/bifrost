@@ -12,7 +12,7 @@ import (
 )
 
 func TestAddControllerSendReadyAndWaitIgnoresNilControllerExit(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	bus := &nilExitBus{released: make(chan struct{})}
@@ -85,6 +85,10 @@ func (b *nilExitBus) AddController(ctx context.Context, ctrl controller.Controll
 }
 
 type noopBus struct{}
+
+func (noopBus) Close() error {
+	return nil
+}
 
 func (noopBus) GetControllers() []controller.Controller {
 	return nil
