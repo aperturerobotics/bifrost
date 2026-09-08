@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/s4wave/spacewave/net/link"
+	"github.com/s4wave/spacewave/net/transport/common/dialer"
 )
 
 // TestNetworkIsolationAndAttachmentLifetime exercises real links across scoped packet networks.
@@ -62,5 +63,41 @@ func TestNetworkIsolationAndAttachmentLifetime(t *testing.T) {
 	t.Cleanup(release)
 	if linked.GetRemotePeer() != first.GetPeerID() {
 		t.Fatal("link did not authenticate the requested peer")
+	}
+}
+
+// TestIncomingDialReturnsLocalLink preserves a dialer's result when the remote peer initiates QUIC.
+func TestIncomingDialReturnsLocalLink(t *testing.T) {
+	// Select the higher peer so its dial request produces an incoming connection.
+	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
+	defer cancel()
+	firstBed, _ := buildTestbed(t, ctx)
+	secondBed, _ := buildTestbed(t, ctx)
+	firstController, first, firstRef := execPeer(ctx, t, firstBed, nil)
+	t.Cleanup(firstRef.Release)
+	secondController, second, secondRef := execPeer(ctx, t, secondBed, nil)
+	t.Cleanup(secondRef.Release)
+	if first.GetPeerID() < second.GetPeerID() {
+		first, second = second, first
+		firstController = secondController
+	}
+
+	// Attach both endpoints through production network ownership.
+	network := NewNetwork()
+	for _, endpoint := range []*Inproc{first, second} {
+		detach, err := network.Attach(ctx, endpoint)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(detach)
+	}
+
+	// The caller must receive its local link even though the other endpoint dialed.
+	linked, err := firstController.DialPeerAddr(ctx, second.GetPeerID(), &dialer.DialerOpts{Address: second.LocalAddr().String()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if linked.GetLocalPeer() != first.GetPeerID() || linked.GetRemotePeer() != second.GetPeerID() {
+		t.Fatal("incoming dial returned the wrong local or remote peer")
 	}
 }
