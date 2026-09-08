@@ -120,7 +120,10 @@ func (s *SOSync) handleSolicitedStream(ctx context.Context, sms link_solicit.Sol
 }
 
 // runStream owns authentication, authorization watches, data exchange and stream cleanup.
-func (s *SOSync) runStream(ctx context.Context, le *logrus.Entry, strm stream.Stream, localTransport, remoteTransport peer.ID) error {
+func (s *SOSync) runStream(ctx context.Context, le *logrus.Entry, strm stream.Stream, localTransport, remoteTransport peer.ID) (rerr error) {
+	// Preserve the local authorization failure when closing transport interrupts I/O.
+	ctx, cancel := context.WithCancelCause(ctx)
+	defer cancel(nil)
 	defer strm.Close()
 	stopClose := context.AfterFunc(ctx, func() { strm.Close() })
 	defer stopClose()
@@ -142,8 +145,12 @@ func (s *SOSync) runStream(ctx context.Context, le *logrus.Entry, strm stream.St
 	}
 
 	// A separate watch can close a sender blocked in transport when membership is removed.
-	watcher := routine.NewRoutineContainer(routine.WithExitCb(func(error) { strm.Close() }))
-	watcher.SetRoutine(func(ctx context.Context) error {
+	watcher := routine.NewRoutineContainer()
+	watcher.SetRoutine(func(ctx context.Context) (rerr error) {
+		defer func() {
+			cancel(rerr)
+			strm.Close()
+		}()
 		states, release, err := s.soHost.GetSOStateCtr(ctx, nil)
 		if err != nil {
 			return err
@@ -164,8 +171,12 @@ func (s *SOSync) runStream(ctx context.Context, le *logrus.Entry, strm stream.St
 	watcher.SetContext(ctx, false)
 	defer func() {
 		strm.Close()
-		watcher.ClearContext()
-		_ = watcher.WaitExited(context.Background(), true, nil)
+		if exited, _ := watcher.SetRoutine(nil); exited != nil {
+			<-exited
+		}
+		if cause := context.Cause(ctx); errors.Is(cause, ErrAccessDenied) {
+			rerr = cause
+		}
 	}()
 
 	sess := stream_packet.NewSession(strm, maxMessageSize)
@@ -369,8 +380,9 @@ func (s *SOSync) streamOps(ctx context.Context, le *logrus.Entry, sess *stream_p
 	defer func() {
 		sess.Close()
 		sendCancel()
-		sender.ClearContext()
-		_ = sender.WaitExited(context.Background(), true, nil)
+		if exited, _ := sender.SetRoutine(nil); exited != nil {
+			<-exited
+		}
 	}()
 
 	// Receive ops from peer and apply.
