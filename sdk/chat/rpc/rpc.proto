@@ -133,6 +133,11 @@ message SendMessageRequest {
   // Content is the typed message content. When set, it is persisted as given
   // and the legacy text field is rejected if also supplied.
   .spacewave.chat.ChatMessageContent content = 4;
+  // ExpectedStateMessageKey requires the current state event to have this key.
+  // An empty value requires absent state; omission makes the write unconditional.
+  // Only state changes accept this condition. Accepted transaction retries retain
+  // their original result even when current state has since changed.
+  optional string expected_state_message_key = 5;
 }
 
 // SendMessageResponse is the response after sending a message.

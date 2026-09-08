@@ -32,6 +32,9 @@ const (
 // ErrChatAuthorIdentityRequired is returned when a message has no authenticated author.
 var ErrChatAuthorIdentityRequired = errors.New("chat author identity required")
 
+// ErrChatStateConflict indicates that current state no longer matches a write condition.
+var ErrChatStateConflict = errors.New("chat state write condition conflicts with current state")
+
 // ChatResource serves ChatResourceService for a single chat channel object.
 type ChatResource struct {
 	// ws serves reads within the mounted Space.
@@ -367,6 +370,9 @@ func (r *ChatResource) appendMessage(ctx context.Context, wtx world.WorldState, 
 	if err != nil {
 		return nil, err
 	}
+	if req.ExpectedStateMessageKey != nil && content.GetStateChange() == nil {
+		return nil, errors.New("chat state write condition requires a state change")
+	}
 
 	// Resolve every public relationship inside this transaction and channel.
 	relation := content.GetCiphertext().GetRelation()
@@ -416,6 +422,21 @@ func (r *ChatResource) appendMessage(ctx context.Context, wtx world.WorldState, 
 		priorState, err = wtx.LookupGraphQuads(ctx, NewChatStateQuad(r.objectKey, "", state.GetType(), state.GetStateKey()), 0)
 		if err != nil {
 			return nil, err
+		}
+		if expected := req.ExpectedStateMessageKey; expected != nil {
+			currentKey := ""
+			if len(priorState) > 1 {
+				return nil, errors.New("chat state has multiple current events")
+			}
+			if len(priorState) == 1 {
+				currentKey, err = world.GraphValueToKey(priorState[0].GetObj())
+				if err != nil {
+					return nil, err
+				}
+			}
+			if currentKey != *expected {
+				return nil, ErrChatStateConflict
+			}
 		}
 		for _, edge := range priorState {
 			key, err := world.GraphValueToKey(edge.GetObj())
