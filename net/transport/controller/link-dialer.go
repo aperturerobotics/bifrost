@@ -13,20 +13,21 @@ import (
 
 // linkDialerKey is the peer ID and link address tuple.
 type linkDialerKey struct {
-	peerID      peer.ID
+	// peerID is the authenticated destination identity.
+	peerID peer.ID
+	// dialAddress identifies the transport endpoint.
 	dialAddress string
 }
 
 // linkDialer is a link dialer instance.
 type linkDialer struct {
-	// c is the controller
+	// c owns the live links and dialer lifecycle.
 	c *Controller
-	// key is the link dialer key
+	// key identifies the requested peer and address.
 	key linkDialerKey
-	// opts contains the link dialer opts
-	// resolved by the caller who created this dialer
+	// opts is resolved by the caller that requested this dialer.
 	opts *promise.Promise[*dialer.DialerOpts]
-	// lnk is the link that resolved by this dialer
+	// lnk records the local link whose loss must restart this dialer.
 	lnk *ccontainer.CContainer[link.Link]
 }
 
@@ -76,7 +77,31 @@ func (l *linkDialer) executeLinkDialer(
 		return err
 	}
 
-	// Publish the established link to waiters.
+	// Incoming dials publish through the transport handler instead of returning a link.
+	// Retain that local link so its loss restarts this standing dial request.
+	if lnk == nil {
+		for {
+			var waitCh <-chan struct{}
+			l.c.bcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
+				waitCh = getWaitCh()
+				if links := l.c.linksByPeerID[l.key.peerID]; len(links) != 0 {
+					lnk = links[0].lnk
+					// Publish under the owner lock so link removal cannot miss this dialer.
+					l.lnk.SetValue(lnk)
+				}
+			})
+			if lnk != nil {
+				return nil
+			}
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-waitCh:
+			}
+		}
+	}
+
+	// Publish an outgoing link returned directly by the transport.
 	l.lnk.SetValue(lnk)
 	return nil
 }
