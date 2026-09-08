@@ -197,11 +197,8 @@ func (s *BlockStore) PutBlock(ctx context.Context, data []byte, opts *block.PutO
 		return ref, false, block.ErrBlockRefMismatch
 	}
 
-	// Report known duplicates without making admission retry unrelated writes.
-	existed, err := s.GetBlockExists(ctx, ref)
-	if err == nil && !existed {
-		existed, err = s.admit(ctx, &block.PutBatchEntry{Ref: ref, Data: data})
-	}
+	// Report pending duplicates; publication resolves durable duplicates.
+	existed, err := s.admit(ctx, &block.PutBatchEntry{Ref: ref, Data: data})
 	if err == nil && opts.GetSync() {
 		_, err = s.Sync(ctx)
 	}
