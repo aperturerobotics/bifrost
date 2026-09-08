@@ -986,7 +986,7 @@ async function waitForQuickstartRegistration(
 
 // initUnixFS initializes an empty UnixFS filesystem.
 export async function initUnixFS(
-  spaceWorld: EngineWorldState,
+  spaceWorld: IWorldState,
   abortSignal?: AbortSignal,
   timing?: QuickstartSetupTiming,
 ): Promise<void> {
@@ -1314,26 +1314,33 @@ export async function createDrive(
   abortSignal?: AbortSignal,
   timing?: QuickstartSetupTiming,
 ): Promise<void> {
-  await timeQuickstartPhase(timing, 'init-drive-unixfs', () =>
-    initUnixFS(spaceWorld, abortSignal, timing),
+  // Publish the filesystem and its index together before opening file storage.
+  const tx = await timeQuickstartPhase(
+    timing,
+    'init-drive-new-transaction',
+    () => spaceWorld.getEngine().newTransaction(true, abortSignal),
   )
+  try {
+    await timeQuickstartPhase(timing, 'init-drive-unixfs', () =>
+      initUnixFS(tx, abortSignal, timing),
+    )
+    await timeQuickstartPhase(timing, 'create-drive-settings', () =>
+      createSpaceSettingsObject(
+        tx,
+        abortSignal,
+        UNIXFS_OBJECT_KEY,
+        undefined,
+        timing,
+        'create-drive-settings',
+      ),
+    )
+    await timeQuickstartPhase(timing, 'init-drive-commit', () =>
+      tx.commit(abortSignal),
+    )
+  } finally {
+    await timeQuickstartPhase(timing, 'init-drive-discard', () => tx.discard())
+  }
   await writeDriveStarterGuide(spaceWorld, abortSignal, timing)
-  // Index the Space directly at the UnixFS files object. The new-user intro
-  // renders as a non-blocking overlay on first run instead of owning the
-  // index, so the seeded Drive is visible without finishing a wizard first.
-  // Older spaces whose index still points at a wizard object keep the
-  // existing finish flow (IntroWizardViewer only replaces the index while it
-  // still points at the wizard).
-  await timeQuickstartPhase(timing, 'create-drive-settings', () =>
-    createSpaceSettingsObject(
-      spaceWorld,
-      abortSignal,
-      UNIXFS_OBJECT_KEY,
-      undefined,
-      timing,
-      'create-drive-settings',
-    ),
-  )
 }
 
 async function applyQuickstartWorldOp(
