@@ -1555,9 +1555,9 @@ func TestPackfileStoreVerifyBeforeServeWaitsForPersistence(t *testing.T) {
 	}
 }
 
-// TestPackfileStoreSecondReadWaitsForVerify verifies the second concurrent
-// caller blocks until verification completes.
-func TestPackfileStoreSecondReadWaitsForVerify(t *testing.T) {
+// TestPackfileStoreSecondReadReturnsBeforePersistence verifies repeated default
+// reads use resident bytes while the background cache write remains blocked.
+func TestPackfileStoreSecondReadReturnsBeforePersistence(t *testing.T) {
 	ctx := t.Context()
 	packBytes, bloomBytes := buildTestPackOrdered(t, []struct{ Name, Data string }{{"a", "alpha"}})
 	opener, _ := openerFromBytes(packBytes)
@@ -1599,25 +1599,24 @@ func TestPackfileStoreSecondReadWaitsForVerify(t *testing.T) {
 
 	second := make(chan error, 1)
 	go func() {
-		_, _, err := store.GetBlock(ctx, &block.BlockRef{Hash: alphaHash})
+		data, found, err := store.GetBlock(ctx, &block.BlockRef{Hash: alphaHash})
+		if err == nil && (!found || !bytes.Equal(data, []byte("alpha"))) {
+			err = errors.New("repeated read returned wrong block")
+		}
 		second <- err
 	}()
 
 	select {
-	case <-second:
-		t.Fatal("expected second caller to wait on verify")
-	case <-time.After(50 * time.Millisecond):
-	}
-
-	close(blocked)
-	select {
 	case err := <-second:
 		if err != nil {
+			close(blocked)
 			t.Fatalf("second caller returned error: %v", err)
 		}
 	case <-time.After(time.Second):
-		t.Fatal("expected second caller to resume after verify")
+		close(blocked)
+		t.Fatal("repeated read waited for background persistence")
 	}
+	close(blocked)
 }
 
 // TestPackfileStoreDedupesConcurrentFetch verifies two concurrent GetBlock
