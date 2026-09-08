@@ -1,7 +1,6 @@
 package sobject
 
 import (
-	"bytes"
 	"context"
 
 	"github.com/aperturerobotics/util/ccontainer"
@@ -30,7 +29,7 @@ type SOHost struct {
 
 // NewSOHost constructs a new shared object host.
 //
-// ctx can be nil
+// ctx can be nil.
 func NewSOHost(ctx context.Context, watchFn SOStateWatchFunc, lockFn SOStateLockFunc, sharedObjectID string) *SOHost {
 	h := &SOHost{watchFn: watchFn, lockFn: lockFn, sharedObjectID: sharedObjectID}
 	h.soRc = refcount.NewRefCount(ctx, false, nil, nil, func(ctx context.Context, released func()) (ccontainer.Watchable[*SOState], func(), error) {
@@ -69,12 +68,14 @@ func (s *SOHost) GetSOStateCtr(ctx context.Context, released func()) (ccontainer
 
 // GetHostState returns a snapshot of the current SOState.
 func (s *SOHost) GetHostState(ctx context.Context) (*SOState, error) {
+	// Retain the watched state until its snapshot has been copied.
 	watchable, rel, err := s.soRc.Resolve(ctx)
 	if err != nil {
 		return nil, err
 	}
 	defer rel()
 
+	// Return an independent snapshot once the state becomes available.
 	st, err := watchable.WaitValue(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -94,11 +95,13 @@ func (s *SOHost) GetRootState(ctx context.Context) (*SORoot, error) {
 
 // GetRootInnerState returns a snapshot of the SORoot and unmarshals the SORootInner.
 func (s *SOHost) GetRootInnerState(ctx context.Context) (*SORootInner, *SORoot, error) {
+	// Read the signed root from the current host snapshot.
 	sr, err := s.GetRootState(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
 
+	// Decode and validate the signed root's inner value.
 	sri := &SORootInner{}
 	if err := sri.UnmarshalVT(sr.GetInner()); err != nil {
 		return nil, sr, err
@@ -109,12 +112,14 @@ func (s *SOHost) GetRootInnerState(ctx context.Context) (*SORootInner, *SORoot, 
 // UpdateSOState locks the SO state, clones it, calls the provided function
 // to mutate the clone, then writes the updated state.
 func (s *SOHost) UpdateSOState(ctx context.Context, fn func(state *SOState) error) error {
+	// Hold the provider lock through mutation and persistence.
 	lk, err := s.lockFn(ctx, s.sharedObjectID)
 	if err != nil {
 		return err
 	}
 	defer lk.Release()
 
+	// Apply the mutation to an independent state and commit on success.
 	nextState := lk.GetSOState().CloneVT()
 	if err := fn(nextState); err != nil {
 		return err
@@ -133,45 +138,47 @@ func (s *SOHost) UpdateRootState(
 	rejectedOps []*SOOperationRejection,
 	acceptedOps []*SOOperation,
 ) error {
+	// Serialize root acceptance with other host mutations.
 	lk, err := s.lockFn(ctx, s.sharedObjectID)
 	if err != nil {
 		return err
 	}
 	defer lk.Release()
 
-	// load and clone the previous state
+	// Clone the locked state before root validation.
 	prevState := lk.GetSOState()
 	nextState := prevState.CloneVT()
 
-	// apply the change to nextState
+	// Validate root authorization and the operation results together.
 	err = nextState.UpdateRootState(s.sharedObjectID, nextRootState, enforceValidatorPeerID, rejectedOps, acceptedOps)
 	if err != nil {
 		return err
 	}
 
-	// write the change
+	// Publish the accepted state through the provider's write boundary.
 	return lk.WriteSOState(ctx, nextState)
 }
 
 // ClearRejectedOperation clears a rejected operation from the state.
 // The clear operation must be signed by the peer that submitted the original operation.
 func (s *SOHost) ClearRejectedOperation(ctx context.Context, clearOp *SOClearOperationResult) error {
+	// Serialize rejection cleanup with other host mutations.
 	lk, err := s.lockFn(ctx, s.sharedObjectID)
 	if err != nil {
 		return err
 	}
 	defer lk.Release()
 
-	// load and clone the previous state
+	// Clone the locked state before changing rejection records.
 	prevState := lk.GetSOState()
 	nextState := prevState.CloneVT()
 
-	// apply the change to nextState
+	// Validate the clearing signature against the original operation.
 	if err := nextState.ClearOperationResult(s.sharedObjectID, clearOp); err != nil {
 		return err
 	}
 
-	// write the change
+	// Commit the accepted rejection cleanup.
 	return lk.WriteSOState(ctx, nextState)
 }
 
@@ -184,53 +191,29 @@ func (s *SOHost) ClearRejectedOperation(ctx context.Context, clearOp *SOClearOpe
 // If fn is non-nil it is called after the config is applied but before the
 // state is written, allowing additional atomic mutations (e.g. grant issuance).
 func (s *SOHost) ApplyConfigChange(ctx context.Context, entry *SOConfigChange, fn func(state *SOState) error) error {
+	// Reject absent input before acquiring provider resources.
 	if entry == nil {
 		return errors.New("config change entry is nil")
 	}
 
+	// Hold the provider lock through verification and persistence.
 	lk, err := s.lockFn(ctx, s.sharedObjectID)
 	if err != nil {
 		return err
 	}
 	defer lk.Release()
 
+	// Retain the prior state unchanged if verification or the callback fails.
 	prevState := lk.GetSOState()
 	nextState := prevState.CloneVT()
 
-	currentCfg := nextState.GetConfig()
-	currentHash := currentCfg.GetConfigChainHash()
-	currentSeqno := currentCfg.GetConfigChainSeqno()
-
-	// Verify previous_hash chains from the current config.
-	if !bytes.Equal(entry.GetPreviousHash(), currentHash) {
-		return errors.New("config change previous_hash does not match current config_chain_hash")
-	}
-
-	// Verify config_seqno is the expected next value.
-	var expectedSeqno uint64
-	if len(currentHash) != 0 {
-		expectedSeqno = currentSeqno + 1
-	}
-	if entry.GetConfigSeqno() != expectedSeqno {
-		return errors.Errorf("config change seqno %d does not match expected %d", entry.GetConfigSeqno(), expectedSeqno)
-	}
-
-	// Verify the signature is authorized by the current config.
-	if err := verifyConfigChangeSignature(entry, currentCfg); err != nil {
-		return errors.Wrap(err, "verify config change")
-	}
-
-	// Apply the new config from the entry (clone to avoid mutating the input).
-	nextState.Config = entry.GetConfig().CloneVT()
-
-	// Compute and store the new config_chain_hash and seqno.
-	entryHash, err := HashSOConfigChange(entry)
+	// Verify the transition against the configuration held under this lock.
+	nextState.Config, err = VerifyConfigChange(nextState.GetConfig(), entry)
 	if err != nil {
-		return errors.Wrap(err, "hash config change entry")
+		return err
 	}
-	nextState.GetConfig().ConfigChainHash = entryHash
-	nextState.GetConfig().ConfigChainSeqno = entry.GetConfigSeqno()
 
+	// Include associated state changes in the same provider write.
 	if fn != nil {
 		if err := fn(nextState); err != nil {
 			return err
@@ -250,31 +233,32 @@ func (s *SOHost) QueueOperation(
 	peerID peer.ID,
 	cb func(nonce uint64) (*SOOperation, error),
 ) error {
+	// Serialize nonce selection and operation acceptance under the provider lock.
 	lk, err := s.lockFn(ctx, s.sharedObjectID)
 	if err != nil {
 		return err
 	}
 	defer lk.Release()
 
-	// load and clone the previous state
+	// Clone the locked state before selecting an operation nonce.
 	prevState := lk.GetSOState()
 	nextState := prevState.CloneVT()
 
-	// determine the next nonce
+	// Select the next nonce for this peer's queued operation.
 	nextAccNonce := nextState.GetNextAccountNonce(peerID.String())
 
-	// call the callback
+	// Build the operation with the selected nonce.
 	op, err := cb(nextAccNonce)
 	if err != nil {
 		return err
 	}
 
-	// apply the operation to nextState
+	// Validate and queue the operation in the cloned state.
 	err = nextState.QueueOperation(s.sharedObjectID, op)
 	if err != nil {
 		return err
 	}
 
-	// write the change
+	// Commit the accepted operation.
 	return lk.WriteSOState(ctx, nextState)
 }
