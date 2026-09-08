@@ -26,12 +26,8 @@ const (
 	signalingWebSocketMaxRetryDelay = 5 * time.Second
 )
 
-type signalingDialFunc func(
-	context.Context,
-	*logrus.Entry,
-	string,
-	bifrost_crypto.PrivKey,
-) (*signaling_rpc_client.Client, *ws.Conn, func(), error)
+// signalingURLFunc acquires a fresh ticket and builds its WebSocket URL.
+type signalingURLFunc func(context.Context) (string, error)
 
 // dialSignalingClient dials a SignalingDO via WebSocket and returns a
 // signaling client using direct SRPC over yamux (no bifrost transport).
@@ -73,7 +69,7 @@ func dialSignalingClient(
 type wsSignalingCtrl struct {
 	le    *logrus.Entry
 	b     bus.Bus
-	url   string
+	url   signalingURLFunc
 	priv  bifrost_crypto.PrivKey
 	sigID string
 	pid   peer.ID
@@ -84,7 +80,6 @@ type wsSignalingCtrl struct {
 	mtx        sync.Mutex
 	ready      chan struct{}
 	refs       map[string]listenRef
-	dial       signalingDialFunc
 	retryDelay time.Duration
 }
 
@@ -98,7 +93,7 @@ type listenRef struct {
 func newWSSignalingCtrl(
 	le *logrus.Entry,
 	b bus.Bus,
-	url string,
+	url signalingURLFunc,
 	priv bifrost_crypto.PrivKey,
 	sigID string,
 	pid peer.ID,
@@ -152,17 +147,20 @@ func (c *wsSignalingCtrl) Execute(ctx context.Context) error {
 	}
 }
 
+// executeGeneration acquires fresh authorization and owns one connection lifetime.
 func (c *wsSignalingCtrl) executeGeneration(ctx context.Context) error {
-	dial := c.dial
-	if dial == nil {
-		dial = dialSignalingClient
+	// Acquire authorization immediately before opening this generation.
+	url, err := c.url(ctx)
+	if err != nil {
+		return err
 	}
-	client, conn, cleanup, err := dial(ctx, c.le, c.url, c.priv)
+	client, conn, cleanup, err := dialSignalingClient(ctx, c.le, url, c.priv)
 	if err != nil {
 		return err
 	}
 	defer cleanup()
 
+	// Publish readiness until this generation releases its signaling references.
 	c.mtx.Lock()
 	c.client = client
 	c.conn = conn
@@ -177,6 +175,7 @@ func (c *wsSignalingCtrl) executeGeneration(ctx context.Context) error {
 		c.mtx.Unlock()
 	}()
 
+	// Attach incoming peers through the existing signaling directives.
 	client.SetListenHandler(func(lctx context.Context, reset, added bool, pid string) {
 		c.mtx.Lock()
 		defer c.mtx.Unlock()
@@ -209,6 +208,7 @@ func (c *wsSignalingCtrl) executeGeneration(ctx context.Context) error {
 	})
 	client.SetContext(ctx)
 
+	// Detect a broken socket and return it to the controller retry loop.
 	pingErr := make(chan error, 1)
 	go func() {
 		pingErr <- runWebSocketPing(ctx, conn, signalingWebSocketPingInterval)
