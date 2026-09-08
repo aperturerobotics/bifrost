@@ -14,11 +14,13 @@ var ErrNotImplemented = errors.New("operation not implemented by lookup controll
 
 // lookupBucket implements bucket.Bucket with a lookup handle.
 type lookupBucket struct {
-	h         Handle
+	// h resolves the bucket's lookup service.
+	h Handle
+	// localOnly excludes remote discovery from payload reads.
 	localOnly bool
 }
 
-// NewBucketFromHandle implements the Bucket api with a Lookup handle.
+// NewBucketFromHandle exposes the bucket API through a lookup handle.
 func NewBucketFromHandle(h Handle) bucket.Bucket {
 	return &lookupBucket{h: h}
 }
@@ -116,15 +118,11 @@ func (l *lookupBucket) GetBlock(ctx context.Context, ref *block.BlockRef) ([]byt
 // GetBlockExists checks if a block exists with a cid reference.
 // Note: the block may not be in the specified bucket.
 func (l *lookupBucket) GetBlockExists(ctx context.Context, ref *block.BlockRef) (bool, error) {
-	lb, err := l.h.GetLookup(ctx)
+	found, err := l.GetBlockExistsBatch(ctx, []*block.BlockRef{ref})
 	if err != nil {
 		return false, err
 	}
-	if lb == nil {
-		return false, bucket.ErrBucketNotFound
-	}
-	_, ok, err := lb.LookupBlock(ctx, ref, WithLocalOnly())
-	return ok, err
+	return found[0], nil
 }
 
 // GetBlockExistsBatch checks whether refs exist through the lookup controller.
@@ -161,5 +159,5 @@ func (l *lookupBucket) Sync(context.Context) (bool, error) {
 	return true, nil
 }
 
-// _ is a type assertion
+// _ verifies the bucket contract.
 var _ bucket.Bucket = (*lookupBucket)(nil)
