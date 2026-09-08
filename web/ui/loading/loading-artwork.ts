@@ -37,15 +37,18 @@ export function createLoadingArtwork(
   const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.18, 0.08, 1.4)
   const output = new OutputPass()
 
-  // Sky drift shares the scene clock and stops with reduced motion or a hidden page.
+  // Bake the dust at a fixed instant; only geometry changes invalidate the sky.
+  const skyTarget = new THREE.WebGLRenderTarget(1, 1, {
+    type: THREE.HalfFloatType,
+    depthBuffer: false,
+  })
   const probe = document.createElement('canvas').getContext('2d')!
   probe.fillStyle =
     getComputedStyle(shell).getPropertyValue('--scene-background')
   probe.fillRect(0, 0, 1, 1)
   const background = probe.getImageData(0, 0, 1, 1).data
-  const composite = new ShaderPass({
+  const sky = new ShaderPass({
     uniforms: {
-      tDiffuse: { value: null },
       background: {
         value: new THREE.Vector3(
           background[0],
@@ -60,7 +63,6 @@ export function createLoadingArtwork(
     vertexShader:
       'varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.0,1.0);}',
     fragmentShader: `
-    uniform sampler2D tDiffuse;
     uniform vec3 background;
     uniform float aspect,time;
     uniform vec2 focus;
@@ -79,7 +81,6 @@ export function createLoadingArtwork(
       return noise(p)*0.50+noise(p*2.13+4.7)*0.27+noise(p*4.67+9.2)*0.15+noise(p*9.73+13.8)*0.08;
     }
     void main(){
-      vec3 light=texture2D(tDiffuse,vUv).rgb;
       vec2 p=(vUv-0.5)*vec2(aspect,1.0);
       vec2 drift=vec2(time*0.0015,-time*0.0007);
       vec2 warp=vec2(noise(p*3.0+7.0+drift),noise(p*3.0+19.0-drift))-0.5;
@@ -103,16 +104,34 @@ export function createLoadingArtwork(
       sky+=vec3(0.105,0.05,0.145)*scatter*backlight;
       sky+=vec3(0.10,0.055,0.15)*edgeLight*0.22;
       sky+=(hash(gl_FragCoord.xy)-0.5)*0.003;
-      gl_FragColor=vec4(sky+(1.0-sky)*light,1.0);
+      gl_FragColor=vec4(sky,1.0);
     }`,
   })
+  const composite = new ShaderPass({
+    uniforms: {
+      tDiffuse: { value: null },
+      sky: { value: null },
+    },
+    vertexShader:
+      'varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.0,1.0);}',
+    fragmentShader: `
+      uniform sampler2D tDiffuse,sky;
+      varying vec2 vUv;
+      void main(){
+        vec3 background=texture2D(sky,vUv).rgb;
+        vec3 light=texture2D(tDiffuse,vUv).rgb;
+        gl_FragColor=vec4(background+(1.0-background)*light,1.0);
+      }`,
+  })
+  // ShaderPass clones initial uniforms; sample the actual cached render target.
+  composite.uniforms.sky.value = skyTarget.texture
   composer.addPass(renderPass)
   composer.addPass(bloom)
   composer.addPass(output)
   composer.addPass(composite)
 
   const uniforms = {
-    time: composite.uniforms.time,
+    time: { value: 12 },
     aspect: { value: 1 },
     height: { value: 800 },
     pointer: { value: new THREE.Vector2() },
@@ -396,28 +415,34 @@ export function createLoadingArtwork(
       1 - ((rect.y - bounds.y + rect.height / 2) * 2) / height,
     )
   }
+  let skyDirty = true
   function layout() {
     const width = canvas.clientWidth
     const height = canvas.clientHeight
     if (!width || !height) return
     const limit = renderer.capabilities.maxTextureSize
     const scale = Math.min(devicePixelRatio, limit / width, limit / height)
-    renderer.setSize(
-      Math.round(width * scale),
-      Math.round(height * scale),
-      false,
-    )
-    composer.setSize(Math.round(width * scale), Math.round(height * scale))
+    const pixelWidth = Math.round(width * scale)
+    const pixelHeight = Math.round(height * scale)
+    if (skyTarget.width !== pixelWidth || skyTarget.height !== pixelHeight) {
+      renderer.setSize(pixelWidth, pixelHeight, false)
+      composer.setSize(pixelWidth, pixelHeight)
+      skyTarget.setSize(pixelWidth, pixelHeight)
+      skyDirty = true
+    }
     uniforms.aspect.value = width / height
-    composite.uniforms.aspect.value = width / height
+    if (sky.uniforms.aspect.value !== width / height) skyDirty = true
+    sky.uniforms.aspect.value = width / height
     geometry.instanceCount =
       sparkCount +
       Math.round(starCount * Math.min(1, (width * height) / 1050000))
     uniforms.height.value = height
     center(emblem, uniforms.origin.value)
-    composite.uniforms.focus.value
-      .copy(uniforms.origin.value)
-      .multiplyScalar(0.5)
+    const focus = sky.uniforms.focus.value as THREE.Vector2
+    const focusX = uniforms.origin.value.x * 0.5
+    const focusY = uniforms.origin.value.y * 0.5
+    if (focus.x !== focusX || focus.y !== focusY) skyDirty = true
+    focus.set(focusX, focusY)
     const consoleBounds = shell
       .querySelector<HTMLElement>('.swl-console')!
       .getBoundingClientRect()
@@ -438,6 +463,8 @@ export function createLoadingArtwork(
   }
   let request = 0
   let previous = 0
+  let nextFrame = 0
+  const frameInterval = 1000 / 30
   let elapsed = 12
   const pointerTarget = new THREE.Vector2()
   let pointerInside = false
@@ -460,6 +487,11 @@ export function createLoadingArtwork(
   function draw(now: number) {
     request = 0
     if (document.hidden) return
+    if (now < nextFrame) {
+      request = requestAnimationFrame(draw)
+      return
+    }
+    nextFrame = now + frameInterval - ((now - nextFrame) % frameInterval)
     const dt = previous ? Math.min((now - previous) / 1000, 0.05) : 0
     previous = now
     if (!reduced.matches) elapsed += dt
@@ -473,6 +505,11 @@ export function createLoadingArtwork(
           strength,
           1 - Math.exp(-dt * 4),
         )
+    if (skyDirty) {
+      sky.render(renderer, skyTarget, skyTarget, 0, false)
+      renderer.setRenderTarget(null)
+      skyDirty = false
+    }
     composer.render(dt)
     if (!reduced.matches) request = requestAnimationFrame(draw)
   }
@@ -507,6 +544,7 @@ export function createLoadingArtwork(
   shell.addEventListener('pointerleave', leavePointer)
   function resetClock() {
     previous = 0
+    nextFrame = 0
     resume()
   }
   document.addEventListener('visibilitychange', resetClock)
@@ -531,6 +569,8 @@ export function createLoadingArtwork(
     bloom.dispose()
     output.dispose()
     composite.dispose()
+    sky.dispose()
+    skyTarget.dispose()
     composer.dispose()
     renderer.dispose()
     delete canvas.dataset.renderer
