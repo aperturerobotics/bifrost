@@ -185,8 +185,8 @@ func TestParticipantRevocationClosesBlockedSnapshot(t *testing.T) {
 	}
 	select {
 	case err := <-done:
-		if err == nil {
-			t.Fatal("blocked snapshot unexpectedly completed")
+		if !errors.Is(err, ErrAccessDenied) {
+			t.Fatalf("revoked stream result = %v, want access denied", err)
 		}
 	case <-time.After(time.Second):
 		t.Fatal("revocation did not close and join the blocked stream")
