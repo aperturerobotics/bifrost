@@ -4,7 +4,6 @@ import (
 	"cmp"
 	"context"
 	"slices"
-	"sync"
 	"time"
 
 	"github.com/aperturerobotics/controllerbus/bus"
@@ -19,56 +18,6 @@ import (
 	transport_controller "github.com/s4wave/spacewave/net/transport/controller"
 	s4wave_status "github.com/s4wave/spacewave/sdk/status"
 )
-
-// RecoveryStatusRegistry owns volatile renderer-published recovery facts for
-// logical sessions. Multiple mounted SessionResources for the same SessionRef
-// share one status container through this registry.
-type RecoveryStatusRegistry struct {
-	mtx       sync.Mutex
-	bySession map[string]*ccontainer.CContainer[*s4wave_status.ReportRecoveryStatusRequest]
-}
-
-// NewRecoveryStatusRegistry creates a new recovery status registry.
-func NewRecoveryStatusRegistry() *RecoveryStatusRegistry {
-	return &RecoveryStatusRegistry{bySession: make(map[string]*ccontainer.CContainer[*s4wave_status.ReportRecoveryStatusRequest])}
-}
-
-// GetSessionRecoveryStatusCtr returns the shared volatile recovery status
-// container for sess.
-func (r *RecoveryStatusRegistry) GetSessionRecoveryStatusCtr(
-	sess session.Session,
-) *ccontainer.CContainer[*s4wave_status.ReportRecoveryStatusRequest] {
-	if r == nil || sess == nil || sess.GetSessionRef() == nil {
-		return newRendererRecoveryCtr()
-	}
-	return r.getSessionRecoveryStatusCtrForRef(sess.GetSessionRef())
-}
-
-func (r *RecoveryStatusRegistry) getSessionRecoveryStatusCtrForRef(
-	ref *session.SessionRef,
-) *ccontainer.CContainer[*s4wave_status.ReportRecoveryStatusRequest] {
-	if r == nil || ref == nil {
-		return newRendererRecoveryCtr()
-	}
-	key := recoveryStatusSessionKey(ref)
-	r.mtx.Lock()
-	defer r.mtx.Unlock()
-	ctr := r.bySession[key]
-	if ctr == nil {
-		ctr = newRendererRecoveryCtr()
-		r.bySession[key] = ctr
-	}
-	return ctr
-}
-
-func recoveryStatusSessionKey(ref *session.SessionRef) string {
-	providerRef := ref.GetProviderResourceRef()
-	return providerRef.GetProviderId() + "/" + providerRef.GetProviderAccountId() + "/" + providerRef.GetId()
-}
-
-func newRendererRecoveryCtr() *ccontainer.CContainer[*s4wave_status.ReportRecoveryStatusRequest] {
-	return ccontainer.NewCContainerWithEqual(nil, rendererRecoveryStatusEqual)
-}
 
 // StatusResource implements the SystemStatusService for a session.
 type StatusResource struct {
@@ -208,7 +157,7 @@ func (r *StatusResource) WatchNetworkStats(
 			}
 			prev = resp.CloneVT()
 		}
-		if err := waitNetworkStats(ctx, waitChs); err != nil {
+		if err := broadcast.WaitAny(ctx, waitChs...); err != nil {
 			return err
 		}
 	}
@@ -274,6 +223,7 @@ func (r *StatusResource) WatchRecoveryStatus(
 	}
 }
 
+// watchRecoveryOwnerChanges restarts owner watches when the controller set changes until cancellation.
 func (r *StatusResource) watchRecoveryOwnerChanges(ctx context.Context, notify func()) {
 	for {
 		waitCh := r.controllersWaitCh()
@@ -292,6 +242,7 @@ func (r *StatusResource) watchRecoveryOwnerChanges(ctx context.Context, notify f
 	}
 }
 
+// watchRecoveryLauncherChanges watches launcher facts for the supplied controller-watch lifetime.
 func (r *StatusResource) watchRecoveryLauncherChanges(ctx context.Context, notify func()) {
 	ctrl := spacewave_launcher_controller.FindControllerOnBus(r.b)
 	if ctrl == nil {
@@ -327,6 +278,7 @@ func (r *StatusResource) watchRecoveryLauncherChanges(ctx context.Context, notif
 	}()
 }
 
+// watchRecoveryPluginChanges watches plugin facts until its controller-watch context ends.
 func (r *StatusResource) watchRecoveryPluginChanges(ctx context.Context, notify func()) {
 	ctr := r.findPluginStatusCtr()
 	if ctr == nil {
@@ -345,6 +297,7 @@ func (r *StatusResource) watchRecoveryPluginChanges(ctx context.Context, notify 
 	)
 }
 
+// watchRecoveryRendererChanges watches volatile renderer facts until the status stream ends.
 func (r *StatusResource) watchRecoveryRendererChanges(ctx context.Context, notify func()) {
 	current := r.rendererRecoveryCtr.GetValue()
 	_ = ccontainer.WatchChanges(
@@ -359,6 +312,7 @@ func (r *StatusResource) watchRecoveryRendererChanges(ctx context.Context, notif
 	)
 }
 
+// rendererRecoveryStatusEqual compares nullable renderer snapshots by value.
 func rendererRecoveryStatusEqual(
 	a,
 	b *s4wave_status.ReportRecoveryStatusRequest,
@@ -369,6 +323,7 @@ func rendererRecoveryStatusEqual(
 	return a.EqualVT(b)
 }
 
+// waitPluginStatusCtr waits for a plugin scheduler or context cancellation.
 func (r *StatusResource) waitPluginStatusCtr(
 	ctx context.Context,
 ) (ccontainer.Watchable[*plugin_host_scheduler.PluginStatusSnapshot], error) {
@@ -385,6 +340,7 @@ func (r *StatusResource) waitPluginStatusCtr(
 	}
 }
 
+// findPluginStatusCtr locates the mounted plugin scheduler status owner.
 func (r *StatusResource) findPluginStatusCtr() ccontainer.Watchable[*plugin_host_scheduler.PluginStatusSnapshot] {
 	for _, ctrl := range r.b.GetControllers() {
 		scheduler, ok := ctrl.(*plugin_host_scheduler.Controller)
@@ -395,6 +351,7 @@ func (r *StatusResource) findPluginStatusCtr() ccontainer.Watchable[*plugin_host
 	return nil
 }
 
+// controllersWaitCh captures controller-change notification under its owning lock.
 func (r *StatusResource) controllersWaitCh() <-chan struct{} {
 	var waitCh <-chan struct{}
 	r.b.GetControllersBroadcast().HoldLock(func(
@@ -406,6 +363,7 @@ func (r *StatusResource) controllersWaitCh() <-chan struct{} {
 	return waitCh
 }
 
+// buildPluginsResponse projects the scheduler snapshot into plugin status records.
 func buildPluginsResponse(snapshot *plugin_host_scheduler.PluginStatusSnapshot) *s4wave_status.WatchPluginsResponse {
 	var infos []*s4wave_status.PluginInfo
 	if snapshot != nil {
@@ -424,11 +382,15 @@ func buildPluginsResponse(snapshot *plugin_host_scheduler.PluginStatusSnapshot) 
 	}
 }
 
+// networkStatusProvider exposes the account-owned transport and its lifecycle.
 type networkStatusProvider interface {
+	// GetSessionTransport returns the active transport, or nil.
 	GetSessionTransport() *spacewave_transport.SessionTransport
+	// GetTransportSnapshotWithWait returns running state and its change channel.
 	GetTransportSnapshotWithWait() (bool, <-chan struct{})
 }
 
+// buildNetworkStatsResponse projects live transport links into network status records.
 func (r *StatusResource) buildNetworkStatsResponse() (*s4wave_status.WatchNetworkStatsResponse, []<-chan struct{}) {
 	resp := &s4wave_status.WatchNetworkStatsResponse{}
 	if r.sess == nil || r.sess.GetProviderAccount() == nil {
@@ -440,18 +402,19 @@ func (r *StatusResource) buildNetworkStatsResponse() (*s4wave_status.WatchNetwor
 	}
 	transportRunning, transportWaitCh := provider.GetTransportSnapshotWithWait()
 	resp.TransportRunning = transportRunning
-	waitChs := appendNetworkStatsWaitCh(nil, transportWaitCh)
+	waitChs := []<-chan struct{}{transportWaitCh}
 	st := provider.GetSessionTransport()
 	if st == nil {
 		return resp, waitChs
 	}
 	resp.LocalPeerId = st.GetPeerID().String()
-	links, linkWaitCh := st.GetLinkSnapshotsWithWait()
-	waitChs = appendNetworkStatsWaitCh(waitChs, linkWaitCh)
+	links, linkWaitChs := st.GetLinkSnapshotsWithWait()
+	waitChs = append(waitChs, linkWaitChs...)
 	slices.SortFunc(links, compareNetworkLinkSnapshots)
 	return buildNetworkStatsResponse(resp, links), waitChs
 }
 
+// compareNetworkLinkSnapshots orders links by remote identity and link identifier.
 func compareNetworkLinkSnapshots(a, b transport_controller.LinkSnapshot) int {
 	if n := cmp.Compare(a.RemotePeerID.String(), b.RemotePeerID.String()); n != 0 {
 		return n
@@ -459,6 +422,7 @@ func compareNetworkLinkSnapshots(a, b transport_controller.LinkSnapshot) int {
 	return cmp.Compare(a.LinkID, b.LinkID)
 }
 
+// buildNetworkStatsResponse projects live transport links into network status records.
 func buildNetworkStatsResponse(
 	resp *s4wave_status.WatchNetworkStatsResponse,
 	links []transport_controller.LinkSnapshot,
@@ -492,21 +456,7 @@ func buildNetworkStatsResponse(
 	return resp
 }
 
-func appendNetworkStatsWaitCh(waitChs []<-chan struct{}, waitCh <-chan struct{}) []<-chan struct{} {
-	if waitCh == nil {
-		return waitChs
-	}
-	return append(waitChs, waitCh)
-}
-
-func waitNetworkStats(ctx context.Context, waitChs []<-chan struct{}) error {
-	if len(waitChs) == 0 {
-		<-ctx.Done()
-		return ctx.Err()
-	}
-	return broadcast.WaitAny(ctx, waitChs...)
-}
-
+// buildRecoveryStatus combines current owner facts with volatile renderer facts.
 func (r *StatusResource) buildRecoveryStatus() *s4wave_status.RecoveryStatus {
 	pluginSnapshot := (*plugin_host_scheduler.PluginStatusSnapshot)(nil)
 	if statusCtr := r.findPluginStatusCtr(); statusCtr != nil {
@@ -522,6 +472,7 @@ func (r *StatusResource) buildRecoveryStatus() *s4wave_status.RecoveryStatus {
 	}
 }
 
+// buildLauncherRecoveryStatus projects the current launcher metadata and update state.
 func (r *StatusResource) buildLauncherRecoveryStatus() *s4wave_status.LauncherRecoveryStatus {
 	ctrl := spacewave_launcher_controller.FindControllerOnBus(r.b)
 	if ctrl == nil {
@@ -532,6 +483,7 @@ func (r *StatusResource) buildLauncherRecoveryStatus() *s4wave_status.LauncherRe
 	return buildLauncherRecoveryStatus(info, status)
 }
 
+// buildLauncherRecoveryStatus projects the current launcher metadata and update state.
 func buildLauncherRecoveryStatus(
 	info *spacewave_launcher.LauncherInfo,
 	status *spacewave_launcher.FetchStatus,
@@ -563,6 +515,7 @@ func buildLauncherRecoveryStatus(
 	return out
 }
 
+// launcherUpdatePhaseString formats the launcher update phase for diagnostic status.
 func launcherUpdatePhaseString(phase spacewave_launcher.UpdatePhase) string {
 	switch phase {
 	case spacewave_launcher.UpdatePhase_UpdatePhase_IDLE:
@@ -580,6 +533,7 @@ func launcherUpdatePhaseString(phase spacewave_launcher.UpdatePhase) string {
 	}
 }
 
+// buildPluginManifestRecoveryStatuses projects retained plugin recovery outcomes.
 func buildPluginManifestRecoveryStatuses(
 	snapshot *plugin_host_scheduler.PluginStatusSnapshot,
 ) []*s4wave_status.PluginManifestRecoveryStatus {
@@ -607,6 +561,7 @@ func buildPluginManifestRecoveryStatuses(
 	return out
 }
 
+// buildBrowserBootRecoveryStatus copies the renderer boot report or marks it unreported.
 func buildBrowserBootRecoveryStatus(
 	renderer *s4wave_status.ReportRecoveryStatusRequest,
 ) *s4wave_status.BrowserBootRecoveryStatus {
@@ -620,6 +575,7 @@ func buildBrowserBootRecoveryStatus(
 	return status
 }
 
+// buildRuntimeAssetRecoveryStatus copies the renderer asset report or marks it unreported.
 func buildRuntimeAssetRecoveryStatus(
 	renderer *s4wave_status.ReportRecoveryStatusRequest,
 ) *s4wave_status.RuntimeAssetRecoveryStatus {
@@ -633,6 +589,7 @@ func buildRuntimeAssetRecoveryStatus(
 	return status
 }
 
+// formatRecoveryStatusTime formats a recorded recovery timestamp in UTC.
 func formatRecoveryStatusTime(ts time.Time) string {
 	if ts.IsZero() {
 		return ""
@@ -640,6 +597,7 @@ func formatRecoveryStatusTime(ts time.Time) string {
 	return ts.UTC().Format(time.RFC3339Nano)
 }
 
+// pluginStateString formats the plugin lifecycle for diagnostic status.
 func pluginStateString(state bldr_plugin.PluginState) string {
 	switch state {
 	case bldr_plugin.PluginState_PluginState_REQUESTED:

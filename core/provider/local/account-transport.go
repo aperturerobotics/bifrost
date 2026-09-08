@@ -21,6 +21,7 @@ type sessionTransportConfig struct {
 	signingEnvPrefix string
 }
 
+// matches compares the peer identity and signaling configuration.
 func (c sessionTransportConfig) matches(peerID peer.ID, signalingURL, signingEnvPrefix string) bool {
 	return c.peerID == peerID &&
 		c.signalingURL == signalingURL &&
@@ -41,6 +42,7 @@ type sessionTransportState struct {
 	err      error
 }
 
+// setReady publishes readiness only while this transport still owns startup.
 func (s *sessionTransportState) setReady() bool {
 	committed := false
 	s.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
@@ -54,6 +56,7 @@ func (s *sessionTransportState) setReady() bool {
 	return committed
 }
 
+// setReplaced prevents a replaced startup attempt from publishing readiness.
 func (s *sessionTransportState) setReplaced() {
 	s.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
 		if s.replaced {
@@ -64,6 +67,7 @@ func (s *sessionTransportState) setReplaced() {
 	})
 }
 
+// setExited publishes terminal state while preserving a substantive exit error.
 func (s *sessionTransportState) setExited(err error) {
 	s.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
 		if s.exited {
@@ -105,6 +109,7 @@ func sessionTransportReplacementContext(ctx context.Context) (context.Context, c
 	return context.WithCancel(replacementCtx)
 }
 
+// sessionTransportCleanupContext bounds cleanup independently of an already canceled caller.
 func sessionTransportCleanupContext(ctx context.Context) (context.Context, context.CancelFunc) {
 	if ctx == nil {
 		ctx = context.Background()
@@ -128,6 +133,7 @@ func (a *ProviderAccount) CreateSessionTransport(ctx context.Context, sessionKey
 	return err
 }
 
+// createSessionTransport starts an account-owned transport and waits for its readiness.
 func (a *ProviderAccount) createSessionTransport(ctx context.Context, sessionKey crypto.PrivKey, signalingURL string) (*sessionTransportState, error) {
 	cleanupCtx, cleanupCancel := sessionTransportReplacementContext(ctx)
 	defer cleanupCancel()
@@ -150,6 +156,7 @@ func (a *ProviderAccount) createSessionTransport(ctx context.Context, sessionKey
 	return sts, nil
 }
 
+// waitExistingSessionTransportReady waits for readiness while detecting replacement and exit.
 func (a *ProviderAccount) waitExistingSessionTransportReady(ctx context.Context, sts *sessionTransportState) error {
 	for {
 		if err := ctx.Err(); err != nil {
@@ -203,6 +210,7 @@ func (a *ProviderAccount) waitExistingSessionTransportReady(ctx context.Context,
 	}
 }
 
+// startSessionTransportLocked replaces the previous transport under the account lock.
 func (a *ProviderAccount) startSessionTransportLocked(
 	ctx context.Context,
 	cleanupCtx context.Context,
@@ -226,6 +234,7 @@ func (a *ProviderAccount) startSessionTransportLocked(
 		signalingURL,
 		signingEnvPrefix,
 		transport.WithStartupRetry(),
+		a.t.p.localNetwork,
 	)
 	if err != nil {
 		return nil, errors.Wrap(err, "create session transport")
@@ -274,6 +283,7 @@ func (a *ProviderAccount) startSessionTransportLocked(
 	return sts, nil
 }
 
+// waitSessionTransportReady races startup readiness against cancellation and replacement.
 func (a *ProviderAccount) waitSessionTransportReady(ctx context.Context, sts *sessionTransportState) error {
 	cleanup := func(err error) error {
 		return a.cleanupSessionTransportReadyError(ctx, sts, err)
@@ -342,6 +352,7 @@ func (a *ProviderAccount) waitSessionTransportReady(ctx context.Context, sts *se
 	}
 }
 
+// cleanupSessionTransportReadyError stops only the startup attempt that still owns the account slot.
 func (a *ProviderAccount) cleanupSessionTransportReadyError(ctx context.Context, sts *sessionTransportState, err error) error {
 	cleanupCtx, cleanupCancel := sessionTransportCleanupContext(ctx)
 	defer cleanupCancel()
@@ -375,6 +386,7 @@ func (a *ProviderAccount) cleanupSessionTransportReadyError(ctx context.Context,
 	return err
 }
 
+// classifySessionTransportReadyError distinguishes caller cancellation from transport replacement.
 func classifySessionTransportReadyError(ctx context.Context, sts *sessionTransportState, err error, cleanup func(error) error) error {
 	var replaced bool
 	sts.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
@@ -432,6 +444,7 @@ func (a *ProviderAccount) StopSessionTransport() {
 	}
 }
 
+// stopSessionTransportState stops the specified transport under the account lock.
 func (a *ProviderAccount) stopSessionTransportState(sts *sessionTransportState) {
 	cleanupCtx, cleanupCancel := sessionTransportReplacementContext(nil)
 	defer cleanupCancel()
@@ -447,6 +460,7 @@ func (a *ProviderAccount) stopSessionTransportState(sts *sessionTransportState) 
 	}
 }
 
+// stopSessionTransportLocked stops the current transport under the account lock.
 func (a *ProviderAccount) stopSessionTransportLocked(ctx context.Context) error {
 	var sts *sessionTransportState
 	a.transportBcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
@@ -455,6 +469,7 @@ func (a *ProviderAccount) stopSessionTransportLocked(ctx context.Context) error 
 	return a.stopSessionTransportStateLocked(ctx, sts)
 }
 
+// stopSessionTransportForReplacementLocked marks replacement before waiting for the previous transport to exit.
 func (a *ProviderAccount) stopSessionTransportForReplacementLocked(ctx context.Context) error {
 	var sts *sessionTransportState
 	a.transportBcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
@@ -470,6 +485,7 @@ func (a *ProviderAccount) stopSessionTransportForReplacementLocked(ctx context.C
 	return nil
 }
 
+// stopSessionTransportStateLocked joins the routine before clearing its account slot.
 func (a *ProviderAccount) stopSessionTransportStateLocked(ctx context.Context, sts *sessionTransportState) error {
 	if sts == nil {
 		return nil
@@ -563,6 +579,7 @@ func (a *ProviderAccount) EnsureConfiguredSessionTransport(
 	return err
 }
 
+// ensureSessionTransport reuses matching transport configuration or replaces it.
 func (a *ProviderAccount) ensureSessionTransport(
 	ctx context.Context,
 	sessionPriv crypto.PrivKey,
@@ -572,6 +589,7 @@ func (a *ProviderAccount) ensureSessionTransport(
 	return a.ensureSessionTransportWithReplacement(ctx, sessionPriv, relayURL, signingEnvPrefix, true)
 }
 
+// ensureSessionTransportWithReplacement selects whether a configuration mismatch permits replacement.
 func (a *ProviderAccount) ensureSessionTransportWithReplacement(
 	ctx context.Context,
 	sessionPriv crypto.PrivKey,
@@ -589,6 +607,7 @@ func (a *ProviderAccount) ensureSessionTransportWithReplacement(
 	)
 }
 
+// ensureSessionTransportWithOwner reconciles transport configuration with a separate running lifetime.
 func (a *ProviderAccount) ensureSessionTransportWithOwner(
 	ctx context.Context,
 	ownerCtx context.Context,
@@ -674,12 +693,12 @@ func (a *ProviderAccount) GetOnlinePeerIDsWithWait(peerIDs []string) ([]string, 
 		decoded = append(decoded, remotePeerID)
 		peerIDStrings[remotePeerID] = pidStr
 	}
-	linked, linkCh := st.GetLinkedPeerIDsSnapshotWithWait(decoded)
+	linked, linkChs := st.GetLinkedPeerIDsSnapshotWithWait(decoded)
 	online := make([]string, 0, len(linked))
 	for _, peerID := range decoded {
 		if _, ok := linked[peerID]; ok {
 			online = append(online, peerIDStrings[peerID])
 		}
 	}
-	return online, []<-chan struct{}{transportCh, linkCh}
+	return online, append(linkChs, transportCh)
 }
