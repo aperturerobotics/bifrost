@@ -90,3 +90,54 @@ func WriteSOConfigHistory(
 	}
 	return nil
 }
+
+// NewSOHostSyncFuncs reads retained lineage from one object-store transaction.
+// Local imports use the ordinary host lock, which commits state and lineage together.
+func NewSOHostSyncFuncs(store kvtx.Store) *sobject.SOHostSyncFuncs {
+	return &sobject.SOHostSyncFuncs{
+		History: func(ctx context.Context, id string, base, target []byte) ([]*sobject.SOConfigChange, error) {
+			// One read scope pins the complete bounded suffix across concurrent writes.
+			tx, err := store.NewTransaction(ctx, false)
+			if err != nil {
+				return nil, err
+			}
+			defer tx.Discard()
+
+			// The shared traversal checks content hashes, missing history and budgets.
+			return sobject.ReadConfigSuffix(ctx, base, target, func(ctx context.Context, head []byte) (*sobject.SOConfigChange, error) {
+				data, found, err := tx.Get(ctx, SOConfigHistoryEntryKey(id, head))
+				if err != nil || !found {
+					return nil, err
+				}
+				entry := &sobject.SOConfigChange{}
+				if err := entry.UnmarshalVT(data); err != nil {
+					return nil, err
+				}
+				return entry, nil
+			})
+		},
+	}
+}
+
+// WriteSOConfigCheckpoint records already-held trust in the caller's state transaction.
+// Only an explicit authenticated invitation may replace an existing checkpoint.
+func WriteSOConfigCheckpoint(ctx context.Context, tx kvtx.Tx, id string, config *sobject.SharedObjectConfig, replace bool) error {
+	if len(config.GetConfigChainHash()) == 0 {
+		return sobject.ErrConfigHistoryUnavailable
+	}
+	if err := config.Validate(); err != nil {
+		return err
+	}
+	key := SOConfigHistoryCheckpointKey(id)
+	if !replace {
+		_, found, err := tx.Get(ctx, key)
+		if err != nil || found {
+			return err
+		}
+	}
+	data, err := config.MarshalVT()
+	if err != nil {
+		return err
+	}
+	return tx.Set(ctx, key, data)
+}

@@ -2,6 +2,7 @@ package sobject_sync
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
 	"io"
 	"net"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/aperturerobotics/util/ccontainer"
+	"github.com/aperturerobotics/util/csync"
 	ulid "github.com/aperturerobotics/util/ulid"
 	"github.com/s4wave/spacewave/core/sobject"
 	block_transform "github.com/s4wave/spacewave/db/block/transform"
@@ -37,13 +39,36 @@ func newMemHost(soID string, initial *sobject.SOState) (*sobject.SOHost, *cconta
 	watchFn := func(_ context.Context, _ string, _ func()) (ccontainer.Watchable[*sobject.SOState], func(), error) {
 		return ctr, func() {}, nil
 	}
-	lockFn := func(_ context.Context, _ string) (sobject.SOStateLock, error) {
-		return sobject.NewSOStateLock(ctr.GetValue(), func(_ context.Context, s *sobject.SOState, _ ...*sobject.SOConfigChange) error {
-			ctr.SetValue(s)
+	var mutex csync.Mutex
+	history := make(map[string]*sobject.SOConfigChange)
+	lockFn := func(ctx context.Context, _ string) (sobject.SOStateLock, error) {
+		release, err := mutex.Lock(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return sobject.NewSOStateLock(ctr.GetValue(), func(_ context.Context, state *sobject.SOState, changes ...*sobject.SOConfigChange) error {
+			for _, change := range changes {
+				hash, err := sobject.HashSOConfigChange(change)
+				if err != nil {
+					return err
+				}
+				history[string(hash)] = change.CloneVT()
+			}
+			ctr.SetValue(state)
 			return nil
-		}, func() {}), nil
+		}, release), nil
 	}
-	return sobject.NewSOHost(context.Background(), watchFn, lockFn, soID), ctr
+	syncFuncs := &sobject.SOHostSyncFuncs{History: func(ctx context.Context, _ string, base, target []byte) ([]*sobject.SOConfigChange, error) {
+		release, err := mutex.Lock(ctx)
+		if err != nil {
+			return nil, err
+		}
+		defer release()
+		return sobject.ReadConfigSuffix(ctx, base, target, func(_ context.Context, hash []byte) (*sobject.SOConfigChange, error) {
+			return history[string(hash)], nil
+		})
+	}}
+	return sobject.NewSOHost(context.Background(), watchFn, lockFn, soID, syncFuncs), ctr
 }
 
 // mustKeyPair generates a real participant signing key.
@@ -109,102 +134,61 @@ func buildGrant(t *testing.T, soID string, ownerPriv crypto.PrivKey, localPub cr
 	return grant
 }
 
-// runSnapshotExchange drives exchangeSnapshots with the peer snapshot as the
-// remote side and returns any error from the local side.
+// runSnapshotExchange drives the authenticated data protocol with a requested candidate.
+// Authentication itself is covered by runStream tests; this helper isolates host rejection.
 func runSnapshotExchange(t *testing.T, s *SOSync, ctx context.Context, peerSnap *SOSyncMessage) error {
 	t.Helper()
-	localSess, remoteSess := pipeSessions(t)
-
-	errCh := make(chan error, 1)
-	go func() {
-		errCh <- s.exchangeSnapshots(ctx, gateLogger(), localSess, true, s.localObjectPeerID)
-	}()
-
-	// The local side sends its snapshot first; consume it.
-	in := &SOSyncMessage{}
-	if err := remoteSess.RecvMsg(in); err != nil {
-		t.Fatalf("remote recv local snapshot: %v", err)
-	}
-	if err := remoteSess.SendMsg(peerSnap); err != nil {
-		t.Fatalf("remote send snapshot: %v", err)
-	}
-	return <-errCh
-}
-
-func TestStreamOpsAppliesNewerSnapshot(t *testing.T) {
-	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
-
-	ownerPriv := mustKeyPair(t)
-	writerPriv := mustKeyPair(t)
-	ownerID := mustPeerIDStr(t, ownerPriv)
-	writerID := mustPeerIDStr(t, writerPriv)
-	participants := []*sobject.SOParticipantConfig{
-		participantCfg(ownerID, sobject.SOParticipantRole_SOParticipantRole_OWNER),
-		participantCfg(writerID, sobject.SOParticipantRole_SOParticipantRole_WRITER),
-	}
-	initial := &sobject.SOState{
-		Config: &sobject.SharedObjectConfig{Participants: participants},
-		Root:   &sobject.SORoot{InnerSeqno: 1},
-	}
-	trustSnapshotConfig(t, initial, ownerPriv)
-	newer := initial.CloneVT()
-	newer.Root.InnerSeqno = 2
-	signSnapshotRoot(t, "stream-newer-snapshot", newer, ownerPriv)
-	newerData, err := newer.MarshalVT()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	host, stateCtr := newMemHost("stream-newer-snapshot", initial)
-	writerPeerID, err := peer.IDFromPrivateKey(writerPriv)
-	if err != nil {
-		t.Fatal(err)
-	}
-	syncer := NewSOSync(gateLogger(), nil, "stream-newer-snapshot", writerPeerID, writerPriv, host, nil)
 	localSess, remoteSess := pipeSessions(t)
-	streamDone := make(chan struct{})
-	go func() {
-		syncer.streamOps(ctx, gateLogger(), localSess, writerPeerID)
-		close(streamDone)
-	}()
+	done := make(chan error, 1)
+	go func() { done <- s.synchronize(ctx, gateLogger(), localSess, s.localObjectPeerID) }()
+	defer remoteSess.Close()
 
-	if err := remoteSess.SendMsg(&SOSyncMessage{
-		Body: &SOSyncMessage_Snapshot{Snapshot: &SOSyncSnapshot{
-			SoState:   newerData,
-			RootSeqno: 2,
-		}},
-	}); err != nil {
+	// Decline the local advertisement, then request adoption of the supplied candidate.
+	localHead := &SOSyncMessage{}
+	if err := remoteSess.RecvMsg(localHead); err != nil {
+		return <-done
+	}
+	if err := remoteSess.SendMsg(syncAcknowledgment(localHead.GetHead().GetRevision())); err != nil {
+		return <-done
+	}
+	state := &sobject.SOState{}
+	if err := state.UnmarshalVT(peerSnap.GetSnapshot().GetSoState()); err != nil {
 		t.Fatal(err)
 	}
-	updated, err := stateCtr.WaitValueChange(ctx, initial, nil)
-	if err != nil {
-		t.Fatal(err)
+	digest := sha256.Sum256(peerSnap.GetSnapshot().GetSoState())
+	head := &SOSyncHead{Revision: 1, StateHash: digest[:], ConfigHash: state.GetConfig().GetConfigChainHash(), ConfigSeqno: state.GetConfig().GetConfigChainSeqno(), RootSeqno: peerSnap.GetSnapshot().GetRootSeqno()}
+	if err := remoteSess.SendMsg(&SOSyncMessage{Body: &SOSyncMessage_Head{Head: head}}); err != nil {
+		return <-done
 	}
-	if got := updated.GetRoot().GetInnerSeqno(); got != 2 {
-		t.Fatalf("root seqno = %d, want 2", got)
+	request := &SOSyncMessage{}
+	if err := remoteSess.RecvMsg(request); err != nil {
+		return <-done
 	}
-
-	// The local sender publishes the adopted root so both directions keep
-	// following authoritative state after the initial exchange.
-	for {
-		out := &SOSyncMessage{}
-		if err := remoteSess.RecvMsg(out); err != nil {
-			t.Fatal(err)
-		}
-		if out.GetSnapshot().GetRootSeqno() == 2 {
-			break
-		}
+	if request.GetHistoryRequest() == nil {
+		cancel()
+		remoteSess.Close()
+		<-done
+		return errors.New("candidate not requested")
+	}
+	snapshot := peerSnap.GetSnapshot().CloneVT()
+	snapshot.Revision = 1
+	snapshot.BaseHash = request.GetHistoryRequest().GetBaseHash()
+	if err := remoteSess.SendMsg(&SOSyncMessage{Body: &SOSyncMessage_Snapshot{Snapshot: snapshot}}); err != nil {
+		return <-done
+	}
+	ack := &SOSyncMessage{}
+	if err := remoteSess.RecvMsg(ack); err != nil {
+		return <-done
+	}
+	if ack.GetAck().GetRevision() != 1 {
+		t.Fatalf("unexpected snapshot acknowledgment: %v", ack)
 	}
 	cancel()
-	if err := remoteSess.Close(); err != nil {
-		t.Fatal(err)
-	}
-	select {
-	case <-streamDone:
-	case <-time.After(time.Second):
-		t.Fatal("stream did not stop after cancellation")
-	}
+	remoteSess.Close()
+	<-done
+	return nil
 }
 
 func TestSnapshotExchangeRejectsExcludedLocalPeer(t *testing.T) {
@@ -427,41 +411,51 @@ func TestSnapshotExchangeAcceptsObjectPeerDistinctFromTransportPeer(t *testing.T
 	}
 }
 
-func TestMergePendingOperationsAcceptsAuthoritativeWriterDemotion(t *testing.T) {
-	soID := "gate-object-writer-demotion"
-	writerPriv := mustKeyPair(t)
-	writerPeer, err := peer.IDFromPrivateKey(writerPriv)
+// TestPeerImportDropsDemotedWriterQueue exercises queue merging under verified authority.
+func TestPeerImportDropsDemotedWriterQueue(t *testing.T) {
+	const soID = "gate-object-writer-demotion"
+	owner, writer := mustKeyPair(t), mustKeyPair(t)
+	writerID, err := peer.IDFromPrivateKey(writer)
 	if err != nil {
-		t.Fatal(err.Error())
+		t.Fatal(err)
 	}
 	previous := &sobject.SOState{
 		Config: &sobject.SharedObjectConfig{Participants: []*sobject.SOParticipantConfig{
-			participantCfg(writerPeer.String(), sobject.SOParticipantRole_SOParticipantRole_WRITER),
+			participantCfg(mustPeerIDStr(t, owner), sobject.SOParticipantRole_SOParticipantRole_OWNER),
+			participantCfg(writerID.String(), sobject.SOParticipantRole_SOParticipantRole_WRITER),
 		}},
 		Root: &sobject.SORoot{InnerSeqno: 1},
 	}
-	operation, err := sobject.BuildSOOperation(soID, writerPriv, []byte("pending-before-demotion"), 1, ulid.NewULID())
+	trustSnapshotConfig(t, previous, owner)
+	signSnapshotRoot(t, soID, previous, owner)
+	operation, err := sobject.BuildSOOperation(soID, writer, []byte("pending-before-demotion"), 1, ulid.NewULID())
 	if err != nil {
-		t.Fatal(err.Error())
+		t.Fatal(err)
 	}
 	if err := previous.QueueOperation(soID, operation); err != nil {
-		t.Fatal(err.Error())
-	}
-	authoritative := &sobject.SOState{
-		Config: &sobject.SharedObjectConfig{Participants: []*sobject.SOParticipantConfig{
-			participantCfg(writerPeer.String(), sobject.SOParticipantRole_SOParticipantRole_READER),
-		}},
-		Root: &sobject.SORoot{InnerSeqno: 2},
+		t.Fatal(err)
 	}
 
-	if err := mergePendingOperations(gateLogger(), soID, authoritative, previous); err != nil {
-		t.Fatal(err.Error())
+	// The owner demotes the writer without changing the accepted root.
+	candidate := previous.CloneVT()
+	candidate.Config.Participants[1].Role = sobject.SOParticipantRole_SOParticipantRole_READER
+	change, err := sobject.BuildSOConfigChange(previous.Config, candidate.Config, sobject.SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_ADD_PARTICIPANT, owner, nil)
+	if err != nil {
+		t.Fatal(err)
 	}
-	if len(authoritative.GetOps()) != 0 {
-		t.Fatalf("authoritative queue contains %d demoted-writer operations, want 0", len(authoritative.GetOps()))
+	candidate.Config, err = sobject.VerifyConfigChange(previous.Config, change)
+	if err != nil {
+		t.Fatal(err)
 	}
-	if got := authoritative.GetConfig().GetParticipants()[0].GetRole(); got != sobject.SOParticipantRole_SOParticipantRole_READER {
-		t.Fatalf("authoritative writer role = %s, want READER", got.String())
+	candidate.Ops = nil
+	candidate.QueuedAccountNonces = nil
+	host, state := newMemHost(soID, previous)
+	t.Cleanup(host.ClearContext)
+	if err := host.ImportPeerSnapshot(t.Context(), candidate, []*sobject.SOConfigChange{change}, writerID, nil); err != nil {
+		t.Fatal(err)
+	}
+	if len(state.GetValue().GetOps()) != 0 || state.GetValue().GetConfig().GetParticipants()[1].GetRole() != sobject.SOParticipantRole_SOParticipantRole_READER {
+		t.Fatal("demoted writer's pending operation survived import")
 	}
 }
 

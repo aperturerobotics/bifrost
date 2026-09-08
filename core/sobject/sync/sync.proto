@@ -2,6 +2,7 @@ syntax = "proto3";
 package sobject.sync;
 
 import "github.com/s4wave/spacewave/net/peer/peer.proto";
+import "github.com/s4wave/spacewave/core/sobject/sobject.proto";
 
 option go_package = "github.com/s4wave/spacewave/core/sobject/sync;sobject_sync";
 
@@ -21,6 +22,14 @@ message SOSyncMessage {
     peer.Signature proof = 5;
     // Authorization reports acceptance without revealing configuration data.
     SOSyncAuthorization authorization = 6;
+    // Head advertises a pinned state after authentication.
+    SOSyncHead head = 7;
+    // HistoryRequest asks for a suffix from the receiver's held checkpoint.
+    SOSyncHistoryRequest history_request = 8;
+    // HistoryPage carries one bounded contiguous suffix page.
+    SOSyncHistoryPage history_page = 9;
+    // RecoveryRequired reports that trusted recovery must replace this exchange.
+    SOSyncRecoveryRequired recovery_required = 10;
   }
 }
 
@@ -30,6 +39,10 @@ message SOSyncSnapshot {
   bytes so_state = 1;
   // RootSeqno is the inner_seqno from SORoot.
   uint64 root_seqno = 2;
+  // Revision binds this snapshot to the requested, pinned advertisement.
+  uint64 revision = 3;
+  // BaseHash is the trusted checkpoint named by the request.
+  bytes base_hash = 4;
 }
 
 // SOSyncOp carries a signed operation for the peer to apply.
@@ -46,6 +59,8 @@ message SOSyncOp {
 message SOSyncAck {
   // AckedSeqno is the acknowledged sequence number.
   uint64 acked_seqno = 1;
+  // Revision releases the sender's pinned advertisement after receipt or decline.
+  uint64 revision = 2;
 }
 
 // SOSyncChallenge provides fresh entropy for one stream authentication.
@@ -72,4 +87,42 @@ message SOSyncAuthTranscript {
   bytes sender_nonce = 4;
   // ReceiverNonce is the challenge produced by the verifying endpoint.
   bytes receiver_nonce = 5;
+}
+
+// SOSyncHead remains pinned until its revision is acknowledged.
+message SOSyncHead {
+  // Revision increases for each advertised state on this stream.
+  uint64 revision = 1;
+  // ConfigHash identifies the advertised configuration head.
+  bytes config_hash = 2;
+  // ConfigSeqno is the configuration-chain sequence at ConfigHash.
+  uint64 config_seqno = 3;
+  // RootSeqno is the advertised signed root sequence.
+  uint64 root_seqno = 4;
+  // StateHash is SHA-256 of the serialized transferable snapshot; it grants no authority.
+  bytes state_hash = 5;
+}
+
+// SOSyncHistoryRequest requests one complete candidate rooted in held trust.
+message SOSyncHistoryRequest {
+  // Revision identifies the peer's pinned advertisement.
+  uint64 revision = 1;
+  // BaseHash identifies the receiver's exact trusted checkpoint.
+  bytes base_hash = 2;
+}
+
+// SOSyncHistoryPage advances the request's cursor without adopting any state.
+message SOSyncHistoryPage {
+  // Revision identifies the pinned target advertisement.
+  uint64 revision = 1;
+  // Cursor is the hash immediately before this page's first entry.
+  bytes cursor = 2;
+  // Changes are contiguous, oldest-first signed transitions.
+  repeated .sobject.SOConfigChange changes = 3;
+}
+
+// SOSyncRecoveryRequired ends catch-up without changing receiver-held state.
+message SOSyncRecoveryRequired {
+  // Revision identifies the advertisement whose history could not be supplied.
+  uint64 revision = 1;
 }

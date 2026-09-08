@@ -199,7 +199,7 @@ func TestParticipantAuthenticationDeniesBeforeDisclosure(t *testing.T) {
 			go func() { done <- local.runStream(ctx, gateLogger(), observed, "transport-a", "transport-b") }()
 			go func() { done <- remote.runStream(ctx, gateLogger(), right, "transport-b", "transport-a") }()
 			if !denied {
-				waitAuthenticationSnapshot(t, ctx, observed.messages)
+				waitAuthenticationData(t, ctx, observed.messages)
 				cancel()
 			}
 			for range 2 {
@@ -215,7 +215,7 @@ func TestParticipantAuthenticationDeniesBeforeDisclosure(t *testing.T) {
 			if denied {
 				for len(observed.messages) > 0 {
 					message := <-observed.messages
-					if message.GetSnapshot() != nil || message.GetOp() != nil {
+					if message.GetSnapshot() != nil || message.GetOp() != nil || message.GetHead() != nil || message.GetHistoryPage() != nil {
 						t.Fatal("unauthorized stream received object data")
 					}
 				}
@@ -263,8 +263,7 @@ func TestParticipantRevocationNotifiesConnectedPeer(t *testing.T) {
 	done := make(chan error, 2)
 	go func() { done <- local.runStream(ctx, gateLogger(), observed, "transport-a", "transport-b") }()
 	go func() { done <- remote.runStream(ctx, gateLogger(), right, "transport-b", "transport-a") }()
-	waitAuthenticationSnapshot(t, ctx, observed.messages)
-	waitAuthenticationSnapshot(t, ctx, observed.messages)
+	waitAuthenticationData(t, ctx, observed.messages)
 	removed, err := sobject.RemoveSOParticipant(ctx, local.soHost, remote.localObjectPeerID.String(), owner, nil)
 	if err != nil || !removed {
 		t.Fatalf("remove = %v, %v", removed, err)
@@ -328,7 +327,7 @@ func TestParticipantRevocationClosesBlockedSnapshot(t *testing.T) {
 	if _, err := remote.authenticate(ctx, stream_packet.NewSession(right, 64*1024), "transport-b", "transport-a"); err != nil {
 		t.Fatal(err)
 	}
-	waitAuthenticationSnapshot(t, ctx, observed.messages)
+	waitAuthenticationData(t, ctx, observed.messages)
 	removed, err := sobject.RemoveSOParticipant(ctx, local.soHost, remote.localObjectPeerID.String(), owner, nil)
 	if err != nil || !removed {
 		t.Fatalf("remove = %v, %v", removed, err)
@@ -343,17 +342,17 @@ func TestParticipantRevocationClosesBlockedSnapshot(t *testing.T) {
 	}
 }
 
-// waitAuthenticationSnapshot waits for admission of the first authenticated data frame.
-func waitAuthenticationSnapshot(t *testing.T, ctx context.Context, messages <-chan *SOSyncMessage) {
+// waitAuthenticationData waits for admission of the first authenticated data frame.
+func waitAuthenticationData(t *testing.T, ctx context.Context, messages <-chan *SOSyncMessage) {
 	t.Helper()
 	for {
 		select {
 		case message := <-messages:
-			if message.GetSnapshot() != nil {
+			if message.GetHead() != nil {
 				return
 			}
 		case <-ctx.Done():
-			t.Fatal("authenticated snapshot did not reach transport admission")
+			t.Fatal("authenticated head did not reach transport admission")
 		}
 	}
 }

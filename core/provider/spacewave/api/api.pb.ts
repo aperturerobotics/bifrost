@@ -17,6 +17,7 @@ import {
   SharedObjectConfig,
   SharedObjectList,
   SOConfigChainResponse,
+  SOConfigChange,
   SOEntityRecoveryEnvelope,
   SOInvite,
   SOJoinResponse,
@@ -5994,6 +5995,18 @@ export interface VerifiedSOStateCache {
    * @generated from field: sobject.SharedObjectConfig current_config = 5;
    */
   currentConfig?: SharedObjectConfig
+  /**
+   * PeerState is the last durably accepted peer snapshot, when present.
+   *
+   * @generated from field: sobject.SOState peer_state = 6;
+   */
+  peerState?: SOState
+  /**
+   * ConfigHistory retains authenticated transitions for peer catch-up.
+   *
+   * @generated from field: repeated sobject.SOConfigChange config_history = 7;
+   */
+  configHistory?: SOConfigChange[]
 }
 
 export const VerifiedSOStateCache: MessageType<VerifiedSOStateCache> =
@@ -6025,6 +6038,14 @@ export const VerifiedSOStateCache: MessageType<VerifiedSOStateCache> =
         name: 'current_config',
         kind: 'message',
         T: () => SharedObjectConfig,
+      },
+      { no: 6, name: 'peer_state', kind: 'message', T: () => SOState },
+      {
+        no: 7,
+        name: 'config_history',
+        kind: 'message',
+        T: () => SOConfigChange,
+        repeated: true,
       },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,

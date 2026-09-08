@@ -970,6 +970,14 @@ export interface SharedObjectHealth {
    * @generated from field: repeated string sync_denied_peer_ids = 7;
    */
   syncDeniedPeerIds?: string[]
+  /**
+   * SyncRecoveryPeerIds lists authenticated participants whose direct sync needs
+   * an upgrade or trusted history recovery. Local content remains available.
+   * Verified convergence clears the participant; admission alone does not.
+   *
+   * @generated from field: repeated string sync_recovery_peer_ids = 8;
+   */
+  syncRecoveryPeerIds?: string[]
 }
 
 export const SharedObjectHealth: MessageType<SharedObjectHealth> =
@@ -995,6 +1003,13 @@ export const SharedObjectHealth: MessageType<SharedObjectHealth> =
       {
         no: 7,
         name: 'sync_denied_peer_ids',
+        kind: 'scalar',
+        T: ScalarType.STRING,
+        repeated: true,
+      },
+      {
+        no: 8,
+        name: 'sync_recovery_peer_ids',
         kind: 'scalar',
         T: ScalarType.STRING,
         repeated: true,

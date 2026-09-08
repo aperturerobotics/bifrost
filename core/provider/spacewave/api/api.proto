@@ -1558,6 +1558,10 @@ message VerifiedSOStateCache {
   repeated .sobject.SOKeyEpoch key_epochs = 4;
   // CurrentConfig is the latest trusted config from the verified chain.
   .sobject.SharedObjectConfig current_config = 5;
+  // PeerState is the last durably accepted peer snapshot, when present.
+  .sobject.SOState peer_state = 6;
+  // ConfigHistory retains authenticated transitions for peer catch-up.
+  repeated .sobject.SOConfigChange config_history = 7;
 }
 
 // TicketResponse is the response body for POST /session/ticket.

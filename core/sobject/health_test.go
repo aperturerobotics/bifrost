@@ -36,3 +36,21 @@ func TestSyncPeerAdmissionPreservesMountHealth(t *testing.T) {
 		t.Fatal("recovery mutated the previous health snapshot")
 	}
 }
+
+// TestSyncRecoveryRequiresConvergence preserves local access and independent source denials.
+func TestSyncRecoveryRequiresConvergence(t *testing.T) {
+	initial := NewSharedObjectReadyHealth(SharedObjectHealthLayer_SHARED_OBJECT_HEALTH_LAYER_SHARED_OBJECT)
+	recovery := initial.WithSyncPeerRecovery("peer-a", true)
+	admitted := recovery.WithSyncPeerAdmission("peer-a", true)
+	if len(admitted.GetSyncRecoveryPeerIds()) != 1 || admitted.GetStatus() != SharedObjectHealthStatus_SHARED_OBJECT_HEALTH_STATUS_READY {
+		t.Fatal("admission cleared recovery or closed local access")
+	}
+	denied := admitted.WithSyncPeerAdmission("peer-b", false)
+	converged := denied.WithSyncPeerRecovery("peer-a", false)
+	if len(converged.GetSyncRecoveryPeerIds()) != 0 || len(converged.GetSyncDeniedPeerIds()) != 1 {
+		t.Fatal("convergence did not clear only its own recovery requirement")
+	}
+	if len(recovery.GetSyncRecoveryPeerIds()) != 1 || len(initial.GetSyncRecoveryPeerIds()) != 0 {
+		t.Fatal("recovery update mutated an earlier health snapshot")
+	}
+}

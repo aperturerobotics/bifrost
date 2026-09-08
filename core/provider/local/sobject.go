@@ -370,8 +370,8 @@ func (t *sobjectTracker) executeSharedObjectTracker(rctx context.Context) (rerr 
 
 	// Construct the shared object state handle.
 	// Since this is the "local" provider we can "lock" the state with an in-memory lock.
-	watchFn, lockFn := NewObjectStoreSOStateFuncs(ctx, objStore)
-	soHost := sobject.NewSOHost(ctx, watchFn, lockFn, sharedObjectID)
+	watchFn, lockFn, syncFuncs := NewObjectStoreSOStateFuncs(ctx, objStore)
+	soHost := sobject.NewSOHost(ctx, watchFn, lockFn, sharedObjectID, syncFuncs)
 
 	// construct the local host logic
 	lsoHost, err := NewLocalSOHost(
@@ -638,6 +638,20 @@ func (t *sobjectTracker) initSharedObjectState(
 				PeerId: localPeerIDStr,
 				Role:   sobject.SOParticipantRole_SOParticipantRole_OWNER,
 			}},
+		}
+
+		// Pin new objects to their creator's signed genesis in the state transaction.
+		initialConfig := val.Config
+		genesis, err := sobject.BuildSOConfigChange(initialConfig, initialConfig, sobject.SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_GENESIS, localPriv, nil)
+		if err != nil {
+			return err
+		}
+		val.Config, err = sobject.VerifyConfigChange(initialConfig, genesis)
+		if err != nil {
+			return err
+		}
+		if err := WriteSOConfigHistory(ctx, otx, sharedObjectID, initialConfig, val.Config, []*sobject.SOConfigChange{genesis}); err != nil {
+			return err
 		}
 
 		// TODO move to common functions(!)
