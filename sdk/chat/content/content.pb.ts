@@ -187,6 +187,37 @@ export const ChatStateChange: MessageType<ChatStateChange> =
   })
 
 /**
+ * ChatEvent retains a message from an extensible external protocol.
+ *
+ * @generated from message spacewave.chat.ChatEvent
+ */
+export interface ChatEvent {
+  /**
+   * Type is an open protocol vocabulary identifying the message schema.
+   *
+   * @generated from field: string type = 1;
+   */
+  type?: string
+  /**
+   * ContentJson is a complete JSON object, bounded to 64 KiB.
+   * The producing protocol validates its schema and canonicalizes its encoding.
+   *
+   * @generated from field: string content_json = 2;
+   */
+  contentJson?: string
+}
+
+export const ChatEvent: MessageType<ChatEvent> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'spacewave.chat.ChatEvent',
+    fields: [
+      { no: 1, name: 'type', kind: 'scalar', T: ScalarType.STRING },
+      { no: 2, name: 'content_json', kind: 'scalar', T: ScalarType.STRING },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
  * ChatMessageContent contains the message body.
  *
  * @generated from message spacewave.chat.ChatMessageContent
@@ -236,6 +267,15 @@ export interface ChatMessageContent {
         value: ChatStateChange
         case: 'stateChange'
       }
+    | {
+        /**
+         * Event is a protocol message body subject to channel encryption policy.
+         *
+         * @generated from field: spacewave.chat.ChatEvent event = 5;
+         */
+        value: ChatEvent
+        case: 'event'
+      }
 }
 
 export const ChatMessageContent: MessageType<ChatMessageContent> =
@@ -268,6 +308,13 @@ export const ChatMessageContent: MessageType<ChatMessageContent> =
         name: 'state_change',
         kind: 'message',
         T: () => ChatStateChange,
+        oneof: 'content',
+      },
+      {
+        no: 5,
+        name: 'event',
+        kind: 'message',
+        T: () => ChatEvent,
         oneof: 'content',
       },
     ] satisfies readonly PartialFieldInfo[],

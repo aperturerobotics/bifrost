@@ -28,3 +28,9 @@ type ChatStateChange = spacewave_chat_content.ChatStateChange
 
 // ChatMessageContent_StateChange carries a retained channel state event.
 type ChatMessageContent_StateChange = spacewave_chat_content.ChatMessageContent_StateChange
+
+// ChatEvent retains an external protocol message body.
+type ChatEvent = spacewave_chat_content.ChatEvent
+
+// ChatMessageContent_Event carries a protocol message in channel history.
+type ChatMessageContent_Event = spacewave_chat_content.ChatMessageContent_Event

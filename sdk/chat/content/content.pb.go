@@ -202,6 +202,36 @@ func (x *ChatStateChange) GetContentJson() string {
 	return ""
 }
 
+// ChatEvent retains a message from an extensible external protocol.
+type ChatEvent struct {
+	unknownFields []byte
+	// Type is an open protocol vocabulary identifying the message schema.
+	Type string `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
+	// ContentJson is a complete JSON object, bounded to 64 KiB.
+	// The producing protocol validates its schema and canonicalizes its encoding.
+	ContentJson string `protobuf:"bytes,2,opt,name=content_json,json=contentJson,proto3" json:"contentJson,omitempty"`
+}
+
+func (x *ChatEvent) Reset() {
+	*x = ChatEvent{}
+}
+
+func (*ChatEvent) ProtoMessage() {}
+
+func (x *ChatEvent) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *ChatEvent) GetContentJson() string {
+	if x != nil {
+		return x.ContentJson
+	}
+	return ""
+}
+
 // ChatMessageContent contains the message body.
 type ChatMessageContent struct {
 	unknownFields []byte
@@ -210,6 +240,7 @@ type ChatMessageContent struct {
 	//	*ChatMessageContent_Ciphertext
 	//	*ChatMessageContent_Annotation
 	//	*ChatMessageContent_StateChange
+	//	*ChatMessageContent_Event
 	Content isChatMessageContent_Content `protobuf_oneof:"content"`
 }
 
@@ -254,6 +285,13 @@ func (x *ChatMessageContent) GetStateChange() *ChatStateChange {
 	return nil
 }
 
+func (x *ChatMessageContent) GetEvent() *ChatEvent {
+	if x, ok := x.GetContent().(*ChatMessageContent_Event); ok {
+		return x.Event
+	}
+	return nil
+}
+
 type isChatMessageContent_Content interface {
 	isChatMessageContent_Content()
 }
@@ -278,6 +316,11 @@ type ChatMessageContent_StateChange struct {
 	StateChange *ChatStateChange `protobuf:"bytes,4,opt,name=state_change,json=stateChange,proto3,oneof"`
 }
 
+type ChatMessageContent_Event struct {
+	// Event is a protocol message body subject to channel encryption policy.
+	Event *ChatEvent `protobuf:"bytes,5,opt,name=event,proto3,oneof"`
+}
+
 func (*ChatMessageContent_Text) isChatMessageContent_Content() {}
 
 func (*ChatMessageContent_Ciphertext) isChatMessageContent_Content() {}
@@ -285,6 +328,8 @@ func (*ChatMessageContent_Ciphertext) isChatMessageContent_Content() {}
 func (*ChatMessageContent_Annotation) isChatMessageContent_Content() {}
 
 func (*ChatMessageContent_StateChange) isChatMessageContent_Content() {}
+
+func (*ChatMessageContent_Event) isChatMessageContent_Content() {}
 
 func (m *ChatCiphertext) CloneVT() *ChatCiphertext {
 	if m == nil {
@@ -362,6 +407,23 @@ func (m *ChatStateChange) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
+func (m *ChatEvent) CloneVT() *ChatEvent {
+	if m == nil {
+		return (*ChatEvent)(nil)
+	}
+	r := new(ChatEvent)
+	r.Type = m.Type
+	r.ContentJson = m.ContentJson
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *ChatEvent) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
 func (m *ChatMessageContent) CloneVT() *ChatMessageContent {
 	if m == nil {
 		return (*ChatMessageContent)(nil)
@@ -431,6 +493,19 @@ func (m *ChatMessageContent_StateChange) CloneVT() *ChatMessageContent_StateChan
 }
 
 func (m *ChatMessageContent_StateChange) CloneOneofVT() isChatMessageContent_Content {
+	return m.CloneVT()
+}
+
+func (m *ChatMessageContent_Event) CloneVT() *ChatMessageContent_Event {
+	if m == nil {
+		return (*ChatMessageContent_Event)(nil)
+	}
+	r := new(ChatMessageContent_Event)
+	r.Event = protobuf_go_lite.CloneVTValue(m.Event)
+	return r
+}
+
+func (m *ChatMessageContent_Event) CloneOneofVT() isChatMessageContent_Content {
 	return m.CloneVT()
 }
 
@@ -550,6 +625,29 @@ func (this *ChatStateChange) EqualMessageVT(thatMsg any) bool {
 	return this.EqualVT(that)
 }
 
+func (this *ChatEvent) EqualVT(that *ChatEvent) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.Type != that.Type {
+		return false
+	}
+	if this.ContentJson != that.ContentJson {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *ChatEvent) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*ChatEvent)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
 func (this *ChatMessageContent) EqualVT(that *ChatMessageContent) bool {
 	if this == that {
 		return true
@@ -642,6 +740,23 @@ func (this *ChatMessageContent_StateChange) EqualVT(thatIface isChatMessageConte
 		return false
 	}
 	if !protobuf_go_lite.EqualVTImplicit(this.StateChange, that.StateChange, func() *ChatStateChange { return &ChatStateChange{} }) {
+		return false
+	}
+	return true
+}
+
+func (this *ChatMessageContent_Event) EqualVT(thatIface isChatMessageContent_Content) bool {
+	that, ok := thatIface.(*ChatMessageContent_Event)
+	if !ok {
+		return false
+	}
+	if this == that {
+		return true
+	}
+	if this == nil && that != nil || this != nil && that == nil {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTImplicit(this.Event, that.Event, func() *ChatEvent { return &ChatEvent{} }) {
 		return false
 	}
 	return true
@@ -915,6 +1030,56 @@ func (x *ChatStateChange) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
+// MarshalProtoJSON marshals the ChatEvent message to JSON.
+func (x *ChatEvent) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Type != "" || s.HasField("type") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("type")
+		s.WriteString(x.Type)
+	}
+	if x.ContentJson != "" || s.HasField("contentJson") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("contentJson")
+		s.WriteString(x.ContentJson)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the ChatEvent to JSON.
+func (x *ChatEvent) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the ChatEvent message from JSON.
+func (x *ChatEvent) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "type":
+			s.AddField("type")
+			x.Type = s.ReadString()
+		case "content_json", "contentJson":
+			s.AddField("content_json")
+			x.ContentJson = s.ReadString()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the ChatEvent from JSON.
+func (x *ChatEvent) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
 // MarshalProtoJSON marshals the ChatMessageContent message to JSON.
 func (x *ChatMessageContent) MarshalProtoJSON(s *json.MarshalState) {
 	if x == nil {
@@ -941,6 +1106,10 @@ func (x *ChatMessageContent) MarshalProtoJSON(s *json.MarshalState) {
 			s.WriteMoreIf(&wroteField)
 			s.WriteObjectField("stateChange")
 			ov.StateChange.MarshalProtoJSON(s.WithField("stateChange"))
+		case *ChatMessageContent_Event:
+			s.WriteMoreIf(&wroteField)
+			s.WriteObjectField("event")
+			ov.Event.MarshalProtoJSON(s.WithField("event"))
 		}
 	}
 	s.WriteObjectEnd()
@@ -992,6 +1161,15 @@ func (x *ChatMessageContent) UnmarshalProtoJSON(s *json.UnmarshalState) {
 			}
 			ov.StateChange = &ChatStateChange{}
 			ov.StateChange.UnmarshalProtoJSON(s.WithField("state_change", true))
+		case "event":
+			ov := &ChatMessageContent_Event{}
+			x.Content = ov
+			if s.ReadNil() {
+				ov.Event = nil
+				return
+			}
+			ov.Event = &ChatEvent{}
+			ov.Event.UnmarshalProtoJSON(s.WithField("event", true))
 		}
 	})
 }
@@ -1214,6 +1392,48 @@ func (m *ChatStateChange) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *ChatEvent) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ChatEvent) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *ChatEvent) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.ContentJson) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.ContentJson)
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Type) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.Type)
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *ChatMessageContent) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -1340,6 +1560,30 @@ func (m *ChatMessageContent_StateChange) MarshalToSizedBufferVT(dAtA []byte) (in
 	return len(dAtA) - i, nil
 }
 
+func (m *ChatMessageContent_Event) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *ChatMessageContent_Event) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.Event != nil {
+		size, err := m.Event.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x2a
+	} else {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, 0)
+		i--
+		dAtA[i] = 0x2a
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *ChatCiphertext) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -1394,6 +1638,18 @@ func (m *ChatStateChange) SizeVT() (n int) {
 	_ = l
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Type)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.StateKey)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.ContentJson)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *ChatEvent) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Type)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.ContentJson)
 	n += len(m.unknownFields)
 	return n
@@ -1460,6 +1716,21 @@ func (m *ChatMessageContent_StateChange) SizeVT() (n int) {
 	_ = l
 	if m.StateChange != nil {
 		l = m.StateChange.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	} else {
+		n += 2
+	}
+	return n
+}
+
+func (m *ChatMessageContent_Event) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Event != nil {
+		l = m.Event.SizeVT()
 		n += protobuf_go_lite.SizeMessage(1, l)
 	} else {
 		n += 2
@@ -1571,6 +1842,24 @@ func (x *ChatStateChange) String() string {
 	return x.MarshalProtoText()
 }
 
+func (x *ChatEvent) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "ChatEvent")
+	if x.Type != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "type")
+		protobuf_go_lite.TextWriteString(&sb, x.Type)
+	}
+	if x.ContentJson != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "content_json")
+		protobuf_go_lite.TextWriteString(&sb, x.ContentJson)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *ChatEvent) String() string {
+	return x.MarshalProtoText()
+}
+
 func (x *ChatMessageContent) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "ChatMessageContent")
@@ -1598,6 +1887,13 @@ func (x *ChatMessageContent) MarshalProtoText() string {
 			protobuf_go_lite.TextWriteTextMarshaler(&sb, &ChatStateChange{})
 		} else {
 			protobuf_go_lite.TextWriteTextMarshaler(&sb, body.StateChange)
+		}
+	case *ChatMessageContent_Event:
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "event")
+		if body.Event == nil {
+			protobuf_go_lite.TextWriteTextMarshaler(&sb, &ChatEvent{})
+		} else {
+			protobuf_go_lite.TextWriteTextMarshaler(&sb, body.Event)
 		}
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
@@ -1944,6 +2240,69 @@ func (m *ChatStateChange) UnmarshalVT(dAtA []byte) error {
 	return nil
 }
 
+func (m *ChatEvent) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ChatEvent: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ChatEvent: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Type = v
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ContentJson", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.ContentJson = v
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
 func (m *ChatMessageContent) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -2032,6 +2391,26 @@ func (m *ChatMessageContent) UnmarshalVT(dAtA []byte) error {
 					return err
 				}
 				m.Content = &ChatMessageContent_StateChange{StateChange: v}
+			}
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Event", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if oneof, ok := m.Content.(*ChatMessageContent_Event); ok {
+				if err := oneof.Event.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+					return err
+				}
+			} else {
+				v := &ChatEvent{}
+				if err := v.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+					return err
+				}
+				m.Content = &ChatMessageContent_Event{Event: v}
 			}
 			iNdEx = postIndex
 		default:
