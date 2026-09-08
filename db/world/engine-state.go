@@ -7,16 +7,20 @@ import (
 	"github.com/s4wave/spacewave/db/bucket"
 	bucket_lookup "github.com/s4wave/spacewave/db/bucket/lookup"
 	"github.com/s4wave/spacewave/db/coord"
+	"github.com/s4wave/spacewave/db/kvtx"
 	"github.com/s4wave/spacewave/db/tx"
 	"github.com/s4wave/spacewave/net/peer"
 )
 
+// maxEngineWorldStateTries bounds retries of a complete World operation.
 const maxEngineWorldStateTries = 10
 
 // engineWorldState implements a WorldState on top of an Engine.
 // Short-lived transactions are created for each operation.
 type engineWorldState struct {
-	e     Engine
+	// e owns transaction snapshots and their publication.
+	e Engine
+	// write permits mutating operations.
 	write bool
 }
 
@@ -237,8 +241,9 @@ func (e *engineWorldState) HasObject(ctx context.Context, key string) (bool, err
 	return found, err
 }
 
-// performOp performs an operation in a short-lived transaction, retrying stale
-// coordinated snapshots before callers observe a recoverable transaction race.
+// performOp replays a complete operation in a fresh transaction after either a
+// coordinated head change or an invalid storage snapshot. Each failed attempt
+// is discarded before the next transaction opens.
 func (e *engineWorldState) performOp(ctx context.Context, write bool, cb func(tx Tx) error) error {
 	if !e.write && write {
 		return tx.ErrNotWrite
@@ -250,13 +255,14 @@ func (e *engineWorldState) performOp(ctx context.Context, write bool, cb func(tx
 			return err
 		}
 		err = e.performOpOnce(ctx, write, cb)
-		if !errors.Is(err, coord.ErrStaleGeneration) {
+		if !errors.Is(err, coord.ErrStaleGeneration) && !kvtx.RetryInvalidSnapshot(err) {
 			return err
 		}
 	}
 	return err
 }
 
+// performOpOnce owns one attempt, including commit and unconditional discard.
 func (e *engineWorldState) performOpOnce(ctx context.Context, write bool, cb func(tx Tx) error) error {
 	opTx, err := e.e.NewTransaction(ctx, write)
 	if err != nil {

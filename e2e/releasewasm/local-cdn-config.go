@@ -17,7 +17,6 @@ import (
 
 const (
 	localCDNEnv     = "E2E_RELEASE_WASM_LOCAL_CDN"
-	localCDNPort    = "30772"
 	localCDNSpaceID = "01kqjmfxd44r7ggrq78efad3d2"
 	localCDNState   = ".bldr-startup"
 )
@@ -79,7 +78,7 @@ func localCDNProject(repoRoot, baseURL string) (*project.ProjectConfig, string, 
 	core := conf.Build["release-web-e2e-goscript"].ManifestOverrides["spacewave-core"].CloneVT()
 	conf.Build["local-startup-plugins"] = &project.BuildConfig{
 		Manifests:         []string{"spacewave-core", "spacewave-web", "spacewave-app"},
-		PlatformIds:       []string{"js"},
+		PlatformIds:       []string{"js", "web/js/wasm"},
 		ManifestOverrides: map[string]*configset_proto.ControllerConfig{"spacewave-core": core},
 	}
 	conf.Build["local-startup-web"] = &project.BuildConfig{
@@ -99,7 +98,7 @@ func localCDNProject(repoRoot, baseURL string) (*project.ProjectConfig, string, 
 	}
 	plugins := conf.Publish["spacewave-release"]
 	plugins.Manifests = []string{"spacewave-core", "spacewave-web", "spacewave-app"}
-	plugins.PlatformIds = []string{"js"}
+	plugins.PlatformIds = []string{"js", "web/js/wasm"}
 	web := plugins.CloneVT()
 	web.Manifests = []string{"web"}
 	web.PlatformIds = []string{"web/js/wasm"}

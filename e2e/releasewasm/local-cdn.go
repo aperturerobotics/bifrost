@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
+	"sync/atomic"
 
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/bldr/util/packedmsg"
@@ -82,7 +84,7 @@ func prepareLocalCDN(ctx context.Context, le *logrus.Entry, repoRoot, baseURL st
 
 	// Use the same landing page and hydration composition as browser releases.
 	for _, config := range []string{"app/prerender/vite.hydrate.config.ts", "app/prerender/vite.ssr.config.ts"} {
-		if err := runBun(ctx, repoRoot, "run", "vite", "build", "--config", config); err != nil {
+		if err := runBun(ctx, repoRoot, "run", "cross-env", "BLDR_STATE_PATH="+stateDir, "vite", "build", "--config", config); err != nil {
 			return releaseWasmDistDirs{}, err
 		}
 	}
@@ -154,13 +156,32 @@ func exportLocalCDN(ctx context.Context, le *logrus.Entry, stateDir, distDir str
 	return os.WriteFile(filepath.Join(cdnDir, "root.packedmsg"), []byte(packedmsg.EncodePackedMessage(data)), 0o644)
 }
 
-// localCDNHandler serves the fixture and rejects outbound proxy connections.
-func localCDNHandler(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		if req.Method == http.MethodConnect || req.URL.IsAbs() {
-			http.Error(rw, "external network is unavailable", http.StatusForbidden)
-			return
-		}
-		next.ServeHTTP(rw, req)
-	})
+// localCDNHandler observes actual fixture delivery, including requests from
+// workers that WebKit does not expose through page request events.
+type localCDNHandler struct {
+	// next serves the fixture's static assets.
+	next http.Handler
+	// distribution counts delivered distribution requests.
+	distribution atomic.Uint64
+	// roots counts delivered CDN root requests.
+	roots atomic.Uint64
+	// packs counts delivered pack requests.
+	packs atomic.Uint64
+}
+
+// ServeHTTP counts fixture requests and rejects outbound proxy connections.
+func (h *localCDNHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+	if req.Method == http.MethodConnect || req.URL.IsAbs() {
+		http.Error(rw, "external network is unavailable", http.StatusForbidden)
+		return
+	}
+	switch {
+	case strings.HasSuffix(req.URL.Path, "/distribution.packedmsg"):
+		h.distribution.Add(1)
+	case strings.HasSuffix(req.URL.Path, "/root.packedmsg"):
+		h.roots.Add(1)
+	case strings.HasSuffix(req.URL.Path, ".kvf"):
+		h.packs.Add(1)
+	}
+	h.next.ServeHTTP(rw, req)
 }

@@ -49,7 +49,7 @@ func (t *pluginInstance) execWatchWorldManifest(ctx context.Context, hosts *plug
 	return objLoop.Execute(ctx, ws)
 }
 
-// processManifestWorldState processes the state for the PluginManifest.
+// processManifestWorldStateCore selects eligible manifests from one World snapshot.
 func (t *pluginInstance) processManifestWorldStateCore(
 	ctx context.Context,
 	le *logrus.Entry,
@@ -71,12 +71,11 @@ func (t *pluginInstance) processManifestWorldStateCore(
 		ws = world_vlogger.NewWorldState(le, ws)
 	}
 
-	// Lookup PluginManifests matching our plugin linked to PluginHost.
+	// Collect the plugin's linked manifests for currently available hosts.
 	platformIDsMap := hosts.toPluginPlatformIDsMap(t.c.conf, t.pluginID)
 	platformIDs := slices.Collect(maps.Keys(platformIDsMap))
 	slices.Sort(platformIDs)
 	trace.Log(ctx, "platform-ids", strings.Join(platformIDs, ","))
-	// collect and classify retained startup manifest candidates
 	candidateEligibility, err := bldr_manifest_world.CollectStartupManifestEligibilityForManifestID(
 		ctx,
 		ws,
@@ -146,7 +145,7 @@ func (t *pluginInstance) processManifestWorldStateCore(
 		aRank := platformPreferenceRank(a.Manifest.GetMeta().GetPlatformId())
 		bRank := platformPreferenceRank(b.Manifest.GetMeta().GetPlatformId())
 		if aRank != bRank {
-			return bRank - aRank
+			return aRank - bRank
 		}
 		aRev := a.GetRev()
 		bRev := b.GetRev()
@@ -159,13 +158,12 @@ func (t *pluginInstance) processManifestWorldStateCore(
 		return strings.Compare(b.ManifestRef.String(), a.ManifestRef.String())
 	})
 
-	// return the result of this + true to keep waiting
+	// Resolve locality against the same World snapshot used for selection.
 	return true, ws.AccessWorldState(
 		ctx,
-		// access the root of the world state
 		nil,
 		func(bls *bucket_lookup.Cursor) error {
-			// get the bucket id of the world state
+			// The World bucket determines which candidates need a local copy.
 			worldBucketID := bls.GetOpArgs().GetBucketId()
 			trace.Log(ctx, "world-bucket-id", worldBucketID)
 
@@ -178,16 +176,14 @@ func (t *pluginInstance) processManifestWorldStateCore(
 			// Prefer candidates in sorted order, but keep looking past external
 			// copy candidates for an execute-eligible manifest.
 			for _, manifest := range manifests {
-				// find the corresponding plugin host
+				// The host must still be part of this selection's platform set.
 				manifestPlatformID := manifest.Manifest.GetMeta().GetPlatformId()
 				manifestPluginHost, ok := platformIDsMap[manifestPlatformID]
 				if !ok || manifestPluginHost == nil {
-					// if no plugin host found, continue
-					// this shouldn't happen since we filtered by platformIDs above
 					continue
 				}
 
-				// check if the manifest bucket id is within the same world bucket
+				// Empty bucket IDs refer to this World's storage.
 				le := manifest.Manifest.GetMeta().Logger(le)
 				manifestBucketID := manifest.ManifestRef.GetBucketId()
 				if manifestBucketID == "" {
@@ -201,7 +197,7 @@ func (t *pluginInstance) processManifestWorldStateCore(
 				noCopy := slices.Contains(t.c.conf.GetNoCopyBucketIds(), manifestBucketID)
 				needsDownload := manifestBucketID != worldBucketID
 
-				// create the snapshot
+				// Keep the reference and metadata together through admission.
 				manifestSnapshot := &bldr_manifest.ManifestSnapshot{
 					ManifestRef: manifest.ManifestRef,
 					Manifest:    manifest.Manifest,
@@ -217,21 +213,51 @@ func (t *pluginInstance) processManifestWorldStateCore(
 					break
 				}
 
-				// set downloadManifest = manifestSnapshot if we don't already have a downloadManifest
+				// Copy the highest-ranked remote candidate while retaining a
+				// usable local generation farther down the ordering.
 				if downloadManifest == nil {
 					downloadManifest = manifestSnapshot
 					downloadManifestHost = manifestPluginHost
 				}
 
-				// keep looking for a candidate to execute
-				continue
 			}
 
-			// if we have no candidate to execute use downloadManifest
+			// With no local candidate, execution can demand-load the remote one.
 			if executeManifest == nil {
 				executeManifest = downloadManifest
 				executeManifestHost = downloadManifestHost
 			}
+
+			// Retain a still-selectable generation across late same-revision
+			// platform arrivals. A missing candidate or replaced host cannot pin
+			// execution, and newer revisions still follow the normal copy policy.
+			if executeManifest != nil {
+				currentState := t.executePluginRoutine.GetState()
+				best := &manifestCandidate{
+					ref:  bldr_manifest.NewManifestRef(executeManifest.GetManifest().GetMeta(), executeManifest.GetManifestRef()),
+					host: executeManifestHost,
+				}
+				for _, manifest := range manifests {
+					candidate := &manifestCandidate{
+						ref:  bldr_manifest.NewManifestRef(manifest.Manifest.GetMeta(), manifest.ManifestRef),
+						host: platformIDsMap[manifest.Manifest.GetMeta().GetPlatformId()],
+					}
+					if !candidate.matchesState(currentState) || !candidate.shouldRemainCurrent(best) {
+						continue
+					}
+					retained := &bldr_manifest.ManifestSnapshot{
+						ManifestRef: manifest.ManifestRef,
+						Manifest:    manifest.Manifest,
+					}
+					if downloadManifest == executeManifest {
+						downloadManifest = retained
+					}
+					executeManifest = retained
+					executeManifestHost = candidate.host
+					break
+				}
+			}
+
 			if executeManifest != nil {
 				executeRef := executeManifest.GetManifestRef()
 				sourceBucketID := ""
@@ -262,9 +288,8 @@ func (t *pluginInstance) processManifestWorldStateCore(
 
 			var anyChanged bool
 
-			// execute the executeManifest
+			// The routine container owns generation replacement and cancellation.
 			if executeManifest != nil {
-				// update the state container (which automatically diffs the manifest and restarts if changed)
 				changed := t.setExecutePluginState(&executePluginArgs{
 					manifestSnapshot: executeManifest,
 					pluginHost:       executeManifestHost,
@@ -297,7 +322,9 @@ func (t *pluginInstance) processManifestWorldStateCore(
 // manifestSelectionInput is the fingerprinted selection state used to
 // suppress redundant re-selections.
 type manifestSelectionInput struct {
-	hostSet     *pluginHostSet
+	// hostSet binds the fingerprint to execution-host identity.
+	hostSet *pluginHostSet
+	// fingerprint records the eligible World candidates.
 	fingerprint string
 }
 

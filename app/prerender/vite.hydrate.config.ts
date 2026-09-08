@@ -18,7 +18,11 @@ import {
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const projectRoot = resolve(__dirname, '../../')
-const bldrDistRoot = resolve(projectRoot, '.bldr-dist/src')
+const bldrDistRoot = resolve(
+  projectRoot,
+  process.env.BLDR_STATE_PATH ?? '.bldr-dist',
+  'src',
+)
 const goAliases = buildGoAliases(projectRoot, bldrDistRoot)
 
 export default defineConfig({
