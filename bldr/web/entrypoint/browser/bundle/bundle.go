@@ -1171,6 +1171,7 @@ func BuildBrowserBundle(
 }
 
 // BuildWebPkgsBundle builds the web pkg bundle files.
+// devMode selects the package environment independently of minification.
 //
 // stateDir is the directory where bun will be downloaded if not found in PATH.
 // pathPrefix is the prefix to prepend to /pkgs/ for pkg paths
@@ -1209,7 +1210,7 @@ func BuildWebPkgsBundle(ctx context.Context, le *logrus.Entry, stateDir string, 
 			refs,
 			outDir,
 			pathPrefix+"/pkgs/",
-			minify,
+			!devMode,
 			minify,
 			sourcemaps,
 			client,
