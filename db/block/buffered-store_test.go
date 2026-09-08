@@ -20,6 +20,7 @@ type countStore struct {
 	mtx           sync.Mutex
 	blocks        map[string][]byte
 	putCalls      int
+	existsCalls   int
 	batchCalls    int
 	batchSizes    []int
 	failPut       error
@@ -199,6 +200,7 @@ func (s *countStore) GetBlockExists(ctx context.Context, ref *BlockRef) (bool, e
 	}
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
+	s.existsCalls++
 	_, ok := s.blocks[key]
 	return ok, nil
 }
@@ -731,15 +733,18 @@ func TestBufferedStoreUnblocksOnContextCancel(t *testing.T) {
 }
 
 func TestBufferedStoreUsesBatchPut(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	inner := newCountStore(hash.HashType_HashType_BLAKE3)
 	store := NewBufferedStore(ctx, inner)
 
-	if _, _, err := store.PutBlock(ctx, []byte("a"), nil); err != nil {
-		t.Fatal(err.Error())
+	if err := store.PutBlockBatch(ctx, []*PutBatchEntry{
+		{Data: []byte("a")},
+		{Data: []byte("b")},
+	}); err != nil {
+		t.Fatal(err)
 	}
-	if _, _, err := store.PutBlock(ctx, []byte("b"), nil); err != nil {
-		t.Fatal(err.Error())
+	if inner.existsCalls != 0 {
+		t.Fatalf("batch performed %d serial existence probes", inner.existsCalls)
 	}
 
 	if _, err := store.Sync(ctx); err != nil {

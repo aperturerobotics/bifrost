@@ -91,6 +91,12 @@ func (s *BufferedStore) BeginReadOperation(context.Context) (StoreOps, func(), e
 // PutBlock buffers a block in memory and drains synchronously only when
 // backpressure requires capacity.
 func (s *BufferedStore) PutBlock(ctx context.Context, data []byte, opts *PutOpts) (*BlockRef, bool, error) {
+	return s.putBlock(ctx, data, opts, true)
+}
+
+// putBlock verifies and buffers a block, optionally resolving prior existence.
+// Batch callers discard the existence result and let storage deduplicate at drain.
+func (s *BufferedStore) putBlock(ctx context.Context, data []byte, opts *PutOpts, checkExists bool) (*BlockRef, bool, error) {
 	if len(data) == 0 {
 		return nil, false, ErrEmptyBlock
 	}
@@ -140,9 +146,12 @@ func (s *BufferedStore) PutBlock(ctx context.Context, data []byte, opts *PutOpts
 		return finish(ref, true)
 	}
 
-	exists, err := s.inner.GetBlockExists(ctx, ref)
-	if err != nil {
-		return nil, false, err
+	var exists bool
+	if checkExists {
+		exists, err = s.inner.GetBlockExists(ctx, ref)
+		if err != nil {
+			return nil, false, err
+		}
 	}
 
 	_, subtask := trace.NewTask(ctx, "hydra/block/buffered-store/enqueue")
@@ -201,7 +210,8 @@ func (s *BufferedStore) PutBlock(ctx context.Context, data []byte, opts *PutOpts
 	}
 }
 
-// PutBlockBatch loops through PutBlock and RmBlock using the buffered store.
+// PutBlockBatch buffers verified entries without per-block existence probes.
+// Pending entries deduplicate locally; durable duplicates resolve during drain.
 func (s *BufferedStore) PutBlockBatch(ctx context.Context, entries []*PutBatchEntry) error {
 	for _, entry := range entries {
 		if entry.Tombstone {
@@ -214,10 +224,10 @@ func (s *BufferedStore) PutBlockBatch(ctx context.Context, entries []*PutBatchEn
 		if entry.Ref != nil {
 			ref = entry.Ref.Clone()
 		}
-		if _, _, err := s.PutBlock(ctx, entry.Data, &PutOpts{
+		if _, _, err := s.putBlock(ctx, entry.Data, &PutOpts{
 			ForceBlockRef: ref,
 			Refs:          CloneBlockRefs(entry.Refs),
-		}); err != nil {
+		}, false); err != nil {
 			return err
 		}
 	}
