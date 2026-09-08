@@ -172,21 +172,7 @@ func (e *Engine) readCached(ctx context.Context, key, name string, offset int64,
 	if e.closed {
 		return nil, ErrClosed
 	}
-	if elem := e.cache[key]; elem != nil {
-		e.recency.MoveToFront(elem)
-		return elem.Value.(*cacheEntry).data, nil
-	}
-	charge := len(data) + len(key) + 192
-	for e.cacheBytes+charge > cacheByteLimit || len(e.cache) >= cacheFileLimit {
-		elem := e.recency.Back()
-		entry := elem.Value.(*cacheEntry)
-		delete(e.cache, entry.name)
-		e.cacheBytes -= entry.charge
-		e.recency.Remove(elem)
-	}
-	e.cache[key] = e.recency.PushFront(&cacheEntry{name: key, data: data, charge: charge})
-	e.cacheBytes += charge
-	return data, nil
+	return e.cacheBytesLocked(key, data), nil
 }
 
 // loadRoot validates both fixed descriptors and each candidate's immediate page.

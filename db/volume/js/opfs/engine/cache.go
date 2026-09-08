@@ -47,3 +47,23 @@ func (e *Engine) cacheMessage(name string, parsed message, decodedCharge int) {
 	entry.charge += decodedCharge
 	e.cacheBytes += decodedCharge
 }
+
+// cacheBytesLocked retains immutable bytes under the shared byte and entry budgets.
+// The caller holds mtx and has checked that the engine remains open.
+func (e *Engine) cacheBytesLocked(key string, data []byte) []byte {
+	if elem := e.cache[key]; elem != nil {
+		e.recency.MoveToFront(elem)
+		return elem.Value.(*cacheEntry).data
+	}
+	charge := len(data) + len(key) + 192
+	for e.cacheBytes+charge > cacheByteLimit || len(e.cache) >= cacheFileLimit {
+		elem := e.recency.Back()
+		entry := elem.Value.(*cacheEntry)
+		delete(e.cache, entry.name)
+		e.cacheBytes -= entry.charge
+		e.recency.Remove(elem)
+	}
+	e.cache[key] = e.recency.PushFront(&cacheEntry{name: key, data: data, charge: charge})
+	e.cacheBytes += charge
+	return data
+}
