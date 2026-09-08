@@ -309,7 +309,7 @@ func TestStaleTransactionCannotOverwriteNewGeneration(t *testing.T) {
 	}
 }
 
-// TestTransactionCursor preserves prefix ordering, overlays, seeks, and conflicts.
+// TestTransactionCursor preserves ordering, overlays, seeks, and snapshot reads.
 func TestTransactionCursor(t *testing.T) {
 	ctx := t.Context()
 	e, err := Open(ctx, newDiskBackend(t))
@@ -382,7 +382,7 @@ func TestTransactionCursor(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Callback writes cannot deadlock on reclamation protection held by the scan.
+	// Callback writes preserve the scan snapshot and can reuse its protection.
 	read, err := e.NewTransaction(ctx, false)
 	if err != nil {
 		t.Fatal(err)
@@ -396,8 +396,8 @@ func TestTransactionCursor(t *testing.T) {
 		written = true
 		return e.Apply(ctx, nil, []*Record{{Key: []byte("new"), Value: []byte("generation")}})
 	})
-	if !errors.Is(err, kvtx.ErrInvalidSnapshot) {
-		t.Fatalf("scan combined generations: %v", err)
+	if err != nil {
+		t.Fatalf("scan across publication: %v", err)
 	}
 }
 

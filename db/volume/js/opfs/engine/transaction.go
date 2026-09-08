@@ -3,13 +3,13 @@ package engine
 import (
 	"bytes"
 	"context"
-	"sort"
+	"slices"
 
 	"github.com/s4wave/spacewave/db/kvtx"
 )
 
-// transaction buffers bounded mutations and pins the first observed generation.
-// Each file operation releases reclamation protection before application callbacks.
+// transaction buffers bounded mutations against one protected committed snapshot.
+// Commit or Discard releases the immutable files retained by the first read.
 type transaction struct {
 	// engine owns durable data and publication.
 	engine *Engine
@@ -19,10 +19,8 @@ type transaction struct {
 	metadata bool
 	// discarded closes the transaction and all derived iterators.
 	discarded bool
-	// pinned records whether generation has been established.
-	pinned bool
-	// generation is the complete view observed by this transaction.
-	generation uint64
+	// snapshot retains the first committed view until the transaction ends.
+	snapshot *snapshot
 	// pending provides read-your-writes within explicit memory bounds.
 	pending map[string]*Record
 	// pendingBytes charges retained mutation keys, values, and record overhead.
@@ -37,15 +35,16 @@ func (t *transaction) revision(root *Root) uint64 {
 	return root.Revision
 }
 
-// pin accepts the first observed generation and rejects all later mismatches.
-func (t *transaction) pin(generation uint64) error {
-	if !t.pinned {
-		t.generation = generation
-		t.pinned = true
-	} else if t.generation != generation {
-		return kvtx.ErrInvalidSnapshot
+// readSnapshot acquires the transaction's committed view on its first read.
+func (t *transaction) readSnapshot(ctx context.Context) (*snapshot, error) {
+	if t.snapshot == nil {
+		snapshot, err := t.engine.snapshot(ctx)
+		if err != nil {
+			return nil, err
+		}
+		t.snapshot = snapshot
 	}
-	return nil
+	return t.snapshot, nil
 }
 
 // check validates the transaction lifetime and caller cancellation.
@@ -53,7 +52,16 @@ func (t *transaction) check(ctx context.Context) error {
 	if t.discarded {
 		return kvtx.ErrDiscarded
 	}
-	return ctx.Err()
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	t.engine.mtx.Lock()
+	closed := t.engine.closed
+	t.engine.mtx.Unlock()
+	if closed {
+		return ErrClosed
+	}
+	return nil
 }
 
 // Get returns a copied committed value or the transaction's pending value.
@@ -61,12 +69,8 @@ func (t *transaction) Get(ctx context.Context, key []byte) ([]byte, bool, error)
 	if err := t.check(ctx); err != nil {
 		return nil, false, err
 	}
-	snapshot, err := t.engine.snapshot(ctx)
+	snapshot, err := t.readSnapshot(ctx)
 	if err != nil {
-		return nil, false, err
-	}
-	defer snapshot.release()
-	if err := t.pin(t.revision(snapshot.root)); err != nil {
 		return nil, false, err
 	}
 	if pending := t.pending[string(key)]; pending != nil {
@@ -159,7 +163,7 @@ func (t *transaction) Iterate(ctx context.Context, prefix []byte, _ bool, revers
 			pending = append(pending, record)
 		}
 	}
-	sort.Slice(pending, func(i, j int) bool { return bytes.Compare(pending[i].Key, pending[j].Key) < 0 })
+	slices.SortFunc(pending, func(a, b *Record) int { return bytes.Compare(a.Key, b.Key) })
 	return &iterator{ctx: ctx, tx: t, prefix: bytes.Clone(prefix), reverse: reverse, pending: pending}
 }
 
@@ -176,19 +180,24 @@ func (t *transaction) Commit(ctx context.Context) error {
 	for _, record := range t.pending {
 		records = append(records, record)
 	}
-	sort.Slice(records, func(i, j int) bool { return bytes.Compare(records[i].Key, records[j].Key) < 0 })
+	slices.SortFunc(records, func(a, b *Record) int { return bytes.Compare(a.Key, b.Key) })
 	// Blind writes serialize against the current root without a stale read dependency.
 	var base *uint64
-	if t.pinned {
-		base = &t.generation
+	if t.snapshot != nil {
+		revision := t.revision(t.snapshot.root)
+		base = &revision
 	}
 	err := t.engine.apply(ctx, base, records, t.metadata)
 	t.Discard()
 	return err
 }
 
-// Discard releases retained mutations and invalidates derived iterators.
+// Discard releases the snapshot and mutations and invalidates derived iterators.
 func (t *transaction) Discard() {
+	if t.snapshot != nil {
+		t.snapshot.release()
+		t.snapshot = nil
+	}
 	t.discarded = true
 	t.pending = nil
 	t.pendingBytes = 0

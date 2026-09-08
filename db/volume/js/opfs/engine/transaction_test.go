@@ -5,6 +5,7 @@ package engine
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/s4wave/spacewave/db/kvtx"
 )
@@ -123,75 +124,76 @@ func TestTransactionReadDependencyRejectsLogicalWrite(t *testing.T) {
 	}
 }
 
-// TestTransactionSurvivesPhysicalReclaim proves metadata commits use revision.
-func TestTransactionSurvivesPhysicalReclaim(t *testing.T) {
+// TestTransactionRetainsSnapshot proves reads remain stable and reclamation resumes.
+func TestTransactionRetainsSnapshot(t *testing.T) {
 	ctx := t.Context()
-	engine, err := Open(ctx, newDiskBackend(t))
+	disk := newDiskBackend(t)
+	queued := make(chan struct{}, 1)
+	backend := &queuedReclaimBackend{Backend: disk, queued: queued}
+	engine, err := Open(ctx, backend)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer engine.Close()
-
-	seed, err := engine.NewTransaction(ctx, true)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := seed.Set(ctx, []byte("metadata"), []byte("before reclaim")); err != nil {
-		t.Fatal(err)
-	}
-	if err := seed.Commit(ctx); err != nil {
-		t.Fatal(err)
-	}
-	before, err := engine.loadRoot(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if before.ReclaimNext > before.RetireThrough {
-		t.Fatal("seed publication did not construct retired files")
-	}
-
-	tx, err := engine.NewTransaction(ctx, true)
-	if err != nil {
-		t.Fatal(err)
-	}
-	value, found, err := tx.Get(ctx, []byte("metadata"))
-	if err != nil || !found || string(value) != "before reclaim" {
-		t.Fatalf("metadata read = %q, %t, %v", value, found, err)
-	}
-	if err := tx.Set(ctx, []byte("metadata"), []byte("after reclaim")); err != nil {
+	if err := engine.Apply(ctx, nil, []*Record{{Key: []byte("key"), Value: []byte("before")}}); err != nil {
 		t.Fatal(err)
 	}
 
-	for {
-		progress, err := engine.Reclaim(ctx)
+	for _, commit := range []bool{false, true} {
+		tx, err := engine.NewTransaction(ctx, false)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !progress {
-			break
+		defer tx.Discard()
+		value, found, err := tx.Get(ctx, []byte("key"))
+		if err != nil || !found {
+			t.Fatalf("initial read: %q, %t, %v", value, found, err)
 		}
-	}
-	after, err := engine.loadRoot(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if after.Generation <= before.Generation {
-		t.Fatalf("generation = %d, want greater than %d", after.Generation, before.Generation)
-	}
-	if after.Revision != before.Revision {
-		t.Fatalf("revision changed during reclaim: %d to %d", before.Revision, after.Revision)
-	}
-	if err := tx.Commit(ctx); err != nil {
-		t.Fatalf("commit after reclaim: %v", err)
-	}
+		reads := disk.reads
+		for range 100 {
+			if _, _, err := tx.Get(ctx, []byte("key")); err != nil {
+				t.Fatal(err)
+			}
+		}
+		if disk.reads != reads {
+			t.Fatalf("repeated snapshot reads performed %d extra file reads", disk.reads-reads)
+		}
 
-	read, err := engine.NewTransaction(ctx, false)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer read.Discard()
-	value, found, err = read.Get(ctx, []byte("metadata"))
-	if err != nil || !found || string(value) != "after reclaim" {
-		t.Fatalf("metadata after commit = %q, %t, %v", value, found, err)
+		reclaimed := make(chan error, 1)
+		go func() {
+			_, err := engine.Reclaim(ctx)
+			reclaimed <- err
+		}()
+		select {
+		case <-queued:
+		case <-time.After(5 * time.Second):
+			t.Fatal("reclamation did not queue")
+		}
+		if err := engine.Apply(ctx, nil, []*Record{{Key: []byte("key"), Value: []byte("after")}}); err != nil {
+			t.Fatal(err)
+		}
+		if got, found, err := tx.Get(ctx, []byte("key")); err != nil || !found || string(got) != string(value) {
+			t.Fatalf("snapshot changed during publication: %q, %t, %v", got, found, err)
+		}
+		select {
+		case err := <-reclaimed:
+			t.Fatalf("reclamation bypassed live snapshot: %v", err)
+		default:
+		}
+		if commit {
+			if err := tx.Commit(ctx); err != nil {
+				t.Fatal(err)
+			}
+		} else {
+			tx.Discard()
+		}
+		select {
+		case err := <-reclaimed:
+			if err != nil {
+				t.Fatal(err)
+			}
+		case <-time.After(5 * time.Second):
+			t.Fatal("reclamation did not resume after snapshot release")
+		}
 	}
 }

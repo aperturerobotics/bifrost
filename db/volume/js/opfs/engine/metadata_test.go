@@ -2,13 +2,7 @@
 
 package engine
 
-import (
-	"context"
-	"errors"
-	"testing"
-
-	"github.com/s4wave/spacewave/db/kvtx"
-)
+import "testing"
 
 // TestMetadataTransactionIgnoresBlockAndGCChanges preserves the metadata view.
 func TestMetadataTransactionIgnoresBlockAndGCChanges(t *testing.T) {
@@ -66,7 +60,7 @@ func TestMetadataTransactionIgnoresBlockAndGCChanges(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// A real metadata write must still invalidate the conservative read view.
+	// A later metadata publication cannot change an established read view.
 	read, err := store.NewTransaction(ctx, false)
 	if err != nil {
 		t.Fatal(err)
@@ -76,7 +70,10 @@ func TestMetadataTransactionIgnoresBlockAndGCChanges(t *testing.T) {
 		t.Fatal(err)
 	}
 	writeMetadata("other")
-	if _, _, err := read.Get(context.Background(), []byte("saved")); !errors.Is(err, kvtx.ErrInvalidSnapshot) {
-		t.Fatalf("changed metadata snapshot: %v", err)
+	if value, found, err := read.Get(ctx, []byte("saved")); err != nil || !found || string(value) != "value" {
+		t.Fatalf("retained metadata snapshot: %q, %t, %v", value, found, err)
+	}
+	if _, found, err := read.Get(ctx, []byte("other")); err != nil || found {
+		t.Fatalf("later metadata appeared in snapshot: %t, %v", found, err)
 	}
 }
