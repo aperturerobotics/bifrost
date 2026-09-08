@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"runtime/trace"
 	"strconv"
+	"strings"
 )
 
 const (
@@ -127,6 +128,17 @@ func (p *publication) commit(ctx context.Context) error {
 		return err
 	}
 
+	// Keep newly durable metadata in the existing bounded immutable-file cache.
+	// Packs use range-window keys and remain demand-cached at the payload reader.
+	p.engine.mtx.Lock()
+	if !p.engine.closed {
+		for _, output := range p.output {
+			if !strings.HasPrefix(output.name, "pack-") {
+				p.engine.cacheBytesLocked(output.name, output.data)
+			}
+		}
+	}
+	p.engine.mtx.Unlock()
 	p.engine.backend.Notify(p.root.Generation)
 
 	// A leftover committed intent is harmless and resolved before the next write.
