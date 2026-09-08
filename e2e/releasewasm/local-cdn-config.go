@@ -97,6 +97,12 @@ func localCDNProject(repoRoot, baseURL string) (*project.ProjectConfig, string, 
 	if err != nil {
 		return nil, "", err
 	}
-	conf.Publish["spacewave-release"].Manifests = []string{"spacewave-core", "spacewave-web", "spacewave-app", "web"}
+	plugins := conf.Publish["spacewave-release"]
+	plugins.Manifests = []string{"spacewave-core", "spacewave-web", "spacewave-app"}
+	plugins.PlatformIds = []string{"js"}
+	web := plugins.CloneVT()
+	web.Manifests = []string{"web"}
+	web.PlatformIds = []string{"web/js/wasm"}
+	conf.Publish["spacewave-release-web"] = web
 	return conf, packedConfig, nil
 }
