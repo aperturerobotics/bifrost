@@ -3,185 +3,109 @@
 package volume_opfs
 
 import (
+	"bytes"
 	"context"
-	"encoding/json"
-	"maps"
-	"sync"
 	"syscall/js"
 
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/db/opfs"
 	"github.com/s4wave/spacewave/db/unixfs"
+	"github.com/s4wave/spacewave/db/volume"
 	"github.com/sirupsen/logrus"
 )
 
 const (
-	currentStorageFormatVersion uint32 = 2
-	formatMarkerName                   = ".spacewave-opfs-format.json"
-	formatMarkerKind                   = "spacewave-opfs-volume"
-
-	driverModeAuto         = "auto"
+	// currentStorageFormatVersion identifies the clean immutable volume format.
+	currentStorageFormatVersion uint32 = 3
+	// formatMarkerName distinguishes initialized roots from preexisting data.
+	formatMarkerName = ".spacewave-opfs-format"
+	// formatMarker is fixed framing, not a second mutable storage descriptor.
+	formatMarker = "spacewave-opfs-volume/3\n"
+	// driverModeAuto selects the current runtime's supported browser driver.
+	driverModeAuto = "auto"
+	// driverModeStandardWasm selects standard Go's browser driver ABI.
 	driverModeStandardWasm = "standard-wasm"
-	driverModeTinyGo       = "tinygo"
-
-	resetPolicyAutomatic = "automatic"
+	// driverModeTinyGo selects TinyGo's browser driver ABI.
+	driverModeTinyGo = "tinygo"
 )
 
-// ResetReason identifies why the OPFS Volume Runtime initialized a clean root.
-type ResetReason string
-
-const (
-	ResetReasonMissing      ResetReason = "missing"
-	ResetReasonUnknown      ResetReason = "unknown"
-	ResetReasonIncompatible ResetReason = "incompatible"
-)
-
-type formatMarker struct {
-	Kind    string `json:"kind"`
-	Version uint32 `json:"version"`
-}
-
-var resetCounts = struct {
-	sync.Mutex
-	byReason map[ResetReason]uint64
-}{
-	byReason: make(map[ResetReason]uint64),
-}
-
-func runtimeStorageFormatVersion(conf *Config) uint32 {
-	version := conf.GetStorageFormatVersion()
-	if version == 0 {
-		return currentStorageFormatVersion
-	}
-	return version
-}
-
+// runtimeDriverMode resolves the driver selection for the current runtime.
 func runtimeDriverMode(conf *Config) string {
-	mode := conf.GetDriverMode()
-	if mode == "" {
-		return driverModeAuto
+	if mode := conf.GetDriverMode(); mode != "" {
+		return mode
 	}
-	return mode
+	return driverModeAuto
 }
 
-func runtimeResetPolicy(conf *Config) string {
-	policy := conf.GetResetPolicy()
-	if policy == "" {
-		return resetPolicyAutomatic
-	}
-	return policy
-}
-
-func openRuntimeRoot(
-	ctx context.Context,
-	le *logrus.Entry,
-	opfsRoot js.Value,
-	conf *Config,
-) (js.Value, error) {
-	_ = ctx
-
-	rootPath := conf.GetRootPath()
-	pathParts, _ := unixfs.SplitPath(rootPath)
-	if len(pathParts) == 0 {
+// openRuntimeRoot initializes only an absent or empty directory.
+// Existing data with an unknown marker requires an explicit external transition.
+func openRuntimeRoot(ctx context.Context, le *logrus.Entry, root js.Value, conf *Config) (js.Value, error) {
+	parts, _ := unixfs.SplitPath(conf.GetRootPath())
+	if len(parts) == 0 {
 		return js.Undefined(), errors.New("root_path must name an OPFS directory")
 	}
-
-	version := runtimeStorageFormatVersion(conf)
-	volDir, err := opfs.GetDirectoryPath(opfsRoot, pathParts, false)
-	if err != nil {
-		if opfs.IsNotFound(err) {
-			return resetRuntimeRoot(le, opfsRoot, rootPath, ResetReasonMissing, 0, nil, version)
-		}
-		return js.Undefined(), errors.Wrap(err, "open volume directory")
+	prefix := conf.GetLockPrefix()
+	if prefix == "" {
+		prefix = conf.GetRootPath()
 	}
-
-	marker, err := readFormatMarker(volDir)
+	lock, err := opfs.DefaultDriver.AcquireWebLock(ctx, prefix+"/engine/publish", true)
+	if err != nil {
+		return js.Undefined(), err
+	}
+	if lock.Outcome != opfs.WebLockOutcomeAcquired {
+		return js.Undefined(), errors.New("OPFS format lock was not acquired")
+	}
+	defer lock.Release()
+	dir, err := opfs.GetDirectoryPath(root, parts, true)
+	if err != nil {
+		return js.Undefined(), err
+	}
+	marker, err := opfs.ReadFile(dir, formatMarkerName)
+	emptyMarker := err == nil && len(marker) == 0
 	if err == nil {
-		if marker.Kind == formatMarkerKind && marker.Version == version {
-			return volDir, nil
+		if bytes.Equal(marker, []byte(formatMarker)) {
+			return dir, nil
 		}
-		names, listErr := opfs.ListDirectory(volDir)
-		if listErr != nil {
-			return js.Undefined(), errors.Wrap(listErr, "list incompatible volume directory")
+		if len(marker) != 0 {
+			return js.Undefined(), incompatibleFormat()
 		}
-		return resetRuntimeRoot(le, opfsRoot, rootPath, ResetReasonIncompatible, marker.Version, names, version)
 	}
-	if !opfs.IsNotFound(err) {
-		names, listErr := opfs.ListDirectory(volDir)
-		if listErr != nil {
-			return js.Undefined(), errors.Wrap(listErr, "list unreadable volume directory")
-		}
-		return resetRuntimeRoot(le, opfsRoot, rootPath, ResetReasonIncompatible, 0, names, version)
+	if err != nil && !opfs.IsNotFound(err) {
+		return js.Undefined(), err
 	}
 
-	names, err := opfs.ListDirectory(volDir)
+	// Listing is confined to first initialization, never ordinary compatible open.
+	names, err := opfs.ListDirectory(dir)
 	if err != nil {
-		return js.Undefined(), errors.Wrap(err, "list unmarked volume directory")
+		return js.Undefined(), err
 	}
-	reason := ResetReasonUnknown
-	if len(names) == 0 {
-		reason = ResetReasonMissing
+	// An interrupted first marker write may leave its newly created empty entry.
+	if len(names) != 0 && !(len(names) == 1 && names[0] == formatMarkerName && emptyMarker) {
+		return js.Undefined(), incompatibleFormat()
 	}
-	return resetRuntimeRoot(le, opfsRoot, rootPath, reason, 0, names, version)
+	if err := opfs.WriteFile(dir, formatMarkerName, []byte(formatMarker)); err != nil {
+		return js.Undefined(), err
+	}
+	if le != nil {
+		le.WithField("root_path", conf.GetRootPath()).Info("initialized immutable OPFS volume")
+	}
+	return dir, nil
 }
 
-func readFormatMarker(volDir js.Value) (*formatMarker, error) {
-	data, err := opfs.ReadFile(volDir, formatMarkerName)
-	if err != nil {
-		return nil, err
-	}
-	var marker formatMarker
-	if err := json.Unmarshal(data, &marker); err != nil {
-		return nil, errors.Wrap(err, "decode format marker")
-	}
-	return &marker, nil
+// incompatibleFormat preserves saved bytes and stops a futile restart loop.
+func incompatibleFormat() error {
+	return volume.Permanent(errors.New("incompatible OPFS volume format: use a new empty volume or explicitly export and import the existing data"))
 }
 
-func writeFormatMarker(volDir js.Value, version uint32) error {
-	data, err := json.Marshal(formatMarker{
-		Kind:    formatMarkerKind,
-		Version: version,
-	})
-	if err != nil {
-		return err
-	}
-	return opfs.WriteFile(volDir, formatMarkerName, append(data, '\n'))
-}
-
-func resetRuntimeRoot(
-	le *logrus.Entry,
-	opfsRoot js.Value,
-	rootPath string,
-	reason ResetReason,
-	previousVersion uint32,
-	previousEntries []string,
-	version uint32,
-) (js.Value, error) {
-	if err := deleteRuntimeRoot(opfsRoot, rootPath); err != nil {
-		return js.Undefined(), errors.Wrap(err, "reset volume directory")
-	}
-	pathParts, _ := unixfs.SplitPath(rootPath)
-	volDir, err := opfs.GetDirectoryPath(opfsRoot, pathParts, true)
-	if err != nil {
-		return js.Undefined(), errors.Wrap(err, "initialize volume directory")
-	}
-	if err := writeFormatMarker(volDir, version); err != nil {
-		return js.Undefined(), errors.Wrap(err, "write format marker")
-	}
-
-	recordRuntimeReset(reason)
-	logRuntimeReset(le, rootPath, reason, previousVersion, previousEntries, version)
-	return volDir, nil
-}
-
-func deleteRuntimeRoot(opfsRoot js.Value, rootPath string) error {
-	pathParts, _ := unixfs.SplitPath(rootPath)
-	if len(pathParts) == 0 {
+// deleteRuntimeRoot performs the Volume interface's explicit destructive operation.
+func deleteRuntimeRoot(root js.Value, rootPath string) error {
+	parts, _ := unixfs.SplitPath(rootPath)
+	if len(parts) == 0 {
 		return errors.New("root_path must name an OPFS directory")
 	}
-	parent := opfsRoot
-	for _, p := range pathParts[:len(pathParts)-1] {
-		next, err := opfs.GetDirectory(parent, p, false)
+	parent := root
+	for _, part := range parts[:len(parts)-1] {
+		next, err := opfs.GetDirectory(parent, part, false)
 		if err != nil {
 			if opfs.IsNotFound(err) {
 				return nil
@@ -190,63 +114,9 @@ func deleteRuntimeRoot(opfsRoot js.Value, rootPath string) error {
 		}
 		parent = next
 	}
-	err := opfs.DeleteEntry(parent, pathParts[len(pathParts)-1], true)
+	err := opfs.DeleteEntry(parent, parts[len(parts)-1], true)
 	if err != nil && !opfs.IsNotFound(err) {
 		return err
 	}
 	return nil
-}
-
-func recordRuntimeReset(reason ResetReason) {
-	resetCounts.Lock()
-	defer resetCounts.Unlock()
-	resetCounts.byReason[reason]++
-}
-
-// RuntimeResetCount returns the number of runtime root resets for a reason in
-// this browser Go runtime.
-func RuntimeResetCount(reason ResetReason) uint64 {
-	resetCounts.Lock()
-	defer resetCounts.Unlock()
-	return resetCounts.byReason[reason]
-}
-
-// RuntimeResetCounts returns a snapshot of runtime root reset counts in this
-// browser Go runtime.
-func RuntimeResetCounts() map[ResetReason]uint64 {
-	resetCounts.Lock()
-	defer resetCounts.Unlock()
-	out := make(map[ResetReason]uint64, len(resetCounts.byReason))
-	maps.Copy(out, resetCounts.byReason)
-	return out
-}
-
-func logRuntimeReset(
-	le *logrus.Entry,
-	rootPath string,
-	reason ResetReason,
-	previousVersion uint32,
-	previousEntries []string,
-	version uint32,
-) {
-	if le == nil {
-		return
-	}
-	fields := logrus.Fields{
-		"root_path":      rootPath,
-		"reason":         string(reason),
-		"format_version": version,
-	}
-	if previousVersion != 0 {
-		fields["previous_format_version"] = previousVersion
-	}
-	if len(previousEntries) != 0 {
-		fields["previous_entries"] = previousEntries
-	}
-	entry := le.WithFields(fields)
-	if reason == ResetReasonMissing {
-		entry.Info("initialized opfs volume v2 root")
-		return
-	}
-	entry.Warn("reset opfs volume root for v2 format")
 }

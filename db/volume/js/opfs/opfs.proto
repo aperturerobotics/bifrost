@@ -25,30 +25,16 @@ message Config {
   .volume.controller.Config volume_config = 7;
   // StoreConfig is the store configuration for kvtx.
   .store.kvtx.Config store_config = 8;
-  // BlockShardCount is the number of OPFS block shards.
-  uint32 block_shard_count = 9;
-  // MetaShardCount is the number of metadata shards.
-  // The current implementation requires exactly 1 when set.
-  uint32 meta_shard_count = 10;
-  // BlockBloomFpr is the block SSTable bloom-filter false-positive rate.
-  double block_bloom_fpr = 11;
-  // BlockCompactionTrigger is the L0 compaction trigger per shard.
-  uint32 block_compaction_trigger = 12;
-  // PageSize is the metadata page size in bytes.
-  uint32 page_size = 13;
-  // SyncIo forces using the sync OPFS API instead of the async API.
-  // The default is async OPFS writes so write actors can yield the Go thread via
-  // AwaitPromise while I/O is in flight.
-  bool sync_io = 14;
-  // BlockMaxSegmentDataBytes bounds one block SSTable segment's data bytes.
-  uint32 block_max_segment_data_bytes = 15;
+  // The old shard, page allocator, and sync-handle tuning fields are retired.
+  reserved 9 to 15;
+  reserved "block_shard_count", "meta_shard_count", "block_bloom_fpr", "block_compaction_trigger", "page_size", "sync_io", "block_max_segment_data_bytes";
   // DriverMode selects the browser OPFS driver ABI.
   // Empty defaults to the current runtime's standard wasm or TinyGo mode.
   string driver_mode = 16;
   // StorageFormatVersion is the OPFS Volume Runtime format marker version.
-  // Empty/zero defaults to the current v2 format.
+  // Empty/zero defaults to the current immutable format.
   uint32 storage_format_version = 17;
-  // ResetPolicy selects the open-time incompatible-state policy.
-  // Empty defaults to "automatic"; no v1 compatibility policy is supported.
-  string reset_policy = 18;
+  // Saved data is never automatically reset when the format changes.
+  reserved 18;
+  reserved "reset_policy";
 }

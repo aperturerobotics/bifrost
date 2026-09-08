@@ -13,8 +13,11 @@ import (
 
 // DebugDbResource implements the DebugDbResourceService.
 type DebugDbResource struct {
-	le  *logrus.Entry
-	b   bus.Bus
+	// le reports benchmark failures.
+	le *logrus.Entry
+	// b provides the resource's controller bus.
+	b bus.Bus
+	// mux serves the resource RPC methods.
 	mux srpc.Invoker
 }
 
@@ -52,7 +55,6 @@ func (r *DebugDbResource) StartBenchmark(
 ) (*s4wave_debugdb.StartBenchmarkResponse, error) {
 	info := &s4wave_debugdb.StorageInfo{
 		VolumeType: "hydra/volume/opfs",
-		SyncIo:     req.GetConfig().GetSyncIo(),
 		Goos:       runtime.GOOS,
 		Goarch:     runtime.GOARCH,
 	}

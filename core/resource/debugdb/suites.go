@@ -4,6 +4,8 @@ package resource_debugdb
 
 import (
 	"context"
+	"encoding/binary"
+	std_errors "errors"
 	"runtime"
 	"strconv"
 	"time"
@@ -13,26 +15,28 @@ import (
 	block_gc "github.com/s4wave/spacewave/db/block/gc"
 	"github.com/s4wave/spacewave/db/kvtx"
 	"github.com/s4wave/spacewave/db/opfs"
-	"github.com/s4wave/spacewave/db/volume/js/opfs/blockshard"
-	"github.com/s4wave/spacewave/db/volume/js/opfs/segment"
+	"github.com/s4wave/spacewave/db/volume/js/opfs/engine"
 	s4wave_debugdb "github.com/s4wave/spacewave/sdk/debugdb"
 )
 
 // suiteRunner manages suite execution against a throw-away engine.
 type suiteRunner struct {
-	ctx      context.Context
-	config   *s4wave_debugdb.BenchmarkConfig
-	runner   *BenchmarkRunner
-	suites   []string
-	results  []*s4wave_debugdb.BenchmarkSuite
+	// ctx bounds all operations in this run.
+	ctx context.Context
+	// runner owns shared progress and final results.
+	runner *BenchmarkRunner
+	// suites fixes the selected suite names and order.
+	suites []string
+	// duration is the total requested benchmark duration.
 	duration time.Duration
 }
 
+// newSuiteRunner fixes the selected suites and their duration budget.
 func newSuiteRunner(ctx context.Context, r *BenchmarkRunner) *suiteRunner {
 	suites := []string{
-		"blockshard-put-single",
-		"blockshard-put-batch",
-		"blockshard-get",
+		"engine-put-single",
+		"engine-put-batch",
+		"engine-get",
 		"blockstore-put",
 		"blockstore-get",
 		"gc-flush",
@@ -43,13 +47,13 @@ func newSuiteRunner(ctx context.Context, r *BenchmarkRunner) *suiteRunner {
 	}
 	return &suiteRunner{
 		ctx:      ctx,
-		config:   r.config,
 		runner:   r,
 		suites:   suites,
 		duration: time.Duration(r.config.GetDurationSeconds()) * time.Second,
 	}
 }
 
+// updateProgress publishes the current suite and metric to watchers.
 func (s *suiteRunner) updateProgress(idx int, metric string) {
 	pct := uint32(idx * 100 / len(s.suites))
 	s.runner.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
@@ -64,92 +68,128 @@ func (s *suiteRunner) updateProgress(idx int, metric string) {
 	})
 }
 
+// timer starts the proportional time budget for one suite.
 func (s *suiteRunner) timer(idx int) *SuiteTimer {
 	return NewSuiteTimer(s.duration, len(s.suites), idx)
 }
 
-// runBlockshardPutSingle benchmarks sequential single-entry Engine.Put calls.
-func (s *suiteRunner) runBlockshardPutSingle(engine *blockshard.Engine) *s4wave_debugdb.BenchmarkSuite {
+// runEnginePutSingle benchmarks durable sequential block writes and retains a
+// bounded existing-ref corpus for the engine get suite.
+func (s *suiteRunner) runEnginePutSingle(store *engine.BlockStore) (*s4wave_debugdb.BenchmarkSuite, []*block.BlockRef) {
 	idx := 0
 	s.updateProgress(idx, "put-single")
 	timer := s.timer(idx)
 	m := NewMetricCollector("put-single", "ms")
 
-	i := 0
+	const maxRetainedRefs = 1000
+	refs := make([]*block.BlockRef, 0, maxRetainedRefs)
+	var id uint64
 	for timer.Running() {
-		key := []byte("bench-s-" + strconv.Itoa(i))
-		val := make([]byte, 4096)
-		// Yield before put so the write actor's flush timer can fire in WASM.
+		data := engineBenchmarkBlock('s', id)
 		runtime.Gosched()
 		m.Start()
-		err := engine.Put(s.ctx, []segment.Entry{{Key: key, Value: val}})
+		ref, _, err := store.PutBlock(s.ctx, data, nil)
+		if err == nil {
+			_, err = store.Sync(s.ctx)
+		}
 		m.Stop()
 		if err != nil {
 			break
 		}
-		i++
+		if len(refs) < maxRetainedRefs {
+			refs = append(refs, ref)
+		}
+		id++
 	}
 
 	return &s4wave_debugdb.BenchmarkSuite{
-		Name:    "blockshard-put-single",
+		Name:    "engine-put-single",
 		Metrics: []*s4wave_debugdb.BenchmarkMetric{m.Build()},
-	}
+	}, refs
 }
 
-// runBlockshardPutBatch benchmarks batched Engine.Put calls.
-func (s *suiteRunner) runBlockshardPutBatch(engine *blockshard.Engine) *s4wave_debugdb.BenchmarkSuite {
+// runEnginePutBatch benchmarks durable batches through the engine block store.
+func (s *suiteRunner) runEnginePutBatch(store *engine.BlockStore) *s4wave_debugdb.BenchmarkSuite {
 	idx := 1
 	s.updateProgress(idx, "put-batch")
 	timer := s.timer(idx)
 	m := NewMetricCollector("put-batch-32", "ms")
 
 	batchSize := 32
-	round := 0
+	var id uint64
 	for timer.Running() {
-		entries := make([]segment.Entry, batchSize)
+		entries := make([]*block.PutBatchEntry, batchSize)
+		var buildErr error
 		for j := range entries {
-			entries[j] = segment.Entry{
-				Key:   []byte("bench-b-" + strconv.Itoa(round*batchSize+j)),
-				Value: make([]byte, 4096),
+			data := engineBenchmarkBlock('b', id)
+			ref, err := block.BuildBlockRef(data, nil)
+			if err != nil {
+				buildErr = err
+				break
 			}
+			entries[j] = &block.PutBatchEntry{Ref: ref, Data: data}
+			id++
+		}
+		if buildErr != nil {
+			break
 		}
 		runtime.Gosched()
 		m.Start()
-		err := engine.Put(s.ctx, entries)
+		err := store.PutBlockBatch(s.ctx, entries)
+		if err == nil {
+			_, err = store.Sync(s.ctx)
+		}
 		m.Stop()
 		if err != nil {
 			break
 		}
-		round++
 	}
 
 	return &s4wave_debugdb.BenchmarkSuite{
-		Name:    "blockshard-put-batch",
+		Name:    "engine-put-batch",
 		Metrics: []*s4wave_debugdb.BenchmarkMetric{m.Build()},
 	}
 }
 
-// runBlockshardGet benchmarks Engine.Get for existing keys.
-func (s *suiteRunner) runBlockshardGet(engine *blockshard.Engine) *s4wave_debugdb.BenchmarkSuite {
+// runEngineGet benchmarks engine block reads from the retained existing corpus.
+func (s *suiteRunner) runEngineGet(store *engine.BlockStore, refs []*block.BlockRef) *s4wave_debugdb.BenchmarkSuite {
 	idx := 2
 	s.updateProgress(idx, "get")
 	timer := s.timer(idx)
 	m := NewMetricCollector("get", "ms")
 
+	if len(refs) == 0 {
+		return &s4wave_debugdb.BenchmarkSuite{
+			Name:    "engine-get",
+			Metrics: []*s4wave_debugdb.BenchmarkMetric{m.Build()},
+		}
+	}
+
 	i := 0
 	for timer.Running() {
-		key := []byte("bench-s-" + strconv.Itoa(i%1000))
+		ref := refs[i%len(refs)]
 		m.Start()
-		_, _, _ = engine.Get(key)
+		_, found, err := store.GetBlock(s.ctx, ref)
 		m.Stop()
+		if err != nil || !found {
+			break
+		}
 		m.MaybeYield()
 		i++
 	}
 
 	return &s4wave_debugdb.BenchmarkSuite{
-		Name:    "blockshard-get",
+		Name:    "engine-get",
 		Metrics: []*s4wave_debugdb.BenchmarkMetric{m.Build()},
 	}
+}
+
+// engineBenchmarkBlock builds one unique deterministic benchmark payload.
+func engineBenchmarkBlock(family byte, id uint64) []byte {
+	data := make([]byte, 4096)
+	data[0] = family
+	binary.BigEndian.PutUint64(data[1:], id)
+	return data
 }
 
 // runBlockStorePut benchmarks PutBlock through the full StoreOps interface.
@@ -293,24 +333,31 @@ func (s *suiteRunner) runMetaStoreRW(store kvtx.Store) *s4wave_debugdb.Benchmark
 	}
 }
 
-// createBlockshardEngine creates a standalone blockshard engine for direct benchmarks.
-func createBlockshardEngine(ctx context.Context, settings *blockshard.Settings) (*blockshard.Engine, func() error, error) {
+// createEngineBlockStore creates a standalone immutable engine and block store.
+func createEngineBlockStore(ctx context.Context) (*engine.BlockStore, func() error, error) {
 	root, err := opfs.GetRoot()
 	if err != nil {
 		return nil, nil, err
 	}
-	dirName := "debugdb-bench-engine-" + time.Now().Format("150405")
+	dirName := "debugdb-bench-engine-" + strconv.FormatInt(time.Now().UnixNano(), 10)
 	dir, err := opfs.GetDirectory(root, dirName, true)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "create engine directory")
 	}
-	engine, err := blockshard.NewEngineWithSettings(ctx, dir, "debugdb-bench", settings)
+	e, err := engine.Open(ctx, engine.NewBrowserBackend(opfs.DefaultDriver, dir, dirName))
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "create engine")
+		return nil, nil, errors.Wrap(
+			std_errors.Join(err, opfs.DeleteEntry(root, dirName, true)),
+			"create engine",
+		)
 	}
+	store := engine.NewBlockStore(ctx, e, block.DefaultHashType)
 	cleanup := func() error {
-		engine.Close()
-		return opfs.DeleteEntry(root, dirName, true)
+		return std_errors.Join(
+			store.Close(),
+			e.Close(),
+			opfs.DeleteEntry(root, dirName, true),
+		)
 	}
-	return engine, cleanup, nil
+	return store, cleanup, nil
 }

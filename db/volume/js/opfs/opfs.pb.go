@@ -7,7 +7,6 @@ package volume_opfs
 import (
 	fmt "fmt"
 	io "io"
-	math "math"
 	slices "slices"
 
 	protobuf_go_lite "github.com/aperturerobotics/protobuf-go-lite"
@@ -38,32 +37,12 @@ type Config struct {
 	VolumeConfig *controller.Config `protobuf:"bytes,7,opt,name=volume_config,json=volumeConfig,proto3" json:"volumeConfig,omitempty"`
 	// StoreConfig is the store configuration for kvtx.
 	StoreConfig *kvtx.Config `protobuf:"bytes,8,opt,name=store_config,json=storeConfig,proto3" json:"storeConfig,omitempty"`
-	// BlockShardCount is the number of OPFS block shards.
-	BlockShardCount uint32 `protobuf:"varint,9,opt,name=block_shard_count,json=blockShardCount,proto3" json:"blockShardCount,omitempty"`
-	// MetaShardCount is the number of metadata shards.
-	// The current implementation requires exactly 1 when set.
-	MetaShardCount uint32 `protobuf:"varint,10,opt,name=meta_shard_count,json=metaShardCount,proto3" json:"metaShardCount,omitempty"`
-	// BlockBloomFpr is the block SSTable bloom-filter false-positive rate.
-	BlockBloomFpr float64 `protobuf:"fixed64,11,opt,name=block_bloom_fpr,json=blockBloomFpr,proto3" json:"blockBloomFpr,omitempty"`
-	// BlockCompactionTrigger is the L0 compaction trigger per shard.
-	BlockCompactionTrigger uint32 `protobuf:"varint,12,opt,name=block_compaction_trigger,json=blockCompactionTrigger,proto3" json:"blockCompactionTrigger,omitempty"`
-	// PageSize is the metadata page size in bytes.
-	PageSize uint32 `protobuf:"varint,13,opt,name=page_size,json=pageSize,proto3" json:"pageSize,omitempty"`
-	// SyncIo forces using the sync OPFS API instead of the async API.
-	// The default is async OPFS writes so write actors can yield the Go thread via
-	// AwaitPromise while I/O is in flight.
-	SyncIo bool `protobuf:"varint,14,opt,name=sync_io,json=syncIo,proto3" json:"syncIo,omitempty"`
-	// BlockMaxSegmentDataBytes bounds one block SSTable segment's data bytes.
-	BlockMaxSegmentDataBytes uint32 `protobuf:"varint,15,opt,name=block_max_segment_data_bytes,json=blockMaxSegmentDataBytes,proto3" json:"blockMaxSegmentDataBytes,omitempty"`
 	// DriverMode selects the browser OPFS driver ABI.
 	// Empty defaults to the current runtime's standard wasm or TinyGo mode.
 	DriverMode string `protobuf:"bytes,16,opt,name=driver_mode,json=driverMode,proto3" json:"driverMode,omitempty"`
 	// StorageFormatVersion is the OPFS Volume Runtime format marker version.
-	// Empty/zero defaults to the current v2 format.
+	// Empty/zero defaults to the current immutable format.
 	StorageFormatVersion uint32 `protobuf:"varint,17,opt,name=storage_format_version,json=storageFormatVersion,proto3" json:"storageFormatVersion,omitempty"`
-	// ResetPolicy selects the open-time incompatible-state policy.
-	// Empty defaults to "automatic"; no v1 compatibility policy is supported.
-	ResetPolicy string `protobuf:"bytes,18,opt,name=reset_policy,json=resetPolicy,proto3" json:"resetPolicy,omitempty"`
 }
 
 func (x *Config) Reset() {
@@ -128,55 +107,6 @@ func (x *Config) GetStoreConfig() *kvtx.Config {
 	return nil
 }
 
-func (x *Config) GetBlockShardCount() uint32 {
-	if x != nil {
-		return x.BlockShardCount
-	}
-	return 0
-}
-
-func (x *Config) GetMetaShardCount() uint32 {
-	if x != nil {
-		return x.MetaShardCount
-	}
-	return 0
-}
-
-func (x *Config) GetBlockBloomFpr() float64 {
-	if x != nil {
-		return x.BlockBloomFpr
-	}
-	return 0
-}
-
-func (x *Config) GetBlockCompactionTrigger() uint32 {
-	if x != nil {
-		return x.BlockCompactionTrigger
-	}
-	return 0
-}
-
-func (x *Config) GetPageSize() uint32 {
-	if x != nil {
-		return x.PageSize
-	}
-	return 0
-}
-
-func (x *Config) GetSyncIo() bool {
-	if x != nil {
-		return x.SyncIo
-	}
-	return false
-}
-
-func (x *Config) GetBlockMaxSegmentDataBytes() uint32 {
-	if x != nil {
-		return x.BlockMaxSegmentDataBytes
-	}
-	return 0
-}
-
 func (x *Config) GetDriverMode() string {
 	if x != nil {
 		return x.DriverMode
@@ -191,13 +121,6 @@ func (x *Config) GetStorageFormatVersion() uint32 {
 	return 0
 }
 
-func (x *Config) GetResetPolicy() string {
-	if x != nil {
-		return x.ResetPolicy
-	}
-	return ""
-}
-
 func (m *Config) CloneVT() *Config {
 	if m == nil {
 		return (*Config)(nil)
@@ -208,16 +131,8 @@ func (m *Config) CloneVT() *Config {
 	r.NoGenerateKey = m.NoGenerateKey
 	r.NoWriteKey = m.NoWriteKey
 	r.Verbose = m.Verbose
-	r.BlockShardCount = m.BlockShardCount
-	r.MetaShardCount = m.MetaShardCount
-	r.BlockBloomFpr = m.BlockBloomFpr
-	r.BlockCompactionTrigger = m.BlockCompactionTrigger
-	r.PageSize = m.PageSize
-	r.SyncIo = m.SyncIo
-	r.BlockMaxSegmentDataBytes = m.BlockMaxSegmentDataBytes
 	r.DriverMode = m.DriverMode
 	r.StorageFormatVersion = m.StorageFormatVersion
-	r.ResetPolicy = m.ResetPolicy
 	r.KvKeyOpts = protobuf_go_lite.CloneVTValue(m.KvKeyOpts)
 	r.VolumeConfig = protobuf_go_lite.CloneVTValue(m.VolumeConfig)
 	r.StoreConfig = protobuf_go_lite.CloneVTValue(m.StoreConfig)
@@ -261,34 +176,10 @@ func (this *Config) EqualVT(that *Config) bool {
 	if !protobuf_go_lite.IsEqualVT(this.StoreConfig, that.StoreConfig) {
 		return false
 	}
-	if this.BlockShardCount != that.BlockShardCount {
-		return false
-	}
-	if this.MetaShardCount != that.MetaShardCount {
-		return false
-	}
-	if this.BlockBloomFpr != that.BlockBloomFpr {
-		return false
-	}
-	if this.BlockCompactionTrigger != that.BlockCompactionTrigger {
-		return false
-	}
-	if this.PageSize != that.PageSize {
-		return false
-	}
-	if this.SyncIo != that.SyncIo {
-		return false
-	}
-	if this.BlockMaxSegmentDataBytes != that.BlockMaxSegmentDataBytes {
-		return false
-	}
 	if this.DriverMode != that.DriverMode {
 		return false
 	}
 	if this.StorageFormatVersion != that.StorageFormatVersion {
-		return false
-	}
-	if this.ResetPolicy != that.ResetPolicy {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -350,41 +241,6 @@ func (x *Config) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("storeConfig")
 		x.StoreConfig.MarshalProtoJSON(s.WithField("storeConfig"))
 	}
-	if x.BlockShardCount != 0 || s.HasField("blockShardCount") {
-		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("blockShardCount")
-		s.WriteUint32(x.BlockShardCount)
-	}
-	if x.MetaShardCount != 0 || s.HasField("metaShardCount") {
-		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("metaShardCount")
-		s.WriteUint32(x.MetaShardCount)
-	}
-	if x.BlockBloomFpr != 0 || s.HasField("blockBloomFpr") {
-		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("blockBloomFpr")
-		s.WriteFloat64(x.BlockBloomFpr)
-	}
-	if x.BlockCompactionTrigger != 0 || s.HasField("blockCompactionTrigger") {
-		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("blockCompactionTrigger")
-		s.WriteUint32(x.BlockCompactionTrigger)
-	}
-	if x.PageSize != 0 || s.HasField("pageSize") {
-		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("pageSize")
-		s.WriteUint32(x.PageSize)
-	}
-	if x.SyncIo || s.HasField("syncIo") {
-		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("syncIo")
-		s.WriteBool(x.SyncIo)
-	}
-	if x.BlockMaxSegmentDataBytes != 0 || s.HasField("blockMaxSegmentDataBytes") {
-		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("blockMaxSegmentDataBytes")
-		s.WriteUint32(x.BlockMaxSegmentDataBytes)
-	}
 	if x.DriverMode != "" || s.HasField("driverMode") {
 		s.WriteMoreIf(&wroteField)
 		s.WriteObjectField("driverMode")
@@ -394,11 +250,6 @@ func (x *Config) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteMoreIf(&wroteField)
 		s.WriteObjectField("storageFormatVersion")
 		s.WriteUint32(x.StorageFormatVersion)
-	}
-	if x.ResetPolicy != "" || s.HasField("resetPolicy") {
-		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("resetPolicy")
-		s.WriteString(x.ResetPolicy)
 	}
 	s.WriteObjectEnd()
 }
@@ -453,36 +304,12 @@ func (x *Config) UnmarshalProtoJSON(s *json.UnmarshalState) {
 			}
 			x.StoreConfig = &kvtx.Config{}
 			x.StoreConfig.UnmarshalProtoJSON(s.WithField("store_config", true))
-		case "block_shard_count", "blockShardCount":
-			s.AddField("block_shard_count")
-			x.BlockShardCount = s.ReadUint32()
-		case "meta_shard_count", "metaShardCount":
-			s.AddField("meta_shard_count")
-			x.MetaShardCount = s.ReadUint32()
-		case "block_bloom_fpr", "blockBloomFpr":
-			s.AddField("block_bloom_fpr")
-			x.BlockBloomFpr = s.ReadFloat64()
-		case "block_compaction_trigger", "blockCompactionTrigger":
-			s.AddField("block_compaction_trigger")
-			x.BlockCompactionTrigger = s.ReadUint32()
-		case "page_size", "pageSize":
-			s.AddField("page_size")
-			x.PageSize = s.ReadUint32()
-		case "sync_io", "syncIo":
-			s.AddField("sync_io")
-			x.SyncIo = s.ReadBool()
-		case "block_max_segment_data_bytes", "blockMaxSegmentDataBytes":
-			s.AddField("block_max_segment_data_bytes")
-			x.BlockMaxSegmentDataBytes = s.ReadUint32()
 		case "driver_mode", "driverMode":
 			s.AddField("driver_mode")
 			x.DriverMode = s.ReadString()
 		case "storage_format_version", "storageFormatVersion":
 			s.AddField("storage_format_version")
 			x.StorageFormatVersion = s.ReadUint32()
-		case "reset_policy", "resetPolicy":
-			s.AddField("reset_policy")
-			x.ResetPolicy = s.ReadString()
 		}
 	})
 }
@@ -521,13 +348,6 @@ func (m *Config) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
-	if len(m.ResetPolicy) > 0 {
-		i = protobuf_go_lite.EncodeString(dAtA, i, m.ResetPolicy)
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x92
-	}
 	if m.StorageFormatVersion != 0 {
 		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.StorageFormatVersion))
 		i--
@@ -541,41 +361,6 @@ func (m *Config) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 		dAtA[i] = 0x1
 		i--
 		dAtA[i] = 0x82
-	}
-	if m.BlockMaxSegmentDataBytes != 0 {
-		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.BlockMaxSegmentDataBytes))
-		i--
-		dAtA[i] = 0x78
-	}
-	if m.SyncIo {
-		i = protobuf_go_lite.EncodeBool(dAtA, i, m.SyncIo)
-		i--
-		dAtA[i] = 0x70
-	}
-	if m.PageSize != 0 {
-		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.PageSize))
-		i--
-		dAtA[i] = 0x68
-	}
-	if m.BlockCompactionTrigger != 0 {
-		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.BlockCompactionTrigger))
-		i--
-		dAtA[i] = 0x60
-	}
-	if m.BlockBloomFpr != 0 {
-		i = protobuf_go_lite.EncodeFixed64(dAtA, i, uint64(math.Float64bits(float64(m.BlockBloomFpr))))
-		i--
-		dAtA[i] = 0x59
-	}
-	if m.MetaShardCount != 0 {
-		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.MetaShardCount))
-		i--
-		dAtA[i] = 0x50
-	}
-	if m.BlockShardCount != 0 {
-		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.BlockShardCount))
-		i--
-		dAtA[i] = 0x48
 	}
 	if m.StoreConfig != nil {
 		size, err := m.StoreConfig.MarshalToSizedBufferVT(dAtA[:i])
@@ -658,16 +443,8 @@ func (m *Config) SizeVT() (n int) {
 		l = m.StoreConfig.SizeVT()
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
-	n += protobuf_go_lite.SizeVarintNonZero(1, m.BlockShardCount)
-	n += protobuf_go_lite.SizeVarintNonZero(1, m.MetaShardCount)
-	n += protobuf_go_lite.SizeFixed64NonZero(1, m.BlockBloomFpr)
-	n += protobuf_go_lite.SizeVarintNonZero(1, m.BlockCompactionTrigger)
-	n += protobuf_go_lite.SizeVarintNonZero(1, m.PageSize)
-	n += protobuf_go_lite.SizeBoolNonZero(1, m.SyncIo)
-	n += protobuf_go_lite.SizeVarintNonZero(1, m.BlockMaxSegmentDataBytes)
 	n += protobuf_go_lite.SizeStringNonEmpty(2, m.DriverMode)
 	n += protobuf_go_lite.SizeVarintNonZero(2, m.StorageFormatVersion)
-	n += protobuf_go_lite.SizeStringNonEmpty(2, m.ResetPolicy)
 	n += len(m.unknownFields)
 	return n
 }
@@ -707,34 +484,6 @@ func (x *Config) MarshalProtoText() string {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "store_config")
 		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.StoreConfig)
 	}
-	if x.BlockShardCount != 0 {
-		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "block_shard_count")
-		protobuf_go_lite.TextWriteUint(&sb, x.BlockShardCount)
-	}
-	if x.MetaShardCount != 0 {
-		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "meta_shard_count")
-		protobuf_go_lite.TextWriteUint(&sb, x.MetaShardCount)
-	}
-	if x.BlockBloomFpr != 0 {
-		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "block_bloom_fpr")
-		protobuf_go_lite.TextWriteFloat64(&sb, x.BlockBloomFpr)
-	}
-	if x.BlockCompactionTrigger != 0 {
-		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "block_compaction_trigger")
-		protobuf_go_lite.TextWriteUint(&sb, x.BlockCompactionTrigger)
-	}
-	if x.PageSize != 0 {
-		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "page_size")
-		protobuf_go_lite.TextWriteUint(&sb, x.PageSize)
-	}
-	if x.SyncIo != false {
-		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "sync_io")
-		protobuf_go_lite.TextWriteBool(&sb, x.SyncIo)
-	}
-	if x.BlockMaxSegmentDataBytes != 0 {
-		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "block_max_segment_data_bytes")
-		protobuf_go_lite.TextWriteUint(&sb, x.BlockMaxSegmentDataBytes)
-	}
 	if x.DriverMode != "" {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "driver_mode")
 		protobuf_go_lite.TextWriteString(&sb, x.DriverMode)
@@ -742,10 +491,6 @@ func (x *Config) MarshalProtoText() string {
 	if x.StorageFormatVersion != 0 {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "storage_format_version")
 		protobuf_go_lite.TextWriteUint(&sb, x.StorageFormatVersion)
-	}
-	if x.ResetPolicy != "" {
-		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "reset_policy")
-		protobuf_go_lite.TextWriteString(&sb, x.ResetPolicy)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -869,73 +614,6 @@ func (m *Config) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 9:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field BlockShardCount", wireType)
-			}
-			m.BlockShardCount = 0
-			m.BlockShardCount, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
-			if err != nil {
-				return err
-			}
-		case 10:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field MetaShardCount", wireType)
-			}
-			m.MetaShardCount = 0
-			m.MetaShardCount, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
-			if err != nil {
-				return err
-			}
-		case 11:
-			if wireType != 1 {
-				return fmt.Errorf("proto: wrong wireType = %d for field BlockBloomFpr", wireType)
-			}
-			var v uint64
-			var _v64 uint64
-			_v64, iNdEx, err = protobuf_go_lite.DecodeFixed64(dAtA, iNdEx)
-			if err != nil {
-				return err
-			}
-			v = uint64(_v64)
-			m.BlockBloomFpr = float64(math.Float64frombits(v))
-		case 12:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field BlockCompactionTrigger", wireType)
-			}
-			m.BlockCompactionTrigger = 0
-			m.BlockCompactionTrigger, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
-			if err != nil {
-				return err
-			}
-		case 13:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field PageSize", wireType)
-			}
-			m.PageSize = 0
-			m.PageSize, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
-			if err != nil {
-				return err
-			}
-		case 14:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SyncIo", wireType)
-			}
-			var v bool
-			v, iNdEx, err = protobuf_go_lite.DecodeVarintBool(dAtA, iNdEx)
-			if err != nil {
-				return err
-			}
-			m.SyncIo = bool(v)
-		case 15:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field BlockMaxSegmentDataBytes", wireType)
-			}
-			m.BlockMaxSegmentDataBytes = 0
-			m.BlockMaxSegmentDataBytes, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
-			if err != nil {
-				return err
-			}
 		case 16:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field DriverMode", wireType)
@@ -955,16 +633,6 @@ func (m *Config) UnmarshalVT(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-		case 18:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ResetPolicy", wireType)
-			}
-			var v string
-			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
-			if err != nil {
-				return err
-			}
-			m.ResetPolicy = v
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

@@ -2,7 +2,6 @@ package chrometest
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -19,6 +18,7 @@ import (
 	"github.com/s4wave/spacewave/bldr/util/gocompiler"
 )
 
+// Browser probe settings and watchdog deadlines.
 const (
 	runEnv                          = "RUN_OPFS_CHROME_TEST"
 	profileEnv                      = "RUN_OPFS_CHROME_PROFILE"
@@ -38,30 +38,47 @@ const (
 	tinyGoBldrFeatures              = "bldr-features"
 	chromeSmoke                     = "smoke"
 	chromeStress                    = "stress"
-	defaultShards                   = 4
 	runWorkersScriptWatchdogDefault = 30 * time.Second
 	runWorkersScriptWatchdogMargin  = 15 * time.Second
 	runWorkersScriptWatchdogMin     = 100 * time.Millisecond
 )
 
+// sharedHarness owns the browser and generated assets shared by this test process.
 var sharedHarness *chromeHarness
 
+// chromeHarness owns the selected browser, asset server, and disposable build directory.
 type chromeHarness struct {
-	dir     string
-	server  *httptest.Server
-	pw      *playwright.Playwright
+	// dir owns the disposable asset and profile directory.
+	dir string
+	// server serves the compiled worker and bridge.
+	server *httptest.Server
+	// pw owns the Playwright driver process.
+	pw *playwright.Playwright
+	// browser owns the launched browser.
 	browser playwright.Browser
+	// browserType creates matching persistent profiles when needed.
+	browserType playwright.BrowserType
 }
 
+// chromeSession owns an isolated browser context and its current page.
 type chromeSession struct {
-	ctx  playwright.BrowserContext
+	// ctx owns this scenario's isolated storage and pages.
+	ctx playwright.BrowserContext
+	// page is the currently active test page.
 	page playwright.Page
 }
+
+// storageSnapshot records origin quota and recursively counted OPFS file bytes.
 type storageSnapshot struct {
-	usage     int64
-	quota     int64
+	// usage is the browser's origin usage estimate in bytes.
+	usage int64
+	// quota is the origin quota in bytes.
+	quota int64
+	// opfsBytes is the recursive sum of OPFS file sizes.
 	opfsBytes int64
-	files     int64
+	// files counts OPFS files.
+	files int64
+	// persisted reports the origin's persistent-storage grant.
 	persisted bool
 }
 
@@ -81,6 +98,7 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
+// TestOpfsChromeConcurrentBlockReadersWriters checks concurrent publication, live reads, maintenance, and remount.
 func TestOpfsChromeConcurrentBlockReadersWriters(t *testing.T) {
 	requireChromeProfile(t, chromeStress)
 	h := newChromeHarness(t)
@@ -108,7 +126,6 @@ func TestOpfsChromeConcurrentBlockReadersWriters(t *testing.T) {
 			workers:    writers,
 			iterations: iterations,
 			batch:      batch,
-			shards:     defaultShards,
 		})
 	}
 	for i := range readers {
@@ -119,7 +136,6 @@ func TestOpfsChromeConcurrentBlockReadersWriters(t *testing.T) {
 			workers:    writers,
 			iterations: iterations,
 			batch:      batch,
-			shards:     defaultShards,
 		})
 	}
 	s.runWorkersStaged(t, args[writers:], args[:writers])
@@ -129,20 +145,22 @@ func TestOpfsChromeConcurrentBlockReadersWriters(t *testing.T) {
 		workers:    writers,
 		iterations: iterations,
 		batch:      batch,
-		shards:     defaultShards,
 	})
 }
 
+// TestOpfsChromeSharedVolumeCacheLifecycle checks shared-volume reads across local worker lifetimes.
 func TestOpfsChromeSharedVolumeCacheLifecycle(t *testing.T) {
 	requireChromeProfile(t, chromeSmoke, chromeStress)
 	runSharedVolumeCacheLifecycle(t, false)
 }
 
+// TestOpfsChromeRemoteSharedVolumeCacheLifecycle checks shared-volume reads through remote OPFS bridges.
 func TestOpfsChromeRemoteSharedVolumeCacheLifecycle(t *testing.T) {
 	requireChromeProfile(t, chromeSmoke)
 	runSharedVolumeCacheLifecycle(t, true)
 }
 
+// runSharedVolumeCacheLifecycle runs readers before publishers and checks a fresh mount afterwards.
 func runSharedVolumeCacheLifecycle(t *testing.T, remote bool) {
 	t.Helper()
 	// Open one browser session for the shared volume cell.
@@ -176,7 +194,6 @@ func runSharedVolumeCacheLifecycle(t *testing.T, remote bool) {
 			workers:    writers,
 			iterations: iterations,
 			batch:      batch,
-			shards:     defaultShards,
 			remote:     remote,
 		},
 		{
@@ -186,7 +203,6 @@ func runSharedVolumeCacheLifecycle(t *testing.T, remote bool) {
 			workers:    writers,
 			iterations: iterations,
 			batch:      batch,
-			shards:     defaultShards,
 			remote:     remote,
 		},
 	}
@@ -198,7 +214,6 @@ func runSharedVolumeCacheLifecycle(t *testing.T, remote bool) {
 			workers:    writers,
 			iterations: iterations,
 			batch:      batch,
-			shards:     defaultShards,
 			remote:     remote,
 		})
 	}
@@ -213,11 +228,11 @@ func runSharedVolumeCacheLifecycle(t *testing.T, remote bool) {
 		workers:    writers,
 		iterations: iterations,
 		batch:      batch,
-		shards:     defaultShards,
 		remote:     remote,
 	})
 }
 
+// TestOpfsChromeRemoteDriverCacheLifecycle checks bridge replacement rejects stale handles and preserves data.
 func TestOpfsChromeRemoteDriverCacheLifecycle(t *testing.T) {
 	requireChromeProfile(t, chromeSmoke)
 
@@ -237,166 +252,9 @@ func TestOpfsChromeRemoteDriverCacheLifecycle(t *testing.T) {
 	result := s.runRemoteSwapWorker(t, workerArgs{
 		scenario: "remote-cache-lifecycle",
 		root:     root,
-		shards:   defaultShards,
 		remote:   true,
 	})
 	t.Logf("remote driver live handles after remount and release: %d", result.remoteHandles)
-}
-
-// TestOpfsChromeMaterializeFanout measures how the block feed pattern changes
-// first-run manifest materialization cost. The pre-refactor scheduler fed
-// bucket_lookup.CopyObjectToBucket at maxConcurrency=1 (one foreground-awaited
-// PutBlock per block), so each block became its own OPFS Publish with the full
-// Web Lock + sync-access-handle + manifest-write tax. This drives identical
-// blocks through the real blockshard engine four ways and logs write-only time
-// and the Publish-count proxy so the serial vs coalesced gap is measured, not
-// asserted by a flaky ratio. The async-serial mode is the landed async-default
-// BlockStore.PutBlock feed: a strictly serial PutBackground walk fenced by one
-// Sync, the path the storage refactor put on the default so a one-at-a-time copy
-// loop coalesces partially even without caller concurrency or batching.
-func TestOpfsChromeMaterializeFanout(t *testing.T) {
-	requireChromeProfile(t, chromeStress)
-	h := newChromeHarness(t)
-	s := h.newSession(t)
-	defer s.close(t)
-
-	blocks := envIntDefault(t, "OPFS_MATERIALIZE_BLOCKS", 512)
-	concurrency := envIntDefault(t, "OPFS_MATERIALIZE_CONCURRENCY", 16)
-	batchSize := envIntDefault(t, "OPFS_MATERIALIZE_BATCH", 64)
-
-	modes := []struct {
-		scenario string
-		batch    int
-	}{
-		{"materialize-fanout-serial", 1},
-		{"materialize-fanout-concurrent", concurrency},
-		{"materialize-fanout-batched", batchSize},
-		{"materialize-fanout-async-serial", 1},
-	}
-
-	type row struct {
-		scenario   string
-		durationMS int
-		writeMS    int
-		publishGen int
-	}
-	rows := make([]row, 0, len(modes))
-	for _, m := range modes {
-		root := "opfs-chrome-materialize-" + time.Now().Format("150405.000000000")
-		s.runWorker(t, workerArgs{scenario: "clear", root: root})
-		res := s.runWorker(t, workerArgs{
-			scenario:   m.scenario,
-			root:       root,
-			iterations: blocks,
-			batch:      m.batch,
-			shards:     defaultShards,
-		})
-		rows = append(rows, row{m.scenario, res.durationMS, res.writeMS, res.publishGen})
-		t.Logf("materialize-fanout scenario=%s blocks=%d batch=%d writeMs=%d durationMs=%d publishGen=%d",
-			m.scenario, blocks, m.batch, res.writeMS, res.durationMS, res.publishGen)
-	}
-
-	serial := rows[0]
-	for _, r := range rows[1:] {
-		if r.writeMS > 0 && serial.writeMS > 0 {
-			t.Logf("materialize-fanout %s vs serial: writeMs %d -> %d (%.2fx faster), publishGen %d -> %d",
-				r.scenario, serial.writeMS, r.writeMS,
-				float64(serial.writeMS)/float64(r.writeMS), serial.publishGen, r.publishGen)
-		}
-	}
-	t.Run("accounting", func(t *testing.T) {
-		runMaterializeAccounting(t, s, blocks)
-	})
-}
-
-func runMaterializeAccounting(t *testing.T, s *chromeSession, blocks int) {
-	t.Helper()
-	modes := []struct {
-		name     string
-		scenario string
-		batch    int
-	}{
-		{"async-serial", "materialize-fanout-async-serial", 1},
-		{"batch-64", "materialize-fanout-batched", 64},
-	}
-
-	for _, mode := range modes {
-		for sample := 0; sample <= 3; sample++ {
-			phase := materializeSamplePhase(sample)
-			root := materializeAccountingRoot("off", mode.name, phase, sample)
-			s.runWorker(t, workerArgs{scenario: "clear", root: root})
-			off := s.runWorker(t, workerArgs{
-				scenario:   mode.scenario,
-				root:       root,
-				worker:     sample,
-				iterations: blocks,
-				batch:      mode.batch,
-				shards:     defaultShards,
-			})
-			t.Logf("materialize-accounting mode=%s instrumentation=disabled phase=%s sample=%d blocks=%d writeMs=%d durationMs=%d",
-				mode.name, phase, sample, blocks, off.writeMS, off.durationMS)
-			if len(off.extra) != 2 {
-				// Generation delta and pending entries are result fields, not
-				// recorder counters.
-				t.Fatalf("disabled accounting emitted metrics: %v", off.extra)
-			}
-		}
-
-		for sample := 0; sample <= 3; sample++ {
-			phase := materializeSamplePhase(sample)
-			root := materializeAccountingRoot("on", mode.name, phase, sample)
-			s.runWorker(t, workerArgs{scenario: "clear", root: root})
-			res := s.runWorker(t, workerArgs{
-				scenario:   mode.scenario,
-				root:       root,
-				worker:     sample,
-				iterations: blocks,
-				batch:      mode.batch,
-				shards:     defaultShards,
-				metrics:    true,
-			})
-			m := res.extra
-			// The materialization scenario generates one unique key for every
-			// accepted entry, so pending-buffer deduplication cannot reduce this
-			// population. The generation equation below also asserts that no
-			// compaction manifest write occurred during the measured phase.
-			accepted := m["acceptedEntries"]
-			published := m["publishedEntries"]
-			pending := m["pendingEntries"]
-			errors := m["publishErrors"]
-			if accepted != published+pending || errors != 0 {
-				t.Fatalf("accounting reconcile mode=%s phase=%s sample=%d accepted=%d published=%d pending=%d errors=%d",
-					mode.name, phase, sample, accepted, published, pending, errors)
-			}
-			if m["generationDelta"] != m["manifestWrites"] ||
-				m["manifestWrites"] != m["publishSuccesses"]+m["reclaimHits"] {
-				t.Fatalf("generation reconcile mode=%s phase=%s sample=%d metrics=%v",
-					mode.name, phase, sample, m)
-			}
-			if m["reclaimCalls"] != 0 || m["reclaimHits"] != 0 || m["reclaimDeletes"] != 0 {
-				t.Fatalf("unexpected no-pending reclaim mode=%s phase=%s sample=%d metrics=%v",
-					mode.name, phase, sample, m)
-			}
-			if m["manifestSlotReads"] != 2*m["publishSuccesses"] {
-				t.Fatalf("manifest reads do not match publish reloads mode=%s phase=%s sample=%d metrics=%v",
-					mode.name, phase, sample, m)
-			}
-			t.Logf("materialize-accounting mode=%s phase=%s sample=%d writeMs=%d durationMs=%d metrics=%v reconciliation=pass",
-				mode.name, phase, sample, res.writeMS, res.durationMS, m)
-		}
-	}
-}
-
-func materializeSamplePhase(sample int) string {
-	if sample == 0 {
-		return "warmup"
-	}
-	return "retained"
-}
-
-func materializeAccountingRoot(instrumentation, mode, phase string, sample int) string {
-	return fmt.Sprintf("opfs-chrome-materialize-%s-%s-%s-%d-%s",
-		instrumentation, mode, phase, sample, time.Now().Format("150405.000000000"))
 }
 
 // TestOpfsChromeCopyWalkWrapperConcurrency probes whether the production
@@ -427,12 +285,12 @@ func TestOpfsChromeCopyWalkWrapperConcurrency(t *testing.T) {
 		root:       root,
 		iterations: inputBytes,
 		batch:      concurrency,
-		shards:     defaultShards,
 	})
 	t.Logf("copy-walk-wrapper concurrency=%d inputBytes=%d durationMs=%d",
 		concurrency, inputBytes, res.durationMS)
 }
 
+// TestOpfsChromeConcurrentMetaWriters checks every concurrent writer's metadata survives remount.
 func TestOpfsChromeConcurrentMetaWriters(t *testing.T) {
 	requireChromeProfile(t, chromeStress)
 	h := newChromeHarness(t)
@@ -458,7 +316,6 @@ func TestOpfsChromeConcurrentMetaWriters(t *testing.T) {
 			workers:    writers,
 			iterations: iterations,
 			batch:      1,
-			shards:     defaultShards,
 		})
 	}
 	s.runWorkers(t, args)
@@ -468,10 +325,10 @@ func TestOpfsChromeConcurrentMetaWriters(t *testing.T) {
 		workers:    writers,
 		iterations: iterations,
 		batch:      1,
-		shards:     defaultShards,
 	})
 }
 
+// TestOpfsChromeConcurrentMetaOverflowWriters checks concurrent small and large metadata values.
 func TestOpfsChromeConcurrentMetaOverflowWriters(t *testing.T) {
 	requireChromeProfile(t, chromeStress)
 	h := newChromeHarness(t)
@@ -497,7 +354,6 @@ func TestOpfsChromeConcurrentMetaOverflowWriters(t *testing.T) {
 			workers:    workers,
 			iterations: iterations,
 			batch:      1,
-			shards:     defaultShards,
 		})
 	}
 	s.runWorkers(t, args)
@@ -507,36 +363,10 @@ func TestOpfsChromeConcurrentMetaOverflowWriters(t *testing.T) {
 		workers:    workers,
 		iterations: iterations,
 		batch:      1,
-		shards:     defaultShards,
 	})
 }
 
-func TestOpfsChromeManifestBloomSplitSafety(t *testing.T) {
-	requireChromeProfile(t, chromeSmoke)
-	h := newChromeHarness(t)
-	s := h.newPersistentSession(t, "volume-reset-current-v1")
-	defer s.close(t)
-
-	root := "opfs-chrome-manifest-bloom-" + time.Now().Format("150405.000000000")
-	s.runWorker(t, workerArgs{
-		scenario: "clear",
-		root:     root,
-	})
-	s.runWorker(t, workerArgs{
-		scenario: "meta-manifest-bloom-split",
-		root:     root,
-		shards:   defaultShards,
-	})
-
-	s.reopenPage(t)
-
-	s.runWorker(t, workerArgs{
-		scenario: "meta-manifest-bloom-verify",
-		root:     root,
-		shards:   defaultShards,
-	})
-}
-
+// TestOpfsChromeClassifiesPromiseRejection checks browser NotFound rejection classification.
 func TestOpfsChromeClassifiesPromiseRejection(t *testing.T) {
 	requireChromeProfile(t, chromeSmoke)
 	h := newChromeHarness(t)
@@ -554,6 +384,7 @@ func TestOpfsChromeClassifiesPromiseRejection(t *testing.T) {
 	})
 }
 
+// TestOpfsChromeReadFileHelperLoop checks repeated whole-file reads inside a worker.
 func TestOpfsChromeReadFileHelperLoop(t *testing.T) {
 	requireChromeProfile(t, chromeSmoke)
 	h := newChromeHarness(t)
@@ -572,6 +403,7 @@ func TestOpfsChromeReadFileHelperLoop(t *testing.T) {
 	})
 }
 
+// TestOpfsChromeLargeWriteReadList checks large file writes, sampled reads, and listing.
 func TestOpfsChromeLargeWriteReadList(t *testing.T) {
 	requireChromeProfile(t, chromeSmoke)
 	h := newChromeHarness(t)
@@ -591,6 +423,7 @@ func TestOpfsChromeLargeWriteReadList(t *testing.T) {
 	})
 }
 
+// TestOpfsChromeTinyGoPipeWriteLoop checks TinyGo pipe streaming independently of storage.
 func TestOpfsChromeTinyGoPipeWriteLoop(t *testing.T) {
 	requireChromeProfile(t, chromeSmoke)
 	if os.Getenv(tinyGoEnv) != "1" && !strings.EqualFold(os.Getenv(tinyGoEnv), "true") {
@@ -609,6 +442,7 @@ func TestOpfsChromeTinyGoPipeWriteLoop(t *testing.T) {
 	})
 }
 
+// TestOpfsChromeTinyGoSRPCEchoLoop checks TinyGo calls over a multiplexed connection.
 func TestOpfsChromeTinyGoSRPCEchoLoop(t *testing.T) {
 	requireChromeProfile(t, chromeSmoke)
 	if os.Getenv(tinyGoEnv) != "1" && !strings.EqualFold(os.Getenv(tinyGoEnv), "true") {
@@ -628,6 +462,7 @@ func TestOpfsChromeTinyGoSRPCEchoLoop(t *testing.T) {
 	})
 }
 
+// TestOpfsChromeTinyGoSRPCRpcStreamEchoLoop checks TinyGo calls through nested RPC streams.
 func TestOpfsChromeTinyGoSRPCRpcStreamEchoLoop(t *testing.T) {
 	requireChromeProfile(t, chromeSmoke)
 	if os.Getenv(tinyGoEnv) != "1" && !strings.EqualFold(os.Getenv(tinyGoEnv), "true") {
@@ -647,6 +482,7 @@ func TestOpfsChromeTinyGoSRPCRpcStreamEchoLoop(t *testing.T) {
 	})
 }
 
+// TestOpfsChromeTinyGoResourceEchoLoop checks TinyGo resource reference calls.
 func TestOpfsChromeTinyGoResourceEchoLoop(t *testing.T) {
 	requireChromeProfile(t, chromeSmoke)
 	if os.Getenv(tinyGoEnv) != "1" && !strings.EqualFold(os.Getenv(tinyGoEnv), "true") {
@@ -666,6 +502,7 @@ func TestOpfsChromeTinyGoResourceEchoLoop(t *testing.T) {
 	})
 }
 
+// TestOpfsChromeTinyGoLargeWriteReadList checks large raw OPFS files under TinyGo.
 func TestOpfsChromeTinyGoLargeWriteReadList(t *testing.T) {
 	requireChromeProfile(t, chromeSmoke)
 	if os.Getenv(tinyGoEnv) != "1" && !strings.EqualFold(os.Getenv(tinyGoEnv), "true") {
@@ -689,10 +526,11 @@ func TestOpfsChromeTinyGoLargeWriteReadList(t *testing.T) {
 	})
 }
 
+// TestOpfsChromeTinyGoLargeBlockShardBatch checks durable large block batches under TinyGo.
 func TestOpfsChromeTinyGoLargeBlockShardBatch(t *testing.T) {
 	requireChromeProfile(t, chromeSmoke)
 	if os.Getenv(tinyGoEnv) != "1" && !strings.EqualFold(os.Getenv(tinyGoEnv), "true") {
-		t.Skipf("set %s=1 to exercise the TinyGo blockshard large-upload path", tinyGoEnv)
+		t.Skipf("set %s=1 to exercise the TinyGo immutable-engine large-upload path", tinyGoEnv)
 	}
 
 	h := newChromeHarness(t)
@@ -709,17 +547,16 @@ func TestOpfsChromeTinyGoLargeBlockShardBatch(t *testing.T) {
 		root:       root,
 		iterations: envIntDefault(t, largeSizeEnv, 68056093),
 		batch:      96,
-		shards:     1,
 	})
 	s.runWorker(t, workerArgs{
 		scenario:   "large-block-verify",
 		root:       root,
 		iterations: envIntDefault(t, largeSizeEnv, 68056093),
 		batch:      96,
-		shards:     1,
 	})
 }
 
+// TestOpfsChromeBlockShardStorageAmplification bounds actual disk growth for a large block workload.
 func TestOpfsChromeBlockShardStorageAmplification(t *testing.T) {
 	requireChromeProfile(t, chromeSmoke)
 
@@ -739,7 +576,6 @@ func TestOpfsChromeBlockShardStorageAmplification(t *testing.T) {
 		root:       root,
 		iterations: sourceBytes,
 		batch:      96,
-		shards:     1,
 	})
 	after := s.readStorageSnapshot(t)
 
@@ -776,6 +612,7 @@ func TestOpfsChromeBlockShardStorageAmplification(t *testing.T) {
 	)
 }
 
+// TestOpfsChromeUnixFSStorageAmplification bounds actual disk growth for a large UnixFS upload.
 func TestOpfsChromeUnixFSStorageAmplification(t *testing.T) {
 	requireChromeProfile(t, chromeSmoke)
 
@@ -795,7 +632,6 @@ func TestOpfsChromeUnixFSStorageAmplification(t *testing.T) {
 		root:       root,
 		iterations: sourceBytes,
 		batch:      262144,
-		shards:     defaultShards,
 	})
 	after := s.readStorageSnapshot(t)
 
@@ -833,118 +669,7 @@ func TestOpfsChromeUnixFSStorageAmplification(t *testing.T) {
 	)
 }
 
-func TestOpfsChromeTinyGoLargeBlockShardMultiShardBatch(t *testing.T) {
-	requireChromeProfile(t, chromeSmoke)
-	if os.Getenv(tinyGoEnv) != "1" && !strings.EqualFold(os.Getenv(tinyGoEnv), "true") {
-		t.Skipf("set %s=1 to exercise the TinyGo blockshard large-upload path", tinyGoEnv)
-	}
-
-	h := newChromeHarness(t)
-	s := h.newSession(t)
-	defer s.close(t)
-
-	root := "opfs-chrome-large-block-multishard-batch-" + time.Now().Format("150405.000000000")
-	s.runWorker(t, workerArgs{
-		scenario: "clear",
-		root:     root,
-	})
-	s.runWorker(t, workerArgs{
-		scenario:   "large-block-batch",
-		root:       root,
-		iterations: envIntDefault(t, largeSizeEnv, 68056093),
-		batch:      96,
-		shards:     defaultShards,
-	})
-	s.runWorker(t, workerArgs{
-		scenario:   "large-block-verify",
-		root:       root,
-		iterations: envIntDefault(t, largeSizeEnv, 68056093),
-		batch:      96,
-		shards:     defaultShards,
-	})
-}
-
-func TestOpfsChromeTinyGoLargeBlockShardWithGCWalContention(t *testing.T) {
-	requireChromeProfile(t, chromeSmoke)
-	if os.Getenv(tinyGoEnv) != "1" && !strings.EqualFold(os.Getenv(tinyGoEnv), "true") {
-		t.Skipf("set %s=1 to exercise TinyGo large Blockshard beside GC/WAL writes", tinyGoEnv)
-	}
-
-	h := newChromeHarness(t)
-	s := h.newSession(t)
-	defer s.close(t)
-
-	root := "opfs-chrome-large-block-gc-wal-" + time.Now().Format("150405.000000000")
-	s.runWorker(t, workerArgs{
-		scenario: "clear",
-		root:     root,
-	})
-	s.runWorkers(t, []workerArgs{
-		{
-			scenario:   "large-block-batch",
-			root:       root,
-			iterations: envIntDefault(t, largeSizeEnv, 68056093),
-			batch:      96,
-			shards:     defaultShards,
-		},
-		{
-			scenario:   "gc-wal-write-loop",
-			root:       root,
-			iterations: 16,
-			shards:     defaultShards,
-		},
-	})
-	s.runWorker(t, workerArgs{
-		scenario:   "large-block-verify",
-		root:       root,
-		iterations: envIntDefault(t, largeSizeEnv, 68056093),
-		batch:      96,
-		shards:     defaultShards,
-	})
-	s.runWorker(t, workerArgs{
-		scenario:   "gc-wal-verify",
-		root:       root,
-		iterations: 16,
-		shards:     defaultShards,
-	})
-}
-
-func TestOpfsChromeBlockShardCorruptCompactionInput(t *testing.T) {
-	requireChromeProfile(t, chromeSmoke)
-
-	h := newChromeHarness(t)
-	s := h.newSession(t)
-	defer s.close(t)
-
-	root := "opfs-chrome-block-corrupt-compaction-" + time.Now().Format("150405.000000000")
-	s.runWorker(t, workerArgs{
-		scenario: "clear",
-		root:     root,
-	})
-	s.runWorker(t, workerArgs{
-		scenario: "block-corrupt-compaction",
-		root:     root,
-	})
-}
-
-func TestOpfsChromeBlockShardZeroSizeCompactionInput(t *testing.T) {
-	requireChromeProfile(t, chromeSmoke)
-
-	h := newChromeHarness(t)
-	s := h.newSession(t)
-	defer s.close(t)
-
-	root := "opfs-chrome-block-zero-size-compaction-" + time.Now().Format("150405.000000000")
-	s.runWorker(t, workerArgs{
-		scenario: "clear",
-		root:     root,
-	})
-	s.runWorker(t, workerArgs{
-		scenario: "block-zero-size-compaction",
-		root:     root,
-	})
-}
-
+// TestOpfsChromeReadAtHelperLoop checks worker offset reads and EOF semantics.
 func TestOpfsChromeReadAtHelperLoop(t *testing.T) {
 	requireChromeProfile(t, chromeSmoke)
 	h := newChromeHarness(t)
@@ -963,24 +688,7 @@ func TestOpfsChromeReadAtHelperLoop(t *testing.T) {
 	})
 }
 
-func TestOpfsChromeGCWalWriteLoop(t *testing.T) {
-	requireChromeProfile(t, chromeSmoke)
-	h := newChromeHarness(t)
-	s := h.newSession(t)
-	defer s.close(t)
-
-	root := "opfs-chrome-gc-wal-" + time.Now().Format("150405.000000000")
-	s.runWorker(t, workerArgs{
-		scenario: "clear",
-		root:     root,
-	})
-	s.runWorker(t, workerArgs{
-		scenario:   "gc-wal-write-loop",
-		root:       root,
-		iterations: 16,
-	})
-}
-
+// TestOpfsChromePersistsAcrossPageLifecycle requires published data to survive page replacement.
 func TestOpfsChromePersistsAcrossPageLifecycle(t *testing.T) {
 	requireChromeProfile(t, chromeSmoke)
 	h := newChromeHarness(t)
@@ -1006,7 +714,6 @@ func TestOpfsChromePersistsAcrossPageLifecycle(t *testing.T) {
 		workers:    1,
 		iterations: blockIterations,
 		batch:      blockBatch,
-		shards:     defaultShards,
 	})
 	var metaArgs []workerArgs
 	for i := range metaWorkers {
@@ -1017,7 +724,6 @@ func TestOpfsChromePersistsAcrossPageLifecycle(t *testing.T) {
 			workers:    metaWorkers,
 			iterations: metaIterations,
 			batch:      1,
-			shards:     defaultShards,
 		})
 	}
 	s.runWorkers(t, metaArgs)
@@ -1030,7 +736,6 @@ func TestOpfsChromePersistsAcrossPageLifecycle(t *testing.T) {
 		workers:    1,
 		iterations: blockIterations,
 		batch:      blockBatch,
-		shards:     defaultShards,
 	})
 	s.runWorker(t, workerArgs{
 		scenario:   "meta-mixed-verify",
@@ -1038,10 +743,10 @@ func TestOpfsChromePersistsAcrossPageLifecycle(t *testing.T) {
 		workers:    metaWorkers,
 		iterations: metaIterations,
 		batch:      1,
-		shards:     defaultShards,
 	})
 }
 
+// TestOpfsChromeRunWorkersScriptWatchdogReportsHangingWorker requires useful progress in timeout failures.
 func TestOpfsChromeRunWorkersScriptWatchdogReportsHangingWorker(t *testing.T) {
 	requireChromeProfile(t, chromeSmoke)
 	h := newChromeHarness(t)
@@ -1080,6 +785,7 @@ func TestOpfsChromeRunWorkersScriptWatchdogReportsHangingWorker(t *testing.T) {
 	}
 }
 
+// TestOpfsChromeFileLockSerializesWorkers requires file locking to preserve every counter increment.
 func TestOpfsChromeFileLockSerializesWorkers(t *testing.T) {
 	requireChromeProfile(t, chromeStress)
 	h := newChromeHarness(t)
@@ -1109,7 +815,6 @@ func TestOpfsChromeFileLockSerializesWorkers(t *testing.T) {
 			workers:    workers,
 			iterations: iterations,
 			batch:      1,
-			shards:     defaultShards,
 		})
 	}
 	s.runWorkers(t, args)
@@ -1119,10 +824,10 @@ func TestOpfsChromeFileLockSerializesWorkers(t *testing.T) {
 		workers:    workers,
 		iterations: iterations,
 		batch:      1,
-		shards:     defaultShards,
 	})
 }
 
+// TestOpfsChromeFileLockQueuedWorkersProgressAfterRelease checks queued writers resume after release.
 func TestOpfsChromeFileLockQueuedWorkersProgressAfterRelease(t *testing.T) {
 	requireChromeProfile(t, chromeSmoke)
 	h := newChromeHarness(t)
@@ -1156,7 +861,6 @@ func TestOpfsChromeFileLockQueuedWorkersProgressAfterRelease(t *testing.T) {
 			workers:    workers,
 			iterations: iterations,
 			batch:      1,
-			shards:     defaultShards,
 		})
 	}
 	s.runBlockedLockWorkers(t, holder, args)
@@ -1166,10 +870,10 @@ func TestOpfsChromeFileLockQueuedWorkersProgressAfterRelease(t *testing.T) {
 		workers:    workers,
 		iterations: iterations,
 		batch:      1,
-		shards:     defaultShards,
 	})
 }
 
+// TestOpfsChromeFileLockQueuedWorkersProgressAfterHolderTermination checks crash-released lock progress.
 func TestOpfsChromeFileLockQueuedWorkersProgressAfterHolderTermination(t *testing.T) {
 	requireChromeProfile(t, chromeStress)
 	h := newChromeHarness(t)
@@ -1203,7 +907,6 @@ func TestOpfsChromeFileLockQueuedWorkersProgressAfterHolderTermination(t *testin
 			workers:    workers,
 			iterations: iterations,
 			batch:      1,
-			shards:     defaultShards,
 		})
 	}
 	s.runTerminatedLockHolderWorkers(t, holder, args)
@@ -1213,10 +916,10 @@ func TestOpfsChromeFileLockQueuedWorkersProgressAfterHolderTermination(t *testin
 		workers:    workers,
 		iterations: iterations,
 		batch:      1,
-		shards:     defaultShards,
 	})
 }
 
+// TestOpfsChromeWebLockIfAvailable checks nonblocking lock outcomes while a holder is active.
 func TestOpfsChromeWebLockIfAvailable(t *testing.T) {
 	requireChromeProfile(t, chromeStress)
 	h := newChromeHarness(t)
@@ -1248,6 +951,7 @@ func TestOpfsChromeWebLockIfAvailable(t *testing.T) {
 	})
 }
 
+// TestOpfsChromeWebLockCancellation checks queued Web Lock cancellation.
 func TestOpfsChromeWebLockCancellation(t *testing.T) {
 	requireChromeProfile(t, chromeSmoke)
 	h := newChromeHarness(t)
@@ -1273,7 +977,8 @@ func TestOpfsChromeWebLockCancellation(t *testing.T) {
 	})
 }
 
-func TestOpfsChromeTerminatedBlockWriterLeavesRecoverableShard(t *testing.T) {
+// TestOpfsChromeTerminatedBlockWriterLeavesRecoverableVolume checks recovery before block-root publication.
+func TestOpfsChromeTerminatedBlockWriterLeavesRecoverableVolume(t *testing.T) {
 	requireChromeProfile(t, chromeStress)
 	h := newChromeHarness(t)
 	s := h.newSession(t)
@@ -1291,12 +996,10 @@ func TestOpfsChromeTerminatedBlockWriterLeavesRecoverableShard(t *testing.T) {
 		workers:    1,
 		iterations: 1,
 		batch:      1,
-		shards:     defaultShards,
 	})
 	s.runTerminatedReadyWorker(t, workerArgs{
-		scenario: "block-orphan-segment",
+		scenario: "engine-crash-before-root-block",
 		root:     root,
-		shards:   defaultShards,
 	})
 	s.runWorker(t, workerArgs{
 		scenario:   "block-verify",
@@ -1304,15 +1007,14 @@ func TestOpfsChromeTerminatedBlockWriterLeavesRecoverableShard(t *testing.T) {
 		workers:    1,
 		iterations: 1,
 		batch:      1,
-		shards:     defaultShards,
 	})
 	s.runWorker(t, workerArgs{
-		scenario: "block-orphan-verify-clean",
+		scenario: "engine-crash-verify-block-clean",
 		root:     root,
-		shards:   defaultShards,
 	})
 }
 
+// TestOpfsChromeTerminatedMetaWriterRecovery checks recovery on both sides of root publication.
 func TestOpfsChromeTerminatedMetaWriterRecovery(t *testing.T) {
 	requireChromeProfile(t, chromeStress)
 	h := newChromeHarness(t)
@@ -1331,10 +1033,9 @@ func TestOpfsChromeTerminatedMetaWriterRecovery(t *testing.T) {
 		workers:    1,
 		iterations: 1,
 		batch:      1,
-		shards:     defaultShards,
 	})
 	s.runTerminatedReadyWorker(t, workerArgs{
-		scenario: "meta-crash-before-superblock",
+		scenario: "engine-crash-before-root-meta",
 		root:     root,
 	})
 	s.runWorker(t, workerArgs{
@@ -1343,22 +1044,21 @@ func TestOpfsChromeTerminatedMetaWriterRecovery(t *testing.T) {
 		workers:    1,
 		iterations: 1,
 		batch:      1,
-		shards:     defaultShards,
 	})
 	s.runTerminatedReadyWorker(t, workerArgs{
-		scenario: "meta-crash-after-superblock",
+		scenario: "engine-crash-after-root-meta",
 		root:     root,
 	})
 	s.runWorker(t, workerArgs{
-		scenario:   "meta-crash-verify",
+		scenario:   "engine-crash-verify-meta",
 		root:       root,
 		workers:    1,
 		iterations: 1,
 		batch:      1,
-		shards:     defaultShards,
 	})
 }
 
+// TestOpfsChromeTerminationRecoverySurvivesFreshContext checks crash recovery after profile reopen.
 func TestOpfsChromeTerminationRecoverySurvivesFreshContext(t *testing.T) {
 	requireChromeProfile(t, chromeStress)
 	h := newChromeHarness(t)
@@ -1377,12 +1077,10 @@ func TestOpfsChromeTerminationRecoverySurvivesFreshContext(t *testing.T) {
 		workers:    1,
 		iterations: 1,
 		batch:      1,
-		shards:     defaultShards,
 	})
 	s.runTerminatedReadyWorker(t, workerArgs{
-		scenario: "block-orphan-segment",
+		scenario: "engine-crash-before-root-block",
 		root:     root,
-		shards:   defaultShards,
 	})
 	s.runWorker(t, workerArgs{
 		scenario:   "meta-writer",
@@ -1391,10 +1089,9 @@ func TestOpfsChromeTerminationRecoverySurvivesFreshContext(t *testing.T) {
 		workers:    1,
 		iterations: 1,
 		batch:      1,
-		shards:     defaultShards,
 	})
 	s.runTerminatedReadyWorker(t, workerArgs{
-		scenario: "meta-crash-before-superblock",
+		scenario: "engine-crash-before-root-meta",
 		root:     root,
 	})
 	s.runWorker(t, workerArgs{
@@ -1419,7 +1116,6 @@ func TestOpfsChromeTerminationRecoverySurvivesFreshContext(t *testing.T) {
 			workers:    workers,
 			iterations: iterations,
 			batch:      1,
-			shards:     defaultShards,
 		})
 	}
 	s.runTerminatedLockHolderWorkers(t, holder, args)
@@ -1433,12 +1129,10 @@ func TestOpfsChromeTerminationRecoverySurvivesFreshContext(t *testing.T) {
 		workers:    1,
 		iterations: 1,
 		batch:      1,
-		shards:     defaultShards,
 	})
 	reopened.runWorker(t, workerArgs{
-		scenario: "block-orphan-verify-clean",
+		scenario: "engine-crash-verify-block-clean",
 		root:     root,
-		shards:   defaultShards,
 	})
 	reopened.runWorker(t, workerArgs{
 		scenario:   "meta-verify",
@@ -1446,7 +1140,6 @@ func TestOpfsChromeTerminationRecoverySurvivesFreshContext(t *testing.T) {
 		workers:    1,
 		iterations: 1,
 		batch:      1,
-		shards:     defaultShards,
 	})
 	reopened.runWorker(t, workerArgs{
 		scenario:   "counter-verify",
@@ -1454,10 +1147,10 @@ func TestOpfsChromeTerminationRecoverySurvivesFreshContext(t *testing.T) {
 		workers:    workers,
 		iterations: iterations,
 		batch:      1,
-		shards:     defaultShards,
 	})
 }
 
+// TestOpfsChromeVolumeRuntimeSlice checks interrupted initialization, durable remount, and explicit deletion.
 func TestOpfsChromeVolumeRuntimeSlice(t *testing.T) {
 	requireChromeProfile(t, chromeStress)
 	h := newChromeHarness(t)
@@ -1469,23 +1162,31 @@ func TestOpfsChromeVolumeRuntimeSlice(t *testing.T) {
 		scenario: "clear",
 		root:     root,
 	})
+	// Simulate termination after creating the first format-marker entry.
+	_, err := s.page.Evaluate(`async (name) => {
+	  const root = await navigator.storage.getDirectory()
+	  const test = await root.getDirectoryHandle(name, { create: true })
+	  const volume = await test.getDirectoryHandle('volume', { create: true })
+	  await volume.getFileHandle('.spacewave-opfs-format', { create: true })
+	}`, root)
+	if err != nil {
+		t.Fatal(err)
+	}
 	s.runWorker(t, workerArgs{
 		scenario: "volume-runtime-write",
 		root:     root,
-		shards:   defaultShards,
 	})
 	s.runWorker(t, workerArgs{
 		scenario: "volume-runtime-verify",
 		root:     root,
-		shards:   defaultShards,
 	})
 	s.runWorker(t, workerArgs{
 		scenario: "volume-runtime-delete-verify",
 		root:     root,
-		shards:   defaultShards,
 	})
 }
 
+// TestOpfsChromeVolumeCoordinator checks lease exclusion and cross-worker revision visibility.
 func TestOpfsChromeVolumeCoordinator(t *testing.T) {
 	requireChromeProfile(t, chromeSmoke)
 	h := newChromeHarness(t)
@@ -1500,26 +1201,24 @@ func TestOpfsChromeVolumeCoordinator(t *testing.T) {
 	s.runWorker(t, workerArgs{
 		scenario: "volume-coord-local",
 		root:     root,
-		shards:   defaultShards,
 	})
 	s.runWorkersStaged(t, []workerArgs{{
 		scenario: "volume-coord-watch",
 		root:     root,
-		shards:   defaultShards,
 	}}, []workerArgs{{
 		scenario: "volume-coord-broadcast",
 		root:     root,
-		shards:   defaultShards,
 	}})
 }
 
-func TestOpfsChromeVolumeRuntimeResetsIncompatibleRoot(t *testing.T) {
+// TestOpfsChromeVolumeRuntimeRejectsIncompatibleRootWithoutMutation requires old-format bytes to remain intact.
+func TestOpfsChromeVolumeRuntimeRejectsIncompatibleRootWithoutMutation(t *testing.T) {
 	requireChromeProfile(t, chromeSmoke)
 	h := newChromeHarness(t)
 	s := h.newSession(t)
 	defer s.close(t)
 
-	root := "opfs-chrome-volume-reset-incompat-" + time.Now().Format("150405.000000000")
+	root := "opfs-chrome-volume-reject-incompat-" + time.Now().Format("150405.000000000")
 	s.runWorker(t, workerArgs{
 		scenario: "clear",
 		root:     root,
@@ -1527,22 +1226,21 @@ func TestOpfsChromeVolumeRuntimeResetsIncompatibleRoot(t *testing.T) {
 	s.runWorker(t, workerArgs{
 		scenario: "volume-runtime-seed-incompatible",
 		root:     root,
-		shards:   defaultShards,
 	})
 	s.runWorker(t, workerArgs{
-		scenario: "volume-runtime-verify-incompatible-reset",
+		scenario: "volume-runtime-verify-incompatible-rejected",
 		root:     root,
-		shards:   defaultShards,
 	})
 }
 
-func TestOpfsChromeVolumeRuntimeResetsUnknownRoot(t *testing.T) {
+// TestOpfsChromeVolumeRuntimeRejectsUnknownRootWithoutMutation requires unrecognized saved bytes to remain intact.
+func TestOpfsChromeVolumeRuntimeRejectsUnknownRootWithoutMutation(t *testing.T) {
 	requireChromeProfile(t, chromeSmoke)
 	h := newChromeHarness(t)
 	s := h.newSession(t)
 	defer s.close(t)
 
-	root := "opfs-chrome-volume-reset-unknown-" + time.Now().Format("150405.000000000")
+	root := "opfs-chrome-volume-reject-unknown-" + time.Now().Format("150405.000000000")
 	s.runWorker(t, workerArgs{
 		scenario: "clear",
 		root:     root,
@@ -1550,15 +1248,14 @@ func TestOpfsChromeVolumeRuntimeResetsUnknownRoot(t *testing.T) {
 	s.runWorker(t, workerArgs{
 		scenario: "volume-runtime-seed-unknown",
 		root:     root,
-		shards:   defaultShards,
 	})
 	s.runWorker(t, workerArgs{
-		scenario: "volume-runtime-verify-unknown-reset",
+		scenario: "volume-runtime-verify-unknown-rejected",
 		root:     root,
-		shards:   defaultShards,
 	})
 }
 
+// TestOpfsChromeWorldInitUnixFS checks world initialization through the product volume.
 func TestOpfsChromeWorldInitUnixFS(t *testing.T) {
 	requireChromeProfile(t, chromeSmoke)
 	h := newChromeHarness(t)
@@ -1573,10 +1270,10 @@ func TestOpfsChromeWorldInitUnixFS(t *testing.T) {
 	s.runWorker(t, workerArgs{
 		scenario: "world-init-unixfs",
 		root:     root,
-		shards:   defaultShards,
 	})
 }
 
+// TestOpfsChromeWorldCoordinatorMultiWriter checks serialized world writes and stale-head rejection.
 func TestOpfsChromeWorldCoordinatorMultiWriter(t *testing.T) {
 	requireChromeProfile(t, chromeSmoke)
 	h := newChromeHarness(t)
@@ -1591,61 +1288,10 @@ func TestOpfsChromeWorldCoordinatorMultiWriter(t *testing.T) {
 	s.runWorker(t, workerArgs{
 		scenario: "world-coord-multi-writer",
 		root:     root,
-		shards:   defaultShards,
 	})
 }
 
-func TestOpfsChromeMetaReadTxServesOneGeneration(t *testing.T) {
-	requireChromeProfile(t, chromeSmoke)
-	h := newChromeHarness(t)
-	s := h.newSession(t)
-	defer s.close(t)
-
-	root := "opfs-chrome-meta-read-isolation-" + time.Now().Format("150405.000000000")
-	s.runWorker(t, workerArgs{
-		scenario: "clear",
-		root:     root,
-	})
-	s.runWorker(t, workerArgs{
-		scenario: "meta-read-isolation",
-		root:     root,
-	})
-}
-
-func TestOpfsChromeMetaShardNoticesReplacedDatabase(t *testing.T) {
-	requireChromeProfile(t, chromeSmoke)
-	h := newChromeHarness(t)
-	s := h.newSession(t)
-	defer s.close(t)
-
-	root := "opfs-chrome-meta-reset-identity-" + time.Now().Format("150405.000000000")
-	s.runWorker(t, workerArgs{
-		scenario: "clear",
-		root:     root,
-	})
-	s.runWorker(t, workerArgs{
-		scenario: "meta-reset-identity",
-		root:     root,
-	})
-}
-
-func TestOpfsChromeMetaShardReusesFallbackState(t *testing.T) {
-	requireChromeProfile(t, chromeSmoke)
-	h := newChromeHarness(t)
-	s := h.newSession(t)
-	defer s.close(t)
-
-	root := "opfs-chrome-meta-fallback-shortcut-" + time.Now().Format("150405.000000000")
-	s.runWorker(t, workerArgs{
-		scenario: "clear",
-		root:     root,
-	})
-	s.runWorker(t, workerArgs{
-		scenario: "meta-fallback-shortcut",
-		root:     root,
-	})
-}
-
+// TestOpfsChromeWorldDeferredCrashRecovery checks recovery at the last explicit world Sync.
 func TestOpfsChromeWorldDeferredCrashRecovery(t *testing.T) {
 	requireChromeProfile(t, chromeSmoke)
 	h := newChromeHarness(t)
@@ -1660,10 +1306,10 @@ func TestOpfsChromeWorldDeferredCrashRecovery(t *testing.T) {
 	s.runWorker(t, workerArgs{
 		scenario: "world-deferred-crash-recovery",
 		root:     root,
-		shards:   defaultShards,
 	})
 }
 
+// TestOpfsChromeTinyGoWorldLargeUnixFSUpload checks large world file write and readback under TinyGo.
 func TestOpfsChromeTinyGoWorldLargeUnixFSUpload(t *testing.T) {
 	requireChromeProfile(t, chromeSmoke)
 	if os.Getenv(tinyGoEnv) != "1" && !strings.EqualFold(os.Getenv(tinyGoEnv), "true") {
@@ -1683,10 +1329,10 @@ func TestOpfsChromeTinyGoWorldLargeUnixFSUpload(t *testing.T) {
 		scenario:   "world-large-unixfs-upload",
 		root:       root,
 		iterations: envIntDefault(t, largeSizeEnv, 68056093),
-		shards:     defaultShards,
 	})
 }
 
+// TestOpfsChromeTinyGoWorldResourceLargeUnixFSUpload checks large resource uploads under TinyGo.
 func TestOpfsChromeTinyGoWorldResourceLargeUnixFSUpload(t *testing.T) {
 	requireChromeProfile(t, chromeSmoke)
 	if os.Getenv(tinyGoEnv) != "1" && !strings.EqualFold(os.Getenv(tinyGoEnv), "true") {
@@ -1707,10 +1353,10 @@ func TestOpfsChromeTinyGoWorldResourceLargeUnixFSUpload(t *testing.T) {
 		root:       root,
 		iterations: envIntDefault(t, largeSizeEnv, 68056093),
 		batch:      envInt(t, resourceReadChunkEnv),
-		shards:     defaultShards,
 	})
 }
 
+// TestOpfsChromeTinyGoWorldResourceDirectUploadTreeLargeUnixFSUpload isolates direct UploadTree from RPC.
 func TestOpfsChromeTinyGoWorldResourceDirectUploadTreeLargeUnixFSUpload(t *testing.T) {
 	requireChromeProfile(t, chromeSmoke)
 	if os.Getenv(tinyGoEnv) != "1" && !strings.EqualFold(os.Getenv(tinyGoEnv), "true") {
@@ -1731,10 +1377,10 @@ func TestOpfsChromeTinyGoWorldResourceDirectUploadTreeLargeUnixFSUpload(t *testi
 		root:       root,
 		iterations: envIntDefault(t, largeSizeEnv, 68056093),
 		batch:      envInt(t, resourceReadChunkEnv),
-		shards:     defaultShards,
 	})
 }
 
+// TestOpfsChromeTinyGoWorldControllerResourceLargeUnixFSUpload checks controller-backed resource uploads.
 func TestOpfsChromeTinyGoWorldControllerResourceLargeUnixFSUpload(t *testing.T) {
 	requireChromeProfile(t, chromeSmoke)
 	if os.Getenv(tinyGoEnv) != "1" && !strings.EqualFold(os.Getenv(tinyGoEnv), "true") {
@@ -1755,10 +1401,10 @@ func TestOpfsChromeTinyGoWorldControllerResourceLargeUnixFSUpload(t *testing.T) 
 		root:       root,
 		iterations: envIntDefault(t, largeSizeEnv, 68056093),
 		batch:      envInt(t, resourceReadChunkEnv),
-		shards:     defaultShards,
 	})
 }
 
+// TestOpfsChromeTinyGoWorldCloudOverlayResourceLargeUnixFSUpload checks the dirty-tracking overlay upload path.
 func TestOpfsChromeTinyGoWorldCloudOverlayResourceLargeUnixFSUpload(t *testing.T) {
 	requireChromeProfile(t, chromeSmoke)
 	if os.Getenv(tinyGoEnv) != "1" && !strings.EqualFold(os.Getenv(tinyGoEnv), "true") {
@@ -1779,10 +1425,10 @@ func TestOpfsChromeTinyGoWorldCloudOverlayResourceLargeUnixFSUpload(t *testing.T
 		root:       root,
 		iterations: envIntDefault(t, largeSizeEnv, 68056093),
 		batch:      envInt(t, resourceReadChunkEnv),
-		shards:     defaultShards,
 	})
 }
 
+// TestOpfsChromeTinyGoWorldCloudSyncResourceLargeUnixFSUpload checks packing concurrent with an upload.
 func TestOpfsChromeTinyGoWorldCloudSyncResourceLargeUnixFSUpload(t *testing.T) {
 	requireChromeProfile(t, chromeSmoke)
 	if os.Getenv(tinyGoEnv) != "1" && !strings.EqualFold(os.Getenv(tinyGoEnv), "true") {
@@ -1803,10 +1449,10 @@ func TestOpfsChromeTinyGoWorldCloudSyncResourceLargeUnixFSUpload(t *testing.T) {
 		root:       root,
 		iterations: envIntDefault(t, largeSizeEnv, 68056093),
 		batch:      envInt(t, resourceReadChunkEnv),
-		shards:     defaultShards,
 	})
 }
 
+// newChromeHarness returns the initialized harness or skips when browser tests are disabled.
 func newChromeHarness(t testing.TB) *chromeHarness {
 	t.Helper()
 	if os.Getenv(runEnv) != "1" && !strings.EqualFold(os.Getenv(runEnv), "true") {
@@ -1818,6 +1464,7 @@ func newChromeHarness(t testing.TB) *chromeHarness {
 	return sharedHarness
 }
 
+// requireChromeProfile skips scenarios outside the selected test profile.
 func requireChromeProfile(t testing.TB, profiles ...string) {
 	t.Helper()
 	profile := os.Getenv(profileEnv)
@@ -1830,6 +1477,7 @@ func requireChromeProfile(t testing.TB, profiles ...string) {
 	t.Skipf("set %s=%s to run this Chrome OPFS test", profileEnv, strings.Join(profiles, " or "))
 }
 
+// envInt reads a nonnegative workload setting, returning zero when unset.
 func envInt(t testing.TB, key string) int {
 	t.Helper()
 	val := strings.TrimSpace(os.Getenv(key))
@@ -1846,6 +1494,7 @@ func envInt(t testing.TB, key string) int {
 	return n
 }
 
+// envIntDefault reads a workload setting or uses the supplied positive default.
 func envIntDefault(t testing.TB, key string, def int) int {
 	t.Helper()
 	val := envInt(t, key)
@@ -1865,11 +1514,12 @@ func BenchmarkOpfsChromeProductVolumeKVWrite(b *testing.B) {
 // BenchmarkOpfsChromeProductVolumeKVWriteSingleTx puts all values into one
 // write transaction and commits once. The delta from
 // BenchmarkOpfsChromeProductVolumeKVWrite isolates per-transaction commit
-// overhead on the product blockshard-pagestore path.
+// overhead on the product immutable-engine path.
 func BenchmarkOpfsChromeProductVolumeKVWriteSingleTx(b *testing.B) {
 	benchmarkOpfsChromeProductVolumeKVWrite(b, "volume-kv-write-single-tx")
 }
 
+// benchmarkOpfsChromeProductVolumeKVWrite measures product metadata writes in isolated worker roots.
 func benchmarkOpfsChromeProductVolumeKVWrite(b *testing.B, scenario string) {
 	requireChromeProfile(b, chromeStress)
 	h := newChromeHarness(b)
@@ -1880,7 +1530,7 @@ func benchmarkOpfsChromeProductVolumeKVWrite(b *testing.B, scenario string) {
 		b.Run(strconv.Itoa(size), func(b *testing.B) {
 			// Unique root per size and session so no run reuses another
 			// run's tree state.
-			root := fmt.Sprintf("opfs-chrome-kv-%s-%d-%d", scenario, size, time.Now().UnixNano())
+			root := "opfs-chrome-kv-" + scenario + "-" + strconv.Itoa(size) + "-" + strconv.FormatInt(time.Now().UnixNano(), 10)
 			// Pre-delete of any stale root and the final delete below both
 			// fail loudly on non-NotFound errors (clearRoot), so a live
 			// stale handle aborts instead of measuring contamination.
@@ -1893,7 +1543,6 @@ func benchmarkOpfsChromeProductVolumeKVWrite(b *testing.B, scenario string) {
 				root:       root,
 				iterations: b.N,
 				batch:      size,
-				shards:     defaultShards,
 			})
 			if !res.ok {
 				b.Fatal(res.err)
@@ -1912,6 +1561,8 @@ func benchmarkOpfsChromeProductVolumeKVWrite(b *testing.B, scenario string) {
 	}
 }
 
+// startChromeHarness builds and serves the assets, then launches the selected browser.
+// The caller owns the returned harness and closes it after all sessions finish.
 func startChromeHarness() (*chromeHarness, error) {
 	dir, err := os.MkdirTemp("", "opfs-chrometest-*")
 	if err != nil {
@@ -1923,26 +1574,42 @@ func startChromeHarness() (*chromeHarness, error) {
 	}
 
 	server := newServer(dir)
+	browserName := os.Getenv("RUN_OPFS_BROWSER")
+	if browserName == "" {
+		browserName = "chromium"
+	}
+	if browserName != "chromium" && browserName != "webkit" {
+		server.Close()
+		os.RemoveAll(dir)
+		return nil, errors.New("RUN_OPFS_BROWSER must be chromium or webkit")
+	}
+
 	if err := playwright.Install(&playwright.RunOptions{
-		Browsers: []string{"chromium"},
+		Browsers: []string{browserName},
 		Stdout:   os.Stdout,
 		Stderr:   os.Stderr,
 	}); err != nil {
 		server.Close()
 		os.RemoveAll(dir)
-		return nil, errors.Wrap(err, "install playwright chromium")
+		return nil, errors.Wrap(err, "install playwright "+browserName)
 	}
+
 	pw, err := playwright.Run()
 	if err != nil {
 		server.Close()
 		os.RemoveAll(dir)
 		return nil, errors.Wrap(err, "start playwright")
 	}
+
+	browserType := pw.Chromium
+	if browserName == "webkit" {
+		browserType = pw.WebKit
+	}
 	headless := true
 	launchOpts := playwright.BrowserTypeLaunchOptions{
 		Headless: &headless,
 	}
-	if gpuEnabled := chrometestGPUEnabled(); gpuEnabled {
+	if browserName == "chromium" && chrometestGPUEnabled() {
 		channel := "chromium"
 		launchOpts.Channel = &channel
 		headless = false
@@ -1955,21 +1622,24 @@ func startChromeHarness() (*chromeHarness, error) {
 			"--enable-features=Vulkan",
 		}
 	}
-	browser, err := pw.Chromium.Launch(launchOpts)
+
+	browser, err := browserType.Launch(launchOpts)
 	if err != nil {
 		pw.Stop()
 		server.Close()
 		os.RemoveAll(dir)
-		return nil, errors.Wrap(err, "launch chromium")
+		return nil, errors.Wrap(err, "launch "+browserName)
 	}
 	return &chromeHarness{
-		dir:     dir,
-		server:  server,
-		pw:      pw,
-		browser: browser,
+		dir:         dir,
+		server:      server,
+		pw:          pw,
+		browser:     browser,
+		browserType: browserType,
 	}, nil
 }
 
+// close releases browser resources before the server and generated assets.
 func (h *chromeHarness) close() {
 	if h.browser != nil {
 		if err := h.browser.Close(); err != nil {
@@ -1989,8 +1659,15 @@ func (h *chromeHarness) close() {
 	}
 }
 
+// newSession opens an isolated browser context and its initial page.
+// WebKit uses a persistent context because its ephemeral context lacks OPFS.
 func (h *chromeHarness) newSession(t testing.TB) *chromeSession {
 	t.Helper()
+
+	if h.browserType.Name() == "webkit" {
+		return h.newPersistentSession(t, "webkit-"+strconv.FormatInt(time.Now().UnixNano(), 10))
+	}
+
 	ctx, err := h.browser.NewContext()
 	if err != nil {
 		t.Fatal(err)
@@ -2000,13 +1677,15 @@ func (h *chromeHarness) newSession(t testing.TB) *chromeSession {
 	return s
 }
 
+// newPersistentSession opens one named browser profile and its initial page.
 func (h *chromeHarness) newPersistentSession(t testing.TB, name string) *chromeSession {
 	t.Helper()
+
 	headless := true
 	persistOpts := playwright.BrowserTypeLaunchPersistentContextOptions{
 		Headless: &headless,
 	}
-	if chrometestGPUEnabled() {
+	if h.browserType.Name() == "chromium" && chrometestGPUEnabled() {
 		channel := "chromium"
 		persistOpts.Channel = &channel
 		headless = false
@@ -2019,7 +1698,8 @@ func (h *chromeHarness) newPersistentSession(t testing.TB, name string) *chromeS
 			"--enable-features=Vulkan",
 		}
 	}
-	ctx, err := h.pw.Chromium.LaunchPersistentContext(filepath.Join(h.dir, name), persistOpts)
+
+	ctx, err := h.browserType.LaunchPersistentContext(filepath.Join(h.dir, name), persistOpts)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2028,15 +1708,19 @@ func (h *chromeHarness) newPersistentSession(t testing.TB, name string) *chromeS
 	return s
 }
 
+// close releases this session's page and profile resources through its context.
 func (s *chromeSession) close(t testing.TB) {
 	t.Helper()
+
 	if err := s.ctx.Close(); err != nil {
 		t.Error(err)
 	}
 }
 
+// reopenPage replaces the current page while preserving its URL and context.
 func (s *chromeSession) reopenPage(t testing.TB) {
 	t.Helper()
+
 	url := s.page.URL()
 	if err := s.page.Close(); err != nil {
 		t.Fatal(err)
@@ -2044,8 +1728,10 @@ func (s *chromeSession) reopenPage(t testing.TB) {
 	s.openPage(t, url)
 }
 
+// openPage creates the session page and waits for its initial document.
 func (s *chromeSession) openPage(t testing.TB, url string) {
 	t.Helper()
+
 	page, err := s.ctx.NewPage()
 	if err != nil {
 		if closeErr := s.ctx.Close(); closeErr != nil {
@@ -2059,6 +1745,7 @@ func (s *chromeSession) openPage(t testing.TB, url string) {
 	page.On("pageerror", func(err error) {
 		t.Errorf("page error: %v", err)
 	})
+
 	resp, err := page.Goto(url, playwright.PageGotoOptions{
 		WaitUntil: playwright.WaitUntilStateDomcontentloaded,
 		Timeout:   playwright.Float(30000),
@@ -2078,6 +1765,7 @@ func (s *chromeSession) openPage(t testing.TB, url string) {
 	s.page = page
 }
 
+// readStorageSnapshot measures origin quota and all OPFS files in the isolated context.
 func (s *chromeSession) readStorageSnapshot(t testing.TB) storageSnapshot {
 	t.Helper()
 	raw, err := s.page.Evaluate(`async () => {
@@ -2138,12 +1826,14 @@ func (s *chromeSession) readStorageSnapshot(t testing.TB) storageSnapshot {
 	}
 }
 
+// runWorker runs one worker to a successful terminal result.
 func (s *chromeSession) runWorker(t testing.TB, args workerArgs) workerResult {
 	t.Helper()
 	results := s.runWorkers(t, []workerArgs{args})
 	return results[0]
 }
 
+// runWorkers starts a group of workers concurrently and checks their results.
 func (s *chromeSession) runWorkers(t testing.TB, args []workerArgs) []workerResult {
 	t.Helper()
 	return s.runWorkersScript(t, `async ({ workers }) => {
@@ -2151,6 +1841,7 @@ func (s *chromeSession) runWorkers(t testing.TB, args []workerArgs) []workerResu
 }`, map[string]any{"workers": mapWorkerArgs(args)})
 }
 
+// runWorkersStaged waits for readers to announce readiness before starting publishers.
 func (s *chromeSession) runWorkersStaged(t testing.TB, readyWorkers, workers []workerArgs) []workerResult {
 	t.Helper()
 	return s.runWorkersScript(t, `async ({ readyWorkers, workers }) => {
@@ -2161,6 +1852,7 @@ func (s *chromeSession) runWorkersStaged(t testing.TB, readyWorkers, workers []w
 	})
 }
 
+// runBlockedLockWorkers queues writers behind a holder and then releases it.
 func (s *chromeSession) runBlockedLockWorkers(t testing.TB, holder workerArgs, workers []workerArgs) []workerResult {
 	t.Helper()
 	return s.runWorkersScript(t, `async ({ holder, workers }) => {
@@ -2171,6 +1863,7 @@ func (s *chromeSession) runBlockedLockWorkers(t testing.TB, holder workerArgs, w
 	})
 }
 
+// runTerminatedLockHolderWorkers queues writers before terminating the current lock holder.
 func (s *chromeSession) runTerminatedLockHolderWorkers(
 	t testing.TB,
 	holder workerArgs,
@@ -2185,6 +1878,7 @@ func (s *chromeSession) runTerminatedLockHolderWorkers(
 	})
 }
 
+// runHeldLockCheck runs a lock probe while another worker holds the lock.
 func (s *chromeSession) runHeldLockCheck(t testing.TB, holder, check workerArgs) []workerResult {
 	t.Helper()
 	return s.runWorkersScript(t, `async ({ holder, check }) => {
@@ -2195,6 +1889,7 @@ func (s *chromeSession) runHeldLockCheck(t testing.TB, holder, check workerArgs)
 	})
 }
 
+// runTerminatedReadyWorker terminates a worker at its announced crash boundary.
 func (s *chromeSession) runTerminatedReadyWorker(t testing.TB, worker workerArgs) workerResult {
 	t.Helper()
 	results := s.runWorkersScript(t, `async ({ worker }) => {
@@ -2205,6 +1900,7 @@ func (s *chromeSession) runTerminatedReadyWorker(t testing.TB, worker workerArgs
 	return results[0]
 }
 
+// runRemoteSwapWorker replaces the remote bridge after the worker announces readiness.
 func (s *chromeSession) runRemoteSwapWorker(t testing.TB, worker workerArgs) workerResult {
 	t.Helper()
 	results := s.runWorkersScript(t, `async ({ worker }) => {
@@ -2215,6 +1911,7 @@ func (s *chromeSession) runRemoteSwapWorker(t testing.TB, worker workerArgs) wor
 	return results[0]
 }
 
+// runWorkersScript checks and logs every worker's terminal result.
 func (s *chromeSession) runWorkersScript(t testing.TB, script string, args map[string]any) []workerResult {
 	t.Helper()
 	results, err := s.evalWorkersScript(t, script, args, runWorkersScriptTimeout(t))
@@ -2230,6 +1927,7 @@ func (s *chromeSession) runWorkersScript(t testing.TB, script string, args map[s
 	return results
 }
 
+// evalWorkersScript bounds browser evaluation and preserves the last progress on failure.
 func (s *chromeSession) evalWorkersScript(
 	t testing.TB,
 	script string,
@@ -2271,6 +1969,7 @@ func (s *chromeSession) evalWorkersScript(
 	}
 }
 
+// readWorkerScriptState reads the browser watchdog snapshot when evaluation fails.
 func (s *chromeSession) readWorkerScriptState() *workerScriptEnvelope {
 	raw, err := s.page.Evaluate(`() => window.__opfsChromeWorkerWatchdog?.snapshot?.() ?? null`)
 	if err != nil || raw == nil {
@@ -2283,6 +1982,7 @@ func (s *chromeSession) readWorkerScriptState() *workerScriptEnvelope {
 	return env
 }
 
+// testContext returns the test lifetime context when the testing implementation supports it.
 func testContext(t testing.TB) context.Context {
 	ctxT, ok := t.(interface {
 		Context() context.Context
@@ -2293,6 +1993,7 @@ func testContext(t testing.TB) context.Context {
 	return ctxT.Context()
 }
 
+// runWorkersScriptTimeout leaves time for diagnostics before the Go test deadline.
 func runWorkersScriptTimeout(t testing.TB) time.Duration {
 	deadlineT, ok := t.(interface {
 		Deadline() (time.Time, bool)
@@ -2311,6 +2012,7 @@ func runWorkersScriptTimeout(t testing.TB) time.Duration {
 	return timeout
 }
 
+// buildAssets builds the worker program and browser bridge into the disposable asset directory.
 func buildAssets(dir string) error {
 	if err := buildOpfsBridgeWorker(dir); err != nil {
 		return err
@@ -2334,6 +2036,7 @@ func buildAssets(dir string) error {
 	return nil
 }
 
+// buildOpfsBridgeWorker bundles the product OPFS bridge for worker tests.
 func buildOpfsBridgeWorker(dir string) error {
 	// Resolve the repository source for the real bridge worker.
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
@@ -2362,6 +2065,7 @@ func buildOpfsBridgeWorker(dir string) error {
 	return nil
 }
 
+// buildWasm compiles the selected worker with the requested Go or TinyGo toolchain.
 func buildWasm(out string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer cancel()
@@ -2382,13 +2086,9 @@ func buildWasm(out string) error {
 		}
 		args := append([]string{"build"}, envelope.args()...)
 		args = append(args, "-o", out, program)
-		fmt.Fprintf(
-			os.Stderr,
-			"opfs chrometest wasm build: compiler=tinygo version=%q envelope=%s args=%q\n",
-			tinyGoVersion(ctx),
-			envelope.String(),
-			args,
-		)
+		os.Stderr.WriteString("opfs chrometest wasm build: compiler=tinygo version=" +
+			strconv.Quote(tinyGoVersion(ctx)) + " envelope=" + envelope.String() +
+			" args=" + strings.Join(args, " ") + "\n")
 		start := time.Now()
 		cmd := exec.CommandContext(ctx, "tinygo", args...)
 		cmd.Dir = root
@@ -2400,13 +2100,9 @@ func buildWasm(out string) error {
 		if err != nil {
 			return errors.Wrap(err, "stat TinyGo wasm artifact")
 		}
-		fmt.Fprintf(
-			os.Stderr,
-			"opfs chrometest wasm build result: compiler=tinygo elapsed=%s artifact_bytes=%d wasm_features=%s\n",
-			time.Since(start).Round(time.Millisecond),
-			info.Size(),
-			wasmFeatureEvidence(ctx, out),
-		)
+		os.Stderr.WriteString("opfs chrometest wasm build result: compiler=tinygo elapsed=" +
+			time.Since(start).Round(time.Millisecond).String() + " artifact_bytes=" +
+			strconv.FormatInt(info.Size(), 10) + " wasm_features=" + wasmFeatureEvidence(ctx, out) + "\n")
 		return nil
 	}
 	cmd := exec.CommandContext(ctx, "go", "build", "-o", out, program)
@@ -2419,17 +2115,27 @@ func buildWasm(out string) error {
 	return nil
 }
 
+// tinyGoBuildEnvelope records the exact TinyGo target and compiler settings.
 type tinyGoBuildEnvelope struct {
-	profile       string
-	target        string
-	opt           string
+	// profile selects the compiler default policy.
+	profile string
+	// target names the TinyGo build target.
+	target string
+	// opt overrides optimization when nonempty.
+	opt string
+	// panicStrategy selects panic reporting.
 	panicStrategy string
-	gc            string
-	scheduler     string
-	stackSize     string
-	llvmFeatures  string
+	// gc overrides garbage collection when nonempty.
+	gc string
+	// scheduler selects goroutine scheduling.
+	scheduler string
+	// stackSize overrides stack size when nonempty.
+	stackSize string
+	// llvmFeatures overrides target features when nonempty.
+	llvmFeatures string
 }
 
+// resolveTinyGoBuildEnvelope validates the profile and resolves requested compiler settings.
 func resolveTinyGoBuildEnvelope() (*tinyGoBuildEnvelope, error) {
 	profile := strings.TrimSpace(os.Getenv(tinyGoProfileEnv))
 	if profile == "" {
@@ -2466,6 +2172,7 @@ func resolveTinyGoBuildEnvelope() (*tinyGoBuildEnvelope, error) {
 	return env, nil
 }
 
+// args returns explicit compiler arguments, preserving target defaults when unset.
 func (e *tinyGoBuildEnvelope) args() []string {
 	args := []string{"-target", e.target}
 	if e.opt != "" {
@@ -2489,6 +2196,7 @@ func (e *tinyGoBuildEnvelope) args() []string {
 	return args
 }
 
+// String renders the selected compiler envelope for reproducible probe output.
 func (e *tinyGoBuildEnvelope) String() string {
 	features := e.llvmFeatures
 	if features == "" {
@@ -2506,33 +2214,28 @@ func (e *tinyGoBuildEnvelope) String() string {
 	if stack == "" {
 		stack = "target-default"
 	}
-	return fmt.Sprintf(
-		"%s=%s %s=%s %s=%s %s=%s %s=%s %s=%s %s=%s target=%s bldr_concepts=%s,%s,%s,%s,%s,%s,%s",
-		tinyGoProfileEnv,
-		e.profile,
-		tinyGoOptEnv,
-		opt,
-		tinyGoPanicEnv,
-		e.panicStrategy,
-		tinyGoGCEnv,
-		gc,
-		tinyGoSchedulerEnv,
-		e.scheduler,
-		tinyGoStackEnv,
-		stack,
-		tinyGoLLVMEnv,
-		features,
-		e.target,
-		gocompiler.TinyGoProfileEnv,
-		gocompiler.TinyGoOptEnv,
-		gocompiler.TinyGoPanicStrategyEnv,
-		gocompiler.TinyGoGCEnv,
-		gocompiler.TinyGoSchedulerEnv,
-		gocompiler.TinyGoStackSizeEnv,
-		gocompiler.TinyGoLLVMFeaturesEnv,
-	)
+	return strings.Join([]string{
+		tinyGoProfileEnv + "=" + e.profile,
+		tinyGoOptEnv + "=" + opt,
+		tinyGoPanicEnv + "=" + e.panicStrategy,
+		tinyGoGCEnv + "=" + gc,
+		tinyGoSchedulerEnv + "=" + e.scheduler,
+		tinyGoStackEnv + "=" + stack,
+		tinyGoLLVMEnv + "=" + features,
+		"target=" + e.target,
+		"bldr_concepts=" + strings.Join([]string{
+			gocompiler.TinyGoProfileEnv,
+			gocompiler.TinyGoOptEnv,
+			gocompiler.TinyGoPanicStrategyEnv,
+			gocompiler.TinyGoGCEnv,
+			gocompiler.TinyGoSchedulerEnv,
+			gocompiler.TinyGoStackSizeEnv,
+			gocompiler.TinyGoLLVMFeaturesEnv,
+		}, ","),
+	}, " ")
 }
 
+// tinyGoVersion reads the compiler version within a bounded subprocess lifetime.
 func tinyGoVersion(ctx context.Context) string {
 	versionCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
@@ -2544,6 +2247,7 @@ func tinyGoVersion(ctx context.Context) string {
 	return strings.TrimSpace(string(data))
 }
 
+// wasmFeatureEvidence summarizes available feature evidence from the compiled artifact.
 func wasmFeatureEvidence(ctx context.Context, wasmPath string) string {
 	objdumpCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
@@ -2577,6 +2281,7 @@ func wasmFeatureEvidence(ctx context.Context, wasmPath string) string {
 	return strings.Join(features, ";")
 }
 
+// wasmExecPath finds the runtime glue corresponding to the selected compiler.
 func wasmExecPath() (string, error) {
 	if os.Getenv(tinyGoEnv) == "1" || strings.EqualFold(os.Getenv(tinyGoEnv), "true") {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -2606,6 +2311,7 @@ func wasmExecPath() (string, error) {
 	return filepath.Join(goroot, "lib", "wasm", "wasm_exec.js"), nil
 }
 
+// repoRoot finds the module root used for worker builds.
 func repoRoot() (string, error) {
 	dir, err := os.Getwd()
 	if err != nil {
@@ -2623,6 +2329,7 @@ func repoRoot() (string, error) {
 	}
 }
 
+// copyFile copies one generated asset into the test server directory.
 func copyFile(src, dst string) error {
 	data, err := os.ReadFile(src)
 	if err != nil {
@@ -2631,6 +2338,7 @@ func copyFile(src, dst string) error {
 	return os.WriteFile(dst, data, 0o644)
 }
 
+// newServer serves test assets with the browser isolation headers required by workers.
 func newServer(dir string) *httptest.Server {
 	mux := http.NewServeMux()
 	fs := http.FileServer(http.Dir(dir))
@@ -2642,6 +2350,7 @@ func newServer(dir string) *httptest.Server {
 	return httptest.NewServer(mux)
 }
 
+// decodeWorkerScriptEnvelope decodes terminal status, progress, and worker results.
 func decodeWorkerScriptEnvelope(raw any) (*workerScriptEnvelope, error) {
 	m, ok := raw.(map[string]any)
 	if !ok {
@@ -2660,6 +2369,7 @@ func decodeWorkerScriptEnvelope(raw any) (*workerScriptEnvelope, error) {
 	}, nil
 }
 
+// decodeWorkerScriptProgress decodes optional progress while retaining field presence.
 func decodeWorkerScriptProgress(raw any) workerScriptProgress {
 	m, ok := raw.(map[string]any)
 	if !ok {
@@ -2680,6 +2390,7 @@ func decodeWorkerScriptProgress(raw any) workerScriptProgress {
 	}
 }
 
+// decodeWorkerResults decodes the worker identity, status, and supported timing fields.
 func decodeWorkerResults(raw any) ([]workerResult, error) {
 	list, ok := raw.([]any)
 	if !ok {
@@ -2691,14 +2402,7 @@ func decodeWorkerResults(raw any) ([]workerResult, error) {
 		if !ok {
 			return nil, errors.Errorf("unexpected result item %T", item)
 		}
-		extra := make(map[string]int)
-		for _, key := range materializeMetricKeys {
-			if value, ok := intFieldOK(m, key); ok {
-				extra[key] = value
-			}
-		}
 		results[i] = workerResult{
-			extra:    extra,
 			scenario: stringField(m, "scenario"),
 			worker:   intField(m, "worker"),
 			ok:       boolField(m, "ok"),
@@ -2707,9 +2411,6 @@ func decodeWorkerResults(raw any) ([]workerResult, error) {
 				m,
 				"durationMs",
 			),
-			writeMS:       intField(m, "writeMs"),
-			blocks:        intField(m, "blocks"),
-			publishGen:    intField(m, "publishGen"),
 			remoteHandles: intField(m, "remoteHandles"),
 			opNanos:       int64Field(m, "opNanos"),
 			ops:           int64Field(m, "ops"),
@@ -2718,6 +2419,7 @@ func decodeWorkerResults(raw any) ([]workerResult, error) {
 	return results, nil
 }
 
+// mapWorkerArgs converts worker configurations to browser argument objects.
 func mapWorkerArgs(args []workerArgs) []map[string]any {
 	out := make([]map[string]any, len(args))
 	for i, arg := range args {
@@ -2726,6 +2428,7 @@ func mapWorkerArgs(args []workerArgs) []map[string]any {
 	return out
 }
 
+// mapSingleWorkerArg encodes one worker configuration for browser dispatch.
 func mapSingleWorkerArg(arg workerArgs) map[string]any {
 	return map[string]any{
 		"scenario":   arg.scenario,
@@ -2735,11 +2438,10 @@ func mapSingleWorkerArg(arg workerArgs) map[string]any {
 		"iterations": arg.iterations,
 		"batch":      arg.batch,
 		"remote":     arg.remote,
-		"shards":     arg.shards,
-		"metrics":    arg.metrics,
 	}
 }
 
+// stringField reads an optional string from a browser result object.
 func stringField(m map[string]any, key string) string {
 	if v, ok := m[key].(string); ok {
 		return v
@@ -2747,6 +2449,7 @@ func stringField(m map[string]any, key string) string {
 	return ""
 }
 
+// boolField reads an optional boolean from a browser result object.
 func boolField(m map[string]any, key string) bool {
 	if v, ok := m[key].(bool); ok {
 		return v
@@ -2754,11 +2457,13 @@ func boolField(m map[string]any, key string) bool {
 	return false
 }
 
+// intField reads a browser integer or returns zero when absent.
 func intField(m map[string]any, key string) int {
 	v, _ := intFieldOK(m, key)
 	return v
 }
 
+// intFieldOK reads a browser integer while retaining field presence.
 func intFieldOK(m map[string]any, key string) (int, bool) {
 	switch v := m[key].(type) {
 	case int:
@@ -2770,11 +2475,13 @@ func intFieldOK(m map[string]any, key string) (int, bool) {
 	}
 }
 
+// int64Field reads a browser integer as int64 or returns zero when absent.
 func int64Field(m map[string]any, key string) int64 {
 	v, _ := int64FieldOK(m, key)
 	return v
 }
 
+// int64FieldOK reads a browser integer as int64 while retaining field presence.
 func int64FieldOK(m map[string]any, key string) (int64, bool) {
 	switch v := m[key].(type) {
 	case int:
@@ -2786,64 +2493,59 @@ func int64FieldOK(m map[string]any, key string) (int64, bool) {
 	}
 }
 
+// workerArgs selects one worker action and its workload dimensions.
 type workerArgs struct {
-	scenario   string
-	root       string
-	worker     int
-	workers    int
+	// scenario selects the worker action.
+	scenario string
+	// root names the disposable shared OPFS directory.
+	root string
+	// worker identifies one concurrent worker.
+	worker int
+	// workers counts the expected publishers.
+	workers int
+	// iterations sets operation count or total bytes for this scenario.
 	iterations int
-	batch      int
-	shards     int
-	remote     bool
-	metrics    bool
+	// batch sets batch size or readback window for this scenario.
+	batch int
+	// remote routes OPFS through the product bridge.
+	remote bool
 }
 
-var materializeMetricKeys = []string{
-	"generationDelta",
-	"pendingEntries",
-	"acceptedRequests",
-	"acceptedEntries",
-	"acceptedBytes",
-	"actorCycles",
-	"drainRounds",
-	"publishAttempts",
-	"publishSuccesses",
-	"publishErrors",
-	"publishErrorEntries",
-	"publishedEntries",
-	"publishedBytes",
-	"publishedSegments",
-	"manifestSlotReads",
-	"manifestWrites",
-	"reclaimCalls",
-	"reclaimHits",
-	"reclaimDeletes",
-	"reclaimNs",
-}
-
+// workerResult contains one worker's terminal status and optional operation timings.
 type workerResult struct {
-	extra         map[string]int
-	scenario      string
-	worker        int
-	ok            bool
-	err           string
-	durationMS    int
-	writeMS       int
-	blocks        int
-	publishGen    int
+	// scenario identifies the completed action.
+	scenario string
+	// worker identifies the worker instance.
+	worker int
+	// ok reports successful completion.
+	ok bool
+	// err contains the terminal error when unsuccessful.
+	err string
+	// durationMS measures total worker duration in milliseconds.
+	durationMS int
+	// remoteHandles reports live bridge handles at completion.
 	remoteHandles int
-	opNanos       int64
-	ops           int64
+	// opNanos measures only the requested storage operations in nanoseconds.
+	opNanos int64
+	// ops counts the measured storage operations.
+	ops int64
 }
 
+// workerScriptEnvelope contains watchdog status and any completed worker results.
 type workerScriptEnvelope struct {
-	status    string
-	results   []workerResult
-	progress  workerScriptProgress
+	// status distinguishes success, timeout, and browser exception.
+	status string
+	// results contains completed worker results.
+	results []workerResult
+	// progress retains the last reported worker phase.
+	progress workerScriptProgress
+	// exception contains the browser exception text.
 	exception string
+	// timeoutMS records the evaluation deadline in milliseconds.
 	timeoutMS int
 }
 
+// describe renders terminal status together with the last worker progress.
 func (e *workerScriptEnvelope) describe(status string) string {
 	parts := []string{"opfs worker script " + status}
 	if e.timeoutMS != 0 {
@@ -2858,17 +2560,27 @@ func (e *workerScriptEnvelope) describe(status string) string {
 	return strings.Join(parts, ": ")
 }
 
+// workerScriptProgress retains the latest worker phase and optional progress coordinates.
 type workerScriptProgress struct {
-	scenario  string
-	worker    int
+	// scenario identifies the reporting action.
+	scenario string
+	// worker identifies the reporting worker when hasWorker is set.
+	worker int
+	// hasWorker distinguishes worker zero from an absent worker.
 	hasWorker bool
-	phase     string
-	offset    int
+	// phase names the current operation stage.
+	phase string
+	// offset records completed progress when hasOffset is set.
+	offset int
+	// hasOffset distinguishes progress zero from absent progress.
 	hasOffset bool
-	total     int
-	hasTotal  bool
+	// total records the target count when hasTotal is set.
+	total int
+	// hasTotal distinguishes a zero target from an absent target.
+	hasTotal bool
 }
 
+// describe renders the latest progress coordinates for failure diagnostics.
 func (p workerScriptProgress) describe() string {
 	if p.scenario == "" && !p.hasWorker && p.phase == "" && !p.hasOffset && !p.hasTotal {
 		return "none"
@@ -2930,6 +2642,7 @@ const opfsWorkerScriptEnvelope = `async ({ script, args, timeoutMs }) => {
   return await Promise.race([run, timeout])
 }`
 
+// indexHTML hosts the browser worker lifecycle and synchronization helpers.
 const indexHTML = `<!doctype html>
 <html>
   <head>
@@ -3236,6 +2949,7 @@ const indexHTML = `<!doctype html>
 </html>
 `
 
+// workerJS loads the compiled Go program inside a disposable worker.
 const workerJS = `importScripts('/wasm_exec.js')
 
 self.__BLDR_TINYGO_STORED_BYTES = new Map()
@@ -3803,8 +3517,6 @@ self.onmessage = async (event) => {
     String(args.workers ?? 1),
     String(args.iterations ?? 1),
     String(args.batch ?? 1),
-    String(args.shards ?? 4),
-    String(args.metrics ?? false),
   ]
   self.__OPFS_CHROMETEST_ARGS = go.argv
   if (go.importObject.gojs && typeof go.importObject.gojs['runtime.getRandomData'] !== 'function') {

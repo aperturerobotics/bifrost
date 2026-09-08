@@ -8,31 +8,37 @@ import (
 	"github.com/s4wave/spacewave/db/coord"
 	coord_inmem "github.com/s4wave/spacewave/db/coord/inmem"
 	"github.com/s4wave/spacewave/db/opfs/filelock"
-	"github.com/s4wave/spacewave/db/volume/js/opfs/blockshard"
-	"github.com/s4wave/spacewave/db/volume/js/opfs/metashard"
 )
 
-// Coordinator adapts OPFS Web Locks, metashard generations, and
-// BroadcastChannel invalidations into the Volume coordinator contract.
-type Coordinator struct {
-	meta       *metashard.MetaShard
-	inner      *coord_inmem.Coordinator
-	lockPrefix string
-	blockScope string
+// GenerationSource reads the latest committed storage generation.
+type GenerationSource interface {
+	// RefreshGenerationContext reads the authoritative logical revision.
+	RefreshGenerationContext(context.Context) (uint64, error)
+	// WaitGeneration waits for a later durable logical revision or cancellation.
+	WaitGeneration(context.Context, uint64) (uint64, error)
 }
 
-// NewCoordinator builds an OPFS-backed coordinator. meta may be nil for
-// backends with Web Lock exclusion but no metashard generation store; the
-// inner coordinator then carries generations alone.
-func NewCoordinator(meta *metashard.MetaShard, lockPrefix string, inner *coord_inmem.Coordinator) *Coordinator {
+// Coordinator adapts OPFS Web Locks, committed generations, and
+// BroadcastChannel invalidations into the Volume coordinator contract.
+type Coordinator struct {
+	// meta owns durable logical revisions and their notification lifetime.
+	meta GenerationSource
+	// inner owns local logical leases and detailed prefix/root events.
+	inner *coord_inmem.Coordinator
+	// lockPrefix scopes logical write leases to the mounted volume.
+	lockPrefix string
+}
+
+// NewCoordinator builds an OPFS-backed coordinator. source may be nil when the
+// inner coordinator carries generations alone.
+func NewCoordinator(source GenerationSource, lockPrefix string, inner *coord_inmem.Coordinator) *Coordinator {
 	if inner == nil {
 		inner = coord_inmem.NewCoordinator()
 	}
 	return &Coordinator{
-		meta:       meta,
+		meta:       source,
 		inner:      inner,
 		lockPrefix: lockPrefix,
-		blockScope: lockPrefix + "/blocks",
 	}
 }
 
@@ -55,7 +61,7 @@ func (c *Coordinator) Capability(ctx context.Context, scope coord.Scope) (*coord
 		return capability, nil
 	}
 
-	// Read the metashard generation for root scopes.
+	// Read the committed generation for root scopes.
 	generation, err := c.generation(ctx, scope)
 	if err != nil {
 		return nil, err
@@ -64,9 +70,9 @@ func (c *Coordinator) Capability(ctx context.Context, scope coord.Scope) (*coord
 	return capability, nil
 }
 
-// Snapshot returns the latest metashard generation and coordinator root.
+// Snapshot returns the latest committed generation and coordinator root.
 func (c *Coordinator) Snapshot(ctx context.Context, scope coord.Scope) (*coord.Snapshot, error) {
-	// Read the inner snapshot before overlaying metashard generation.
+	// Read the inner snapshot before overlaying the committed generation.
 	snapshot, err := c.inner.Snapshot(ctx, scope)
 	if err != nil {
 		return nil, err
@@ -75,7 +81,7 @@ func (c *Coordinator) Snapshot(ctx context.Context, scope coord.Scope) (*coord.S
 		return snapshot, nil
 	}
 
-	// Refresh the generation only when this coordinator has a metashard.
+	// Refresh the generation only when this coordinator has a committed source.
 	snapshot.Generation, err = c.generation(ctx, scope)
 	if err != nil {
 		return nil, err
@@ -94,14 +100,14 @@ func (c *Coordinator) Watch(ctx context.Context, scope coord.Scope, afterGenerat
 	// Create and start the combined watch lifecycle.
 	ctx, cancel := context.WithCancel(ctx)
 	w := &watch{
-		ctx:      ctx,
-		cancel:   cancel,
-		c:        c,
-		scope:    scope,
-		inner:    inner,
-		listener: blockshard.NewListener(c.blockScope),
-		events:   make(chan coord.Event, 16),
-		done:     make(chan struct{}),
+		ctx:    ctx,
+		cancel: cancel,
+		c:      c,
+		scope:  scope,
+		inner:  inner,
+		after:  afterGeneration,
+		events: make(chan coord.Event, 16),
+		done:   make(chan struct{}),
 	}
 	w.start()
 	return w, nil
@@ -146,8 +152,9 @@ func (c *Coordinator) WaitAcquireWriteLease(ctx context.Context, scope coord.Sco
 	return &lease{c: c, scope: scope, inner: inner, releaseWebLock: releaseWebLock}, nil
 }
 
+// generation reads the durable logical revision or the standalone local source.
 func (c *Coordinator) generation(ctx context.Context, scope coord.Scope) (uint64, error) {
-	// Reject canceled generation reads before consulting metashard state.
+	// Reject canceled generation reads before consulting committed state.
 	if err := ctx.Err(); err != nil {
 		return 0, err
 	}

@@ -11,12 +11,11 @@ import (
 	"github.com/s4wave/spacewave/db/unixfs"
 	volume_controller "github.com/s4wave/spacewave/db/volume/controller"
 	volume_opfs "github.com/s4wave/spacewave/db/volume/js/opfs"
-	"github.com/s4wave/spacewave/db/volume/js/opfs/blockshard"
-	"github.com/s4wave/spacewave/db/volume/js/opfs/pagestore"
 )
 
 // OpfsStorage implements OPFS-backed browser storage.
 type OpfsStorage struct {
+	// prefix namespaces persisted volume directories.
 	prefix string
 }
 
@@ -39,17 +38,11 @@ func (s *OpfsStorage) AddFactories(b bus.Bus, sr *static.Resolver) {
 func (s *OpfsStorage) BuildVolumeConfig(id string, baseVolCtrlConf *volume_controller.Config) (config.Config, error) {
 	rootPath := s.prefix + id
 	return &volume_opfs.Config{
-		RootPath:                 rootPath,
-		LockPrefix:               rootPath,
-		BlockShardCount:          blockshard.DefaultShardCount,
-		BlockCompactionTrigger:   8,
-		BlockMaxSegmentDataBytes: blockshard.DefaultMaxSegmentDataBytes,
-		MetaShardCount:           1,
-		PageSize:                 pagestore.DefaultPageSize,
-		DriverMode:               "auto",
-		StorageFormatVersion:     2,
-		ResetPolicy:              "automatic",
-		VolumeConfig:             baseVolCtrlConf,
+		RootPath:             rootPath,
+		LockPrefix:           rootPath,
+		DriverMode:           "auto",
+		StorageFormatVersion: 3,
+		VolumeConfig:         baseVolCtrlConf,
 	}, nil
 }
 
@@ -78,6 +71,7 @@ func (s *OpfsStorage) DeleteVolume(id string) error {
 	return nil
 }
 
+// init registers the OPFS storage provider for browser builds.
 func init() {
 	storageMethods = append(storageMethods, func(b bus.Bus, prefix string) []storage.Storage {
 		return []storage.Storage{NewOpfsStorage(prefix)}

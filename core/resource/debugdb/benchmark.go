@@ -13,22 +13,27 @@ import (
 	block_gc "github.com/s4wave/spacewave/db/block/gc"
 	"github.com/s4wave/spacewave/db/opfs"
 	volume_opfs "github.com/s4wave/spacewave/db/volume/js/opfs"
-	"github.com/s4wave/spacewave/db/volume/js/opfs/blockshard"
-	"github.com/s4wave/spacewave/db/volume/js/opfs/pagestore"
 	s4wave_debugdb "github.com/s4wave/spacewave/sdk/debugdb"
 	"github.com/sirupsen/logrus"
 )
 
 // BenchmarkRunner executes storage benchmark suites against a throw-away volume.
 type BenchmarkRunner struct {
-	le     *logrus.Entry
+	// le reports execution and cleanup failures.
+	le *logrus.Entry
+	// config fixes the options for this benchmark run.
 	config *s4wave_debugdb.BenchmarkConfig
-	info   *s4wave_debugdb.StorageInfo
+	// info describes the runtime in which the measurements were taken.
+	info *s4wave_debugdb.StorageInfo
 
-	bcast   broadcast.Broadcast
-	done    bool
+	// bcast protects completion, results, and progress and wakes subscribers.
+	bcast broadcast.Broadcast
+	// done records completion of all selected suites.
+	done bool
+	// results remains immutable after completion.
 	results *s4wave_debugdb.BenchmarkResults
 
+	// progress is the latest measurement stage shared with watchers.
 	progress s4wave_debugdb.WatchProgressResponse
 }
 
@@ -40,12 +45,6 @@ func NewBenchmarkRunner(
 ) *BenchmarkRunner {
 	if config.GetDurationSeconds() == 0 {
 		config.DurationSeconds = 10
-	}
-	if info.GetBlockShardCount() == 0 {
-		info.BlockShardCount = blockshard.DefaultShardCount
-	}
-	if info.GetPageSize() == 0 {
-		info.PageSize = pagestore.DefaultPageSize
 	}
 	return &BenchmarkRunner{
 		le:     le,
@@ -78,21 +77,19 @@ func (r *BenchmarkRunner) Run(ctx context.Context) {
 
 	sr := newSuiteRunner(ctx, r)
 
-	// Blockshard suites: direct engine benchmarks.
-	engine, engineCleanup, err := createBlockshardEngine(ctx, &blockshard.Settings{
-		ShardCount: int(r.info.GetBlockShardCount()),
-		SyncIO:     r.info.GetSyncIo(),
-	})
+	// Engine suites benchmark the standalone immutable block store.
+	engineStore, engineCleanup, err := createEngineBlockStore(ctx)
 	if err != nil {
-		r.le.WithError(err).Warn("benchmark: failed to create blockshard engine")
+		r.le.WithError(err).Warn("benchmark: failed to create immutable engine")
 		r.finish(results, start)
 		return
 	}
-	results.Suites = append(results.Suites, sr.runBlockshardPutSingle(engine))
-	results.Suites = append(results.Suites, sr.runBlockshardPutBatch(engine))
-	results.Suites = append(results.Suites, sr.runBlockshardGet(engine))
+	putSuite, engineRefs := sr.runEnginePutSingle(engineStore)
+	results.Suites = append(results.Suites, putSuite)
+	results.Suites = append(results.Suites, sr.runEnginePutBatch(engineStore))
+	results.Suites = append(results.Suites, sr.runEngineGet(engineStore, engineRefs))
 	if err := engineCleanup(); err != nil {
-		r.le.WithError(err).Warn("benchmark: failed to cleanup blockshard engine")
+		r.le.WithError(err).Warn("benchmark: failed to cleanup immutable engine")
 	}
 
 	// Block store suites: through the full StoreOps interface (includes GC wrapper).
@@ -169,12 +166,12 @@ func (r *BenchmarkRunner) GetResults(ctx context.Context) (*s4wave_debugdb.Bench
 
 // allocateVolume creates a throw-away OPFS volume for benchmarking.
 func (r *BenchmarkRunner) allocateVolume(ctx context.Context) (*volume_opfs.Opfs, func() error, error) {
-	rootPath := "debugdb-bench-" + time.Now().Format("20060102-150405")
+	rootPath := "debugdb-bench-" + time.Now().Format("20060102-150405.000000000")
 	conf := &volume_opfs.Config{
-		RootPath:        rootPath,
-		BlockShardCount: r.info.GetBlockShardCount(),
-		PageSize:        r.info.GetPageSize(),
-		SyncIo:          r.info.GetSyncIo(),
+		RootPath:             rootPath,
+		LockPrefix:           rootPath,
+		DriverMode:           "auto",
+		StorageFormatVersion: 3,
 	}
 
 	le := r.le.WithField("volume", rootPath)

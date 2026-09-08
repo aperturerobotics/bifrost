@@ -11,116 +11,77 @@ import (
 
 	"github.com/s4wave/spacewave/db/block"
 	block_gc "github.com/s4wave/spacewave/db/block/gc"
-	"github.com/s4wave/spacewave/db/block/gc/gcgraph"
-	block_gc_wal "github.com/s4wave/spacewave/db/block/gc/wal"
-	"github.com/s4wave/spacewave/db/opfs"
-	"github.com/s4wave/spacewave/db/opfs/filelock"
-	"github.com/s4wave/spacewave/db/volume/js/opfs/blockshard"
-	"github.com/s4wave/spacewave/net/hash"
+	volume_opfs "github.com/s4wave/spacewave/db/volume/js/opfs"
+	"github.com/sirupsen/logrus"
 )
 
-// testHarness sets up real OPFS-backed block store, GC graph, and WAL writer.
+// testHarness exposes one public OPFS volume's block, graph, and journal hooks.
 type testHarness struct {
-	t          *testing.T
-	root       func() // cleanup
-	blkStore   block.StoreOps
-	engine     *blockshard.Engine
-	gcGraph    *gcgraph.GCGraph
-	walWriter  *block_gc_wal.Writer
-	appender   *block_gc_wal.Appender
-	lockPrefix string
+	// t reports cleanup failures.
+	t *testing.T
+	// volume owns the disposable persisted volume.
+	volume *volume_opfs.Opfs
+	// blkStore provides the public block operations.
+	blkStore block.StoreOps
+	// gcGraph provides the public collector graph.
+	gcGraph block_gc.CollectorGraph
+	// appender records durable reference changes.
+	appender block_gc.WALAppender
+	// hooks provides replay and stop-the-world boundaries.
+	hooks block_gc.ManagerHooks
 }
 
+// newTestHarness opens the product volume and requires its GC integration hooks.
 func newTestHarness(t *testing.T, name string) *testHarness {
 	t.Helper()
-	if !opfs.SyncAvailable() {
-		t.Skip("sync access handles not available")
-	}
 
-	opfsRoot, err := opfs.GetRoot()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	dir, err := opfs.GetDirectory(opfsRoot, name, true)
-	if err != nil {
-		t.Fatal(err)
-	}
-	cleanup := func() { opfs.DeleteEntry(opfsRoot, name, true) } //nolint
-
-	blocksDir, err := opfs.GetDirectory(dir, "blocks", true)
-	if err != nil {
-		cleanup()
-		t.Fatal(err)
-	}
-	gcDir, err := opfs.GetDirectory(dir, "gc", true)
-	if err != nil {
-		cleanup()
-		t.Fatal(err)
-	}
-	graphDir, err := opfs.GetDirectory(gcDir, "graph", true)
-	if err != nil {
-		cleanup()
-		t.Fatal(err)
-	}
-	walDir, err := opfs.GetDirectory(gcDir, "wal", true)
-	if err != nil {
-		cleanup()
-		t.Fatal(err)
-	}
-
-	lockPrefix := name
+	// Open the product volume that owns the block store and GC state.
 	ctx := context.Background()
-
-	engine, err := blockshard.NewEngine(ctx, blocksDir, lockPrefix+"/blocks", blockshard.DefaultShardCount)
+	volume, err := volume_opfs.NewOpfs(
+		ctx,
+		logrus.NewEntry(logrus.New()),
+		&volume_opfs.Config{RootPath: name, LockPrefix: name},
+	)
 	if err != nil {
-		cleanup()
-		t.Fatal(err)
-	}
-	blkStore := blockshard.NewBlockStore(engine, hash.HashType_HashType_BLAKE3)
-
-	gcGraph, err := gcgraph.NewGCGraph(graphDir, lockPrefix+"/gc/graph")
-	if err != nil {
-		cleanup()
 		t.Fatal(err)
 	}
 
-	// Register volume-context roots.
-	if err := gcGraph.AddRoot(ctx, block_gc.NodeGCRoot); err != nil {
-		cleanup()
-		t.Fatal(err)
+	// Require the graph, journal, and sweep hooks exposed by the volume.
+	hooks, ok := volume.GetGCManagerHooks()
+	if !ok {
+		if err := volume.Delete(); err != nil {
+			t.Errorf("delete test volume: %v", err)
+		}
+		t.Fatal("OPFS volume has no GC manager hooks")
 	}
-	if err := gcGraph.AddRoot(ctx, block_gc.NodeUnreferenced); err != nil {
-		cleanup()
-		t.Fatal(err)
+	appender := volume.GetWALAppender()
+	if appender == nil {
+		if err := volume.Delete(); err != nil {
+			t.Errorf("delete test volume: %v", err)
+		}
+		t.Fatal("OPFS volume has no GC journal appender")
 	}
 
-	stwLock := lockPrefix + "|gc-stw"
-	orderLock := lockPrefix + "|gc-wal-order"
-	walWriter := block_gc_wal.NewWriter(walDir, lockPrefix+"/gc/wal", orderLock, stwLock)
-	appender := block_gc_wal.NewAppender(walWriter)
-
+	// Retain only public interfaces consumed by the observable sweep tests.
 	return &testHarness{
-		t:          t,
-		root:       cleanup,
-		blkStore:   blkStore,
-		engine:     engine,
-		gcGraph:    gcGraph,
-		walWriter:  walWriter,
-		appender:   appender,
-		lockPrefix: lockPrefix,
+		t:        t,
+		volume:   volume,
+		blkStore: volume,
+		gcGraph:  hooks.Graph,
+		appender: appender,
+		hooks:    hooks,
 	}
 }
 
+// cleanup deletes only this test's disposable volume.
 func (h *testHarness) cleanup() {
-	if h.engine != nil {
-		h.engine.Close()
+	if err := h.volume.Delete(); err != nil {
+		h.t.Errorf("delete test volume: %v", err)
 	}
-	h.root()
 }
 
 // newGCStoreOps creates a GCStoreOps wired to the harness block store,
-// GC graph, and WAL appender, under the given parent IRI.
+// GC graph, and journal appender, under the given parent IRI.
 func (h *testHarness) newGCStoreOps(parentIRI string) *block_gc.GCStoreOps {
 	ops := block_gc.NewGCStoreOpsWithParentAndTraceTask(
 		h.blkStore,
@@ -132,46 +93,13 @@ func (h *testHarness) newGCStoreOps(parentIRI string) *block_gc.GCStoreOps {
 	return ops
 }
 
-// replayWAL returns a WALReplayFunc that reads and applies WAL entries.
-func (h *testHarness) replayWAL() block_gc.WALReplayFunc {
-	return func(ctx context.Context, graph block_gc.CollectorGraph) (int, error) {
-		entries, filenames, err := block_gc_wal.ReadWAL(h.walWriter.Dir(), h.lockPrefix+"/gc/wal")
-		if err != nil {
-			return 0, err
-		}
-		for i, entry := range entries {
-			adds := make([]block_gc.RefEdge, len(entry.GetAdds()))
-			for j, e := range entry.GetAdds() {
-				adds[j] = block_gc.RefEdge{Subject: e.GetSubject(), Object: e.GetObject()}
-			}
-			removes := make([]block_gc.RefEdge, len(entry.GetRemoves()))
-			for j, e := range entry.GetRemoves() {
-				removes[j] = block_gc.RefEdge{Subject: e.GetSubject(), Object: e.GetObject()}
-			}
-			if err := graph.ApplyRefBatch(ctx, adds, removes); err != nil {
-				return i, err
-			}
-			if err := block_gc_wal.DeleteWALEntry(h.walWriter.Dir(), filenames[i]); err != nil {
-				return i, err
-			}
-		}
-		return len(entries), nil
-	}
-}
-
-// acquireSTW returns an STWLockFunc using the harness lock prefix.
-func (h *testHarness) acquireSTW() block_gc.STWLockFunc {
-	stwLock := h.lockPrefix + "|gc-stw"
-	return func() (func(), error) {
-		return filelock.AcquireWebLock(stwLock, true)
-	}
-}
-
 // sweepTarget wraps the block store for GC sweep deletion.
 type sweepTarget struct {
+	// blk provides block deletion during sweep.
 	blk block.StoreOps
 }
 
+// DeleteBlock removes a parsed block reference through the public store.
 func (s *sweepTarget) DeleteBlock(ctx context.Context, iri string) error {
 	ref, ok := block_gc.ParseBlockIRI(iri)
 	if !ok {
@@ -180,12 +108,13 @@ func (s *sweepTarget) DeleteBlock(ctx context.Context, iri string) error {
 	return s.blk.RmBlock(ctx, ref)
 }
 
+// DeleteObject accepts object deletion in these block-only sweep fixtures.
 func (s *sweepTarget) DeleteObject(_ context.Context, _ string) error {
 	return nil
 }
 
-// TestGCIntegrationSweepUnreachable writes blocks through GCStoreOps with
-// WAL, runs a sweep cycle, and verifies unreachable blocks are deleted
+// TestGCIntegrationSweepUnreachable writes blocks through journaled GCStoreOps,
+// runs a sweep cycle, and verifies unreachable blocks are deleted
 // while reachable blocks survive.
 func TestGCIntegrationSweepUnreachable(t *testing.T) {
 	h := newTestHarness(t, "test-gc-integ-sweep")
@@ -243,8 +172,8 @@ func TestGCIntegrationSweepUnreachable(t *testing.T) {
 	result, err := block_gc.SweepCycle(ctx, block_gc.SweepConfig{
 		Graph:      h.gcGraph,
 		Target:     target,
-		ReplayWAL:  h.replayWAL(),
-		AcquireSTW: h.acquireSTW(),
+		ReplayWAL:  h.hooks.ReplayWAL,
+		AcquireSTW: h.hooks.AcquireSTW,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -341,8 +270,8 @@ func TestGCIntegrationConcurrentWriteAndSweep(t *testing.T) {
 		_, err := block_gc.SweepCycle(ctx, block_gc.SweepConfig{
 			Graph:      h.gcGraph,
 			Target:     target,
-			ReplayWAL:  h.replayWAL(),
-			AcquireSTW: h.acquireSTW(),
+			ReplayWAL:  h.hooks.ReplayWAL,
+			AcquireSTW: h.hooks.AcquireSTW,
 		})
 		if err != nil {
 			t.Error(err)

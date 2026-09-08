@@ -38,36 +38,6 @@ export interface StorageInfo {
    */
   volumeType?: string
   /**
-   * BlockShardCount is the number of block shards.
-   *
-   * @generated from field: uint32 block_shard_count = 2;
-   */
-  blockShardCount?: number
-  /**
-   * BlockFlushThreshold is the per-shard flush entry threshold.
-   *
-   * @generated from field: uint32 block_flush_threshold = 3;
-   */
-  blockFlushThreshold?: number
-  /**
-   * BlockFlushMaxAgeMillis is the max coalescing age in milliseconds.
-   *
-   * @generated from field: uint32 block_flush_max_age_millis = 4;
-   */
-  blockFlushMaxAgeMillis?: number
-  /**
-   * PageSize is the metadata page size in bytes.
-   *
-   * @generated from field: uint32 page_size = 5;
-   */
-  pageSize?: number
-  /**
-   * SyncIo is true if sync OPFS I/O is enabled.
-   *
-   * @generated from field: bool sync_io = 6;
-   */
-  syncIo?: boolean
-  /**
    * Goos is the Go runtime GOOS value.
    *
    * @generated from field: string goos = 7;
@@ -92,26 +62,6 @@ export const StorageInfo: MessageType<StorageInfo> =
     typeName: 's4wave.debugdb.StorageInfo',
     fields: [
       { no: 1, name: 'volume_type', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'block_shard_count',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      {
-        no: 3,
-        name: 'block_flush_threshold',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      {
-        no: 4,
-        name: 'block_flush_max_age_millis',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      { no: 5, name: 'page_size', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 6, name: 'sync_io', kind: 'scalar', T: ScalarType.BOOL },
       { no: 7, name: 'goos', kind: 'scalar', T: ScalarType.STRING },
       { no: 8, name: 'goarch', kind: 'scalar', T: ScalarType.STRING },
       { no: 9, name: 'user_agent', kind: 'scalar', T: ScalarType.STRING },
@@ -168,12 +118,6 @@ export interface BenchmarkConfig {
    * @generated from field: bool include_world_suite = 3;
    */
   includeWorldSuite?: boolean
-  /**
-   * SyncIo runs the benchmark against OPFS sync file writes.
-   *
-   * @generated from field: bool sync_io = 4;
-   */
-  syncIo?: boolean
 }
 
 export const BenchmarkConfig: MessageType<BenchmarkConfig> =
@@ -194,7 +138,6 @@ export const BenchmarkConfig: MessageType<BenchmarkConfig> =
         kind: 'scalar',
         T: ScalarType.BOOL,
       },
-      { no: 4, name: 'sync_io', kind: 'scalar', T: ScalarType.BOOL },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })
@@ -422,7 +365,7 @@ export const BenchmarkMetric: MessageType<BenchmarkMetric> =
  */
 export interface BenchmarkSuite {
   /**
-   * Name is the suite name (e.g. "blockshard-put-single").
+   * Name is the suite name (e.g. "engine-put-single").
    *
    * @generated from field: string name = 1;
    */

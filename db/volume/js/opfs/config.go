@@ -23,9 +23,7 @@ func (c *Config) Validate() error {
 	default:
 		return errors.Errorf("unsupported driver_mode %q", c.GetDriverMode())
 	}
-	if policy := runtimeResetPolicy(c); policy != resetPolicyAutomatic {
-		return errors.Errorf("unsupported reset_policy %q", policy)
-	}
+
 	return nil
 }
 

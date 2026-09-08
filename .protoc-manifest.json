@@ -1538,16 +1538,6 @@
         "db/block/gc/rpc/refgraph.proto"
       ]
     },
-    "github.com/s4wave/spacewave/db/block/gc/wal": {
-      "hash": "823fa611fa27745b60f9804bd7df013d833bba4b603634babe3079ff246b84cb",
-      "generatedFiles": [
-        "db/block/gc/wal/wal.pb.go",
-        "db/block/gc/wal/wal.pb.ts"
-      ],
-      "protoFiles": [
-        "db/block/gc/wal/wal.proto"
-      ]
-    },
     "github.com/s4wave/spacewave/db/block/mock": {
       "hash": "bad57a79760d0b54d399ebc14ce8b75fb025105498dfed4ec810c55d728022e9",
       "generatedFiles": [
@@ -2336,13 +2326,23 @@
       ]
     },
     "github.com/s4wave/spacewave/db/volume/js/opfs": {
-      "hash": "f4c073f32ba06b9aa971f1ef5684fb95da0e66ee472541c0e12474b4417bb8ca",
+      "hash": "a3315c15139da59b6b3a425c21c13f93448b2fe8707bf0ae6d1c140076b063e0",
       "generatedFiles": [
         "db/volume/js/opfs/opfs.pb.go",
         "db/volume/js/opfs/opfs.pb.ts"
       ],
       "protoFiles": [
         "db/volume/js/opfs/opfs.proto"
+      ]
+    },
+    "github.com/s4wave/spacewave/db/volume/js/opfs/engine": {
+      "hash": "755fbf4e888cf8bf17e3dfbe2200070b2956e2e76a1cb72de6794908f88e5fd2",
+      "generatedFiles": [
+        "db/volume/js/opfs/engine/engine.pb.go",
+        "db/volume/js/opfs/engine/engine.pb.ts"
+      ],
+      "protoFiles": [
+        "db/volume/js/opfs/engine/engine.proto"
       ]
     },
     "github.com/s4wave/spacewave/db/volume/kvfile": {
@@ -3520,7 +3520,7 @@
       ]
     },
     "github.com/s4wave/spacewave/sdk/debugdb": {
-      "hash": "db72c24d6b91dd4c052ad2671551e07b1dfbb29e4f64dfc16d83fef1850e8770",
+      "hash": "964f58b8056dc6ce7203bfead75ab21f2d30a93b12024e80940dddfe243ae5cc",
       "generatedFiles": [
         "sdk/debugdb/debugdb.pb.go",
         "sdk/debugdb/debugdb.pb.ts",

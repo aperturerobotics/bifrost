@@ -26,16 +26,9 @@ message GetStorageInfoResponse {
 message StorageInfo {
   // VolumeType is the volume implementation type (e.g. "hydra/volume/opfs").
   string volume_type = 1;
-  // BlockShardCount is the number of block shards.
-  uint32 block_shard_count = 2;
-  // BlockFlushThreshold is the per-shard flush entry threshold.
-  uint32 block_flush_threshold = 3;
-  // BlockFlushMaxAgeMillis is the max coalescing age in milliseconds.
-  uint32 block_flush_max_age_millis = 4;
-  // PageSize is the metadata page size in bytes.
-  uint32 page_size = 5;
-  // SyncIo is true if sync OPFS I/O is enabled.
-  bool sync_io = 6;
+  // Retired mutable-shard and page-store tuning.
+  reserved 2 to 6;
+  reserved "block_shard_count", "block_flush_threshold", "block_flush_max_age_millis", "page_size", "sync_io";
   // Goos is the Go runtime GOOS value.
   string goos = 7;
   // Goarch is the Go runtime GOARCH value.
@@ -66,8 +59,8 @@ message BenchmarkConfig {
   repeated uint32 block_sizes = 2;
   // IncludeWorldSuite enables the world transaction benchmark suite.
   bool include_world_suite = 3;
-  // SyncIo runs the benchmark against OPFS sync file writes.
-  bool sync_io = 4;
+  reserved 4;
+  reserved "sync_io";
 }
 
 // WatchProgressRequest is the request type for WatchProgress.
@@ -114,7 +107,7 @@ message BenchmarkResults {
 
 // BenchmarkSuite contains results for one benchmark suite.
 message BenchmarkSuite {
-  // Name is the suite name (e.g. "blockshard-put-single").
+  // Name is the suite name (e.g. "engine-put-single").
   string name = 1;
   // Metrics is the list of measured metrics.
   repeated BenchmarkMetric metrics = 2;
