@@ -32,6 +32,10 @@ github.com/aperturerobotics/common v0.35.4 h1:MQgSHHIad71KIwV0pFqNTKm47QW93/kWJ4
 github.com/aperturerobotics/common v0.35.4/go.mod h1:eqVzmvTuSCoS31uwheXjILMcfx+jhl3VClGCT5ZxruI=
 github.com/aperturerobotics/controllerbus v0.53.5-0.20260824183849-02413eacc3de h1:FsRiEw05cnzDsNdejdIBZSmoheio7EcY0iubWbQkXpM=
 github.com/aperturerobotics/controllerbus v0.53.5-0.20260824183849-02413eacc3de/go.mod h1:rWdcZCKa8cT7kJAHERzrIq2D/qmBCAGGYkbvBKfjjH0=
+github.com/aperturerobotics/controllerbus v0.53.5-0.20260908122515-93b13ce4474b h1:Yl3CmrfjRCVKDz4KClE+Nu2E3RA0iQHUkjHOq/EwWTo=
+github.com/aperturerobotics/controllerbus v0.53.5-0.20260908122515-93b13ce4474b/go.mod h1:rWdcZCKa8cT7kJAHERzrIq2D/qmBCAGGYkbvBKfjjH0=
+github.com/aperturerobotics/controllerbus v0.53.5-0.20260908122836-c1afcdc3351c h1:LMdjiJSGcJH0kgF1+crg3BDz3BF2cIP6yecY54nGSRk=
+github.com/aperturerobotics/controllerbus v0.53.5-0.20260908122836-c1afcdc3351c/go.mod h1:rWdcZCKa8cT7kJAHERzrIq2D/qmBCAGGYkbvBKfjjH0=
 github.com/aperturerobotics/cpp-yamux v0.0.0-20260223122921-58339cfd0e5d h1:TVae+YDmMmtutvNKC5d64yXx5Woa3QIq3Ndn11J1IPQ=
 github.com/aperturerobotics/cpp-yamux v0.0.0-20260223122921-58339cfd0e5d/go.mod h1:z43wdjwvCS9HJwxnqEtWgedAqWpeK6c5vozJoGXtUug=
 github.com/aperturerobotics/esbuild v0.24.1-0.20260219011422-6d4b923e2023 h1:OFfw+2XQglhiej7liQM/YQneJTkJvENZLfR/H4zmZ8Q=
@@ -385,6 +389,8 @@ golang.org/x/lint v0.0.0-20190227174305-5b3e6a55c961/go.mod h1:wehouNa3lNwaWXcvx
 golang.org/x/lint v0.0.0-20190313153728-d0100b6bd8b3/go.mod h1:6SW0HCj/g11FgYtHlgUYUwCkIfeOF89ocIRzGO/8vkc=
 golang.org/x/mod v0.40.0 h1:hUv+3cXcdRHz08UmSiOob7sadHig73uo5bkXxQ/tvUs=
 golang.org/x/mod v0.40.0/go.mod h1:0/weTWkPWGBikyTWAX3dkjVztMmBA5hM0DH6BElSupE=
+golang.org/x/mod v0.41.0 h1:qJmnOUb4YB+FsEuM3HcWucdZASCPGhsX6uljO6pog0c=
+golang.org/x/mod v0.41.0/go.mod h1:Ek9pY8RKWXwsWvd3rQiHYtMqkjSUV+s1Rj7j4H5Ur6o=
 golang.org/x/net v0.0.0-20180724234803-3673e40ba225/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=
 golang.org/x/net v0.0.0-20180826012351-8a410e7b638d/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=
 golang.org/x/net v0.0.0-20190213061140-3a22650c66bd/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=

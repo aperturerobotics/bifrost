@@ -34,7 +34,7 @@ require (
 	github.com/aperturerobotics/cayley v0.15.1-0.20260824110931-e6b102492e31 // master
 	github.com/aperturerobotics/cli v1.1.0 // v1.1.0
 	github.com/aperturerobotics/common v0.35.4 // master
-	github.com/aperturerobotics/controllerbus v0.53.5-0.20260824183849-02413eacc3de // master
+	github.com/aperturerobotics/controllerbus v0.53.5-0.20260908122836-c1afcdc3351c // master
 	github.com/aperturerobotics/cpp-yamux v0.0.0-20260223122921-58339cfd0e5d
 	github.com/aperturerobotics/esbuild v0.24.1-0.20260219011422-6d4b923e2023 // https://github.com/evanw/esbuild/pull/3413 [rejected]
 	github.com/aperturerobotics/fastjson v0.1.2-0.20260705010846-94f343f5bb34
@@ -100,7 +100,7 @@ require (
 	go.starlark.net v0.0.0-20260904161901-6ecada49e42f
 	golang.org/x/crypto v0.56.0
 	golang.org/x/exp v0.0.0-20260824195058-e88cd73687aa
-	golang.org/x/mod v0.40.0 // latest
+	golang.org/x/mod v0.41.0 // latest
 	golang.org/x/sync v0.22.0
 	golang.org/x/sys v0.47.0
 	golang.org/x/term v0.45.0
