@@ -16,6 +16,37 @@ import (
 	state "github.com/s4wave/spacewave/sdk/chat/state"
 )
 
+// GetStateRequest selects current state for the mounted channel.
+type GetStateRequest struct {
+	unknownFields []byte
+}
+
+func (x *GetStateRequest) Reset() {
+	*x = GetStateRequest{}
+}
+
+func (*GetStateRequest) ProtoMessage() {}
+
+// GetStateResponse contains current state events with their immutable history identities.
+type GetStateResponse struct {
+	unknownFields []byte
+	// Messages is ordered by state type and state key.
+	Messages []*ChatMessageInfo `protobuf:"bytes,1,rep,name=messages,proto3" json:"messages,omitempty"`
+}
+
+func (x *GetStateResponse) Reset() {
+	*x = GetStateResponse{}
+}
+
+func (*GetStateResponse) ProtoMessage() {}
+
+func (x *GetStateResponse) GetMessages() []*ChatMessageInfo {
+	if x != nil {
+		return x.Messages
+	}
+	return nil
+}
+
 // ChatMessageInfo contains flattened message info for the client.
 type ChatMessageInfo struct {
 	unknownFields []byte
@@ -23,7 +54,8 @@ type ChatMessageInfo struct {
 	ObjectKey string `protobuf:"bytes,1,opt,name=object_key,json=objectKey,proto3" json:"objectKey,omitempty"`
 	// SenderPeerId is the sender's peer ID.
 	SenderPeerId string `protobuf:"bytes,2,opt,name=sender_peer_id,json=senderPeerId,proto3" json:"senderPeerId,omitempty"`
-	// Text is the message text content. Empty for ciphertext messages.
+	// Text is plaintext content or a readable state-change summary.
+	// Empty for ciphertext messages and annotations.
 	Text string `protobuf:"bytes,3,opt,name=text,proto3" json:"text,omitempty"`
 	// CreatedAt is the message creation timestamp.
 	CreatedAt *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=created_at,json=createdAt,proto3" json:"createdAt,omitempty"`
@@ -123,8 +155,8 @@ type GetChannelInfoResponse struct {
 	CreatedAt *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=created_at,json=createdAt,proto3" json:"createdAt,omitempty"`
 	// CreatorPeerId is the peer identity that created the channel.
 	CreatorPeerId string `protobuf:"bytes,5,opt,name=creator_peer_id,json=creatorPeerId,proto3" json:"creatorPeerId,omitempty"`
-	// EncryptionAlgorithm reports the immutable creation-time policy. Empty allows plaintext;
-	// otherwise sends require ciphertext using this algorithm.
+	// EncryptionAlgorithm reports the channel encryption policy. Empty allows plaintext;
+	// otherwise message bodies require this algorithm. State and annotations remain public.
 	EncryptionAlgorithm string `protobuf:"bytes,6,opt,name=encryption_algorithm,json=encryptionAlgorithm,proto3" json:"encryptionAlgorithm,omitempty"`
 }
 
@@ -489,6 +521,37 @@ func (x *GetReadPositionsResponse_PositionsEntry) GetValue() *state.ChatReadPosi
 	return nil
 }
 
+func (m *GetStateRequest) CloneVT() *GetStateRequest {
+	if m == nil {
+		return (*GetStateRequest)(nil)
+	}
+	r := new(GetStateRequest)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *GetStateRequest) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *GetStateResponse) CloneVT() *GetStateResponse {
+	if m == nil {
+		return (*GetStateResponse)(nil)
+	}
+	r := new(GetStateResponse)
+	r.Messages = protobuf_go_lite.CloneVTSlice(m.Messages)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *GetStateResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
 func (m *ChatMessageInfo) CloneVT() *ChatMessageInfo {
 	if m == nil {
 		return (*ChatMessageInfo)(nil)
@@ -743,6 +806,43 @@ func (m *UpdateReadPositionResponse) CloneVT() *UpdateReadPositionResponse {
 
 func (m *UpdateReadPositionResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
+}
+
+func (this *GetStateRequest) EqualVT(that *GetStateRequest) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *GetStateRequest) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*GetStateRequest)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *GetStateResponse) EqualVT(that *GetStateResponse) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.Messages, that.Messages, func() *ChatMessageInfo { return &ChatMessageInfo{} }) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *GetStateResponse) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*GetStateResponse)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
 }
 
 func (this *ChatMessageInfo) EqualVT(that *ChatMessageInfo) bool {
@@ -1091,6 +1191,99 @@ func (this *UpdateReadPositionResponse) EqualMessageVT(thatMsg any) bool {
 		return false
 	}
 	return this.EqualVT(that)
+}
+
+// MarshalProtoJSON marshals the GetStateRequest message to JSON.
+func (x *GetStateRequest) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the GetStateRequest to JSON.
+func (x *GetStateRequest) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the GetStateRequest message from JSON.
+func (x *GetStateRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		// no fields
+	})
+}
+
+// UnmarshalJSON unmarshals the GetStateRequest from JSON.
+func (x *GetStateRequest) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the GetStateResponse message to JSON.
+func (x *GetStateResponse) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if len(x.Messages) > 0 || s.HasField("messages") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("messages")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.Messages {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s.WithField("messages"))
+		}
+		s.WriteArrayEnd()
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the GetStateResponse to JSON.
+func (x *GetStateResponse) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the GetStateResponse message from JSON.
+func (x *GetStateResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "messages":
+			s.AddField("messages")
+			if s.ReadNil() {
+				x.Messages = nil
+				return
+			}
+			s.ReadArray(func() {
+				if s.ReadNil() {
+					x.Messages = append(x.Messages, nil)
+					return
+				}
+				v := &ChatMessageInfo{}
+				v.UnmarshalProtoJSON(s.WithField("messages", false))
+				if s.Err() != nil {
+					return
+				}
+				x.Messages = append(x.Messages, v)
+			})
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the GetStateResponse from JSON.
+func (x *GetStateResponse) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
 // MarshalProtoJSON marshals the ChatMessageInfo message to JSON.
@@ -1985,6 +2178,82 @@ func (x *UpdateReadPositionResponse) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
+func (m *GetStateRequest) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetStateRequest) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *GetStateRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetStateResponse) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetStateResponse) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *GetStateResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.Messages) > 0 {
+		for iNdEx := len(m.Messages) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.Messages[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *ChatMessageInfo) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -2679,6 +2948,30 @@ func (m *UpdateReadPositionResponse) MarshalToSizedBufferVT(dAtA []byte) (int, e
 	return len(dAtA) - i, nil
 }
 
+func (m *GetStateRequest) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *GetStateResponse) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	for _, e := range m.Messages {
+		l = e.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
 func (m *ChatMessageInfo) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -2891,6 +3184,38 @@ func (m *UpdateReadPositionResponse) SizeVT() (n int) {
 	}
 	n += len(m.unknownFields)
 	return n
+}
+
+func (x *GetStateRequest) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	protobuf_go_lite.TextStartMessage(&sb, "GetStateRequest")
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *GetStateRequest) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *GetStateResponse) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "GetStateResponse")
+	if len(x.Messages) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "messages")
+		for i, v := range x.Messages {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &ChatMessageInfo{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *GetStateResponse) String() string {
+	return x.MarshalProtoText()
 }
 
 func (x *ChatMessageInfo) MarshalProtoText() string {
@@ -3210,6 +3535,105 @@ func (x *UpdateReadPositionResponse) MarshalProtoText() string {
 
 func (x *UpdateReadPositionResponse) String() string {
 	return x.MarshalProtoText()
+}
+
+func (m *GetStateRequest) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetStateRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetStateRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *GetStateResponse) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetStateResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetStateResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Messages", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Messages = append(m.Messages, &ChatMessageInfo{})
+			if err := m.Messages[len(m.Messages)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
 }
 
 func (m *ChatMessageInfo) UnmarshalVT(dAtA []byte) error {

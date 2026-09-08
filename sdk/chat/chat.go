@@ -3,6 +3,7 @@ package spacewave_chat
 import (
 	"github.com/aperturerobotics/cayley/quad"
 	"github.com/s4wave/spacewave/db/block"
+	"github.com/s4wave/spacewave/db/world"
 )
 
 // ChatChannelTypeID is the type identifier for chat channel objects.
@@ -16,6 +17,15 @@ var PredChannelMessage = quad.IRI("spacewave-chat/channel-message")
 
 // PredMessageSender is the graph predicate linking a message to its sender.
 var PredMessageSender = quad.IRI("spacewave-chat/message-sender")
+
+// PredChannelState links a channel to the latest event for each state identity.
+var PredChannelState = quad.IRI("spacewave-chat/channel-state")
+
+// NewChatStateQuad links a channel state identity to its retained message.
+// Empty messageKey selects the current event for this identity in a graph query.
+func NewChatStateQuad(channelKey, messageKey, stateType, stateKey string) world.GraphQuad {
+	return world.NewGraphQuadWithKeys(channelKey, PredChannelState.String(), messageKey, quad.String(stateType+"\x00"+stateKey).String())
+}
 
 // NewChatChannelBlock constructs a new ChatChannel block.
 func NewChatChannelBlock() block.Block {

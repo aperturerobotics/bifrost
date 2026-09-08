@@ -8,7 +8,7 @@ import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
 import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-import { ChatMessageContent } from './content/content.pb.js'
+import { ChatMessageContent, ChatStateChange } from './content/content.pb.js'
 
 export const protobufPackage = 'spacewave.chat'
 
@@ -57,8 +57,8 @@ export interface ChatChannel {
    */
   creatorPeerId?: string
   /**
-   * EncryptionAlgorithm is the immutable creation-time policy. Empty allows plaintext;
-   * otherwise message bodies require this algorithm; typed annotations remain public.
+   * EncryptionAlgorithm is the channel encryption policy. Empty allows plaintext;
+   * once enabled it cannot change. Annotations and state changes remain public.
    *
    * @generated from field: string encryption_algorithm = 7;
    */
@@ -245,12 +245,18 @@ export interface CreateChatChannelOp {
    */
   timestamp?: Date
   /**
-   * EncryptionAlgorithm is the immutable creation-time policy. Empty allows plaintext;
-   * otherwise message bodies require this algorithm; typed annotations remain public.
+   * EncryptionAlgorithm initializes the channel encryption policy. Empty allows plaintext;
+   * once enabled it cannot change. Annotations and state changes remain public.
    *
    * @generated from field: string encryption_algorithm = 5;
    */
   encryptionAlgorithm?: string
+  /**
+   * InitialState is appended atomically in order with the channel creation timestamp.
+   *
+   * @generated from field: repeated spacewave.chat.ChatStateChange initial_state = 6;
+   */
+  initialState?: ChatStateChange[]
 }
 
 export const CreateChatChannelOp: MessageType<CreateChatChannelOp> =
@@ -266,6 +272,13 @@ export const CreateChatChannelOp: MessageType<CreateChatChannelOp> =
         name: 'encryption_algorithm',
         kind: 'scalar',
         T: ScalarType.STRING,
+      },
+      {
+        no: 6,
+        name: 'initial_state',
+        kind: 'message',
+        T: () => ChatStateChange,
+        repeated: true,
       },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,

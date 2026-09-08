@@ -149,6 +149,44 @@ export const ChatAnnotation: MessageType<ChatAnnotation> =
   })
 
 /**
+ * ChatStateChange replaces one channel state value while retaining its history.
+ *
+ * @generated from message spacewave.chat.ChatStateChange
+ */
+export interface ChatStateChange {
+  /**
+   * Type is an open protocol vocabulary identifying the state schema.
+   *
+   * @generated from field: string type = 1;
+   */
+  type?: string
+  /**
+   * StateKey is an external state identity within Type, not a World object key.
+   *
+   * @generated from field: string state_key = 2;
+   */
+  stateKey?: string
+  /**
+   * ContentJson is a complete JSON object, bounded to 64 KiB.
+   * The producing protocol validates its schema and canonicalizes its encoding.
+   *
+   * @generated from field: string content_json = 3;
+   */
+  contentJson?: string
+}
+
+export const ChatStateChange: MessageType<ChatStateChange> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'spacewave.chat.ChatStateChange',
+    fields: [
+      { no: 1, name: 'type', kind: 'scalar', T: ScalarType.STRING },
+      { no: 2, name: 'state_key', kind: 'scalar', T: ScalarType.STRING },
+      { no: 3, name: 'content_json', kind: 'scalar', T: ScalarType.STRING },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
  * ChatMessageContent contains the message body.
  *
  * @generated from message spacewave.chat.ChatMessageContent
@@ -189,6 +227,15 @@ export interface ChatMessageContent {
         value: ChatAnnotation
         case: 'annotation'
       }
+    | {
+        /**
+         * StateChange is public channel metadata retained in message history.
+         *
+         * @generated from field: spacewave.chat.ChatStateChange state_change = 4;
+         */
+        value: ChatStateChange
+        case: 'stateChange'
+      }
 }
 
 export const ChatMessageContent: MessageType<ChatMessageContent> =
@@ -214,6 +261,13 @@ export const ChatMessageContent: MessageType<ChatMessageContent> =
         name: 'annotation',
         kind: 'message',
         T: () => ChatAnnotation,
+        oneof: 'content',
+      },
+      {
+        no: 4,
+        name: 'state_change',
+        kind: 'message',
+        T: () => ChatStateChange,
         oneof: 'content',
       },
     ] satisfies readonly PartialFieldInfo[],

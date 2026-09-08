@@ -2,18 +2,31 @@
 // @generated from file github.com/s4wave/spacewave/sdk/chat/rpc/rpc.proto (package spacewave.chat.rpc, syntax proto3)
 /* eslint-disable */
 
-import { ChatMessageContent } from '../content/content.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import {
   createEmptyMessageType,
   createMessageType,
 } from '@aptre/protobuf-es-lite/message'
+import { ChatMessageContent } from '../content/content.pb.js'
 import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
 import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { ChatReadPosition } from '../state/state.pb.js'
 
 export const protobufPackage = 'spacewave.chat.rpc'
+
+/**
+ * GetStateRequest selects current state for the mounted channel.
+ *
+ * @generated from message spacewave.chat.rpc.GetStateRequest
+ */
+export interface GetStateRequest {}
+
+export const GetStateRequest: MessageType<GetStateRequest> =
+  /* @__PURE__ */ createEmptyMessageType<GetStateRequest>(
+    'spacewave.chat.rpc.GetStateRequest',
+    true,
+  )
 
 /**
  * ChatMessageInfo contains flattened message info for the client.
@@ -34,7 +47,8 @@ export interface ChatMessageInfo {
    */
   senderPeerId?: string
   /**
-   * Text is the message text content. Empty for ciphertext messages.
+   * Text is plaintext content or a readable state-change summary.
+   * Empty for ciphertext messages and annotations.
    *
    * @generated from field: string text = 3;
    */
@@ -83,6 +97,35 @@ export const ChatMessageInfo: MessageType<ChatMessageInfo> =
       { no: 6, name: 'index', kind: 'scalar', T: ScalarType.UINT64 },
       { no: 7, name: 'content', kind: 'message', T: () => ChatMessageContent },
       { no: 8, name: 'person_peer_id', kind: 'scalar', T: ScalarType.STRING },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
+ * GetStateResponse contains current state events with their immutable history identities.
+ *
+ * @generated from message spacewave.chat.rpc.GetStateResponse
+ */
+export interface GetStateResponse {
+  /**
+   * Messages is ordered by state type and state key.
+   *
+   * @generated from field: repeated spacewave.chat.rpc.ChatMessageInfo messages = 1;
+   */
+  messages?: ChatMessageInfo[]
+}
+
+export const GetStateResponse: MessageType<GetStateResponse> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'spacewave.chat.rpc.GetStateResponse',
+    fields: [
+      {
+        no: 1,
+        name: 'messages',
+        kind: 'message',
+        T: () => ChatMessageInfo,
+        repeated: true,
+      },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })
@@ -137,8 +180,8 @@ export interface GetChannelInfoResponse {
    */
   creatorPeerId?: string
   /**
-   * EncryptionAlgorithm reports the immutable creation-time policy. Empty allows plaintext;
-   * otherwise sends require ciphertext using this algorithm.
+   * EncryptionAlgorithm reports the channel encryption policy. Empty allows plaintext;
+   * otherwise message bodies require this algorithm. State and annotations remain public.
    *
    * @generated from field: string encryption_algorithm = 6;
    */

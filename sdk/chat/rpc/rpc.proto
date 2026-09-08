@@ -11,6 +11,8 @@ option go_package = "github.com/s4wave/spacewave/sdk/chat/rpc;spacewave_chat_rpc
 service ChatResourceService {
   // GetChannelInfo returns channel metadata and its retained history extent.
   rpc GetChannelInfo(GetChannelInfoRequest) returns (GetChannelInfoResponse);
+  // GetState returns the latest retained event for each channel state identity.
+  rpc GetState(GetStateRequest) returns (GetStateResponse);
   // GetMessage returns one message from this channel by object key.
   rpc GetMessage(GetMessageRequest) returns (GetMessageResponse);
   // ListMessages returns a bounded page of channel history.
@@ -25,13 +27,24 @@ service ChatResourceService {
   rpc UpdateReadPosition(UpdateReadPositionRequest) returns (UpdateReadPositionResponse);
 }
 
+// GetStateRequest selects current state for the mounted channel.
+message GetStateRequest {
+}
+
+// GetStateResponse contains current state events with their immutable history identities.
+message GetStateResponse {
+  // Messages is ordered by state type and state key.
+  repeated ChatMessageInfo messages = 1;
+}
+
 // ChatMessageInfo contains flattened message info for the client.
 message ChatMessageInfo {
   // ObjectKey is the message world object key.
   string object_key = 1;
   // SenderPeerId is the sender's peer ID.
   string sender_peer_id = 2;
-  // Text is the message text content. Empty for ciphertext messages.
+  // Text is plaintext content or a readable state-change summary.
+  // Empty for ciphertext messages and annotations.
   string text = 3;
   // CreatedAt is the message creation timestamp.
   .google.protobuf.Timestamp created_at = 4;
@@ -61,8 +74,8 @@ message GetChannelInfoResponse {
   .google.protobuf.Timestamp created_at = 4;
   // CreatorPeerId is the peer identity that created the channel.
   string creator_peer_id = 5;
-  // EncryptionAlgorithm reports the immutable creation-time policy. Empty allows plaintext;
-  // otherwise sends require ciphertext using this algorithm.
+  // EncryptionAlgorithm reports the channel encryption policy. Empty allows plaintext;
+  // otherwise message bodies require this algorithm. State and annotations remain public.
   string encryption_algorithm = 6;
 }
 

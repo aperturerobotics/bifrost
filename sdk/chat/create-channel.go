@@ -7,6 +7,7 @@ import (
 	"github.com/s4wave/spacewave/db/world"
 	world_types "github.com/s4wave/spacewave/db/world/types"
 	"github.com/s4wave/spacewave/net/peer"
+	spacewave_chat_rpc "github.com/s4wave/spacewave/sdk/chat/rpc"
 	"github.com/sirupsen/logrus"
 )
 
@@ -30,6 +31,11 @@ func (o *CreateChatChannelOp) Validate() error {
 	}
 	if err := o.GetTimestamp().Validate(false); err != nil {
 		return err
+	}
+	for _, state := range o.GetInitialState() {
+		if err := state.Validate(); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -73,6 +79,17 @@ func (o *CreateChatChannelOp) ApplyWorldOp(
 
 	if err := world_types.SetObjectType(ctx, ws, objKey, ChatChannelTypeID); err != nil {
 		return false, err
+	}
+
+	// Initial events share the operation's author, timestamp, and transaction.
+	resource := NewChatResource(ws, nil, objKey, sender.String())
+	for _, state := range o.GetInitialState() {
+		request := &spacewave_chat_rpc.SendMessageRequest{
+			Content: &ChatMessageContent{Content: &ChatMessageContent_StateChange{StateChange: state}},
+		}
+		if _, err := resource.appendMessage(ctx, ws, request, o.GetTimestamp()); err != nil {
+			return false, err
+		}
 	}
 
 	return false, nil

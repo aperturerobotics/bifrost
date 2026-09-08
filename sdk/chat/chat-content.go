@@ -22,3 +22,9 @@ type ChatAnnotation = spacewave_chat_content.ChatAnnotation
 
 // ChatMessageContent_Annotation carries a public reaction independently of message encryption.
 type ChatMessageContent_Annotation = spacewave_chat_content.ChatMessageContent_Annotation
+
+// ChatStateChange is a public channel state event.
+type ChatStateChange = spacewave_chat_content.ChatStateChange
+
+// ChatMessageContent_StateChange carries a retained channel state event.
+type ChatMessageContent_StateChange = spacewave_chat_content.ChatMessageContent_StateChange

@@ -41,6 +41,17 @@ message ChatAnnotation {
   string key = 2;
 }
 
+// ChatStateChange replaces one channel state value while retaining its history.
+message ChatStateChange {
+  // Type is an open protocol vocabulary identifying the state schema.
+  string type = 1;
+  // StateKey is an external state identity within Type, not a World object key.
+  string state_key = 2;
+  // ContentJson is a complete JSON object, bounded to 64 KiB.
+  // The producing protocol validates its schema and canonicalizes its encoding.
+  string content_json = 3;
+}
+
 // ChatMessageContent contains the message body.
 message ChatMessageContent {
   oneof content {
@@ -50,5 +61,7 @@ message ChatMessageContent {
     ChatCiphertext ciphertext = 2;
     // Annotation is public metadata even when message bodies require encryption.
     ChatAnnotation annotation = 3;
+    // StateChange is public channel metadata retained in message history.
+    ChatStateChange state_change = 4;
   }
 }
