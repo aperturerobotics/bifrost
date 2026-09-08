@@ -7,41 +7,80 @@ import (
 	"sync/atomic"
 
 	"github.com/s4wave/spacewave/db/coord"
-	"github.com/s4wave/spacewave/db/volume/js/opfs/blockshard"
 )
 
+// watch combines detailed local events with durable cross-runtime invalidations.
 type watch struct {
-	ctx      context.Context
-	cancel   context.CancelFunc
-	c        *Coordinator
-	scope    coord.Scope
-	inner    coord.Watch
-	listener *blockshard.Listener
-	events   chan coord.Event
-	done     chan struct{}
-	once     atomic.Bool
+	// ctx bounds delivery and both watched event sources.
+	ctx context.Context
+	// cancel interrupts queued delivery and durable generation waits.
+	cancel context.CancelFunc
+	// c supplies the authoritative generation source.
+	c *Coordinator
+	// scope identifies the watched volume and object store.
+	scope coord.Scope
+	// inner supplies local root and prefix events.
+	inner coord.Watch
+	// after excludes already observed durable revisions.
+	after uint64
+	// events is the public bounded delivery channel.
+	events chan coord.Event
+	// done joins the combined watch and its generation waiter.
+	done chan struct{}
+	// once makes source cancellation idempotent.
+	once atomic.Bool
 }
 
+// Events yields ordered local events and durable invalidation hints.
 func (w *watch) Events() <-chan coord.Event {
 	return w.events
 }
 
+// Close cancels event sources and joins the delivery loop.
 func (w *watch) Close() error {
 	var err error
 	if w.once.CompareAndSwap(false, true) {
 		w.cancel()
 		err = w.inner.Close()
-		w.listener.Close()
 		<-w.done
 	}
 	return err
 }
 
+// start owns the delivery loop and joins its generation waiter on every exit.
 func (w *watch) start() {
 	go func() {
 		defer close(w.done)
 		defer close(w.events)
 
+		// Join the storage owner's durable generation waiter on every exit.
+		ctx, cancel := context.WithCancel(w.ctx)
+		generations := make(chan uint64)
+		generationDone := make(chan struct{})
+		go func() {
+			defer close(generationDone)
+			defer close(generations)
+			if w.c.meta == nil {
+				return
+			}
+			after := w.after
+			for {
+				next, err := w.c.meta.WaitGeneration(ctx, after)
+				if err != nil {
+					return
+				}
+				select {
+				case <-ctx.Done():
+					return
+				case generations <- next:
+				}
+				after = next
+			}
+		}()
+		defer func() {
+			cancel()
+			<-generationDone
+		}()
 		innerEvents := w.inner.Events()
 		for {
 			select {
@@ -53,9 +92,13 @@ func (w *watch) start() {
 					continue
 				}
 				w.send(event)
-			case <-w.listener.Notify():
-				w.listener.DrainPending()
+			case generation, ok := <-generations:
+				if !ok {
+					generations = nil
+					continue
+				}
 				w.send(coord.Event{
+					Generation:    generation,
 					VolumeID:      w.scope.VolumeID,
 					ObjectStoreID: w.scope.ObjectStoreID,
 				})
@@ -67,6 +110,7 @@ func (w *watch) start() {
 	}()
 }
 
+// send resolves unstamped local events before cancellation-aware delivery.
 func (w *watch) send(event coord.Event) {
 	if event.Generation == 0 {
 		generation, err := w.c.generation(w.ctx, w.scope)

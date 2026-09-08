@@ -110,12 +110,18 @@ func TestGoScriptDriveStartupBench(t *testing.T) {
 // driveBenchCellInput carries the per-cell identity and the wall-clock origin a
 // cell measures milestones against.
 type driveBenchCellInput struct {
-	runStamp     string
-	navStart     time.Time
-	liveAppMs    int64
-	buildMode    string
+	// runStamp names this benchmark run.
+	runStamp string
+	// navStart is the origin for navigation milestones.
+	navStart time.Time
+	// liveAppMs records elapsed time until the app became callable.
+	liveAppMs int64
+	// buildMode identifies the compiled runtime configuration.
+	buildMode string
+	// runtimeState identifies the cold or warm worker state.
 	runtimeState string
-	cell         string
+	// cell names this measurement cell.
+	cell string
 }
 
 // runDriveBenchCell opens the Drive route on the session's current page, records
@@ -232,6 +238,7 @@ func runDriveBenchCell(
 		in.cell, runPath, in.liveAppMs, routeAcceptedMs, unixfsVisibleMs, contentReadyMs, traceEnabled)
 }
 
+// captureDriveBenchBrowserProfile captures the optional Chromium CPU profile around one Drive open.
 func captureDriveBenchBrowserProfile(
 	t testing.TB,
 	ctx context.Context,
@@ -303,6 +310,7 @@ func captureDriveBenchBrowserProfile(
 	return profile, nil
 }
 
+// marshalBrowserProfileJSON encodes the browser profile in deterministic JSON with a final newline.
 func marshalBrowserProfileJSON(value any) []byte {
 	var arena fastjson.Arena
 	data := marshalCDPValue(&arena, value).MarshalTo(nil)
@@ -310,6 +318,7 @@ func marshalBrowserProfileJSON(value any) []byte {
 	return data
 }
 
+// marshalCDPValue copies supported CDP values into the caller's JSON arena.
 func marshalCDPValue(arena *fastjson.Arena, value any) *fastjson.Value {
 	switch typed := value.(type) {
 	case nil:
@@ -351,6 +360,7 @@ func marshalCDPValue(arena *fastjson.Arena, value any) *fastjson.Value {
 	}
 }
 
+// summarizeBrowserCPUProfile aggregates self and inclusive sample time by subsystem.
 func summarizeBrowserCPUProfile(profile any) []drivebench.ProfileBucket {
 	obj, ok := profile.(map[string]any)
 	if !ok {
@@ -360,7 +370,9 @@ func summarizeBrowserCPUProfile(profile any) []drivebench.ProfileBucket {
 	if len(nodesRaw) == 0 {
 		return nil
 	}
+	// nodeInfo retains the subsystem attributed to one sampled frame.
 	type nodeInfo struct {
+		// bucket names the frame's report subsystem.
 		bucket string
 	}
 	nodes := make(map[int64]nodeInfo, len(nodesRaw))
@@ -464,6 +476,7 @@ func summarizeBrowserCPUProfile(profile any) []drivebench.ProfileBucket {
 	return out
 }
 
+// profileBucket returns or creates the named subsystem accumulator.
 func profileBucket(buckets map[string]*drivebench.ProfileBucket, name string) *drivebench.ProfileBucket {
 	bucket := buckets[name]
 	if bucket != nil {
@@ -474,6 +487,7 @@ func profileBucket(buckets map[string]*drivebench.ProfileBucket, name string) *d
 	return bucket
 }
 
+// browserProfileBucketName classifies a sampled frame by URL and function name.
 func browserProfileBucketName(url, functionName string) string {
 	text := strings.ToLower(url + " " + functionName)
 	switch {
@@ -482,7 +496,6 @@ func browserProfileBucketName(url, functionName string) string {
 		strings.Contains(text, "$."):
 		return "goscript-runtime"
 	case strings.Contains(text, "opfs") ||
-		strings.Contains(text, "blockshard") ||
 		strings.Contains(text, "web lock"):
 		return "storage-opfs"
 	case strings.Contains(text, "db/block") ||
@@ -500,11 +513,13 @@ func browserProfileBucketName(url, functionName string) string {
 	}
 }
 
+// cdpString reads an optional CDP string.
 func cdpString(value any) string {
 	text, _ := value.(string)
 	return text
 }
 
+// cdpInt64 normalizes a CDP numeric value to int64.
 func cdpInt64(value any) int64 {
 	switch typed := value.(type) {
 	case int:
@@ -520,6 +535,7 @@ func cdpInt64(value any) int64 {
 	}
 }
 
+// renderBrowserProfileSummary renders stable tab-separated timing totals.
 func renderBrowserProfileSummary(buckets []drivebench.ProfileBucket) []byte {
 	var b strings.Builder
 	b.WriteString("bucket\tcount\tself_us\ttotal_us\n")
@@ -613,10 +629,14 @@ var benchTracePrefixes = []string{"alpha", "hydra", "provider", "bldr"}
 
 // benchTaskAgg accumulates per-task-type timing across a captured trace.
 type benchTaskAgg struct {
-	typ      string
-	count    int
+	// typ identifies a trace task family.
+	typ string
+	// count counts completed tasks.
+	count int
+	// totalDur sums completed task durations.
 	totalDur time.Duration
-	maxDur   time.Duration
+	// maxDur is the longest completed task duration.
+	maxDur time.Duration
 }
 
 // summarizeTrace walks the captured trace with the upstream Go trace reader, the
@@ -779,6 +799,7 @@ func benchTracePrefixFor(typ string) string {
 	return "other"
 }
 
+// operationShapeOrder fixes the report order for recognized operation families.
 var operationShapeOrder = []string{
 	"write-transaction",
 	"block-write",
@@ -789,28 +810,42 @@ var operationShapeOrder = []string{
 	"startup-replay",
 }
 
+// operationShapeCollector aggregates trace tasks and logs by operation family.
 type operationShapeCollector struct {
+	// ops indexes the summaries by their stable report name.
 	ops map[string]*operationShapeSummary
 }
 
+// operationShapeSummary accumulates timing and log fields for one operation.
 type operationShapeSummary struct {
-	name     string
-	count    int
-	totalUs  int64
-	maxUs    int64
+	// name is the stable operation family reported to the benchmark result.
+	name string
+	// count is the number of completed and open tasks observed.
+	count int
+	// totalUs is the sum of completed task durations in microseconds.
+	totalUs int64
+	// maxUs is the longest completed task duration in microseconds.
+	maxUs int64
+	// logCount is the number of trace logs attributed to this operation.
 	logCount int
-	fields   map[string]*drivebench.OperationField
+	// fields indexes numeric log aggregates by normalized field name.
+	fields map[string]*drivebench.OperationField
 }
 
+// newOperationShapeCollector creates an empty trace operation aggregator.
 func newOperationShapeCollector() *operationShapeCollector {
-	return &operationShapeCollector{ops: map[string]*operationShapeSummary{}}
+	return &operationShapeCollector{ops: make(map[string]*operationShapeSummary)}
 }
 
+// addTask records one completed task in its recognized operation family.
 func (c *operationShapeCollector) addTask(typ string, dur time.Duration) {
+	// Map the trace task to a reportable operation family.
 	op := operationNameForTraceTask(typ)
 	if op == "" {
 		return
 	}
+
+	// Accumulate the task count, total duration, and maximum duration.
 	summary := c.summary(op)
 	summary.count++
 	durUs := dur.Microseconds()
@@ -820,6 +855,7 @@ func (c *operationShapeCollector) addTask(typ string, dur time.Duration) {
 	}
 }
 
+// addOpenTask records one unfinished task in its recognized operation family.
 func (c *operationShapeCollector) addOpenTask(typ string) {
 	op := operationNameForTraceTask(typ)
 	if op == "" {
@@ -828,20 +864,27 @@ func (c *operationShapeCollector) addOpenTask(typ string) {
 	c.summary(op).count++
 }
 
+// addLog records one trace log and its numeric fields under an operation family.
 func (c *operationShapeCollector) addLog(log exptrace.Log) {
+	// Map the trace category to a reportable operation family.
 	op := operationNameForTraceLog(log.Category)
 	if op == "" {
 		return
 	}
+
+	// Count the log before aggregating each numeric field it carries.
 	summary := c.summary(op)
 	summary.logCount++
 	for key, value := range parseTraceLogNumericFields(log.Message) {
+		// Resolve or create the normalized field aggregate.
 		fieldName := operationTraceLogFieldName(log.Category, key)
 		field := summary.fields[fieldName]
 		if field == nil {
 			field = &drivebench.OperationField{Name: fieldName}
 			summary.fields[fieldName] = field
 		}
+
+		// Accumulate sample count, sum, latest value, and maximum value.
 		field.Samples++
 		field.Sum += value
 		field.Last = value
@@ -851,20 +894,28 @@ func (c *operationShapeCollector) addLog(log exptrace.Log) {
 	}
 }
 
+// summary returns the existing named summary or creates it on first use.
 func (c *operationShapeCollector) summary(name string) *operationShapeSummary {
+	// Reuse the accumulator for an operation already observed.
 	summary := c.ops[name]
 	if summary != nil {
 		return summary
 	}
-	summary = &operationShapeSummary{name: name, fields: map[string]*drivebench.OperationField{}}
+
+	// Create and retain the operation's accumulator.
+	summary = &operationShapeSummary{name: name, fields: make(map[string]*drivebench.OperationField)}
 	c.ops[name] = summary
 	return summary
 }
 
+// build returns the stable ordered operation report, or nil without evidence.
 func (c *operationShapeCollector) build() *drivebench.OperationShape {
+	// Omit operation-shape output when the trace contained no recognized work.
 	if len(c.ops) == 0 {
 		return nil
 	}
+
+	// Emit recognized summaries in the report's stable family order.
 	shape := &drivebench.OperationShape{}
 	for _, name := range operationShapeOrder {
 		summary := c.ops[name]
@@ -876,14 +927,20 @@ func (c *operationShapeCollector) build() *drivebench.OperationShape {
 	return shape
 }
 
+// build copies one summary into its stable field ordering.
 func (s *operationShapeSummary) build() drivebench.OperationSummary {
+	// Copy pointer-backed field accumulators into report values.
 	fields := make([]drivebench.OperationField, 0, len(s.fields))
 	for _, field := range s.fields {
 		fields = append(fields, *field)
 	}
+
+	// Sort fields independently of map iteration order.
 	slices.SortFunc(fields, func(a, b drivebench.OperationField) int {
 		return strings.Compare(a.Name, b.Name)
 	})
+
+	// Return the completed operation summary.
 	return drivebench.OperationSummary{
 		Name:     s.name,
 		Count:    s.count,
@@ -894,6 +951,7 @@ func (s *operationShapeSummary) build() drivebench.OperationSummary {
 	}
 }
 
+// operationNameForTraceTask maps known trace task paths to report families.
 func operationNameForTraceTask(typ string) string {
 	switch {
 	case typ == "alpha/so-engine/write-tx/hold-write-mtx" ||
@@ -913,30 +971,26 @@ func operationNameForTraceTask(typ string) string {
 		return "startup-replay"
 	case strings.HasPrefix(typ, "hydra/block-gc/"):
 		return "gc-wal"
-	case typ == "hydra/opfs-blockshard/get-from-shard" ||
-		strings.HasPrefix(typ, "hydra/opfs-blockshard/get-from-shard/") ||
-		typ == "hydra/opfs-blockshard/acquire-segment" ||
-		strings.HasPrefix(typ, "hydra/opfs-blockshard/acquire-segment/"):
+	case typ == "hydra/opfs-engine/read" ||
+		strings.HasPrefix(typ, "hydra/opfs-engine/read/"):
 		return "opfs-read"
-	case strings.HasPrefix(typ, "hydra/opfs-blockshard/block-store/"):
-		return "opfs-publish"
-	case typ == "hydra/opfs-blockshard/run-actor/publish" ||
-		strings.HasPrefix(typ, "hydra/opfs-blockshard/run-actor/publish/") ||
-		strings.HasPrefix(typ, "hydra/opfs-blockshard/shard/publish/"):
+	case strings.HasPrefix(typ, "hydra/opfs-engine/block-store/") ||
+		typ == "hydra/opfs-engine/publish" ||
+		strings.HasPrefix(typ, "hydra/opfs-engine/publish/"):
 		return "opfs-publish"
 	default:
 		return ""
 	}
 }
 
+// operationNameForTraceLog maps a trace log category through the task taxonomy.
 func operationNameForTraceLog(category string) string {
-	if category == "coalesce" {
-		return "opfs-publish"
-	}
 	return operationNameForTraceTask(category)
 }
 
+// operationTraceLogFieldName joins the relative trace category and field key.
 func operationTraceLogFieldName(category, key string) string {
+	// Remove the known operation path while retaining its detailed suffix.
 	prefix := category
 	for _, base := range []string{
 		"alpha/so-engine/write-tx/",
@@ -945,10 +999,9 @@ func operationTraceLogFieldName(category, key string) string {
 		"hydra/block-gc/store/flush-pending/",
 		"hydra/block-gc/refgraph/apply-ref-batch/",
 		"hydra/block-gc/wal/",
-		"hydra/opfs-blockshard/get-from-shard/",
-		"hydra/opfs-blockshard/run-actor/publish/",
-		"hydra/opfs-blockshard/block-store/",
-		"hydra/opfs-blockshard/shard/publish/",
+		"hydra/opfs-engine/read/",
+		"hydra/opfs-engine/publish/",
+		"hydra/opfs-engine/block-store/",
 		"hydra/world-graph/",
 		"cayley/kv/apply-deltas/",
 	} {
@@ -957,22 +1010,31 @@ func operationTraceLogFieldName(category, key string) string {
 			break
 		}
 	}
+
+	// Normalize the remaining path as a dotted result field.
 	prefix = strings.ReplaceAll(prefix, "/", ".")
 	return prefix + "." + key
 }
 
+// parseTraceLogNumericFields extracts signed integer key-value pairs from a log.
 func parseTraceLogNumericFields(message string) map[string]int64 {
-	fields := map[string]int64{}
+	// Parse each whitespace-delimited key-value candidate independently.
+	fields := make(map[string]int64)
 	for part := range strings.FieldsSeq(message) {
+		// Require a nonempty key and value around the first equals sign.
 		key, valueText, ok := strings.Cut(part, "=")
 		if !ok || key == "" || valueText == "" {
 			continue
 		}
+
+		// Accept signed decimal values followed by common log punctuation.
 		valueText = strings.TrimRight(valueText, ",;")
 		value, err := strconv.ParseInt(valueText, 10, 64)
 		if err != nil {
 			continue
 		}
+
+		// Retain the last value when a key appears more than once.
 		fields[key] = value
 	}
 	return fields

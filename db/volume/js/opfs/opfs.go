@@ -4,220 +4,109 @@ package volume_opfs
 
 import (
 	"context"
+	"errors"
 
 	"github.com/aperturerobotics/controllerbus/controller"
-	"github.com/pkg/errors"
 	block_gc "github.com/s4wave/spacewave/db/block/gc"
-	"github.com/s4wave/spacewave/db/block/gc/gcgraph"
-	block_gc_wal "github.com/s4wave/spacewave/db/block/gc/wal"
 	coord_inmem "github.com/s4wave/spacewave/db/coord/inmem"
 	coord_opfs "github.com/s4wave/spacewave/db/coord/opfs"
+	"github.com/s4wave/spacewave/db/kvtx"
+	kvtx_vlogger "github.com/s4wave/spacewave/db/kvtx/vlogger"
 	"github.com/s4wave/spacewave/db/opfs"
-	"github.com/s4wave/spacewave/db/opfs/filelock"
-	kvkey "github.com/s4wave/spacewave/db/store/kvkey"
-	skvtx "github.com/s4wave/spacewave/db/store/kvtx"
-	kvtx_vlogger "github.com/s4wave/spacewave/db/store/kvtx/vlogger"
+	store_kvkey "github.com/s4wave/spacewave/db/store/kvkey"
 	"github.com/s4wave/spacewave/db/volume"
-	kvtx "github.com/s4wave/spacewave/db/volume/common/kvtx"
-	"github.com/s4wave/spacewave/db/volume/js/opfs/blockshard"
-	"github.com/s4wave/spacewave/db/volume/js/opfs/metashard"
+	volume_kvtx "github.com/s4wave/spacewave/db/volume/common/kvtx"
+	"github.com/s4wave/spacewave/db/volume/js/opfs/engine"
+	"github.com/s4wave/spacewave/db/volume/js/opfs/refgraph"
 	"github.com/sirupsen/logrus"
 )
 
 // ControllerID identifies the OPFS volume controller.
 const ControllerID = "hydra/volume/opfs"
 
-// Version is the version of the OPFS volume implementation.
-var Version = controller.MustParseVersion("0.0.1")
+// Version identifies the immutable OPFS volume implementation.
+var Version = controller.MustParseVersion("0.0.2")
 
-// Opfs implements an OPFS-backed volume.
-type Opfs = kvtx.Volume
+// Opfs implements the existing Volume interface over one immutable storage engine.
+type Opfs = volume_kvtx.Volume
 
-// NewOpfs builds a new OPFS volume, opening or creating the directory tree.
-func NewOpfs(
-	ctx context.Context,
-	le *logrus.Entry,
-	conf *Config,
-) (*Opfs, error) {
-	kk, err := kvkey.NewKVKey(conf.GetKvKeyOpts())
+// NewOpfs opens a compatible volume or creates a new empty one.
+// Incompatible saved data is rejected and never reset implicitly.
+func NewOpfs(ctx context.Context, le *logrus.Entry, conf *Config) (*Opfs, error) {
+	if err := conf.Validate(); err != nil {
+		return nil, volume.Permanent(err)
+	}
+	keys, err := store_kvkey.NewKVKey(conf.GetKvKeyOpts())
 	if err != nil {
 		return nil, err
 	}
-
-	rootPath := conf.GetRootPath()
-	lockPrefix := conf.GetLockPrefix()
-	if lockPrefix == "" {
-		lockPrefix = rootPath
-	}
-
 	opfs.InstallRemoteDriverFromGlobal()
-
-	opfsRoot, err := opfs.GetRoot()
+	root, err := opfs.GetRoot()
 	if err != nil {
-		err = errors.Wrap(err, "opfs GetRoot")
-		// SecurityError and UnknownError on root acquisition are browser
-		// storage-capability denials for this profile. Retrying in the same
-		// profile cannot succeed, so let the volume controller surface the
-		// condition instead of restarting forever.
 		if opfs.IsSecurity(err) || opfs.IsUnknown(err) {
 			return nil, volume.Permanent(err)
 		}
 		return nil, err
 	}
-	volDir, err := openRuntimeRoot(ctx, le, opfsRoot, conf)
-	if err != nil {
-		return nil, errors.Wrap(err, "open runtime root")
-	}
-
-	// Block shard engine: sharded SSTable segments with per-shard write actors.
-	blocksDir, err := opfs.GetDirectory(volDir, "blocks", true)
-	if err != nil {
-		return nil, errors.Wrap(err, "create blocks directory")
-	}
-
-	blockSettings := &blockshard.Settings{
-		ShardCount:          int(conf.GetBlockShardCount()),
-		BloomFPR:            conf.GetBlockBloomFpr(),
-		CompactionTrigger:   int(conf.GetBlockCompactionTrigger()),
-		SyncIO:              conf.GetSyncIo(),
-		MaxSegmentDataBytes: int(conf.GetBlockMaxSegmentDataBytes()),
-	}
-	blkEngine, err := blockshard.NewEngineWithSettings(ctx, blocksDir, lockPrefix+"/blocks", blockSettings)
-	if err != nil {
-		return nil, errors.Wrap(err, "create block shard engine")
-	}
-	blkStore := blockshard.NewBlockStore(blkEngine, conf.GetStoreConfig().ResolveHashType())
-
-	// Meta page store: single B+tree page file with dual superblocks.
-	metaShardCount := conf.GetMetaShardCount()
-	if metaShardCount == 0 {
-		metaShardCount = 1
-	}
-	if metaShardCount != 1 {
-		return nil, errors.Errorf("meta shard count must be 1, got %d", metaShardCount)
-	}
-	metaDir, err := opfs.GetDirectory(volDir, "meta", true)
-	if err != nil {
-		return nil, errors.Wrap(err, "create meta directory")
-	}
-
-	meta, err := metashard.NewMetaShard(
-		metaDir,
-		lockPrefix+"/meta",
-		int(conf.GetPageSize()),
-		le.WithField("component", "opfs-metashard"),
-	)
-	if err != nil {
-		return nil, errors.Wrap(err, "create meta shard")
-	}
-	metaStore := metashard.NewMetaStore(meta)
-
-	var store skvtx.Store = metaStore
-	if conf.GetVerbose() {
-		store = kvtx_vlogger.NewVLogger(le, store)
-	}
-
-	statsFn := func(context.Context) (*volume.StorageStats, error) {
-		count, totalBytes := blkEngine.StorageStats()
-		return &volume.StorageStats{
-			TotalBytes: totalBytes,
-			BlockCount: count,
-		}, nil
-	}
-
-	// GC graph store: own OPFS subdirectory with per-file locking.
-	gcDir, err := opfs.GetDirectory(volDir, "gc", true)
-	if err != nil {
-		return nil, errors.Wrap(err, "create gc directory")
-	}
-	graphDir, err := opfs.GetDirectory(gcDir, "graph", true)
-	if err != nil {
-		return nil, errors.Wrap(err, "create gc/graph directory")
-	}
-	walDir, err := opfs.GetDirectory(gcDir, "wal", true)
-	if err != nil {
-		return nil, errors.Wrap(err, "create gc/wal directory")
-	}
-
-	gcGraph, err := gcgraph.NewGCGraph(graphDir, lockPrefix+"/gc/graph")
-	if err != nil {
-		return nil, errors.Wrap(err, "create GC graph store")
-	}
-
-	// Register volume-context roots.
-	if err := gcGraph.AddRoot(ctx, block_gc.NodeGCRoot); err != nil {
-		return nil, errors.Wrap(err, "register gcroot")
-	}
-	if err := gcGraph.AddRoot(ctx, block_gc.NodeUnreferenced); err != nil {
-		return nil, errors.Wrap(err, "register unreferenced root")
-	}
-
-	// WAL writer with STW and ordering locks.
-	stwLockName := lockPrefix + "|gc-stw"
-	orderLockName := lockPrefix + "|gc-wal-order"
-	walWriter := block_gc_wal.NewWriter(walDir, lockPrefix+"/gc/wal", orderLockName, stwLockName)
-	walAppender := block_gc_wal.NewAppender(walWriter)
-
-	vol, err := kvtx.NewVolumeWithBlockStoreAndGC(
-		ctx,
-		ControllerID,
-		kk,
-		store,
-		blkStore,
-		gcGraph,
-		conf.GetStoreConfig(),
-		conf.GetNoGenerateKey(),
-		conf.GetNoWriteKey(),
-		statsFn,
-		func() error {
-			blkEngine.Close()
-			if err := meta.Close(); err != nil {
-				return err
-			}
-			return gcGraph.Close()
-		},
-		func() error {
-			return deleteRuntimeRoot(opfsRoot, rootPath)
-		},
-	)
+	dir, err := openRuntimeRoot(ctx, le, root, conf)
 	if err != nil {
 		return nil, err
 	}
-	vol.Coordinator = coord_opfs.NewCoordinator(meta, lockPrefix, coord_inmem.ForVolume(vol.GetID()))
+	lockPrefix := conf.GetLockPrefix()
+	if lockPrefix == "" {
+		lockPrefix = conf.GetRootPath()
+	}
+	// Serialize first identity creation across every runtime mounting this volume.
+	backend := engine.NewBrowserBackend(opfs.DefaultDriver, dir, lockPrefix)
+	releaseInit, err := backend.Lock(ctx, "initialize", true)
+	if err != nil {
+		return nil, errors.Join(err, backend.Close())
+	}
+	defer releaseInit()
+	e, err := engine.Open(ctx, backend)
+	if err != nil {
+		return nil, err
+	}
+	blocks := engine.NewBlockStore(ctx, e, conf.GetStoreConfig().ResolveHashType())
+	closeStore := func() error {
+		return errors.Join(blocks.Close(), e.Close())
+	}
 
-	// Store the WAL appender on the volume so the volume controller
-	// and bucket handles can propagate it to GCStoreOps instances.
-	vol.SetWALAppender(walAppender)
+	// Metadata, GC records, and block locations have disjoint ordered namespaces.
+	var store kvtx.Store = e.MetadataStore()
+	if conf.GetVerbose() {
+		store = kvtx_vlogger.NewVLogger(le, store)
+	}
+	graph := refgraph.NewGraph(e)
+	for _, node := range []string{block_gc.NodeGCRoot, block_gc.NodeUnreferenced} {
+		if err := graph.AddRoot(ctx, node); err != nil {
+			_ = closeStore()
+			return nil, err
+		}
+	}
+	stats := func(ctx context.Context) (*volume.StorageStats, error) {
+		count, size, err := e.BlockStats(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return &volume.StorageStats{BlockCount: count, TotalBytes: size}, nil
+	}
+	vol, err := volume_kvtx.NewVolumeWithBlockStoreAndGC(
+		ctx, ControllerID, keys, store, blocks, graph, conf.GetStoreConfig(),
+		conf.GetNoGenerateKey(), conf.GetNoWriteKey(), stats, closeStore,
+		func() error { return deleteRuntimeRoot(root, conf.GetRootPath()) },
+	)
+	if err != nil {
+		_ = closeStore()
+		return nil, errors.Join(errors.New("initialize OPFS volume identity"), err)
+	}
+	vol.Coordinator = coord_opfs.NewCoordinator(e, lockPrefix, coord_inmem.ForVolume(vol.GetID()))
+	vol.SetWALAppender(e)
 	vol.SetGCManagerHooks(block_gc.ManagerHooks{
-		Graph: gcGraph,
-		ReplayWAL: func(ctx context.Context, graph block_gc.CollectorGraph) (int, error) {
-			entries, filenames, err := block_gc_wal.ReadWAL(walDir, lockPrefix+"/gc/wal")
-			if err != nil {
-				return 0, err
-			}
-			for i, entry := range entries {
-				adds := make([]block_gc.RefEdge, len(entry.GetAdds()))
-				for j, e := range entry.GetAdds() {
-					adds[j] = block_gc.RefEdge{Subject: e.GetSubject(), Object: e.GetObject()}
-				}
-				removes := make([]block_gc.RefEdge, len(entry.GetRemoves()))
-				for j, e := range entry.GetRemoves() {
-					removes[j] = block_gc.RefEdge{Subject: e.GetSubject(), Object: e.GetObject()}
-				}
-				if err := graph.ApplyRefBatch(ctx, adds, removes); err != nil {
-					return i, err
-				}
-				if err := block_gc_wal.DeleteWALEntry(walDir, filenames[i]); err != nil {
-					return i, err
-				}
-			}
-			return len(entries), nil
-		},
-		AcquireSTW: func() (func(), error) {
-			return filelock.AcquireWebLock(stwLockName, true)
-		},
-		Maintenance: blkEngine.CompactOnce,
+		Graph:       graph,
+		ReplayWAL:   e.ReplayWAL,
+		AcquireSTW:  func() (func(), error) { return e.AcquireSTW(ctx) },
+		Maintenance: e.Maintenance,
 	})
-
 	return vol, nil
 }

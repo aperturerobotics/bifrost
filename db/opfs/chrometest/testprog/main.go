@@ -8,7 +8,6 @@ import (
 	"encoding/binary"
 	stderrors "errors"
 	"io"
-	"maps"
 	"net"
 	"os"
 	"strconv"
@@ -36,7 +35,6 @@ import (
 	space_world_ops "github.com/s4wave/spacewave/core/space/world/ops"
 	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/block/blob"
-	block_gc_wal "github.com/s4wave/spacewave/db/block/gc/wal"
 	block_transform "github.com/s4wave/spacewave/db/block/transform"
 	transform_all "github.com/s4wave/spacewave/db/block/transform/all"
 	transform_gzip "github.com/s4wave/spacewave/db/block/transform/gzip"
@@ -56,10 +54,7 @@ import (
 	"github.com/s4wave/spacewave/db/volume"
 	volume_controller "github.com/s4wave/spacewave/db/volume/controller"
 	volume_opfs "github.com/s4wave/spacewave/db/volume/js/opfs"
-	"github.com/s4wave/spacewave/db/volume/js/opfs/blockshard"
-	"github.com/s4wave/spacewave/db/volume/js/opfs/metashard"
-	"github.com/s4wave/spacewave/db/volume/js/opfs/pagestore"
-	"github.com/s4wave/spacewave/db/volume/js/opfs/segment"
+	"github.com/s4wave/spacewave/db/volume/js/opfs/engine"
 	"github.com/s4wave/spacewave/db/world"
 	world_block "github.com/s4wave/spacewave/db/world/block"
 	world_block_engine "github.com/s4wave/spacewave/db/world/block/engine"
@@ -68,60 +63,52 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// config selects one worker action and its shared workload dimensions.
 type config struct {
-	scenario   string
-	root       string
-	worker     int
-	workers    int
+	// scenario selects the worker action.
+	scenario string
+	// root names the disposable shared OPFS directory.
+	root string
+	// worker identifies this worker within the workload.
+	worker int
+	// workers counts the concurrent publishers expected by readers.
+	workers int
+	// iterations sets the loop count or total payload bytes for the selected scenario.
 	iterations int
-	batch      int
-	shards     int
-	metrics    bool
+	// batch sets the batch count or read window for the selected scenario.
+	batch int
 }
 
+// blockEvent identifies a published batch or completed writer.
 type blockEvent struct {
-	typ       string
-	worker    int
+	// typ identifies publication or writer completion.
+	typ string
+	// worker identifies the publisher.
+	worker int
+	// iteration identifies the published batch.
 	iteration int
 }
 
+// blockEventSub owns a browser subscription and its buffered Go event queue.
 type blockEventSub struct {
+	// ch buffers all expected events so the browser callback never waits.
 	ch chan blockEvent
+	// bc owns the underlying BroadcastChannel.
 	bc js.Value
+	// cb retains the installed browser callback until Close.
 	cb js.Func
 }
 
+// blockEventPub owns the send side of the workload's browser event channel.
 type blockEventPub struct {
+	// bc owns the send-only BroadcastChannel.
 	bc js.Value
 }
 
-type manifestBloomCase struct {
-	shard string
-	pack  string
-	size  int
-}
-
-type manifestSeedEntry struct {
-	sub  string
-	size int
-}
-
-var manifestSeedEntries = []manifestSeedEntry{
-	{sub: "pack_bloom/00/pfv1_seed_left", size: 1700},
-	{sub: "pack_bloom/zz/pfv1_seed_right", size: 1700},
-}
-
+// largeScenarioProgressEvery bounds progress-report frequency during large transfers.
 const largeScenarioProgressEvery = 8 * 1024 * 1024
 
-var manifestBloomCases = []manifestBloomCase{
-	{shard: "mm", pack: "pfv1_manifest_middle_split", size: 2500},
-	{shard: "2B", pack: "pfv1_manifest_2B", size: 1892},
-	{shard: "4U", pack: "pfv1_manifest_4U", size: 2801},
-	{shard: "Bn", pack: "pfv1_manifest_Bn", size: 2367},
-	{shard: "pQ", pack: "pfv1_manifest_pQ", size: 2119},
-	{shard: "z3", pack: "pfv1_manifest_z3", size: 1954},
-}
-
+// main runs one selected worker scenario and reports its terminal result.
 func main() {
 	start := time.Now()
 	c, err := parseConfig(testArgs())
@@ -131,8 +118,9 @@ func main() {
 	postResult(c, time.Since(start), err)
 }
 
+// testArgs returns process arguments or the browser harness fallback.
 func testArgs() []string {
-	if len(os.Args) >= 8 {
+	if len(os.Args) >= 7 {
 		return os.Args
 	}
 	val := js.Global().Get("__OPFS_CHROMETEST_ARGS")
@@ -147,9 +135,10 @@ func testArgs() []string {
 	return args
 }
 
+// parseConfig validates the scenario's numeric workload arguments.
 func parseConfig(args []string) (*config, error) {
-	if len(args) < 9 {
-		return nil, errors.Errorf("expected 8 args, got %d", len(args)-1)
+	if len(args) < 7 {
+		return nil, errors.Errorf("expected 6 args, got %d", len(args)-1)
 	}
 	worker, err := strconv.Atoi(args[3])
 	if err != nil {
@@ -167,14 +156,6 @@ func parseConfig(args []string) (*config, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "parse batch")
 	}
-	shards, err := strconv.Atoi(args[7])
-	if err != nil {
-		return nil, errors.Wrap(err, "parse shards")
-	}
-	metrics, err := strconv.ParseBool(args[8])
-	if err != nil {
-		return nil, errors.Wrap(err, "parse metrics")
-	}
 	return &config{
 		scenario:   args[1],
 		root:       args[2],
@@ -182,11 +163,10 @@ func parseConfig(args []string) (*config, error) {
 		workers:    workers,
 		iterations: iterations,
 		batch:      batch,
-		shards:     shards,
-		metrics:    metrics,
 	}, nil
 }
 
+// run installs the browser driver and dispatches one selected scenario.
 func run(ctx context.Context, c *config) error {
 	opfs.InstallRemoteDriverFromGlobal()
 	switch c.scenario {
@@ -210,24 +190,18 @@ func run(ctx context.Context, c *config) error {
 		return runLargeBlockBatch(ctx, c)
 	case "large-block-verify":
 		return runLargeBlockVerify(ctx, c)
-	case "materialize-fanout-serial":
-		return runMaterializeFanout(ctx, c, fanoutSerial)
-	case "materialize-fanout-concurrent":
-		return runMaterializeFanout(ctx, c, fanoutConcurrent)
-	case "materialize-fanout-batched":
-		return runMaterializeFanout(ctx, c, fanoutBatched)
-	case "materialize-fanout-async-serial":
-		return runMaterializeFanout(ctx, c, fanoutAsyncSerial)
-	case "block-corrupt-compaction":
-		return runBlockCorruptCompaction(ctx, c)
-	case "block-zero-size-compaction":
-		return runBlockZeroSizeCompaction(ctx, c)
 	case "read-at-helper-loop":
 		return runReadAtHelperLoop(c)
-	case "gc-wal-write-loop":
-		return runGCWalWriteLoop(ctx, c)
-	case "gc-wal-verify":
-		return verifyGCWal(c)
+	case "engine-crash-before-root-block":
+		return runEngineCrash(ctx, c, false, true)
+	case "engine-crash-verify-block-clean":
+		return verifyEngineCrash(ctx, c, true)
+	case "engine-crash-before-root-meta":
+		return runEngineCrash(ctx, c, false, false)
+	case "engine-crash-after-root-meta":
+		return runEngineCrash(ctx, c, true, false)
+	case "engine-crash-verify-meta":
+		return verifyEngineCrash(ctx, c, false)
 	case "block-writer":
 		return runBlockWriter(ctx, c)
 	case "block-reader":
@@ -238,10 +212,6 @@ func run(ctx context.Context, c *config) error {
 		return runBlockVerify(ctx, c)
 	case "remote-cache-lifecycle":
 		return runRemoteCacheLifecycle(ctx, c)
-	case "block-orphan-segment":
-		return runBlockOrphanSegment(c)
-	case "block-orphan-verify-clean":
-		return runBlockOrphanVerifyClean(c)
 	case "meta-writer":
 		return runMetaWriter(ctx, c)
 	case "meta-verify":
@@ -250,22 +220,6 @@ func run(ctx context.Context, c *config) error {
 		return runMetaMixedWriter(ctx, c)
 	case "meta-mixed-verify":
 		return runMetaMixedVerify(ctx, c)
-	case "meta-manifest-bloom-split":
-		return runMetaManifestBloomSplit(ctx, c)
-	case "meta-manifest-bloom-verify":
-		return runMetaManifestBloomVerify(ctx, c)
-	case "meta-crash-before-superblock":
-		return runMetaCrashWrite(c, false)
-	case "meta-crash-after-superblock":
-		return runMetaCrashWrite(c, true)
-	case "meta-crash-verify":
-		return runMetaCrashVerify(ctx, c)
-	case "meta-read-isolation":
-		return runMetaReadIsolation(ctx, c)
-	case "meta-reset-identity":
-		return runMetaResetIdentity(ctx, c)
-	case "meta-fallback-shortcut":
-		return runMetaFallbackShortcut(ctx, c)
 	case "counter-init":
 		return runCounterInit(c)
 	case "counter-hold":
@@ -292,10 +246,10 @@ func run(ctx context.Context, c *config) error {
 		return runVolumeRuntimeSeedIncompatible(c)
 	case "volume-runtime-seed-unknown":
 		return runVolumeRuntimeSeedUnknown(c)
-	case "volume-runtime-verify-incompatible-reset":
-		return runVolumeRuntimeVerifyReset(ctx, c, volume_opfs.ResetReasonIncompatible)
-	case "volume-runtime-verify-unknown-reset":
-		return runVolumeRuntimeVerifyReset(ctx, c, volume_opfs.ResetReasonUnknown)
+	case "volume-runtime-verify-incompatible-rejected":
+		return runVolumeRuntimeVerifyRejected(ctx, c, "incompatible")
+	case "volume-runtime-verify-unknown-rejected":
+		return runVolumeRuntimeVerifyRejected(ctx, c, "unknown")
 	case "volume-runtime-delete-verify":
 		return runVolumeRuntimeDeleteVerify(ctx, c)
 	case "volume-kv-write-per-op":
@@ -335,11 +289,15 @@ func run(ctx context.Context, c *config) error {
 	}
 }
 
+// pipeReadResult returns the bytes drained and terminal error from a pipe reader.
 type pipeReadResult struct {
-	n   int
+	// n counts the bytes drained before termination.
+	n int
+	// err is the terminal pipe error, excluding normal EOF.
 	err error
 }
 
+// runPipeWriteLoop checks deterministic streaming through a Go pipe.
 func runPipeWriteLoop(c *config) error {
 	totalSize := c.iterations
 	if totalSize <= 0 {
@@ -396,6 +354,7 @@ func runPipeWriteLoop(c *config) error {
 	return nil
 }
 
+// runSRPCEchoLoop checks the echo contract over a real multiplexed connection.
 func runSRPCEchoLoop(ctx context.Context, c *config) error {
 	clientPipe, serverPipe := net.Pipe()
 	clientMp, err := srpc.NewMuxedConn(clientPipe, true, nil)
@@ -440,6 +399,7 @@ func runSRPCEchoLoop(ctx context.Context, c *config) error {
 	return runEchoClientLoop(ctx, c, client, "srpc-echo-loop")
 }
 
+// runSRPCRpcStreamEchoLoop checks echo calls through a nested RPC stream.
 func runSRPCRpcStreamEchoLoop(ctx context.Context, c *config) error {
 	clientPipe, serverPipe := net.Pipe()
 	clientMp, err := srpc.NewMuxedConn(clientPipe, true, nil)
@@ -500,6 +460,7 @@ func runSRPCRpcStreamEchoLoop(ctx context.Context, c *config) error {
 	return runEchoClientLoop(ctx, c, client, "srpc-rpcstream-echo-loop")
 }
 
+// runEchoClientLoop verifies repeated echo responses and reports stream progress.
 func runEchoClientLoop(
 	ctx context.Context,
 	c *config,
@@ -534,6 +495,7 @@ func runEchoClientLoop(
 	return nil
 }
 
+// runResourceEchoLoop checks echo calls through the resource reference lifecycle.
 func runResourceEchoLoop(ctx context.Context, c *config) error {
 	rootMux := srpc.NewMux()
 	if err := echo.NewEchoServer(nil).Register(rootMux); err != nil {
@@ -556,6 +518,7 @@ func runResourceEchoLoop(ctx context.Context, c *config) error {
 	return runEchoClientLoop(ctx, c, client, "resource-echo-loop")
 }
 
+// clearRoot recreates only the scenario's disposable OPFS directory.
 func clearRoot(rootName string) error {
 	root, err := opfs.GetRoot()
 	if err != nil {
@@ -569,6 +532,7 @@ func clearRoot(rootName string) error {
 	return err
 }
 
+// runMissingDeleteClassify requires a missing-file deletion to report NotFound.
 func runMissingDeleteClassify(c *config) error {
 	root, err := opfs.GetRoot()
 	if err != nil {
@@ -585,6 +549,7 @@ func runMissingDeleteClassify(c *config) error {
 	return nil
 }
 
+// runReadFileHelperLoop checks repeated whole-file reads against written bytes.
 func runReadFileHelperLoop(c *config) error {
 	dir, err := openTestDirectory(c.root, []string{"read-helper"})
 	if err != nil {
@@ -594,7 +559,7 @@ func runReadFileHelperLoop(c *config) error {
 	if err := opfs.WriteFile(dir, "manifest-a", want); err != nil {
 		return err
 	}
-	for i := 0; i < c.iterations; i++ {
+	for i := range c.iterations {
 		got, err := opfs.ReadFile(dir, "manifest-a")
 		if err != nil {
 			return errors.Wrap(err, "read manifest-a")
@@ -606,6 +571,7 @@ func runReadFileHelperLoop(c *config) error {
 	return nil
 }
 
+// runLargeWriteReadList checks large writes, sampled reads, and directory membership.
 func runLargeWriteReadList(c *config) error {
 	dir, err := openTestDirectory(c.root, []string{"large-helper"})
 	if err != nil {
@@ -621,7 +587,7 @@ func runLargeWriteReadList(c *config) error {
 	}
 	baseSize := totalSize / files
 	remainder := totalSize % files
-	for i := 0; i < files; i++ {
+	for i := range files {
 		size := baseSize
 		if i < remainder {
 			size++
@@ -664,7 +630,7 @@ func runLargeWriteReadList(c *config) error {
 	for _, name := range names {
 		seen[name] = true
 	}
-	for i := 0; i < files; i++ {
+	for i := range files {
 		name := "chunk-" + zeroPad(i, 3) + ".bin"
 		if !seen[name] {
 			return errors.Errorf("%s missing from list directory result", name)
@@ -673,8 +639,9 @@ func runLargeWriteReadList(c *config) error {
 	return nil
 }
 
+// runLargeBlockBatch checks a durable large batch before and after remount.
 func runLargeBlockBatch(ctx context.Context, c *config) error {
-	e, release, err := openBlockEngine(ctx, c)
+	_, e, release, err := openBlockEngine(ctx, c)
 	if err != nil {
 		return err
 	}
@@ -692,22 +659,28 @@ func runLargeBlockBatch(ctx context.Context, c *config) error {
 	totalSize, entriesCount := largeBlockShape(c)
 	baseSize := totalSize / entriesCount
 	remainder := totalSize % entriesCount
-	entries := make([]segment.Entry, entriesCount)
+	entries := make([]*block.PutBatchEntry, entriesCount)
 	for i := range entries {
 		size := baseSize
 		if i < remainder {
 			size++
 		}
-		key := largeBlockKey(i)
-		entries[i] = segment.Entry{
-			Key:   key,
-			Value: deterministicLargeBytes(size, i),
+		data := deterministicLargeBytes(size, i)
+		ref, err := block.BuildBlockRef(data, nil)
+		if err != nil {
+			release()
+			return err
 		}
+		entries[i] = &block.PutBatchEntry{Ref: ref, Data: data}
 	}
 	postProgress(c, "large-block-put-start", 0, totalSize)
-	if err := e.Put(ctx, entries); err != nil {
+	if err := e.PutBlockBatch(ctx, entries); err != nil {
 		release()
 		return errors.Wrap(err, "put large block batch")
+	}
+	if _, err := e.Sync(ctx); err != nil {
+		release()
+		return err
 	}
 	postProgress(c, "large-block-put-complete", totalSize, totalSize)
 	postProgress(c, "large-block-readback-before-close-start", 0, totalSize)
@@ -716,13 +689,9 @@ func runLargeBlockBatch(ctx context.Context, c *config) error {
 		return err
 	}
 	postProgress(c, "large-block-readback-before-close-complete", totalSize, totalSize)
-	if err := verifyLargeBlockPublishLocks(ctx, c); err != nil {
-		release()
-		return err
-	}
 	release()
 
-	e, release, err = openBlockEngine(ctx, c)
+	_, e, release, err = openBlockEngine(ctx, c)
 	if err != nil {
 		return errors.Wrap(err, "reopen large block engine")
 	}
@@ -735,8 +704,9 @@ func runLargeBlockBatch(ctx context.Context, c *config) error {
 	return nil
 }
 
+// runLargeBlockVerify checks a large batch from a fresh worker instance.
 func runLargeBlockVerify(ctx context.Context, c *config) error {
-	e, release, err := openBlockEngine(ctx, c)
+	_, e, release, err := openBlockEngine(ctx, c)
 	if err != nil {
 		return err
 	}
@@ -751,6 +721,7 @@ func runLargeBlockVerify(ctx context.Context, c *config) error {
 	return nil
 }
 
+// largeBlockShape returns the requested total bytes and block count with probe defaults.
 func largeBlockShape(c *config) (int, int) {
 	totalSize := c.iterations
 	if totalSize <= 0 {
@@ -763,7 +734,8 @@ func largeBlockShape(c *config) (int, int) {
 	return totalSize, entriesCount
 }
 
-func verifyLargeBlocks(ctx context.Context, c *config, e *blockshard.Engine, totalSize, entriesCount int) error {
+// verifyLargeBlocks compares every large block against its deterministic content.
+func verifyLargeBlocks(ctx context.Context, c *config, e *engine.BlockStore, totalSize, entriesCount int) error {
 	baseSize := totalSize / entriesCount
 	remainder := totalSize % entriesCount
 	for i := range entriesCount {
@@ -771,15 +743,18 @@ func verifyLargeBlocks(ctx context.Context, c *config, e *blockshard.Engine, tot
 		if i < remainder {
 			size++
 		}
-		key := largeBlockKey(i)
-		got, found, err := e.GetContext(ctx, key)
+		want := deterministicLargeBytes(size, i)
+		ref, err := block.BuildBlockRef(want, nil)
+		if err != nil {
+			return err
+		}
+		got, found, err := e.GetBlock(ctx, ref)
 		if err != nil {
 			return errors.Wrapf(err, "get large block %d", i)
 		}
 		if !found {
 			return errors.Errorf("large block %d not found", i)
 		}
-		want := deterministicLargeBytes(size, i)
 		if len(got) != len(want) {
 			return errors.Errorf("large block %d length=%d want=%d", i, len(got), len(want))
 		}
@@ -794,229 +769,7 @@ func verifyLargeBlocks(ctx context.Context, c *config, e *blockshard.Engine, tot
 	return nil
 }
 
-func verifyLargeBlockPublishLocks(ctx context.Context, c *config) error {
-	postProgress(c, "large-block-publish-lock-start")
-	shardCount := c.shards
-	if shardCount <= 0 {
-		shardCount = blockshard.DefaultShardCount
-	}
-	settings := blockshard.DefaultSettings()
-	settings.ShardCount = shardCount
-	for shardID := 0; shardID < shardCount; shardID++ {
-		dir, err := openTestDirectory(c.root, []string{"blocks", "shard-" + zeroPad(shardID, 2)})
-		if err != nil {
-			return err
-		}
-		shard, err := blockshard.NewShard(shardID, dir, c.root+"/blocks", settings)
-		if err != nil {
-			return errors.Wrapf(err, "open large block shard %d for lock liveness", shardID)
-		}
-		lockCtx, cancel := context.WithTimeout(ctx, time.Second)
-		release, err := shard.AcquirePublishLockContext(lockCtx)
-		cancel()
-		if err != nil {
-			return errors.Wrapf(err, "acquire large block shard %d publish lock after publish", shardID)
-		}
-		release()
-	}
-	postProgress(c, "large-block-publish-lock-complete")
-	return nil
-}
-
-func runBlockCorruptCompaction(ctx context.Context, c *config) error {
-	dir, err := openTestDirectory(c.root, []string{"block-corrupt-compaction"})
-	if err != nil {
-		return err
-	}
-
-	shard, before, err := publishCompactionInputSegments(ctx, c, dir, "corrupt-compaction")
-	if err != nil {
-		return err
-	}
-	corruptName := before.Segments[0].Filename
-	data, err := opfs.ReadFile(dir, corruptName)
-	if err != nil {
-		return errors.Wrap(err, "read segment to corrupt")
-	}
-	if len(data) < segment.HeaderSize {
-		return errors.New("segment too small to corrupt")
-	}
-	hdr, err := segment.DecodeHeader(data[:segment.HeaderSize])
-	if err != nil {
-		return errors.Wrap(err, "decode corrupt target header")
-	}
-	if int(hdr.DataOffset) >= len(data)-4 {
-		return errors.New("segment has no data byte to corrupt")
-	}
-	data[hdr.DataOffset] ^= 0xff
-	if err := opfs.WriteFile(dir, corruptName, data); err != nil {
-		return errors.Wrap(err, "write corrupt segment")
-	}
-
-	plan := blockshard.PlanCompaction(shard, blockshard.DefaultL0Trigger)
-	if plan == nil {
-		return errors.New("expected compaction plan")
-	}
-	release, err := shard.AcquirePublishLock()
-	if err != nil {
-		return err
-	}
-	err = blockshard.ExecuteCompaction(ctx, shard, plan)
-	release()
-	if err == nil {
-		return errors.New("expected corrupt compaction input to fail")
-	}
-	if !strings.Contains(err.Error(), "CRC32 mismatch") {
-		return errors.Wrap(err, "expected CRC32 mismatch")
-	}
-
-	after := shard.Manifest()
-	if after.Generation != before.Generation {
-		return errors.Errorf("generation mutated after failed compaction: got %d want %d", after.Generation, before.Generation)
-	}
-	if len(after.Segments) != len(before.Segments) {
-		return errors.Errorf("segments mutated after failed compaction: got %d want %d", len(after.Segments), len(before.Segments))
-	}
-	if len(after.PendingDelete) != len(before.PendingDelete) {
-		return errors.Errorf("pending deletes mutated after failed compaction: got %d want %d", len(after.PendingDelete), len(before.PendingDelete))
-	}
-	return nil
-}
-
-func runBlockZeroSizeCompaction(ctx context.Context, c *config) error {
-	dir, err := openTestDirectory(c.root, []string{"block-zero-size-compaction"})
-	if err != nil {
-		return err
-	}
-
-	_, before, err := publishCompactionInputSegments(ctx, c, dir, "zero-size-compaction")
-	if err != nil {
-		return err
-	}
-	zeroSizeManifest := before.Clone()
-	zeroSizeManifest.Generation = before.Generation + 1
-	for i := range zeroSizeManifest.Segments {
-		zeroSizeManifest.Segments[i].Size = 0
-	}
-	if err := writeTestBlockshardManifest(dir, zeroSizeManifest); err != nil {
-		return err
-	}
-
-	settings := blockshard.DefaultSettings()
-	settings.MaxSegmentDataBytes = 128
-	shard, err := blockshard.NewShard(0, dir, c.root+"/zero-size-compaction", settings)
-	if err != nil {
-		return err
-	}
-	plan := blockshard.PlanCompaction(shard, blockshard.DefaultL0Trigger)
-	if plan == nil {
-		return errors.New("expected compaction plan")
-	}
-	for i := range plan.InputSegs {
-		if plan.InputSegs[i].Size != 0 {
-			return errors.Errorf("plan input size=%d want zero", plan.InputSegs[i].Size)
-		}
-	}
-
-	release, err := shard.AcquirePublishLock()
-	if err != nil {
-		return err
-	}
-	err = blockshard.ExecuteCompaction(ctx, shard, plan)
-	release()
-	if err != nil {
-		return errors.Wrap(err, "execute compaction with zero-size inputs")
-	}
-	after := shard.Manifest()
-	if after.Generation <= zeroSizeManifest.Generation {
-		return errors.Errorf("generation after compaction=%d want > %d", after.Generation, zeroSizeManifest.Generation)
-	}
-	if len(after.Segments) == 0 {
-		return errors.New("compaction produced no output segments")
-	}
-	for i := range after.Segments {
-		if after.Segments[i].Size == 0 {
-			return errors.Errorf("output segment %s has zero size", after.Segments[i].Filename)
-		}
-	}
-	if err := verifyCompactionInputValues(dir, after, "zero-size-compaction"); err != nil {
-		return err
-	}
-	return nil
-}
-
-func publishCompactionInputSegments(
-	ctx context.Context,
-	c *config,
-	dir js.Value,
-	lockSuffix string,
-) (*blockshard.Shard, *blockshard.Manifest, error) {
-	settings := blockshard.DefaultSettings()
-	settings.MaxSegmentDataBytes = 128
-	shard, err := blockshard.NewShard(0, dir, c.root+"/"+lockSuffix, settings)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	release, err := shard.AcquirePublishLock()
-	if err != nil {
-		return nil, nil, err
-	}
-	for i := range blockshard.DefaultL0Trigger {
-		key := []byte(lockSuffix + "-key-" + strconv.Itoa(i))
-		value := bytes.Repeat([]byte{byte(i + 1)}, 48)
-		if err := shard.Publish(ctx, []segment.Entry{{Key: key, Value: value}}); err != nil {
-			release()
-			return nil, nil, err
-		}
-	}
-	release()
-
-	manifest := shard.Manifest()
-	if len(manifest.Segments) != blockshard.DefaultL0Trigger {
-		return nil, nil, errors.Errorf("segments before compaction=%d want=%d", len(manifest.Segments), blockshard.DefaultL0Trigger)
-	}
-	return shard, manifest, nil
-}
-
-func verifyCompactionInputValues(dir js.Value, m *blockshard.Manifest, keyPrefix string) error {
-	for i := range blockshard.DefaultL0Trigger {
-		key := []byte(keyPrefix + "-key-" + strconv.Itoa(i))
-		want := bytes.Repeat([]byte{byte(i + 1)}, 48)
-		found := false
-		for j := range m.Segments {
-			sr, err := blockshard.OpenSegment(dir, m.Segments[j].Filename)
-			if err != nil {
-				return err
-			}
-			got, ok, err := sr.Get(key)
-			if err != nil {
-				return err
-			}
-			if !ok {
-				continue
-			}
-			found = true
-			if !bytes.Equal(got, want) {
-				return errors.Errorf("compacted value mismatch for %s", key)
-			}
-			break
-		}
-		if !found {
-			return errors.Errorf("compacted key %s not found", key)
-		}
-	}
-	return nil
-}
-
-func writeTestBlockshardManifest(dir js.Value, m *blockshard.Manifest) error {
-	slot := "manifest-a"
-	if m.Generation%2 == 0 {
-		slot = "manifest-b"
-	}
-	return opfs.WriteFile(dir, slot, m.Encode())
-}
-
+// runReadAtHelperLoop checks offset reads and exact EOF behavior.
 func runReadAtHelperLoop(c *config) error {
 	dir, err := openTestDirectory(c.root, []string{"read-at-helper"})
 	if err != nil {
@@ -1034,7 +787,7 @@ func runReadAtHelperLoop(c *config) error {
 
 	off := int64(11)
 	expected := want[off : off+12]
-	for i := 0; i < c.iterations; i++ {
+	for i := range c.iterations {
 		got := make([]byte, len(expected))
 		n, err := file.ReadAt(got, off)
 		if err != nil {
@@ -1058,116 +811,47 @@ func runReadAtHelperLoop(c *config) error {
 	return nil
 }
 
-func runGCWalWriteLoop(ctx context.Context, c *config) error {
-	dir, err := openTestDirectory(c.root, []string{"gc", "wal"})
-	if err != nil {
-		return err
-	}
-	writer := block_gc_wal.NewWriter(
-		dir,
-		c.root+"/gc/wal",
-		c.root+"|gc-wal-order",
-		c.root+"|gc-stw",
-	)
-	for i := 0; i < c.iterations; i++ {
-		edge := &block_gc_wal.RefEdge{
-			Subject: "subject/" + zeroPad(c.worker, 2) + "/" + zeroPad(i, 5),
-			Object:  "object/" + zeroPad(c.worker, 2) + "/" + zeroPad(i, 5),
-		}
-		if err := writer.Append(ctx, []*block_gc_wal.RefEdge{edge}, nil); err != nil {
-			return errors.Wrapf(err, "append wal %d", i)
-		}
-	}
-	return verifyGCWal(c)
-}
-
-func verifyGCWal(c *config) error {
-	dir, err := openTestDirectory(c.root, []string{"gc", "wal"})
-	if err != nil {
-		return err
-	}
-	names, err := opfs.ListDirectory(dir)
-	if err != nil {
-		return errors.Wrap(err, "list wal directory")
-	}
-	var walFiles int
-	var maxSeq uint64
-	for _, name := range names {
-		if !strings.HasSuffix(name, ".wal") {
-			continue
-		}
-		walFiles++
-		data, err := opfs.ReadFile(dir, name)
-		if err != nil {
-			return errors.Wrapf(err, "read wal file %s", name)
-		}
-		var entry block_gc_wal.WALEntry
-		if err := entry.UnmarshalVT(data); err != nil {
-			return errors.Wrapf(err, "unmarshal wal file %s", name)
-		}
-		if entry.Sequence == 0 || len(entry.Adds) != 1 {
-			return errors.Errorf("invalid wal entry %s sequence=%d adds=%d", name, entry.Sequence, len(entry.Adds))
-		}
-		if entry.Sequence > maxSeq {
-			maxSeq = entry.Sequence
-		}
-	}
-	if walFiles != c.iterations {
-		return errors.Errorf("wal files=%d want=%d", walFiles, c.iterations)
-	}
-	if maxSeq != uint64(c.iterations) {
-		return errors.Errorf("wal max sequence=%d want=%d", maxSeq, c.iterations)
-	}
-	return nil
-}
-
+// runBlockWriter publishes deterministic batches before announcing their availability.
 func runBlockWriter(ctx context.Context, c *config) error {
-	e, release, err := openBlockEngine(ctx, c)
+	// Open one publishing engine and its cross-runtime event channel.
+	_, blocks, release, err := openBlockEngine(ctx, c)
 	if err != nil {
 		return err
 	}
 	defer release()
 	events := newBlockEventPub(c.root)
 	defer events.Close()
-	defer events.Post(blockEvent{
-		typ:    "block-writer-done",
-		worker: c.worker,
-	})
 
-	for i := 0; i < c.iterations; i++ {
-		entries := make([]segment.Entry, c.batch)
+	// Publish deterministic batches and announce each visible generation.
+	for i := range c.iterations {
+		entries := make([]*block.PutBatchEntry, c.batch)
 		for j := range entries {
 			key := blockKey(c.worker, i, j)
-			entries[j] = segment.Entry{
-				Key:   key,
-				Value: blockValue(key),
-			}
-		}
-		if err := e.Put(ctx, entries); err != nil {
-			return errors.Wrap(err, "put block batch")
-		}
-		events.Post(blockEvent{
-			typ:       "block-written",
-			worker:    c.worker,
-			iteration: i,
-		})
-		if i%4 == 0 {
-			key := blockKey(c.worker, i, 0)
-			val, found, err := e.GetContext(ctx, key)
+			value := blockValue(key)
+			ref, err := block.BuildBlockRef(value, nil)
 			if err != nil {
-				return errors.Wrap(err, "read own block")
+				return errors.Wrap(err, "build concurrent block reference")
 			}
-			if !found || string(val) != string(blockValue(key)) {
-				return errors.Errorf("own block mismatch worker=%d iteration=%d found=%v", c.worker, i, found)
-			}
+			entries[j] = &block.PutBatchEntry{Ref: ref, Data: value}
 		}
+		if err := blocks.PutBlockBatch(ctx, entries); err != nil {
+			return errors.Wrap(err, "write concurrent blocks")
+		}
+		if _, err := blocks.Sync(ctx); err != nil {
+			return errors.Wrap(err, "sync concurrent blocks")
+		}
+		events.Post(blockEvent{typ: "block-written", worker: c.worker, iteration: i})
 	}
+
+	// Announce completion after every published batch is durable.
+	events.Post(blockEvent{typ: "block-writer-done", worker: c.worker})
 	return nil
 }
 
+// runBlockReader observes concurrent publishers and optionally verifies maintenance.
 func runBlockReader(ctx context.Context, c *config, compact bool) error {
-	// Open one reader runtime before the writers start.
-	e, release, err := openBlockEngine(ctx, c)
+	// Open one reader before the publishers start.
+	e, blocks, release, err := openBlockEngine(ctx, c)
 	if err != nil {
 		return err
 	}
@@ -1176,59 +860,38 @@ func runBlockReader(ctx context.Context, c *config, compact bool) error {
 	defer events.Close()
 	postReady(c)
 
-	// Read each published batch until every writer reports completion.
+	// Consume publication events until every writer completes.
 	done := make([]bool, c.workers)
 	var found int
 	var doneCount int
 	for doneCount < c.workers {
-		ev, err := events.Next(ctx)
+		event, err := events.Next(ctx)
 		if err != nil {
 			return err
 		}
-		switch ev.typ {
+		switch event.typ {
 		case "block-written":
 			for j := range c.batch {
-				key := blockKey(ev.worker, ev.iteration, j)
-				val, ok, err := e.GetContext(ctx, key)
+				key := blockKey(event.worker, event.iteration, j)
+				value, ok, err := getBlock(ctx, blocks, key)
 				if err != nil {
 					return errors.Wrap(err, "read concurrent block")
 				}
 				if !ok {
 					continue
 				}
-				if string(val) != string(blockValue(key)) {
+				if !bytes.Equal(value, blockValue(key)) {
 					return errors.Errorf("block value mismatch key=%s", string(key))
 				}
 				found++
 			}
 		case "block-writer-done":
-			if ev.worker < 0 || ev.worker >= len(done) {
-				return errors.Errorf("invalid writer id %d", ev.worker)
+			if event.worker < 0 || event.worker >= len(done) {
+				return errors.Errorf("invalid writer id %d", event.worker)
 			}
-			if !done[ev.worker] {
-				done[ev.worker] = true
+			if !done[event.worker] {
+				done[event.worker] = true
 				doneCount++
-			}
-		default:
-			continue
-		}
-	}
-
-	// Confirm final visibility when publication events raced manifest refresh.
-	if found == 0 {
-		for w := range c.workers {
-			for i := range c.iterations {
-				key := blockKey(w, i, 0)
-				val, ok, err := e.GetContext(ctx, key)
-				if err != nil {
-					return errors.Wrap(err, "read final concurrent block")
-				}
-				if ok {
-					found++
-					if string(val) != string(blockValue(key)) {
-						return errors.Errorf("block value mismatch key=%s", string(key))
-					}
-				}
 			}
 		}
 	}
@@ -1239,57 +902,24 @@ func runBlockReader(ctx context.Context, c *config, compact bool) error {
 		return nil
 	}
 
-	// Compact through the live reader and verify every retained value.
-	if err := e.CompactOnce(ctx); err != nil {
-		return errors.Wrap(err, "compact shared block volume")
+	// Run bounded maintenance through the live reader before checking all values.
+	if err := e.Maintenance(ctx); err != nil {
+		return errors.Wrap(err, "maintain shared block volume")
 	}
-	for w := range c.workers {
-		for i := range c.iterations {
-			for j := range c.batch {
-				key := blockKey(w, i, j)
-				val, ok, err := e.GetContext(ctx, key)
-				if err != nil {
-					return errors.Wrap(err, "read block after compaction")
-				}
-				if !ok {
-					return errors.Errorf("missing block after compaction key=%s", string(key))
-				}
-				if string(val) != string(blockValue(key)) {
-					return errors.Errorf("bad block after compaction key=%s", string(key))
-				}
-			}
-		}
-	}
-	return nil
+	return verifyBlocks(ctx, c, blocks, "after maintenance")
 }
 
+// runBlockVerify checks every expected block after a fresh engine mount.
 func runBlockVerify(ctx context.Context, c *config) error {
-	e, release, err := openBlockEngine(ctx, c)
+	_, blocks, release, err := openBlockEngine(ctx, c)
 	if err != nil {
 		return err
 	}
 	defer release()
-
-	for w := 0; w < c.workers; w++ {
-		for i := 0; i < c.iterations; i++ {
-			for j := 0; j < c.batch; j++ {
-				key := blockKey(w, i, j)
-				val, found, err := e.GetContext(ctx, key)
-				if err != nil {
-					return errors.Wrap(err, "verify block")
-				}
-				if !found {
-					return errors.Errorf("missing block key=%s %s", string(key), describeBlockShard(c, e.ShardForKey(key)))
-				}
-				if string(val) != string(blockValue(key)) {
-					return errors.Errorf("bad block value key=%s", string(key))
-				}
-			}
-		}
-	}
-	return nil
+	return verifyBlocks(ctx, c, blocks, "after remount")
 }
 
+// runRemoteCacheLifecycle checks stale handle rejection and fresh reads after bridge replacement.
 func runRemoteCacheLifecycle(ctx context.Context, c *config) error {
 	// Install and require the bridge-backed driver.
 	if !opfs.InstallRemoteDriverFromGlobal() {
@@ -1301,7 +931,7 @@ func runRemoteCacheLifecycle(ctx context.Context, c *config) error {
 	}
 
 	// Populate the block cache through the first bridge.
-	e, release, err := openBlockEngine(ctx, c)
+	_, e, release, err := openBlockEngine(ctx, c)
 	if err != nil {
 		return err
 	}
@@ -1310,16 +940,16 @@ func runRemoteCacheLifecycle(ctx context.Context, c *config) error {
 			release()
 		}
 	}()
-	key := []byte("remote-cache-key")
 	value := []byte("remote-cache-value")
-	if err := e.Put(ctx, []segment.Entry{{Key: key, Value: value}}); err != nil {
+	ref, _, err := e.PutBlock(ctx, value, &block.PutOpts{Sync: true})
+	if err != nil {
 		return errors.Wrap(err, "write remote cache block")
 	}
-	got, found, err := e.GetContext(ctx, key)
+	got, found, err := e.GetBlock(ctx, ref)
 	if err != nil {
 		return errors.Wrap(err, "read remote cache block")
 	}
-	if !found || string(got) != string(value) {
+	if !found || !bytes.Equal(got, value) {
 		return errors.Errorf("remote cache read returned found=%t value=%q", found, got)
 	}
 
@@ -1356,16 +986,16 @@ func runRemoteCacheLifecycle(ctx context.Context, c *config) error {
 	release = nil
 
 	// Remount the block cache through fresh directory and file tokens.
-	fresh, freshRelease, err := openBlockEngine(ctx, c)
+	_, fresh, freshRelease, err := openBlockEngine(ctx, c)
 	if err != nil {
 		return errors.Wrap(err, "remount block engine after bridge swap")
 	}
 	defer freshRelease()
-	got, found, err = fresh.GetContext(ctx, key)
+	got, found, err = fresh.GetBlock(ctx, ref)
 	if err != nil {
 		return errors.Wrap(err, "read remote cache block after remount")
 	}
-	if !found || string(got) != string(value) {
+	if !found || !bytes.Equal(got, value) {
 		return errors.Errorf("remote cache remount returned found=%t value=%q", found, got)
 	}
 
@@ -1398,339 +1028,40 @@ func runRemoteCacheLifecycle(ctx context.Context, c *config) error {
 	return nil
 }
 
-func openBlockEngine(ctx context.Context, c *config) (*blockshard.Engine, func(), error) {
-	return openBlockEngineWithMetrics(ctx, c, nil)
-}
-
-func openBlockEngineWithMetrics(
-	ctx context.Context,
-	c *config,
-	metrics *blockshard.BenchmarkMetrics,
-) (*blockshard.Engine, func(), error) {
-	dir, err := openTestDirectory(c.root, []string{"blocks"})
+// openBlockEngine returns the immutable engine, its block adapter, and their joint release.
+func openBlockEngine(ctx context.Context, c *config) (*engine.Engine, *engine.BlockStore, func(), error) {
+	dir, err := openTestDirectory(c.root, nil)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
-	settings := blockshard.DefaultSettings()
-	settings.ShardCount = c.shards
-	settings.BenchmarkMetrics = metrics
-	e, err := blockshard.NewEngineWithSettings(ctx, dir, c.root+"/blocks", settings)
+	e, err := engine.Open(ctx, engine.NewBrowserBackend(opfs.DefaultDriver, dir, c.root))
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
-	return e, e.Close, nil
+	blocks := engine.NewBlockStore(ctx, e, block.DefaultHashType)
+	release := func() {
+		_ = blocks.Close()
+		_ = e.Close()
+	}
+	return e, blocks, release, nil
 }
 
-// materializeBlockBytes is the per-block payload for the manifest materialization
-// fanout benchmark. Small blocks make the per-Publish fixed cost (Web Lock
-// acquire, sync access handle open/flush/close, double-buffered manifest write)
-// dominate, which is the regime first-run plugin manifest materialization hits:
-// the world Manifest DAG is hundreds of small UnixFS and metadata blocks.
-const materializeBlockBytes = 16 * 1024
-
-type fanoutMode int
-
-const (
-	fanoutSerial fanoutMode = iota
-	fanoutConcurrent
-	fanoutBatched
-	fanoutAsyncSerial
-)
-
-// runMaterializeFanout writes c.iterations content-addressed blocks into the
-// production OPFS blockshard engine and records how the block feed pattern
-// changes total write time and the number of OPFS Publish cycles.
-//
-// fanoutSerial mirrors the pre-refactor manifest copy loop: a foreground-awaited
-// Put per block, so every block becomes its own Publish and pays the full fixed
-// tax. fanoutConcurrent issues single-block puts from c.batch goroutines so the
-// shard write actor coalesces concurrently queued puts into far fewer Publishes.
-// fanoutBatched groups c.batch blocks per Put. fanoutAsyncSerial mirrors the
-// landed async-default BlockStore.PutBlock path: a strictly serial one-block-at-
-// a-time PutBackground feed (no caller concurrency or batching) fenced by a
-// single Sync, so the actor coalesces whatever piles up behind the in-flight
-// publish. All four write identical blocks; only the feed pattern differs.
-func runMaterializeFanout(ctx context.Context, c *config, mode fanoutMode) error {
-	blocks := c.iterations
-	if blocks <= 0 {
-		blocks = 512
-	}
-	entries := make([]segment.Entry, blocks)
-	for i := range entries {
-		entries[i] = segment.Entry{
-			Key:   materializeBlockKey(i),
-			Value: deterministicLargeBytes(materializeBlockBytes, i),
-		}
-	}
-
-	var metrics *blockshard.BenchmarkMetrics
-	if c.metrics {
-		metrics = &blockshard.BenchmarkMetrics{}
-	}
-	e, release, err := openBlockEngineWithMetrics(ctx, c, metrics)
-	if err != nil {
-		return err
-	}
-	defer release()
-	if metrics != nil {
-		metrics.Reset()
-	}
-	generationStart := sumManifestGenerations(c)
-
-	postProgress(c, "materialize-write-start", 0, blocks)
-	start := time.Now()
-	switch mode {
-	case fanoutSerial:
-		for i := range entries {
-			if err := e.Put(ctx, entries[i:i+1]); err != nil {
-				return errors.Wrapf(err, "serial put block %d", i)
-			}
-		}
-	case fanoutConcurrent:
-		if err := putEntriesConcurrent(ctx, e, entries, c.batch); err != nil {
-			return err
-		}
-	case fanoutBatched:
-		if err := putEntriesBatched(ctx, e, entries, c.batch); err != nil {
-			return err
-		}
-	case fanoutAsyncSerial:
-		if err := putEntriesAsyncSerial(ctx, e, entries); err != nil {
-			return err
-		}
-	}
-	writeDur := time.Since(start)
-	postProgress(c, "materialize-write-complete", blocks, blocks)
-
-	generationEnd := sumManifestGenerations(c)
-	// Sync above is the durability barrier. No writer remains active in this
-	// worker, so PendingEntries is stable for the result snapshot.
-	benchExtra = map[string]int64{
-		"writeMs":         writeDur.Milliseconds(),
-		"blocks":          int64(blocks),
-		"publishGen":      generationEnd,
-		"generationDelta": generationEnd - generationStart,
-		"pendingEntries":  int64(e.PendingEntries()),
-	}
-	if metrics != nil {
-		m := metrics.Snapshot()
-		benchExtra["acceptedRequests"] = m.AcceptedRequests
-		benchExtra["acceptedEntries"] = m.AcceptedEntries
-		benchExtra["acceptedBytes"] = m.AcceptedBytes
-		benchExtra["actorCycles"] = m.ActorCycles
-		benchExtra["drainRounds"] = m.DrainRounds
-		benchExtra["publishAttempts"] = m.PublishAttempts
-		benchExtra["publishSuccesses"] = m.PublishSuccesses
-		benchExtra["publishErrors"] = m.PublishErrors
-		benchExtra["publishErrorEntries"] = m.PublishErrorEntries
-		benchExtra["publishedEntries"] = m.PublishedEntries
-		benchExtra["publishedBytes"] = m.PublishedBytes
-		benchExtra["publishedSegments"] = m.PublishedSegments
-		benchExtra["manifestSlotReads"] = m.ManifestSlotReads
-		benchExtra["manifestWrites"] = m.ManifestWrites
-		benchExtra["reclaimCalls"] = m.ReclaimCalls
-		benchExtra["reclaimHits"] = m.ReclaimHits
-		benchExtra["reclaimDeletes"] = m.ReclaimDeletes
-		benchExtra["reclaimNs"] = m.ReclaimNanoseconds
-	}
-	return nil
-}
-
-// putEntriesConcurrent writes single-block puts from concurrency goroutines.
-// Each goroutine blocks on its own OPFS publish promise; while one awaits, the
-// Go scheduler runs the others, so multiple blocks queue into a shard before its
-// actor publishes and the actor coalesces them into one Publish.
-func putEntriesConcurrent(ctx context.Context, e *blockshard.Engine, entries []segment.Entry, concurrency int) error {
-	if concurrency <= 0 {
-		concurrency = 16
-	}
-	idx := make(chan int, len(entries))
-	for i := range entries {
-		idx <- i
-	}
-	close(idx)
-
-	var mu sync.Mutex
-	var firstErr error
-	var wg sync.WaitGroup
-	for w := 0; w < concurrency; w++ {
-		wg.Go(func() {
-			for i := range idx {
-				if err := e.Put(ctx, entries[i:i+1]); err != nil {
-					mu.Lock()
-					if firstErr == nil {
-						firstErr = errors.Wrapf(err, "concurrent put block %d", i)
-					}
-					mu.Unlock()
-					return
-				}
-			}
-		})
-	}
-	wg.Wait()
-	return firstErr
-}
-
-// putEntriesBatched writes batch blocks per Put call, the explicit-batching
-// alternative to raising walk concurrency.
-func putEntriesBatched(ctx context.Context, e *blockshard.Engine, entries []segment.Entry, batch int) error {
-	if batch <= 0 {
-		batch = 64
-	}
-	for start := 0; start < len(entries); start += batch {
-		end := min(start+batch, len(entries))
-		if err := e.Put(ctx, entries[start:end]); err != nil {
-			return errors.Wrapf(err, "batched put blocks %d..%d", start, end)
-		}
-	}
-	return nil
-}
-
-// putEntriesAsyncSerial writes single-block PutBackground enqueues one at a time
-// with no caller concurrency or batching, then fences once with Sync. This is
-// the landed async-default BlockStore.PutBlock feed: the enqueue returns before
-// the publish, so blocks pile up behind the shard's in-flight publish and the
-// write actor coalesces whatever accumulated into one Publish. A single serial
-// producer fills the pending buffer only shallowly, so the coalescing is partial
-// (measured ~1.1-1.8x fewer Publishes than the serial Put path, weaker as the
-// block count grows) rather than the order-of-magnitude collapse of a batched or
-// concurrent feed; the trailing Sync still removes the per-block durability fence
-// the serial Put path pays, which is the larger share of the write-time win.
-func putEntriesAsyncSerial(ctx context.Context, e *blockshard.Engine, entries []segment.Entry) error {
-	for i := range entries {
-		if err := e.PutBackground(ctx, entries[i:i+1]); err != nil {
-			return errors.Wrapf(err, "async-serial put block %d", i)
-		}
-	}
-	if err := e.Sync(ctx); err != nil {
-		return errors.Wrap(err, "async-serial sync")
-	}
-	return nil
-}
-
-func materializeBlockKey(entry int) []byte {
-	return []byte("materialize/" + zeroPad(entry, 6))
-}
-
-// sumManifestGenerations sums the blockshard manifest generation across shards
-// as a proxy for the number of OPFS Publish cycles performed: each publish
-// advances the shard's manifest generation.
-func sumManifestGenerations(c *config) int64 {
-	shardCount := c.shards
-	if shardCount <= 0 {
-		shardCount = blockshard.DefaultShardCount
-	}
-	var total int64
-	for shardID := 0; shardID < shardCount; shardID++ {
-		dir, err := openTestDirectory(c.root, []string{"blocks", "shard-" + zeroPad(shardID, 2)})
-		if err != nil {
-			continue
-		}
-		a, err := opfs.ReadFile(dir, "manifest-a")
-		if err != nil && !opfs.IsNotFound(err) {
-			continue
-		}
-		b, err := opfs.ReadFile(dir, "manifest-b")
-		if err != nil && !opfs.IsNotFound(err) {
-			continue
-		}
-		if m := blockshard.PickManifest(a, b); m != nil {
-			total += int64(m.Generation)
-		}
-	}
-	return total
-}
-
-func describeBlockShard(c *config, shard int) string {
-	dir, err := openTestDirectory(c.root, []string{"blocks", "shard-" + zeroPad(shard, 2)})
-	if err != nil {
-		return "describe-shard-error=" + err.Error()
-	}
-	a, err := opfs.ReadFile(dir, "manifest-a")
-	if err != nil && !opfs.IsNotFound(err) {
-		return "read-manifest-a-error=" + err.Error()
-	}
-	b, err := opfs.ReadFile(dir, "manifest-b")
-	if err != nil && !opfs.IsNotFound(err) {
-		return "read-manifest-b-error=" + err.Error()
-	}
-	m := blockshard.PickManifest(a, b)
-	if m == nil {
-		return "manifest=nil"
-	}
-	var sb strings.Builder
-	sb.WriteString("shard=")
-	sb.WriteString(strconv.Itoa(shard))
-	sb.WriteString(" gen=")
-	sb.WriteString(strconv.FormatUint(m.Generation, 10))
-	sb.WriteString(" segments=")
-	sb.WriteString(strconv.Itoa(len(m.Segments)))
-	limit := min(len(m.Segments), 8)
-	for i := range limit {
-		seg := m.Segments[i]
-		sb.WriteString(" ")
-		sb.WriteString(seg.Filename)
-		sb.WriteString("[")
-		sb.Write(seg.MinKey)
-		sb.WriteString("..")
-		sb.Write(seg.MaxKey)
-		sb.WriteString("]")
-	}
-	return sb.String()
-}
-
-func runBlockOrphanSegment(c *config) error {
-	dir, err := openTestDirectory(c.root, []string{"blocks", "shard-00"})
-	if err != nil {
-		return err
-	}
-	w := segment.NewWriter()
-	key := []byte("orphan/terminated")
-	w.Add(key, blockValue(key))
-	var buf bytes.Buffer
-	if _, err := w.Build(&buf); err != nil {
-		return errors.Wrap(err, "build orphan segment")
-	}
-	if err := opfs.WriteFile(dir, orphanSegmentFilename(), buf.Bytes()); err != nil {
-		return errors.Wrap(err, "write orphan segment")
-	}
-	postReady(c)
-	_, err = io.Copy(io.Discard, neverReader{})
-	return err
-}
-
-func runBlockOrphanVerifyClean(c *config) error {
-	dir, err := openTestDirectory(c.root, []string{"blocks", "shard-00"})
-	if err != nil {
-		return err
-	}
-	exists, err := opfs.FileExists(dir, orphanSegmentFilename())
-	if err != nil {
-		return err
-	}
-	if exists {
-		return errors.Errorf("orphan segment %s still exists", orphanSegmentFilename())
-	}
-	return nil
-}
-
+// runMetaWriter commits one deterministic key per transaction while other workers write.
 func runMetaWriter(ctx context.Context, c *config) error {
-	store, err := openMetaStore(c)
+	vol, err := openVolume(ctx, c)
 	if err != nil {
 		return err
 	}
-	for i := 0; i < c.iterations; i++ {
-		tx, err := store.NewTransaction(ctx, true)
-		if err != nil {
-			return errors.Wrap(err, "open meta write tx")
-		}
+	defer vol.Close()
+	store := vol.GetKvtxStore()
+	for i := range c.iterations {
 		key := metaKey(c.worker, i)
-		if err := tx.Set(ctx, key, metaValue(key)); err != nil {
-			tx.Discard()
-			return errors.Wrap(err, "set meta")
-		}
-		if err := tx.Commit(ctx); err != nil {
-			return errors.Wrap(err, "commit meta")
+		if err := kvtx.RunTransaction(ctx, true, func(ctx context.Context) (kvtx.Tx, error) {
+			return store.NewTransaction(ctx, true)
+		}, func(ctx context.Context, tx kvtx.Tx) error {
+			return tx.Set(ctx, key, metaValue(key))
+		}); err != nil {
+			return err
 		}
 		if i%5 == 0 {
 			if err := verifyMetaKey(ctx, store, key); err != nil {
@@ -1741,13 +1072,16 @@ func runMetaWriter(ctx context.Context, c *config) error {
 	return nil
 }
 
+// runMetaVerify checks all workers' metadata through a fresh volume.
 func runMetaVerify(ctx context.Context, c *config) error {
-	store, err := openMetaStore(c)
+	vol, err := openVolume(ctx, c)
 	if err != nil {
 		return err
 	}
-	for w := 0; w < c.workers; w++ {
-		for i := 0; i < c.iterations; i++ {
+	defer vol.Close()
+	store := vol.GetKvtxStore()
+	for w := range c.workers {
+		for i := range c.iterations {
 			if err := verifyMetaKey(ctx, store, metaKey(w, i)); err != nil {
 				return err
 			}
@@ -1756,270 +1090,22 @@ func runMetaVerify(ctx context.Context, c *config) error {
 	return nil
 }
 
-// runMetaReadIsolation checks that a read transaction serves one committed
-// generation. Reading several keys is how a caller assembles one object, so a
-// transaction that answered from two generations would hand back a combination
-// the store never held.
-func runMetaReadIsolation(ctx context.Context, c *config) error {
-	store, err := openMetaStore(c)
-	if err != nil {
-		return err
-	}
-
-	if err := putMetaPair(ctx, store, "1"); err != nil {
-		return err
-	}
-
-	readTx, err := store.NewTransaction(ctx, false)
-	if err != nil {
-		return errors.Wrap(err, "open meta read tx")
-	}
-	defer readTx.Discard()
-
-	val, found, err := readTx.Get(ctx, []byte("iso-a"))
-	if err != nil {
-		return errors.Wrap(err, "read iso-a")
-	}
-	if !found || string(val) != "1" {
-		return errors.Errorf("iso-a = %q found=%v, want 1", val, found)
-	}
-
-	// Repeated reads with nothing committed in between stay on one generation
-	// and must not fail.
-	for i := 0; i < 8; i++ {
-		if _, _, err := readTx.Get(ctx, []byte("iso-b")); err != nil {
-			return errors.Wrapf(err, "repeat read %d", i)
-		}
-	}
-
-	if err := putMetaPair(ctx, store, "2"); err != nil {
-		return err
-	}
-
-	readErr := func() error {
-		_, _, err := readTx.Get(ctx, []byte("iso-b"))
-		return err
-	}()
-	if !errors.Is(readErr, metashard.ErrGenerationChanged) {
-		return errors.Errorf("read after foreign commit err = %v, want ErrGenerationChanged", readErr)
-	}
-	// The callers that reopen a transaction at a fresh generation recognize the
-	// store-level snapshot error, not this store's private sentinel, so a
-	// generation change has to reach them as one.
-	if !errors.Is(readErr, kvtx.ErrInvalidSnapshot) {
-		return errors.Errorf("read after foreign commit err = %v, want kvtx.ErrInvalidSnapshot", readErr)
-	}
-
-	nextTx, err := store.NewTransaction(ctx, false)
-	if err != nil {
-		return errors.Wrap(err, "open fresh meta read tx")
-	}
-	defer nextTx.Discard()
-	for _, key := range []string{"iso-a", "iso-b"} {
-		val, found, err := nextTx.Get(ctx, []byte(key))
-		if err != nil {
-			return errors.Wrapf(err, "fresh read %s", key)
-		}
-		if !found || string(val) != "2" {
-			return errors.Errorf("fresh %s = %q found=%v, want 2", key, val, found)
-		}
-	}
-	return nil
-}
-
-func putMetaPair(ctx context.Context, store *metashard.MetaStore, value string) error {
-	tx, err := store.NewTransaction(ctx, true)
-	if err != nil {
-		return errors.Wrap(err, "open meta write tx")
-	}
-	for _, key := range []string{"iso-a", "iso-b"} {
-		if err := tx.Set(ctx, []byte(key), []byte(value)); err != nil {
-			tx.Discard()
-			return errors.Wrapf(err, "set %s", key)
-		}
-	}
-	return errors.Wrap(tx.Commit(ctx), "commit meta pair")
-}
-
-func putMetaValue(ctx context.Context, store *metashard.MetaStore, key, value string) error {
-	tx, err := store.NewTransaction(ctx, true)
-	if err != nil {
-		return errors.Wrap(err, "open meta write tx")
-	}
-	if err := tx.Set(ctx, []byte(key), []byte(value)); err != nil {
-		tx.Discard()
-		return errors.Wrapf(err, "set %s", key)
-	}
-	return errors.Wrapf(tx.Commit(ctx), "commit %s", key)
-}
-
-// runMetaResetIdentity checks that a shard holding cached committed state
-// notices when another agent replaces the database underneath it.
-//
-// Corruption recovery deletes the page file and builds a new database in its
-// place. A shard decides whether to revalidate by comparing the state it
-// loaded against what is on disk, so a replacement that reached the same
-// commit count with the same tree shape must still be distinguishable from the
-// database it replaced. Otherwise the cached shard serves the old root page
-// over the new file and returns metadata that no longer exists.
-func runMetaResetIdentity(ctx context.Context, c *config) error {
-	cached, err := openMetaStore(c)
-	if err != nil {
-		return err
-	}
-	if err := putMetaValue(ctx, cached, "reset-key", "before"); err != nil {
-		return err
-	}
-	// Read once so this shard caches the state it just committed.
-	if err := verifyMetaValue(ctx, cached, []byte("reset-key"), []byte("before")); err != nil {
-		return errors.Wrap(err, "read before replacement")
-	}
-
-	dir, err := openTestDirectory(c.root, []string{"meta"})
-	if err != nil {
-		return err
-	}
-	for _, name := range []string{"pages.dat", "super-a", "super-b"} {
-		if err := opfs.DeleteFile(dir, name); err != nil && !opfs.IsNotFound(err) {
-			return errors.Wrapf(err, "delete %s", name)
-		}
-	}
-
-	// Build the replacement in one commit, so it reaches the same commit count
-	// as the database that was deleted while holding a different root page and
-	// page count. That is the state a shard comparing commit counts alone would
-	// mistake for the one it cached.
-	replacement, err := openMetaStore(c)
-	if err != nil {
-		return err
-	}
-	tx, err := replacement.NewTransaction(ctx, true)
-	if err != nil {
-		return errors.Wrap(err, "open replacement write tx")
-	}
-	for i := 0; i < 512; i++ {
-		if err := tx.Set(ctx, metaKey(0, i), metaValue(metaKey(0, i))); err != nil {
-			tx.Discard()
-			return errors.Wrap(err, "set replacement key")
-		}
-	}
-	if err := tx.Set(ctx, []byte("reset-key"), []byte("after!")); err != nil {
-		tx.Discard()
-		return errors.Wrap(err, "set replacement reset-key")
-	}
-	if err := tx.Commit(ctx); err != nil {
-		return errors.Wrap(err, "commit replacement")
-	}
-
-	return errors.Wrap(
-		verifyMetaValue(ctx, cached, []byte("reset-key"), []byte("after!")),
-		"read after replacement",
-	)
-}
-
-// runMetaFallbackShortcut checks that a shard serving the older superblock
-// still recognizes its own loaded state on the next read.
-//
-// A superblock whose header decodes can still fail tree validation, and the
-// shard then falls back to the other slot. The rejected slot stays on disk, so
-// a shard that decided whether to revalidate by looking at the newest slot
-// alone would find a stranger there on every read and walk the whole tree
-// again, under the shared metadata lock, for each point read.
-func runMetaFallbackShortcut(ctx context.Context, c *config) error {
-	shard, store, err := openMetaShard(c)
-	if err != nil {
-		return err
-	}
-	if err := putMetaValue(ctx, store, "fallback-key", "value!"); err != nil {
-		return err
-	}
-	if err := shard.Close(); err != nil {
-		return errors.Wrap(err, "close writer shard")
-	}
-
-	dir, err := openTestDirectory(c.root, []string{"meta"})
-	if err != nil {
-		return err
-	}
-	committed, err := readCurrentMetaSuperblock(dir)
-	if err != nil {
-		return err
-	}
-	if committed == nil {
-		return errors.New("no committed meta superblock after write")
-	}
-
-	// Publish a newer superblock whose root page lies outside the page file.
-	// Its header decodes, so the shard has to walk the tree to reject it, and
-	// the slot it lands in is the one the committed superblock does not hold.
-	poisoned := pagestore.Superblock{
-		Magic:        pagestore.SuperblockMagic,
-		Version:      1,
-		Generation:   committed.Generation + 1,
-		RootPage:     pagestore.PageID(committed.PageCount),
-		FreelistPage: committed.FreelistPage,
-		PageCount:    committed.PageCount,
-	}
-	slot := "super-a"
-	if poisoned.Generation%2 == 0 {
-		slot = "super-b"
-	}
-	var poisonedBuf [pagestore.SuperblockSize]byte
-	pagestore.EncodeSuperblock(poisonedBuf[:], &poisoned)
-	if err := opfs.WriteFile(dir, slot, poisonedBuf[:]); err != nil {
-		return errors.Wrap(err, "write poisoned superblock")
-	}
-
-	reader, readerStore, err := openMetaShard(c)
-	if err != nil {
-		return err
-	}
-	if err := verifyMetaValue(
-		ctx,
-		readerStore,
-		[]byte("fallback-key"),
-		[]byte("value!"),
-	); err != nil {
-		return errors.Wrap(err, "read through fallback superblock")
-	}
-
-	before := reader.Revalidations()
-	for i := 0; i < 4; i++ {
-		if err := verifyMetaValue(
-			ctx,
-			readerStore,
-			[]byte("fallback-key"),
-			[]byte("value!"),
-		); err != nil {
-			return errors.Wrap(err, "repeat read through fallback superblock")
-		}
-	}
-	if after := reader.Revalidations(); after != before {
-		return errors.Errorf(
-			"reads over an unchanged fallback shard revalidated %d times, want 0",
-			after-before,
-		)
-	}
-	return nil
-}
-
+// runMetaMixedWriter publishes alternating small and large metadata values.
 func runMetaMixedWriter(ctx context.Context, c *config) error {
-	store, err := openMetaStore(c)
+	vol, err := openVolume(ctx, c)
 	if err != nil {
 		return err
 	}
-	for i := 0; i < c.iterations; i++ {
-		tx, err := store.NewTransaction(ctx, true)
-		if err != nil {
-			return errors.Wrap(err, "open mixed meta write tx")
-		}
+	defer vol.Close()
+	store := vol.GetKvtxStore()
+	for i := range c.iterations {
 		key := metaKey(c.worker, i)
-		if err := tx.Set(ctx, key, metaMixedValue(c.worker, key)); err != nil {
-			tx.Discard()
-			return errors.Wrap(err, "set mixed meta")
-		}
-		if err := tx.Commit(ctx); err != nil {
-			return errors.Wrap(err, "commit mixed meta")
+		if err := kvtx.RunTransaction(ctx, true, func(ctx context.Context) (kvtx.Tx, error) {
+			return store.NewTransaction(ctx, true)
+		}, func(ctx context.Context, tx kvtx.Tx) error {
+			return tx.Set(ctx, key, metaMixedValue(c.worker, key))
+		}); err != nil {
+			return err
 		}
 		if i%4 == 0 {
 			if err := verifyMetaValue(ctx, store, key, metaMixedValue(c.worker, key)); err != nil {
@@ -2030,13 +1116,16 @@ func runMetaMixedWriter(ctx context.Context, c *config) error {
 	return nil
 }
 
+// runMetaMixedVerify checks every small and large value after concurrent publication.
 func runMetaMixedVerify(ctx context.Context, c *config) error {
-	store, err := openMetaStore(c)
+	vol, err := openVolume(ctx, c)
 	if err != nil {
 		return err
 	}
-	for w := 0; w < c.workers; w++ {
-		for i := 0; i < c.iterations; i++ {
+	defer vol.Close()
+	store := vol.GetKvtxStore()
+	for w := range c.workers {
+		for i := range c.iterations {
 			key := metaKey(w, i)
 			if err := verifyMetaValue(ctx, store, key, metaMixedValue(w, key)); err != nil {
 				return err
@@ -2046,144 +1135,7 @@ func runMetaMixedVerify(ctx context.Context, c *config) error {
 	return nil
 }
 
-func runMetaManifestBloomSplit(ctx context.Context, c *config) error {
-	store, err := openMetaStore(c)
-	if err != nil {
-		return err
-	}
-	tx, err := store.NewTransaction(ctx, true)
-	if err != nil {
-		return errors.Wrap(err, "open manifest seed tx")
-	}
-	defer tx.Discard()
-	for _, entry := range manifestSeedEntries {
-		if err := tx.Set(ctx, manifestKey(entry.sub), manifestSizedValue(entry.sub, entry.size)); err != nil {
-			return errors.Wrap(err, "set manifest seed")
-		}
-	}
-	if err := tx.Commit(ctx); err != nil {
-		return errors.Wrap(err, "commit manifest seed")
-	}
-
-	tx, err = store.NewTransaction(ctx, true)
-	if err != nil {
-		return errors.Wrap(err, "open manifest delta tx")
-	}
-	defer tx.Discard()
-	if err := tx.Set(ctx, manifestKey("meta/lastPullSequence"), []byte("42")); err != nil {
-		return errors.Wrap(err, "set manifest sequence")
-	}
-	for _, entry := range manifestBloomCases {
-		key := manifestKey("pack_bloom/" + entry.shard + "/" + entry.pack)
-		if err := tx.Set(ctx, key, manifestBloomValue(entry)); err != nil {
-			return errors.Wrap(err, "set manifest bloom")
-		}
-		packKey := manifestKey("packs/" + entry.shard + "/" + entry.pack)
-		if err := tx.Set(ctx, packKey, manifestPackValue(entry)); err != nil {
-			return errors.Wrap(err, "set manifest pack")
-		}
-	}
-	if err := tx.Commit(ctx); err != nil {
-		return errors.Wrap(err, "commit manifest delta")
-	}
-	return nil
-}
-
-func runMetaManifestBloomVerify(ctx context.Context, c *config) error {
-	store, err := openMetaStore(c)
-	if err != nil {
-		return err
-	}
-	for _, entry := range manifestSeedEntries {
-		if err := verifyMetaValue(ctx, store, manifestKey(entry.sub), manifestSizedValue(entry.sub, entry.size)); err != nil {
-			return err
-		}
-	}
-	if err := verifyMetaValue(ctx, store, manifestKey("meta/lastPullSequence"), []byte("42")); err != nil {
-		return err
-	}
-	for _, entry := range manifestBloomCases {
-		key := manifestKey("pack_bloom/" + entry.shard + "/" + entry.pack)
-		if err := verifyMetaValue(ctx, store, key, manifestBloomValue(entry)); err != nil {
-			return err
-		}
-		packKey := manifestKey("packs/" + entry.shard + "/" + entry.pack)
-		if err := verifyMetaValue(ctx, store, packKey, manifestPackValue(entry)); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func runMetaCrashWrite(c *config, flipSuperblock bool) error {
-	dir, err := openTestDirectory(c.root, []string{"meta"})
-	if err != nil {
-		return err
-	}
-	sb, err := readCurrentMetaSuperblock(dir)
-	if err != nil {
-		return err
-	}
-	pager := metashard.NewOpfsPager(dir, "pages.dat", pagestore.DefaultPageSize)
-	if sb != nil {
-		pager.SetPageCount(sb.PageCount)
-		if err := pager.LoadFreelist(sb.FreelistPage); err != nil {
-			return errors.Wrap(err, "load freelist")
-		}
-	}
-	tree := pagestore.NewTree(pager)
-	if sb != nil {
-		tree = pagestore.OpenTree(pager, sb.RootPage)
-	}
-	key := metaKey(0, 0)
-	if err := tree.Put(key, metaCrashValue(key)); err != nil {
-		return errors.Wrap(err, "put crash meta")
-	}
-	freelistPage, err := pager.PersistFreelist()
-	if err != nil {
-		return errors.Wrap(err, "persist crash freelist")
-	}
-	pager.Flush()
-	if err := pager.Close(); err != nil {
-		return errors.Wrap(err, "close crash pager")
-	}
-	if flipSuperblock {
-		gen := uint64(1)
-		if sb != nil {
-			gen = sb.Generation + 1
-		}
-		next := pagestore.Superblock{
-			Magic:        pagestore.SuperblockMagic,
-			Version:      1,
-			Generation:   gen,
-			RootPage:     tree.RootID(),
-			FreelistPage: freelistPage,
-			PageCount:    pager.PageCount(),
-		}
-		slot := "super-a"
-		if gen%2 == 0 {
-			slot = "super-b"
-		}
-		var sbBuf [pagestore.SuperblockSize]byte
-		pagestore.EncodeSuperblock(sbBuf[:], &next)
-		if err := opfs.WriteFile(dir, slot, sbBuf[:]); err != nil {
-			return errors.Wrap(err, "write crash superblock")
-		}
-	}
-	postReady(c)
-	_, err = io.Copy(io.Discard, neverReader{})
-	return err
-}
-
-func runMetaCrashVerify(ctx context.Context, c *config) error {
-	store, err := openMetaStore(c)
-	if err != nil {
-		return err
-	}
-	key := metaKey(0, 0)
-	return verifyMetaValue(ctx, store, key, metaCrashValue(key))
-}
-
+// runVolumeRuntimeWrite persists a block and the metadata needed to find it after remount.
 func runVolumeRuntimeWrite(ctx context.Context, c *config) error {
 	vol, err := openVolume(ctx, c)
 	if err != nil {
@@ -2194,6 +1146,9 @@ func runVolumeRuntimeWrite(ctx context.Context, c *config) error {
 	ref, _, err := vol.PutBlock(ctx, volumeBlockValue(), nil)
 	if err != nil {
 		return errors.Wrap(err, "put volume block")
+	}
+	if _, err := vol.Sync(ctx); err != nil {
+		return err
 	}
 	refData, err := ref.MarshalVT()
 	if err != nil {
@@ -2214,7 +1169,8 @@ func runVolumeRuntimeWrite(ctx context.Context, c *config) error {
 	if err := tx.Commit(ctx); err != nil {
 		return errors.Wrap(err, "commit volume meta")
 	}
-	return nil
+	_, err = vol.Sync(ctx)
+	return err
 }
 
 // volumeKVKey returns the benchmark key for one write iteration.
@@ -2299,6 +1255,7 @@ func runVolumeKVWriteSingleTx(ctx context.Context, c *config) error {
 	return nil
 }
 
+// runVolumeRuntimeVerify checks saved metadata, referenced block content, and storage totals.
 func runVolumeRuntimeVerify(ctx context.Context, c *config) error {
 	vol, err := openVolume(ctx, c)
 	if err != nil {
@@ -2349,6 +1306,7 @@ func runVolumeRuntimeVerify(ctx context.Context, c *config) error {
 	return nil
 }
 
+// runVolumeRuntimeDeleteVerify requires explicit Volume.Delete to remove its subtree.
 func runVolumeRuntimeDeleteVerify(ctx context.Context, c *config) error {
 	vol, err := openVolume(ctx, c)
 	if err != nil {
@@ -2369,6 +1327,7 @@ func runVolumeRuntimeDeleteVerify(ctx context.Context, c *config) error {
 	return nil
 }
 
+// runVolumeCoordinatorLocal checks lease exclusion and authoritative local watch refresh.
 func runVolumeCoordinatorLocal(ctx context.Context, c *config) error {
 	reader, err := openVolume(ctx, c)
 	if err != nil {
@@ -2429,11 +1388,15 @@ func runVolumeCoordinatorLocal(ctx context.Context, c *config) error {
 		return errors.Wrap(err, "release coordinator lease")
 	}
 
-	event, err := waitCoordEvent(ctx, watch.Events(), before.Generation)
-	if err != nil {
-		return err
+	// Storage invalidation hints may precede the richer logical lease event.
+	var event coord.Event
+	for event.RootChanged == nil {
+		event, err = waitCoordEvent(ctx, watch.Events(), before.Generation)
+		if err != nil {
+			return err
+		}
 	}
-	if event.RootChanged == nil || !event.RootChanged.EqualsRef(ref) {
+	if !event.RootChanged.EqualsRef(ref) {
 		return errors.Errorf("root event=%v want=%v", event.RootChanged, ref)
 	}
 	if !bytes.Equal(event.KeyPrefixChanged, []byte("volume/coord/")) {
@@ -2453,6 +1416,7 @@ func runVolumeCoordinatorLocal(ctx context.Context, c *config) error {
 	return nil
 }
 
+// runVolumeCoordinatorWatch waits for another worker's durable generation to become visible.
 func runVolumeCoordinatorWatch(ctx context.Context, c *config) error {
 	vol, err := openVolume(ctx, c)
 	if err != nil {
@@ -2489,6 +1453,7 @@ func runVolumeCoordinatorWatch(ctx context.Context, c *config) error {
 	return nil
 }
 
+// runVolumeCoordinatorBroadcast fences admitted writes before the cross-worker wakeup.
 func runVolumeCoordinatorBroadcast(ctx context.Context, c *config) error {
 	vol, err := openVolume(ctx, c)
 	if err != nil {
@@ -2502,7 +1467,7 @@ func runVolumeCoordinatorBroadcast(ctx context.Context, c *config) error {
 	if _, _, err := vol.PutBlock(ctx, []byte("volume-coord-broadcast"), nil); err != nil {
 		return errors.Wrap(err, "put broadcast block")
 	}
-	// PutBlock is async by default: its blockshard publish, which fires the
+	// PutBlock is async by default: its immutable pack publication, which fires the
 	// cross-worker BroadcastChannel wakeup the watcher waits for, is deferred.
 	// A cross-worker coordinator change is observable only once fenced at the
 	// volume commit boundary, so Sync here as a production writer would before
@@ -2513,6 +1478,7 @@ func runVolumeCoordinatorBroadcast(ctx context.Context, c *config) error {
 	return nil
 }
 
+// volumeCoordScope identifies the shared object store and this worker's participant.
 func volumeCoordScope(vol volume.Volume, c *config) coord.Scope {
 	return coord.Scope{
 		VolumeID:      vol.GetID(),
@@ -2521,10 +1487,12 @@ func volumeCoordScope(vol volume.Volume, c *config) coord.Scope {
 	}
 }
 
+// volumeCoordRoot builds the distinct root marker used by a coordinator probe.
 func volumeCoordRoot(c *config, suffix string) *bucket.ObjectRef {
 	return &bucket.ObjectRef{BucketId: c.root + "/coord/" + suffix}
 }
 
+// advanceVolumeCoordinatorGeneration commits metadata to advance the durable revision.
 func advanceVolumeCoordinatorGeneration(ctx context.Context, vol *volume_opfs.Opfs, key []byte) error {
 	tx, err := vol.GetKvtxStore().NewTransaction(ctx, true)
 	if err != nil {
@@ -2540,6 +1508,7 @@ func advanceVolumeCoordinatorGeneration(ctx context.Context, vol *volume_opfs.Op
 	return nil
 }
 
+// waitCoordEvent waits for a newer event within the probe's bounded deadline.
 func waitCoordEvent(ctx context.Context, events <-chan coord.Event, afterGeneration uint64) (coord.Event, error) {
 	waitCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
@@ -2558,6 +1527,7 @@ func waitCoordEvent(ctx context.Context, events <-chan coord.Event, afterGenerat
 	}
 }
 
+// runVolumeRuntimeSeedIncompatible writes an old format marker and sentinel saved bytes.
 func runVolumeRuntimeSeedIncompatible(c *config) error {
 	dir, err := openTestDirectory(c.root, []string{"volume"})
 	if err != nil {
@@ -2569,6 +1539,7 @@ func runVolumeRuntimeSeedIncompatible(c *config) error {
 	return opfs.WriteFile(dir, "legacy-only", []byte("incompatible"))
 }
 
+// runVolumeRuntimeSeedUnknown writes sentinel data without a recognized format marker.
 func runVolumeRuntimeSeedUnknown(c *config) error {
 	dir, err := openTestDirectory(c.root, []string{"volume"})
 	if err != nil {
@@ -2577,103 +1548,31 @@ func runVolumeRuntimeSeedUnknown(c *config) error {
 	return opfs.WriteFile(dir, "legacy-only", []byte("unknown"))
 }
 
-func runVolumeRuntimeVerifyReset(ctx context.Context, c *config, reason volume_opfs.ResetReason) error {
-	logger := logrus.New()
-	hook := &captureLogHook{}
-	logger.AddHook(hook)
-	le := logrus.NewEntry(logger)
-	before := volume_opfs.RuntimeResetCount(reason)
-	vol, err := openVolumeWithLogger(ctx, c, le)
-	if err != nil {
+// runVolumeRuntimeVerifyRejected requires an incompatible open to preserve sentinel bytes.
+func runVolumeRuntimeVerifyRejected(ctx context.Context, c *config, expected string) error {
+	vol, err := openVolume(ctx, c)
+	if err == nil {
+		_ = vol.Close()
+		return errors.New("incompatible volume was accepted")
+	}
+	if !strings.Contains(err.Error(), "incompatible OPFS volume format") {
 		return err
 	}
-	if err := vol.Close(); err != nil {
-		return err
-	}
-	after := volume_opfs.RuntimeResetCount(reason)
-	if after != before+1 {
-		return errors.Errorf("runtime reset count for %s = %d, want %d", reason, after, before+1)
-	}
-	if !hook.hasVolumeResetLog(c.root+"/volume", reason) {
-		return errors.Errorf("missing reset log for reason %s logs=%v", reason, hook.entries)
-	}
-
 	dir, err := openTestDirectory(c.root, []string{"volume"})
 	if err != nil {
 		return err
 	}
-	exists, err := opfs.FileExists(dir, "legacy-only")
+	data, err := opfs.ReadFile(dir, "legacy-only")
 	if err != nil {
 		return err
 	}
-	if exists {
-		return errors.New("legacy-only file survived v2 reset")
-	}
-	marker, err := opfs.ReadFile(dir, ".spacewave-opfs-format.json")
-	if err != nil {
-		return errors.Wrap(err, "read v2 marker")
-	}
-	if !strings.Contains(string(marker), `"version":2`) {
-		return errors.Errorf("marker = %s, want version 2", string(marker))
-	}
-	for _, name := range []string{"blocks", "meta", "gc"} {
-		if _, err := opfs.GetDirectory(dir, name, false); err != nil {
-			return errors.Wrapf(err, "open v2 %s directory", name)
-		}
+	if string(data) != expected {
+		return errors.New("incompatible saved volume changed")
 	}
 	return nil
 }
 
-type captureLogHook struct {
-	entries []capturedLogEntry
-}
-
-type capturedLogEntry struct {
-	level   logrus.Level
-	message string
-	data    logrus.Fields
-}
-
-func (h *captureLogHook) Levels() []logrus.Level {
-	return logrus.AllLevels
-}
-
-func (h *captureLogHook) Fire(entry *logrus.Entry) error {
-	data := make(logrus.Fields, len(entry.Data))
-	maps.Copy(data, entry.Data)
-	h.entries = append(h.entries, capturedLogEntry{
-		level:   entry.Level,
-		message: entry.Message,
-		data:    data,
-	})
-	return nil
-}
-
-func (h *captureLogHook) hasVolumeResetLog(rootPath string, reason volume_opfs.ResetReason) bool {
-	for _, entry := range h.entries {
-		if entry.level != logrus.WarnLevel {
-			continue
-		}
-		if entry.message != "reset opfs volume root for v2 format" {
-			continue
-		}
-		if entry.data["root_path"] != rootPath {
-			continue
-		}
-		if entry.data["reason"] != string(reason) {
-			continue
-		}
-		if entry.data["format_version"] != uint32(2) {
-			continue
-		}
-		if reason == volume_opfs.ResetReasonIncompatible && entry.data["previous_format_version"] != uint32(1) {
-			continue
-		}
-		return true
-	}
-	return false
-}
-
+// runWorldInitUnixFS initializes and reads an empty UnixFS root through the product volume.
 func runWorldInitUnixFS(ctx context.Context, c *config) error {
 	vol, err := openVolume(ctx, c)
 	if err != nil {
@@ -2753,6 +1652,7 @@ func runWorldInitUnixFS(ctx context.Context, c *config) error {
 	return nil
 }
 
+// runWorldCoordinatorMultiWriter checks stale-head rejection and serialized world commits.
 func runWorldCoordinatorMultiWriter(ctx context.Context, c *config) error {
 	writer, err := openCoordinatorWorldEngine(ctx, c, "writer")
 	if err != nil {
@@ -2879,7 +1779,7 @@ func runWorldCoordinatorMultiWriter(ctx context.Context, c *config) error {
 
 // runWorldDeferredCrashRecovery is the wasm/OPFS port of the host
 // TestEngineDeferredDurabilityCrashRecovery. It proves world commits over the
-// blockshard OPFS volume defer durability to Sync: a per-commit write advances
+// immutable OPFS volume defer durability to Sync: a per-commit write advances
 // only the in-memory root, Sync runs the block barrier then advances the durable
 // head, and a crash (engine + volume teardown WITHOUT a final Sync) recovers to
 // the last Sync'd world head. The rollback invariant holds via the durable HEAD
@@ -2981,6 +1881,7 @@ func runWorldDeferredCrashRecovery(ctx context.Context, c *config) error {
 	return nil
 }
 
+// createWorldObject commits one named object through the world transaction interface.
 func createWorldObject(ctx context.Context, h *coordinatorWorldEngine, key string) error {
 	tx, err := h.engine.NewTransaction(ctx, true)
 	if err != nil {
@@ -2996,24 +1897,35 @@ func createWorldObject(ctx context.Context, h *coordinatorWorldEngine, key strin
 	return nil
 }
 
+// coordinatorWorldEngine owns a volume, object store, cursor, and world engine for one participant.
 type coordinatorWorldEngine struct {
-	vol           *volume_opfs.Opfs
+	// vol owns the persisted volume.
+	vol *volume_opfs.Opfs
+	// objectStoreID identifies the shared object store.
 	objectStoreID string
-	bucketID      string
-	store         object.ObjectStore
-	storeRelease  func()
-	cursor        *bucket_lookup.Cursor
-	engine        *world_block.Engine
+	// bucketID identifies the shared world bucket.
+	bucketID string
+	// store provides the durable world head transaction API.
+	store object.ObjectStore
+	// storeRelease releases the object-store reference.
+	storeRelease func()
+	// cursor pins the world root used to construct the engine.
+	cursor *bucket_lookup.Cursor
+	// engine owns the participant's world transaction lifecycle.
+	engine *world_block.Engine
 }
 
+// openCoordinatorWorldEngine mounts a world engine using the volume's write coordinator.
 func openCoordinatorWorldEngine(ctx context.Context, c *config, participant string) (*coordinatorWorldEngine, error) {
 	return openWorldEngine(ctx, c, participant, false)
 }
 
+// openDeferredWorldEngine mounts a single-writer world whose durable head advances at Sync.
 func openDeferredWorldEngine(ctx context.Context, c *config, participant string) (*coordinatorWorldEngine, error) {
 	return openWorldEngine(ctx, c, participant, true)
 }
 
+// openWorldEngine mounts the requested world durability mode at the persisted head.
 func openWorldEngine(ctx context.Context, c *config, participant string, deferred bool) (*coordinatorWorldEngine, error) {
 	vol, err := openVolume(ctx, c)
 	if err != nil {
@@ -3094,6 +2006,7 @@ func openWorldEngine(ctx context.Context, c *config, participant string, deferre
 	return h, nil
 }
 
+// readHead reads the participant's shared durable world head.
 func (h *coordinatorWorldEngine) readHead(ctx context.Context) (*bucket.ObjectRef, error) {
 	tx, err := h.store.NewTransaction(ctx, false)
 	if err != nil {
@@ -3111,6 +2024,7 @@ func (h *coordinatorWorldEngine) readHead(ctx context.Context) (*bucket.ObjectRe
 	return state.GetHeadRef().Clone(), nil
 }
 
+// writeHead commits a serialized world head through the object store.
 func (h *coordinatorWorldEngine) writeHead(ctx context.Context, ref *bucket.ObjectRef) error {
 	tx, err := h.store.NewTransaction(ctx, true)
 	if err != nil {
@@ -3127,6 +2041,7 @@ func (h *coordinatorWorldEngine) writeHead(ctx context.Context, ref *bucket.Obje
 	return tx.Commit(ctx)
 }
 
+// casHead rejects a changed base before publishing under the caller's coordinator lease.
 func (h *coordinatorWorldEngine) casHead(ctx context.Context, baseRef, nextRef *bucket.ObjectRef) error {
 	current, err := h.readHead(ctx)
 	if err != nil {
@@ -3138,6 +2053,7 @@ func (h *coordinatorWorldEngine) casHead(ctx context.Context, baseRef, nextRef *
 	return h.writeHead(ctx, nextRef)
 }
 
+// objectRefsEqual compares optional object references by value.
 func objectRefsEqual(a, b *bucket.ObjectRef) bool {
 	if a == nil || b == nil {
 		return a == nil && b == nil
@@ -3145,6 +2061,7 @@ func objectRefsEqual(a, b *bucket.ObjectRef) bool {
 	return a.EqualsRef(b)
 }
 
+// refreshHead updates the world engine from its nonempty durable head.
 func (h *coordinatorWorldEngine) refreshHead(ctx context.Context) error {
 	headRef, err := h.readHead(ctx)
 	if err != nil || headRef == nil || headRef.GetRootRef().GetEmpty() {
@@ -3153,6 +2070,7 @@ func (h *coordinatorWorldEngine) refreshHead(ctx context.Context) error {
 	return h.engine.SetRootRef(ctx, headRef)
 }
 
+// verifyObjects requires all named objects to exist in one read transaction.
 func (h *coordinatorWorldEngine) verifyObjects(ctx context.Context, keys ...string) error {
 	tx, err := h.engine.NewTransaction(ctx, false)
 	if err != nil {
@@ -3169,6 +2087,7 @@ func (h *coordinatorWorldEngine) verifyObjects(ctx context.Context, keys ...stri
 	return nil
 }
 
+// release closes the world engine before releasing its cursor, store, and volume.
 func (h *coordinatorWorldEngine) release() {
 	if h.engine != nil {
 		_ = h.engine.Close()
@@ -3184,6 +2103,7 @@ func (h *coordinatorWorldEngine) release() {
 	}
 }
 
+// waitCoordinatorRootPrefix waits for the expected root and changed-key prefix.
 func waitCoordinatorRootPrefix(
 	ctx context.Context,
 	events <-chan coord.Event,
@@ -3209,6 +2129,7 @@ func waitCoordinatorRootPrefix(
 	}
 }
 
+// runWorldLargeUnixFSUpload writes and reads a large deterministic file through the world API.
 func runWorldLargeUnixFSUpload(ctx context.Context, c *config) error {
 	vol, err := openVolume(ctx, c)
 	if err != nil {
@@ -3310,6 +2231,7 @@ func runWorldLargeUnixFSUpload(ctx context.Context, c *config) error {
 	return verifyDeterministicFSFile(ctx, largeFile, totalSize, 0, c)
 }
 
+// runWorldResourceLargeUnixFSUpload checks the resource upload contract over a direct volume.
 func runWorldResourceLargeUnixFSUpload(ctx context.Context, c *config) (retErr error) {
 	vol, err := openVolume(ctx, c)
 	if err != nil {
@@ -3320,6 +2242,7 @@ func runWorldResourceLargeUnixFSUpload(ctx context.Context, c *config) (retErr e
 	return runWorldResourceLargeUnixFSUploadOnBucket(ctx, c, vol, vol)
 }
 
+// runWorldResourceDirectUploadTreeLargeUnixFSUpload checks UploadTree without the RPC transport.
 func runWorldResourceDirectUploadTreeLargeUnixFSUpload(ctx context.Context, c *config) (retErr error) {
 	vol, err := openVolume(ctx, c)
 	if err != nil {
@@ -3420,6 +2343,7 @@ func runWorldResourceDirectUploadTreeLargeUnixFSUpload(ctx context.Context, c *c
 	return verifyDeterministicFSFile(ctx, largeFile, totalSize, 0, c)
 }
 
+// runWorldControllerResourceLargeUnixFSUpload checks resource upload through a live volume controller.
 func runWorldControllerResourceLargeUnixFSUpload(ctx context.Context, c *config) (retErr error) {
 	vol, bkt, cleanup, err := openControllerBucket(ctx, c)
 	if err != nil {
@@ -3434,6 +2358,7 @@ func runWorldControllerResourceLargeUnixFSUpload(ctx context.Context, c *config)
 	return runWorldResourceLargeUnixFSUploadOnBucket(ctx, c, vol, bkt)
 }
 
+// runWorldCloudOverlayResourceLargeUnixFSUpload checks resource upload through the dirty-tracking overlay.
 func runWorldCloudOverlayResourceLargeUnixFSUpload(ctx context.Context, c *config) (retErr error) {
 	vol, bkt, cleanup, err := openControllerCloudOverlayBucket(ctx, c, false)
 	if err != nil {
@@ -3448,6 +2373,7 @@ func runWorldCloudOverlayResourceLargeUnixFSUpload(ctx context.Context, c *confi
 	return runWorldResourceLargeUnixFSUploadOnBucket(ctx, c, vol, bkt)
 }
 
+// runWorldCloudSyncResourceLargeUnixFSUpload checks resource upload while dirty blocks are packed.
 func runWorldCloudSyncResourceLargeUnixFSUpload(ctx context.Context, c *config) (retErr error) {
 	vol, bkt, cleanup, err := openControllerCloudOverlayBucket(ctx, c, true)
 	if err != nil {
@@ -3462,6 +2388,7 @@ func runWorldCloudSyncResourceLargeUnixFSUpload(ctx context.Context, c *config) 
 	return runWorldResourceLargeUnixFSUploadOnBucket(ctx, c, vol, bkt)
 }
 
+// runWorldResourceLargeUnixFSUploadOnBucket checks streamed upload and readback through resource clients.
 func runWorldResourceLargeUnixFSUploadOnBucket(
 	ctx context.Context,
 	c *config,
@@ -3594,6 +2521,7 @@ func runWorldResourceLargeUnixFSUploadOnBucket(
 	return nil
 }
 
+// openControllerBucket returns a running volume controller's bucket and ordered cleanup.
 func openControllerBucket(
 	ctx context.Context,
 	c *config,
@@ -3902,6 +2830,7 @@ func runCopyWalkWrapperCopy(
 	})
 }
 
+// openControllerCloudOverlayBucket wraps a controller bucket with dirty tracking and optional packing.
 func openControllerCloudOverlayBucket(
 	ctx context.Context,
 	c *config,
@@ -3947,22 +2876,29 @@ func openControllerCloudOverlayBucket(
 	}, nil
 }
 
+// probeDirtyTrackingStore records newly written blocks for the concurrent packing probe.
 type probeDirtyTrackingStore struct {
-	store      block.StoreOps
+	// store provides the underlying block operations.
+	store block.StoreOps
+	// dirtyStore stores the dirty index.
 	dirtyStore kvtx.Store
-	flusher    *probeSyncFlusher
+	// flusher optionally packs blocks after the dirty-byte threshold.
+	flusher *probeSyncFlusher
 }
 
 var _ block.StoreOps = (*probeDirtyTrackingStore)(nil)
 
+// GetHashType returns the underlying store's content hash algorithm.
 func (d *probeDirtyTrackingStore) GetHashType() hash.HashType {
 	return d.store.GetHashType()
 }
 
+// GetSupportedFeatures returns the underlying store's advertised capabilities.
 func (d *probeDirtyTrackingStore) GetSupportedFeatures() block.StoreFeature {
 	return d.store.GetSupportedFeatures()
 }
 
+// BeginReadOperation retains the underlying read scope while preserving dirty tracking.
 func (d *probeDirtyTrackingStore) BeginReadOperation(ctx context.Context) (block.StoreOps, func(), error) {
 	store, release, err := d.store.BeginReadOperation(ctx)
 	if err != nil {
@@ -3971,6 +2907,7 @@ func (d *probeDirtyTrackingStore) BeginReadOperation(ctx context.Context) (block
 	return &probeDirtyTrackingStore{store: store, dirtyStore: d.dirtyStore, flusher: d.flusher}, release, nil
 }
 
+// PutBlock writes content and records a newly admitted block in the dirty store.
 func (d *probeDirtyTrackingStore) PutBlock(ctx context.Context, data []byte, opts *block.PutOpts) (*block.BlockRef, bool, error) {
 	ref, existed, err := d.store.PutBlock(ctx, data, opts)
 	if err == nil && !existed {
@@ -3979,6 +2916,7 @@ func (d *probeDirtyTrackingStore) PutBlock(ctx context.Context, data []byte, opt
 	return ref, existed, err
 }
 
+// PutBlockBatch writes the batch and records each previously absent live block.
 func (d *probeDirtyTrackingStore) PutBlockBatch(ctx context.Context, entries []*block.PutBatchEntry) error {
 	var refs []*block.BlockRef
 	var valid []int
@@ -4010,38 +2948,47 @@ func (d *probeDirtyTrackingStore) PutBlockBatch(ctx context.Context, entries []*
 	return nil
 }
 
+// GetBlock reads content from the underlying store.
 func (d *probeDirtyTrackingStore) GetBlock(ctx context.Context, ref *block.BlockRef) ([]byte, bool, error) {
 	return d.store.GetBlock(ctx, ref)
 }
 
+// GetBlockExists delegates the underlying store's presence check.
 func (d *probeDirtyTrackingStore) GetBlockExists(ctx context.Context, ref *block.BlockRef) (bool, error) {
 	return d.store.GetBlockExists(ctx, ref)
 }
 
+// GetBlockExistsBatch delegates a batch of presence checks.
 func (d *probeDirtyTrackingStore) GetBlockExistsBatch(ctx context.Context, refs []*block.BlockRef) ([]bool, error) {
 	return d.store.GetBlockExistsBatch(ctx, refs)
 }
 
+// RmBlock removes the block through the underlying store.
 func (d *probeDirtyTrackingStore) RmBlock(ctx context.Context, ref *block.BlockRef) error {
 	return d.store.RmBlock(ctx, ref)
 }
 
+// StatBlock returns the underlying store's block metadata.
 func (d *probeDirtyTrackingStore) StatBlock(ctx context.Context, ref *block.BlockRef) (*block.BlockStat, error) {
 	return d.store.StatBlock(ctx, ref)
 }
 
+// Sync fences writes through the underlying store.
 func (d *probeDirtyTrackingStore) Sync(ctx context.Context) (bool, error) {
 	return d.store.Sync(ctx)
 }
 
+// BeginDeferFlush opens the underlying store's optional deferred flush scope.
 func (d *probeDirtyTrackingStore) BeginDeferFlush() {
 	block.BeginDeferFlush(d.store)
 }
 
+// EndDeferFlush closes the underlying store's deferred flush scope.
 func (d *probeDirtyTrackingStore) EndDeferFlush(ctx context.Context) error {
 	return block.EndDeferFlush(ctx, d.store)
 }
 
+// markDirty commits the dirty entry before notifying the optional packer.
 func (d *probeDirtyTrackingStore) markDirty(ctx context.Context, h *hash.Hash, size int64) error {
 	tx, err := d.dirtyStore.NewTransaction(ctx, true)
 	if err != nil {
@@ -4061,20 +3008,30 @@ func (d *probeDirtyTrackingStore) markDirty(ctx context.Context, h *hash.Hash, s
 }
 
 const (
+	// probeSyncSizeThresholdBytes starts packing after enough dirty data accumulates.
 	probeSyncSizeThresholdBytes int64 = 48 * 1024 * 1024
-	probeSyncFlushMaxPackBytes  int64 = 4 * 1024 * 1024
+	// probeSyncFlushMaxPackBytes bounds each in-memory pack payload.
+	probeSyncFlushMaxPackBytes int64 = 4 * 1024 * 1024
 )
 
+// probeSyncFlusher starts one packing pass after dirty bytes cross its threshold.
 type probeSyncFlusher struct {
-	upper      block.StoreOps
+	// upper reads dirty block payloads.
+	upper block.StoreOps
+	// dirtyStore provides the dirty-index transaction API.
 	dirtyStore kvtx.Store
-	done       chan error
+	// done reports the single packing pass's result.
+	done chan error
 
-	mtx       sync.Mutex
+	// mtx protects dirtySize and started.
+	mtx sync.Mutex
+	// dirtySize counts admitted dirty payload bytes under mtx.
 	dirtySize int64
-	started   bool
+	// started prevents a second packing pass under mtx.
+	started bool
 }
 
+// newProbeSyncFlusher constructs the single-pass dirty block packer.
 func newProbeSyncFlusher(upper block.StoreOps, dirtyStore kvtx.Store) *probeSyncFlusher {
 	return &probeSyncFlusher{
 		upper:      upper,
@@ -4083,6 +3040,7 @@ func newProbeSyncFlusher(upper block.StoreOps, dirtyStore kvtx.Store) *probeSync
 	}
 }
 
+// markDirty accounts bytes and starts at most one background packing pass.
 func (f *probeSyncFlusher) markDirty(ctx context.Context, size int64) {
 	f.mtx.Lock()
 	f.dirtySize += size
@@ -4098,6 +3056,7 @@ func (f *probeSyncFlusher) markDirty(ctx context.Context, size int64) {
 	}()
 }
 
+// wait joins the packing pass if the threshold started one.
 func (f *probeSyncFlusher) wait() error {
 	f.mtx.Lock()
 	started := f.started
@@ -4108,16 +3067,23 @@ func (f *probeSyncFlusher) wait() error {
 	return <-f.done
 }
 
+// probeDirtyCandidate identifies a stored dirty block and its indexed byte length.
 type probeDirtyCandidate struct {
+	// hash identifies the stored block.
 	hash *hash.Hash
+	// size is its indexed payload length.
 	size int64
 }
 
+// probeDirtyBlock holds one loaded dirty block until its pack is encoded.
 type probeDirtyBlock struct {
+	// hash identifies the loaded content.
 	hash *hash.Hash
+	// data holds the content until the current pack is encoded.
 	data []byte
 }
 
+// flush packs dirty blocks in bounded chunks through the production pack writer.
 func (f *probeSyncFlusher) flush(ctx context.Context) error {
 	candidates, err := f.scanDirty(ctx)
 	if err != nil {
@@ -4143,6 +3109,7 @@ func (f *probeSyncFlusher) flush(ctx context.Context) error {
 	return nil
 }
 
+// scanDirty reads the probe's dirty index from one metadata transaction.
 func (f *probeSyncFlusher) scanDirty(ctx context.Context) ([]probeDirtyCandidate, error) {
 	tx, err := f.dirtyStore.NewTransaction(ctx, false)
 	if err != nil {
@@ -4169,6 +3136,7 @@ func (f *probeSyncFlusher) scanDirty(ctx context.Context) ([]probeDirtyCandidate
 	return out, nil
 }
 
+// loadDirtyBlocks loads the present blocks for one bounded candidate chunk.
 func (f *probeSyncFlusher) loadDirtyBlocks(ctx context.Context, candidates []probeDirtyCandidate) ([]probeDirtyBlock, error) {
 	blocks := make([]probeDirtyBlock, 0, len(candidates))
 	for _, candidate := range candidates {
@@ -4184,6 +3152,7 @@ func (f *probeSyncFlusher) loadDirtyBlocks(ctx context.Context, candidates []pro
 	return blocks, nil
 }
 
+// nextProbeDirtyChunk selects a nonempty chunk within the pack writer's limits.
 func nextProbeDirtyChunk(blocks []probeDirtyCandidate, start int, maxChunkBytes int64, maxChunkBlocks int) (int, error) {
 	var chunkBytes int64
 	end := start
@@ -4210,6 +3179,7 @@ func nextProbeDirtyChunk(blocks []probeDirtyCandidate, start int, maxChunkBytes 
 	return end, nil
 }
 
+// packProbeDirtyBlocks encodes a chunk with the production pack format.
 func packProbeDirtyBlocks(blocks []probeDirtyBlock) error {
 	var buf bytes.Buffer
 	idx := 0
@@ -4224,6 +3194,7 @@ func packProbeDirtyBlocks(blocks []probeDirtyBlock) error {
 	return errors.Wrap(err, "pack dirty blocks")
 }
 
+// openResourceClient returns a live resource client and cleanup that joins its server.
 func openResourceClient(
 	ctx context.Context,
 	rootMux srpc.Mux,
@@ -4288,6 +3259,7 @@ func openResourceClient(
 	return resClient, cleanup, nil
 }
 
+// isExpectedMuxCloseError recognizes the normal transport termination errors.
 func isExpectedMuxCloseError(err error) bool {
 	return stderrors.Is(err, context.Canceled) ||
 		stderrors.Is(err, io.EOF) ||
@@ -4295,6 +3267,7 @@ func isExpectedMuxCloseError(err error) bool {
 		stderrors.Is(err, net.ErrClosed)
 }
 
+// uploadDeterministicResourceFile streams one deterministic file through UploadTree.
 func uploadDeterministicResourceFile(
 	ctx context.Context,
 	rootSvc s4wave_unixfs.SRPCFSHandleResourceServiceClient,
@@ -4348,6 +3321,7 @@ func uploadDeterministicResourceFile(
 	return nil
 }
 
+// verifyDeterministicResourceFile checks file size, sampled offsets, and full content over RPC.
 func verifyDeterministicResourceFile(
 	ctx context.Context,
 	fileSvc s4wave_unixfs.SRPCFSHandleResourceServiceClient,
@@ -4415,6 +3389,7 @@ func verifyDeterministicResourceFile(
 	return nil
 }
 
+// resourceFullReadChunkSize returns the requested readback window or its bounded default.
 func resourceFullReadChunkSize(c *config) int {
 	if c != nil && c.batch > 0 {
 		return c.batch
@@ -4422,6 +3397,7 @@ func resourceFullReadChunkSize(c *config) int {
 	return 256 * 1024
 }
 
+// verifyDeterministicFSFile checks file size, sampled offsets, and full content through FSHandle.
 func verifyDeterministicFSFile(
 	ctx context.Context,
 	handle *unixfs_sdk.FSHandle,
@@ -4482,16 +3458,25 @@ func verifyDeterministicFSFile(
 	return nil
 }
 
+// generatedUploadTreeStream generates one file stream without retaining its full payload.
 type generatedUploadTreeStream struct {
-	ctx       context.Context
-	c         *config
-	name      string
+	// ctx bounds the upload lifetime.
+	ctx context.Context
+	// c identifies the worker for progress reports.
+	c *config
+	// name names the uploaded file.
+	name string
+	// totalSize is the complete file length.
 	totalSize int
-	salt      int
-	offset    int
+	// salt selects the reproducible payload.
+	salt int
+	// offset is the next unread byte offset.
+	offset int
+	// startSent records whether the file header has been emitted.
 	startSent bool
 }
 
+// newGeneratedUploadTreeStream constructs a deterministic UploadTree request source.
 func newGeneratedUploadTreeStream(
 	ctx context.Context,
 	c *config,
@@ -4508,14 +3493,17 @@ func newGeneratedUploadTreeStream(
 	}
 }
 
+// Context returns the upload operation's cancellation context.
 func (s *generatedUploadTreeStream) Context() context.Context {
 	return s.ctx
 }
 
+// MsgSend accepts the unused response direction of the local upload stream.
 func (s *generatedUploadTreeStream) MsgSend(srpc.Message) error {
 	return nil
 }
 
+// MsgRecv fills a typed upload request from the next generated message.
 func (s *generatedUploadTreeStream) MsgRecv(msg srpc.Message) error {
 	req, ok := msg.(*s4wave_unixfs.HandleUploadTreeRequest)
 	if !ok {
@@ -4529,14 +3517,17 @@ func (s *generatedUploadTreeStream) MsgRecv(msg srpc.Message) error {
 	return nil
 }
 
+// CloseSend accepts closure of the unused response direction.
 func (s *generatedUploadTreeStream) CloseSend() error {
 	return nil
 }
 
+// Close accepts closure of the generated stream, which owns no external handles.
 func (s *generatedUploadTreeStream) Close() error {
 	return nil
 }
 
+// Recv emits the file header, bounded data chunks, and then EOF.
 func (s *generatedUploadTreeStream) Recv() (*s4wave_unixfs.HandleUploadTreeRequest, error) {
 	if !s.startSent {
 		s.startSent = true
@@ -4570,6 +3561,7 @@ func (s *generatedUploadTreeStream) Recv() (*s4wave_unixfs.HandleUploadTreeReque
 	}, nil
 }
 
+// RecvTo copies the next generated message into the caller's request.
 func (s *generatedUploadTreeStream) RecvTo(req *s4wave_unixfs.HandleUploadTreeRequest) error {
 	next, err := s.Recv()
 	if err != nil {
@@ -4579,64 +3571,32 @@ func (s *generatedUploadTreeStream) RecvTo(req *s4wave_unixfs.HandleUploadTreeRe
 	return nil
 }
 
-func readCurrentMetaSuperblock(dir js.Value) (*pagestore.Superblock, error) {
-	a, err := opfs.ReadFile(dir, "super-a")
-	if err != nil && !opfs.IsNotFound(err) {
-		return nil, errors.Wrap(err, "read super-a")
-	}
-	b, err := opfs.ReadFile(dir, "super-b")
-	if err != nil && !opfs.IsNotFound(err) {
-		return nil, errors.Wrap(err, "read super-b")
-	}
-	sb := pagestore.PickSuperblock(a, b)
-	if sb == nil && (len(a) != 0 || len(b) != 0) {
-		return nil, errors.New("no valid meta superblock")
-	}
-	return sb, nil
-}
-
-func openMetaStore(c *config) (*metashard.MetaStore, error) {
-	_, store, err := openMetaShard(c)
-	return store, err
-}
-
-// openMetaShard returns the shard alongside its store, for scenarios that
-// assert on shard-level counters rather than only on stored values.
-func openMetaShard(c *config) (*metashard.MetaShard, *metashard.MetaStore, error) {
-	dir, err := openTestDirectory(c.root, []string{"meta"})
-	if err != nil {
-		return nil, nil, err
-	}
-	shard, err := metashard.NewMetaShard(dir, c.root+"/meta", 4096, nil)
-	if err != nil {
-		return nil, nil, err
-	}
-	return shard, metashard.NewMetaStore(shard), nil
-}
-
+// openVolume mounts the product volume under the scenario's isolated root.
 func openVolume(ctx context.Context, c *config) (*volume_opfs.Opfs, error) {
 	return openVolumeWithLogger(ctx, c, logrus.NewEntry(logrus.New()))
 }
 
+// openVolumeWithLogger mounts the product volume using the supplied probe logger.
 func openVolumeWithLogger(ctx context.Context, c *config, le *logrus.Entry) (*volume_opfs.Opfs, error) {
 	return volume_opfs.NewOpfs(ctx, le, newOPFSConfig(c))
 }
 
+// newOPFSConfig isolates the volume directory and lock namespace by test root.
 func newOPFSConfig(c *config) *volume_opfs.Config {
 	return &volume_opfs.Config{
-		RootPath:        c.root + "/volume",
-		LockPrefix:      c.root + "/volume",
-		StoreConfig:     &store_kvtx.Config{},
-		BlockShardCount: uint32(c.shards),
-		ResetPolicy:     "automatic",
+		RootPath:    c.root + "/volume",
+		LockPrefix:  c.root + "/volume",
+		StoreConfig: &store_kvtx.Config{},
 	}
 }
 
-func verifyMetaKey(ctx context.Context, store *metashard.MetaStore, key []byte) error {
+// verifyMetaKey checks the deterministic value associated with a metadata key.
+func verifyMetaKey(ctx context.Context, store kvtx.Store, key []byte) error {
 	return verifyMetaValue(ctx, store, key, metaValue(key))
 }
 
-func verifyMetaValue(ctx context.Context, store *metashard.MetaStore, key, want []byte) error {
+// verifyMetaValue checks one expected metadata value in a fresh read transaction.
+func verifyMetaValue(ctx context.Context, store kvtx.Store, key, want []byte) error {
 	tx, err := store.NewTransaction(ctx, false)
 	if err != nil {
 		return errors.Wrap(err, "open meta read tx")
@@ -4655,6 +3615,7 @@ func verifyMetaValue(ctx context.Context, store *metashard.MetaStore, key, want 
 	return nil
 }
 
+// runCounterInit creates and flushes the counter used by cross-worker lock probes.
 func runCounterInit(c *config) error {
 	dir, err := openTestDirectory(c.root, []string{"locks"})
 	if err != nil {
@@ -4675,6 +3636,7 @@ func runCounterInit(c *config) error {
 	return file.Flush()
 }
 
+// runCounterHold holds the counter's exclusive file lock until the harness releases it.
 func runCounterHold(c *config) error {
 	dir, err := openTestDirectory(c.root, []string{"locks"})
 	if err != nil {
@@ -4692,12 +3654,13 @@ func runCounterHold(c *config) error {
 	return waitCounterRelease(c)
 }
 
+// runCounterIncrement flushes each counter increment while holding its exclusive lock.
 func runCounterIncrement(c *config) error {
 	dir, err := openTestDirectory(c.root, []string{"locks"})
 	if err != nil {
 		return err
 	}
-	for i := 0; i < c.iterations; i++ {
+	for range c.iterations {
 		file, release, err := filelock.AcquireFile(dir, "counter", c.root+"/locks", true)
 		if err != nil {
 			return errors.Wrap(err, "acquire counter")
@@ -4722,6 +3685,7 @@ func runCounterIncrement(c *config) error {
 	return nil
 }
 
+// runCounterTryLock checks the nonblocking Web Lock acquisition outcome.
 func runCounterTryLock(c *config, want bool) error {
 	release, acquired, err := filelock.AcquireWebLockIfAvailable(c.root+"/locks/counter", true)
 	if err != nil {
@@ -4736,6 +3700,7 @@ func runCounterTryLock(c *config, want bool) error {
 	return nil
 }
 
+// runCounterTimeoutLock requires a queued Web Lock request to honor cancellation.
 func runCounterTimeoutLock(ctx context.Context, c *config) error {
 	ctx, cancel := context.WithTimeout(ctx, 250*time.Millisecond)
 	defer cancel()
@@ -4752,6 +3717,7 @@ func runCounterTimeoutLock(ctx context.Context, c *config) error {
 	return nil
 }
 
+// waitCounterRelease announces readiness and waits for the harness release message.
 func waitCounterRelease(c *config) error {
 	ch := make(chan struct{}, 1)
 	bc := js.Global().Get("BroadcastChannel").New(counterReleaseChannel(c.root))
@@ -4770,6 +3736,7 @@ func waitCounterRelease(c *config) error {
 	return nil
 }
 
+// runCounterVerify checks that serialized increments preserved every writer's update.
 func runCounterVerify(c *config) error {
 	dir, err := openTestDirectory(c.root, []string{"locks"})
 	if err != nil {
@@ -4792,6 +3759,7 @@ func runCounterVerify(c *config) error {
 	return nil
 }
 
+// openTestDirectory creates the requested descendant under the disposable test root.
 func openTestDirectory(rootName string, parts []string) (js.Value, error) {
 	root, err := opfs.GetRoot()
 	if err != nil {
@@ -4801,36 +3769,38 @@ func openTestDirectory(rootName string, parts []string) (js.Value, error) {
 	return opfs.GetDirectoryPath(root, path, true)
 }
 
+// blockKey encodes one worker, batch, and entry in lexical order.
 func blockKey(worker, iteration, entry int) []byte {
 	return []byte("b/" + strconv.Itoa(worker) + "/" + zeroPad(iteration, 5) + "/" + zeroPad(entry, 3))
 }
 
-func largeBlockKey(entry int) []byte {
-	return []byte("large/" + zeroPad(entry, 5))
-}
-
+// blockValue derives deterministic content from the workload key.
 func blockValue(key []byte) []byte {
 	return []byte("value:" + string(key))
 }
 
+// deterministicLargeBytes builds a reproducible payload from offset zero.
 func deterministicLargeBytes(size int, salt int) []byte {
 	buf := make([]byte, size)
 	fillDeterministicLargeBytes(buf, 0, salt)
 	return buf
 }
 
+// deterministicLargeWindow builds a reproducible window without earlier payload bytes.
 func deterministicLargeWindow(offset, size int, salt int) []byte {
 	buf := make([]byte, size)
 	fillDeterministicLargeBytes(buf, offset, salt)
 	return buf
 }
 
+// fillDeterministicLargeBytes fills a window using absolute offsets and a payload salt.
 func fillDeterministicLargeBytes(buf []byte, offset int, salt int) {
 	for i := range buf {
 		buf[i] = deterministicLargeByte(offset+i, salt)
 	}
 }
 
+// deterministicLargeByte mixes absolute offset and salt into a reproducible byte.
 func deterministicLargeByte(offset int, salt int) byte {
 	x := uint32(offset) + uint32(0x9e3779b9)
 	x ^= uint32(salt) * uint32(0x85ebca6b)
@@ -4842,12 +3812,17 @@ func deterministicLargeByte(offset int, salt int) byte {
 	return byte(x) + byte(offset)
 }
 
+// deterministicLargeReader streams deterministic content with bounded retained state.
 type deterministicLargeReader struct {
+	// remaining counts unread bytes.
 	remaining int
-	offset    int
-	salt      int
+	// offset is the absolute position of the next byte.
+	offset int
+	// salt selects the reproducible payload.
+	salt int
 }
 
+// newDeterministicLargeReader constructs a finite deterministic payload stream.
 func newDeterministicLargeReader(size int, salt int) *deterministicLargeReader {
 	return &deterministicLargeReader{
 		remaining: size,
@@ -4855,6 +3830,7 @@ func newDeterministicLargeReader(size int, salt int) *deterministicLargeReader {
 	}
 }
 
+// Read fills the caller's buffer until the deterministic stream reaches EOF.
 func (r *deterministicLargeReader) Read(p []byte) (int, error) {
 	if len(p) == 0 {
 		return 0, nil
@@ -4871,62 +3847,48 @@ func (r *deterministicLargeReader) Read(p []byte) (int, error) {
 	return n, nil
 }
 
+// metaKey encodes a worker and iteration in lexical order.
 func metaKey(worker, iteration int) []byte {
 	return []byte("m/" + strconv.Itoa(worker) + "/" + zeroPad(iteration, 5))
 }
 
+// metaValue derives the small metadata value from its key.
 func metaValue(key []byte) []byte {
 	return []byte("value:" + string(key))
 }
 
+// metaMixedValue alternates small and multi-page values between writers.
 func metaMixedValue(worker int, key []byte) []byte {
 	if worker%2 != 0 {
 		return metaValue(key)
 	}
 	seed := []byte("overflow:" + string(key) + ":")
-	size := pagestore.DefaultPageSize + 2048
+	size := 4096 + 2048
 	out := bytes.Repeat(seed, size/len(seed)+1)
 	return out[:size]
 }
 
-func manifestKey(sub string) []byte {
-	return []byte("h/objs/p/spacewave/test-account/bstore/test-bstore/meta/" + sub)
-}
-
-func manifestBloomValue(entry manifestBloomCase) []byte {
-	return manifestSizedValue(entry.pack, entry.size)
-}
-
-func manifestPackValue(entry manifestBloomCase) []byte {
-	return []byte("pack:" + entry.shard + "/" + entry.pack)
-}
-
-func manifestSizedValue(seed string, size int) []byte {
-	prefix := []byte("manifest:" + seed + ":")
-	out := bytes.Repeat(prefix, size/len(prefix)+1)
-	return out[:size]
-}
-
-func metaCrashValue(key []byte) []byte {
-	return []byte("crash:" + string(key))
-}
-
+// volumeMetaKey returns the runtime probe's metadata key.
 func volumeMetaKey() []byte {
 	return []byte("volume/runtime/meta")
 }
 
+// volumeMetaValue returns the runtime probe's expected metadata bytes.
 func volumeMetaValue() []byte {
 	return []byte("volume-runtime-meta-value")
 }
 
+// volumeRefKey returns the key holding the runtime probe's serialized block reference.
 func volumeRefKey() []byte {
 	return []byte("volume/runtime/block-ref")
 }
 
+// volumeBlockValue returns the runtime probe's expected block content.
 func volumeBlockValue() []byte {
 	return []byte("volume-runtime-block-value")
 }
 
+// zeroPad renders a workload index at the requested minimum width.
 func zeroPad(n, width int) string {
 	s := strconv.Itoa(n)
 	for len(s) < width {
@@ -4935,6 +3897,7 @@ func zeroPad(n, width int) string {
 	return s
 }
 
+// newBlockEventSub subscribes with room for every expected publisher event.
 func newBlockEventSub(c *config) *blockEventSub {
 	ch := make(chan blockEvent, c.workers*c.iterations+c.workers+8)
 	bc := js.Global().Get("BroadcastChannel").New(blockEventChannel(c.root))
@@ -4955,6 +3918,7 @@ func newBlockEventSub(c *config) *blockEventSub {
 	}
 }
 
+// Next waits for a publisher event or caller cancellation.
 func (s *blockEventSub) Next(ctx context.Context) (blockEvent, error) {
 	select {
 	case ev := <-s.ch:
@@ -4964,18 +3928,21 @@ func (s *blockEventSub) Next(ctx context.Context) (blockEvent, error) {
 	}
 }
 
+// Close releases the subscription and its browser callback.
 func (s *blockEventSub) Close() {
 	s.bc.Set("onmessage", js.Null())
 	s.bc.Call("close")
 	s.cb.Release()
 }
 
+// newBlockEventPub opens the send side of the workload's broadcast channel.
 func newBlockEventPub(root string) *blockEventPub {
 	return &blockEventPub{
 		bc: js.Global().Get("BroadcastChannel").New(blockEventChannel(root)),
 	}
 }
 
+// Post broadcasts one publication or completion event.
 func (p *blockEventPub) Post(ev blockEvent) {
 	obj := js.Global().Get("Object").New()
 	obj.Set("type", ev.typ)
@@ -4984,22 +3951,22 @@ func (p *blockEventPub) Post(ev blockEvent) {
 	p.bc.Call("postMessage", obj)
 }
 
+// Close closes the publication channel.
 func (p *blockEventPub) Close() {
 	p.bc.Call("close")
 }
 
+// blockEventChannel derives the shared publication channel from the test root.
 func blockEventChannel(root string) string {
 	return "opfs-chrometest:" + root
 }
 
-func orphanSegmentFilename() string {
-	return "seg-999999.sst"
-}
-
+// counterReleaseChannel derives the lock-holder release channel from the test root.
 func counterReleaseChannel(root string) string {
 	return "opfs-chrometest-counter-release:" + root
 }
 
+// postReady announces that the worker reached the harness's synchronization point.
 func postReady(c *config) {
 	obj := js.Global().Get("Object").New()
 	obj.Set("kind", "ready")
@@ -5008,6 +3975,7 @@ func postReady(c *config) {
 	js.Global().Call("postMessage", obj)
 }
 
+// postProgress reports the current phase and optional byte or operation counts.
 func postProgress(c *config, phase string, values ...int) {
 	obj := js.Global().Get("Object").New()
 	obj.Set("kind", "progress")
@@ -5025,10 +3993,11 @@ func postProgress(c *config, phase string, values ...int) {
 	js.Global().Call("postMessage", obj)
 }
 
-// benchExtra carries optional benchmark metrics (writeMs, blocks, publishGen)
+// benchExtra carries operation counts and durations for the active probe
 // from a scenario into the single worker result object.
 var benchExtra map[string]int64
 
+// postResult reports the terminal result and optional operation measurements.
 func postResult(c *config, dur time.Duration, err error) {
 	// Build the common result and optional benchmark fields.
 	obj := js.Global().Get("Object").New()
@@ -5060,10 +4029,33 @@ func postResult(c *config, dur time.Duration, err error) {
 	js.Global().Call("postMessage", obj)
 }
 
-type neverReader struct{}
+// verifyBlocks requires all expected content to survive publication and maintenance.
+func verifyBlocks(ctx context.Context, c *config, blocks *engine.BlockStore, phase string) error {
+	for w := range c.workers {
+		for i := range c.iterations {
+			for j := range c.batch {
+				key := blockKey(w, i, j)
+				value, found, err := getBlock(ctx, blocks, key)
+				if err != nil {
+					return errors.Wrap(err, "read block "+phase)
+				}
+				if !found {
+					return errors.Errorf("missing block %s key=%s", phase, string(key))
+				}
+				if !bytes.Equal(value, blockValue(key)) {
+					return errors.Errorf("bad block %s key=%s", phase, string(key))
+				}
+			}
+		}
+	}
+	return nil
+}
 
-func (neverReader) Read(p []byte) (int, error) {
-	ch := make(chan struct{})
-	<-ch
-	return 0, nil
+// getBlock reconstructs a deterministic block reference and reads it through StoreOps.
+func getBlock(ctx context.Context, blocks *engine.BlockStore, key []byte) ([]byte, bool, error) {
+	ref, err := block.BuildBlockRef(blockValue(key), nil)
+	if err != nil {
+		return nil, false, err
+	}
+	return blocks.GetBlock(ctx, ref)
 }

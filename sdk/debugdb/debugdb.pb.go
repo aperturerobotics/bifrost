@@ -50,16 +50,6 @@ type StorageInfo struct {
 	unknownFields []byte
 	// VolumeType is the volume implementation type (e.g. "hydra/volume/opfs").
 	VolumeType string `protobuf:"bytes,1,opt,name=volume_type,json=volumeType,proto3" json:"volumeType,omitempty"`
-	// BlockShardCount is the number of block shards.
-	BlockShardCount uint32 `protobuf:"varint,2,opt,name=block_shard_count,json=blockShardCount,proto3" json:"blockShardCount,omitempty"`
-	// BlockFlushThreshold is the per-shard flush entry threshold.
-	BlockFlushThreshold uint32 `protobuf:"varint,3,opt,name=block_flush_threshold,json=blockFlushThreshold,proto3" json:"blockFlushThreshold,omitempty"`
-	// BlockFlushMaxAgeMillis is the max coalescing age in milliseconds.
-	BlockFlushMaxAgeMillis uint32 `protobuf:"varint,4,opt,name=block_flush_max_age_millis,json=blockFlushMaxAgeMillis,proto3" json:"blockFlushMaxAgeMillis,omitempty"`
-	// PageSize is the metadata page size in bytes.
-	PageSize uint32 `protobuf:"varint,5,opt,name=page_size,json=pageSize,proto3" json:"pageSize,omitempty"`
-	// SyncIo is true if sync OPFS I/O is enabled.
-	SyncIo bool `protobuf:"varint,6,opt,name=sync_io,json=syncIo,proto3" json:"syncIo,omitempty"`
 	// Goos is the Go runtime GOOS value.
 	Goos string `protobuf:"bytes,7,opt,name=goos,proto3" json:"goos,omitempty"`
 	// Goarch is the Go runtime GOARCH value.
@@ -79,41 +69,6 @@ func (x *StorageInfo) GetVolumeType() string {
 		return x.VolumeType
 	}
 	return ""
-}
-
-func (x *StorageInfo) GetBlockShardCount() uint32 {
-	if x != nil {
-		return x.BlockShardCount
-	}
-	return 0
-}
-
-func (x *StorageInfo) GetBlockFlushThreshold() uint32 {
-	if x != nil {
-		return x.BlockFlushThreshold
-	}
-	return 0
-}
-
-func (x *StorageInfo) GetBlockFlushMaxAgeMillis() uint32 {
-	if x != nil {
-		return x.BlockFlushMaxAgeMillis
-	}
-	return 0
-}
-
-func (x *StorageInfo) GetPageSize() uint32 {
-	if x != nil {
-		return x.PageSize
-	}
-	return 0
-}
-
-func (x *StorageInfo) GetSyncIo() bool {
-	if x != nil {
-		return x.SyncIo
-	}
-	return false
 }
 
 func (x *StorageInfo) GetGoos() string {
@@ -188,8 +143,6 @@ type BenchmarkConfig struct {
 	BlockSizes []uint32 `protobuf:"varint,2,rep,packed,name=block_sizes,json=blockSizes,proto3" json:"blockSizes,omitempty"`
 	// IncludeWorldSuite enables the world transaction benchmark suite.
 	IncludeWorldSuite bool `protobuf:"varint,3,opt,name=include_world_suite,json=includeWorldSuite,proto3" json:"includeWorldSuite,omitempty"`
-	// SyncIo runs the benchmark against OPFS sync file writes.
-	SyncIo bool `protobuf:"varint,4,opt,name=sync_io,json=syncIo,proto3" json:"syncIo,omitempty"`
 }
 
 func (x *BenchmarkConfig) Reset() {
@@ -215,13 +168,6 @@ func (x *BenchmarkConfig) GetBlockSizes() []uint32 {
 func (x *BenchmarkConfig) GetIncludeWorldSuite() bool {
 	if x != nil {
 		return x.IncludeWorldSuite
-	}
-	return false
-}
-
-func (x *BenchmarkConfig) GetSyncIo() bool {
-	if x != nil {
-		return x.SyncIo
 	}
 	return false
 }
@@ -392,7 +338,7 @@ func (x *BenchmarkResults) GetTotalDurationMillis() uint64 {
 // BenchmarkSuite contains results for one benchmark suite.
 type BenchmarkSuite struct {
 	unknownFields []byte
-	// Name is the suite name (e.g. "blockshard-put-single").
+	// Name is the suite name (e.g. "engine-put-single").
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// Metrics is the list of measured metrics.
 	Metrics []*BenchmarkMetric `protobuf:"bytes,2,rep,name=metrics,proto3" json:"metrics,omitempty"`
@@ -548,11 +494,6 @@ func (m *StorageInfo) CloneVT() *StorageInfo {
 	}
 	r := new(StorageInfo)
 	r.VolumeType = m.VolumeType
-	r.BlockShardCount = m.BlockShardCount
-	r.BlockFlushThreshold = m.BlockFlushThreshold
-	r.BlockFlushMaxAgeMillis = m.BlockFlushMaxAgeMillis
-	r.PageSize = m.PageSize
-	r.SyncIo = m.SyncIo
 	r.Goos = m.Goos
 	r.Goarch = m.Goarch
 	r.UserAgent = m.UserAgent
@@ -605,7 +546,6 @@ func (m *BenchmarkConfig) CloneVT() *BenchmarkConfig {
 	r := new(BenchmarkConfig)
 	r.DurationSeconds = m.DurationSeconds
 	r.IncludeWorldSuite = m.IncludeWorldSuite
-	r.SyncIo = m.SyncIo
 	r.BlockSizes = protobuf_go_lite.CloneSlice(m.BlockSizes)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
@@ -791,21 +731,6 @@ func (this *StorageInfo) EqualVT(that *StorageInfo) bool {
 	if this.VolumeType != that.VolumeType {
 		return false
 	}
-	if this.BlockShardCount != that.BlockShardCount {
-		return false
-	}
-	if this.BlockFlushThreshold != that.BlockFlushThreshold {
-		return false
-	}
-	if this.BlockFlushMaxAgeMillis != that.BlockFlushMaxAgeMillis {
-		return false
-	}
-	if this.PageSize != that.PageSize {
-		return false
-	}
-	if this.SyncIo != that.SyncIo {
-		return false
-	}
 	if this.Goos != that.Goos {
 		return false
 	}
@@ -879,9 +804,6 @@ func (this *BenchmarkConfig) EqualVT(that *BenchmarkConfig) bool {
 		return false
 	}
 	if this.IncludeWorldSuite != that.IncludeWorldSuite {
-		return false
-	}
-	if this.SyncIo != that.SyncIo {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -1172,31 +1094,6 @@ func (x *StorageInfo) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("volumeType")
 		s.WriteString(x.VolumeType)
 	}
-	if x.BlockShardCount != 0 || s.HasField("blockShardCount") {
-		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("blockShardCount")
-		s.WriteUint32(x.BlockShardCount)
-	}
-	if x.BlockFlushThreshold != 0 || s.HasField("blockFlushThreshold") {
-		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("blockFlushThreshold")
-		s.WriteUint32(x.BlockFlushThreshold)
-	}
-	if x.BlockFlushMaxAgeMillis != 0 || s.HasField("blockFlushMaxAgeMillis") {
-		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("blockFlushMaxAgeMillis")
-		s.WriteUint32(x.BlockFlushMaxAgeMillis)
-	}
-	if x.PageSize != 0 || s.HasField("pageSize") {
-		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("pageSize")
-		s.WriteUint32(x.PageSize)
-	}
-	if x.SyncIo || s.HasField("syncIo") {
-		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("syncIo")
-		s.WriteBool(x.SyncIo)
-	}
 	if x.Goos != "" || s.HasField("goos") {
 		s.WriteMoreIf(&wroteField)
 		s.WriteObjectField("goos")
@@ -1232,21 +1129,6 @@ func (x *StorageInfo) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "volume_type", "volumeType":
 			s.AddField("volume_type")
 			x.VolumeType = s.ReadString()
-		case "block_shard_count", "blockShardCount":
-			s.AddField("block_shard_count")
-			x.BlockShardCount = s.ReadUint32()
-		case "block_flush_threshold", "blockFlushThreshold":
-			s.AddField("block_flush_threshold")
-			x.BlockFlushThreshold = s.ReadUint32()
-		case "block_flush_max_age_millis", "blockFlushMaxAgeMillis":
-			s.AddField("block_flush_max_age_millis")
-			x.BlockFlushMaxAgeMillis = s.ReadUint32()
-		case "page_size", "pageSize":
-			s.AddField("page_size")
-			x.PageSize = s.ReadUint32()
-		case "sync_io", "syncIo":
-			s.AddField("sync_io")
-			x.SyncIo = s.ReadBool()
 		case "goos":
 			s.AddField("goos")
 			x.Goos = s.ReadString()
@@ -1376,11 +1258,6 @@ func (x *BenchmarkConfig) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("includeWorldSuite")
 		s.WriteBool(x.IncludeWorldSuite)
 	}
-	if x.SyncIo || s.HasField("syncIo") {
-		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("syncIo")
-		s.WriteBool(x.SyncIo)
-	}
 	s.WriteObjectEnd()
 }
 
@@ -1411,9 +1288,6 @@ func (x *BenchmarkConfig) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "include_world_suite", "includeWorldSuite":
 			s.AddField("include_world_suite")
 			x.IncludeWorldSuite = s.ReadBool()
-		case "sync_io", "syncIo":
-			s.AddField("sync_io")
-			x.SyncIo = s.ReadBool()
 		}
 	})
 }
@@ -2013,31 +1887,6 @@ func (m *StorageInfo) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x3a
 	}
-	if m.SyncIo {
-		i = protobuf_go_lite.EncodeBool(dAtA, i, m.SyncIo)
-		i--
-		dAtA[i] = 0x30
-	}
-	if m.PageSize != 0 {
-		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.PageSize))
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.BlockFlushMaxAgeMillis != 0 {
-		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.BlockFlushMaxAgeMillis))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.BlockFlushThreshold != 0 {
-		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.BlockFlushThreshold))
-		i--
-		dAtA[i] = 0x18
-	}
-	if m.BlockShardCount != 0 {
-		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.BlockShardCount))
-		i--
-		dAtA[i] = 0x10
-	}
 	if len(m.VolumeType) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.VolumeType)
 		i--
@@ -2153,11 +2002,6 @@ func (m *BenchmarkConfig) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	_ = l
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
-	}
-	if m.SyncIo {
-		i = protobuf_go_lite.EncodeBool(dAtA, i, m.SyncIo)
-		i--
-		dAtA[i] = 0x20
 	}
 	if m.IncludeWorldSuite {
 		i = protobuf_go_lite.EncodeBool(dAtA, i, m.IncludeWorldSuite)
@@ -2580,11 +2424,6 @@ func (m *StorageInfo) SizeVT() (n int) {
 	var l int
 	_ = l
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.VolumeType)
-	n += protobuf_go_lite.SizeVarintNonZero(1, m.BlockShardCount)
-	n += protobuf_go_lite.SizeVarintNonZero(1, m.BlockFlushThreshold)
-	n += protobuf_go_lite.SizeVarintNonZero(1, m.BlockFlushMaxAgeMillis)
-	n += protobuf_go_lite.SizeVarintNonZero(1, m.PageSize)
-	n += protobuf_go_lite.SizeBoolNonZero(1, m.SyncIo)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Goos)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Goarch)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.UserAgent)
@@ -2626,7 +2465,6 @@ func (m *BenchmarkConfig) SizeVT() (n int) {
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.DurationSeconds)
 	n += protobuf_go_lite.SizeVarintPacked(1, m.BlockSizes)
 	n += protobuf_go_lite.SizeBoolNonZero(1, m.IncludeWorldSuite)
-	n += protobuf_go_lite.SizeBoolNonZero(1, m.SyncIo)
 	n += len(m.unknownFields)
 	return n
 }
@@ -2770,26 +2608,6 @@ func (x *StorageInfo) MarshalProtoText() string {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "volume_type")
 		protobuf_go_lite.TextWriteString(&sb, x.VolumeType)
 	}
-	if x.BlockShardCount != 0 {
-		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "block_shard_count")
-		protobuf_go_lite.TextWriteUint(&sb, x.BlockShardCount)
-	}
-	if x.BlockFlushThreshold != 0 {
-		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "block_flush_threshold")
-		protobuf_go_lite.TextWriteUint(&sb, x.BlockFlushThreshold)
-	}
-	if x.BlockFlushMaxAgeMillis != 0 {
-		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "block_flush_max_age_millis")
-		protobuf_go_lite.TextWriteUint(&sb, x.BlockFlushMaxAgeMillis)
-	}
-	if x.PageSize != 0 {
-		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "page_size")
-		protobuf_go_lite.TextWriteUint(&sb, x.PageSize)
-	}
-	if x.SyncIo != false {
-		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "sync_io")
-		protobuf_go_lite.TextWriteBool(&sb, x.SyncIo)
-	}
 	if x.Goos != "" {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "goos")
 		protobuf_go_lite.TextWriteString(&sb, x.Goos)
@@ -2855,10 +2673,6 @@ func (x *BenchmarkConfig) MarshalProtoText() string {
 	if x.IncludeWorldSuite != false {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "include_world_suite")
 		protobuf_go_lite.TextWriteBool(&sb, x.IncludeWorldSuite)
-	}
-	if x.SyncIo != false {
-		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "sync_io")
-		protobuf_go_lite.TextWriteBool(&sb, x.SyncIo)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -3180,52 +2994,6 @@ func (m *StorageInfo) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.VolumeType = v
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field BlockShardCount", wireType)
-			}
-			m.BlockShardCount = 0
-			m.BlockShardCount, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
-			if err != nil {
-				return err
-			}
-		case 3:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field BlockFlushThreshold", wireType)
-			}
-			m.BlockFlushThreshold = 0
-			m.BlockFlushThreshold, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
-			if err != nil {
-				return err
-			}
-		case 4:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field BlockFlushMaxAgeMillis", wireType)
-			}
-			m.BlockFlushMaxAgeMillis = 0
-			m.BlockFlushMaxAgeMillis, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
-			if err != nil {
-				return err
-			}
-		case 5:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field PageSize", wireType)
-			}
-			m.PageSize = 0
-			m.PageSize, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
-			if err != nil {
-				return err
-			}
-		case 6:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SyncIo", wireType)
-			}
-			var v bool
-			v, iNdEx, err = protobuf_go_lite.DecodeVarintBool(dAtA, iNdEx)
-			if err != nil {
-				return err
-			}
-			m.SyncIo = bool(v)
 		case 7:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Goos", wireType)
@@ -3458,16 +3226,6 @@ func (m *BenchmarkConfig) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.IncludeWorldSuite = bool(v)
-		case 4:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SyncIo", wireType)
-			}
-			var v bool
-			v, iNdEx, err = protobuf_go_lite.DecodeVarintBool(dAtA, iNdEx)
-			if err != nil {
-				return err
-			}
-			m.SyncIo = bool(v)
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

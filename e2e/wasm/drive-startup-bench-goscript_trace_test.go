@@ -9,10 +9,10 @@ import (
 	"testing"
 
 	"github.com/aperturerobotics/fastjson"
-
 	"github.com/s4wave/spacewave/e2e/drivebench"
 )
 
+// TestSummarizeTraceBuildsOperationShapeFromTasksAndLogs checks operation counts and numeric fields from a real Go trace.
 func TestSummarizeTraceBuildsOperationShapeFromTasksAndLogs(t *testing.T) {
 	var buf bytes.Buffer
 	if err := trace.Start(&buf); err != nil {
@@ -33,16 +33,16 @@ func TestSummarizeTraceBuildsOperationShapeFromTasksAndLogs(t *testing.T) {
 	trace.Log(ctx, "hydra/world-graph/set-quad/shape", "adds=1 duplicates=0")
 	graphTask.End()
 
-	ctx, readTask := trace.NewTask(ctx, "hydra/opfs-blockshard/get-from-shard")
-	trace.Log(ctx, "hydra/opfs-blockshard/get-from-shard/shape", "manifest_segments=4 candidates=3 acquisitions=3 pending_hit=0 found_published=1 retried=0")
+	ctx, readTask := trace.NewTask(ctx, "hydra/opfs-engine/read")
+	trace.Log(ctx, "hydra/opfs-engine/read/shape", "bytes=65536 files=1")
 	readTask.End()
 
-	ctx, publishTask := trace.NewTask(ctx, "hydra/opfs-blockshard/run-actor/publish")
-	trace.Log(ctx, "coalesce", "reqs=4 entries=5")
+	ctx, publishTask := trace.NewTask(ctx, "hydra/opfs-engine/publish")
+	trace.Log(ctx, "hydra/opfs-engine/publish/shape", "files=4 bytes=512 retired=2")
 	publishTask.End()
 
-	ctx, opfsBatchTask := trace.NewTask(ctx, "hydra/opfs-blockshard/block-store/put-block-batch")
-	trace.Logf(ctx, "hydra/opfs-blockshard/block-store/put-block-batch/shape", "entries=%d bytes=%d tombstones=%d", 6, 128, 1)
+	ctx, opfsBatchTask := trace.NewTask(ctx, "hydra/opfs-engine/block-store/put-block-batch")
+	trace.Logf(ctx, "hydra/opfs-engine/block-store/put-block-batch/shape", "entries=%d bytes=%d tombstones=%d", 6, 128, 1)
 	opfsBatchTask.End()
 
 	trace.Stop()
@@ -82,20 +82,20 @@ func TestSummarizeTraceBuildsOperationShapeFromTasksAndLogs(t *testing.T) {
 	if read.Count == 0 {
 		t.Fatalf("opfs-read count = 0")
 	}
-	assertOperationField(t, read, "shape.manifest_segments", 4)
-	assertOperationField(t, read, "shape.candidates", 3)
-	assertOperationField(t, read, "shape.acquisitions", 3)
+	assertOperationField(t, read, "shape.bytes", 65536)
+	assertOperationField(t, read, "shape.files", 1)
 
 	publish := findOperation(t, shape, "opfs-publish")
 	if publish.Count == 0 {
 		t.Fatalf("opfs-publish count = 0")
 	}
-	assertOperationField(t, publish, "coalesce.reqs", 4)
-	assertOperationField(t, publish, "coalesce.entries", 5)
+	assertOperationField(t, publish, "shape.files", 4)
+	assertOperationField(t, publish, "shape.bytes", 512)
 	assertOperationField(t, publish, "put-block-batch.shape.entries", 6)
 	assertOperationField(t, publish, "put-block-batch.shape.bytes", 128)
 }
 
+// TestSummarizeBrowserCPUProfileBucketsSamples checks self time, inclusive time, and valid profile serialization.
 func TestSummarizeBrowserCPUProfileBucketsSamples(t *testing.T) {
 	profile := map[string]any{
 		"nodes": []any{
@@ -118,7 +118,7 @@ func TestSummarizeBrowserCPUProfileBucketsSamples(t *testing.T) {
 				"id": 3,
 				"callFrame": map[string]any{
 					"functionName": "Publish",
-					"url":          "https://example.invalid/db/volume/js/opfs/blockshard/engine.gs.js",
+					"url":          "https://example.invalid/db/volume/js/opfs/engine/publication.gs.js",
 				},
 			},
 		},
@@ -146,6 +146,7 @@ func TestSummarizeBrowserCPUProfileBucketsSamples(t *testing.T) {
 	}
 }
 
+// findProfileBucket requires a named CPU-profile bucket.
 func findProfileBucket(t testing.TB, buckets []drivebench.ProfileBucket, name string) drivebench.ProfileBucket {
 	t.Helper()
 	for _, bucket := range buckets {
@@ -157,6 +158,7 @@ func findProfileBucket(t testing.TB, buckets []drivebench.ProfileBucket, name st
 	return drivebench.ProfileBucket{}
 }
 
+// findOperation requires a named operation summary.
 func findOperation(t testing.TB, shape *drivebench.OperationShape, name string) drivebench.OperationSummary {
 	t.Helper()
 	for _, op := range shape.Operations {
@@ -168,6 +170,7 @@ func findOperation(t testing.TB, shape *drivebench.OperationShape, name string) 
 	return drivebench.OperationSummary{}
 }
 
+// assertOperationField requires one exact numeric trace-field observation.
 func assertOperationField(t testing.TB, op drivebench.OperationSummary, name string, want int64) {
 	t.Helper()
 	for _, field := range op.Fields {

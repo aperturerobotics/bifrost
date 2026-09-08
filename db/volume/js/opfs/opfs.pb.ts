@@ -69,51 +69,6 @@ export interface Config {
    */
   storeConfig?: Config$3
   /**
-   * BlockShardCount is the number of OPFS block shards.
-   *
-   * @generated from field: uint32 block_shard_count = 9;
-   */
-  blockShardCount?: number
-  /**
-   * MetaShardCount is the number of metadata shards.
-   * The current implementation requires exactly 1 when set.
-   *
-   * @generated from field: uint32 meta_shard_count = 10;
-   */
-  metaShardCount?: number
-  /**
-   * BlockBloomFpr is the block SSTable bloom-filter false-positive rate.
-   *
-   * @generated from field: double block_bloom_fpr = 11;
-   */
-  blockBloomFpr?: number
-  /**
-   * BlockCompactionTrigger is the L0 compaction trigger per shard.
-   *
-   * @generated from field: uint32 block_compaction_trigger = 12;
-   */
-  blockCompactionTrigger?: number
-  /**
-   * PageSize is the metadata page size in bytes.
-   *
-   * @generated from field: uint32 page_size = 13;
-   */
-  pageSize?: number
-  /**
-   * SyncIo forces using the sync OPFS API instead of the async API.
-   * The default is async OPFS writes so write actors can yield the Go thread via
-   * AwaitPromise while I/O is in flight.
-   *
-   * @generated from field: bool sync_io = 14;
-   */
-  syncIo?: boolean
-  /**
-   * BlockMaxSegmentDataBytes bounds one block SSTable segment's data bytes.
-   *
-   * @generated from field: uint32 block_max_segment_data_bytes = 15;
-   */
-  blockMaxSegmentDataBytes?: number
-  /**
    * DriverMode selects the browser OPFS driver ABI.
    * Empty defaults to the current runtime's standard wasm or TinyGo mode.
    *
@@ -122,18 +77,11 @@ export interface Config {
   driverMode?: string
   /**
    * StorageFormatVersion is the OPFS Volume Runtime format marker version.
-   * Empty/zero defaults to the current v2 format.
+   * Empty/zero defaults to the current immutable format.
    *
    * @generated from field: uint32 storage_format_version = 17;
    */
   storageFormatVersion?: number
-  /**
-   * ResetPolicy selects the open-time incompatible-state policy.
-   * Empty defaults to "automatic"; no v1 compatibility policy is supported.
-   *
-   * @generated from field: string reset_policy = 18;
-   */
-  resetPolicy?: string
 }
 
 export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
@@ -147,23 +95,6 @@ export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
     { no: 6, name: 'verbose', kind: 'scalar', T: ScalarType.BOOL },
     { no: 7, name: 'volume_config', kind: 'message', T: () => Config$2 },
     { no: 8, name: 'store_config', kind: 'message', T: () => Config$3 },
-    { no: 9, name: 'block_shard_count', kind: 'scalar', T: ScalarType.UINT32 },
-    { no: 10, name: 'meta_shard_count', kind: 'scalar', T: ScalarType.UINT32 },
-    { no: 11, name: 'block_bloom_fpr', kind: 'scalar', T: ScalarType.DOUBLE },
-    {
-      no: 12,
-      name: 'block_compaction_trigger',
-      kind: 'scalar',
-      T: ScalarType.UINT32,
-    },
-    { no: 13, name: 'page_size', kind: 'scalar', T: ScalarType.UINT32 },
-    { no: 14, name: 'sync_io', kind: 'scalar', T: ScalarType.BOOL },
-    {
-      no: 15,
-      name: 'block_max_segment_data_bytes',
-      kind: 'scalar',
-      T: ScalarType.UINT32,
-    },
     { no: 16, name: 'driver_mode', kind: 'scalar', T: ScalarType.STRING },
     {
       no: 17,
@@ -171,7 +102,6 @@ export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
       kind: 'scalar',
       T: ScalarType.UINT32,
     },
-    { no: 18, name: 'reset_policy', kind: 'scalar', T: ScalarType.STRING },
   ] satisfies readonly PartialFieldInfo[],
   packedByDefault: true,
 })
