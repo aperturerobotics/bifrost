@@ -21,19 +21,23 @@ const SyncProtocolID = protocol.ID("alpha/so-sync")
 // maxMessageSize is the max message size for SO sync messages.
 const maxMessageSize = 10 * 1024 * 1024
 
-// SOSync manages bidirectional shared object state synchronization
-// over a solicit protocol stream. Each instance syncs one SharedObject
-// with peers connected via the session transport's child bus.
 // SnapshotAccessValidator verifies that the local object identity can decode
 // an inbound snapshot before it replaces durable state.
 type SnapshotAccessValidator func(context.Context, *sobject.SOState) error
 
+// SOSync synchronizes one shared object over the session transport's child bus.
 type SOSync struct {
-	le                     *logrus.Entry
-	b                      bus.Bus
-	soID                   string
-	localObjectPeerID      peer.ID
-	soHost                 *sobject.SOHost
+	// le records synchronization errors and peer activity.
+	le *logrus.Entry
+	// b supplies the session transport's solicitation interface.
+	b bus.Bus
+	// soID identifies the object and its signature context.
+	soID string
+	// localObjectPeerID is the participant identity, independent of transport identity.
+	localObjectPeerID peer.ID
+	// soHost owns accepted state and its provider lock.
+	soHost *sobject.SOHost
+	// validateSnapshotAccess checks local decryption before acceptance.
 	validateSnapshotAccess SnapshotAccessValidator
 }
 
@@ -189,9 +193,27 @@ func (s *SOSync) applyPeerSnapshot(
 
 	var applied bool
 	if err := s.soHost.UpdateSOState(ctx, func(state *sobject.SOState) error {
+		// This protocol carries no lineage. Authenticate the entire candidate
+		// configuration against the checkpoint held under the provider lock.
+		if err := sobject.VerifyConfigChainSuffix(state.GetConfig(), peerState.GetConfig(), nil); err != nil {
+			return errors.Wrap(err, "peer snapshot configuration authority")
+		}
 		if peerSnap.GetRootSeqno() <= state.GetRoot().GetInnerSeqno() {
 			return nil
 		}
+
+		// Sequence jumps require a root authorized by the held configuration.
+		validSigs, err := peerState.GetRoot().ValidateSignatures(s.soID, state.GetConfig().GetParticipants())
+		if err != nil {
+			return errors.Wrap(err, "peer snapshot root authority")
+		}
+		if err := sobject.CheckConsensusAcceptance(state.GetConfig().GetConsensusMode(), validSigs); err != nil {
+			return errors.Wrap(err, "peer snapshot consensus")
+		}
+		if err := peerState.Validate(s.soID); err != nil {
+			return errors.Wrap(err, "peer snapshot state")
+		}
+
 		merged := peerState.CloneVT()
 		if err := mergePendingOperations(le, s.soID, merged, state); err != nil {
 			return errors.Wrap(err, "preserve pending local operations")
@@ -244,17 +266,9 @@ func mergePendingOperations(le *logrus.Entry, sharedObjectID string, authoritati
 	return nil
 }
 
-// validateSnapshotElements checks an inbound snapshot before it may replace
-// local shared-object state. The sending peer may have self-authored the
-// received config: nothing here verifies who wrote it or its lineage. The
-// checks only require the local session peer to keep readable membership in
-// the resulting config, and the grants and ops carried in the snapshot to
-// carry internally valid signatures against that untrusted config.
-//
-// Full config-head authorization requires VerifyConfigChain over the
-// sender's SOConfigChange entries. Neither SOSyncMessage nor any p2p-side
-// store carries those entries today; closing that chain-lineage gap is a
-// separate prerequisite.
+// validateSnapshotElements checks local readability and element signatures before
+// expensive access checks. Configuration and root authority are checked again
+// against the held state under the provider lock before accepting a snapshot.
 func (s *SOSync) validateSnapshotElements(peerState *sobject.SOState) error {
 	cfg := peerState.GetConfig()
 	if cfg == nil || len(cfg.GetParticipants()) == 0 {

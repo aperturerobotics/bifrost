@@ -15,6 +15,7 @@ import (
 	transform_blockenc "github.com/s4wave/spacewave/db/block/transform/blockenc"
 	"github.com/s4wave/spacewave/db/util/blockenc"
 	"github.com/s4wave/spacewave/net/crypto"
+	"github.com/s4wave/spacewave/net/hash"
 	"github.com/s4wave/spacewave/net/peer"
 	stream_packet "github.com/s4wave/spacewave/net/stream/packet"
 	"github.com/sirupsen/logrus"
@@ -45,6 +46,7 @@ func newMemHost(soID string, initial *sobject.SOState) (*sobject.SOHost, *cconta
 	return sobject.NewSOHost(context.Background(), watchFn, lockFn, soID), ctr
 }
 
+// mustKeyPair generates a real participant signing key.
 func mustKeyPair(t *testing.T) crypto.PrivKey {
 	t.Helper()
 	priv, _, err := crypto.GenerateKeyPair(crypto.KeyType_Ed25519, 0)
@@ -54,6 +56,7 @@ func mustKeyPair(t *testing.T) crypto.PrivKey {
 	return priv
 }
 
+// mustPeerIDStr encodes the identity belonging to the signing key.
 func mustPeerIDStr(t *testing.T, priv crypto.PrivKey) string {
 	t.Helper()
 	id, err := peer.IDFromPrivateKey(priv)
@@ -63,6 +66,7 @@ func mustPeerIDStr(t *testing.T, priv crypto.PrivKey) string {
 	return id.String()
 }
 
+// participantCfg constructs a participant with the requested role.
 func participantCfg(peerIDStr string, role sobject.SOParticipantRole) *sobject.SOParticipantConfig {
 	return &sobject.SOParticipantConfig{PeerId: peerIDStr, Role: role}
 }
@@ -143,8 +147,10 @@ func TestStreamOpsAppliesNewerSnapshot(t *testing.T) {
 		Config: &sobject.SharedObjectConfig{Participants: participants},
 		Root:   &sobject.SORoot{InnerSeqno: 1},
 	}
+	trustSnapshotConfig(t, initial, ownerPriv)
 	newer := initial.CloneVT()
 	newer.Root.InnerSeqno = 2
+	signSnapshotRoot(t, "stream-newer-snapshot", newer, ownerPriv)
 	newerData, err := newer.MarshalVT()
 	if err != nil {
 		t.Fatal(err)
@@ -360,6 +366,7 @@ func TestSnapshotExchangeAcceptsObjectPeerDistinctFromTransportPeer(t *testing.T
 		Root:       &sobject.SORoot{InnerSeqno: 1},
 		RootGrants: []*sobject.SOGrant{grant},
 	}
+	trustSnapshotConfig(t, localState, ownerPriv)
 	if err := localState.QueueOperation(soID, pending); err != nil {
 		t.Fatal(err.Error())
 	}
@@ -367,10 +374,11 @@ func TestSnapshotExchangeAcceptsObjectPeerDistinctFromTransportPeer(t *testing.T
 	s := NewSOSync(gateLogger(), nil, soID, localPeer, localHost)
 
 	peerState := &sobject.SOState{
-		Config:     &sobject.SharedObjectConfig{Participants: participants},
+		Config:     localState.GetConfig().CloneVT(),
 		Root:       &sobject.SORoot{InnerSeqno: 5},
 		RootGrants: []*sobject.SOGrant{grant},
 	}
+	signSnapshotRoot(t, soID, peerState, ownerPriv)
 	snapData, err := peerState.MarshalVT()
 	if err != nil {
 		t.Fatal(err.Error())
@@ -570,5 +578,28 @@ func TestRemoteOpTamperedSignatureRejected(t *testing.T) {
 
 	if got := len(ctr.GetValue().GetOps()); got != 0 {
 		t.Fatalf("tampered op was queued (%d ops)", got)
+	}
+}
+
+// trustSnapshotConfig establishes a signed genesis checkpoint already held locally.
+func trustSnapshotConfig(t *testing.T, state *sobject.SOState, owner crypto.PrivKey) {
+	t.Helper()
+	entry, err := sobject.BuildSOConfigChange(state.GetConfig(), state.GetConfig(), sobject.SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_GENESIS, owner, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	state.Config, err = sobject.VerifyConfigChange(state.GetConfig(), entry)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+// signSnapshotRoot signs the candidate sequence and content with a real participant key.
+func signSnapshotRoot(t *testing.T, soID string, state *sobject.SOState, signer crypto.PrivKey) {
+	t.Helper()
+	state.Root.Inner = []byte("snapshot-root")
+	state.Root.ValidatorSignatures = nil
+	if err := state.Root.SignInnerData(signer, soID, state.Root.GetInnerSeqno(), hash.RecommendedHashType); err != nil {
+		t.Fatal(err)
 	}
 }
