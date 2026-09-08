@@ -766,7 +766,7 @@ func TestBufferedStoreUsesBatchPut(t *testing.T) {
 }
 
 func TestBufferedStoreRemovesPendingBlockWithoutResurrection(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	inner := newCountStore(hash.HashType_HashType_BLAKE3)
 	store := NewBufferedStore(ctx, inner)
 
@@ -797,6 +797,23 @@ func TestBufferedStoreRemovesPendingBlockWithoutResurrection(t *testing.T) {
 	}
 	if found {
 		t.Fatal("expected tombstone to win over pending put")
+	}
+
+	// A later put must replace a queued deletion even while the old block exists.
+	if _, _, err := inner.PutBlock(ctx, []byte("hello"), nil); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.RmBlock(ctx, ref); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := store.PutBlock(ctx, []byte("hello"), nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.Sync(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if data, found, err := inner.GetBlock(ctx, ref); err != nil || !found || string(data) != "hello" {
+		t.Fatalf("put after queued deletion: data=%q found=%t err=%v", data, found, err)
 	}
 }
 
