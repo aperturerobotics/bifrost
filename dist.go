@@ -9,6 +9,7 @@ import "embed"
 //go:embed app/device/add-device-wizard.ts app/quickstart/create.ts app/quickstart/options.ts
 //go:embed app/quickstart/perf-test.ts app/quickstart/startup-boundary.ts app/space/create-op-builders.ts
 //go:embed app/space/space-settings.ts app/space/space.ts app/urls.ts app/vm/v86-wizard-config.ts
+//go:embed bldr/manifest/manifest.pb.ts
 //go:embed app/wizard/intro.ts core/account/settings/settings.pb.ts core/changelog/changelog.pb.ts
 //go:embed core/forge/dashboard/dashboard.pb.ts core/forge/job/job.pb.ts core/forge/task/task.pb.ts
 //go:embed core/git/git.pb.ts core/provider/provider.pb.ts core/provider/spacewave/api/api.pb.ts
@@ -31,6 +32,7 @@ import "embed"
 //go:embed sdk/block/transaction/transaction_srpc.pb.ts sdk/bucket/lookup/lookup.pb.ts
 //go:embed sdk/bucket/lookup/lookup.ts sdk/bucket/lookup/lookup_srpc.pb.ts sdk/canvas/canvas.pb.ts
 //go:embed sdk/cdn/cdn-resource.pb.ts sdk/cdn/cdn-resource_srpc.pb.ts sdk/cdn/cdn.ts sdk/chat/chat.pb.ts
+//go:embed sdk/chat/content/content.pb.ts sdk/chat/state/state.pb.ts
 //go:embed sdk/chat/create-channel.ts sdk/chat/init-chat-demo.ts sdk/command/command.pb.ts
 //go:embed sdk/command/registry/registry.pb.ts sdk/command/registry/registry_srpc.pb.ts
 //go:embed sdk/configtype/registry/registry.pb.ts sdk/configtype/registry/registry_srpc.pb.ts
