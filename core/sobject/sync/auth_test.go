@@ -239,6 +239,77 @@ func TestParticipantAuthenticationDeniesBeforeDisclosure(t *testing.T) {
 	}
 }
 
+// TestParticipantRevocationNotifiesConnectedPeer preserves the old replica while
+// delivering an explicit denial over the already authenticated stream.
+func TestParticipantRevocationNotifiesConnectedPeer(t *testing.T) {
+	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
+	defer cancel()
+	const soID = "authentication-live-revocation"
+	owner, reader := mustKeyPair(t), mustKeyPair(t)
+	state := authenticationState(t, soID, owner, reader)
+	local := newAuthenticationPeer(t, soID, owner, state)
+	remote := newAuthenticationPeer(t, soID, reader, state)
+	denied := make(chan peer.ID, 1)
+	remote.peerAdmission = func(remoteID peer.ID, accepted bool) {
+		if !accepted {
+			denied <- remoteID
+		}
+	}
+
+	// Start the real paired exchange and remove access once object traffic has begun.
+	left, right := net.Pipe()
+	t.Cleanup(func() { left.Close(); right.Close() })
+	observed := &authenticationStream{Conn: left, messages: make(chan *SOSyncMessage, 32)}
+	done := make(chan error, 2)
+	go func() { done <- local.runStream(ctx, gateLogger(), observed, "transport-a", "transport-b") }()
+	go func() { done <- remote.runStream(ctx, gateLogger(), right, "transport-b", "transport-a") }()
+	waitAuthenticationSnapshot(t, ctx, observed.messages)
+	waitAuthenticationSnapshot(t, ctx, observed.messages)
+	removed, err := sobject.RemoveSOParticipant(ctx, local.soHost, remote.localObjectPeerID.String(), owner, nil)
+	if err != nil || !removed {
+		t.Fatalf("remove = %v, %v", removed, err)
+	}
+	select {
+	case source := <-denied:
+		if source != local.localObjectPeerID {
+			t.Fatalf("denied source = %v", source)
+		}
+	case <-ctx.Done():
+		t.Fatal("connected peer did not receive the revocation notice")
+	}
+	for range 2 {
+		select {
+		case <-done:
+		case <-ctx.Done():
+			t.Fatal("revoked stream failed to close")
+		}
+	}
+
+	// The notice reveals neither the removed configuration nor any operation history.
+	for len(observed.messages) != 0 {
+		message := <-observed.messages
+		if message.GetOp() != nil {
+			t.Fatal("revocation disclosed new object data")
+		}
+		if snapshot := message.GetSnapshot(); snapshot != nil {
+			decoded := &sobject.SOState{}
+			if err := decoded.UnmarshalVT(snapshot.GetSoState()); err != nil {
+				t.Fatal(err)
+			}
+			if !decoded.GetConfig().EqualVT(state.GetConfig()) || snapshot.GetRootSeqno() != state.GetRoot().GetInnerSeqno() {
+				t.Fatal("revocation disclosed new configuration or history")
+			}
+		}
+	}
+	retained, err := remote.soHost.GetHostState(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !retained.GetConfig().EqualVT(state.GetConfig()) {
+		t.Fatal("revocation rewrote the removed peer's retained configuration")
+	}
+}
+
 // TestParticipantRevocationClosesBlockedSnapshot proves the authority watch can
 // stop a stream whose authorized initial send is blocked in the transport.
 func TestParticipantRevocationClosesBlockedSnapshot(t *testing.T) {
