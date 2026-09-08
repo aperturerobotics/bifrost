@@ -59,6 +59,7 @@ type pendingWrite struct {
 
 // NewBlockStore starts bounded writeback and quiescent maintenance for a volume.
 func NewBlockStore(ctx context.Context, e *Engine, hashType hash.HashType) *BlockStore {
+	// Bind admission, writeback, and maintenance to the volume lifetime.
 	ctx, cancel := context.WithCancel(ctx)
 	s := &BlockStore{
 		raw:     &packStore{engine: e, hashType: hashType},
@@ -68,6 +69,8 @@ func NewBlockStore(ctx context.Context, e *Engine, hashType hash.HashType) *Bloc
 		wake:    make(chan struct{}, 1),
 		pending: make(map[string]*pendingWrite),
 	}
+
+	// Route engine cleanup notifications to the same background worker.
 	e.mtx.Lock()
 	e.wake = s.wake
 	e.mtx.Unlock()
@@ -78,6 +81,7 @@ func NewBlockStore(ctx context.Context, e *Engine, hashType hash.HashType) *Bloc
 
 // Close cancels admission, joins writeback, and releases uncommitted local data.
 func (s *BlockStore) Close() error {
+	// Join background work before releasing any queued payloads.
 	s.cancel()
 	<-s.done
 	release, err := s.drain.Lock(context.Background())
@@ -85,6 +89,8 @@ func (s *BlockStore) Close() error {
 		return err
 	}
 	defer release()
+
+	// Drop uncommitted admission state after all drainers have stopped.
 	s.mtx.Lock()
 	s.queue, s.pending = nil, nil
 	s.pendingBytes = 0
@@ -167,6 +173,7 @@ func (s *BlockStore) GetSupportedFeatures() block.StoreFeature {
 
 // PutBlock admits verified content and optionally completes its durability fence.
 func (s *BlockStore) PutBlock(ctx context.Context, data []byte, opts *block.PutOpts) (*block.BlockRef, bool, error) {
+	// Validate the caller's immutable content identity before admission.
 	if err := s.check(ctx); err != nil {
 		return nil, false, err
 	}
@@ -189,7 +196,12 @@ func (s *BlockStore) PutBlock(ctx context.Context, data []byte, opts *block.PutO
 	if forced := opts.GetForceBlockRef(); !forced.GetEmpty() && !ref.EqualsRef(forced) {
 		return ref, false, block.ErrBlockRefMismatch
 	}
-	existed, err := s.admit(ctx, &block.PutBatchEntry{Ref: ref, Data: data})
+
+	// Report known duplicates without making admission retry unrelated writes.
+	existed, err := s.GetBlockExists(ctx, ref)
+	if err == nil && !existed {
+		existed, err = s.admit(ctx, &block.PutBatchEntry{Ref: ref, Data: data})
+	}
 	if err == nil && opts.GetSync() {
 		_, err = s.Sync(ctx)
 	}
@@ -197,49 +209,32 @@ func (s *BlockStore) PutBlock(ctx context.Context, data []byte, opts *block.PutO
 }
 
 // admit orders copied writes and applies bounded backpressure before acceptance.
+// Durable duplicates are resolved by packStore under its publication lock.
 func (s *BlockStore) admit(ctx context.Context, entry *block.PutBatchEntry) (bool, error) {
+	// Retain caller-owned bytes once, including across a capacity drain.
 	keyBytes, err := blockKey(entry.Ref)
 	if err != nil {
 		return false, err
 	}
 	key := string(keyBytes)
-	var copied *block.PutBatchEntry
+	copied := &block.PutBatchEntry{Ref: entry.Ref.Clone(), Tombstone: entry.Tombstone}
+	if !entry.Tombstone {
+		copied.Data = bytes.Clone(entry.Data)
+	}
+
+	// Admit against only current local state; a batch needs no disk lookups.
 	for {
 		if err := s.check(ctx); err != nil {
 			return false, err
 		}
 		s.mtx.Lock()
-		epoch := s.sequence
-		pending := s.pending[key]
-		s.mtx.Unlock()
-		if pending != nil && pending.entry.Tombstone == entry.Tombstone {
-			return !entry.Tombstone, nil
-		}
-		found := false
-		if pending == nil && !entry.Tombstone {
-			found, err = s.raw.GetBlockExists(ctx, entry.Ref)
-			if err != nil {
-				return false, err
-			}
-		}
-		if copied == nil && !found {
-			copied = &block.PutBatchEntry{Ref: entry.Ref.Clone(), Tombstone: entry.Tombstone}
-			if !entry.Tombstone {
-				copied.Data = bytes.Clone(entry.Data)
-			}
-		}
-		s.mtx.Lock()
-		if s.sequence != epoch {
-			s.mtx.Unlock()
-			continue
-		}
 		if s.ctx.Err() != nil {
 			s.mtx.Unlock()
 			return false, ErrClosed
 		}
-		if found {
+		if pending := s.pending[key]; pending != nil && pending.entry.Tombstone == entry.Tombstone {
 			s.mtx.Unlock()
-			return true, nil
+			return !entry.Tombstone, nil
 		}
 		if len(s.queue) < maxPendingBlocks && s.pendingBytes+len(copied.Data) <= maxPendingBytes {
 			s.sequence++
@@ -252,6 +247,8 @@ func (s *BlockStore) admit(ctx context.Context, entry *block.PutBatchEntry) (boo
 			return false, nil
 		}
 		s.mtx.Unlock()
+
+		// Free bounded capacity through the existing durability fence.
 		if _, err := s.Sync(ctx); err != nil {
 			return false, err
 		}
@@ -260,6 +257,7 @@ func (s *BlockStore) admit(ctx context.Context, entry *block.PutBatchEntry) (boo
 
 // PutBlockBatch validates supplied identities and admits the bounded local writes.
 func (s *BlockStore) PutBlockBatch(ctx context.Context, entries []*block.PutBatchEntry) error {
+	// Verify the whole batch before admitting any of its content.
 	ctx, task := trace.NewTask(ctx, "hydra/opfs-engine/block-store/put-block-batch")
 	defer task.End()
 	var payloadBytes, tombstones int
@@ -287,6 +285,8 @@ func (s *BlockStore) PutBlockBatch(ctx context.Context, entries []*block.PutBatc
 			}
 		}
 	}
+
+	// Queue the verified entries without per-entry reads or publication waits.
 	trace.Logf(ctx, "hydra/opfs-engine/block-store/put-block-batch/shape", "entries=%d bytes=%d tombstones=%d", len(entries), payloadBytes, tombstones)
 	for _, entry := range entries {
 		if _, err := s.admit(ctx, entry); err != nil {
@@ -298,6 +298,7 @@ func (s *BlockStore) PutBlockBatch(ctx context.Context, entries []*block.PutBatc
 
 // Sync publishes every write admitted before the captured sequence fence.
 func (s *BlockStore) Sync(ctx context.Context) (bool, error) {
+	// Reject closed stores and bind the fence to volume shutdown.
 	if err := s.check(ctx); err != nil {
 		return false, err
 	}
@@ -305,6 +306,8 @@ func (s *BlockStore) Sync(ctx context.Context) (bool, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	stop := context.AfterFunc(s.ctx, cancel)
 	defer func() { stop(); cancel() }()
+
+	// Capture the admitted prefix before joining other durability fences.
 	s.mtx.Lock()
 	fence := s.sequence
 	s.mtx.Unlock()
@@ -314,6 +317,7 @@ func (s *BlockStore) Sync(ctx context.Context) (bool, error) {
 	}
 	defer release()
 	for {
+		// Prepare one bounded pack from the captured prefix.
 		if err := s.check(ctx); err != nil {
 			return false, err
 		}
@@ -335,6 +339,8 @@ func (s *BlockStore) Sync(ctx context.Context) (bool, error) {
 		if len(batch) == 0 {
 			return true, nil
 		}
+
+		// Publish before releasing local read-through state or its capacity.
 		entries := make([]*block.PutBatchEntry, len(batch))
 		for i, pending := range batch {
 			entries[i] = pending.entry
@@ -397,11 +403,14 @@ func (s *BlockStore) GetBlockExists(ctx context.Context, ref *block.BlockRef) (b
 
 // GetBlockExistsBatch shares one immutable generation for uncached references.
 func (s *BlockStore) GetBlockExistsBatch(ctx context.Context, refs []*block.BlockRef) ([]bool, error) {
+	// Keep one durable snapshot and pending overlay for the complete lookup.
 	read, release, err := s.BeginReadOperation(ctx)
 	if err != nil {
 		return nil, err
 	}
 	defer release()
+
+	// Preserve input positions while skipping empty references.
 	out := make([]bool, len(refs))
 	for j, ref := range refs {
 		if ref.GetEmpty() {
