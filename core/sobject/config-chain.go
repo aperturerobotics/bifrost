@@ -125,7 +125,8 @@ func VerifyConfigChange(current *SharedObjectConfig, entry *SOConfigChange) (*Sh
 // VerifyConfigChainSuffix authenticates a candidate configuration from a held,
 // nonempty checkpoint. Every transition must be authorized by its predecessor.
 // Genesis and self-enrollment are unavailable on this peer verification path.
-// Empty suffixes require the entire candidate to equal the checkpoint.
+// Empty suffixes require every candidate field to equal the checkpoint,
+// independent of participant order.
 // This verifies configuration authority only, not root or content acceptance.
 func VerifyConfigChainSuffix(current, candidate *SharedObjectConfig, entries []*SOConfigChange) error {
 	// Trust must already exist at the receiver before remote history is examined.
@@ -158,7 +159,7 @@ func VerifyConfigChainSuffix(current, candidate *SharedObjectConfig, entries []*
 	}
 
 	// Bind both the effective configuration and the computed head to the candidate.
-	if !current.EqualVT(candidate) {
+	if !EqualSOConfigs(current, candidate) {
 		return errors.New("config suffix does not match candidate configuration")
 	}
 	return nil
@@ -226,6 +227,7 @@ func BuildSOConfigChange(
 		nextSeqno = currentConfig.GetConfigChainSeqno() + 1
 	}
 
+	// Capture the new configuration without changing the caller's signed data.
 	entry := &SOConfigChange{
 		ConfigSeqno:    nextSeqno,
 		Config:         nextConfig.CloneVT(),
@@ -320,16 +322,6 @@ func participantRoleForEntity(cfg *SharedObjectConfig, entityID string) SOPartic
 	return role
 }
 
-// sameParticipant compares participant identity, role and entity membership.
-func sameParticipant(a, b *SOParticipantConfig) bool {
-	if a == nil || b == nil {
-		return a == b
-	}
-	return a.GetPeerId() == b.GetPeerId() &&
-		a.GetRole() == b.GetRole() &&
-		a.GetEntityId() == b.GetEntityId()
-}
-
 // validateSelfEnrollPeerChange checks enrollment shape and existing entity role bounds.
 // The caller must independently authenticate the peer-to-entity relationship.
 func validateSelfEnrollPeerChange(entry *SOConfigChange, cfg *SharedObjectConfig, signerPeerID string) error {
@@ -369,7 +361,7 @@ func validateSelfEnrollPeerChange(entry *SOConfigChange, cfg *SharedObjectConfig
 		if !ok {
 			return errors.New("self-enroll must preserve existing participants")
 		}
-		if !sameParticipant(prevParticipant, nextParticipant) {
+		if !prevParticipant.EqualVT(nextParticipant) {
 			return errors.New("self-enroll may not modify existing participants")
 		}
 	}

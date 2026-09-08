@@ -1,6 +1,7 @@
 package sobject
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/s4wave/spacewave/net/crypto"
@@ -41,6 +42,13 @@ func TestVerifyConfigChainSuffix(t *testing.T) {
 	}
 	before := checkpoint.CloneVT()
 
+	// Transport projections may reorder members without changing signed authority.
+	reordered := checkpoint.CloneVT()
+	slices.Reverse(reordered.Participants)
+	if err := VerifyConfigChainSuffix(checkpoint, reordered, nil); err != nil {
+		t.Fatalf("reordered checkpoint: %v", err)
+	}
+
 	// Transfer authority, then remove the previous owner under the new authority.
 	promoted := checkpoint.CloneVT()
 	promoted.Participants[1].Role = SOParticipantRole_SOParticipantRole_OWNER
@@ -49,6 +57,26 @@ func TestVerifyConfigChainSuffix(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	// The final projection may also differ in order from a signed suffix entry.
+	reordered = intermediate.CloneVT()
+	slices.Reverse(reordered.Participants)
+	encodedPromotion, err := promotion.MarshalVT()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := VerifyConfigChainSuffix(checkpoint, reordered, []*SOConfigChange{promotion}); err != nil {
+		t.Fatalf("reordered suffix target: %v", err)
+	}
+	afterPromotion, err := promotion.MarshalVT()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(encodedPromotion, afterPromotion) {
+		t.Fatal("verification mutated the signed suffix")
+	}
+
+	// Continue the verified history under the promoted participant's authority.
 	removed := intermediate.CloneVT()
 	removed.Participants = removed.Participants[1:]
 	removal := build(intermediate, removed, SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_REMOVE_PARTICIPANT, reader)

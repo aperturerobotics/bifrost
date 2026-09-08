@@ -22,39 +22,33 @@ import (
 // maxWriteRetries is the maximum number of retries on 409 write conflicts.
 const maxWriteRetries = 3
 
-// errSOStateDeltaResponse indicates the HTTP SO state response carried a delta.
-var errSOStateDeltaResponse = errors.New("so state response returned delta")
-
-// errSOConfigChainChanged indicates the pulled state uses a newer config chain hash.
-var errSOConfigChainChanged = errors.New("config chain hash changed")
-
 // cloudSOHost implements the shared object state management via the wsTracker.
 type cloudSOHost struct {
-	// le is the logger
+	// le is the logger.
 	le *logrus.Entry
-	// client is the session client for API calls
+	// client is the session client for API calls.
 	client *SessionClient
-	// soID is the shared object ID
+	// soID is the shared object ID.
 	soID string
 	// selfEntityID is the stable entity id for the mounted account.
 	selfEntityID string
-	// privKey is the session private key for signing
+	// privKey is the session private key for signing.
 	privKey crypto.PrivKey
-	// peerID is the local peer ID derived from privKey
+	// peerID is the local peer ID derived from privKey.
 	peerID peer.ID
-	// sfs is the step factory set for block transforms
+	// sfs is the step factory set for block transforms.
 	sfs *block_transform.StepFactorySet
-	// tracker is the shared session WebSocket tracker
+	// tracker is the shared session WebSocket tracker.
 	tracker *wsTracker
-	// soHost is the SOHost managing the refcount
+	// soHost is the SOHost managing the refcount.
 	soHost *sobject.SOHost
-	// stateCtr contains the current shared object state
+	// stateCtr contains the current shared object state.
 	stateCtr *ccontainer.CContainer[*sobject.SOState]
-	// snapCtr contains the derived SharedObjectStateSnapshot
+	// snapCtr contains the derived SharedObjectStateSnapshot.
 	snapCtr *ccontainer.CContainer[sobject.SharedObjectStateSnapshot]
 	// lastSeqno tracks the last applied change_log sequence number.
 	lastSeqno uint64
-	// lastConfigChainHash tracks the last known config chain hash
+	// lastConfigChainHash tracks the last known config chain hash.
 	lastConfigChainHash []byte
 	// verifiedConfigChainSeqno tracks the seqno of the last verified config chain head.
 	verifiedConfigChainSeqno uint64
@@ -68,7 +62,7 @@ type cloudSOHost struct {
 	persistVerifiedStateCache func(context.Context, *api.VerifiedSOStateCache) error
 	// stateObserved projects accepted root mechanics without owning state.
 	stateObserved func(*sobject.SOState)
-	// bcast guards lastSeqno and stateCtr updates
+	// bcast guards state, trusted configuration, and notification snapshots.
 	bcast broadcast.Broadcast
 	// acceptMu serializes cache acceptance and persistence, never HTTP requests.
 	acceptMu csync.Mutex
@@ -78,7 +72,7 @@ type cloudSOHost struct {
 	historyIndex map[string]*sobject.SOConfigChange
 	// peerState is the durable peer snapshot retained across cache-only updates.
 	peerState *sobject.SOState
-	// writeMu serializes local writes to prevent self-nonce conflicts
+	// writeMu serializes local writes to prevent self-nonce conflicts.
 	writeMu csync.Mutex
 	// pullRoutine runs coalesced gap-recovery state pulls.
 	pullRoutine *coalescedTriggerRoutine
@@ -96,7 +90,7 @@ type cloudSOHost struct {
 	snapDeriver *routine.RoutineContainer
 	// configChangedRoutine runs coalesced config-chain verification.
 	configChangedRoutine *coalescedTriggerRoutine
-	// ctxCancel cancels the host context (used for D11 teardown on participant removal)
+	// ctxCancel cancels the host context on participant removal.
 	ctxCancel context.CancelFunc
 	// onPeerRevoked is called when a peer is removed from the config chain with
 	// RevocationInfo. Called with the revoked peer ID string.
@@ -128,6 +122,7 @@ func newCloudSOHost(
 	persistVerifiedStateCache func(context.Context, *api.VerifiedSOStateCache) error,
 	forceBlockSync func(ctx context.Context) error,
 ) *cloudSOHost {
+	// Construct state containers and background routines before exposing the host.
 	h := &cloudSOHost{
 		le:                        le,
 		client:                    client,
@@ -156,6 +151,7 @@ func newCloudSOHost(
 	// lockFn acquires the local write mutex and reads from the cached stateCtr.
 	// WriteSOState does HTTP POST with 409 retry.
 	lockFn := func(ctx context.Context, sharedObjectID string) (sobject.SOStateLock, error) {
+		// Serialize local writers until their returned state lock is released.
 		relLock, err := h.writeMu.Lock(ctx)
 		if err != nil {
 			return nil, err
@@ -173,6 +169,7 @@ func newCloudSOHost(
 			return nil, errors.New("no state available after pull")
 		}
 
+		// Bind the local snapshot to cloud publication and the acquired write lock.
 		initialState := state.CloneVT()
 		writeFn := func(ctx context.Context, state *sobject.SOState, changes ...*sobject.SOConfigChange) error {
 			// Cloud configuration mutations use the server's config-state transaction.
@@ -192,17 +189,18 @@ func newCloudSOHost(
 
 // Execute runs the cloudSOHost lifecycle.
 func (h *cloudSOHost) Execute(ctx context.Context) error {
+	// Keep the host and its notification callback inside one cancellation lifetime.
 	ctx, cancel := context.WithCancel(ctx)
 	h.ctxCancel = cancel
 	defer cancel()
 
 	h.soHost.SetContext(ctx)
-
 	h.tracker.RegisterNotifyCallback(h.soID, func(payload *api.SONotifyEventPayload) {
 		h.handleSONotifyWithContext(ctx, payload)
 	})
 	defer h.tracker.UnregisterNotifyCallback(h.soID)
 
+	// Attach background work before seeding the first observable snapshot.
 	h.pullRoutine.SetContext(ctx)
 	defer h.pullRoutine.ClearContext()
 	h.snapDeriver.SetContext(ctx, true)
@@ -219,6 +217,7 @@ func (h *cloudSOHost) Execute(ctx context.Context) error {
 		return errors.Wrap(err, "initial state pull")
 	}
 
+	// Retain the registered callback until host cancellation.
 	<-ctx.Done()
 	return context.Canceled
 }
@@ -227,12 +226,15 @@ func (h *cloudSOHost) Execute(ctx context.Context) error {
 // If stateCtr already holds a value from an earlier mount-time seed, it reuses
 // that snapshot instead of issuing another HTTP GET.
 func (h *cloudSOHost) ensureInitialState(ctx context.Context, reason SeedReason) error {
+	// Reuse an accepted snapshot or join the existing cold-seed request.
 	if h.stateCtr.GetValue() != nil {
 		return nil
 	}
 	if err := h.pullStateSingleflight(ctx, reason); err != nil {
 		return err
 	}
+
+	// Preserve the verification failure instead of reporting an empty cache.
 	if h.stateCtr.GetValue() == nil {
 		var initialStateErr error
 		h.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
@@ -250,11 +252,14 @@ func (h *cloudSOHost) ensureInitialState(ctx context.Context, reason SeedReason)
 func (h *cloudSOHost) runSnapDeriver(ctx context.Context) error {
 	var prev *sobject.SOState
 	for {
+		// Wait on the state container's atomic change notification.
 		next, err := h.stateCtr.WaitValueChange(ctx, prev, nil)
 		if err != nil {
 			return err
 		}
 		prev = next
+
+		// Project each accepted state through the existing participant handle.
 		if h.stateObserved != nil {
 			h.stateObserved(next)
 		}
@@ -298,6 +303,7 @@ func (h *cloudSOHost) pullStateSingleflight(ctx context.Context, reason SeedReas
 // pullState fetches the current state via HTTP GET and updates stateCtr.
 // reason tags the fan-out origin on the underlying HTTP request.
 func (h *cloudSOHost) pullState(ctx context.Context, reason SeedReason) error {
+	// Fetch from the held changelog cursor, falling back when a full snapshot is needed.
 	var since uint64
 	h.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
 		since = h.lastSeqno
@@ -307,6 +313,7 @@ func (h *cloudSOHost) pullState(ctx context.Context, reason SeedReason) error {
 		return err
 	}
 
+	// Decode a snapshot, retrying without a cursor when the server returned a delta.
 	state, lastSeqno, configChain, err := decodeSOStateResponse(stateData)
 	if errors.Is(err, errSOStateDeltaResponse) && since > 0 {
 		h.le.WithField("since", since).Debug("received delta from state pull, retrying full snapshot")
@@ -319,6 +326,8 @@ func (h *cloudSOHost) pullState(ctx context.Context, reason SeedReason) error {
 	if err != nil {
 		return err
 	}
+
+	// Reject rollback before synchronizing the response's embedded authority.
 	if err := h.verifyChangeLogSeqno(lastSeqno); err != nil {
 		h.noteInitialStateRejection(
 			errors.Wrapf(
@@ -331,29 +340,11 @@ func (h *cloudSOHost) pullState(ctx context.Context, reason SeedReason) error {
 		return nil
 	}
 
+	// Verify the response under its authenticated configuration history.
 	embeddedChainSynced := h.syncEmbeddedConfigChain(ctx, state, configChain)
-
-	// D10: Client-side state verification before accepting.
 	if err := h.verifyPulledState(state); err != nil {
-		if errors.Is(err, errSOConfigChainChanged) {
-			if !embeddedChainSynced {
-				if syncErr := h.syncConfigChainSingleflight(ctx, state.GetConfig().GetConfigChainHash()); syncErr != nil {
-					h.le.WithError(syncErr).Warn("failed to verify updated config chain for pulled state")
-					return nil
-				}
-			}
-			if err := h.verifyPulledState(state); err != nil {
-				h.noteInitialStateRejection(
-					errors.Wrapf(
-						errSharedObjectInitialStateRejected,
-						"state verification after config sync: %v",
-						err,
-					),
-				)
-				h.le.WithError(err).Warn("pulled state failed verification after config sync, ignoring")
-				return nil
-			}
-		} else {
+		// A matching head cannot recover an invalid snapshot by fetching more history.
+		if !errors.Is(err, errSOConfigChainChanged) {
 			h.noteInitialStateRejection(
 				errors.Wrapf(
 					errSharedObjectInitialStateRejected,
@@ -362,6 +353,19 @@ func (h *cloudSOHost) pullState(ctx context.Context, reason SeedReason) error {
 				),
 			)
 			h.le.WithError(err).Warn("pulled state failed verification, ignoring")
+			return nil
+		}
+
+		// Resolve a newer head once, then repeat the complete snapshot verification.
+		if !embeddedChainSynced {
+			if syncErr := h.syncConfigChainSingleflight(ctx, state.GetConfig().GetConfigChainHash()); syncErr != nil {
+				h.le.WithError(syncErr).Warn("failed to verify updated config chain for pulled state")
+				return nil
+			}
+		}
+		if err := h.verifyPulledState(state); err != nil {
+			h.noteInitialStateRejection(errors.Wrapf(errSharedObjectInitialStateRejected, "state verification after config sync: %v", err))
+			h.le.WithError(err).Warn("pulled state failed verification after config sync, ignoring")
 			return nil
 		}
 	}
@@ -380,6 +384,7 @@ func (h *cloudSOHost) pullState(ctx context.Context, reason SeedReason) error {
 		return err
 	}
 
+	// Publish only after the accepted snapshot has been retained successfully.
 	var configHashChanged bool
 	var prevState *sobject.SOState
 	h.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
@@ -409,6 +414,7 @@ func (h *cloudSOHost) pullState(ctx context.Context, reason SeedReason) error {
 // so ensureInitialState can return a terminal mount error instead of falling
 // back to a generic retryable "no state available after pull" error.
 func (h *cloudSOHost) noteInitialStateRejection(err error) {
+	// Record failures only until the first state is accepted.
 	if err == nil || h.stateCtr.GetValue() != nil {
 		return
 	}
@@ -470,6 +476,7 @@ func (h *cloudSOHost) verifyChangeLogSeqno(snapshotSeqno uint64) error {
 // verifyPulledState performs client-side verification on a pulled SOState.
 // Checks config chain hash continuity and root signature validity.
 func (h *cloudSOHost) verifyPulledState(state *sobject.SOState) error {
+	// Snapshot the trusted head and accepted root before comparing the response.
 	root := state.GetRoot()
 	var lastConfigHash []byte
 	var trustedConfig *sobject.SharedObjectConfig
@@ -498,10 +505,12 @@ func (h *cloudSOHost) verifyPulledState(state *sobject.SOState) error {
 		trustedConfig = trustedConfig.CloneVT()
 		trustedConfig.ConfigChainHash = bytes.Clone(lastConfigHash)
 		trustedConfig.ConfigChainSeqno = trustedSeqno
-		if !trustedConfig.EqualVT(state.GetConfig()) {
+		if !sobject.EqualSOConfigs(trustedConfig, state.GetConfig()) {
 			return errors.New("cloud state differs from verified configuration")
 		}
 	}
+
+	// Preserve the accepted root's sequence and contents at an equal sequence.
 	if held.GetRoot() != nil {
 		if root.GetInnerSeqno() < held.GetRoot().GetInnerSeqno() {
 			return errors.New("cloud root rollback")
@@ -564,10 +573,12 @@ func (h *cloudSOHost) handleSONotify(payload *api.SONotifyEventPayload) {
 // a config-chain re-verify only; the state pull fallback only fires for
 // genuine gap or cold-cache cases.
 func (h *cloudSOHost) handleSONotifyWithContext(ctx context.Context, payload *api.SONotifyEventPayload) {
+	// Ignore absent notifications before inspecting their state payload.
 	if payload == nil {
 		return
 	}
 
+	// Refresh referenced blocks before applying an inline snapshot or delta.
 	if msg := payload.GetStateMessage(); msg != nil {
 		if err := h.refreshBlockManifestForNonce(ctx, payload.GetBlockStoreNonce()); err != nil {
 			h.le.WithError(err).
@@ -601,6 +612,7 @@ func (h *cloudSOHost) handleSONotifyWithContext(ctx context.Context, payload *ap
 		return
 	}
 
+	// Configuration-only notifications wake their verifier without fetching state.
 	switch payload.GetChangeType() {
 	case "configChanged":
 		h.triggerConfigChanged()
@@ -620,6 +632,7 @@ func (h *cloudSOHost) handleSONotifyWithContext(ctx context.Context, payload *ap
 
 // refreshBlockManifestForNonce makes referenced blocks available before publishing newer state.
 func (h *cloudSOHost) refreshBlockManifestForNonce(ctx context.Context, nonce uint64) error {
+	// Skip absent notifications and already-pulled manifest versions.
 	if nonce == 0 || h.refreshBlockManifest == nil {
 		return nil
 	}
@@ -632,6 +645,8 @@ func (h *cloudSOHost) refreshBlockManifestForNonce(ctx context.Context, nonce ui
 			return nil
 		}
 	}
+
+	// Fetch the required manifest through the backing store's existing refresh.
 	return h.refreshBlockManifest(ctx)
 }
 
@@ -642,14 +657,17 @@ func (h *cloudSOHost) refreshBlockManifestForNonce(ctx context.Context, nonce ui
 // be applied (gap, decode failure, or verification failure); the caller may
 // fall back to an HTTP pull.
 func (h *cloudSOHost) handleStateDelta(ctx context.Context, msg *api.SOStateMessage) error {
+	// Serialize the complete inline acceptance with cloud and peer publications.
 	release, err := h.acceptMu.Lock(ctx)
 	if err != nil {
 		return err
 	}
 	defer release()
 
+	// Apply only the response variant supplied by the cloud.
 	switch {
 	case msg.GetSnapshot() != nil:
+		// Verify a complete snapshot before retaining or exposing it.
 		snap := msg.GetSnapshot()
 		if err := h.verifyChangeLogSeqno(msg.GetSeqno()); err != nil {
 			return errors.Wrap(err, "verify inline snapshot seqno")
@@ -660,6 +678,8 @@ func (h *cloudSOHost) handleStateDelta(ctx context.Context, msg *api.SOStateMess
 		if err := h.retainPeerState(ctx, snap); err != nil {
 			return err
 		}
+
+		// Publish the retained snapshot and its changelog cursor together.
 		var prevState *sobject.SOState
 		h.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
 			prevState = h.stateCtr.GetValue()
@@ -673,6 +693,7 @@ func (h *cloudSOHost) handleStateDelta(ctx context.Context, msg *api.SOStateMess
 		return nil
 
 	case msg.GetDelta() != nil:
+		// Read the delta and the held base needed to apply it.
 		delta := msg.GetDelta()
 		entries := delta.GetEntries()
 		if len(entries) == 0 {
@@ -715,6 +736,7 @@ func (h *cloudSOHost) handleStateDelta(ctx context.Context, msg *api.SOStateMess
 			return errors.Errorf("delta gap: since=%d, last=%d", since, lastSeqno)
 		}
 
+		// Apply the contiguous delta to an independent snapshot.
 		next := cached.CloneVT()
 		expected := since + 1
 		for _, entry := range entries {
@@ -727,6 +749,7 @@ func (h *cloudSOHost) handleStateDelta(ctx context.Context, msg *api.SOStateMess
 			expected++
 		}
 
+		// Retain only a fully verified result before publishing it.
 		if err := h.verifyPulledState(next); err != nil {
 			return errors.Wrap(err, "verify state after delta apply")
 		}
@@ -734,6 +757,8 @@ func (h *cloudSOHost) handleStateDelta(ctx context.Context, msg *api.SOStateMess
 		if err := h.retainPeerState(ctx, next); err != nil {
 			return err
 		}
+
+		// Publish the retained delta only if its base is still current.
 		newSeqno := entries[len(entries)-1].GetSeqno()
 		var prevState *sobject.SOState
 		h.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
@@ -773,6 +798,7 @@ func applyChangeLogEntry(
 ) error {
 	switch entry.GetChangeType() {
 	case "op":
+		// Decode the operation and discard any already-queued duplicate.
 		op := &sobject.SOOperation{}
 		if err := op.UnmarshalVT(entry.GetChangeData()); err != nil {
 			return errors.Wrap(err, "unmarshal op envelope")
@@ -792,10 +818,13 @@ func applyChangeLogEntry(
 				return nil
 			}
 		}
+
+		// Keep only operations not already resolved by the accepted root or rejections.
 		state.Ops = sobject.FilterResolvedOperations(append(state.Ops, op), state.GetRoot().GetAccountNonces(), nil, state.GetOpRejections())
 		return nil
 
 	case "root":
+		// Decode the root publication and discard an already-applied root.
 		req := &api.PostRootRequest{}
 		if err := req.UnmarshalVT(entry.GetChangeData()); err != nil {
 			return errors.Wrap(err, "unmarshal post root request")
@@ -807,6 +836,7 @@ func applyChangeLogEntry(
 			return nil
 		}
 
+		// Resolve the queued operations covered by the root's account nonces.
 		accepted := make(map[string]uint64, len(req.GetRoot().GetAccountNonces()))
 		for _, acc := range req.GetRoot().GetAccountNonces() {
 			accepted[acc.GetPeerId()] = acc.GetNonce()
@@ -824,6 +854,7 @@ func applyChangeLogEntry(
 			}
 		}
 
+		// Apply through the state owner so signatures and resolution rules stay shared.
 		if err := state.UpdateRootState(
 			sharedObjectID,
 			req.GetRoot(),
@@ -845,6 +876,7 @@ func diffSOOperationRejections(
 	prevState *sobject.SOState,
 	nextState *sobject.SOState,
 ) []*sobject.SOOperationRejection {
+	// Index previous rejection identities before selecting newly observed records.
 	if nextState == nil {
 		return nil
 	}
@@ -852,6 +884,7 @@ func diffSOOperationRejections(
 	prevKeys := make(map[string]struct{})
 	addSOOperationRejectionKeys(prevKeys, prevState)
 
+	// Return only signed records absent from the previous snapshot.
 	var nextRejections []*sobject.SOOperationRejection
 	for _, peerRejections := range nextState.GetOpRejections() {
 		for _, rejection := range peerRejections.GetRejections() {
@@ -893,6 +926,7 @@ func (h *cloudSOHost) logNewOpRejections(
 	source string,
 ) {
 	for _, rejection := range diffSOOperationRejections(prevState, nextState) {
+		// Decode the rejection's signed operation identity.
 		rejInner, err := rejection.UnmarshalInner()
 		if err != nil {
 			h.le.WithError(err).
@@ -901,6 +935,7 @@ func (h *cloudSOHost) logNewOpRejections(
 			continue
 		}
 
+		// Attach operation details and decrypt errors addressed to this peer.
 		le := h.le.WithFields(logrus.Fields{
 			"source":               source,
 			"rejected-op-local-id": rejInner.GetLocalId(),
@@ -925,6 +960,7 @@ func (h *cloudSOHost) logNewOpRejections(
 			}
 		}
 
+		// Report each newly observed rejection once.
 		le.Warn("observed shared object operation rejection")
 	}
 }
@@ -944,6 +980,7 @@ func (h *cloudSOHost) writeStateWithRetry(ctx context.Context, state *sobject.SO
 				Debug("flushed block store before root write")
 		}
 
+		// Submit the root only after its referenced blocks are available remotely.
 		prevState := h.stateCtr.GetValue()
 		rejectedOps := diffSOOperationRejections(prevState, state)
 
@@ -978,6 +1015,7 @@ func (h *cloudSOHost) writeStateWithRetry(ctx context.Context, state *sobject.SO
 			return nil
 		}
 
+		// Retry only sequence conflicts after refreshing the held state.
 		var ce *cloudError
 		if !errors.As(err, &ce) || ce.StatusCode != 409 {
 			return err
@@ -1016,6 +1054,8 @@ func (h *cloudSOHost) applyQueuedOperation(ctx context.Context, op *sobject.SOOp
 		h.triggerPull()
 		return
 	}
+
+	// Publish the retained optimistic projection.
 	h.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
 		h.stateCtr.SetValue(next)
 		broadcast()
@@ -1024,6 +1064,7 @@ func (h *cloudSOHost) applyQueuedOperation(ctx context.Context, op *sobject.SOOp
 
 // applyKeyEpoch updates the cached key-epoch state after a successful write.
 func (h *cloudSOHost) applyKeyEpoch(ctx context.Context, epoch *sobject.SOKeyEpoch) {
+	// Serialize epoch acceptance with state and authority publications.
 	if epoch == nil {
 		return
 	}
@@ -1081,6 +1122,7 @@ func (h *cloudSOHost) applyConfigMutation(
 	}
 	defer release()
 
+	// Identify the signed transition before comparing it with held authority.
 	newHash, err := sobject.HashSOConfigChange(entry)
 	if err != nil {
 		return errors.Wrap(err, "hash config change")
@@ -1096,6 +1138,7 @@ func (h *cloudSOHost) applyConfigMutation(
 		}
 	}
 
+	// Derive the next effective head and this peer's remaining membership.
 	nextCfg := entry.GetConfig().CloneVT()
 	nextCfg.ConfigChainHash = bytes.Clone(newHash)
 	nextCfg.ConfigChainSeqno = entry.GetConfigSeqno()
@@ -1164,6 +1207,7 @@ func (h *cloudSOHost) applyConfigMutation(
 
 // QueueOperation uploads pending blocks before submitting an operation to the cloud.
 func (h *cloudSOHost) QueueOperation(ctx context.Context, peerID peer.ID, cb func(nonce uint64) (*sobject.SOOperation, error)) error {
+	// Keep nonce selection and publication under the existing local write lock.
 	relLock, err := h.writeMu.Lock(ctx)
 	if err != nil {
 		return err
@@ -1171,6 +1215,7 @@ func (h *cloudSOHost) QueueOperation(ctx context.Context, peerID peer.ID, cb fun
 	defer relLock()
 
 	for attempt := range maxWriteRetries {
+		// Refresh the accepted state before deriving an operation nonce.
 		if err := h.ensureInitialState(ctx, SeedReasonColdSeed); err != nil {
 			return errors.Wrap(err, "initial state pull for op queue")
 		}
@@ -1179,6 +1224,7 @@ func (h *cloudSOHost) QueueOperation(ctx context.Context, peerID peer.ID, cb fun
 			return errors.New("no state available after pull")
 		}
 
+		// Construct and encode the signed operation against that state.
 		op, err := cb(state.GetNextAccountNonce(peerID.String()))
 		if err != nil {
 			return err
@@ -1191,6 +1237,7 @@ func (h *cloudSOHost) QueueOperation(ctx context.Context, peerID peer.ID, cb fun
 		if err != nil {
 			return errors.Wrap(err, "marshal operation")
 		}
+
 		// A remote validator must be able to read the operation's referenced
 		// blocks immediately, without waiting for the background upload timer.
 		if h.forceBlockSync != nil {
@@ -1215,6 +1262,7 @@ func (h *cloudSOHost) QueueOperation(ctx context.Context, peerID peer.ID, cb fun
 			continue
 		}
 
+		// Project the server-accepted operation without an immediate read-after-write.
 		h.applyQueuedOperation(ctx, op)
 		return nil
 	}
@@ -1261,6 +1309,7 @@ func (h *cloudSOHost) handleConfigChanged(ctx context.Context) {
 		return
 	}
 
+	// Join the existing verifier request when the observed head is newer.
 	if err := h.syncConfigChainSingleflight(ctx, newHash); err != nil {
 		if ctx.Err() != nil {
 			return
@@ -1283,6 +1332,7 @@ func (h *cloudSOHost) syncConfigChainSingleflight(ctx context.Context, newHash [
 
 // syncConfigChain fetches and verifies the latest config chain for the given hash.
 func (h *cloudSOHost) syncConfigChain(ctx context.Context, newHash []byte) error {
+	// Fetch history only when the response advertises a configuration head.
 	if len(newHash) == 0 {
 		return nil
 	}
@@ -1292,6 +1342,7 @@ func (h *cloudSOHost) syncConfigChain(ctx context.Context, newHash []byte) error
 		return errors.Wrap(err, "fetch config chain")
 	}
 
+	// Verify the decoded history through the shared response acceptance path.
 	resp := &sobject.SOConfigChainResponse{}
 	if err := resp.UnmarshalVT(chainData); err != nil {
 		return errors.Wrap(err, "parse config chain response")
@@ -1365,6 +1416,7 @@ func (h *cloudSOHost) syncConfigChainResponse(
 	if lastEntry.GetConfigSeqno() == h.verifiedConfigChainSeqno && len(h.lastConfigChainHash) != 0 && !bytes.Equal(newHash, h.lastConfigChainHash) {
 		return errors.New("config chain conflicts with accepted head")
 	}
+
 	// Pin the accepted intermediate head as well as genesis to reject later forks.
 	if len(h.lastConfigChainHash) != 0 {
 		var extendsHeld bool
@@ -1383,6 +1435,8 @@ func (h *cloudSOHost) syncConfigChainResponse(
 			return errors.New("cloud configuration history does not extend held checkpoint")
 		}
 	}
+
+	// Prepare the complete durable configuration checkpoint.
 	latestConfig := lastEntry.GetConfig().CloneVT()
 	latestConfig.ConfigChainHash = bytes.Clone(newHash)
 	latestConfig.ConfigChainSeqno = lastEntry.GetConfigSeqno()
@@ -1508,6 +1562,7 @@ func (h *cloudSOHost) syncConfigChainResponse(
 // participantsRemoved returns true if any participant peer IDs present
 // in prev are absent in curr (i.e., a participant was removed).
 func participantsRemoved(prev, curr []*sobject.SOParticipantConfig) bool {
+	// Index current membership before checking for removed peers.
 	currIDs := make(map[string]struct{}, len(curr))
 	for _, p := range curr {
 		currIDs[p.GetPeerId()] = struct{}{}
@@ -1527,6 +1582,7 @@ func participantsRemoved(prev, curr []*sobject.SOParticipantConfig) bool {
 // accessible to anyone who had the old key. The server is trusted to serve epochs
 // only to authorized participants (via rbac_role_bindings).
 func (h *cloudSOHost) rotateKeyOnRevocation(ctx context.Context, participants []*sobject.SOParticipantConfig) {
+	// Snapshot the current epoch and configuration together.
 	var currentEpoch uint64
 	var currentSeqno uint64
 	var currentCfg *sobject.SharedObjectConfig
@@ -1546,6 +1602,7 @@ func (h *cloudSOHost) rotateKeyOnRevocation(ctx context.Context, participants []
 		return
 	}
 
+	// Build the new encryption epoch and authorized recovery envelopes.
 	transformConf, _, epoch, err := sobject.RotateTransformKey(
 		h.privKey,
 		h.soID,
@@ -1587,8 +1644,8 @@ func (h *cloudSOHost) rotateKeyOnRevocation(ctx context.Context, participants []
 		return
 	}
 
+	// Project the successful rotation into the accepted local state.
 	h.applyKeyEpoch(ctx, epoch)
-
 	h.le.WithField("epoch", epoch.GetEpoch()).Info("key rotation complete after participant revocation")
 }
 
@@ -1659,16 +1716,20 @@ func shouldSyncVerifiedConfigChain(
 
 // hydrateVerifiedStateCache loads persisted verified SO config state into memory.
 func (h *cloudSOHost) hydrateVerifiedStateCache(cache *api.VerifiedSOStateCache) {
+	// Preserve an empty host when no durable checkpoint exists.
 	if cache == nil {
 		return
 	}
 
+	// Restore a valid snapshot even when its participant projection is reordered.
 	h.configHistory = cloneVTSlice(cache.GetConfigHistory())
 	h.historyIndex = indexConfigHistory(h.configHistory)
 	h.peerState = cache.GetPeerState().CloneVT()
-	if h.peerState != nil && h.peerState.GetConfig().EqualVT(cache.GetCurrentConfig()) && h.peerState.Validate(h.soID) == nil {
+	if h.peerState != nil && sobject.EqualSOConfigs(h.peerState.GetConfig(), cache.GetCurrentConfig()) && h.peerState.Validate(h.soID) == nil {
 		h.stateCtr.SetValue(h.peerState.CloneVT())
 	}
+
+	// Restore the exact signed lineage and encryption epochs independently of order.
 	h.genesisHash = bytes.Clone(cache.GetGenesisHash())
 	h.lastConfigChainHash = bytes.Clone(cache.GetVerifiedConfigChainHash())
 	h.verifiedConfigChainSeqno = cache.GetVerifiedConfigChainSeqno()

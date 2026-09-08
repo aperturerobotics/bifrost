@@ -2,6 +2,12 @@ package provider_spacewave
 
 import "github.com/pkg/errors"
 
+// errSOStateDeltaResponse indicates the HTTP SO state response carried a delta.
+var errSOStateDeltaResponse = errors.New("so state response returned delta")
+
+// errSOConfigChainChanged indicates the pulled state uses a newer config chain hash.
+var errSOConfigChainChanged = errors.New("config chain hash changed")
+
 // ErrUnknownEntity is returned when the account exists but the
 // provided credentials do not match any registered keypair.
 var ErrUnknownEntity = errors.New("unknown entity: wrong credentials")
