@@ -959,6 +959,11 @@ func (a *ProviderAccount) startSOSync(
 		localSO.GetPeerID(),
 		localSO.localPriv,
 		localSO.soHost,
+		func(remoteID peer.ID, accepted bool) {
+			localSO.tkr.healthCtr.SwapValue(func(health *sobject.SharedObjectHealth) *sobject.SharedObjectHealth {
+				return health.WithSyncPeerAdmission(remoteID.String(), accepted)
+			})
+		},
 		validateSnapshotAccess,
 	)
 	state.addWorker()

@@ -1,6 +1,7 @@
 package sobject_sync
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"net"
@@ -13,6 +14,61 @@ import (
 	"github.com/s4wave/spacewave/net/peer"
 	stream_packet "github.com/s4wave/spacewave/net/stream/packet"
 )
+
+// TestParticipantAuthenticationRequiresExplicitAdmission rejects a different
+// message after a valid proof without reporting it as a remote access decision.
+func TestParticipantAuthenticationRequiresExplicitAdmission(t *testing.T) {
+	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
+	defer cancel()
+	const soID = "authentication-admission"
+	owner, reader := mustKeyPair(t), mustKeyPair(t)
+	local := newAuthenticationPeer(t, soID, owner, authenticationState(t, soID, owner, reader))
+	admissions := make(chan bool, 1)
+	local.peerAdmission = func(_ peer.ID, accepted bool) { admissions <- accepted }
+	left, right := net.Pipe()
+	t.Cleanup(func() { left.Close(); right.Close() })
+	done := make(chan error, 1)
+	go func() { done <- local.runStream(ctx, gateLogger(), left, "transport-a", "transport-b") }()
+	remote := stream_packet.NewSession(right, 64*1024)
+
+	// Prove possession on the actual challenged transport before sending the wrong message.
+	nonce := bytes.Repeat([]byte{1}, authenticationNonceSize)
+	challenge, err := exchangeMessage(remote, false, &SOSyncMessage{Body: &SOSyncMessage_Challenge{Challenge: &SOSyncChallenge{Nonce: nonce}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	transcript := &SOSyncAuthTranscript{
+		SharedObjectId: soID, SenderTransport: []byte("transport-b"), ReceiverTransport: []byte("transport-a"),
+		SenderNonce: nonce, ReceiverNonce: challenge.GetChallenge().GetNonce(),
+	}
+	data, err := transcript.MarshalVT()
+	if err != nil {
+		t.Fatal(err)
+	}
+	proof, err := peer.NewSignature(authenticationContext, reader, hash.RecommendedHashType, data, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := exchangeMessage(remote, false, &SOSyncMessage{Body: &SOSyncMessage_Proof{Proof: proof}}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := exchangeMessage(remote, false, &SOSyncMessage{}); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case err := <-done:
+		if err == nil || errors.Is(err, ErrAccessDenied) {
+			t.Fatalf("missing admission result = %v, want protocol error", err)
+		}
+	case <-ctx.Done():
+		t.Fatal("invalid admission did not close the stream")
+	}
+	select {
+	case <-admissions:
+		t.Fatal("missing admission was reported as a peer access decision")
+	default:
+	}
+}
 
 // authenticationStream records each complete outbound packet before transport admission.
 type authenticationStream struct {
@@ -40,7 +96,7 @@ func newAuthenticationPeer(t *testing.T, soID string, key crypto.PrivKey, state 
 	}
 	host, _ := newMemHost(soID, state.CloneVT())
 	t.Cleanup(host.ClearContext)
-	return NewSOSync(gateLogger(), nil, soID, id, key, host)
+	return NewSOSync(gateLogger(), nil, soID, id, key, host, nil)
 }
 
 // authenticationState establishes the trusted participants before the stream exists.
@@ -121,6 +177,14 @@ func TestParticipantAuthenticationDeniesBeforeDisclosure(t *testing.T) {
 			}
 			local := newAuthenticationPeer(t, soID, owner, state)
 			remote := newAuthenticationPeer(t, soID, remoteKey, state)
+			localHealth := sobject.NewSharedObjectReadyHealth(sobject.SharedObjectHealthLayer_SHARED_OBJECT_HEALTH_LAYER_SHARED_OBJECT)
+			remoteHealth := localHealth.CloneVT()
+			local.peerAdmission = func(remoteID peer.ID, accepted bool) {
+				localHealth = localHealth.WithSyncPeerAdmission(remoteID.String(), accepted)
+			}
+			remote.peerAdmission = func(remoteID peer.ID, accepted bool) {
+				remoteHealth = remoteHealth.WithSyncPeerAdmission(remoteID.String(), accepted)
+			}
 			if test.removed {
 				removed, err := sobject.RemoveSOParticipant(ctx, local.soHost, remote.localObjectPeerID.String(), owner, nil)
 				if err != nil || !removed {
@@ -155,6 +219,21 @@ func TestParticipantAuthenticationDeniesBeforeDisclosure(t *testing.T) {
 						t.Fatal("unauthorized stream received object data")
 					}
 				}
+			}
+
+			// Only the removed device accepted its peer locally and received an explicit denial.
+			if len(localHealth.GetSyncDeniedPeerIds()) != 0 {
+				t.Fatal("local rejection was reported as a remote denial")
+			}
+			if test.removed {
+				if got := remoteHealth.GetSyncDeniedPeerIds(); len(got) != 1 || got[0] != local.localObjectPeerID.String() {
+					t.Fatalf("removed device's denied source = %v", got)
+				}
+			} else if len(remoteHealth.GetSyncDeniedPeerIds()) != 0 {
+				t.Fatal("untrusted or accepted peer was reported as a denied source")
+			}
+			if remoteHealth.GetStatus() != sobject.SharedObjectHealthStatus_SHARED_OBJECT_HEALTH_STATUS_READY {
+				t.Fatal("remote denial changed local mount readiness")
 			}
 		})
 	}

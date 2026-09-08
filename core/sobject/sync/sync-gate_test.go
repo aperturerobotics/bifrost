@@ -161,7 +161,7 @@ func TestStreamOpsAppliesNewerSnapshot(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	syncer := NewSOSync(gateLogger(), nil, "stream-newer-snapshot", writerPeerID, writerPriv, host)
+	syncer := NewSOSync(gateLogger(), nil, "stream-newer-snapshot", writerPeerID, writerPriv, host, nil)
 	localSess, remoteSess := pipeSessions(t)
 	streamDone := make(chan struct{})
 	go func() {
@@ -228,7 +228,7 @@ func TestSnapshotExchangeRejectsExcludedLocalPeer(t *testing.T) {
 	}
 	trustSnapshotConfig(t, held, ownerPriv)
 	localHost, ctr := newMemHost(soID, held)
-	s := NewSOSync(gateLogger(), nil, soID, localPeer, localPriv, localHost)
+	s := NewSOSync(gateLogger(), nil, soID, localPeer, localPriv, localHost, nil)
 
 	peerState := &sobject.SOState{
 		Config: &sobject.SharedObjectConfig{
@@ -278,7 +278,7 @@ func TestSnapshotExchangeRejectsSnapshotWithoutLocalGrant(t *testing.T) {
 		}
 		return errors.New("no local root grant")
 	}
-	s := NewSOSync(gateLogger(), nil, soID, localPeer, localPriv, localHost, validateAccess)
+	s := NewSOSync(gateLogger(), nil, soID, localPeer, localPriv, localHost, nil, validateAccess)
 	peerState := &sobject.SOState{
 		Config: &sobject.SharedObjectConfig{Participants: []*sobject.SOParticipantConfig{
 			participantCfg(ownerPeer, sobject.SOParticipantRole_SOParticipantRole_OWNER),
@@ -324,7 +324,7 @@ func TestSnapshotExchangeRejectsTamperedGrant(t *testing.T) {
 	}
 	trustSnapshotConfig(t, held, ownerPriv)
 	localHost, ctr := newMemHost(soID, held)
-	s := NewSOSync(gateLogger(), nil, soID, localPeer, localPriv, localHost)
+	s := NewSOSync(gateLogger(), nil, soID, localPeer, localPriv, localHost, nil)
 
 	grant := buildGrant(t, soID, ownerPriv, localPub)
 	grant.InnerData[0] ^= 0xFF
@@ -391,7 +391,7 @@ func TestSnapshotExchangeAcceptsObjectPeerDistinctFromTransportPeer(t *testing.T
 		t.Fatal(err.Error())
 	}
 	localHost, ctr := newMemHost(soID, localState)
-	s := NewSOSync(gateLogger(), nil, soID, localPeer, localPriv, localHost)
+	s := NewSOSync(gateLogger(), nil, soID, localPeer, localPriv, localHost, nil)
 
 	peerState := &sobject.SOState{
 		Config:     localState.GetConfig().CloneVT(),
@@ -487,7 +487,7 @@ func TestRemoteOpNonparticipantRejected(t *testing.T) {
 		},
 		Root: &sobject.SORoot{InnerSeqno: 1},
 	})
-	s := NewSOSync(gateLogger(), nil, soID, localPeer, localPriv, host)
+	s := NewSOSync(gateLogger(), nil, soID, localPeer, localPriv, host, nil)
 
 	opLocalID := ulid.NewULID()
 	op, err := sobject.BuildSOOperation(soID, strangerPriv, []byte("op-data"), 1, opLocalID)
@@ -545,7 +545,7 @@ func TestRemoteOpReplayIsIdempotent(t *testing.T) {
 				}
 			}
 			host, ctr := newMemHost(soID, state)
-			s := NewSOSync(gateLogger(), nil, soID, writerPeer, writerPriv, host)
+			s := NewSOSync(gateLogger(), nil, soID, writerPeer, writerPriv, host, nil)
 			opData, err := op.MarshalVT()
 			if err != nil {
 				t.Fatal(err.Error())
@@ -579,7 +579,7 @@ func TestRemoteOpTamperedSignatureRejected(t *testing.T) {
 		},
 		Root: &sobject.SORoot{InnerSeqno: 1},
 	})
-	s := NewSOSync(gateLogger(), nil, soID, writerPeer, writerPriv, host)
+	s := NewSOSync(gateLogger(), nil, soID, writerPeer, writerPriv, host, nil)
 
 	opLocalID := ulid.NewULID()
 	op, err := sobject.BuildSOOperation(soID, writerPriv, []byte("op-data"), 1, opLocalID)

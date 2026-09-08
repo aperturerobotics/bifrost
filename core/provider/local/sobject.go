@@ -32,15 +32,23 @@ import (
 
 // SharedObject implements the sobject interface attached to sobjectTracker.
 type SharedObject struct {
+	// ctx is the retained mount lifecycle.
 	ctx context.Context
+	// tkr retains the provider account and shared object state.
 	tkr *sobjectTracker
 
-	blkStore  bstore.BlockStore
-	soHost    *sobject.SOHost
-	lsoHost   *LocalSOHost
-	objStore  object.ObjectStore
+	// blkStore stores the shared object blocks.
+	blkStore bstore.BlockStore
+	// soHost owns accepted shared object state.
+	soHost *sobject.SOHost
+	// lsoHost runs local persistence and operations.
+	lsoHost *LocalSOHost
+	// objStore stores local shared object records.
+	objStore object.ObjectStore
+	// localPriv authenticates the local participant.
 	localPriv crypto.PrivKey
-	localPid  peer.ID
+	// localPid identifies the local participant.
+	localPid peer.ID
 }
 
 // GetSOHostState returns a snapshot of the current SOState via the SOHost.
@@ -83,7 +91,7 @@ func (s *SharedObject) AccessLocalStateStore(ctx context.Context, storeID string
 	return prefixedObjStore, func() { relReleased() }, nil
 }
 
-// GetSharedObjectState returns an snapshot of the shared object state.
+// GetSharedObjectState returns a snapshot of the shared object state.
 func (s *SharedObject) GetSharedObjectState(ctx context.Context) (sobject.SharedObjectStateSnapshot, error) {
 	stateCtr, relStateCtr, err := s.lsoHost.AccessSharedObjectState(ctx, nil)
 	if err != nil {
@@ -102,6 +110,15 @@ func (s *SharedObject) GetSharedObjectState(ctx context.Context) (sobject.Shared
 // Returns a release function. Accepts a function that is called if the Watchable becomes invalid.
 func (s *SharedObject) AccessSharedObjectState(ctx context.Context, released func()) (ccontainer.Watchable[sobject.SharedObjectStateSnapshot], func(), error) {
 	return s.lsoHost.AccessSharedObjectState(ctx, released)
+}
+
+// AccessSharedObjectHealth retains the provider's health watch for this mount.
+func (s *SharedObject) AccessSharedObjectHealth(ctx context.Context, released func()) (ccontainer.Watchable[*sobject.SharedObjectHealth], func(), error) {
+	ref, err := s.tkr.ref.Await(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	return s.tkr.a.AccessSharedObjectHealth(ctx, ref, released)
 }
 
 // QueueOperation applies an operation to the shared object op queue.
@@ -210,14 +227,13 @@ func (s *SharedObject) ProcessOperations(ctx context.Context, watch bool, cb sob
 
 // sobjectTracker tracks a SharedObject in the ProviderAccount.
 type sobjectTracker struct {
-	// a is the provider account
+	// a is the provider account.
 	a *ProviderAccount
-	// id is the sobject id
+	// id is the shared object ID.
 	id string
-	// ref is the reference to the shared object
-	// set when instantiating the tracker
+	// ref is the shared object reference, set when instantiating the tracker.
 	ref *promise.Promise[*sobject.SharedObjectRef]
-	// sobjectProm is the sobject promise container
+	// sobjectProm is the shared object promise container.
 	sobjectProm *promise.PromiseContainer[*SharedObject]
 	// healthCtr contains the current shared object health snapshot.
 	healthCtr *ccontainer.CContainer[*sobject.SharedObjectHealth]
@@ -247,7 +263,7 @@ func (t *sobjectTracker) setHealth(health *sobject.SharedObjectHealth) {
 	t.healthCtr.SetValue(health)
 }
 
-// executeSharedObjectTracker exeecutes the sobjectTracker for the sobject.
+// executeSharedObjectTracker executes the sobjectTracker for the sobject.
 func (t *sobjectTracker) executeSharedObjectTracker(rctx context.Context) (rerr error) {
 	// clear old state if any
 	t.sobjectProm.SetPromise(nil)
@@ -841,8 +857,9 @@ func (s *SharedObject) IncrementInviteUses(ctx context.Context, signerPrivKey cr
 
 // _ is a type assertion
 var (
-	_ sobject.SharedObjectProvider      = (*ProviderAccount)(nil)
-	_ sobject.SharedObject              = (*SharedObject)(nil)
-	_ sobject.InviteHost                = (*SharedObject)(nil)
-	_ sobject.SharedObjectStateSnapshot = (*lsoStateSnapshot)(nil)
+	_ sobject.SharedObjectHealthAccessor = (*SharedObject)(nil)
+	_ sobject.SharedObjectProvider       = (*ProviderAccount)(nil)
+	_ sobject.SharedObject               = (*SharedObject)(nil)
+	_ sobject.InviteHost                 = (*SharedObject)(nil)
+	_ sobject.SharedObjectStateSnapshot  = (*lsoStateSnapshot)(nil)
 )

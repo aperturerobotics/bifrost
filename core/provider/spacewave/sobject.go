@@ -28,10 +28,15 @@ import (
 
 // SharedObject implements the sobject interface attached to sobjectTracker.
 type SharedObject struct {
-	tkr      *sobjectTracker
+	// tkr retains the provider account and shared object state.
+	tkr *sobjectTracker
+	// blkStore stores the shared object blocks.
 	blkStore bstore.BlockStore
-	host     *cloudSOHost
-	privKey  crypto.PrivKey
+	// host runs the cloud-backed shared object.
+	host *cloudSOHost
+	// privKey authenticates the local participant.
+	privKey crypto.PrivKey
+	// localPid identifies the local participant.
 	localPid peer.ID
 }
 
@@ -93,6 +98,15 @@ func (s *SharedObject) GetSharedObjectState(ctx context.Context) (sobject.Shared
 // AccessSharedObjectState adds a reference to the state and returns the state container.
 func (s *SharedObject) AccessSharedObjectState(ctx context.Context, released func()) (ccontainer.Watchable[sobject.SharedObjectStateSnapshot], func(), error) {
 	return s.host.AccessSharedObjectSnapshot(), func() {}, nil
+}
+
+// AccessSharedObjectHealth retains the provider's health watch for this mount.
+func (s *SharedObject) AccessSharedObjectHealth(ctx context.Context, released func()) (ccontainer.Watchable[*sobject.SharedObjectHealth], func(), error) {
+	ref, err := s.tkr.ref.Await(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	return s.tkr.a.AccessSharedObjectHealth(ctx, ref, released)
 }
 
 // QueueOperation applies an operation to the shared object op queue.
@@ -256,9 +270,9 @@ func (s *SharedObject) ProcessOperations(ctx context.Context, watch bool, cb sob
 
 // sobjectTracker tracks a SharedObject in the ProviderAccount.
 type sobjectTracker struct {
-	// a is the provider account
+	// a is the provider account.
 	a *ProviderAccount
-	// id is the sobject id
+	// id is the shared object ID.
 	id string
 	// ref is the reference to the shared object, set when instantiating the tracker.
 	ref *promise.Promise[*sobject.SharedObjectRef]
@@ -689,6 +703,7 @@ func (a *ProviderAccount) RemoveSharedObjectListEntry(
 	a.refreshSelfEnrollmentSummary(context.Background())
 }
 
+// sharedObjectListMetaFromMetadata builds typed metadata for a supported object.
 func sharedObjectListMetaFromMetadata(
 	metadata *api.SpaceMetadataResponse,
 ) (*sobject.SharedObjectMeta, bool) {
@@ -1652,7 +1667,8 @@ func (s *SharedObject) GetProviderID() string {
 
 // _ is a type assertion
 var (
-	_ sobject.SharedObjectProvider = (*ProviderAccount)(nil)
-	_ sobject.SharedObject         = (*SharedObject)(nil)
-	_ sobject.InviteHost           = (*SharedObject)(nil)
+	_ sobject.SharedObjectHealthAccessor = (*SharedObject)(nil)
+	_ sobject.SharedObjectProvider       = (*ProviderAccount)(nil)
+	_ sobject.SharedObject               = (*SharedObject)(nil)
+	_ sobject.InviteHost                 = (*SharedObject)(nil)
 )

@@ -250,20 +250,22 @@ class SharedObjectMeta(_message.Message):
     def __init__(self, body_type: _Optional[str] = ..., body_meta: _Optional[bytes] = ..., account_private: _Optional[bool] = ...) -> None: ...
 
 class SharedObjectHealth(_message.Message):
-    __slots__ = ("status", "layer", "common_reason", "remediation_hint", "error", "metadata")
+    __slots__ = ("status", "layer", "common_reason", "remediation_hint", "error", "metadata", "sync_denied_peer_ids")
     STATUS_FIELD_NUMBER: _ClassVar[int]
     LAYER_FIELD_NUMBER: _ClassVar[int]
     COMMON_REASON_FIELD_NUMBER: _ClassVar[int]
     REMEDIATION_HINT_FIELD_NUMBER: _ClassVar[int]
     ERROR_FIELD_NUMBER: _ClassVar[int]
     METADATA_FIELD_NUMBER: _ClassVar[int]
+    SYNC_DENIED_PEER_IDS_FIELD_NUMBER: _ClassVar[int]
     status: SharedObjectHealthStatus
     layer: SharedObjectHealthLayer
     common_reason: SharedObjectHealthCommonReason
     remediation_hint: SharedObjectHealthRemediationHint
     error: str
     metadata: bytes
-    def __init__(self, status: _Optional[_Union[SharedObjectHealthStatus, str]] = ..., layer: _Optional[_Union[SharedObjectHealthLayer, str]] = ..., common_reason: _Optional[_Union[SharedObjectHealthCommonReason, str]] = ..., remediation_hint: _Optional[_Union[SharedObjectHealthRemediationHint, str]] = ..., error: _Optional[str] = ..., metadata: _Optional[bytes] = ...) -> None: ...
+    sync_denied_peer_ids: _containers.RepeatedScalarFieldContainer[str]
+    def __init__(self, status: _Optional[_Union[SharedObjectHealthStatus, str]] = ..., layer: _Optional[_Union[SharedObjectHealthLayer, str]] = ..., common_reason: _Optional[_Union[SharedObjectHealthCommonReason, str]] = ..., remediation_hint: _Optional[_Union[SharedObjectHealthRemediationHint, str]] = ..., error: _Optional[str] = ..., metadata: _Optional[bytes] = ..., sync_denied_peer_ids: _Optional[_Iterable[str]] = ...) -> None: ...
 
 class SharedObjectConfig(_message.Message):
     __slots__ = ("participants", "consensus_mode", "config_chain_hash", "config_chain_seqno")
