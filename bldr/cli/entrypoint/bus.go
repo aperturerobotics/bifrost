@@ -37,31 +37,48 @@ var cliTransformConf = []config.Config{
 
 // CliBusImpl implements the CliBus interface for CLI binaries.
 type CliBusImpl struct {
-	ctx           context.Context
-	b             bus.Bus
-	le            *logrus.Entry
-	sr            *static.Resolver
-	storageID     string
+	// ctx is canceled when Release begins.
+	ctx context.Context
+	// b owns controller execution and cleanup.
+	b bus.Bus
+	// le reports lifecycle failures.
+	le *logrus.Entry
+	// sr provides the CLI controller factories.
+	sr *static.Resolver
+	// storageID identifies the CLI storage method.
+	storageID string
+	// worldEngineID identifies the CLI world engine.
 	worldEngineID string
-	vol           volume.Volume
-	worldEngine   world.Engine
-	worldState    world.WorldState
-	rels          []func()
-	releaseOnce   sync.Once
+	// vol stores CLI state.
+	vol volume.Volume
+	// worldEngine manages the CLI world.
+	worldEngine world.Engine
+	// worldState exposes the CLI world state.
+	worldState world.WorldState
+	// rels runs bus cleanup before caller cleanup.
+	rels []func()
+	// releaseOnce joins concurrent Release calls.
+	releaseOnce sync.Once
 }
 
-// _ is a type assertion
+// _ is a type assertion.
 var _ CliBus = (*CliBusImpl)(nil)
 
 // BuildCliBus builds a lightweight bus for CLI binaries.
 func BuildCliBus(rctx context.Context, le *logrus.Entry, stateRoot string) (*CliBusImpl, error) {
 	ctx, ctxCancel := context.WithCancel(rctx)
 	var rels []func()
+	var b bus.Bus
 	rel := func() {
+		ctxCancel()
+		if b != nil {
+			if err := b.Close(); err != nil {
+				le.WithError(err).Error("closing CLI bus")
+			}
+		}
 		for _, fn := range rels {
 			fn()
 		}
-		ctxCancel()
 	}
 
 	b, sr, err := cbc.NewCoreBus(ctx, le)
@@ -70,7 +87,7 @@ func BuildCliBus(rctx context.Context, le *logrus.Entry, stateRoot string) (*Cli
 		return nil, err
 	}
 
-	// add controller factories
+	// Add controller factories.
 	sr.AddFactory(node_controller.NewFactory(b))
 	sr.AddFactory(lookup_concurrent.NewFactory(b))
 	sr.AddFactory(bucket_setup.NewFactory(b))
@@ -78,7 +95,7 @@ func BuildCliBus(rctx context.Context, le *logrus.Entry, stateRoot string) (*Cli
 	sr.AddFactory(block_store_bucket.NewFactory(b))
 	sr.AddFactory(world_block_engine.NewFactory(b))
 
-	// add the configset controller
+	// Add the configset controller.
 	configSetCtrl, _ := configset_controller.NewController(le, b)
 	relConfigSetCtrl, err := b.AddController(ctx, configSetCtrl, nil)
 	if err != nil {
@@ -87,7 +104,7 @@ func BuildCliBus(rctx context.Context, le *logrus.Entry, stateRoot string) (*Cli
 	}
 	rels = append(rels, relConfigSetCtrl)
 
-	// attach the default storage controller
+	// Attach the default storage controller.
 	storageID := default_storage.StorageID
 	storageCtrl := default_storage.NewController(storageID, b, stateRoot)
 	relStorageCtrl, err := b.AddController(ctx, storageCtrl, nil)
@@ -97,19 +114,19 @@ func BuildCliBus(rctx context.Context, le *logrus.Entry, stateRoot string) (*Cli
 	}
 	rels = append(rels, relStorageCtrl)
 
-	// ensure there is at least one storage method
+	// Ensure there is at least one storage method.
 	storageMethods := storageCtrl.GetStorage()
 	if len(storageMethods) == 0 {
 		rel()
 		return nil, errors.New("no available storage methods")
 	}
 
-	// add the storage method factories
+	// Add the storage method factories.
 	for _, storageMethod := range storageMethods {
 		storageMethod.AddFactories(b, sr)
 	}
 
-	// start the storage volume
+	// Start the storage volume.
 	volCtrl, volCtrlRef, err := storage_volume.ExecVolumeController(ctx, b, &storage_volume.Config{
 		StorageId:       storageID,
 		StorageVolumeId: "cli",
@@ -129,7 +146,7 @@ func BuildCliBus(rctx context.Context, le *logrus.Entry, stateRoot string) (*Cli
 		return nil, err
 	}
 
-	// start the node controller
+	// Start the node controller.
 	dir := resolver.NewLoadControllerWithConfig(&node_controller.Config{})
 	_, _, nodeCtrlRef, err := bus.ExecOneOff(ctx, b, dir, nil, nil)
 	if err != nil {
@@ -138,7 +155,7 @@ func BuildCliBus(rctx context.Context, le *logrus.Entry, stateRoot string) (*Cli
 	}
 	rels = append(rels, nodeCtrlRef.Release)
 
-	// start the world engine
+	// Start the world engine.
 	engineBucketID := "bldr/cli"
 	engineObjStoreID := engineBucketID
 	engineID := "bldr/cli"
@@ -197,7 +214,7 @@ func BuildCliBus(rctx context.Context, le *logrus.Entry, stateRoot string) (*Cli
 		vol:           vol,
 		worldEngine:   eng,
 		worldState:    worldState,
-		rels:          rels,
+		rels:          []func(){rel},
 	}, nil
 }
 
@@ -254,7 +271,7 @@ func (c *CliBusImpl) AddRelease(release func()) {
 	}
 }
 
-// Release releases all resources held by the bus.
+// Release cancels and joins the bus before running caller cleanup.
 func (c *CliBusImpl) Release() {
 	c.releaseOnce.Do(func() {
 		for _, rel := range c.rels {
