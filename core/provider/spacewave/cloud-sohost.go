@@ -166,7 +166,11 @@ func newCloudSOHost(
 		}
 
 		initialState := state.CloneVT()
-		writeFn := func(ctx context.Context, state *sobject.SOState) error {
+		writeFn := func(ctx context.Context, state *sobject.SOState, changes ...*sobject.SOConfigChange) error {
+			// Cloud configuration mutations use the server's config-state transaction.
+			if len(changes) != 0 {
+				return errors.New("configuration changes require cloud config-state publication")
+			}
 			return h.writeStateWithRetry(ctx, state)
 		}
 
@@ -406,6 +410,7 @@ func decodeSOStateResponse(data []byte) (*sobject.SOState, uint64, *sobject.SOCo
 	return nil, 0, nil, errors.New("missing snapshot or delta in SOStateMessage")
 }
 
+// syncEmbeddedConfigChain verifies a response's embedded chain through the shared fetch coordinator.
 func (h *cloudSOHost) syncEmbeddedConfigChain(
 	ctx context.Context,
 	state *sobject.SOState,
@@ -566,6 +571,7 @@ func (h *cloudSOHost) handleSONotifyWithContext(ctx context.Context, payload *ap
 	}
 }
 
+// refreshBlockManifestForNonce makes referenced blocks available before publishing newer state.
 func (h *cloudSOHost) refreshBlockManifestForNonce(ctx context.Context, nonce uint64) error {
 	if nonce == 0 || h.refreshBlockManifest == nil {
 		return nil
@@ -775,6 +781,7 @@ func applyChangeLogEntry(
 	}
 }
 
+// diffSOOperationRejections returns rejections not present in the previous state.
 func diffSOOperationRejections(
 	prevState *sobject.SOState,
 	nextState *sobject.SOState,
@@ -799,6 +806,7 @@ func diffSOOperationRejections(
 	return nextRejections
 }
 
+// addSOOperationRejectionKeys indexes the state's signed rejection records.
 func addSOOperationRejectionKeys(keys map[string]struct{}, state *sobject.SOState) {
 	if state == nil {
 		return
@@ -811,6 +819,7 @@ func addSOOperationRejectionKeys(keys map[string]struct{}, state *sobject.SOStat
 	}
 }
 
+// buildSOOperationRejectionKey identifies a rejection by its signed content.
 func buildSOOperationRejectionKey(rejection *sobject.SOOperationRejection) string {
 	if rejection == nil {
 		return ""
@@ -818,6 +827,7 @@ func buildSOOperationRejectionKey(rejection *sobject.SOOperationRejection) strin
 	return string(rejection.GetInner()) + "\x00" + string(rejection.GetSignature().GetSigData())
 }
 
+// logNewOpRejections reports newly observed rejections and decrypts local error details.
 func (h *cloudSOHost) logNewOpRejections(
 	prevState *sobject.SOState,
 	nextState *sobject.SOState,
@@ -1147,6 +1157,7 @@ func (h *cloudSOHost) syncConfigChain(ctx context.Context, newHash []byte) error
 	return h.syncConfigChainResponse(ctx, resp, newHash)
 }
 
+// syncConfigChainResponse verifies pinned chain continuity and records the resulting authority.
 func (h *cloudSOHost) syncConfigChainResponse(
 	ctx context.Context,
 	resp *sobject.SOConfigChainResponse,

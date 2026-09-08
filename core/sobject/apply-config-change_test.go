@@ -51,7 +51,7 @@ func TestApplyConfigChange(t *testing.T) {
 
 		var written *SOState
 		host := NewSOHost(nil, nil, func(_ context.Context, _ string) (SOStateLock, error) {
-			return NewSOStateLock(state, func(_ context.Context, s *SOState) error {
+			return NewSOStateLock(state, func(_ context.Context, s *SOState, _ ...*SOConfigChange) error {
 				written = s
 				return nil
 			}, func() {}), nil
@@ -111,7 +111,7 @@ func TestApplyConfigChange(t *testing.T) {
 
 		var written *SOState
 		host := NewSOHost(nil, nil, func(_ context.Context, _ string) (SOStateLock, error) {
-			return NewSOStateLock(state, func(_ context.Context, s *SOState) error {
+			return NewSOStateLock(state, func(_ context.Context, s *SOState, _ ...*SOConfigChange) error {
 				written = s
 				return nil
 			}, func() {}), nil
@@ -158,7 +158,7 @@ func TestApplyConfigChange(t *testing.T) {
 		}
 
 		host := NewSOHost(nil, nil, func(_ context.Context, _ string) (SOStateLock, error) {
-			return NewSOStateLock(state, func(_ context.Context, _ *SOState) error {
+			return NewSOStateLock(state, func(_ context.Context, _ *SOState, _ ...*SOConfigChange) error {
 				t.Fatal("should not write on rejection")
 				return nil
 			}, func() {}), nil
@@ -206,7 +206,7 @@ func TestApplyConfigChange(t *testing.T) {
 		}
 
 		host := NewSOHost(nil, nil, func(_ context.Context, _ string) (SOStateLock, error) {
-			return NewSOStateLock(state, func(_ context.Context, _ *SOState) error {
+			return NewSOStateLock(state, func(_ context.Context, _ *SOState, _ ...*SOConfigChange) error {
 				t.Fatal("should not write on seqno rejection")
 				return nil
 			}, func() {}), nil
@@ -238,7 +238,7 @@ func TestApplyConfigChange(t *testing.T) {
 
 		var written *SOState
 		host := NewSOHost(nil, nil, func(_ context.Context, _ string) (SOStateLock, error) {
-			return NewSOStateLock(state, func(_ context.Context, s *SOState) error {
+			return NewSOStateLock(state, func(_ context.Context, s *SOState, _ ...*SOConfigChange) error {
 				written = s
 				state = s
 				return nil
@@ -301,7 +301,7 @@ func TestApplyConfigChange(t *testing.T) {
 		}
 
 		host := NewSOHost(nil, nil, func(_ context.Context, _ string) (SOStateLock, error) {
-			return NewSOStateLock(state, func(_ context.Context, _ *SOState) error {
+			return NewSOStateLock(state, func(_ context.Context, _ *SOState, _ ...*SOConfigChange) error {
 				t.Fatal("should not write when signer is not OWNER")
 				return nil
 			}, func() {}), nil
@@ -362,7 +362,7 @@ func TestApplyConfigChange(t *testing.T) {
 
 		var written *SOState
 		host := NewSOHost(nil, nil, func(_ context.Context, _ string) (SOStateLock, error) {
-			return NewSOStateLock(state, func(_ context.Context, s *SOState) error {
+			return NewSOStateLock(state, func(_ context.Context, s *SOState, _ ...*SOConfigChange) error {
 				written = s
 				return nil
 			}, func() {}), nil
@@ -421,7 +421,7 @@ func TestApplyConfigChange(t *testing.T) {
 		}
 
 		host := NewSOHost(nil, nil, func(_ context.Context, _ string) (SOStateLock, error) {
-			return NewSOStateLock(state, func(_ context.Context, _ *SOState) error {
+			return NewSOStateLock(state, func(_ context.Context, _ *SOState, _ ...*SOConfigChange) error {
 				t.Fatal("should not write on self-enroll escalation")
 				return nil
 			}, func() {}), nil
@@ -472,7 +472,7 @@ func TestApplyConfigChange(t *testing.T) {
 		}
 
 		host := NewSOHost(nil, nil, func(_ context.Context, _ string) (SOStateLock, error) {
-			return NewSOStateLock(state, func(_ context.Context, _ *SOState) error {
+			return NewSOStateLock(state, func(_ context.Context, _ *SOState, _ ...*SOConfigChange) error {
 				t.Fatal("should not write on cross-entity self-enroll")
 				return nil
 			}, func() {}), nil

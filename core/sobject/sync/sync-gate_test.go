@@ -37,7 +37,7 @@ func newMemHost(soID string, initial *sobject.SOState) (*sobject.SOHost, *cconta
 		return ctr, func() {}, nil
 	}
 	lockFn := func(_ context.Context, _ string) (sobject.SOStateLock, error) {
-		return sobject.NewSOStateLock(ctr.GetValue(), func(_ context.Context, s *sobject.SOState) error {
+		return sobject.NewSOStateLock(ctr.GetValue(), func(_ context.Context, s *sobject.SOState, _ ...*sobject.SOConfigChange) error {
 			ctr.SetValue(s)
 			return nil
 		}, func() {}), nil
