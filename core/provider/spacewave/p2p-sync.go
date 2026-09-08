@@ -276,7 +276,15 @@ func (a *ProviderAccount) runP2PSpace(ctx context.Context, childBus bus.Bus, sta
 		_, err := snapshot.GetTransformer(ctx)
 		return err
 	}
-	return sobject_sync.NewSOSync(a.le, childBus, key.id, swSO.localPid, swSO.privKey, swSO.GetSOHost(), validateSnapshotAccess).Execute(ctx)
+	return sobject_sync.NewSOSync(
+		a.le, childBus, key.id, swSO.localPid, swSO.privKey, swSO.GetSOHost(),
+		func(remoteID peer.ID, accepted bool) {
+			swSO.tkr.healthCtr.SwapValue(func(health *sobject.SharedObjectHealth) *sobject.SharedObjectHealth {
+				return health.WithSyncPeerAdmission(remoteID.String(), accepted)
+			})
+		},
+		validateSnapshotAccess,
+	).Execute(ctx)
 }
 
 // getSessionDEXStore reads the live adapter without retaining a stopped composition.

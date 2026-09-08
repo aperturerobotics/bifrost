@@ -850,6 +850,10 @@ type SharedObjectHealth struct {
 	// Metadata reserves an opaque slot for future provider-specific or body-specific remediation data.
 	// Empty in v1. Callers must treat the contents as opaque.
 	Metadata []byte `protobuf:"bytes,6,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	// SyncDeniedPeerIds lists base58 participant IDs whose latest authenticated sync admission denied this object identity.
+	// Each peer was readable under local authority. This is source availability, not proof of membership removal.
+	// A successful admission from that participant clears its denial; transport failures leave it unchanged.
+	SyncDeniedPeerIds []string `protobuf:"bytes,7,rep,name=sync_denied_peer_ids,json=syncDeniedPeerIds,proto3" json:"syncDeniedPeerIds,omitempty"`
 }
 
 func (x *SharedObjectHealth) Reset() {
@@ -896,6 +900,13 @@ func (x *SharedObjectHealth) GetError() string {
 func (x *SharedObjectHealth) GetMetadata() []byte {
 	if x != nil {
 		return x.Metadata
+	}
+	return nil
+}
+
+func (x *SharedObjectHealth) GetSyncDeniedPeerIds() []string {
+	if x != nil {
+		return x.SyncDeniedPeerIds
 	}
 	return nil
 }
@@ -3278,6 +3289,7 @@ func (m *SharedObjectHealth) CloneVT() *SharedObjectHealth {
 	r.RemediationHint = m.RemediationHint
 	r.Error = m.Error
 	r.Metadata = protobuf_go_lite.CloneBytes(m.Metadata)
+	r.SyncDeniedPeerIds = protobuf_go_lite.CloneSlice(m.SyncDeniedPeerIds)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -4301,6 +4313,9 @@ func (this *SharedObjectHealth) EqualVT(that *SharedObjectHealth) bool {
 		return false
 	}
 	if !protobuf_go_lite.EqualBytes(this.Metadata, that.Metadata) {
+		return false
+	}
+	if !protobuf_go_lite.EqualSlice(this.SyncDeniedPeerIds, that.SyncDeniedPeerIds) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -6542,6 +6557,11 @@ func (x *SharedObjectHealth) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("metadata")
 		s.WriteBytes(x.Metadata)
 	}
+	if len(x.SyncDeniedPeerIds) > 0 || s.HasField("syncDeniedPeerIds") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("syncDeniedPeerIds")
+		s.WriteStringArray(x.SyncDeniedPeerIds)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -6577,6 +6597,13 @@ func (x *SharedObjectHealth) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "metadata":
 			s.AddField("metadata")
 			x.Metadata = s.ReadBytes()
+		case "sync_denied_peer_ids", "syncDeniedPeerIds":
+			s.AddField("sync_denied_peer_ids")
+			if s.ReadNil() {
+				x.SyncDeniedPeerIds = nil
+				return
+			}
+			x.SyncDeniedPeerIds = s.ReadStringArray()
 		}
 	})
 }
@@ -10303,6 +10330,13 @@ func (m *SharedObjectHealth) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if len(m.SyncDeniedPeerIds) > 0 {
+		for iNdEx := len(m.SyncDeniedPeerIds) - 1; iNdEx >= 0; iNdEx-- {
+			i = protobuf_go_lite.EncodeString(dAtA, i, m.SyncDeniedPeerIds[iNdEx])
+			i--
+			dAtA[i] = 0x3a
+		}
+	}
 	if len(m.Metadata) > 0 {
 		i = protobuf_go_lite.EncodeBytes(dAtA, i, m.Metadata)
 		i--
@@ -13165,6 +13199,7 @@ func (m *SharedObjectHealth) SizeVT() (n int) {
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.RemediationHint)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Error)
 	n += protobuf_go_lite.SizeBytesNonEmpty(1, m.Metadata)
+	n += protobuf_go_lite.SizeStringSlice(1, m.SyncDeniedPeerIds)
 	n += len(m.unknownFields)
 	return n
 }
@@ -14202,6 +14237,14 @@ func (x *SharedObjectHealth) MarshalProtoText() string {
 	if len(x.Metadata) != 0 {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "metadata")
 		protobuf_go_lite.TextWriteBytes(&sb, x.Metadata)
+	}
+	if len(x.SyncDeniedPeerIds) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "sync_denied_peer_ids")
+		for i, v := range x.SyncDeniedPeerIds {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			protobuf_go_lite.TextWriteString(&sb, v)
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -15894,6 +15937,16 @@ func (m *SharedObjectHealth) UnmarshalVT(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SyncDeniedPeerIds", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.SyncDeniedPeerIds = append(m.SyncDeniedPeerIds, v)
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

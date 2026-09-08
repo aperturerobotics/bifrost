@@ -962,6 +962,14 @@ export interface SharedObjectHealth {
    * @generated from field: bytes metadata = 6;
    */
   metadata?: Uint8Array
+  /**
+   * SyncDeniedPeerIds lists base58 participant IDs whose latest authenticated sync admission denied this object identity.
+   * Each peer was readable under local authority. This is source availability, not proof of membership removal.
+   * A successful admission from that participant clears its denial; transport failures leave it unchanged.
+   *
+   * @generated from field: repeated string sync_denied_peer_ids = 7;
+   */
+  syncDeniedPeerIds?: string[]
 }
 
 export const SharedObjectHealth: MessageType<SharedObjectHealth> =
@@ -984,6 +992,13 @@ export const SharedObjectHealth: MessageType<SharedObjectHealth> =
       },
       { no: 5, name: 'error', kind: 'scalar', T: ScalarType.STRING },
       { no: 6, name: 'metadata', kind: 'scalar', T: ScalarType.BYTES },
+      {
+        no: 7,
+        name: 'sync_denied_peer_ids',
+        kind: 'scalar',
+        T: ScalarType.STRING,
+        repeated: true,
+      },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })

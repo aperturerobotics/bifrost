@@ -1,0 +1,38 @@
+package sobject
+
+import (
+	"slices"
+	"testing"
+)
+
+// TestSyncPeerAdmissionPreservesMountHealth keeps source availability separate
+// from locally held mount health and clears only the recovering participant.
+func TestSyncPeerAdmissionPreservesMountHealth(t *testing.T) {
+	health := NewSharedObjectReadyHealth(SharedObjectHealthLayer_SHARED_OBJECT_HEALTH_LAYER_SHARED_OBJECT)
+	first := health.WithSyncPeerAdmission("peer-b", false)
+	second := first.WithSyncPeerAdmission("peer-a", false)
+	if !slices.Equal(second.GetSyncDeniedPeerIds(), []string{"peer-a", "peer-b"}) {
+		t.Fatalf("denied sources = %v", second.GetSyncDeniedPeerIds())
+	}
+	if len(health.GetSyncDeniedPeerIds()) != 0 || !slices.Equal(first.GetSyncDeniedPeerIds(), []string{"peer-b"}) {
+		t.Fatal("updating source health mutated an earlier snapshot")
+	}
+	if second.GetStatus() != health.GetStatus() || second.GetCommonReason() != health.GetCommonReason() {
+		t.Fatal("remote admission changed local mount authority")
+	}
+	if unchanged := second.WithSyncPeerAdmission("peer-a", false); unchanged != second {
+		t.Fatal("unchanged denial produced another watch update")
+	}
+
+	// Another source becoming available cannot clear the denied peer.
+	if unchanged := second.WithSyncPeerAdmission("peer-c", true); unchanged != second {
+		t.Fatal("unrelated admission changed the denied sources")
+	}
+	recovered := second.WithSyncPeerAdmission("peer-a", true)
+	if !slices.Equal(recovered.GetSyncDeniedPeerIds(), []string{"peer-b"}) {
+		t.Fatalf("remaining denied sources = %v", recovered.GetSyncDeniedPeerIds())
+	}
+	if !slices.Equal(second.GetSyncDeniedPeerIds(), []string{"peer-a", "peer-b"}) {
+		t.Fatal("recovery mutated the previous health snapshot")
+	}
+}

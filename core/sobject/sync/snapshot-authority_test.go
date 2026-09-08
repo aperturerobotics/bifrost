@@ -96,7 +96,7 @@ func TestSnapshotExchangeRequiresHeldAuthority(t *testing.T) {
 					return nil
 				})
 			}
-			syncer := NewSOSync(gateLogger(), nil, soID, localID, local, host, accessChecks...)
+			syncer := NewSOSync(gateLogger(), nil, soID, localID, local, host, nil, accessChecks...)
 			data, err := candidate.MarshalVT()
 			if err != nil {
 				t.Fatal(err)

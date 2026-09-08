@@ -45,6 +45,8 @@ type SOSync struct {
 	soHost *sobject.SOHost
 	// validateSnapshotAccess checks local decryption before acceptance.
 	validateSnapshotAccess SnapshotAccessValidator
+	// peerAdmission reports a locally permitted participant's explicit admission response.
+	peerAdmission func(peer.ID, bool)
 }
 
 // NewSOSync constructs a new SOSync.
@@ -53,6 +55,9 @@ type SOSync struct {
 // state. The transport peer routes the sync stream but need not be a Space
 // participant. localObjectKey must belong to localObjectPeerID and remains
 // available for the SOSync lifetime. Authentication rejects a mismatched key.
+// peerAdmission, when non-nil, observes explicit responses from peers permitted
+// by local authority. Calls may be concurrent and must return promptly. A remote
+// denial describes that source's response, not a local membership change.
 func NewSOSync(
 	le *logrus.Entry,
 	b bus.Bus,
@@ -60,6 +65,7 @@ func NewSOSync(
 	localObjectPeerID peer.ID,
 	localObjectKey crypto.PrivKey,
 	soHost *sobject.SOHost,
+	peerAdmission func(peer.ID, bool),
 	accessValidators ...SnapshotAccessValidator,
 ) *SOSync {
 	var validateSnapshotAccess SnapshotAccessValidator
@@ -74,6 +80,7 @@ func NewSOSync(
 		localObjectKey:         localObjectKey,
 		soHost:                 soHost,
 		validateSnapshotAccess: validateSnapshotAccess,
+		peerAdmission:          peerAdmission,
 	}
 }
 

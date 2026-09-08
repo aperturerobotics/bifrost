@@ -89,7 +89,14 @@ func (s *SOSync) authenticate(ctx context.Context, sess *stream_packet.Session, 
 	if err != nil {
 		return "", err
 	}
-	if !accepted || !incoming.GetAuthorization().GetAccepted() {
+	authorization := incoming.GetAuthorization()
+	if authorization == nil {
+		return "", errors.New("expected synchronization admission response")
+	}
+	if accepted && s.peerAdmission != nil {
+		s.peerAdmission(remoteID, authorization.GetAccepted())
+	}
+	if !accepted || !authorization.GetAccepted() {
 		return "", ErrAccessDenied
 	}
 	return remoteID, nil

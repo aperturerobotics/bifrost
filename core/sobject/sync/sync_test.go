@@ -169,7 +169,7 @@ func TestSyncProtocolID(t *testing.T) {
 func TestNewSOSync(t *testing.T) {
 	le := logrus.NewEntry(logrus.New())
 	le.Logger.SetOutput(io.Discard)
-	s := NewSOSync(le, nil, "test-so-id", peer.ID("test-peer"), nil, nil)
+	s := NewSOSync(le, nil, "test-so-id", peer.ID("test-peer"), nil, nil, nil)
 	if s.soID != "test-so-id" {
 		t.Errorf("expected test-so-id, got %s", s.soID)
 	}

@@ -1,5 +1,29 @@
 package sobject
 
+import "slices"
+
+// WithSyncPeerAdmission returns a health snapshot reflecting a verified peer's
+// admission response without changing local mount readiness or authority.
+// The caller must have verified that peerID is readable under local authority.
+func (h *SharedObjectHealth) WithSyncPeerAdmission(peerID string, accepted bool) *SharedObjectHealth {
+	if slices.Contains(h.GetSyncDeniedPeerIds(), peerID) == !accepted {
+		return h
+	}
+
+	// Retain immutable snapshots for concurrent health watchers.
+	next := h.CloneVT()
+	if next == nil {
+		next = NewSharedObjectLoadingHealth(SharedObjectHealthLayer_SHARED_OBJECT_HEALTH_LAYER_SHARED_OBJECT)
+	}
+	if accepted {
+		next.SyncDeniedPeerIds = slices.DeleteFunc(next.SyncDeniedPeerIds, func(id string) bool { return id == peerID })
+		return next
+	}
+	next.SyncDeniedPeerIds = append(next.SyncDeniedPeerIds, peerID)
+	slices.Sort(next.SyncDeniedPeerIds)
+	return next
+}
+
 // NewSharedObjectLoadingHealth constructs a loading SharedObjectHealth snapshot.
 func NewSharedObjectLoadingHealth(
 	layer SharedObjectHealthLayer,
