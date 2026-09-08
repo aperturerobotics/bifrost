@@ -6,7 +6,7 @@ Run the cold Chromium landing-to-Drive scenario with:
 bun run test:release:web:startup
 ```
 
-The harness incrementally builds unminified release artifacts, exports the
+The harness incrementally builds minified release artifacts, exports the
 startup plugins into real CDN KVF packs, and serves them on
 `http://127.0.0.1:30772`. The production bootstrap embeds only the launcher and
 materializer. The browser fetches a signed distribution fixture, the CDN root
@@ -18,7 +18,7 @@ software-rendered runs can be distinguished.
 
 Build and publication state live in `.bldr-startup`. Bldr checks source changes
 on every run and reuses unchanged manifests. The build keeps the release
-manifest selection rules, with JavaScript and entrypoint minification disabled.
+manifest selection rules, with JavaScript and entrypoint minification enabled.
 Build time is outside the measured browser interval.
 
 Capture the root worker's runtime trace during the same scenario with:
