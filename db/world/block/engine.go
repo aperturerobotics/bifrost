@@ -1095,6 +1095,17 @@ func (e *Engine) buildWorldStateForRoot(
 	_, subtask = trace.NewTask(ctx, "hydra/world-block/engine/build-world-state/build-transaction")
 	btx, bcs := root.BuildTransactionWithStore(nil, store)
 	subtask.End()
+
+	// The published read head already holds this immutable root. Clone its
+	// decoded value so each new handle owns its mutable sub-block fields.
+	if e.head.readTx != nil && e.head.root.GetRef().EqualsRef(root.GetRef()) &&
+		e.head.readTx.state.GetRootRef().EqualsRef(root.GetRef().GetRootRef()) {
+		rootBlock, err := e.head.readTx.state.GetRoot(ctx)
+		if err != nil {
+			return nil, err
+		}
+		bcs.SetBlock(rootBlock.CloneVT(), false)
+	}
 	if readOnly {
 		btx = nil
 	}
