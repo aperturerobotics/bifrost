@@ -8,7 +8,8 @@ import (
 	"github.com/s4wave/spacewave/db/bucket"
 )
 
-func TestLookupBucketGetBlockExistsBatchUsesLookupBatch(t *testing.T) {
+// TestLookupBucketExistenceUsesLookupBatch rejects payload reads for existence probes.
+func TestLookupBucketExistenceUsesLookupBatch(t *testing.T) {
 	refs := []*block.BlockRef{
 		mustLookupTestBlockRef(t, "first"),
 		mustLookupTestBlockRef(t, "second"),
@@ -16,15 +17,26 @@ func TestLookupBucketGetBlockExistsBatchUsesLookupBatch(t *testing.T) {
 	lk := &batchLookupTestLookup{found: []bool{true, false}}
 	bkt := NewBucketFromHandle(&batchLookupTestHandle{lookup: lk})
 
-	found, err := bkt.GetBlockExistsBatch(context.Background(), refs)
+	found, err := bkt.GetBlockExistsBatch(t.Context(), refs)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(found) != 2 || !found[0] || found[1] {
 		t.Fatalf("found = %v, want [true false]", found)
 	}
-	if lk.existsBatchCalls != 1 {
-		t.Fatalf("exists batch calls = %d, want 1", lk.existsBatchCalls)
+	// Single-block probes use the same metadata-only lookup for hits and misses.
+	for _, expected := range []bool{true, false} {
+		lk.found = []bool{expected}
+		found, err := bkt.GetBlockExists(t.Context(), refs[0])
+		if err != nil {
+			t.Fatal(err)
+		}
+		if found != expected {
+			t.Fatalf("single block found = %t, want %t", found, expected)
+		}
+	}
+	if lk.existsBatchCalls != 3 {
+		t.Fatalf("exists batch calls = %d, want 3", lk.existsBatchCalls)
 	}
 	if lk.lookupBlockCalls != 0 {
 		t.Fatalf("payload lookup calls = %d, want 0", lk.lookupBlockCalls)
@@ -34,6 +46,7 @@ func TestLookupBucketGetBlockExistsBatchUsesLookupBatch(t *testing.T) {
 	}
 }
 
+// mustLookupTestBlockRef builds a valid reference for a fixture payload.
 func mustLookupTestBlockRef(t *testing.T, data string) *block.BlockRef {
 	t.Helper()
 	ref, err := block.BuildBlockRef([]byte(data), nil)
@@ -43,29 +56,40 @@ func mustLookupTestBlockRef(t *testing.T, data string) *block.BlockRef {
 	return ref
 }
 
+// batchLookupTestHandle exposes one lookup service to the bucket adapter.
 type batchLookupTestHandle struct {
+	// lookup supplies the fixture lookup operations.
 	lookup Lookup
 }
 
+// GetDisposed keeps the fixture handle available.
 func (h *batchLookupTestHandle) GetDisposed() bool {
 	return false
 }
 
+// GetBucketConfig omits configuration unused by the existence probes.
 func (h *batchLookupTestHandle) GetBucketConfig() *bucket.Config {
 	return nil
 }
 
+// GetLookup returns the fixture service.
 func (h *batchLookupTestHandle) GetLookup(context.Context) (Lookup, error) {
 	return h.lookup, nil
 }
 
+// batchLookupTestLookup records whether the adapter reads metadata or payloads.
 type batchLookupTestLookup struct {
-	found            []bool
-	localOnly        bool
+	// found supplies the configured existence results.
+	found []bool
+	// localOnly records the lookup's discovery policy.
+	localOnly bool
+	// lookupBlockCalls counts payload reads.
 	lookupBlockCalls int
+	// existsBatchCalls counts metadata probes.
 	existsBatchCalls int
 }
 
+// LookupBlock records an unwanted payload read.
 func (l *batchLookupTestLookup) LookupBlock(
 	context.Context,
 	*block.BlockRef,
@@ -75,6 +99,7 @@ func (l *batchLookupTestLookup) LookupBlock(
 	return nil, false, nil
 }
 
+// LookupBlockExistsBatch returns configured metadata results in input order.
 func (l *batchLookupTestLookup) LookupBlockExistsBatch(
 	_ context.Context,
 	refs []*block.BlockRef,
@@ -87,6 +112,7 @@ func (l *batchLookupTestLookup) LookupBlockExistsBatch(
 	return out, nil
 }
 
+// PutBlock satisfies the unused write contract.
 func (l *batchLookupTestLookup) PutBlock(
 	context.Context,
 	[]byte,
