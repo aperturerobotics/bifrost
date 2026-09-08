@@ -17,6 +17,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const bldrDistRoot =
   process.env['BLDR_DIST_ROOT'] || resolve(__dirname, '.bldr/src')
 
+// resolveBldrSourcePath resolves generated exports and source fallbacks.
 function resolveBldrSourcePath(...segments: string[]) {
   const isPatternReplacement = segments.some((segment) => segment.includes('$'))
   const patternProbeSegments = segments
@@ -58,6 +59,9 @@ export default defineConfig({
       preserveEntrySignatures: 'strict',
       output: {
         format: 'es',
+        codeSplitting: {
+          groups: [{ name: 'initial-deps', tags: ['$initial'] }],
+        },
       },
     },
   },
