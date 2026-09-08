@@ -78,16 +78,31 @@ func boot(ctx context.Context, le *logrus.Entry) (_ *harness, retErr error) {
 		return nil, errors.Wrap(err, "find repo root")
 	}
 
-	distDirs, err := prepareReleaseWasmDist(ctx, le, repoRoot)
+	// Own the listening socket before building or starting any browser consumer.
+	port := "0"
+	if os.Getenv(localCDNEnv) == "1" {
+		port = localCDNPort
+	}
+	listener, err := net.Listen("tcp", "127.0.0.1:"+port)
+	if err != nil {
+		return nil, errors.Wrap(err, "listen for release browser harness")
+	}
+	defer func() {
+		if retErr != nil {
+			listener.Close()
+		}
+	}()
+	port = strconv.Itoa(listener.Addr().(*net.TCPAddr).Port)
+	baseURL := "http://127.0.0.1:" + port
+	var distDirs releaseWasmDistDirs
+	if os.Getenv(localCDNEnv) == "1" {
+		distDirs, err = prepareLocalCDN(ctx, le, repoRoot, baseURL)
+	} else {
+		distDirs, err = prepareReleaseWasmDist(ctx, le, repoRoot)
+	}
 	if err != nil {
 		return nil, err
 	}
-
-	port, err := findFreePort()
-	if err != nil {
-		return nil, errors.Wrap(err, "find free port")
-	}
-	baseURL := "http://127.0.0.1:" + port
 	artifactDir := filepath.Join(repoRoot, ".bldr", "e2e-releasewasm", "artifacts")
 	browserName, err := releaseWasmBrowserName()
 	if err != nil {
@@ -111,19 +126,20 @@ func boot(ctx context.Context, le *logrus.Entry) (_ *harness, retErr error) {
 		}
 	}()
 
+	handler := releaseHandler(distDirs.releaseDist, distDirs.prerender, baseURL)
+	if os.Getenv(localCDNEnv) == "1" {
+		handler = localCDNHandler(handler)
+	}
 	h.server = &http.Server{
 		Addr:              "127.0.0.1:" + port,
-		Handler:           releaseHandler(distDirs.releaseDist, distDirs.prerender, baseURL),
+		Handler:           handler,
 		ReadHeaderTimeout: 30 * time.Second,
 	}
 	go func() {
-		if err := h.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		if err := h.server.Serve(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			le.WithError(err).Error("release wasm server exited")
 		}
 	}()
-	if err := h.waitForReady(ctx); err != nil {
-		return nil, errors.Wrap(err, "wait for release server")
-	}
 
 	le.WithField("browser", browserName).Info("installing playwright driver")
 	if err := playwright.Install(&playwright.RunOptions{
@@ -149,6 +165,11 @@ func boot(ctx context.Context, le *logrus.Entry) (_ *harness, retErr error) {
 		opts := playwright.BrowserTypeLaunchOptions{Headless: new(true)}
 		if browserName == "chromium" {
 			opts = e2eharness.ChromiumLaunchOptions(true, gpu)
+		}
+		if os.Getenv(localCDNEnv) == "1" {
+			// The static server rejects proxy requests; all browser network access
+			// stays local, including requests made by service and shared workers.
+			opts.Proxy = &playwright.Proxy{Server: baseURL, Bypass: new("127.0.0.1,localhost")}
 		}
 		return browserType.Launch(opts)
 	}
@@ -795,35 +816,4 @@ func runBun(ctx context.Context, dir string, args ...string) error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
-}
-
-func (h *harness) waitForReady(ctx context.Context) error {
-	client := &http.Client{Timeout: 2 * time.Second}
-	for {
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, h.baseURL+"/browser-release.json", nil)
-		if err != nil {
-			return err
-		}
-		resp, err := client.Do(req)
-		if err == nil {
-			resp.Body.Close()
-			if resp.StatusCode == http.StatusOK {
-				return nil
-			}
-		}
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-time.After(200 * time.Millisecond):
-		}
-	}
-}
-
-func findFreePort() (string, error) {
-	l, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		return "", err
-	}
-	defer l.Close()
-	return strconv.Itoa(l.Addr().(*net.TCPAddr).Port), nil
 }

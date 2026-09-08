@@ -131,6 +131,7 @@
     "test:browser:ui": "cross-env BROWSER_TEST_UI=1 bun run test:browser",
     "test:browser:watch": "cross-env BROWSER_TEST_WATCH=1 bun run test:browser",
     "test:release:web": "bun run test:go:e2e:release-wasm",
+    "test:release:web:startup": "cross-env ENABLE_E2E_RELEASE_WASM=true E2E_RELEASE_WASM_LOCAL_CDN=1 E2E_RELEASE_WASM_GOSCRIPT=true E2E_RELEASE_WASM_BROWSER=chromium go test -count=1 -timeout=20m -v ./e2e/releasewasm -run '^TestLocalCDNDriveStartup$'",
     "test:browser:nobackend": "vitest --config=vitest.browser.config.ts --run",
     "test:browser:nobackend:watch": "vitest --config=vitest.browser.config.ts",
     "test:browser:nobackend:ui": "cross-env BROWSER_TEST_UI=1 vitest --config=vitest.browser.config.ts --ui",
