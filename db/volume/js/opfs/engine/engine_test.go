@@ -94,12 +94,16 @@ func (d *diskBackend) Write(ctx context.Context, name string, data []byte) error
 		case <-d.writeGate:
 		}
 	}
+	// Allocate failure boundaries across concurrent immutable writes.
+	d.mtx.Lock()
 	if d.failAfter == 0 {
+		d.mtx.Unlock()
 		return errors.New("injected write failure")
 	}
 	if d.failAfter > 0 {
 		d.failAfter--
 	}
+	d.mtx.Unlock()
 	f, err := os.CreateTemp(d.root, "write-")
 	if err != nil {
 		return err
