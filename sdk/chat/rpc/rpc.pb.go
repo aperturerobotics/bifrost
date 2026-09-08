@@ -368,6 +368,11 @@ type SendMessageRequest struct {
 	// Content is the typed message content. When set, it is persisted as given
 	// and the legacy text field is rejected if also supplied.
 	Content *content.ChatMessageContent `protobuf:"bytes,4,opt,name=content,proto3" json:"content,omitempty"`
+	// ExpectedStateMessageKey requires the current state event to have this key.
+	// An empty value requires absent state; omission makes the write unconditional.
+	// Only state changes accept this condition. Accepted transaction retries retain
+	// their original result even when current state has since changed.
+	ExpectedStateMessageKey *string `protobuf:"bytes,5,opt,name=expected_state_message_key,json=expectedStateMessageKey,proto3,oneof" json:"expectedStateMessageKey,omitempty"`
 }
 
 func (x *SendMessageRequest) Reset() {
@@ -402,6 +407,13 @@ func (x *SendMessageRequest) GetContent() *content.ChatMessageContent {
 		return x.Content
 	}
 	return nil
+}
+
+func (x *SendMessageRequest) GetExpectedStateMessageKey() string {
+	if x != nil && x.ExpectedStateMessageKey != nil {
+		return *x.ExpectedStateMessageKey
+	}
+	return ""
 }
 
 // SendMessageResponse is the response after sending a message.
@@ -719,6 +731,7 @@ func (m *SendMessageRequest) CloneVT() *SendMessageRequest {
 	r.ReplyToKey = m.ReplyToKey
 	r.TransactionId = m.TransactionId
 	r.Content = protobuf_go_lite.CloneVTValue(m.Content)
+	r.ExpectedStateMessageKey = protobuf_go_lite.ClonePtr(m.ExpectedStateMessageKey)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -1083,6 +1096,9 @@ func (this *SendMessageRequest) EqualVT(that *SendMessageRequest) bool {
 		return false
 	}
 	if !protobuf_go_lite.IsEqualVT(this.Content, that.Content) {
+		return false
+	}
+	if !protobuf_go_lite.EqualPtr(this.ExpectedStateMessageKey, that.ExpectedStateMessageKey) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -1864,6 +1880,11 @@ func (x *SendMessageRequest) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("content")
 		x.Content.MarshalProtoJSON(s.WithField("content"))
 	}
+	if x.ExpectedStateMessageKey != nil {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("expectedStateMessageKey")
+		s.WriteString(*x.ExpectedStateMessageKey)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -1897,6 +1918,14 @@ func (x *SendMessageRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
 			}
 			x.Content = &content.ChatMessageContent{}
 			x.Content.UnmarshalProtoJSON(s.WithField("content", true))
+		case "expected_state_message_key", "expectedStateMessageKey":
+			s.AddField("expected_state_message_key")
+			if s.ReadNil() {
+				x.ExpectedStateMessageKey = nil
+				return
+			}
+			t := s.ReadString()
+			x.ExpectedStateMessageKey = &t
 		}
 	})
 }
@@ -2720,6 +2749,11 @@ func (m *SendMessageRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.ExpectedStateMessageKey != nil {
+		i = protobuf_go_lite.EncodeString(dAtA, i, *m.ExpectedStateMessageKey)
+		i--
+		dAtA[i] = 0x2a
+	}
 	if m.Content != nil {
 		size, err := m.Content.MarshalToSizedBufferVT(dAtA[:i])
 		if err != nil {
@@ -3116,6 +3150,7 @@ func (m *SendMessageRequest) SizeVT() (n int) {
 		l = m.Content.SizeVT()
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
+	n += protobuf_go_lite.SizeStringPtr(1, m.ExpectedStateMessageKey)
 	n += len(m.unknownFields)
 	return n
 }
@@ -3434,6 +3469,10 @@ func (x *SendMessageRequest) MarshalProtoText() string {
 	if x.Content != nil {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "content")
 		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Content)
+	}
+	if x.ExpectedStateMessageKey != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "expected_state_message_key")
+		protobuf_go_lite.TextWriteString(&sb, *x.ExpectedStateMessageKey)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -4341,6 +4380,16 @@ func (m *SendMessageRequest) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ExpectedStateMessageKey", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.ExpectedStateMessageKey = &v
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

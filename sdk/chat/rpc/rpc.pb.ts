@@ -419,6 +419,15 @@ export interface SendMessageRequest {
    * @generated from field: spacewave.chat.ChatMessageContent content = 4;
    */
   content?: ChatMessageContent
+  /**
+   * ExpectedStateMessageKey requires the current state event to have this key.
+   * An empty value requires absent state; omission makes the write unconditional.
+   * Only state changes accept this condition. Accepted transaction retries retain
+   * their original result even when current state has since changed.
+   *
+   * @generated from field: optional string expected_state_message_key = 5;
+   */
+  expectedStateMessageKey?: string
 }
 
 export const SendMessageRequest: MessageType<SendMessageRequest> =
@@ -429,6 +438,13 @@ export const SendMessageRequest: MessageType<SendMessageRequest> =
       { no: 2, name: 'reply_to_key', kind: 'scalar', T: ScalarType.STRING },
       { no: 3, name: 'transaction_id', kind: 'scalar', T: ScalarType.STRING },
       { no: 4, name: 'content', kind: 'message', T: () => ChatMessageContent },
+      {
+        no: 5,
+        name: 'expected_state_message_key',
+        kind: 'scalar',
+        T: ScalarType.STRING,
+        opt: true,
+      },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })

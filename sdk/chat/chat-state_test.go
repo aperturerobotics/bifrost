@@ -1,6 +1,7 @@
 package spacewave_chat
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/aperturerobotics/protobuf-go-lite/types/known/timestamppb"
@@ -8,6 +9,97 @@ import (
 	db_world_testbed "github.com/s4wave/spacewave/db/world/testbed"
 	spacewave_chat_rpc "github.com/s4wave/spacewave/sdk/chat/rpc"
 )
+
+// TestChatStateConditionalWrite checks that stale cleanup cannot replace newer state.
+func TestChatStateConditionalWrite(t *testing.T) {
+	ctx := t.Context()
+	wtb, err := db_world_testbed.Default(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(wtb.Release)
+	ws := world.NewEngineWorldState(wtb.Engine, true)
+	createChatChannel(t, ctx, ws, GeneralChannelKey, "General")
+	sender := wtb.Volume.GetPeerID().String()
+	cleaner := NewChatResource(ws, wtb.Engine, GeneralChannelKey, sender)
+	writer := NewChatResource(ws, wtb.Engine, GeneralChannelKey, sender)
+
+	// An absent-state condition creates the first event exactly once.
+	empty := ""
+	request := &spacewave_chat_rpc.SendMessageRequest{
+		ExpectedStateMessageKey: &empty,
+		TransactionId:           "first-state",
+		Content: &ChatMessageContent{Content: &ChatMessageContent_StateChange{
+			StateChange: &ChatStateChange{Type: "m.room.canonical_alias", ContentJson: `{"alias":"#first:example.org"}`},
+		}},
+	}
+	first, err := cleaner.SendMessage(ctx, request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newer := request.CloneVT()
+	newer.ExpectedStateMessageKey = nil
+	newer.TransactionId = ""
+	newer.Content.GetStateChange().ContentJson = `{"alias":"#newer:example.org"}`
+	second, err := writer.SendMessage(ctx, newer)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// A cleanup based on the first event fails, including when its body matches current state.
+	stale := newer.CloneVT()
+	stale.ExpectedStateMessageKey = &first.MessageKey
+	if _, err := cleaner.SendMessage(ctx, stale); !errors.Is(err, ErrChatStateConflict) {
+		t.Fatalf("stale identical state error = %v, want state conflict", err)
+	}
+	stale.Content.GetStateChange().ContentJson = `{}`
+	if _, err := cleaner.SendMessage(ctx, stale); !errors.Is(err, ErrChatStateConflict) {
+		t.Fatalf("stale cleanup error = %v, want state conflict", err)
+	}
+	absent := stale.CloneVT()
+	absent.ExpectedStateMessageKey = &empty
+	if _, err := cleaner.SendMessage(ctx, absent); !errors.Is(err, ErrChatStateConflict) {
+		t.Fatalf("absent-state condition error = %v, want state conflict", err)
+	}
+	current, err := writer.GetState(ctx, &spacewave_chat_rpc.GetStateRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(current.GetMessages()) != 1 || current.GetMessages()[0].GetObjectKey() != second.GetMessageKey() {
+		t.Fatal("rejected cleanup changed current state")
+	}
+	info, err := writer.GetChannelInfo(ctx, &spacewave_chat_rpc.GetChannelInfoRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.GetMessageCount() != 2 {
+		t.Fatalf("rejected writes changed history count to %d, want 2", info.GetMessageCount())
+	}
+
+	// An accepted retry keeps its identity; a fresh matching condition can clear state.
+	retried, err := cleaner.SendMessage(ctx, request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if retried.GetMessageKey() != first.GetMessageKey() {
+		t.Fatal("accepted conditional retry lost its original event")
+	}
+	stale.ExpectedStateMessageKey = &second.MessageKey
+	cleared, err := cleaner.SendMessage(ctx, stale)
+	if err != nil {
+		t.Fatal(err)
+	}
+	current, err = writer.GetState(ctx, &spacewave_chat_rpc.GetStateRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(current.GetMessages()) != 1 || current.GetMessages()[0].GetObjectKey() != cleared.GetMessageKey() || current.GetMessages()[0].GetContent().GetStateChange().GetContentJson() != `{}` {
+		t.Fatal("matching condition did not clear current state")
+	}
+	if _, err := cleaner.SendMessage(ctx, &spacewave_chat_rpc.SendMessageRequest{Text: "plain", ExpectedStateMessageKey: &empty}); err == nil {
+		t.Fatal("accepted a state condition on a non-state message")
+	}
+}
 
 // TestChatStateHistory checks current state, immutable history, and retry ordering together.
 func TestChatStateHistory(t *testing.T) {
