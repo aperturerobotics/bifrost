@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/pkg/errors"
 	trace "github.com/s4wave/spacewave/db/traceutil"
 )
 
@@ -41,8 +40,9 @@ func NewManager(cfg ManagerConfig) *Manager {
 	return &Manager{cfg: cfg}
 }
 
-// Run starts the GC manager lifecycle: startup WAL replay followed
-// by periodic sweep cycles. Blocks until the context is canceled.
+// Run replays the WAL at startup, then runs periodic sweep cycles until canceled.
+// Failed replay leaves unapplied entries for the next cycle and prevents sweeping;
+// maintenance failures must not terminate the volume serving application writes.
 func (m *Manager) Run(ctx context.Context) error {
 	ctx, task := trace.NewTask(ctx, "hydra/block-gc/manager")
 	defer task.End()
@@ -52,9 +52,11 @@ func (m *Manager) Run(ctx context.Context) error {
 	n, err := m.cfg.ReplayWAL(ctx, m.cfg.Graph)
 	replayTask.End()
 	if err != nil {
-		return errors.Wrap(err, "startup WAL replay")
-	}
-	if n > 0 {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		trace.Logf(ctx, "gc-manager", "startup WAL replay failed; retrying next cycle: %v", err)
+	} else if n > 0 {
 		trace.Logf(ctx, "gc-manager", "replayed %d WAL entries on startup", n)
 	}
 
