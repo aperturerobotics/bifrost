@@ -89,6 +89,11 @@ type batchLookupTestLookup struct {
 	existsBatchCalls int
 }
 
+// BeginReadOperation retains the fixture lookup for a bounded read.
+func (l *batchLookupTestLookup) BeginReadOperation(context.Context) (Lookup, func(), error) {
+	return l, func() {}, nil
+}
+
 // LookupBlock records an unwanted payload read.
 func (l *batchLookupTestLookup) LookupBlock(
 	context.Context,

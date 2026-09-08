@@ -4270,6 +4270,11 @@ type testSchedulerStaticLookup struct {
 	store block.StoreOps
 }
 
+// BeginReadOperation retains the fixture lookup for a bounded read.
+func (l *testSchedulerStaticLookup) BeginReadOperation(context.Context) (bucket_lookup.Lookup, func(), error) {
+	return l, func() {}, nil
+}
+
 func (l *testSchedulerStaticLookup) LookupBlock(
 	ctx context.Context,
 	ref *block.BlockRef,

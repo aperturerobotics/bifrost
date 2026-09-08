@@ -79,6 +79,11 @@ type queueTestLookup struct {
 	existsBatchCalls int
 }
 
+// BeginReadOperation retains the fixture lookup for a bounded read.
+func (l *queueTestLookup) BeginReadOperation(context.Context) (bucket_lookup.Lookup, func(), error) {
+	return l, func() {}, nil
+}
+
 func (l *queueTestLookup) LookupBlock(
 	context.Context,
 	*block.BlockRef,

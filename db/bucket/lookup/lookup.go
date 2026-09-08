@@ -52,6 +52,9 @@ func WithTimeout(dur time.Duration, notFound bool) LookupBlockOption {
 
 // Lookup are the lookup operations.
 type Lookup interface {
+	// BeginReadOperation opens a bounded read scope where the lookup supports one.
+	// The caller completes every lookup before releasing the returned scope.
+	BeginReadOperation(ctx context.Context) (Lookup, func(), error)
 	// LookupBlock searches for a block using the bucket lookup controller.
 	// If lookup is disabled, will return an error.
 	LookupBlock(

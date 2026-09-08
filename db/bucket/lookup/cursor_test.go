@@ -249,6 +249,11 @@ type staticBucketLookup struct {
 	bucketID string
 }
 
+// BeginReadOperation retains the fixture lookup for a bounded read.
+func (l *staticBucketLookup) BeginReadOperation(context.Context) (Lookup, func(), error) {
+	return l, func() {}, nil
+}
+
 func (l *staticBucketLookup) LookupBlock(
 	ctx context.Context,
 	ref *block.BlockRef,
