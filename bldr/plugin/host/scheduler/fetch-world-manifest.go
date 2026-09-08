@@ -11,24 +11,16 @@ import (
 	"github.com/aperturerobotics/util/promise"
 	bldr_manifest "github.com/s4wave/spacewave/bldr/manifest"
 	bldr_manifest_world "github.com/s4wave/spacewave/bldr/manifest/world"
-	bldr_platform "github.com/s4wave/spacewave/bldr/platform"
-	bldr_plugin_host "github.com/s4wave/spacewave/bldr/plugin/host"
 	trace "github.com/s4wave/spacewave/db/traceutil"
 	"github.com/sirupsen/logrus"
 )
 
-// storeFetchedManifestsKey is the context key for the fetched manifests
-// key.
+// storeFetchedManifestsKey identifies one reference in a fetched value.
 type storeFetchedManifestsKey struct {
-	valueID  uint32
+	// valueID identifies the attached fetch result.
+	valueID uint32
+	// refIndex selects the manifest within that result.
 	refIndex int
-}
-
-// directFetchCandidate is one candidate manifest ref considered for a
-// direct fetch.
-type directFetchCandidate struct {
-	ref  *bldr_manifest.ManifestRef
-	host bldr_plugin_host.PluginHost
 }
 
 // execFetchWorldManifestCore fetches plugin manifests via FetchManifest and
@@ -38,7 +30,7 @@ func (t *pluginInstance) execFetchWorldManifestCore(ctx context.Context, hosts *
 		t.c.recordPluginStatusError(t.pluginID, t.instanceKey, "fetch plugin manifest", rerr)
 	}()
 
-	// wait for hosts set
+	// Wait until an execution host is available.
 	if hosts == nil {
 		return nil
 	}
@@ -122,7 +114,7 @@ func (t *pluginInstance) execFetchWorldManifestCore(ctx context.Context, hosts *
 		}
 	})
 
-	// we are done
+	// Keep the fetch reference alive until this host selection is canceled.
 	_ = context.AfterFunc(ctx, func() {
 		releaseIdle()
 		ref.Release()
@@ -133,10 +125,14 @@ func (t *pluginInstance) execFetchWorldManifestCore(ctx context.Context, hosts *
 // fetchManifestValueStorer stores fetched manifest values on the plugin
 // instance.
 type fetchManifestValueStorer struct {
-	pi      *pluginInstance
-	value   *promise.Promise[*bldr_manifest.FetchManifestValue]
+	// pi owns registration and its status.
+	pi *pluginInstance
+	// value supplies the immutable fetched references.
+	value *promise.Promise[*bldr_manifest.FetchManifestValue]
+	// valueID identifies the attached result for tracing.
 	valueID uint32
-	refIdx  int
+	// refIdx selects the reference registered by this routine.
+	refIdx int
 }
 
 // newManifestFetchValueStorer constructs a value storer bound to this
@@ -147,7 +143,7 @@ func (t *pluginInstance) newManifestFetchValueStorer(key storeFetchedManifestsKe
 	return s.execFetchManifestValueStorer, s
 }
 
-// execFetchManifestValueStorer executes storing the FetchManifest value in storage.
+// execFetchManifestValueStorerCore registers a fetched reference in the World.
 func (t *fetchManifestValueStorer) execFetchManifestValueStorerCore(ctx context.Context) (rerr error) {
 	defer func() {
 		t.pi.c.recordPluginStatusError(
@@ -186,7 +182,7 @@ func (t *fetchManifestValueStorer) execFetchManifestValueStorerCore(ctx context.
 	}
 
 	manifestKey := bldr_manifest.NewManifestKey(t.pi.c.objKey, meta)
-	// detects changes and does nothing if there are no changes
+	// Registration updates the host only when its manifest reference changes.
 	le.
 		WithFields(logrus.Fields{
 			"manifest-ref": manifestRef.GetManifestRef().String(),
@@ -218,8 +214,8 @@ func (t *pluginInstance) newDirectFetchHandler(ctx context.Context, hosts *plugi
 	platformIDsMap := hosts.toPluginPlatformIDsMap(t.c.conf, t.pluginID)
 
 	selectBest := func() {
-		var best *directFetchCandidate
-		var current *directFetchCandidate
+		var best *manifestCandidate
+		var current *manifestCandidate
 		currentState := t.executePluginRoutine.GetState()
 		for _, refs := range allRefs {
 			for _, ref := range refs {
@@ -228,20 +224,20 @@ func (t *pluginInstance) newDirectFetchHandler(ctx context.Context, hosts *plugi
 				if !ok || host == nil {
 					continue
 				}
-				candidate := &directFetchCandidate{
+				candidate := &manifestCandidate{
 					ref:  ref,
 					host: host,
 				}
-				if current == nil && directFetchCandidateMatchesState(candidate, currentState) {
+				if current == nil && candidate.matchesState(currentState) {
 					current = candidate
 				}
-				if best == nil || directFetchCandidateBetter(candidate, best) {
+				if best == nil || candidate.betterThan(best) {
 					best = candidate
 				}
 			}
 		}
 
-		if current != nil && directFetchCandidateShouldRemainCurrent(current, best) {
+		if current != nil && current.shouldRemainCurrent(best) {
 			best = current
 		}
 
@@ -304,82 +300,5 @@ func (t *pluginInstance) newDirectFetchHandler(ctx context.Context, hosts *plugi
 			selectBest()
 		},
 		nil, nil,
-	)
-}
-
-// directFetchCandidateBetter reports whether candidate is a better
-// download choice than current.
-func directFetchCandidateBetter(candidate, current *directFetchCandidate) bool {
-	if current == nil {
-		return true
-	}
-
-	candidateRank := platformPreferenceRank(candidate.host.GetPlatformId())
-	currentRank := platformPreferenceRank(current.host.GetPlatformId())
-	if candidateRank != currentRank {
-		return candidateRank > currentRank
-	}
-
-	candidateRev := candidate.ref.GetMeta().GetRev()
-	currentRev := current.ref.GetMeta().GetRev()
-	if candidateRev != currentRev {
-		return candidateRev > currentRev
-	}
-
-	candidateRef := candidate.ref.String()
-	currentRef := current.ref.String()
-	if candidateRef != currentRef {
-		return candidateRef > currentRef
-	}
-
-	return candidate.host.GetPlatformId() > current.host.GetPlatformId()
-}
-
-// directFetchCandidateShouldRemainCurrent pins the hysteresis rule: an
-// already-selected same-rev candidate is never displaced by a later
-// preferred-platform arrival.
-func directFetchCandidateShouldRemainCurrent(current, best *directFetchCandidate) bool {
-	if current == nil {
-		return false
-	}
-	if best == nil {
-		return true
-	}
-
-	currentRev := current.ref.GetMeta().GetRev()
-	bestRev := best.ref.GetMeta().GetRev()
-	if currentRev != bestRev {
-		return currentRev > bestRev
-	}
-
-	// Preserve an already selected same-rev candidate. Late arrival of a
-	// preferred-platform manifest should not close an active plugin runtime and
-	// abort in-flight Resource RPCs; the preferred platform still wins when all
-	// candidates are present before the first selection.
-	return true
-}
-
-// platformPreferenceRank returns the preference rank of a platform id;
-// lower is more preferred.
-func platformPreferenceRank(platformID string) int {
-	if platformID == bldr_platform.PlatformID_JS {
-		return 0
-	}
-	return 1
-}
-
-// directFetchCandidateMatchesState reports whether the candidate matches
-// the currently selected state.
-func directFetchCandidateMatchesState(candidate *directFetchCandidate, currentState *executePluginArgs) bool {
-	if currentState == nil || currentState.pluginHost != candidate.host {
-		return false
-	}
-	if currentState.manifestSnapshot == nil || currentState.manifestSnapshot.GetManifestRef() == nil {
-		return false
-	}
-
-	return bldr_manifest_world.ManifestObjectRefsSameExecutable(
-		currentState.manifestSnapshot.GetManifestRef(),
-		candidate.ref.GetManifestRef(),
 	)
 }

@@ -6,7 +6,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 	"testing"
 
@@ -21,7 +20,11 @@ func TestLocalCDNDriveStartup(t *testing.T) {
 		t.Skip("set " + localCDNEnv + "=1 to build and serve the local startup CDN")
 	}
 
-	// Observe delivery without request interception, which disables HTTP caching.
+	// Observe delivery at the server without disabling browser HTTP caching.
+	server := testHarness.server.Handler.(*localCDNHandler)
+	initialDistribution := server.distribution.Load()
+	initialRoots := server.roots.Load()
+	initialPacks := server.packs.Load()
 	page := testHarness.newPage(t)
 	if testHarness.browserName == "chromium" {
 		cdp, err := testHarness.browser.NewBrowserCDPSession()
@@ -39,7 +42,6 @@ func TestLocalCDNDriveStartup(t *testing.T) {
 	}
 	var mtx sync.Mutex
 	var external []string
-	var distribution, root, ranges int
 	page.Context().OnRequest(func(req playwright.Request) {
 		// The optional public-content catalog is absent from this fixture.
 		// Browser proxy isolation rejects its connection before any remote I/O.
@@ -47,22 +49,17 @@ func TestLocalCDNDriveStartup(t *testing.T) {
 			return
 		}
 		u, err := url.Parse(req.URL())
+		// WebKit reports local module blobs as requests. They perform no
+		// network I/O and do not have an HTTP hostname to classify.
+		if err == nil && (u.Scheme == "blob" || u.Scheme == "data") {
+			return
+		}
 		if err != nil || u.Hostname() != "127.0.0.1" {
 			mtx.Lock()
 			external = append(external, req.URL())
 			mtx.Unlock()
 			return
 		}
-		mtx.Lock()
-		switch {
-		case strings.HasSuffix(u.Path, "/distribution.packedmsg"):
-			distribution++
-		case strings.HasSuffix(u.Path, "/root.packedmsg"):
-			root++
-		case strings.HasSuffix(u.Path, ".kvf"):
-			ranges++
-		}
-		mtx.Unlock()
 	})
 
 	// Start exactly where a new visitor starts, before the runtime is booted.
@@ -84,6 +81,19 @@ func TestLocalCDNDriveStartup(t *testing.T) {
 		t.Fatal(failure)
 	}
 	logQuickstartTiming(t, page)
+
+	// Mixed-platform publication must not replace an admitted startup worker.
+	starts := make(map[string]int)
+	for _, mark := range readBundledStartupMarks(t, page) {
+		if mark.Label == "worker.construct-start" {
+			starts[composedString(mark.Detail["workerId"])]++
+		}
+	}
+	for _, plugin := range []string{"spacewave-core", "spacewave-web", "spacewave-app"} {
+		if count := starts["plugin/"+plugin]; count != 1 {
+			t.Errorf("startup created %d workers for %s, want one: %v", count, plugin, starts)
+		}
+	}
 	if releaseStartupTraceEnabled() {
 		data, err := captureReleaseStartupTrace(t.Context(), testHarness.browser)
 		if err != nil {
@@ -102,6 +112,9 @@ func TestLocalCDNDriveStartup(t *testing.T) {
 	// A successful timing must include the remote-loading contract it measures.
 	mtx.Lock()
 	defer mtx.Unlock()
+	distribution := server.distribution.Load() - initialDistribution
+	root := server.roots.Load() - initialRoots
+	ranges := server.packs.Load() - initialPacks
 	t.Logf("local CDN startup: navigation=%dms click-to-file=%dms distribution=%d roots=%d pack-requests=%d", *readyMS, *readyMS-clickMS, distribution, root, ranges)
 	if len(external) != 0 {
 		t.Errorf("startup attempted external requests: %v", external)

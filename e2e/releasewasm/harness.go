@@ -22,6 +22,7 @@ import (
 	"github.com/aperturerobotics/util/gitroot"
 	playwright "github.com/mxschmitt/playwright-go"
 	"github.com/pkg/errors"
+	"github.com/s4wave/spacewave/core/cdn"
 	api "github.com/s4wave/spacewave/core/provider/spacewave/api"
 	e2eharness "github.com/s4wave/spacewave/e2e/harness"
 	"github.com/s4wave/spacewave/e2e/releasewasm/artifact"
@@ -79,11 +80,7 @@ func boot(ctx context.Context, le *logrus.Entry) (_ *harness, retErr error) {
 	}
 
 	// Own the listening socket before building or starting any browser consumer.
-	port := "0"
-	if os.Getenv(localCDNEnv) == "1" {
-		port = localCDNPort
-	}
-	listener, err := net.Listen("tcp", "127.0.0.1:"+port)
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		return nil, errors.Wrap(err, "listen for release browser harness")
 	}
@@ -92,7 +89,7 @@ func boot(ctx context.Context, le *logrus.Entry) (_ *harness, retErr error) {
 			listener.Close()
 		}
 	}()
-	port = strconv.Itoa(listener.Addr().(*net.TCPAddr).Port)
+	port := strconv.Itoa(listener.Addr().(*net.TCPAddr).Port)
 	baseURL := "http://127.0.0.1:" + port
 	var distDirs releaseWasmDistDirs
 	if os.Getenv(localCDNEnv) == "1" {
@@ -128,7 +125,7 @@ func boot(ctx context.Context, le *logrus.Entry) (_ *harness, retErr error) {
 
 	handler := releaseHandler(distDirs.releaseDist, distDirs.prerender, baseURL)
 	if os.Getenv(localCDNEnv) == "1" {
-		handler = localCDNHandler(handler)
+		handler = &localCDNHandler{next: handler}
 	}
 	h.server = &http.Server{
 		Addr:              "127.0.0.1:" + port,
@@ -445,6 +442,9 @@ func (h *harness) newPersistentBrowserContext(t testing.TB, userDataDir string) 
 		options.DeviceScaleFactor = device.DeviceScaleFactor
 		options.IsMobile = device.IsMobile
 		options.HasTouch = device.HasTouch
+		if os.Getenv(localCDNEnv) == "1" {
+			options.Proxy = &playwright.Proxy{Server: h.baseURL, Bypass: new("127.0.0.1,localhost")}
+		}
 		return browserType.LaunchPersistentContext(userDataDir, options)
 	}
 	var ctx playwright.BrowserContext
@@ -618,7 +618,8 @@ func isRelevantReleaseWasmRequest(url string) bool {
 // the static release server. The app probes auth configuration even when the
 // release proof runs without a cloud auth service.
 func isExpectedReleaseWasmHTTPError(url string) bool {
-	return strings.HasSuffix(url, "/api/auth/config")
+	return strings.HasSuffix(url, "/api/auth/config") ||
+		(os.Getenv(localCDNEnv) == "1" && url == cdn.DefaultBaseURL+"/"+cdn.ProvisionedSpaceID+"/root.packedmsg")
 }
 
 // isExpectedReleaseWasmConsoleError recognizes the browser's resource error for
