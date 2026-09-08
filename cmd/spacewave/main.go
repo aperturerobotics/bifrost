@@ -222,7 +222,7 @@ func buildCliCommands(brokers *listenerBrokers) []cli_entrypoint.BuildCommandsFu
 			}
 			return getBus()
 		}
-		return cli.NewCliCommands(protectedGetBus, brokers.yield)
+		return addNativeProviderHarnessCommands(cli.NewCliCommands(protectedGetBus, brokers.yield), protectedGetBus)
 	}}
 }
 

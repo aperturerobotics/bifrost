@@ -41,7 +41,6 @@ func init() {
 	if nativeProviderHarnessEndpoint != "" {
 		configSets = append(configSets, nativeProviderHarnessConfigSet)
 	}
-	cliCommands = append(cliCommands, newNativeProviderHarnessCommand)
 }
 
 func nativeProviderHarnessConfigSet(
@@ -183,4 +182,11 @@ func newNativeProviderHarnessCommand(getBus func() cli_entrypoint.CliBus) []*ape
 			})
 		},
 	}}
+}
+
+func addNativeProviderHarnessCommands(
+	commands []*aperture_cli.Command,
+	getBus func() cli_entrypoint.CliBus,
+) []*aperture_cli.Command {
+	return append(commands, newNativeProviderHarnessCommand(getBus)...)
 }
