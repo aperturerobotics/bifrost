@@ -382,6 +382,7 @@ func (a *ProviderAccount) startInviteServer(
 		childBus,
 		lookupFn,
 		enrollFn,
+		nil,
 		[]string{localPeerID},
 	)
 	if err != nil {

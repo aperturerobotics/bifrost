@@ -18,6 +18,8 @@ service SessionResourceService {
   rpc WatchSyncStatus(WatchSyncStatusRequest) returns (stream WatchSyncStatusResponse);
   rpc WatchStorageStats(WatchStorageStatsRequest) returns (stream WatchStorageStatsResponse);
   rpc DeleteSpace(DeleteSpaceRequest) returns (DeleteSpaceResponse);
+  // LeaveSpace relinquishes native participation without deleting retained local data.
+  rpc LeaveSpace(LeaveSpaceRequest) returns (LeaveSpaceResponse);
   rpc RenameSpace(RenameSpaceRequest) returns (RenameSpaceResponse);
   rpc WatchLockState(WatchLockStateRequest) returns (stream WatchLockStateResponse);
   rpc SetLockMode(SetLockModeRequest) returns (SetLockModeResponse);
@@ -126,6 +128,16 @@ message DeleteSpaceRequest {
 
 // DeleteSpaceResponse is the response type for DeleteSpace.
 message DeleteSpaceResponse {}
+
+// LeaveSpaceRequest selects a Space already held by this Session's account.
+message LeaveSpaceRequest {
+  // SharedObjectId identifies the external shared object whose native grants are relinquished.
+  string shared_object_id = 1;
+}
+
+// LeaveSpaceResponse acknowledges the owner's committed removal and local revocation.
+message LeaveSpaceResponse {
+}
 
 // RenameSpaceRequest is the request type for RenameSpace.
 message RenameSpaceRequest {

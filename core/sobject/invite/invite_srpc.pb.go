@@ -8,13 +8,17 @@ import (
 	context "context"
 
 	srpc "github.com/aperturerobotics/starpc/srpc"
+	sobject "github.com/s4wave/spacewave/core/sobject"
 )
 
 type SRPCSOInviteServiceClient interface {
 	// SRPCClient returns the underlying SRPC client.
 	SRPCClient() srpc.Client
 
+	// AcceptInvite verifies admission proofs and issues native participant grants.
 	AcceptInvite(ctx context.Context, in *AcceptInviteRequest) (*AcceptInviteResponse, error)
+	// Leave verifies signed consent and returns the owner's committed removal proof.
+	Leave(ctx context.Context, in *sobject.SOLeaveRequest) (*sobject.SOLeaveResponse, error)
 }
 
 type srpcSOInviteServiceClient struct {
@@ -44,8 +48,20 @@ func (c *srpcSOInviteServiceClient) AcceptInvite(ctx context.Context, in *Accept
 	return out, nil
 }
 
+func (c *srpcSOInviteServiceClient) Leave(ctx context.Context, in *sobject.SOLeaveRequest) (*sobject.SOLeaveResponse, error) {
+	out := new(sobject.SOLeaveResponse)
+	err := c.cc.ExecCall(ctx, c.serviceID, "Leave", in, out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 type SRPCSOInviteServiceServer interface {
+	// AcceptInvite verifies admission proofs and issues native participant grants.
 	AcceptInvite(context.Context, *AcceptInviteRequest) (*AcceptInviteResponse, error)
+	// Leave verifies signed consent and returns the owner's committed removal proof.
+	Leave(context.Context, *sobject.SOLeaveRequest) (*sobject.SOLeaveResponse, error)
 }
 
 const SRPCSOInviteServiceServiceID = "sobject.invite.SOInviteService"
@@ -75,6 +91,7 @@ func (d *SRPCSOInviteServiceHandler) GetServiceID() string { return d.serviceID 
 func (SRPCSOInviteServiceHandler) GetMethodIDs() []string {
 	return []string{
 		"AcceptInvite",
+		"Leave",
 	}
 }
 
@@ -89,6 +106,8 @@ func (d *SRPCSOInviteServiceHandler) InvokeMethod(
 	switch methodID {
 	case "AcceptInvite":
 		return true, d.InvokeMethod_AcceptInvite(d.impl, strm)
+	case "Leave":
+		return true, d.InvokeMethod_Leave(d.impl, strm)
 	default:
 		return false, nil
 	}
@@ -106,10 +125,30 @@ func (SRPCSOInviteServiceHandler) InvokeMethod_AcceptInvite(impl SRPCSOInviteSer
 	return strm.MsgSend(out)
 }
 
+func (SRPCSOInviteServiceHandler) InvokeMethod_Leave(impl SRPCSOInviteServiceServer, strm srpc.Stream) error {
+	req := new(sobject.SOLeaveRequest)
+	if err := strm.MsgRecv(req); err != nil {
+		return err
+	}
+	out, err := impl.Leave(strm.Context(), req)
+	if err != nil {
+		return err
+	}
+	return strm.MsgSend(out)
+}
+
 type SRPCSOInviteService_AcceptInviteStream interface {
 	srpc.Stream
 }
 
 type srpcSOInviteService_AcceptInviteStream struct {
+	srpc.Stream
+}
+
+type SRPCSOInviteService_LeaveStream interface {
+	srpc.Stream
+}
+
+type srpcSOInviteService_LeaveStream struct {
 	srpc.Stream
 }

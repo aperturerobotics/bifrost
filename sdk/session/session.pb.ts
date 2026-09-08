@@ -874,6 +874,42 @@ export const DeleteSpaceResponse: MessageType<DeleteSpaceResponse> =
   )
 
 /**
+ * LeaveSpaceRequest selects a Space already held by this Session's account.
+ *
+ * @generated from message s4wave.session.LeaveSpaceRequest
+ */
+export interface LeaveSpaceRequest {
+  /**
+   * SharedObjectId identifies the external shared object whose native grants are relinquished.
+   *
+   * @generated from field: string shared_object_id = 1;
+   */
+  sharedObjectId?: string
+}
+
+export const LeaveSpaceRequest: MessageType<LeaveSpaceRequest> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 's4wave.session.LeaveSpaceRequest',
+    fields: [
+      { no: 1, name: 'shared_object_id', kind: 'scalar', T: ScalarType.STRING },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
+ * LeaveSpaceResponse acknowledges the owner's committed removal and local revocation.
+ *
+ * @generated from message s4wave.session.LeaveSpaceResponse
+ */
+export interface LeaveSpaceResponse {}
+
+export const LeaveSpaceResponse: MessageType<LeaveSpaceResponse> =
+  /* @__PURE__ */ createEmptyMessageType<LeaveSpaceResponse>(
+    's4wave.session.LeaveSpaceResponse',
+    true,
+  )
+
+/**
  * RenameSpaceRequest is the request type for RenameSpace.
  *
  * @generated from message s4wave.session.RenameSpaceRequest

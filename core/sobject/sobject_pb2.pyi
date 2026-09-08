@@ -281,15 +281,33 @@ class SharedObjectConfig(_message.Message):
     config_chain_seqno: int
     def __init__(self, participants: _Optional[_Iterable[_Union[SOParticipantConfig, _Mapping]]] = ..., consensus_mode: _Optional[_Union[SOConsensusMode, str]] = ..., config_chain_hash: _Optional[bytes] = ..., config_chain_seqno: _Optional[int] = ...) -> None: ...
 
+class SOLeaveRequest(_message.Message):
+    __slots__ = ("shared_object_id", "config_hash", "signatures")
+    SHARED_OBJECT_ID_FIELD_NUMBER: _ClassVar[int]
+    CONFIG_HASH_FIELD_NUMBER: _ClassVar[int]
+    SIGNATURES_FIELD_NUMBER: _ClassVar[int]
+    shared_object_id: str
+    config_hash: bytes
+    signatures: _containers.RepeatedCompositeFieldContainer[_peer_pb2.Signature]
+    def __init__(self, shared_object_id: _Optional[str] = ..., config_hash: _Optional[bytes] = ..., signatures: _Optional[_Iterable[_Union[_peer_pb2.Signature, _Mapping]]] = ...) -> None: ...
+
+class SOLeaveResponse(_message.Message):
+    __slots__ = ("changes",)
+    CHANGES_FIELD_NUMBER: _ClassVar[int]
+    changes: _containers.RepeatedCompositeFieldContainer[SOConfigChange]
+    def __init__(self, changes: _Optional[_Iterable[_Union[SOConfigChange, _Mapping]]] = ...) -> None: ...
+
 class SORevocationInfo(_message.Message):
-    __slots__ = ("reason", "timestamp", "nonce")
+    __slots__ = ("reason", "timestamp", "nonce", "leave_request_hash")
     REASON_FIELD_NUMBER: _ClassVar[int]
     TIMESTAMP_FIELD_NUMBER: _ClassVar[int]
     NONCE_FIELD_NUMBER: _ClassVar[int]
+    LEAVE_REQUEST_HASH_FIELD_NUMBER: _ClassVar[int]
     reason: SORevocationReason
     timestamp: _timestamp_pb2.Timestamp
     nonce: int
-    def __init__(self, reason: _Optional[_Union[SORevocationReason, str]] = ..., timestamp: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., nonce: _Optional[int] = ...) -> None: ...
+    leave_request_hash: bytes
+    def __init__(self, reason: _Optional[_Union[SORevocationReason, str]] = ..., timestamp: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., nonce: _Optional[int] = ..., leave_request_hash: _Optional[bytes] = ...) -> None: ...
 
 class SOConfigChange(_message.Message):
     __slots__ = ("config_seqno", "config", "signed_by", "signature", "previous_hash", "change_type", "revocation_info")

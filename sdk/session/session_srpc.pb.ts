@@ -41,6 +41,8 @@ import {
   GetTransferStatusResponse,
   JoinSpaceViaInviteRequest,
   JoinSpaceViaInviteResponse,
+  LeaveSpaceRequest,
+  LeaveSpaceResponse,
   ListSpaceInvitesRequest,
   ListSpaceInvitesResponse,
   ListSpaceParticipantsRequest,
@@ -168,6 +170,17 @@ export const SessionResourceServiceDefinition = {
       name: 'DeleteSpace',
       I: DeleteSpaceRequest,
       O: DeleteSpaceResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * LeaveSpace relinquishes native participation without deleting retained local data.
+     *
+     * @generated from rpc s4wave.session.SessionResourceService.LeaveSpace
+     */
+    LeaveSpace: {
+      name: 'LeaveSpace',
+      I: LeaveSpaceRequest,
+      O: LeaveSpaceResponse,
       kind: MethodKind.Unary,
     },
     /**
@@ -532,6 +545,16 @@ export interface SessionResourceService {
   ): Promise<DeleteSpaceResponse>
 
   /**
+   * LeaveSpace relinquishes native participation without deleting retained local data.
+   *
+   * @generated from rpc s4wave.session.SessionResourceService.LeaveSpace
+   */
+  LeaveSpace(
+    request: LeaveSpaceRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<LeaveSpaceResponse>
+
+  /**
    * @generated from rpc s4wave.session.SessionResourceService.RenameSpace
    */
   RenameSpace(
@@ -867,6 +890,17 @@ export interface SessionResourceServiceHandler {
   ): Promise<DeleteSpaceResponse>
 
   /**
+   * LeaveSpace relinquishes native participation without deleting retained local data.
+   *
+   * @generated from rpc s4wave.session.SessionResourceService.LeaveSpace
+   */
+  LeaveSpace(
+    request: LeaveSpaceRequest,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): Promise<LeaveSpaceResponse>
+
+  /**
    * @generated from rpc s4wave.session.SessionResourceService.RenameSpace
    */
   RenameSpace(
@@ -1174,6 +1208,7 @@ export class SessionResourceServiceClient implements SessionResourceService {
     this.WatchSyncStatus = this.WatchSyncStatus.bind(this)
     this.WatchStorageStats = this.WatchStorageStats.bind(this)
     this.DeleteSpace = this.DeleteSpace.bind(this)
+    this.LeaveSpace = this.LeaveSpace.bind(this)
     this.RenameSpace = this.RenameSpace.bind(this)
     this.WatchLockState = this.WatchLockState.bind(this)
     this.SetLockMode = this.SetLockMode.bind(this)
@@ -1341,6 +1376,25 @@ export class SessionResourceServiceClient implements SessionResourceService {
       abortSignal || undefined,
     )
     return DeleteSpaceResponse.fromBinary(result)
+  }
+
+  /**
+   * LeaveSpace relinquishes native participation without deleting retained local data.
+   *
+   * @generated from rpc s4wave.session.SessionResourceService.LeaveSpace
+   */
+  async LeaveSpace(
+    request: LeaveSpaceRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<LeaveSpaceResponse> {
+    const requestMsg = LeaveSpaceRequest.create(request)
+    const result = await this.rpc.request(
+      this.service,
+      SessionResourceServiceDefinition.methods.LeaveSpace.name,
+      LeaveSpaceRequest.toBinary(requestMsg),
+      abortSignal || undefined,
+    )
+    return LeaveSpaceResponse.fromBinary(result)
   }
 
   /**

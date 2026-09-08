@@ -11,8 +11,8 @@ import {
 } from '@aptre/protobuf-es-lite/message'
 import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
 import { Signature } from '../../net/peer/peer.pb.js'
+import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
 import { Config } from '../../db/block/transform/transform.pb.js'
 
 export const protobufPackage = 'sobject'
@@ -1069,6 +1069,7 @@ export const SOParticipantConfig: MessageType<SOParticipantConfig> =
 export interface SharedObjectConfig {
   /**
    * Participants is the list of shared object participants.
+   * An empty audience with a retained signed history head represents final departure.
    *
    * @generated from field: repeated sobject.SOParticipantConfig participants = 1;
    */
@@ -1125,6 +1126,49 @@ export const SharedObjectConfig: MessageType<SharedObjectConfig> =
   })
 
 /**
+ * SOLeaveRequest relinquishes only the identities that sign this exact object and configuration head.
+ *
+ * @generated from message sobject.SOLeaveRequest
+ */
+export interface SOLeaveRequest {
+  /**
+   * SharedObjectId is the external shared object whose participation is relinquished.
+   *
+   * @generated from field: string shared_object_id = 1;
+   */
+  sharedObjectId?: string
+  /**
+   * ConfigHash binds consent to held authority so an old request cannot undo a later rejoin.
+   *
+   * @generated from field: bytes config_hash = 2;
+   */
+  configHash?: Uint8Array
+  /**
+   * Signatures prove each departing identity; each signs this message with Signatures cleared.
+   *
+   * @generated from field: repeated peer.Signature signatures = 3;
+   */
+  signatures?: Signature[]
+}
+
+export const SOLeaveRequest: MessageType<SOLeaveRequest> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'sobject.SOLeaveRequest',
+    fields: [
+      { no: 1, name: 'shared_object_id', kind: 'scalar', T: ScalarType.STRING },
+      { no: 2, name: 'config_hash', kind: 'scalar', T: ScalarType.BYTES },
+      {
+        no: 3,
+        name: 'signatures',
+        kind: 'message',
+        T: () => Signature,
+        repeated: true,
+      },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
  * SORevocationInfo contains metadata about why a participant was removed.
  *
  * @generated from message sobject.SORevocationInfo
@@ -1148,6 +1192,12 @@ export interface SORevocationInfo {
    * @generated from field: uint64 nonce = 3;
    */
   nonce?: bigint
+  /**
+   * LeaveRequestHash identifies the exact signed consent acknowledged by this removal.
+   *
+   * @generated from field: bytes leave_request_hash = 4;
+   */
+  leaveRequestHash?: Uint8Array
 }
 
 export const SORevocationInfo: MessageType<SORevocationInfo> =
@@ -1157,6 +1207,12 @@ export const SORevocationInfo: MessageType<SORevocationInfo> =
       { no: 1, name: 'reason', kind: 'enum', T: SORevocationReason_Enum },
       { no: 2, name: 'timestamp', kind: 'message', T: () => Timestamp },
       { no: 3, name: 'nonce', kind: 'scalar', T: ScalarType.UINT64 },
+      {
+        no: 4,
+        name: 'leave_request_hash',
+        kind: 'scalar',
+        T: ScalarType.BYTES,
+      },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })
@@ -1227,6 +1283,35 @@ export const SOConfigChange: MessageType<SOConfigChange> =
         name: 'revocation_info',
         kind: 'message',
         T: () => SORevocationInfo,
+      },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
+ * SOLeaveResponse proves the owner committed removal, without returning channel data or root grants.
+ *
+ * @generated from message sobject.SOLeaveResponse
+ */
+export interface SOLeaveResponse {
+  /**
+   * Changes is the signed configuration suffix from the request head through the first completed removal.
+   *
+   * @generated from field: repeated sobject.SOConfigChange changes = 1;
+   */
+  changes?: SOConfigChange[]
+}
+
+export const SOLeaveResponse: MessageType<SOLeaveResponse> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'sobject.SOLeaveResponse',
+    fields: [
+      {
+        no: 1,
+        name: 'changes',
+        kind: 'message',
+        T: () => SOConfigChange,
+        repeated: true,
       },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,

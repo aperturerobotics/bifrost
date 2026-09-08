@@ -50,7 +50,7 @@ type SharedObject interface {
 	// This state store is stored along with the local SharedObject state.
 	AccessLocalStateStore(ctx context.Context, storeID string, released func()) (kvtx.Store, func(), error)
 
-	// GetSharedObjectState returns an snapshot of the shared object state.
+	// GetSharedObjectState returns a snapshot of the shared object state.
 	GetSharedObjectState(ctx context.Context) (SharedObjectStateSnapshot, error)
 
 	// AccessSharedObjectState adds a reference to the state and returns the state container.
@@ -66,7 +66,7 @@ type SharedObject interface {
 	// Returns the current state nonce (greater than or equal to the nonce when the op was applied).
 	// After ClearOperation has been called, this will return success even for failed ops!
 	// If the operation was rejected, returns 0, true, error.
-	// Any other error returns 0, false, error
+	// Any other error returns 0, false, error.
 	WaitOperation(ctx context.Context, localID string) (uint64, bool, error)
 
 	// ClearOperationResult clears the operation state.
@@ -128,14 +128,8 @@ type InviteMutator interface {
 // AccessLocalStateStoreFunc implements AccessLocalStateStore.
 type AccessLocalStateStoreFunc func(ctx context.Context, storeID string, released func()) (kvtx.Store, func(), error)
 
-// NewLocalStateStoreRefcount constructs a refcount with the LocalStateStore access func.
-//
-// ctx, target and targetErr can be empty
-//
-// keepUnref sets if the value should be kept if there are zero references.
-// resolver is the resolver function
-// returns the value and a release function
-// call the released callback if the value is no longer valid.
+// NewLocalStateStoreRefcount retains the selected local store while references remain.
+// The access callback supplies the store and its release function.
 func NewLocalStateStoreRefcount(
 	storeID string,
 	access AccessLocalStateStoreFunc,
@@ -145,15 +139,17 @@ func NewLocalStateStoreRefcount(
 	})
 }
 
-// Validate checks if the SharedObjectConfig is valid.
+// Validate checks bootstrap structure or a retained configuration, including a terminal empty audience.
 func (c *SharedObjectConfig) Validate() error {
-	if len(c.GetParticipants()) == 0 {
+	// A signed history head can retain the final departure; an empty bootstrap cannot grant authority.
+	if len(c.GetParticipants()) == 0 && len(c.GetConfigChainHash()) != 32 {
 		return ErrEmptyParticipants
 	}
 	if len(c.GetParticipants()) > MaxParticipants {
 		return ErrMaxCountExceeded
 	}
 
+	// Each remaining peer has one unambiguous role in this configuration.
 	seenPeerIDs := make(map[string]struct{})
 	for i, participant := range c.GetParticipants() {
 		if err := participant.Validate(); err != nil {
@@ -429,6 +425,7 @@ func (r *SORoot) updateAccountNonce(peerID string, nonce uint64) {
 	})
 }
 
+// Validate checks the root envelope, ordered participant nonces, and signature structure.
 func (r *SORoot) Validate() error {
 	if r.GetInnerSeqno() == 0 {
 		return ErrInvalidSeqno
@@ -491,7 +488,7 @@ func (r *SORoot) ApplyUpdatedState(privKey crypto.PrivKey, sharedObjectID string
 	return r.SignInnerData(privKey, sharedObjectID, nextSeqno, hashType)
 }
 
-// BuildSignatureData builds the signature data that includes both inner and account nonces
+// BuildSignatureData builds the signature data that includes both inner and account nonces.
 func (r *SORoot) BuildSignatureData() ([]byte, error) {
 	var signData []byte
 	signData = append(signData, r.GetInner()...)

@@ -90,6 +90,13 @@ func JoinViaInvite(
 	}, nil
 }
 
+// LeaveSharedObject sends signed departure consent to the authenticated native owner.
+// The caller verifies the returned configuration proof before retiring its local access.
+func LeaveSharedObject(ctx context.Context, childBus bus.Bus, localPeerID, ownerPeerID peer.ID, request *sobject.SOLeaveRequest) (*sobject.SOLeaveResponse, error) {
+	open := stream_srpc.NewOpenStreamFunc(childBus, ProtocolID, localPeerID, ownerPeerID, 0)
+	return NewSRPCSOInviteServiceClient(srpc.NewClient(open)).Leave(ctx, request)
+}
+
 // BuildJoinResponse constructs and signs a SOJoinResponse for an invite.
 // The invitee calls this with their private key and the invite details.
 func BuildJoinResponse(inviteID string, privKey crypto.PrivKey) (*sobject.SOJoinResponse, error) {
