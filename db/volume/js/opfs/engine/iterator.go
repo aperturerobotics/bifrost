@@ -9,7 +9,7 @@ import (
 )
 
 // iterator merges one bounded committed partition with bounded pending changes.
-// No file protection is held while the caller processes an entry.
+// Its transaction retains file protection until Commit or Discard.
 type iterator struct {
 	// ctx controls storage reads and iteration cancellation.
 	ctx context.Context
@@ -191,17 +191,13 @@ func (i *iterator) advance() bool {
 	}
 }
 
-// fill copies the next partition before releasing all file protection.
+// fill copies the next partition from the transaction's committed snapshot.
 func (i *iterator) fill() error {
 	if len(i.committed) != 0 || i.exhausted {
 		return nil
 	}
-	s, err := i.tx.engine.snapshot(i.ctx)
+	s, err := i.tx.readSnapshot(i.ctx)
 	if err != nil {
-		return err
-	}
-	defer s.release()
-	if err := i.tx.pin(i.tx.revision(s.root)); err != nil {
 		return err
 	}
 	records, err := s.seekEntries(i.ctx, i.boundary, i.exclusive, i.reverse)
