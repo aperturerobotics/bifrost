@@ -12,10 +12,9 @@ import (
 
 // getBlock is the top-level engine read path.
 //
-// Fast path: block catalog hit for a verified/published record returns
-// immediately from resident spans. A record still verifying causes the
-// caller to wait on its readyCh. A failed record is recoverable; the record
-// is unpublished so the caller falls through to a fresh fetch.
+// Catalog hits and misses follow the same verifyBeforeServe policy. Default
+// readers use resident bytes while background verification and writeback run.
+// Opt-in readers wait on readyCh. Failed records are removed so reads can retry.
 //
 // Slow path: load the kvfile index (via the shared ReaderAt, so trailer
 // bytes land in the span store), find the target entry, compute the
@@ -50,6 +49,12 @@ retry:
 				invalidated = true
 				failed = true
 				broadcast()
+			case blockStateVerifying:
+				if e.verifyBeforeServe {
+					readyCh = rec.readyCh
+					return
+				}
+				fallthrough
 			case blockStateVerified, blockStatePublished:
 				data, readErr = rec.readBytes()
 				if readErr != nil {
