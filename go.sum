@@ -30,10 +30,6 @@ github.com/aperturerobotics/cli v1.1.0 h1:7a+YRC+EY3npAnTzhHV5gLCiw91KS0Ts3XwLIL
 github.com/aperturerobotics/cli v1.1.0/go.mod h1:M7BFP9wow5ytTzMyJQOOO991fGfsUqdTI7gGEsHfTQ8=
 github.com/aperturerobotics/common v0.35.4 h1:MQgSHHIad71KIwV0pFqNTKm47QW93/kWJ4hFNwOyJNY=
 github.com/aperturerobotics/common v0.35.4/go.mod h1:eqVzmvTuSCoS31uwheXjILMcfx+jhl3VClGCT5ZxruI=
-github.com/aperturerobotics/controllerbus v0.53.5-0.20260824183849-02413eacc3de h1:FsRiEw05cnzDsNdejdIBZSmoheio7EcY0iubWbQkXpM=
-github.com/aperturerobotics/controllerbus v0.53.5-0.20260824183849-02413eacc3de/go.mod h1:rWdcZCKa8cT7kJAHERzrIq2D/qmBCAGGYkbvBKfjjH0=
-github.com/aperturerobotics/controllerbus v0.53.5-0.20260908122515-93b13ce4474b h1:Yl3CmrfjRCVKDz4KClE+Nu2E3RA0iQHUkjHOq/EwWTo=
-github.com/aperturerobotics/controllerbus v0.53.5-0.20260908122515-93b13ce4474b/go.mod h1:rWdcZCKa8cT7kJAHERzrIq2D/qmBCAGGYkbvBKfjjH0=
 github.com/aperturerobotics/controllerbus v0.53.5-0.20260908122836-c1afcdc3351c h1:LMdjiJSGcJH0kgF1+crg3BDz3BF2cIP6yecY54nGSRk=
 github.com/aperturerobotics/controllerbus v0.53.5-0.20260908122836-c1afcdc3351c/go.mod h1:rWdcZCKa8cT7kJAHERzrIq2D/qmBCAGGYkbvBKfjjH0=
 github.com/aperturerobotics/cpp-yamux v0.0.0-20260223122921-58339cfd0e5d h1:TVae+YDmMmtutvNKC5d64yXx5Woa3QIq3Ndn11J1IPQ=
@@ -317,12 +313,8 @@ github.com/restic/chunker v0.5.0/go.mod h1:z0cH2BejpW636LXw0R/BGyv+Ey8+m9QGiOanD
 github.com/rogpeppe/go-internal v1.9.0/go.mod h1:WtVeX8xhTBvf0smdhujwtBcq4Qrzq/fJaraNFVN+nFs=
 github.com/rogpeppe/go-internal v1.16.0 h1:O9DK+vNMDVGLr2BeZqmpLeMjiMNkuXfcqntWbZV6S5g=
 github.com/rogpeppe/go-internal v1.16.0/go.mod h1:DrUVZyrJU+txYW5/1kwtXQSMFio52ZOxX7yM1VHvnxs=
-github.com/s4wave/goscript v0.2.32-0.20260908073932-9f5f25f43337 h1:OUddcu8PqYQJHdZc5xCGuNsl3brlLqr+H9NkX+C8X3w=
-github.com/s4wave/goscript v0.2.32-0.20260908073932-9f5f25f43337/go.mod h1:2PkLvl4v5IXRzAh+HpOQymrS7Z6mNmAOKY89EoAhv8A=
-github.com/s4wave/goscript v0.2.32-0.20260908112817-fcca83a8b87a h1:6cP0P4CLjfr5Lrnd3fcuU+A0Z2WcbYCb9WVHKiv4fK0=
-github.com/s4wave/goscript v0.2.32-0.20260908112817-fcca83a8b87a/go.mod h1:2PkLvl4v5IXRzAh+HpOQymrS7Z6mNmAOKY89EoAhv8A=
-github.com/s4wave/goscript v0.2.32-0.20260908122638-6b25246d6975 h1:DxWcftNJ9NUwjbmRA0KFmEKKUCxFjo7NcdC7WEosKCc=
-github.com/s4wave/goscript v0.2.32-0.20260908122638-6b25246d6975/go.mod h1:2PkLvl4v5IXRzAh+HpOQymrS7Z6mNmAOKY89EoAhv8A=
+github.com/s4wave/goscript v0.2.32-0.20260908173633-720c7077ae83 h1:Xts0uKIfViTXzHlOkMRjUnnOXLG3TJjssUenl0Nn+TE=
+github.com/s4wave/goscript v0.2.32-0.20260908173633-720c7077ae83/go.mod h1:2PkLvl4v5IXRzAh+HpOQymrS7Z6mNmAOKY89EoAhv8A=
 github.com/sasha-s/go-deadlock v0.3.9 h1:fiaT9rB7g5sr5ddNZvlwheclN9IP86eFW9WgqlEQV+w=
 github.com/sasha-s/go-deadlock v0.3.9/go.mod h1:KuZj51ZFmx42q/mPaYbRk0P1xcwe697zsJKE03vD4/Y=
 github.com/satori/go.uuid v1.2.0 h1:0uYX9dsZ2yD7q2RtLRtPSdGDWzjeM3TbMJP9utgA0ww=
@@ -389,8 +381,6 @@ golang.org/x/exp v0.0.0-20260824195058-e88cd73687aa/go.mod h1:zeBbvyFKDaLwa7CH/z
 golang.org/x/lint v0.0.0-20181026193005-c67002cb31c3/go.mod h1:UVdnD1Gm6xHRNCYTkRU2/jEulfH38KcIWyp/GAMgvoE=
 golang.org/x/lint v0.0.0-20190227174305-5b3e6a55c961/go.mod h1:wehouNa3lNwaWXcvxsM5YxQ5yQlVC4a0KAMCusXpPoU=
 golang.org/x/lint v0.0.0-20190313153728-d0100b6bd8b3/go.mod h1:6SW0HCj/g11FgYtHlgUYUwCkIfeOF89ocIRzGO/8vkc=
-golang.org/x/mod v0.40.0 h1:hUv+3cXcdRHz08UmSiOob7sadHig73uo5bkXxQ/tvUs=
-golang.org/x/mod v0.40.0/go.mod h1:0/weTWkPWGBikyTWAX3dkjVztMmBA5hM0DH6BElSupE=
 golang.org/x/mod v0.41.0 h1:qJmnOUb4YB+FsEuM3HcWucdZASCPGhsX6uljO6pog0c=
 golang.org/x/mod v0.41.0/go.mod h1:Ek9pY8RKWXwsWvd3rQiHYtMqkjSUV+s1Rj7j4H5Ur6o=
 golang.org/x/net v0.0.0-20180724234803-3673e40ba225/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=
