@@ -6,6 +6,7 @@ import {
 
 export interface WebViewRootAssetResult {
   scriptPath: string
+  // status is the observed HTTP code, or zero when only import completion is known.
   status: number
   ok: boolean
   fetchSource?: string
@@ -56,7 +57,9 @@ const moduleLoadPromiseByImportPath = new Map<string, Promise<unknown>>()
 // webViewDownloadLabel derives a readable plugin name from a root asset path
 // such as "/b/pa/spacewave-app/v/b/fe/module.mjs" -> "spacewave-app".
 function webViewDownloadLabel(scriptPath: string): string {
-  const afterPrefix = scriptPath.slice(scriptPath.indexOf(rootPluginAssetPrefix) + rootPluginAssetPrefix.length)
+  const afterPrefix = scriptPath.slice(
+    scriptPath.indexOf(rootPluginAssetPrefix) + rootPluginAssetPrefix.length,
+  )
   const pluginId = afterPrefix.split('/')[0]
   return pluginId || 'Plugin'
 }
@@ -106,7 +109,7 @@ function classifyRootAssetResponse(response: Response): string {
 
 async function readBodyPrefix(response: Response): Promise<string | undefined> {
   try {
-    return (await response.clone().text()).slice(0, 300)
+    return (await response.text()).slice(0, 300)
   } catch {
     return undefined
   }
@@ -198,16 +201,36 @@ export function getWebViewRootAssetLoadError(
   return error instanceof WebViewRootAssetLoadError ? error : undefined
 }
 
+// fetchWebViewRootAssetResult records one bounded diagnostic probe.
 export async function fetchWebViewRootAssetResult(
   scriptPath: string,
   fetchRootAsset: typeof fetch = fetch,
   fetchDeadlineMillis: number = rootAssetFetchDeadlineMillis,
 ): Promise<WebViewRootAssetResult> {
-  const response = await withDeadline(
-    fetchRootAsset(scriptPath, { cache: 'no-store' }),
-    fetchDeadlineMillis,
-    `root asset fetch ${scriptPath}`,
-  )
+  const abort = new AbortController()
+  try {
+    const result = await withDeadline(
+      readWebViewRootAssetResult(scriptPath, fetchRootAsset, abort.signal),
+      fetchDeadlineMillis,
+      `root asset fetch ${scriptPath}`,
+    )
+    recordWebViewRootAssetResult(result)
+    return result
+  } finally {
+    abort.abort()
+  }
+}
+
+// readWebViewRootAssetResult classifies the response without publishing partial results.
+async function readWebViewRootAssetResult(
+  scriptPath: string,
+  fetchRootAsset: typeof fetch,
+  signal: AbortSignal,
+): Promise<WebViewRootAssetResult> {
+  const response = await fetchRootAsset(scriptPath, {
+    cache: 'no-store',
+    signal,
+  })
   const classification = classifyRootAssetResponse(response)
   const result: WebViewRootAssetResult = {
     scriptPath,
@@ -229,7 +252,6 @@ export async function fetchWebViewRootAssetResult(
     await closeResponseBody(response)
   }
 
-  recordWebViewRootAssetResult(result)
   return result
 }
 
@@ -308,63 +330,72 @@ export function loadWebViewScriptModule<T>(
   return promise
 }
 
+// loadWebViewScriptModuleUncached imports once and probes HTTP details only on failure.
 async function loadWebViewScriptModuleUncached<T>(
   scriptPath: string,
   moduleImportPath: string,
   options: LoadWebViewScriptModuleOptions<T>,
 ): Promise<T> {
   const isRootPluginAsset = isWebViewRootPluginAssetPath(scriptPath)
-  // The browser's native dynamic import() exposes no byte progress, so a plugin
-  // module load is tracked at honest started/completed granularity (no faked
-  // percentage) rather than a smooth bar. The boot download registry owns the
-  // per-plugin accounting; the loading screen renders it.
+  // Native imports expose completion but no byte progress.
   if (isRootPluginAsset) {
     beginBootDownload(scriptPath, webViewDownloadLabel(scriptPath))
   }
-  let rootAsset: WebViewRootAssetResult | undefined
-  if (isRootPluginAsset) {
-    try {
-      rootAsset = await fetchWebViewRootAssetResult(
-        scriptPath,
-        options.fetchRootAsset,
-        options.fetchDeadlineMillis,
-      )
-    } catch (error) {
-      // A wedged or failed fetch never reaches the response classification
-      // below, so report the boot download as failed here.
-      failBootDownload(scriptPath, serializeImportError(error).message)
-      throw error
-    }
-  }
-  if (rootAsset && (!rootAsset.ok || rootAsset.classification !== 'live')) {
-    if (isRootPluginAsset) {
-      failBootDownload(scriptPath, rootAsset.classification)
-    }
-    throw new WebViewRootAssetLoadError(rootAsset)
-  }
 
   const importModule = options.importModule ?? importWebViewScriptModule<T>
+  const deadlineMillis =
+    options.importDeadlineMillis ?? moduleImportDeadlineMillis
+  const startedAt = performance.now()
   try {
     const module = await withDeadline(
       importModule(moduleImportPath),
-      options.importDeadlineMillis ?? moduleImportDeadlineMillis,
+      deadlineMillis,
       `module import ${moduleImportPath}`,
     )
     recordModuleImportSuccess(scriptPath)
     if (isRootPluginAsset) {
+      // Import completion proves usability without inventing an HTTP response.
+      recordWebViewRootAssetResult({
+        scriptPath,
+        status: 0,
+        ok: true,
+        classification: 'imported',
+      })
       completeBootDownload(scriptPath)
     }
     return module
   } catch (error) {
-    recordModuleImportFailure(scriptPath)
+    let failure = error
+    let rootAsset: WebViewRootAssetResult | undefined
     if (isRootPluginAsset) {
-      failBootDownload(scriptPath, serializeImportError(error).message)
+      failBootDownload(scriptPath, serializeImportError(failure).message)
+      // Diagnostics share the import deadline rather than extending a failed load.
+      const remaining = deadlineMillis - (performance.now() - startedAt)
+      if (remaining > 0) {
+        try {
+          rootAsset = await fetchWebViewRootAssetResult(
+            scriptPath,
+            options.fetchRootAsset,
+            Math.min(
+              options.fetchDeadlineMillis ?? rootAssetFetchDeadlineMillis,
+              remaining,
+            ),
+          )
+          if (!rootAsset.ok || rootAsset.classification !== 'live') {
+            failure = new WebViewRootAssetLoadError(rootAsset)
+          }
+        } catch {
+          // A failed diagnostic probe must preserve the original import error.
+        }
+      }
+      failBootDownload(scriptPath, serializeImportError(failure).message)
     }
+    recordModuleImportFailure(scriptPath)
     recordWebViewModuleImportError({
       scriptPath,
-      ...serializeImportError(error),
+      ...serializeImportError(failure),
       rootAsset,
     })
-    throw error
+    throw failure
   }
 }

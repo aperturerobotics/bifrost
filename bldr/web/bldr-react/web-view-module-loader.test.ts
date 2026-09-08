@@ -36,26 +36,32 @@ function deferred<T>(): {
 }
 
 describe('WebView boot deadlines', () => {
-  it('fails the boot download when the root asset fetch never settles', async () => {
-    const fetchRootAsset = vi.fn(
+  it('preserves the import failure when its diagnostic probe never settles', async () => {
+    const fetchRootAsset = vi.fn<typeof fetch>(
       () => new Promise<Response>(() => undefined),
     )
-    const importModule = vi.fn(async () => ({ default: 'module' }))
+    const importFailure = new Error('module evaluation failed')
+    const importModule = vi.fn(async () => {
+      throw importFailure
+    })
 
     await expect(
       loadWebViewScriptModule('/b/pa/spacewave-app/v/app/App.mjs', {
         fetchRootAsset,
         importModule,
         fetchDeadlineMillis: 10,
+        importDeadlineMillis: 10,
       }),
-    ).rejects.toThrow('root asset fetch')
+    ).rejects.toBe(importFailure)
 
     const downloads = readBootDownloads()
     const failed = downloads.find((download) => download.state === 'error')
-    expect(failed?.error).toContain('timed out')
-    expect(
-      globalThis.__bldrWebViewModuleImportError,
-    ).toBeUndefined()
+    expect(failed?.error).toContain('module evaluation failed')
+    expect(fetchRootAsset).toHaveBeenCalledOnce()
+    expect(fetchRootAsset.mock.calls[0]?.[1]?.signal?.aborted).toBe(true)
+    expect(globalThis.__bldrWebViewModuleImportError?.message).toBe(
+      importFailure.message,
+    )
   })
 
   it('fails the boot download when the module import never settles', async () => {
@@ -65,9 +71,7 @@ describe('WebView boot deadlines', () => {
         'X-Bldr-Plugin-Asset-Fetch-Result': 'live',
       }),
     )
-    const importModule = vi.fn(
-      () => new Promise<unknown>(() => undefined),
-    )
+    const importModule = vi.fn(() => new Promise<unknown>(() => undefined))
 
     await expect(
       loadWebViewScriptModule('/b/pa/spacewave-app/v/app/App.mjs', {
@@ -102,7 +106,7 @@ describe('WebView root module loader', () => {
     expect(importModule).toHaveBeenCalledWith('/component.js')
   })
 
-  it('reports a missing root plugin asset before module import', async () => {
+  it('reports a missing root plugin asset after module import fails', async () => {
     const fetchRootAsset = vi.fn(async () =>
       pluginAssetResponse(404, 'missing plugin asset body', {
         'content-type': 'text/plain',
@@ -111,7 +115,9 @@ describe('WebView root module loader', () => {
         'X-Bldr-Plugin-Asset-Fetch-Result': 'missing',
       }),
     )
-    const importModule = vi.fn(async () => ({ default: 'module' }))
+    const importModule = vi.fn(async () => {
+      throw new TypeError('Failed to fetch dynamically imported module')
+    })
 
     await expect(
       loadWebViewScriptModule('/b/pa/spacewave-app/v/app/App-old.mjs', {
@@ -135,9 +141,12 @@ describe('WebView root module loader', () => {
 
     expect(fetchRootAsset).toHaveBeenCalledWith(
       '/b/pa/spacewave-app/v/app/App-old.mjs',
-      { cache: 'no-store' },
+      expect.objectContaining({
+        cache: 'no-store',
+        signal: expect.any(AbortSignal),
+      }),
     )
-    expect(importModule).not.toHaveBeenCalled()
+    expect(importModule).toHaveBeenCalledOnce()
   })
 
   it('preserves nested import and module evaluation failures after a live root asset', async () => {
@@ -255,11 +264,10 @@ describe('WebView root module loader', () => {
 
   it('coalesces concurrent root plugin module loads for the same retry nonce', async () => {
     const scriptPath = '/b/pa/spacewave-app/v/app/App-coalesce-success.mjs'
-    const rootAsset = deferred<Response>()
     const importedModule = { default: 'component' }
     const moduleLoad = deferred<typeof importedModule>()
     const importStarted = deferred<void>()
-    const fetchRootAsset = vi.fn(async () => await rootAsset.promise)
+    const fetchRootAsset = vi.fn<typeof fetch>()
     const importModule = vi.fn(() => {
       importStarted.resolve()
       return moduleLoad.promise
@@ -274,16 +282,9 @@ describe('WebView root module loader', () => {
       importModule,
     })
 
-    expect(fetchRootAsset).toHaveBeenCalledOnce()
-    expect(importModule).not.toHaveBeenCalled()
+    expect(fetchRootAsset).not.toHaveBeenCalled()
+    expect(importModule).toHaveBeenCalledOnce()
 
-    rootAsset.resolve(
-      pluginAssetResponse(200, 'export default function App() {}', {
-        'content-type': 'text/javascript',
-        'X-Bldr-Fetch-Source': 'plugin-assets',
-        'X-Bldr-Plugin-Asset-Fetch-Result': 'live',
-      }),
-    )
     await importStarted.promise
 
     expect(importModule).toHaveBeenCalledOnce()
@@ -336,7 +337,7 @@ describe('WebView root module loader', () => {
 
       await firstImportStarted.promise
 
-      expect(fetchRootAsset).toHaveBeenCalledOnce()
+      expect(fetchRootAsset).not.toHaveBeenCalled()
       expect(importModule).toHaveBeenCalledOnce()
       expect(importModule).toHaveBeenNthCalledWith(1, scriptPath)
 
@@ -362,7 +363,7 @@ describe('WebView root module loader', () => {
         }),
       ).resolves.toBe(retryModule)
 
-      expect(fetchRootAsset).toHaveBeenCalledTimes(2)
+      expect(fetchRootAsset).toHaveBeenCalledOnce()
       expect(importModule).toHaveBeenCalledTimes(2)
       expect(importModule).toHaveBeenNthCalledWith(
         2,
@@ -374,7 +375,7 @@ describe('WebView root module loader', () => {
     }
   })
 
-  it('imports the module after a live root plugin asset result', async () => {
+  it('imports a root plugin module without a diagnostic probe', async () => {
     const fetchRootAsset = vi.fn(async () =>
       pluginAssetResponse(200, 'export default function App() {}', {
         'content-type': 'text/javascript',
@@ -391,7 +392,12 @@ describe('WebView root module loader', () => {
       }),
     ).resolves.toEqual({ default: 'component' })
 
-    expect(fetchRootAsset).toHaveBeenCalledOnce()
+    expect(fetchRootAsset).not.toHaveBeenCalled()
+    expect(globalThis.__bldrWebViewRootAssetStatus).toMatchObject({
+      status: 0,
+      ok: true,
+      classification: 'imported',
+    })
     expect(importModule).toHaveBeenCalledWith(
       '/b/pa/spacewave-app/v/app/App-live.mjs',
     )
@@ -416,13 +422,15 @@ describe('WebView root module loader', () => {
     })
   })
 
-  it('rejects bypassed root plugin asset responses before module import', async () => {
+  it('rejects bypassed root plugin asset responses after module import fails', async () => {
     const fetchRootAsset = vi.fn(async () =>
       pluginAssetResponse(200, '<!doctype html><title>loading</title>', {
         'content-type': 'text/html',
       }),
     )
-    const importModule = vi.fn(async () => ({ default: 'module' }))
+    const importModule = vi.fn(async () => {
+      throw new TypeError('Failed to fetch dynamically imported module')
+    })
 
     await expect(
       loadWebViewScriptModule('/b/pa/spacewave-app/v/app/App-bypass.mjs', {
@@ -441,7 +449,7 @@ describe('WebView root module loader', () => {
     })
 
     expect(fetchRootAsset).toHaveBeenCalledOnce()
-    expect(importModule).not.toHaveBeenCalled()
+    expect(importModule).toHaveBeenCalledOnce()
   })
 
   it('records the latest typed root asset result for status readers', async () => {
