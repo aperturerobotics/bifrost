@@ -27,15 +27,20 @@ import (
 
 // Session implements the session interface attached to sessionTracker.
 type Session struct {
-	tkr      *sessionTracker
+	// tkr links this handle to its mounted Session lifecycle.
+	tkr *sessionTracker
+	// objStore persists Session lock material and local indexes.
 	objStore object.ObjectStore
 	// stateAtomMgr manages shared session state atom stores.
 	stateAtomMgr *resource_state.StateAtomManager
 	// stateAtomStoreIndex tracks known session state atom store ids.
 	stateAtomStoreIndex *session.StateAtomStoreIndex
-	sessionPriv         crypto.PrivKey
-	sessionPid          peer.ID
-	storageKey          [32]byte
+	// sessionPriv signs as this Session and is nil while the Session is locked.
+	sessionPriv crypto.PrivKey
+	// sessionPid identifies sessionPriv on transports and cloud APIs.
+	sessionPid peer.ID
+	// storageKey encrypts auto-unlock material in objStore.
+	storageKey [32]byte
 
 	// lifecycleCtx owns direct transport mechanics for this mounted Session.
 	lifecycleCtx context.Context
@@ -82,10 +87,13 @@ func (s *Session) GetProviderAccount() provider.ProviderAccount {
 
 // AccessStateAtomStore gets or creates a shared session state atom store.
 func (s *Session) AccessStateAtomStore(ctx context.Context, storeID string) (resource_state.StateAtomStore, error) {
+	// Resolve the shared state atom store through its lifecycle manager.
 	store, err := s.stateAtomMgr.GetOrCreateStore(ctx, storeID)
 	if err != nil {
 		return nil, err
 	}
+
+	// Record the store ID in the Session-local discovery index.
 	s.stateAtomStoreIndex.TrackStoreID(storeID)
 	return store, nil
 }
@@ -105,10 +113,13 @@ func (s *Session) WatchStateAtomStoreIDs(
 
 // GetLockState returns the current lock mode and whether the session is locked.
 func (s *Session) GetLockState(ctx context.Context) (session.SessionLockMode, bool, error) {
+	// Read the persisted mode so the result reflects durable lock state.
 	mode, err := session_lock.ReadLockMode(ctx, s.objStore, s.tkr.id)
 	if err != nil {
 		return 0, false, err
 	}
+
+	// Derive the active lock state from the in-memory private key.
 	locked := s.sessionPriv == nil
 	return session.SessionLockMode(mode), locked, nil
 }
@@ -163,6 +174,7 @@ func (s *Session) SetDirectP2PEnabled(ctx context.Context, enabled bool) error {
 // UnlockSession unlocks a PIN-locked session with the given PIN.
 // No-op if the session is already unlocked.
 func (s *Session) UnlockSession(ctx context.Context, pin []byte) error {
+	// Require a locked Session configured for PIN encryption.
 	if s.sessionPriv != nil {
 		return nil
 	}
@@ -194,7 +206,6 @@ func (s *Session) UnlockSession(ctx context.Context, pin []byte) error {
 	// Install the key and reconcile authenticated transport state.
 	s.sessionPriv = privKey
 	s.tkr.a.maybeSetSessionClient(s.tkr.id, NewSessionClient(
-
 		s.tkr.a.p.httpCli,
 		s.tkr.a.p.endpoint,
 		s.tkr.a.p.signingEnvPfx,
@@ -226,6 +237,7 @@ func (s *Session) UnlockSession(ctx context.Context, pin []byte) error {
 // Existing mounted references remain valid, but future mounts must wait for a
 // fresh tracker run instead of reusing this in-memory session.
 func (s *Session) LockSession(ctx context.Context) error {
+	// Require a running PIN-encrypted Session before locking it.
 	if s.lockMode != session_lock.SessionLockMode_PIN_ENCRYPTED {
 		return errors.New("cannot lock: PIN mode not configured")
 	}
@@ -257,15 +269,19 @@ func (s *Session) LockSession(ctx context.Context) error {
 
 // SetLockMode changes the session lock mode. Hot switch: session stays running.
 func (s *Session) SetLockMode(ctx context.Context, mode session.SessionLockMode, pin []byte) error {
+	// Require an unlocked Session before reading its private key.
 	if s.sessionPriv == nil {
 		return errors.New("session is locked")
 	}
+
+	// Serialize the private key for the selected lock representation.
 	privPEM, err := keypem.MarshalPrivKeyPem(s.sessionPriv)
 	if err != nil {
 		return err
 	}
 	defer scrub.Scrub(privPEM)
 
+	// Persist the selected auto-unlock or PIN-encrypted lock material.
 	switch mode {
 	case session.SessionLockMode_SESSION_LOCK_MODE_AUTO_UNLOCK:
 		encPriv, err := session_lock.EncryptAutoUnlock(s.storageKey, privPEM)
@@ -287,6 +303,7 @@ func (s *Session) SetLockMode(ctx context.Context, mode session.SessionLockMode,
 		return nil
 	}
 
+	// Publish the new lock mode to live Session watchers.
 	s.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
 		s.lockMode = session_lock.SessionLockMode(mode)
 		broadcast()
@@ -297,15 +314,17 @@ func (s *Session) SetLockMode(ctx context.Context, mode session.SessionLockMode,
 	return nil
 }
 
-// updateSessionMetadata updates the session controller metadata with the current lock mode.
-// Reads existing metadata first to avoid clobbering other fields.
+// updateSessionMetadata mirrors the current lock mode without replacing other
+// Session presentation metadata.
 func (s *Session) updateSessionMetadata(ctx context.Context, mode session.SessionLockMode) {
+	// Acquire the controller that owns persisted Session metadata.
 	sessionCtrl, sessionCtrlRef, err := session.ExLookupSessionController(ctx, s.GetBus(), "", false, nil)
 	if err != nil {
 		return
 	}
 	defer sessionCtrlRef.Release()
 
+	// Read the current record so unrelated metadata fields remain intact.
 	ref := s.GetSessionRef()
 	meta, err := lookupSessionMetadata(ctx, sessionCtrl, ref)
 	if err != nil {
@@ -317,19 +336,25 @@ func (s *Session) updateSessionMetadata(ctx context.Context, mode session.Sessio
 			ProviderId:          "spacewave",
 		}
 	}
+
+	// Submit the best-effort lock-mode projection to the metadata owner.
 	meta.LockMode = mode
 	_ = sessionCtrl.UpdateSessionMetadata(ctx, ref, meta)
 }
 
+// lookupSessionMetadata resolves metadata for one Session reference.
 func lookupSessionMetadata(
 	ctx context.Context,
 	ctrl session.SessionController,
 	ref *session.SessionRef,
 ) (*session.SessionMetadata, error) {
+	// Snapshot the registered Sessions from the metadata owner.
 	entries, err := ctrl.ListSessions(ctx)
 	if err != nil {
 		return nil, err
 	}
+
+	// Resolve the matching entry through its controller-assigned index.
 	for _, entry := range entries {
 		if !entry.GetSessionRef().EqualVT(ref) {
 			continue
@@ -339,6 +364,7 @@ func lookupSessionMetadata(
 	return nil, nil
 }
 
+// directP2PEnabledFromMetadata applies the enabled-by-default transport policy.
 func directP2PEnabledFromMetadata(meta *session.SessionMetadata) bool {
 	return meta == nil || !meta.GetDirectP2PDisabled()
 }
@@ -346,6 +372,7 @@ func directP2PEnabledFromMetadata(meta *session.SessionMetadata) bool {
 // WatchLockState calls the callback with the current lock state and on changes.
 func (s *Session) WatchLockState(ctx context.Context, cb func(mode session.SessionLockMode, locked bool)) error {
 	for {
+		// Snapshot the lock state and the wait channel for its next change.
 		var ch <-chan struct{}
 		var mode session.SessionLockMode
 		var locked bool
@@ -354,8 +381,11 @@ func (s *Session) WatchLockState(ctx context.Context, cb func(mode session.Sessi
 			mode = session.SessionLockMode(s.lockMode)
 			locked = s.sessionPriv == nil
 		})
+
+		// Publish the current state before waiting for another transition.
 		cb(mode, locked)
 
+		// Wait for cancellation or a state change without missing a broadcast.
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
@@ -366,9 +396,9 @@ func (s *Session) WatchLockState(ctx context.Context, cb func(mode session.Sessi
 
 // sessionTracker tracks a Session in the ProviderAccount.
 type sessionTracker struct {
-	// a is the provider account
+	// a is the provider account.
 	a *ProviderAccount
-	// id is the session id
+	// id is the Session identifier.
 	id string
 	// ref is the reference to the session, set when instantiating the tracker.
 	ref *promise.Promise[*session.SessionRef]
@@ -391,10 +421,13 @@ func (t *sessionTracker) setPinnedRef(release func()) {
 
 // releasePinnedRef drops the current self-ref, if any.
 func (t *sessionTracker) releasePinnedRef() {
+	// Detach the release callback while holding its guard.
 	t.pinnedRefMtx.Lock()
 	release := t.releasePinnedRefFn
 	t.releasePinnedRefFn = nil
 	t.pinnedRefMtx.Unlock()
+
+	// Release outside the guard because the refcount may run lifecycle callbacks.
 	if release != nil {
 		release()
 	}
@@ -414,7 +447,7 @@ func (a *ProviderAccount) buildSessionTracker(sessionID string) (keyed.Routine, 
 
 // executeSessionTracker executes the sessionTracker for the session.
 func (t *sessionTracker) executeSessionTracker(rctx context.Context) (rerr error) {
-	// Clear old state if any.
+	// Clear the prior result and publish any terminal mount failure.
 	t.sessionProm.SetPromise(nil)
 	defer func() {
 		if rerr != nil && rerr != context.Canceled {
@@ -422,9 +455,11 @@ func (t *sessionTracker) executeSessionTracker(rctx context.Context) (rerr error
 		}
 	}()
 
+	// Bind mounted resources and transports to this tracker execution.
 	ctx, ctxCancel := context.WithCancel(rctx)
 	defer ctxCancel()
 
+	// Attach the Session identity to lifecycle logs.
 	le := t.a.le.WithField("session-id", t.id)
 	le.Debug("mounting session")
 
@@ -434,6 +469,7 @@ func (t *sessionTracker) executeSessionTracker(rctx context.Context) (rerr error
 		return err
 	}
 
+	// Resolve the account and Session storage identifiers.
 	provRef := sessionRef.GetProviderResourceRef()
 	providerAccountID := provRef.GetProviderAccountId()
 	sessionID := provRef.GetId()
@@ -471,6 +507,7 @@ func (t *sessionTracker) executeSessionTracker(rctx context.Context) (rerr error
 		return errors.Wrap(err, "read lock mode")
 	}
 
+	// Load or create the private key according to the persisted lock mode.
 	var privPEM []byte
 	var sessionPriv crypto.PrivKey
 
@@ -526,6 +563,7 @@ func (t *sessionTracker) executeSessionTracker(rctx context.Context) (rerr error
 		}
 	}
 
+	// Derive the transport identity from the unlocked private key.
 	sessionPeerID, err := peer.IDFromPrivateKey(sessionPriv)
 	if err != nil {
 		return err
@@ -555,11 +593,15 @@ func (t *sessionTracker) executeSessionTracker(rctx context.Context) (rerr error
 		return errors.Wrap(err, "check session registration state")
 	}
 
+	// Register the peer identity, install its signer, and persist acceptance.
 	registerSession := func() (*api.ObservedSessionMetadata, error) {
+		// Register the Session identity and capture cloud-observed metadata.
 		resp, err := t.a.entityCli.RegisterSessionDirectWithResponse(ctx, sessionPeerID.String(), buildSessionDeviceInfo(), "", "")
 		if err != nil {
 			return nil, errors.Wrap(err, "register session with cloud")
 		}
+
+		// Install the accepted Session signer for authenticated account requests.
 		le.Debug("registered session with cloud")
 		t.a.maybeSetSessionClient(t.id, NewSessionClient(
 			t.a.p.httpCli,
@@ -568,6 +610,8 @@ func (t *sessionTracker) executeSessionTracker(rctx context.Context) (rerr error
 			sessionPriv,
 			sessionPeerID.String(),
 		))
+
+		// Persist the accepted peer ID so future mounts can skip registration.
 		err = kvtx.RunTransaction(ctx, true,
 			func(ctx context.Context) (kvtx.Tx, error) {
 				return objStore.NewTransaction(ctx, true)
@@ -581,6 +625,8 @@ func (t *sessionTracker) executeSessionTracker(rctx context.Context) (rerr error
 		}
 		return resp.GetObservedMetadata(), nil
 	}
+
+	// Register identities that have not yet been accepted for this key.
 	var registeredObserved *api.ObservedSessionMetadata
 	if !registered {
 		observed, err := registerSession()
@@ -603,6 +649,7 @@ func (t *sessionTracker) executeSessionTracker(rctx context.Context) (rerr error
 		t.a.bumpSelfRejoinSweepGeneration()
 	}
 
+	// Load the persisted direct-transport policy from the metadata owner.
 	sessionCtrl, sessionCtrlRef, err := session.ExLookupSessionController(ctx, t.a.p.b, "", false, nil)
 	if err != nil {
 		return errors.Wrap(err, "lookup session metadata owner")
@@ -641,6 +688,8 @@ func (t *sessionTracker) executeSessionTracker(rctx context.Context) (rerr error
 	t.sessionProm.SetResult(so, nil)
 	defer t.sessionProm.SetPromise(nil)
 	defer t.releasePinnedRef()
+
+	// Mirror newly observed presentation metadata without gating the mount.
 	if registeredObserved != nil {
 		if err := t.a.UpsertSessionPresentation(ctx, sessionPeerID.String(), registeredObserved); err != nil {
 			le.WithError(err).Warn("failed to mirror session presentation metadata")
@@ -656,6 +705,7 @@ func (t *sessionTracker) executeSessionTracker(rctx context.Context) (rerr error
 	defer accountRef.Release()
 	defer t.a.StopSessionTransportComposition(t.id)
 
+	// Start direct transport and repair cloud registration when it was rejected.
 	if err := t.a.ConfigureSessionTransport(
 		ctx,
 		t.id,
@@ -671,25 +721,33 @@ func (t *sessionTracker) executeSessionTracker(rctx context.Context) (rerr error
 			observed, rerr := registerSession()
 			if rerr != nil {
 				le.WithError(rerr).Warn("failed to re-register rejected session")
-			} else if perr := t.a.UpsertSessionPresentation(ctx, sessionPeerID.String(), observed); perr != nil {
-				le.WithError(perr).Warn("failed to mirror session presentation metadata")
-			} else if terr := t.a.ConfigureSessionTransport(
-				ctx,
-				t.id,
-				sessionPriv,
-				t.a.p.endpoint,
-				directP2PEnabled,
-			); terr != nil {
-				if errors.Is(terr, context.Canceled) {
-					return context.Canceled
+			}
+			if rerr == nil {
+				// Mirror presentation metadata without making it transport-critical.
+				if perr := t.a.UpsertSessionPresentation(ctx, sessionPeerID.String(), observed); perr != nil {
+					le.WithError(perr).Warn("failed to mirror session presentation metadata")
 				}
-				le.WithError(terr).Warn("failed to reconcile session transport after re-registration")
+
+				// Rebuild transport after the cloud accepts the Session registration.
+				if terr := t.a.ConfigureSessionTransport(
+					ctx,
+					t.id,
+					sessionPriv,
+					t.a.p.endpoint,
+					directP2PEnabled,
+				); terr != nil {
+					if errors.Is(terr, context.Canceled) {
+						return context.Canceled
+					}
+					le.WithError(terr).Warn("failed to reconcile session transport after re-registration")
+				}
 			}
 		} else {
 			le.WithError(err).Warn("failed to reconcile session transport")
 		}
 	}
 
+	// Keep mounted resources alive until the tracker lifecycle ends.
 	<-ctx.Done()
 	return context.Canceled
 }
@@ -697,10 +755,12 @@ func (t *sessionTracker) executeSessionTracker(rctx context.Context) (rerr error
 // UnlockPINSession unlocks a PIN-locked session before it is mounted.
 // Decrypts the session key with the PIN and unblocks the tracker.
 func (a *ProviderAccount) UnlockPINSession(ctx context.Context, ref *session.SessionRef, pin []byte) error {
+	// Validate the provider reference before resolving Session storage.
 	if err := ref.Validate(); err != nil {
 		return err
 	}
 
+	// Resolve the account and Session identifiers used by the lock store.
 	provRef := ref.GetProviderResourceRef()
 	providerAccountID := provRef.GetProviderAccountId()
 	sessionID := provRef.GetId()
@@ -713,7 +773,6 @@ func (a *ProviderAccount) UnlockPINSession(ctx context.Context, ref *session.Ses
 		return errors.Wrap(err, "mount session object store for unlock")
 	}
 	defer diRef.Release()
-
 	objStore := objStoreHandle.GetObjectStore()
 
 	// Read PIN lock files.
@@ -743,6 +802,7 @@ func (a *ProviderAccount) UnlockPINSession(ctx context.Context, ref *session.Ses
 // GetPINSessionRecoveryState reports that cloud PIN reset can use the account
 // credential recovery path.
 func (a *ProviderAccount) GetPINSessionRecoveryState(ctx context.Context, ref *session.SessionRef) (session.SessionRecoveryState, error) {
+	// Validate the Session reference and advertise account recovery.
 	if err := ref.Validate(); err != nil {
 		return session.SessionRecoveryState_SESSION_RECOVERY_STATE_UNKNOWN, err
 	}
@@ -753,14 +813,17 @@ func (a *ProviderAccount) GetPINSessionRecoveryState(ctx context.Context, ref *s
 // and the stored key. The session tracker will generate a fresh key on
 // next mount.
 func (a *ProviderAccount) ResetPINSession(ctx context.Context, ref *session.SessionRef, _ *session.EntityCredential) error {
+	// Validate the provider reference before deleting Session lock material.
 	if err := ref.Validate(); err != nil {
 		return err
 	}
 
+	// Resolve the account and Session identifiers used by the lock store.
 	provRef := ref.GetProviderResourceRef()
 	providerAccountID := provRef.GetProviderAccountId()
 	sessionID := provRef.GetId()
 
+	// Mount the Session object store that owns lock and registration records.
 	volID := a.vol.GetID()
 	objectStoreID := SessionObjectStoreID(providerAccountID)
 	objStoreHandle, _, diRef, err := volume.ExBuildObjectStoreAPI(ctx, a.p.b, false, objectStoreID, volID, nil)
@@ -768,7 +831,6 @@ func (a *ProviderAccount) ResetPINSession(ctx context.Context, ref *session.Sess
 		return errors.Wrap(err, "mount session object store for reset")
 	}
 	defer diRef.Release()
-
 	objStore := objStoreHandle.GetObjectStore()
 
 	// Delete all lock files and the stored key.
@@ -798,10 +860,12 @@ func (a *ProviderAccount) ResetPINSession(ctx context.Context, ref *session.Sess
 
 // MountSession attempts to mount a Session returning the session and a release function.
 func (a *ProviderAccount) MountSession(ctx context.Context, ref *session.SessionRef, released func()) (session.Session, func(), error) {
+	// Validate the provider reference before acquiring its tracker.
 	if err := ref.Validate(); err != nil {
 		return nil, nil, err
 	}
 
+	// Acquire the keyed tracker that exclusively owns this Session lifecycle.
 	sessionID := ref.GetProviderResourceRef().GetId()
 	tkrRef, tkr, _ := a.sessions.AddKeyRef(sessionID)
 
@@ -815,6 +879,7 @@ func (a *ProviderAccount) MountSession(ctx context.Context, ref *session.Session
 		return nil, nil, err
 	}
 
+	// Return the mounted Session with the caller's tracker release callback.
 	return ws, tkrRef.Release, nil
 }
 
