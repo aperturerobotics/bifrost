@@ -14,6 +14,65 @@ import (
 	sobject "github.com/s4wave/spacewave/core/sobject"
 )
 
+// WatchSharedObjectParticipationRequest selects the already mounted SharedObject.
+type WatchSharedObjectParticipationRequest struct {
+	unknownFields []byte
+}
+
+func (x *WatchSharedObjectParticipationRequest) Reset() {
+	*x = WatchSharedObjectParticipationRequest{}
+}
+
+func (*WatchSharedObjectParticipationRequest) ProtoMessage() {}
+
+// SharedObjectParticipation is the configuration accepted by the native host for its own participant.
+// It grants no content access and does not treat a remote refusal as a configuration change.
+type SharedObjectParticipation struct {
+	unknownFields []byte
+	// ViewerPeerId identifies the native participant bound to this mounted SharedObject.
+	ViewerPeerId string `protobuf:"bytes,1,opt,name=viewer_peer_id,json=viewerPeerId,proto3" json:"viewerPeerId,omitempty"`
+	// Config is the retained native configuration, including an accepted departure.
+	Config *sobject.SharedObjectConfig `protobuf:"bytes,2,opt,name=config,proto3" json:"config,omitempty"`
+	// ConfigHistoryBase is the native trust checkpoint when retained lineage is available.
+	ConfigHistoryBase *sobject.SharedObjectConfig `protobuf:"bytes,3,opt,name=config_history_base,json=configHistoryBase,proto3" json:"configHistoryBase,omitempty"`
+	// ConfigHistoryChanges is the verified oldest-first suffix from the checkpoint through Config.
+	ConfigHistoryChanges []*sobject.SOConfigChange `protobuf:"bytes,4,rep,name=config_history_changes,json=configHistoryChanges,proto3" json:"configHistoryChanges,omitempty"`
+}
+
+func (x *SharedObjectParticipation) Reset() {
+	*x = SharedObjectParticipation{}
+}
+
+func (*SharedObjectParticipation) ProtoMessage() {}
+
+func (x *SharedObjectParticipation) GetViewerPeerId() string {
+	if x != nil {
+		return x.ViewerPeerId
+	}
+	return ""
+}
+
+func (x *SharedObjectParticipation) GetConfig() *sobject.SharedObjectConfig {
+	if x != nil {
+		return x.Config
+	}
+	return nil
+}
+
+func (x *SharedObjectParticipation) GetConfigHistoryBase() *sobject.SharedObjectConfig {
+	if x != nil {
+		return x.ConfigHistoryBase
+	}
+	return nil
+}
+
+func (x *SharedObjectParticipation) GetConfigHistoryChanges() []*sobject.SOConfigChange {
+	if x != nil {
+		return x.ConfigHistoryChanges
+	}
+	return nil
+}
+
 // WatchSharedObjectHealthRequest is the request type for WatchSharedObjectHealth.
 type WatchSharedObjectHealthRequest struct {
 	unknownFields []byte
@@ -112,6 +171,80 @@ func (*MountSharedObjectBodyResponse_ResourceId) isMountSharedObjectBodyResponse
 
 func (*MountSharedObjectBodyResponse_Health) isMountSharedObjectBodyResponse_Result() {}
 
+// OpenReadCheckpointRequest selects the native participant's retained history.
+type OpenReadCheckpointRequest struct {
+	unknownFields []byte
+}
+
+func (x *OpenReadCheckpointRequest) Reset() {
+	*x = OpenReadCheckpointRequest{}
+}
+
+func (*OpenReadCheckpointRequest) ProtoMessage() {}
+
+// OpenReadCheckpointResponse returns a read-only World engine when history exists.
+type OpenReadCheckpointResponse struct {
+	unknownFields []byte
+	// ResourceId is zero when no checkpoint was retained.
+	ResourceId uint32 `protobuf:"varint,1,opt,name=resource_id,json=resourceId,proto3" json:"resourceId,omitempty"`
+	// Config is the historical audience at the retained root, not current authority.
+	Config *sobject.SharedObjectConfig `protobuf:"bytes,2,opt,name=config,proto3" json:"config,omitempty"`
+}
+
+func (x *OpenReadCheckpointResponse) Reset() {
+	*x = OpenReadCheckpointResponse{}
+}
+
+func (*OpenReadCheckpointResponse) ProtoMessage() {}
+
+func (x *OpenReadCheckpointResponse) GetResourceId() uint32 {
+	if x != nil {
+		return x.ResourceId
+	}
+	return 0
+}
+
+func (x *OpenReadCheckpointResponse) GetConfig() *sobject.SharedObjectConfig {
+	if x != nil {
+		return x.Config
+	}
+	return nil
+}
+
+func (m *WatchSharedObjectParticipationRequest) CloneVT() *WatchSharedObjectParticipationRequest {
+	if m == nil {
+		return (*WatchSharedObjectParticipationRequest)(nil)
+	}
+	r := new(WatchSharedObjectParticipationRequest)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *WatchSharedObjectParticipationRequest) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *SharedObjectParticipation) CloneVT() *SharedObjectParticipation {
+	if m == nil {
+		return (*SharedObjectParticipation)(nil)
+	}
+	r := new(SharedObjectParticipation)
+	r.ViewerPeerId = m.ViewerPeerId
+	r.Config = protobuf_go_lite.CloneVTValue(m.Config)
+	r.ConfigHistoryBase = protobuf_go_lite.CloneVTValue(m.ConfigHistoryBase)
+	r.ConfigHistoryChanges = protobuf_go_lite.CloneVTSlice(m.ConfigHistoryChanges)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *SharedObjectParticipation) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
 func (m *WatchSharedObjectHealthRequest) CloneVT() *WatchSharedObjectHealthRequest {
 	if m == nil {
 		return (*WatchSharedObjectHealthRequest)(nil)
@@ -202,6 +335,84 @@ func (m *MountSharedObjectBodyResponse_Health) CloneVT() *MountSharedObjectBodyR
 
 func (m *MountSharedObjectBodyResponse_Health) CloneOneofVT() isMountSharedObjectBodyResponse_Result {
 	return m.CloneVT()
+}
+
+func (m *OpenReadCheckpointRequest) CloneVT() *OpenReadCheckpointRequest {
+	if m == nil {
+		return (*OpenReadCheckpointRequest)(nil)
+	}
+	r := new(OpenReadCheckpointRequest)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *OpenReadCheckpointRequest) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *OpenReadCheckpointResponse) CloneVT() *OpenReadCheckpointResponse {
+	if m == nil {
+		return (*OpenReadCheckpointResponse)(nil)
+	}
+	r := new(OpenReadCheckpointResponse)
+	r.ResourceId = m.ResourceId
+	r.Config = protobuf_go_lite.CloneVTValue(m.Config)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *OpenReadCheckpointResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (this *WatchSharedObjectParticipationRequest) EqualVT(that *WatchSharedObjectParticipationRequest) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *WatchSharedObjectParticipationRequest) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*WatchSharedObjectParticipationRequest)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *SharedObjectParticipation) EqualVT(that *SharedObjectParticipation) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.ViewerPeerId != that.ViewerPeerId {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.Config, that.Config) {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.ConfigHistoryBase, that.ConfigHistoryBase) {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.ConfigHistoryChanges, that.ConfigHistoryChanges, func() *sobject.SOConfigChange { return &sobject.SOConfigChange{} }) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *SharedObjectParticipation) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*SharedObjectParticipation)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
 }
 
 func (this *WatchSharedObjectHealthRequest) EqualVT(that *WatchSharedObjectHealthRequest) bool {
@@ -319,6 +530,171 @@ func (this *MountSharedObjectBodyResponse_Health) EqualVT(thatIface isMountShare
 		return false
 	}
 	return true
+}
+
+func (this *OpenReadCheckpointRequest) EqualVT(that *OpenReadCheckpointRequest) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *OpenReadCheckpointRequest) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*OpenReadCheckpointRequest)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *OpenReadCheckpointResponse) EqualVT(that *OpenReadCheckpointResponse) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.ResourceId != that.ResourceId {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.Config, that.Config) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *OpenReadCheckpointResponse) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*OpenReadCheckpointResponse)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+// MarshalProtoJSON marshals the WatchSharedObjectParticipationRequest message to JSON.
+func (x *WatchSharedObjectParticipationRequest) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the WatchSharedObjectParticipationRequest to JSON.
+func (x *WatchSharedObjectParticipationRequest) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the WatchSharedObjectParticipationRequest message from JSON.
+func (x *WatchSharedObjectParticipationRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		// no fields
+	})
+}
+
+// UnmarshalJSON unmarshals the WatchSharedObjectParticipationRequest from JSON.
+func (x *WatchSharedObjectParticipationRequest) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the SharedObjectParticipation message to JSON.
+func (x *SharedObjectParticipation) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.ViewerPeerId != "" || s.HasField("viewerPeerId") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("viewerPeerId")
+		s.WriteString(x.ViewerPeerId)
+	}
+	if x.Config != nil || s.HasField("config") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("config")
+		x.Config.MarshalProtoJSON(s.WithField("config"))
+	}
+	if x.ConfigHistoryBase != nil || s.HasField("configHistoryBase") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("configHistoryBase")
+		x.ConfigHistoryBase.MarshalProtoJSON(s.WithField("configHistoryBase"))
+	}
+	if len(x.ConfigHistoryChanges) > 0 || s.HasField("configHistoryChanges") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("configHistoryChanges")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.ConfigHistoryChanges {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s.WithField("configHistoryChanges"))
+		}
+		s.WriteArrayEnd()
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the SharedObjectParticipation to JSON.
+func (x *SharedObjectParticipation) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the SharedObjectParticipation message from JSON.
+func (x *SharedObjectParticipation) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "viewer_peer_id", "viewerPeerId":
+			s.AddField("viewer_peer_id")
+			x.ViewerPeerId = s.ReadString()
+		case "config":
+			if s.ReadNil() {
+				x.Config = nil
+				return
+			}
+			x.Config = &sobject.SharedObjectConfig{}
+			x.Config.UnmarshalProtoJSON(s.WithField("config", true))
+		case "config_history_base", "configHistoryBase":
+			if s.ReadNil() {
+				x.ConfigHistoryBase = nil
+				return
+			}
+			x.ConfigHistoryBase = &sobject.SharedObjectConfig{}
+			x.ConfigHistoryBase.UnmarshalProtoJSON(s.WithField("config_history_base", true))
+		case "config_history_changes", "configHistoryChanges":
+			s.AddField("config_history_changes")
+			if s.ReadNil() {
+				x.ConfigHistoryChanges = nil
+				return
+			}
+			s.ReadArray(func() {
+				if s.ReadNil() {
+					x.ConfigHistoryChanges = append(x.ConfigHistoryChanges, nil)
+					return
+				}
+				v := &sobject.SOConfigChange{}
+				v.UnmarshalProtoJSON(s.WithField("config_history_changes", false))
+				if s.Err() != nil {
+					return
+				}
+				x.ConfigHistoryChanges = append(x.ConfigHistoryChanges, v)
+			})
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the SharedObjectParticipation from JSON.
+func (x *SharedObjectParticipation) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
 // MarshalProtoJSON marshals the WatchSharedObjectHealthRequest message to JSON.
@@ -485,6 +861,191 @@ func (x *MountSharedObjectBodyResponse) UnmarshalProtoJSON(s *json.UnmarshalStat
 // UnmarshalJSON unmarshals the MountSharedObjectBodyResponse from JSON.
 func (x *MountSharedObjectBodyResponse) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the OpenReadCheckpointRequest message to JSON.
+func (x *OpenReadCheckpointRequest) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the OpenReadCheckpointRequest to JSON.
+func (x *OpenReadCheckpointRequest) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the OpenReadCheckpointRequest message from JSON.
+func (x *OpenReadCheckpointRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		// no fields
+	})
+}
+
+// UnmarshalJSON unmarshals the OpenReadCheckpointRequest from JSON.
+func (x *OpenReadCheckpointRequest) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the OpenReadCheckpointResponse message to JSON.
+func (x *OpenReadCheckpointResponse) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.ResourceId != 0 || s.HasField("resourceId") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("resourceId")
+		s.WriteUint32(x.ResourceId)
+	}
+	if x.Config != nil || s.HasField("config") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("config")
+		x.Config.MarshalProtoJSON(s.WithField("config"))
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the OpenReadCheckpointResponse to JSON.
+func (x *OpenReadCheckpointResponse) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the OpenReadCheckpointResponse message from JSON.
+func (x *OpenReadCheckpointResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "resource_id", "resourceId":
+			s.AddField("resource_id")
+			x.ResourceId = s.ReadUint32()
+		case "config":
+			if s.ReadNil() {
+				x.Config = nil
+				return
+			}
+			x.Config = &sobject.SharedObjectConfig{}
+			x.Config.UnmarshalProtoJSON(s.WithField("config", true))
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the OpenReadCheckpointResponse from JSON.
+func (x *OpenReadCheckpointResponse) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+func (m *WatchSharedObjectParticipationRequest) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WatchSharedObjectParticipationRequest) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *WatchSharedObjectParticipationRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *SharedObjectParticipation) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *SharedObjectParticipation) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *SharedObjectParticipation) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.ConfigHistoryChanges) > 0 {
+		for iNdEx := len(m.ConfigHistoryChanges) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.ConfigHistoryChanges[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0x22
+		}
+	}
+	if m.ConfigHistoryBase != nil {
+		size, err := m.ConfigHistoryBase.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if m.Config != nil {
+		size, err := m.Config.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.ViewerPeerId) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.ViewerPeerId)
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *WatchSharedObjectHealthRequest) MarshalVT() (dAtA []byte, err error) {
@@ -671,6 +1232,118 @@ func (m *MountSharedObjectBodyResponse_Health) MarshalToSizedBufferVT(dAtA []byt
 	return len(dAtA) - i, nil
 }
 
+func (m *OpenReadCheckpointRequest) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *OpenReadCheckpointRequest) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *OpenReadCheckpointRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *OpenReadCheckpointResponse) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *OpenReadCheckpointResponse) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *OpenReadCheckpointResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.Config != nil {
+		size, err := m.Config.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.ResourceId != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.ResourceId))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WatchSharedObjectParticipationRequest) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *SharedObjectParticipation) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.ViewerPeerId)
+	if m.Config != nil {
+		l = m.Config.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	if m.ConfigHistoryBase != nil {
+		l = m.ConfigHistoryBase.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	for _, e := range m.ConfigHistoryChanges {
+		l = e.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
 func (m *WatchSharedObjectHealthRequest) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -743,6 +1416,75 @@ func (m *MountSharedObjectBodyResponse_Health) SizeVT() (n int) {
 	return n
 }
 
+func (m *OpenReadCheckpointRequest) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *OpenReadCheckpointResponse) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.ResourceId)
+	if m.Config != nil {
+		l = m.Config.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
+func (x *WatchSharedObjectParticipationRequest) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	protobuf_go_lite.TextStartMessage(&sb, "WatchSharedObjectParticipationRequest")
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *WatchSharedObjectParticipationRequest) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *SharedObjectParticipation) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "SharedObjectParticipation")
+	if x.ViewerPeerId != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "viewer_peer_id")
+		protobuf_go_lite.TextWriteString(&sb, x.ViewerPeerId)
+	}
+	if x.Config != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "config")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Config)
+	}
+	if x.ConfigHistoryBase != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "config_history_base")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.ConfigHistoryBase)
+	}
+	if len(x.ConfigHistoryChanges) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "config_history_changes")
+		for i, v := range x.ConfigHistoryChanges {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &sobject.SOConfigChange{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *SharedObjectParticipation) String() string {
+	return x.MarshalProtoText()
+}
+
 func (x *WatchSharedObjectHealthRequest) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	protobuf_go_lite.TextStartMessage(&sb, "WatchSharedObjectHealthRequest")
@@ -797,6 +1539,173 @@ func (x *MountSharedObjectBodyResponse) MarshalProtoText() string {
 
 func (x *MountSharedObjectBodyResponse) String() string {
 	return x.MarshalProtoText()
+}
+
+func (x *OpenReadCheckpointRequest) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	protobuf_go_lite.TextStartMessage(&sb, "OpenReadCheckpointRequest")
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *OpenReadCheckpointRequest) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *OpenReadCheckpointResponse) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "OpenReadCheckpointResponse")
+	if x.ResourceId != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "resource_id")
+		protobuf_go_lite.TextWriteUint(&sb, x.ResourceId)
+	}
+	if x.Config != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "config")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Config)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *OpenReadCheckpointResponse) String() string {
+	return x.MarshalProtoText()
+}
+
+func (m *WatchSharedObjectParticipationRequest) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WatchSharedObjectParticipationRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WatchSharedObjectParticipationRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *SharedObjectParticipation) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SharedObjectParticipation: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SharedObjectParticipation: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ViewerPeerId", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.ViewerPeerId = v
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Config", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Config == nil {
+				m.Config = &sobject.SharedObjectConfig{}
+			}
+			if err := m.Config.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ConfigHistoryBase", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.ConfigHistoryBase == nil {
+				m.ConfigHistoryBase = &sobject.SharedObjectConfig{}
+			}
+			if err := m.ConfigHistoryBase.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ConfigHistoryChanges", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.ConfigHistoryChanges = append(m.ConfigHistoryChanges, &sobject.SOConfigChange{})
+			if err := m.ConfigHistoryChanges[len(m.ConfigHistoryChanges)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
 }
 
 func (m *WatchSharedObjectHealthRequest) UnmarshalVT(dAtA []byte) error {
@@ -991,6 +1900,116 @@ func (m *MountSharedObjectBodyResponse) UnmarshalVT(dAtA []byte) error {
 					return err
 				}
 				m.Result = &MountSharedObjectBodyResponse_Health{Health: v}
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *OpenReadCheckpointRequest) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: OpenReadCheckpointRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: OpenReadCheckpointRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *OpenReadCheckpointResponse) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: OpenReadCheckpointResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: OpenReadCheckpointResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ResourceId", wireType)
+			}
+			m.ResourceId = 0
+			m.ResourceId, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Config", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Config == nil {
+				m.Config = &sobject.SharedObjectConfig{}
+			}
+			if err := m.Config.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
 			}
 			iNdEx = postIndex
 		default:

@@ -5,8 +5,12 @@
 import {
   MountSharedObjectBodyRequest,
   MountSharedObjectBodyResponse,
+  OpenReadCheckpointRequest,
+  OpenReadCheckpointResponse,
+  SharedObjectParticipation,
   WatchSharedObjectHealthRequest,
   WatchSharedObjectHealthResponse,
+  WatchSharedObjectParticipationRequest,
 } from './sobject.pb.js'
 import { MethodKind } from '@aptre/protobuf-es-lite'
 import {
@@ -17,6 +21,8 @@ import {
 } from 'starpc'
 
 /**
+ * SharedObjectResourceService exposes retained native state independently of readable body access.
+ *
  * @generated from service s4wave.sobject.SharedObjectResourceService
  */
 export const SharedObjectResourceServiceDefinition = {
@@ -32,6 +38,28 @@ export const SharedObjectResourceServiceDefinition = {
       kind: MethodKind.ServerStreaming,
     },
     /**
+     * WatchSharedObjectParticipation observes held native authority without mounting content.
+     *
+     * @generated from rpc s4wave.sobject.SharedObjectResourceService.WatchSharedObjectParticipation
+     */
+    WatchSharedObjectParticipation: {
+      name: 'WatchSharedObjectParticipation',
+      I: WatchSharedObjectParticipationRequest,
+      O: SharedObjectParticipation,
+      kind: MethodKind.ServerStreaming,
+    },
+    /**
+     * OpenReadCheckpoint opens immutable World history retained before departure.
+     *
+     * @generated from rpc s4wave.sobject.SharedObjectResourceService.OpenReadCheckpoint
+     */
+    OpenReadCheckpoint: {
+      name: 'OpenReadCheckpoint',
+      I: OpenReadCheckpointRequest,
+      O: OpenReadCheckpointResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
      * @generated from rpc s4wave.sobject.SharedObjectResourceService.MountSharedObjectBody
      */
     MountSharedObjectBody: {
@@ -44,6 +72,8 @@ export const SharedObjectResourceServiceDefinition = {
 } as const
 
 /**
+ * SharedObjectResourceService exposes retained native state independently of readable body access.
+ *
  * @generated from service s4wave.sobject.SharedObjectResourceService
  */
 export interface SharedObjectResourceService {
@@ -56,6 +86,26 @@ export interface SharedObjectResourceService {
   ): MessageStream<WatchSharedObjectHealthResponse>
 
   /**
+   * WatchSharedObjectParticipation observes held native authority without mounting content.
+   *
+   * @generated from rpc s4wave.sobject.SharedObjectResourceService.WatchSharedObjectParticipation
+   */
+  WatchSharedObjectParticipation(
+    request: WatchSharedObjectParticipationRequest,
+    abortSignal?: AbortSignal,
+  ): MessageStream<SharedObjectParticipation>
+
+  /**
+   * OpenReadCheckpoint opens immutable World history retained before departure.
+   *
+   * @generated from rpc s4wave.sobject.SharedObjectResourceService.OpenReadCheckpoint
+   */
+  OpenReadCheckpoint(
+    request: OpenReadCheckpointRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<OpenReadCheckpointResponse>
+
+  /**
    * @generated from rpc s4wave.sobject.SharedObjectResourceService.MountSharedObjectBody
    */
   MountSharedObjectBody(
@@ -65,6 +115,8 @@ export interface SharedObjectResourceService {
 }
 
 /**
+ * SharedObjectResourceService exposes retained native state independently of readable body access.
+ *
  * @generated from service s4wave.sobject.SharedObjectResourceService
  */
 export interface SharedObjectResourceServiceHandler {
@@ -76,6 +128,28 @@ export interface SharedObjectResourceServiceHandler {
     abortSignal: AbortSignal,
     context: ServerContext,
   ): MessageStream<WatchSharedObjectHealthResponse>
+
+  /**
+   * WatchSharedObjectParticipation observes held native authority without mounting content.
+   *
+   * @generated from rpc s4wave.sobject.SharedObjectResourceService.WatchSharedObjectParticipation
+   */
+  WatchSharedObjectParticipation(
+    request: WatchSharedObjectParticipationRequest,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): MessageStream<SharedObjectParticipation>
+
+  /**
+   * OpenReadCheckpoint opens immutable World history retained before departure.
+   *
+   * @generated from rpc s4wave.sobject.SharedObjectResourceService.OpenReadCheckpoint
+   */
+  OpenReadCheckpoint(
+    request: OpenReadCheckpointRequest,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): Promise<OpenReadCheckpointResponse>
 
   /**
    * @generated from rpc s4wave.sobject.SharedObjectResourceService.MountSharedObjectBody
@@ -97,6 +171,9 @@ export class SharedObjectResourceServiceClient implements SharedObjectResourceSe
     this.service = opts?.service || SharedObjectResourceServiceServiceName
     this.rpc = rpc
     this.WatchSharedObjectHealth = this.WatchSharedObjectHealth.bind(this)
+    this.WatchSharedObjectParticipation =
+      this.WatchSharedObjectParticipation.bind(this)
+    this.OpenReadCheckpoint = this.OpenReadCheckpoint.bind(this)
     this.MountSharedObjectBody = this.MountSharedObjectBody.bind(this)
   }
   /**
@@ -115,6 +192,45 @@ export class SharedObjectResourceServiceClient implements SharedObjectResourceSe
       abortSignal || undefined,
     )
     return buildDecodeMessageTransform(WatchSharedObjectHealthResponse)(result)
+  }
+
+  /**
+   * WatchSharedObjectParticipation observes held native authority without mounting content.
+   *
+   * @generated from rpc s4wave.sobject.SharedObjectResourceService.WatchSharedObjectParticipation
+   */
+  WatchSharedObjectParticipation(
+    request: WatchSharedObjectParticipationRequest,
+    abortSignal?: AbortSignal,
+  ): MessageStream<SharedObjectParticipation> {
+    const requestMsg = WatchSharedObjectParticipationRequest.create(request)
+    const result = this.rpc.serverStreamingRequest(
+      this.service,
+      SharedObjectResourceServiceDefinition.methods
+        .WatchSharedObjectParticipation.name,
+      WatchSharedObjectParticipationRequest.toBinary(requestMsg),
+      abortSignal || undefined,
+    )
+    return buildDecodeMessageTransform(SharedObjectParticipation)(result)
+  }
+
+  /**
+   * OpenReadCheckpoint opens immutable World history retained before departure.
+   *
+   * @generated from rpc s4wave.sobject.SharedObjectResourceService.OpenReadCheckpoint
+   */
+  async OpenReadCheckpoint(
+    request: OpenReadCheckpointRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<OpenReadCheckpointResponse> {
+    const requestMsg = OpenReadCheckpointRequest.create(request)
+    const result = await this.rpc.request(
+      this.service,
+      SharedObjectResourceServiceDefinition.methods.OpenReadCheckpoint.name,
+      OpenReadCheckpointRequest.toBinary(requestMsg),
+      abortSignal || undefined,
+    )
+    return OpenReadCheckpointResponse.fromBinary(result)
   }
 
   /**

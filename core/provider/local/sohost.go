@@ -44,6 +44,8 @@ type LocalSOHost struct {
 	soHost *sobject.SOHost
 	// stateSnapCtr contains the current state snapshot
 	stateSnapCtr *ccontainer.CContainer[sobject.SharedObjectStateSnapshot]
+	// publishedConfigCtr acknowledges the configuration represented by stateSnapCtr.
+	publishedConfigCtr *ccontainer.CContainer[*sobject.SharedObjectConfig]
 }
 
 // queueOpTxn contains the txn to queue an operation.
@@ -77,16 +79,17 @@ func NewLocalSOHost(
 	}
 
 	return &LocalSOHost{
-		le:             le,
-		privKey:        privKey,
-		peerID:         peerID,
-		pubKey:         pubKey,
-		objStore:       objStore,
-		soHost:         soHost,
-		sharedObjectID: sharedObjectID,
-		sfs:            sfs,
-		queueOpCh:      make(chan *queueOpTxn),
-		stateSnapCtr:   ccontainer.NewCContainer[sobject.SharedObjectStateSnapshot](nil),
+		le:                 le,
+		privKey:            privKey,
+		peerID:             peerID,
+		pubKey:             pubKey,
+		objStore:           objStore,
+		soHost:             soHost,
+		sharedObjectID:     sharedObjectID,
+		sfs:                sfs,
+		queueOpCh:          make(chan *queueOpTxn),
+		stateSnapCtr:       ccontainer.NewCContainer[sobject.SharedObjectStateSnapshot](nil),
+		publishedConfigCtr: ccontainer.NewCContainer[*sobject.SharedObjectConfig](nil),
 	}, nil
 }
 
@@ -137,6 +140,7 @@ func (l *LocalSOHost) Execute(ctx context.Context) error {
 			l.peerID,
 		), localState.CloneVT())
 		l.stateSnapCtr.SetValue(snap)
+		l.publishedConfigCtr.SetValue(soState.GetConfig().CloneVT())
 	}
 
 	processUpdatedSoState := func(updatedSoState *sobject.SOState) error {
@@ -344,6 +348,30 @@ func (l *LocalSOHost) executeQueueOp(
 	return nil
 }
 
+// waitPublishedConfig waits until body readers can observe target or a verified descendant.
+func (l *LocalSOHost) waitPublishedConfig(ctx context.Context, target *sobject.SharedObjectConfig) error {
+	if target == nil || l.publishedConfigCtr == nil {
+		return errors.New("published SharedObject configuration is unavailable")
+	}
+	_, err := l.publishedConfigCtr.WaitValueWithValidator(ctx, func(current *sobject.SharedObjectConfig) (bool, error) {
+		if current == nil || current.GetConfigChainSeqno() < target.GetConfigChainSeqno() {
+			return false, nil
+		}
+		if current.EqualVT(target) {
+			return true, nil
+		}
+		changes, err := l.soHost.ReadConfigHistory(ctx, target.GetConfigChainHash(), current.GetConfigChainHash())
+		if err != nil {
+			return false, err
+		}
+		if err := sobject.VerifyConfigChainSuffix(target, current, changes); err != nil {
+			return false, err
+		}
+		return true, nil
+	}, nil)
+	return err
+}
+
 // AccessSharedObjectState adds a reference to the state and returns the state container.
 func (l *LocalSOHost) AccessSharedObjectState(ctx context.Context, released func()) (ccontainer.Watchable[sobject.SharedObjectStateSnapshot], func(), error) {
 	return l.stateSnapCtr, func() {}, nil
@@ -487,7 +515,7 @@ func (l *LocalSOHost) localOperationInner(
 // Returns the current state nonce (greater than or equal to the nonce when the op was applied).
 // After ClearOperation has been called, this will return success even for failed ops!
 // If the operation was rejected, returns 0, true, error.
-// Any other error returns 0, false, error
+// Any other error returns 0, false, error.
 func (l *LocalSOHost) WaitOperation(ctx context.Context, localID string) (uint64, bool, error) {
 	if seqno, rejected, err, resolved := l.localOpResultOutcome(ctx, localID); err != nil || resolved {
 		if err == nil && resolved && !rejected && l.soHost.CanWatchSOState() {

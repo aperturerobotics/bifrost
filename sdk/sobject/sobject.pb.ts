@@ -7,11 +7,84 @@ import {
   createEmptyMessageType,
   createMessageType,
 } from '@aptre/protobuf-es-lite/message'
-import { SharedObjectHealth } from '../../core/sobject/sobject.pb.js'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import {
+  SharedObjectConfig,
+  SharedObjectHealth,
+  SOConfigChange,
+} from '../../core/sobject/sobject.pb.js'
 import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
+import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 export const protobufPackage = 's4wave.sobject'
+
+/**
+ * WatchSharedObjectParticipationRequest selects the already mounted SharedObject.
+ *
+ * @generated from message s4wave.sobject.WatchSharedObjectParticipationRequest
+ */
+export interface WatchSharedObjectParticipationRequest {}
+
+export const WatchSharedObjectParticipationRequest: MessageType<WatchSharedObjectParticipationRequest> =
+  /* @__PURE__ */ createEmptyMessageType<WatchSharedObjectParticipationRequest>(
+    's4wave.sobject.WatchSharedObjectParticipationRequest',
+    true,
+  )
+
+/**
+ * SharedObjectParticipation is the configuration accepted by the native host for its own participant.
+ * It grants no content access and does not treat a remote refusal as a configuration change.
+ *
+ * @generated from message s4wave.sobject.SharedObjectParticipation
+ */
+export interface SharedObjectParticipation {
+  /**
+   * ViewerPeerId identifies the native participant bound to this mounted SharedObject.
+   *
+   * @generated from field: string viewer_peer_id = 1;
+   */
+  viewerPeerId?: string
+  /**
+   * Config is the retained native configuration, including an accepted departure.
+   *
+   * @generated from field: sobject.SharedObjectConfig config = 2;
+   */
+  config?: SharedObjectConfig
+  /**
+   * ConfigHistoryBase is the native trust checkpoint when retained lineage is available.
+   *
+   * @generated from field: sobject.SharedObjectConfig config_history_base = 3;
+   */
+  configHistoryBase?: SharedObjectConfig
+  /**
+   * ConfigHistoryChanges is the verified oldest-first suffix from the checkpoint through Config.
+   *
+   * @generated from field: repeated sobject.SOConfigChange config_history_changes = 4;
+   */
+  configHistoryChanges?: SOConfigChange[]
+}
+
+export const SharedObjectParticipation: MessageType<SharedObjectParticipation> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 's4wave.sobject.SharedObjectParticipation',
+    fields: [
+      { no: 1, name: 'viewer_peer_id', kind: 'scalar', T: ScalarType.STRING },
+      { no: 2, name: 'config', kind: 'message', T: () => SharedObjectConfig },
+      {
+        no: 3,
+        name: 'config_history_base',
+        kind: 'message',
+        T: () => SharedObjectConfig,
+      },
+      {
+        no: 4,
+        name: 'config_history_changes',
+        kind: 'message',
+        T: () => SOConfigChange,
+        repeated: true,
+      },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
 
 /**
  * WatchSharedObjectHealthRequest is the request type for WatchSharedObjectHealth.
@@ -116,6 +189,49 @@ export const MountSharedObjectBodyResponse: MessageType<MountSharedObjectBodyRes
         T: () => SharedObjectHealth,
         oneof: 'result',
       },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
+ * OpenReadCheckpointRequest selects the native participant's retained history.
+ *
+ * @generated from message s4wave.sobject.OpenReadCheckpointRequest
+ */
+export interface OpenReadCheckpointRequest {}
+
+export const OpenReadCheckpointRequest: MessageType<OpenReadCheckpointRequest> =
+  /* @__PURE__ */ createEmptyMessageType<OpenReadCheckpointRequest>(
+    's4wave.sobject.OpenReadCheckpointRequest',
+    true,
+  )
+
+/**
+ * OpenReadCheckpointResponse returns a read-only World engine when history exists.
+ *
+ * @generated from message s4wave.sobject.OpenReadCheckpointResponse
+ */
+export interface OpenReadCheckpointResponse {
+  /**
+   * ResourceId is zero when no checkpoint was retained.
+   *
+   * @generated from field: uint32 resource_id = 1;
+   */
+  resourceId?: number
+  /**
+   * Config is the historical audience at the retained root, not current authority.
+   *
+   * @generated from field: sobject.SharedObjectConfig config = 2;
+   */
+  config?: SharedObjectConfig
+}
+
+export const OpenReadCheckpointResponse: MessageType<OpenReadCheckpointResponse> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 's4wave.sobject.OpenReadCheckpointResponse',
+    fields: [
+      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
+      { no: 2, name: 'config', kind: 'message', T: () => SharedObjectConfig },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })

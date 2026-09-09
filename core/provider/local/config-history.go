@@ -103,18 +103,7 @@ func NewSOHostSyncFuncs(store kvtx.Store) *sobject.SOHostSyncFuncs {
 			}
 			defer tx.Discard()
 
-			// The shared traversal checks content hashes, missing history and budgets.
-			return sobject.ReadConfigSuffix(ctx, base, target, func(ctx context.Context, head []byte) (*sobject.SOConfigChange, error) {
-				data, found, err := tx.Get(ctx, SOConfigHistoryEntryKey(id, head))
-				if err != nil || !found {
-					return nil, err
-				}
-				entry := &sobject.SOConfigChange{}
-				if err := entry.UnmarshalVT(data); err != nil {
-					return nil, err
-				}
-				return entry, nil
-			})
+			return readSOConfigHistory(ctx, tx, id, base, target)
 		},
 	}
 }
@@ -140,4 +129,47 @@ func WriteSOConfigCheckpoint(ctx context.Context, tx kvtx.Tx, id string, config 
 		return err
 	}
 	return tx.Set(ctx, key, data)
+}
+
+// readSOConfigHistory traverses immutable entries in the caller's read transaction.
+func readSOConfigHistory(ctx context.Context, tx kvtx.Tx, id string, base, target []byte) ([]*sobject.SOConfigChange, error) {
+	return sobject.ReadConfigSuffix(ctx, base, target, func(ctx context.Context, head []byte) (*sobject.SOConfigChange, error) {
+		data, found, err := tx.Get(ctx, SOConfigHistoryEntryKey(id, head))
+		if err != nil || !found {
+			return nil, err
+		}
+		entry := &sobject.SOConfigChange{}
+		if err := entry.UnmarshalVT(data); err != nil {
+			return nil, err
+		}
+		return entry, nil
+	})
+}
+
+// ReadSharedObjectConfigHistory returns accepted lineage from the local trust checkpoint.
+func (s *SharedObject) ReadSharedObjectConfigHistory(ctx context.Context, target *sobject.SharedObjectConfig) (*sobject.SharedObjectConfig, []*sobject.SOConfigChange, error) {
+	read, err := s.objStore.NewTransaction(ctx, false)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer read.Discard()
+	data, found, err := read.Get(ctx, SOConfigHistoryCheckpointKey(s.GetSharedObjectID()))
+	if err != nil {
+		return nil, nil, err
+	}
+	if !found {
+		return nil, nil, sobject.ErrConfigHistoryUnavailable
+	}
+	base := &sobject.SharedObjectConfig{}
+	if err := base.UnmarshalVT(data); err != nil {
+		return nil, nil, err
+	}
+	changes, err := readSOConfigHistory(ctx, read, s.GetSharedObjectID(), base.GetConfigChainHash(), target.GetConfigChainHash())
+	if err != nil {
+		return nil, nil, err
+	}
+	if err := sobject.VerifyConfigChainSuffix(base, target, changes); err != nil {
+		return nil, nil, err
+	}
+	return base, changes, nil
 }

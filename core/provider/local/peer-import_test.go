@@ -73,7 +73,7 @@ func TestPeerImportRetainsAuthority(t *testing.T) {
 	// Reject inaccessible candidates before any durable or watched state changes.
 	faults := kvtest.NewFaultStore(backend, kvtest.FaultBeforeCommit)
 	store := &configHistoryFaultStore{backend: backend, writes: faults}
-	watch, lock, syncFuncs := NewObjectStoreSOStateFuncs(ctx, store)
+	watch, lock, syncFuncs := NewObjectStoreSOStateFuncs(ctx, store, readerID)
 	host := sobject.NewSOHost(ctx, watch, lock, testSharedObjectID, syncFuncs)
 	t.Cleanup(host.ClearContext)
 	change, err := sobject.BuildSOConfigChange(initial.Config, initial.Config, sobject.SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_ADD_INVITE, owner, nil)
@@ -103,7 +103,7 @@ func TestPeerImportRetainsAuthority(t *testing.T) {
 	if faults.Opened() != 2 || faults.DelegatedCommits() != 1 {
 		t.Fatalf("attempts = %d, commits = %d", faults.Opened(), faults.DelegatedCommits())
 	}
-	watchAgain, lockAgain, syncAgain := NewObjectStoreSOStateFuncs(ctx, backend)
+	watchAgain, lockAgain, syncAgain := NewObjectStoreSOStateFuncs(ctx, backend, readerID)
 	reopened := sobject.NewSOHost(ctx, watchAgain, lockAgain, testSharedObjectID, syncAgain)
 	t.Cleanup(reopened.ClearContext)
 	got, err = reopened.GetHostState(ctx)
@@ -142,6 +142,24 @@ func TestPeerImportRetainsAuthority(t *testing.T) {
 		t.Fatalf("revocation did not preserve root and commit authority: %v", err)
 	}
 
+	// A fresh storage read recovers only the last readable configuration and root.
+	archived, err := backend.NewTransaction(ctx, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	archiveData, found, err := archived.Get(ctx, readCheckpointKey(testSharedObjectID))
+	archived.Discard()
+	if err != nil || !found {
+		t.Fatalf("read checkpoint missing after removal: %v", err)
+	}
+	checkpointState := &sobject.SOState{}
+	if err := checkpointState.UnmarshalVT(archiveData); err != nil {
+		t.Fatal(err)
+	}
+	if !checkpointState.Config.EqualVT(candidate.Config) || !checkpointState.Root.EqualVT(candidate.Root) {
+		t.Fatal("read checkpoint did not retain the last readable snapshot")
+	}
+
 	// Explicit invitation authority replaces the upgrade checkpoint with its accepted head.
 	rejoined := got.CloneVT()
 	rejoined.Config = initial.Config.CloneVT()
@@ -161,6 +179,9 @@ func TestPeerImportRetainsAuthority(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(read.Discard)
+	if _, found, err := read.Get(ctx, readCheckpointKey(testSharedObjectID)); err != nil || found {
+		t.Fatalf("readmission retained obsolete read checkpoint: found=%v err=%v", found, err)
+	}
 	checkpointData, found, err := read.Get(ctx, SOConfigHistoryCheckpointKey(testSharedObjectID))
 	if err != nil || !found {
 		t.Fatalf("invitation checkpoint missing: %v", err)
