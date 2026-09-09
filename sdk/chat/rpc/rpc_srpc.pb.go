@@ -22,6 +22,8 @@ type SRPCChatResourceServiceClient interface {
 	GetMessage(ctx context.Context, in *GetMessageRequest) (*GetMessageResponse, error)
 	// ListMessages returns a bounded page of channel history.
 	ListMessages(ctx context.Context, in *ListMessagesRequest) (*ListMessagesResponse, error)
+	// ListThreads returns activity-ordered native thread summaries.
+	ListThreads(ctx context.Context, in *ListThreadsRequest) (*ListThreadsResponse, error)
 	// WatchMessages streams channel messages after each shared-state change.
 	WatchMessages(ctx context.Context, in *WatchMessagesRequest) (SRPCChatResourceService_WatchMessagesClient, error)
 	// SendMessage appends one message or resolves an identical retry.
@@ -80,6 +82,15 @@ func (c *srpcChatResourceServiceClient) GetMessage(ctx context.Context, in *GetM
 func (c *srpcChatResourceServiceClient) ListMessages(ctx context.Context, in *ListMessagesRequest) (*ListMessagesResponse, error) {
 	out := new(ListMessagesResponse)
 	err := c.cc.ExecCall(ctx, c.serviceID, "ListMessages", in, out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *srpcChatResourceServiceClient) ListThreads(ctx context.Context, in *ListThreadsRequest) (*ListThreadsResponse, error) {
+	out := new(ListThreadsResponse)
+	err := c.cc.ExecCall(ctx, c.serviceID, "ListThreads", in, out)
 	if err != nil {
 		return nil, err
 	}
@@ -156,6 +167,8 @@ type SRPCChatResourceServiceServer interface {
 	GetMessage(context.Context, *GetMessageRequest) (*GetMessageResponse, error)
 	// ListMessages returns a bounded page of channel history.
 	ListMessages(context.Context, *ListMessagesRequest) (*ListMessagesResponse, error)
+	// ListThreads returns activity-ordered native thread summaries.
+	ListThreads(context.Context, *ListThreadsRequest) (*ListThreadsResponse, error)
 	// WatchMessages streams channel messages after each shared-state change.
 	WatchMessages(*WatchMessagesRequest, SRPCChatResourceService_WatchMessagesStream) error
 	// SendMessage appends one message or resolves an identical retry.
@@ -196,6 +209,7 @@ func (SRPCChatResourceServiceHandler) GetMethodIDs() []string {
 		"GetState",
 		"GetMessage",
 		"ListMessages",
+		"ListThreads",
 		"WatchMessages",
 		"SendMessage",
 		"GetReadPositions",
@@ -220,6 +234,8 @@ func (d *SRPCChatResourceServiceHandler) InvokeMethod(
 		return true, d.InvokeMethod_GetMessage(d.impl, strm)
 	case "ListMessages":
 		return true, d.InvokeMethod_ListMessages(d.impl, strm)
+	case "ListThreads":
+		return true, d.InvokeMethod_ListThreads(d.impl, strm)
 	case "WatchMessages":
 		return true, d.InvokeMethod_WatchMessages(d.impl, strm)
 	case "SendMessage":
@@ -275,6 +291,18 @@ func (SRPCChatResourceServiceHandler) InvokeMethod_ListMessages(impl SRPCChatRes
 		return err
 	}
 	out, err := impl.ListMessages(strm.Context(), req)
+	if err != nil {
+		return err
+	}
+	return strm.MsgSend(out)
+}
+
+func (SRPCChatResourceServiceHandler) InvokeMethod_ListThreads(impl SRPCChatResourceServiceServer, strm srpc.Stream) error {
+	req := new(ListThreadsRequest)
+	if err := strm.MsgRecv(req); err != nil {
+		return err
+	}
+	out, err := impl.ListThreads(strm.Context(), req)
 	if err != nil {
 		return err
 	}
@@ -355,6 +383,14 @@ type SRPCChatResourceService_ListMessagesStream interface {
 }
 
 type srpcChatResourceService_ListMessagesStream struct {
+	srpc.Stream
+}
+
+type SRPCChatResourceService_ListThreadsStream interface {
+	srpc.Stream
+}
+
+type srpcChatResourceService_ListThreadsStream struct {
 	srpc.Stream
 }
 

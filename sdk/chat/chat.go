@@ -21,10 +21,23 @@ var PredMessageSender = quad.IRI("spacewave-chat/message-sender")
 // PredChannelState links a channel to the latest event for each state identity.
 var PredChannelState = quad.IRI("spacewave-chat/channel-state")
 
+// PredThreadParticipant marks a thread summary with an attributed person label.
+var PredThreadParticipant = quad.IRI("spacewave-chat/thread-participant")
+
 // NewChatStateQuad links a channel state identity to its retained message.
 // Empty messageKey selects the current event for this identity in a graph query.
 func NewChatStateQuad(channelKey, messageKey, stateType, stateKey string) world.GraphQuad {
 	return world.NewGraphQuadWithKeys(channelKey, PredChannelState.String(), messageKey, quad.String(stateType+"\x00"+stateKey).String())
+}
+
+// NewChatThreadParticipantQuad records a verified person who authored a canonical thread reply.
+func NewChatThreadParticipantQuad(threadKey, personPeerID string) world.GraphQuad {
+	return world.NewGraphQuadWithKeys(
+		threadKey,
+		PredThreadParticipant.String(),
+		threadKey,
+		quad.String(personPeerID).String(),
+	)
 }
 
 // NewChatChannelBlock constructs a new ChatChannel block.
@@ -40,6 +53,11 @@ func NewChatMessageBlock() block.Block {
 // NewChatMessagePageBlock constructs a new ChatMessagePage block.
 func NewChatMessagePageBlock() block.Block {
 	return &ChatMessagePage{}
+}
+
+// NewChatThreadBlock constructs a new ChatThread block.
+func NewChatThreadBlock() block.Block {
+	return &ChatThread{}
 }
 
 // MarshalBlock marshals the ChatChannel to bytes.
@@ -87,8 +105,25 @@ func (m *ChatMessagePage) Validate() error {
 	return nil
 }
 
+// MarshalBlock marshals the ChatThread to bytes.
+func (t *ChatThread) MarshalBlock() ([]byte, error) {
+	return t.MarshalVT()
+}
+
+// UnmarshalBlock unmarshals the ChatThread from bytes.
+func (t *ChatThread) UnmarshalBlock(data []byte) error {
+	return t.UnmarshalVT(data)
+}
+
+// Validate performs cursory checks on the ChatThread.
+func (t *ChatThread) Validate() error {
+	return nil
+}
+
 var _ block.Block = (*ChatChannel)(nil)
 
 var _ block.Block = (*ChatMessage)(nil)
 
 var _ block.Block = (*ChatMessagePage)(nil)
+
+var _ block.Block = (*ChatThread)(nil)

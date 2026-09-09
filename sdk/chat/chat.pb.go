@@ -36,6 +36,11 @@ type ChatChannel struct {
 	// EncryptionAlgorithm is the channel encryption policy. Empty allows plaintext;
 	// once enabled it cannot change. Annotations and state changes remain public.
 	EncryptionAlgorithm string `protobuf:"bytes,7,opt,name=encryption_algorithm,json=encryptionAlgorithm,proto3" json:"encryptionAlgorithm,omitempty"`
+	// ThreadHeadKey starts the activity-ordered thread-summary list.
+	ThreadHeadKey string `protobuf:"bytes,8,opt,name=thread_head_key,json=threadHeadKey,proto3" json:"threadHeadKey,omitempty"`
+	// ThreadIndexedMessageCount is the history prefix represented by the thread index.
+	// Presence distinguishes an initialized empty index from legacy channel state.
+	ThreadIndexedMessageCount *uint64 `protobuf:"varint,9,opt,name=thread_indexed_message_count,json=threadIndexedMessageCount,proto3,oneof" json:"threadIndexedMessageCount,omitempty"`
 }
 
 func (x *ChatChannel) Reset() {
@@ -91,6 +96,20 @@ func (x *ChatChannel) GetEncryptionAlgorithm() string {
 		return x.EncryptionAlgorithm
 	}
 	return ""
+}
+
+func (x *ChatChannel) GetThreadHeadKey() string {
+	if x != nil {
+		return x.ThreadHeadKey
+	}
+	return ""
+}
+
+func (x *ChatChannel) GetThreadIndexedMessageCount() uint64 {
+	if x != nil && x.ThreadIndexedMessageCount != nil {
+		return *x.ThreadIndexedMessageCount
+	}
+	return 0
 }
 
 // ChatMessage is a chat message world object linked to a channel.
@@ -177,6 +196,71 @@ func (x *ChatMessagePage) GetMessageKeys() []string {
 		return x.MessageKeys
 	}
 	return nil
+}
+
+// ChatThread stores one bounded summary in the channel's activity-ordered thread index.
+type ChatThread struct {
+	unknownFields []byte
+	// RootMessageKey is the immutable root identity summarized by this snapshot.
+	RootMessageKey string `protobuf:"bytes,1,opt,name=root_message_key,json=rootMessageKey,proto3" json:"rootMessageKey,omitempty"`
+	// LatestMessageKey is the newest canonical reply captured by this snapshot.
+	LatestMessageKey string `protobuf:"bytes,2,opt,name=latest_message_key,json=latestMessageKey,proto3" json:"latestMessageKey,omitempty"`
+	// LatestMessageIndex orders threads by their newest canonical reply.
+	LatestMessageIndex uint64 `protobuf:"varint,3,opt,name=latest_message_index,json=latestMessageIndex,proto3" json:"latestMessageIndex,omitempty"`
+	// ReplyCount is the number of canonical thread replies.
+	ReplyCount uint64 `protobuf:"varint,4,opt,name=reply_count,json=replyCount,proto3" json:"replyCount,omitempty"`
+	// NewerThreadKey establishes the preceding entry in activity order.
+	NewerThreadKey string `protobuf:"bytes,5,opt,name=newer_thread_key,json=newerThreadKey,proto3" json:"newerThreadKey,omitempty"`
+	// OlderThreadKey establishes the following entry in activity order.
+	OlderThreadKey string `protobuf:"bytes,6,opt,name=older_thread_key,json=olderThreadKey,proto3" json:"olderThreadKey,omitempty"`
+}
+
+func (x *ChatThread) Reset() {
+	*x = ChatThread{}
+}
+
+func (*ChatThread) ProtoMessage() {}
+
+func (x *ChatThread) GetRootMessageKey() string {
+	if x != nil {
+		return x.RootMessageKey
+	}
+	return ""
+}
+
+func (x *ChatThread) GetLatestMessageKey() string {
+	if x != nil {
+		return x.LatestMessageKey
+	}
+	return ""
+}
+
+func (x *ChatThread) GetLatestMessageIndex() uint64 {
+	if x != nil {
+		return x.LatestMessageIndex
+	}
+	return 0
+}
+
+func (x *ChatThread) GetReplyCount() uint64 {
+	if x != nil {
+		return x.ReplyCount
+	}
+	return 0
+}
+
+func (x *ChatThread) GetNewerThreadKey() string {
+	if x != nil {
+		return x.NewerThreadKey
+	}
+	return ""
+}
+
+func (x *ChatThread) GetOlderThreadKey() string {
+	if x != nil {
+		return x.OlderThreadKey
+	}
+	return ""
 }
 
 // InitChatDemoOp creates a "General" channel on space quickstart.
@@ -310,8 +394,10 @@ func (m *ChatChannel) CloneVT() *ChatChannel {
 	r.MessageCount = m.MessageCount
 	r.CreatorPeerId = m.CreatorPeerId
 	r.EncryptionAlgorithm = m.EncryptionAlgorithm
+	r.ThreadHeadKey = m.ThreadHeadKey
 	r.CreatedAt = protobuf_go_lite.CloneVTValue(m.CreatedAt)
 	r.ReadPositions = protobuf_go_lite.CloneVTMap(m.ReadPositions)
+	r.ThreadIndexedMessageCount = protobuf_go_lite.ClonePtr(m.ThreadIndexedMessageCount)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -356,6 +442,27 @@ func (m *ChatMessagePage) CloneVT() *ChatMessagePage {
 }
 
 func (m *ChatMessagePage) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *ChatThread) CloneVT() *ChatThread {
+	if m == nil {
+		return (*ChatThread)(nil)
+	}
+	r := new(ChatThread)
+	r.RootMessageKey = m.RootMessageKey
+	r.LatestMessageKey = m.LatestMessageKey
+	r.LatestMessageIndex = m.LatestMessageIndex
+	r.ReplyCount = m.ReplyCount
+	r.NewerThreadKey = m.NewerThreadKey
+	r.OlderThreadKey = m.OlderThreadKey
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *ChatThread) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
@@ -424,6 +531,12 @@ func (this *ChatChannel) EqualVT(that *ChatChannel) bool {
 	if this.EncryptionAlgorithm != that.EncryptionAlgorithm {
 		return false
 	}
+	if this.ThreadHeadKey != that.ThreadHeadKey {
+		return false
+	}
+	if !protobuf_go_lite.EqualPtr(this.ThreadIndexedMessageCount, that.ThreadIndexedMessageCount) {
+		return false
+	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
@@ -484,6 +597,41 @@ func (this *ChatMessagePage) EqualVT(that *ChatMessagePage) bool {
 
 func (this *ChatMessagePage) EqualMessageVT(thatMsg any) bool {
 	that, ok := thatMsg.(*ChatMessagePage)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *ChatThread) EqualVT(that *ChatThread) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.RootMessageKey != that.RootMessageKey {
+		return false
+	}
+	if this.LatestMessageKey != that.LatestMessageKey {
+		return false
+	}
+	if this.LatestMessageIndex != that.LatestMessageIndex {
+		return false
+	}
+	if this.ReplyCount != that.ReplyCount {
+		return false
+	}
+	if this.NewerThreadKey != that.NewerThreadKey {
+		return false
+	}
+	if this.OlderThreadKey != that.OlderThreadKey {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *ChatThread) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*ChatThread)
 	if !ok {
 		return false
 	}
@@ -652,6 +800,16 @@ func (x *ChatChannel) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("encryptionAlgorithm")
 		s.WriteString(x.EncryptionAlgorithm)
 	}
+	if x.ThreadHeadKey != "" || s.HasField("threadHeadKey") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("threadHeadKey")
+		s.WriteString(x.ThreadHeadKey)
+	}
+	if x.ThreadIndexedMessageCount != nil {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("threadIndexedMessageCount")
+		s.WriteUint64(*x.ThreadIndexedMessageCount)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -703,6 +861,17 @@ func (x *ChatChannel) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "encryption_algorithm", "encryptionAlgorithm":
 			s.AddField("encryption_algorithm")
 			x.EncryptionAlgorithm = s.ReadString()
+		case "thread_head_key", "threadHeadKey":
+			s.AddField("thread_head_key")
+			x.ThreadHeadKey = s.ReadString()
+		case "thread_indexed_message_count", "threadIndexedMessageCount":
+			s.AddField("thread_indexed_message_count")
+			if s.ReadNil() {
+				x.ThreadIndexedMessageCount = nil
+				return
+			}
+			t := s.ReadUint64()
+			x.ThreadIndexedMessageCount = &t
 		}
 	})
 }
@@ -845,6 +1014,88 @@ func (x *ChatMessagePage) UnmarshalProtoJSON(s *json.UnmarshalState) {
 
 // UnmarshalJSON unmarshals the ChatMessagePage from JSON.
 func (x *ChatMessagePage) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the ChatThread message to JSON.
+func (x *ChatThread) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.RootMessageKey != "" || s.HasField("rootMessageKey") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("rootMessageKey")
+		s.WriteString(x.RootMessageKey)
+	}
+	if x.LatestMessageKey != "" || s.HasField("latestMessageKey") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("latestMessageKey")
+		s.WriteString(x.LatestMessageKey)
+	}
+	if x.LatestMessageIndex != 0 || s.HasField("latestMessageIndex") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("latestMessageIndex")
+		s.WriteUint64(x.LatestMessageIndex)
+	}
+	if x.ReplyCount != 0 || s.HasField("replyCount") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("replyCount")
+		s.WriteUint64(x.ReplyCount)
+	}
+	if x.NewerThreadKey != "" || s.HasField("newerThreadKey") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("newerThreadKey")
+		s.WriteString(x.NewerThreadKey)
+	}
+	if x.OlderThreadKey != "" || s.HasField("olderThreadKey") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("olderThreadKey")
+		s.WriteString(x.OlderThreadKey)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the ChatThread to JSON.
+func (x *ChatThread) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the ChatThread message from JSON.
+func (x *ChatThread) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "root_message_key", "rootMessageKey":
+			s.AddField("root_message_key")
+			x.RootMessageKey = s.ReadString()
+		case "latest_message_key", "latestMessageKey":
+			s.AddField("latest_message_key")
+			x.LatestMessageKey = s.ReadString()
+		case "latest_message_index", "latestMessageIndex":
+			s.AddField("latest_message_index")
+			x.LatestMessageIndex = s.ReadUint64()
+		case "reply_count", "replyCount":
+			s.AddField("reply_count")
+			x.ReplyCount = s.ReadUint64()
+		case "newer_thread_key", "newerThreadKey":
+			s.AddField("newer_thread_key")
+			x.NewerThreadKey = s.ReadString()
+		case "older_thread_key", "olderThreadKey":
+			s.AddField("older_thread_key")
+			x.OlderThreadKey = s.ReadString()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the ChatThread from JSON.
+func (x *ChatThread) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -1038,6 +1289,16 @@ func (m *ChatChannel) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.ThreadIndexedMessageCount != nil {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(*m.ThreadIndexedMessageCount))
+		i--
+		dAtA[i] = 0x48
+	}
+	if len(m.ThreadHeadKey) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.ThreadHeadKey)
+		i--
+		dAtA[i] = 0x42
+	}
 	if len(m.EncryptionAlgorithm) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.EncryptionAlgorithm)
 		i--
@@ -1207,6 +1468,68 @@ func (m *ChatMessagePage) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *ChatThread) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ChatThread) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *ChatThread) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.OlderThreadKey) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.OlderThreadKey)
+		i--
+		dAtA[i] = 0x32
+	}
+	if len(m.NewerThreadKey) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.NewerThreadKey)
+		i--
+		dAtA[i] = 0x2a
+	}
+	if m.ReplyCount != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.ReplyCount))
+		i--
+		dAtA[i] = 0x20
+	}
+	if m.LatestMessageIndex != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.LatestMessageIndex))
+		i--
+		dAtA[i] = 0x18
+	}
+	if len(m.LatestMessageKey) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.LatestMessageKey)
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.RootMessageKey) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.RootMessageKey)
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *InitChatDemoOp) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -1353,6 +1676,8 @@ func (m *ChatChannel) SizeVT() (n int) {
 	}
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.CreatorPeerId)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.EncryptionAlgorithm)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.ThreadHeadKey)
+	n += protobuf_go_lite.SizeVarintPtr(1, m.ThreadIndexedMessageCount)
 	n += len(m.unknownFields)
 	return n
 }
@@ -1386,6 +1711,22 @@ func (m *ChatMessagePage) SizeVT() (n int) {
 	var l int
 	_ = l
 	n += protobuf_go_lite.SizeStringSlice(1, m.MessageKeys)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *ChatThread) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.RootMessageKey)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.LatestMessageKey)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.LatestMessageIndex)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.ReplyCount)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.NewerThreadKey)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.OlderThreadKey)
 	n += len(m.unknownFields)
 	return n
 }
@@ -1487,6 +1828,14 @@ func (x *ChatChannel) MarshalProtoText() string {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "encryption_algorithm")
 		protobuf_go_lite.TextWriteString(&sb, x.EncryptionAlgorithm)
 	}
+	if x.ThreadHeadKey != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "thread_head_key")
+		protobuf_go_lite.TextWriteString(&sb, x.ThreadHeadKey)
+	}
+	if x.ThreadIndexedMessageCount != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "thread_indexed_message_count")
+		protobuf_go_lite.TextWriteUint(&sb, *x.ThreadIndexedMessageCount)
+	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
@@ -1543,6 +1892,40 @@ func (x *ChatMessagePage) MarshalProtoText() string {
 }
 
 func (x *ChatMessagePage) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *ChatThread) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "ChatThread")
+	if x.RootMessageKey != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "root_message_key")
+		protobuf_go_lite.TextWriteString(&sb, x.RootMessageKey)
+	}
+	if x.LatestMessageKey != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "latest_message_key")
+		protobuf_go_lite.TextWriteString(&sb, x.LatestMessageKey)
+	}
+	if x.LatestMessageIndex != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "latest_message_index")
+		protobuf_go_lite.TextWriteUint(&sb, x.LatestMessageIndex)
+	}
+	if x.ReplyCount != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "reply_count")
+		protobuf_go_lite.TextWriteUint(&sb, x.ReplyCount)
+	}
+	if x.NewerThreadKey != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "newer_thread_key")
+		protobuf_go_lite.TextWriteString(&sb, x.NewerThreadKey)
+	}
+	if x.OlderThreadKey != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "older_thread_key")
+		protobuf_go_lite.TextWriteString(&sb, x.OlderThreadKey)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *ChatThread) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -1737,6 +2120,26 @@ func (m *ChatChannel) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.EncryptionAlgorithm = v
+		case 8:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ThreadHeadKey", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.ThreadHeadKey = v
+		case 9:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ThreadIndexedMessageCount", wireType)
+			}
+			var v uint64
+			v, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.ThreadIndexedMessageCount = &v
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
@@ -1902,6 +2305,107 @@ func (m *ChatMessagePage) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.MessageKeys = append(m.MessageKeys, v)
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *ChatThread) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ChatThread: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ChatThread: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RootMessageKey", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.RootMessageKey = v
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LatestMessageKey", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.LatestMessageKey = v
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LatestMessageIndex", wireType)
+			}
+			m.LatestMessageIndex = 0
+			m.LatestMessageIndex, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ReplyCount", wireType)
+			}
+			m.ReplyCount = 0
+			m.ReplyCount, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field NewerThreadKey", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.NewerThreadKey = v
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OlderThreadKey", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.OlderThreadKey = v
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

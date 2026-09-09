@@ -26,6 +26,11 @@ message ChatChannel {
   // EncryptionAlgorithm is the channel encryption policy. Empty allows plaintext;
   // once enabled it cannot change. Annotations and state changes remain public.
   string encryption_algorithm = 7;
+  // ThreadHeadKey starts the activity-ordered thread-summary list.
+  string thread_head_key = 8;
+  // ThreadIndexedMessageCount is the history prefix represented by the thread index.
+  // Presence distinguishes an initialized empty index from legacy channel state.
+  optional uint64 thread_indexed_message_count = 9;
 }
 
 // ChatMessage is a chat message world object linked to a channel.
@@ -49,6 +54,22 @@ message ChatMessage {
 message ChatMessagePage {
   // MessageKeys are page-local message object keys in creation order.
   repeated string message_keys = 1;
+}
+
+// ChatThread stores one bounded summary in the channel's activity-ordered thread index.
+message ChatThread {
+  // RootMessageKey is the immutable root identity summarized by this snapshot.
+  string root_message_key = 1;
+  // LatestMessageKey is the newest canonical reply captured by this snapshot.
+  string latest_message_key = 2;
+  // LatestMessageIndex orders threads by their newest canonical reply.
+  uint64 latest_message_index = 3;
+  // ReplyCount is the number of canonical thread replies.
+  uint64 reply_count = 4;
+  // NewerThreadKey establishes the preceding entry in activity order.
+  string newer_thread_key = 5;
+  // OlderThreadKey establishes the following entry in activity order.
+  string older_thread_key = 6;
 }
 
 // InitChatDemoOp creates a "General" channel on space quickstart.

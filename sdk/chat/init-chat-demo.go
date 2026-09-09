@@ -54,8 +54,9 @@ func (o *InitChatDemoOp) ApplyWorldOp(
 	}
 
 	channel := &ChatChannel{
-		Name:      "General",
-		CreatedAt: o.GetTimestamp(),
+		Name:                      "General",
+		CreatedAt:                 o.GetTimestamp(),
+		ThreadIndexedMessageCount: new(uint64),
 	}
 	if _, _, err := world.CreateWorldObject(ctx, ws, objKey, func(bcs *block.Cursor) error {
 		bcs.SetBlock(channel, true)
