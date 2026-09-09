@@ -2,6 +2,7 @@ package bldr_plugin_host_storage_volume
 
 import (
 	"context"
+	"encoding/base64"
 
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
@@ -65,7 +66,13 @@ func NewFactory(b bus.Bus) controller.Factory {
 func (c *Controller) Execute(ctx context.Context) error {
 	// Start the storage volume on the plugin host.
 	storageVolumeID := c.GetConfig().GetStorageVolumeId()
-	hostVolumeID := "sv-" + storageVolumeID
+	hostStorageID := c.GetConfig().GetStorageId()
+	if hostStorageID == "" {
+		hostStorageID = "default"
+	}
+	hostName := base64.RawURLEncoding.EncodeToString([]byte(hostStorageID)) + "/" +
+		base64.RawURLEncoding.EncodeToString([]byte(storageVolumeID))
+	hostVolumeID := "sv-" + hostName
 
 	hostVolumeConf := c.GetConfig().GetVolumeConfig().CloneVT()
 	if hostVolumeConf == nil {
@@ -77,12 +84,6 @@ func (c *Controller) Execute(ctx context.Context) error {
 	hostVolumeConf.DisablePeer = true
 	hostVolumeConf.DisableEventBlockRm = true
 
-	// Host storage ID defaults
-	hostStorageID := c.GetConfig().GetStorageId()
-	if hostStorageID == "" {
-		hostStorageID = "default"
-	}
-
 	// Start via the plugin host.
 	hostStorageVolumeConf := &storage_volume.Config{
 		StorageId:       hostStorageID,
@@ -93,7 +94,7 @@ func (c *Controller) Execute(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	hostStorageVolumeServiceID := storageVolumeID + "/" + volume_rpc.SRPCAccessVolumesServiceID
+	hostStorageVolumeServiceID := hostName + "/" + volume_rpc.SRPCAccessVolumesServiceID
 	hostStorageVolumeRpcServerConf := &volume_rpc_server.Config{
 		ServiceId:        hostStorageVolumeServiceID,
 		VolumeIdList:     []string{hostVolumeID},

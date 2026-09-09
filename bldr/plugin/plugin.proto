@@ -97,6 +97,10 @@ message GetPluginInfoResponse {
   .volume.VolumeInfo host_volume_info = 3;
   // Standalone reports that no PluginHost Resource graph is available.
   bool standalone = 4;
+  // HostStorageId is the Storage ID on the plugin host bus that this plugin
+  // instance allocates named volumes through. Empty selects the host default
+  // storage.
+  string host_storage_id = 5;
 }
 
 

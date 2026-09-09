@@ -11,11 +11,14 @@ import (
 )
 
 // PluginHostStorage provides storage via the plugin host.
-type PluginHostStorage struct{}
+type PluginHostStorage struct {
+	// storageID selects the host provider; empty selects its default.
+	storageID string
+}
 
 // NewPluginHostStorage constructs the storage.
-func NewPluginHostStorage() *PluginHostStorage {
-	return &PluginHostStorage{}
+func NewPluginHostStorage(storageID string) *PluginHostStorage {
+	return &PluginHostStorage{storageID: storageID}
 }
 
 // GetStorageInfo returns StorageInfo.
@@ -33,7 +36,11 @@ func (s *PluginHostStorage) AddFactories(b bus.Bus, sr *static.Resolver) {
 // Returns nil if the storage cannot produce Volume.
 // baseVolCtrlConf can be nil
 func (s *PluginHostStorage) BuildVolumeConfig(id string, baseVolCtrlConf *volume_controller.Config) (config.Config, error) {
-	return &plugin_host_storage_volume.Config{StorageVolumeId: id, VolumeConfig: baseVolCtrlConf}, nil
+	return &plugin_host_storage_volume.Config{
+		StorageId:       s.storageID,
+		StorageVolumeId: id,
+		VolumeConfig:    baseVolCtrlConf,
+	}, nil
 }
 
 // DeleteVolume is not supported for plugin host storage.

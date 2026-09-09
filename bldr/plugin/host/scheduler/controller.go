@@ -479,6 +479,7 @@ func (c *Controller) buildPluginMux(
 		c.conf.GetInstanceKey(),
 		manifest,
 		proxyHostVolInfo,
+		c.conf.GetHostStorageId(),
 	))
 
 	// register plugin dist fs service
