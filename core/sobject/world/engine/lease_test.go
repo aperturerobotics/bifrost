@@ -22,9 +22,11 @@ func TestWorldEngineLeaseLifecycle(t *testing.T) {
 	defer tb.Release()
 
 	soA := &leaseTestSharedObject{
-		blockStore: newTestBlockStore("provider-block-store-a", tb.Volume),
-		id:         "object-a",
-		vol:        tb.Volume,
+		testSharedObject: testSharedObject{
+			blockStore: newTestBlockStore("provider-block-store-a", tb.Volume),
+		},
+		id:  "object-a",
+		vol: tb.Volume,
 	}
 	engineA := &Controller{bus: tb.Bus, engineID: "world-x"}
 	leaseA, _, err := engineA.acquireWorldEngineLease(ctx, soA)
@@ -39,9 +41,11 @@ func TestWorldEngineLeaseLifecycle(t *testing.T) {
 	}
 
 	soB := &leaseTestSharedObject{
-		blockStore: newTestBlockStore("provider-block-store-b", tb.Volume),
-		id:         "object-b",
-		vol:        tb.Volume,
+		testSharedObject: testSharedObject{
+			blockStore: newTestBlockStore("provider-block-store-b", tb.Volume),
+		},
+		id:  "object-b",
+		vol: tb.Volume,
 	}
 	leaseB, _, err := engineB.acquireWorldEngineLease(ctx, soB)
 	if err != nil {
@@ -74,9 +78,11 @@ func TestWorldEngineLeaseLossStopsEngineContext(t *testing.T) {
 	lease := newTestWorldEngineLease()
 	vol := &leaseTestVolume{Volume: tb.Volume, lease: lease, detectsLoss: true}
 	so := &leaseTestSharedObject{
-		blockStore: newTestBlockStore("provider-block-store-loss", tb.Volume),
-		id:         "object-loss",
-		vol:        vol,
+		testSharedObject: testSharedObject{
+			blockStore: newTestBlockStore("provider-block-store-loss", tb.Volume),
+		},
+		id:  "object-loss",
+		vol: vol,
 	}
 	c := &Controller{bus: tb.Bus, engineID: "world-loss"}
 	acquired, detectsLoss, err := c.acquireWorldEngineLease(ctx, so)
