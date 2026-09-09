@@ -210,6 +210,8 @@ type ChatEvent struct {
 	// ContentJson is a complete JSON object, bounded to 64 KiB.
 	// The producing protocol validates its schema and canonicalizes its encoding.
 	ContentJson string `protobuf:"bytes,2,opt,name=content_json,json=contentJson,proto3" json:"contentJson,omitempty"`
+	// Relation is protocol-neutral routing metadata expressed in native message keys.
+	Relation *ChatRelation `protobuf:"bytes,3,opt,name=relation,proto3" json:"relation,omitempty"`
 }
 
 func (x *ChatEvent) Reset() {
@@ -230,6 +232,13 @@ func (x *ChatEvent) GetContentJson() string {
 		return x.ContentJson
 	}
 	return ""
+}
+
+func (x *ChatEvent) GetRelation() *ChatRelation {
+	if x != nil {
+		return x.Relation
+	}
+	return nil
 }
 
 // ChatMessageContent contains the message body.
@@ -414,6 +423,7 @@ func (m *ChatEvent) CloneVT() *ChatEvent {
 	r := new(ChatEvent)
 	r.Type = m.Type
 	r.ContentJson = m.ContentJson
+	r.Relation = protobuf_go_lite.CloneVTValue(m.Relation)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -635,6 +645,9 @@ func (this *ChatEvent) EqualVT(that *ChatEvent) bool {
 		return false
 	}
 	if this.ContentJson != that.ContentJson {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.Relation, that.Relation) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -1048,6 +1061,11 @@ func (x *ChatEvent) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("contentJson")
 		s.WriteString(x.ContentJson)
 	}
+	if x.Relation != nil || s.HasField("relation") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("relation")
+		x.Relation.MarshalProtoJSON(s.WithField("relation"))
+	}
 	s.WriteObjectEnd()
 }
 
@@ -1071,6 +1089,13 @@ func (x *ChatEvent) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "content_json", "contentJson":
 			s.AddField("content_json")
 			x.ContentJson = s.ReadString()
+		case "relation":
+			if s.ReadNil() {
+				x.Relation = nil
+				return
+			}
+			x.Relation = &ChatRelation{}
+			x.Relation.UnmarshalProtoJSON(s.WithField("relation", true))
 		}
 	})
 }
@@ -1421,6 +1446,16 @@ func (m *ChatEvent) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.Relation != nil {
+		size, err := m.Relation.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x1a
+	}
 	if len(m.ContentJson) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.ContentJson)
 		i--
@@ -1651,6 +1686,10 @@ func (m *ChatEvent) SizeVT() (n int) {
 	_ = l
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Type)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.ContentJson)
+	if m.Relation != nil {
+		l = m.Relation.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -1852,6 +1891,10 @@ func (x *ChatEvent) MarshalProtoText() string {
 	if x.ContentJson != "" {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "content_json")
 		protobuf_go_lite.TextWriteString(&sb, x.ContentJson)
+	}
+	if x.Relation != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "relation")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Relation)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -2280,6 +2323,21 @@ func (m *ChatEvent) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.ContentJson = v
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Relation", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Relation == nil {
+				m.Relation = &ChatRelation{}
+			}
+			if err := m.Relation.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

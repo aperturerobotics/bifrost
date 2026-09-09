@@ -205,6 +205,12 @@ export interface ChatEvent {
    * @generated from field: string content_json = 2;
    */
   contentJson?: string
+  /**
+   * Relation is protocol-neutral routing metadata expressed in native message keys.
+   *
+   * @generated from field: spacewave.chat.ChatRelation relation = 3;
+   */
+  relation?: ChatRelation
 }
 
 export const ChatEvent: MessageType<ChatEvent> =
@@ -213,6 +219,7 @@ export const ChatEvent: MessageType<ChatEvent> =
     fields: [
       { no: 1, name: 'type', kind: 'scalar', T: ScalarType.STRING },
       { no: 2, name: 'content_json', kind: 'scalar', T: ScalarType.STRING },
+      { no: 3, name: 'relation', kind: 'message', T: () => ChatRelation },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })

@@ -24,5 +24,19 @@ func (e *ChatEvent) Validate() error {
 	if value.Type() != fastjson.TypeObject {
 		return errors.New("chat event content must be a JSON object")
 	}
+	return e.GetRelation().Validate()
+}
+
+// Validate checks one optional relationship expressed in native message keys.
+func (r *ChatRelation) Validate() error {
+	if r == nil {
+		return nil
+	}
+	if len(r.GetType()) > 255 || len(r.GetKey()) > 4096 || len(r.GetTargetKey()) > 4096 || len(r.GetReplyToKey()) > 4096 {
+		return errors.New("chat relationship is incomplete or exceeds its bounds")
+	}
+	if (r.GetType() == "") != (r.GetTargetKey() == "") || r.GetTargetKey() == "" && r.GetReplyToKey() == "" {
+		return errors.New("chat relationship is incomplete or exceeds its bounds")
+	}
 	return nil
 }

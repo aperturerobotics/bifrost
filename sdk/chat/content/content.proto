@@ -59,6 +59,8 @@ message ChatEvent {
   // ContentJson is a complete JSON object, bounded to 64 KiB.
   // The producing protocol validates its schema and canonicalizes its encoding.
   string content_json = 2;
+  // Relation is protocol-neutral routing metadata expressed in native message keys.
+  ChatRelation relation = 3;
 }
 
 // ChatMessageContent contains the message body.
