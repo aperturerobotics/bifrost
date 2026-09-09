@@ -50,6 +50,27 @@ func TestProtocolEventHistory(t *testing.T) {
 		t.Fatalf("timeline event replaced channel state: %v %v", state, err)
 	}
 
+	// Extension events retain native relationships and reject unavailable targets.
+	related := request.CloneVT()
+	related.TransactionId = "related-event"
+	related.Content.GetEvent().Type = "m.room.related"
+	related.Content.GetEvent().ContentJson = `{"body":"related"}`
+	related.Content.GetEvent().Relation = &ChatRelation{Type: "m.thread", TargetKey: sent.GetMessageKey()}
+	relationResult, err := channel.SendMessage(ctx, related)
+	if err != nil {
+		t.Fatal(err)
+	}
+	relationRead, err := reader.GetMessage(ctx, &chat_rpc.GetMessageRequest{MessageKey: relationResult.GetMessageKey()})
+	if err != nil || !relationRead.GetMessage().GetContent().EqualVT(related.GetContent()) {
+		t.Fatalf("stored event relationship changed: %v %v", relationRead, err)
+	}
+	invalidRelation := related.CloneVT()
+	invalidRelation.TransactionId = "invalid-relation"
+	invalidRelation.Content.GetEvent().Relation.TargetKey = key + "/message/missing"
+	if _, err := channel.SendMessage(ctx, invalidRelation); err == nil {
+		t.Fatal("accepted an unavailable event relationship")
+	}
+
 	// Conflicting retries and malformed bodies leave history unchanged.
 	conflict := request.CloneVT()
 	conflict.Content.GetEvent().ContentJson = `{}`
@@ -65,7 +86,7 @@ func TestProtocolEventHistory(t *testing.T) {
 		}
 	}
 	info, err := reader.GetChannelInfo(ctx, &chat_rpc.GetChannelInfoRequest{})
-	if err != nil || info.GetMessageCount() != 1 {
+	if err != nil || info.GetMessageCount() != 2 {
 		t.Fatalf("rejected sends advanced history: %v %v", info, err)
 	}
 

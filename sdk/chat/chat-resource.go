@@ -397,7 +397,8 @@ func (r *ChatResource) appendMessage(ctx context.Context, wtx world.WorldState, 
 
 	// Resolve relationships only for new writes; accepted retries retain their original targets.
 	relation := content.GetCiphertext().GetRelation()
-	for _, key := range []string{relation.GetTargetKey(), relation.GetReplyToKey(), content.GetAnnotation().GetTargetKey()} {
+	eventRelation := content.GetEvent().GetRelation()
+	for _, key := range []string{relation.GetTargetKey(), relation.GetReplyToKey(), eventRelation.GetTargetKey(), eventRelation.GetReplyToKey(), content.GetAnnotation().GetTargetKey()} {
 		if key == "" {
 			continue
 		}
@@ -803,10 +804,8 @@ func normalizeSendMessageContent(req *spacewave_chat_rpc.SendMessageRequest) (*C
 		if value == nil || value.Ciphertext.GetAlgorithm() == "" || value.Ciphertext.GetCiphertext() == "" || value.Ciphertext.GetSenderKey() == "" || value.Ciphertext.GetSessionId() == "" {
 			return nil, errors.New("chat encrypted content is incomplete")
 		}
-		if relation := value.Ciphertext.GetRelation(); relation != nil {
-			if len(relation.GetType()) > 255 || len(relation.GetKey()) > 4096 || len(relation.GetTargetKey()) > 4096 || len(relation.GetReplyToKey()) > 4096 || (relation.GetType() == "") != (relation.GetTargetKey() == "") || relation.GetTargetKey() == "" && relation.GetReplyToKey() == "" {
-				return nil, errors.New("chat relationship is incomplete or exceeds its bounds")
-			}
+		if err := value.Ciphertext.GetRelation().Validate(); err != nil {
+			return nil, err
 		}
 	case *ChatMessageContent_Annotation:
 		if value == nil || value.Annotation.GetTargetKey() == "" || len(value.Annotation.GetTargetKey()) > 4096 || value.Annotation.GetKey() == "" || len(value.Annotation.GetKey()) > 4096 {

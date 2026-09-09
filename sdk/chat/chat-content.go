@@ -14,7 +14,7 @@ type ChatMessageContent_Ciphertext = spacewave_chat_content.ChatMessageContent_C
 // ChatCiphertext is the shared encrypted envelope used by storage and RPC.
 type ChatCiphertext = spacewave_chat_content.ChatCiphertext
 
-// ChatRelation is the shared message relationship used by encrypted transports.
+// ChatRelation is shared relationship metadata stored beside supported message bodies.
 type ChatRelation = spacewave_chat_content.ChatRelation
 
 // ChatAnnotation is an attributed public reaction to a channel message.
