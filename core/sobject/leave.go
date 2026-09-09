@@ -85,51 +85,91 @@ func LeaveSOParticipants(ctx context.Context, host *SOHost, owner crypto.PrivKey
 	if request.GetSharedObjectId() != host.GetSharedObjectID() {
 		return nil, errors.New("leave request addresses a different shared object")
 	}
-	state, err := host.GetHostState(ctx)
-	if err != nil {
-		return nil, err
-	}
-	current := state.GetConfig()
 	data, err := request.MarshalVT()
 	if err != nil {
 		return nil, err
 	}
 	requestHash := sha256.Sum256(data)
 
-	// A completed request remains retryable without revealing subsequent membership changes.
-	if !bytes.Equal(current.GetConfigChainHash(), request.GetConfigHash()) {
-		changes, err := host.ReadConfigHistory(ctx, request.GetConfigHash(), current.GetConfigChainHash())
+	for {
+		state, err := host.GetHostState(ctx)
 		if err != nil {
 			return nil, err
 		}
-		for i, change := range changes {
-			if bytes.Equal(change.GetRevocationInfo().GetLeaveRequestHash(), requestHash[:]) {
-				return &SOLeaveResponse{Changes: changes[:i+1]}, nil
+		current := state.GetConfig()
+		var changes []*SOConfigChange
+
+		// A completed request remains retryable without revealing subsequent membership changes.
+		if !bytes.Equal(current.GetConfigChainHash(), request.GetConfigHash()) {
+			changes, err = host.ReadConfigHistory(ctx, request.GetConfigHash(), current.GetConfigChainHash())
+			if err != nil {
+				return nil, err
+			}
+			for i, change := range changes {
+				if bytes.Equal(change.GetRevocationInfo().GetLeaveRequestHash(), requestHash[:]) {
+					return &SOLeaveResponse{Changes: changes[:i+1]}, nil
+				}
+			}
+			if !leaveProofsRemainCurrent(peers, changes) {
+				return nil, errors.New("leave configuration changed before removal")
 			}
 		}
-		return nil, errors.New("leave configuration changed before removal")
-	}
 
-	// Preserve every other participant and remove the proven grants in the same commit.
-	next := current.CloneVT()
-	next.Participants = slices.DeleteFunc(next.Participants, func(p *SOParticipantConfig) bool { return slices.Contains(peers, p.GetPeerId()) })
-	if len(next.Participants) == len(current.GetParticipants()) {
-		return nil, errors.New("leave proofs name no current participant")
+		// Preserve every other participant and remove the proven grants in the same commit.
+		next := current.CloneVT()
+		next.Participants = slices.DeleteFunc(next.Participants, func(p *SOParticipantConfig) bool { return slices.Contains(peers, p.GetPeerId()) })
+		if len(next.Participants) == len(current.GetParticipants()) {
+			return nil, errors.New("leave proofs name no current participant")
+		}
+		if len(next.Participants) != 0 && slices.ContainsFunc(current.GetParticipants(), func(p *SOParticipantConfig) bool {
+			return IsOwner(p.GetRole()) && slices.Contains(peers, p.GetPeerId())
+		}) {
+			return nil, errors.New("remaining root grants require ownership transfer before owner departure")
+		}
+		change, err := BuildSOConfigChange(current, next, SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_REMOVE_PARTICIPANT, owner, &SORevocationInfo{LeaveRequestHash: requestHash[:]})
+		if err != nil {
+			return nil, err
+		}
+		err = host.ApplyConfigChange(ctx, change, func(state *SOState) error {
+			state.RootGrants = slices.DeleteFunc(state.RootGrants, func(grant *SOGrant) bool { return slices.Contains(peers, grant.GetPeerId()) })
+			return nil
+		})
+		if err == nil {
+			return &SOLeaveResponse{Changes: append(changes, change)}, nil
+		}
+
+		// A concurrent owner change invalidates only this optimistic attempt. Re-read
+		// retained history and apply the same consent if its identities stayed admitted.
+		latest, latestErr := host.GetHostState(ctx)
+		if latestErr != nil || bytes.Equal(latest.GetConfig().GetConfigChainHash(), current.GetConfigChainHash()) {
+			return nil, err
+		}
 	}
-	if len(next.Participants) != 0 && slices.ContainsFunc(current.GetParticipants(), func(p *SOParticipantConfig) bool {
-		return IsOwner(p.GetRole()) && slices.Contains(peers, p.GetPeerId())
-	}) {
-		return nil, errors.New("remaining root grants require ownership transfer before owner departure")
+}
+
+// leaveProofsRemainCurrent permits rebasing consent only across transitions that
+// prove every signer remained admitted. Admission changes require fresh consent
+// because the first resulting configuration cannot prove the preceding audience.
+func leaveProofsRemainCurrent(peers []string, changes []*SOConfigChange) bool {
+	if len(changes) == 0 {
+		return false
 	}
-	change, err := BuildSOConfigChange(current, next, SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_REMOVE_PARTICIPANT, owner, &SORevocationInfo{LeaveRequestHash: requestHash[:]})
-	if err != nil {
-		return nil, err
+	switch changes[0].GetChangeType() {
+	case SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_REMOVE_PARTICIPANT,
+		SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_ADD_INVITE,
+		SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_REVOKE_INVITE,
+		SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_INCREMENT_INVITE_USES:
+	default:
+		return false
 	}
-	if err := host.ApplyConfigChange(ctx, change, func(state *SOState) error {
-		state.RootGrants = slices.DeleteFunc(state.RootGrants, func(grant *SOGrant) bool { return slices.Contains(peers, grant.GetPeerId()) })
-		return nil
-	}); err != nil {
-		return nil, err
+	for _, change := range changes {
+		for _, peerID := range peers {
+			if !slices.ContainsFunc(change.GetConfig().GetParticipants(), func(p *SOParticipantConfig) bool {
+				return p.GetPeerId() == peerID
+			}) {
+				return false
+			}
+		}
 	}
-	return &SOLeaveResponse{Changes: []*SOConfigChange{change}}, nil
+	return true
 }
