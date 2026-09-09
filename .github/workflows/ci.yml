@@ -683,7 +683,7 @@ jobs:
     name: E2E (wasm)
     runs-on: ubuntu-latest
     needs: e2e-wasm
-    if: ${{ always() }}
+    if: ${{ !cancelled() }}
     timeout-minutes: 5
     permissions:
       actions: read
