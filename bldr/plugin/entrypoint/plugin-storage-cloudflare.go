@@ -9,4 +9,4 @@ import (
 )
 
 // buildPluginStorages exposes no ambient browser or host storage in a facet.
-func buildPluginStorages(bus.Bus, *static.Resolver) []storage.Storage { return nil }
+func buildPluginStorages(bus.Bus, *static.Resolver, string) []storage.Storage { return nil }

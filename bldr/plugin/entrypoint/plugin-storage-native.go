@@ -11,8 +11,12 @@ import (
 
 // buildPluginStorages builds the storage backends for the plugin.
 // On native builds, uses the plugin host storage (RPC proxy) for cross-process access.
-func buildPluginStorages(b bus.Bus, sr *static.Resolver) []storage.Storage {
-	hostStorage := plugin_host_storage.NewPluginHostStorage()
+func buildPluginStorages(
+	b bus.Bus,
+	sr *static.Resolver,
+	hostStorageID string,
+) []storage.Storage {
+	hostStorage := plugin_host_storage.NewPluginHostStorage(hostStorageID)
 	hostStorage.AddFactories(b, sr)
 	return []storage.Storage{hostStorage}
 }

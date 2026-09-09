@@ -30,6 +30,10 @@ type PluginHostServer struct {
 	manifestSnapshot *bldr_manifest.ManifestSnapshot
 	// hostVolumeInfo is the host volume information
 	hostVolumeInfo *volume.VolumeInfo
+	// hostStorageID is the Storage ID on the host bus that this plugin
+	// instance allocates named volumes through. Empty selects the host
+	// default storage.
+	hostStorageID string
 	// pluginFsTracker tracks loaded plugin FSCursor servers
 	// TODO: we need a KeyedRefCountValue type which resolves a value with the same logic as refcount/refcount.go
 	// TODO: that would be a lot simpler and more robust here
@@ -45,6 +49,7 @@ func NewPluginHostServer(
 	instanceKey string,
 	manifest *bldr_manifest.ManifestSnapshot,
 	hostVolumeInfo *volume.VolumeInfo,
+	hostStorageID string,
 ) *PluginHostServer {
 	s := &PluginHostServer{
 		b:                b,
@@ -53,6 +58,7 @@ func NewPluginHostServer(
 		instanceKey:      instanceKey,
 		manifestSnapshot: manifest,
 		hostVolumeInfo:   hostVolumeInfo,
+		hostStorageID:    hostStorageID,
 	}
 	s.pluginFsTracker = keyed.NewKeyedRefCountWithLogger(
 		s.newPluginHostServerFsTracker,
@@ -75,6 +81,7 @@ func (s *PluginHostServer) GetPluginInfo(
 			s.manifestSnapshot.GetManifestRef().Clone(),
 		),
 		HostVolumeInfo: s.hostVolumeInfo,
+		HostStorageId:  s.hostStorageID,
 	}, nil
 }
 

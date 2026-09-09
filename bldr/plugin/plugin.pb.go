@@ -169,6 +169,10 @@ type GetPluginInfoResponse struct {
 	HostVolumeInfo *volume.VolumeInfo `protobuf:"bytes,3,opt,name=host_volume_info,json=hostVolumeInfo,proto3" json:"hostVolumeInfo,omitempty"`
 	// Standalone reports that no PluginHost Resource graph is available.
 	Standalone bool `protobuf:"varint,4,opt,name=standalone,proto3" json:"standalone,omitempty"`
+	// HostStorageId is the Storage ID on the plugin host bus that this plugin
+	// instance allocates named volumes through. Empty selects the host default
+	// storage.
+	HostStorageId string `protobuf:"bytes,5,opt,name=host_storage_id,json=hostStorageId,proto3" json:"hostStorageId,omitempty"`
 }
 
 func (x *GetPluginInfoResponse) Reset() {
@@ -203,6 +207,13 @@ func (x *GetPluginInfoResponse) GetStandalone() bool {
 		return x.Standalone
 	}
 	return false
+}
+
+func (x *GetPluginInfoResponse) GetHostStorageId() string {
+	if x != nil {
+		return x.HostStorageId
+	}
+	return ""
 }
 
 // LoadPluginRequest is a request to load a plugin while the RPC is active.
@@ -441,6 +452,7 @@ func (m *GetPluginInfoResponse) CloneVT() *GetPluginInfoResponse {
 	r := new(GetPluginInfoResponse)
 	r.PluginId = m.PluginId
 	r.Standalone = m.Standalone
+	r.HostStorageId = m.HostStorageId
 	r.ManifestRef = protobuf_go_lite.CloneVTValue(m.ManifestRef)
 	r.HostVolumeInfo = protobuf_go_lite.CloneVTValue(m.HostVolumeInfo)
 	if len(m.unknownFields) > 0 {
@@ -641,6 +653,9 @@ func (this *GetPluginInfoResponse) EqualVT(that *GetPluginInfoResponse) bool {
 		return false
 	}
 	if this.Standalone != that.Standalone {
+		return false
+	}
+	if this.HostStorageId != that.HostStorageId {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -1016,6 +1031,11 @@ func (x *GetPluginInfoResponse) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("standalone")
 		s.WriteBool(x.Standalone)
 	}
+	if x.HostStorageId != "" || s.HasField("hostStorageId") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("hostStorageId")
+		s.WriteString(x.HostStorageId)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -1053,6 +1073,9 @@ func (x *GetPluginInfoResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "standalone":
 			s.AddField("standalone")
 			x.Standalone = s.ReadBool()
+		case "host_storage_id", "hostStorageId":
+			s.AddField("host_storage_id")
+			x.HostStorageId = s.ReadString()
 		}
 	})
 }
@@ -1520,6 +1543,11 @@ func (m *GetPluginInfoResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error)
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if len(m.HostStorageId) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.HostStorageId)
+		i--
+		dAtA[i] = 0x2a
+	}
 	if m.Standalone {
 		i = protobuf_go_lite.EncodeBool(dAtA, i, m.Standalone)
 		i--
@@ -1843,6 +1871,7 @@ func (m *GetPluginInfoResponse) SizeVT() (n int) {
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
 	n += protobuf_go_lite.SizeBoolNonZero(1, m.Standalone)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.HostStorageId)
 	n += len(m.unknownFields)
 	return n
 }
@@ -2000,6 +2029,10 @@ func (x *GetPluginInfoResponse) MarshalProtoText() string {
 	if x.Standalone != false {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "standalone")
 		protobuf_go_lite.TextWriteBool(&sb, x.Standalone)
+	}
+	if x.HostStorageId != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "host_storage_id")
+		protobuf_go_lite.TextWriteString(&sb, x.HostStorageId)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -2410,6 +2443,16 @@ func (m *GetPluginInfoResponse) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.Standalone = bool(v)
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field HostStorageId", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.HostStorageId = v
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

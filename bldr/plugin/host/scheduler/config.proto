@@ -67,6 +67,11 @@ message Config {
   // UpdateGuardPluginIds require a successful UpdateGuard.Prepare call on the
   // running generation before a different executable replaces it.
   repeated string update_guard_plugin_ids = 17;
+  // HostStorageId selects the Storage ID on the plugin host bus that plugin
+  // instance volumes allocate through. Empty keeps the host default storage.
+  // Top-level plugins leave this unset; instance-scoped runtimes set it to
+  // route the instance's volumes through host-owned storage.
+  string host_storage_id = 18;
 }
 
 // PlatformSelectionPolicy restricts a plugin host platform to a plugin ID list.

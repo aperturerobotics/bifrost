@@ -264,7 +264,7 @@ func ExecutePluginEntrypoint(
 	// Start the plugin storage controller and use the default storage id.
 	// On js/wasm this resolves to direct OPFS access, and on native it
 	// proxies through the plugin host via RPC.
-	storages := buildPluginStorages(b, sr)
+	storages := buildPluginStorages(b, sr, pluginInfo.GetHostStorageId())
 	hostStorageCtrl := storage_controller.BuildStorageController(
 		bldr_plugin.HostStorageID,
 		storages,

@@ -2257,7 +2257,7 @@ func TestExecPluginReadsExternalManifestViaLookupBlockFromNetwork(t *testing.T) 
 	}
 
 	host := &releaseCDNRuntimePluginHost{
-		testPluginHost: testPluginHost{id: "desktop/darwin/arm64"},
+		id: "desktop/darwin/arm64",
 	}
 	hostCtrl := plugin_host_controller.NewController(
 		le,
