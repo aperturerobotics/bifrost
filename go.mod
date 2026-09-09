@@ -85,7 +85,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/quic-go/quic-go v0.62.0
 	github.com/restic/chunker v0.5.0
-	github.com/s4wave/goscript v0.2.32-0.20260908194721-1992f84ca427
+	github.com/s4wave/goscript v0.2.32-0.20260909025243-fba32a3cb953
 	github.com/sasha-s/go-deadlock v0.3.9
 	github.com/satori/go.uuid v1.2.0
 	github.com/sergi/go-diff v1.4.0
@@ -98,13 +98,13 @@ require (
 	github.com/whilp/git-urls v1.0.0
 	github.com/zeebo/blake3 v0.2.4
 	go.starlark.net v0.0.0-20260904161901-6ecada49e42f
-	golang.org/x/crypto v0.56.0
+	golang.org/x/crypto v0.57.0
 	golang.org/x/exp v0.0.0-20260824195058-e88cd73687aa
 	golang.org/x/mod v0.41.0 // latest
-	golang.org/x/sync v0.22.0
-	golang.org/x/sys v0.47.0
-	golang.org/x/term v0.45.0
-	golang.org/x/tools v0.49.0 // latest
+	golang.org/x/sync v0.23.0
+	golang.org/x/sys v0.48.0
+	golang.org/x/term v0.46.0
+	golang.org/x/tools v0.50.0 // latest
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	gorm.io/gorm v1.31.2
 	gotest.tools/v3 v3.5.2
@@ -174,9 +174,9 @@ require (
 	go.opentelemetry.io/otel v1.41.0 // indirect
 	go.opentelemetry.io/otel/trace v1.41.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
-	golang.org/x/net v0.58.0 // indirect
-	golang.org/x/telemetry v0.0.0-20260811182544-a038080d80e5 // indirect
-	golang.org/x/text v0.41.0 // indirect
+	golang.org/x/net v0.59.0 // indirect
+	golang.org/x/telemetry v0.0.0-20260908163034-4bcc4b2ee518 // indirect
+	golang.org/x/text v0.42.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
 	gopkg.in/src-d/go-errors.v1 v1.0.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

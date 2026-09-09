@@ -30,8 +30,8 @@ func TestWatchStateKeepsAcceptedWorldBase(t *testing.T) {
 		pending:                  []*sobject.QueuedSOOperation{{LocalId: "pending", OpData: marshalApplyTxOpForProcessTest(t, op)}},
 	}
 	shared := &transactionSharedObject{
-		testSharedObject: *so,
-		snapshot:         snapshot,
+		testFinalizationSharedObject: testFinalizationSharedObject{testSharedObject: *so},
+		snapshot:                     snapshot,
 	}
 	engine := newSoEngine(c, shared, ws.bengine)
 
@@ -66,8 +66,8 @@ func TestWriteTransactionRefreshesAcceptedBase(t *testing.T) {
 	t.Cleanup(ws.Release)
 	accepted := applyTransactionTestObject(t, c, so, head, "remote-object")
 	shared := &transactionSharedObject{
-		testSharedObject: *so,
-		snapshot:         newTestFinalizationSnapshot(t, &sobject.SORoot{InnerSeqno: 2}, accepted.GetHeadRef()),
+		testFinalizationSharedObject: testFinalizationSharedObject{testSharedObject: *so},
+		snapshot:                     newTestFinalizationSnapshot(t, &sobject.SORoot{InnerSeqno: 2}, accepted.GetHeadRef()),
 	}
 	engine := newSoEngine(c, shared, ws.bengine)
 
@@ -127,8 +127,8 @@ func TestWriteTransactionRetainsSharedObjectBase(t *testing.T) {
 	}
 	t.Cleanup(ws.Release)
 	shared := &transactionSharedObject{
-		testSharedObject: *so,
-		snapshot:         newTestFinalizationSnapshot(t, &sobject.SORoot{InnerSeqno: 1}, head.GetHeadRef()),
+		testFinalizationSharedObject: testFinalizationSharedObject{testSharedObject: *so},
+		snapshot:                     newTestFinalizationSnapshot(t, &sobject.SORoot{InnerSeqno: 1}, head.GetHeadRef()),
 	}
 	engine := newSoEngine(c, shared, ws.bengine)
 	tx, err := engine.NewTransaction(ctx, true)
