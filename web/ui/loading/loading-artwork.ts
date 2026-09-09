@@ -465,7 +465,6 @@ export function createLoadingArtwork(
   let previous = 0
   let nextFrame = 0
   const frameInterval = 1000 / 30
-  let elapsed = 12
   const pointerTarget = new THREE.Vector2()
   let pointerInside = false
 
@@ -494,8 +493,9 @@ export function createLoadingArtwork(
     nextFrame = now + frameInterval - ((now - nextFrame) % frameInterval)
     const dt = previous ? Math.min((now - previous) / 1000, 0.05) : 0
     previous = now
-    if (!reduced.matches) elapsed += dt
-    uniforms.time.value = elapsed
+    // The document clock survives React and prerender handoffs. A scene-local
+    // clock would restart every time the next loading owner mounts its canvas.
+    uniforms.time.value = reduced.matches ? 12 : 12 + now / 1000
     uniforms.pointer.value.copy(pointerTarget)
     const strength = pointerInside && !reduced.matches ? 1 : 0
     uniforms.pointerStrength.value = reduced.matches
@@ -551,7 +551,7 @@ export function createLoadingArtwork(
   reduced.addEventListener('change', resetClock)
   layout()
   canvas.dataset.renderer = 'three'
-  resume()
+  draw(performance.now())
   return () => {
     document.removeEventListener('visibilitychange', resetClock)
     reduced.removeEventListener('change', resetClock)

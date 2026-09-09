@@ -16,23 +16,39 @@ export function LoadingArtwork() {
   )
 }
 
-// mountLoadingArtwork releases the scene when its host leaves the document.
+// mountLoadingArtwork paints visible hosts before the browser can present an
+// empty canvas, and releases the scene when its host leaves the document.
 export function mountLoadingArtwork(host: HTMLElement): () => void {
   const canvas = host.querySelector<HTMLCanvasElement>('canvas')!
   const shell = host.closest<HTMLElement>('.swl-canvas')!
   if (typeof WebGL2RenderingContext === 'undefined') return () => {}
   let release: (() => void) | undefined
-  const visibility = new IntersectionObserver(([entry]) => {
-    release?.()
-    release = undefined
-    if (!entry.isIntersecting) return
+  function show(visible: boolean) {
+    if (!visible) {
+      release?.()
+      release = undefined
+      return
+    }
+    if (release) return
     try {
       release = createLoadingArtwork(canvas, shell)
     } catch {
       // Status and recovery remain usable when a GPU context is unavailable.
       canvas.dataset.renderer = 'unavailable'
     }
+  }
+  const visibility = new IntersectionObserver(([entry]) => {
+    show(entry.isIntersecting)
   })
+  const bounds = canvas.getBoundingClientRect()
+  show(
+    bounds.width > 0 &&
+      bounds.height > 0 &&
+      bounds.bottom > 0 &&
+      bounds.right > 0 &&
+      bounds.top < window.innerHeight &&
+      bounds.left < window.innerWidth,
+  )
   visibility.observe(canvas)
   const removal = new MutationObserver(() => {
     if (!host.isConnected) dispose()
