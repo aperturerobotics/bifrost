@@ -10,6 +10,7 @@ import (
 	block_transform "github.com/s4wave/spacewave/db/block/transform"
 	"github.com/s4wave/spacewave/db/bucket"
 	trace "github.com/s4wave/spacewave/db/traceutil"
+	"github.com/s4wave/spacewave/runtimeenv"
 )
 
 // CopyObjectToBucket copies an object from srcCursor to destCursor.
@@ -66,11 +67,13 @@ func CopyObjectToBucketWithStats(
 		skipSubtreeExists,
 		cb,
 		nil,
+		runtimeenv.Current().Enabled(runtimeenv.BatchCopyExistence),
 	)
 }
 
 // CopyObjectToBucketWithProgress copies an object and reports logical copy
-// accounting after each processed source block.
+// accounting after each processed source block and before batched writes.
+// Existence counts may lag traversal until the pending write batch drains.
 func CopyObjectToBucketWithProgress(
 	ctx context.Context,
 	destCursor, srcCursor *Cursor,
@@ -89,6 +92,7 @@ func CopyObjectToBucketWithProgress(
 		skipSubtreeExists,
 		cb,
 		progress,
+		runtimeenv.Current().Enabled(runtimeenv.BatchCopyExistence),
 	)
 }
 
@@ -101,7 +105,12 @@ func copyObjectToBucket(
 	skipSubtreeExists bool,
 	cb WalkObjectBlocksCb,
 	progress ObjectCopyProgress,
+	batchExistence bool,
 ) (*bucket.ObjectRef, ObjectCopyStats, error) {
+	// Pruning needs an existence answer before traversing each subtree.
+	batchExistence = batchExistence && !skipSubtreeExists
+	trace.Logf(ctx, "copy-batch-existence", "%t", batchExistence)
+
 	// Preserve the source encoding in the destination reference.
 	srcRef := srcCursor.GetRef()
 	destinationRef := srcRef.Clone()
@@ -154,14 +163,6 @@ func copyObjectToBucket(
 	}
 	writeBkt := writeCursor.GetBucket()
 
-	// Bound pending payloads while amortizing destination ownership updates.
-	const maxPendingBytes = 4 << 20
-	writes := block.NewBufferedStoreWithSettings(ctx, writeBkt, &block.BufferedStoreSettings{
-		MaxPendingEntries: 128,
-		MaxPendingBytes:   maxPendingBytes,
-		DrainBatchEntries: 128,
-	})
-
 	// seenMtx guards the set of block references claimed by copy workers.
 	var seenMtx sync.Mutex
 	seenBlocks := make(map[string]struct{})
@@ -194,6 +195,31 @@ func copyObjectToBucket(
 		progressMtx.Unlock()
 		return err
 	}
+
+	// Resolve accounting with each write batch when traversal does not need an
+	// immediate existence answer. Every block still acquires destination ownership.
+	var target block.StoreOps = writeBkt
+	if batchExistence {
+		target = &objectCopyStore{inner: writeBkt, account: func(existing []bool) error {
+			for _, exists := range existing {
+				copiedBlocks.Add(1)
+				if exists {
+					existingBlocks.Add(1)
+				} else {
+					writtenBlocks.Add(1)
+				}
+			}
+			return reportProgress()
+		}}
+	}
+
+	// Bound pending payloads while amortizing destination reads and ownership writes.
+	const maxPendingBytes = 4 << 20
+	writes := block.NewBufferedStoreWithSettings(ctx, target, &block.BufferedStoreSettings{
+		MaxPendingEntries: 128,
+		MaxPendingBytes:   maxPendingBytes,
+		DrainBatchEntries: 128,
+	})
 
 	// GetBlockRefCtor supplies the decoder for each child in the block graph.
 	// TODO: handle garbage collection (set parent in PutOpts).
@@ -234,23 +260,26 @@ func copyObjectToBucket(
 				return false, nil
 			}
 
-			// Preserve existence accounting and subtree skipping, but submit even
-			// existing blocks so the destination establishes its own GC ownership.
+			// The selected policy determines when existence accounting resolves.
+			// All payloads still receive destination ownership writes.
 			seenBlockCount.Add(1)
 			logicalSourceBytes.Add(int64(len(ent.Data)))
-			writeExisted, err := writeBkt.GetBlockExists(ctx, ent.Ref)
+			var writeExisted bool
+			if !batchExistence {
+				writeExisted, err = writeBkt.GetBlockExists(ctx, ent.Ref)
+			}
 			if err == nil {
 				// A single large block must not wait for capacity it can never fit.
-				var target block.StoreOps = writes
+				var batchTarget block.StoreOps = writes
 				if len(ent.Data) > maxPendingBytes {
-					target = writeBkt
+					batchTarget = target
 				}
-				err = target.PutBlockBatch(ctx, []*block.PutBatchEntry{{Ref: ent.Ref, Data: ent.Data}})
+				err = batchTarget.PutBlockBatch(ctx, []*block.PutBatchEntry{{Ref: ent.Ref, Data: ent.Data}})
 			}
 			if err != nil && err != context.Canceled {
 				err = errors.Wrapf(err, "write ref %s", ent.Ref.MarshalString())
 			}
-			if err == nil {
+			if err == nil && !batchExistence {
 				copiedBlocks.Add(1)
 				if writeExisted {
 					existingBlocks.Add(1)

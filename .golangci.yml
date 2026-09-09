@@ -47,6 +47,12 @@ linters:
           deny:
             - pkg: github.com/s4wave/spacewave
               desc: net imports only its own packages inside the Spacewave module.
+        runtimeenv-layering:
+          list-mode: strict
+          files:
+            - '**/runtimeenv/**'
+          allow:
+            - $gostd
         db-layering:
           list-mode: lax
           files:
@@ -56,9 +62,10 @@ linters:
           allow:
             - github.com/s4wave/spacewave/db
             - github.com/s4wave/spacewave/net
+            - github.com/s4wave/spacewave/runtimeenv
           deny:
             - pkg: github.com/s4wave/spacewave
-              desc: db imports only db and lower-layer net packages inside the Spacewave module.
+              desc: db imports only db, lower-layer net packages, and the standard-library-only runtimeenv policy inside the Spacewave module.
     gosec:
       excludes:
         - G306
