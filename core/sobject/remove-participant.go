@@ -8,61 +8,73 @@ import (
 	"github.com/s4wave/spacewave/net/crypto"
 )
 
-// RemoveSOParticipant removes a target peer's participant config and grant
-// from a single shared object.
-//
-// Returns true if the participant was found and removed, false if they were
-// not a participant. Builds a signed SOConfigChange removing the participant
-// and atomically removes the corresponding SOGrant from RootGrants. Does not
-// rotate the transform key; control-plane revocation (P2P block DEX and cloud
-// block exchange denial) handles access removal.
-//
-// signerPriv must be the private key of an OWNER in the current config.
+// RemoveSOParticipants removes participant configs and grants in one signed
+// configuration change. It returns the peer IDs that were present and removed.
+func RemoveSOParticipants(
+	ctx context.Context,
+	host *SOHost,
+	targetPeerIDs []string,
+	signerPriv crypto.PrivKey,
+	revInfo *SORevocationInfo,
+) ([]string, error) {
+	targets := make(map[string]struct{}, len(targetPeerIDs))
+	for _, peerID := range targetPeerIDs {
+		if peerID != "" {
+			targets[peerID] = struct{}{}
+		}
+	}
+	if len(targets) == 0 {
+		return nil, nil
+	}
+
+	state, err := host.GetHostState(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "get current SO state")
+	}
+	currentCfg := state.GetConfig()
+	if currentCfg == nil {
+		return nil, nil
+	}
+
+	var removed []string
+	for _, participant := range currentCfg.GetParticipants() {
+		if _, ok := targets[participant.GetPeerId()]; ok {
+			removed = append(removed, participant.GetPeerId())
+		}
+	}
+	if len(removed) == 0 {
+		return nil, nil
+	}
+
+	nextCfg := currentCfg.CloneVT()
+	nextCfg.Participants = slices.DeleteFunc(nextCfg.Participants, func(participant *SOParticipantConfig) bool {
+		_, ok := targets[participant.GetPeerId()]
+		return ok
+	})
+	entry, err := BuildSOConfigChange(currentCfg, nextCfg, SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_REMOVE_PARTICIPANT, signerPriv, revInfo)
+	if err != nil {
+		return nil, errors.Wrap(err, "build config change")
+	}
+	if err := host.ApplyConfigChange(ctx, entry, func(state *SOState) error {
+		state.RootGrants = slices.DeleteFunc(state.RootGrants, func(grant *SOGrant) bool {
+			_, ok := targets[grant.GetPeerId()]
+			return ok
+		})
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return removed, nil
+}
+
+// RemoveSOParticipant removes one participant config and grant.
 func RemoveSOParticipant(
 	ctx context.Context,
 	host *SOHost,
-	targetPeerIDStr string,
+	targetPeerID string,
 	signerPriv crypto.PrivKey,
 	revInfo *SORevocationInfo,
 ) (bool, error) {
-	state, err := host.GetHostState(ctx)
-	if err != nil {
-		return false, errors.Wrap(err, "get current SO state")
-	}
-
-	currentCfg := state.GetConfig()
-	if currentCfg == nil {
-		return false, nil
-	}
-
-	// Check if participant exists.
-	found := slices.ContainsFunc(currentCfg.GetParticipants(), func(p *SOParticipantConfig) bool {
-		return p.GetPeerId() == targetPeerIDStr
-	})
-	if !found {
-		return false, nil
-	}
-
-	// Build the new config with the participant removed.
-	nextCfg := currentCfg.CloneVT()
-	nextCfg.Participants = slices.DeleteFunc(nextCfg.Participants, func(p *SOParticipantConfig) bool {
-		return p.GetPeerId() == targetPeerIDStr
-	})
-
-	entry, err := BuildSOConfigChange(currentCfg, nextCfg, SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_REMOVE_PARTICIPANT, signerPriv, revInfo)
-	if err != nil {
-		return false, errors.Wrap(err, "build config change")
-	}
-
-	// Apply config change and remove grant atomically.
-	err = host.ApplyConfigChange(ctx, entry, func(st *SOState) error {
-		st.RootGrants = slices.DeleteFunc(st.RootGrants, func(g *SOGrant) bool {
-			return g.GetPeerId() == targetPeerIDStr
-		})
-		return nil
-	})
-	if err != nil {
-		return false, err
-	}
-	return true, nil
+	removed, err := RemoveSOParticipants(ctx, host, []string{targetPeerID}, signerPriv, revInfo)
+	return len(removed) != 0, err
 }

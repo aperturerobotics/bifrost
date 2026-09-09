@@ -260,9 +260,9 @@ SESSIONRESOURCESERVICE_SERVICE = ServiceDescriptor(
             False,
         ),
         MethodDescriptor(
-            "RemoveSpaceParticipant",
-            _github_com_s4wave_spacewave_sdk_session_session_pb2.RemoveSpaceParticipantRequest,
-            _github_com_s4wave_spacewave_sdk_session_session_pb2.RemoveSpaceParticipantResponse,
+            "RemoveSpaceParticipants",
+            _github_com_s4wave_spacewave_sdk_session_session_pb2.RemoveSpaceParticipantsRequest,
+            _github_com_s4wave_spacewave_sdk_session_session_pb2.RemoveSpaceParticipantsResponse,
             False,
             False,
         ),
@@ -1044,20 +1044,20 @@ class SessionResourceServiceClient:
         finally:
             await call.aclose()
 
-    async def remove_space_participant(
+    async def remove_space_participants(
         self,
-        request: _github_com_s4wave_spacewave_sdk_session_session_pb2.RemoveSpaceParticipantRequest,
-    ) -> _github_com_s4wave_spacewave_sdk_session_session_pb2.RemoveSpaceParticipantResponse:
+        request: _github_com_s4wave_spacewave_sdk_session_session_pb2.RemoveSpaceParticipantsRequest,
+    ) -> _github_com_s4wave_spacewave_sdk_session_session_pb2.RemoveSpaceParticipantsResponse:
         call = await self._client.open_call(
             self._service,
-            "RemoveSpaceParticipant",
+            "RemoveSpaceParticipants",
             request.SerializeToString(deterministic=True),
         )
         try:
             data = await call.receive()
             if data is None:
                 raise CallProtocolError("missing unary response")
-            response = _github_com_s4wave_spacewave_sdk_session_session_pb2.RemoveSpaceParticipantResponse()
+            response = _github_com_s4wave_spacewave_sdk_session_session_pb2.RemoveSpaceParticipantsResponse()
             response.ParseFromString(data)
             if await call.receive() is not None:
                 raise CallProtocolError("extra unary response")
@@ -1356,10 +1356,10 @@ class SessionResourceServiceServer(Protocol):
         self,
         request: _github_com_s4wave_spacewave_sdk_session_session_pb2.ListSpaceParticipantsRequest,
     ) -> _github_com_s4wave_spacewave_sdk_session_session_pb2.ListSpaceParticipantsResponse: ...
-    async def remove_space_participant(
+    async def remove_space_participants(
         self,
-        request: _github_com_s4wave_spacewave_sdk_session_session_pb2.RemoveSpaceParticipantRequest,
-    ) -> _github_com_s4wave_spacewave_sdk_session_session_pb2.RemoveSpaceParticipantResponse: ...
+        request: _github_com_s4wave_spacewave_sdk_session_session_pb2.RemoveSpaceParticipantsRequest,
+    ) -> _github_com_s4wave_spacewave_sdk_session_session_pb2.RemoveSpaceParticipantsResponse: ...
     async def revoke_space_invite(
         self,
         request: _github_com_s4wave_spacewave_sdk_session_session_pb2.RevokeSpaceInviteRequest,
@@ -1808,17 +1808,17 @@ def register_session_resource_service(
 
     registry.register(service, "ListSpaceParticipants", list_space_participants_handler)
 
-    async def remove_space_participant_handler(call: Call) -> None:
+    async def remove_space_participants_handler(call: Call) -> None:
         first = await call.receive()
         if first is None:
             raise CallProtocolError("missing initial request")
-        request = _github_com_s4wave_spacewave_sdk_session_session_pb2.RemoveSpaceParticipantRequest()
+        request = _github_com_s4wave_spacewave_sdk_session_session_pb2.RemoveSpaceParticipantsRequest()
         request.ParseFromString(first)
-        response = await implementation.remove_space_participant(request)
+        response = await implementation.remove_space_participants(request)
         await call.send(response.SerializeToString(deterministic=True))
 
     registry.register(
-        service, "RemoveSpaceParticipant", remove_space_participant_handler
+        service, "RemoveSpaceParticipants", remove_space_participants_handler
     )
 
     async def revoke_space_invite_handler(call: Call) -> None:

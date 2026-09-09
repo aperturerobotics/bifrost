@@ -1459,18 +1459,18 @@ func (r *SessionResource) ListSpaceParticipants(
 	}, nil
 }
 
-// RemoveSpaceParticipant removes a participant from a space shared object by peer ID.
-func (r *SessionResource) RemoveSpaceParticipant(
+// RemoveSpaceParticipants removes participant grants in one configuration change.
+func (r *SessionResource) RemoveSpaceParticipants(
 	ctx context.Context,
-	req *s4wave_session.RemoveSpaceParticipantRequest,
-) (*s4wave_session.RemoveSpaceParticipantResponse, error) {
+	req *s4wave_session.RemoveSpaceParticipantsRequest,
+) (*s4wave_session.RemoveSpaceParticipantsResponse, error) {
 	spaceID := req.GetSpaceId()
 	if spaceID == "" {
 		return nil, errors.New("space_id is required")
 	}
-	peerID := req.GetPeerId()
-	if peerID == "" {
-		return nil, errors.New("peer_id is required")
+	peerIDs := req.GetPeerIds()
+	if len(peerIDs) == 0 || slices.Contains(peerIDs, "") {
+		return nil, errors.New("peer_ids are required")
 	}
 
 	ih, rel, err := r.mountInviteHost(ctx, spaceID)
@@ -1479,12 +1479,12 @@ func (r *SessionResource) RemoveSpaceParticipant(
 	}
 	defer rel()
 
-	removed, err := sobject.RemoveSOParticipant(ctx, ih.GetSOHost(), peerID, ih.GetPrivKey(), nil)
+	removed, err := sobject.RemoveSOParticipants(ctx, ih.GetSOHost(), peerIDs, ih.GetPrivKey(), nil)
 	if err != nil {
-		return nil, errors.Wrap(err, "remove participant")
+		return nil, errors.Wrap(err, "remove participants")
 	}
 
-	return &s4wave_session.RemoveSpaceParticipantResponse{Removed: removed}, nil
+	return &s4wave_session.RemoveSpaceParticipantsResponse{RemovedPeerIds: removed}, nil
 }
 
 // RevokeSpaceInvite revokes an invite on a space shared object.

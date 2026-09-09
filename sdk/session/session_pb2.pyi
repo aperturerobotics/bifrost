@@ -693,19 +693,19 @@ class ListSpaceParticipantsResponse(_message.Message):
     participants: _containers.RepeatedCompositeFieldContainer[_sobject_pb2.SOParticipantConfig]
     def __init__(self, participants: _Optional[_Iterable[_Union[_sobject_pb2.SOParticipantConfig, _Mapping]]] = ...) -> None: ...
 
-class RemoveSpaceParticipantRequest(_message.Message):
-    __slots__ = ("space_id", "peer_id")
+class RemoveSpaceParticipantsRequest(_message.Message):
+    __slots__ = ("space_id", "peer_ids")
     SPACE_ID_FIELD_NUMBER: _ClassVar[int]
-    PEER_ID_FIELD_NUMBER: _ClassVar[int]
+    PEER_IDS_FIELD_NUMBER: _ClassVar[int]
     space_id: str
-    peer_id: str
-    def __init__(self, space_id: _Optional[str] = ..., peer_id: _Optional[str] = ...) -> None: ...
+    peer_ids: _containers.RepeatedScalarFieldContainer[str]
+    def __init__(self, space_id: _Optional[str] = ..., peer_ids: _Optional[_Iterable[str]] = ...) -> None: ...
 
-class RemoveSpaceParticipantResponse(_message.Message):
-    __slots__ = ("removed",)
-    REMOVED_FIELD_NUMBER: _ClassVar[int]
-    removed: bool
-    def __init__(self, removed: _Optional[bool] = ...) -> None: ...
+class RemoveSpaceParticipantsResponse(_message.Message):
+    __slots__ = ("removed_peer_ids",)
+    REMOVED_PEER_IDS_FIELD_NUMBER: _ClassVar[int]
+    removed_peer_ids: _containers.RepeatedScalarFieldContainer[str]
+    def __init__(self, removed_peer_ids: _Optional[_Iterable[str]] = ...) -> None: ...
 
 class RevokeSpaceInviteRequest(_message.Message):
     __slots__ = ("space_id", "invite_id")

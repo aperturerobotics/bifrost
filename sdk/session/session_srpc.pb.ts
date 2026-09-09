@@ -51,8 +51,8 @@ import {
   LockSessionResponse,
   MountSharedObjectRequest,
   MountSharedObjectResponse,
-  RemoveSpaceParticipantRequest,
-  RemoveSpaceParticipantResponse,
+  RemoveSpaceParticipantsRequest,
+  RemoveSpaceParticipantsResponse,
   RenameSpaceRequest,
   RenameSpaceResponse,
   RevokeSpaceInviteRequest,
@@ -420,12 +420,12 @@ export const SessionResourceServiceDefinition = {
       kind: MethodKind.Unary,
     },
     /**
-     * @generated from rpc s4wave.session.SessionResourceService.RemoveSpaceParticipant
+     * @generated from rpc s4wave.session.SessionResourceService.RemoveSpaceParticipants
      */
-    RemoveSpaceParticipant: {
-      name: 'RemoveSpaceParticipant',
-      I: RemoveSpaceParticipantRequest,
-      O: RemoveSpaceParticipantResponse,
+    RemoveSpaceParticipants: {
+      name: 'RemoveSpaceParticipants',
+      I: RemoveSpaceParticipantsRequest,
+      O: RemoveSpaceParticipantsResponse,
       kind: MethodKind.Unary,
     },
     /**
@@ -765,12 +765,12 @@ export interface SessionResourceService {
   ): Promise<ListSpaceParticipantsResponse>
 
   /**
-   * @generated from rpc s4wave.session.SessionResourceService.RemoveSpaceParticipant
+   * @generated from rpc s4wave.session.SessionResourceService.RemoveSpaceParticipants
    */
-  RemoveSpaceParticipant(
-    request: RemoveSpaceParticipantRequest,
+  RemoveSpaceParticipants(
+    request: RemoveSpaceParticipantsRequest,
     abortSignal?: AbortSignal,
-  ): Promise<RemoveSpaceParticipantResponse>
+  ): Promise<RemoveSpaceParticipantsResponse>
 
   /**
    * @generated from rpc s4wave.session.SessionResourceService.RevokeSpaceInvite
@@ -1137,13 +1137,13 @@ export interface SessionResourceServiceHandler {
   ): Promise<ListSpaceParticipantsResponse>
 
   /**
-   * @generated from rpc s4wave.session.SessionResourceService.RemoveSpaceParticipant
+   * @generated from rpc s4wave.session.SessionResourceService.RemoveSpaceParticipants
    */
-  RemoveSpaceParticipant(
-    request: RemoveSpaceParticipantRequest,
+  RemoveSpaceParticipants(
+    request: RemoveSpaceParticipantsRequest,
     abortSignal: AbortSignal,
     context: ServerContext,
-  ): Promise<RemoveSpaceParticipantResponse>
+  ): Promise<RemoveSpaceParticipantsResponse>
 
   /**
    * @generated from rpc s4wave.session.SessionResourceService.RevokeSpaceInvite
@@ -1235,7 +1235,7 @@ export class SessionResourceServiceClient implements SessionResourceService {
     this.CreateSpaceInvite = this.CreateSpaceInvite.bind(this)
     this.ListSpaceInvites = this.ListSpaceInvites.bind(this)
     this.ListSpaceParticipants = this.ListSpaceParticipants.bind(this)
-    this.RemoveSpaceParticipant = this.RemoveSpaceParticipant.bind(this)
+    this.RemoveSpaceParticipants = this.RemoveSpaceParticipants.bind(this)
     this.RevokeSpaceInvite = this.RevokeSpaceInvite.bind(this)
     this.JoinSpaceViaInvite = this.JoinSpaceViaInvite.bind(this)
     this.CreateLocalPairingOffer = this.CreateLocalPairingOffer.bind(this)
@@ -1842,20 +1842,20 @@ export class SessionResourceServiceClient implements SessionResourceService {
   }
 
   /**
-   * @generated from rpc s4wave.session.SessionResourceService.RemoveSpaceParticipant
+   * @generated from rpc s4wave.session.SessionResourceService.RemoveSpaceParticipants
    */
-  async RemoveSpaceParticipant(
-    request: RemoveSpaceParticipantRequest,
+  async RemoveSpaceParticipants(
+    request: RemoveSpaceParticipantsRequest,
     abortSignal?: AbortSignal,
-  ): Promise<RemoveSpaceParticipantResponse> {
-    const requestMsg = RemoveSpaceParticipantRequest.create(request)
+  ): Promise<RemoveSpaceParticipantsResponse> {
+    const requestMsg = RemoveSpaceParticipantsRequest.create(request)
     const result = await this.rpc.request(
       this.service,
-      SessionResourceServiceDefinition.methods.RemoveSpaceParticipant.name,
-      RemoveSpaceParticipantRequest.toBinary(requestMsg),
+      SessionResourceServiceDefinition.methods.RemoveSpaceParticipants.name,
+      RemoveSpaceParticipantsRequest.toBinary(requestMsg),
       abortSignal || undefined,
     )
-    return RemoveSpaceParticipantResponse.fromBinary(result)
+    return RemoveSpaceParticipantsResponse.fromBinary(result)
   }
 
   /**

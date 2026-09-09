@@ -47,7 +47,7 @@ service SessionResourceService {
   rpc CreateSpaceInvite(CreateSpaceInviteRequest) returns (CreateSpaceInviteResponse);
   rpc ListSpaceInvites(ListSpaceInvitesRequest) returns (ListSpaceInvitesResponse);
   rpc ListSpaceParticipants(ListSpaceParticipantsRequest) returns (ListSpaceParticipantsResponse);
-  rpc RemoveSpaceParticipant(RemoveSpaceParticipantRequest) returns (RemoveSpaceParticipantResponse);
+  rpc RemoveSpaceParticipants(RemoveSpaceParticipantsRequest) returns (RemoveSpaceParticipantsResponse);
   rpc RevokeSpaceInvite(RevokeSpaceInviteRequest) returns (RevokeSpaceInviteResponse);
   rpc JoinSpaceViaInvite(JoinSpaceViaInviteRequest) returns (JoinSpaceViaInviteResponse);
   rpc CreateLocalPairingOffer(CreateLocalPairingOfferRequest) returns (CreateLocalPairingOfferResponse);
@@ -721,18 +721,18 @@ message ListSpaceParticipantsResponse {
   repeated .sobject.SOParticipantConfig participants = 1;
 }
 
-// RemoveSpaceParticipantRequest is the request for RemoveSpaceParticipant.
-message RemoveSpaceParticipantRequest {
+// RemoveSpaceParticipantsRequest removes one native audience set atomically.
+message RemoveSpaceParticipantsRequest {
   // SpaceId is the shared object ULID for the space.
   string space_id = 1;
-  // PeerId is the peer ID of the participant to remove.
-  string peer_id = 2;
+  // PeerIds are the participant peer IDs to remove in one configuration change.
+  repeated string peer_ids = 2;
 }
 
-// RemoveSpaceParticipantResponse is the response for RemoveSpaceParticipant.
-message RemoveSpaceParticipantResponse {
-  // Removed indicates whether the participant was found and removed.
-  bool removed = 1;
+// RemoveSpaceParticipantsResponse reports the participant grants that existed.
+message RemoveSpaceParticipantsResponse {
+  // RemovedPeerIds are the participant peer IDs that were present and removed.
+  repeated string removed_peer_ids = 1;
 }
 
 // RevokeSpaceInviteRequest is the request for RevokeSpaceInvite.
