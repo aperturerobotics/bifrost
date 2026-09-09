@@ -1511,7 +1511,7 @@
     },
     {
       "name": "github.com/s4wave/goscript",
-      "version": "v0.2.32-0.20260908194721-1992f84ca427",
+      "version": "v0.2.32-0.20260909025243-fba32a3cb953",
       "spdx": "MIT",
       "source": "go",
       "repo": "https://github.com/s4wave/goscript",
@@ -1669,7 +1669,7 @@
     },
     {
       "name": "golang.org/x/crypto",
-      "version": "v0.56.0",
+      "version": "v0.57.0",
       "spdx": "BSD-3-Clause",
       "source": "go",
       "repo": "https://github.com/golang/crypto",
@@ -1693,7 +1693,7 @@
     },
     {
       "name": "golang.org/x/net",
-      "version": "v0.58.0",
+      "version": "v0.59.0",
       "spdx": "BSD-3-Clause",
       "source": "go",
       "repo": "https://github.com/golang/net",
@@ -1701,7 +1701,7 @@
     },
     {
       "name": "golang.org/x/sync",
-      "version": "v0.22.0",
+      "version": "v0.23.0",
       "spdx": "BSD-3-Clause",
       "source": "go",
       "repo": "https://github.com/golang/sync",
@@ -1709,7 +1709,7 @@
     },
     {
       "name": "golang.org/x/sys",
-      "version": "v0.47.0",
+      "version": "v0.48.0",
       "spdx": "BSD-3-Clause",
       "source": "go",
       "repo": "https://github.com/golang/sys",
@@ -1717,7 +1717,7 @@
     },
     {
       "name": "golang.org/x/term",
-      "version": "v0.45.0",
+      "version": "v0.46.0",
       "spdx": "BSD-3-Clause",
       "source": "go",
       "repo": "https://github.com/golang/term",
@@ -1725,7 +1725,7 @@
     },
     {
       "name": "golang.org/x/text",
-      "version": "v0.41.0",
+      "version": "v0.42.0",
       "spdx": "BSD-3-Clause",
       "source": "go",
       "repo": "https://github.com/golang/text",
@@ -1741,7 +1741,7 @@
     },
     {
       "name": "golang.org/x/tools",
-      "version": "v0.49.0",
+      "version": "v0.50.0",
       "spdx": "BSD-3-Clause",
       "source": "go",
       "repo": "https://github.com/golang/tools",
