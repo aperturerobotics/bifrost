@@ -324,6 +324,120 @@ func (x *ListMessagesResponse) GetHasMore() bool {
 	return false
 }
 
+// ListThreadsRequest selects an activity-ordered thread page.
+type ListThreadsRequest struct {
+	unknownFields []byte
+	// BeforeIndex resumes after the thread whose latest reply has this history index.
+	BeforeIndex *uint64 `protobuf:"varint,1,opt,name=before_index,json=beforeIndex,proto3,oneof" json:"beforeIndex,omitempty"`
+	// Limit is the maximum number of matching threads to return.
+	Limit uint32 `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`
+	// ParticipatedOnly selects threads with a reply by the authenticated person.
+	ParticipatedOnly bool `protobuf:"varint,3,opt,name=participated_only,json=participatedOnly,proto3" json:"participatedOnly,omitempty"`
+}
+
+func (x *ListThreadsRequest) Reset() {
+	*x = ListThreadsRequest{}
+}
+
+func (*ListThreadsRequest) ProtoMessage() {}
+
+func (x *ListThreadsRequest) GetBeforeIndex() uint64 {
+	if x != nil && x.BeforeIndex != nil {
+		return *x.BeforeIndex
+	}
+	return 0
+}
+
+func (x *ListThreadsRequest) GetLimit() uint32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+func (x *ListThreadsRequest) GetParticipatedOnly() bool {
+	if x != nil {
+		return x.ParticipatedOnly
+	}
+	return false
+}
+
+// ChatThreadInfo projects one native thread summary.
+type ChatThreadInfo struct {
+	unknownFields []byte
+	// Root is the retained thread-root message.
+	Root *ChatMessageInfo `protobuf:"bytes,1,opt,name=root,proto3" json:"root,omitempty"`
+	// LatestReply is the newest canonical thread reply.
+	LatestReply *ChatMessageInfo `protobuf:"bytes,2,opt,name=latest_reply,json=latestReply,proto3" json:"latestReply,omitempty"`
+	// ReplyCount is the number of canonical thread replies.
+	ReplyCount uint64 `protobuf:"varint,3,opt,name=reply_count,json=replyCount,proto3" json:"replyCount,omitempty"`
+	// CurrentUserParticipated reports whether the authenticated person wrote a reply.
+	CurrentUserParticipated bool `protobuf:"varint,4,opt,name=current_user_participated,json=currentUserParticipated,proto3" json:"currentUserParticipated,omitempty"`
+}
+
+func (x *ChatThreadInfo) Reset() {
+	*x = ChatThreadInfo{}
+}
+
+func (*ChatThreadInfo) ProtoMessage() {}
+
+func (x *ChatThreadInfo) GetRoot() *ChatMessageInfo {
+	if x != nil {
+		return x.Root
+	}
+	return nil
+}
+
+func (x *ChatThreadInfo) GetLatestReply() *ChatMessageInfo {
+	if x != nil {
+		return x.LatestReply
+	}
+	return nil
+}
+
+func (x *ChatThreadInfo) GetReplyCount() uint64 {
+	if x != nil {
+		return x.ReplyCount
+	}
+	return 0
+}
+
+func (x *ChatThreadInfo) GetCurrentUserParticipated() bool {
+	if x != nil {
+		return x.CurrentUserParticipated
+	}
+	return false
+}
+
+// ListThreadsResponse contains one bounded thread page.
+type ListThreadsResponse struct {
+	unknownFields []byte
+	// Threads is ordered from most to least recent activity.
+	Threads []*ChatThreadInfo `protobuf:"bytes,1,rep,name=threads,proto3" json:"threads,omitempty"`
+	// NextBeforeIndex resumes after the last summary examined by this page.
+	NextBeforeIndex *uint64 `protobuf:"varint,2,opt,name=next_before_index,json=nextBeforeIndex,proto3,oneof" json:"nextBeforeIndex,omitempty"`
+}
+
+func (x *ListThreadsResponse) Reset() {
+	*x = ListThreadsResponse{}
+}
+
+func (*ListThreadsResponse) ProtoMessage() {}
+
+func (x *ListThreadsResponse) GetThreads() []*ChatThreadInfo {
+	if x != nil {
+		return x.Threads
+	}
+	return nil
+}
+
+func (x *ListThreadsResponse) GetNextBeforeIndex() uint64 {
+	if x != nil && x.NextBeforeIndex != nil {
+		return *x.NextBeforeIndex
+	}
+	return 0
+}
+
 // WatchMessagesRequest is a request to stream messages.
 type WatchMessagesRequest struct {
 	unknownFields []byte
@@ -702,6 +816,60 @@ func (m *ListMessagesResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
+func (m *ListThreadsRequest) CloneVT() *ListThreadsRequest {
+	if m == nil {
+		return (*ListThreadsRequest)(nil)
+	}
+	r := new(ListThreadsRequest)
+	r.Limit = m.Limit
+	r.ParticipatedOnly = m.ParticipatedOnly
+	r.BeforeIndex = protobuf_go_lite.ClonePtr(m.BeforeIndex)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *ListThreadsRequest) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *ChatThreadInfo) CloneVT() *ChatThreadInfo {
+	if m == nil {
+		return (*ChatThreadInfo)(nil)
+	}
+	r := new(ChatThreadInfo)
+	r.ReplyCount = m.ReplyCount
+	r.CurrentUserParticipated = m.CurrentUserParticipated
+	r.Root = protobuf_go_lite.CloneVTValue(m.Root)
+	r.LatestReply = protobuf_go_lite.CloneVTValue(m.LatestReply)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *ChatThreadInfo) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *ListThreadsResponse) CloneVT() *ListThreadsResponse {
+	if m == nil {
+		return (*ListThreadsResponse)(nil)
+	}
+	r := new(ListThreadsResponse)
+	r.Threads = protobuf_go_lite.CloneVTSlice(m.Threads)
+	r.NextBeforeIndex = protobuf_go_lite.ClonePtr(m.NextBeforeIndex)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *ListThreadsResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
 func (m *WatchMessagesRequest) CloneVT() *WatchMessagesRequest {
 	if m == nil {
 		return (*WatchMessagesRequest)(nil)
@@ -1049,6 +1217,84 @@ func (this *ListMessagesResponse) EqualVT(that *ListMessagesResponse) bool {
 
 func (this *ListMessagesResponse) EqualMessageVT(thatMsg any) bool {
 	that, ok := thatMsg.(*ListMessagesResponse)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *ListThreadsRequest) EqualVT(that *ListThreadsRequest) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if !protobuf_go_lite.EqualPtr(this.BeforeIndex, that.BeforeIndex) {
+		return false
+	}
+	if this.Limit != that.Limit {
+		return false
+	}
+	if this.ParticipatedOnly != that.ParticipatedOnly {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *ListThreadsRequest) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*ListThreadsRequest)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *ChatThreadInfo) EqualVT(that *ChatThreadInfo) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.Root, that.Root) {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.LatestReply, that.LatestReply) {
+		return false
+	}
+	if this.ReplyCount != that.ReplyCount {
+		return false
+	}
+	if this.CurrentUserParticipated != that.CurrentUserParticipated {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *ChatThreadInfo) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*ChatThreadInfo)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *ListThreadsResponse) EqualVT(that *ListThreadsResponse) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.Threads, that.Threads, func() *ChatThreadInfo { return &ChatThreadInfo{} }) {
+		return false
+	}
+	if !protobuf_go_lite.EqualPtr(this.NextBeforeIndex, that.NextBeforeIndex) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *ListThreadsResponse) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*ListThreadsResponse)
 	if !ok {
 		return false
 	}
@@ -1771,6 +2017,219 @@ func (x *ListMessagesResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
 
 // UnmarshalJSON unmarshals the ListMessagesResponse from JSON.
 func (x *ListMessagesResponse) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the ListThreadsRequest message to JSON.
+func (x *ListThreadsRequest) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.BeforeIndex != nil {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("beforeIndex")
+		s.WriteUint64(*x.BeforeIndex)
+	}
+	if x.Limit != 0 || s.HasField("limit") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("limit")
+		s.WriteUint32(x.Limit)
+	}
+	if x.ParticipatedOnly || s.HasField("participatedOnly") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("participatedOnly")
+		s.WriteBool(x.ParticipatedOnly)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the ListThreadsRequest to JSON.
+func (x *ListThreadsRequest) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the ListThreadsRequest message from JSON.
+func (x *ListThreadsRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "before_index", "beforeIndex":
+			s.AddField("before_index")
+			if s.ReadNil() {
+				x.BeforeIndex = nil
+				return
+			}
+			t := s.ReadUint64()
+			x.BeforeIndex = &t
+		case "limit":
+			s.AddField("limit")
+			x.Limit = s.ReadUint32()
+		case "participated_only", "participatedOnly":
+			s.AddField("participated_only")
+			x.ParticipatedOnly = s.ReadBool()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the ListThreadsRequest from JSON.
+func (x *ListThreadsRequest) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the ChatThreadInfo message to JSON.
+func (x *ChatThreadInfo) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Root != nil || s.HasField("root") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("root")
+		x.Root.MarshalProtoJSON(s.WithField("root"))
+	}
+	if x.LatestReply != nil || s.HasField("latestReply") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("latestReply")
+		x.LatestReply.MarshalProtoJSON(s.WithField("latestReply"))
+	}
+	if x.ReplyCount != 0 || s.HasField("replyCount") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("replyCount")
+		s.WriteUint64(x.ReplyCount)
+	}
+	if x.CurrentUserParticipated || s.HasField("currentUserParticipated") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("currentUserParticipated")
+		s.WriteBool(x.CurrentUserParticipated)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the ChatThreadInfo to JSON.
+func (x *ChatThreadInfo) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the ChatThreadInfo message from JSON.
+func (x *ChatThreadInfo) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "root":
+			if s.ReadNil() {
+				x.Root = nil
+				return
+			}
+			x.Root = &ChatMessageInfo{}
+			x.Root.UnmarshalProtoJSON(s.WithField("root", true))
+		case "latest_reply", "latestReply":
+			if s.ReadNil() {
+				x.LatestReply = nil
+				return
+			}
+			x.LatestReply = &ChatMessageInfo{}
+			x.LatestReply.UnmarshalProtoJSON(s.WithField("latest_reply", true))
+		case "reply_count", "replyCount":
+			s.AddField("reply_count")
+			x.ReplyCount = s.ReadUint64()
+		case "current_user_participated", "currentUserParticipated":
+			s.AddField("current_user_participated")
+			x.CurrentUserParticipated = s.ReadBool()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the ChatThreadInfo from JSON.
+func (x *ChatThreadInfo) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the ListThreadsResponse message to JSON.
+func (x *ListThreadsResponse) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if len(x.Threads) > 0 || s.HasField("threads") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("threads")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.Threads {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s.WithField("threads"))
+		}
+		s.WriteArrayEnd()
+	}
+	if x.NextBeforeIndex != nil {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("nextBeforeIndex")
+		s.WriteUint64(*x.NextBeforeIndex)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the ListThreadsResponse to JSON.
+func (x *ListThreadsResponse) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the ListThreadsResponse message from JSON.
+func (x *ListThreadsResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "threads":
+			s.AddField("threads")
+			if s.ReadNil() {
+				x.Threads = nil
+				return
+			}
+			s.ReadArray(func() {
+				if s.ReadNil() {
+					x.Threads = append(x.Threads, nil)
+					return
+				}
+				v := &ChatThreadInfo{}
+				v.UnmarshalProtoJSON(s.WithField("threads", false))
+				if s.Err() != nil {
+					return
+				}
+				x.Threads = append(x.Threads, v)
+			})
+		case "next_before_index", "nextBeforeIndex":
+			s.AddField("next_before_index")
+			if s.ReadNil() {
+				x.NextBeforeIndex = nil
+				return
+			}
+			t := s.ReadUint64()
+			x.NextBeforeIndex = &t
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the ListThreadsResponse from JSON.
+func (x *ListThreadsResponse) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -2667,6 +3126,164 @@ func (m *ListMessagesResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) 
 	return len(dAtA) - i, nil
 }
 
+func (m *ListThreadsRequest) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ListThreadsRequest) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *ListThreadsRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.ParticipatedOnly {
+		i = protobuf_go_lite.EncodeBool(dAtA, i, m.ParticipatedOnly)
+		i--
+		dAtA[i] = 0x18
+	}
+	if m.Limit != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Limit))
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.BeforeIndex != nil {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(*m.BeforeIndex))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ChatThreadInfo) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ChatThreadInfo) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *ChatThreadInfo) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.CurrentUserParticipated {
+		i = protobuf_go_lite.EncodeBool(dAtA, i, m.CurrentUserParticipated)
+		i--
+		dAtA[i] = 0x20
+	}
+	if m.ReplyCount != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.ReplyCount))
+		i--
+		dAtA[i] = 0x18
+	}
+	if m.LatestReply != nil {
+		size, err := m.LatestReply.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.Root != nil {
+		size, err := m.Root.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ListThreadsResponse) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ListThreadsResponse) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *ListThreadsResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.NextBeforeIndex != nil {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(*m.NextBeforeIndex))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.Threads) > 0 {
+		for iNdEx := len(m.Threads) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.Threads[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *WatchMessagesRequest) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -3141,6 +3758,54 @@ func (m *ListMessagesResponse) SizeVT() (n int) {
 	return n
 }
 
+func (m *ListThreadsRequest) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeVarintPtr(1, m.BeforeIndex)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Limit)
+	n += protobuf_go_lite.SizeBoolNonZero(1, m.ParticipatedOnly)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *ChatThreadInfo) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Root != nil {
+		l = m.Root.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	if m.LatestReply != nil {
+		l = m.LatestReply.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.ReplyCount)
+	n += protobuf_go_lite.SizeBoolNonZero(1, m.CurrentUserParticipated)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *ListThreadsResponse) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	for _, e := range m.Threads {
+		l = e.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += protobuf_go_lite.SizeVarintPtr(1, m.NextBeforeIndex)
+	n += len(m.unknownFields)
+	return n
+}
+
 func (m *WatchMessagesRequest) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -3445,6 +4110,80 @@ func (x *ListMessagesResponse) MarshalProtoText() string {
 }
 
 func (x *ListMessagesResponse) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *ListThreadsRequest) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "ListThreadsRequest")
+	if x.BeforeIndex != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "before_index")
+		protobuf_go_lite.TextWriteUint(&sb, *x.BeforeIndex)
+	}
+	if x.Limit != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "limit")
+		protobuf_go_lite.TextWriteUint(&sb, x.Limit)
+	}
+	if x.ParticipatedOnly != false {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "participated_only")
+		protobuf_go_lite.TextWriteBool(&sb, x.ParticipatedOnly)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *ListThreadsRequest) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *ChatThreadInfo) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "ChatThreadInfo")
+	if x.Root != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "root")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Root)
+	}
+	if x.LatestReply != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "latest_reply")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.LatestReply)
+	}
+	if x.ReplyCount != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "reply_count")
+		protobuf_go_lite.TextWriteUint(&sb, x.ReplyCount)
+	}
+	if x.CurrentUserParticipated != false {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "current_user_participated")
+		protobuf_go_lite.TextWriteBool(&sb, x.CurrentUserParticipated)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *ChatThreadInfo) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *ListThreadsResponse) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "ListThreadsResponse")
+	if len(x.Threads) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "threads")
+		for i, v := range x.Threads {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &ChatThreadInfo{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	if x.NextBeforeIndex != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "next_before_index")
+		protobuf_go_lite.TextWriteUint(&sb, *x.NextBeforeIndex)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *ListThreadsResponse) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -4226,6 +4965,236 @@ func (m *ListMessagesResponse) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.HasMore = bool(v)
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *ListThreadsRequest) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ListThreadsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ListThreadsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BeforeIndex", wireType)
+			}
+			var v uint64
+			v, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.BeforeIndex = &v
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Limit", wireType)
+			}
+			m.Limit = 0
+			m.Limit, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ParticipatedOnly", wireType)
+			}
+			var v bool
+			v, iNdEx, err = protobuf_go_lite.DecodeVarintBool(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.ParticipatedOnly = bool(v)
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *ChatThreadInfo) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ChatThreadInfo: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ChatThreadInfo: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Root", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Root == nil {
+				m.Root = &ChatMessageInfo{}
+			}
+			if err := m.Root.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LatestReply", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.LatestReply == nil {
+				m.LatestReply = &ChatMessageInfo{}
+			}
+			if err := m.LatestReply.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ReplyCount", wireType)
+			}
+			m.ReplyCount = 0
+			m.ReplyCount, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CurrentUserParticipated", wireType)
+			}
+			var v bool
+			v, iNdEx, err = protobuf_go_lite.DecodeVarintBool(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.CurrentUserParticipated = bool(v)
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *ListThreadsResponse) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ListThreadsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ListThreadsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Threads", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Threads = append(m.Threads, &ChatThreadInfo{})
+			if err := m.Threads[len(m.Threads)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field NextBeforeIndex", wireType)
+			}
+			var v uint64
+			v, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.NextBeforeIndex = &v
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

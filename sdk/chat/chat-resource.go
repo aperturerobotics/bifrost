@@ -318,6 +318,12 @@ func (r *ChatResource) SendMessage(
 	ctx context.Context,
 	req *spacewave_chat_rpc.SendMessageRequest,
 ) (*spacewave_chat_rpc.SendMessageResponse, error) {
+	// Advance legacy indexing in bounded work before entering the append transaction.
+	if r.engine != nil && r.localPeerID != "" && r.personPeerID != "" {
+		if err := r.ensureThreadIndex(ctx); err != nil {
+			return nil, err
+		}
+	}
 	response, err := r.commitMessage(ctx, req)
 	if err != nil {
 		return nil, err
@@ -457,6 +463,12 @@ func (r *ChatResource) appendMessage(ctx context.Context, wtx world.WorldState, 
 		}
 	}
 
+	// Every new append advances an already initialized history prefix atomically.
+	if channel.ThreadIndexedMessageCount == nil ||
+		channel.GetThreadIndexedMessageCount() != channel.GetMessageCount() {
+		return nil, ErrChatThreadIndexBuilding
+	}
+
 	// Append the accepted message and its page entry in one World transaction.
 	index, msgKey, err := r.appendChannelMessageKey(ctx, wtx, msgKey, state)
 	if err != nil {
@@ -512,6 +524,9 @@ func (r *ChatResource) appendMessage(ctx context.Context, wtx world.WorldState, 
 		if err := wtx.SetGraphQuad(ctx, NewChatStateQuad(r.objectKey, msgKey, state.GetType(), state.GetStateKey())); err != nil {
 			return nil, err
 		}
+	}
+	if err := r.indexAppendedMessage(ctx, wtx, msgKey, msg); err != nil {
+		return nil, err
 	}
 	return &spacewave_chat_rpc.SendMessageResponse{MessageKey: msgKey}, nil
 }

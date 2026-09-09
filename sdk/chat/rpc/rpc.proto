@@ -17,6 +17,8 @@ service ChatResourceService {
   rpc GetMessage(GetMessageRequest) returns (GetMessageResponse);
   // ListMessages returns a bounded page of channel history.
   rpc ListMessages(ListMessagesRequest) returns (ListMessagesResponse);
+  // ListThreads returns activity-ordered native thread summaries.
+  rpc ListThreads(ListThreadsRequest) returns (ListThreadsResponse);
   // WatchMessages streams channel messages after each shared-state change.
   rpc WatchMessages(WatchMessagesRequest) returns (stream WatchMessagesResponse);
   // SendMessage appends one message or resolves an identical retry.
@@ -109,6 +111,36 @@ message ListMessagesResponse {
   repeated ChatMessageInfo messages = 1;
   // HasMore indicates more messages exist in the selected pagination direction.
   bool has_more = 2;
+}
+
+// ListThreadsRequest selects an activity-ordered thread page.
+message ListThreadsRequest {
+  // BeforeIndex resumes after the thread whose latest reply has this history index.
+  optional uint64 before_index = 1;
+  // Limit is the maximum number of matching threads to return.
+  uint32 limit = 2;
+  // ParticipatedOnly selects threads with a reply by the authenticated person.
+  bool participated_only = 3;
+}
+
+// ChatThreadInfo projects one native thread summary.
+message ChatThreadInfo {
+  // Root is the retained thread-root message.
+  ChatMessageInfo root = 1;
+  // LatestReply is the newest canonical thread reply.
+  ChatMessageInfo latest_reply = 2;
+  // ReplyCount is the number of canonical thread replies.
+  uint64 reply_count = 3;
+  // CurrentUserParticipated reports whether the authenticated person wrote a reply.
+  bool current_user_participated = 4;
+}
+
+// ListThreadsResponse contains one bounded thread page.
+message ListThreadsResponse {
+  // Threads is ordered from most to least recent activity.
+  repeated ChatThreadInfo threads = 1;
+  // NextBeforeIndex resumes after the last summary examined by this page.
+  optional uint64 next_before_index = 2;
 }
 
 // WatchMessagesRequest is a request to stream messages.

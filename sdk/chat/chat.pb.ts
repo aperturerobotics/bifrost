@@ -63,6 +63,19 @@ export interface ChatChannel {
    * @generated from field: string encryption_algorithm = 7;
    */
   encryptionAlgorithm?: string
+  /**
+   * ThreadHeadKey starts the activity-ordered thread-summary list.
+   *
+   * @generated from field: string thread_head_key = 8;
+   */
+  threadHeadKey?: string
+  /**
+   * ThreadIndexedMessageCount is the history prefix represented by the thread index.
+   * Presence distinguishes an initialized empty index from legacy channel state.
+   *
+   * @generated from field: optional uint64 thread_indexed_message_count = 9;
+   */
+  threadIndexedMessageCount?: bigint
 }
 
 export const ChatChannel: MessageType<ChatChannel> =
@@ -86,6 +99,14 @@ export const ChatChannel: MessageType<ChatChannel> =
         name: 'encryption_algorithm',
         kind: 'scalar',
         T: ScalarType.STRING,
+      },
+      { no: 8, name: 'thread_head_key', kind: 'scalar', T: ScalarType.STRING },
+      {
+        no: 9,
+        name: 'thread_indexed_message_count',
+        kind: 'scalar',
+        T: ScalarType.UINT64,
+        opt: true,
       },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
@@ -175,6 +196,74 @@ export const ChatMessagePage: MessageType<ChatMessagePage> =
         T: ScalarType.STRING,
         repeated: true,
       },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
+ * ChatThread stores one bounded summary in the channel's activity-ordered thread index.
+ *
+ * @generated from message spacewave.chat.ChatThread
+ */
+export interface ChatThread {
+  /**
+   * RootMessageKey is the immutable root identity summarized by this snapshot.
+   *
+   * @generated from field: string root_message_key = 1;
+   */
+  rootMessageKey?: string
+  /**
+   * LatestMessageKey is the newest canonical reply captured by this snapshot.
+   *
+   * @generated from field: string latest_message_key = 2;
+   */
+  latestMessageKey?: string
+  /**
+   * LatestMessageIndex orders threads by their newest canonical reply.
+   *
+   * @generated from field: uint64 latest_message_index = 3;
+   */
+  latestMessageIndex?: bigint
+  /**
+   * ReplyCount is the number of canonical thread replies.
+   *
+   * @generated from field: uint64 reply_count = 4;
+   */
+  replyCount?: bigint
+  /**
+   * NewerThreadKey establishes the preceding entry in activity order.
+   *
+   * @generated from field: string newer_thread_key = 5;
+   */
+  newerThreadKey?: string
+  /**
+   * OlderThreadKey establishes the following entry in activity order.
+   *
+   * @generated from field: string older_thread_key = 6;
+   */
+  olderThreadKey?: string
+}
+
+export const ChatThread: MessageType<ChatThread> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'spacewave.chat.ChatThread',
+    fields: [
+      { no: 1, name: 'root_message_key', kind: 'scalar', T: ScalarType.STRING },
+      {
+        no: 2,
+        name: 'latest_message_key',
+        kind: 'scalar',
+        T: ScalarType.STRING,
+      },
+      {
+        no: 3,
+        name: 'latest_message_index',
+        kind: 'scalar',
+        T: ScalarType.UINT64,
+      },
+      { no: 4, name: 'reply_count', kind: 'scalar', T: ScalarType.UINT64 },
+      { no: 5, name: 'newer_thread_key', kind: 'scalar', T: ScalarType.STRING },
+      { no: 6, name: 'older_thread_key', kind: 'scalar', T: ScalarType.STRING },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })

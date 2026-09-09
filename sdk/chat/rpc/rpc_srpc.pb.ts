@@ -13,6 +13,8 @@ import {
   GetStateResponse,
   ListMessagesRequest,
   ListMessagesResponse,
+  ListThreadsRequest,
+  ListThreadsResponse,
   SendMessageRequest,
   SendMessageResponse,
   UpdateReadPositionRequest,
@@ -78,6 +80,17 @@ export const ChatResourceServiceDefinition = {
       name: 'ListMessages',
       I: ListMessagesRequest,
       O: ListMessagesResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * ListThreads returns activity-ordered native thread summaries.
+     *
+     * @generated from rpc spacewave.chat.rpc.ChatResourceService.ListThreads
+     */
+    ListThreads: {
+      name: 'ListThreads',
+      I: ListThreadsRequest,
+      O: ListThreadsResponse,
       kind: MethodKind.Unary,
     },
     /**
@@ -174,6 +187,16 @@ export interface ChatResourceService {
   ): Promise<ListMessagesResponse>
 
   /**
+   * ListThreads returns activity-ordered native thread summaries.
+   *
+   * @generated from rpc spacewave.chat.rpc.ChatResourceService.ListThreads
+   */
+  ListThreads(
+    request: ListThreadsRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<ListThreadsResponse>
+
+  /**
    * WatchMessages streams channel messages after each shared-state change.
    *
    * @generated from rpc spacewave.chat.rpc.ChatResourceService.WatchMessages
@@ -265,6 +288,17 @@ export interface ChatResourceServiceHandler {
   ): Promise<ListMessagesResponse>
 
   /**
+   * ListThreads returns activity-ordered native thread summaries.
+   *
+   * @generated from rpc spacewave.chat.rpc.ChatResourceService.ListThreads
+   */
+  ListThreads(
+    request: ListThreadsRequest,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): Promise<ListThreadsResponse>
+
+  /**
    * WatchMessages streams channel messages after each shared-state change.
    *
    * @generated from rpc spacewave.chat.rpc.ChatResourceService.WatchMessages
@@ -322,6 +356,7 @@ export class ChatResourceServiceClient implements ChatResourceService {
     this.GetState = this.GetState.bind(this)
     this.GetMessage = this.GetMessage.bind(this)
     this.ListMessages = this.ListMessages.bind(this)
+    this.ListThreads = this.ListThreads.bind(this)
     this.WatchMessages = this.WatchMessages.bind(this)
     this.SendMessage = this.SendMessage.bind(this)
     this.GetReadPositions = this.GetReadPositions.bind(this)
@@ -401,6 +436,25 @@ export class ChatResourceServiceClient implements ChatResourceService {
       abortSignal || undefined,
     )
     return ListMessagesResponse.fromBinary(result)
+  }
+
+  /**
+   * ListThreads returns activity-ordered native thread summaries.
+   *
+   * @generated from rpc spacewave.chat.rpc.ChatResourceService.ListThreads
+   */
+  async ListThreads(
+    request: ListThreadsRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<ListThreadsResponse> {
+    const requestMsg = ListThreadsRequest.create(request)
+    const result = await this.rpc.request(
+      this.service,
+      ChatResourceServiceDefinition.methods.ListThreads.name,
+      ListThreadsRequest.toBinary(requestMsg),
+      abortSignal || undefined,
+    )
+    return ListThreadsResponse.fromBinary(result)
   }
 
   /**

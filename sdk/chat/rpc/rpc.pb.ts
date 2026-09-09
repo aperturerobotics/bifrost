@@ -346,6 +346,145 @@ export const ListMessagesResponse: MessageType<ListMessagesResponse> =
   })
 
 /**
+ * ListThreadsRequest selects an activity-ordered thread page.
+ *
+ * @generated from message spacewave.chat.rpc.ListThreadsRequest
+ */
+export interface ListThreadsRequest {
+  /**
+   * BeforeIndex resumes after the thread whose latest reply has this history index.
+   *
+   * @generated from field: optional uint64 before_index = 1;
+   */
+  beforeIndex?: bigint
+  /**
+   * Limit is the maximum number of matching threads to return.
+   *
+   * @generated from field: uint32 limit = 2;
+   */
+  limit?: number
+  /**
+   * ParticipatedOnly selects threads with a reply by the authenticated person.
+   *
+   * @generated from field: bool participated_only = 3;
+   */
+  participatedOnly?: boolean
+}
+
+export const ListThreadsRequest: MessageType<ListThreadsRequest> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'spacewave.chat.rpc.ListThreadsRequest',
+    fields: [
+      {
+        no: 1,
+        name: 'before_index',
+        kind: 'scalar',
+        T: ScalarType.UINT64,
+        opt: true,
+      },
+      { no: 2, name: 'limit', kind: 'scalar', T: ScalarType.UINT32 },
+      { no: 3, name: 'participated_only', kind: 'scalar', T: ScalarType.BOOL },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
+ * ChatThreadInfo projects one native thread summary.
+ *
+ * @generated from message spacewave.chat.rpc.ChatThreadInfo
+ */
+export interface ChatThreadInfo {
+  /**
+   * Root is the retained thread-root message.
+   *
+   * @generated from field: spacewave.chat.rpc.ChatMessageInfo root = 1;
+   */
+  root?: ChatMessageInfo
+  /**
+   * LatestReply is the newest canonical thread reply.
+   *
+   * @generated from field: spacewave.chat.rpc.ChatMessageInfo latest_reply = 2;
+   */
+  latestReply?: ChatMessageInfo
+  /**
+   * ReplyCount is the number of canonical thread replies.
+   *
+   * @generated from field: uint64 reply_count = 3;
+   */
+  replyCount?: bigint
+  /**
+   * CurrentUserParticipated reports whether the authenticated person wrote a reply.
+   *
+   * @generated from field: bool current_user_participated = 4;
+   */
+  currentUserParticipated?: boolean
+}
+
+export const ChatThreadInfo: MessageType<ChatThreadInfo> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'spacewave.chat.rpc.ChatThreadInfo',
+    fields: [
+      { no: 1, name: 'root', kind: 'message', T: () => ChatMessageInfo },
+      {
+        no: 2,
+        name: 'latest_reply',
+        kind: 'message',
+        T: () => ChatMessageInfo,
+      },
+      { no: 3, name: 'reply_count', kind: 'scalar', T: ScalarType.UINT64 },
+      {
+        no: 4,
+        name: 'current_user_participated',
+        kind: 'scalar',
+        T: ScalarType.BOOL,
+      },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
+ * ListThreadsResponse contains one bounded thread page.
+ *
+ * @generated from message spacewave.chat.rpc.ListThreadsResponse
+ */
+export interface ListThreadsResponse {
+  /**
+   * Threads is ordered from most to least recent activity.
+   *
+   * @generated from field: repeated spacewave.chat.rpc.ChatThreadInfo threads = 1;
+   */
+  threads?: ChatThreadInfo[]
+  /**
+   * NextBeforeIndex resumes after the last summary examined by this page.
+   *
+   * @generated from field: optional uint64 next_before_index = 2;
+   */
+  nextBeforeIndex?: bigint
+}
+
+export const ListThreadsResponse: MessageType<ListThreadsResponse> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'spacewave.chat.rpc.ListThreadsResponse',
+    fields: [
+      {
+        no: 1,
+        name: 'threads',
+        kind: 'message',
+        T: () => ChatThreadInfo,
+        repeated: true,
+      },
+      {
+        no: 2,
+        name: 'next_before_index',
+        kind: 'scalar',
+        T: ScalarType.UINT64,
+        opt: true,
+      },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
  * WatchMessagesRequest is a request to stream messages.
  *
  * @generated from message spacewave.chat.rpc.WatchMessagesRequest
