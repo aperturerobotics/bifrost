@@ -1,4 +1,16 @@
 
+Ô
+0.57.5
+2026-09-08®Spacewave 0.57.5 speeds up browser startup and local storage, improves connection recovery, and preserves more useful collaboration history. This release accompanies a reset of hosted beta content. Existing accounts and billing records are retained, but hosted Spaces and files must be recreated."®Spacewave 0.57.5 speeds up browser startup and local storage, improves connection recovery, and preserves more useful collaboration history. This release accompanies a reset of hosted beta content. Existing accounts and billing records are retained, but hosted Spaces and files must be recreated.2í
+GBrowser startup retains required plugins and retries invalid snapshots.GBrowser startup retains required plugins and retries invalid snapshots.2‚
+oConnections renew signaling tickets and recover peer synchronization after reconnects and accepted invitations.oConnections renew signaling tickets and recover peer synchronization after reconnects and accepted invitations.2í
+GPlugin updates retain newer revisions when local copies are incomplete.GPlugin updates retain newer revisions when local copies are incomplete.2t
+8Native command-line shutdown waits for storage to close.8Native command-line shutdown waits for storage to close.:¥
+XDrive quickstarts load fewer modules and initialize files with fewer storage operations.XDrive quickstarts load fewer modules and initialize files with fewer storage operations.:ê
+ÖBrowser storage batches reads and writes more efficiently, and startup reuses cached metadata and downloads related content together.ÖBrowser storage batches reads and writes more efficiently, and startup reuses cached metadata and downloads related content together.:L
+$The loading animation uses less CPU.$The loading animation uses less CPU.:†
+NChat history now retains channel state and protocol events alongside messages.NChat history now retains channel state and protocol events alongside messages.:¬
+_Leaving a shared object preserves locally readable history while ending synchronization access._Leaving a shared object preserves locally readable history while ending synchronization access.
 «
 0.57.4
 2026-09-07ñSpacewave 0.57.4 refreshes the loading screen, improves browser startup and offline recovery, and makes invitations and desktop updates more reliable."ñSpacewave 0.57.4 refreshes the loading screen, improves browser startup and offline recovery, and makes invitations and desktop updates more reliable.2Ú

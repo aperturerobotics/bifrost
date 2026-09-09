@@ -1,5 +1,30 @@
 #+TITLE: Spacewave Changelog
 
+* v0.57.5
+<2026-09-08 Tue>
+
+Spacewave 0.57.5 speeds up browser startup and local storage, improves
+connection recovery, and preserves more useful collaboration history. This
+release accompanies a reset of hosted beta content. Existing accounts and
+billing records are retained, but hosted Spaces and files must be recreated.
+
+** Improvements
+- Drive quickstarts load fewer modules and initialize files with fewer storage
+  operations.
+- Browser storage batches reads and writes more efficiently, and startup reuses
+  cached metadata and downloads related content together.
+- The loading animation uses less CPU.
+- Chat history now retains channel state and protocol events alongside messages.
+- Leaving a shared object preserves locally readable history while ending
+  synchronization access.
+
+** Fixes
+- Browser startup retains required plugins and retries invalid snapshots.
+- Connections renew signaling tickets and recover peer synchronization after
+  reconnects and accepted invitations.
+- Plugin updates retain newer revisions when local copies are incomplete.
+- Native command-line shutdown waits for storage to close.
+
 * v0.57.4
 <2026-09-07 Mon>
 
