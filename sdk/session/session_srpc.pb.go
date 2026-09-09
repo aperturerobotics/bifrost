@@ -84,7 +84,7 @@ type SRPCSessionResourceServiceClient interface {
 
 	ListSpaceParticipants(ctx context.Context, in *ListSpaceParticipantsRequest) (*ListSpaceParticipantsResponse, error)
 
-	RemoveSpaceParticipant(ctx context.Context, in *RemoveSpaceParticipantRequest) (*RemoveSpaceParticipantResponse, error)
+	RemoveSpaceParticipants(ctx context.Context, in *RemoveSpaceParticipantsRequest) (*RemoveSpaceParticipantsResponse, error)
 
 	RevokeSpaceInvite(ctx context.Context, in *RevokeSpaceInviteRequest) (*RevokeSpaceInviteResponse, error)
 
@@ -655,9 +655,9 @@ func (c *srpcSessionResourceServiceClient) ListSpaceParticipants(ctx context.Con
 	return out, nil
 }
 
-func (c *srpcSessionResourceServiceClient) RemoveSpaceParticipant(ctx context.Context, in *RemoveSpaceParticipantRequest) (*RemoveSpaceParticipantResponse, error) {
-	out := new(RemoveSpaceParticipantResponse)
-	err := c.cc.ExecCall(ctx, c.serviceID, "RemoveSpaceParticipant", in, out)
+func (c *srpcSessionResourceServiceClient) RemoveSpaceParticipants(ctx context.Context, in *RemoveSpaceParticipantsRequest) (*RemoveSpaceParticipantsResponse, error) {
+	out := new(RemoveSpaceParticipantsResponse)
+	err := c.cc.ExecCall(ctx, c.serviceID, "RemoveSpaceParticipants", in, out)
 	if err != nil {
 		return nil, err
 	}
@@ -780,7 +780,7 @@ type SRPCSessionResourceServiceServer interface {
 
 	ListSpaceParticipants(context.Context, *ListSpaceParticipantsRequest) (*ListSpaceParticipantsResponse, error)
 
-	RemoveSpaceParticipant(context.Context, *RemoveSpaceParticipantRequest) (*RemoveSpaceParticipantResponse, error)
+	RemoveSpaceParticipants(context.Context, *RemoveSpaceParticipantsRequest) (*RemoveSpaceParticipantsResponse, error)
 
 	RevokeSpaceInvite(context.Context, *RevokeSpaceInviteRequest) (*RevokeSpaceInviteResponse, error)
 
@@ -854,7 +854,7 @@ func (SRPCSessionResourceServiceHandler) GetMethodIDs() []string {
 		"CreateSpaceInvite",
 		"ListSpaceInvites",
 		"ListSpaceParticipants",
-		"RemoveSpaceParticipant",
+		"RemoveSpaceParticipants",
 		"RevokeSpaceInvite",
 		"JoinSpaceViaInvite",
 		"CreateLocalPairingOffer",
@@ -942,8 +942,8 @@ func (d *SRPCSessionResourceServiceHandler) InvokeMethod(
 		return true, d.InvokeMethod_ListSpaceInvites(d.impl, strm)
 	case "ListSpaceParticipants":
 		return true, d.InvokeMethod_ListSpaceParticipants(d.impl, strm)
-	case "RemoveSpaceParticipant":
-		return true, d.InvokeMethod_RemoveSpaceParticipant(d.impl, strm)
+	case "RemoveSpaceParticipants":
+		return true, d.InvokeMethod_RemoveSpaceParticipants(d.impl, strm)
 	case "RevokeSpaceInvite":
 		return true, d.InvokeMethod_RevokeSpaceInvite(d.impl, strm)
 	case "JoinSpaceViaInvite":
@@ -1352,12 +1352,12 @@ func (SRPCSessionResourceServiceHandler) InvokeMethod_ListSpaceParticipants(impl
 	return strm.MsgSend(out)
 }
 
-func (SRPCSessionResourceServiceHandler) InvokeMethod_RemoveSpaceParticipant(impl SRPCSessionResourceServiceServer, strm srpc.Stream) error {
-	req := new(RemoveSpaceParticipantRequest)
+func (SRPCSessionResourceServiceHandler) InvokeMethod_RemoveSpaceParticipants(impl SRPCSessionResourceServiceServer, strm srpc.Stream) error {
+	req := new(RemoveSpaceParticipantsRequest)
 	if err := strm.MsgRecv(req); err != nil {
 		return err
 	}
-	out, err := impl.RemoveSpaceParticipant(strm.Context(), req)
+	out, err := impl.RemoveSpaceParticipants(strm.Context(), req)
 	if err != nil {
 		return err
 	}
@@ -1839,11 +1839,11 @@ type srpcSessionResourceService_ListSpaceParticipantsStream struct {
 	srpc.Stream
 }
 
-type SRPCSessionResourceService_RemoveSpaceParticipantStream interface {
+type SRPCSessionResourceService_RemoveSpaceParticipantsStream interface {
 	srpc.Stream
 }
 
-type srpcSessionResourceService_RemoveSpaceParticipantStream struct {
+type srpcSessionResourceService_RemoveSpaceParticipantsStream struct {
 	srpc.Stream
 }
 

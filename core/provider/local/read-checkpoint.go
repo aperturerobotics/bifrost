@@ -68,12 +68,29 @@ func (s *SharedObject) GetSharedObjectReadCheckpoint(ctx context.Context) (*sobj
 	}
 	defer read.Discard()
 	data, found, err := read.Get(ctx, readCheckpointKey(s.GetSharedObjectID()))
-	if err != nil || !found {
+	if err != nil {
 		return nil, err
 	}
 	state := &sobject.SOState{}
-	if err := state.UnmarshalVT(data); err != nil {
-		return nil, err
+	if found {
+		if err := state.UnmarshalVT(data); err != nil {
+			return nil, err
+		}
+	} else {
+		current, err := s.soHost.GetHostState(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if !sobject.AuthoritativeSyncDenied(current.GetConfig(), s.tkr.healthCtr.GetValue()) {
+			return nil, nil
+		}
+		state.Config = current.GetConfig().CloneVT()
+		state.Root = current.GetRoot().CloneVT()
+		for _, grant := range current.GetRootGrants() {
+			if grant.GetPeerId() == s.localPid.String() {
+				state.RootGrants = append(state.RootGrants, grant.CloneVT())
+			}
+		}
 	}
 	if err := state.Validate(s.GetSharedObjectID()); err != nil {
 		return nil, err

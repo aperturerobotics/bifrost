@@ -2949,11 +2949,11 @@ export const ListSpaceParticipantsResponse: MessageType<ListSpaceParticipantsRes
   })
 
 /**
- * RemoveSpaceParticipantRequest is the request for RemoveSpaceParticipant.
+ * RemoveSpaceParticipantsRequest removes one native audience set atomically.
  *
- * @generated from message s4wave.session.RemoveSpaceParticipantRequest
+ * @generated from message s4wave.session.RemoveSpaceParticipantsRequest
  */
-export interface RemoveSpaceParticipantRequest {
+export interface RemoveSpaceParticipantsRequest {
   /**
    * SpaceId is the shared object ULID for the space.
    *
@@ -2961,42 +2961,54 @@ export interface RemoveSpaceParticipantRequest {
    */
   spaceId?: string
   /**
-   * PeerId is the peer ID of the participant to remove.
+   * PeerIds are the participant peer IDs to remove in one configuration change.
    *
-   * @generated from field: string peer_id = 2;
+   * @generated from field: repeated string peer_ids = 2;
    */
-  peerId?: string
+  peerIds?: string[]
 }
 
-export const RemoveSpaceParticipantRequest: MessageType<RemoveSpaceParticipantRequest> =
+export const RemoveSpaceParticipantsRequest: MessageType<RemoveSpaceParticipantsRequest> =
   /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.RemoveSpaceParticipantRequest',
+    typeName: 's4wave.session.RemoveSpaceParticipantsRequest',
     fields: [
       { no: 1, name: 'space_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
+      {
+        no: 2,
+        name: 'peer_ids',
+        kind: 'scalar',
+        T: ScalarType.STRING,
+        repeated: true,
+      },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })
 
 /**
- * RemoveSpaceParticipantResponse is the response for RemoveSpaceParticipant.
+ * RemoveSpaceParticipantsResponse reports the participant grants that existed.
  *
- * @generated from message s4wave.session.RemoveSpaceParticipantResponse
+ * @generated from message s4wave.session.RemoveSpaceParticipantsResponse
  */
-export interface RemoveSpaceParticipantResponse {
+export interface RemoveSpaceParticipantsResponse {
   /**
-   * Removed indicates whether the participant was found and removed.
+   * RemovedPeerIds are the participant peer IDs that were present and removed.
    *
-   * @generated from field: bool removed = 1;
+   * @generated from field: repeated string removed_peer_ids = 1;
    */
-  removed?: boolean
+  removedPeerIds?: string[]
 }
 
-export const RemoveSpaceParticipantResponse: MessageType<RemoveSpaceParticipantResponse> =
+export const RemoveSpaceParticipantsResponse: MessageType<RemoveSpaceParticipantsResponse> =
   /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.RemoveSpaceParticipantResponse',
+    typeName: 's4wave.session.RemoveSpaceParticipantsResponse',
     fields: [
-      { no: 1, name: 'removed', kind: 'scalar', T: ScalarType.BOOL },
+      {
+        no: 1,
+        name: 'removed_peer_ids',
+        kind: 'scalar',
+        T: ScalarType.STRING,
+        repeated: true,
+      },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })

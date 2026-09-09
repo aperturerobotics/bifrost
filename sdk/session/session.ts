@@ -18,7 +18,7 @@ import {
   JoinSpaceViaInviteResponse,
   ListSpaceInvitesResponse,
   ListSpaceParticipantsResponse,
-  RemoveSpaceParticipantResponse,
+  RemoveSpaceParticipantsResponse,
   RenameSpaceRequest,
   MountSharedObjectRequest,
   RevokeSpaceInviteResponse,
@@ -371,14 +371,14 @@ export class Session extends Resource {
     return await this.service.ListSpaceParticipants({ spaceId }, abortSignal)
   }
 
-  // removeSpaceParticipant removes a participant from a space shared object by peer ID.
-  public async removeSpaceParticipant(
+  // removeSpaceParticipants removes participants in one configuration change.
+  public async removeSpaceParticipants(
     spaceId: string,
-    peerId: string,
+    peerIds: string[],
     abortSignal?: AbortSignal,
-  ): Promise<RemoveSpaceParticipantResponse> {
-    return await this.service.RemoveSpaceParticipant(
-      { spaceId, peerId },
+  ): Promise<RemoveSpaceParticipantsResponse> {
+    return await this.service.RemoveSpaceParticipants(
+      { spaceId, peerIds },
       abortSignal,
     )
   }

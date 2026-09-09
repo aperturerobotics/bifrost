@@ -149,10 +149,8 @@ export function SpaceMembersPanel({ compact = false }: SpaceMembersPanelProps) {
       try {
         if (session.spacewave && member.accountId) {
           await session.spacewave.removeSpaceMember(spaceId, member.accountId)
-        } else {
-          for (const peerId of member.peerIds ?? []) {
-            await session.removeSpaceParticipant(spaceId, peerId)
-          }
+        } else if (member.peerIds?.length) {
+          await session.removeSpaceParticipants(spaceId, member.peerIds)
         }
         dispatch({ type: 'done' })
       } catch (err) {

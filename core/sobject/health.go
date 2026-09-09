@@ -2,6 +2,17 @@ package sobject
 
 import "slices"
 
+// AuthoritativeSyncDenied reports whether a retained owner has denied this
+// object identity. Denial from a non-owner cannot revoke another participant.
+func AuthoritativeSyncDenied(config *SharedObjectConfig, health *SharedObjectHealth) bool {
+	if config == nil || health == nil {
+		return false
+	}
+	return slices.ContainsFunc(config.GetParticipants(), func(participant *SOParticipantConfig) bool {
+		return IsOwner(participant.GetRole()) && slices.Contains(health.GetSyncDeniedPeerIds(), participant.GetPeerId())
+	})
+}
+
 // WithSyncPeerAdmission returns a health snapshot reflecting a verified peer's
 // admission response without changing local mount readiness or authority.
 // The caller must have verified that peerID is readable under local authority.

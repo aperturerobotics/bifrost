@@ -14,7 +14,7 @@ const mockSession = {
     removeSpaceMember: vi.fn(),
     processMailboxEntry: vi.fn(),
   },
-  removeSpaceParticipant: vi.fn(),
+  removeSpaceParticipants: vi.fn(),
   revokeSpaceInvite: vi.fn(),
   resourceRef: { resourceId: 1, released: false },
   id: 1,

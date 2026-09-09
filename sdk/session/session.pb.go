@@ -2490,53 +2490,53 @@ func (x *ListSpaceParticipantsResponse) GetParticipants() []*sobject.SOParticipa
 	return nil
 }
 
-// RemoveSpaceParticipantRequest is the request for RemoveSpaceParticipant.
-type RemoveSpaceParticipantRequest struct {
+// RemoveSpaceParticipantsRequest removes one native audience set atomically.
+type RemoveSpaceParticipantsRequest struct {
 	unknownFields []byte
 	// SpaceId is the shared object ULID for the space.
 	SpaceId string `protobuf:"bytes,1,opt,name=space_id,json=spaceId,proto3" json:"spaceId,omitempty"`
-	// PeerId is the peer ID of the participant to remove.
-	PeerId string `protobuf:"bytes,2,opt,name=peer_id,json=peerId,proto3" json:"peerId,omitempty"`
+	// PeerIds are the participant peer IDs to remove in one configuration change.
+	PeerIds []string `protobuf:"bytes,2,rep,name=peer_ids,json=peerIds,proto3" json:"peerIds,omitempty"`
 }
 
-func (x *RemoveSpaceParticipantRequest) Reset() {
-	*x = RemoveSpaceParticipantRequest{}
+func (x *RemoveSpaceParticipantsRequest) Reset() {
+	*x = RemoveSpaceParticipantsRequest{}
 }
 
-func (*RemoveSpaceParticipantRequest) ProtoMessage() {}
+func (*RemoveSpaceParticipantsRequest) ProtoMessage() {}
 
-func (x *RemoveSpaceParticipantRequest) GetSpaceId() string {
+func (x *RemoveSpaceParticipantsRequest) GetSpaceId() string {
 	if x != nil {
 		return x.SpaceId
 	}
 	return ""
 }
 
-func (x *RemoveSpaceParticipantRequest) GetPeerId() string {
+func (x *RemoveSpaceParticipantsRequest) GetPeerIds() []string {
 	if x != nil {
-		return x.PeerId
+		return x.PeerIds
 	}
-	return ""
+	return nil
 }
 
-// RemoveSpaceParticipantResponse is the response for RemoveSpaceParticipant.
-type RemoveSpaceParticipantResponse struct {
+// RemoveSpaceParticipantsResponse reports the participant grants that existed.
+type RemoveSpaceParticipantsResponse struct {
 	unknownFields []byte
-	// Removed indicates whether the participant was found and removed.
-	Removed bool `protobuf:"varint,1,opt,name=removed,proto3" json:"removed,omitempty"`
+	// RemovedPeerIds are the participant peer IDs that were present and removed.
+	RemovedPeerIds []string `protobuf:"bytes,1,rep,name=removed_peer_ids,json=removedPeerIds,proto3" json:"removedPeerIds,omitempty"`
 }
 
-func (x *RemoveSpaceParticipantResponse) Reset() {
-	*x = RemoveSpaceParticipantResponse{}
+func (x *RemoveSpaceParticipantsResponse) Reset() {
+	*x = RemoveSpaceParticipantsResponse{}
 }
 
-func (*RemoveSpaceParticipantResponse) ProtoMessage() {}
+func (*RemoveSpaceParticipantsResponse) ProtoMessage() {}
 
-func (x *RemoveSpaceParticipantResponse) GetRemoved() bool {
+func (x *RemoveSpaceParticipantsResponse) GetRemovedPeerIds() []string {
 	if x != nil {
-		return x.Removed
+		return x.RemovedPeerIds
 	}
-	return false
+	return nil
 }
 
 // RevokeSpaceInviteRequest is the request for RevokeSpaceInvite.
@@ -4057,36 +4057,36 @@ func (m *ListSpaceParticipantsResponse) CloneMessageVT() protobuf_go_lite.CloneM
 	return m.CloneVT()
 }
 
-func (m *RemoveSpaceParticipantRequest) CloneVT() *RemoveSpaceParticipantRequest {
+func (m *RemoveSpaceParticipantsRequest) CloneVT() *RemoveSpaceParticipantsRequest {
 	if m == nil {
-		return (*RemoveSpaceParticipantRequest)(nil)
+		return (*RemoveSpaceParticipantsRequest)(nil)
 	}
-	r := new(RemoveSpaceParticipantRequest)
+	r := new(RemoveSpaceParticipantsRequest)
 	r.SpaceId = m.SpaceId
-	r.PeerId = m.PeerId
+	r.PeerIds = protobuf_go_lite.CloneSlice(m.PeerIds)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
 	return r
 }
 
-func (m *RemoveSpaceParticipantRequest) CloneMessageVT() protobuf_go_lite.CloneMessage {
+func (m *RemoveSpaceParticipantsRequest) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
-func (m *RemoveSpaceParticipantResponse) CloneVT() *RemoveSpaceParticipantResponse {
+func (m *RemoveSpaceParticipantsResponse) CloneVT() *RemoveSpaceParticipantsResponse {
 	if m == nil {
-		return (*RemoveSpaceParticipantResponse)(nil)
+		return (*RemoveSpaceParticipantsResponse)(nil)
 	}
-	r := new(RemoveSpaceParticipantResponse)
-	r.Removed = m.Removed
+	r := new(RemoveSpaceParticipantsResponse)
+	r.RemovedPeerIds = protobuf_go_lite.CloneSlice(m.RemovedPeerIds)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
 	return r
 }
 
-func (m *RemoveSpaceParticipantResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
+func (m *RemoveSpaceParticipantsResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
@@ -5946,7 +5946,7 @@ func (this *ListSpaceParticipantsResponse) EqualMessageVT(thatMsg any) bool {
 	return this.EqualVT(that)
 }
 
-func (this *RemoveSpaceParticipantRequest) EqualVT(that *RemoveSpaceParticipantRequest) bool {
+func (this *RemoveSpaceParticipantsRequest) EqualVT(that *RemoveSpaceParticipantsRequest) bool {
 	if this == that {
 		return true
 	} else if this == nil || that == nil {
@@ -5955,34 +5955,34 @@ func (this *RemoveSpaceParticipantRequest) EqualVT(that *RemoveSpaceParticipantR
 	if this.SpaceId != that.SpaceId {
 		return false
 	}
-	if this.PeerId != that.PeerId {
+	if !protobuf_go_lite.EqualSlice(this.PeerIds, that.PeerIds) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
-func (this *RemoveSpaceParticipantRequest) EqualMessageVT(thatMsg any) bool {
-	that, ok := thatMsg.(*RemoveSpaceParticipantRequest)
+func (this *RemoveSpaceParticipantsRequest) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*RemoveSpaceParticipantsRequest)
 	if !ok {
 		return false
 	}
 	return this.EqualVT(that)
 }
 
-func (this *RemoveSpaceParticipantResponse) EqualVT(that *RemoveSpaceParticipantResponse) bool {
+func (this *RemoveSpaceParticipantsResponse) EqualVT(that *RemoveSpaceParticipantsResponse) bool {
 	if this == that {
 		return true
 	} else if this == nil || that == nil {
 		return false
 	}
-	if this.Removed != that.Removed {
+	if !protobuf_go_lite.EqualSlice(this.RemovedPeerIds, that.RemovedPeerIds) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
-func (this *RemoveSpaceParticipantResponse) EqualMessageVT(thatMsg any) bool {
-	that, ok := thatMsg.(*RemoveSpaceParticipantResponse)
+func (this *RemoveSpaceParticipantsResponse) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*RemoveSpaceParticipantsResponse)
 	if !ok {
 		return false
 	}
@@ -10199,8 +10199,8 @@ func (x *ListSpaceParticipantsResponse) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
-// MarshalProtoJSON marshals the RemoveSpaceParticipantRequest message to JSON.
-func (x *RemoveSpaceParticipantRequest) MarshalProtoJSON(s *json.MarshalState) {
+// MarshalProtoJSON marshals the RemoveSpaceParticipantsRequest message to JSON.
+func (x *RemoveSpaceParticipantsRequest) MarshalProtoJSON(s *json.MarshalState) {
 	if x == nil {
 		s.WriteNil()
 		return
@@ -10212,21 +10212,21 @@ func (x *RemoveSpaceParticipantRequest) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("spaceId")
 		s.WriteString(x.SpaceId)
 	}
-	if x.PeerId != "" || s.HasField("peerId") {
+	if len(x.PeerIds) > 0 || s.HasField("peerIds") {
 		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("peerId")
-		s.WriteString(x.PeerId)
+		s.WriteObjectField("peerIds")
+		s.WriteStringArray(x.PeerIds)
 	}
 	s.WriteObjectEnd()
 }
 
-// MarshalJSON marshals the RemoveSpaceParticipantRequest to JSON.
-func (x *RemoveSpaceParticipantRequest) MarshalJSON() ([]byte, error) {
+// MarshalJSON marshals the RemoveSpaceParticipantsRequest to JSON.
+func (x *RemoveSpaceParticipantsRequest) MarshalJSON() ([]byte, error) {
 	return json.DefaultMarshalerConfig.Marshal(x)
 }
 
-// UnmarshalProtoJSON unmarshals the RemoveSpaceParticipantRequest message from JSON.
-func (x *RemoveSpaceParticipantRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
+// UnmarshalProtoJSON unmarshals the RemoveSpaceParticipantsRequest message from JSON.
+func (x *RemoveSpaceParticipantsRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
 	if s.ReadNil() {
 		return
 	}
@@ -10237,41 +10237,45 @@ func (x *RemoveSpaceParticipantRequest) UnmarshalProtoJSON(s *json.UnmarshalStat
 		case "space_id", "spaceId":
 			s.AddField("space_id")
 			x.SpaceId = s.ReadString()
-		case "peer_id", "peerId":
-			s.AddField("peer_id")
-			x.PeerId = s.ReadString()
+		case "peer_ids", "peerIds":
+			s.AddField("peer_ids")
+			if s.ReadNil() {
+				x.PeerIds = nil
+				return
+			}
+			x.PeerIds = s.ReadStringArray()
 		}
 	})
 }
 
-// UnmarshalJSON unmarshals the RemoveSpaceParticipantRequest from JSON.
-func (x *RemoveSpaceParticipantRequest) UnmarshalJSON(b []byte) error {
+// UnmarshalJSON unmarshals the RemoveSpaceParticipantsRequest from JSON.
+func (x *RemoveSpaceParticipantsRequest) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
-// MarshalProtoJSON marshals the RemoveSpaceParticipantResponse message to JSON.
-func (x *RemoveSpaceParticipantResponse) MarshalProtoJSON(s *json.MarshalState) {
+// MarshalProtoJSON marshals the RemoveSpaceParticipantsResponse message to JSON.
+func (x *RemoveSpaceParticipantsResponse) MarshalProtoJSON(s *json.MarshalState) {
 	if x == nil {
 		s.WriteNil()
 		return
 	}
 	s.WriteObjectStart()
 	var wroteField bool
-	if x.Removed || s.HasField("removed") {
+	if len(x.RemovedPeerIds) > 0 || s.HasField("removedPeerIds") {
 		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("removed")
-		s.WriteBool(x.Removed)
+		s.WriteObjectField("removedPeerIds")
+		s.WriteStringArray(x.RemovedPeerIds)
 	}
 	s.WriteObjectEnd()
 }
 
-// MarshalJSON marshals the RemoveSpaceParticipantResponse to JSON.
-func (x *RemoveSpaceParticipantResponse) MarshalJSON() ([]byte, error) {
+// MarshalJSON marshals the RemoveSpaceParticipantsResponse to JSON.
+func (x *RemoveSpaceParticipantsResponse) MarshalJSON() ([]byte, error) {
 	return json.DefaultMarshalerConfig.Marshal(x)
 }
 
-// UnmarshalProtoJSON unmarshals the RemoveSpaceParticipantResponse message from JSON.
-func (x *RemoveSpaceParticipantResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
+// UnmarshalProtoJSON unmarshals the RemoveSpaceParticipantsResponse message from JSON.
+func (x *RemoveSpaceParticipantsResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
 	if s.ReadNil() {
 		return
 	}
@@ -10279,15 +10283,19 @@ func (x *RemoveSpaceParticipantResponse) UnmarshalProtoJSON(s *json.UnmarshalSta
 		switch key {
 		default:
 			s.Skip() // ignore unknown field
-		case "removed":
-			s.AddField("removed")
-			x.Removed = s.ReadBool()
+		case "removed_peer_ids", "removedPeerIds":
+			s.AddField("removed_peer_ids")
+			if s.ReadNil() {
+				x.RemovedPeerIds = nil
+				return
+			}
+			x.RemovedPeerIds = s.ReadStringArray()
 		}
 	})
 }
 
-// UnmarshalJSON unmarshals the RemoveSpaceParticipantResponse from JSON.
-func (x *RemoveSpaceParticipantResponse) UnmarshalJSON(b []byte) error {
+// UnmarshalJSON unmarshals the RemoveSpaceParticipantsResponse from JSON.
+func (x *RemoveSpaceParticipantsResponse) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -14066,7 +14074,7 @@ func (m *ListSpaceParticipantsResponse) MarshalToSizedBufferVT(dAtA []byte) (int
 	return len(dAtA) - i, nil
 }
 
-func (m *RemoveSpaceParticipantRequest) MarshalVT() (dAtA []byte, err error) {
+func (m *RemoveSpaceParticipantsRequest) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
 	}
@@ -14079,12 +14087,12 @@ func (m *RemoveSpaceParticipantRequest) MarshalVT() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *RemoveSpaceParticipantRequest) MarshalToVT(dAtA []byte) (int, error) {
+func (m *RemoveSpaceParticipantsRequest) MarshalToVT(dAtA []byte) (int, error) {
 	size := m.SizeVT()
 	return m.MarshalToSizedBufferVT(dAtA[:size])
 }
 
-func (m *RemoveSpaceParticipantRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+func (m *RemoveSpaceParticipantsRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -14095,10 +14103,12 @@ func (m *RemoveSpaceParticipantRequest) MarshalToSizedBufferVT(dAtA []byte) (int
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
-	if len(m.PeerId) > 0 {
-		i = protobuf_go_lite.EncodeString(dAtA, i, m.PeerId)
-		i--
-		dAtA[i] = 0x12
+	if len(m.PeerIds) > 0 {
+		for iNdEx := len(m.PeerIds) - 1; iNdEx >= 0; iNdEx-- {
+			i = protobuf_go_lite.EncodeString(dAtA, i, m.PeerIds[iNdEx])
+			i--
+			dAtA[i] = 0x12
+		}
 	}
 	if len(m.SpaceId) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.SpaceId)
@@ -14108,7 +14118,7 @@ func (m *RemoveSpaceParticipantRequest) MarshalToSizedBufferVT(dAtA []byte) (int
 	return len(dAtA) - i, nil
 }
 
-func (m *RemoveSpaceParticipantResponse) MarshalVT() (dAtA []byte, err error) {
+func (m *RemoveSpaceParticipantsResponse) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
 	}
@@ -14121,12 +14131,12 @@ func (m *RemoveSpaceParticipantResponse) MarshalVT() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *RemoveSpaceParticipantResponse) MarshalToVT(dAtA []byte) (int, error) {
+func (m *RemoveSpaceParticipantsResponse) MarshalToVT(dAtA []byte) (int, error) {
 	size := m.SizeVT()
 	return m.MarshalToSizedBufferVT(dAtA[:size])
 }
 
-func (m *RemoveSpaceParticipantResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+func (m *RemoveSpaceParticipantsResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -14137,10 +14147,12 @@ func (m *RemoveSpaceParticipantResponse) MarshalToSizedBufferVT(dAtA []byte) (in
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
-	if m.Removed {
-		i = protobuf_go_lite.EncodeBool(dAtA, i, m.Removed)
-		i--
-		dAtA[i] = 0x8
+	if len(m.RemovedPeerIds) > 0 {
+		for iNdEx := len(m.RemovedPeerIds) - 1; iNdEx >= 0; iNdEx-- {
+			i = protobuf_go_lite.EncodeString(dAtA, i, m.RemovedPeerIds[iNdEx])
+			i--
+			dAtA[i] = 0xa
+		}
 	}
 	return len(dAtA) - i, nil
 }
@@ -15590,25 +15602,25 @@ func (m *ListSpaceParticipantsResponse) SizeVT() (n int) {
 	return n
 }
 
-func (m *RemoveSpaceParticipantRequest) SizeVT() (n int) {
+func (m *RemoveSpaceParticipantsRequest) SizeVT() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.SpaceId)
-	n += protobuf_go_lite.SizeStringNonEmpty(1, m.PeerId)
+	n += protobuf_go_lite.SizeStringSlice(1, m.PeerIds)
 	n += len(m.unknownFields)
 	return n
 }
 
-func (m *RemoveSpaceParticipantResponse) SizeVT() (n int) {
+func (m *RemoveSpaceParticipantsResponse) SizeVT() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	n += protobuf_go_lite.SizeBoolNonZero(1, m.Removed)
+	n += protobuf_go_lite.SizeStringSlice(1, m.RemovedPeerIds)
 	n += len(m.unknownFields)
 	return n
 }
@@ -17157,35 +17169,43 @@ func (x *ListSpaceParticipantsResponse) String() string {
 	return x.MarshalProtoText()
 }
 
-func (x *RemoveSpaceParticipantRequest) MarshalProtoText() string {
+func (x *RemoveSpaceParticipantsRequest) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
-	initialLen := protobuf_go_lite.TextStartMessage(&sb, "RemoveSpaceParticipantRequest")
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "RemoveSpaceParticipantsRequest")
 	if x.SpaceId != "" {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "space_id")
 		protobuf_go_lite.TextWriteString(&sb, x.SpaceId)
 	}
-	if x.PeerId != "" {
-		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "peer_id")
-		protobuf_go_lite.TextWriteString(&sb, x.PeerId)
+	if len(x.PeerIds) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "peer_ids")
+		for i, v := range x.PeerIds {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			protobuf_go_lite.TextWriteString(&sb, v)
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
-func (x *RemoveSpaceParticipantRequest) String() string {
+func (x *RemoveSpaceParticipantsRequest) String() string {
 	return x.MarshalProtoText()
 }
 
-func (x *RemoveSpaceParticipantResponse) MarshalProtoText() string {
+func (x *RemoveSpaceParticipantsResponse) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
-	initialLen := protobuf_go_lite.TextStartMessage(&sb, "RemoveSpaceParticipantResponse")
-	if x.Removed != false {
-		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "removed")
-		protobuf_go_lite.TextWriteBool(&sb, x.Removed)
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "RemoveSpaceParticipantsResponse")
+	if len(x.RemovedPeerIds) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "removed_peer_ids")
+		for i, v := range x.RemovedPeerIds {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			protobuf_go_lite.TextWriteString(&sb, v)
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
-func (x *RemoveSpaceParticipantResponse) String() string {
+func (x *RemoveSpaceParticipantsResponse) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -21887,7 +21907,7 @@ func (m *ListSpaceParticipantsResponse) UnmarshalVT(dAtA []byte) error {
 	return nil
 }
 
-func (m *RemoveSpaceParticipantRequest) UnmarshalVT(dAtA []byte) error {
+func (m *RemoveSpaceParticipantsRequest) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	var err error
@@ -21901,10 +21921,10 @@ func (m *RemoveSpaceParticipantRequest) UnmarshalVT(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: RemoveSpaceParticipantRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: RemoveSpaceParticipantsRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: RemoveSpaceParticipantRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: RemoveSpaceParticipantsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -21919,14 +21939,14 @@ func (m *RemoveSpaceParticipantRequest) UnmarshalVT(dAtA []byte) error {
 			m.SpaceId = v
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field PeerId", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field PeerIds", wireType)
 			}
 			var v string
 			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
 			if err != nil {
 				return err
 			}
-			m.PeerId = v
+			m.PeerIds = append(m.PeerIds, v)
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
@@ -21950,7 +21970,7 @@ func (m *RemoveSpaceParticipantRequest) UnmarshalVT(dAtA []byte) error {
 	return nil
 }
 
-func (m *RemoveSpaceParticipantResponse) UnmarshalVT(dAtA []byte) error {
+func (m *RemoveSpaceParticipantsResponse) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	var err error
@@ -21964,22 +21984,22 @@ func (m *RemoveSpaceParticipantResponse) UnmarshalVT(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: RemoveSpaceParticipantResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: RemoveSpaceParticipantsResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: RemoveSpaceParticipantResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: RemoveSpaceParticipantsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Removed", wireType)
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RemovedPeerIds", wireType)
 			}
-			var v bool
-			v, iNdEx, err = protobuf_go_lite.DecodeVarintBool(dAtA, iNdEx)
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
 			if err != nil {
 				return err
 			}
-			m.Removed = bool(v)
+			m.RemovedPeerIds = append(m.RemovedPeerIds, v)
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

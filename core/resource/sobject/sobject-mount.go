@@ -43,9 +43,19 @@ func (r *SharedObjectResource) MountSharedObjectBody(ctx context.Context, req *s
 		if err != nil {
 			return nil, err
 		}
-		if !slices.ContainsFunc(state.GetConfig().GetParticipants(), func(participant *sobject.SOParticipantConfig) bool {
+		config := state.GetConfig()
+		readable := slices.ContainsFunc(config.GetParticipants(), func(participant *sobject.SOParticipantConfig) bool {
 			return participant.GetPeerId() == r.sharedObject.GetPeerID().String() && sobject.CanReadState(participant.GetRole())
-		}) {
+		})
+		if healthAccessor, ok := r.sharedObject.(sobject.SharedObjectHealthAccessor); ok {
+			health, release, err := healthAccessor.AccessSharedObjectHealth(ctx, nil)
+			if err != nil {
+				return nil, err
+			}
+			readable = readable && !sobject.AuthoritativeSyncDenied(config, health.GetValue())
+			release()
+		}
+		if !readable {
 			return mountSharedObjectBodyHealthResponse(sobject.WrapSharedObjectHealthError(
 				sobject.SharedObjectHealthLayer_SHARED_OBJECT_HEALTH_LAYER_BODY,
 				sobject.ErrNotParticipant,

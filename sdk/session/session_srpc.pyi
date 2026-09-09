@@ -194,10 +194,10 @@ class SessionResourceServiceClient:
         self,
         request: _github_com_s4wave_spacewave_sdk_session_session_pb2.ListSpaceParticipantsRequest,
     ) -> _github_com_s4wave_spacewave_sdk_session_session_pb2.ListSpaceParticipantsResponse: ...
-    async def remove_space_participant(
+    async def remove_space_participants(
         self,
-        request: _github_com_s4wave_spacewave_sdk_session_session_pb2.RemoveSpaceParticipantRequest,
-    ) -> _github_com_s4wave_spacewave_sdk_session_session_pb2.RemoveSpaceParticipantResponse: ...
+        request: _github_com_s4wave_spacewave_sdk_session_session_pb2.RemoveSpaceParticipantsRequest,
+    ) -> _github_com_s4wave_spacewave_sdk_session_session_pb2.RemoveSpaceParticipantsResponse: ...
     async def revoke_space_invite(
         self,
         request: _github_com_s4wave_spacewave_sdk_session_session_pb2.RevokeSpaceInviteRequest,
@@ -406,10 +406,10 @@ class SessionResourceServiceServer(Protocol):
         self,
         request: _github_com_s4wave_spacewave_sdk_session_session_pb2.ListSpaceParticipantsRequest,
     ) -> _github_com_s4wave_spacewave_sdk_session_session_pb2.ListSpaceParticipantsResponse: ...
-    async def remove_space_participant(
+    async def remove_space_participants(
         self,
-        request: _github_com_s4wave_spacewave_sdk_session_session_pb2.RemoveSpaceParticipantRequest,
-    ) -> _github_com_s4wave_spacewave_sdk_session_session_pb2.RemoveSpaceParticipantResponse: ...
+        request: _github_com_s4wave_spacewave_sdk_session_session_pb2.RemoveSpaceParticipantsRequest,
+    ) -> _github_com_s4wave_spacewave_sdk_session_session_pb2.RemoveSpaceParticipantsResponse: ...
     async def revoke_space_invite(
         self,
         request: _github_com_s4wave_spacewave_sdk_session_session_pb2.RevokeSpaceInviteRequest,
