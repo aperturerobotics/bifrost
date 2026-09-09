@@ -15,27 +15,45 @@ import (
 // DriveReadyResult is the browser-observed evidence that the Drive quickstart
 // reached content-ready, beyond merely rendering the file browser frame.
 type DriveReadyResult struct {
-	Body                      string
-	Hash                      string
-	ContentReadyMs            int
-	QuickstartState           string
+	// Body contains the visible Drive text at content readiness.
+	Body string
+	// Hash is the browser route at content readiness.
+	Hash string
+	// ContentReadyMs is the browser timestamp when starter content appeared.
+	ContentReadyMs int
+	// QuickstartState is the last published quickstart phase.
+	QuickstartState string
+	// QuickstartProgressReadyMs is when the progress view became ready.
 	QuickstartProgressReadyMs *int
-	QuickstartContentReadyMs  *int
-	QuickstartFinishedMs      *int
-	QuickstartError           string
-	QuickstartTiming          map[string]any
+	// QuickstartContentReadyMs is when the quickstart published content readiness.
+	QuickstartContentReadyMs *int
+	// QuickstartFinishedMs is when the quickstart completed its work.
+	QuickstartFinishedMs *int
+	// QuickstartError contains the quickstart's terminal failure, if any.
+	QuickstartError string
+	// QuickstartTiming retains the complete browser timing record.
+	QuickstartTiming map[string]any
 }
 
 // WaitForApp waits for the real app runtime, not the prerendered shell, to be
 // connected to the Resource SDK.
 func WaitForApp(t testing.TB, page playwright.Page) {
 	t.Helper()
+	if err := WaitForAppReady(page); err != nil {
+		t.Fatal(err)
+	}
+}
 
+// WaitForAppReady boots the app when deferred and waits for its Resource SDK
+// connection, returning diagnostics when startup fails.
+func WaitForAppReady(page playwright.Page) error {
+	// Budget cold compiler startup separately from ordinary navigation.
 	deadlineMS := 120000
 	if E2EWasmSlowCompilerEnabled() {
 		deadlineMS = 240000
 	}
 
+	// Re-enter evaluation when startup replaces the document's JS context.
 	deadline := time.Now().Add(time.Duration(deadlineMS) * time.Millisecond)
 	var lastErr error
 	for time.Now().Before(deadline) {
@@ -81,20 +99,21 @@ func WaitForApp(t testing.TB, page playwright.Page) {
 		return null
 	}`, map[string]any{"deadlineMS": evalWindowMS})
 		if err == nil {
-			return
+			return nil
 		}
 		lastErr = err
 		if !isTransientAppWaitError(err) {
 			break
 		}
-		time.Sleep(250 * time.Millisecond)
+		<-time.After(250 * time.Millisecond)
 	}
 
+	// Include the current page state when the runtime never becomes available.
 	body, bodyErr := page.Locator("body").TextContent()
 	if bodyErr != nil {
 		body = "failed to read body text: " + bodyErr.Error()
 	}
-	t.Fatalf(
+	return errors.Errorf(
 		"app not ready: %v\nurl: %s\nbody: %s",
 		lastErr,
 		page.URL(),
@@ -102,6 +121,7 @@ func WaitForApp(t testing.TB, page playwright.Page) {
 	)
 }
 
+// isTransientAppWaitError recognizes document replacement and incomplete boot.
 func isTransientAppWaitError(err error) bool {
 	if err == nil {
 		return false
@@ -114,6 +134,7 @@ func isTransientAppWaitError(err error) bool {
 		strings.Contains(msg, "debug context did not initialize before deadline")
 }
 
+// AssertBrowserStartupDone verifies that the connected runtime revealed its frame.
 func AssertBrowserStartupDone(t testing.TB, h *Harness, page playwright.Page) map[string]any {
 	t.Helper()
 
@@ -138,6 +159,7 @@ func AssertBrowserStartupDone(t testing.TB, h *Harness, page playwright.Page) ma
 	return proof
 }
 
+// AssertRootImportMap requires the shared React and protobuf runtime specifiers.
 func AssertRootImportMap(t testing.TB, h *Harness, page playwright.Page) {
 	t.Helper()
 
@@ -157,6 +179,7 @@ func AssertRootImportMap(t testing.TB, h *Harness, page playwright.Page) {
 	}
 }
 
+// readRuntimeStartupProof reads the browser's published startup state.
 func readRuntimeStartupProof(t testing.TB, h *Harness, page playwright.Page) map[string]any {
 	t.Helper()
 
@@ -183,6 +206,7 @@ func NavigateHash(t testing.TB, h *Harness, page playwright.Page, hash string) {
 	}
 }
 
+// visibleDriveBrowser selects the first visible Drive pane.
 func visibleDriveBrowser(page playwright.Page) playwright.Locator {
 	return page.Locator("[data-testid='unixfs-browser']:visible").First()
 }
@@ -191,6 +215,7 @@ func visibleDriveBrowser(page playwright.Page) playwright.Locator {
 func WaitForDriveShell(t testing.TB, page playwright.Page) {
 	t.Helper()
 
+	// Complete onboarding before waiting for the raw file browser.
 	CompleteDriveIntroWizardIfPresent(t, page)
 	err := visibleDriveBrowser(page).WaitFor(
 		playwright.LocatorWaitForOptions{Timeout: playwright.Float(120000)},
@@ -338,6 +363,7 @@ func WaitForEmptySpaceReady(t testing.TB, page playwright.Page) {
 		}
 	}
 
+	// Require the quickstart to have reached the new Space's route without error.
 	raw, err := page.Evaluate(`() => {
 		const timing = globalThis.__s4waveQuickstartTiming ?? globalThis.__s4wave_debug?.quickstartTiming ?? null
 		return {
@@ -365,6 +391,7 @@ func WaitForEmptySpaceReady(t testing.TB, page playwright.Page) {
 	}
 }
 
+// completeDriveIntroWizardScript advances the first-use wizard to the file browser.
 const completeDriveIntroWizardScript = `async () => {
 	const deadline = Date.now() + 120000
 	const actionLabels = ['Next', 'Got it, start exploring', 'Open files']
@@ -513,6 +540,7 @@ func WaitForDriveReady(t testing.TB, h *Harness, page playwright.Page) DriveRead
 
 	WaitForDriveShell(t, page)
 
+	// Wait for starter content, then retain the quickstart's timing evidence.
 	raw, err := page.Evaluate(h.Script("wait-for-drive.ts"), map[string]any{
 		"deadlineMs": 120000,
 	})
@@ -526,6 +554,7 @@ func WaitForDriveReady(t testing.TB, h *Harness, page playwright.Page) DriveRead
 	return result
 }
 
+// parseDriveReadyResult decodes the browser's Drive readiness and timing record.
 func parseDriveReadyResult(t testing.TB, raw any) DriveReadyResult {
 	t.Helper()
 
@@ -549,16 +578,19 @@ func parseDriveReadyResult(t testing.TB, raw any) DriveReadyResult {
 	return result
 }
 
+// stringField reads an optional string from a browser record.
 func stringField(m map[string]any, key string) string {
 	v, _ := m[key].(string)
 	return v
 }
 
+// boolField reads an optional boolean from a browser record.
 func boolField(m map[string]any, key string) bool {
 	v, _ := m[key].(bool)
 	return v
 }
 
+// intField converts an optional browser number to an integer.
 func intField(m map[string]any, key string) int {
 	switch v := m[key].(type) {
 	case float64:
@@ -570,6 +602,7 @@ func intField(m map[string]any, key string) int {
 	}
 }
 
+// mapField requires a nested browser record.
 func mapField(t testing.TB, m map[string]any, key string) map[string]any {
 	t.Helper()
 
@@ -580,6 +613,7 @@ func mapField(t testing.TB, m map[string]any, key string) map[string]any {
 	return v
 }
 
+// optionalIntField distinguishes a missing browser number from zero.
 func optionalIntField(m map[string]any, key string) *int {
 	switch v := m[key].(type) {
 	case float64:
@@ -592,6 +626,7 @@ func optionalIntField(m map[string]any, key string) *int {
 	}
 }
 
+// AssertQuickstartContentAfterProgress checks the quickstart's recorded phase order.
 func AssertQuickstartContentAfterProgress(t testing.TB, result DriveReadyResult) {
 	t.Helper()
 
@@ -633,6 +668,7 @@ func AssertQuickstartContentAfterProgress(t testing.TB, result DriveReadyResult)
 	}
 }
 
+// formatOptionalMs formats a present timing value or its missing marker.
 func formatOptionalMs(v *int) string {
 	if v == nil {
 		return "<missing>"
@@ -640,6 +676,7 @@ func formatOptionalMs(v *int) string {
 	return strconv.Itoa(*v) + "ms"
 }
 
+// trimPageText bounds diagnostic output after collapsing whitespace.
 func trimPageText(s string) string {
 	s = strings.Join(strings.Fields(s), " ")
 	if len(s) <= 800 {
@@ -648,8 +685,7 @@ func trimPageText(s string) string {
 	return s[:800] + "..."
 }
 
-// parseQuickstartRoute extracts sessionIndex and spaceID from a URL like:
-// http://host/#/u/{sessionIndex}/so/{spaceID}/...
+// parseQuickstartRoute extracts the Session index and Space ID from a hash route.
 func parseQuickstartRoute(rawURL string) (uint32, string, error) {
 	hashIdx := strings.Index(rawURL, "#")
 	if hashIdx == -1 || hashIdx == len(rawURL)-1 {

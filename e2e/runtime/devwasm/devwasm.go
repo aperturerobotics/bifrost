@@ -16,6 +16,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// defaultWait bounds browser actions outside event-specific readiness waits.
 const defaultWait = 120 * time.Second
 
 // Options configures the dev WASM runtime adapter.
@@ -23,14 +24,19 @@ type Options struct{}
 
 // Adapter drives scenarios through the existing browser WASM harness.
 type Adapter struct {
-	h                 *wasm.Harness
-	ctx               playwright.BrowserContext
-	page              playwright.Page
+	// h owns the application server and browser process.
+	h *wasm.Harness
+	// ctx retains origin storage across pages in one scenario session.
+	ctx playwright.BrowserContext
+	// page is the active document receiving scenario actions.
+	page playwright.Page
+	// resetDriveOnReady returns a newly opened Drive to its root folder.
 	resetDriveOnReady bool
 }
 
 // New boots the browser WASM harness and opens the first scenario page.
 func New(ctx context.Context, _ Options) (*Adapter, error) {
+	// Select the requested browser compiler before booting the harness.
 	compiler, err := wasm.ResolveE2EWasmCompiler()
 	if err != nil {
 		return nil, errors.Wrap(err, "resolve devwasm compiler")
@@ -48,6 +54,8 @@ func New(ctx context.Context, _ Options) (*Adapter, error) {
 	case wasm.E2EWasmCompilerGoScript:
 		bootOptions = append(bootOptions, wasm.WithGoScriptBrowserStartup())
 	}
+
+	// Start the application and browser, releasing both on partial startup.
 	h, err := wasm.Boot(ctx, logrus.NewEntry(logrus.New()), bootOptions...)
 	if err != nil {
 		return nil, errors.Wrap(err, "boot devwasm harness")
@@ -56,6 +64,8 @@ func New(ctx context.Context, _ Options) (*Adapter, error) {
 		h.Release()
 		return nil, errors.Wrap(err, "launch devwasm browser")
 	}
+
+	// Create the initial scenario session.
 	a := &Adapter{h: h}
 	if err := a.newPage(); err != nil {
 		a.Close()
@@ -79,7 +89,9 @@ func (a *Adapter) Close() {
 	}
 }
 
+// newPage opens a document in the current storage context, creating it if absent.
 func (a *Adapter) newPage() error {
+	// Retain storage when replacing a document in the same session.
 	var err error
 	if a.ctx == nil {
 		a.ctx, err = a.h.Browser().NewContext(playwright.BrowserNewContextOptions{AcceptDownloads: new(true)})
@@ -87,6 +99,8 @@ func (a *Adapter) newPage() error {
 			return errors.Wrap(err, "create browser context")
 		}
 	}
+
+	// Open the active scenario document.
 	a.page, err = a.ctx.NewPage()
 	if err != nil {
 		return errors.Wrap(err, "create browser page")
@@ -122,6 +136,7 @@ func (a *Adapter) ResetSession(requirement runtime.SessionRequirement) error {
 
 // OpenRoute opens route through a document load or committed client-side hash.
 func (a *Adapter) OpenRoute(route string) error {
+	// Load the application only when the current document is blank.
 	if !strings.HasPrefix(route, "/") {
 		route = "/" + route
 	}
@@ -134,6 +149,8 @@ func (a *Adapter) OpenRoute(route string) error {
 		}
 		return a.WaitForEvent(runtime.EventAppReady)
 	}
+
+	// Route within a live document so its workers and connections survive.
 	targetHash := warmRouteHash(route)
 	a.resetDriveOnReady = route == "/quickstart/drive" && pageHash(a.page.URL()) != targetHash
 	if err := a.openRouteClientSide(targetHash); err != nil {
@@ -142,6 +159,7 @@ func (a *Adapter) OpenRoute(route string) error {
 	return a.WaitForEvent(runtime.EventAppReady)
 }
 
+// openRouteClientSide waits for the shell to commit a hash route in place.
 func (a *Adapter) openRouteClientSide(targetHash string) error {
 	_, err := a.page.WaitForFunction(`({ targetHash }) => {
 		const eventName = 's4wave:shell-tab-path-committed'
@@ -173,7 +191,9 @@ func (a *Adapter) openRouteClientSide(targetHash string) error {
 	return err
 }
 
+// waitForNextTabPathCommit observes the shell commit produced by run.
 func (a *Adapter) waitForNextTabPathCommit(action string, run func() error) error {
+	// Arm the browser listener before dispatching the action.
 	const key = "__s4waveE2ENextTabPathCommit"
 	if _, err := a.page.Evaluate(`({ key }) => {
 		const eventName = 's4wave:shell-tab-path-committed'
@@ -194,13 +214,18 @@ func (a *Adapter) waitForNextTabPathCommit(action string, run func() error) erro
 	}`, map[string]any{"key": key}); err != nil {
 		return errors.Wrapf(err, "arm tab path commit wait before %s", action)
 	}
+
+	// Remove the listener if the action fails before committing a route.
 	if err := run(); err != nil {
+		// Navigation failure may already have destroyed this document.
 		_, _ = a.page.Evaluate(`({ key }) => {
 			window[key]?.cleanup?.()
 			delete window[key]
 		}`, map[string]any{"key": key})
 		return err
 	}
+
+	// Await the recorded commit and release its document marker.
 	_, err := a.page.WaitForFunction(`({ key }) => window[key]?.promise`, map[string]any{"key": key}, playwright.PageWaitForFunctionOptions{Timeout: durationMS(defaultWait)})
 	_, _ = a.page.Evaluate(`({ key }) => delete window[key]`, map[string]any{"key": key})
 	if err != nil {
@@ -209,10 +234,12 @@ func (a *Adapter) waitForNextTabPathCommit(action string, run func() error) erro
 	return nil
 }
 
+// needsDocumentLoad distinguishes an uninitialized page from a live app route.
 func needsDocumentLoad(pageURL string) bool {
 	return pageURL == "" || pageURL == "about:blank"
 }
 
+// pageHash returns the route fragment without its query parameters.
 func pageHash(pageURL string) string {
 	hashIndex := strings.IndexByte(pageURL, '#')
 	if hashIndex < 0 {
@@ -231,12 +258,14 @@ func warmRouteHash(route string) string {
 	return "#" + route
 }
 
+// driveBrowser selects the last visible Drive pane in the active document.
 func (a *Adapter) driveBrowser() playwright.Locator {
 	return a.page.Locator("[data-testid='unixfs-browser']:visible").Last()
 }
 
 // ClickControl activates a named Drive control or Playwright selector.
 func (a *Adapter) ClickControl(control string) error {
+	// Folder creation uses the inline editor rather than a page-level control.
 	if control == "confirm" {
 		return a.driveBrowser().Locator("input[placeholder='Folder name']:visible").First().Press("Enter")
 	}
@@ -244,11 +273,8 @@ func (a *Adapter) ClickControl(control string) error {
 		browser := a.driveBrowser()
 		input := browser.Locator("input[placeholder='Folder name']:visible").First()
 		buttons := browser.Locator("button[title='New folder']:not([disabled]):visible")
-		// Count is a snapshot. Right after navigating into a folder the browser
-		// that driveBrowser resolves is the newly mounted one, whose toolbar has
-		// not rendered its actions yet, so the snapshot can be zero. That left
-		// the loop below with nothing to click and spent the whole wait on an
-		// input no click had opened. Wait for a clickable button first.
+
+		// A newly mounted folder can render its toolbar after the browser pane.
 		if err := buttons.First().WaitFor(playwright.LocatorWaitForOptions{
 			Timeout: durationMS(defaultWait),
 		}); err != nil {
@@ -272,6 +298,8 @@ func (a *Adapter) ClickControl(control string) error {
 		}
 		return input.WaitFor(playwright.LocatorWaitForOptions{Timeout: durationMS(defaultWait)})
 	}
+
+	// Map scenario control names to the current interface.
 	selectors := map[string]string{
 		"drive":        "text=Create a Drive",
 		"up":           "button[title='Up']:not([disabled]):visible",
@@ -352,6 +380,7 @@ func (a *Adapter) ExpectAbsent(content string) error {
 	return a.waitForText(content, false)
 }
 
+// waitForText observes DOM changes until the requested visibility holds.
 func (a *Adapter) waitForText(content string, wantVisible bool) error {
 	_, err := a.page.WaitForFunction(`({ content, wantVisible }) => {
 		const isVisible = (element) => {
@@ -384,6 +413,7 @@ func (a *Adapter) waitForText(content string, wantVisible bool) error {
 // DeleteSpace deletes the current Space and waits for the dialog to close and
 // the Space name to leave the observed UI state.
 func (a *Adapter) DeleteSpace() error {
+	// Open the current object's menu, retaining diagnostics on failure.
 	menu := a.page.Locator("[role='button'][aria-label='Open shared object menu']:visible").Last()
 	if err := menu.Click(); err != nil {
 		snapshot, snapshotErr := a.page.Evaluate(`() => ({
@@ -402,6 +432,8 @@ func (a *Adapter) DeleteSpace() error {
 		}
 		return errors.Wrap(err, "open shared object menu")
 	}
+
+	// Reach the deletion dialog through the object's danger zone.
 	danger := a.page.Locator("button").Filter(playwright.LocatorFilterOptions{HasText: "Danger Zone"}).Last()
 	if err := danger.Click(); err != nil {
 		return errors.Wrap(err, "open danger zone")
@@ -410,6 +442,8 @@ func (a *Adapter) DeleteSpace() error {
 	if err := trigger.Click(); err != nil {
 		return errors.Wrap(err, "open delete space dialog")
 	}
+
+	// Confirm the displayed Space name and wait for its removal.
 	input := a.page.Locator("[role='dialog'] input:visible").First()
 	spaceName, err := input.GetAttribute("placeholder")
 	if err != nil {
@@ -427,6 +461,7 @@ func (a *Adapter) DeleteSpace() error {
 	return a.waitForSpaceDeleted(spaceName)
 }
 
+// waitForSpaceDeleted observes both dialog dismissal and removal from the UI.
 func (a *Adapter) waitForSpaceDeleted(spaceName string) error {
 	_, err := a.page.WaitForFunction(`({ spaceName }) => {
 		const isVisible = (element) => {
@@ -465,6 +500,12 @@ func (a *Adapter) ExpectRoute(route string) error {
 
 // WaitForEvent waits for a named app readiness transition.
 func (a *Adapter) WaitForEvent(event runtime.Event) error {
+	// Reuse the harness's deferred-boot and Resource SDK readiness contract.
+	if event == runtime.EventAppReady {
+		return wasm.WaitForAppReady(a.page)
+	}
+
+	// Complete first-use navigation before checking the Drive pane.
 	if event == runtime.EventDriveReady {
 		var introErr error
 		for range 3 {
@@ -532,8 +573,9 @@ func (a *Adapter) WaitForEvent(event runtime.Event) error {
 			a.resetDriveOnReady = false
 		}
 	}
+
+	// Other events expose their state through visible or hidden DOM elements.
 	selector := map[runtime.Event]string{
-		runtime.EventAppReady:           "body",
 		runtime.EventDriveReady:         "[data-testid='unixfs-browser']:visible",
 		runtime.EventDriveSettled:       "[data-testid='unixfs-loading-diagnostics']",
 		runtime.EventContentReady:       "pre",
@@ -549,9 +591,10 @@ func (a *Adapter) WaitForEvent(event runtime.Event) error {
 	return a.page.Locator(selector).First().WaitFor(options)
 }
 
+// eventTimeout gives initialization longer than content convergence.
 func eventTimeout(event runtime.Event) time.Duration {
 	switch event {
-	case runtime.EventAppReady, runtime.EventDriveReady:
+	case runtime.EventDriveReady:
 		return 2 * time.Minute
 	case runtime.EventDriveSettled, runtime.EventContentReady, runtime.EventSpaceListConverged:
 		return 30 * time.Second
@@ -562,10 +605,13 @@ func eventTimeout(event runtime.Event) time.Duration {
 
 // OpenSecondTab opens route in a new page inside the current browser context.
 func (a *Adapter) OpenSecondTab(route string) (runtime.Tab, error) {
+	// Open the additional document in the same origin storage context.
 	page, err := a.ctx.NewPage()
 	if err != nil {
 		return nil, err
 	}
+
+	// Route through the adapter while preserving its original active page.
 	old := a.page
 	a.page = page
 	if err := a.OpenRoute(route); err != nil {
@@ -582,6 +628,7 @@ func (a *Adapter) BackgroundTab(tab runtime.Tab) error {
 	return runtime.Unsupported("background-tab", "devwasm cannot control operating-system tab focus")
 }
 
+// isTransientNavigationError recognizes evaluation invalidated by navigation.
 func isTransientNavigationError(message string) bool {
 	message = strings.ToLower(message)
 	return strings.Contains(message, "execution context was destroyed") ||
@@ -599,13 +646,20 @@ func (a *Adapter) RestartWorkerHost() error {
 	return runtime.Unsupported("restart-worker-host", "devwasm does not expose worker-host lifecycle control")
 }
 
-type tab struct{ page playwright.Page }
+// tab identifies an additional browser document in the scenario session.
+type tab struct {
+	// page is the document opened by OpenSecondTab.
+	page playwright.Page
+}
 
+// ID returns the document's current URL.
 func (t *tab) ID() string { return t.page.URL() }
 
+// durationMS converts a Go duration to a Playwright timeout.
 func durationMS(d time.Duration) *float64 {
 	ms := float64(d.Milliseconds())
 	return &ms
 }
 
+// _ is a type assertion
 var _ runtime.Runtime = (*Adapter)(nil)
