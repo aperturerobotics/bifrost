@@ -815,7 +815,7 @@
     },
     {
       "name": "github.com/aperturerobotics/controllerbus",
-      "version": "v0.53.5-0.20260824183849-02413eacc3de",
+      "version": "v0.53.5-0.20260908122836-c1afcdc3351c",
       "spdx": "MIT",
       "source": "go",
       "repo": "https://github.com/aperturerobotics/controllerbus",
@@ -1511,7 +1511,7 @@
     },
     {
       "name": "github.com/s4wave/goscript",
-      "version": "v0.2.32-0.20260908112817-fcca83a8b87a",
+      "version": "v0.2.32-0.20260908194721-1992f84ca427",
       "spdx": "MIT",
       "source": "go",
       "repo": "https://github.com/s4wave/goscript",
@@ -1685,7 +1685,7 @@
     },
     {
       "name": "golang.org/x/mod",
-      "version": "v0.40.0",
+      "version": "v0.41.0",
       "spdx": "BSD-3-Clause",
       "source": "go",
       "repo": "https://github.com/golang/mod",
