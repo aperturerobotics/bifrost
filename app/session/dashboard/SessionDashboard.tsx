@@ -28,6 +28,7 @@ import {
 
 import AnimatedLogo from '@s4wave/app/landing/AnimatedLogo.js'
 import { useNavLinks } from '@s4wave/app/nav-links.js'
+import { usePageNavigate } from '@s4wave/app/routes/usePageNavigate.js'
 import { QuickstartCommands } from '@s4wave/app/quickstart/QuickstartCommands.js'
 import {
   getQuickstartPath,
@@ -107,7 +108,7 @@ export function SessionDashboard({
   topStatus,
   objectTypeMetadataById,
 }: SessionDashboardProps) {
-  const navigate = useNavigate()
+  const navigate = usePageNavigate()
   const isLoading = spaces === undefined
   const isEmpty = spaces?.length === 0
   const quickstartOptions = useVisibleQuickstartOptions()

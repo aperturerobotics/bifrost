@@ -1,10 +1,11 @@
 import { useCallback } from 'react'
-import { useNavigate } from '@s4wave/web/router/router.js'
+
+import { usePageNavigate } from '@s4wave/app/routes/usePageNavigate.js'
 import { useDownloadDesktopApp } from '@s4wave/app/download/handler.js'
 
 // useNavLinks returns shared navigation callbacks for links used across landing and session pages.
 export function useNavLinks() {
-  const navigate = useNavigate()
+  const navigate = usePageNavigate()
 
   return {
     download: useDownloadDesktopApp(),

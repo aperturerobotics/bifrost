@@ -1,10 +1,9 @@
 import { useCallback } from 'react'
 
-import { useNavigate } from '@s4wave/web/router/router.js'
+import { usePageNavigate } from '@s4wave/app/routes/usePageNavigate.js'
 
-// useDownloadDesktopApp returns a callback that navigates to the /download
-// landing page.
+// useDownloadDesktopApp opens downloads within the current session when present.
 export function useDownloadDesktopApp(): () => void {
-  const navigate = useNavigate()
+  const navigate = usePageNavigate()
   return useCallback(() => navigate({ path: '/download' }), [navigate])
 }

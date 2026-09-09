@@ -1,5 +1,8 @@
 /* eslint-disable react-doctor/no-giant-component */
 import { LuShield } from 'react-icons/lu'
+
+import { useStaticHref } from '@s4wave/app/prerender/StaticContext.js'
+
 import { ExternalLink } from './ExternalLink.js'
 import { LegalPageLayout } from './LegalPageLayout.js'
 
@@ -13,6 +16,9 @@ export const metadata = {
 
 // PrivacyPolicy renders the privacy policy page.
 export function PrivacyPolicy() {
+  const tosHref = useStaticHref('/tos')
+  const homeHref = useStaticHref('/')
+
   return (
     <LegalPageLayout
       icon={<LuShield className="size-10" />}
@@ -36,7 +42,7 @@ export function PrivacyPolicy() {
                 information when you use the Service. This Privacy Policy is
                 incorporated into and subject to our{' '}
                 <a
-                  href="#/tos"
+                  href={tosHref}
                   className="text-brand hover:text-brand-highlight underline"
                 >
                   Terms of Service
@@ -200,7 +206,7 @@ export function PrivacyPolicy() {
                 <li>
                   Prevent abuse, enforce our{' '}
                   <a
-                    href="#/tos"
+                    href={tosHref}
                     className="text-brand hover:text-brand-highlight underline"
                   >
                     Terms of Service
@@ -662,7 +668,7 @@ export function PrivacyPolicy() {
                 <br />
                 Web:{' '}
                 <a
-                  href="#/"
+                  href={homeHref}
                   className="text-brand hover:text-brand-highlight underline"
                 >
                   spacewave.app

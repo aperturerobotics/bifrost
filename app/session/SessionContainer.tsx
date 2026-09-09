@@ -38,6 +38,7 @@ import { BillingCancelRoute } from '@s4wave/app/billing/BillingCancelRoute.js'
 import { OrgContainer } from '@s4wave/app/org/OrgContainer.js'
 import { JoinSpacePage } from '@s4wave/app/sobject/JoinSpacePage.js'
 import { consumePendingJoin } from '@s4wave/app/routes/pendingJoin.js'
+import { SessionPageRoutes } from '@s4wave/app/routes/SessionPageRoutes.js'
 import { CreateSpaceRoute } from '@s4wave/app/quickstart/CreateSpaceRoute.js'
 import { SpacewaveRootRouter } from '@s4wave/app/provider/spacewave/SpacewaveRootRouter.js'
 import { spacewaveSessionRoutes } from '@s4wave/app/provider/spacewave/SpacewaveSessionRoutes.js'
@@ -464,6 +465,7 @@ export function SessionContainer(props: SessionContainerProps) {
                       sessionResource={spacewaveSessionResource}
                     />
                     <Routes>
+                      {SessionPageRoutes}
                       <Route path="/settings/storage/recovery/incident">
                         <StorageHealthPage recovery storageIncident />
                       </Route>

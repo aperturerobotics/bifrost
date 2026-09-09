@@ -102,7 +102,7 @@ describe('blogMarkdownOptions', () => {
     )
 
     expect(html).toContain(
-      'Thanks for checking out Spacewave!<br/>~ Christian Stewart<br/><a href="https://cjs.zip">cjs.zip</a>',
+      'Thanks for checking out Spacewave!<br/>~ Christian Stewart<br/><a href="https://cjs.zip"',
     )
   })
 

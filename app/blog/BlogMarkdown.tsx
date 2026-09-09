@@ -2,6 +2,8 @@ import { useSyncExternalStore } from 'react'
 import Markdown from 'markdown-to-jsx'
 import { LuExternalLink } from 'react-icons/lu'
 
+import { MarkdownLink } from '@s4wave/app/docs/MarkdownLink.js'
+
 interface YouTubeEmbedProps {
   videoid?: string
   title?: string
@@ -125,6 +127,7 @@ function YouTubeEmbed({ videoid, title }: YouTubeEmbedProps) {
 
 export const blogMarkdownOptions = {
   overrides: {
+    a: { component: MarkdownLink },
     'yt-embed': {
       component: YouTubeEmbed,
     },

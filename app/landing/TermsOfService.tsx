@@ -1,5 +1,8 @@
 /* eslint-disable react-doctor/no-giant-component */
 import { LuFileText } from 'react-icons/lu'
+
+import { useStaticHref } from '@s4wave/app/prerender/StaticContext.js'
+
 import { ExternalLink } from './ExternalLink.js'
 import { LegalPageLayout } from './LegalPageLayout.js'
 
@@ -13,6 +16,11 @@ export const metadata = {
 
 // TermsOfService renders the terms of service page.
 export function TermsOfService() {
+  const pricingHref = useStaticHref('/pricing')
+  const dmcaHref = useStaticHref('/dmca')
+  const privacyHref = useStaticHref('/privacy')
+  const homeHref = useStaticHref('/')
+
   return (
     <LegalPageLayout
       icon={<LuFileText className="size-10" />}
@@ -301,7 +309,7 @@ export function TermsOfService() {
                 Service plans, features, and pricing are described on our
                 pricing page at{' '}
                 <a
-                  href="#/pricing"
+                  href={pricingHref}
                   className="text-brand hover:text-brand-highlight underline"
                 >
                   spacewave.app/pricing
@@ -332,7 +340,7 @@ export function TermsOfService() {
                 operations, and read operations per billing period, as specified
                 on the pricing page at{' '}
                 <a
-                  href="#/pricing"
+                  href={pricingHref}
                   className="text-brand hover:text-brand-highlight underline"
                 >
                   spacewave.app/pricing
@@ -859,7 +867,7 @@ export function TermsOfService() {
                 Digital Millennium Copyright Act (DMCA). If you believe content
                 on Spacewave infringes your copyright, please see our{' '}
                 <a
-                  href="#/dmca"
+                  href={dmcaHref}
                   className="text-brand hover:text-brand-highlight underline"
                 >
                   DMCA Policy
@@ -884,7 +892,7 @@ export function TermsOfService() {
               <p>
                 Your use of the Service is also governed by our{' '}
                 <a
-                  href="#/privacy"
+                  href={privacyHref}
                   className="text-brand hover:text-brand-highlight underline"
                 >
                   Privacy Policy
@@ -1248,7 +1256,7 @@ export function TermsOfService() {
                 <br />
                 Web:{' '}
                 <a
-                  href="#/"
+                  href={homeHref}
                   className="text-brand hover:text-brand-highlight underline"
                 >
                   spacewave.app
