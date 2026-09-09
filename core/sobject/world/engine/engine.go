@@ -46,8 +46,6 @@ func StartEngineWithConfig(
 type blkEngine struct {
 	// bengine serves the World rooted at cursor.
 	bengine *world_block.Engine
-	// cursor retains the block store and root for this engine.
-	cursor *bucket_lookup.Cursor
 	// decodedBlocks shares decoded blocks across replay engines.
 	decodedBlocks *block.DecodedBlockCache
 	// ownDecodedBlocks requires Release to close a privately allocated cache.
@@ -58,7 +56,7 @@ type blkEngine struct {
 
 // Release releases the engine resources.
 func (w *blkEngine) Release() {
-	w.cursor.Release()
+	_ = w.bengine.Close()
 	if w.ownDecodedBlocks {
 		w.decodedBlocks.Close()
 	}
@@ -72,6 +70,21 @@ func (c *Controller) buildBlkEngine(
 	so sobject.SharedObject,
 	headRef *bucket.ObjectRef,
 	transformConf *block_transform.Config,
+) (*blkEngine, error) {
+	return buildBlockEngine(ctx, le, c.bus, c.sfs, so, headRef, transformConf, c.buildLookupWorldOp(le), c.conf.GetVerbose())
+}
+
+// buildBlockEngine binds a World root to its SharedObject block store.
+func buildBlockEngine(
+	ctx context.Context,
+	le *logrus.Entry,
+	b bus.Bus,
+	sfs *block_transform.StepFactorySet,
+	so sobject.SharedObject,
+	headRef *bucket.ObjectRef,
+	transformConf *block_transform.Config,
+	lookupWorldOp world.LookupOp,
+	verbose bool,
 ) (*blkEngine, error) {
 	ctx, task := trace.NewTask(ctx, "alpha/so-engine/build-block-engine")
 	defer task.End()
@@ -88,7 +101,7 @@ func (c *Controller) buildBlkEngine(
 		var err error
 		xfrm, err = newWorldTransformer(
 			controller.ConstructOpts{Logger: le},
-			c.sfs,
+			sfs,
 			transformConf,
 		)
 		task.End()
@@ -125,9 +138,9 @@ func (c *Controller) buildBlkEngine(
 		taskCtx, task := trace.NewTask(ctx, "alpha/so-engine/build-block-engine/new-cursor")
 		cursor = bucket_lookup.NewCursor(
 			taskCtx,
-			c.bus,
+			b,
 			le,
-			c.sfs,
+			sfs,
 			blockStore,
 			xfrm,
 			headRef,
@@ -145,9 +158,7 @@ func (c *Controller) buildBlkEngine(
 		task.End()
 	}
 
-	lookupWorldOp := c.buildLookupWorldOp(le)
-
-	// Build the world engine
+	// Transfer cursor ownership to the World engine, including constructor failure.
 	var bengine *world_block.Engine
 	{
 		taskCtx, task := trace.NewTask(ctx, "alpha/so-engine/build-block-engine/new-world-engine")
@@ -158,11 +169,10 @@ func (c *Controller) buildBlkEngine(
 			cursor,
 			lookupWorldOp,
 			nil, // no commit function needed
-			c.conf.GetVerbose(),
+			verbose,
 		)
 		task.End()
 		if err != nil {
-			cursor.Release()
 			return nil, err
 		}
 	}
@@ -170,7 +180,6 @@ func (c *Controller) buildBlkEngine(
 	closeDecodedBlocks = false
 	return &blkEngine{
 		bengine:          bengine,
-		cursor:           cursor,
 		decodedBlocks:    decodedBlocks,
 		ownDecodedBlocks: ownDecodedBlocks,
 		lookupOp:         lookupWorldOp,

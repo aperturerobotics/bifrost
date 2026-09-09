@@ -15,6 +15,10 @@ type SRPCSharedObjectResourceServiceClient interface {
 	SRPCClient() srpc.Client
 
 	WatchSharedObjectHealth(ctx context.Context, in *WatchSharedObjectHealthRequest) (SRPCSharedObjectResourceService_WatchSharedObjectHealthClient, error)
+	// WatchSharedObjectParticipation observes held native authority without mounting content.
+	WatchSharedObjectParticipation(ctx context.Context, in *WatchSharedObjectParticipationRequest) (SRPCSharedObjectResourceService_WatchSharedObjectParticipationClient, error)
+	// OpenReadCheckpoint opens immutable World history retained before departure.
+	OpenReadCheckpoint(ctx context.Context, in *OpenReadCheckpointRequest) (*OpenReadCheckpointResponse, error)
 
 	MountSharedObjectBody(ctx context.Context, in *MountSharedObjectBodyRequest) (*MountSharedObjectBodyResponse, error)
 }
@@ -71,6 +75,49 @@ func (x *srpcSharedObjectResourceService_WatchSharedObjectHealthClient) RecvTo(m
 	return x.MsgRecv(m)
 }
 
+func (c *srpcSharedObjectResourceServiceClient) WatchSharedObjectParticipation(ctx context.Context, in *WatchSharedObjectParticipationRequest) (SRPCSharedObjectResourceService_WatchSharedObjectParticipationClient, error) {
+	stream, err := c.cc.NewStream(ctx, c.serviceID, "WatchSharedObjectParticipation", in)
+	if err != nil {
+		return nil, err
+	}
+	strm := &srpcSharedObjectResourceService_WatchSharedObjectParticipationClient{stream}
+	if err := strm.CloseSend(); err != nil {
+		return nil, err
+	}
+	return strm, nil
+}
+
+type SRPCSharedObjectResourceService_WatchSharedObjectParticipationClient interface {
+	srpc.Stream
+	Recv() (*SharedObjectParticipation, error)
+	RecvTo(*SharedObjectParticipation) error
+}
+
+type srpcSharedObjectResourceService_WatchSharedObjectParticipationClient struct {
+	srpc.Stream
+}
+
+func (x *srpcSharedObjectResourceService_WatchSharedObjectParticipationClient) Recv() (*SharedObjectParticipation, error) {
+	m := new(SharedObjectParticipation)
+	if err := x.MsgRecv(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (x *srpcSharedObjectResourceService_WatchSharedObjectParticipationClient) RecvTo(m *SharedObjectParticipation) error {
+	return x.MsgRecv(m)
+}
+
+func (c *srpcSharedObjectResourceServiceClient) OpenReadCheckpoint(ctx context.Context, in *OpenReadCheckpointRequest) (*OpenReadCheckpointResponse, error) {
+	out := new(OpenReadCheckpointResponse)
+	err := c.cc.ExecCall(ctx, c.serviceID, "OpenReadCheckpoint", in, out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *srpcSharedObjectResourceServiceClient) MountSharedObjectBody(ctx context.Context, in *MountSharedObjectBodyRequest) (*MountSharedObjectBodyResponse, error) {
 	out := new(MountSharedObjectBodyResponse)
 	err := c.cc.ExecCall(ctx, c.serviceID, "MountSharedObjectBody", in, out)
@@ -82,6 +129,10 @@ func (c *srpcSharedObjectResourceServiceClient) MountSharedObjectBody(ctx contex
 
 type SRPCSharedObjectResourceServiceServer interface {
 	WatchSharedObjectHealth(*WatchSharedObjectHealthRequest, SRPCSharedObjectResourceService_WatchSharedObjectHealthStream) error
+	// WatchSharedObjectParticipation observes held native authority without mounting content.
+	WatchSharedObjectParticipation(*WatchSharedObjectParticipationRequest, SRPCSharedObjectResourceService_WatchSharedObjectParticipationStream) error
+	// OpenReadCheckpoint opens immutable World history retained before departure.
+	OpenReadCheckpoint(context.Context, *OpenReadCheckpointRequest) (*OpenReadCheckpointResponse, error)
 
 	MountSharedObjectBody(context.Context, *MountSharedObjectBodyRequest) (*MountSharedObjectBodyResponse, error)
 }
@@ -113,6 +164,8 @@ func (d *SRPCSharedObjectResourceServiceHandler) GetServiceID() string { return 
 func (SRPCSharedObjectResourceServiceHandler) GetMethodIDs() []string {
 	return []string{
 		"WatchSharedObjectHealth",
+		"WatchSharedObjectParticipation",
+		"OpenReadCheckpoint",
 		"MountSharedObjectBody",
 	}
 }
@@ -128,6 +181,10 @@ func (d *SRPCSharedObjectResourceServiceHandler) InvokeMethod(
 	switch methodID {
 	case "WatchSharedObjectHealth":
 		return true, d.InvokeMethod_WatchSharedObjectHealth(d.impl, strm)
+	case "WatchSharedObjectParticipation":
+		return true, d.InvokeMethod_WatchSharedObjectParticipation(d.impl, strm)
+	case "OpenReadCheckpoint":
+		return true, d.InvokeMethod_OpenReadCheckpoint(d.impl, strm)
 	case "MountSharedObjectBody":
 		return true, d.InvokeMethod_MountSharedObjectBody(d.impl, strm)
 	default:
@@ -142,6 +199,27 @@ func (SRPCSharedObjectResourceServiceHandler) InvokeMethod_WatchSharedObjectHeal
 	}
 	serverStrm := &srpcSharedObjectResourceService_WatchSharedObjectHealthStream{strm}
 	return impl.WatchSharedObjectHealth(req, serverStrm)
+}
+
+func (SRPCSharedObjectResourceServiceHandler) InvokeMethod_WatchSharedObjectParticipation(impl SRPCSharedObjectResourceServiceServer, strm srpc.Stream) error {
+	req := new(WatchSharedObjectParticipationRequest)
+	if err := strm.MsgRecv(req); err != nil {
+		return err
+	}
+	serverStrm := &srpcSharedObjectResourceService_WatchSharedObjectParticipationStream{strm}
+	return impl.WatchSharedObjectParticipation(req, serverStrm)
+}
+
+func (SRPCSharedObjectResourceServiceHandler) InvokeMethod_OpenReadCheckpoint(impl SRPCSharedObjectResourceServiceServer, strm srpc.Stream) error {
+	req := new(OpenReadCheckpointRequest)
+	if err := strm.MsgRecv(req); err != nil {
+		return err
+	}
+	out, err := impl.OpenReadCheckpoint(strm.Context(), req)
+	if err != nil {
+		return err
+	}
+	return strm.MsgSend(out)
 }
 
 func (SRPCSharedObjectResourceServiceHandler) InvokeMethod_MountSharedObjectBody(impl SRPCSharedObjectResourceServiceServer, strm srpc.Stream) error {
@@ -177,6 +255,37 @@ func (x *srpcSharedObjectResourceService_WatchSharedObjectHealthStream) SendAndC
 		}
 	}
 	return x.CloseSend()
+}
+
+type SRPCSharedObjectResourceService_WatchSharedObjectParticipationStream interface {
+	srpc.Stream
+	Send(*SharedObjectParticipation) error
+	SendAndClose(*SharedObjectParticipation) error
+}
+
+type srpcSharedObjectResourceService_WatchSharedObjectParticipationStream struct {
+	srpc.Stream
+}
+
+func (x *srpcSharedObjectResourceService_WatchSharedObjectParticipationStream) Send(m *SharedObjectParticipation) error {
+	return x.MsgSend(m)
+}
+
+func (x *srpcSharedObjectResourceService_WatchSharedObjectParticipationStream) SendAndClose(m *SharedObjectParticipation) error {
+	if m != nil {
+		if err := x.MsgSend(m); err != nil {
+			return err
+		}
+	}
+	return x.CloseSend()
+}
+
+type SRPCSharedObjectResourceService_OpenReadCheckpointStream interface {
+	srpc.Stream
+}
+
+type srpcSharedObjectResourceService_OpenReadCheckpointStream struct {
+	srpc.Stream
 }
 
 type SRPCSharedObjectResourceService_MountSharedObjectBodyStream interface {

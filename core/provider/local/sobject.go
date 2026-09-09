@@ -132,7 +132,7 @@ func (s *SharedObject) QueueOperation(ctx context.Context, op []byte) (string, e
 // Returns the current state nonce (greater than or equal to the nonce when the op was applied).
 // After ClearOperation has been called, this will return success even for failed ops!
 // If the operation was rejected, returns 0, true, error.
-// Any other error returns 0, false, error
+// Any other error returns 0, false, error.
 func (s *SharedObject) WaitOperation(ctx context.Context, localID string) (uint64, bool, error) {
 	return s.lsoHost.WaitOperation(ctx, localID)
 }
@@ -370,7 +370,7 @@ func (t *sobjectTracker) executeSharedObjectTracker(rctx context.Context) (rerr 
 
 	// Construct the shared object state handle.
 	// Since this is the "local" provider we can "lock" the state with an in-memory lock.
-	watchFn, lockFn, syncFuncs := NewObjectStoreSOStateFuncs(ctx, objStore)
+	watchFn, lockFn, syncFuncs := NewObjectStoreSOStateFuncs(ctx, objStore, localPeerID)
 	soHost := sobject.NewSOHost(ctx, watchFn, lockFn, sharedObjectID, syncFuncs)
 
 	// construct the local host logic

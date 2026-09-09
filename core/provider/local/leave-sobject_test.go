@@ -95,6 +95,13 @@ func TestNativeSpaceLeave(t *testing.T) {
 	if len(after.GetConfig().GetParticipants()) != 1 || after.GetConfig().GetParticipants()[0].GetPeerId() != object.GetPeerID().String() {
 		t.Fatalf("departure did not preserve only the remaining owner: %v", after.GetConfig().GetParticipants())
 	}
+	base, changes, err := object.ReadSharedObjectConfigHistory(ctx, after.GetConfig())
+	if err != nil || len(changes) == 0 {
+		t.Fatalf("owner lost native departure history: %v", err)
+	}
+	if err := sobject.VerifyConfigChainSuffix(base, after.GetConfig(), changes); err != nil {
+		t.Fatalf("owner history does not prove current participation: %v", err)
+	}
 	retired, err := copy.GetSOHostState(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -121,6 +128,16 @@ func TestNativeSpaceLeave(t *testing.T) {
 		return true, nil
 	}, nil); err != nil {
 		t.Fatal(err)
+	}
+	checkpoint, err := copy.GetSharedObjectReadCheckpoint(ctx)
+	if err != nil || checkpoint == nil {
+		t.Fatalf("departed copy lost read checkpoint: %v", err)
+	}
+	if !checkpoint.Config.EqualVT(before.GetConfig()) {
+		t.Fatal("checkpoint audience differs from the readable native snapshot")
+	}
+	if _, err := checkpoint.Snapshot.GetTransformer(ctx); err != nil {
+		t.Fatalf("checkpoint lost its historical decryption grant: %v", err)
 	}
 	if err := reader.LeaveSharedObject(ctx, readerSession.GetPrivKey(), id); err != nil {
 		t.Fatalf("repeated departure failed: %v", err)

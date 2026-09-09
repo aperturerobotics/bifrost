@@ -3,10 +3,33 @@ package s4wave.sobject;
 
 import "github.com/s4wave/spacewave/core/sobject/sobject.proto";
 
+// SharedObjectResourceService exposes retained native state independently of readable body access.
 service SharedObjectResourceService {
   rpc WatchSharedObjectHealth(WatchSharedObjectHealthRequest) returns (stream WatchSharedObjectHealthResponse);
+  // WatchSharedObjectParticipation observes held native authority without mounting content.
+  rpc WatchSharedObjectParticipation(WatchSharedObjectParticipationRequest) returns (stream SharedObjectParticipation);
+
+  // OpenReadCheckpoint opens immutable World history retained before departure.
+  rpc OpenReadCheckpoint(OpenReadCheckpointRequest) returns (OpenReadCheckpointResponse);
 
   rpc MountSharedObjectBody(MountSharedObjectBodyRequest) returns (MountSharedObjectBodyResponse);
+}
+
+// WatchSharedObjectParticipationRequest selects the already mounted SharedObject.
+message WatchSharedObjectParticipationRequest {
+}
+
+// SharedObjectParticipation is the configuration accepted by the native host for its own participant.
+// It grants no content access and does not treat a remote refusal as a configuration change.
+message SharedObjectParticipation {
+  // ViewerPeerId identifies the native participant bound to this mounted SharedObject.
+  string viewer_peer_id = 1;
+  // Config is the retained native configuration, including an accepted departure.
+  .sobject.SharedObjectConfig config = 2;
+  // ConfigHistoryBase is the native trust checkpoint when retained lineage is available.
+  .sobject.SharedObjectConfig config_history_base = 3;
+  // ConfigHistoryChanges is the verified oldest-first suffix from the checkpoint through Config.
+  repeated .sobject.SOConfigChange config_history_changes = 4;
 }
 
 // WatchSharedObjectHealthRequest is the request type for WatchSharedObjectHealth.
@@ -30,4 +53,15 @@ message MountSharedObjectBodyResponse {
     // Health is returned when body construction failed with typed SharedObject health.
     .sobject.SharedObjectHealth health = 2;
   }
+}
+
+// OpenReadCheckpointRequest selects the native participant's retained history.
+message OpenReadCheckpointRequest {}
+
+// OpenReadCheckpointResponse returns a read-only World engine when history exists.
+message OpenReadCheckpointResponse {
+  // ResourceId is zero when no checkpoint was retained.
+  uint32 resource_id = 1;
+  // Config is the historical audience at the retained root, not current authority.
+  .sobject.SharedObjectConfig config = 2;
 }

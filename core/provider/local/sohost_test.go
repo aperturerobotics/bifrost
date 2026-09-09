@@ -242,6 +242,27 @@ func TestWaitOperationWaitsForDurableLocalQueueTransmission(t *testing.T) {
 	}
 }
 
+func TestWaitPublishedConfigFencesBodySnapshot(t *testing.T) {
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+	defer cancel()
+	host, _ := newTestLocalSOHost(t)
+	host.publishedConfigCtr = ccontainer.NewCContainer[*sobject.SharedObjectConfig](nil)
+	target := &sobject.SharedObjectConfig{ConfigChainSeqno: 7, ConfigChainHash: []byte("accepted")}
+
+	done := make(chan error, 1)
+	go func() { done <- host.waitPublishedConfig(ctx, target) }()
+	host.publishedConfigCtr.SetValue(&sobject.SharedObjectConfig{ConfigChainSeqno: 6, ConfigChainHash: []byte("stale")})
+	select {
+	case err := <-done:
+		t.Fatalf("wait returned before the body snapshot reached admission: %v", err)
+	case <-time.After(20 * time.Millisecond):
+	}
+	host.publishedConfigCtr.SetValue(target.CloneVT())
+	if err := <-done; err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestWaitOperationUsesAcceptedLocalResult(t *testing.T) {
 	ctx := context.Background()
 	host, localPeer := newTestLocalSOHost(t)

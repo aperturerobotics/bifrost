@@ -2,7 +2,6 @@ package sobject
 
 import (
 	"context"
-	"time"
 
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/directive"
@@ -79,9 +78,6 @@ func (v *mountSharedObjectBodyValue[T]) GetSharedObjectBody() T {
 	return v.body
 }
 
-// _ is a type assertion
-var _ MountSharedObjectBodyValue[any] = (*mountSharedObjectBodyValue[any])(nil)
-
 // ExMountSharedObjectBody executes a directive to mount the body of a shared object.
 //
 // If returnIfIdle is set, returns when the directive becomes idle.
@@ -154,8 +150,7 @@ func NewMountSharedObjectBodyWithSource(ref *SharedObjectRef, bodyType string, s
 	}
 }
 
-// Validate validates the directive.
-// This is a cursory validation to see if the values "look correct."
+// Validate checks whether the directive has a valid SharedObject reference.
 func (d *mountSharedObjectBody) Validate() error {
 	if err := d.ref.Validate(); err != nil {
 		return err
@@ -165,12 +160,10 @@ func (d *mountSharedObjectBody) Validate() error {
 
 // GetValueOptions returns options relating to value handling.
 func (d *mountSharedObjectBody) GetValueOptions() directive.ValueOptions {
-	return directive.ValueOptions{
-		// UnrefDisposeDur is the duration to wait to dispose a directive after all
-		// references have been released.
-		UnrefDisposeDur:            time.Millisecond * 100,
-		UnrefDisposeEmptyImmediate: true,
-	}
+	// A mounted body owns a live World engine. Dispose it with its final
+	// reference so a later admission cannot reuse an engine that is closing
+	// under the previous participation state.
+	return directive.ValueOptions{}
 }
 
 // MountSharedObjectBodyRef returns the shared object id to mount.
@@ -226,5 +219,7 @@ func (d *mountSharedObjectBody) GetDebugVals() directive.DebugValues {
 	}
 }
 
-// _ is a type assertion
-var _ MountSharedObjectBody = (*mountSharedObjectBody)(nil)
+var (
+	_ MountSharedObjectBodyValue[any] = (*mountSharedObjectBodyValue[any])(nil)
+	_ MountSharedObjectBody           = (*mountSharedObjectBody)(nil)
+)

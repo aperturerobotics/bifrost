@@ -21,7 +21,8 @@ const directInviteOwnerWaitTimeout = 5 * time.Second
 // the owner to be reachable on the live transport.
 var ErrDirectInviteOwnerMustBeOnline = errors.New("space owner must be online to accept this invite directly")
 
-// JoinViaInvite executes the full invite join flow:
+// JoinViaInvite executes the full invite join flow.
+//
 // 1. Ensures a session transport is running (starts one if needed)
 // 2. Opens an SRPC stream to the owner and sends AcceptInviteRequest
 // 3. Receives the SOGrant from the owner
@@ -206,6 +207,10 @@ func (a *ProviderAccount) mountInvitedSO(
 
 	if err := localSO.soHost.InstallInviteSnapshot(ctx, result.SharedObjectState); err != nil {
 		return errors.Wrap(err, "install owner shared object state")
+	}
+	// Admission is complete only when body mounts can observe the accepted grant.
+	if err := localSO.lsoHost.waitPublishedConfig(ctx, result.SharedObjectState.GetConfig()); err != nil {
+		return errors.Wrap(err, "publish invited shared object state")
 	}
 
 	// Persist the SO to the account's SO list so it survives restarts

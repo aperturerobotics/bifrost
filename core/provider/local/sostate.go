@@ -12,13 +12,15 @@ import (
 	"github.com/s4wave/spacewave/db/object"
 	trace "github.com/s4wave/spacewave/db/traceutil"
 	"github.com/s4wave/spacewave/db/world"
+	"github.com/s4wave/spacewave/net/peer"
 )
 
 // NewObjectStoreSOStateFuncs constructs a SOHostState backed by an object store and in-memory locks.
 //
 // Assumes no other writers will access the object store.
 // rctx is the context to use for looking up states from the object store.
-func NewObjectStoreSOStateFuncs(rctx context.Context, objStore object.ObjectStore) (
+// localPeer binds private read checkpoints to the local participant; empty disables retention.
+func NewObjectStoreSOStateFuncs(rctx context.Context, objStore object.ObjectStore, localPeer peer.ID) (
 	watchFn sobject.SOStateWatchFunc,
 	lockFn sobject.SOStateLockFunc,
 	syncFuncs *sobject.SOHostSyncFuncs,
@@ -148,6 +150,9 @@ func NewObjectStoreSOStateFuncs(rctx context.Context, objStore object.ObjectStor
 							if err := WriteSOConfigHistory(ctx, tx, sharedObjectID, initialState.GetConfig(), state.GetConfig(), changes); err != nil {
 								return err
 							}
+						}
+						if err := writeReadCheckpoint(ctx, tx, sharedObjectID, localPeer, initialState, state); err != nil {
+							return err
 						}
 						return tx.Set(ctx, ent.key, data)
 					},
