@@ -7,8 +7,6 @@ import (
 	"github.com/aperturerobotics/controllerbus/config"
 	"github.com/aperturerobotics/controllerbus/controller/resolver/static"
 	"github.com/s4wave/spacewave/bldr/storage"
-	"github.com/s4wave/spacewave/db/opfs"
-	"github.com/s4wave/spacewave/db/unixfs"
 	volume_controller "github.com/s4wave/spacewave/db/volume/controller"
 	volume_opfs "github.com/s4wave/spacewave/db/volume/js/opfs"
 )
@@ -46,29 +44,9 @@ func (s *OpfsStorage) BuildVolumeConfig(id string, baseVolCtrlConf *volume_contr
 	}, nil
 }
 
-// DeleteVolume removes the OPFS directory for the given volume ID.
+// DeleteVolume removes the active OPFS volume while retaining replaced legacy data.
 func (s *OpfsStorage) DeleteVolume(id string) error {
-	rootPath := s.prefix + id
-	root, err := opfs.GetRoot()
-	if err != nil {
-		return err
-	}
-	parts, _ := unixfs.SplitPath(rootPath)
-	parent := root
-	for _, p := range parts[:len(parts)-1] {
-		parent, err = opfs.GetDirectory(parent, p, false)
-		if err != nil {
-			if opfs.IsNotFound(err) {
-				return nil
-			}
-			return err
-		}
-	}
-	err = opfs.DeleteEntry(parent, parts[len(parts)-1], true)
-	if err != nil && !opfs.IsNotFound(err) {
-		return err
-	}
-	return nil
+	return volume_opfs.DeleteRoot(s.prefix + id)
 }
 
 // init registers the OPFS storage provider for browser builds.

@@ -246,10 +246,10 @@ func run(ctx context.Context, c *config) error {
 		return runVolumeRuntimeSeedIncompatible(c)
 	case "volume-runtime-seed-unknown":
 		return runVolumeRuntimeSeedUnknown(c)
-	case "volume-runtime-verify-incompatible-rejected":
-		return runVolumeRuntimeVerifyRejected(ctx, c, "incompatible")
-	case "volume-runtime-verify-unknown-rejected":
-		return runVolumeRuntimeVerifyRejected(ctx, c, "unknown")
+	case "volume-runtime-verify-incompatible-recovered":
+		return runVolumeRuntimeVerifyRecovered(ctx, c, "incompatible")
+	case "volume-runtime-verify-unknown-recovered":
+		return runVolumeRuntimeVerifyRecovered(ctx, c, "unknown")
 	case "volume-runtime-delete-verify":
 		return runVolumeRuntimeDeleteVerify(ctx, c)
 	case "volume-kv-write-per-op":
@@ -1548,16 +1548,26 @@ func runVolumeRuntimeSeedUnknown(c *config) error {
 	return opfs.WriteFile(dir, "legacy-only", []byte("unknown"))
 }
 
-// runVolumeRuntimeVerifyRejected requires an incompatible open to preserve sentinel bytes.
-func runVolumeRuntimeVerifyRejected(ctx context.Context, c *config, expected string) error {
-	vol, err := openVolume(ctx, c)
-	if err == nil {
-		_ = vol.Close()
-		return errors.New("incompatible volume was accepted")
-	}
-	if !strings.Contains(err.Error(), "incompatible OPFS volume format") {
+// runVolumeRuntimeVerifyRecovered requires an incompatible open to preserve sentinel bytes.
+func runVolumeRuntimeVerifyRecovered(ctx context.Context, c *config, expected string) error {
+	// A replacement must remain writable and readable through a remount.
+	if err := runVolumeRuntimeWrite(ctx, c); err != nil {
 		return err
 	}
+	if err := runVolumeRuntimeVerify(ctx, c); err != nil {
+		return err
+	}
+
+	// Deleting the active replacement must not remove the legacy directory.
+	vol, err := openVolume(ctx, c)
+	if err != nil {
+		return err
+	}
+	if err := vol.Delete(); err != nil {
+		return err
+	}
+
+	// Verify the original saved bytes after opening and deleting the replacement.
 	dir, err := openTestDirectory(c.root, []string{"volume"})
 	if err != nil {
 		return err

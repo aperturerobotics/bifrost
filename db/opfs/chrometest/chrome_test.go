@@ -1211,14 +1211,14 @@ func TestOpfsChromeVolumeCoordinator(t *testing.T) {
 	}})
 }
 
-// TestOpfsChromeVolumeRuntimeRejectsIncompatibleRootWithoutMutation requires old-format bytes to remain intact.
-func TestOpfsChromeVolumeRuntimeRejectsIncompatibleRootWithoutMutation(t *testing.T) {
+// TestOpfsChromeVolumeRuntimeRecoversIncompatibleRoot requires old-format bytes to remain intact.
+func TestOpfsChromeVolumeRuntimeRecoversIncompatibleRoot(t *testing.T) {
 	requireChromeProfile(t, chromeSmoke)
 	h := newChromeHarness(t)
 	s := h.newSession(t)
 	defer s.close(t)
 
-	root := "opfs-chrome-volume-reject-incompat-" + time.Now().Format("150405.000000000")
+	root := "opfs-chrome-volume-recover-incompat-" + time.Now().Format("150405.000000000")
 	s.runWorker(t, workerArgs{
 		scenario: "clear",
 		root:     root,
@@ -1228,19 +1228,19 @@ func TestOpfsChromeVolumeRuntimeRejectsIncompatibleRootWithoutMutation(t *testin
 		root:     root,
 	})
 	s.runWorker(t, workerArgs{
-		scenario: "volume-runtime-verify-incompatible-rejected",
+		scenario: "volume-runtime-verify-incompatible-recovered",
 		root:     root,
 	})
 }
 
-// TestOpfsChromeVolumeRuntimeRejectsUnknownRootWithoutMutation requires unrecognized saved bytes to remain intact.
-func TestOpfsChromeVolumeRuntimeRejectsUnknownRootWithoutMutation(t *testing.T) {
+// TestOpfsChromeVolumeRuntimeRecoversUnknownRoot requires unrecognized saved bytes to remain intact.
+func TestOpfsChromeVolumeRuntimeRecoversUnknownRoot(t *testing.T) {
 	requireChromeProfile(t, chromeSmoke)
 	h := newChromeHarness(t)
 	s := h.newSession(t)
 	defer s.close(t)
 
-	root := "opfs-chrome-volume-reject-unknown-" + time.Now().Format("150405.000000000")
+	root := "opfs-chrome-volume-recover-unknown-" + time.Now().Format("150405.000000000")
 	s.runWorker(t, workerArgs{
 		scenario: "clear",
 		root:     root,
@@ -1250,7 +1250,7 @@ func TestOpfsChromeVolumeRuntimeRejectsUnknownRootWithoutMutation(t *testing.T) 
 		root:     root,
 	})
 	s.runWorker(t, workerArgs{
-		scenario: "volume-runtime-verify-unknown-rejected",
+		scenario: "volume-runtime-verify-unknown-recovered",
 		root:     root,
 	})
 }

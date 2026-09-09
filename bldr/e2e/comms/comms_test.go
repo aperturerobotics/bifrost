@@ -222,22 +222,36 @@ func runFixtureWithAllowedBrowserFailures(
 	t.Helper()
 
 	bt := browserType(browserName)
-	browser, err := bt.Launch(playwright.BrowserTypeLaunchOptions{
-		Headless: new(true),
-	})
+	var ctx playwright.BrowserContext
+	var err error
+	if browserName == "webkit" {
+		// WebKit needs persistent storage for OPFS; Cocoa also needs an isolated home.
+		directory := t.TempDir()
+		opts := playwright.BrowserTypeLaunchPersistentContextOptions{Headless: new(true)}
+		if runtime.GOOS == "darwin" {
+			opts.Env = make(map[string]string)
+			for _, entry := range os.Environ() {
+				key, value, _ := strings.Cut(entry, "=")
+				opts.Env[key] = value
+			}
+			opts.Env["CFFIXED_USER_HOME"] = directory
+		}
+		ctx, err = bt.LaunchPersistentContext(directory, opts)
+	} else {
+		var browser playwright.Browser
+		browser, err = bt.Launch(playwright.BrowserTypeLaunchOptions{Headless: new(true)})
+		if err == nil {
+			t.Cleanup(func() { _ = browser.Close() })
+			ctx, err = browser.NewContext()
+		}
+	}
 	if err != nil {
 		if shouldSkipBrowserLaunch(browserName, err) {
 			t.Skipf("skip %s: %v", browserName, err)
 		}
-		t.Fatalf("launch %s: %v", browserName, err)
+		t.Fatalf("launch %s context: %v", browserName, err)
 	}
-	defer browser.Close()
-
-	ctx, err := browser.NewContext()
-	if err != nil {
-		t.Fatalf("new context: %v", err)
-	}
-	defer ctx.Close()
+	t.Cleanup(func() { _ = ctx.Close() })
 
 	page, err := ctx.NewPage()
 	if err != nil {
@@ -484,11 +498,10 @@ func TestGoScriptResourceService(t *testing.T) {
 	}
 }
 
-// TestGoScriptOpfsStorage verifies that GoScript-generated browser worker code
-// can write OPFS data, restart the worker, read the persisted data, and clean
-// up the OPFS directory.
+// TestGoScriptOpfsStorage verifies raw persistence and legacy-volume recovery,
+// including replacement identity across worker restart and safe deletion.
 func TestGoScriptOpfsStorage(t *testing.T) {
-	browsers := []string{"chromium", "firefox"}
+	browsers := []string{"chromium", "webkit"}
 	for _, browser := range browsers {
 		t.Run(browser, func(t *testing.T) {
 			t.Parallel()

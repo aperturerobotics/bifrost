@@ -31,7 +31,7 @@ var Version = controller.MustParseVersion("0.0.2")
 type Opfs = volume_kvtx.Volume
 
 // NewOpfs opens a compatible volume or creates a new empty one.
-// Incompatible saved data is rejected and never reset implicitly.
+// Incompatible saved data remains intact beside a current-format replacement.
 func NewOpfs(ctx context.Context, le *logrus.Entry, conf *Config) (*Opfs, error) {
 	if err := conf.Validate(); err != nil {
 		return nil, volume.Permanent(err)
@@ -48,13 +48,16 @@ func NewOpfs(ctx context.Context, le *logrus.Entry, conf *Config) (*Opfs, error)
 		}
 		return nil, err
 	}
-	dir, err := openRuntimeRoot(ctx, le, root, conf)
+	dir, rootPath, err := openRuntimeRoot(ctx, le, root, conf)
 	if err != nil {
 		return nil, err
 	}
 	lockPrefix := conf.GetLockPrefix()
 	if lockPrefix == "" {
 		lockPrefix = conf.GetRootPath()
+	}
+	if rootPath != conf.GetRootPath() {
+		lockPrefix += recoverySuffix
 	}
 	// Serialize first identity creation across every runtime mounting this volume.
 	backend := engine.NewBrowserBackend(opfs.DefaultDriver, dir, lockPrefix)
@@ -94,7 +97,7 @@ func NewOpfs(ctx context.Context, le *logrus.Entry, conf *Config) (*Opfs, error)
 	vol, err := volume_kvtx.NewVolumeWithBlockStoreAndGC(
 		ctx, ControllerID, keys, store, blocks, graph, conf.GetStoreConfig(),
 		conf.GetNoGenerateKey(), conf.GetNoWriteKey(), stats, closeStore,
-		func() error { return deleteRuntimeRoot(root, conf.GetRootPath()) },
+		func() error { return deleteRuntimeRoot(root, rootPath) },
 	)
 	if err != nil {
 		_ = closeStore()

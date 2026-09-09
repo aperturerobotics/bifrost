@@ -33,8 +33,7 @@ func TestBridgeRemountVolumeKeepsMountedAfterStoreNoop(t *testing.T) {
 		},
 	)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	done := make(chan error, 1)
 	go func() { done <- v.Execute(ctx) }()
 

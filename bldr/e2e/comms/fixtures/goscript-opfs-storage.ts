@@ -61,6 +61,11 @@ function waitWorkerMsg(
         return
       }
       const msg = ev.data as WorkerMessage
+      if (msg.type === 'opfs-failed') {
+        cleanup()
+        reject(new Error(String(msg.failureReason)))
+        return
+      }
       if (msg.type !== type) {
         return
       }
