@@ -136,6 +136,7 @@ func copyObjectToBucket(
 		return destinationRef, ObjectCopyStats{}, nil
 	}
 
+	// Resolve the destination's storage and encoding for the complete copy.
 	writeCursor, err := destCursor.FollowRef(ctx, destinationRef)
 	if err != nil {
 		if err == context.Canceled {
@@ -145,12 +146,21 @@ func copyObjectToBucket(
 	}
 	defer writeCursor.Release()
 
+	// Read encoded source blocks and decode only for child traversal.
 	readBkt := srcCursor.GetBucket()
 	readXfrm := srcCursor.GetTransformer()
 	if readXfrm == nil {
 		readXfrm = block_transform.NewTransformerWithSteps(nil)
 	}
 	writeBkt := writeCursor.GetBucket()
+
+	// Bound pending payloads while amortizing destination ownership updates.
+	const maxPendingBytes = 4 << 20
+	writes := block.NewBufferedStoreWithSettings(ctx, writeBkt, &block.BufferedStoreSettings{
+		MaxPendingEntries: 128,
+		MaxPendingBytes:   maxPendingBytes,
+		DrainBatchEntries: 128,
+	})
 
 	// seenMtx guards the set of block references claimed by copy workers.
 	var seenMtx sync.Mutex
@@ -192,10 +202,9 @@ func copyObjectToBucket(
 		ctx,
 		NewWalkObjectBlocksWithRef(srcRef.GetRootRef(), rootCtor),
 		func(ent *WalkObjectBlocksEntry) (bool, error) {
+			// Let the caller recover a read error before deciding traversal.
 			var cntu bool
 			var err error
-
-			// The callback may recover a read error.
 			if cb != nil {
 				cntu, err = cb(ent)
 			} else {
@@ -225,17 +234,18 @@ func copyObjectToBucket(
 				return false, nil
 			}
 
+			// Preserve existence accounting and subtree skipping, but submit even
+			// existing blocks so the destination establishes its own GC ownership.
 			seenBlockCount.Add(1)
 			logicalSourceBytes.Add(int64(len(ent.Data)))
-			// Most implementations check existence inside PutBlock.
-			var writeRef *block.BlockRef
-			var writeExisted bool
-			writeRef, writeExisted, err = writeBkt.PutBlock(ctx, ent.Data, &block.PutOpts{
-				HashType:      ent.Ref.GetHash().GetHashType(),
-				ForceBlockRef: ent.Ref,
-			})
-			if err == nil && !writeRef.EqualsRef(ent.Ref) {
-				err = errors.Errorf("wrote to different ref %s", writeRef.MarshalString())
+			writeExisted, err := writeBkt.GetBlockExists(ctx, ent.Ref)
+			if err == nil {
+				// A single large block must not wait for capacity it can never fit.
+				var target block.StoreOps = writes
+				if len(ent.Data) > maxPendingBytes {
+					target = writeBkt
+				}
+				err = target.PutBlockBatch(ctx, []*block.PutBatchEntry{{Ref: ent.Ref, Data: ent.Data}})
 			}
 			if err != nil && err != context.Canceled {
 				err = errors.Wrapf(err, "write ref %s", ent.Ref.MarshalString())
@@ -249,6 +259,7 @@ func copyObjectToBucket(
 				}
 			}
 
+			// Honor the caller's existing-subtree completeness guarantee.
 			if skipSubtreeExists && writeExisted && err == nil {
 				skippedSubtrees.Add(1)
 				if err := reportProgress(); err != nil {
@@ -257,6 +268,7 @@ func copyObjectToBucket(
 				return false, nil
 			}
 
+			// Report accepted work before traversing the remaining children.
 			if progressErr := reportProgress(); progressErr != nil {
 				return false, progressErr
 			}
@@ -266,6 +278,14 @@ func copyObjectToBucket(
 		maxConcurrency,
 		false,
 	)
+
+	// The returned root becomes usable only after all payloads and ownership
+	// updates have reached the destination's durability fence.
+	if err == nil {
+		_, err = writes.Sync(ctx)
+	}
+
+	// Preserve logical accounting even when the copy fails to complete.
 	stats := snapshot()
 	trace.Logf(ctx, "copy-block-seen-count", "%d", stats.BlocksSeen)
 	trace.Logf(ctx, "copy-block-copied-count", "%d", stats.BlocksCopied)
