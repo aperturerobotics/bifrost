@@ -23,8 +23,11 @@ import { useRootResourceWithClient } from '@s4wave/web/hooks/useRootResource.js'
 import { ViewerRegistryProvider } from '@s4wave/web/hooks/useViewerRegistry.js'
 import type { ObjectViewerComponent } from '@s4wave/web/object/object.js'
 import {
+  atom,
   StateNamespaceProvider,
+  type Atom,
   type StateAtomAccessor,
+  type StateType,
 } from '@s4wave/web/state/index.js'
 import { ErrorState } from '@s4wave/web/ui/ErrorState.js'
 import { LoadingScreen } from '@s4wave/web/ui/loading/LoadingScreen.js'
@@ -40,18 +43,101 @@ export interface SpacewaveRuntimeContext {
 export interface SpacewaveRuntimeProvidersProps {
   staticViewers: ObjectViewerComponent[]
   staticConfigTypes: StaticConfigTypeRegistration[]
+  /**
+   * ResourceClient for an explicit runtime connection. Present (including
+   * null while pending) bypasses the Bldr WebView transport entirely; the
+   * caller owns the client lifetime. Omitted keeps the default Bldr context
+   * transport.
+   */
+  resourceClient?: ResourceClient | null
+  /**
+   * rootAtom scopes legacy local UI state. Explicit connections default to
+   * a fresh atom so nested state never reaches the outer app's global atom;
+   * the default connection omits it and inherits from the outer tree.
+   */
+  rootAtom?: Atom<StateType>
+  /** resourceService is the service name for the default Bldr transport. */
   resourceService?: string
   children: ReactNode | ((ctx: SpacewaveRuntimeContext) => ReactNode)
 }
 
-export function SpacewaveRuntimeProviders({
+export function SpacewaveRuntimeProviders(
+  props: SpacewaveRuntimeProvidersProps,
+) {
+  // Presence of resourceClient selects the explicit runtime connection; see
+  // SpacewaveRuntimeProvidersProps.resourceClient.
+  if ('resourceClient' in props) {
+    return <ExplicitSpacewaveRuntime {...props} />
+  }
+  return <BldrSpacewaveRuntime {...props} />
+}
+
+/**
+ * ExplicitSpacewaveRuntime renders the provider tree for a caller-owned
+ * ResourceClient, defaulting the root UI atom to a fresh in-memory atom.
+ */
+function ExplicitSpacewaveRuntime({
+  staticViewers,
+  staticConfigTypes,
+  resourceClient,
+  rootAtom,
+  children,
+}: SpacewaveRuntimeProvidersProps) {
+  const scopedRootAtom = useMemo(
+    () => rootAtom ?? atom<StateType>({}),
+    [rootAtom],
+  )
+  return (
+    <RuntimeProviderTree
+      resourceClient={resourceClient ?? null}
+      staticViewers={staticViewers}
+      staticConfigTypes={staticConfigTypes}
+      rootAtom={scopedRootAtom}
+      children={children}
+    />
+  )
+}
+
+/**
+ * BldrSpacewaveRuntime renders the provider tree over the Bldr WebView
+ * transport, creating and disposing the ResourceClient itself.
+ */
+function BldrSpacewaveRuntime({
   staticViewers,
   staticConfigTypes,
   resourceService = defaultResourceService,
+  rootAtom,
   children,
 }: SpacewaveRuntimeProvidersProps) {
   const resourceClient = useSpacewaveResourceClient(resourceService)
+  return (
+    <RuntimeProviderTree
+      resourceClient={resourceClient}
+      staticViewers={staticViewers}
+      staticConfigTypes={staticConfigTypes}
+      rootAtom={rootAtom}
+      children={children}
+    />
+  )
+}
 
+/**
+ * RuntimeProviderTree is the shared provider composition for both runtime
+ * connection modes.
+ */
+function RuntimeProviderTree({
+  resourceClient,
+  staticViewers,
+  staticConfigTypes,
+  rootAtom,
+  children,
+}: {
+  resourceClient: ResourceClient | null
+  staticViewers: ObjectViewerComponent[]
+  staticConfigTypes: StaticConfigTypeRegistration[]
+  rootAtom?: Atom<StateType>
+  children: ReactNode | ((ctx: SpacewaveRuntimeContext) => ReactNode)
+}) {
   return (
     <ViewerRegistryProvider staticViewers={staticViewers}>
       <ConfigTypeRegistryProvider staticConfigTypes={staticConfigTypes}>
@@ -61,6 +147,7 @@ export function SpacewaveRuntimeProviders({
               <ResourcesProvider client={resourceClient}>
                 <SpacewaveRuntimeRoot
                   resourceClient={resourceClient}
+                  rootAtom={rootAtom}
                   children={children}
                 />
               </ResourcesProvider>
@@ -107,9 +194,11 @@ function useSpacewaveResourceClient(
 
 function SpacewaveRuntimeRoot({
   resourceClient,
+  rootAtom,
   children,
 }: {
   resourceClient: ResourceClient | null
+  rootAtom?: Atom<StateType>
   children: ReactNode | ((ctx: SpacewaveRuntimeContext) => ReactNode)
 }) {
   const rootResource = useRootResourceWithClient(resourceClient)
@@ -162,7 +251,10 @@ function SpacewaveRuntimeRoot({
 
   return (
     <RootContext.Provider resource={rootResource}>
-      <StateNamespaceProvider stateAtomAccessor={rootStateAccessor}>
+      <StateNamespaceProvider
+        rootAtom={rootAtom}
+        stateAtomAccessor={rootStateAccessor}
+      >
         <CommandProvider rootResource={rootResource}>
           {renderedChildren}
         </CommandProvider>
