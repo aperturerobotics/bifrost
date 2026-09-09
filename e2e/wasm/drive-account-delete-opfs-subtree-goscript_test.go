@@ -14,7 +14,7 @@ import (
 // (db/volume/js/opfs/runtime.go). Its presence fingerprints a live OPFS volume
 // subtree, so listing markers from the page is a path-agnostic way to assert a
 // volume subtree exists and, after account deletion, is gone.
-const opfsFormatMarkerName = ".spacewave-opfs-format.json"
+const opfsFormatMarkerName = ".spacewave-opfs-format"
 
 // TestGoScriptDriveAccountDeleteRemovesOpfsSubtree proves that deleting an
 // account removes its OPFS volume subtree. Under E2E_WASM_WORKER_MODE=shared the
@@ -26,6 +26,7 @@ const opfsFormatMarkerName = ".spacewave-opfs-format.json"
 // SharedWorker scope throws SecurityError), and OPFS is origin-global, so the
 // page observes exactly what the bridge wrote and removed.
 func TestGoScriptDriveAccountDeleteRemovesOpfsSubtree(t *testing.T) {
+	// This case exercises the GoScript OPFS bridge.
 	compiler, err := ResolveE2EWasmCompiler()
 	if err != nil {
 		t.Fatalf("resolve wasm compiler: %v", err)
@@ -34,6 +35,7 @@ func TestGoScriptDriveAccountDeleteRemovesOpfsSubtree(t *testing.T) {
 		t.Skipf("requires %s", E2EWasmCompilerGoScript)
 	}
 
+	// Create one account and record its OPFS subtree before deletion.
 	sess := harness(t).NewCleanSession(t)
 	scenario := CreateDriveScenario(t, harness(t), sess)
 	page := scenario.GetSession().Page()
@@ -45,6 +47,7 @@ func TestGoScriptDriveAccountDeleteRemovesOpfsSubtree(t *testing.T) {
 		t.Fatalf("expected an OPFS volume format marker after drive ready, found none")
 	}
 
+	// Delete through the account API that owns its volume lifetime.
 	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Minute)
 	defer cancel()
 
@@ -86,6 +89,7 @@ func TestGoScriptDriveAccountDeleteRemovesOpfsSubtree(t *testing.T) {
 func listOpfsFormatMarkers(t testing.TB, page playwright.Page) []string {
 	t.Helper()
 
+	// Inspect the origin's storage directly, independently of worker routing.
 	result, err := page.Evaluate(`async (markerName) => {
 		const out = []
 		const walk = async (dir, prefix) => {
@@ -106,6 +110,7 @@ func listOpfsFormatMarkers(t testing.TB, page playwright.Page) []string {
 		t.Fatalf("list OPFS format markers: %v", err)
 	}
 
+	// Decode the browser's marker paths without assuming a volume ID layout.
 	entries, ok := result.([]any)
 	if !ok {
 		t.Fatalf("OPFS marker list: unexpected result type %T", result)

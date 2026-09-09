@@ -18,7 +18,6 @@ import (
 	plugin_host_wazero_quickjs "github.com/s4wave/spacewave/bldr/plugin/host/wazero-quickjs"
 	bldr_project "github.com/s4wave/spacewave/bldr/project"
 	bldr_project_controller "github.com/s4wave/spacewave/bldr/project/controller"
-	"github.com/s4wave/spacewave/bldr/testbed"
 	bldr_web_bundler_vite_compiler "github.com/s4wave/spacewave/bldr/web/bundler/vite/compiler"
 	s4wave_core_e2e "github.com/s4wave/spacewave/core/e2e"
 	resource_testbed "github.com/s4wave/spacewave/core/resource/testbed"
@@ -30,6 +29,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// TestSpacewaveCoreE2E runs the TypeScript fixture against native core services.
 // TIER: pr
 func TestSpacewaveCoreE2E(t *testing.T) {
 	if os.Getenv("RUN_CORE_E2E") == "" {
@@ -71,7 +71,7 @@ func TestSpacewaveCoreE2E(t *testing.T) {
 	}
 
 	// build the bldr testbed
-	tb, err := testbed.BuildTestbed(ctx, le)
+	tb, err := s4wave_core_e2e.NewNativeTestbed(ctx, le)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -129,8 +129,8 @@ func TestSpacewaveCoreE2E(t *testing.T) {
 	}
 	defer relObjectTypeCtrl()
 
-	// load the go plugin host
-	processHost, _, processRef, err := loader.WaitExecControllerRunningTyped[*plugin_host_process.Controller](
+	// Load the native Go plugin host.
+	_, _, processRef, err := loader.WaitExecControllerRunningTyped[*plugin_host_process.Controller](
 		ctx,
 		tb.GetBus(),
 		resolver.NewLoadControllerWithConfig(plugin_host_process.NewConfig(pluginStateDir, pluginDistDir)),
@@ -140,10 +140,9 @@ func TestSpacewaveCoreE2E(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 	defer processRef.Release()
-	_ = processHost
 
-	// load the js plugin host
-	quickjsHost, _, quickjsHostRef, err := loader.WaitExecControllerRunningTyped[*plugin_host_wazero_quickjs.Controller](
+	// Load QuickJS for the TypeScript fixture and frontend plugins.
+	_, _, quickjsHostRef, err := loader.WaitExecControllerRunningTyped[*plugin_host_wazero_quickjs.Controller](
 		ctx,
 		tb.GetBus(),
 		resolver.NewLoadControllerWithConfig(plugin_host_wazero_quickjs.NewConfig()),
@@ -153,7 +152,6 @@ func TestSpacewaveCoreE2E(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 	defer quickjsHostRef.Release()
-	_ = quickjsHost
 
 	// load the merged project config
 	projectConfig, err := s4wave_core_e2e.LoadProjectConfig(repoRoot)
@@ -180,7 +178,7 @@ func TestSpacewaveCoreE2E(t *testing.T) {
 	projCtrlConf.FetchManifestRemote = "devtool"
 
 	// run the project controller, which also compiles and starts the plugins
-	projCtrl, _, projCtrlRef, err := loader.WaitExecControllerRunningTyped[*bldr_project_controller.Controller](
+	_, _, projCtrlRef, err := loader.WaitExecControllerRunningTyped[*bldr_project_controller.Controller](
 		ctx,
 		tb.GetBus(),
 		resolver.NewLoadControllerWithConfig(projCtrlConf),
@@ -190,12 +188,15 @@ func TestSpacewaveCoreE2E(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 	defer projCtrlRef.Release()
-	_ = projCtrl
 
+	// Observe both plugin startup and the fixture's terminal result.
 	type testResult struct {
-		success  bool
+		// success reports the fixture's completed acceptance result.
+		success bool
+		// errorMsg contains a failed assertion reported by the fixture.
 		errorMsg string
-		err      error
+		// err contains a transport or lifecycle failure while awaiting the result.
+		err error
 	}
 	waitCtx, waitCancel := context.WithCancel(ctx)
 	defer waitCancel()

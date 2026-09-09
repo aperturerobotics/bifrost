@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 
 	"github.com/aperturerobotics/controllerbus/controller/loader"
@@ -21,7 +22,6 @@ import (
 	plugin_host_wazero_quickjs "github.com/s4wave/spacewave/bldr/plugin/host/wazero-quickjs"
 	bldr_project "github.com/s4wave/spacewave/bldr/project"
 	bldr_project_controller "github.com/s4wave/spacewave/bldr/project/controller"
-	"github.com/s4wave/spacewave/bldr/testbed"
 	bldr_web_bundler_vite_compiler "github.com/s4wave/spacewave/bldr/web/bundler/vite/compiler"
 	s4wave_core_e2e "github.com/s4wave/spacewave/core/e2e"
 	space_world_objecttypes "github.com/s4wave/spacewave/core/space/world/objecttypes"
@@ -34,10 +34,13 @@ import (
 )
 
 const (
-	corePluginID  = "spacewave-core"
+	// corePluginID identifies the native application service plugin.
+	corePluginID = "spacewave-core"
+	// debugPluginID identifies the native debugging service plugin.
 	debugPluginID = "spacewave-debug"
 )
 
+// setupPluginClients builds isolated native plugins and resolves their RPC clients.
 func setupPluginClients(
 	ctx context.Context,
 	t *testing.T,
@@ -46,10 +49,12 @@ func setupPluginClients(
 ) map[string]srpc.Client {
 	t.Helper()
 
+	// Retain compiler and subprocess diagnostics for startup failures.
 	log := logrus.New()
-	log.SetLevel(logrus.InfoLevel)
+	log.SetLevel(logrus.DebugLevel)
 	le := logrus.NewEntry(log)
 
+	// Materialize sources and plugin state in an isolated test directory.
 	wd, err := os.Getwd()
 	if err != nil {
 		t.Fatal(err)
@@ -70,7 +75,8 @@ func setupPluginClients(
 		t.Fatal(err)
 	}
 
-	tb, err := testbed.BuildTestbed(ctx, le)
+	// Compose native execution with the project's manifest builders.
+	tb, err := s4wave_core_e2e.NewNativeTestbed(ctx, le)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -88,6 +94,7 @@ func setupPluginClients(
 	sr.AddFactory(volume_rpc_server.NewFactory(b))
 	sr.AddFactory(world_block_engine.NewFactory(b))
 
+	// Mount the test volume identity and application object types.
 	volPeer, err := tb.GetVolume().GetPeer(ctx, true)
 	if err != nil {
 		t.Fatal(err)
@@ -106,6 +113,7 @@ func setupPluginClients(
 	}
 	t.Cleanup(relObjectTypeCtrl)
 
+	// Start both hosts; scheduler policy selects each plugin's permitted runtime.
 	_, _, processRef, err := loader.WaitExecControllerRunningTyped[*plugin_host_process.Controller](
 		ctx,
 		b,
@@ -128,6 +136,7 @@ func setupPluginClients(
 	}
 	t.Cleanup(quickjsRef.Release)
 
+	// Enable trace services in the project's native plugin configurations.
 	projectConfig, err := s4wave_core_e2e.LoadProjectConfig(repoRoot)
 	if err == nil {
 		err = InjectTraceConfig(projectConfig)
@@ -138,7 +147,7 @@ func setupPluginClients(
 	if err != nil {
 		t.Fatal(err)
 	}
-	projectConfig.Start.Plugins = append([]string(nil), startPlugins...)
+	projectConfig.Start.Plugins = slices.Clone(startPlugins)
 	projectConfig.Remotes = map[string]*bldr_project.RemoteConfig{
 		"devtool": {
 			EngineId:       tb.GetWorldEngineID(),
@@ -148,6 +157,7 @@ func setupPluginClients(
 		},
 	}
 
+	// Compile and launch the requested startup plugins.
 	projCtrlConf := bldr_project_controller.NewConfig(repoRoot, workDir, projectConfig, false, true)
 	projCtrlConf.FetchManifestRemote = "devtool"
 	_, _, projCtrlRef, err := loader.WaitExecControllerRunningTyped[*bldr_project_controller.Controller](
@@ -161,6 +171,7 @@ func setupPluginClients(
 	}
 	t.Cleanup(projCtrlRef.Release)
 
+	// Retain each client reference for the test's lifetime.
 	clients := make(map[string]srpc.Client, len(pluginIDs))
 	for _, pluginID := range pluginIDs {
 		pluginClient, pluginRef, err := bldr_plugin.ExPluginLoadWaitClient(ctx, b, pluginID, nil)
@@ -174,11 +185,13 @@ func setupPluginClients(
 	return clients
 }
 
+// TestTraceServiceDiscovery discovers and streams a trace from the core plugin.
 func TestTraceServiceDiscovery(t *testing.T) {
 	if os.Getenv("RUN_TRACE_E2E") == "" {
 		t.Skip("set RUN_TRACE_E2E=1 to run trace service discovery E2E tests")
 	}
 
+	// Start a recording through the plugin's discovered trace service.
 	ctx := context.Background()
 	clients := setupPluginClients(ctx, t, []string{corePluginID}, []string{corePluginID})
 	pluginClient := clients[corePluginID]
@@ -189,6 +202,7 @@ func TestTraceServiceDiscovery(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Stop the recording and require at least one streamed trace chunk.
 	stopStrm, err := traceClient.StopTrace(ctx, &s4wave_trace.StopTraceRequest{})
 	if err != nil {
 		t.Fatal(err)
@@ -214,11 +228,13 @@ func TestTraceServiceDiscovery(t *testing.T) {
 	}
 }
 
+// TestTraceServiceAllPlugins records traces from core and debug with frontend plugins loaded.
 func TestTraceServiceAllPlugins(t *testing.T) {
 	if os.Getenv("RUN_TRACE_E2E") == "" {
 		t.Skip("set RUN_TRACE_E2E=1 to run trace service discovery E2E tests")
 	}
 
+	// Load frontend plugins alongside both native trace providers.
 	ctx := context.Background()
 	clients := setupPluginClients(
 		ctx,
@@ -227,6 +243,7 @@ func TestTraceServiceAllPlugins(t *testing.T) {
 		[]string{corePluginID, debugPluginID},
 	)
 
+	// Verify that each provider independently returns a complete trace stream.
 	for _, pluginID := range []string{corePluginID, debugPluginID} {
 		t.Run(pluginID, func(t *testing.T) {
 			traceClient := s4wave_trace.NewSRPCTraceServiceClient(clients[pluginID])
