@@ -35,6 +35,27 @@ func newWriteTicketOwner(acc *ProviderAccount, resourceID string) *writeticketow
 	)
 }
 
+func (c *SessionClient) getDirectWriteTicketOwner(resourceID string) *writeticketowner.Owner {
+	c.directWriteTicketOwnersMtx.Lock()
+	defer c.directWriteTicketOwnersMtx.Unlock()
+	if c.directWriteTicketOwners == nil {
+		c.directWriteTicketOwners = make(map[string]*writeticketowner.Owner)
+	}
+	owner := c.directWriteTicketOwners[resourceID]
+	if owner == nil {
+		owner = writeticketowner.NewOwner(
+			func(context.Context) (writeticketowner.Fetcher, error) {
+				return writeTicketSessionFetcher{cli: c}, nil
+			},
+			resourceID,
+			writeTicketBundleRefCountOptions,
+			isRefreshableWriteTicketCloudError,
+		)
+		c.directWriteTicketOwners[resourceID] = owner
+	}
+	return owner
+}
+
 type writeTicketSessionFetcher struct {
 	cli *SessionClient
 }

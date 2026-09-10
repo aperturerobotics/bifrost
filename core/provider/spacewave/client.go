@@ -25,6 +25,7 @@ import (
 	"github.com/s4wave/spacewave/core/provider/spacewave/entitykeystore"
 	packfile "github.com/s4wave/spacewave/core/provider/spacewave/packfile"
 	"github.com/s4wave/spacewave/core/provider/spacewave/syncprogress"
+	"github.com/s4wave/spacewave/core/provider/spacewave/writeticketowner"
 	"github.com/s4wave/spacewave/core/session"
 	"github.com/s4wave/spacewave/core/sobject"
 	"github.com/s4wave/spacewave/net/crypto"
@@ -1051,6 +1052,10 @@ type SessionClient struct {
 		audience writeTicketAudience,
 		fn func(ticket string) error,
 	) error
+	// directWriteTicketOwners caches per-resource ticket bundles for standalone
+	// clients that are not owned by a ProviderAccount.
+	directWriteTicketOwnersMtx sync.Mutex
+	directWriteTicketOwners    map[string]*writeticketowner.Owner
 
 	// packReadTicketMtx guards packReadTickets
 	packReadTicketMtx sync.Mutex
@@ -1271,8 +1276,8 @@ func (c *SessionClient) GetWriteTicket(
 	return resp.GetTicket(), nil
 }
 
-// EnableDirectWriteTickets configures the session client to fetch one
-// write-ticket JWT per protected mutation directly from the cloud API.
+// EnableDirectWriteTickets configures the session client to cache bundled
+// write tickets directly from the cloud API.
 //
 // Standalone CLIs use this when they have a session keypair but do not have a
 // ProviderAccount available to own cached write-ticket bundles.
@@ -1296,20 +1301,11 @@ func (c *SessionClient) EnableDirectWriteTickets() {
 			return err
 		}
 
-		ticket, err := c.GetWriteTicket(ctx, resourceID, string(audience))
-		if err != nil {
-			return err
-		}
-		err = fn(ticket)
-		if !isRefreshableWriteTicketCloudError(err) {
-			return err
-		}
-
-		ticket, err = c.GetWriteTicket(ctx, resourceID, string(audience))
-		if err != nil {
-			return err
-		}
-		return fn(ticket)
+		return c.getDirectWriteTicketOwner(resourceID).ExecuteAudience(
+			ctx,
+			audience,
+			fn,
+		)
 	}
 }
 

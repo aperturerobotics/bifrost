@@ -336,19 +336,21 @@ func TestSyncPushData_UsesWriteTicketWhenConfigured(t *testing.T) {
 }
 
 // TestSyncPushData_EnableDirectWriteTickets verifies a standalone session
-// client can mint write tickets directly when no ProviderAccount owns it.
+// client reuses write tickets when no ProviderAccount owns it.
 func TestSyncPushData_EnableDirectWriteTickets(t *testing.T) {
 	packData := []byte("inline-pack-data")
 	h := sha256.Sum256(packData)
 	bloomFilter := []byte("bloom-filter-bytes")
 
+	var ticketRequests int
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case "/api/session/write-ticket/test-res/bstore-sync-push":
+		case "/api/session/write-tickets/test-res":
 			if r.Method != http.MethodPost {
 				t.Errorf("expected POST, got %s", r.Method)
 			}
-			resp := &api.TicketResponse{Ticket: "ticket-direct"}
+			ticketRequests++
+			resp := &api.WriteTicketBundleResponse{BstoreSyncPushTicket: "ticket-direct"}
 			data, err := resp.MarshalVT()
 			if err != nil {
 				t.Fatalf("marshal ticket response: %v", err)
@@ -389,6 +391,22 @@ func TestSyncPushData_EnableDirectWriteTickets(t *testing.T) {
 	)
 	if err != nil {
 		t.Fatalf("SyncPushData: %v", err)
+	}
+	err = cli.SyncPushData(
+		context.Background(),
+		"test-res",
+		"test-pack-id-2",
+		3,
+		packData,
+		h[:],
+		bloomFilter,
+		packfile.BloomFormatVersionV1,
+	)
+	if err != nil {
+		t.Fatalf("second SyncPushData: %v", err)
+	}
+	if ticketRequests != 1 {
+		t.Fatalf("write ticket requests: got %d, want 1", ticketRequests)
 	}
 }
 
