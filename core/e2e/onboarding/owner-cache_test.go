@@ -96,7 +96,7 @@ func TestCloudOwnerFreshCache(t *testing.T) {
 
 	// Restore the existing registered Session using its retained signing key.
 	restored, err := provider.(*provider_spacewave.Provider).MountHandoffSession(
-		ctx, account.GetAccountID(), "Owner cache", original.GetPrivKey(), inventory,
+		ctx, account.GetAccountID(), original.GetPrivKey(), inventory,
 	)
 	if err != nil {
 		t.Fatal(err)

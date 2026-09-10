@@ -826,22 +826,26 @@ message GetLinkedCloudSessionResponse {
   bool local_session_empty = 3;
 }
 
-// EncryptForHandoffRequest encrypts the active session privkey to a device pubkey.
-message EncryptForHandoffRequest {
+// EnrollForHandoffRequest registers the receiving client's independent Session key.
+message EnrollForHandoffRequest {
   // DevicePublicKey is the Ed25519 public key from the HandoffRequest.
   bytes device_public_key = 1;
   // SessionNonce is the ULID that keys the AuthSessionDO.
   string session_nonce = 2;
+  // DeviceName is the label for the receiving Session.
+  string device_name = 3;
 }
 
-// EncryptForHandoffResponse contains the encrypted session key and account info.
-message EncryptForHandoffResponse {
-  // EncryptedSessionKey is the session privkey encrypted to the device pubkey.
-  bytes encrypted_session_key = 1;
+// EnrollForHandoffResponse identifies the receiving Session's account attachment.
+message EnrollForHandoffResponse {
+  reserved 1;
+  reserved "encrypted_session_key";
   // AccountId is the cloud account ULID.
   string account_id = 2;
   // EntityId is the cloud username.
   string entity_id = 3;
+  // SessionPeerId is the newly authorized receiving key.
+  string session_peer_id = 4;
 }
 
 // CreateCheckoutSessionRequest creates a Stripe Checkout Session for subscription.

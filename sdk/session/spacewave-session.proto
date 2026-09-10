@@ -149,8 +149,8 @@ service SpacewaveSessionResourceService {
   // and returns the unwrap artifacts for the existing unlock path.
   rpc StartDesktopPasskeyReauth(.s4wave.provider.spacewave.StartDesktopPasskeyReauthRequest) returns (.s4wave.provider.spacewave.StartDesktopPasskeyReauthResponse);
 
-  // EncryptForHandoff encrypts the active session privkey to a device pubkey.
-  rpc EncryptForHandoff(.s4wave.provider.spacewave.EncryptForHandoffRequest) returns (.s4wave.provider.spacewave.EncryptForHandoffResponse);
+  // EnrollForHandoff registers the receiving client's independent Session key.
+  rpc EnrollForHandoff(.s4wave.provider.spacewave.EnrollForHandoffRequest) returns (.s4wave.provider.spacewave.EnrollForHandoffResponse);
   // PreviewSpaceLink verifies a SpaceLink ticket for trusted UI display.
   rpc PreviewSpaceLink(.s4wave.provider.spacewave.PreviewSpaceLinkRequest) returns (.s4wave.provider.spacewave.PreviewSpaceLinkResponse);
   // ApproveSpaceLink approves a SpaceLink ticket for a target Space.

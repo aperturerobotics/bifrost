@@ -21,7 +21,12 @@ export function decodeHandoffRequest(
 ): HandoffRequest | null {
   if (!payload) return null
   try {
-    return HandoffRequest.fromBinary(base64urlDecode(payload))
+    const request = HandoffRequest.fromBinary(base64urlDecode(payload))
+    return request.protocolVersion === 1 &&
+      request.devicePublicKey?.length === 32 &&
+      request.sessionNonce
+      ? request
+      : null
   } catch {
     return null
   }
@@ -43,11 +48,10 @@ export function hasStoredHandoffRequest(): boolean {
   return getStoredHandoffRequest() != null
 }
 
-async function encryptForHandoffViaSession(
+export async function enrollHandoffSession(
   root: Root,
   sessionIdx: number,
-  devicePublicKey: Uint8Array | undefined,
-  sessionNonce: string | undefined,
+  request: HandoffRequest,
 ) {
   if (sessionIdx < 1) {
     throw new Error('Invalid session index')
@@ -57,9 +61,10 @@ async function encryptForHandoffViaSession(
     throw new Error('Failed to mount session')
   }
   try {
-    await result.session.spacewave.encryptForHandoff({
-      devicePublicKey,
-      sessionNonce,
+    await result.session.spacewave.enrollForHandoff({
+      devicePublicKey: request.devicePublicKey,
+      sessionNonce: request.sessionNonce,
+      deviceName: request.deviceName,
     })
   } finally {
     result.session.release()
@@ -72,12 +77,7 @@ export async function completeStoredHandoff(
 ): Promise<boolean> {
   const request = getStoredHandoffRequest()
   if (!request) return false
-  await encryptForHandoffViaSession(
-    root,
-    sessionIdx,
-    request.devicePublicKey,
-    request.sessionNonce,
-  )
+  await enrollHandoffSession(root, sessionIdx, request)
   clearStoredHandoffPayload()
   return true
 }

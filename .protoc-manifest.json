@@ -1317,7 +1317,7 @@
       ]
     },
     "github.com/s4wave/spacewave/core/session/handoff": {
-      "hash": "fb7339442f52c2ede8e0883947293a79f035a87ab1b78367cbce9b04870be289",
+      "hash": "2b9fceb1c1a3c91a1017d428ddb5f6779c700aeada8ba3c89c2c367135795167",
       "generatedFiles": [
         "core/session/handoff/handoff.pb.go",
         "core/session/handoff/handoff.pb.ts"
@@ -3678,7 +3678,7 @@
       ]
     },
     "github.com/s4wave/spacewave/sdk/provider/spacewave": {
-      "hash": "da17fdd3f5f9da11088d39c42572fa74b46b1cc9b6d447392d8fd73f5efa3361",
+      "hash": "fc08da0b3e4a71f7e89b41d3706cb36386e8d32f100d0daa37ed35493b988a63",
       "generatedFiles": [
         "sdk/provider/spacewave/spacewave.pb.go",
         "sdk/provider/spacewave/spacewave.pb.ts",
@@ -3726,7 +3726,7 @@
       ]
     },
     "github.com/s4wave/spacewave/sdk/session": {
-      "hash": "3ef648962cd535428c5482d4e6523503b822634de37443f358b48d33a7a79c3e",
+      "hash": "0104b4adece3ed110c3ef61ef4757ebfc7424c4d56897c0b40ec9c00a0b1e3a5",
       "generatedFiles": [
         "sdk/session/local-session.pb.go",
         "sdk/session/local-session.pb.ts",

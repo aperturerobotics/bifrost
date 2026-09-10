@@ -3338,69 +3338,78 @@ func (x *GetLinkedCloudSessionResponse) GetLocalSessionEmpty() bool {
 	return false
 }
 
-// EncryptForHandoffRequest encrypts the active session privkey to a device pubkey.
-type EncryptForHandoffRequest struct {
+// EnrollForHandoffRequest registers the receiving client's independent Session key.
+type EnrollForHandoffRequest struct {
 	unknownFields []byte
 	// DevicePublicKey is the Ed25519 public key from the HandoffRequest.
 	DevicePublicKey []byte `protobuf:"bytes,1,opt,name=device_public_key,json=devicePublicKey,proto3" json:"devicePublicKey,omitempty"`
 	// SessionNonce is the ULID that keys the AuthSessionDO.
 	SessionNonce string `protobuf:"bytes,2,opt,name=session_nonce,json=sessionNonce,proto3" json:"sessionNonce,omitempty"`
+	// DeviceName is the label for the receiving Session.
+	DeviceName string `protobuf:"bytes,3,opt,name=device_name,json=deviceName,proto3" json:"deviceName,omitempty"`
 }
 
-func (x *EncryptForHandoffRequest) Reset() {
-	*x = EncryptForHandoffRequest{}
+func (x *EnrollForHandoffRequest) Reset() {
+	*x = EnrollForHandoffRequest{}
 }
 
-func (*EncryptForHandoffRequest) ProtoMessage() {}
+func (*EnrollForHandoffRequest) ProtoMessage() {}
 
-func (x *EncryptForHandoffRequest) GetDevicePublicKey() []byte {
+func (x *EnrollForHandoffRequest) GetDevicePublicKey() []byte {
 	if x != nil {
 		return x.DevicePublicKey
 	}
 	return nil
 }
 
-func (x *EncryptForHandoffRequest) GetSessionNonce() string {
+func (x *EnrollForHandoffRequest) GetSessionNonce() string {
 	if x != nil {
 		return x.SessionNonce
 	}
 	return ""
 }
 
-// EncryptForHandoffResponse contains the encrypted session key and account info.
-type EncryptForHandoffResponse struct {
+func (x *EnrollForHandoffRequest) GetDeviceName() string {
+	if x != nil {
+		return x.DeviceName
+	}
+	return ""
+}
+
+// EnrollForHandoffResponse identifies the receiving Session's account attachment.
+type EnrollForHandoffResponse struct {
 	unknownFields []byte
-	// EncryptedSessionKey is the session privkey encrypted to the device pubkey.
-	EncryptedSessionKey []byte `protobuf:"bytes,1,opt,name=encrypted_session_key,json=encryptedSessionKey,proto3" json:"encryptedSessionKey,omitempty"`
 	// AccountId is the cloud account ULID.
 	AccountId string `protobuf:"bytes,2,opt,name=account_id,json=accountId,proto3" json:"accountId,omitempty"`
 	// EntityId is the cloud username.
 	EntityId string `protobuf:"bytes,3,opt,name=entity_id,json=entityId,proto3" json:"entityId,omitempty"`
+	// SessionPeerId is the newly authorized receiving key.
+	SessionPeerId string `protobuf:"bytes,4,opt,name=session_peer_id,json=sessionPeerId,proto3" json:"sessionPeerId,omitempty"`
 }
 
-func (x *EncryptForHandoffResponse) Reset() {
-	*x = EncryptForHandoffResponse{}
+func (x *EnrollForHandoffResponse) Reset() {
+	*x = EnrollForHandoffResponse{}
 }
 
-func (*EncryptForHandoffResponse) ProtoMessage() {}
+func (*EnrollForHandoffResponse) ProtoMessage() {}
 
-func (x *EncryptForHandoffResponse) GetEncryptedSessionKey() []byte {
-	if x != nil {
-		return x.EncryptedSessionKey
-	}
-	return nil
-}
-
-func (x *EncryptForHandoffResponse) GetAccountId() string {
+func (x *EnrollForHandoffResponse) GetAccountId() string {
 	if x != nil {
 		return x.AccountId
 	}
 	return ""
 }
 
-func (x *EncryptForHandoffResponse) GetEntityId() string {
+func (x *EnrollForHandoffResponse) GetEntityId() string {
 	if x != nil {
 		return x.EntityId
+	}
+	return ""
+}
+
+func (x *EnrollForHandoffResponse) GetSessionPeerId() string {
+	if x != nil {
+		return x.SessionPeerId
 	}
 	return ""
 }
@@ -9879,12 +9888,13 @@ func (m *GetLinkedCloudSessionResponse) CloneMessageVT() protobuf_go_lite.CloneM
 	return m.CloneVT()
 }
 
-func (m *EncryptForHandoffRequest) CloneVT() *EncryptForHandoffRequest {
+func (m *EnrollForHandoffRequest) CloneVT() *EnrollForHandoffRequest {
 	if m == nil {
-		return (*EncryptForHandoffRequest)(nil)
+		return (*EnrollForHandoffRequest)(nil)
 	}
-	r := new(EncryptForHandoffRequest)
+	r := new(EnrollForHandoffRequest)
 	r.SessionNonce = m.SessionNonce
+	r.DeviceName = m.DeviceName
 	r.DevicePublicKey = protobuf_go_lite.CloneBytes(m.DevicePublicKey)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
@@ -9892,25 +9902,25 @@ func (m *EncryptForHandoffRequest) CloneVT() *EncryptForHandoffRequest {
 	return r
 }
 
-func (m *EncryptForHandoffRequest) CloneMessageVT() protobuf_go_lite.CloneMessage {
+func (m *EnrollForHandoffRequest) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
-func (m *EncryptForHandoffResponse) CloneVT() *EncryptForHandoffResponse {
+func (m *EnrollForHandoffResponse) CloneVT() *EnrollForHandoffResponse {
 	if m == nil {
-		return (*EncryptForHandoffResponse)(nil)
+		return (*EnrollForHandoffResponse)(nil)
 	}
-	r := new(EncryptForHandoffResponse)
+	r := new(EnrollForHandoffResponse)
 	r.AccountId = m.AccountId
 	r.EntityId = m.EntityId
-	r.EncryptedSessionKey = protobuf_go_lite.CloneBytes(m.EncryptedSessionKey)
+	r.SessionPeerId = m.SessionPeerId
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
 	return r
 }
 
-func (m *EncryptForHandoffResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
+func (m *EnrollForHandoffResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
@@ -14814,7 +14824,7 @@ func (this *GetLinkedCloudSessionResponse) EqualMessageVT(thatMsg any) bool {
 	return this.EqualVT(that)
 }
 
-func (this *EncryptForHandoffRequest) EqualVT(that *EncryptForHandoffRequest) bool {
+func (this *EnrollForHandoffRequest) EqualVT(that *EnrollForHandoffRequest) bool {
 	if this == that {
 		return true
 	} else if this == nil || that == nil {
@@ -14826,24 +14836,24 @@ func (this *EncryptForHandoffRequest) EqualVT(that *EncryptForHandoffRequest) bo
 	if this.SessionNonce != that.SessionNonce {
 		return false
 	}
+	if this.DeviceName != that.DeviceName {
+		return false
+	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
-func (this *EncryptForHandoffRequest) EqualMessageVT(thatMsg any) bool {
-	that, ok := thatMsg.(*EncryptForHandoffRequest)
+func (this *EnrollForHandoffRequest) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*EnrollForHandoffRequest)
 	if !ok {
 		return false
 	}
 	return this.EqualVT(that)
 }
 
-func (this *EncryptForHandoffResponse) EqualVT(that *EncryptForHandoffResponse) bool {
+func (this *EnrollForHandoffResponse) EqualVT(that *EnrollForHandoffResponse) bool {
 	if this == that {
 		return true
 	} else if this == nil || that == nil {
-		return false
-	}
-	if !protobuf_go_lite.EqualBytes(this.EncryptedSessionKey, that.EncryptedSessionKey) {
 		return false
 	}
 	if this.AccountId != that.AccountId {
@@ -14852,11 +14862,14 @@ func (this *EncryptForHandoffResponse) EqualVT(that *EncryptForHandoffResponse) 
 	if this.EntityId != that.EntityId {
 		return false
 	}
+	if this.SessionPeerId != that.SessionPeerId {
+		return false
+	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
-func (this *EncryptForHandoffResponse) EqualMessageVT(thatMsg any) bool {
-	that, ok := thatMsg.(*EncryptForHandoffResponse)
+func (this *EnrollForHandoffResponse) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*EnrollForHandoffResponse)
 	if !ok {
 		return false
 	}
@@ -23256,8 +23269,8 @@ func (x *GetLinkedCloudSessionResponse) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
-// MarshalProtoJSON marshals the EncryptForHandoffRequest message to JSON.
-func (x *EncryptForHandoffRequest) MarshalProtoJSON(s *json.MarshalState) {
+// MarshalProtoJSON marshals the EnrollForHandoffRequest message to JSON.
+func (x *EnrollForHandoffRequest) MarshalProtoJSON(s *json.MarshalState) {
 	if x == nil {
 		s.WriteNil()
 		return
@@ -23274,16 +23287,21 @@ func (x *EncryptForHandoffRequest) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("sessionNonce")
 		s.WriteString(x.SessionNonce)
 	}
+	if x.DeviceName != "" || s.HasField("deviceName") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("deviceName")
+		s.WriteString(x.DeviceName)
+	}
 	s.WriteObjectEnd()
 }
 
-// MarshalJSON marshals the EncryptForHandoffRequest to JSON.
-func (x *EncryptForHandoffRequest) MarshalJSON() ([]byte, error) {
+// MarshalJSON marshals the EnrollForHandoffRequest to JSON.
+func (x *EnrollForHandoffRequest) MarshalJSON() ([]byte, error) {
 	return json.DefaultMarshalerConfig.Marshal(x)
 }
 
-// UnmarshalProtoJSON unmarshals the EncryptForHandoffRequest message from JSON.
-func (x *EncryptForHandoffRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
+// UnmarshalProtoJSON unmarshals the EnrollForHandoffRequest message from JSON.
+func (x *EnrollForHandoffRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
 	if s.ReadNil() {
 		return
 	}
@@ -23297,28 +23315,26 @@ func (x *EncryptForHandoffRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "session_nonce", "sessionNonce":
 			s.AddField("session_nonce")
 			x.SessionNonce = s.ReadString()
+		case "device_name", "deviceName":
+			s.AddField("device_name")
+			x.DeviceName = s.ReadString()
 		}
 	})
 }
 
-// UnmarshalJSON unmarshals the EncryptForHandoffRequest from JSON.
-func (x *EncryptForHandoffRequest) UnmarshalJSON(b []byte) error {
+// UnmarshalJSON unmarshals the EnrollForHandoffRequest from JSON.
+func (x *EnrollForHandoffRequest) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
-// MarshalProtoJSON marshals the EncryptForHandoffResponse message to JSON.
-func (x *EncryptForHandoffResponse) MarshalProtoJSON(s *json.MarshalState) {
+// MarshalProtoJSON marshals the EnrollForHandoffResponse message to JSON.
+func (x *EnrollForHandoffResponse) MarshalProtoJSON(s *json.MarshalState) {
 	if x == nil {
 		s.WriteNil()
 		return
 	}
 	s.WriteObjectStart()
 	var wroteField bool
-	if len(x.EncryptedSessionKey) > 0 || s.HasField("encryptedSessionKey") {
-		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("encryptedSessionKey")
-		s.WriteBytes(x.EncryptedSessionKey)
-	}
 	if x.AccountId != "" || s.HasField("accountId") {
 		s.WriteMoreIf(&wroteField)
 		s.WriteObjectField("accountId")
@@ -23329,16 +23345,21 @@ func (x *EncryptForHandoffResponse) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("entityId")
 		s.WriteString(x.EntityId)
 	}
+	if x.SessionPeerId != "" || s.HasField("sessionPeerId") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("sessionPeerId")
+		s.WriteString(x.SessionPeerId)
+	}
 	s.WriteObjectEnd()
 }
 
-// MarshalJSON marshals the EncryptForHandoffResponse to JSON.
-func (x *EncryptForHandoffResponse) MarshalJSON() ([]byte, error) {
+// MarshalJSON marshals the EnrollForHandoffResponse to JSON.
+func (x *EnrollForHandoffResponse) MarshalJSON() ([]byte, error) {
 	return json.DefaultMarshalerConfig.Marshal(x)
 }
 
-// UnmarshalProtoJSON unmarshals the EncryptForHandoffResponse message from JSON.
-func (x *EncryptForHandoffResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
+// UnmarshalProtoJSON unmarshals the EnrollForHandoffResponse message from JSON.
+func (x *EnrollForHandoffResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
 	if s.ReadNil() {
 		return
 	}
@@ -23346,21 +23367,21 @@ func (x *EncryptForHandoffResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		switch key {
 		default:
 			s.Skip() // ignore unknown field
-		case "encrypted_session_key", "encryptedSessionKey":
-			s.AddField("encrypted_session_key")
-			x.EncryptedSessionKey = s.ReadBytes()
 		case "account_id", "accountId":
 			s.AddField("account_id")
 			x.AccountId = s.ReadString()
 		case "entity_id", "entityId":
 			s.AddField("entity_id")
 			x.EntityId = s.ReadString()
+		case "session_peer_id", "sessionPeerId":
+			s.AddField("session_peer_id")
+			x.SessionPeerId = s.ReadString()
 		}
 	})
 }
 
-// UnmarshalJSON unmarshals the EncryptForHandoffResponse from JSON.
-func (x *EncryptForHandoffResponse) UnmarshalJSON(b []byte) error {
+// UnmarshalJSON unmarshals the EnrollForHandoffResponse from JSON.
+func (x *EnrollForHandoffResponse) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -35560,7 +35581,7 @@ func (m *GetLinkedCloudSessionResponse) MarshalToSizedBufferVT(dAtA []byte) (int
 	return len(dAtA) - i, nil
 }
 
-func (m *EncryptForHandoffRequest) MarshalVT() (dAtA []byte, err error) {
+func (m *EnrollForHandoffRequest) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
 	}
@@ -35573,12 +35594,12 @@ func (m *EncryptForHandoffRequest) MarshalVT() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *EncryptForHandoffRequest) MarshalToVT(dAtA []byte) (int, error) {
+func (m *EnrollForHandoffRequest) MarshalToVT(dAtA []byte) (int, error) {
 	size := m.SizeVT()
 	return m.MarshalToSizedBufferVT(dAtA[:size])
 }
 
-func (m *EncryptForHandoffRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+func (m *EnrollForHandoffRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -35588,6 +35609,11 @@ func (m *EncryptForHandoffRequest) MarshalToSizedBufferVT(dAtA []byte) (int, err
 	_ = l
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.DeviceName) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.DeviceName)
+		i--
+		dAtA[i] = 0x1a
 	}
 	if len(m.SessionNonce) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.SessionNonce)
@@ -35602,7 +35628,7 @@ func (m *EncryptForHandoffRequest) MarshalToSizedBufferVT(dAtA []byte) (int, err
 	return len(dAtA) - i, nil
 }
 
-func (m *EncryptForHandoffResponse) MarshalVT() (dAtA []byte, err error) {
+func (m *EnrollForHandoffResponse) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
 	}
@@ -35615,12 +35641,12 @@ func (m *EncryptForHandoffResponse) MarshalVT() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *EncryptForHandoffResponse) MarshalToVT(dAtA []byte) (int, error) {
+func (m *EnrollForHandoffResponse) MarshalToVT(dAtA []byte) (int, error) {
 	size := m.SizeVT()
 	return m.MarshalToSizedBufferVT(dAtA[:size])
 }
 
-func (m *EncryptForHandoffResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+func (m *EnrollForHandoffResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -35631,6 +35657,11 @@ func (m *EncryptForHandoffResponse) MarshalToSizedBufferVT(dAtA []byte) (int, er
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if len(m.SessionPeerId) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.SessionPeerId)
+		i--
+		dAtA[i] = 0x22
+	}
 	if len(m.EntityId) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.EntityId)
 		i--
@@ -35640,11 +35671,6 @@ func (m *EncryptForHandoffResponse) MarshalToSizedBufferVT(dAtA []byte) (int, er
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.AccountId)
 		i--
 		dAtA[i] = 0x12
-	}
-	if len(m.EncryptedSessionKey) > 0 {
-		i = protobuf_go_lite.EncodeBytes(dAtA, i, m.EncryptedSessionKey)
-		i--
-		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
@@ -43756,7 +43782,7 @@ func (m *GetLinkedCloudSessionResponse) SizeVT() (n int) {
 	return n
 }
 
-func (m *EncryptForHandoffRequest) SizeVT() (n int) {
+func (m *EnrollForHandoffRequest) SizeVT() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -43764,19 +43790,20 @@ func (m *EncryptForHandoffRequest) SizeVT() (n int) {
 	_ = l
 	n += protobuf_go_lite.SizeBytesNonEmpty(1, m.DevicePublicKey)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.SessionNonce)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.DeviceName)
 	n += len(m.unknownFields)
 	return n
 }
 
-func (m *EncryptForHandoffResponse) SizeVT() (n int) {
+func (m *EnrollForHandoffResponse) SizeVT() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	n += protobuf_go_lite.SizeBytesNonEmpty(1, m.EncryptedSessionKey)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.AccountId)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.EntityId)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.SessionPeerId)
 	n += len(m.unknownFields)
 	return n
 }
@@ -47456,9 +47483,9 @@ func (x *GetLinkedCloudSessionResponse) String() string {
 	return x.MarshalProtoText()
 }
 
-func (x *EncryptForHandoffRequest) MarshalProtoText() string {
+func (x *EnrollForHandoffRequest) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
-	initialLen := protobuf_go_lite.TextStartMessage(&sb, "EncryptForHandoffRequest")
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "EnrollForHandoffRequest")
 	if len(x.DevicePublicKey) != 0 {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "device_public_key")
 		protobuf_go_lite.TextWriteBytes(&sb, x.DevicePublicKey)
@@ -47467,20 +47494,20 @@ func (x *EncryptForHandoffRequest) MarshalProtoText() string {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "session_nonce")
 		protobuf_go_lite.TextWriteString(&sb, x.SessionNonce)
 	}
+	if x.DeviceName != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "device_name")
+		protobuf_go_lite.TextWriteString(&sb, x.DeviceName)
+	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
-func (x *EncryptForHandoffRequest) String() string {
+func (x *EnrollForHandoffRequest) String() string {
 	return x.MarshalProtoText()
 }
 
-func (x *EncryptForHandoffResponse) MarshalProtoText() string {
+func (x *EnrollForHandoffResponse) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
-	initialLen := protobuf_go_lite.TextStartMessage(&sb, "EncryptForHandoffResponse")
-	if len(x.EncryptedSessionKey) != 0 {
-		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "encrypted_session_key")
-		protobuf_go_lite.TextWriteBytes(&sb, x.EncryptedSessionKey)
-	}
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "EnrollForHandoffResponse")
 	if x.AccountId != "" {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "account_id")
 		protobuf_go_lite.TextWriteString(&sb, x.AccountId)
@@ -47489,10 +47516,14 @@ func (x *EncryptForHandoffResponse) MarshalProtoText() string {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "entity_id")
 		protobuf_go_lite.TextWriteString(&sb, x.EntityId)
 	}
+	if x.SessionPeerId != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "session_peer_id")
+		protobuf_go_lite.TextWriteString(&sb, x.SessionPeerId)
+	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
-func (x *EncryptForHandoffResponse) String() string {
+func (x *EnrollForHandoffResponse) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -56133,7 +56164,7 @@ func (m *GetLinkedCloudSessionResponse) UnmarshalVT(dAtA []byte) error {
 	return nil
 }
 
-func (m *EncryptForHandoffRequest) UnmarshalVT(dAtA []byte) error {
+func (m *EnrollForHandoffRequest) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	var err error
@@ -56147,10 +56178,10 @@ func (m *EncryptForHandoffRequest) UnmarshalVT(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: EncryptForHandoffRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: EnrollForHandoffRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: EncryptForHandoffRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: EnrollForHandoffRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -56171,6 +56202,16 @@ func (m *EncryptForHandoffRequest) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.SessionNonce = v
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DeviceName", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.DeviceName = v
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
@@ -56194,7 +56235,7 @@ func (m *EncryptForHandoffRequest) UnmarshalVT(dAtA []byte) error {
 	return nil
 }
 
-func (m *EncryptForHandoffResponse) UnmarshalVT(dAtA []byte) error {
+func (m *EnrollForHandoffResponse) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	var err error
@@ -56208,20 +56249,12 @@ func (m *EncryptForHandoffResponse) UnmarshalVT(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: EncryptForHandoffResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: EnrollForHandoffResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: EncryptForHandoffResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: EnrollForHandoffResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field EncryptedSessionKey", wireType)
-			}
-			m.EncryptedSessionKey, iNdEx, err = protobuf_go_lite.DecodeBytesAppend(m.EncryptedSessionKey, dAtA, iNdEx)
-			if err != nil {
-				return err
-			}
 		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field AccountId", wireType)
@@ -56242,6 +56275,16 @@ func (m *EncryptForHandoffResponse) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.EntityId = v
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SessionPeerId", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.SessionPeerId = v
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
