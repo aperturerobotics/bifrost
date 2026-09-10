@@ -1095,6 +1095,16 @@
         "core/node/world/world.proto"
       ]
     },
+    "github.com/s4wave/spacewave/core/pairing": {
+      "hash": "bbd2bc56ab8c35dc635b6fafa99294402dcc4b0bfce88fc5558ba4f675f17159",
+      "generatedFiles": [
+        "core/pairing/pairing.pb.go",
+        "core/pairing/pairing.pb.ts"
+      ],
+      "protoFiles": [
+        "core/pairing/pairing.proto"
+      ]
+    },
     "github.com/s4wave/spacewave/core/plugin/list": {
       "hash": "834c7e539cbe0a10752998980754176effa75e0ee09c1a6c3883f3a92ac6b3c7",
       "generatedFiles": [
@@ -1126,7 +1136,7 @@
       ]
     },
     "github.com/s4wave/spacewave/core/provider/local": {
-      "hash": "2577f5e8141a43f4cbded1fbcc51e5f37b611649cf9491ffb75cb5d65022de82",
+      "hash": "8fd7ee55a46ce4292ee5e6b760aadc9af5454decd39fcf79c81ce7ff4b1b7489",
       "generatedFiles": [
         "core/provider/local/local.pb.go",
         "core/provider/local/local.pb.ts",

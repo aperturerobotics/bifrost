@@ -1,7 +1,7 @@
 package resource_session
 
 import (
-	provider_local "github.com/s4wave/spacewave/core/provider/local"
+	"github.com/s4wave/spacewave/core/pairing"
 	s4wave_session "github.com/s4wave/spacewave/sdk/session"
 )
 
@@ -10,48 +10,23 @@ func (r *SessionResource) WatchPairingStatus(
 	req *s4wave_session.WatchPairingStatusRequest,
 	strm s4wave_session.SRPCSessionResourceService_WatchPairingStatusStream,
 ) error {
-	// Initialize the pairing watch context.
-	ctx := strm.Context()
-
-	// Return idle status for providers without pairing support.
-	localAcc, ok := r.session.GetProviderAccount().(*provider_local.ProviderAccount)
-	if !ok {
-		return strm.Send(&s4wave_session.WatchPairingStatusResponse{
-			Status: s4wave_session.PairingStatus_PairingStatus_IDLE,
-		})
+	engine, err := r.getPairingEngine()
+	if err != nil {
+		return err
 	}
-
-	// Capture pairing state and its wake channel.
-	bcast := localAcc.GetPairingBroadcast()
-	var prev *s4wave_session.WatchPairingStatusResponse
-	for {
-		var ch <-chan struct{}
-		var snap provider_local.PairingSnapshot
-		bcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
-			ch = getWaitCh()
-			snap = localAcc.GetPairingSnapshot()
-		})
-
-		// Emit only changed pairing snapshots.
-		resp := pairingSnapshotToProto(snap)
-		if prev == nil || !resp.EqualVT(prev) {
-			if err := strm.Send(resp); err != nil {
-				return err
-			}
-			prev = resp
+	var previous *s4wave_session.WatchPairingStatusResponse
+	return engine.Watch(strm.Context(), func(snapshot pairing.Snapshot) error {
+		response := pairingSnapshotToProto(snapshot)
+		if previous != nil && response.EqualVT(previous) {
+			return nil
 		}
-
-		// Wait for pairing changes or cancellation.
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-ch:
-		}
-	}
+		previous = response
+		return strm.Send(response)
+	})
 }
 
-// pairingSnapshotToProto converts a local PairingSnapshot to a proto response.
-func pairingSnapshotToProto(snap provider_local.PairingSnapshot) *s4wave_session.WatchPairingStatusResponse {
+// pairingSnapshotToProto converts a pairing snapshot to a proto response.
+func pairingSnapshotToProto(snap pairing.Snapshot) *s4wave_session.WatchPairingStatusResponse {
 	resp := &s4wave_session.WatchPairingStatusResponse{
 		Status:       s4wave_session.PairingStatus(snap.Status),
 		Code:         snap.Code,

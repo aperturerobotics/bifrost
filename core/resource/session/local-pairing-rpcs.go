@@ -10,7 +10,7 @@ import (
 	"github.com/aperturerobotics/util/routine"
 	webrtc "github.com/pion/webrtc/v4"
 	"github.com/pkg/errors"
-	provider_local "github.com/s4wave/spacewave/core/provider/local"
+	"github.com/s4wave/spacewave/core/pairing"
 	p2ptls "github.com/s4wave/spacewave/net/crypto/tls"
 	"github.com/s4wave/spacewave/net/peer"
 	s4wave_session "github.com/s4wave/spacewave/sdk/session"
@@ -59,14 +59,11 @@ func (r *SessionResource) replaceLocalPairingTransport(tpt *s4wave_session.Manua
 
 // startLocalPairingLinkWaiter starts or replaces the direct-link wait routine.
 func (r *SessionResource) startLocalPairingLinkWaiter(remotePeerID peer.ID) error {
-	localAcc, ok := r.session.GetProviderAccount().(*provider_local.ProviderAccount)
-	if !ok {
-		return errors.New("provider account is not local")
+	engine, err := r.getPairingEngine()
+	if err != nil {
+		return err
 	}
-	parentCtx := localAcc.GetPairingContext()
-	if parentCtx == nil {
-		return errors.New("local pairing lifecycle context unavailable")
-	}
+	parentCtx := engine.Context()
 
 	lps := r.getOrInitLocalPairing()
 	lps.mu.Lock()
@@ -78,7 +75,7 @@ func (r *SessionResource) startLocalPairingLinkWaiter(remotePeerID peer.ID) erro
 	}
 
 	_, _ = lps.waitLink.SetRoutine(func(ctx context.Context) error {
-		r.waitLocalPairingLink(ctx, tpt, remotePeerID, localAcc)
+		r.waitLocalPairingLink(ctx, tpt, remotePeerID, engine)
 		return nil
 	})
 	lps.waitLink.SetContext(parentCtx, true)
@@ -242,7 +239,7 @@ func (r *SessionResource) waitLocalPairingLink(
 	parentCtx context.Context,
 	tpt *s4wave_session.ManualSignalTransport,
 	remotePeerID peer.ID,
-	localAcc *provider_local.ProviderAccount,
+	engine *pairing.Engine,
 ) {
 	ctx, cancel := context.WithTimeout(parentCtx, localPairingLinkTimeout)
 	defer cancel()
@@ -257,7 +254,7 @@ func (r *SessionResource) waitLocalPairingLink(
 		if ctx.Err() != nil {
 			failMsg = "direct connection timed out"
 		}
-		localAcc.SetPairingFailed(failMsg)
+		engine.SetFailed(failMsg)
 		return
 	}
 
@@ -266,11 +263,10 @@ func (r *SessionResource) waitLocalPairingLink(
 	privKey := r.session.GetPrivKey()
 	if privKey == nil {
 		r.le.Warn("local pairing: session is locked")
-		localAcc.SetPairingFailed("session is locked")
+		engine.SetFailed("session is locked")
 		_ = lnk.Close()
 		return
 	}
 
-	localPeerID := r.session.GetPeerId()
-	localAcc.OnDirectPairingConnected(remotePeerID, privKey, localPeerID, lnk, tpt.IsOfferer())
+	engine.StartDirect(lnk, tpt.IsOfferer())
 }

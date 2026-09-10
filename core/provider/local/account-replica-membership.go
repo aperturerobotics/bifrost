@@ -3,6 +3,8 @@ package provider_local
 import (
 	"context"
 
+	"github.com/s4wave/spacewave/core/pairing"
+
 	"github.com/pkg/errors"
 	account_settings "github.com/s4wave/spacewave/core/account/settings"
 	"github.com/s4wave/spacewave/core/sobject"
@@ -106,7 +108,7 @@ func (a *ProviderAccount) registerPairingReplicas(ctx context.Context, enrollmen
 
 // enrollAccountMemberObject issues grants only for a stored, approved binding.
 // The caller validates current membership before invoking this host mutation.
-func (a *ProviderAccount) enrollAccountMemberObject(ctx context.Context, entry *sobject.SharedObjectListEntry, member *account_settings.AccountSession) (*PairingSharedObject, error) {
+func (a *ProviderAccount) enrollAccountMemberObject(ctx context.Context, entry *sobject.SharedObjectListEntry, member *account_settings.AccountSession) (*pairing.SharedObject, error) {
 	if member == nil || member.GetRevoked() {
 		return nil, errors.New("account Session is not authorized")
 	}
@@ -137,7 +139,7 @@ func (a *ProviderAccount) enrollAccountMemberObject(ctx context.Context, entry *
 	if err != nil {
 		return nil, err
 	}
-	return &PairingSharedObject{Entry: entry.CloneVT(), State: state.CloneVT()}, nil
+	return &pairing.SharedObject{Entry: entry.CloneVT(), State: state.CloneVT()}, nil
 }
 
 // revokeAccountReplicaAccess lets the initiating replica finish its one signed

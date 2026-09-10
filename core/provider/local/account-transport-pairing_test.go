@@ -10,6 +10,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/s4wave/spacewave/core/pairing"
+	"github.com/s4wave/spacewave/core/session"
+
 	"github.com/aperturerobotics/util/routine"
 	"github.com/s4wave/spacewave/core/transport"
 	"github.com/s4wave/spacewave/net/crypto"
@@ -33,10 +36,8 @@ func newPairingTransportAccount(ctx context.Context, t *testing.T) (*ProviderAcc
 		le:           logrus.New().WithField("test", t.Name()),
 		lifecycleCtx: ctx,
 	}
-	acc.setPairingContext(ctx)
 	release := func() {
 		acc.StopSessionTransport()
-		acc.ClearPairingState()
 		tb.Release()
 	}
 	return acc, privKey, release
@@ -74,34 +75,34 @@ func startTestSessionTransport(
 	return sts
 }
 
-func waitForPairingStatus(
-	ctx context.Context,
-	t *testing.T,
-	acc *ProviderAccount,
-	status PairingStatus,
-) PairingSnapshot {
+func pairingEngineForTest(t *testing.T, sess session.Session) *pairing.Engine {
+	t.Helper()
+	engine, err := sess.(pairing.Session).GetPairingEngine()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return engine
+}
+
+func waitForPairingStatus(ctx context.Context, t *testing.T, engine *pairing.Engine, status pairing.Status) pairing.Snapshot {
 	t.Helper()
 	for {
-		var (
-			waitCh <-chan struct{}
-			snap   PairingSnapshot
-		)
-		acc.GetPairingBroadcast().HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
-			waitCh = getWaitCh()
-			snap = acc.GetPairingSnapshot()
-		})
-		if snap.Status == status {
-			return snap
+		snapshot, wait := engine.Snapshot()
+		if snapshot.Status == status {
+			return snapshot
+		}
+		if snapshot.Status == pairing.StatusFailed {
+			t.Fatalf("pairing failed: %s", snapshot.ErrMsg)
 		}
 		select {
 		case <-ctx.Done():
-			t.Fatalf("pairing status did not become %d: %v", status, ctx.Err())
-		case <-waitCh:
+			t.Fatalf("pairing did not reach %v: %s", status, snapshot.ErrMsg)
+		case <-wait:
 		}
 	}
 }
 
-func TestTerminalTransportStartupFailurePublishesPairingStatus(t *testing.T) {
+func TestTerminalTransportStartupFailureReturnsError(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()
 
@@ -117,7 +118,6 @@ func TestTerminalTransportStartupFailurePublishesPairingStatus(t *testing.T) {
 	}))
 	defer server.Close()
 
-	acc.SetPairingCode("TESTCODE", sessionKey)
 	sts := startTestSessionTransport(ctx, t, acc, sessionKey, server.URL, 1500*time.Millisecond)
 	err := acc.waitSessionTransportReady(ctx, sts)
 	if err == nil {
@@ -127,18 +127,13 @@ func TestTerminalTransportStartupFailurePublishesPairingStatus(t *testing.T) {
 		t.Fatalf("startup retry did not retain attempt ownership: %d requests", ticketRequests.Load())
 	}
 
-	snap := waitForPairingStatus(ctx, t, acc, PairingStatusSignalingFailed)
-	if snap.ErrMsg != err.Error() {
-		t.Fatalf("pairing error %q != startup error %q", snap.ErrMsg, err)
-	}
 }
 
-func TestTransportStartupCancellationDoesNotPublishPairingFailure(t *testing.T) {
+func TestTransportStartupCancellationReturnsCancellation(t *testing.T) {
 	ctx := t.Context()
 	acc, sessionKey, release := newPairingTransportAccount(ctx, t)
 	defer release()
 
-	acc.SetPairingCode("TESTCODE", sessionKey)
 	transportCtx, transportCancel := context.WithCancel(ctx)
 	defer transportCancel()
 	sts := startTestSessionTransport(transportCtx, t, acc, sessionKey, "", time.Second)
@@ -148,18 +143,14 @@ func TestTransportStartupCancellationDoesNotPublishPairingFailure(t *testing.T) 
 	if err := acc.waitSessionTransportReady(waitCtx, sts); !errors.Is(err, context.Canceled) {
 		t.Fatalf("startup cancellation returned %v", err)
 	}
-	snap := acc.GetPairingSnapshot()
-	if snap.Status == PairingStatusSignalingFailed {
-		t.Fatalf("caller cancellation published signaling failure: %q", snap.ErrMsg)
-	}
+
 }
 
-func TestSupersededTransportStartupDoesNotPublishPairingFailure(t *testing.T) {
+func TestSupersededTransportStartupReturnsSuperseded(t *testing.T) {
 	ctx := t.Context()
 	acc, sessionKey, release := newPairingTransportAccount(ctx, t)
 	defer release()
 
-	acc.SetPairingCode("TESTCODE", sessionKey)
 	transportCtx, transportCancel := context.WithCancel(ctx)
 	defer transportCancel()
 	sts := startTestSessionTransport(transportCtx, t, acc, sessionKey, "", time.Second)
@@ -170,10 +161,7 @@ func TestSupersededTransportStartupDoesNotPublishPairingFailure(t *testing.T) {
 		t.Fatalf("superseded startup returned %v", err)
 	}
 	acc.stopSessionTransportState(sts)
-	snap := acc.GetPairingSnapshot()
-	if snap.Status == PairingStatusSignalingFailed {
-		t.Fatalf("supersession published signaling failure: %q", snap.ErrMsg)
-	}
+
 }
 
 func TestCreateSessionTransportCancellationAfterReadyRecreatesCurrent(t *testing.T) {

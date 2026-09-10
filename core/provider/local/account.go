@@ -93,12 +93,6 @@ type ProviderAccount struct {
 	gcCleanupRunner *provider_gccleanup.Runner
 	// gcCleanupCollect overrides cleanup collection in tests.
 	gcCleanupCollect provider_gccleanup.CollectFunc
-	// pairing tracks an active pairing flow, nil when not active.
-	pairing *pairingState
-	// pairingCtx is the ProviderAccount lifecycle context for pairing routines.
-	pairingCtx context.Context
-	// pairingBcast guards pairing state changes.
-	pairingBcast broadcast.Broadcast
 }
 
 // GetVolume returns the parent volume for the account.
@@ -277,9 +271,6 @@ func (t *providerAccountTracker) executeProviderAccountTracker(rctx context.Cont
 	defer providerAcc.sessions.ClearContext()
 
 	// Cleanup on exit.
-	providerAcc.setPairingContext(ctx)
-	defer providerAcc.setPairingContext(nil)
-	defer providerAcc.ClearPairingState()
 	defer providerAcc.StopSessionTransport()
 	defer providerAcc.StopP2PSync()
 

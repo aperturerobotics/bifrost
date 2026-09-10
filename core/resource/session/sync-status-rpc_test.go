@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/s4wave/spacewave/core/pairing"
+
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/starpc/srpc"
 	"github.com/pkg/errors"
@@ -329,7 +331,7 @@ func TestSyncStatusLocalNoPeerAggregation(t *testing.T) {
 	t.Parallel()
 
 	resp := syncStatusFromLocalState(
-		provider_local.PairingSnapshot{Status: provider_local.PairingStatusIdle},
+		pairing.Snapshot{Status: pairing.StatusIdle},
 		false,
 		false,
 	)
@@ -349,7 +351,7 @@ func TestSyncStatusLocalP2PLifecycleAggregation(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		pairing    provider_local.PairingSnapshot
+		pairing    pairing.Snapshot
 		transport  bool
 		p2pRunning bool
 		state      s4wave_session.SyncStatusState
@@ -364,8 +366,8 @@ func TestSyncStatusLocalP2PLifecycleAggregation(t *testing.T) {
 		},
 		{
 			name: "pairing active",
-			pairing: provider_local.PairingSnapshot{
-				Status: provider_local.PairingStatusWaitingForPeer,
+			pairing: pairing.Snapshot{
+				Status: pairing.StatusWaitingForPeer,
 			},
 			transport: true,
 			state:     s4wave_session.SyncStatusState_SyncStatusState_SYNCED,
@@ -380,8 +382,8 @@ func TestSyncStatusLocalP2PLifecycleAggregation(t *testing.T) {
 		},
 		{
 			name: "pairing error",
-			pairing: provider_local.PairingSnapshot{
-				Status: provider_local.PairingStatusFailed,
+			pairing: pairing.Snapshot{
+				Status: pairing.StatusFailed,
 				ErrMsg: "pairing failed",
 			},
 			transport: true,

@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	provider_local "github.com/s4wave/spacewave/core/provider/local"
 	"github.com/s4wave/spacewave/core/session"
 	"github.com/s4wave/spacewave/net/peer"
 	s4wave_session "github.com/s4wave/spacewave/sdk/session"
@@ -17,9 +16,9 @@ func (r *SessionResource) ConfirmPairing(ctx context.Context, req *s4wave_sessio
 		return nil, errors.New("session is locked")
 	}
 
-	localAcc, ok := r.session.GetProviderAccount().(*provider_local.ProviderAccount)
-	if !ok {
-		return nil, errors.New("confirm pairing only supported for local provider")
+	engine, err := r.getPairingEngine()
+	if err != nil {
+		return nil, err
 	}
 
 	remotePeerID, err := peer.IDB58Decode(req.GetRemotePeerId())
@@ -27,7 +26,7 @@ func (r *SessionResource) ConfirmPairing(ctx context.Context, req *s4wave_sessio
 		return nil, errors.Wrap(err, "decode remote peer ID")
 	}
 
-	ref, err := localAcc.GetPairingResult(remotePeerID)
+	ref, err := engine.Result(remotePeerID)
 	if err != nil {
 		return nil, err
 	}

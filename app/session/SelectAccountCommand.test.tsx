@@ -41,7 +41,8 @@ vi.mock('@s4wave/web/hooks/useRootResource.js', () => ({
     value: { getSessionMetadata: h.getSessionMetadata },
   }),
 }))
-vi.mock('@s4wave/web/router/app-path.js', () => ({
+vi.mock('@s4wave/web/router/app-path.js', async (importOriginal) => ({
+  ...(await importOriginal()),
   getAppPath: () => h.path,
   setAppPath: (path: string) => {
     h.navigate({ path })

@@ -138,6 +138,7 @@ describe('SpaceObjectContainer', () => {
       7,
       'space/git',
       'repo/demo',
+      '',
     )
     const props = h.objectViewer.mock.calls[0]?.[0]
     expect(props?.objectInfo?.info?.value?.objectType).toBe('unixfs/fs-node')

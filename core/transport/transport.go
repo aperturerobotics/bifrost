@@ -40,6 +40,8 @@ type SessionTransport struct {
 	bcast broadcast.Broadcast
 	// childBus is the session-scoped child bus.
 	childBus bus.Bus
+	// lifecycleCtx owns controllers added after transport startup.
+	lifecycleCtx context.Context
 	// linkControllers owns the links exposed by each active transport.
 	linkControllers []*transport_controller.Controller
 	// startLocalTransport optionally attaches a native process-local network.
@@ -496,11 +498,13 @@ func (t *SessionTransport) Execute(ctx context.Context) (err error) {
 	}()
 	t.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
 		t.childBus = b
+		t.lifecycleCtx = ctx
 		broadcast()
 	})
 	defer func() {
 		t.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
 			t.childBus = nil
+			t.lifecycleCtx = nil
 			t.linkControllers = nil
 			broadcast()
 		})

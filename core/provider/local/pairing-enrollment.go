@@ -2,139 +2,215 @@ package provider_local
 
 import (
 	"context"
+	"slices"
 	"time"
 
 	"github.com/aperturerobotics/util/ulid"
 	"github.com/pkg/errors"
+	"github.com/s4wave/spacewave/core/pairing"
 	"github.com/s4wave/spacewave/core/provider"
 	"github.com/s4wave/spacewave/core/session"
+	"github.com/s4wave/spacewave/core/transport"
 	"github.com/s4wave/spacewave/db/kvtx"
+	"github.com/s4wave/spacewave/net/crypto"
 	"github.com/s4wave/spacewave/net/peer"
 	stream_packet "github.com/s4wave/spacewave/net/stream/packet"
 )
 
-// pairingEnrollment retains the selected account and receiving Session while
-// the authenticated stream authorizes and persists their attachment.
+// pairingEnrollment binds local membership records to the approved identities.
 type pairingEnrollment struct {
-	offer     *PairingAccount
-	identity  *PairingIdentity
-	replica   *ProviderAccount
-	session   session.Session
-	release   func()
-	proof     string
-	offering  bool
+	offer     *pairing.AccountOffer
+	identity  *pairing.Identity
 	source    peer.ID
 	receiving peer.ID
 }
 
-// preparePairingEnrollment exchanges identities without granting account access.
-func (a *ProviderAccount) preparePairingEnrollment(ctx context.Context, stream *stream_packet.Session, offering bool, localPeer, remotePeer peer.ID) (*pairingEnrollment, error) {
-	// The offering client selects the existing account and creates a fresh operation.
-	if offering {
-		settings, err := a.GetAccountSettingsRef(ctx)
-		if err != nil {
-			return nil, err
-		}
-		storagePeer, err := a.vol.GetPeer(ctx, true)
-		if err != nil {
-			return nil, err
-		}
-		settingsSO, releaseSettings, err := a.MountSharedObject(ctx, settings, nil)
-		if err != nil {
-			return nil, err
-		}
-		defer releaseSettings()
-		snapshot, err := settingsSO.GetSharedObjectState(ctx)
-		if err != nil {
-			return nil, err
-		}
-		accountSettings, _, err := decodeAccountSettingsSnapshot(ctx, snapshot)
-		if err != nil {
-			return nil, err
-		}
-		name := accountSettings.GetDisplayName()
-		if name == "" {
-			name = "Local account"
-		}
-		offer := &PairingAccount{AccountId: a.GetAccountID(), SettingsId: settings.GetProviderResourceRef().GetId(), OperationId: ulid.NewULID(), StoragePeerId: storagePeer.GetPeerID().String(), DisplayName: name}
-		if err := stream.SendMsg(&PairingFrame{Body: &PairingFrame_Account{Account: offer}}); err != nil {
-			return nil, err
-		}
-		frame, err := receivePairingFrame(stream)
-		if err != nil {
-			return nil, err
-		}
-		identity := frame.GetIdentity()
-		if err := validatePairingIdentity(offer, identity, localPeer, remotePeer); err != nil {
-			return nil, err
-		}
-		proof, err := pairingApprovalContext(offer, identity, localPeer, remotePeer)
-		if err != nil {
-			return nil, err
-		}
-		return &pairingEnrollment{offer: offer, identity: identity, offering: true, proof: proof, source: localPeer, receiving: remotePeer, release: func() {}}, nil
-	}
-
-	// Open the source account in this machine's store while preserving other accounts.
-	frame, err := receivePairingFrame(stream)
+// OfferPairingAccount identifies the canonical local account and its replica signer.
+func (a *ProviderAccount) OfferPairingAccount(ctx context.Context, _ crypto.PrivKey) (*pairing.AccountOffer, error) {
+	settings, err := a.GetAccountSettingsRef(ctx)
 	if err != nil {
 		return nil, err
 	}
-	offer := frame.GetAccount()
-	if offer.GetAccountId() == "" || offer.GetSettingsId() == "" || offer.GetOperationId() == "" {
-		return nil, errors.New("pairing source did not offer an account")
-	}
-	if _, _, err := peer.ParsePeerIDWithPubKey(offer.GetStoragePeerId()); err != nil {
-		return nil, errors.Wrap(err, "invalid source storage identity")
-	}
-	account, releaseAccount, err := a.t.p.AccessProviderAccount(ctx, offer.GetAccountId(), nil)
+	storagePeer, err := a.vol.GetPeer(ctx, true)
 	if err != nil {
 		return nil, err
 	}
-	replica := account.(*ProviderAccount)
-	ref, err := replica.preparePairingSession(ctx)
+	settingsSO, releaseSettings, err := a.MountSharedObject(ctx, settings, nil)
 	if err != nil {
-		releaseAccount()
 		return nil, err
 	}
-	sess, releaseSession, err := replica.MountSession(ctx, ref, nil)
+	defer releaseSettings()
+	snapshot, err := settingsSO.GetSharedObjectState(ctx)
 	if err != nil {
-		releaseAccount()
 		return nil, err
 	}
-	release := func() {
-		releaseSession()
-		releaseAccount()
-	}
-
-	// Prove the new Session and volume keys before either user approves the transfer.
-	identity, err := replica.buildPairingIdentity(ctx, offer, sess, remotePeer, localPeer)
+	accountSettings, _, err := decodeAccountSettingsSnapshot(ctx, snapshot)
 	if err != nil {
-		release()
 		return nil, err
 	}
-	proof, err := pairingApprovalContext(offer, identity, remotePeer, localPeer)
-	if err != nil {
-		release()
-		return nil, err
+	name := accountSettings.GetDisplayName()
+	if name == "" {
+		name = "Local account"
 	}
-	if err := stream.SendMsg(&PairingFrame{Body: &PairingFrame_Identity{Identity: identity}}); err != nil {
-		release()
-		return nil, err
+	offer := &pairing.AccountOffer{ProviderId: a.GetProviderID(), RevokedSessionPeerIds: nil, AccountId: a.GetAccountID(), SettingsId: settings.GetProviderResourceRef().GetId(), OperationId: ulid.NewULID(), StoragePeerId: storagePeer.GetPeerID().String(), DisplayName: name}
+	for _, member := range accountSettings.GetSessions() {
+		if member.GetRevoked() {
+			offer.RevokedSessionPeerIds = append(offer.RevokedSessionPeerIds, member.GetPeerId())
+		}
 	}
-	return &pairingEnrollment{offer: offer, identity: identity, replica: replica, session: sess, proof: proof, source: remotePeer, receiving: localPeer, release: release}, nil
+	return offer, nil
 }
 
-// receivePairingFrame returns a protocol frame or the remote operation failure.
-func receivePairingFrame(stream *stream_packet.Session) (*PairingFrame, error) {
-	frame := &PairingFrame{}
-	if err := stream.RecvMsg(frame); err != nil {
+// PreparePairingReceiver reserves a receiving Session without granting account access.
+func (a *ProviderAccount) PreparePairingReceiver(ctx context.Context, offer *pairing.AccountOffer, sourcePeer, receivingPeer peer.ID) (*pairing.Receiver, error) {
+	if offer.GetSettingsId() == "" || offer.GetAccountId() != a.GetAccountID() {
+		return nil, errors.New("pairing source did not offer this local account")
+	}
+	if _, _, err := peer.ParsePeerIDWithPubKey(offer.GetStoragePeerId()); err != nil {
 		return nil, err
 	}
-	if message := frame.GetError(); message != "" {
-		return nil, errors.New(message)
+	ref, err := a.preparePairingSession(ctx)
+	if err != nil {
+		return nil, err
 	}
-	return frame, nil
+	sess, release, err := a.MountSession(ctx, ref, nil)
+	if err != nil {
+		return nil, err
+	}
+	// Repair reserves a fresh key before approval when prior access was revoked.
+	if slices.Contains(offer.GetRevokedSessionPeerIds(), sess.GetPeerId().String()) {
+		release()
+		ref = &session.SessionRef{ProviderResourceRef: &provider.ProviderResourceRef{ProviderId: a.GetProviderID(), ProviderAccountId: a.GetAccountID(), Id: ulid.NewULID()}}
+		if err := a.storePairingSessionRef(ctx, ref); err != nil {
+			return nil, err
+		}
+		sess, release, err = a.MountSession(ctx, ref, nil)
+		if err != nil {
+			return nil, err
+		}
+	}
+	identity, err := a.buildPairingIdentity(ctx, offer, sess, sourcePeer, receivingPeer)
+	if err != nil {
+		release()
+		return nil, err
+	}
+	return &pairing.Receiver{Transport: func(ctx context.Context) (*transport.SessionTransport, error) {
+		return sess.(pairing.Session).GetPairingTransport(ctx, pairing.Relay{})
+	}, Identity: identity, Release: release, Receive: func(ctx context.Context, stream *stream_packet.Session) error {
+		return a.receivePairingEnrollment(ctx, stream, offer, sess, sourcePeer)
+	}}, nil
+}
+
+// storePairingSessionRef replaces the resumable receiver after its prior key
+// was revoked. The rejected key remains durable for audit and cannot be reused.
+func (a *ProviderAccount) storePairingSessionRef(ctx context.Context, ref *session.SessionRef) error {
+	release, err := a.mtx.Lock(ctx)
+	if err != nil {
+		return err
+	}
+	defer release()
+	store, releaseStore, err := a.buildSoObjectStore(ctx)
+	if err != nil {
+		return err
+	}
+	defer releaseStore()
+	data, err := ref.MarshalVT()
+	if err != nil {
+		return err
+	}
+	return kvtx.RunTransaction(ctx, true, func(ctx context.Context) (kvtx.Tx, error) {
+		return store.NewTransaction(ctx, true)
+	}, func(ctx context.Context, tx kvtx.Tx) error {
+		return tx.Set(ctx, SobjectBindingKey("pairing-session"), data)
+	})
+}
+
+// EnrollPairingReceiver authorizes both receiving keys and transfers checkpoints.
+func (a *ProviderAccount) EnrollPairingReceiver(ctx context.Context, stream *stream_packet.Session, offer *pairing.AccountOffer, identity *pairing.Identity, _ crypto.PrivKey, sourcePeer, receivingPeer peer.ID) error {
+	release, err := a.replicaAuth.Lock(ctx)
+	if err != nil {
+		return err
+	}
+	defer release()
+	if err := a.registerPairingReplicas(ctx, &pairingEnrollment{offer: offer, identity: identity, source: sourcePeer, receiving: receivingPeer}); err != nil {
+		return err
+	}
+	for _, entry := range a.soListCtr.GetValue().GetSharedObjects() {
+		object, err := a.enrollPairingObject(ctx, entry, identity)
+		if err != nil {
+			return errors.Wrap(err, "enroll SharedObject "+entry.GetRef().GetProviderResourceRef().GetId())
+		}
+		if err := stream.SendMsg(&pairing.Frame{Body: &pairing.Frame_Object{Object: object}}); err != nil {
+			return err
+		}
+	}
+	remotePeer, _, err := peer.ParsePeerIDWithPubKey(identity.GetSessionProof().GetResponderPeerId())
+	if err != nil {
+		return err
+	}
+	if err := a.retainPairedAccountPeer(ctx, remotePeer); err != nil {
+		return err
+	}
+	return stream.SendMsg(&pairing.Frame{Body: &pairing.Frame_Complete{Complete: true}})
+}
+
+// receivePairingEnrollment imports checkpoints and registers the durable attachment.
+func (a *ProviderAccount) receivePairingEnrollment(ctx context.Context, stream *stream_packet.Session, offer *pairing.AccountOffer, sess session.Session, sourcePeer peer.ID) error {
+	// Bind the canonical settings identity before importing the replica's catalog.
+	if err := a.bindPairingSettings(ctx, offer); err != nil {
+		return err
+	}
+	settingsReceived := false
+	for {
+		frame, err := pairing.ReceiveFrame(stream)
+		if err != nil {
+			return err
+		}
+		if frame.GetComplete() {
+			break
+		}
+		object := frame.GetObject()
+		if err := a.installPairingObject(ctx, offer, object, sourcePeer); err != nil {
+			return err
+		}
+		if object.GetEntry().GetRef().GetProviderResourceRef().GetId() == offer.GetSettingsId() {
+			settingsReceived = true
+		}
+	}
+	if !settingsReceived {
+		return errors.New("source did not provide the canonical account settings")
+	}
+
+	// Publish the durable account attachment through the ordinary Session controller.
+	if err := a.EnsureConfiguredSessionTransport(ctx, sess.GetPrivKey()); err != nil {
+		return err
+	}
+	if err := a.retainPairedAccountPeer(ctx, sourcePeer); err != nil {
+		return err
+	}
+	controller, releaseController, err := session.ExLookupSessionController(ctx, a.t.p.b, "", false, nil)
+	if err != nil {
+		return err
+	}
+	defer releaseController.Release()
+	ref := sess.GetSessionRef()
+	metadata := &session.SessionMetadata{
+		ProviderId: "local", ProviderDisplayName: "Local", ProviderAccountId: a.GetAccountID(), CreatedAt: time.Now().UnixMilli(),
+	}
+	entries, err := controller.ListSessions(ctx)
+	if err != nil {
+		return err
+	}
+	for _, entry := range entries {
+		if entry.GetSessionRef().EqualVT(ref) {
+			metadata = nil
+			break
+		}
+	}
+	if _, err := controller.RegisterSession(ctx, ref, metadata); err != nil {
+		return err
+	}
+	return nil
 }
 
 // preparePairingSession persists one receiving Session reference per account
@@ -208,103 +284,6 @@ func (a *ProviderAccount) preparePairingSession(ctx context.Context) (*session.S
 		return tx.Set(ctx, key, data)
 	})
 	return ref, err
-}
-
-// completePairingEnrollment transfers authorized state after bilateral approval
-// and waits for the receiving machine's durable Session registration.
-func (a *ProviderAccount) completePairingEnrollment(ctx context.Context, stream *stream_packet.Session, enrollment *pairingEnrollment) error {
-	// The source grants each actual receiving identity and streams bounded checkpoints.
-	if enrollment.offering {
-		release, err := a.replicaAuth.Lock(ctx)
-		if err != nil {
-			return err
-		}
-		defer release()
-		if err := a.registerPairingReplicas(ctx, enrollment); err != nil {
-			return err
-		}
-		for _, entry := range a.soListCtr.GetValue().GetSharedObjects() {
-			object, err := a.enrollPairingObject(ctx, entry, enrollment.identity)
-			if err != nil {
-				return errors.Wrap(err, "enroll SharedObject "+entry.GetRef().GetProviderResourceRef().GetId())
-			}
-			if err := stream.SendMsg(&PairingFrame{Body: &PairingFrame_Object{Object: object}}); err != nil {
-				return err
-			}
-		}
-		if err := stream.SendMsg(&PairingFrame{Body: &PairingFrame_Complete{Complete: true}}); err != nil {
-			return err
-		}
-		frame, err := receivePairingFrame(stream)
-		if err != nil {
-			return err
-		}
-		if !frame.GetComplete() {
-			return errors.New("receiving client did not acknowledge account enrollment")
-		}
-		remotePeer, _, err := peer.ParsePeerIDWithPubKey(enrollment.identity.GetSessionProof().GetResponderPeerId())
-		if err != nil {
-			return err
-		}
-		return a.retainPairedAccountPeer(ctx, remotePeer)
-	}
-
-	// Bind the canonical settings identity before importing the replica's catalog.
-	replica := enrollment.replica
-	if err := replica.bindPairingSettings(ctx, enrollment.offer); err != nil {
-		return err
-	}
-	settingsReceived := false
-	for {
-		frame, err := receivePairingFrame(stream)
-		if err != nil {
-			return err
-		}
-		if frame.GetComplete() {
-			break
-		}
-		object := frame.GetObject()
-		if err := replica.installPairingObject(ctx, enrollment.offer, object, enrollment.source); err != nil {
-			return err
-		}
-		if object.GetEntry().GetRef().GetProviderResourceRef().GetId() == enrollment.offer.GetSettingsId() {
-			settingsReceived = true
-		}
-	}
-	if !settingsReceived {
-		return errors.New("source did not provide the canonical account settings")
-	}
-
-	// Publish the durable account attachment through the ordinary Session controller.
-	if err := replica.EnsureConfiguredSessionTransport(ctx, enrollment.session.GetPrivKey()); err != nil {
-		return err
-	}
-	if err := replica.retainPairedAccountPeer(ctx, enrollment.source); err != nil {
-		return err
-	}
-	controller, releaseController, err := session.ExLookupSessionController(ctx, a.t.p.b, "", false, nil)
-	if err != nil {
-		return err
-	}
-	defer releaseController.Release()
-	ref := enrollment.session.GetSessionRef()
-	metadata := &session.SessionMetadata{
-		ProviderId: "local", ProviderDisplayName: "Local", ProviderAccountId: replica.GetAccountID(), CreatedAt: time.Now().UnixMilli(),
-	}
-	entries, err := controller.ListSessions(ctx)
-	if err != nil {
-		return err
-	}
-	for _, entry := range entries {
-		if entry.GetSessionRef().EqualVT(ref) {
-			metadata = nil
-			break
-		}
-	}
-	if _, err := controller.RegisterSession(ctx, ref, metadata); err != nil {
-		return err
-	}
-	return stream.SendMsg(&PairingFrame{Body: &PairingFrame_Complete{Complete: true}})
 }
 
 // retainPairedAccountPeer persists reconnect demand through the account lifecycle.

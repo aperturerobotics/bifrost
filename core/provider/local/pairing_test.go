@@ -13,8 +13,10 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/s4wave/spacewave/core/pairing"
+	"github.com/s4wave/spacewave/core/session"
+
 	websocket "github.com/aperturerobotics/go-websocket"
-	provider_local "github.com/s4wave/spacewave/core/provider/local"
 	api "github.com/s4wave/spacewave/core/provider/spacewave/api"
 	"github.com/s4wave/spacewave/net/crypto"
 	"github.com/s4wave/spacewave/net/peer"
@@ -232,7 +234,7 @@ func TestGeneratePairingCodeSignsRelayRequestWithSigningEnvPrefix(t *testing.T) 
 			srv := newSignedPairingRelayServer(t, tc.envPrefix, sess.GetPeerId())
 			defer srv.Close()
 
-			code, err := acc.GeneratePairingCode(ctx, srv.URL, tc.envPrefix, sess.GetPrivKey(), sess.GetPeerId())
+			code, err := pairingEngineForTest(t, sess).GenerateCode(ctx, pairing.Relay{URL: srv.URL, SigningEnvPrefix: tc.envPrefix})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -264,7 +266,7 @@ func TestPairingCreatesTransport(t *testing.T) {
 	defer srv.Close()
 	defer acc.StopSessionTransport()
 
-	code, err := acc.GeneratePairingCode(ctx, srv.URL, "", sess.GetPrivKey(), sess.GetPeerId())
+	code, err := pairingEngineForTest(t, sess).GenerateCode(ctx, pairing.Relay{URL: srv.URL, SigningEnvPrefix: ""})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -284,7 +286,7 @@ func TestPairingCreatesTransport(t *testing.T) {
 	}
 
 	// Calling again should reuse existing transport.
-	code2, err := acc.GeneratePairingCode(ctx, srv.URL, "", sess.GetPrivKey(), sess.GetPeerId())
+	code2, err := pairingEngineForTest(t, sess).GenerateCode(ctx, pairing.Relay{URL: srv.URL, SigningEnvPrefix: ""})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -322,7 +324,7 @@ func TestCompletePairingWaitsForLink(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got, err := acc.CompletePairing(ctx, srv.URL, "", "TESTCODE", sess.GetPrivKey(), sess.GetPeerId())
+	got, err := pairingEngineForTest(t, sess).CompleteCode(ctx, pairing.Relay{URL: srv.URL, SigningEnvPrefix: ""}, "TESTCODE")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -339,18 +341,12 @@ func TestCompletePairingWaitsForLink(t *testing.T) {
 		t.Fatal("expected child bus to be non-nil")
 	}
 
-	// Verify pairing state tracks the remote peer.
-	if acc.GetPairingRemotePeerID() != remotePeerID {
-		t.Fatalf("pairing remote peer %s != expected %s",
-			acc.GetPairingRemotePeerID().String(), remotePeerID.String())
+	snapshot, _ := pairingEngineForTest(t, sess).Snapshot()
+	if snapshot.RemotePeerID != remotePeerID {
+		t.Fatal("pairing lost the resolved peer")
 	}
 
-	// Verify the link channel exists (directive was added).
-	if acc.GetPairingLinkCh() == nil {
-		t.Fatal("expected pairing link channel to be non-nil")
-	}
-
-	acc.ClearPairingState()
+	pairingEngineForTest(t, sess).Clear()
 	acc.StopSessionTransport()
 }
 
@@ -403,7 +399,7 @@ func TestCompletePairingReplacesEmptyTransportWithSignaling(t *testing.T) {
 		t.Fatalf("settle session transport startup: %v", err)
 	}
 
-	got, err := acc.CompletePairing(ctx, srv.URL, "spacewave-staging", "TESTCODE", sess.GetPrivKey(), sess.GetPeerId())
+	got, err := pairingEngineForTest(t, sess).CompleteCode(ctx, pairing.Relay{URL: srv.URL, SigningEnvPrefix: "spacewave-staging"}, "TESTCODE")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -431,8 +427,8 @@ func TestWatchPairingStatus(t *testing.T) {
 	defer release()
 
 	// Initial state: idle.
-	snap := acc.GetPairingSnapshot()
-	if snap.Status != provider_local.PairingStatusIdle {
+	snap, _ := pairingEngineForTest(t, sess).Snapshot()
+	if snap.Status != pairing.StatusIdle {
 		t.Fatalf("expected idle, got %d", snap.Status)
 	}
 
@@ -445,13 +441,13 @@ func TestWatchPairingStatus(t *testing.T) {
 	srv := newPairingRelayServer("")
 	defer srv.Close()
 
-	code, err := acc.GeneratePairingCode(ctx, srv.URL, "", sess.GetPrivKey(), sess.GetPeerId())
+	code, err := pairingEngineForTest(t, sess).GenerateCode(ctx, pairing.Relay{URL: srv.URL, SigningEnvPrefix: ""})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	snap = acc.GetPairingSnapshot()
-	if snap.Status != provider_local.PairingStatusCodeGenerated {
+	snap, _ = pairingEngineForTest(t, sess).Snapshot()
+	if snap.Status != pairing.StatusCodeGenerated {
 		t.Fatalf("expected CODE_GENERATED, got %d", snap.Status)
 	}
 	if snap.Code != code {
@@ -476,13 +472,13 @@ func TestWatchPairingStatus(t *testing.T) {
 		}
 	}
 
-	_, err = acc.CompletePairing(ctx, srv2.URL, "", "TESTCODE", sess.GetPrivKey(), sess.GetPeerId())
+	_, err = pairingEngineForTest(t, sess).CompleteCode(ctx, pairing.Relay{URL: srv2.URL, SigningEnvPrefix: ""}, "TESTCODE")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	snap = acc.GetPairingSnapshot()
-	if snap.Status != provider_local.PairingStatusWaitingForPeer {
+	snap, _ = pairingEngineForTest(t, sess).Snapshot()
+	if snap.Status != pairing.StatusWaitingForPeer {
 		t.Fatalf("expected WAITING_FOR_PEER, got %d", snap.Status)
 	}
 	if snap.RemotePeerID != remotePeerID {
@@ -490,9 +486,9 @@ func TestWatchPairingStatus(t *testing.T) {
 	}
 
 	// Set failed: status transitions to FAILED.
-	acc.SetPairingFailed("test error")
-	snap = acc.GetPairingSnapshot()
-	if snap.Status != provider_local.PairingStatusFailed {
+	pairingEngineForTest(t, sess).SetFailed("test error")
+	snap, _ = pairingEngineForTest(t, sess).Snapshot()
+	if snap.Status != pairing.StatusFailed {
 		t.Fatalf("expected FAILED, got %d", snap.Status)
 	}
 	if snap.ErrMsg != "test error" {
@@ -500,11 +496,20 @@ func TestWatchPairingStatus(t *testing.T) {
 	}
 
 	// Clear: back to idle.
-	acc.ClearPairingState()
-	snap = acc.GetPairingSnapshot()
-	if snap.Status != provider_local.PairingStatusIdle {
+	pairingEngineForTest(t, sess).Clear()
+	snap, _ = pairingEngineForTest(t, sess).Snapshot()
+	if snap.Status != pairing.StatusIdle {
 		t.Fatalf("expected idle after clear, got %d", snap.Status)
 	}
 
 	acc.StopSessionTransport()
+}
+
+func pairingEngineForTest(t *testing.T, sess session.Session) *pairing.Engine {
+	t.Helper()
+	engine, err := sess.(pairing.Session).GetPairingEngine()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return engine
 }

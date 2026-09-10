@@ -380,9 +380,6 @@ func (a *ProviderAccount) cleanupSessionTransportReadyError(ctx context.Context,
 		return stopErr
 	}
 	sts.setExited(err)
-	if !errors.Is(err, context.Canceled) {
-		a.SetPairingSignalingFailed(err.Error())
-	}
 	return err
 }
 

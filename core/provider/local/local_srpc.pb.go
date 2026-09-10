@@ -8,6 +8,7 @@ import (
 	context "context"
 
 	srpc "github.com/aperturerobotics/starpc/srpc"
+	pairing "github.com/s4wave/spacewave/core/pairing"
 )
 
 type SRPCAccountReplicaServiceClient interface {
@@ -15,7 +16,7 @@ type SRPCAccountReplicaServiceClient interface {
 	SRPCClient() srpc.Client
 
 	// FetchObject authorizes the caller's registered storage identity and exports a checkpoint.
-	FetchObject(ctx context.Context, in *AccountReplicaObjectRequest) (*PairingSharedObject, error)
+	FetchObject(ctx context.Context, in *AccountReplicaObjectRequest) (*pairing.SharedObject, error)
 }
 
 type srpcAccountReplicaServiceClient struct {
@@ -36,8 +37,8 @@ func NewSRPCAccountReplicaServiceClientWithServiceID(cc srpc.Client, serviceID s
 
 func (c *srpcAccountReplicaServiceClient) SRPCClient() srpc.Client { return c.cc }
 
-func (c *srpcAccountReplicaServiceClient) FetchObject(ctx context.Context, in *AccountReplicaObjectRequest) (*PairingSharedObject, error) {
-	out := new(PairingSharedObject)
+func (c *srpcAccountReplicaServiceClient) FetchObject(ctx context.Context, in *AccountReplicaObjectRequest) (*pairing.SharedObject, error) {
+	out := new(pairing.SharedObject)
 	err := c.cc.ExecCall(ctx, c.serviceID, "FetchObject", in, out)
 	if err != nil {
 		return nil, err
@@ -47,7 +48,7 @@ func (c *srpcAccountReplicaServiceClient) FetchObject(ctx context.Context, in *A
 
 type SRPCAccountReplicaServiceServer interface {
 	// FetchObject authorizes the caller's registered storage identity and exports a checkpoint.
-	FetchObject(context.Context, *AccountReplicaObjectRequest) (*PairingSharedObject, error)
+	FetchObject(context.Context, *AccountReplicaObjectRequest) (*pairing.SharedObject, error)
 }
 
 const SRPCAccountReplicaServiceServiceID = "provider.local.AccountReplicaService"

@@ -25,7 +25,8 @@ vi.mock('@s4wave/app/hooks/useSessionAccountStatuses.js', () => ({
 vi.mock('@s4wave/web/router/router.js', () => ({
   useNavigate: () => mockNavigate,
 }))
-vi.mock('@s4wave/web/router/app-path.js', () => ({
+vi.mock('@s4wave/web/router/app-path.js', async (importOriginal) => ({
+  ...(await importOriginal()),
   setAppPath: (path: string) => {
     mockNavigate({ path })
   },

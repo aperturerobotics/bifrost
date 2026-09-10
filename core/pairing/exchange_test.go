@@ -1,4 +1,4 @@
-package provider_local
+package pairing
 
 import (
 	"context"
@@ -18,8 +18,8 @@ func TestPairingApprovalCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 	sess := stream_packet.NewSession(left, 1024)
-	status, err := exchangePairingApproval(ctx, sess, make(chan bool), "operation", func(PairingStatus) {})
-	if err == nil || status != PairingStatusConfirmationTimeout {
+	status, err := exchangeApproval(ctx, sess, make(chan bool), "operation", func(Status) {})
+	if err == nil || status != StatusConfirmationTimeout {
 		t.Fatalf("canceled approval returned status %v, error %v", status, err)
 	}
 	_ = right.SetWriteDeadline(time.Now().Add(time.Second))

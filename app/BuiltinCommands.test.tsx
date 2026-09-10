@@ -102,7 +102,8 @@ vi.mock('@s4wave/app/ShellTabContext.js', () => ({
   }),
 }))
 
-vi.mock('@s4wave/web/router/app-path.js', () => ({
+vi.mock('@s4wave/web/router/app-path.js', async (importOriginal) => ({
+  ...(await importOriginal()),
   getAppPath: () => builtinCommandMocks.appPath,
   setAppPath: (path: string) => builtinCommandMocks.setAppPath(path),
 }))

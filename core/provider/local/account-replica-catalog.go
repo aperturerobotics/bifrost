@@ -5,6 +5,8 @@ import (
 	"slices"
 	"time"
 
+	"github.com/s4wave/spacewave/core/pairing"
+
 	"github.com/aperturerobotics/starpc/srpc"
 	"github.com/pkg/errors"
 	account_settings "github.com/s4wave/spacewave/core/account/settings"
@@ -213,7 +215,7 @@ func (a *ProviderAccount) fetchAccountReplicaObject(ctx context.Context, state *
 		if !object.GetEntry().GetRef().EqualVT(entry.GetRef()) {
 			return errors.New("account peer returned a different object")
 		}
-		return a.installPairingObject(ctx, &PairingAccount{AccountId: a.GetAccountID(), SettingsId: settingsID, StoragePeerId: member.GetStoragePeerId()}, object, remote)
+		return a.installPairingObject(ctx, &pairing.AccountOffer{AccountId: a.GetAccountID(), SettingsId: settingsID, StoragePeerId: member.GetStoragePeerId()}, object, remote)
 	}
 	if lastErr == nil {
 		lastErr = errors.New("no other active account Session can provide the object")
