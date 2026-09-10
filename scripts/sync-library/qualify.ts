@@ -199,13 +199,13 @@ await writeFile(
 )
 await run('install', [bun, 'install', '--ignore-scripts'], consumer)
 
-// Verify package provenance and SSR imports without Go on the consumer's PATH.
+// Verify package provenance and run standalone consumers without executable lookup.
 const distribution = join(consumer, 'node_modules/spacewave/dist')
 assert.deepEqual(
   JSON.parse(await readFile(join(distribution, 'build.json'), 'utf8')),
   metadata,
 )
-const noGo = { PATH: `${dirname(node)}:/usr/bin:/bin` }
+const noGo = { PATH: '' }
 await run(
   'ssr-import',
   [
@@ -290,7 +290,7 @@ await writeFile(
 )
 await run('consumer-types', [bun, 'x', 'tsgo', '-p', 'tsconfig.json'], consumer)
 
-// Exercise browser and React subscriptions in Chromium and WebKit.
+// Exercise browser subscriptions with the system utilities their launchers require.
 await bundle('e2e/sync-library/browser.ts', 'browser.mjs', true, ['spacewave'])
 await cp('e2e/sync-library/react.tsx', join(consumer, 'react-fixture.tsx'))
 await cp('e2e/sync-library/schema.ts', join(consumer, 'schema.ts'))
@@ -306,12 +306,7 @@ await run(
   consumer,
 )
 await bundle('e2e/sync-library/journey.test.ts', 'journey.test.mjs')
-await run(
-  'browser-journey',
-  [node, '--test', 'journey.test.mjs'],
-  consumer,
-  noGo,
-)
+await run('browser-journey', [node, '--test', 'journey.test.mjs'], consumer)
 
 // Copy the published example and confirm that it selects this package version.
 const example = join(working, 'example')
@@ -335,7 +330,6 @@ await run('example-install', [bun, 'install', '--ignore-scripts'], example)
 await run('example-types', [bun, 'x', 'tsgo', '-p', 'tsconfig.json'], example)
 await bundle('e2e/sync-library/example.test.ts', 'example.test.mjs')
 await run('example-browser', [node, '--test', 'example.test.mjs'], consumer, {
-  ...noGo,
   SYNC_EXAMPLE_DIRECTORY: example,
 })
 
