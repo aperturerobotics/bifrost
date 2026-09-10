@@ -1,0 +1,99 @@
+name: npm release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Qualify npm package
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.27.1'
+          cache: false
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24.x'
+          package-manager-cache: false
+      - name: Install build dependencies
+        run: |
+          bun install --frozen-lockfile --ignore-scripts
+          bun install --cwd bldr/dist/deps --frozen-lockfile --ignore-scripts
+          go mod vendor
+      - name: Install browser test runtimes
+        run: bunx playwright install --with-deps chromium webkit
+      - name: Build and qualify the package
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            bun run qualify:sync --release-tag "${GITHUB_REF_NAME}"
+          else
+            bun run qualify:sync
+          fi
+      - name: Upload qualified package
+        uses: actions/upload-artifact@v7
+        with:
+          name: spacewave-npm
+          path: |
+            .bldr-dist/sync-library/*.tgz
+            .bldr-dist/sync-library/*.tgz.sha256
+            .bldr-dist/sync-library/qualification.json
+          if-no-files-found: error
+      - name: Upload qualification logs
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: spacewave-npm-logs
+          path: .tmp/sync-qualification/*.log
+          if-no-files-found: ignore
+
+  publish:
+    name: Publish to npm
+    needs: build
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24.x'
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false
+      - name: Install npm with trusted publishing support
+        run: npm install --global npm@11 --ignore-scripts
+      - uses: actions/download-artifact@v8
+        with:
+          name: spacewave-npm
+          path: package
+      - name: Verify and publish the qualified tarball
+        working-directory: package
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          archive="spacewave-${version}.tgz"
+          sha256sum --check "${archive}.sha256"
+          dist_tag=latest
+          if [[ "${version}" == *-* ]]; then
+            dist_tag=next
+          fi
+          npm publish "./${archive}" --tag "${dist_tag}" --access public --ignore-scripts

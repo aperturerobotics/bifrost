@@ -2,6 +2,13 @@
   "name": "spacewave",
   "version": "0.1.0-rc.1",
   "description": "Typed live collections backed by a durable Spacewave World",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/s4wave/spacewave.git",
+    "directory": "packages/spacewave"
+  },
+  "homepage": "https://github.com/s4wave/spacewave/tree/master/packages/spacewave#readme",
+  "bugs": "https://github.com/s4wave/spacewave/issues",
   "type": "module",
   "engines": {
     "node": ">=24.15.0 <25"
