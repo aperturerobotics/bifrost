@@ -1,12 +1,14 @@
-import { createServer as createHTTPServer } from 'node:http'
 import { readFile } from 'node:fs/promises'
+import { createServer as createHTTPServer } from 'node:http'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { build } from 'esbuild'
 import { SyncError } from 'spacewave'
 import { createServer } from 'spacewave/server'
+
 import { schema } from './schema.ts'
 
+// Build both browser entry points before accepting page requests.
 const directory = dirname(fileURLToPath(import.meta.url))
 await build({
   absWorkingDir: directory,
@@ -19,21 +21,31 @@ await build({
   define: { 'process.env.NODE_ENV': '"production"' },
 })
 
+// Open the persistent task dataset and admit only the local demo identity.
 const server = await createServer({
   directory: process.env.DATA_DIRECTORY ?? join(directory, '.data'),
   schema,
-  // Replace the local demo identity with your application's token verifier.
+
+  // Replace this verifier with the application's real authentication provider.
   authenticate: async (token) => {
-    if (token !== 'local-demo')
+    if (token !== 'local-demo') {
       throw new SyncError('AUTHENTICATION', 'Sign in again')
+    }
     return { subject: 'demo-user', scope: 'demo' }
   },
   authorize: ({ scope }) => scope === 'demo',
+
+  // Mutations read and write through one server transaction.
   mutations: {
     completeTodo: async (context, { id }) => {
+      // Read the task before changing its completion state.
       const todos = context.collection('todos')
       const todo = await todos.get(id)
-      if (!todo) throw new SyncError('VALIDATION', 'This task no longer exists')
+      if (!todo) {
+        throw new SyncError('VALIDATION', 'This task no longer exists')
+      }
+
+      // Update the task within this transaction and return its value.
       const updated = { ...todo, done: true }
       await todos.put(id, updated)
       return updated
@@ -41,6 +53,7 @@ const server = await createServer({
   },
 })
 
+// Seed the board through the same authorized collection API used by clients.
 const tasks = server
   .as({ subject: 'demo-user', scope: 'demo' })
   .collection('todos')
@@ -51,6 +64,7 @@ if (!(await tasks.get('welcome'))) {
   })
 }
 
+// Serve only the example's page, bundle, and stylesheet routes.
 const files = new Map([
   ['/', ['vanilla.html', 'text/html']],
   ['/react', ['react.html', 'text/html']],
@@ -59,6 +73,7 @@ const files = new Map([
   ['/style.css', ['style.css', 'text/css']],
 ])
 const http = createHTTPServer((request, response) => {
+  // Resolve the request through the fixed route map.
   const path = new URL(request.url ?? '/', 'http://localhost').pathname
   const file = files.get(path)
   if (!file) {
@@ -66,9 +81,12 @@ const http = createHTTPServer((request, response) => {
     response.end()
     return
   }
-  void readFile(join(directory, file[0])).then(
+
+  // Send the matching asset or report a read failure.
+  const [filename, contentType] = file
+  void readFile(join(directory, filename)).then(
     (data) => {
-      response.setHeader('Content-Type', file[1])
+      response.setHeader('Content-Type', contentType)
       response.end(data)
     },
     () => {
@@ -77,6 +95,8 @@ const http = createHTTPServer((request, response) => {
     },
   )
 })
+
+// Share the HTTP listener between pages and the sync endpoint.
 server.attach(http)
 const port = Number(process.env.PORT ?? 8787)
 await new Promise<void>((resolve, reject) => {
@@ -84,17 +104,25 @@ await new Promise<void>((resolve, reject) => {
   http.listen(port, '127.0.0.1', resolve)
 })
 const address = http.address()
-if (address && typeof address !== 'string')
+if (address && typeof address !== 'string') {
   console.log(`Task board: http://127.0.0.1:${address.port}`)
+}
 
+// Repeated shutdown signals share one close operation.
 let closing: Promise<void> | undefined
-const close = () =>
-  (closing ??= (async () => {
+
+/** close releases sync connections and storage, then the HTTP server we supplied. */
+function close(): Promise<void> {
+  closing ??= (async () => {
     await server.close()
     await new Promise<void>((resolve, reject) =>
       http.close((error) => (error ? reject(error) : resolve())),
     )
-  })())
+  })()
+  return closing
+}
+
+// Let both normal interruption and service termination finish cleanup.
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.once(signal, () => {
     void close().catch((error: unknown) => {

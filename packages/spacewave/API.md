@@ -344,3 +344,21 @@ const http = createHTTPServer((request, response) => response.end())
 server.attach(http, { path: '/sync', allowedOrigins: ['https://example.com'] })
 http.listen(3000)
 ```
+
+## Limits and performance
+
+Queries return complete, ordered snapshots of a collection or prefix. Defaults bound a query to 10,000 records and 8 MiB of encoded keys and values, and a record to 256 KiB. Exceeding a bound produces `QUERY_LIMIT`. These are safety bounds, not throughput guarantees.
+
+A qualification workload on Node 24.21.0 and macOS arm64 used 1,000 numeric records, three subscribers, and ten writes. Identical queries shared one producer.
+
+| Measurement | Observed sample |
+| --- | --- |
+| Write acceptance, p50 / p95 | 234 / 242 ms |
+| Delivery to all subscribers, p50 / p95 | 947 / 1,041 ms |
+| Initial bulk seeding | 13.57 seconds |
+| RSS when ready / after the workload | 336 MB / 1.10 GB |
+| Encoded snapshot | 28.9 KB |
+
+Each changed revision still requires a complete scan. RSS includes the compiled runtime and is not a retained-heap measurement. These observations describe one workload; measure representative scan and delivery time, memory, and storage growth before raising limits. Acceptance receipts and World history accumulate for the dataset lifetime.
+
+A qualified release artifact's `qualification.json` records its own sample, source revision, package sizes, and checksum. See the [README](README.md) for supported runtimes and current release scope.

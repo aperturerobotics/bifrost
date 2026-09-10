@@ -1,13 +1,18 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import {
+  useCallback,
+  useState,
+  useSyncExternalStore,
+  type FormEvent,
+} from 'react'
 import { createRoot } from 'react-dom/client'
 import { connect, SyncError, type ConnectionState } from 'spacewave'
 import { createSyncContext } from 'spacewave/react'
+
 import { schema } from './schema.ts'
 
 const { SyncProvider, useDatabase, useCollection } = createSyncContext(schema)
 
-// UncertainWrite keeps the exact original write closure and requestId so Retry
-// resubmits the identical operation; no offline queue is kept.
+/** UncertainWrite retains the original input and request ID for an explicit retry. */
 interface UncertainWrite {
   requestId: string
   message: string
@@ -20,28 +25,32 @@ const connectionLabels: Record<ConnectionState['status'], string> = {
   closed: 'Disconnected',
 }
 
-// TaskBoard renders the live task list and issues every write against the
-// supplied db. Record state comes only from useCollection; a write never
-// inserts a row before the server accepts it.
+/** TaskBoard renders accepted tasks and keeps pending form input separate. */
 function TaskBoard() {
+  // Read task and connection state from the database's existing subscriptions.
   const db = useDatabase()
   const todos = useCollection('todos')
-  const [connection, setConnection] = useState<ConnectionState>(
-    db.connection.current,
+  const connection = useSyncExternalStore(
+    db.connection.subscribe,
+    () => db.connection.current,
+    () => db.connection.current,
   )
+
+  // Keep editable input and unresolved writes outside the accepted task snapshot.
   const [title, setTitle] = useState('')
   const [pending, setPending] = useState(false)
   const [uncertain, setUncertain] = useState<UncertainWrite | null>(null)
   const [writeError, setWriteError] = useState<string | null>(null)
 
-  useEffect(() => db.connection.subscribe(setConnection), [db])
-
-  // runWrite runs one write at a time and reports UNCERTAIN with its retry.
+  /** runWrite exposes an uncertain write's original operation for a later retry. */
   const runWrite = useCallback(
     async (run: () => Promise<unknown>, requestId: string): Promise<void> => {
+      // Suspend new edits and clear the previous write's feedback.
       setPending(true)
       setUncertain(null)
       setWriteError(null)
+
+      // Keep failed writes recoverable without inserting unaccepted task rows.
       try {
         await run()
       } catch (error) {
@@ -63,10 +72,14 @@ function TaskBoard() {
     [],
   )
 
+  /** addTask preserves the title and generated IDs until the write is accepted. */
   const addTask = (event: FormEvent<HTMLFormElement>) => {
+    // Accept a nonempty title only while connected and ready for another write.
     event.preventDefault()
     const trimmed = title.trim()
     if (!trimmed || pending || connection.status !== 'ready') return
+
+    // Capture the write once so Retry submits the same input with the same ID.
     const id = crypto.randomUUID()
     const requestId = crypto.randomUUID()
     void runWrite(async () => {
@@ -77,6 +90,7 @@ function TaskBoard() {
     }, requestId)
   }
 
+  /** completeTask invokes the server mutation with a recoverable request ID. */
   const completeTask = (id: string) => {
     const requestId = crypto.randomUUID()
     void runWrite(
@@ -85,6 +99,7 @@ function TaskBoard() {
     )
   }
 
+  // Describe the snapshot's freshness without treating stale data as current.
   const todosStatus =
     todos.status === 'loading'
       ? 'Loading tasks…'
@@ -94,6 +109,7 @@ function TaskBoard() {
           }`
         : 'Showing the last saved view while reconnecting…'
 
+  // Render connection feedback, write controls, and the accepted task list.
   return (
     <>
       <h1>Task board</h1>
@@ -101,6 +117,7 @@ function TaskBoard() {
         Two tabs share one server: the <a href="/">Vanilla</a> example and this{' '}
         <a href="/react">React</a> example.
       </p>
+
       <p className="status">
         {`Connection: ${connectionLabels[connection.status]}`}
         {connection.error ? `: ${connection.error.message}` : ''}
@@ -112,6 +129,7 @@ function TaskBoard() {
       ) : (
         <p className="status">{todosStatus}</p>
       )}
+
       <form onSubmit={addTask}>
         <label htmlFor="new-task">
           Add a task
@@ -132,6 +150,7 @@ function TaskBoard() {
           Add task
         </button>
       </form>
+
       {writeError ? <p className="notice">{writeError}</p> : null}
       {uncertain ? (
         <p className="notice">
@@ -147,6 +166,7 @@ function TaskBoard() {
           </button>
         </p>
       ) : null}
+
       <ul className="tasks">
         {todos.data.map((entry) => (
           <li className="task" key={entry.key} data-done={entry.value.done}>
@@ -168,10 +188,13 @@ function TaskBoard() {
   )
 }
 
-// start connects, mounts the board into #app, and registers pagehide teardown.
+/** start connects the board and releases its React tree and database on pagehide. */
 async function start(): Promise<void> {
+  // Require the page's mount point before opening a connection.
   const container = document.getElementById('app')
   if (!container) throw new Error('Missing #app mount point')
+
+  // Connect to the sync endpoint served alongside this page.
   const url = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${
     location.host
   }/sync`
@@ -180,12 +203,16 @@ async function start(): Promise<void> {
     schema,
     getAccessToken: () => 'local-demo',
   })
+
+  // Supply the admitted database to every task-board component.
   const root = createRoot(container)
   root.render(
     <SyncProvider db={db}>
       <TaskBoard />
     </SyncProvider>,
   )
+
+  // Unmount subscriptions before closing the database they use.
   window.addEventListener(
     'pagehide',
     () => {
@@ -196,6 +223,7 @@ async function start(): Promise<void> {
   )
 }
 
+// Replace the loading view with a readable failure if startup cannot finish.
 start().catch((error: unknown) => {
   const container = document.getElementById('app') ?? document.body
   const notice = document.createElement('p')
