@@ -3,6 +3,7 @@ package provider.spacewave.api;
 
 import "github.com/s4wave/spacewave/sdk/provider/spacewave/spacewave.proto";
 import "github.com/s4wave/spacewave/core/session/session.proto";
+import "github.com/s4wave/spacewave/core/provider/provider.proto";
 import "github.com/s4wave/spacewave/core/session/handoff/handoff.proto";
 import "github.com/s4wave/spacewave/core/sobject/sobject.proto";
 import "github.com/s4wave/spacewave/net/peer/peer.proto";
@@ -95,6 +96,29 @@ message AccountSessionInfo {
 message ListAccountSessionsResponse {
   // Sessions is the authoritative cloud auth session set for the account.
   repeated AccountSessionInfo sessions = 1;
+}
+
+// AccountMigrationRequest authorizes source Sessions under the destination account.
+// The ordinary Session-registration endpoint continues to reject cross-account peers.
+message AccountMigrationRequest {
+  // Transition fixes the complete account and Session relationship.
+  .provider.AccountTransition transition = 1;
+  // SourcePeerId identifies the source USER Session authorizing the move.
+  string source_peer_id = 2;
+  // SourceSignature signs the migration domain followed by the binary Transition.
+  bytes source_signature = 3;
+  // CheckOnly performs permission and capacity preflight without mutation.
+  bool check_only = 4;
+}
+
+// AccountDepartureRequest retains an authenticated redirect from cloud to local storage.
+message AccountDepartureRequest {
+  // Transition is the destination's durable resource and Session acceptance.
+  .provider.AccountTransition transition = 1;
+  // DestinationPeerId identifies the independent receiving account Session.
+  string destination_peer_id = 2;
+  // DestinationSignature signs the same migration domain and binary Transition.
+  bytes destination_signature = 3;
 }
 
 // ErrorResponse is a standard error response.
@@ -1412,6 +1436,8 @@ message AccountInfoResponse {
   int64 deleted_at = 12;
   // EntityUuid is the stable entity generation for this account.
   string entity_uuid = 13;
+  // Transition identifies the most recent provider-authorized move of this Session.
+  .provider.AccountTransition transition = 14;
 }
 
 // ListKeypairsResponse is the response body for GET /account/keypairs.
@@ -1543,6 +1569,10 @@ message AccountStateResponse {
   int64 lifecycle_updated_at = 15;
   // DeletedAt is when the account became logically deleted (ms), if any.
   int64 deleted_at = 16;
+  // Transition redirects this Session before mounting another account's metadata.
+  .provider.AccountTransition transition = 17;
+  // AcceptedMigrations retain source redirects that destination replicas deliver.
+  repeated .provider.AccountTransition accepted_migrations = 18;
 }
 
 // AccountStateCache is the local cache of account state for ObjectStore persistence.
@@ -2879,4 +2909,8 @@ message CreateWithStateRequest {
   bytes config_state = 6;
   // RootState is the signed initial root state payload.
   bytes root_state = 7;
+  // ConfigHistory imports the complete signed chain and retained key epochs.
+  // When present, ConfigState is its final checkpoint and RootState may be later
+  // than the first root. The authenticated account must own that checkpoint.
+  bytes config_history = 8;
 }

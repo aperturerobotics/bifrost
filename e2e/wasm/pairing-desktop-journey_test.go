@@ -1,0 +1,120 @@
+//go:build !skip_e2e && !js
+
+package wasm
+
+import (
+	"context"
+	"fmt"
+	"testing"
+	"time"
+
+	playwright "github.com/mxschmitt/playwright-go"
+	"github.com/s4wave/spacewave/e2e/electron"
+	"github.com/sirupsen/logrus"
+)
+
+// TestPairingBrowserDesktopJourney reads a browser-created file in the actual
+// desktop runtime, then restarts that runtime with the browser disconnected.
+func TestPairingBrowserDesktopJourney(t *testing.T) {
+	if !electron.E2EElectronEnabled() {
+		t.Skip("set ENABLE_E2E_ELECTRON=true to include the desktop runtime")
+	}
+	h := harness(t)
+	a := h.NewCleanSession(t)
+	drive := CreateDriveScenario(t, h, a)
+	WaitForDriveReady(t, h, a.Page())
+	file := playwright.InputFile{Name: "browser-to-desktop.md", MimeType: "text/markdown", Buffer: []byte("The desktop keeps its own copy after the browser leaves.\n")}
+	uploadDriveFileThroughUI(t, a.Page(), file)
+	waitForDriveEntry(t, a.Page(), file.Name)
+	ctx, cancel := context.WithTimeout(h.Context(), 12*time.Minute)
+	defer cancel()
+	source, err := a.MountSessionByIdx(ctx, drive.GetSessionIndex())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer source.Release()
+	info, err := source.GetSessionInfo(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	desktop, err := electron.Boot(ctx, logrus.NewEntry(logrus.New()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer desktop.Release()
+	if err := desktop.ConnectDriver(); err != nil {
+		t.Fatal(err)
+	}
+	page, err := desktop.WaitForPage(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	WaitForApp(t, page)
+	startPairingPages(t, a.Page(), page, drive.GetSessionIndex(), "#/pair/{offer}")
+	confirmPairingPages(t, a.Page(), page)
+	if err := page.GetByRole("heading", playwright.PageGetByRoleOptions{Name: "Account connected", Exact: new(true)}).WaitFor(); err != nil {
+		t.Fatal(err)
+	}
+	index := waitPairingPageCopy(t, page, info.GetSessionRef().GetProviderResourceRef().GetProviderAccountId(), drive.GetSpaceID())
+	navigatePairingPage(t, page, fmt.Sprintf("#/u/%d/so/%s", index, drive.GetSpaceID()))
+	WaitForDriveShell(t, page)
+	driveURL := page.URL()
+	openDriveEntry(t, page, file.Name)
+	waitForUnixFSFileText(t, page, "desktop paired file", string(file.Buffer))
+	a.release()
+	if err := desktop.Relaunch(ctx); err != nil {
+		t.Fatal(err)
+	}
+	page, err = desktop.WaitForPage(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Boot the restarted renderer at the saved Drive route before session routing.
+	if _, err := page.Goto("about:blank"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := page.Goto(driveURL); err != nil {
+		t.Fatal(err)
+	}
+	WaitForApp(t, page)
+	WaitForDriveShell(t, page)
+	openDriveEntry(t, page, file.Name)
+	waitForUnixFSFileText(t, page, "desktop file after restart", string(file.Buffer))
+}
+
+// waitPairingPageCopy checks the actual SDK stream exposed by either runtime.
+// Session totals must equal their peer breakdown before the file is accepted.
+func waitPairingPageCopy(t *testing.T, page playwright.Page, accountID string, ids ...string) uint32 {
+	t.Helper()
+	result, err := page.Evaluate(`async ({ accountID, ids }) => {
+		const root = globalThis.__s4wave_debug.root
+		const signal = AbortSignal.timeout(120000)
+		const entries = (await root.listSessions(signal)).sessions ?? []
+		const entry = entries.find((entry) => entry.sessionRef?.providerResourceRef?.providerAccountId === accountID)
+		if (!entry) throw new Error('paired account has no Session')
+		const { session } = await root.mountSessionByIdx({ sessionIdx: entry.sessionIndex }, signal)
+		if (!session) throw new Error('paired Session did not mount')
+		let latest = null
+		try {
+			for await (const state of session.watchSyncStatus({}, signal)) {
+				latest = state
+				const uploaded = (state.peers ?? []).reduce((sum, peer) => sum + BigInt(peer.uploadedBytes ?? 0), 0n)
+				const downloaded = (state.peers ?? []).reduce((sum, peer) => sum + BigInt(peer.downloadedBytes ?? 0), 0n)
+				if (uploaded !== BigInt(state.peerUploadBytes ?? 0) || downloaded !== BigInt(state.peerDownloadBytes ?? 0)) throw new Error('peer byte totals differ from Session totals')
+				if (ids.every((id) => state.localCopies?.some((copy) => copy.sharedObjectId === id && copy.complete))) return entry.sessionIndex
+			}
+			throw new Error('copy stream closed before files became durable')
+		} catch (error) {
+			const state = JSON.stringify(latest, (_, value) => typeof value === 'bigint' ? value.toString() : value)
+			throw new Error('copy state for ' + accountID + ' / ' + ids.join(', ') + ': ' + state, { cause: error })
+		} finally { session.release() }
+	}`, map[string]any{"accountID": accountID, "ids": ids})
+	if err != nil {
+		t.Fatal(err)
+	}
+	index, ok := result.(int)
+	if !ok || index <= 0 {
+		t.Fatalf("unexpected paired Session index: %T %v", result, result)
+	}
+	return uint32(index)
+}

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	resource_client "github.com/s4wave/spacewave/bldr/resource/client"
+	"github.com/s4wave/spacewave/core/pairing"
 	session "github.com/s4wave/spacewave/core/session"
 )
 
@@ -171,8 +172,8 @@ func (s *Session) CreateLocalPairingOffer(ctx context.Context) (*CreateLocalPair
 }
 
 // AcceptLocalPairingOffer accepts a remote offer and returns an answer.
-func (s *Session) AcceptLocalPairingOffer(ctx context.Context, offerPayload string) (*AcceptLocalPairingOfferResponse, error) {
-	return s.service.AcceptLocalPairingOffer(ctx, &AcceptLocalPairingOfferRequest{OfferPayload: offerPayload})
+func (s *Session) AcceptLocalPairingOffer(ctx context.Context, offerPayload string, offerCurrent bool) (*AcceptLocalPairingOfferResponse, error) {
+	return s.service.AcceptLocalPairingOffer(ctx, &AcceptLocalPairingOfferRequest{OfferPayload: offerPayload, OfferCurrentAccount: offerCurrent})
 }
 
 // AcceptLocalPairingAnswer accepts a remote answer to complete the connection.
@@ -202,8 +203,14 @@ func (s *Session) GeneratePairingCode(ctx context.Context) (*GeneratePairingCode
 }
 
 // CompletePairing resolves a pairing code from the other device to link.
-func (s *Session) CompletePairing(ctx context.Context, code string) (*CompletePairingResponse, error) {
-	return s.service.CompletePairing(ctx, &CompletePairingRequest{Code: code})
+func (s *Session) CompletePairing(ctx context.Context, code string, offerCurrentAccount bool) (*CompletePairingResponse, error) {
+	return s.service.CompletePairing(ctx, &CompletePairingRequest{Code: code, OfferCurrentAccount: offerCurrentAccount})
+}
+
+// SelectPairingAccount fixes the proposed account relationship before approval.
+func (s *Session) SelectPairingAccount(ctx context.Context, outcome pairing.AccountOutcome) error {
+	_, err := s.service.SelectPairingAccount(ctx, &SelectPairingAccountRequest{Outcome: outcome})
+	return err
 }
 
 // GetSASEmoji derives the 6-emoji SAS verification sequence for a remote peer.

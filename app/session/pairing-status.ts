@@ -6,6 +6,7 @@ import { PairingStatus } from '@s4wave/sdk/session/session.pb.js'
 export function pairingStatusReachedPeer(status?: PairingStatus): boolean {
   switch (status) {
     case PairingStatus.PairingStatus_PEER_CONNECTED:
+    case PairingStatus.PairingStatus_SELECTING_ACCOUNT:
     case PairingStatus.PairingStatus_VERIFYING_EMOJI:
     case PairingStatus.PairingStatus_WAITING_FOR_REMOTE_CONFIRM:
     case PairingStatus.PairingStatus_ENROLLING:

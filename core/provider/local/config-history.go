@@ -1,6 +1,7 @@
 package provider_local
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
 
@@ -54,7 +55,7 @@ func WriteSOConfigHistory(
 		}
 		current = accepted
 	}
-	if !current.EqualVT(next) {
+	if !sobject.EqualSOConfigs(current, next) {
 		return errors.New("config history does not match written state")
 	}
 
@@ -172,4 +173,49 @@ func (s *SharedObject) ReadSharedObjectConfigHistory(ctx context.Context, target
 		return nil, nil, err
 	}
 	return base, changes, nil
+}
+
+// ReadSharedObjectGenesis returns the signed entry behind the oldest retained
+// checkpoint. Older replicas may require their original owner to supply it.
+func (s *SharedObject) ReadSharedObjectGenesis(ctx context.Context, base *sobject.SharedObjectConfig) (*sobject.SOConfigChange, error) {
+	if base.GetConfigChainSeqno() != 0 {
+		return nil, nil
+	}
+	read, err := s.objStore.NewTransaction(ctx, false)
+	if err != nil {
+		return nil, err
+	}
+	defer read.Discard()
+	data, found, err := read.Get(ctx, SOConfigHistoryEntryKey(s.GetSharedObjectID(), base.GetConfigChainHash()))
+	if err != nil || !found {
+		return nil, err
+	}
+	entry := &sobject.SOConfigChange{}
+	if err := entry.UnmarshalVT(data); err != nil {
+		return nil, err
+	}
+	hash, err := sobject.HashSOConfigChange(entry)
+	if err != nil {
+		return nil, err
+	}
+	if !bytes.Equal(hash, base.GetConfigChainHash()) {
+		return nil, sobject.ErrConfigHistoryUnavailable
+	}
+	return entry, sobject.VerifyConfigChain([]*sobject.SOConfigChange{entry})
+}
+
+// ReadSharedObjectFullConfigHistory proves an imported object's original lineage.
+func (s *SharedObject) ReadSharedObjectFullConfigHistory(ctx context.Context, target *sobject.SharedObjectConfig) ([]*sobject.SOConfigChange, error) {
+	base, suffix, err := s.ReadSharedObjectConfigHistory(ctx, target)
+	if err != nil {
+		return nil, err
+	}
+	genesis, err := s.ReadSharedObjectGenesis(ctx, base)
+	if err != nil {
+		return nil, err
+	}
+	if genesis == nil {
+		return nil, errors.Wrap(sobject.ErrConfigHistoryUnavailable, "the original Space replica must supply its signed history before cloud import")
+	}
+	return append([]*sobject.SOConfigChange{genesis}, suffix...), nil
 }

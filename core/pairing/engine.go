@@ -3,6 +3,7 @@ package pairing
 import (
 	"context"
 	"io"
+	"slices"
 
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/util/broadcast"
@@ -33,6 +34,7 @@ const (
 	StatusPairingRejected
 	StatusConfirmationTimeout
 	StatusEnrolling
+	StatusSelectingAccount
 )
 
 // Snapshot describes one Session's current pairing operation.
@@ -46,6 +48,7 @@ type Snapshot struct {
 	AccountName  string
 	ProviderID   string
 	Receiving    bool
+	Choice       *AccountChoice
 }
 
 // Engine owns approval and enrollment for one mounted Session. Account adapters
@@ -56,6 +59,7 @@ type Engine struct {
 	le        *logrus.Entry
 	b         bus.Bus
 	key       crypto.PrivKey
+	session   session.Session
 	peerID    peer.ID
 	adapter   AccountAdapter
 	transport func(context.Context, Relay) (*transport.SessionTransport, error)
@@ -64,16 +68,19 @@ type Engine struct {
 }
 
 type attempt struct {
-	snapshot Snapshot
-	offering bool
-	confirm  chan bool
-	cancel   context.CancelFunc
-	result   *session.SessionRef
-	release  func()
+	snapshot     Snapshot
+	offering     bool
+	offerCurrent bool
+	choose       chan AccountOutcome
+	confirm      chan bool
+	cancel       context.CancelFunc
+	result       *session.SessionRef
+	release      func()
 }
 
 // NewEngine binds a Session's key, provider adapter, and transport owner.
-func NewEngine(ctx context.Context, le *logrus.Entry, b bus.Bus, key crypto.PrivKey, adapter AccountAdapter, getTransport func(context.Context, Relay) (*transport.SessionTransport, error)) (*Engine, error) {
+func NewEngine(ctx context.Context, le *logrus.Entry, b bus.Bus, mounted session.Session, adapter AccountAdapter, getTransport func(context.Context, Relay) (*transport.SessionTransport, error)) (*Engine, error) {
+	key := mounted.GetPrivKey()
 	if ctx == nil || key == nil {
 		return nil, errors.New("pairing requires an unlocked Session lifecycle")
 	}
@@ -81,7 +88,7 @@ func NewEngine(ctx context.Context, le *logrus.Entry, b bus.Bus, key crypto.Priv
 	if err != nil {
 		return nil, err
 	}
-	e := &Engine{ctx: ctx, le: le, b: b, key: key, peerID: peerID, adapter: adapter, transport: getTransport}
+	e := &Engine{ctx: ctx, le: le, b: b, key: key, session: mounted, peerID: peerID, adapter: adapter, transport: getTransport}
 	context.AfterFunc(ctx, e.Clear)
 	return e, nil
 }
@@ -90,9 +97,9 @@ func NewEngine(ctx context.Context, le *logrus.Entry, b bus.Bus, key crypto.Priv
 func (e *Engine) Context() context.Context { return e.ctx }
 
 // begin cancels the prior attempt before publishing another operation identity.
-func (e *Engine) begin(offering bool, code string, remote peer.ID, status Status) (context.Context, *attempt) {
+func (e *Engine) begin(offering, offerCurrent bool, code string, remote peer.ID, status Status) (context.Context, *attempt) {
 	ctx, cancel := context.WithCancel(e.ctx)
-	active := &attempt{offering: offering, cancel: cancel, confirm: make(chan bool, 1), snapshot: Snapshot{Status: status, Code: code, RemotePeerID: remote, Receiving: !offering}}
+	active := &attempt{offering: offering, offerCurrent: offerCurrent, cancel: cancel, confirm: make(chan bool, 1), choose: make(chan AccountOutcome, 1), snapshot: Snapshot{Status: status, Code: code, RemotePeerID: remote, Receiving: !offering}}
 	var previous *attempt
 	e.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
 		previous, e.active = e.active, active
@@ -129,7 +136,13 @@ func (e *Engine) retain(active *attempt, release func()) bool {
 	var retained bool
 	e.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
 		if e.active == active {
-			active.release = release
+			previous := active.release
+			active.release = func() {
+				release()
+				if previous != nil {
+					previous()
+				}
+			}
 			retained = true
 		}
 	})
@@ -162,6 +175,9 @@ func (e *Engine) update(active *attempt, update func(*attempt)) {
 
 func (e *Engine) fail(active *attempt, status Status, err error) {
 	e.update(active, func(a *attempt) {
+		if a.snapshot.Status == StatusPairingRejected {
+			return
+		}
 		a.snapshot.Status = status
 		a.snapshot.ErrMsg = err.Error()
 	})
@@ -180,8 +196,19 @@ func (e *Engine) SetFailed(message string) {
 
 // ConfirmSAS submits the current screen's bilateral approval decision.
 func (e *Engine) ConfirmSAS(confirmed bool) {
-	e.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
-		if e.active == nil || e.active.snapshot.Status != StatusVerifyingEmoji {
+	var canceled *attempt
+	e.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+		if e.active == nil {
+			return
+		}
+		if !confirmed && e.active.snapshot.Status != StatusVerifyingEmoji && e.active.snapshot.Status != StatusBothConfirmed {
+			canceled = e.active
+			canceled.snapshot.Status = StatusPairingRejected
+			canceled.snapshot.ErrMsg = "Pairing canceled"
+			broadcast()
+			return
+		}
+		if e.active.snapshot.Status != StatusVerifyingEmoji {
 			return
 		}
 		select {
@@ -189,6 +216,37 @@ func (e *Engine) ConfirmSAS(confirmed bool) {
 		default:
 		}
 	})
+	if canceled != nil {
+		canceled.cancel()
+		e.releaseResources(canceled)
+	}
+}
+
+// SelectAccount fixes the code-entering client's account proposal before approval.
+// A different choice requires a new exchange once the proposal has been submitted.
+func (e *Engine) SelectAccount(outcome AccountOutcome) error {
+	var err error
+	e.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+		active := e.active
+		if active == nil || active.offering || active.snapshot.Status != StatusSelectingAccount {
+			err = errors.New("this client is not choosing a pairing account")
+			return
+		}
+		choice := active.snapshot.Choice.CloneVT()
+		choice.Outcome = outcome
+		if err = choice.Validate(); err != nil {
+			return
+		}
+		select {
+		case active.choose <- outcome:
+			active.snapshot.Choice = choice
+			active.snapshot.Status = StatusPeerConnected
+			broadcast()
+		default:
+			err = errors.New("a pairing account was already selected")
+		}
+	})
+	return err
 }
 
 // Watch observes coherent snapshots until cancellation or a callback error.
@@ -214,7 +272,8 @@ func (e *Engine) Snapshot() (Snapshot, <-chan struct{}) {
 		wait = getWait()
 		if e.active != nil {
 			snapshot = e.active.snapshot
-			snapshot.Emoji = append([]string(nil), snapshot.Emoji...)
+			snapshot.Emoji = slices.Clone(snapshot.Emoji)
+			snapshot.Choice = snapshot.Choice.CloneVT()
 		}
 	})
 	return snapshot, wait
@@ -237,7 +296,7 @@ func (e *Engine) Result(remote peer.ID) (*session.SessionRef, error) {
 			err = ErrExchangeMissing
 		case e.active.snapshot.RemotePeerID != remote:
 			err = ErrExchangePeerMismatch
-		case e.active.snapshot.Status != StatusBothConfirmed || (!e.active.offering && e.active.result == nil):
+		case e.active.snapshot.Status != StatusBothConfirmed || (e.active.snapshot.Receiving && e.active.result == nil):
 			err = ErrExchangeUnconfirmed
 		default:
 			if e.active.result != nil {
@@ -250,15 +309,15 @@ func (e *Engine) Result(remote peer.ID) (*session.SessionRef, error) {
 
 // StartOnStream runs enrollment on an already authenticated duplex connection.
 // The caller retains the stream's transport through completion.
-func (e *Engine) StartOnStream(ctx context.Context, stream io.ReadWriteCloser, remote peer.ID, offering bool) {
-	attemptCtx, active := e.begin(offering, "", remote, StatusPeerConnected)
+func (e *Engine) StartOnStream(ctx context.Context, stream io.ReadWriteCloser, remote peer.ID, offering, offerCurrent bool) {
+	attemptCtx, active := e.begin(offering, offerCurrent, "", remote, StatusPeerConnected)
 	stop := context.AfterFunc(ctx, active.cancel)
 	defer stop()
 	e.runStream(attemptCtx, active, stream, remote, nil)
 }
 
 // StartDirect uses the same approval and enrollment on a manually signaled link.
-func (e *Engine) StartDirect(lnk link.Link, offering bool) {
-	ctx, active := e.begin(offering, "", lnk.GetRemotePeer(), StatusPeerConnected)
+func (e *Engine) StartDirect(lnk link.Link, offering, offerCurrent bool) {
+	ctx, active := e.begin(offering, offerCurrent, "", lnk.GetRemotePeer(), StatusPeerConnected)
 	go e.runDirect(ctx, active, lnk)
 }

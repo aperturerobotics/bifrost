@@ -126,7 +126,6 @@ func TestTerminalTransportStartupFailureReturnsError(t *testing.T) {
 	if ticketRequests.Load() < 2 {
 		t.Fatalf("startup retry did not retain attempt ownership: %d requests", ticketRequests.Load())
 	}
-
 }
 
 func TestTransportStartupCancellationReturnsCancellation(t *testing.T) {
@@ -143,7 +142,6 @@ func TestTransportStartupCancellationReturnsCancellation(t *testing.T) {
 	if err := acc.waitSessionTransportReady(waitCtx, sts); !errors.Is(err, context.Canceled) {
 		t.Fatalf("startup cancellation returned %v", err)
 	}
-
 }
 
 func TestSupersededTransportStartupReturnsSuperseded(t *testing.T) {
@@ -161,7 +159,6 @@ func TestSupersededTransportStartupReturnsSuperseded(t *testing.T) {
 		t.Fatalf("superseded startup returned %v", err)
 	}
 	acc.stopSessionTransportState(sts)
-
 }
 
 func TestCreateSessionTransportCancellationAfterReadyRecreatesCurrent(t *testing.T) {

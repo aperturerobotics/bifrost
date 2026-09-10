@@ -3,15 +3,15 @@ package provider_local
 import (
 	"bytes"
 	"context"
+	"errors"
 	"net"
 	"testing"
 	"time"
 
-	"github.com/s4wave/spacewave/core/pairing"
-
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
 	"github.com/aperturerobotics/starpc/srpc"
 	"github.com/aperturerobotics/util/ulid"
+	"github.com/s4wave/spacewave/core/pairing"
 	"github.com/s4wave/spacewave/core/session"
 	session_controller "github.com/s4wave/spacewave/core/session/controller"
 	"github.com/s4wave/spacewave/core/sobject"
@@ -212,12 +212,12 @@ func TestAccountPairingExchange(t *testing.T) {
 			finished := make(chan struct{}, 2)
 			go func() {
 				defer left.Close()
-				sourceEngine.StartOnStream(ctx, left, receivingSession.GetPeerId(), true)
+				sourceEngine.StartOnStream(ctx, left, receivingSession.GetPeerId(), true, true)
 				finished <- struct{}{}
 			}()
 			go func() {
 				defer right.Close()
-				receivingEngine.StartOnStream(ctx, right, sourceSession.GetPeerId(), false)
+				receivingEngine.StartOnStream(ctx, right, sourceSession.GetPeerId(), false, false)
 				finished <- struct{}{}
 			}()
 
@@ -417,12 +417,38 @@ func TestAccountPairingExchange(t *testing.T) {
 // seedAccountReplicaPayload publishes a real nested block graph under a signed
 // Space root. Its leaf is large enough to exercise authenticated DEX transfer.
 func seedAccountReplicaPayload(ctx context.Context, t *testing.T, account *ProviderAccount, ref *sobject.SharedObjectRef) (*block.BlockRef, []byte) {
+	return seedProviderReplicaPayload(ctx, t, account, account, ref)
+}
+
+// seedProviderReplicaPayload exercises either native provider on the fixture bus.
+func seedProviderReplicaPayload(ctx context.Context, t *testing.T, fixture *ProviderAccount, account sobject.SharedObjectProvider, ref *sobject.SharedObjectRef) (*block.BlockRef, []byte) {
 	t.Helper()
 	so, release, err := account.MountSharedObject(ctx, ref, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer release()
+
+	// A cloud mount can precede its initial readable root. Wait for the same
+	// grant-backed state required by a Space viewer before submitting an edit.
+	snapshots, releaseSnapshots, err := so.AccessSharedObjectState(ctx, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer releaseSnapshots()
+	if _, err := snapshots.WaitValueWithValidator(ctx, func(snapshot sobject.SharedObjectStateSnapshot) (bool, error) {
+		if snapshot == nil {
+			return false, nil
+		}
+		_, err := snapshot.GetTransformer(ctx)
+		if errors.Is(err, sobject.ErrCannotDecode) {
+			return false, nil
+		}
+		return err == nil, err
+	}, nil); err != nil {
+		t.Fatalf("wait for readable Space before seeding: %v", err)
+	}
+
 	store := so.GetBlockStore()
 	data, err := (&block_mock.Example{Msg: string(bytes.Repeat([]byte("paired account payload\n"), 8192))}).MarshalVT()
 	if err != nil {
@@ -436,9 +462,9 @@ func seedAccountReplicaPayload(ctx context.Context, t *testing.T, account *Provi
 	if err != nil {
 		t.Fatal(err)
 	}
-	cursor := bucket_lookup.NewCursor(ctx, account.t.p.b, account.le, account.t.p.sfs, store, nil, &bucket.ObjectRef{}, nil, nil)
+	cursor := bucket_lookup.NewCursor(ctx, fixture.t.p.b, fixture.le, fixture.t.p.sfs, store, nil, &bucket.ObjectRef{}, nil, nil)
 	defer cursor.Release()
-	ws, err := world_block.BuildWorldStateFromCursor(ctx, account.le, true, cursor, world.NewWorldStorageFromCursor(cursor), nil, false)
+	ws, err := world_block.BuildWorldStateFromCursor(ctx, fixture.le, true, cursor, world.NewWorldStorageFromCursor(cursor), nil, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -458,9 +484,9 @@ func seedAccountReplicaPayload(ctx context.Context, t *testing.T, account *Provi
 	}
 	id, err := so.QueueOperation(ctx, []byte("initialize replica fixture"))
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("queue initial Space operation: %v", err)
 	}
-	states, releaseStates, err := so.(*SharedObject).GetSOHost().GetSOStateCtr(ctx, nil)
+	states, releaseStates, err := so.(sobject.InviteHost).GetSOHost().GetSOStateCtr(ctx, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -477,7 +503,7 @@ func seedAccountReplicaPayload(ctx context.Context, t *testing.T, account *Provi
 		}
 		return &state, results, nil
 	}); err != nil {
-		t.Fatal(err)
+		t.Fatalf("process initial Space operation: %v", err)
 	}
 	if _, _, err := so.WaitOperation(ctx, id); err != nil {
 		t.Fatal(err)

@@ -8,12 +8,61 @@ import (
 	fmt "fmt"
 	io "io"
 	slices "slices"
+	strconv "strconv"
 
 	protobuf_go_lite "github.com/aperturerobotics/protobuf-go-lite"
 	json "github.com/aperturerobotics/protobuf-go-lite/json"
 	session "github.com/s4wave/spacewave/core/session"
 	sobject "github.com/s4wave/spacewave/core/sobject"
 )
+
+// AccountOutcome selects the account relationship created by bilateral approval.
+type AccountOutcome int32
+
+const (
+	// AccountOutcome_UNSPECIFIED requires the receiving client to choose an outcome.
+	AccountOutcome_AccountOutcome_UNSPECIFIED AccountOutcome = 0
+	// AccountOutcome_SIGN_IN_OFFERED adds the code creator's account on the receiving client.
+	AccountOutcome_AccountOutcome_SIGN_IN_OFFERED AccountOutcome = 1
+	// AccountOutcome_SIGN_IN_RECEIVING adds the receiving client's account on the code creator.
+	AccountOutcome_AccountOutcome_SIGN_IN_RECEIVING AccountOutcome = 2
+	// AccountOutcome_MERGE_INTO_OFFERED moves the receiving account into the offered account.
+	AccountOutcome_AccountOutcome_MERGE_INTO_OFFERED AccountOutcome = 3
+	// AccountOutcome_MERGE_INTO_RECEIVING moves the offered account into the receiving account.
+	AccountOutcome_AccountOutcome_MERGE_INTO_RECEIVING AccountOutcome = 4
+)
+
+// Enum value maps for AccountOutcome.
+var (
+	AccountOutcome_name = map[int32]string{
+		0: "AccountOutcome_UNSPECIFIED",
+		1: "AccountOutcome_SIGN_IN_OFFERED",
+		2: "AccountOutcome_SIGN_IN_RECEIVING",
+		3: "AccountOutcome_MERGE_INTO_OFFERED",
+		4: "AccountOutcome_MERGE_INTO_RECEIVING",
+	}
+	AccountOutcome_value = map[string]int32{
+		"AccountOutcome_UNSPECIFIED":          0,
+		"AccountOutcome_SIGN_IN_OFFERED":      1,
+		"AccountOutcome_SIGN_IN_RECEIVING":    2,
+		"AccountOutcome_MERGE_INTO_OFFERED":   3,
+		"AccountOutcome_MERGE_INTO_RECEIVING": 4,
+	}
+)
+
+func (x AccountOutcome) Enum() *AccountOutcome {
+	p := new(AccountOutcome)
+	*p = x
+	return p
+}
+
+func (x AccountOutcome) String() string {
+	name, valid := AccountOutcome_name[int32(x)]
+	if valid {
+		return name
+	}
+	return strconv.Itoa(int(x))
+}
 
 // Approval is exchanged over a bifrost link during the
 // mutual SAS verification step. Both peers send their confirmation
@@ -76,6 +125,13 @@ type AccountOffer struct {
 	RevokedSessionPeerIds []string `protobuf:"bytes,8,rep,name=revoked_session_peer_ids,json=revokedSessionPeerIds,proto3" json:"revokedSessionPeerIds,omitempty"`
 	// ActiveSessionPeerIds identifies current cloud authorizations for Session reuse.
 	ActiveSessionPeerIds []string `protobuf:"bytes,9,rep,name=active_session_peer_ids,json=activeSessionPeerIds,proto3" json:"activeSessionPeerIds,omitempty"`
+	// SelectionContext binds this enrollment to both accounts and the selected outcome.
+	SelectionContext string `protobuf:"bytes,10,opt,name=selection_context,json=selectionContext,proto3" json:"selectionContext,omitempty"`
+	// MachineName identifies the client offering this account.
+	MachineName string `protobuf:"bytes,11,opt,name=machine_name,json=machineName,proto3" json:"machineName,omitempty"`
+	// SpaceCount and SessionCount describe the current migration preview.
+	SpaceCount   uint32 `protobuf:"varint,12,opt,name=space_count,json=spaceCount,proto3" json:"spaceCount,omitempty"`
+	SessionCount uint32 `protobuf:"varint,13,opt,name=session_count,json=sessionCount,proto3" json:"sessionCount,omitempty"`
 }
 
 func (x *AccountOffer) Reset() {
@@ -147,6 +203,72 @@ func (x *AccountOffer) GetActiveSessionPeerIds() []string {
 	return nil
 }
 
+func (x *AccountOffer) GetSelectionContext() string {
+	if x != nil {
+		return x.SelectionContext
+	}
+	return ""
+}
+
+func (x *AccountOffer) GetMachineName() string {
+	if x != nil {
+		return x.MachineName
+	}
+	return ""
+}
+
+func (x *AccountOffer) GetSpaceCount() uint32 {
+	if x != nil {
+		return x.SpaceCount
+	}
+	return 0
+}
+
+func (x *AccountOffer) GetSessionCount() uint32 {
+	if x != nil {
+		return x.SessionCount
+	}
+	return 0
+}
+
+// AccountChoice carries the two account identities and the selected relationship.
+type AccountChoice struct {
+	unknownFields []byte
+	// OfferedAccount is the account selected by the code creator.
+	OfferedAccount *AccountOffer `protobuf:"bytes,1,opt,name=offered_account,json=offeredAccount,proto3" json:"offeredAccount,omitempty"`
+	// ReceivingAccount is absent when pairing from Home without a selected account.
+	ReceivingAccount *AccountOffer `protobuf:"bytes,2,opt,name=receiving_account,json=receivingAccount,proto3" json:"receivingAccount,omitempty"`
+	// Outcome is fixed before either client approves the operation.
+	Outcome AccountOutcome `protobuf:"varint,3,opt,name=outcome,proto3" json:"outcome,omitempty"`
+}
+
+func (x *AccountChoice) Reset() {
+	*x = AccountChoice{}
+}
+
+func (*AccountChoice) ProtoMessage() {}
+
+func (x *AccountChoice) GetOfferedAccount() *AccountOffer {
+	if x != nil {
+		return x.OfferedAccount
+	}
+	return nil
+}
+
+func (x *AccountChoice) GetReceivingAccount() *AccountOffer {
+	if x != nil {
+		return x.ReceivingAccount
+	}
+	return nil
+}
+
+func (x *AccountChoice) GetOutcome() AccountOutcome {
+	if x != nil {
+		return x.Outcome
+	}
+	return AccountOutcome_AccountOutcome_UNSPECIFIED
+}
+
 // Identity proves possession of the receiving Session and storage keys.
 type Identity struct {
 	unknownFields []byte
@@ -192,6 +314,11 @@ type SharedObject struct {
 	Entry *sobject.SharedObjectListEntry `protobuf:"bytes,1,opt,name=entry,proto3" json:"entry,omitempty"`
 	// State is accepted only through the SharedObject host's enrollment contract.
 	State *sobject.SOState `protobuf:"bytes,2,opt,name=state,proto3" json:"state,omitempty"`
+	// HistoryBase and History retain the verified lineage leading to State.
+	HistoryBase *sobject.SharedObjectConfig `protobuf:"bytes,3,opt,name=history_base,json=historyBase,proto3" json:"historyBase,omitempty"`
+	History     []*sobject.SOConfigChange   `protobuf:"bytes,4,rep,name=history,proto3" json:"history,omitempty"`
+	// Genesis retains the signed first entry when HistoryBase is that entry.
+	Genesis *sobject.SOConfigChange `protobuf:"bytes,5,opt,name=genesis,proto3" json:"genesis,omitempty"`
 }
 
 func (x *SharedObject) Reset() {
@@ -214,6 +341,27 @@ func (x *SharedObject) GetState() *sobject.SOState {
 	return nil
 }
 
+func (x *SharedObject) GetHistoryBase() *sobject.SharedObjectConfig {
+	if x != nil {
+		return x.HistoryBase
+	}
+	return nil
+}
+
+func (x *SharedObject) GetHistory() []*sobject.SOConfigChange {
+	if x != nil {
+		return x.History
+	}
+	return nil
+}
+
+func (x *SharedObject) GetGenesis() *sobject.SOConfigChange {
+	if x != nil {
+		return x.Genesis
+	}
+	return nil
+}
+
 // Frame carries the ordered account enrollment exchange.
 type Frame struct {
 	unknownFields []byte
@@ -223,6 +371,7 @@ type Frame struct {
 	//	*Frame_Object
 	//	*Frame_Complete
 	//	*Frame_Error
+	//	*Frame_Choice
 	Body isFrame_Body `protobuf_oneof:"body"`
 }
 
@@ -274,6 +423,13 @@ func (x *Frame) GetError() string {
 	return ""
 }
 
+func (x *Frame) GetChoice() *AccountChoice {
+	if x, ok := x.GetBody().(*Frame_Choice); ok {
+		return x.Choice
+	}
+	return nil
+}
+
 type isFrame_Body interface {
 	isFrame_Body()
 }
@@ -303,6 +459,11 @@ type Frame_Error struct {
 	Error string `protobuf:"bytes,5,opt,name=error,proto3,oneof"`
 }
 
+type Frame_Choice struct {
+	// Choice selects the relationship after both account identities are known.
+	Choice *AccountChoice `protobuf:"bytes,6,opt,name=choice,proto3,oneof"`
+}
+
 func (*Frame_Account) isFrame_Body() {}
 
 func (*Frame_Identity) isFrame_Body() {}
@@ -312,6 +473,8 @@ func (*Frame_Object) isFrame_Body() {}
 func (*Frame_Complete) isFrame_Body() {}
 
 func (*Frame_Error) isFrame_Body() {}
+
+func (*Frame_Choice) isFrame_Body() {}
 
 func (m *Approval) CloneVT() *Approval {
 	if m == nil {
@@ -343,6 +506,10 @@ func (m *AccountOffer) CloneVT() *AccountOffer {
 	r.DisplayName = m.DisplayName
 	r.ProviderId = m.ProviderId
 	r.ProviderEndpoint = m.ProviderEndpoint
+	r.SelectionContext = m.SelectionContext
+	r.MachineName = m.MachineName
+	r.SpaceCount = m.SpaceCount
+	r.SessionCount = m.SessionCount
 	r.RevokedSessionPeerIds = protobuf_go_lite.CloneSlice(m.RevokedSessionPeerIds)
 	r.ActiveSessionPeerIds = protobuf_go_lite.CloneSlice(m.ActiveSessionPeerIds)
 	if len(m.unknownFields) > 0 {
@@ -352,6 +519,24 @@ func (m *AccountOffer) CloneVT() *AccountOffer {
 }
 
 func (m *AccountOffer) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *AccountChoice) CloneVT() *AccountChoice {
+	if m == nil {
+		return (*AccountChoice)(nil)
+	}
+	r := new(AccountChoice)
+	r.Outcome = m.Outcome
+	r.OfferedAccount = protobuf_go_lite.CloneVTValue(m.OfferedAccount)
+	r.ReceivingAccount = protobuf_go_lite.CloneVTValue(m.ReceivingAccount)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *AccountChoice) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
@@ -380,6 +565,9 @@ func (m *SharedObject) CloneVT() *SharedObject {
 	r := new(SharedObject)
 	r.Entry = protobuf_go_lite.CloneVTValue(m.Entry)
 	r.State = protobuf_go_lite.CloneVTValue(m.State)
+	r.HistoryBase = protobuf_go_lite.CloneVTValue(m.HistoryBase)
+	r.History = protobuf_go_lite.CloneVTSlice(m.History)
+	r.Genesis = protobuf_go_lite.CloneVTValue(m.Genesis)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -473,6 +661,19 @@ func (m *Frame_Error) CloneOneofVT() isFrame_Body {
 	return m.CloneVT()
 }
 
+func (m *Frame_Choice) CloneVT() *Frame_Choice {
+	if m == nil {
+		return (*Frame_Choice)(nil)
+	}
+	r := new(Frame_Choice)
+	r.Choice = protobuf_go_lite.CloneVTValue(m.Choice)
+	return r
+}
+
+func (m *Frame_Choice) CloneOneofVT() isFrame_Body {
+	return m.CloneVT()
+}
+
 func (this *Approval) EqualVT(that *Approval) bool {
 	if this == that {
 		return true
@@ -532,11 +733,49 @@ func (this *AccountOffer) EqualVT(that *AccountOffer) bool {
 	if !protobuf_go_lite.EqualSlice(this.ActiveSessionPeerIds, that.ActiveSessionPeerIds) {
 		return false
 	}
+	if this.SelectionContext != that.SelectionContext {
+		return false
+	}
+	if this.MachineName != that.MachineName {
+		return false
+	}
+	if this.SpaceCount != that.SpaceCount {
+		return false
+	}
+	if this.SessionCount != that.SessionCount {
+		return false
+	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
 func (this *AccountOffer) EqualMessageVT(thatMsg any) bool {
 	that, ok := thatMsg.(*AccountOffer)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *AccountChoice) EqualVT(that *AccountChoice) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.OfferedAccount, that.OfferedAccount) {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.ReceivingAccount, that.ReceivingAccount) {
+		return false
+	}
+	if this.Outcome != that.Outcome {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *AccountChoice) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*AccountChoice)
 	if !ok {
 		return false
 	}
@@ -579,6 +818,15 @@ func (this *SharedObject) EqualVT(that *SharedObject) bool {
 		return false
 	}
 	if !protobuf_go_lite.IsEqualVT(this.State, that.State) {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.HistoryBase, that.HistoryBase) {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.History, that.History, func() *sobject.SOConfigChange { return &sobject.SOConfigChange{} }) {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.Genesis, that.Genesis) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -704,6 +952,63 @@ func (this *Frame_Error) EqualVT(thatIface isFrame_Body) bool {
 	return true
 }
 
+func (this *Frame_Choice) EqualVT(thatIface isFrame_Body) bool {
+	that, ok := thatIface.(*Frame_Choice)
+	if !ok {
+		return false
+	}
+	if this == that {
+		return true
+	}
+	if this == nil && that != nil || this != nil && that == nil {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTImplicit(this.Choice, that.Choice, func() *AccountChoice { return &AccountChoice{} }) {
+		return false
+	}
+	return true
+}
+
+// MarshalProtoJSON marshals the AccountOutcome to JSON.
+func (x AccountOutcome) MarshalProtoJSON(s *json.MarshalState) {
+	s.WriteEnum(int32(x), AccountOutcome_name)
+}
+
+// MarshalText marshals the AccountOutcome to text.
+func (x AccountOutcome) MarshalText() ([]byte, error) {
+	return []byte(json.GetEnumString(int32(x), AccountOutcome_name)), nil
+}
+
+// MarshalJSON marshals the AccountOutcome to JSON.
+func (x AccountOutcome) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the AccountOutcome from JSON.
+func (x *AccountOutcome) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	v := s.ReadEnum(AccountOutcome_value)
+	if err := s.Err(); err != nil {
+		s.SetErrorf("could not read AccountOutcome enum: %v", err)
+		return
+	}
+	*x = AccountOutcome(v)
+}
+
+// UnmarshalText unmarshals the AccountOutcome from text.
+func (x *AccountOutcome) UnmarshalText(b []byte) error {
+	i, err := json.ParseEnumString(string(b), AccountOutcome_value)
+	if err != nil {
+		return err
+	}
+	*x = AccountOutcome(i)
+	return nil
+}
+
+// UnmarshalJSON unmarshals the AccountOutcome from JSON.
+func (x *AccountOutcome) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
 // MarshalProtoJSON marshals the Approval message to JSON.
 func (x *Approval) MarshalProtoJSON(s *json.MarshalState) {
 	if x == nil {
@@ -815,6 +1120,26 @@ func (x *AccountOffer) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("activeSessionPeerIds")
 		s.WriteStringArray(x.ActiveSessionPeerIds)
 	}
+	if x.SelectionContext != "" || s.HasField("selectionContext") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("selectionContext")
+		s.WriteString(x.SelectionContext)
+	}
+	if x.MachineName != "" || s.HasField("machineName") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("machineName")
+		s.WriteString(x.MachineName)
+	}
+	if x.SpaceCount != 0 || s.HasField("spaceCount") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("spaceCount")
+		s.WriteUint32(x.SpaceCount)
+	}
+	if x.SessionCount != 0 || s.HasField("sessionCount") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("sessionCount")
+		s.WriteUint32(x.SessionCount)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -867,12 +1192,90 @@ func (x *AccountOffer) UnmarshalProtoJSON(s *json.UnmarshalState) {
 				return
 			}
 			x.ActiveSessionPeerIds = s.ReadStringArray()
+		case "selection_context", "selectionContext":
+			s.AddField("selection_context")
+			x.SelectionContext = s.ReadString()
+		case "machine_name", "machineName":
+			s.AddField("machine_name")
+			x.MachineName = s.ReadString()
+		case "space_count", "spaceCount":
+			s.AddField("space_count")
+			x.SpaceCount = s.ReadUint32()
+		case "session_count", "sessionCount":
+			s.AddField("session_count")
+			x.SessionCount = s.ReadUint32()
 		}
 	})
 }
 
 // UnmarshalJSON unmarshals the AccountOffer from JSON.
 func (x *AccountOffer) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the AccountChoice message to JSON.
+func (x *AccountChoice) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.OfferedAccount != nil || s.HasField("offeredAccount") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("offeredAccount")
+		x.OfferedAccount.MarshalProtoJSON(s.WithField("offeredAccount"))
+	}
+	if x.ReceivingAccount != nil || s.HasField("receivingAccount") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("receivingAccount")
+		x.ReceivingAccount.MarshalProtoJSON(s.WithField("receivingAccount"))
+	}
+	if x.Outcome != 0 || s.HasField("outcome") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("outcome")
+		x.Outcome.MarshalProtoJSON(s)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the AccountChoice to JSON.
+func (x *AccountChoice) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the AccountChoice message from JSON.
+func (x *AccountChoice) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "offered_account", "offeredAccount":
+			if s.ReadNil() {
+				x.OfferedAccount = nil
+				return
+			}
+			x.OfferedAccount = &AccountOffer{}
+			x.OfferedAccount.UnmarshalProtoJSON(s.WithField("offered_account", true))
+		case "receiving_account", "receivingAccount":
+			if s.ReadNil() {
+				x.ReceivingAccount = nil
+				return
+			}
+			x.ReceivingAccount = &AccountOffer{}
+			x.ReceivingAccount.UnmarshalProtoJSON(s.WithField("receiving_account", true))
+		case "outcome":
+			s.AddField("outcome")
+			x.Outcome.UnmarshalProtoJSON(s)
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the AccountChoice from JSON.
+func (x *AccountChoice) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -964,6 +1367,27 @@ func (x *SharedObject) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("state")
 		x.State.MarshalProtoJSON(s.WithField("state"))
 	}
+	if x.HistoryBase != nil || s.HasField("historyBase") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("historyBase")
+		x.HistoryBase.MarshalProtoJSON(s.WithField("historyBase"))
+	}
+	if len(x.History) > 0 || s.HasField("history") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("history")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.History {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s.WithField("history"))
+		}
+		s.WriteArrayEnd()
+	}
+	if x.Genesis != nil || s.HasField("genesis") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("genesis")
+		x.Genesis.MarshalProtoJSON(s.WithField("genesis"))
+	}
 	s.WriteObjectEnd()
 }
 
@@ -995,6 +1419,38 @@ func (x *SharedObject) UnmarshalProtoJSON(s *json.UnmarshalState) {
 			}
 			x.State = &sobject.SOState{}
 			x.State.UnmarshalProtoJSON(s.WithField("state", true))
+		case "history_base", "historyBase":
+			if s.ReadNil() {
+				x.HistoryBase = nil
+				return
+			}
+			x.HistoryBase = &sobject.SharedObjectConfig{}
+			x.HistoryBase.UnmarshalProtoJSON(s.WithField("history_base", true))
+		case "history":
+			s.AddField("history")
+			if s.ReadNil() {
+				x.History = nil
+				return
+			}
+			s.ReadArray(func() {
+				if s.ReadNil() {
+					x.History = append(x.History, nil)
+					return
+				}
+				v := &sobject.SOConfigChange{}
+				v.UnmarshalProtoJSON(s.WithField("history", false))
+				if s.Err() != nil {
+					return
+				}
+				x.History = append(x.History, v)
+			})
+		case "genesis":
+			if s.ReadNil() {
+				x.Genesis = nil
+				return
+			}
+			x.Genesis = &sobject.SOConfigChange{}
+			x.Genesis.UnmarshalProtoJSON(s.WithField("genesis", true))
 		}
 	})
 }
@@ -1034,6 +1490,10 @@ func (x *Frame) MarshalProtoJSON(s *json.MarshalState) {
 			s.WriteMoreIf(&wroteField)
 			s.WriteObjectField("error")
 			s.WriteString(ov.Error)
+		case *Frame_Choice:
+			s.WriteMoreIf(&wroteField)
+			s.WriteObjectField("choice")
+			ov.Choice.MarshalProtoJSON(s.WithField("choice"))
 		}
 	}
 	s.WriteObjectEnd()
@@ -1090,6 +1550,15 @@ func (x *Frame) UnmarshalProtoJSON(s *json.UnmarshalState) {
 			ov := &Frame_Error{}
 			x.Body = ov
 			ov.Error = s.ReadString()
+		case "choice":
+			ov := &Frame_Choice{}
+			x.Body = ov
+			if s.ReadNil() {
+				ov.Choice = nil
+				return
+			}
+			ov.Choice = &AccountChoice{}
+			ov.Choice.UnmarshalProtoJSON(s.WithField("choice", true))
 		}
 	})
 }
@@ -1175,6 +1644,26 @@ func (m *AccountOffer) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.SessionCount != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.SessionCount))
+		i--
+		dAtA[i] = 0x68
+	}
+	if m.SpaceCount != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.SpaceCount))
+		i--
+		dAtA[i] = 0x60
+	}
+	if len(m.MachineName) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.MachineName)
+		i--
+		dAtA[i] = 0x5a
+	}
+	if len(m.SelectionContext) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.SelectionContext)
+		i--
+		dAtA[i] = 0x52
+	}
 	if len(m.ActiveSessionPeerIds) > 0 {
 		for iNdEx := len(m.ActiveSessionPeerIds) - 1; iNdEx >= 0; iNdEx-- {
 			i = protobuf_go_lite.EncodeString(dAtA, i, m.ActiveSessionPeerIds[iNdEx])
@@ -1221,6 +1710,63 @@ func (m *AccountOffer) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	}
 	if len(m.AccountId) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.AccountId)
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *AccountChoice) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *AccountChoice) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *AccountChoice) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.Outcome != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Outcome))
+		i--
+		dAtA[i] = 0x18
+	}
+	if m.ReceivingAccount != nil {
+		size, err := m.ReceivingAccount.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.OfferedAccount != nil {
+		size, err := m.OfferedAccount.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -1317,6 +1863,38 @@ func (m *SharedObject) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	_ = l
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.Genesis != nil {
+		size, err := m.Genesis.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x2a
+	}
+	if len(m.History) > 0 {
+		for iNdEx := len(m.History) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.History[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0x22
+		}
+	}
+	if m.HistoryBase != nil {
+		size, err := m.HistoryBase.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x1a
 	}
 	if m.State != nil {
 		size, err := m.State.MarshalToSizedBufferVT(dAtA[:i])
@@ -1480,6 +2058,30 @@ func (m *Frame_Error) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *Frame_Choice) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *Frame_Choice) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.Choice != nil {
+		size, err := m.Choice.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x32
+	} else {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, 0)
+		i--
+		dAtA[i] = 0x32
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *Approval) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -1508,6 +2110,29 @@ func (m *AccountOffer) SizeVT() (n int) {
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.ProviderEndpoint)
 	n += protobuf_go_lite.SizeStringSlice(1, m.RevokedSessionPeerIds)
 	n += protobuf_go_lite.SizeStringSlice(1, m.ActiveSessionPeerIds)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.SelectionContext)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.MachineName)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.SpaceCount)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.SessionCount)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *AccountChoice) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.OfferedAccount != nil {
+		l = m.OfferedAccount.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	if m.ReceivingAccount != nil {
+		l = m.ReceivingAccount.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Outcome)
 	n += len(m.unknownFields)
 	return n
 }
@@ -1546,6 +2171,18 @@ func (m *SharedObject) SizeVT() (n int) {
 	}
 	if m.State != nil {
 		l = m.State.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	if m.HistoryBase != nil {
+		l = m.HistoryBase.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	for _, e := range m.History {
+		l = e.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	if m.Genesis != nil {
+		l = m.Genesis.SizeVT()
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
 	n += len(m.unknownFields)
@@ -1630,6 +2267,25 @@ func (m *Frame_Error) SizeVT() (n int) {
 	return n
 }
 
+func (m *Frame_Choice) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Choice != nil {
+		l = m.Choice.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	} else {
+		n += 2
+	}
+	return n
+}
+
+func (x AccountOutcome) MarshalProtoText() string {
+	return x.String()
+}
+
 func (x *Approval) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "Approval")
@@ -1699,10 +2355,48 @@ func (x *AccountOffer) MarshalProtoText() string {
 		}
 		protobuf_go_lite.TextWriteListEnd(&sb)
 	}
+	if x.SelectionContext != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "selection_context")
+		protobuf_go_lite.TextWriteString(&sb, x.SelectionContext)
+	}
+	if x.MachineName != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "machine_name")
+		protobuf_go_lite.TextWriteString(&sb, x.MachineName)
+	}
+	if x.SpaceCount != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "space_count")
+		protobuf_go_lite.TextWriteUint(&sb, x.SpaceCount)
+	}
+	if x.SessionCount != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "session_count")
+		protobuf_go_lite.TextWriteUint(&sb, x.SessionCount)
+	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
 func (x *AccountOffer) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *AccountChoice) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "AccountChoice")
+	if x.OfferedAccount != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "offered_account")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.OfferedAccount)
+	}
+	if x.ReceivingAccount != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "receiving_account")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.ReceivingAccount)
+	}
+	if x.Outcome != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "outcome")
+		protobuf_go_lite.TextWriteStringer(&sb, AccountOutcome(x.Outcome))
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *AccountChoice) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -1738,6 +2432,26 @@ func (x *SharedObject) MarshalProtoText() string {
 	if x.State != nil {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "state")
 		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.State)
+	}
+	if x.HistoryBase != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "history_base")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.HistoryBase)
+	}
+	if len(x.History) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "history")
+		for i, v := range x.History {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &sobject.SOConfigChange{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	if x.Genesis != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "genesis")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Genesis)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -1777,6 +2491,13 @@ func (x *Frame) MarshalProtoText() string {
 	case *Frame_Error:
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "error")
 		protobuf_go_lite.TextWriteString(&sb, body.Error)
+	case *Frame_Choice:
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "choice")
+		if body.Choice == nil {
+			protobuf_go_lite.TextWriteTextMarshaler(&sb, &AccountChoice{})
+		} else {
+			protobuf_go_lite.TextWriteTextMarshaler(&sb, body.Choice)
+		}
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -1968,6 +2689,128 @@ func (m *AccountOffer) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.ActiveSessionPeerIds = append(m.ActiveSessionPeerIds, v)
+		case 10:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SelectionContext", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.SelectionContext = v
+		case 11:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MachineName", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.MachineName = v
+		case 12:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SpaceCount", wireType)
+			}
+			m.SpaceCount = 0
+			m.SpaceCount, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 13:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SessionCount", wireType)
+			}
+			m.SessionCount = 0
+			m.SessionCount, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *AccountChoice) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: AccountChoice: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: AccountChoice: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OfferedAccount", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.OfferedAccount == nil {
+				m.OfferedAccount = &AccountOffer{}
+			}
+			if err := m.OfferedAccount.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ReceivingAccount", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.ReceivingAccount == nil {
+				m.ReceivingAccount = &AccountOffer{}
+			}
+			if err := m.ReceivingAccount.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Outcome", wireType)
+			}
+			m.Outcome = 0
+			var _v uint64
+			_v, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			m.Outcome = AccountOutcome(_v)
+			if err != nil {
+				return err
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
@@ -2129,6 +2972,49 @@ func (m *SharedObject) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field HistoryBase", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.HistoryBase == nil {
+				m.HistoryBase = &sobject.SharedObjectConfig{}
+			}
+			if err := m.HistoryBase.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field History", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.History = append(m.History, &sobject.SOConfigChange{})
+			if err := m.History[len(m.History)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Genesis", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Genesis == nil {
+				m.Genesis = &sobject.SOConfigChange{}
+			}
+			if err := m.Genesis.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
@@ -2253,6 +3139,26 @@ func (m *Frame) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.Body = &Frame_Error{Error: v}
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Choice", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if oneof, ok := m.Body.(*Frame_Choice); ok {
+				if err := oneof.Choice.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+					return err
+				}
+			} else {
+				v := &AccountChoice{}
+				if err := v.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+					return err
+				}
+				m.Body = &Frame_Choice{Choice: v}
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

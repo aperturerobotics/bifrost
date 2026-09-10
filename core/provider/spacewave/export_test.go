@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/aperturerobotics/util/ccontainer"
+	"github.com/aperturerobotics/util/keyed"
 	"github.com/aperturerobotics/util/refcount"
 	provider_gccleanup "github.com/s4wave/spacewave/core/provider/gccleanup"
 	"github.com/s4wave/spacewave/core/sobject"
@@ -37,6 +38,7 @@ func NewTestProviderAccount(t *testing.T, endpoint string) *ProviderAccount {
 		soListCtr:     ccontainer.NewCContainer[*sobject.SharedObjectList](nil),
 	}
 	acc.sessionClient = acc.configureSessionClient(cli)
+	acc.sobjects = keyed.NewKeyedRefCountWithLogger(acc.buildSharedObjectTracker, le)
 	acc.gcCleanupRunner = provider_gccleanup.NewRunner(
 		le.WithField("component", "gc-cleanup-runner"),
 		"GC swept nodes after provider account cleanup",

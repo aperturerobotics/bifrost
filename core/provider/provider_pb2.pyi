@@ -94,3 +94,21 @@ class ProviderFeatureResourceRef(_message.Message):
     provider_feature: ProviderFeature
     provider_feature_meta: bytes
     def __init__(self, provider_resource_ref: _Optional[_Union[ProviderResourceRef, _Mapping]] = ..., provider_feature: _Optional[_Union[ProviderFeature, str]] = ..., provider_feature_meta: _Optional[bytes] = ...) -> None: ...
+
+class AccountTransition(_message.Message):
+    __slots__ = ("operation_id", "source", "destination", "destination_endpoint", "destination_peer_ids", "session_peer_ids", "source_endpoint")
+    OPERATION_ID_FIELD_NUMBER: _ClassVar[int]
+    SOURCE_FIELD_NUMBER: _ClassVar[int]
+    DESTINATION_FIELD_NUMBER: _ClassVar[int]
+    DESTINATION_ENDPOINT_FIELD_NUMBER: _ClassVar[int]
+    DESTINATION_PEER_IDS_FIELD_NUMBER: _ClassVar[int]
+    SESSION_PEER_IDS_FIELD_NUMBER: _ClassVar[int]
+    SOURCE_ENDPOINT_FIELD_NUMBER: _ClassVar[int]
+    operation_id: str
+    source: ProviderResourceRef
+    destination: ProviderResourceRef
+    destination_endpoint: str
+    destination_peer_ids: _containers.RepeatedScalarFieldContainer[str]
+    session_peer_ids: _containers.RepeatedScalarFieldContainer[str]
+    source_endpoint: str
+    def __init__(self, operation_id: _Optional[str] = ..., source: _Optional[_Union[ProviderResourceRef, _Mapping]] = ..., destination: _Optional[_Union[ProviderResourceRef, _Mapping]] = ..., destination_endpoint: _Optional[str] = ..., destination_peer_ids: _Optional[_Iterable[str]] = ..., session_peer_ids: _Optional[_Iterable[str]] = ..., source_endpoint: _Optional[str] = ...) -> None: ...

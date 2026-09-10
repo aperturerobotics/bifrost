@@ -7,7 +7,7 @@ import (
 
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/pkg/errors"
-	"github.com/s4wave/spacewave/core/provider"
+	"github.com/s4wave/spacewave/core/session"
 	"github.com/s4wave/spacewave/core/transport"
 	"github.com/s4wave/spacewave/net/link"
 	link_solicit "github.com/s4wave/spacewave/net/link/solicit"
@@ -18,7 +18,7 @@ import (
 )
 
 // ProtocolID identifies account enrollment on an authenticated connection.
-const ProtocolID = protocol.ID("alpha/account-pairing/1")
+const ProtocolID = protocol.ID("alpha/account-pairing/2")
 
 const confirmationTimeout = 120 * time.Second
 
@@ -74,7 +74,7 @@ func (e *Engine) runDirect(ctx context.Context, active *attempt, lnk link.Link) 
 	} else {
 		strm, err = lnk.OpenStream(stream.OpenOpts{})
 		if err == nil {
-			_, err = strm.Write([]byte{0})
+			_, err = strm.Write([]byte{1})
 		}
 	}
 	if err != nil {
@@ -88,7 +88,7 @@ func (e *Engine) runDirect(ctx context.Context, active *attempt, lnk link.Link) 
 			e.fail(active, StatusFailed, err)
 			return
 		}
-		if preamble[0] != 0 {
+		if preamble[0] != 1 {
 			e.fail(active, StatusFailed, errors.New("invalid direct pairing preamble"))
 			return
 		}
@@ -100,67 +100,7 @@ func (e *Engine) runDirect(ctx context.Context, active *attempt, lnk link.Link) 
 	}
 }
 
-func (e *Engine) prepare(ctx context.Context, active *attempt, stream *stream_packet.Session, remote peer.ID) (*AccountOffer, *Identity, *Receiver, func(), error) {
-	if active.offering {
-		offer, err := e.adapter.OfferPairingAccount(ctx, e.key)
-		if err != nil {
-			return nil, nil, nil, nil, err
-		}
-		if err := stream.SendMsg(&Frame{Body: &Frame_Account{Account: offer}}); err != nil {
-			return nil, nil, nil, nil, err
-		}
-		frame, err := ReceiveFrame(stream)
-		if err != nil {
-			return nil, nil, nil, nil, err
-		}
-		identity := frame.GetIdentity()
-		return offer, identity, nil, func() {}, ValidateIdentity(offer, identity, e.peerID, remote)
-	}
-
-	frame, err := ReceiveFrame(stream)
-	if err != nil {
-		return nil, nil, nil, nil, err
-	}
-	offer := frame.GetAccount()
-	if offer.GetAccountId() == "" || offer.GetOperationId() == "" {
-		return nil, nil, nil, nil, errors.New("pairing source did not offer an account")
-	}
-	p, releaseProvider, err := provider.ExLookupProvider(ctx, e.b, SessionProviderID(offer), false, nil)
-	if err != nil {
-		return nil, nil, nil, nil, err
-	}
-	if p == nil {
-		releaseProvider.Release()
-		return nil, nil, nil, nil, errors.New("the offered account provider is not configured")
-	}
-	account, releaseAccount, err := p.AccessProviderAccount(ctx, offer.GetAccountId(), nil)
-	if err != nil {
-		releaseProvider.Release()
-		return nil, nil, nil, nil, err
-	}
-	release := func() { releaseAccount(); releaseProvider.Release() }
-	adapter, ok := account.(AccountAdapter)
-	if !ok {
-		release()
-		return nil, nil, nil, nil, errors.New("the offered account provider does not support pairing")
-	}
-	receiver, err := adapter.PreparePairingReceiver(ctx, offer, remote, e.peerID)
-	if err != nil {
-		release()
-		return nil, nil, nil, nil, err
-	}
-	releaseAll := func() { receiver.Release(); release() }
-	if err := ValidateIdentity(offer, receiver.Identity, remote, e.peerID); err != nil {
-		releaseAll()
-		return nil, nil, nil, nil, err
-	}
-	if err := stream.SendMsg(&Frame{Body: &Frame_Identity{Identity: receiver.Identity}}); err != nil {
-		releaseAll()
-		return nil, nil, nil, nil, err
-	}
-	return offer, receiver.Identity, receiver, releaseAll, nil
-}
-
+// runStream completes one selected account relationship on the authenticated stream.
 func (e *Engine) runStream(ctx context.Context, active *attempt, strm io.ReadWriteCloser, remote peer.ID, directLink link.Link) {
 	defer strm.Close()
 	stopClose := context.AfterFunc(ctx, func() { _ = strm.Close() })
@@ -168,14 +108,14 @@ func (e *Engine) runStream(ctx context.Context, active *attempt, strm io.ReadWri
 	sess := stream_packet.NewSession(strm, 16<<20)
 	prepareCtx, cancelPrepare := context.WithTimeout(ctx, confirmationTimeout)
 	stopPrepare := context.AfterFunc(prepareCtx, func() { _ = strm.Close() })
-	offer, identity, receiver, release, err := e.prepare(prepareCtx, active, sess, remote)
+	enrollment, err := e.prepare(prepareCtx, active, sess, remote)
 	stopPrepare()
 	cancelPrepare()
 	if err != nil {
 		e.fail(active, StatusFailed, errors.Wrap(err, "prepare account enrollment"))
 		return
 	}
-	if !e.retain(active, release) {
+	if !e.retain(active, enrollment.Release) {
 		return
 	}
 	succeeded := false
@@ -184,8 +124,9 @@ func (e *Engine) runStream(ctx context.Context, active *attempt, strm io.ReadWri
 			e.releaseResources(active)
 		}
 	}()
+	offer, identity, receiver := enrollment.Offer, enrollment.Identity, enrollment.Receiver
 	sourcePeer, receivingPeer := e.peerID, remote
-	if !active.offering {
+	if !enrollment.Offering {
 		sourcePeer, receivingPeer = remote, e.peerID
 	}
 	proof, err := ApprovalContext(offer, identity, sourcePeer, receivingPeer)
@@ -208,6 +149,7 @@ func (e *Engine) runStream(ctx context.Context, active *attempt, strm io.ReadWri
 		a.snapshot.AccountID = offer.GetAccountId()
 		a.snapshot.AccountName = offer.GetDisplayName()
 		a.snapshot.ProviderID = SessionProviderID(offer)
+		a.snapshot.Receiving = !enrollment.Offering
 		a.snapshot.Emoji = emoji
 		a.snapshot.Status = StatusVerifyingEmoji
 	})
@@ -220,8 +162,10 @@ func (e *Engine) runStream(ctx context.Context, active *attempt, strm io.ReadWri
 		return
 	}
 	setStatus(StatusEnrolling)
-	if active.offering {
-		err = e.adapter.EnrollPairingReceiver(ctx, sess, offer, identity, e.key, sourcePeer, receivingPeer)
+	result := receivingSessionRef(receiver)
+	var commitMerge func(context.Context) (*session.SessionRef, error)
+	if enrollment.Offering {
+		err = e.adapter.EnrollPairingReceiver(ctx, sess, enrollment, e.key, sourcePeer, receivingPeer)
 		if err == nil {
 			var frame *Frame
 			frame, err = ReceiveFrame(sess)
@@ -231,6 +175,14 @@ func (e *Engine) runStream(ctx context.Context, active *attempt, strm io.ReadWri
 		}
 	} else {
 		err = receiver.Receive(ctx, sess)
+		if err == nil && enrollment.Choice.Merging() {
+			merger, ok := e.adapter.(AccountMerger)
+			if !ok {
+				err = errors.New("the source account provider does not support account merge")
+			} else {
+				commitMerge, err = merger.MergePairingAccount(ctx, e.session, enrollment.Account, identity.GetSessionRef())
+			}
+		}
 		if err == nil {
 			err = sess.SendMsg(&Frame{Body: &Frame_Complete{Complete: true}})
 		}
@@ -243,14 +195,34 @@ func (e *Engine) runStream(ctx context.Context, active *attempt, strm io.ReadWri
 		e.fail(active, StatusFailed, err)
 		return
 	}
+	if commitMerge != nil {
+		result, err = commitMerge(ctx)
+		if err != nil {
+			e.fail(active, StatusFailed, errors.Wrap(err, "attach merged account"))
+			return
+		}
+	}
 	if directLink != nil {
 		var owner *transport.SessionTransport
-		if active.offering {
+		if enrollment.Offering {
 			owner, err = e.transport(ctx, Relay{})
+		} else if commitMerge != nil {
+			var mounted session.Session
+			var release func()
+			mounted, release, err = enrollment.Account.(session.SessionProvider).MountSession(ctx, result, nil)
+			if err == nil {
+				if !e.retain(active, release) {
+					return
+				}
+				owner, err = mounted.(Session).GetPairingTransport(ctx, Relay{})
+			}
 		} else if receiver.Transport != nil {
 			owner, err = receiver.Transport(ctx)
 		} else {
 			err = errors.New("receiving provider did not supply a Session transport")
+		}
+		if err == nil && !enrollment.Choice.Merging() {
+			directLink, err = BindEnrolledLink(directLink, offer, identity, sourcePeer, receivingPeer)
 		}
 		if err == nil {
 			err = owner.AdoptLink(ctx, directLink)
@@ -260,8 +232,27 @@ func (e *Engine) runStream(ctx context.Context, active *attempt, strm io.ReadWri
 			return
 		}
 	}
+	// Both clients acknowledge their final attachment and connection ownership.
+	// The earlier receipt only released the source's enrollment operation.
+	if enrollment.Offering {
+		err = sess.SendMsg(&Frame{Body: &Frame_Complete{Complete: true}})
+	}
+	if err == nil {
+		var frame *Frame
+		frame, err = ReceiveFrame(sess)
+		if err == nil && !frame.GetComplete() {
+			err = errors.New("peer did not finish its account attachment")
+		}
+	}
+	if err == nil && !enrollment.Offering {
+		err = sess.SendMsg(&Frame{Body: &Frame_Complete{Complete: true}})
+	}
+	if err != nil {
+		e.fail(active, StatusFailed, err)
+		return
+	}
 	e.update(active, func(a *attempt) {
-		a.result = receivingSessionRef(receiver)
+		a.result = result
 		a.snapshot.Status = StatusBothConfirmed
 		a.snapshot.ErrMsg = ""
 	})
@@ -301,6 +292,17 @@ func exchangeApproval(ctx context.Context, stream *stream_packet.Session, confir
 				return StatusFailed, err
 			}
 			if !approved {
+				// Keep the connection alive until the peer receives our rejection
+				// and closes its exchange. Closing a WebRTC link immediately after
+				// a buffered write can discard that decision.
+				if remote != nil {
+					result := <-remote
+					if result.err != nil || result.message.GetRejected() {
+						return StatusPairingRejected, errors.New("pairing rejected locally")
+					}
+				}
+				var receipt Approval
+				_ = stream.RecvMsg(&receipt)
 				return StatusPairingRejected, errors.New("pairing rejected locally")
 			}
 			localApproved = true

@@ -11,6 +11,7 @@ import (
 
 	protobuf_go_lite "github.com/aperturerobotics/protobuf-go-lite"
 	json "github.com/aperturerobotics/protobuf-go-lite/json"
+	provider "github.com/s4wave/spacewave/core/provider"
 	session "github.com/s4wave/spacewave/core/session"
 	sobject "github.com/s4wave/spacewave/core/sobject"
 	command "github.com/s4wave/spacewave/sdk/command"
@@ -36,6 +37,10 @@ type AccountSettings struct {
 	Sessions []*AccountSession `protobuf:"bytes,6,rep,name=sessions,proto3" json:"sessions,omitempty"`
 	// Catalog names account objects. Checkpoints require separate authenticated enrollment.
 	Catalog []*AccountCatalogEntry `protobuf:"bytes,7,rep,name=catalog,proto3" json:"catalog,omitempty"`
+	// Transition redirects returning Sessions after all destination resources are durable.
+	Transition *provider.AccountTransition `protobuf:"bytes,8,opt,name=transition,proto3" json:"transition,omitempty"`
+	// AcceptedMigrations authorizes returning source Session peers to bind their local storage.
+	AcceptedMigrations []*provider.AccountTransition `protobuf:"bytes,9,rep,name=accepted_migrations,json=acceptedMigrations,proto3" json:"acceptedMigrations,omitempty"`
 }
 
 func (x *AccountSettings) Reset() {
@@ -89,6 +94,20 @@ func (x *AccountSettings) GetSessions() []*AccountSession {
 func (x *AccountSettings) GetCatalog() []*AccountCatalogEntry {
 	if x != nil {
 		return x.Catalog
+	}
+	return nil
+}
+
+func (x *AccountSettings) GetTransition() *provider.AccountTransition {
+	if x != nil {
+		return x.Transition
+	}
+	return nil
+}
+
+func (x *AccountSettings) GetAcceptedMigrations() []*provider.AccountTransition {
+	if x != nil {
+		return x.AcceptedMigrations
 	}
 	return nil
 }
@@ -288,6 +307,8 @@ type AccountSettingsOp struct {
 	//	*AccountSettingsOp_ReplaceKeybindingOverrideSet
 	//	*AccountSettingsOp_UpsertAccountSession
 	//	*AccountSettingsOp_UpsertCatalogEntry
+	//	*AccountSettingsOp_AcceptAccountMigration
+	//	*AccountSettingsOp_CommitAccountTransition
 	Op isAccountSettingsOp_Op `protobuf_oneof:"op"`
 }
 
@@ -374,6 +395,20 @@ func (x *AccountSettingsOp) GetUpsertCatalogEntry() *AccountCatalogEntry {
 	return nil
 }
 
+func (x *AccountSettingsOp) GetAcceptAccountMigration() *provider.AccountTransition {
+	if x, ok := x.GetOp().(*AccountSettingsOp_AcceptAccountMigration); ok {
+		return x.AcceptAccountMigration
+	}
+	return nil
+}
+
+func (x *AccountSettingsOp) GetCommitAccountTransition() *provider.AccountTransition {
+	if x, ok := x.GetOp().(*AccountSettingsOp_CommitAccountTransition); ok {
+		return x.CommitAccountTransition
+	}
+	return nil
+}
+
 type isAccountSettingsOp_Op interface {
 	isAccountSettingsOp_Op()
 }
@@ -428,6 +463,16 @@ type AccountSettingsOp_UpsertCatalogEntry struct {
 	UpsertCatalogEntry *AccountCatalogEntry `protobuf:"bytes,10,opt,name=upsert_catalog_entry,json=upsertCatalogEntry,proto3,oneof"`
 }
 
+type AccountSettingsOp_AcceptAccountMigration struct {
+	// AcceptAccountMigration records provider-approved returning Session authorization.
+	AcceptAccountMigration *provider.AccountTransition `protobuf:"bytes,11,opt,name=accept_account_migration,json=acceptAccountMigration,proto3,oneof"`
+}
+
+type AccountSettingsOp_CommitAccountTransition struct {
+	// CommitAccountTransition fixes the destination once resources and Sessions are durable.
+	CommitAccountTransition *provider.AccountTransition `protobuf:"bytes,12,opt,name=commit_account_transition,json=commitAccountTransition,proto3,oneof"`
+}
+
 func (*AccountSettingsOp_UpdateDisplayName) isAccountSettingsOp_Op() {}
 
 func (*AccountSettingsOp_AddPairedDevice) isAccountSettingsOp_Op() {}
@@ -447,6 +492,10 @@ func (*AccountSettingsOp_ReplaceKeybindingOverrideSet) isAccountSettingsOp_Op() 
 func (*AccountSettingsOp_UpsertAccountSession) isAccountSettingsOp_Op() {}
 
 func (*AccountSettingsOp_UpsertCatalogEntry) isAccountSettingsOp_Op() {}
+
+func (*AccountSettingsOp_AcceptAccountMigration) isAccountSettingsOp_Op() {}
+
+func (*AccountSettingsOp_CommitAccountTransition) isAccountSettingsOp_Op() {}
 
 // ReplaceKeybindingOverrideSetOp applies a complete layer replacement with per-surface conflict detection.
 type ReplaceKeybindingOverrideSetOp struct {
@@ -569,6 +618,8 @@ func (m *AccountSettings) CloneVT() *AccountSettings {
 	r.KeybindingOverrides = protobuf_go_lite.CloneVTValue(m.KeybindingOverrides)
 	r.Sessions = protobuf_go_lite.CloneVTSlice(m.Sessions)
 	r.Catalog = protobuf_go_lite.CloneVTSlice(m.Catalog)
+	r.Transition = protobuf_go_lite.CloneVTValue(m.Transition)
+	r.AcceptedMigrations = protobuf_go_lite.CloneVTSlice(m.AcceptedMigrations)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -802,6 +853,32 @@ func (m *AccountSettingsOp_UpsertCatalogEntry) CloneOneofVT() isAccountSettingsO
 	return m.CloneVT()
 }
 
+func (m *AccountSettingsOp_AcceptAccountMigration) CloneVT() *AccountSettingsOp_AcceptAccountMigration {
+	if m == nil {
+		return (*AccountSettingsOp_AcceptAccountMigration)(nil)
+	}
+	r := new(AccountSettingsOp_AcceptAccountMigration)
+	r.AcceptAccountMigration = protobuf_go_lite.CloneVTValue(m.AcceptAccountMigration)
+	return r
+}
+
+func (m *AccountSettingsOp_AcceptAccountMigration) CloneOneofVT() isAccountSettingsOp_Op {
+	return m.CloneVT()
+}
+
+func (m *AccountSettingsOp_CommitAccountTransition) CloneVT() *AccountSettingsOp_CommitAccountTransition {
+	if m == nil {
+		return (*AccountSettingsOp_CommitAccountTransition)(nil)
+	}
+	r := new(AccountSettingsOp_CommitAccountTransition)
+	r.CommitAccountTransition = protobuf_go_lite.CloneVTValue(m.CommitAccountTransition)
+	return r
+}
+
+func (m *AccountSettingsOp_CommitAccountTransition) CloneOneofVT() isAccountSettingsOp_Op {
+	return m.CloneVT()
+}
+
 func (m *ReplaceKeybindingOverrideSetOp) CloneVT() *ReplaceKeybindingOverrideSetOp {
 	if m == nil {
 		return (*ReplaceKeybindingOverrideSetOp)(nil)
@@ -908,6 +985,12 @@ func (this *AccountSettings) EqualVT(that *AccountSettings) bool {
 		return false
 	}
 	if !protobuf_go_lite.EqualVTSliceImplicit(this.Catalog, that.Catalog, func() *AccountCatalogEntry { return &AccountCatalogEntry{} }) {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.Transition, that.Transition) {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.AcceptedMigrations, that.AcceptedMigrations, func() *provider.AccountTransition { return &provider.AccountTransition{} }) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -1233,6 +1316,40 @@ func (this *AccountSettingsOp_UpsertCatalogEntry) EqualVT(thatIface isAccountSet
 	return true
 }
 
+func (this *AccountSettingsOp_AcceptAccountMigration) EqualVT(thatIface isAccountSettingsOp_Op) bool {
+	that, ok := thatIface.(*AccountSettingsOp_AcceptAccountMigration)
+	if !ok {
+		return false
+	}
+	if this == that {
+		return true
+	}
+	if this == nil && that != nil || this != nil && that == nil {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTImplicit(this.AcceptAccountMigration, that.AcceptAccountMigration, func() *provider.AccountTransition { return &provider.AccountTransition{} }) {
+		return false
+	}
+	return true
+}
+
+func (this *AccountSettingsOp_CommitAccountTransition) EqualVT(thatIface isAccountSettingsOp_Op) bool {
+	that, ok := thatIface.(*AccountSettingsOp_CommitAccountTransition)
+	if !ok {
+		return false
+	}
+	if this == that {
+		return true
+	}
+	if this == nil && that != nil || this != nil && that == nil {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTImplicit(this.CommitAccountTransition, that.CommitAccountTransition, func() *provider.AccountTransition { return &provider.AccountTransition{} }) {
+		return false
+	}
+	return true
+}
+
 func (this *ReplaceKeybindingOverrideSetOp) EqualVT(that *ReplaceKeybindingOverrideSetOp) bool {
 	if this == that {
 		return true
@@ -1409,6 +1526,22 @@ func (x *AccountSettings) MarshalProtoJSON(s *json.MarshalState) {
 		}
 		s.WriteArrayEnd()
 	}
+	if x.Transition != nil || s.HasField("transition") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("transition")
+		x.Transition.MarshalProtoJSON(s.WithField("transition"))
+	}
+	if len(x.AcceptedMigrations) > 0 || s.HasField("acceptedMigrations") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("acceptedMigrations")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.AcceptedMigrations {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s.WithField("acceptedMigrations"))
+		}
+		s.WriteArrayEnd()
+	}
 	s.WriteObjectEnd()
 }
 
@@ -1525,6 +1658,31 @@ func (x *AccountSettings) UnmarshalProtoJSON(s *json.UnmarshalState) {
 					return
 				}
 				x.Catalog = append(x.Catalog, v)
+			})
+		case "transition":
+			if s.ReadNil() {
+				x.Transition = nil
+				return
+			}
+			x.Transition = &provider.AccountTransition{}
+			x.Transition.UnmarshalProtoJSON(s.WithField("transition", true))
+		case "accepted_migrations", "acceptedMigrations":
+			s.AddField("accepted_migrations")
+			if s.ReadNil() {
+				x.AcceptedMigrations = nil
+				return
+			}
+			s.ReadArray(func() {
+				if s.ReadNil() {
+					x.AcceptedMigrations = append(x.AcceptedMigrations, nil)
+					return
+				}
+				v := &provider.AccountTransition{}
+				v.UnmarshalProtoJSON(s.WithField("accepted_migrations", false))
+				if s.Err() != nil {
+					return
+				}
+				x.AcceptedMigrations = append(x.AcceptedMigrations, v)
 			})
 		}
 	})
@@ -1845,6 +2003,14 @@ func (x *AccountSettingsOp) MarshalProtoJSON(s *json.MarshalState) {
 			s.WriteMoreIf(&wroteField)
 			s.WriteObjectField("upsertCatalogEntry")
 			ov.UpsertCatalogEntry.MarshalProtoJSON(s.WithField("upsertCatalogEntry"))
+		case *AccountSettingsOp_AcceptAccountMigration:
+			s.WriteMoreIf(&wroteField)
+			s.WriteObjectField("acceptAccountMigration")
+			ov.AcceptAccountMigration.MarshalProtoJSON(s.WithField("acceptAccountMigration"))
+		case *AccountSettingsOp_CommitAccountTransition:
+			s.WriteMoreIf(&wroteField)
+			s.WriteObjectField("commitAccountTransition")
+			ov.CommitAccountTransition.MarshalProtoJSON(s.WithField("commitAccountTransition"))
 		}
 	}
 	s.WriteObjectEnd()
@@ -1954,6 +2120,24 @@ func (x *AccountSettingsOp) UnmarshalProtoJSON(s *json.UnmarshalState) {
 			}
 			ov.UpsertCatalogEntry = &AccountCatalogEntry{}
 			ov.UpsertCatalogEntry.UnmarshalProtoJSON(s.WithField("upsert_catalog_entry", true))
+		case "accept_account_migration", "acceptAccountMigration":
+			ov := &AccountSettingsOp_AcceptAccountMigration{}
+			x.Op = ov
+			if s.ReadNil() {
+				ov.AcceptAccountMigration = nil
+				return
+			}
+			ov.AcceptAccountMigration = &provider.AccountTransition{}
+			ov.AcceptAccountMigration.UnmarshalProtoJSON(s.WithField("accept_account_migration", true))
+		case "commit_account_transition", "commitAccountTransition":
+			ov := &AccountSettingsOp_CommitAccountTransition{}
+			x.Op = ov
+			if s.ReadNil() {
+				ov.CommitAccountTransition = nil
+				return
+			}
+			ov.CommitAccountTransition = &provider.AccountTransition{}
+			ov.CommitAccountTransition.UnmarshalProtoJSON(s.WithField("commit_account_transition", true))
 		}
 	})
 }
@@ -2217,6 +2401,28 @@ func (m *AccountSettings) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	_ = l
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.AcceptedMigrations) > 0 {
+		for iNdEx := len(m.AcceptedMigrations) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.AcceptedMigrations[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0x4a
+		}
+	}
+	if m.Transition != nil {
+		size, err := m.Transition.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x42
 	}
 	if len(m.Catalog) > 0 {
 		for iNdEx := len(m.Catalog) - 1; iNdEx >= 0; iNdEx-- {
@@ -2785,6 +2991,54 @@ func (m *AccountSettingsOp_UpsertCatalogEntry) MarshalToSizedBufferVT(dAtA []byt
 	return len(dAtA) - i, nil
 }
 
+func (m *AccountSettingsOp_AcceptAccountMigration) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *AccountSettingsOp_AcceptAccountMigration) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.AcceptAccountMigration != nil {
+		size, err := m.AcceptAccountMigration.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x5a
+	} else {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, 0)
+		i--
+		dAtA[i] = 0x5a
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *AccountSettingsOp_CommitAccountTransition) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *AccountSettingsOp_CommitAccountTransition) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.CommitAccountTransition != nil {
+		size, err := m.CommitAccountTransition.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x62
+	} else {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, 0)
+		i--
+		dAtA[i] = 0x62
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *ReplaceKeybindingOverrideSetOp) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -3016,6 +3270,14 @@ func (m *AccountSettings) SizeVT() (n int) {
 		l = e.SizeVT()
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
+	if m.Transition != nil {
+		l = m.Transition.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	for _, e := range m.AcceptedMigrations {
+		l = e.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -3241,6 +3503,36 @@ func (m *AccountSettingsOp_UpsertCatalogEntry) SizeVT() (n int) {
 	return n
 }
 
+func (m *AccountSettingsOp_AcceptAccountMigration) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.AcceptAccountMigration != nil {
+		l = m.AcceptAccountMigration.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	} else {
+		n += 2
+	}
+	return n
+}
+
+func (m *AccountSettingsOp_CommitAccountTransition) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.CommitAccountTransition != nil {
+		l = m.CommitAccountTransition.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	} else {
+		n += 2
+	}
+	return n
+}
+
 func (m *ReplaceKeybindingOverrideSetOp) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -3368,6 +3660,22 @@ func (x *AccountSettings) MarshalProtoText() string {
 			protobuf_go_lite.TextWriteListSeparator(&sb, i)
 			if v == nil {
 				protobuf_go_lite.TextWriteTextMarshaler(&sb, &AccountCatalogEntry{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	if x.Transition != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "transition")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Transition)
+	}
+	if len(x.AcceptedMigrations) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "accepted_migrations")
+		for i, v := range x.AcceptedMigrations {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &provider.AccountTransition{})
 			} else {
 				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
 			}
@@ -3554,6 +3862,20 @@ func (x *AccountSettingsOp) MarshalProtoText() string {
 			protobuf_go_lite.TextWriteTextMarshaler(&sb, &AccountCatalogEntry{})
 		} else {
 			protobuf_go_lite.TextWriteTextMarshaler(&sb, body.UpsertCatalogEntry)
+		}
+	case *AccountSettingsOp_AcceptAccountMigration:
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "accept_account_migration")
+		if body.AcceptAccountMigration == nil {
+			protobuf_go_lite.TextWriteTextMarshaler(&sb, &provider.AccountTransition{})
+		} else {
+			protobuf_go_lite.TextWriteTextMarshaler(&sb, body.AcceptAccountMigration)
+		}
+	case *AccountSettingsOp_CommitAccountTransition:
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "commit_account_transition")
+		if body.CommitAccountTransition == nil {
+			protobuf_go_lite.TextWriteTextMarshaler(&sb, &provider.AccountTransition{})
+		} else {
+			protobuf_go_lite.TextWriteTextMarshaler(&sb, body.CommitAccountTransition)
 		}
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
@@ -3744,6 +4066,34 @@ func (m *AccountSettings) UnmarshalVT(dAtA []byte) error {
 			}
 			m.Catalog = append(m.Catalog, &AccountCatalogEntry{})
 			if err := m.Catalog[len(m.Catalog)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 8:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Transition", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Transition == nil {
+				m.Transition = &provider.AccountTransition{}
+			}
+			if err := m.Transition.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 9:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AcceptedMigrations", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.AcceptedMigrations = append(m.AcceptedMigrations, &provider.AccountTransition{})
+			if err := m.AcceptedMigrations[len(m.AcceptedMigrations)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -4314,6 +4664,46 @@ func (m *AccountSettingsOp) UnmarshalVT(dAtA []byte) error {
 					return err
 				}
 				m.Op = &AccountSettingsOp_UpsertCatalogEntry{UpsertCatalogEntry: v}
+			}
+			iNdEx = postIndex
+		case 11:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AcceptAccountMigration", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if oneof, ok := m.Op.(*AccountSettingsOp_AcceptAccountMigration); ok {
+				if err := oneof.AcceptAccountMigration.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+					return err
+				}
+			} else {
+				v := &provider.AccountTransition{}
+				if err := v.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+					return err
+				}
+				m.Op = &AccountSettingsOp_AcceptAccountMigration{AcceptAccountMigration: v}
+			}
+			iNdEx = postIndex
+		case 12:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CommitAccountTransition", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if oneof, ok := m.Op.(*AccountSettingsOp_CommitAccountTransition); ok {
+				if err := oneof.CommitAccountTransition.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+					return err
+				}
+			} else {
+				v := &provider.AccountTransition{}
+				if err := v.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+					return err
+				}
+				m.Op = &AccountSettingsOp_CommitAccountTransition{CommitAccountTransition: v}
 			}
 			iNdEx = postIndex
 		default:

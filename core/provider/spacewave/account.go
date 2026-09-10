@@ -228,6 +228,8 @@ func (a *ProviderAccount) fireCdnRootChanged(spaceID string) {
 // accountState holds all cached account state for a provider account.
 // All fields are guarded by ProviderAccount.accountBcast.
 type accountState struct {
+	// transition is a provider-authenticated redirect for this old attachment.
+	transition *provider.AccountTransition
 	// info is the cached account state from GET /account/state.
 	info *api.AccountStateResponse
 	// infoFetching indicates a GET /account/state fetch is in flight.
@@ -973,6 +975,9 @@ func (a *ProviderAccount) GetAccountState(ctx context.Context) (*api.AccountStat
 		}
 		if shouldFetch {
 			fetched, err := cli.GetAccountState(ctx)
+			if err == nil && a.observeAccountTransition(fetched.GetTransition(), fetched.GetAccountId(), cli.peerID.String()) {
+				err = errAccountTransitionPending
+			}
 			if err != nil {
 				var (
 					waitCh       <-chan struct{}

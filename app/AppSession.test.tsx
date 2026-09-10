@@ -11,6 +11,7 @@ import {
 } from './quickstart/session-handoff.js'
 
 const mockUseParams = vi.hoisted(() => vi.fn())
+const mockUsePath = vi.hoisted(() => vi.fn(() => '/u/1'))
 const mockUseNavigate = vi.hoisted(() => vi.fn())
 const mockUseResource = vi.hoisted(() => vi.fn())
 const mockUseRootResource = vi.hoisted(() => vi.fn())
@@ -20,6 +21,7 @@ vi.mock('@s4wave/web/router/router.js', () => ({
   resolvePath: vi.fn(),
   useNavigate: () => mockUseNavigate,
   useParams: mockUseParams,
+  usePath: mockUsePath,
 }))
 
 vi.mock('@aptre/bldr-sdk/hooks/useResource.js', () => ({
@@ -60,6 +62,7 @@ describe('AppSession', () => {
     cleanup()
     releaseQuickstartSessionHandoffsForTests()
     vi.clearAllMocks()
+    mockUsePath.mockReturnValue('/u/1')
   })
 
   it('describes a pending session attachment as connecting', () => {
@@ -176,5 +179,33 @@ describe('AppSession', () => {
 
     expect(root.mountSessionByIdx).not.toHaveBeenCalled()
     expect(cleanupCalls).toEqual([session])
+  })
+
+  it('refreshes a moved account after leaving the pairing flow', () => {
+    mockUseParams.mockReturnValue({ sessionIndex: '1' })
+    mockUseRootResource.mockReturnValue({ value: null })
+    mockUseResource.mockReturnValue({ value: null, loading: true })
+    mockUseSessionMetadata.mockReturnValue({
+      providerId: 'local',
+      providerAccountId: 'source',
+    })
+    mockUsePath.mockReturnValue('/u/1/setup/link-device')
+    const { rerender } = render(<AppSession />)
+    const dependencies = () => mockUseResource.mock.lastCall?.[2]
+    const pairingDependencies = dependencies()
+
+    mockUseSessionMetadata.mockReturnValue({
+      providerId: 'local',
+      providerAccountId: 'destination',
+    })
+    rerender(<AppSession />)
+    expect(dependencies()).toEqual(pairingDependencies)
+
+    mockUsePath.mockReturnValue('/u/1/so/drive')
+    rerender(<AppSession />)
+    expect(dependencies()).toEqual([1, 'local/destination'])
+    mockUsePath.mockReturnValue('/u/1/so/another-drive')
+    rerender(<AppSession />)
+    expect(dependencies()).toEqual([1, 'local/destination'])
   })
 })

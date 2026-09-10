@@ -5,11 +5,11 @@ import (
 	"slices"
 	"time"
 
-	"github.com/s4wave/spacewave/core/pairing"
-
 	"github.com/aperturerobotics/starpc/srpc"
+	"github.com/aperturerobotics/util/routine"
 	"github.com/pkg/errors"
 	account_settings "github.com/s4wave/spacewave/core/account/settings"
+	"github.com/s4wave/spacewave/core/pairing"
 	"github.com/s4wave/spacewave/core/sobject"
 	"github.com/s4wave/spacewave/net/peer"
 	stream_srpc "github.com/s4wave/spacewave/net/stream/srpc"
@@ -43,6 +43,16 @@ func (a *ProviderAccount) publishAccountCatalogEntry(ctx context.Context, entry 
 // runAccountReplicaSync reacts to settings and local inventory changes. Network
 // failures use the owning routine's backoff; unchanged accounts produce no traffic.
 func (a *ProviderAccount) runAccountReplicaSync(ctx context.Context, state *p2pSyncState) error {
+	delivery := routine.NewStateRoutineContainerWithLoggerVT[*account_settings.AccountSettings](a.le.WithField("routine", "account-transition-delivery"), routine.WithRetry(providerBackoff))
+	delivery.SetStateRoutine(func(ctx context.Context, settings *account_settings.AccountSettings) error {
+		return a.deliverAccountTransitions(ctx, state, settings)
+	})
+	delivery.SetContext(ctx, false)
+	defer func() {
+		if exited, _, _ := delivery.SetStateRoutine(nil); exited != nil {
+			<-exited
+		}
+	}()
 	ref, err := a.GetAccountSettingsRef(ctx)
 	if err != nil {
 		return err
@@ -72,6 +82,7 @@ func (a *ProviderAccount) runAccountReplicaSync(ctx context.Context, state *p2pS
 			if err := a.reconcileAccountReplica(ctx, state, ref.GetProviderResourceRef().GetId(), settings, a.soListCtr.GetValue()); err != nil {
 				return err
 			}
+			delivery.SetState(settings)
 		}
 	}
 }
@@ -83,6 +94,24 @@ func (a *ProviderAccount) reconcileAccountReplica(ctx context.Context, state *p2
 	self := settings.FindAccountSession(localPeer)
 	if self == nil || self.GetRevoked() {
 		return nil
+	}
+
+	// A moved account's offline clients already have approved Session keys.
+	// Retain their endpoints so the signed recovery object can deliver the
+	// redirect before they know the destination account's current peer mesh.
+	for _, migration := range settings.GetAcceptedMigrations() {
+		for _, id := range migration.GetSessionPeerIds() {
+			if id == localPeer || settings.FindAccountSession(id).GetRevoked() {
+				continue
+			}
+			remote, _, err := peer.ParsePeerIDWithPubKey(id)
+			if err != nil {
+				return err
+			}
+			if err := a.retainP2PPeerOnState(ctx, state, remote); err != nil {
+				return err
+			}
+		}
 	}
 
 	// Every active Session retains every other Session, producing the account mesh.

@@ -13,11 +13,10 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/s4wave/spacewave/core/pairing"
-	"github.com/s4wave/spacewave/core/session"
-
 	websocket "github.com/aperturerobotics/go-websocket"
+	"github.com/s4wave/spacewave/core/pairing"
 	api "github.com/s4wave/spacewave/core/provider/spacewave/api"
+	"github.com/s4wave/spacewave/core/session"
 	"github.com/s4wave/spacewave/net/crypto"
 	"github.com/s4wave/spacewave/net/peer"
 )
@@ -324,7 +323,7 @@ func TestCompletePairingWaitsForLink(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got, err := pairingEngineForTest(t, sess).CompleteCode(ctx, pairing.Relay{URL: srv.URL, SigningEnvPrefix: ""}, "TESTCODE")
+	got, err := pairingEngineForTest(t, sess).CompleteCode(ctx, pairing.Relay{URL: srv.URL, SigningEnvPrefix: ""}, "TESTCODE", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -399,7 +398,7 @@ func TestCompletePairingReplacesEmptyTransportWithSignaling(t *testing.T) {
 		t.Fatalf("settle session transport startup: %v", err)
 	}
 
-	got, err := pairingEngineForTest(t, sess).CompleteCode(ctx, pairing.Relay{URL: srv.URL, SigningEnvPrefix: "spacewave-staging"}, "TESTCODE")
+	got, err := pairingEngineForTest(t, sess).CompleteCode(ctx, pairing.Relay{URL: srv.URL, SigningEnvPrefix: "spacewave-staging"}, "TESTCODE", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -472,7 +471,7 @@ func TestWatchPairingStatus(t *testing.T) {
 		}
 	}
 
-	_, err = pairingEngineForTest(t, sess).CompleteCode(ctx, pairing.Relay{URL: srv2.URL, SigningEnvPrefix: ""}, "TESTCODE")
+	_, err = pairingEngineForTest(t, sess).CompleteCode(ctx, pairing.Relay{URL: srv2.URL, SigningEnvPrefix: ""}, "TESTCODE", false)
 	if err != nil {
 		t.Fatal(err)
 	}

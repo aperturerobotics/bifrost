@@ -159,12 +159,23 @@ func TestColdMountBudget(t *testing.T) {
 			},
 		}
 		stateJSON := mustMarshalSOStateMessageSnapshotJSON(t, state)
+		tracker := newWSTracker(logrus.New().WithField("test", t.Name()), func() *SessionClient { return nil })
+		notify := func() func(*api.SONotifyEventPayload) {
+			var callback func(*api.SONotifyEventPayload)
+			tracker.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
+				callback = tracker.notifyCallbacks[soID]
+			})
+			return callback
+		}
 
 		counter := newBudgetCounter()
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			counter.record(r)
 			switch r.URL.Path {
 			case "/api/sobject/" + soID + "/state":
+				if notify() == nil {
+					t.Error("initial state fetch began before notification subscription")
+				}
 				_, _ = w.Write(stateJSON)
 			case "/api/sobject/" + soID + "/config-chain":
 				_, _ = w.Write([]byte("{}"))
@@ -179,7 +190,7 @@ func TestColdMountBudget(t *testing.T) {
 			NewSessionClient(http.DefaultClient, srv.URL, DefaultSigningEnvPrefix, priv, pid.String()),
 			soID,
 			"",
-			newWSTracker(logrus.New().WithField("test", t.Name()), func() *SessionClient { return nil }),
+			tracker,
 			priv,
 			pid,
 			nil,
@@ -192,10 +203,41 @@ func TestColdMountBudget(t *testing.T) {
 		)
 
 		execCtx, cancel := context.WithCancel(context.Background())
+		defer cancel()
 		errCh := make(chan error, 1)
+		ready := make(chan struct{})
 		go func() {
-			errCh <- host.Execute(execCtx)
+			errCh <- host.execute(execCtx, func(context.Context) error {
+				if host.stateCtr.GetValue() == nil {
+					return errors.New("mount published before initial state")
+				}
+				callback := notify()
+				if callback == nil {
+					return errors.New("mount published without notification subscription")
+				}
+				callback(&api.SONotifyEventPayload{
+					Seqno: 2,
+					StateMessage: &api.SOStateMessage{
+						Seqno:   2,
+						Content: &api.SOStateMessage_Snapshot{Snapshot: state.CloneVT()},
+					},
+				})
+				close(ready)
+				return nil
+			})
 		}()
+		select {
+		case <-ready:
+		case err := <-errCh:
+			t.Fatalf("host did not become ready: %v", err)
+		case <-time.After(time.Second):
+			t.Fatal("host did not become ready")
+		}
+		host.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
+			if host.lastSeqno != 2 {
+				t.Errorf("notification during mount was lost: sequence %d", host.lastSeqno)
+			}
+		})
 
 		waitCtx, waitCancel := context.WithTimeout(context.Background(), time.Second)
 		defer waitCancel()

@@ -32,8 +32,7 @@ func newMountedLink(
 	}
 }
 
-// GetLinkUUID returns the host-unique link ID.
-// This should be repeatable between re-constructions of the same link.
+// GetLinkUUID returns the underlying physical connection's ID.
 func (l *mountedLink) GetLinkUUID() uint64 {
 	return l.link.GetUUID()
 }

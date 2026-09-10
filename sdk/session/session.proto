@@ -2,6 +2,7 @@ syntax = "proto3";
 package s4wave.session;
 
 import "github.com/s4wave/spacewave/core/account/settings/settings.proto";
+import "github.com/s4wave/spacewave/core/pairing/pairing.proto";
 import "github.com/s4wave/spacewave/core/provider/transfer/transfer.proto";
 import "github.com/s4wave/spacewave/core/session/session.proto";
 import "github.com/s4wave/spacewave/core/sobject/sobject.proto";
@@ -28,6 +29,8 @@ service SessionResourceService {
   rpc LockSession(LockSessionRequest) returns (LockSessionResponse);
   rpc GeneratePairingCode(GeneratePairingCodeRequest) returns (GeneratePairingCodeResponse);
   rpc CompletePairing(CompletePairingRequest) returns (CompletePairingResponse);
+  // SelectPairingAccount fixes an account outcome before bilateral approval.
+  rpc SelectPairingAccount(SelectPairingAccountRequest) returns (SelectPairingAccountResponse);
   rpc GetSASEmoji(GetSASEmojiRequest) returns (GetSASEmojiResponse);
   rpc ConfirmSASMatch(ConfirmSASMatchRequest) returns (ConfirmSASMatchResponse);
   rpc ConfirmPairing(ConfirmPairingRequest) returns (ConfirmPairingResponse);
@@ -497,7 +500,19 @@ message GeneratePairingCodeResponse {
 message CompletePairingRequest {
   // Code is the 8-char pairing code from the other device.
   string code = 1;
+  // OfferCurrentAccount includes this selected Session's account in the choice.
+  // Home leaves this false so its temporary transport account is not offered.
+  bool offer_current_account = 2;
 }
+
+// SelectPairingAccountRequest selects the proposed relationship between the accounts.
+message SelectPairingAccountRequest {
+  // Outcome identifies the sign-in direction or merge destination.
+  .pairing.AccountOutcome outcome = 1;
+}
+
+// SelectPairingAccountResponse acknowledges an immutable account proposal.
+message SelectPairingAccountResponse {}
 
 // CompletePairingResponse is the response for CompletePairing.
 message CompletePairingResponse {
@@ -682,6 +697,8 @@ enum PairingStatus {
   PairingStatus_CONFIRMATION_TIMEOUT = 12;
   // PairingStatus_ENROLLING means both clients approved and account access is being persisted.
   PairingStatus_ENROLLING = 13;
+  // PairingStatus_SELECTING_ACCOUNT waits for the receiving client's account choice.
+  PairingStatus_SELECTING_ACCOUNT = 14;
 }
 
 // WatchPairingStatusRequest is the request for WatchPairingStatus.
@@ -705,6 +722,8 @@ message WatchPairingStatusResponse {
   bool receiving = 7;
   // AccountName is the offered account's display name.
   string account_name = 8;
+  // Choice identifies both selected accounts and the proposed outcome before approval.
+  .pairing.AccountChoice choice = 9;
 }
 
 // -- Space Invites --
@@ -869,6 +888,8 @@ message CreateLocalPairingOfferResponse {
 message AcceptLocalPairingOfferRequest {
   // OfferPayload is the compressed, base58-encoded offer string from the offerer.
   string offer_payload = 1;
+  // OfferCurrentAccount includes this selected Session's account in the choice.
+  bool offer_current_account = 2;
 }
 
 // AcceptLocalPairingOfferResponse is the response for AcceptLocalPairingOffer.

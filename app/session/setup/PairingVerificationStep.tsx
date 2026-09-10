@@ -7,10 +7,12 @@ import {
   type WatchPairingStatusResponse,
 } from '@s4wave/sdk/session/session.pb.js'
 import type { Session } from '@s4wave/sdk/session/session.js'
+import { AccountOutcome } from '@s4wave/core/pairing/pairing.pb.js'
 import { pairingStatusIsTerminalFailure } from '@s4wave/app/loading/status/pairing.js'
 import { Spinner } from '@s4wave/web/ui/loading/Spinner.js'
 import { cn } from '@s4wave/web/style/utils.js'
 import { PairingChannelProgress } from './PairingChannelProgress.js'
+import { PairingAccountChoice } from './PairingAccountChoice.js'
 
 interface PairingVerificationStepProps {
   session: Session | null | undefined
@@ -77,6 +79,24 @@ export function PairingVerificationStep({
     }
   }
 
+  if (
+    snapshot?.status === PairingStatus.PairingStatus_SELECTING_ACCOUNT &&
+    snapshot.choice &&
+    !error
+  ) {
+    return (
+      <PairingAccountChoice
+        choice={snapshot.choice}
+        receiving={snapshot.receiving ?? false}
+        onChoose={async (outcome) => {
+          if (!session) throw new Error('Pairing Session is unavailable')
+          await session.selectPairingAccount(outcome)
+        }}
+        onAbort={() => void confirm(false)}
+      />
+    )
+  }
+
   if (error) {
     return (
       <div className="space-y-4 text-center">
@@ -98,6 +118,19 @@ export function PairingVerificationStep({
     snapshot?.status === PairingStatus.PairingStatus_WAITING_FOR_REMOTE_CONFIRM
   const emoji = snapshot?.emoji ?? []
   const accountName = snapshot?.accountName || 'this account'
+  const outcome = snapshot?.choice?.outcome
+  const merging =
+    outcome === AccountOutcome.AccountOutcome_MERGE_INTO_OFFERED ||
+    outcome === AccountOutcome.AccountOutcome_MERGE_INTO_RECEIVING
+  const source =
+    outcome === AccountOutcome.AccountOutcome_MERGE_INTO_OFFERED
+      ? snapshot?.choice?.receivingAccount
+      : snapshot?.choice?.offeredAccount
+  const summary = merging
+    ? `Merge ${source?.displayName || 'the other account'} into ${accountName}. Move its Spaces and Sessions, keeping ${accountName}'s settings and storage provider.`
+    : snapshot?.receiving
+      ? `Add ${accountName} to this device. Other accounts stay separate.`
+      : `Allow the other device to access ${accountName}. Other accounts stay separate.`
 
   return (
     <div className="space-y-4">
@@ -107,19 +140,24 @@ export function PairingVerificationStep({
         </div>
         <h2 className="text-foreground text-sm font-medium">
           {enrolling
-            ? 'Connecting account'
+            ? merging
+              ? 'Merging accounts'
+              : 'Connecting account'
             : waiting
               ? 'Waiting for other device'
               : 'Verify connection'}
         </h2>
+        {snapshot?.accountId && (
+          <p className="text-foreground text-xs leading-relaxed">{summary}</p>
+        )}
         <p className="text-foreground-alt text-xs leading-relaxed">
           {enrolling
-            ? 'Saving account access and preparing your Spaces.'
+            ? merging
+              ? 'Saving the account transition and transferring your Spaces. Source data stays recoverable until the transfer is complete.'
+              : 'Saving account access and preparing your Spaces.'
             : waiting
               ? 'Confirm the same emoji on the other device.'
-              : snapshot?.receiving
-                ? `Add ${accountName} to this device? Confirm the emoji match on both devices.`
-                : `Allow the other device to access ${accountName}? Confirm the emoji match on both devices.`}
+              : 'Confirm the emoji match on both devices to approve this account choice.'}
         </p>
       </div>
 

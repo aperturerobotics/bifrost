@@ -115,3 +115,22 @@ message ProviderFeatureResourceRef {
   // Max size 120kb
   bytes provider_feature_meta = 3;
 }
+
+// AccountTransition is the durable, provider-authorized result of an account merge.
+// Source replicas retain it so independently authorized Sessions can reconnect.
+message AccountTransition {
+  // OperationId identifies this source-to-destination transition across retries.
+  string operation_id = 1;
+  // Source identifies the account whose Sessions and resources are moving.
+  ProviderResourceRef source = 2;
+  // Destination identifies the surviving account; id is its settings object ID.
+  ProviderResourceRef destination = 3;
+  // DestinationEndpoint must match the receiver's configured cloud provider.
+  string destination_endpoint = 4;
+  // DestinationPeerIds are the destination's independently authorized transport peers.
+  repeated string destination_peer_ids = 5;
+  // SessionPeerIds is the exact set of source Sessions approved for the transition.
+  repeated string session_peer_ids = 6;
+  // SourceEndpoint identifies cloud authority; empty identifies a local account.
+  string source_endpoint = 7;
+}

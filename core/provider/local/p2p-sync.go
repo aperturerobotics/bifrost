@@ -443,6 +443,9 @@ func (a *ProviderAccount) retainP2PPeerOnState(
 	state *p2pSyncState,
 	remotePeerID peer.ID,
 ) error {
+	if remotePeerID == state.sessionTransport.GetPeerID() {
+		return nil
+	}
 	remoteKey := remotePeerID.String()
 	var alreadyRetained bool
 	state.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {

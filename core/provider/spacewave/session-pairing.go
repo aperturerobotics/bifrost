@@ -12,7 +12,7 @@ import (
 func (s *Session) GetPairingEngine() (*pairing.Engine, error) {
 	s.pairingMu.Lock()
 	defer s.pairingMu.Unlock()
-	if s.sessionPriv == nil || s.lifecycleCtx.Err() != nil {
+	if s.GetPrivKey() == nil || s.lifecycleCtx.Err() != nil {
 		return nil, errors.New("Session is locked or closed")
 	}
 	if s.pairingEngine != nil {
@@ -20,7 +20,7 @@ func (s *Session) GetPairingEngine() (*pairing.Engine, error) {
 	}
 	ctx, cancel := context.WithCancel(s.lifecycleCtx)
 	a := s.tkr.a
-	engine, err := pairing.NewEngine(ctx, a.le, a.p.b, s.sessionPriv, a, s.GetPairingTransport)
+	engine, err := pairing.NewEngine(ctx, a.le, a.p.b, s, a, s.GetPairingTransport)
 	if err != nil {
 		cancel()
 		return nil, err

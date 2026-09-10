@@ -57,6 +57,8 @@ import {
   RenameSpaceResponse,
   RevokeSpaceInviteRequest,
   RevokeSpaceInviteResponse,
+  SelectPairingAccountRequest,
+  SelectPairingAccountResponse,
   SetDirectP2PEnabledRequest,
   SetDirectP2PEnabledResponse,
   SetLockModeRequest,
@@ -253,6 +255,17 @@ export const SessionResourceServiceDefinition = {
       name: 'CompletePairing',
       I: CompletePairingRequest,
       O: CompletePairingResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * SelectPairingAccount fixes an account outcome before bilateral approval.
+     *
+     * @generated from rpc s4wave.session.SessionResourceService.SelectPairingAccount
+     */
+    SelectPairingAccount: {
+      name: 'SelectPairingAccount',
+      I: SelectPairingAccountRequest,
+      O: SelectPairingAccountResponse,
       kind: MethodKind.Unary,
     },
     /**
@@ -619,6 +632,16 @@ export interface SessionResourceService {
   ): Promise<CompletePairingResponse>
 
   /**
+   * SelectPairingAccount fixes an account outcome before bilateral approval.
+   *
+   * @generated from rpc s4wave.session.SessionResourceService.SelectPairingAccount
+   */
+  SelectPairingAccount(
+    request: SelectPairingAccountRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<SelectPairingAccountResponse>
+
+  /**
    * @generated from rpc s4wave.session.SessionResourceService.GetSASEmoji
    */
   GetSASEmoji(
@@ -973,6 +996,17 @@ export interface SessionResourceServiceHandler {
   ): Promise<CompletePairingResponse>
 
   /**
+   * SelectPairingAccount fixes an account outcome before bilateral approval.
+   *
+   * @generated from rpc s4wave.session.SessionResourceService.SelectPairingAccount
+   */
+  SelectPairingAccount(
+    request: SelectPairingAccountRequest,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): Promise<SelectPairingAccountResponse>
+
+  /**
    * @generated from rpc s4wave.session.SessionResourceService.GetSASEmoji
    */
   GetSASEmoji(
@@ -1217,6 +1251,7 @@ export class SessionResourceServiceClient implements SessionResourceService {
     this.LockSession = this.LockSession.bind(this)
     this.GeneratePairingCode = this.GeneratePairingCode.bind(this)
     this.CompletePairing = this.CompletePairing.bind(this)
+    this.SelectPairingAccount = this.SelectPairingAccount.bind(this)
     this.GetSASEmoji = this.GetSASEmoji.bind(this)
     this.ConfirmSASMatch = this.ConfirmSASMatch.bind(this)
     this.ConfirmPairing = this.ConfirmPairing.bind(this)
@@ -1531,6 +1566,25 @@ export class SessionResourceServiceClient implements SessionResourceService {
       abortSignal || undefined,
     )
     return CompletePairingResponse.fromBinary(result)
+  }
+
+  /**
+   * SelectPairingAccount fixes an account outcome before bilateral approval.
+   *
+   * @generated from rpc s4wave.session.SessionResourceService.SelectPairingAccount
+   */
+  async SelectPairingAccount(
+    request: SelectPairingAccountRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<SelectPairingAccountResponse> {
+    const requestMsg = SelectPairingAccountRequest.create(request)
+    const result = await this.rpc.request(
+      this.service,
+      SessionResourceServiceDefinition.methods.SelectPairingAccount.name,
+      SelectPairingAccountRequest.toBinary(requestMsg),
+      abortSignal || undefined,
+    )
+    return SelectPairingAccountResponse.fromBinary(result)
   }
 
   /**

@@ -419,3 +419,91 @@ export const ProviderFeatureResourceRef: MessageType<ProviderFeatureResourceRef>
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })
+
+/**
+ * AccountTransition is the durable, provider-authorized result of an account merge.
+ * Source replicas retain it so independently authorized Sessions can reconnect.
+ *
+ * @generated from message provider.AccountTransition
+ */
+export interface AccountTransition {
+  /**
+   * OperationId identifies this source-to-destination transition across retries.
+   *
+   * @generated from field: string operation_id = 1;
+   */
+  operationId?: string
+  /**
+   * Source identifies the account whose Sessions and resources are moving.
+   *
+   * @generated from field: provider.ProviderResourceRef source = 2;
+   */
+  source?: ProviderResourceRef
+  /**
+   * Destination identifies the surviving account; id is its settings object ID.
+   *
+   * @generated from field: provider.ProviderResourceRef destination = 3;
+   */
+  destination?: ProviderResourceRef
+  /**
+   * DestinationEndpoint must match the receiver's configured cloud provider.
+   *
+   * @generated from field: string destination_endpoint = 4;
+   */
+  destinationEndpoint?: string
+  /**
+   * DestinationPeerIds are the destination's independently authorized transport peers.
+   *
+   * @generated from field: repeated string destination_peer_ids = 5;
+   */
+  destinationPeerIds?: string[]
+  /**
+   * SessionPeerIds is the exact set of source Sessions approved for the transition.
+   *
+   * @generated from field: repeated string session_peer_ids = 6;
+   */
+  sessionPeerIds?: string[]
+  /**
+   * SourceEndpoint identifies cloud authority; empty identifies a local account.
+   *
+   * @generated from field: string source_endpoint = 7;
+   */
+  sourceEndpoint?: string
+}
+
+export const AccountTransition: MessageType<AccountTransition> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'provider.AccountTransition',
+    fields: [
+      { no: 1, name: 'operation_id', kind: 'scalar', T: ScalarType.STRING },
+      { no: 2, name: 'source', kind: 'message', T: () => ProviderResourceRef },
+      {
+        no: 3,
+        name: 'destination',
+        kind: 'message',
+        T: () => ProviderResourceRef,
+      },
+      {
+        no: 4,
+        name: 'destination_endpoint',
+        kind: 'scalar',
+        T: ScalarType.STRING,
+      },
+      {
+        no: 5,
+        name: 'destination_peer_ids',
+        kind: 'scalar',
+        T: ScalarType.STRING,
+        repeated: true,
+      },
+      {
+        no: 6,
+        name: 'session_peer_ids',
+        kind: 'scalar',
+        T: ScalarType.STRING,
+        repeated: true,
+      },
+      { no: 7, name: 'source_endpoint', kind: 'scalar', T: ScalarType.STRING },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })

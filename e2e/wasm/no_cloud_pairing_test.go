@@ -68,7 +68,7 @@ func TestNoCloudPairingDirect(t *testing.T) {
 		t.Fatal("expected non-empty offer payload from A")
 	}
 
-	answerResp, err := sdkB.AcceptLocalPairingOffer(ctx, offerResp.GetOfferPayload())
+	answerResp, err := sdkB.AcceptLocalPairingOffer(ctx, offerResp.GetOfferPayload(), false)
 	if err != nil {
 		t.Fatalf("AcceptLocalPairingOffer (B): %v", err)
 	}

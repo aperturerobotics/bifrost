@@ -14,6 +14,7 @@ import { WhichKeyPanel } from '@s4wave/web/command/WhichKeyPanel.js'
 import { ShellTabFocusContextProvider } from '@s4wave/web/command/FocusContext.js'
 import { SessionContext } from '@s4wave/web/contexts/contexts.js'
 import { useRootResource } from '@s4wave/web/hooks/useRootResource.js'
+import { useSessionMetadata } from '@s4wave/app/hooks/useSessionMetadata.js'
 import {
   DocumentTitleProvider,
   getRouteDocumentTitleParts,
@@ -45,6 +46,7 @@ function CommandSessionScope({ children }: { children: ReactNode }) {
     const sessionIndex = Number(match[1])
     return sessionIndex > 0 ? sessionIndex : null
   }, [tabs, activeTabId])
+  const metadata = useSessionMetadata(activeSessionIndex)
   const sessionResource = useResource(
     rootResource,
     async (root, signal, cleanup) => {
@@ -55,7 +57,7 @@ function CommandSessionScope({ children }: { children: ReactNode }) {
       )
       return result ? cleanup(result.session) : null
     },
-    [activeSessionIndex],
+    [activeSessionIndex, metadata?.providerId, metadata?.providerAccountId],
   )
 
   if (activeSessionIndex === null) return children

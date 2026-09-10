@@ -36,6 +36,37 @@ message AccountOffer {
   repeated string revoked_session_peer_ids = 8;
   // ActiveSessionPeerIds identifies current cloud authorizations for Session reuse.
   repeated string active_session_peer_ids = 9;
+  // SelectionContext binds this enrollment to both accounts and the selected outcome.
+  string selection_context = 10;
+  // MachineName identifies the client offering this account.
+  string machine_name = 11;
+  // SpaceCount and SessionCount describe the current migration preview.
+  uint32 space_count = 12;
+  uint32 session_count = 13;
+}
+
+// AccountOutcome selects the account relationship created by bilateral approval.
+enum AccountOutcome {
+  // AccountOutcome_UNSPECIFIED requires the receiving client to choose an outcome.
+  AccountOutcome_UNSPECIFIED = 0;
+  // AccountOutcome_SIGN_IN_OFFERED adds the code creator's account on the receiving client.
+  AccountOutcome_SIGN_IN_OFFERED = 1;
+  // AccountOutcome_SIGN_IN_RECEIVING adds the receiving client's account on the code creator.
+  AccountOutcome_SIGN_IN_RECEIVING = 2;
+  // AccountOutcome_MERGE_INTO_OFFERED moves the receiving account into the offered account.
+  AccountOutcome_MERGE_INTO_OFFERED = 3;
+  // AccountOutcome_MERGE_INTO_RECEIVING moves the offered account into the receiving account.
+  AccountOutcome_MERGE_INTO_RECEIVING = 4;
+}
+
+// AccountChoice carries the two account identities and the selected relationship.
+message AccountChoice {
+  // OfferedAccount is the account selected by the code creator.
+  AccountOffer offered_account = 1;
+  // ReceivingAccount is absent when pairing from Home without a selected account.
+  AccountOffer receiving_account = 2;
+  // Outcome is fixed before either client approves the operation.
+  AccountOutcome outcome = 3;
 }
 
 // Identity proves possession of the receiving Session and storage keys.
@@ -54,6 +85,11 @@ message SharedObject {
   .sobject.SharedObjectListEntry entry = 1;
   // State is accepted only through the SharedObject host's enrollment contract.
   .sobject.SOState state = 2;
+  // HistoryBase and History retain the verified lineage leading to State.
+  .sobject.SharedObjectConfig history_base = 3;
+  repeated .sobject.SOConfigChange history = 4;
+  // Genesis retains the signed first entry when HistoryBase is that entry.
+  .sobject.SOConfigChange genesis = 5;
 }
 
 // Frame carries the ordered account enrollment exchange.
@@ -69,5 +105,7 @@ message Frame {
     bool complete = 4;
     // Error terminates enrollment with a reason visible to both clients.
     string error = 5;
+    // Choice selects the relationship after both account identities are known.
+    AccountChoice choice = 6;
   }
 }

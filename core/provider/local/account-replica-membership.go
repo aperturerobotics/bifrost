@@ -3,10 +3,9 @@ package provider_local
 import (
 	"context"
 
-	"github.com/s4wave/spacewave/core/pairing"
-
 	"github.com/pkg/errors"
 	account_settings "github.com/s4wave/spacewave/core/account/settings"
+	"github.com/s4wave/spacewave/core/pairing"
 	"github.com/s4wave/spacewave/core/sobject"
 	"github.com/s4wave/spacewave/net/peer"
 )
@@ -61,15 +60,22 @@ func commitAccountSettingsOp(ctx context.Context, so sobject.SharedObject, op *a
 	return so.ClearOperationResult(ctx, id)
 }
 
-// registerPairingReplicas publishes the two approved identity bindings before
+// registerPairingReplicas publishes the approved identity bindings before
 // exporting settings, so every client learns the same account membership.
-func (a *ProviderAccount) registerPairingReplicas(ctx context.Context, enrollment *pairingEnrollment) error {
+func (a *ProviderAccount) registerPairingReplicas(ctx context.Context, enrollment *pairing.Enrollment, source, receiving peer.ID) error {
+	members := []*account_settings.AccountSession{
+		{PeerId: source.String(), StoragePeerId: enrollment.Offer.GetStoragePeerId()},
+		{PeerId: enrollment.Identity.GetSessionProof().GetResponderPeerId(), StoragePeerId: enrollment.Identity.GetStorageProof().GetResponderPeerId()},
+	}
+	if enrollment.Choice.Merging() {
+		members = append(members, &account_settings.AccountSession{PeerId: receiving.String(), StoragePeerId: enrollment.Identity.GetStorageProof().GetResponderPeerId()})
+	}
 	settings, err := a.readAccountSettings(ctx)
 	if err != nil {
 		return err
 	}
-	for _, id := range []string{enrollment.source.String(), enrollment.identity.GetSessionProof().GetResponderPeerId()} {
-		if settings.FindAccountSession(id).GetRevoked() {
+	for _, member := range members {
+		if settings.FindAccountSession(member.GetPeerId()).GetRevoked() {
 			return errors.New("removed Session must pair with a new identity")
 		}
 	}
@@ -82,10 +88,7 @@ func (a *ProviderAccount) registerPairingReplicas(ctx context.Context, enrollmen
 		return err
 	}
 	defer release()
-	for _, member := range []*account_settings.AccountSession{
-		{PeerId: enrollment.source.String(), StoragePeerId: enrollment.offer.GetStoragePeerId()},
-		{PeerId: enrollment.identity.GetSessionProof().GetResponderPeerId(), StoragePeerId: enrollment.identity.GetStorageProof().GetResponderPeerId()},
-	} {
+	for _, member := range members {
 		if err := commitAccountSettingsOp(ctx, so, &account_settings.AccountSettingsOp{
 			Op: &account_settings.AccountSettingsOp_UpsertAccountSession{UpsertAccountSession: member},
 		}); err != nil {
@@ -139,7 +142,15 @@ func (a *ProviderAccount) enrollAccountMemberObject(ctx context.Context, entry *
 	if err != nil {
 		return nil, err
 	}
-	return &pairing.SharedObject{Entry: entry.CloneVT(), State: state.CloneVT()}, nil
+	base, history, err := local.ReadSharedObjectConfigHistory(ctx, state.GetConfig())
+	if err != nil {
+		return nil, err
+	}
+	genesis, err := local.ReadSharedObjectGenesis(ctx, base)
+	if err != nil {
+		return nil, err
+	}
+	return &pairing.SharedObject{Entry: entry.CloneVT(), State: state.CloneVT(), HistoryBase: base, History: history, Genesis: genesis}, nil
 }
 
 // revokeAccountReplicaAccess lets the initiating replica finish its one signed

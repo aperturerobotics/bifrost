@@ -2,18 +2,74 @@
 // @generated from file github.com/s4wave/spacewave/core/pairing/pairing.proto (package pairing, syntax proto3)
 /* eslint-disable */
 
+import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { SessionRef } from '../session/session.pb.js'
 import {
+  SharedObjectConfig,
   SharedObjectListEntry,
+  SOConfigChange,
   SOJoinResponse,
   SOState,
 } from '../sobject/sobject.pb.js'
 
 export const protobufPackage = 'pairing'
+
+/**
+ * AccountOutcome selects the account relationship created by bilateral approval.
+ *
+ * @generated from enum pairing.AccountOutcome
+ */
+export enum AccountOutcome {
+  /**
+   * AccountOutcome_UNSPECIFIED requires the receiving client to choose an outcome.
+   *
+   * @generated from enum value: AccountOutcome_UNSPECIFIED = 0;
+   */
+  AccountOutcome_UNSPECIFIED = 0,
+
+  /**
+   * AccountOutcome_SIGN_IN_OFFERED adds the code creator's account on the receiving client.
+   *
+   * @generated from enum value: AccountOutcome_SIGN_IN_OFFERED = 1;
+   */
+  AccountOutcome_SIGN_IN_OFFERED = 1,
+
+  /**
+   * AccountOutcome_SIGN_IN_RECEIVING adds the receiving client's account on the code creator.
+   *
+   * @generated from enum value: AccountOutcome_SIGN_IN_RECEIVING = 2;
+   */
+  AccountOutcome_SIGN_IN_RECEIVING = 2,
+
+  /**
+   * AccountOutcome_MERGE_INTO_OFFERED moves the receiving account into the offered account.
+   *
+   * @generated from enum value: AccountOutcome_MERGE_INTO_OFFERED = 3;
+   */
+  AccountOutcome_MERGE_INTO_OFFERED = 3,
+
+  /**
+   * AccountOutcome_MERGE_INTO_RECEIVING moves the offered account into the receiving account.
+   *
+   * @generated from enum value: AccountOutcome_MERGE_INTO_RECEIVING = 4;
+   */
+  AccountOutcome_MERGE_INTO_RECEIVING = 4,
+}
+
+export const AccountOutcome_Enum = /* @__PURE__ */ createEnumType(
+  'pairing.AccountOutcome',
+  [
+    [0, 'AccountOutcome_UNSPECIFIED'],
+    [1, 'AccountOutcome_SIGN_IN_OFFERED'],
+    [2, 'AccountOutcome_SIGN_IN_RECEIVING'],
+    [3, 'AccountOutcome_MERGE_INTO_OFFERED'],
+    [4, 'AccountOutcome_MERGE_INTO_RECEIVING'],
+  ],
+)
 
 /**
  * Approval is exchanged over a bifrost link during the
@@ -119,6 +175,28 @@ export interface AccountOffer {
    * @generated from field: repeated string active_session_peer_ids = 9;
    */
   activeSessionPeerIds?: string[]
+  /**
+   * SelectionContext binds this enrollment to both accounts and the selected outcome.
+   *
+   * @generated from field: string selection_context = 10;
+   */
+  selectionContext?: string
+  /**
+   * MachineName identifies the client offering this account.
+   *
+   * @generated from field: string machine_name = 11;
+   */
+  machineName?: string
+  /**
+   * SpaceCount and SessionCount describe the current migration preview.
+   *
+   * @generated from field: uint32 space_count = 12;
+   */
+  spaceCount?: number
+  /**
+   * @generated from field: uint32 session_count = 13;
+   */
+  sessionCount?: number
 }
 
 export const AccountOffer: MessageType<AccountOffer> =
@@ -151,6 +229,62 @@ export const AccountOffer: MessageType<AccountOffer> =
         T: ScalarType.STRING,
         repeated: true,
       },
+      {
+        no: 10,
+        name: 'selection_context',
+        kind: 'scalar',
+        T: ScalarType.STRING,
+      },
+      { no: 11, name: 'machine_name', kind: 'scalar', T: ScalarType.STRING },
+      { no: 12, name: 'space_count', kind: 'scalar', T: ScalarType.UINT32 },
+      { no: 13, name: 'session_count', kind: 'scalar', T: ScalarType.UINT32 },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
+ * AccountChoice carries the two account identities and the selected relationship.
+ *
+ * @generated from message pairing.AccountChoice
+ */
+export interface AccountChoice {
+  /**
+   * OfferedAccount is the account selected by the code creator.
+   *
+   * @generated from field: pairing.AccountOffer offered_account = 1;
+   */
+  offeredAccount?: AccountOffer
+  /**
+   * ReceivingAccount is absent when pairing from Home without a selected account.
+   *
+   * @generated from field: pairing.AccountOffer receiving_account = 2;
+   */
+  receivingAccount?: AccountOffer
+  /**
+   * Outcome is fixed before either client approves the operation.
+   *
+   * @generated from field: pairing.AccountOutcome outcome = 3;
+   */
+  outcome?: AccountOutcome
+}
+
+export const AccountChoice: MessageType<AccountChoice> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'pairing.AccountChoice',
+    fields: [
+      {
+        no: 1,
+        name: 'offered_account',
+        kind: 'message',
+        T: () => AccountOffer,
+      },
+      {
+        no: 2,
+        name: 'receiving_account',
+        kind: 'message',
+        T: () => AccountOffer,
+      },
+      { no: 3, name: 'outcome', kind: 'enum', T: AccountOutcome_Enum },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })
@@ -220,6 +354,22 @@ export interface SharedObject {
    * @generated from field: sobject.SOState state = 2;
    */
   state?: SOState
+  /**
+   * HistoryBase and History retain the verified lineage leading to State.
+   *
+   * @generated from field: sobject.SharedObjectConfig history_base = 3;
+   */
+  historyBase?: SharedObjectConfig
+  /**
+   * @generated from field: repeated sobject.SOConfigChange history = 4;
+   */
+  history?: SOConfigChange[]
+  /**
+   * Genesis retains the signed first entry when HistoryBase is that entry.
+   *
+   * @generated from field: sobject.SOConfigChange genesis = 5;
+   */
+  genesis?: SOConfigChange
 }
 
 export const SharedObject: MessageType<SharedObject> =
@@ -228,6 +378,20 @@ export const SharedObject: MessageType<SharedObject> =
     fields: [
       { no: 1, name: 'entry', kind: 'message', T: () => SharedObjectListEntry },
       { no: 2, name: 'state', kind: 'message', T: () => SOState },
+      {
+        no: 3,
+        name: 'history_base',
+        kind: 'message',
+        T: () => SharedObjectConfig,
+      },
+      {
+        no: 4,
+        name: 'history',
+        kind: 'message',
+        T: () => SOConfigChange,
+        repeated: true,
+      },
+      { no: 5, name: 'genesis', kind: 'message', T: () => SOConfigChange },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })
@@ -291,6 +455,15 @@ export interface Frame {
         value: string
         case: 'error'
       }
+    | {
+        /**
+         * Choice selects the relationship after both account identities are known.
+         *
+         * @generated from field: pairing.AccountChoice choice = 6;
+         */
+        value: AccountChoice
+        case: 'choice'
+      }
 }
 
 export const Frame: MessageType<Frame> = /* @__PURE__ */ createMessageType({
@@ -329,6 +502,13 @@ export const Frame: MessageType<Frame> = /* @__PURE__ */ createMessageType({
       name: 'error',
       kind: 'scalar',
       T: ScalarType.STRING,
+      oneof: 'body',
+    },
+    {
+      no: 6,
+      name: 'choice',
+      kind: 'message',
+      T: () => AccountChoice,
       oneof: 'body',
     },
   ] satisfies readonly PartialFieldInfo[],

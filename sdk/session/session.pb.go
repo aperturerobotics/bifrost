@@ -15,6 +15,7 @@ import (
 	json "github.com/aperturerobotics/protobuf-go-lite/json"
 	timestamppb "github.com/aperturerobotics/protobuf-go-lite/types/known/timestamppb"
 	settings "github.com/s4wave/spacewave/core/account/settings"
+	pairing "github.com/s4wave/spacewave/core/pairing"
 	transfer "github.com/s4wave/spacewave/core/provider/transfer"
 	session "github.com/s4wave/spacewave/core/session"
 	sobject "github.com/s4wave/spacewave/core/sobject"
@@ -292,6 +293,8 @@ const (
 	PairingStatus_PairingStatus_CONFIRMATION_TIMEOUT PairingStatus = 12
 	// PairingStatus_ENROLLING means both clients approved and account access is being persisted.
 	PairingStatus_PairingStatus_ENROLLING PairingStatus = 13
+	// PairingStatus_SELECTING_ACCOUNT waits for the receiving client's account choice.
+	PairingStatus_PairingStatus_SELECTING_ACCOUNT PairingStatus = 14
 )
 
 // Enum value maps for PairingStatus.
@@ -311,6 +314,7 @@ var (
 		11: "PairingStatus_PAIRING_REJECTED",
 		12: "PairingStatus_CONFIRMATION_TIMEOUT",
 		13: "PairingStatus_ENROLLING",
+		14: "PairingStatus_SELECTING_ACCOUNT",
 	}
 	PairingStatus_value = map[string]int32{
 		"PairingStatus_IDLE":                       0,
@@ -327,6 +331,7 @@ var (
 		"PairingStatus_PAIRING_REJECTED":           11,
 		"PairingStatus_CONFIRMATION_TIMEOUT":       12,
 		"PairingStatus_ENROLLING":                  13,
+		"PairingStatus_SELECTING_ACCOUNT":          14,
 	}
 )
 
@@ -1882,6 +1887,9 @@ type CompletePairingRequest struct {
 	unknownFields []byte
 	// Code is the 8-char pairing code from the other device.
 	Code string `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
+	// OfferCurrentAccount includes this selected Session's account in the choice.
+	// Home leaves this false so its temporary transport account is not offered.
+	OfferCurrentAccount bool `protobuf:"varint,2,opt,name=offer_current_account,json=offerCurrentAccount,proto3" json:"offerCurrentAccount,omitempty"`
 }
 
 func (x *CompletePairingRequest) Reset() {
@@ -1896,6 +1904,44 @@ func (x *CompletePairingRequest) GetCode() string {
 	}
 	return ""
 }
+
+func (x *CompletePairingRequest) GetOfferCurrentAccount() bool {
+	if x != nil {
+		return x.OfferCurrentAccount
+	}
+	return false
+}
+
+// SelectPairingAccountRequest selects the proposed relationship between the accounts.
+type SelectPairingAccountRequest struct {
+	unknownFields []byte
+	// Outcome identifies the sign-in direction or merge destination.
+	Outcome pairing.AccountOutcome `protobuf:"varint,1,opt,name=outcome,proto3" json:"outcome,omitempty"`
+}
+
+func (x *SelectPairingAccountRequest) Reset() {
+	*x = SelectPairingAccountRequest{}
+}
+
+func (*SelectPairingAccountRequest) ProtoMessage() {}
+
+func (x *SelectPairingAccountRequest) GetOutcome() pairing.AccountOutcome {
+	if x != nil {
+		return x.Outcome
+	}
+	return pairing.AccountOutcome(0)
+}
+
+// SelectPairingAccountResponse acknowledges an immutable account proposal.
+type SelectPairingAccountResponse struct {
+	unknownFields []byte
+}
+
+func (x *SelectPairingAccountResponse) Reset() {
+	*x = SelectPairingAccountResponse{}
+}
+
+func (*SelectPairingAccountResponse) ProtoMessage() {}
 
 // CompletePairingResponse is the response for CompletePairing.
 type CompletePairingResponse struct {
@@ -2443,6 +2489,8 @@ type WatchPairingStatusResponse struct {
 	Receiving bool `protobuf:"varint,7,opt,name=receiving,proto3" json:"receiving,omitempty"`
 	// AccountName is the offered account's display name.
 	AccountName string `protobuf:"bytes,8,opt,name=account_name,json=accountName,proto3" json:"accountName,omitempty"`
+	// Choice identifies both selected accounts and the proposed outcome before approval.
+	Choice *pairing.AccountChoice `protobuf:"bytes,9,opt,name=choice,proto3" json:"choice,omitempty"`
 }
 
 func (x *WatchPairingStatusResponse) Reset() {
@@ -2505,6 +2553,13 @@ func (x *WatchPairingStatusResponse) GetAccountName() string {
 		return x.AccountName
 	}
 	return ""
+}
+
+func (x *WatchPairingStatusResponse) GetChoice() *pairing.AccountChoice {
+	if x != nil {
+		return x.Choice
+	}
+	return nil
 }
 
 // CreateSpaceInviteRequest is the request for CreateSpaceInvite.
@@ -2973,6 +3028,8 @@ type AcceptLocalPairingOfferRequest struct {
 	unknownFields []byte
 	// OfferPayload is the compressed, base58-encoded offer string from the offerer.
 	OfferPayload string `protobuf:"bytes,1,opt,name=offer_payload,json=offerPayload,proto3" json:"offerPayload,omitempty"`
+	// OfferCurrentAccount includes this selected Session's account in the choice.
+	OfferCurrentAccount bool `protobuf:"varint,2,opt,name=offer_current_account,json=offerCurrentAccount,proto3" json:"offerCurrentAccount,omitempty"`
 }
 
 func (x *AcceptLocalPairingOfferRequest) Reset() {
@@ -2986,6 +3043,13 @@ func (x *AcceptLocalPairingOfferRequest) GetOfferPayload() string {
 		return x.OfferPayload
 	}
 	return ""
+}
+
+func (x *AcceptLocalPairingOfferRequest) GetOfferCurrentAccount() bool {
+	if x != nil {
+		return x.OfferCurrentAccount
+	}
+	return false
 }
 
 // AcceptLocalPairingOfferResponse is the response for AcceptLocalPairingOffer.
@@ -3715,6 +3779,7 @@ func (m *CompletePairingRequest) CloneVT() *CompletePairingRequest {
 	}
 	r := new(CompletePairingRequest)
 	r.Code = m.Code
+	r.OfferCurrentAccount = m.OfferCurrentAccount
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -3722,6 +3787,37 @@ func (m *CompletePairingRequest) CloneVT() *CompletePairingRequest {
 }
 
 func (m *CompletePairingRequest) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *SelectPairingAccountRequest) CloneVT() *SelectPairingAccountRequest {
+	if m == nil {
+		return (*SelectPairingAccountRequest)(nil)
+	}
+	r := new(SelectPairingAccountRequest)
+	r.Outcome = m.Outcome
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *SelectPairingAccountRequest) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *SelectPairingAccountResponse) CloneVT() *SelectPairingAccountResponse {
+	if m == nil {
+		return (*SelectPairingAccountResponse)(nil)
+	}
+	r := new(SelectPairingAccountResponse)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *SelectPairingAccountResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
@@ -4182,6 +4278,7 @@ func (m *WatchPairingStatusResponse) CloneVT() *WatchPairingStatusResponse {
 	r.Receiving = m.Receiving
 	r.AccountName = m.AccountName
 	r.Emoji = protobuf_go_lite.CloneSlice(m.Emoji)
+	r.Choice = protobuf_go_lite.CloneVTValue(m.Choice)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -4496,6 +4593,7 @@ func (m *AcceptLocalPairingOfferRequest) CloneVT() *AcceptLocalPairingOfferReque
 	}
 	r := new(AcceptLocalPairingOfferRequest)
 	r.OfferPayload = m.OfferPayload
+	r.OfferCurrentAccount = m.OfferCurrentAccount
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -5538,11 +5636,51 @@ func (this *CompletePairingRequest) EqualVT(that *CompletePairingRequest) bool {
 	if this.Code != that.Code {
 		return false
 	}
+	if this.OfferCurrentAccount != that.OfferCurrentAccount {
+		return false
+	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
 func (this *CompletePairingRequest) EqualMessageVT(thatMsg any) bool {
 	that, ok := thatMsg.(*CompletePairingRequest)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *SelectPairingAccountRequest) EqualVT(that *SelectPairingAccountRequest) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.Outcome != that.Outcome {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *SelectPairingAccountRequest) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*SelectPairingAccountRequest)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *SelectPairingAccountResponse) EqualVT(that *SelectPairingAccountResponse) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *SelectPairingAccountResponse) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*SelectPairingAccountResponse)
 	if !ok {
 		return false
 	}
@@ -6127,6 +6265,9 @@ func (this *WatchPairingStatusResponse) EqualVT(that *WatchPairingStatusResponse
 	if this.AccountName != that.AccountName {
 		return false
 	}
+	if !protobuf_go_lite.IsEqualVT(this.Choice, that.Choice) {
+		return false
+	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
@@ -6535,6 +6676,9 @@ func (this *AcceptLocalPairingOfferRequest) EqualVT(that *AcceptLocalPairingOffe
 		return false
 	}
 	if this.OfferPayload != that.OfferPayload {
+		return false
+	}
+	if this.OfferCurrentAccount != that.OfferCurrentAccount {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -9157,6 +9301,11 @@ func (x *CompletePairingRequest) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("code")
 		s.WriteString(x.Code)
 	}
+	if x.OfferCurrentAccount || s.HasField("offerCurrentAccount") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("offerCurrentAccount")
+		s.WriteBool(x.OfferCurrentAccount)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -9177,12 +9326,87 @@ func (x *CompletePairingRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "code":
 			s.AddField("code")
 			x.Code = s.ReadString()
+		case "offer_current_account", "offerCurrentAccount":
+			s.AddField("offer_current_account")
+			x.OfferCurrentAccount = s.ReadBool()
 		}
 	})
 }
 
 // UnmarshalJSON unmarshals the CompletePairingRequest from JSON.
 func (x *CompletePairingRequest) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the SelectPairingAccountRequest message to JSON.
+func (x *SelectPairingAccountRequest) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Outcome != 0 || s.HasField("outcome") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("outcome")
+		x.Outcome.MarshalProtoJSON(s)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the SelectPairingAccountRequest to JSON.
+func (x *SelectPairingAccountRequest) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the SelectPairingAccountRequest message from JSON.
+func (x *SelectPairingAccountRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "outcome":
+			s.AddField("outcome")
+			x.Outcome.UnmarshalProtoJSON(s)
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the SelectPairingAccountRequest from JSON.
+func (x *SelectPairingAccountRequest) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the SelectPairingAccountResponse message to JSON.
+func (x *SelectPairingAccountResponse) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the SelectPairingAccountResponse to JSON.
+func (x *SelectPairingAccountResponse) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the SelectPairingAccountResponse message from JSON.
+func (x *SelectPairingAccountResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		// no fields
+	})
+}
+
+// UnmarshalJSON unmarshals the SelectPairingAccountResponse from JSON.
+func (x *SelectPairingAccountResponse) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -10400,6 +10624,11 @@ func (x *WatchPairingStatusResponse) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("accountName")
 		s.WriteString(x.AccountName)
 	}
+	if x.Choice != nil || s.HasField("choice") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("choice")
+		x.Choice.MarshalProtoJSON(s.WithField("choice"))
+	}
 	s.WriteObjectEnd()
 }
 
@@ -10445,6 +10674,13 @@ func (x *WatchPairingStatusResponse) UnmarshalProtoJSON(s *json.UnmarshalState) 
 		case "account_name", "accountName":
 			s.AddField("account_name")
 			x.AccountName = s.ReadString()
+		case "choice":
+			if s.ReadNil() {
+				x.Choice = nil
+				return
+			}
+			x.Choice = &pairing.AccountChoice{}
+			x.Choice.UnmarshalProtoJSON(s.WithField("choice", true))
 		}
 	})
 }
@@ -11357,6 +11593,11 @@ func (x *AcceptLocalPairingOfferRequest) MarshalProtoJSON(s *json.MarshalState) 
 		s.WriteObjectField("offerPayload")
 		s.WriteString(x.OfferPayload)
 	}
+	if x.OfferCurrentAccount || s.HasField("offerCurrentAccount") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("offerCurrentAccount")
+		s.WriteBool(x.OfferCurrentAccount)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -11377,6 +11618,9 @@ func (x *AcceptLocalPairingOfferRequest) UnmarshalProtoJSON(s *json.UnmarshalSta
 		case "offer_payload", "offerPayload":
 			s.AddField("offer_payload")
 			x.OfferPayload = s.ReadString()
+		case "offer_current_account", "offerCurrentAccount":
+			s.AddField("offer_current_account")
+			x.OfferCurrentAccount = s.ReadBool()
 		}
 	})
 }
@@ -13458,10 +13702,84 @@ func (m *CompletePairingRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.OfferCurrentAccount {
+		i = protobuf_go_lite.EncodeBool(dAtA, i, m.OfferCurrentAccount)
+		i--
+		dAtA[i] = 0x10
+	}
 	if len(m.Code) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.Code)
 		i--
 		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *SelectPairingAccountRequest) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *SelectPairingAccountRequest) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *SelectPairingAccountRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.Outcome != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Outcome))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *SelectPairingAccountResponse) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *SelectPairingAccountResponse) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *SelectPairingAccountResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
 	return len(dAtA) - i, nil
 }
@@ -14543,6 +14861,16 @@ func (m *WatchPairingStatusResponse) MarshalToSizedBufferVT(dAtA []byte) (int, e
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.Choice != nil {
+		size, err := m.Choice.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x4a
+	}
 	if len(m.AccountName) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.AccountName)
 		i--
@@ -15371,6 +15699,11 @@ func (m *AcceptLocalPairingOfferRequest) MarshalToSizedBufferVT(dAtA []byte) (in
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.OfferCurrentAccount {
+		i = protobuf_go_lite.EncodeBool(dAtA, i, m.OfferCurrentAccount)
+		i--
+		dAtA[i] = 0x10
+	}
 	if len(m.OfferPayload) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.OfferPayload)
 		i--
@@ -16014,6 +16347,28 @@ func (m *CompletePairingRequest) SizeVT() (n int) {
 	var l int
 	_ = l
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Code)
+	n += protobuf_go_lite.SizeBoolNonZero(1, m.OfferCurrentAccount)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *SelectPairingAccountRequest) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Outcome)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *SelectPairingAccountResponse) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
 	n += len(m.unknownFields)
 	return n
 }
@@ -16348,6 +16703,10 @@ func (m *WatchPairingStatusResponse) SizeVT() (n int) {
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.AccountId)
 	n += protobuf_go_lite.SizeBoolNonZero(1, m.Receiving)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.AccountName)
+	if m.Choice != nil {
+		l = m.Choice.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -16585,6 +16944,7 @@ func (m *AcceptLocalPairingOfferRequest) SizeVT() (n int) {
 	var l int
 	_ = l
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.OfferPayload)
+	n += protobuf_go_lite.SizeBoolNonZero(1, m.OfferCurrentAccount)
 	n += len(m.unknownFields)
 	return n
 }
@@ -17533,10 +17893,38 @@ func (x *CompletePairingRequest) MarshalProtoText() string {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "code")
 		protobuf_go_lite.TextWriteString(&sb, x.Code)
 	}
+	if x.OfferCurrentAccount != false {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "offer_current_account")
+		protobuf_go_lite.TextWriteBool(&sb, x.OfferCurrentAccount)
+	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
 func (x *CompletePairingRequest) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *SelectPairingAccountRequest) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "SelectPairingAccountRequest")
+	if x.Outcome != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "outcome")
+		protobuf_go_lite.TextWriteStringer(&sb, pairing.AccountOutcome(x.Outcome))
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *SelectPairingAccountRequest) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *SelectPairingAccountResponse) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	protobuf_go_lite.TextStartMessage(&sb, "SelectPairingAccountResponse")
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *SelectPairingAccountResponse) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -17987,6 +18375,10 @@ func (x *WatchPairingStatusResponse) MarshalProtoText() string {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "account_name")
 		protobuf_go_lite.TextWriteString(&sb, x.AccountName)
 	}
+	if x.Choice != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "choice")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Choice)
+	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
@@ -18316,6 +18708,10 @@ func (x *AcceptLocalPairingOfferRequest) MarshalProtoText() string {
 	if x.OfferPayload != "" {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "offer_payload")
 		protobuf_go_lite.TextWriteString(&sb, x.OfferPayload)
+	}
+	if x.OfferCurrentAccount != false {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "offer_current_account")
+		protobuf_go_lite.TextWriteBool(&sb, x.OfferCurrentAccount)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -21148,6 +21544,113 @@ func (m *CompletePairingRequest) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.Code = v
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OfferCurrentAccount", wireType)
+			}
+			var v bool
+			v, iNdEx, err = protobuf_go_lite.DecodeVarintBool(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.OfferCurrentAccount = bool(v)
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *SelectPairingAccountRequest) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SelectPairingAccountRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SelectPairingAccountRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Outcome", wireType)
+			}
+			m.Outcome = 0
+			var _v uint64
+			_v, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			m.Outcome = pairing.AccountOutcome(_v)
+			if err != nil {
+				return err
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *SelectPairingAccountResponse) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SelectPairingAccountResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SelectPairingAccountResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
@@ -22726,6 +23229,21 @@ func (m *WatchPairingStatusResponse) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.AccountName = v
+		case 9:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Choice", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Choice == nil {
+				m.Choice = &pairing.AccountChoice{}
+			}
+			if err := m.Choice.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
@@ -23858,6 +24376,16 @@ func (m *AcceptLocalPairingOfferRequest) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.OfferPayload = v
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OfferCurrentAccount", wireType)
+			}
+			var v bool
+			v, iNdEx, err = protobuf_go_lite.DecodeVarintBool(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.OfferCurrentAccount = bool(v)
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

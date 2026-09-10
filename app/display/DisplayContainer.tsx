@@ -224,7 +224,11 @@ function useDisplayController() {
       )
       return result ? cleanup(result.session) : null
     },
-    [selectedSessionIndex],
+    [
+      selectedSessionIndex,
+      firstSession?.sessionRef?.providerResourceRef?.providerId,
+      firstSession?.sessionRef?.providerResourceRef?.providerAccountId,
+    ],
   )
   const session = useResourceValue(sessionResource)
   const resourcesList = useWatchStateRpc(

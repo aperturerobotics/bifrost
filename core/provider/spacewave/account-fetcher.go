@@ -115,6 +115,12 @@ func (a *ProviderAccount) accountFetcher(ctx context.Context) error {
 			}
 
 			// Fetch the account email snapshot for the same epoch.
+			if a.observeAccountTransition(state.GetTransition(), state.GetAccountId(), cli.peerID.String()) {
+				<-ctx.Done()
+				return ctx.Err()
+			}
+
+			// Fetch the account email snapshot for the same epoch.
 			emailResp, err := cli.ListEmails(ctx)
 			if err != nil {
 				if isNonRetryableCloudError(err) {

@@ -997,7 +997,6 @@ func TestSessionTransportReadyErrorCleanupRechecksSupersession(t *testing.T) {
 	case <-ctx.Done():
 		t.Fatalf("superseded startup did not return: %v", ctx.Err())
 	}
-
 }
 
 func TestSessionTransportReplacementReturnsSupersededSignal(t *testing.T) {
@@ -1311,7 +1310,7 @@ func deriveLowCostPINKey(config *session_lock.LockConfig, pin []byte) ([]byte, e
 	return scrypt.Key(passKey[:], config.Salt, 1<<config.ScryptN, 8, 1, 32)
 }
 
-func setupProviderAndSessionInternal(ctx context.Context, t *testing.T) (
+func setupProviderAndSessionInternal(ctx context.Context, t *testing.T, configure ...func(*Provider)) (
 	*testbed.Testbed,
 	*core_session.SessionRef,
 	*ProviderAccount,
@@ -1346,6 +1345,9 @@ func setupProviderAndSessionInternal(ctx context.Context, t *testing.T) (
 	}
 
 	localProv := prov.(*Provider)
+	for _, apply := range configure {
+		apply(localProv)
+	}
 	sessRef, err := localProv.CreateLocalAccountAndSession(ctx, "")
 	if err != nil {
 		provRef.Release()

@@ -106,10 +106,12 @@ func (l *adoptTestLink) GetLocalPeer() peer.ID          { return l.localPeer }
 func (l *adoptTestLink) OpenStream(stream.OpenOpts) (stream.Stream, error) {
 	return nil, io.EOF
 }
+
 func (l *adoptTestLink) AcceptStream() (stream.Stream, stream.OpenOpts, error) {
 	<-l.closed
 	return nil, stream.OpenOpts{}, io.EOF
 }
+
 func (l *adoptTestLink) Close() error {
 	select {
 	case <-l.closed:

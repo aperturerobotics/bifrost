@@ -10,8 +10,7 @@ import (
 
 // MountedLink is a Link managed by the transport controller.
 type MountedLink interface {
-	// GetLinkUUID returns the host-unique link ID.
-	// This should be repeatable between re-constructions of the same link.
+	// GetLinkUUID returns the underlying physical connection's ID.
 	GetLinkUUID() uint64
 
 	// GetTransportUUID returns the unique ID of the transport.

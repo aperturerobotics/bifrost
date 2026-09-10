@@ -74,7 +74,12 @@ func (a *ProviderAccount) getReadySessionClientForSession(
 		}
 
 		sess, err := prom.Await(ctx)
-		if err != nil || sess == nil || sess.sessionPriv == nil {
+		if err != nil || sess == nil {
+			continue
+		}
+
+		priv := sess.GetPrivKey()
+		if priv == nil {
 			continue
 		}
 
@@ -82,7 +87,7 @@ func (a *ProviderAccount) getReadySessionClientForSession(
 			a.p.httpCli,
 			a.p.endpoint,
 			a.p.signingEnvPfx,
-			sess.sessionPriv,
+			priv,
 			sess.sessionPid.String(),
 		)
 		cli = a.configureSessionClient(cli)
@@ -91,7 +96,7 @@ func (a *ProviderAccount) getReadySessionClientForSession(
 			a.sessionClientSessionID = entry.Key
 			broadcast()
 		})
-		return cli, sess.sessionPriv, sess.sessionPid, true
+		return cli, priv, sess.sessionPid, true
 	}
 	return nil, nil, "", false
 }

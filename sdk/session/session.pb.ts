@@ -30,6 +30,11 @@ import {
 import type { HashType } from '../../net/hash/hash.pb.js'
 import { HashType_Enum } from '../../net/hash/hash.pb.js'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
+import type { AccountOutcome } from '../../core/pairing/pairing.pb.js'
+import {
+  AccountChoice,
+  AccountOutcome_Enum,
+} from '../../core/pairing/pairing.pb.js'
 import type { TransferMode } from '../../core/provider/transfer/transfer.pb.js'
 import {
   TransferMode_Enum,
@@ -401,6 +406,13 @@ export enum PairingStatus {
    * @generated from enum value: PairingStatus_ENROLLING = 13;
    */
   PairingStatus_ENROLLING = 13,
+
+  /**
+   * PairingStatus_SELECTING_ACCOUNT waits for the receiving client's account choice.
+   *
+   * @generated from enum value: PairingStatus_SELECTING_ACCOUNT = 14;
+   */
+  PairingStatus_SELECTING_ACCOUNT = 14,
 }
 
 export const PairingStatus_Enum = /* @__PURE__ */ createEnumType(
@@ -420,6 +432,7 @@ export const PairingStatus_Enum = /* @__PURE__ */ createEnumType(
     [11, 'PairingStatus_PAIRING_REJECTED'],
     [12, 'PairingStatus_CONFIRMATION_TIMEOUT'],
     [13, 'PairingStatus_ENROLLING'],
+    [14, 'PairingStatus_SELECTING_ACCOUNT'],
   ],
 )
 
@@ -2210,6 +2223,13 @@ export interface CompletePairingRequest {
    * @generated from field: string code = 1;
    */
   code?: string
+  /**
+   * OfferCurrentAccount includes this selected Session's account in the choice.
+   * Home leaves this false so its temporary transport account is not offered.
+   *
+   * @generated from field: bool offer_current_account = 2;
+   */
+  offerCurrentAccount?: boolean
 }
 
 export const CompletePairingRequest: MessageType<CompletePairingRequest> =
@@ -2217,9 +2237,51 @@ export const CompletePairingRequest: MessageType<CompletePairingRequest> =
     typeName: 's4wave.session.CompletePairingRequest',
     fields: [
       { no: 1, name: 'code', kind: 'scalar', T: ScalarType.STRING },
+      {
+        no: 2,
+        name: 'offer_current_account',
+        kind: 'scalar',
+        T: ScalarType.BOOL,
+      },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })
+
+/**
+ * SelectPairingAccountRequest selects the proposed relationship between the accounts.
+ *
+ * @generated from message s4wave.session.SelectPairingAccountRequest
+ */
+export interface SelectPairingAccountRequest {
+  /**
+   * Outcome identifies the sign-in direction or merge destination.
+   *
+   * @generated from field: pairing.AccountOutcome outcome = 1;
+   */
+  outcome?: AccountOutcome
+}
+
+export const SelectPairingAccountRequest: MessageType<SelectPairingAccountRequest> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 's4wave.session.SelectPairingAccountRequest',
+    fields: [
+      { no: 1, name: 'outcome', kind: 'enum', T: AccountOutcome_Enum },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
+ * SelectPairingAccountResponse acknowledges an immutable account proposal.
+ *
+ * @generated from message s4wave.session.SelectPairingAccountResponse
+ */
+export interface SelectPairingAccountResponse {}
+
+export const SelectPairingAccountResponse: MessageType<SelectPairingAccountResponse> =
+  /* @__PURE__ */ createEmptyMessageType<SelectPairingAccountResponse>(
+    's4wave.session.SelectPairingAccountResponse',
+    true,
+  )
 
 /**
  * CompletePairingResponse is the response for CompletePairing.
@@ -2912,6 +2974,12 @@ export interface WatchPairingStatusResponse {
    * @generated from field: string account_name = 8;
    */
   accountName?: string
+  /**
+   * Choice identifies both selected accounts and the proposed outcome before approval.
+   *
+   * @generated from field: pairing.AccountChoice choice = 9;
+   */
+  choice?: AccountChoice
 }
 
 export const WatchPairingStatusResponse: MessageType<WatchPairingStatusResponse> =
@@ -2932,6 +3000,7 @@ export const WatchPairingStatusResponse: MessageType<WatchPairingStatusResponse>
       { no: 6, name: 'account_id', kind: 'scalar', T: ScalarType.STRING },
       { no: 7, name: 'receiving', kind: 'scalar', T: ScalarType.BOOL },
       { no: 8, name: 'account_name', kind: 'scalar', T: ScalarType.STRING },
+      { no: 9, name: 'choice', kind: 'message', T: () => AccountChoice },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })
@@ -3473,6 +3542,12 @@ export interface AcceptLocalPairingOfferRequest {
    * @generated from field: string offer_payload = 1;
    */
   offerPayload?: string
+  /**
+   * OfferCurrentAccount includes this selected Session's account in the choice.
+   *
+   * @generated from field: bool offer_current_account = 2;
+   */
+  offerCurrentAccount?: boolean
 }
 
 export const AcceptLocalPairingOfferRequest: MessageType<AcceptLocalPairingOfferRequest> =
@@ -3480,6 +3555,12 @@ export const AcceptLocalPairingOfferRequest: MessageType<AcceptLocalPairingOffer
     typeName: 's4wave.session.AcceptLocalPairingOfferRequest',
     fields: [
       { no: 1, name: 'offer_payload', kind: 'scalar', T: ScalarType.STRING },
+      {
+        no: 2,
+        name: 'offer_current_account',
+        kind: 'scalar',
+        T: ScalarType.BOOL,
+      },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })
