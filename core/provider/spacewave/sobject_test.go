@@ -349,6 +349,7 @@ func TestCreateSharedObject_ServerError(t *testing.T) {
 	}
 }
 
+// TestGetSharedObjectDisplayName uses the cached shared object name.
 func TestGetSharedObjectDisplayName(t *testing.T) {
 	soMeta, err := space.NewSharedObjectMeta("My Space")
 	if err != nil {
@@ -366,6 +367,7 @@ func TestGetSharedObjectDisplayName(t *testing.T) {
 	}
 }
 
+// TestEnsureAccountSettingsSharedObject_AlreadyExists reuses the existing settings object.
 func TestEnsureAccountSettingsSharedObject_AlreadyExists(t *testing.T) {
 	var calls []string
 	const soID = "so-123"
@@ -418,6 +420,7 @@ func TestEnsureAccountSettingsSharedObject_AlreadyExists(t *testing.T) {
 	}
 }
 
+// TestEnsureAccountSettingsSharedObject_UsesReadyBindingFromAccountState reuses the ready account binding.
 func TestEnsureAccountSettingsSharedObject_UsesReadyBindingFromAccountState(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Fatalf("unexpected path: %s", r.URL.Path)
@@ -442,6 +445,7 @@ func TestEnsureAccountSettingsSharedObject_UsesReadyBindingFromAccountState(t *t
 	}
 }
 
+// TestDeleteSharedObjectRemovesMetadataAndListCaches invalidates both object caches after deletion.
 func TestDeleteSharedObjectRemovesMetadataAndListCaches(t *testing.T) {
 	var calls []string
 	const soID = "so-123"
@@ -492,6 +496,7 @@ func TestDeleteSharedObjectRemovesMetadataAndListCaches(t *testing.T) {
 	}
 }
 
+// TestFetchSharedObjectListPreservesCreatedCacheEntry retains locally created entries during list refresh.
 func TestFetchSharedObjectListPreservesCreatedCacheEntry(t *testing.T) {
 	const soID = "so-created"
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -531,6 +536,7 @@ func TestFetchSharedObjectListPreservesCreatedCacheEntry(t *testing.T) {
 	}
 }
 
+// TestEnsureSharedObjectListLoaded_NoSubscriptionSkipsFetch avoids fetching without account access.
 func TestEnsureSharedObjectListLoaded_NoSubscriptionSkipsFetch(t *testing.T) {
 	var listCalls int
 
@@ -565,6 +571,7 @@ func TestEnsureSharedObjectListLoaded_NoSubscriptionSkipsFetch(t *testing.T) {
 	}
 }
 
+// TestEnsureSharedObjectListLoaded_InvalidationRefetchesOnce coalesces invalidated list reads.
 func TestEnsureSharedObjectListLoaded_InvalidationRefetchesOnce(t *testing.T) {
 	var listCalls int
 
@@ -607,6 +614,7 @@ func TestEnsureSharedObjectListLoaded_InvalidationRefetchesOnce(t *testing.T) {
 	}
 }
 
+// TestGetAccountStateEnablesSharedObjectListAccess enables list reads after account access arrives.
 func TestGetAccountStateEnablesSharedObjectListAccess(t *testing.T) {
 	var listCalls int
 
@@ -649,6 +657,7 @@ func TestGetAccountStateEnablesSharedObjectListAccess(t *testing.T) {
 	}
 }
 
+// TestRefreshSharedObjectListRefreshesAccountAccess refreshes account access before listing objects.
 func TestRefreshSharedObjectListRefreshesAccountAccess(t *testing.T) {
 	var accountStateCalls int
 	var listCalls int

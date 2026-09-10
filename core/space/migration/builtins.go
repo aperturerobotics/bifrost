@@ -3,6 +3,7 @@ package space_migration
 import (
 	bldr_manifest_world "github.com/s4wave/spacewave/bldr/manifest/world"
 	forge_dashboard "github.com/s4wave/spacewave/core/forge/dashboard"
+	volume_world "github.com/s4wave/spacewave/db/volume/world"
 	forge_cluster "github.com/s4wave/spacewave/forge/cluster"
 	forge_execution "github.com/s4wave/spacewave/forge/execution"
 	forge_job "github.com/s4wave/spacewave/forge/job"
@@ -29,10 +30,12 @@ import (
 	s4wave_vm_world "github.com/s4wave/spacewave/sdk/vm/world"
 )
 
+// spaceSettingsTypeID identifies the Space settings payload.
 const spaceSettingsTypeID = "github.com/s4wave/spacewave/core/space/world.SpaceSettings"
 
 // BuiltInRegistry returns the complete built-in ObjectType classification.
 func BuiltInRegistry() (*Registry, error) {
+	// Classify every built-in payload before exposing the registry to planners.
 	registry := NewRegistry()
 	handlers := []*TypedHandler{
 		NewSchemaHandler(spaceSettingsTypeID, ClassificationRewrite, true, false, false, false, false, inspectSpaceSettings, rewriteSpaceSettings),
@@ -42,6 +45,7 @@ func BuiltInRegistry() (*Registry, error) {
 		NewSchemaHandler(s4wave_git_world.GitWorktreeTypeID, ClassificationRewrite, true, false, false, true, false, inspectGitWorktree, rewriteGitWorktree),
 		NewSchemaHandler(s4wave_canvas_world.CanvasTypeID, ClassificationRewrite, true, false, true, true, false, inspectCanvas, rewriteCanvas),
 		NewSchemaHandler(s4wave_kv_world.KvStoreTypeID, ClassificationSpaceLocalOpaque, false, false, false, false, false, inspectKV, rewriteKV),
+		NewSchemaRefusalHandler(volume_world.ObjectTypeID, ClassificationNonMigratable, "Volume backing contains installation identity and requires an installation-aware migration"),
 		NewSchemaHandler(forge_cluster.ClusterTypeID, ClassificationRewrite, false, false, false, true, false, inspectForgeCluster, rewriteForgeCluster),
 		NewSchemaHandler(forge_job.JobTypeID, ClassificationRewrite, false, false, false, true, false, inspectForgeJob, rewriteForgeJob),
 		NewSchemaHandler(forge_task.TaskTypeID, ClassificationRewrite, true, false, false, true, true, inspectForgeTask, rewriteForgeTask),
@@ -61,6 +65,8 @@ func BuiltInRegistry() (*Registry, error) {
 		NewSchemaHandler(s4wave_secret_world.SecretTypeID, ClassificationRewrite, false, true, false, false, true, inspectSecret, rewriteSecret),
 		NewSchemaRefusalHandler(bldr_manifest_world.ManifestTypeID, ClassificationExternalRef, "manifest payload is external and not admitted for rewrite"),
 	}
+
+	// Reject duplicate registrations before returning the complete inventory.
 	for _, handler := range handlers {
 		if err := registry.Register(handler); err != nil {
 			return nil, err

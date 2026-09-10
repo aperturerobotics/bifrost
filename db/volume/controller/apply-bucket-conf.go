@@ -2,6 +2,7 @@ package volume_controller
 
 import (
 	"context"
+	"errors"
 	"sync"
 
 	"github.com/aperturerobotics/controllerbus/directive"
@@ -9,7 +10,7 @@ import (
 	"github.com/s4wave/spacewave/db/bucket"
 )
 
-// applyBucketConfigResolver resolves ApplyBucketConfig directives
+// applyBucketConfigResolver resolves ApplyBucketConfig directives.
 type applyBucketConfigResolver struct {
 	c   *Controller
 	dir bucket.ApplyBucketConfig
@@ -41,16 +42,22 @@ func (o *applyBucketConfigResolver) Resolve(ctx context.Context, handler directi
 	}
 
 	ts := timestamp.Now()
-	var errStr string
 	updated, prev, curr, err := vol.ApplyBucketConfig(ctx, o.dir.ApplyBucketConfigBucketConf())
 	if err != nil {
-		if err == context.Canceled {
+		if errors.Is(err, context.Canceled) {
 			return err
 		}
-		errStr = err.Error()
+		o.applied = true
+		handler.AddValue(&bucket.ApplyBucketConfigResult{
+			VolumeId:  vol.GetID(),
+			BucketId:  o.dir.ApplyBucketConfigBucketConf().GetId(),
+			Timestamp: ts,
+			Error:     err.Error(),
+		})
+		return nil
 	}
 
-	// no effect and no bucket data -> no value
+	// An unchanged bucket rejected by the Volume has no value.
 	if !updated && curr.GetId() == "" {
 		if prev != nil {
 			curr = prev
@@ -84,7 +91,6 @@ func (o *applyBucketConfigResolver) Resolve(ctx context.Context, handler directi
 		OldBucketConf: prev,
 		Timestamp:     ts,
 		Updated:       updated,
-		Error:         errStr,
 	})
 	return nil
 }
@@ -95,7 +101,7 @@ func (c *Controller) resolveApplyBucketConf(
 	di directive.Instance,
 	dir bucket.ApplyBucketConfig,
 ) (directive.Resolver, error) {
-	// check if we can immediately reject this directive or not
+	// Reject a directive that cannot match the current Volume.
 	if vb := c.volume.GetValue(); vb != nil {
 		if !bucket.CheckApplyBucketConfigMatchesVolume(dir, vb.vol.GetID(), c.config.GetVolumeIdAlias()) {
 			return nil, nil
@@ -106,5 +112,5 @@ func (c *Controller) resolveApplyBucketConf(
 	return &applyBucketConfigResolver{c: c, dir: dir}, nil
 }
 
-// _ is a type assertion
+// _ asserts the resolver contract.
 var _ directive.Resolver = (*applyBucketConfigResolver)(nil)

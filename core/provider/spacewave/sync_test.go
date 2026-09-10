@@ -528,6 +528,7 @@ func TestSyncPush_ServerError(t *testing.T) {
 	}
 }
 
+// TestSyncPushData_MissingBloomFilter rejects uploads without a bloom filter.
 func TestSyncPushData_MissingBloomFilter(t *testing.T) {
 	packData := []byte("inline-pack-data")
 	h := sha256.Sum256(packData)
@@ -592,6 +593,7 @@ func TestSyncPushData_MissingWriteTicketExecutor(t *testing.T) {
 	}
 }
 
+// TestSyncControllerPushPackfileRetriesCanceledPush retries a canceled upload with the same pack.
 func TestSyncControllerPushPackfileRetriesCanceledPush(t *testing.T) {
 	s := &syncController{}
 
@@ -630,6 +632,7 @@ func TestSyncControllerPushPackfileRetriesCanceledPush(t *testing.T) {
 	}
 }
 
+// TestSyncControllerExecuteExitsOnCanceledThresholdContext stops execution when its context is canceled.
 func TestSyncControllerExecuteExitsOnCanceledThresholdContext(t *testing.T) {
 	s := &syncController{
 		conf: &SyncConfig{SizeThresholdBytes: 1},
@@ -654,6 +657,7 @@ func TestSyncControllerExecuteExitsOnCanceledThresholdContext(t *testing.T) {
 	}
 }
 
+// TestSyncControllerInitSkipsPullForRemoteManifest uses an existing remote manifest without pulling.
 func TestSyncControllerInitSkipsPullForRemoteManifest(t *testing.T) {
 	ctx := context.Background()
 	pullRequests := make(chan struct{}, 1)
@@ -704,6 +708,7 @@ func TestSyncControllerInitSkipsPullForRemoteManifest(t *testing.T) {
 	}
 }
 
+// TestSyncControllerPullNowRecordsLatestSequenceFromEmptyPull retains sequence progress from empty responses.
 func TestSyncControllerPullNowRecordsLatestSequenceFromEmptyPull(t *testing.T) {
 	ctx := context.Background()
 	respData := mustMarshalVT(t, &packfile.PullResponse{LatestSequence: 9})
@@ -751,6 +756,7 @@ func TestSyncControllerPullNowRecordsLatestSequenceFromEmptyPull(t *testing.T) {
 	}
 }
 
+// TestSyncControllerInitReturnsAccessGatedPullError propagates access failures during initialization.
 func TestSyncControllerInitReturnsAccessGatedPullError(t *testing.T) {
 	ctx := context.Background()
 	errResp := &api.ErrorResponse{
@@ -806,6 +812,7 @@ func TestSyncControllerInitReturnsAccessGatedPullError(t *testing.T) {
 	}
 }
 
+// TestSyncControllerExecuteHonorsRetryAfterBackoff delays retries for the server backoff interval.
 func TestSyncControllerExecuteHonorsRetryAfterBackoff(t *testing.T) {
 	errResp := &api.ErrorResponse{
 		Code:      "rate_limited",
@@ -873,6 +880,7 @@ func TestSyncControllerExecuteHonorsRetryAfterBackoff(t *testing.T) {
 	}
 }
 
+// TestSyncControllerExecuteGatesAccessDeniedFlushFailures waits for access changes after denied writes.
 func TestSyncControllerExecuteGatesAccessDeniedFlushFailures(t *testing.T) {
 	errResp := &api.ErrorResponse{
 		Code:      "account_read_only",
@@ -949,19 +957,23 @@ func TestSyncControllerExecuteGatesAccessDeniedFlushFailures(t *testing.T) {
 	}
 }
 
+// syncPackTransport serves packed fixture bytes.
 type syncPackTransport struct {
 	data []byte
 }
 
+// syncErrorTransport returns a configured read failure.
 type syncErrorTransport struct {
 	err error
 }
 
+// syncCountingBlockStore observes upper-store block reads.
 type syncCountingBlockStore struct {
 	block.StoreOps
 	onGet func(*block.BlockRef)
 }
 
+// Fetch reads a bounded range of fixture bytes.
 func (t *syncPackTransport) Fetch(_ context.Context, off int64, length int) ([]byte, error) {
 	if off >= int64(len(t.data)) {
 		return nil, io.EOF
@@ -970,10 +982,12 @@ func (t *syncPackTransport) Fetch(_ context.Context, off int64, length int) ([]b
 	return bytes.Clone(t.data[off:end]), nil
 }
 
+// Fetch returns the configured failure.
 func (t *syncErrorTransport) Fetch(context.Context, int64, int) ([]byte, error) {
 	return nil, t.err
 }
 
+// GetBlock observes the read before forwarding it.
 func (s *syncCountingBlockStore) GetBlock(ctx context.Context, ref *block.BlockRef) ([]byte, bool, error) {
 	if s.onGet != nil {
 		s.onGet(ref)
@@ -981,10 +995,12 @@ func (s *syncCountingBlockStore) GetBlock(ctx context.Context, ref *block.BlockR
 	return s.StoreOps.GetBlock(ctx, ref)
 }
 
+// newSyncTestBlockStore constructs the provider block test store.
 func newSyncTestBlockStore() block.StoreOps {
 	return newProviderSpacewaveTestBlockStore(hash.RecommendedHashType)
 }
 
+// newSyncTestLowerPackfileStore packs fixture blocks into a readable lower store.
 func newSyncTestLowerPackfileStore(t *testing.T, blocks map[string][]byte) *packfile_store.PackfileStore {
 	t.Helper()
 	var items []struct {
@@ -1038,6 +1054,7 @@ func newSyncTestLowerPackfileStore(t *testing.T, blocks map[string][]byte) *pack
 	return lower
 }
 
+// newSyncTestErrorLowerPackfileStore constructs a lower store whose reads fail.
 func newSyncTestErrorLowerPackfileStore() *packfile_store.PackfileStore {
 	lower := packfile_store.NewPackfileStore(
 		func(packID string, size int64) (*packfile_store.PackReader, error) {
@@ -1060,11 +1077,13 @@ func newSyncTestErrorLowerPackfileStore() *packfile_store.PackfileStore {
 	return lower
 }
 
+// syncTestRefGraph stores directed block references.
 type syncTestRefGraph struct {
 	out map[string][]string
 	in  map[string][]string
 }
 
+// newSyncTestRefGraph constructs an empty reference graph.
 func newSyncTestRefGraph() *syncTestRefGraph {
 	return &syncTestRefGraph{
 		out: make(map[string][]string),
@@ -1072,23 +1091,28 @@ func newSyncTestRefGraph() *syncTestRefGraph {
 	}
 }
 
+// add inserts a directed reference.
 func (g *syncTestRefGraph) add(subject, object string) {
 	g.out[subject] = append(g.out[subject], object)
 	g.in[object] = append(g.in[object], subject)
 }
 
+// GetOutgoingRefs returns references originating at the node.
 func (g *syncTestRefGraph) GetOutgoingRefs(_ context.Context, node string) ([]string, error) {
 	return slices.Clone(g.out[node]), nil
 }
 
+// GetIncomingRefs returns references targeting the node.
 func (g *syncTestRefGraph) GetIncomingRefs(_ context.Context, node string) ([]string, error) {
 	return slices.Clone(g.in[node]), nil
 }
 
+// newSyncTestKvStore constructs a transactional in-memory store.
 func newSyncTestKvStore() kvtx.Store {
 	return hashmap.NewHashmapKvtx(hashmap.NewHashmap[[]byte]())
 }
 
+// assertSyncPackEntryMetadata checks uploaded pack discovery metadata.
 func assertSyncPackEntryMetadata(t *testing.T, entries []*packfile.PackfileEntry) {
 	t.Helper()
 	for i, entry := range entries {
@@ -1104,6 +1128,7 @@ func assertSyncPackEntryMetadata(t *testing.T, entries []*packfile.PackfileEntry
 	}
 }
 
+// readPackPhysicalKeys returns block keys in physical pack order.
 func readPackPhysicalKeys(t *testing.T, body []byte) []string {
 	t.Helper()
 	reader, err := kvfile.BuildReader(bytes.NewReader(body), uint64(len(body)))
@@ -1134,6 +1159,7 @@ func readPackPhysicalKeys(t *testing.T, body []byte) []string {
 	return keys
 }
 
+// addSyncDirtyBlock stores a block and queues it for upload.
 func addSyncDirtyBlock(
 	t *testing.T,
 	ctx context.Context,
@@ -1157,6 +1183,7 @@ func addSyncDirtyBlock(
 	return ref
 }
 
+// newDirtySyncExecuteTestController constructs a controller with pending upload work.
 func newDirtySyncExecuteTestController(
 	t *testing.T,
 	cli *SessionClient,
@@ -1197,6 +1224,7 @@ func newDirtySyncExecuteTestController(
 	return s
 }
 
+// TestSyncControllerFlushChunksLargeDirtySet uploads bounded packs before reading all dirty data.
 func TestSyncControllerFlushChunksLargeDirtySet(t *testing.T) {
 	ctx := context.Background()
 
@@ -1325,6 +1353,7 @@ func TestSyncControllerFlushChunksLargeDirtySet(t *testing.T) {
 	}
 }
 
+// TestSyncControllerFlushDedupesLowerBlocks filters stored blocks before reading upper data.
 func TestSyncControllerFlushDedupesLowerBlocks(t *testing.T) {
 	ctx := context.Background()
 
@@ -1444,6 +1473,7 @@ func TestSyncControllerFlushDedupesLowerBlocks(t *testing.T) {
 	}
 }
 
+// TestSyncControllerFlushAllDuplicateDirtyBlocksSkipsPush clears duplicate work without uploading.
 func TestSyncControllerFlushAllDuplicateDirtyBlocksSkipsPush(t *testing.T) {
 	ctx := context.Background()
 
@@ -1538,6 +1568,7 @@ func TestSyncControllerFlushAllDuplicateDirtyBlocksSkipsPush(t *testing.T) {
 	}
 }
 
+// TestSyncControllerFlushDuplicateProbeErrorPreservesDirty retains dirty work when deduplication fails.
 func TestSyncControllerFlushDuplicateProbeErrorPreservesDirty(t *testing.T) {
 	ctx := context.Background()
 
@@ -1593,6 +1624,7 @@ func TestSyncControllerFlushDuplicateProbeErrorPreservesDirty(t *testing.T) {
 	}
 }
 
+// TestSyncControllerFlushOrdersBlocksByGCGraph writes parent blocks before their children.
 func TestSyncControllerFlushOrdersBlocksByGCGraph(t *testing.T) {
 	ctx := context.Background()
 
@@ -1673,6 +1705,7 @@ func TestSyncControllerFlushOrdersBlocksByGCGraph(t *testing.T) {
 	}
 }
 
+// TestSyncControllerFlushChunksBlockCountCeiling splits packs at the wire block limit.
 func TestSyncControllerFlushChunksBlockCountCeiling(t *testing.T) {
 	ctx := context.Background()
 

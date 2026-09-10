@@ -45,7 +45,8 @@ vi.mock('@s4wave/web/router/router.js', () => ({
   useNavigate: () => mockNavigate,
 }))
 
-vi.mock('@s4wave/web/state/persist.js', () => ({
+vi.mock('@s4wave/web/state/persist.js', async (importOriginal) => ({
+  ...(await importOriginal()),
   useStateNamespace: () => ['session-settings'],
   useStateAtom: () => ['/', mockSetStateAtom],
 }))

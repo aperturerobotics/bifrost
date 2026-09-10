@@ -8,9 +8,12 @@ import (
 
 	space_migration "github.com/s4wave/spacewave/core/space/migration"
 	objecttypes "github.com/s4wave/spacewave/core/space/world/objecttypes"
+	volume_world "github.com/s4wave/spacewave/db/volume/world"
 )
 
+// TestBuiltInsAreClassifiedAndBoundToCentralInventory verifies complete migration coverage.
 func TestBuiltInsAreClassifiedAndBoundToCentralInventory(t *testing.T) {
+	// Compare the migration registry with the application inventory.
 	registry, err := space_migration.BuiltInRegistry()
 	if err != nil {
 		t.Fatal(err)
@@ -19,6 +22,8 @@ func TestBuiltInsAreClassifiedAndBoundToCentralInventory(t *testing.T) {
 	if !slices.Equal(central, registry.TypeIDs()) {
 		t.Fatalf("migration registry diverges from central ObjectType inventory: central=%v migration=%v", central, registry.TypeIDs())
 	}
+
+	// Require a policy for each type and preserve installation identity boundaries.
 	for _, typeID := range central {
 		handler := registry.Lookup(typeID)
 		if handler == nil {
@@ -27,14 +32,21 @@ func TestBuiltInsAreClassifiedAndBoundToCentralInventory(t *testing.T) {
 		if handler.Classification() == space_migration.ClassificationUnclassified {
 			t.Fatalf("built-in type %q is unclassified", typeID)
 		}
+		if typeID == volume_world.ObjectTypeID && handler.Classification() != space_migration.ClassificationNonMigratable {
+			t.Fatal("Volume backing must not migrate installation identity as an ordinary object")
+		}
 	}
 }
 
+// TestSchemaHandlersRejectSyntheticMetadata requires the live source payload.
 func TestSchemaHandlersRejectSyntheticMetadata(t *testing.T) {
+	// Resolve handlers with real payload requirements.
 	registry, err := space_migration.BuiltInRegistry()
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	// Caller-provided references cannot substitute for a stored payload.
 	for _, typeID := range []string{"spacewave/secret", "canvas"} {
 		handler := registry.Lookup(typeID)
 		if handler == nil {
