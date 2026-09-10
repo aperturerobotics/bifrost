@@ -2,11 +2,27 @@
 // @generated from file github.com/s4wave/spacewave/bldr/plugin/plugin.proto (package bldr.plugin, syntax proto3)
 /* eslint-disable */
 
-import { GetPluginInfoRequest, GetPluginInfoResponse, LoadPluginRequest, LoadPluginResponse, PrepareUpdateRequest, PrepareUpdateResponse } from "./plugin.pb.js";
-import { MethodKind } from "@aptre/protobuf-es-lite";
-import { ExecControllerRequest, ExecControllerResponse } from "@go/github.com/aperturerobotics/controllerbus/controller/exec/exec.pb.js";
-import { RpcStreamPacket } from "@go/github.com/aperturerobotics/starpc/rpcstream/rpcstream.pb.js";
-import { buildDecodeMessageTransform, buildEncodeMessageTransform, MessageStream, ProtoRpc, ServerContext } from "starpc";
+import {
+  GetPluginInfoRequest,
+  GetPluginInfoResponse,
+  LoadPluginRequest,
+  LoadPluginResponse,
+  PrepareUpdateRequest,
+  PrepareUpdateResponse,
+} from './plugin.pb.js'
+import { MethodKind } from '@aptre/protobuf-es-lite'
+import {
+  ExecControllerRequest,
+  ExecControllerResponse,
+} from '@go/github.com/aperturerobotics/controllerbus/controller/exec/exec.pb.js'
+import { RpcStreamPacket } from '@go/github.com/aperturerobotics/starpc/rpcstream/rpcstream.pb.js'
+import {
+  buildDecodeMessageTransform,
+  buildEncodeMessageTransform,
+  MessageStream,
+  ProtoRpc,
+  ServerContext,
+} from 'starpc'
 
 /**
  * PluginHost is the service exposed by the plugin host.
@@ -16,7 +32,7 @@ import { buildDecodeMessageTransform, buildEncodeMessageTransform, MessageStream
  * @generated from service bldr.plugin.PluginHost
  */
 export const PluginHostDefinition = {
-  typeName: "bldr.plugin.PluginHost",
+  typeName: 'bldr.plugin.PluginHost',
   methods: {
     /**
      * GetPluginInfo returns the information for the current plugin.
@@ -24,7 +40,7 @@ export const PluginHostDefinition = {
      * @generated from rpc bldr.plugin.PluginHost.GetPluginInfo
      */
     GetPluginInfo: {
-      name: "GetPluginInfo",
+      name: 'GetPluginInfo',
       I: GetPluginInfoRequest,
       O: GetPluginInfoResponse,
       kind: MethodKind.Unary,
@@ -35,7 +51,7 @@ export const PluginHostDefinition = {
      * @generated from rpc bldr.plugin.PluginHost.ExecController
      */
     ExecController: {
-      name: "ExecController",
+      name: 'ExecController',
       I: ExecControllerRequest,
       O: ExecControllerResponse,
       kind: MethodKind.ServerStreaming,
@@ -48,7 +64,7 @@ export const PluginHostDefinition = {
      * @generated from rpc bldr.plugin.PluginHost.LoadPlugin
      */
     LoadPlugin: {
-      name: "LoadPlugin",
+      name: 'LoadPlugin',
       I: LoadPluginRequest,
       O: LoadPluginResponse,
       kind: MethodKind.ServerStreaming,
@@ -61,7 +77,7 @@ export const PluginHostDefinition = {
      * @generated from rpc bldr.plugin.PluginHost.PluginRpc
      */
     PluginRpc: {
-      name: "PluginRpc",
+      name: 'PluginRpc',
       I: RpcStreamPacket,
       O: RpcStreamPacket,
       kind: MethodKind.BiDiStreaming,
@@ -75,13 +91,13 @@ export const PluginHostDefinition = {
      * @generated from rpc bldr.plugin.PluginHost.PluginFsRpc
      */
     PluginFsRpc: {
-      name: "PluginFsRpc",
+      name: 'PluginFsRpc',
       I: RpcStreamPacket,
       O: RpcStreamPacket,
       kind: MethodKind.BiDiStreaming,
     },
-  }
-} as const;
+  },
+} as const
 
 /**
  * PluginHost is the service exposed by the plugin host.
@@ -96,14 +112,20 @@ export interface PluginHost {
    *
    * @generated from rpc bldr.plugin.PluginHost.GetPluginInfo
    */
-  GetPluginInfo(request: GetPluginInfoRequest, abortSignal?: AbortSignal): Promise<GetPluginInfoResponse>;
+  GetPluginInfo(
+    request: GetPluginInfoRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<GetPluginInfoResponse>
 
   /**
    * ExecController executes a controller configuration on the bus.
    *
    * @generated from rpc bldr.plugin.PluginHost.ExecController
    */
-  ExecController(request: ExecControllerRequest, abortSignal?: AbortSignal): MessageStream<ExecControllerResponse>;
+  ExecController(
+    request: ExecControllerRequest,
+    abortSignal?: AbortSignal,
+  ): MessageStream<ExecControllerResponse>
 
   /**
    * LoadPlugin requests to load the plugin with the given ID.
@@ -112,7 +134,10 @@ export interface PluginHost {
    *
    * @generated from rpc bldr.plugin.PluginHost.LoadPlugin
    */
-  LoadPlugin(request: LoadPluginRequest, abortSignal?: AbortSignal): MessageStream<LoadPluginResponse>;
+  LoadPlugin(
+    request: LoadPluginRequest,
+    abortSignal?: AbortSignal,
+  ): MessageStream<LoadPluginResponse>
 
   /**
    * PluginRpc forwards an RPC call to a remote plugin.
@@ -121,7 +146,10 @@ export interface PluginHost {
    *
    * @generated from rpc bldr.plugin.PluginHost.PluginRpc
    */
-  PluginRpc(request: MessageStream<RpcStreamPacket>, abortSignal?: AbortSignal): MessageStream<RpcStreamPacket>;
+  PluginRpc(
+    request: MessageStream<RpcStreamPacket>,
+    abortSignal?: AbortSignal,
+  ): MessageStream<RpcStreamPacket>
 
   /**
    * PluginFsRpc accesses a FSCursorService to access plugin assets or dist filesystems.
@@ -131,7 +159,10 @@ export interface PluginHost {
    *
    * @generated from rpc bldr.plugin.PluginHost.PluginFsRpc
    */
-  PluginFsRpc(request: MessageStream<RpcStreamPacket>, abortSignal?: AbortSignal): MessageStream<RpcStreamPacket>;
+  PluginFsRpc(
+    request: MessageStream<RpcStreamPacket>,
+    abortSignal?: AbortSignal,
+  ): MessageStream<RpcStreamPacket>
 }
 
 /**
@@ -147,14 +178,22 @@ export interface PluginHostHandler {
    *
    * @generated from rpc bldr.plugin.PluginHost.GetPluginInfo
    */
-  GetPluginInfo(request: GetPluginInfoRequest, abortSignal: AbortSignal, context: ServerContext): Promise<GetPluginInfoResponse>;
+  GetPluginInfo(
+    request: GetPluginInfoRequest,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): Promise<GetPluginInfoResponse>
 
   /**
    * ExecController executes a controller configuration on the bus.
    *
    * @generated from rpc bldr.plugin.PluginHost.ExecController
    */
-  ExecController(request: ExecControllerRequest, abortSignal: AbortSignal, context: ServerContext): MessageStream<ExecControllerResponse>;
+  ExecController(
+    request: ExecControllerRequest,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): MessageStream<ExecControllerResponse>
 
   /**
    * LoadPlugin requests to load the plugin with the given ID.
@@ -163,7 +202,11 @@ export interface PluginHostHandler {
    *
    * @generated from rpc bldr.plugin.PluginHost.LoadPlugin
    */
-  LoadPlugin(request: LoadPluginRequest, abortSignal: AbortSignal, context: ServerContext): MessageStream<LoadPluginResponse>;
+  LoadPlugin(
+    request: LoadPluginRequest,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): MessageStream<LoadPluginResponse>
 
   /**
    * PluginRpc forwards an RPC call to a remote plugin.
@@ -172,7 +215,11 @@ export interface PluginHostHandler {
    *
    * @generated from rpc bldr.plugin.PluginHost.PluginRpc
    */
-  PluginRpc(request: MessageStream<RpcStreamPacket>, abortSignal: AbortSignal, context: ServerContext): MessageStream<RpcStreamPacket>;
+  PluginRpc(
+    request: MessageStream<RpcStreamPacket>,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): MessageStream<RpcStreamPacket>
 
   /**
    * PluginFsRpc accesses a FSCursorService to access plugin assets or dist filesystems.
@@ -182,7 +229,11 @@ export interface PluginHostHandler {
    *
    * @generated from rpc bldr.plugin.PluginHost.PluginFsRpc
    */
-  PluginFsRpc(request: MessageStream<RpcStreamPacket>, abortSignal: AbortSignal, context: ServerContext): MessageStream<RpcStreamPacket>;
+  PluginFsRpc(
+    request: MessageStream<RpcStreamPacket>,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): MessageStream<RpcStreamPacket>
 }
 
 export const PluginHostServiceName = PluginHostDefinition.typeName
@@ -204,7 +255,10 @@ export class PluginHostClient implements PluginHost {
    *
    * @generated from rpc bldr.plugin.PluginHost.GetPluginInfo
    */
-  async GetPluginInfo(request: GetPluginInfoRequest, abortSignal?: AbortSignal): Promise<GetPluginInfoResponse> {
+  async GetPluginInfo(
+    request: GetPluginInfoRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<GetPluginInfoResponse> {
     const requestMsg = GetPluginInfoRequest.create(request)
     const result = await this.rpc.request(
       this.service,
@@ -220,7 +274,10 @@ export class PluginHostClient implements PluginHost {
    *
    * @generated from rpc bldr.plugin.PluginHost.ExecController
    */
-  ExecController(request: ExecControllerRequest, abortSignal?: AbortSignal): MessageStream<ExecControllerResponse> {
+  ExecController(
+    request: ExecControllerRequest,
+    abortSignal?: AbortSignal,
+  ): MessageStream<ExecControllerResponse> {
     const requestMsg = ExecControllerRequest.create(request)
     const result = this.rpc.serverStreamingRequest(
       this.service,
@@ -238,7 +295,10 @@ export class PluginHostClient implements PluginHost {
    *
    * @generated from rpc bldr.plugin.PluginHost.LoadPlugin
    */
-  LoadPlugin(request: LoadPluginRequest, abortSignal?: AbortSignal): MessageStream<LoadPluginResponse> {
+  LoadPlugin(
+    request: LoadPluginRequest,
+    abortSignal?: AbortSignal,
+  ): MessageStream<LoadPluginResponse> {
     const requestMsg = LoadPluginRequest.create(request)
     const result = this.rpc.serverStreamingRequest(
       this.service,
@@ -256,7 +316,10 @@ export class PluginHostClient implements PluginHost {
    *
    * @generated from rpc bldr.plugin.PluginHost.PluginRpc
    */
-  PluginRpc(request: MessageStream<RpcStreamPacket>, abortSignal?: AbortSignal): MessageStream<RpcStreamPacket> {
+  PluginRpc(
+    request: MessageStream<RpcStreamPacket>,
+    abortSignal?: AbortSignal,
+  ): MessageStream<RpcStreamPacket> {
     const result = this.rpc.bidirectionalStreamingRequest(
       this.service,
       PluginHostDefinition.methods.PluginRpc.name,
@@ -274,7 +337,10 @@ export class PluginHostClient implements PluginHost {
    *
    * @generated from rpc bldr.plugin.PluginHost.PluginFsRpc
    */
-  PluginFsRpc(request: MessageStream<RpcStreamPacket>, abortSignal?: AbortSignal): MessageStream<RpcStreamPacket> {
+  PluginFsRpc(
+    request: MessageStream<RpcStreamPacket>,
+    abortSignal?: AbortSignal,
+  ): MessageStream<RpcStreamPacket> {
     const result = this.rpc.bidirectionalStreamingRequest(
       this.service,
       PluginHostDefinition.methods.PluginFsRpc.name,
@@ -290,7 +356,7 @@ export class PluginHostClient implements PluginHost {
  * @generated from service bldr.plugin.Plugin
  */
 export const PluginDefinition = {
-  typeName: "bldr.plugin.Plugin",
+  typeName: 'bldr.plugin.Plugin',
   methods: {
     /**
      * PluginRpc handles an RPC call from a remote plugin.
@@ -299,13 +365,13 @@ export const PluginDefinition = {
      * @generated from rpc bldr.plugin.Plugin.PluginRpc
      */
     PluginRpc: {
-      name: "PluginRpc",
+      name: 'PluginRpc',
       I: RpcStreamPacket,
       O: RpcStreamPacket,
       kind: MethodKind.BiDiStreaming,
     },
-  }
-} as const;
+  },
+} as const
 
 /**
  * Plugin is the service exposed by the plugin.
@@ -319,7 +385,10 @@ export interface Plugin {
    *
    * @generated from rpc bldr.plugin.Plugin.PluginRpc
    */
-  PluginRpc(request: MessageStream<RpcStreamPacket>, abortSignal?: AbortSignal): MessageStream<RpcStreamPacket>;
+  PluginRpc(
+    request: MessageStream<RpcStreamPacket>,
+    abortSignal?: AbortSignal,
+  ): MessageStream<RpcStreamPacket>
 }
 
 /**
@@ -334,7 +403,11 @@ export interface PluginHandler {
    *
    * @generated from rpc bldr.plugin.Plugin.PluginRpc
    */
-  PluginRpc(request: MessageStream<RpcStreamPacket>, abortSignal: AbortSignal, context: ServerContext): MessageStream<RpcStreamPacket>;
+  PluginRpc(
+    request: MessageStream<RpcStreamPacket>,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): MessageStream<RpcStreamPacket>
 }
 
 export const PluginServiceName = PluginDefinition.typeName
@@ -353,7 +426,10 @@ export class PluginClient implements Plugin {
    *
    * @generated from rpc bldr.plugin.Plugin.PluginRpc
    */
-  PluginRpc(request: MessageStream<RpcStreamPacket>, abortSignal?: AbortSignal): MessageStream<RpcStreamPacket> {
+  PluginRpc(
+    request: MessageStream<RpcStreamPacket>,
+    abortSignal?: AbortSignal,
+  ): MessageStream<RpcStreamPacket> {
     const result = this.rpc.bidirectionalStreamingRequest(
       this.service,
       PluginDefinition.methods.PluginRpc.name,
@@ -370,7 +446,7 @@ export class PluginClient implements Plugin {
  * @generated from service bldr.plugin.UpdateGuard
  */
 export const UpdateGuardDefinition = {
-  typeName: "bldr.plugin.UpdateGuard",
+  typeName: 'bldr.plugin.UpdateGuard',
   methods: {
     /**
      * Prepare waits for owned work to finish and prevents new work from starting.
@@ -379,13 +455,13 @@ export const UpdateGuardDefinition = {
      * @generated from rpc bldr.plugin.UpdateGuard.Prepare
      */
     Prepare: {
-      name: "Prepare",
+      name: 'Prepare',
       I: PrepareUpdateRequest,
       O: PrepareUpdateResponse,
       kind: MethodKind.Unary,
     },
-  }
-} as const;
+  },
+} as const
 
 /**
  * UpdateGuard is implemented by plugins whose owned work must quiesce before
@@ -400,7 +476,10 @@ export interface UpdateGuard {
    *
    * @generated from rpc bldr.plugin.UpdateGuard.Prepare
    */
-  Prepare(request: PrepareUpdateRequest, abortSignal?: AbortSignal): Promise<PrepareUpdateResponse>;
+  Prepare(
+    request: PrepareUpdateRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<PrepareUpdateResponse>
 }
 
 /**
@@ -416,7 +495,11 @@ export interface UpdateGuardHandler {
    *
    * @generated from rpc bldr.plugin.UpdateGuard.Prepare
    */
-  Prepare(request: PrepareUpdateRequest, abortSignal: AbortSignal, context: ServerContext): Promise<PrepareUpdateResponse>;
+  Prepare(
+    request: PrepareUpdateRequest,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): Promise<PrepareUpdateResponse>
 }
 
 export const UpdateGuardServiceName = UpdateGuardDefinition.typeName
@@ -435,7 +518,10 @@ export class UpdateGuardClient implements UpdateGuard {
    *
    * @generated from rpc bldr.plugin.UpdateGuard.Prepare
    */
-  async Prepare(request: PrepareUpdateRequest, abortSignal?: AbortSignal): Promise<PrepareUpdateResponse> {
+  async Prepare(
+    request: PrepareUpdateRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<PrepareUpdateResponse> {
     const requestMsg = PrepareUpdateRequest.create(request)
     const result = await this.rpc.request(
       this.service,

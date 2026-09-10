@@ -73,6 +73,27 @@ func build(ctx context.Context, le *logrus.Entry, output string, skipCompile boo
 	if err != nil {
 		return err
 	}
+	client, err := rolldown.Build(ctx, le, working, filepath.Join(root, "bldr"), &rolldown.BuildRequest{
+		WorkingDir: working, SourceRoot: root, OutputRoot: output,
+		BldrDistRoot: filepath.Join(root, "bldr"),
+		Format:       "es", Platform: "browser", Target: "es2024",
+		EntryFileNames: "[name].mjs", ChunkFileNames: "chunks/[name]-[hash].mjs",
+		AssetFileNames: "assets/[name]-[hash][extname]",
+		CodeSplitting:  true, Sourcemap: "none", TreeShaking: true,
+		Entrypoints: []*rolldown.Entrypoint{
+			{Name: "index", InputPath: filepath.Join(root, "packages/spacewave/index.ts")},
+		},
+	})
+	if err != nil {
+		return err
+	}
+	clientReport, err := client.MarshalJSON()
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(filepath.Join(working, "client-build-report.json"), clientReport, 0o644); err != nil {
+		return err
+	}
 	report, err := result.MarshalJSON()
 	if err != nil {
 		return err

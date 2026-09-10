@@ -660,6 +660,18 @@ export interface KvtxWatchRequest {
    * @generated from field: bool only_keys = 2;
    */
   onlyKeys?: boolean
+  /**
+   * MaxRecords bounds the record count of one snapshot. Zero is unbounded.
+   *
+   * @generated from field: uint64 max_records = 3;
+   */
+  maxRecords?: bigint
+  /**
+   * MaxBytes bounds the total key and value bytes of one snapshot. Zero is unbounded.
+   *
+   * @generated from field: uint64 max_bytes = 4;
+   */
+  maxBytes?: bigint
 }
 
 export const KvtxWatchRequest: MessageType<KvtxWatchRequest> =
@@ -668,6 +680,8 @@ export const KvtxWatchRequest: MessageType<KvtxWatchRequest> =
     fields: [
       { no: 1, name: 'prefix', kind: 'scalar', T: ScalarType.BYTES },
       { no: 2, name: 'only_keys', kind: 'scalar', T: ScalarType.BOOL },
+      { no: 3, name: 'max_records', kind: 'scalar', T: ScalarType.UINT64 },
+      { no: 4, name: 'max_bytes', kind: 'scalar', T: ScalarType.UINT64 },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })
@@ -721,6 +735,12 @@ export interface KvtxWatchResponse {
    * @generated from field: repeated kvtx.rpc.KvtxWatchEntry entries = 2;
    */
   entries?: KvtxWatchEntry[]
+  /**
+   * LimitExceeded indicates the error was the snapshot limit.
+   *
+   * @generated from field: bool limit_exceeded = 3;
+   */
+  limitExceeded?: boolean
 }
 
 export const KvtxWatchResponse: MessageType<KvtxWatchResponse> =
@@ -735,6 +755,7 @@ export const KvtxWatchResponse: MessageType<KvtxWatchResponse> =
         T: () => KvtxWatchEntry,
         repeated: true,
       },
+      { no: 3, name: 'limit_exceeded', kind: 'scalar', T: ScalarType.BOOL },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })

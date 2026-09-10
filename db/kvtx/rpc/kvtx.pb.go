@@ -652,6 +652,10 @@ type KvtxWatchRequest struct {
 	Prefix []byte `protobuf:"bytes,1,opt,name=prefix,proto3" json:"prefix,omitempty"`
 	// OnlyKeys omits values from each entry.
 	OnlyKeys bool `protobuf:"varint,2,opt,name=only_keys,json=onlyKeys,proto3" json:"onlyKeys,omitempty"`
+	// MaxRecords bounds the record count of one snapshot. Zero is unbounded.
+	MaxRecords uint64 `protobuf:"varint,3,opt,name=max_records,json=maxRecords,proto3" json:"maxRecords,omitempty"`
+	// MaxBytes bounds the total key and value bytes of one snapshot. Zero is unbounded.
+	MaxBytes uint64 `protobuf:"varint,4,opt,name=max_bytes,json=maxBytes,proto3" json:"maxBytes,omitempty"`
 }
 
 func (x *KvtxWatchRequest) Reset() {
@@ -672,6 +676,20 @@ func (x *KvtxWatchRequest) GetOnlyKeys() bool {
 		return x.OnlyKeys
 	}
 	return false
+}
+
+func (x *KvtxWatchRequest) GetMaxRecords() uint64 {
+	if x != nil {
+		return x.MaxRecords
+	}
+	return 0
+}
+
+func (x *KvtxWatchRequest) GetMaxBytes() uint64 {
+	if x != nil {
+		return x.MaxBytes
+	}
+	return 0
 }
 
 // KvtxWatchEntry is one key/value pair in a watched snapshot.
@@ -711,6 +729,8 @@ type KvtxWatchResponse struct {
 	Error string `protobuf:"bytes,1,opt,name=error,proto3" json:"error,omitempty"`
 	// Entries is the current key/value snapshot for the watched prefix.
 	Entries []*KvtxWatchEntry `protobuf:"bytes,2,rep,name=entries,proto3" json:"entries,omitempty"`
+	// LimitExceeded indicates the error was the snapshot limit.
+	LimitExceeded bool `protobuf:"varint,3,opt,name=limit_exceeded,json=limitExceeded,proto3" json:"limitExceeded,omitempty"`
 }
 
 func (x *KvtxWatchResponse) Reset() {
@@ -731,6 +751,13 @@ func (x *KvtxWatchResponse) GetEntries() []*KvtxWatchEntry {
 		return x.Entries
 	}
 	return nil
+}
+
+func (x *KvtxWatchResponse) GetLimitExceeded() bool {
+	if x != nil {
+		return x.LimitExceeded
+	}
+	return false
 }
 
 // KvtxIterateRequest is a request to open an iterator on a kvtx store.
@@ -1401,6 +1428,8 @@ func (m *KvtxWatchRequest) CloneVT() *KvtxWatchRequest {
 	}
 	r := new(KvtxWatchRequest)
 	r.OnlyKeys = m.OnlyKeys
+	r.MaxRecords = m.MaxRecords
+	r.MaxBytes = m.MaxBytes
 	r.Prefix = protobuf_go_lite.CloneBytes(m.Prefix)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
@@ -1435,6 +1464,7 @@ func (m *KvtxWatchResponse) CloneVT() *KvtxWatchResponse {
 	}
 	r := new(KvtxWatchResponse)
 	r.Error = m.Error
+	r.LimitExceeded = m.LimitExceeded
 	r.Entries = protobuf_go_lite.CloneVTSlice(m.Entries)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
@@ -2159,6 +2189,12 @@ func (this *KvtxWatchRequest) EqualVT(that *KvtxWatchRequest) bool {
 	if this.OnlyKeys != that.OnlyKeys {
 		return false
 	}
+	if this.MaxRecords != that.MaxRecords {
+		return false
+	}
+	if this.MaxBytes != that.MaxBytes {
+		return false
+	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
@@ -2203,6 +2239,9 @@ func (this *KvtxWatchResponse) EqualVT(that *KvtxWatchResponse) bool {
 		return false
 	}
 	if !protobuf_go_lite.EqualVTSliceImplicit(this.Entries, that.Entries, func() *KvtxWatchEntry { return &KvtxWatchEntry{} }) {
+		return false
+	}
+	if this.LimitExceeded != that.LimitExceeded {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -3450,6 +3489,16 @@ func (x *KvtxWatchRequest) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("onlyKeys")
 		s.WriteBool(x.OnlyKeys)
 	}
+	if x.MaxRecords != 0 || s.HasField("maxRecords") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("maxRecords")
+		s.WriteUint64(x.MaxRecords)
+	}
+	if x.MaxBytes != 0 || s.HasField("maxBytes") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("maxBytes")
+		s.WriteUint64(x.MaxBytes)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -3473,6 +3522,12 @@ func (x *KvtxWatchRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "only_keys", "onlyKeys":
 			s.AddField("only_keys")
 			x.OnlyKeys = s.ReadBool()
+		case "max_records", "maxRecords":
+			s.AddField("max_records")
+			x.MaxRecords = s.ReadUint64()
+		case "max_bytes", "maxBytes":
+			s.AddField("max_bytes")
+			x.MaxBytes = s.ReadUint64()
 		}
 	})
 }
@@ -3556,6 +3611,11 @@ func (x *KvtxWatchResponse) MarshalProtoJSON(s *json.MarshalState) {
 		}
 		s.WriteArrayEnd()
 	}
+	if x.LimitExceeded || s.HasField("limitExceeded") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("limitExceeded")
+		s.WriteBool(x.LimitExceeded)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -3594,6 +3654,9 @@ func (x *KvtxWatchResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
 				}
 				x.Entries = append(x.Entries, v)
 			})
+		case "limit_exceeded", "limitExceeded":
+			s.AddField("limit_exceeded")
+			x.LimitExceeded = s.ReadBool()
 		}
 	})
 }
@@ -4740,6 +4803,16 @@ func (m *KvtxWatchRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.MaxBytes != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.MaxBytes))
+		i--
+		dAtA[i] = 0x20
+	}
+	if m.MaxRecords != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.MaxRecords))
+		i--
+		dAtA[i] = 0x18
+	}
 	if m.OnlyKeys {
 		i = protobuf_go_lite.EncodeBool(dAtA, i, m.OnlyKeys)
 		i--
@@ -4823,6 +4896,11 @@ func (m *KvtxWatchResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	_ = l
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.LimitExceeded {
+		i = protobuf_go_lite.EncodeBool(dAtA, i, m.LimitExceeded)
+		i--
+		dAtA[i] = 0x18
 	}
 	if len(m.Entries) > 0 {
 		for iNdEx := len(m.Entries) - 1; iNdEx >= 0; iNdEx-- {
@@ -5467,6 +5545,8 @@ func (m *KvtxWatchRequest) SizeVT() (n int) {
 	_ = l
 	n += protobuf_go_lite.SizeBytesNonEmpty(1, m.Prefix)
 	n += protobuf_go_lite.SizeBoolNonZero(1, m.OnlyKeys)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.MaxRecords)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.MaxBytes)
 	n += len(m.unknownFields)
 	return n
 }
@@ -5494,6 +5574,7 @@ func (m *KvtxWatchResponse) SizeVT() (n int) {
 		l = e.SizeVT()
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
+	n += protobuf_go_lite.SizeBoolNonZero(1, m.LimitExceeded)
 	n += len(m.unknownFields)
 	return n
 }
@@ -6010,6 +6091,14 @@ func (x *KvtxWatchRequest) MarshalProtoText() string {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "only_keys")
 		protobuf_go_lite.TextWriteBool(&sb, x.OnlyKeys)
 	}
+	if x.MaxRecords != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "max_records")
+		protobuf_go_lite.TextWriteUint(&sb, x.MaxRecords)
+	}
+	if x.MaxBytes != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "max_bytes")
+		protobuf_go_lite.TextWriteUint(&sb, x.MaxBytes)
+	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
@@ -6053,6 +6142,10 @@ func (x *KvtxWatchResponse) MarshalProtoText() string {
 			}
 		}
 		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	if x.LimitExceeded != false {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "limit_exceeded")
+		protobuf_go_lite.TextWriteBool(&sb, x.LimitExceeded)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -7307,6 +7400,24 @@ func (m *KvtxWatchRequest) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.OnlyKeys = bool(v)
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MaxRecords", wireType)
+			}
+			m.MaxRecords = 0
+			m.MaxRecords, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MaxBytes", wireType)
+			}
+			m.MaxBytes = 0
+			m.MaxBytes, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
@@ -7432,6 +7543,16 @@ func (m *KvtxWatchResponse) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LimitExceeded", wireType)
+			}
+			var v bool
+			v, iNdEx, err = protobuf_go_lite.DecodeVarintBool(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.LimitExceeded = bool(v)
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

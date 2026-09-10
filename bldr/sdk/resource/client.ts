@@ -419,6 +419,7 @@ export class Client {
   private disposed = false
   private _connectionGeneration = 0
   private _reconnectResolve: ((state: ClientInitState) => void) | null = null
+  private _reconnectReject: ((error: Error) => void) | null = null
   private attachSession: AttachSession | null = null
   private attachSessionInitPromise: Promise<AttachSession> | null = null
 
@@ -766,6 +767,11 @@ export class Client {
   dispose(reason: ResourceClientErrorCode = 'CLIENT_DISPOSED'): void {
     if (this.disposed) return
     this.disposed = true
+    this._reconnectReject?.(
+      new ResourceClientError('Resource client is closed', reason),
+    )
+    this._reconnectResolve = null
+    this._reconnectReject = null
 
     // A normal close ends the request stream after its final controls. A
     // failed transport retires the generation without replaying releases.
@@ -969,6 +975,7 @@ export class Client {
                 this.initState = state
                 this._reconnectResolve(state)
                 this._reconnectResolve = null
+                this._reconnectReject = null
               } else if (!this.initState) {
                 this.initState = state
                 markInitialized()
@@ -1191,9 +1198,12 @@ export class Client {
     }
     this.resources.clear()
     this.initState = null
-    this.initPromise = new Promise<ClientInitState>((resolve) => {
+    this.initPromise = new Promise<ClientInitState>((resolve, reject) => {
       this._reconnectResolve = resolve
+      this._reconnectReject = reject
     })
+    // A generation may be retired before any caller requests its root.
+    void this.initPromise.catch(() => {})
     this.connectionLostEvents.emit(undefined)
   }
 
@@ -1208,7 +1218,14 @@ export class Client {
     this.resources.clear()
     this.initState = null
     this.initPromise = null
+    this._reconnectReject?.(
+      new ResourceClientError(
+        'Resource generation was replaced',
+        'CONNECTION_FAILED',
+      ),
+    )
     this._reconnectResolve = null
+    this._reconnectReject = null
     this.retireResourceSession()
     controller?.abort()
     this._connectionGeneration++

@@ -2,16 +2,19 @@
 // @generated from file github.com/s4wave/spacewave/bldr/plugin/plugin.proto (package bldr.plugin, syntax proto3)
 /* eslint-disable */
 
-import { createEnumType } from "@aptre/protobuf-es-lite/enum";
-import type { MessageType } from "@aptre/protobuf-es-lite/message";
-import { createEmptyMessageType, createMessageType } from "@aptre/protobuf-es-lite/message";
-import { ScalarType } from "@aptre/protobuf-es-lite/scalar";
-import { Timestamp } from "@aptre/protobuf-es-lite/google/protobuf/timestamp";
-import type { PartialFieldInfo } from "@aptre/protobuf-es-lite/field";
-import { ManifestRef } from "../manifest/manifest.pb.js";
-import { VolumeInfo } from "@go/github.com/s4wave/spacewave/db/volume/volume.pb.js";
+import { createEnumType } from '@aptre/protobuf-es-lite/enum'
+import type { MessageType } from '@aptre/protobuf-es-lite/message'
+import {
+  createEmptyMessageType,
+  createMessageType,
+} from '@aptre/protobuf-es-lite/message'
+import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
+import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
+import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { ManifestRef } from '../manifest/manifest.pb.js'
+import { VolumeInfo } from '@go/github.com/s4wave/spacewave/db/volume/volume.pb.js'
 
-export const protobufPackage = "bldr.plugin";
+export const protobufPackage = 'bldr.plugin'
 
 /**
  * PluginState is the scheduler state for a plugin instance.
@@ -41,11 +44,14 @@ export enum PluginState {
   PluginState_RUNNING = 2,
 }
 
-export const PluginState_Enum = /* @__PURE__ */ createEnumType("bldr.plugin.PluginState", [
-  [0, "PluginState_UNKNOWN"],
-  [1, "PluginState_REQUESTED"],
-  [2, "PluginState_RUNNING"],
-]);
+export const PluginState_Enum = /* @__PURE__ */ createEnumType(
+  'bldr.plugin.PluginState',
+  [
+    [0, 'PluginState_UNKNOWN'],
+    [1, 'PluginState_REQUESTED'],
+    [2, 'PluginState_RUNNING'],
+  ],
+)
 
 /**
  * PluginStatus holds basic status for a plugin.
@@ -58,85 +64,96 @@ export interface PluginStatus {
    *
    * @generated from field: string plugin_id = 1;
    */
-  pluginId?: string;
+  pluginId?: string
   /**
    * Running indicates the plugin is running.
    *
    * @generated from field: bool running = 2;
    */
-  running?: boolean;
+  running?: boolean
   /**
    * InstanceKey is the optional instance key for instanced plugins.
    *
    * @generated from field: string instance_key = 3;
    */
-  instanceKey?: string;
+  instanceKey?: string
   /**
    * State is the scheduler state for this plugin instance.
    *
    * @generated from field: bldr.plugin.PluginState state = 4;
    */
-  state?: PluginState;
+  state?: PluginState
   /**
    * LastErrorMessage is the most recent plugin execution error summary.
    *
    * @generated from field: string last_error_message = 5;
    */
-  lastErrorMessage?: string;
+  lastErrorMessage?: string
   /**
    * LastErrorAt is when LastErrorMessage was recorded.
    *
    * @generated from field: google.protobuf.Timestamp last_error_at = 6;
    */
-  lastErrorAt?: Date;
+  lastErrorAt?: Date
+}
 
-};
-
-export const PluginStatus: MessageType<PluginStatus> = /* @__PURE__ */ createMessageType({
-    typeName: "bldr.plugin.PluginStatus",
+export const PluginStatus: MessageType<PluginStatus> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'bldr.plugin.PluginStatus',
     fields: [
-        { no: 1, name: "plugin_id", kind: "scalar", T: ScalarType.STRING },
-        { no: 2, name: "running", kind: "scalar", T: ScalarType.BOOL },
-        { no: 3, name: "instance_key", kind: "scalar", T: ScalarType.STRING },
-        { no: 4, name: "state", kind: "enum", T: PluginState_Enum },
-        { no: 5, name: "last_error_message", kind: "scalar", T: ScalarType.STRING },
-        { no: 6, name: "last_error_at", kind: "message", T: () => Timestamp },
+      { no: 1, name: 'plugin_id', kind: 'scalar', T: ScalarType.STRING },
+      { no: 2, name: 'running', kind: 'scalar', T: ScalarType.BOOL },
+      { no: 3, name: 'instance_key', kind: 'scalar', T: ScalarType.STRING },
+      { no: 4, name: 'state', kind: 'enum', T: PluginState_Enum },
+      {
+        no: 5,
+        name: 'last_error_message',
+        kind: 'scalar',
+        T: ScalarType.STRING,
+      },
+      { no: 6, name: 'last_error_at', kind: 'message', T: () => Timestamp },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
-});
+  })
 
 /**
  * PrepareUpdateRequest asks the current generation to relinquish its work.
  *
  * @generated from message bldr.plugin.PrepareUpdateRequest
  */
-export interface PrepareUpdateRequest {
+export interface PrepareUpdateRequest {}
 
-};
-
-export const PrepareUpdateRequest: MessageType<PrepareUpdateRequest> = /* @__PURE__ */ createEmptyMessageType<PrepareUpdateRequest>("bldr.plugin.PrepareUpdateRequest", true);
+export const PrepareUpdateRequest: MessageType<PrepareUpdateRequest> =
+  /* @__PURE__ */ createEmptyMessageType<PrepareUpdateRequest>(
+    'bldr.plugin.PrepareUpdateRequest',
+    true,
+  )
 
 /**
  * PrepareUpdateResponse confirms the generation is ready for replacement.
  *
  * @generated from message bldr.plugin.PrepareUpdateResponse
  */
-export interface PrepareUpdateResponse {
+export interface PrepareUpdateResponse {}
 
-};
-
-export const PrepareUpdateResponse: MessageType<PrepareUpdateResponse> = /* @__PURE__ */ createEmptyMessageType<PrepareUpdateResponse>("bldr.plugin.PrepareUpdateResponse", true);
+export const PrepareUpdateResponse: MessageType<PrepareUpdateResponse> =
+  /* @__PURE__ */ createEmptyMessageType<PrepareUpdateResponse>(
+    'bldr.plugin.PrepareUpdateResponse',
+    true,
+  )
 
 /**
  * GetPluginInfoRequest is a request to return the information for the current plugin.
  *
  * @generated from message bldr.plugin.GetPluginInfoRequest
  */
-export interface GetPluginInfoRequest {
+export interface GetPluginInfoRequest {}
 
-};
-
-export const GetPluginInfoRequest: MessageType<GetPluginInfoRequest> = /* @__PURE__ */ createEmptyMessageType<GetPluginInfoRequest>("bldr.plugin.GetPluginInfoRequest", true);
+export const GetPluginInfoRequest: MessageType<GetPluginInfoRequest> =
+  /* @__PURE__ */ createEmptyMessageType<GetPluginInfoRequest>(
+    'bldr.plugin.GetPluginInfoRequest',
+    true,
+  )
 
 /**
  * GetPluginInfoResponse is the response to the GetPluginInfo request.
@@ -149,26 +166,26 @@ export interface GetPluginInfoResponse {
    *
    * @generated from field: string plugin_id = 1;
    */
-  pluginId?: string;
+  pluginId?: string
   /**
    * ManifestRef is the reference to the Manifest object.
    *
    * @generated from field: bldr.manifest.ManifestRef manifest_ref = 2;
    */
-  manifestRef?: ManifestRef;
+  manifestRef?: ManifestRef
   /**
    * HostVolumeInfo is the optional information for the host Volume.
    * The volume is exposed with a ProxyVolume when present.
    *
    * @generated from field: volume.VolumeInfo host_volume_info = 3;
    */
-  hostVolumeInfo?: VolumeInfo;
+  hostVolumeInfo?: VolumeInfo
   /**
    * Standalone reports that no PluginHost Resource graph is available.
    *
    * @generated from field: bool standalone = 4;
    */
-  standalone?: boolean;
+  standalone?: boolean
   /**
    * HostStorageId is the Storage ID on the plugin host bus that this plugin
    * instance allocates named volumes through. Empty selects the host default
@@ -176,21 +193,21 @@ export interface GetPluginInfoResponse {
    *
    * @generated from field: string host_storage_id = 5;
    */
-  hostStorageId?: string;
+  hostStorageId?: string
+}
 
-};
-
-export const GetPluginInfoResponse: MessageType<GetPluginInfoResponse> = /* @__PURE__ */ createMessageType({
-    typeName: "bldr.plugin.GetPluginInfoResponse",
+export const GetPluginInfoResponse: MessageType<GetPluginInfoResponse> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'bldr.plugin.GetPluginInfoResponse',
     fields: [
-        { no: 1, name: "plugin_id", kind: "scalar", T: ScalarType.STRING },
-        { no: 2, name: "manifest_ref", kind: "message", T: () => ManifestRef },
-        { no: 3, name: "host_volume_info", kind: "message", T: () => VolumeInfo },
-        { no: 4, name: "standalone", kind: "scalar", T: ScalarType.BOOL },
-        { no: 5, name: "host_storage_id", kind: "scalar", T: ScalarType.STRING },
+      { no: 1, name: 'plugin_id', kind: 'scalar', T: ScalarType.STRING },
+      { no: 2, name: 'manifest_ref', kind: 'message', T: () => ManifestRef },
+      { no: 3, name: 'host_volume_info', kind: 'message', T: () => VolumeInfo },
+      { no: 4, name: 'standalone', kind: 'scalar', T: ScalarType.BOOL },
+      { no: 5, name: 'host_storage_id', kind: 'scalar', T: ScalarType.STRING },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
-});
+  })
 
 /**
  * LoadPluginRequest is a request to load a plugin while the RPC is active.
@@ -203,7 +220,7 @@ export interface LoadPluginRequest {
    *
    * @generated from field: string plugin_id = 1;
    */
-  pluginId?: string;
+  pluginId?: string
   /**
    * InstanceKey is an optional key for instanced plugins.
    * When non-empty, the plugin host uses (plugin_id, instance_key) as the
@@ -213,18 +230,18 @@ export interface LoadPluginRequest {
    *
    * @generated from field: string instance_key = 2;
    */
-  instanceKey?: string;
+  instanceKey?: string
+}
 
-};
-
-export const LoadPluginRequest: MessageType<LoadPluginRequest> = /* @__PURE__ */ createMessageType({
-    typeName: "bldr.plugin.LoadPluginRequest",
+export const LoadPluginRequest: MessageType<LoadPluginRequest> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'bldr.plugin.LoadPluginRequest',
     fields: [
-        { no: 1, name: "plugin_id", kind: "scalar", T: ScalarType.STRING },
-        { no: 2, name: "instance_key", kind: "scalar", T: ScalarType.STRING },
+      { no: 1, name: 'plugin_id', kind: 'scalar', T: ScalarType.STRING },
+      { no: 2, name: 'instance_key', kind: 'scalar', T: ScalarType.STRING },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
-});
+  })
 
 /**
  * LoadPluginResponse is a status response to a LoadPlugin request.
@@ -237,17 +254,17 @@ export interface LoadPluginResponse {
    *
    * @generated from field: bldr.plugin.PluginStatus plugin_status = 1;
    */
-  pluginStatus?: PluginStatus;
+  pluginStatus?: PluginStatus
+}
 
-};
-
-export const LoadPluginResponse: MessageType<LoadPluginResponse> = /* @__PURE__ */ createMessageType({
-    typeName: "bldr.plugin.LoadPluginResponse",
+export const LoadPluginResponse: MessageType<LoadPluginResponse> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'bldr.plugin.LoadPluginResponse',
     fields: [
-        { no: 1, name: "plugin_status", kind: "message", T: () => PluginStatus },
+      { no: 1, name: 'plugin_status', kind: 'message', T: () => PluginStatus },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
-});
+  })
 
 /**
  * PluginMeta is metadata embedded in a plugin entrypoint.
@@ -261,39 +278,39 @@ export interface PluginMeta {
    *
    * @generated from field: string project_id = 1;
    */
-  projectId?: string;
+  projectId?: string
   /**
    * PluginId is the plugin identifier.
    * Must be a valid-dns-label.
    *
    * @generated from field: string plugin_id = 2;
    */
-  pluginId?: string;
+  pluginId?: string
   /**
    * PlatformId is the destination platform ID.
    *
    * @generated from field: string platform_id = 3;
    */
-  platformId?: string;
+  platformId?: string
   /**
    * BuildType is the type of build this is.
    *
    * @generated from field: string build_type = 4;
    */
-  buildType?: string;
+  buildType?: string
+}
 
-};
-
-export const PluginMeta: MessageType<PluginMeta> = /* @__PURE__ */ createMessageType({
-    typeName: "bldr.plugin.PluginMeta",
+export const PluginMeta: MessageType<PluginMeta> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'bldr.plugin.PluginMeta',
     fields: [
-        { no: 1, name: "project_id", kind: "scalar", T: ScalarType.STRING },
-        { no: 2, name: "plugin_id", kind: "scalar", T: ScalarType.STRING },
-        { no: 3, name: "platform_id", kind: "scalar", T: ScalarType.STRING },
-        { no: 4, name: "build_type", kind: "scalar", T: ScalarType.STRING },
+      { no: 1, name: 'project_id', kind: 'scalar', T: ScalarType.STRING },
+      { no: 2, name: 'plugin_id', kind: 'scalar', T: ScalarType.STRING },
+      { no: 3, name: 'platform_id', kind: 'scalar', T: ScalarType.STRING },
+      { no: 4, name: 'build_type', kind: 'scalar', T: ScalarType.STRING },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
-});
+  })
 
 /**
  * PluginStartInfo are details passed to the plugin by the plugin host in the environment.
@@ -306,33 +323,33 @@ export interface PluginStartInfo {
    *
    * @generated from field: string instance_id = 1;
    */
-  instanceId?: string;
+  instanceId?: string
   /**
    * PluginId is the plugin identifier.
    * Must be a valid-dns-label.
    *
    * @generated from field: string plugin_id = 2;
    */
-  pluginId?: string;
+  pluginId?: string
   /**
    * InstanceKey is the instance key from the LoadPlugin request.
    * Empty for non-instanced (shared) plugins.
    *
    * @generated from field: string instance_key = 3;
    */
-  instanceKey?: string;
+  instanceKey?: string
+}
 
-};
-
-export const PluginStartInfo: MessageType<PluginStartInfo> = /* @__PURE__ */ createMessageType({
-    typeName: "bldr.plugin.PluginStartInfo",
+export const PluginStartInfo: MessageType<PluginStartInfo> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'bldr.plugin.PluginStartInfo',
     fields: [
-        { no: 1, name: "instance_id", kind: "scalar", T: ScalarType.STRING },
-        { no: 2, name: "plugin_id", kind: "scalar", T: ScalarType.STRING },
-        { no: 3, name: "instance_key", kind: "scalar", T: ScalarType.STRING },
+      { no: 1, name: 'instance_id', kind: 'scalar', T: ScalarType.STRING },
+      { no: 2, name: 'plugin_id', kind: 'scalar', T: ScalarType.STRING },
+      { no: 3, name: 'instance_key', kind: 'scalar', T: ScalarType.STRING },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
-});
+  })
 
 /**
  * PluginContextInfo contains information about the running plugin attached to
@@ -346,14 +363,14 @@ export interface PluginContextInfo {
    *
    * @generated from field: bldr.plugin.PluginMeta plugin_meta = 1;
    */
-  pluginMeta?: PluginMeta;
+  pluginMeta?: PluginMeta
+}
 
-};
-
-export const PluginContextInfo: MessageType<PluginContextInfo> = /* @__PURE__ */ createMessageType({
-    typeName: "bldr.plugin.PluginContextInfo",
+export const PluginContextInfo: MessageType<PluginContextInfo> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'bldr.plugin.PluginContextInfo',
     fields: [
-        { no: 1, name: "plugin_meta", kind: "message", T: () => PluginMeta },
+      { no: 1, name: 'plugin_meta', kind: 'message', T: () => PluginMeta },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
-});
+  })

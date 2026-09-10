@@ -216,6 +216,10 @@ message KvtxWatchRequest {
   bytes prefix = 1;
   // OnlyKeys omits values from each entry.
   bool only_keys = 2;
+  // MaxRecords bounds the record count of one snapshot. Zero is unbounded.
+  uint64 max_records = 3;
+  // MaxBytes bounds the total key and value bytes of one snapshot. Zero is unbounded.
+  uint64 max_bytes = 4;
 }
 
 // KvtxWatchEntry is one key/value pair in a watched snapshot.
@@ -233,6 +237,8 @@ message KvtxWatchResponse {
   string error = 1;
   // Entries is the current key/value snapshot for the watched prefix.
   repeated KvtxWatchEntry entries = 2;
+  // LimitExceeded indicates the error was the snapshot limit.
+  bool limit_exceeded = 3;
 }
 
 // KvtxIterateRequest is a request to open an iterator on a kvtx store.

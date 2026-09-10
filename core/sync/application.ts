@@ -2,7 +2,7 @@ import { createHash, randomUUID } from 'node:crypto'
 
 import {
   KvScanLimitError,
-  type KvStore,
+  KvStore,
   type KvTransaction,
 } from '../../sdk/kv/kv.js'
 import {
@@ -11,6 +11,7 @@ import {
 } from '../../sdk/kv/world/store.js'
 import { Engine } from '../../sdk/world/engine.js'
 import type { Tx } from '../../sdk/world/tx.js'
+import { getObjectType } from '../../sdk/world/types/types.js'
 import { SyncError, publicError } from '../../sdk/sync/errors.js'
 import type { Operation } from '../../sdk/sync/operation.js'
 import {
@@ -34,6 +35,7 @@ import {
   type Schema,
   type Transaction,
   type TransactionCollection,
+  type RecordEntry,
 } from '../../sdk/sync/schema.js'
 
 export interface Access<P extends Principal> {
@@ -211,6 +213,16 @@ export class Application<S extends Schema, P extends Principal> {
     }
   }
 
+  // Opening a capability grants no operation; every call checks its own policy.
+  async openCollection(principal: P, collection: string): Promise<void> {
+    try {
+      await this.authorize(principal, collection, 'read')
+    } catch (error) {
+      if (!(error instanceof SyncError) || error.code !== 'DENIED') throw error
+      await this.authorize(principal, collection, 'write')
+    }
+  }
+
   execute(
     principal: P,
     operation: Operation,
@@ -234,12 +246,92 @@ export class Application<S extends Schema, P extends Principal> {
     return this.closing
   }
 
-  private checkPrincipal(principal: P): void {
+  // watch follows the owning KV producer and rechecks policy before every delivery.
+  async *watch(
+    principal: P,
+    collection: string,
+    prefix: string,
+    signal: AbortSignal,
+  ): AsyncIterable<readonly RecordEntry<JsonValue>[]> {
+    if (this.closing) throw new SyncError('CLOSED', 'Server is closed')
+    const lifetime = AbortSignal.any([
+      this.signal,
+      signal,
+      ...(principal.signal ? [principal.signal] : []),
+    ])
+    const done = Promise.withResolvers<void>()
+    this.active.add(done.promise)
+    let store: KvStore | undefined
+    try {
+      const key = collectionKey(this.schema.id, principal.scope, collection)
+      const bytes = prefix ? this.recordKey(prefix) : new Uint8Array()
+      let emptyDelivered = false
+      for (;;) {
+        lifetime.throwIfAborted()
+        // Each iteration follows a later World revision and rechecks its authority.
+        // eslint-disable-next-line react-doctor/async-await-in-loop
+        await this.authorize(principal, collection, 'read')
+        const sequence = await this.engine.getSeqno(lifetime)
+        const read = await this.engine.newTransaction(false, lifetime)
+        let exists = false
+        try {
+          const object = await read.getObject(key, lifetime)
+          exists = object !== null
+          object?.release()
+          if (
+            exists &&
+            (await getObjectType(read, key, lifetime)) !== 'kv/store'
+          )
+            throw new KvObjectTypeError()
+        } finally {
+          try {
+            await read.discard()
+          } finally {
+            read.release()
+          }
+        }
+        if (exists) break
+        if (!emptyDelivered) {
+          yield []
+          emptyDelivered = true
+        }
+        await this.engine.waitSeqno((sequence.seqno ?? 0n) + 1n, lifetime)
+      }
+      const access = await this.engine.accessTypedObject(key, lifetime)
+      store = this.engine.resourceRef.createResource(access.resourceId, KvStore)
+      for await (const entries of store.watchRecords(
+        bytes,
+        {
+          maxRecords: this.limits.maxRecords,
+          maxBytes: this.limits.maxSnapshotBytes,
+        },
+        lifetime,
+      )) {
+        await this.authorize(principal, collection, 'read')
+        yield entries.map((entry) => ({
+          key: decoder.decode(entry.key),
+          value: decodeJSON(entry.value),
+        }))
+      }
+    } catch (error) {
+      if (error instanceof KvScanLimitError)
+        throw new SyncError('QUERY_LIMIT', error.message)
+      if (!lifetime.aborted) throw publicError(error)
+    } finally {
+      store?.release()
+      done.resolve()
+      this.active.delete(done.promise)
+    }
+  }
+
+  checkPrincipal(principal: P): void {
     if (
       !principal.subject ||
       !principal.scope ||
       principal.signal?.aborted ||
-      (principal.expiresAt !== undefined && principal.expiresAt <= Date.now())
+      (principal.expiresAt !== undefined &&
+        (!Number.isFinite(principal.expiresAt) ||
+          principal.expiresAt <= Date.now()))
     ) {
       throw new SyncError('AUTHENTICATION', 'Authentication is no longer valid')
     }
