@@ -31,7 +31,7 @@ func (k *KVTx) loadBucketConfig(ctx context.Context, tx kvtx.Tx, key []byte) (*b
 // ApplyBucketConfig applies a bucket configuration.
 // Returns the previous and current (updated) configurations.
 // The current configuration may be nil if the volume rejects the bucket.
-// If outdated, prev == curr.
+// If outdated, prev == curr. Invalid storage snapshots retry the complete update.
 func (k *KVTx) ApplyBucketConfig(ctx context.Context, conf *bucket.Config) (
 	updated bool,
 	prev, curr *bucket.Config,
@@ -47,33 +47,31 @@ func (k *KVTx) ApplyBucketConfig(ctx context.Context, conf *bucket.Config) (
 	}
 
 	key := k.kvkey.GetBucketConfigKey(conf.GetId())
-	tx, err := k.store.NewTransaction(ctx, true)
+	err = kvtx.RunTransaction(ctx, true,
+		func(ctx context.Context) (kvtx.Tx, error) {
+			return k.store.NewTransaction(ctx, true)
+		},
+		func(ctx context.Context, tx kvtx.Tx) error {
+			updated, prev, curr = false, nil, nil
+			existing, err := k.loadBucketConfig(ctx, tx, key)
+			if err != nil {
+				return err
+			}
+			if existing != nil && existing.GetRev() >= conf.GetRev() {
+				prev, curr = existing, existing
+				return nil
+			}
+
+			if err := tx.Set(ctx, key, dat); err != nil {
+				return err
+			}
+			updated, prev, curr = true, existing, conf
+			return nil
+		})
 	if err != nil {
 		return false, nil, nil, err
 	}
-	defer tx.Discard()
-
-	// 1. lookup the existing config
-	econf, err := k.loadBucketConfig(ctx, tx, key)
-	if err != nil {
-		return false, nil, nil, err
-	}
-
-	if econf != nil {
-		if econf.GetRev() >= conf.GetRev() {
-			return false, econf, econf, nil
-		}
-	}
-
-	if err := tx.Set(ctx, key, dat); err != nil {
-		return false, nil, nil, err
-	}
-
-	if err := tx.Commit(ctx); err != nil {
-		return false, nil, nil, err
-	}
-
-	return true, econf, conf, nil
+	return updated, prev, curr, nil
 }
 
 // GetBucketInfo returns bucket information by string.
