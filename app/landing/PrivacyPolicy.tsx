@@ -19,7 +19,11 @@ export function PrivacyPolicy() {
       icon={<LuShield className="size-10" />}
       title="Privacy Policy"
       subtitle="What stays on your devices and what our cloud service handles."
-      lastUpdated={`Policy version: ${policies.privacy.version}`}
+      lastUpdated={
+        policies.privacy.effectiveDate
+          ? `Effective date: ${policies.privacy.effectiveDate}`
+          : `Policy version: ${policies.privacy.version}`
+      }
       draftBanner={policies.privacy.draft}
     >
       <LegalPolicyContent sections={policies.privacy.sections} />

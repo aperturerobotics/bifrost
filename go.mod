@@ -34,7 +34,7 @@ require (
 	github.com/aperturerobotics/cayley v0.15.1-0.20260824110931-e6b102492e31 // master
 	github.com/aperturerobotics/cli v1.1.0 // v1.1.0
 	github.com/aperturerobotics/common v0.35.4 // master
-	github.com/aperturerobotics/controllerbus v0.53.6-0.20260910010448-62281fa2684f // master
+	github.com/aperturerobotics/controllerbus v0.53.6-0.20260910121824-08a6567a0994 // master
 	github.com/aperturerobotics/cpp-yamux v0.0.0-20260223122921-58339cfd0e5d
 	github.com/aperturerobotics/esbuild v0.24.1-0.20260219011422-6d4b923e2023 // https://github.com/evanw/esbuild/pull/3413 [rejected]
 	github.com/aperturerobotics/fastjson v0.1.2-0.20260705010846-94f343f5bb34
@@ -48,7 +48,7 @@ require (
 	github.com/aperturerobotics/go-websocket v1.8.15-0.20260619192713-a096778f08c1
 	github.com/aperturerobotics/go-winjob v0.0.0-20260705010911-656e088d1b05
 	github.com/aperturerobotics/json-iterator-lite v1.1.0 // latest
-	github.com/aperturerobotics/protobuf-go-lite v0.18.1-0.20260826222423-298dca0e6eaf // master
+	github.com/aperturerobotics/protobuf-go-lite v0.18.1-0.20260910104758-d722c32acb2f // master
 	github.com/aperturerobotics/starpc v0.52.1
 	github.com/aperturerobotics/util v1.34.10-0.20260908052533-9b98f88c3976 // master
 	github.com/cloudflare/circl v1.6.5
@@ -85,7 +85,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/quic-go/quic-go v0.62.0
 	github.com/restic/chunker v0.5.0
-	github.com/s4wave/goscript v0.2.32-0.20260910110749-847ab63454b5
+	github.com/s4wave/goscript v0.2.32-0.20260910133935-2f49dab6c6fd
 	github.com/sasha-s/go-deadlock v0.3.9
 	github.com/satori/go.uuid v1.2.0
 	github.com/sergi/go-diff v1.4.0

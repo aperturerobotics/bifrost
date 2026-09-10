@@ -132,25 +132,10 @@ func BenchmarkWorldStateListGraphEdgeBucketsRelationshipFanout(b *testing.B) {
 func BenchmarkWorldStateQueryGraphPathRelationshipFanout(b *testing.B) {
 	ctx := context.Background()
 
-	buildQuery := func(roots []string) *world.GraphPathQuery {
-		return &world.GraphPathQuery{
-			StartKeys: roots,
-			Steps: []world.GraphPathStep{
-				{
-					Direction: world.GraphPathDirectionOut,
-					Predicate: "<bench/path-out>",
-					Limit:     16,
-				},
-			},
-			ResultLimit:  uint32(len(roots)), //nolint:gosec
-			IncludeQuads: true,
-		}
-	}
-
 	b.Run("existing-handle", func(b *testing.B) {
 		ws, roots, cleanup := setupGraphPathBenchWorld(ctx, b, 96)
 		defer cleanup()
-		query := buildQuery(roots)
+		query := buildGraphPathBenchQuery(roots)
 		b.ResetTimer()
 		b.ReportAllocs()
 		var readCount, readBytes uint64
@@ -172,7 +157,7 @@ func BenchmarkWorldStateQueryGraphPathRelationshipFanout(b *testing.B) {
 	b.Run("scoped-read-operation", func(b *testing.B) {
 		ws, roots, cleanup := setupGraphPathBenchWorld(ctx, b, 96)
 		defer cleanup()
-		query := buildQuery(roots)
+		query := buildGraphPathBenchQuery(roots)
 		b.ResetTimer()
 		b.ReportAllocs()
 		var readCount, readBytes uint64
@@ -191,6 +176,21 @@ func BenchmarkWorldStateQueryGraphPathRelationshipFanout(b *testing.B) {
 		}
 		reportBlockReadMetrics(b, readCount, readBytes)
 	})
+}
+
+func buildGraphPathBenchQuery(roots []string) *world.GraphPathQuery {
+	return &world.GraphPathQuery{
+		StartKeys: roots,
+		Steps: []world.GraphPathStep{
+			{
+				Direction: world.GraphPathDirectionOut,
+				Predicate: "<bench/path-out>",
+				Limit:     16,
+			},
+		},
+		ResultLimit:  uint32(len(roots)), //nolint:gosec
+		IncludeQuads: true,
+	}
 }
 
 func setupRelationshipFanoutBenchWorld(ctx context.Context, tb testing.TB, roots int) (*world_block.WorldState, []world.GraphQuad, func()) {

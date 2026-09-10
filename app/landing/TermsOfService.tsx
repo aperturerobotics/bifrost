@@ -19,7 +19,11 @@ export function TermsOfService() {
       icon={<LuFileText className="size-10" />}
       title="Terms of Service"
       subtitle="Your service, subscription, and content rights."
-      lastUpdated={`Policy version: ${policies.terms.version}`}
+      lastUpdated={
+        policies.terms.effectiveDate
+          ? `Effective date: ${policies.terms.effectiveDate}`
+          : `Policy version: ${policies.terms.version}`
+      }
       draftBanner={policies.terms.draft}
     >
       <LegalPolicyContent sections={policies.terms.sections} />
