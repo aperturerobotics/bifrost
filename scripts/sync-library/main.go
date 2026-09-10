@@ -58,6 +58,10 @@ func build(ctx context.Context, le *logrus.Entry, output string, skipCompile boo
 			return err
 		}
 	}
+	entrypoint := filepath.Join(working, "engine-worker.ts")
+	if err := os.WriteFile(entrypoint, []byte(workerEntrypoint), 0o644); err != nil {
+		return err
+	}
 	result, err := rolldown.Build(ctx, le, working, filepath.Join(root, "bldr"), &rolldown.BuildRequest{
 		WorkingDir: working, SourceRoot: root, OutputRoot: output,
 		BldrDistRoot: filepath.Join(root, "bldr"),
@@ -68,7 +72,7 @@ func build(ctx context.Context, le *logrus.Entry, output string, skipCompile boo
 		CleanOutputDir: true,
 		Defines:        map[string]string{"process.env.WS_NO_BUFFER_UTIL": "true", "process.env.WS_NO_UTF_8_VALIDATE": "true"},
 		Entrypoints: []*rolldown.Entrypoint{
-			{Name: "engine-worker", InputPath: filepath.Join(root, "core/sync/node/worker.ts")},
+			{Name: "engine-worker", InputPath: entrypoint},
 			{Name: "server", InputPath: filepath.Join(root, "packages/spacewave/server.ts")},
 		},
 		Goscript: &rolldown.GoScriptPolicy{OutputRoot: compiled},
@@ -119,3 +123,26 @@ func build(ctx context.Context, le *logrus.Entry, output string, skipCompile boo
 	notices.Stderr = os.Stderr
 	return notices.Run()
 }
+
+// workerEntrypoint adapts generated Go values to the typed Worker host contract.
+// Its relative host import is rooted at the build's .tmp/sync-library directory.
+const workerEntrypoint = `import { ValueOf } from '@goscript/syscall/js/index.js'
+import { Open } from '@goscript/github.com/s4wave/spacewave/core/sync/node/runtime.gs.js'
+import { runWorker } from '../../core/sync/node/worker.js'
+
+runWorker(async (directory, openSQLPort) => {
+  const [runtime, error] = await Open(directory, ValueOf(openSQLPort))
+  if (error) throw new Error(await error.Error())
+  if (!runtime) throw new Error('Sync engine returned no runtime')
+  return {
+    async accept(port) {
+      const error = await runtime.Accept(ValueOf(port))
+      if (error) throw new Error(await error.Error())
+    },
+    async close() {
+      const error = await runtime.Close()
+      if (error) throw new Error(await error.Error())
+    },
+  }
+})
+`

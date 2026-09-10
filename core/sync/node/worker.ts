@@ -1,16 +1,26 @@
 import { isMainThread, parentPort, workerData } from 'node:worker_threads'
 import { createHandler, createMux, Server } from 'starpc'
-import { ValueOf } from '@goscript/syscall/js/index.js'
 
 import { SqliteNodeServer } from '../../../db/sql/sqlite-node/server.js'
 import { SqliteBridgeDefinition } from '../../../db/sql/sqlite-wasm/rpc/sqlite-bridge_srpc.pb.js'
 import { messagePortPacketStream } from '../../../bldr/web/entrypoint/browser/message-port-packet-stream.js'
-import { Open } from '@goscript/github.com/s4wave/spacewave/core/sync/node/runtime.gs.js'
 import { acquireDirectoryLock } from '../../../db/sql/sqlite-node/lock.js'
 import { RuntimeInit, RuntimeMessage, RuntimeMessage_Kind } from './node.pb.js'
 
+// EngineRuntime is the compiled engine capability supplied by the build entrypoint.
+interface EngineRuntime {
+  accept(port: MessagePort): Promise<void>
+  close(): Promise<void>
+}
+
+// OpenRuntime binds the compiled engine to this Worker's private SQL-port opener.
+type OpenRuntime = (
+  directory: string,
+  openSQLPort: () => MessagePort,
+) => Promise<EngineRuntime>
+
 // openEngine connects the compiled engine to SQLite within this Worker.
-export async function openEngine(directory: string) {
+async function openEngine(directory: string, openRuntime: OpenRuntime) {
   const sqlite = new SqliteNodeServer()
   const mux = createMux()
   mux.register(createHandler(SqliteBridgeDefinition, sqlite))
@@ -21,9 +31,7 @@ export async function openEngine(directory: string) {
     return port2
   }
   try {
-    const [runtime, error] = await Open(directory, ValueOf(openPort))
-    if (error) throw new Error(await error.Error())
-    if (!runtime) throw new Error('Sync engine returned no runtime')
+    const runtime = await openRuntime(directory, openPort)
     return { runtime, sqlite }
   } catch (error) {
     sqlite.close()
@@ -31,15 +39,15 @@ export async function openEngine(directory: string) {
   }
 }
 
-// runWorker publishes readiness only after SQLite and the World are available.
-async function runWorker(): Promise<void> {
+// serveWorker publishes readiness only after SQLite and the World are available.
+async function serveWorker(openRuntime: OpenRuntime): Promise<void> {
   if (!parentPort) throw new Error('Sync engine requires a Worker parent')
   const parent = parentPort
   const init = RuntimeInit.fromBinary(workerData)
   const lock = acquireDirectoryLock(init.directory ?? '')
   let opened: Awaited<ReturnType<typeof openEngine>> | undefined
   try {
-    opened = await openEngine(lock.directory)
+    opened = await openEngine(lock.directory, openRuntime)
     const { runtime, sqlite } = opened
     let closing: Promise<void> | undefined
     parent.on(
@@ -51,17 +59,12 @@ async function runWorker(): Promise<void> {
             frame.port.close()
             return
           }
-          void Promise.resolve(runtime.Accept(ValueOf(frame.port)))
-            .then((error) => {
-              if (error) frame.port?.close()
-            })
-            .catch(() => frame.port?.close())
+          void runtime.accept(frame.port).catch(() => frame.port?.close())
         } else if (message.kind === RuntimeMessage_Kind.CLOSE) {
           closing ??= (async () => {
             let failure = ''
             try {
-              const error = await runtime.Close()
-              if (error) throw new Error(await error.Error())
+              await runtime.close()
             } catch (error) {
               failure = error instanceof Error ? error.message : String(error)
             } finally {
@@ -111,8 +114,10 @@ async function runWorker(): Promise<void> {
   }
 }
 
-if (!isMainThread) {
-  void runWorker().catch((error: unknown) => {
+// runWorker starts the host after the generated entrypoint supplies its compiled binding.
+export function runWorker(openRuntime: OpenRuntime): void {
+  if (isMainThread) throw new Error('Sync engine requires a Worker')
+  void serveWorker(openRuntime).catch((error: unknown) => {
     parentPort?.postMessage(
       RuntimeMessage.toBinary({
         kind: RuntimeMessage_Kind.FAILED,

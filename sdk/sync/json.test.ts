@@ -1,5 +1,10 @@
 import { describe, expect, test } from 'vitest'
-import { canonicalJSON, decodeJSON, encodeJSON } from './json.js'
+import {
+  canonicalJSON,
+  decodeJSON,
+  encodeJSON,
+  type JsonValue,
+} from './json.js'
 
 describe('canonicalJSON', () => {
   test('null round-trips and stays distinct from absent', () => {
@@ -101,14 +106,13 @@ describe('canonicalJSON', () => {
   })
 
   test('rejects enumerable symbol keys', () => {
-    const v: Record<string, unknown> = { a: 1 }
+    const v: Record<PropertyKey, unknown> = { a: 1 }
     v[Symbol('s')] = 2
     expect(() => canonicalJSON(v)).toThrow(TypeError)
   })
 
   test('rejects extra enumerable array properties', () => {
-    const v: unknown[] = [1, 2]
-    ;(v as Record<string, unknown>).extra = 3
+    const v = Object.assign([1, 2], { extra: 3 })
     expect(() => canonicalJSON(v)).toThrow(TypeError)
   })
 

@@ -67,8 +67,10 @@ assert.match(
   'Set SYNC_NODE_BINARY to supported Node 24.15 or later within 24.x',
 )
 assert.ok(Number(version.split('.')[1]) >= 15)
-if (!process.argv.includes('--skip-build'))
+if (!process.argv.includes('--skip-build')) {
+  await run('source-types', [bun, 'run', 'typecheck'])
   await run('build', ['go', 'run', './scripts/sync-library'])
+}
 const metadata = JSON.parse(
   await readFile('packages/spacewave/dist/build.json', 'utf8'),
 )
