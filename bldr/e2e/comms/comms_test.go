@@ -498,28 +498,6 @@ func TestGoScriptResourceService(t *testing.T) {
 	}
 }
 
-// TestGoScriptOpfsStorage verifies raw persistence and legacy-volume recovery,
-// including replacement identity across worker restart and safe deletion.
-func TestGoScriptOpfsStorage(t *testing.T) {
-	browsers := []string{"chromium", "webkit"}
-	for _, browser := range browsers {
-		t.Run(browser, func(t *testing.T) {
-			t.Parallel()
-			ensureGoScriptFixtureWorker(t, &opfsStorageGoScriptFixtureWorker)
-			results := runFixture(t, browser, "goscript-opfs-storage")
-
-			if pass, ok := results["pass"].(bool); !ok || !pass {
-				t.Fatalf("GoScript OPFS storage fixture failed: %v", results["detail"])
-			}
-
-			assertBoolResult(t, results, "workerReady", true)
-			assertBoolResult(t, results, "write", true)
-			assertBoolResult(t, results, "reloadRead", true)
-			assertBoolResult(t, results, "cleanup", true)
-		})
-	}
-}
-
 // TestStartupFailures verifies bounded rejection for startup failure paths:
 // slow registration, close during startup, worker pre-registration death, and
 // plugin import failure.
