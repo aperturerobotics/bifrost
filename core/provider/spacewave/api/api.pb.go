@@ -2456,7 +2456,8 @@ type WriteTicketProofPayload struct {
 	ContentLength int64 `protobuf:"varint,5,opt,name=content_length,json=contentLength,proto3" json:"contentLength,omitempty"`
 	// BodyHashHex is the hex-encoded body hash associated with the proof.
 	BodyHashHex string `protobuf:"bytes,6,opt,name=body_hash_hex,json=bodyHashHex,proto3" json:"bodyHashHex,omitempty"`
-	// SignedHeaders is the sorted comma-separated "key=value" signed header pairs.
+	// SignedHeaders contains sorted comma-separated "key=value" header pairs.
+	// Values use URL query escaping, including commas, plus signs, and percent signs.
 	SignedHeaders string `protobuf:"bytes,7,opt,name=signed_headers,json=signedHeaders,proto3" json:"signedHeaders,omitempty"`
 }
 

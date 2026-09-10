@@ -314,9 +314,11 @@ func TestMarshalWriteTicketProofPayload(t *testing.T) {
 		ContentLength: 42,
 		BodyHashHex:   "abcd",
 		SignedHeaders: map[string]string{
-			"x-pack-id":     "pack-1",
-			"content-type":  "application/octet-stream",
-			"x-block-count": "12",
+			"x-pack-id":           "pack-1",
+			"x-replaces-pack-ids": "old-1,old-2",
+			"x-bloom-filter":      "A+/==",
+			"content-type":        "application/octet-stream",
+			"x-block-count":       "12",
 		},
 	})
 	if err != nil {
@@ -330,7 +332,7 @@ func TestMarshalWriteTicketProofPayload(t *testing.T) {
 		TimestampMs:   123456789,
 		ContentLength: 42,
 		BodyHashHex:   "abcd",
-		SignedHeaders: "content-type=application/octet-stream,x-block-count=12,x-pack-id=pack-1",
+		SignedHeaders: "content-type=application%2Foctet-stream,x-block-count=12,x-bloom-filter=A%2B%2F%3D%3D,x-pack-id=pack-1,x-replaces-pack-ids=old-1%2Cold-2",
 	}).MarshalVT()
 	if err != nil {
 		t.Fatalf("marshal want payload: %v", err)
@@ -393,7 +395,7 @@ func TestMarshalSObjectWriteTicketProofPayload(t *testing.T) {
 	if payload.GetPath() != "/api/sobject/01/op" {
 		t.Fatalf("unexpected path: %q", payload.GetPath())
 	}
-	if payload.GetSignedHeaders() != "content-type=application/octet-stream" {
+	if payload.GetSignedHeaders() != "content-type=application%2Foctet-stream" {
 		t.Fatalf("unexpected signed headers: %q", payload.GetSignedHeaders())
 	}
 	wantHash := sha256.Sum256(body)
@@ -433,7 +435,7 @@ func TestMarshalSyncPushWriteTicketProofPayload(t *testing.T) {
 	if payload.GetTicket() != "ticket-456" {
 		t.Fatalf("unexpected ticket: %q", payload.GetTicket())
 	}
-	if payload.GetSignedHeaders() != "content-type=application/octet-stream,x-block-count=12,x-bloom-filter=AQID,x-pack-id=pack-1" {
+	if payload.GetSignedHeaders() != "content-type=application%2Foctet-stream,x-block-count=12,x-bloom-filter=AQID,x-pack-id=pack-1" {
 		t.Fatalf("unexpected signed headers: %q", payload.GetSignedHeaders())
 	}
 	if payload.GetBodyHashHex() != hex.EncodeToString(bodyHash) {

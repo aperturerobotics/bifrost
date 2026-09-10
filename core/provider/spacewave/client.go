@@ -141,7 +141,7 @@ func marshalWriteTicketProofPayload(
 		}
 		hdrs.WriteString(k)
 		hdrs.WriteByte('=')
-		hdrs.WriteString(fields.SignedHeaders[k])
+		hdrs.WriteString(url.QueryEscape(fields.SignedHeaders[k]))
 	}
 
 	payload := &api.WriteTicketProofPayload{
