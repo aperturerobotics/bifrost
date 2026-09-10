@@ -159,7 +159,7 @@ describe('PlanSelectionPage', () => {
       expect(screen.getByText('Shared Spaces with collaborators')).toBeDefined()
       expect(screen.getByText('100 GiB cloud storage included')).toBeDefined()
       expect(
-        screen.getByText('50K writes / 250K uncached reads per month'),
+        screen.getByText('40K writes / 100K uncached reads per month'),
       ).toBeDefined()
       expect(
         screen.getByText('Always-on sync across all devices'),

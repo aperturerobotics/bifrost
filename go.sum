@@ -38,6 +38,8 @@ github.com/aperturerobotics/controllerbus v0.53.5 h1:mSZQltMn2G1qjELMnsRWOb3jjyF
 github.com/aperturerobotics/controllerbus v0.53.5/go.mod h1:oMdVjwUwfKUo9XgnO7GbDk6cVMvrlnVaRDp/epb7ydU=
 github.com/aperturerobotics/controllerbus v0.53.6-0.20260910010448-62281fa2684f h1:qEuo1mmxCkpL5kR9rNiIHSW+hfdHog5nJjlEtTMwX50=
 github.com/aperturerobotics/controllerbus v0.53.6-0.20260910010448-62281fa2684f/go.mod h1:oMdVjwUwfKUo9XgnO7GbDk6cVMvrlnVaRDp/epb7ydU=
+github.com/aperturerobotics/controllerbus v0.53.6-0.20260910121824-08a6567a0994 h1:MLILFYz4sXMFvMbgCjrFt239PR2UtlAIU4ASlV906c0=
+github.com/aperturerobotics/controllerbus v0.53.6-0.20260910121824-08a6567a0994/go.mod h1:oMdVjwUwfKUo9XgnO7GbDk6cVMvrlnVaRDp/epb7ydU=
 github.com/aperturerobotics/cpp-yamux v0.0.0-20260223122921-58339cfd0e5d h1:TVae+YDmMmtutvNKC5d64yXx5Woa3QIq3Ndn11J1IPQ=
 github.com/aperturerobotics/cpp-yamux v0.0.0-20260223122921-58339cfd0e5d/go.mod h1:z43wdjwvCS9HJwxnqEtWgedAqWpeK6c5vozJoGXtUug=
 github.com/aperturerobotics/esbuild v0.24.1-0.20260219011422-6d4b923e2023 h1:OFfw+2XQglhiej7liQM/YQneJTkJvENZLfR/H4zmZ8Q=
@@ -86,6 +88,8 @@ github.com/aperturerobotics/protobuf v0.0.0-20260203024654-8201686529c4 h1:4Dy3B
 github.com/aperturerobotics/protobuf v0.0.0-20260203024654-8201686529c4/go.mod h1:tMgO7y6SJo/d9ZcvrpNqIQtdYT9de+QmYaHOZ4KnhOg=
 github.com/aperturerobotics/protobuf-go-lite v0.18.1-0.20260826222423-298dca0e6eaf h1:Tckjg0YEboL8uf/ZWuDsp1eTQ0GDCWORar/atnxPIU4=
 github.com/aperturerobotics/protobuf-go-lite v0.18.1-0.20260826222423-298dca0e6eaf/go.mod h1:3Ay/E7iaw2KWLirK3+dDdNJZHK0hu8Y1/kKeYeUa+8s=
+github.com/aperturerobotics/protobuf-go-lite v0.18.1-0.20260910104758-d722c32acb2f h1:XB5IzL+1JlOPVoO3r0wHqdgfKzV1tJV0hvt9vw0RigM=
+github.com/aperturerobotics/protobuf-go-lite v0.18.1-0.20260910104758-d722c32acb2f/go.mod h1:3Ay/E7iaw2KWLirK3+dDdNJZHK0hu8Y1/kKeYeUa+8s=
 github.com/aperturerobotics/ristretto/v2 v2.0.0-20260705010935-8d0c8a34b53e h1:R1jRl3USxWkaiM0PAJZtUsN5kDnPKDuDu0x4WoZGUVw=
 github.com/aperturerobotics/ristretto/v2 v2.0.0-20260705010935-8d0c8a34b53e/go.mod h1:0KsrXtXvnv0EqnzyowllbVJB8yBonswa2lTCK2gGo9E=
 github.com/aperturerobotics/saucer v0.0.0-20260317232052-4db05a4e0b4c h1:32+9phqiA+X/w4YAT3sP8DyhfP81mo3k6v/RI/t1qGk=
@@ -378,6 +382,8 @@ github.com/s4wave/goscript v0.2.32-0.20260910104619-c3332db76d5b h1:/i1m1rhtCI0W
 github.com/s4wave/goscript v0.2.32-0.20260910104619-c3332db76d5b/go.mod h1:2PkLvl4v5IXRzAh+HpOQymrS7Z6mNmAOKY89EoAhv8A=
 github.com/s4wave/goscript v0.2.32-0.20260910110749-847ab63454b5 h1:BYWiCOEkNmNsoH+1ALE8xwIn4fjYHpiPGPCGQzW0xtQ=
 github.com/s4wave/goscript v0.2.32-0.20260910110749-847ab63454b5/go.mod h1:2PkLvl4v5IXRzAh+HpOQymrS7Z6mNmAOKY89EoAhv8A=
+github.com/s4wave/goscript v0.2.32-0.20260910133935-2f49dab6c6fd h1:wNSw9bngMtquk64GDtHMuj0b/DljC+qXWe8LkUxjDBk=
+github.com/s4wave/goscript v0.2.32-0.20260910133935-2f49dab6c6fd/go.mod h1:2PkLvl4v5IXRzAh+HpOQymrS7Z6mNmAOKY89EoAhv8A=
 github.com/sagikazarmark/locafero v0.11.0/go.mod h1:nVIGvgyzw595SUSUE6tvCp3YYTeHs15MvlmU87WwIik=
 github.com/sasha-s/go-deadlock v0.3.9 h1:fiaT9rB7g5sr5ddNZvlwheclN9IP86eFW9WgqlEQV+w=
 github.com/sasha-s/go-deadlock v0.3.9/go.mod h1:KuZj51ZFmx42q/mPaYbRk0P1xcwe697zsJKE03vD4/Y=
