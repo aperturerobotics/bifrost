@@ -62,11 +62,13 @@ func (c *Controller) runGCSweep(ctx context.Context) error {
 	collector := block_gc.NewCollector(rg, vol, nil)
 	c.le.WithField("interval", interval.String()).Debug("gc sweep routine started")
 
-	for {
+	timer := time.NewTimer(interval)
+	defer timer.Stop()
+	for ; ; timer.Reset(interval) {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case <-time.After(interval):
+		case <-timer.C:
 		}
 
 		stats, err := collector.Collect(ctx)

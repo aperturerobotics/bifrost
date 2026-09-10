@@ -13,13 +13,25 @@ import (
 
 // Factory constructs a sqlite volume.
 type Factory struct {
-	// bus is the controller bus
+	// bus is the controller bus.
 	bus bus.Bus
+	// open creates a volume with the storage selected by this factory.
+	open OpenFunc
 }
 
+// OpenFunc opens an owned SQLite volume for a controller lifetime.
+type OpenFunc func(context.Context, *logrus.Entry, *Config) (volume.Volume, error)
+
 // NewFactory builds a sqlite volume factory.
-func NewFactory(bus bus.Bus) *Factory {
-	return &Factory{bus: bus}
+func NewFactory(b bus.Bus) *Factory {
+	return NewFactoryWithOpener(b, func(ctx context.Context, le *logrus.Entry, conf *Config) (volume.Volume, error) {
+		return NewSqlite(ctx, le, conf)
+	})
+}
+
+// NewFactoryWithOpener binds storage creation to this factory instead of a global driver.
+func NewFactoryWithOpener(b bus.Bus, open OpenFunc) *Factory {
+	return &Factory{bus: b, open: open}
 }
 
 // GetConfigID returns the unique ID for the config.
@@ -60,7 +72,7 @@ func (t *Factory) Construct(
 			ctx context.Context,
 			le *logrus.Entry,
 		) (volume.Volume, error) {
-			return NewSqlite(
+			return t.open(
 				ctx,
 				le,
 				cc,

@@ -2,6 +2,7 @@ package volume_sqlite
 
 import (
 	"context"
+	"database/sql"
 	"os"
 	"path/filepath"
 
@@ -24,11 +25,6 @@ func NewSqlite(
 	le *logrus.Entry,
 	conf *Config,
 ) (*Sqlite, error) {
-	kvkey, err := kvkey.NewKVKey(conf.GetKvKeyOpts())
-	if err != nil {
-		return nil, err
-	}
-
 	pragmas := sqlite.Pragmas{
 		CacheSize: conf.GetCacheSize(),
 		MmapSize:  conf.GetMmapSize(),
@@ -39,14 +35,41 @@ func NewSqlite(
 	if err != nil {
 		return nil, err
 	}
+	path := conf.GetPath()
+	vol, err := NewWithStore(ctx, le, conf, store, func() error { return os.Remove(path) })
+	if err != nil {
+		return nil, err
+	}
+	vol.Coordinator = coord_filelock.NewCoordinator(
+		filepath.Dir(path),
+		path+"\x00"+conf.GetTable(),
+		vol.Coordinator,
+	)
+	return vol, nil
+}
+
+// Store combines a KV transaction store with its physical SQLite pool.
+type Store interface {
+	skvtx.Store
+	// GetDB returns the pool owned by this store.
+	GetDB() *sql.DB
+}
+
+// NewWithStore takes ownership of an opened SQLite store, including on failure.
+// The opener configures durability and coordinates access to the backing path.
+func NewWithStore(ctx context.Context, le *logrus.Entry, conf *Config, store Store, deleteFn func() error) (*Sqlite, error) {
+	db := store.GetDB()
+	kvkey, err := kvkey.NewKVKey(conf.GetKvKeyOpts())
+	if err != nil {
+		_ = db.Close()
+		return nil, err
+	}
 
 	var vstore skvtx.Store = store
 	if conf.GetVerbose() {
 		vstore = kvtx_vlogger.NewVLogger(le, vstore)
 	}
 
-	db := store.GetDB()
-	path := conf.GetPath()
 	vol, err := kvtx.NewVolume(
 		ctx,
 		ControllerID,
@@ -78,16 +101,12 @@ func NewSqlite(
 			}, nil
 		},
 		db.Close,
-		func() error { return os.Remove(path) },
+		deleteFn,
 	)
 	if err != nil {
+		_ = db.Close()
 		return nil, err
 	}
-	vol.Coordinator = coord_filelock.NewCoordinator(
-		filepath.Dir(path),
-		path+"\x00"+conf.GetTable(),
-		vol.Coordinator,
-	)
 	return vol, nil
 }
 

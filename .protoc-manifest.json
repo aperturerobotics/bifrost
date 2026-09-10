@@ -1468,6 +1468,16 @@
         "core/space/world/ops/ops.proto"
       ]
     },
+    "github.com/s4wave/spacewave/core/sync/node": {
+      "hash": "7ec113ec498e47f3b0648dab5fa5d991306ea1dcbdc095d3ed05828ce823f35e",
+      "generatedFiles": [
+        "core/sync/node/node.pb.go",
+        "core/sync/node/node.pb.ts"
+      ],
+      "protoFiles": [
+        "core/sync/node/node.proto"
+      ]
+    },
     "github.com/s4wave/spacewave/core/trace/service": {
       "hash": "08cc1227c38d118eaa335009abc0d940e509700ae6e1c4c29ad9f479c1766529",
       "generatedFiles": [

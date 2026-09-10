@@ -1,0 +1,17 @@
+{
+  "name": "spacewave",
+  "version": "0.1.0-rc.1",
+  "description": "Typed live collections backed by a durable Spacewave World",
+  "type": "module",
+  "engines": {
+    "node": ">=24.15.0 <25"
+  },
+  "exports": {
+    "./server": "./dist/server.mjs"
+  },
+  "files": [
+    "dist",
+    "LICENSE"
+  ],
+  "license": "Apache-2.0"
+}

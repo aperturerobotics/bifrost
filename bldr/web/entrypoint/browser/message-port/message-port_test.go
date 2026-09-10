@@ -187,6 +187,9 @@ func TestMessagePortPacketStreamClosePreservesInboundRead(t *testing.T) {
 	if msgCount := chObj.Get("messages").Length(); msgCount != 1 {
 		t.Fatalf("expected full close not to post a second outbound close, got %d messages", msgCount)
 	}
+	if calls := chObj.Get("closeCalls").Int(); calls != 1 {
+		t.Fatalf("expected full close after remote EOF to release the JS port, got %d calls", calls)
+	}
 }
 
 func waitReadError(readDone <-chan error) error {

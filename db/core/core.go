@@ -6,13 +6,8 @@ import (
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller/resolver/static"
 	cbc "github.com/aperturerobotics/controllerbus/core"
-	block_store_inmem "github.com/s4wave/spacewave/db/block/store/inmem"
-	block_store_overlay "github.com/s4wave/spacewave/db/block/store/overlay"
-	lookup_concurrent "github.com/s4wave/spacewave/db/bucket/lookup/concurrent"
-	bucket_setup "github.com/s4wave/spacewave/db/bucket/setup"
+	db_storage "github.com/s4wave/spacewave/db/core/storage"
 	"github.com/s4wave/spacewave/db/dex/psecho"
-	node_controller "github.com/s4wave/spacewave/db/node/controller"
-	volume_kvtxinmem "github.com/s4wave/spacewave/db/volume/kvtxinmem"
 	bifrostcore "github.com/s4wave/spacewave/net/core"
 	nctr "github.com/s4wave/spacewave/net/peer/controller"
 	"github.com/sirupsen/logrus"
@@ -41,16 +36,9 @@ func AddFactories(b bus.Bus, sr *static.Resolver) {
 	addNativeFactories(b, sr)
 	bifrostcore.AddFactories(b, sr)
 
-	// Register node, bucket, and lookup factories.
+	// Register peer and storage factories.
 	sr.AddFactory(nctr.NewFactory(b))
-	sr.AddFactory(bucket_setup.NewFactory(b))
-	sr.AddFactory(node_controller.NewFactory(b))
-	sr.AddFactory(lookup_concurrent.NewFactory(b))
-
-	// Register the in-memory volume and block stores.
-	sr.AddFactory(volume_kvtxinmem.NewFactory(b))
-	sr.AddFactory(block_store_inmem.NewFactory(b))
-	sr.AddFactory(block_store_overlay.NewFactory(b))
+	db_storage.AddFactories(b, sr)
 
 	// Register the pub-sub exchange factory.
 	sr.AddFactory(psecho.NewFactory(b))

@@ -1,9 +1,24 @@
 import { type PacketStream } from 'starpc'
 
+// PacketMessagePort is the shared Node and browser MessagePort contract.
+export interface PacketMessagePort {
+  postMessage(data: Uint8Array | null): void
+  start(): void
+  close(): void
+  addEventListener(
+    type: 'message',
+    listener: (event: { data: unknown }) => void,
+  ): void
+  removeEventListener(
+    type: 'message',
+    listener: (event: { data: unknown }) => void,
+  ): void
+}
+
 // messagePortPacketStream speaks the Go MessagePort protocol: raw byte packets
 // and null for write EOF. Finishing one direction preserves the other; close
 // and abort release both directions, including pending reads and writes.
-export function messagePortPacketStream(port: MessagePort): PacketStream {
+export function messagePortPacketStream(port: PacketMessagePort): PacketStream {
   let closed = false
   let readClosed = false
   let writeClosed = false
@@ -32,11 +47,11 @@ export function messagePortPacketStream(port: MessagePort): PacketStream {
       writeClosed = true
       port.postMessage(null)
     }
-    port.onmessage = null
+    port.removeEventListener('message', onMessage)
     port.close()
   }
 
-  port.onmessage = (event: MessageEvent<Uint8Array | null>) => {
+  function onMessage(event: { data: unknown }): void {
     if (closed || readClosed) return
     if (event.data === null) {
       readClosed = true
@@ -48,6 +63,7 @@ export function messagePortPacketStream(port: MessagePort): PacketStream {
       finish(new Error('Go MessagePort received a non-byte packet'))
     }
   }
+  port.addEventListener('message', onMessage)
   port.start()
 
   return {

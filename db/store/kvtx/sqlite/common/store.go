@@ -13,24 +13,6 @@ import (
 	"github.com/s4wave/spacewave/db/kvtx"
 )
 
-// Pragmas configures tunable SQLite pragmas applied during Open.
-// A zero value leaves SQLite's compiled default in place.
-type Pragmas struct {
-	// CacheSize sets the SQLite cache_size pragma. Positive = pages,
-	// negative = KiB. 0 leaves the SQLite default.
-	CacheSize int32
-	// MmapSize sets the SQLite mmap_size pragma in bytes. 0 leaves the
-	// SQLite default (mmap disabled).
-	MmapSize int64
-	// TempStore sets the SQLite temp_store pragma. Valid values are 0
-	// (DEFAULT), 1 (FILE), 2 (MEMORY). 0 leaves the SQLite default.
-	TempStore int32
-	// PageSize sets the SQLite page_size pragma in bytes. Must be a power
-	// of two between 512 and 65536. 0 leaves the SQLite default. Only
-	// effective on a fresh database.
-	PageSize int32
-}
-
 // ValidateTableName validates that a table name is safe to use in SQL queries.
 // It only allows alphanumeric characters and underscores, and must start with a letter or underscore.
 func ValidateTableName(table string) error {
@@ -50,32 +32,13 @@ func ValidateTableName(table string) error {
 	return nil
 }
 
-// SQLiteDriverConfig defines the interface for SQLite driver configuration.
-type SQLiteDriverConfig interface {
-	// DriverName returns the name to use with sql.Open()
-	DriverName() string
-	// OpenDSN returns the DSN to use with sql.Open() for a given database path.
-	OpenDSN(path string) string
-	// Description returns a human-readable description of the driver
-	Description() string
-	// IsBusyError checks if the error is a SQLITE_BUSY error for this driver
-	IsBusyError(err error) bool
-	// IsNestedTxError checks if the error is a nested transaction error for this driver
-	IsNestedTxError(err error) bool
-}
-
-// SQLiteDriverPoolConfigurator optionally constrains the sql.DB pool created by
-// common.Open. Drivers with connection-bound semantics can use this to align
-// database/sql pooling with the underlying engine.
-type SQLiteDriverPoolConfigurator interface {
-	// ConfigureDBPool mutates the sql.DB pool settings after sql.Open.
-	ConfigureDBPool(db *sql.DB)
-}
-
 // Store represents a generic SQLite store that can work with any driver.
 type Store[T SQLiteDriverConfig] struct {
-	db     *sql.DB
-	table  string
+	// db owns the SQL connection pool and its transaction lifetimes.
+	db *sql.DB
+	// table is the validated key-value table name.
+	table string
+	// config classifies driver errors for bounded recovery.
 	config T
 }
 
@@ -96,6 +59,7 @@ func Open[T SQLiteDriverConfig](ctx context.Context, path string, table string, 
 // and applies the supplied tunable pragmas. Zero-valued pragma fields leave
 // the SQLite default in place.
 func OpenWithPragmas[T SQLiteDriverConfig](ctx context.Context, path string, table string, pragmas Pragmas, config T) (*Store[T], error) {
+	// Reject an invalid table before opening the database.
 	if err := ValidateTableName(table); err != nil {
 		return nil, err
 	}
@@ -121,12 +85,14 @@ func OpenWithPragmas[T SQLiteDriverConfig](ctx context.Context, path string, tab
 		}
 	}
 
-	// Execute PRAGMAs directly as a safety net for drivers that may ignore DSN params.
-	// journal_mode and synchronous are database-level and persist once set.
-	// busy_timeout is per-connection but covers the initial connection used for setup.
+	// Configure the initial connection. Connectors own settings on later connections.
+	synchronous := "NORMAL"
+	if pragmas.FullSync {
+		synchronous = "FULL"
+	}
 	for _, pragma := range []string{
 		"PRAGMA journal_mode=WAL",
-		"PRAGMA synchronous=NORMAL",
+		"PRAGMA synchronous=" + synchronous,
 		"PRAGMA busy_timeout=5000",
 	} {
 		if _, err := db.ExecContext(ctx, pragma); err != nil {
@@ -157,6 +123,14 @@ func OpenWithPragmas[T SQLiteDriverConfig](ctx context.Context, path string, tab
 		}
 	}
 
+	// Initialize the table through the same path used by injected SQL pools.
+	return OpenDB(ctx, db, table, config)
+}
+
+// OpenDB takes ownership of an already configured SQL pool and opens its KV table.
+// It closes the pool on failure; the caller selects durability on every connection.
+func OpenDB[T SQLiteDriverConfig](ctx context.Context, db *sql.DB, table string, config T) (*Store[T], error) {
+	// Bind the validated table to its supplied database pool.
 	store, err := NewStore(db, table, config)
 	if err != nil {
 		db.Close()
