@@ -11,6 +11,7 @@ import { SyncError } from 'spacewave'
 import { createServer } from 'spacewave/server'
 import { schema } from './schema.js'
 import type {} from './browser.js'
+import type {} from './react.js'
 
 const consumer = dirname(fileURLToPath(import.meta.url))
 const distribution = join(consumer, 'node_modules/spacewave/dist')
@@ -48,6 +49,7 @@ for (const browserType of [chromium, webkit]) {
       const mutationEntered = Promise.withResolvers<void>()
       const continueMutation = Promise.withResolvers<void>()
       let increments = 0
+      let denyBobRead = false
       const server = await createServer({
         directory,
         schema,
@@ -64,6 +66,7 @@ for (const browserType of [chromium, webkit]) {
         },
         authorize: ({ principal, collection, action }) =>
           collection !== 'secrets' &&
+          !(denyBobRead && principal.subject === 'bob' && action === 'read') &&
           !(principal.subject === 'reader' && action === 'write') &&
           !(principal.subject === 'writer' && action === 'read'),
         mutations: {
@@ -80,6 +83,13 @@ for (const browserType of [chromium, webkit]) {
       })
       const http = createHTTPServer((request, response) => {
         const route = new URL(request.url ?? '/', 'http://fixture').pathname
+        if (route === '/react-fixture') {
+          response.setHeader('content-type', 'text/html')
+          response.end(
+            '<!doctype html><title>React acceptance</title><div id="app"></div><script type="module" src="/react-fixture.mjs"></script>',
+          )
+          return
+        }
         if (route === '/') {
           response.setHeader('content-type', 'text/html')
           response.end(
@@ -91,12 +101,17 @@ for (const browserType of [chromium, webkit]) {
           response.end('ready')
           return
         }
-        const path =
+        const fixtureFile =
           route === '/fixture.mjs'
-            ? join(consumer, 'browser.mjs')
-            : resolve(distribution, '.' + route.slice(4))
+            ? 'browser.mjs'
+            : route === '/react-fixture.mjs'
+              ? 'react-fixture.mjs'
+              : undefined
+        const path = fixtureFile
+          ? join(consumer, fixtureFile)
+          : resolve(distribution, '.' + route.slice(4))
         if (
-          route !== '/fixture.mjs' &&
+          !fixtureFile &&
           (!route.startsWith('/pkg/') || !path.startsWith(distribution + sep))
         ) {
           response.writeHead(404)
@@ -120,8 +135,16 @@ for (const browserType of [chromium, webkit]) {
       assert.ok(address && typeof address !== 'string')
       const origin = `http://127.0.0.1:${address.port}`
       const url = origin.replace('http:', 'ws:') + '/sync'
-      const browser = await browserType.launch({ headless: true })
+      const browser = await browserType
+        .launch({ headless: true })
+        .catch(async (error: unknown) => {
+          await server.close()
+          await new Promise<void>((resolve) => http.close(() => resolve()))
+          await rm(directory, { recursive: true, force: true })
+          throw error
+        })
       const context = await browser.newContext()
+      context.setDefaultTimeout(10_000)
       const pages: Page[] = []
       const pageErrors: string[] = []
       const open = async (token: string) => {
@@ -157,6 +180,27 @@ for (const browserType of [chromium, webkit]) {
           .collection('todos')
           .put('b', { title: 'Server write', done: true })
         await current(alice, 'all', 'b')
+        denyBobRead = true
+        await server
+          .admin('team')
+          .collection('todos')
+          .put('b', { title: 'Policy changed', done: true })
+        await bob.waitForFunction(
+          () => window.fixture.latest('all')?.error?.code === 'DENIED',
+        )
+        await alice.waitForFunction(
+          () =>
+            (
+              window.fixture
+                .latest('all')
+                ?.data.find((entry) => entry.key === 'b')?.value as {
+                title?: string
+              }
+            )?.title === 'Policy changed',
+        )
+        denyBobRead = false
+        await bob.evaluate(() => window.fixture.watch('all'))
+        await current(bob, 'all', 'b')
         assert.equal(
           (await alice.evaluate(() => window.fixture.put('bad', { title: 42 })))
             .code,
@@ -292,6 +336,53 @@ for (const browserType of [chromium, webkit]) {
         await expiring.waitForFunction(() => window.fixture.status().tokens > 1)
         await expiring.evaluate(() => window.fixture.close())
 
+        const react = await context.newPage()
+        pages.push(react)
+        react.on('pageerror', (error) => pageErrors.push(error.message))
+        await react.goto(origin + '/react-fixture')
+        await react.waitForFunction(() => Boolean(window.reactFixture))
+        await react.evaluate(async (url) => {
+          await window.reactFixture.start(url)
+          window.reactFixture.mount()
+        }, url)
+        await react.waitForFunction(
+          () => document.querySelector('#result')?.textContent === 'a,c',
+        )
+        assert.deepEqual(
+          await react.evaluate(() => window.reactFixture.counts()),
+          { active: 1, opened: 1 },
+        )
+        await react.evaluate(() => {
+          for (let index = 0; index < 5; index++) window.reactFixture.mount()
+        })
+        assert.equal(
+          (await react.evaluate(() => window.reactFixture.counts())).opened,
+          1,
+        )
+        await react.evaluate(() => window.reactFixture.prefix('a'))
+        await react.waitForFunction(
+          () => document.querySelector('#result')?.textContent === 'a',
+        )
+        assert.equal(
+          (await react.evaluate(() => window.reactFixture.counts())).active,
+          1,
+        )
+        await react.evaluate(() => window.reactFixture.unmount())
+        await react.waitForFunction(
+          () => window.reactFixture.counts().active === 0,
+        )
+        await react.evaluate(() => window.reactFixture.mount())
+        await react.waitForFunction(
+          () =>
+            document.querySelector('#result')?.getAttribute('data-status') ===
+            'current',
+        )
+        await react.evaluate(() => window.reactFixture.close())
+        assert.equal(
+          (await react.evaluate(() => window.reactFixture.counts())).active,
+          0,
+        )
+
         await Promise.all(
           [alice, bob].map((page) =>
             page.evaluate(() => window.fixture.close()),
@@ -307,7 +398,12 @@ for (const browserType of [chromium, webkit]) {
       } finally {
         continueMutation.resolve()
         await Promise.allSettled(
-          pages.map((page) => page.evaluate(() => window.fixture?.close())),
+          pages.map((page) =>
+            page.evaluate(async () => {
+              await window.fixture?.close()
+              await window.reactFixture?.close()
+            }),
+          ),
         )
         await context.close()
         await browser.close()

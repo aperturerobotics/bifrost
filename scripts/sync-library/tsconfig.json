@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "rootDir": "../..",
+    "outDir": "../../.tmp/sync-library/types",
+    "stripInternal": true
+  },
+  "include": [
+    "../../packages/spacewave/index.ts",
+    "../../packages/spacewave/server.ts",
+    "../../packages/spacewave/react.ts",
+    "../../bldr/global.d.ts"
+  ],
+  "exclude": []
+}

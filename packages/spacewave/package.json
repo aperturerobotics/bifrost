@@ -7,11 +7,46 @@
     "node": ">=24.15.0 <25"
   },
   "exports": {
-    ".": "./dist/index.mjs",
-    "./server": "./dist/server.mjs"
+    ".": {
+      "types": "./dist/types/packages/spacewave/index.d.ts",
+      "import": "./dist/index.mjs"
+    },
+    "./server": {
+      "types": "./dist/types/packages/spacewave/server.d.ts",
+      "import": "./dist/server.mjs"
+    },
+    "./react": {
+      "types": "./dist/types/packages/spacewave/react.d.ts",
+      "import": "./dist/react.mjs"
+    }
   },
+  "types": "./dist/types/packages/spacewave/index.d.ts",
+  "dependencies": {
+    "@standard-schema/spec": "^1.1.0"
+  },
+  "peerDependencies": {
+    "react": ">=19.2.0 <20",
+    "@types/react": ">=19.2.0 <20",
+    "@types/node": ">=24 <25"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "@types/react": {
+      "optional": true
+    },
+    "@types/node": {
+      "optional": true
+    }
+  },
+  "sideEffects": false,
   "files": [
     "dist",
+    "examples",
+    "API.md",
+    "AGENTS.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "license": "Apache-2.0"
