@@ -1093,7 +1093,7 @@ export async function initObjectLayout(
 
 // initCanvasDemo initializes a Canvas with demo content.
 export async function initCanvasDemo(
-  spaceWorld: EngineWorldState,
+  spaceWorld: IWorldState,
   abortSignal?: AbortSignal,
 ): Promise<void> {
   const op: InitCanvasDemoOp = {
@@ -1124,22 +1124,40 @@ export async function populateSpace(
     case 'notebook':
       await initNotesQuickstart(setup, quickstartId, abortSignal)
       break
-    case 'canvas':
-      await initUnixFS(setup.spaceWorld, abortSignal, timing)
-      await timeQuickstartPhase(timing, 'init-canvas-demo', () =>
-        initCanvasDemo(setup.spaceWorld, abortSignal),
+    case 'canvas': {
+      // Publish the Canvas, reference filesystem, and initial route together.
+      const tx = await timeQuickstartPhase(
+        timing,
+        'init-canvas-new-transaction',
+        () => setup.spaceWorld.getEngine().newTransaction(true, abortSignal),
       )
-      await timeQuickstartPhase(timing, 'create-canvas-settings', () =>
-        createSpaceSettingsObject(
-          setup.spaceWorld,
-          abortSignal,
-          CANVAS_DEMO_OBJECT_KEY,
-          undefined,
-          timing,
-          'create-canvas-settings',
-        ),
-      )
+      try {
+        await timeQuickstartPhase(timing, 'init-canvas-unixfs', () =>
+          initUnixFS(tx, abortSignal, timing),
+        )
+        await timeQuickstartPhase(timing, 'init-canvas-demo', () =>
+          initCanvasDemo(tx, abortSignal),
+        )
+        await timeQuickstartPhase(timing, 'create-canvas-settings', () =>
+          createSpaceSettingsObject(
+            tx,
+            abortSignal,
+            CANVAS_DEMO_OBJECT_KEY,
+            undefined,
+            timing,
+            'create-canvas-settings',
+          ),
+        )
+        await timeQuickstartPhase(timing, 'init-canvas-commit', () =>
+          tx.commit(abortSignal),
+        )
+      } finally {
+        await timeQuickstartPhase(timing, 'init-canvas-discard', () =>
+          tx.discard(),
+        )
+      }
       break
+    }
     case 'chat':
       await initChatQuickstart(setup.spaceWorld, abortSignal)
       break
