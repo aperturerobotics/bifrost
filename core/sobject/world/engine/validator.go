@@ -116,6 +116,11 @@ func (c *Controller) executeProcessOpsAsValidator(ctx context.Context, so sobjec
 				return nil, opResults, nil
 			}
 
+			// Retain replayed dependencies before accepting the next signed root.
+			if err := c.retainPublicationWorld(ctx, so, headState.GetHeadRef()); err != nil {
+				return nil, nil, err
+			}
+
 			// Marshal the next state
 			nextStateData, err := headState.MarshalVT()
 			if err != nil {

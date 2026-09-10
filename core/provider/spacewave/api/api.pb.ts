@@ -23,6 +23,7 @@ import {
   SOJoinResponse,
   SOKeyEpoch,
   SOMutationKey,
+  SOOperation,
   SOOperationRejection,
   SOReceiptState_Enum,
   SORoot,
@@ -964,6 +965,35 @@ export const SOStateMessage: MessageType<SOStateMessage> =
         name: 'receipt_protocol_epoch',
         kind: 'scalar',
         T: ScalarType.UINT32,
+      },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
+ * PostOpsRequest is one bounded, atomic cloud operation checkpoint.
+ *
+ * @generated from message provider.spacewave.api.PostOpsRequest
+ */
+export interface PostOpsRequest {
+  /**
+   * Operations contains at most 50 signed operations and 1 MiB of encoded data.
+   *
+   * @generated from field: repeated sobject.SOOperation operations = 1;
+   */
+  operations?: SOOperation[]
+}
+
+export const PostOpsRequest: MessageType<PostOpsRequest> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'provider.spacewave.api.PostOpsRequest',
+    fields: [
+      {
+        no: 1,
+        name: 'operations',
+        kind: 'message',
+        T: () => SOOperation,
+        repeated: true,
       },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
@@ -5961,6 +5991,67 @@ export const AccountStateCache: MessageType<AccountStateCache> =
   })
 
 /**
+ * PendingSOPublication survives process loss without moving its first deadline.
+ *
+ * @generated from message provider.spacewave.api.PendingSOPublication
+ */
+export interface PendingSOPublication {
+  /**
+   * Root is the newest locally validated checkpoint awaiting cloud acceptance.
+   *
+   * @generated from field: sobject.SORoot root = 1;
+   */
+  root?: SORoot
+  /**
+   * Operations are signed local writes not yet acknowledged by the cloud.
+   *
+   * @generated from field: repeated sobject.SOOperation operations = 2;
+   */
+  operations?: SOOperation[]
+  /**
+   * Rejections are signed outcomes accompanying the coalesced root.
+   *
+   * @generated from field: repeated sobject.SOOperationRejection rejections = 3;
+   */
+  rejections?: SOOperationRejection[]
+  /**
+   * FirstPendingUnixMilli starts the bounded cloud-checkpoint interval.
+   *
+   * @generated from field: int64 first_pending_unix_milli = 4;
+   */
+  firstPendingUnixMilli?: bigint
+}
+
+export const PendingSOPublication: MessageType<PendingSOPublication> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'provider.spacewave.api.PendingSOPublication',
+    fields: [
+      { no: 1, name: 'root', kind: 'message', T: () => SORoot },
+      {
+        no: 2,
+        name: 'operations',
+        kind: 'message',
+        T: () => SOOperation,
+        repeated: true,
+      },
+      {
+        no: 3,
+        name: 'rejections',
+        kind: 'message',
+        T: () => SOOperationRejection,
+        repeated: true,
+      },
+      {
+        no: 4,
+        name: 'first_pending_unix_milli',
+        kind: 'scalar',
+        T: ScalarType.INT64,
+      },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
  * VerifiedSOStateCache is the trusted local cache of verified SO config state.
  *
  * @generated from message provider.spacewave.api.VerifiedSOStateCache
@@ -6008,6 +6099,24 @@ export interface VerifiedSOStateCache {
    * @generated from field: repeated sobject.SOConfigChange config_history = 7;
    */
   configHistory?: SOConfigChange[]
+  /**
+   * PendingPublication retains locally accepted work until cloud acknowledgment.
+   *
+   * @generated from field: provider.spacewave.api.PendingSOPublication pending_publication = 8;
+   */
+  pendingPublication?: PendingSOPublication
+  /**
+   * CloudState is the authenticated base for cloud deltas, separate from peers.
+   *
+   * @generated from field: sobject.SOState cloud_state = 9;
+   */
+  cloudState?: SOState
+  /**
+   * CloudSequence is the changelog cursor belonging to CloudState.
+   *
+   * @generated from field: uint64 cloud_sequence = 10;
+   */
+  cloudSequence?: bigint
 }
 
 export const VerifiedSOStateCache: MessageType<VerifiedSOStateCache> =
@@ -6048,6 +6157,14 @@ export const VerifiedSOStateCache: MessageType<VerifiedSOStateCache> =
         T: () => SOConfigChange,
         repeated: true,
       },
+      {
+        no: 8,
+        name: 'pending_publication',
+        kind: 'message',
+        T: () => PendingSOPublication,
+      },
+      { no: 9, name: 'cloud_state', kind: 'message', T: () => SOState },
+      { no: 10, name: 'cloud_sequence', kind: 'scalar', T: ScalarType.UINT64 },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })

@@ -146,7 +146,7 @@ func TestPostOp_UsesWriteTicketWhenConfigured(t *testing.T) {
 		if payload.GetBodyHashHex() != hex.EncodeToString(wantHash[:]) {
 			t.Errorf("unexpected proof body hash: %q", payload.GetBodyHashHex())
 		}
-		if payload.GetSignedHeaders() != "content-type=application/octet-stream" {
+		if payload.GetSignedHeaders() != "content-type=application%2Foctet-stream" {
 			t.Errorf("unexpected proof signed headers: %q", payload.GetSignedHeaders())
 		}
 
@@ -799,7 +799,7 @@ func TestPostInitState_UsesWriteTicketWhenConfigured(t *testing.T) {
 		if payload.GetBodyHashHex() != hex.EncodeToString(wantHash[:]) {
 			t.Errorf("unexpected proof body hash: %q", payload.GetBodyHashHex())
 		}
-		if payload.GetSignedHeaders() != "content-type=application/octet-stream" {
+		if payload.GetSignedHeaders() != "content-type=application%2Foctet-stream" {
 			t.Errorf("unexpected proof signed headers: %q", payload.GetSignedHeaders())
 		}
 

@@ -1630,6 +1630,28 @@ func (c *SessionClient) PostOp(ctx context.Context, soID string, opData []byte) 
 	return errors.Wrap(err, "post op")
 }
 
+// PostOps posts one bounded atomic operation checkpoint using its write ticket.
+func (c *SessionClient) PostOps(ctx context.Context, soID string, operations []*sobject.SOOperation) error {
+	if len(operations) == 0 || len(operations) > 50 {
+		return errors.New("operation checkpoint must contain 1 to 50 operations")
+	}
+	body, err := (&api.PostOpsRequest{Operations: operations}).MarshalVT()
+	if err != nil {
+		return err
+	}
+	if len(body) > 1<<20 {
+		return errors.New("operation checkpoint exceeds 1 MiB")
+	}
+	return c.executeRequiredWriteTicketAudience(ctx, soID, writeTicketAudienceSOOp, func(ticket string) error {
+		data, err := c.postSObjectWriteWithTicket(ctx, soID, "ops", body, ticket)
+		if err != nil {
+			return err
+		}
+		var response api.SubmitOpResponse
+		return response.UnmarshalVT(data)
+	})
+}
+
 // PostRoot posts a root state update to a shared object.
 func (c *SessionClient) PostRoot(
 	ctx context.Context,

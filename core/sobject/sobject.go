@@ -86,6 +86,13 @@ type SharedObject interface {
 	ProcessOperations(ctx context.Context, watch bool, cb ProcessOpsFunc) error
 }
 
+// PublicationRetention is implemented by providers that publish local state
+// asynchronously. Its store retains graph-completion proofs for the mounted
+// block store; World consumers fence all dependencies before accepting a write.
+type PublicationRetention interface {
+	AccessPublicationRetention(context.Context) (kvtx.Store, func(), error)
+}
+
 // SharedObjectHealthAccessor exposes SharedObject health directly from a mounted object.
 type SharedObjectHealthAccessor interface {
 	// AccessSharedObjectHealth adds a reference to SharedObject health and returns the state container.

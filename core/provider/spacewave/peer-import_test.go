@@ -115,16 +115,18 @@ func TestCloudPeerImportCommitsWithoutPublication(t *testing.T) {
 	// A cloud response prepared before the import cannot roll back its root or authority.
 	stale := initial.CloneVT()
 	stale.Config = candidate.Config.CloneVT()
-	if err := reopened.handleStateDelta(ctx, &api.SOStateMessage{Seqno: 99, Content: &api.SOStateMessage_Snapshot{Snapshot: stale}}); err == nil {
-		t.Fatal("accepted stale cloud root after peer import")
+	if err := reopened.handleStateDelta(ctx, &api.SOStateMessage{Seqno: 99, Content: &api.SOStateMessage_Snapshot{Snapshot: stale}}); err != nil {
+		t.Fatal(err)
 	}
 	if !reopened.stateCtr.GetValue().EqualVT(candidate) {
 		t.Fatal("stale cloud response changed accepted peer state")
 	}
 	// Hold peer persistence while a cloud completion tries to publish an older root.
 	persisting, allowCommit := make(chan struct{}), make(chan struct{})
+	var blocked bool
 	reopened.persistVerifiedStateCache = func(ctx context.Context, cache *api.VerifiedSOStateCache) error {
-		if cache.GetPeerState().GetRoot().GetInnerSeqno() == 9 {
+		if cache.GetPeerState().GetRoot().GetInnerSeqno() == 9 && !blocked {
+			blocked = true
 			close(persisting)
 			select {
 			case <-allowCommit:
@@ -164,8 +166,11 @@ func TestCloudPeerImportCommitsWithoutPublication(t *testing.T) {
 	if err := <-peerDone; err != nil {
 		t.Fatal(err)
 	}
-	if err := <-cloudDone; err == nil {
-		t.Fatal("delayed cloud completion overwrote the peer winner")
+	if err := <-cloudDone; err != nil {
+		t.Fatal(err)
+	}
+	if !reopened.stateCtr.GetValue().EqualVT(newer) || reopened.pending != nil {
+		t.Fatal("delayed cloud completion overwrote the peer winner or created a publication")
 	}
 
 	// Later valid cloud progress also advances the durable root used on restart.

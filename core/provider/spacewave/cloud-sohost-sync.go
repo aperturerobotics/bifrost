@@ -66,26 +66,6 @@ func (h *cloudSOHost) readConfigHistory(ctx context.Context, _ string, base, tar
 	})
 }
 
-// retainPeerState advances an existing durable snapshot before cloud publication.
-// The caller holds acceptMu and publishes next only after this returns success.
-func (h *cloudSOHost) retainPeerState(ctx context.Context, next *sobject.SOState) error {
-	if h.peerState == nil {
-		return nil
-	}
-	cache := h.buildVerifiedStateCache()
-	if cache == nil || h.persistVerifiedStateCache == nil {
-		return sobject.ErrConfigHistoryUnavailable
-	}
-	cache.PeerState = next.CloneVT()
-	if err := h.persistVerifiedStateCache(ctx, cache); err != nil {
-		return err
-	}
-	h.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
-		h.peerState = cache.PeerState
-	})
-	return nil
-}
-
 // stateWithVerifiedConfig preserves the accepted root while fencing capabilities
 // and queued work that no longer have authority in the verified configuration.
 func (h *cloudSOHost) stateWithVerifiedConfig(state *sobject.SOState, config *sobject.SharedObjectConfig) *sobject.SOState {

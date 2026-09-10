@@ -10,19 +10,26 @@ import (
 	world_types "github.com/s4wave/spacewave/db/world/types"
 )
 
-// WalkBlocks visits the persisted World metadata and each current object's full
-// block graph. resolve supplies the object's root decoder; unknown types fail
-// instead of treating an opaque root as a complete object. The callback is
-// sequential and can copy each block to durable storage. External bucket and
-// transform references are resolved by the World storage.
-// Like other WorldState operations, the caller serializes access to the state.
-func (t *WorldState) WalkBlocks(ctx context.Context, resolve func(context.Context, string) (block.Ctor, error), visit func(*block.BlockRef, []byte) error) error {
-	seen := make(map[string]struct{})
-	walk := func(ref *block.BlockRef, ctor block.Ctor, store block.StoreOps, xfrm block.Transformer) error {
-		if ref.GetEmpty() {
-			return nil
-		}
-		return bucket_lookup.WalkObjectBlocks(ctx, bucket_lookup.NewWalkObjectBlocksWithRef(ref, ctor), func(entry *bucket_lookup.WalkObjectBlocksEntry) (bool, error) {
+// WalkBlocksOptions retains immutable subtrees separately for each decoding
+// domain. Known is valid only while the corresponding bytes remain durable.
+// Complete runs after every dependency in that domain has been visited.
+type WalkBlocksOptions struct {
+	Known    func(domain string, ref *block.BlockRef) (bool, error)
+	Complete func(domain string, ref *block.BlockRef) error
+}
+
+// WalkBlocks visits World metadata and each current object's complete block graph.
+// resolve supplies dynamic object decoders; an unknown type prevents completion.
+// Callbacks are sequential. Completion records prune unchanged Merkle branches.
+// The caller serializes World access and keeps retained bytes through later walks.
+func (t *WorldState) WalkBlocks(ctx context.Context, resolve func(context.Context, string) (block.Ctor, error), visit func(*block.BlockRef, []byte) error, options ...*WalkBlocksOptions) error {
+	var opts *WalkBlocksOptions
+	if len(options) != 0 {
+		opts = options[0]
+	}
+	var walk func(*bucket_lookup.WalkObjectBlocksEntry, block.StoreOps, block.Transformer, string) error
+	walk = func(root *bucket_lookup.WalkObjectBlocksEntry, store block.StoreOps, xfrm block.Transformer, domain string) error {
+		return bucket_lookup.WalkObjectGraph(ctx, root, func(entry *bucket_lookup.WalkObjectBlocksEntry) (bool, error) {
 			if entry.Err != nil {
 				return false, entry.Err
 			}
@@ -32,56 +39,76 @@ func (t *WorldState) WalkBlocks(ctx context.Context, resolve func(context.Contex
 			if !entry.Found {
 				return false, errors.Wrap(block.ErrNotFound, entry.Ref.MarshalString())
 			}
-			// An opaque metadata reference can later be visited with its object
-			// decoder. Deduplicate writes without skipping that traversal.
-			key := entry.Ref.MarshalString()
-			if _, found := seen[key]; !found {
-				if err := visit(entry.Ref, entry.Data); err != nil {
+			if opts != nil && opts.Known != nil {
+				known, err := opts.Known(domain, entry.Ref)
+				if err != nil || known {
 					return false, err
 				}
-				seen[key] = struct{}{}
 			}
-			return true, nil
-		}, store, xfrm, 1, false)
-	}
-	if err := walk(t.GetRootRef(), NewWorldBlock, t.store, t.xfrm); err != nil {
-		return err
-	}
+			if err := visit(entry.Ref, entry.Data); err != nil {
+				return false, err
+			}
+			if domain != "objects" || entry.Ctor != nil {
+				return true, nil
+			}
 
-	objects := t.IterateObjects(ctx, "", false)
-	defer objects.Close()
-	for objects.Next() {
-		object, found, err := t.GetObject(ctx, objects.Key())
-		if err != nil {
-			return err
-		}
-		if !found {
-			return world.ErrObjectNotFound
-		}
-		err = func() error {
+			// Object-index leaves are opaque to the generic key/value decoder.
+			// Resolve their complete payload here, independent of the changelog.
+			data := entry.Data
+			if xfrm != nil {
+				var err error
+				data, err = xfrm.DecodeBlock(data)
+				if err != nil {
+					return false, err
+				}
+			}
+			objectBlock := &Object{}
+			if err := objectBlock.UnmarshalVT(data); err != nil {
+				return false, err
+			}
+			object, found, err := t.GetObject(ctx, objectBlock.GetKey())
+			if err != nil {
+				return false, err
+			}
+			if !found {
+				return false, world.ErrObjectNotFound
+			}
 			defer world.ReleaseObjectState(object)
-			ref, _, err := object.GetRootRef(ctx)
-			if err != nil || ref.GetRootRef().GetEmpty() {
-				return err
+			objectRef, _, err := object.GetRootRef(ctx)
+			if err != nil || objectRef.GetRootRef().GetEmpty() {
+				return err == nil, err
 			}
 			typeID, err := world_types.GetObjectType(ctx, t, object.GetKey())
 			if err != nil {
-				return err
+				return false, err
 			}
 			ctor, err := resolve(ctx, typeID)
 			if err != nil {
-				return err
+				return false, err
 			}
 			if ctor == nil {
-				return errors.Errorf("block decoder unavailable for object %s (%s)", object.GetKey(), typeID)
+				return false, errors.Errorf("block decoder unavailable for object %s (%s)", object.GetKey(), typeID)
 			}
-			return object.AccessWorldState(ctx, nil, func(cursor *bucket_lookup.Cursor) error {
-				return walk(ref.GetRootRef(), ctor, cursor.GetBucket(), cursor.GetTransformer())
+			err = object.AccessWorldState(ctx, nil, func(cursor *bucket_lookup.Cursor) error {
+				return walk(bucket_lookup.NewWalkObjectBlocksWithRef(objectRef.GetRootRef(), ctor), cursor.GetBucket(), cursor.GetTransformer(), "type/"+typeID)
 			})
-		}()
-		if err != nil {
-			return err
-		}
+			return err == nil, err
+		}, func(entry *bucket_lookup.WalkObjectBlocksEntry) error {
+			if opts != nil && opts.Complete != nil && !entry.IsSubBlock && !entry.Ref.GetEmpty() {
+				return opts.Complete(domain, entry.Ref)
+			}
+			return nil
+		}, store, xfrm)
 	}
-	return objects.Err()
+
+	// Metadata and dynamic object graphs have distinct completion domains: a
+	// copied opaque value does not prove that its typed descendants were copied.
+	if err := walk(bucket_lookup.NewWalkObjectBlocksWithRef(t.GetRootRef(), NewWorldBlock), t.store, t.xfrm, "metadata"); err != nil {
+		return err
+	}
+	root, err := t.GetRoot(ctx)
+	if err != nil {
+		return err
+	}
+	return walk(bucket_lookup.NewWalkObjectBlocksWithSubBlock(root.GetObjectKeyValue()), t.store, t.xfrm, "objects")
 }

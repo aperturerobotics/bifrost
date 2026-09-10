@@ -17,6 +17,11 @@ import (
 // TestWalkBlocksCopiesObjectDescendants uses separate stores and an opaque World
 // object root. Copying metadata alone cannot recover the nested payload.
 func TestWalkBlocksCopiesObjectDescendants(t *testing.T) {
+	t.Run("with changelog", func(t *testing.T) { testWalkBlocksCopiesObjectDescendants(t, false) })
+	t.Run("without changelog", func(t *testing.T) { testWalkBlocksCopiesObjectDescendants(t, true) })
+}
+
+func testWalkBlocksCopiesObjectDescendants(t *testing.T, disableChangelog bool) {
 	ctx := t.Context()
 	le := logrus.NewEntry(logrus.New())
 	source, err := testbed.NewTestbed(ctx, le)
@@ -32,6 +37,13 @@ func TestWalkBlocksCopiesObjectDescendants(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer cursor.Release()
+	if disableChangelog {
+		root, _, err := block.PutBlock(ctx, cursor.GetBucket(), world_block.NewWorld(true))
+		if err != nil {
+			t.Fatal(err)
+		}
+		cursor.SetRootRef(root)
+	}
 	target, err := receiver.BuildEmptyCursor(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -85,13 +97,38 @@ func TestWalkBlocksCopiesObjectDescendants(t *testing.T) {
 		t.Fatalf("unexpected payload: %q", value.GetMsg())
 	}
 
+	// An unchanged graph needs no repeated payload copies or object decoding.
+	complete := make(map[string]bool)
+	options := &world_block.WalkBlocksOptions{
+		Known: func(domain string, ref *block.BlockRef) (bool, error) {
+			return complete[domain+ref.MarshalString()], nil
+		},
+		Complete: func(domain string, ref *block.BlockRef) error {
+			complete[domain+ref.MarshalString()] = true
+			return nil
+		},
+	}
+	if err := ws.WalkBlocks(ctx, resolve, copyBlock, options); err != nil {
+		t.Fatal(err)
+	}
+	if err := ws.WalkBlocks(ctx, resolve, func(*block.BlockRef, []byte) error {
+		t.Error("unchanged completed graph copied again")
+		return nil
+	}, options); err != nil {
+		t.Fatal(err)
+	}
+
 	if err := ws.WalkBlocks(ctx, func(context.Context, string) (block.Ctor, error) { return nil, nil }, copyBlock); err == nil {
 		t.Fatal("unknown object decoder must prevent completion")
 	}
 	if err := cursor.GetBucket().RmBlock(ctx, leaf); err != nil {
 		t.Fatal(err)
 	}
-	if err := ws.WalkBlocks(ctx, resolve, copyBlock); !errors.Is(err, block.ErrNotFound) {
+	clear(complete)
+	if err := ws.WalkBlocks(ctx, resolve, copyBlock, options); !errors.Is(err, block.ErrNotFound) {
 		t.Fatalf("missing descendant must prevent completion: %v", err)
+	}
+	if complete["type/test/nested"+root.MarshalString()] {
+		t.Fatal("failed descendant retained a completion claim for its parent")
 	}
 }

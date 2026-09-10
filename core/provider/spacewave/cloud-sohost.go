@@ -3,7 +3,6 @@ package provider_spacewave
 import (
 	"bytes"
 	"context"
-	"time"
 
 	"github.com/aperturerobotics/util/broadcast"
 	"github.com/aperturerobotics/util/ccontainer"
@@ -72,6 +71,12 @@ type cloudSOHost struct {
 	historyIndex map[string]*sobject.SOConfigChange
 	// peerState is the durable peer snapshot retained across cache-only updates.
 	peerState *sobject.SOState
+	// pending retains only work accepted locally for cloud publication.
+	pending *api.PendingSOPublication
+	// cloudState is the authenticated cloud-delta base, independent of live peers.
+	cloudState *sobject.SOState
+	// syncer owns this host's block and root checkpoint lifetime.
+	syncer *syncController
 	// writeMu serializes local writes to prevent self-nonce conflicts.
 	writeMu csync.Mutex
 	// pullRoutine runs coalesced gap-recovery state pulls.
@@ -95,8 +100,6 @@ type cloudSOHost struct {
 	// onPeerRevoked is called when a peer is removed from the config chain with
 	// RevocationInfo. Called with the revoked peer ID string.
 	onPeerRevoked func(peerIDStr string)
-	// forceBlockSync uploads referenced blocks before publishing operations or roots.
-	forceBlockSync func(ctx context.Context) error
 	// refreshBlockManifest pulls remote packfile metadata before publishing
 	// remote SO state that may reference newly-pushed blocks.
 	refreshBlockManifest func(ctx context.Context) error
@@ -120,7 +123,7 @@ func newCloudSOHost(
 	sfs *block_transform.StepFactorySet,
 	verifiedCache *api.VerifiedSOStateCache,
 	persistVerifiedStateCache func(context.Context, *api.VerifiedSOStateCache) error,
-	forceBlockSync func(ctx context.Context) error,
+	syncer *syncController,
 ) *cloudSOHost {
 	// Construct state containers and background routines before exposing the host.
 	h := &cloudSOHost{
@@ -135,7 +138,7 @@ func newCloudSOHost(
 		stateCtr:                  ccontainer.NewCContainer[*sobject.SOState](nil),
 		snapCtr:                   ccontainer.NewCContainer[sobject.SharedObjectStateSnapshot](nil),
 		persistVerifiedStateCache: persistVerifiedStateCache,
-		forceBlockSync:            forceBlockSync,
+		syncer:                    syncer,
 	}
 	h.pullRoutine = newCoalescedTriggerRoutine(le, "so-state-pull", h.pullOnTrigger)
 	h.snapDeriver = newNamedRoutineContainer(le, "so-snapshot-deriver")
@@ -149,7 +152,7 @@ func newCloudSOHost(
 	}
 
 	// lockFn acquires the local write mutex and reads from the cached stateCtr.
-	// WriteSOState does HTTP POST with 409 retry.
+	// WriteSOState persists accepted local work before peer notification.
 	lockFn := func(ctx context.Context, sharedObjectID string) (sobject.SOStateLock, error) {
 		// Serialize local writers until their returned state lock is released.
 		relLock, err := h.writeMu.Lock(ctx)
@@ -169,14 +172,14 @@ func newCloudSOHost(
 			return nil, errors.New("no state available after pull")
 		}
 
-		// Bind the local snapshot to cloud publication and the acquired write lock.
+		// Bind the local snapshot to durable acceptance and the acquired write lock.
 		initialState := state.CloneVT()
 		writeFn := func(ctx context.Context, state *sobject.SOState, changes ...*sobject.SOConfigChange) error {
 			// Cloud configuration mutations use the server's config-state transaction.
 			if len(changes) != 0 {
 				return errors.New("configuration changes require cloud config-state publication")
 			}
-			return h.writeStateWithRetry(ctx, state)
+			return h.acceptLocalState(ctx, state)
 		}
 
 		return sobject.NewSOStateLock(initialState, writeFn, relLock), nil
@@ -380,34 +383,7 @@ func (h *cloudSOHost) pullState(ctx context.Context, reason SeedReason) error {
 		return err
 	}
 
-	if err := h.retainPeerState(ctx, state); err != nil {
-		return err
-	}
-
-	// Publish only after the accepted snapshot has been retained successfully.
-	var configHashChanged bool
-	var prevState *sobject.SOState
-	h.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
-		prevState = h.stateCtr.GetValue()
-		h.initialStateErr = nil
-		if lastSeqno > h.lastSeqno {
-			h.lastSeqno = lastSeqno
-		}
-		newHash := state.GetConfig().GetConfigChainHash()
-		if !bytes.Equal(newHash, h.lastConfigChainHash) && len(newHash) > 0 {
-			configHashChanged = true
-		}
-		h.stateCtr.SetValue(state)
-		broadcast()
-	})
-	h.logNewOpRejections(prevState, state, "state-pull")
-
-	// If the config chain hash changed, trigger verification.
-	if configHashChanged {
-		h.triggerConfigChanged()
-	}
-
-	return nil
+	return h.acceptCloudSnapshot(ctx, state, lastSeqno)
 }
 
 // noteInitialStateRejection records a rejected cold-seed verification outcome
@@ -476,17 +452,27 @@ func (h *cloudSOHost) verifyChangeLogSeqno(snapshotSeqno uint64) error {
 // verifyPulledState performs client-side verification on a pulled SOState.
 // Checks config chain hash continuity and root signature validity.
 func (h *cloudSOHost) verifyPulledState(state *sobject.SOState) error {
+	var held *sobject.SOState
+	h.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
+		held = h.cloudState
+		if held == nil && h.pending == nil && h.peerState == nil {
+			held = h.stateCtr.GetValue()
+		}
+	})
+	return h.verifyStateAgainst(state, held)
+}
+
+// verifyStateAgainst binds signatures and root progression to the given origin.
+func (h *cloudSOHost) verifyStateAgainst(state, held *sobject.SOState) error {
 	// Snapshot the trusted head and accepted root before comparing the response.
 	root := state.GetRoot()
 	var lastConfigHash []byte
 	var trustedConfig *sobject.SharedObjectConfig
 	var trustedSeqno uint64
-	var held *sobject.SOState
 	h.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
 		lastConfigHash = h.lastConfigChainHash
 		trustedConfig = h.verifiedConfig
 		trustedSeqno = h.verifiedConfigChainSeqno
-		held = h.stateCtr.GetValue()
 	})
 
 	// D3/D4: Reject state if its config chain hash differs from the last
@@ -675,22 +661,7 @@ func (h *cloudSOHost) handleStateDelta(ctx context.Context, msg *api.SOStateMess
 		if err := h.verifyPulledState(snap); err != nil {
 			return errors.Wrap(err, "verify inline snapshot")
 		}
-		if err := h.retainPeerState(ctx, snap); err != nil {
-			return err
-		}
-
-		// Publish the retained snapshot and its changelog cursor together.
-		var prevState *sobject.SOState
-		h.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
-			prevState = h.stateCtr.GetValue()
-			if msg.GetSeqno() >= h.lastSeqno {
-				h.stateCtr.SetValue(snap)
-				h.lastSeqno = msg.GetSeqno()
-				broadcast()
-			}
-		})
-		h.logNewOpRejections(prevState, snap, "inline-snapshot")
-		return nil
+		return h.acceptCloudSnapshot(ctx, snap, msg.GetSeqno())
 
 	case msg.GetDelta() != nil:
 		// Read the delta and the held base needed to apply it.
@@ -705,7 +676,10 @@ func (h *cloudSOHost) handleStateDelta(ctx context.Context, msg *api.SOStateMess
 			lastSeqno uint64
 		)
 		h.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
-			cached = h.stateCtr.GetValue()
+			cached = h.cloudState
+			if cached == nil && h.pending == nil {
+				cached = h.stateCtr.GetValue()
+			}
 			lastSeqno = h.lastSeqno
 		})
 
@@ -754,25 +728,7 @@ func (h *cloudSOHost) handleStateDelta(ctx context.Context, msg *api.SOStateMess
 			return errors.Wrap(err, "verify state after delta apply")
 		}
 
-		if err := h.retainPeerState(ctx, next); err != nil {
-			return err
-		}
-
-		// Publish the retained delta only if its base is still current.
-		newSeqno := entries[len(entries)-1].GetSeqno()
-		var prevState *sobject.SOState
-		h.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
-			// Re-check under lock to avoid clobbering a concurrent update.
-			if h.lastSeqno != lastSeqno {
-				return
-			}
-			prevState = h.stateCtr.GetValue()
-			h.stateCtr.SetValue(next)
-			h.lastSeqno = newSeqno
-			broadcast()
-		})
-		h.logNewOpRejections(prevState, next, "inline-delta")
-		return nil
+		return h.acceptCloudSnapshot(ctx, next, entries[len(entries)-1].GetSeqno())
 
 	case msg.GetConfigChanged() != nil:
 		h.triggerConfigChanged()
@@ -797,6 +753,21 @@ func applyChangeLogEntry(
 	entry *api.SOStateDeltaEntry,
 ) error {
 	switch entry.GetChangeType() {
+	case "ops":
+		batch := &api.PostOpsRequest{}
+		if err := batch.UnmarshalVT(entry.GetChangeData()); err != nil {
+			return err
+		}
+		for _, operation := range batch.GetOperations() {
+			data, err := operation.MarshalVT()
+			if err != nil {
+				return err
+			}
+			if err := applyChangeLogEntry(sharedObjectID, state, &api.SOStateDeltaEntry{ChangeType: "op", ChangeData: data}); err != nil {
+				return err
+			}
+		}
+		return nil
 	case "op":
 		// Decode the operation and discard any already-queued duplicate.
 		op := &sobject.SOOperation{}
@@ -965,101 +936,20 @@ func (h *cloudSOHost) logNewOpRejections(
 	}
 }
 
-// writeStateWithRetry posts the root state to the server.
-// On 409 (seqno conflict): pull fresh state, rebuild, retry up to maxWriteRetries times.
-func (h *cloudSOHost) writeStateWithRetry(ctx context.Context, state *sobject.SOState) error {
-	for attempt := range maxWriteRetries {
-		if h.forceBlockSync != nil {
-			started := time.Now()
-			h.le.WithField("attempt", attempt+1).Debug("flushing block store before root write")
-			if err := h.forceBlockSync(ctx); err != nil {
-				return errors.Wrap(err, "flush block store before root write")
-			}
-			h.le.WithField("attempt", attempt+1).
-				WithField("duration", time.Since(started)).
-				Debug("flushed block store before root write")
-		}
-
-		// Submit the root only after its referenced blocks are available remotely.
-		prevState := h.stateCtr.GetValue()
-		rejectedOps := diffSOOperationRejections(prevState, state)
-
-		started := time.Now()
-		err := h.client.PostRoot(ctx, h.soID, state.GetRoot(), rejectedOps)
-		if err == nil {
-			h.le.WithField("attempt", attempt+1).
-				WithField("duration", time.Since(started)).
-				WithField("so-seqno", state.GetRoot().GetInnerSeqno()).
-				Debug("posted root state")
-
-			// Recheck the accepted state after HTTP before publishing this local write.
-			release, err := h.acceptMu.Lock(ctx)
-			if err != nil {
-				return err
-			}
-			defer release()
-			if err := h.verifyPulledState(state); err != nil {
-				return err
-			}
-
-			if err := h.retainPeerState(ctx, state); err != nil {
-				return err
-			}
-
-			// Update cached state on successful write.
-			h.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
-				h.stateCtr.SetValue(state)
-				broadcast()
-			})
-			h.logNewOpRejections(prevState, state, "root-write")
-			return nil
-		}
-
-		// Retry only sequence conflicts after refreshing the held state.
-		var ce *cloudError
-		if !errors.As(err, &ce) || ce.StatusCode != 409 {
-			return err
-		}
-
-		h.le.WithField("attempt", attempt+1).Debug("seqno conflict, pulling fresh state for retry")
-		if pullErr := h.pullStateSingleflight(ctx, SeedReasonGapRecovery); pullErr != nil {
-			return errors.Wrap(pullErr, "pull state after 409")
-		}
-	}
-	return errors.New("write failed after max retries due to seqno conflicts")
-}
-
-// applyQueuedOperation updates the cached state with a newly accepted queued op.
-// It avoids an immediate read-after-write pull in the common success case.
-func (h *cloudSOHost) applyQueuedOperation(ctx context.Context, op *sobject.SOOperation) {
-	// Serialize the optimistic projection with cloud and peer acceptance.
+// acceptLocalState durably accepts a validated root for the checkpoint scheduler.
+func (h *cloudSOHost) acceptLocalState(ctx context.Context, state *sobject.SOState) error {
 	release, err := h.acceptMu.Lock(ctx)
 	if err != nil {
-		return
+		return err
 	}
 	defer release()
-	state := h.stateCtr.GetValue()
-	if state == nil {
-		return
+	if err := h.verifyStateAgainst(state, h.stateCtr.GetValue()); err != nil {
+		return err
 	}
-
-	// Revalidate the server-accepted operation against the latest held state.
-	next := state.CloneVT()
-	if err := next.QueueOperation(h.soID, op); err != nil {
-		h.le.WithError(err).Debug("failed to optimistically apply queued operation")
-		return
+	if err := state.Validate(h.soID); err != nil {
+		return err
 	}
-	if err := h.retainPeerState(ctx, next); err != nil {
-		h.le.WithError(err).Warn("failed to retain accepted cloud operation")
-		h.triggerPull()
-		return
-	}
-
-	// Publish the retained optimistic projection.
-	h.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
-		h.stateCtr.SetValue(next)
-		broadcast()
-	})
+	return h.retainPublication(ctx, state, nil, true)
 }
 
 // applyKeyEpoch updates the cached key-epoch state after a successful write.
@@ -1205,68 +1095,33 @@ func (h *cloudSOHost) applyConfigMutation(
 	return nil
 }
 
-// QueueOperation uploads pending blocks before submitting an operation to the cloud.
+// QueueOperation signs and durably accepts local work before live peer delivery.
 func (h *cloudSOHost) QueueOperation(ctx context.Context, peerID peer.ID, cb func(nonce uint64) (*sobject.SOOperation, error)) error {
-	// Keep nonce selection and publication under the existing local write lock.
-	relLock, err := h.writeMu.Lock(ctx)
+	releaseWrite, err := h.writeMu.Lock(ctx)
 	if err != nil {
 		return err
 	}
-	defer relLock()
-
-	for attempt := range maxWriteRetries {
-		// Refresh the accepted state before deriving an operation nonce.
-		if err := h.ensureInitialState(ctx, SeedReasonColdSeed); err != nil {
-			return errors.Wrap(err, "initial state pull for op queue")
-		}
-		state := h.stateCtr.GetValue()
-		if state == nil {
-			return errors.New("no state available after pull")
-		}
-
-		// Construct and encode the signed operation against that state.
-		op, err := cb(state.GetNextAccountNonce(peerID.String()))
-		if err != nil {
-			return err
-		}
-		if err := op.Validate(); err != nil {
-			return err
-		}
-
-		opData, err := op.MarshalVT()
-		if err != nil {
-			return errors.Wrap(err, "marshal operation")
-		}
-
-		// A remote validator must be able to read the operation's referenced
-		// blocks immediately, without waiting for the background upload timer.
-		if h.forceBlockSync != nil {
-			started := time.Now()
-			if err := h.forceBlockSync(ctx); err != nil {
-				return errors.Wrap(err, "upload blocks before operation")
-			}
-			h.le.WithField("duration", time.Since(started)).Debug("uploaded blocks before operation")
-		}
-		if err := h.client.PostOp(ctx, h.soID, opData); err != nil {
-			var ce *cloudError
-			if !errors.As(err, &ce) || ce.StatusCode != 409 || attempt+1 == maxWriteRetries {
-				return err
-			}
-			h.le.WithFields(logrus.Fields{
-				"attempt": attempt + 1,
-				"code":    ce.Code,
-			}).Debug("op conflict, pulling fresh state for retry")
-			if pullErr := h.pullStateSingleflight(ctx, SeedReasonGapRecovery); pullErr != nil {
-				return errors.Wrap(pullErr, "pull state after op conflict")
-			}
-			continue
-		}
-
-		// Project the server-accepted operation without an immediate read-after-write.
-		h.applyQueuedOperation(ctx, op)
-		return nil
+	defer releaseWrite()
+	if err := h.ensureInitialState(ctx, SeedReasonColdSeed); err != nil {
+		return err
 	}
-	return errors.New("queue operation failed after max retries due to write conflicts")
+	release, err := h.acceptMu.Lock(ctx)
+	if err != nil {
+		return err
+	}
+	defer release()
+	state := h.stateCtr.GetValue().CloneVT()
+	if state == nil {
+		return errors.New("no accepted shared object state")
+	}
+	operation, err := cb(state.GetNextAccountNonce(peerID.String()))
+	if err != nil {
+		return err
+	}
+	if err := state.QueueOperation(h.soID, operation); err != nil {
+		return err
+	}
+	return h.retainPublication(ctx, state, operation, false)
 }
 
 // AccessSharedObjectState returns the raw SOState container.
@@ -1677,6 +1532,9 @@ func (h *cloudSOHost) buildVerifiedStateCache() *api.VerifiedSOStateCache {
 			KeyEpochs:                cloneVTSlice(h.keyEpochs),
 			PeerState:                h.peerState.CloneVT(),
 			ConfigHistory:            cloneVTSlice(h.configHistory),
+			PendingPublication:       h.pending.CloneVT(),
+			CloudState:               h.cloudState.CloneVT(),
+			CloudSequence:            h.lastSeqno,
 		}
 		config := h.verifiedConfig
 		if config == nil {
@@ -1725,6 +1583,9 @@ func (h *cloudSOHost) hydrateVerifiedStateCache(cache *api.VerifiedSOStateCache)
 	h.configHistory = cloneVTSlice(cache.GetConfigHistory())
 	h.historyIndex = indexConfigHistory(h.configHistory)
 	h.peerState = cache.GetPeerState().CloneVT()
+	h.pending = cache.GetPendingPublication().CloneVT()
+	h.cloudState = cache.GetCloudState().CloneVT()
+	h.lastSeqno = cache.GetCloudSequence()
 	if h.peerState != nil && sobject.EqualSOConfigs(h.peerState.GetConfig(), cache.GetCurrentConfig()) && h.peerState.Validate(h.soID) == nil {
 		h.stateCtr.SetValue(h.peerState.CloneVT())
 	}

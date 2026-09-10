@@ -894,6 +894,26 @@ func (x *SOStateDeltaEntry) GetChangeData() []byte {
 	return nil
 }
 
+// PostOpsRequest is one bounded, atomic cloud operation checkpoint.
+type PostOpsRequest struct {
+	unknownFields []byte
+	// Operations contains at most 50 signed operations and 1 MiB of encoded data.
+	Operations []*sobject.SOOperation `protobuf:"bytes,1,rep,name=operations,proto3" json:"operations,omitempty"`
+}
+
+func (x *PostOpsRequest) Reset() {
+	*x = PostOpsRequest{}
+}
+
+func (*PostOpsRequest) ProtoMessage() {}
+
+func (x *PostOpsRequest) GetOperations() []*sobject.SOOperation {
+	if x != nil {
+		return x.Operations
+	}
+	return nil
+}
+
 // PostRootRequest is the binary payload for POST /sobject/:id/root.
 type PostRootRequest struct {
 	unknownFields []byte
@@ -5528,6 +5548,12 @@ type VerifiedSOStateCache struct {
 	PeerState *sobject.SOState `protobuf:"bytes,6,opt,name=peer_state,json=peerState,proto3" json:"peerState,omitempty"`
 	// ConfigHistory retains authenticated transitions for peer catch-up.
 	ConfigHistory []*sobject.SOConfigChange `protobuf:"bytes,7,rep,name=config_history,json=configHistory,proto3" json:"configHistory,omitempty"`
+	// PendingPublication retains locally accepted work until cloud acknowledgment.
+	PendingPublication *PendingSOPublication `protobuf:"bytes,8,opt,name=pending_publication,json=pendingPublication,proto3" json:"pendingPublication,omitempty"`
+	// CloudState is the authenticated base for cloud deltas, separate from peers.
+	CloudState *sobject.SOState `protobuf:"bytes,9,opt,name=cloud_state,json=cloudState,proto3" json:"cloudState,omitempty"`
+	// CloudSequence is the changelog cursor belonging to CloudState.
+	CloudSequence uint64 `protobuf:"varint,10,opt,name=cloud_sequence,json=cloudSequence,proto3" json:"cloudSequence,omitempty"`
 }
 
 func (x *VerifiedSOStateCache) Reset() {
@@ -5583,6 +5609,74 @@ func (x *VerifiedSOStateCache) GetConfigHistory() []*sobject.SOConfigChange {
 		return x.ConfigHistory
 	}
 	return nil
+}
+
+func (x *VerifiedSOStateCache) GetPendingPublication() *PendingSOPublication {
+	if x != nil {
+		return x.PendingPublication
+	}
+	return nil
+}
+
+func (x *VerifiedSOStateCache) GetCloudState() *sobject.SOState {
+	if x != nil {
+		return x.CloudState
+	}
+	return nil
+}
+
+func (x *VerifiedSOStateCache) GetCloudSequence() uint64 {
+	if x != nil {
+		return x.CloudSequence
+	}
+	return 0
+}
+
+// PendingSOPublication survives process loss without moving its first deadline.
+type PendingSOPublication struct {
+	unknownFields []byte
+	// Root is the newest locally validated checkpoint awaiting cloud acceptance.
+	Root *sobject.SORoot `protobuf:"bytes,1,opt,name=root,proto3" json:"root,omitempty"`
+	// Operations are signed local writes not yet acknowledged by the cloud.
+	Operations []*sobject.SOOperation `protobuf:"bytes,2,rep,name=operations,proto3" json:"operations,omitempty"`
+	// Rejections are signed outcomes accompanying the coalesced root.
+	Rejections []*sobject.SOOperationRejection `protobuf:"bytes,3,rep,name=rejections,proto3" json:"rejections,omitempty"`
+	// FirstPendingUnixMilli starts the bounded cloud-checkpoint interval.
+	FirstPendingUnixMilli int64 `protobuf:"varint,4,opt,name=first_pending_unix_milli,json=firstPendingUnixMilli,proto3" json:"firstPendingUnixMilli,omitempty"`
+}
+
+func (x *PendingSOPublication) Reset() {
+	*x = PendingSOPublication{}
+}
+
+func (*PendingSOPublication) ProtoMessage() {}
+
+func (x *PendingSOPublication) GetRoot() *sobject.SORoot {
+	if x != nil {
+		return x.Root
+	}
+	return nil
+}
+
+func (x *PendingSOPublication) GetOperations() []*sobject.SOOperation {
+	if x != nil {
+		return x.Operations
+	}
+	return nil
+}
+
+func (x *PendingSOPublication) GetRejections() []*sobject.SOOperationRejection {
+	if x != nil {
+		return x.Rejections
+	}
+	return nil
+}
+
+func (x *PendingSOPublication) GetFirstPendingUnixMilli() int64 {
+	if x != nil {
+		return x.FirstPendingUnixMilli
+	}
+	return 0
 }
 
 // TicketResponse is the response body for POST /session/ticket.
@@ -10579,6 +10673,22 @@ func (m *SOStateDeltaEntry) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
+func (m *PostOpsRequest) CloneVT() *PostOpsRequest {
+	if m == nil {
+		return (*PostOpsRequest)(nil)
+	}
+	r := new(PostOpsRequest)
+	r.Operations = protobuf_go_lite.CloneVTSlice(m.Operations)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *PostOpsRequest) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
 func (m *PostRootRequest) CloneVT() *PostRootRequest {
 	if m == nil {
 		return (*PostRootRequest)(nil)
@@ -12844,12 +12954,15 @@ func (m *VerifiedSOStateCache) CloneVT() *VerifiedSOStateCache {
 	}
 	r := new(VerifiedSOStateCache)
 	r.VerifiedConfigChainSeqno = m.VerifiedConfigChainSeqno
+	r.CloudSequence = m.CloudSequence
 	r.GenesisHash = protobuf_go_lite.CloneBytes(m.GenesisHash)
 	r.VerifiedConfigChainHash = protobuf_go_lite.CloneBytes(m.VerifiedConfigChainHash)
 	r.KeyEpochs = protobuf_go_lite.CloneVTSlice(m.KeyEpochs)
 	r.CurrentConfig = protobuf_go_lite.CloneVTValue(m.CurrentConfig)
 	r.PeerState = protobuf_go_lite.CloneVTValue(m.PeerState)
 	r.ConfigHistory = protobuf_go_lite.CloneVTSlice(m.ConfigHistory)
+	r.PendingPublication = protobuf_go_lite.CloneVTValue(m.PendingPublication)
+	r.CloudState = protobuf_go_lite.CloneVTValue(m.CloudState)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -12857,6 +12970,25 @@ func (m *VerifiedSOStateCache) CloneVT() *VerifiedSOStateCache {
 }
 
 func (m *VerifiedSOStateCache) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *PendingSOPublication) CloneVT() *PendingSOPublication {
+	if m == nil {
+		return (*PendingSOPublication)(nil)
+	}
+	r := new(PendingSOPublication)
+	r.FirstPendingUnixMilli = m.FirstPendingUnixMilli
+	r.Root = protobuf_go_lite.CloneVTValue(m.Root)
+	r.Operations = protobuf_go_lite.CloneVTSlice(m.Operations)
+	r.Rejections = protobuf_go_lite.CloneVTSlice(m.Rejections)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *PendingSOPublication) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
@@ -15912,6 +16044,26 @@ func (this *SOStateDeltaEntry) EqualVT(that *SOStateDeltaEntry) bool {
 
 func (this *SOStateDeltaEntry) EqualMessageVT(thatMsg any) bool {
 	that, ok := thatMsg.(*SOStateDeltaEntry)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *PostOpsRequest) EqualVT(that *PostOpsRequest) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.Operations, that.Operations, func() *sobject.SOOperation { return &sobject.SOOperation{} }) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *PostOpsRequest) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*PostOpsRequest)
 	if !ok {
 		return false
 	}
@@ -19164,11 +19316,49 @@ func (this *VerifiedSOStateCache) EqualVT(that *VerifiedSOStateCache) bool {
 	if !protobuf_go_lite.EqualVTSliceImplicit(this.ConfigHistory, that.ConfigHistory, func() *sobject.SOConfigChange { return &sobject.SOConfigChange{} }) {
 		return false
 	}
+	if !protobuf_go_lite.IsEqualVT(this.PendingPublication, that.PendingPublication) {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.CloudState, that.CloudState) {
+		return false
+	}
+	if this.CloudSequence != that.CloudSequence {
+		return false
+	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
 func (this *VerifiedSOStateCache) EqualMessageVT(thatMsg any) bool {
 	that, ok := thatMsg.(*VerifiedSOStateCache)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *PendingSOPublication) EqualVT(that *PendingSOPublication) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.Root, that.Root) {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.Operations, that.Operations, func() *sobject.SOOperation { return &sobject.SOOperation{} }) {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.Rejections, that.Rejections, func() *sobject.SOOperationRejection { return &sobject.SOOperationRejection{} }) {
+		return false
+	}
+	if this.FirstPendingUnixMilli != that.FirstPendingUnixMilli {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *PendingSOPublication) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*PendingSOPublication)
 	if !ok {
 		return false
 	}
@@ -23901,6 +24091,69 @@ func (x *SOStateDeltaEntry) UnmarshalProtoJSON(s *json.UnmarshalState) {
 
 // UnmarshalJSON unmarshals the SOStateDeltaEntry from JSON.
 func (x *SOStateDeltaEntry) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the PostOpsRequest message to JSON.
+func (x *PostOpsRequest) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if len(x.Operations) > 0 || s.HasField("operations") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("operations")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.Operations {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s.WithField("operations"))
+		}
+		s.WriteArrayEnd()
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the PostOpsRequest to JSON.
+func (x *PostOpsRequest) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the PostOpsRequest message from JSON.
+func (x *PostOpsRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "operations":
+			s.AddField("operations")
+			if s.ReadNil() {
+				x.Operations = nil
+				return
+			}
+			s.ReadArray(func() {
+				if s.ReadNil() {
+					x.Operations = append(x.Operations, nil)
+					return
+				}
+				v := &sobject.SOOperation{}
+				v.UnmarshalProtoJSON(s.WithField("operations", false))
+				if s.Err() != nil {
+					return
+				}
+				x.Operations = append(x.Operations, v)
+			})
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the PostOpsRequest from JSON.
+func (x *PostOpsRequest) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -31199,6 +31452,21 @@ func (x *VerifiedSOStateCache) MarshalProtoJSON(s *json.MarshalState) {
 		}
 		s.WriteArrayEnd()
 	}
+	if x.PendingPublication != nil || s.HasField("pendingPublication") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("pendingPublication")
+		x.PendingPublication.MarshalProtoJSON(s.WithField("pendingPublication"))
+	}
+	if x.CloudState != nil || s.HasField("cloudState") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("cloudState")
+		x.CloudState.MarshalProtoJSON(s.WithField("cloudState"))
+	}
+	if x.CloudSequence != 0 || s.HasField("cloudSequence") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("cloudSequence")
+		s.WriteUint64(x.CloudSequence)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -31275,12 +31543,141 @@ func (x *VerifiedSOStateCache) UnmarshalProtoJSON(s *json.UnmarshalState) {
 				}
 				x.ConfigHistory = append(x.ConfigHistory, v)
 			})
+		case "pending_publication", "pendingPublication":
+			if s.ReadNil() {
+				x.PendingPublication = nil
+				return
+			}
+			x.PendingPublication = &PendingSOPublication{}
+			x.PendingPublication.UnmarshalProtoJSON(s.WithField("pending_publication", true))
+		case "cloud_state", "cloudState":
+			if s.ReadNil() {
+				x.CloudState = nil
+				return
+			}
+			x.CloudState = &sobject.SOState{}
+			x.CloudState.UnmarshalProtoJSON(s.WithField("cloud_state", true))
+		case "cloud_sequence", "cloudSequence":
+			s.AddField("cloud_sequence")
+			x.CloudSequence = s.ReadUint64()
 		}
 	})
 }
 
 // UnmarshalJSON unmarshals the VerifiedSOStateCache from JSON.
 func (x *VerifiedSOStateCache) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the PendingSOPublication message to JSON.
+func (x *PendingSOPublication) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Root != nil || s.HasField("root") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("root")
+		x.Root.MarshalProtoJSON(s.WithField("root"))
+	}
+	if len(x.Operations) > 0 || s.HasField("operations") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("operations")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.Operations {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s.WithField("operations"))
+		}
+		s.WriteArrayEnd()
+	}
+	if len(x.Rejections) > 0 || s.HasField("rejections") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("rejections")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.Rejections {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s.WithField("rejections"))
+		}
+		s.WriteArrayEnd()
+	}
+	if x.FirstPendingUnixMilli != 0 || s.HasField("firstPendingUnixMilli") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("firstPendingUnixMilli")
+		s.WriteInt64(x.FirstPendingUnixMilli)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the PendingSOPublication to JSON.
+func (x *PendingSOPublication) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the PendingSOPublication message from JSON.
+func (x *PendingSOPublication) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "root":
+			if s.ReadNil() {
+				x.Root = nil
+				return
+			}
+			x.Root = &sobject.SORoot{}
+			x.Root.UnmarshalProtoJSON(s.WithField("root", true))
+		case "operations":
+			s.AddField("operations")
+			if s.ReadNil() {
+				x.Operations = nil
+				return
+			}
+			s.ReadArray(func() {
+				if s.ReadNil() {
+					x.Operations = append(x.Operations, nil)
+					return
+				}
+				v := &sobject.SOOperation{}
+				v.UnmarshalProtoJSON(s.WithField("operations", false))
+				if s.Err() != nil {
+					return
+				}
+				x.Operations = append(x.Operations, v)
+			})
+		case "rejections":
+			s.AddField("rejections")
+			if s.ReadNil() {
+				x.Rejections = nil
+				return
+			}
+			s.ReadArray(func() {
+				if s.ReadNil() {
+					x.Rejections = append(x.Rejections, nil)
+					return
+				}
+				v := &sobject.SOOperationRejection{}
+				v.UnmarshalProtoJSON(s.WithField("rejections", false))
+				if s.Err() != nil {
+					return
+				}
+				x.Rejections = append(x.Rejections, v)
+			})
+		case "first_pending_unix_milli", "firstPendingUnixMilli":
+			s.AddField("first_pending_unix_milli")
+			x.FirstPendingUnixMilli = s.ReadInt64()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the PendingSOPublication from JSON.
+func (x *PendingSOPublication) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -39707,6 +40104,50 @@ func (m *SOStateDeltaEntry) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *PostOpsRequest) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *PostOpsRequest) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *PostOpsRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.Operations) > 0 {
+		for iNdEx := len(m.Operations) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.Operations[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *PostRootRequest) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -45712,6 +46153,31 @@ func (m *VerifiedSOStateCache) MarshalToSizedBufferVT(dAtA []byte) (int, error) 
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.CloudSequence != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.CloudSequence))
+		i--
+		dAtA[i] = 0x50
+	}
+	if m.CloudState != nil {
+		size, err := m.CloudState.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x4a
+	}
+	if m.PendingPublication != nil {
+		size, err := m.PendingPublication.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x42
+	}
 	if len(m.ConfigHistory) > 0 {
 		for iNdEx := len(m.ConfigHistory) - 1; iNdEx >= 0; iNdEx-- {
 			size, err := m.ConfigHistory[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
@@ -45768,6 +46234,77 @@ func (m *VerifiedSOStateCache) MarshalToSizedBufferVT(dAtA []byte) (int, error) 
 	}
 	if len(m.GenesisHash) > 0 {
 		i = protobuf_go_lite.EncodeBytes(dAtA, i, m.GenesisHash)
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *PendingSOPublication) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *PendingSOPublication) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *PendingSOPublication) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.FirstPendingUnixMilli != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.FirstPendingUnixMilli))
+		i--
+		dAtA[i] = 0x20
+	}
+	if len(m.Rejections) > 0 {
+		for iNdEx := len(m.Rejections) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.Rejections[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0x1a
+		}
+	}
+	if len(m.Operations) > 0 {
+		for iNdEx := len(m.Operations) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.Operations[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if m.Root != nil {
+		size, err := m.Root.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -52644,6 +53181,20 @@ func (m *SOStateDeltaEntry) SizeVT() (n int) {
 	return n
 }
 
+func (m *PostOpsRequest) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	for _, e := range m.Operations {
+		l = e.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
 func (m *PostRootRequest) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -54462,6 +55013,38 @@ func (m *VerifiedSOStateCache) SizeVT() (n int) {
 		l = e.SizeVT()
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
+	if m.PendingPublication != nil {
+		l = m.PendingPublication.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	if m.CloudState != nil {
+		l = m.CloudState.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.CloudSequence)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *PendingSOPublication) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Root != nil {
+		l = m.Root.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	for _, e := range m.Operations {
+		l = e.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	for _, e := range m.Rejections {
+		l = e.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.FirstPendingUnixMilli)
 	n += len(m.unknownFields)
 	return n
 }
@@ -56914,6 +57497,28 @@ func (x *SOStateDeltaEntry) MarshalProtoText() string {
 }
 
 func (x *SOStateDeltaEntry) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *PostOpsRequest) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "PostOpsRequest")
+	if len(x.Operations) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "operations")
+		for i, v := range x.Operations {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &sobject.SOOperation{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *PostOpsRequest) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -59687,10 +60292,64 @@ func (x *VerifiedSOStateCache) MarshalProtoText() string {
 		}
 		protobuf_go_lite.TextWriteListEnd(&sb)
 	}
+	if x.PendingPublication != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "pending_publication")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.PendingPublication)
+	}
+	if x.CloudState != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "cloud_state")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.CloudState)
+	}
+	if x.CloudSequence != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "cloud_sequence")
+		protobuf_go_lite.TextWriteUint(&sb, x.CloudSequence)
+	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
 func (x *VerifiedSOStateCache) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *PendingSOPublication) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "PendingSOPublication")
+	if x.Root != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "root")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Root)
+	}
+	if len(x.Operations) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "operations")
+		for i, v := range x.Operations {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &sobject.SOOperation{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	if len(x.Rejections) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "rejections")
+		for i, v := range x.Rejections {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &sobject.SOOperationRejection{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	if x.FirstPendingUnixMilli != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "first_pending_unix_milli")
+		protobuf_go_lite.TextWriteInt(&sb, x.FirstPendingUnixMilli)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *PendingSOPublication) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -63565,6 +64224,62 @@ func (m *SOStateDeltaEntry) UnmarshalVT(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *PostOpsRequest) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PostOpsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PostOpsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Operations", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Operations = append(m.Operations, &sobject.SOOperation{})
+			if err := m.Operations[len(m.Operations)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
@@ -72473,6 +73188,138 @@ func (m *VerifiedSOStateCache) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 8:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PendingPublication", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.PendingPublication == nil {
+				m.PendingPublication = &PendingSOPublication{}
+			}
+			if err := m.PendingPublication.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 9:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CloudState", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.CloudState == nil {
+				m.CloudState = &sobject.SOState{}
+			}
+			if err := m.CloudState.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 10:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CloudSequence", wireType)
+			}
+			m.CloudSequence = 0
+			m.CloudSequence, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *PendingSOPublication) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PendingSOPublication: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PendingSOPublication: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Root", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Root == nil {
+				m.Root = &sobject.SORoot{}
+			}
+			if err := m.Root.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Operations", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Operations = append(m.Operations, &sobject.SOOperation{})
+			if err := m.Operations[len(m.Operations)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Rejections", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Rejections = append(m.Rejections, &sobject.SOOperationRejection{})
+			if err := m.Rejections[len(m.Rejections)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FirstPendingUnixMilli", wireType)
+			}
+			m.FirstPendingUnixMilli = 0
+			m.FirstPendingUnixMilli, iNdEx, err = protobuf_go_lite.DecodeVarintInt64(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
