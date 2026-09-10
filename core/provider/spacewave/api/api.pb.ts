@@ -2918,7 +2918,8 @@ export interface WriteTicketProofPayload {
    */
   bodyHashHex?: string
   /**
-   * SignedHeaders is the sorted comma-separated "key=value" signed header pairs.
+   * SignedHeaders contains sorted comma-separated "key=value" header pairs.
+   * Values use URL query escaping, including commas, plus signs, and percent signs.
    *
    * @generated from field: string signed_headers = 7;
    */
