@@ -47,6 +47,67 @@ type Controller struct {
 	// key: remote peer ID string
 	// guarded by bcast
 	sessions map[string]*peerSession
+	// transfer counts block payloads that actually crossed a peer stream.
+	transfer      TransferSnapshot
+	peerTransfers map[string]PeerTransferSnapshot
+}
+
+// TransferSnapshot reports payload traffic and current peers for this controller.
+// Counters exclude cached reads and protocol framing and last for its lifetime.
+type TransferSnapshot struct {
+	UploadedBytes   uint64
+	DownloadedBytes uint64
+	LastActivity    time.Time
+	Peers           []PeerTransferSnapshot
+}
+
+// PeerTransferSnapshot retains this peer's traffic across stream reconnects.
+type PeerTransferSnapshot struct {
+	PeerID          string
+	UploadedBytes   uint64
+	DownloadedBytes uint64
+	Connected       bool
+}
+
+// GetTransferSnapshot returns counters and a channel for the next change.
+func (c *Controller) GetTransferSnapshot() (TransferSnapshot, <-chan struct{}) {
+	var result TransferSnapshot
+	var wait <-chan struct{}
+	c.bcast.HoldLock(func(_ func(), getWait func() <-chan struct{}) {
+		result = c.transfer
+		for id, peer := range c.peerTransfers {
+			_, peer.Connected = c.sessions[id]
+			result.Peers = append(result.Peers, peer)
+		}
+		for id := range c.sessions {
+			if _, exists := c.peerTransfers[id]; !exists {
+				result.Peers = append(result.Peers, PeerTransferSnapshot{PeerID: id, Connected: true})
+			}
+		}
+		wait = getWait()
+	})
+	return result, wait
+}
+
+// recordTransfer runs outside the peer's write lock to preserve lock ordering.
+func (c *Controller) recordTransfer(peerID string, uploaded, downloaded int) {
+	if uploaded == 0 && downloaded == 0 {
+		return
+	}
+	c.bcast.HoldLock(func(changed func(), _ func() <-chan struct{}) {
+		c.transfer.UploadedBytes += uint64(uploaded)
+		c.transfer.DownloadedBytes += uint64(downloaded)
+		c.transfer.LastActivity = time.Now()
+		if c.peerTransfers == nil {
+			c.peerTransfers = make(map[string]PeerTransferSnapshot)
+		}
+		peer := c.peerTransfers[peerID]
+		peer.PeerID = peerID
+		peer.UploadedBytes += uint64(uploaded)
+		peer.DownloadedBytes += uint64(downloaded)
+		c.peerTransfers[peerID] = peer
+		changed()
+	})
 }
 
 // NewController constructs a new solicitation-based DEX controller.

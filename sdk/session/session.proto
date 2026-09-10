@@ -398,6 +398,34 @@ message WatchSyncStatusResponse {
   bool direct_p2p_disabled = 55;
   // BlockStores contains owner-observed mechanics keyed by mounted block store.
   repeated SyncBlockStoreStatus block_stores = 56;
+  // local_account selects account-replica status instead of cloud queues.
+  bool local_account = 57;
+  // local_copies reports durable availability for each accepted Space head.
+  repeated SyncLocalCopyStatus local_copies = 58;
+  // peer_upload_bytes and peer_download_bytes count actual block payload traffic.
+  uint64 peer_upload_bytes = 59;
+  uint64 peer_download_bytes = 60;
+  // peers breaks the payload totals down by authenticated Session peer.
+  repeated SyncPeerTransferStatus peers = 61;
+}
+
+// SyncPeerTransferStatus reports one peer's traffic on the active transport.
+message SyncPeerTransferStatus {
+  string peer_id = 1;
+  uint64 uploaded_bytes = 2;
+  uint64 downloaded_bytes = 3;
+  bool connected = 4;
+}
+
+// SyncLocalCopyStatus describes the local copy of one Space's current head.
+// Completion is recorded only after every reachable block is stored durably.
+message SyncLocalCopyStatus {
+  string shared_object_id = 1;
+  string display_name = 2;
+  uint64 blocks = 3;
+  uint64 bytes = 4;
+  bool complete = 5;
+  string error = 6;
 }
 
 // WatchStorageStatsResponse is the response type for WatchStorageStats.
@@ -507,7 +535,10 @@ message ConfirmPairingRequest {
 }
 
 // ConfirmPairingResponse is the response for ConfirmPairing.
-message ConfirmPairingResponse {}
+message ConfirmPairingResponse {
+  // SessionListEntry is the durable receiving Session, absent on the offering client.
+  .session.SessionListEntry session_list_entry = 1;
+}
 
 // DeleteAccountRequest is the request type for DeleteAccount.
 message DeleteAccountRequest {
@@ -649,6 +680,8 @@ enum PairingStatus {
   // PairingStatus_CONFIRMATION_TIMEOUT means remote confirmation was not
   // received within the timeout period.
   PairingStatus_CONFIRMATION_TIMEOUT = 12;
+  // PairingStatus_ENROLLING means both clients approved and account access is being persisted.
+  PairingStatus_ENROLLING = 13;
 }
 
 // WatchPairingStatusRequest is the request for WatchPairingStatus.
@@ -666,6 +699,12 @@ message WatchPairingStatusResponse {
   repeated string emoji = 4;
   // ErrorMessage describes what went wrong (set when status is FAILED).
   string error_message = 5;
+  // AccountId is the existing account selected for enrollment.
+  string account_id = 6;
+  // Receiving indicates this client is adding the selected account.
+  bool receiving = 7;
+  // AccountName is the offered account's display name.
+  string account_name = 8;
 }
 
 // -- Space Invites --

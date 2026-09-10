@@ -26,7 +26,7 @@ export function pairingStatusIsTerminalFailure(
   }
 }
 
-// toPairingView maps all 13 PairingStatus substates into a LoadingView with
+// toPairingView maps PairingStatus substates into a LoadingView with
 // stage-specific detail text. Error substates (FAILED, SIGNALING_FAILED,
 // CONNECTION_TIMEOUT, PAIRING_REJECTED, CONFIRMATION_TIMEOUT) flip to
 // 'error'. VERIFIED / BOTH_CONFIRMED flip to 'synced'.
@@ -102,8 +102,14 @@ function pairingStage(status: PairingStatus): PairingStage {
     case PairingStatus.PairingStatus_BOTH_CONFIRMED:
       return {
         state: 'synced',
-        title: 'Verification confirmed',
-        detail: 'Both devices confirmed. Finishing pairing.',
+        title: 'Account connected',
+        detail: 'Account access and the receiving Session are saved.',
+      }
+    case PairingStatus.PairingStatus_ENROLLING:
+      return {
+        state: 'active',
+        title: 'Connecting account',
+        detail: 'Saving account access and preparing your Spaces.',
       }
     case PairingStatus.PairingStatus_VERIFIED:
       return {

@@ -252,10 +252,18 @@ func lookupSQLWorldOp(ctx context.Context, opTypeID string) (world.Operation, er
 
 func lookupSQLBlockType(typeID string) (blocktype.BlockType, error) {
 	switch typeID {
-	case s4wave_sql_query.SqlQueryBlockTypeID:
+	case s4wave_sql_world.SqlDbTypeID:
+		return blocktype.NewBlockType(typeID, sql_mysql.NewRootBlock), nil
+	case s4wave_sql_query.SqlQueryTypeID, s4wave_sql_query.SqlQueryBlockTypeID:
 		return s4wave_sql_query.SqlQueryBlockType, nil
-	case s4wave_sql_workbench.SqlWorkbenchBlockTypeID:
+	case s4wave_sql_workbench.SqlWorkbenchTypeID, s4wave_sql_workbench.SqlWorkbenchBlockTypeID:
 		return s4wave_sql_workbench.SqlWorkbenchBlockType, nil
+	case s4wave_sql_query_result.SqlQueryResultTypeID:
+		return blocktype.NewBlockType(typeID, s4wave_sql_query_result.NewQueryResultBlock), nil
+	case s4wave_sql_schema.SqlSchemaTypeID:
+		return blocktype.NewBlockType(typeID, s4wave_sql_schema.NewSchemaBlock), nil
+	case s4wave_sql_table_view.SqlTableViewTypeID:
+		return blocktype.NewBlockType(typeID, s4wave_sql_table_view.NewTableViewBlock), nil
 	default:
 		return nil, nil
 	}

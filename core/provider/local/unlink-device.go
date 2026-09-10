@@ -12,12 +12,65 @@ import (
 // UnlinkDevice removes a paired device from the account settings SO and
 // revokes its SO participant access on all shared objects.
 func (a *ProviderAccount) UnlinkDevice(ctx context.Context, remotePeerID peer.ID) error {
+	release, err := a.replicaAuth.Lock(ctx)
+	if err != nil {
+		return err
+	}
+	defer release()
+
 	remotePeerIDStr := remotePeerID.String()
 	accountSettingsRef, err := a.GetAccountSettingsRef(ctx)
 	if err != nil {
 		return errors.Wrap(err, "get account settings ref")
 	}
 	accountSettingsID := accountSettingsRef.GetProviderResourceRef().GetId()
+	settings, err := a.readAccountSettings(ctx)
+	if err != nil {
+		return err
+	}
+	identities := []string{remotePeerIDStr}
+	if member := settings.FindAccountSession(remotePeerIDStr); member != nil {
+		writer, err := a.vol.GetPeer(ctx, true)
+		if err != nil {
+			return err
+		}
+		if member.GetRevokedByStoragePeerId() != "" && member.GetRevokedByStoragePeerId() != writer.GetPeerID().String() {
+			return errors.New("this Session's removal is already being completed by another replica")
+		}
+		// Commit revocation before removing grants so concurrent discovery fails closed.
+		next := member.CloneVT()
+		next.Revoked = true
+		next.RevokedByStoragePeerId = writer.GetPeerID().String()
+		so, releaseSO, err := a.MountSharedObject(ctx, accountSettingsRef, nil)
+		if err != nil {
+			return err
+		}
+		err = commitAccountSettingsOp(ctx, so, &account_settings.AccountSettingsOp{
+			Op: &account_settings.AccountSettingsOp_UpsertAccountSession{UpsertAccountSession: next},
+		})
+		releaseSO()
+		if err != nil {
+			return err
+		}
+		settings, err = a.readAccountSettings(ctx)
+		if err != nil {
+			return err
+		}
+		if accepted := settings.FindAccountSession(remotePeerIDStr); accepted.GetRevokedByStoragePeerId() != next.GetRevokedByStoragePeerId() {
+			return errors.New("another replica owns this Session's removal")
+		}
+		storageShared := false
+		for _, other := range settings.GetSessions() {
+			if other.GetPeerId() != remotePeerIDStr && !other.GetRevoked() && other.GetStoragePeerId() == member.GetStoragePeerId() {
+				storageShared = true
+				break
+			}
+		}
+		if !storageShared && member.GetStoragePeerId() != remotePeerIDStr {
+			identities = append(identities, member.GetStoragePeerId())
+		}
+	}
+	a.releaseAccountReplicaPeer(remotePeerID)
 
 	soList := a.soListCtr.GetValue()
 	for _, entry := range soList.GetSharedObjects() {
@@ -26,12 +79,14 @@ func (a *ProviderAccount) UnlinkDevice(ctx context.Context, remotePeerID peer.ID
 
 		so, relSO, err := a.MountSharedObject(ctx, ref, nil)
 		if err != nil {
-			a.le.WithError(err).WithField("so-id", soID).Warn("failed to mount SO for unlink")
-			continue
+			return errors.Wrap(err, "mount object for unlink: "+soID)
 		}
 
-		if err := a.removeSOParticipant(ctx, so, remotePeerIDStr); err != nil {
-			a.le.WithError(err).WithField("so-id", soID).Warn("failed to remove participant from SO")
+		for _, identity := range identities {
+			if err := a.removeSOParticipant(ctx, so, identity); err != nil {
+				relSO()
+				return errors.Wrap(err, "revoke object access: "+soID)
+			}
 		}
 
 		if soID == accountSettingsID {

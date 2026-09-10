@@ -48,6 +48,10 @@ function fakeSyncStatus(
     packIndexCacheLabel: '0 hits / 0 misses',
     lastActivityLabel: 'No recent activity',
     lastError: '',
+    localCopies: [],
+    peerUploadLabel: '0 B',
+    peerDownloadLabel: '0 B',
+    peers: [],
     ...overrides,
   }
 }

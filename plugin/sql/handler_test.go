@@ -22,6 +22,7 @@ import (
 	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/bucket"
 	hydra_sql "github.com/s4wave/spacewave/db/sql"
+	sql_mysql "github.com/s4wave/spacewave/db/sql/mysql"
 	sql_rpc "github.com/s4wave/spacewave/db/sql/rpc"
 	sql_rpc_client "github.com/s4wave/spacewave/db/sql/rpc/client"
 	"github.com/s4wave/spacewave/db/world"
@@ -65,8 +66,14 @@ func TestLookupSQLBlockTypeOwnsSQLCursorBlockTypes(t *testing.T) {
 			wantMatch: s4wave_sql_workbench.SqlWorkbenchBlockType.MatchesBlockType,
 		},
 		{
-			name:       "object type id is not a block type",
-			typeID:     s4wave_sql_world.SqlDbTypeID,
+			name:      "database object resolves its persisted root",
+			typeID:    s4wave_sql_world.SqlDbTypeID,
+			wantID:    s4wave_sql_world.SqlDbTypeID,
+			wantMatch: func(b block.Block) bool { _, ok := b.(*sql_mysql.Root); return ok },
+		},
+		{
+			name:       "unknown object",
+			typeID:     "unknown/object",
 			wantAbsent: true,
 		},
 	} {

@@ -469,6 +469,24 @@ func (a *ProviderAccount) stopSessionTransportLocked(ctx context.Context) error 
 	return a.stopSessionTransportStateLocked(ctx, sts)
 }
 
+// stopSessionPeerTransport ends network use of a locked Session credential
+// without stopping an explicitly selected transport for another Session.
+func (a *ProviderAccount) stopSessionPeerTransport(ctx context.Context, sessionPeer peer.ID) error {
+	release, err := a.mtx.Lock(ctx)
+	if err != nil {
+		return err
+	}
+	defer release()
+
+	var current *sessionTransportState
+	a.transportBcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
+		if a.sessionTransport != nil && a.sessionTransport.config.peerID == sessionPeer {
+			current = a.sessionTransport
+		}
+	})
+	return a.stopSessionTransportStateLocked(ctx, current)
+}
+
 // stopSessionTransportForReplacementLocked marks replacement before waiting for the previous transport to exit.
 func (a *ProviderAccount) stopSessionTransportForReplacementLocked(ctx context.Context) error {
 	var sts *sessionTransportState

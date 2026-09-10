@@ -1,99 +1,48 @@
-import { useEffect, useState } from 'react'
+import { useResource } from '@aptre/bldr-sdk/hooks/useResource.js'
 import {
   LuArrowRight,
   LuCircleCheck,
   LuLink,
   LuRefreshCw,
-  LuX,
 } from 'react-icons/lu'
 
-import { Spinner } from '@s4wave/web/ui/loading/Spinner.js'
-import { cn } from '@s4wave/web/style/utils.js'
-import { PhaseChecklist } from './PhaseChecklist.js'
+import type { SessionListEntry } from '@s4wave/core/session/session.pb.js'
 import type { Session } from '@s4wave/sdk/session/session.js'
+import { Spinner } from '@s4wave/web/ui/loading/Spinner.js'
 
 export interface LinkDeviceDoneStepProps {
   session: Session | null | undefined
   remotePeerId: string | null
-  onDone: () => void
-  onLinkMore: () => void
+  onDone: (entry?: SessionListEntry) => void
+  onLinkMore: (entry?: SessionListEntry) => void
 }
 
-type LinkSyncState = 'confirming' | 'syncing' | 'done'
-
-// LinkDeviceDoneStep confirms the linked device and waits for the watched sync signal.
+// LinkDeviceDoneStep reads the durable account attachment. File-copy progress is
+// independent; a paired-device record never establishes either completion state.
 export function LinkDeviceDoneStep({
   session,
   remotePeerId,
   onDone,
   onLinkMore,
 }: LinkDeviceDoneStepProps) {
-  const [pairingConfirmed, setPairingConfirmed] = useState(false)
-  const [pairingError, setPairingError] = useState<string | null>(null)
-  const [syncState, setSyncState] = useState<LinkSyncState>('confirming')
-  const syncDone = syncState === 'done'
+  const completion = useResource(
+    async (signal) =>
+      session && remotePeerId
+        ? session.confirmPairing(remotePeerId, '', signal)
+        : null,
+    [session, remotePeerId],
+  )
+  const result = completion.loading ? null : completion.value
+  const error = completion.error?.message
 
-  useEffect(() => {
-    queueMicrotask(() => {
-      setPairingConfirmed(false)
-      setPairingError(null)
-      setSyncState('confirming')
-    })
-    if (!session || !remotePeerId) return
-    const controller = new AbortController()
-    session
-      .confirmPairing(remotePeerId, '', controller.signal)
-      .then(() => {
-        if (!controller.signal.aborted) {
-          setPairingConfirmed(true)
-          setSyncState('syncing')
-        }
-      })
-      .catch((err: Error) => {
-        if (!controller.signal.aborted) {
-          setPairingError(err.message)
-        }
-      })
-    return () => controller.abort()
-  }, [session, remotePeerId])
-
-  useEffect(() => {
-    if (!session || !pairingConfirmed || !remotePeerId) return
-    const controller = new AbortController()
-    ;(async () => {
-      for await (const resp of session.watchPairedDevices(controller.signal)) {
-        if (controller.signal.aborted) break
-        const devices = resp.pairedDevices ?? []
-        if (devices.some((device) => device.peerId === remotePeerId)) {
-          setSyncState('done')
-          break
-        }
-      }
-    })().catch(() => {})
-    return () => {
-      controller.abort()
-    }
-  }, [session, pairingConfirmed, remotePeerId])
-
-  if (pairingError) {
+  if (error) {
     return (
-      <div className="space-y-4">
-        <div className="flex flex-col items-center gap-3">
-          <div className="bg-destructive/10 flex size-12 items-center justify-center rounded-full">
-            <LuX className="text-destructive size-6" />
-          </div>
-          <h2 className="text-foreground text-sm font-medium">
-            Pairing failed
-          </h2>
-          <p className="text-destructive text-xs">{pairingError}</p>
-        </div>
+      <div className="space-y-4 text-center">
+        <h2 className="text-foreground text-sm font-medium">Pairing failed</h2>
+        <p className="text-destructive text-xs">{error}</p>
         <button
-          onClick={onLinkMore}
-          className={cn(
-            'w-full rounded-md border transition-all duration-300',
-            'border-foreground/20 hover:border-foreground/40',
-            'flex h-10 items-center justify-center gap-2',
-          )}
+          onClick={() => onLinkMore()}
+          className="border-foreground/20 hover:border-foreground/40 flex h-10 w-full items-center justify-center gap-2 rounded-md border"
         >
           <LuRefreshCw className="text-foreground-alt size-4" />
           <span className="text-foreground text-sm">Try again</span>
@@ -104,72 +53,40 @@ export function LinkDeviceDoneStep({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col items-center gap-3">
+      <div className="flex flex-col items-center gap-3 text-center">
         <div className="bg-brand/10 flex size-12 items-center justify-center rounded-full">
-          {syncDone ? (
+          {result ? (
             <LuCircleCheck className="text-brand size-6" />
           ) : (
             <Spinner size="lg" className="text-brand" />
           )}
         </div>
         <h2 className="text-foreground text-sm font-medium">
-          {syncState === 'confirming'
-            ? 'Confirming linked device…'
-            : syncDone
-              ? 'All set!'
-              : 'Finishing device sync…'}
+          {result ? 'Account connected' : 'Opening paired account…'}
         </h2>
+        {result && (
+          <p className="text-foreground-alt text-xs">
+            Your Spaces are ready to open.
+          </p>
+        )}
       </div>
-
-      <PhaseChecklist
-        phases={[
-          {
-            label: 'Pairing confirmed',
-            done: pairingConfirmed,
-            active: !pairingConfirmed,
-          },
-          {
-            label: 'Syncing data',
-            done: syncDone,
-            active: pairingConfirmed && !syncDone,
-          },
-        ]}
-      />
-
-      {syncDone && (
+      {result && (
         <div className="flex gap-2">
           <button
-            onClick={onLinkMore}
-            className={cn(
-              'flex-1 rounded-md border transition-all duration-300',
-              'border-foreground/20 hover:border-foreground/40',
-              'flex h-10 items-center justify-center gap-2',
-            )}
+            onClick={() => onLinkMore(result.sessionListEntry)}
+            className="border-foreground/20 hover:border-foreground/40 flex h-10 flex-1 items-center justify-center gap-2 rounded-md border"
           >
             <LuLink className="text-foreground-alt size-4" />
             <span className="text-foreground text-sm">Link more</span>
           </button>
           <button
-            onClick={onDone}
-            className={cn(
-              'flex-1 rounded-md border transition-all duration-300',
-              'border-brand/30 bg-brand/10 hover:bg-brand/20',
-              'flex h-10 items-center justify-center gap-2',
-            )}
+            onClick={() => onDone(result.sessionListEntry)}
+            className="border-brand/30 bg-brand/10 hover:bg-brand/20 flex h-10 flex-1 items-center justify-center gap-2 rounded-md border"
           >
-            <span className="text-foreground text-sm">Dashboard</span>
+            <span className="text-foreground text-sm">Open account</span>
             <LuArrowRight className="text-foreground-alt size-4" />
           </button>
         </div>
-      )}
-
-      {!syncDone && (
-        <button
-          onClick={onDone}
-          className="text-foreground-alt hover:text-foreground w-full text-center text-xs transition-colors"
-        >
-          Skip and continue to dashboard
-        </button>
       )}
     </div>
   )

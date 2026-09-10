@@ -12,6 +12,7 @@ import {
   CreateSpaceInviteResponse,
   CreateSpaceRequest,
   CreateSpaceResponse,
+  ConfirmPairingResponse,
   GetSessionInfoResponse,
   GetTransferInventoryResponse,
   GetTransferStatusResponse,
@@ -220,14 +221,13 @@ export class Session extends Resource {
     await this.service.ConfirmSASMatch({ confirmed }, abortSignal)
   }
 
-  // confirmPairing confirms a verified pairing, adding the remote peer as
-  // OWNER on all SharedObjects and persisting the paired device.
+  // confirmPairing returns the durable account attachment from the approved exchange.
   public async confirmPairing(
     remotePeerId: string,
     displayName?: string,
     abortSignal?: AbortSignal,
-  ): Promise<void> {
-    await this.service.ConfirmPairing(
+  ): Promise<ConfirmPairingResponse> {
+    return await this.service.ConfirmPairing(
       { remotePeerId, displayName: displayName ?? '' },
       abortSignal,
     )

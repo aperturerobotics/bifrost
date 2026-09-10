@@ -1,27 +1,28 @@
 package webrtc
 
 import (
-	"bytes"
 	"testing"
 
 	"github.com/s4wave/spacewave/net/peer"
 	"github.com/s4wave/spacewave/net/transport/common/dialer"
 )
 
-func TestAllPeersChoosesOneOfferer(t *testing.T) {
+// TestAllPeersAcceptsEitherInitiator preserves one-sided peer discovery while
+// the negotiation owner still selects exactly one SDP offerer.
+func TestAllPeersAcceptsEitherInitiator(t *testing.T) {
 	first, second := peer.ID("first-peer"), peer.ID("second-peer")
-	if bytes.Compare([]byte(first), []byte(second)) > 0 {
-		first, second = second, first
-	}
-	lower := &WebRTC{peerID: first, conf: &Config{AllPeers: true, AllPeersLowerPeerOffers: true}}
-	upper := &WebRTC{peerID: second, conf: &Config{AllPeers: true, AllPeersLowerPeerOffers: true}}
+	lower := &WebRTC{peerID: first, conf: &Config{AllPeers: true}}
+	upper := &WebRTC{peerID: second, conf: &Config{AllPeers: true}}
 	got, err := lower.GetPeerDialer(t.Context(), second)
 	if err != nil || got == nil {
-		t.Fatalf("lower peer did not offer: opts=%v err=%v", got, err)
+		t.Fatalf("first peer cannot initiate: opts=%v err=%v", got, err)
 	}
 	got, err = upper.GetPeerDialer(t.Context(), first)
-	if err != nil || got != nil {
-		t.Fatalf("upper peer also offered: opts=%v err=%v", got, err)
+	if err != nil || got == nil {
+		t.Fatalf("second peer cannot initiate: opts=%v err=%v", got, err)
+	}
+	if isOfferer(first.String(), second.String()) == isOfferer(second.String(), first.String()) {
+		t.Fatal("negotiation did not select exactly one SDP offerer")
 	}
 
 	explicit := &dialer.DialerOpts{Address: "explicit"}

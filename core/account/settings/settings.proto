@@ -2,6 +2,7 @@ syntax = "proto3";
 package account.settings;
 
 import "github.com/s4wave/spacewave/core/session/session.proto";
+import "github.com/s4wave/spacewave/core/sobject/sobject.proto";
 import "github.com/s4wave/spacewave/sdk/command/command.proto";
 
 // AccountSettings is the root state data for account settings SharedObjects.
@@ -19,6 +20,31 @@ message AccountSettings {
   repeated SessionPresentation session_presentations = 4;
   // KeybindingOverrides stores account-scope keybinding overrides.
   .s4wave.command.KeybindingOverrideSet keybinding_overrides = 5;
+  // Sessions binds each approved account Session to its replica's storage identity.
+  repeated AccountSession sessions = 6;
+  // Catalog names account objects. Checkpoints require separate authenticated enrollment.
+  repeated AccountCatalogEntry catalog = 7;
+}
+
+// AccountSession is an approved account replica, distinct from a managed Device.
+message AccountSession {
+  // PeerId is the independently generated Session's transport identity.
+  string peer_id = 1;
+  // StoragePeerId identifies the replica's SharedObject signing and encryption key.
+  string storage_peer_id = 2;
+  // Revoked retains the binding after access is withdrawn.
+  bool revoked = 3;
+  // RevokedByStoragePeerId owns the signed configuration changes for revocation.
+  // Other replicas import that writer's lineage instead of signing competing changes.
+  string revoked_by_storage_peer_id = 4;
+}
+
+// AccountCatalogEntry records one account object or its durable deletion.
+message AccountCatalogEntry {
+  // Entry identifies the object and its presentation metadata.
+  .sobject.SharedObjectListEntry entry = 1;
+  // Deleted prevents an offline replica from rediscovering a removed object.
+  bool deleted = 2;
 }
 
 // PairedDevice is a device that has been paired with this account via P2P.
@@ -67,6 +93,10 @@ message AccountSettingsOp {
     RemoveSessionPresentationOp remove_session_presentation = 7;
     // ReplaceKeybindingOverrideSet atomically replaces the complete persisted layer.
     ReplaceKeybindingOverrideSetOp replace_keybinding_override_set = 8;
+    // UpsertAccountSession applies an explicitly authorized Session enrollment or revocation.
+    AccountSession upsert_account_session = 9;
+    // UpsertCatalogEntry publishes an object or its permanent deletion tombstone.
+    AccountCatalogEntry upsert_catalog_entry = 10;
   }
 }
 

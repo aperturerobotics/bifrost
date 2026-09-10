@@ -6,7 +6,6 @@ import (
 	"maps"
 
 	"github.com/pkg/errors"
-	account_settings "github.com/s4wave/spacewave/core/account/settings"
 	sobject "github.com/s4wave/spacewave/core/sobject"
 	"github.com/s4wave/spacewave/core/transport"
 	"github.com/s4wave/spacewave/net/peer"
@@ -27,13 +26,27 @@ func (a *ProviderAccount) AutoStartP2PSyncIfNeeded(
 		return nil
 	}
 
-	devices, err := a.readPairedDevices(ctx)
+	settings, err := a.readAccountSettings(ctx)
 	if err != nil {
 		if isAutoStartReadCanceled(err) {
 			return nil
 		}
 		a.le.WithError(err).Warn("failed to read paired devices for auto-start")
 		return nil
+	}
+	devices := settings.GetPairedDevices()
+	var accountPeers []peer.ID
+	if self := settings.FindAccountSession(st.GetPeerID().String()); self != nil && !self.GetRevoked() {
+		for _, member := range settings.GetSessions() {
+			if member.GetRevoked() || member.GetPeerId() == st.GetPeerID().String() {
+				continue
+			}
+			remote, _, err := peer.ParsePeerIDWithPubKey(member.GetPeerId())
+			if err != nil {
+				return err
+			}
+			accountPeers = append(accountPeers, remote)
+		}
 	}
 	sharedSpaceCount := 0
 	invitedPeers := make(map[string]struct{})
@@ -84,7 +97,7 @@ func (a *ProviderAccount) AutoStartP2PSyncIfNeeded(
 			}
 		}
 	}
-	if len(devices) == 0 && sharedSpaceCount == 0 {
+	if len(devices) == 0 && len(accountPeers) == 0 && sharedSpaceCount == 0 {
 		return nil
 	}
 
@@ -94,6 +107,11 @@ func (a *ProviderAccount) AutoStartP2PSyncIfNeeded(
 	}).Debug("auto-starting P2P sync")
 	if err := a.StartPersistentP2PSync(ctx, st); err != nil {
 		return errors.Wrap(err, "auto-start P2P sync")
+	}
+	for _, remote := range accountPeers {
+		if err := a.RetainP2PPeer(ctx, remote); err != nil {
+			return errors.Wrap(err, "restore account Session")
+		}
 	}
 	// Both targeted peers retain the link so deterministic WebRTC offers can start.
 	for target := range invitedPeers {
@@ -117,6 +135,9 @@ func (a *ProviderAccount) AutoStartP2PSyncIfNeeded(
 		if err != nil {
 			return errors.Wrap(err, "parse paired Device peer id")
 		}
+		if remotePeerID == st.GetPeerID() {
+			continue
+		}
 		// The Device dials the owner through its one-use invite; the owner
 		// must not dial a device that has not connected once in this process.
 		if _, pending := pendingEnroll[remotePeerID.String()]; pending {
@@ -128,56 +149,6 @@ func (a *ProviderAccount) AutoStartP2PSyncIfNeeded(
 		}
 	}
 	return nil
-}
-
-// readPairedDevices mounts the account settings SO and returns its current
-// paired_devices list. Returns an empty slice when the SO has no state yet.
-func (a *ProviderAccount) readPairedDevices(
-	ctx context.Context,
-) ([]*account_settings.PairedDevice, error) {
-	ref, err := a.GetAccountSettingsRef(ctx)
-	if err != nil {
-		if err == sobject.ErrSharedObjectNotFound {
-			return nil, nil
-		}
-		return nil, errors.Wrap(err, "get account settings ref")
-	}
-
-	so, relSO, err := a.MountSharedObject(ctx, ref, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "mount account settings")
-	}
-	defer relSO()
-
-	localSO, ok := so.(*SharedObject)
-	if !ok {
-		return nil, errors.New("unexpected shared object type")
-	}
-
-	stateCtr, relStateCtr, err := localSO.AccessSharedObjectState(ctx, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "access account settings state")
-	}
-	defer relStateCtr()
-
-	snap, err := stateCtr.WaitValue(ctx, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "wait for account settings snapshot")
-	}
-	rootInner, err := snap.GetRootInner(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "decode account settings root inner")
-	}
-	if rootInner == nil {
-		return nil, nil
-	}
-	settings := &account_settings.AccountSettings{}
-	if data := rootInner.GetStateData(); len(data) > 0 {
-		if err := settings.UnmarshalVT(data); err != nil {
-			return nil, errors.Wrap(err, "unmarshal account settings state")
-		}
-	}
-	return settings.GetPairedDevices(), nil
 }
 
 func isAutoStartReadCanceled(err error) bool {

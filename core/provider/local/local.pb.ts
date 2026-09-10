@@ -8,10 +8,45 @@ import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import {
   QueuedSOOperation,
+  SharedObjectListEntry,
+  SOJoinResponse,
   SOOperationResult,
+  SOState,
 } from '../../sobject/sobject.pb.js'
+import { SessionRef } from '../../session/session.pb.js'
+import { ObjectRef } from '../../../db/bucket/bucket.pb.js'
 
 export const protobufPackage = 'provider.local'
+
+/**
+ * AccountReplicaObjectRequest selects an object within a known canonical account.
+ *
+ * @generated from message provider.local.AccountReplicaObjectRequest
+ */
+export interface AccountReplicaObjectRequest {
+  /**
+   * SettingsId binds the request to the already enrolled account settings object.
+   *
+   * @generated from field: string settings_id = 1;
+   */
+  settingsId?: string
+  /**
+   * ObjectId selects a live entry in that account's catalog.
+   *
+   * @generated from field: string object_id = 2;
+   */
+  objectId?: string
+}
+
+export const AccountReplicaObjectRequest: MessageType<AccountReplicaObjectRequest> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'provider.local.AccountReplicaObjectRequest',
+    fields: [
+      { no: 1, name: 'settings_id', kind: 'scalar', T: ScalarType.STRING },
+      { no: 2, name: 'object_id', kind: 'scalar', T: ScalarType.STRING },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
 
 /**
  * Config configures the local space provider controller.
@@ -163,6 +198,12 @@ export interface PairingConfirmMessage {
    * @generated from field: bool rejected = 2;
    */
   rejected?: boolean
+  /**
+   * OperationContext binds approval to the selected account and both receiving keys.
+   *
+   * @generated from field: string operation_context = 3;
+   */
+  operationContext?: string
 }
 
 export const PairingConfirmMessage: MessageType<PairingConfirmMessage> =
@@ -171,6 +212,302 @@ export const PairingConfirmMessage: MessageType<PairingConfirmMessage> =
     fields: [
       { no: 1, name: 'confirmed', kind: 'scalar', T: ScalarType.BOOL },
       { no: 2, name: 'rejected', kind: 'scalar', T: ScalarType.BOOL },
+      {
+        no: 3,
+        name: 'operation_context',
+        kind: 'scalar',
+        T: ScalarType.STRING,
+      },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
+ * PairingAccount identifies the account offered over an authenticated pairing stream.
+ *
+ * @generated from message provider.local.PairingAccount
+ */
+export interface PairingAccount {
+  /**
+   * AccountId is the logical local ProviderAccount shared by its replicas.
+   *
+   * @generated from field: string account_id = 1;
+   */
+  accountId?: string
+  /**
+   * SettingsId is the canonical account settings SharedObject.
+   *
+   * @generated from field: string settings_id = 2;
+   */
+  settingsId?: string
+  /**
+   * OperationId binds enrollment proofs to this pairing attempt.
+   *
+   * @generated from field: string operation_id = 3;
+   */
+  operationId?: string
+  /**
+   * StoragePeerId is the source account's storage participant identity.
+   *
+   * @generated from field: string storage_peer_id = 4;
+   */
+  storagePeerId?: string
+  /**
+   * DisplayName identifies the offered account in the approval screen.
+   *
+   * @generated from field: string display_name = 5;
+   */
+  displayName?: string
+}
+
+export const PairingAccount: MessageType<PairingAccount> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'provider.local.PairingAccount',
+    fields: [
+      { no: 1, name: 'account_id', kind: 'scalar', T: ScalarType.STRING },
+      { no: 2, name: 'settings_id', kind: 'scalar', T: ScalarType.STRING },
+      { no: 3, name: 'operation_id', kind: 'scalar', T: ScalarType.STRING },
+      { no: 4, name: 'storage_peer_id', kind: 'scalar', T: ScalarType.STRING },
+      { no: 5, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
+ * PairingIdentity proves possession of the receiving Session and storage keys.
+ *
+ * @generated from message provider.local.PairingIdentity
+ */
+export interface PairingIdentity {
+  /**
+   * SessionRef is the independently generated receiving Session.
+   *
+   * @generated from field: session.SessionRef session_ref = 1;
+   */
+  sessionRef?: SessionRef
+  /**
+   * SessionProof binds the receiving Session key to the offered operation.
+   *
+   * @generated from field: sobject.SOJoinResponse session_proof = 2;
+   */
+  sessionProof?: SOJoinResponse
+  /**
+   * StorageProof binds the replica volume key to the same operation.
+   *
+   * @generated from field: sobject.SOJoinResponse storage_proof = 3;
+   */
+  storageProof?: SOJoinResponse
+}
+
+export const PairingIdentity: MessageType<PairingIdentity> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'provider.local.PairingIdentity',
+    fields: [
+      { no: 1, name: 'session_ref', kind: 'message', T: () => SessionRef },
+      {
+        no: 2,
+        name: 'session_proof',
+        kind: 'message',
+        T: () => SOJoinResponse,
+      },
+      {
+        no: 3,
+        name: 'storage_proof',
+        kind: 'message',
+        T: () => SOJoinResponse,
+      },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
+ * PairingSharedObject carries one authorized bootstrap checkpoint.
+ *
+ * @generated from message provider.local.PairingSharedObject
+ */
+export interface PairingSharedObject {
+  /**
+   * Entry describes the object's identity and body type.
+   *
+   * @generated from field: sobject.SharedObjectListEntry entry = 1;
+   */
+  entry?: SharedObjectListEntry
+  /**
+   * State is accepted only through the SharedObject host's enrollment contract.
+   *
+   * @generated from field: sobject.SOState state = 2;
+   */
+  state?: SOState
+}
+
+export const PairingSharedObject: MessageType<PairingSharedObject> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'provider.local.PairingSharedObject',
+    fields: [
+      { no: 1, name: 'entry', kind: 'message', T: () => SharedObjectListEntry },
+      { no: 2, name: 'state', kind: 'message', T: () => SOState },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
+ * PairingFrame carries the ordered account enrollment exchange.
+ *
+ * @generated from message provider.local.PairingFrame
+ */
+export interface PairingFrame {
+  /**
+   * @generated from oneof provider.local.PairingFrame.body
+   */
+  body?:
+    | {
+        value?: undefined
+        case: undefined
+      }
+    | {
+        /**
+         * Account offers an existing account before user approval.
+         *
+         * @generated from field: provider.local.PairingAccount account = 1;
+         */
+        value: PairingAccount
+        case: 'account'
+      }
+    | {
+        /**
+         * Identity supplies the receiving client identities before approval.
+         *
+         * @generated from field: provider.local.PairingIdentity identity = 2;
+         */
+        value: PairingIdentity
+        case: 'identity'
+      }
+    | {
+        /**
+         * Object transfers an authorized object after bilateral approval.
+         *
+         * @generated from field: provider.local.PairingSharedObject object = 3;
+         */
+        value: PairingSharedObject
+        case: 'object'
+      }
+    | {
+        /**
+         * Complete ends object transfer or acknowledges durable enrollment.
+         *
+         * @generated from field: bool complete = 4;
+         */
+        value: boolean
+        case: 'complete'
+      }
+    | {
+        /**
+         * Error terminates enrollment with a reason visible to both clients.
+         *
+         * @generated from field: string error = 5;
+         */
+        value: string
+        case: 'error'
+      }
+}
+
+export const PairingFrame: MessageType<PairingFrame> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'provider.local.PairingFrame',
+    fields: [
+      {
+        no: 1,
+        name: 'account',
+        kind: 'message',
+        T: () => PairingAccount,
+        oneof: 'body',
+      },
+      {
+        no: 2,
+        name: 'identity',
+        kind: 'message',
+        T: () => PairingIdentity,
+        oneof: 'body',
+      },
+      {
+        no: 3,
+        name: 'object',
+        kind: 'message',
+        T: () => PairingSharedObject,
+        oneof: 'body',
+      },
+      {
+        no: 4,
+        name: 'complete',
+        kind: 'scalar',
+        T: ScalarType.BOOL,
+        oneof: 'body',
+      },
+      {
+        no: 5,
+        name: 'error',
+        kind: 'scalar',
+        T: ScalarType.STRING,
+        oneof: 'body',
+      },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
+ * AccountReplicaCopyState records local durability for one accepted World head.
+ *
+ * @generated from message provider.local.AccountReplicaCopyState
+ */
+export interface AccountReplicaCopyState {
+  /**
+   * ObjectId identifies the SharedObject within this ProviderAccount.
+   *
+   * @generated from field: string object_id = 1;
+   */
+  objectId?: string
+  /**
+   * Head is the exact accepted World root being copied.
+   *
+   * @generated from field: bucket.ObjectRef head = 2;
+   */
+  head?: ObjectRef
+  /**
+   * Blocks is the number of distinct blocks copied for this head.
+   *
+   * @generated from field: uint64 blocks = 3;
+   */
+  blocks?: bigint
+  /**
+   * Bytes is the at-rest size of those blocks, including local cache hits.
+   *
+   * @generated from field: uint64 bytes = 4;
+   */
+  bytes?: bigint
+  /**
+   * Complete is set only after all reachable blocks cross the durability fence.
+   *
+   * @generated from field: bool complete = 5;
+   */
+  complete?: boolean
+  /**
+   * Error describes why this head could not finish; a later attempt resumes from local blocks.
+   *
+   * @generated from field: string error = 6;
+   */
+  error?: string
+}
+
+export const AccountReplicaCopyState: MessageType<AccountReplicaCopyState> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'provider.local.AccountReplicaCopyState',
+    fields: [
+      { no: 1, name: 'object_id', kind: 'scalar', T: ScalarType.STRING },
+      { no: 2, name: 'head', kind: 'message', T: () => ObjectRef },
+      { no: 3, name: 'blocks', kind: 'scalar', T: ScalarType.UINT64 },
+      { no: 4, name: 'bytes', kind: 'scalar', T: ScalarType.UINT64 },
+      { no: 5, name: 'complete', kind: 'scalar', T: ScalarType.BOOL },
+      { no: 6, name: 'error', kind: 'scalar', T: ScalarType.STRING },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })

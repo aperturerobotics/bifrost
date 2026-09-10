@@ -208,9 +208,9 @@ func TestBuildLocalSyncStatusSnapshotWaitsForP2P(t *testing.T) {
 		session: &testSyncStatusSession{acc: acc},
 	}
 
-	_, waitChs := res.buildLocalSyncStatusSnapshot(acc)
-	if len(waitChs) != 3 {
-		t.Fatalf("wait channel count = %d, want 3", len(waitChs))
+	_, waitChs := res.buildLocalSyncStatusSnapshot(acc, nil, time.Now())
+	if len(waitChs) != 5 {
+		t.Fatalf("wait channel count = %d, want 5", len(waitChs))
 	}
 }
 

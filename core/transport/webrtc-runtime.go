@@ -69,8 +69,7 @@ func (t *SessionTransport) startWebRTCControllers(
 					{Urls: []string{"stun:stun.l.google.com:19302"}},
 				},
 			},
-			AllPeers:                true,
-			AllPeersLowerPeerOffers: true,
+			AllPeers: true,
 		}),
 		nil,
 	)

@@ -2,6 +2,22 @@ syntax = "proto3";
 package provider.local;
 
 import "github.com/s4wave/spacewave/core/sobject/sobject.proto";
+import "github.com/s4wave/spacewave/core/session/session.proto";
+import "github.com/s4wave/spacewave/db/bucket/bucket.proto";
+
+// AccountReplicaService serves checkpoints to authenticated account Sessions.
+service AccountReplicaService {
+  // FetchObject authorizes the caller's registered storage identity and exports a checkpoint.
+  rpc FetchObject(AccountReplicaObjectRequest) returns (PairingSharedObject);
+}
+
+// AccountReplicaObjectRequest selects an object within a known canonical account.
+message AccountReplicaObjectRequest {
+  // SettingsId binds the request to the already enrolled account settings object.
+  string settings_id = 1;
+  // ObjectId selects a live entry in that account's catalog.
+  string object_id = 2;
+}
 
 // Config configures the local space provider controller.
 message Config {
@@ -50,4 +66,70 @@ message PairingConfirmMessage {
   bool confirmed = 1;
   // Rejected indicates the user rejected the SAS emoji match.
   bool rejected = 2;
+  // OperationContext binds approval to the selected account and both receiving keys.
+  string operation_context = 3;
+}
+
+// PairingAccount identifies the account offered over an authenticated pairing stream.
+message PairingAccount {
+  // AccountId is the logical local ProviderAccount shared by its replicas.
+  string account_id = 1;
+  // SettingsId is the canonical account settings SharedObject.
+  string settings_id = 2;
+  // OperationId binds enrollment proofs to this pairing attempt.
+  string operation_id = 3;
+  // StoragePeerId is the source account's storage participant identity.
+  string storage_peer_id = 4;
+  // DisplayName identifies the offered account in the approval screen.
+  string display_name = 5;
+}
+
+// PairingIdentity proves possession of the receiving Session and storage keys.
+message PairingIdentity {
+  // SessionRef is the independently generated receiving Session.
+  .session.SessionRef session_ref = 1;
+  // SessionProof binds the receiving Session key to the offered operation.
+  .sobject.SOJoinResponse session_proof = 2;
+  // StorageProof binds the replica volume key to the same operation.
+  .sobject.SOJoinResponse storage_proof = 3;
+}
+
+// PairingSharedObject carries one authorized bootstrap checkpoint.
+message PairingSharedObject {
+  // Entry describes the object's identity and body type.
+  .sobject.SharedObjectListEntry entry = 1;
+  // State is accepted only through the SharedObject host's enrollment contract.
+  .sobject.SOState state = 2;
+}
+
+// PairingFrame carries the ordered account enrollment exchange.
+message PairingFrame {
+  oneof body {
+    // Account offers an existing account before user approval.
+    PairingAccount account = 1;
+    // Identity supplies the receiving client identities before approval.
+    PairingIdentity identity = 2;
+    // Object transfers an authorized object after bilateral approval.
+    PairingSharedObject object = 3;
+    // Complete ends object transfer or acknowledges durable enrollment.
+    bool complete = 4;
+    // Error terminates enrollment with a reason visible to both clients.
+    string error = 5;
+  }
+}
+
+// AccountReplicaCopyState records local durability for one accepted World head.
+message AccountReplicaCopyState {
+  // ObjectId identifies the SharedObject within this ProviderAccount.
+  string object_id = 1;
+  // Head is the exact accepted World root being copied.
+  .bucket.ObjectRef head = 2;
+  // Blocks is the number of distinct blocks copied for this head.
+  uint64 blocks = 3;
+  // Bytes is the at-rest size of those blocks, including local cache hits.
+  uint64 bytes = 4;
+  // Complete is set only after all reachable blocks cross the durability fence.
+  bool complete = 5;
+  // Error describes why this head could not finish; a later attempt resumes from local blocks.
+  string error = 6;
 }

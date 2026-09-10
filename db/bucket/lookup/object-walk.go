@@ -133,6 +133,8 @@ func WalkObjectBlocks(
 	if root == nil {
 		return nil
 	}
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	errCh := make(chan error, 1)
 	handleErr := func(err error) {
 		select {
@@ -148,7 +150,24 @@ func WalkObjectBlocks(
 		maxConcurrency,
 		alwaysDecode,
 	)
-	return queue.WaitIdle(ctx, errCh)
+	err := queue.WaitIdle(ctx, errCh)
+	if err == nil {
+		err = ctx.Err()
+	}
+	cancel()
+	// Join callbacks before releasing the caller's stores or callback state.
+	// Idle and the last worker's error can arrive together; inspect that
+	// buffered error after joining even when WaitIdle observed idle first.
+	_ = queue.WaitIdle(context.WithoutCancel(ctx), nil)
+	if err != nil {
+		return err
+	}
+	select {
+	case err := <-errCh:
+		return err
+	default:
+		return nil
+	}
 }
 
 // walkState contains state for walking a tree of blocks.

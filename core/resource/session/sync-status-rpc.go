@@ -2,6 +2,8 @@ package resource_session
 
 import (
 	"context"
+	"slices"
+	"strings"
 	"time"
 
 	timestamppb "github.com/aperturerobotics/protobuf-go-lite/types/known/timestamppb"
@@ -10,6 +12,8 @@ import (
 	provider_local "github.com/s4wave/spacewave/core/provider/local"
 	provider_spacewave "github.com/s4wave/spacewave/core/provider/spacewave"
 	"github.com/s4wave/spacewave/core/session"
+	"github.com/s4wave/spacewave/core/sobject"
+	"github.com/s4wave/spacewave/core/space"
 	s4wave_session "github.com/s4wave/spacewave/sdk/session"
 )
 
@@ -66,7 +70,7 @@ func (r *SessionResource) buildSyncStatusSnapshot(
 	case *provider_spacewave.ProviderAccount:
 		return r.buildSpacewaveSyncStatusSnapshot(acc, rate, now)
 	case *provider_local.ProviderAccount:
-		return r.buildLocalSyncStatusSnapshot(acc)
+		return r.buildLocalSyncStatusSnapshot(acc, rate, now)
 	default:
 		return &s4wave_session.WatchSyncStatusResponse{
 			State:          s4wave_session.SyncStatusState_SyncStatusState_SYNCED,
@@ -101,6 +105,8 @@ func (r *SessionResource) buildSpacewaveSyncStatusSnapshot(
 
 func (r *SessionResource) buildLocalSyncStatusSnapshot(
 	acc *provider_local.ProviderAccount,
+	rate *syncStatusRateState,
+	now time.Time,
 ) (*s4wave_session.WatchSyncStatusResponse, []<-chan struct{}) {
 	var pairingCh <-chan struct{}
 	var pairing provider_local.PairingSnapshot
@@ -110,8 +116,76 @@ func (r *SessionResource) buildLocalSyncStatusSnapshot(
 	})
 	transportRunning, transportCh := acc.GetTransportSnapshotWithWait()
 	p2pRunning, p2pCh := acc.GetP2PSyncSnapshotWithWait()
-	return syncStatusFromLocalState(pairing, transportRunning, p2pRunning),
-		[]<-chan struct{}{pairingCh, transportCh, p2pCh}
+	resp := syncStatusFromLocalState(pairing, transportRunning, p2pRunning)
+	resp.LocalAccount = true
+	progress, copyCh := acc.GetAccountCopyProgress()
+	var inventory *sobject.SharedObjectList
+	if p2pRunning {
+		inventory = acc.GetSOListCtr().GetValue()
+	}
+	for _, entry := range inventory.GetSharedObjects() {
+		if entry.GetMeta().GetBodyType() != "space" {
+			continue
+		}
+		item := &s4wave_session.SyncLocalCopyStatus{
+			SharedObjectId: entry.GetRef().GetProviderResourceRef().GetId(),
+			DisplayName:    "Space",
+		}
+		meta := &space.SpaceSoMeta{}
+		if err := meta.UnmarshalVT(entry.GetMeta().GetBodyMeta()); err == nil && meta.GetName() != "" {
+			item.DisplayName = meta.GetName()
+		}
+		for _, current := range progress {
+			if current.GetObjectId() == item.SharedObjectId {
+				item.Blocks, item.Bytes = current.GetBlocks(), current.GetBytes()
+				item.Complete, item.Error = current.GetComplete(), current.GetError()
+				break
+			}
+		}
+		resp.LocalCopies = append(resp.LocalCopies, item)
+		if !item.Complete {
+			resp.PendingDownloadCount++
+		}
+	}
+	slices.SortFunc(resp.LocalCopies, func(a, b *s4wave_session.SyncLocalCopyStatus) int {
+		if a.DisplayName != b.DisplayName {
+			return strings.Compare(a.DisplayName, b.DisplayName)
+		}
+		return strings.Compare(a.SharedObjectId, b.SharedObjectId)
+	})
+	traffic, waits := acc.GetAccountTransferSnapshot()
+	for _, peer := range traffic.Peers {
+		if peer.Connected {
+			resp.ActivePeerCount++
+		}
+		resp.Peers = append(resp.Peers, &s4wave_session.SyncPeerTransferStatus{
+			PeerId: peer.PeerID, UploadedBytes: peer.UploadedBytes, DownloadedBytes: peer.DownloadedBytes, Connected: peer.Connected,
+		})
+	}
+	resp.PeerUploadBytes, resp.PeerDownloadBytes = traffic.UploadedBytes, traffic.DownloadedBytes
+	if !traffic.LastActivity.IsZero() {
+		resp.LastActivityAt = timestamppb.New(traffic.LastActivity)
+	}
+	if resp.PendingDownloadCount > 0 || now.Sub(traffic.LastActivity) < 2*syncStatusRateWindow {
+		resp.State = s4wave_session.SyncStatusState_SyncStatusState_ACTIVE
+	}
+	if rate != nil {
+		rate.apply(resp, syncStatusCounters{uploadBytes: int64(traffic.UploadedBytes), downloadBytes: int64(traffic.DownloadedBytes)}, now)
+	}
+	if resp.UploadBytesPerSecond > 0 {
+		resp.Direction = s4wave_session.SyncActivityDirection_SyncActivityDirection_UPLOAD
+	}
+	if resp.DownloadBytesPerSecond > 0 || resp.PendingDownloadCount > 0 {
+		if resp.Direction == s4wave_session.SyncActivityDirection_SyncActivityDirection_UPLOAD {
+			resp.Direction = s4wave_session.SyncActivityDirection_SyncActivityDirection_UPLOAD_DOWNLOAD
+		} else {
+			resp.Direction = s4wave_session.SyncActivityDirection_SyncActivityDirection_DOWNLOAD
+		}
+	}
+	if resp.ActivePeerCount == 0 {
+		resp.P2PState = s4wave_session.SyncP2PState_SyncP2PState_NO_PEERS
+	}
+	return resp, append(waits, pairingCh, transportCh, p2pCh, copyCh)
 }
 
 func syncStatusFromSpacewaveTelemetry(
@@ -379,7 +453,14 @@ func (s *syncStatusRateState) apply(
 }
 
 func waitSyncStatus(ctx context.Context, waitChs []<-chan struct{}) error {
-	return broadcast.WaitAny(ctx, waitChs...)
+	// Sample rates and clear stale activity even after the final transfer.
+	waitCtx, cancel := context.WithTimeout(ctx, syncStatusRateWindow)
+	defer cancel()
+	err := broadcast.WaitAny(waitCtx, waitChs...)
+	if ctx.Err() == nil && waitCtx.Err() == context.DeadlineExceeded {
+		return nil
+	}
+	return err
 }
 
 func bytesPerSecond(delta int64, elapsed time.Duration) uint64 {

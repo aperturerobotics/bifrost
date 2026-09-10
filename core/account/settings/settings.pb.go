@@ -12,6 +12,7 @@ import (
 	protobuf_go_lite "github.com/aperturerobotics/protobuf-go-lite"
 	json "github.com/aperturerobotics/protobuf-go-lite/json"
 	session "github.com/s4wave/spacewave/core/session"
+	sobject "github.com/s4wave/spacewave/core/sobject"
 	command "github.com/s4wave/spacewave/sdk/command"
 )
 
@@ -31,6 +32,10 @@ type AccountSettings struct {
 	SessionPresentations []*SessionPresentation `protobuf:"bytes,4,rep,name=session_presentations,json=sessionPresentations,proto3" json:"sessionPresentations,omitempty"`
 	// KeybindingOverrides stores account-scope keybinding overrides.
 	KeybindingOverrides *command.KeybindingOverrideSet `protobuf:"bytes,5,opt,name=keybinding_overrides,json=keybindingOverrides,proto3" json:"keybindingOverrides,omitempty"`
+	// Sessions binds each approved account Session to its replica's storage identity.
+	Sessions []*AccountSession `protobuf:"bytes,6,rep,name=sessions,proto3" json:"sessions,omitempty"`
+	// Catalog names account objects. Checkpoints require separate authenticated enrollment.
+	Catalog []*AccountCatalogEntry `protobuf:"bytes,7,rep,name=catalog,proto3" json:"catalog,omitempty"`
 }
 
 func (x *AccountSettings) Reset() {
@@ -72,6 +77,97 @@ func (x *AccountSettings) GetKeybindingOverrides() *command.KeybindingOverrideSe
 		return x.KeybindingOverrides
 	}
 	return nil
+}
+
+func (x *AccountSettings) GetSessions() []*AccountSession {
+	if x != nil {
+		return x.Sessions
+	}
+	return nil
+}
+
+func (x *AccountSettings) GetCatalog() []*AccountCatalogEntry {
+	if x != nil {
+		return x.Catalog
+	}
+	return nil
+}
+
+// AccountSession is an approved account replica, distinct from a managed Device.
+type AccountSession struct {
+	unknownFields []byte
+	// PeerId is the independently generated Session's transport identity.
+	PeerId string `protobuf:"bytes,1,opt,name=peer_id,json=peerId,proto3" json:"peerId,omitempty"`
+	// StoragePeerId identifies the replica's SharedObject signing and encryption key.
+	StoragePeerId string `protobuf:"bytes,2,opt,name=storage_peer_id,json=storagePeerId,proto3" json:"storagePeerId,omitempty"`
+	// Revoked retains the binding after access is withdrawn.
+	Revoked bool `protobuf:"varint,3,opt,name=revoked,proto3" json:"revoked,omitempty"`
+	// RevokedByStoragePeerId owns the signed configuration changes for revocation.
+	// Other replicas import that writer's lineage instead of signing competing changes.
+	RevokedByStoragePeerId string `protobuf:"bytes,4,opt,name=revoked_by_storage_peer_id,json=revokedByStoragePeerId,proto3" json:"revokedByStoragePeerId,omitempty"`
+}
+
+func (x *AccountSession) Reset() {
+	*x = AccountSession{}
+}
+
+func (*AccountSession) ProtoMessage() {}
+
+func (x *AccountSession) GetPeerId() string {
+	if x != nil {
+		return x.PeerId
+	}
+	return ""
+}
+
+func (x *AccountSession) GetStoragePeerId() string {
+	if x != nil {
+		return x.StoragePeerId
+	}
+	return ""
+}
+
+func (x *AccountSession) GetRevoked() bool {
+	if x != nil {
+		return x.Revoked
+	}
+	return false
+}
+
+func (x *AccountSession) GetRevokedByStoragePeerId() string {
+	if x != nil {
+		return x.RevokedByStoragePeerId
+	}
+	return ""
+}
+
+// AccountCatalogEntry records one account object or its durable deletion.
+type AccountCatalogEntry struct {
+	unknownFields []byte
+	// Entry identifies the object and its presentation metadata.
+	Entry *sobject.SharedObjectListEntry `protobuf:"bytes,1,opt,name=entry,proto3" json:"entry,omitempty"`
+	// Deleted prevents an offline replica from rediscovering a removed object.
+	Deleted bool `protobuf:"varint,2,opt,name=deleted,proto3" json:"deleted,omitempty"`
+}
+
+func (x *AccountCatalogEntry) Reset() {
+	*x = AccountCatalogEntry{}
+}
+
+func (*AccountCatalogEntry) ProtoMessage() {}
+
+func (x *AccountCatalogEntry) GetEntry() *sobject.SharedObjectListEntry {
+	if x != nil {
+		return x.Entry
+	}
+	return nil
+}
+
+func (x *AccountCatalogEntry) GetDeleted() bool {
+	if x != nil {
+		return x.Deleted
+	}
+	return false
 }
 
 // PairedDevice is a device that has been paired with this account via P2P.
@@ -190,6 +286,8 @@ type AccountSettingsOp struct {
 	//	*AccountSettingsOp_UpsertSessionPresentation
 	//	*AccountSettingsOp_RemoveSessionPresentation
 	//	*AccountSettingsOp_ReplaceKeybindingOverrideSet
+	//	*AccountSettingsOp_UpsertAccountSession
+	//	*AccountSettingsOp_UpsertCatalogEntry
 	Op isAccountSettingsOp_Op `protobuf_oneof:"op"`
 }
 
@@ -262,6 +360,20 @@ func (x *AccountSettingsOp) GetReplaceKeybindingOverrideSet() *ReplaceKeybinding
 	return nil
 }
 
+func (x *AccountSettingsOp) GetUpsertAccountSession() *AccountSession {
+	if x, ok := x.GetOp().(*AccountSettingsOp_UpsertAccountSession); ok {
+		return x.UpsertAccountSession
+	}
+	return nil
+}
+
+func (x *AccountSettingsOp) GetUpsertCatalogEntry() *AccountCatalogEntry {
+	if x, ok := x.GetOp().(*AccountSettingsOp_UpsertCatalogEntry); ok {
+		return x.UpsertCatalogEntry
+	}
+	return nil
+}
+
 type isAccountSettingsOp_Op interface {
 	isAccountSettingsOp_Op()
 }
@@ -306,6 +418,16 @@ type AccountSettingsOp_ReplaceKeybindingOverrideSet struct {
 	ReplaceKeybindingOverrideSet *ReplaceKeybindingOverrideSetOp `protobuf:"bytes,8,opt,name=replace_keybinding_override_set,json=replaceKeybindingOverrideSet,proto3,oneof"`
 }
 
+type AccountSettingsOp_UpsertAccountSession struct {
+	// UpsertAccountSession applies an explicitly authorized Session enrollment or revocation.
+	UpsertAccountSession *AccountSession `protobuf:"bytes,9,opt,name=upsert_account_session,json=upsertAccountSession,proto3,oneof"`
+}
+
+type AccountSettingsOp_UpsertCatalogEntry struct {
+	// UpsertCatalogEntry publishes an object or its permanent deletion tombstone.
+	UpsertCatalogEntry *AccountCatalogEntry `protobuf:"bytes,10,opt,name=upsert_catalog_entry,json=upsertCatalogEntry,proto3,oneof"`
+}
+
 func (*AccountSettingsOp_UpdateDisplayName) isAccountSettingsOp_Op() {}
 
 func (*AccountSettingsOp_AddPairedDevice) isAccountSettingsOp_Op() {}
@@ -321,6 +443,10 @@ func (*AccountSettingsOp_UpsertSessionPresentation) isAccountSettingsOp_Op() {}
 func (*AccountSettingsOp_RemoveSessionPresentation) isAccountSettingsOp_Op() {}
 
 func (*AccountSettingsOp_ReplaceKeybindingOverrideSet) isAccountSettingsOp_Op() {}
+
+func (*AccountSettingsOp_UpsertAccountSession) isAccountSettingsOp_Op() {}
+
+func (*AccountSettingsOp_UpsertCatalogEntry) isAccountSettingsOp_Op() {}
 
 // ReplaceKeybindingOverrideSetOp applies a complete layer replacement with per-surface conflict detection.
 type ReplaceKeybindingOverrideSetOp struct {
@@ -441,6 +567,8 @@ func (m *AccountSettings) CloneVT() *AccountSettings {
 	r.EntityKeypairs = protobuf_go_lite.CloneVTSlice(m.EntityKeypairs)
 	r.SessionPresentations = protobuf_go_lite.CloneVTSlice(m.SessionPresentations)
 	r.KeybindingOverrides = protobuf_go_lite.CloneVTValue(m.KeybindingOverrides)
+	r.Sessions = protobuf_go_lite.CloneVTSlice(m.Sessions)
+	r.Catalog = protobuf_go_lite.CloneVTSlice(m.Catalog)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -448,6 +576,42 @@ func (m *AccountSettings) CloneVT() *AccountSettings {
 }
 
 func (m *AccountSettings) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *AccountSession) CloneVT() *AccountSession {
+	if m == nil {
+		return (*AccountSession)(nil)
+	}
+	r := new(AccountSession)
+	r.PeerId = m.PeerId
+	r.StoragePeerId = m.StoragePeerId
+	r.Revoked = m.Revoked
+	r.RevokedByStoragePeerId = m.RevokedByStoragePeerId
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *AccountSession) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *AccountCatalogEntry) CloneVT() *AccountCatalogEntry {
+	if m == nil {
+		return (*AccountCatalogEntry)(nil)
+	}
+	r := new(AccountCatalogEntry)
+	r.Deleted = m.Deleted
+	r.Entry = protobuf_go_lite.CloneVTValue(m.Entry)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *AccountCatalogEntry) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
@@ -612,6 +776,32 @@ func (m *AccountSettingsOp_ReplaceKeybindingOverrideSet) CloneOneofVT() isAccoun
 	return m.CloneVT()
 }
 
+func (m *AccountSettingsOp_UpsertAccountSession) CloneVT() *AccountSettingsOp_UpsertAccountSession {
+	if m == nil {
+		return (*AccountSettingsOp_UpsertAccountSession)(nil)
+	}
+	r := new(AccountSettingsOp_UpsertAccountSession)
+	r.UpsertAccountSession = protobuf_go_lite.CloneVTValue(m.UpsertAccountSession)
+	return r
+}
+
+func (m *AccountSettingsOp_UpsertAccountSession) CloneOneofVT() isAccountSettingsOp_Op {
+	return m.CloneVT()
+}
+
+func (m *AccountSettingsOp_UpsertCatalogEntry) CloneVT() *AccountSettingsOp_UpsertCatalogEntry {
+	if m == nil {
+		return (*AccountSettingsOp_UpsertCatalogEntry)(nil)
+	}
+	r := new(AccountSettingsOp_UpsertCatalogEntry)
+	r.UpsertCatalogEntry = protobuf_go_lite.CloneVTValue(m.UpsertCatalogEntry)
+	return r
+}
+
+func (m *AccountSettingsOp_UpsertCatalogEntry) CloneOneofVT() isAccountSettingsOp_Op {
+	return m.CloneVT()
+}
+
 func (m *ReplaceKeybindingOverrideSetOp) CloneVT() *ReplaceKeybindingOverrideSetOp {
 	if m == nil {
 		return (*ReplaceKeybindingOverrideSetOp)(nil)
@@ -714,11 +904,69 @@ func (this *AccountSettings) EqualVT(that *AccountSettings) bool {
 	if !protobuf_go_lite.IsEqualVT(this.KeybindingOverrides, that.KeybindingOverrides) {
 		return false
 	}
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.Sessions, that.Sessions, func() *AccountSession { return &AccountSession{} }) {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.Catalog, that.Catalog, func() *AccountCatalogEntry { return &AccountCatalogEntry{} }) {
+		return false
+	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
 func (this *AccountSettings) EqualMessageVT(thatMsg any) bool {
 	that, ok := thatMsg.(*AccountSettings)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *AccountSession) EqualVT(that *AccountSession) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.PeerId != that.PeerId {
+		return false
+	}
+	if this.StoragePeerId != that.StoragePeerId {
+		return false
+	}
+	if this.Revoked != that.Revoked {
+		return false
+	}
+	if this.RevokedByStoragePeerId != that.RevokedByStoragePeerId {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *AccountSession) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*AccountSession)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *AccountCatalogEntry) EqualVT(that *AccountCatalogEntry) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.Entry, that.Entry) {
+		return false
+	}
+	if this.Deleted != that.Deleted {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *AccountCatalogEntry) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*AccountCatalogEntry)
 	if !ok {
 		return false
 	}
@@ -951,6 +1199,40 @@ func (this *AccountSettingsOp_ReplaceKeybindingOverrideSet) EqualVT(thatIface is
 	return true
 }
 
+func (this *AccountSettingsOp_UpsertAccountSession) EqualVT(thatIface isAccountSettingsOp_Op) bool {
+	that, ok := thatIface.(*AccountSettingsOp_UpsertAccountSession)
+	if !ok {
+		return false
+	}
+	if this == that {
+		return true
+	}
+	if this == nil && that != nil || this != nil && that == nil {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTImplicit(this.UpsertAccountSession, that.UpsertAccountSession, func() *AccountSession { return &AccountSession{} }) {
+		return false
+	}
+	return true
+}
+
+func (this *AccountSettingsOp_UpsertCatalogEntry) EqualVT(thatIface isAccountSettingsOp_Op) bool {
+	that, ok := thatIface.(*AccountSettingsOp_UpsertCatalogEntry)
+	if !ok {
+		return false
+	}
+	if this == that {
+		return true
+	}
+	if this == nil && that != nil || this != nil && that == nil {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTImplicit(this.UpsertCatalogEntry, that.UpsertCatalogEntry, func() *AccountCatalogEntry { return &AccountCatalogEntry{} }) {
+		return false
+	}
+	return true
+}
+
 func (this *ReplaceKeybindingOverrideSetOp) EqualVT(that *ReplaceKeybindingOverrideSetOp) bool {
 	if this == that {
 		return true
@@ -1105,6 +1387,28 @@ func (x *AccountSettings) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("keybindingOverrides")
 		x.KeybindingOverrides.MarshalProtoJSON(s.WithField("keybindingOverrides"))
 	}
+	if len(x.Sessions) > 0 || s.HasField("sessions") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("sessions")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.Sessions {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s.WithField("sessions"))
+		}
+		s.WriteArrayEnd()
+	}
+	if len(x.Catalog) > 0 || s.HasField("catalog") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("catalog")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.Catalog {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s.WithField("catalog"))
+		}
+		s.WriteArrayEnd()
+	}
 	s.WriteObjectEnd()
 }
 
@@ -1186,12 +1490,168 @@ func (x *AccountSettings) UnmarshalProtoJSON(s *json.UnmarshalState) {
 			}
 			x.KeybindingOverrides = &command.KeybindingOverrideSet{}
 			x.KeybindingOverrides.UnmarshalProtoJSON(s.WithField("keybinding_overrides", true))
+		case "sessions":
+			s.AddField("sessions")
+			if s.ReadNil() {
+				x.Sessions = nil
+				return
+			}
+			s.ReadArray(func() {
+				if s.ReadNil() {
+					x.Sessions = append(x.Sessions, nil)
+					return
+				}
+				v := &AccountSession{}
+				v.UnmarshalProtoJSON(s.WithField("sessions", false))
+				if s.Err() != nil {
+					return
+				}
+				x.Sessions = append(x.Sessions, v)
+			})
+		case "catalog":
+			s.AddField("catalog")
+			if s.ReadNil() {
+				x.Catalog = nil
+				return
+			}
+			s.ReadArray(func() {
+				if s.ReadNil() {
+					x.Catalog = append(x.Catalog, nil)
+					return
+				}
+				v := &AccountCatalogEntry{}
+				v.UnmarshalProtoJSON(s.WithField("catalog", false))
+				if s.Err() != nil {
+					return
+				}
+				x.Catalog = append(x.Catalog, v)
+			})
 		}
 	})
 }
 
 // UnmarshalJSON unmarshals the AccountSettings from JSON.
 func (x *AccountSettings) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the AccountSession message to JSON.
+func (x *AccountSession) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.PeerId != "" || s.HasField("peerId") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("peerId")
+		s.WriteString(x.PeerId)
+	}
+	if x.StoragePeerId != "" || s.HasField("storagePeerId") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("storagePeerId")
+		s.WriteString(x.StoragePeerId)
+	}
+	if x.Revoked || s.HasField("revoked") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("revoked")
+		s.WriteBool(x.Revoked)
+	}
+	if x.RevokedByStoragePeerId != "" || s.HasField("revokedByStoragePeerId") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("revokedByStoragePeerId")
+		s.WriteString(x.RevokedByStoragePeerId)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the AccountSession to JSON.
+func (x *AccountSession) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the AccountSession message from JSON.
+func (x *AccountSession) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "peer_id", "peerId":
+			s.AddField("peer_id")
+			x.PeerId = s.ReadString()
+		case "storage_peer_id", "storagePeerId":
+			s.AddField("storage_peer_id")
+			x.StoragePeerId = s.ReadString()
+		case "revoked":
+			s.AddField("revoked")
+			x.Revoked = s.ReadBool()
+		case "revoked_by_storage_peer_id", "revokedByStoragePeerId":
+			s.AddField("revoked_by_storage_peer_id")
+			x.RevokedByStoragePeerId = s.ReadString()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the AccountSession from JSON.
+func (x *AccountSession) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the AccountCatalogEntry message to JSON.
+func (x *AccountCatalogEntry) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Entry != nil || s.HasField("entry") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("entry")
+		x.Entry.MarshalProtoJSON(s.WithField("entry"))
+	}
+	if x.Deleted || s.HasField("deleted") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("deleted")
+		s.WriteBool(x.Deleted)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the AccountCatalogEntry to JSON.
+func (x *AccountCatalogEntry) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the AccountCatalogEntry message from JSON.
+func (x *AccountCatalogEntry) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "entry":
+			if s.ReadNil() {
+				x.Entry = nil
+				return
+			}
+			x.Entry = &sobject.SharedObjectListEntry{}
+			x.Entry.UnmarshalProtoJSON(s.WithField("entry", true))
+		case "deleted":
+			s.AddField("deleted")
+			x.Deleted = s.ReadBool()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the AccountCatalogEntry from JSON.
+func (x *AccountCatalogEntry) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -1377,6 +1837,14 @@ func (x *AccountSettingsOp) MarshalProtoJSON(s *json.MarshalState) {
 			s.WriteMoreIf(&wroteField)
 			s.WriteObjectField("replaceKeybindingOverrideSet")
 			ov.ReplaceKeybindingOverrideSet.MarshalProtoJSON(s.WithField("replaceKeybindingOverrideSet"))
+		case *AccountSettingsOp_UpsertAccountSession:
+			s.WriteMoreIf(&wroteField)
+			s.WriteObjectField("upsertAccountSession")
+			ov.UpsertAccountSession.MarshalProtoJSON(s.WithField("upsertAccountSession"))
+		case *AccountSettingsOp_UpsertCatalogEntry:
+			s.WriteMoreIf(&wroteField)
+			s.WriteObjectField("upsertCatalogEntry")
+			ov.UpsertCatalogEntry.MarshalProtoJSON(s.WithField("upsertCatalogEntry"))
 		}
 	}
 	s.WriteObjectEnd()
@@ -1468,6 +1936,24 @@ func (x *AccountSettingsOp) UnmarshalProtoJSON(s *json.UnmarshalState) {
 			}
 			ov.ReplaceKeybindingOverrideSet = &ReplaceKeybindingOverrideSetOp{}
 			ov.ReplaceKeybindingOverrideSet.UnmarshalProtoJSON(s.WithField("replace_keybinding_override_set", true))
+		case "upsert_account_session", "upsertAccountSession":
+			ov := &AccountSettingsOp_UpsertAccountSession{}
+			x.Op = ov
+			if s.ReadNil() {
+				ov.UpsertAccountSession = nil
+				return
+			}
+			ov.UpsertAccountSession = &AccountSession{}
+			ov.UpsertAccountSession.UnmarshalProtoJSON(s.WithField("upsert_account_session", true))
+		case "upsert_catalog_entry", "upsertCatalogEntry":
+			ov := &AccountSettingsOp_UpsertCatalogEntry{}
+			x.Op = ov
+			if s.ReadNil() {
+				ov.UpsertCatalogEntry = nil
+				return
+			}
+			ov.UpsertCatalogEntry = &AccountCatalogEntry{}
+			ov.UpsertCatalogEntry.UnmarshalProtoJSON(s.WithField("upsert_catalog_entry", true))
 		}
 	})
 }
@@ -1732,6 +2218,30 @@ func (m *AccountSettings) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if len(m.Catalog) > 0 {
+		for iNdEx := len(m.Catalog) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.Catalog[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0x3a
+		}
+	}
+	if len(m.Sessions) > 0 {
+		for iNdEx := len(m.Sessions) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.Sessions[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0x32
+		}
+	}
 	if m.KeybindingOverrides != nil {
 		size, err := m.KeybindingOverrides.MarshalToSizedBufferVT(dAtA[:i])
 		if err != nil {
@@ -1780,6 +2290,105 @@ func (m *AccountSettings) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	}
 	if len(m.DisplayName) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.DisplayName)
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *AccountSession) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *AccountSession) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *AccountSession) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.RevokedByStoragePeerId) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.RevokedByStoragePeerId)
+		i--
+		dAtA[i] = 0x22
+	}
+	if m.Revoked {
+		i = protobuf_go_lite.EncodeBool(dAtA, i, m.Revoked)
+		i--
+		dAtA[i] = 0x18
+	}
+	if len(m.StoragePeerId) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.StoragePeerId)
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.PeerId) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.PeerId)
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *AccountCatalogEntry) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *AccountCatalogEntry) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *AccountCatalogEntry) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.Deleted {
+		i = protobuf_go_lite.EncodeBool(dAtA, i, m.Deleted)
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.Entry != nil {
+		size, err := m.Entry.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -2128,6 +2737,54 @@ func (m *AccountSettingsOp_ReplaceKeybindingOverrideSet) MarshalToSizedBufferVT(
 	return len(dAtA) - i, nil
 }
 
+func (m *AccountSettingsOp_UpsertAccountSession) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *AccountSettingsOp_UpsertAccountSession) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.UpsertAccountSession != nil {
+		size, err := m.UpsertAccountSession.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x4a
+	} else {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, 0)
+		i--
+		dAtA[i] = 0x4a
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *AccountSettingsOp_UpsertCatalogEntry) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *AccountSettingsOp_UpsertCatalogEntry) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.UpsertCatalogEntry != nil {
+		size, err := m.UpsertCatalogEntry.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x52
+	} else {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, 0)
+		i--
+		dAtA[i] = 0x52
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *ReplaceKeybindingOverrideSetOp) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -2351,6 +3008,43 @@ func (m *AccountSettings) SizeVT() (n int) {
 		l = m.KeybindingOverrides.SizeVT()
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
+	for _, e := range m.Sessions {
+		l = e.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	for _, e := range m.Catalog {
+		l = e.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *AccountSession) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.PeerId)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.StoragePeerId)
+	n += protobuf_go_lite.SizeBoolNonZero(1, m.Revoked)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.RevokedByStoragePeerId)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *AccountCatalogEntry) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Entry != nil {
+		l = m.Entry.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += protobuf_go_lite.SizeBoolNonZero(1, m.Deleted)
 	n += len(m.unknownFields)
 	return n
 }
@@ -2517,6 +3211,36 @@ func (m *AccountSettingsOp_ReplaceKeybindingOverrideSet) SizeVT() (n int) {
 	return n
 }
 
+func (m *AccountSettingsOp_UpsertAccountSession) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.UpsertAccountSession != nil {
+		l = m.UpsertAccountSession.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	} else {
+		n += 2
+	}
+	return n
+}
+
+func (m *AccountSettingsOp_UpsertCatalogEntry) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.UpsertCatalogEntry != nil {
+		l = m.UpsertCatalogEntry.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	} else {
+		n += 2
+	}
+	return n
+}
+
 func (m *ReplaceKeybindingOverrideSetOp) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -2626,10 +3350,78 @@ func (x *AccountSettings) MarshalProtoText() string {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "keybinding_overrides")
 		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.KeybindingOverrides)
 	}
+	if len(x.Sessions) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "sessions")
+		for i, v := range x.Sessions {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &AccountSession{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	if len(x.Catalog) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "catalog")
+		for i, v := range x.Catalog {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &AccountCatalogEntry{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
 func (x *AccountSettings) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *AccountSession) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "AccountSession")
+	if x.PeerId != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "peer_id")
+		protobuf_go_lite.TextWriteString(&sb, x.PeerId)
+	}
+	if x.StoragePeerId != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "storage_peer_id")
+		protobuf_go_lite.TextWriteString(&sb, x.StoragePeerId)
+	}
+	if x.Revoked != false {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "revoked")
+		protobuf_go_lite.TextWriteBool(&sb, x.Revoked)
+	}
+	if x.RevokedByStoragePeerId != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "revoked_by_storage_peer_id")
+		protobuf_go_lite.TextWriteString(&sb, x.RevokedByStoragePeerId)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *AccountSession) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *AccountCatalogEntry) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "AccountCatalogEntry")
+	if x.Entry != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "entry")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Entry)
+	}
+	if x.Deleted != false {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "deleted")
+		protobuf_go_lite.TextWriteBool(&sb, x.Deleted)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *AccountCatalogEntry) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -2748,6 +3540,20 @@ func (x *AccountSettingsOp) MarshalProtoText() string {
 			protobuf_go_lite.TextWriteTextMarshaler(&sb, &ReplaceKeybindingOverrideSetOp{})
 		} else {
 			protobuf_go_lite.TextWriteTextMarshaler(&sb, body.ReplaceKeybindingOverrideSet)
+		}
+	case *AccountSettingsOp_UpsertAccountSession:
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "upsert_account_session")
+		if body.UpsertAccountSession == nil {
+			protobuf_go_lite.TextWriteTextMarshaler(&sb, &AccountSession{})
+		} else {
+			protobuf_go_lite.TextWriteTextMarshaler(&sb, body.UpsertAccountSession)
+		}
+	case *AccountSettingsOp_UpsertCatalogEntry:
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "upsert_catalog_entry")
+		if body.UpsertCatalogEntry == nil {
+			protobuf_go_lite.TextWriteTextMarshaler(&sb, &AccountCatalogEntry{})
+		} else {
+			protobuf_go_lite.TextWriteTextMarshaler(&sb, body.UpsertCatalogEntry)
 		}
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
@@ -2915,6 +3721,183 @@ func (m *AccountSettings) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Sessions", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Sessions = append(m.Sessions, &AccountSession{})
+			if err := m.Sessions[len(m.Sessions)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Catalog", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Catalog = append(m.Catalog, &AccountCatalogEntry{})
+			if err := m.Catalog[len(m.Catalog)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *AccountSession) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: AccountSession: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: AccountSession: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PeerId", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.PeerId = v
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StoragePeerId", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.StoragePeerId = v
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Revoked", wireType)
+			}
+			var v bool
+			v, iNdEx, err = protobuf_go_lite.DecodeVarintBool(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Revoked = bool(v)
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RevokedByStoragePeerId", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.RevokedByStoragePeerId = v
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *AccountCatalogEntry) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: AccountCatalogEntry: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: AccountCatalogEntry: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Entry", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Entry == nil {
+				m.Entry = &sobject.SharedObjectListEntry{}
+			}
+			if err := m.Entry.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Deleted", wireType)
+			}
+			var v bool
+			v, iNdEx, err = protobuf_go_lite.DecodeVarintBool(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Deleted = bool(v)
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
@@ -3291,6 +4274,46 @@ func (m *AccountSettingsOp) UnmarshalVT(dAtA []byte) error {
 					return err
 				}
 				m.Op = &AccountSettingsOp_ReplaceKeybindingOverrideSet{ReplaceKeybindingOverrideSet: v}
+			}
+			iNdEx = postIndex
+		case 9:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UpsertAccountSession", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if oneof, ok := m.Op.(*AccountSettingsOp_UpsertAccountSession); ok {
+				if err := oneof.UpsertAccountSession.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+					return err
+				}
+			} else {
+				v := &AccountSession{}
+				if err := v.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+					return err
+				}
+				m.Op = &AccountSettingsOp_UpsertAccountSession{UpsertAccountSession: v}
+			}
+			iNdEx = postIndex
+		case 10:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UpsertCatalogEntry", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if oneof, ok := m.Op.(*AccountSettingsOp_UpsertCatalogEntry); ok {
+				if err := oneof.UpsertCatalogEntry.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+					return err
+				}
+			} else {
+				v := &AccountCatalogEntry{}
+				if err := v.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+					return err
+				}
+				m.Op = &AccountSettingsOp_UpsertCatalogEntry{UpsertCatalogEntry: v}
 			}
 			iNdEx = postIndex
 		default:

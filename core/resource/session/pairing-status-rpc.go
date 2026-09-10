@@ -57,6 +57,9 @@ func pairingSnapshotToProto(snap provider_local.PairingSnapshot) *s4wave_session
 		Code:         snap.Code,
 		Emoji:        snap.Emoji,
 		ErrorMessage: snap.ErrMsg,
+		AccountId:    snap.AccountID,
+		AccountName:  snap.AccountName,
+		Receiving:    snap.Receiving,
 	}
 	if len(snap.RemotePeerID) > 0 {
 		resp.RemotePeerId = snap.RemotePeerID.String()

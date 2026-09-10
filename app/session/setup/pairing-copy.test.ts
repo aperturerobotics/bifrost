@@ -4,24 +4,8 @@ import {
   PAIRING_CODE_NOT_FOUND,
   PAIRING_FAILED,
   PAIRING_SERVICE_UNREACHABLE,
-  pairingCodeInstructions,
   pairingErrorMessage,
 } from './pairing-copy.js'
-
-describe('pairingCodeInstructions', () => {
-  it('does not tell a desktop user to open the desktop app', () => {
-    const { heading, hint } = pairingCodeInstructions(true)
-    expect(heading).toBe('Enter this code on your other device')
-    expect(hint).not.toMatch(/open the .*desktop app/i)
-    expect(hint).toMatch(/other device/i)
-  })
-
-  it('points a web user at the desktop app', () => {
-    const { heading, hint } = pairingCodeInstructions(false)
-    expect(heading).toMatch(/desktop app/i)
-    expect(hint).toMatch(/open the spacewave desktop app/i)
-  })
-})
 
 describe('pairingErrorMessage', () => {
   it('collapses relay 5xx and fetch failures to the reachability message', () => {

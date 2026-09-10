@@ -186,7 +186,19 @@ func (a *ProviderAccount) mountInvitedSO(
 	if soID == "" {
 		return errors.New("invite result has no shared object ID")
 	}
+	return a.mountEnrolledSO(ctx, soID, &sobject.SharedObjectMeta{BodyType: "space"}, "shared", result.SharedObjectState, ownerPeerID)
+}
 
+// mountEnrolledSO persists a checkpoint received through an authorized enrollment
+// exchange. The SharedObject host validates its state and configuration lineage.
+func (a *ProviderAccount) mountEnrolledSO(
+	ctx context.Context,
+	soID string,
+	meta *sobject.SharedObjectMeta,
+	source string,
+	state *sobject.SOState,
+	ownerPeerID peer.ID,
+) error {
 	providerID := a.t.accountInfo.GetProviderId()
 	accountID := a.t.accountInfo.GetProviderAccountId()
 	blockStoreID := SobjectBlockStoreID(soID)
@@ -205,11 +217,11 @@ func (a *ProviderAccount) mountInvitedSO(
 		return errors.New("unexpected shared object type")
 	}
 
-	if err := localSO.soHost.InstallInviteSnapshot(ctx, result.SharedObjectState); err != nil {
+	if err := localSO.soHost.InstallInviteSnapshot(ctx, state); err != nil {
 		return errors.Wrap(err, "install owner shared object state")
 	}
 	// Admission is complete only when body mounts can observe the accepted grant.
-	if err := localSO.lsoHost.waitPublishedConfig(ctx, result.SharedObjectState.GetConfig()); err != nil {
+	if err := localSO.lsoHost.waitPublishedConfig(ctx, state.GetConfig()); err != nil {
 		return errors.Wrap(err, "publish invited shared object state")
 	}
 
@@ -240,11 +252,9 @@ func (a *ProviderAccount) mountInvitedSO(
 
 	soList.SharedObjects = append(soList.SharedObjects, &sobject.SharedObjectListEntry{
 		Ref:             ref.CloneVT(),
-		Source:          "shared",
+		Source:          source,
 		TransportPeerId: ownerPeerID.String(),
-		Meta: &sobject.SharedObjectMeta{
-			BodyType: "space",
-		},
+		Meta:            meta.CloneVT(),
 	})
 	slices.SortFunc(soList.SharedObjects, func(a, b *sobject.SharedObjectListEntry) int {
 		return strings.Compare(a.GetRef().GetProviderResourceRef().GetId(), b.GetRef().GetProviderResourceRef().GetId())

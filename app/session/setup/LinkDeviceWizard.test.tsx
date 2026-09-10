@@ -13,7 +13,8 @@ const mockUseSessionInfo = vi.hoisted(() => vi.fn())
 const mockUsePromise = vi.hoisted(() => vi.fn())
 const mockUseResourceValue = vi.hoisted(() => vi.fn())
 
-vi.mock('@aptre/bldr', () => ({
+vi.mock('@aptre/bldr', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@aptre/bldr')>()),
   isDesktop: true,
 }))
 
@@ -31,7 +32,10 @@ vi.mock('@s4wave/web/contexts/contexts.js', () => ({
   SessionContext: { useContext: vi.fn(() => ({ value: null })) },
 }))
 
-vi.mock('@aptre/bldr-sdk/hooks/useResource.js', () => ({
+vi.mock('@aptre/bldr-sdk/hooks/useResource.js', async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import('@aptre/bldr-sdk/hooks/useResource.js')
+  >()),
   useResourceValue: mockUseResourceValue,
 }))
 
@@ -272,7 +276,7 @@ describe('LinkDeviceWizard', () => {
     fireEvent.change(answerInput, { target: { value: 'answer-payload' } })
     fireEvent.click(screen.getByRole('button', { name: 'Connect' }))
 
-    expect(await screen.findByText('Verification failed')).toBeDefined()
+    expect(await screen.findByText('Pairing failed')).toBeDefined()
     expect(screen.getByText('unsupported cross-NAT topology')).toBeDefined()
     expect(screen.queryByText('Waiting for other device')).toBeNull()
   })

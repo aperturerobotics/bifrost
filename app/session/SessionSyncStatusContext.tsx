@@ -35,6 +35,16 @@ export interface SessionSyncStatusView {
   packIndexCacheLabel: string
   lastActivityLabel: string
   lastError: string
+  localCopies: {
+    id: string
+    name: string
+    status: string
+    detail: string
+    error: string
+  }[]
+  peerUploadLabel: string
+  peerDownloadLabel: string
+  peers: { id: string; name: string; state: string; traffic: string }[]
 }
 
 const loadingView: SessionSyncStatusView = {
@@ -60,6 +70,10 @@ const loadingView: SessionSyncStatusView = {
   packIndexCacheLabel: '0 hits / 0 misses',
   lastActivityLabel: 'No recent activity',
   lastError: '',
+  localCopies: [],
+  peerUploadLabel: '0 B',
+  peerDownloadLabel: '0 B',
+  peers: [],
 }
 
 const SessionSyncStatusContext =
@@ -129,9 +143,24 @@ export function buildSessionSyncStatusView(
   const p2p = snapshot?.p2pState ?? SyncP2PState.SyncP2PState_UNKNOWN
   const lastError = snapshot?.lastError ?? ''
   const visualState = syncVisualState(snapshot, state, direction, lastError)
-  const local = transport === SyncTransportState.SyncTransportState_UNAVAILABLE
-  const summaryLabel = syncSummaryLabel(visualState, direction, local)
-  const detailLabel = syncDetailLabel(visualState, direction, local, lastError)
+  const local =
+    !!snapshot?.localAccount ||
+    transport === SyncTransportState.SyncTransportState_UNAVAILABLE
+  const copies = snapshot?.localCopies ?? []
+  const incomplete = copies.filter((copy) => !copy.complete).length
+  const paused = incomplete > 0 && !snapshot?.activePeerCount
+  let summaryLabel = syncSummaryLabel(visualState, direction, local)
+  let detailLabel = syncDetailLabel(visualState, direction, local, lastError)
+  if (local && copies.length && !lastError) {
+    summaryLabel = incomplete
+      ? paused
+        ? 'Copy paused'
+        : 'Copying Spaces'
+      : 'Available offline'
+    detailLabel = incomplete
+      ? `${copies.length - incomplete} of ${copies.length} Spaces available offline. ${paused ? 'Waiting for a linked Session.' : 'You can use your account while copying continues.'}`
+      : 'The latest received Spaces and their contents are stored on this device.'
+  }
   const uploadRateLabel = formatRate(snapshot?.uploadBytesPerSecond)
   const downloadRateLabel = formatRate(snapshot?.downloadBytesPerSecond)
 
@@ -145,8 +174,16 @@ export function buildSessionSyncStatusView(
     summaryLabel,
     detailLabel,
     ariaLabel: `Session sync status: ${summaryLabel}`,
-    transportLabel: syncTransportLabel(transport),
-    p2pLabel: syncP2PLabel(p2p),
+    transportLabel: local
+      ? transport === SyncTransportState.SyncTransportState_ONLINE
+        ? 'Peer network ready'
+        : 'Peer network offline'
+      : syncTransportLabel(transport),
+    p2pLabel: local
+      ? snapshot?.activePeerCount
+        ? `${snapshot.activePeerCount} linked Session${snapshot.activePeerCount === 1 ? '' : 's'} online`
+        : 'No linked Sessions online'
+      : syncP2PLabel(p2p),
     uploadRateLabel,
     downloadRateLabel,
     pendingUploadLabel: formatBytes(snapshot?.pendingUploadBytes),
@@ -164,6 +201,25 @@ export function buildSessionSyncStatusView(
     packIndexCacheLabel: formatPackIndexCache(snapshot),
     lastActivityLabel: formatLastActivity(snapshot?.lastActivityAt),
     lastError,
+    localCopies: copies.map((copy) => ({
+      id: copy.sharedObjectId ?? '',
+      name: copy.displayName || 'Space',
+      status: copy.complete
+        ? 'Available offline'
+        : copy.error || paused
+          ? 'Waiting to resume'
+          : 'Copying',
+      detail: `${formatBytes(copy.bytes)} stored · ${formatCount(copy.blocks)} blocks`,
+      error: copy.error ?? '',
+    })),
+    peerUploadLabel: formatBytes(snapshot?.peerUploadBytes),
+    peerDownloadLabel: formatBytes(snapshot?.peerDownloadBytes),
+    peers: (snapshot?.peers ?? []).map((peer) => ({
+      id: peer.peerId ?? '',
+      name: `Session …${(peer.peerId ?? '').slice(-8)}`,
+      state: peer.connected ? 'Connected' : 'Offline',
+      traffic: `↑ ${formatBytes(peer.uploadedBytes)} · ↓ ${formatBytes(peer.downloadedBytes)}`,
+    })),
   }
 }
 

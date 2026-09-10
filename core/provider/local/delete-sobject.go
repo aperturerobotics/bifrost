@@ -9,13 +9,32 @@ import (
 
 // DeleteSharedObject deletes the shared object with the given id.
 func (a *ProviderAccount) DeleteSharedObject(ctx context.Context, id string) error {
+	// Publish the deletion first so interrupted cleanup cannot resurrect it.
+	var entry *sobject.SharedObjectListEntry
+	for _, candidate := range a.soListCtr.GetValue().GetSharedObjects() {
+		if candidate.GetRef().GetProviderResourceRef().GetId() == id {
+			entry = candidate
+			break
+		}
+	}
+	if entry == nil {
+		return sobject.ErrSharedObjectNotFound
+	}
+	if err := a.publishAccountCatalogEntry(ctx, entry, true); err != nil {
+		return err
+	}
+
+	// Local cleanup follows the committed account decision.
 	relMtx, err := a.mtx.Lock(ctx)
 	if err != nil {
 		return err
 	}
 	defer relMtx()
 
-	return a.deleteSharedObjectLocked(ctx, id)
+	if err := a.deleteSharedObjectLocked(ctx, id); err != nil && err != sobject.ErrSharedObjectNotFound {
+		return err
+	}
+	return nil
 }
 
 // deleteSharedObjectLocked deletes a shared object. Assumes mtx is locked.

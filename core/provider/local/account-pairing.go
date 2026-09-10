@@ -7,6 +7,7 @@ import (
 	"github.com/aperturerobotics/util/broadcast"
 	"github.com/aperturerobotics/util/routine"
 	"github.com/pkg/errors"
+	"github.com/s4wave/spacewave/core/session"
 	"github.com/s4wave/spacewave/net/crypto"
 	"github.com/s4wave/spacewave/net/link"
 	"github.com/s4wave/spacewave/net/peer"
@@ -34,6 +35,7 @@ const (
 	PairingStatusBothConfirmed       PairingStatus = 10
 	PairingStatusPairingRejected     PairingStatus = 11
 	PairingStatusConfirmationTimeout PairingStatus = 12
+	PairingStatusEnrolling           PairingStatus = 13
 )
 
 // PairingSnapshot is a point-in-time snapshot of pairing state.
@@ -43,6 +45,9 @@ type PairingSnapshot struct {
 	RemotePeerID peer.ID
 	Emoji        []string
 	ErrMsg       string
+	AccountID    string
+	AccountName  string
+	Receiving    bool
 }
 
 // pairingState tracks an active pairing flow on the ProviderAccount.
@@ -61,10 +66,16 @@ type pairingState struct {
 	localConfirmed bool
 	// confirmCh receives the local user's confirmation decision (true = confirmed, false = rejected).
 	confirmCh chan bool
-	// confirmationConsumed records whether the BothConfirmed exchange authorized a pairing.
-	confirmationConsumed bool
 	// direct is true when the active pairing flow uses a direct manual-signal link.
 	direct bool
+	// offering distinguishes the account source from the receiving client.
+	offering bool
+	// accountID is the account selected by the authenticated exchange.
+	accountID string
+	// accountName is the selected account's user-facing name.
+	accountName string
+	// enrolledSession is set only after the receiving account attachment is durable.
+	enrolledSession *session.SessionRef
 }
 
 // setPairingContext updates the lifecycle context used for pairing routines.
@@ -87,11 +98,11 @@ func (a *ProviderAccount) GetPairingContext() context.Context {
 // Starts the confirmation exchange goroutine which waits for a remote peer
 // to connect via the solicit protocol (generator side).
 func (a *ProviderAccount) SetPairingCode(code string, sessionKey crypto.PrivKey) {
+	a.ClearPairingState()
 	a.pairingBcast.HoldLock(func(bcast func(), _ func() <-chan struct{}) {
-		if a.pairing == nil {
-			a.pairing = &pairingState{}
-		}
+		a.pairing = &pairingState{}
 		a.pairing.code = code
+		a.pairing.offering = true
 		a.pairing.sessionKey = sessionKey
 		a.pairing.direct = false
 		a.pairing.status = PairingStatusCodeGenerated
@@ -105,17 +116,8 @@ func (a *ProviderAccount) SetPairingCode(code string, sessionKey crypto.PrivKey)
 // and sets status to WAITING_FOR_PEER. sessionKey is stored for SAS
 // emoji computation when the link establishes.
 func (a *ProviderAccount) SetPairingRemotePeer(ctx context.Context, remotePeerID peer.ID, sessionKey crypto.PrivKey) error {
-	// Snapshot and release existing link directive outside lock.
-	var oldDiRef directive.Reference
-	a.pairingBcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
-		if a.pairing != nil && a.pairing.linkDiRef != nil {
-			oldDiRef = a.pairing.linkDiRef
-			a.pairing.linkDiRef = nil
-		}
-	})
-	if oldDiRef != nil {
-		oldDiRef.Release()
-	}
+	// A new operation cancels the prior exchange and its transport demand.
+	a.ClearPairingState()
 
 	st := a.GetSessionTransport()
 	if st == nil {
@@ -129,14 +131,20 @@ func (a *ProviderAccount) SetPairingRemotePeer(ctx context.Context, remotePeerID
 		return ErrNoSessionTransport
 	}
 
+	// Publish the operation before AddDirective can synchronously deliver a link.
 	linkCh := make(chan link.MountedLink, 1)
+	active := &pairingState{remotePeerID: remotePeerID, sessionKey: sessionKey, linkCh: linkCh, status: PairingStatusWaitingForPeer}
+	a.pairingBcast.HoldLock(func(bcast func(), _ func() <-chan struct{}) {
+		a.pairing = active
+		bcast()
+	})
 	handler := directive.NewTypedCallbackHandler(
 		func(v directive.TypedAttachedValue[link.MountedLink]) {
 			select {
 			case linkCh <- v.GetValue():
 			default:
 			}
-			a.onPairingLinkEstablished()
+			a.onPairingLinkEstablished(active)
 		},
 		nil, nil, nil,
 	)
@@ -150,28 +158,26 @@ func (a *ProviderAccount) SetPairingRemotePeer(ctx context.Context, remotePeerID
 		return err
 	}
 
-	// Assign results and broadcast inside lock.
-	a.pairingBcast.HoldLock(func(bcast func(), _ func() <-chan struct{}) {
-		if a.pairing == nil {
-			a.pairing = &pairingState{}
+	// Retain the directive only if this operation is still current.
+	var retained bool
+	a.pairingBcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
+		if a.pairing == active {
+			active.linkDiRef = diRef
+			retained = true
 		}
-		a.pairing.remotePeerID = remotePeerID
-		a.pairing.sessionKey = sessionKey
-		a.pairing.linkDiRef = diRef
-		a.pairing.linkCh = linkCh
-		a.pairing.direct = false
-		a.pairing.status = PairingStatusWaitingForPeer
-		bcast()
 	})
+	if !retained {
+		diRef.Release()
+	}
 	return nil
 }
 
 // onPairingLinkEstablished is called when the bifrost link with the
 // remote peer establishes during pairing. Sets PEER_CONNECTED and
 // starts the confirmation exchange which handles emoji computation.
-func (a *ProviderAccount) onPairingLinkEstablished() {
+func (a *ProviderAccount) onPairingLinkEstablished(active *pairingState) {
 	a.pairingBcast.HoldLock(func(bcast func(), _ func() <-chan struct{}) {
-		if a.pairing == nil {
+		if a.pairing != active || active.status != PairingStatusWaitingForPeer {
 			return
 		}
 		a.pairing.status = PairingStatusPeerConnected
@@ -219,14 +225,14 @@ func (a *ProviderAccount) OnDirectPairingConnected(
 	lnk link.Link,
 	isOfferer bool,
 ) {
+	a.ClearPairingState()
 	a.pairingBcast.HoldLock(func(bcast func(), _ func() <-chan struct{}) {
 		parentCtx := a.pairingCtx
-		if a.pairing == nil {
-			a.pairing = &pairingState{}
-		}
+		a.pairing = &pairingState{}
 		a.pairing.remotePeerID = remotePeerID
 		a.pairing.sessionKey = sessionKey
 		a.pairing.direct = true
+		a.pairing.offering = isOfferer
 		a.pairing.status = PairingStatusPeerConnected
 
 		if a.pairing.exchangeRc != nil {
@@ -267,33 +273,6 @@ func (a *ProviderAccount) ConfirmSASMatch(confirmed bool) {
 		default:
 		}
 	})
-}
-
-// setPairingStatus updates the pairing status and broadcasts.
-func (a *ProviderAccount) setPairingStatus(status PairingStatus) {
-	a.pairingBcast.HoldLock(func(bcast func(), _ func() <-chan struct{}) {
-		if a.pairing == nil {
-			return
-		}
-		a.pairing.status = status
-		bcast()
-	})
-}
-
-func (a *ProviderAccount) setPairingBothConfirmed(remotePeerID peer.ID, confirmCh <-chan bool) bool {
-	var recorded bool
-	a.pairingBcast.HoldLock(func(bcast func(), _ func() <-chan struct{}) {
-		if a.pairing == nil ||
-			a.pairing.remotePeerID != remotePeerID ||
-			a.pairing.confirmCh != confirmCh {
-			return
-		}
-		a.pairing.status = PairingStatusBothConfirmed
-		a.pairing.confirmationConsumed = false
-		recorded = true
-		bcast()
-	})
-	return recorded
 }
 
 // SetPairingFailed marks the pairing as failed with an error message.
@@ -342,6 +321,9 @@ func (a *ProviderAccount) GetPairingSnapshot() PairingSnapshot {
 		RemotePeerID: a.pairing.remotePeerID,
 		Emoji:        a.pairing.emoji,
 		ErrMsg:       a.pairing.errMsg,
+		AccountID:    a.pairing.accountID,
+		AccountName:  a.pairing.accountName,
+		Receiving:    !a.pairing.offering,
 	}
 }
 

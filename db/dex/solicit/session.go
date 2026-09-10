@@ -87,6 +87,7 @@ func (s *peerSession) run(ctx context.Context) {
 		}
 
 		if msg.GetIsResponse() {
+			s.c.recordTransfer(s.ms.GetPeerID().String(), 0, len(msg.GetData()))
 			s.mtx.Lock()
 			ch, ok := s.pending[msg.GetRequestId()]
 			if ok {
@@ -228,8 +229,12 @@ func (s *peerSession) requestBlock(ctx context.Context, ref *block.BlockRef, hop
 // sendMsg sends a message with write serialization.
 func (s *peerSession) sendMsg(msg *DexMessage) error {
 	s.mtx.Lock()
-	defer s.mtx.Unlock()
-	return s.sess.SendMsg(msg)
+	err := s.sess.SendMsg(msg)
+	s.mtx.Unlock()
+	if err == nil && msg.GetIsResponse() {
+		s.c.recordTransfer(s.ms.GetPeerID().String(), len(msg.GetData()), 0)
+	}
+	return err
 }
 
 // close closes the session stream.

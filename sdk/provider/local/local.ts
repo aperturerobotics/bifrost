@@ -5,6 +5,7 @@ import {
   LocalProviderResourceServiceClient,
 } from './local_srpc.pb.js'
 import type { CreateAccountResponse } from './local.pb.js'
+import type { SessionRef } from '../../../core/session/session.pb.js'
 
 // LocalProvider wraps a Provider resource with local-provider-specific RPCs.
 export class LocalProvider extends Provider {
@@ -22,5 +23,17 @@ export class LocalProvider extends Provider {
     abortSignal?: AbortSignal,
   ): Promise<CreateAccountResponse> {
     return await this.localService.CreateAccount({}, abortSignal)
+  }
+
+  // preparePairingSession creates the exchange identity without adding an account to Home.
+  public async preparePairingSession(
+    abortSignal?: AbortSignal,
+  ): Promise<SessionRef> {
+    const response = await this.localService.CreateAccount(
+      { deferRegistration: true },
+      abortSignal,
+    )
+    if (!response.sessionRef) throw new Error('Pairing Session was not created')
+    return response.sessionRef
   }
 }

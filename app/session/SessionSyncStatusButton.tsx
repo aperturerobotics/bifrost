@@ -119,23 +119,78 @@ function SessionSyncStatusPopover({
       <div className="grid grid-cols-2 gap-2">
         <SyncMetric label="Upload" value={status.uploadRateLabel} />
         <SyncMetric label="Download" value={status.downloadRateLabel} />
-        <SyncMetric label="Uploading now" value={status.activeUploadLabel} />
-        <SyncMetric label="Upload queued" value={status.pendingUploadLabel} />
-        <SyncMetric
-          label="Download queued"
-          value={status.pendingDownloadLabel}
-        />
+        {status.local ? (
+          <>
+            <SyncMetric label="Sent to peers" value={status.peerUploadLabel} />
+            <SyncMetric
+              label="Received from peers"
+              value={status.peerDownloadLabel}
+            />
+          </>
+        ) : (
+          <>
+            <SyncMetric
+              label="Uploading now"
+              value={status.activeUploadLabel}
+            />
+            <SyncMetric
+              label="Upload queued"
+              value={status.pendingUploadLabel}
+            />
+            <SyncMetric
+              label="Download queued"
+              value={status.pendingDownloadLabel}
+            />
+          </>
+        )}
       </div>
 
-      <div className="border-foreground/8 space-y-1.5 border-t pt-2">
-        <div className="text-foreground-alt/50 text-[0.6rem] font-medium tracking-widest uppercase">
-          Pack reads
+      {status.localCopies.length > 0 && (
+        <div className="border-foreground/8 max-h-56 space-y-3 overflow-y-auto border-t pt-2">
+          {status.localCopies.map((copy) => (
+            <div key={copy.id}>
+              <SyncRow label={copy.name} value={copy.status} />
+              <div className="text-foreground-alt/50 mt-0.5 text-xs">
+                {copy.detail}
+              </div>
+              {copy.error && (
+                <details className="text-foreground-alt/60 mt-1 text-xs">
+                  <summary className="cursor-pointer">Copy details</summary>
+                  <p className="mt-1 break-words">{copy.error}</p>
+                </details>
+              )}
+            </div>
+          ))}
         </div>
-        <SyncRow label="Ranges" value={status.packRangeLabel} />
-        <SyncRow label="Index tail" value={status.packIndexTailLabel} />
-        <SyncRow label="Lookup" value={status.packLookupLabel} />
-        <SyncRow label="Index cache" value={status.packIndexCacheLabel} />
-      </div>
+      )}
+
+      {!status.local && (
+        <details className="border-foreground/8 space-y-1.5 border-t pt-2">
+          <summary className="text-foreground-alt/50 cursor-pointer text-xs">
+            Storage diagnostics
+          </summary>
+          <SyncRow label="Ranges" value={status.packRangeLabel} />
+          <SyncRow label="Index tail" value={status.packIndexTailLabel} />
+          <SyncRow label="Lookup" value={status.packLookupLabel} />
+          <SyncRow label="Index cache" value={status.packIndexCacheLabel} />
+        </details>
+      )}
+
+      {status.peers.length > 0 && (
+        <details className="border-foreground/8 space-y-2 border-t pt-2">
+          <summary className="text-foreground-alt/50 cursor-pointer text-xs">
+            Linked Sessions
+          </summary>
+          {status.peers.map((peer) => (
+            <div key={peer.id}>
+              <SyncRow label={peer.name} value={peer.state} />
+              <div className="text-foreground-alt/50 mt-0.5 text-right text-xs">
+                {peer.traffic}
+              </div>
+            </div>
+          ))}
+        </details>
+      )}
 
       <div className="border-foreground/8 space-y-1.5 border-t pt-2">
         <SyncRow label="Transport" value={status.transportLabel} />

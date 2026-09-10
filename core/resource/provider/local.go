@@ -66,19 +66,21 @@ func (s *LocalProviderResource) CreateAccount(
 	ctx context.Context,
 	req *s4wave_provider_local.CreateAccountRequest,
 ) (*s4wave_provider_local.CreateAccountResponse, error) {
-	sessionCtrl, sessionCtrlRef, err := session.ExLookupSessionController(ctx, s.b, "", false, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer sessionCtrlRef.Release()
-
 	// Create an independent local account before registering its Session.
 	sessRef, err := s.provider.CreateLocalAccountAndSession(ctx, "")
 	if err != nil {
 		return nil, err
 	}
+	if req.GetDeferRegistration() {
+		return &s4wave_provider_local.CreateAccountResponse{SessionRef: sessRef}, nil
+	}
 
 	// Publish the new Session metadata through the controller.
+	sessionCtrl, sessionCtrlRef, err := session.ExLookupSessionController(ctx, s.b, "", false, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer sessionCtrlRef.Release()
 	meta := &session.SessionMetadata{
 		ProviderDisplayName: "Local",
 		ProviderId:          "local",
@@ -91,7 +93,7 @@ func (s *LocalProviderResource) CreateAccount(
 	}
 
 	// Return the registered Session to the caller.
-	return &s4wave_provider_local.CreateAccountResponse{SessionListEntry: listEntry}, nil
+	return &s4wave_provider_local.CreateAccountResponse{SessionListEntry: listEntry, SessionRef: sessRef}, nil
 }
 
 // CompleteSpaceLinkEnrollment creates or reopens the caller's own local
