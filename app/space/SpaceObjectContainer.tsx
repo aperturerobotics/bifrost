@@ -1,3 +1,4 @@
+import { useAppEnvironment } from '@s4wave/web/sdk/app/environment.js'
 import { useMemo, useCallback } from 'react'
 import { resolvePath, type To, useNavigate } from '@s4wave/web/router/router.js'
 import { isLocalNavigation } from '@s4wave/web/router/HistoryRouter.js'
@@ -13,6 +14,7 @@ import { getQuickstartInitialObjectHandoff } from '@s4wave/app/quickstart/sessio
 
 // SpaceObjectContainer displays an object within a space.
 export function SpaceObjectContainer() {
+  const environment = useAppEnvironment()
   const {
     spaceId,
     objectKey,
@@ -51,10 +53,20 @@ export function SpaceObjectContainer() {
       return stateType
     }
     return (
-      getQuickstartInitialObjectHandoff(sessionIndex, spaceId, objectKey)
-        ?.objectType ?? ''
+      getQuickstartInitialObjectHandoff(
+        sessionIndex,
+        spaceId,
+        objectKey,
+        environment.instanceKey,
+      )?.objectType ?? ''
     )
-  }, [objectKey, sessionIndex, spaceId, spaceState.worldContents?.objects])
+  }, [
+    objectKey,
+    sessionIndex,
+    spaceId,
+    spaceState.worldContents?.objects,
+    environment.instanceKey,
+  ])
 
   const objectInfo: ObjectInfo = useMemo(
     () => ({

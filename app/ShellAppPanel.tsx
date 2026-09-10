@@ -1,10 +1,7 @@
 import { useCallback, useMemo, useRef } from 'react'
 
 import { BottomBarRoot } from '@s4wave/web/frame/bottom-bar-root.js'
-import {
-  getAppNavigationGeneration,
-  setAppPath,
-} from '@s4wave/web/router/app-path.js'
+import { useAppNavigation } from '@s4wave/web/sdk/app/environment.js'
 import { HistoryRouter } from '@s4wave/web/router/HistoryRouter.js'
 import { resolvePath, type To } from '@s4wave/web/router/router.js'
 import {
@@ -61,6 +58,7 @@ function ShellAppPanelInner({
   initialPath: string
   syncAppPath: boolean
 }) {
+  const { getAppNavigationGeneration, setAppPath } = useAppNavigation()
   const [openMenu, setOpenMenu] = useStateAtom<string>(null, 'openMenu', '')
   const tabId = useTabId()
   const { tabs, activeTabId, addShellTab, updateTabPath } = useShellTabs()
@@ -85,7 +83,7 @@ function ShellAppPanelInner({
         setAppPath(path)
       }
     },
-    [tabId],
+    [tabId, getAppNavigationGeneration, setAppPath],
   )
 
   const addTab = useCallback(

@@ -1,3 +1,4 @@
+import { useAppEnvironment } from '@s4wave/web/sdk/app/environment.js'
 import { useCallback, useMemo } from 'react'
 
 import {
@@ -27,6 +28,7 @@ import { markQuickstartStartupBoundary } from './quickstart/startup-boundary.js'
 
 // AppSession handles the /u/{session-idx}/* path.
 export function AppSession() {
+  const environment = useAppEnvironment()
   const navigate = useNavigate()
   const { sessionIndex: sessionIndexParam } = useParams()
 
@@ -53,7 +55,10 @@ export function AppSession() {
     rootResource,
     async (root: Root, signal, cleanup) => {
       if (!sessionIdx) return null
-      const handoff = consumeQuickstartSessionHandoff(sessionIdx)
+      const handoff = consumeQuickstartSessionHandoff(
+        sessionIdx,
+        environment.instanceKey,
+      )
       if (handoff) {
         markQuickstartStartupBoundary('quickstart.session-handoff-used', {
           sessionIdx,
@@ -103,7 +108,7 @@ export function AppSession() {
     [sessionIdx],
     {
       onSuccess: () => {
-        markInteracted()
+        markInteracted(environment.storage)
       },
     },
   )

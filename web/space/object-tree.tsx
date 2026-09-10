@@ -57,7 +57,7 @@ export type ObjectTypeMetadataById = ReadonlyMap<string, ObjectTypeMetadata>
 
 // HIDDEN_OBJECT_TYPES is the set of object types hidden from the tree.
 export const HIDDEN_OBJECT_TYPES = new Set([
-  'space/settings',
+  'github.com/s4wave/spacewave/core/space/world.SpaceSettings',
   SPACE_SETTINGS_BLOCK_TYPE,
 ])
 

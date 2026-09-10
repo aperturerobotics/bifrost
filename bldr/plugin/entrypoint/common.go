@@ -20,6 +20,7 @@ import (
 	plugin_host_configset "github.com/s4wave/spacewave/bldr/plugin/host/configset"
 	plugin_host_storage_volume "github.com/s4wave/spacewave/bldr/plugin/host/storage/volume"
 	vardef "github.com/s4wave/spacewave/bldr/plugin/vardef"
+	"github.com/s4wave/spacewave/bldr/storage"
 	storage_controller "github.com/s4wave/spacewave/bldr/storage/controller"
 	web_fetch_service "github.com/s4wave/spacewave/bldr/web/fetch/service"
 	web_runtime "github.com/s4wave/spacewave/bldr/web/runtime"
@@ -152,6 +153,9 @@ func ExecutePluginEntrypoint(
 		return err
 	}
 	pluginManifestRef := pluginInfo.GetManifestRef()
+	if pluginInfo.GetHostStorageId() != "" {
+		ctx = storage.WithHostStorageID(ctx, "default")
+	}
 	le.Infof(
 		"plugin information received from host w/ manifest: %s",
 		pluginManifestRef.GetManifestRef().MarshalString(),

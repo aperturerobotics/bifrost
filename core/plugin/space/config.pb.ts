@@ -79,6 +79,13 @@ export interface Config {
    * @generated from field: string host_plugin_id = 9;
    */
   hostPluginId?: string
+  /**
+   * HostStorageId selects the parent runtime Storage for every child plugin.
+   * Empty preserves the ordinary platform storage selection.
+   *
+   * @generated from field: string host_storage_id = 10;
+   */
+  hostStorageId?: string
 }
 
 export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
@@ -105,6 +112,7 @@ export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
     { no: 7, name: 'session_peer_id', kind: 'scalar', T: ScalarType.STRING },
     { no: 8, name: 'world_bucket_id', kind: 'scalar', T: ScalarType.STRING },
     { no: 9, name: 'host_plugin_id', kind: 'scalar', T: ScalarType.STRING },
+    { no: 10, name: 'host_storage_id', kind: 'scalar', T: ScalarType.STRING },
   ] satisfies readonly PartialFieldInfo[],
   packedByDefault: true,
 })

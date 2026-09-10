@@ -3,6 +3,7 @@ import * as MenubarPrimitive from '@radix-ui/react-menubar'
 import { LuCheck, LuChevronRight, LuCircle } from 'react-icons/lu'
 
 import { cn } from '../style/utils.js'
+import { useAppEnvironment } from '@s4wave/web/sdk/app/environment.js'
 
 function Menubar({
   className,
@@ -54,9 +55,11 @@ function MenubarContent({
   sideOffset = 4,
   ...props
 }: React.ComponentProps<typeof MenubarPrimitive.Content>) {
+  const environment = useAppEnvironment()
   return (
     <MenubarPortal>
       <MenubarPrimitive.Content
+        data-spacewave-app={environment.id || undefined}
         data-slot="menubar-content"
         align={align}
         sideOffset={sideOffset}
@@ -234,8 +237,10 @@ function MenubarSubContent({
   className,
   ...props
 }: React.ComponentProps<typeof MenubarPrimitive.SubContent>) {
+  const environment = useAppEnvironment()
   return (
     <MenubarPrimitive.SubContent
+      data-spacewave-app={environment.id || undefined}
       data-slot="menubar-sub-content"
       className={cn(
         'border-popover-border bg-popover text-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 min-w-[8rem] origin-(--radix-menubar-content-transform-origin) overflow-hidden rounded-md border p-1 shadow-lg',

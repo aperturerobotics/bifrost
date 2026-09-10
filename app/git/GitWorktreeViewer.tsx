@@ -1,3 +1,4 @@
+import { useAppEnvironment } from '@s4wave/web/sdk/app/environment.js'
 import {
   useCallback,
   useDeferredValue,
@@ -54,6 +55,7 @@ function useGitWorktreeController({
 }: ObjectViewerComponentProps) {
   const objectKey = getObjectKey(objectInfo)
   const sessionIndex = useSessionIndex()
+  const { httpPathPrefix } = useAppEnvironment()
   const spaceCtx = SpaceContainerContext.useContextSafe()
   const navigate = useNavigate()
   const history = useHistory()
@@ -205,6 +207,7 @@ function useGitWorktreeController({
     !inlinePreviewObjectKey
       ? undefined
       : buildProjectedFileInlineURL({
+          httpPathPrefix,
           sessionIndex,
           sharedObjectId: spaceCtx.spaceId,
           objectKey: inlinePreviewObjectKey,
@@ -219,6 +222,7 @@ function useGitWorktreeController({
     !inlinePreviewObjectKey
       ? undefined
       : buildProjectedFileInlineURL({
+          httpPathPrefix,
           sessionIndex,
           sharedObjectId: spaceCtx.spaceId,
           objectKey: inlinePreviewObjectKey,

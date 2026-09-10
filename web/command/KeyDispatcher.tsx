@@ -1,4 +1,5 @@
 import { CommandSurface } from '@s4wave/sdk/command/command.pb.js'
+import { useAppEnvironment } from '@s4wave/web/sdk/app/environment.js'
 import {
   createContext,
   use,
@@ -66,6 +67,7 @@ export function useKeyDispatcherState(): KeyDispatcherPrefixState {
 }
 
 export function KeyDispatcher({ children }: { children?: ReactNode }) {
+  const environment = useAppEnvironment()
   const commands = useCommands()
   const invokeCommand = useInvokeCommand()
   const resolveFocusContexts = useFocusContextResolver()
@@ -113,6 +115,15 @@ export function KeyDispatcher({ children }: { children?: ReactNode }) {
   )
 
   const handler = useEffectEvent((event: KeyboardEvent) => {
+    const appId =
+      event.target instanceof Element
+        ? (event.target.closest<HTMLElement>('[data-spacewave-app]')?.dataset
+            .spacewaveApp ?? '')
+        : ''
+    if (appId !== environment.id) {
+      if (prefixRef.current) clearPrefix()
+      return
+    }
     if (document.documentElement.dataset.keybindingRecording === 'true') {
       if (prefixRef.current) clearPrefix()
       return

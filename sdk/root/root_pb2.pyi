@@ -56,6 +56,26 @@ SpaceRootRuntimeStatus_STARTING: SpaceRootRuntimeStatus
 SpaceRootRuntimeStatus_READY: SpaceRootRuntimeStatus
 SpaceRootRuntimeStatus_ERROR: SpaceRootRuntimeStatus
 
+class MountAppRequest(_message.Message):
+    __slots__ = ("storage_id", "world_resource_id", "object_prefix", "ephemeral")
+    STORAGE_ID_FIELD_NUMBER: _ClassVar[int]
+    WORLD_RESOURCE_ID_FIELD_NUMBER: _ClassVar[int]
+    OBJECT_PREFIX_FIELD_NUMBER: _ClassVar[int]
+    EPHEMERAL_FIELD_NUMBER: _ClassVar[int]
+    storage_id: str
+    world_resource_id: int
+    object_prefix: str
+    ephemeral: bool
+    def __init__(self, storage_id: _Optional[str] = ..., world_resource_id: _Optional[int] = ..., object_prefix: _Optional[str] = ..., ephemeral: _Optional[bool] = ...) -> None: ...
+
+class MountAppResponse(_message.Message):
+    __slots__ = ("resource_id", "http_path_prefix")
+    RESOURCE_ID_FIELD_NUMBER: _ClassVar[int]
+    HTTP_PATH_PREFIX_FIELD_NUMBER: _ClassVar[int]
+    resource_id: int
+    http_path_prefix: str
+    def __init__(self, resource_id: _Optional[int] = ..., http_path_prefix: _Optional[str] = ...) -> None: ...
+
 class LookupProviderRequest(_message.Message):
     __slots__ = ("provider_id",)
     PROVIDER_ID_FIELD_NUMBER: _ClassVar[int]

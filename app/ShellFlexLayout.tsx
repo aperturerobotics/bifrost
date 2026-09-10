@@ -23,7 +23,10 @@ import {
 import { LuExternalLink, LuPlus, LuX } from 'react-icons/lu'
 
 import { BASE_MODEL } from '@s4wave/web/layout/layout.js'
-import { getAppPath, setAppPath } from '@s4wave/web/router/app-path.js'
+import {
+  useAppEnvironment,
+  useAppNavigation,
+} from '@s4wave/web/sdk/app/environment.js'
 import {
   ShellTab,
   getTabDisplayName,
@@ -89,7 +92,7 @@ function findTopLeftStrip(container: HTMLElement): HTMLElement | null {
     container.querySelectorAll<HTMLElement>(
       '.flexlayout__tabset_tabbar_outer_top',
     ),
-  ).filter((el) => !el.closest('.flexlayout__tab'))
+  ).filter((el) => el.closest('.shell-flexlayout') === container)
   if (strips.length === 0) return null
   return strips.reduce((best, el) => {
     const a = el.getBoundingClientRect()
@@ -152,9 +155,10 @@ function buildDefaultModel(tabs: ShellTab[], activeTabId: string): IJsonModel {
 function loadModelFromStorage(
   tabs: ShellTab[],
   activeTabId: string,
+  storage: Storage,
 ): IJsonModel {
   try {
-    const stored = sessionStorage.getItem(SHELL_TABS_STORAGE_KEY)
+    const stored = storage.getItem(SHELL_TABS_STORAGE_KEY)
     if (stored) {
       const parsed = JSON.parse(stored) as unknown
       if (typeof parsed === 'object' && parsed !== null) {
@@ -193,9 +197,9 @@ function loadModelFromStorage(
 }
 
 // saveModelToStorage saves the FlexLayout model to sessionStorage.
-function saveModelToStorage(model: IJsonModel): void {
+function saveModelToStorage(model: IJsonModel, storage: Storage): void {
   try {
-    sessionStorage.setItem(
+    storage.setItem(
       SHELL_TABS_STORAGE_KEY,
       JSON.stringify({ nonce: SHELL_TABS_NONCE, model }),
     )
@@ -276,6 +280,8 @@ export function ShellTabStrip({ children, entry }: ShellTabStripProps) {
 function ShellTabStripInner({
   children,
 }: Pick<ShellTabStripProps, 'children'>) {
+  const environment = useAppEnvironment()
+  const { getAppPath, setAppPath, subscribe } = useAppNavigation()
   const {
     tabs,
     activeTabId,
@@ -305,15 +311,8 @@ function ShellTabStripInner({
   // Check if we're currently in grid mode (URL starts with /g/)
   const isGridMode = useCallback(() => {
     return getAppPath().startsWith('/g/')
-  }, [])
-  const routePath = useSyncExternalStore(
-    (onChange) => {
-      window.addEventListener('hashchange', onChange)
-      return () => window.removeEventListener('hashchange', onChange)
-    },
-    getAppPath,
-    getAppPath,
-  )
+  }, [getAppPath])
+  const routePath = useSyncExternalStore(subscribe, getAppPath, getAppPath)
 
   // Initialize model from storage or default, and perform URL sync during
   // initialization. This avoids calling setState in the sync effect. A grid
@@ -328,7 +327,7 @@ function ShellTabStripInner({
       : null
     const jsonModel = decoded
       ? reconcileModelWithTabs(decoded.model, tabs)
-      : loadModelFromStorage(tabs, activeTabId)
+      : loadModelFromStorage(tabs, activeTabId, environment.documentStorage)
     const m = Model.fromJson(jsonModel)
     if (decoded) {
       applyLocalStateToModel(m, decoded.localState)
@@ -398,7 +397,7 @@ function ShellTabStripInner({
     gridPathRef.current = path
     gridStructureRef.current = encodeGridLayoutStructure(next)
     setModel(next)
-  }, [activeTabId, routePath, tabs])
+  }, [activeTabId, routePath, tabs, setAppPath, getAppPath])
   const didSyncEntryRef = useRef(false)
   const lastSyncedActiveTabIdRef = useRef(activeTabId)
   const suppressedHashPathRef = useRef<string | null>(null)
@@ -451,7 +450,7 @@ function ShellTabStripInner({
       })
       return newTab.id
     },
-    [addShellTab, isGridMode, model, selectShellTab],
+    [addShellTab, isGridMode, model, selectShellTab, setAppPath, getAppPath],
   )
 
   useEffect(
@@ -509,7 +508,7 @@ function ShellTabStripInner({
     if (activeTab && activeTab.path !== getAppPath()) {
       setAppPath(activeTab.path)
     }
-  }, [activeTabId, isGridMode])
+  }, [activeTabId, isGridMode, setAppPath, getAppPath])
 
   // Listen for hash changes (back/forward navigation)
   const handleHashChange = useEffectEvent(() => {
@@ -571,9 +570,8 @@ function ShellTabStripInner({
     const onHashChange = () => {
       handleHashChange()
     }
-    window.addEventListener('hashchange', onHashChange)
-    return () => window.removeEventListener('hashchange', onHashChange)
-  }, [])
+    return subscribe(onHashChange)
+  }, [subscribe])
 
   // onRenderTab customizes the tab button label with inline rename support.
   // Uses display name (custom or auto-derived) from tabs state.
@@ -618,7 +616,7 @@ function ShellTabStripInner({
       setModel(newModel)
 
       // Save to sessionStorage.
-      saveModelToStorage(newModel.toJson())
+      saveModelToStorage(newModel.toJson(), environment.documentStorage)
 
       // The provider owns state-to-model projection. FlexLayout reports each
       // synchronous intermediate action, so do not reconcile partial models
@@ -728,6 +726,9 @@ function ShellTabStripInner({
       activeTabId,
       tabs,
       isGridMode,
+      setAppPath,
+      getAppPath,
+      environment.documentStorage,
     ],
   )
 
@@ -859,7 +860,7 @@ function ShellTabStripInner({
           })
         }
       }),
-    [addShellTab, isGridMode, markShellEngaged, model],
+    [addShellTab, isGridMode, markShellEngaged, model, setAppPath],
   )
 
   const [contextMenu, setContextMenu] =

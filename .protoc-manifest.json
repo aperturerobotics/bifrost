@@ -1106,7 +1106,7 @@
       ]
     },
     "github.com/s4wave/spacewave/core/plugin/space": {
-      "hash": "6de06b652970c3073b62f87556f1b0140494a082b07cda52d26fbb68f0af6d1a",
+      "hash": "a22efa50934c8b8c311272bff367a635c5a96d6d35a2045117d8d011ac8f5537",
       "generatedFiles": [
         "core/plugin/space/config.pb.go",
         "core/plugin/space/config.pb.ts"
@@ -2418,7 +2418,7 @@
       ]
     },
     "github.com/s4wave/spacewave/db/volume/world": {
-      "hash": "caad70bbe5d0068c0c0f3f467250f45298954bd1c40bf873baf608494039f6f0",
+      "hash": "47b6b18ebdbf2796298df38edf046ca3c493c685d23fae85d594983ba3e75378",
       "generatedFiles": [
         "db/volume/world/volume.pb.go",
         "db/volume/world/volume.pb.ts"
@@ -3700,7 +3700,7 @@
       ]
     },
     "github.com/s4wave/spacewave/sdk/root": {
-      "hash": "5aeebb71216eceb3652cf73233461310579c3b61b55a062f9857d93958cda37e",
+      "hash": "8d5e7f2b7138ef760f98b6a2936816e1d57c4935c80dcc1739250cda08f706c9",
       "generatedFiles": [
         "sdk/root/root.pb.go",
         "sdk/root/root.pb.ts",

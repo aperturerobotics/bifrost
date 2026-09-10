@@ -7,13 +7,13 @@ export function formatPendingJoin(code: string): string {
 }
 
 // storePendingJoin saves a bearer invitation for post-setup pickup.
-export function storePendingJoin(code: string) {
-  if (code) sessionStorage.setItem(PENDING_JOIN_KEY, formatPendingJoin(code))
+export function storePendingJoin(code: string, storage = sessionStorage) {
+  if (code) storage.setItem(PENDING_JOIN_KEY, formatPendingJoin(code))
 }
 
 // consumePendingJoin retrieves and clears a stored invite handoff.
-export function consumePendingJoin(): string | null {
-  const code = sessionStorage.getItem(PENDING_JOIN_KEY)
-  if (code) sessionStorage.removeItem(PENDING_JOIN_KEY)
+export function consumePendingJoin(storage = sessionStorage): string | null {
+  const code = storage.getItem(PENDING_JOIN_KEY)
+  if (code) storage.removeItem(PENDING_JOIN_KEY)
   return code
 }

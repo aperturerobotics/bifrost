@@ -31,4 +31,7 @@ message Config {
   // Required when world_bucket_id is set so the forwarded block store
   // configset registers under the correct plugin service prefix.
   string host_plugin_id = 9;
+  // HostStorageId selects the parent runtime Storage for every child plugin.
+  // Empty preserves the ordinary platform storage selection.
+  string host_storage_id = 10;
 }

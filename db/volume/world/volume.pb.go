@@ -139,6 +139,27 @@ func (x *Config) GetVolumeId() string {
 	return ""
 }
 
+// Backing is the body of a hydra/volume object backed by a transactional KV object.
+// The enclosing World grants access to the installation, including its identity.
+type Backing struct {
+	unknownFields []byte
+	// KvObjectKey identifies the kv/store object containing the complete Volume.
+	KvObjectKey string `protobuf:"bytes,1,opt,name=kv_object_key,json=kvObjectKey,proto3" json:"kvObjectKey,omitempty"`
+}
+
+func (x *Backing) Reset() {
+	*x = Backing{}
+}
+
+func (*Backing) ProtoMessage() {}
+
+func (x *Backing) GetKvObjectKey() string {
+	if x != nil {
+		return x.KvObjectKey
+	}
+	return ""
+}
+
 func (m *Config) CloneVT() *Config {
 	if m == nil {
 		return (*Config)(nil)
@@ -162,6 +183,22 @@ func (m *Config) CloneVT() *Config {
 }
 
 func (m *Config) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *Backing) CloneVT() *Backing {
+	if m == nil {
+		return (*Backing)(nil)
+	}
+	r := new(Backing)
+	r.KvObjectKey = m.KvObjectKey
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *Backing) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
@@ -209,6 +246,26 @@ func (this *Config) EqualVT(that *Config) bool {
 
 func (this *Config) EqualMessageVT(thatMsg any) bool {
 	that, ok := thatMsg.(*Config)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *Backing) EqualVT(that *Backing) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.KvObjectKey != that.KvObjectKey {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *Backing) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*Backing)
 	if !ok {
 		return false
 	}
@@ -353,6 +410,48 @@ func (x *Config) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
+// MarshalProtoJSON marshals the Backing message to JSON.
+func (x *Backing) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.KvObjectKey != "" || s.HasField("kvObjectKey") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("kvObjectKey")
+		s.WriteString(x.KvObjectKey)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the Backing to JSON.
+func (x *Backing) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the Backing message from JSON.
+func (x *Backing) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "kv_object_key", "kvObjectKey":
+			s.AddField("kv_object_key")
+			x.KvObjectKey = s.ReadString()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the Backing from JSON.
+func (x *Backing) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
 func (m *Config) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -460,6 +559,43 @@ func (m *Config) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *Backing) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Backing) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *Backing) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.KvObjectKey) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.KvObjectKey)
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *Config) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -489,6 +625,17 @@ func (m *Config) SizeVT() (n int) {
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.BucketId)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.VolumeId)
 	n += protobuf_go_lite.SizeBoolNonZero(1, m.NoWriteKey)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *Backing) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.KvObjectKey)
 	n += len(m.unknownFields)
 	return n
 }
@@ -544,6 +691,20 @@ func (x *Config) MarshalProtoText() string {
 }
 
 func (x *Config) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *Backing) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "Backing")
+	if x.KvObjectKey != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "kv_object_key")
+		protobuf_go_lite.TextWriteString(&sb, x.KvObjectKey)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *Backing) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -697,6 +858,59 @@ func (m *Config) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.NoWriteKey = bool(v)
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *Backing) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Backing: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Backing: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field KvObjectKey", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.KvObjectKey = v
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

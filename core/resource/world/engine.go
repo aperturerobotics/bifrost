@@ -74,6 +74,11 @@ func (r *EngineResource) GetMux() srpc.Invoker {
 	return r.mux
 }
 
+// GetEngine returns the capability already granted by this Engine Resource.
+func (r *EngineResource) GetEngine() world.Engine {
+	return r.engine
+}
+
 // GetEngineInfo returns information about the world engine.
 func (r *EngineResource) GetEngineInfo(ctx context.Context, req *s4wave_world.GetEngineInfoRequest) (*s4wave_world.GetEngineInfoResponse, error) {
 	return &s4wave_world.GetEngineInfoResponse{EngineInfo: r.engineInfo}, nil

@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	bldr_plugin "github.com/s4wave/spacewave/bldr/plugin"
 	resource_server "github.com/s4wave/spacewave/bldr/resource/server"
+	"github.com/s4wave/spacewave/bldr/storage"
 	plugin_space "github.com/s4wave/spacewave/core/plugin/space"
 	provider "github.com/s4wave/spacewave/core/provider"
 	provider_spacewave "github.com/s4wave/spacewave/core/provider/spacewave"
@@ -309,7 +310,7 @@ func (r *SpaceResource) AccessWorld(
 		engineInfo,
 		resource_world.WithSessionPeerID(sessionPeerID),
 	)
-	id, err := resourceCtx.AddResource(worldResource.GetMux(), func() {})
+	id, err := resourceCtx.AddResourceValue(worldResource.GetMux(), worldResource, func() {})
 	if err != nil {
 		return nil, err
 	}
@@ -363,6 +364,7 @@ func (r *SpaceResource) MountSpaceContents(
 		SessionPeerId: r.sessionPeerID,
 		WorldBucketId: worldBucketID,
 		HostPluginId:  hostPluginID,
+		HostStorageId: storage.GetHostStorageID(ctx),
 	}
 
 	id, err := resourceCtx.AddResource(contentsResource.GetMux(), contentsResource.Release)

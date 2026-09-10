@@ -1121,333 +1121,324 @@ body,
   opacity: 0;
 }
 
-/*
- * Shell FlexLayout Styles
- *
- * These styles target only the shell's FlexLayout, not nested FlexLayouts
- * (like SpaceFlexLayout). We use two scoping strategies:
- *
- * 1. Direct child selector (>) for the root .flexlayout__layout
- * 2. :not(.flexlayout__tab *) to exclude elements inside tab content areas
- *    where nested FlexLayouts would be rendered
- */
+/* Each shell owns its chrome, including shells mounted inside another tab.
+ * Tab children start the next surface and are outside this layout scope. */
+@scope (.shell-flexlayout) to (.flexlayout__tab > *) {
+  :scope > .flexlayout__optimized_layout > .flexlayout__layout {
+    --color-tab-content: var(--color-background);
+  }
 
-.shell-flexlayout > .flexlayout__optimized_layout > .flexlayout__layout {
-  --color-tab-content: var(--color-background);
-}
+  /* Style the tabbar as the header row - only apply menu bar padding when menu exists.
+ * Stop each scope at its own tab content. */
+  :scope.shell-flexlayout--with-menu
+    > .flexlayout__optimized_layout
+    > .flexlayout__layout
+    .flexlayout__tabset_tabbar_outer_top {
+    @apply bg-topbar-back;
+    height: var(--spacing-shell-header);
+    min-height: var(--spacing-shell-header);
+    /* Left padding dynamically set based on menu bar width */
+    padding: 0 0.5rem 0 var(--menu-bar-width);
+    align-items: flex-end;
+    border: none;
+    @apply border-editor-outline border-b;
+  }
 
-/* Style the tabbar as the header row - only apply menu bar padding when menu exists.
- * Use :not(.flexlayout__tab *) to exclude nested FlexLayouts inside tab content. */
-.shell-flexlayout--with-menu
-  > .flexlayout__optimized_layout
-  > .flexlayout__layout
-  .flexlayout__tabset_tabbar_outer_top:not(.flexlayout__tab *) {
-  @apply bg-topbar-back;
-  height: var(--spacing-shell-header);
-  min-height: var(--spacing-shell-header);
-  /* Left padding dynamically set based on menu bar width */
-  padding: 0 0.5rem 0 var(--menu-bar-width);
-  align-items: flex-end;
-  border: none;
-  @apply border-editor-outline border-b;
-}
+  /* Grid mode tabsets - no menu bar padding */
+  :scope:not(.shell-flexlayout--with-menu)
+    > .flexlayout__optimized_layout
+    > .flexlayout__layout
+    .flexlayout__tabset_tabbar_outer_top {
+    padding: 0 0.5rem 0 0.5rem;
+  }
 
-/* Grid mode tabsets - no menu bar padding */
-.shell-flexlayout:not(.shell-flexlayout--with-menu)
-  > .flexlayout__optimized_layout
-  > .flexlayout__layout
-  .flexlayout__tabset_tabbar_outer_top:not(.flexlayout__tab *) {
-  padding: 0 0.5rem 0 0.5rem;
-}
-
-/* Only the top-left tabset sits under the absolute menu-bar overlay, so only
+  /* Only the top-left tabset sits under the absolute menu-bar overlay, so only
  * it needs the --menu-bar-width clearance. The top-left tabset is the unique
  * one with no splitter before it or before any ancestor row; every other
  * tabset is preceded (directly or via an ancestor row) by a splitter. Reset
  * those back to the normal strip padding. Higher specificity than the rule
  * above plus later source order, so it wins for non-top-left strips. */
-.shell-flexlayout--with-menu
-  > .flexlayout__optimized_layout
-  > .flexlayout__layout
-  .flexlayout__splitter
-  ~ .flexlayout__tabset_container
-  .flexlayout__tabset_tabbar_outer_top:not(.flexlayout__tab *),
-.shell-flexlayout--with-menu
-  > .flexlayout__optimized_layout
-  > .flexlayout__layout
-  .flexlayout__splitter
-  ~ .flexlayout__row
-  .flexlayout__tabset_tabbar_outer_top:not(.flexlayout__tab *) {
-  padding-left: 0.5rem;
-}
+  :scope.shell-flexlayout--with-menu
+    > .flexlayout__optimized_layout
+    > .flexlayout__layout
+    .flexlayout__splitter
+    ~ .flexlayout__tabset_container
+    .flexlayout__tabset_tabbar_outer_top,
+  :scope.shell-flexlayout--with-menu
+    > .flexlayout__optimized_layout
+    > .flexlayout__layout
+    .flexlayout__splitter
+    ~ .flexlayout__row
+    .flexlayout__tabset_tabbar_outer_top {
+    padding-left: 0.5rem;
+  }
 
-/* Remove border from main tabset container in single-tabset mode */
-.shell-flexlayout.shell-flexlayout--with-menu
-  > .flexlayout__optimized_layout
-  > .flexlayout__layout
-  .flexlayout__tabset:not(.flexlayout__tab *) {
-  @apply bg-background;
-  border: none;
-  border-radius: 0;
-}
+  /* Remove border from main tabset container in single-tabset mode */
+  :scope.shell-flexlayout--with-menu
+    > .flexlayout__optimized_layout
+    > .flexlayout__layout
+    .flexlayout__tabset {
+    @apply bg-background;
+    border: none;
+    border-radius: 0;
+  }
 
-/* Grid mode tabsets - keep borders for visual separation */
-.shell-flexlayout:not(.shell-flexlayout--with-menu)
-  > .flexlayout__optimized_layout
-  > .flexlayout__layout
-  .flexlayout__tabset_container:not(.flexlayout__tab *) {
-  @apply rounded-editor overflow-hidden;
-}
+  /* Grid mode tabsets - keep borders for visual separation */
+  :scope:not(.shell-flexlayout--with-menu)
+    > .flexlayout__optimized_layout
+    > .flexlayout__layout
+    .flexlayout__tabset_container {
+    @apply rounded-editor overflow-hidden;
+  }
 
-.shell-flexlayout:not(.shell-flexlayout--with-menu)
-  > .flexlayout__optimized_layout
-  > .flexlayout__layout
-  .flexlayout__tabset:not(.flexlayout__tab *) {
-  @apply bg-background border-editor-outline rounded-editor border;
-}
+  :scope:not(.shell-flexlayout--with-menu)
+    > .flexlayout__optimized_layout
+    > .flexlayout__layout
+    .flexlayout__tabset {
+    @apply bg-background border-editor-outline rounded-editor border;
+  }
 
-/* Active tabset in grid mode - highlight border */
-.shell-flexlayout:not(.shell-flexlayout--with-menu)
-  > .flexlayout__optimized_layout
-  > .flexlayout__layout
-  .flexlayout__tabset:not(.flexlayout__tab *):has(
-    .flexlayout__tabset-selected
-  ) {
-  @apply border-ui-outline-active;
-}
+  /* Active tabset in grid mode - highlight border */
+  :scope:not(.shell-flexlayout--with-menu)
+    > .flexlayout__optimized_layout
+    > .flexlayout__layout
+    .flexlayout__tabset:has(.flexlayout__tabset-selected) {
+    @apply border-ui-outline-active;
+  }
 
-.shell-flexlayout
-  > .flexlayout__optimized_layout
-  > .flexlayout__layout
-  .flexlayout__tabset_tabbar_inner:not(.flexlayout__tab *) {
-  height: 24px;
-  align-items: flex-end;
-}
+  :scope
+    > .flexlayout__optimized_layout
+    > .flexlayout__layout
+    .flexlayout__tabset_tabbar_inner {
+    height: 24px;
+    align-items: flex-end;
+  }
 
-.shell-flexlayout
-  > .flexlayout__optimized_layout
-  > .flexlayout__layout
-  .flexlayout__tabset_tabbar_inner_tab_container:not(.flexlayout__tab *) {
-  padding: 0 3px;
-  gap: 2px;
-  align-items: flex-end;
-}
+  :scope
+    > .flexlayout__optimized_layout
+    > .flexlayout__layout
+    .flexlayout__tabset_tabbar_inner_tab_container {
+    padding: 0 3px;
+    gap: 2px;
+    align-items: flex-end;
+  }
 
-.shell-flexlayout
-  > .flexlayout__optimized_layout
-  > .flexlayout__layout
-  .flexlayout__tabset_tabbar_inner_tab_container_top:not(.flexlayout__tab *) {
-  border-top: none;
-}
+  :scope
+    > .flexlayout__optimized_layout
+    > .flexlayout__layout
+    .flexlayout__tabset_tabbar_inner_tab_container_top {
+    border-top: none;
+  }
 
-/* Individual tab buttons — Heavy Frost style:
+  /* Individual tab buttons — Heavy Frost style:
  * Flush/compact tabs with frosted-glass backdrop blur on inactive,
  * opaque active tab connecting to content. */
-.shell-flexlayout
-  > .flexlayout__optimized_layout
-  > .flexlayout__layout
-  .flexlayout__tab_button:not(.flexlayout__tab *) {
-  color: oklch(0.62 0 0);
-  background: oklch(0.247 0.003 8 / 0.4);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  height: 22px;
-  min-width: 24px;
-  max-width: 100px;
-  padding: 0 0.5rem 1px 0.5rem;
-  margin: 0;
-  gap: 0.25rem;
-  border: 1px solid oklch(1 0 0 / 0.06);
-  border-top: 1px solid oklch(1 0 0 / 0.08);
-  border-bottom: none;
-  border-radius: 5px 5px 0 0;
-  transition:
-    background-color 0.15s ease,
-    color 0.15s ease,
-    backdrop-filter 0.15s ease;
-  flex-shrink: 0;
-}
+  :scope
+    > .flexlayout__optimized_layout
+    > .flexlayout__layout
+    .flexlayout__tab_button {
+    color: oklch(0.62 0 0);
+    background: oklch(0.247 0.003 8 / 0.4);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    height: 22px;
+    min-width: 24px;
+    max-width: 100px;
+    padding: 0 0.5rem 1px 0.5rem;
+    margin: 0;
+    gap: 0.25rem;
+    border: 1px solid oklch(1 0 0 / 0.06);
+    border-top: 1px solid oklch(1 0 0 / 0.08);
+    border-bottom: none;
+    border-radius: 5px 5px 0 0;
+    transition:
+      background-color 0.15s ease,
+      color 0.15s ease,
+      backdrop-filter 0.15s ease;
+    flex-shrink: 0;
+  }
 
-/* Remove the underline pseudo-element */
-.shell-flexlayout
-  > .flexlayout__optimized_layout
-  > .flexlayout__layout
-  .flexlayout__tab_button:not(.flexlayout__tab *)::after {
-  display: none;
-}
+  /* Remove the underline pseudo-element */
+  :scope
+    > .flexlayout__optimized_layout
+    > .flexlayout__layout
+    .flexlayout__tab_button::after {
+    display: none;
+  }
 
-.shell-flexlayout
-  > .flexlayout__optimized_layout
-  > .flexlayout__layout
-  .flexlayout__tab_button:not(.flexlayout__tab *):hover {
-  background: oklch(0.247 0.003 8 / 0.55);
-}
+  :scope
+    > .flexlayout__optimized_layout
+    > .flexlayout__layout
+    .flexlayout__tab_button:hover {
+    background: oklch(0.247 0.003 8 / 0.55);
+  }
 
-/* Selected tab in inactive tabset */
-.shell-flexlayout
-  > .flexlayout__optimized_layout
-  > .flexlayout__layout
-  .flexlayout__tab_button--selected:not(.flexlayout__tab *) {
-  background: oklch(0.247 0.003 8);
-  color: oklch(0.85 0.01 305);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  border-top: 1px solid oklch(1 0 0 / 0.12);
-  border-left: 1px solid oklch(1 0 0 / 0.1);
-  border-right: 1px solid oklch(1 0 0 / 0.1);
-  box-shadow: none;
-}
+  /* Selected tab in inactive tabset */
+  :scope
+    > .flexlayout__optimized_layout
+    > .flexlayout__layout
+    .flexlayout__tab_button--selected {
+    background: oklch(0.247 0.003 8);
+    color: oklch(0.85 0.01 305);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-top: 1px solid oklch(1 0 0 / 0.12);
+    border-left: 1px solid oklch(1 0 0 / 0.1);
+    border-right: 1px solid oklch(1 0 0 / 0.1);
+    box-shadow: none;
+  }
 
-/* Selected tab in active tabset — full brightness */
-.shell-flexlayout
-  > .flexlayout__optimized_layout
-  > .flexlayout__layout
-  .flexlayout__tabset-selected
-  .flexlayout__tab_button--selected:not(.flexlayout__tab *) {
-  color: oklch(0.96 0.02 305);
-  box-shadow: none;
-}
+  /* Selected tab in active tabset — full brightness */
+  :scope
+    > .flexlayout__optimized_layout
+    > .flexlayout__layout
+    .flexlayout__tabset-selected
+    .flexlayout__tab_button--selected {
+    color: oklch(0.96 0.02 305);
+    box-shadow: none;
+  }
 
-.shell-flexlayout
-  > .flexlayout__optimized_layout
-  > .flexlayout__layout
-  .flexlayout__tab_button--unselected:not(.flexlayout__tab *) {
-  color: oklch(0.62 0 0);
-  background: oklch(0.247 0.003 8 / 0.4);
-}
+  :scope
+    > .flexlayout__optimized_layout
+    > .flexlayout__layout
+    .flexlayout__tab_button--unselected {
+    color: oklch(0.62 0 0);
+    background: oklch(0.247 0.003 8 / 0.4);
+  }
 
-/* Tab button content */
-.shell-flexlayout
-  > .flexlayout__optimized_layout
-  > .flexlayout__layout
-  .flexlayout__tab_button_content:not(.flexlayout__tab *) {
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  letter-spacing: -0.01em;
-}
+  /* Tab button content */
+  :scope
+    > .flexlayout__optimized_layout
+    > .flexlayout__layout
+    .flexlayout__tab_button_content {
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    letter-spacing: -0.01em;
+  }
 
-/* Tab dividers - hidden */
-.shell-flexlayout
-  > .flexlayout__optimized_layout
-  > .flexlayout__layout
-  .flexlayout__tabset_tab_divider:not(.flexlayout__tab *) {
-  display: none;
-}
+  /* Tab dividers - hidden */
+  :scope
+    > .flexlayout__optimized_layout
+    > .flexlayout__layout
+    .flexlayout__tabset_tab_divider {
+    display: none;
+  }
 
-/* Toolbar (add button area) */
-.shell-flexlayout
-  > .flexlayout__optimized_layout
-  > .flexlayout__layout
-  .flexlayout__tab_toolbar:not(.flexlayout__tab *) {
-  height: 20px;
-  align-items: center;
-  padding: 0;
-  margin-left: 4px;
-  gap: 1px;
-}
+  /* Toolbar (add button area) */
+  :scope
+    > .flexlayout__optimized_layout
+    > .flexlayout__layout
+    .flexlayout__tab_toolbar {
+    height: 20px;
+    align-items: center;
+    padding: 0;
+    margin-left: 4px;
+    gap: 1px;
+  }
 
-/* Toolbar buttons - compact icon buttons */
-.shell-flexlayout
-  > .flexlayout__optimized_layout
-  > .flexlayout__layout
-  .flexlayout__tab_toolbar_button:not(.flexlayout__tab *) {
-  @apply text-shell-tab-text;
-  background: transparent;
-  height: 16px;
-  width: 16px;
-  padding: 0;
-  border: none;
-  border-radius: var(--radius-editor);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0.6;
-  transition:
-    opacity 0.15s ease,
-    background-color 0.15s ease;
-}
+  /* Toolbar buttons - compact icon buttons */
+  :scope
+    > .flexlayout__optimized_layout
+    > .flexlayout__layout
+    .flexlayout__tab_toolbar_button {
+    @apply text-shell-tab-text;
+    background: transparent;
+    height: 16px;
+    width: 16px;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-editor);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.6;
+    transition:
+      opacity 0.15s ease,
+      background-color 0.15s ease;
+  }
 
-.shell-flexlayout
-  > .flexlayout__optimized_layout
-  > .flexlayout__layout
-  .flexlayout__tab_toolbar_button:not(.flexlayout__tab *):hover {
-  opacity: 1;
-  background-color: color-mix(
-    in srgb,
-    var(--color-shell-tab-text) 15%,
-    transparent
-  );
-}
+  :scope
+    > .flexlayout__optimized_layout
+    > .flexlayout__layout
+    .flexlayout__tab_toolbar_button:hover {
+    opacity: 1;
+    background-color: color-mix(
+      in srgb,
+      var(--color-shell-tab-text) 15%,
+      transparent
+    );
+  }
 
-.shell-flexlayout
-  > .flexlayout__optimized_layout
-  > .flexlayout__layout
-  .flexlayout__tab_toolbar_button:not(.flexlayout__tab *):disabled {
-  opacity: 0.25;
-  cursor: not-allowed;
-}
+  :scope
+    > .flexlayout__optimized_layout
+    > .flexlayout__layout
+    .flexlayout__tab_toolbar_button:disabled {
+    opacity: 0.25;
+    cursor: not-allowed;
+  }
 
-.shell-flexlayout
-  > .flexlayout__optimized_layout
-  > .flexlayout__layout
-  .flexlayout__tab_toolbar_button:not(.flexlayout__tab *):disabled:hover {
-  background: transparent;
-}
+  :scope
+    > .flexlayout__optimized_layout
+    > .flexlayout__layout
+    .flexlayout__tab_toolbar_button:disabled:hover {
+    background: transparent;
+  }
 
-/* Tab content area - these don't need :not() since they define the boundary */
-.shell-flexlayout
-  > .flexlayout__optimized_layout
-  > .flexlayout__layout
-  .flexlayout__tab {
-  @apply bg-background;
-  border-radius: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
+  /* Tab content defines the shell scope boundary. */
+  :scope
+    > .flexlayout__optimized_layout
+    > .flexlayout__layout
+    .flexlayout__tab {
+    @apply bg-background;
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
 
-/* Add top padding to shell tab content in non-grid mode */
-.shell-flexlayout.shell-flexlayout--with-menu
-  > .flexlayout__optimized_layout
-  > .flexlayout__layout
-  .flexlayout__tab {
-  padding-top: 4px;
-}
+  /* Add top padding to shell tab content in non-grid mode */
+  :scope.shell-flexlayout--with-menu
+    > .flexlayout__optimized_layout
+    > .flexlayout__layout
+    .flexlayout__tab {
+    padding-top: 4px;
+  }
 
-.shell-flexlayout
-  > .flexlayout__optimized_layout
-  > .flexlayout__layout
-  .flexlayout__tabset_content:not(.flexlayout__tab *) {
-  @apply bg-background;
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-}
+  :scope
+    > .flexlayout__optimized_layout
+    > .flexlayout__layout
+    .flexlayout__tabset_content {
+    @apply bg-background;
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
 
-/* Splitters for grid layout */
-.shell-flexlayout
-  > .flexlayout__optimized_layout
-  > .flexlayout__layout
-  .flexlayout__splitter:not(.flexlayout__tab *) {
-  @apply bg-editor-border;
-}
+  /* Splitters for grid layout */
+  :scope
+    > .flexlayout__optimized_layout
+    > .flexlayout__layout
+    .flexlayout__splitter {
+    @apply bg-editor-border;
+  }
 
-.shell-flexlayout
-  > .flexlayout__optimized_layout
-  > .flexlayout__layout
-  .flexlayout__splitter:not(.flexlayout__tab *):hover {
-  @apply bg-ui-outline-active;
-}
+  :scope
+    > .flexlayout__optimized_layout
+    > .flexlayout__layout
+    .flexlayout__splitter:hover {
+    @apply bg-ui-outline-active;
+  }
 
-.shell-flexlayout
-  > .flexlayout__optimized_layout
-  > .flexlayout__layout
-  .flexlayout__splitter_drag:not(.flexlayout__tab *) {
-  @apply bg-resize-handle-active;
+  :scope
+    > .flexlayout__optimized_layout
+    > .flexlayout__layout
+    .flexlayout__splitter_drag {
+    @apply bg-resize-handle-active;
+  }
 }
 
 /* end of shell flexlayout styles */

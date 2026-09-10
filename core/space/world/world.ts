@@ -2,8 +2,7 @@
 export const SPACE_SETTINGS_OBJECT_KEY = 'settings'
 
 // SPACE_SETTINGS_BLOCK_TYPE is the block type identifier for SpaceSettings.
-export const SPACE_SETTINGS_BLOCK_TYPE =
-  'github.com/s4wave/spacewave/core/space/world.SpaceSettings'
+export const SPACE_SETTINGS_BLOCK_TYPE = 'space/settings'
 
 const DNS1123_LABEL_RE = /^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/
 const DNS1123_LABEL_MAX_LENGTH = 63

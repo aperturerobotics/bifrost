@@ -12,6 +12,9 @@ ROOTRESOURCESERVICE_SERVICE: ServiceDescriptor
 
 class RootResourceServiceClient:
     def __init__(self, client: Client, service: str | None = None) -> None: ...
+    async def mount_app(
+        self, request: _github_com_s4wave_spacewave_sdk_root_root_pb2.MountAppRequest
+    ) -> _github_com_s4wave_spacewave_sdk_root_root_pb2.MountAppResponse: ...
     async def list_providers(
         self,
         request: _github_com_s4wave_spacewave_sdk_root_root_pb2.ListProvidersRequest,
@@ -171,6 +174,9 @@ class RootResourceServiceClient:
     ]: ...
 
 class RootResourceServiceServer(Protocol):
+    async def mount_app(
+        self, request: _github_com_s4wave_spacewave_sdk_root_root_pb2.MountAppRequest
+    ) -> _github_com_s4wave_spacewave_sdk_root_root_pb2.MountAppResponse: ...
     async def list_providers(
         self,
         request: _github_com_s4wave_spacewave_sdk_root_root_pb2.ListProvidersRequest,

@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { useAppEnvironment } from '@s4wave/web/sdk/app/environment.js'
 import type { WatchSessionsResponse } from '@s4wave/sdk/root/root.pb.js'
 import type { Root } from '@s4wave/sdk/root/root.js'
 import type {
@@ -20,6 +21,7 @@ const EMPTY_SESSIONS: Resource<WatchSessionsResponse> = {
 
 // useSessionList returns the list of configured sessions, updating live.
 export function useSessionList(): Resource<WatchSessionsResponse> {
+  const environment = useAppEnvironment()
   const isStatic = useIsStaticMode()
   const rootResource = useRootResource()
   const resource = useStreamingResource(
@@ -32,11 +34,11 @@ export function useSessionList(): Resource<WatchSessionsResponse> {
     if (resource.loading) return
     const hasSessions = (resource.value?.sessions?.length ?? 0) > 0
     if (hasSessions) {
-      localStorage.setItem('spacewave-has-session', '1')
+      environment.storage.setItem('spacewave-has-session', '1')
       return
     }
-    localStorage.removeItem('spacewave-has-session')
-  }, [isStatic, resource.loading, resource.value])
+    environment.storage.removeItem('spacewave-has-session')
+  }, [isStatic, resource.loading, resource.value, environment])
   if (isStatic) return EMPTY_SESSIONS
   return resource
 }

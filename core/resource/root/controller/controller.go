@@ -8,6 +8,8 @@ import (
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/aperturerobotics/starpc/srpc"
+	"github.com/aperturerobotics/util/keyed"
+	"github.com/aperturerobotics/util/promise"
 	bldr_plugin "github.com/s4wave/spacewave/bldr/plugin"
 	resource "github.com/s4wave/spacewave/bldr/resource"
 	resource_server "github.com/s4wave/spacewave/bldr/resource/server"
@@ -53,6 +55,10 @@ type Controller struct {
 	server *resource_server.ResourceServer
 	// rootResource is the root resource server
 	rootResource *resource_root.CoreRootServer
+	// httpPathPrefix locates this installation beneath its host plugin HTTP route.
+	httpPathPrefix string
+	// apps owns shared runtime attachments for explicitly supplied Storage.
+	apps *keyed.KeyedRefCount[resource_root.AppStorage, *promise.Promise[*appRuntime]]
 	// viewerRegistry is the viewer registry resource
 	viewerRegistry *resource_viewer_registry.ViewerRegistryResource
 	// objectTypeRegistry is the ObjectType registry resource
@@ -101,6 +107,7 @@ func NewFactory(b bus.Bus, opts ...Option) controller.Factory {
 		},
 		func(base *bus.BusController[*Config]) (*Controller, error) {
 			c := &Controller{BusController: base}
+			c.apps = c.newAppRegistry()
 			for _, opt := range opts {
 				opt(c)
 			}
@@ -118,6 +125,7 @@ func NewFactory(b bus.Bus, opts ...Option) controller.Factory {
 
 			// create the root resource
 			c.rootResource = resource_root.NewCoreRootServer(base.GetLogger(), b)
+			c.rootResource.SetMountAppFunc(c.mountApp)
 			if c.yieldBroker != nil {
 				c.rootResource.SetYieldBroker(c.yieldBroker)
 			}
@@ -188,6 +196,8 @@ func (c *Controller) SetWebListenerKeepaliveFunc(fn resource_root.WebListenerKee
 
 // Execute registers child controllers for the root resource lifecycle.
 func (c *Controller) Execute(ctx context.Context) error {
+	c.apps.SetContext(ctx, true)
+	defer c.apps.ClearContext()
 	b := c.GetBus()
 	le := c.GetLogger()
 	if info := bldr_plugin.GetPluginContextInfo(ctx); info != nil {
@@ -227,6 +237,12 @@ func (c *Controller) Execute(ctx context.Context) error {
 
 	<-ctx.Done()
 	return nil
+}
+
+// Close releases permanent root resources after controller execution stops.
+func (c *Controller) Close() error {
+	c.rootResource.Close()
+	return c.BusController.Close()
 }
 
 // GetServiceID returns the ServiceID the controller will respond to.

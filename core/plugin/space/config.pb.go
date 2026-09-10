@@ -44,6 +44,9 @@ type Config struct {
 	// Required when world_bucket_id is set so the forwarded block store
 	// configset registers under the correct plugin service prefix.
 	HostPluginId string `protobuf:"bytes,9,opt,name=host_plugin_id,json=hostPluginId,proto3" json:"hostPluginId,omitempty"`
+	// HostStorageId selects the parent runtime Storage for every child plugin.
+	// Empty preserves the ordinary platform storage selection.
+	HostStorageId string `protobuf:"bytes,10,opt,name=host_storage_id,json=hostStorageId,proto3" json:"hostStorageId,omitempty"`
 }
 
 func (x *Config) Reset() {
@@ -115,6 +118,13 @@ func (x *Config) GetHostPluginId() string {
 	return ""
 }
 
+func (x *Config) GetHostStorageId() string {
+	if x != nil {
+		return x.HostStorageId
+	}
+	return ""
+}
+
 func (m *Config) CloneVT() *Config {
 	if m == nil {
 		return (*Config)(nil)
@@ -127,6 +137,7 @@ func (m *Config) CloneVT() *Config {
 	r.SessionPeerId = m.SessionPeerId
 	r.WorldBucketId = m.WorldBucketId
 	r.HostPluginId = m.HostPluginId
+	r.HostStorageId = m.HostStorageId
 	r.PluginIds = protobuf_go_lite.CloneSlice(m.PluginIds)
 	r.ObjectKeys = protobuf_go_lite.CloneSlice(m.ObjectKeys)
 	if len(m.unknownFields) > 0 {
@@ -170,6 +181,9 @@ func (this *Config) EqualVT(that *Config) bool {
 		return false
 	}
 	if this.HostPluginId != that.HostPluginId {
+		return false
+	}
+	if this.HostStorageId != that.HostStorageId {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -236,6 +250,11 @@ func (x *Config) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("hostPluginId")
 		s.WriteString(x.HostPluginId)
 	}
+	if x.HostStorageId != "" || s.HasField("hostStorageId") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("hostStorageId")
+		s.WriteString(x.HostStorageId)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -288,6 +307,9 @@ func (x *Config) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "host_plugin_id", "hostPluginId":
 			s.AddField("host_plugin_id")
 			x.HostPluginId = s.ReadString()
+		case "host_storage_id", "hostStorageId":
+			s.AddField("host_storage_id")
+			x.HostStorageId = s.ReadString()
 		}
 	})
 }
@@ -325,6 +347,11 @@ func (m *Config) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	_ = l
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.HostStorageId) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.HostStorageId)
+		i--
+		dAtA[i] = 0x52
 	}
 	if len(m.HostPluginId) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.HostPluginId)
@@ -393,6 +420,7 @@ func (m *Config) SizeVT() (n int) {
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.SessionPeerId)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.WorldBucketId)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.HostPluginId)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.HostStorageId)
 	n += len(m.unknownFields)
 	return n
 }
@@ -443,6 +471,10 @@ func (x *Config) MarshalProtoText() string {
 	if x.HostPluginId != "" {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "host_plugin_id")
 		protobuf_go_lite.TextWriteString(&sb, x.HostPluginId)
+	}
+	if x.HostStorageId != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "host_storage_id")
+		protobuf_go_lite.TextWriteString(&sb, x.HostStorageId)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -561,6 +593,16 @@ func (m *Config) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.HostPluginId = v
+		case 10:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field HostStorageId", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.HostStorageId = v
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

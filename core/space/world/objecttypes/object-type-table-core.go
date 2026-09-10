@@ -4,6 +4,7 @@ package objecttypes
 
 import (
 	forge_dashboard "github.com/s4wave/spacewave/core/forge/dashboard"
+	volume_world "github.com/s4wave/spacewave/db/volume/world"
 	forge_cluster "github.com/s4wave/spacewave/forge/cluster"
 	forge_execution "github.com/s4wave/spacewave/forge/execution"
 	forge_job "github.com/s4wave/spacewave/forge/job"
@@ -24,10 +25,12 @@ import (
 	s4wave_terminal "github.com/s4wave/spacewave/sdk/terminal"
 	s4wave_terminal_world "github.com/s4wave/spacewave/sdk/terminal/world"
 	s4wave_unixfs_world "github.com/s4wave/spacewave/sdk/unixfs/world"
+	s4wave_volume_world "github.com/s4wave/spacewave/sdk/volume/world"
 	"github.com/s4wave/spacewave/sdk/world/objecttype"
 )
 
 var commonObjectTypes = map[string]objecttype.ObjectType{
+	volume_world.ObjectTypeID:              s4wave_volume_world.VolumeType,
 	s4wave_layout_world.ObjectLayoutTypeID: s4wave_layout_world.ObjectLayoutType,
 	s4wave_unixfs_world.UnixFSTypeID:       s4wave_unixfs_world.UnixFSType,
 	s4wave_git_world.GitRepoTypeID:         s4wave_git_world.GitRepoType,

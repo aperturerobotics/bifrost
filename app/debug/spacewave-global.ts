@@ -1,8 +1,11 @@
 import { pluginPathPrefix } from '@s4wave/app/urls.js'
 import { resolvePath, To } from '@s4wave/web/router/router.js'
+import { getDebugContext } from '@s4wave/sdk/debug/context.js'
 
 // SpacewaveDebug provides debug commands on window.spacewave.
 interface SpacewaveDebug {
+  // app returns one mounted app's normal SDK and scenario controls.
+  app: (id: string) => ReturnType<typeof getDebugContext>
   // navigate resolves a path (relative or absolute) against the current
   // hash path and navigates to it. Supports ../../, ./foo/bar, /absolute.
   navigate: (to: string | To) => void
@@ -27,6 +30,7 @@ function triggerDownload(path: string, filename: string): void {
 }
 
 const spacewave: SpacewaveDebug = {
+  app: getDebugContext,
   navigate(to: string | To) {
     const toObj = typeof to === 'string' ? { path: to } : to
     const resolved = resolvePath(getHashPath(), toObj)

@@ -1,3 +1,4 @@
+import { useAppEnvironment } from '@s4wave/web/sdk/app/environment.js'
 import { useDeferredValue, useState } from 'react'
 
 import { useResource } from '@aptre/bldr-sdk/hooks/useResource.js'
@@ -34,6 +35,7 @@ function useGitRepoController({
 }: ObjectViewerComponentProps) {
   const objectKey = getObjectKey(objectInfo)
   const sessionIndex = useSessionIndex()
+  const { httpPathPrefix } = useAppEnvironment()
   const spaceCtx = SpaceContainerContext.useContextSafe()
   const navigate = useNavigate()
   const history = useHistory()
@@ -80,6 +82,7 @@ function useGitRepoController({
       : !sessionIndex || !spaceCtx?.spaceId
         ? undefined
         : buildProjectedFileInlineURL({
+            httpPathPrefix,
             sessionIndex,
             sharedObjectId: spaceCtx.spaceId,
             objectKey,

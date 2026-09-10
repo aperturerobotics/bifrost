@@ -33,10 +33,8 @@ func (c *Config) Validate() error {
 			return errors.Wrap(err, "init_head_ref")
 		}
 	}
-	if c.GetVolumeId() == "" {
-		return errors.New(
-			"block volume requires volume_id to be set for writes",
-		)
+	if c.GetObjectKey() == "" {
+		return world.ErrEmptyObjectKey
 	}
 	if err := c.GetKvKeyOpts().Validate(); err != nil {
 		return err

@@ -602,7 +602,7 @@ func (c *Cursor) fetch(ctx context.Context) ([]byte, []byte, bool, error) {
 	if bkt == nil {
 		return nil, nil, false, ErrBlockStoreUnavailable
 	}
-	data, found, err := bkt.GetBlock(ctx, c.pos.ref)
+	data, found, err := bkt.GetBlock(withoutReadOperationStore(ctx), c.pos.ref)
 	if err == nil {
 		recordReadCounter(ctx, found, len(data))
 	}
@@ -675,7 +675,7 @@ func (c *Cursor) Unmarshal(ctx context.Context, ctor func() Block) (Block, error
 	if cacheable {
 		store := c.readStore(ctx)
 		if freshener, ok := store.(DecodedBlockCacheFreshener); ok {
-			if err := freshener.EnsureDecodedBlockCacheFresh(ctx); err != nil {
+			if err := freshener.EnsureDecodedBlockCacheFresh(withoutReadOperationStore(ctx)); err != nil {
 				return nil, err
 			}
 		}

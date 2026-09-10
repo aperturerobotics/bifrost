@@ -46,6 +46,7 @@ export interface BrowserShellTabsStoreOptions {
   locks?: Pick<LockManager, 'request'>
   lockName?: string
   now?: () => number
+  storageEvents?: boolean
 }
 
 export interface BrowserShellTabsMutationVersion {
@@ -236,8 +237,10 @@ export class BrowserShellTabsStore {
   private snapshot: BrowserShellTabsSnapshot
   private readonly listeners = new Set<() => void>()
   private storageListenerAttached = false
+  private readonly storageEvents: boolean
 
   constructor(options: BrowserShellTabsStoreOptions = {}) {
+    this.storageEvents = options.storageEvents ?? true
     this.key = options.key ?? BROWSER_SHELL_TABS_STORAGE_KEY
     this.lockName = options.lockName ?? BROWSER_SHELL_TABS_LOCK_NAME
     this.storage = options.storage ?? browserStorage()
@@ -251,7 +254,13 @@ export class BrowserShellTabsStore {
   subscribe = (listener: () => void): (() => void) => {
     this.listeners.add(listener)
     this.attachStorageListener()
-    return () => this.listeners.delete(listener)
+    return () => {
+      this.listeners.delete(listener)
+      if (!this.listeners.size && this.storageListenerAttached) {
+        window.removeEventListener('storage', this.handleStorageEvent)
+        this.storageListenerAttached = false
+      }
+    }
   }
 
   read(): BrowserShellTabsSnapshot {
@@ -514,7 +523,12 @@ export class BrowserShellTabsStore {
   }
 
   private attachStorageListener(): void {
-    if (this.storageListenerAttached || typeof window === 'undefined') return
+    if (
+      !this.storageEvents ||
+      this.storageListenerAttached ||
+      typeof window === 'undefined'
+    )
+      return
     this.storageListenerAttached = true
     window.addEventListener('storage', this.handleStorageEvent)
   }

@@ -11,8 +11,16 @@ import { SessionSettingsDebug } from '@s4wave/web/debug/SessionSettingsDebug.js'
 import { UnixFSBrowserDebug } from '@s4wave/web/debug/UnixFSBrowserDebug.js'
 
 import { DebugIndex } from './DebugIndex.js'
+import { appScenarios } from '../debug/scenarios/registry.js'
+import { ScenarioPage } from '../debug/scenarios/ScenarioPage.js'
 
 const debugRouteEntries = [
+  ...appScenarios.map((scenario) => ({
+    path: `/debug/ui/scenarios/${scenario.name}`,
+    title: scenario.title,
+    description: 'Open and reset a real app in an isolated temporary World.',
+    element: <ScenarioPage scenario={scenario} />,
+  })),
   {
     path: '/debug/db/bench',
     title: 'DB bench',

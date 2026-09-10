@@ -12,6 +12,7 @@ import type { DownloadDragTarget } from '@s4wave/web/dnd/download-url-drag.js'
 import type { FileEntry } from '@s4wave/web/editors/file-browser/types.js'
 
 interface UnixFSSelectionDownloadOpts {
+  httpPathPrefix?: string
   sessionIndex: number
   sharedObjectId: string
   objectKey: string
@@ -54,12 +55,14 @@ export function buildUnixFSFileDownloadURL(
   sharedObjectId: string,
   objectKey: string,
   path: string,
+  httpPathPrefix = '',
 ): string {
   return buildProjectedFileURL({
     sessionIndex,
     sharedObjectId,
     objectKey,
     path,
+    httpPathPrefix,
   })
 }
 
@@ -68,12 +71,14 @@ export function buildUnixFSFileInlineURL(
   sharedObjectId: string,
   objectKey: string,
   path: string,
+  httpPathPrefix = '',
 ): string {
   return buildProjectedFileInlineURL({
     sessionIndex,
     sharedObjectId,
     objectKey,
     path,
+    httpPathPrefix,
   })
 }
 
@@ -82,12 +87,14 @@ export function buildUnixFSExportURL(
   sharedObjectId: string,
   objectKey: string,
   path: string,
+  httpPathPrefix = '',
 ): string {
   return buildProjectedExportURL({
     sessionIndex,
     sharedObjectId,
     objectKey,
     path,
+    httpPathPrefix,
   })
 }
 
@@ -97,6 +104,7 @@ export function buildUnixFSBatchExportURL(
   objectKey: string,
   basePath: string,
   entries: FileEntry[],
+  httpPathPrefix = '',
 ): { url: string; filename: string } {
   const normalizedEntries = normalizeBatchEntries(entries)
   const req = ExportBatchRequest.toBinary({
@@ -113,13 +121,14 @@ export function buildUnixFSBatchExportURL(
   const encodedReq = encodeBase64Url(req)
   return {
     url:
-      `${pluginPathPrefix}/export-batch/${baseProjectedPath}/` +
+      `${pluginPathPrefix}${httpPathPrefix}/export-batch/${baseProjectedPath}/` +
       `${encodedReq}/${encodedFilename}`,
     filename,
   }
 }
 
 export function buildUnixFSSelectionDownloadDragTarget({
+  httpPathPrefix,
   sessionIndex,
   sharedObjectId,
   objectKey,
@@ -144,6 +153,7 @@ export function buildUnixFSSelectionDownloadDragTarget({
         sharedObjectId,
         objectKey,
         filePath,
+        httpPathPrefix,
       ),
     }
   }
@@ -161,6 +171,7 @@ export function buildUnixFSSelectionDownloadDragTarget({
         sharedObjectId,
         objectKey,
         dirPath,
+        httpPathPrefix,
       ),
     }
   }
@@ -171,6 +182,7 @@ export function buildUnixFSSelectionDownloadDragTarget({
     objectKey,
     currentPath,
     normalizedEntries,
+    httpPathPrefix,
   )
   return {
     mimeType: 'application/zip',
@@ -180,6 +192,7 @@ export function buildUnixFSSelectionDownloadDragTarget({
 }
 
 export function downloadUnixFSSelection({
+  httpPathPrefix,
   sessionIndex,
   sharedObjectId,
   objectKey,
@@ -202,6 +215,7 @@ export function downloadUnixFSSelection({
         sharedObjectId,
         objectKey,
         filePath,
+        httpPathPrefix,
       ),
       normalizedEntries[0].name,
     )
@@ -213,7 +227,13 @@ export function downloadUnixFSSelection({
       normalizedEntries[0].name,
     ])
     return downloadURL(
-      buildUnixFSExportURL(sessionIndex, sharedObjectId, objectKey, dirPath),
+      buildUnixFSExportURL(
+        sessionIndex,
+        sharedObjectId,
+        objectKey,
+        dirPath,
+        httpPathPrefix,
+      ),
       `${normalizedEntries[0].name}.zip`,
     )
   }
@@ -224,6 +244,7 @@ export function downloadUnixFSSelection({
     objectKey,
     currentPath,
     normalizedEntries,
+    httpPathPrefix,
   )
   return downloadURL(batchDownload.url, batchDownload.filename)
 }

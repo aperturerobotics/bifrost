@@ -1,3 +1,4 @@
+import { useAppEnvironment } from '@s4wave/web/sdk/app/environment.js'
 import { useStateAtom } from '@s4wave/web/state/persist.js'
 import { stateDevToolsStateAtom } from './StateDevToolsContext.js'
 
@@ -19,8 +20,11 @@ export function useStateDevToolsPanelState(): [
   StateDevToolsPanelState,
   (state: StateDevToolsPanelState) => void,
 ] {
+  const environment = useAppEnvironment()
   return useStateAtom<StateDevToolsPanelState>(
-    stateDevToolsNamespace,
+    environment.id
+      ? { ...stateDevToolsNamespace, stateAtom: environment.rootAtom }
+      : stateDevToolsNamespace,
     'panel',
     DEFAULT_STATE,
   )

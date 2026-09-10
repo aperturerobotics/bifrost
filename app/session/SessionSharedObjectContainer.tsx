@@ -1,3 +1,4 @@
+import { useAppEnvironment } from '@s4wave/web/sdk/app/environment.js'
 /* eslint-disable react-doctor/no-giant-component */
 import {
   useCallback,
@@ -641,6 +642,7 @@ function SharedObjectHealthCard({
 
 // SessionSharedObjectContainer displays a shared object.
 export function SessionSharedObjectContainer() {
+  const environment = useAppEnvironment()
   const params = useParams()
   const sharedObjectId = params['sharedObjectId'] ?? ''
   const navigate = useNavigate()
@@ -657,6 +659,7 @@ export function SessionSharedObjectContainer() {
   const quickstartSharedObjectHandoffPresent = hasQuickstartSharedObjectHandoff(
     sessionIndex,
     sharedObjectId,
+    environment.instanceKey,
   )
 
   // Redirect legacy /u/:idx/so/:spaceId to /u/:idx/org/:orgId/so/:spaceId
@@ -714,6 +717,7 @@ export function SessionSharedObjectContainer() {
       const handoff = consumeQuickstartSharedObjectHandoff(
         sessionIndex,
         sharedObjectId,
+        environment.instanceKey,
       )
       if (handoff) {
         logQuickstartRouteDiagnostic(
@@ -769,6 +773,7 @@ export function SessionSharedObjectContainer() {
       const handoff = consumeQuickstartSharedObjectBodyHandoff(
         sessionIndex,
         sharedObjectId,
+        environment.instanceKey,
       )
       if (handoff) {
         logQuickstartRouteDiagnostic(
@@ -799,10 +804,15 @@ export function SessionSharedObjectContainer() {
       clearQuickstartSharedObjectHandoffAwaitingResourcesList(
         sessionIndex,
         sharedObjectId,
+        environment.instanceKey,
       )
-      releaseQuickstartSharedObjectHandoff(sessionIndex, sharedObjectId)
+      releaseQuickstartSharedObjectHandoff(
+        sessionIndex,
+        sharedObjectId,
+        environment.instanceKey,
+      )
     }
-  }, [sessionIndex, sharedObjectId])
+  }, [sessionIndex, sharedObjectId, environment.instanceKey])
 
   const sharedObjectInResourcesList = useMemo(
     () =>
@@ -818,6 +828,7 @@ export function SessionSharedObjectContainer() {
       isQuickstartSharedObjectHandoffAwaitingResourcesList(
         sessionIndex,
         sharedObjectId,
+        environment.instanceKey,
       ))
 
   useEffect(() => {
@@ -825,6 +836,7 @@ export function SessionSharedObjectContainer() {
       clearQuickstartSharedObjectHandoffAwaitingResourcesList(
         sessionIndex,
         sharedObjectId,
+        environment.instanceKey,
       )
       return
     }
@@ -832,6 +844,7 @@ export function SessionSharedObjectContainer() {
       markQuickstartSharedObjectHandoffAwaitingResourcesList(
         sessionIndex,
         sharedObjectId,
+        environment.instanceKey,
       )
     }
   }, [
@@ -839,6 +852,7 @@ export function SessionSharedObjectContainer() {
     sessionIndex,
     sharedObjectInResourcesList,
     sharedObjectId,
+    environment.instanceKey,
   ])
 
   // Quickstart handoff can mount this SharedObject before WatchResourcesList

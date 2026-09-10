@@ -18,6 +18,7 @@ import {
   createQuickstartSessionHandoffCleanup,
   getQuickstartInitialObjectHandoff,
   releaseQuickstartSharedObjectHandoff,
+  releaseQuickstartAppHandoffs,
   releaseQuickstartSessionHandoffsForTests,
   stageQuickstartSessionHandoff,
 } from './session-handoff.js'
@@ -141,6 +142,32 @@ describe('quickstart session handoff', () => {
     expect(consumeQuickstartSessionHandoff(1)?.session).toBe(session)
     expect(consumeQuickstartSessionHandoff(1)).toBeNull()
     expect(release).not.toHaveBeenCalled()
+  })
+
+  it('isolates equal Session indexes and releases only the reset app', () => {
+    const outer = createTestSession()
+    const left = createTestSession()
+    const right = createTestSession()
+    stageQuickstartSessionHandoff({ sessionIndex: 1, session: outer.session })
+    stageQuickstartSessionHandoff(
+      { sessionIndex: 1, session: left.session },
+      'left',
+    )
+    stageQuickstartSessionHandoff(
+      { sessionIndex: 1, session: right.session },
+      'right',
+    )
+
+    releaseQuickstartAppHandoffs('left')
+
+    expect(left.release).toHaveBeenCalledOnce()
+    expect(consumeQuickstartSessionHandoff(1, 'left')).toBeNull()
+    expect(consumeQuickstartSessionHandoff(1, 'right')?.session).toBe(
+      right.session,
+    )
+    expect(consumeQuickstartSessionHandoff(1)?.session).toBe(outer.session)
+    expect(outer.release).not.toHaveBeenCalled()
+    expect(right.release).not.toHaveBeenCalled()
   })
 
   it('releases stale staged sessions when a later handoff replaces them', () => {

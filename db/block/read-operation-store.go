@@ -11,7 +11,9 @@ type readOperationContext struct {
 	decodedBlocks *decodedBlockFrontCache
 }
 
-// WithReadOperationStore returns a context that routes block fetches through store.
+// WithReadOperationStore routes the current cursor operation through store.
+// Storage implementations receive a context without this routing override so
+// their own backing cursors remain bound to their underlying stores.
 func WithReadOperationStore(ctx context.Context, store StoreOps) context.Context {
 	if store == nil {
 		return ctx
@@ -34,6 +36,14 @@ func readOperationStore(ctx context.Context) StoreOps {
 		return nil
 	}
 	return op.store
+}
+
+// withoutReadOperationStore ends routing at the selected storage boundary.
+func withoutReadOperationStore(ctx context.Context) context.Context {
+	if readOperationContextFromContext(ctx) == nil {
+		return ctx
+	}
+	return context.WithValue(ctx, readOperationStoreContextKey{}, (*readOperationContext)(nil))
 }
 
 // readOperationContextFromContext returns the read operation context from
