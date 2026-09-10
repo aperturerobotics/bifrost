@@ -1,6 +1,98 @@
 package provider_spacewave_handoff
 
-import "testing"
+import (
+	"context"
+	"encoding/base64"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"strings"
+	"testing"
+	"time"
+
+	websocket "github.com/aperturerobotics/go-websocket"
+	api "github.com/s4wave/spacewave/core/provider/spacewave/api"
+	session_handoff "github.com/s4wave/spacewave/core/session/handoff"
+	"github.com/s4wave/spacewave/net/crypto"
+	"github.com/s4wave/spacewave/net/peer"
+)
+
+func TestStartHandoffKeepsReceivingKey(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	requests := make(chan *session_handoff.HandoffRequest, 1)
+	originalOpener := browserOpener
+	t.Cleanup(func() { browserOpener = originalOpener })
+	browserOpener = func(raw string) error {
+		u, err := url.Parse(raw)
+		if err != nil {
+			return err
+		}
+		encoded, _, _ := strings.Cut(strings.TrimPrefix(u.Fragment, "/auth/link/"), "?")
+		data, err := base64.RawURLEncoding.DecodeString(encoded)
+		if err != nil {
+			return err
+		}
+		request := &session_handoff.HandoffRequest{}
+		if err := request.UnmarshalVT(data); err != nil {
+			return err
+		}
+		requests <- request
+		return nil
+	}
+	var offeredPeer peer.ID
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/auth/session/create" {
+			data, _ := (&api.AuthSessionCreateResponse{WsTicket: "test-ticket"}).MarshalVT()
+			_, _ = w.Write(data)
+			return
+		}
+		if r.URL.Path != "/api/auth/session/ws" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		conn, err := websocket.Accept(w, r, nil)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		defer conn.Close(websocket.StatusNormalClosure, "")
+		request := <-requests
+		if request.GetProtocolVersion() != 1 {
+			t.Error("handoff did not request independent Session enrollment")
+		}
+		key, err := crypto.UnmarshalEd25519PublicKey(request.GetDevicePublicKey())
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		offeredPeer, err = peer.IDFromPublicKey(key)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		data, _ := (&api.WsAuthSessionServerFrame{Body: &api.WsAuthSessionServerFrame_Completion{Completion: &session_handoff.HandoffCompletion{AccountId: "account", EntityId: "user", SessionPeerId: offeredPeer.String()}}}).MarshalVT()
+		if err := conn.Write(ctx, websocket.MessageBinary, data); err != nil {
+			t.Error(err)
+			return
+		}
+		if _, _, err := conn.Read(ctx); err != nil {
+			t.Error(err)
+		}
+	}))
+	defer server.Close()
+	key, accountID, _, err := StartHandoff(ctx, server.Client(), server.URL, server.URL, "desktop", "login", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	actual, err := peer.IDFromPrivateKey(key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if actual != offeredPeer || accountID != "account" {
+		t.Fatal("handoff replaced the receiving client's own Session identity")
+	}
+}
 
 func TestBuildHandoffURLs(t *testing.T) {
 	apiEndpoint := "https://api.spacewave.test/"

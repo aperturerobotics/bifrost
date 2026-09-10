@@ -152,8 +152,8 @@ type SRPCSpacewaveSessionResourceServiceClient interface {
 	// waits for the browser-authenticated result on the auth-session WebSocket,
 	// and returns the unwrap artifacts for the existing unlock path.
 	StartDesktopPasskeyReauth(ctx context.Context, in *s4wave_provider_spacewave.StartDesktopPasskeyReauthRequest) (*s4wave_provider_spacewave.StartDesktopPasskeyReauthResponse, error)
-	// EncryptForHandoff encrypts the active session privkey to a device pubkey.
-	EncryptForHandoff(ctx context.Context, in *s4wave_provider_spacewave.EncryptForHandoffRequest) (*s4wave_provider_spacewave.EncryptForHandoffResponse, error)
+	// EnrollForHandoff registers the receiving client's independent Session key.
+	EnrollForHandoff(ctx context.Context, in *s4wave_provider_spacewave.EnrollForHandoffRequest) (*s4wave_provider_spacewave.EnrollForHandoffResponse, error)
 	// PreviewSpaceLink verifies a SpaceLink ticket for trusted UI display.
 	PreviewSpaceLink(ctx context.Context, in *s4wave_provider_spacewave.PreviewSpaceLinkRequest) (*s4wave_provider_spacewave.PreviewSpaceLinkResponse, error)
 	// ApproveSpaceLink approves a SpaceLink ticket for a target Space.
@@ -933,9 +933,9 @@ func (c *srpcSpacewaveSessionResourceServiceClient) StartDesktopPasskeyReauth(ct
 	return out, nil
 }
 
-func (c *srpcSpacewaveSessionResourceServiceClient) EncryptForHandoff(ctx context.Context, in *s4wave_provider_spacewave.EncryptForHandoffRequest) (*s4wave_provider_spacewave.EncryptForHandoffResponse, error) {
-	out := new(s4wave_provider_spacewave.EncryptForHandoffResponse)
-	err := c.cc.ExecCall(ctx, c.serviceID, "EncryptForHandoff", in, out)
+func (c *srpcSpacewaveSessionResourceServiceClient) EnrollForHandoff(ctx context.Context, in *s4wave_provider_spacewave.EnrollForHandoffRequest) (*s4wave_provider_spacewave.EnrollForHandoffResponse, error) {
+	out := new(s4wave_provider_spacewave.EnrollForHandoffResponse)
+	err := c.cc.ExecCall(ctx, c.serviceID, "EnrollForHandoff", in, out)
 	if err != nil {
 		return nil, err
 	}
@@ -1115,8 +1115,8 @@ type SRPCSpacewaveSessionResourceServiceServer interface {
 	// waits for the browser-authenticated result on the auth-session WebSocket,
 	// and returns the unwrap artifacts for the existing unlock path.
 	StartDesktopPasskeyReauth(context.Context, *s4wave_provider_spacewave.StartDesktopPasskeyReauthRequest) (*s4wave_provider_spacewave.StartDesktopPasskeyReauthResponse, error)
-	// EncryptForHandoff encrypts the active session privkey to a device pubkey.
-	EncryptForHandoff(context.Context, *s4wave_provider_spacewave.EncryptForHandoffRequest) (*s4wave_provider_spacewave.EncryptForHandoffResponse, error)
+	// EnrollForHandoff registers the receiving client's independent Session key.
+	EnrollForHandoff(context.Context, *s4wave_provider_spacewave.EnrollForHandoffRequest) (*s4wave_provider_spacewave.EnrollForHandoffResponse, error)
 	// PreviewSpaceLink verifies a SpaceLink ticket for trusted UI display.
 	PreviewSpaceLink(context.Context, *s4wave_provider_spacewave.PreviewSpaceLinkRequest) (*s4wave_provider_spacewave.PreviewSpaceLinkResponse, error)
 	// ApproveSpaceLink approves a SpaceLink ticket for a target Space.
@@ -1216,7 +1216,7 @@ func (SRPCSpacewaveSessionResourceServiceHandler) GetMethodIDs() []string {
 		"ProcessMailboxEntry",
 		"StartDesktopSSOLink",
 		"StartDesktopPasskeyReauth",
-		"EncryptForHandoff",
+		"EnrollForHandoff",
 		"PreviewSpaceLink",
 		"ApproveSpaceLink",
 		"ApproveGuestSpaceLink",
@@ -1355,8 +1355,8 @@ func (d *SRPCSpacewaveSessionResourceServiceHandler) InvokeMethod(
 		return true, d.InvokeMethod_StartDesktopSSOLink(d.impl, strm)
 	case "StartDesktopPasskeyReauth":
 		return true, d.InvokeMethod_StartDesktopPasskeyReauth(d.impl, strm)
-	case "EncryptForHandoff":
-		return true, d.InvokeMethod_EncryptForHandoff(d.impl, strm)
+	case "EnrollForHandoff":
+		return true, d.InvokeMethod_EnrollForHandoff(d.impl, strm)
 	case "PreviewSpaceLink":
 		return true, d.InvokeMethod_PreviewSpaceLink(d.impl, strm)
 	case "ApproveSpaceLink":
@@ -2078,12 +2078,12 @@ func (SRPCSpacewaveSessionResourceServiceHandler) InvokeMethod_StartDesktopPassk
 	return strm.MsgSend(out)
 }
 
-func (SRPCSpacewaveSessionResourceServiceHandler) InvokeMethod_EncryptForHandoff(impl SRPCSpacewaveSessionResourceServiceServer, strm srpc.Stream) error {
-	req := new(s4wave_provider_spacewave.EncryptForHandoffRequest)
+func (SRPCSpacewaveSessionResourceServiceHandler) InvokeMethod_EnrollForHandoff(impl SRPCSpacewaveSessionResourceServiceServer, strm srpc.Stream) error {
+	req := new(s4wave_provider_spacewave.EnrollForHandoffRequest)
 	if err := strm.MsgRecv(req); err != nil {
 		return err
 	}
-	out, err := impl.EncryptForHandoff(strm.Context(), req)
+	out, err := impl.EnrollForHandoff(strm.Context(), req)
 	if err != nil {
 		return err
 	}
@@ -2746,11 +2746,11 @@ type srpcSpacewaveSessionResourceService_StartDesktopPasskeyReauthStream struct 
 	srpc.Stream
 }
 
-type SRPCSpacewaveSessionResourceService_EncryptForHandoffStream interface {
+type SRPCSpacewaveSessionResourceService_EnrollForHandoffStream interface {
 	srpc.Stream
 }
 
-type srpcSpacewaveSessionResourceService_EncryptForHandoffStream struct {
+type srpcSpacewaveSessionResourceService_EnrollForHandoffStream struct {
 	srpc.Stream
 }
 

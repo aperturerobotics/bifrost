@@ -20,7 +20,7 @@ export const protobufPackage = 'session.handoff'
  */
 export interface HandoffRequest {
   /**
-   * DevicePublicKey is the ephemeral Ed25519 public key of the device.
+   * DevicePublicKey is the receiving client's independently generated Session key.
    *
    * @generated from field: bytes device_public_key = 1;
    */
@@ -43,6 +43,12 @@ export interface HandoffRequest {
    * @generated from field: string client_type = 4;
    */
   clientType?: string
+  /**
+   * ProtocolVersion is 1 for independent Session enrollment.
+   *
+   * @generated from field: uint32 protocol_version = 5;
+   */
+  protocolVersion?: number
 }
 
 export const HandoffRequest: MessageType<HandoffRequest> =
@@ -53,24 +59,18 @@ export const HandoffRequest: MessageType<HandoffRequest> =
       { no: 2, name: 'device_name', kind: 'scalar', T: ScalarType.STRING },
       { no: 3, name: 'session_nonce', kind: 'scalar', T: ScalarType.STRING },
       { no: 4, name: 'client_type', kind: 'scalar', T: ScalarType.STRING },
+      { no: 5, name: 'protocol_version', kind: 'scalar', T: ScalarType.UINT32 },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })
 
 /**
  * HandoffCompletion is sent by the browser to the AuthSessionDO
- * after successful auth. Contains the encrypted session key.
+ * after the provider registers the receiving client's key.
  *
  * @generated from message session.handoff.HandoffCompletion
  */
 export interface HandoffCompletion {
-  /**
-   * EncryptedSessionKey is the session private key encrypted to the
-   * device public key using bifrost EncryptToEd25519.
-   *
-   * @generated from field: bytes encrypted_session_key = 1;
-   */
-  encryptedSessionKey?: Uint8Array
   /**
    * AccountId is the cloud account ULID.
    *
@@ -83,27 +83,27 @@ export interface HandoffCompletion {
    * @generated from field: string entity_id = 3;
    */
   entityId?: string
+  /**
+   * SessionPeerId is the receiving key registered by the provider.
+   *
+   * @generated from field: string session_peer_id = 4;
+   */
+  sessionPeerId?: string
 }
 
 export const HandoffCompletion: MessageType<HandoffCompletion> =
   /* @__PURE__ */ createMessageType({
     typeName: 'session.handoff.HandoffCompletion',
     fields: [
-      {
-        no: 1,
-        name: 'encrypted_session_key',
-        kind: 'scalar',
-        T: ScalarType.BYTES,
-      },
       { no: 2, name: 'account_id', kind: 'scalar', T: ScalarType.STRING },
       { no: 3, name: 'entity_id', kind: 'scalar', T: ScalarType.STRING },
+      { no: 4, name: 'session_peer_id', kind: 'scalar', T: ScalarType.STRING },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })
 
 /**
- * HandoffAck is sent by the device to confirm receipt of the
- * encrypted session key.
+ * HandoffAck confirms receipt of the Session enrollment result.
  *
  * @generated from message session.handoff.HandoffAck
  */

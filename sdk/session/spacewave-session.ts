@@ -25,8 +25,8 @@ import type {
   CreateTargetedInvitationResponse,
   CreateSpaceTargetedInvitationByUsernameResponse,
   DeleteOrganizationResponse,
-  EncryptForHandoffRequest,
-  EncryptForHandoffResponse,
+  EnrollForHandoffRequest,
+  EnrollForHandoffResponse,
   EnrollSpaceMemberResponse,
   RemoveSpaceMemberResponse,
   RefreshBillingStateResponse,
@@ -156,12 +156,12 @@ export class SpacewaveSession extends Resource {
     return this.service.WatchCheckoutStatus({}, abortSignal)
   }
 
-  // encryptForHandoff encrypts the session privkey to a device pubkey.
-  public async encryptForHandoff(
-    request: EncryptForHandoffRequest,
+  // enrollForHandoff registers the receiving client's independent Session key.
+  public async enrollForHandoff(
+    request: EnrollForHandoffRequest,
     abortSignal?: AbortSignal,
-  ): Promise<EncryptForHandoffResponse> {
-    return await this.service.EncryptForHandoff(request, abortSignal)
+  ): Promise<EnrollForHandoffResponse> {
+    return await this.service.EnrollForHandoff(request, abortSignal)
   }
 
   // previewSpaceLink verifies a SpaceLink ticket for trusted UI display.

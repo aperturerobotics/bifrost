@@ -17,7 +17,7 @@ import (
 // browser-delegated auth. Encoded as base64url in URL fragment.
 type HandoffRequest struct {
 	unknownFields []byte
-	// DevicePublicKey is the ephemeral Ed25519 public key of the device.
+	// DevicePublicKey is the receiving client's independently generated Session key.
 	DevicePublicKey []byte `protobuf:"bytes,1,opt,name=device_public_key,json=devicePublicKey,proto3" json:"devicePublicKey,omitempty"`
 	// DeviceName is the human-readable name of the device.
 	DeviceName string `protobuf:"bytes,2,opt,name=device_name,json=deviceName,proto3" json:"deviceName,omitempty"`
@@ -25,6 +25,8 @@ type HandoffRequest struct {
 	SessionNonce string `protobuf:"bytes,3,opt,name=session_nonce,json=sessionNonce,proto3" json:"sessionNonce,omitempty"`
 	// ClientType is the type of client requesting auth.
 	ClientType string `protobuf:"bytes,4,opt,name=client_type,json=clientType,proto3" json:"clientType,omitempty"`
+	// ProtocolVersion is 1 for independent Session enrollment.
+	ProtocolVersion uint32 `protobuf:"varint,5,opt,name=protocol_version,json=protocolVersion,proto3" json:"protocolVersion,omitempty"`
 }
 
 func (x *HandoffRequest) Reset() {
@@ -61,17 +63,23 @@ func (x *HandoffRequest) GetClientType() string {
 	return ""
 }
 
+func (x *HandoffRequest) GetProtocolVersion() uint32 {
+	if x != nil {
+		return x.ProtocolVersion
+	}
+	return 0
+}
+
 // HandoffCompletion is sent by the browser to the AuthSessionDO
-// after successful auth. Contains the encrypted session key.
+// after the provider registers the receiving client's key.
 type HandoffCompletion struct {
 	unknownFields []byte
-	// EncryptedSessionKey is the session private key encrypted to the
-	// device public key using bifrost EncryptToEd25519.
-	EncryptedSessionKey []byte `protobuf:"bytes,1,opt,name=encrypted_session_key,json=encryptedSessionKey,proto3" json:"encryptedSessionKey,omitempty"`
 	// AccountId is the cloud account ULID.
 	AccountId string `protobuf:"bytes,2,opt,name=account_id,json=accountId,proto3" json:"accountId,omitempty"`
 	// EntityId is the cloud username.
 	EntityId string `protobuf:"bytes,3,opt,name=entity_id,json=entityId,proto3" json:"entityId,omitempty"`
+	// SessionPeerId is the receiving key registered by the provider.
+	SessionPeerId string `protobuf:"bytes,4,opt,name=session_peer_id,json=sessionPeerId,proto3" json:"sessionPeerId,omitempty"`
 }
 
 func (x *HandoffCompletion) Reset() {
@@ -79,13 +87,6 @@ func (x *HandoffCompletion) Reset() {
 }
 
 func (*HandoffCompletion) ProtoMessage() {}
-
-func (x *HandoffCompletion) GetEncryptedSessionKey() []byte {
-	if x != nil {
-		return x.EncryptedSessionKey
-	}
-	return nil
-}
 
 func (x *HandoffCompletion) GetAccountId() string {
 	if x != nil {
@@ -101,8 +102,14 @@ func (x *HandoffCompletion) GetEntityId() string {
 	return ""
 }
 
-// HandoffAck is sent by the device to confirm receipt of the
-// encrypted session key.
+func (x *HandoffCompletion) GetSessionPeerId() string {
+	if x != nil {
+		return x.SessionPeerId
+	}
+	return ""
+}
+
+// HandoffAck confirms receipt of the Session enrollment result.
 type HandoffAck struct {
 	unknownFields []byte
 }
@@ -121,6 +128,7 @@ func (m *HandoffRequest) CloneVT() *HandoffRequest {
 	r.DeviceName = m.DeviceName
 	r.SessionNonce = m.SessionNonce
 	r.ClientType = m.ClientType
+	r.ProtocolVersion = m.ProtocolVersion
 	r.DevicePublicKey = protobuf_go_lite.CloneBytes(m.DevicePublicKey)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
@@ -139,7 +147,7 @@ func (m *HandoffCompletion) CloneVT() *HandoffCompletion {
 	r := new(HandoffCompletion)
 	r.AccountId = m.AccountId
 	r.EntityId = m.EntityId
-	r.EncryptedSessionKey = protobuf_go_lite.CloneBytes(m.EncryptedSessionKey)
+	r.SessionPeerId = m.SessionPeerId
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -183,6 +191,9 @@ func (this *HandoffRequest) EqualVT(that *HandoffRequest) bool {
 	if this.ClientType != that.ClientType {
 		return false
 	}
+	if this.ProtocolVersion != that.ProtocolVersion {
+		return false
+	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
@@ -200,13 +211,13 @@ func (this *HandoffCompletion) EqualVT(that *HandoffCompletion) bool {
 	} else if this == nil || that == nil {
 		return false
 	}
-	if !protobuf_go_lite.EqualBytes(this.EncryptedSessionKey, that.EncryptedSessionKey) {
-		return false
-	}
 	if this.AccountId != that.AccountId {
 		return false
 	}
 	if this.EntityId != that.EntityId {
+		return false
+	}
+	if this.SessionPeerId != that.SessionPeerId {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -265,6 +276,11 @@ func (x *HandoffRequest) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("clientType")
 		s.WriteString(x.ClientType)
 	}
+	if x.ProtocolVersion != 0 || s.HasField("protocolVersion") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("protocolVersion")
+		s.WriteUint32(x.ProtocolVersion)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -294,6 +310,9 @@ func (x *HandoffRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "client_type", "clientType":
 			s.AddField("client_type")
 			x.ClientType = s.ReadString()
+		case "protocol_version", "protocolVersion":
+			s.AddField("protocol_version")
+			x.ProtocolVersion = s.ReadUint32()
 		}
 	})
 }
@@ -311,11 +330,6 @@ func (x *HandoffCompletion) MarshalProtoJSON(s *json.MarshalState) {
 	}
 	s.WriteObjectStart()
 	var wroteField bool
-	if len(x.EncryptedSessionKey) > 0 || s.HasField("encryptedSessionKey") {
-		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("encryptedSessionKey")
-		s.WriteBytes(x.EncryptedSessionKey)
-	}
 	if x.AccountId != "" || s.HasField("accountId") {
 		s.WriteMoreIf(&wroteField)
 		s.WriteObjectField("accountId")
@@ -325,6 +339,11 @@ func (x *HandoffCompletion) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteMoreIf(&wroteField)
 		s.WriteObjectField("entityId")
 		s.WriteString(x.EntityId)
+	}
+	if x.SessionPeerId != "" || s.HasField("sessionPeerId") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("sessionPeerId")
+		s.WriteString(x.SessionPeerId)
 	}
 	s.WriteObjectEnd()
 }
@@ -343,15 +362,15 @@ func (x *HandoffCompletion) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		switch key {
 		default:
 			s.Skip() // ignore unknown field
-		case "encrypted_session_key", "encryptedSessionKey":
-			s.AddField("encrypted_session_key")
-			x.EncryptedSessionKey = s.ReadBytes()
 		case "account_id", "accountId":
 			s.AddField("account_id")
 			x.AccountId = s.ReadString()
 		case "entity_id", "entityId":
 			s.AddField("entity_id")
 			x.EntityId = s.ReadString()
+		case "session_peer_id", "sessionPeerId":
+			s.AddField("session_peer_id")
+			x.SessionPeerId = s.ReadString()
 		}
 	})
 }
@@ -420,6 +439,11 @@ func (m *HandoffRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.ProtocolVersion != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.ProtocolVersion))
+		i--
+		dAtA[i] = 0x28
+	}
 	if len(m.ClientType) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.ClientType)
 		i--
@@ -472,6 +496,11 @@ func (m *HandoffCompletion) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if len(m.SessionPeerId) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.SessionPeerId)
+		i--
+		dAtA[i] = 0x22
+	}
 	if len(m.EntityId) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.EntityId)
 		i--
@@ -481,11 +510,6 @@ func (m *HandoffCompletion) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.AccountId)
 		i--
 		dAtA[i] = 0x12
-	}
-	if len(m.EncryptedSessionKey) > 0 {
-		i = protobuf_go_lite.EncodeBytes(dAtA, i, m.EncryptedSessionKey)
-		i--
-		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
@@ -532,6 +556,7 @@ func (m *HandoffRequest) SizeVT() (n int) {
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.DeviceName)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.SessionNonce)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.ClientType)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.ProtocolVersion)
 	n += len(m.unknownFields)
 	return n
 }
@@ -542,9 +567,9 @@ func (m *HandoffCompletion) SizeVT() (n int) {
 	}
 	var l int
 	_ = l
-	n += protobuf_go_lite.SizeBytesNonEmpty(1, m.EncryptedSessionKey)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.AccountId)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.EntityId)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.SessionPeerId)
 	n += len(m.unknownFields)
 	return n
 }
@@ -578,6 +603,10 @@ func (x *HandoffRequest) MarshalProtoText() string {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "client_type")
 		protobuf_go_lite.TextWriteString(&sb, x.ClientType)
 	}
+	if x.ProtocolVersion != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "protocol_version")
+		protobuf_go_lite.TextWriteUint(&sb, x.ProtocolVersion)
+	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
@@ -588,10 +617,6 @@ func (x *HandoffRequest) String() string {
 func (x *HandoffCompletion) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "HandoffCompletion")
-	if len(x.EncryptedSessionKey) != 0 {
-		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "encrypted_session_key")
-		protobuf_go_lite.TextWriteBytes(&sb, x.EncryptedSessionKey)
-	}
 	if x.AccountId != "" {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "account_id")
 		protobuf_go_lite.TextWriteString(&sb, x.AccountId)
@@ -599,6 +624,10 @@ func (x *HandoffCompletion) MarshalProtoText() string {
 	if x.EntityId != "" {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "entity_id")
 		protobuf_go_lite.TextWriteString(&sb, x.EntityId)
+	}
+	if x.SessionPeerId != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "session_peer_id")
+		protobuf_go_lite.TextWriteString(&sb, x.SessionPeerId)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -675,6 +704,15 @@ func (m *HandoffRequest) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.ClientType = v
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ProtocolVersion", wireType)
+			}
+			m.ProtocolVersion = 0
+			m.ProtocolVersion, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
@@ -718,14 +756,6 @@ func (m *HandoffCompletion) UnmarshalVT(dAtA []byte) error {
 			return fmt.Errorf("proto: HandoffCompletion: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field EncryptedSessionKey", wireType)
-			}
-			m.EncryptedSessionKey, iNdEx, err = protobuf_go_lite.DecodeBytesAppend(m.EncryptedSessionKey, dAtA, iNdEx)
-			if err != nil {
-				return err
-			}
 		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field AccountId", wireType)
@@ -746,6 +776,16 @@ func (m *HandoffCompletion) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.EntityId = v
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SessionPeerId", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.SessionPeerId = v
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

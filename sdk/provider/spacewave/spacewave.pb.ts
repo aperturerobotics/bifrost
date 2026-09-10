@@ -3502,11 +3502,11 @@ export const GetLinkedCloudSessionResponse: MessageType<GetLinkedCloudSessionRes
   })
 
 /**
- * EncryptForHandoffRequest encrypts the active session privkey to a device pubkey.
+ * EnrollForHandoffRequest registers the receiving client's independent Session key.
  *
- * @generated from message s4wave.provider.spacewave.EncryptForHandoffRequest
+ * @generated from message s4wave.provider.spacewave.EnrollForHandoffRequest
  */
-export interface EncryptForHandoffRequest {
+export interface EnrollForHandoffRequest {
   /**
    * DevicePublicKey is the Ed25519 public key from the HandoffRequest.
    *
@@ -3519,30 +3519,31 @@ export interface EncryptForHandoffRequest {
    * @generated from field: string session_nonce = 2;
    */
   sessionNonce?: string
+  /**
+   * DeviceName is the label for the receiving Session.
+   *
+   * @generated from field: string device_name = 3;
+   */
+  deviceName?: string
 }
 
-export const EncryptForHandoffRequest: MessageType<EncryptForHandoffRequest> =
+export const EnrollForHandoffRequest: MessageType<EnrollForHandoffRequest> =
   /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.EncryptForHandoffRequest',
+    typeName: 's4wave.provider.spacewave.EnrollForHandoffRequest',
     fields: [
       { no: 1, name: 'device_public_key', kind: 'scalar', T: ScalarType.BYTES },
       { no: 2, name: 'session_nonce', kind: 'scalar', T: ScalarType.STRING },
+      { no: 3, name: 'device_name', kind: 'scalar', T: ScalarType.STRING },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })
 
 /**
- * EncryptForHandoffResponse contains the encrypted session key and account info.
+ * EnrollForHandoffResponse identifies the receiving Session's account attachment.
  *
- * @generated from message s4wave.provider.spacewave.EncryptForHandoffResponse
+ * @generated from message s4wave.provider.spacewave.EnrollForHandoffResponse
  */
-export interface EncryptForHandoffResponse {
-  /**
-   * EncryptedSessionKey is the session privkey encrypted to the device pubkey.
-   *
-   * @generated from field: bytes encrypted_session_key = 1;
-   */
-  encryptedSessionKey?: Uint8Array
+export interface EnrollForHandoffResponse {
   /**
    * AccountId is the cloud account ULID.
    *
@@ -3555,20 +3556,21 @@ export interface EncryptForHandoffResponse {
    * @generated from field: string entity_id = 3;
    */
   entityId?: string
+  /**
+   * SessionPeerId is the newly authorized receiving key.
+   *
+   * @generated from field: string session_peer_id = 4;
+   */
+  sessionPeerId?: string
 }
 
-export const EncryptForHandoffResponse: MessageType<EncryptForHandoffResponse> =
+export const EnrollForHandoffResponse: MessageType<EnrollForHandoffResponse> =
   /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.EncryptForHandoffResponse',
+    typeName: 's4wave.provider.spacewave.EnrollForHandoffResponse',
     fields: [
-      {
-        no: 1,
-        name: 'encrypted_session_key',
-        kind: 'scalar',
-        T: ScalarType.BYTES,
-      },
       { no: 2, name: 'account_id', kind: 'scalar', T: ScalarType.STRING },
       { no: 3, name: 'entity_id', kind: 'scalar', T: ScalarType.STRING },
+      { no: 4, name: 'session_peer_id', kind: 'scalar', T: ScalarType.STRING },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })

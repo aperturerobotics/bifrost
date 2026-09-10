@@ -9,11 +9,11 @@ import { LoginForm, type LoginResult } from '@s4wave/web/ui/login-form.js'
 import { useRootResource } from '@s4wave/web/hooks/useRootResource.js'
 import { useResourceValue } from '@aptre/bldr-sdk/hooks/useResource.js'
 import { SpacewaveProvider } from '@s4wave/sdk/provider/spacewave/spacewave.js'
-import type { Root } from '@s4wave/sdk/root/root.js'
 import { AuthScreenLayout } from '@s4wave/app/auth/AuthScreenLayout.js'
 import { useCloudProviderConfig } from '@s4wave/app/provider/spacewave/useSpacewaveAuth.js'
 import {
   decodeHandoffRequest,
+  enrollHandoffSession,
   setStoredHandoffPayload,
 } from './handoff-state.js'
 
@@ -32,30 +32,6 @@ function parseHandoffRouteHints(): HandoffRouteHints {
   return {
     authIntent: params.get('intent') ?? '',
     username: (params.get('username') ?? '').toLowerCase(),
-  }
-}
-
-// encryptForHandoffViaSession mounts the session and calls encryptForHandoff.
-async function encryptForHandoffViaSession(
-  root: Root,
-  sessionIdx: number,
-  devicePublicKey: Uint8Array | undefined,
-  sessionNonce: string | undefined,
-) {
-  if (sessionIdx < 1) {
-    throw new Error('Invalid session index')
-  }
-  const result = await root.mountSessionByIdx({ sessionIdx })
-  if (!result) {
-    throw new Error('Failed to mount session')
-  }
-  try {
-    await result.session.spacewave.encryptForHandoff({
-      devicePublicKey,
-      sessionNonce,
-    })
-  } finally {
-    result.session.release()
   }
 }
 
@@ -130,12 +106,7 @@ export function HandoffPage() {
         case 'session': {
           const idx = resp.result.value?.sessionIndex ?? 0
           setState('completing')
-          await encryptForHandoffViaSession(
-            root,
-            idx,
-            request.devicePublicKey,
-            request.sessionNonce,
-          )
+          await enrollHandoffSession(root, idx, request)
           setState('complete')
           return { type: 'session', sessionIndex: idx }
         }
@@ -175,12 +146,7 @@ export function HandoffPage() {
       const sessionIndex = resp.sessionListEntry?.sessionIndex ?? 0
 
       setState('completing')
-      await encryptForHandoffViaSession(
-        root,
-        sessionIndex,
-        request.devicePublicKey,
-        request.sessionNonce,
-      )
+      await enrollHandoffSession(root, sessionIndex, request)
       setState('complete')
 
       return { sessionIndex }

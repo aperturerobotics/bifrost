@@ -21,22 +21,23 @@ import (
 func (p *Provider) MountHandoffSession(
 	ctx context.Context,
 	accountID string,
-	entityID string,
 	sessionPriv crypto.PrivKey,
 	sessionCtrl session.SessionController,
 ) (*session.SessionListEntry, error) {
 	if sessionPriv == nil {
 		return nil, errors.New("session private key is required")
 	}
-
-	sessions, err := sessionCtrl.ListSessions(ctx)
-	if err == nil {
-		for _, entry := range sessions {
-			ref := entry.GetSessionRef().GetProviderResourceRef()
-			if ref.GetProviderAccountId() == accountID {
-				return entry, nil
-			}
-		}
+	peerID, err := peer.IDFromPrivateKey(sessionPriv)
+	if err != nil {
+		return nil, err
+	}
+	client := NewSessionClient(p.httpCli, p.endpoint, p.GetSigningEnvPrefix(), sessionPriv, peerID.String())
+	info, err := client.GetAccountInfo(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "verify enrolled Session")
+	}
+	if info.GetAccountId() != accountID {
+		return nil, errors.New("enrolled Session belongs to another account")
 	}
 
 	provAccValue, relProvAcc, err := p.AccessProviderAccount(ctx, accountID, nil)
@@ -44,8 +45,15 @@ func (p *Provider) MountHandoffSession(
 		return nil, errors.Wrap(err, "access provider account")
 	}
 	defer relProvAcc()
-
 	provAcc := provAccValue.(*ProviderAccount)
+	entries, err := sessionCtrl.ListSessions(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if existing, err := provAcc.findRegisteredSession(ctx, entries, peerID); err != nil || existing != nil {
+		return existing, err
+	}
+
 	sessProv, err := session.GetSessionProviderAccountFeature(ctx, provAcc)
 	if err != nil {
 		return nil, errors.Wrap(err, "get session provider")
@@ -62,18 +70,17 @@ func (p *Provider) MountHandoffSession(
 		return nil, err
 	}
 
-	sess, relSess, err := sessProv.MountSession(ctx, sessRef, nil)
+	_, relSess, err := sessProv.MountSession(ctx, sessRef, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "mount session")
 	}
 	defer relSess()
-	_ = sess
 
 	meta := &session.SessionMetadata{
-		DisplayName:         entityID,
+		DisplayName:         info.GetEntityId(),
 		ProviderDisplayName: "Cloud",
 		ProviderAccountId:   accountID,
-		ProviderId:          "spacewave",
+		ProviderId:          p.info.GetProviderId(),
 		CreatedAt:           time.Now().UnixMilli(),
 	}
 	listEntry, err := sessionCtrl.RegisterSession(ctx, sessRef, meta)
@@ -161,4 +168,36 @@ func (p *Provider) seedHandoffSession(
 	}
 
 	return nil
+}
+
+// findRegisteredSession reads persisted public registration markers without
+// unlocking existing Sessions. Reusing the same key preserves its lock policy.
+func (a *ProviderAccount) findRegisteredSession(ctx context.Context, entries []*session.SessionListEntry, peerID peer.ID) (*session.SessionListEntry, error) {
+	handle, _, ref, err := volume.ExBuildObjectStoreAPI(ctx, a.p.b, false, SessionObjectStoreID(a.accountID), a.vol.GetID(), nil)
+	if err != nil {
+		return nil, err
+	}
+	defer ref.Release()
+	store := handle.GetObjectStore()
+	var existing *session.SessionListEntry
+	err = kvtx.RunTransaction(ctx, false, func(ctx context.Context) (kvtx.Tx, error) {
+		return store.NewTransaction(ctx, false)
+	}, func(ctx context.Context, tx kvtx.Tx) error {
+		for _, entry := range entries {
+			ref := entry.GetSessionRef().GetProviderResourceRef()
+			if ref.GetProviderAccountId() != a.accountID || ref.GetProviderId() != a.GetProviderID() {
+				continue
+			}
+			data, found, err := tx.Get(ctx, []byte(ref.GetId()+"/registered"))
+			if err != nil {
+				return err
+			}
+			if found && string(data) == peerID.String() {
+				existing = entry
+				return nil
+			}
+		}
+		return nil
+	})
+	return existing, err
 }

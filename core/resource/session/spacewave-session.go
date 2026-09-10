@@ -10,7 +10,6 @@ import (
 
 	"github.com/aperturerobotics/controllerbus/bus"
 	timestamppb "github.com/aperturerobotics/protobuf-go-lite/types/known/timestamppb"
-	"github.com/aperturerobotics/util/scrub"
 	"github.com/pkg/errors"
 	resource_server "github.com/s4wave/spacewave/bldr/resource/server"
 	alpha_nethttp "github.com/s4wave/spacewave/core/nethttp"
@@ -26,7 +25,6 @@ import (
 	"github.com/s4wave/spacewave/core/sobject"
 	"github.com/s4wave/spacewave/db/volume"
 	"github.com/s4wave/spacewave/net/crypto"
-	"github.com/s4wave/spacewave/net/keypem"
 	"github.com/s4wave/spacewave/net/peer"
 	s4wave_org "github.com/s4wave/spacewave/sdk/org"
 	s4wave_provider_spacewave "github.com/s4wave/spacewave/sdk/provider/spacewave"
@@ -2328,11 +2326,11 @@ func (r *SpacewaveSessionResource) ResetSession(
 	return &s4wave_provider_spacewave.ResetSessionResponse{}, nil
 }
 
-// EncryptForHandoff encrypts the active session privkey to a device pubkey.
-func (r *SpacewaveSessionResource) EncryptForHandoff(
+// EnrollForHandoff registers the receiving client's independent Session key.
+func (r *SpacewaveSessionResource) EnrollForHandoff(
 	ctx context.Context,
-	req *s4wave_provider_spacewave.EncryptForHandoffRequest,
-) (*s4wave_provider_spacewave.EncryptForHandoffResponse, error) {
+	req *s4wave_provider_spacewave.EnrollForHandoffRequest,
+) (*s4wave_provider_spacewave.EnrollForHandoffResponse, error) {
 	devicePubRaw := req.GetDevicePublicKey()
 	if len(devicePubRaw) == 0 {
 		return nil, errors.New("device_public_key is required")
@@ -2354,32 +2352,25 @@ func (r *SpacewaveSessionResource) EncryptForHandoff(
 		return nil, errors.New("session is locked")
 	}
 
-	privPEM, err := keypem.MarshalPrivKeyPem(sessionPrivKey)
-	if err != nil {
-		return nil, errors.Wrap(err, "marshal session privkey")
-	}
-	defer scrub.Scrub(privPEM)
-
 	devicePubKey, err := crypto.UnmarshalEd25519PublicKey(devicePubRaw)
 	if err != nil {
 		return nil, errors.Wrap(err, "parse device public key")
 	}
 
-	encrypted, err := peer.EncryptToPubKey(devicePubKey, session_handoff.EncryptContext, privPEM)
+	receivingPeer, err := peer.IDFromPublicKey(devicePubKey)
 	if err != nil {
-		return nil, errors.Wrap(err, "encrypt session key")
+		return nil, err
 	}
-
-	info, err := r.swAcc.GetAccountState(ctx)
+	registration, err := r.swAcc.LinkSession(ctx, sessionPrivKey, receivingPeer, req.GetDeviceName())
 	if err != nil {
-		return nil, errors.Wrap(err, "get account info")
+		return nil, errors.Wrap(err, "register receiving Session")
 	}
 
 	// Build HandoffCompletion and relay to AuthSessionDO.
 	completion := &session_handoff.HandoffCompletion{
-		EncryptedSessionKey: encrypted,
-		AccountId:           info.AccountId,
-		EntityId:            info.EntityId,
+		SessionPeerId: registration.GetPeerId(),
+		AccountId:     registration.GetAccountId(),
+		EntityId:      registration.GetEntityId(),
 	}
 	completionData, err := completion.MarshalVT()
 	if err != nil {
@@ -2402,10 +2393,10 @@ func (r *SpacewaveSessionResource) EncryptForHandoff(
 		return nil, errors.Errorf("handoff completion relay failed: %d", httpResp.StatusCode)
 	}
 
-	return &s4wave_provider_spacewave.EncryptForHandoffResponse{
-		EncryptedSessionKey: encrypted,
-		AccountId:           info.AccountId,
-		EntityId:            info.EntityId,
+	return &s4wave_provider_spacewave.EnrollForHandoffResponse{
+		SessionPeerId: registration.GetPeerId(),
+		AccountId:     registration.GetAccountId(),
+		EntityId:      registration.GetEntityId(),
 	}, nil
 }
 

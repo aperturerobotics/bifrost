@@ -33,7 +33,7 @@ func (s *SpacewaveProviderResource) StartBrowserHandoff(
 		clientType = "desktop"
 	}
 
-	sessionPriv, accountID, entityID, err := provider_spacewave_handoff.StartHandoff(
+	sessionPriv, accountID, _, err := provider_spacewave_handoff.StartHandoff(
 		ctx,
 		s.provider.GetHTTPClient(),
 		s.provider.GetEndpoint(),
@@ -49,7 +49,6 @@ func (s *SpacewaveProviderResource) StartBrowserHandoff(
 	listEntry, err := s.provider.MountHandoffSession(
 		ctx,
 		accountID,
-		entityID,
 		sessionPriv,
 		sessionCtrl,
 	)

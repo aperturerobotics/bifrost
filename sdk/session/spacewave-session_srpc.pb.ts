@@ -45,8 +45,8 @@ import {
   DeleteOrganizationResponse,
   DetachBillingAccountRequest,
   DetachBillingAccountResponse,
-  EncryptForHandoffRequest,
-  EncryptForHandoffResponse,
+  EnrollForHandoffRequest,
+  EnrollForHandoffResponse,
   EnrollSpaceMemberRequest,
   EnrollSpaceMemberResponse,
   GetLinkedLocalSessionRequest,
@@ -837,14 +837,14 @@ export const SpacewaveSessionResourceServiceDefinition = {
       kind: MethodKind.Unary,
     },
     /**
-     * EncryptForHandoff encrypts the active session privkey to a device pubkey.
+     * EnrollForHandoff registers the receiving client's independent Session key.
      *
-     * @generated from rpc s4wave.session.SpacewaveSessionResourceService.EncryptForHandoff
+     * @generated from rpc s4wave.session.SpacewaveSessionResourceService.EnrollForHandoff
      */
-    EncryptForHandoff: {
-      name: 'EncryptForHandoff',
-      I: EncryptForHandoffRequest,
-      O: EncryptForHandoffResponse,
+    EnrollForHandoff: {
+      name: 'EnrollForHandoff',
+      I: EnrollForHandoffRequest,
+      O: EnrollForHandoffResponse,
       kind: MethodKind.Unary,
     },
     /**
@@ -1527,14 +1527,14 @@ export interface SpacewaveSessionResourceService {
   ): Promise<StartDesktopPasskeyReauthResponse>
 
   /**
-   * EncryptForHandoff encrypts the active session privkey to a device pubkey.
+   * EnrollForHandoff registers the receiving client's independent Session key.
    *
-   * @generated from rpc s4wave.session.SpacewaveSessionResourceService.EncryptForHandoff
+   * @generated from rpc s4wave.session.SpacewaveSessionResourceService.EnrollForHandoff
    */
-  EncryptForHandoff(
-    request: EncryptForHandoffRequest,
+  EnrollForHandoff(
+    request: EnrollForHandoffRequest,
     abortSignal?: AbortSignal,
-  ): Promise<EncryptForHandoffResponse>
+  ): Promise<EnrollForHandoffResponse>
 
   /**
    * PreviewSpaceLink verifies a SpaceLink ticket for trusted UI display.
@@ -2271,15 +2271,15 @@ export interface SpacewaveSessionResourceServiceHandler {
   ): Promise<StartDesktopPasskeyReauthResponse>
 
   /**
-   * EncryptForHandoff encrypts the active session privkey to a device pubkey.
+   * EnrollForHandoff registers the receiving client's independent Session key.
    *
-   * @generated from rpc s4wave.session.SpacewaveSessionResourceService.EncryptForHandoff
+   * @generated from rpc s4wave.session.SpacewaveSessionResourceService.EnrollForHandoff
    */
-  EncryptForHandoff(
-    request: EncryptForHandoffRequest,
+  EnrollForHandoff(
+    request: EnrollForHandoffRequest,
     abortSignal: AbortSignal,
     context: ServerContext,
-  ): Promise<EncryptForHandoffResponse>
+  ): Promise<EnrollForHandoffResponse>
 
   /**
    * PreviewSpaceLink verifies a SpaceLink ticket for trusted UI display.
@@ -2404,7 +2404,7 @@ export class SpacewaveSessionResourceServiceClient implements SpacewaveSessionRe
     this.ProcessMailboxEntry = this.ProcessMailboxEntry.bind(this)
     this.StartDesktopSSOLink = this.StartDesktopSSOLink.bind(this)
     this.StartDesktopPasskeyReauth = this.StartDesktopPasskeyReauth.bind(this)
-    this.EncryptForHandoff = this.EncryptForHandoff.bind(this)
+    this.EnrollForHandoff = this.EnrollForHandoff.bind(this)
     this.PreviewSpaceLink = this.PreviewSpaceLink.bind(this)
     this.ApproveSpaceLink = this.ApproveSpaceLink.bind(this)
     this.ApproveGuestSpaceLink = this.ApproveGuestSpaceLink.bind(this)
@@ -3629,22 +3629,22 @@ export class SpacewaveSessionResourceServiceClient implements SpacewaveSessionRe
   }
 
   /**
-   * EncryptForHandoff encrypts the active session privkey to a device pubkey.
+   * EnrollForHandoff registers the receiving client's independent Session key.
    *
-   * @generated from rpc s4wave.session.SpacewaveSessionResourceService.EncryptForHandoff
+   * @generated from rpc s4wave.session.SpacewaveSessionResourceService.EnrollForHandoff
    */
-  async EncryptForHandoff(
-    request: EncryptForHandoffRequest,
+  async EnrollForHandoff(
+    request: EnrollForHandoffRequest,
     abortSignal?: AbortSignal,
-  ): Promise<EncryptForHandoffResponse> {
-    const requestMsg = EncryptForHandoffRequest.create(request)
+  ): Promise<EnrollForHandoffResponse> {
+    const requestMsg = EnrollForHandoffRequest.create(request)
     const result = await this.rpc.request(
       this.service,
-      SpacewaveSessionResourceServiceDefinition.methods.EncryptForHandoff.name,
-      EncryptForHandoffRequest.toBinary(requestMsg),
+      SpacewaveSessionResourceServiceDefinition.methods.EnrollForHandoff.name,
+      EnrollForHandoffRequest.toBinary(requestMsg),
       abortSignal || undefined,
     )
-    return EncryptForHandoffResponse.fromBinary(result)
+    return EnrollForHandoffResponse.fromBinary(result)
   }
 
   /**
