@@ -15,6 +15,7 @@ import (
 	"github.com/aperturerobotics/protobuf-go-lite/types/known/timestamppb"
 	cbackoff "github.com/aperturerobotics/util/backoff/cbackoff"
 	"github.com/aperturerobotics/util/broadcast"
+	"github.com/aperturerobotics/util/csync"
 	"github.com/pkg/errors"
 	packfile "github.com/s4wave/spacewave/core/provider/spacewave/packfile"
 	"github.com/s4wave/spacewave/core/provider/spacewave/packfile/identity"
@@ -31,6 +32,9 @@ import (
 const syncPushRetryTimeout = 30 * time.Second
 
 const syncNoProgressBackoff = time.Second
+
+// syncPendingSinceKey retains the first dirty-block deadline across restart.
+const syncPendingSinceKey = "sync/pending-since"
 
 const defaultSyncSizeThresholdBytes = 48 * 1024 * 1024
 
@@ -60,9 +64,13 @@ type syncController struct {
 	skipPull          bool
 	remotePullRoutine *coalescedTriggerRoutine
 
-	// dirtySize is guarded by bcast.
-	dirtySize int64
-	bcast     broadcast.Broadcast
+	// dirtySize and dirtyPendingAt project durable dirty records under bcast.
+	dirtySize      int64
+	dirtyPendingAt time.Time
+	// bcast wakes the scheduler when the durable dirty queue changes.
+	bcast broadcast.Broadcast
+	// dirtyMtx orders durable dirty mutations and their in-memory projection.
+	dirtyMtx csync.Mutex
 
 	// flushMtx serializes foreground and background flush operations.
 	flushMtx sync.Mutex
@@ -74,7 +82,9 @@ type syncController struct {
 // Must be called before Execute.
 func (s *syncController) Init(ctx context.Context) error {
 	s.cleanStaleTempFiles()
-	s.recalcDirtySize(ctx)
+	if err := s.recalcDirtySize(ctx); err != nil {
+		return err
+	}
 
 	if s.skipPull {
 		s.lower.UpdateManifest(s.mergedManifestEntries())
@@ -121,120 +131,88 @@ func (s *syncController) mergedManifestEntries() []*packfile.PackfileEntry {
 	return out
 }
 
-// Execute runs the sync controller loop.
+// pendingSnapshot reads the durable queue projection and its notification together.
+func (s *syncController) pendingSnapshot() (time.Time, int64, <-chan struct{}) {
+	var first time.Time
+	var dirty int64
+	var changed <-chan struct{}
+	s.bcast.HoldLock(func(_ func(), getWait func() <-chan struct{}) {
+		first, dirty, changed = s.dirtyPendingAt, s.dirtySize, getWait()
+	})
+	return first, dirty, changed
+}
+
+// Execute dispatches from the first pending change, without extending its deadline.
 func (s *syncController) Execute(ctx context.Context) error {
 	if s.remotePullRoutine != nil && !s.skipPull {
 		s.remotePullRoutine.SetContext(ctx)
 		defer s.remotePullRoutine.ClearContext()
 	}
 
+	// Keep the existing pressure and pack limits independent of the time boundary.
 	bo := providerBackoff.Construct()
 	threshold := int64(s.conf.GetSizeThresholdBytes())
 	if threshold == 0 {
 		threshold = defaultSyncSizeThresholdBytes
 	}
-
-	timeout := time.Duration(s.conf.GetInactivityTimeoutSecs()) * time.Second
-	if timeout == 0 {
-		timeout = 10 * time.Second
+	interval := time.Duration(s.conf.GetCheckpointIntervalSecs()) * time.Second
+	if interval == 0 {
+		interval = 30 * time.Second
 	}
 
-	for {
-		if err := ctx.Err(); err != nil {
-			return nil
-		}
-
-		var ch <-chan struct{}
-		var dirty int64
-		s.bcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
-			ch = getWaitCh()
-			dirty = s.dirtySize
-		})
-
-		if dirty >= threshold {
-			if err := s.FlushNow(ctx); err != nil {
-				if ctx.Err() != nil {
-					return nil
-				}
-				if isDirtySyncGatedCloudError(err) {
-					bo.Reset()
-					s.le.WithError(err).Warn("flush gated, waiting for account state change")
-					if err := s.waitDirtySyncGate(ctx); err != nil {
-						return nil
-					}
-					continue
-				}
-				s.le.WithError(err).Warn("flush failed")
-				delay := nextProviderRetryDelay(bo, err)
-				s.bcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
-					ch = getWaitCh()
-				})
-				if err := waitDirtySyncRetry(ctx, ch, delay); err != nil {
-					return nil
-				}
-				continue
-			}
-
+	for ctx.Err() == nil {
+		first, dirty, changed := s.pendingSnapshot()
+		if first.IsZero() && dirty < threshold {
 			bo.Reset()
-			var nextDirty int64
-			s.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
-				nextDirty = s.dirtySize
-			})
-			if nextDirty >= dirty && nextDirty > 0 {
-				s.bcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
-					ch = getWaitCh()
-				})
-				select {
-				case <-ctx.Done():
-					return nil
-				case <-ch:
-				case <-time.After(syncNoProgressBackoff):
-				}
-			}
-			continue
-		}
-
-		if dirty > 0 {
 			select {
 			case <-ctx.Done():
 				return nil
-			case <-ch:
+			case <-changed:
 				continue
-			case <-time.After(timeout):
-				if err := s.FlushNow(ctx); err != nil {
-					if ctx.Err() != nil {
-						return nil
-					}
-					if isDirtySyncGatedCloudError(err) {
-						bo.Reset()
-						s.le.WithError(err).Warn("flush on timeout gated, waiting for account state change")
-						if err := s.waitDirtySyncGate(ctx); err != nil {
-							return nil
-						}
-						continue
-					}
-					s.le.WithError(err).Warn("flush on timeout failed")
-					delay := nextProviderRetryDelay(bo, err)
-					s.bcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
-						ch = getWaitCh()
-					})
-					if werr := waitDirtySyncRetry(ctx, ch, delay); werr != nil {
-						return nil
-					}
-					continue
-				}
+			}
+		}
+
+		// A later edit wakes this wait but keeps the original persisted deadline.
+		if delay := time.Until(first.Add(interval)); dirty < threshold && delay > 0 {
+			select {
+			case <-ctx.Done():
+				return nil
+			case <-changed:
+				continue
+			case <-time.After(delay):
+			}
+		}
+
+		if err := s.FlushNow(ctx); err != nil {
+			if ctx.Err() != nil {
+				return nil
+			}
+			if isDirtySyncGatedCloudError(err) {
 				bo.Reset()
+				s.le.WithError(err).Warn("block upload gated, waiting for account state change")
+				if err := s.waitDirtySyncGate(ctx); err != nil {
+					return nil
+				}
+				continue
+			}
+			s.le.WithError(err).Warn("block upload failed")
+			_, _, changed = s.pendingSnapshot()
+			if err := waitDirtySyncRetry(ctx, changed, nextProviderRetryDelay(bo, err)); err != nil {
+				return nil
 			}
 			continue
 		}
 
+		// A flush with no progress must not spin on an expired deadline.
 		bo.Reset()
-		select {
-		case <-ctx.Done():
-			return nil
-		case <-ch:
+		next, _, changed := s.pendingSnapshot()
+		if !next.IsZero() && !next.After(first) {
+			if err := waitDirtySyncRetry(ctx, changed, syncNoProgressBackoff); err != nil {
+				return nil
+			}
 		}
 	}
+	return nil
 }
 
 func waitDirtySyncRetry(ctx context.Context, ch <-chan struct{}, delay time.Duration) error {
@@ -258,13 +236,8 @@ func waitDirtySyncRetry(ctx context.Context, ch <-chan struct{}, delay time.Dura
 
 func (s *syncController) waitDirtySyncGate(ctx context.Context) error {
 	for {
-		var dirty int64
-		var dirtyCh <-chan struct{}
-		s.bcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
-			dirty = s.dirtySize
-			dirtyCh = getWaitCh()
-		})
-		if dirty == 0 {
+		first, dirty, dirtyCh := s.pendingSnapshot()
+		if first.IsZero() && dirty == 0 {
 			return nil
 		}
 		if s.gateBcast == nil {
@@ -364,66 +337,115 @@ func (s *syncController) pushPackfile(
 	return pushFn(retryCtx, packID, blockCount)
 }
 
-// MarkDirty marks a block as dirty for sync.
-func (s *syncController) MarkDirty(ctx context.Context, h *hash.Hash, size int64) {
-	key := []byte("dirty/" + h.MarshalString())
-	sizeBytes := []byte(strconv.FormatInt(size, 10))
-	err := kvtx.RunTransaction(ctx, true,
-		func(ctx context.Context) (kvtx.Tx, error) {
-			return s.store.NewTransaction(ctx, true)
-		},
-		func(ctx context.Context, tx kvtx.Tx) error {
-			return tx.Set(ctx, key, sizeBytes)
-		},
-	)
+// MarkDirty durably schedules a block before its caller can acknowledge the write.
+// Repeating a write repairs a failed marker without double-counting pending bytes.
+func (s *syncController) MarkDirty(ctx context.Context, h *hash.Hash, size int64) error {
+	release, err := s.dirtyMtx.Lock(ctx)
 	if err != nil {
-		s.le.WithError(err).Warn("failed to mark dirty")
-		return
+		return err
 	}
-	s.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
-		s.dirtySize += size
-		broadcast()
-	})
-	s.telemetrySafeCall(func(t *ProviderAccount, id string) {
-		t.addSyncTelemetryDirty(id, size)
-	})
-}
+	defer release()
 
-// recalcDirtySize recalculates the dirty size from the object store on startup.
-func (s *syncController) recalcDirtySize(ctx context.Context) {
-	var total int64
-	var count int
-	err := kvtx.RunTransaction(ctx, false,
-		func(ctx context.Context) (kvtx.Tx, error) {
-			return s.store.NewTransaction(ctx, false)
-		},
+	// The marker and first-pending timestamp share the metadata transaction.
+	key := []byte("dirty/" + h.MarshalString())
+	var added bool
+	var first time.Time
+	err = kvtx.RunTransaction(ctx, true,
+		func(ctx context.Context) (kvtx.Tx, error) { return s.store.NewTransaction(ctx, true) },
 		func(ctx context.Context, tx kvtx.Tx) error {
-			var attemptTotal int64
-			var attemptCount int
-			err := tx.ScanPrefix(ctx, []byte("dirty/"), func(_, v []byte) error {
-				attemptTotal += parseDirtySize(v)
-				attemptCount++
-				return nil
-			})
-			if err == nil {
-				total = attemptTotal
-				count = attemptCount
+			_, found, err := tx.Get(ctx, key)
+			if err != nil {
+				return err
 			}
+			added = !found
+			if added {
+				if err := tx.Set(ctx, key, []byte(strconv.FormatInt(size, 10))); err != nil {
+					return err
+				}
+			}
+			first, err = readDirtyPendingTime(ctx, tx)
 			return err
 		},
 	)
 	if err != nil {
-		s.le.WithError(err).Warn("failed to recalculate dirty size")
-		return
+		return errors.Wrap(err, "retain pending block")
 	}
 
+	// Publish only the committed projection, ordered with startup and cleanup scans.
 	s.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
-		s.dirtySize = total
+		if added {
+			s.dirtySize += size
+		}
+		s.dirtyPendingAt = first
 		broadcast()
 	})
-	s.telemetrySafeCall(func(t *ProviderAccount, id string) {
-		t.setSyncTelemetryPending(id, total, count)
+	if added {
+		s.telemetrySafeCall(func(t *ProviderAccount, id string) { t.addSyncTelemetryDirty(id, size) })
+	}
+	return nil
+}
+
+// readDirtyPendingTime retains the first dirty time for current and preexisting work.
+// The caller holds a writable metadata transaction containing at least one marker.
+func readDirtyPendingTime(ctx context.Context, tx kvtx.Tx) (time.Time, error) {
+	value, found, err := tx.Get(ctx, []byte(syncPendingSinceKey))
+	if err != nil {
+		return time.Time{}, err
+	}
+	if found {
+		return time.Parse(time.RFC3339Nano, string(value))
+	}
+	first := time.Now().UTC()
+	return first, tx.Set(ctx, []byte(syncPendingSinceKey), []byte(first.Format(time.RFC3339Nano)))
+}
+
+// recalcDirtySize reconciles the durable queue and clears its deadline only when empty.
+func (s *syncController) recalcDirtySize(ctx context.Context, flushed ...dirtyCandidate) error {
+	release, err := s.dirtyMtx.Lock(ctx)
+	if err != nil {
+		return err
+	}
+	defer release()
+
+	// Startup and successful cleanup use one transaction for count and deadline.
+	var total int64
+	var count int
+	var first time.Time
+	err = kvtx.RunTransaction(ctx, true,
+		func(ctx context.Context) (kvtx.Tx, error) { return s.store.NewTransaction(ctx, true) },
+		func(ctx context.Context, tx kvtx.Tx) error {
+			total, count, first = 0, 0, time.Time{}
+			for _, candidate := range flushed {
+				if err := tx.Delete(ctx, candidate.key); err != nil {
+					return err
+				}
+			}
+			if err := tx.ScanPrefix(ctx, []byte("dirty/"), func(_, value []byte) error {
+				total += parseDirtySize(value)
+				count++
+				return nil
+			}); err != nil {
+				return err
+			}
+			if count == 0 {
+				return tx.Delete(ctx, []byte(syncPendingSinceKey))
+			}
+			var err error
+			first, err = readDirtyPendingTime(ctx, tx)
+			return err
+		},
+	)
+	if err != nil {
+		return errors.Wrap(err, "read pending blocks")
+	}
+
+	// Readers observe counts and their matching timer together.
+	s.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+		s.dirtySize, s.dirtyPendingAt = total, first
+		broadcast()
 	})
+	s.telemetrySafeCall(func(t *ProviderAccount, id string) { t.setSyncTelemetryPending(id, total, count) })
+	return nil
 }
 
 // dirtyCandidate is the metadata needed to decide which dirty blocks belong in
@@ -469,25 +491,9 @@ func (s *syncController) packBlocks(w io.Writer, blocks []dirtyBlock) (*writer.P
 	return result, hashWriter.Sum(nil), nil
 }
 
-// cleanupDirtyCandidates removes flushed dirty keys from the object store.
+// cleanupDirtyCandidates removes acknowledged markers and resets an empty queue's deadline atomically.
 func (s *syncController) cleanupDirtyCandidates(ctx context.Context, blocks []dirtyCandidate) error {
-	err := kvtx.RunTransaction(ctx, true,
-		func(ctx context.Context) (kvtx.Tx, error) {
-			return s.store.NewTransaction(ctx, true)
-		},
-		func(ctx context.Context, tx kvtx.Tx) error {
-			for _, b := range blocks {
-				if err := tx.Delete(ctx, b.key); err != nil {
-					return errors.Wrap(err, "deleting dirty key")
-				}
-			}
-			return nil
-		},
-	)
-	if err != nil {
-		return errors.Wrap(err, "cleaning dirty candidates")
-	}
-	return nil
+	return s.recalcDirtySize(ctx, blocks...)
 }
 
 // orderDirtyBlocks orders dirty block metadata for pack locality before
@@ -638,7 +644,7 @@ func (s *syncController) loadDirtyBlocks(ctx context.Context, candidates []dirty
 			return nil, errors.Wrap(err, "getting dirty block")
 		}
 		if !found {
-			continue
+			return nil, errors.Wrap(block.ErrNotFound, candidate.hash.MarshalString())
 		}
 		if int64(len(data)) > writer.DefaultMaxPackBytes {
 			return nil, errors.Errorf(
@@ -790,8 +796,7 @@ func (s *syncController) flush(ctx context.Context, orderBlocks bool) error {
 		return err
 	}
 	if len(blocks) == 0 {
-		s.recalcDirtySize(ctx)
-		return nil
+		return s.recalcDirtySize(ctx)
 	}
 
 	s.le.WithField("dirty-blocks", len(blocks)).
@@ -801,15 +806,10 @@ func (s *syncController) flush(ctx context.Context, orderBlocks bool) error {
 
 	blocks, dedupedBlocks, err := s.filterDuplicateDirtyBlocks(ctx, blocks)
 	if err != nil {
-		s.recalcDirtySize(ctx)
 		return errors.Wrap(err, "filtering duplicate dirty blocks")
 	}
 	if len(blocks) == 0 {
-		if err := s.cleanupDirtyCandidates(ctx, dedupedBlocks); err != nil {
-			return err
-		}
-		s.recalcDirtySize(ctx)
-		return nil
+		return s.cleanupDirtyCandidates(ctx, dedupedBlocks)
 	}
 
 	if orderBlocks && len(blocks) > syncOrderDirtyBlocksLimit {
@@ -826,7 +826,6 @@ func (s *syncController) flush(ctx context.Context, orderBlocks bool) error {
 			WithField("duration", time.Since(started)).
 			Debug("ordered dirty blocks")
 		if err != nil {
-			s.recalcDirtySize(ctx)
 			return errors.Wrap(err, "ordering dirty blocks")
 		}
 	}
@@ -839,22 +838,14 @@ func (s *syncController) flush(ctx context.Context, orderBlocks bool) error {
 	for start < len(blocks) {
 		end, err := nextDirtyCandidateChunk(blocks, start, syncFlushMaxPackBytes, maxChunkBlocks)
 		if err != nil {
-			s.recalcDirtySize(ctx)
 			return err
 		}
 
 		loadedBlocks, err := s.loadDirtyBlocks(ctx, blocks[start:end])
 		if err != nil {
-			s.recalcDirtySize(ctx)
 			return err
 		}
-		if len(loadedBlocks) == 0 {
-			start = end
-			continue
-		}
-
 		if err := s.flushLoadedBlocks(ctx, loadedBlocks, &entries, &flushedBlocks); err != nil {
-			s.recalcDirtySize(ctx)
 			return err
 		}
 		start = end
@@ -867,17 +858,8 @@ func (s *syncController) flush(ctx context.Context, orderBlocks bool) error {
 		s.lower.UpdateManifest(s.mergedManifestEntries())
 	}
 
-	if len(flushedBlocks) != 0 {
-		if err := s.cleanupDirtyCandidates(ctx, flushedBlocks); err != nil {
-			return err
-		}
-	}
-
-	// Recalculate dirty size from the store so concurrent markDirty calls that
-	// raced with this flush are preserved for the next cycle.
-	s.recalcDirtySize(ctx)
-
-	return nil
+	// Reconcile cleanup with concurrent writes in the same metadata transaction.
+	return s.cleanupDirtyCandidates(ctx, flushedBlocks)
 }
 
 // pull fetches new packfile entries from the server since the last pull.

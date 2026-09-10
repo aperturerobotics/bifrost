@@ -23,11 +23,11 @@ message Config {
 
 // SyncConfig configures block store synchronization behavior.
 message SyncConfig {
-  // InactivityTimeoutSecs is the inactivity timeout in seconds before flushing.
-  // Default: 10.
-  uint32 inactivity_timeout_secs = 1;
+  // CheckpointIntervalSecs bounds the delay from the first pending cloud change.
+  // Later changes do not reset this interval. Zero uses thirty seconds.
+  uint32 checkpoint_interval_secs = 1;
   // SizeThresholdBytes is the dirty size threshold in bytes before flushing.
-  // Default: 10485760 (10MB).
+  // Zero uses 48 MiB.
   uint32 size_threshold_bytes = 2;
   // AutoSync enables automatic sync on block writes.
   // Default: true.

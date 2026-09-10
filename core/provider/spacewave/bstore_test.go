@@ -451,8 +451,9 @@ func TestDirtyTrackingStoreForwardsBatch(t *testing.T) {
 	var dirtyMarks int
 	store := &dirtyTrackingStore{
 		store: inner,
-		markDirty: func(_ context.Context, _ *hash.Hash, _ int64) {
+		markDirty: func(_ context.Context, _ *hash.Hash, _ int64) error {
 			dirtyMarks++
+			return nil
 		},
 	}
 
@@ -477,26 +478,27 @@ func TestDirtyTrackingStoreForwardsBatch(t *testing.T) {
 	if dirtyMarks != 2 {
 		t.Fatalf("expected 2 dirty marks, got %d", dirtyMarks)
 	}
-	if inner.existsBatchHits != 1 {
-		t.Fatalf("expected 1 advisory GetBlockExistsBatch call, got %d", inner.existsBatchHits)
+	if inner.existsBatchHits != 0 {
+		t.Fatalf("unexpected advisory existence calls: %d", inner.existsBatchHits)
 	}
 
 	if _, err := store.GetBlockExistsBatch(ctx, []*block.BlockRef{ref1}); err != nil {
 		t.Fatalf("GetBlockExistsBatch failed: %v", err)
 	}
-	if inner.existsBatchHits != 2 {
-		t.Fatalf("expected 2 GetBlockExistsBatch calls, got %d", inner.existsBatchHits)
+	if inner.existsBatchHits != 1 {
+		t.Fatalf("expected 1 explicit GetBlockExistsBatch call, got %d", inner.existsBatchHits)
 	}
 }
 
-func TestDirtyTrackingStoreBatchSkipsExistingBlocks(t *testing.T) {
+func TestDirtyTrackingStoreBatchRepairsExistingBlocks(t *testing.T) {
 	ctx := context.Background()
 	inner := newWrapperForwardTestStore("", 0)
 	var dirty []string
 	store := &dirtyTrackingStore{
 		store: inner,
-		markDirty: func(_ context.Context, h *hash.Hash, _ int64) {
+		markDirty: func(_ context.Context, h *hash.Hash, _ int64) error {
 			dirty = append(dirty, h.MarshalString())
+			return nil
 		},
 	}
 
@@ -521,10 +523,10 @@ func TestDirtyTrackingStoreBatchSkipsExistingBlocks(t *testing.T) {
 	if inner.putBlockBatchHits != 1 {
 		t.Fatalf("expected 1 PutBlockBatch call, got %d", inner.putBlockBatchHits)
 	}
-	if inner.existsBatchHits != 1 {
-		t.Fatalf("expected 1 GetBlockExistsBatch call, got %d", inner.existsBatchHits)
+	if inner.existsBatchHits != 0 {
+		t.Fatalf("unexpected GetBlockExistsBatch call, got %d", inner.existsBatchHits)
 	}
-	want := []string{fresh.GetHash().MarshalString()}
+	want := []string{existing.GetHash().MarshalString(), fresh.GetHash().MarshalString()}
 	if !slices.Equal(dirty, want) {
 		t.Fatalf("dirty marks = %v, want %v", dirty, want)
 	}
@@ -874,8 +876,9 @@ func TestNewCloudOverlayDoesNotDirtyLowerReads(t *testing.T) {
 	var dirtyMarks int
 	dirtyUpper := &dirtyTrackingStore{
 		store: upper,
-		markDirty: func(context.Context, *hash.Hash, int64) {
+		markDirty: func(context.Context, *hash.Hash, int64) error {
 			dirtyMarks++
+			return nil
 		},
 	}
 
