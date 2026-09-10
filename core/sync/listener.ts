@@ -23,30 +23,20 @@ import {
 import { ResourceServiceDefinition } from '../../bldr/sdk/resource/resource_srpc.pb.js'
 import type { Application } from './application.js'
 import { applicationResources } from './rpc.js'
-
-export interface AttachmentOptions {
-  path?: string
-  allowedOrigins?: readonly string[]
-  maxRequestBytes?: number
-}
-
-export interface ListenerOptions extends AttachmentOptions {
-  port?: number
-  host?: string
-}
-
-export interface Attachment extends AsyncDisposable {
-  close(): Promise<void>
-}
-
-export interface Listener extends Attachment {
-  readonly url: string
-}
-
-export type Authenticate<P extends Principal> = (
-  token: string,
-  signal: AbortSignal,
-) => Promise<P>
+import type {
+  Attachment,
+  AttachmentOptions,
+  Authenticate,
+  Listener,
+  ListenerOptions,
+} from './config.js'
+export type {
+  Attachment,
+  AttachmentOptions,
+  Authenticate,
+  Listener,
+  ListenerOptions,
+} from './config.js'
 
 // attachListener owns upgrade routing and accepted sockets, preserving the supplied HTTP server.
 export function attachListener<S extends Schema, P extends Principal>(

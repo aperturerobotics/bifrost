@@ -37,7 +37,9 @@
     "sonner": "^2.0.7",
     "ulid": "^3.0.2",
     "vite": "8.2.2",
-    "workbox-window": "^7.4.1"
+    "workbox-window": "^7.4.1",
+    "@aptre/it-ws": "^1.1.2",
+    "ws": "^8.20.0"
   },
   "overrides": {
     "@aptre/protobuf-es-lite": "1.1.1"

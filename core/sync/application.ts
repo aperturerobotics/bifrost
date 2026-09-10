@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
 
+import { ItState } from '../../bldr/web/bldr/it-state.js'
 import {
   KvScanLimitError,
   KvStore,
@@ -30,7 +31,6 @@ import {
   validate,
   defineSchema,
   type CallOptions,
-  type MutationHandlers,
   type Principal,
   type Schema,
   type Transaction,
@@ -38,23 +38,14 @@ import {
   type RecordEntry,
 } from '../../sdk/sync/schema.js'
 
-export interface Access<P extends Principal> {
-  readonly principal: P
-  readonly scope: string
-  readonly collection: string
-  readonly action: 'read' | 'write'
-}
+import type { ApplicationConfig, Migration } from './config.js'
+export type { Access, Migration } from './config.js'
 
-export interface ApplicationOptions<S extends Schema, P extends Principal> {
-  schema: S
+export interface ApplicationOptions<
+  S extends Schema,
+  P extends Principal,
+> extends ApplicationConfig<S, P> {
   engine: Engine
-  authorize(access: Access<P>): boolean | Promise<boolean>
-  mutations: MutationHandlers<S, P>
-  limits?: {
-    maxRecords?: number
-    maxSnapshotBytes?: number
-    maxRecordBytes?: number
-  }
 }
 
 interface Receipt {
@@ -68,13 +59,14 @@ interface StoredVersion {
   version: number
 }
 
-export interface Migration<S extends Schema> {
-  from: number
-  run(context: {
-    scopes(): Promise<readonly string[]>
-    scope(scope: string): Transaction<S>
-    signal: AbortSignal
-  }): Promise<void>
+type QuerySnapshot =
+  | { entries: readonly RecordEntry<JsonValue>[] }
+  | { error: SyncError }
+
+interface SharedQuery {
+  controller: AbortController
+  state: ItState<QuerySnapshot>
+  users: number
 }
 
 const encoder = new TextEncoder()
@@ -94,6 +86,7 @@ export class Application<S extends Schema, P extends Principal> {
   private readonly engine: Engine
   private readonly controller = new AbortController()
   private readonly active = new Set<Promise<unknown>>()
+  private readonly queries = new Map<string, SharedQuery>()
   private closing?: Promise<void>
 
   constructor(private readonly options: ApplicationOptions<S, P>) {
@@ -246,7 +239,7 @@ export class Application<S extends Schema, P extends Principal> {
     return this.closing
   }
 
-  // watch follows the owning KV producer and rechecks policy before every delivery.
+  // Identical queries share a bounded producer; authority remains per delivery.
   async *watch(
     principal: P,
     collection: string,
@@ -261,16 +254,96 @@ export class Application<S extends Schema, P extends Principal> {
     ])
     const done = Promise.withResolvers<void>()
     this.active.add(done.promise)
+    let query: SharedQuery | undefined
+    let iterator: AsyncIterator<QuerySnapshot> | undefined
+    const stop = () => {
+      void iterator?.return?.()
+    }
+    const queryId = canonicalJSON([principal.scope, collection, prefix])
+    try {
+      await this.authorize(principal, collection, 'read')
+      lifetime.throwIfAborted()
+      query =
+        this.queries.get(queryId) ??
+        this.startQuery(queryId, principal.scope, collection, prefix)
+      query.users++
+      iterator = query.state.getIterable()[Symbol.asyncIterator]()
+      lifetime.addEventListener('abort', stop, { once: true })
+      for (;;) {
+        // Delivery stays ordered while the shared producer coalesces snapshots.
+        // eslint-disable-next-line react-doctor/async-await-in-loop
+        const next = await iterator.next()
+        if (next.done || lifetime.aborted) break
+        await this.authorize(principal, collection, 'read')
+        lifetime.throwIfAborted()
+        if ('error' in next.value) throw next.value.error
+        yield next.value.entries
+      }
+    } finally {
+      lifetime.removeEventListener('abort', stop)
+      await iterator?.return?.()
+      if (query && --query.users === 0) {
+        if (this.queries.get(queryId) === query) this.queries.delete(queryId)
+        query.controller.abort()
+      }
+      done.resolve()
+      this.active.delete(done.promise)
+    }
+  }
+
+  private startQuery(
+    id: string,
+    scope: string,
+    collection: string,
+    prefix: string,
+  ): SharedQuery {
+    let snapshot: QuerySnapshot | undefined
+    const query: SharedQuery = {
+      controller: new AbortController(),
+      state: new ItState(async () => snapshot, { mostRecentOnly: true }),
+      users: 0,
+    }
+    this.queries.set(id, query)
+    const signal = AbortSignal.any([this.signal, query.controller.signal])
+    const publish = (value: QuerySnapshot) => {
+      snapshot = value
+      query.state.pushChangeEvent(value)
+    }
+    const pump = (async () => {
+      try {
+        for await (const entries of this.watchQuery(
+          scope,
+          collection,
+          prefix,
+          signal,
+        ))
+          publish({ entries })
+      } catch (error) {
+        if (!signal.aborted) publish({ error: publicError(error) })
+      } finally {
+        if (this.queries.get(id) === query) this.queries.delete(id)
+      }
+    })()
+    this.active.add(pump)
+    void pump.finally(() => this.active.delete(pump)).catch(() => {})
+    return query
+  }
+
+  private async *watchQuery(
+    scope: string,
+    collection: string,
+    prefix: string,
+    lifetime: AbortSignal,
+  ): AsyncIterable<readonly RecordEntry<JsonValue>[]> {
     let store: KvStore | undefined
     try {
-      const key = collectionKey(this.schema.id, principal.scope, collection)
+      const key = collectionKey(this.schema.id, scope, collection)
       const bytes = prefix ? this.recordKey(prefix) : new Uint8Array()
       let emptyDelivered = false
       for (;;) {
         lifetime.throwIfAborted()
-        // Each iteration follows a later World revision and rechecks its authority.
+        // Wait for collection creation before opening its owning KV producer.
         // eslint-disable-next-line react-doctor/async-await-in-loop
-        await this.authorize(principal, collection, 'read')
         const sequence = await this.engine.getSeqno(lifetime)
         const read = await this.engine.newTransaction(false, lifetime)
         let exists = false
@@ -307,7 +380,6 @@ export class Application<S extends Schema, P extends Principal> {
         },
         lifetime,
       )) {
-        await this.authorize(principal, collection, 'read')
         yield entries.map((entry) => ({
           key: decoder.decode(entry.key),
           value: decodeJSON(entry.value),
@@ -319,8 +391,6 @@ export class Application<S extends Schema, P extends Principal> {
       if (!lifetime.aborted) throw publicError(error)
     } finally {
       store?.release()
-      done.resolve()
-      this.active.delete(done.promise)
     }
   }
 

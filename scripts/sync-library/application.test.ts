@@ -4,7 +4,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import type { StandardSchemaV1 } from '@standard-schema/spec'
-import { createServer, openNodeEngine } from 'spacewave/server'
+import { createServer } from '../../core/sync/server.js'
+import { openNodeEngine } from '../../core/sync/node/host.js'
 
 import { Application } from '../../core/sync/application.js'
 import { defineSchema, type Principal } from '../../sdk/sync/schema.js'
@@ -45,7 +46,7 @@ const schema = defineSchema({
 const principal: Principal = { subject: 'alice', scope: 'team-a' }
 
 test(
-  'public server access uses policy and preserves a supplied engine and existing ObjectTypes',
+  'internal server attachment preserves a supplied engine and existing ObjectTypes',
   { timeout: 60_000 },
   async () => {
     const directory = await mkdtemp(join(tmpdir(), 'spacewave-supplied-'))

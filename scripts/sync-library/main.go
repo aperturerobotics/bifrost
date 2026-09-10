@@ -5,6 +5,7 @@ import (
 	"context"
 	"flag"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	"github.com/s4wave/spacewave/bldr/util/gocompiler"
@@ -63,7 +64,9 @@ func build(ctx context.Context, le *logrus.Entry, output string, skipCompile boo
 		Format:       "es", Platform: "node", Target: "es2024",
 		EntryFileNames: "[name].mjs", ChunkFileNames: "chunks/[name]-[hash].mjs",
 		AssetFileNames: "assets/[name]-[hash][extname]",
-		CodeSplitting:  true, Sourcemap: "none", TreeShaking: true,
+		CodeSplitting:  true, Sourcemap: "none", TreeShaking: true, Minify: true,
+		CleanOutputDir: true,
+		Defines:        map[string]string{"process.env.WS_NO_BUFFER_UTIL": "true", "process.env.WS_NO_UTF_8_VALIDATE": "true"},
 		Entrypoints: []*rolldown.Entrypoint{
 			{Name: "engine-worker", InputPath: filepath.Join(root, "core/sync/node/worker.ts")},
 			{Name: "server", InputPath: filepath.Join(root, "packages/spacewave/server.ts")},
@@ -79,9 +82,11 @@ func build(ctx context.Context, le *logrus.Entry, output string, skipCompile boo
 		Format:       "es", Platform: "browser", Target: "es2024",
 		EntryFileNames: "[name].mjs", ChunkFileNames: "chunks/[name]-[hash].mjs",
 		AssetFileNames: "assets/[name]-[hash][extname]",
-		CodeSplitting:  true, Sourcemap: "none", TreeShaking: true,
+		CodeSplitting:  true, Sourcemap: "none", TreeShaking: true, Minify: true,
+		External: []string{"react", "react/jsx-runtime"},
 		Entrypoints: []*rolldown.Entrypoint{
 			{Name: "index", InputPath: filepath.Join(root, "packages/spacewave/index.ts")},
+			{Name: "react", InputPath: filepath.Join(root, "packages/spacewave/react.ts")},
 		},
 	})
 	if err != nil {
@@ -98,5 +103,19 @@ func build(ctx context.Context, le *logrus.Entry, output string, skipCompile boo
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(working, "build-report.json"), report, 0o644)
+	if err := os.WriteFile(filepath.Join(working, "build-report.json"), report, 0o644); err != nil {
+		return err
+	}
+	declarations := exec.CommandContext(ctx, "bun", "run", "scripts/sync-library/declarations.ts", output)
+	declarations.Dir = root
+	declarations.Stdout = os.Stdout
+	declarations.Stderr = os.Stderr
+	if err := declarations.Run(); err != nil {
+		return err
+	}
+	notices := exec.CommandContext(ctx, "bun", "run", "scripts/sync-library/notices.ts", output)
+	notices.Dir = root
+	notices.Stdout = os.Stdout
+	notices.Stderr = os.Stderr
+	return notices.Run()
 }

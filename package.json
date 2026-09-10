@@ -37,6 +37,9 @@
     ]
   },
   "scripts": {
+    "build:sync": "go run ./scripts/sync-library",
+    "qualify:sync": "bun run scripts/sync-library/qualify.ts",
+    "pack:sync": "npm pack --ignore-scripts ./packages/spacewave --pack-destination .tmp/sync-library",
     "check": "bun run typecheck && bun run lint",
     "fecheck": "bun scripts/fecheck.js",
     "clean": "rimraf ./dist ./.bldr/{devtool.db*,logs,src,plugin,build,cli,cache} ./.bldr-dist ./.tools ./bin ./bldr/bin",
@@ -328,7 +331,10 @@
     "uint8arraylist": "^3.0.2",
     "ulid": "^3.0.2",
     "workbox-window": "^7.4.1",
-    "yaml": "^2.9.0"
+    "yaml": "^2.9.0",
+    "@aptre/it-ws": "^1.1.2",
+    "ws": "^8.20.0",
+    "it-pipe": "^3.0.1"
   },
   "resolutions": {
     "@aptre/protobuf-es-lite": "1.1.1",
