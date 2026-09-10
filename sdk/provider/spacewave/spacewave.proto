@@ -949,26 +949,36 @@ message BillingUsageInfo {
   int64 read_ops = 5;
   // ReadOpsBaseline is the baseline.
   int64 read_ops_baseline = 6;
-  // StorageOverageBytes is current storage beyond the included baseline.
-  double storage_overage_bytes = 7;
-  // StorageOverageMonthlyCostEstimateUsd is the estimated monthly cost for
-  // current storage overage if held for a full month.
-  double storage_overage_monthly_cost_estimate_usd = 8;
-  // StorageOverageMonthToDateGbMonths is accrued storage overage for the
-  // current billing period in GB-months.
-  double storage_overage_month_to_date_gb_months = 9;
-  // StorageOverageMonthToDateCostEstimateUsd is the estimated cost for accrued
-  // storage overage in the current billing period.
-  double storage_overage_month_to_date_cost_estimate_usd = 10;
-  // StorageOverageDeletedGbMonths is the accrued overage attributable to data
-  // that is no longer resident.
-  double storage_overage_deleted_gb_months = 11;
-  // StorageOverageDeletedCostEstimateUsd is the estimated cost for deleted-data
-  // storage overage in the current billing period.
-  double storage_overage_deleted_cost_estimate_usd = 12;
+  reserved 7 to 12;
   // UsageMeteredThroughAt is the Spacewave usage ledger freshness timestamp
   // in Unix epoch milliseconds.
   int64 usage_metered_through_at = 13;
+  // OverageLimitCents is the customer's recurring extra-spending maximum.
+  uint32 overage_limit_cents = 14;
+  // AccruedOverageMicrodollars is the exact accepted operation charge.
+  int64 accrued_overage_microdollars = 15;
+  // CurrentPeriodStart is the subscription-period start in Unix milliseconds.
+  int64 current_period_start = 16;
+  // CurrentPeriodEnd is the allowance reset in Unix milliseconds.
+  int64 current_period_end = 17;
+  // ReservedOverageMicrodollars is the additional maximum awaiting work results.
+  int64 reserved_overage_microdollars = 18;
+  // OfferVersion identifies the applied offer.
+  string offer_version = 19;
+}
+
+// BillingConsent captures the customer's affirmative offer and spending choice.
+message BillingConsent {
+  // OfferVersion is the exact offer displayed before acceptance.
+  string offer_version = 1;
+  // PolicyVersion is the displayed service-policy revision.
+  string policy_version = 2;
+  // RenewalAccepted authorizes the monthly subscription to renew until canceled.
+  bool renewal_accepted = 3;
+  // OverageLimitCents selects 0, 500, 1000, or 2000 additional cents per period.
+  uint32 overage_limit_cents = 4;
+  // OverageAccepted expressly authorizes the displayed proportional rates.
+  bool overage_accepted = 5;
 }
 
 message CreateCheckoutSessionRequest {
@@ -976,11 +986,13 @@ message CreateCheckoutSessionRequest {
   string success_url = 1;
   // CancelUrl is the URL to redirect to if checkout is canceled.
   string cancel_url = 2;
-  // BillingInterval selects monthly or annual.
+  // BillingInterval must select monthly billing.
   BillingInterval billing_interval = 3;
   // BillingAccountId selects a specific billing account to check out. Empty
   // falls back to the caller's single managed BA (legacy default).
   string billing_account_id = 5;
+  // Consent records the terms affirmatively accepted before checkout.
+  BillingConsent consent = 6;
 }
 
 // CreateCheckoutSessionResponse is the response for CreateCheckoutSession.
@@ -1886,16 +1898,16 @@ message ReactivateSubscriptionResponse {
   bool needs_checkout = 1;
 }
 
-// SwitchBillingIntervalRequest is the request for SwitchBillingInterval.
-message SwitchBillingIntervalRequest {
-  // BillingInterval is the target interval.
-  BillingInterval billing_interval = 1;
-  // BillingAccountId overrides the personal billing account when set.
-  string billing_account_id = 2;
+// SetBillingSpendingLimitRequest updates the recurring operation budget.
+message SetBillingSpendingLimitRequest {
+  // BillingAccountId identifies the payer whose budget changes.
+  string billing_account_id = 1;
+  // Consent records explicit authorization for an increase.
+  BillingConsent consent = 2;
 }
 
-// SwitchBillingIntervalResponse is the response for SwitchBillingInterval.
-message SwitchBillingIntervalResponse {}
+// SetBillingSpendingLimitResponse acknowledges the persisted spending choice.
+message SetBillingSpendingLimitResponse {}
 
 // CreateBillingPortalRequest is the request for CreateBillingPortal.
 message CreateBillingPortalRequest {

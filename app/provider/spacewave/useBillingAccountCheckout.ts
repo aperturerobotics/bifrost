@@ -1,3 +1,4 @@
+import { useBillingConsent } from './useBillingConsent.js'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useStreamingResource } from '@aptre/bldr-sdk/hooks/useStreamingResource.js'
@@ -16,6 +17,7 @@ export interface UseBillingAccountCheckoutOptions {
 export function useBillingAccountCheckout(
   opts: UseBillingAccountCheckoutOptions = {},
 ) {
+  const { requestConsent, consentDialog } = useBillingConsent()
   const sessionResource = SessionContext.useContext()
   const session = useResourceValue(sessionResource)
   const cloudProviderConfig = useCloudProviderConfig()
@@ -81,6 +83,8 @@ export function useBillingAccountCheckout(
         return false
       }
 
+      const consent = await requestConsent()
+      if (!consent) return false
       if (retryTimerRef.current) clearTimeout(retryTimerRef.current)
       setError(null)
       setShowRetry(false)
@@ -92,6 +96,7 @@ export function useBillingAccountCheckout(
         const cancelUrl = checkoutResultBaseUrl + '/checkout/cancel'
         const resp = await session.spacewave.createCheckoutSession({
           billingAccountId,
+          consent,
           successUrl,
           cancelUrl,
         })
@@ -119,7 +124,7 @@ export function useBillingAccountCheckout(
         return false
       }
     },
-    [checkoutResultBaseUrl, handleCompleted, session],
+    [checkoutResultBaseUrl, handleCompleted, session, requestConsent],
   )
 
   const continueCheckout = useCallback(() => {
@@ -129,6 +134,7 @@ export function useBillingAccountCheckout(
   }, [checkoutUrl])
 
   return {
+    consentDialog,
     continueCheckout,
     error,
     polling,

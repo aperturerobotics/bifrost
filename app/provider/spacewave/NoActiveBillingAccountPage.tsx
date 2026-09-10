@@ -211,6 +211,7 @@ export function NoActiveBillingAccountPage() {
 
   return (
     <PageWrapper>
+      {checkout.consentDialog}
       <div className="mt-4 flex w-full justify-start">
         <div className="border-foreground/10 bg-background-card/35 inline-flex items-center gap-3 rounded-xl border p-3 backdrop-blur-sm">
           <div className="bg-brand/10 text-brand flex size-10 items-center justify-center rounded-xl">

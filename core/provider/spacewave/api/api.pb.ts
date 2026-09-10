@@ -37,6 +37,7 @@ import type {
   BillingStatus,
 } from '../../../../sdk/provider/spacewave/spacewave.pb.js'
 import {
+  BillingConsent,
   BillingInterval_Enum,
   BillingStatus_Enum,
 } from '../../../../sdk/provider/spacewave/spacewave.pb.js'
@@ -3033,6 +3034,12 @@ export interface CheckoutRequest {
    * @generated from field: string billing_account_id = 4;
    */
   billingAccountId?: string
+  /**
+   * Consent records the terms affirmatively accepted before checkout.
+   *
+   * @generated from field: s4wave.provider.spacewave.BillingConsent consent = 5;
+   */
+  consent?: BillingConsent
 }
 
 export const CheckoutRequest: MessageType<CheckoutRequest> =
@@ -3053,6 +3060,7 @@ export const CheckoutRequest: MessageType<CheckoutRequest> =
         kind: 'scalar',
         T: ScalarType.STRING,
       },
+      { no: 5, name: 'consent', kind: 'message', T: () => BillingConsent },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })
@@ -3090,62 +3098,6 @@ export const CheckoutResponse: MessageType<CheckoutResponse> =
       { no: 1, name: 'checkout_url', kind: 'scalar', T: ScalarType.STRING },
       { no: 2, name: 'ws_ticket', kind: 'scalar', T: ScalarType.STRING },
       { no: 3, name: 'status', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-    packedByDefault: true,
-  })
-
-/**
- * SwitchIntervalRequest is the request body for POST /billing/:id/switch-interval.
- *
- * @generated from message provider.spacewave.api.SwitchIntervalRequest
- */
-export interface SwitchIntervalRequest {
-  /**
-   * BillingInterval is the new billing interval.
-   *
-   * @generated from field: s4wave.provider.spacewave.BillingInterval billing_interval = 1;
-   */
-  billingInterval?: BillingInterval
-}
-
-export const SwitchIntervalRequest: MessageType<SwitchIntervalRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.api.SwitchIntervalRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'billing_interval',
-        kind: 'enum',
-        T: BillingInterval_Enum,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-    packedByDefault: true,
-  })
-
-/**
- * SwitchIntervalResponse is the response body for POST /billing/:id/switch-interval.
- *
- * @generated from message provider.spacewave.api.SwitchIntervalResponse
- */
-export interface SwitchIntervalResponse {
-  /**
-   * BillingInterval is the billing interval after the switch succeeds.
-   *
-   * @generated from field: s4wave.provider.spacewave.BillingInterval billing_interval = 1;
-   */
-  billingInterval?: BillingInterval
-}
-
-export const SwitchIntervalResponse: MessageType<SwitchIntervalResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.api.SwitchIntervalResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'billing_interval',
-        kind: 'enum',
-        T: BillingInterval_Enum,
-      },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })
@@ -3318,53 +3270,66 @@ export interface BillingUsageResponse {
    */
   readOps?: bigint
   /**
-   * StorageOverageBytes is current storage beyond the included baseline.
-   *
-   * @generated from field: double storage_overage_bytes = 4;
-   */
-  storageOverageBytes?: number
-  /**
-   * StorageOverageMonthlyCostEstimateUsd is the estimated monthly cost for
-   * current storage overage if held for a full month.
-   *
-   * @generated from field: double storage_overage_monthly_cost_estimate_usd = 5;
-   */
-  storageOverageMonthlyCostEstimateUsd?: number
-  /**
-   * StorageOverageMonthToDateGbMonths is accrued storage overage for the
-   * current billing period in GB-months.
-   *
-   * @generated from field: double storage_overage_month_to_date_gb_months = 6;
-   */
-  storageOverageMonthToDateGbMonths?: number
-  /**
-   * StorageOverageMonthToDateCostEstimateUsd is the estimated cost for accrued
-   * storage overage in the current billing period.
-   *
-   * @generated from field: double storage_overage_month_to_date_cost_estimate_usd = 7;
-   */
-  storageOverageMonthToDateCostEstimateUsd?: number
-  /**
-   * StorageOverageDeletedGbMonths is the accrued overage attributable to data
-   * that is no longer resident.
-   *
-   * @generated from field: double storage_overage_deleted_gb_months = 8;
-   */
-  storageOverageDeletedGbMonths?: number
-  /**
-   * StorageOverageDeletedCostEstimateUsd is the estimated cost for deleted-data
-   * storage overage in the current billing period.
-   *
-   * @generated from field: double storage_overage_deleted_cost_estimate_usd = 9;
-   */
-  storageOverageDeletedCostEstimateUsd?: number
-  /**
    * UsageMeteredThroughAt is the Spacewave usage ledger freshness timestamp
    * in Unix epoch milliseconds.
    *
    * @generated from field: int64 usage_metered_through_at = 10;
    */
   usageMeteredThroughAt?: bigint
+  /**
+   * StorageBaselineBytes is the retained-content capacity.
+   *
+   * @generated from field: double storage_baseline_bytes = 11;
+   */
+  storageBaselineBytes?: number
+  /**
+   * WriteOpsBaseline is the included subscription-period write allowance.
+   *
+   * @generated from field: int64 write_ops_baseline = 12;
+   */
+  writeOpsBaseline?: bigint
+  /**
+   * ReadOpsBaseline is the included subscription-period uncached read allowance.
+   *
+   * @generated from field: int64 read_ops_baseline = 13;
+   */
+  readOpsBaseline?: bigint
+  /**
+   * OverageLimitCents is the customer's recurring extra-spending maximum.
+   *
+   * @generated from field: uint32 overage_limit_cents = 14;
+   */
+  overageLimitCents?: number
+  /**
+   * AccruedOverageMicrodollars is the exact accepted operation charge.
+   *
+   * @generated from field: int64 accrued_overage_microdollars = 15;
+   */
+  accruedOverageMicrodollars?: bigint
+  /**
+   * CurrentPeriodStart is the subscription-period start in Unix milliseconds.
+   *
+   * @generated from field: int64 current_period_start = 16;
+   */
+  currentPeriodStart?: bigint
+  /**
+   * CurrentPeriodEnd is the allowance reset in Unix milliseconds.
+   *
+   * @generated from field: int64 current_period_end = 17;
+   */
+  currentPeriodEnd?: bigint
+  /**
+   * ReservedOverageMicrodollars is the additional maximum awaiting work results.
+   *
+   * @generated from field: int64 reserved_overage_microdollars = 18;
+   */
+  reservedOverageMicrodollars?: bigint
+  /**
+   * OfferVersion identifies the applied offer.
+   *
+   * @generated from field: string offer_version = 19;
+   */
+  offerVersion?: string
 }
 
 export const BillingUsageResponse: MessageType<BillingUsageResponse> =
@@ -3375,47 +3340,60 @@ export const BillingUsageResponse: MessageType<BillingUsageResponse> =
       { no: 2, name: 'write_ops', kind: 'scalar', T: ScalarType.INT64 },
       { no: 3, name: 'read_ops', kind: 'scalar', T: ScalarType.INT64 },
       {
-        no: 4,
-        name: 'storage_overage_bytes',
-        kind: 'scalar',
-        T: ScalarType.DOUBLE,
-      },
-      {
-        no: 5,
-        name: 'storage_overage_monthly_cost_estimate_usd',
-        kind: 'scalar',
-        T: ScalarType.DOUBLE,
-      },
-      {
-        no: 6,
-        name: 'storage_overage_month_to_date_gb_months',
-        kind: 'scalar',
-        T: ScalarType.DOUBLE,
-      },
-      {
-        no: 7,
-        name: 'storage_overage_month_to_date_cost_estimate_usd',
-        kind: 'scalar',
-        T: ScalarType.DOUBLE,
-      },
-      {
-        no: 8,
-        name: 'storage_overage_deleted_gb_months',
-        kind: 'scalar',
-        T: ScalarType.DOUBLE,
-      },
-      {
-        no: 9,
-        name: 'storage_overage_deleted_cost_estimate_usd',
-        kind: 'scalar',
-        T: ScalarType.DOUBLE,
-      },
-      {
         no: 10,
         name: 'usage_metered_through_at',
         kind: 'scalar',
         T: ScalarType.INT64,
       },
+      {
+        no: 11,
+        name: 'storage_baseline_bytes',
+        kind: 'scalar',
+        T: ScalarType.DOUBLE,
+      },
+      {
+        no: 12,
+        name: 'write_ops_baseline',
+        kind: 'scalar',
+        T: ScalarType.INT64,
+      },
+      {
+        no: 13,
+        name: 'read_ops_baseline',
+        kind: 'scalar',
+        T: ScalarType.INT64,
+      },
+      {
+        no: 14,
+        name: 'overage_limit_cents',
+        kind: 'scalar',
+        T: ScalarType.UINT32,
+      },
+      {
+        no: 15,
+        name: 'accrued_overage_microdollars',
+        kind: 'scalar',
+        T: ScalarType.INT64,
+      },
+      {
+        no: 16,
+        name: 'current_period_start',
+        kind: 'scalar',
+        T: ScalarType.INT64,
+      },
+      {
+        no: 17,
+        name: 'current_period_end',
+        kind: 'scalar',
+        T: ScalarType.INT64,
+      },
+      {
+        no: 18,
+        name: 'reserved_overage_microdollars',
+        kind: 'scalar',
+        T: ScalarType.INT64,
+      },
+      { no: 19, name: 'offer_version', kind: 'scalar', T: ScalarType.STRING },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })

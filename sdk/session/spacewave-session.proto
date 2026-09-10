@@ -32,8 +32,8 @@ service SpacewaveSessionResourceService {
   rpc CancelSubscription(.s4wave.provider.spacewave.CancelSubscriptionRequest) returns (.s4wave.provider.spacewave.CancelSubscriptionResponse);
   // ReactivateSubscription reactivates a canceled subscription.
   rpc ReactivateSubscription(.s4wave.provider.spacewave.ReactivateSubscriptionRequest) returns (.s4wave.provider.spacewave.ReactivateSubscriptionResponse);
-  // SwitchBillingInterval switches between monthly and annual billing.
-  rpc SwitchBillingInterval(.s4wave.provider.spacewave.SwitchBillingIntervalRequest) returns (.s4wave.provider.spacewave.SwitchBillingIntervalResponse);
+  // SetBillingSpendingLimit updates the recurring extra-usage maximum.
+  rpc SetBillingSpendingLimit(.s4wave.provider.spacewave.SetBillingSpendingLimitRequest) returns (.s4wave.provider.spacewave.SetBillingSpendingLimitResponse);
   // CreateBillingPortal creates a Stripe billing portal session URL.
   rpc CreateBillingPortal(.s4wave.provider.spacewave.CreateBillingPortalRequest) returns (.s4wave.provider.spacewave.CreateBillingPortalResponse);
   // CreateBillingAccount creates a new unassigned billing account managed by the caller.

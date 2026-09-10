@@ -1,26 +1,23 @@
-import type { ReactNode } from 'react'
-
 import { cleanup, render, screen } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { UsageBars } from './UsageBars.js'
 
 const mockBillingState = vi.hoisted(() => ({
+  selfServiceAllowed: false,
   response: {
     usage: {
-      storageBytes: 112.4 * 1024 * 1024 * 1024,
-      storageBaselineBytes: 100 * 1024 * 1024 * 1024,
-      writeOps: 1n,
-      writeOpsBaseline: 10n,
-      readOps: 1n,
-      readOpsBaseline: 10n,
-      storageOverageBytes: 12.4 * 1024 * 1024 * 1024,
-      storageOverageMonthlyCostEstimateUsd: 0.25,
-      storageOverageMonthToDateGbMonths: 0.5,
-      storageOverageMonthToDateCostEstimateUsd: 0.01,
-      storageOverageDeletedGbMonths: 0,
-      storageOverageDeletedCostEstimateUsd: 0,
-      usageMeteredThroughAt: 1776900000000n,
+      storageBytes: 80 * 2 ** 30,
+      storageBaselineBytes: 100 * 2 ** 30,
+      writeOps: 42_500n,
+      writeOpsBaseline: 50_000n,
+      readOps: 225_000n,
+      readOpsBaseline: 250_000n,
+      overageLimitCents: 1000,
+      accruedOverageMicrodollars: 2_000_000n,
+      reservedOverageMicrodollars: 500_000n,
+      currentPeriodStart: 1_800_000_000_000n,
+      currentPeriodEnd: 1_802_592_000_000n,
     },
   },
 }))
@@ -28,72 +25,27 @@ const mockBillingState = vi.hoisted(() => ({
 vi.mock('./BillingStateProvider.js', () => ({
   useBillingStateContext: () => mockBillingState,
 }))
-
-vi.mock('@s4wave/web/ui/tooltip.js', () => ({
-  Tooltip: ({ children }: { children?: ReactNode }) => <>{children}</>,
-  TooltipTrigger: ({ children }: { children?: ReactNode }) => <>{children}</>,
-  TooltipContent: ({ children }: { children?: ReactNode }) => <>{children}</>,
+vi.mock('@s4wave/web/contexts/contexts.js', () => ({
+  SessionContext: { useContext: () => ({ value: null }) },
 }))
 
+afterEach(cleanup)
+
 describe('UsageBars', () => {
-  beforeEach(() => {
-    mockBillingState.response.usage.storageBytes = 112.4 * 1024 * 1024 * 1024
-    mockBillingState.response.usage.storageBaselineBytes =
-      100 * 1024 * 1024 * 1024
-    mockBillingState.response.usage.writeOps = 1n
-    mockBillingState.response.usage.writeOpsBaseline = 10n
-    mockBillingState.response.usage.readOps = 1n
-    mockBillingState.response.usage.readOpsBaseline = 10n
-    mockBillingState.response.usage.storageOverageBytes =
-      12.4 * 1024 * 1024 * 1024
-    mockBillingState.response.usage.storageOverageMonthlyCostEstimateUsd = 0.25
-    mockBillingState.response.usage.storageOverageMonthToDateGbMonths = 0.5
-    mockBillingState.response.usage.storageOverageMonthToDateCostEstimateUsd = 0.01
-    mockBillingState.response.usage.storageOverageDeletedGbMonths = 0
-    mockBillingState.response.usage.storageOverageDeletedCostEstimateUsd = 0
-    mockBillingState.response.usage.usageMeteredThroughAt = 1776900000000n
-  })
-
-  afterEach(() => {
-    cleanup()
-  })
-
-  it('shows storage overage as an extra cost line', () => {
+  it('shows accrued charges, pending exposure, available budget, and the subscription reset date', () => {
     render(<UsageBars />)
-
-    expect(screen.getByText('Extra storage')).toBeDefined()
-    expect(screen.getByText('12.4 GB')).toBeDefined()
-    expect(screen.getByText('$0.02')).toBeDefined()
-    expect(screen.getByText('$0.25/mo')).toBeDefined()
-    expect(screen.getByText('Month-to-date overage')).toBeDefined()
-    expect(screen.getByText('0.500 GB-months = $0.01 estimated')).toBeDefined()
-    expect(screen.getByText(/Accrued storage overage/)).toBeDefined()
     expect(
-      screen.getByText('Usage metered through 2026-04-22 23:20 UTC'),
+      screen.getByText(
+        /Accrued: \$2.00 · Reserved: \$0.50 · Available: \$7.50/,
+      ),
     ).toBeDefined()
-  })
-
-  it('does not show storage overage below the included baseline', () => {
-    mockBillingState.response.usage.storageBytes = 50 * 1024 * 1024 * 1024
-    mockBillingState.response.usage.storageOverageBytes = 0
-
-    render(<UsageBars />)
-
+    expect(screen.getByText(/Subscription period:/)).toBeDefined()
+    expect(screen.getByText(/Peer-only traffic and cached reads/)).toBeDefined()
     expect(screen.queryByText('Extra storage')).toBeNull()
-    expect(screen.queryByText('Included usage alert')).toBeNull()
   })
 
-  it('shows a soft alert when usage reaches 80% of the included baseline', () => {
-    mockBillingState.response.usage.storageBytes = 80 * 1024 * 1024 * 1024
-    mockBillingState.response.usage.storageOverageBytes = 0
-    mockBillingState.response.usage.writeOps = 850_000n
-    mockBillingState.response.usage.writeOpsBaseline = 1_000_000n
-    mockBillingState.response.usage.readOps = 9_000_000n
-    mockBillingState.response.usage.readOpsBaseline = 10_000_000n
-
+  it('shows threshold alerts against the monthly offer', () => {
     render(<UsageBars />)
-
-    expect(screen.getByText('Included usage alert')).toBeDefined()
     expect(
       screen.getByText('Storage has reached 80% of included usage.'),
     ).toBeDefined()
@@ -103,16 +55,5 @@ describe('UsageBars', () => {
     expect(
       screen.getByText('Cloud Reads has reached 90% of included usage.'),
     ).toBeDefined()
-  })
-
-  it('shows already-deleted data cost only when provided', () => {
-    mockBillingState.response.usage.storageOverageDeletedGbMonths = 0.25
-    mockBillingState.response.usage.storageOverageDeletedCostEstimateUsd = 0.01
-
-    render(<UsageBars />)
-
-    expect(screen.getByText('Already-deleted data')).toBeDefined()
-    expect(screen.getByText('0.250 GB-months = +$0.01 estimated')).toBeDefined()
-    expect(screen.getByText(/data that is no longer stored/)).toBeDefined()
   })
 })

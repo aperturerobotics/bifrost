@@ -3,7 +3,6 @@ import { Resource } from '@aptre/bldr-sdk/resource/resource.js'
 import { SpacewaveSessionResourceServiceClient } from './spacewave-session_srpc.pb.js'
 import { SharedObjectSelfEnrollment } from './shared-object-self-enrollment.js'
 import type { MountSharedObjectSelfEnrollmentResponse } from './spacewave-session.pb.js'
-import { BillingInterval } from '../provider/spacewave/spacewave.pb.js'
 import type {
   AcceptOrganizationTargetedInvitationResponse,
   AcceptSpaceTargetedInvitationResponse,
@@ -54,7 +53,8 @@ import type {
   RevokeTargetedInvitationResponse,
   RevokeOrgInviteResponse,
   SendVerificationEmailResponse,
-  SwitchBillingIntervalResponse,
+  SetBillingSpendingLimitResponse,
+  BillingConsent,
   TransferResourceResponse,
   AssignBillingAccountResponse,
   DetachBillingAccountResponse,
@@ -213,14 +213,14 @@ export class SpacewaveSession extends Resource {
     )
   }
 
-  // switchBillingInterval switches between monthly and annual billing.
-  public async switchBillingInterval(
-    interval: BillingInterval,
+  // setBillingSpendingLimit persists an explicitly selected recurring budget.
+  public async setBillingSpendingLimit(
+    consent: BillingConsent,
     billingAccountId?: string,
     abortSignal?: AbortSignal,
-  ): Promise<SwitchBillingIntervalResponse> {
-    return await this.service.SwitchBillingInterval(
-      { billingInterval: interval, billingAccountId },
+  ): Promise<SetBillingSpendingLimitResponse> {
+    return await this.service.SetBillingSpendingLimit(
+      { consent, billingAccountId },
       abortSignal,
     )
   }

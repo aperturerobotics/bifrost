@@ -3731,53 +3731,48 @@ export interface BillingUsageInfo {
    */
   readOpsBaseline?: bigint
   /**
-   * StorageOverageBytes is current storage beyond the included baseline.
-   *
-   * @generated from field: double storage_overage_bytes = 7;
-   */
-  storageOverageBytes?: number
-  /**
-   * StorageOverageMonthlyCostEstimateUsd is the estimated monthly cost for
-   * current storage overage if held for a full month.
-   *
-   * @generated from field: double storage_overage_monthly_cost_estimate_usd = 8;
-   */
-  storageOverageMonthlyCostEstimateUsd?: number
-  /**
-   * StorageOverageMonthToDateGbMonths is accrued storage overage for the
-   * current billing period in GB-months.
-   *
-   * @generated from field: double storage_overage_month_to_date_gb_months = 9;
-   */
-  storageOverageMonthToDateGbMonths?: number
-  /**
-   * StorageOverageMonthToDateCostEstimateUsd is the estimated cost for accrued
-   * storage overage in the current billing period.
-   *
-   * @generated from field: double storage_overage_month_to_date_cost_estimate_usd = 10;
-   */
-  storageOverageMonthToDateCostEstimateUsd?: number
-  /**
-   * StorageOverageDeletedGbMonths is the accrued overage attributable to data
-   * that is no longer resident.
-   *
-   * @generated from field: double storage_overage_deleted_gb_months = 11;
-   */
-  storageOverageDeletedGbMonths?: number
-  /**
-   * StorageOverageDeletedCostEstimateUsd is the estimated cost for deleted-data
-   * storage overage in the current billing period.
-   *
-   * @generated from field: double storage_overage_deleted_cost_estimate_usd = 12;
-   */
-  storageOverageDeletedCostEstimateUsd?: number
-  /**
    * UsageMeteredThroughAt is the Spacewave usage ledger freshness timestamp
    * in Unix epoch milliseconds.
    *
    * @generated from field: int64 usage_metered_through_at = 13;
    */
   usageMeteredThroughAt?: bigint
+  /**
+   * OverageLimitCents is the customer's recurring extra-spending maximum.
+   *
+   * @generated from field: uint32 overage_limit_cents = 14;
+   */
+  overageLimitCents?: number
+  /**
+   * AccruedOverageMicrodollars is the exact accepted operation charge.
+   *
+   * @generated from field: int64 accrued_overage_microdollars = 15;
+   */
+  accruedOverageMicrodollars?: bigint
+  /**
+   * CurrentPeriodStart is the subscription-period start in Unix milliseconds.
+   *
+   * @generated from field: int64 current_period_start = 16;
+   */
+  currentPeriodStart?: bigint
+  /**
+   * CurrentPeriodEnd is the allowance reset in Unix milliseconds.
+   *
+   * @generated from field: int64 current_period_end = 17;
+   */
+  currentPeriodEnd?: bigint
+  /**
+   * ReservedOverageMicrodollars is the additional maximum awaiting work results.
+   *
+   * @generated from field: int64 reserved_overage_microdollars = 18;
+   */
+  reservedOverageMicrodollars?: bigint
+  /**
+   * OfferVersion identifies the applied offer.
+   *
+   * @generated from field: string offer_version = 19;
+   */
+  offerVersion?: string
 }
 
 export const BillingUsageInfo: MessageType<BillingUsageInfo> =
@@ -3801,47 +3796,98 @@ export const BillingUsageInfo: MessageType<BillingUsageInfo> =
       { no: 5, name: 'read_ops', kind: 'scalar', T: ScalarType.INT64 },
       { no: 6, name: 'read_ops_baseline', kind: 'scalar', T: ScalarType.INT64 },
       {
-        no: 7,
-        name: 'storage_overage_bytes',
-        kind: 'scalar',
-        T: ScalarType.DOUBLE,
-      },
-      {
-        no: 8,
-        name: 'storage_overage_monthly_cost_estimate_usd',
-        kind: 'scalar',
-        T: ScalarType.DOUBLE,
-      },
-      {
-        no: 9,
-        name: 'storage_overage_month_to_date_gb_months',
-        kind: 'scalar',
-        T: ScalarType.DOUBLE,
-      },
-      {
-        no: 10,
-        name: 'storage_overage_month_to_date_cost_estimate_usd',
-        kind: 'scalar',
-        T: ScalarType.DOUBLE,
-      },
-      {
-        no: 11,
-        name: 'storage_overage_deleted_gb_months',
-        kind: 'scalar',
-        T: ScalarType.DOUBLE,
-      },
-      {
-        no: 12,
-        name: 'storage_overage_deleted_cost_estimate_usd',
-        kind: 'scalar',
-        T: ScalarType.DOUBLE,
-      },
-      {
         no: 13,
         name: 'usage_metered_through_at',
         kind: 'scalar',
         T: ScalarType.INT64,
       },
+      {
+        no: 14,
+        name: 'overage_limit_cents',
+        kind: 'scalar',
+        T: ScalarType.UINT32,
+      },
+      {
+        no: 15,
+        name: 'accrued_overage_microdollars',
+        kind: 'scalar',
+        T: ScalarType.INT64,
+      },
+      {
+        no: 16,
+        name: 'current_period_start',
+        kind: 'scalar',
+        T: ScalarType.INT64,
+      },
+      {
+        no: 17,
+        name: 'current_period_end',
+        kind: 'scalar',
+        T: ScalarType.INT64,
+      },
+      {
+        no: 18,
+        name: 'reserved_overage_microdollars',
+        kind: 'scalar',
+        T: ScalarType.INT64,
+      },
+      { no: 19, name: 'offer_version', kind: 'scalar', T: ScalarType.STRING },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
+ * BillingConsent captures the customer's affirmative offer and spending choice.
+ *
+ * @generated from message s4wave.provider.spacewave.BillingConsent
+ */
+export interface BillingConsent {
+  /**
+   * OfferVersion is the exact offer displayed before acceptance.
+   *
+   * @generated from field: string offer_version = 1;
+   */
+  offerVersion?: string
+  /**
+   * PolicyVersion is the displayed service-policy revision.
+   *
+   * @generated from field: string policy_version = 2;
+   */
+  policyVersion?: string
+  /**
+   * RenewalAccepted authorizes the monthly subscription to renew until canceled.
+   *
+   * @generated from field: bool renewal_accepted = 3;
+   */
+  renewalAccepted?: boolean
+  /**
+   * OverageLimitCents selects 0, 500, 1000, or 2000 additional cents per period.
+   *
+   * @generated from field: uint32 overage_limit_cents = 4;
+   */
+  overageLimitCents?: number
+  /**
+   * OverageAccepted expressly authorizes the displayed proportional rates.
+   *
+   * @generated from field: bool overage_accepted = 5;
+   */
+  overageAccepted?: boolean
+}
+
+export const BillingConsent: MessageType<BillingConsent> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 's4wave.provider.spacewave.BillingConsent',
+    fields: [
+      { no: 1, name: 'offer_version', kind: 'scalar', T: ScalarType.STRING },
+      { no: 2, name: 'policy_version', kind: 'scalar', T: ScalarType.STRING },
+      { no: 3, name: 'renewal_accepted', kind: 'scalar', T: ScalarType.BOOL },
+      {
+        no: 4,
+        name: 'overage_limit_cents',
+        kind: 'scalar',
+        T: ScalarType.UINT32,
+      },
+      { no: 5, name: 'overage_accepted', kind: 'scalar', T: ScalarType.BOOL },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })
@@ -3863,7 +3909,7 @@ export interface CreateCheckoutSessionRequest {
    */
   cancelUrl?: string
   /**
-   * BillingInterval selects monthly or annual.
+   * BillingInterval must select monthly billing.
    *
    * @generated from field: s4wave.provider.spacewave.BillingInterval billing_interval = 3;
    */
@@ -3875,6 +3921,12 @@ export interface CreateCheckoutSessionRequest {
    * @generated from field: string billing_account_id = 5;
    */
   billingAccountId?: string
+  /**
+   * Consent records the terms affirmatively accepted before checkout.
+   *
+   * @generated from field: s4wave.provider.spacewave.BillingConsent consent = 6;
+   */
+  consent?: BillingConsent
 }
 
 export const CreateCheckoutSessionRequest: MessageType<CreateCheckoutSessionRequest> =
@@ -3895,6 +3947,7 @@ export const CreateCheckoutSessionRequest: MessageType<CreateCheckoutSessionRequ
         kind: 'scalar',
         T: ScalarType.STRING,
       },
+      { no: 6, name: 'consent', kind: 'message', T: () => BillingConsent },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })
@@ -7416,55 +7469,50 @@ export const ReactivateSubscriptionResponse: MessageType<ReactivateSubscriptionR
   })
 
 /**
- * SwitchBillingIntervalRequest is the request for SwitchBillingInterval.
+ * SetBillingSpendingLimitRequest updates the recurring operation budget.
  *
- * @generated from message s4wave.provider.spacewave.SwitchBillingIntervalRequest
+ * @generated from message s4wave.provider.spacewave.SetBillingSpendingLimitRequest
  */
-export interface SwitchBillingIntervalRequest {
+export interface SetBillingSpendingLimitRequest {
   /**
-   * BillingInterval is the target interval.
+   * BillingAccountId identifies the payer whose budget changes.
    *
-   * @generated from field: s4wave.provider.spacewave.BillingInterval billing_interval = 1;
-   */
-  billingInterval?: BillingInterval
-  /**
-   * BillingAccountId overrides the personal billing account when set.
-   *
-   * @generated from field: string billing_account_id = 2;
+   * @generated from field: string billing_account_id = 1;
    */
   billingAccountId?: string
+  /**
+   * Consent records explicit authorization for an increase.
+   *
+   * @generated from field: s4wave.provider.spacewave.BillingConsent consent = 2;
+   */
+  consent?: BillingConsent
 }
 
-export const SwitchBillingIntervalRequest: MessageType<SwitchBillingIntervalRequest> =
+export const SetBillingSpendingLimitRequest: MessageType<SetBillingSpendingLimitRequest> =
   /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.SwitchBillingIntervalRequest',
+    typeName: 's4wave.provider.spacewave.SetBillingSpendingLimitRequest',
     fields: [
       {
         no: 1,
-        name: 'billing_interval',
-        kind: 'enum',
-        T: BillingInterval_Enum,
-      },
-      {
-        no: 2,
         name: 'billing_account_id',
         kind: 'scalar',
         T: ScalarType.STRING,
       },
+      { no: 2, name: 'consent', kind: 'message', T: () => BillingConsent },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })
 
 /**
- * SwitchBillingIntervalResponse is the response for SwitchBillingInterval.
+ * SetBillingSpendingLimitResponse acknowledges the persisted spending choice.
  *
- * @generated from message s4wave.provider.spacewave.SwitchBillingIntervalResponse
+ * @generated from message s4wave.provider.spacewave.SetBillingSpendingLimitResponse
  */
-export interface SwitchBillingIntervalResponse {}
+export interface SetBillingSpendingLimitResponse {}
 
-export const SwitchBillingIntervalResponse: MessageType<SwitchBillingIntervalResponse> =
-  /* @__PURE__ */ createEmptyMessageType<SwitchBillingIntervalResponse>(
-    's4wave.provider.spacewave.SwitchBillingIntervalResponse',
+export const SetBillingSpendingLimitResponse: MessageType<SetBillingSpendingLimitResponse> =
+  /* @__PURE__ */ createEmptyMessageType<SetBillingSpendingLimitResponse>(
+    's4wave.provider.spacewave.SetBillingSpendingLimitResponse',
     true,
   )
 

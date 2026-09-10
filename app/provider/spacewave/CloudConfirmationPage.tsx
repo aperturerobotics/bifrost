@@ -1,3 +1,5 @@
+import type { BillingConsent } from '@s4wave/sdk/provider/spacewave/spacewave.pb.js'
+import { BillingConsentForm } from './useBillingConsent.js'
 import { useState, useCallback } from 'react'
 import {
   LuArrowLeft,
@@ -22,17 +24,21 @@ import { Spinner } from '@s4wave/web/ui/loading/Spinner.js'
 import { cn } from '@s4wave/web/style/utils.js'
 import {
   PLAN_PRICE_MONTHLY,
-  OVERAGE_STORAGE_PER_GB,
-  OVERAGE_WRITE_PER_MILLION,
-  OVERAGE_READ_PER_MILLION,
+  OVERAGE_EXPLANATION,
+  STORAGE_BASELINE_GB,
+  WRITE_OPS_BASELINE_DISPLAY,
+  READ_OPS_BASELINE_DISPLAY,
 } from '@s4wave/app/provider/spacewave/pricing.js'
 import AnimatedLogo from '@s4wave/app/landing/AnimatedLogo.js'
 
 const CLOUD_EXPANDED_FEATURES = [
   { icon: LuGlobe, text: 'Cloud sync and backup across all devices' },
   { icon: LuUsers, text: 'Shared Spaces with collaborators' },
-  { icon: LuServer, text: '100 GB cloud storage included' },
-  { icon: LuZap, text: '1M writes / 10M cloud reads per month' },
+  { icon: LuServer, text: `${STORAGE_BASELINE_GB} GiB cloud storage included` },
+  {
+    icon: LuZap,
+    text: `${WRITE_OPS_BASELINE_DISPLAY} writes / ${READ_OPS_BASELINE_DISPLAY} uncached reads per month`,
+  },
   {
     icon: LuShield,
     text: 'End-to-end encrypted privacy',
@@ -70,7 +76,7 @@ const E2E_ENCRYPTION_LINK = (
 const CANCEL_FAQ_ANSWER =
   'Yes. Standard cancellation keeps your subscription active until the end of the current billing period. After that, your cloud data becomes read-only for 30 days so you can export what you need or re-subscribe. If you want to fully delete your account, that is handled separately and requires email verification.'
 
-const OVERAGE_FAQ_ANSWER = `Overages at very low prices: $${OVERAGE_STORAGE_PER_GB.toFixed(2)}/GB-month storage, $${OVERAGE_WRITE_PER_MILLION.toFixed(2)}/million writes, $${OVERAGE_READ_PER_MILLION.toFixed(2)}/million cloud reads. You can monitor your usage anytime. Limit resets every month.`
+const OVERAGE_FAQ_ANSWER = OVERAGE_EXPLANATION
 
 export const CLOUD_FAQ: { question: string; answer: React.ReactNode }[] = [
   {
@@ -112,7 +118,7 @@ export interface CloudConfirmationPageProps {
   root: boolean
   checkoutUrl?: string
   onBack: () => void
-  onRetry: () => void
+  onRetry: (consent?: BillingConsent) => void
   onLoading?: () => void
 }
 
@@ -173,46 +179,56 @@ export function CloudConfirmationPage({
 
         <FeatureGrid features={CLOUD_EXPANDED_FEATURES} />
 
-        {/* Checkout button */}
-        <div className="mt-8 flex gap-1">
-          <button
-            onClick={() => {
-              if (showRetry && checkoutUrl) {
-                window.open(checkoutUrl, '_blank')
-                onLoading?.()
-              } else {
-                onRetry()
-              }
-            }}
-            disabled={loading || !root}
-            className={cn(
-              'flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-md border px-5 py-2.5 text-sm font-medium transition-all duration-300 select-none',
-              'border-brand bg-brand/10 text-foreground hover:bg-brand/20',
-              'disabled:cursor-not-allowed disabled:opacity-50',
-              showRetry ? 'rounded-r-none' : '',
-            )}
-          >
-            {loading ? (
-              <>
-                <Spinner />
-                {polling
-                  ? 'Activating subscription…'
-                  : 'Continuing with Stripe…'}
-              </>
-            ) : (
-              'Continue with Stripe…'
-            )}
-          </button>
-          {showRetry && (
+        {!checkoutUrl && !polling && (
+          <div className="mt-6">
+            <BillingConsentForm
+              disabled={loading || !root}
+              onAccept={onRetry}
+            />
+          </div>
+        )}
+        {/* Checkout continuation */}
+        {(checkoutUrl || polling) && (
+          <div className="mt-8 flex gap-1">
             <button
-              onClick={onRetry}
-              className="border-brand bg-brand/10 text-foreground hover:bg-brand/20 flex cursor-pointer items-center justify-center rounded-r-md border border-l-0 px-3 transition duration-300"
-              title="Retry"
+              onClick={() => {
+                if (showRetry && checkoutUrl) {
+                  window.open(checkoutUrl, '_blank')
+                  onLoading?.()
+                } else {
+                  onRetry()
+                }
+              }}
+              disabled={loading || !root}
+              className={cn(
+                'flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-md border px-5 py-2.5 text-sm font-medium transition-all duration-300 select-none',
+                'border-brand bg-brand/10 text-foreground hover:bg-brand/20',
+                'disabled:cursor-not-allowed disabled:opacity-50',
+                showRetry ? 'rounded-r-none' : '',
+              )}
             >
-              <LuRefreshCw className="size-4" />
+              {loading ? (
+                <>
+                  <Spinner />
+                  {polling
+                    ? 'Activating subscription…'
+                    : 'Continuing with Stripe…'}
+                </>
+              ) : (
+                'Continue with Stripe…'
+              )}
             </button>
-          )}
-        </div>
+            {showRetry && (
+              <button
+                onClick={() => onRetry()}
+                className="border-brand bg-brand/10 text-foreground hover:bg-brand/20 flex cursor-pointer items-center justify-center rounded-r-md border border-l-0 px-3 transition duration-300"
+                title="Retry"
+              >
+                <LuRefreshCw className="size-4" />
+              </button>
+            )}
+          </div>
+        )}
 
         {error && (
           <p className="text-destructive mt-3 text-center text-xs">{error}</p>

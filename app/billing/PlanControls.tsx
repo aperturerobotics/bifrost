@@ -93,6 +93,7 @@ export function PlanControls(props: {
 
   return (
     <div className="space-y-3">
+      {checkout.consentDialog}
       <div className="text-foreground-alt/60 text-xs font-medium tracking-wider uppercase">
         Plan
       </div>

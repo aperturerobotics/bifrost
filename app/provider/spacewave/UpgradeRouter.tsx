@@ -1,3 +1,4 @@
+import type { BillingConsent } from '@s4wave/sdk/provider/spacewave/spacewave.pb.js'
 /* eslint-disable react-doctor/async-await-in-loop */
 import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react'
 
@@ -21,8 +22,9 @@ import type { Session } from '@s4wave/sdk/session/session.js'
 // route state and routes to the appropriate page. If the user already has a
 // subscription, it redirects to /plan/migrate (non-empty local) or the
 // dashboard (no local / empty local). If no subscription exists, it renders
-// the cloud confirmation checkout flow with auto-start.
+// the cloud confirmation page and waits for affirmative purchase consent.
 export function UpgradeRouter() {
+  const checkoutConsent = useRef<BillingConsent | undefined>(undefined)
   const sessionResource = SessionContext.useContext()
   const session = useResourceValue(sessionResource)
   const ctx = SpacewaveOnboardingContext.useContextSafe()
@@ -40,11 +42,6 @@ export function UpgradeRouter() {
   // advanced past the pre-fetch placeholder. UpgradeRouter only reads
   // hasSubscription / hasLinkedLocal / linkedLocalHasContent so the managed BA
   // summary is not required here.
-  const noSubscription =
-    !!onboarding &&
-    isAccountStatusLoaded(onboarding.accountStatus) &&
-    !onboarding.hasSubscription
-
   // Checkout reducer for the no-subscription case.
   const initialState: CheckoutState = useMemo(
     () => ({
@@ -84,74 +81,69 @@ export function UpgradeRouter() {
 
   // Create or resume a Stripe checkout session.
   // Retries on "released" errors (session resource still mounting after creation).
-  const handleStartCloud = useCallback(async () => {
-    if (!session || !checkoutResultBaseUrl) return
-    dispatch({ type: 'start_checkout' })
-    if (retryTimerRef.current) clearTimeout(retryTimerRef.current)
+  const handleStartCloud = useCallback(
+    async (consent?: BillingConsent) => {
+      if (!session || !checkoutResultBaseUrl) return
+      consent ??= checkoutConsent.current
+      if (!consent) return
+      checkoutConsent.current = consent
+      dispatch({ type: 'start_checkout' })
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current)
 
-    const maxRetries = 10
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      try {
-        const sw = session.spacewave
+      const maxRetries = 10
+      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+          const sw = session.spacewave
 
-        const successUrl = checkoutResultBaseUrl + '/checkout/success'
-        const cancelUrl = checkoutResultBaseUrl + '/checkout/cancel'
+          const successUrl = checkoutResultBaseUrl + '/checkout/success'
+          const cancelUrl = checkoutResultBaseUrl + '/checkout/cancel'
 
-        const resp = await sw.createCheckoutSession({ successUrl, cancelUrl })
-
-        if (resp.status === CheckoutStatus.CheckoutStatus_COMPLETED) {
-          navigate({
-            path: path.replace(/\/plan(\/.*)?$/, '/setup'),
+          const resp = await sw.createCheckoutSession({
+            successUrl,
+            cancelUrl,
+            consent,
           })
-          return
-        }
 
-        const url = resp.checkoutUrl ?? ''
-        if (url) {
-          const win = window.open(url, '_blank')
-          if (!win) {
-            dispatch({ type: 'checkout_pending', checkoutUrl: url })
-            dispatch({ type: 'popup_blocked' })
+          if (resp.status === CheckoutStatus.CheckoutStatus_COMPLETED) {
+            navigate({
+              path: path.replace(/\/plan(\/.*)?$/, '/setup'),
+            })
             return
           }
-        }
-        dispatch({ type: 'checkout_pending', checkoutUrl: url })
-        retryTimerRef.current = setTimeout(
-          () => dispatch({ type: 'show_retry' }),
-          4000,
-        )
-        return
-      } catch (err) {
-        const msg =
-          err instanceof Error ? err.message : 'Failed to create checkout'
-        if (/released/.test(msg) && attempt < maxRetries) {
-          await new Promise((r) => setTimeout(r, 100))
-          continue
-        }
-        if (/no active spacewave session/.test(msg)) {
-          navigate({ path: '/login' })
+
+          const url = resp.checkoutUrl ?? ''
+          if (url) {
+            const win = window.open(url, '_blank')
+            if (!win) {
+              dispatch({ type: 'checkout_pending', checkoutUrl: url })
+              dispatch({ type: 'popup_blocked' })
+              return
+            }
+          }
+          dispatch({ type: 'checkout_pending', checkoutUrl: url })
+          retryTimerRef.current = setTimeout(
+            () => dispatch({ type: 'show_retry' }),
+            4000,
+          )
+          return
+        } catch (err) {
+          const msg =
+            err instanceof Error ? err.message : 'Failed to create checkout'
+          if (/released/.test(msg) && attempt < maxRetries) {
+            await new Promise((r) => setTimeout(r, 100))
+            continue
+          }
+          if (/no active spacewave session/.test(msg)) {
+            navigate({ path: '/login' })
+            return
+          }
+          dispatch({ type: 'checkout_error', error: msg })
           return
         }
-        dispatch({ type: 'checkout_error', error: msg })
-        return
       }
-    }
-  }, [checkoutResultBaseUrl, session, navigate, path])
-
-  // Auto-start Stripe once Onboarding Status confirms the caller has no
-  // subscription. Holding until account_status is loaded prevents firing a
-  // createCheckoutSession RPC while the cloud account snapshot is still
-  // loading, which would otherwise push subscribed users through Stripe.
-  useEffect(() => {
-    if (!noSubscription) return
-    if (!checkoutResultBaseUrl) return
-    if (state.loading || state.polling) return
-    void handleStartCloud()
-    // Only re-run when the trigger conditions change; state.loading /
-    // state.polling are checked each render but should not re-drive the
-    // effect themselves.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [noSubscription, checkoutResultBaseUrl])
+    },
+    [checkoutResultBaseUrl, session, navigate, path],
+  )
 
   // Clean up retry timer.
   useEffect(() => {
@@ -179,9 +171,12 @@ export function UpgradeRouter() {
     navigate({ path: '../' })
   }, [session, navigate, retryTimerRef, path])
 
-  const handleRetry = useCallback(() => {
-    void handleStartCloud()
-  }, [handleStartCloud])
+  const handleRetry = useCallback(
+    (consent?: BillingConsent) => {
+      void handleStartCloud(consent)
+    },
+    [handleStartCloud],
+  )
 
   // Non-cloud sessions need to create a cloud account first.
   if (providerId && !isCloudSession) {
@@ -206,8 +201,7 @@ export function UpgradeRouter() {
     return <Redirect to="../../" />
   }
 
-  // No subscription: render the checkout confirmation. The auto-start
-  // effect above will fire a single createCheckoutSession RPC.
+  // No subscription: show the offer before requesting purchase consent.
   return (
     <CloudConfirmationPage
       loading={state.loading}

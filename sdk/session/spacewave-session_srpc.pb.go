@@ -41,8 +41,8 @@ type SRPCSpacewaveSessionResourceServiceClient interface {
 	CancelSubscription(ctx context.Context, in *s4wave_provider_spacewave.CancelSubscriptionRequest) (*s4wave_provider_spacewave.CancelSubscriptionResponse, error)
 	// ReactivateSubscription reactivates a canceled subscription.
 	ReactivateSubscription(ctx context.Context, in *s4wave_provider_spacewave.ReactivateSubscriptionRequest) (*s4wave_provider_spacewave.ReactivateSubscriptionResponse, error)
-	// SwitchBillingInterval switches between monthly and annual billing.
-	SwitchBillingInterval(ctx context.Context, in *s4wave_provider_spacewave.SwitchBillingIntervalRequest) (*s4wave_provider_spacewave.SwitchBillingIntervalResponse, error)
+	// SetBillingSpendingLimit updates the recurring extra-usage maximum.
+	SetBillingSpendingLimit(ctx context.Context, in *s4wave_provider_spacewave.SetBillingSpendingLimitRequest) (*s4wave_provider_spacewave.SetBillingSpendingLimitResponse, error)
 	// CreateBillingPortal creates a Stripe billing portal session URL.
 	CreateBillingPortal(ctx context.Context, in *s4wave_provider_spacewave.CreateBillingPortalRequest) (*s4wave_provider_spacewave.CreateBillingPortalResponse, error)
 	// CreateBillingAccount creates a new unassigned billing account managed by the caller.
@@ -392,9 +392,9 @@ func (c *srpcSpacewaveSessionResourceServiceClient) ReactivateSubscription(ctx c
 	return out, nil
 }
 
-func (c *srpcSpacewaveSessionResourceServiceClient) SwitchBillingInterval(ctx context.Context, in *s4wave_provider_spacewave.SwitchBillingIntervalRequest) (*s4wave_provider_spacewave.SwitchBillingIntervalResponse, error) {
-	out := new(s4wave_provider_spacewave.SwitchBillingIntervalResponse)
-	err := c.cc.ExecCall(ctx, c.serviceID, "SwitchBillingInterval", in, out)
+func (c *srpcSpacewaveSessionResourceServiceClient) SetBillingSpendingLimit(ctx context.Context, in *s4wave_provider_spacewave.SetBillingSpendingLimitRequest) (*s4wave_provider_spacewave.SetBillingSpendingLimitResponse, error) {
+	out := new(s4wave_provider_spacewave.SetBillingSpendingLimitResponse)
+	err := c.cc.ExecCall(ctx, c.serviceID, "SetBillingSpendingLimit", in, out)
 	if err != nil {
 		return nil, err
 	}
@@ -1004,8 +1004,8 @@ type SRPCSpacewaveSessionResourceServiceServer interface {
 	CancelSubscription(context.Context, *s4wave_provider_spacewave.CancelSubscriptionRequest) (*s4wave_provider_spacewave.CancelSubscriptionResponse, error)
 	// ReactivateSubscription reactivates a canceled subscription.
 	ReactivateSubscription(context.Context, *s4wave_provider_spacewave.ReactivateSubscriptionRequest) (*s4wave_provider_spacewave.ReactivateSubscriptionResponse, error)
-	// SwitchBillingInterval switches between monthly and annual billing.
-	SwitchBillingInterval(context.Context, *s4wave_provider_spacewave.SwitchBillingIntervalRequest) (*s4wave_provider_spacewave.SwitchBillingIntervalResponse, error)
+	// SetBillingSpendingLimit updates the recurring extra-usage maximum.
+	SetBillingSpendingLimit(context.Context, *s4wave_provider_spacewave.SetBillingSpendingLimitRequest) (*s4wave_provider_spacewave.SetBillingSpendingLimitResponse, error)
 	// CreateBillingPortal creates a Stripe billing portal session URL.
 	CreateBillingPortal(context.Context, *s4wave_provider_spacewave.CreateBillingPortalRequest) (*s4wave_provider_spacewave.CreateBillingPortalResponse, error)
 	// CreateBillingAccount creates a new unassigned billing account managed by the caller.
@@ -1167,7 +1167,7 @@ func (SRPCSpacewaveSessionResourceServiceHandler) GetMethodIDs() []string {
 		"RefreshBillingState",
 		"CancelSubscription",
 		"ReactivateSubscription",
-		"SwitchBillingInterval",
+		"SetBillingSpendingLimit",
 		"CreateBillingPortal",
 		"CreateBillingAccount",
 		"ListManagedBillingAccounts",
@@ -1257,8 +1257,8 @@ func (d *SRPCSpacewaveSessionResourceServiceHandler) InvokeMethod(
 		return true, d.InvokeMethod_CancelSubscription(d.impl, strm)
 	case "ReactivateSubscription":
 		return true, d.InvokeMethod_ReactivateSubscription(d.impl, strm)
-	case "SwitchBillingInterval":
-		return true, d.InvokeMethod_SwitchBillingInterval(d.impl, strm)
+	case "SetBillingSpendingLimit":
+		return true, d.InvokeMethod_SetBillingSpendingLimit(d.impl, strm)
 	case "CreateBillingPortal":
 		return true, d.InvokeMethod_CreateBillingPortal(d.impl, strm)
 	case "CreateBillingAccount":
@@ -1502,12 +1502,12 @@ func (SRPCSpacewaveSessionResourceServiceHandler) InvokeMethod_ReactivateSubscri
 	return strm.MsgSend(out)
 }
 
-func (SRPCSpacewaveSessionResourceServiceHandler) InvokeMethod_SwitchBillingInterval(impl SRPCSpacewaveSessionResourceServiceServer, strm srpc.Stream) error {
-	req := new(s4wave_provider_spacewave.SwitchBillingIntervalRequest)
+func (SRPCSpacewaveSessionResourceServiceHandler) InvokeMethod_SetBillingSpendingLimit(impl SRPCSpacewaveSessionResourceServiceServer, strm srpc.Stream) error {
+	req := new(s4wave_provider_spacewave.SetBillingSpendingLimitRequest)
 	if err := strm.MsgRecv(req); err != nil {
 		return err
 	}
-	out, err := impl.SwitchBillingInterval(strm.Context(), req)
+	out, err := impl.SetBillingSpendingLimit(strm.Context(), req)
 	if err != nil {
 		return err
 	}
@@ -2294,11 +2294,11 @@ type srpcSpacewaveSessionResourceService_ReactivateSubscriptionStream struct {
 	srpc.Stream
 }
 
-type SRPCSpacewaveSessionResourceService_SwitchBillingIntervalStream interface {
+type SRPCSpacewaveSessionResourceService_SetBillingSpendingLimitStream interface {
 	srpc.Stream
 }
 
-type srpcSpacewaveSessionResourceService_SwitchBillingIntervalStream struct {
+type srpcSpacewaveSessionResourceService_SetBillingSpendingLimitStream struct {
 	srpc.Stream
 }
 

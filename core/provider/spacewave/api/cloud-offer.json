@@ -1,0 +1,18 @@
+{
+  "version": "cloud-monthly-v1",
+  "policyVersion": "2026-09-10",
+  "currency": "usd",
+  "monthlyPriceCents": 800,
+  "storageBytes": 107374182400,
+  "writeOperations": 50000,
+  "readOperations": 250000,
+  "writeMicrodollars": 20,
+  "readMicrodollars": 10,
+  "overageLimitsCents": [
+    0,
+    500,
+    1000,
+    2000
+  ],
+  "defaultOverageLimitCents": 1000
+}
