@@ -902,7 +902,7 @@
     },
     {
       "name": "github.com/aperturerobotics/go-websocket",
-      "version": "v1.8.15-0.20260619192713-a096778f08c1",
+      "version": "v1.8.15-0.20260910142736-349504d079da",
       "spdx": "ISC",
       "source": "go",
       "repo": "https://github.com/nhooyr/websocket",
