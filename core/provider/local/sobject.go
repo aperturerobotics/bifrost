@@ -81,11 +81,10 @@ func (s *SharedObject) GetBackingVolume() volume.Volume {
 	return s.tkr.a.vol
 }
 
-// AccessLocalStateStore accesses a kvtx ops for a local state store with the given ID.
-// This state store is stored along with the local SharedObject state.
+// AccessLocalStateStore isolates state by SharedObject and store ID within the
+// account's object store. Releasing the mount invalidates its local stores.
 func (s *SharedObject) AccessLocalStateStore(ctx context.Context, storeID string, released func()) (kvtx.Store, func(), error) {
-	// ls = local state
-	storePrefix := []byte("ls/")
+	storePrefix := []byte("so/" + s.tkr.id + "/ls/" + storeID + "/")
 	prefixedObjStore := object.NewPrefixer(s.objStore, storePrefix)
 	if released == nil {
 		return prefixedObjStore, func() {}, nil
@@ -96,12 +95,12 @@ func (s *SharedObject) AccessLocalStateStore(ctx context.Context, storeID string
 
 // GetSharedObjectState returns a snapshot of the shared object state.
 func (s *SharedObject) GetSharedObjectState(ctx context.Context) (sobject.SharedObjectStateSnapshot, error) {
+	// Retain the local state watch until it supplies a usable snapshot.
 	stateCtr, relStateCtr, err := s.lsoHost.AccessSharedObjectState(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer relStateCtr()
-
 	val, err := stateCtr.WaitValue(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -157,23 +156,24 @@ func (s *SharedObject) ClearOperationResult(ctx context.Context, localID string)
 // If watch is unset, if there are no available ops, returns immediately.
 // cb is called with the state snapshot and the decoded inner state.
 func (s *SharedObject) ProcessOperations(ctx context.Context, watch bool, cb sobject.ProcessOpsFunc) error {
-	// Get the state container
+	// Retain accepted state while processing successive operation batches.
 	stateCtr, relStateCtr, err := s.soHost.GetSOStateCtr(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer relStateCtr()
 
+	// Validate each pending batch against the state that exposed it.
 	var current *sobject.SOState
 	for {
-		// Wait for state
+		// Wait for a newly accepted state.
 		next, err := stateCtr.WaitValueChange(ctx, current, nil)
 		if err != nil {
 			return err
 		}
 		current = next
 
-		// Get pending operations
+		// Stop a one-shot pass when no pending work remains.
 		pendingOps := current.GetOps()
 		if len(pendingOps) == 0 {
 			if !watch {
@@ -182,7 +182,7 @@ func (s *SharedObject) ProcessOperations(ctx context.Context, watch bool, cb sob
 			continue
 		}
 
-		// Create state snapshot
+		// Bind validation to the current participant and state snapshot.
 		snap := sobject.NewSOStateParticipantHandle(
 			s.tkr.a.le,
 			s.tkr.a.t.p.sfs,
@@ -192,7 +192,7 @@ func (s *SharedObject) ProcessOperations(ctx context.Context, watch bool, cb sob
 			s.localPid,
 		)
 
-		// Process the operations through the snapshot
+		// Compute the accepted root and per-operation rejection results.
 		nextRoot, rejectedOps, acceptedOps, err := snap.ProcessOperations(
 			ctx,
 			pendingOps,
@@ -211,7 +211,7 @@ func (s *SharedObject) ProcessOperations(ctx context.Context, watch bool, cb sob
 			continue
 		}
 
-		// Update the state
+		// Publish the complete validation result before watching another batch.
 		if err := s.soHost.UpdateRootState(
 			ctx,
 			nextRoot,
@@ -221,7 +221,6 @@ func (s *SharedObject) ProcessOperations(ctx context.Context, watch bool, cb sob
 		); err != nil {
 			return err
 		}
-
 		if !watch {
 			return nil
 		}
@@ -268,7 +267,7 @@ func (t *sobjectTracker) setHealth(health *sobject.SharedObjectHealth) {
 
 // executeSharedObjectTracker executes the sobjectTracker for the sobject.
 func (t *sobjectTracker) executeSharedObjectTracker(rctx context.Context) (rerr error) {
-	// clear old state if any
+	// Replace the previous mount result and report a terminal mount error.
 	t.sobjectProm.SetPromise(nil)
 	t.setHealth(
 		sobject.NewSharedObjectLoadingHealth(
@@ -285,24 +284,23 @@ func (t *sobjectTracker) executeSharedObjectTracker(rctx context.Context) (rerr 
 		}
 	}()
 
+	// Tie every retained store and state component to this mount's context.
 	ctx, ctxCancel := context.WithCancel(rctx)
 	defer ctxCancel()
-
 	le := t.a.le.WithField("sobject-id", t.id)
 	le.Debug("mounting sobject")
 
-	// Wait for the ref
+	// Resolve the provider and storage identities from the mounted reference.
 	sobjectRef, err := t.ref.Await(ctx)
 	if err != nil {
 		return err
 	}
-
 	provRef := sobjectRef.GetProviderResourceRef()
 	providerID := provRef.GetProviderId()
 	providerAccountID := provRef.GetProviderAccountId()
 	sharedObjectID := provRef.GetId()
 
-	// Mount block store
+	// Retain the SharedObject's block store for the mount lifetime.
 	blkStore, blkStoreRef, err := bstore.ExMountBlockStore(
 		ctx,
 		t.a.t.p.b,
@@ -318,7 +316,6 @@ func (t *sobjectTracker) executeSharedObjectTracker(rctx context.Context) (rerr 
 		return err
 	}
 	defer blkStoreRef.Release()
-
 	le.Debug("mounted block store for sobject successfully")
 
 	// Create and/or open the object store in the account volume.
@@ -339,7 +336,6 @@ func (t *sobjectTracker) executeSharedObjectTracker(rctx context.Context) (rerr 
 		return err
 	}
 	defer diRef.Release()
-
 	le.Debug("mounted object store for sobject successfully")
 
 	// Get the peer id from the volume for ops.
@@ -350,7 +346,7 @@ func (t *sobjectTracker) executeSharedObjectTracker(rctx context.Context) (rerr 
 	localPeerID := localPeer.GetPeerID()
 	localPeerIDStr := localPeerID.String()
 
-	// Get the local priv key
+	// Obtain the local signing key for state and operation ownership.
 	localPriv, err := localPeer.GetPrivKey(ctx)
 	if err != nil {
 		return err
@@ -371,12 +367,11 @@ func (t *sobjectTracker) executeSharedObjectTracker(rctx context.Context) (rerr 
 		return err
 	}
 
-	// Construct the shared object state handle.
-	// Since this is the "local" provider we can "lock" the state with an in-memory lock.
+	// Share the accepted-state watch and lock with the local persistence owner.
 	watchFn, lockFn, syncFuncs := NewObjectStoreSOStateFuncs(ctx, objStore, localPeerID)
 	soHost := sobject.NewSOHost(ctx, watchFn, lockFn, sharedObjectID, syncFuncs)
 
-	// construct the local host logic
+	// Construct the local operation queue and mounted SharedObject handle.
 	lsoHost, err := NewLocalSOHost(
 		le,
 		localPriv,
@@ -388,7 +383,6 @@ func (t *sobjectTracker) executeSharedObjectTracker(rctx context.Context) (rerr 
 	if err != nil {
 		return err
 	}
-
 	so := &SharedObject{
 		ctx:       ctx,
 		tkr:       t,
@@ -399,25 +393,25 @@ func (t *sobjectTracker) executeSharedObjectTracker(rctx context.Context) (rerr 
 		localPriv: localPriv,
 		localPid:  localPeerID,
 	}
+
 	// A mounted local SharedObject is ready only after LocalSOHost publishes its
 	// first state snapshot; otherwise immediate callers can block on state reads.
 	errCh := make(chan error, 1)
 	go func() {
 		errCh <- lsoHost.Execute(ctx)
 	}()
-
 	stateCtr, relStateCtr, err := lsoHost.AccessSharedObjectState(ctx, nil)
 	if err != nil {
 		ctxCancel()
 		return err
 	}
 	defer relStateCtr()
-
 	if _, err := stateCtr.WaitValue(ctx, errCh); err != nil {
 		ctxCancel()
 		return err
 	}
 
+	// Publish readiness only while the local persistence owner remains active.
 	t.setHealth(
 		sobject.NewSharedObjectReadyHealth(
 			sobject.SharedObjectHealthLayer_SHARED_OBJECT_HEALTH_LAYER_SHARED_OBJECT,
@@ -425,25 +419,22 @@ func (t *sobjectTracker) executeSharedObjectTracker(rctx context.Context) (rerr 
 	)
 	t.sobjectProm.SetResult(so, nil)
 	defer t.sobjectProm.SetPromise(nil)
-
 	return <-errCh
 }
 
 // createSharedObjectLocked creates a new sobject with the given details.
 // Assumes p.mtx is locked.
 func (a *ProviderAccount) createSharedObjectLocked(ctx context.Context, id string, meta *sobject.SharedObjectMeta) (*sobject.SharedObjectRef, error) {
-	// build the sobject ref
+	// Derive the SharedObject and block-store references from account identity.
 	providerID := a.t.accountInfo.GetProviderId()
 	providerAccountID := a.t.accountInfo.GetProviderAccountId()
-
-	// Create the shared object and block store ref.
 	blockStoreID := SobjectBlockStoreID(id)
 	sobjectRef := sobject.NewSharedObjectRef(providerID, providerAccountID, id, blockStoreID)
 	if err := sobjectRef.Validate(); err != nil {
 		return nil, err
 	}
 
-	// validate meta
+	// Reject invalid metadata before changing the account's stores.
 	if err := meta.Validate(); err != nil {
 		return nil, err
 	}
@@ -461,14 +452,12 @@ func (a *ProviderAccount) createSharedObjectLocked(ctx context.Context, id strin
 		}
 	}
 
-	// create the block store first
-	bstoreRef, err := a.createBlockStoreLocked(ctx, blockStoreID)
-	if err != nil {
+	// Create backing storage before publishing the SharedObject.
+	if _, err := a.createBlockStoreLocked(ctx, blockStoreID); err != nil {
 		return nil, err
 	}
-	_ = bstoreRef
 
-	// Register GC hierarchy: gcroot -> provider -> bucket
+	// Retain the bucket under its provider in the garbage-collection graph.
 	if kvVol, ok := a.vol.(kvtx_volume.KvtxVolume); ok {
 		if rg := kvVol.GetRefGraph(); rg != nil {
 			bucketID := BlockStoreBucketID(providerID, providerAccountID, blockStoreID)
@@ -491,20 +480,17 @@ func (a *ProviderAccount) createSharedObjectLocked(ctx context.Context, id strin
 		return strings.Compare(a.GetRef().GetProviderResourceRef().GetId(), b.GetRef().GetProviderResourceRef().GetId())
 	})
 
-	// Write the list
+	// Persist the complete list before publishing its in-memory snapshot.
 	if err := a.writeSharedObjectList(ctx, sharedObjectList); err != nil {
 		return nil, err
 	}
-
-	// Update the list
 	a.soListCtr.SetValue(sharedObjectList)
-
-	// return the shared object ref
 	return sobjectRef, nil
 }
 
 // CreateSharedObject creates a new sobject with the given details.
 func (a *ProviderAccount) CreateSharedObject(ctx context.Context, id string, meta *sobject.SharedObjectMeta, _, _ string) (*sobject.SharedObjectRef, error) {
+	// Serialize local storage creation with the account's other mutations.
 	relMtx, err := a.mtx.Lock(ctx)
 	if err != nil {
 		return nil, err
@@ -514,6 +500,8 @@ func (a *ProviderAccount) CreateSharedObject(ctx context.Context, id string, met
 	if err != nil {
 		return nil, err
 	}
+
+	// Publish canonical account membership after the local mutation commits.
 	if err := a.publishAccountCatalogEntry(ctx, &sobject.SharedObjectListEntry{Ref: ref, Meta: meta}, false); err != nil {
 		return nil, err
 	}
@@ -527,10 +515,10 @@ func (a *ProviderAccount) UpdateSharedObjectMeta(ctx context.Context, id string,
 
 // updateSharedObjectMeta applies either an explicit edit or canonical catalog metadata.
 func (a *ProviderAccount) updateSharedObjectMeta(ctx context.Context, id string, meta *sobject.SharedObjectMeta, publish bool) error {
+	// Find the existing object under the account mutation lock.
 	if err := meta.Validate(); err != nil {
 		return err
 	}
-
 	relMtx, err := a.mtx.Lock(ctx)
 	if err != nil {
 		return err
@@ -540,7 +528,6 @@ func (a *ProviderAccount) updateSharedObjectMeta(ctx context.Context, id string,
 		relMtx()
 		return sobject.ErrSharedObjectNotFound
 	}
-
 	idx := slices.IndexFunc(sharedObjectList.GetSharedObjects(), func(entry *sobject.SharedObjectListEntry) bool {
 		return entry.GetRef().GetProviderResourceRef().GetId() == id
 	})
@@ -549,6 +536,7 @@ func (a *ProviderAccount) updateSharedObjectMeta(ctx context.Context, id string,
 		return sobject.ErrSharedObjectNotFound
 	}
 
+	// Persist and publish the replacement metadata before releasing serialization.
 	sharedObjectList.SharedObjects[idx].Meta = meta.CloneVT()
 	if err := a.writeSharedObjectList(ctx, sharedObjectList); err != nil {
 		relMtx()
@@ -556,33 +544,30 @@ func (a *ProviderAccount) updateSharedObjectMeta(ctx context.Context, id string,
 	}
 	a.soListCtr.SetValue(sharedObjectList)
 	relMtx()
+
+	// Explicit edits also update the canonical catalog; catalog replay does not.
 	if publish {
 		return a.publishAccountCatalogEntry(ctx, sharedObjectList.SharedObjects[idx], false)
 	}
 	return nil
 }
 
-// MountSharedObject attempts to mount a SharedObject returning the sobject and a release function.
-//
-// usually called by the provider controller
+// MountSharedObject retains a ready SharedObject until the returned release runs.
 func (a *ProviderAccount) MountSharedObject(ctx context.Context, ref *sobject.SharedObjectRef, released func()) (sobject.SharedObject, func(), error) {
+	// Retain the tracker for the validated SharedObject identity.
 	if err := ref.Validate(); err != nil {
 		return nil, nil, err
 	}
-
 	sobjectID := ref.GetProviderResourceRef().GetId()
 	tkrRef, tkr, _ := a.sobjects.AddKeyRef(sobjectID)
-
-	// Set the ref in the tracker if not set
 	tkr.ref.SetResult(ref, nil)
 
-	// Await the sobject handle to be ready
+	// Await mount readiness while preserving the caller's tracker reference.
 	ws, err := tkr.sobjectProm.Await(ctx)
 	if err != nil {
 		tkrRef.Release()
 		return nil, nil, err
 	}
-
 	return ws, tkrRef.Release, nil
 }
 
@@ -637,11 +622,11 @@ func (t *sobjectTracker) initSharedObjectState(
 	}
 	defer otx.Discard()
 
+	// Load and validate existing state before considering initialization.
 	data, found, err := otx.Get(ctx, objStoreKey)
 	if err != nil {
 		return err
 	}
-
 	val := &sobject.SOState{}
 	if found {
 		if err := val.UnmarshalVT(data); err != nil {
@@ -651,6 +636,7 @@ func (t *sobjectTracker) initSharedObjectState(
 			return err
 		}
 	} else {
+		// Give the storage peer ownership of the new SharedObject.
 		le.Debug("initializing shared object with empty state")
 		val.Config = &sobject.SharedObjectConfig{
 			Participants: []*sobject.SOParticipantConfig{{
@@ -673,19 +659,16 @@ func (t *sobjectTracker) initSharedObjectState(
 			return err
 		}
 
-		// TODO move to common functions(!)
+		// Create the first empty state and its random encryption configuration.
 		ninner := &sobject.SORootInner{
 			Seqno:     1,
-			StateData: nil, // TODO
+			StateData: nil,
 		}
-
-		// generate random transform config
 		encKey := make([]byte, 32)
 		_, err = rand.Read(encKey)
 		if err != nil {
 			return err
 		}
-
 		soTransformConf, err := block_transform.NewConfig([]config.Config{
 			&transform_blockenc.Config{
 				BlockEnc: blockenc.DefaultBlockEnc,
@@ -695,22 +678,20 @@ func (t *sobjectTracker) initSharedObjectState(
 		if err != nil {
 			return err
 		}
-
 		soTransform, err := block_transform.NewTransformer(controller.ConstructOpts{Logger: le}, t.a.t.p.sfs, soTransformConf)
 		if err != nil {
 			return err
 		}
 
+		// Encrypt and sign the initial root under the creator's identity.
 		innerDataDec, err := ninner.MarshalVT()
 		if err != nil {
 			return err
 		}
-
 		innerDataEnc, err := soTransform.EncodeBlock(innerDataDec)
 		if err != nil {
 			return err
 		}
-
 		nroot := &sobject.SORoot{InnerSeqno: 1, Inner: innerDataEnc}
 		if err := nroot.SignInnerData(localPriv, sharedObjectID, nroot.GetInnerSeqno(), hash.RecommendedHashType); err != nil {
 			return err
@@ -725,7 +706,6 @@ func (t *sobjectTracker) initSharedObjectState(
 				grantToPeerIDs = append(grantToPeerIDs, participant.GetPeerId())
 			}
 		}
-
 		grants := make([]*sobject.SOGrant, len(grantToPeerIDs))
 		nextGrantInner := &sobject.SOGrantInner{TransformConf: soTransformConf}
 		for i, grantPeerIDStr := range grantToPeerIDs {
@@ -745,35 +725,32 @@ func (t *sobjectTracker) initSharedObjectState(
 		}
 		val.RootGrants = grants
 
+		// Commit only a complete state with valid configuration, root, and grants.
 		if err := val.Validate(sharedObjectID); err != nil {
 			return err
 		}
-
 		data, err = val.MarshalVT()
 		if err != nil {
 			return err
 		}
-
 		if err := otx.Set(ctx, objStoreKey, data); err != nil {
 			return err
 		}
-
 		if err := otx.Commit(ctx); err != nil {
 			return err
 		}
 	}
-
 	return nil
 }
 
 // buildSoObjectStore builds the shared object store for the provider account.
 func (a *ProviderAccount) buildSoObjectStore(ctx context.Context) (object.ObjectStore, func(), error) {
-	// Get the object store ID
+	// Derive the account-wide object store from its provider identity.
 	providerID := a.t.accountInfo.GetProviderId()
 	providerAccountID := a.t.accountInfo.GetProviderAccountId()
 	objectStoreID := SobjectObjectStoreID(providerID, providerAccountID)
 
-	// Look up the object store
+	// Retain the mounted volume's object-store API for the caller.
 	volID := a.vol.GetID()
 	objStoreHandle, _, diRef, err := volume.ExBuildObjectStoreAPI(
 		ctx,
@@ -791,12 +768,14 @@ func (a *ProviderAccount) buildSoObjectStore(ctx context.Context) (object.Object
 
 // readSharedObjectList reads and returns the shared object list from storage.
 func (a *ProviderAccount) readSharedObjectList(ctx context.Context) (*sobject.SharedObjectList, error) {
+	// Retain the account's store for a consistent list snapshot.
 	objStore, release, err := a.buildSoObjectStore(ctx)
 	if err != nil {
 		return nil, err
 	}
 	defer release()
 
+	// Decode the list inside the existing transaction retry boundary.
 	var list *sobject.SharedObjectList
 	err = kvtx.RunTransaction(ctx, false,
 		func(ctx context.Context) (kvtx.Tx, error) {
@@ -822,12 +801,14 @@ func (a *ProviderAccount) readSharedObjectList(ctx context.Context) (*sobject.Sh
 
 // writeSharedObjectList writes the shared object list to storage.
 func (a *ProviderAccount) writeSharedObjectList(ctx context.Context, list *sobject.SharedObjectList) error {
+	// Retain the account's store while persisting the replacement list.
 	objStore, release, err := a.buildSoObjectStore(ctx)
 	if err != nil {
 		return err
 	}
 	defer release()
 
+	// Encode once and retry only the transactional write.
 	data, err := list.MarshalVT()
 	if err != nil {
 		return err
@@ -888,7 +869,7 @@ func (s *SharedObject) IncrementInviteUses(ctx context.Context, signerPrivKey cr
 	return s.soHost.IncrementInviteUses(ctx, signerPrivKey, inviteID)
 }
 
-// _ is a type assertion
+// _ verifies the local provider's SharedObject contracts.
 var (
 	_ sobject.SharedObjectHealthAccessor = (*SharedObject)(nil)
 	_ sobject.SharedObjectProvider       = (*ProviderAccount)(nil)

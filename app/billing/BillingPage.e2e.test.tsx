@@ -43,7 +43,10 @@ vi.mock('@s4wave/web/contexts/contexts.js', () => ({
   },
 }))
 
-vi.mock('@aptre/bldr-sdk/hooks/useResource.js', () => ({
+vi.mock('@aptre/bldr-sdk/hooks/useResource.js', async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import('@aptre/bldr-sdk/hooks/useResource.js')
+  >()),
   useResourceValue: () => mockSession,
 }))
 

@@ -17,41 +17,57 @@ import (
 	s4wave_session "github.com/s4wave/spacewave/sdk/session"
 )
 
+// billingBytesPerGB preserves the CLI's binary storage-unit conversion.
 const billingBytesPerGB = 1024 * 1024 * 1024
 
+// billingSessionHandle retains the Session needed for one billing snapshot.
 type billingSessionHandle interface {
+	// Release releases the mounted Session and its resources.
 	Release()
+	// GetSessionInfo identifies the Session's provider before querying billing.
 	GetSessionInfo(context.Context) (*s4wave_session.GetSessionInfoResponse, error)
+	// AccessSpacewaveSession returns the Session's cloud billing client.
 	AccessSpacewaveSession() (billingSpacewaveSessionService, error)
 }
 
+// billingSpacewaveSessionService opens the selected account's billing watch.
 type billingSpacewaveSessionService interface {
+	// WatchBillingState watches billing until its context or Session is released.
 	WatchBillingState(
 		context.Context,
 		*s4wave_provider_spacewave.WatchBillingStateRequest,
 	) (billingStateStream, error)
 }
 
+// billingStateStream receives the initial snapshot used by the usage command.
 type billingStateStream interface {
+	// Recv waits for billing state or a terminal stream error.
 	Recv() (*s4wave_provider_spacewave.WatchBillingStateResponse, error)
 }
 
+// billingSpacewaveSessionClient adapts the generated cloud Session client.
 type billingSpacewaveSessionClient struct {
+	// client shares the mounted Session's resource lifetime.
 	client s4wave_session.SRPCSpacewaveSessionResourceServiceClient
 }
 
+// mountedBillingSession owns the command's mounted Session reference.
 type mountedBillingSession struct {
+	// session supplies provider identity and cloud resource access.
 	session *s4wave_session.Session
 }
 
+// Release releases the command's mounted Session reference.
 func (s *mountedBillingSession) Release() {
 	s.session.Release()
 }
 
+// GetSessionInfo returns the mounted Session's provider identity.
 func (s *mountedBillingSession) GetSessionInfo(ctx context.Context) (*s4wave_session.GetSessionInfoResponse, error) {
 	return s.session.GetSessionInfo(ctx)
 }
 
+// AccessSpacewaveSession binds billing RPCs to the retained Session resource.
 func (s *mountedBillingSession) AccessSpacewaveSession() (billingSpacewaveSessionService, error) {
 	client, err := s.session.GetResourceRef().GetClient()
 	if err != nil {
@@ -62,6 +78,7 @@ func (s *mountedBillingSession) AccessSpacewaveSession() (billingSpacewaveSessio
 	}, nil
 }
 
+// WatchBillingState forwards the selected account's billing subscription.
 func (c *billingSpacewaveSessionClient) WatchBillingState(
 	ctx context.Context,
 	req *s4wave_provider_spacewave.WatchBillingStateRequest,
@@ -70,10 +87,14 @@ func (c *billingSpacewaveSessionClient) WatchBillingState(
 }
 
 var (
+	// billingResolveStatePath resolves the daemon's persisted configuration.
 	billingResolveStatePath = resolveStatePathFromContext
-	billingConnectDaemon    = connectDaemon
-	billingCloseClient      = func(client *sdkClient) { client.close() }
-	billingMountSession     = func(ctx context.Context, client *sdkClient, idx uint32) (billingSessionHandle, error) {
+	// billingConnectDaemon opens the command's daemon connection.
+	billingConnectDaemon = connectDaemon
+	// billingCloseClient releases the command's daemon connection.
+	billingCloseClient = func(client *sdkClient) { client.close() }
+	// billingMountSession retains the requested Session for the command.
+	billingMountSession = func(ctx context.Context, client *sdkClient, idx uint32) (billingSessionHandle, error) {
 		sess, err := client.mountSession(ctx, idx)
 		if err != nil {
 			return nil, err
@@ -129,24 +150,24 @@ func runBillingUsage(
 	sessionIdx uint32,
 	billingAccountID string,
 ) error {
+	// Retain the configured daemon and Session for the whole request.
 	ctx := c.Context
 	resolved, err := billingResolveStatePath(c, statePath)
 	if err != nil {
 		return err
 	}
-
 	client, err := billingConnectDaemon(ctx, resolved)
 	if err != nil {
 		return err
 	}
 	defer billingCloseClient(client)
-
 	sess, err := billingMountSession(ctx, client, sessionIdx)
 	if err != nil {
 		return err
 	}
 	defer sess.Release()
 
+	// Local Sessions have no cloud billing account to inspect.
 	info, err := sess.GetSessionInfo(ctx)
 	if err != nil {
 		return errors.Wrap(err, "get session info")
@@ -156,6 +177,7 @@ func runBillingUsage(
 		return writeBillingUsageNotApplicable(os.Stdout, outputFormat, sessionIdx, ref.GetProviderId(), "billing usage is only available for Spacewave cloud sessions")
 	}
 
+	// Read one authoritative snapshot through the Session's billing watch.
 	svc, err := sess.AccessSpacewaveSession()
 	if err != nil {
 		return err
@@ -170,10 +192,10 @@ func runBillingUsage(
 	if err != nil {
 		return errors.Wrap(err, "receive billing state")
 	}
-
 	return writeBillingUsageOutput(os.Stdout, outputFormat, sessionIdx, billingAccountID, resp.GetUsage())
 }
 
+// writeBillingUsageOutput renders the current offer and metered operation usage.
 func writeBillingUsageOutput(
 	w io.Writer,
 	outputFormat string,
@@ -181,6 +203,7 @@ func writeBillingUsageOutput(
 	billingAccountID string,
 	usage *s4wave_provider_spacewave.BillingUsageInfo,
 ) error {
+	// Keep machine output aligned with the protobuf field names and integer encoding.
 	if usage == nil {
 		usage = &s4wave_provider_spacewave.BillingUsageInfo{}
 	}
@@ -204,23 +227,35 @@ func writeBillingUsageOutput(
 		ms.WriteObjectField("storageBaselineBytes")
 		ms.WriteFloat64(usage.GetStorageBaselineBytes())
 		ms.WriteMoreIf(&f)
-		ms.WriteObjectField("storageOverageBytes")
-		ms.WriteFloat64(usage.GetStorageOverageBytes())
+		ms.WriteObjectField("overageLimitCents")
+		ms.WriteUint32(usage.GetOverageLimitCents())
 		ms.WriteMoreIf(&f)
-		ms.WriteObjectField("storageOverageMonthlyCostEstimateUsd")
-		ms.WriteFloat64(usage.GetStorageOverageMonthlyCostEstimateUsd())
+		ms.WriteObjectField("accruedOverageMicrodollars")
+		ms.WriteInt64(usage.GetAccruedOverageMicrodollars())
 		ms.WriteMoreIf(&f)
-		ms.WriteObjectField("storageOverageMonthToDateGbMonths")
-		ms.WriteFloat64(usage.GetStorageOverageMonthToDateGbMonths())
+		ms.WriteObjectField("reservedOverageMicrodollars")
+		ms.WriteInt64(usage.GetReservedOverageMicrodollars())
 		ms.WriteMoreIf(&f)
-		ms.WriteObjectField("storageOverageMonthToDateCostEstimateUsd")
-		ms.WriteFloat64(usage.GetStorageOverageMonthToDateCostEstimateUsd())
+		ms.WriteObjectField("currentPeriodStart")
+		ms.WriteInt64(usage.GetCurrentPeriodStart())
 		ms.WriteMoreIf(&f)
-		ms.WriteObjectField("storageOverageDeletedGbMonths")
-		ms.WriteFloat64(usage.GetStorageOverageDeletedGbMonths())
+		ms.WriteObjectField("currentPeriodEnd")
+		ms.WriteInt64(usage.GetCurrentPeriodEnd())
 		ms.WriteMoreIf(&f)
-		ms.WriteObjectField("storageOverageDeletedCostEstimateUsd")
-		ms.WriteFloat64(usage.GetStorageOverageDeletedCostEstimateUsd())
+		ms.WriteObjectField("offerVersion")
+		ms.WriteString(usage.GetOfferVersion())
+		ms.WriteMoreIf(&f)
+		ms.WriteObjectField("monthlyPriceCents")
+		ms.WriteUint32(usage.GetMonthlyPriceCents())
+		ms.WriteMoreIf(&f)
+		ms.WriteObjectField("writeMicrodollars")
+		ms.WriteUint32(usage.GetWriteMicrodollars())
+		ms.WriteMoreIf(&f)
+		ms.WriteObjectField("readMicrodollars")
+		ms.WriteUint32(usage.GetReadMicrodollars())
+		ms.WriteMoreIf(&f)
+		ms.WriteObjectField("policyVersion")
+		ms.WriteString(usage.GetPolicyVersion())
 		ms.WriteMoreIf(&f)
 		ms.WriteObjectField("usageMeteredThroughAt")
 		ms.WriteInt64(usage.GetUsageMeteredThroughAt())
@@ -243,28 +278,32 @@ func writeBillingUsageOutput(
 		return formatOutput(nil, outputFormat)
 	}
 
+	// Present spending, allowances, rates, and freshness with explicit units.
 	baLabel := "default"
 	if billingAccountID != "" {
 		baLabel = billingAccountID
 	}
 	fields := [][2]string{
 		{"Billing Account", baLabel},
+		{"Monthly Price", billingFormatCurrency(float64(usage.GetMonthlyPriceCents()) / 100)},
+		{"Extra Spending Limit", billingFormatCurrency(float64(usage.GetOverageLimitCents()) / 100)},
+		{"Extra Usage Charges", billingFormatCurrency(float64(usage.GetAccruedOverageMicrodollars()) / 1e6)},
+		{"Pending Extra Charges", billingFormatCurrency(float64(usage.GetReservedOverageMicrodollars()) / 1e6)},
 		{"Storage", billingFormatBytes(usage.GetStorageBytes()) + " / " + billingFormatBytes(usage.GetStorageBaselineBytes()) + " included"},
-		{"Extra Storage", billingFormatBytes(usage.GetStorageOverageBytes()) + " = " + billingFormatCurrency(usage.GetStorageOverageMonthlyCostEstimateUsd()) + "/mo if held"},
-		{"Month-to-date overage", billingFormatGBMonths(usage.GetStorageOverageMonthToDateGbMonths()) + " = " + billingFormatCurrency(usage.GetStorageOverageMonthToDateCostEstimateUsd()) + " estimated"},
+		{"Write Ops", strconv.FormatInt(usage.GetWriteOps(), 10) + " / " + strconv.FormatInt(usage.GetWriteOpsBaseline(), 10) + " included"},
+		{"Read Ops", strconv.FormatInt(usage.GetReadOps(), 10) + " / " + strconv.FormatInt(usage.GetReadOpsBaseline(), 10) + " included"},
+		{"Extra Write Rate", "$" + strconv.FormatFloat(float64(usage.GetWriteMicrodollars())/1e6, 'f', 6, 64) + " per write"},
+		{"Extra Read Rate", "$" + strconv.FormatFloat(float64(usage.GetReadMicrodollars())/1e6, 'f', 6, 64) + " per uncached read"},
+		{"Metered Through", billingFormatTimestamp(usage.GetUsageMeteredThroughAt())},
 	}
-	if usage.GetStorageOverageDeletedGbMonths() > 0 || usage.GetStorageOverageDeletedCostEstimateUsd() > 0 {
-		fields = append(fields, [2]string{"Already-deleted data", billingFormatGBMonths(usage.GetStorageOverageDeletedGbMonths()) + " = +" + billingFormatCurrency(usage.GetStorageOverageDeletedCostEstimateUsd()) + " estimated"})
+	if usage.GetCurrentPeriodStart() > 0 && usage.GetCurrentPeriodEnd() > 0 {
+		fields = append(fields, [2]string{"Billing Period", billingFormatTimestamp(usage.GetCurrentPeriodStart()) + " to " + billingFormatTimestamp(usage.GetCurrentPeriodEnd())})
 	}
-	fields = append(fields,
-		[2]string{"Write Ops", strconv.FormatInt(usage.GetWriteOps(), 10) + " / " + strconv.FormatInt(usage.GetWriteOpsBaseline(), 10) + " included"},
-		[2]string{"Read Ops", strconv.FormatInt(usage.GetReadOps(), 10) + " / " + strconv.FormatInt(usage.GetReadOpsBaseline(), 10) + " included"},
-		[2]string{"Metered Through", billingFormatTimestamp(usage.GetUsageMeteredThroughAt())},
-	)
 	writeFields(w, fields)
 	return nil
 }
 
+// writeBillingUsageNotApplicable explains why the selected provider has no bill.
 func writeBillingUsageNotApplicable(
 	w io.Writer,
 	outputFormat string,
@@ -272,6 +311,7 @@ func writeBillingUsageNotApplicable(
 	providerID string,
 	reason string,
 ) error {
+	// Preserve a structured unavailable result for machine consumers.
 	if outputFormat == "json" || outputFormat == "yaml" {
 		buf, ms := newMarshalBuf()
 		ms.WriteObjectStart()
@@ -295,6 +335,7 @@ func writeBillingUsageNotApplicable(
 		return formatOutput(nil, outputFormat)
 	}
 
+	// Give interactive users the provider and the reason billing is unavailable.
 	writeFields(w, [][2]string{
 		{"Billing Usage", "not applicable"},
 		{"Provider", providerID},
@@ -303,14 +344,12 @@ func writeBillingUsageNotApplicable(
 	return nil
 }
 
+// billingFormatBytes renders storage using the CLI's existing unit convention.
 func billingFormatBytes(bytes float64) string {
 	return strconv.FormatFloat(bytes/billingBytesPerGB, 'f', 2, 64) + " GB"
 }
 
-func billingFormatGBMonths(gbMonths float64) string {
-	return strconv.FormatFloat(gbMonths, 'f', 6, 64) + " GB-months"
-}
-
+// billingFormatCurrency keeps a positive subcent charge distinguishable from zero.
 func billingFormatCurrency(amount float64) string {
 	if amount > 0 && amount < 0.01 {
 		return "<$0.01"
@@ -318,6 +357,7 @@ func billingFormatCurrency(amount float64) string {
 	return "$" + strconv.FormatFloat(amount, 'f', 2, 64)
 }
 
+// billingFormatTimestamp renders metering times in UTC and identifies missing data.
 func billingFormatTimestamp(ms int64) string {
 	if ms <= 0 {
 		return "not yet metered"
@@ -325,5 +365,5 @@ func billingFormatTimestamp(ms int64) string {
 	return time.UnixMilli(ms).UTC().Format("2006-01-02 15:04 UTC")
 }
 
-// _ is a type assertion
+// _ verifies the mounted Session adapter's billing contract.
 var _ billingSessionHandle = (*mountedBillingSession)(nil)
