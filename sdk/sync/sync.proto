@@ -1,0 +1,180 @@
+syntax = "proto3";
+package sdk.sync;
+
+// Gateway authenticates one transport before it can open application Resources.
+service Gateway {
+  // Authenticate verifies wire and application versions and the bearer token.
+  rpc Authenticate(HandshakeRequest) returns (HandshakeResponse);
+}
+
+// Application exposes only declared, authorized application operations.
+service Application {
+  // OpenCollection returns a connection-owned collection Resource.
+  rpc OpenCollection(OpenCollectionRequest) returns (OpenCollectionResponse);
+  // Mutate invokes a declared handler within one authoritative transaction.
+  rpc Mutate(MutationRequest) returns (MutationResponse);
+}
+
+// Collection binds calls to one declared collection and authenticated scope.
+service Collection {
+  // Get distinguishes an absent record from a stored JSON null.
+  rpc Get(GetRequest) returns (GetResponse);
+  // Scan returns a complete bounded snapshot in bytewise key order.
+  rpc Scan(QueryRequest) returns (Snapshot);
+  // Put validates and durably accepts a record with a retained request receipt.
+  rpc Put(PutRequest) returns (Acceptance);
+  // Delete durably accepts removal, including removal of an absent key.
+  rpc Delete(DeleteRequest) returns (Acceptance);
+  // Watch delivers complete latest snapshots, coalescing intermediate changes.
+  rpc Watch(QueryRequest) returns (stream Snapshot);
+}
+
+// ErrorCode identifies stable application failure classes.
+enum ErrorCode {
+  // ERROR_CODE_UNSPECIFIED is not a valid failure.
+  ERROR_CODE_UNSPECIFIED = 0;
+  // VALIDATION rejects a value that does not satisfy the contract.
+  VALIDATION = 1;
+  // AUTHENTICATION requires a new valid principal.
+  AUTHENTICATION = 2;
+  // DENIED rejects an operation forbidden by collection policy.
+  DENIED = 3;
+  // MISSING_COLLECTION identifies an undeclared collection.
+  MISSING_COLLECTION = 4;
+  // SCHEMA_MISMATCH rejects incompatible wire, application, or stored versions.
+  SCHEMA_MISMATCH = 5;
+  // QUERY_LIMIT rejects an oversized complete snapshot or record.
+  QUERY_LIMIT = 6;
+  // CONFLICT rejects a request ID reused with different input.
+  CONFLICT = 7;
+  // UNAVAILABLE identifies a disconnected or canceled operation.
+  UNAVAILABLE = 8;
+  // UNCERTAIN requires retrying the same request ID and input.
+  UNCERTAIN = 9;
+  // STORAGE reports failure without exposing internal storage details.
+  STORAGE = 10;
+  // CLOSED identifies a released handle or stopped server.
+  CLOSED = 11;
+}
+
+// Failure contains only safe application details and an optional recovery ID.
+message Failure {
+  // Code is the stable failure class.
+  ErrorCode code = 1;
+  // Message explains the action the application can take.
+  string message = 2;
+  // RequestId identifies an uncertain mutation for explicit recovery.
+  string request_id = 3;
+}
+
+// HandshakeRequest supplies compatibility and authentication in the first RPC.
+message HandshakeRequest {
+  // WireVersion selects the package-owned protocol version.
+  uint32 wire_version = 1;
+  // ApplicationId identifies the declared application contract.
+  string application_id = 2;
+  // ApplicationVersion selects its explicit schema version.
+  uint32 application_version = 3;
+  // Token is supplied to the server authentication callback and never retained.
+  string token = 4;
+}
+
+// HandshakeResponse confirms admission or reports a safe failure.
+message HandshakeResponse {
+  // Error is set when admission fails.
+  Failure error = 1;
+}
+
+// OpenCollectionRequest selects a declared collection before prefix filtering.
+message OpenCollectionRequest {
+  // Name identifies the collection in the application schema.
+  string name = 1;
+}
+
+// OpenCollectionResponse grants one connection-owned collection Resource.
+message OpenCollectionResponse {
+  // ResourceId exposes only the Collection service.
+  uint32 resource_id = 1;
+  // Error is set when the collection cannot be opened.
+  Failure error = 2;
+}
+
+// GetRequest selects one UTF-8 record key.
+message GetRequest {
+  // Key identifies the record within the bound collection.
+  string key = 1;
+}
+
+// GetResponse distinguishes absence from a present JSON value.
+message GetResponse {
+  // Found is true even when Data encodes JSON null.
+  bool found = 1;
+  // Data contains canonical JSON for a present record.
+  bytes data = 2;
+  // Error is set when the read fails.
+  Failure error = 3;
+}
+
+// QueryRequest selects a key prefix in the bound collection.
+message QueryRequest {
+  // Prefix is empty to select the complete collection.
+  string prefix = 1;
+}
+
+// RecordEntry contains one complete record in a snapshot.
+message RecordEntry {
+  // Key identifies the record within the collection.
+  string key = 1;
+  // Data contains its canonical JSON value.
+  bytes data = 2;
+}
+
+// Snapshot replaces the prior view and never represents a partial result.
+message Snapshot {
+  // Entries are ordered by their UTF-8 key bytes.
+  repeated RecordEntry entries = 1;
+  // Error terminates this subscription or scan without affecting other handles.
+  Failure error = 2;
+}
+
+// PutRequest contains a stable retry identity and unvalidated JSON input.
+message PutRequest {
+  // Key identifies the record within the collection.
+  string key = 1;
+  // Data is JSON input validated before storage.
+  bytes data = 2;
+  // RequestId must remain unchanged when retrying this input.
+  string request_id = 3;
+}
+
+// DeleteRequest identifies a removal and its stable retry identity.
+message DeleteRequest {
+  // Key identifies the record within the collection.
+  string key = 1;
+  // RequestId must remain unchanged when retrying this removal.
+  string request_id = 2;
+}
+
+// Acceptance acknowledges a durable write or reports its failure.
+message Acceptance {
+  // Error is absent only after the receipt and change are durably fenced.
+  Failure error = 1;
+}
+
+// MutationRequest invokes a declared server handler with a stable retry ID.
+message MutationRequest {
+  // Name identifies the mutation in the shared contract.
+  string name = 1;
+  // Input contains its JSON input before server validation.
+  bytes input = 2;
+  // RequestId must remain unchanged when retrying this invocation.
+  string request_id = 3;
+}
+
+// MutationResponse contains the validated durable result or a safe failure.
+message MutationResponse {
+  // Result contains the accepted JSON output, including JSON null.
+  bytes result = 1;
+  // Error is set when acceptance or its outcome could not be confirmed.
+  Failure error = 2;
+}

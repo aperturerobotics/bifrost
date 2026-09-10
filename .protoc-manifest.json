@@ -3940,6 +3940,18 @@
         "sdk/status/status.proto"
       ]
     },
+    "github.com/s4wave/spacewave/sdk/sync": {
+      "hash": "65114b818baf97a8fb75f94510eeff95b9303d2ba9dec7a3a3677d467d160685",
+      "generatedFiles": [
+        "sdk/sync/sync.pb.go",
+        "sdk/sync/sync.pb.ts",
+        "sdk/sync/sync_srpc.pb.go",
+        "sdk/sync/sync_srpc.pb.ts"
+      ],
+      "protoFiles": [
+        "sdk/sync/sync.proto"
+      ]
+    },
     "github.com/s4wave/spacewave/sdk/terminal": {
       "hash": "8631d8a557a41406a1f4c63bd93374c369229b1c7aca81a15f2dc4cbfa180e8d",
       "generatedFiles": [

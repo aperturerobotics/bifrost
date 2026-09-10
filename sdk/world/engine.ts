@@ -38,6 +38,12 @@ export class Engine extends Resource {
     return await this.service.GetEngineInfo({}, abortSignal)
   }
 
+  // sync fences committed changes to the engine's durable storage.
+  public async sync(abortSignal?: AbortSignal): Promise<boolean> {
+    const response = await this.service.Sync({}, abortSignal)
+    return response.fenced ?? false
+  }
+
   // getWorldRootSnapshot returns the current committed World root.
   public async getWorldRootSnapshot(abortSignal?: AbortSignal) {
     return await this.service.GetWorldRootSnapshot({}, abortSignal)
