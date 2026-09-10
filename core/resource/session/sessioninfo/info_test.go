@@ -73,8 +73,12 @@ func TestBuildBillingUsageInfoPreservesSpendingConsent(t *testing.T) {
 		StorageBytes: 123, StorageBaselineBytes: 107374182400,
 		WriteOps: 50001, WriteOpsBaseline: 50000, ReadOps: 250000, ReadOpsBaseline: 250000,
 		OverageLimitCents: 500, AccruedOverageMicrodollars: 20, ReservedOverageMicrodollars: 10,
-		CurrentPeriodStart: 1776900000000, CurrentPeriodEnd: 1779492000000, OfferVersion: "cloud-monthly-v1",
+		CurrentPeriodStart: 1776900000000, CurrentPeriodEnd: 1779492000000, OfferVersion: "cloud-monthly-v2",
+		MonthlyPriceCents: 900, WriteMicrodollars: 30, ReadMicrodollars: 15, PolicyVersion: "2026-09-10",
 	})
+	if usage.GetMonthlyPriceCents() != 900 || usage.GetWriteMicrodollars() != 30 || usage.GetReadMicrodollars() != 15 || usage.GetPolicyVersion() != "2026-09-10" {
+		t.Fatalf("billing projection lost accepted prices: %+v", usage)
+	}
 	if usage.GetAccruedOverageMicrodollars() != 20 || usage.GetOverageLimitCents() != 500 || usage.GetReservedOverageMicrodollars() != 10 {
 		t.Fatalf("spending projection lost exact ledger units: %+v", usage)
 	}

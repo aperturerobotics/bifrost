@@ -3554,6 +3554,14 @@ type BillingUsageInfo struct {
 	ReservedOverageMicrodollars int64 `protobuf:"varint,18,opt,name=reserved_overage_microdollars,json=reservedOverageMicrodollars,proto3" json:"reservedOverageMicrodollars,omitempty"`
 	// OfferVersion identifies the applied offer.
 	OfferVersion string `protobuf:"bytes,19,opt,name=offer_version,json=offerVersion,proto3" json:"offerVersion,omitempty"`
+	// MonthlyPriceCents is the accepted recurring base price before tax.
+	MonthlyPriceCents uint32 `protobuf:"varint,20,opt,name=monthly_price_cents,json=monthlyPriceCents,proto3" json:"monthlyPriceCents,omitempty"`
+	// WriteMicrodollars is the accepted charge for one extra write.
+	WriteMicrodollars uint32 `protobuf:"varint,21,opt,name=write_microdollars,json=writeMicrodollars,proto3" json:"writeMicrodollars,omitempty"`
+	// ReadMicrodollars is the accepted charge for one extra uncached read.
+	ReadMicrodollars uint32 `protobuf:"varint,22,opt,name=read_microdollars,json=readMicrodollars,proto3" json:"readMicrodollars,omitempty"`
+	// PolicyVersion identifies the policy applying to the current offer.
+	PolicyVersion string `protobuf:"bytes,23,opt,name=policy_version,json=policyVersion,proto3" json:"policyVersion,omitempty"`
 }
 
 func (x *BillingUsageInfo) Reset() {
@@ -3649,6 +3657,34 @@ func (x *BillingUsageInfo) GetReservedOverageMicrodollars() int64 {
 func (x *BillingUsageInfo) GetOfferVersion() string {
 	if x != nil {
 		return x.OfferVersion
+	}
+	return ""
+}
+
+func (x *BillingUsageInfo) GetMonthlyPriceCents() uint32 {
+	if x != nil {
+		return x.MonthlyPriceCents
+	}
+	return 0
+}
+
+func (x *BillingUsageInfo) GetWriteMicrodollars() uint32 {
+	if x != nil {
+		return x.WriteMicrodollars
+	}
+	return 0
+}
+
+func (x *BillingUsageInfo) GetReadMicrodollars() uint32 {
+	if x != nil {
+		return x.ReadMicrodollars
+	}
+	return 0
+}
+
+func (x *BillingUsageInfo) GetPolicyVersion() string {
+	if x != nil {
+		return x.PolicyVersion
 	}
 	return ""
 }
@@ -10028,6 +10064,10 @@ func (m *BillingUsageInfo) CloneVT() *BillingUsageInfo {
 	r.CurrentPeriodEnd = m.CurrentPeriodEnd
 	r.ReservedOverageMicrodollars = m.ReservedOverageMicrodollars
 	r.OfferVersion = m.OfferVersion
+	r.MonthlyPriceCents = m.MonthlyPriceCents
+	r.WriteMicrodollars = m.WriteMicrodollars
+	r.ReadMicrodollars = m.ReadMicrodollars
+	r.PolicyVersion = m.PolicyVersion
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -15050,6 +15090,18 @@ func (this *BillingUsageInfo) EqualVT(that *BillingUsageInfo) bool {
 		return false
 	}
 	if this.OfferVersion != that.OfferVersion {
+		return false
+	}
+	if this.MonthlyPriceCents != that.MonthlyPriceCents {
+		return false
+	}
+	if this.WriteMicrodollars != that.WriteMicrodollars {
+		return false
+	}
+	if this.ReadMicrodollars != that.ReadMicrodollars {
+		return false
+	}
+	if this.PolicyVersion != that.PolicyVersion {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -23696,6 +23748,26 @@ func (x *BillingUsageInfo) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("offerVersion")
 		s.WriteString(x.OfferVersion)
 	}
+	if x.MonthlyPriceCents != 0 || s.HasField("monthlyPriceCents") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("monthlyPriceCents")
+		s.WriteUint32(x.MonthlyPriceCents)
+	}
+	if x.WriteMicrodollars != 0 || s.HasField("writeMicrodollars") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("writeMicrodollars")
+		s.WriteUint32(x.WriteMicrodollars)
+	}
+	if x.ReadMicrodollars != 0 || s.HasField("readMicrodollars") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("readMicrodollars")
+		s.WriteUint32(x.ReadMicrodollars)
+	}
+	if x.PolicyVersion != "" || s.HasField("policyVersion") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("policyVersion")
+		s.WriteString(x.PolicyVersion)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -23752,6 +23824,18 @@ func (x *BillingUsageInfo) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "offer_version", "offerVersion":
 			s.AddField("offer_version")
 			x.OfferVersion = s.ReadString()
+		case "monthly_price_cents", "monthlyPriceCents":
+			s.AddField("monthly_price_cents")
+			x.MonthlyPriceCents = s.ReadUint32()
+		case "write_microdollars", "writeMicrodollars":
+			s.AddField("write_microdollars")
+			x.WriteMicrodollars = s.ReadUint32()
+		case "read_microdollars", "readMicrodollars":
+			s.AddField("read_microdollars")
+			x.ReadMicrodollars = s.ReadUint32()
+		case "policy_version", "policyVersion":
+			s.AddField("policy_version")
+			x.PolicyVersion = s.ReadString()
 		}
 	})
 }
@@ -35997,6 +36081,34 @@ func (m *BillingUsageInfo) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if len(m.PolicyVersion) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.PolicyVersion)
+		i--
+		dAtA[i] = 0x1
+		i--
+		dAtA[i] = 0xba
+	}
+	if m.ReadMicrodollars != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.ReadMicrodollars))
+		i--
+		dAtA[i] = 0x1
+		i--
+		dAtA[i] = 0xb0
+	}
+	if m.WriteMicrodollars != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.WriteMicrodollars))
+		i--
+		dAtA[i] = 0x1
+		i--
+		dAtA[i] = 0xa8
+	}
+	if m.MonthlyPriceCents != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.MonthlyPriceCents))
+		i--
+		dAtA[i] = 0x1
+		i--
+		dAtA[i] = 0xa0
+	}
 	if len(m.OfferVersion) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.OfferVersion)
 		i--
@@ -44134,6 +44246,10 @@ func (m *BillingUsageInfo) SizeVT() (n int) {
 	n += protobuf_go_lite.SizeVarintNonZero(2, m.CurrentPeriodEnd)
 	n += protobuf_go_lite.SizeVarintNonZero(2, m.ReservedOverageMicrodollars)
 	n += protobuf_go_lite.SizeStringNonEmpty(2, m.OfferVersion)
+	n += protobuf_go_lite.SizeVarintNonZero(2, m.MonthlyPriceCents)
+	n += protobuf_go_lite.SizeVarintNonZero(2, m.WriteMicrodollars)
+	n += protobuf_go_lite.SizeVarintNonZero(2, m.ReadMicrodollars)
+	n += protobuf_go_lite.SizeStringNonEmpty(2, m.PolicyVersion)
 	n += len(m.unknownFields)
 	return n
 }
@@ -47943,6 +48059,22 @@ func (x *BillingUsageInfo) MarshalProtoText() string {
 	if x.OfferVersion != "" {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "offer_version")
 		protobuf_go_lite.TextWriteString(&sb, x.OfferVersion)
+	}
+	if x.MonthlyPriceCents != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "monthly_price_cents")
+		protobuf_go_lite.TextWriteUint(&sb, x.MonthlyPriceCents)
+	}
+	if x.WriteMicrodollars != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "write_microdollars")
+		protobuf_go_lite.TextWriteUint(&sb, x.WriteMicrodollars)
+	}
+	if x.ReadMicrodollars != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "read_microdollars")
+		protobuf_go_lite.TextWriteUint(&sb, x.ReadMicrodollars)
+	}
+	if x.PolicyVersion != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "policy_version")
+		protobuf_go_lite.TextWriteString(&sb, x.PolicyVersion)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -56944,6 +57076,43 @@ func (m *BillingUsageInfo) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.OfferVersion = v
+		case 20:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MonthlyPriceCents", wireType)
+			}
+			m.MonthlyPriceCents = 0
+			m.MonthlyPriceCents, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 21:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field WriteMicrodollars", wireType)
+			}
+			m.WriteMicrodollars = 0
+			m.WriteMicrodollars, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 22:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ReadMicrodollars", wireType)
+			}
+			m.ReadMicrodollars = 0
+			m.ReadMicrodollars, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 23:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PolicyVersion", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.PolicyVersion = v
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

@@ -784,6 +784,14 @@ message BillingUsageResponse {
   int64 reserved_overage_microdollars = 18;
   // OfferVersion identifies the applied offer.
   string offer_version = 19;
+  // MonthlyPriceCents is the accepted recurring base price before tax.
+  uint32 monthly_price_cents = 20;
+  // WriteMicrodollars is the accepted charge for one extra write.
+  uint32 write_microdollars = 21;
+  // ReadMicrodollars is the accepted charge for one extra uncached read.
+  uint32 read_microdollars = 22;
+  // PolicyVersion identifies the policy applying to the current offer.
+  string policy_version = 23;
 }
 
 // CheckoutStatusMessage is a JSON message from the checkout status WebSocket.

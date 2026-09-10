@@ -12,27 +12,28 @@ import { CLOUD_OFFER } from './pricing.js'
 // BillingConsentForm binds the visible terms and spending choice to one action.
 export function BillingConsentForm({
   onAccept,
-  initialLimit = CLOUD_OFFER.defaultOverageLimitCents,
+  offer = CLOUD_OFFER,
+  initialLimit = offer.defaultOverageLimitCents,
   spendingOnly = false,
   disabled = false,
 }: {
+  offer?: typeof CLOUD_OFFER
   onAccept: (consent: BillingConsent) => void
   initialLimit?: number
   spendingOnly?: boolean
   disabled?: boolean
 }) {
   const [limit, setLimit] = useState(initialLimit)
-  const monthlyPrice = CLOUD_OFFER.monthlyPriceCents / 100
+  const monthlyPrice = offer.monthlyPriceCents / 100
   const label = spendingOnly
     ? 'Save extra-usage maximum'
     : `Subscribe for $${monthlyPrice}/month`
   return (
     <div className="space-y-4 text-sm">
       <p className="text-foreground-alt text-xs">
-        Extra writes: ${(CLOUD_OFFER.writeMicrodollars / 100).toFixed(2)} per
-        10,000. Extra uncached reads: $
-        {(CLOUD_OFFER.readMicrodollars / 100).toFixed(2)} per 10,000. Charges
-        accrue proportionally.
+        Extra writes: ${(offer.writeMicrodollars / 100).toFixed(2)} per 10,000.
+        Extra uncached reads: ${(offer.readMicrodollars / 100).toFixed(2)} per
+        10,000. Charges accrue proportionally.
       </p>
       <label className="grid gap-2">
         Extra-usage cap
@@ -42,7 +43,7 @@ export function BillingConsentForm({
           disabled={disabled}
           onChange={(event) => setLimit(Number(event.target.value))}
         >
-          {CLOUD_OFFER.overageLimitsCents.map((value) => (
+          {offer.overageLimitsCents.map((value) => (
             <option key={value} value={value}>
               {value === 0 ? 'Off' : `$${value / 100}/month`}
             </option>
@@ -77,8 +78,8 @@ export function BillingConsentForm({
         disabled={disabled}
         onClick={() =>
           onAccept({
-            offerVersion: CLOUD_OFFER.version,
-            policyVersion: CLOUD_OFFER.policyVersion,
+            offerVersion: offer.version,
+            policyVersion: offer.policyVersion,
             renewalAccepted: !spendingOnly,
             overageAccepted: limit > 0,
             overageLimitCents: limit,
@@ -98,6 +99,7 @@ export function useBillingConsent() {
   const [choice, setChoice] = useState<{
     limit: number
     spendingOnly: boolean
+    offer: typeof CLOUD_OFFER
   } | null>(null)
 
   const finish = useCallback((consent?: BillingConsent) => {
@@ -119,9 +121,10 @@ export function useBillingConsent() {
     (
       currentLimit = CLOUD_OFFER.defaultOverageLimitCents,
       spendingOnly = false,
+      offer = CLOUD_OFFER,
     ) => {
       pending.current?.()
-      setChoice({ limit: currentLimit, spendingOnly })
+      setChoice({ limit: currentLimit, spendingOnly, offer })
       return new Promise<BillingConsent | undefined>((resolve) => {
         pending.current = resolve
       })
@@ -129,6 +132,7 @@ export function useBillingConsent() {
     [],
   )
 
+  const offer = choice?.offer ?? CLOUD_OFFER
   const consentDialog = (
     <Dialog
       open={choice !== null}
@@ -141,14 +145,15 @@ export function useBillingConsent() {
           {choice?.spendingOnly ? 'Extra-usage maximum' : 'Cloud monthly offer'}
         </DialogTitle>
         <DialogDescription>
-          ${CLOUD_OFFER.monthlyPriceCents / 100}/month before tax. Includes{' '}
-          {CLOUD_OFFER.storageBytes / 2 ** 30} GiB of encrypted cloud storage,{' '}
-          {CLOUD_OFFER.writeOperations.toLocaleString()} cloud writes, and{' '}
-          {CLOUD_OFFER.readOperations.toLocaleString()} uncached cloud reads per
+          ${offer.monthlyPriceCents / 100}/month before tax. Includes{' '}
+          {offer.storageBytes / 2 ** 30} GiB of encrypted cloud storage,{' '}
+          {offer.writeOperations.toLocaleString()} cloud writes, and{' '}
+          {offer.readOperations.toLocaleString()} uncached cloud reads per
           subscription month.
         </DialogDescription>
         {choice && (
           <BillingConsentForm
+            offer={choice.offer}
             initialLimit={choice.limit}
             spendingOnly={choice.spendingOnly}
             onAccept={finish}

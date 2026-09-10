@@ -30,6 +30,10 @@ func BuildEmptyBillingUsageInfo() *s4wave_provider_spacewave.BillingUsageInfo {
 		WriteOpsBaseline:     int64(offer.WriteOperations),
 		ReadOpsBaseline:      int64(offer.ReadOperations),
 		OfferVersion:         offer.Version,
+		MonthlyPriceCents:    offer.MonthlyPriceCents,
+		WriteMicrodollars:    offer.WriteMicrodollars,
+		ReadMicrodollars:     offer.ReadMicrodollars,
+		PolicyVersion:        offer.PolicyVersion,
 	}
 }
 
@@ -52,5 +56,9 @@ func BuildBillingUsageInfo(usage *api.BillingUsageResponse) *s4wave_provider_spa
 		CurrentPeriodEnd:            usage.GetCurrentPeriodEnd(),
 		ReservedOverageMicrodollars: usage.GetReservedOverageMicrodollars(),
 		OfferVersion:                usage.GetOfferVersion(),
+		MonthlyPriceCents:           usage.GetMonthlyPriceCents(),
+		WriteMicrodollars:           usage.GetWriteMicrodollars(),
+		ReadMicrodollars:            usage.GetReadMicrodollars(),
+		PolicyVersion:               usage.GetPolicyVersion(),
 	}
 }
