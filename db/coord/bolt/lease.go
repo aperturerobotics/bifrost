@@ -34,7 +34,10 @@ func (l *lease) Err() error {
 }
 
 func (l *lease) Refresh(ctx context.Context) (*coord.Snapshot, error) {
-	if l.c != nil && l.c.db != nil {
+	// The held coordination lock excludes external writers for this lease.
+	// Remap only on entry, before its snapshots open; remapping again would
+	// wait for those readers while their owner waits for Refresh to finish.
+	if !l.refreshed && l.c != nil && l.c.db != nil {
 		if err := l.c.db.RefreshForCoordinationLock(); err != nil {
 			return nil, err
 		}
