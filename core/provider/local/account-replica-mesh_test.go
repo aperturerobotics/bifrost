@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/s4wave/spacewave/core/pairing"
+
 	"github.com/aperturerobotics/util/ulid"
 	"github.com/s4wave/spacewave/core/session"
 	"github.com/s4wave/spacewave/core/sobject"
@@ -132,7 +134,7 @@ func enrollMeshReplica(ctx context.Context, t *testing.T, source *ProviderAccoun
 	if err != nil {
 		t.Fatal(err)
 	}
-	offer := &PairingAccount{AccountId: source.GetAccountID(), SettingsId: settings.GetProviderResourceRef().GetId(), StoragePeerId: storage.GetPeerID().String(), OperationId: ulid.NewULID()}
+	offer := &pairing.AccountOffer{AccountId: source.GetAccountID(), SettingsId: settings.GetProviderResourceRef().GetId(), StoragePeerId: storage.GetPeerID().String(), OperationId: ulid.NewULID()}
 	account, releaseAccount, err := receiving.t.p.AccessProviderAccount(ctx, source.GetAccountID(), nil)
 	if err != nil {
 		t.Fatal(err)
@@ -150,7 +152,7 @@ func enrollMeshReplica(ctx context.Context, t *testing.T, source *ProviderAccoun
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := validatePairingIdentity(offer, identity, sourceSession.GetPeerId(), receivingSession.GetPeerId()); err != nil {
+	if err := pairing.ValidateIdentity(offer, identity, sourceSession.GetPeerId(), receivingSession.GetPeerId()); err != nil {
 		t.Fatal(err)
 	}
 	if err := replica.bindPairingSettings(ctx, offer); err != nil {

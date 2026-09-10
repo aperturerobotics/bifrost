@@ -51,6 +51,14 @@ vi.mock('@s4wave/app/auth/LaunchLoginPage.js', () => ({
   LaunchLoginPage: () => null,
 }))
 
+vi.mock('@s4wave/app/debug/scenarios/registry.js', () => ({
+  appScenarios: [],
+}))
+
+vi.mock('@s4wave/app/debug/scenarios/ScenarioPage.js', () => ({
+  ScenarioPage: () => null,
+}))
+
 vi.mock('../AppLogin.js', () => ({
   AppLogin: () => null,
 }))

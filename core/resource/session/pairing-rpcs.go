@@ -3,53 +3,47 @@ package resource_session
 import (
 	"context"
 
+	"github.com/s4wave/spacewave/core/pairing"
+
 	"github.com/pkg/errors"
 	provider "github.com/s4wave/spacewave/core/provider"
-	provider_local "github.com/s4wave/spacewave/core/provider/local"
 	provider_spacewave "github.com/s4wave/spacewave/core/provider/spacewave"
-	"github.com/s4wave/spacewave/net/crypto"
 	"github.com/s4wave/spacewave/net/peer"
 	s4wave_session "github.com/s4wave/spacewave/sdk/session"
 )
 
-// pairingProvider is the interface for provider accounts that support pairing.
-type pairingProvider interface {
-	GeneratePairingCode(ctx context.Context, relayURL string, signingEnvPrefix string, sessionPriv crypto.PrivKey, sessionPeerID peer.ID) (string, error)
-	CompletePairing(ctx context.Context, relayURL string, signingEnvPrefix string, code string, sessionPriv crypto.PrivKey, sessionPeerID peer.ID) (peer.ID, error)
-}
-
-// pairingRelay is the Spacewave Cloud relay endpoint used by local provider
-// sessions for Pairing code registration and signaling tickets.
-type pairingRelay struct {
-	url              string
-	signingEnvPrefix string
+// getPairingEngine resolves pairing from the mounted Session that owns its key.
+func (r *SessionResource) getPairingEngine() (*pairing.Engine, error) {
+	supported, ok := r.session.(pairing.Session)
+	if !ok {
+		return nil, errors.New("this Session does not support pairing")
+	}
+	return supported.GetPairingEngine()
 }
 
 // getPairingRelay returns the relay endpoint and signing context that must be
 // used as one contract; staging rejects prod-context signatures.
-func (r *SessionResource) getPairingRelay(ctx context.Context) (pairingRelay, error) {
-	if _, ok := r.session.GetProviderAccount().(*provider_spacewave.ProviderAccount); ok {
-		return pairingRelay{}, nil
-	}
+func (r *SessionResource) getPairingRelay(ctx context.Context) (pairing.Relay, error) {
 	swProv, swProvRef, err := provider.ExLookupProvider(ctx, r.b, "spacewave", false, nil)
 	if err != nil {
-		return pairingRelay{}, errors.Wrap(err, "lookup cloud provider for pairing relay")
+		return pairing.Relay{}, errors.Wrap(err, "lookup cloud provider for pairing relay")
 	}
 	if swProv == nil {
-		return pairingRelay{}, errors.New("no cloud provider configured for pairing relay")
+		return pairing.Relay{}, errors.New("no cloud provider configured for pairing relay")
 	}
 	defer swProvRef.Release()
 	swp, ok := swProv.(*provider_spacewave.Provider)
 	if !ok {
-		return pairingRelay{}, errors.New("unexpected spacewave provider type")
+		return pairing.Relay{}, errors.New("unexpected spacewave provider type")
 	}
 	endpoint := swp.GetEndpoint()
 	if endpoint == "" {
-		return pairingRelay{}, errors.New("cloud provider endpoint is empty")
+		return pairing.Relay{}, errors.New("cloud provider endpoint is empty")
 	}
-	return pairingRelay{
-		url:              endpoint,
-		signingEnvPrefix: swp.GetSigningEnvPrefix(),
+	return pairing.Relay{
+		URL:              endpoint,
+		SigningEnvPrefix: swp.GetSigningEnvPrefix(),
+		Client:           swp.GetHTTPClient(),
 	}, nil
 }
 
@@ -60,10 +54,9 @@ func (r *SessionResource) GeneratePairingCode(ctx context.Context, _ *s4wave_ses
 		return nil, errors.New("session is locked")
 	}
 
-	providerAcc := r.session.GetProviderAccount()
-	pp, ok := providerAcc.(pairingProvider)
-	if !ok {
-		return nil, errors.New("provider does not support pairing")
+	engine, err := r.getPairingEngine()
+	if err != nil {
+		return nil, err
 	}
 
 	relay, err := r.getPairingRelay(ctx)
@@ -71,7 +64,7 @@ func (r *SessionResource) GeneratePairingCode(ctx context.Context, _ *s4wave_ses
 		return nil, err
 	}
 
-	code, err := pp.GeneratePairingCode(ctx, relay.url, relay.signingEnvPrefix, privKey, r.session.GetPeerId())
+	code, err := engine.GenerateCode(ctx, relay)
 	if err != nil {
 		return nil, err
 	}
@@ -86,10 +79,9 @@ func (r *SessionResource) CompletePairing(ctx context.Context, req *s4wave_sessi
 		return nil, errors.New("session is locked")
 	}
 
-	providerAcc := r.session.GetProviderAccount()
-	pp, ok := providerAcc.(pairingProvider)
-	if !ok {
-		return nil, errors.New("provider does not support pairing")
+	engine, err := r.getPairingEngine()
+	if err != nil {
+		return nil, err
 	}
 
 	relay, err := r.getPairingRelay(ctx)
@@ -97,7 +89,7 @@ func (r *SessionResource) CompletePairing(ctx context.Context, req *s4wave_sessi
 		return nil, err
 	}
 
-	remotePeerID, err := pp.CompletePairing(ctx, relay.url, relay.signingEnvPrefix, req.GetCode(), privKey, r.session.GetPeerId())
+	remotePeerID, err := engine.CompleteCode(ctx, relay, req.GetCode())
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +114,7 @@ func (r *SessionResource) GetSASEmoji(ctx context.Context, req *s4wave_session.G
 		return nil, errors.Wrap(err, "extract remote public key")
 	}
 
-	emoji, err := provider_local.DeriveSASEmoji(
+	emoji, err := pairing.DeriveSASEmoji(
 		privKey, remotePub,
 		r.session.GetPeerId(), remotePeerID,
 	)

@@ -3,6 +3,8 @@ package provider_local
 import (
 	"context"
 
+	"github.com/s4wave/spacewave/core/pairing"
+
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/starpc/srpc"
 	"github.com/aperturerobotics/util/routine"
@@ -17,7 +19,7 @@ const accountReplicaProtocol = protocol.ID("alpha/account-replica/1")
 
 // FetchObject authorizes the authenticated Session against the current canonical
 // account registry. Catalog knowledge alone never permits checkpoint enrollment.
-func (a *ProviderAccount) FetchObject(ctx context.Context, request *AccountReplicaObjectRequest) (*PairingSharedObject, error) {
+func (a *ProviderAccount) FetchObject(ctx context.Context, request *AccountReplicaObjectRequest) (*pairing.SharedObject, error) {
 	release, err := a.replicaAuth.Lock(ctx)
 	if err != nil {
 		return nil, err

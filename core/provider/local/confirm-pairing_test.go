@@ -3,7 +3,6 @@ package provider_local
 import (
 	"context"
 	"crypto/rand"
-	"errors"
 	"io"
 	"testing"
 
@@ -13,36 +12,6 @@ import (
 	"github.com/s4wave/spacewave/net/crypto"
 	"github.com/s4wave/spacewave/net/peer"
 )
-
-// TestPairingResultRequiresCompletedEnrollment prevents a status-only record
-// from making an unregistered receiving Session appear connected.
-func TestPairingResultRequiresCompletedEnrollment(t *testing.T) {
-	remotePeerID := newConfirmPairingPeerID(t)
-	acc := &ProviderAccount{}
-	if _, err := acc.GetPairingResult(remotePeerID); !errors.Is(err, ErrPairingExchangeMissing) {
-		t.Fatalf("expected missing exchange, got %v", err)
-	}
-	acc.pairing = &pairingState{remotePeerID: remotePeerID, status: PairingStatusBothConfirmed}
-	if _, err := acc.GetPairingResult(remotePeerID); !errors.Is(err, ErrPairingExchangeUnconfirmed) {
-		t.Fatalf("status without durable enrollment returned %v", err)
-	}
-	if _, err := acc.GetPairingResult(newConfirmPairingPeerID(t)); !errors.Is(err, ErrPairingExchangePeerMismatch) {
-		t.Fatalf("expected peer mismatch, got %v", err)
-	}
-}
-
-func newConfirmPairingPeerID(t *testing.T) peer.ID {
-	t.Helper()
-	priv, _, err := crypto.GenerateEd25519Key(rand.Reader)
-	if err != nil {
-		t.Fatal(err)
-	}
-	peerID, err := peer.IDFromPrivateKey(priv)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return peerID
-}
 
 // verifyParticipantOnAllSOs checks that the given peer is OWNER with a grant
 // on every SO in the list.

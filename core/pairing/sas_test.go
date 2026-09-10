@@ -1,4 +1,4 @@
-package provider_local
+package pairing
 
 import (
 	"crypto/rand"

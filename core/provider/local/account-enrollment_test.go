@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/s4wave/spacewave/core/pairing"
+
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
 	"github.com/aperturerobotics/starpc/srpc"
 	"github.com/aperturerobotics/util/ulid"
@@ -48,7 +50,7 @@ func TestAccountReplicaEnrollment(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	offer := &PairingAccount{AccountId: source.GetAccountID(), SettingsId: settingsRef.GetProviderResourceRef().GetId(), OperationId: ulid.NewULID()}
+	offer := &pairing.AccountOffer{AccountId: source.GetAccountID(), SettingsId: settingsRef.GetProviderResourceRef().GetId(), OperationId: ulid.NewULID()}
 
 	// Prepare a fresh Session in the same logical account on the receiving store.
 	ref := sourceSession.GetSessionRef().CloneVT()
@@ -71,14 +73,14 @@ func TestAccountReplicaEnrollment(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := validatePairingIdentity(offer, identity, sourceSession.GetPeerId(), receiverSession.GetPeerId()); err != nil {
+	if err := pairing.ValidateIdentity(offer, identity, sourceSession.GetPeerId(), receiverSession.GetPeerId()); err != nil {
 		t.Fatal(err)
 	}
 
 	// Reject a proof reused for a different account before issuing any grants.
 	other := offer.CloneVT()
 	other.AccountId = receiver.GetAccountID()
-	if err := validatePairingIdentity(other, identity, sourceSession.GetPeerId(), receiverSession.GetPeerId()); err == nil {
+	if err := pairing.ValidateIdentity(other, identity, sourceSession.GetPeerId(), receiverSession.GetPeerId()); err == nil {
 		t.Fatal("accepted a proof for another account")
 	}
 	if err := replica.bindPairingSettings(ctx, offer); err != nil {
@@ -202,38 +204,33 @@ func TestAccountPairingExchange(t *testing.T) {
 				}
 			}
 
-			// Supply the peer identities that the authenticated link gives the exchange.
-			source.pairingBcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
-				source.pairing = &pairingState{sessionKey: sourceSession.GetPrivKey(), offering: true}
-			})
-			receiver.pairingBcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
-				receiver.pairing = &pairingState{sessionKey: receivingSession.GetPrivKey()}
-			})
+			sourceEngine := pairingEngineForTest(t, sourceSession)
+			receivingEngine := pairingEngineForTest(t, receivingSession)
 			left, right := net.Pipe()
 			defer left.Close()
 			defer right.Close()
 			finished := make(chan struct{}, 2)
 			go func() {
 				defer left.Close()
-				source.runConfirmExchangeOnStream(ctx, left, receivingSession.GetPeerId(), sourceSession.GetPeerId(), source.le)
+				sourceEngine.StartOnStream(ctx, left, receivingSession.GetPeerId(), true)
 				finished <- struct{}{}
 			}()
 			go func() {
 				defer right.Close()
-				receiver.runConfirmExchangeOnStream(ctx, right, sourceSession.GetPeerId(), receivingSession.GetPeerId(), receiver.le)
+				receivingEngine.StartOnStream(ctx, right, sourceSession.GetPeerId(), false)
 				finished <- struct{}{}
 			}()
 
 			// Matching emoji alone must neither register a Session nor import Spaces.
-			waitForPairingStatus(ctx, t, source, PairingStatusVerifyingEmoji)
-			waitForPairingStatus(ctx, t, receiver, PairingStatusVerifyingEmoji)
+			waitForPairingStatus(ctx, t, sourceEngine, pairing.StatusVerifyingEmoji)
+			waitForPairingStatus(ctx, t, receivingEngine, pairing.StatusVerifyingEmoji)
 			entries, err := controller.ListSessions(ctx)
 			if err != nil || len(entries) != 1 {
 				t.Fatalf("unapproved pairing changed the Session list: %v, %v", entries, err)
 			}
-			source.ConfirmSASMatch(approve)
+			sourceEngine.ConfirmSAS(approve)
 			if approve {
-				receiver.ConfirmSASMatch(true)
+				receivingEngine.ConfirmSAS(true)
 			}
 			for range 2 {
 				select {
@@ -252,21 +249,21 @@ func TestAccountPairingExchange(t *testing.T) {
 				if len(entries) != 1 {
 					t.Fatal("rejected pairing registered account access")
 				}
-				waitForPairingStatus(ctx, t, receiver, PairingStatusPairingRejected)
+				waitForPairingStatus(ctx, t, receivingEngine, pairing.StatusPairingRejected)
 				return
 			}
 
 			// Successful completion keeps the original account and attaches a distinct Session.
-			waitForPairingStatus(ctx, t, source, PairingStatusBothConfirmed)
-			waitForPairingStatus(ctx, t, receiver, PairingStatusBothConfirmed)
-			ref, err := receiver.GetPairingResult(sourceSession.GetPeerId())
+			waitForPairingStatus(ctx, t, sourceEngine, pairing.StatusBothConfirmed)
+			waitForPairingStatus(ctx, t, receivingEngine, pairing.StatusBothConfirmed)
+			ref, err := receivingEngine.Result(sourceSession.GetPeerId())
 			if err != nil || ref == nil {
 				t.Fatalf("missing durable pairing result: %v", err)
 			}
 			if len(entries) != 2 || ref.GetProviderResourceRef().GetProviderAccountId() != source.GetAccountID() {
 				t.Fatal("pairing did not add the offered account alongside the existing account")
 			}
-			repeated, err := receiver.GetPairingResult(sourceSession.GetPeerId())
+			repeated, err := receivingEngine.Result(sourceSession.GetPeerId())
 			if err != nil || !repeated.EqualVT(ref) {
 				t.Fatal("completion retry did not return the same Session")
 			}

@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/s4wave/spacewave/core/pairing"
+
 	timestamppb "github.com/aperturerobotics/protobuf-go-lite/types/known/timestamppb"
 	"github.com/aperturerobotics/util/broadcast"
 	provider "github.com/s4wave/spacewave/core/provider"
@@ -109,14 +111,13 @@ func (r *SessionResource) buildLocalSyncStatusSnapshot(
 	now time.Time,
 ) (*s4wave_session.WatchSyncStatusResponse, []<-chan struct{}) {
 	var pairingCh <-chan struct{}
-	var pairing provider_local.PairingSnapshot
-	acc.GetPairingBroadcast().HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
-		pairingCh = getWaitCh()
-		pairing = acc.GetPairingSnapshot()
-	})
+	var pairingSnapshot pairing.Snapshot
+	if engine, err := r.getPairingEngine(); err == nil {
+		pairingSnapshot, pairingCh = engine.Snapshot()
+	}
 	transportRunning, transportCh := acc.GetTransportSnapshotWithWait()
 	p2pRunning, p2pCh := acc.GetP2PSyncSnapshotWithWait()
-	resp := syncStatusFromLocalState(pairing, transportRunning, p2pRunning)
+	resp := syncStatusFromLocalState(pairingSnapshot, transportRunning, p2pRunning)
 	resp.LocalAccount = true
 	progress, copyCh := acc.GetAccountCopyProgress()
 	var inventory *sobject.SharedObjectList
@@ -284,11 +285,11 @@ func syncStatusFromSpacewaveTelemetry(
 }
 
 func syncStatusFromLocalState(
-	pairing provider_local.PairingSnapshot,
+	snapshot pairing.Snapshot,
 	transportRunning bool,
 	p2pRunning bool,
 ) *s4wave_session.WatchSyncStatusResponse {
-	p2pState, errMsg := syncStatusLocalP2PState(pairing, transportRunning, p2pRunning)
+	p2pState, errMsg := syncStatusLocalP2PState(snapshot, transportRunning, p2pRunning)
 	resp := &s4wave_session.WatchSyncStatusResponse{
 		State:          s4wave_session.SyncStatusState_SyncStatusState_SYNCED,
 		Direction:      s4wave_session.SyncActivityDirection_SyncActivityDirection_NONE,
@@ -386,18 +387,18 @@ func syncStatusLocalTransportState(transportRunning bool) s4wave_session.SyncTra
 }
 
 func syncStatusLocalP2PState(
-	pairing provider_local.PairingSnapshot,
+	snapshot pairing.Snapshot,
 	transportRunning bool,
 	p2pRunning bool,
 ) (s4wave_session.SyncP2PState, string) {
-	switch pairing.Status {
-	case provider_local.PairingStatusFailed,
-		provider_local.PairingStatusSignalingFailed,
-		provider_local.PairingStatusConnectionTimeout,
-		provider_local.PairingStatusPairingRejected,
-		provider_local.PairingStatusConfirmationTimeout:
-		return s4wave_session.SyncP2PState_SyncP2PState_ERROR, pairing.ErrMsg
-	case provider_local.PairingStatusIdle:
+	switch snapshot.Status {
+	case pairing.StatusFailed,
+		pairing.StatusSignalingFailed,
+		pairing.StatusConnectionTimeout,
+		pairing.StatusPairingRejected,
+		pairing.StatusConfirmationTimeout:
+		return s4wave_session.SyncP2PState_SyncP2PState_ERROR, snapshot.ErrMsg
+	case pairing.StatusIdle:
 	default:
 		return s4wave_session.SyncP2PState_SyncP2PState_ACTIVE, ""
 	}

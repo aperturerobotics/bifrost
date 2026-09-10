@@ -6,6 +6,8 @@ import (
 	"slices"
 	"sync"
 
+	"github.com/s4wave/spacewave/core/pairing"
+
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/util/broadcast"
 	"github.com/aperturerobotics/util/keyed"
@@ -47,6 +49,11 @@ type Session struct {
 
 	// directP2PEnabled is the persisted Session-local transport policy.
 	directP2PEnabled bool
+	// pairingMu guards the engine for this unlocked Session lifetime.
+	pairingMu     sync.Mutex
+	pairingEngine *pairing.Engine
+	pairingCancel context.CancelFunc
+
 	// lockMode is the current lock mode, set during init and SetLockMode.
 	lockMode session_lock.SessionLockMode
 	// bcast guards lock state and policy changes.
@@ -244,6 +251,8 @@ func (s *Session) LockSession(ctx context.Context) error {
 	if s.sessionPriv == nil {
 		return nil
 	}
+
+	s.clearPairingEngine()
 
 	// Scrub the private key from memory.
 	raw, err := s.sessionPriv.Raw()

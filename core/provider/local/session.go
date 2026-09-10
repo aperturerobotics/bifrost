@@ -4,6 +4,9 @@ import (
 	"context"
 	"crypto/rand"
 	"slices"
+	"sync"
+
+	"github.com/s4wave/spacewave/core/pairing"
 
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/util/broadcast"
@@ -36,6 +39,11 @@ type Session struct {
 	sessionPriv         crypto.PrivKey
 	sessionPid          peer.ID
 	storageKey          [32]byte
+
+	// pairingMu guards the engine for this unlocked Session lifetime.
+	pairingMu     sync.Mutex
+	pairingEngine *pairing.Engine
+	pairingCancel context.CancelFunc
 
 	// lockMode is the current lock mode, set during init and SetLockMode.
 	lockMode session_lock.SessionLockMode
@@ -175,6 +183,8 @@ func (s *Session) LockSession(ctx context.Context) error {
 	if s.sessionPriv == nil {
 		return nil
 	}
+
+	s.clearPairingEngine()
 
 	// End authenticated transport use before clearing the unlocked credential.
 	if err := s.tkr.a.stopSessionPeerTransport(ctx, s.sessionPid); err != nil {

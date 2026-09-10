@@ -28,7 +28,8 @@ vi.mock('@s4wave/web/ui/CollapsibleSection.js', () => ({
     </section>
   ),
 }))
-vi.mock('@s4wave/web/state/persist.js', () => ({
+vi.mock('@s4wave/web/state/persist.js', async (importOriginal) => ({
+  ...(await importOriginal()),
   useStateNamespace: () => ['session-settings'],
   useStateAtom: (_ns: unknown, _key: string, init: boolean) =>
     [init, vi.fn()] as const,

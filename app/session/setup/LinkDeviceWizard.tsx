@@ -136,7 +136,7 @@ export function LinkDeviceWizard({ exitPath }: LinkDeviceWizardProps) {
     navigate({ path: resolvedExitPath })
   }, [navigate, resolvedExitPath])
   const pairingSupported = providerId === 'local' || providerId === 'spacewave'
-  const directPairingSupported = providerId === 'local'
+  const directPairingSupported = pairingSupported
 
   return (
     <SetupPageLayout title="Link My Device" showHeader={step === 'choose'}>
@@ -159,7 +159,7 @@ export function LinkDeviceWizard({ exitPath }: LinkDeviceWizardProps) {
 
         {!sessionInfoError && !sessionInfoLoading && !pairingSupported && (
           <UnsupportedLinkStep
-            message="Device linking is available from local sessions only."
+            message="Device linking is not available for this provider."
             buttonLabel="Back"
             onDone={handleExit}
           />

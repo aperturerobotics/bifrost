@@ -924,7 +924,6 @@ func TestSessionTransportReadyErrorCleanupRechecksSupersession(t *testing.T) {
 	defer cancel()
 	acc, oldPriv, release := newPairingTransportAccount(ctx, t)
 	defer release()
-	acc.SetPairingCode("TESTCODE", oldPriv)
 
 	oldTransport, err := transport.NewSessionTransport(acc.le, acc.t.p.b, oldPriv, "", "")
 	if err != nil {
@@ -998,10 +997,7 @@ func TestSessionTransportReadyErrorCleanupRechecksSupersession(t *testing.T) {
 	case <-ctx.Done():
 		t.Fatalf("superseded startup did not return: %v", ctx.Err())
 	}
-	snapshot := acc.GetPairingSnapshot()
-	if snapshot.Status == PairingStatusSignalingFailed {
-		t.Fatalf("superseded startup published stale pairing failure: %q", snapshot.ErrMsg)
-	}
+
 }
 
 func TestSessionTransportReplacementReturnsSupersededSignal(t *testing.T) {

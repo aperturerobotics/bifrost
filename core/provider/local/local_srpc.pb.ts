@@ -2,7 +2,8 @@
 // @generated from file github.com/s4wave/spacewave/core/provider/local/local.proto (package provider.local, syntax proto3)
 /* eslint-disable */
 
-import { AccountReplicaObjectRequest, PairingSharedObject } from './local.pb.js'
+import { AccountReplicaObjectRequest } from './local.pb.js'
+import { SharedObject } from '../../pairing/pairing.pb.js'
 import { MethodKind } from '@aptre/protobuf-es-lite'
 import { ProtoRpc, ServerContext } from 'starpc'
 
@@ -22,7 +23,7 @@ export const AccountReplicaServiceDefinition = {
     FetchObject: {
       name: 'FetchObject',
       I: AccountReplicaObjectRequest,
-      O: PairingSharedObject,
+      O: SharedObject,
       kind: MethodKind.Unary,
     },
   },
@@ -42,7 +43,7 @@ export interface AccountReplicaService {
   FetchObject(
     request: AccountReplicaObjectRequest,
     abortSignal?: AbortSignal,
-  ): Promise<PairingSharedObject>
+  ): Promise<SharedObject>
 }
 
 /**
@@ -60,7 +61,7 @@ export interface AccountReplicaServiceHandler {
     request: AccountReplicaObjectRequest,
     abortSignal: AbortSignal,
     context: ServerContext,
-  ): Promise<PairingSharedObject>
+  ): Promise<SharedObject>
 }
 
 export const AccountReplicaServiceServiceName =
@@ -82,7 +83,7 @@ export class AccountReplicaServiceClient implements AccountReplicaService {
   async FetchObject(
     request: AccountReplicaObjectRequest,
     abortSignal?: AbortSignal,
-  ): Promise<PairingSharedObject> {
+  ): Promise<SharedObject> {
     const requestMsg = AccountReplicaObjectRequest.create(request)
     const result = await this.rpc.request(
       this.service,
@@ -90,6 +91,6 @@ export class AccountReplicaServiceClient implements AccountReplicaService {
       AccountReplicaObjectRequest.toBinary(requestMsg),
       abortSignal || undefined,
     )
-    return PairingSharedObject.fromBinary(result)
+    return SharedObject.fromBinary(result)
   }
 }

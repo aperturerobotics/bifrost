@@ -209,9 +209,10 @@ vi.mock('@s4wave/web/hooks/useMountAccount.js', () => ({
   }),
 }))
 
-vi.mock('@s4wave/web/state/persist.js', async () => {
+vi.mock('@s4wave/web/state/persist.js', async (importOriginal) => {
   const React = await import('react')
   return {
+    ...(await importOriginal()),
     useStateNamespace: () => ['session-settings'],
     useStateAtom: <T,>(_ns: unknown, _key: string, init: T) =>
       React.useState(init),

@@ -97,7 +97,7 @@ describe('LinkDeviceWizard', () => {
     cleanup()
   })
 
-  it('renders cloud relay pairing options for spacewave providers', () => {
+  it('renders relay and direct pairing options for spacewave providers', () => {
     mockUseSessionInfo.mockReturnValue({
       error: null,
       loading: false,
@@ -108,8 +108,8 @@ describe('LinkDeviceWizard', () => {
 
     expect(screen.getByText('Generate code for another device')).toBeDefined()
     expect(screen.getByText('Enter a code from another device')).toBeDefined()
-    expect(screen.queryByText('Show QR code')).toBeNull()
-    expect(screen.queryByText('Scan QR code')).toBeNull()
+    expect(screen.getByText('Show QR code')).toBeDefined()
+    expect(screen.getByText('Scan QR code')).toBeDefined()
   })
 
   it('groups options by which device shows the code and renames the direct QR paths', () => {
