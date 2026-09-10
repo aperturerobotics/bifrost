@@ -2097,22 +2097,14 @@ func (c *SessionClient) ProcessMailboxEntry(
 	return resp, nil
 }
 
-// CreateCheckoutSession creates or resumes a Stripe Checkout Session.
-// Returns the checkout URL, a WebSocket ticket, and the attempt status.
-// billingAccountID selects a specific BA; empty falls back to the caller's
-// single managed BA (legacy default).
-func (c *SessionClient) CreateCheckoutSession(
-	ctx context.Context,
-	successURL string,
-	cancelURL string,
-	interval s4wave_provider_spacewave.BillingInterval,
-	billingAccountID string,
-) (*api.CheckoutResponse, error) {
+// CreateCheckoutSession submits the customer's explicit monthly-offer consent.
+func (c *SessionClient) CreateCheckoutSession(ctx context.Context, req *s4wave_provider_spacewave.CreateCheckoutSessionRequest) (*api.CheckoutResponse, error) {
 	body, err := (&api.CheckoutRequest{
-		SuccessUrl:       successURL,
-		CancelUrl:        cancelURL,
-		BillingInterval:  interval,
-		BillingAccountId: billingAccountID,
+		SuccessUrl:       req.GetSuccessUrl(),
+		CancelUrl:        req.GetCancelUrl(),
+		BillingInterval:  req.GetBillingInterval(),
+		BillingAccountId: req.GetBillingAccountId(),
+		Consent:          req.GetConsent(),
 	}).MarshalVT()
 	if err != nil {
 		return nil, err
@@ -2235,24 +2227,14 @@ func (c *SessionClient) ReactivateSubscription(ctx context.Context, baID string)
 	return resp, nil
 }
 
-// SwitchBillingInterval switches the billing interval for a subscription.
-func (c *SessionClient) SwitchBillingInterval(
-	ctx context.Context,
-	baID string,
-	interval s4wave_provider_spacewave.BillingInterval,
-) ([]byte, error) {
-	body, err := (&api.SwitchIntervalRequest{BillingInterval: interval}).MarshalVT()
+// SetBillingSpendingLimit persists an explicitly selected recurring budget.
+func (c *SessionClient) SetBillingSpendingLimit(ctx context.Context, baID string, consent *s4wave_provider_spacewave.BillingConsent) error {
+	body, err := (&s4wave_provider_spacewave.SetBillingSpendingLimitRequest{Consent: consent}).MarshalVT()
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return c.doPost(
-		ctx,
-		"/api/billing/"+baID+"/switch-interval",
-		"application/octet-stream",
-		body,
-		nil,
-		SeedReasonMutation,
-	)
+	_, err = c.doPost(ctx, "/api/billing/"+baID+"/spending-limit", "application/octet-stream", body, nil, SeedReasonMutation)
+	return err
 }
 
 // CreateBillingPortal creates a Stripe billing portal session and returns the URL.

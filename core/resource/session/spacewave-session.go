@@ -346,13 +346,7 @@ func (r *SpacewaveSessionResource) CreateCheckoutSession(
 	}
 
 	cli := r.swAcc.GetSessionClient()
-	resp, err := cli.CreateCheckoutSession(
-		ctx,
-		req.GetSuccessUrl(),
-		req.GetCancelUrl(),
-		req.GetBillingInterval(),
-		req.GetBillingAccountId(),
-	)
+	resp, err := cli.CreateCheckoutSession(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -548,11 +542,8 @@ func (r *SpacewaveSessionResource) ReactivateSubscription(
 	return resp, nil
 }
 
-// SwitchBillingInterval switches between monthly and annual billing.
-func (r *SpacewaveSessionResource) SwitchBillingInterval(
-	ctx context.Context,
-	req *s4wave_provider_spacewave.SwitchBillingIntervalRequest,
-) (*s4wave_provider_spacewave.SwitchBillingIntervalResponse, error) {
+// SetBillingSpendingLimit updates the selected payer's recurring operation budget.
+func (r *SpacewaveSessionResource) SetBillingSpendingLimit(ctx context.Context, req *s4wave_provider_spacewave.SetBillingSpendingLimitRequest) (*s4wave_provider_spacewave.SetBillingSpendingLimitResponse, error) {
 	baID, err := r.resolveBillingAccountID(ctx, req.GetBillingAccountId())
 	if err != nil {
 		return nil, err
@@ -560,17 +551,11 @@ func (r *SpacewaveSessionResource) SwitchBillingInterval(
 	if baID == "" {
 		return nil, errors.New("no billing account found")
 	}
-
-	if req.GetBillingInterval() == s4wave_provider_spacewave.BillingInterval_BillingInterval_UNKNOWN {
-		return nil, errors.New("billing_interval is required")
-	}
-
-	cli := r.swAcc.GetSessionClient()
-	if _, err := cli.SwitchBillingInterval(ctx, baID, req.GetBillingInterval()); err != nil {
+	if err := r.swAcc.GetSessionClient().SetBillingSpendingLimit(ctx, baID, req.GetConsent()); err != nil {
 		return nil, err
 	}
 	r.swAcc.InvalidateBillingSnapshot(baID)
-	return &s4wave_provider_spacewave.SwitchBillingIntervalResponse{}, nil
+	return &s4wave_provider_spacewave.SetBillingSpendingLimitResponse{}, nil
 }
 
 // CreateBillingPortal creates a Stripe billing portal session URL.

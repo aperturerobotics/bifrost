@@ -2578,6 +2578,8 @@ type CheckoutRequest struct {
 	// BillingAccountId selects a specific billing account to check out. Empty
 	// falls back to the caller's single managed BA (legacy default).
 	BillingAccountId string `protobuf:"bytes,4,opt,name=billing_account_id,json=billingAccountId,proto3" json:"billingAccountId,omitempty"`
+	// Consent records the terms affirmatively accepted before checkout.
+	Consent *spacewave.BillingConsent `protobuf:"bytes,5,opt,name=consent,proto3" json:"consent,omitempty"`
 }
 
 func (x *CheckoutRequest) Reset() {
@@ -2612,6 +2614,13 @@ func (x *CheckoutRequest) GetBillingAccountId() string {
 		return x.BillingAccountId
 	}
 	return ""
+}
+
+func (x *CheckoutRequest) GetConsent() *spacewave.BillingConsent {
+	if x != nil {
+		return x.Consent
+	}
+	return nil
 }
 
 // CheckoutResponse is the response body for POST /billing/checkout.
@@ -2650,46 +2659,6 @@ func (x *CheckoutResponse) GetStatus() string {
 		return x.Status
 	}
 	return ""
-}
-
-// SwitchIntervalRequest is the request body for POST /billing/:id/switch-interval.
-type SwitchIntervalRequest struct {
-	unknownFields []byte
-	// BillingInterval is the new billing interval.
-	BillingInterval spacewave.BillingInterval `protobuf:"varint,1,opt,name=billing_interval,json=billingInterval,proto3" json:"billingInterval,omitempty"`
-}
-
-func (x *SwitchIntervalRequest) Reset() {
-	*x = SwitchIntervalRequest{}
-}
-
-func (*SwitchIntervalRequest) ProtoMessage() {}
-
-func (x *SwitchIntervalRequest) GetBillingInterval() spacewave.BillingInterval {
-	if x != nil {
-		return x.BillingInterval
-	}
-	return spacewave.BillingInterval(0)
-}
-
-// SwitchIntervalResponse is the response body for POST /billing/:id/switch-interval.
-type SwitchIntervalResponse struct {
-	unknownFields []byte
-	// BillingInterval is the billing interval after the switch succeeds.
-	BillingInterval spacewave.BillingInterval `protobuf:"varint,1,opt,name=billing_interval,json=billingInterval,proto3" json:"billingInterval,omitempty"`
-}
-
-func (x *SwitchIntervalResponse) Reset() {
-	*x = SwitchIntervalResponse{}
-}
-
-func (*SwitchIntervalResponse) ProtoMessage() {}
-
-func (x *SwitchIntervalResponse) GetBillingInterval() spacewave.BillingInterval {
-	if x != nil {
-		return x.BillingInterval
-	}
-	return spacewave.BillingInterval(0)
 }
 
 // BillingPortalRequest is the request body for POST /billing/:id/portal.
@@ -2834,26 +2803,27 @@ type BillingUsageResponse struct {
 	WriteOps int64 `protobuf:"varint,2,opt,name=write_ops,json=writeOps,proto3" json:"writeOps,omitempty"`
 	// ReadOps is the number of read operations in the current period.
 	ReadOps int64 `protobuf:"varint,3,opt,name=read_ops,json=readOps,proto3" json:"readOps,omitempty"`
-	// StorageOverageBytes is current storage beyond the included baseline.
-	StorageOverageBytes float64 `protobuf:"fixed64,4,opt,name=storage_overage_bytes,json=storageOverageBytes,proto3" json:"storageOverageBytes,omitempty"`
-	// StorageOverageMonthlyCostEstimateUsd is the estimated monthly cost for
-	// current storage overage if held for a full month.
-	StorageOverageMonthlyCostEstimateUsd float64 `protobuf:"fixed64,5,opt,name=storage_overage_monthly_cost_estimate_usd,json=storageOverageMonthlyCostEstimateUsd,proto3" json:"storageOverageMonthlyCostEstimateUsd,omitempty"`
-	// StorageOverageMonthToDateGbMonths is accrued storage overage for the
-	// current billing period in GB-months.
-	StorageOverageMonthToDateGbMonths float64 `protobuf:"fixed64,6,opt,name=storage_overage_month_to_date_gb_months,json=storageOverageMonthToDateGbMonths,proto3" json:"storageOverageMonthToDateGbMonths,omitempty"`
-	// StorageOverageMonthToDateCostEstimateUsd is the estimated cost for accrued
-	// storage overage in the current billing period.
-	StorageOverageMonthToDateCostEstimateUsd float64 `protobuf:"fixed64,7,opt,name=storage_overage_month_to_date_cost_estimate_usd,json=storageOverageMonthToDateCostEstimateUsd,proto3" json:"storageOverageMonthToDateCostEstimateUsd,omitempty"`
-	// StorageOverageDeletedGbMonths is the accrued overage attributable to data
-	// that is no longer resident.
-	StorageOverageDeletedGbMonths float64 `protobuf:"fixed64,8,opt,name=storage_overage_deleted_gb_months,json=storageOverageDeletedGbMonths,proto3" json:"storageOverageDeletedGbMonths,omitempty"`
-	// StorageOverageDeletedCostEstimateUsd is the estimated cost for deleted-data
-	// storage overage in the current billing period.
-	StorageOverageDeletedCostEstimateUsd float64 `protobuf:"fixed64,9,opt,name=storage_overage_deleted_cost_estimate_usd,json=storageOverageDeletedCostEstimateUsd,proto3" json:"storageOverageDeletedCostEstimateUsd,omitempty"`
 	// UsageMeteredThroughAt is the Spacewave usage ledger freshness timestamp
 	// in Unix epoch milliseconds.
 	UsageMeteredThroughAt int64 `protobuf:"varint,10,opt,name=usage_metered_through_at,json=usageMeteredThroughAt,proto3" json:"usageMeteredThroughAt,omitempty"`
+	// StorageBaselineBytes is the retained-content capacity.
+	StorageBaselineBytes float64 `protobuf:"fixed64,11,opt,name=storage_baseline_bytes,json=storageBaselineBytes,proto3" json:"storageBaselineBytes,omitempty"`
+	// WriteOpsBaseline is the included subscription-period write allowance.
+	WriteOpsBaseline int64 `protobuf:"varint,12,opt,name=write_ops_baseline,json=writeOpsBaseline,proto3" json:"writeOpsBaseline,omitempty"`
+	// ReadOpsBaseline is the included subscription-period uncached read allowance.
+	ReadOpsBaseline int64 `protobuf:"varint,13,opt,name=read_ops_baseline,json=readOpsBaseline,proto3" json:"readOpsBaseline,omitempty"`
+	// OverageLimitCents is the customer's recurring extra-spending maximum.
+	OverageLimitCents uint32 `protobuf:"varint,14,opt,name=overage_limit_cents,json=overageLimitCents,proto3" json:"overageLimitCents,omitempty"`
+	// AccruedOverageMicrodollars is the exact accepted operation charge.
+	AccruedOverageMicrodollars int64 `protobuf:"varint,15,opt,name=accrued_overage_microdollars,json=accruedOverageMicrodollars,proto3" json:"accruedOverageMicrodollars,omitempty"`
+	// CurrentPeriodStart is the subscription-period start in Unix milliseconds.
+	CurrentPeriodStart int64 `protobuf:"varint,16,opt,name=current_period_start,json=currentPeriodStart,proto3" json:"currentPeriodStart,omitempty"`
+	// CurrentPeriodEnd is the allowance reset in Unix milliseconds.
+	CurrentPeriodEnd int64 `protobuf:"varint,17,opt,name=current_period_end,json=currentPeriodEnd,proto3" json:"currentPeriodEnd,omitempty"`
+	// ReservedOverageMicrodollars is the additional maximum awaiting work results.
+	ReservedOverageMicrodollars int64 `protobuf:"varint,18,opt,name=reserved_overage_microdollars,json=reservedOverageMicrodollars,proto3" json:"reservedOverageMicrodollars,omitempty"`
+	// OfferVersion identifies the applied offer.
+	OfferVersion string `protobuf:"bytes,19,opt,name=offer_version,json=offerVersion,proto3" json:"offerVersion,omitempty"`
 }
 
 func (x *BillingUsageResponse) Reset() {
@@ -2883,53 +2853,74 @@ func (x *BillingUsageResponse) GetReadOps() int64 {
 	return 0
 }
 
-func (x *BillingUsageResponse) GetStorageOverageBytes() float64 {
-	if x != nil {
-		return x.StorageOverageBytes
-	}
-	return 0
-}
-
-func (x *BillingUsageResponse) GetStorageOverageMonthlyCostEstimateUsd() float64 {
-	if x != nil {
-		return x.StorageOverageMonthlyCostEstimateUsd
-	}
-	return 0
-}
-
-func (x *BillingUsageResponse) GetStorageOverageMonthToDateGbMonths() float64 {
-	if x != nil {
-		return x.StorageOverageMonthToDateGbMonths
-	}
-	return 0
-}
-
-func (x *BillingUsageResponse) GetStorageOverageMonthToDateCostEstimateUsd() float64 {
-	if x != nil {
-		return x.StorageOverageMonthToDateCostEstimateUsd
-	}
-	return 0
-}
-
-func (x *BillingUsageResponse) GetStorageOverageDeletedGbMonths() float64 {
-	if x != nil {
-		return x.StorageOverageDeletedGbMonths
-	}
-	return 0
-}
-
-func (x *BillingUsageResponse) GetStorageOverageDeletedCostEstimateUsd() float64 {
-	if x != nil {
-		return x.StorageOverageDeletedCostEstimateUsd
-	}
-	return 0
-}
-
 func (x *BillingUsageResponse) GetUsageMeteredThroughAt() int64 {
 	if x != nil {
 		return x.UsageMeteredThroughAt
 	}
 	return 0
+}
+
+func (x *BillingUsageResponse) GetStorageBaselineBytes() float64 {
+	if x != nil {
+		return x.StorageBaselineBytes
+	}
+	return 0
+}
+
+func (x *BillingUsageResponse) GetWriteOpsBaseline() int64 {
+	if x != nil {
+		return x.WriteOpsBaseline
+	}
+	return 0
+}
+
+func (x *BillingUsageResponse) GetReadOpsBaseline() int64 {
+	if x != nil {
+		return x.ReadOpsBaseline
+	}
+	return 0
+}
+
+func (x *BillingUsageResponse) GetOverageLimitCents() uint32 {
+	if x != nil {
+		return x.OverageLimitCents
+	}
+	return 0
+}
+
+func (x *BillingUsageResponse) GetAccruedOverageMicrodollars() int64 {
+	if x != nil {
+		return x.AccruedOverageMicrodollars
+	}
+	return 0
+}
+
+func (x *BillingUsageResponse) GetCurrentPeriodStart() int64 {
+	if x != nil {
+		return x.CurrentPeriodStart
+	}
+	return 0
+}
+
+func (x *BillingUsageResponse) GetCurrentPeriodEnd() int64 {
+	if x != nil {
+		return x.CurrentPeriodEnd
+	}
+	return 0
+}
+
+func (x *BillingUsageResponse) GetReservedOverageMicrodollars() int64 {
+	if x != nil {
+		return x.ReservedOverageMicrodollars
+	}
+	return 0
+}
+
+func (x *BillingUsageResponse) GetOfferVersion() string {
+	if x != nil {
+		return x.OfferVersion
+	}
+	return ""
 }
 
 // CheckoutStatusMessage is a JSON message from the checkout status WebSocket.
@@ -11559,6 +11550,7 @@ func (m *CheckoutRequest) CloneVT() *CheckoutRequest {
 	r.CancelUrl = m.CancelUrl
 	r.BillingInterval = m.BillingInterval
 	r.BillingAccountId = m.BillingAccountId
+	r.Consent = protobuf_go_lite.CloneVTValue(m.Consent)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -11584,38 +11576,6 @@ func (m *CheckoutResponse) CloneVT() *CheckoutResponse {
 }
 
 func (m *CheckoutResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
-	return m.CloneVT()
-}
-
-func (m *SwitchIntervalRequest) CloneVT() *SwitchIntervalRequest {
-	if m == nil {
-		return (*SwitchIntervalRequest)(nil)
-	}
-	r := new(SwitchIntervalRequest)
-	r.BillingInterval = m.BillingInterval
-	if len(m.unknownFields) > 0 {
-		r.unknownFields = slices.Clone(m.unknownFields)
-	}
-	return r
-}
-
-func (m *SwitchIntervalRequest) CloneMessageVT() protobuf_go_lite.CloneMessage {
-	return m.CloneVT()
-}
-
-func (m *SwitchIntervalResponse) CloneVT() *SwitchIntervalResponse {
-	if m == nil {
-		return (*SwitchIntervalResponse)(nil)
-	}
-	r := new(SwitchIntervalResponse)
-	r.BillingInterval = m.BillingInterval
-	if len(m.unknownFields) > 0 {
-		r.unknownFields = slices.Clone(m.unknownFields)
-	}
-	return r
-}
-
-func (m *SwitchIntervalResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
@@ -11683,13 +11643,16 @@ func (m *BillingUsageResponse) CloneVT() *BillingUsageResponse {
 	r.StorageBytes = m.StorageBytes
 	r.WriteOps = m.WriteOps
 	r.ReadOps = m.ReadOps
-	r.StorageOverageBytes = m.StorageOverageBytes
-	r.StorageOverageMonthlyCostEstimateUsd = m.StorageOverageMonthlyCostEstimateUsd
-	r.StorageOverageMonthToDateGbMonths = m.StorageOverageMonthToDateGbMonths
-	r.StorageOverageMonthToDateCostEstimateUsd = m.StorageOverageMonthToDateCostEstimateUsd
-	r.StorageOverageDeletedGbMonths = m.StorageOverageDeletedGbMonths
-	r.StorageOverageDeletedCostEstimateUsd = m.StorageOverageDeletedCostEstimateUsd
 	r.UsageMeteredThroughAt = m.UsageMeteredThroughAt
+	r.StorageBaselineBytes = m.StorageBaselineBytes
+	r.WriteOpsBaseline = m.WriteOpsBaseline
+	r.ReadOpsBaseline = m.ReadOpsBaseline
+	r.OverageLimitCents = m.OverageLimitCents
+	r.AccruedOverageMicrodollars = m.AccruedOverageMicrodollars
+	r.CurrentPeriodStart = m.CurrentPeriodStart
+	r.CurrentPeriodEnd = m.CurrentPeriodEnd
+	r.ReservedOverageMicrodollars = m.ReservedOverageMicrodollars
+	r.OfferVersion = m.OfferVersion
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -17297,6 +17260,9 @@ func (this *CheckoutRequest) EqualVT(that *CheckoutRequest) bool {
 	if this.BillingAccountId != that.BillingAccountId {
 		return false
 	}
+	if !protobuf_go_lite.IsEqualVT(this.Consent, that.Consent) {
+		return false
+	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
@@ -17328,46 +17294,6 @@ func (this *CheckoutResponse) EqualVT(that *CheckoutResponse) bool {
 
 func (this *CheckoutResponse) EqualMessageVT(thatMsg any) bool {
 	that, ok := thatMsg.(*CheckoutResponse)
-	if !ok {
-		return false
-	}
-	return this.EqualVT(that)
-}
-
-func (this *SwitchIntervalRequest) EqualVT(that *SwitchIntervalRequest) bool {
-	if this == that {
-		return true
-	} else if this == nil || that == nil {
-		return false
-	}
-	if this.BillingInterval != that.BillingInterval {
-		return false
-	}
-	return string(this.unknownFields) == string(that.unknownFields)
-}
-
-func (this *SwitchIntervalRequest) EqualMessageVT(thatMsg any) bool {
-	that, ok := thatMsg.(*SwitchIntervalRequest)
-	if !ok {
-		return false
-	}
-	return this.EqualVT(that)
-}
-
-func (this *SwitchIntervalResponse) EqualVT(that *SwitchIntervalResponse) bool {
-	if this == that {
-		return true
-	} else if this == nil || that == nil {
-		return false
-	}
-	if this.BillingInterval != that.BillingInterval {
-		return false
-	}
-	return string(this.unknownFields) == string(that.unknownFields)
-}
-
-func (this *SwitchIntervalResponse) EqualMessageVT(thatMsg any) bool {
-	that, ok := thatMsg.(*SwitchIntervalResponse)
 	if !ok {
 		return false
 	}
@@ -17473,25 +17399,34 @@ func (this *BillingUsageResponse) EqualVT(that *BillingUsageResponse) bool {
 	if this.ReadOps != that.ReadOps {
 		return false
 	}
-	if this.StorageOverageBytes != that.StorageOverageBytes {
-		return false
-	}
-	if this.StorageOverageMonthlyCostEstimateUsd != that.StorageOverageMonthlyCostEstimateUsd {
-		return false
-	}
-	if this.StorageOverageMonthToDateGbMonths != that.StorageOverageMonthToDateGbMonths {
-		return false
-	}
-	if this.StorageOverageMonthToDateCostEstimateUsd != that.StorageOverageMonthToDateCostEstimateUsd {
-		return false
-	}
-	if this.StorageOverageDeletedGbMonths != that.StorageOverageDeletedGbMonths {
-		return false
-	}
-	if this.StorageOverageDeletedCostEstimateUsd != that.StorageOverageDeletedCostEstimateUsd {
-		return false
-	}
 	if this.UsageMeteredThroughAt != that.UsageMeteredThroughAt {
+		return false
+	}
+	if this.StorageBaselineBytes != that.StorageBaselineBytes {
+		return false
+	}
+	if this.WriteOpsBaseline != that.WriteOpsBaseline {
+		return false
+	}
+	if this.ReadOpsBaseline != that.ReadOpsBaseline {
+		return false
+	}
+	if this.OverageLimitCents != that.OverageLimitCents {
+		return false
+	}
+	if this.AccruedOverageMicrodollars != that.AccruedOverageMicrodollars {
+		return false
+	}
+	if this.CurrentPeriodStart != that.CurrentPeriodStart {
+		return false
+	}
+	if this.CurrentPeriodEnd != that.CurrentPeriodEnd {
+		return false
+	}
+	if this.ReservedOverageMicrodollars != that.ReservedOverageMicrodollars {
+		return false
+	}
+	if this.OfferVersion != that.OfferVersion {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -26697,6 +26632,11 @@ func (x *CheckoutRequest) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("billingAccountId")
 		s.WriteString(x.BillingAccountId)
 	}
+	if x.Consent != nil || s.HasField("consent") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("consent")
+		x.Consent.MarshalProtoJSON(s.WithField("consent"))
+	}
 	s.WriteObjectEnd()
 }
 
@@ -26726,6 +26666,13 @@ func (x *CheckoutRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "billing_account_id", "billingAccountId":
 			s.AddField("billing_account_id")
 			x.BillingAccountId = s.ReadString()
+		case "consent":
+			if s.ReadNil() {
+				x.Consent = nil
+				return
+			}
+			x.Consent = &spacewave.BillingConsent{}
+			x.Consent.UnmarshalProtoJSON(s.WithField("consent", true))
 		}
 	})
 }
@@ -26790,90 +26737,6 @@ func (x *CheckoutResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
 
 // UnmarshalJSON unmarshals the CheckoutResponse from JSON.
 func (x *CheckoutResponse) UnmarshalJSON(b []byte) error {
-	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
-}
-
-// MarshalProtoJSON marshals the SwitchIntervalRequest message to JSON.
-func (x *SwitchIntervalRequest) MarshalProtoJSON(s *json.MarshalState) {
-	if x == nil {
-		s.WriteNil()
-		return
-	}
-	s.WriteObjectStart()
-	var wroteField bool
-	if x.BillingInterval != 0 || s.HasField("billingInterval") {
-		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("billingInterval")
-		x.BillingInterval.MarshalProtoJSON(s)
-	}
-	s.WriteObjectEnd()
-}
-
-// MarshalJSON marshals the SwitchIntervalRequest to JSON.
-func (x *SwitchIntervalRequest) MarshalJSON() ([]byte, error) {
-	return json.DefaultMarshalerConfig.Marshal(x)
-}
-
-// UnmarshalProtoJSON unmarshals the SwitchIntervalRequest message from JSON.
-func (x *SwitchIntervalRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
-	if s.ReadNil() {
-		return
-	}
-	s.ReadObject(func(key string) {
-		switch key {
-		default:
-			s.Skip() // ignore unknown field
-		case "billing_interval", "billingInterval":
-			s.AddField("billing_interval")
-			x.BillingInterval.UnmarshalProtoJSON(s)
-		}
-	})
-}
-
-// UnmarshalJSON unmarshals the SwitchIntervalRequest from JSON.
-func (x *SwitchIntervalRequest) UnmarshalJSON(b []byte) error {
-	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
-}
-
-// MarshalProtoJSON marshals the SwitchIntervalResponse message to JSON.
-func (x *SwitchIntervalResponse) MarshalProtoJSON(s *json.MarshalState) {
-	if x == nil {
-		s.WriteNil()
-		return
-	}
-	s.WriteObjectStart()
-	var wroteField bool
-	if x.BillingInterval != 0 || s.HasField("billingInterval") {
-		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("billingInterval")
-		x.BillingInterval.MarshalProtoJSON(s)
-	}
-	s.WriteObjectEnd()
-}
-
-// MarshalJSON marshals the SwitchIntervalResponse to JSON.
-func (x *SwitchIntervalResponse) MarshalJSON() ([]byte, error) {
-	return json.DefaultMarshalerConfig.Marshal(x)
-}
-
-// UnmarshalProtoJSON unmarshals the SwitchIntervalResponse message from JSON.
-func (x *SwitchIntervalResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
-	if s.ReadNil() {
-		return
-	}
-	s.ReadObject(func(key string) {
-		switch key {
-		default:
-			s.Skip() // ignore unknown field
-		case "billing_interval", "billingInterval":
-			s.AddField("billing_interval")
-			x.BillingInterval.UnmarshalProtoJSON(s)
-		}
-	})
-}
-
-// UnmarshalJSON unmarshals the SwitchIntervalResponse from JSON.
-func (x *SwitchIntervalResponse) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -27086,40 +26949,55 @@ func (x *BillingUsageResponse) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("readOps")
 		s.WriteInt64(x.ReadOps)
 	}
-	if x.StorageOverageBytes != 0 || s.HasField("storageOverageBytes") {
-		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("storageOverageBytes")
-		s.WriteFloat64(x.StorageOverageBytes)
-	}
-	if x.StorageOverageMonthlyCostEstimateUsd != 0 || s.HasField("storageOverageMonthlyCostEstimateUsd") {
-		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("storageOverageMonthlyCostEstimateUsd")
-		s.WriteFloat64(x.StorageOverageMonthlyCostEstimateUsd)
-	}
-	if x.StorageOverageMonthToDateGbMonths != 0 || s.HasField("storageOverageMonthToDateGbMonths") {
-		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("storageOverageMonthToDateGbMonths")
-		s.WriteFloat64(x.StorageOverageMonthToDateGbMonths)
-	}
-	if x.StorageOverageMonthToDateCostEstimateUsd != 0 || s.HasField("storageOverageMonthToDateCostEstimateUsd") {
-		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("storageOverageMonthToDateCostEstimateUsd")
-		s.WriteFloat64(x.StorageOverageMonthToDateCostEstimateUsd)
-	}
-	if x.StorageOverageDeletedGbMonths != 0 || s.HasField("storageOverageDeletedGbMonths") {
-		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("storageOverageDeletedGbMonths")
-		s.WriteFloat64(x.StorageOverageDeletedGbMonths)
-	}
-	if x.StorageOverageDeletedCostEstimateUsd != 0 || s.HasField("storageOverageDeletedCostEstimateUsd") {
-		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("storageOverageDeletedCostEstimateUsd")
-		s.WriteFloat64(x.StorageOverageDeletedCostEstimateUsd)
-	}
 	if x.UsageMeteredThroughAt != 0 || s.HasField("usageMeteredThroughAt") {
 		s.WriteMoreIf(&wroteField)
 		s.WriteObjectField("usageMeteredThroughAt")
 		s.WriteInt64(x.UsageMeteredThroughAt)
+	}
+	if x.StorageBaselineBytes != 0 || s.HasField("storageBaselineBytes") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("storageBaselineBytes")
+		s.WriteFloat64(x.StorageBaselineBytes)
+	}
+	if x.WriteOpsBaseline != 0 || s.HasField("writeOpsBaseline") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("writeOpsBaseline")
+		s.WriteInt64(x.WriteOpsBaseline)
+	}
+	if x.ReadOpsBaseline != 0 || s.HasField("readOpsBaseline") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("readOpsBaseline")
+		s.WriteInt64(x.ReadOpsBaseline)
+	}
+	if x.OverageLimitCents != 0 || s.HasField("overageLimitCents") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("overageLimitCents")
+		s.WriteUint32(x.OverageLimitCents)
+	}
+	if x.AccruedOverageMicrodollars != 0 || s.HasField("accruedOverageMicrodollars") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("accruedOverageMicrodollars")
+		s.WriteInt64(x.AccruedOverageMicrodollars)
+	}
+	if x.CurrentPeriodStart != 0 || s.HasField("currentPeriodStart") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("currentPeriodStart")
+		s.WriteInt64(x.CurrentPeriodStart)
+	}
+	if x.CurrentPeriodEnd != 0 || s.HasField("currentPeriodEnd") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("currentPeriodEnd")
+		s.WriteInt64(x.CurrentPeriodEnd)
+	}
+	if x.ReservedOverageMicrodollars != 0 || s.HasField("reservedOverageMicrodollars") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("reservedOverageMicrodollars")
+		s.WriteInt64(x.ReservedOverageMicrodollars)
+	}
+	if x.OfferVersion != "" || s.HasField("offerVersion") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("offerVersion")
+		s.WriteString(x.OfferVersion)
 	}
 	s.WriteObjectEnd()
 }
@@ -27147,27 +27025,36 @@ func (x *BillingUsageResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "read_ops", "readOps":
 			s.AddField("read_ops")
 			x.ReadOps = s.ReadInt64()
-		case "storage_overage_bytes", "storageOverageBytes":
-			s.AddField("storage_overage_bytes")
-			x.StorageOverageBytes = s.ReadFloat64()
-		case "storage_overage_monthly_cost_estimate_usd", "storageOverageMonthlyCostEstimateUsd":
-			s.AddField("storage_overage_monthly_cost_estimate_usd")
-			x.StorageOverageMonthlyCostEstimateUsd = s.ReadFloat64()
-		case "storage_overage_month_to_date_gb_months", "storageOverageMonthToDateGbMonths":
-			s.AddField("storage_overage_month_to_date_gb_months")
-			x.StorageOverageMonthToDateGbMonths = s.ReadFloat64()
-		case "storage_overage_month_to_date_cost_estimate_usd", "storageOverageMonthToDateCostEstimateUsd":
-			s.AddField("storage_overage_month_to_date_cost_estimate_usd")
-			x.StorageOverageMonthToDateCostEstimateUsd = s.ReadFloat64()
-		case "storage_overage_deleted_gb_months", "storageOverageDeletedGbMonths":
-			s.AddField("storage_overage_deleted_gb_months")
-			x.StorageOverageDeletedGbMonths = s.ReadFloat64()
-		case "storage_overage_deleted_cost_estimate_usd", "storageOverageDeletedCostEstimateUsd":
-			s.AddField("storage_overage_deleted_cost_estimate_usd")
-			x.StorageOverageDeletedCostEstimateUsd = s.ReadFloat64()
 		case "usage_metered_through_at", "usageMeteredThroughAt":
 			s.AddField("usage_metered_through_at")
 			x.UsageMeteredThroughAt = s.ReadInt64()
+		case "storage_baseline_bytes", "storageBaselineBytes":
+			s.AddField("storage_baseline_bytes")
+			x.StorageBaselineBytes = s.ReadFloat64()
+		case "write_ops_baseline", "writeOpsBaseline":
+			s.AddField("write_ops_baseline")
+			x.WriteOpsBaseline = s.ReadInt64()
+		case "read_ops_baseline", "readOpsBaseline":
+			s.AddField("read_ops_baseline")
+			x.ReadOpsBaseline = s.ReadInt64()
+		case "overage_limit_cents", "overageLimitCents":
+			s.AddField("overage_limit_cents")
+			x.OverageLimitCents = s.ReadUint32()
+		case "accrued_overage_microdollars", "accruedOverageMicrodollars":
+			s.AddField("accrued_overage_microdollars")
+			x.AccruedOverageMicrodollars = s.ReadInt64()
+		case "current_period_start", "currentPeriodStart":
+			s.AddField("current_period_start")
+			x.CurrentPeriodStart = s.ReadInt64()
+		case "current_period_end", "currentPeriodEnd":
+			s.AddField("current_period_end")
+			x.CurrentPeriodEnd = s.ReadInt64()
+		case "reserved_overage_microdollars", "reservedOverageMicrodollars":
+			s.AddField("reserved_overage_microdollars")
+			x.ReservedOverageMicrodollars = s.ReadInt64()
+		case "offer_version", "offerVersion":
+			s.AddField("offer_version")
+			x.OfferVersion = s.ReadString()
 		}
 	})
 }
@@ -42365,6 +42252,16 @@ func (m *CheckoutRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.Consent != nil {
+		size, err := m.Consent.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x2a
+	}
 	if len(m.BillingAccountId) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.BillingAccountId)
 		i--
@@ -42431,80 +42328,6 @@ func (m *CheckoutResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.CheckoutUrl)
 		i--
 		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *SwitchIntervalRequest) MarshalVT() (dAtA []byte, err error) {
-	if m == nil {
-		return nil, nil
-	}
-	size := m.SizeVT()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *SwitchIntervalRequest) MarshalToVT(dAtA []byte) (int, error) {
-	size := m.SizeVT()
-	return m.MarshalToSizedBufferVT(dAtA[:size])
-}
-
-func (m *SwitchIntervalRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
-	if m == nil {
-		return 0, nil
-	}
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.unknownFields != nil {
-		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
-	}
-	if m.BillingInterval != 0 {
-		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.BillingInterval))
-		i--
-		dAtA[i] = 0x8
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *SwitchIntervalResponse) MarshalVT() (dAtA []byte, err error) {
-	if m == nil {
-		return nil, nil
-	}
-	size := m.SizeVT()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *SwitchIntervalResponse) MarshalToVT(dAtA []byte) (int, error) {
-	size := m.SizeVT()
-	return m.MarshalToSizedBufferVT(dAtA[:size])
-}
-
-func (m *SwitchIntervalResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
-	if m == nil {
-		return 0, nil
-	}
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.unknownFields != nil {
-		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
-	}
-	if m.BillingInterval != 0 {
-		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.BillingInterval))
-		i--
-		dAtA[i] = 0x8
 	}
 	return len(dAtA) - i, nil
 }
@@ -42689,40 +42512,63 @@ func (m *BillingUsageResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) 
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if len(m.OfferVersion) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.OfferVersion)
+		i--
+		dAtA[i] = 0x1
+		i--
+		dAtA[i] = 0x9a
+	}
+	if m.ReservedOverageMicrodollars != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.ReservedOverageMicrodollars))
+		i--
+		dAtA[i] = 0x1
+		i--
+		dAtA[i] = 0x90
+	}
+	if m.CurrentPeriodEnd != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.CurrentPeriodEnd))
+		i--
+		dAtA[i] = 0x1
+		i--
+		dAtA[i] = 0x88
+	}
+	if m.CurrentPeriodStart != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.CurrentPeriodStart))
+		i--
+		dAtA[i] = 0x1
+		i--
+		dAtA[i] = 0x80
+	}
+	if m.AccruedOverageMicrodollars != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.AccruedOverageMicrodollars))
+		i--
+		dAtA[i] = 0x78
+	}
+	if m.OverageLimitCents != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.OverageLimitCents))
+		i--
+		dAtA[i] = 0x70
+	}
+	if m.ReadOpsBaseline != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.ReadOpsBaseline))
+		i--
+		dAtA[i] = 0x68
+	}
+	if m.WriteOpsBaseline != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.WriteOpsBaseline))
+		i--
+		dAtA[i] = 0x60
+	}
+	if m.StorageBaselineBytes != 0 {
+		i = protobuf_go_lite.EncodeFixed64(dAtA, i, uint64(math.Float64bits(float64(m.StorageBaselineBytes))))
+		i--
+		dAtA[i] = 0x59
+	}
 	if m.UsageMeteredThroughAt != 0 {
 		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.UsageMeteredThroughAt))
 		i--
 		dAtA[i] = 0x50
-	}
-	if m.StorageOverageDeletedCostEstimateUsd != 0 {
-		i = protobuf_go_lite.EncodeFixed64(dAtA, i, uint64(math.Float64bits(float64(m.StorageOverageDeletedCostEstimateUsd))))
-		i--
-		dAtA[i] = 0x49
-	}
-	if m.StorageOverageDeletedGbMonths != 0 {
-		i = protobuf_go_lite.EncodeFixed64(dAtA, i, uint64(math.Float64bits(float64(m.StorageOverageDeletedGbMonths))))
-		i--
-		dAtA[i] = 0x41
-	}
-	if m.StorageOverageMonthToDateCostEstimateUsd != 0 {
-		i = protobuf_go_lite.EncodeFixed64(dAtA, i, uint64(math.Float64bits(float64(m.StorageOverageMonthToDateCostEstimateUsd))))
-		i--
-		dAtA[i] = 0x39
-	}
-	if m.StorageOverageMonthToDateGbMonths != 0 {
-		i = protobuf_go_lite.EncodeFixed64(dAtA, i, uint64(math.Float64bits(float64(m.StorageOverageMonthToDateGbMonths))))
-		i--
-		dAtA[i] = 0x31
-	}
-	if m.StorageOverageMonthlyCostEstimateUsd != 0 {
-		i = protobuf_go_lite.EncodeFixed64(dAtA, i, uint64(math.Float64bits(float64(m.StorageOverageMonthlyCostEstimateUsd))))
-		i--
-		dAtA[i] = 0x29
-	}
-	if m.StorageOverageBytes != 0 {
-		i = protobuf_go_lite.EncodeFixed64(dAtA, i, uint64(math.Float64bits(float64(m.StorageOverageBytes))))
-		i--
-		dAtA[i] = 0x21
 	}
 	if m.ReadOps != 0 {
 		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.ReadOps))
@@ -53918,6 +53764,10 @@ func (m *CheckoutRequest) SizeVT() (n int) {
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.CancelUrl)
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.BillingInterval)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.BillingAccountId)
+	if m.Consent != nil {
+		l = m.Consent.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -53931,28 +53781,6 @@ func (m *CheckoutResponse) SizeVT() (n int) {
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.CheckoutUrl)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.WsTicket)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Status)
-	n += len(m.unknownFields)
-	return n
-}
-
-func (m *SwitchIntervalRequest) SizeVT() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	n += protobuf_go_lite.SizeVarintNonZero(1, m.BillingInterval)
-	n += len(m.unknownFields)
-	return n
-}
-
-func (m *SwitchIntervalResponse) SizeVT() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	n += protobuf_go_lite.SizeVarintNonZero(1, m.BillingInterval)
 	n += len(m.unknownFields)
 	return n
 }
@@ -54007,13 +53835,16 @@ func (m *BillingUsageResponse) SizeVT() (n int) {
 	n += protobuf_go_lite.SizeFixed64NonZero(1, m.StorageBytes)
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.WriteOps)
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.ReadOps)
-	n += protobuf_go_lite.SizeFixed64NonZero(1, m.StorageOverageBytes)
-	n += protobuf_go_lite.SizeFixed64NonZero(1, m.StorageOverageMonthlyCostEstimateUsd)
-	n += protobuf_go_lite.SizeFixed64NonZero(1, m.StorageOverageMonthToDateGbMonths)
-	n += protobuf_go_lite.SizeFixed64NonZero(1, m.StorageOverageMonthToDateCostEstimateUsd)
-	n += protobuf_go_lite.SizeFixed64NonZero(1, m.StorageOverageDeletedGbMonths)
-	n += protobuf_go_lite.SizeFixed64NonZero(1, m.StorageOverageDeletedCostEstimateUsd)
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.UsageMeteredThroughAt)
+	n += protobuf_go_lite.SizeFixed64NonZero(1, m.StorageBaselineBytes)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.WriteOpsBaseline)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.ReadOpsBaseline)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.OverageLimitCents)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.AccruedOverageMicrodollars)
+	n += protobuf_go_lite.SizeVarintNonZero(2, m.CurrentPeriodStart)
+	n += protobuf_go_lite.SizeVarintNonZero(2, m.CurrentPeriodEnd)
+	n += protobuf_go_lite.SizeVarintNonZero(2, m.ReservedOverageMicrodollars)
+	n += protobuf_go_lite.SizeStringNonEmpty(2, m.OfferVersion)
 	n += len(m.unknownFields)
 	return n
 }
@@ -58472,6 +58303,10 @@ func (x *CheckoutRequest) MarshalProtoText() string {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "billing_account_id")
 		protobuf_go_lite.TextWriteString(&sb, x.BillingAccountId)
 	}
+	if x.Consent != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "consent")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Consent)
+	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
@@ -58498,34 +58333,6 @@ func (x *CheckoutResponse) MarshalProtoText() string {
 }
 
 func (x *CheckoutResponse) String() string {
-	return x.MarshalProtoText()
-}
-
-func (x *SwitchIntervalRequest) MarshalProtoText() string {
-	var sb protobuf_go_lite.TextBuilder
-	initialLen := protobuf_go_lite.TextStartMessage(&sb, "SwitchIntervalRequest")
-	if x.BillingInterval != 0 {
-		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "billing_interval")
-		protobuf_go_lite.TextWriteStringer(&sb, spacewave.BillingInterval(x.BillingInterval))
-	}
-	return protobuf_go_lite.TextFinishMessage(&sb)
-}
-
-func (x *SwitchIntervalRequest) String() string {
-	return x.MarshalProtoText()
-}
-
-func (x *SwitchIntervalResponse) MarshalProtoText() string {
-	var sb protobuf_go_lite.TextBuilder
-	initialLen := protobuf_go_lite.TextStartMessage(&sb, "SwitchIntervalResponse")
-	if x.BillingInterval != 0 {
-		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "billing_interval")
-		protobuf_go_lite.TextWriteStringer(&sb, spacewave.BillingInterval(x.BillingInterval))
-	}
-	return protobuf_go_lite.TextFinishMessage(&sb)
-}
-
-func (x *SwitchIntervalResponse) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -58618,33 +58425,45 @@ func (x *BillingUsageResponse) MarshalProtoText() string {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "read_ops")
 		protobuf_go_lite.TextWriteInt(&sb, x.ReadOps)
 	}
-	if x.StorageOverageBytes != 0 {
-		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "storage_overage_bytes")
-		protobuf_go_lite.TextWriteFloat64(&sb, x.StorageOverageBytes)
-	}
-	if x.StorageOverageMonthlyCostEstimateUsd != 0 {
-		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "storage_overage_monthly_cost_estimate_usd")
-		protobuf_go_lite.TextWriteFloat64(&sb, x.StorageOverageMonthlyCostEstimateUsd)
-	}
-	if x.StorageOverageMonthToDateGbMonths != 0 {
-		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "storage_overage_month_to_date_gb_months")
-		protobuf_go_lite.TextWriteFloat64(&sb, x.StorageOverageMonthToDateGbMonths)
-	}
-	if x.StorageOverageMonthToDateCostEstimateUsd != 0 {
-		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "storage_overage_month_to_date_cost_estimate_usd")
-		protobuf_go_lite.TextWriteFloat64(&sb, x.StorageOverageMonthToDateCostEstimateUsd)
-	}
-	if x.StorageOverageDeletedGbMonths != 0 {
-		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "storage_overage_deleted_gb_months")
-		protobuf_go_lite.TextWriteFloat64(&sb, x.StorageOverageDeletedGbMonths)
-	}
-	if x.StorageOverageDeletedCostEstimateUsd != 0 {
-		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "storage_overage_deleted_cost_estimate_usd")
-		protobuf_go_lite.TextWriteFloat64(&sb, x.StorageOverageDeletedCostEstimateUsd)
-	}
 	if x.UsageMeteredThroughAt != 0 {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "usage_metered_through_at")
 		protobuf_go_lite.TextWriteInt(&sb, x.UsageMeteredThroughAt)
+	}
+	if x.StorageBaselineBytes != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "storage_baseline_bytes")
+		protobuf_go_lite.TextWriteFloat64(&sb, x.StorageBaselineBytes)
+	}
+	if x.WriteOpsBaseline != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "write_ops_baseline")
+		protobuf_go_lite.TextWriteInt(&sb, x.WriteOpsBaseline)
+	}
+	if x.ReadOpsBaseline != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "read_ops_baseline")
+		protobuf_go_lite.TextWriteInt(&sb, x.ReadOpsBaseline)
+	}
+	if x.OverageLimitCents != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "overage_limit_cents")
+		protobuf_go_lite.TextWriteUint(&sb, x.OverageLimitCents)
+	}
+	if x.AccruedOverageMicrodollars != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "accrued_overage_microdollars")
+		protobuf_go_lite.TextWriteInt(&sb, x.AccruedOverageMicrodollars)
+	}
+	if x.CurrentPeriodStart != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "current_period_start")
+		protobuf_go_lite.TextWriteInt(&sb, x.CurrentPeriodStart)
+	}
+	if x.CurrentPeriodEnd != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "current_period_end")
+		protobuf_go_lite.TextWriteInt(&sb, x.CurrentPeriodEnd)
+	}
+	if x.ReservedOverageMicrodollars != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "reserved_overage_microdollars")
+		protobuf_go_lite.TextWriteInt(&sb, x.ReservedOverageMicrodollars)
+	}
+	if x.OfferVersion != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "offer_version")
+		protobuf_go_lite.TextWriteString(&sb, x.OfferVersion)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -67437,6 +67256,21 @@ func (m *CheckoutRequest) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.BillingAccountId = v
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Consent", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Consent == nil {
+				m.Consent = &spacewave.BillingConsent{}
+			}
+			if err := m.Consent.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
@@ -67510,114 +67344,6 @@ func (m *CheckoutResponse) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.Status = v
-		default:
-			iNdEx = preIndex
-			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return protobuf_go_lite.ErrInvalidLength
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-
-func (m *SwitchIntervalRequest) UnmarshalVT(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	var err error
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
-		if err != nil {
-			return err
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: SwitchIntervalRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: SwitchIntervalRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field BillingInterval", wireType)
-			}
-			m.BillingInterval = 0
-			var _v uint64
-			_v, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
-			m.BillingInterval = spacewave.BillingInterval(_v)
-			if err != nil {
-				return err
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return protobuf_go_lite.ErrInvalidLength
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-
-func (m *SwitchIntervalResponse) UnmarshalVT(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	var err error
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
-		if err != nil {
-			return err
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: SwitchIntervalResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: SwitchIntervalResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field BillingInterval", wireType)
-			}
-			m.BillingInterval = 0
-			var _v uint64
-			_v, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
-			m.BillingInterval = spacewave.BillingInterval(_v)
-			if err != nil {
-				return err
-			}
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
@@ -67927,78 +67653,6 @@ func (m *BillingUsageResponse) UnmarshalVT(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-		case 4:
-			if wireType != 1 {
-				return fmt.Errorf("proto: wrong wireType = %d for field StorageOverageBytes", wireType)
-			}
-			var v uint64
-			var _v64 uint64
-			_v64, iNdEx, err = protobuf_go_lite.DecodeFixed64(dAtA, iNdEx)
-			if err != nil {
-				return err
-			}
-			v = uint64(_v64)
-			m.StorageOverageBytes = float64(math.Float64frombits(v))
-		case 5:
-			if wireType != 1 {
-				return fmt.Errorf("proto: wrong wireType = %d for field StorageOverageMonthlyCostEstimateUsd", wireType)
-			}
-			var v uint64
-			var _v64 uint64
-			_v64, iNdEx, err = protobuf_go_lite.DecodeFixed64(dAtA, iNdEx)
-			if err != nil {
-				return err
-			}
-			v = uint64(_v64)
-			m.StorageOverageMonthlyCostEstimateUsd = float64(math.Float64frombits(v))
-		case 6:
-			if wireType != 1 {
-				return fmt.Errorf("proto: wrong wireType = %d for field StorageOverageMonthToDateGbMonths", wireType)
-			}
-			var v uint64
-			var _v64 uint64
-			_v64, iNdEx, err = protobuf_go_lite.DecodeFixed64(dAtA, iNdEx)
-			if err != nil {
-				return err
-			}
-			v = uint64(_v64)
-			m.StorageOverageMonthToDateGbMonths = float64(math.Float64frombits(v))
-		case 7:
-			if wireType != 1 {
-				return fmt.Errorf("proto: wrong wireType = %d for field StorageOverageMonthToDateCostEstimateUsd", wireType)
-			}
-			var v uint64
-			var _v64 uint64
-			_v64, iNdEx, err = protobuf_go_lite.DecodeFixed64(dAtA, iNdEx)
-			if err != nil {
-				return err
-			}
-			v = uint64(_v64)
-			m.StorageOverageMonthToDateCostEstimateUsd = float64(math.Float64frombits(v))
-		case 8:
-			if wireType != 1 {
-				return fmt.Errorf("proto: wrong wireType = %d for field StorageOverageDeletedGbMonths", wireType)
-			}
-			var v uint64
-			var _v64 uint64
-			_v64, iNdEx, err = protobuf_go_lite.DecodeFixed64(dAtA, iNdEx)
-			if err != nil {
-				return err
-			}
-			v = uint64(_v64)
-			m.StorageOverageDeletedGbMonths = float64(math.Float64frombits(v))
-		case 9:
-			if wireType != 1 {
-				return fmt.Errorf("proto: wrong wireType = %d for field StorageOverageDeletedCostEstimateUsd", wireType)
-			}
-			var v uint64
-			var _v64 uint64
-			_v64, iNdEx, err = protobuf_go_lite.DecodeFixed64(dAtA, iNdEx)
-			if err != nil {
-				return err
-			}
-			v = uint64(_v64)
-			m.StorageOverageDeletedCostEstimateUsd = float64(math.Float64frombits(v))
 		case 10:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field UsageMeteredThroughAt", wireType)
@@ -68008,6 +67662,91 @@ func (m *BillingUsageResponse) UnmarshalVT(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
+		case 11:
+			if wireType != 1 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StorageBaselineBytes", wireType)
+			}
+			var v uint64
+			var _v64 uint64
+			_v64, iNdEx, err = protobuf_go_lite.DecodeFixed64(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			v = uint64(_v64)
+			m.StorageBaselineBytes = float64(math.Float64frombits(v))
+		case 12:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field WriteOpsBaseline", wireType)
+			}
+			m.WriteOpsBaseline = 0
+			m.WriteOpsBaseline, iNdEx, err = protobuf_go_lite.DecodeVarintInt64(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 13:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ReadOpsBaseline", wireType)
+			}
+			m.ReadOpsBaseline = 0
+			m.ReadOpsBaseline, iNdEx, err = protobuf_go_lite.DecodeVarintInt64(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 14:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OverageLimitCents", wireType)
+			}
+			m.OverageLimitCents = 0
+			m.OverageLimitCents, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 15:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AccruedOverageMicrodollars", wireType)
+			}
+			m.AccruedOverageMicrodollars = 0
+			m.AccruedOverageMicrodollars, iNdEx, err = protobuf_go_lite.DecodeVarintInt64(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 16:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CurrentPeriodStart", wireType)
+			}
+			m.CurrentPeriodStart = 0
+			m.CurrentPeriodStart, iNdEx, err = protobuf_go_lite.DecodeVarintInt64(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 17:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CurrentPeriodEnd", wireType)
+			}
+			m.CurrentPeriodEnd = 0
+			m.CurrentPeriodEnd, iNdEx, err = protobuf_go_lite.DecodeVarintInt64(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 18:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ReservedOverageMicrodollars", wireType)
+			}
+			m.ReservedOverageMicrodollars = 0
+			m.ReservedOverageMicrodollars, iNdEx, err = protobuf_go_lite.DecodeVarintInt64(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 19:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OfferVersion", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.OfferVersion = v
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

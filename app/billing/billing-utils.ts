@@ -10,7 +10,7 @@ export function statusLabel(status?: BillingStatus): string {
     case BillingStatus.BillingStatus_ACTIVE:
       return 'Active'
     case BillingStatus.BillingStatus_TRIALING:
-      return 'Trial'
+      return 'No subscription'
     case BillingStatus.BillingStatus_PAST_DUE:
     case BillingStatus.BillingStatus_PAST_DUE_READONLY:
       return 'Past due'
@@ -32,19 +32,14 @@ export function intervalLabel(interval?: BillingInterval): string {
   switch (interval) {
     case BillingInterval.BillingInterval_MONTH:
       return 'Monthly'
-    case BillingInterval.BillingInterval_YEAR:
-      return 'Annual'
     default:
       return ''
   }
 }
 
-// isStatusActive returns true for active or trialing statuses.
+// isStatusActive returns true for paid subscriptions.
 export function isStatusActive(status?: BillingStatus): boolean {
-  return (
-    status === BillingStatus.BillingStatus_ACTIVE ||
-    status === BillingStatus.BillingStatus_TRIALING
-  )
+  return status === BillingStatus.BillingStatus_ACTIVE
 }
 
 // isStatusPastDue returns true for past-due statuses.
@@ -108,7 +103,6 @@ export function lifecycleStateLabel(state?: AccountLifecycleState): string {
 export function subscriptionStatusBadgeColor(status?: BillingStatus): string {
   switch (status) {
     case BillingStatus.BillingStatus_ACTIVE:
-    case BillingStatus.BillingStatus_TRIALING:
       return 'bg-green-500/15 text-green-500'
     case BillingStatus.BillingStatus_PAST_DUE:
     case BillingStatus.BillingStatus_PAST_DUE_READONLY:

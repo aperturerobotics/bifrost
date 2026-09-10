@@ -66,39 +66,19 @@ func TestShouldEmitOnboardingStatusFirstEmissionGate(t *testing.T) {
 	}
 }
 
-func TestBuildBillingUsageInfoIncludesStorageOverageFields(t *testing.T) {
+// TestBuildBillingUsageInfoPreservesSpendingConsent keeps exact ledger units and
+// the payer's subscription boundary intact through the generated SDK projection.
+func TestBuildBillingUsageInfoPreservesSpendingConsent(t *testing.T) {
 	usage := BuildBillingUsageInfo(&api.BillingUsageResponse{
-		StorageBytes:                             123,
-		WriteOps:                                 4,
-		ReadOps:                                  5,
-		StorageOverageBytes:                      23,
-		StorageOverageMonthlyCostEstimateUsd:     0.46,
-		StorageOverageMonthToDateGbMonths:        1.25,
-		StorageOverageMonthToDateCostEstimateUsd: 0.025,
-		StorageOverageDeletedGbMonths:            0.5,
-		StorageOverageDeletedCostEstimateUsd:     0.01,
-		UsageMeteredThroughAt:                    1776900000000,
+		StorageBytes: 123, StorageBaselineBytes: 107374182400,
+		WriteOps: 50001, WriteOpsBaseline: 50000, ReadOps: 250000, ReadOpsBaseline: 250000,
+		OverageLimitCents: 500, AccruedOverageMicrodollars: 20, ReservedOverageMicrodollars: 10,
+		CurrentPeriodStart: 1776900000000, CurrentPeriodEnd: 1779492000000, OfferVersion: "cloud-monthly-v1",
 	})
-
-	if usage.GetStorageOverageBytes() != 23 {
-		t.Fatalf("expected current storage overage bytes, got %+v", usage)
+	if usage.GetAccruedOverageMicrodollars() != 20 || usage.GetOverageLimitCents() != 500 || usage.GetReservedOverageMicrodollars() != 10 {
+		t.Fatalf("spending projection lost exact ledger units: %+v", usage)
 	}
-	if usage.GetStorageOverageMonthlyCostEstimateUsd() != 0.46 {
-		t.Fatalf("expected monthly cost estimate, got %+v", usage)
-	}
-	if usage.GetStorageOverageMonthToDateGbMonths() != 1.25 {
-		t.Fatalf("expected month-to-date GB-months, got %+v", usage)
-	}
-	if usage.GetStorageOverageMonthToDateCostEstimateUsd() != 0.025 {
-		t.Fatalf("expected month-to-date cost, got %+v", usage)
-	}
-	if usage.GetStorageOverageDeletedGbMonths() != 0.5 {
-		t.Fatalf("expected deleted-data GB-months, got %+v", usage)
-	}
-	if usage.GetStorageOverageDeletedCostEstimateUsd() != 0.01 {
-		t.Fatalf("expected deleted-data cost, got %+v", usage)
-	}
-	if usage.GetUsageMeteredThroughAt() != 1776900000000 {
-		t.Fatalf("expected usage freshness timestamp, got %+v", usage)
+	if usage.GetCurrentPeriodStart() != 1776900000000 || usage.GetCurrentPeriodEnd() != 1779492000000 || usage.GetWriteOpsBaseline() != 50000 {
+		t.Fatalf("spending projection lost its period or allowance: %+v", usage)
 	}
 }

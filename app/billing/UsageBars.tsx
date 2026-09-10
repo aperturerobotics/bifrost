@@ -1,17 +1,14 @@
-import type { ReactNode } from 'react'
-
+import { useState, type ReactNode } from 'react'
 import { cn } from '@s4wave/web/style/utils.js'
 import { formatBytes } from '@s4wave/web/transform/TransformConfigDisplay.js'
+import { SessionContext } from '@s4wave/web/contexts/contexts.js'
+import { useBillingConsent } from '../provider/spacewave/useBillingConsent.js'
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@s4wave/web/ui/tooltip.js'
-
-import { OVERAGE_STORAGE_PER_GB } from '../provider/spacewave/pricing.js'
+  CLOUD_OFFER,
+  OVERAGE_EXPLANATION,
+} from '../provider/spacewave/pricing.js'
 import { useBillingStateContext } from './BillingStateProvider.js'
 
-const BYTES_PER_GB = 1024 * 1024 * 1024
 const SOFT_USAGE_ALERT_RATIO = 0.8
 
 type UsageAlert = {
@@ -53,6 +50,10 @@ function usageAlert(
 // UsageBars shows storage, write ops, and read ops progress bars.
 export function UsageBars(props: { actions?: ReactNode }) {
   const billingState = useBillingStateContext()
+  const session = SessionContext.useContext().value
+  const { requestConsent, consentDialog } = useBillingConsent()
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const usage = billingState.response?.usage
   if (!usage) return null
 
@@ -62,16 +63,29 @@ export function UsageBars(props: { actions?: ReactNode }) {
   const writeBaseline = Number(usage.writeOpsBaseline ?? 1n)
   const readOps = Number(usage.readOps ?? 0n)
   const readBaseline = Number(usage.readOpsBaseline ?? 1n)
-  const extraStorageBytes =
-    usage.storageOverageBytes ?? Math.max(storageUsed - storageBaseline, 0)
-  const extraStorageGB = extraStorageBytes / BYTES_PER_GB
-  const extraStorageCost =
-    usage.storageOverageMonthlyCostEstimateUsd ??
-    extraStorageGB * OVERAGE_STORAGE_PER_GB
-  const monthToDateGbMonths = usage.storageOverageMonthToDateGbMonths ?? 0
-  const monthToDateCost = usage.storageOverageMonthToDateCostEstimateUsd ?? 0
-  const deletedGbMonths = usage.storageOverageDeletedGbMonths ?? 0
-  const deletedCost = usage.storageOverageDeletedCostEstimateUsd ?? 0
+  const overageLimit = (usage.overageLimitCents ?? 0) / 100
+  const accrued = Number(usage.accruedOverageMicrodollars ?? 0n) / 1_000_000
+  const reserved = Number(usage.reservedOverageMicrodollars ?? 0n) / 1_000_000
+  const periodStart = Number(usage.currentPeriodStart ?? 0n)
+  const periodEnd = Number(usage.currentPeriodEnd ?? 0n)
+
+  async function changeLimit() {
+    if (!session || saving) return
+    const consent = await requestConsent(usage?.overageLimitCents ?? 0, true)
+    if (!consent) return
+    setSaving(true)
+    setError(null)
+    try {
+      await session.spacewave.setBillingSpendingLimit(
+        consent,
+        billingState.billingAccountId,
+      )
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setSaving(false)
+    }
+  }
   const meteredThroughAt = Number(usage.usageMeteredThroughAt ?? 0n)
   const softAlerts = [
     usageAlert('Storage', storageUsed, storageBaseline),
@@ -81,6 +95,7 @@ export function UsageBars(props: { actions?: ReactNode }) {
 
   return (
     <div className="space-y-3">
+      {consentDialog}
       <div className="flex items-center justify-between gap-2">
         <div className="text-foreground-alt/60 text-xs font-medium tracking-wider uppercase">
           Usage
@@ -114,41 +129,6 @@ export function UsageBars(props: { actions?: ReactNode }) {
           formatValue={formatBytes}
           barClassName="bg-blue-500"
         />
-        {extraStorageBytes > 0 && (
-          <div className="rounded-md border border-blue-400/10 bg-blue-400/5 px-2.5 py-1.5 text-xs">
-            <div className="flex items-center justify-between gap-2">
-              <div className="text-foreground-alt/60 flex min-w-0 items-center gap-1.5">
-                <span className="size-1 shrink-0 rounded-full bg-blue-400/80" />
-                <span>Extra storage</span>
-              </div>
-              <div className="text-foreground-alt/50 text-right">
-                <span className="text-foreground">
-                  {formatBytes(extraStorageBytes)}
-                </span>{' '}
-                @{' '}
-                <span className="text-foreground">
-                  ${OVERAGE_STORAGE_PER_GB.toFixed(2)}
-                </span>{' '}
-                per GB/mo ={' '}
-                <span className="text-foreground font-medium">
-                  {formatCurrency(extraStorageCost)}/mo
-                </span>
-              </div>
-            </div>
-            <UsageCostLine
-              label="Month-to-date overage"
-              tooltip="Accrued storage overage for this billing period so far. If usage drops later, future accrual slows or stops, but already accrued usage remains part of this period."
-              value={`${formatGbMonths(monthToDateGbMonths)} = ${formatCurrency(monthToDateCost)} estimated`}
-            />
-            {deletedCost > 0 && (
-              <UsageCostLine
-                label="Already-deleted data"
-                tooltip="Additional storage overage already accrued from data that is no longer stored."
-                value={`${formatGbMonths(deletedGbMonths)} = +${formatCurrency(deletedCost)} estimated`}
-              />
-            )}
-          </div>
-        )}
       </div>
       <UsageBar
         label="Write Ops"
@@ -162,42 +142,62 @@ export function UsageBars(props: { actions?: ReactNode }) {
         baseline={readBaseline}
         formatValue={formatCount}
       />
+      <div className="text-foreground-alt space-y-2 rounded border p-3 text-xs">
+        <div>
+          Extra usage:{' '}
+          {overageLimit
+            ? `${formatCurrency(overageLimit)} monthly maximum`
+            : 'off'}
+          . Service maximum:{' '}
+          {formatCurrency(CLOUD_OFFER.monthlyPriceCents / 100 + overageLimit)}{' '}
+          before tax.
+        </div>
+        <div>
+          Accrued: {formatCurrency(accrued)} · Reserved:{' '}
+          {formatCurrency(reserved)} · Available:{' '}
+          {formatCurrency(Math.max(0, overageLimit - accrued - reserved))}
+        </div>
+        {periodEnd > 0 && (
+          <div>
+            Subscription period: {new Date(periodStart).toLocaleDateString()} –{' '}
+            {new Date(periodEnd).toLocaleDateString()}. Allowances reset{' '}
+            {new Date(periodEnd).toLocaleString()}.
+          </div>
+        )}
+        <p>{OVERAGE_EXPLANATION}</p>
+        <p>
+          A cloud write is a successful sync upload or billed cloud mutation.
+          Many edits can share one upload. Peer-only traffic and cached reads do
+          not consume cloud operation allowances. One GiB is 1,073,741,824
+          bytes.
+        </p>
+        {accrued + reserved > overageLimit && (
+          <p>
+            Previously accrued charges and reserved work remain payable. Further
+            extra usage is paused.
+          </p>
+        )}
+        {billingState.selfServiceAllowed && (
+          <button
+            className="text-brand underline disabled:opacity-50"
+            disabled={saving || !session}
+            onClick={() => void changeLimit()}
+          >
+            {saving ? 'Saving…' : 'Change extra-usage maximum'}
+          </button>
+        )}
+        {error && (
+          <p className="text-destructive" role="alert">
+            {error}
+          </p>
+        )}
+      </div>
     </div>
   )
-}
-
-function formatGbMonths(value: number): string {
-  if (value > 0 && value < 0.001) return '<0.001 GB-months'
-  return `${value.toFixed(3)} GB-months`
 }
 
 function formatMeteredThrough(value: number): string {
   return `${new Date(value).toISOString().replace('T', ' ').slice(0, 16)} UTC`
-}
-
-function UsageCostLine(props: {
-  label: string
-  tooltip: string
-  value: string
-}) {
-  return (
-    <div className="border-foreground/5 mt-1.5 flex items-center justify-between gap-2 border-t pt-1.5">
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            type="button"
-            className="text-foreground-alt/55 cursor-help underline decoration-dotted underline-offset-2"
-          >
-            {props.label}
-          </button>
-        </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-xs">
-          {props.tooltip}
-        </TooltipContent>
-      </Tooltip>
-      <span className="text-foreground-alt/50 text-right">{props.value}</span>
-    </div>
-  )
 }
 
 function UsageBar(props: {

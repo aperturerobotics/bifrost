@@ -676,6 +676,8 @@ message CheckoutRequest {
   // BillingAccountId selects a specific billing account to check out. Empty
   // falls back to the caller's single managed BA (legacy default).
   string billing_account_id = 4;
+  // Consent records the terms affirmatively accepted before checkout.
+  .s4wave.provider.spacewave.BillingConsent consent = 5;
 }
 
 // CheckoutResponse is the response body for POST /billing/checkout.
@@ -686,18 +688,6 @@ message CheckoutResponse {
   string ws_ticket = 2;
   // Status is the checkout attempt status ("pending", "completed", etc.).
   string status = 3;
-}
-
-// SwitchIntervalRequest is the request body for POST /billing/:id/switch-interval.
-message SwitchIntervalRequest {
-  // BillingInterval is the new billing interval.
-  .s4wave.provider.spacewave.BillingInterval billing_interval = 1;
-}
-
-// SwitchIntervalResponse is the response body for POST /billing/:id/switch-interval.
-message SwitchIntervalResponse {
-  // BillingInterval is the billing interval after the switch succeeds.
-  .s4wave.provider.spacewave.BillingInterval billing_interval = 1;
 }
 
 // BillingPortalRequest is the request body for POST /billing/:id/portal.
@@ -772,26 +762,28 @@ message BillingUsageResponse {
   int64 write_ops = 2;
   // ReadOps is the number of read operations in the current period.
   int64 read_ops = 3;
-  // StorageOverageBytes is current storage beyond the included baseline.
-  double storage_overage_bytes = 4;
-  // StorageOverageMonthlyCostEstimateUsd is the estimated monthly cost for
-  // current storage overage if held for a full month.
-  double storage_overage_monthly_cost_estimate_usd = 5;
-  // StorageOverageMonthToDateGbMonths is accrued storage overage for the
-  // current billing period in GB-months.
-  double storage_overage_month_to_date_gb_months = 6;
-  // StorageOverageMonthToDateCostEstimateUsd is the estimated cost for accrued
-  // storage overage in the current billing period.
-  double storage_overage_month_to_date_cost_estimate_usd = 7;
-  // StorageOverageDeletedGbMonths is the accrued overage attributable to data
-  // that is no longer resident.
-  double storage_overage_deleted_gb_months = 8;
-  // StorageOverageDeletedCostEstimateUsd is the estimated cost for deleted-data
-  // storage overage in the current billing period.
-  double storage_overage_deleted_cost_estimate_usd = 9;
+  reserved 4 to 9;
   // UsageMeteredThroughAt is the Spacewave usage ledger freshness timestamp
   // in Unix epoch milliseconds.
   int64 usage_metered_through_at = 10;
+  // StorageBaselineBytes is the retained-content capacity.
+  double storage_baseline_bytes = 11;
+  // WriteOpsBaseline is the included subscription-period write allowance.
+  int64 write_ops_baseline = 12;
+  // ReadOpsBaseline is the included subscription-period uncached read allowance.
+  int64 read_ops_baseline = 13;
+  // OverageLimitCents is the customer's recurring extra-spending maximum.
+  uint32 overage_limit_cents = 14;
+  // AccruedOverageMicrodollars is the exact accepted operation charge.
+  int64 accrued_overage_microdollars = 15;
+  // CurrentPeriodStart is the subscription-period start in Unix milliseconds.
+  int64 current_period_start = 16;
+  // CurrentPeriodEnd is the allowance reset in Unix milliseconds.
+  int64 current_period_end = 17;
+  // ReservedOverageMicrodollars is the additional maximum awaiting work results.
+  int64 reserved_overage_microdollars = 18;
+  // OfferVersion identifies the applied offer.
+  string offer_version = 19;
 }
 
 // CheckoutStatusMessage is a JSON message from the checkout status WebSocket.

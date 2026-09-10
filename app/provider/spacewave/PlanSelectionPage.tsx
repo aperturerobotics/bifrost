@@ -1,3 +1,4 @@
+import type { BillingConsent } from '@s4wave/sdk/provider/spacewave/spacewave.pb.js'
 import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react'
 import {
   LuCheck,
@@ -12,9 +13,10 @@ import {
 import { cn } from '@s4wave/web/style/utils.js'
 import {
   PLAN_PRICE_MONTHLY,
-  OVERAGE_STORAGE_PER_GB,
-  OVERAGE_WRITE_PER_MILLION,
-  OVERAGE_READ_PER_MILLION,
+  OVERAGE_EXPLANATION,
+  STORAGE_BASELINE_GB,
+  WRITE_OPS_BASELINE_DISPLAY,
+  READ_OPS_BASELINE_DISPLAY,
 } from '@s4wave/app/provider/spacewave/pricing.js'
 import AnimatedLogo from '@s4wave/app/landing/AnimatedLogo.js'
 import { useNavigate, usePath } from '@s4wave/web/router/router.js'
@@ -109,8 +111,11 @@ export function checkoutReducer(
 const CLOUD_FEATURES = [
   { icon: LuGlobe, text: 'Cloud sync and backup' },
   { icon: LuUsers, text: 'Shared Spaces with collaborators' },
-  { icon: LuServer, text: '100 GB cloud storage included' },
-  { icon: LuZap, text: '1M writes / 10M cloud reads per month' },
+  { icon: LuServer, text: `${STORAGE_BASELINE_GB} GiB cloud storage included` },
+  {
+    icon: LuZap,
+    text: `${WRITE_OPS_BASELINE_DISPLAY} writes / ${READ_OPS_BASELINE_DISPLAY} uncached reads per month`,
+  },
   { icon: LuGlobe, text: 'Always-on sync across all devices' },
   { icon: LuShield, text: 'End-to-end encrypted' },
 ]
@@ -157,7 +162,7 @@ const PLAN_FAQ: { question: string; answer: React.ReactNode }[] = [
   },
   {
     question: 'What if I go over the Cloud baseline?',
-    answer: `Overages at very low prices: $${OVERAGE_STORAGE_PER_GB.toFixed(2)}/GB-month storage, $${OVERAGE_WRITE_PER_MILLION.toFixed(2)}/million writes, $${OVERAGE_READ_PER_MILLION.toFixed(2)}/million cloud reads. You can monitor your usage anytime. Limit resets every month.`,
+    answer: OVERAGE_EXPLANATION,
   },
   {
     question: 'Can I cancel my subscription?',
@@ -186,6 +191,7 @@ export function PlanSelectionPage({
   checkoutResult?: 'success' | 'cancel'
   startCloud?: boolean
 }) {
+  const checkoutConsent = useRef<BillingConsent | undefined>(undefined)
   const sessionResource = SessionContext.useContext()
   const session = useResourceValue(sessionResource)
   const navigate = useNavigate()
@@ -241,67 +247,61 @@ export function PlanSelectionPage({
   }, [checkoutStatus, navigate, path])
 
   // Cloud path: create or resume checkout in a single atomic call.
-  const handleStartCloud = useCallback(async () => {
-    if (!session || !checkoutResultBaseUrl) return
-    dispatch({ type: 'start_checkout' })
-    if (retryTimerRef.current) clearTimeout(retryTimerRef.current)
-    try {
-      const sw = session.spacewave
+  const handleStartCloud = useCallback(
+    async (consent?: BillingConsent) => {
+      if (!session || !checkoutResultBaseUrl) return
+      consent ??= checkoutConsent.current
+      if (!consent) return
+      checkoutConsent.current = consent
+      dispatch({ type: 'start_checkout' })
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current)
+      try {
+        const sw = session.spacewave
 
-      const successUrl = checkoutResultBaseUrl + '/checkout/success'
-      const cancelUrl = checkoutResultBaseUrl + '/checkout/cancel'
+        const successUrl = checkoutResultBaseUrl + '/checkout/success'
+        const cancelUrl = checkoutResultBaseUrl + '/checkout/cancel'
 
-      const resp = await sw.createCheckoutSession({ successUrl, cancelUrl })
-
-      if (resp.status === CheckoutStatus.CheckoutStatus_COMPLETED) {
-        navigate({
-          path: path.replace(/\/plan(\/.*)?$/, ''),
+        const resp = await sw.createCheckoutSession({
+          successUrl,
+          cancelUrl,
+          consent,
         })
-        return
-      }
 
-      const url = resp.checkoutUrl ?? ''
-      if (url) {
-        const win = window.open(url, '_blank')
-        if (!win) {
-          // Popup was blocked; show the button immediately so the user
-          // can open Stripe with a direct click (user gesture).
-          dispatch({ type: 'checkout_pending', checkoutUrl: url })
-          dispatch({ type: 'popup_blocked' })
+        if (resp.status === CheckoutStatus.CheckoutStatus_COMPLETED) {
+          navigate({
+            path: path.replace(/\/plan(\/.*)?$/, ''),
+          })
           return
         }
-      }
-      dispatch({ type: 'checkout_pending', checkoutUrl: url })
-      retryTimerRef.current = setTimeout(
-        () => dispatch({ type: 'show_retry' }),
-        4000,
-      )
-    } catch (err) {
-      if (err instanceof Error && err.message.includes('released resource')) {
-        // Session resource was released during the async call; ignore.
-        return
-      }
-      const msg =
-        err instanceof Error ? err.message : 'Failed to create checkout'
-      dispatch({ type: 'checkout_error', error: msg })
-    }
-  }, [checkoutResultBaseUrl, session, navigate, path])
 
-  // Auto-start Stripe when entering expanded view or when the session
-  // resource becomes available after a release/retry cycle.
-  useEffect(() => {
-    if (
-      state.cloudExpanded &&
-      !state.loading &&
-      !state.polling &&
-      session &&
-      checkoutResultBaseUrl
-    ) {
-      void handleStartCloud()
-    }
-    // Re-trigger when session changes (e.g. after resource retry).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.cloudExpanded, session, checkoutResultBaseUrl])
+        const url = resp.checkoutUrl ?? ''
+        if (url) {
+          const win = window.open(url, '_blank')
+          if (!win) {
+            // Popup was blocked; show the button immediately so the user
+            // can open Stripe with a direct click (user gesture).
+            dispatch({ type: 'checkout_pending', checkoutUrl: url })
+            dispatch({ type: 'popup_blocked' })
+            return
+          }
+        }
+        dispatch({ type: 'checkout_pending', checkoutUrl: url })
+        retryTimerRef.current = setTimeout(
+          () => dispatch({ type: 'show_retry' }),
+          4000,
+        )
+      } catch (err) {
+        if (err instanceof Error && err.message.includes('released resource')) {
+          // Session resource was released during the async call; ignore.
+          return
+        }
+        const msg =
+          err instanceof Error ? err.message : 'Failed to create checkout'
+        dispatch({ type: 'checkout_error', error: msg })
+      }
+    },
+    [checkoutResultBaseUrl, session, navigate, path],
+  )
 
   // Clean up retry timer.
   useEffect(() => {
@@ -353,7 +353,7 @@ export function PlanSelectionPage({
             })()
           }
         }}
-        onRetry={() => void handleStartCloud()}
+        onRetry={(consent) => void handleStartCloud(consent)}
         onLoading={() => dispatch({ type: 'start_checkout' })}
       />
     )

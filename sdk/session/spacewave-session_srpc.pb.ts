@@ -97,14 +97,14 @@ import {
   RevokeTargetedInvitationResponse,
   SendVerificationEmailRequest,
   SendVerificationEmailResponse,
+  SetBillingSpendingLimitRequest,
+  SetBillingSpendingLimitResponse,
   SetPrimaryEmailRequest,
   SetPrimaryEmailResponse,
   StartDesktopPasskeyReauthRequest,
   StartDesktopPasskeyReauthResponse,
   StartDesktopSSOLinkRequest,
   StartDesktopSSOLinkResponse,
-  SwitchBillingIntervalRequest,
-  SwitchBillingIntervalResponse,
   TransferResourceRequest,
   TransferResourceResponse,
   UndoDeleteNowRequest,
@@ -285,14 +285,14 @@ export const SpacewaveSessionResourceServiceDefinition = {
       kind: MethodKind.Unary,
     },
     /**
-     * SwitchBillingInterval switches between monthly and annual billing.
+     * SetBillingSpendingLimit updates the recurring extra-usage maximum.
      *
-     * @generated from rpc s4wave.session.SpacewaveSessionResourceService.SwitchBillingInterval
+     * @generated from rpc s4wave.session.SpacewaveSessionResourceService.SetBillingSpendingLimit
      */
-    SwitchBillingInterval: {
-      name: 'SwitchBillingInterval',
-      I: SwitchBillingIntervalRequest,
-      O: SwitchBillingIntervalResponse,
+    SetBillingSpendingLimit: {
+      name: 'SetBillingSpendingLimit',
+      I: SetBillingSpendingLimitRequest,
+      O: SetBillingSpendingLimitResponse,
       kind: MethodKind.Unary,
     },
     /**
@@ -1024,14 +1024,14 @@ export interface SpacewaveSessionResourceService {
   ): Promise<ReactivateSubscriptionResponse>
 
   /**
-   * SwitchBillingInterval switches between monthly and annual billing.
+   * SetBillingSpendingLimit updates the recurring extra-usage maximum.
    *
-   * @generated from rpc s4wave.session.SpacewaveSessionResourceService.SwitchBillingInterval
+   * @generated from rpc s4wave.session.SpacewaveSessionResourceService.SetBillingSpendingLimit
    */
-  SwitchBillingInterval(
-    request: SwitchBillingIntervalRequest,
+  SetBillingSpendingLimit(
+    request: SetBillingSpendingLimitRequest,
     abortSignal?: AbortSignal,
-  ): Promise<SwitchBillingIntervalResponse>
+  ): Promise<SetBillingSpendingLimitResponse>
 
   /**
    * CreateBillingPortal creates a Stripe billing portal session URL.
@@ -1719,15 +1719,15 @@ export interface SpacewaveSessionResourceServiceHandler {
   ): Promise<ReactivateSubscriptionResponse>
 
   /**
-   * SwitchBillingInterval switches between monthly and annual billing.
+   * SetBillingSpendingLimit updates the recurring extra-usage maximum.
    *
-   * @generated from rpc s4wave.session.SpacewaveSessionResourceService.SwitchBillingInterval
+   * @generated from rpc s4wave.session.SpacewaveSessionResourceService.SetBillingSpendingLimit
    */
-  SwitchBillingInterval(
-    request: SwitchBillingIntervalRequest,
+  SetBillingSpendingLimit(
+    request: SetBillingSpendingLimitRequest,
     abortSignal: AbortSignal,
     context: ServerContext,
-  ): Promise<SwitchBillingIntervalResponse>
+  ): Promise<SetBillingSpendingLimitResponse>
 
   /**
    * CreateBillingPortal creates a Stripe billing portal session URL.
@@ -2349,7 +2349,7 @@ export class SpacewaveSessionResourceServiceClient implements SpacewaveSessionRe
     this.RefreshBillingState = this.RefreshBillingState.bind(this)
     this.CancelSubscription = this.CancelSubscription.bind(this)
     this.ReactivateSubscription = this.ReactivateSubscription.bind(this)
-    this.SwitchBillingInterval = this.SwitchBillingInterval.bind(this)
+    this.SetBillingSpendingLimit = this.SetBillingSpendingLimit.bind(this)
     this.CreateBillingPortal = this.CreateBillingPortal.bind(this)
     this.CreateBillingAccount = this.CreateBillingAccount.bind(this)
     this.ListManagedBillingAccounts = this.ListManagedBillingAccounts.bind(this)
@@ -2649,23 +2649,23 @@ export class SpacewaveSessionResourceServiceClient implements SpacewaveSessionRe
   }
 
   /**
-   * SwitchBillingInterval switches between monthly and annual billing.
+   * SetBillingSpendingLimit updates the recurring extra-usage maximum.
    *
-   * @generated from rpc s4wave.session.SpacewaveSessionResourceService.SwitchBillingInterval
+   * @generated from rpc s4wave.session.SpacewaveSessionResourceService.SetBillingSpendingLimit
    */
-  async SwitchBillingInterval(
-    request: SwitchBillingIntervalRequest,
+  async SetBillingSpendingLimit(
+    request: SetBillingSpendingLimitRequest,
     abortSignal?: AbortSignal,
-  ): Promise<SwitchBillingIntervalResponse> {
-    const requestMsg = SwitchBillingIntervalRequest.create(request)
+  ): Promise<SetBillingSpendingLimitResponse> {
+    const requestMsg = SetBillingSpendingLimitRequest.create(request)
     const result = await this.rpc.request(
       this.service,
-      SpacewaveSessionResourceServiceDefinition.methods.SwitchBillingInterval
+      SpacewaveSessionResourceServiceDefinition.methods.SetBillingSpendingLimit
         .name,
-      SwitchBillingIntervalRequest.toBinary(requestMsg),
+      SetBillingSpendingLimitRequest.toBinary(requestMsg),
       abortSignal || undefined,
     )
-    return SwitchBillingIntervalResponse.fromBinary(result)
+    return SetBillingSpendingLimitResponse.fromBinary(result)
   }
 
   /**

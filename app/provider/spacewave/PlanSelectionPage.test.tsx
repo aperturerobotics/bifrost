@@ -1,3 +1,4 @@
+import { CLOUD_OFFER } from './pricing.js'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, cleanup, fireEvent, screen, act } from '@testing-library/react'
 import { PlanSelectionPage } from './PlanSelectionPage.js'
@@ -89,6 +90,13 @@ async function flushAsync() {
   await act(async () => {})
 }
 
+async function acceptMonthlyOffer() {
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Subscribe for $8/month' }),
+  )
+  await flushAsync()
+}
+
 describe('PlanSelectionPage', () => {
   const mockNavigate = vi.fn()
   const mockCreateCheckoutSession = vi.fn()
@@ -149,9 +157,9 @@ describe('PlanSelectionPage', () => {
       render(<PlanSelectionPage />)
       expect(screen.getByText('Cloud sync and backup')).toBeDefined()
       expect(screen.getByText('Shared Spaces with collaborators')).toBeDefined()
-      expect(screen.getByText('100 GB cloud storage included')).toBeDefined()
+      expect(screen.getByText('100 GiB cloud storage included')).toBeDefined()
       expect(
-        screen.getByText('1M writes / 10M cloud reads per month'),
+        screen.getByText('50K writes / 250K uncached reads per month'),
       ).toBeDefined()
       expect(
         screen.getByText('Always-on sync across all devices'),
@@ -223,7 +231,7 @@ describe('PlanSelectionPage', () => {
       })
     })
 
-    it('auto-starts checkout and calls createCheckoutSession when startCloud is set', async () => {
+    it('waits for affirmative monthly consent before creating checkout', async () => {
       mockCreateCheckoutSession.mockResolvedValue({
         checkoutUrl: 'https://checkout.stripe.com/test',
         status: 1, // PENDING
@@ -231,11 +239,42 @@ describe('PlanSelectionPage', () => {
 
       render(<PlanSelectionPage startCloud />)
       await flushAsync()
+      expect(mockCreateCheckoutSession).not.toHaveBeenCalled()
+      await acceptMonthlyOffer()
 
       expect(mockCreateCheckoutSession).toHaveBeenCalledWith({
         successUrl: 'https://account.spacewave.example/checkout/success',
         cancelUrl: 'https://account.spacewave.example/checkout/cancel',
+        consent: {
+          offerVersion: CLOUD_OFFER.version,
+          policyVersion: CLOUD_OFFER.policyVersion,
+          renewalAccepted: true,
+          overageAccepted: true,
+          overageLimitCents: 1000,
+        },
       })
+    })
+
+    it('lets the customer turn extra usage off with no agreement checkbox or additional confirmation', async () => {
+      mockCreateCheckoutSession.mockResolvedValue({
+        checkoutUrl: 'https://checkout.stripe.com/test',
+        status: 1,
+      })
+      render(<PlanSelectionPage startCloud />)
+      expect(screen.queryByRole('checkbox')).toBeNull()
+      const maximum = screen.getByRole('combobox') as HTMLSelectElement
+      expect(maximum.value).toBe('1000')
+      fireEvent.change(maximum, { target: { value: '0' } })
+      await acceptMonthlyOffer()
+      expect(mockCreateCheckoutSession).toHaveBeenCalledWith(
+        expect.objectContaining({
+          consent: expect.objectContaining({
+            renewalAccepted: true,
+            overageAccepted: false,
+            overageLimitCents: 0,
+          }),
+        }),
+      )
     })
 
     it('does not navigate to setup while checkout is still pending', async () => {
@@ -246,6 +285,8 @@ describe('PlanSelectionPage', () => {
 
       render(<PlanSelectionPage startCloud />)
       await flushAsync()
+      expect(mockCreateCheckoutSession).not.toHaveBeenCalled()
+      await acceptMonthlyOffer()
 
       expect(mockNavigate).not.toHaveBeenCalled()
     })
@@ -267,6 +308,8 @@ describe('PlanSelectionPage', () => {
 
       render(<PlanSelectionPage startCloud />)
       await flushAsync()
+      expect(mockCreateCheckoutSession).not.toHaveBeenCalled()
+      await acceptMonthlyOffer()
 
       expect(mockNavigate).toHaveBeenCalled()
     })
@@ -276,6 +319,8 @@ describe('PlanSelectionPage', () => {
 
       render(<PlanSelectionPage startCloud />)
       await flushAsync()
+      expect(mockCreateCheckoutSession).not.toHaveBeenCalled()
+      await acceptMonthlyOffer()
 
       expect(screen.getByText('Stripe error')).toBeDefined()
     })
@@ -285,6 +330,8 @@ describe('PlanSelectionPage', () => {
 
       render(<PlanSelectionPage startCloud />)
       await flushAsync()
+      expect(mockCreateCheckoutSession).not.toHaveBeenCalled()
+      await acceptMonthlyOffer()
 
       expect(screen.getByText('Failed to create checkout')).toBeDefined()
     })

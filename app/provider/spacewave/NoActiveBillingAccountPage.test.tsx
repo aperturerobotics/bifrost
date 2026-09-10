@@ -1,3 +1,4 @@
+import { CLOUD_OFFER } from './pricing.js'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 
@@ -195,11 +196,22 @@ describe('NoActiveBillingAccountPage', () => {
 
     fireEvent.click(screen.getByText('Activate'))
     await flushAsync()
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Subscribe for $8/month' }),
+    )
+    await flushAsync()
 
     expect(mockCreateCheckoutSession).toHaveBeenCalledWith({
       billingAccountId: 'ba_1',
       successUrl: 'https://account.spacewave.example/checkout/success',
       cancelUrl: 'https://account.spacewave.example/checkout/cancel',
+      consent: {
+        offerVersion: CLOUD_OFFER.version,
+        policyVersion: CLOUD_OFFER.policyVersion,
+        renewalAccepted: true,
+        overageAccepted: true,
+        overageLimitCents: 1000,
+      },
     })
     expect(mockNavigateSession).toHaveBeenCalledWith({ path: 'setup' })
   })
@@ -213,6 +225,10 @@ describe('NoActiveBillingAccountPage', () => {
     const { rerender } = render(<NoActiveBillingAccountPage />)
 
     fireEvent.click(screen.getByText('Activate'))
+    await flushAsync()
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Subscribe for $8/month' }),
+    )
     await flushAsync()
 
     expect(window.open).toHaveBeenCalledWith(

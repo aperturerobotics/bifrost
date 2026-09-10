@@ -1,3 +1,4 @@
+import { useBillingConsent } from '../provider/spacewave/useBillingConsent.js'
 /* eslint-disable react-doctor/no-giant-component */
 import { useCallback, useMemo, useState } from 'react'
 import { LuCheck, LuCreditCard, LuPlus, LuX } from 'react-icons/lu'
@@ -56,6 +57,7 @@ function formatBillingAccountDate(
 // BillingAccountsPage lists every BillingAccount the caller manages.
 // Each row links into the detail view at /billing/:baId.
 export function BillingAccountsPage() {
+  const { requestConsent, consentDialog } = useBillingConsent()
   const sessionResource = SessionContext.useContext()
   const session = useResourceValue(sessionResource)
   const orgList = SpacewaveOrgListContext.useContext()
@@ -167,6 +169,8 @@ export function BillingAccountsPage() {
 
   const handleCreate = useCallback(async () => {
     if (!session || !checkoutResultBaseUrl || creating) return
+    const consent = await requestConsent()
+    if (!consent) return
     setCreating(true)
     setCreateError(null)
     try {
@@ -176,6 +180,7 @@ export function BillingAccountsPage() {
       const cancelUrl = checkoutResultBaseUrl + '/checkout/cancel'
       const resp = await sw.createCheckoutSession({
         billingAccountId: baId,
+        consent,
         successUrl,
         cancelUrl,
       })
@@ -193,12 +198,19 @@ export function BillingAccountsPage() {
     } finally {
       setCreating(false)
     }
-  }, [session, checkoutResultBaseUrl, creating, navigateSession])
+  }, [
+    session,
+    checkoutResultBaseUrl,
+    creating,
+    navigateSession,
+    requestConsent,
+  ])
 
   const accounts: ManagedBillingAccount[] = data?.accounts ?? []
 
   return (
     <div className="relative flex h-full w-full items-start justify-center overflow-y-auto pt-16 pb-8">
+      {consentDialog}
       <BackButton floating onClick={handleBack}>
         Back
       </BackButton>
