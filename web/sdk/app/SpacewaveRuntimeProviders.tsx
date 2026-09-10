@@ -31,6 +31,7 @@ import {
 } from '@s4wave/web/state/index.js'
 import { ErrorState } from '@s4wave/web/ui/ErrorState.js'
 import { LoadingScreen } from '@s4wave/web/ui/loading/LoadingScreen.js'
+import { LoadingWorkspace } from '@s4wave/web/ui/loading/LoadingWorkspace.js'
 
 const defaultResourceService =
   'plugin/spacewave-core/' + ResourceServiceServiceName
@@ -94,6 +95,14 @@ function ExplicitSpacewaveRuntime({
       staticConfigTypes={staticConfigTypes}
       rootAtom={scopedRootAtom}
       children={children}
+      loading={
+        <LoadingWorkspace
+          view={{
+            title: 'Preparing your workspace',
+            detail: 'Opening the app connection',
+          }}
+        />
+      }
     />
   )
 }
@@ -131,12 +140,14 @@ function RuntimeProviderTree({
   staticConfigTypes,
   rootAtom,
   children,
+  loading,
 }: {
   resourceClient: ResourceClient | null
   staticViewers: ObjectViewerComponent[]
   staticConfigTypes: StaticConfigTypeRegistration[]
   rootAtom?: Atom<StateType>
   children: ReactNode | ((ctx: SpacewaveRuntimeContext) => ReactNode)
+  loading?: ReactNode
 }) {
   return (
     <ViewerRegistryProvider staticViewers={staticViewers}>
@@ -149,6 +160,7 @@ function RuntimeProviderTree({
                   resourceClient={resourceClient}
                   rootAtom={rootAtom}
                   children={children}
+                  loading={loading}
                 />
               </ResourcesProvider>
             </ResourceDevToolsProvider>
@@ -196,10 +208,12 @@ function SpacewaveRuntimeRoot({
   resourceClient,
   rootAtom,
   children,
+  loading,
 }: {
   resourceClient: ResourceClient | null
   rootAtom?: Atom<StateType>
   children: ReactNode | ((ctx: SpacewaveRuntimeContext) => ReactNode)
+  loading?: ReactNode
 }) {
   const rootResource = useRootResourceWithClient(resourceClient)
   const rootStateAccessor: StateAtomAccessor = useMemo(() => {
@@ -233,6 +247,7 @@ function SpacewaveRuntimeRoot({
   }
 
   if (!resourceClient || rootResource.loading || !rootResource.value) {
+    if (loading) return loading
     return (
       <LoadingScreen
         view={{

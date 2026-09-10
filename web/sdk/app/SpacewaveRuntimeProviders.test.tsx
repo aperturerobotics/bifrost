@@ -294,7 +294,7 @@ describe('SpacewaveRuntimeProviders', () => {
     )
 
     expect(
-      screen.getByRole('heading', { name: 'Starting Spacewave' }),
+      screen.getByRole('heading', { name: 'Preparing your workspace' }),
     ).toBeDefined()
     expect(screen.queryByText('ready')).toBeNull()
     expect(mocks.getLastRootClient()).toBeNull()
@@ -315,7 +315,7 @@ describe('SpacewaveRuntimeProviders', () => {
     )
 
     expect(
-      screen.getByRole('heading', { name: 'Starting Spacewave' }),
+      screen.getByRole('heading', { name: 'Preparing your workspace' }),
     ).toBeDefined()
     expect(mocks.getLastRootClient()).toBeNull()
     expect(mocks.resourceClientInstances).toHaveLength(0)

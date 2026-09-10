@@ -17,7 +17,7 @@ import {
 } from '@s4wave/web/sdk/app/environment.js'
 import { persistAppEnvironment } from '@s4wave/web/sdk/app/persistence.js'
 import { TooltipProvider } from '@s4wave/web/ui/tooltip.js'
-import { LoadingCard } from '@s4wave/web/ui/loading/LoadingCard.js'
+import { LoadingWorkspace } from '@s4wave/web/ui/loading/LoadingWorkspace.js'
 import { ErrorState } from '@s4wave/web/ui/ErrorState.js'
 import { AppAPI } from './AppAPI.js'
 import { releaseQuickstartAppHandoffs } from './quickstart/session-handoff.js'
@@ -73,6 +73,7 @@ export function SpacewaveApp({
   const reset = useCallback(() => {
     setRunning(null)
     setError(null)
+    setProgress('Opening app storage')
     setGeneration((value) => value + 1)
     return new Promise<void>((resolve, reject) => {
       resetWaiters.current.push({ resolve, reject })
@@ -269,17 +270,9 @@ export function SpacewaveApp({
           </TooltipProvider>
         </AppEnvironmentContext.Provider>
       ) : (
-        <div className="flex min-h-0 flex-1 items-center justify-center p-6">
-          <div className="w-full max-w-sm">
-            <LoadingCard
-              view={{
-                state: 'loading',
-                title: 'Preparing app',
-                detail: progress,
-              }}
-            />
-          </div>
-        </div>
+        <LoadingWorkspace
+          view={{ title: 'Preparing your workspace', detail: progress }}
+        />
       )}
     </div>
   )

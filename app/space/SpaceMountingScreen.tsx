@@ -1,10 +1,12 @@
 import { LuRefreshCw } from 'react-icons/lu'
 
 import { useRenderDelay } from '@s4wave/app/loading/useRenderDelay.js'
+import { useAppEnvironment } from '@s4wave/web/sdk/app/environment.js'
 import { cn } from '@s4wave/web/style/utils.js'
 import { BackButton } from '@s4wave/web/ui/BackButton.js'
 import { DashboardButton } from '@s4wave/web/ui/DashboardButton.js'
 import { LoadingScreen } from '@s4wave/web/ui/loading/LoadingScreen.js'
+import { LoadingWorkspace } from '@s4wave/web/ui/loading/LoadingWorkspace.js'
 
 import {
   spaceMountStageIndex,
@@ -38,9 +40,10 @@ export function SpaceMountingScreen({
   onBack,
   onRetry,
 }: SpaceMountingScreenProps) {
+  const Loading = useAppEnvironment().id ? LoadingWorkspace : LoadingScreen
   const allowRetry = useRenderDelay(RETRY_DELAY_MS)
   return (
-    <LoadingScreen
+    <Loading
       view={{ state: 'active', title, detail }}
       topLeftSlot={
         onBack ? (
@@ -63,7 +66,7 @@ export function SpaceMountingScreen({
       }
     >
       <SpaceMountStepper current={stage} />
-    </LoadingScreen>
+    </Loading>
   )
 }
 
