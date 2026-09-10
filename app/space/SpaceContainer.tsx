@@ -1,3 +1,4 @@
+import { useAppEnvironment } from '@s4wave/web/sdk/app/environment.js'
 import { useMemo, useCallback, useEffect, useState } from 'react'
 import { joinPath } from '@aptre/bldr'
 import { DebugInfo, useWatchStateRpc } from '@aptre/bldr-react'
@@ -5,7 +6,7 @@ import { LuArrowUp, LuBuilding2, LuPlus } from 'react-icons/lu'
 import { PiAppStoreLogoLight } from 'react-icons/pi'
 
 import { useNavigate, useParams, useRouter } from '@s4wave/web/router/router.js'
-import { setAppPath } from '@s4wave/web/router/app-path.js'
+import { useAppNavigation } from '@s4wave/web/sdk/app/environment.js'
 import {
   RootContext,
   SessionContext,
@@ -131,6 +132,8 @@ function logQuickstartSpaceDiagnostic(
 // useSpaceContainerController owns Space mounting, route projection, object
 // navigation, sharing policy, and destructive mutations.
 function useSpaceContainerController() {
+  const environment = useAppEnvironment()
+  const { setAppPath } = useAppNavigation()
   const rootResource = RootContext.useContext()
   const root = useResourceValue(rootResource)
 
@@ -166,6 +169,7 @@ function useSpaceContainerController() {
       const handoff = consumeQuickstartSpaceHandoff(
         sessionIndex,
         sharedObjectId,
+        environment.instanceKey,
       )
       if (handoff) {
         logQuickstartSpaceDiagnostic('quickstart route using space handoff', {
@@ -197,6 +201,7 @@ function useSpaceContainerController() {
       const handoff = consumeQuickstartSpaceWorldHandoff(
         sessionIndex,
         sharedObjectId,
+        environment.instanceKey,
       )
       if (handoff) {
         logQuickstartSpaceDiagnostic(
@@ -242,6 +247,7 @@ function useSpaceContainerController() {
       const handoff = consumeQuickstartSpaceContentsHandoff(
         sessionIndex,
         sharedObjectId,
+        environment.instanceKey,
       )
       if (handoff) {
         logQuickstartSpaceDiagnostic(
@@ -291,9 +297,13 @@ function useSpaceContainerController() {
 
   useEffect(() => {
     return () => {
-      releaseQuickstartSharedObjectHandoff(sessionIndex, sharedObjectId)
+      releaseQuickstartSharedObjectHandoff(
+        sessionIndex,
+        sharedObjectId,
+        environment.instanceKey,
+      )
     }
-  }, [sessionIndex, sharedObjectId])
+  }, [sessionIndex, sharedObjectId, environment.instanceKey])
 
   const canManageSharing = spaceSharingState?.canManage ?? false
   const spaceOrgId = useMemo(() => {
@@ -492,7 +502,7 @@ function useSpaceContainerController() {
       }
       setAppPath(nextPath)
     },
-    [tabId, updateTabPath],
+    [tabId, updateTabPath, setAppPath],
   )
   const switchObjectAtCurrentPosition = useCallback(
     ({ objectKey }: { objectKey: string }) => {

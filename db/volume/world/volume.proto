@@ -50,3 +50,10 @@ message Config {
   // configs are synchronized with the parent volume: upon bucket ID collision,
   // the config with the higher revision ID is kept.
 }
+
+// Backing is the body of a hydra/volume object backed by a transactional KV object.
+// The enclosing World grants access to the installation, including its identity.
+message Backing {
+  // KvObjectKey identifies the kv/store object containing the complete Volume.
+  string kv_object_key = 1;
+}

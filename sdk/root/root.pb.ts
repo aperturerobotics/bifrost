@@ -209,6 +209,87 @@ export const SpaceRootRuntimeStatus_Enum = /* @__PURE__ */ createEnumType(
 )
 
 /**
+ * MountAppRequest selects exactly one storage source for a nested installation.
+ * The caller retains any supplied World resource until the app is released.
+ *
+ * @generated from message s4wave.root.MountAppRequest
+ */
+export interface MountAppRequest {
+  /**
+   * StorageId selects an explicitly registered Storage on this runtime.
+   *
+   * @generated from field: string storage_id = 1;
+   */
+  storageId?: string
+  /**
+   * WorldResourceId selects a caller-owned World Engine Resource.
+   *
+   * @generated from field: uint32 world_resource_id = 2;
+   */
+  worldResourceId?: number
+  /**
+   * ObjectPrefix separates this installation's named Volumes in the World.
+   * Required with world_resource_id.
+   *
+   * @generated from field: string object_prefix = 3;
+   */
+  objectPrefix?: string
+  /**
+   * Ephemeral creates a private in-memory World owned by this attachment.
+   *
+   * @generated from field: bool ephemeral = 4;
+   */
+  ephemeral?: boolean
+}
+
+export const MountAppRequest: MessageType<MountAppRequest> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 's4wave.root.MountAppRequest',
+    fields: [
+      { no: 1, name: 'storage_id', kind: 'scalar', T: ScalarType.STRING },
+      {
+        no: 2,
+        name: 'world_resource_id',
+        kind: 'scalar',
+        T: ScalarType.UINT32,
+      },
+      { no: 3, name: 'object_prefix', kind: 'scalar', T: ScalarType.STRING },
+      { no: 4, name: 'ephemeral', kind: 'scalar', T: ScalarType.BOOL },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
+ * MountAppResponse contains an ordinary ResourceService for the nested app.
+ *
+ * @generated from message s4wave.root.MountAppResponse
+ */
+export interface MountAppResponse {
+  /**
+   * ResourceId serves the nested runtime's ResourceService.
+   *
+   * @generated from field: uint32 resource_id = 1;
+   */
+  resourceId?: number
+  /**
+   * HttpPathPrefix scopes projected files and exports for the attachment lifetime.
+   *
+   * @generated from field: string http_path_prefix = 2;
+   */
+  httpPathPrefix?: string
+}
+
+export const MountAppResponse: MessageType<MountAppResponse> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 's4wave.root.MountAppResponse',
+    fields: [
+      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
+      { no: 2, name: 'http_path_prefix', kind: 'scalar', T: ScalarType.STRING },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
  * LookupProviderRequest is the request type for LookupProvider.
  *
  * @generated from message s4wave.root.LookupProviderRequest

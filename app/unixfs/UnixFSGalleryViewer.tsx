@@ -1,3 +1,4 @@
+import { useAppEnvironment } from '@s4wave/web/sdk/app/environment.js'
 import 'react-photo-view/dist/react-photo-view.css'
 
 import { useCallback, useMemo, useState, type MouseEventHandler } from 'react'
@@ -107,6 +108,7 @@ function UnixFSGalleryBody({
   const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(
     null,
   )
+  const { httpPathPrefix } = useAppEnvironment()
   const spaceCtx = SpaceContainerContext.useContextSafe()
   const sessionIndex = useSessionIndex()
   const spaceId = spaceCtx?.spaceId ?? null
@@ -139,9 +141,10 @@ function UnixFSGalleryBody({
                 spaceId,
                 unixfsId,
                 item.path,
+                httpPathPrefix,
               ),
       })),
-    [galleryItems, sessionIndex, spaceId, unixfsId],
+    [galleryItems, sessionIndex, spaceId, unixfsId, httpPathPrefix],
   )
   const lightboxItems = useMemo(
     () => previewItems.filter((item) => !!item.previewURL),
@@ -244,6 +247,7 @@ function UnixFSGalleryBody({
                           spaceId,
                           unixfsId,
                           item.path,
+                          httpPathPrefix,
                         ),
                         item.name,
                       ).catch((err: unknown) => {

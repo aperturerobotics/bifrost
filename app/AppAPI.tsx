@@ -1,4 +1,9 @@
-import { useEffect } from 'react'
+import { useEffect, useLayoutEffect } from 'react'
+import {
+  bindRootEnvironment,
+  useAppEnvironment,
+} from '@s4wave/web/sdk/app/environment.js'
+import type { SpacewaveRuntimeProvidersProps } from '@s4wave/web/sdk/app/SpacewaveRuntimeProviders.js'
 
 import type { Resource } from '@aptre/bldr-sdk/hooks/useResource.js'
 import type { Client as ResourceClient } from '@aptre/bldr-sdk/resource/index.js'
@@ -29,13 +34,18 @@ import { getAllObjectViewers } from './viewers.js'
 
 const staticViewers = getAllObjectViewers()
 
-export interface AppAPIProps {
+export interface AppAPIProps extends Pick<
+  SpacewaveRuntimeProvidersProps,
+  'resourceClient' | 'rootAtom'
+> {
   children: React.ReactNode
+  debugContext?: Record<string, unknown>
 }
 
-export function AppAPI({ children }: AppAPIProps) {
+export function AppAPI({ children, debugContext, ...connection }: AppAPIProps) {
   return (
     <SpacewaveRuntimeProviders
+      {...connection}
       staticViewers={staticViewers}
       staticConfigTypes={staticConfigTypes}
     >
@@ -43,6 +53,7 @@ export function AppAPI({ children }: AppAPIProps) {
         <SpacewaveProductRuntime
           resourceClient={resourceClient}
           rootResource={rootResource}
+          debugContext={debugContext}
         >
           {children}
         </SpacewaveProductRuntime>
@@ -55,16 +66,24 @@ function SpacewaveProductRuntime({
   rootResource,
   resourceClient,
   children,
+  debugContext: extraDebugContext,
 }: {
   rootResource: Resource<Root>
   resourceClient: ResourceClient
   children: React.ReactNode
+  debugContext?: Record<string, unknown>
 }) {
+  const environment = useAppEnvironment()
+  useLayoutEffect(() => {
+    if (rootResource.value)
+      return bindRootEnvironment(rootResource.value, environment)
+  }, [rootResource.value, environment])
   useEffect(() => {
     const root = rootResource.value
     if (!root) return
 
     const debugContext = {
+      ...extraDebugContext,
       client: resourceClient,
       root,
       createLocalSession,
@@ -78,16 +97,17 @@ function SpacewaveProductRuntime({
       UNIXFS_OBJECT_KEY,
       runSOPerfTest,
       runPostLoadSOPerfTest,
+      environment,
     }
-    setDebugContext(debugContext)
+    setDebugContext(debugContext, environment.id)
     return () => {
-      clearDebugContext(debugContext)
+      clearDebugContext(debugContext, environment.id)
     }
-  }, [resourceClient, rootResource.value])
+  }, [resourceClient, rootResource.value, environment, extraDebugContext])
 
   return (
     <QuickstartOptionsProvider rootResource={rootResource}>
-      <UpdateNotifier rootResource={rootResource} />
+      {!environment.id && <UpdateNotifier rootResource={rootResource} />}
       <ListenerYieldNotifier rootResource={rootResource}>
         {children}
       </ListenerYieldNotifier>

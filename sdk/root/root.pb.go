@@ -195,6 +195,84 @@ func (x SpaceRootRuntimeStatus) String() string {
 	return strconv.Itoa(int(x))
 }
 
+// MountAppRequest selects exactly one storage source for a nested installation.
+// The caller retains any supplied World resource until the app is released.
+type MountAppRequest struct {
+	unknownFields []byte
+	// StorageId selects an explicitly registered Storage on this runtime.
+	StorageId string `protobuf:"bytes,1,opt,name=storage_id,json=storageId,proto3" json:"storageId,omitempty"`
+	// WorldResourceId selects a caller-owned World Engine Resource.
+	WorldResourceId uint32 `protobuf:"varint,2,opt,name=world_resource_id,json=worldResourceId,proto3" json:"worldResourceId,omitempty"`
+	// ObjectPrefix separates this installation's named Volumes in the World.
+	// Required with world_resource_id.
+	ObjectPrefix string `protobuf:"bytes,3,opt,name=object_prefix,json=objectPrefix,proto3" json:"objectPrefix,omitempty"`
+	// Ephemeral creates a private in-memory World owned by this attachment.
+	Ephemeral bool `protobuf:"varint,4,opt,name=ephemeral,proto3" json:"ephemeral,omitempty"`
+}
+
+func (x *MountAppRequest) Reset() {
+	*x = MountAppRequest{}
+}
+
+func (*MountAppRequest) ProtoMessage() {}
+
+func (x *MountAppRequest) GetStorageId() string {
+	if x != nil {
+		return x.StorageId
+	}
+	return ""
+}
+
+func (x *MountAppRequest) GetWorldResourceId() uint32 {
+	if x != nil {
+		return x.WorldResourceId
+	}
+	return 0
+}
+
+func (x *MountAppRequest) GetObjectPrefix() string {
+	if x != nil {
+		return x.ObjectPrefix
+	}
+	return ""
+}
+
+func (x *MountAppRequest) GetEphemeral() bool {
+	if x != nil {
+		return x.Ephemeral
+	}
+	return false
+}
+
+// MountAppResponse contains an ordinary ResourceService for the nested app.
+type MountAppResponse struct {
+	unknownFields []byte
+	// ResourceId serves the nested runtime's ResourceService.
+	ResourceId uint32 `protobuf:"varint,1,opt,name=resource_id,json=resourceId,proto3" json:"resourceId,omitempty"`
+	// HttpPathPrefix scopes projected files and exports for the attachment lifetime.
+	HttpPathPrefix string `protobuf:"bytes,2,opt,name=http_path_prefix,json=httpPathPrefix,proto3" json:"httpPathPrefix,omitempty"`
+}
+
+func (x *MountAppResponse) Reset() {
+	*x = MountAppResponse{}
+}
+
+func (*MountAppResponse) ProtoMessage() {}
+
+func (x *MountAppResponse) GetResourceId() uint32 {
+	if x != nil {
+		return x.ResourceId
+	}
+	return 0
+}
+
+func (x *MountAppResponse) GetHttpPathPrefix() string {
+	if x != nil {
+		return x.HttpPathPrefix
+	}
+	return ""
+}
+
 // LookupProviderRequest is the request type for LookupProvider.
 type LookupProviderRequest struct {
 	unknownFields []byte
@@ -2013,6 +2091,42 @@ func (x *WatchListenerStatusResponse) GetConnectedClients() uint32 {
 	return 0
 }
 
+func (m *MountAppRequest) CloneVT() *MountAppRequest {
+	if m == nil {
+		return (*MountAppRequest)(nil)
+	}
+	r := new(MountAppRequest)
+	r.StorageId = m.StorageId
+	r.WorldResourceId = m.WorldResourceId
+	r.ObjectPrefix = m.ObjectPrefix
+	r.Ephemeral = m.Ephemeral
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *MountAppRequest) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *MountAppResponse) CloneVT() *MountAppResponse {
+	if m == nil {
+		return (*MountAppResponse)(nil)
+	}
+	r := new(MountAppResponse)
+	r.ResourceId = m.ResourceId
+	r.HttpPathPrefix = m.HttpPathPrefix
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *MountAppResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
 func (m *LookupProviderRequest) CloneVT() *LookupProviderRequest {
 	if m == nil {
 		return (*LookupProviderRequest)(nil)
@@ -3257,6 +3371,58 @@ func (m *WatchListenerStatusResponse) CloneVT() *WatchListenerStatusResponse {
 
 func (m *WatchListenerStatusResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
+}
+
+func (this *MountAppRequest) EqualVT(that *MountAppRequest) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.StorageId != that.StorageId {
+		return false
+	}
+	if this.WorldResourceId != that.WorldResourceId {
+		return false
+	}
+	if this.ObjectPrefix != that.ObjectPrefix {
+		return false
+	}
+	if this.Ephemeral != that.Ephemeral {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *MountAppRequest) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*MountAppRequest)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *MountAppResponse) EqualVT(that *MountAppResponse) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.ResourceId != that.ResourceId {
+		return false
+	}
+	if this.HttpPathPrefix != that.HttpPathPrefix {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *MountAppResponse) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*MountAppResponse)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
 }
 
 func (this *LookupProviderRequest) EqualVT(that *LookupProviderRequest) bool {
@@ -5026,6 +5192,122 @@ func (x *SpaceRootRuntimeStatus) UnmarshalText(b []byte) error {
 
 // UnmarshalJSON unmarshals the SpaceRootRuntimeStatus from JSON.
 func (x *SpaceRootRuntimeStatus) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the MountAppRequest message to JSON.
+func (x *MountAppRequest) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.StorageId != "" || s.HasField("storageId") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("storageId")
+		s.WriteString(x.StorageId)
+	}
+	if x.WorldResourceId != 0 || s.HasField("worldResourceId") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("worldResourceId")
+		s.WriteUint32(x.WorldResourceId)
+	}
+	if x.ObjectPrefix != "" || s.HasField("objectPrefix") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("objectPrefix")
+		s.WriteString(x.ObjectPrefix)
+	}
+	if x.Ephemeral || s.HasField("ephemeral") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("ephemeral")
+		s.WriteBool(x.Ephemeral)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the MountAppRequest to JSON.
+func (x *MountAppRequest) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the MountAppRequest message from JSON.
+func (x *MountAppRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "storage_id", "storageId":
+			s.AddField("storage_id")
+			x.StorageId = s.ReadString()
+		case "world_resource_id", "worldResourceId":
+			s.AddField("world_resource_id")
+			x.WorldResourceId = s.ReadUint32()
+		case "object_prefix", "objectPrefix":
+			s.AddField("object_prefix")
+			x.ObjectPrefix = s.ReadString()
+		case "ephemeral":
+			s.AddField("ephemeral")
+			x.Ephemeral = s.ReadBool()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the MountAppRequest from JSON.
+func (x *MountAppRequest) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the MountAppResponse message to JSON.
+func (x *MountAppResponse) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.ResourceId != 0 || s.HasField("resourceId") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("resourceId")
+		s.WriteUint32(x.ResourceId)
+	}
+	if x.HttpPathPrefix != "" || s.HasField("httpPathPrefix") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("httpPathPrefix")
+		s.WriteString(x.HttpPathPrefix)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the MountAppResponse to JSON.
+func (x *MountAppResponse) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the MountAppResponse message from JSON.
+func (x *MountAppResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "resource_id", "resourceId":
+			s.AddField("resource_id")
+			x.ResourceId = s.ReadUint32()
+		case "http_path_prefix", "httpPathPrefix":
+			s.AddField("http_path_prefix")
+			x.HttpPathPrefix = s.ReadString()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the MountAppResponse from JSON.
+func (x *MountAppResponse) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -8692,6 +8974,100 @@ func (x *WatchListenerStatusResponse) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
+func (m *MountAppRequest) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MountAppRequest) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *MountAppRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.Ephemeral {
+		i = protobuf_go_lite.EncodeBool(dAtA, i, m.Ephemeral)
+		i--
+		dAtA[i] = 0x20
+	}
+	if len(m.ObjectPrefix) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.ObjectPrefix)
+		i--
+		dAtA[i] = 0x1a
+	}
+	if m.WorldResourceId != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.WorldResourceId))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.StorageId) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.StorageId)
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MountAppResponse) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MountAppResponse) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *MountAppResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.HttpPathPrefix) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.HttpPathPrefix)
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.ResourceId != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.ResourceId))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *LookupProviderRequest) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -11818,6 +12194,32 @@ func (m *WatchListenerStatusResponse) MarshalToSizedBufferVT(dAtA []byte) (int, 
 	return len(dAtA) - i, nil
 }
 
+func (m *MountAppRequest) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.StorageId)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.WorldResourceId)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.ObjectPrefix)
+	n += protobuf_go_lite.SizeBoolNonZero(1, m.Ephemeral)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *MountAppResponse) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.ResourceId)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.HttpPathPrefix)
+	n += len(m.unknownFields)
+	return n
+}
+
 func (m *LookupProviderRequest) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -12782,6 +13184,50 @@ func (x SpaceRootStatus) MarshalProtoText() string {
 
 func (x SpaceRootRuntimeStatus) MarshalProtoText() string {
 	return x.String()
+}
+
+func (x *MountAppRequest) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "MountAppRequest")
+	if x.StorageId != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "storage_id")
+		protobuf_go_lite.TextWriteString(&sb, x.StorageId)
+	}
+	if x.WorldResourceId != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "world_resource_id")
+		protobuf_go_lite.TextWriteUint(&sb, x.WorldResourceId)
+	}
+	if x.ObjectPrefix != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "object_prefix")
+		protobuf_go_lite.TextWriteString(&sb, x.ObjectPrefix)
+	}
+	if x.Ephemeral != false {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "ephemeral")
+		protobuf_go_lite.TextWriteBool(&sb, x.Ephemeral)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *MountAppRequest) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *MountAppResponse) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "MountAppResponse")
+	if x.ResourceId != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "resource_id")
+		protobuf_go_lite.TextWriteUint(&sb, x.ResourceId)
+	}
+	if x.HttpPathPrefix != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "http_path_prefix")
+		protobuf_go_lite.TextWriteString(&sb, x.HttpPathPrefix)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *MountAppResponse) String() string {
+	return x.MarshalProtoText()
 }
 
 func (x *LookupProviderRequest) MarshalProtoText() string {
@@ -14058,6 +14504,150 @@ func (x *WatchListenerStatusResponse) MarshalProtoText() string {
 
 func (x *WatchListenerStatusResponse) String() string {
 	return x.MarshalProtoText()
+}
+
+func (m *MountAppRequest) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MountAppRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MountAppRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StorageId", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.StorageId = v
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field WorldResourceId", wireType)
+			}
+			m.WorldResourceId = 0
+			m.WorldResourceId, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ObjectPrefix", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.ObjectPrefix = v
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Ephemeral", wireType)
+			}
+			var v bool
+			v, iNdEx, err = protobuf_go_lite.DecodeVarintBool(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Ephemeral = bool(v)
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *MountAppResponse) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MountAppResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MountAppResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ResourceId", wireType)
+			}
+			m.ResourceId = 0
+			m.ResourceId, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field HttpPathPrefix", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.HttpPathPrefix = v
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
 }
 
 func (m *LookupProviderRequest) UnmarshalVT(dAtA []byte) error {

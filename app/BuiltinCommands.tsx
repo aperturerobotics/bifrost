@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 import { isDesktop, quitDesktopRuntime } from '@aptre/bldr'
 
-import { getAppPath, setAppPath } from '@s4wave/web/router/app-path.js'
+import { useAppNavigation } from '@s4wave/web/sdk/app/environment.js'
 import { useCommand } from '@s4wave/web/command/useCommand.js'
 import { CommandSurface } from '@s4wave/sdk/command/command.pb.js'
 import {
@@ -20,6 +20,7 @@ import { SelectAccountCommand } from '@s4wave/app/session/SelectAccountCommand.j
 // BuiltinCommands registers built-in commands with the command registry.
 // Returns null (no UI).
 export function BuiltinCommands() {
+  const { getAppPath, setAppPath } = useAppNavigation()
   const { activeTabId, openPathInActiveTabset, resetShellTabs } = useShellTabs()
   const [keybindingEditorOpen, setKeybindingEditorOpen] = useState(false)
   const [keybindingEditorScope, setKeybindingEditorScope] =
@@ -120,7 +121,7 @@ export function BuiltinCommands() {
           })
         },
       )
-    }, []),
+    }, [getAppPath]),
   })
 
   useCommand({
@@ -182,7 +183,7 @@ export function BuiltinCommands() {
     menuOrder: 3,
     handler: useCallback(() => {
       setAppPath('/changelog')
-    }, []),
+    }, [setAppPath]),
   })
 
   useCommand({

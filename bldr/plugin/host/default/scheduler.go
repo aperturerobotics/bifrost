@@ -34,7 +34,7 @@ func StartPluginScheduler(
 		disableStoreManifest,
 		disableCopyManifest,
 	)
-	return startPluginSchedulerWithConfig(ctx, b, schedConf)
+	return StartPluginSchedulerWithConfig(ctx, b, schedConf)
 }
 
 // StartNativeDesktopPluginScheduler starts the native desktop plugin scheduler.
@@ -62,10 +62,11 @@ func StartNativeDesktopPluginScheduler(
 		disableCopyManifest,
 		quickJSPluginIDs,
 	)
-	return startPluginSchedulerWithConfig(ctx, b, schedConf)
+	return StartPluginSchedulerWithConfig(ctx, b, schedConf)
 }
 
-func startPluginSchedulerWithConfig(
+// StartPluginSchedulerWithConfig starts the scheduler with an explicit runtime binding.
+func StartPluginSchedulerWithConfig(
 	ctx context.Context,
 	b bus.Bus,
 	schedConf *plugin_host_scheduler.Config,

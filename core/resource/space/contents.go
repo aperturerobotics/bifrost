@@ -16,12 +16,12 @@ import (
 	"github.com/aperturerobotics/controllerbus/bus"
 	bus_bridge "github.com/aperturerobotics/controllerbus/bus/bridge"
 	"github.com/aperturerobotics/controllerbus/controller"
-	controllerbus_core "github.com/aperturerobotics/controllerbus/core"
 	"github.com/aperturerobotics/controllerbus/directive"
 	timestamppb "github.com/aperturerobotics/protobuf-go-lite/types/known/timestamppb"
 	"github.com/aperturerobotics/starpc/srpc"
 	"github.com/aperturerobotics/util/broadcast"
 	"github.com/aperturerobotics/util/routine"
+	bldr_core "github.com/s4wave/spacewave/bldr/core"
 	bldr_manifest "github.com/s4wave/spacewave/bldr/manifest"
 	bldr_manifest_world "github.com/s4wave/spacewave/bldr/manifest/world"
 	bldr_plugin "github.com/s4wave/spacewave/bldr/plugin"
@@ -30,11 +30,14 @@ import (
 	plugin_host_root "github.com/s4wave/spacewave/bldr/plugin/host/root"
 	plugin_host_scheduler "github.com/s4wave/spacewave/bldr/plugin/host/scheduler"
 	resource_server "github.com/s4wave/spacewave/bldr/resource/server"
+	"github.com/s4wave/spacewave/bldr/storage"
+	storage_controller "github.com/s4wave/spacewave/bldr/storage/controller"
 	process_binding "github.com/s4wave/spacewave/core/plugin/process"
 	plugin_space "github.com/s4wave/spacewave/core/plugin/space"
 	space_world "github.com/s4wave/spacewave/core/space/world"
 	"github.com/s4wave/spacewave/db/bucket"
 	"github.com/s4wave/spacewave/db/volume"
+	volume_rpc_server "github.com/s4wave/spacewave/db/volume/rpc/server"
 	"github.com/s4wave/spacewave/db/world"
 	world_types "github.com/s4wave/spacewave/db/world/types"
 	bifrost_rpc "github.com/s4wave/spacewave/net/rpc"
@@ -493,12 +496,13 @@ func startSpaceRuntime(
 		le = logrus.NewEntry(logrus.New())
 	}
 	childCtx, childCancel := context.WithCancel(context.WithoutCancel(ctx))
-	child, resolver, err := controllerbus_core.NewCoreBus(childCtx, le)
+	child, resolver, err := bldr_core.NewCoreBus(childCtx, le)
 	if err != nil {
 		childCancel()
 		return nil, err
 	}
 	resolver.AddFactory(plugin_host_scheduler.NewFactory(child))
+	resolver.AddFactory(volume_rpc_server.NewFactory(child))
 	factoryOpts := []plugin_space.FactoryOption{plugin_space.WithManifestSource(parent)}
 	if conf.GetHostPluginId() != "" {
 		factoryOpts = append(factoryOpts, plugin_space.WithLoadTarget(parent))
@@ -509,6 +513,32 @@ func startSpaceRuntime(
 	if err != nil {
 		childCancel()
 		return nil, err
+	}
+	if storageID := conf.GetHostStorageId(); storageID != "" {
+		selected, _, selectedRef, lookupErr := bus.ExecWaitValue[storage.LookupStorageValue](
+			ctx, parent, storage.NewLookupStorage(storageID), bus.ReturnIfIdle(true), nil, nil,
+		)
+		if lookupErr != nil {
+			bridgeRef()
+			childCancel()
+			return nil, lookupErr
+		}
+		selected.AddFactories(child, resolver)
+		storageCtrl := storage_controller.BuildStorageController(storageID, []storage.Storage{selected},
+			controller.NewInfo("space/storage", controller.MustParseVersion("0.0.1"), "Space plugin storage"))
+		storageRelease, addErr := child.AddController(childCtx, storageCtrl, nil)
+		if addErr != nil {
+			selectedRef.Release()
+			bridgeRef()
+			childCancel()
+			return nil, addErr
+		}
+		parentBridgeRelease := bridgeRef
+		bridgeRef = func() {
+			storageRelease()
+			selectedRef.Release()
+			parentBridgeRelease()
+		}
 	}
 
 	mirror := newSpacePluginHostMirror()
@@ -565,9 +595,7 @@ func startSpaceRuntime(
 		return nil, err
 	}
 
-	scheduler, schedulerRelease, err := plugin_host_default.StartNativeDesktopPluginScheduler(
-		childCtx,
-		child,
+	schedulerConfig := plugin_host_default.NewNativeDesktopSchedulerConfig(
 		conf.GetSpaceId(),
 		conf.GetEngineId(),
 		bldr_plugin.PluginVolumeID,
@@ -578,6 +606,8 @@ func startSpaceRuntime(
 		true,
 		[]string{},
 	)
+	schedulerConfig.HostStorageId = conf.GetHostStorageId()
+	scheduler, schedulerRelease, err := plugin_host_default.StartPluginSchedulerWithConfig(childCtx, child, schedulerConfig)
 	if err != nil {
 		hostWatchRelease()
 		mirrorRelease()

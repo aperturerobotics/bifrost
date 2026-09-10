@@ -119,7 +119,13 @@ export function getRouteDocumentTitleParts(
 }
 
 // DocumentTitleProvider is the only component that writes document.title.
-export function DocumentTitleProvider({ children }: { children: ReactNode }) {
+export function DocumentTitleProvider({
+  children,
+  enabled = true,
+}: {
+  children: ReactNode
+  enabled?: boolean
+}) {
   const [candidates, setCandidates] = useState(
     () => new Map<string, DocumentTitleCandidate>(),
   )
@@ -155,8 +161,9 @@ export function DocumentTitleProvider({ children }: { children: ReactNode }) {
   }, [candidates])
 
   useEffect(() => {
+    if (!enabled) return
     document.title = title
-  }, [title])
+  }, [title, enabled])
 
   return (
     <DocumentTitleContext.Provider value={value}>

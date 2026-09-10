@@ -5,6 +5,7 @@ import {
 } from '@s4wave/sdk/space/projected-path.js'
 
 export interface ProjectedObjectURLOpts {
+  httpPathPrefix?: string
   sessionIndex: number
   sharedObjectId: string
   objectKey: string
@@ -12,7 +13,7 @@ export interface ProjectedObjectURLOpts {
 }
 
 export function buildProjectedFileURL(opts: ProjectedObjectURLOpts): string {
-  return `${pluginPathPrefix}/fs/${buildProjectedObjectContentPath(opts)}`
+  return `${pluginPathPrefix}${opts.httpPathPrefix ?? ''}/fs/${buildProjectedObjectContentPath(opts)}`
 }
 
 export function buildProjectedFileInlineURL(
@@ -31,5 +32,5 @@ export function buildProjectedObjectContentPath(
 }
 
 export function buildProjectedExportURL(opts: ProjectedObjectURLOpts): string {
-  return `${pluginPathPrefix}/export/${buildProjectedObjectContentPath(opts)}`
+  return `${pluginPathPrefix}${opts.httpPathPrefix ?? ''}/export/${buildProjectedObjectContentPath(opts)}`
 }

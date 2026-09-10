@@ -11,7 +11,10 @@ import {
 } from 'react'
 import { useIsStaticMode } from '@s4wave/app/prerender/StaticContext.js'
 import { TabActiveProvider } from '@s4wave/web/contexts/TabActiveContext.js'
-import { getAppNavigation, setAppPath } from '@s4wave/web/router/app-path.js'
+import {
+  useAppEnvironment,
+  useAppNavigation,
+} from '@s4wave/web/sdk/app/environment.js'
 import { toast } from '@s4wave/web/ui/toaster.js'
 import { useTabId as useTabContextTabId } from '@s4wave/web/object/TabContext.js'
 import {
@@ -39,11 +42,12 @@ import {
 } from './ShellDocumentEntry.js'
 import {
   clearObsoleteShellTabsState,
-  readShellDocumentState,
+  readShellDocumentState as readDocumentState,
   removeObsoleteShellTabState,
   removeShellTabDocumentState,
   shellTabStateStorageKey,
-  writeShellDocumentState,
+  writeShellDocumentState as writeDocumentState,
+  type ShellDocumentState,
 } from './ShellDocumentState.js'
 
 const sessionStorageBackend: StateStorage = {
@@ -209,8 +213,9 @@ function removeShellTabLocalState(
   incarnation: string,
   tabId: string,
   removeObsoleteState = false,
+  storage?: Storage,
 ): void {
-  removeShellTabDocumentState(incarnation, tabId)
+  removeShellTabDocumentState(incarnation, tabId, storage)
   if (removeObsoleteState) removeObsoleteShellTabState(tabId)
 }
 
@@ -227,7 +232,30 @@ function useShellTabsContextValue(
   providedStore: BrowserShellTabsStore | undefined,
   providedEntry: ShellDocumentEntry | undefined,
 ): ShellTabsContextValue {
-  const store = providedStore ?? getBrowserShellTabsStore()
+  const environment = useAppEnvironment()
+  const { getAppNavigation, setAppPath } = useAppNavigation()
+  const defaultStore = useMemo(
+    () =>
+      environment.id
+        ? new BrowserShellTabsStore({
+            storage: environment.storage,
+            key: `app:${environment.id}:tabs`,
+            lockName: `app:${environment.id}:tabs`,
+            storageEvents: false,
+          })
+        : getBrowserShellTabsStore(),
+    [environment],
+  )
+  const store = providedStore ?? defaultStore
+  const readShellDocumentState = useCallback(
+    () => readDocumentState(environment.documentStorage),
+    [environment],
+  )
+  const writeShellDocumentState = useCallback(
+    (state: ShellDocumentState) =>
+      writeDocumentState(state, environment.documentStorage),
+    [environment],
+  )
   const snapshot = useProviderStore(store)
   const entry = useMemo(
     () => providedEntry ?? classifyShellDocumentEntry(),
@@ -235,7 +263,7 @@ function useShellTabsContextValue(
   )
   const persistedDocumentState = useMemo(
     () => (entry.kind === 'continuation' ? readShellDocumentState() : null),
-    [entry],
+    [entry, readShellDocumentState],
   )
   const [localOrder, setLocalOrder] = useState<string[]>(() =>
     normalizeLocalOrder([], snapshot.records),
@@ -306,7 +334,12 @@ function useShellTabsContextValue(
     )
     for (const id of previousRecordIdsRef.current) {
       if (!currentRecordIds.has(id)) {
-        removeShellTabLocalState(entry.incarnation, id)
+        removeShellTabLocalState(
+          entry.incarnation,
+          id,
+          false,
+          environment.documentStorage,
+        )
       }
     }
     previousRecordIdsRef.current = currentRecordIds
@@ -331,7 +364,7 @@ function useShellTabsContextValue(
     setRenamingTabId((current) =>
       current && currentRecordIds.has(current) ? current : null,
     )
-  }, [entry, snapshot])
+  }, [entry, snapshot, environment.documentStorage])
 
   useEffect(() => {
     if (!activeTabId) return
@@ -346,7 +379,7 @@ function useShellTabsContextValue(
     if (pendingCreatedTabId === activeTabId) {
       pendingCreatedTabIdRef.current = null
     }
-  }, [activeTabId, entry.incarnation])
+  }, [activeTabId, entry.incarnation, writeShellDocumentState])
 
   useEffect(() => {
     if (
@@ -361,7 +394,7 @@ function useShellTabsContextValue(
       ...navigation.params,
       shellTabId: activeTabId,
     })
-  }, [activeTabId, entry.params])
+  }, [activeTabId, entry.params, getAppNavigation, setAppPath])
   const reportMutation = useCallback(
     (operation: Promise<unknown>, isCancelled?: () => boolean) => {
       setMutationError(null)
@@ -393,7 +426,7 @@ function useShellTabsContextValue(
         pendingCreatedTabId: tabId,
       })
     },
-    [entry.incarnation],
+    [entry.incarnation, writeShellDocumentState],
   )
   const clearCreatedTabSelection = useCallback(
     (tabId: string) => {
@@ -404,7 +437,7 @@ function useShellTabsContextValue(
         activeTabId: activeTabIdRef.current,
       })
     },
-    [entry.incarnation],
+    [entry.incarnation, writeShellDocumentState],
   )
 
   useEffect(() => {
@@ -413,7 +446,7 @@ function useShellTabsContextValue(
     let cancelled = false
 
     const initialize = async () => {
-      clearObsoleteShellTabsState()
+      if (!environment.id) clearObsoleteShellTabsState()
       const current = store.read()
       if (entry.kind === 'handoff' && entry.tabId) {
         if (current.records.some((record) => record.id === entry.tabId)) {
@@ -450,6 +483,8 @@ function useShellTabsContextValue(
     reportMutation,
     stageCreatedTabSelection,
     store,
+    setAppPath,
+    environment.id,
   ])
 
   const setTabs = useCallback<React.Dispatch<React.SetStateAction<ShellTab[]>>>(
@@ -549,7 +584,7 @@ function useShellTabsContextValue(
       })
       return tab.id
     },
-    [addShellTab, tabs],
+    [addShellTab, tabs, setAppPath],
   )
 
   const registerActiveTabsetPathOpener = useCallback(
@@ -593,7 +628,12 @@ function useShellTabsContextValue(
     (tabId: string) => {
       reportMutation(
         store.close(tabId).then(() => {
-          removeShellTabLocalState(entry.incarnation, tabId, true)
+          removeShellTabLocalState(
+            entry.incarnation,
+            tabId,
+            !environment.id,
+            environment.documentStorage,
+          )
           const committedRecords = store.getSnapshot().records
           const nextOrder = normalizeLocalOrder(
             localOrderRef.current.filter((id) => id !== tabId),
@@ -612,7 +652,13 @@ function useShellTabsContextValue(
         }),
       )
     },
-    [entry.incarnation, reportMutation, store],
+    [
+      entry.incarnation,
+      reportMutation,
+      store,
+      environment.id,
+      environment.documentStorage,
+    ],
   )
 
   const resetShellTabs = useCallback(() => {
@@ -620,13 +666,25 @@ function useShellTabsContextValue(
     reportMutation(
       store.reset().then((record) => {
         for (const id of oldIds) {
-          removeShellTabLocalState(entry.incarnation, id, true)
+          removeShellTabLocalState(
+            entry.incarnation,
+            id,
+            !environment.id,
+            environment.documentStorage,
+          )
         }
         setLocalOrder([record.id])
         setActiveTabIdState(record.id)
       }),
     )
-  }, [entry.incarnation, reportMutation, snapshot.records, store])
+  }, [
+    entry.incarnation,
+    reportMutation,
+    snapshot.records,
+    store,
+    environment.id,
+    environment.documentStorage,
+  ])
 
   const updateTabPath = useCallback(
     (tabId: string, path: string, onCommitted?: () => void) => {
@@ -635,7 +693,7 @@ function useShellTabsContextValue(
       )
       if (!record || record.path === path) return Promise.resolve(false)
       const operation = store.updatePath(tabId, path).then((updated) => {
-        window.dispatchEvent(
+        environment.events.dispatchEvent(
           new CustomEvent(SHELL_TAB_PATH_COMMITTED_EVENT, {
             detail: { tabId, path },
           }),
@@ -649,7 +707,7 @@ function useShellTabsContextValue(
         () => false,
       )
     },
-    [reportMutation, snapshot.records, store],
+    [reportMutation, snapshot.records, store, environment.events],
   )
 
   const updateTabAutoName = useCallback(
@@ -747,16 +805,22 @@ export function ShellTabStateProvider({
   tabId: string
   children: ReactNode
 }) {
+  const environment = useAppEnvironment()
   const { documentIncarnation } = useShellTabs()
   const [atomCache] = useState(() => new Map<string, Atom<StateType>>())
   const tabStateAtom = useMemo(() => {
     const key = shellTabStateStorageKey(documentIncarnation, tabId)
     const cached = atomCache.get(key)
     if (cached) return cached
-    const atom = new StorageAtom<StateType>(sessionStorageBackend, key, {})
+    const atom = new StorageAtom<StateType>(
+      environment.id ? environment.documentStorage : sessionStorageBackend,
+      key,
+      {},
+      !environment.id,
+    )
     atomCache.set(key, atom)
     return atom
-  }, [atomCache, documentIncarnation, tabId])
+  }, [atomCache, documentIncarnation, tabId, environment])
   const contextValue = useMemo<ShellTabContextValue>(() => ({ tabId }), [tabId])
   return (
     <ShellTabContext.Provider value={contextValue}>

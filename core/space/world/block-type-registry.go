@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/s4wave/spacewave/db/blocktype"
+	s4wave_layout_world "github.com/s4wave/spacewave/sdk/layout/world"
 	s4wave_vm "github.com/s4wave/spacewave/sdk/vm"
 )
 
@@ -18,6 +19,8 @@ func LookupBlockType(
 	switch typeID {
 	case SpaceSettingsBlockType.GetBlockTypeID():
 		return SpaceSettingsBlockType, nil
+	case s4wave_layout_world.ObjectLayoutTypeID:
+		return s4wave_layout_world.ObjectLayoutBlockType, nil
 	case s4wave_vm.V86ImageTypeID:
 		return s4wave_vm.V86ImageBlockType, nil
 	default:

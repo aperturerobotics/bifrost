@@ -37,6 +37,7 @@ import { BillingAccountsRoute } from '@s4wave/app/billing/BillingAccountsRoute.j
 import { BillingCancelRoute } from '@s4wave/app/billing/BillingCancelRoute.js'
 import { OrgContainer } from '@s4wave/app/org/OrgContainer.js'
 import { JoinSpacePage } from '@s4wave/app/sobject/JoinSpacePage.js'
+import { useAppEnvironment } from '@s4wave/web/sdk/app/environment.js'
 import { consumePendingJoin } from '@s4wave/app/routes/pendingJoin.js'
 import { SessionPageRoutes } from '@s4wave/app/routes/SessionPageRoutes.js'
 import { CreateSpaceRoute } from '@s4wave/app/quickstart/CreateSpaceRoute.js'
@@ -125,6 +126,7 @@ interface SessionContainerProps {
 // useSessionContainerController owns Session status, account overlays,
 // document state access, and navigation callbacks.
 function useSessionContainerController(props: SessionContainerProps) {
+  const environment = useAppEnvironment()
   const session = props.sessionResource.value
   const providerId =
     session?.sessionRef?.providerResourceRef?.providerId ??
@@ -133,20 +135,20 @@ function useSessionContainerController(props: SessionContainerProps) {
   // Signal to bootstrap.ts that this user has product state to return to.
   // Return visitors with hasSession see the loading screen instead of landing.
   useEffect(() => {
-    if (session && !localStorage.getItem('spacewave-has-session')) {
-      localStorage.setItem('spacewave-has-session', '1')
+    if (session && !environment.storage.getItem('spacewave-has-session')) {
+      environment.storage.setItem('spacewave-has-session', '1')
     }
-  }, [session])
+  }, [session, environment.storage])
 
   // Pick up a pending join code stashed by JoinRedirect (no-session path).
   const navigate = useNavigate()
   useEffect(() => {
     if (!session) return
-    const code = consumePendingJoin()
+    const code = consumePendingJoin(environment.documentStorage)
     if (code) {
       navigate({ path: `./join/${code}`, replace: true })
     }
-  }, [session, navigate])
+  }, [session, navigate, environment.documentStorage])
 
   const { peerId: peerIdRaw } = useSessionInfo(session)
   const peerId = peerIdRaw || null

@@ -14,6 +14,8 @@ type SRPCRootResourceServiceClient interface {
 	// SRPCClient returns the underlying SRPC client.
 	SRPCClient() srpc.Client
 
+	MountApp(ctx context.Context, in *MountAppRequest) (*MountAppResponse, error)
+
 	ListProviders(ctx context.Context, in *ListProvidersRequest) (*ListProvidersResponse, error)
 
 	LookupProvider(ctx context.Context, in *LookupProviderRequest) (*LookupProviderResponse, error)
@@ -100,6 +102,15 @@ func NewSRPCRootResourceServiceClientWithServiceID(cc srpc.Client, serviceID str
 }
 
 func (c *srpcRootResourceServiceClient) SRPCClient() srpc.Client { return c.cc }
+
+func (c *srpcRootResourceServiceClient) MountApp(ctx context.Context, in *MountAppRequest) (*MountAppResponse, error) {
+	out := new(MountAppResponse)
+	err := c.cc.ExecCall(ctx, c.serviceID, "MountApp", in, out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
 
 func (c *srpcRootResourceServiceClient) ListProviders(ctx context.Context, in *ListProvidersRequest) (*ListProvidersResponse, error) {
 	out := new(ListProvidersResponse)
@@ -658,6 +669,8 @@ func (x *srpcRootResourceService_WatchListenerStatusClient) RecvTo(m *WatchListe
 }
 
 type SRPCRootResourceServiceServer interface {
+	MountApp(context.Context, *MountAppRequest) (*MountAppResponse, error)
+
 	ListProviders(context.Context, *ListProvidersRequest) (*ListProvidersResponse, error)
 
 	LookupProvider(context.Context, *LookupProviderRequest) (*LookupProviderResponse, error)
@@ -753,6 +766,7 @@ func (d *SRPCRootResourceServiceHandler) GetServiceID() string { return d.servic
 
 func (SRPCRootResourceServiceHandler) GetMethodIDs() []string {
 	return []string{
+		"MountApp",
 		"ListProviders",
 		"LookupProvider",
 		"MountSession",
@@ -799,6 +813,8 @@ func (d *SRPCRootResourceServiceHandler) InvokeMethod(
 	}
 
 	switch methodID {
+	case "MountApp":
+		return true, d.InvokeMethod_MountApp(d.impl, strm)
 	case "ListProviders":
 		return true, d.InvokeMethod_ListProviders(d.impl, strm)
 	case "LookupProvider":
@@ -870,6 +886,18 @@ func (d *SRPCRootResourceServiceHandler) InvokeMethod(
 	default:
 		return false, nil
 	}
+}
+
+func (SRPCRootResourceServiceHandler) InvokeMethod_MountApp(impl SRPCRootResourceServiceServer, strm srpc.Stream) error {
+	req := new(MountAppRequest)
+	if err := strm.MsgRecv(req); err != nil {
+		return err
+	}
+	out, err := impl.MountApp(strm.Context(), req)
+	if err != nil {
+		return err
+	}
+	return strm.MsgSend(out)
 }
 
 func (SRPCRootResourceServiceHandler) InvokeMethod_ListProviders(impl SRPCRootResourceServiceServer, strm srpc.Stream) error {
@@ -1248,6 +1276,14 @@ func (SRPCRootResourceServiceHandler) InvokeMethod_WatchListenerStatus(impl SRPC
 	}
 	serverStrm := &srpcRootResourceService_WatchListenerStatusStream{strm}
 	return impl.WatchListenerStatus(req, serverStrm)
+}
+
+type SRPCRootResourceService_MountAppStream interface {
+	srpc.Stream
+}
+
+type srpcRootResourceService_MountAppStream struct {
+	srpc.Stream
 }
 
 type SRPCRootResourceService_ListProvidersStream interface {

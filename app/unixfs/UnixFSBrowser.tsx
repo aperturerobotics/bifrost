@@ -1,3 +1,4 @@
+import { useAppEnvironment } from '@s4wave/web/sdk/app/environment.js'
 import {
   type ChangeEvent,
   type ComponentType,
@@ -254,6 +255,7 @@ function useUnixFSBrowserElement({
   directoryHeader: DirectoryHeader,
 }: UnixFSBrowserProps) {
   const tabContext = useTabContext()
+  const { httpPathPrefix } = useAppEnvironment()
   const spaceCtx = SpaceContainerContext.useContextSafe()
   const spaceId = spaceCtx?.spaceId ?? null
   const sessionIndex = useSessionIndex()
@@ -326,8 +328,17 @@ function useUnixFSBrowserElement({
       spaceId,
       unixfsId,
       displayPath,
+      httpPathPrefix,
     )
-  }, [displayPath, isDir, sessionIndex, spaceId, statResource.value, unixfsId])
+  }, [
+    displayPath,
+    isDir,
+    sessionIndex,
+    spaceId,
+    statResource.value,
+    unixfsId,
+    httpPathPrefix,
+  ])
   const effectiveMimeType = mimeTypeOverride || statResource.value?.mimeType
 
   const { getDragEnvelope, getDownloadDragTarget } =
@@ -472,6 +483,7 @@ function useUnixFSBrowserElement({
     (entries: FileEntry[]) => {
       if (!sessionIndex || !spaceId || entries.length === 0) return
       void downloadUnixFSSelection({
+        httpPathPrefix,
         sessionIndex,
         sharedObjectId: spaceId,
         objectKey: unixfsId,
@@ -482,7 +494,7 @@ function useUnixFSBrowserElement({
         toast.error('Download failed', { description: String(err) })
       })
     },
-    [displayPath, sessionIndex, spaceId, unixfsId],
+    [displayPath, sessionIndex, spaceId, unixfsId, httpPathPrefix],
   )
 
   // handleStartRename activates inline rename for a file entry.

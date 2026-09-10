@@ -2,171 +2,126 @@ package volume_world
 
 import (
 	"context"
-	"errors"
 
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
 	block_transform "github.com/s4wave/spacewave/db/block/transform"
-	bucket "github.com/s4wave/spacewave/db/bucket"
-	bucket_lookup "github.com/s4wave/spacewave/db/bucket/lookup"
 	"github.com/s4wave/spacewave/db/kvtx"
-	kvtx_block "github.com/s4wave/spacewave/db/kvtx/block"
 	kvtx_vlogger "github.com/s4wave/spacewave/db/kvtx/vlogger"
 	kvkey "github.com/s4wave/spacewave/db/store/kvkey"
 	"github.com/s4wave/spacewave/db/volume"
 	common_kvtx "github.com/s4wave/spacewave/db/volume/common/kvtx"
 	"github.com/s4wave/spacewave/db/world"
+	"github.com/s4wave/spacewave/net/keypem"
+	"github.com/s4wave/spacewave/net/peer"
 	"github.com/sirupsen/logrus"
 )
 
-// ControllerID identifies the world object volume controller.
+// ControllerID identifies the World object volume controller.
 const ControllerID = "hydra/volume/world"
 
-// Version is the version of the KVTxInmem implementation.
+// Version is the World volume implementation version.
 var Version = controller.MustParseVersion("0.0.1")
 
-// Volume implements a World Object block-graph kvtx backed volume.
+// Volume stores its transactional metadata and blocks in one World object.
 type Volume struct {
 	*common_kvtx.Volume
-
-	le   *logrus.Entry
-	b    bus.Bus
-	conf *Config
-	rels []func()
+	engine world.Engine
 }
 
-// NewVolume builds the block-graph volume storing state in a object store.
+// NewVolume opens a World-backed volume. Every metadata transaction reads and
+// publishes its object head within the same World transaction.
 func NewVolume(
 	ctx context.Context,
 	le *logrus.Entry,
 	b bus.Bus,
 	sfs *block_transform.StepFactorySet,
 	conf *Config,
-) (v *Volume, err error) {
-	var rels []func()
-	rel := func() {
-		for _, f := range rels {
-			f()
+) (*Volume, error) {
+	return NewVolumeWithEngine(ctx, le, b, sfs, conf, world.NewBusEngine(ctx, b, conf.GetEngineId()))
+}
+
+// NewVolumeWithEngine opens a Volume through an already-granted World capability.
+// The caller retains the engine until the Volume closes.
+func NewVolumeWithEngine(
+	ctx context.Context,
+	le *logrus.Entry,
+	b bus.Bus,
+	sfs *block_transform.StepFactorySet,
+	conf *Config,
+	engine world.Engine,
+) (*Volume, error) {
+	keys, err := kvkey.NewKVKey(conf.GetKvKeyOpts())
+	if err != nil {
+		return nil, err
+	}
+	store := &worldStore{engine: engine, b: b, le: le, sfs: sfs, conf: conf.CloneVT()}
+
+	// Initialize identity while holding the writer that checks its absence.
+	// A second attachment must use the first committed identity.
+	if !conf.GetNoGenerateKey() && !conf.GetNoWriteKey() {
+		if err := initializeIdentity(ctx, store, keys.GetPeerPrivKey()); err != nil {
+			return nil, err
 		}
 	}
-	defer func() {
-		if err != nil {
-			v = nil
-			rel()
-		}
-	}()
 
-	le.Debug("building volume")
-	v = &Volume{
-		le:   le,
-		b:    b,
-		conf: conf,
-	}
-
-	kvkey, err := kvkey.NewKVKey(conf.GetKvKeyOpts())
-	if err != nil {
-		return nil, err
-	}
-
-	// Determine the init ref to the HEAD
-	var headRef *bucket.ObjectRef
-
-	// initialize headRef using the configured head ref
-	initRef := conf.GetInitHeadRef()
-	if initRef != nil {
-		headRef = initRef.Clone()
-	}
-
-	// Construct the bus engine
-	busEngine := world.NewBusEngine(ctx, b, conf.GetEngineId())
-	worldState := world.NewEngineWorldState(busEngine, true)
-
-	// load initial head ref
-	headState, headStateFound, err := v.loadHeadState(ctx, worldState)
-	if err != nil {
-		return nil, err
-	}
-	if headStateFound && headState != nil {
-		headRef = headState
-	}
-
-	// override bucket id if configured
-	if confBucketID := conf.GetBucketId(); confBucketID != "" {
-		headRef.BucketId = confBucketID
-	}
-
-	// requires either initial ref or head ref to be set
-	if headRef.GetBucketId() == "" {
-		return nil, errors.New("head ref bucket id required but was unset")
-	}
-
-	// Build the initial cursor (will lookup the bucket)
-	cursor, err := bucket_lookup.BuildCursor(
-		ctx,
-		b,
-		le,
-		sfs,
-		conf.GetVolumeId(),
-		headRef,
-		nil,
-	)
-	if err != nil {
-		return nil, err
-	}
-	rels = append(rels, cursor.Release)
-
-	commitFn := func(nref *bucket.ObjectRef) error {
-		// write state back to state store
-		return v.writeHeadState(ctx, worldState, nref)
-	}
-
-	// Build the kvtx block store.
-	bstore, err := kvtx_block.NewStore(ctx, le, cursor, commitFn)
-	if err != nil {
-		return nil, err
-	}
-
-	var store kvtx.Store = bstore
+	var loggedStore kvtx.Store = store
 	if conf.GetVerbose() {
-		store = kvtx_vlogger.NewVLogger(le, store)
+		loggedStore = kvtx_vlogger.NewVLogger(le, store)
 	}
-
-	// Build the volume wrapping the store.
 	bvol, err := common_kvtx.NewVolume(
-		ctx,
-		ControllerID,
-		kvkey,
-		store,
-		conf.GetStoreConfig(),
-		conf.GetNoGenerateKey(),
-		conf.GetNoWriteKey(),
-		nil,
-		func() error { cursor.Release(); return nil },
+		ctx, ControllerID, keys, loggedStore, conf.GetStoreConfig(),
+		conf.GetNoGenerateKey(), conf.GetNoWriteKey(), nil, nil,
+		func() error {
+			tx, err := engine.NewTransaction(ctx, true)
+			if err != nil {
+				return err
+			}
+			defer tx.Discard()
+			if _, err := tx.DeleteObject(ctx, conf.GetObjectKey()); err != nil {
+				return err
+			}
+			return tx.Commit(ctx)
+		},
 	)
 	if err != nil {
 		return nil, err
 	}
-	v.Volume = bvol
-	v.rels = rels
-	return v, nil
+	return &Volume{Volume: bvol, engine: engine}, nil
 }
 
-// Close closes the volume, returning any errors.
-func (v *Volume) Close() error {
-	err := v.Volume.Close()
-	for _, rel := range v.rels {
-		rel()
+// initializeIdentity creates the durable identity once across concurrent mounts.
+func initializeIdentity(ctx context.Context, store kvtx.Store, key []byte) error {
+	tx, err := store.NewTransaction(ctx, true)
+	if err != nil {
+		return err
 	}
-	return err
-}
-
-// Delete closes the volume and removes the backing store.
-func (v *Volume) Delete() error {
-	for _, rel := range v.rels {
-		rel()
+	defer tx.Discard()
+	data, found, err := tx.Get(ctx, key)
+	if err != nil || (found && len(data) != 0) {
+		return err
 	}
-	return v.Volume.Delete()
+	p, err := peer.NewPeer(nil)
+	if err != nil {
+		return err
+	}
+	priv, err := p.GetPrivKey(ctx)
+	if err != nil {
+		return err
+	}
+	data, err = keypem.MarshalPrivKeyPem(priv)
+	if err != nil {
+		return err
+	}
+	if err := tx.Set(ctx, key, data); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
 }
 
-// _ is a type assertion
+// Sync fences both Volume blocks and the enclosing World's durable head.
+func (v *Volume) Sync(ctx context.Context) (bool, error) {
+	return v.engine.Sync(ctx)
+}
+
 var _ volume.Volume = (*Volume)(nil)

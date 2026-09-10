@@ -2,6 +2,7 @@ import * as React from 'react'
 import * as PopoverPrimitive from '@radix-ui/react-popover'
 
 import { cn } from '../style/utils.js'
+import { useAppEnvironment } from '@s4wave/web/sdk/app/environment.js'
 
 function Popover({
   ...props
@@ -21,9 +22,11 @@ function PopoverContent({
   sideOffset = 4,
   ...props
 }: React.ComponentProps<typeof PopoverPrimitive.Content>) {
+  const environment = useAppEnvironment()
   return (
     <PopoverPrimitive.Portal>
       <PopoverPrimitive.Content
+        data-spacewave-app={environment.id || undefined}
         data-slot="popover-content"
         align={align}
         sideOffset={sideOffset}

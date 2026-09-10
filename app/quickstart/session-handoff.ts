@@ -16,7 +16,7 @@ export interface QuickstartInitialObjectHandoff {
   objectType: string
 }
 
-const handoffsBySessionIndex = new Map<number, QuickstartSessionHandoff>()
+const handoffsBySessionIndex = new Map<string, QuickstartSessionHandoff>()
 
 // QuickstartHandoffRecord is every fact and resource staged under one
 // session+shared-object key. releaseQuickstartSharedObjectHandoffNow walks
@@ -39,8 +39,9 @@ const handoffReleaseGraceMs = 5000
 function sharedObjectHandoffKey(
   sessionIndex: number,
   sharedObjectId: string,
+  scope = '',
 ): string {
-  return `${sessionIndex}:${sharedObjectId}`
+  return `${scope}/${sessionIndex}/${sharedObjectId}`
 }
 
 function releaseSession(session: Session): void {
@@ -262,24 +263,28 @@ function stageHandoffResource<T>(
 
 export function stageQuickstartSessionHandoff(
   handoff: QuickstartSessionHandoff,
+  scope = '',
 ): void {
-  const existing = handoffsBySessionIndex.get(handoff.sessionIndex)
+  const existing = handoffsBySessionIndex.get(
+    `${scope}/${handoff.sessionIndex}`,
+  )
   if (existing?.session === handoff.session) {
-    handoffsBySessionIndex.set(handoff.sessionIndex, handoff)
+    handoffsBySessionIndex.set(`${scope}/${handoff.sessionIndex}`, handoff)
     return
   }
   if (existing) {
     releaseHandoff(existing)
   }
-  handoffsBySessionIndex.set(handoff.sessionIndex, handoff)
+  handoffsBySessionIndex.set(`${scope}/${handoff.sessionIndex}`, handoff)
 }
 
 export function consumeQuickstartSessionHandoff(
   sessionIndex: number,
+  scope = '',
 ): QuickstartSessionHandoff | null {
-  const handoff = handoffsBySessionIndex.get(sessionIndex)
+  const handoff = handoffsBySessionIndex.get(`${scope}/${sessionIndex}`)
   if (!handoff) return null
-  handoffsBySessionIndex.delete(sessionIndex)
+  handoffsBySessionIndex.delete(`${scope}/${sessionIndex}`)
   if (handoff.session.released) return null
   return handoff
 }
@@ -287,9 +292,10 @@ export function consumeQuickstartSessionHandoff(
 export function consumeQuickstartSharedObjectHandoff(
   sessionIndex: number,
   sharedObjectId: string,
+  scope = '',
 ): SharedObject | null {
   return consumeHandoffField(
-    sharedObjectHandoffKey(sessionIndex, sharedObjectId),
+    sharedObjectHandoffKey(sessionIndex, sharedObjectId, scope),
     SHARED_OBJECT_FIELD,
   )
 }
@@ -297,9 +303,10 @@ export function consumeQuickstartSharedObjectHandoff(
 export function hasQuickstartSharedObjectHandoff(
   sessionIndex: number,
   sharedObjectId: string,
+  scope = '',
 ): boolean {
   const record = sharedObjectHandoffsByKey.get(
-    sharedObjectHandoffKey(sessionIndex, sharedObjectId),
+    sharedObjectHandoffKey(sessionIndex, sharedObjectId, scope),
   )
   return (
     !!record &&
@@ -316,9 +323,10 @@ export function hasQuickstartSharedObjectHandoff(
 export function markQuickstartSharedObjectHandoffAwaitingResourcesList(
   sessionIndex: number,
   sharedObjectId: string,
+  scope = '',
 ): void {
   const record = handoffRecordAt(
-    sharedObjectHandoffKey(sessionIndex, sharedObjectId),
+    sharedObjectHandoffKey(sessionIndex, sharedObjectId, scope),
     true,
   )
   if (record) {
@@ -329,8 +337,9 @@ export function markQuickstartSharedObjectHandoffAwaitingResourcesList(
 export function clearQuickstartSharedObjectHandoffAwaitingResourcesList(
   sessionIndex: number,
   sharedObjectId: string,
+  scope = '',
 ): void {
-  const key = sharedObjectHandoffKey(sessionIndex, sharedObjectId)
+  const key = sharedObjectHandoffKey(sessionIndex, sharedObjectId, scope)
   const record = handoffRecordAt(key, false)
   if (!record) return
   record.awaitingResourcesList = false
@@ -340,18 +349,20 @@ export function clearQuickstartSharedObjectHandoffAwaitingResourcesList(
 export function isQuickstartSharedObjectHandoffAwaitingResourcesList(
   sessionIndex: number,
   sharedObjectId: string,
+  scope = '',
 ): boolean {
   return !!sharedObjectHandoffsByKey.get(
-    sharedObjectHandoffKey(sessionIndex, sharedObjectId),
+    sharedObjectHandoffKey(sessionIndex, sharedObjectId, scope),
   )?.awaitingResourcesList
 }
 
 export function consumeQuickstartSharedObjectBodyHandoff(
   sessionIndex: number,
   sharedObjectId: string,
+  scope = '',
 ): SharedObjectBody | null {
   return consumeHandoffField(
-    sharedObjectHandoffKey(sessionIndex, sharedObjectId),
+    sharedObjectHandoffKey(sessionIndex, sharedObjectId, scope),
     SHARED_OBJECT_BODY_FIELD,
   )
 }
@@ -359,9 +370,10 @@ export function consumeQuickstartSharedObjectBodyHandoff(
 export function consumeQuickstartSpaceHandoff(
   sessionIndex: number,
   sharedObjectId: string,
+  scope = '',
 ): Space | null {
   return consumeHandoffField(
-    sharedObjectHandoffKey(sessionIndex, sharedObjectId),
+    sharedObjectHandoffKey(sessionIndex, sharedObjectId, scope),
     SPACE_FIELD,
   )
 }
@@ -369,9 +381,10 @@ export function consumeQuickstartSpaceHandoff(
 export function consumeQuickstartSpaceContentsHandoff(
   sessionIndex: number,
   sharedObjectId: string,
+  scope = '',
 ): SpaceContents | null {
   return consumeHandoffField(
-    sharedObjectHandoffKey(sessionIndex, sharedObjectId),
+    sharedObjectHandoffKey(sessionIndex, sharedObjectId, scope),
     SPACE_CONTENTS_FIELD,
   )
 }
@@ -379,9 +392,10 @@ export function consumeQuickstartSpaceContentsHandoff(
 export function consumeQuickstartSpaceWorldHandoff(
   sessionIndex: number,
   sharedObjectId: string,
+  scope = '',
 ): EngineWorldState | null {
   return consumeHandoffField(
-    sharedObjectHandoffKey(sessionIndex, sharedObjectId),
+    sharedObjectHandoffKey(sessionIndex, sharedObjectId, scope),
     SPACE_WORLD_FIELD,
   )
 }
@@ -390,10 +404,11 @@ export function getQuickstartInitialObjectHandoff(
   sessionIndex: number | null | undefined,
   sharedObjectId: string,
   objectKey?: string,
+  scope = '',
 ): QuickstartInitialObjectHandoff | null {
   if (sessionIndex == null || !sharedObjectId || !objectKey) return null
   const record = sharedObjectHandoffsByKey.get(
-    sharedObjectHandoffKey(sessionIndex, sharedObjectId),
+    sharedObjectHandoffKey(sessionIndex, sharedObjectId, scope),
   )
   const handoff = record?.initialObject
   if (!handoff || handoff.objectKey !== objectKey) return null
@@ -436,9 +451,10 @@ function releaseQuickstartSharedObjectHandoffNow(key: string): void {
 export function releaseQuickstartSharedObjectHandoff(
   sessionIndex: number,
   sharedObjectId: string,
+  scope = '',
 ): void {
   scheduleSharedObjectHandoffRelease(
-    sharedObjectHandoffKey(sessionIndex, sharedObjectId),
+    sharedObjectHandoffKey(sessionIndex, sharedObjectId, scope),
   )
 }
 
@@ -455,6 +471,7 @@ export interface QuickstartSessionHandoffCleanup {
 
 export function createQuickstartSessionHandoffCleanup(
   cleanup: RegisterCleanup,
+  scope = '',
 ): QuickstartSessionHandoffCleanup {
   const heldSessions: Session[] = []
   const heldSharedObjects: SharedObject[] = []
@@ -540,13 +557,13 @@ export function createQuickstartSessionHandoffCleanup(
       if (index >= 0) {
         heldSessions.splice(index, 1)
       }
-      stageQuickstartSessionHandoff({ sessionIndex, session })
+      stageQuickstartSessionHandoff({ sessionIndex, session }, scope)
 
       if (!sharedObjectId) {
         releaseHeldSpaceResources()
         return
       }
-      const key = sharedObjectHandoffKey(sessionIndex, sharedObjectId)
+      const key = sharedObjectHandoffKey(sessionIndex, sharedObjectId, scope)
       cancelScheduledRelease(key)
       const record = handoffRecordAt(key, true)
       if (!record) return
@@ -594,8 +611,17 @@ export function createQuickstartSessionHandoffCleanup(
   }
 }
 
+export function releaseQuickstartAppHandoffs(scope: string): void {
+  releaseMatchingHandoffs(scope)
+}
+
 export function releaseQuickstartSessionHandoffsForTests(): void {
+  releaseMatchingHandoffs()
+}
+
+function releaseMatchingHandoffs(scope?: string): void {
   for (const [key, record] of sharedObjectHandoffsByKey) {
+    if (scope !== undefined && !key.startsWith(scope + '/')) continue
     if (record.releaseTimer) {
       clearTimeout(record.releaseTimer)
       record.releaseTimer = undefined
@@ -611,8 +637,9 @@ export function releaseQuickstartSessionHandoffsForTests(): void {
     deleteHandoffRecordIfEmpty(key, record)
   }
 
-  for (const handoff of handoffsBySessionIndex.values()) {
+  for (const [key, handoff] of handoffsBySessionIndex) {
+    if (scope !== undefined && !key.startsWith(scope + '/')) continue
     releaseHandoff(handoff)
+    handoffsBySessionIndex.delete(key)
   }
-  handoffsBySessionIndex.clear()
 }

@@ -1,3 +1,4 @@
+import { useAppEnvironment } from '@s4wave/web/sdk/app/environment.js'
 import { useCallback } from 'react'
 
 import type { FileEntry } from '@s4wave/web/editors/file-browser/types.js'
@@ -24,6 +25,7 @@ export function useUnixFSBrowserDragTargets({
   spaceId,
   unixfsId,
 }: UnixFSBrowserDragTargetsOptions) {
+  const { httpPathPrefix } = useAppEnvironment()
   const getDragEnvelope = useCallback(
     (entry: FileEntry, { selectedIds }: { selectedIds: string[] }) => {
       const dragEntries =
@@ -64,6 +66,7 @@ export function useUnixFSBrowserDragTargets({
           ? selectedEntries
           : [entry]
       return buildUnixFSSelectionDownloadDragTarget({
+        httpPathPrefix,
         sessionIndex,
         sharedObjectId: spaceId,
         objectKey: unixfsId,
@@ -71,7 +74,14 @@ export function useUnixFSBrowserDragTargets({
         entries: dragEntries,
       })
     },
-    [displayPath, selectedEntries, sessionIndex, spaceId, unixfsId],
+    [
+      displayPath,
+      selectedEntries,
+      sessionIndex,
+      spaceId,
+      unixfsId,
+      httpPathPrefix,
+    ],
   )
 
   return { getDragEnvelope, getDownloadDragTarget }

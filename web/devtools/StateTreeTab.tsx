@@ -1,3 +1,4 @@
+import { useAppEnvironment } from '@s4wave/web/sdk/app/environment.js'
 import { useCallback, useMemo } from 'react'
 import { LuChevronDown, LuChevronRight, LuDatabase } from 'react-icons/lu'
 
@@ -468,10 +469,11 @@ function sortNodes(nodes: ChildNode[]): ChildNode[] {
 }
 
 function useTreeExpandedState() {
+  const environment = useAppEnvironment()
   return useStateAtom<Record<string, boolean>>(
     {
       namespace: ['devtools', 'state', 'tree'],
-      stateAtom: stateDevToolsStateAtom,
+      stateAtom: environment.id ? environment.rootAtom : stateDevToolsStateAtom,
     },
     'expanded',
     {},

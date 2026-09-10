@@ -1,3 +1,4 @@
+import { useAppEnvironment } from '@s4wave/web/sdk/app/environment.js'
 // Quickstart prepares a local session and opens the selected app.
 
 import { useCallback, useState } from 'react'
@@ -51,6 +52,7 @@ function QuickstartErrorState({ message, onRetry }: QuickstartErrorStateProps) {
 
 // Quickstart retains setup resources across the final route transition.
 export const Quickstart: React.FC<QuickstartProps> = ({ quickstartId }) => {
+  const environment = useAppEnvironment()
   // isCreate indicates this is an option that should call createQuickstartSetup.
   // otherwise we redirect below.
   const isCreate = isQuickstartCreateId(quickstartId)
@@ -65,7 +67,10 @@ export const Quickstart: React.FC<QuickstartProps> = ({ quickstartId }) => {
   const localSessionResource = useResource(
     rootResource,
     async (root, signal, cleanup) => {
-      const handoff = createQuickstartSessionHandoffCleanup(cleanup)
+      const handoff = createQuickstartSessionHandoffCleanup(
+        cleanup,
+        environment.instanceKey,
+      )
       try {
         const setup = await createLocalSession(
           root,
@@ -95,7 +100,10 @@ export const Quickstart: React.FC<QuickstartProps> = ({ quickstartId }) => {
     rootResource,
     async (root, signal, cleanup) => {
       if (!isCreate || isLocal) return null
-      const handoff = createQuickstartSessionHandoffCleanup(cleanup)
+      const handoff = createQuickstartSessionHandoffCleanup(
+        cleanup,
+        environment.instanceKey,
+      )
       try {
         const setup = await createQuickstartSetup(
           root,

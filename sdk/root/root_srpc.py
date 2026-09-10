@@ -15,6 +15,13 @@ ROOTRESOURCESERVICE_SERVICE = ServiceDescriptor(
     "s4wave.root.RootResourceService",
     (
         MethodDescriptor(
+            "MountApp",
+            _github_com_s4wave_spacewave_sdk_root_root_pb2.MountAppRequest,
+            _github_com_s4wave_spacewave_sdk_root_root_pb2.MountAppResponse,
+            False,
+            False,
+        ),
+        MethodDescriptor(
             "ListProviders",
             _github_com_s4wave_spacewave_sdk_root_root_pb2.ListProvidersRequest,
             _github_com_s4wave_spacewave_sdk_root_root_pb2.ListProvidersResponse,
@@ -260,6 +267,24 @@ class RootResourceServiceClient:
     def __init__(self, client: Client, service: str | None = None) -> None:
         self._client = client
         self._service = service or "s4wave.root.RootResourceService"
+
+    async def mount_app(
+        self, request: _github_com_s4wave_spacewave_sdk_root_root_pb2.MountAppRequest
+    ) -> _github_com_s4wave_spacewave_sdk_root_root_pb2.MountAppResponse:
+        call = await self._client.open_call(
+            self._service, "MountApp", request.SerializeToString(deterministic=True)
+        )
+        try:
+            data = await call.receive()
+            if data is None:
+                raise CallProtocolError("missing unary response")
+            response = _github_com_s4wave_spacewave_sdk_root_root_pb2.MountAppResponse()
+            response.ParseFromString(data)
+            if await call.receive() is not None:
+                raise CallProtocolError("extra unary response")
+            return response
+        finally:
+            await call.aclose()
 
     async def list_providers(
         self,
@@ -988,6 +1013,9 @@ class RootResourceServiceClient:
 
 
 class RootResourceServiceServer(Protocol):
+    async def mount_app(
+        self, request: _github_com_s4wave_spacewave_sdk_root_root_pb2.MountAppRequest
+    ) -> _github_com_s4wave_spacewave_sdk_root_root_pb2.MountAppResponse: ...
     async def list_providers(
         self,
         request: _github_com_s4wave_spacewave_sdk_root_root_pb2.ListProvidersRequest,
@@ -1152,6 +1180,17 @@ def register_root_resource_service(
     implementation: RootResourceServiceServer,
     service: str = "s4wave.root.RootResourceService",
 ) -> None:
+    async def mount_app_handler(call: Call) -> None:
+        first = await call.receive()
+        if first is None:
+            raise CallProtocolError("missing initial request")
+        request = _github_com_s4wave_spacewave_sdk_root_root_pb2.MountAppRequest()
+        request.ParseFromString(first)
+        response = await implementation.mount_app(request)
+        await call.send(response.SerializeToString(deterministic=True))
+
+    registry.register(service, "MountApp", mount_app_handler)
+
     async def list_providers_handler(call: Call) -> None:
         first = await call.receive()
         if first is None:

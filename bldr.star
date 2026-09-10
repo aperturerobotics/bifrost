@@ -5,6 +5,7 @@
 
 # Shared Go packages for the core runtime
 CORE_GO_PKGS = [
+    "./db/volume/world",
     "./core/resource/root/controller",
     "./core/resource/listener",
     "./core/session/controller",
@@ -970,4 +971,3 @@ project(
         loadWebStartup=WEB_STARTUP,
     ),
 )
-

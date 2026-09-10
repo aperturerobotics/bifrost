@@ -1,13 +1,13 @@
 const INTERACTION_KEY = 'spacewave-has-interacted'
 
-export function hasInteracted(): boolean {
-  return localStorage.getItem(INTERACTION_KEY) === 'true'
+export function hasInteracted(storage = localStorage): boolean {
+  return storage.getItem(INTERACTION_KEY) === 'true'
 }
 
-export function markInteracted(): void {
-  localStorage.setItem(INTERACTION_KEY, 'true')
+export function markInteracted(storage = localStorage): void {
+  storage.setItem(INTERACTION_KEY, 'true')
 }
 
-export function clearInteracted(): void {
-  localStorage.removeItem(INTERACTION_KEY)
+export function clearInteracted(storage = localStorage): void {
+  storage.removeItem(INTERACTION_KEY)
 }

@@ -1,4 +1,5 @@
 import { lazy } from 'react'
+import { useAppEnvironment } from '@s4wave/web/sdk/app/environment.js'
 
 import { Route, useParams } from '@s4wave/web/router/router.js'
 import { CheckoutResultPage } from '@s4wave/app/provider/spacewave/CheckoutResultPage.js'
@@ -17,6 +18,7 @@ const LazyPairCodePage = lazy(async () => {
 
 // JoinRedirect resolves the first available session and redirects to its join route.
 function JoinRedirect() {
+  const environment = useAppEnvironment()
   const params = useParams()
   const code = params.code ?? ''
   const resource = useSessionList()
@@ -40,7 +42,7 @@ function JoinRedirect() {
   const sessions = resource.value?.sessions ?? []
   if (sessions.length === 0) {
     // Stash the invite code so it survives account creation.
-    if (code) storePendingJoin(code)
+    if (code) storePendingJoin(code, environment.documentStorage)
     return <NavigatePath to="/" replace />
   }
 

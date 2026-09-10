@@ -1,3 +1,4 @@
+import { useAppEnvironment } from '@s4wave/web/sdk/app/environment.js'
 /* eslint-disable react-doctor/async-await-in-loop */
 import { useMemo } from 'react'
 
@@ -12,7 +13,8 @@ import type { SessionListEntry } from '@s4wave/core/session/session.pb.js'
 
 // LandingOrRedirect checks for existing sessions and redirects accordingly.
 export function LandingOrRedirect() {
-  if (!hasInteracted()) {
+  const environment = useAppEnvironment()
+  if (!hasInteracted(environment.storage)) {
     return <Landing />
   }
   return <LandingWithSessionCheck />

@@ -116,3 +116,26 @@ export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
   ] satisfies readonly PartialFieldInfo[],
   packedByDefault: true,
 })
+
+/**
+ * Backing is the body of a hydra/volume object backed by a transactional KV object.
+ * The enclosing World grants access to the installation, including its identity.
+ *
+ * @generated from message volume.world.Backing
+ */
+export interface Backing {
+  /**
+   * KvObjectKey identifies the kv/store object containing the complete Volume.
+   *
+   * @generated from field: string kv_object_key = 1;
+   */
+  kvObjectKey?: string
+}
+
+export const Backing: MessageType<Backing> = /* @__PURE__ */ createMessageType({
+  typeName: 'volume.world.Backing',
+  fields: [
+    { no: 1, name: 'kv_object_key', kind: 'scalar', T: ScalarType.STRING },
+  ] satisfies readonly PartialFieldInfo[],
+  packedByDefault: true,
+})

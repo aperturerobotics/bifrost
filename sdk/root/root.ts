@@ -1,4 +1,5 @@
 import { ClientResourceRef } from '@aptre/bldr-sdk/resource/client.js'
+import { AppRuntime, type AppStorage } from './app.js'
 import { Cdn } from '../cdn/cdn.js'
 import { DebugDb } from '../debugdb/debugdb.js'
 import { Provider } from '../provider/provider.js'
@@ -57,6 +58,38 @@ export class Root extends Resource {
   constructor(resourceRef: ClientResourceRef) {
     super(resourceRef)
     this.service = new RootResourceServiceClient(resourceRef.client)
+  }
+
+  // mountApp attaches an ordinary app backed exclusively by the supplied
+  // storage. Equal persistent bindings share the backend while attached.
+  public async mountApp(
+    storage: AppStorage,
+    abortSignal?: AbortSignal,
+  ): Promise<AppRuntime> {
+    const worldRef =
+      'world' in storage
+        ? storage.world.resourceRef.createRef(storage.world.id)
+        : undefined
+    try {
+      const response = await this.service.MountApp(
+        'world' in storage
+          ? {
+              worldResourceId: storage.world.id,
+              objectPrefix: storage.objectPrefix,
+            }
+          : storage,
+        abortSignal,
+      )
+      return this.resourceRef.createResource(
+        response.resourceId ?? 0,
+        AppRuntime,
+        worldRef,
+        response.httpPathPrefix,
+      )
+    } catch (error) {
+      worldRef?.release()
+      throw error
+    }
   }
 
   // lookupProvider looks up a Provider resource by ID and returns the handle to it.

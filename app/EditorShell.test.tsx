@@ -80,7 +80,8 @@ if (typeof document === 'undefined') {
   })
 }
 
-vi.mock('@s4wave/web/router/app-path.js', () => ({
+vi.mock('@s4wave/web/router/app-path.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@s4wave/web/router/app-path.js')>()),
   getAppPath: () => h.appPath,
   getAppNavigation: () => ({ path: h.appPath, params: {} }),
 }))

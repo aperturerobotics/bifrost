@@ -8,12 +8,13 @@ import type {
 } from '@s4wave/web/command/CommandContext.js'
 import { useCommand } from '@s4wave/web/command/useCommand.js'
 import { useRootResource } from '@s4wave/web/hooks/useRootResource.js'
-import { getAppPath } from '@s4wave/web/router/app-path.js'
+import { useAppNavigation } from '@s4wave/web/sdk/app/environment.js'
 
 import { accountDescription, accountTitle } from './account-presentation.js'
 
 // SelectAccountCommand registers the global account-selection palette command.
 export function SelectAccountCommand() {
+  const { getAppPath } = useAppNavigation()
   const root = useRootResource().value
   const sessionList = useSessionList().value?.sessions
   const sessions = useMemo(() => sessionList ?? [], [sessionList])

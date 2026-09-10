@@ -2,7 +2,10 @@
 import { useState, useEffect, useMemo, type ReactNode } from 'react'
 import { useResource } from '@aptre/bldr-sdk/hooks/useResource.js'
 
-import { getAppPath } from '@s4wave/web/router/app-path.js'
+import {
+  useAppEnvironment,
+  useAppNavigation,
+} from '@s4wave/web/sdk/app/environment.js'
 import { BottomBarRoot } from '@s4wave/web/frame/bottom-bar-root.js'
 import { useStateAtom, useStateNamespace } from '@s4wave/web/state/index.js'
 import { KeyDispatcher } from '@s4wave/web/command/KeyDispatcher.js'
@@ -95,8 +98,9 @@ function ShellDocumentTitle() {
 // The FlexLayout spans the entire content area, enabling drag-to-split anywhere.
 // When splits are created, it transitions to grid mode via URL.
 export function EditorShell() {
+  const environment = useAppEnvironment()
   return (
-    <DocumentTitleProvider>
+    <DocumentTitleProvider enabled={!environment.id}>
       <CliTerminalSessionProvider>
         <EditorShellContent />
       </CliTerminalSessionProvider>
@@ -104,11 +108,23 @@ export function EditorShell() {
   )
 }
 function useShellDocumentEntry(): ShellDocumentEntry {
-  const [entry] = useState(() => classifyShellDocumentEntry())
+  const environment = useAppEnvironment()
+  const [entry] = useState(() =>
+    classifyShellDocumentEntry(
+      environment.id
+        ? {
+            ...environment.navigation.getAppNavigation(),
+            navigationType: 'navigate',
+            incarnation: environment.id,
+          }
+        : undefined,
+    ),
+  )
   return entry
 }
 
 function EditorShellContent() {
+  const { getAppPath, subscribe } = useAppNavigation()
   const documentEntry = useShellDocumentEntry()
   const namespace = useStateNamespace(['shell'])
 
@@ -128,9 +144,8 @@ function EditorShellContent() {
     const handleHashChange = () => {
       setIsGridMode(getAppPath().startsWith('/g/'))
     }
-    window.addEventListener('hashchange', handleHashChange)
-    return () => window.removeEventListener('hashchange', handleHashChange)
-  }, [])
+    return subscribe(handleHashChange)
+  }, [getAppPath, subscribe])
 
   // Keep ShellTabStrip (and the single OptimizedLayout it renders) mounted for
   // both URL modes. Its model handoff preserves FlexLayout's tab nodes and

@@ -49,8 +49,9 @@ function isDocumentState(value: unknown): value is ShellDocumentState {
   )
 }
 
-export function readShellDocumentState(): ShellDocumentState | null {
-  const storage = getSessionStorage()
+export function readShellDocumentState(
+  storage = getSessionStorage(),
+): ShellDocumentState | null {
   if (!storage) return null
   try {
     const raw = storage.getItem(SHELL_DOCUMENT_STATE_STORAGE_KEY)
@@ -62,8 +63,10 @@ export function readShellDocumentState(): ShellDocumentState | null {
   }
 }
 
-export function writeShellDocumentState(state: ShellDocumentState): void {
-  const storage = getSessionStorage()
+export function writeShellDocumentState(
+  state: ShellDocumentState,
+  storage = getSessionStorage(),
+): void {
   if (!storage) return
   try {
     storage.setItem(SHELL_DOCUMENT_STATE_STORAGE_KEY, JSON.stringify(state))
@@ -82,8 +85,8 @@ export function shellTabStateStorageKey(
 export function removeShellTabDocumentState(
   incarnation: string,
   tabId: string,
+  storage = getSessionStorage(),
 ): void {
-  const storage = getSessionStorage()
   if (!storage) return
   try {
     storage.removeItem(shellTabStateStorageKey(incarnation, tabId))

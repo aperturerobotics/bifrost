@@ -90,7 +90,12 @@ export class StorageAtom<T> extends BasicAtom<T> {
   private key: string
   private storageListener?: (e: StorageEvent) => void
 
-  constructor(storage: Storage, key: string, initialValue: T) {
+  constructor(
+    storage: Storage,
+    key: string,
+    initialValue: T,
+    storageEvents = true,
+  ) {
     super(initialValue)
     this.storage = storage
     this.key = key
@@ -110,6 +115,7 @@ export class StorageAtom<T> extends BasicAtom<T> {
 
     // Listen for cross-window storage changes
     if (
+      storageEvents &&
       typeof window !== 'undefined' &&
       typeof window.addEventListener === 'function'
     ) {

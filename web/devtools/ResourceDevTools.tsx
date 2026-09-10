@@ -1,3 +1,4 @@
+import { useAppEnvironment } from '@s4wave/web/sdk/app/environment.js'
 import {
   useStateAtom,
   atomWithLocalStorage,
@@ -30,8 +31,11 @@ export function useResourceDevToolsPanelState(): [
   ResourceDevToolsPanelState,
   (state: ResourceDevToolsPanelState) => void,
 ] {
+  const environment = useAppEnvironment()
   return useStateAtom<ResourceDevToolsPanelState>(
-    devToolsNamespace,
+    environment.id
+      ? { ...devToolsNamespace, stateAtom: environment.rootAtom }
+      : devToolsNamespace,
     'panel',
     DEFAULT_STATE,
   )

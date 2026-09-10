@@ -31,6 +31,8 @@ import {
   LookupProviderResponse,
   MarshalHashRequest,
   MarshalHashResponse,
+  MountAppRequest,
+  MountAppResponse,
   MountSessionByIdxRequest,
   MountSessionByIdxResponse,
   MountSessionRequest,
@@ -86,6 +88,15 @@ import {
 export const RootResourceServiceDefinition = {
   typeName: 's4wave.root.RootResourceService',
   methods: {
+    /**
+     * @generated from rpc s4wave.root.RootResourceService.MountApp
+     */
+    MountApp: {
+      name: 'MountApp',
+      I: MountAppRequest,
+      O: MountAppResponse,
+      kind: MethodKind.Unary,
+    },
     /**
      * @generated from rpc s4wave.root.RootResourceService.ListProviders
      */
@@ -400,6 +411,14 @@ export const RootResourceServiceDefinition = {
  */
 export interface RootResourceService {
   /**
+   * @generated from rpc s4wave.root.RootResourceService.MountApp
+   */
+  MountApp(
+    request: MountAppRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<MountAppResponse>
+
+  /**
    * @generated from rpc s4wave.root.RootResourceService.ListProviders
    */
   ListProviders(
@@ -676,6 +695,15 @@ export interface RootResourceService {
  * @generated from service s4wave.root.RootResourceService
  */
 export interface RootResourceServiceHandler {
+  /**
+   * @generated from rpc s4wave.root.RootResourceService.MountApp
+   */
+  MountApp(
+    request: MountAppRequest,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): Promise<MountAppResponse>
+
   /**
    * @generated from rpc s4wave.root.RootResourceService.ListProviders
    */
@@ -992,6 +1020,7 @@ export class RootResourceServiceClient implements RootResourceService {
   constructor(rpc: ProtoRpc, opts?: { service?: string }) {
     this.service = opts?.service || RootResourceServiceServiceName
     this.rpc = rpc
+    this.MountApp = this.MountApp.bind(this)
     this.ListProviders = this.ListProviders.bind(this)
     this.LookupProvider = this.LookupProvider.bind(this)
     this.MountSession = this.MountSession.bind(this)
@@ -1028,6 +1057,23 @@ export class RootResourceServiceClient implements RootResourceService {
     this.ReclaimRuntime = this.ReclaimRuntime.bind(this)
     this.WatchListenerStatus = this.WatchListenerStatus.bind(this)
   }
+  /**
+   * @generated from rpc s4wave.root.RootResourceService.MountApp
+   */
+  async MountApp(
+    request: MountAppRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<MountAppResponse> {
+    const requestMsg = MountAppRequest.create(request)
+    const result = await this.rpc.request(
+      this.service,
+      RootResourceServiceDefinition.methods.MountApp.name,
+      MountAppRequest.toBinary(requestMsg),
+      abortSignal || undefined,
+    )
+    return MountAppResponse.fromBinary(result)
+  }
+
   /**
    * @generated from rpc s4wave.root.RootResourceService.ListProviders
    */

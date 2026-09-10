@@ -60,6 +60,8 @@ import { CreateWizardObjectOp } from '@s4wave/sdk/world/wizard/wizard.pb.js'
 import { CREATE_WIZARD_OBJECT_OP_ID } from '@s4wave/sdk/world/wizard/create-wizard.js'
 import { InitForgeQuickstartOp } from '@s4wave/core/forge/dashboard/dashboard.pb.js'
 import { INIT_FORGE_QUICKSTART_OP_ID } from '@s4wave/sdk/forge/dashboard/init-forge-quickstart.js'
+import { getRootEnvironment } from '@s4wave/web/sdk/app/environment.js'
+import { getDebugContext } from '@s4wave/sdk/debug/context.js'
 import { markInteracted } from '@s4wave/web/state/interaction.js'
 import { mountSpace } from '@s4wave/app/space/space.js'
 import { buildWizardObjectKey } from '@s4wave/app/space/create-op-builders.js'
@@ -133,6 +135,7 @@ export interface QuickstartPhaseTiming {
 }
 
 export interface QuickstartSetupTiming {
+  appId?: string
   quickstartId: QuickstartSpaceCreateId
   state: 'loading' | 'progress-ready' | 'content-ready' | 'error' | 'cancelled'
   startedMs: number
@@ -198,9 +201,11 @@ function isQuickstartRpcAbort(err: unknown): boolean {
 
 function startQuickstartTiming(
   quickstartId: QuickstartSpaceCreateId,
+  appId: string,
 ): QuickstartSetupTiming {
   const timing: QuickstartSetupTiming = {
     quickstartId,
+    appId,
     state: 'loading',
     startedMs: nowMs(),
     phases: [],
@@ -213,6 +218,14 @@ function startQuickstartTiming(
 }
 
 function publishQuickstartTiming(timing: QuickstartSetupTiming): void {
+  if (timing.appId) {
+    try {
+      getDebugContext(timing.appId).quickstartTiming = timing
+    } catch {
+      /* The frontend may still be mounting. */
+    }
+    return
+  }
   globalThis.__s4waveQuickstartTiming = timing
   if (globalThis.__s4wave_debug) {
     globalThis.__s4wave_debug.quickstartTiming = timing
@@ -368,7 +381,8 @@ async function findMostRecentLocalSession(
   return undefined
 }
 
-function hasStoredLocalSessionHint(): boolean {
+function hasStoredLocalSessionHint(root: Root): boolean {
+  const localStorage = getRootEnvironment(root).storage
   if (typeof localStorage === 'undefined') return true
   return localStorage.getItem('spacewave-has-session') === '1'
 }
@@ -428,7 +442,7 @@ export async function createLocalSession(
   progress?: QuickstartProgressReporter,
 ): Promise<LocalSessionSetup> {
   // Check for an existing local session to reuse.
-  const hasLocalSessionHint = hasStoredLocalSessionHint()
+  const hasLocalSessionHint = hasStoredLocalSessionHint(root)
   if (!forceNew && hasLocalSessionHint) {
     reportQuickstartProgress(
       progress,
@@ -447,7 +461,7 @@ export async function createLocalSession(
           root.mountSession({ sessionRef: existing.sessionRef }, abortSignal),
         ),
       )
-      markInteracted()
+      markInteracted(getRootEnvironment(root).storage)
       return { sessionIndex: existing.sessionIndex, session }
     }
   }
@@ -500,7 +514,7 @@ export async function createLocalSession(
       )
       if (mounted) {
         const session = cleanup(mounted.session)
-        markInteracted()
+        markInteracted(getRootEnvironment(root).storage)
         return { sessionIndex: 1, session }
       }
     }
@@ -525,7 +539,7 @@ export async function createLocalSession(
           root.mountSession({ sessionRef: existing.sessionRef }, abortSignal),
         ),
       )
-      markInteracted()
+      markInteracted(getRootEnvironment(root).storage)
       return { sessionIndex: existing.sessionIndex, session }
     }
     throw err
@@ -543,7 +557,7 @@ export async function createLocalSession(
     ),
   )
 
-  markInteracted()
+  markInteracted(getRootEnvironment(root).storage)
 
   return { accountResp, sessionIndex, session }
 }
@@ -670,7 +684,10 @@ export async function createQuickstartSetup(
   cleanup: RegisterCleanup,
   progress?: QuickstartProgressReporter,
 ): Promise<QuickstartSetup> {
-  const timing = startQuickstartTiming(quickstartId)
+  const timing = startQuickstartTiming(
+    quickstartId,
+    getRootEnvironment(root).id,
+  )
   try {
     reportQuickstartProgress(progress, 'session', 'Preparing a local session')
     // Reuse existing local session or create a new one.
@@ -1108,12 +1125,19 @@ export async function populateSpace(
       await initNotesQuickstart(setup, quickstartId, abortSignal)
       break
     case 'canvas':
-      await initUnixFS(setup.spaceWorld, abortSignal)
-      await initCanvasDemo(setup.spaceWorld, abortSignal)
-      await createSpaceSettingsObject(
-        setup.spaceWorld,
-        abortSignal,
-        CANVAS_DEMO_OBJECT_KEY,
+      await initUnixFS(setup.spaceWorld, abortSignal, timing)
+      await timeQuickstartPhase(timing, 'init-canvas-demo', () =>
+        initCanvasDemo(setup.spaceWorld, abortSignal),
+      )
+      await timeQuickstartPhase(timing, 'create-canvas-settings', () =>
+        createSpaceSettingsObject(
+          setup.spaceWorld,
+          abortSignal,
+          CANVAS_DEMO_OBJECT_KEY,
+          undefined,
+          timing,
+          'create-canvas-settings',
+        ),
       )
       break
     case 'chat':

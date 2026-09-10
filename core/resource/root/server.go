@@ -27,6 +27,8 @@ type CoreRootServer struct {
 	b bus.Bus
 	// hostPluginID is the plugin id that owns this resource root.
 	hostPluginID string
+	// mountApp attaches a child installation through the composition root.
+	mountApp MountAppFunc
 	// stateAtomMgr manages state atom stores
 	stateAtomMgr *resource_state.StateAtomManager
 	// spaceRootAliasBcast broadcasts configured root registry changes.
