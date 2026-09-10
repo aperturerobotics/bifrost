@@ -46,15 +46,15 @@ export const SyncMode_Enum = /* @__PURE__ */ createEnumType(
  */
 export interface SyncConfig {
   /**
-   * InactivityTimeoutSecs is the inactivity timeout in seconds before flushing.
-   * Default: 10.
+   * CheckpointIntervalSecs bounds the delay from the first pending cloud change.
+   * Later changes do not reset this interval. Zero uses thirty seconds.
    *
-   * @generated from field: uint32 inactivity_timeout_secs = 1;
+   * @generated from field: uint32 checkpoint_interval_secs = 1;
    */
-  inactivityTimeoutSecs?: number
+  checkpointIntervalSecs?: number
   /**
    * SizeThresholdBytes is the dirty size threshold in bytes before flushing.
-   * Default: 10485760 (10MB).
+   * Zero uses 48 MiB.
    *
    * @generated from field: uint32 size_threshold_bytes = 2;
    */
@@ -80,7 +80,7 @@ export const SyncConfig: MessageType<SyncConfig> =
     fields: [
       {
         no: 1,
-        name: 'inactivity_timeout_secs',
+        name: 'checkpoint_interval_secs',
         kind: 'scalar',
         T: ScalarType.UINT32,
       },

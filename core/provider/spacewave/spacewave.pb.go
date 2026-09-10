@@ -129,11 +129,11 @@ func (x *Config) GetSigningEnvPrefix() string {
 // SyncConfig configures block store synchronization behavior.
 type SyncConfig struct {
 	unknownFields []byte
-	// InactivityTimeoutSecs is the inactivity timeout in seconds before flushing.
-	// Default: 10.
-	InactivityTimeoutSecs uint32 `protobuf:"varint,1,opt,name=inactivity_timeout_secs,json=inactivityTimeoutSecs,proto3" json:"inactivityTimeoutSecs,omitempty"`
+	// CheckpointIntervalSecs bounds the delay from the first pending cloud change.
+	// Later changes do not reset this interval. Zero uses thirty seconds.
+	CheckpointIntervalSecs uint32 `protobuf:"varint,1,opt,name=checkpoint_interval_secs,json=checkpointIntervalSecs,proto3" json:"checkpointIntervalSecs,omitempty"`
 	// SizeThresholdBytes is the dirty size threshold in bytes before flushing.
-	// Default: 10485760 (10MB).
+	// Zero uses 48 MiB.
 	SizeThresholdBytes uint32 `protobuf:"varint,2,opt,name=size_threshold_bytes,json=sizeThresholdBytes,proto3" json:"sizeThresholdBytes,omitempty"`
 	// AutoSync enables automatic sync on block writes.
 	// Default: true.
@@ -148,9 +148,9 @@ func (x *SyncConfig) Reset() {
 
 func (*SyncConfig) ProtoMessage() {}
 
-func (x *SyncConfig) GetInactivityTimeoutSecs() uint32 {
+func (x *SyncConfig) GetCheckpointIntervalSecs() uint32 {
 	if x != nil {
-		return x.InactivityTimeoutSecs
+		return x.CheckpointIntervalSecs
 	}
 	return 0
 }
@@ -203,7 +203,7 @@ func (m *SyncConfig) CloneVT() *SyncConfig {
 		return (*SyncConfig)(nil)
 	}
 	r := new(SyncConfig)
-	r.InactivityTimeoutSecs = m.InactivityTimeoutSecs
+	r.CheckpointIntervalSecs = m.CheckpointIntervalSecs
 	r.SizeThresholdBytes = m.SizeThresholdBytes
 	r.AutoSync = m.AutoSync
 	r.SyncMode = m.SyncMode
@@ -261,7 +261,7 @@ func (this *SyncConfig) EqualVT(that *SyncConfig) bool {
 	} else if this == nil || that == nil {
 		return false
 	}
-	if this.InactivityTimeoutSecs != that.InactivityTimeoutSecs {
+	if this.CheckpointIntervalSecs != that.CheckpointIntervalSecs {
 		return false
 	}
 	if this.SizeThresholdBytes != that.SizeThresholdBytes {
@@ -426,10 +426,10 @@ func (x *SyncConfig) MarshalProtoJSON(s *json.MarshalState) {
 	}
 	s.WriteObjectStart()
 	var wroteField bool
-	if x.InactivityTimeoutSecs != 0 || s.HasField("inactivityTimeoutSecs") {
+	if x.CheckpointIntervalSecs != 0 || s.HasField("checkpointIntervalSecs") {
 		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("inactivityTimeoutSecs")
-		s.WriteUint32(x.InactivityTimeoutSecs)
+		s.WriteObjectField("checkpointIntervalSecs")
+		s.WriteUint32(x.CheckpointIntervalSecs)
 	}
 	if x.SizeThresholdBytes != 0 || s.HasField("sizeThresholdBytes") {
 		s.WriteMoreIf(&wroteField)
@@ -463,9 +463,9 @@ func (x *SyncConfig) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		switch key {
 		default:
 			s.Skip() // ignore unknown field
-		case "inactivity_timeout_secs", "inactivityTimeoutSecs":
-			s.AddField("inactivity_timeout_secs")
-			x.InactivityTimeoutSecs = s.ReadUint32()
+		case "checkpoint_interval_secs", "checkpointIntervalSecs":
+			s.AddField("checkpoint_interval_secs")
+			x.CheckpointIntervalSecs = s.ReadUint32()
 		case "size_threshold_bytes", "sizeThresholdBytes":
 			s.AddField("size_threshold_bytes")
 			x.SizeThresholdBytes = s.ReadUint32()
@@ -600,8 +600,8 @@ func (m *SyncConfig) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x10
 	}
-	if m.InactivityTimeoutSecs != 0 {
-		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.InactivityTimeoutSecs))
+	if m.CheckpointIntervalSecs != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.CheckpointIntervalSecs))
 		i--
 		dAtA[i] = 0x8
 	}
@@ -634,7 +634,7 @@ func (m *SyncConfig) SizeVT() (n int) {
 	}
 	var l int
 	_ = l
-	n += protobuf_go_lite.SizeVarintNonZero(1, m.InactivityTimeoutSecs)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.CheckpointIntervalSecs)
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.SizeThresholdBytes)
 	n += protobuf_go_lite.SizeBoolNonZero(1, m.AutoSync)
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.SyncMode)
@@ -687,9 +687,9 @@ func (x *Config) String() string {
 func (x *SyncConfig) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "SyncConfig")
-	if x.InactivityTimeoutSecs != 0 {
-		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "inactivity_timeout_secs")
-		protobuf_go_lite.TextWriteUint(&sb, x.InactivityTimeoutSecs)
+	if x.CheckpointIntervalSecs != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "checkpoint_interval_secs")
+		protobuf_go_lite.TextWriteUint(&sb, x.CheckpointIntervalSecs)
 	}
 	if x.SizeThresholdBytes != 0 {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "size_threshold_bytes")
@@ -850,10 +850,10 @@ func (m *SyncConfig) UnmarshalVT(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field InactivityTimeoutSecs", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field CheckpointIntervalSecs", wireType)
 			}
-			m.InactivityTimeoutSecs = 0
-			m.InactivityTimeoutSecs, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			m.CheckpointIntervalSecs = 0
+			m.CheckpointIntervalSecs, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
 			if err != nil {
 				return err
 			}

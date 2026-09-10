@@ -570,11 +570,11 @@ func (s *sourceTrackingStore) GetBlock(ctx context.Context, ref *block.BlockRef)
 	return data, true, nil
 }
 
-// dirtyTrackingStore wraps block.StoreOps and calls markDirty on new PutBlock.
+// dirtyTrackingStore acknowledges writes only after retaining their sync markers.
 type dirtyTrackingStore struct {
-	// store owns block writes; markDirty records newly supplied blocks.
+	// store owns block writes; markDirty durably records every supplied block.
 	store     block.StoreOps
-	markDirty func(ctx context.Context, h *hash.Hash, size int64)
+	markDirty func(ctx context.Context, h *hash.Hash, size int64) error
 }
 
 // GetHashType returns the inner store hash type.
@@ -596,58 +596,39 @@ func (d *dirtyTrackingStore) BeginReadOperation(ctx context.Context) (block.Stor
 	return &dirtyTrackingStore{store: store, markDirty: d.markDirty}, release, nil
 }
 
-// PutBlock puts a block and marks it dirty if new.
+// PutBlock stores a block and repairs its durable sync marker even on a retry.
 func (d *dirtyTrackingStore) PutBlock(ctx context.Context, data []byte, opts *block.PutOpts) (*block.BlockRef, bool, error) {
 	ref, existed, err := d.store.PutBlock(ctx, data, opts)
-	if err == nil && !existed && d.markDirty != nil {
-		d.markDirty(ctx, ref.GetHash(), int64(len(data)))
+	if err == nil && d.markDirty != nil && !ref.GetEmpty() {
+		err = d.markDirty(ctx, ref.GetHash(), int64(len(data)))
 	}
 	return ref, existed, err
 }
 
-// PutBlockBatch writes blocks and marks successful new entries dirty.
+// PutBlockBatch retains markers for every successful non-tombstone write.
+// A failed marker returns an error; repeating the batch repairs the remaining work.
 func (d *dirtyTrackingStore) PutBlockBatch(ctx context.Context, entries []*block.PutBatchEntry) error {
-	var exists []bool
-	var valid []int
-	if d.markDirty != nil {
-		refs := make([]*block.BlockRef, 0, len(entries))
-		for i, entry := range entries {
-			if entry == nil || entry.Tombstone || entry.Ref == nil || entry.Ref.GetEmpty() {
-				continue
-			}
-			valid = append(valid, i)
-			refs = append(refs, entry.Ref)
-		}
-		var err error
-		exists, err = d.store.GetBlockExistsBatch(ctx, refs)
-		if err != nil || len(exists) != len(refs) {
-			// Existence preflight is advisory; fall back to conservative dirty
-			// marking rather than failing the underlying batch write.
-			exists = nil
-		}
-	}
 	if err := d.store.PutBlockBatch(ctx, entries); err != nil {
 		return err
 	}
-	if d.markDirty != nil {
-		for j, i := range valid {
-			if exists != nil && exists[j] {
-				continue
-			}
-			entry := entries[i]
-			d.markDirty(ctx, entry.Ref.GetHash(), int64(len(entry.Data)))
+	var markErr error
+	for _, entry := range entries {
+		if entry == nil {
+			continue
 		}
-	}
-	if invalidator, ok := d.store.(decodedBlockRefInvalidator); ok {
-		// Dirty-tracking batches can wrap cache-owning stores directly; keep
-		// tombstone invalidation with the wrapper that observes the deletion.
-		for _, entry := range entries {
-			if entry != nil && entry.Tombstone {
+		if entry.Tombstone {
+			if invalidator, ok := d.store.(decodedBlockRefInvalidator); ok {
 				invalidator.InvalidateDecodedBlockRef(ctx, entry.Ref)
 			}
+			continue
+		}
+		if d.markDirty != nil && !entry.Ref.GetEmpty() {
+			if err := d.markDirty(ctx, entry.Ref.GetHash(), int64(len(entry.Data))); err != nil && markErr == nil {
+				markErr = err
+			}
 		}
 	}
-	return nil
+	return markErr
 }
 
 // GetBlock gets a block by reference.

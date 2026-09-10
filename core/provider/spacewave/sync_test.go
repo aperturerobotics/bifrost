@@ -1190,7 +1190,7 @@ func newDirtySyncExecuteTestController(
 		mfst:       mfst,
 		lower:      packfile_store.NewPackfileStore(nil, nil),
 		upper:      upper,
-		conf:       &SyncConfig{SizeThresholdBytes: 1, InactivityTimeoutSecs: 1},
+		conf:       &SyncConfig{SizeThresholdBytes: 1, CheckpointIntervalSecs: 1},
 		gateBcast:  gate,
 	}
 	s.recalcDirtySize(ctx)
