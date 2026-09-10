@@ -73,6 +73,13 @@ func (s *WorldBackedStore) Close() {
 
 // WatchPrefix streams current key/value snapshots for a prefix after world commits.
 func (s *WorldBackedStore) WatchPrefix(ctx context.Context, prefix []byte, cb func(entries []kvtx.WatchEntry) error) error {
+	return s.WatchPrefixBounded(ctx, prefix, kvtx.WatchLimits{}, cb)
+}
+
+// WatchPrefixBounded streams current key/value snapshots for a prefix after
+// world commits while each snapshot stays within limits.
+// Returns ErrWatchLimit without any callback when a snapshot exceeds limits.
+func (s *WorldBackedStore) WatchPrefixBounded(ctx context.Context, prefix []byte, limits kvtx.WatchLimits, cb func(entries []kvtx.WatchEntry) error) error {
 	if cb == nil {
 		return nil
 	}
@@ -90,7 +97,7 @@ func (s *WorldBackedStore) WatchPrefix(ctx context.Context, prefix []byte, cb fu
 		if err != nil {
 			return err
 		}
-		entries, err := s.scanWatchPrefix(ctx, prefix)
+		entries, err := s.scanWatchPrefix(ctx, prefix, limits)
 		if err != nil {
 			return err
 		}
@@ -107,7 +114,11 @@ func (s *WorldBackedStore) WatchPrefix(ctx context.Context, prefix []byte, cb fu
 	}
 }
 
-func (s *WorldBackedStore) scanWatchPrefix(ctx context.Context, prefix []byte) ([]kvtx.WatchEntry, error) {
+// scanWatchPrefix scans one bounded snapshot in stable sorted key order.
+// It checks the record count before loading another value and the key and value
+// bytes before cloning the next entry, returning ErrWatchLimit with no partial
+// snapshot.
+func (s *WorldBackedStore) scanWatchPrefix(ctx context.Context, prefix []byte, limits kvtx.WatchLimits) ([]kvtx.WatchEntry, error) {
 	s.writeMtx.Lock()
 	tx, err := func() (kvtx.Tx, error) {
 		defer s.writeMtx.Unlock()
@@ -121,15 +132,36 @@ func (s *WorldBackedStore) scanWatchPrefix(ctx context.Context, prefix []byte) (
 	}
 	defer tx.Discard()
 
-	var entries []kvtx.WatchEntry
-	err = tx.ScanPrefix(ctx, prefix, func(key, value []byte) error {
+	var (
+		entries    []kvtx.WatchEntry
+		numBytes   uint64
+		numRecords uint64
+	)
+	it := tx.Iterate(ctx, prefix, true, false)
+	defer it.Close()
+	for it.Next() {
+		if limits.MaxRecords != 0 && numRecords >= limits.MaxRecords {
+			return nil, kvtx.ErrWatchLimit
+		}
+		key := it.Key()
+		value, err := it.Value()
+		if err != nil {
+			return nil, err
+		}
+		if limits.MaxBytes != 0 && numBytes+uint64(len(key))+uint64(len(value)) > limits.MaxBytes {
+			return nil, kvtx.ErrWatchLimit
+		}
 		entries = append(entries, kvtx.WatchEntry{
 			Key:   bytes.Clone(key),
 			Value: bytes.Clone(value),
 		})
-		return nil
-	})
-	return entries, err
+		numRecords++
+		numBytes += uint64(len(key)) + uint64(len(value))
+	}
+	if err := it.Err(); err != nil {
+		return nil, err
+	}
+	return entries, nil
 }
 
 func kvWatchEntriesEqual(a, b []kvtx.WatchEntry) bool {

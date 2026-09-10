@@ -24,4 +24,7 @@ var (
 	ErrInvalidSnapshot = errors.New("kvtx snapshot is invalid")
 	// ErrWatchUnsupported is returned when a store cannot stream committed changes.
 	ErrWatchUnsupported = errors.New("kvtx store does not support watch")
+	// ErrWatchLimit is returned when a watched snapshot exceeds its limits.
+	// No partial snapshot was delivered.
+	ErrWatchLimit = errors.New("kvtx watch snapshot exceeds limits")
 )

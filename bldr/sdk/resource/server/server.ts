@@ -88,7 +88,7 @@ class ResourceServer implements ResourceServiceHandler {
     const outgoing = pushable<ResourceClientResponse>({ objectMode: true })
     const packetRx = request[Symbol.asyncIterator]()
     const run = async () => {
-      const first = await packetRx.next()
+      const first = await nextResourceClientControl(packetRx, abortSignal)
       if (first.done || first.value.body?.case !== 'init') {
         throw new Error('expected ResourceClient init')
       }

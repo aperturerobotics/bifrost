@@ -3,6 +3,7 @@ import { Resource } from '@aptre/bldr-sdk/resource/resource.js'
 import { pushable, type Pushable } from 'it-pushable'
 import { Client as SRPCClient, openRpcStream } from 'starpc'
 import type { Message } from '@aptre/protobuf-es-lite'
+import { ItState } from '../../bldr/web/bldr/it-state.js'
 
 import { KvtxClient, KvtxOpsClient } from '../../db/kvtx/rpc/kvtx_srpc.pb.js'
 import type {
@@ -48,6 +49,11 @@ export interface IKvStore {
     prefix: Uint8Array,
     abortSignal?: AbortSignal,
   ): AsyncIterable<KvKeyEntry[]>
+  watchRecords(
+    prefix: Uint8Array,
+    limits: KvScanLimits,
+    abortSignal?: AbortSignal,
+  ): AsyncIterable<KvRecordEntry[]>
   get(
     key: Uint8Array,
     abortSignal?: AbortSignal,
@@ -104,6 +110,72 @@ export class KvStore extends Resource implements IKvStore {
         key: entry.key ?? new Uint8Array(),
         byteLength: entry.value?.length ?? 0,
       }))
+    }
+  }
+
+  // watchRecords retains at most one pending complete snapshot during backpressure.
+  public async *watchRecords(
+    prefix: Uint8Array,
+    limits: KvScanLimits,
+    abortSignal?: AbortSignal,
+  ): AsyncIterable<KvRecordEntry[]> {
+    const controller = new AbortController()
+    const signal = abortSignal
+      ? AbortSignal.any([controller.signal, abortSignal])
+      : controller.signal
+    signal.throwIfAborted()
+    const state = new ItState<KvRecordEntry[]>(undefined, {
+      mostRecentOnly: true,
+    })
+    const iterator = state.getIterable()[Symbol.asyncIterator]()
+    const stop = () => {
+      void iterator.return?.()
+    }
+    signal.addEventListener('abort', stop, { once: true })
+    let failure: unknown
+    const pump = (async () => {
+      try {
+        for await (const response of this.service.Watch(
+          {
+            prefix,
+            maxRecords: BigInt(limits.maxRecords),
+            maxBytes: BigInt(limits.maxBytes),
+          },
+          signal,
+        )) {
+          if (response.limitExceeded) throw new KvScanLimitError()
+          if (response.error) throw new Error(response.error)
+          const entries = (response.entries ?? []).map((entry) => ({
+            key: entry.key ?? new Uint8Array(),
+            value: entry.value ?? new Uint8Array(),
+          }))
+          const bytes = entries.reduce(
+            (sum, entry) => sum + entry.key.length + entry.value.length,
+            0,
+          )
+          if (entries.length > limits.maxRecords || bytes > limits.maxBytes)
+            throw new KvScanLimitError()
+          state.pushChangeEvent(entries)
+        }
+        if (!signal.aborted) throw new Error('kv/store: watch ended')
+      } catch (error) {
+        failure = error
+      } finally {
+        await iterator.return?.()
+      }
+    })()
+    try {
+      for (;;) {
+        const next = await iterator.next()
+        if (next.done) break
+        yield next.value
+      }
+      if (failure && !signal.aborted) throw failure
+    } finally {
+      controller.abort()
+      signal.removeEventListener('abort', stop)
+      await iterator.return?.()
+      await pump
     }
   }
 

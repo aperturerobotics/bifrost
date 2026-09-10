@@ -12,8 +12,20 @@ export type SyncErrorCode =
   | 'CLOSED'
 
 // SyncError carries a stable code and the recovery identity of an uncertain write.
+const errorBrand = Symbol.for('spacewave.SyncError')
+
 export class SyncError extends Error {
   override readonly name = 'SyncError'
+  private readonly [errorBrand] = true
+
+  // Client and server builds recognize the same public error across entry points.
+  static [Symbol.hasInstance](value: unknown): boolean {
+    return (
+      value instanceof Error &&
+      errorBrand in value &&
+      value[errorBrand] === true
+    )
+  }
 
   constructor(
     readonly code: SyncErrorCode,

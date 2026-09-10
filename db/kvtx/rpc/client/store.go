@@ -33,10 +33,21 @@ func (s *Store) NewTransaction(ctx context.Context, write bool) (kvtx.Tx, error)
 
 // WatchPrefix streams key/value snapshots after committed store changes.
 func (s *Store) WatchPrefix(ctx context.Context, prefix []byte, cb func(entries []kvtx.WatchEntry) error) error {
+	return s.WatchPrefixBounded(ctx, prefix, kvtx.WatchLimits{}, cb)
+}
+
+// WatchPrefixBounded streams key/value snapshots after committed store changes
+// while each snapshot stays within limits.
+// Returns ErrWatchLimit without any callback when a snapshot exceeds limits.
+func (s *Store) WatchPrefixBounded(ctx context.Context, prefix []byte, limits kvtx.WatchLimits, cb func(entries []kvtx.WatchEntry) error) error {
 	if cb == nil {
 		return nil
 	}
-	client, err := s.client.Watch(ctx, &kvtx_rpc.KvtxWatchRequest{Prefix: prefix})
+	client, err := s.client.Watch(ctx, &kvtx_rpc.KvtxWatchRequest{
+		Prefix:     prefix,
+		MaxRecords: limits.MaxRecords,
+		MaxBytes:   limits.MaxBytes,
+	})
 	if err != nil {
 		return err
 	}
@@ -50,6 +61,9 @@ func (s *Store) WatchPrefix(ctx context.Context, prefix []byte, cb func(entries 
 			return err
 		}
 		if errStr := resp.GetError(); errStr != "" {
+			if resp.GetLimitExceeded() {
+				return kvtx.ErrWatchLimit
+			}
 			return errors.New(errStr)
 		}
 		entries := make([]kvtx.WatchEntry, 0, len(resp.GetEntries()))
@@ -67,6 +81,9 @@ func (s *Store) WatchPrefix(ctx context.Context, prefix []byte, cb func(entries 
 
 // _ is a type assertion
 var _ kvtx.WatchStore = (*Store)(nil)
+
+// _ is a type assertion
+var _ kvtx.BoundedWatchStore = (*Store)(nil)
 
 // _ is a type assertion
 var _ kvtx.Store = (*Store)(nil)

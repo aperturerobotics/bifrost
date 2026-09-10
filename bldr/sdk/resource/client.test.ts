@@ -25,6 +25,34 @@ function setInitializedResourceSession(client: Client): void {
 }
 
 describe('ResourceClient', () => {
+  it('rejects pending root acquisition when closed during reconnect', async () => {
+    const lost = deferredVoid()
+    const controller = new AbortController()
+    const service = buildUnusedService()
+    service.ResourceClient = async function* (_request, signal) {
+      yield buildResourceClientInit(1)
+      await Promise.race([
+        lost.promise,
+        new Promise<void>((resolve) =>
+          signal?.addEventListener('abort', () => resolve(), { once: true }),
+        ),
+      ])
+    }
+    const client = new Client(service, controller.signal)
+    const first = await client.accessRootResource()
+    const retired = deferredVoid()
+    client.onConnectionLost(retired.resolve)
+    lost.resolve()
+    await retired.promise
+    expect(first.released).toBe(true)
+    const pending = client.accessRootResource()
+    const rejected = expect(pending).rejects.toThrow(
+      'Resource client is closed',
+    )
+    controller.abort()
+    await rejected
+  })
+
   it('clears stale attachSession state on reconnect cleanup', () => {
     const client = new Client(
       buildUnusedService(),

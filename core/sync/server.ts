@@ -1,4 +1,5 @@
 import type { Engine } from '../../sdk/world/engine.js'
+import type { Server as HTTPServer } from 'node:http'
 import { createAccess, type DatabaseAccess } from '../../sdk/sync/access.js'
 import { publicError, SyncError } from '../../sdk/sync/errors.js'
 import type { Principal, Schema } from '../../sdk/sync/schema.js'
@@ -8,6 +9,14 @@ import {
   type Migration,
 } from './application.js'
 import { openNodeEngine, type OwnedEngine } from './node/host.js'
+import {
+  attachListener,
+  listen,
+  type Attachment,
+  type AttachmentOptions,
+  type Listener,
+  type ListenerOptions,
+} from './listener.js'
 
 export type ServerOptions<S extends Schema, P extends Principal> = Omit<
   ApplicationOptions<S, P>,
@@ -27,6 +36,7 @@ export class SyncServer<
   P extends Principal,
 > implements AsyncDisposable {
   private closing?: Promise<void>
+  private readonly attachments = new Set<Attachment>()
 
   constructor(
     readonly application: Application<S, P>,
@@ -48,8 +58,38 @@ export class SyncServer<
     )
   }
 
+  attach(http: HTTPServer, options?: AttachmentOptions): Attachment {
+    if (this.closing) throw new SyncError('CLOSED', 'Server is closed')
+    const attachment = attachListener(
+      http,
+      this.application,
+      this.options.authenticate,
+      options,
+    )
+    this.attachments.add(attachment)
+    return this.track(attachment)
+  }
+
+  async listen(options?: ListenerOptions): Promise<Listener> {
+    if (this.closing) throw new SyncError('CLOSED', 'Server is closed')
+    const listener = await listen(
+      this.application,
+      this.options.authenticate,
+      options,
+    )
+    if (this.closing) {
+      await listener.close()
+      throw new SyncError('CLOSED', 'Server is closed')
+    }
+    this.attachments.add(listener)
+    return { ...this.track(listener), url: listener.url }
+  }
+
   close(): Promise<void> {
     this.closing ??= (async () => {
+      await Promise.all(
+        Array.from(this.attachments, (attachment) => attachment.close()),
+      )
       await this.application.close()
       await this.owner?.close()
     })()
@@ -58,6 +98,17 @@ export class SyncServer<
 
   [Symbol.asyncDispose](): Promise<void> {
     return this.close()
+  }
+
+  private track(attachment: Attachment): Attachment {
+    const close = async () => {
+      try {
+        await attachment.close()
+      } finally {
+        this.attachments.delete(attachment)
+      }
+    }
+    return { close, [Symbol.asyncDispose]: close }
   }
 }
 
