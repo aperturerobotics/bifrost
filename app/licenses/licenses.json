@@ -2067,13 +2067,6 @@
       "copyrightNotice": "Copyright (c) 2020 Simon Knott and superjson contributors"
     },
     {
-      "name": "three",
-      "version": "0.185.1",
-      "spdx": "MIT",
-      "source": "js",
-      "copyrightNotice": "Copyright © 2010-2026 three.js authors"
-    },
-    {
       "name": "tiny-invariant",
       "version": "1.3.3",
       "spdx": "MIT",
