@@ -32,7 +32,7 @@ export function DMCA() {
               <p>Registration number: DMCA-1070193</p>
               <div className="bg-background/50 border-border/50 rounded-lg border p-4">
                 <p className="text-foreground mb-2 text-sm font-medium">
-                  Copyright Compliance Manager
+                  Christian Stewart, Designated Agent
                 </p>
                 <p>Aperture Robotics, LLC.</p>
                 <p>PO Box 692</p>
@@ -140,11 +140,21 @@ export function DMCA() {
                 </li>
               </ol>
               <p>
-                Upon receipt of a valid counter-notification, we will forward it
-                to the complaining party. If the complaining party does not file
-                a court action seeking to restrain the allegedly infringing
-                activity within ten (10) business days, we will restore the
-                removed material.
+                We promptly forward a valid counter-notification to the
+                complaining party and inform them that we intend to restore the
+                material after ten business days. We restore it no earlier than
+                ten and no later than fourteen business days after we receive
+                the valid counter-notification, unless our designated agent
+                receives notice of a court action seeking an order restraining
+                the subscriber from the alleged infringement.
+              </p>
+              <p>
+                Our operational calendar uses America/Los_Angeles dates and
+                excludes weekends and observed U.S. federal holidays. Later
+                administrative entry, review, or forwarding does not restart the
+                original receipt period. Other unresolved notices may keep the
+                material disabled. A withdrawal or acknowledged mistake may be
+                resolved sooner.
               </p>
             </div>
           </div>

@@ -3330,6 +3330,30 @@ export interface BillingUsageResponse {
    * @generated from field: string offer_version = 19;
    */
   offerVersion?: string
+  /**
+   * MonthlyPriceCents is the accepted recurring base price before tax.
+   *
+   * @generated from field: uint32 monthly_price_cents = 20;
+   */
+  monthlyPriceCents?: number
+  /**
+   * WriteMicrodollars is the accepted charge for one extra write.
+   *
+   * @generated from field: uint32 write_microdollars = 21;
+   */
+  writeMicrodollars?: number
+  /**
+   * ReadMicrodollars is the accepted charge for one extra uncached read.
+   *
+   * @generated from field: uint32 read_microdollars = 22;
+   */
+  readMicrodollars?: number
+  /**
+   * PolicyVersion identifies the policy applying to the current offer.
+   *
+   * @generated from field: string policy_version = 23;
+   */
+  policyVersion?: string
 }
 
 export const BillingUsageResponse: MessageType<BillingUsageResponse> =
@@ -3394,6 +3418,25 @@ export const BillingUsageResponse: MessageType<BillingUsageResponse> =
         T: ScalarType.INT64,
       },
       { no: 19, name: 'offer_version', kind: 'scalar', T: ScalarType.STRING },
+      {
+        no: 20,
+        name: 'monthly_price_cents',
+        kind: 'scalar',
+        T: ScalarType.UINT32,
+      },
+      {
+        no: 21,
+        name: 'write_microdollars',
+        kind: 'scalar',
+        T: ScalarType.UINT32,
+      },
+      {
+        no: 22,
+        name: 'read_microdollars',
+        kind: 'scalar',
+        T: ScalarType.UINT32,
+      },
+      { no: 23, name: 'policy_version', kind: 'scalar', T: ScalarType.STRING },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })

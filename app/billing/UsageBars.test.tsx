@@ -14,6 +14,11 @@ const mockBillingState = vi.hoisted(() => ({
       readOps: 225_000n,
       readOpsBaseline: 250_000n,
       overageLimitCents: 1000,
+      monthlyPriceCents: 900,
+      writeMicrodollars: 30,
+      readMicrodollars: 15,
+      offerVersion: 'cloud-monthly-v2',
+      policyVersion: '2026-09-10',
       accruedOverageMicrodollars: 2_000_000n,
       reservedOverageMicrodollars: 500_000n,
       currentPeriodStart: 1_800_000_000_000n,
@@ -40,6 +45,9 @@ describe('UsageBars', () => {
       ),
     ).toBeDefined()
     expect(screen.getByText(/Subscription period:/)).toBeDefined()
+    expect(screen.getByText(/Service maximum: \$19.00/)).toBeDefined()
+    expect(screen.getByText(/Extra writes cost \$0.30/)).toBeDefined()
+    expect(screen.getByText(/Extra uncached reads cost \$0.15/)).toBeDefined()
     expect(screen.getByText(/Peer-only traffic and cached reads/)).toBeDefined()
     expect(screen.queryByText('Extra storage')).toBeNull()
   })

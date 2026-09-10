@@ -286,7 +286,7 @@ describe('NoActiveBillingAccountPage', () => {
           {
             id: 'ba_1',
             displayName: 'Billing Account',
-            subscriptionStatus: 'trialing',
+            subscriptionStatus: 'active',
             lifecycleState: 'active',
             assignees: [{ ownerType: 'account', ownerId: 'acct_1' }],
           },

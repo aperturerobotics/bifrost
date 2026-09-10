@@ -3,10 +3,7 @@ import { cn } from '@s4wave/web/style/utils.js'
 import { formatBytes } from '@s4wave/web/transform/TransformConfigDisplay.js'
 import { SessionContext } from '@s4wave/web/contexts/contexts.js'
 import { useBillingConsent } from '../provider/spacewave/useBillingConsent.js'
-import {
-  CLOUD_OFFER,
-  OVERAGE_EXPLANATION,
-} from '../provider/spacewave/pricing.js'
+import { CLOUD_OFFER } from '../provider/spacewave/pricing.js'
 import { useBillingStateContext } from './BillingStateProvider.js'
 
 const SOFT_USAGE_ALERT_RATIO = 0.8
@@ -69,9 +66,25 @@ export function UsageBars(props: { actions?: ReactNode }) {
   const periodStart = Number(usage.currentPeriodStart ?? 0n)
   const periodEnd = Number(usage.currentPeriodEnd ?? 0n)
 
+  const offer = {
+    ...CLOUD_OFFER,
+    version: usage.offerVersion ?? CLOUD_OFFER.version,
+    policyVersion: usage.policyVersion ?? CLOUD_OFFER.policyVersion,
+    monthlyPriceCents: usage.monthlyPriceCents ?? CLOUD_OFFER.monthlyPriceCents,
+    writeMicrodollars: usage.writeMicrodollars ?? CLOUD_OFFER.writeMicrodollars,
+    readMicrodollars: usage.readMicrodollars ?? CLOUD_OFFER.readMicrodollars,
+    storageBytes: storageBaseline,
+    writeOperations: writeBaseline,
+    readOperations: readBaseline,
+  }
+
   async function changeLimit() {
     if (!session || saving) return
-    const consent = await requestConsent(usage?.overageLimitCents ?? 0, true)
+    const consent = await requestConsent(
+      usage?.overageLimitCents ?? 0,
+      true,
+      offer,
+    )
     if (!consent) return
     setSaving(true)
     setError(null)
@@ -149,8 +162,8 @@ export function UsageBars(props: { actions?: ReactNode }) {
             ? `${formatCurrency(overageLimit)} monthly maximum`
             : 'off'}
           . Service maximum:{' '}
-          {formatCurrency(CLOUD_OFFER.monthlyPriceCents / 100 + overageLimit)}{' '}
-          before tax.
+          {formatCurrency(offer.monthlyPriceCents / 100 + overageLimit)} before
+          tax.
         </div>
         <div>
           Accrued: {formatCurrency(accrued)} · Reserved:{' '}
@@ -164,7 +177,13 @@ export function UsageBars(props: { actions?: ReactNode }) {
             {new Date(periodEnd).toLocaleString()}.
           </div>
         )}
-        <p>{OVERAGE_EXPLANATION}</p>
+        <p>
+          Extra writes cost ${(offer.writeMicrodollars / 100).toFixed(2)} per
+          10,000. Extra uncached reads cost $
+          {(offer.readMicrodollars / 100).toFixed(2)} per 10,000. Charges accrue
+          proportionally. Change or turn off the monthly extra-usage maximum
+          below.
+        </p>
         <p>
           A cloud write is a successful sync upload or billed cloud mutation.
           Many edits can share one upload. Peer-only traffic and cached reads do
