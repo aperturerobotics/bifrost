@@ -7,7 +7,7 @@ import { CanvasHandle } from '@s4wave/sdk/canvas/canvas.js'
 import { NodeType } from '@s4wave/sdk/canvas/canvas.pb.js'
 import { FSHandle } from '@s4wave/sdk/unixfs/handle.js'
 import { MknodType } from '@s4wave/sdk/unixfs/handle.pb.js'
-import { createWorldObject } from '@s4wave/sdk/world/utils.js'
+import { accessObject } from '@s4wave/sdk/world/utils.js'
 import { setObjectType } from '@s4wave/sdk/world/types/types.js'
 import {
   createSingleRowObjectLayout,
@@ -147,10 +147,9 @@ async function seedCanvasFiles(
   ])
   reportProgress('Creating the workspace layout')
   using cursor = await world.buildStorageCursor(signal)
-  const created = await createWorldObject(
-    world,
+  const objectRef = await accessObject(
     cursor,
-    'reference-workspace',
+    undefined,
     async (block) => {
       await block.setBlock(
         {
@@ -163,8 +162,24 @@ async function seedCanvasFiles(
     },
     signal,
   )
-  created.objectState.release()
-  await setObjectType(world, 'reference-workspace', ObjectLayoutTypeID, signal)
+  // oxlint-disable-next-line react-doctor/server-sequential-independent-await -- Finish block storage before holding the World writer.
+  using transaction = await world.getEngine().newTransaction(true, signal)
+  try {
+    using _object = await transaction.createObject(
+      'reference-workspace',
+      objectRef,
+      signal,
+    )
+    await setObjectType(
+      transaction,
+      'reference-workspace',
+      ObjectLayoutTypeID,
+      signal,
+    )
+    await transaction.commit(signal)
+  } finally {
+    await transaction.discard()
+  }
   const spaceId = setup.spaceResp.sharedObjectRef?.providerResourceRef?.id
   if (!spaceId || !setup.sessionIndex)
     throw new Error('Scenario setup did not return a Session and Space')
@@ -174,10 +189,12 @@ async function seedCanvasFiles(
   }
 }
 
+// canvasFiles opens a Canvas beside its reference files.
 export function canvasFiles(context: AppSetupContext): Promise<AppSetupResult> {
   return seedCanvasFiles(context, false)
 }
 
+// imageContext opens the same workspace with its reference image selected.
 export function imageContext(
   context: AppSetupContext,
 ): Promise<AppSetupResult> {

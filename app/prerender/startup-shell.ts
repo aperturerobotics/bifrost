@@ -28,14 +28,14 @@ export function buildStartupShell(iconUrl: string): string {
     <div id="sw-loading" data-sw-boot-state="loading" style="${ROOT_LOADING_STYLE}">
       <div class="swl-canvas">
         <div class="swl-main">
-          <div class="swl-art" aria-hidden="true">
-            <div class="swl-artwork-host"><canvas class="swl-artwork"></canvas></div>
-            <div class="swl-emblem"><img src="${escapedIcon}" alt="" width="128" height="128"/></div>
+          <div class="swl-emblem" aria-hidden="true">
+            <img src="${escapedIcon}" alt="" width="56" height="56"/>
           </div>
           <div class="swl-console">
+            <div class="swl-brand" aria-hidden="true">Spacewave</div>
             <div class="swl-head" aria-live="polite" aria-atomic="true">
-              <h1 class="swl-title swl-boot-title">Preparing <span class="swl-title-brand">Spacewave</span></h1>
-              <h1 class="swl-title swl-boot-error-title">Unable to open <span class="swl-title-brand">Spacewave</span></h1>
+              <h1 class="swl-title swl-boot-title">Preparing Spacewave</h1>
+              <h1 class="swl-title swl-boot-error-title">Unable to open Spacewave</h1>
             </div>
             <div class="swl-phases"><ol class="swb-steps" aria-label="Startup phases">${rail}</ol></div>
             <p data-sw-boot-status hidden>Loading the app shell.</p>

@@ -17,7 +17,7 @@ import {
 } from '@s4wave/web/sdk/app/environment.js'
 import { persistAppEnvironment } from '@s4wave/web/sdk/app/persistence.js'
 import { TooltipProvider } from '@s4wave/web/ui/tooltip.js'
-import { LoadingWorkspace } from '@s4wave/web/ui/loading/LoadingWorkspace.js'
+import { LoadingScreen } from '@s4wave/web/ui/loading/LoadingScreen.js'
 import { ErrorState } from '@s4wave/web/ui/ErrorState.js'
 import { AppAPI } from './AppAPI.js'
 import { releaseQuickstartAppHandoffs } from './quickstart/session-handoff.js'
@@ -270,8 +270,12 @@ export function SpacewaveApp({
           </TooltipProvider>
         </AppEnvironmentContext.Provider>
       ) : (
-        <LoadingWorkspace
-          view={{ title: 'Preparing your workspace', detail: progress }}
+        <LoadingScreen
+          view={{
+            state: 'loading',
+            title: 'Preparing your workspace',
+            detail: progress,
+          }}
         />
       )}
     </div>

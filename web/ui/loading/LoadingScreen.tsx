@@ -5,7 +5,6 @@ import { LuArrowLeft, LuRotateCw } from 'react-icons/lu'
 import spacewaveIcon from '@s4wave/web/images/spacewave-icon.png'
 import { cn } from '@s4wave/web/style/utils.js'
 
-import { LoadingArtwork } from './LoadingArtwork.js'
 import { LOADING_SCREEN_CSS } from './loading-screen-style.js'
 import type { LoadingView } from './types.js'
 import { useReducedMotion } from './useReducedMotion.js'
@@ -32,7 +31,6 @@ export function LoadingScreen({
 }: LoadingScreenProps) {
   const reducedMotion = useReducedMotion()
   const failed = view.state === 'error'
-  const brandIndex = view.title.indexOf('Spacewave')
   const progress =
     view.progress === undefined || view.progressIndeterminate
       ? undefined
@@ -49,27 +47,15 @@ export function LoadingScreen({
       </style>
       {topLeftSlot}
       <div className="swl-main">
-        <div className="swl-art" aria-hidden="true">
-          <LoadingArtwork />
-          <div className="swl-emblem">
-            {logo ?? (
-              <img src={spacewaveIcon} alt="" width={140} height={140} />
-            )}
-          </div>
+        <div className="swl-emblem" aria-hidden="true">
+          {logo ?? <img src={spacewaveIcon} alt="" width={56} height={56} />}
         </div>
         <div className="swl-console">
+          <div className="swl-brand" aria-hidden="true">
+            Spacewave
+          </div>
           <div className="swl-head" aria-live="polite" aria-atomic="true">
-            <h1 className="swl-title">
-              {brandIndex < 0 ? (
-                view.title
-              ) : (
-                <>
-                  {view.title.slice(0, brandIndex)}
-                  <span className="swl-title-brand">Spacewave</span>
-                  {view.title.slice(brandIndex + 9)}
-                </>
-              )}
-            </h1>
+            <h1 className="swl-title">{view.title}</h1>
           </div>
           {view.error ? (
             <p className="swl-error" role="alert">

@@ -51,6 +51,7 @@ import "embed"
 //go:embed sdk/provider/spacewave/spacewave.ts sdk/provider/spacewave/spacewave_srpc.pb.ts
 //go:embed sdk/quickstart/registry/registry.pb.ts sdk/quickstart/registry/registry_srpc.pb.ts
 //go:embed sdk/root/index.ts sdk/root/root.pb.ts sdk/root/root.ts sdk/root/root_srpc.pb.ts
+//go:embed sdk/root/app.ts
 //go:embed sdk/secret/secret.pb.ts sdk/session/index.ts sdk/session/local-session.pb.ts
 //go:embed sdk/session/local-session.ts sdk/session/local-session_srpc.pb.ts sdk/session/session.pb.ts
 //go:embed sdk/session/session.ts sdk/session/session_srpc.pb.ts

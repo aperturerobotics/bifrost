@@ -787,11 +787,11 @@ description.
 
 **`loading-screen`** owns route-level and boot loading.
 
-- Full viewport dark canvas with violet and amber currents around the planet emblem. A soft pulse follows the current startup phase; pointer light changes ribbon color without moving the geometry.
+- A compact planet emblem with a slow orbit sits above the heading on the application background. Route startup, embedded workspaces, and Space mounting share this composition.
 - Shared critical CSS keeps initial HTML and React handoffs styled before the application stylesheet arrives.
-- A centered heading and the operation's actual phase indicators sit directly on the canvas. Download percentages describe measured transfers, never readiness milestones.
+- A centered heading and the operation's actual phase indicators stay inside the available panel. Download percentages describe measured transfers, never readiness milestones.
 - Errors and compact Retry and Back actions remain visible.
-- The composition adapts to narrow and short viewports. Reduced motion freezes decorative animation and pointer response. Hidden or removed surfaces release their GPU scene; status and recovery remain usable without WebGL.
+- The composition adapts to narrow and short viewports. Reduced motion freezes the CSS orbit and emblem pulse. Loading surfaces use ordinary HTML and CSS throughout startup.
 
 ### Loading Card
 

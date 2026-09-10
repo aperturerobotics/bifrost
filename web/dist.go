@@ -52,6 +52,7 @@ import "embed"
 //go:embed router/HistoryRouter.tsx router/NavigatePath.tsx router/Redirect.tsx router/app-path.ts
 //go:embed router/hash.tsx router/router.tsx router/static-routes.ts sdk/app/SpacewaveRuntimeProviders.tsx
 //go:embed sdk/app/base-viewers.ts sdk/app/index.ts sdk/app/lifecycle.tsx sdk/app/viewer-catalog.ts
+//go:embed sdk/app/environment.tsx
 //go:embed space/object-tree.tsx space/space-object-navigation-actions.ts state/StateAtomRegistry.tsx
 //go:embed state/global.ts state/index.tsx state/interaction.ts state/persist.tsx state/useBackendStateAtom.tsx
 //go:embed state/useStateAtomResource.tsx style/app.css style/flexlayout/base.css
@@ -68,7 +69,7 @@ import "embed"
 //go:embed ui/label.tsx ui/list/List.tsx ui/list/ListItem.tsx ui/list/ListRow.tsx ui/list/ListState.tsx
 //go:embed ui/list/index.ts ui/loading/LoadingCard.tsx ui/loading/LoadingInline.tsx ui/loading/LoadingScreen.tsx
 //go:embed ui/loading/ProgressBar.tsx ui/loading/Spinner.tsx ui/loading/index.ts ui/loading/types.ts
-//go:embed ui/loading/loading-screen-style.ts ui/loading/loading-artwork.ts ui/loading/LoadingArtwork.tsx
+//go:embed ui/loading/loading-screen-style.ts
 //go:embed ui/loading/useReducedMotion.ts ui/login-form.tsx ui/path/PathInput.tsx ui/path/index.ts
 //go:embed ui/range-slider.tsx ui/separator.tsx ui/sheet.tsx ui/shine-border.tsx ui/tabs.tsx ui/toaster.tsx
 //go:embed ui/tooltip.tsx ui/tree/Tree.tsx ui/tree/TreeNode.tsx ui/tree/TreeRow.tsx ui/tree/TreeState.tsx

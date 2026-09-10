@@ -32,7 +32,7 @@ describe('startup surfaces', () => {
     { width: 390, height: 844 },
     { width: 320, height: 568 },
   ])(
-    'shows actual phases and artwork at $width × $height',
+    'shows actual phases and the emblem at $width × $height',
     async ({ width, height }) => {
       await page.viewport(width, height)
       globalThis.__swBootStatus = {
@@ -54,11 +54,8 @@ describe('startup surfaces', () => {
       )
       expect(document.querySelector('details')).toBeNull()
       expect(document.querySelector('[role="progressbar"]')).toBeNull()
-      await expect
-        .poll(() =>
-          document.querySelector('canvas')?.getAttribute('data-renderer'),
-        )
-        .toBe('three')
+      expect(document.querySelector('canvas')).toBeNull()
+      expect(document.querySelector('.swl-emblem img')).not.toBeNull()
       expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(width)
       const consoleBounds = document
         .querySelector('.swl-console')!
@@ -67,9 +64,7 @@ describe('startup surfaces', () => {
       await page.screenshot({
         path: `__screenshots__/browser-startup/current-pulse-${width}.png`,
       })
-      const canvas = document.querySelector('canvas')!
       await cleanup()
-      expect(canvas.hasAttribute('data-renderer')).toBe(false)
     },
   )
 
@@ -196,7 +191,7 @@ it('keeps static routes on their prerendered surface', async () => {
   expect(document.querySelector('.swl-canvas')).toBeNull()
 })
 
-it('stops the decorative frame loop under reduced motion', async () => {
+it('retains startup feedback under reduced motion', async () => {
   const originalMatchMedia = window.matchMedia.bind(window)
   vi.spyOn(window, 'matchMedia').mockImplementation((query) => {
     const media = originalMatchMedia(query)
@@ -210,15 +205,8 @@ it('stops the decorative frame loop under reduced motion', async () => {
       <AppLoadingScreen />
     </div>,
   )
-  await expect
-    .poll(() => document.querySelector('canvas')?.getAttribute('data-renderer'))
-    .toBe('three')
-  await document.fonts.ready
-  const frame = window.requestAnimationFrame.bind(window)
-  await new Promise<void>((resolve) => frame(() => frame(() => resolve())))
-  const request = vi.spyOn(window, 'requestAnimationFrame')
-  await new Promise<void>((resolve) => frame(() => frame(() => resolve())))
-  expect(request).not.toHaveBeenCalled()
+  expect(document.querySelector('canvas')).toBeNull()
+  await expect.element(page.getByRole('heading')).toBeVisible()
   expect(
     document
       .querySelector('[data-sw-reduced-motion]')
