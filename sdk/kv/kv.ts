@@ -21,6 +21,25 @@ export interface KvKeyEntry {
   byteLength: number
 }
 
+export interface KvRecordEntry {
+  key: Uint8Array
+  value: Uint8Array
+}
+
+export interface KvScanLimits {
+  maxRecords: number
+  maxBytes: number
+}
+
+export class KvScanLimitError extends Error {
+  constructor() {
+    super(
+      'The snapshot exceeds its record or byte limit; use a narrower prefix',
+    )
+    this.name = 'KvScanLimitError'
+  }
+}
+
 // IKvStore contains the bytes-only KV store interface.
 export interface IKvStore {
   keyCount(abortSignal?: AbortSignal): Promise<bigint>
@@ -205,6 +224,36 @@ export class KvTransaction {
       entries.push({ key: resp.key, byteLength: resp.value?.length ?? 0 })
     }
     return entries
+  }
+
+  // scanRecords retains complete values and rejects an incomplete bounded scan.
+  public async scanRecords(
+    prefix: Uint8Array,
+    limits: KvScanLimits,
+    abortSignal?: AbortSignal,
+  ): Promise<KvRecordEntry[]> {
+    const entries: KvRecordEntry[] = []
+    let bytes = 0
+    const controller = new AbortController()
+    const signal = abortSignal
+      ? AbortSignal.any([controller.signal, abortSignal])
+      : controller.signal
+    try {
+      const stream = this.ops.ScanPrefix({ prefix, onlyKeys: false }, signal)
+      for await (const response of stream) {
+        if (response.error) throw new Error(response.error)
+        if (!response.key) continue
+        const value = response.value ?? new Uint8Array()
+        bytes += response.key.length + value.length
+        if (entries.length >= limits.maxRecords || bytes > limits.maxBytes) {
+          throw new KvScanLimitError()
+        }
+        entries.push({ key: response.key, value })
+      }
+      return entries
+    } finally {
+      controller.abort()
+    }
   }
 
   // get returns a key value, if present.

@@ -204,9 +204,11 @@ export async function ensureTypeExists(
   const objKey = buildTypeObjectKey(typeID)
   const obj = await ws.getObject(objKey, abortSignal)
   if (obj) {
+    obj.release()
     return false
   }
-  await ws.createObject(objKey, {}, abortSignal)
+  const created = await ws.createObject(objKey, {}, abortSignal)
+  created.release()
   return true
 }
 
