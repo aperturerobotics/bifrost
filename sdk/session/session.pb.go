@@ -290,6 +290,8 @@ const (
 	// PairingStatus_CONFIRMATION_TIMEOUT means remote confirmation was not
 	// received within the timeout period.
 	PairingStatus_PairingStatus_CONFIRMATION_TIMEOUT PairingStatus = 12
+	// PairingStatus_ENROLLING means both clients approved and account access is being persisted.
+	PairingStatus_PairingStatus_ENROLLING PairingStatus = 13
 )
 
 // Enum value maps for PairingStatus.
@@ -308,6 +310,7 @@ var (
 		10: "PairingStatus_BOTH_CONFIRMED",
 		11: "PairingStatus_PAIRING_REJECTED",
 		12: "PairingStatus_CONFIRMATION_TIMEOUT",
+		13: "PairingStatus_ENROLLING",
 	}
 	PairingStatus_value = map[string]int32{
 		"PairingStatus_IDLE":                       0,
@@ -323,6 +326,7 @@ var (
 		"PairingStatus_BOTH_CONFIRMED":             10,
 		"PairingStatus_PAIRING_REJECTED":           11,
 		"PairingStatus_CONFIRMATION_TIMEOUT":       12,
+		"PairingStatus_ENROLLING":                  13,
 	}
 )
 
@@ -1093,6 +1097,15 @@ type WatchSyncStatusResponse struct {
 	DirectP2PDisabled bool `protobuf:"varint,55,opt,name=direct_p2p_disabled,json=directP2pDisabled,proto3" json:"directP2pDisabled,omitempty"`
 	// BlockStores contains owner-observed mechanics keyed by mounted block store.
 	BlockStores []*SyncBlockStoreStatus `protobuf:"bytes,56,rep,name=block_stores,json=blockStores,proto3" json:"blockStores,omitempty"`
+	// local_account selects account-replica status instead of cloud queues.
+	LocalAccount bool `protobuf:"varint,57,opt,name=local_account,json=localAccount,proto3" json:"localAccount,omitempty"`
+	// local_copies reports durable availability for each accepted Space head.
+	LocalCopies []*SyncLocalCopyStatus `protobuf:"bytes,58,rep,name=local_copies,json=localCopies,proto3" json:"localCopies,omitempty"`
+	// peer_upload_bytes and peer_download_bytes count actual block payload traffic.
+	PeerUploadBytes   uint64 `protobuf:"varint,59,opt,name=peer_upload_bytes,json=peerUploadBytes,proto3" json:"peerUploadBytes,omitempty"`
+	PeerDownloadBytes uint64 `protobuf:"varint,60,opt,name=peer_download_bytes,json=peerDownloadBytes,proto3" json:"peerDownloadBytes,omitempty"`
+	// peers breaks the payload totals down by authenticated Session peer.
+	Peers []*SyncPeerTransferStatus `protobuf:"bytes,61,rep,name=peers,proto3" json:"peers,omitempty"`
 }
 
 func (x *WatchSyncStatusResponse) Reset() {
@@ -1493,6 +1506,144 @@ func (x *WatchSyncStatusResponse) GetBlockStores() []*SyncBlockStoreStatus {
 	return nil
 }
 
+func (x *WatchSyncStatusResponse) GetLocalAccount() bool {
+	if x != nil {
+		return x.LocalAccount
+	}
+	return false
+}
+
+func (x *WatchSyncStatusResponse) GetLocalCopies() []*SyncLocalCopyStatus {
+	if x != nil {
+		return x.LocalCopies
+	}
+	return nil
+}
+
+func (x *WatchSyncStatusResponse) GetPeerUploadBytes() uint64 {
+	if x != nil {
+		return x.PeerUploadBytes
+	}
+	return 0
+}
+
+func (x *WatchSyncStatusResponse) GetPeerDownloadBytes() uint64 {
+	if x != nil {
+		return x.PeerDownloadBytes
+	}
+	return 0
+}
+
+func (x *WatchSyncStatusResponse) GetPeers() []*SyncPeerTransferStatus {
+	if x != nil {
+		return x.Peers
+	}
+	return nil
+}
+
+// SyncPeerTransferStatus reports one peer's traffic on the active transport.
+type SyncPeerTransferStatus struct {
+	unknownFields   []byte
+	PeerId          string `protobuf:"bytes,1,opt,name=peer_id,json=peerId,proto3" json:"peerId,omitempty"`
+	UploadedBytes   uint64 `protobuf:"varint,2,opt,name=uploaded_bytes,json=uploadedBytes,proto3" json:"uploadedBytes,omitempty"`
+	DownloadedBytes uint64 `protobuf:"varint,3,opt,name=downloaded_bytes,json=downloadedBytes,proto3" json:"downloadedBytes,omitempty"`
+	Connected       bool   `protobuf:"varint,4,opt,name=connected,proto3" json:"connected,omitempty"`
+}
+
+func (x *SyncPeerTransferStatus) Reset() {
+	*x = SyncPeerTransferStatus{}
+}
+
+func (*SyncPeerTransferStatus) ProtoMessage() {}
+
+func (x *SyncPeerTransferStatus) GetPeerId() string {
+	if x != nil {
+		return x.PeerId
+	}
+	return ""
+}
+
+func (x *SyncPeerTransferStatus) GetUploadedBytes() uint64 {
+	if x != nil {
+		return x.UploadedBytes
+	}
+	return 0
+}
+
+func (x *SyncPeerTransferStatus) GetDownloadedBytes() uint64 {
+	if x != nil {
+		return x.DownloadedBytes
+	}
+	return 0
+}
+
+func (x *SyncPeerTransferStatus) GetConnected() bool {
+	if x != nil {
+		return x.Connected
+	}
+	return false
+}
+
+// SyncLocalCopyStatus describes the local copy of one Space's current head.
+// Completion is recorded only after every reachable block is stored durably.
+type SyncLocalCopyStatus struct {
+	unknownFields  []byte
+	SharedObjectId string `protobuf:"bytes,1,opt,name=shared_object_id,json=sharedObjectId,proto3" json:"sharedObjectId,omitempty"`
+	DisplayName    string `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"displayName,omitempty"`
+	Blocks         uint64 `protobuf:"varint,3,opt,name=blocks,proto3" json:"blocks,omitempty"`
+	Bytes          uint64 `protobuf:"varint,4,opt,name=bytes,proto3" json:"bytes,omitempty"`
+	Complete       bool   `protobuf:"varint,5,opt,name=complete,proto3" json:"complete,omitempty"`
+	Error          string `protobuf:"bytes,6,opt,name=error,proto3" json:"error,omitempty"`
+}
+
+func (x *SyncLocalCopyStatus) Reset() {
+	*x = SyncLocalCopyStatus{}
+}
+
+func (*SyncLocalCopyStatus) ProtoMessage() {}
+
+func (x *SyncLocalCopyStatus) GetSharedObjectId() string {
+	if x != nil {
+		return x.SharedObjectId
+	}
+	return ""
+}
+
+func (x *SyncLocalCopyStatus) GetDisplayName() string {
+	if x != nil {
+		return x.DisplayName
+	}
+	return ""
+}
+
+func (x *SyncLocalCopyStatus) GetBlocks() uint64 {
+	if x != nil {
+		return x.Blocks
+	}
+	return 0
+}
+
+func (x *SyncLocalCopyStatus) GetBytes() uint64 {
+	if x != nil {
+		return x.Bytes
+	}
+	return 0
+}
+
+func (x *SyncLocalCopyStatus) GetComplete() bool {
+	if x != nil {
+		return x.Complete
+	}
+	return false
+}
+
+func (x *SyncLocalCopyStatus) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
 // WatchStorageStatsResponse is the response type for WatchStorageStats.
 type WatchStorageStatsResponse struct {
 	unknownFields []byte
@@ -1869,6 +2020,8 @@ func (x *ConfirmPairingRequest) GetDisplayName() string {
 // ConfirmPairingResponse is the response for ConfirmPairing.
 type ConfirmPairingResponse struct {
 	unknownFields []byte
+	// SessionListEntry is the durable receiving Session, absent on the offering client.
+	SessionListEntry *session.SessionListEntry `protobuf:"bytes,1,opt,name=session_list_entry,json=sessionListEntry,proto3" json:"sessionListEntry,omitempty"`
 }
 
 func (x *ConfirmPairingResponse) Reset() {
@@ -1876,6 +2029,13 @@ func (x *ConfirmPairingResponse) Reset() {
 }
 
 func (*ConfirmPairingResponse) ProtoMessage() {}
+
+func (x *ConfirmPairingResponse) GetSessionListEntry() *session.SessionListEntry {
+	if x != nil {
+		return x.SessionListEntry
+	}
+	return nil
+}
 
 // DeleteAccountRequest is the request type for DeleteAccount.
 type DeleteAccountRequest struct {
@@ -2277,6 +2437,12 @@ type WatchPairingStatusResponse struct {
 	Emoji []string `protobuf:"bytes,4,rep,name=emoji,proto3" json:"emoji,omitempty"`
 	// ErrorMessage describes what went wrong (set when status is FAILED).
 	ErrorMessage string `protobuf:"bytes,5,opt,name=error_message,json=errorMessage,proto3" json:"errorMessage,omitempty"`
+	// AccountId is the existing account selected for enrollment.
+	AccountId string `protobuf:"bytes,6,opt,name=account_id,json=accountId,proto3" json:"accountId,omitempty"`
+	// Receiving indicates this client is adding the selected account.
+	Receiving bool `protobuf:"varint,7,opt,name=receiving,proto3" json:"receiving,omitempty"`
+	// AccountName is the offered account's display name.
+	AccountName string `protobuf:"bytes,8,opt,name=account_name,json=accountName,proto3" json:"accountName,omitempty"`
 }
 
 func (x *WatchPairingStatusResponse) Reset() {
@@ -2316,6 +2482,27 @@ func (x *WatchPairingStatusResponse) GetEmoji() []string {
 func (x *WatchPairingStatusResponse) GetErrorMessage() string {
 	if x != nil {
 		return x.ErrorMessage
+	}
+	return ""
+}
+
+func (x *WatchPairingStatusResponse) GetAccountId() string {
+	if x != nil {
+		return x.AccountId
+	}
+	return ""
+}
+
+func (x *WatchPairingStatusResponse) GetReceiving() bool {
+	if x != nil {
+		return x.Receiving
+	}
+	return false
+}
+
+func (x *WatchPairingStatusResponse) GetAccountName() string {
+	if x != nil {
+		return x.AccountName
 	}
 	return ""
 }
@@ -3260,8 +3447,13 @@ func (m *WatchSyncStatusResponse) CloneVT() *WatchSyncStatusResponse {
 	r.PackIndexTailFetchBytes = m.PackIndexTailFetchBytes
 	r.PackIndexTailResponseBytes = m.PackIndexTailResponseBytes
 	r.DirectP2PDisabled = m.DirectP2PDisabled
+	r.LocalAccount = m.LocalAccount
+	r.PeerUploadBytes = m.PeerUploadBytes
+	r.PeerDownloadBytes = m.PeerDownloadBytes
 	r.LastActivityAt = protobuf_go_lite.CloneVTValue(m.LastActivityAt)
 	r.BlockStores = protobuf_go_lite.CloneVTSlice(m.BlockStores)
+	r.LocalCopies = protobuf_go_lite.CloneVTSlice(m.LocalCopies)
+	r.Peers = protobuf_go_lite.CloneVTSlice(m.Peers)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -3269,6 +3461,46 @@ func (m *WatchSyncStatusResponse) CloneVT() *WatchSyncStatusResponse {
 }
 
 func (m *WatchSyncStatusResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *SyncPeerTransferStatus) CloneVT() *SyncPeerTransferStatus {
+	if m == nil {
+		return (*SyncPeerTransferStatus)(nil)
+	}
+	r := new(SyncPeerTransferStatus)
+	r.PeerId = m.PeerId
+	r.UploadedBytes = m.UploadedBytes
+	r.DownloadedBytes = m.DownloadedBytes
+	r.Connected = m.Connected
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *SyncPeerTransferStatus) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *SyncLocalCopyStatus) CloneVT() *SyncLocalCopyStatus {
+	if m == nil {
+		return (*SyncLocalCopyStatus)(nil)
+	}
+	r := new(SyncLocalCopyStatus)
+	r.SharedObjectId = m.SharedObjectId
+	r.DisplayName = m.DisplayName
+	r.Blocks = m.Blocks
+	r.Bytes = m.Bytes
+	r.Complete = m.Complete
+	r.Error = m.Error
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *SyncLocalCopyStatus) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
@@ -3594,6 +3826,7 @@ func (m *ConfirmPairingResponse) CloneVT() *ConfirmPairingResponse {
 		return (*ConfirmPairingResponse)(nil)
 	}
 	r := new(ConfirmPairingResponse)
+	r.SessionListEntry = protobuf_go_lite.CloneVTValue(m.SessionListEntry)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -3945,6 +4178,9 @@ func (m *WatchPairingStatusResponse) CloneVT() *WatchPairingStatusResponse {
 	r.RemotePeerId = m.RemotePeerId
 	r.Code = m.Code
 	r.ErrorMessage = m.ErrorMessage
+	r.AccountId = m.AccountId
+	r.Receiving = m.Receiving
+	r.AccountName = m.AccountName
 	r.Emoji = protobuf_go_lite.CloneSlice(m.Emoji)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
@@ -4952,11 +5188,90 @@ func (this *WatchSyncStatusResponse) EqualVT(that *WatchSyncStatusResponse) bool
 	if !protobuf_go_lite.EqualVTSliceImplicit(this.BlockStores, that.BlockStores, func() *SyncBlockStoreStatus { return &SyncBlockStoreStatus{} }) {
 		return false
 	}
+	if this.LocalAccount != that.LocalAccount {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.LocalCopies, that.LocalCopies, func() *SyncLocalCopyStatus { return &SyncLocalCopyStatus{} }) {
+		return false
+	}
+	if this.PeerUploadBytes != that.PeerUploadBytes {
+		return false
+	}
+	if this.PeerDownloadBytes != that.PeerDownloadBytes {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.Peers, that.Peers, func() *SyncPeerTransferStatus { return &SyncPeerTransferStatus{} }) {
+		return false
+	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
 func (this *WatchSyncStatusResponse) EqualMessageVT(thatMsg any) bool {
 	that, ok := thatMsg.(*WatchSyncStatusResponse)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *SyncPeerTransferStatus) EqualVT(that *SyncPeerTransferStatus) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.PeerId != that.PeerId {
+		return false
+	}
+	if this.UploadedBytes != that.UploadedBytes {
+		return false
+	}
+	if this.DownloadedBytes != that.DownloadedBytes {
+		return false
+	}
+	if this.Connected != that.Connected {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *SyncPeerTransferStatus) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*SyncPeerTransferStatus)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *SyncLocalCopyStatus) EqualVT(that *SyncLocalCopyStatus) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.SharedObjectId != that.SharedObjectId {
+		return false
+	}
+	if this.DisplayName != that.DisplayName {
+		return false
+	}
+	if this.Blocks != that.Blocks {
+		return false
+	}
+	if this.Bytes != that.Bytes {
+		return false
+	}
+	if this.Complete != that.Complete {
+		return false
+	}
+	if this.Error != that.Error {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *SyncLocalCopyStatus) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*SyncLocalCopyStatus)
 	if !ok {
 		return false
 	}
@@ -5358,6 +5673,9 @@ func (this *ConfirmPairingResponse) EqualVT(that *ConfirmPairingResponse) bool {
 	if this == that {
 		return true
 	} else if this == nil || that == nil {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.SessionListEntry, that.SessionListEntry) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -5798,6 +6116,15 @@ func (this *WatchPairingStatusResponse) EqualVT(that *WatchPairingStatusResponse
 		return false
 	}
 	if this.ErrorMessage != that.ErrorMessage {
+		return false
+	}
+	if this.AccountId != that.AccountId {
+		return false
+	}
+	if this.Receiving != that.Receiving {
+		return false
+	}
+	if this.AccountName != that.AccountName {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -7880,6 +8207,43 @@ func (x *WatchSyncStatusResponse) MarshalProtoJSON(s *json.MarshalState) {
 		}
 		s.WriteArrayEnd()
 	}
+	if x.LocalAccount || s.HasField("localAccount") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("localAccount")
+		s.WriteBool(x.LocalAccount)
+	}
+	if len(x.LocalCopies) > 0 || s.HasField("localCopies") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("localCopies")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.LocalCopies {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s.WithField("localCopies"))
+		}
+		s.WriteArrayEnd()
+	}
+	if x.PeerUploadBytes != 0 || s.HasField("peerUploadBytes") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("peerUploadBytes")
+		s.WriteUint64(x.PeerUploadBytes)
+	}
+	if x.PeerDownloadBytes != 0 || s.HasField("peerDownloadBytes") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("peerDownloadBytes")
+		s.WriteUint64(x.PeerDownloadBytes)
+	}
+	if len(x.Peers) > 0 || s.HasField("peers") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("peers")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.Peers {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s.WithField("peers"))
+		}
+		s.WriteArrayEnd()
+	}
 	s.WriteObjectEnd()
 }
 
@@ -8084,12 +8448,205 @@ func (x *WatchSyncStatusResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
 				}
 				x.BlockStores = append(x.BlockStores, v)
 			})
+		case "local_account", "localAccount":
+			s.AddField("local_account")
+			x.LocalAccount = s.ReadBool()
+		case "local_copies", "localCopies":
+			s.AddField("local_copies")
+			if s.ReadNil() {
+				x.LocalCopies = nil
+				return
+			}
+			s.ReadArray(func() {
+				if s.ReadNil() {
+					x.LocalCopies = append(x.LocalCopies, nil)
+					return
+				}
+				v := &SyncLocalCopyStatus{}
+				v.UnmarshalProtoJSON(s.WithField("local_copies", false))
+				if s.Err() != nil {
+					return
+				}
+				x.LocalCopies = append(x.LocalCopies, v)
+			})
+		case "peer_upload_bytes", "peerUploadBytes":
+			s.AddField("peer_upload_bytes")
+			x.PeerUploadBytes = s.ReadUint64()
+		case "peer_download_bytes", "peerDownloadBytes":
+			s.AddField("peer_download_bytes")
+			x.PeerDownloadBytes = s.ReadUint64()
+		case "peers":
+			s.AddField("peers")
+			if s.ReadNil() {
+				x.Peers = nil
+				return
+			}
+			s.ReadArray(func() {
+				if s.ReadNil() {
+					x.Peers = append(x.Peers, nil)
+					return
+				}
+				v := &SyncPeerTransferStatus{}
+				v.UnmarshalProtoJSON(s.WithField("peers", false))
+				if s.Err() != nil {
+					return
+				}
+				x.Peers = append(x.Peers, v)
+			})
 		}
 	})
 }
 
 // UnmarshalJSON unmarshals the WatchSyncStatusResponse from JSON.
 func (x *WatchSyncStatusResponse) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the SyncPeerTransferStatus message to JSON.
+func (x *SyncPeerTransferStatus) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.PeerId != "" || s.HasField("peerId") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("peerId")
+		s.WriteString(x.PeerId)
+	}
+	if x.UploadedBytes != 0 || s.HasField("uploadedBytes") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("uploadedBytes")
+		s.WriteUint64(x.UploadedBytes)
+	}
+	if x.DownloadedBytes != 0 || s.HasField("downloadedBytes") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("downloadedBytes")
+		s.WriteUint64(x.DownloadedBytes)
+	}
+	if x.Connected || s.HasField("connected") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("connected")
+		s.WriteBool(x.Connected)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the SyncPeerTransferStatus to JSON.
+func (x *SyncPeerTransferStatus) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the SyncPeerTransferStatus message from JSON.
+func (x *SyncPeerTransferStatus) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "peer_id", "peerId":
+			s.AddField("peer_id")
+			x.PeerId = s.ReadString()
+		case "uploaded_bytes", "uploadedBytes":
+			s.AddField("uploaded_bytes")
+			x.UploadedBytes = s.ReadUint64()
+		case "downloaded_bytes", "downloadedBytes":
+			s.AddField("downloaded_bytes")
+			x.DownloadedBytes = s.ReadUint64()
+		case "connected":
+			s.AddField("connected")
+			x.Connected = s.ReadBool()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the SyncPeerTransferStatus from JSON.
+func (x *SyncPeerTransferStatus) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the SyncLocalCopyStatus message to JSON.
+func (x *SyncLocalCopyStatus) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.SharedObjectId != "" || s.HasField("sharedObjectId") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("sharedObjectId")
+		s.WriteString(x.SharedObjectId)
+	}
+	if x.DisplayName != "" || s.HasField("displayName") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("displayName")
+		s.WriteString(x.DisplayName)
+	}
+	if x.Blocks != 0 || s.HasField("blocks") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("blocks")
+		s.WriteUint64(x.Blocks)
+	}
+	if x.Bytes != 0 || s.HasField("bytes") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("bytes")
+		s.WriteUint64(x.Bytes)
+	}
+	if x.Complete || s.HasField("complete") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("complete")
+		s.WriteBool(x.Complete)
+	}
+	if x.Error != "" || s.HasField("error") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("error")
+		s.WriteString(x.Error)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the SyncLocalCopyStatus to JSON.
+func (x *SyncLocalCopyStatus) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the SyncLocalCopyStatus message from JSON.
+func (x *SyncLocalCopyStatus) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "shared_object_id", "sharedObjectId":
+			s.AddField("shared_object_id")
+			x.SharedObjectId = s.ReadString()
+		case "display_name", "displayName":
+			s.AddField("display_name")
+			x.DisplayName = s.ReadString()
+		case "blocks":
+			s.AddField("blocks")
+			x.Blocks = s.ReadUint64()
+		case "bytes":
+			s.AddField("bytes")
+			x.Bytes = s.ReadUint64()
+		case "complete":
+			s.AddField("complete")
+			x.Complete = s.ReadBool()
+		case "error":
+			s.AddField("error")
+			x.Error = s.ReadString()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the SyncLocalCopyStatus from JSON.
+func (x *SyncLocalCopyStatus) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -8888,6 +9445,12 @@ func (x *ConfirmPairingResponse) MarshalProtoJSON(s *json.MarshalState) {
 		return
 	}
 	s.WriteObjectStart()
+	var wroteField bool
+	if x.SessionListEntry != nil || s.HasField("sessionListEntry") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("sessionListEntry")
+		x.SessionListEntry.MarshalProtoJSON(s.WithField("sessionListEntry"))
+	}
 	s.WriteObjectEnd()
 }
 
@@ -8902,7 +9465,17 @@ func (x *ConfirmPairingResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		return
 	}
 	s.ReadObject(func(key string) {
-		// no fields
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "session_list_entry", "sessionListEntry":
+			if s.ReadNil() {
+				x.SessionListEntry = nil
+				return
+			}
+			x.SessionListEntry = &session.SessionListEntry{}
+			x.SessionListEntry.UnmarshalProtoJSON(s.WithField("session_list_entry", true))
+		}
 	})
 }
 
@@ -9812,6 +10385,21 @@ func (x *WatchPairingStatusResponse) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("errorMessage")
 		s.WriteString(x.ErrorMessage)
 	}
+	if x.AccountId != "" || s.HasField("accountId") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("accountId")
+		s.WriteString(x.AccountId)
+	}
+	if x.Receiving || s.HasField("receiving") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("receiving")
+		s.WriteBool(x.Receiving)
+	}
+	if x.AccountName != "" || s.HasField("accountName") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("accountName")
+		s.WriteString(x.AccountName)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -9848,6 +10436,15 @@ func (x *WatchPairingStatusResponse) UnmarshalProtoJSON(s *json.UnmarshalState) 
 		case "error_message", "errorMessage":
 			s.AddField("error_message")
 			x.ErrorMessage = s.ReadString()
+		case "account_id", "accountId":
+			s.AddField("account_id")
+			x.AccountId = s.ReadString()
+		case "receiving":
+			s.AddField("receiving")
+			x.Receiving = s.ReadBool()
+		case "account_name", "accountName":
+			s.AddField("account_name")
+			x.AccountName = s.ReadString()
 		}
 	})
 }
@@ -11826,6 +12423,55 @@ func (m *WatchSyncStatusResponse) MarshalToSizedBufferVT(dAtA []byte) (int, erro
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if len(m.Peers) > 0 {
+		for iNdEx := len(m.Peers) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.Peers[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0x3
+			i--
+			dAtA[i] = 0xea
+		}
+	}
+	if m.PeerDownloadBytes != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.PeerDownloadBytes))
+		i--
+		dAtA[i] = 0x3
+		i--
+		dAtA[i] = 0xe0
+	}
+	if m.PeerUploadBytes != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.PeerUploadBytes))
+		i--
+		dAtA[i] = 0x3
+		i--
+		dAtA[i] = 0xd8
+	}
+	if len(m.LocalCopies) > 0 {
+		for iNdEx := len(m.LocalCopies) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.LocalCopies[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0x3
+			i--
+			dAtA[i] = 0xd2
+		}
+	}
+	if m.LocalAccount {
+		i = protobuf_go_lite.EncodeBool(dAtA, i, m.LocalAccount)
+		i--
+		dAtA[i] = 0x3
+		i--
+		dAtA[i] = 0xc8
+	}
 	if len(m.BlockStores) > 0 {
 		for iNdEx := len(m.BlockStores) - 1; iNdEx >= 0; iNdEx-- {
 			size, err := m.BlockStores[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
@@ -12199,6 +12845,120 @@ func (m *WatchSyncStatusResponse) MarshalToSizedBufferVT(dAtA []byte) (int, erro
 		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.State))
 		i--
 		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *SyncPeerTransferStatus) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *SyncPeerTransferStatus) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *SyncPeerTransferStatus) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.Connected {
+		i = protobuf_go_lite.EncodeBool(dAtA, i, m.Connected)
+		i--
+		dAtA[i] = 0x20
+	}
+	if m.DownloadedBytes != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.DownloadedBytes))
+		i--
+		dAtA[i] = 0x18
+	}
+	if m.UploadedBytes != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.UploadedBytes))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.PeerId) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.PeerId)
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *SyncLocalCopyStatus) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *SyncLocalCopyStatus) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *SyncLocalCopyStatus) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.Error) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.Error)
+		i--
+		dAtA[i] = 0x32
+	}
+	if m.Complete {
+		i = protobuf_go_lite.EncodeBool(dAtA, i, m.Complete)
+		i--
+		dAtA[i] = 0x28
+	}
+	if m.Bytes != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Bytes))
+		i--
+		dAtA[i] = 0x20
+	}
+	if m.Blocks != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Blocks))
+		i--
+		dAtA[i] = 0x18
+	}
+	if len(m.DisplayName) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.DisplayName)
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.SharedObjectId) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.SharedObjectId)
+		i--
+		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
@@ -12958,6 +13718,16 @@ func (m *ConfirmPairingResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error
 	_ = l
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.SessionListEntry != nil {
+		size, err := m.SessionListEntry.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
@@ -13772,6 +14542,21 @@ func (m *WatchPairingStatusResponse) MarshalToSizedBufferVT(dAtA []byte) (int, e
 	_ = l
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.AccountName) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.AccountName)
+		i--
+		dAtA[i] = 0x42
+	}
+	if m.Receiving {
+		i = protobuf_go_lite.EncodeBool(dAtA, i, m.Receiving)
+		i--
+		dAtA[i] = 0x38
+	}
+	if len(m.AccountId) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.AccountId)
+		i--
+		dAtA[i] = 0x32
 	}
 	if len(m.ErrorMessage) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.ErrorMessage)
@@ -15037,6 +15822,47 @@ func (m *WatchSyncStatusResponse) SizeVT() (n int) {
 		l = e.SizeVT()
 		n += protobuf_go_lite.SizeMessage(2, l)
 	}
+	n += protobuf_go_lite.SizeBoolNonZero(2, m.LocalAccount)
+	for _, e := range m.LocalCopies {
+		l = e.SizeVT()
+		n += protobuf_go_lite.SizeMessage(2, l)
+	}
+	n += protobuf_go_lite.SizeVarintNonZero(2, m.PeerUploadBytes)
+	n += protobuf_go_lite.SizeVarintNonZero(2, m.PeerDownloadBytes)
+	for _, e := range m.Peers {
+		l = e.SizeVT()
+		n += protobuf_go_lite.SizeMessage(2, l)
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *SyncPeerTransferStatus) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.PeerId)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.UploadedBytes)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.DownloadedBytes)
+	n += protobuf_go_lite.SizeBoolNonZero(1, m.Connected)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *SyncLocalCopyStatus) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.SharedObjectId)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.DisplayName)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Blocks)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Bytes)
+	n += protobuf_go_lite.SizeBoolNonZero(1, m.Complete)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Error)
 	n += len(m.unknownFields)
 	return n
 }
@@ -15264,6 +16090,10 @@ func (m *ConfirmPairingResponse) SizeVT() (n int) {
 	}
 	var l int
 	_ = l
+	if m.SessionListEntry != nil {
+		l = m.SessionListEntry.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -15515,6 +16345,9 @@ func (m *WatchPairingStatusResponse) SizeVT() (n int) {
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Code)
 	n += protobuf_go_lite.SizeStringSlice(1, m.Emoji)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.ErrorMessage)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.AccountId)
+	n += protobuf_go_lite.SizeBoolNonZero(1, m.Receiving)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.AccountName)
 	n += len(m.unknownFields)
 	return n
 }
@@ -16420,10 +17253,106 @@ func (x *WatchSyncStatusResponse) MarshalProtoText() string {
 		}
 		protobuf_go_lite.TextWriteListEnd(&sb)
 	}
+	if x.LocalAccount != false {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "local_account")
+		protobuf_go_lite.TextWriteBool(&sb, x.LocalAccount)
+	}
+	if len(x.LocalCopies) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "local_copies")
+		for i, v := range x.LocalCopies {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &SyncLocalCopyStatus{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	if x.PeerUploadBytes != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "peer_upload_bytes")
+		protobuf_go_lite.TextWriteUint(&sb, x.PeerUploadBytes)
+	}
+	if x.PeerDownloadBytes != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "peer_download_bytes")
+		protobuf_go_lite.TextWriteUint(&sb, x.PeerDownloadBytes)
+	}
+	if len(x.Peers) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "peers")
+		for i, v := range x.Peers {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &SyncPeerTransferStatus{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
 func (x *WatchSyncStatusResponse) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *SyncPeerTransferStatus) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "SyncPeerTransferStatus")
+	if x.PeerId != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "peer_id")
+		protobuf_go_lite.TextWriteString(&sb, x.PeerId)
+	}
+	if x.UploadedBytes != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "uploaded_bytes")
+		protobuf_go_lite.TextWriteUint(&sb, x.UploadedBytes)
+	}
+	if x.DownloadedBytes != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "downloaded_bytes")
+		protobuf_go_lite.TextWriteUint(&sb, x.DownloadedBytes)
+	}
+	if x.Connected != false {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "connected")
+		protobuf_go_lite.TextWriteBool(&sb, x.Connected)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *SyncPeerTransferStatus) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *SyncLocalCopyStatus) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "SyncLocalCopyStatus")
+	if x.SharedObjectId != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "shared_object_id")
+		protobuf_go_lite.TextWriteString(&sb, x.SharedObjectId)
+	}
+	if x.DisplayName != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "display_name")
+		protobuf_go_lite.TextWriteString(&sb, x.DisplayName)
+	}
+	if x.Blocks != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "blocks")
+		protobuf_go_lite.TextWriteUint(&sb, x.Blocks)
+	}
+	if x.Bytes != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "bytes")
+		protobuf_go_lite.TextWriteUint(&sb, x.Bytes)
+	}
+	if x.Complete != false {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "complete")
+		protobuf_go_lite.TextWriteBool(&sb, x.Complete)
+	}
+	if x.Error != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "error")
+		protobuf_go_lite.TextWriteString(&sb, x.Error)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *SyncLocalCopyStatus) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -16701,7 +17630,11 @@ func (x *ConfirmPairingRequest) String() string {
 
 func (x *ConfirmPairingResponse) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
-	protobuf_go_lite.TextStartMessage(&sb, "ConfirmPairingResponse")
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "ConfirmPairingResponse")
+	if x.SessionListEntry != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "session_list_entry")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.SessionListEntry)
+	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
@@ -17041,6 +17974,18 @@ func (x *WatchPairingStatusResponse) MarshalProtoText() string {
 	if x.ErrorMessage != "" {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "error_message")
 		protobuf_go_lite.TextWriteString(&sb, x.ErrorMessage)
+	}
+	if x.AccountId != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "account_id")
+		protobuf_go_lite.TextWriteString(&sb, x.AccountId)
+	}
+	if x.Receiving != false {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "receiving")
+		protobuf_go_lite.TextWriteBool(&sb, x.Receiving)
+	}
+	if x.AccountName != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "account_name")
+		protobuf_go_lite.TextWriteString(&sb, x.AccountName)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -19259,6 +20204,242 @@ func (m *WatchSyncStatusResponse) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 57:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LocalAccount", wireType)
+			}
+			var v bool
+			v, iNdEx, err = protobuf_go_lite.DecodeVarintBool(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.LocalAccount = bool(v)
+		case 58:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LocalCopies", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.LocalCopies = append(m.LocalCopies, &SyncLocalCopyStatus{})
+			if err := m.LocalCopies[len(m.LocalCopies)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 59:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PeerUploadBytes", wireType)
+			}
+			m.PeerUploadBytes = 0
+			m.PeerUploadBytes, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 60:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PeerDownloadBytes", wireType)
+			}
+			m.PeerDownloadBytes = 0
+			m.PeerDownloadBytes, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 61:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Peers", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Peers = append(m.Peers, &SyncPeerTransferStatus{})
+			if err := m.Peers[len(m.Peers)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *SyncPeerTransferStatus) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SyncPeerTransferStatus: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SyncPeerTransferStatus: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PeerId", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.PeerId = v
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UploadedBytes", wireType)
+			}
+			m.UploadedBytes = 0
+			m.UploadedBytes, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DownloadedBytes", wireType)
+			}
+			m.DownloadedBytes = 0
+			m.DownloadedBytes, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Connected", wireType)
+			}
+			var v bool
+			v, iNdEx, err = protobuf_go_lite.DecodeVarintBool(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Connected = bool(v)
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *SyncLocalCopyStatus) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SyncLocalCopyStatus: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SyncLocalCopyStatus: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SharedObjectId", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.SharedObjectId = v
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DisplayName", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.DisplayName = v
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Blocks", wireType)
+			}
+			m.Blocks = 0
+			m.Blocks, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Bytes", wireType)
+			}
+			m.Bytes = 0
+			m.Bytes, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Complete", wireType)
+			}
+			var v bool
+			v, iNdEx, err = protobuf_go_lite.DecodeVarintBool(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Complete = bool(v)
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Error", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Error = v
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
@@ -20328,6 +21509,21 @@ func (m *ConfirmPairingResponse) UnmarshalVT(dAtA []byte) error {
 			return fmt.Errorf("proto: ConfirmPairingResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SessionListEntry", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.SessionListEntry == nil {
+				m.SessionListEntry = &session.SessionListEntry{}
+			}
+			if err := m.SessionListEntry.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
@@ -21500,6 +22696,36 @@ func (m *WatchPairingStatusResponse) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.ErrorMessage = v
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AccountId", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.AccountId = v
+		case 7:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Receiving", wireType)
+			}
+			var v bool
+			v, iNdEx, err = protobuf_go_lite.DecodeVarintBool(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Receiving = bool(v)
+		case 8:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AccountName", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.AccountName = v
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

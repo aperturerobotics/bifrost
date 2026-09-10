@@ -179,6 +179,22 @@ func ProcessAccountSettingsOps(
 			state.KeybindingOverrides = merged
 			results = append(results, sobject.BuildSOOperationResult(peerIDStr, opInner.GetNonce(), true, nil))
 
+		case *AccountSettingsOp_UpsertAccountSession:
+			if err := state.applyAccountSession(body.UpsertAccountSession); err != nil {
+				results = append(results, sobject.BuildSOOperationResult(peerIDStr, opInner.GetNonce(), false,
+					&sobject.SOOperationRejectionErrorDetails{ErrorMsg: err.Error()}))
+				continue
+			}
+			results = append(results, sobject.BuildSOOperationResult(peerIDStr, opInner.GetNonce(), true, nil))
+
+		case *AccountSettingsOp_UpsertCatalogEntry:
+			if err := state.applyCatalogEntry(body.UpsertCatalogEntry); err != nil {
+				results = append(results, sobject.BuildSOOperationResult(peerIDStr, opInner.GetNonce(), false,
+					&sobject.SOOperationRejectionErrorDetails{ErrorMsg: err.Error()}))
+				continue
+			}
+			results = append(results, sobject.BuildSOOperationResult(peerIDStr, opInner.GetNonce(), true, nil))
+
 		default:
 			results = append(results, sobject.BuildSOOperationResult(
 				peerIDStr, opInner.GetNonce(), false,

@@ -1199,6 +1199,7 @@ func stopMountedSessionTransportOwner(t *testing.T, acc *ProviderAccount, sess *
 	case <-ctx.Done():
 		t.Fatalf("mounted session owner did not stop: %v", ctx.Err())
 	}
+	acc.StopSessionTransport()
 }
 
 func newBlockedSessionTransportServer(t *testing.T) (*httptest.Server, <-chan struct{}, func()) {

@@ -91,10 +91,6 @@ type Config struct {
 	BlockPeers []string `protobuf:"bytes,10,rep,name=block_peers,json=blockPeers,proto3" json:"blockPeers,omitempty"`
 	// Verbose enables very verbose logging.
 	Verbose bool `protobuf:"varint,11,opt,name=verbose,proto3" json:"verbose,omitempty"`
-	// AllPeersLowerPeerOffers prevents simultaneous offers when both peers use
-	// AllPeers. The peer with the lower binary peer ID makes the offer.
-	// Explicit Dialers are not restricted.
-	AllPeersLowerPeerOffers bool `protobuf:"varint,12,opt,name=all_peers_lower_peer_offers,json=allPeersLowerPeerOffers,proto3" json:"allPeersLowerPeerOffers,omitempty"`
 }
 
 func (x *Config) Reset() {
@@ -176,13 +172,6 @@ func (x *Config) GetBlockPeers() []string {
 func (x *Config) GetVerbose() bool {
 	if x != nil {
 		return x.Verbose
-	}
-	return false
-}
-
-func (x *Config) GetAllPeersLowerPeerOffers() bool {
-	if x != nil {
-		return x.AllPeersLowerPeerOffers
 	}
 	return false
 }
@@ -528,7 +517,6 @@ func (m *Config) CloneVT() *Config {
 	r.AllPeers = m.AllPeers
 	r.DisableListen = m.DisableListen
 	r.Verbose = m.Verbose
-	r.AllPeersLowerPeerOffers = m.AllPeersLowerPeerOffers
 	r.Quic = protobuf_go_lite.CloneVTValue(m.Quic)
 	r.WebRtc = protobuf_go_lite.CloneVTValue(m.WebRtc)
 	r.Backoff = protobuf_go_lite.CloneVTValue(m.Backoff)
@@ -757,9 +745,6 @@ func (this *Config) EqualVT(that *Config) bool {
 		return false
 	}
 	if this.Verbose != that.Verbose {
-		return false
-	}
-	if this.AllPeersLowerPeerOffers != that.AllPeersLowerPeerOffers {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -1187,11 +1172,6 @@ func (x *Config) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("verbose")
 		s.WriteBool(x.Verbose)
 	}
-	if x.AllPeersLowerPeerOffers || s.HasField("allPeersLowerPeerOffers") {
-		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("allPeersLowerPeerOffers")
-		s.WriteBool(x.AllPeersLowerPeerOffers)
-	}
 	s.WriteObjectEnd()
 }
 
@@ -1267,9 +1247,6 @@ func (x *Config) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "verbose":
 			s.AddField("verbose")
 			x.Verbose = s.ReadBool()
-		case "all_peers_lower_peer_offers", "allPeersLowerPeerOffers":
-			s.AddField("all_peers_lower_peer_offers")
-			x.AllPeersLowerPeerOffers = s.ReadBool()
 		}
 	})
 }
@@ -1705,11 +1682,6 @@ func (m *Config) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	_ = l
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
-	}
-	if m.AllPeersLowerPeerOffers {
-		i = protobuf_go_lite.EncodeBool(dAtA, i, m.AllPeersLowerPeerOffers)
-		i--
-		dAtA[i] = 0x60
 	}
 	if m.Verbose {
 		i = protobuf_go_lite.EncodeBool(dAtA, i, m.Verbose)
@@ -2218,7 +2190,6 @@ func (m *Config) SizeVT() (n int) {
 	n += protobuf_go_lite.SizeBoolNonZero(1, m.DisableListen)
 	n += protobuf_go_lite.SizeStringSlice(1, m.BlockPeers)
 	n += protobuf_go_lite.SizeBoolNonZero(1, m.Verbose)
-	n += protobuf_go_lite.SizeBoolNonZero(1, m.AllPeersLowerPeerOffers)
 	n += len(m.unknownFields)
 	return n
 }
@@ -2453,10 +2424,6 @@ func (x *Config) MarshalProtoText() string {
 	if x.Verbose != false {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "verbose")
 		protobuf_go_lite.TextWriteBool(&sb, x.Verbose)
-	}
-	if x.AllPeersLowerPeerOffers != false {
-		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "all_peers_lower_peer_offers")
-		protobuf_go_lite.TextWriteBool(&sb, x.AllPeersLowerPeerOffers)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -2802,16 +2769,6 @@ func (m *Config) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.Verbose = bool(v)
-		case 12:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field AllPeersLowerPeerOffers", wireType)
-			}
-			var v bool
-			v, iNdEx, err = protobuf_go_lite.DecodeVarintBool(dAtA, iNdEx)
-			if err != nil {
-				return err
-			}
-			m.AllPeersLowerPeerOffers = bool(v)
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

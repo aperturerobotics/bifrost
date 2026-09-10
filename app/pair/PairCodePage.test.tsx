@@ -7,6 +7,7 @@ const mockUseParams = vi.hoisted(() => vi.fn(() => ({ code: 'direct' })))
 const mockNavigate = vi.hoisted(() => vi.fn())
 const mockUseRootResource = vi.hoisted(() => vi.fn(() => null))
 const mockUseResourceValue = vi.hoisted(() => vi.fn(() => null))
+const mockPreparePairingSession = vi.hoisted(() => vi.fn())
 
 vi.mock('@s4wave/web/router/router.js', () => ({
   useNavigate: () => mockNavigate,
@@ -17,12 +18,15 @@ vi.mock('@s4wave/web/hooks/useRootResource.js', () => ({
   useRootResource: mockUseRootResource,
 }))
 
-vi.mock('@aptre/bldr-sdk/hooks/useResource.js', () => ({
+vi.mock('@aptre/bldr-sdk/hooks/useResource.js', async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import('@aptre/bldr-sdk/hooks/useResource.js')
+  >()),
   useResourceValue: mockUseResourceValue,
 }))
 
-vi.mock('@s4wave/app/quickstart/create.js', () => ({
-  createLocalSession: vi.fn(),
+vi.mock('./prepare-session.js', () => ({
+  preparePairingSession: mockPreparePairingSession,
 }))
 
 import { asyncValues } from '@s4wave/web/test/async-values.js'
@@ -34,7 +38,35 @@ describe('PairCodePage', () => {
     cleanup()
     vi.clearAllMocks()
     mockUseParams.mockReturnValue({ code: 'direct' })
+    mockUseResourceValue.mockReturnValue(null)
   })
+
+  it('opens the enrolled account returned by Home pairing', async () => {
+    mockUseParams.mockReturnValue({ code: '' })
+    mockUseResourceValue.mockReturnValue({} as never)
+    const session = {
+      completePairing: vi.fn(async () => 'source-peer'),
+      watchPairingStatus: vi.fn(() =>
+        asyncValues({ status: PairingStatus.PairingStatus_BOTH_CONFIRMED }),
+      ),
+      confirmPairing: vi.fn(async () => ({
+        sessionListEntry: { sessionIndex: 7 },
+      })),
+      [Symbol.dispose]: vi.fn(),
+    }
+    mockPreparePairingSession.mockResolvedValue(session)
+
+    render(<PairCodePage />)
+    fireEvent.change(screen.getByPlaceholderText('XXXX XXXX'), {
+      target: { value: 'AAAA AAAA' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Connect' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Open account' }))
+
+    expect(mockPreparePairingSession).toHaveBeenCalledOnce()
+    expect(mockNavigate).toHaveBeenCalledWith({ path: '/u/7' })
+  })
+
   it('shows the missing or expired message for a rejected pairing code', async () => {
     mockUseParams.mockReturnValue({ code: '' })
     const session = {
@@ -115,7 +147,7 @@ describe('PairCodePage', () => {
     })
     fireEvent.click(screen.getByRole('button', { name: 'Accept offer' }))
 
-    expect(await screen.findByText('Verification failed')).toBeDefined()
+    expect(await screen.findByText('Pairing failed')).toBeDefined()
     expect(screen.getByText('unsupported cross-NAT topology')).toBeDefined()
     expect(screen.queryByText('Waiting for other device')).toBeNull()
   })

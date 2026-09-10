@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"github.com/s4wave/spacewave/db/blocktype"
+	unixfs_block "github.com/s4wave/spacewave/db/unixfs/block"
+	unixfs_world "github.com/s4wave/spacewave/db/unixfs/world"
 	s4wave_layout_world "github.com/s4wave/spacewave/sdk/layout/world"
 	s4wave_vm "github.com/s4wave/spacewave/sdk/vm"
 )
@@ -17,13 +19,19 @@ func LookupBlockType(
 	typeID string,
 ) (blocktype.BlockType, error) {
 	switch typeID {
-	case SpaceSettingsBlockType.GetBlockTypeID():
+	case SpaceSettingsBlockType.GetBlockTypeID(), "github.com/s4wave/spacewave/core/space/world.SpaceSettings":
 		return SpaceSettingsBlockType, nil
 	case s4wave_layout_world.ObjectLayoutTypeID:
 		return s4wave_layout_world.ObjectLayoutBlockType, nil
 	case s4wave_vm.V86ImageTypeID:
 		return s4wave_vm.V86ImageBlockType, nil
+	case unixfs_world.FSNodeTypeID:
+		return blocktype.NewBlockType(typeID, unixfs_block.NewFSNodeBlock), nil
+	case unixfs_world.FSObjectTypeID:
+		return blocktype.NewBlockType(typeID, unixfs_block.NewFSObjectBlock), nil
+	case unixfs_world.FSHostVolumeTypeID:
+		return blocktype.NewBlockType(typeID, unixfs_block.NewFSHostVolumeBlock), nil
 	default:
-		return nil, nil
+		return lookupApplicationBlockType(ctx, typeID)
 	}
 }

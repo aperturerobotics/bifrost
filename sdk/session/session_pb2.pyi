@@ -70,6 +70,7 @@ class PairingStatus(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     PairingStatus_BOTH_CONFIRMED: _ClassVar[PairingStatus]
     PairingStatus_PAIRING_REJECTED: _ClassVar[PairingStatus]
     PairingStatus_CONFIRMATION_TIMEOUT: _ClassVar[PairingStatus]
+    PairingStatus_ENROLLING: _ClassVar[PairingStatus]
 
 class JoinSpaceViaInviteResult(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     __slots__ = ()
@@ -115,6 +116,7 @@ PairingStatus_WAITING_FOR_REMOTE_CONFIRM: PairingStatus
 PairingStatus_BOTH_CONFIRMED: PairingStatus
 PairingStatus_PAIRING_REJECTED: PairingStatus
 PairingStatus_CONFIRMATION_TIMEOUT: PairingStatus
+PairingStatus_ENROLLING: PairingStatus
 JoinSpaceViaInviteResult_UNSPECIFIED: JoinSpaceViaInviteResult
 JoinSpaceViaInviteResult_ACCEPTED: JoinSpaceViaInviteResult
 JoinSpaceViaInviteResult_PENDING_OWNER_APPROVAL: JoinSpaceViaInviteResult
@@ -282,7 +284,7 @@ class SyncBlockStoreStatus(_message.Message):
     def __init__(self, block_store_id: _Optional[str] = ..., direct_hit_count: _Optional[int] = ..., cloud_hit_count: _Optional[int] = ..., cache_hit_count: _Optional[int] = ..., last_source: _Optional[_Union[SyncBlockSource, str]] = ..., accepted_root_inner_sequence: _Optional[int] = ..., cloud_remote_sequence: _Optional[int] = ..., shared_object_id: _Optional[str] = ...) -> None: ...
 
 class WatchSyncStatusResponse(_message.Message):
-    __slots__ = ("state", "direction", "transport_state", "p2p_state", "pending_upload_bytes", "pending_download_bytes", "pending_upload_count", "pending_download_count", "upload_bytes_per_second", "download_bytes_per_second", "active_upload_bytes", "active_upload_transferred_bytes", "in_flight_upload_count", "active_store_count", "active_peer_count", "last_error", "last_activity_at", "pack_range_request_count", "pack_range_response_bytes", "pack_full_response_fallback_count", "pack_full_response_fallback_bytes", "pack_last_full_response_fallback_bytes", "pack_manifest_entries", "pack_block_count_total", "pack_block_count_min", "pack_block_count_max", "pack_size_bytes_total", "pack_size_bytes_min", "pack_size_bytes_max", "pack_bloom_filter_count", "pack_bloom_missing_count", "pack_bloom_invalid_count", "pack_bloom_parameter_shape_count", "pack_bloom_max_false_positive_rate", "pack_bloom_risk_pack_count", "pack_lookup_count", "pack_candidate_packs", "pack_opened_packs", "pack_negative_packs", "pack_target_hits", "pack_last_candidate_packs", "pack_last_opened_packs", "pack_last_negative_packs", "pack_last_target_hit", "pack_index_cache_hits", "pack_index_cache_misses", "pack_index_cache_read_errors", "pack_index_cache_write_errors", "pack_remote_index_loads", "pack_remote_index_bytes", "pack_last_remote_index_bytes", "pack_index_tail_fetch_count", "pack_index_tail_fetch_bytes", "pack_index_tail_response_bytes", "direct_p2p_disabled", "block_stores")
+    __slots__ = ("state", "direction", "transport_state", "p2p_state", "pending_upload_bytes", "pending_download_bytes", "pending_upload_count", "pending_download_count", "upload_bytes_per_second", "download_bytes_per_second", "active_upload_bytes", "active_upload_transferred_bytes", "in_flight_upload_count", "active_store_count", "active_peer_count", "last_error", "last_activity_at", "pack_range_request_count", "pack_range_response_bytes", "pack_full_response_fallback_count", "pack_full_response_fallback_bytes", "pack_last_full_response_fallback_bytes", "pack_manifest_entries", "pack_block_count_total", "pack_block_count_min", "pack_block_count_max", "pack_size_bytes_total", "pack_size_bytes_min", "pack_size_bytes_max", "pack_bloom_filter_count", "pack_bloom_missing_count", "pack_bloom_invalid_count", "pack_bloom_parameter_shape_count", "pack_bloom_max_false_positive_rate", "pack_bloom_risk_pack_count", "pack_lookup_count", "pack_candidate_packs", "pack_opened_packs", "pack_negative_packs", "pack_target_hits", "pack_last_candidate_packs", "pack_last_opened_packs", "pack_last_negative_packs", "pack_last_target_hit", "pack_index_cache_hits", "pack_index_cache_misses", "pack_index_cache_read_errors", "pack_index_cache_write_errors", "pack_remote_index_loads", "pack_remote_index_bytes", "pack_last_remote_index_bytes", "pack_index_tail_fetch_count", "pack_index_tail_fetch_bytes", "pack_index_tail_response_bytes", "direct_p2p_disabled", "block_stores", "local_account", "local_copies", "peer_upload_bytes", "peer_download_bytes", "peers")
     STATE_FIELD_NUMBER: _ClassVar[int]
     DIRECTION_FIELD_NUMBER: _ClassVar[int]
     TRANSPORT_STATE_FIELD_NUMBER: _ClassVar[int]
@@ -339,6 +341,11 @@ class WatchSyncStatusResponse(_message.Message):
     PACK_INDEX_TAIL_RESPONSE_BYTES_FIELD_NUMBER: _ClassVar[int]
     DIRECT_P2P_DISABLED_FIELD_NUMBER: _ClassVar[int]
     BLOCK_STORES_FIELD_NUMBER: _ClassVar[int]
+    LOCAL_ACCOUNT_FIELD_NUMBER: _ClassVar[int]
+    LOCAL_COPIES_FIELD_NUMBER: _ClassVar[int]
+    PEER_UPLOAD_BYTES_FIELD_NUMBER: _ClassVar[int]
+    PEER_DOWNLOAD_BYTES_FIELD_NUMBER: _ClassVar[int]
+    PEERS_FIELD_NUMBER: _ClassVar[int]
     state: SyncStatusState
     direction: SyncActivityDirection
     transport_state: SyncTransportState
@@ -395,7 +402,40 @@ class WatchSyncStatusResponse(_message.Message):
     pack_index_tail_response_bytes: int
     direct_p2p_disabled: bool
     block_stores: _containers.RepeatedCompositeFieldContainer[SyncBlockStoreStatus]
-    def __init__(self, state: _Optional[_Union[SyncStatusState, str]] = ..., direction: _Optional[_Union[SyncActivityDirection, str]] = ..., transport_state: _Optional[_Union[SyncTransportState, str]] = ..., p2p_state: _Optional[_Union[SyncP2PState, str]] = ..., pending_upload_bytes: _Optional[int] = ..., pending_download_bytes: _Optional[int] = ..., pending_upload_count: _Optional[int] = ..., pending_download_count: _Optional[int] = ..., upload_bytes_per_second: _Optional[int] = ..., download_bytes_per_second: _Optional[int] = ..., active_upload_bytes: _Optional[int] = ..., active_upload_transferred_bytes: _Optional[int] = ..., in_flight_upload_count: _Optional[int] = ..., active_store_count: _Optional[int] = ..., active_peer_count: _Optional[int] = ..., last_error: _Optional[str] = ..., last_activity_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., pack_range_request_count: _Optional[int] = ..., pack_range_response_bytes: _Optional[int] = ..., pack_full_response_fallback_count: _Optional[int] = ..., pack_full_response_fallback_bytes: _Optional[int] = ..., pack_last_full_response_fallback_bytes: _Optional[int] = ..., pack_manifest_entries: _Optional[int] = ..., pack_block_count_total: _Optional[int] = ..., pack_block_count_min: _Optional[int] = ..., pack_block_count_max: _Optional[int] = ..., pack_size_bytes_total: _Optional[int] = ..., pack_size_bytes_min: _Optional[int] = ..., pack_size_bytes_max: _Optional[int] = ..., pack_bloom_filter_count: _Optional[int] = ..., pack_bloom_missing_count: _Optional[int] = ..., pack_bloom_invalid_count: _Optional[int] = ..., pack_bloom_parameter_shape_count: _Optional[int] = ..., pack_bloom_max_false_positive_rate: _Optional[float] = ..., pack_bloom_risk_pack_count: _Optional[int] = ..., pack_lookup_count: _Optional[int] = ..., pack_candidate_packs: _Optional[int] = ..., pack_opened_packs: _Optional[int] = ..., pack_negative_packs: _Optional[int] = ..., pack_target_hits: _Optional[int] = ..., pack_last_candidate_packs: _Optional[int] = ..., pack_last_opened_packs: _Optional[int] = ..., pack_last_negative_packs: _Optional[int] = ..., pack_last_target_hit: _Optional[bool] = ..., pack_index_cache_hits: _Optional[int] = ..., pack_index_cache_misses: _Optional[int] = ..., pack_index_cache_read_errors: _Optional[int] = ..., pack_index_cache_write_errors: _Optional[int] = ..., pack_remote_index_loads: _Optional[int] = ..., pack_remote_index_bytes: _Optional[int] = ..., pack_last_remote_index_bytes: _Optional[int] = ..., pack_index_tail_fetch_count: _Optional[int] = ..., pack_index_tail_fetch_bytes: _Optional[int] = ..., pack_index_tail_response_bytes: _Optional[int] = ..., direct_p2p_disabled: _Optional[bool] = ..., block_stores: _Optional[_Iterable[_Union[SyncBlockStoreStatus, _Mapping]]] = ...) -> None: ...
+    local_account: bool
+    local_copies: _containers.RepeatedCompositeFieldContainer[SyncLocalCopyStatus]
+    peer_upload_bytes: int
+    peer_download_bytes: int
+    peers: _containers.RepeatedCompositeFieldContainer[SyncPeerTransferStatus]
+    def __init__(self, state: _Optional[_Union[SyncStatusState, str]] = ..., direction: _Optional[_Union[SyncActivityDirection, str]] = ..., transport_state: _Optional[_Union[SyncTransportState, str]] = ..., p2p_state: _Optional[_Union[SyncP2PState, str]] = ..., pending_upload_bytes: _Optional[int] = ..., pending_download_bytes: _Optional[int] = ..., pending_upload_count: _Optional[int] = ..., pending_download_count: _Optional[int] = ..., upload_bytes_per_second: _Optional[int] = ..., download_bytes_per_second: _Optional[int] = ..., active_upload_bytes: _Optional[int] = ..., active_upload_transferred_bytes: _Optional[int] = ..., in_flight_upload_count: _Optional[int] = ..., active_store_count: _Optional[int] = ..., active_peer_count: _Optional[int] = ..., last_error: _Optional[str] = ..., last_activity_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., pack_range_request_count: _Optional[int] = ..., pack_range_response_bytes: _Optional[int] = ..., pack_full_response_fallback_count: _Optional[int] = ..., pack_full_response_fallback_bytes: _Optional[int] = ..., pack_last_full_response_fallback_bytes: _Optional[int] = ..., pack_manifest_entries: _Optional[int] = ..., pack_block_count_total: _Optional[int] = ..., pack_block_count_min: _Optional[int] = ..., pack_block_count_max: _Optional[int] = ..., pack_size_bytes_total: _Optional[int] = ..., pack_size_bytes_min: _Optional[int] = ..., pack_size_bytes_max: _Optional[int] = ..., pack_bloom_filter_count: _Optional[int] = ..., pack_bloom_missing_count: _Optional[int] = ..., pack_bloom_invalid_count: _Optional[int] = ..., pack_bloom_parameter_shape_count: _Optional[int] = ..., pack_bloom_max_false_positive_rate: _Optional[float] = ..., pack_bloom_risk_pack_count: _Optional[int] = ..., pack_lookup_count: _Optional[int] = ..., pack_candidate_packs: _Optional[int] = ..., pack_opened_packs: _Optional[int] = ..., pack_negative_packs: _Optional[int] = ..., pack_target_hits: _Optional[int] = ..., pack_last_candidate_packs: _Optional[int] = ..., pack_last_opened_packs: _Optional[int] = ..., pack_last_negative_packs: _Optional[int] = ..., pack_last_target_hit: _Optional[bool] = ..., pack_index_cache_hits: _Optional[int] = ..., pack_index_cache_misses: _Optional[int] = ..., pack_index_cache_read_errors: _Optional[int] = ..., pack_index_cache_write_errors: _Optional[int] = ..., pack_remote_index_loads: _Optional[int] = ..., pack_remote_index_bytes: _Optional[int] = ..., pack_last_remote_index_bytes: _Optional[int] = ..., pack_index_tail_fetch_count: _Optional[int] = ..., pack_index_tail_fetch_bytes: _Optional[int] = ..., pack_index_tail_response_bytes: _Optional[int] = ..., direct_p2p_disabled: _Optional[bool] = ..., block_stores: _Optional[_Iterable[_Union[SyncBlockStoreStatus, _Mapping]]] = ..., local_account: _Optional[bool] = ..., local_copies: _Optional[_Iterable[_Union[SyncLocalCopyStatus, _Mapping]]] = ..., peer_upload_bytes: _Optional[int] = ..., peer_download_bytes: _Optional[int] = ..., peers: _Optional[_Iterable[_Union[SyncPeerTransferStatus, _Mapping]]] = ...) -> None: ...
+
+class SyncPeerTransferStatus(_message.Message):
+    __slots__ = ("peer_id", "uploaded_bytes", "downloaded_bytes", "connected")
+    PEER_ID_FIELD_NUMBER: _ClassVar[int]
+    UPLOADED_BYTES_FIELD_NUMBER: _ClassVar[int]
+    DOWNLOADED_BYTES_FIELD_NUMBER: _ClassVar[int]
+    CONNECTED_FIELD_NUMBER: _ClassVar[int]
+    peer_id: str
+    uploaded_bytes: int
+    downloaded_bytes: int
+    connected: bool
+    def __init__(self, peer_id: _Optional[str] = ..., uploaded_bytes: _Optional[int] = ..., downloaded_bytes: _Optional[int] = ..., connected: _Optional[bool] = ...) -> None: ...
+
+class SyncLocalCopyStatus(_message.Message):
+    __slots__ = ("shared_object_id", "display_name", "blocks", "bytes", "complete", "error")
+    SHARED_OBJECT_ID_FIELD_NUMBER: _ClassVar[int]
+    DISPLAY_NAME_FIELD_NUMBER: _ClassVar[int]
+    BLOCKS_FIELD_NUMBER: _ClassVar[int]
+    BYTES_FIELD_NUMBER: _ClassVar[int]
+    COMPLETE_FIELD_NUMBER: _ClassVar[int]
+    ERROR_FIELD_NUMBER: _ClassVar[int]
+    shared_object_id: str
+    display_name: str
+    blocks: int
+    bytes: int
+    complete: bool
+    error: str
+    def __init__(self, shared_object_id: _Optional[str] = ..., display_name: _Optional[str] = ..., blocks: _Optional[int] = ..., bytes: _Optional[int] = ..., complete: _Optional[bool] = ..., error: _Optional[str] = ...) -> None: ...
 
 class WatchStorageStatsResponse(_message.Message):
     __slots__ = ("supported", "total_bytes", "block_count")
@@ -512,8 +552,10 @@ class ConfirmPairingRequest(_message.Message):
     def __init__(self, remote_peer_id: _Optional[str] = ..., display_name: _Optional[str] = ...) -> None: ...
 
 class ConfirmPairingResponse(_message.Message):
-    __slots__ = ()
-    def __init__(self) -> None: ...
+    __slots__ = ("session_list_entry",)
+    SESSION_LIST_ENTRY_FIELD_NUMBER: _ClassVar[int]
+    session_list_entry: _session_pb2.SessionListEntry
+    def __init__(self, session_list_entry: _Optional[_Union[_session_pb2.SessionListEntry, _Mapping]] = ...) -> None: ...
 
 class DeleteAccountRequest(_message.Message):
     __slots__ = ("session_idx",)
@@ -634,18 +676,24 @@ class WatchPairingStatusRequest(_message.Message):
     def __init__(self) -> None: ...
 
 class WatchPairingStatusResponse(_message.Message):
-    __slots__ = ("status", "remote_peer_id", "code", "emoji", "error_message")
+    __slots__ = ("status", "remote_peer_id", "code", "emoji", "error_message", "account_id", "receiving", "account_name")
     STATUS_FIELD_NUMBER: _ClassVar[int]
     REMOTE_PEER_ID_FIELD_NUMBER: _ClassVar[int]
     CODE_FIELD_NUMBER: _ClassVar[int]
     EMOJI_FIELD_NUMBER: _ClassVar[int]
     ERROR_MESSAGE_FIELD_NUMBER: _ClassVar[int]
+    ACCOUNT_ID_FIELD_NUMBER: _ClassVar[int]
+    RECEIVING_FIELD_NUMBER: _ClassVar[int]
+    ACCOUNT_NAME_FIELD_NUMBER: _ClassVar[int]
     status: PairingStatus
     remote_peer_id: str
     code: str
     emoji: _containers.RepeatedScalarFieldContainer[str]
     error_message: str
-    def __init__(self, status: _Optional[_Union[PairingStatus, str]] = ..., remote_peer_id: _Optional[str] = ..., code: _Optional[str] = ..., emoji: _Optional[_Iterable[str]] = ..., error_message: _Optional[str] = ...) -> None: ...
+    account_id: str
+    receiving: bool
+    account_name: str
+    def __init__(self, status: _Optional[_Union[PairingStatus, str]] = ..., remote_peer_id: _Optional[str] = ..., code: _Optional[str] = ..., emoji: _Optional[_Iterable[str]] = ..., error_message: _Optional[str] = ..., account_id: _Optional[str] = ..., receiving: _Optional[bool] = ..., account_name: _Optional[str] = ...) -> None: ...
 
 class CreateSpaceInviteRequest(_message.Message):
     __slots__ = ("space_id", "role", "target_peer_id", "max_uses", "expires_at")

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/aperturerobotics/controllerbus/directive"
+	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/net/crypto"
 	"github.com/s4wave/spacewave/net/link"
 	link_solicit "github.com/s4wave/spacewave/net/link/solicit"
@@ -17,7 +18,7 @@ import (
 )
 
 // ConfirmProtocolID is the protocol ID for pairing confirmation exchange.
-const ConfirmProtocolID = protocol.ID("alpha/pairing-confirm")
+const ConfirmProtocolID = protocol.ID("alpha/account-pairing/1")
 
 // confirmationTimeout is the maximum time to wait for remote confirmation.
 const confirmationTimeout = 120 * time.Second
@@ -101,6 +102,16 @@ func (a *ProviderAccount) runPairingConfirmExchange(ctx context.Context) {
 		le.Warn("matched stream has no remote peer ID")
 		return
 	}
+
+	// The offering client learns its peer from solicitation. Retain that link
+	// through approval and enrollment so the transport's idle lease cannot close it.
+	_, releaseLink, err := link.EstablishLinkWithPeerEx(ctx, childBus, localPeerID, remotePeerID, false)
+	if err != nil {
+		a.SetPairingFailed("failed to retain the pairing connection")
+		return
+	}
+	defer releaseLink()
+
 	le = le.WithField("remote-peer", remotePeerID.String()[:8])
 	le.Debug("pairing confirm stream accepted")
 
@@ -155,124 +166,163 @@ func (a *ProviderAccount) runConfirmExchangeOnStream(
 	localPeerID peer.ID,
 	le *logrus.Entry,
 ) {
-	// Read session key from pairing state.
+	// Capture one exchange identity so an old connection cannot complete a new attempt.
+	var active *pairingState
 	var sessionKey crypto.PrivKey
+	var offering bool
 	a.pairingBcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
-		if a.pairing != nil {
-			sessionKey = a.pairing.sessionKey
+		active = a.pairing
+		if active != nil {
+			sessionKey = active.sessionKey
+			offering = active.offering
 		}
 	})
-	if sessionKey == nil || len(localPeerID) == 0 {
-		le.Warn("missing keys for SAS emoji derivation")
+	if sessionKey == nil || localPeerID == "" {
 		return
 	}
+	fail := func(status PairingStatus, err error) {
+		a.pairingBcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+			if a.pairing == active {
+				active.status = status
+				active.errMsg = err.Error()
+				broadcast()
+			}
+		})
+	}
 
-	// Compute SAS emoji from ECDH shared secret.
+	// Cancellation closes the stream and releases pending protocol reads and writes.
+	exchangeCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	stopClose := context.AfterFunc(exchangeCtx, func() { _ = strm.Close() })
+	defer stopClose()
+	sess := stream_packet.NewSession(strm, 16<<20)
+	prepareCtx, cancelPrepare := context.WithTimeout(exchangeCtx, confirmationTimeout)
+	stopPrepare := context.AfterFunc(prepareCtx, func() { _ = strm.Close() })
+	enrollment, err := a.preparePairingEnrollment(prepareCtx, sess, offering, localPeerID, remotePeerID)
+	stopPrepare()
+	cancelPrepare()
+	if err != nil {
+		fail(PairingStatusFailed, errors.Wrap(err, "prepare account enrollment"))
+		return
+	}
+	defer enrollment.release()
+
+	// Present the authenticated account and SAS before any grant or binding changes.
 	remotePub, err := remotePeerID.ExtractPublicKey()
 	if err != nil {
-		le.WithError(err).Warn("failed to extract remote public key for SAS")
+		fail(PairingStatusFailed, err)
 		return
 	}
 	emoji, err := DeriveSASEmoji(sessionKey, remotePub, localPeerID, remotePeerID)
 	if err != nil {
-		le.WithError(err).Warn("failed to derive SAS emoji")
+		fail(PairingStatusFailed, err)
 		return
 	}
-
-	// Store results and transition to VERIFYING_EMOJI.
-	a.pairingBcast.HoldLock(func(bcast func(), _ func() <-chan struct{}) {
-		if a.pairing == nil {
-			return
-		}
-		a.pairing.remotePeerID = remotePeerID
-		a.pairing.emoji = emoji
-		a.pairing.confirmCh = make(chan bool, 1)
-		a.pairing.confirmationConsumed = false
-		a.pairing.status = PairingStatusVerifyingEmoji
-		bcast()
-	})
-
-	sess := stream_packet.NewSession(strm, 1024)
-
-	// Read confirmCh (just created above).
-	var confirmCh <-chan bool
-	a.pairingBcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
-		if a.pairing != nil {
-			confirmCh = a.pairing.confirmCh
+	confirmCh := make(chan bool, 1)
+	var current bool
+	a.pairingBcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+		if a.pairing == active {
+			active.remotePeerID = remotePeerID
+			active.accountID = enrollment.offer.GetAccountId()
+			active.accountName = enrollment.offer.GetDisplayName()
+			active.emoji = emoji
+			active.confirmCh = confirmCh
+			active.enrolledSession = nil
+			active.status = PairingStatusVerifyingEmoji
+			current = true
+			broadcast()
 		}
 	})
-	if confirmCh == nil {
+	if !current {
 		return
 	}
 
-	timeoutCtx, timeoutCancel := context.WithTimeout(ctx, confirmationTimeout)
-	defer timeoutCancel()
-
-	// Wait for local user decision.
-	var localConfirmed bool
-	select {
-	case <-timeoutCtx.Done():
-		if ctx.Err() == nil {
-			a.setPairingError(PairingStatusConfirmationTimeout, "confirmation timed out")
-		}
-		return
-	case localConfirmed = <-confirmCh:
+	// Both approvals cover the account and both receiving identity proofs.
+	approvalCtx, cancelApproval := context.WithTimeout(exchangeCtx, confirmationTimeout)
+	setStatus := func(status PairingStatus) {
+		a.pairingBcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+			if a.pairing == active {
+				active.status = status
+				broadcast()
+			}
+		})
 	}
-
-	// Send local confirmation to remote.
-	msg := &PairingConfirmMessage{
-		Confirmed: localConfirmed,
-		Rejected:  !localConfirmed,
-	}
-	if err := sess.SendMsg(msg); err != nil {
-		le.WithError(err).Warn("failed to send confirm message")
-		return
-	}
-
-	if !localConfirmed {
-		a.setPairingError(PairingStatusPairingRejected, "pairing rejected locally")
-		return
-	}
-
-	// Local confirmed. Update status to waiting for remote.
-	a.setPairingStatus(PairingStatusWaitingForRemote)
-
-	// Read remote confirmation.
-	remoteMsg, err, timedOut := recvPairingConfirm(timeoutCtx, sess)
+	status, err := exchangePairingApproval(approvalCtx, sess, confirmCh, enrollment.proof, setStatus)
+	cancelApproval()
 	if err != nil {
-		if timedOut && ctx.Err() == nil {
-			a.setPairingError(PairingStatusConfirmationTimeout, "remote confirmation timed out")
+		fail(status, err)
+		return
+	}
+	setStatus(PairingStatusEnrolling)
+	if err := a.completePairingEnrollment(exchangeCtx, sess, enrollment); err != nil {
+		le.WithError(err).Warn("account enrollment failed")
+		fail(PairingStatusFailed, err)
+		return
+	}
+
+	// Completion exposes only an account attachment acknowledged by the receiver.
+	a.pairingBcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+		if a.pairing == active {
+			if enrollment.session != nil {
+				active.enrolledSession = enrollment.session.GetSessionRef()
+			}
+			active.status = PairingStatusBothConfirmed
+			active.errMsg = ""
+			broadcast()
 		}
-		return
-	}
-
-	if remoteMsg.GetRejected() || !remoteMsg.GetConfirmed() {
-		a.setPairingError(PairingStatusPairingRejected, "remote device rejected the pairing")
-		return
-	}
-
-	// Bind the completed exchange to the peer and exchange channel that produced it.
-	if a.setPairingBothConfirmed(remotePeerID, confirmCh) {
-		le.Debug("both sides confirmed pairing")
-	}
+	})
 }
 
-func recvPairingConfirm(ctx context.Context, sess *stream_packet.Session) (PairingConfirmMessage, error, bool) {
-	type recvResult struct {
-		msg PairingConfirmMessage
-		err error
+// exchangePairingApproval reads the remote decision while the local user decides.
+// A remote rejection ends the flow immediately, including before local approval.
+func exchangePairingApproval(ctx context.Context, stream *stream_packet.Session, confirmCh <-chan bool, proof string, setStatus func(PairingStatus)) (PairingStatus, error) {
+	type decision struct {
+		message PairingConfirmMessage
+		err     error
 	}
-	done := make(chan recvResult, 1)
+	remote := make(chan decision, 1)
+	stop := context.AfterFunc(ctx, func() { _ = stream.Close() })
+	defer func() {
+		stop()
+		if ctx.Err() != nil {
+			_ = stream.Close()
+		}
+	}()
 	go func() {
-		var msg PairingConfirmMessage
-		done <- recvResult{msg: msg, err: sess.RecvMsg(&msg)}
+		var message PairingConfirmMessage
+		err := stream.RecvMsg(&message)
+		remote <- decision{message: message, err: err}
 	}()
 
-	select {
-	case res := <-done:
-		return res.msg, res.err, false
-	case <-ctx.Done():
-		_ = sess.Close()
-		return PairingConfirmMessage{}, ctx.Err(), true
+	// Keep the receiving goroutine active before either side sends to a duplex stream.
+	var localApproved, remoteApproved bool
+	for !localApproved || !remoteApproved {
+		select {
+		case <-ctx.Done():
+			return PairingStatusConfirmationTimeout, errors.New("pairing confirmation timed out")
+		case approved := <-confirmCh:
+			confirmCh = nil
+			if err := stream.SendMsg(&PairingConfirmMessage{Confirmed: approved, Rejected: !approved, OperationContext: proof}); err != nil {
+				return PairingStatusFailed, err
+			}
+			if !approved {
+				return PairingStatusPairingRejected, errors.New("pairing rejected locally")
+			}
+			localApproved = true
+			setStatus(PairingStatusWaitingForRemote)
+		case result := <-remote:
+			remote = nil
+			if result.err != nil {
+				return PairingStatusFailed, result.err
+			}
+			if result.message.GetOperationContext() != proof {
+				return PairingStatusPairingRejected, errors.New("remote approval selected a different account enrollment")
+			}
+			if result.message.GetRejected() || !result.message.GetConfirmed() {
+				return PairingStatusPairingRejected, errors.New("remote client rejected the pairing")
+			}
+			remoteApproved = true
+		}
 	}
+	return PairingStatusEnrolling, nil
 }

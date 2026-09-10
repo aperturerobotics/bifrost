@@ -62,6 +62,45 @@ describe('SessionSyncStatusButton', () => {
 
   it.each([
     {
+      name: 'connected account with an incomplete local copy',
+      view: view({
+        state: SyncStatusState.SyncStatusState_ACTIVE,
+        localAccount: true,
+        activePeerCount: 1,
+        pendingDownloadCount: 1,
+        localCopies: [
+          {
+            sharedObjectId: 'drive',
+            displayName: 'My Drive',
+            complete: false,
+            bytes: 4096n,
+          },
+        ],
+      }),
+      label: 'Copying Spaces',
+      detail:
+        '0 of 1 Spaces available offline. You can use your account while copying continues.',
+    },
+    {
+      name: 'durable copy with no peer online',
+      view: view({
+        localAccount: true,
+        activePeerCount: 0,
+        localCopies: [
+          {
+            sharedObjectId: 'drive',
+            displayName: 'My Drive',
+            complete: true,
+            bytes: 4096n,
+          },
+        ],
+      }),
+      label: 'Available offline',
+      detail:
+        'The latest received Spaces and their contents are stored on this device.',
+      spinning: false,
+    },
+    {
       name: 'idle cloud',
       view: view({
         state: SyncStatusState.SyncStatusState_SYNCED,
@@ -167,7 +206,7 @@ describe('SessionSyncStatusButton', () => {
         .getByTestId('session-sync-status-button')
         .getAttribute('aria-label'),
     ).toBe(`Session sync status: ${test.label}`)
-    expect(screen.getByText(test.label)).toBeTruthy()
+    expect(screen.getAllByText(test.label).length).toBeGreaterThan(0)
     expect(screen.getAllByText(test.detail).length).toBeGreaterThan(0)
     if (test.p2pLabel) {
       expect(screen.getByText(test.p2pLabel)).toBeTruthy()
@@ -214,7 +253,7 @@ describe('SessionSyncStatusButton', () => {
 
     render(<SessionSyncStatusButton />)
 
-    expect(screen.getByText('Pack reads')).toBeTruthy()
+    fireEvent.click(screen.getByText('Storage diagnostics'))
     expect(screen.getByText('3 / 4.0 KiB')).toBeTruthy()
     expect(screen.getByText('1 / 2.0 KiB')).toBeTruthy()
     expect(screen.getByText('2 opened / 5 candidates')).toBeTruthy()

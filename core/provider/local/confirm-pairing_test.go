@@ -14,139 +14,21 @@ import (
 	"github.com/s4wave/spacewave/net/peer"
 )
 
-// TestConfirmPairingAddsOwner verifies that ConfirmPairing adds the remote
-// peer as OWNER on all SharedObjects in the account.
-func TestConfirmPairingAddsOwner(t *testing.T) {
-	ctx := t.Context()
-
-	_, _, acc, _, release := setupProviderAndSessionInternal(ctx, t)
-	defer release()
-
-	// Generate a remote peer ID.
-	remotePriv, _, err := crypto.GenerateEd25519Key(rand.Reader)
-	if err != nil {
-		t.Fatal(err)
-	}
-	remotePeerID, err := peer.IDFromPrivateKey(remotePriv)
-	if err != nil {
-		t.Fatal(err)
-	}
-	remotePeerIDStr := remotePeerID.String()
-
-	// The account settings SO should already exist from provider init.
-	soList := acc.GetSOListCtr().GetValue()
-	if soList == nil || len(soList.GetSharedObjects()) == 0 {
-		t.Fatal("expected at least account settings SO in list")
-	}
-
-	// Create an additional space SO to test that all SOs get the participant.
-	spaceMeta := &sobject.SharedObjectMeta{BodyType: "space"}
-	_, err = acc.CreateSharedObject(ctx, "test-space-1", spaceMeta, "", "")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Verify the SO list now has 2 entries.
-	soList = acc.GetSOListCtr().GetValue()
-	if len(soList.GetSharedObjects()) != 2 {
-		t.Fatalf("expected 2 SOs, got %d", len(soList.GetSharedObjects()))
-	}
-
-	setPairingExchangeState(t, acc, remotePeerID, PairingStatusBothConfirmed)
-	// Confirm pairing.
-	if err := acc.ConfirmPairing(ctx, remotePeerID, "Test Device"); err != nil {
-		t.Fatal(err)
-	}
-
-	// Verify the remote peer is OWNER on all SOs with a grant.
-	verifyParticipantOnAllSOs(ctx, t, acc, soList, remotePeerIDStr)
-
-	// The confirmed exchange is single-use even though the durable operations are idempotent.
-	if err := acc.ConfirmPairing(ctx, remotePeerID, "Test Device"); !errors.Is(err, ErrPairingExchangeConsumed) {
-		t.Fatalf("expected consumed exchange error, got %v", err)
-	}
-
-	// Verify still only one entry per SO.
-	for _, entry := range soList.GetSharedObjects() {
-		ref := entry.GetRef()
-		soID := ref.GetProviderResourceRef().GetId()
-		hostState := getSOState(ctx, t, acc, ref, soID)
-
-		count := 0
-		for _, p := range hostState.GetConfig().GetParticipants() {
-			if p.GetPeerId() == remotePeerIDStr {
-				count++
-			}
-		}
-		if count != 1 {
-			t.Fatalf("SO %s: expected 1 remote peer entry, got %d", soID, count)
-		}
-	}
-}
-
-func TestConfirmPairingWithoutExchangeFails(t *testing.T) {
-	ctx := t.Context()
+// TestPairingResultRequiresCompletedEnrollment prevents a status-only record
+// from making an unregistered receiving Session appear connected.
+func TestPairingResultRequiresCompletedEnrollment(t *testing.T) {
 	remotePeerID := newConfirmPairingPeerID(t)
 	acc := &ProviderAccount{}
-
-	if err := acc.ConfirmPairing(ctx, remotePeerID, "Missing"); !errors.Is(err, ErrPairingExchangeMissing) {
-		t.Fatalf("expected missing exchange error, got %v", err)
+	if _, err := acc.GetPairingResult(remotePeerID); !errors.Is(err, ErrPairingExchangeMissing) {
+		t.Fatalf("expected missing exchange, got %v", err)
 	}
-
-	setPairingExchangeState(t, acc, remotePeerID, PairingStatusWaitingForRemote)
-	if err := acc.ConfirmPairing(ctx, remotePeerID, "Unconfirmed"); !errors.Is(err, ErrPairingExchangeUnconfirmed) {
-		t.Fatalf("expected unconfirmed exchange error, got %v", err)
+	acc.pairing = &pairingState{remotePeerID: remotePeerID, status: PairingStatusBothConfirmed}
+	if _, err := acc.GetPairingResult(remotePeerID); !errors.Is(err, ErrPairingExchangeUnconfirmed) {
+		t.Fatalf("status without durable enrollment returned %v", err)
 	}
-}
-
-func TestConfirmPairingAfterBothConfirmedSucceedsOnce(t *testing.T) {
-	ctx := t.Context()
-	_, _, acc, _, release := setupProviderAndSessionInternal(ctx, t)
-	defer release()
-	remotePeerID := newConfirmPairingPeerID(t)
-	setPairingExchangeState(t, acc, remotePeerID, PairingStatusBothConfirmed)
-
-	if err := acc.ConfirmPairing(ctx, remotePeerID, "Confirmed"); err != nil {
-		t.Fatal(err)
+	if _, err := acc.GetPairingResult(newConfirmPairingPeerID(t)); !errors.Is(err, ErrPairingExchangePeerMismatch) {
+		t.Fatalf("expected peer mismatch, got %v", err)
 	}
-
-	acc.pairingBcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
-		if !acc.pairing.confirmationConsumed {
-			t.Error("expected confirmed exchange to be consumed")
-		}
-	})
-}
-
-func TestConfirmPairingReplayFails(t *testing.T) {
-	ctx := t.Context()
-	_, _, acc, _, release := setupProviderAndSessionInternal(ctx, t)
-	defer release()
-	remotePeerID := newConfirmPairingPeerID(t)
-	setPairingExchangeState(t, acc, remotePeerID, PairingStatusBothConfirmed)
-
-	if err := acc.ConfirmPairing(ctx, remotePeerID, "First"); err != nil {
-		t.Fatal(err)
-	}
-	if err := acc.ConfirmPairing(ctx, remotePeerID, "Replay"); !errors.Is(err, ErrPairingExchangeConsumed) {
-		t.Fatalf("expected consumed exchange error, got %v", err)
-	}
-}
-
-func TestConfirmPairingDifferentPeerFails(t *testing.T) {
-	ctx := t.Context()
-	confirmedPeerID := newConfirmPairingPeerID(t)
-	differentPeerID := newConfirmPairingPeerID(t)
-	acc := &ProviderAccount{}
-	setPairingExchangeState(t, acc, confirmedPeerID, PairingStatusBothConfirmed)
-
-	if err := acc.ConfirmPairing(ctx, differentPeerID, "Different"); !errors.Is(err, ErrPairingExchangePeerMismatch) {
-		t.Fatalf("expected peer mismatch error, got %v", err)
-	}
-	acc.pairingBcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
-		if acc.pairing.confirmationConsumed {
-			t.Error("peer mismatch consumed the confirmed exchange")
-		}
-	})
 }
 
 func newConfirmPairingPeerID(t *testing.T) peer.ID {
@@ -160,17 +42,6 @@ func newConfirmPairingPeerID(t *testing.T) peer.ID {
 		t.Fatal(err)
 	}
 	return peerID
-}
-
-func setPairingExchangeState(t *testing.T, acc *ProviderAccount, remotePeerID peer.ID, status PairingStatus) {
-	t.Helper()
-	acc.pairingBcast.HoldLock(func(bcast func(), _ func() <-chan struct{}) {
-		acc.pairing = &pairingState{
-			status:       status,
-			remotePeerID: remotePeerID,
-		}
-		bcast()
-	})
 }
 
 // verifyParticipantOnAllSOs checks that the given peer is OWNER with a grant
@@ -217,9 +88,9 @@ func verifyParticipantOnAllSOs(
 	}
 }
 
-// TestConfirmPairingPersists verifies that ConfirmPairing writes the paired
-// device to the account settings SO via AddPairedDevice operation.
-func TestConfirmPairingPersists(t *testing.T) {
+// TestRecordPairedDevicePersists verifies the durable reconnect record used by
+// account pairing and managed Device enrollment.
+func TestRecordPairedDevicePersists(t *testing.T) {
 	ctx := t.Context()
 
 	_, _, acc, _, release := setupProviderAndSessionInternal(ctx, t)
@@ -236,9 +107,7 @@ func TestConfirmPairingPersists(t *testing.T) {
 	}
 	remotePeerIDStr := remotePeerID.String()
 
-	setPairingExchangeState(t, acc, remotePeerID, PairingStatusBothConfirmed)
-	// Confirm pairing with a display name.
-	if err := acc.ConfirmPairing(ctx, remotePeerID, "My Desktop"); err != nil {
+	if err := acc.RecordPairedDevice(ctx, remotePeerID.String(), "My Desktop"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -296,47 +165,6 @@ func TestConfirmPairingPersists(t *testing.T) {
 	}
 }
 
-// TestConfirmPairingStartsSync verifies that ConfirmPairing starts P2P sync
-// when the session transport is running.
-func TestConfirmPairingStartsSync(t *testing.T) {
-	ctx := t.Context()
-
-	_, _, acc, sess, release := setupProviderAndSessionInternal(ctx, t)
-	defer release()
-
-	// Generate a remote peer ID.
-	remotePriv, _, err := crypto.GenerateEd25519Key(rand.Reader)
-	if err != nil {
-		t.Fatal(err)
-	}
-	remotePeerID, err := peer.IDFromPrivateKey(remotePriv)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Start the session transport (required for P2P sync).
-	if err := acc.CreateSessionTransport(ctx, sess.GetPrivKey(), ""); err != nil {
-		t.Fatal(err)
-	}
-	defer acc.StopSessionTransport()
-
-	if acc.IsP2PSyncRunning() {
-		t.Fatal("expected no P2P sync before ConfirmPairing")
-	}
-
-	setPairingExchangeState(t, acc, remotePeerID, PairingStatusBothConfirmed)
-	// Confirm pairing triggers P2P sync.
-	if err := acc.ConfirmPairing(ctx, remotePeerID, "Sync Device"); err != nil {
-		t.Fatal(err)
-	}
-
-	if !acc.IsP2PSyncRunning() {
-		t.Fatal("expected P2P sync to be running after ConfirmPairing")
-	}
-
-	acc.StopP2PSync()
-}
-
 // TestUnlinkDevice verifies that UnlinkDevice removes the paired device from
 // the account settings SO and revokes the peer's SO participant access.
 func TestUnlinkDevice(t *testing.T) {
@@ -368,9 +196,27 @@ func TestUnlinkDevice(t *testing.T) {
 		t.Fatalf("expected 2 SOs, got %d", len(soList.GetSharedObjects()))
 	}
 
-	setPairingExchangeState(t, acc, remotePeerID, PairingStatusBothConfirmed)
-	// Confirm pairing to add participant + device.
-	if err := acc.ConfirmPairing(ctx, remotePeerID, "Unlink Test"); err != nil {
+	// Arrange a managed Device's existing owner grants and reconnect record.
+	storagePeer, err := acc.vol.GetPeer(ctx, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	storageKey, err := storagePeer.GetPrivKey(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, entry := range soList.GetSharedObjects() {
+		so, releaseSO, err := acc.MountSharedObject(ctx, entry.GetRef(), nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, err = sobject.AddSOParticipant(ctx, so.(*SharedObject).soHost, entry.GetRef().GetProviderResourceRef().GetId(), storageKey, storagePeer.GetPeerID().String(), remotePeerIDStr, remotePriv.GetPublic(), sobject.SOParticipantRole_SOParticipantRole_OWNER, "")
+		releaseSO()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := acc.RecordPairedDevice(ctx, remotePeerIDStr, "Unlink Test"); err != nil {
 		t.Fatal(err)
 	}
 

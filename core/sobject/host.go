@@ -3,6 +3,7 @@ package sobject
 import (
 	"bytes"
 	"context"
+	"slices"
 
 	"github.com/aperturerobotics/util/ccontainer"
 	"github.com/aperturerobotics/util/refcount"
@@ -214,10 +215,21 @@ func (s *SOHost) ImportPeerSnapshot(
 	if seqno < previousSeqno {
 		return errors.New("peer snapshot root rollback")
 	}
-	if seqno == previousSeqno && !next.GetRoot().EqualVT(previous.GetRoot()) {
-		return errors.New("peer snapshot conflicts with accepted root")
+	if seqno == previousSeqno {
+		acceptedRoot := previous.GetRoot()
+		candidateRoot := next.GetRoot()
+		if !bytes.Equal(candidateRoot.GetInner(), acceptedRoot.GetInner()) ||
+			!slices.EqualFunc(candidateRoot.GetAccountNonces(), acceptedRoot.GetAccountNonces(), func(a, b *SOAccountNonce) bool { return a.EqualVT(b) }) {
+			return errors.New("peer snapshot conflicts with accepted root")
+		}
+		// Keep an equivalent held proof while its validators remain authorized.
+		// A configuration change may require the sender's replacement proof.
+		validSigs, err := acceptedRoot.ValidateSignatures(s.sharedObjectID, next.GetConfig().GetParticipants())
+		if err == nil && CheckConsensusAcceptance(next.GetConfig().GetConsensusMode(), validSigs) == nil {
+			next.Root = acceptedRoot.CloneVT()
+		}
 	}
-	if seqno > previousSeqno {
+	if len(next.GetRoot().GetInner()) != 0 {
 		validSigs, err := next.GetRoot().ValidateSignatures(s.sharedObjectID, next.GetConfig().GetParticipants())
 		if err != nil {
 			return errors.Wrap(err, "peer snapshot root authority")

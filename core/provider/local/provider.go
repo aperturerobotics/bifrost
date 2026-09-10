@@ -150,10 +150,10 @@ func (p *Provider) CreateLocalAccountAndSession(ctx context.Context, cloudAccoun
 // when the session has no stored key yet; an existing stored key wins so the
 // session reopens with its durable identity. An empty keyPEM generates a key.
 func (p *Provider) CreateLocalAccountAndSessionWithKey(ctx context.Context, cloudAccountID string, keyPEM []byte) (*session.SessionRef, error) {
-	// Generate an ID for the local account and session.
-	localAccountID := ulid.NewULID()
-	localSessionID := ulid.NewULID()
+	return p.createAccountSession(ctx, ulid.NewULID(), ulid.NewULID(), cloudAccountID, keyPEM)
+}
 
+func (p *Provider) createAccountSession(ctx context.Context, localAccountID, localSessionID, cloudAccountID string, keyPEM []byte) (*session.SessionRef, error) {
 	// Create the provider account.
 	// For the local provider, the account is created on first mount.
 	provAcc, relProvAcc, err := p.AccessProviderAccount(ctx, localAccountID, nil)

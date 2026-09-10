@@ -46,9 +46,9 @@ func TestRetrySharedObjectSyncRestartsOnlySelectedSO(t *testing.T) {
 	state := &p2pSyncState{
 		ctx:     ctx,
 		started: true,
-		soSync: map[string]*routine.RoutineContainer{
-			"target": targetRoutine,
-			"other":  otherRoutine,
+		soSync: map[string]*accountObjectSync{
+			"target": {sync: targetRoutine},
+			"other":  {sync: otherRoutine},
 		},
 	}
 	account := &ProviderAccount{}
@@ -98,7 +98,7 @@ func TestRetrySharedObjectSyncRejectsUnknownSOWithoutRestart(t *testing.T) {
 	state := &p2pSyncState{
 		ctx:     ctx,
 		started: true,
-		soSync:  map[string]*routine.RoutineContainer{"known": rc},
+		soSync:  map[string]*accountObjectSync{"known": {sync: rc}},
 	}
 	account := &ProviderAccount{p2pSync: state}
 
@@ -137,7 +137,7 @@ func TestRetireP2PSyncStateWaitsForSOSyncRoutine(t *testing.T) {
 		started:       true,
 		startComplete: true,
 		startupExited: true,
-		soSync:        map[string]*routine.RoutineContainer{"target": rc},
+		soSync:        map[string]*accountObjectSync{"target": {sync: rc}},
 	}
 	account := &ProviderAccount{p2pSync: state}
 

@@ -109,3 +109,50 @@ func TestSnapshotExchangeRequiresHeldAuthority(t *testing.T) {
 		})
 	}
 }
+
+// TestPeerSnapshotSameContentKeepsHeldProof accepts independently signed
+// identical state while rejecting changes to either signed content component.
+func TestPeerSnapshotSameContentKeepsHeldProof(t *testing.T) {
+	const soID = "same-content-independent-validators"
+	first, second := mustKeyPair(t), mustKeyPair(t)
+	localID, err := peer.IDFromPrivateKey(first)
+	if err != nil {
+		t.Fatal(err)
+	}
+	initial := &sobject.SOState{
+		Config: &sobject.SharedObjectConfig{Participants: []*sobject.SOParticipantConfig{
+			participantCfg(localID.String(), sobject.SOParticipantRole_SOParticipantRole_OWNER),
+			participantCfg(mustPeerIDStr(t, second), sobject.SOParticipantRole_SOParticipantRole_OWNER),
+		}},
+		Root: &sobject.SORoot{InnerSeqno: 1},
+	}
+	trustSnapshotConfig(t, initial, first)
+	signSnapshotRoot(t, soID, initial, first)
+	candidate := initial.CloneVT()
+	signSnapshotRoot(t, soID, candidate, second)
+	if candidate.GetRoot().EqualVT(initial.GetRoot()) {
+		t.Fatal("fixture needs independent signatures")
+	}
+	host, state := newMemHost(soID, initial)
+	t.Cleanup(host.ClearContext)
+	if err := host.ImportPeerSnapshot(t.Context(), candidate, nil, localID, nil); err != nil {
+		t.Fatal(err)
+	}
+	if !state.GetValue().EqualVT(initial) {
+		t.Fatal("same-content import replaced held proof")
+	}
+	for _, field := range []string{"inner", "nonces"} {
+		changed := candidate.CloneVT()
+		if field == "inner" {
+			changed.Root.Inner = append(changed.Root.Inner, 1)
+		} else {
+			changed.Root.AccountNonces = []*sobject.SOAccountNonce{{PeerId: localID.String(), Nonce: 1}}
+		}
+		if err := host.ImportPeerSnapshot(t.Context(), changed, nil, localID, nil); err == nil || !strings.Contains(err.Error(), "conflicts") {
+			t.Fatalf("changed %s accepted: %v", field, err)
+		}
+		if !state.GetValue().EqualVT(initial) {
+			t.Fatal("conflicting import modified held state")
+		}
+	}
+}

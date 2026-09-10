@@ -34,10 +34,16 @@ message CompleteSpaceLinkEnrollmentResponse {
 }
 
 // CreateAccountRequest creates a new account on the local provider.
-message CreateAccountRequest {}
+message CreateAccountRequest {
+  // DeferRegistration prepares a private pairing Session without adding an
+  // unrelated account to Home. The completed enrollment registers its result.
+  bool defer_registration = 1;
+}
 
 // CreateAccountResponse returns the details of the created provider account.
 message CreateAccountResponse {
   // SessionListEntry is the created session entry.
   .session.SessionListEntry session_list_entry = 1;
+  // SessionRef can be mounted before registration for the pairing exchange.
+  .session.SessionRef session_ref = 2;
 }

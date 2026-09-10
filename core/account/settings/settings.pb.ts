@@ -6,6 +6,7 @@ import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { SharedObjectListEntry } from '../../sobject/sobject.pb.js'
 import { EntityKeypair } from '../../session/session.pb.js'
 import { KeybindingOverrideSet } from '../../../sdk/command/command.pb.js'
 
@@ -107,6 +108,86 @@ export const SessionPresentation: MessageType<SessionPresentation> =
   })
 
 /**
+ * AccountSession is an approved account replica, distinct from a managed Device.
+ *
+ * @generated from message account.settings.AccountSession
+ */
+export interface AccountSession {
+  /**
+   * PeerId is the independently generated Session's transport identity.
+   *
+   * @generated from field: string peer_id = 1;
+   */
+  peerId?: string
+  /**
+   * StoragePeerId identifies the replica's SharedObject signing and encryption key.
+   *
+   * @generated from field: string storage_peer_id = 2;
+   */
+  storagePeerId?: string
+  /**
+   * Revoked retains the binding after access is withdrawn.
+   *
+   * @generated from field: bool revoked = 3;
+   */
+  revoked?: boolean
+  /**
+   * RevokedByStoragePeerId owns the signed configuration changes for revocation.
+   * Other replicas import that writer's lineage instead of signing competing changes.
+   *
+   * @generated from field: string revoked_by_storage_peer_id = 4;
+   */
+  revokedByStoragePeerId?: string
+}
+
+export const AccountSession: MessageType<AccountSession> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'account.settings.AccountSession',
+    fields: [
+      { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
+      { no: 2, name: 'storage_peer_id', kind: 'scalar', T: ScalarType.STRING },
+      { no: 3, name: 'revoked', kind: 'scalar', T: ScalarType.BOOL },
+      {
+        no: 4,
+        name: 'revoked_by_storage_peer_id',
+        kind: 'scalar',
+        T: ScalarType.STRING,
+      },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
+ * AccountCatalogEntry records one account object or its durable deletion.
+ *
+ * @generated from message account.settings.AccountCatalogEntry
+ */
+export interface AccountCatalogEntry {
+  /**
+   * Entry identifies the object and its presentation metadata.
+   *
+   * @generated from field: sobject.SharedObjectListEntry entry = 1;
+   */
+  entry?: SharedObjectListEntry
+  /**
+   * Deleted prevents an offline replica from rediscovering a removed object.
+   *
+   * @generated from field: bool deleted = 2;
+   */
+  deleted?: boolean
+}
+
+export const AccountCatalogEntry: MessageType<AccountCatalogEntry> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'account.settings.AccountCatalogEntry',
+    fields: [
+      { no: 1, name: 'entry', kind: 'message', T: () => SharedObjectListEntry },
+      { no: 2, name: 'deleted', kind: 'scalar', T: ScalarType.BOOL },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
  * AccountSettings is the root state data for account settings SharedObjects.
  * Stored as SORootInner.StateData.
  *
@@ -145,6 +226,18 @@ export interface AccountSettings {
    * @generated from field: s4wave.command.KeybindingOverrideSet keybinding_overrides = 5;
    */
   keybindingOverrides?: KeybindingOverrideSet
+  /**
+   * Sessions binds each approved account Session to its replica's storage identity.
+   *
+   * @generated from field: repeated account.settings.AccountSession sessions = 6;
+   */
+  sessions?: AccountSession[]
+  /**
+   * Catalog names account objects. Checkpoints require separate authenticated enrollment.
+   *
+   * @generated from field: repeated account.settings.AccountCatalogEntry catalog = 7;
+   */
+  catalog?: AccountCatalogEntry[]
 }
 
 export const AccountSettings: MessageType<AccountSettings> =
@@ -178,6 +271,20 @@ export const AccountSettings: MessageType<AccountSettings> =
         name: 'keybinding_overrides',
         kind: 'message',
         T: () => KeybindingOverrideSet,
+      },
+      {
+        no: 6,
+        name: 'sessions',
+        kind: 'message',
+        T: () => AccountSession,
+        repeated: true,
+      },
+      {
+        no: 7,
+        name: 'catalog',
+        kind: 'message',
+        T: () => AccountCatalogEntry,
+        repeated: true,
       },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
@@ -402,6 +509,24 @@ export interface AccountSettingsOp {
         value: ReplaceKeybindingOverrideSetOp
         case: 'replaceKeybindingOverrideSet'
       }
+    | {
+        /**
+         * UpsertAccountSession applies an explicitly authorized Session enrollment or revocation.
+         *
+         * @generated from field: account.settings.AccountSession upsert_account_session = 9;
+         */
+        value: AccountSession
+        case: 'upsertAccountSession'
+      }
+    | {
+        /**
+         * UpsertCatalogEntry publishes an object or its permanent deletion tombstone.
+         *
+         * @generated from field: account.settings.AccountCatalogEntry upsert_catalog_entry = 10;
+         */
+        value: AccountCatalogEntry
+        case: 'upsertCatalogEntry'
+      }
 }
 
 export const AccountSettingsOp: MessageType<AccountSettingsOp> =
@@ -462,6 +587,20 @@ export const AccountSettingsOp: MessageType<AccountSettingsOp> =
         name: 'replace_keybinding_override_set',
         kind: 'message',
         T: () => ReplaceKeybindingOverrideSetOp,
+        oneof: 'op',
+      },
+      {
+        no: 9,
+        name: 'upsert_account_session',
+        kind: 'message',
+        T: () => AccountSession,
+        oneof: 'op',
+      },
+      {
+        no: 10,
+        name: 'upsert_catalog_entry',
+        kind: 'message',
+        T: () => AccountCatalogEntry,
         oneof: 'op',
       },
     ] satisfies readonly PartialFieldInfo[],

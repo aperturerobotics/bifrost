@@ -8,6 +8,7 @@ export function pairingStatusReachedPeer(status?: PairingStatus): boolean {
     case PairingStatus.PairingStatus_PEER_CONNECTED:
     case PairingStatus.PairingStatus_VERIFYING_EMOJI:
     case PairingStatus.PairingStatus_WAITING_FOR_REMOTE_CONFIRM:
+    case PairingStatus.PairingStatus_ENROLLING:
     case PairingStatus.PairingStatus_BOTH_CONFIRMED:
     case PairingStatus.PairingStatus_VERIFIED:
       return true

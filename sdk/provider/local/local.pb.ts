@@ -4,13 +4,13 @@
 
 import { SOInviteMessage } from '../../../core/sobject/sobject.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-import { SessionListEntry } from '../../../core/session/session.pb.js'
+import {
+  SessionListEntry,
+  SessionRef,
+} from '../../../core/session/session.pb.js'
 
 export const protobufPackage = 's4wave.provider.local'
 
@@ -93,13 +93,24 @@ export const CompleteSpaceLinkEnrollmentResponse: MessageType<CompleteSpaceLinkE
  *
  * @generated from message s4wave.provider.local.CreateAccountRequest
  */
-export interface CreateAccountRequest {}
+export interface CreateAccountRequest {
+  /**
+   * DeferRegistration prepares a private pairing Session without adding an
+   * unrelated account to Home. The completed enrollment registers its result.
+   *
+   * @generated from field: bool defer_registration = 1;
+   */
+  deferRegistration?: boolean
+}
 
 export const CreateAccountRequest: MessageType<CreateAccountRequest> =
-  /* @__PURE__ */ createEmptyMessageType<CreateAccountRequest>(
-    's4wave.provider.local.CreateAccountRequest',
-    true,
-  )
+  /* @__PURE__ */ createMessageType({
+    typeName: 's4wave.provider.local.CreateAccountRequest',
+    fields: [
+      { no: 1, name: 'defer_registration', kind: 'scalar', T: ScalarType.BOOL },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
 
 /**
  * CreateAccountResponse returns the details of the created provider account.
@@ -113,6 +124,12 @@ export interface CreateAccountResponse {
    * @generated from field: session.SessionListEntry session_list_entry = 1;
    */
   sessionListEntry?: SessionListEntry
+  /**
+   * SessionRef can be mounted before registration for the pairing exchange.
+   *
+   * @generated from field: session.SessionRef session_ref = 2;
+   */
+  sessionRef?: SessionRef
 }
 
 export const CreateAccountResponse: MessageType<CreateAccountResponse> =
@@ -125,6 +142,7 @@ export const CreateAccountResponse: MessageType<CreateAccountResponse> =
         kind: 'message',
         T: () => SessionListEntry,
       },
+      { no: 2, name: 'session_ref', kind: 'message', T: () => SessionRef },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })

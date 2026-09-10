@@ -80,6 +80,9 @@ func (x *CompleteSpaceLinkEnrollmentResponse) GetSessionListEntry() *session.Ses
 // CreateAccountRequest creates a new account on the local provider.
 type CreateAccountRequest struct {
 	unknownFields []byte
+	// DeferRegistration prepares a private pairing Session without adding an
+	// unrelated account to Home. The completed enrollment registers its result.
+	DeferRegistration bool `protobuf:"varint,1,opt,name=defer_registration,json=deferRegistration,proto3" json:"deferRegistration,omitempty"`
 }
 
 func (x *CreateAccountRequest) Reset() {
@@ -88,11 +91,20 @@ func (x *CreateAccountRequest) Reset() {
 
 func (*CreateAccountRequest) ProtoMessage() {}
 
+func (x *CreateAccountRequest) GetDeferRegistration() bool {
+	if x != nil {
+		return x.DeferRegistration
+	}
+	return false
+}
+
 // CreateAccountResponse returns the details of the created provider account.
 type CreateAccountResponse struct {
 	unknownFields []byte
 	// SessionListEntry is the created session entry.
 	SessionListEntry *session.SessionListEntry `protobuf:"bytes,1,opt,name=session_list_entry,json=sessionListEntry,proto3" json:"sessionListEntry,omitempty"`
+	// SessionRef can be mounted before registration for the pairing exchange.
+	SessionRef *session.SessionRef `protobuf:"bytes,2,opt,name=session_ref,json=sessionRef,proto3" json:"sessionRef,omitempty"`
 }
 
 func (x *CreateAccountResponse) Reset() {
@@ -104,6 +116,13 @@ func (*CreateAccountResponse) ProtoMessage() {}
 func (x *CreateAccountResponse) GetSessionListEntry() *session.SessionListEntry {
 	if x != nil {
 		return x.SessionListEntry
+	}
+	return nil
+}
+
+func (x *CreateAccountResponse) GetSessionRef() *session.SessionRef {
+	if x != nil {
+		return x.SessionRef
 	}
 	return nil
 }
@@ -147,6 +166,7 @@ func (m *CreateAccountRequest) CloneVT() *CreateAccountRequest {
 		return (*CreateAccountRequest)(nil)
 	}
 	r := new(CreateAccountRequest)
+	r.DeferRegistration = m.DeferRegistration
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -163,6 +183,7 @@ func (m *CreateAccountResponse) CloneVT() *CreateAccountResponse {
 	}
 	r := new(CreateAccountResponse)
 	r.SessionListEntry = protobuf_go_lite.CloneVTValue(m.SessionListEntry)
+	r.SessionRef = protobuf_go_lite.CloneVTValue(m.SessionRef)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -225,6 +246,9 @@ func (this *CreateAccountRequest) EqualVT(that *CreateAccountRequest) bool {
 	} else if this == nil || that == nil {
 		return false
 	}
+	if this.DeferRegistration != that.DeferRegistration {
+		return false
+	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
@@ -243,6 +267,9 @@ func (this *CreateAccountResponse) EqualVT(that *CreateAccountResponse) bool {
 		return false
 	}
 	if !protobuf_go_lite.IsEqualVT(this.SessionListEntry, that.SessionListEntry) {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.SessionRef, that.SessionRef) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -371,6 +398,12 @@ func (x *CreateAccountRequest) MarshalProtoJSON(s *json.MarshalState) {
 		return
 	}
 	s.WriteObjectStart()
+	var wroteField bool
+	if x.DeferRegistration || s.HasField("deferRegistration") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("deferRegistration")
+		s.WriteBool(x.DeferRegistration)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -385,7 +418,13 @@ func (x *CreateAccountRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		return
 	}
 	s.ReadObject(func(key string) {
-		// no fields
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "defer_registration", "deferRegistration":
+			s.AddField("defer_registration")
+			x.DeferRegistration = s.ReadBool()
+		}
 	})
 }
 
@@ -406,6 +445,11 @@ func (x *CreateAccountResponse) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteMoreIf(&wroteField)
 		s.WriteObjectField("sessionListEntry")
 		x.SessionListEntry.MarshalProtoJSON(s.WithField("sessionListEntry"))
+	}
+	if x.SessionRef != nil || s.HasField("sessionRef") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("sessionRef")
+		x.SessionRef.MarshalProtoJSON(s.WithField("sessionRef"))
 	}
 	s.WriteObjectEnd()
 }
@@ -431,6 +475,13 @@ func (x *CreateAccountResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
 			}
 			x.SessionListEntry = &session.SessionListEntry{}
 			x.SessionListEntry.UnmarshalProtoJSON(s.WithField("session_list_entry", true))
+		case "session_ref", "sessionRef":
+			if s.ReadNil() {
+				x.SessionRef = nil
+				return
+			}
+			x.SessionRef = &session.SessionRef{}
+			x.SessionRef.UnmarshalProtoJSON(s.WithField("session_ref", true))
 		}
 	})
 }
@@ -563,6 +614,11 @@ func (m *CreateAccountRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) 
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.DeferRegistration {
+		i = protobuf_go_lite.EncodeBool(dAtA, i, m.DeferRegistration)
+		i--
+		dAtA[i] = 0x8
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -594,6 +650,16 @@ func (m *CreateAccountResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error)
 	_ = l
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.SessionRef != nil {
+		size, err := m.SessionRef.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x12
 	}
 	if m.SessionListEntry != nil {
 		size, err := m.SessionListEntry.MarshalToSizedBufferVT(dAtA[:i])
@@ -644,6 +710,7 @@ func (m *CreateAccountRequest) SizeVT() (n int) {
 	}
 	var l int
 	_ = l
+	n += protobuf_go_lite.SizeBoolNonZero(1, m.DeferRegistration)
 	n += len(m.unknownFields)
 	return n
 }
@@ -656,6 +723,10 @@ func (m *CreateAccountResponse) SizeVT() (n int) {
 	_ = l
 	if m.SessionListEntry != nil {
 		l = m.SessionListEntry.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	if m.SessionRef != nil {
+		l = m.SessionRef.SizeVT()
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
 	n += len(m.unknownFields)
@@ -700,7 +771,11 @@ func (x *CompleteSpaceLinkEnrollmentResponse) String() string {
 
 func (x *CreateAccountRequest) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
-	protobuf_go_lite.TextStartMessage(&sb, "CreateAccountRequest")
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "CreateAccountRequest")
+	if x.DeferRegistration != false {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "defer_registration")
+		protobuf_go_lite.TextWriteBool(&sb, x.DeferRegistration)
+	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
@@ -714,6 +789,10 @@ func (x *CreateAccountResponse) MarshalProtoText() string {
 	if x.SessionListEntry != nil {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "session_list_entry")
 		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.SessionListEntry)
+	}
+	if x.SessionRef != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "session_ref")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.SessionRef)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -876,6 +955,16 @@ func (m *CreateAccountRequest) UnmarshalVT(dAtA []byte) error {
 			return fmt.Errorf("proto: CreateAccountRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DeferRegistration", wireType)
+			}
+			var v bool
+			v, iNdEx, err = protobuf_go_lite.DecodeVarintBool(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.DeferRegistration = bool(v)
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
@@ -931,6 +1020,21 @@ func (m *CreateAccountResponse) UnmarshalVT(dAtA []byte) error {
 				m.SessionListEntry = &session.SessionListEntry{}
 			}
 			if err := m.SessionListEntry.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SessionRef", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.SessionRef == nil {
+				m.SessionRef = &session.SessionRef{}
+			}
+			if err := m.SessionRef.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

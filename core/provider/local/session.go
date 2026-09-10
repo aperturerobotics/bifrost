@@ -139,7 +139,7 @@ func (s *Session) UnlockSession(ctx context.Context, pin []byte) error {
 	s.sessionPriv = privKey
 	s.tkr.sessionProm.SetResult(s, nil)
 
-	transportCtx := context.WithoutCancel(ctx)
+	transportCtx := ctx
 	relay := cloudRelayEndpoint{}
 	if s.tkr.cloudAccountID != "" {
 		relay = s.tkr.a.lookupCloudRelayEndpoint(transportCtx)
@@ -147,7 +147,7 @@ func (s *Session) UnlockSession(ctx context.Context, pin []byte) error {
 	if relay.url == "" {
 		relay = s.tkr.a.fallbackSignalingEndpoint()
 	}
-	_, _, transportErr := s.tkr.a.ensureSessionTransportWithoutReplacement(transportCtx, privKey, relay.url, relay.signingEnvPrefix)
+	_, _, transportErr := s.tkr.a.ensureSessionTransportWithOwner(transportCtx, s.tkr.a.lifecycleCtx, privKey, relay.url, relay.signingEnvPrefix, false)
 	if transportErr != nil {
 		if errors.Is(transportErr, context.Canceled) {
 			return context.Canceled
@@ -174,6 +174,11 @@ func (s *Session) LockSession(ctx context.Context) error {
 	}
 	if s.sessionPriv == nil {
 		return nil
+	}
+
+	// End authenticated transport use before clearing the unlocked credential.
+	if err := s.tkr.a.stopSessionPeerTransport(ctx, s.sessionPid); err != nil {
+		return err
 	}
 
 	// Scrub the private key from memory.
@@ -516,10 +521,19 @@ func (t *sessionTracker) executeSessionTracker(rctx context.Context) (rerr error
 	if relay.url == "" {
 		relay = t.a.fallbackSignalingEndpoint()
 	}
-	sts, created, err := t.a.ensureSessionTransportWithoutReplacement(ctx, sessionPriv, relay.url, relay.signingEnvPrefix)
-	if created {
-		defer t.a.stopSessionTransportState(sts)
-	}
+	// Transport and background replication belong to the account. A temporary
+	// Session mount ending must not tear down the next consumer's connection.
+	// PIN credentials remain authorized only while their Session is mounted.
+	defer func() {
+		if so.lockMode == session_lock.SessionLockMode_PIN_ENCRYPTED {
+			cleanupCtx, cancel := sessionTransportCleanupContext(ctx)
+			defer cancel()
+			if err := t.a.stopSessionPeerTransport(cleanupCtx, sessionPeerID); err != nil {
+				le.WithError(err).Warn("failed to stop locked session transport")
+			}
+		}
+	}()
+	_, _, err = t.a.ensureSessionTransportWithOwner(ctx, t.a.lifecycleCtx, sessionPriv, relay.url, relay.signingEnvPrefix, false)
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
 			return context.Canceled

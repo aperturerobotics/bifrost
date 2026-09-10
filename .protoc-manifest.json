@@ -922,7 +922,7 @@
       ]
     },
     "github.com/s4wave/spacewave/core/account/settings": {
-      "hash": "1af76fbc3c912306359da754ce9c7c78c666d86eba042fad5441aec84a1e42fb",
+      "hash": "1fe9ba70774e549a7ce69f96ea267ba1c1278f6b44990acd23b768a6e3081849",
       "generatedFiles": [
         "core/account/settings/settings.pb.go",
         "core/account/settings/settings.pb.ts"
@@ -1126,10 +1126,12 @@
       ]
     },
     "github.com/s4wave/spacewave/core/provider/local": {
-      "hash": "7f4ab24d7fee80d116c9fc79d3411bee7cd3ab1d2e079091d0ada5ab064f3c91",
+      "hash": "2577f5e8141a43f4cbded1fbcc51e5f37b611649cf9491ffb75cb5d65022de82",
       "generatedFiles": [
         "core/provider/local/local.pb.go",
-        "core/provider/local/local.pb.ts"
+        "core/provider/local/local.pb.ts",
+        "core/provider/local/local_srpc.pb.go",
+        "core/provider/local/local_srpc.pb.ts"
       ],
       "protoFiles": [
         "core/provider/local/local.proto"
@@ -3247,7 +3249,7 @@
       ]
     },
     "github.com/s4wave/spacewave/net/transport/webrtc": {
-      "hash": "b1e80e61b190826c0197b9fe6bab2efffa481a30fa4684b60141696c19c332d4",
+      "hash": "16d8d30255278f9dbf5c08b42053028c9f8d14a91ea0cd40f8ca01054c8101f1",
       "generatedFiles": [
         "net/transport/webrtc/webrtc.pb.go",
         "net/transport/webrtc/webrtc.pb.ts"
@@ -3664,7 +3666,7 @@
       ]
     },
     "github.com/s4wave/spacewave/sdk/provider/local": {
-      "hash": "01ecd49f02e105b344d832879dd2a1666457a185418e3189dec31073d5cc65ad",
+      "hash": "4ff93cd5f58c9679a8fe453c05c562602ae2f89a4d9e5d1b47c3fa95f5c6190b",
       "generatedFiles": [
         "sdk/provider/local/local.pb.go",
         "sdk/provider/local/local.pb.ts",
@@ -3724,7 +3726,7 @@
       ]
     },
     "github.com/s4wave/spacewave/sdk/session": {
-      "hash": "9565ac142ba490620761de5e2283df664e3ddedfde3ed5bbde915513e9cf87b5",
+      "hash": "3ef648962cd535428c5482d4e6523503b822634de37443f358b48d33a7a79c3e",
       "generatedFiles": [
         "sdk/session/local-session.pb.go",
         "sdk/session/local-session.pb.ts",

@@ -2,6 +2,7 @@ package resource_session
 
 import (
 	"context"
+	"slices"
 
 	"github.com/aperturerobotics/util/broadcast"
 	"github.com/pkg/errors"
@@ -91,7 +92,25 @@ func (r *SessionResource) buildPairedDevicesResponse(
 			return nil, nil, err
 		}
 	}
-	devices := settings.GetPairedDevices()
+	devices := slices.Clone(settings.GetPairedDevices())
+	for _, member := range settings.GetSessions() {
+		if member.GetRevoked() || member.GetPeerId() == r.session.GetPeerId().String() {
+			continue
+		}
+		if slices.ContainsFunc(devices, func(device *account_settings.PairedDevice) bool {
+			return device.GetPeerId() == member.GetPeerId()
+		}) {
+			continue
+		}
+		label := "Linked Session"
+		for _, presentation := range settings.GetSessionPresentations() {
+			if presentation.GetPeerId() == member.GetPeerId() && presentation.GetLabel() != "" {
+				label = presentation.GetLabel()
+				break
+			}
+		}
+		devices = append(devices, &account_settings.PairedDevice{PeerId: member.GetPeerId(), DisplayName: label})
+	}
 	var onlinePeerIDs []string
 	var waitChs []<-chan struct{}
 	if len(devices) > 0 {

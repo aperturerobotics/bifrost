@@ -12,6 +12,7 @@ import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import type { SessionLockMode } from '../../core/session/session.pb.js'
 import {
+  SessionListEntry,
   SessionLockMode_Enum,
   SessionRef,
 } from '../../core/session/session.pb.js'
@@ -393,6 +394,13 @@ export enum PairingStatus {
    * @generated from enum value: PairingStatus_CONFIRMATION_TIMEOUT = 12;
    */
   PairingStatus_CONFIRMATION_TIMEOUT = 12,
+
+  /**
+   * PairingStatus_ENROLLING means both clients approved and account access is being persisted.
+   *
+   * @generated from enum value: PairingStatus_ENROLLING = 13;
+   */
+  PairingStatus_ENROLLING = 13,
 }
 
 export const PairingStatus_Enum = /* @__PURE__ */ createEnumType(
@@ -411,6 +419,7 @@ export const PairingStatus_Enum = /* @__PURE__ */ createEnumType(
     [10, 'PairingStatus_BOTH_CONFIRMED'],
     [11, 'PairingStatus_PAIRING_REJECTED'],
     [12, 'PairingStatus_CONFIRMATION_TIMEOUT'],
+    [13, 'PairingStatus_ENROLLING'],
   ],
 )
 
@@ -1130,6 +1139,89 @@ export const SyncBlockStoreStatus: MessageType<SyncBlockStoreStatus> =
   })
 
 /**
+ * SyncLocalCopyStatus describes the local copy of one Space's current head.
+ * Completion is recorded only after every reachable block is stored durably.
+ *
+ * @generated from message s4wave.session.SyncLocalCopyStatus
+ */
+export interface SyncLocalCopyStatus {
+  /**
+   * @generated from field: string shared_object_id = 1;
+   */
+  sharedObjectId?: string
+  /**
+   * @generated from field: string display_name = 2;
+   */
+  displayName?: string
+  /**
+   * @generated from field: uint64 blocks = 3;
+   */
+  blocks?: bigint
+  /**
+   * @generated from field: uint64 bytes = 4;
+   */
+  bytes?: bigint
+  /**
+   * @generated from field: bool complete = 5;
+   */
+  complete?: boolean
+  /**
+   * @generated from field: string error = 6;
+   */
+  error?: string
+}
+
+export const SyncLocalCopyStatus: MessageType<SyncLocalCopyStatus> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 's4wave.session.SyncLocalCopyStatus',
+    fields: [
+      { no: 1, name: 'shared_object_id', kind: 'scalar', T: ScalarType.STRING },
+      { no: 2, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
+      { no: 3, name: 'blocks', kind: 'scalar', T: ScalarType.UINT64 },
+      { no: 4, name: 'bytes', kind: 'scalar', T: ScalarType.UINT64 },
+      { no: 5, name: 'complete', kind: 'scalar', T: ScalarType.BOOL },
+      { no: 6, name: 'error', kind: 'scalar', T: ScalarType.STRING },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
+ * SyncPeerTransferStatus reports one peer's traffic on the active transport.
+ *
+ * @generated from message s4wave.session.SyncPeerTransferStatus
+ */
+export interface SyncPeerTransferStatus {
+  /**
+   * @generated from field: string peer_id = 1;
+   */
+  peerId?: string
+  /**
+   * @generated from field: uint64 uploaded_bytes = 2;
+   */
+  uploadedBytes?: bigint
+  /**
+   * @generated from field: uint64 downloaded_bytes = 3;
+   */
+  downloadedBytes?: bigint
+  /**
+   * @generated from field: bool connected = 4;
+   */
+  connected?: boolean
+}
+
+export const SyncPeerTransferStatus: MessageType<SyncPeerTransferStatus> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 's4wave.session.SyncPeerTransferStatus',
+    fields: [
+      { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
+      { no: 2, name: 'uploaded_bytes', kind: 'scalar', T: ScalarType.UINT64 },
+      { no: 3, name: 'downloaded_bytes', kind: 'scalar', T: ScalarType.UINT64 },
+      { no: 4, name: 'connected', kind: 'scalar', T: ScalarType.BOOL },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
  * WatchSyncStatusResponse is the response type for WatchSyncStatus.
  *
  * @generated from message s4wave.session.WatchSyncStatusResponse
@@ -1472,6 +1564,34 @@ export interface WatchSyncStatusResponse {
    * @generated from field: repeated s4wave.session.SyncBlockStoreStatus block_stores = 56;
    */
   blockStores?: SyncBlockStoreStatus[]
+  /**
+   * local_account selects account-replica status instead of cloud queues.
+   *
+   * @generated from field: bool local_account = 57;
+   */
+  localAccount?: boolean
+  /**
+   * local_copies reports durable availability for each accepted Space head.
+   *
+   * @generated from field: repeated s4wave.session.SyncLocalCopyStatus local_copies = 58;
+   */
+  localCopies?: SyncLocalCopyStatus[]
+  /**
+   * peer_upload_bytes and peer_download_bytes count actual block payload traffic.
+   *
+   * @generated from field: uint64 peer_upload_bytes = 59;
+   */
+  peerUploadBytes?: bigint
+  /**
+   * @generated from field: uint64 peer_download_bytes = 60;
+   */
+  peerDownloadBytes?: bigint
+  /**
+   * peers breaks the payload totals down by authenticated Session peer.
+   *
+   * @generated from field: repeated s4wave.session.SyncPeerTransferStatus peers = 61;
+   */
+  peers?: SyncPeerTransferStatus[]
 }
 
 export const WatchSyncStatusResponse: MessageType<WatchSyncStatusResponse> =
@@ -1788,6 +1908,33 @@ export const WatchSyncStatusResponse: MessageType<WatchSyncStatusResponse> =
         name: 'block_stores',
         kind: 'message',
         T: () => SyncBlockStoreStatus,
+        repeated: true,
+      },
+      { no: 57, name: 'local_account', kind: 'scalar', T: ScalarType.BOOL },
+      {
+        no: 58,
+        name: 'local_copies',
+        kind: 'message',
+        T: () => SyncLocalCopyStatus,
+        repeated: true,
+      },
+      {
+        no: 59,
+        name: 'peer_upload_bytes',
+        kind: 'scalar',
+        T: ScalarType.UINT64,
+      },
+      {
+        no: 60,
+        name: 'peer_download_bytes',
+        kind: 'scalar',
+        T: ScalarType.UINT64,
+      },
+      {
+        no: 61,
+        name: 'peers',
+        kind: 'message',
+        T: () => SyncPeerTransferStatus,
         repeated: true,
       },
     ] satisfies readonly PartialFieldInfo[],
@@ -2220,13 +2367,28 @@ export const ConfirmPairingRequest: MessageType<ConfirmPairingRequest> =
  *
  * @generated from message s4wave.session.ConfirmPairingResponse
  */
-export interface ConfirmPairingResponse {}
+export interface ConfirmPairingResponse {
+  /**
+   * SessionListEntry is the durable receiving Session, absent on the offering client.
+   *
+   * @generated from field: session.SessionListEntry session_list_entry = 1;
+   */
+  sessionListEntry?: SessionListEntry
+}
 
 export const ConfirmPairingResponse: MessageType<ConfirmPairingResponse> =
-  /* @__PURE__ */ createEmptyMessageType<ConfirmPairingResponse>(
-    's4wave.session.ConfirmPairingResponse',
-    true,
-  )
+  /* @__PURE__ */ createMessageType({
+    typeName: 's4wave.session.ConfirmPairingResponse',
+    fields: [
+      {
+        no: 1,
+        name: 'session_list_entry',
+        kind: 'message',
+        T: () => SessionListEntry,
+      },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
 
 /**
  * DeleteAccountRequest is the request type for DeleteAccount.
@@ -2732,6 +2894,24 @@ export interface WatchPairingStatusResponse {
    * @generated from field: string error_message = 5;
    */
   errorMessage?: string
+  /**
+   * AccountId is the existing account selected for enrollment.
+   *
+   * @generated from field: string account_id = 6;
+   */
+  accountId?: string
+  /**
+   * Receiving indicates this client is adding the selected account.
+   *
+   * @generated from field: bool receiving = 7;
+   */
+  receiving?: boolean
+  /**
+   * AccountName is the offered account's display name.
+   *
+   * @generated from field: string account_name = 8;
+   */
+  accountName?: string
 }
 
 export const WatchPairingStatusResponse: MessageType<WatchPairingStatusResponse> =
@@ -2749,6 +2929,9 @@ export const WatchPairingStatusResponse: MessageType<WatchPairingStatusResponse>
         repeated: true,
       },
       { no: 5, name: 'error_message', kind: 'scalar', T: ScalarType.STRING },
+      { no: 6, name: 'account_id', kind: 'scalar', T: ScalarType.STRING },
+      { no: 7, name: 'receiving', kind: 'scalar', T: ScalarType.BOOL },
+      { no: 8, name: 'account_name', kind: 'scalar', T: ScalarType.STRING },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })

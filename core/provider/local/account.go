@@ -56,6 +56,8 @@ type ProviderAccount struct {
 
 	// mtx guards /changing/ below fields
 	mtx csync.Mutex
+	// replicaAuth serializes local account enrollment, checkpoint grants, and revocation.
+	replicaAuth csync.Mutex
 	// soListCtr is the list of shared objects.
 	soListCtr *ccontainer.CContainer[*sobject.SharedObjectList]
 	// p2pSyncBcast guards p2pSync lifecycle and wakes status watchers.

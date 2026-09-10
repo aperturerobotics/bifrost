@@ -66,8 +66,14 @@ type p2pSyncState struct {
 	relFns []func()
 	// stores indexes DEX stores by bucket ID for this generation.
 	stores map[string]block.StoreOps
+	// exchanges owns the traffic counters for each mounted DEX bucket.
+	exchanges map[string]*dex_solicit.Controller
 	// soSync indexes restartable shared-object sync routines.
-	soSync map[string]*routine.RoutineContainer
+	soSync map[string]*accountObjectSync
+	// copyProgress records each Space's latest local durability check.
+	copyProgress map[string]*AccountReplicaCopyState
+	// replicaSync follows the canonical account catalog and Session membership.
+	replicaSync *routine.RoutineContainer
 }
 
 // retainP2PSyncStateLocked adds an owner while a.p2pSyncBcast is locked.
@@ -215,14 +221,14 @@ func (s *p2pSyncState) hasSO(soID string) bool {
 }
 
 // addSO registers the sync routine for soID while the generation is active.
-func (s *p2pSyncState) addSO(soID string, syncRoutine *routine.RoutineContainer) bool {
+func (s *p2pSyncState) addSO(soID string, syncRoutine *accountObjectSync) bool {
 	var added bool
 	s.bcast.HoldLock(func(bcast func(), _ func() <-chan struct{}) {
 		if s.stopping || s.ctx.Err() != nil {
 			return
 		}
 		if s.soSync == nil {
-			s.soSync = make(map[string]*routine.RoutineContainer)
+			s.soSync = make(map[string]*accountObjectSync)
 		}
 		if _, exists := s.soSync[soID]; exists {
 			return
@@ -685,6 +691,7 @@ func (a *ProviderAccount) startP2PSyncControllers(
 	soList *sobject.SharedObjectList,
 ) error {
 	syncCtx := state.ctx
+	state.removeMissingObjects(soList)
 	if err := a.retainConfiguredP2PPeers(state); err != nil {
 		return errors.Wrap(err, "retain configured P2P peers")
 	}
@@ -725,6 +732,9 @@ func (a *ProviderAccount) startP2PSyncControllers(
 			}
 			a.le.WithError(err).Warn("failed to start invite server")
 		} else {
+			if err := a.startAccountReplicaSync(state); err != nil {
+				return err
+			}
 			*inviteStarted = true
 		}
 	}
@@ -779,7 +789,7 @@ func (a *ProviderAccount) RetrySharedObjectSync(soID string) bool {
 			}
 			syncRoutine := state.soSync[soID]
 			if syncRoutine != nil {
-				restarted = syncRoutine.RestartRoutine()
+				restarted = syncRoutine.sync.RestartRoutine()
 			}
 		})
 	})
@@ -890,7 +900,16 @@ func (a *ProviderAccount) stopP2PSyncState(state *p2pSyncState) {
 	state.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
 		syncRoutines = make([]*routine.RoutineContainer, 0, len(state.soSync))
 		for _, syncRoutine := range state.soSync {
-			syncRoutines = append(syncRoutines, syncRoutine)
+			syncRoutines = append(syncRoutines, syncRoutine.sync)
+			if syncRoutine.copy != nil {
+				syncRoutines = append(syncRoutines, syncRoutine.copy)
+			}
+			if syncRoutine.body != nil {
+				syncRoutines = append(syncRoutines, syncRoutine.body)
+			}
+		}
+		if state.replicaSync != nil {
+			syncRoutines = append(syncRoutines, state.replicaSync)
 		}
 	})
 	for _, syncRoutine := range syncRoutines {
@@ -933,7 +952,13 @@ func (a *ProviderAccount) startSOSync(
 	bodyType string,
 	soID string,
 	state *p2pSyncState,
-) error {
+) (retErr error) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer func() {
+		if retErr != nil {
+			cancel()
+		}
+	}()
 	// Mount the SO to ensure the tracker is initialized with the ref.
 	// This is necessary when StartP2PSync is called from auto-start
 	// (before any UI-driven mount).
@@ -966,12 +991,12 @@ func (a *ProviderAccount) startSOSync(
 		relSO()
 		return err
 	}
+	var bodyRoutine *routine.RoutineContainer
 	if bodyType == space.SpaceBodyType &&
 		sobject.IsValidatorOrOwner(participantConfig.GetRole()) &&
 		ref.GetProviderResourceRef() != nil {
-		state.addWorker()
-		go func() {
-			defer state.workerDone()
+		bodyRoutine = routine.NewRoutineContainerWithLogger(a.le.WithField("routine", "account-space-body"), routine.WithRetry(providerBackoff))
+		bodyRoutine.SetRoutine(func(ctx context.Context) error {
 			_, bodyRef, err := sobject.ExMountSharedObjectBodyWithSource[space.SpaceSharedObjectBody](
 				ctx,
 				a.t.p.b,
@@ -982,13 +1007,12 @@ func (a *ProviderAccount) startSOSync(
 				nil,
 			)
 			if err != nil {
-				if ctx.Err() == nil {
-					a.le.WithError(err).WithField("so-id", soID).Warn("validator Space body exited")
-				}
-				return
+				return err
 			}
-			state.addRef(bodyRef)
-		}()
+			defer bodyRef.Release()
+			<-ctx.Done()
+			return ctx.Err()
+		})
 	}
 
 	// Validate inbound snapshots against the local storage identity that holds
@@ -1036,7 +1060,12 @@ func (a *ProviderAccount) startSOSync(
 		}
 		return err
 	})
-	if !state.addSO(soID, syncRoutine) {
+	objectSync := &accountObjectSync{sync: syncRoutine, body: bodyRoutine, cancel: cancel, release: relSO}
+	if bodyType == space.SpaceBodyType {
+		objectSync.copy = routine.NewRoutineContainerWithLogger(a.le.WithField("routine", "account-copy"), routine.WithRetry(providerBackoff))
+		objectSync.copy.SetRoutine(func(ctx context.Context) error { return a.runAccountReplicaCopy(ctx, so, state) })
+	}
+	if !state.addSO(soID, objectSync) {
 		relSO()
 		if err := ctx.Err(); err != nil {
 			return err
@@ -1044,7 +1073,14 @@ func (a *ProviderAccount) startSOSync(
 		return errors.Errorf("shared object sync already started: %s", soID)
 	}
 	state.addRelease(relSO)
+	state.addRelease(cancel)
 	syncRoutine.SetContext(ctx, false)
+	if objectSync.copy != nil {
+		objectSync.copy.SetContext(ctx, false)
+	}
+	if objectSync.body != nil {
+		objectSync.body.SetContext(ctx, false)
+	}
 
 	return nil
 }
@@ -1190,5 +1226,12 @@ func (a *ProviderAccount) startDEXSolicit(ctx context.Context, childBus bus.Bus,
 	}
 	state.addRef(dexRef)
 	state.addStore(bucketID, dex_solicit.NewStore(ctrl))
+	state.bcast.HoldLock(func(changed func(), _ func() <-chan struct{}) {
+		if state.exchanges == nil {
+			state.exchanges = make(map[string]*dex_solicit.Controller)
+		}
+		state.exchanges[bucketID] = ctrl
+		changed()
+	})
 	return nil
 }

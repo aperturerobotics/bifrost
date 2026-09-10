@@ -87,6 +87,9 @@ func (s *SharedObject) AccessLocalStateStore(ctx context.Context, storeID string
 	// ls = local state
 	storePrefix := []byte("ls/")
 	prefixedObjStore := object.NewPrefixer(s.objStore, storePrefix)
+	if released == nil {
+		return prefixedObjStore, func() {}, nil
+	}
 	relReleased := context.AfterFunc(s.ctx, released)
 	return prefixedObjStore, func() { relReleased() }, nil
 }
@@ -506,13 +509,24 @@ func (a *ProviderAccount) CreateSharedObject(ctx context.Context, id string, met
 	if err != nil {
 		return nil, err
 	}
-	defer relMtx()
-
-	return a.createSharedObjectLocked(ctx, id, meta)
+	ref, err := a.createSharedObjectLocked(ctx, id, meta)
+	relMtx()
+	if err != nil {
+		return nil, err
+	}
+	if err := a.publishAccountCatalogEntry(ctx, &sobject.SharedObjectListEntry{Ref: ref, Meta: meta}, false); err != nil {
+		return nil, err
+	}
+	return ref, nil
 }
 
 // UpdateSharedObjectMeta updates the metadata for an existing shared object.
 func (a *ProviderAccount) UpdateSharedObjectMeta(ctx context.Context, id string, meta *sobject.SharedObjectMeta) error {
+	return a.updateSharedObjectMeta(ctx, id, meta, true)
+}
+
+// updateSharedObjectMeta applies either an explicit edit or canonical catalog metadata.
+func (a *ProviderAccount) updateSharedObjectMeta(ctx context.Context, id string, meta *sobject.SharedObjectMeta, publish bool) error {
 	if err := meta.Validate(); err != nil {
 		return err
 	}
@@ -521,10 +535,9 @@ func (a *ProviderAccount) UpdateSharedObjectMeta(ctx context.Context, id string,
 	if err != nil {
 		return err
 	}
-	defer relMtx()
-
 	sharedObjectList := a.soListCtr.GetValue().CloneVT()
 	if sharedObjectList == nil {
+		relMtx()
 		return sobject.ErrSharedObjectNotFound
 	}
 
@@ -532,14 +545,20 @@ func (a *ProviderAccount) UpdateSharedObjectMeta(ctx context.Context, id string,
 		return entry.GetRef().GetProviderResourceRef().GetId() == id
 	})
 	if idx == -1 {
+		relMtx()
 		return sobject.ErrSharedObjectNotFound
 	}
 
 	sharedObjectList.SharedObjects[idx].Meta = meta.CloneVT()
 	if err := a.writeSharedObjectList(ctx, sharedObjectList); err != nil {
+		relMtx()
 		return err
 	}
 	a.soListCtr.SetValue(sharedObjectList)
+	relMtx()
+	if publish {
+		return a.publishAccountCatalogEntry(ctx, sharedObjectList.SharedObjects[idx], false)
+	}
 	return nil
 }
 

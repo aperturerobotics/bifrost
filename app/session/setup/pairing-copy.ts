@@ -1,28 +1,7 @@
-// PairingCodeInstructions is the runtime-aware copy for the code-display step.
-export interface PairingCodeInstructions {
-  heading: string
-  hint: string
-}
-
-// pairingCodeInstructions returns the heading and hint shown while a device
-// displays its pairing code. isDesktop is true when this device runs the native
-// desktop app; in that case the other device is where the code is entered, so
-// the copy never tells a desktop user to "open the desktop app". The other
-// device's runtime is unknown, so it is named generically. From the web the
-// linked target is the desktop app, matching the download-desktop flow.
-export function pairingCodeInstructions(
-  isDesktop: boolean,
-): PairingCodeInstructions {
-  if (isDesktop) {
-    return {
-      heading: 'Enter this code on your other device',
-      hint: 'Open Spacewave on your other device and enter it under Link My Device.',
-    }
-  }
-  return {
-    heading: 'Enter this code in your desktop app',
-    hint: 'Open the Spacewave desktop app and enter it under Link My Device.',
-  }
+// The receiving client may use Spacewave in a browser or the desktop app.
+export const PAIRING_CODE_INSTRUCTIONS = {
+  heading: 'Enter this code on your other device',
+  hint: 'Open Spacewave on your other device and enter it under Link My Device.',
 }
 
 // PAIRING_SERVICE_UNREACHABLE is the human error state for a pairing attempt

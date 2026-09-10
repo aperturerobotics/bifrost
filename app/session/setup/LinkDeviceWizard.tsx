@@ -12,13 +12,11 @@ import {
   LuArrowLeft,
   LuArrowRight,
   LuCamera,
-  LuCircleCheck,
   LuCopy,
   LuKeyboard,
   LuLink,
   LuMonitor,
   LuRefreshCw,
-  LuShieldCheck,
   LuSmartphone,
   LuWifi,
   LuX,
@@ -28,8 +26,14 @@ import { cn } from '@s4wave/web/style/utils.js'
 import { toast } from '@s4wave/web/ui/toaster.js'
 import { Spinner } from '@s4wave/web/ui/loading/Spinner.js'
 import { LinkDeviceDoneStep } from './LinkDeviceDoneStep.js'
+import { PairingVerificationStep } from './PairingVerificationStep.js'
+import type { SessionListEntry } from '@s4wave/core/session/session.pb.js'
 import { PairingCodeChip } from './PairingCodeChip.js'
-import { pairingCodeInstructions, pairingErrorMessage } from './pairing-copy.js'
+import {
+  PAIRING_CODE_INSTRUCTIONS,
+  pairingErrorMessage,
+} from './pairing-copy.js'
+import { ExternalLink } from '@s4wave/app/landing/ExternalLink.js'
 import { SetupPageLayout } from './SetupPageLayout.js'
 import {
   useNavigate,
@@ -41,9 +45,7 @@ import { SessionContext } from '@s4wave/web/contexts/contexts.js'
 import { usePromise } from '@s4wave/web/hooks/usePromise.js'
 import { useSessionInfo } from '@s4wave/web/hooks/useSessionInfo.js'
 import { useOptionalLocalSessionOnboardingContext } from '@s4wave/app/session/setup/LocalSessionOnboardingContext.js'
-import { PairingChannelProgress } from './PairingChannelProgress.js'
 import { pairingStatusReachedPeer } from '@s4wave/app/session/pairing-status.js'
-import { pairingStatusIsTerminalFailure } from '@s4wave/app/loading/status/pairing.js'
 import { SPACEWAVE_PUBLIC_BASE_URL } from '@s4wave/app/urls.js'
 import { PairingStatus } from '@s4wave/sdk/session/session.pb.js'
 import type { Session } from '@s4wave/sdk/session/session.js'
@@ -119,10 +121,17 @@ export function LinkDeviceWizard({ exitPath }: LinkDeviceWizardProps) {
     setStep('verify')
   }, [])
 
-  const handleDone = useCallback(() => {
-    onboarding?.markProviderChoiceComplete()
-    navigate({ path: resolvedExitPath })
-  }, [navigate, onboarding, resolvedExitPath])
+  const handleDone = useCallback(
+    (entry?: SessionListEntry) => {
+      if (entry?.sessionIndex != null) {
+        navigate({ path: `/u/${entry.sessionIndex}` })
+        return
+      }
+      onboarding?.markProviderChoiceComplete()
+      navigate({ path: resolvedExitPath })
+    },
+    [navigate, onboarding, resolvedExitPath],
+  )
   const handleExit = useCallback(() => {
     navigate({ path: resolvedExitPath })
   }, [navigate, resolvedExitPath])
@@ -241,9 +250,8 @@ export function LinkDeviceWizard({ exitPath }: LinkDeviceWizardProps) {
           !sessionInfoLoading &&
           pairingSupported &&
           step === 'verify' && (
-            <VerifyStep
+            <PairingVerificationStep
               session={session}
-              remotePeerId={remotePeerId}
               onContinue={() => setStep('done')}
               onAbort={() => handleBack('choose')}
             />
@@ -257,7 +265,13 @@ export function LinkDeviceWizard({ exitPath }: LinkDeviceWizardProps) {
               session={session}
               remotePeerId={remotePeerId}
               onDone={handleDone}
-              onLinkMore={() => {
+              onLinkMore={(entry) => {
+                if (entry?.sessionIndex != null) {
+                  navigate({
+                    path: `/u/${entry.sessionIndex}/setup/link-device`,
+                  })
+                  return
+                }
                 setRemotePeerId(null)
                 setStep('choose')
               }}
@@ -465,16 +479,22 @@ function DownloadStep({ onContinue, onBack }: DownloadStepProps) {
             Download the desktop app
           </h2>
           <p className="text-foreground-alt mt-1 text-xs leading-relaxed">
-            Download the Spacewave desktop app to keep your data backed up
-            locally.
+            Choose the installer for your computer, then return here to link
+            your account.
           </p>
         </div>
       </div>
 
       <div className="space-y-2">
-        <PlatformLink label="Download for macOS" />
-        <PlatformLink label="Download for Windows" />
-        <PlatformLink label="Download for Linux" />
+        <ExternalLink
+          href={`${SPACEWAVE_PUBLIC_BASE_URL}/#/download`}
+          className="border-brand/30 bg-brand/10 text-foreground flex h-10 items-center justify-center rounded-md border text-sm"
+        >
+          Choose a desktop download
+        </ExternalLink>
+        <p className="text-foreground-alt text-center text-xs">
+          macOS, Windows, and Linux. Opens in a new tab.
+        </p>
       </div>
 
       <button
@@ -495,19 +515,6 @@ function DownloadStep({ onContinue, onBack }: DownloadStepProps) {
       >
         Back
       </button>
-    </div>
-  )
-}
-
-function PlatformLink({ label }: { label: string }) {
-  return (
-    <div
-      className={cn(
-        'border-foreground/10 text-foreground-alt flex h-9 items-center justify-center rounded-md border text-xs',
-        'cursor-not-allowed opacity-50',
-      )}
-    >
-      {label} (coming soon)
     </div>
   )
 }
@@ -625,7 +632,7 @@ function PairingStep({
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }, [secondsLeft])
 
-  const instructions = pairingCodeInstructions(isDesktop)
+  const instructions = PAIRING_CODE_INSTRUCTIONS
 
   return (
     <div className="border-foreground/20 bg-background-get-started w-full rounded-lg border p-6 shadow-lg backdrop-blur-sm">
@@ -999,266 +1006,6 @@ function EnterCodeStep({
     </div>
   )
 }
-
-interface VerifyStepProps {
-  session: Session | null | undefined
-  remotePeerId: string | null
-  onContinue: () => void
-  onAbort: () => void
-}
-
-function VerifyStep({
-  session,
-  remotePeerId,
-  onContinue,
-  onAbort,
-}: VerifyStepProps) {
-  const [emoji, setEmoji] = useState<string[] | null>(null)
-  const [waitingForRemote, setWaitingForRemote] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [pairingStatus, setPairingStatus] = useState(
-    remotePeerId
-      ? PairingStatus.PairingStatus_PEER_CONNECTED
-      : PairingStatus.PairingStatus_WAITING_FOR_PEER,
-  )
-
-  // Watch pairing status for emoji data and confirmation states.
-  useEffect(() => {
-    if (!session) return
-    const controller = new AbortController()
-    ;(async () => {
-      for await (const resp of session.watchPairingStatus(controller.signal)) {
-        if (controller.signal.aborted) break
-        setPairingStatus(
-          resp.status ?? PairingStatus.PairingStatus_WAITING_FOR_PEER,
-        )
-        if (
-          pairingStatusReachedPeer(resp.status) &&
-          resp.emoji &&
-          resp.emoji.length > 0
-        ) {
-          setEmoji(resp.emoji)
-          setWaitingForRemote(false)
-          setError(null)
-        }
-        if (
-          resp.status === PairingStatus.PairingStatus_WAITING_FOR_REMOTE_CONFIRM
-        ) {
-          setWaitingForRemote(true)
-        }
-        if (
-          resp.status === PairingStatus.PairingStatus_BOTH_CONFIRMED ||
-          resp.status === PairingStatus.PairingStatus_VERIFIED
-        ) {
-          onContinue()
-          break
-        }
-        if (pairingStatusIsTerminalFailure(resp.status)) {
-          setError(resp.errorMessage || 'Pairing failed')
-          setWaitingForRemote(false)
-          break
-        }
-      }
-    })().catch((err) => {
-      if (controller.signal.aborted) return
-      setError(
-        err instanceof Error ? err.message : 'Pairing status stream failed',
-      )
-      setWaitingForRemote(false)
-    })
-    return () => controller.abort()
-  }, [session, onContinue])
-
-  const handleConfirm = useCallback(() => {
-    void session?.confirmSASMatch(true)
-  }, [session])
-
-  const handleReject = useCallback(() => {
-    void session?.confirmSASMatch(false)
-    onAbort()
-  }, [session, onAbort])
-
-  if (!remotePeerId && !emoji) {
-    return <WaitingForConnection onSkip={onContinue} onAbort={onAbort} />
-  }
-
-  if (error) {
-    return (
-      <div className="space-y-4">
-        <div className="flex flex-col items-center gap-2">
-          <div className="bg-destructive/10 flex size-10 items-center justify-center rounded-full">
-            <LuX className="text-destructive size-5" />
-          </div>
-          <h2 className="text-foreground text-sm font-medium">
-            Verification failed
-          </h2>
-          <p className="text-destructive text-xs">{error}</p>
-        </div>
-        <button
-          onClick={onAbort}
-          className={cn(
-            'w-full rounded-md border transition-all duration-300',
-            'border-foreground/20 hover:border-foreground/40',
-            'flex h-10 items-center justify-center gap-2',
-          )}
-        >
-          <LuArrowLeft className="text-foreground-alt size-4" />
-          <span className="text-foreground text-sm">Back to pairing</span>
-        </button>
-      </div>
-    )
-  }
-
-  if (waitingForRemote) {
-    return (
-      <div className="space-y-4">
-        <div className="flex flex-col items-center gap-2">
-          <div className="bg-brand/10 flex size-10 items-center justify-center rounded-full">
-            <LuShieldCheck className="text-brand size-5" />
-          </div>
-          <h2 className="text-foreground text-sm font-medium">
-            Waiting for other device
-          </h2>
-          <p className="text-foreground-alt text-xs leading-relaxed">
-            Confirm the emoji match on your other device to continue.
-          </p>
-        </div>
-        {emoji && <EmojiGrid emoji={emoji} />}
-        <div className="flex min-h-10 items-center justify-center">
-          <Spinner size="lg" className="text-foreground-alt" />
-        </div>
-      </div>
-    )
-  }
-
-  if (!emoji) {
-    return (
-      <div className="space-y-4">
-        <PairingChannelProgress status={pairingStatus} />
-        <button
-          onClick={onAbort}
-          className={cn(
-            'w-full rounded-md border transition-all duration-300',
-            'border-foreground/20 hover:border-foreground/40',
-            'flex h-10 items-center justify-center gap-2',
-          )}
-        >
-          <LuArrowLeft className="text-foreground-alt size-4" />
-          <span className="text-foreground text-sm">Back to pairing</span>
-        </button>
-      </div>
-    )
-  }
-
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-col items-center gap-2">
-        <div className="bg-brand/10 flex size-10 items-center justify-center rounded-full">
-          <LuShieldCheck className="text-brand size-5" />
-        </div>
-        <h2 className="text-foreground text-sm font-medium">
-          Verify connection
-        </h2>
-        <p className="text-foreground-alt text-xs leading-relaxed">
-          Do these emoji match what your other device shows?
-        </p>
-      </div>
-
-      <EmojiGrid emoji={emoji} />
-
-      <div className="flex gap-2">
-        <button
-          onClick={handleReject}
-          className={cn(
-            'flex-1 rounded-md border transition-all duration-300',
-            'border-destructive/30 hover:bg-destructive/10',
-            'flex h-10 items-center justify-center gap-2',
-          )}
-        >
-          <LuX className="text-destructive size-4" />
-          <span className="text-destructive text-sm">No, abort</span>
-        </button>
-        <button
-          onClick={handleConfirm}
-          className={cn(
-            'flex-1 rounded-md border transition-all duration-300',
-            'border-brand/30 bg-brand/10 hover:bg-brand/20',
-            'flex h-10 items-center justify-center gap-2',
-          )}
-        >
-          <LuCircleCheck className="text-brand size-4" />
-          <span className="text-foreground text-sm">Yes, they match</span>
-        </button>
-      </div>
-    </div>
-  )
-}
-
-interface WaitingForConnectionProps {
-  onSkip: () => void
-  onAbort: () => void
-}
-
-function WaitingForConnection({ onSkip, onAbort }: WaitingForConnectionProps) {
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-col items-center gap-2">
-        <div className="bg-brand/10 flex size-10 items-center justify-center rounded-full">
-          <LuShieldCheck className="text-brand size-5" />
-        </div>
-        <h2 className="text-foreground text-sm font-medium">
-          Verify connection
-        </h2>
-        <p className="text-foreground-alt text-xs leading-relaxed">
-          Setting up the connection with your desktop app…
-        </p>
-      </div>
-
-      <div className="flex min-h-24 items-center justify-center">
-        <Spinner size="lg" className="text-foreground-alt" />
-      </div>
-
-      <button
-        onClick={onAbort}
-        className={cn(
-          'w-full rounded-md border transition-all duration-300',
-          'border-foreground/20 hover:border-foreground/40',
-          'flex h-10 items-center justify-center gap-2',
-        )}
-      >
-        <LuArrowLeft className="text-foreground-alt size-4" />
-        <span className="text-foreground text-sm">Back to pairing</span>
-      </button>
-
-      <button
-        onClick={onSkip}
-        className="text-foreground-alt hover:text-foreground w-full text-center text-xs transition-colors"
-      >
-        Skip verification for now (not recommended)
-      </button>
-    </div>
-  )
-}
-
-function EmojiGrid({ emoji }: { emoji: string[] }) {
-  return (
-    <div className="grid grid-cols-3 gap-2 px-4">
-      {emoji.map((e) => (
-        <div
-          key={e}
-          className={cn(
-            'border-foreground/10 bg-foreground/5 flex items-center justify-center rounded-lg border',
-            'h-16 text-4xl',
-          )}
-        >
-          {e}
-        </div>
-      ))}
-    </div>
-  )
-}
-
-// -- Direct pairing components (no-cloud WebRTC) --
 
 interface DirectOfferStepProps {
   session: Session | null | undefined
