@@ -16,6 +16,7 @@ import (
 // TestPairingHomeDriveJourney enters from Home, reads its durable copy offline,
 // then receives a new file after both clients reconnect with preserved stores.
 func TestPairingHomeDriveJourney(t *testing.T) {
+	// Retain failures from both independent browser processes.
 	h := harness(t)
 	a, b := h.NewCleanSession(t), h.NewCleanSession(t)
 	for _, client := range []*TestSession{a, b} {
@@ -29,7 +30,10 @@ func TestPairingHomeDriveJourney(t *testing.T) {
 				}
 			}
 		}()
-		t.Cleanup(func() { stop(); <-done })
+		t.Cleanup(func() {
+			stop()
+			<-done
+		})
 	}
 	t.Cleanup(func() {
 		if t.Failed() {
@@ -44,6 +48,8 @@ func TestPairingHomeDriveJourney(t *testing.T) {
 			}
 		}
 	})
+
+	// Seed the offered account with a file whose bytes must survive disconnection.
 	ctx, cancel := context.WithTimeout(h.Context(), 5*time.Minute)
 	defer cancel()
 	drive := CreateDriveScenario(t, h, a)
@@ -61,6 +67,7 @@ func TestPairingHomeDriveJourney(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Approve the exchange through Home and locate the enrolled account.
 	startPairingPages(t, a.Page(), b.Page(), drive.GetSessionIndex(), "#/")
 	confirmPairingPages(t, a.Page(), b.Page())
 	if err := b.Page().GetByRole("heading", playwright.PageGetByRoleOptions{Name: "Account connected", Exact: new(true)}).WaitFor(); err != nil {
@@ -79,6 +86,8 @@ func TestPairingHomeDriveJourney(t *testing.T) {
 	if index == 0 {
 		t.Fatal("pairing did not register the offered account")
 	}
+
+	// Wait for the receiver's own block copy before opening the file.
 	receiver, err := b.MountSessionByIdx(ctx, index)
 	if err != nil {
 		t.Fatal(err)
@@ -94,6 +103,8 @@ func TestPairingHomeDriveJourney(t *testing.T) {
 	WaitForDriveReady(t, h, b.Page())
 	openDriveEntry(t, b.Page(), file.Name)
 	waitForUnixFSFileText(t, b.Page(), "paired file", string(file.Buffer))
+
+	// Reopen the receiver without a live original client.
 	stream.Close()
 	receiver.Release()
 	source.Release()
@@ -105,6 +116,8 @@ func TestPairingHomeDriveJourney(t *testing.T) {
 		t.Fatal(err)
 	}
 	waitForUnixFSFileText(t, b.Page(), "offline paired file", string(file.Buffer))
+
+	// Restart the original process and prove continued synchronization.
 	if err := h.loadAppPageURL(a, fmt.Sprintf("%s/#/u/%d/so/%s", h.BaseURL(), drive.GetSessionIndex(), drive.GetSpaceID())); err != nil {
 		t.Fatal(err)
 	}
@@ -119,6 +132,7 @@ func TestPairingHomeDriveJourney(t *testing.T) {
 	waitForUnixFSFileText(t, b.Page(), "file after reconnect", string(update.Buffer))
 }
 
+// waitPairingSpaceCopy waits for the selected Space's complete local block copy.
 func waitPairingSpaceCopy(t *testing.T, stream s4wave_session.SRPCSessionResourceService_WatchSyncStatusClient, id string) {
 	t.Helper()
 	var lastError string
@@ -147,6 +161,21 @@ func waitPairingSpaceCopy(t *testing.T, stream s4wave_session.SRPCSessionResourc
 // startPairingPages exchanges real direct payloads through the shared pairing UI.
 func startPairingPages(t *testing.T, source, receiving playwright.Page, sourceIndex uint32, receivingRoute string) {
 	t.Helper()
+
+	// Both clients run on this host. Gather host candidates without waiting
+	// for a public STUN server that the CI runner may be unable to reach.
+	for _, page := range []playwright.Page{source, receiving} {
+		if _, err := page.Evaluate(`() => {
+			const PeerConnection = globalThis.RTCPeerConnection
+			globalThis.RTCPeerConnection = class extends PeerConnection {
+				constructor(config) { super({ ...config, iceServers: [] }) }
+			}
+		}`); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// Generate the source's direct offer through its signed-in entry point.
 	navigatePairingPage(t, source, "#/")
 	navigatePairingPage(t, receiving, "#/")
 	navigatePairingPage(t, source, fmt.Sprintf("#/u/%d/setup/link-device", sourceIndex))
@@ -161,6 +190,8 @@ func startPairingPages(t *testing.T, source, receiving playwright.Page, sourceIn
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	// Submit the offer through the receiving client's selected entry point.
 	navigatePairingPage(t, receiving, strings.ReplaceAll(receivingRoute, "{offer}", payload))
 	if receivingRoute == "#/" {
 		if err := receiving.GetByText("Enter a device pairing code", playwright.PageGetByTextOptions{Exact: new(true)}).Click(); err != nil {
@@ -184,6 +215,8 @@ func startPairingPages(t *testing.T, source, receiving playwright.Page, sourceIn
 			t.Fatal(err)
 		}
 	}
+
+	// Return the direct answer to complete the authenticated transport.
 	answer := receiving.Locator("input[readonly]").First()
 	if err := answer.WaitFor(); err != nil {
 		t.Fatal(err)
@@ -221,6 +254,7 @@ func navigatePairingPage(t *testing.T, page playwright.Page, hash string) {
 // TestPairingSignedInDriveJourney rejects an unapproved proposal, then merges
 // two populated accounts through the signed-in entry point on the same stores.
 func TestPairingSignedInDriveJourney(t *testing.T) {
+	// Preserve routing and sync state when the exchange fails.
 	h := harness(t)
 	a, b := h.NewCleanSession(t), h.NewCleanSession(t)
 	t.Cleanup(func() {
@@ -251,6 +285,8 @@ func TestPairingSignedInDriveJourney(t *testing.T) {
 			}
 		}
 	})
+
+	// Populate both accounts before choosing a merge destination.
 	ctx, cancel := context.WithTimeout(h.Context(), 4*time.Minute)
 	defer cancel()
 	clients := []*TestSession{a, b}
@@ -279,6 +315,8 @@ func TestPairingSignedInDriveJourney(t *testing.T) {
 		ids = append(ids, drive.GetSpaceID())
 		accounts = append(accounts, info.GetSessionRef().GetProviderResourceRef().GetProviderAccountId())
 	}
+
+	// Refuse the first proof and approve the second on the same persisted accounts.
 	for attempt := range 2 {
 		startPairingPages(t, a.Page(), b.Page(), indices[0], fmt.Sprintf("#/u/%d/setup/link-device", indices[1]))
 		if err := b.Page().GetByRole("radio").Nth(2).Check(); err != nil {
@@ -310,6 +348,8 @@ func TestPairingSignedInDriveJourney(t *testing.T) {
 			}
 		}
 	}
+
+	// Both clients must retain and display files from both original accounts.
 	for _, client := range clients {
 		if err := client.Page().GetByRole("heading", playwright.PageGetByRoleOptions{Name: "Account connected", Exact: new(true)}).WaitFor(); err != nil {
 			t.Fatal(err)
@@ -322,6 +362,8 @@ func TestPairingSignedInDriveJourney(t *testing.T) {
 			waitForUnixFSFileText(t, client.Page(), "merged account file", string(files[i].Buffer))
 		}
 	}
+
+	// Reopen the merging client after the offered client leaves.
 	a.release()
 	if _, err := b.Page().Reload(); err != nil {
 		t.Fatal(err)
@@ -332,12 +374,16 @@ func TestPairingSignedInDriveJourney(t *testing.T) {
 // confirmPairingPages compares both displayed proofs before authorizing access.
 func confirmPairingPages(t *testing.T, source, receiving playwright.Page) {
 	t.Helper()
+
+	// Wait until both participants can inspect the shared proof.
 	for _, page := range []playwright.Page{source, receiving} {
 		if err := page.GetByRole("button", playwright.PageGetByRoleOptions{Name: "Yes, they match", Exact: new(true)}).WaitFor(); err != nil {
 			body, readErr := page.Locator("body").InnerText()
 			t.Fatalf("pairing verification: %v; page %s: %s (read error: %v)", err, page.URL(), body, readErr)
 		}
 	}
+
+	// Authorize access only after comparing the proofs displayed by both clients.
 	emojiA, err := source.GetByLabel("Verification emoji").InnerText()
 	if err != nil {
 		t.Fatal(err)

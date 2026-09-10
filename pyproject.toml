@@ -39,6 +39,7 @@ module = [
     "bldr.resource.resource_pb2",
     "core.account.settings.settings_pb2",
     "core.changelog.changelog_pb2",
+    "core.pairing.pairing_pb2",
     "core.provider.provider_pb2",
     "core.provider.transfer.transfer_pb2",
     "core.session.session_pb2",
