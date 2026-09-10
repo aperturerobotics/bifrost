@@ -4,11 +4,11 @@ package message_port
 
 import (
 	"context"
+	"errors"
 	"io"
 	"runtime"
 	"syscall/js"
 
-	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/db/util/jsbuf"
 )
 
@@ -20,15 +20,24 @@ const tinyGoPostBytes = "BLDR_TINYGO_POST_BYTES"
 // Writes a null value when closing the stream.
 // NOTE: This assumes we are running in a single-threaded environment!
 type MessagePort struct {
-	chObj      js.Value
-	chPost     js.Value
+	// chObj is the physical JavaScript endpoint; chPost is its bound sender.
+	chObj  js.Value
+	chPost js.Value
+	// uint8Array constructs outgoing byte buffers.
 	uint8Array js.Value
-	onMessage  js.Func
+	// onMessage receives ordered bytes and remote write EOF.
+	onMessage js.Func
 
-	trig         chan struct{}
-	msgs         [][]byte
-	closed       bool
-	writeClosed  bool
+	// trig wakes a reader when a message or read closure arrives.
+	trig chan struct{}
+	// msgs retains received packets until ReadMessage consumes them.
+	msgs [][]byte
+	// readClosed and writeClosed track the independent stream directions.
+	readClosed  bool
+	writeClosed bool
+	// closed records full endpoint disposal, including after remote EOF.
+	closed bool
+	// onMessageSet records ownership of the JavaScript callback.
 	onMessageSet bool
 }
 
@@ -45,16 +54,16 @@ func NewMessagePort(chObj js.Value) *MessagePort {
 	}
 	s.onMessage = js.FuncOf(
 		func(t js.Value, args []js.Value) any {
-			if len(args) < 1 || s.closed {
+			if len(args) < 1 || s.readClosed {
 				return nil
 			}
 
 			msgEvent := args[0]
 			dat := msgEvent.Get("data")
 
-			// data == null -> stream closed
+			// A null message closes the remote write direction.
 			if dat.IsNull() {
-				s.closed = true
+				s.readClosed = true
 				defer s.releaseOnMessage()
 			} else {
 				dlen := dat.Length()
@@ -85,7 +94,7 @@ func (s *MessagePort) ReadMessage(ctx context.Context) ([]byte, error) {
 			return nextMsg, nil
 		}
 
-		if s.closed {
+		if s.readClosed {
 			return nil, io.EOF
 		}
 
@@ -97,7 +106,7 @@ func (s *MessagePort) ReadMessage(ctx context.Context) ([]byte, error) {
 
 		select {
 		case <-ctx.Done():
-			return nil, context.Canceled
+			return nil, ctx.Err()
 		case <-trig:
 		}
 	}
@@ -160,19 +169,15 @@ func (s *MessagePort) CloseWrite() error {
 // Close closes both sides of the channel.
 func (s *MessagePort) Close() error {
 	if s.closed {
-		s.releaseOnMessage()
-		s.wakeReader()
 		return nil
 	}
 
 	s.closed = true
+	s.readClosed = true
 	s.releaseOnMessage()
 	s.wakeReader()
-	if err := s.CloseWrite(); err != nil {
-		return err
-	}
-	s.chObj.Call("close")
-	return nil
+	defer s.chObj.Call("close")
+	return s.CloseWrite()
 }
 
 func (s *MessagePort) wakeReader() {

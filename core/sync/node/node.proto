@@ -1,0 +1,32 @@
+syntax = "proto3";
+package core.sync.node;
+
+// RuntimeInit selects the exclusively owned storage directory for one Worker.
+message RuntimeInit {
+  // Directory is the filesystem path exclusively owned until the Worker exits.
+  string directory = 1;
+}
+
+// RuntimeMessage controls the Worker lifetime outside its Resource connection.
+// OPEN_STREAM accompanies a transferred MessagePort carrying StaRPC packets.
+message RuntimeMessage {
+  // Kind identifies the required Worker lifecycle operation or response.
+  enum Kind {
+    // KIND_UNKNOWN is invalid for every lifecycle operation.
+    KIND_UNKNOWN = 0;
+    // READY confirms the World is open and accepts Resource streams.
+    READY = 1;
+    // OPEN_STREAM supplies one transferred MessagePort for a StaRPC exchange.
+    OPEN_STREAM = 2;
+    // CLOSE stops admission and requests a durable, joined shutdown.
+    CLOSE = 3;
+    // CLOSED reports completion of shutdown, including any failure.
+    CLOSED = 4;
+    // FAILED reports a startup or protocol failure before orderly shutdown.
+    FAILED = 5;
+  }
+  // Kind selects the required operation or response.
+  Kind kind = 1;
+  // Error describes a failure in FAILED or CLOSED and is empty on success.
+  string error = 2;
+}

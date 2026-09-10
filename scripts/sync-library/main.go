@@ -1,0 +1,81 @@
+// Command sync-library compiles and bundles the standalone npm package.
+package main
+
+import (
+	"context"
+	"flag"
+	"os"
+	"path/filepath"
+
+	"github.com/s4wave/spacewave/bldr/util/gocompiler"
+	rolldown "github.com/s4wave/spacewave/bldr/web/bundler/rolldown"
+	"github.com/sirupsen/logrus"
+)
+
+func main() {
+	output := flag.String("output", "packages/spacewave/dist", "Directory for the compiled npm exports")
+	skipCompile := flag.Bool("skip-compile", false, "Reuse the existing compiled engine for a TypeScript-only change")
+	overrideDir := flag.String("override-dir", "", "GoScript runtime override directory for compiler development")
+	flag.Parse()
+	ctx := context.Background()
+	le := logrus.NewEntry(logrus.New())
+	if err := build(ctx, le, *output, *skipCompile, *overrideDir); err != nil {
+		le.Error(err)
+		os.Exit(1)
+	}
+}
+
+// build uses the same compiler binding discovery and bundle owner as Bldr.
+func build(ctx context.Context, le *logrus.Entry, output string, skipCompile bool, overrideDir string) error {
+	root, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	output, err = filepath.Abs(output)
+	if err != nil {
+		return err
+	}
+	working := filepath.Join(root, ".tmp", "sync-library")
+	compiled := filepath.Join(working, "goscript")
+	if !skipCompile {
+		env := []string{"GOOS=js", "GOARCH=wasm", "CGO_ENABLED=0"}
+		bindings, err := gocompiler.GoScriptBindingRoots(ctx, root, env...)
+		if err != nil {
+			return err
+		}
+		var overrides []string
+		if overrideDir != "" {
+			overrides = []string{overrideDir}
+		}
+		if err := gocompiler.ExecGoScriptCompile(ctx, le, gocompiler.GoScriptCompileOptions{
+			WorkDir: root, OutputPath: compiled,
+			Packages:   []string{"./core/sync/node"},
+			BuildFlags: []string{"-tags=goscript,skip_e2e,purego"},
+			Env:        env, BindingRoots: bindings, OverrideDirs: overrides,
+			AllDependencies: true, ProtobufTypeScriptBinding: true,
+		}); err != nil {
+			return err
+		}
+	}
+	result, err := rolldown.Build(ctx, le, working, filepath.Join(root, "bldr"), &rolldown.BuildRequest{
+		WorkingDir: working, SourceRoot: root, OutputRoot: output,
+		BldrDistRoot: filepath.Join(root, "bldr"),
+		Format:       "es", Platform: "node", Target: "es2024",
+		EntryFileNames: "[name].mjs", ChunkFileNames: "chunks/[name]-[hash].mjs",
+		AssetFileNames: "assets/[name]-[hash][extname]",
+		CodeSplitting:  true, Sourcemap: "none", TreeShaking: true,
+		Entrypoints: []*rolldown.Entrypoint{
+			{Name: "engine-worker", InputPath: filepath.Join(root, "core/sync/node/worker.ts")},
+			{Name: "server", InputPath: filepath.Join(root, "packages/spacewave/server.ts")},
+		},
+		Goscript: &rolldown.GoScriptPolicy{OutputRoot: compiled},
+	})
+	if err != nil {
+		return err
+	}
+	report, err := result.MarshalJSON()
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(working, "build-report.json"), report, 0o644)
+}

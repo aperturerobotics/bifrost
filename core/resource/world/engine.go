@@ -79,6 +79,12 @@ func (r *EngineResource) GetEngine() world.Engine {
 	return r.engine
 }
 
+// Close releases typed object handles owned by this resource mount.
+// It leaves the supplied engine and its storage running.
+func (r *EngineResource) Close() {
+	r.typedResource.Close()
+}
+
 // GetEngineInfo returns information about the world engine.
 func (r *EngineResource) GetEngineInfo(ctx context.Context, req *s4wave_world.GetEngineInfoRequest) (*s4wave_world.GetEngineInfoResponse, error) {
 	return &s4wave_world.GetEngineInfoResponse{EngineInfo: r.engineInfo}, nil
