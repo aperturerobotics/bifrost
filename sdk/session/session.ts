@@ -41,6 +41,7 @@ import {
   WatchTransferProgressResponse,
 } from './session.pb.js'
 import { SessionLockMode, SessionRef } from '../../core/session/session.pb.js'
+import type { AccountOutcome } from '../../core/pairing/pairing.pb.js'
 import type {
   SOInviteMessage,
   SOParticipantRole,
@@ -197,10 +198,22 @@ export class Session extends Resource {
   // completePairing resolves a pairing code to link a remote session.
   public async completePairing(
     code: string,
+    offerCurrentAccount = false,
     abortSignal?: AbortSignal,
   ): Promise<string> {
-    const resp = await this.service.CompletePairing({ code }, abortSignal)
+    const resp = await this.service.CompletePairing(
+      { code, offerCurrentAccount },
+      abortSignal,
+    )
     return resp.remotePeerId ?? ''
+  }
+
+  // selectPairingAccount fixes the proposed account relationship before approval.
+  public async selectPairingAccount(
+    outcome: AccountOutcome,
+    abortSignal?: AbortSignal,
+  ): Promise<void> {
+    await this.service.SelectPairingAccount({ outcome }, abortSignal)
   }
 
   // getSASEmoji derives the SAS emoji verification sequence for a remote peer.
@@ -417,10 +430,11 @@ export class Session extends Resource {
   // acceptLocalPairingOffer accepts a remote offer and returns an answer.
   public async acceptLocalPairingOffer(
     offerPayload: string,
+    offerCurrentAccount = false,
     abortSignal?: AbortSignal,
   ): Promise<AcceptLocalPairingOfferResponse> {
     return await this.service.AcceptLocalPairingOffer(
-      { offerPayload },
+      { offerPayload, offerCurrentAccount },
       abortSignal,
     )
   }

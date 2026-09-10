@@ -433,8 +433,6 @@ func (t *sobjectTracker) executeSharedObjectTracker(rctx context.Context) (rerr 
 			state.GetRoot().GetInnerSeqno(),
 		)
 	}
-	host.soHost.SetContext(ctx)
-
 	so := &SharedObject{
 		tkr:      t,
 		blkStore: blkStore,
@@ -442,40 +440,21 @@ func (t *sobjectTracker) executeSharedObjectTracker(rctx context.Context) (rerr 
 		privKey:  sessionPriv,
 		localPid: sessionPeerID,
 	}
-	if err := t.tryRecoverMissingSharedObjectPeer(
-		ctx,
-		sobjectRef,
-		so,
-		sessionCli,
-	); err != nil {
-		if isTerminalSharedObjectMountError(err) {
-			return t.holdTerminalMountError(ctx, err)
-		}
-		return err
-	}
-
-	if err := host.ensureInitialState(ctx, SeedReasonColdSeed); err != nil {
-		if ctx.Err() != nil {
-			return context.Canceled
-		}
-		if isTerminalSharedObjectMountError(err) {
-			return t.holdTerminalMountError(
-				ctx,
-				errors.Wrap(err, "initial state pull"),
-			)
-		}
-		return errors.Wrap(err, "initial state pull")
-	}
-	t.setHealth(
-		sobject.NewSharedObjectReadyHealth(
-			sobject.SharedObjectHealthLayer_SHARED_OBJECT_HEALTH_LAYER_SHARED_OBJECT,
-		),
-	)
-	t.sobjectProm.SetResult(so, nil)
 	defer t.sobjectProm.SetPromise(nil)
-
-	// Execute the cloud host logic, blocks until cancelled.
-	return host.Execute(ctx)
+	err = host.execute(ctx, func(ctx context.Context) error {
+		if err := t.tryRecoverMissingSharedObjectPeer(ctx, sobjectRef, so, sessionCli); err != nil {
+			return err
+		}
+		t.setHealth(sobject.NewSharedObjectReadyHealth(
+			sobject.SharedObjectHealthLayer_SHARED_OBJECT_HEALTH_LAYER_SHARED_OBJECT,
+		))
+		t.sobjectProm.SetResult(so, nil)
+		return nil
+	})
+	if isTerminalSharedObjectMountError(err) {
+		return t.holdTerminalMountError(ctx, err)
+	}
+	return err
 }
 
 // holdTerminalMountError delivers a terminal mount error to waiters while
@@ -559,7 +538,11 @@ func (a *ProviderAccount) CreateSharedObject(ctx context.Context, id string, met
 	displayName := getSharedObjectDisplayName(meta)
 	objectType := meta.GetBodyType()
 
-	if err := a.sessionClient.CreateSharedObject(
+	cli, sessionPriv, _, err := a.getReadySessionClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := cli.CreateSharedObject(
 		ctx,
 		id,
 		displayName,
@@ -571,13 +554,27 @@ func (a *ProviderAccount) CreateSharedObject(ctx context.Context, id string, met
 		return nil, err
 	}
 
-	// Perform client-side crypto initialization.
-	_, sessionPriv, _, err := a.getReadySessionClient(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "session private key not available for crypto init")
-	}
-	if err := a.initCloudSharedObjectState(ctx, id, sessionPriv, objectType == space.SpaceBodyType); err != nil {
+	// Initialize the object with the same authorized Session that created it.
+	if err := initializeCloudSharedObjectState(ctx, cli, a.le.WithField("sobject-id", id), a.accountID, id, sessionPriv, a.sfs, objectType == space.SpaceBodyType); err != nil {
 		return nil, errors.Wrap(err, "init shared object state")
+	}
+	ref := a.buildSharedObjectRef(id)
+
+	// Creation enters the cloud catalog before its root is initialized. An
+	// enrollment sweep can mount that empty state while the Session WebSocket
+	// is still connecting, so publish the completed write to that existing host.
+	if _, mounted := a.sobjects.GetKey(id); mounted {
+		object, release, err := a.MountSharedObject(ctx, ref, nil)
+		if err != nil {
+			return nil, err
+		}
+		defer release()
+		host := object.(*SharedObject).host
+		if host.stateCtr.GetValue().GetRoot() == nil {
+			if err := host.pullState(ctx, SeedReasonMutation); err != nil {
+				return nil, errors.Wrap(err, "publish initialized shared object")
+			}
+		}
 	}
 
 	// Register GC hierarchy: gcroot -> sw-provider -> bucket
@@ -596,7 +593,6 @@ func (a *ProviderAccount) CreateSharedObject(ctx context.Context, id string, met
 		}
 	}
 
-	ref := a.buildSharedObjectRef(id)
 	a.SetSharedObjectMetadata(id, &api.SpaceMetadataResponse{
 		OwnerType:   ownerType,
 		OwnerId:     ownerID,
@@ -760,27 +756,14 @@ func getSharedObjectDisplayName(meta *sobject.SharedObjectMeta) string {
 	return spaceMeta.GetName()
 }
 
-// initCloudSharedObjectState performs the client-side crypto initialization
-// for a newly created shared object. Generates a random XChaCha20 key, builds
-// the initial root, signs it, creates grants, and POSTs the state to the server.
-func (a *ProviderAccount) initCloudSharedObjectState(ctx context.Context, sharedObjectID string, localPriv crypto.PrivKey, seedWorldHead bool) error {
-	le := a.le.WithField("sobject-id", sharedObjectID)
-	return initializeCloudSharedObjectState(
-		ctx,
-		a.sessionClient,
-		le,
-		a.accountID,
-		sharedObjectID,
-		localPriv,
-		a.sfs,
-		seedWorldHead,
-	)
-}
-
 // DeleteSharedObject deletes the shared object with the given ID.
 func (a *ProviderAccount) DeleteSharedObject(ctx context.Context, id string) error {
 	le := a.le.WithField("sobject-id", id)
-	data, err := a.sessionClient.doDelete(ctx, path.Join("/api/sobject", id, "delete"), SeedReasonMutation)
+	cli, _, _, err := a.getReadySessionClient(ctx)
+	if err != nil {
+		return err
+	}
+	data, err := cli.doDelete(ctx, path.Join("/api/sobject", id, "delete"), SeedReasonMutation)
 	if err != nil {
 		return errors.Wrap(err, "delete shared object")
 	}
@@ -868,7 +851,11 @@ func (a *ProviderAccount) HasCachedSharedObject(soID string) bool {
 
 // fetchSharedObjectList fetches the shared object list from the server and updates the persistent container.
 func (a *ProviderAccount) fetchSharedObjectList(ctx context.Context) error {
-	listData, err := a.sessionClient.ListSharedObjects(ctx)
+	cli := a.currentSessionClient()
+	if cli == nil {
+		return errors.New("Session is not available to list shared objects")
+	}
+	listData, err := cli.ListSharedObjects(ctx)
 	if err != nil {
 		return err
 	}

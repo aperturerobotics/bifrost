@@ -14,6 +14,7 @@ import (
 	protobuf_go_lite "github.com/aperturerobotics/protobuf-go-lite"
 	json "github.com/aperturerobotics/protobuf-go-lite/json"
 	timestamppb "github.com/aperturerobotics/protobuf-go-lite/types/known/timestamppb"
+	provider "github.com/s4wave/spacewave/core/provider"
 	session "github.com/s4wave/spacewave/core/session"
 	handoff "github.com/s4wave/spacewave/core/session/handoff"
 	sobject "github.com/s4wave/spacewave/core/sobject"
@@ -621,6 +622,92 @@ func (*ListAccountSessionsResponse) ProtoMessage() {}
 func (x *ListAccountSessionsResponse) GetSessions() []*AccountSessionInfo {
 	if x != nil {
 		return x.Sessions
+	}
+	return nil
+}
+
+// AccountMigrationRequest authorizes source Sessions under the destination account.
+// The ordinary Session-registration endpoint continues to reject cross-account peers.
+type AccountMigrationRequest struct {
+	unknownFields []byte
+	// Transition fixes the complete account and Session relationship.
+	Transition *provider.AccountTransition `protobuf:"bytes,1,opt,name=transition,proto3" json:"transition,omitempty"`
+	// SourcePeerId identifies the source USER Session authorizing the move.
+	SourcePeerId string `protobuf:"bytes,2,opt,name=source_peer_id,json=sourcePeerId,proto3" json:"sourcePeerId,omitempty"`
+	// SourceSignature signs the migration domain followed by the binary Transition.
+	SourceSignature []byte `protobuf:"bytes,3,opt,name=source_signature,json=sourceSignature,proto3" json:"sourceSignature,omitempty"`
+	// CheckOnly performs permission and capacity preflight without mutation.
+	CheckOnly bool `protobuf:"varint,4,opt,name=check_only,json=checkOnly,proto3" json:"checkOnly,omitempty"`
+}
+
+func (x *AccountMigrationRequest) Reset() {
+	*x = AccountMigrationRequest{}
+}
+
+func (*AccountMigrationRequest) ProtoMessage() {}
+
+func (x *AccountMigrationRequest) GetTransition() *provider.AccountTransition {
+	if x != nil {
+		return x.Transition
+	}
+	return nil
+}
+
+func (x *AccountMigrationRequest) GetSourcePeerId() string {
+	if x != nil {
+		return x.SourcePeerId
+	}
+	return ""
+}
+
+func (x *AccountMigrationRequest) GetSourceSignature() []byte {
+	if x != nil {
+		return x.SourceSignature
+	}
+	return nil
+}
+
+func (x *AccountMigrationRequest) GetCheckOnly() bool {
+	if x != nil {
+		return x.CheckOnly
+	}
+	return false
+}
+
+// AccountDepartureRequest retains an authenticated redirect from cloud to local storage.
+type AccountDepartureRequest struct {
+	unknownFields []byte
+	// Transition is the destination's durable resource and Session acceptance.
+	Transition *provider.AccountTransition `protobuf:"bytes,1,opt,name=transition,proto3" json:"transition,omitempty"`
+	// DestinationPeerId identifies the independent receiving account Session.
+	DestinationPeerId string `protobuf:"bytes,2,opt,name=destination_peer_id,json=destinationPeerId,proto3" json:"destinationPeerId,omitempty"`
+	// DestinationSignature signs the same migration domain and binary Transition.
+	DestinationSignature []byte `protobuf:"bytes,3,opt,name=destination_signature,json=destinationSignature,proto3" json:"destinationSignature,omitempty"`
+}
+
+func (x *AccountDepartureRequest) Reset() {
+	*x = AccountDepartureRequest{}
+}
+
+func (*AccountDepartureRequest) ProtoMessage() {}
+
+func (x *AccountDepartureRequest) GetTransition() *provider.AccountTransition {
+	if x != nil {
+		return x.Transition
+	}
+	return nil
+}
+
+func (x *AccountDepartureRequest) GetDestinationPeerId() string {
+	if x != nil {
+		return x.DestinationPeerId
+	}
+	return ""
+}
+
+func (x *AccountDepartureRequest) GetDestinationSignature() []byte {
+	if x != nil {
+		return x.DestinationSignature
 	}
 	return nil
 }
@@ -5057,6 +5144,8 @@ type AccountInfoResponse struct {
 	DeletedAt int64 `protobuf:"varint,12,opt,name=deleted_at,json=deletedAt,proto3" json:"deletedAt,omitempty"`
 	// EntityUuid is the stable entity generation for this account.
 	EntityUuid string `protobuf:"bytes,13,opt,name=entity_uuid,json=entityUuid,proto3" json:"entityUuid,omitempty"`
+	// Transition identifies the most recent provider-authorized move of this Session.
+	Transition *provider.AccountTransition `protobuf:"bytes,14,opt,name=transition,proto3" json:"transition,omitempty"`
 }
 
 func (x *AccountInfoResponse) Reset() {
@@ -5154,6 +5243,13 @@ func (x *AccountInfoResponse) GetEntityUuid() string {
 		return x.EntityUuid
 	}
 	return ""
+}
+
+func (x *AccountInfoResponse) GetTransition() *provider.AccountTransition {
+	if x != nil {
+		return x.Transition
+	}
+	return nil
 }
 
 // ListKeypairsResponse is the response body for GET /account/keypairs.
@@ -5409,6 +5505,10 @@ type AccountStateResponse struct {
 	LifecycleUpdatedAt int64 `protobuf:"varint,15,opt,name=lifecycle_updated_at,json=lifecycleUpdatedAt,proto3" json:"lifecycleUpdatedAt,omitempty"`
 	// DeletedAt is when the account became logically deleted (ms), if any.
 	DeletedAt int64 `protobuf:"varint,16,opt,name=deleted_at,json=deletedAt,proto3" json:"deletedAt,omitempty"`
+	// Transition redirects this Session before mounting another account's metadata.
+	Transition *provider.AccountTransition `protobuf:"bytes,17,opt,name=transition,proto3" json:"transition,omitempty"`
+	// AcceptedMigrations retain source redirects that destination replicas deliver.
+	AcceptedMigrations []*provider.AccountTransition `protobuf:"bytes,18,rep,name=accepted_migrations,json=acceptedMigrations,proto3" json:"acceptedMigrations,omitempty"`
 }
 
 func (x *AccountStateResponse) Reset() {
@@ -5527,6 +5627,20 @@ func (x *AccountStateResponse) GetDeletedAt() int64 {
 		return x.DeletedAt
 	}
 	return 0
+}
+
+func (x *AccountStateResponse) GetTransition() *provider.AccountTransition {
+	if x != nil {
+		return x.Transition
+	}
+	return nil
+}
+
+func (x *AccountStateResponse) GetAcceptedMigrations() []*provider.AccountTransition {
+	if x != nil {
+		return x.AcceptedMigrations
+	}
+	return nil
 }
 
 // AccountStateCache is the local cache of account state for ObjectStore persistence.
@@ -10363,6 +10477,10 @@ type CreateWithStateRequest struct {
 	ConfigState []byte `protobuf:"bytes,6,opt,name=config_state,json=configState,proto3" json:"configState,omitempty"`
 	// RootState is the signed initial root state payload.
 	RootState []byte `protobuf:"bytes,7,opt,name=root_state,json=rootState,proto3" json:"rootState,omitempty"`
+	// ConfigHistory imports the complete signed chain and retained key epochs.
+	// When present, ConfigState is its final checkpoint and RootState may be later
+	// than the first root. The authenticated account must own that checkpoint.
+	ConfigHistory []byte `protobuf:"bytes,8,opt,name=config_history,json=configHistory,proto3" json:"configHistory,omitempty"`
 }
 
 func (x *CreateWithStateRequest) Reset() {
@@ -10416,6 +10534,13 @@ func (x *CreateWithStateRequest) GetConfigState() []byte {
 func (x *CreateWithStateRequest) GetRootState() []byte {
 	if x != nil {
 		return x.RootState
+	}
+	return nil
+}
+
+func (x *CreateWithStateRequest) GetConfigHistory() []byte {
+	if x != nil {
+		return x.ConfigHistory
 	}
 	return nil
 }
@@ -10550,6 +10675,43 @@ func (m *ListAccountSessionsResponse) CloneVT() *ListAccountSessionsResponse {
 }
 
 func (m *ListAccountSessionsResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *AccountMigrationRequest) CloneVT() *AccountMigrationRequest {
+	if m == nil {
+		return (*AccountMigrationRequest)(nil)
+	}
+	r := new(AccountMigrationRequest)
+	r.SourcePeerId = m.SourcePeerId
+	r.CheckOnly = m.CheckOnly
+	r.Transition = protobuf_go_lite.CloneVTValue(m.Transition)
+	r.SourceSignature = protobuf_go_lite.CloneBytes(m.SourceSignature)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *AccountMigrationRequest) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *AccountDepartureRequest) CloneVT() *AccountDepartureRequest {
+	if m == nil {
+		return (*AccountDepartureRequest)(nil)
+	}
+	r := new(AccountDepartureRequest)
+	r.DestinationPeerId = m.DestinationPeerId
+	r.Transition = protobuf_go_lite.CloneVTValue(m.Transition)
+	r.DestinationSignature = protobuf_go_lite.CloneBytes(m.DestinationSignature)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *AccountDepartureRequest) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
@@ -12773,6 +12935,7 @@ func (m *AccountInfoResponse) CloneVT() *AccountInfoResponse {
 	r.LifecycleUpdatedAt = m.LifecycleUpdatedAt
 	r.DeletedAt = m.DeletedAt
 	r.EntityUuid = m.EntityUuid
+	r.Transition = protobuf_go_lite.CloneVTValue(m.Transition)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -12924,6 +13087,8 @@ func (m *AccountStateResponse) CloneVT() *AccountStateResponse {
 	r.Keypairs = protobuf_go_lite.CloneVTSlice(m.Keypairs)
 	r.AccountSobjectBindings = protobuf_go_lite.CloneVTSlice(m.AccountSobjectBindings)
 	r.AuthMethods = protobuf_go_lite.CloneVTSlice(m.AuthMethods)
+	r.Transition = protobuf_go_lite.CloneVTValue(m.Transition)
+	r.AcceptedMigrations = protobuf_go_lite.CloneVTSlice(m.AcceptedMigrations)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -15630,6 +15795,7 @@ func (m *CreateWithStateRequest) CloneVT() *CreateWithStateRequest {
 	r.AccountPrivate = m.AccountPrivate
 	r.ConfigState = protobuf_go_lite.CloneBytes(m.ConfigState)
 	r.RootState = protobuf_go_lite.CloneBytes(m.RootState)
+	r.ConfigHistory = protobuf_go_lite.CloneBytes(m.ConfigHistory)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -15837,6 +16003,61 @@ func (this *ListAccountSessionsResponse) EqualVT(that *ListAccountSessionsRespon
 
 func (this *ListAccountSessionsResponse) EqualMessageVT(thatMsg any) bool {
 	that, ok := thatMsg.(*ListAccountSessionsResponse)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *AccountMigrationRequest) EqualVT(that *AccountMigrationRequest) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.Transition, that.Transition) {
+		return false
+	}
+	if this.SourcePeerId != that.SourcePeerId {
+		return false
+	}
+	if !protobuf_go_lite.EqualBytes(this.SourceSignature, that.SourceSignature) {
+		return false
+	}
+	if this.CheckOnly != that.CheckOnly {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *AccountMigrationRequest) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*AccountMigrationRequest)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *AccountDepartureRequest) EqualVT(that *AccountDepartureRequest) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.Transition, that.Transition) {
+		return false
+	}
+	if this.DestinationPeerId != that.DestinationPeerId {
+		return false
+	}
+	if !protobuf_go_lite.EqualBytes(this.DestinationSignature, that.DestinationSignature) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *AccountDepartureRequest) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*AccountDepartureRequest)
 	if !ok {
 		return false
 	}
@@ -19013,6 +19234,9 @@ func (this *AccountInfoResponse) EqualVT(that *AccountInfoResponse) bool {
 	if this.EntityUuid != that.EntityUuid {
 		return false
 	}
+	if !protobuf_go_lite.IsEqualVT(this.Transition, that.Transition) {
+		return false
+	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
@@ -19240,6 +19464,12 @@ func (this *AccountStateResponse) EqualVT(that *AccountStateResponse) bool {
 		return false
 	}
 	if this.DeletedAt != that.DeletedAt {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.Transition, that.Transition) {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.AcceptedMigrations, that.AcceptedMigrations, func() *provider.AccountTransition { return &provider.AccountTransition{} }) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -22991,6 +23221,9 @@ func (this *CreateWithStateRequest) EqualVT(that *CreateWithStateRequest) bool {
 	if !protobuf_go_lite.EqualBytes(this.RootState, that.RootState) {
 		return false
 	}
+	if !protobuf_go_lite.EqualBytes(this.ConfigHistory, that.ConfigHistory) {
+		return false
+	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
@@ -23707,6 +23940,138 @@ func (x *ListAccountSessionsResponse) UnmarshalProtoJSON(s *json.UnmarshalState)
 
 // UnmarshalJSON unmarshals the ListAccountSessionsResponse from JSON.
 func (x *ListAccountSessionsResponse) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the AccountMigrationRequest message to JSON.
+func (x *AccountMigrationRequest) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Transition != nil || s.HasField("transition") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("transition")
+		x.Transition.MarshalProtoJSON(s.WithField("transition"))
+	}
+	if x.SourcePeerId != "" || s.HasField("sourcePeerId") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("sourcePeerId")
+		s.WriteString(x.SourcePeerId)
+	}
+	if len(x.SourceSignature) > 0 || s.HasField("sourceSignature") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("sourceSignature")
+		s.WriteBytes(x.SourceSignature)
+	}
+	if x.CheckOnly || s.HasField("checkOnly") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("checkOnly")
+		s.WriteBool(x.CheckOnly)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the AccountMigrationRequest to JSON.
+func (x *AccountMigrationRequest) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the AccountMigrationRequest message from JSON.
+func (x *AccountMigrationRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "transition":
+			if s.ReadNil() {
+				x.Transition = nil
+				return
+			}
+			x.Transition = &provider.AccountTransition{}
+			x.Transition.UnmarshalProtoJSON(s.WithField("transition", true))
+		case "source_peer_id", "sourcePeerId":
+			s.AddField("source_peer_id")
+			x.SourcePeerId = s.ReadString()
+		case "source_signature", "sourceSignature":
+			s.AddField("source_signature")
+			x.SourceSignature = s.ReadBytes()
+		case "check_only", "checkOnly":
+			s.AddField("check_only")
+			x.CheckOnly = s.ReadBool()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the AccountMigrationRequest from JSON.
+func (x *AccountMigrationRequest) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the AccountDepartureRequest message to JSON.
+func (x *AccountDepartureRequest) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Transition != nil || s.HasField("transition") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("transition")
+		x.Transition.MarshalProtoJSON(s.WithField("transition"))
+	}
+	if x.DestinationPeerId != "" || s.HasField("destinationPeerId") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("destinationPeerId")
+		s.WriteString(x.DestinationPeerId)
+	}
+	if len(x.DestinationSignature) > 0 || s.HasField("destinationSignature") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("destinationSignature")
+		s.WriteBytes(x.DestinationSignature)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the AccountDepartureRequest to JSON.
+func (x *AccountDepartureRequest) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the AccountDepartureRequest message from JSON.
+func (x *AccountDepartureRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "transition":
+			if s.ReadNil() {
+				x.Transition = nil
+				return
+			}
+			x.Transition = &provider.AccountTransition{}
+			x.Transition.UnmarshalProtoJSON(s.WithField("transition", true))
+		case "destination_peer_id", "destinationPeerId":
+			s.AddField("destination_peer_id")
+			x.DestinationPeerId = s.ReadString()
+		case "destination_signature", "destinationSignature":
+			s.AddField("destination_signature")
+			x.DestinationSignature = s.ReadBytes()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the AccountDepartureRequest from JSON.
+func (x *AccountDepartureRequest) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -30633,6 +30998,11 @@ func (x *AccountInfoResponse) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("entityUuid")
 		s.WriteString(x.EntityUuid)
 	}
+	if x.Transition != nil || s.HasField("transition") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("transition")
+		x.Transition.MarshalProtoJSON(s.WithField("transition"))
+	}
 	s.WriteObjectEnd()
 }
 
@@ -30689,6 +31059,13 @@ func (x *AccountInfoResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "entity_uuid", "entityUuid":
 			s.AddField("entity_uuid")
 			x.EntityUuid = s.ReadString()
+		case "transition":
+			if s.ReadNil() {
+				x.Transition = nil
+				return
+			}
+			x.Transition = &provider.AccountTransition{}
+			x.Transition.UnmarshalProtoJSON(s.WithField("transition", true))
 		}
 	})
 }
@@ -31195,6 +31572,22 @@ func (x *AccountStateResponse) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("deletedAt")
 		s.WriteInt64(x.DeletedAt)
 	}
+	if x.Transition != nil || s.HasField("transition") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("transition")
+		x.Transition.MarshalProtoJSON(s.WithField("transition"))
+	}
+	if len(x.AcceptedMigrations) > 0 || s.HasField("acceptedMigrations") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("acceptedMigrations")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.AcceptedMigrations {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s.WithField("acceptedMigrations"))
+		}
+		s.WriteArrayEnd()
+	}
 	s.WriteObjectEnd()
 }
 
@@ -31305,6 +31698,31 @@ func (x *AccountStateResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "deleted_at", "deletedAt":
 			s.AddField("deleted_at")
 			x.DeletedAt = s.ReadInt64()
+		case "transition":
+			if s.ReadNil() {
+				x.Transition = nil
+				return
+			}
+			x.Transition = &provider.AccountTransition{}
+			x.Transition.UnmarshalProtoJSON(s.WithField("transition", true))
+		case "accepted_migrations", "acceptedMigrations":
+			s.AddField("accepted_migrations")
+			if s.ReadNil() {
+				x.AcceptedMigrations = nil
+				return
+			}
+			s.ReadArray(func() {
+				if s.ReadNil() {
+					x.AcceptedMigrations = append(x.AcceptedMigrations, nil)
+					return
+				}
+				v := &provider.AccountTransition{}
+				v.UnmarshalProtoJSON(s.WithField("accepted_migrations", false))
+				if s.Err() != nil {
+					return
+				}
+				x.AcceptedMigrations = append(x.AcceptedMigrations, v)
+			})
 		}
 	})
 }
@@ -39293,6 +39711,11 @@ func (x *CreateWithStateRequest) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("rootState")
 		s.WriteBytes(x.RootState)
 	}
+	if len(x.ConfigHistory) > 0 || s.HasField("configHistory") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("configHistory")
+		s.WriteBytes(x.ConfigHistory)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -39331,6 +39754,9 @@ func (x *CreateWithStateRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "root_state", "rootState":
 			s.AddField("root_state")
 			x.RootState = s.ReadBytes()
+		case "config_history", "configHistory":
+			s.AddField("config_history")
+			x.ConfigHistory = s.ReadBytes()
 		}
 	})
 }
@@ -39719,6 +40145,115 @@ func (m *ListAccountSessionsResponse) MarshalToSizedBufferVT(dAtA []byte) (int, 
 			i--
 			dAtA[i] = 0xa
 		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *AccountMigrationRequest) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *AccountMigrationRequest) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *AccountMigrationRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.CheckOnly {
+		i = protobuf_go_lite.EncodeBool(dAtA, i, m.CheckOnly)
+		i--
+		dAtA[i] = 0x20
+	}
+	if len(m.SourceSignature) > 0 {
+		i = protobuf_go_lite.EncodeBytes(dAtA, i, m.SourceSignature)
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.SourcePeerId) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.SourcePeerId)
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.Transition != nil {
+		size, err := m.Transition.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *AccountDepartureRequest) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *AccountDepartureRequest) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *AccountDepartureRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.DestinationSignature) > 0 {
+		i = protobuf_go_lite.EncodeBytes(dAtA, i, m.DestinationSignature)
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.DestinationPeerId) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.DestinationPeerId)
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.Transition != nil {
+		size, err := m.Transition.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
@@ -45511,6 +46046,16 @@ func (m *AccountInfoResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.Transition != nil {
+		size, err := m.Transition.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x72
+	}
 	if len(m.EntityUuid) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.EntityUuid)
 		i--
@@ -45928,6 +46473,32 @@ func (m *AccountStateResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) 
 	_ = l
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.AcceptedMigrations) > 0 {
+		for iNdEx := len(m.AcceptedMigrations) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.AcceptedMigrations[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0x1
+			i--
+			dAtA[i] = 0x92
+		}
+	}
+	if m.Transition != nil {
+		size, err := m.Transition.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x1
+		i--
+		dAtA[i] = 0x8a
 	}
 	if m.DeletedAt != 0 {
 		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.DeletedAt))
@@ -52860,6 +53431,11 @@ func (m *CreateWithStateRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if len(m.ConfigHistory) > 0 {
+		i = protobuf_go_lite.EncodeBytes(dAtA, i, m.ConfigHistory)
+		i--
+		dAtA[i] = 0x42
+	}
 	if len(m.RootState) > 0 {
 		i = protobuf_go_lite.EncodeBytes(dAtA, i, m.RootState)
 		i--
@@ -53001,6 +53577,39 @@ func (m *ListAccountSessionsResponse) SizeVT() (n int) {
 		l = e.SizeVT()
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *AccountMigrationRequest) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Transition != nil {
+		l = m.Transition.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.SourcePeerId)
+	n += protobuf_go_lite.SizeBytesNonEmpty(1, m.SourceSignature)
+	n += protobuf_go_lite.SizeBoolNonZero(1, m.CheckOnly)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *AccountDepartureRequest) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Transition != nil {
+		l = m.Transition.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.DestinationPeerId)
+	n += protobuf_go_lite.SizeBytesNonEmpty(1, m.DestinationSignature)
 	n += len(m.unknownFields)
 	return n
 }
@@ -54784,6 +55393,10 @@ func (m *AccountInfoResponse) SizeVT() (n int) {
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.LifecycleUpdatedAt)
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.DeletedAt)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.EntityUuid)
+	if m.Transition != nil {
+		l = m.Transition.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -54916,6 +55529,14 @@ func (m *AccountStateResponse) SizeVT() (n int) {
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.DeleteAt)
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.LifecycleUpdatedAt)
 	n += protobuf_go_lite.SizeVarintNonZero(2, m.DeletedAt)
+	if m.Transition != nil {
+		l = m.Transition.SizeVT()
+		n += protobuf_go_lite.SizeMessage(2, l)
+	}
+	for _, e := range m.AcceptedMigrations {
+		l = e.SizeVT()
+		n += protobuf_go_lite.SizeMessage(2, l)
+	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -57077,6 +57698,7 @@ func (m *CreateWithStateRequest) SizeVT() (n int) {
 	n += protobuf_go_lite.SizeBoolNonZero(1, m.AccountPrivate)
 	n += protobuf_go_lite.SizeBytesNonEmpty(1, m.ConfigState)
 	n += protobuf_go_lite.SizeBytesNonEmpty(1, m.RootState)
+	n += protobuf_go_lite.SizeBytesNonEmpty(1, m.ConfigHistory)
 	n += len(m.unknownFields)
 	return n
 }
@@ -57296,6 +57918,54 @@ func (x *ListAccountSessionsResponse) MarshalProtoText() string {
 }
 
 func (x *ListAccountSessionsResponse) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *AccountMigrationRequest) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "AccountMigrationRequest")
+	if x.Transition != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "transition")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Transition)
+	}
+	if x.SourcePeerId != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "source_peer_id")
+		protobuf_go_lite.TextWriteString(&sb, x.SourcePeerId)
+	}
+	if len(x.SourceSignature) != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "source_signature")
+		protobuf_go_lite.TextWriteBytes(&sb, x.SourceSignature)
+	}
+	if x.CheckOnly != false {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "check_only")
+		protobuf_go_lite.TextWriteBool(&sb, x.CheckOnly)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *AccountMigrationRequest) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *AccountDepartureRequest) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "AccountDepartureRequest")
+	if x.Transition != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "transition")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Transition)
+	}
+	if x.DestinationPeerId != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "destination_peer_id")
+		protobuf_go_lite.TextWriteString(&sb, x.DestinationPeerId)
+	}
+	if len(x.DestinationSignature) != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "destination_signature")
+		protobuf_go_lite.TextWriteBytes(&sb, x.DestinationSignature)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *AccountDepartureRequest) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -59935,6 +60605,10 @@ func (x *AccountInfoResponse) MarshalProtoText() string {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "entity_uuid")
 		protobuf_go_lite.TextWriteString(&sb, x.EntityUuid)
 	}
+	if x.Transition != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "transition")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Transition)
+	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
@@ -60170,6 +60844,22 @@ func (x *AccountStateResponse) MarshalProtoText() string {
 	if x.DeletedAt != 0 {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "deleted_at")
 		protobuf_go_lite.TextWriteInt(&sb, x.DeletedAt)
+	}
+	if x.Transition != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "transition")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Transition)
+	}
+	if len(x.AcceptedMigrations) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "accepted_migrations")
+		for i, v := range x.AcceptedMigrations {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &provider.AccountTransition{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -63157,6 +63847,10 @@ func (x *CreateWithStateRequest) MarshalProtoText() string {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "root_state")
 		protobuf_go_lite.TextWriteBytes(&sb, x.RootState)
 	}
+	if len(x.ConfigHistory) != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "config_history")
+		protobuf_go_lite.TextWriteBytes(&sb, x.ConfigHistory)
+	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
@@ -63729,6 +64423,168 @@ func (m *ListAccountSessionsResponse) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *AccountMigrationRequest) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: AccountMigrationRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: AccountMigrationRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Transition", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Transition == nil {
+				m.Transition = &provider.AccountTransition{}
+			}
+			if err := m.Transition.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SourcePeerId", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.SourcePeerId = v
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SourceSignature", wireType)
+			}
+			m.SourceSignature, iNdEx, err = protobuf_go_lite.DecodeBytesAppend(m.SourceSignature, dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CheckOnly", wireType)
+			}
+			var v bool
+			v, iNdEx, err = protobuf_go_lite.DecodeVarintBool(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.CheckOnly = bool(v)
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *AccountDepartureRequest) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: AccountDepartureRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: AccountDepartureRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Transition", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Transition == nil {
+				m.Transition = &provider.AccountTransition{}
+			}
+			if err := m.Transition.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DestinationPeerId", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.DestinationPeerId = v
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DestinationSignature", wireType)
+			}
+			m.DestinationSignature, iNdEx, err = protobuf_go_lite.DecodeBytesAppend(m.DestinationSignature, dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
@@ -72227,6 +73083,21 @@ func (m *AccountInfoResponse) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.EntityUuid = v
+		case 14:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Transition", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Transition == nil {
+				m.Transition = &provider.AccountTransition{}
+			}
+			if err := m.Transition.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
@@ -72905,6 +73776,34 @@ func (m *AccountStateResponse) UnmarshalVT(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
+		case 17:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Transition", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Transition == nil {
+				m.Transition = &provider.AccountTransition{}
+			}
+			if err := m.Transition.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 18:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AcceptedMigrations", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.AcceptedMigrations = append(m.AcceptedMigrations, &provider.AccountTransition{})
+			if err := m.AcceptedMigrations[len(m.AcceptedMigrations)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
@@ -82675,6 +83574,14 @@ func (m *CreateWithStateRequest) UnmarshalVT(dAtA []byte) error {
 				return fmt.Errorf("proto: wrong wireType = %d for field RootState", wireType)
 			}
 			m.RootState, iNdEx, err = protobuf_go_lite.DecodeBytesAppend(m.RootState, dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 8:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ConfigHistory", wireType)
+			}
+			m.ConfigHistory, iNdEx, err = protobuf_go_lite.DecodeBytesAppend(m.ConfigHistory, dAtA, iNdEx)
 			if err != nil {
 				return err
 			}

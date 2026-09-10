@@ -9,6 +9,7 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { SharedObjectListEntry } from '../../sobject/sobject.pb.js'
 import { EntityKeypair } from '../../session/session.pb.js'
 import { KeybindingOverrideSet } from '../../../sdk/command/command.pb.js'
+import { AccountTransition } from '../../provider/provider.pb.js'
 
 export const protobufPackage = 'account.settings'
 
@@ -238,6 +239,18 @@ export interface AccountSettings {
    * @generated from field: repeated account.settings.AccountCatalogEntry catalog = 7;
    */
   catalog?: AccountCatalogEntry[]
+  /**
+   * Transition redirects returning Sessions after all destination resources are durable.
+   *
+   * @generated from field: provider.AccountTransition transition = 8;
+   */
+  transition?: AccountTransition
+  /**
+   * AcceptedMigrations authorizes returning source Session peers to bind their local storage.
+   *
+   * @generated from field: repeated provider.AccountTransition accepted_migrations = 9;
+   */
+  acceptedMigrations?: AccountTransition[]
 }
 
 export const AccountSettings: MessageType<AccountSettings> =
@@ -284,6 +297,19 @@ export const AccountSettings: MessageType<AccountSettings> =
         name: 'catalog',
         kind: 'message',
         T: () => AccountCatalogEntry,
+        repeated: true,
+      },
+      {
+        no: 8,
+        name: 'transition',
+        kind: 'message',
+        T: () => AccountTransition,
+      },
+      {
+        no: 9,
+        name: 'accepted_migrations',
+        kind: 'message',
+        T: () => AccountTransition,
         repeated: true,
       },
     ] satisfies readonly PartialFieldInfo[],
@@ -527,6 +553,24 @@ export interface AccountSettingsOp {
         value: AccountCatalogEntry
         case: 'upsertCatalogEntry'
       }
+    | {
+        /**
+         * AcceptAccountMigration records provider-approved returning Session authorization.
+         *
+         * @generated from field: provider.AccountTransition accept_account_migration = 11;
+         */
+        value: AccountTransition
+        case: 'acceptAccountMigration'
+      }
+    | {
+        /**
+         * CommitAccountTransition fixes the destination once resources and Sessions are durable.
+         *
+         * @generated from field: provider.AccountTransition commit_account_transition = 12;
+         */
+        value: AccountTransition
+        case: 'commitAccountTransition'
+      }
 }
 
 export const AccountSettingsOp: MessageType<AccountSettingsOp> =
@@ -601,6 +645,20 @@ export const AccountSettingsOp: MessageType<AccountSettingsOp> =
         name: 'upsert_catalog_entry',
         kind: 'message',
         T: () => AccountCatalogEntry,
+        oneof: 'op',
+      },
+      {
+        no: 11,
+        name: 'accept_account_migration',
+        kind: 'message',
+        T: () => AccountTransition,
+        oneof: 'op',
+      },
+      {
+        no: 12,
+        name: 'commit_account_transition',
+        kind: 'message',
+        T: () => AccountTransition,
         oneof: 'op',
       },
     ] satisfies readonly PartialFieldInfo[],

@@ -141,7 +141,11 @@ export function PairCodePage(props: PairCodePageProps) {
         sessionRef.current = session
         setCurrentSession(session)
       }
-      const peerId = await session.completePairing(code, controller.signal)
+      const peerId = await session.completePairing(
+        code,
+        providedSession != null,
+        controller.signal,
+      )
       if (peerId) {
         setRemotePeerId(peerId)
         setStep('verify')
@@ -153,7 +157,7 @@ export function PairCodePage(props: PairCodePageProps) {
     } finally {
       setLoading(false)
     }
-  }, [root, code, registerCleanup])
+  }, [root, code, registerCleanup, providedSession])
 
   const handleBack = useCallback(() => {
     navigate({ path: props.backPath ?? '/' })
@@ -266,6 +270,13 @@ export function PairCodePage(props: PairCodePageProps) {
                   )}
                 </button>
               </div>
+              <button
+                onClick={() => setStep('direct')}
+                disabled={loading}
+                className="text-foreground-alt hover:text-foreground w-full text-center text-xs"
+              >
+                Use a QR code or link
+              </button>
             </div>
           )}
 
@@ -273,6 +284,7 @@ export function PairCodePage(props: PairCodePageProps) {
             <PairDirectStep
               initialOfferPayload={initialOfferPayload}
               session={currentSession}
+              offerCurrentAccount={providedSession != null}
               root={root ?? null}
               registerCleanup={registerCleanup}
               onSessionCreated={(sess) => {
@@ -325,6 +337,7 @@ export function PairCodePage(props: PairCodePageProps) {
 interface PairDirectStepProps {
   initialOfferPayload?: string
   session: Session | null
+  offerCurrentAccount: boolean
   root: Root | null
   registerCleanup: RegisterCleanup
   onSessionCreated: (session: Session) => void
@@ -338,6 +351,7 @@ interface PairDirectStepProps {
 function PairDirectStep({
   initialOfferPayload,
   session,
+  offerCurrentAccount,
   root,
   registerCleanup,
   onSessionCreated,
@@ -383,7 +397,8 @@ function PairDirectStep({
         const controller = new AbortController()
         registerCleanup({ [Symbol.dispose]: () => controller.abort() })
         const resp = await sess.acceptLocalPairingOffer(
-          payload.trim(),
+          extractDirectOfferPayload(payload.trim()),
+          offerCurrentAccount,
           controller.signal,
         )
         setAnswerPayload(resp.answerPayload ?? null)
@@ -393,7 +408,7 @@ function PairDirectStep({
         setLoading(false)
       }
     },
-    [ensureSession, registerCleanup],
+    [ensureSession, registerCleanup, offerCurrentAccount],
   )
 
   // Auto-accept if initial offer payload was provided via URL.

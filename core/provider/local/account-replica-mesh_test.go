@@ -158,7 +158,7 @@ func enrollMeshReplica(ctx context.Context, t *testing.T, source *ProviderAccoun
 	if err := replica.bindPairingSettings(ctx, offer); err != nil {
 		t.Fatal(err)
 	}
-	if err := source.registerPairingReplicas(ctx, &pairingEnrollment{offer: offer, identity: identity, source: sourceSession.GetPeerId()}); err != nil {
+	if err := source.registerPairingReplicas(ctx, &pairing.Enrollment{Offer: offer, Identity: identity}, sourceSession.GetPeerId(), receivingSession.GetPeerId()); err != nil {
 		t.Fatal(err)
 	}
 	for _, entry := range source.soListCtr.GetValue().GetSharedObjects() {

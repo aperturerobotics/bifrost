@@ -4,6 +4,10 @@ package wasm
 
 import (
 	stderrors "errors"
+	"net/http"
+	"net/http/httptest"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"strings"
 
@@ -80,13 +84,12 @@ func (h *Harness) newBrowserContext(s *TestSession) (playwright.Page, error) {
 		return nil, errors.New("browser not launched")
 	}
 
-	ctx, err := h.browser.NewContext(playwright.BrowserNewContextOptions{
-		AcceptDownloads: new(true),
-	})
+	ctx, baseURL, err := h.newStorageContext()
 	if err != nil {
 		return nil, errors.Wrap(err, "new browser context")
 	}
 	s.browserCtx = ctx
+	s.baseURL = baseURL
 	s.ownsBrowserCtx = true
 
 	page, err := h.newBrowserPage(s)
@@ -108,16 +111,16 @@ func (h *Harness) newRetainedStateBrowserPage(s *TestSession) (playwright.Page, 
 	defer h.retainedStateCtxMu.Unlock()
 
 	if h.retainedStateCtx == nil {
-		ctx, err := h.browser.NewContext(playwright.BrowserNewContextOptions{
-			AcceptDownloads: new(true),
-		})
+		ctx, baseURL, err := h.newStorageContext()
 		if err != nil {
 			return nil, errors.Wrap(err, "new retained-state browser context")
 		}
 		h.retainedStateCtx = ctx
+		h.retainedStateBaseURL = baseURL
 	}
 
 	s.browserCtx = h.retainedStateCtx
+	s.baseURL = h.retainedStateBaseURL
 	s.ownsBrowserCtx = false
 	page, err := h.newBrowserPage(s)
 	if err != nil {
@@ -125,6 +128,72 @@ func (h *Harness) newRetainedStateBrowserPage(s *TestSession) (playwright.Page, 
 		return nil, err
 	}
 	return page, nil
+}
+
+// newStorageContext keeps each fixture isolated while providing real durable
+// storage. WebKit's ephemeral contexts reject OPFS; its macOS persistent
+// profiles share OPFS by origin, so each fixture also owns a loopback origin.
+func (h *Harness) newStorageContext() (playwright.BrowserContext, string, error) {
+	if h.browserName != "webkit" {
+		ctx, err := h.browser.NewContext(playwright.BrowserNewContextOptions{AcceptDownloads: new(true)})
+		return ctx, h.baseURL, err
+	}
+	profile, err := os.MkdirTemp("", "spacewave-e2e-webkit-")
+	if err != nil {
+		return nil, "", err
+	}
+	target, err := url.Parse(h.baseURL)
+	if err != nil {
+		os.RemoveAll(profile)
+		return nil, "", err
+	}
+	proxy := httputil.NewSingleHostReverseProxy(target)
+	origin := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/__e2e_storage_cleanup" {
+			w.Header().Set("Content-Type", "text/html")
+			w.Write([]byte("<!doctype html><title>Fixture cleanup</title>"))
+			return
+		}
+		proxy.ServeHTTP(w, r)
+	}))
+	ctx, err := h.pw.WebKit.LaunchPersistentContext(profile, playwright.BrowserTypeLaunchPersistentContextOptions{
+		Headless: new(h.headless), AcceptDownloads: new(true),
+	})
+	if err != nil {
+		origin.Close()
+		os.RemoveAll(profile)
+		return nil, "", err
+	}
+	ctx.OnClose(func(playwright.BrowserContext) {
+		origin.Close()
+		os.RemoveAll(profile)
+	})
+	return ctx, origin.URL, nil
+}
+
+// closeStorageContext removes only the fixture origin after its workers stop.
+// WebKit's macOS OPFS directory is outside its explicit profile directory.
+func (h *Harness) closeStorageContext(ctx playwright.BrowserContext, baseURL string) {
+	defer ctx.Close()
+	if h.browserName != "webkit" {
+		return
+	}
+	for _, page := range ctx.Pages() {
+		page.Close()
+	}
+	page, err := ctx.NewPage()
+	if err == nil {
+		_, err = page.Goto(baseURL + "/__e2e_storage_cleanup")
+	}
+	if err == nil {
+		_, err = page.Evaluate(`async () => {
+			const root = await navigator.storage.getDirectory()
+			for await (const [name] of root.entries()) await root.removeEntry(name, { recursive: true })
+		}`)
+	}
+	if err != nil {
+		h.le.WithError(err).Warn("remove WebKit fixture storage")
+	}
 }
 
 func (h *Harness) newBrowserPage(s *TestSession) (playwright.Page, error) {
@@ -223,6 +292,9 @@ func (h *Harness) loadAppPageURL(s *TestSession, targetURL string) error {
 	if s.page == nil {
 		return errors.New("session page not initialized")
 	}
+	if s.baseURL != "" && strings.HasPrefix(targetURL, h.baseURL+"/") {
+		targetURL = s.baseURL + strings.TrimPrefix(targetURL, h.baseURL)
+	}
 
 	s.peerAfterSeq = h.getPeerWatcher().LatestSequence()
 
@@ -248,7 +320,7 @@ func (h *Harness) closeRetainedStateContext() {
 	defer h.retainedStateCtxMu.Unlock()
 
 	if h.retainedStateCtx != nil {
-		h.retainedStateCtx.Close()
+		h.closeStorageContext(h.retainedStateCtx, h.retainedStateBaseURL)
 		h.retainedStateCtx = nil
 	}
 }

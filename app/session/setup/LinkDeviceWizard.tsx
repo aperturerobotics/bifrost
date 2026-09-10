@@ -886,6 +886,7 @@ function EnterCodeStep({
     try {
       const remotePeerId = await session.completePairing(
         code.replace(/\s/g, ''),
+        true,
       )
       if (remotePeerId) {
         onRemotePeerResolved(remotePeerId)
@@ -1222,7 +1223,7 @@ function DirectAnswerStep({
       setLoading(true)
       setError(null)
       try {
-        const resp = await session.acceptLocalPairingOffer(payload.trim())
+        const resp = await session.acceptLocalPairingOffer(payload.trim(), true)
         setAnswerPayload(resp.answerPayload ?? null)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to accept offer')

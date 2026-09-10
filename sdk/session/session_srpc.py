@@ -134,6 +134,13 @@ SESSIONRESOURCESERVICE_SERVICE = ServiceDescriptor(
             False,
         ),
         MethodDescriptor(
+            "SelectPairingAccount",
+            _github_com_s4wave_spacewave_sdk_session_session_pb2.SelectPairingAccountRequest,
+            _github_com_s4wave_spacewave_sdk_session_session_pb2.SelectPairingAccountResponse,
+            False,
+            False,
+        ),
+        MethodDescriptor(
             "GetSASEmoji",
             _github_com_s4wave_spacewave_sdk_session_session_pb2.GetSASEmojiRequest,
             _github_com_s4wave_spacewave_sdk_session_session_pb2.GetSASEmojiResponse,
@@ -657,6 +664,27 @@ class SessionResourceServiceClient:
             if data is None:
                 raise CallProtocolError("missing unary response")
             response = _github_com_s4wave_spacewave_sdk_session_session_pb2.CompletePairingResponse()
+            response.ParseFromString(data)
+            if await call.receive() is not None:
+                raise CallProtocolError("extra unary response")
+            return response
+        finally:
+            await call.aclose()
+
+    async def select_pairing_account(
+        self,
+        request: _github_com_s4wave_spacewave_sdk_session_session_pb2.SelectPairingAccountRequest,
+    ) -> _github_com_s4wave_spacewave_sdk_session_session_pb2.SelectPairingAccountResponse:
+        call = await self._client.open_call(
+            self._service,
+            "SelectPairingAccount",
+            request.SerializeToString(deterministic=True),
+        )
+        try:
+            data = await call.receive()
+            if data is None:
+                raise CallProtocolError("missing unary response")
+            response = _github_com_s4wave_spacewave_sdk_session_session_pb2.SelectPairingAccountResponse()
             response.ParseFromString(data)
             if await call.receive() is not None:
                 raise CallProtocolError("extra unary response")
@@ -1262,6 +1290,10 @@ class SessionResourceServiceServer(Protocol):
     ) -> (
         _github_com_s4wave_spacewave_sdk_session_session_pb2.CompletePairingResponse
     ): ...
+    async def select_pairing_account(
+        self,
+        request: _github_com_s4wave_spacewave_sdk_session_session_pb2.SelectPairingAccountRequest,
+    ) -> _github_com_s4wave_spacewave_sdk_session_session_pb2.SelectPairingAccountResponse: ...
     async def get_sas_emoji(
         self,
         request: _github_com_s4wave_spacewave_sdk_session_session_pb2.GetSASEmojiRequest,
@@ -1597,6 +1629,17 @@ def register_session_resource_service(
         await call.send(response.SerializeToString(deterministic=True))
 
     registry.register(service, "CompletePairing", complete_pairing_handler)
+
+    async def select_pairing_account_handler(call: Call) -> None:
+        first = await call.receive()
+        if first is None:
+            raise CallProtocolError("missing initial request")
+        request = _github_com_s4wave_spacewave_sdk_session_session_pb2.SelectPairingAccountRequest()
+        request.ParseFromString(first)
+        response = await implementation.select_pairing_account(request)
+        await call.send(response.SerializeToString(deterministic=True))
+
+    registry.register(service, "SelectPairingAccount", select_pairing_account_handler)
 
     async def get_sas_emoji_handler(call: Call) -> None:
         first = await call.receive()

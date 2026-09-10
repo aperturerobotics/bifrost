@@ -7,6 +7,7 @@ import (
 
 	"github.com/aperturerobotics/util/ulid"
 	"github.com/pkg/errors"
+	account_settings "github.com/s4wave/spacewave/core/account/settings"
 	"github.com/s4wave/spacewave/core/pairing"
 	"github.com/s4wave/spacewave/core/provider"
 	"github.com/s4wave/spacewave/core/session"
@@ -17,16 +18,8 @@ import (
 	stream_packet "github.com/s4wave/spacewave/net/stream/packet"
 )
 
-// pairingEnrollment binds local membership records to the approved identities.
-type pairingEnrollment struct {
-	offer     *pairing.AccountOffer
-	identity  *pairing.Identity
-	source    peer.ID
-	receiving peer.ID
-}
-
 // OfferPairingAccount identifies the canonical local account and its replica signer.
-func (a *ProviderAccount) OfferPairingAccount(ctx context.Context, _ crypto.PrivKey) (*pairing.AccountOffer, error) {
+func (a *ProviderAccount) OfferPairingAccount(ctx context.Context, key crypto.PrivKey) (*pairing.AccountOffer, error) {
 	settings, err := a.GetAccountSettingsRef(ctx)
 	if err != nil {
 		return nil, err
@@ -53,11 +46,31 @@ func (a *ProviderAccount) OfferPairingAccount(ctx context.Context, _ crypto.Priv
 		name = "Local account"
 	}
 	offer := &pairing.AccountOffer{ProviderId: a.GetProviderID(), RevokedSessionPeerIds: nil, AccountId: a.GetAccountID(), SettingsId: settings.GetProviderResourceRef().GetId(), OperationId: ulid.NewULID(), StoragePeerId: storagePeer.GetPeerID().String(), DisplayName: name}
+	current, err := peer.IDFromPrivateKey(key)
+	if err != nil {
+		return nil, err
+	}
+	active := map[string]bool{current.String(): true}
+	for _, presentation := range accountSettings.GetSessionPresentations() {
+		if presentation.GetPeerId() == current.String() {
+			offer.MachineName = presentation.GetLabel()
+		}
+	}
 	for _, member := range accountSettings.GetSessions() {
 		if member.GetRevoked() {
 			offer.RevokedSessionPeerIds = append(offer.RevokedSessionPeerIds, member.GetPeerId())
+		} else {
+			active[member.GetPeerId()] = true
 		}
 	}
+	for _, transition := range accountSettings.GetAcceptedMigrations() {
+		for _, id := range transition.GetSessionPeerIds() {
+			if !accountSettings.FindAccountSession(id).GetRevoked() {
+				active[id] = true
+			}
+		}
+	}
+	offer.SessionCount = uint32(len(active))
 	return offer, nil
 }
 
@@ -126,16 +139,29 @@ func (a *ProviderAccount) storePairingSessionRef(ctx context.Context, ref *sessi
 }
 
 // EnrollPairingReceiver authorizes both receiving keys and transfers checkpoints.
-func (a *ProviderAccount) EnrollPairingReceiver(ctx context.Context, stream *stream_packet.Session, offer *pairing.AccountOffer, identity *pairing.Identity, _ crypto.PrivKey, sourcePeer, receivingPeer peer.ID) error {
+func (a *ProviderAccount) EnrollPairingReceiver(ctx context.Context, stream *stream_packet.Session, enrollment *pairing.Enrollment, _ crypto.PrivKey, sourcePeer, receivingPeer peer.ID) error {
+	offer, identity := enrollment.Offer, enrollment.Identity
+	if err := pairing.ValidateIdentity(offer, identity, sourcePeer, receivingPeer); err != nil {
+		return err
+	}
 	release, err := a.replicaAuth.Lock(ctx)
 	if err != nil {
 		return err
 	}
 	defer release()
-	if err := a.registerPairingReplicas(ctx, &pairingEnrollment{offer: offer, identity: identity, source: sourcePeer, receiving: receivingPeer}); err != nil {
+	if err := a.registerPairingReplicas(ctx, enrollment, sourcePeer, receivingPeer); err != nil {
 		return err
 	}
 	for _, entry := range a.soListCtr.GetValue().GetSharedObjects() {
+		// A merge keeps the authenticated receiving key after its temporary
+		// enrollment retires. Grant it before exporting any checkpoint, so
+		// that handoff never depends on background membership propagation.
+		if enrollment.Choice.Merging() {
+			member := &account_settings.AccountSession{PeerId: receivingPeer.String(), StoragePeerId: identity.GetStorageProof().GetResponderPeerId()}
+			if _, err := a.enrollAccountMemberObject(ctx, entry, member); err != nil {
+				return errors.Wrap(err, "enroll merging Session")
+			}
+		}
 		object, err := a.enrollPairingObject(ctx, entry, identity)
 		if err != nil {
 			return errors.Wrap(err, "enroll SharedObject "+entry.GetRef().GetProviderResourceRef().GetId())

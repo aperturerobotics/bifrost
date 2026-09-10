@@ -122,6 +122,7 @@ func Boot(ctx context.Context, le *logrus.Entry) (_ *Harness, retErr error) {
 	}()
 
 	h.restoreEnv = append(h.restoreEnv,
+		setEnv("BLDR_PLUGIN_WEB_SKIP_ELECTRON", "false"),
 		setEnv("BLDR_ELECTRON_REMOTE_DEBUGGING_PORT", strconv.Itoa(port)),
 		setEnv("BLDR_ELECTRON_E2E_CONTROL_PORT", strconv.Itoa(controlPort)),
 		setEnv("BLDR_PLUGIN_STATE_PATH", filepath.Join(stateRoot, "electron-user-data")),

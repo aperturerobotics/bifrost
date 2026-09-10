@@ -5,12 +5,15 @@ import (
 	"context"
 
 	"github.com/aperturerobotics/controllerbus/bus"
+	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/controller/loader"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
+	"github.com/aperturerobotics/starpc/srpc"
 	"github.com/aperturerobotics/util/broadcast"
 	"github.com/aperturerobotics/util/keyed"
 	"github.com/aperturerobotics/util/routine"
 	"github.com/pkg/errors"
+	provider_migration "github.com/s4wave/spacewave/core/provider/migration"
 	"github.com/s4wave/spacewave/core/sobject"
 	sobject_invite "github.com/s4wave/spacewave/core/sobject/invite"
 	sobject_sync "github.com/s4wave/spacewave/core/sobject/sync"
@@ -19,6 +22,8 @@ import (
 	dex_solicit "github.com/s4wave/spacewave/db/dex/solicit"
 	"github.com/s4wave/spacewave/net/crypto"
 	"github.com/s4wave/spacewave/net/peer"
+	"github.com/s4wave/spacewave/net/protocol"
+	stream_srpc_server "github.com/s4wave/spacewave/net/stream/srpc/server"
 )
 
 // p2pSyncSpaceKey identifies one Space and its current backing block store.
@@ -169,6 +174,20 @@ func (a *ProviderAccount) startP2PSyncForSession(ctx context.Context, sessionID 
 	a.stopP2PSyncForSession(sessionID)
 	syncCtx, cancel := context.WithCancel(ctx)
 	state := &p2pSyncState{cancel: cancel, watcher: newNamedRoutineContainer(a.le, "p2p-space-list")}
+	recoveryServer, err := stream_srpc_server.NewServer(childBus, a.le,
+		controller.NewInfo("alpha/account-migration", Version, "account migration recovery"),
+		[]stream_srpc_server.RegisterFn{func(mux srpc.Mux) error { return provider_migration.SRPCRegisterAccountMigrationService(mux, a) }},
+		[]protocol.ID{provider_migration.RecoveryProtocol}, []string{st.GetPeerID().String()}, false)
+	if err != nil {
+		cancel()
+		return err
+	}
+	releaseRecovery, err := childBus.AddController(syncCtx, recoveryServer, nil)
+	if err != nil {
+		cancel()
+		return err
+	}
+	state.addRelease(releaseRecovery)
 	objects := keyed.NewKeyed(func(key p2pSyncSpaceKey) (keyed.Routine, struct{}) {
 		return func(ctx context.Context) error {
 			if !state.beginRoutine(&key) {
@@ -184,6 +203,14 @@ func (a *ProviderAccount) startP2PSyncForSession(ctx context.Context, sessionID 
 			return nil
 		}
 		defer state.endRoutine(nil)
+		recovery := routine.NewRoutineContainerWithLogger(a.le.WithField("routine", "account-recovery-delivery"), routine.WithRetry(providerBackoff))
+		recovery.SetRoutine(func(ctx context.Context) error { return a.deliverAccountTransitions(ctx, st) })
+		recovery.SetContext(ctx, false)
+		defer func() {
+			if exited, _ := recovery.SetRoutine(nil); exited != nil {
+				<-exited
+			}
+		}()
 
 		// Keyed owns each Space's cancellation and retry independently.
 		objects.SetContext(ctx, true)

@@ -1,6 +1,7 @@
 import datetime
 
 from core.account.settings import settings_pb2 as _settings_pb2
+from core.pairing import pairing_pb2 as _pairing_pb2
 from core.provider.transfer import transfer_pb2 as _transfer_pb2
 from core.session import session_pb2 as _session_pb2
 from core.sobject import sobject_pb2 as _sobject_pb2
@@ -71,6 +72,7 @@ class PairingStatus(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     PairingStatus_PAIRING_REJECTED: _ClassVar[PairingStatus]
     PairingStatus_CONFIRMATION_TIMEOUT: _ClassVar[PairingStatus]
     PairingStatus_ENROLLING: _ClassVar[PairingStatus]
+    PairingStatus_SELECTING_ACCOUNT: _ClassVar[PairingStatus]
 
 class JoinSpaceViaInviteResult(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     __slots__ = ()
@@ -117,6 +119,7 @@ PairingStatus_BOTH_CONFIRMED: PairingStatus
 PairingStatus_PAIRING_REJECTED: PairingStatus
 PairingStatus_CONFIRMATION_TIMEOUT: PairingStatus
 PairingStatus_ENROLLING: PairingStatus
+PairingStatus_SELECTING_ACCOUNT: PairingStatus
 JoinSpaceViaInviteResult_UNSPECIFIED: JoinSpaceViaInviteResult
 JoinSpaceViaInviteResult_ACCEPTED: JoinSpaceViaInviteResult
 JoinSpaceViaInviteResult_PENDING_OWNER_APPROVAL: JoinSpaceViaInviteResult
@@ -510,10 +513,22 @@ class GeneratePairingCodeResponse(_message.Message):
     def __init__(self, code: _Optional[str] = ...) -> None: ...
 
 class CompletePairingRequest(_message.Message):
-    __slots__ = ("code",)
+    __slots__ = ("code", "offer_current_account")
     CODE_FIELD_NUMBER: _ClassVar[int]
+    OFFER_CURRENT_ACCOUNT_FIELD_NUMBER: _ClassVar[int]
     code: str
-    def __init__(self, code: _Optional[str] = ...) -> None: ...
+    offer_current_account: bool
+    def __init__(self, code: _Optional[str] = ..., offer_current_account: _Optional[bool] = ...) -> None: ...
+
+class SelectPairingAccountRequest(_message.Message):
+    __slots__ = ("outcome",)
+    OUTCOME_FIELD_NUMBER: _ClassVar[int]
+    outcome: _pairing_pb2.AccountOutcome
+    def __init__(self, outcome: _Optional[_Union[_pairing_pb2.AccountOutcome, str]] = ...) -> None: ...
+
+class SelectPairingAccountResponse(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
 
 class CompletePairingResponse(_message.Message):
     __slots__ = ("remote_peer_id",)
@@ -676,7 +691,7 @@ class WatchPairingStatusRequest(_message.Message):
     def __init__(self) -> None: ...
 
 class WatchPairingStatusResponse(_message.Message):
-    __slots__ = ("status", "remote_peer_id", "code", "emoji", "error_message", "account_id", "receiving", "account_name")
+    __slots__ = ("status", "remote_peer_id", "code", "emoji", "error_message", "account_id", "receiving", "account_name", "choice")
     STATUS_FIELD_NUMBER: _ClassVar[int]
     REMOTE_PEER_ID_FIELD_NUMBER: _ClassVar[int]
     CODE_FIELD_NUMBER: _ClassVar[int]
@@ -685,6 +700,7 @@ class WatchPairingStatusResponse(_message.Message):
     ACCOUNT_ID_FIELD_NUMBER: _ClassVar[int]
     RECEIVING_FIELD_NUMBER: _ClassVar[int]
     ACCOUNT_NAME_FIELD_NUMBER: _ClassVar[int]
+    CHOICE_FIELD_NUMBER: _ClassVar[int]
     status: PairingStatus
     remote_peer_id: str
     code: str
@@ -693,7 +709,8 @@ class WatchPairingStatusResponse(_message.Message):
     account_id: str
     receiving: bool
     account_name: str
-    def __init__(self, status: _Optional[_Union[PairingStatus, str]] = ..., remote_peer_id: _Optional[str] = ..., code: _Optional[str] = ..., emoji: _Optional[_Iterable[str]] = ..., error_message: _Optional[str] = ..., account_id: _Optional[str] = ..., receiving: _Optional[bool] = ..., account_name: _Optional[str] = ...) -> None: ...
+    choice: _pairing_pb2.AccountChoice
+    def __init__(self, status: _Optional[_Union[PairingStatus, str]] = ..., remote_peer_id: _Optional[str] = ..., code: _Optional[str] = ..., emoji: _Optional[_Iterable[str]] = ..., error_message: _Optional[str] = ..., account_id: _Optional[str] = ..., receiving: _Optional[bool] = ..., account_name: _Optional[str] = ..., choice: _Optional[_Union[_pairing_pb2.AccountChoice, _Mapping]] = ...) -> None: ...
 
 class CreateSpaceInviteRequest(_message.Message):
     __slots__ = ("space_id", "role", "target_peer_id", "max_uses", "expires_at")
@@ -824,10 +841,12 @@ class CreateLocalPairingOfferResponse(_message.Message):
     def __init__(self, offer_payload: _Optional[str] = ...) -> None: ...
 
 class AcceptLocalPairingOfferRequest(_message.Message):
-    __slots__ = ("offer_payload",)
+    __slots__ = ("offer_payload", "offer_current_account")
     OFFER_PAYLOAD_FIELD_NUMBER: _ClassVar[int]
+    OFFER_CURRENT_ACCOUNT_FIELD_NUMBER: _ClassVar[int]
     offer_payload: str
-    def __init__(self, offer_payload: _Optional[str] = ...) -> None: ...
+    offer_current_account: bool
+    def __init__(self, offer_payload: _Optional[str] = ..., offer_current_account: _Optional[bool] = ...) -> None: ...
 
 class AcceptLocalPairingOfferResponse(_message.Message):
     __slots__ = ("answer_payload",)

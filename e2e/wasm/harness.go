@@ -72,8 +72,9 @@ type Harness struct {
 	// Retained-state BrowserContext (lazy init). This is intentionally not used
 	// by NewCleanSession/NewCleanBlankSession, which keep strict isolated
 	// context semantics.
-	retainedStateCtxMu sync.Mutex
-	retainedStateCtx   playwright.BrowserContext
+	retainedStateCtxMu   sync.Mutex
+	retainedStateCtx     playwright.BrowserContext
+	retainedStateBaseURL string
 
 	// Compiled TypeScript test scripts (populated by CompileScripts).
 	scripts CompiledScripts

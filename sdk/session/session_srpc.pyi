@@ -100,6 +100,10 @@ class SessionResourceServiceClient:
     ) -> (
         _github_com_s4wave_spacewave_sdk_session_session_pb2.CompletePairingResponse
     ): ...
+    async def select_pairing_account(
+        self,
+        request: _github_com_s4wave_spacewave_sdk_session_session_pb2.SelectPairingAccountRequest,
+    ) -> _github_com_s4wave_spacewave_sdk_session_session_pb2.SelectPairingAccountResponse: ...
     async def get_sas_emoji(
         self,
         request: _github_com_s4wave_spacewave_sdk_session_session_pb2.GetSASEmojiRequest,
@@ -312,6 +316,10 @@ class SessionResourceServiceServer(Protocol):
     ) -> (
         _github_com_s4wave_spacewave_sdk_session_session_pb2.CompletePairingResponse
     ): ...
+    async def select_pairing_account(
+        self,
+        request: _github_com_s4wave_spacewave_sdk_session_session_pb2.SelectPairingAccountRequest,
+    ) -> _github_com_s4wave_spacewave_sdk_session_session_pb2.SelectPairingAccountResponse: ...
     async def get_sas_emoji(
         self,
         request: _github_com_s4wave_spacewave_sdk_session_session_pb2.GetSASEmojiRequest,

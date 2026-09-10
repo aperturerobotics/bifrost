@@ -48,6 +48,7 @@ func (a *ProviderAccount) OfferPairingAccount(ctx context.Context, key crypto.Pr
 	for _, member := range members {
 		offer.ActiveSessionPeerIds = append(offer.ActiveSessionPeerIds, member.GetPeerId())
 	}
+	offer.SessionCount = uint32(len(members))
 	return offer, nil
 }
 
@@ -126,7 +127,8 @@ func (a *ProviderAccount) PreparePairingReceiver(ctx context.Context, offer *pai
 }
 
 // EnrollPairingReceiver registers the approved receiving Session with the cloud.
-func (a *ProviderAccount) EnrollPairingReceiver(ctx context.Context, stream *stream_packet.Session, offer *pairing.AccountOffer, identity *pairing.Identity, sourceKey crypto.PrivKey, sourcePeer, receivingPeer peer.ID) error {
+func (a *ProviderAccount) EnrollPairingReceiver(ctx context.Context, stream *stream_packet.Session, enrollment *pairing.Enrollment, sourceKey crypto.PrivKey, sourcePeer, receivingPeer peer.ID) error {
+	offer, identity := enrollment.Offer, enrollment.Identity
 	if err := pairing.ValidateIdentity(offer, identity, sourcePeer, receivingPeer); err != nil {
 		return err
 	}

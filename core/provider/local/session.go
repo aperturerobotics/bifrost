@@ -6,15 +6,16 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/s4wave/spacewave/core/pairing"
-
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/util/broadcast"
+	"github.com/aperturerobotics/util/csync"
 	"github.com/aperturerobotics/util/keyed"
 	"github.com/aperturerobotics/util/promise"
+	"github.com/aperturerobotics/util/routine"
 	"github.com/aperturerobotics/util/scrub"
 	"github.com/pkg/errors"
 	resource_state "github.com/s4wave/spacewave/bldr/resource/state"
+	"github.com/s4wave/spacewave/core/pairing"
 	"github.com/s4wave/spacewave/core/provider"
 	"github.com/s4wave/spacewave/core/session"
 	session_lock "github.com/s4wave/spacewave/core/session/lock"
@@ -44,6 +45,12 @@ type Session struct {
 	pairingMu     sync.Mutex
 	pairingEngine *pairing.Engine
 	pairingCancel context.CancelFunc
+
+	// transitionWatcher follows account redirects only while unlocked.
+	transitionWatcher *routine.RoutineContainer
+
+	// lockTransition serializes startup and changes to the unlocked lifetime.
+	lockTransition csync.Mutex
 
 	// lockMode is the current lock mode, set during init and SetLockMode.
 	lockMode session_lock.SessionLockMode
@@ -75,7 +82,11 @@ func (s *Session) GetPeerId() peer.ID {
 // GetPrivKey returns the session private key.
 // Returns nil if the session is locked.
 func (s *Session) GetPrivKey() crypto.PrivKey {
-	return s.sessionPriv
+	var priv crypto.PrivKey
+	s.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
+		priv = s.sessionPriv
+	})
+	return priv
 }
 
 // GetProviderAccount returns the handle to the session provider account.
@@ -112,12 +123,18 @@ func (s *Session) GetLockState(ctx context.Context) (session.SessionLockMode, bo
 	if err != nil {
 		return 0, false, err
 	}
-	locked := s.sessionPriv == nil
+	locked := s.GetPrivKey() == nil
 	return session.SessionLockMode(mode), locked, nil
 }
 
 // UnlockSession unlocks a PIN-locked session. No-op if already unlocked.
 func (s *Session) UnlockSession(ctx context.Context, pin []byte) error {
+	release, err := s.lockTransition.Lock(ctx)
+	if err != nil {
+		return err
+	}
+	defer release()
+
 	if s.sessionPriv != nil {
 		return nil
 	}
@@ -144,8 +161,9 @@ func (s *Session) UnlockSession(ctx context.Context, pin []byte) error {
 		return errors.Wrap(err, "parse unlocked key")
 	}
 
-	s.sessionPriv = privKey
-	s.tkr.sessionProm.SetResult(s, nil)
+	s.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
+		s.sessionPriv = privKey
+	})
 
 	transportCtx := ctx
 	relay := cloudRelayEndpoint{}
@@ -167,6 +185,13 @@ func (s *Session) UnlockSession(ctx context.Context, pin []byte) error {
 		}
 	}
 
+	selfRef, _, _ := s.tkr.a.sessions.AddKeyRef(s.tkr.id)
+	s.tkr.setPinnedRef(selfRef.Release)
+	s.tkr.sessionProm.SetResult(s, nil)
+	if s.transitionWatcher != nil {
+		s.transitionWatcher.SetContext(s.ctx, true)
+	}
+
 	s.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
 		broadcast()
 	})
@@ -177,6 +202,12 @@ func (s *Session) UnlockSession(ctx context.Context, pin []byte) error {
 // LockSession locks a running session, scrubbing the privkey from memory.
 // The session tracker will restart and enter PIN-wait state when re-mounted.
 func (s *Session) LockSession(ctx context.Context) error {
+	release, err := s.lockTransition.Lock(ctx)
+	if err != nil {
+		return err
+	}
+	defer release()
+
 	if s.lockMode != session_lock.SessionLockMode_PIN_ENCRYPTED {
 		return errors.New("cannot lock: PIN mode not configured")
 	}
@@ -185,6 +216,12 @@ func (s *Session) LockSession(ctx context.Context) error {
 	}
 
 	s.clearPairingEngine()
+	if s.transitionWatcher != nil {
+		s.transitionWatcher.ClearContext()
+		if err := s.transitionWatcher.WaitExited(ctx, true, nil); err != nil && !errors.Is(err, context.Canceled) {
+			return err
+		}
+	}
 
 	// End authenticated transport use before clearing the unlocked credential.
 	if err := s.tkr.a.stopSessionPeerTransport(ctx, s.sessionPid); err != nil {
@@ -196,11 +233,14 @@ func (s *Session) LockSession(ctx context.Context) error {
 	if err == nil {
 		scrub.Scrub(raw)
 	}
-	s.sessionPriv = nil
+	s.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
+		s.sessionPriv = nil
+	})
 
 	// Invalidate the session so new mounts trigger a tracker restart.
 	s.tkr.sessionProm.SetPromise(nil)
 	s.tkr.unlockProm = promise.NewPromiseContainer[[]byte]()
+	s.tkr.releasePinnedRef()
 
 	// Broadcast locked=true so WatchLockState emits.
 	s.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
@@ -212,6 +252,12 @@ func (s *Session) LockSession(ctx context.Context) error {
 
 // SetLockMode changes the session lock mode. Hot switch: session stays running.
 func (s *Session) SetLockMode(ctx context.Context, mode session.SessionLockMode, pin []byte) error {
+	release, err := s.lockTransition.Lock(ctx)
+	if err != nil {
+		return err
+	}
+	defer release()
+
 	if s.sessionPriv == nil {
 		return errors.New("session is locked")
 	}
@@ -313,6 +359,31 @@ type sessionTracker struct {
 	sessionProm *promise.PromiseContainer[*Session]
 	// unlockProm is set when PIN-locked. Unblocks when UnlockSession is called.
 	unlockProm *promise.PromiseContainer[[]byte]
+	// pinnedRefMtx guards the reference retaining this unlocked Session.
+	pinnedRefMtx       sync.Mutex
+	releasePinnedRefFn func()
+}
+
+// setPinnedRef retains the tracker across temporary mount handoffs.
+func (t *sessionTracker) setPinnedRef(release func()) {
+	t.pinnedRefMtx.Lock()
+	previous := t.releasePinnedRefFn
+	t.releasePinnedRefFn = release
+	t.pinnedRefMtx.Unlock()
+	if previous != nil {
+		previous()
+	}
+}
+
+// releasePinnedRef releases the unlocked lifetime outside the reference guard.
+func (t *sessionTracker) releasePinnedRef() {
+	t.pinnedRefMtx.Lock()
+	release := t.releasePinnedRefFn
+	t.releasePinnedRefFn = nil
+	t.pinnedRefMtx.Unlock()
+	if release != nil {
+		release()
+	}
 }
 
 // buildSessionTracker builds a new sessionTracker for a session id.
@@ -517,7 +588,14 @@ func (t *sessionTracker) executeSessionTracker(rctx context.Context) (rerr error
 		storageKey:          storageKey,
 		lockMode:            lockMode,
 	}
-	t.sessionProm.SetResult(so, nil)
+	so.transitionWatcher = routine.NewRoutineContainerWithLogger(le.WithField("routine", "account-transition"), routine.WithRetry(providerBackoff))
+	so.transitionWatcher.SetRoutine(so.waitAccountTransition)
+
+	// An unlocked credential remains available until locking or account shutdown.
+	// Pin before publication so temporary mounts cannot discard PIN authorization.
+	selfRef, _, _ := t.a.sessions.AddKeyRef(t.id)
+	t.setPinnedRef(selfRef.Release)
+	defer t.releasePinnedRef()
 	defer t.sessionProm.SetPromise(nil)
 	t.a.setLinkedCloudAccountID(t.cloudAccountID)
 
@@ -533,7 +611,7 @@ func (t *sessionTracker) executeSessionTracker(rctx context.Context) (rerr error
 	}
 	// Transport and background replication belong to the account. A temporary
 	// Session mount ending must not tear down the next consumer's connection.
-	// PIN credentials remain authorized only while their Session is mounted.
+	// PIN credentials remain authorized only for the unlocked Session lifetime.
 	defer func() {
 		if so.lockMode == session_lock.SessionLockMode_PIN_ENCRYPTED {
 			cleanupCtx, cancel := sessionTransportCleanupContext(ctx)
@@ -558,9 +636,15 @@ func (t *sessionTracker) executeSessionTracker(rctx context.Context) (rerr error
 		}
 	}
 
-	// Wait for context cancel.
+	so.transitionWatcher.SetContext(ctx, false)
+	defer func() {
+		if exited, _ := so.transitionWatcher.SetRoutine(nil); exited != nil {
+			<-exited
+		}
+	}()
+	t.sessionProm.SetResult(so, nil)
 	<-ctx.Done()
-	return context.Canceled
+	return ctx.Err()
 }
 
 // UnlockPINSession unlocks a PIN-locked session before it is mounted.
@@ -602,12 +686,15 @@ func (a *ProviderAccount) UnlockPINSession(ctx context.Context, ref *session.Ses
 	}
 
 	// Unblock the tracker waiting on unlockProm.
+	defer scrub.Scrub(privPEM)
 	tkrRef, tkr, _ := a.sessions.AddKeyRef(sessionID)
+	defer tkrRef.Release()
 	tkr.ref.SetResult(ref, nil)
 	tkr.unlockProm.SetResult(slices.Clone(privPEM), nil)
-	tkrRef.Release()
 
-	return nil
+	// Retain the unlock until the Session has installed its own lifetime pin.
+	_, err = tkr.sessionProm.Await(ctx)
+	return err
 }
 
 // MountSession attempts to mount a Session returning the session and a release function.

@@ -17,7 +17,7 @@ func TestResultRequiresDurableEnrollment(t *testing.T) {
 	if _, err := engine.Result(remote); !errors.Is(err, ErrExchangeMissing) {
 		t.Fatalf("missing exchange returned %v", err)
 	}
-	engine.active = &attempt{snapshot: Snapshot{RemotePeerID: remote, Status: StatusBothConfirmed}}
+	engine.active = &attempt{snapshot: Snapshot{RemotePeerID: remote, Status: StatusBothConfirmed, Receiving: true}}
 	if _, err := engine.Result(remote); !errors.Is(err, ErrExchangeUnconfirmed) {
 		t.Fatalf("completed status without enrollment returned %v", err)
 	}
@@ -46,4 +46,24 @@ func newEngineTestPeer(t *testing.T) peer.ID {
 		t.Fatal(err)
 	}
 	return id
+}
+
+// TestRetainedPairingResources releases both the prepared enrollment and the
+// final migrated Session, including a late result from a replaced attempt.
+func TestRetainedPairingResources(t *testing.T) {
+	engine := &Engine{ctx: t.Context()}
+	_, active := engine.begin(true, true, "", "", StatusPeerConnected)
+	var released int
+	for range 2 {
+		if !engine.retain(active, func() { released++ }) {
+			t.Fatal("active pairing did not retain its resource")
+		}
+	}
+	engine.Clear()
+	if released != 2 {
+		t.Fatalf("released %d of 2 pairing resources", released)
+	}
+	if engine.retain(active, func() { released++ }) || released != 3 {
+		t.Fatal("replaced pairing retained a late resource")
+	}
 }

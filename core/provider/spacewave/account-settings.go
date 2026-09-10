@@ -18,7 +18,11 @@ func (a *ProviderAccount) ensureAccountSettingsSharedObject(
 		return ref, nil
 	}
 
-	binding, err := a.sessionClient.EnsureAccountSObjectBinding(
+	cli, _, _, err := a.getReadySessionClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	binding, err := cli.EnsureAccountSObjectBinding(
 		ctx,
 		account_settings.BindingPurpose,
 	)
@@ -44,7 +48,7 @@ func (a *ProviderAccount) ensureAccountSettingsSharedObject(
 		}
 	}
 
-	if _, err := a.sessionClient.FinalizeAccountSObjectBinding(
+	if _, err := cli.FinalizeAccountSObjectBinding(
 		ctx,
 		account_settings.BindingPurpose,
 		binding.GetSoId(),

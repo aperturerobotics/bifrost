@@ -192,6 +192,12 @@ func newCloudSOHost(
 
 // Execute runs the cloudSOHost lifecycle.
 func (h *cloudSOHost) Execute(ctx context.Context) error {
+	return h.execute(ctx, nil)
+}
+
+// execute subscribes before seeding state and publishes readiness only after
+// the caller's initial enrollment has completed under that same subscription.
+func (h *cloudSOHost) execute(ctx context.Context, ready func(context.Context) error) error {
 	// Keep the host and its notification callback inside one cancellation lifetime.
 	ctx, cancel := context.WithCancel(ctx)
 	h.ctxCancel = cancel
@@ -218,6 +224,11 @@ func (h *cloudSOHost) Execute(ctx context.Context) error {
 			return context.Canceled
 		}
 		return errors.Wrap(err, "initial state pull")
+	}
+	if ready != nil {
+		if err := ready(ctx); err != nil {
+			return err
+		}
 	}
 
 	// Retain the registered callback until host cancellation.
@@ -379,6 +390,10 @@ func (h *cloudSOHost) pullState(ctx context.Context, reason SeedReason) error {
 		return err
 	}
 	defer release()
+	if err := h.verifyChangeLogSeqno(lastSeqno); err != nil {
+		// An inline update can advance state while this HTTP response is in flight.
+		return nil
+	}
 	if err := h.verifyPulledState(state); err != nil {
 		return err
 	}

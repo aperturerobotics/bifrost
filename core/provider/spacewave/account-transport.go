@@ -250,18 +250,15 @@ func (a *ProviderAccount) createSessionTransportForSession(
 	}
 
 	// Construct the replacement transport with its bridge policy.
-	st, err := transport.NewSessionTransport(
-		a.le,
-		a.p.b,
-		sessionKey,
-		signalingURL,
-		a.p.signingEnvPfx,
+	options := append([]transport.SessionTransportOption{}, a.p.transportOptions...)
+	options = append(options,
 		transport.WithStartupRetry(),
 		transport.WithBridgeDirectiveFilter(func(di directive.Instance) (bool, error) {
 			_, isMount := di.GetDirective().(sobject.MountSharedObject)
 			return !isMount, nil
 		}),
 	)
+	st, err := transport.NewSessionTransport(a.le, a.p.b, sessionKey, signalingURL, a.p.signingEnvPfx, options...)
 	if err != nil {
 		rel()
 		cleanupCancel()

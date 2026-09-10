@@ -5,6 +5,7 @@ import {
   resolvePath,
   useNavigate,
   useParams,
+  usePath,
   type To,
 } from '@s4wave/web/router/router.js'
 import { useResource } from '@aptre/bldr-sdk/hooks/useResource.js'
@@ -37,6 +38,14 @@ export function AppSession() {
 
   const rootResource = useRootResource()
   const metadata = useSessionMetadata(sessionIdx)
+  const path = usePath()
+
+  // Pairing keeps its original Session until the user leaves the flow so its
+  // approval and completion remain available through an account transition.
+  const isPairing = /\/(?:pair|setup\/link-device)(?:\/|$)/.test(path)
+  const attachmentKey = isPairing
+    ? undefined
+    : `${metadata?.providerId ?? ''}/${metadata?.providerAccountId ?? ''}`
 
   const isPinLocked = metadata?.lockMode === SessionLockMode.PIN_ENCRYPTED
 
@@ -105,7 +114,7 @@ export function AppSession() {
       })
       return cleanup(result.session)
     },
-    [sessionIdx],
+    [sessionIdx, attachmentKey],
     {
       onSuccess: () => {
         markInteracted(environment.storage)

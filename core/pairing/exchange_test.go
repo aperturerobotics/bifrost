@@ -9,6 +9,52 @@ import (
 	stream_packet "github.com/s4wave/spacewave/net/stream/packet"
 )
 
+// TestPairingRejectionDelivery keeps the rejecting side alive until its peer
+// receives the decision, whether that peer has already approved or is waiting.
+func TestPairingRejectionDelivery(t *testing.T) {
+	for _, approved := range []bool{false, true} {
+		t.Run(map[bool]string{false: "waiting", true: "approved"}[approved], func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
+			defer cancel()
+			left, right := net.Pipe()
+			defer left.Close()
+			defer right.Close()
+			localChoice, remoteChoice := make(chan bool, 1), make(chan bool, 1)
+			remoteSent := make(chan struct{})
+			results := make(chan Status, 2)
+			go func() {
+				defer left.Close()
+				status, _ := exchangeApproval(ctx, stream_packet.NewSession(left, 1024), localChoice, "operation", func(Status) {})
+				results <- status
+			}()
+			go func() {
+				defer right.Close()
+				status, _ := exchangeApproval(ctx, stream_packet.NewSession(right, 1024), remoteChoice, "operation", func(Status) { close(remoteSent) })
+				results <- status
+			}()
+			if approved {
+				remoteChoice <- true
+				select {
+				case <-ctx.Done():
+					t.Fatal(ctx.Err())
+				case <-remoteSent:
+				}
+			}
+			localChoice <- false
+			for range 2 {
+				select {
+				case <-ctx.Done():
+					t.Fatal("rejected exchange did not close")
+				case status := <-results:
+					if status != StatusPairingRejected {
+						t.Fatalf("rejection returned status %v", status)
+					}
+				}
+			}
+		})
+	}
+}
+
 // TestPairingApprovalCancellation closes a blocked duplex exchange when the
 // user leaves pairing, including while the other client has not decided.
 func TestPairingApprovalCancellation(t *testing.T) {

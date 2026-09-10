@@ -45,3 +45,9 @@ type SessionController interface {
 	// GetSessionBroadcast returns the broadcast that fires when sessions change.
 	GetSessionBroadcast() *broadcast.Broadcast
 }
+
+// SessionTransitionController atomically rebinds a registered client after
+// provider migration has durably installed its independent credential.
+type SessionTransitionController interface {
+	TransitionSession(context.Context, *SessionRef, *SessionRef) error
+}

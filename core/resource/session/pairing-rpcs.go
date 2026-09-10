@@ -3,9 +3,8 @@ package resource_session
 import (
 	"context"
 
-	"github.com/s4wave/spacewave/core/pairing"
-
 	"github.com/pkg/errors"
+	"github.com/s4wave/spacewave/core/pairing"
 	provider "github.com/s4wave/spacewave/core/provider"
 	provider_spacewave "github.com/s4wave/spacewave/core/provider/spacewave"
 	"github.com/s4wave/spacewave/net/peer"
@@ -89,12 +88,25 @@ func (r *SessionResource) CompletePairing(ctx context.Context, req *s4wave_sessi
 		return nil, err
 	}
 
-	remotePeerID, err := engine.CompleteCode(ctx, relay, req.GetCode())
+	remotePeerID, err := engine.CompleteCode(ctx, relay, req.GetCode(), req.GetOfferCurrentAccount())
 	if err != nil {
 		return nil, err
 	}
 
 	return &s4wave_session.CompletePairingResponse{RemotePeerId: remotePeerID.String()}, nil
+}
+
+// SelectPairingAccount fixes the account proposal before either client approves it.
+func (r *SessionResource) SelectPairingAccount(ctx context.Context, req *s4wave_session.SelectPairingAccountRequest) (*s4wave_session.SelectPairingAccountResponse, error) {
+	// Resolve the mounted Session's operation and submit the selected relationship.
+	engine, err := r.getPairingEngine()
+	if err != nil {
+		return nil, err
+	}
+	if err := engine.SelectAccount(req.GetOutcome()); err != nil {
+		return nil, err
+	}
+	return &s4wave_session.SelectPairingAccountResponse{}, nil
 }
 
 // GetSASEmoji derives SAS emoji for verifying a P2P link with a remote peer.

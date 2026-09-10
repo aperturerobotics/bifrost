@@ -398,6 +398,11 @@ jobs:
             run: '^(TestQuickstartForge(Route|Trace)|TestForge(ScenarioSequence|WorkerExecution)|TestBlog(CoexistenceScenario|QuickstartSetupProbe|QuickstartRetainedStateRegistrationProbe))$'
             timeout_minutes: 20
             job_timeout_minutes: 40
+          - name: pairing-desktop
+            run: '^TestPairingBrowserDesktopJourney$'
+            electron: true
+            timeout_minutes: 30
+            job_timeout_minutes: 50
           - name: startup-build-cache
             run: '^TestStartupBuildCacheInvalidatesOnSourceChange$'
             timeout_minutes: 40
@@ -473,7 +478,12 @@ jobs:
           ENABLE_E2E_WASM: 'true'
           GO_TEST_REPORT_TITLE: Nightly E2E (wasm / ${{ matrix.slice.name }})
           WASM_TEST_RUN: ${{ matrix.slice.run }}
+          ENABLE_E2E_ELECTRON: ${{ matrix.slice.electron && 'true' || '' }}
+          BLDR_ELECTRON_NO_SANDBOX: ${{ matrix.slice.electron && 'true' || '' }}
         run: |
+          if [ "$ENABLE_E2E_ELECTRON" = "true" ]; then
+            exec xvfb-run --auto-servernum --server-args='-screen 0 1280x720x24' bun scripts/go-test-report.ts -- go test -json -count=1 -timeout=${{ matrix.slice.timeout_minutes }}m -run "$WASM_TEST_RUN" ./e2e/wasm
+          fi
           bun scripts/go-test-report.ts -- go test -json -count=1 -timeout=${{ matrix.slice.timeout_minutes }}m -run "$WASM_TEST_RUN" ./e2e/wasm
 
       - name: Upload wasm runtime diagnostics

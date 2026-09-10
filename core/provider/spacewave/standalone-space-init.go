@@ -552,7 +552,7 @@ func buildCreateWithStateRequest(
 	configState []byte,
 	rootState []byte,
 ) (*api.CreateWithStateRequest, error) {
-	if displayName == "" || objectType == "" || ownerType == "" || ownerID == "" {
+	if (displayName == "" && objectType == "space") || objectType == "" || ownerType == "" || ownerID == "" {
 		return nil, errors.New("space metadata is required")
 	}
 	if len(configState) == 0 || len(rootState) == 0 {

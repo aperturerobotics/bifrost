@@ -195,6 +195,22 @@ func ProcessAccountSettingsOps(
 			}
 			results = append(results, sobject.BuildSOOperationResult(peerIDStr, opInner.GetNonce(), true, nil))
 
+		case *AccountSettingsOp_AcceptAccountMigration:
+			if err := state.acceptAccountMigration(body.AcceptAccountMigration); err != nil {
+				results = append(results, sobject.BuildSOOperationResult(peerIDStr, opInner.GetNonce(), false,
+					&sobject.SOOperationRejectionErrorDetails{ErrorMsg: err.Error()}))
+				continue
+			}
+			results = append(results, sobject.BuildSOOperationResult(peerIDStr, opInner.GetNonce(), true, nil))
+
+		case *AccountSettingsOp_CommitAccountTransition:
+			if err := state.commitAccountTransition(body.CommitAccountTransition); err != nil {
+				results = append(results, sobject.BuildSOOperationResult(peerIDStr, opInner.GetNonce(), false,
+					&sobject.SOOperationRejectionErrorDetails{ErrorMsg: err.Error()}))
+				continue
+			}
+			results = append(results, sobject.BuildSOOperationResult(peerIDStr, opInner.GetNonce(), true, nil))
+
 		default:
 			results = append(results, sobject.BuildSOOperationResult(
 				peerIDStr, opInner.GetNonce(), false,

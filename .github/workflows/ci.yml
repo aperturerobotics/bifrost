@@ -597,6 +597,10 @@ jobs:
             run: '^(TestLocalOnboardingScenario|TestMultiSessionScenario|TestNoCloud(AnonymousParticipantSync|PairingDirect)|TestRecreatedPageSharedObjectHealthGuard|TestRetainedStatePagePeerProbe)$'
             timeout_minutes: 30
             job_timeout_minutes: 50
+          - name: pairing
+            run: '^TestPairing(HomeDrive|SignedInDrive|StorageQuota)Journey$'
+            timeout_minutes: 30
+            job_timeout_minutes: 50
           - name: web-lifecycle-host
             run: '^(TestDedicatedWorkerHostMultiTab|TestWebDocumentLivenessLockReleaseNoDeletion)$'
             timeout_minutes: 40

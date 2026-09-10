@@ -346,6 +346,81 @@ func (x *ProviderFeatureResourceRef) GetProviderFeatureMeta() []byte {
 	return nil
 }
 
+// AccountTransition is the durable, provider-authorized result of an account merge.
+// Source replicas retain it so independently authorized Sessions can reconnect.
+type AccountTransition struct {
+	unknownFields []byte
+	// OperationId identifies this source-to-destination transition across retries.
+	OperationId string `protobuf:"bytes,1,opt,name=operation_id,json=operationId,proto3" json:"operationId,omitempty"`
+	// Source identifies the account whose Sessions and resources are moving.
+	Source *ProviderResourceRef `protobuf:"bytes,2,opt,name=source,proto3" json:"source,omitempty"`
+	// Destination identifies the surviving account; id is its settings object ID.
+	Destination *ProviderResourceRef `protobuf:"bytes,3,opt,name=destination,proto3" json:"destination,omitempty"`
+	// DestinationEndpoint must match the receiver's configured cloud provider.
+	DestinationEndpoint string `protobuf:"bytes,4,opt,name=destination_endpoint,json=destinationEndpoint,proto3" json:"destinationEndpoint,omitempty"`
+	// DestinationPeerIds are the destination's independently authorized transport peers.
+	DestinationPeerIds []string `protobuf:"bytes,5,rep,name=destination_peer_ids,json=destinationPeerIds,proto3" json:"destinationPeerIds,omitempty"`
+	// SessionPeerIds is the exact set of source Sessions approved for the transition.
+	SessionPeerIds []string `protobuf:"bytes,6,rep,name=session_peer_ids,json=sessionPeerIds,proto3" json:"sessionPeerIds,omitempty"`
+	// SourceEndpoint identifies cloud authority; empty identifies a local account.
+	SourceEndpoint string `protobuf:"bytes,7,opt,name=source_endpoint,json=sourceEndpoint,proto3" json:"sourceEndpoint,omitempty"`
+}
+
+func (x *AccountTransition) Reset() {
+	*x = AccountTransition{}
+}
+
+func (*AccountTransition) ProtoMessage() {}
+
+func (x *AccountTransition) GetOperationId() string {
+	if x != nil {
+		return x.OperationId
+	}
+	return ""
+}
+
+func (x *AccountTransition) GetSource() *ProviderResourceRef {
+	if x != nil {
+		return x.Source
+	}
+	return nil
+}
+
+func (x *AccountTransition) GetDestination() *ProviderResourceRef {
+	if x != nil {
+		return x.Destination
+	}
+	return nil
+}
+
+func (x *AccountTransition) GetDestinationEndpoint() string {
+	if x != nil {
+		return x.DestinationEndpoint
+	}
+	return ""
+}
+
+func (x *AccountTransition) GetDestinationPeerIds() []string {
+	if x != nil {
+		return x.DestinationPeerIds
+	}
+	return nil
+}
+
+func (x *AccountTransition) GetSessionPeerIds() []string {
+	if x != nil {
+		return x.SessionPeerIds
+	}
+	return nil
+}
+
+func (x *AccountTransition) GetSourceEndpoint() string {
+	if x != nil {
+		return x.SourceEndpoint
+	}
+	return ""
+}
+
 func (m *ProviderInfo) CloneVT() *ProviderInfo {
 	if m == nil {
 		return (*ProviderInfo)(nil)
@@ -450,6 +525,28 @@ func (m *ProviderFeatureResourceRef) CloneVT() *ProviderFeatureResourceRef {
 }
 
 func (m *ProviderFeatureResourceRef) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *AccountTransition) CloneVT() *AccountTransition {
+	if m == nil {
+		return (*AccountTransition)(nil)
+	}
+	r := new(AccountTransition)
+	r.OperationId = m.OperationId
+	r.DestinationEndpoint = m.DestinationEndpoint
+	r.SourceEndpoint = m.SourceEndpoint
+	r.Source = protobuf_go_lite.CloneVTValue(m.Source)
+	r.Destination = protobuf_go_lite.CloneVTValue(m.Destination)
+	r.DestinationPeerIds = protobuf_go_lite.CloneSlice(m.DestinationPeerIds)
+	r.SessionPeerIds = protobuf_go_lite.CloneSlice(m.SessionPeerIds)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *AccountTransition) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
@@ -600,6 +697,44 @@ func (this *ProviderFeatureResourceRef) EqualVT(that *ProviderFeatureResourceRef
 
 func (this *ProviderFeatureResourceRef) EqualMessageVT(thatMsg any) bool {
 	that, ok := thatMsg.(*ProviderFeatureResourceRef)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *AccountTransition) EqualVT(that *AccountTransition) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.OperationId != that.OperationId {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.Source, that.Source) {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.Destination, that.Destination) {
+		return false
+	}
+	if this.DestinationEndpoint != that.DestinationEndpoint {
+		return false
+	}
+	if !protobuf_go_lite.EqualSlice(this.DestinationPeerIds, that.DestinationPeerIds) {
+		return false
+	}
+	if !protobuf_go_lite.EqualSlice(this.SessionPeerIds, that.SessionPeerIds) {
+		return false
+	}
+	if this.SourceEndpoint != that.SourceEndpoint {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *AccountTransition) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*AccountTransition)
 	if !ok {
 		return false
 	}
@@ -1093,6 +1228,112 @@ func (x *ProviderFeatureResourceRef) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
+// MarshalProtoJSON marshals the AccountTransition message to JSON.
+func (x *AccountTransition) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.OperationId != "" || s.HasField("operationId") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("operationId")
+		s.WriteString(x.OperationId)
+	}
+	if x.Source != nil || s.HasField("source") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("source")
+		x.Source.MarshalProtoJSON(s.WithField("source"))
+	}
+	if x.Destination != nil || s.HasField("destination") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("destination")
+		x.Destination.MarshalProtoJSON(s.WithField("destination"))
+	}
+	if x.DestinationEndpoint != "" || s.HasField("destinationEndpoint") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("destinationEndpoint")
+		s.WriteString(x.DestinationEndpoint)
+	}
+	if len(x.DestinationPeerIds) > 0 || s.HasField("destinationPeerIds") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("destinationPeerIds")
+		s.WriteStringArray(x.DestinationPeerIds)
+	}
+	if len(x.SessionPeerIds) > 0 || s.HasField("sessionPeerIds") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("sessionPeerIds")
+		s.WriteStringArray(x.SessionPeerIds)
+	}
+	if x.SourceEndpoint != "" || s.HasField("sourceEndpoint") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("sourceEndpoint")
+		s.WriteString(x.SourceEndpoint)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the AccountTransition to JSON.
+func (x *AccountTransition) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the AccountTransition message from JSON.
+func (x *AccountTransition) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "operation_id", "operationId":
+			s.AddField("operation_id")
+			x.OperationId = s.ReadString()
+		case "source":
+			if s.ReadNil() {
+				x.Source = nil
+				return
+			}
+			x.Source = &ProviderResourceRef{}
+			x.Source.UnmarshalProtoJSON(s.WithField("source", true))
+		case "destination":
+			if s.ReadNil() {
+				x.Destination = nil
+				return
+			}
+			x.Destination = &ProviderResourceRef{}
+			x.Destination.UnmarshalProtoJSON(s.WithField("destination", true))
+		case "destination_endpoint", "destinationEndpoint":
+			s.AddField("destination_endpoint")
+			x.DestinationEndpoint = s.ReadString()
+		case "destination_peer_ids", "destinationPeerIds":
+			s.AddField("destination_peer_ids")
+			if s.ReadNil() {
+				x.DestinationPeerIds = nil
+				return
+			}
+			x.DestinationPeerIds = s.ReadStringArray()
+		case "session_peer_ids", "sessionPeerIds":
+			s.AddField("session_peer_ids")
+			if s.ReadNil() {
+				x.SessionPeerIds = nil
+				return
+			}
+			x.SessionPeerIds = s.ReadStringArray()
+		case "source_endpoint", "sourceEndpoint":
+			s.AddField("source_endpoint")
+			x.SourceEndpoint = s.ReadString()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the AccountTransition from JSON.
+func (x *AccountTransition) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
 func (m *ProviderInfo) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -1382,6 +1623,87 @@ func (m *ProviderFeatureResourceRef) MarshalToSizedBufferVT(dAtA []byte) (int, e
 	return len(dAtA) - i, nil
 }
 
+func (m *AccountTransition) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *AccountTransition) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *AccountTransition) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.SourceEndpoint) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.SourceEndpoint)
+		i--
+		dAtA[i] = 0x3a
+	}
+	if len(m.SessionPeerIds) > 0 {
+		for iNdEx := len(m.SessionPeerIds) - 1; iNdEx >= 0; iNdEx-- {
+			i = protobuf_go_lite.EncodeString(dAtA, i, m.SessionPeerIds[iNdEx])
+			i--
+			dAtA[i] = 0x32
+		}
+	}
+	if len(m.DestinationPeerIds) > 0 {
+		for iNdEx := len(m.DestinationPeerIds) - 1; iNdEx >= 0; iNdEx-- {
+			i = protobuf_go_lite.EncodeString(dAtA, i, m.DestinationPeerIds[iNdEx])
+			i--
+			dAtA[i] = 0x2a
+		}
+	}
+	if len(m.DestinationEndpoint) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.DestinationEndpoint)
+		i--
+		dAtA[i] = 0x22
+	}
+	if m.Destination != nil {
+		size, err := m.Destination.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if m.Source != nil {
+		size, err := m.Source.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.OperationId) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.OperationId)
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *ProviderInfo) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -1461,6 +1783,29 @@ func (m *ProviderFeatureResourceRef) SizeVT() (n int) {
 	}
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.ProviderFeature)
 	n += protobuf_go_lite.SizeBytesNonEmpty(1, m.ProviderFeatureMeta)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *AccountTransition) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.OperationId)
+	if m.Source != nil {
+		l = m.Source.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	if m.Destination != nil {
+		l = m.Destination.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.DestinationEndpoint)
+	n += protobuf_go_lite.SizeStringSlice(1, m.DestinationPeerIds)
+	n += protobuf_go_lite.SizeStringSlice(1, m.SessionPeerIds)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.SourceEndpoint)
 	n += len(m.unknownFields)
 	return n
 }
@@ -1618,6 +1963,52 @@ func (x *ProviderFeatureResourceRef) MarshalProtoText() string {
 }
 
 func (x *ProviderFeatureResourceRef) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *AccountTransition) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "AccountTransition")
+	if x.OperationId != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "operation_id")
+		protobuf_go_lite.TextWriteString(&sb, x.OperationId)
+	}
+	if x.Source != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "source")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Source)
+	}
+	if x.Destination != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "destination")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Destination)
+	}
+	if x.DestinationEndpoint != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "destination_endpoint")
+		protobuf_go_lite.TextWriteString(&sb, x.DestinationEndpoint)
+	}
+	if len(x.DestinationPeerIds) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "destination_peer_ids")
+		for i, v := range x.DestinationPeerIds {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			protobuf_go_lite.TextWriteString(&sb, v)
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	if len(x.SessionPeerIds) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "session_peer_ids")
+		for i, v := range x.SessionPeerIds {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			protobuf_go_lite.TextWriteString(&sb, v)
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	if x.SourceEndpoint != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "source_endpoint")
+		protobuf_go_lite.TextWriteString(&sb, x.SourceEndpoint)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *AccountTransition) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -2104,6 +2495,129 @@ func (m *ProviderFeatureResourceRef) UnmarshalVT(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *AccountTransition) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: AccountTransition: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: AccountTransition: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OperationId", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.OperationId = v
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Source", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Source == nil {
+				m.Source = &ProviderResourceRef{}
+			}
+			if err := m.Source.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Destination", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Destination == nil {
+				m.Destination = &ProviderResourceRef{}
+			}
+			if err := m.Destination.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DestinationEndpoint", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.DestinationEndpoint = v
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DestinationPeerIds", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.DestinationPeerIds = append(m.DestinationPeerIds, v)
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SessionPeerIds", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.SessionPeerIds = append(m.SessionPeerIds, v)
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SourceEndpoint", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.SourceEndpoint = v
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

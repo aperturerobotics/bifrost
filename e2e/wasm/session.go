@@ -26,6 +26,7 @@ type TestSession struct {
 	ownsBrowserCtx bool
 	retainedState  bool
 	page           playwright.Page
+	baseURL        string
 	workersMu      sync.Mutex
 	workers        []playwright.Worker
 	consoleMu      sync.Mutex
@@ -386,7 +387,7 @@ func (s *TestSession) release() {
 		s.clearWorkers()
 	}
 	if s.browserCtx != nil && s.ownsBrowserCtx {
-		s.browserCtx.Close()
+		s.h.closeStorageContext(s.browserCtx, s.baseURL)
 	}
 	s.browserCtx = nil
 	s.ownsBrowserCtx = false

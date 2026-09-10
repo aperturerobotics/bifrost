@@ -24,17 +24,17 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n8github.com/s4wave/spacewave/core/provider/provider.proto\x12\x08provider\"Y\n\x0cProviderInfo\x12\x13\n\x0bprovider_id\x18\x01 \x01(\t\x12\x34\n\x11provider_features\x18\x02 \x03(\x0e\x32\x19.provider.ProviderFeature\"I\n\x12ProviderFeatureMap\x12\x33\n\tmap_items\x18\x01 \x03(\x0b\x32 .provider.ProviderFeatureMapItem\"\x80\x01\n\x16ProviderFeatureMapItem\x12\x34\n\x11provider_features\x18\x01 \x03(\x0e\x32\x19.provider.ProviderFeature\x12\x13\n\x0bprovider_id\x18\x02 \x01(\t\x12\x1b\n\x13provider_account_id\x18\x03 \x01(\t\"\xdf\x01\n\x13ProviderAccountInfo\x12\x13\n\x0bprovider_id\x18\x01 \x01(\t\x12\x1b\n\x13provider_account_id\x18\x02 \x01(\t\x12\x34\n\x11provider_features\x18\x03 \x03(\x0e\x32\x19.provider.ProviderFeature\x12@\n\x17provider_account_status\x18\x04 \x01(\x0e\x32\x1f.provider.ProviderAccountStatus\x12\x1e\n\x16provider_account_state\x18\x05 \x01(\x0c\"S\n\x13ProviderResourceRef\x12\n\n\x02id\x18\x01 \x01(\t\x12\x13\n\x0bprovider_id\x18\x02 \x01(\t\x12\x1b\n\x13provider_account_id\x18\x03 \x01(\t\"\xae\x01\n\x1aProviderFeatureResourceRef\x12<\n\x15provider_resource_ref\x18\x01 \x01(\x0b\x32\x1d.provider.ProviderResourceRef\x12\x33\n\x10provider_feature\x18\x02 \x01(\x0e\x32\x19.provider.ProviderFeature\x12\x1d\n\x15provider_feature_meta\x18\x03 \x01(\x0c*\xb8\x01\n\x0fProviderFeature\x12\x18\n\x14ProviderFeature_NONE\x10\x00\x12\x1b\n\x17ProviderFeature_SESSION\x10\x01\x12!\n\x1dProviderFeature_SHARED_OBJECT\x10\x02\x12\x1f\n\x1bProviderFeature_BLOCK_STORE\x10\x03\x12*\n&ProviderFeature_SHARED_OBJECT_RECOVERY\x10\x04*\x8e\x02\n\x15ProviderAccountStatus\x12\x1e\n\x1aProviderAccountStatus_NONE\x10\x00\x12!\n\x1dProviderAccountStatus_PENDING\x10\x01\x12\x1f\n\x1bProviderAccountStatus_READY\x10\x02\x12!\n\x1dProviderAccountStatus_DELETED\x10\x03\x12 \n\x1cProviderAccountStatus_FAILED\x10\x04\x12)\n%ProviderAccountStatus_UNAUTHENTICATED\x10\x05\x12!\n\x1dProviderAccountStatus_DORMANT\x10\x06\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n8github.com/s4wave/spacewave/core/provider/provider.proto\x12\x08provider\"Y\n\x0cProviderInfo\x12\x13\n\x0bprovider_id\x18\x01 \x01(\t\x12\x34\n\x11provider_features\x18\x02 \x03(\x0e\x32\x19.provider.ProviderFeature\"I\n\x12ProviderFeatureMap\x12\x33\n\tmap_items\x18\x01 \x03(\x0b\x32 .provider.ProviderFeatureMapItem\"\x80\x01\n\x16ProviderFeatureMapItem\x12\x34\n\x11provider_features\x18\x01 \x03(\x0e\x32\x19.provider.ProviderFeature\x12\x13\n\x0bprovider_id\x18\x02 \x01(\t\x12\x1b\n\x13provider_account_id\x18\x03 \x01(\t\"\xdf\x01\n\x13ProviderAccountInfo\x12\x13\n\x0bprovider_id\x18\x01 \x01(\t\x12\x1b\n\x13provider_account_id\x18\x02 \x01(\t\x12\x34\n\x11provider_features\x18\x03 \x03(\x0e\x32\x19.provider.ProviderFeature\x12@\n\x17provider_account_status\x18\x04 \x01(\x0e\x32\x1f.provider.ProviderAccountStatus\x12\x1e\n\x16provider_account_state\x18\x05 \x01(\x0c\"S\n\x13ProviderResourceRef\x12\n\n\x02id\x18\x01 \x01(\t\x12\x13\n\x0bprovider_id\x18\x02 \x01(\t\x12\x1b\n\x13provider_account_id\x18\x03 \x01(\t\"\xae\x01\n\x1aProviderFeatureResourceRef\x12<\n\x15provider_resource_ref\x18\x01 \x01(\x0b\x32\x1d.provider.ProviderResourceRef\x12\x33\n\x10provider_feature\x18\x02 \x01(\x0e\x32\x19.provider.ProviderFeature\x12\x1d\n\x15provider_feature_meta\x18\x03 \x01(\x0c\"\xfb\x01\n\x11\x41\x63\x63ountTransition\x12\x14\n\x0coperation_id\x18\x01 \x01(\t\x12-\n\x06source\x18\x02 \x01(\x0b\x32\x1d.provider.ProviderResourceRef\x12\x32\n\x0b\x64\x65stination\x18\x03 \x01(\x0b\x32\x1d.provider.ProviderResourceRef\x12\x1c\n\x14\x64\x65stination_endpoint\x18\x04 \x01(\t\x12\x1c\n\x14\x64\x65stination_peer_ids\x18\x05 \x03(\t\x12\x18\n\x10session_peer_ids\x18\x06 \x03(\t\x12\x17\n\x0fsource_endpoint\x18\x07 \x01(\t*\xb8\x01\n\x0fProviderFeature\x12\x18\n\x14ProviderFeature_NONE\x10\x00\x12\x1b\n\x17ProviderFeature_SESSION\x10\x01\x12!\n\x1dProviderFeature_SHARED_OBJECT\x10\x02\x12\x1f\n\x1bProviderFeature_BLOCK_STORE\x10\x03\x12*\n&ProviderFeature_SHARED_OBJECT_RECOVERY\x10\x04*\x8e\x02\n\x15ProviderAccountStatus\x12\x1e\n\x1aProviderAccountStatus_NONE\x10\x00\x12!\n\x1dProviderAccountStatus_PENDING\x10\x01\x12\x1f\n\x1bProviderAccountStatus_READY\x10\x02\x12!\n\x1dProviderAccountStatus_DELETED\x10\x03\x12 \n\x1cProviderAccountStatus_FAILED\x10\x04\x12)\n%ProviderAccountStatus_UNAUTHENTICATED\x10\x05\x12!\n\x1dProviderAccountStatus_DORMANT\x10\x06\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'github.com.s4wave.spacewave.core.provider.provider_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_PROVIDERFEATURE']._serialized_start=856
-  _globals['_PROVIDERFEATURE']._serialized_end=1040
-  _globals['_PROVIDERACCOUNTSTATUS']._serialized_start=1043
-  _globals['_PROVIDERACCOUNTSTATUS']._serialized_end=1313
+  _globals['_PROVIDERFEATURE']._serialized_start=1110
+  _globals['_PROVIDERFEATURE']._serialized_end=1294
+  _globals['_PROVIDERACCOUNTSTATUS']._serialized_start=1297
+  _globals['_PROVIDERACCOUNTSTATUS']._serialized_end=1567
   _globals['_PROVIDERINFO']._serialized_start=70
   _globals['_PROVIDERINFO']._serialized_end=159
   _globals['_PROVIDERFEATUREMAP']._serialized_start=161
@@ -47,4 +47,6 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_PROVIDERRESOURCEREF']._serialized_end=676
   _globals['_PROVIDERFEATURERESOURCEREF']._serialized_start=679
   _globals['_PROVIDERFEATURERESOURCEREF']._serialized_end=853
+  _globals['_ACCOUNTTRANSITION']._serialized_start=856
+  _globals['_ACCOUNTTRANSITION']._serialized_end=1107
 # @@protoc_insertion_point(module_scope)

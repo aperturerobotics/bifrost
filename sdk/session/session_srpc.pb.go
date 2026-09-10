@@ -47,6 +47,8 @@ type SRPCSessionResourceServiceClient interface {
 	GeneratePairingCode(ctx context.Context, in *GeneratePairingCodeRequest) (*GeneratePairingCodeResponse, error)
 
 	CompletePairing(ctx context.Context, in *CompletePairingRequest) (*CompletePairingResponse, error)
+	// SelectPairingAccount fixes an account outcome before bilateral approval.
+	SelectPairingAccount(ctx context.Context, in *SelectPairingAccountRequest) (*SelectPairingAccountResponse, error)
 
 	GetSASEmoji(ctx context.Context, in *GetSASEmojiRequest) (*GetSASEmojiResponse, error)
 
@@ -387,6 +389,15 @@ func (c *srpcSessionResourceServiceClient) GeneratePairingCode(ctx context.Conte
 func (c *srpcSessionResourceServiceClient) CompletePairing(ctx context.Context, in *CompletePairingRequest) (*CompletePairingResponse, error) {
 	out := new(CompletePairingResponse)
 	err := c.cc.ExecCall(ctx, c.serviceID, "CompletePairing", in, out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *srpcSessionResourceServiceClient) SelectPairingAccount(ctx context.Context, in *SelectPairingAccountRequest) (*SelectPairingAccountResponse, error) {
+	out := new(SelectPairingAccountResponse)
+	err := c.cc.ExecCall(ctx, c.serviceID, "SelectPairingAccount", in, out)
 	if err != nil {
 		return nil, err
 	}
@@ -743,6 +754,8 @@ type SRPCSessionResourceServiceServer interface {
 	GeneratePairingCode(context.Context, *GeneratePairingCodeRequest) (*GeneratePairingCodeResponse, error)
 
 	CompletePairing(context.Context, *CompletePairingRequest) (*CompletePairingResponse, error)
+	// SelectPairingAccount fixes an account outcome before bilateral approval.
+	SelectPairingAccount(context.Context, *SelectPairingAccountRequest) (*SelectPairingAccountResponse, error)
 
 	GetSASEmoji(context.Context, *GetSASEmojiRequest) (*GetSASEmojiResponse, error)
 
@@ -836,6 +849,7 @@ func (SRPCSessionResourceServiceHandler) GetMethodIDs() []string {
 		"LockSession",
 		"GeneratePairingCode",
 		"CompletePairing",
+		"SelectPairingAccount",
 		"GetSASEmoji",
 		"ConfirmSASMatch",
 		"ConfirmPairing",
@@ -906,6 +920,8 @@ func (d *SRPCSessionResourceServiceHandler) InvokeMethod(
 		return true, d.InvokeMethod_GeneratePairingCode(d.impl, strm)
 	case "CompletePairing":
 		return true, d.InvokeMethod_CompletePairing(d.impl, strm)
+	case "SelectPairingAccount":
+		return true, d.InvokeMethod_SelectPairingAccount(d.impl, strm)
 	case "GetSASEmoji":
 		return true, d.InvokeMethod_GetSASEmoji(d.impl, strm)
 	case "ConfirmSASMatch":
@@ -1142,6 +1158,18 @@ func (SRPCSessionResourceServiceHandler) InvokeMethod_CompletePairing(impl SRPCS
 		return err
 	}
 	out, err := impl.CompletePairing(strm.Context(), req)
+	if err != nil {
+		return err
+	}
+	return strm.MsgSend(out)
+}
+
+func (SRPCSessionResourceServiceHandler) InvokeMethod_SelectPairingAccount(impl SRPCSessionResourceServiceServer, strm srpc.Stream) error {
+	req := new(SelectPairingAccountRequest)
+	if err := strm.MsgRecv(req); err != nil {
+		return err
+	}
+	out, err := impl.SelectPairingAccount(strm.Context(), req)
 	if err != nil {
 		return err
 	}
@@ -1632,6 +1660,14 @@ type SRPCSessionResourceService_CompletePairingStream interface {
 }
 
 type srpcSessionResourceService_CompletePairingStream struct {
+	srpc.Stream
+}
+
+type SRPCSessionResourceService_SelectPairingAccountStream interface {
+	srpc.Stream
+}
+
+type srpcSessionResourceService_SelectPairingAccountStream struct {
 	srpc.Stream
 }
 

@@ -18,9 +18,10 @@ import (
 
 // localPairingState holds the ManualSignalTransport between RPC calls.
 type localPairingState struct {
-	mu        sync.Mutex
-	transport *s4wave_session.ManualSignalTransport
-	waitLink  *routine.RoutineContainer
+	mu           sync.Mutex
+	transport    *s4wave_session.ManualSignalTransport
+	waitLink     *routine.RoutineContainer
+	offerCurrent bool
 }
 
 // getOrInitLocalPairing returns the session's local pairing state, creating it
@@ -45,7 +46,7 @@ func (r *SessionResource) getOrInitLocalPairing() *localPairingState {
 
 // replaceLocalPairingTransport swaps the manual signal transport and stops any
 // outstanding wait-link routine bound to the previous transport.
-func (r *SessionResource) replaceLocalPairingTransport(tpt *s4wave_session.ManualSignalTransport) {
+func (r *SessionResource) replaceLocalPairingTransport(tpt *s4wave_session.ManualSignalTransport, offerCurrent bool) {
 	lps := r.getOrInitLocalPairing()
 	lps.mu.Lock()
 	defer lps.mu.Unlock()
@@ -55,6 +56,7 @@ func (r *SessionResource) replaceLocalPairingTransport(tpt *s4wave_session.Manua
 		_ = lps.transport.Close()
 	}
 	lps.transport = tpt
+	lps.offerCurrent = offerCurrent
 }
 
 // startLocalPairingLinkWaiter starts or replaces the direct-link wait routine.
@@ -70,12 +72,16 @@ func (r *SessionResource) startLocalPairingLinkWaiter(remotePeerID peer.ID) erro
 	defer lps.mu.Unlock()
 
 	tpt := lps.transport
+	offerCurrent := lps.offerCurrent
 	if tpt == nil {
 		return errors.New("no pending local pairing transport")
 	}
+	// A watcher may start before the new link arrives. Retire the previous
+	// decision before returning its replacement signaling response.
+	engine.Clear()
 
 	_, _ = lps.waitLink.SetRoutine(func(ctx context.Context) error {
-		r.waitLocalPairingLink(ctx, tpt, remotePeerID, engine)
+		r.waitLocalPairingLink(ctx, tpt, remotePeerID, engine, offerCurrent)
 		return nil
 	})
 	lps.waitLink.SetContext(parentCtx, true)
@@ -128,7 +134,7 @@ func (r *SessionResource) CreateLocalPairingOffer(ctx context.Context, _ *s4wave
 		return nil, errors.Wrap(err, "encode offer")
 	}
 
-	r.replaceLocalPairingTransport(tpt)
+	r.replaceLocalPairingTransport(tpt, true)
 
 	return &s4wave_session.CreateLocalPairingOfferResponse{OfferPayload: encoded}, nil
 }
@@ -180,7 +186,7 @@ func (r *SessionResource) AcceptLocalPairingOffer(ctx context.Context, req *s4wa
 	}
 
 	// Store the transport for link establishment (answerer also needs WaitLink).
-	r.replaceLocalPairingTransport(tpt)
+	r.replaceLocalPairingTransport(tpt, req.GetOfferCurrentAccount())
 
 	// Start link establishment in the background. The WatchPairingStatus
 	// stream picks up the status change once the link is ready.
@@ -240,6 +246,7 @@ func (r *SessionResource) waitLocalPairingLink(
 	tpt *s4wave_session.ManualSignalTransport,
 	remotePeerID peer.ID,
 	engine *pairing.Engine,
+	offerCurrent bool,
 ) {
 	ctx, cancel := context.WithTimeout(parentCtx, localPairingLinkTimeout)
 	defer cancel()
@@ -268,5 +275,5 @@ func (r *SessionResource) waitLocalPairingLink(
 		return
 	}
 
-	engine.StartDirect(lnk, tpt.IsOfferer())
+	engine.StartDirect(lnk, tpt.IsOfferer(), offerCurrent)
 }

@@ -72,13 +72,13 @@ func (e *Engine) GenerateCode(ctx context.Context, relay Relay) (string, error) 
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
 		return "", errors.Errorf("pairing code registration failed: HTTP %d", resp.StatusCode)
 	}
-	parentCtx, active := e.begin(true, string(code), "", StatusCodeGenerated)
+	parentCtx, active := e.begin(true, true, string(code), "", StatusCodeGenerated)
 	go e.runSolicit(parentCtx, active, st)
 	return string(code), nil
 }
 
 // CompleteCode resolves a code and retains the peer link through enrollment.
-func (e *Engine) CompleteCode(ctx context.Context, relay Relay, code string) (peer.ID, error) {
+func (e *Engine) CompleteCode(ctx context.Context, relay Relay, code string, offerCurrent bool) (peer.ID, error) {
 	e.Clear()
 	st, err := e.transport(ctx, relay)
 	if err != nil {
@@ -112,7 +112,7 @@ func (e *Engine) CompleteCode(ctx context.Context, relay Relay, code string) (pe
 	if err != nil {
 		return "", err
 	}
-	parentCtx, active := e.begin(false, "", remotePeer, StatusWaitingForPeer)
+	parentCtx, active := e.begin(false, offerCurrent, "", remotePeer, StatusWaitingForPeer)
 	go func() {
 		_, release, err := link.EstablishLinkWithPeerEx(parentCtx, st.GetChildBus(), e.peerID, remotePeer, false)
 		if err != nil {

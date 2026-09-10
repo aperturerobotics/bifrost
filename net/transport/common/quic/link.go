@@ -3,6 +3,8 @@ package transport_quic
 import (
 	"context"
 	"crypto"
+	"crypto/rand"
+	"encoding/binary"
 	"io"
 	"net"
 	"sync"
@@ -63,11 +65,16 @@ func NewLink(
 		return nil, err
 	}
 
-	// Compute link addresses and deterministic identifiers.
+	// Each physical connection has its own identity. Manual and signaled
+	// WebRTC connections can share both addresses and authenticated peers.
 	remoteAddr := sess.RemoteAddr()
+	var linkID [8]byte
+	if _, err := rand.Read(linkID[:]); err != nil {
+		return nil, err
+	}
 
 	nctx, nctxCancel := context.WithCancel(ctx) //nolint:gosec // cancel stored on Link and called by Close
-	uuid := NewLinkUUID(localAddr, remoteAddr, remotePeerID)
+	uuid := binary.LittleEndian.Uint64(linkID[:])
 	remoteTransportUUID := NewTransportUUID(remoteAddr.String(), remotePeerID)
 
 	// Assemble the link state with local and remote session metadata.
@@ -153,7 +160,6 @@ func (l *Link) AcceptStream() (stream.Stream, stream.OpenOpts, error) {
 			_ = qstream.Close()
 		}
 		return nil, stream.OpenOpts{}, context.Canceled
-
 	}
 
 	// Translate clean QUIC closure to EOF and preserve other errors.

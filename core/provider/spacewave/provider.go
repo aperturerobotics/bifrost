@@ -3,6 +3,7 @@ package provider_spacewave
 import (
 	"context"
 	"net/http"
+	"slices"
 	"sync"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 	api "github.com/s4wave/spacewave/core/provider/spacewave/api"
 	"github.com/s4wave/spacewave/core/session"
 	"github.com/s4wave/spacewave/core/sobject"
+	"github.com/s4wave/spacewave/core/transport"
 	block_transform "github.com/s4wave/spacewave/db/block/transform"
 	transform_blockenc "github.com/s4wave/spacewave/db/block/transform/blockenc"
 	transform_gzip "github.com/s4wave/spacewave/db/block/transform/gzip"
@@ -63,6 +65,8 @@ type Provider struct {
 	// soListCtrs caches shared object list containers per account ID.
 	// Lives at Provider level so it survives ProviderAccount recreation.
 	soListCtrs map[string]*ccontainer.CContainer[*sobject.SharedObjectList]
+	// transportOptions configure each Session before its transport starts.
+	transportOptions []transport.SessionTransportOption
 }
 
 // providerBackoff is the default backoff for provider services.
@@ -104,6 +108,7 @@ func NewProvider(
 	info *provider.ProviderInfo,
 	peer peer.Peer,
 	handler provider.ProviderHandler,
+	transportOptions ...transport.SessionTransportOption,
 ) *Provider {
 	sfs := block_transform.NewStepFactorySet()
 	sfs.AddStepFactory(transform_gzip.NewStepFactory())
@@ -123,7 +128,8 @@ func NewProvider(
 		httpCli: &http.Client{
 			Transport: newProviderHTTPTransport(cacheSeedBuf),
 		},
-		cacheSeedBuf: cacheSeedBuf,
+		cacheSeedBuf:     cacheSeedBuf,
+		transportOptions: slices.Clone(transportOptions),
 	}
 	p.accountRc = keyed.NewKeyedRefCountWithLogger(
 		p.buildProviderAccountTracker,

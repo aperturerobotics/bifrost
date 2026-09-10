@@ -61,7 +61,7 @@ func TestNoCloudAnonymousParticipantSync(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CreateLocalPairingOffer (A): %v", err)
 	}
-	answerResp, err := sdkB.AcceptLocalPairingOffer(ctx, offerResp.GetOfferPayload())
+	answerResp, err := sdkB.AcceptLocalPairingOffer(ctx, offerResp.GetOfferPayload(), false)
 	if err != nil {
 		t.Fatalf("AcceptLocalPairingOffer (B): %v", err)
 	}

@@ -15,7 +15,7 @@ var ErrNoSessionTransport = errors.New("no session transport running")
 func (s *Session) GetPairingEngine() (*pairing.Engine, error) {
 	s.pairingMu.Lock()
 	defer s.pairingMu.Unlock()
-	if s.sessionPriv == nil || s.ctx.Err() != nil {
+	if s.GetPrivKey() == nil || s.ctx.Err() != nil {
 		return nil, errors.New("Session is locked or closed")
 	}
 	if s.pairingEngine != nil {
@@ -23,8 +23,7 @@ func (s *Session) GetPairingEngine() (*pairing.Engine, error) {
 	}
 	ctx, cancel := context.WithCancel(s.ctx)
 	a := s.tkr.a
-	key := s.sessionPriv
-	engine, err := pairing.NewEngine(ctx, a.le, a.t.p.b, key, a, s.GetPairingTransport)
+	engine, err := pairing.NewEngine(ctx, a.le, a.t.p.b, s, a, s.GetPairingTransport)
 	if err != nil {
 		cancel()
 		return nil, err
@@ -51,7 +50,7 @@ func (s *Session) GetPairingTransport(ctx context.Context, relay pairing.Relay) 
 			return st, st.AwaitReady(ctx)
 		}
 	}
-	if _, _, err := a.ensureSessionTransport(ctx, s.sessionPriv, relay.URL, relay.SigningEnvPrefix); err != nil {
+	if _, _, err := a.ensureSessionTransport(ctx, s.GetPrivKey(), relay.URL, relay.SigningEnvPrefix); err != nil {
 		return nil, err
 	}
 	st := a.GetSessionTransport()

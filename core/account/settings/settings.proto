@@ -2,6 +2,7 @@ syntax = "proto3";
 package account.settings;
 
 import "github.com/s4wave/spacewave/core/session/session.proto";
+import "github.com/s4wave/spacewave/core/provider/provider.proto";
 import "github.com/s4wave/spacewave/core/sobject/sobject.proto";
 import "github.com/s4wave/spacewave/sdk/command/command.proto";
 
@@ -24,6 +25,10 @@ message AccountSettings {
   repeated AccountSession sessions = 6;
   // Catalog names account objects. Checkpoints require separate authenticated enrollment.
   repeated AccountCatalogEntry catalog = 7;
+  // Transition redirects returning Sessions after all destination resources are durable.
+  .provider.AccountTransition transition = 8;
+  // AcceptedMigrations authorizes returning source Session peers to bind their local storage.
+  repeated .provider.AccountTransition accepted_migrations = 9;
 }
 
 // AccountSession is an approved account replica, distinct from a managed Device.
@@ -97,6 +102,10 @@ message AccountSettingsOp {
     AccountSession upsert_account_session = 9;
     // UpsertCatalogEntry publishes an object or its permanent deletion tombstone.
     AccountCatalogEntry upsert_catalog_entry = 10;
+    // AcceptAccountMigration records provider-approved returning Session authorization.
+    .provider.AccountTransition accept_account_migration = 11;
+    // CommitAccountTransition fixes the destination once resources and Sessions are durable.
+    .provider.AccountTransition commit_account_transition = 12;
   }
 }
 

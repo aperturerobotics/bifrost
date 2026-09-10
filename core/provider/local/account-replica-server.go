@@ -3,12 +3,12 @@ package provider_local
 import (
 	"context"
 
-	"github.com/s4wave/spacewave/core/pairing"
-
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/starpc/srpc"
 	"github.com/aperturerobotics/util/routine"
 	"github.com/pkg/errors"
+	"github.com/s4wave/spacewave/core/pairing"
+	provider_migration "github.com/s4wave/spacewave/core/provider/migration"
 	"github.com/s4wave/spacewave/net/link"
 	"github.com/s4wave/spacewave/net/protocol"
 	stream_srpc_server "github.com/s4wave/spacewave/net/stream/srpc/server"
@@ -59,8 +59,11 @@ func (a *ProviderAccount) startAccountReplicaSync(state *p2pSyncState) error {
 	server, err := stream_srpc_server.NewServer(
 		transport.GetChildBus(), a.le,
 		controller.NewInfo("alpha/account-replica", controller.MustParseVersion("0.0.1"), "account replica service"),
-		[]stream_srpc_server.RegisterFn{func(mux srpc.Mux) error { return SRPCRegisterAccountReplicaService(mux, a) }},
-		[]protocol.ID{accountReplicaProtocol}, []string{transport.GetPeerID().String()}, false,
+		[]stream_srpc_server.RegisterFn{
+			func(mux srpc.Mux) error { return SRPCRegisterAccountReplicaService(mux, a) },
+			func(mux srpc.Mux) error { return provider_migration.SRPCRegisterAccountMigrationService(mux, a) },
+		},
+		[]protocol.ID{accountReplicaProtocol, provider_migration.RecoveryProtocol}, []string{transport.GetPeerID().String()}, false,
 	)
 	if err != nil {
 		return err

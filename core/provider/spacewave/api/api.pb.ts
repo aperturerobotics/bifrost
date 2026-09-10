@@ -12,6 +12,7 @@ import {
 } from '@aptre/protobuf-es-lite/message'
 import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { AccountTransition } from '../../provider.pb.js'
 import type { SOReceiptState } from '../../../sobject/sobject.pb.js'
 import {
   SharedObjectConfig,
@@ -681,6 +682,108 @@ export const ListAccountSessionsResponse: MessageType<ListAccountSessionsRespons
         kind: 'message',
         T: () => AccountSessionInfo,
         repeated: true,
+      },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
+ * AccountMigrationRequest authorizes source Sessions under the destination account.
+ * The ordinary Session-registration endpoint continues to reject cross-account peers.
+ *
+ * @generated from message provider.spacewave.api.AccountMigrationRequest
+ */
+export interface AccountMigrationRequest {
+  /**
+   * Transition fixes the complete account and Session relationship.
+   *
+   * @generated from field: provider.AccountTransition transition = 1;
+   */
+  transition?: AccountTransition
+  /**
+   * SourcePeerId identifies the source USER Session authorizing the move.
+   *
+   * @generated from field: string source_peer_id = 2;
+   */
+  sourcePeerId?: string
+  /**
+   * SourceSignature signs the migration domain followed by the binary Transition.
+   *
+   * @generated from field: bytes source_signature = 3;
+   */
+  sourceSignature?: Uint8Array
+  /**
+   * CheckOnly performs permission and capacity preflight without mutation.
+   *
+   * @generated from field: bool check_only = 4;
+   */
+  checkOnly?: boolean
+}
+
+export const AccountMigrationRequest: MessageType<AccountMigrationRequest> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'provider.spacewave.api.AccountMigrationRequest',
+    fields: [
+      {
+        no: 1,
+        name: 'transition',
+        kind: 'message',
+        T: () => AccountTransition,
+      },
+      { no: 2, name: 'source_peer_id', kind: 'scalar', T: ScalarType.STRING },
+      { no: 3, name: 'source_signature', kind: 'scalar', T: ScalarType.BYTES },
+      { no: 4, name: 'check_only', kind: 'scalar', T: ScalarType.BOOL },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
+ * AccountDepartureRequest retains an authenticated redirect from cloud to local storage.
+ *
+ * @generated from message provider.spacewave.api.AccountDepartureRequest
+ */
+export interface AccountDepartureRequest {
+  /**
+   * Transition is the destination's durable resource and Session acceptance.
+   *
+   * @generated from field: provider.AccountTransition transition = 1;
+   */
+  transition?: AccountTransition
+  /**
+   * DestinationPeerId identifies the independent receiving account Session.
+   *
+   * @generated from field: string destination_peer_id = 2;
+   */
+  destinationPeerId?: string
+  /**
+   * DestinationSignature signs the same migration domain and binary Transition.
+   *
+   * @generated from field: bytes destination_signature = 3;
+   */
+  destinationSignature?: Uint8Array
+}
+
+export const AccountDepartureRequest: MessageType<AccountDepartureRequest> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'provider.spacewave.api.AccountDepartureRequest',
+    fields: [
+      {
+        no: 1,
+        name: 'transition',
+        kind: 'message',
+        T: () => AccountTransition,
+      },
+      {
+        no: 2,
+        name: 'destination_peer_id',
+        kind: 'scalar',
+        T: ScalarType.STRING,
+      },
+      {
+        no: 3,
+        name: 'destination_signature',
+        kind: 'scalar',
+        T: ScalarType.BYTES,
       },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
@@ -5528,6 +5631,12 @@ export interface AccountInfoResponse {
    * @generated from field: string entity_uuid = 13;
    */
   entityUuid?: string
+  /**
+   * Transition identifies the most recent provider-authorized move of this Session.
+   *
+   * @generated from field: provider.AccountTransition transition = 14;
+   */
+  transition?: AccountTransition
 }
 
 export const AccountInfoResponse: MessageType<AccountInfoResponse> =
@@ -5567,6 +5676,12 @@ export const AccountInfoResponse: MessageType<AccountInfoResponse> =
       },
       { no: 12, name: 'deleted_at', kind: 'scalar', T: ScalarType.INT64 },
       { no: 13, name: 'entity_uuid', kind: 'scalar', T: ScalarType.STRING },
+      {
+        no: 14,
+        name: 'transition',
+        kind: 'message',
+        T: () => AccountTransition,
+      },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })
@@ -5917,6 +6032,18 @@ export interface AccountStateResponse {
    * @generated from field: int64 deleted_at = 16;
    */
   deletedAt?: bigint
+  /**
+   * Transition redirects this Session before mounting another account's metadata.
+   *
+   * @generated from field: provider.AccountTransition transition = 17;
+   */
+  transition?: AccountTransition
+  /**
+   * AcceptedMigrations retain source redirects that destination replicas deliver.
+   *
+   * @generated from field: repeated provider.AccountTransition accepted_migrations = 18;
+   */
+  acceptedMigrations?: AccountTransition[]
 }
 
 export const AccountStateResponse: MessageType<AccountStateResponse> =
@@ -5977,6 +6104,19 @@ export const AccountStateResponse: MessageType<AccountStateResponse> =
         T: ScalarType.INT64,
       },
       { no: 16, name: 'deleted_at', kind: 'scalar', T: ScalarType.INT64 },
+      {
+        no: 17,
+        name: 'transition',
+        kind: 'message',
+        T: () => AccountTransition,
+      },
+      {
+        no: 18,
+        name: 'accepted_migrations',
+        kind: 'message',
+        T: () => AccountTransition,
+        repeated: true,
+      },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })
@@ -11004,6 +11144,14 @@ export interface CreateWithStateRequest {
    * @generated from field: bytes root_state = 7;
    */
   rootState?: Uint8Array
+  /**
+   * ConfigHistory imports the complete signed chain and retained key epochs.
+   * When present, ConfigState is its final checkpoint and RootState may be later
+   * than the first root. The authenticated account must own that checkpoint.
+   *
+   * @generated from field: bytes config_history = 8;
+   */
+  configHistory?: Uint8Array
 }
 
 export const CreateWithStateRequest: MessageType<CreateWithStateRequest> =
@@ -11017,6 +11165,7 @@ export const CreateWithStateRequest: MessageType<CreateWithStateRequest> =
       { no: 5, name: 'account_private', kind: 'scalar', T: ScalarType.BOOL },
       { no: 6, name: 'config_state', kind: 'scalar', T: ScalarType.BYTES },
       { no: 7, name: 'root_state', kind: 'scalar', T: ScalarType.BYTES },
+      { no: 8, name: 'config_history', kind: 'scalar', T: ScalarType.BYTES },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })

@@ -242,7 +242,8 @@ func (c *Controller) buildApp(ctx context.Context, binding resource_root.AppStor
 
 	// The installation owns the plugin host Volume and each provider owns its
 	// usual separately named account Volumes through the selected Storage.
-	pluginVolumeCtrl, err := start(&storage_volume.Config{StorageId: "default", StorageVolumeId: "plugin-host",
+	pluginVolumeCtrl, err := start(&storage_volume.Config{
+		StorageId: "default", StorageVolumeId: "plugin-host",
 		VolumeConfig: &volume_controller.Config{VolumeIdAlias: []string{bldr_plugin.PluginVolumeID}},
 	})
 	if err != nil {

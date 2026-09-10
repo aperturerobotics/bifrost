@@ -4,10 +4,9 @@ import (
 	"context"
 	"slices"
 
-	"github.com/s4wave/spacewave/core/pairing"
-
 	"github.com/pkg/errors"
 	account_settings "github.com/s4wave/spacewave/core/account/settings"
+	"github.com/s4wave/spacewave/core/pairing"
 	"github.com/s4wave/spacewave/core/session"
 	"github.com/s4wave/spacewave/core/sobject"
 	sobject_invite "github.com/s4wave/spacewave/core/sobject/invite"
@@ -57,7 +56,10 @@ func (a *ProviderAccount) installPairingObject(ctx context.Context, offer *pairi
 	if object.GetState() == nil || entry.GetMeta().GetBodyType() == "" {
 		return errors.New("pairing object checkpoint is incomplete")
 	}
-	return a.mountEnrolledSO(ctx, providerRef.GetId(), entry.GetMeta(), entry.GetSource(), object.GetState(), sourcePeer)
+	if err := a.mountEnrolledSO(ctx, providerRef.GetId(), entry.GetMeta(), entry.GetSource(), object.GetState(), sourcePeer); err != nil {
+		return err
+	}
+	return a.retainEnrollmentHistory(ctx, object)
 }
 
 // bindPairingSettings replaces only the empty settings object created while

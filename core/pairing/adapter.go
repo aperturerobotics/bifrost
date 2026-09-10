@@ -3,6 +3,7 @@ package pairing
 import (
 	"context"
 
+	"github.com/s4wave/spacewave/core/provider"
 	"github.com/s4wave/spacewave/core/session"
 	"github.com/s4wave/spacewave/core/transport"
 	"github.com/s4wave/spacewave/net/crypto"
@@ -15,7 +16,15 @@ import (
 type AccountAdapter interface {
 	OfferPairingAccount(context.Context, crypto.PrivKey) (*AccountOffer, error)
 	PreparePairingReceiver(context.Context, *AccountOffer, peer.ID, peer.ID) (*Receiver, error)
-	EnrollPairingReceiver(context.Context, *stream_packet.Session, *AccountOffer, *Identity, crypto.PrivKey, peer.ID, peer.ID) error
+	EnrollPairingReceiver(context.Context, *stream_packet.Session, *Enrollment, crypto.PrivKey, peer.ID, peer.ID) error
+}
+
+// AccountMerger moves this client's source account into the selected destination.
+// Completion requires durable resource and Session transitions while retaining
+// source recovery through any interrupted transfer.
+type AccountMerger interface {
+	// MergePairingAccount preserves the destination identity and its local storage key.
+	MergePairingAccount(context.Context, session.Session, provider.ProviderAccount, *session.SessionRef) (func(context.Context) (*session.SessionRef, error), error)
 }
 
 // Receiver retains the approved receiving identity through durable attachment.

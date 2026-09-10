@@ -2,6 +2,7 @@ package provider_local
 
 import (
 	"context"
+	"slices"
 	"testing"
 
 	"github.com/s4wave/spacewave/core/sobject"
@@ -42,9 +43,19 @@ func TestSOConfigHistoryRetainsHostChanges(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	readerKey, _, err := crypto.GenerateKeyPair(crypto.KeyType_Ed25519, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	reader, err := peer.IDFromPrivateKey(readerKey)
+	if err != nil {
+		t.Fatal(err)
+	}
 	initial := &sobject.SOState{
 		Config: &sobject.SharedObjectConfig{Participants: []*sobject.SOParticipantConfig{{
 			PeerId: pid.String(), Role: sobject.SOParticipantRole_SOParticipantRole_OWNER,
+		}, {
+			PeerId: reader.String(), Role: sobject.SOParticipantRole_SOParticipantRole_READER,
 		}}},
 		Root: &sobject.SORoot{InnerSeqno: 1, Inner: []byte("retained-root")},
 	}
@@ -191,6 +202,27 @@ func TestSOConfigHistoryRetainsHostChanges(t *testing.T) {
 	}
 	if !retained.EqualVT(next) {
 		t.Fatal("later signed entry was not retained")
+	}
+	read.Discard()
+
+	// Cloud projections may reorder membership without changing signed authority.
+	ordered := got.GetConfig().CloneVT()
+	projection, err := sobject.BuildSOConfigChange(ordered, ordered, sobject.SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_ADD_INVITE, priv, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := host.ApplyConfigChange(ctx, projection, func(state *sobject.SOState) error {
+		slices.Reverse(state.Config.Participants)
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	projected, err := host.GetHostState(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := sobject.VerifyConfigChainSuffix(ordered, projected.GetConfig(), []*sobject.SOConfigChange{projection}); err != nil {
+		t.Fatal(err)
 	}
 }
 
