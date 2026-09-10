@@ -163,6 +163,12 @@ message SOStateDeltaEntry {
   bytes change_data = 3;
 }
 
+// PostOpsRequest is one bounded, atomic cloud operation checkpoint.
+message PostOpsRequest {
+  // Operations contains at most 50 signed operations and 1 MiB of encoded data.
+  repeated .sobject.SOOperation operations = 1;
+}
+
 // PostRootRequest is the binary payload for POST /sobject/:id/root.
 message PostRootRequest {
   // Root is the next signed root state.
@@ -1563,6 +1569,24 @@ message VerifiedSOStateCache {
   .sobject.SOState peer_state = 6;
   // ConfigHistory retains authenticated transitions for peer catch-up.
   repeated .sobject.SOConfigChange config_history = 7;
+  // PendingPublication retains locally accepted work until cloud acknowledgment.
+  PendingSOPublication pending_publication = 8;
+  // CloudState is the authenticated base for cloud deltas, separate from peers.
+  .sobject.SOState cloud_state = 9;
+  // CloudSequence is the changelog cursor belonging to CloudState.
+  uint64 cloud_sequence = 10;
+}
+
+// PendingSOPublication survives process loss without moving its first deadline.
+message PendingSOPublication {
+  // Root is the newest locally validated checkpoint awaiting cloud acceptance.
+  .sobject.SORoot root = 1;
+  // Operations are signed local writes not yet acknowledged by the cloud.
+  repeated .sobject.SOOperation operations = 2;
+  // Rejections are signed outcomes accompanying the coalesced root.
+  repeated .sobject.SOOperationRejection rejections = 3;
+  // FirstPendingUnixMilli starts the bounded cloud-checkpoint interval.
+  int64 first_pending_unix_milli = 4;
 }
 
 // TicketResponse is the response body for POST /session/ticket.

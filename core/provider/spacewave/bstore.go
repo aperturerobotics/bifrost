@@ -26,6 +26,7 @@ import (
 	block_store_controller "github.com/s4wave/spacewave/db/block/store/controller"
 	"github.com/s4wave/spacewave/db/bucket"
 	lookup_concurrent "github.com/s4wave/spacewave/db/bucket/lookup/concurrent"
+	kvtx_prefixer "github.com/s4wave/spacewave/db/kvtx/prefixer"
 	"github.com/s4wave/spacewave/db/volume"
 	kvtx_volume "github.com/s4wave/spacewave/db/volume/common/kvtx"
 	"github.com/s4wave/spacewave/net/hash"
@@ -60,6 +61,10 @@ type BlockStore struct {
 	decodedBlocks *block.DecodedBlockCache
 	// forceSync flushes pending dirty blocks to the cloud immediately.
 	forceSync func(ctx context.Context) error
+	// syncer coalesces block uploads with mounted SharedObject publications.
+	syncer *syncController
+	// retention shares graph proofs and deletion exclusion across scoped handles.
+	retention *blockPublicationRetention
 	// refreshRemote pulls remote packfile metadata into the local read manifest.
 	refreshRemote func(ctx context.Context) error
 	// remoteSequence returns the local manifest's last-seen remote sequence.
@@ -110,6 +115,8 @@ func (b *BlockStore) BeginReadOperation(ctx context.Context) (block.StoreOps, fu
 		store:          scopedStore,
 		decodedBlocks:  b.decodedBlocks,
 		forceSync:      b.forceSync,
+		syncer:         b.syncer,
+		retention:      b.retention,
 		refreshRemote:  b.refreshRemote,
 		remoteSequence: b.remoteSequence,
 	}, release, nil
@@ -122,6 +129,16 @@ func (b *BlockStore) PutBlock(ctx context.Context, data []byte, opts *block.PutO
 
 // PutBlockBatch forwards batched writes to the inner store.
 func (b *BlockStore) PutBlockBatch(ctx context.Context, entries []*block.PutBatchEntry) error {
+	for _, entry := range entries {
+		if entry != nil && entry.Tombstone {
+			release, err := b.retention.invalidate(ctx)
+			if err != nil {
+				return err
+			}
+			defer release()
+			break
+		}
+	}
 	// Tombstone publication and the decoded cache are separate lower stores;
 	// invalidate on both sides so in-flight decoded stores cannot cross the
 	// mutation boundary.
@@ -150,6 +167,11 @@ func (b *BlockStore) GetBlockExistsBatch(ctx context.Context, refs []*block.Bloc
 
 // RmBlock forwards to the inner store.
 func (b *BlockStore) RmBlock(ctx context.Context, ref *block.BlockRef) error {
+	release, err := b.retention.invalidate(ctx)
+	if err != nil {
+		return err
+	}
+	defer release()
 	// Delete publication and the decoded cache are separate lower stores;
 	// invalidate on both sides so in-flight decoded stores cannot cross the
 	// mutation boundary.
@@ -364,6 +386,9 @@ func (t *bstoreTracker) executeBlockStoreTracker(rctx context.Context) error {
 		decodedBlocks: decodedBlocks,
 		cacheStore:    sourceUpper,
 		cloudStore:    sourceLower,
+		retention: &blockPublicationRetention{
+			store: kvtx_prefixer.NewPrefixer(objStore, []byte("publication-retention/")),
+		},
 	}
 
 	// Build and register block store controller on the bus.
@@ -413,6 +438,7 @@ func (t *bstoreTracker) executeBlockStoreTracker(rctx context.Context) error {
 
 	// Wire dirty tracking from PutBlock to syncController.
 	dirtyUpper.markDirty = sc.MarkDirty
+	bstoreHandle.syncer = sc
 	bstoreHandle.forceSync = sc.FlushNowUnordered
 	bstoreHandle.refreshRemote = sc.PullNow
 	bstoreHandle.remoteSequence = sc.LastPullSequence

@@ -224,7 +224,7 @@ func TestSyncPush_UsesWriteTicketWhenConfigured(t *testing.T) {
 		if payload.GetBodyHashHex() != hex.EncodeToString(h[:]) {
 			t.Errorf("unexpected proof body hash: %q", payload.GetBodyHashHex())
 		}
-		if payload.GetSignedHeaders() != "content-type=application/octet-stream,x-block-count=42,x-bloom-filter="+base64.StdEncoding.EncodeToString(bloomFilter)+",x-pack-id=test-pack-id" {
+		if payload.GetSignedHeaders() != "content-type=application%2Foctet-stream,x-block-count=42,x-bloom-filter="+base64.StdEncoding.EncodeToString(bloomFilter)+",x-pack-id=test-pack-id" {
 			t.Errorf("unexpected proof signed headers: %q", payload.GetSignedHeaders())
 		}
 

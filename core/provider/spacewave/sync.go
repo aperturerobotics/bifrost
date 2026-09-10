@@ -67,6 +67,8 @@ type syncController struct {
 	// dirtySize and dirtyPendingAt project durable dirty records under bcast.
 	dirtySize      int64
 	dirtyPendingAt time.Time
+	// publications tracks mounted hosts with durable pending cloud work.
+	publications map[*cloudSOHost]time.Time
 	// bcast wakes the scheduler when the durable dirty queue changes.
 	bcast broadcast.Broadcast
 	// dirtyMtx orders durable dirty mutations and their in-memory projection.
@@ -138,6 +140,11 @@ func (s *syncController) pendingSnapshot() (time.Time, int64, <-chan struct{}) {
 	var changed <-chan struct{}
 	s.bcast.HoldLock(func(_ func(), getWait func() <-chan struct{}) {
 		first, dirty, changed = s.dirtyPendingAt, s.dirtySize, getWait()
+		for _, pendingAt := range s.publications {
+			if first.IsZero() || pendingAt.Before(first) {
+				first = pendingAt
+			}
+		}
 	})
 	return first, dirty, changed
 }
@@ -267,14 +274,14 @@ func (s *syncController) waitDirtySyncGate(ctx context.Context) error {
 func (s *syncController) FlushNow(ctx context.Context) error {
 	s.flushMtx.Lock()
 	defer s.flushMtx.Unlock()
-	return s.flush(ctx, true)
+	return s.flushCheckpoint(ctx, true)
 }
 
 // FlushNowUnordered flushes dirty blocks without refgraph locality ordering.
 func (s *syncController) FlushNowUnordered(ctx context.Context) error {
 	s.flushMtx.Lock()
 	defer s.flushMtx.Unlock()
-	return s.flush(ctx, false)
+	return s.flushCheckpoint(ctx, false)
 }
 
 // PullNow serializes an immediate remote packfile manifest pull.

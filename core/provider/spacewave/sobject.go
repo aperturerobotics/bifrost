@@ -18,6 +18,7 @@ import (
 	"github.com/s4wave/spacewave/core/space"
 	block_gc "github.com/s4wave/spacewave/db/block/gc"
 	"github.com/s4wave/spacewave/db/kvtx"
+	kvtx_prefixer "github.com/s4wave/spacewave/db/kvtx/prefixer"
 	"github.com/s4wave/spacewave/db/volume"
 	kvtx_volume "github.com/s4wave/spacewave/db/volume/common/kvtx"
 	"github.com/s4wave/spacewave/net/crypto"
@@ -67,8 +68,28 @@ func (s *SharedObject) GetBackingVolume() volume.Volume {
 
 // AccessLocalStateStore accesses a kvtx ops for a local state store with the given ID.
 func (s *SharedObject) AccessLocalStateStore(ctx context.Context, storeID string, released func()) (kvtx.Store, func(), error) {
-	// For cloud provider, local state store is not yet implemented.
-	return nil, nil, errors.New("local state store not available for cloud provider")
+	if s.tkr.a.objStore == nil {
+		return nil, nil, errors.New("account object store not ready")
+	}
+	store := kvtx_prefixer.NewPrefixer(s.tkr.a.objStore, []byte("so-local/"+s.tkr.id+"/"+storeID+"/"))
+	if released == nil {
+		return store, func() {}, nil
+	}
+	stop := context.AfterFunc(ctx, released)
+	return store, func() { stop() }, nil
+}
+
+// AccessPublicationRetention retains completion proofs for cloud-bound graphs.
+func (s *SharedObject) AccessPublicationRetention(ctx context.Context) (kvtx.Store, func(), error) {
+	store, ok := s.blkStore.(*BlockStore)
+	if !ok || store.retention == nil {
+		return nil, nil, errors.New("cloud block retention unavailable")
+	}
+	release, err := store.retention.mu.Lock(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	return store.retention.store, release, nil
 }
 
 // GetSharedObjectState returns a snapshot of the shared object state.
@@ -394,9 +415,13 @@ func (t *sobjectTracker) executeSharedObjectTracker(rctx context.Context) (rerr 
 		func(ctx context.Context, cache *api.VerifiedSOStateCache) error {
 			return t.a.writeVerifiedSOStateCache(ctx, sharedObjectID, cache)
 		},
-		cloudBlkStore.ForceSync,
+		cloudBlkStore.syncer,
 	)
 	host.refreshBlockManifest = cloudBlkStore.RefreshRemote
+	if host.syncer != nil {
+		host.syncer.setPublication(host, host.pending)
+		defer host.syncer.setPublication(host, nil)
+	}
 	host.blockManifestSequence = cloudBlkStore.RemoteSequence
 	host.stateObserved = func(state *sobject.SOState) {
 		if state == nil || state.GetRoot() == nil {

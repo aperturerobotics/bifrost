@@ -200,6 +200,7 @@ type state struct {
 
 	pendingUploadBytes        int64
 	pendingUploadCount        int
+	pendingPublications       int
 	activeUploadBytes         int64
 	activeUploadSent          int64
 	inFlightPushes            int
@@ -296,6 +297,15 @@ func (s *Store) SetPending(bstoreID string, bytes int64, count int) {
 	})
 }
 
+// SetPendingPublications keeps metadata awaiting cloud acknowledgment visible
+// after all payload blocks have uploaded.
+func (s *Store) SetPendingPublications(bstoreID string, count int) {
+	s.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+		s.getOrCreateStateLocked(bstoreID).pendingPublications = max(count, 0)
+		broadcast()
+	})
+}
+
 // AddDirty records newly dirty upload bytes.
 func (s *Store) AddDirty(bstoreID string, bytes int64) {
 	if bytes < 0 {
@@ -376,16 +386,18 @@ func (s *Store) FinishPush(bstoreID string, bytes int64, err error) {
 	})
 }
 
-// RecordError records a sync error that happened outside an active push/pull.
+// RecordError records a sync error outside an active push/pull. A successful
+// checkpoint clears the previous error without counting another payload push.
 func (s *Store) RecordError(bstoreID string, err error) {
-	if err == nil {
-		return
-	}
 	now := time.Now()
 	s.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
 		state := s.getOrCreateStateLocked(bstoreID)
-		state.lastPushError = err.Error()
-		state.lastPushErrorAt = now
+		state.lastPushError = ""
+		state.lastPushErrorAt = time.Time{}
+		if err != nil {
+			state.lastPushError = err.Error()
+			state.lastPushErrorAt = now
+		}
 		state.lastActivityAt = now
 		broadcast()
 	})
@@ -502,7 +514,7 @@ func BuildSnapshot(states []state) Snapshot {
 			CloudRemoteSequence:       state.cloudRemoteSequence,
 		})
 		snap.PendingUploadBytes += state.pendingUploadBytes
-		snap.PendingUploadCount += state.pendingUploadCount
+		snap.PendingUploadCount += state.pendingUploadCount + state.pendingPublications
 		snap.ActiveUploadBytes += state.activeUploadBytes
 		snap.ActiveUploadTransferredBytes += state.activeUploadSent
 		snap.InFlightPushes += state.inFlightPushes

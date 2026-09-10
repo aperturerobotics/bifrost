@@ -126,6 +126,9 @@ func (t *soEngineWriteTx) Commit(ctx context.Context) error {
 	baseStoredObjRef.BucketId = ""
 	nextStoredObjRef := nextObjRef.CloneVT()
 	nextStoredObjRef.BucketId = ""
+	if err := t.eng.c.retainPublicationWorld(ctx, t.eng.so, nextStoredObjRef); err != nil {
+		return err
+	}
 
 	// Bind the finalization packet to the encoded operation.
 	contentID, err := bifhash.Sum(bifhash.HashType_HashType_SHA256, opData)
