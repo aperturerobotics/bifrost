@@ -506,7 +506,7 @@ func TestMountSharedObjectBodyUsesBodyDirectiveForNativeBody(t *testing.T) {
 		ref:       ref,
 		so:        so,
 		body:      body,
-		releaseCh: make(chan struct{}, 1),
+		releaseCh: make(chan struct{}, 2),
 	}
 	removeHandler, err := tb.Bus.AddHandler(handler)
 	if err != nil {
@@ -548,10 +548,26 @@ func TestMountSharedObjectBodyUsesBodyDirectiveForNativeBody(t *testing.T) {
 	if !resourceCtx.ReleaseResource(resp.GetResourceId()) {
 		t.Fatal("expected child resource release")
 	}
-	select {
-	case <-handler.releaseCh:
-	case <-time.After(2 * time.Second):
-		t.Fatalf("expected directive value release, got %d", handler.releaseCt)
+
+	rejoined, err := r.MountSharedObjectBody(
+		ctx,
+		&s4wave_sobject.MountSharedObjectBodyRequest{},
+	)
+	if err != nil {
+		t.Fatalf("rejoin MountSharedObjectBody() error = %v", err)
+	}
+	if handler.resolveCt != 2 {
+		t.Fatalf("rejoin reused the released body directive value: resolver calls = %d", handler.resolveCt)
+	}
+	if !resourceCtx.ReleaseResource(rejoined.GetResourceId()) {
+		t.Fatal("expected rejoined child resource release")
+	}
+	for range 2 {
+		select {
+		case <-handler.releaseCh:
+		case <-time.After(2 * time.Second):
+			t.Fatalf("expected both directive value releases, got %d", handler.releaseCt)
+		}
 	}
 }
 
