@@ -11,7 +11,7 @@ import { Backoff } from '@go/github.com/aperturerobotics/util/backoff/backoff.pb
 export const protobufPackage = 'plugin.host.scheduler'
 
 /**
- * PlatformSelectionPolicy restricts a plugin host platform to a plugin ID list.
+ * PlatformSelectionPolicy restricts one plugin host platform by plugin ID.
  *
  * @generated from message plugin.host.scheduler.PlatformSelectionPolicy
  */
@@ -24,11 +24,19 @@ export interface PlatformSelectionPolicy {
    */
   platformId?: string
   /**
-   * AllowedPluginIds are the plugin IDs that may select PlatformId.
+   * AllowedPluginIds are the only plugin IDs that may select PlatformId when
+   * nonempty.
    *
    * @generated from field: repeated string allowed_plugin_ids = 2;
    */
   allowedPluginIds?: string[]
+  /**
+   * DeniedPluginIds are the plugin IDs that cannot select PlatformId. This
+   * leaves unlisted and externally supplied plugins eligible.
+   *
+   * @generated from field: repeated string denied_plugin_ids = 3;
+   */
+  deniedPluginIds?: string[]
 }
 
 export const PlatformSelectionPolicy: MessageType<PlatformSelectionPolicy> =
@@ -39,6 +47,13 @@ export const PlatformSelectionPolicy: MessageType<PlatformSelectionPolicy> =
       {
         no: 2,
         name: 'allowed_plugin_ids',
+        kind: 'scalar',
+        T: ScalarType.STRING,
+        repeated: true,
+      },
+      {
+        no: 3,
+        name: 'denied_plugin_ids',
         kind: 'scalar',
         T: ScalarType.STRING,
         repeated: true,
@@ -139,9 +154,9 @@ export interface Config {
    */
   verbose?: boolean
   /**
-   * PlatformSelectionPolicies restrict selected platform IDs to selected
-   * plugin IDs. If empty, every discovered plugin host platform is selectable
-   * for every plugin.
+   * PlatformSelectionPolicies restrict selected platform IDs by plugin ID. If
+   * empty, every discovered plugin host platform is selectable for every
+   * plugin.
    *
    * @generated from field: repeated plugin.host.scheduler.PlatformSelectionPolicy platform_selection_policies = 12;
    */

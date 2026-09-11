@@ -46,9 +46,9 @@ message Config {
   bool disable_copy_manifest = 10;
   // Verbose enables verbose logging for world ops (slower).
   bool verbose = 11;
-  // PlatformSelectionPolicies restrict selected platform IDs to selected
-  // plugin IDs. If empty, every discovered plugin host platform is selectable
-  // for every plugin.
+  // PlatformSelectionPolicies restrict selected platform IDs by plugin ID. If
+  // empty, every discovered plugin host platform is selectable for every
+  // plugin.
   repeated PlatformSelectionPolicy platform_selection_policies = 12;
   // NoCopyBucketIds lists source buckets that remain authoritative without a
   // full-DAG copy.
@@ -74,11 +74,15 @@ message Config {
   string host_storage_id = 18;
 }
 
-// PlatformSelectionPolicy restricts a plugin host platform to a plugin ID list.
+// PlatformSelectionPolicy restricts one plugin host platform by plugin ID.
 message PlatformSelectionPolicy {
   // PlatformId is the plugin host platform ID to restrict, such as
   // "web/js/wasm".
   string platform_id = 1;
-  // AllowedPluginIds are the plugin IDs that may select PlatformId.
+  // AllowedPluginIds are the only plugin IDs that may select PlatformId when
+  // nonempty.
   repeated string allowed_plugin_ids = 2;
+  // DeniedPluginIds are the plugin IDs that cannot select PlatformId. This
+  // leaves unlisted and externally supplied plugins eligible.
+  repeated string denied_plugin_ids = 3;
 }

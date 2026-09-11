@@ -39,7 +39,7 @@ import (
 // GoScript as the default Go compiler.
 func (a *DevtoolArgs) ExecuteWebGoScriptProject(ctx context.Context) error {
 	return withGoCompiler(gocompiler.GoCompilerGoScript, func() error {
-		return a.ExecuteWebWasmProject(ctx)
+		return a.executeWebProject(ctx, "GoScript", "js")
 	})
 }
 
@@ -60,8 +60,17 @@ func withGoCompiler(mode gocompiler.GoCompiler, fn func() error) error {
 	return fn()
 }
 
-// ExecuteWebWasmProject starts the project as a web server in Wasm mode.
-func (a *DevtoolArgs) ExecuteWebWasmProject(ctx context.Context) (err error) {
+// ExecuteWebWasmProject starts the browser-hosted devtool path with the
+// standard Go WebAssembly compiler.
+func (a *DevtoolArgs) ExecuteWebWasmProject(ctx context.Context) error {
+	return withGoCompiler(gocompiler.GoCompilerGo, func() error {
+		return a.executeWebProject(ctx, "Go/Wasm", "web/js/wasm")
+	})
+}
+
+// executeWebProject starts the browser host and labels the selected Go plugin
+// compiler in user-facing status.
+func (a *DevtoolArgs) executeWebProject(ctx context.Context, compilerName, goPluginPlatformID string) (err error) {
 	// Initialize the repo root and storage directories.
 	le := a.Logger
 	repoRoot, stateDir, err := a.InitRepoRoot()
@@ -79,7 +88,11 @@ func (a *DevtoolArgs) ExecuteWebWasmProject(ctx context.Context) (err error) {
 
 	// Start the command status log and the devtool TUI.
 	commandLogFile := a.commandLogFile()
-	d.setCommandStartingWithLogFile("start web", "initializing wasm web runtime", commandLogFile)
+	d.setCommandStartingWithLogFile(
+		"start web",
+		"initializing web runtime with "+compilerName+" plugins",
+		commandLogFile,
+	)
 	ctx, stopTUI := a.startDevtoolTUI(ctx, d.GetStatusProducer(), "http://"+a.WebListenAddr)
 	defer func() {
 		d.finishCommandWithLogFile(ctx, "start web", commandLogFile, err)
@@ -115,7 +128,11 @@ func (a *DevtoolArgs) ExecuteWebWasmProject(ctx context.Context) (err error) {
 	appID := currProjConf.GetId()
 	startConf := currProjConf.GetStart()
 	startupPlugins := startConf.GetPlugins()
-	startupManifestPreflights := ProjectOwnedStartupManifestPreflights(currProjConf, "web/js/wasm")
+	startupManifestPreflights := projectOwnedStartupManifestPreflightsForPlatforms(
+		currProjConf,
+		goPluginPlatformID,
+		"web/js/wasm",
+	)
 	webStartupSrcPath, _ := startConf.ParseWebStartupPath()
 
 	buildType := bldr_manifest.BuildType(a.BuildType)
@@ -132,7 +149,11 @@ func (a *DevtoolArgs) ExecuteWebWasmProject(ctx context.Context) (err error) {
 		webStartupSrcPath,
 		false,
 		func(string) error {
-			d.setCommandRunningWithLogFile("start web", "wasm web runtime active on "+a.WebListenAddr, commandLogFile)
+			d.setCommandRunningWithLogFile(
+				"start web",
+				"web dev server active on "+a.WebListenAddr+" with "+compilerName+" plugins",
+				commandLogFile,
+			)
 			return nil
 		},
 	)
@@ -365,11 +386,12 @@ func (d *DevtoolBus) executeWebWasm(
 
 	// Encode the init info for the browser devtool entrypoint.
 	browserInit := &devtool_web.DevtoolInitBrowser{
-		AppId:                 appID,
-		DevtoolPeerId:         wsPeerID,
-		DevtoolVolumeInfo:     d.GetVolumeInfo(),
-		StartPlugins:          startPlugins,
-		ForceDedicatedWorkers: forceDedicatedWorkers,
+		AppId:                     appID,
+		DevtoolPeerId:             wsPeerID,
+		DevtoolVolumeInfo:         d.GetVolumeInfo(),
+		StartPlugins:              startPlugins,
+		ForceDedicatedWorkers:     forceDedicatedWorkers,
+		PlatformSelectionPolicies: startupManifestPlatformSelectionPolicies(startupManifestPreflights),
 	}
 	if err := browserInit.Validate(); err != nil {
 		return err

@@ -1,4 +1,4 @@
-//go:build js && bldr_indexeddb
+//go:build js
 
 package browser_storage
 
@@ -58,12 +58,6 @@ func (i *IndexedDB) DeleteVolume(id string) error {
 		return err
 	}
 	return req.Await(context.Background())
-}
-
-func init() {
-	storageMethods = append(storageMethods, func(b bus.Bus, prefix string) []storage.Storage {
-		return []storage.Storage{NewIndexedDB(prefix, false)}
-	})
 }
 
 // _ is a type assertion

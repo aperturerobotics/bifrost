@@ -3,6 +3,7 @@ package plugin_host_scheduler
 import (
 	"context"
 	"errors"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -291,6 +292,20 @@ func TestFilterPluginPlatformIDsHonorsPlatformPolicy(t *testing.T) {
 		if got[i] != want[i] {
 			t.Fatalf("allowed platform ids: got %v, want %v", got, want)
 		}
+	}
+}
+
+func TestFilterPluginPlatformIDsHonorsDeniedPlugins(t *testing.T) {
+	conf := &Config{PlatformSelectionPolicies: []*PlatformSelectionPolicy{{
+		PlatformId:      "web/js/wasm",
+		DeniedPluginIds: []string{"core"},
+	}}}
+	platforms := []string{"js", "web/js/wasm"}
+	if got, want := conf.FilterPluginPlatformIDs("core", platforms), []string{"js"}; !slices.Equal(got, want) {
+		t.Fatalf("denied plugin platforms = %v, want %v", got, want)
+	}
+	if got := conf.FilterPluginPlatformIDs("external", platforms); !slices.Equal(got, platforms) {
+		t.Fatalf("unlisted plugin platforms = %v, want %v", got, platforms)
 	}
 }
 

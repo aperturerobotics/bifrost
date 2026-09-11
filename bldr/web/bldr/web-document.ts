@@ -651,6 +651,18 @@ function readRuntimeWasmEnv(): Record<string, string> | undefined {
   return Object.keys(env).length > 0 ? env : undefined
 }
 
+// runtimeWasmEnvForCapabilities selects IndexedDB only when the browser's
+// active profile cannot open OPFS. Explicit runtime configuration wins.
+export function runtimeWasmEnvForCapabilities(
+  detect?: WorkerCommsDetectResult,
+): Record<string, string> | undefined {
+  const env = readRuntimeWasmEnv() ?? {}
+  if (!detect?.caps.opfsAvailable && env.BLDR_BROWSER_STORAGE === undefined) {
+    env.BLDR_BROWSER_STORAGE = 'indexeddb'
+  }
+  return Object.keys(env).length > 0 ? env : undefined
+}
+
 export interface WebDocumentResumeReadyState {
   ready: true
   documentId: string
@@ -1088,7 +1100,7 @@ export class WebDocument extends SimpleEventEmitter<WebDocumentEvents> {
       this.enablePluginSingletonLock()
     }
 
-    const startWebRuntimeWorker = () => {
+    const startWebRuntimeWorker = (detect?: WorkerCommsDetectResult) => {
       if (this.webRuntimePort || this.closed) {
         return
       }
@@ -1123,7 +1135,7 @@ export class WebDocument extends SimpleEventEmitter<WebDocumentEvents> {
         type: 'module',
       }
 
-      const runtimeWasmEnv = readRuntimeWasmEnv()
+      const runtimeWasmEnv = runtimeWasmEnvForCapabilities(detect)
       const initMsg: WebDocumentToWebRuntime = {
         from: this.webDocumentUuid,
         initWebRuntime: {
@@ -1193,25 +1205,25 @@ export class WebDocument extends SimpleEventEmitter<WebDocumentEvents> {
       this.webRuntimePort.start()
     }
 
-    const startDedicatedRuntime = () => {
+    const startDedicatedRuntime = (detect?: WorkerCommsDetectResult) => {
       if (this.closed) {
         return
       }
       if (!this.dedicatedRuntimeHost) {
-        startWebRuntimeWorker()
+        startWebRuntimeWorker(detect)
         this.startWebRuntimeConnection()
         return
       }
       this.dedicatedRuntimeHost.start({
         startHost: () => {
-          startWebRuntimeWorker()
+          startWebRuntimeWorker(detect)
           this.startWebRuntimeConnection()
         },
         startAttached: () => {
           this.startWebRuntimeConnection()
         },
         promoteToHost: () => {
-          startWebRuntimeWorker()
+          startWebRuntimeWorker(detect)
           // Promoted hosts own a new DedicatedWorker generation; publish it
           // through the normal connection path so runtime and resume-ready
           // state belong to the new worker, not the stale attached relay.
@@ -1234,7 +1246,7 @@ export class WebDocument extends SimpleEventEmitter<WebDocumentEvents> {
           this.startWebRuntimeConnection()
         },
         startUnavailable: () => {
-          startWebRuntimeWorker()
+          startWebRuntimeWorker(detect)
           this.startWebRuntimeConnection()
         },
       })
@@ -1289,14 +1301,19 @@ export class WebDocument extends SimpleEventEmitter<WebDocumentEvents> {
         return
       }
       runtimeStarted = true
-      if (useDedicatedRuntime) {
-        // The dedicated host election reads the ServiceWorker tracker, so let
-        // the caller finish binding its port before the election starts.
-        queueMicrotask(startDedicatedRuntime)
-        return
-      }
-      startWebRuntimeWorker()
-      this.startWebRuntimeConnection()
+      void this.workerCommsDetect.then((detect) => {
+        if (this.closed) {
+          return
+        }
+        if (useDedicatedRuntime) {
+          // The dedicated host election reads the ServiceWorker tracker, so let
+          // the caller finish binding its port before the election starts.
+          queueMicrotask(() => startDedicatedRuntime(detect))
+          return
+        }
+        startWebRuntimeWorker(detect)
+        this.startWebRuntimeConnection()
+      })
     }
     this.startRuntimeOnce = startRuntimeOnce
     const controlFallback = globalThis.setTimeout(
@@ -1562,7 +1579,7 @@ export class WebDocument extends SimpleEventEmitter<WebDocumentEvents> {
       shared,
       this.onWebWorkerMessage.bind(this, request.id),
       detect,
-      readRuntimeWasmEnv(),
+      runtimeWasmEnvForCapabilities(detect),
     )
     this.webWorkers[request.id] = worker
     this.notifyResumeReadyClient(worker.port)

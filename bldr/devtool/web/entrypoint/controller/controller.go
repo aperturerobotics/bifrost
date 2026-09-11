@@ -298,6 +298,12 @@ func (c *Controller) Execute(ctx context.Context) (rerr error) {
 		true, // fetched manifest refs point at the devtool bucket
 		true, // no need to copy into browser storage in devtool mode
 	)
+	for _, policy := range devtoolInfo.GetPlatformSelectionPolicies() {
+		pluginSchedConf.PlatformSelectionPolicies = append(
+			pluginSchedConf.PlatformSelectionPolicies,
+			policy.CloneVT(),
+		)
+	}
 	pluginSchedCtrl := plugin_host_scheduler.NewController(le, b, pluginSchedConf)
 	pluginSchecCtrlRel, err := b.AddController(ctx, pluginSchedCtrl, func(err error) {
 		le.WithError(err).Error("plugin scheduler controller failed")

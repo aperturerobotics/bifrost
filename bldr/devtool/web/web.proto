@@ -1,6 +1,7 @@
 syntax = "proto3";
 package devtool.web;
 
+import "github.com/s4wave/spacewave/bldr/plugin/host/scheduler/config.proto";
 import "github.com/s4wave/spacewave/db/volume/volume.proto";
 
 // DevtoolInitBrowser is the message initializing the browser from the devtool.
@@ -18,4 +19,7 @@ message DevtoolInitBrowser {
   // dedicated Workers for plugins. Useful for testing with Playwright
   // which can capture console output from dedicated workers but not shared.
   bool force_dedicated_workers = 5;
+  // PlatformSelectionPolicies bind project-owned startup plugins to the
+  // platform selected by the active development compiler.
+  repeated .plugin.host.scheduler.PlatformSelectionPolicy platform_selection_policies = 6;
 }

@@ -58,9 +58,9 @@ type Config struct {
 	DisableCopyManifest bool `protobuf:"varint,10,opt,name=disable_copy_manifest,json=disableCopyManifest,proto3" json:"disableCopyManifest,omitempty"`
 	// Verbose enables verbose logging for world ops (slower).
 	Verbose bool `protobuf:"varint,11,opt,name=verbose,proto3" json:"verbose,omitempty"`
-	// PlatformSelectionPolicies restrict selected platform IDs to selected
-	// plugin IDs. If empty, every discovered plugin host platform is selectable
-	// for every plugin.
+	// PlatformSelectionPolicies restrict selected platform IDs by plugin ID. If
+	// empty, every discovered plugin host platform is selectable for every
+	// plugin.
 	PlatformSelectionPolicies []*PlatformSelectionPolicy `protobuf:"bytes,12,rep,name=platform_selection_policies,json=platformSelectionPolicies,proto3" json:"platformSelectionPolicies,omitempty"`
 	// NoCopyBucketIds lists source buckets that remain authoritative without a
 	// full-DAG copy.
@@ -218,14 +218,18 @@ func (x *Config) GetHostStorageId() string {
 	return ""
 }
 
-// PlatformSelectionPolicy restricts a plugin host platform to a plugin ID list.
+// PlatformSelectionPolicy restricts one plugin host platform by plugin ID.
 type PlatformSelectionPolicy struct {
 	unknownFields []byte
 	// PlatformId is the plugin host platform ID to restrict, such as
 	// "web/js/wasm".
 	PlatformId string `protobuf:"bytes,1,opt,name=platform_id,json=platformId,proto3" json:"platformId,omitempty"`
-	// AllowedPluginIds are the plugin IDs that may select PlatformId.
+	// AllowedPluginIds are the only plugin IDs that may select PlatformId when
+	// nonempty.
 	AllowedPluginIds []string `protobuf:"bytes,2,rep,name=allowed_plugin_ids,json=allowedPluginIds,proto3" json:"allowedPluginIds,omitempty"`
+	// DeniedPluginIds are the plugin IDs that cannot select PlatformId. This
+	// leaves unlisted and externally supplied plugins eligible.
+	DeniedPluginIds []string `protobuf:"bytes,3,rep,name=denied_plugin_ids,json=deniedPluginIds,proto3" json:"deniedPluginIds,omitempty"`
 }
 
 func (x *PlatformSelectionPolicy) Reset() {
@@ -244,6 +248,13 @@ func (x *PlatformSelectionPolicy) GetPlatformId() string {
 func (x *PlatformSelectionPolicy) GetAllowedPluginIds() []string {
 	if x != nil {
 		return x.AllowedPluginIds
+	}
+	return nil
+}
+
+func (x *PlatformSelectionPolicy) GetDeniedPluginIds() []string {
+	if x != nil {
+		return x.DeniedPluginIds
 	}
 	return nil
 }
@@ -288,6 +299,7 @@ func (m *PlatformSelectionPolicy) CloneVT() *PlatformSelectionPolicy {
 	r := new(PlatformSelectionPolicy)
 	r.PlatformId = m.PlatformId
 	r.AllowedPluginIds = protobuf_go_lite.CloneSlice(m.AllowedPluginIds)
+	r.DeniedPluginIds = protobuf_go_lite.CloneSlice(m.DeniedPluginIds)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -379,6 +391,9 @@ func (this *PlatformSelectionPolicy) EqualVT(that *PlatformSelectionPolicy) bool
 		return false
 	}
 	if !protobuf_go_lite.EqualSlice(this.AllowedPluginIds, that.AllowedPluginIds) {
+		return false
+	}
+	if !protobuf_go_lite.EqualSlice(this.DeniedPluginIds, that.DeniedPluginIds) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -625,6 +640,11 @@ func (x *PlatformSelectionPolicy) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("allowedPluginIds")
 		s.WriteStringArray(x.AllowedPluginIds)
 	}
+	if len(x.DeniedPluginIds) > 0 || s.HasField("deniedPluginIds") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("deniedPluginIds")
+		s.WriteStringArray(x.DeniedPluginIds)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -652,6 +672,13 @@ func (x *PlatformSelectionPolicy) UnmarshalProtoJSON(s *json.UnmarshalState) {
 				return
 			}
 			x.AllowedPluginIds = s.ReadStringArray()
+		case "denied_plugin_ids", "deniedPluginIds":
+			s.AddField("denied_plugin_ids")
+			if s.ReadNil() {
+				x.DeniedPluginIds = nil
+				return
+			}
+			x.DeniedPluginIds = s.ReadStringArray()
 		}
 	})
 }
@@ -839,6 +866,13 @@ func (m *PlatformSelectionPolicy) MarshalToSizedBufferVT(dAtA []byte) (int, erro
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if len(m.DeniedPluginIds) > 0 {
+		for iNdEx := len(m.DeniedPluginIds) - 1; iNdEx >= 0; iNdEx-- {
+			i = protobuf_go_lite.EncodeString(dAtA, i, m.DeniedPluginIds[iNdEx])
+			i--
+			dAtA[i] = 0x1a
+		}
+	}
 	if len(m.AllowedPluginIds) > 0 {
 		for iNdEx := len(m.AllowedPluginIds) - 1; iNdEx >= 0; iNdEx-- {
 			i = protobuf_go_lite.EncodeString(dAtA, i, m.AllowedPluginIds[iNdEx])
@@ -899,6 +933,7 @@ func (m *PlatformSelectionPolicy) SizeVT() (n int) {
 	_ = l
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.PlatformId)
 	n += protobuf_go_lite.SizeStringSlice(1, m.AllowedPluginIds)
+	n += protobuf_go_lite.SizeStringSlice(1, m.DeniedPluginIds)
 	n += len(m.unknownFields)
 	return n
 }
@@ -1011,6 +1046,14 @@ func (x *PlatformSelectionPolicy) MarshalProtoText() string {
 	if len(x.AllowedPluginIds) > 0 {
 		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "allowed_plugin_ids")
 		for i, v := range x.AllowedPluginIds {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			protobuf_go_lite.TextWriteString(&sb, v)
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	if len(x.DeniedPluginIds) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "denied_plugin_ids")
+		for i, v := range x.DeniedPluginIds {
 			protobuf_go_lite.TextWriteListSeparator(&sb, i)
 			protobuf_go_lite.TextWriteString(&sb, v)
 		}
@@ -1298,6 +1341,16 @@ func (m *PlatformSelectionPolicy) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.AllowedPluginIds = append(m.AllowedPluginIds, v)
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DeniedPluginIds", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.DeniedPluginIds = append(m.DeniedPluginIds, v)
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

@@ -1,4 +1,4 @@
-//go:build js && !bldr_indexeddb
+//go:build js
 
 package browser_storage
 
