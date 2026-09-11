@@ -172,3 +172,26 @@ func (c *SessionClient) SetApplicationState(ctx context.Context, req *api.SetApp
 	}
 	return &resp, nil
 }
+
+// GetApplicationAccountAccess reads current rollout access for a verified application identity.
+// The server permits the registered operator and platform administrators.
+func (c *SessionClient) GetApplicationAccountAccess(ctx context.Context, req *api.GetApplicationAccountAccessRequest) (*api.GetApplicationAccountAccessResponse, error) {
+	// Encode the selected identity without overriding the authenticated operator.
+	body, err := req.MarshalVT()
+	if err != nil {
+		return nil, errors.Wrap(err, "marshal application account access")
+	}
+
+	// Read current grants through the existing authenticated transport.
+	data, err := c.doPostBinary(ctx, "/api/applications/accounts/access", body, nil, "")
+	if err != nil {
+		return nil, errors.Wrap(err, "get application account access")
+	}
+
+	// Return the server projection without retaining a local permission cache.
+	var resp api.GetApplicationAccountAccessResponse
+	if err := resp.UnmarshalVT(data); err != nil {
+		return nil, errors.Wrap(err, "unmarshal application account access")
+	}
+	return &resp, nil
+}

@@ -181,3 +181,21 @@ message SetApplicationStateResponse {
   // Application contains the new configuration; disabled credentials are never restored.
   Application application = 1;
 }
+
+// GetApplicationAccountAccessRequest selects a verified external identity within an application.
+// Only its registered operator or a platform administrator may read this projection.
+message GetApplicationAccountAccessRequest {
+  // ApplicationId identifies the approved registration.
+  string application_id = 1;
+  // Issuer is the verified identity namespace, at most 512 UTF-8 bytes.
+  string issuer = 2;
+  // Subject is the verified identity within the issuer, at most 256 UTF-8 bytes.
+  string subject = 3;
+}
+
+// GetApplicationAccountAccessResponse projects current managed-account rollout access.
+// Missing, inactive, or unenrolled accounts have no access. This grants no cloud operations.
+message GetApplicationAccountAccessResponse {
+  // Developer reflects a live, unexpired platform Developer role on the managed account.
+  bool developer = 1;
+}
