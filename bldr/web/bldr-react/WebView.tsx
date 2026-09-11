@@ -28,10 +28,7 @@ import { ReactComponentContainer } from './web-view-react.js'
 import { DebugInfo } from './DebugInfo.js'
 import { useLatestRef } from './hooks.js'
 import { markStartupBoundary } from '../bldr/startup-marks.js'
-import {
-  beginBootDownload,
-  failBootDownload,
-} from '../bldr/boot-downloads.js'
+import { beginBootDownload, failBootDownload } from '../bldr/boot-downloads.js'
 
 // webViewRevealDeadlineMillis bounds how long a startup-critical web view may
 // wait for the plugin's SetRenderMode/SetHtmlLinks calls and component
@@ -339,7 +336,16 @@ export const WebView: React.FC<IWebViewProps> = (props) => {
         options: SetRenderModeRequest,
       ): Promise<SetRenderModeResponse | void> {
         console.log(`WebView: set render mode: ${uuid}`, options)
+        if (options.frontendBinding && !bldrWebDocument) {
+          throw new Error('A live frontend requires a Bldr document')
+        }
+        const frontendPath = options.frontendBinding?.entrypoint
+          ? await bldrWebDocument?.resolveFrontend(
+              options.frontendBinding.entrypoint,
+            )
+          : undefined
         const scriptPath =
+          frontendPath ||
           (options.renderMode !== RenderMode.RenderMode_NONE &&
             options.scriptPath?.trim()) ||
           undefined

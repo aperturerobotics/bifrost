@@ -525,6 +525,16 @@ func (d *DevtoolBus) StartProjectControllerWithStartup(
 	directive.Reference,
 	error,
 ) {
+	return d.startProjectController(ctx, b, repoRoot, configPath, startWithRemote, extraPlugins, start, false)
+}
+
+// StartFrontendProjectController enables the retained graph for watched web startup.
+func (d *DevtoolBus) StartFrontendProjectController(ctx context.Context, b bus.Bus, repoRoot, configPath, startWithRemote string, extraPlugins []string, development bool) (*bldr_project_watcher.Controller, directive.Reference, error) {
+	return d.startProjectController(ctx, b, repoRoot, configPath, startWithRemote, extraPlugins, startWithRemote != "", development && d.watch)
+}
+
+// startProjectController selects the build mode before registering any builders.
+func (d *DevtoolBus) startProjectController(ctx context.Context, b bus.Bus, repoRoot, configPath, startWithRemote string, extraPlugins []string, start, frontendDevelopment bool) (*bldr_project_watcher.Controller, directive.Reference, error) {
 	absConfigPath := filepath.Join(repoRoot, configPath)
 
 	// Validate the config file upfront so parse errors surface immediately
@@ -569,6 +579,7 @@ func (d *DevtoolBus) StartProjectControllerWithStartup(
 		start,
 	)
 	projCtrlConf.FetchManifestRemote = startWithRemote
+	projCtrlConf.FrontendDevelopment = frontendDevelopment
 	projWatcherConfig := &bldr_project_watcher.Config{
 		ConfigPath:              absConfigPath,
 		DisableWatch:            !d.watch,

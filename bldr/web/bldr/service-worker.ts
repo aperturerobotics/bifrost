@@ -1740,6 +1740,11 @@ export async function swFetch(
   const requestPath = requestURL.pathname
   const source = classifyBrowserFetchSource(request, matchPrefixes)
 
+  // Development bootstrap code binds a live compiler session, never a release.
+  if (source.sameOrigin && requestPath.startsWith('/bldr-dev/frontend-')) {
+    return fetch(new Request(request, { cache: 'no-store' }))
+  }
+
   if (source.kind === 'release-asset' && requestPath === browserReleasePath) {
     return handleBrowserReleaseRequest(ev)
   }

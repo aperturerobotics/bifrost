@@ -10,6 +10,7 @@ import (
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/aperturerobotics/util/broadcast"
+	frontend "github.com/s4wave/spacewave/bldr/frontend"
 	bldr_plugin "github.com/s4wave/spacewave/bldr/plugin"
 	web_document "github.com/s4wave/spacewave/bldr/web/document"
 	web_entrypoint_index "github.com/s4wave/spacewave/bldr/web/entrypoint/index"
@@ -17,6 +18,7 @@ import (
 	web_pkg_http "github.com/s4wave/spacewave/bldr/web/pkg/http"
 	web_runtime "github.com/s4wave/spacewave/bldr/web/runtime"
 	unixfs_access_http "github.com/s4wave/spacewave/db/unixfs/access/http"
+	bifrost_rpc "github.com/s4wave/spacewave/net/rpc"
 	"github.com/sirupsen/logrus"
 )
 
@@ -205,6 +207,18 @@ func (c *Controller) ServeServiceWorkerHTTP(rw http.ResponseWriter, req *http.Re
 		rw.Header().Set("Cross-Origin-Embedder-Policy", "require-corp")
 		rw.Header().Set("Cross-Origin-Resource-Policy", "same-origin")
 		c.le.Debugf("serve /b/ path: %s", rpath)
+
+		// Live frontend modules use the existing devtool connection.
+		if strings.HasPrefix(rpath, "/b/fe/") {
+			setNoCacheHeaders(rw.Header())
+			client := frontend.NewSRPCFrontendClientWithServiceID(bifrost_rpc.NewBusClient(c.bus), "devtool/"+frontend.SRPCFrontendServiceID)
+			err := fetch.Fetch(req.Context(), func(ctx context.Context) (fetch.SRPCFetchService_FetchClient, error) { return client.Fetch(ctx) }, req, rw)
+			if err != nil && req.Context().Err() == nil {
+				c.le.WithError(err).Warn("frontend module request failed")
+				http.Error(rw, "frontend module unavailable", http.StatusBadGateway)
+			}
+			return
+		}
 
 		// /b/pkg/ is for Web module distribution files (like react)
 		bPkgPrefix := bldr_plugin.PluginWebPkgHttpPrefix

@@ -10,9 +10,11 @@ import (
 	"github.com/aperturerobotics/starpc/rpcstream"
 	"github.com/aperturerobotics/starpc/srpc"
 	"github.com/aperturerobotics/util/ccontainer"
+	frontend "github.com/s4wave/spacewave/bldr/frontend"
 	"github.com/s4wave/spacewave/bldr/util/cstate"
 	web_view "github.com/s4wave/spacewave/bldr/web/view"
 	web_worker "github.com/s4wave/spacewave/bldr/web/worker"
+	bifrost_rpc "github.com/s4wave/spacewave/net/rpc"
 	random_id "github.com/s4wave/spacewave/net/util/randstring"
 	"github.com/sirupsen/logrus"
 )
@@ -94,7 +96,14 @@ func NewRemote(
 		r.updateStatusSnapshot()
 	})
 
-	r.rpcMux = srpc.NewMux()
+	// The document owns frontend updates; other application RPC uses WebViews.
+	frontendInvoker := srpc.NewClientInvoker(bifrost_rpc.NewBusClient(b))
+	r.rpcMux = srpc.NewMux(srpc.InvokerFunc(func(serviceID, methodID string, stream srpc.Stream) (bool, error) {
+		if serviceID != "devtool/"+frontend.SRPCFrontendServiceID {
+			return false, nil
+		}
+		return frontendInvoker.InvokeMethod(serviceID, methodID, stream)
+	}))
 	if err := SRPCRegisterWebDocumentHost(r.rpcMux, newRemoteWebDocumentHost(r)); err != nil {
 		return nil, err
 	}

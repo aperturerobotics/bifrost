@@ -13,7 +13,16 @@ import {
   BuildResponse,
   BuildWebPkgRequest,
   BuildWebPkgResponse,
+  DevelopmentConfig,
+  DevelopmentResult,
 } from './vite.pb.js'
+import {
+  Event,
+  WatchRequest,
+  SendRequest,
+  SendResponse,
+} from '../../../frontend/frontend.pb.js'
+import { DevelopmentEnvironment } from './development.js'
 import {
   buildAndAnalyze,
   buildConfig,
@@ -60,11 +69,53 @@ function parseArgs() {
 
 // Implementation of the ViteBundler service
 class ViteBundlerService implements ViteBundler {
+  private development?: Promise<DevelopmentEnvironment>
+
+  /** StartDevelopment retains exactly one environment in this dedicated process. */
+  async StartDevelopment(
+    request: DevelopmentConfig,
+  ): Promise<DevelopmentResult> {
+    if (this.development)
+      throw new Error('Vite development environment already started')
+    const environment = new DevelopmentEnvironment(request)
+    let result: DevelopmentResult
+    this.development = environment.start().then((ready) => {
+      result = ready
+      return environment
+    })
+    await this.development
+    return result!
+  }
+
+  /** WatchDevelopment forwards ordered upstream events until cancellation. */
+  async *WatchDevelopment(
+    _request: WatchRequest,
+    signal?: AbortSignal,
+  ): AsyncGenerator<Event> {
+    const environment = await this.development
+    if (!environment)
+      throw new Error('Vite development environment is not started')
+    yield* environment.watch(signal)
+  }
+
+  /** SendDevelopment validates session identity before delivering client events. */
+  async SendDevelopment(request: SendRequest): Promise<SendResponse> {
+    const environment = await this.development
+    if (!environment)
+      throw new Error('Vite development environment is not started')
+    environment.send(request)
+    return SendResponse.create({})
+  }
+
   async Build(request: BuildRequest): Promise<BuildResponse> {
+    if (this.development)
+      throw new Error('Snapshot builds require a separate Vite process')
     return await buildBundle(request)
   }
 
   async BuildWebPkg(request: BuildWebPkgRequest): Promise<BuildWebPkgResponse> {
+    if (this.development)
+      throw new Error('Package builds require a separate Vite process')
     return await buildWebPkg(request)
   }
 }
@@ -816,6 +867,9 @@ async function main() {
   // Set up bidirectional communication after successful connection
   const connection = createSocketConnection(socket, streamConn)
   startSocketSender(connection)
+
+  // The native owner is the only client; its pipe ending ends this process.
+  socket.once('close', () => process.exit(0))
 
   // Handle socket errors after connection is established
   socket.on('error', (err) => {

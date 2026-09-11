@@ -1,3 +1,4 @@
+import { FrontendResource } from './frontend.js'
 import {
   Client,
   RpcStreamHandler,
@@ -797,6 +798,8 @@ export class WebDocument extends SimpleEventEmitter<WebDocumentEvents> {
   private readonly server: Server
   // client is the RPC client for the WebDocument.
   private readonly client: Client
+  // frontend owns this document's live compiler subscription.
+  private frontend?: FrontendResource
 
   // hidden indicates the web document is hidden
   private hidden: boolean
@@ -1068,6 +1071,11 @@ export class WebDocument extends SimpleEventEmitter<WebDocumentEvents> {
 
     // set the conn on the client to start accepting rpcs
     this.client.setOpenStreamFn(this.openWebDocumentHostStream.bind(this))
+    if (globalThis.__bldrFrontendEnabled) {
+      this.frontend = new FrontendResource(
+        this.openWebDocumentHostStream.bind(this),
+      )
+    }
 
     // Saucer mode: Go runtime runs natively, no SharedWorker/ServiceWorker needed.
     if (this.isSaucer) {
@@ -1324,6 +1332,21 @@ export class WebDocument extends SimpleEventEmitter<WebDocumentEvents> {
       globalThis.clearTimeout(controlFallback)
       startRuntimeOnce()
     })
+  }
+
+  /** resolveFrontend attaches a manifest-loaded view to the project session. */
+  public resolveFrontend(entrypoint: string): Promise<string> {
+    if (this.closed) return Promise.reject(new Error('web document is closed'))
+    if (!globalThis.__bldrFrontendEnabled) {
+      location.reload()
+      return Promise.reject(
+        new Error('Reloading to initialize the frontend environment'),
+      )
+    }
+    this.frontend ??= new FrontendResource(
+      this.openWebDocumentHostStream.bind(this),
+    )
+    return this.frontend.resolve(entrypoint)
   }
 
   // openWebDocumentHostStream opens an RPC stream with the WebDocumentHost.
@@ -1695,6 +1718,7 @@ export class WebDocument extends SimpleEventEmitter<WebDocumentEvents> {
       return
     }
     this.closed = err ?? true
+    this.frontend?.release()
 
     // Close all WebRTC bridge endpoints.
     for (const [, endpoint] of this.webrtcBridgeEndpoints) {

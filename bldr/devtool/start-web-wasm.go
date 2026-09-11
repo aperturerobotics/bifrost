@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/aperturerobotics/controllerbus/controller"
@@ -19,9 +20,11 @@ import (
 	"github.com/aperturerobotics/starpc/srpc"
 	devtool_status "github.com/s4wave/spacewave/bldr/devtool/status"
 	devtool_web "github.com/s4wave/spacewave/bldr/devtool/web"
+	frontend "github.com/s4wave/spacewave/bldr/frontend"
 	bldr_manifest "github.com/s4wave/spacewave/bldr/manifest"
 	manifest_fetch_world "github.com/s4wave/spacewave/bldr/manifest/fetch/world"
 	bldr_platform "github.com/s4wave/spacewave/bldr/platform"
+	bldr_project_controller "github.com/s4wave/spacewave/bldr/project/controller"
 	"github.com/s4wave/spacewave/bldr/util/gocompiler"
 	entrypoint_browser_build "github.com/s4wave/spacewave/bldr/web/entrypoint/browser/build"
 	entrypoint_browser_bundle "github.com/s4wave/spacewave/bldr/web/entrypoint/browser/bundle"
@@ -105,13 +108,14 @@ func (a *DevtoolArgs) executeWebProject(ctx context.Context, compilerName, goPlu
 	}
 
 	// Execute the project controller.
-	projCtrl, projCtrlRef, err := d.StartProjectController(
+	projCtrl, projCtrlRef, err := d.StartFrontendProjectController(
 		ctx,
 		d.GetBus(),
 		repoRoot,
 		a.ConfigPath,
 		a.Remote,
 		a.StartPlugins.Value(),
+		bldr_manifest.BuildType(a.BuildType).IsDev(),
 	)
 	if err != nil {
 		return err
@@ -148,6 +152,7 @@ func (a *DevtoolArgs) executeWebProject(ctx context.Context, compilerName, goPlu
 		startupManifestPreflights,
 		webStartupSrcPath,
 		false,
+		currProjCtrl.GetFrontendService(),
 		func(string) error {
 			d.setCommandRunningWithLogFile(
 				"start web",
@@ -172,7 +177,7 @@ func (d *DevtoolBus) ExecuteWebWasm(
 	webStartupSrcPath string,
 	forceDedicatedWorkers bool,
 ) error {
-	return d.executeWebWasm(ctx, repoRoot, minifyEntrypoint, devMode, listenAddr, appID, startPlugins, startupManifestPreflights, webStartupSrcPath, forceDedicatedWorkers, nil)
+	return d.executeWebWasm(ctx, repoRoot, minifyEntrypoint, devMode, listenAddr, appID, startPlugins, startupManifestPreflights, webStartupSrcPath, forceDedicatedWorkers, nil, nil)
 }
 
 // executeWebWasm builds the wasm web entrypoint and serves it over HTTP
@@ -188,6 +193,7 @@ func (d *DevtoolBus) executeWebWasm(
 	startupManifestPreflights []StartupManifestPreflight,
 	webStartupSrcPath string,
 	forceDedicatedWorkers bool,
+	frontendService *bldr_project_controller.FrontendService,
 	onListening func(string) error,
 ) error {
 	le := d.GetLogger()
@@ -310,6 +316,12 @@ func (d *DevtoolBus) executeWebWasm(
 			"listens for incoming requests from the web frontend",
 		),
 		[]stream_srpc_server.RegisterFn{
+			func(mux srpc.Mux) error {
+				if frontendService == nil {
+					return nil
+				}
+				return frontend.SRPCRegisterFrontend(mux, frontendService)
+			},
 			// handle ManifestFetch requests via bus ManifestFetch.
 			func(mux srpc.Mux) error {
 				pluginFetchViaBus := bldr_manifest.NewManifestFetchViaBus(le, d.GetBus())
@@ -380,6 +392,10 @@ func (d *DevtoolBus) executeWebWasm(
 		Wasm:                       "entrypoint/runtime.wasm",
 		CSS:                        bundleResult.CSSPaths,
 	}
+	if frontendService != nil {
+		manifest.Entrypoint = "bldr-dev/frontend-boot.mjs"
+		manifest.EntrypointDecompressedSize = 0
+	}
 	if err := entrypoint_browser_bundle.WriteBuildManifest(entrypointDir, manifest); err != nil {
 		return err
 	}
@@ -427,6 +443,10 @@ func (d *DevtoolBus) executeWebWasm(
 			return
 		}
 
+		if frontendService != nil && strings.HasPrefix(req.URL.Path, "/bldr-dev/frontend-") {
+			frontendService.ServeBootstrap(rw, req, bundleResult.EntrypointPath)
+			return
+		}
 		entrySrv.ServeHTTP(rw, req)
 	}
 

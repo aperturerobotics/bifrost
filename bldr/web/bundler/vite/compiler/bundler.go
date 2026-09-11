@@ -18,7 +18,6 @@ import (
 	"github.com/aperturerobotics/util/promise"
 	b58 "github.com/mr-tron/base58/base58"
 	"github.com/pkg/errors"
-	bldr_buildbudget "github.com/s4wave/spacewave/bldr/util/buildbudget"
 	bldr_pipesock "github.com/s4wave/spacewave/bldr/util/pipesock"
 	singleton_muxed_conn "github.com/s4wave/spacewave/bldr/util/singleton-muxed-conn"
 	bldr_web_bundler "github.com/s4wave/spacewave/bldr/web/bundler"
@@ -130,8 +129,12 @@ func (t *viteBundlerTracker) execute(ctx context.Context) error {
 	go smc.AcceptPump(pipeListener)
 	defer smc.Close()
 
+	// Cancel and join the process on every return path.
+	processCtx, cancelProcess := context.WithCancel(ctx)
+	defer cancelProcess()
+
 	// Set up the bun process
-	cmd, err := bun.BunExec(ctx, t.le, bunStateDir, viteScriptPath, "--bundle-id", bundleID, "--pipe-uuid", pipeUuid, "--pipe-root", pipeListener.GetRootDir())
+	cmd, err := bun.BunExec(processCtx, t.le, bunStateDir, viteScriptPath, "--bundle-id", bundleID, "--pipe-uuid", pipeUuid, "--pipe-root", pipeListener.GetRootDir())
 	if err != nil {
 		if ctx.Err() == nil {
 			t.instancePromiseCtr.SetResult(nil, err)
@@ -158,16 +161,6 @@ func (t *viteBundlerTracker) execute(ctx context.Context) error {
 		return context.Canceled
 	}
 
-	budget, err := bldr_buildbudget.Default()
-	if err != nil {
-		return err
-	}
-	permit, err := budget.Acquire(ctx, bldr_buildbudget.ViteBuildWeight)
-	if err != nil {
-		return err
-	}
-	defer permit.Release()
-
 	// Run the process
 	err = cmd.Start()
 	if err != nil {
@@ -184,10 +177,13 @@ func (t *viteBundlerTracker) execute(ctx context.Context) error {
 		_, waitErr := smc.WaitConn(timeoutCtx)
 		connectionResult <- waitErr
 	}()
-	processResult := make(chan error, 1)
+	processExited := make(chan struct{})
+	var processErr error
 	go func() {
-		processResult <- cmd.Wait()
+		processErr = cmd.Wait()
+		close(processExited)
 	}()
+	defer func() { cancelProcess(); <-processExited }()
 
 	t.le.Debug("waiting for vite to connect")
 	select {
@@ -198,7 +194,8 @@ func (t *viteBundlerTracker) execute(ctx context.Context) error {
 			}
 			return err
 		}
-	case err = <-processResult:
+	case <-processExited:
+		err = processErr
 		if err == nil {
 			err = errors.New("Vite process exited before connecting")
 		}
@@ -209,11 +206,16 @@ func (t *viteBundlerTracker) execute(ctx context.Context) error {
 	}
 
 	srpcClient := srpc.NewClientWithMuxedConn(smc)
-	client := bldr_vite.NewSRPCViteBundlerClient(srpcClient)
+	client, err := bldr_vite.NewBudgetClient(bldr_vite.NewSRPCViteBundlerClient(srpcClient))
+	if err != nil {
+		t.instancePromiseCtr.SetResult(nil, err)
+		return err
+	}
 	t.le.Debug("vite compiler connected")
 	t.instancePromiseCtr.SetResult(client, nil)
 
-	err = <-processResult
+	<-processExited
+	err = processErr
 	if ctx.Err() != nil {
 		t.instancePromiseCtr.SetPromise(nil)
 		return context.Canceled

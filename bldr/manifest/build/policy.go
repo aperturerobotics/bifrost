@@ -69,6 +69,7 @@ func (p *BuildPolicy) Merge(override *BuildPolicy) *BuildPolicy {
 	if override == nil {
 		return merged
 	}
+	merged.FrontendDevelopment = merged.GetFrontendDevelopment() || override.GetFrontendDevelopment()
 	merged.JsMinification = merged.GetJsMinification().Merge(override.GetJsMinification())
 	merged.JsSourcemaps = merged.GetJsSourcemaps().Merge(override.GetJsSourcemaps())
 	merged.GoscriptCodeSplitting = merged.GetGoscriptCodeSplitting().Merge(override.GetGoscriptCodeSplitting())

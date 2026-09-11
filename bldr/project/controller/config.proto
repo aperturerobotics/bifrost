@@ -29,6 +29,10 @@ message Config {
   // When FetchManifest is applied, we will compile the plugin manifest to the remote.
   // If unset, we don't service FetchManifest directives.
   string fetch_manifest_remote = 7;
+
+  // FrontendDevelopment attaches watched web development builds to the active
+  // project frontend service. Explicit build commands leave this disabled.
+  bool frontend_development = 8;
 }
 
 // ManifestBuilderConfig is a configuration for a ManifestBuilder.

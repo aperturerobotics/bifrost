@@ -2,6 +2,7 @@ syntax = "proto3";
 package bldr.web.bundler.vite;
 
 import "github.com/s4wave/spacewave/bldr/web/bundler/bundler.proto";
+import "github.com/s4wave/spacewave/bldr/frontend/frontend.proto";
 
 // ViteBundler is a service that runs Vite to compile web assets.
 service ViteBundler {
@@ -9,6 +10,46 @@ service ViteBundler {
   rpc Build(BuildRequest) returns (BuildResponse) {}
   // BuildWebPkg builds a single web package with Vite.
   rpc BuildWebPkg(BuildWebPkgRequest) returns (BuildWebPkgResponse) {}
+
+  // StartDevelopment starts the process's retained frontend environment.
+  rpc StartDevelopment(DevelopmentConfig) returns (DevelopmentResult);
+
+  // WatchDevelopment streams the current session and upstream HMR messages.
+  rpc WatchDevelopment(.bldr.frontend.WatchRequest) returns (stream .bldr.frontend.Event);
+
+  // SendDevelopment forwards an upstream client message into the environment.
+  rpc SendDevelopment(.bldr.frontend.SendRequest) returns (.bldr.frontend.SendResponse);
+}
+
+// DevelopmentConfig configures a dedicated process's frontend environment.
+message DevelopmentConfig {
+  // RootDir is the project source root.
+  string root_dir = 1;
+  // DistDir is the generated Bldr source root.
+  string dist_dir = 2;
+  // CacheDir holds dependency preparation output for this environment.
+  string cache_dir = 3;
+  // ConfigPaths contains additional project-relative Vite configuration paths.
+  repeated string config_paths = 4;
+  // Entrypoints contains configured project-relative frontend source paths.
+  repeated string entrypoints = 5;
+  // ExternalPkgs are canonical browser import-map packages and their subpaths.
+  repeated string external_pkgs = 6;
+  // SessionId identifies this compiler environment and its route namespace.
+  string session_id = 7;
+  // DisableProjectConfig disables automatic root Vite config discovery.
+  bool disable_project_config = 8;
+}
+
+// DevelopmentResult publishes readiness of the internal middleware adapter.
+message DevelopmentResult {
+  // Session identifies the environment exposed through Bldr.
+  .bldr.frontend.Session session = 1;
+  // PrivateUrl is the loopback-only HTTP adapter, never sent to a browser.
+  string private_url = 2;
+  // RefreshRuntime is the project's React refresh module for the bootstrap.
+  // It is empty when the project does not use React refresh.
+  string refresh_runtime = 3;
 }
 
 // WebPkgRef is a reference to a web package.

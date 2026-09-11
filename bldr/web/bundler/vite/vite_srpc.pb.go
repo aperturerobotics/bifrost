@@ -8,6 +8,7 @@ import (
 	context "context"
 
 	srpc "github.com/aperturerobotics/starpc/srpc"
+	bldr_frontend "github.com/s4wave/spacewave/bldr/frontend"
 )
 
 type SRPCViteBundlerClient interface {
@@ -18,6 +19,12 @@ type SRPCViteBundlerClient interface {
 	Build(ctx context.Context, in *BuildRequest) (*BuildResponse, error)
 	// BuildWebPkg builds a single web package with Vite.
 	BuildWebPkg(ctx context.Context, in *BuildWebPkgRequest) (*BuildWebPkgResponse, error)
+	// StartDevelopment starts the process's retained frontend environment.
+	StartDevelopment(ctx context.Context, in *DevelopmentConfig) (*DevelopmentResult, error)
+	// WatchDevelopment streams the current session and upstream HMR messages.
+	WatchDevelopment(ctx context.Context, in *bldr_frontend.WatchRequest) (SRPCViteBundler_WatchDevelopmentClient, error)
+	// SendDevelopment forwards an upstream client message into the environment.
+	SendDevelopment(ctx context.Context, in *bldr_frontend.SendRequest) (*bldr_frontend.SendResponse, error)
 }
 
 type srpcViteBundlerClient struct {
@@ -56,11 +63,69 @@ func (c *srpcViteBundlerClient) BuildWebPkg(ctx context.Context, in *BuildWebPkg
 	return out, nil
 }
 
+func (c *srpcViteBundlerClient) StartDevelopment(ctx context.Context, in *DevelopmentConfig) (*DevelopmentResult, error) {
+	out := new(DevelopmentResult)
+	err := c.cc.ExecCall(ctx, c.serviceID, "StartDevelopment", in, out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *srpcViteBundlerClient) WatchDevelopment(ctx context.Context, in *bldr_frontend.WatchRequest) (SRPCViteBundler_WatchDevelopmentClient, error) {
+	stream, err := c.cc.NewStream(ctx, c.serviceID, "WatchDevelopment", in)
+	if err != nil {
+		return nil, err
+	}
+	strm := &srpcViteBundler_WatchDevelopmentClient{stream}
+	if err := strm.CloseSend(); err != nil {
+		return nil, err
+	}
+	return strm, nil
+}
+
+type SRPCViteBundler_WatchDevelopmentClient interface {
+	srpc.Stream
+	Recv() (*bldr_frontend.Event, error)
+	RecvTo(*bldr_frontend.Event) error
+}
+
+type srpcViteBundler_WatchDevelopmentClient struct {
+	srpc.Stream
+}
+
+func (x *srpcViteBundler_WatchDevelopmentClient) Recv() (*bldr_frontend.Event, error) {
+	m := new(bldr_frontend.Event)
+	if err := x.MsgRecv(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (x *srpcViteBundler_WatchDevelopmentClient) RecvTo(m *bldr_frontend.Event) error {
+	return x.MsgRecv(m)
+}
+
+func (c *srpcViteBundlerClient) SendDevelopment(ctx context.Context, in *bldr_frontend.SendRequest) (*bldr_frontend.SendResponse, error) {
+	out := new(bldr_frontend.SendResponse)
+	err := c.cc.ExecCall(ctx, c.serviceID, "SendDevelopment", in, out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 type SRPCViteBundlerServer interface {
 	// Build runs the Vite compiler with the given configuration.
 	Build(context.Context, *BuildRequest) (*BuildResponse, error)
 	// BuildWebPkg builds a single web package with Vite.
 	BuildWebPkg(context.Context, *BuildWebPkgRequest) (*BuildWebPkgResponse, error)
+	// StartDevelopment starts the process's retained frontend environment.
+	StartDevelopment(context.Context, *DevelopmentConfig) (*DevelopmentResult, error)
+	// WatchDevelopment streams the current session and upstream HMR messages.
+	WatchDevelopment(*bldr_frontend.WatchRequest, SRPCViteBundler_WatchDevelopmentStream) error
+	// SendDevelopment forwards an upstream client message into the environment.
+	SendDevelopment(context.Context, *bldr_frontend.SendRequest) (*bldr_frontend.SendResponse, error)
 }
 
 const SRPCViteBundlerServiceID = "bldr.web.bundler.vite.ViteBundler"
@@ -91,6 +156,9 @@ func (SRPCViteBundlerHandler) GetMethodIDs() []string {
 	return []string{
 		"Build",
 		"BuildWebPkg",
+		"StartDevelopment",
+		"WatchDevelopment",
+		"SendDevelopment",
 	}
 }
 
@@ -107,6 +175,12 @@ func (d *SRPCViteBundlerHandler) InvokeMethod(
 		return true, d.InvokeMethod_Build(d.impl, strm)
 	case "BuildWebPkg":
 		return true, d.InvokeMethod_BuildWebPkg(d.impl, strm)
+	case "StartDevelopment":
+		return true, d.InvokeMethod_StartDevelopment(d.impl, strm)
+	case "WatchDevelopment":
+		return true, d.InvokeMethod_WatchDevelopment(d.impl, strm)
+	case "SendDevelopment":
+		return true, d.InvokeMethod_SendDevelopment(d.impl, strm)
 	default:
 		return false, nil
 	}
@@ -136,6 +210,39 @@ func (SRPCViteBundlerHandler) InvokeMethod_BuildWebPkg(impl SRPCViteBundlerServe
 	return strm.MsgSend(out)
 }
 
+func (SRPCViteBundlerHandler) InvokeMethod_StartDevelopment(impl SRPCViteBundlerServer, strm srpc.Stream) error {
+	req := new(DevelopmentConfig)
+	if err := strm.MsgRecv(req); err != nil {
+		return err
+	}
+	out, err := impl.StartDevelopment(strm.Context(), req)
+	if err != nil {
+		return err
+	}
+	return strm.MsgSend(out)
+}
+
+func (SRPCViteBundlerHandler) InvokeMethod_WatchDevelopment(impl SRPCViteBundlerServer, strm srpc.Stream) error {
+	req := new(bldr_frontend.WatchRequest)
+	if err := strm.MsgRecv(req); err != nil {
+		return err
+	}
+	serverStrm := &srpcViteBundler_WatchDevelopmentStream{strm}
+	return impl.WatchDevelopment(req, serverStrm)
+}
+
+func (SRPCViteBundlerHandler) InvokeMethod_SendDevelopment(impl SRPCViteBundlerServer, strm srpc.Stream) error {
+	req := new(bldr_frontend.SendRequest)
+	if err := strm.MsgRecv(req); err != nil {
+		return err
+	}
+	out, err := impl.SendDevelopment(strm.Context(), req)
+	if err != nil {
+		return err
+	}
+	return strm.MsgSend(out)
+}
+
 type SRPCViteBundler_BuildStream interface {
 	srpc.Stream
 }
@@ -149,5 +256,44 @@ type SRPCViteBundler_BuildWebPkgStream interface {
 }
 
 type srpcViteBundler_BuildWebPkgStream struct {
+	srpc.Stream
+}
+
+type SRPCViteBundler_StartDevelopmentStream interface {
+	srpc.Stream
+}
+
+type srpcViteBundler_StartDevelopmentStream struct {
+	srpc.Stream
+}
+
+type SRPCViteBundler_WatchDevelopmentStream interface {
+	srpc.Stream
+	Send(*bldr_frontend.Event) error
+	SendAndClose(*bldr_frontend.Event) error
+}
+
+type srpcViteBundler_WatchDevelopmentStream struct {
+	srpc.Stream
+}
+
+func (x *srpcViteBundler_WatchDevelopmentStream) Send(m *bldr_frontend.Event) error {
+	return x.MsgSend(m)
+}
+
+func (x *srpcViteBundler_WatchDevelopmentStream) SendAndClose(m *bldr_frontend.Event) error {
+	if m != nil {
+		if err := x.MsgSend(m); err != nil {
+			return err
+		}
+	}
+	return x.CloseSend()
+}
+
+type SRPCViteBundler_SendDevelopmentStream interface {
+	srpc.Stream
+}
+
+type srpcViteBundler_SendDevelopmentStream struct {
 	srpc.Stream
 }

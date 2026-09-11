@@ -17,6 +17,7 @@ import (
 )
 
 type fakeViteBundlerClient struct {
+	bldr_vite.SRPCViteBundlerClient
 	resp      *bldr_vite.BuildWebPkgResponse
 	buildResp func(*bldr_vite.BuildWebPkgRequest) *bldr_vite.BuildWebPkgResponse
 	requests  []*bldr_vite.BuildWebPkgRequest

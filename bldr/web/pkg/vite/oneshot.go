@@ -120,7 +120,13 @@ func RunOneShot(
 
 	// Create the SRPC client.
 	srpcClient := srpc.NewClientWithMuxedConn(smc)
-	client := bldr_vite.NewSRPCViteBundlerClient(srpcClient)
+	client, err := bldr_vite.NewBudgetClient(bldr_vite.NewSRPCViteBundlerClient(srpcClient))
+	if err != nil {
+		// Failed admission setup still closes the process started above.
+		_ = cmd.Process.Kill()
+		_ = cmd.Wait()
+		return err
+	}
 
 	le.Debug("vite oneshot connected")
 

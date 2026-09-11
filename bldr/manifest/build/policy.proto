@@ -22,4 +22,9 @@ message BuildPolicy {
   // DEFAULT emits split GoScript wrapper bundles. ENABLE also permits chunk
   // output; DISABLE forces single-file output.
   .enabled.Enabled goscript_code_splitting = 3;
+
+  // FrontendDevelopment selects the active project service instead of immutable
+  // frontend bundles. Only an attached web development session enables it.
+  // It participates in build and startup-cache identity and propagates to children.
+  bool frontend_development = 4;
 }
