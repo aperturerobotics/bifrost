@@ -1,4 +1,4 @@
-//go:build js && !bldr_indexeddb
+//go:build js
 
 package browser_storage
 
@@ -47,13 +47,6 @@ func (s *OpfsStorage) BuildVolumeConfig(id string, baseVolCtrlConf *volume_contr
 // DeleteVolume removes the active OPFS volume while retaining replaced legacy data.
 func (s *OpfsStorage) DeleteVolume(id string) error {
 	return volume_opfs.DeleteRoot(s.prefix + id)
-}
-
-// init registers the OPFS storage provider for browser builds.
-func init() {
-	storageMethods = append(storageMethods, func(b bus.Bus, prefix string) []storage.Storage {
-		return []storage.Storage{NewOpfsStorage(prefix)}
-	})
 }
 
 // _ is a type assertion.

@@ -3,8 +3,11 @@
 package devtool
 
 import (
+	"slices"
+
 	bldr_plugin_compiler_go "github.com/s4wave/spacewave/bldr/plugin/compiler/go"
 	bldr_plugin_compiler_js "github.com/s4wave/spacewave/bldr/plugin/compiler/js"
+	plugin_host_scheduler "github.com/s4wave/spacewave/bldr/plugin/host/scheduler"
 	bldr_project "github.com/s4wave/spacewave/bldr/project"
 	web_plugin_compiler "github.com/s4wave/spacewave/bldr/web/plugin/compiler"
 )
@@ -13,6 +16,39 @@ import (
 type StartupManifestPreflight struct {
 	PluginID    string
 	PlatformIDs []string
+}
+
+// startupManifestPlatformSelectionPolicies prevents each exact preflight from
+// being rebuilt for the other plugin platform after the browser connects.
+func startupManifestPlatformSelectionPolicies(
+	preflights []StartupManifestPreflight,
+) []*plugin_host_scheduler.PlatformSelectionPolicy {
+	var platformIDs []string
+	for _, preflight := range preflights {
+		platformIDs = append(platformIDs, preflight.PlatformIDs...)
+	}
+	slices.Sort(platformIDs)
+	platformIDs = slices.Compact(platformIDs)
+
+	policies := make([]*plugin_host_scheduler.PlatformSelectionPolicy, 0, len(platformIDs))
+	for _, platformID := range platformIDs {
+		var deniedPluginIDs []string
+		for _, preflight := range preflights {
+			if !slices.Contains(preflight.PlatformIDs, platformID) {
+				deniedPluginIDs = append(deniedPluginIDs, preflight.PluginID)
+			}
+		}
+		if len(deniedPluginIDs) == 0 {
+			continue
+		}
+		slices.Sort(deniedPluginIDs)
+		deniedPluginIDs = slices.Compact(deniedPluginIDs)
+		policies = append(policies, &plugin_host_scheduler.PlatformSelectionPolicy{
+			PlatformId:      platformID,
+			DeniedPluginIds: deniedPluginIDs,
+		})
+	}
+	return policies
 }
 
 // projectOwnedStartupPlugins returns the plugin ids owned by the project's
@@ -45,7 +81,7 @@ func ProjectOwnedStartupManifestPreflight(
 	}
 	return StartupManifestPreflight{
 		PluginID:    pluginID,
-		PlatformIDs: startupManifestPlatformIDs(pluginID, manifest, wasmPlatformID),
+		PlatformIDs: startupManifestPlatformIDs(manifest, "", wasmPlatformID),
 	}, true
 }
 
@@ -67,20 +103,49 @@ func ProjectOwnedStartupManifestPreflights(projectConfig *bldr_project.ProjectCo
 	return preflights
 }
 
+// projectOwnedStartupManifestPreflightsForPlatforms narrows known builders to
+// the single platform used by the active browser development mode.
+func projectOwnedStartupManifestPreflightsForPlatforms(
+	projectConfig *bldr_project.ProjectConfig,
+	goPluginPlatformID,
+	wasmPlatformID string,
+) []StartupManifestPreflight {
+	pluginIDs := projectOwnedStartupPlugins(projectConfig)
+	preflights := make([]StartupManifestPreflight, 0, len(pluginIDs))
+	for _, pluginID := range pluginIDs {
+		manifest := projectConfig.GetManifests()[pluginID]
+		if manifest == nil {
+			continue
+		}
+		preflights = append(preflights, StartupManifestPreflight{
+			PluginID:    pluginID,
+			PlatformIDs: startupManifestPlatformIDs(manifest, goPluginPlatformID, wasmPlatformID),
+		})
+	}
+	return preflights
+}
+
 // startupManifestPlatformIDs returns the platform ids a manifest builds
 // for, given the resolved wasm platform id.
-func startupManifestPlatformIDs(pluginID string, manifest *bldr_project.ManifestConfig, wasmPlatformID string) []string {
+func startupManifestPlatformIDs(
+	manifest *bldr_project.ManifestConfig,
+	goPluginPlatformID,
+	wasmPlatformID string,
+) []string {
 	switch manifest.GetBuilder().GetId() {
 	case bldr_plugin_compiler_js.ConfigID:
-		if wasmPlatformID != "" && wasmPlatformID != "js" {
+		if goPluginPlatformID == "" && wasmPlatformID != "" && wasmPlatformID != "js" {
 			return []string{"js", wasmPlatformID}
 		}
 		return []string{"js"}
 	case bldr_plugin_compiler_go.ConfigID:
-		if wasmPlatformID != "" && wasmPlatformID != "js" {
-			return []string{"js", wasmPlatformID}
+		if goPluginPlatformID == "" {
+			if wasmPlatformID != "" && wasmPlatformID != "js" {
+				return []string{"js", wasmPlatformID}
+			}
+			return []string{"js"}
 		}
-		return []string{"js"}
+		return []string{goPluginPlatformID}
 	case web_plugin_compiler.ConfigID:
 		return []string{wasmPlatformID}
 	default:

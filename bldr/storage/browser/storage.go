@@ -1,23 +1,24 @@
+//go:build js
+
 package browser_storage
 
 import (
+	"os"
+
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/s4wave/spacewave/bldr/storage"
 )
 
-// storageMethodCtor constructs a storage method.
-type storageMethodCtor func(b bus.Bus, prefix string) []storage.Storage
-
-// storageMethods is the list of available storage methods.
-var storageMethods []storageMethodCtor
+// StorageModeEnv selects the browser storage backend after the browser probes
+// its actual capabilities.
+const StorageModeEnv = "BLDR_BROWSER_STORAGE"
 
 // BuildStorage builds all available storage methods.
 //
 // prefix is used as the IndexedDB prefix in the browser.
-func BuildStorage(b bus.Bus, prefix string) []storage.Storage {
-	r := make([]storage.Storage, 0, len(storageMethods))
-	for _, ctor := range storageMethods {
-		r = append(r, ctor(b, prefix)...)
+func BuildStorage(_ bus.Bus, prefix string) []storage.Storage {
+	if os.Getenv(StorageModeEnv) == "indexeddb" {
+		return []storage.Storage{NewIndexedDB(prefix, false)}
 	}
-	return r
+	return []storage.Storage{NewOpfsStorage(prefix)}
 }

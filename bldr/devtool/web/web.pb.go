@@ -11,6 +11,7 @@ import (
 
 	protobuf_go_lite "github.com/aperturerobotics/protobuf-go-lite"
 	json "github.com/aperturerobotics/protobuf-go-lite/json"
+	scheduler "github.com/s4wave/spacewave/bldr/plugin/host/scheduler"
 	volume "github.com/s4wave/spacewave/db/volume"
 )
 
@@ -30,6 +31,9 @@ type DevtoolInitBrowser struct {
 	// dedicated Workers for plugins. Useful for testing with Playwright
 	// which can capture console output from dedicated workers but not shared.
 	ForceDedicatedWorkers bool `protobuf:"varint,5,opt,name=force_dedicated_workers,json=forceDedicatedWorkers,proto3" json:"forceDedicatedWorkers,omitempty"`
+	// PlatformSelectionPolicies bind project-owned startup plugins to the
+	// platform selected by the active development compiler.
+	PlatformSelectionPolicies []*scheduler.PlatformSelectionPolicy `protobuf:"bytes,6,rep,name=platform_selection_policies,json=platformSelectionPolicies,proto3" json:"platformSelectionPolicies,omitempty"`
 }
 
 func (x *DevtoolInitBrowser) Reset() {
@@ -73,6 +77,13 @@ func (x *DevtoolInitBrowser) GetForceDedicatedWorkers() bool {
 	return false
 }
 
+func (x *DevtoolInitBrowser) GetPlatformSelectionPolicies() []*scheduler.PlatformSelectionPolicy {
+	if x != nil {
+		return x.PlatformSelectionPolicies
+	}
+	return nil
+}
+
 func (m *DevtoolInitBrowser) CloneVT() *DevtoolInitBrowser {
 	if m == nil {
 		return (*DevtoolInitBrowser)(nil)
@@ -83,6 +94,7 @@ func (m *DevtoolInitBrowser) CloneVT() *DevtoolInitBrowser {
 	r.ForceDedicatedWorkers = m.ForceDedicatedWorkers
 	r.DevtoolVolumeInfo = protobuf_go_lite.CloneVTValue(m.DevtoolVolumeInfo)
 	r.StartPlugins = protobuf_go_lite.CloneSlice(m.StartPlugins)
+	r.PlatformSelectionPolicies = protobuf_go_lite.CloneVTSlice(m.PlatformSelectionPolicies)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -112,6 +124,9 @@ func (this *DevtoolInitBrowser) EqualVT(that *DevtoolInitBrowser) bool {
 		return false
 	}
 	if this.ForceDedicatedWorkers != that.ForceDedicatedWorkers {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.PlatformSelectionPolicies, that.PlatformSelectionPolicies, func() *scheduler.PlatformSelectionPolicy { return &scheduler.PlatformSelectionPolicy{} }) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -158,6 +173,17 @@ func (x *DevtoolInitBrowser) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("forceDedicatedWorkers")
 		s.WriteBool(x.ForceDedicatedWorkers)
 	}
+	if len(x.PlatformSelectionPolicies) > 0 || s.HasField("platformSelectionPolicies") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("platformSelectionPolicies")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.PlatformSelectionPolicies {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s.WithField("platformSelectionPolicies"))
+		}
+		s.WriteArrayEnd()
+	}
 	s.WriteObjectEnd()
 }
 
@@ -198,6 +224,24 @@ func (x *DevtoolInitBrowser) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "force_dedicated_workers", "forceDedicatedWorkers":
 			s.AddField("force_dedicated_workers")
 			x.ForceDedicatedWorkers = s.ReadBool()
+		case "platform_selection_policies", "platformSelectionPolicies":
+			s.AddField("platform_selection_policies")
+			if s.ReadNil() {
+				x.PlatformSelectionPolicies = nil
+				return
+			}
+			s.ReadArray(func() {
+				if s.ReadNil() {
+					x.PlatformSelectionPolicies = append(x.PlatformSelectionPolicies, nil)
+					return
+				}
+				v := &scheduler.PlatformSelectionPolicy{}
+				v.UnmarshalProtoJSON(s.WithField("platform_selection_policies", false))
+				if s.Err() != nil {
+					return
+				}
+				x.PlatformSelectionPolicies = append(x.PlatformSelectionPolicies, v)
+			})
 		}
 	})
 }
@@ -235,6 +279,18 @@ func (m *DevtoolInitBrowser) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	_ = l
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.PlatformSelectionPolicies) > 0 {
+		for iNdEx := len(m.PlatformSelectionPolicies) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.PlatformSelectionPolicies[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0x32
+		}
 	}
 	if m.ForceDedicatedWorkers {
 		i = protobuf_go_lite.EncodeBool(dAtA, i, m.ForceDedicatedWorkers)
@@ -285,6 +341,10 @@ func (m *DevtoolInitBrowser) SizeVT() (n int) {
 	}
 	n += protobuf_go_lite.SizeStringSlice(1, m.StartPlugins)
 	n += protobuf_go_lite.SizeBoolNonZero(1, m.ForceDedicatedWorkers)
+	for _, e := range m.PlatformSelectionPolicies {
+		l = e.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -315,6 +375,18 @@ func (x *DevtoolInitBrowser) MarshalProtoText() string {
 	if x.ForceDedicatedWorkers != false {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "force_dedicated_workers")
 		protobuf_go_lite.TextWriteBool(&sb, x.ForceDedicatedWorkers)
+	}
+	if len(x.PlatformSelectionPolicies) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "platform_selection_policies")
+		for i, v := range x.PlatformSelectionPolicies {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &scheduler.PlatformSelectionPolicy{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -398,6 +470,19 @@ func (m *DevtoolInitBrowser) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.ForceDedicatedWorkers = bool(v)
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PlatformSelectionPolicies", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.PlatformSelectionPolicies = append(m.PlatformSelectionPolicies, &scheduler.PlatformSelectionPolicy{})
+			if err := m.PlatformSelectionPolicies[len(m.PlatformSelectionPolicies)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

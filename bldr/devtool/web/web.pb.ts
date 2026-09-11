@@ -3,6 +3,7 @@
 /* eslint-disable */
 
 import { VolumeInfo } from '@go/github.com/s4wave/spacewave/db/volume/volume.pb.js'
+import { PlatformSelectionPolicy } from '../../plugin/host/scheduler/config.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
@@ -49,6 +50,13 @@ export interface DevtoolInitBrowser {
    * @generated from field: bool force_dedicated_workers = 5;
    */
   forceDedicatedWorkers?: boolean
+  /**
+   * PlatformSelectionPolicies bind project-owned startup plugins to the
+   * platform selected by the active development compiler.
+   *
+   * @generated from field: repeated plugin.host.scheduler.PlatformSelectionPolicy platform_selection_policies = 6;
+   */
+  platformSelectionPolicies?: PlatformSelectionPolicy[]
 }
 
 export const DevtoolInitBrowser: MessageType<DevtoolInitBrowser> =
@@ -75,6 +83,13 @@ export const DevtoolInitBrowser: MessageType<DevtoolInitBrowser> =
         name: 'force_dedicated_workers',
         kind: 'scalar',
         T: ScalarType.BOOL,
+      },
+      {
+        no: 6,
+        name: 'platform_selection_policies',
+        kind: 'message',
+        T: () => PlatformSelectionPolicy,
+        repeated: true,
       },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,

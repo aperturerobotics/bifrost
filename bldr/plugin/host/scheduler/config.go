@@ -69,6 +69,17 @@ func (c *Config) Validate() error {
 		if slices.Contains(policy.GetAllowedPluginIds(), "") {
 			return errors.New("platform_selection_policies: allowed_plugin_ids cannot contain empty values")
 		}
+		if slices.Contains(policy.GetDeniedPluginIds(), "") {
+			return errors.New("platform_selection_policies: denied_plugin_ids cannot contain empty values")
+		}
+		for _, pluginID := range policy.GetDeniedPluginIds() {
+			if slices.Contains(policy.GetAllowedPluginIds(), pluginID) {
+				return errors.Errorf(
+					"platform_selection_policies: plugin %q cannot be both allowed and denied",
+					pluginID,
+				)
+			}
+		}
 	}
 	if err := bldr_plugin.ValidatePluginID(c.GetMaterializerPluginId(), true); err != nil {
 		return errors.Wrap(err, "materializer_plugin_id")
@@ -146,7 +157,11 @@ func (c *Config) pluginPlatformAllowed(pluginID, platformID string) bool {
 		if policy.GetPlatformId() != platformID {
 			continue
 		}
-		return slices.Contains(policy.GetAllowedPluginIds(), pluginID)
+		if slices.Contains(policy.GetDeniedPluginIds(), pluginID) {
+			return false
+		}
+		allowed := policy.GetAllowedPluginIds()
+		return len(allowed) == 0 || slices.Contains(allowed, pluginID)
 	}
 	return true
 }

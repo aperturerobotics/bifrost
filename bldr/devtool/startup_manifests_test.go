@@ -9,6 +9,7 @@ import (
 	configset_proto "github.com/aperturerobotics/controllerbus/controller/configset/proto"
 	bldr_plugin_compiler_go "github.com/s4wave/spacewave/bldr/plugin/compiler/go"
 	bldr_plugin_compiler_js "github.com/s4wave/spacewave/bldr/plugin/compiler/js"
+	plugin_host_scheduler "github.com/s4wave/spacewave/bldr/plugin/host/scheduler"
 	bldr_project "github.com/s4wave/spacewave/bldr/project"
 	web_plugin_compiler "github.com/s4wave/spacewave/bldr/web/plugin/compiler"
 )
@@ -71,6 +72,35 @@ func TestProjectOwnedStartupManifestPreflightsSelectBuilderPlatforms(t *testing.
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("ProjectOwnedStartupManifestPreflights() = %#v, want %#v", got, want)
+	}
+}
+
+func TestProjectOwnedStartupManifestPreflightsSelectActivePlatforms(t *testing.T) {
+	projectConfig := &bldr_project.ProjectConfig{
+		Start: &bldr_project.StartConfig{Plugins: []string{"web", "frontend", "core"}},
+		Manifests: map[string]*bldr_project.ManifestConfig{
+			"web":      {Builder: &configset_proto.ControllerConfig{Id: web_plugin_compiler.ConfigID}},
+			"frontend": {Builder: &configset_proto.ControllerConfig{Id: bldr_plugin_compiler_js.ConfigID}},
+			"core":     {Builder: &configset_proto.ControllerConfig{Id: bldr_plugin_compiler_go.ConfigID}},
+		},
+	}
+
+	got := projectOwnedStartupManifestPreflightsForPlatforms(projectConfig, "js", "web/js/wasm")
+	want := []StartupManifestPreflight{
+		{PluginID: "web", PlatformIDs: []string{"web/js/wasm"}},
+		{PluginID: "frontend", PlatformIDs: []string{"js"}},
+		{PluginID: "core", PlatformIDs: []string{"js"}},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("ProjectOwnedStartupManifestPreflights() = %#v, want %#v", got, want)
+	}
+	policies := startupManifestPlatformSelectionPolicies(got)
+	wantPolicies := []*plugin_host_scheduler.PlatformSelectionPolicy{
+		{PlatformId: "js", DeniedPluginIds: []string{"web"}},
+		{PlatformId: "web/js/wasm", DeniedPluginIds: []string{"core", "frontend"}},
+	}
+	if !reflect.DeepEqual(policies, wantPolicies) {
+		t.Fatalf("startupManifestPlatformSelectionPolicies() = %#v, want %#v", policies, wantPolicies)
 	}
 }
 

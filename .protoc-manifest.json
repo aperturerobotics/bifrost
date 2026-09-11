@@ -68,7 +68,7 @@
       ]
     },
     "github.com/s4wave/spacewave/bldr/devtool/web": {
-      "hash": "5c769040e039f1ffb10193454ee1ee6d8c732be26cdaaf2236be7dc0fb27208a",
+      "hash": "3eadfd64c28a8a38a0b797af2818e5a3f463252276597bf3bd906c6a67cdec30",
       "generatedFiles": [
         "bldr/devtool/web/web.pb.go",
         "bldr/devtool/web/web.pb.ts"
@@ -317,7 +317,7 @@
       ]
     },
     "github.com/s4wave/spacewave/bldr/plugin/host/scheduler": {
-      "hash": "6c226910d7f3e3667893865829fefbb974742d0836e98aeddd911facfcf2f2cc",
+      "hash": "9614b74b193c6ac5b833e5b37fe94041017db2fe8ed6e9e3abf192c4dcfd79fc",
       "generatedFiles": [
         "bldr/plugin/host/scheduler/config.pb.go",
         "bldr/plugin/host/scheduler/config.pb.ts"
