@@ -3,6 +3,8 @@ import type { Message, MessageType } from '@aptre/protobuf-es-lite/message'
 import {
   EnrollManagedAccountRequest,
   EnrollManagedAccountResponse,
+  GetApplicationAccountAccessRequest,
+  GetApplicationAccountAccessResponse,
   GetApplicationRequest,
   GetApplicationResponse,
 } from '@s4wave/core/provider/spacewave/api/application.pb.js'
@@ -188,6 +190,20 @@ export class ApplicationOperatorClient {
       '/api/applications/get',
       GetApplicationRequest,
       GetApplicationResponse,
+      request,
+      signal,
+    )
+  }
+
+  /** getApplicationAccountAccess reads current rollout access for a verified application identity. */
+  public async getApplicationAccountAccess(
+    request: GetApplicationAccountAccessRequest,
+    signal?: AbortSignal,
+  ): Promise<GetApplicationAccountAccessResponse> {
+    return this.postBinary(
+      '/api/applications/accounts/access',
+      GetApplicationAccountAccessRequest,
+      GetApplicationAccountAccessResponse,
       request,
       signal,
     )

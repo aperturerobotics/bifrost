@@ -731,3 +731,65 @@ export const SetApplicationStateResponse: MessageType<SetApplicationStateRespons
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })
+
+/**
+ * GetApplicationAccountAccessRequest selects a verified external identity within an application.
+ * Only its registered operator or a platform administrator may read this projection.
+ *
+ * @generated from message provider.spacewave.api.GetApplicationAccountAccessRequest
+ */
+export interface GetApplicationAccountAccessRequest {
+  /**
+   * ApplicationId identifies the approved registration.
+   *
+   * @generated from field: string application_id = 1;
+   */
+  applicationId?: string
+  /**
+   * Issuer is the verified identity namespace, at most 512 UTF-8 bytes.
+   *
+   * @generated from field: string issuer = 2;
+   */
+  issuer?: string
+  /**
+   * Subject is the verified identity within the issuer, at most 256 UTF-8 bytes.
+   *
+   * @generated from field: string subject = 3;
+   */
+  subject?: string
+}
+
+export const GetApplicationAccountAccessRequest: MessageType<GetApplicationAccountAccessRequest> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'provider.spacewave.api.GetApplicationAccountAccessRequest',
+    fields: [
+      { no: 1, name: 'application_id', kind: 'scalar', T: ScalarType.STRING },
+      { no: 2, name: 'issuer', kind: 'scalar', T: ScalarType.STRING },
+      { no: 3, name: 'subject', kind: 'scalar', T: ScalarType.STRING },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
+ * GetApplicationAccountAccessResponse projects current managed-account rollout access.
+ * Missing, inactive, or unenrolled accounts have no access. This grants no cloud operations.
+ *
+ * @generated from message provider.spacewave.api.GetApplicationAccountAccessResponse
+ */
+export interface GetApplicationAccountAccessResponse {
+  /**
+   * Developer reflects a live, unexpired platform Developer role on the managed account.
+   *
+   * @generated from field: bool developer = 1;
+   */
+  developer?: boolean
+}
+
+export const GetApplicationAccountAccessResponse: MessageType<GetApplicationAccountAccessResponse> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'provider.spacewave.api.GetApplicationAccountAccessResponse',
+    fields: [
+      { no: 1, name: 'developer', kind: 'scalar', T: ScalarType.BOOL },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
