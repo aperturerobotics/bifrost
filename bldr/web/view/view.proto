@@ -3,6 +3,7 @@ syntax = "proto3";
 package web.view;
 
 import "github.com/aperturerobotics/starpc/rpcstream/rpcstream.proto";
+import "github.com/s4wave/spacewave/bldr/frontend/frontend.proto";
 
 // WebViewHost is the service exposed by the Go runtime.
 //
@@ -60,6 +61,10 @@ message SetRenderModeRequest {
 
   // Refresh clears the existing contents of the view fully before loading the new script.
   bool refresh = 4;
+
+  // FrontendBinding selects a live project entrypoint instead of ScriptPath.
+  // The WebDocument resolves the current session before importing the module.
+  .bldr.frontend.Binding frontend_binding = 5;
 }
 
 // SetRenderModeResponse is the response to the SetRenderMode request.

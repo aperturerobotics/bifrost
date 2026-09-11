@@ -1,3 +1,5 @@
+import { frontendBindingPath } from '@go/github.com/s4wave/spacewave/bldr/frontend/binding.js'
+import type { Binding } from '@go/github.com/s4wave/spacewave/bldr/frontend/frontend.pb.js'
 import { Client as SRPCClient } from 'starpc'
 import type { BackendAPI } from '@aptre/bldr-sdk'
 import {
@@ -25,6 +27,7 @@ const V86_RUNTIME_V86FS_SERVICE_PREFIX = 'vm/v86-runtime/v86fs/'
 const V86_RUNTIME_STATUS_SERVICE_PREFIX = 'vm/v86-runtime/status/'
 
 type ViteManifestEntry = {
+  frontendBinding?: Binding
   file?: string
 }
 
@@ -49,8 +52,7 @@ function retainUntilAbort(
   signal.addEventListener('abort', release, { once: true })
 }
 
-// resolveAssetPath resolves a source entrypoint path to its built output
-// path by reading the Vite manifest from the plugin's assets FS.
+// resolveAssetPath reads the source binding or snapshot from the asset manifest.
 async function resolveAssetPath(
   api: BackendAPI,
   signal: AbortSignal,
@@ -73,6 +75,7 @@ async function resolveAssetPath(
     ViteManifestEntry
   >
   const entry = parsed[key]
+  if (entry?.frontendBinding) return frontendBindingPath(entry.frontendBinding)
   if (entry?.file) {
     const pluginId = api.startInfo.pluginId
     if (!pluginId) {

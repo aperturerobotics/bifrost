@@ -6,9 +6,143 @@ import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { Session } from '../../../frontend/frontend.pb.js'
 import { WebPkgRefConfig } from '../bundler.pb.js'
 
 export const protobufPackage = 'bldr.web.bundler.vite'
+
+/**
+ * DevelopmentConfig configures a dedicated process's frontend environment.
+ *
+ * @generated from message bldr.web.bundler.vite.DevelopmentConfig
+ */
+export interface DevelopmentConfig {
+  /**
+   * RootDir is the project source root.
+   *
+   * @generated from field: string root_dir = 1;
+   */
+  rootDir?: string
+  /**
+   * DistDir is the generated Bldr source root.
+   *
+   * @generated from field: string dist_dir = 2;
+   */
+  distDir?: string
+  /**
+   * CacheDir holds dependency preparation output for this environment.
+   *
+   * @generated from field: string cache_dir = 3;
+   */
+  cacheDir?: string
+  /**
+   * ConfigPaths contains additional project-relative Vite configuration paths.
+   *
+   * @generated from field: repeated string config_paths = 4;
+   */
+  configPaths?: string[]
+  /**
+   * Entrypoints contains configured project-relative frontend source paths.
+   *
+   * @generated from field: repeated string entrypoints = 5;
+   */
+  entrypoints?: string[]
+  /**
+   * ExternalPkgs are canonical browser import-map packages and their subpaths.
+   *
+   * @generated from field: repeated string external_pkgs = 6;
+   */
+  externalPkgs?: string[]
+  /**
+   * SessionId identifies this compiler environment and its route namespace.
+   *
+   * @generated from field: string session_id = 7;
+   */
+  sessionId?: string
+  /**
+   * DisableProjectConfig disables automatic root Vite config discovery.
+   *
+   * @generated from field: bool disable_project_config = 8;
+   */
+  disableProjectConfig?: boolean
+}
+
+export const DevelopmentConfig: MessageType<DevelopmentConfig> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'bldr.web.bundler.vite.DevelopmentConfig',
+    fields: [
+      { no: 1, name: 'root_dir', kind: 'scalar', T: ScalarType.STRING },
+      { no: 2, name: 'dist_dir', kind: 'scalar', T: ScalarType.STRING },
+      { no: 3, name: 'cache_dir', kind: 'scalar', T: ScalarType.STRING },
+      {
+        no: 4,
+        name: 'config_paths',
+        kind: 'scalar',
+        T: ScalarType.STRING,
+        repeated: true,
+      },
+      {
+        no: 5,
+        name: 'entrypoints',
+        kind: 'scalar',
+        T: ScalarType.STRING,
+        repeated: true,
+      },
+      {
+        no: 6,
+        name: 'external_pkgs',
+        kind: 'scalar',
+        T: ScalarType.STRING,
+        repeated: true,
+      },
+      { no: 7, name: 'session_id', kind: 'scalar', T: ScalarType.STRING },
+      {
+        no: 8,
+        name: 'disable_project_config',
+        kind: 'scalar',
+        T: ScalarType.BOOL,
+      },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
+
+/**
+ * DevelopmentResult publishes readiness of the internal middleware adapter.
+ *
+ * @generated from message bldr.web.bundler.vite.DevelopmentResult
+ */
+export interface DevelopmentResult {
+  /**
+   * Session identifies the environment exposed through Bldr.
+   *
+   * @generated from field: bldr.frontend.Session session = 1;
+   */
+  session?: Session
+  /**
+   * PrivateUrl is the loopback-only HTTP adapter, never sent to a browser.
+   *
+   * @generated from field: string private_url = 2;
+   */
+  privateUrl?: string
+  /**
+   * RefreshRuntime is the project's React refresh module for the bootstrap.
+   * It is empty when the project does not use React refresh.
+   *
+   * @generated from field: string refresh_runtime = 3;
+   */
+  refreshRuntime?: string
+}
+
+export const DevelopmentResult: MessageType<DevelopmentResult> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'bldr.web.bundler.vite.DevelopmentResult',
+    fields: [
+      { no: 1, name: 'session', kind: 'message', T: () => Session },
+      { no: 2, name: 'private_url', kind: 'scalar', T: ScalarType.STRING },
+      { no: 3, name: 'refresh_runtime', kind: 'scalar', T: ScalarType.STRING },
+    ] satisfies readonly PartialFieldInfo[],
+    packedByDefault: true,
+  })
 
 /**
  * WebPkgRef is a reference to a web package.

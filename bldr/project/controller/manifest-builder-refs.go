@@ -4,6 +4,7 @@ package bldr_project_controller
 
 import (
 	"github.com/pkg/errors"
+	bldr_manifest_build "github.com/s4wave/spacewave/bldr/manifest/build"
 	bldr_project "github.com/s4wave/spacewave/bldr/project"
 )
 
@@ -61,6 +62,13 @@ func (c *Controller) addManifestBuilderRefsLocked(confs []*ManifestBuilderConfig
 		}
 		if _, ok := projectConfig.GetRemotes()[conf.GetRemoteId()]; !ok {
 			return nil, bldr_project.ErrRemoteNotFound
+		}
+		if c.GetConfig().GetFrontendDevelopment() {
+			conf = conf.CloneVT()
+			if conf.BuildPolicy == nil {
+				conf.BuildPolicy = &bldr_manifest_build.BuildPolicy{}
+			}
+			conf.BuildPolicy.FrontendDevelopment = true
 		}
 		selected[i] = conf
 		if reuseActive {

@@ -1,0 +1,65 @@
+syntax = "proto3";
+package bldr.frontend;
+
+import "github.com/s4wave/spacewave/bldr/web/fetch/fetch.proto";
+
+// Frontend serves the active project's live modules and compiler updates.
+// Browser clients reach it through the existing devtool RPC connection.
+service Frontend {
+  // Watch starts with the current session and sequence, then streams updates.
+  // A new session or a sequence gap requires reloading the document.
+  rpc Watch(WatchRequest) returns (stream Event);
+
+  // Send delivers a client HMR message to the selected compiler session.
+  rpc Send(SendRequest) returns (SendResponse);
+
+  // Fetch serves modules from the session named by the request URL.
+  rpc Fetch(stream .web.fetch.FetchRequest) returns (stream .web.fetch.FetchResponse);
+}
+
+// Binding attaches a manifest-loaded view to a configured project entrypoint.
+// It is stable across compiler sessions and is absent from snapshot builds.
+message Binding {
+  // Entrypoint is the configured source path relative to the project root.
+  string entrypoint = 1;
+}
+
+// Session identifies one retained compiler graph and its browser namespace.
+message Session {
+  // Id changes whenever the compiler environment is replaced.
+  string id = 1;
+  // RoutePrefix is the same-origin Bldr route ending in a slash.
+  string route_prefix = 2;
+  // Entrypoints contains the source paths allowed as frontend attachments.
+  repeated string entrypoints = 3;
+  // ViteVersion identifies the upstream format of opaque HMR payloads.
+  string vite_version = 4;
+}
+
+// WatchRequest subscribes to the current project frontend environment.
+message WatchRequest {
+}
+
+// Event is an ordered message from one compiler session.
+message Event {
+  // Session is present on the initial snapshot of every stream.
+  Session session = 1;
+  // Sequence is the latest update number in the initial snapshot, then increases
+  // by one for each payload. It is scoped to Session.Id.
+  uint64 sequence = 2;
+  // Payload is the upstream Vite HMR JSON message, interpreted by Vite's client.
+  // Bldr treats it as opaque data, not an application protocol.
+  string payload = 3;
+}
+
+// SendRequest sends one upstream client message to its originating session.
+message SendRequest {
+  // SessionId identifies the compiler environment; stale sessions are rejected.
+  string session_id = 1;
+  // Payload contains an upstream Vite client HMR JSON message.
+  string payload = 2;
+}
+
+// SendResponse acknowledges delivery to the selected environment.
+message SendResponse {
+}

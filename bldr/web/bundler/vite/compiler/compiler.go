@@ -18,6 +18,7 @@ import (
 	"github.com/aperturerobotics/util/keyed"
 	"github.com/pkg/errors"
 	bldr "github.com/s4wave/spacewave/bldr"
+	frontend "github.com/s4wave/spacewave/bldr/frontend"
 	bldr_manifest "github.com/s4wave/spacewave/bldr/manifest"
 	bldr_manifest_builder "github.com/s4wave/spacewave/bldr/manifest/builder"
 	bldr_platform "github.com/s4wave/spacewave/bldr/platform"
@@ -51,6 +52,8 @@ type Controller struct {
 
 	// viteBundlers is the refcounted set of vite bundler instances.
 	viteBundlers *keyed.KeyedRefCount[viteBundlerKey, *viteBundlerTracker]
+	// routines joins compiler processes when this controller is removed.
+	routines web_pkg.RoutineGroup
 }
 
 // Factory is the factory for the compiler controller.
@@ -63,7 +66,10 @@ func NewControllerWithBusController(base *bus.BusController[*Config]) (*Controll
 	}
 
 	c.viteBundlers = keyed.NewKeyedRefCount(
-		c.buildViteCompilerTracker,
+		func(key viteBundlerKey) (keyed.Routine, *viteBundlerTracker) {
+			run, tracker := c.buildViteCompilerTracker(key)
+			return c.routines.Wrap(run), tracker
+		},
 		keyed.WithExitLoggerWithNameFn[viteBundlerKey, *viteBundlerTracker](c.GetLogger(), func(key viteBundlerKey) string { return "bundle-" + key.bundleID }),
 		keyed.WithReleaseDelay[viteBundlerKey, *viteBundlerTracker](time.Second*30),
 		keyed.WithRetry[viteBundlerKey, *viteBundlerTracker](&backoff.Backoff{}),
@@ -122,6 +128,55 @@ func (c *Controller) AddPreBuildHook(hook PreBuildHook) {
 // Execute executes the controller goroutine.
 func (c *Controller) Execute(ctx context.Context) error {
 	c.viteBundlers.SetContext(ctx, true)
+	return nil
+}
+
+// RunDevelopment retains a dedicated compiler environment until ctx is canceled.
+// onReady receives its live RPC capability only after module serving is ready.
+func (c *Controller) RunDevelopment(
+	ctx context.Context,
+	conf *bldr_web_bundler_vite.DevelopmentConfig,
+	onReady func(bldr_web_bundler_vite.SRPCViteBundlerClient, *bldr_web_bundler_vite.DevelopmentResult),
+) error {
+	// Retain a project-scoped process independent of all snapshot bundle keys.
+	workingPath := filepath.Dir(conf.GetCacheDir())
+	if err := os.MkdirAll(workingPath, 0o755); err != nil {
+		return err
+	}
+	key := newViteBundlerKey(conf.GetDistDir(), conf.GetRootDir(), workingPath, "frontend-"+conf.GetSessionId())
+	ref, tracker, _ := c.viteBundlers.AddKeyRef(key)
+	defer ref.Release()
+	defer c.viteBundlers.RemoveKey(key)
+	client, err := tracker.instancePromiseCtr.Await(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Start once, then retain the process without holding an operation permit.
+	result, err := client.StartDevelopment(ctx, conf)
+	if err != nil {
+		return err
+	}
+	onReady(client, result)
+
+	// The compiler stream ends if the process or its graph is replaced.
+	watch, err := client.WatchDevelopment(ctx, &frontend.WatchRequest{})
+	if err != nil {
+		return err
+	}
+	defer watch.Close()
+	for {
+		if _, err := watch.Recv(); err != nil {
+			return err
+		}
+	}
+}
+
+// Close cancels and joins every process owned by the compiler controller.
+func (c *Controller) Close() error {
+	c.routines.StopAccepting()
+	c.viteBundlers.ClearContext()
+	c.routines.Wait()
 	return nil
 }
 

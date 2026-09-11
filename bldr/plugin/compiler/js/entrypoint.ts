@@ -344,7 +344,10 @@ async function loadFrontendEntrypoints(
       )
 
       // Override the script path to be /b/pa/{plugin-id}/...
-      if (setRenderModeRequest.scriptPath) {
+      if (
+        setRenderModeRequest.scriptPath &&
+        !setRenderModeRequest.frontendBinding
+      ) {
         setRenderModeRequest.scriptPath = backendAPI.utils.pluginAssetHttpPath(
           ourPluginID,
           setRenderModeRequest.scriptPath,

@@ -7,9 +7,22 @@ import {
   BuildResponse,
   BuildWebPkgRequest,
   BuildWebPkgResponse,
+  DevelopmentConfig,
+  DevelopmentResult,
 } from './vite.pb.js'
 import { MethodKind } from '@aptre/protobuf-es-lite'
-import { ProtoRpc, ServerContext } from 'starpc'
+import {
+  Event,
+  SendRequest,
+  SendResponse,
+  WatchRequest,
+} from '../../../frontend/frontend.pb.js'
+import {
+  buildDecodeMessageTransform,
+  MessageStream,
+  ProtoRpc,
+  ServerContext,
+} from 'starpc'
 
 /**
  * ViteBundler is a service that runs Vite to compile web assets.
@@ -41,6 +54,39 @@ export const ViteBundlerDefinition = {
       O: BuildWebPkgResponse,
       kind: MethodKind.Unary,
     },
+    /**
+     * StartDevelopment starts the process's retained frontend environment.
+     *
+     * @generated from rpc bldr.web.bundler.vite.ViteBundler.StartDevelopment
+     */
+    StartDevelopment: {
+      name: 'StartDevelopment',
+      I: DevelopmentConfig,
+      O: DevelopmentResult,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * WatchDevelopment streams the current session and upstream HMR messages.
+     *
+     * @generated from rpc bldr.web.bundler.vite.ViteBundler.WatchDevelopment
+     */
+    WatchDevelopment: {
+      name: 'WatchDevelopment',
+      I: WatchRequest,
+      O: Event,
+      kind: MethodKind.ServerStreaming,
+    },
+    /**
+     * SendDevelopment forwards an upstream client message into the environment.
+     *
+     * @generated from rpc bldr.web.bundler.vite.ViteBundler.SendDevelopment
+     */
+    SendDevelopment: {
+      name: 'SendDevelopment',
+      I: SendRequest,
+      O: SendResponse,
+      kind: MethodKind.Unary,
+    },
   },
 } as const
 
@@ -69,6 +115,36 @@ export interface ViteBundler {
     request: BuildWebPkgRequest,
     abortSignal?: AbortSignal,
   ): Promise<BuildWebPkgResponse>
+
+  /**
+   * StartDevelopment starts the process's retained frontend environment.
+   *
+   * @generated from rpc bldr.web.bundler.vite.ViteBundler.StartDevelopment
+   */
+  StartDevelopment(
+    request: DevelopmentConfig,
+    abortSignal?: AbortSignal,
+  ): Promise<DevelopmentResult>
+
+  /**
+   * WatchDevelopment streams the current session and upstream HMR messages.
+   *
+   * @generated from rpc bldr.web.bundler.vite.ViteBundler.WatchDevelopment
+   */
+  WatchDevelopment(
+    request: WatchRequest,
+    abortSignal?: AbortSignal,
+  ): MessageStream<Event>
+
+  /**
+   * SendDevelopment forwards an upstream client message into the environment.
+   *
+   * @generated from rpc bldr.web.bundler.vite.ViteBundler.SendDevelopment
+   */
+  SendDevelopment(
+    request: SendRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<SendResponse>
 }
 
 /**
@@ -98,6 +174,39 @@ export interface ViteBundlerHandler {
     abortSignal: AbortSignal,
     context: ServerContext,
   ): Promise<BuildWebPkgResponse>
+
+  /**
+   * StartDevelopment starts the process's retained frontend environment.
+   *
+   * @generated from rpc bldr.web.bundler.vite.ViteBundler.StartDevelopment
+   */
+  StartDevelopment(
+    request: DevelopmentConfig,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): Promise<DevelopmentResult>
+
+  /**
+   * WatchDevelopment streams the current session and upstream HMR messages.
+   *
+   * @generated from rpc bldr.web.bundler.vite.ViteBundler.WatchDevelopment
+   */
+  WatchDevelopment(
+    request: WatchRequest,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): MessageStream<Event>
+
+  /**
+   * SendDevelopment forwards an upstream client message into the environment.
+   *
+   * @generated from rpc bldr.web.bundler.vite.ViteBundler.SendDevelopment
+   */
+  SendDevelopment(
+    request: SendRequest,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): Promise<SendResponse>
 }
 
 export const ViteBundlerServiceName = ViteBundlerDefinition.typeName
@@ -110,6 +219,9 @@ export class ViteBundlerClient implements ViteBundler {
     this.rpc = rpc
     this.Build = this.Build.bind(this)
     this.BuildWebPkg = this.BuildWebPkg.bind(this)
+    this.StartDevelopment = this.StartDevelopment.bind(this)
+    this.WatchDevelopment = this.WatchDevelopment.bind(this)
+    this.SendDevelopment = this.SendDevelopment.bind(this)
   }
   /**
    * Build runs the Vite compiler with the given configuration.
@@ -147,5 +259,62 @@ export class ViteBundlerClient implements ViteBundler {
       abortSignal || undefined,
     )
     return BuildWebPkgResponse.fromBinary(result)
+  }
+
+  /**
+   * StartDevelopment starts the process's retained frontend environment.
+   *
+   * @generated from rpc bldr.web.bundler.vite.ViteBundler.StartDevelopment
+   */
+  async StartDevelopment(
+    request: DevelopmentConfig,
+    abortSignal?: AbortSignal,
+  ): Promise<DevelopmentResult> {
+    const requestMsg = DevelopmentConfig.create(request)
+    const result = await this.rpc.request(
+      this.service,
+      ViteBundlerDefinition.methods.StartDevelopment.name,
+      DevelopmentConfig.toBinary(requestMsg),
+      abortSignal || undefined,
+    )
+    return DevelopmentResult.fromBinary(result)
+  }
+
+  /**
+   * WatchDevelopment streams the current session and upstream HMR messages.
+   *
+   * @generated from rpc bldr.web.bundler.vite.ViteBundler.WatchDevelopment
+   */
+  WatchDevelopment(
+    request: WatchRequest,
+    abortSignal?: AbortSignal,
+  ): MessageStream<Event> {
+    const requestMsg = WatchRequest.create(request)
+    const result = this.rpc.serverStreamingRequest(
+      this.service,
+      ViteBundlerDefinition.methods.WatchDevelopment.name,
+      WatchRequest.toBinary(requestMsg),
+      abortSignal || undefined,
+    )
+    return buildDecodeMessageTransform(Event)(result)
+  }
+
+  /**
+   * SendDevelopment forwards an upstream client message into the environment.
+   *
+   * @generated from rpc bldr.web.bundler.vite.ViteBundler.SendDevelopment
+   */
+  async SendDevelopment(
+    request: SendRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<SendResponse> {
+    const requestMsg = SendRequest.create(request)
+    const result = await this.rpc.request(
+      this.service,
+      ViteBundlerDefinition.methods.SendDevelopment.name,
+      SendRequest.toBinary(requestMsg),
+      abortSignal || undefined,
+    )
+    return SendResponse.fromBinary(result)
   }
 }

@@ -70,6 +70,13 @@ export interface Config {
    * @generated from field: string fetch_manifest_remote = 7;
    */
   fetchManifestRemote?: string
+  /**
+   * FrontendDevelopment attaches watched web development builds to the active
+   * project frontend service. Explicit build commands leave this disabled.
+   *
+   * @generated from field: bool frontend_development = 8;
+   */
+  frontendDevelopment?: boolean
 }
 
 export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
@@ -87,6 +94,7 @@ export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
       kind: 'scalar',
       T: ScalarType.STRING,
     },
+    { no: 8, name: 'frontend_development', kind: 'scalar', T: ScalarType.BOOL },
   ] satisfies readonly PartialFieldInfo[],
   packedByDefault: true,
 })

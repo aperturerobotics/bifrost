@@ -18,6 +18,7 @@ import (
 )
 
 type fakeViteBundlerClient struct {
+	bldr_web_bundler_vite.SRPCViteBundlerClient
 	buildRequest *bldr_web_bundler_vite.BuildRequest
 }
 

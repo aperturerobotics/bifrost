@@ -3,6 +3,7 @@
 /* eslint-disable */
 
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
+import { Binding } from '../../frontend/frontend.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import {
   createEmptyMessageType,
@@ -99,6 +100,13 @@ export interface SetRenderModeRequest {
    * @generated from field: bool refresh = 4;
    */
   refresh?: boolean
+  /**
+   * FrontendBinding selects a live project entrypoint instead of ScriptPath.
+   * The WebDocument resolves the current session before importing the module.
+   *
+   * @generated from field: bldr.frontend.Binding frontend_binding = 5;
+   */
+  frontendBinding?: Binding
 }
 
 export const SetRenderModeRequest: MessageType<SetRenderModeRequest> =
@@ -109,6 +117,7 @@ export const SetRenderModeRequest: MessageType<SetRenderModeRequest> =
       { no: 2, name: 'script_path', kind: 'scalar', T: ScalarType.STRING },
       { no: 3, name: 'props', kind: 'scalar', T: ScalarType.BYTES },
       { no: 4, name: 'refresh', kind: 'scalar', T: ScalarType.BOOL },
+      { no: 5, name: 'frontend_binding', kind: 'message', T: () => Binding },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })

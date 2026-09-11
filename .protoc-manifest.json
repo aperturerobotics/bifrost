@@ -107,6 +107,18 @@
         "bldr/example/example.proto"
       ]
     },
+    "github.com/s4wave/spacewave/bldr/frontend": {
+      "hash": "a6b59b0033433fb2c5cfc6751bad4b7eb0e261544cf248018dfc7e11372e59b5",
+      "generatedFiles": [
+        "bldr/frontend/frontend.pb.go",
+        "bldr/frontend/frontend.pb.ts",
+        "bldr/frontend/frontend_srpc.pb.go",
+        "bldr/frontend/frontend_srpc.pb.ts"
+      ],
+      "protoFiles": [
+        "bldr/frontend/frontend.proto"
+      ]
+    },
     "github.com/s4wave/spacewave/bldr/manifest": {
       "hash": "40e9c2562128f19fd1eaf7f65bccf1e0c4671a2f7d81eafe88f535f4e1837a88",
       "generatedFiles": [
@@ -120,7 +132,7 @@
       ]
     },
     "github.com/s4wave/spacewave/bldr/manifest/build": {
-      "hash": "f417a6a5108266ea1d6c1d71ef96491c6cf2784bfbb9a7431e6fec92a8689a6a",
+      "hash": "fbe1a5fa7767b6796d40db7f4ca3145885351411e282514ba6b6ac734030ae32",
       "generatedFiles": [
         "bldr/manifest/build/policy.pb.go",
         "bldr/manifest/build/policy.pb.ts"
@@ -387,7 +399,7 @@
       ]
     },
     "github.com/s4wave/spacewave/bldr/project/controller": {
-      "hash": "2c30f73e47cf49779c7f1c21537b2c527d321272eb33b92ad6e5640e7aa867ea",
+      "hash": "32957f5d746ae44cf438062625bed7499f9418ae5943e5c09a16f6c6905d1182",
       "generatedFiles": [
         "bldr/project/controller/config.pb.go",
         "bldr/project/controller/config.pb.ts"
@@ -575,7 +587,7 @@
       ]
     },
     "github.com/s4wave/spacewave/bldr/web/bundler/vite": {
-      "hash": "822e1f2c89e5a56d3b679ab9ff88064999894c12b69924eb90f4e1a9e84ef729",
+      "hash": "8f8b160b4921bbca524d50f5664b90edf9a77dcc01d44af75ed8c78520f8a6a3",
       "generatedFiles": [
         "bldr/web/bundler/vite/vite.pb.go",
         "bldr/web/bundler/vite/vite.pb.ts",
@@ -865,7 +877,7 @@
       ]
     },
     "github.com/s4wave/spacewave/bldr/web/view": {
-      "hash": "1f67e25171b39faf6c762b35a71a8433d73f3b504c6d8084fdff938ad85de982",
+      "hash": "636f8bb44374bccc1bd655762c043e8c716499d14de005a40e08bf279ab505d9",
       "generatedFiles": [
         "bldr/web/view/view.pb.go",
         "bldr/web/view/view.pb.ts",

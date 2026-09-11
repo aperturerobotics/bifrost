@@ -22,6 +22,7 @@ import (
 	"github.com/aperturerobotics/util/fsutil"
 	"github.com/pkg/errors"
 	bldr "github.com/s4wave/spacewave/bldr"
+	frontend "github.com/s4wave/spacewave/bldr/frontend"
 	bldr_manifest "github.com/s4wave/spacewave/bldr/manifest"
 	bldr_manifest_builder "github.com/s4wave/spacewave/bldr/manifest/builder"
 	bldr_platform "github.com/s4wave/spacewave/bldr/platform"
@@ -317,6 +318,9 @@ func (c *Controller) BuildManifest(
 	backendEntrypoints := slices.Clone(buildCtrlConf.GetBackendEntrypoints())
 	frontendEntrypoints := slices.Clone(buildCtrlConf.GetFrontendEntrypoints())
 	hasFrontendEntrypoints := len(frontendEntrypoints) != 0
+	liveFrontend := buildType.IsDev() && builderConf.GetBuildPolicy().GetFrontendDevelopment()
+	var snapshotModules []*JsModule
+	frontendBindings := make(map[string]*frontend.Binding)
 
 	// Configure bundles and potentially add default entrypoints based on jsModules.
 	// This adds default Vite bundles for modules defined with the shortcut syntax.
@@ -343,6 +347,24 @@ func (c *Controller) BuildManifest(
 		default:
 			return nil, errors.Errorf("unknown js module kind: %s", modKind.String())
 		}
+
+		// Live views carry a stable source attachment instead of a snapshot bundle.
+		if liveFrontend && modKind == JsModuleKind_JS_MODULE_KIND_FRONTEND {
+			source := path.Clean(mod.GetPath())
+			frontendBindings[source] = &frontend.Binding{Entrypoint: source}
+			if mod.GetEntrypoint() {
+				frontendEntrypoints = append(frontendEntrypoints, &FrontendEntrypoint{
+					SetRenderMode: &web_view.SetRenderModeRequest{
+						RenderMode:      web_view.RenderMode_RenderMode_REACT_COMPONENT,
+						FrontendBinding: &frontend.Binding{Entrypoint: path.Clean(mod.GetPath())},
+					},
+					WebViewId:       mod.GetWebViewId(),
+					WebViewParentId: mod.GetWebViewParentId(),
+				})
+			}
+			continue
+		}
+		snapshotModules = append(snapshotModules, mod)
 
 		// add a bundle for this module
 		inputPath := path.Clean(mod.GetPath())
@@ -448,10 +470,18 @@ func (c *Controller) BuildManifest(
 		startupInputPaths = append(startupInputPaths, viteSrcFiles...)
 	}
 
-	// Build backend paths and content-identified frontend paths from the emitted assets.
+	// Asset consumers discover source bindings through the same entrypoint manifest.
+	if len(frontendBindings) != 0 {
+		preserve := slices.ContainsFunc(viteBundleMetas, func(bundle *bldr_web_bundler_vite_compiler.ViteBundleMeta) bool { return bundle.GetId() == "fe" })
+		if err := writeFrontendBindings(outAssetsPath, frontendBindings, preserve); err != nil {
+			return nil, err
+		}
+	}
+
+	// Snapshot entries identify emitted bytes; live entries retain their binding.
 	backendEntrypoints, frontendEntrypoints, err = CreateEntrypointsFromViteOutputs(
 		outAssetsPath,
-		buildCtrlConf.GetModules(),
+		snapshotModules,
 		viteOutputMeta,
 		backendEntrypoints,
 		frontendEntrypoints,
@@ -761,7 +791,7 @@ func CreateEntrypointsFromViteOutputs(
 	// stable Vite filenames, configured URL parameters, and external URLs.
 	for idx, entrypoint := range frontendEntrypoints {
 		setRenderMode := entrypoint.GetSetRenderMode()
-		if setRenderMode == nil {
+		if setRenderMode == nil || setRenderMode.GetFrontendBinding() != nil {
 			continue
 		}
 		scriptPath, local, err := normalizeFrontendAssetPath(setRenderMode.GetScriptPath())
@@ -796,7 +826,7 @@ func ValidateFrontendEntrypointAssetClosure(
 	frontendEntrypoints []*FrontendEntrypoint,
 ) error {
 	for idx, entrypoint := range frontendEntrypoints {
-		if setRenderMode := entrypoint.GetSetRenderMode(); setRenderMode != nil {
+		if setRenderMode := entrypoint.GetSetRenderMode(); setRenderMode != nil && setRenderMode.GetFrontendBinding() == nil {
 			if err := validateFrontendAssetPath(
 				assetsDir,
 				setRenderMode.GetScriptPath(),

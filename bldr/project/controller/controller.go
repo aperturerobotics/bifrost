@@ -37,6 +37,8 @@ type Controller struct {
 	manifestBuilders *keyed.KeyedRefCount[string, *manifestBuilderTracker]
 	// remotes is the set of keyed remote access controllers.
 	remotes *keyed.KeyedRefCount[string, *remoteTracker]
+	// frontend owns the retained graph for watched browser development.
+	frontend *FrontendService
 	// startup manages the set of "start" plugins listed in the config.
 	startup *routine.StateRoutineContainer[*bldr_project.StartConfig]
 
@@ -74,6 +76,9 @@ func NewController(le *logrus.Entry, bus bus.Bus, cc *Config) *Controller {
 		bus: bus,
 	}
 	ctrl.conf.Store(cc)
+	if cc.GetFrontendDevelopment() {
+		ctrl.frontend = newFrontendService(le, bus)
+	}
 	buildBackoff := cc.GetBuildBackoff()
 	ctrl.manifestBuilders = keyed.NewKeyedRefCountWithLogger(
 		func(key string) (keyed.Routine, *manifestBuilderTracker) {
@@ -172,6 +177,11 @@ func (c *Controller) UpdateProjectConfig(nextConf *bldr_project.ProjectConfig) e
 	// Store a detached configuration before reconciling its builders.
 	nextCtrlConf := prevCtrlConf.CloneVT()
 	nextCtrlConf.ProjectConfig = nextConf.CloneVT()
+	if c.frontend != nil {
+		if err := c.frontend.configure(nextCtrlConf); err != nil {
+			return err
+		}
+	}
 	c.conf.Store(nextCtrlConf)
 	c.publishProjectConfigStatus(nextConf)
 
@@ -427,6 +437,14 @@ func (c *Controller) Execute(ctx context.Context) error {
 		return context.Canceled
 	}
 
+	if c.frontend != nil {
+		if err := c.frontend.configure(c.GetConfig()); err != nil {
+			c.lifecycleMtx.Unlock()
+			return err
+		}
+		c.frontend.run.SetContext(ctx, true)
+	}
+
 	// Keyed routines retain ctx after Execute returns.
 	c.manifestBuilders.SetContext(ctx, true)
 	c.remotes.SetContext(ctx, true)
@@ -498,6 +516,9 @@ func (c *Controller) Close() error {
 	c.manifestBuilders.ClearContext()
 	c.remotes.ClearContext()
 	c.startup.ClearContext()
+	if c.frontend != nil {
+		c.frontend.Close()
+	}
 	c.routines.Wait()
 	close(done)
 	return nil

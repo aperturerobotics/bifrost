@@ -6,6 +6,7 @@ import type { Enabled } from '@go/github.com/aperturerobotics/util/enabled/enabl
 import { Enabled_Enum } from '@go/github.com/aperturerobotics/util/enabled/enabled.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
+import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 export const protobufPackage = 'bldr.manifest.build'
@@ -43,6 +44,14 @@ export interface BuildPolicy {
    * @generated from field: enabled.Enabled goscript_code_splitting = 3;
    */
   goscriptCodeSplitting?: Enabled
+  /**
+   * FrontendDevelopment selects the active project service instead of immutable
+   * frontend bundles. Only an attached web development session enables it.
+   * It participates in build and startup-cache identity and propagates to children.
+   *
+   * @generated from field: bool frontend_development = 4;
+   */
+  frontendDevelopment?: boolean
 }
 
 export const BuildPolicy: MessageType<BuildPolicy> =
@@ -52,6 +61,12 @@ export const BuildPolicy: MessageType<BuildPolicy> =
       { no: 1, name: 'js_minification', kind: 'enum', T: Enabled_Enum },
       { no: 2, name: 'js_sourcemaps', kind: 'enum', T: Enabled_Enum },
       { no: 3, name: 'goscript_code_splitting', kind: 'enum', T: Enabled_Enum },
+      {
+        no: 4,
+        name: 'frontend_development',
+        kind: 'scalar',
+        T: ScalarType.BOOL,
+      },
     ] satisfies readonly PartialFieldInfo[],
     packedByDefault: true,
   })

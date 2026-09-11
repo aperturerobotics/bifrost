@@ -1,3 +1,5 @@
+import { frontendBindingPath } from '@go/github.com/s4wave/spacewave/bldr/frontend/binding.js'
+import type { Binding } from '@go/github.com/s4wave/spacewave/bldr/frontend/frontend.pb.js'
 import {
   createMux,
   createHandler,
@@ -95,6 +97,7 @@ import { CreateDocumentationOp, Documentation } from './proto/docs.pb.js'
 import { uploadSeedTree } from './unixfs-seed.js'
 
 type ViteManifestEntry = {
+  frontendBinding?: Binding
   file?: string
 }
 
@@ -147,8 +150,7 @@ function waitForAbort(signal: AbortSignal): Promise<void> {
   })
 }
 
-// resolveAssetPath resolves a source entrypoint path to its built output
-// path by reading the Vite manifest from the plugin's assets FS.
+// resolveAssetPath reads the source binding or snapshot from the asset manifest.
 async function resolveAssetPath(
   api: BackendAPI,
   signal: AbortSignal,
@@ -170,6 +172,7 @@ async function resolveAssetPath(
     new globalThis.TextDecoder().decode(data),
   ) as Record<string, ViteManifestEntry>
   const entry = parsed[key]
+  if (entry?.frontendBinding) return frontendBindingPath(entry.frontendBinding)
   if (entry?.file) {
     const pluginId = api.startInfo.pluginId
     return api.utils.pluginAssetHttpPath(pluginId!, 'v/b/fe/' + entry.file)
@@ -731,8 +734,7 @@ export function startNotesBackend(
       )
       refs.push(retainRegistration(blogWizard.resourceId, 'blog wizard'))
 
-      // Resolve viewer script paths from the Vite manifest so the
-      // frontend gets the hashed output paths (not the source paths).
+      // Resolve viewer attachments from the current build's entrypoint manifest.
       const [
         notebookViewerScript,
         blogViewerScript,
