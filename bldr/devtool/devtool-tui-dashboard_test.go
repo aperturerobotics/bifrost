@@ -10,19 +10,22 @@ import (
 	devtool_status "github.com/s4wave/spacewave/bldr/devtool/status"
 )
 
+// TestRenderDevtoolTUIDashboardHeaderAndSectionsInOrder keeps the command and serving address above build detail.
 func TestRenderDevtoolTUIDashboardHeaderAndSectionsInOrder(t *testing.T) {
 	dashboard := renderDevtoolTUIDashboard(representativeDevtoolTUIStatus(), "http://127.0.0.1:8080", 100, false)
 
-	assertContains(t, dashboard, "Bldr Devtool · dev · RUNNING")
+	assertContains(t, dashboard, "Bldr · dev")
+	assertContains(t, dashboard, "RUNNING")
 	assertContains(t, dashboard, "serving web app")
 	assertSectionsInOrder(t, dashboard, []string{"SERVING", "TARGETS", "RUNTIME"})
 	// A healthy run has no failures section and never shows a bottom error pile.
 	assertNotContains(t, dashboard, "FAILURES")
 	// Serving surfaces the live URL, not just the free-text command summary.
 	assertContains(t, dashboard, "➜ http://127.0.0.1:8080")
-	assertContains(t, dashboard, "press o to open browser")
+	assertContains(t, dashboard, "o open browser")
 }
 
+// TestRenderDevtoolTUIDashboardSurfacesFailingTargetErrorText retains actionable errors and their log paths.
 func TestRenderDevtoolTUIDashboardSurfacesFailingTargetErrorText(t *testing.T) {
 	dashboard := renderDevtoolTUIDashboard(failingDashboardStatus(), "http://127.0.0.1:8080", 100, false)
 
@@ -38,6 +41,7 @@ func TestRenderDevtoolTUIDashboardSurfacesFailingTargetErrorText(t *testing.T) {
 	assertNotContains(t, dashboard, "/home/dev/spacewave/.bldr/logs/devtool.log")
 }
 
+// TestRenderDevtoolTUIDashboardTargetsActiveFirst places failed and active work before ready targets.
 func TestRenderDevtoolTUIDashboardTargetsActiveFirst(t *testing.T) {
 	dashboard := renderDevtoolTUIDashboard(failingDashboardStatus(), "", 100, false)
 
@@ -51,6 +55,7 @@ func TestRenderDevtoolTUIDashboardTargetsActiveFirst(t *testing.T) {
 	assertContains(t, dashboard, "5 refs")
 }
 
+// TestRenderDevtoolTUIDashboardRuntimeCollapsesToCounts keeps controller internals out of the overview.
 func TestRenderDevtoolTUIDashboardRuntimeCollapsesToCounts(t *testing.T) {
 	dashboard := renderDevtoolTUIDashboard(failingDashboardStatus(), "", 100, false)
 
@@ -62,6 +67,7 @@ func TestRenderDevtoolTUIDashboardRuntimeCollapsesToCounts(t *testing.T) {
 	assertNotContains(t, dashboard, "bldr/plugin-host")
 }
 
+// TestRenderDevtoolTUIDashboardRespectsWidthWithColor bounds styled failure output.
 func TestRenderDevtoolTUIDashboardRespectsWidthWithColor(t *testing.T) {
 	const width = 56
 	dashboard := renderDevtoolTUIDashboard(failingDashboardStatus(), "http://127.0.0.1:8080", width, true)
@@ -75,6 +81,7 @@ func TestRenderDevtoolTUIDashboardRespectsWidthWithColor(t *testing.T) {
 	assertContains(t, dashboard, "undefined: RenderRoot")
 }
 
+// TestRenderDevtoolTUIDashboardCapsManyTargets reports omitted targets without overflowing the table.
 func TestRenderDevtoolTUIDashboardCapsManyTargets(t *testing.T) {
 	rows := make([]devtool_status.BldrDevtoolManifestBuildRow, 0, devtoolTUIMaxTargetRows+3)
 	for idx := range devtoolTUIMaxTargetRows + 3 {
@@ -91,19 +98,21 @@ func TestRenderDevtoolTUIDashboardCapsManyTargets(t *testing.T) {
 	)
 
 	dashboard := renderDevtoolTUIDashboard(snapshot, "", 100, false)
-	assertContains(t, dashboard, "TARGETS · "+strconv.Itoa(devtoolTUIMaxTargetRows+3))
+	assertContains(t, dashboard, "TARGETS · "+strconv.Itoa(devtoolTUIMaxTargetRows+3)+"/"+strconv.Itoa(devtoolTUIMaxTargetRows+3)+" ready")
 	assertContains(t, dashboard, "… 3 more targets")
 }
 
+// TestRenderDevtoolTUIDashboardHandlesNilSnapshot renders before the first status arrives.
 func TestRenderDevtoolTUIDashboardHandlesNilSnapshot(t *testing.T) {
 	dashboard := renderDevtoolTUIDashboard(nil, "", 80, false)
 
-	assertContains(t, dashboard, "Bldr Devtool · UNKNOWN")
+	assertContains(t, dashboard, "UNKNOWN")
 	assertNotContains(t, dashboard, "FAILURES")
 	assertNotContains(t, dashboard, "TARGETS")
 	assertContains(t, dashboard, "ctrl-c quit")
 }
 
+// TestWrapTextCapsLinesAndKeepsSubstance bounds verbose errors.
 func TestWrapTextCapsLinesAndKeepsSubstance(t *testing.T) {
 	long := strings.Repeat("word ", 200)
 	lines := wrapText(long, 40)
@@ -117,6 +126,7 @@ func TestWrapTextCapsLinesAndKeepsSubstance(t *testing.T) {
 	}
 }
 
+// representativeDevtoolTUIStatus provides mixed platforms and active runtime components.
 func representativeDevtoolTUIStatus() *devtool_status.BldrDevtoolStatus {
 	return devtool_status.NewBldrDevtoolStatus(
 		devtool_status.BldrDevtoolCommandStatus{
@@ -154,6 +164,7 @@ func representativeDevtoolTUIStatus() *devtool_status.BldrDevtoolStatus {
 	)
 }
 
+// failingDashboardStatus provides command, build, and plugin failures together.
 func failingDashboardStatus() *devtool_status.BldrDevtoolStatus {
 	return devtool_status.NewBldrDevtoolStatus(
 		devtool_status.BldrDevtoolCommandStatus{
@@ -184,6 +195,7 @@ func failingDashboardStatus() *devtool_status.BldrDevtoolStatus {
 	)
 }
 
+// assertSectionsInOrder checks the visible information hierarchy.
 func assertSectionsInOrder(t *testing.T, dashboard string, sections []string) {
 	t.Helper()
 	last := -1
@@ -199,6 +211,7 @@ func assertSectionsInOrder(t *testing.T, dashboard string, sections []string) {
 	}
 }
 
+// assertContains checks that useful text remains visible.
 func assertContains(t *testing.T, got, want string) {
 	t.Helper()
 	if !strings.Contains(got, want) {
@@ -206,9 +219,59 @@ func assertContains(t *testing.T, got, want string) {
 	}
 }
 
+// assertNotContains checks that redundant or unavailable information stays hidden.
 func assertNotContains(t *testing.T, got, want string) {
 	t.Helper()
 	if strings.Contains(got, want) {
 		t.Fatalf("expected output not to contain %q, got:\n%s", want, got)
+	}
+}
+
+// TestDesktopDashboard keeps shared settings and live progress readable at terminal widths.
+func TestDesktopDashboard(t *testing.T) {
+	rows := []devtool_status.BldrDevtoolManifestBuildRow{
+		{ManifestID: "web", PlatformID: "desktop/darwin/arm64", BuildType: "dev", State: devtool_status.BldrDevtoolManifestStateRunning, Summary: "full rebuild", FullRebuild: true},
+		{ManifestID: "sample-core", PlatformID: "desktop/darwin/arm64", BuildType: "dev", State: devtool_status.BldrDevtoolManifestStateRunning, Summary: "full rebuild", FullRebuild: true},
+		{ManifestID: "sample-web", PlatformID: "desktop/darwin/arm64", BuildType: "dev", State: devtool_status.BldrDevtoolManifestStateReady, Summary: "build complete", FullRebuild: true},
+	}
+	snapshot := devtool_status.NewBldrDevtoolStatus(
+		devtool_status.BldrDevtoolCommandStatus{Name: "start desktop", State: devtool_status.BldrDevtoolCommandStateStarting, Summary: "initializing desktop runtime"},
+		nil, rows, nil, nil, nil,
+	).WithProject(devtool_status.BldrDevtoolProjectStatus{WebStartupPath: "web/startup.tsx"})
+
+	// Startup must not advertise a server or an unavailable keyboard action.
+	for _, width := range []int{32, 40, 56, 80, 100} {
+		t.Run(strconv.Itoa(width), func(t *testing.T) {
+			dashboard := renderDevtoolTUIDashboard(snapshot, "", width, false)
+			assertContains(t, dashboard, "STARTING")
+			assertContains(t, dashboard, "TARGETS · 1/3 ready")
+			assertContains(t, dashboard, "building · full rebuild")
+			assertNotContains(t, dashboard, "SERVING")
+			assertNotContains(t, dashboard, "open browser")
+			assertNotContains(t, dashboard, "full rebuild · full rebuild")
+			if got := strings.Count(dashboard, "desktop/darwin/arm64 dev"); got != 1 {
+				t.Fatalf("shared platform repeated %d times:\n%s", got, dashboard)
+			}
+			for _, color := range []bool{false, true} {
+				for line := range strings.SplitSeq(renderDevtoolTUIDashboard(snapshot, "", width, color), "\n") {
+					if visibleWidth(line) > width {
+						t.Fatalf("line exceeds %d columns: %q", width, line)
+					}
+				}
+			}
+			if width == 80 {
+				t.Log("\n" + dashboard)
+			}
+		})
+	}
+}
+
+// TestDashboardLongTargetKeepsStatus prevents identifiers from consuming the status column.
+func TestDashboardLongTargetKeepsStatus(t *testing.T) {
+	row := tuiTarget{manifest: strings.Repeat("long-target-", 8), detail: "build failed", kind: tuiStatusError, platform: "desktop/darwin/arm64", buildKit: "dev"}
+	for _, width := range []int{40, 80} {
+		line := targetLine(tuiTheme{}, row, 24, width)
+		assertContains(t, line, "build failed")
+		assertContains(t, line, "desktop/darwin/arm64 dev")
 	}
 }

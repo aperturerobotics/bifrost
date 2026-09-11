@@ -10,42 +10,15 @@ import (
 	devtool_status "github.com/s4wave/spacewave/bldr/devtool/status"
 )
 
-// The devtool dashboard is designed to be read in a glance. Sections are
-// ordered by what a developer needs first, and failures are surfaced with
-// their full error text near the top rather than truncated at the bottom.
-//
-// Layout (width 100, a failing build):
-//
-//	⟳ Bldr Devtool · start web · RUNNING
-//	  web runtime active on 127.0.0.1:8080
-//
-//	SERVING
-//	  ➜ http://127.0.0.1:8080          press o to open browser
-//
-//	FAILURES · 2
-//	  ✗ build spacewave-app · web/js/wasm dev
-//	      ./src/app/main.go:42:13: undefined: RenderRoot
-//	      (did you mean RenderRootView?)
-//	  ✗ plugin goscript-web
-//	      worker exited: exit status 2
-//
-//	TARGETS · 3
-//	  ✗ spacewave-app    web/js/wasm dev   build failed
-//	  ⟳ spacewave-core   web/js/wasm dev   compiling · hot rebuild · 214 files
-//	  ✓ spacewave-web    web/js/wasm dev   ready · 5 refs
-//
-//	RUNTIME
-//	  plugins      2 running · 1 errored
-//	  controllers  2 running · 1 idle
-//
-//	ctrl-c quit · o open browser · logs .bldr/logs/
-
 const (
-	devtoolTUIMinWidth      = 40
-	devtoolTUINarrowWidth   = 64
+	// devtoolTUIMinWidth is the fallback width when the terminal size is unknown.
+	devtoolTUIMinWidth = 40
+	// devtoolTUINarrowWidth separates stacked target rows from inline rows.
+	devtoolTUINarrowWidth = 64
+	// devtoolTUIMaxTargetRows bounds the target list while retaining urgent work first.
 	devtoolTUIMaxTargetRows = 12
+	// devtoolTUIMaxErrorLines bounds the visible explanation for a single failure.
 	devtoolTUIMaxErrorLines = 6
-	devtoolTUIStateWidth    = 6
 )
 
 // renderDevtoolTUIDashboard renders the full devtool status screen for the
@@ -57,7 +30,8 @@ func renderDevtoolTUIDashboard(
 	width int,
 	color bool,
 ) string {
-	if width < devtoolTUIMinWidth {
+	// Resolve absent inputs without widening a narrow terminal.
+	if width <= 0 {
 		width = devtoolTUIMinWidth
 	}
 	if snapshot == nil {
@@ -65,15 +39,17 @@ func renderDevtoolTUIDashboard(
 	}
 	th := tuiTheme{color: color}
 
+	// Place failures before build progress and supporting runtime counts.
 	sections := [][]string{
 		headerSection(th, snapshot, width),
-		servingSection(th, snapshot, servingURL, width),
+		servingSection(th, servingURL, width),
 		failureSection(th, snapshot, width),
 		targetSection(th, snapshot, width),
 		runtimeSection(th, snapshot, width),
-		footerSection(th, width),
+		footerSection(th, servingURL, width),
 	}
 
+	// Separate only sections that have content.
 	var out strings.Builder
 	first := true
 	for _, section := range sections {
@@ -94,65 +70,51 @@ func renderDevtoolTUIDashboard(
 
 // headerSection renders the title line with the command name and live state.
 func headerSection(th tuiTheme, snapshot *devtool_status.BldrDevtoolStatus, width int) []string {
+	// Reserve the command state before fitting the title.
 	command := snapshot.GetCommand()
 	kind := commandStatusKind(command.State)
-
-	title := "Bldr Devtool"
+	title := "Bldr"
 	if command.Name != "" {
 		title += " · " + command.Name
 	}
-	state := strings.ToUpper(command.State.String())
-	plain := kind.glyph() + " " + title + " · " + state
-
-	var line string
-	if visibleWidth(plain) <= width {
-		line = th.kind(kind, kind.glyph()) + " " +
-			th.paint(ansiBold, title) + " · " + th.kind(kind, state)
-	} else {
-		line = th.kind(kind, kind.glyph()) + " " + fit(title+" · "+state, width-2)
+	badge := kind.glyph() + " " + strings.ToUpper(command.State.String())
+	titleWidth := width - visibleWidth(badge) - 2
+	lines := []string{th.paint(ansiCyan+ansiBold, padRight(fit(title, titleWidth), titleWidth)) + "  " + th.kind(kind, badge)}
+	if titleWidth < 4 {
+		lines = []string{th.paint(ansiBold, fit(title, width)), th.kind(kind, fit(badge, width))}
 	}
 
-	lines := []string{line}
+	// Keep startup context with the command without implying a server is ready.
 	if command.Summary != "" {
-		lines = append(lines, th.paint(ansiDim, "  "+fit(command.Summary, width-2)))
+		lines = append(lines, th.paint(ansiDim, fit("  "+command.Summary, width)))
+	}
+	if entry := snapshot.GetProject().WebStartupPath; entry != "" {
+		lines = append(lines, th.paint(ansiDim, fit("  entry "+entry, width)))
 	}
 	return lines
 }
 
 // servingSection renders the address the devtool serves, when it serves one.
-func servingSection(
-	th tuiTheme,
-	snapshot *devtool_status.BldrDevtoolStatus,
-	servingURL string,
-	width int,
-) []string {
-	project := snapshot.GetProject()
-	if servingURL == "" && project.WebStartupPath == "" {
+func servingSection(th tuiTheme, servingURL string, width int) []string {
+	if servingURL == "" {
 		return nil
 	}
-	lines := []string{sectionTitle(th, "SERVING", width)}
-	if servingURL != "" {
-		hint := "press o to open browser"
-		url := th.paint(ansiCyan+ansiBold, servingURL)
-		body := "  ➜ " + url
-		if visibleWidth("  ➜ "+servingURL) < width-len(hint)-3 {
-			pad := width - visibleWidth("  ➜ "+servingURL) - len(hint)
-			body += strings.Repeat(" ", pad) + th.paint(ansiDim, hint)
-		}
-		lines = append(lines, body)
+	return []string{
+		sectionTitle(th, "SERVING", width),
+		th.paint(ansiCyan+ansiBold, fit("  ➜ "+servingURL, width)),
 	}
-	if project.WebStartupPath != "" {
-		lines = append(lines, th.paint(ansiDim, "  entry "+fit(project.WebStartupPath, width-9)))
-	}
-	return lines
 }
 
 // tuiFailure is one problem surfaced with enough context to act on it.
 type tuiFailure struct {
-	where   string
+	// where identifies the failed operation.
+	where string
+	// message contains the actionable error text.
 	message string
+	// logPath points to the full command log.
 	logPath string
-	kind    tuiStatusKind
+	// kind determines the failure marker and color.
+	kind tuiStatusKind
 }
 
 // failureSection lists every failing surface with its full error text wrapped
@@ -176,6 +138,7 @@ func failureSection(th tuiTheme, snapshot *devtool_status.BldrDevtoolStatus, wid
 	return lines
 }
 
+// collectFailures gathers actionable errors from the existing status snapshot.
 func collectFailures(snapshot *devtool_status.BldrDevtoolStatus) []tuiFailure {
 	var failures []tuiFailure
 	command := snapshot.GetCommand()
@@ -244,39 +207,62 @@ func collectFailures(snapshot *devtool_status.BldrDevtoolStatus) []tuiFailure {
 // tuiTarget is one build unit shown in the targets table, merging the fetch and
 // build views into a single per-manifest line the developer thinks in terms of.
 type tuiTarget struct {
+	// manifest identifies the build unit.
 	manifest string
+	// platform identifies the runtime and architecture.
 	platform string
+	// buildKit identifies the development or release configuration.
 	buildKit string
-	detail   string
-	kind     tuiStatusKind
+	// detail describes current work or availability.
+	detail string
+	// kind determines the target order, marker, and color.
+	kind tuiStatusKind
 }
 
 // targetSection renders the unified per-target build table, active work first.
 func targetSection(th tuiTheme, snapshot *devtool_status.BldrDevtoolStatus, width int) []string {
+	// Sort urgent work before completed artifacts.
 	targets := collectTargets(snapshot)
 	if len(targets) == 0 {
 		return nil
 	}
-	slices.SortStableFunc(targets, func(a, b tuiTarget) int {
-		return a.kind.rank() - b.kind.rank()
-	})
+	slices.SortStableFunc(targets, func(a, b tuiTarget) int { return a.kind.rank() - b.kind.rank() })
 
-	lines := []string{sectionTitle(th, "TARGETS · "+strconv.Itoa(len(targets)), width)}
-	nameWidth := targetNameWidth(targets)
-	shown := targets
-	if len(shown) > devtoolTUIMaxTargetRows {
-		shown = shown[:devtoolTUIMaxTargetRows]
+	// Show readiness and common build settings once for the whole table.
+	ready := 0
+	platform, buildKit := targets[0].platform, targets[0].buildKit
+	common := true
+	for _, target := range targets {
+		if target.kind == tuiStatusReady {
+			ready++
+		}
+		if target.platform != platform || target.buildKit != buildKit {
+			common = false
+		}
 	}
+	lines := []string{sectionTitle(th, "TARGETS · "+strconv.Itoa(ready)+"/"+strconv.Itoa(len(targets))+" ready", width)}
+	if common && (platform != "" || buildKit != "") {
+		lines = append(lines, th.paint(ansiDim, fit("  "+strings.TrimSpace(platform+" "+buildKit), width)))
+	}
+
+	// Bound the table while preserving each visible target's status.
+	nameWidth := targetNameWidth(targets)
+	shown := targets[:min(len(targets), devtoolTUIMaxTargetRows)]
 	for _, target := range shown {
+		if common {
+			target.platform, target.buildKit = "", ""
+		}
 		lines = append(lines, targetLine(th, target, nameWidth, width))
 	}
 	if hidden := len(targets) - len(shown); hidden > 0 {
-		lines = append(lines, th.paint(ansiDim, "  … "+strconv.Itoa(hidden)+" more targets"))
+		lines = append(lines, th.paint(ansiDim, fit("  … "+strconv.Itoa(hidden)+" more targets", width)))
 	}
 	return lines
 }
 
+// collectTargets combines local builds and standalone fetched artifacts.
 func collectTargets(snapshot *devtool_status.BldrDevtoolStatus) []tuiTarget {
+	// Include local builders as one row per build unit.
 	buildRows := snapshot.GetManifestBuildRows()
 	targets := make([]tuiTarget, 0, len(buildRows))
 	for _, row := range buildRows {
@@ -288,6 +274,7 @@ func collectTargets(snapshot *devtool_status.BldrDevtoolStatus) []tuiTarget {
 			kind:     manifestStatusKind(row.State),
 		})
 	}
+
 	// Fetch rows not backed by a local build are standalone remote/cache
 	// artifacts; surface them so the target list is complete.
 	for _, row := range snapshot.GetManifestFetchRows() {
@@ -305,11 +292,23 @@ func collectTargets(snapshot *devtool_status.BldrDevtoolStatus) []tuiTarget {
 	return targets
 }
 
+// buildDetail describes current build work without repeating strategy labels.
 func buildDetail(row devtool_status.BldrDevtoolManifestBuildRow) string {
 	if row.State == devtool_status.BldrDevtoolManifestStateError {
 		return "build failed"
 	}
+	if row.State == devtool_status.BldrDevtoolManifestStateReady {
+		if row.CacheHit {
+			return "ready · cache hit"
+		}
+		return "ready"
+	}
+
+	// Describe the current operation before its rebuild strategy.
 	detail := row.Summary
+	if detail == "full rebuild" || detail == "hot rebuild" {
+		detail = "building · " + detail
+	}
 	if detail == "" && row.DependencyRebuildReason != "" {
 		detail = row.DependencyRebuildReason
 	}
@@ -322,15 +321,13 @@ func buildDetail(row devtool_status.BldrDevtoolManifestBuildRow) string {
 	if row.FullRebuild {
 		detail = appendDetail(detail, "full rebuild")
 	}
-	if row.WatchedFileCount != 0 {
-		detail = appendDetail(detail, strconv.Itoa(row.WatchedFileCount)+" files")
-	}
 	if detail == "" {
 		detail = row.State.String()
 	}
 	return detail
 }
 
+// fetchDetail describes artifact availability and unresolved local dependencies.
 func fetchDetail(row devtool_status.BldrDevtoolManifestFetchRow) string {
 	if row.Error != "" {
 		return "fetch failed"
@@ -348,25 +345,23 @@ func fetchDetail(row devtool_status.BldrDevtoolManifestFetchRow) string {
 	return detail
 }
 
+// targetLine keeps the target name and current work readable at the given width.
 func targetLine(th tuiTheme, target tuiTarget, nameWidth, width int) string {
+	// Fit the name separately so a long identifier cannot hide progress.
 	glyph := th.kind(target.kind, target.kind.glyph())
-	name := padRight(target.manifest, nameWidth)
-	platform := strings.TrimSpace(target.platform + " " + target.buildKit)
+	nameWidth = min(nameWidth, max(8, (width-6)/2))
+	name := th.paint(ansiBold, padRight(fit(target.manifest, nameWidth), nameWidth))
+	line := "  " + glyph + " " + name + "  " + th.kind(target.kind, fit(target.detail, width-nameWidth-6))
+	if width < devtoolTUINarrowWidth {
+		line = "  " + glyph + " " + th.paint(ansiBold, fit(target.manifest, width-4)) +
+			"\n    " + th.kind(target.kind, fit(target.detail, width-4))
+	}
 
-	rest := name
-	if width >= devtoolTUINarrowWidth {
-		rest += "  " + padRight(platform, 16)
-	} else if platform != "" {
-		rest += "  " + platform
+	// Mixed-platform builds keep their settings attached to each target.
+	if platform := strings.TrimSpace(target.platform + " " + target.buildKit); platform != "" {
+		line += "\n    " + th.paint(ansiDim, fit(platform, width-4))
 	}
-	if target.detail != "" {
-		rest += "  " + target.detail
-	}
-	detailKind := ansiDim
-	if target.kind == tuiStatusError {
-		detailKind = ""
-	}
-	return "  " + glyph + " " + th.paint(detailKind, fit(rest, width-4))
+	return line
 }
 
 // runtimeSection collapses plugin and controller detail into a scannable count
@@ -396,14 +391,25 @@ func runtimeSection(th tuiTheme, snapshot *devtool_status.BldrDevtoolStatus, wid
 }
 
 // footerSection renders the keyboard and log hints.
-func footerSection(th tuiTheme, width int) []string {
-	return []string{th.paint(ansiDim, fit("ctrl-c quit · o open browser · logs .bldr/logs/", width))}
+func footerSection(th tuiTheme, servingURL string, width int) []string {
+	keys := "ctrl-c quit"
+	if servingURL != "" {
+		keys = "o open browser · " + keys
+	}
+	return []string{th.paint(ansiDim, fit(keys, width)), th.paint(ansiDim, fit("logs .bldr/logs/", width))}
 }
 
+// sectionTitle separates sections with a dim rule sized to the terminal.
 func sectionTitle(th tuiTheme, title string, width int) string {
-	return th.paint(ansiBold, fit(title, width))
+	label := fit(title, width)
+	rule := strings.Repeat("─", max(0, width-visibleWidth(label)-2))
+	if rule == "" {
+		return th.paint(ansiBold, label)
+	}
+	return th.paint(ansiBold, label) + th.paint(ansiDim, "  "+rule)
 }
 
+// countSummary formats runtime counts in a stable status order.
 func countSummary(counts map[tuiStatusKind]int) string {
 	order := []struct {
 		kind  tuiStatusKind
@@ -429,10 +435,11 @@ func countSummary(counts map[tuiStatusKind]int) string {
 	return strings.Join(parts, " · ")
 }
 
+// targetNameWidth bounds the name column by the visible target identifiers.
 func targetNameWidth(targets []tuiTarget) int {
 	width := 8
 	for _, target := range targets {
-		if n := len(target.manifest); n > width {
+		if n := visibleWidth(target.manifest); n > width {
 			width = n
 		}
 	}
@@ -442,6 +449,7 @@ func targetNameWidth(targets []tuiTarget) int {
 	return width
 }
 
+// targetLabel identifies the manifest and build settings for a failure.
 func targetLabel(manifest, platform, buildType string) string {
 	label := manifestName(manifest)
 	tail := strings.TrimSpace(platform + " " + buildType)
@@ -451,6 +459,7 @@ func targetLabel(manifest, platform, buildType string) string {
 	return label
 }
 
+// manifestName supplies a visible placeholder for an unnamed manifest.
 func manifestName(id string) string {
 	if id == "" {
 		return "-"
@@ -458,6 +467,7 @@ func manifestName(id string) string {
 	return id
 }
 
+// commandName supplies a label for failures without a command name.
 func commandName(command devtool_status.BldrDevtoolCommandStatus) string {
 	if command.Name == "" {
 		return "command"
@@ -496,10 +506,12 @@ func wrapText(text string, width int) []string {
 	return lines
 }
 
+// fit truncates text to the available display width.
 func fit(value string, width int) string {
 	return truncateDisplay(value, width)
 }
 
+// truncateDisplay marks text omitted at the right edge with an ellipsis.
 func truncateDisplay(value string, width int) string {
 	if width <= 0 {
 		return ""
@@ -514,6 +526,7 @@ func truncateDisplay(value string, width int) string {
 	return string(runes[:width-1]) + "…"
 }
 
+// padRight fills the remainder of a display column with spaces.
 func padRight(value string, width int) string {
 	pad := width - visibleWidth(value)
 	if pad <= 0 {
@@ -522,8 +535,9 @@ func padRight(value string, width int) string {
 	return value + strings.Repeat(" ", pad)
 }
 
+// appendDetail joins distinct status details with a middle dot.
 func appendDetail(detail, next string) string {
-	if next == "" {
+	if next == "" || slices.Contains(strings.Split(detail, " · "), next) {
 		return detail
 	}
 	if detail == "" {
@@ -532,6 +546,7 @@ func appendDetail(detail, next string) string {
 	return detail + " · " + next
 }
 
+// appendSummary joins a summary with its supporting explanation.
 func appendSummary(summary, next string) string {
 	if next == "" {
 		return summary
@@ -542,6 +557,7 @@ func appendSummary(summary, next string) string {
 	return summary + "; " + next
 }
 
+// displayLogPath shortens project log paths while retaining other locations.
 func displayLogPath(path string) string {
 	idx := strings.Index(path, ".bldr/logs/")
 	if idx >= 0 {
