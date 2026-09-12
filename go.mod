@@ -44,7 +44,7 @@ require (
 	github.com/aperturerobotics/go-kvfile v0.10.1-0.20260705010911-5c5ed949ddfe // master
 	github.com/aperturerobotics/go-multiaddr v0.17.1-0.20260514224402-c193991c3ce5
 	github.com/aperturerobotics/go-quickjs-wasi-reactor v0.15.1
-	github.com/aperturerobotics/go-quickjs-wasi-reactor/wazero-quickjs v0.0.0-20260705010951-74676ff0da98
+	github.com/aperturerobotics/go-quickjs-wasi-reactor/wazero-quickjs v0.0.0-20260906074410-727d9e299192
 	github.com/aperturerobotics/go-websocket v1.8.15-0.20260910142736-349504d079da
 	github.com/aperturerobotics/go-winjob v0.0.0-20260705010911-656e088d1b05
 	github.com/aperturerobotics/json-iterator-lite v1.1.0 // latest
@@ -97,9 +97,9 @@ require (
 	github.com/vmihailenco/msgpack/v5 v5.4.1
 	github.com/whilp/git-urls v1.0.0
 	github.com/zeebo/blake3 v0.2.4
-	go.starlark.net v0.0.0-20260904161901-6ecada49e42f
+	go.starlark.net v0.0.0-20260908191801-89a6a09411d5
 	golang.org/x/crypto v0.57.0
-	golang.org/x/exp v0.0.0-20260824195058-e88cd73687aa
+	golang.org/x/exp v0.0.0-20260908205506-85c1c2202aba
 	golang.org/x/mod v0.41.0 // latest
 	golang.org/x/sync v0.23.0
 	golang.org/x/sys v0.48.0

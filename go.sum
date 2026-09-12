@@ -62,6 +62,8 @@ github.com/aperturerobotics/go-quickjs-wasi-reactor v0.15.1 h1:wd9OPxKi81Co1Bv6l
 github.com/aperturerobotics/go-quickjs-wasi-reactor v0.15.1/go.mod h1:tv9gTeRdrIQIsLeXQK+bsc7VrN5YHepfWsQ++/sALRQ=
 github.com/aperturerobotics/go-quickjs-wasi-reactor/wazero-quickjs v0.0.0-20260705010951-74676ff0da98 h1:CRo/EgPdLCl4MMvCxhNG2uJAkb4FkXZ0gD8TsMglNRU=
 github.com/aperturerobotics/go-quickjs-wasi-reactor/wazero-quickjs v0.0.0-20260705010951-74676ff0da98/go.mod h1:YPUNAejo0sSHIFzZCnUbt0b3OR0Gw74cBxHIdv+yzkw=
+github.com/aperturerobotics/go-quickjs-wasi-reactor/wazero-quickjs v0.0.0-20260906074410-727d9e299192 h1:OytXHk45dZ9UezuFlCJPhdsmV7oAbKzuVhxHbfBuw38=
+github.com/aperturerobotics/go-quickjs-wasi-reactor/wazero-quickjs v0.0.0-20260906074410-727d9e299192/go.mod h1:YPUNAejo0sSHIFzZCnUbt0b3OR0Gw74cBxHIdv+yzkw=
 github.com/aperturerobotics/go-websocket v1.8.15-0.20260910142736-349504d079da h1:xRS+FY1PAhIfHHcCRlNDy7DbOwA1TygcD7xJqNlNxOA=
 github.com/aperturerobotics/go-websocket v1.8.15-0.20260910142736-349504d079da/go.mod h1:9KnSGuqxSXbdB/Oi0I6vvfPLkclfJwMGAQaDDGVgGow=
 github.com/aperturerobotics/go-winjob v0.0.0-20260705010911-656e088d1b05 h1:u7Wqib6RFTGKIWKERYoenApCoMKRuqPEjn3x+9qmfic=
@@ -367,6 +369,8 @@ go.opentelemetry.io/otel/trace v1.41.0 h1:Vbk2co6bhj8L59ZJ6/xFTskY+tGAbOnCtQGVVa
 go.opentelemetry.io/otel/trace v1.41.0/go.mod h1:U1NU4ULCoxeDKc09yCWdWe+3QoyweJcISEVa1RBzOis=
 go.starlark.net v0.0.0-20260904161901-6ecada49e42f h1:m+AwfAsRB2E9t6xjYPQ/0quPxDjXihZSjVr03BmwTs8=
 go.starlark.net v0.0.0-20260904161901-6ecada49e42f/go.mod h1:Iue6g6iirlfLoVi/DYCi5/x0h/bAOuWF3dULTKpt2Vo=
+go.starlark.net v0.0.0-20260908191801-89a6a09411d5 h1:X8HyonnLxrmAbdeMIEGEJVZ/yg6WykLZyAZmpCLSfMA=
+go.starlark.net v0.0.0-20260908191801-89a6a09411d5/go.mod h1:Iue6g6iirlfLoVi/DYCi5/x0h/bAOuWF3dULTKpt2Vo=
 go.uber.org/mock v0.5.2 h1:LbtPTcP8A5k9WPXj54PPPbjcI4Y6lhyOZXn+VS7wNko=
 go.uber.org/mock v0.5.2/go.mod h1:wLlUxC2vVTPTaE3UD51E0BGOAElKrILxhVSDYQLld5o=
 go.yaml.in/yaml/v3 v3.0.5 h1:N6y/pJk8buWs9NY5ERU2HSMfm+IuD/OtfdAnq6kESPw=
@@ -378,6 +382,8 @@ golang.org/x/crypto v0.57.0/go.mod h1:Fdz0i5U6CoizGwLda9DttjSk6qlZo25zYNtR+ycvuZ
 golang.org/x/exp v0.0.0-20190121172915-509febef88a4/go.mod h1:CJ0aWSM057203Lf6IL+f9T1iT9GByDxfZKAQTCR3kQA=
 golang.org/x/exp v0.0.0-20260824195058-e88cd73687aa h1:QSyA8ishJCyT21kER9KwNt0b7BM3iRK4x9QXhjN5Fdk=
 golang.org/x/exp v0.0.0-20260824195058-e88cd73687aa/go.mod h1:zeBbvyFKDaLwa7CH/zI8KXt7gTl14SF7sO08Pl5jBCM=
+golang.org/x/exp v0.0.0-20260908205506-85c1c2202aba h1:Ck8QetSgk912qxWLMCKxd0in+aiyBQyDSMae6e/xmpU=
+golang.org/x/exp v0.0.0-20260908205506-85c1c2202aba/go.mod h1:50RgIsmK7OwqzTTeqcSXQW8SswW0o8fRcDxmqGluJ8E=
 golang.org/x/lint v0.0.0-20181026193005-c67002cb31c3/go.mod h1:UVdnD1Gm6xHRNCYTkRU2/jEulfH38KcIWyp/GAMgvoE=
 golang.org/x/lint v0.0.0-20190227174305-5b3e6a55c961/go.mod h1:wehouNa3lNwaWXcvxsM5YxQ5yQlVC4a0KAMCusXpPoU=
 golang.org/x/lint v0.0.0-20190313153728-d0100b6bd8b3/go.mod h1:6SW0HCj/g11FgYtHlgUYUwCkIfeOF89ocIRzGO/8vkc=
