@@ -2,11 +2,12 @@ package sobject_sync
 
 import (
 	"context"
-	"sync"
 	"time"
 
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/directive"
+	cbackoff "github.com/aperturerobotics/util/backoff/cbackoff"
+	"github.com/aperturerobotics/util/broadcast"
 	"github.com/aperturerobotics/util/routine"
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/core/sobject"
@@ -22,8 +23,17 @@ import (
 // SyncProtocolID is the protocol ID used for SO sync solicitation.
 const SyncProtocolID = protocol.ID("alpha/so-sync/2")
 
-// maxMessageSize is the max message size for SO sync messages.
-const maxMessageSize = 10 * 1024 * 1024
+const (
+	// maxMessageSize is the max message size for SO sync messages.
+	maxMessageSize = 10 * 1024 * 1024
+	// syncRetryInitialInterval is the first delay after a recoverable stream
+	// failure.
+	syncRetryInitialInterval = 250 * time.Millisecond
+	// syncRetryMaxInterval caps repeated recoverable stream-failure delays.
+	syncRetryMaxInterval = 2 * time.Second
+	// syncRetryMultiplier doubles the delay until syncRetryMaxInterval.
+	syncRetryMultiplier = 2
+)
 
 // SnapshotAccessValidator verifies that the local object identity can decode
 // an inbound snapshot before it replaces durable state.
@@ -37,7 +47,8 @@ type SOSync struct {
 	b bus.Bus
 	// soID identifies the object and its signature context.
 	soID string
-	// localObjectPeerID is the participant identity, independent of transport identity.
+	// localObjectPeerID is the participant identity, independent of transport
+	// identity.
 	localObjectPeerID peer.ID
 	// localObjectKey proves possession of the participant identity.
 	localObjectKey crypto.PrivKey
@@ -45,10 +56,24 @@ type SOSync struct {
 	soHost *sobject.SOHost
 	// validateSnapshotAccess checks local decryption before acceptance.
 	validateSnapshotAccess SnapshotAccessValidator
-	// peerAdmission reports a locally permitted participant's explicit admission response.
+	// peerAdmission reports a locally permitted participant's explicit admission
+	// response.
 	peerAdmission func(peer.ID, bool)
 	// peerRecovery reports trusted recovery requirements independently of admission.
 	peerRecovery func(peer.ID, bool)
+}
+
+// solicitationGeneration owns the workers admitted by one solicitation
+// directive lifetime and publishes the first recoverable worker failure.
+type solicitationGeneration struct {
+	// bcast guards stopping, workers, and retryErr.
+	bcast broadcast.Broadcast
+	// stopping prevents new workers while the generation drains.
+	stopping bool
+	// workers counts admitted workers that have not returned.
+	workers int
+	// retryErr is the first recoverable worker failure.
+	retryErr error
 }
 
 // NewSOSync constructs a new SOSync.
@@ -70,10 +95,13 @@ func NewSOSync(
 	peerAdmission func(peer.ID, bool),
 	accessValidators ...SnapshotAccessValidator,
 ) *SOSync {
+	// Select the optional inbound-snapshot authority check.
 	var validateSnapshotAccess SnapshotAccessValidator
 	if len(accessValidators) != 0 {
 		validateSnapshotAccess = accessValidators[0]
 	}
+
+	// Bind synchronization to the object and its participant identity.
 	return &SOSync{
 		le:                     le.WithField("so-sync", soID),
 		b:                      b,
@@ -86,8 +114,9 @@ func NewSOSync(
 	}
 }
 
-// SetPeerRecoveryObserver configures source-recovery observation before Execute starts.
-// The observer must return promptly; calls can come from concurrent peer streams.
+// SetPeerRecoveryObserver configures source-recovery observation before Execute
+// starts. The observer must return promptly; calls can come from concurrent peer
+// streams.
 func (s *SOSync) SetPeerRecoveryObserver(observer func(peer.ID, bool)) {
 	s.peerRecovery = observer
 }
@@ -95,67 +124,215 @@ func (s *SOSync) SetPeerRecoveryObserver(observer func(peer.ID, bool)) {
 // Execute runs the SO sync, emitting a SolicitProtocol directive and
 // handling matched streams until ctx is canceled.
 func (s *SOSync) Execute(ctx context.Context) error {
-	// Fence new callback work before joining all accepted streams on shutdown.
-	ctx, cancel := context.WithCancel(ctx)
-	var admissionMu sync.Mutex
-	var workers sync.WaitGroup
-	var stopping bool
-	defer func() {
-		admissionMu.Lock()
-		stopping = true
-		admissionMu.Unlock()
-		cancel()
-		workers.Wait()
-	}()
+	// Retry only generations ended by recoverable stream failures.
+	retryBackoff := newSyncRetryBackoff()
+	for {
+		retry, err := s.runSolicitationGeneration(ctx)
+		if !retry {
+			return err
+		}
 
-	solicitCtx := []byte(s.soID)
-	dir := link_solicit.NewSolicitProtocol(
-		SyncProtocolID,
-		solicitCtx,
-		"",
-		0,
+		// Bound repeated failures without abandoning the standing sync demand.
+		delay := retryBackoff.NextBackOff()
+		if delay == cbackoff.Stop {
+			return err
+		}
+		s.le.WithError(err).WithField("retry-after", delay).
+			Debug("rearming shared object synchronization")
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(delay):
+		}
+	}
+}
+
+// newSyncRetryBackoff constructs the capped delay between solicitation
+// generations.
+func newSyncRetryBackoff() cbackoff.BackOff {
+	return cbackoff.NewExponentialBackOff(
+		cbackoff.WithInitialInterval(syncRetryInitialInterval),
+		cbackoff.WithMultiplier(syncRetryMultiplier),
+		cbackoff.WithMaxInterval(syncRetryMaxInterval),
+		cbackoff.WithRandomizationFactor(0),
+		cbackoff.WithMaxElapsedTime(0),
 	)
+}
 
+// runSolicitationGeneration admits peer streams until cancellation or the
+// first recoverable stream failure. retry is true only when Execute should
+// create a fresh directive incarnation after backoff.
+func (s *SOSync) runSolicitationGeneration(ctx context.Context) (bool, error) {
+	// Give every accepted stream the generation's cancellation boundary.
+	generationCtx, cancel := context.WithCancel(ctx)
+	generation := &solicitationGeneration{}
+
+	// Publish one solicitation lifetime and classify each accepted stream result.
+	dir := link_solicit.NewSolicitProtocol(SyncProtocolID, []byte(s.soID), "", 0)
 	_, solicitRef, err := s.b.AddDirective(
 		dir,
 		directive.NewTypedCallbackHandler[link_solicit.SolicitMountedStream](
 			func(v directive.TypedAttachedValue[link_solicit.SolicitMountedStream]) {
-				admissionMu.Lock()
-				defer admissionMu.Unlock()
-				if stopping || ctx.Err() != nil {
-					return
-				}
-				workers.Go(func() {
-					s.handleSolicitedStream(ctx, v.GetValue())
+				generation.startWorker(func() error {
+					// Run the accepted stream inside this generation's lifetime.
+					err := s.handleSolicitedStream(generationCtx, v.GetValue())
+
+					// Keep typed peer states on the standing directive; return only
+					// recoverable failures to the generation owner.
+					if err == nil || generationCtx.Err() != nil || isTerminalSyncError(err) {
+						return nil
+					}
+					return err
 				})
 			},
 			nil, nil, nil,
 		),
 	)
 	if err != nil {
-		return err
+		generation.stopAndWait(cancel)
+		return false, err
 	}
 	defer solicitRef.Release()
+	defer generation.stopAndWait(cancel)
 
-	<-ctx.Done()
-	return ctx.Err()
+	// Keep the directive admitted through terminal peer states; only a
+	// recoverable stream error retires this generation.
+	err = generation.wait(generationCtx)
+	if ctx.Err() != nil {
+		return false, ctx.Err()
+	}
+	return true, err
+}
+
+// isTerminalSyncError reports peer states that require authority or recovery
+// to change before another stream can make progress.
+func isTerminalSyncError(err error) bool {
+	return errors.Is(err, ErrAccessDenied) ||
+		errors.Is(err, sobject.ErrParticipantRevoked) ||
+		errors.Is(err, sobject.ErrConfigHistoryUnavailable)
+}
+
+// startWorker admits one worker before starting it so shutdown cannot miss it.
+func (g *solicitationGeneration) startWorker(run func() error) bool {
+	// Register the worker only while the generation accepts new streams.
+	var started bool
+	g.bcast.HoldLock(func(bcast func(), _ func() <-chan struct{}) {
+		if g.stopping {
+			return
+		}
+		g.workers++
+		started = true
+		bcast()
+	})
+	if !started {
+		return false
+	}
+
+	// Publish its result and release its generation membership on return.
+	go func() {
+		g.workerDone(run())
+	}()
+	return true
+}
+
+// workerDone releases one worker and publishes its recoverable failure.
+func (g *solicitationGeneration) workerDone(err error) {
+	g.bcast.HoldLock(func(bcast func(), _ func() <-chan struct{}) {
+		g.workers--
+		if err != nil && g.retryErr == nil && !g.stopping {
+			g.retryErr = err
+		}
+		bcast()
+	})
+}
+
+// wait blocks until the generation needs retry or its context ends.
+func (g *solicitationGeneration) wait(ctx context.Context) error {
+	for {
+		// Read the result and its matching wait channel atomically.
+		var retryErr error
+		var waitCh <-chan struct{}
+		g.bcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
+			retryErr = g.retryErr
+			waitCh = getWaitCh()
+		})
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		if retryErr != nil {
+			return retryErr
+		}
+
+		// Wake for either cancellation or a completed worker.
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-waitCh:
+		}
+	}
+}
+
+// stopAndWait fences new workers, cancels accepted streams, and joins them.
+func (g *solicitationGeneration) stopAndWait(cancel context.CancelFunc) {
+	// Fence callbacks before canceling the shared worker context.
+	g.bcast.HoldLock(func(bcast func(), _ func() <-chan struct{}) {
+		g.stopping = true
+		bcast()
+	})
+	cancel()
+
+	// Wait on the same state owner until every accepted worker has returned.
+	for {
+		var waitCh <-chan struct{}
+		var stopped bool
+		g.bcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
+			stopped = g.workers == 0
+			waitCh = getWaitCh()
+		})
+		if stopped {
+			return
+		}
+		<-waitCh
+	}
 }
 
 // handleSolicitedStream processes a matched solicit stream for SO sync.
-func (s *SOSync) handleSolicitedStream(ctx context.Context, sms link_solicit.SolicitMountedStream) {
+func (s *SOSync) handleSolicitedStream(
+	ctx context.Context,
+	sms link_solicit.SolicitMountedStream,
+) error {
+	// Claim the matched stream once for this synchronization worker.
 	ms, taken, err := sms.AcceptMountedStream()
-	if err != nil || taken {
-		return
+	if err != nil {
+		return err
+	}
+	if taken {
+		return nil
 	}
 
+	// Run the authenticated stream with remote-scoped diagnostics.
 	le := s.le.WithField("remote-peer", ms.GetPeerID().String())
-	if err := s.runStream(ctx, le, ms.GetStream(), ms.GetLink().GetLocalPeer(), ms.GetPeerID()); err != nil && ctx.Err() == nil {
+	err = s.runStream(
+		ctx,
+		le,
+		ms.GetStream(),
+		ms.GetLink().GetLocalPeer(),
+		ms.GetPeerID(),
+	)
+	if err != nil && ctx.Err() == nil {
 		le.WithError(err).Debug("shared object synchronization ended")
 	}
+	return err
 }
 
 // runStream owns authentication, authorization watches, data exchange and stream cleanup.
-func (s *SOSync) runStream(ctx context.Context, le *logrus.Entry, strm stream.Stream, localTransport, remoteTransport peer.ID) (rerr error) {
+func (s *SOSync) runStream(
+	ctx context.Context,
+	le *logrus.Entry,
+	strm stream.Stream,
+	localTransport peer.ID,
+	remoteTransport peer.ID,
+) (rerr error) {
 	// Preserve the local authorization failure when closing transport interrupts I/O.
 	ctx, cancel := context.WithCancelCause(ctx)
 	defer cancel(nil)
@@ -235,10 +412,12 @@ func sendAccessDenied(sess *stream_packet.Session) error {
 
 // handleRemoteOp processes an operation received from the peer.
 func (s *SOSync) handleRemoteOp(ctx context.Context, le *logrus.Entry, syncOp *SOSyncOp) {
+	// Ignore frames without a signed operation payload.
 	if len(syncOp.GetOperation()) == 0 {
 		return
 	}
 
+	// Decode the outer signed operation before inspecting its signer.
 	op := &sobject.SOOperation{}
 	if err := op.UnmarshalVT(syncOp.GetOperation()); err != nil {
 		le.WithError(err).Warn("failed to unmarshal remote op")
@@ -252,6 +431,7 @@ func (s *SOSync) handleRemoteOp(ctx context.Context, le *logrus.Entry, syncOp *S
 		return
 	}
 
+	// Parse the signer's canonical peer identity.
 	peerIDStr := opInner.GetPeerId()
 	if peerIDStr == "" {
 		le.Warn("remote op missing peer id")
@@ -282,6 +462,8 @@ func (s *SOSync) handleRemoteOp(ctx context.Context, le *logrus.Entry, syncOp *S
 			return
 		}
 	}
+
+	// Ignore an operation whose accepted or rejected identity is already known.
 	existing, rejection, err := localState.GetOperationStatus(peerIDStr, opInner.GetLocalId())
 	if err != nil {
 		le.WithError(err).Debug("failed to inspect remote op status")
