@@ -407,7 +407,7 @@ type session struct {
 }
 
 // newSession constructs a new session.
-func (s *sessionTracker) newSession() (*session, <-chan struct{}, error) {
+func (s *sessionTracker) newSession(ctx context.Context) (*session, <-chan struct{}, error) {
 	setCallback := func(name string, cb func()) (err error) {
 		defer func() {
 			if e := recover(); e != nil {
@@ -423,7 +423,7 @@ func (s *sessionTracker) newSession() (*session, <-chan struct{}, error) {
 	}
 
 	// Create the peer connection.
-	pc, err := s.w.webrtcApi.NewPeerConnection(*s.w.webrtcConf)
+	pc, err := s.w.newPeerConnection(ctx)
 	if err != nil {
 		return nil, nil, pkgerrors.Wrap(err, "create peer connection")
 	}
@@ -802,7 +802,7 @@ func (s *sessionTracker) execute(ctx context.Context) (err error) {
 		waitCh = s.adoptSession(sess)
 		s.le.Debug("adopted in-flight negotiation session from retired predecessor")
 	} else {
-		sess, waitCh, err = s.newSession()
+		sess, waitCh, err = s.newSession(ctx)
 		if err != nil {
 			return pkgerrors.Wrap(err, phase)
 		}
