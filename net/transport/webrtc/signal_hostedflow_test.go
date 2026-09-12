@@ -179,7 +179,7 @@ func runHostedFlowGeneration(
 ) error {
 	execution := tkr.beginExecution()
 	defer tkr.retireExecution(execution)
-	sess, _, err := tkr.newSession()
+	sess, _, err := tkr.newSession(ctx)
 	if err != nil {
 		return pkgerrors.Wrap(err, "construct hosted-flow session")
 	}
