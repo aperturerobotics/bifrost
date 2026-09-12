@@ -16,7 +16,7 @@ import { SendRequest } from '../../../frontend/frontend.pb.js'
 const require = createRequire(import.meta.url)
 const repoRoot = resolve(
   dirname(fileURLToPath(import.meta.url)),
-  '../../../../..',
+  '../../../../',
 )
 
 it('guards the installed Vite client and rewrites module specifiers only', async () => {
@@ -53,7 +53,7 @@ it('serves a real graph, emits CSS and custom updates, and closes its listener',
   const cssPath = join(root, 'app.css')
   await writeFile(
     appPath,
-    'import React from "react"; import "./app.css"; export default function App() { return <button>before</button> }',
+    'import React from "react"; export { useResource } from "@aptre/bldr-sdk/hooks/useResource.js"; import "./app.css"; export default function App() { return <button>before</button> }',
   )
   await writeFile(cssPath, 'button { color: red }')
   await writeFile(
@@ -89,6 +89,7 @@ export default { server: { watch: { ignored: [] } }, plugins: [react(), { name: 
     expect(module.status).toBe(200)
     const source = await module.text()
     expect(source).toContain('from "react"')
+    expect(source).toContain('/sdk/hooks/useResource.tsx')
     expect(source).toContain('/bldr-dev/frontend-refresh/test.mjs')
     const css = await fetch(privateURL + '/b/fe/test/app.css')
     expect(await css.text()).toContain('__vite__updateStyle')

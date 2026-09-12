@@ -73,9 +73,13 @@ export class DevelopmentEnvironment {
     process.env.BLDR_PROJECT_ROOT = root
     process.env.BLDR_DIST_ROOT = dist
     process.env.NODE_ENV = 'development'
-    const configPaths = (this.config.configPaths ?? []).map((value) =>
-      resolve(root, value),
-    )
+    const distSource = existsSync(resolve(dist, 'bldr'))
+      ? resolve(dist, 'bldr')
+      : dist
+    const configPaths = [
+      resolve(distSource, 'web/bundler/vite/vite-base.config.ts'),
+      ...(this.config.configPaths ?? []).map((value) => resolve(root, value)),
+    ]
     if (!this.config.disableProjectConfig) {
       for (const extension of ['ts', 'js', 'mjs', 'cjs']) {
         const path = resolve(root, `vite.config.${extension}`)
