@@ -1312,20 +1312,26 @@ func TestApplyRefBatchOrphanMarkingAcrossSliceBoundary(t *testing.T) {
 	}
 }
 
+// TestApplyRefBatchInterruptionKeepsCommittedPrefix retains the durable slice after cancellation.
 func TestApplyRefBatchInterruptionKeepsCommittedPrefix(t *testing.T) {
 	// Open a reference graph whose store cancels after the first slice commits.
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
+	t.Cleanup(cancel)
 	store := &refGraphCancelOnCommitStore{
-		Store:    store_kvtx_inmem.NewStore(),
-		cancel:   cancel,
-		cancelAt: int64(refGraphApplySliceLimit / refGraphApplyBatchLimit),
+		Store:  store_kvtx_inmem.NewStore(),
+		cancel: cancel,
 	}
 	rg, err := NewRefGraph(ctx, store, []byte("gc/"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { rg.Close() })
+	t.Cleanup(func() {
+		if err := rg.Close(); err != nil {
+			t.Error(err)
+		}
+	})
 	store.commits.Store(0)
+	store.cancelAt = int64(refGraphApplySliceLimit / refGraphApplyBatchLimit)
 
 	// Prepare additions spanning one full slice and a trailing edge.
 	adds := make([]RefEdge, refGraphApplySliceLimit+1)

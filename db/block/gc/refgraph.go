@@ -25,6 +25,13 @@ import (
 	trace "github.com/s4wave/spacewave/db/traceutil"
 )
 
+// refGraphQuadIndexes keep each unlabeled reference edge in its own posting.
+// Subject and object prefix scans still provide forward and reverse traversal.
+var refGraphQuadIndexes = []cayley_kv.QuadIndex{
+	{Dirs: []quad.Direction{quad.Subject, quad.Predicate, quad.Object}},
+	{Dirs: []quad.Direction{quad.Object, quad.Predicate, quad.Subject}},
+}
+
 // RefGraph is a unified reference graph for garbage collection backed by Cayley.
 // The durable graph is the only representation of the edge set. Membership and
 // owner queries read the store's own indexes, so opening a RefGraph costs
@@ -57,15 +64,23 @@ func NewRefGraph(ctx context.Context, store kvtx.Store, prefix []byte) (*RefGrap
 	opts := graph.Options{
 		"ignore_duplicate": true,
 		"ignore_missing":   true,
-		// RefGraph always uses Cayley's default index set; skip reading the
-		// index metadata on every world-state rebuild.
-		cayley_kv.OptAssumeDefaultIdx: true,
+		// Cayley checks stored metadata before using the per-edge layout.
+		// Opening never walks existing edges.
+		cayley_kv.OptQuadIndexes: refGraphQuadIndexes,
 	}
 	h, err := kvtx_cayley.NewGraph(ctx, prefixed, opts)
 	if err != nil {
-		return nil, errors.Wrap(err, "new ref graph")
+		return nil, errors.Wrap(err, "new ref graph; reindex stopped volumes with spacewave debug volume-reindex <volume-file>")
 	}
 	return &RefGraph{handle: h, store: prefixed}, nil
+}
+
+// RebuildRefGraphIndexes regenerates forward and reverse reference postings
+// from the durable primitive log without changing edges or node reference counts.
+// The caller must exclude graph access until the rebuild succeeds and rerun
+// an interrupted rebuild before reopening the graph.
+func RebuildRefGraphIndexes(ctx context.Context, store kvtx.Store, prefix []byte) (uint64, error) {
+	return kvtx_cayley.RebuildGraphIndexes(ctx, kvtx_prefixer.NewPrefixer(store, prefix), refGraphQuadIndexes)
 }
 
 // RegisterEntityChain registers a chain of gc/ref edges between nodes.
@@ -524,7 +539,7 @@ func hasRefsInTransaction(ctx context.Context, tx kvtx.Tx, predID uint64, ids ma
 		if objectID == 0 || subjectID == 0 {
 			continue
 		}
-		keys = append(keys, cayley_flat.KeyEscape(cayley_kv.DefaultQuadIndexes[1].Key(
+		keys = append(keys, cayley_flat.KeyEscape(refGraphQuadIndexes[1].Key(
 			[]uint64{objectID, predID, subjectID},
 		)))
 		indexes = append(indexes, i)
@@ -972,7 +987,7 @@ func iterateIncomingIndexRefs(
 ) error {
 	return qs.IterateIndexPrefixNextRefs(
 		ctx,
-		cayley_kv.DefaultQuadIndexes[1],
+		refGraphQuadIndexes[1],
 		[]uint64{objectID, predID},
 		cb,
 	)

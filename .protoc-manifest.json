@@ -3719,7 +3719,7 @@
       ]
     },
     "github.com/s4wave/spacewave/sdk/flowgraph/registry": {
-      "hash": "4543137472f4b822017103b1dbf0d974b7f72ec697f8c1591f494a1cfa9fad56",
+      "hash": "9cc125a3d84905521652852d259f0aa21a1c0e2471545a425a0c4e3b363d8557",
       "generatedFiles": [
         "sdk/flowgraph/registry/registry.pb.go",
         "sdk/flowgraph/registry/registry.pb.ts",

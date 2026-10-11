@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"testing"
 
-	cayley_kv "github.com/aperturerobotics/cayley/graph/kv"
 	cayley_proto "github.com/aperturerobotics/cayley/graph/proto"
 	cayley_hkv "github.com/aperturerobotics/cayley/kv"
 	cayley_flat "github.com/aperturerobotics/cayley/kv/flat"
@@ -28,7 +27,7 @@ func TestHasRefsBatch(t *testing.T) {
 	// Seed postings with a deleted newest entry and an older missing entry
 	// that a newer live primitive makes unnecessary to read.
 	for object, quads := range map[string][]uint64{"a": {1, 2}, "b": {99, 3}, "c": {4}, "d": {5}} {
-		key := cayley_flat.KeyEscape(cayley_kv.DefaultQuadIndexes[1].Key([]uint64{ids[object], predID, ids["owner"]}))
+		key := cayley_flat.KeyEscape(refGraphQuadIndexes[1].Key([]uint64{ids[object], predID, ids["owner"]}))
 		var posting []byte
 		for _, id := range quads {
 			posting = binary.AppendUvarint(posting, id)

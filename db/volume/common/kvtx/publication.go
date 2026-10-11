@@ -4,11 +4,19 @@ import (
 	"context"
 
 	"github.com/s4wave/spacewave/db/block"
+	block_gc "github.com/s4wave/spacewave/db/block/gc"
+	store_kvtx "github.com/s4wave/spacewave/db/kvtx"
 )
 
-// The GC key prefix is shared by ordinary volume opening and atomic publication.
-// This intentionally preserves the existing durable representation.
+// volumeRefGraphPrefix is shared by volume opening, publication, and reindexing.
 func volumeRefGraphPrefix() []byte { return []byte("gc/") }
+
+// RebuildVolumeRefGraph regenerates a stopped volume's GC posting indexes.
+// The caller must exclude volume access until this succeeds. It preserves the
+// graph's live edges, primitive IDs, node values, and reference counts.
+func RebuildVolumeRefGraph(ctx context.Context, store store_kvtx.Store) (uint64, error) {
+	return block_gc.RebuildRefGraphIndexes(ctx, store, volumeRefGraphPrefix())
+}
 
 // SupportsAtomicPublication excludes custom block domains, deferred Commit
 // wrappers and WAL-backed GC. Those configurations keep their existing path.
@@ -89,7 +97,8 @@ func (v *Volume) GetPublicationStats() PublicationStats {
 	return stats
 }
 
-var _ block.AtomicPublisher = (*Volume)(nil)
-
 // AtomicPublicationVolumeID identifies the write domain's shared blocks/metadata namespace.
 func (v *Volume) AtomicPublicationVolumeID() string { return v.GetID() }
+
+// _ is a type assertion.
+var _ block.AtomicPublisher = (*Volume)(nil)
