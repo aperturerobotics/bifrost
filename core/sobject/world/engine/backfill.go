@@ -9,6 +9,7 @@ import (
 	"github.com/s4wave/spacewave/core/sobject"
 	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/kvtx"
+	"github.com/sirupsen/logrus"
 )
 
 // backfillStoreID is the local state store holding this device's backfill
@@ -126,12 +127,20 @@ func (e *soEngine) executeBackfill(ctx context.Context, _ bool) error {
 			return err
 		}
 
-		// Copy them.
+		// Copy them, logging each block no peer holds and continuing past it.
 		start := time.Now()
-		if err := copyWorlds(ctx, e.so, backfillProofStoreID, roots); err != nil {
+		var holes int
+		missing := func(ref *block.BlockRef) {
+			holes++
+			le.WithField("block", ref.MarshalString()).Warn("backfill found a block no peer holds")
+		}
+		if err := copyWorlds(ctx, e.so, backfillProofStoreID, roots, missing); err != nil {
 			return err
 		}
-		le.WithField("dur", time.Since(start).String()).Debug("backfilled the World")
+		le.WithFields(logrus.Fields{
+			"dur":   time.Since(start).String(),
+			"holes": holes,
+		}).Debug("backfilled the World")
 
 		// Wait for the next change.
 		select {

@@ -148,7 +148,7 @@ func TestCopyWorldsCopiesFromStorage(t *testing.T) {
 
 	// Copying the World brings the leaf into the local store.
 	roots := []*block.BlockRef{root}
-	if err := copyWorlds(ctx, so, backfillProofStoreID, roots); err != nil {
+	if err := copyWorlds(ctx, so, backfillProofStoreID, roots, nil); err != nil {
 		t.Fatal(err)
 	}
 	if _, found, err := target.GetBucket().GetBlock(ctx, leaf); err != nil || !found {
@@ -157,13 +157,13 @@ func TestCopyWorldsCopiesFromStorage(t *testing.T) {
 
 	// Without storage, the local copy still satisfies the root.
 	so.blockStore = newTestBlockStore("retained-roots-test", target.GetBucket())
-	if err := copyWorlds(ctx, so, backfillProofStoreID, roots); err != nil {
+	if err := copyWorlds(ctx, so, backfillProofStoreID, roots, nil); err != nil {
 		t.Fatalf("copy from the local store: %v", err)
 	}
 
 	// A root in neither store is lost.
 	lost := []*block.BlockRef{{Hash: testRetainedRootHash(t, "lost")}}
-	if err := copyWorlds(ctx, so, backfillProofStoreID, lost); !errors.Is(err, block.ErrNotFound) {
+	if err := copyWorlds(ctx, so, backfillProofStoreID, lost, nil); !errors.Is(err, block.ErrNotFound) {
 		t.Fatalf("copy lost root = %v; want block.ErrNotFound", err)
 	}
 }

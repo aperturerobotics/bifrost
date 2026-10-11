@@ -188,7 +188,7 @@ func (e *soEngine) fenceStorageReclaim(ctx context.Context, copyRoots bool) ([]*
 	}
 
 	// Copy them, then hold the Worlds above the checkpoint.
-	if err := copyWorlds(ctx, e.so, reclaimFenceProofStoreID, live); err != nil {
+	if err := copyWorlds(ctx, e.so, reclaimFenceProofStoreID, live, nil); err != nil {
 		return nil, err
 	}
 	return live, holdRootSet(ctx, e.so, reclaimFenceRootName, roots)

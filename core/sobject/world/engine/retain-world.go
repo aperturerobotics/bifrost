@@ -27,7 +27,7 @@ func (c *Controller) retainPublicationWorld(ctx context.Context, so sobject.Shar
 		return err
 	}
 	defer release()
-	return RetainWorld(ctx, so, head, local, nil)
+	return RetainWorld(ctx, so, head, local, nil, nil)
 }
 
 // RetainWorld copies a complete World graph into its SharedObject's block store.
@@ -35,8 +35,16 @@ func (c *Controller) retainPublicationWorld(ctx context.Context, so sobject.Shar
 // types. Completion proofs skip immutable subtrees only after their ownership
 // writes are durable. The caller owns the proof store and serializes calls for
 // it. visited observes newly traversed blocks; cached complete subtrees are
-// omitted.
-func RetainWorld(ctx context.Context, so sobject.SharedObject, head *bucket.ObjectRef, local kvtx.Store, visited func(*block.BlockRef, []byte)) error {
+// omitted. missing, when set, accepts a block no reachable store holds as a
+// hole, which leaves the World without a completion proof.
+func RetainWorld(
+	ctx context.Context,
+	so sobject.SharedObject,
+	head *bucket.ObjectRef,
+	local kvtx.Store,
+	visited func(*block.BlockRef, []byte),
+	missing func(*block.BlockRef),
+) error {
 	// Short-circuit a World whose graph is already complete in the store. A
 	// proof is volume-wide; a second bucket still needs root ownership.
 	store := so.GetBlockStore()
@@ -46,18 +54,31 @@ func RetainWorld(ctx context.Context, so sobject.SharedObject, head *bucket.Obje
 		return storeRootBlock(ctx, so, head.GetRootRef())
 	}
 
-	// Copy the graph through the proof recorder and mark the root complete.
+	// Copy the graph through the proof recorder.
 	proofs := newRetainProofs(store, store.GetID(), local)
-	err := block.CopyGraph(ctx, store, proofs.writes, head.GetRootRef(), &block.GraphCopyOptions{
+	opts := &block.GraphCopyOptions{
 		Known:    proofs.known,
 		Complete: proofs.complete,
 		Visited:  visited,
-	})
-	if err != nil {
+	}
+	var holes int
+	if missing != nil {
+		opts.Missing = func(_ context.Context, ref *block.BlockRef) error {
+			holes++
+			missing(ref)
+			return nil
+		}
+	}
+	if err := block.CopyGraph(ctx, store, proofs.writes, head.GetRootRef(), opts); err != nil {
 		return err
 	}
 	if err := proofs.flush(ctx); err != nil {
 		return err
+	}
+
+	// Mark the root complete unless the copy left a hole.
+	if holes != 0 {
+		return nil
 	}
 	return block.MarkRootComplete(ctx, store, head.GetRootRef())
 }

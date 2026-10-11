@@ -281,7 +281,7 @@ func (a *ProviderAccount) copyAccountWorld(ctx context.Context, so sobject.Share
 			changed()
 			lastUpdate = time.Now()
 		}
-	})
+	}, nil)
 }
 
 // publishCopyProgress snapshots mutable worker progress under the state lock.

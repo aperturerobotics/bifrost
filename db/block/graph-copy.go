@@ -24,6 +24,10 @@ type GraphCopyOptions struct {
 	Complete func(ctx context.Context, ref *BlockRef) error
 	// Visited observes each block after its read.
 	Visited func(ref *BlockRef, data []byte)
+	// Missing handles a block src does not hold. Returning nil leaves a hole:
+	// the copy continues, and writes the hole's ancestors without completing
+	// them. Without Missing, the copy returns ErrNotFound.
+	Missing func(ctx context.Context, ref *BlockRef) error
 }
 
 // CopySource is implemented by a store whose reads fill a cache. A graph copy
@@ -42,11 +46,12 @@ type CopySource interface {
 // Each block is written only after every block under it, in post-order, the
 // order a tree write produces. A destination that stages new blocks under a
 // temporary owner hands each child to its parent when the parent lands, and a
-// written parent always finds its children present.
+// written parent finds every child present except a hole Missing accepted.
 //
-// Returns ErrNotFound for a missing block and ErrRefsUnknown for a block src
-// holds without its refs, each wrapped with the block ref. Known, Complete
-// and Visited run on the calling goroutine, one at a time.
+// Returns ErrNotFound for a missing block, unless Missing accepts it, and
+// ErrRefsUnknown for a block src holds without its refs, each wrapped with the
+// block ref. Known, Complete, Visited and Missing run on the calling
+// goroutine, one at a time.
 func CopyGraph(ctx context.Context, src, dst StoreOps, root *BlockRef, opts *GraphCopyOptions) error {
 	// Skip an empty root and fill missing options.
 	if root.GetEmpty() {
@@ -94,6 +99,8 @@ type graphCopyNode struct {
 	parents []*graphCopyNode
 	// done is set once the block and its subtree are complete or known.
 	done bool
+	// holed is set when the subtree under the block has a hole.
+	holed bool
 }
 
 // graphCopyRead is the result of reading one block.
@@ -150,6 +157,15 @@ func (c *graphCopy) run(ctx context.Context, root *BlockRef) error {
 		// Consume one result and expand its children.
 		res := <-results
 		inFlight--
+		if res.err != nil && c.opts.Missing != nil && errors.Is(res.err, ErrNotFound) {
+			if err := c.opts.Missing(ctx, res.node.ref); err != nil {
+				return err
+			}
+			if err := c.release(ctx, res.node); err != nil {
+				return err
+			}
+			continue
+		}
 		if res.err != nil {
 			return res.err
 		}
@@ -173,7 +189,7 @@ func (c *graphCopy) readBlock(ctx context.Context, node *graphCopyNode) graphCop
 		err = ErrRefsUnknown
 	}
 	if err != nil {
-		return graphCopyRead{err: errors.Wrap(err, node.ref.MarshalString())}
+		return graphCopyRead{node: node, err: errors.Wrap(err, node.ref.MarshalString())}
 	}
 	return graphCopyRead{node: node, data: stored.Data, refs: stored.Refs}
 }
@@ -232,8 +248,9 @@ func (c *graphCopy) expand(ctx context.Context, node *graphCopyNode, data []byte
 	return nil
 }
 
-// complete writes a block whose subtree is written, marks it complete, and
-// completes each parent that no longer waits on a child.
+// complete writes a block whose subtree is written, marks it complete unless
+// the subtree has a hole, and completes each parent that no longer waits on a
+// child.
 func (c *graphCopy) complete(ctx context.Context, node *graphCopyNode) error {
 	// Write and complete each node, then any parent it fully released.
 	stack := []*graphCopyNode{node}
@@ -249,21 +266,42 @@ func (c *graphCopy) complete(ctx context.Context, node *graphCopyNode) error {
 			return errors.Wrap(err, node.ref.MarshalString())
 		}
 		node.data, node.refs = nil, nil
-		node.done = true
-		if c.opts.Complete != nil {
+		if !node.holed && c.opts.Complete != nil {
 			if err := c.opts.Complete(ctx, node.ref); err != nil {
 				return err
 			}
 		}
-		for _, parent := range node.parents {
-			parent.waiting--
-			if parent.waiting == 0 {
-				stack = append(stack, parent)
-			}
-		}
-		node.parents = nil
+		stack = append(stack, c.finish(node)...)
 	}
 	return nil
+}
+
+// release finishes a hole and completes each parent that no longer waits on a
+// child.
+func (c *graphCopy) release(ctx context.Context, hole *graphCopyNode) error {
+	hole.holed = true
+	for _, parent := range c.finish(hole) {
+		if err := c.complete(ctx, parent); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// finish marks a node done, passes a hole under it to its parents, and returns
+// the parents that no longer wait on a child.
+func (c *graphCopy) finish(node *graphCopyNode) []*graphCopyNode {
+	node.done = true
+	var ready []*graphCopyNode
+	for _, parent := range node.parents {
+		parent.holed = parent.holed || node.holed
+		parent.waiting--
+		if parent.waiting == 0 {
+			ready = append(ready, parent)
+		}
+	}
+	node.parents = nil
+	return ready
 }
 
 // known reports which refs already have a complete copy.

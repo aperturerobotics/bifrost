@@ -182,3 +182,45 @@ func TestCopyGraphReportsMissingAndUnknownBlocks(t *testing.T) {
 		t.Fatalf("completed %d blocks over a failed subtree", completed)
 	}
 }
+
+func TestCopyGraphLeavesAcceptedHoles(t *testing.T) {
+	// Create a root over a missing block and a complete sibling.
+	ctx := t.Context()
+	src := newGraphTestStore()
+	missing := src.put(t, "missing")
+	if err := src.RmBlock(ctx, missing); err != nil {
+		t.Fatal(err)
+	}
+	sibling := src.put(t, "sibling")
+	holed := src.put(t, "holed", missing)
+	root := src.put(t, "root", holed, sibling)
+
+	// Copy past the hole, recording the holes and completed blocks.
+	dst := newGraphTestStore()
+	var holes []string
+	completed := make(map[string]bool)
+	err := block.CopyGraph(ctx, src, dst, root, &block.GraphCopyOptions{
+		Complete: func(_ context.Context, ref *block.BlockRef) error {
+			completed[ref.MarshalString()] = true
+			return nil
+		},
+		Missing: func(_ context.Context, ref *block.BlockRef) error {
+			holes = append(holes, ref.MarshalString())
+			return nil
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Every present block is written; only the sibling's subtree is complete.
+	if len(holes) != 1 || holes[0] != missing.MarshalString() {
+		t.Fatalf("holes = %v, want [%s]", holes, missing.MarshalString())
+	}
+	if len(dst.puts) != 3 {
+		t.Fatalf("wrote %d blocks, want 3", len(dst.puts))
+	}
+	if !completed[sibling.MarshalString()] || len(completed) != 1 {
+		t.Fatalf("completed %v, want only the sibling", completed)
+	}
+}
