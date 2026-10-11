@@ -277,27 +277,25 @@ func TestSDKTxCommitMutations(t *testing.T) {
 	}
 	checkTx.Discard()
 
-	// A canceled request releases the transaction before it can publish state.
+	// A canceled caller does not abandon a commit that was sent.
 	canceledTx, err := engine.NewTransaction(ctx, true)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 	canceledSDKTx := canceledTx.(*sdk_world_engine.SDKTx)
-
-	// Cancel the mutation request before submitting its object creation.
 	canceledCtx, cancel := context.WithCancel(ctx)
 	cancel()
 	_, err = canceledSDKTx.CommitMutations(canceledCtx, []*s4wave_world.TransactionMutation{
 		{Mutation: &s4wave_world.TransactionMutation_CreateObject{CreateObject: &s4wave_world.CreateObjectRequest{ObjectKey: "batch/canceled"}}},
 	})
-	if err == nil {
-		t.Fatal("expected canceled mutation batch")
+	if err != nil {
+		t.Fatalf("canceled caller's batch: %v", err)
 	}
 	if err := canceledSDKTx.Commit(ctx); err == nil {
-		t.Fatal("expected canceled transaction to be unusable")
+		t.Fatal("expected committed transaction to be unusable")
 	}
 
-	// Verify cancellation left no object in the World.
+	// The World holds the object the canceled caller's batch created.
 	canceledCheckTx, err := engine.NewTransaction(ctx, false)
 	if err != nil {
 		t.Fatal(err.Error())
@@ -306,8 +304,8 @@ func TestSDKTxCommitMutations(t *testing.T) {
 	{
 		objectState3, found, err := canceledCheckTx.GetObject(ctx, "batch/canceled")
 		world.ReleaseObjectState(objectState3)
-		if err != nil || found {
-			t.Fatalf("canceled object found=%v err=%v", found, err)
+		if err != nil || !found {
+			t.Fatalf("canceled caller's object found=%v err=%v", found, err)
 		}
 	}
 }

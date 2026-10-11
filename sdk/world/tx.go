@@ -10,12 +10,11 @@ import (
 )
 
 // Tx represents a transaction against the world state.
-// Tx implements the world state transaction interfaces.
-// Provides:
-// - WorldState: full state read/write interface (inherited from WorldState)
-// - tx.Tx: Commit, Discard operations
+// Tx implements the world state transaction interfaces. It provides the full
+// WorldState read and write interface it inherits, and the Commit and Discard
+// operations of tx.Tx.
 //
-// A Tx maintains state across multiple RPC calls, enabling complex multi-step
+// Tx maintains state across multiple RPC calls, enabling complex multi-step
 // operations within a single transaction. Always call Discard() when done.
 //
 // Concurrent calls to WorldState functions should be supported.
@@ -49,14 +48,18 @@ func NewTx(client *resource_client.Client, ref resource_client.ResourceRef, read
 // Commit waits for the server's durable publication, not merely admission. A
 // concurrent Engine.NewTransaction may prepare the next revision after this
 // transaction seals but before this call completes. Keep every outstanding
-// Commit result and join them before reporting success; canceling an RPC does
-// not establish that an already admitted write was rolled back.
+// Commit result and join them before reporting success.
+//
+// The request ignores ctx's cancellation once sent, because canceling an RPC
+// does not roll back an admitted write: a caller's deadline never abandons a
+// commit that started, and a nil result means the write is placed. Closing the
+// transport still ends the call, and its outcome is then unknown.
 //
 // A commit rejected because another writer advanced the World returns an error
 // matching coord.ErrStaleGeneration; the caller may retry from a new
 // transaction.
 func (tx *Tx) Commit(ctx context.Context) error {
-	_, err := tx.txService.Commit(ctx, &CommitRequest{})
+	_, err := tx.txService.Commit(context.WithoutCancel(ctx), &CommitRequest{})
 	return CommitError(err)
 }
 

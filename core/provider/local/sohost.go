@@ -135,6 +135,9 @@ func (l *LocalSOHost) QueueOperation(ctx context.Context, op []byte) (string, er
 	}
 
 	// Wait for the snapshot that holds the operation, or a later checkpoint.
+	// The state write made the operation durable, so the wait ignores ctx's
+	// cancellation and the call reports the operation as added.
+	ctx = context.WithoutCancel(ctx)
 	_, err = l.stateSnapCtr.WaitValueWithValidator(ctx, func(snap sobject.SharedObjectStateSnapshot) (bool, error) {
 		// A snapshot holds the operation, or its checkpoint covers it.
 		if snap == nil {
