@@ -68,9 +68,9 @@ func (a *debugVolumeReindexArgs) Run(c *cli.Context) error {
 // reindexProgress returns a progress function that reports each whole
 // percent of the primitive log indexed on standard error.
 func reindexProgress() func(next, horizon uint64) {
-	last := -1
+	last := ^uint64(0)
 	return func(next, horizon uint64) {
-		pct := int((next - 1) * 100 / max(horizon, 1))
+		pct := (next - 1) * 100 / max(horizon, 1)
 		if pct == last {
 			return
 		}
