@@ -28,6 +28,7 @@ import (
 	js_compiler "github.com/s4wave/spacewave/bldr/plugin/compiler/js"
 	vite "github.com/s4wave/spacewave/bldr/web/bundler/vite"
 	vite_compiler "github.com/s4wave/spacewave/bldr/web/bundler/vite/compiler"
+	web_entrypoint_index "github.com/s4wave/spacewave/bldr/web/entrypoint/index"
 	web_fetch "github.com/s4wave/spacewave/bldr/web/fetch"
 	web_pkg_external "github.com/s4wave/spacewave/bldr/web/pkg/external"
 	"github.com/sirupsen/logrus"
@@ -356,7 +357,7 @@ func (f *FrontendService) ServeBootstrap(rw http.ResponseWriter, req *http.Reque
 	case "/bldr-dev/frontend-boot.mjs":
 		refresh := strconv.Quote(refreshPath)
 		entry := strconv.Quote("/" + strings.TrimPrefix(entrypoint, "/"))
-		boot := "import " + refresh + "; window.__bldrFrontendEnabled = true;"
+		boot := "import " + refresh + ";" + webPkgBindingScript(f.run.GetState().GetWebPkgIds()) + " window.__bldrFrontendEnabled = true;"
 		if startup != "" {
 			boot += " window.__bldrFrontendStartup = " + strconv.Quote(startup) + ";"
 		}
@@ -372,6 +373,24 @@ func (f *FrontendService) ServeBootstrap(rw http.ResponseWriter, req *http.Reque
 	default:
 		http.Error(rw, "frontend session expired", http.StatusGone)
 	}
+}
+
+// webPkgBindingScript maps the shared package specifiers the development graph
+// emits to their served URLs. The startup view loads that graph before any web
+// view binds its packages, and later bindings skip each prefix bound here.
+func webPkgBindingScript(ids []string) string {
+	// A graph without shared packages needs no binding.
+	if len(ids) == 0 {
+		return ""
+	}
+
+	// Insert the map from the boot module, before the entrypoint import.
+	imports := make(map[string]string, len(ids))
+	for _, id := range ids {
+		imports["bldr-web-pkg/"+id+"/"] = "/b/pkg/" + id + "/"
+	}
+	importMap := web_entrypoint_index.ImportMap{Imports: imports}.String()
+	return ` const webPkgs = document.createElement("script"); webPkgs.type = "importmap"; webPkgs.dataset.bldrWebPkg = ""; webPkgs.textContent = ` + strconv.Quote(importMap) + `; document.head.append(webPkgs);`
 }
 
 // GetFrontendService returns the development service, if enabled for this project.

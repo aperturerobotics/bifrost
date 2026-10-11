@@ -15,11 +15,12 @@ import (
 )
 
 // TestFrontendBootstrapAttachesStartup keeps editable startup sources out of the
-// immutable renderer while retaining the refresh preamble before its import.
+// immutable renderer while retaining the refresh preamble before its import, and
+// binds shared packages before the startup graph resolves them.
 func TestFrontendBootstrapAttachesStartup(t *testing.T) {
 	// Configure the application and its startup view through project manifests.
 	project := &bldr_project.ProjectConfig{}
-	const projectJSON = `{"id":"app","start":{"loadWebStartup":"./app/startup.tsx"},"manifests":{"app":{"builder":{"id":"bldr/plugin/compiler/js","config":{"modules":[{"kind":"JS_MODULE_KIND_FRONTEND","path":"./app/App.tsx"}]}}}}}`
+	const projectJSON = `{"id":"app","start":{"loadWebStartup":"./app/startup.tsx"},"manifests":{"app":{"builder":{"id":"bldr/plugin/compiler/js","config":{"webPkgs":[{"id":"sonner","exclude":true}],"modules":[{"kind":"JS_MODULE_KIND_FRONTEND","path":"./app/App.tsx"}]}}}}}`
 	if err := bldr_project.UnmarshalProjectConfig([]byte(projectJSON), project); err != nil {
 		t.Fatal(err)
 	}
@@ -39,7 +40,7 @@ func TestFrontendBootstrapAttachesStartup(t *testing.T) {
 	service.ServeBootstrap(response, httptest.NewRequest(http.MethodGet, "/bldr-dev/frontend-boot.mjs", nil), "entrypoint/entrypoint.mjs", "app/startup.tsx")
 
 	// The refresh import precedes the immutable renderer and supplies a stable source path.
-	want := `import "/bldr-dev/frontend-refresh/first.mjs"; window.__bldrFrontendEnabled = true; window.__bldrFrontendStartup = "app/startup.tsx"; await import("/entrypoint/entrypoint.mjs");`
+	want := `import "/bldr-dev/frontend-refresh/first.mjs"; const webPkgs = document.createElement("script"); webPkgs.type = "importmap"; webPkgs.dataset.bldrWebPkg = ""; webPkgs.textContent = "{\"imports\":{\"bldr-web-pkg/sonner/\":\"/b/pkg/sonner/\"}}"; document.head.append(webPkgs); window.__bldrFrontendEnabled = true; window.__bldrFrontendStartup = "app/startup.tsx"; await import("/entrypoint/entrypoint.mjs");`
 	if response.Code != http.StatusOK || strings.TrimSpace(response.Body.String()) != want {
 		t.Fatalf("bootstrap response = %d %q", response.Code, response.Body.String())
 	}
