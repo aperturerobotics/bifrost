@@ -28,7 +28,11 @@ func (n *StreamEcho) GetDisplayName() string {
 
 // GetPorts declares the stream output that Local Ports may connect to.
 func (n *StreamEcho) GetPorts() []*s4wave_flowgraph.FlowgraphPort {
-	return []*s4wave_flowgraph.FlowgraphPort{{Name: "stream", Direction: s4wave_flowgraph.FlowgraphPortDirection_FLOWGRAPH_PORT_DIRECTION_OUTPUT, TypeId: "stream"}}
+	return []*s4wave_flowgraph.FlowgraphPort{{
+		Name:      "stream",
+		Direction: s4wave_flowgraph.FlowgraphPortDirection_FLOWGRAPH_PORT_DIRECTION_OUTPUT,
+		TypeId:    "stream",
+	}}
 }
 
 // GetConfigIDs declares the existing stream echo controller.

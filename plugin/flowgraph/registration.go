@@ -39,7 +39,11 @@ func Register(ctx context.Context, client *resource_client.Client, root srpc.Cli
 
 	// Publish the editor with the existing config type registry.
 	editor, err := s4wave_configtype_registry.NewSRPCConfigTypeRegistryResourceServiceClient(root).RegisterConfigType(ctx, &s4wave_configtype_registry.RegisterConfigTypeRequest{
-		ConfigId: stream_echo.ConfigID, PluginId: PluginID, DisplayName: nodeType.GetDisplayName(), Category: "Network", ScriptPath: editorPath,
+		ConfigId:    stream_echo.ConfigID,
+		PluginId:    PluginID,
+		DisplayName: nodeType.GetDisplayName(),
+		Category:    "Network",
+		ScriptPath:  editorPath,
 	})
 	if err != nil {
 		if detachErr := release(); detachErr != nil {
@@ -51,7 +55,13 @@ func Register(ctx context.Context, client *resource_client.Client, root srpc.Cli
 
 	// Retain the compiler declaration until the plugin stops.
 	node, err := flowgraph_registry.NewSRPCNodeTypeRegistryResourceServiceClient(root).RegisterNodeType(ctx, &flowgraph_registry.RegisterNodeTypeRequest{
-		NodeType: &flowgraph_registry.NodeType{TypeId: StreamEchoNodeTypeID, DisplayName: nodeType.GetDisplayName(), Ports: nodeType.GetPorts(), ConfigIds: nodeType.GetConfigIDs()}, HandlerResourceId: attachment,
+		NodeType: &flowgraph_registry.NodeType{
+			TypeId:      StreamEchoNodeTypeID,
+			DisplayName: nodeType.GetDisplayName(),
+			Ports:       nodeType.GetPorts(),
+			ConfigIds:   nodeType.GetConfigIDs(),
+		},
+		HandlerResourceId: attachment,
 	})
 	if err != nil {
 		if detachErr := release(); detachErr != nil {

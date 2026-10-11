@@ -48,9 +48,19 @@ func (r *NodeTypeResource) Compile(ctx context.Context, req *CompileRequest) (*C
 // NewCompileRequest copies a placement into its RPC representation.
 func NewCompileRequest(node *s4wave_flowgraph.PlacedFlowgraphNode) *CompileRequest {
 	// Copy the placement and all remote connection identities.
-	req := &CompileRequest{FlowgraphKey: node.FlowgraphKey, NodeId: node.NodeID, Node: node.Node.CloneVT(), DevicePeerId: node.DevicePeerID, Connections: make([]*PlacedConnection, len(node.Connections))}
+	req := &CompileRequest{
+		FlowgraphKey: node.FlowgraphKey,
+		NodeId:       node.NodeID,
+		Node:         node.Node.CloneVT(),
+		DevicePeerId: node.DevicePeerID,
+		Connections:  make([]*PlacedConnection, len(node.Connections)),
+	}
 	for i, conn := range node.Connections {
-		req.Connections[i] = &PlacedConnection{Id: conn.ID, Connection: conn.Connection.CloneVT(), RemoteDevicePeerId: conn.RemoteDevicePeerID}
+		req.Connections[i] = &PlacedConnection{
+			Id:                 conn.ID,
+			Connection:         conn.Connection.CloneVT(),
+			RemoteDevicePeerId: conn.RemoteDevicePeerID,
+		}
 	}
 	return req
 }
@@ -58,9 +68,19 @@ func NewCompileRequest(node *s4wave_flowgraph.PlacedFlowgraphNode) *CompileReque
 // PlacedNode copies the RPC context into the compiler's local interface.
 func (r *CompileRequest) PlacedNode() *s4wave_flowgraph.PlacedFlowgraphNode {
 	// Restore the node and all remote connection identities.
-	node := &s4wave_flowgraph.PlacedFlowgraphNode{FlowgraphKey: r.GetFlowgraphKey(), NodeID: r.GetNodeId(), Node: r.GetNode().CloneVT(), DevicePeerID: r.GetDevicePeerId(), Connections: make([]*s4wave_flowgraph.PlacedFlowgraphConnection, len(r.GetConnections()))}
+	node := &s4wave_flowgraph.PlacedFlowgraphNode{
+		FlowgraphKey: r.GetFlowgraphKey(),
+		NodeID:       r.GetNodeId(),
+		Node:         r.GetNode().CloneVT(),
+		DevicePeerID: r.GetDevicePeerId(),
+		Connections:  make([]*s4wave_flowgraph.PlacedFlowgraphConnection, len(r.GetConnections())),
+	}
 	for i, conn := range r.GetConnections() {
-		node.Connections[i] = &s4wave_flowgraph.PlacedFlowgraphConnection{ID: conn.GetId(), Connection: conn.GetConnection().CloneVT(), RemoteDevicePeerID: conn.GetRemoteDevicePeerId()}
+		node.Connections[i] = &s4wave_flowgraph.PlacedFlowgraphConnection{
+			ID:                 conn.GetId(),
+			Connection:         conn.GetConnection().CloneVT(),
+			RemoteDevicePeerID: conn.GetRemoteDevicePeerId(),
+		}
 	}
 	return node
 }
