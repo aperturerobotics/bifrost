@@ -6,6 +6,7 @@ import {
   WatchStateResponse,
 } from '@aptre/bldr-sdk/state/state.pb.js'
 import { Resource } from '@aptre/bldr-sdk/hooks/useResource.js'
+import { writeStateAtom } from './useBackendStateAtom.js'
 
 // useStateAtomResource provides access to a persisted, cross-window synchronized state atom.
 // The state is stored on the backend and synchronized across all connected clients.
@@ -63,7 +64,7 @@ export function useStateAtomResource<T>(
           ? (update as (prev: T) => T)(currentValue)
           : update
 
-      stateAtom.setState(JSON.stringify(newValue)).catch(console.error)
+      writeStateAtom(stateAtom, JSON.stringify(newValue))
     },
     [stateAtom, currentValue],
   )

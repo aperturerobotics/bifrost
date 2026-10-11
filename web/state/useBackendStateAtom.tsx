@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { isNormalRuntimeClientClose } from '@aptre/bldr'
 import { useLatestRef, useWatchStateRpc } from '@aptre/bldr-react'
 import { useResource } from '@aptre/bldr-sdk/hooks/useResource.js'
 import type { Resource } from '@aptre/bldr-sdk/hooks/useResource.js'
@@ -30,6 +31,17 @@ type PendingBackendState<T> = {
   storeId: string
   stateJson: string
   value: T
+}
+
+// writeStateAtom writes stateJson to the backend atom without awaiting it.
+// A write cut off by the runtime client closing is the document shutting down,
+// so only other failures are logged.
+export function writeStateAtom(stateAtom: StateAtom, stateJson: string): void {
+  stateAtom.setState(stateJson).catch((err: unknown) => {
+    if (!isNormalRuntimeClientClose(err)) {
+      console.error('Failed to write backend state:', err)
+    }
+  })
 }
 
 // useBackendStateAtom provides access to a single backend-persisted state atom.
@@ -109,7 +121,7 @@ export function useBackendStateAtomValue<T>(
   useEffect(() => {
     if (!stateAtom || !pendingForStore) return
     if (stateJson === pendingForStore.stateJson) return
-    stateAtom.setState(pendingForStore.stateJson).catch(console.error)
+    writeStateAtom(stateAtom, pendingForStore.stateJson)
   }, [stateAtom, stateJson, pendingForStore])
 
   // Update function: superjson-encode and send to backend.
