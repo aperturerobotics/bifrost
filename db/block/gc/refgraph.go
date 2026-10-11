@@ -78,9 +78,10 @@ func NewRefGraph(ctx context.Context, store kvtx.Store, prefix []byte) (*RefGrap
 // RebuildRefGraphIndexes regenerates forward and reverse reference postings
 // from the durable primitive log without changing edges or node reference counts.
 // The caller must exclude graph access until the rebuild succeeds and rerun
-// an interrupted rebuild before reopening the graph.
-func RebuildRefGraphIndexes(ctx context.Context, store kvtx.Store, prefix []byte) (uint64, error) {
-	return kvtx_cayley.RebuildGraphIndexes(ctx, kvtx_prefixer.NewPrefixer(store, prefix), refGraphQuadIndexes)
+// an interrupted rebuild before reopening the graph. progress, when set,
+// receives the next primitive ID and the horizon after each batch.
+func RebuildRefGraphIndexes(ctx context.Context, store kvtx.Store, prefix []byte, progress func(next, horizon uint64)) (uint64, error) {
+	return kvtx_cayley.RebuildGraphIndexes(ctx, kvtx_prefixer.NewPrefixer(store, prefix), refGraphQuadIndexes, progress)
 }
 
 // RegisterEntityChain registers a chain of gc/ref edges between nodes.
