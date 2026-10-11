@@ -33,6 +33,7 @@ const (
 // errno values (matching Linux errno.h).
 const (
 	enoent  = 2
+	eio     = 5
 	eexist  = 17
 	enotdir = 20
 	einval  = 22

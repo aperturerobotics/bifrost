@@ -233,3 +233,23 @@ func u32(value uint32) []byte {
 func u64(value uint64) []byte {
 	return binary.LittleEndian.AppendUint64(nil, value)
 }
+
+func TestEncodeErrorFrame(t *testing.T) {
+	// An unanswerable request still gets an EIO reply carrying its tag, so the
+	// guest call completes; a frame too short for a tag replies with tag zero.
+	tests := []struct {
+		name string
+		req  []byte
+		want []byte
+	}{
+		{name: "tagged", req: frame(0x7f, 9, u32(1)), want: frame(v86fsMsgErrorReply, 9, u32(eio))},
+		{name: "short", req: []byte{1, 2}, want: frame(v86fsMsgErrorReply, 0, u32(eio))},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := EncodeErrorFrame(test.req); !bytes.Equal(got, test.want) {
+				t.Fatalf("error frame\n got %x\nwant %x", got, test.want)
+			}
+		})
+	}
+}

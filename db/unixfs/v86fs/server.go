@@ -14,20 +14,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// MountResolver resolves a mount name to an FSHandle root.
-// Called when the client sends a MOUNT request.
-type MountResolver func(ctx context.Context, name string) (*unixfs.FSHandle, error)
-
-// MountEntry is a dynamic mount table entry.
-type MountEntry struct {
-	// Name is the mount name used for v86fs MOUNT resolution.
-	Name string
-	// Path is the guest filesystem path to mount at.
-	Path string
-	// Handle is the FSHandle root for this mount.
-	Handle *unixfs.FSHandle
-}
-
 // Server implements the V86fsService SRPC server.
 // It relays v86fs operations from a browser VM to FSHandle storage.
 type Server struct {
@@ -528,10 +514,15 @@ func (ss *session) handleGetattr(ctx context.Context, tag uint32, req *V86FsGeta
 		return nil, err
 	}
 
-	// Read the modification time and build the reply.
+	// Read the modification time and build the reply. The wire carries
+	// unsigned seconds, so a time before the epoch, such as the zero time of a
+	// tar root with no entry of its own, is reported as the epoch.
 	mtime, err := h.GetModTimestamp(ctx)
 	if err != nil {
 		return nil, err
+	}
+	if mtime.Before(time.Unix(0, 0)) {
+		mtime = time.Unix(0, 0)
 	}
 	return &V86FsMessage{
 		Tag: tag,

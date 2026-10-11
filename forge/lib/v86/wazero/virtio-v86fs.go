@@ -300,7 +300,7 @@ func (d *virtioV86FSDevice) reset(ctx context.Context) {
 	d.lowerIRQ(ctx)
 }
 
-// handleQueue services one available-ring request on the given queue:
+// handleQueue services the available-ring requests on the given queue.
 func (d *virtioV86FSDevice) handleQueue(ctx context.Context, queueID int) {
 	queue := d.queues[queueID]
 	for queue.configured() && queue.hasRequest() {
@@ -310,40 +310,46 @@ func (d *virtioV86FSDevice) handleQueue(ctx context.Context, queueID int) {
 			return
 		}
 		req, err := chain.readAll()
-		if err != nil {
-			d.raiseIRQ(ctx, virtioISRQueue)
-			return
+		resp := unixfs_v86fs.EncodeErrorFrame(req)
+		if err == nil {
+			resp = d.handleRequest(ctx, req)
 		}
-		msg, err := unixfs_v86fs.DecodeBinaryFrame(req)
-		if err != nil {
-			d.raiseIRQ(ctx, virtioISRQueue)
-			return
-		}
-		if len(req) > 4 {
-			d.recordTrace("rq", req[4])
-		}
-		d.requests.Add(1)
-		reply, err := d.session.HandleMessage(ctx, msg)
-		if err != nil {
-			d.raiseIRQ(ctx, virtioISRQueue)
-			return
-		}
-		if reply != nil && chain.lengthWritable != 0 {
-			resp, err := unixfs_v86fs.EncodeBinaryFrame(reply)
-			if err != nil {
-				d.raiseIRQ(ctx, virtioISRQueue)
-				return
-			}
+		if len(resp) != 0 && chain.lengthWritable != 0 {
 			_ = chain.write(resp)
-			if len(resp) > 4 {
-				d.recordTrace("rp", resp[4])
-			}
+			d.recordTrace("rp", resp[4])
 			d.replies.Add(1)
 		}
 		queue.pushReply(chain)
 	}
 	queue.flushReplies(ctx)
 	d.flushNotifications(ctx)
+}
+
+// handleRequest answers one guest request frame. A request the server cannot
+// decode, dispatch, or encode a reply for is answered with an EIO error frame,
+// so the guest call fails instead of blocking in the kernel forever.
+func (d *virtioV86FSDevice) handleRequest(ctx context.Context, req []byte) []byte {
+	// Decode the request frame and count it.
+	msg, err := unixfs_v86fs.DecodeBinaryFrame(req)
+	if err != nil {
+		return unixfs_v86fs.EncodeErrorFrame(req)
+	}
+	d.recordTrace("rq", req[4])
+	d.requests.Add(1)
+
+	// Dispatch the request and encode the reply frame.
+	reply, err := d.session.HandleMessage(ctx, msg)
+	if err != nil {
+		return unixfs_v86fs.EncodeErrorFrame(req)
+	}
+	if reply == nil {
+		return nil
+	}
+	resp, err := unixfs_v86fs.EncodeBinaryFrame(reply)
+	if err != nil {
+		return unixfs_v86fs.EncodeErrorFrame(req)
+	}
+	return resp
 }
 
 // flushNotifications delivers queued server notifications into queue 2,

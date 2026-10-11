@@ -120,6 +120,17 @@ func assertV86RootServesIssue(t *testing.T, session *unixfs_v86fs.LocalSession) 
 		t.Fatalf("mount root failed: %+v", mount)
 	}
 
+	// Stat the root, which has no tar entry of its own, and check that the
+	// reply encodes for the guest wire.
+	getattr := callV86Root(t, session, &unixfs_v86fs.V86FsMessage{
+		Body: &unixfs_v86fs.V86FsMessage_GetattrRequest{
+			GetattrRequest: &unixfs_v86fs.V86FsGetattrRequest{InodeId: mount.GetRootInodeId()},
+		},
+	})
+	if _, err := unixfs_v86fs.EncodeBinaryFrame(getattr); err != nil {
+		t.Fatalf("encode root getattr: %v", err)
+	}
+
 	// Walk to /etc/issue.
 	parent := mount.GetRootInodeId()
 	for _, name := range []string{"etc", "issue"} {

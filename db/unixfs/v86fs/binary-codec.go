@@ -492,6 +492,17 @@ func (w *binaryFrameWriter) u64(value uint64) {
 	w.data = binary.LittleEndian.AppendUint64(w.data, value)
 }
 
+// EncodeErrorFrame encodes an EIO error reply to the request frame req. It
+// answers a request that could not be decoded or answered, carrying the
+// request tag when the frame is long enough to hold one.
+func EncodeErrorFrame(req []byte) []byte {
+	var tag uint16
+	if len(req) >= v86fsFrameHeaderSize {
+		tag = binary.LittleEndian.Uint16(req[5:7])
+	}
+	return encodeStatusReply(v86fsMsgErrorReply, tag, eio)
+}
+
 func parseBinaryFrameHeader(frame []byte) ([]byte, byte, uint16, error) {
 	if len(frame) < v86fsFrameHeaderSize {
 		return nil, 0, 0, errors.New("short v86fs binary frame header")
