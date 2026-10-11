@@ -162,6 +162,72 @@ function LicenseGroup({
   )
 }
 
+// vmComponents are the separately licensed programs in the virtual machine
+// images Spacewave publishes. They are not linked into Spacewave, so they are
+// listed here instead of in the dependency inventory.
+const vmComponents = [
+  {
+    name: 'v86',
+    spdx: 'BSD-2-Clause',
+    href: 'https://github.com/aperturerobotics/v86',
+    note: 'The x86 emulator, built to WebAssembly.',
+  },
+  {
+    name: 'SeaBIOS and SeaVGABIOS',
+    spdx: 'LGPL-3.0-only',
+    href: 'https://github.com/aperturerobotics/v86/tree/master/bios',
+    note: 'The BIOS images, with their build configuration and fetch script.',
+  },
+  {
+    name: 'Linux',
+    spdx: 'GPL-2.0-only',
+    href: 'https://github.com/aperturerobotics/linux/tree/v86',
+    note: 'The kernel image, built from the v86 branch.',
+  },
+  {
+    name: 'Debian root filesystem',
+    spdx: 'Various, mostly GPL',
+    href: 'https://github.com/aperturerobotics/v86-debian',
+    note: 'Debian packages under their own licenses, assembled by these build scripts. Each package lists its license in /usr/share/doc inside the image.',
+  },
+] as const
+
+// VmImageNotice lists the virtual machine image components and the offer of
+// their source code.
+function VmImageNotice() {
+  return (
+    <div className="border-foreground/8 bg-background-card/50 mt-10 rounded-lg border px-5 py-4 backdrop-blur-sm">
+      <h2 className="text-foreground mb-2 text-sm font-medium">
+        Virtual machine images
+      </h2>
+      <p className="text-foreground-alt/70 mb-3 text-xs leading-relaxed">
+        Spacewave publishes images for its in-browser virtual machine. They
+        contain these programs, each under its own license.
+      </p>
+      <ul className="mb-3 space-y-2">
+        {vmComponents.map((c) => (
+          <li key={c.name} className="text-xs">
+            <ExternalLink
+              href={c.href}
+              className="text-foreground hover:text-brand transition-colors hover:underline"
+            >
+              {c.name}
+            </ExternalLink>{' '}
+            <SpdxBadge spdx={c.spdx} />
+            <p className="text-foreground-alt/60 mt-1">{c.note}</p>
+          </li>
+        ))}
+      </ul>
+      <p className="text-foreground-alt/70 text-xs leading-relaxed">
+        For at least three years after we last publish an image, we will give
+        anyone the complete corresponding source code of its GPL and LGPL
+        programs, including the Debian source packages, at no more than the cost
+        of shipping it. Write to legal@aperture.us.
+      </p>
+    </div>
+  )
+}
+
 // Licenses renders the open source licenses page.
 export function Licenses() {
   const [filter, setFilter] = useState('')
@@ -244,6 +310,8 @@ export function Licenses() {
             No packages match &ldquo;{filter}&rdquo;
           </p>
         )}
+
+        <VmImageNotice />
       </section>
     </LegalPageLayout>
   )

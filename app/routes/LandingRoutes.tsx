@@ -1,5 +1,6 @@
 import { lazy } from 'react'
 
+import { NavigatePath } from '@s4wave/web/router/NavigatePath.js'
 import { Route } from '@s4wave/web/router/router.js'
 
 import { Landing } from '@s4wave/app/landing/Landing.js'
@@ -87,6 +88,9 @@ export const LandingRoutes = (
     </Route>
     <Route path="/tos">
       <TermsOfService />
+    </Route>
+    <Route path="/terms">
+      <NavigatePath to="/tos" replace />
     </Route>
     <Route path="/privacy">
       <PrivacyPolicy />
