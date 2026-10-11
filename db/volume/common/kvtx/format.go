@@ -18,7 +18,8 @@ type formatMigration func(ctx context.Context, store kvtx.Store, keys *store_kvk
 // to store_kvkey.FormatVersion, so a store of any age is rewritten once. A new
 // format version retargets every entry and adds one for the previous version.
 var formatMigrations = [store_kvkey.FormatVersion]formatMigration{
-	0: migrateBase58BlockKeys,
+	0: migrateBase58Store,
+	1: migrateCayleyRefGraph,
 }
 
 // migrateBatchBytes bounds the keys and values one migration commit moves.

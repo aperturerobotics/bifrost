@@ -9,7 +9,9 @@ import (
 //
 // Version 0 keyed each block by the base58 text of its marshaled ref.
 // Version 1 keys each block by the marshaled ref bytes.
-const FormatVersion = 1
+// Version 2 stores the reference graph as edge records instead of a Cayley
+// quad store.
+const FormatVersion = 2
 
 // formatVersionKey names the key holding the store's format version.
 var formatVersionKey = []byte("format")

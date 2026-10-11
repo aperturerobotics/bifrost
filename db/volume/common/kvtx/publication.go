@@ -6,18 +6,16 @@ import (
 	"github.com/s4wave/spacewave/db/block"
 	block_gc "github.com/s4wave/spacewave/db/block/gc"
 	store_kvtx "github.com/s4wave/spacewave/db/kvtx"
+	store_kvtx_prefixer "github.com/s4wave/spacewave/db/kvtx/prefixer"
 )
 
-// volumeRefGraphPrefix is shared by volume opening, publication, and reindexing.
-func volumeRefGraphPrefix() []byte { return []byte("gc/") }
+// refGraphPrefix holds the Volume's reference graph records.
+var refGraphPrefix = []byte("refs/")
 
-// RebuildVolumeRefGraph regenerates a stopped volume's GC posting indexes.
-// The caller must exclude volume access until this succeeds. It preserves the
-// graph's live edges, primitive IDs, node values, and reference counts.
-// progress, when set, receives the next primitive ID and the horizon after
-// each batch.
-func RebuildVolumeRefGraph(ctx context.Context, store store_kvtx.Store, progress func(next, horizon uint64)) (uint64, error) {
-	return block_gc.RebuildRefGraphIndexes(ctx, store, volumeRefGraphPrefix(), progress)
+// openRefGraph opens the Volume's reference graph over store. Opening reads
+// nothing, so each transaction opens its own.
+func openRefGraph(store store_kvtx.Store) *block_gc.RefGraph {
+	return block_gc.NewRefGraph(store_kvtx_prefixer.NewPrefixer(store, refGraphPrefix))
 }
 
 // SupportsAtomicPublication excludes custom block domains, deferred Commit

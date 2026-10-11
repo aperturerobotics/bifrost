@@ -90,14 +90,9 @@ func newRPCRefGraphTestbed(
 ) *rpcRefGraphTestbed {
 	// Prepare a fresh real graph and its SRPC testbed.
 	t.Helper()
-	ctx := context.Background()
 
 	// Open a graph over an in-memory store and release it with the test.
-	store := store_kvtx_inmem.NewStore()
-	rg, err := block_gc.NewRefGraph(ctx, store, []byte("gc/"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	rg := block_gc.NewRefGraph(store_kvtx_inmem.NewStore())
 	t.Cleanup(func() { rg.Close() })
 
 	// Optionally wrap the graph owner before recording server calls.

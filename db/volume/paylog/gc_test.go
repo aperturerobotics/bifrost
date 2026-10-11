@@ -11,9 +11,15 @@ import (
 
 	"github.com/s4wave/spacewave/db/block"
 	block_gc "github.com/s4wave/spacewave/db/block/gc"
+	kvtx_prefixer "github.com/s4wave/spacewave/db/kvtx/prefixer"
 	"github.com/s4wave/spacewave/db/volume/device"
-	"github.com/s4wave/spacewave/db/volume/refgraph"
 )
+
+// newGraph opens a collector reference graph in the store's key-value
+// namespace, apart from other records.
+func newGraph(s *Store) *block_gc.RefGraph {
+	return block_gc.NewCollectorRefGraph(kvtx_prefixer.NewPrefixer(s, []byte{0x02}))
+}
 
 // TestJournalHooks checks pending outgoing refs and journal replay into a
 // graph stored in the same store.
@@ -33,7 +39,7 @@ func TestJournalHooks(t *testing.T) {
 			checkPending(t, s, "c")
 
 			// Replay the journal into the graph and check it is consumed.
-			graph := refgraph.NewGraph(s)
+			graph := newGraph(s)
 			for _, want := range []int{2, 0} {
 				n, err := s.ReplayWAL(ctx, graph)
 				if err != nil {

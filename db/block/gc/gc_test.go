@@ -33,10 +33,7 @@ func newTestEnv(t *testing.T) *testEnv {
 	rawStore := block_store_kvtx.NewKVTxBlock(kvKey, kvStore, 0, false)
 
 	// Open the reference graph and register its cleanup.
-	rg, err := NewRefGraph(ctx, kvStore, []byte("gc/"))
-	if err != nil {
-		t.Fatal(err.Error())
-	}
+	rg := NewRefGraph(kvStore)
 	t.Cleanup(func() { rg.Close() })
 
 	// Create a collector that records swept nodes.

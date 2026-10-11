@@ -1,80 +1,137 @@
 package block_gc
 
 import (
-	"encoding/binary"
-	"slices"
-	"strconv"
+	"context"
+	"errors"
 	"testing"
 
-	cayley_proto "github.com/aperturerobotics/cayley/graph/proto"
-	cayley_hkv "github.com/aperturerobotics/cayley/kv"
-	cayley_flat "github.com/aperturerobotics/cayley/kv/flat"
+	"github.com/s4wave/spacewave/db/kvtx"
 	store_kvtx_inmem "github.com/s4wave/spacewave/db/store/kvtx/inmem"
 )
 
-// TestHasRefsBatch validates deleted history, exact endpoints, and aligned results.
-func TestHasRefsBatch(t *testing.T) {
-	// Prepare one storage transaction holding the exact graph posting format.
-	ctx := t.Context()
-	tx, err := store_kvtx_inmem.NewStore().NewTransaction(ctx, true)
+// TestApplyRefBatchOwnershipSemantics covers complete ownership transitions.
+func TestApplyRefBatchOwnershipSemantics(t *testing.T) {
+	ctx := context.Background()
+	tests := []struct {
+		name    string
+		seed    []RefEdge
+		adds    []RefEdge
+		removes []RefEdge
+		want    []RefEdge
+		reject  []RefEdge
+	}{
+		{
+			name:    "ownership transfer",
+			seed:    []RefEdge{{Subject: "old", Object: "object"}},
+			adds:    []RefEdge{{Subject: "new", Object: "object"}},
+			removes: []RefEdge{{Subject: "old", Object: "object"}},
+			want:    []RefEdge{{Subject: "new", Object: "object"}},
+			reject:  []RefEdge{{Subject: "old", Object: "object"}, {Subject: NodeUnreferenced, Object: "object"}},
+		},
+		{
+			name: "duplicate add",
+			adds: []RefEdge{{Subject: "owner", Object: "object"}, {Subject: "owner", Object: "object"}},
+			want: []RefEdge{{Subject: "owner", Object: "object"}},
+		},
+		{
+			name:    "absent removal",
+			removes: []RefEdge{{Subject: "missing", Object: "object"}},
+			reject:  []RefEdge{{Subject: NodeUnreferenced, Object: "object"}},
+		},
+		{
+			name:    "final owner orphan mark",
+			seed:    []RefEdge{{Subject: "owner", Object: "object"}},
+			removes: []RefEdge{{Subject: "owner", Object: "object"}},
+			want:    []RefEdge{{Subject: NodeUnreferenced, Object: "object"}},
+			reject:  []RefEdge{{Subject: "owner", Object: "object"}},
+		},
+		{
+			name:    "permanent root is not orphaned",
+			seed:    []RefEdge{{Subject: "owner", Object: NodeGCRoot}},
+			removes: []RefEdge{{Subject: "owner", Object: NodeGCRoot}},
+			reject:  []RefEdge{{Subject: NodeUnreferenced, Object: NodeGCRoot}},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			// Start a graph and apply the case's ownership transition.
+			graph := NewCollectorRefGraph(store_kvtx_inmem.NewStore())
+			if err := graph.ApplyRefBatch(ctx, test.seed, nil); err != nil {
+				t.Fatal(err)
+			}
+			if err := graph.ApplyRefBatch(ctx, test.adds, test.removes); err != nil {
+				t.Fatal(err)
+			}
+
+			// Verify every expected edge is present.
+			for _, edge := range test.want {
+				assertEdge(t, graph, edge, true)
+			}
+
+			// Verify every forbidden edge is absent.
+			for _, edge := range test.reject {
+				assertEdge(t, graph, edge, false)
+			}
+		})
+	}
+}
+
+// TestRejectedTransactionLeavesNeitherHalfEdge proves atomic edge insertion.
+func TestRejectedTransactionLeavesNeitherHalfEdge(t *testing.T) {
+	// Reject an edge write and confirm the transaction rolls back both indexes.
+	ctx := context.Background()
+	graph := NewCollectorRefGraph(store_kvtx_inmem.NewStore())
+	rejected := errors.New("reject transaction")
+	edge := RefEdge{Subject: "owner", Object: "object"}
+
+	// Roll back after staging both graph directions.
+	err := kvtx.RunTransaction(
+		ctx,
+		true,
+		func(ctx context.Context) (kvtx.Tx, error) {
+			return graph.store.NewTransaction(ctx, true)
+		},
+		func(ctx context.Context, tx kvtx.Tx) error {
+			if err := graph.applyRefBatchTx(ctx, tx, []RefEdge{edge}, nil); err != nil {
+				return err
+			}
+			return rejected
+		},
+	)
+	if !errors.Is(err, rejected) {
+		t.Fatalf("error = %v, want %v", err, rejected)
+	}
+
+	// Confirm rollback removed the forward, reverse, and node records.
+	assertEdge(t, graph, edge, false)
+	assertRecord(t, graph, graphKey(kindNode, edge.Subject), false)
+	assertRecord(t, graph, graphKey(kindNode, edge.Object), false)
+}
+
+// assertEdge checks that both stored directions agree on edge existence.
+func assertEdge(t testing.TB, graph *RefGraph, edge RefEdge, want bool) {
+	t.Helper()
+	assertRecord(t, graph, graphKey(kindForward, edge.Subject, edge.Object), want)
+	assertRecord(t, graph, graphKey(kindIncoming, edge.Object, edge.Subject), want)
+}
+
+// assertRecord checks one graph record through a fresh read transaction.
+func assertRecord(t testing.TB, graph *RefGraph, key []byte, want bool) {
+	// Read the record in a fresh transaction and compare its existence.
+	t.Helper()
+	tx, err := graph.store.NewTransaction(context.Background(), false)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer tx.Discard()
-	ids := map[string]uint64{"owner": 1, "a": 2, "b": 3, "c": 4, "d": 5}
-	const predID = 9
 
-	// Seed postings with a deleted newest entry and an older missing entry
-	// that a newer live primitive makes unnecessary to read.
-	for object, quads := range map[string][]uint64{"a": {1, 2}, "b": {99, 3}, "c": {4}, "d": {5}} {
-		key := cayley_flat.KeyEscape(refGraphQuadIndexes[1].Key([]uint64{ids[object], predID, ids["owner"]}))
-		var posting []byte
-		for _, id := range quads {
-			posting = binary.AppendUvarint(posting, id)
-		}
-		if err := tx.Set(ctx, key, posting); err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	// Seed primitives whose labels and endpoints must still be validated.
-	primitives := []cayley_proto.Primitive{
-		{Subject: 1, Predicate: predID, Object: 2},
-		{Subject: 1, Predicate: predID, Object: 2, Deleted: true},
-		{Subject: 1, Predicate: predID, Object: 3},
-		{Subject: 1, Predicate: predID, Object: 4, Label: 7},
-		{Subject: 1, Predicate: predID, Object: 2},
-	}
-	for i := range primitives {
-		data, err := primitives[i].MarshalVT()
-		if err != nil {
-			t.Fatal(err)
-		}
-		key := cayley_flat.KeyEscape(cayley_hkv.Key{[]byte("l"), []byte(strconv.Itoa(i + 1))})
-		if err := tx.Set(ctx, key, data); err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	// Read unsorted, duplicate, absent, and mismatched edges in caller order.
-	edges := []RefEdge{
-		{Subject: "owner", Object: "b"}, {Subject: "owner", Object: "a"},
-		{Subject: "owner", Object: "missing"}, {Subject: "owner", Object: "c"},
-		{Subject: "owner", Object: "d"}, {Subject: "owner", Object: "a"},
-	}
-	found, err := hasRefsInTransaction(ctx, tx, predID, ids, edges)
+	// Check whether the requested graph record exists.
+	exists, err := tx.Exists(context.Background(), key)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !slices.Equal(found, []bool{true, true, false, false, false, true}) {
-		t.Fatalf("exact membership = %v", found)
-	}
-
-	// Require a missing newest primitive to remain a storage error.
-	if err := tx.Delete(ctx, cayley_flat.KeyEscape(cayley_hkv.Key{[]byte("l"), []byte("3")})); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := hasRefsInTransaction(ctx, tx, predID, ids, edges[:1]); err == nil {
-		t.Fatal("missing indexed primitive was accepted")
+	if exists != want {
+		t.Fatalf("record %x exists = %v, want %v", key, exists, want)
 	}
 }

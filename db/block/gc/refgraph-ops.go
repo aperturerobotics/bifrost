@@ -2,6 +2,7 @@ package block_gc
 
 import (
 	"context"
+	"slices"
 
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/db/block"
@@ -9,13 +10,17 @@ import (
 
 // RefEdge is a subject -> object edge in the GC ref graph.
 type RefEdge struct {
-	Subject, Object string
+	// Subject is the node holding the reference.
+	Subject string
+	// Object is the referenced node.
+	Object string
 }
 
 // RefBatchRemainderError reports the uncommitted suffix of an ownership
 // transition. The slices retain their original add-before-remove order.
 type RefBatchRemainderError interface {
 	error
+	// RefBatchRemainder returns the uncommitted adds and removes.
 	RefBatchRemainder() ([]RefEdge, []RefEdge)
 }
 
@@ -26,7 +31,7 @@ func RefBatchRemainder(err error) ([]RefEdge, []RefEdge, bool) {
 		return nil, nil, false
 	}
 	adds, removes := batchErr.RefBatchRemainder()
-	return cloneRefEdges(adds), cloneRefEdges(removes), true
+	return slices.Clone(adds), slices.Clone(removes), true
 }
 
 // RefGraphOps is the interface for GC reference graph ownership transitions.
@@ -67,6 +72,3 @@ type RefGraphOps interface {
 	// Close closes the ref graph.
 	Close() error
 }
-
-// _ is a type assertion
-var _ RefGraphOps = (*RefGraph)(nil)
