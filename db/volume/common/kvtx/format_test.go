@@ -138,9 +138,97 @@ func TestUpgradeCayleyRefGraph(t *testing.T) {
 
 // testUpgradeCayleyRefGraph runs TestUpgradeCayleyRefGraph on one store.
 func testUpgradeCayleyRefGraph(t *testing.T, store db_kvtx.Store) {
-	// Open a Cayley graph in the store.
+	// Migrate a version 1 store and check its graph.
 	ctx := context.Background()
 	keys := store_kvkey.NewDefaultKVKey()
+	writeCayleyStore(t, store, keys)
+	if err := upgradeFormat(ctx, store, keys); err != nil {
+		t.Fatal(err)
+	}
+	checkConvertedRefGraph(t, store)
+}
+
+// TestCopyStore copies a version 1 store and expects its other keys verbatim,
+// its live reference edges as edge records, no Cayley records and the current
+// format version, with the source unchanged.
+func TestCopyStore(t *testing.T) {
+	t.Run("inmem", func(t *testing.T) {
+		testCopyStore(t, store_kvtx_inmem.NewStore(), store_kvtx_inmem.NewStore())
+	})
+	t.Run("s4db", func(t *testing.T) {
+		dir := t.TempDir()
+		var dbs [2]*s4db.DB
+		for i, name := range []string{"src.s4db", "dst.s4db"} {
+			db, err := s4db.Open(filepath.Join(dir, name), s4db.Options{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() { _ = db.Close() })
+			dbs[i] = db
+		}
+		testCopyStore(t, dbs[0], dbs[1])
+	})
+}
+
+// testCopyStore runs TestCopyStore on one pair of stores.
+func testCopyStore(t *testing.T, src, dst db_kvtx.Store) {
+	// Prepare a version 1 store with a key outside the graph.
+	ctx := context.Background()
+	keys := store_kvkey.NewDefaultKVKey()
+	writeCayleyStore(t, src, keys)
+	tx, err := src.NewTransaction(ctx, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := tx.Set(ctx, []byte("other"), []byte("value")); err != nil {
+		t.Fatal(err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	// Copy it.
+	var last CopyProgress
+	if err := CopyStore(ctx, src, dst, keys, func(p CopyProgress) { last = p }); err != nil {
+		t.Fatal(err)
+	}
+	if last.Keys != 1 || last.Edges != 3 {
+		t.Fatalf("progress %+v, want 1 key and 3 live edges", last)
+	}
+
+	// The destination holds the converted graph, the other key and the
+	// current version, and the source is still version 1.
+	checkConvertedRefGraph(t, dst)
+	rtx, err := dst.NewTransaction(ctx, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rtx.Discard()
+	value, found, err := rtx.Get(ctx, []byte("other"))
+	if err != nil || !found || string(value) != "value" {
+		t.Fatalf("other key: found %v value %q err %v", found, value, err)
+	}
+	for store, want := range map[db_kvtx.Store]uint64{src: 1, dst: store_kvkey.FormatVersion} {
+		version, err := readFormatVersion(ctx, store, keys)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if version != want {
+			t.Fatalf("format version %d, want %d", version, want)
+		}
+	}
+
+	// A second copy refuses the filled destination.
+	if err := CopyStore(ctx, src, dst, keys, nil); err == nil {
+		t.Fatal("copy into a non-empty store succeeded")
+	}
+}
+
+// writeCayleyStore writes a version 1 store whose Cayley reference graph
+// holds root->a and a->b, a removed a->c, and an edge of another predicate.
+func writeCayleyStore(t *testing.T, store db_kvtx.Store, keys *store_kvkey.KVKey) {
+	// Open a Cayley graph in the store.
+	ctx := context.Background()
 	h, err := kvtx_cayley.NewGraph(ctx, kvtx_prefixer.NewPrefixer(store, cayleyGraphPrefix), graph.Options{
 		"ignore_duplicate": true,
 		"ignore_missing":   true,
@@ -181,13 +269,13 @@ func testUpgradeCayleyRefGraph(t *testing.T, store db_kvtx.Store) {
 	if err := tx.Commit(ctx); err != nil {
 		t.Fatal(err)
 	}
+}
 
-	// Migrate the store.
-	if err := upgradeFormat(ctx, store, keys); err != nil {
-		t.Fatal(err)
-	}
-
+// checkConvertedRefGraph expects the edge records of the writeCayleyStore
+// graph and no Cayley records.
+func checkConvertedRefGraph(t *testing.T, store db_kvtx.Store) {
 	// The live reference edges moved.
+	ctx := context.Background()
 	rg := openRefGraph(store)
 	for subject, want := range map[string][]string{
 		block_gc.NodeGCRoot: {"a"},

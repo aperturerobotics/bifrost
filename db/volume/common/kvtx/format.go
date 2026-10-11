@@ -97,8 +97,8 @@ func migrateBase58BlockKeys(ctx context.Context, store kvtx.Store, keys *store_k
 	}
 }
 
-// blockMove is one block to rekey and its value.
-type blockMove struct {
+// keyValue is one key and its value.
+type keyValue struct {
 	key, value []byte
 }
 
@@ -139,7 +139,7 @@ func migrateBase58BlockKeyBatch(
 
 // collectBlockMoves copies up to migrateBatchBytes of the blocks at or after
 // start, and reports whether more remain.
-func collectBlockMoves(ctx context.Context, tx kvtx.Tx, prefix, start []byte) ([]blockMove, bool, error) {
+func collectBlockMoves(ctx context.Context, tx kvtx.Tx, prefix, start []byte) ([]keyValue, bool, error) {
 	// Position the sorted iterator at the first base58 key.
 	it := tx.Iterate(ctx, prefix, true, false)
 	defer it.Close()
@@ -148,7 +148,7 @@ func collectBlockMoves(ctx context.Context, tx kvtx.Tx, prefix, start []byte) ([
 	}
 
 	// Copy blocks until the batch fills.
-	var moves []blockMove
+	var moves []keyValue
 	var size int
 	for ; it.Valid() && size < migrateBatchBytes; it.Next() {
 		value, err := it.ValueCopy(nil)
@@ -156,7 +156,7 @@ func collectBlockMoves(ctx context.Context, tx kvtx.Tx, prefix, start []byte) ([
 			return nil, false, err
 		}
 		key := bytes.Clone(it.Key())
-		moves = append(moves, blockMove{key: key, value: value})
+		moves = append(moves, keyValue{key: key, value: value})
 		size += len(key) + len(value)
 	}
 	return moves, it.Valid(), it.Err()
