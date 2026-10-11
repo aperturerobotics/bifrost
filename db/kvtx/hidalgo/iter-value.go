@@ -1,6 +1,7 @@
 package kvtx_hidalgo
 
 import (
+	"bytes"
 	"context"
 
 	kv "github.com/aperturerobotics/cayley/kv/flat"
@@ -39,27 +40,8 @@ func newTxScanIterator(ctx context.Context, tx kvtx.Tx, prefix []byte) *txScanIt
 
 // Next advances an iterator.
 func (i *txScanIterator) Next(ctx context.Context) bool {
-	// Stop after an earlier error or a canceled context.
-	if i.err != nil {
-		return false
-	}
-	if err := ctx.Err(); err != nil {
-		i.err = err
-		return false
-	}
-
-	// Clear the previous entry.
-	i.key = nil
-	i.value = nil
-
-	// Run the start hook once, then resolve the underlying iterator.
-	if !i.started && i.beforeStart != nil {
-		if err := i.beforeStart(ctx); err != nil {
-			i.err = err
-			return false
-		}
-	}
-	iter := i.getIterator()
+	// Resolve the backend iterator, stopping after an earlier error.
+	iter := i.begin(ctx)
 	if iter == nil {
 		return false
 	}
@@ -75,12 +57,66 @@ func (i *txScanIterator) Next(ctx context.Context) bool {
 		i.err = iter.Err()
 		return false
 	}
+	return i.load(iter)
+}
 
-	// Copy the value, which ValueCopy into a nil buffer already owns.
+// Seek positions the iterator at the first key at or after key under the
+// prefix, and reports whether one exists.
+func (i *txScanIterator) Seek(ctx context.Context, key kv.Key) bool {
+	// Resolve the backend iterator, stopping after an earlier error.
+	iter := i.begin(ctx)
+	if iter == nil {
+		return false
+	}
+
+	// Clamp the target to the prefix, as the backend iterator requires.
+	if bytes.Compare(key, i.prefix) < 0 {
+		key = i.prefix
+	}
+	i.started = true
+	if err := iter.Seek(key); err != nil {
+		i.err = err
+		return false
+	}
+	return i.load(iter)
+}
+
+// begin clears the previous entry and resolves the backend iterator, running
+// the start hook before the first positioning. It returns nil after an error.
+func (i *txScanIterator) begin(ctx context.Context) kvtx.Iterator {
+	// Stop after an earlier error or a canceled context.
+	if i.err != nil {
+		return nil
+	}
+	if err := ctx.Err(); err != nil {
+		i.err = err
+		return nil
+	}
+
+	// Clear the previous entry.
+	i.key = nil
+	i.value = nil
+
+	// Run the start hook once, then resolve the underlying iterator.
+	if !i.started && i.beforeStart != nil {
+		if err := i.beforeStart(ctx); err != nil {
+			i.err = err
+			return nil
+		}
+	}
+	return i.getIterator()
+}
+
+// load copies the backend iterator's current entry and reports whether it
+// is valid.
+func (i *txScanIterator) load(iter kvtx.Iterator) bool {
+	// Stop at the end of the scan or on a backend error.
 	if !iter.Valid() {
 		i.err = iter.Err()
 		return false
 	}
+
+	// Copy the value, which ValueCopy into a nil buffer already owns.
 	value, err := iter.ValueCopy(nil)
 	if err != nil {
 		i.err = err
@@ -145,4 +181,4 @@ func (i *txScanIterator) getIterator() kvtx.Iterator {
 }
 
 // _ is a type assertion
-var _ kv.Iterator = (*txScanIterator)(nil)
+var _ kv.Seeker = (*txScanIterator)(nil)
