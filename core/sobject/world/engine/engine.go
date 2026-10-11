@@ -272,6 +272,9 @@ func (e *soEngine) NewTransaction(ctx context.Context, write bool) (world.Tx, er
 		return e.bengine.NewBlockEngineTransaction(ctx, false)
 	}
 
+	// Time the write from the writer lock wait.
+	clock := newCommitClock()
+
 	// Serialize the write fork with other writes and replay.
 	ctx, task := trace.NewTask(ctx, "alpha/so-engine/new-transaction")
 	defer task.End()
@@ -281,6 +284,9 @@ func (e *soEngine) NewTransaction(ctx context.Context, write bool) (world.Tx, er
 	if err != nil {
 		return nil, err
 	}
+	clock.end(stageLockWait)
+
+	// Trace the hold until the write releases the lock.
 	_, holdWriteMtxTask := trace.NewTask(ctx, "alpha/so-engine/write-tx/hold-write-mtx")
 	unlockWriteMtx = wrapReleaseWithTask(unlockWriteMtx, holdWriteMtxTask)
 
@@ -326,7 +332,8 @@ func (e *soEngine) NewTransaction(ctx context.Context, write bool) (world.Tx, er
 
 	// Return the txn wrapper.
 	fork := &replayFork{base: base, index: index, state: head}
-	return newSoEngineWriteTx(ttx, btx, e, fork, unlockWriteMtx), nil
+	clock.end(stageForkReplay)
+	return newSoEngineWriteTx(ttx, btx, e, fork, unlockWriteMtx, clock), nil
 }
 
 // BuildStorageCursor builds a cursor to the world storage with an empty ref.
@@ -500,14 +507,16 @@ func concurrentAuthors(set *sobject.SOOperationSet, earlier []replayOutcome, h [
 // after the operation. It returns sobject.ErrRejectedOp wrapped with the
 // reason when replay rejected the operation. Once the SharedObject admits the
 // operation it is durable, so the reads and the replay that follow ignore ctx's
-// cancellation and the result says whether the operation was placed. The
-// caller holds the writer lock.
-func (e *soEngine) queueOperation(ctx context.Context, opData []byte, fork *replayFork) error {
+// cancellation and the result says whether the operation was placed. clock, when
+// set, times the write: admission ends here unless a publication already ended
+// it. The caller holds the writer lock.
+func (e *soEngine) queueOperation(ctx context.Context, opData []byte, fork *replayFork, clock *commitClock) error {
 	// Add the operation.
 	localID, err := e.so.QueueOperation(ctx, opData)
 	if err != nil {
 		return err
 	}
+	clock.end(stagePublicationAdmission)
 
 	// The operation is durable, so finish placing it whatever ctx does.
 	ctx = context.WithoutCancel(ctx)

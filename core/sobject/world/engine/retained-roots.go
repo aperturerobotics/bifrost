@@ -64,7 +64,7 @@ func (e *soEngine) SetRetainedRoot(ctx context.Context, name string, ref *block.
 	if err != nil {
 		return err
 	}
-	return e.queueOperation(ctx, opData, nil)
+	return e.queueOperation(ctx, opData, nil, nil)
 }
 
 // processSetRetainedRootOp sets or releases one retained root.
