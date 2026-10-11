@@ -21,6 +21,7 @@ import { ControllerConfig } from '@go/github.com/aperturerobotics/controllerbus/
 export interface NodeType {
   /**
    * TypeId is the node type's stable identifier.
+   * It is a slash-separated path such as "flowgraph/stream-echo"; core node type IDs are bare.
    *
    * @generated from field: string type_id = 1;
    */

@@ -20,6 +20,7 @@ import (
 type NodeType struct {
 	unknownFields []byte
 	// TypeId is the node type's stable identifier.
+	// It is a slash-separated path such as "flowgraph/stream-echo"; core node type IDs are bare.
 	TypeId string `protobuf:"bytes,1,opt,name=type_id,json=typeId,proto3" json:"typeId,omitempty"`
 	// DisplayName is the name shown for the node type.
 	DisplayName string `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"displayName,omitempty"`

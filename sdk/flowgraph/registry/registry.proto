@@ -9,6 +9,7 @@ option go_package = "github.com/s4wave/spacewave/sdk/flowgraph/registry;flowgrap
 // NodeType describes a plugin's standing Device node type.
 message NodeType {
   // TypeId is the node type's stable identifier.
+  // It is a slash-separated path such as "flowgraph/stream-echo"; core node type IDs are bare.
   string type_id = 1;
   // DisplayName is the name shown for the node type.
   string display_name = 2;
