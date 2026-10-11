@@ -33,6 +33,8 @@ type soEngineWriteTx struct {
 	// receipt is the durable publication of the write. It keeps the published
 	// World pinned until Discard, after the engine installs it.
 	receipt *block.PublicationReceipt
+	// clock times the stages of the write.
+	clock *commitClock
 }
 
 // newSoEngineWriteTx constructs a new shared object engine tx.
@@ -42,6 +44,7 @@ func newSoEngineWriteTx(
 	eng *soEngine,
 	fork *replayFork,
 	unlockWriteMtx func(),
+	clock *commitClock,
 ) *soEngineWriteTx {
 	return &soEngineWriteTx{
 		WorldState:     worldState,
@@ -49,6 +52,7 @@ func newSoEngineWriteTx(
 		eng:            eng,
 		fork:           fork,
 		unlockWriteMtx: unlockWriteMtx,
+		clock:          clock,
 	}
 }
 
@@ -62,12 +66,15 @@ func (t *soEngineWriteTx) Commit(ctx context.Context) error {
 	ctx, task := trace.NewTask(ctx, "alpha/so-engine/write-tx/commit")
 	defer task.End()
 	defer t.Discard()
+	defer t.warnIfSlow()
+	t.clock.end(stageCallback)
 
 	// Close the operation buffer before publishing its candidate blocks.
 	{
 		taskCtx, task := trace.NewTask(ctx, "alpha/so-engine/write-tx/world-state-commit")
 		err := t.WorldState.Commit(taskCtx)
 		task.End()
+		t.clock.end(stageWorldStateCommit)
 		if err != nil {
 			return err
 		}
@@ -87,6 +94,7 @@ func (t *soEngineWriteTx) Commit(ctx context.Context) error {
 		var err error
 		nroot, err = t.btx.CommitBlockTransaction(taskCtx)
 		task.End()
+		t.clock.end(stageBlockCommit)
 		if err != nil {
 			return err
 		}
@@ -155,7 +163,17 @@ func (t *soEngineWriteTx) Commit(ctx context.Context) error {
 			return t.publish(ctx, publisher, nroot, head)
 		})
 	}
-	return t.eng.queueOperation(taskCtx, opData, t.fork)
+	err = t.eng.queueOperation(taskCtx, opData, t.fork, t.clock)
+	t.clock.end(stageAdvance)
+	return err
+}
+
+// warnIfSlow logs the stage times of a write that took too long.
+func (t *soEngineWriteTx) warnIfSlow() {
+	if t.eng.c == nil {
+		return
+	}
+	t.clock.warnIfSlow(t.eng.c.le)
 }
 
 // writeBlocks writes the candidate blocks. A state write ordered after the
@@ -220,10 +238,12 @@ func (t *soEngineWriteTx) publish(ctx context.Context, publisher sobject.StatePu
 		batch.Complete(err)
 		return false, err
 	}
+	t.clock.end(stagePublicationAdmission)
 
 	// Admission commits the write to the durable result.
 	err = receipt.Wait(context.WithoutCancel(ctx))
 	batch.Complete(err)
+	t.clock.end(stageReceiptWait)
 	if err != nil {
 		receipt.Release()
 		return false, err

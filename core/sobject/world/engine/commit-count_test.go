@@ -19,6 +19,7 @@ import (
 	"github.com/s4wave/spacewave/db/world"
 	world_mock "github.com/s4wave/spacewave/db/world/mock"
 	"github.com/s4wave/spacewave/testbed"
+	"github.com/sirupsen/logrus"
 )
 
 // localWorld is the World engine of a SharedObject in a local provider
@@ -26,6 +27,8 @@ import (
 type localWorld struct {
 	// bus is the testbed bus the SharedObject mounts on.
 	bus bus.Bus
+	// le is the testbed logger the engine logs to.
+	le *logrus.Entry
 	// eng is the World engine.
 	eng sobject_world_engine.Engine
 	// db is the account volume's database.
@@ -99,7 +102,7 @@ func startLocalWorld(t *testing.T, dir string, soRef *sobject.SharedObjectRef) *
 	if db == nil {
 		t.Fatal("account volume is not s4db")
 	}
-	return &localWorld{bus: tb.Bus, eng: eng, db: db, soRef: soRef}
+	return &localWorld{bus: tb.Bus, le: tb.Logger, eng: eng, db: db, soRef: soRef}
 }
 
 // create commits a World write that creates the object key.
