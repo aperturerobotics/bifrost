@@ -36,6 +36,11 @@ const h = vi.hoisted(() => {
       loading: false,
       error: null,
     },
+    emptySessionResource: {
+      value: null,
+      loading: false,
+      error: null,
+    },
     mountSessionByIdx: vi.fn<MockRootResource['mountSessionByIdx']>(),
     setOpenMenu: vi.fn(),
     shellTabs: {
@@ -101,6 +106,10 @@ vi.mock('@s4wave/web/hooks/useRootResource.js', () => ({
   }),
 }))
 
+vi.mock('@s4wave/app/hooks/useSessionMetadata.js', () => ({
+  useSessionMetadata: () => null,
+}))
+
 vi.mock('@aptre/bldr-sdk/hooks/useResource.js', () => ({
   useResource: (
     parentResource: { value?: MockRootResource | null } | null,
@@ -109,6 +118,7 @@ vi.mock('@aptre/bldr-sdk/hooks/useResource.js', () => ({
       signal: AbortSignal,
       cleanup: (session: MockSession) => MockSession,
     ) => Promise<MockSession | null> | MockSession | null,
+    dependencies: unknown[],
   ) => {
     if (parentResource?.value) {
       void factory(
@@ -117,7 +127,9 @@ vi.mock('@aptre/bldr-sdk/hooks/useResource.js', () => ({
         (session) => session,
       )
     }
-    return h.mountedSessionResource
+    return dependencies[0] === null
+      ? h.emptySessionResource
+      : h.mountedSessionResource
   },
 }))
 
@@ -232,6 +244,7 @@ function setActiveTabPath(path: string) {
 
 describe('EditorShell command session scope', () => {
   beforeEach(() => {
+    // Reset the active tab and session resource fixtures.
     h.appPath = '/'
     h.currentSessionResource = null
     h.mountSessionByIdx.mockReset()
@@ -249,10 +262,11 @@ describe('EditorShell command session scope', () => {
   })
 
   it('mounts the active /u session for shell-level command UI', () => {
+    // Render command UI for a tab that references a session.
     setActiveTabPath('/u/1/settings/keybindings')
-
     render(<EditorShell />)
 
+    // The command palette receives the mounted session resource.
     expect(h.mountSessionByIdx).toHaveBeenCalledTimes(1)
     expect(h.mountSessionByIdx.mock.calls[0]?.[0]).toEqual({ sessionIdx: 1 })
     expect(h.sessionProviderResources).toEqual([h.mountedSessionResource])
@@ -262,27 +276,45 @@ describe('EditorShell command session scope', () => {
   })
 
   it('does not mount a session for non-session shell tabs', () => {
+    // Render command UI for a tab outside any session.
     setActiveTabPath('/settings/keybindings')
-
     render(<EditorShell />)
 
+    // The command palette receives an empty resource without mounting a session.
     expect(h.mountSessionByIdx).not.toHaveBeenCalled()
-    expect(h.sessionProviderResources).toEqual([])
+    expect(h.sessionProviderResources).toEqual([h.emptySessionResource])
     expect(screen.getByTestId('command-palette-session').textContent).toBe(
       'no-session',
     )
   })
 
   it('tracks the active Shell Tab route in the document title', async () => {
+    // Check the title of the initial Home tab.
     const view = render(<EditorShell />)
     await waitFor(() => expect(document.title).toBe('Spacewave'))
 
+    // Navigate the active tab to Pricing.
     h.shellTabs = {
       tabs: [{ id: 'tab-pricing', name: 'Pricing', path: '/pricing' }],
       activeTabId: 'tab-pricing',
     }
     view.rerender(<EditorShell />)
 
+    // The document title follows the committed active tab.
     await waitFor(() => expect(document.title).toBe('Pricing - Spacewave'))
+  })
+
+  it('keeps the command menu mounted when the active tab enters or leaves a session', () => {
+    // Retain the menu element before the watched tab path enters a session.
+    setActiveTabPath('/quickstart/drive')
+    const view = render(<EditorShell />)
+    const menu = screen.getByTestId('shell-menu-bar')
+
+    // Session changes update the command scope without replacing its menu.
+    for (const path of ['/u/1', '/u/1/so/drive/-/files', '/u/2', '/']) {
+      setActiveTabPath(path)
+      view.rerender(<EditorShell />)
+      expect(screen.getByTestId('shell-menu-bar')).toBe(menu)
+    }
   })
 })
