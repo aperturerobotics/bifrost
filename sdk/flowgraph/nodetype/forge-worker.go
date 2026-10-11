@@ -53,7 +53,7 @@ func (forgeWorker) GetConfigIDs() []string {
 }
 
 // Compile validates the node's parameters and compiles to no entries.
-func (forgeWorker) Compile(node *s4wave_flowgraph.PlacedFlowgraphNode) (map[string]config.Config, error) {
+func (forgeWorker) Compile(_ context.Context, node *s4wave_flowgraph.PlacedFlowgraphNode) (map[string]config.Config, error) {
 	_, err := forgeWorkerDeclaration(node.Node)
 	return nil, err
 }
@@ -126,10 +126,8 @@ func forgeWorkerDeclaration(node *s4wave_flowgraph.FlowgraphNode) (*s4wave_devic
 		if backend == "" || strings.ContainsAny(backend, " \t\r\n") {
 			return nil, errors.Errorf("parameter %q must list backends separated by commas", forgeWorkerBackendsParameter)
 		}
-		for _, seen := range backends {
-			if seen == backend {
-				return nil, errors.Errorf("parameter %q lists backend %q twice", forgeWorkerBackendsParameter, backend)
-			}
+		if slices.Contains(backends, backend) {
+			return nil, errors.Errorf("parameter %q lists backend %q twice", forgeWorkerBackendsParameter, backend)
 		}
 		backends = append(backends, backend)
 	}

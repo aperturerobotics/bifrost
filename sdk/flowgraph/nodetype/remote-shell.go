@@ -34,7 +34,7 @@ func (remoteShell) GetConfigIDs() []string {
 }
 
 // Compile runs the remote shell controller on the Device's Session.
-func (remoteShell) Compile(*s4wave_flowgraph.PlacedFlowgraphNode) (map[string]config.Config, error) {
+func (remoteShell) Compile(context.Context, *s4wave_flowgraph.PlacedFlowgraphNode) (map[string]config.Config, error) {
 	return map[string]config.Config{remoteShellEntry: &terminal_remoteshell.Config{}}, nil
 }
 

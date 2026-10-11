@@ -1,6 +1,8 @@
 package flowgraph_nodetype
 
 import (
+	"context"
+
 	"github.com/aperturerobotics/controllerbus/config"
 	stream_forwarding "github.com/s4wave/spacewave/net/stream/forwarding"
 	s4wave_flowgraph "github.com/s4wave/spacewave/sdk/flowgraph"
@@ -29,7 +31,7 @@ func (tcpPort) GetConfigIDs() []string {
 }
 
 // Compile forwards each connection's peer stream to the node's TCP address.
-func (tcpPort) Compile(node *s4wave_flowgraph.PlacedFlowgraphNode) (map[string]config.Config, error) {
+func (tcpPort) Compile(_ context.Context, node *s4wave_flowgraph.PlacedFlowgraphNode) (map[string]config.Config, error) {
 	// Resolve the Device's local address and identity.
 	if err := requireDevicePeerID(node); err != nil {
 		return nil, err

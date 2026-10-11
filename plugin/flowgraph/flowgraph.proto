@@ -1,0 +1,8 @@
+syntax = "proto3";
+package s4wave.plugin.flowgraph;
+
+option go_package = "github.com/s4wave/spacewave/plugin/flowgraph;flowgraph_plugin";
+
+// Config starts the Stream Echo node type plugin.
+message Config {
+}

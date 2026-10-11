@@ -21,7 +21,7 @@ type FlowgraphNodeType interface {
 	GetConfigIDs() []string
 	// Compile returns the controller configs that run the placed node, keyed by
 	// entry name. The name is unique among the node's entries.
-	Compile(node *PlacedFlowgraphNode) (map[string]config.Config, error)
+	Compile(ctx context.Context, node *PlacedFlowgraphNode) (map[string]config.Config, error)
 }
 
 // FlowgraphNodeCapability is implemented by a node type whose placed node shows
@@ -61,14 +61,4 @@ func (n *PlacedFlowgraphNode) CapabilityID() string {
 // when a node type gives one another kind.
 func IsNodeCapabilityID(id string) bool {
 	return strings.HasPrefix(id, s4wave_device.DeviceCapabilityKindFlowgraphNode+"/")
-}
-
-// PlacedFlowgraphConnection is a connection that ends at a placed node.
-type PlacedFlowgraphConnection struct {
-	// ID is the graph-local ID of the connection.
-	ID string
-	// Connection is the authored connection.
-	Connection *FlowgraphConnection
-	// RemoteDevicePeerID is the peer ID of the Device running the other end.
-	RemoteDevicePeerID string
 }

@@ -39,6 +39,7 @@
     "web/**/*",
     "core/**/*",
     "sdk/**/*",
+    "plugin/flowgraph/**/*",
     "bldr/global.d.ts",
     "bldr/types/**/*",
     "bldr/web/**/*",

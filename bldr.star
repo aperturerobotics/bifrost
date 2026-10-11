@@ -456,6 +456,21 @@ manifest("spacewave-cli-plugin",
     },
 )
 
+manifest("spacewave-flowgraph",
+    builder="bldr/plugin/compiler/go",
+    rev=1,
+    config={
+        "goPkgs": ["./plugin/flowgraph"],
+        "configSet": {
+            "spacewave-flowgraph": config_entry("plugin/flowgraph", 1),
+        },
+        "webPkgs": EXCLUDED_WEB_PKGS,
+        "platformTypes": {
+            "js": {"goCompiler": "GO_COMPILER_GOSCRIPT"},
+        },
+    },
+)
+
 manifest("spacewave-sql",
     builder="bldr/plugin/compiler/go",
     rev=1,

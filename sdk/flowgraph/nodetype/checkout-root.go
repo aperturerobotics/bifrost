@@ -50,7 +50,7 @@ func (checkoutRoot) GetConfigIDs() []string {
 }
 
 // Compile validates the node's parameters and compiles to no entries.
-func (checkoutRoot) Compile(node *s4wave_flowgraph.PlacedFlowgraphNode) (map[string]config.Config, error) {
+func (checkoutRoot) Compile(_ context.Context, node *s4wave_flowgraph.PlacedFlowgraphNode) (map[string]config.Config, error) {
 	_, err := checkoutRootPayload(node.Node)
 	return nil, err
 }
