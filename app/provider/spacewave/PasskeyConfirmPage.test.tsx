@@ -149,6 +149,7 @@ describe('PasskeyConfirmPage', () => {
     fireEvent.change(screen.getByDisplayValue('pending-user'), {
       target: { value: 'taken-name' },
     })
+    fireEvent.click(screen.getByRole('checkbox'))
     fireEvent.click(screen.getByText('Create account'))
 
     expect(await screen.findByText('Username is already taken')).toBeDefined()
@@ -172,6 +173,7 @@ describe('PasskeyConfirmPage', () => {
     fireEvent.change(screen.getByDisplayValue('pending-user'), {
       target: { value: 'new-user' },
     })
+    fireEvent.click(screen.getByRole('checkbox'))
     fireEvent.click(screen.getByText('Create account'))
 
     await waitFor(() => {

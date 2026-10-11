@@ -39,6 +39,7 @@ import {
   wrapPemWithPin,
 } from './keypair-utils.js'
 import { OptionalPinLock } from './OptionalPinLock.js'
+import { TermsAgreement } from './TermsAgreement.js'
 import { wrapPemWithPasskeyPrf } from './passkey-prf.js'
 
 type PasskeyConfirmState =
@@ -62,6 +63,7 @@ export function PasskeyConfirmPage() {
   const [pin, setPin] = useState('')
   const [confirmPin, setConfirmPin] = useState('')
   const [pinError, setPinError] = useState('')
+  const [agreed, setAgreed] = useState(false)
 
   const handleRestart = useCallback(() => {
     clearPendingDesktopPasskeyState()
@@ -102,6 +104,9 @@ export function PasskeyConfirmPage() {
   const handleCreateAccount = useCallback(async () => {
     if (!pendingState) {
       setState({ step: 'error', message: 'Passkey session expired' })
+      return
+    }
+    if (!agreed) {
       return
     }
     const usernameValidationError = validateUsername(username)
@@ -180,7 +185,7 @@ export function PasskeyConfirmPage() {
         message: getErrorMessage(err, 'Account creation failed'),
       })
     }
-  }, [confirmPin, navigate, pendingState, pin, root, username])
+  }, [agreed, confirmPin, navigate, pendingState, pin, root, username])
 
   if (!pendingState) {
     return (
@@ -338,10 +343,16 @@ export function PasskeyConfirmPage() {
             keyHeldWithoutPin={!pendingState.prfCapable}
           />
 
+          <TermsAgreement
+            agreed={agreed}
+            onChange={setAgreed}
+            disabled={isBusy}
+          />
+
           <div className="flex w-full flex-col gap-2">
             <AuthPrimaryActionButton
               onClick={() => void handleCreateAccount()}
-              disabled={isBusy || !username || !!usernameError}
+              disabled={isBusy || !username || !!usernameError || !agreed}
               icon={isBusy ? <Spinner /> : <LuUserPlus className="size-4" />}
             >
               {isBusy ? statusMessage : 'Create account'}

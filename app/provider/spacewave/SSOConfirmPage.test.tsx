@@ -114,6 +114,7 @@ function makeProviderRef() {
 }
 
 function submitForm() {
+  fireEvent.click(screen.getByRole('checkbox'))
   fireEvent.click(screen.getByRole('button', { name: 'Create account' }))
 }
 
@@ -166,6 +167,21 @@ describe('SSOConfirmPage', () => {
     expect(screen.getByPlaceholderText('Confirm PIN')).toBeDefined()
   })
 
+  it('requires agreement to the terms before creating the account', () => {
+    render(<SSOConfirmPage />)
+
+    fireEvent.change(screen.getByPlaceholderText('your-name'), {
+      target: { value: 'new-user' },
+    })
+    const create = screen.getByRole('button', { name: 'Create account' })
+    expect(create).toHaveProperty('disabled', true)
+    expect(screen.getByText('Terms of Service')).toBeDefined()
+    expect(screen.getByText('Privacy Policy')).toBeDefined()
+
+    fireEvent.click(screen.getByRole('checkbox'))
+    expect(create).toHaveProperty('disabled', false)
+  })
+
   it('opens the confirm modal before creating the account and proceeds with pinWrapped false when PIN is blank', async () => {
     render(<SSOConfirmPage />)
 
@@ -176,8 +192,6 @@ describe('SSOConfirmPage', () => {
 
     expect(mockConfirmSSO).not.toHaveBeenCalled()
     expect(await screen.findByText('Confirm your username')).toBeDefined()
-    expect(screen.getByText('Terms of Service')).toBeDefined()
-    expect(screen.getByText('Privacy Policy')).toBeDefined()
 
     await confirmModal()
 

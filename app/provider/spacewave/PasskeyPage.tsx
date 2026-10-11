@@ -34,6 +34,7 @@ import {
   unwrapPemWithPasskeyPrf,
   wrapPemWithPasskeyPrf,
 } from './passkey-prf.js'
+import { TermsAgreement } from './TermsAgreement.js'
 
 type PasskeyState =
   | { step: 'username' }
@@ -67,6 +68,7 @@ export function PasskeyPage() {
   const [username, setUsername] = useState(() => getInitialPasskeyUsername())
   const [usernameError, setUsernameError] = useState('')
   const [choiceMessage, setChoiceMessage] = useState('')
+  const [agreed, setAgreed] = useState(false)
   const handleBackToLogin = useCallback(() => {
     navigate({ path: getAuthReturnPath() })
   }, [navigate])
@@ -191,7 +193,7 @@ export function PasskeyPage() {
   }, [root, username])
 
   const handleCreateAccount = useCallback(async () => {
-    if (!root || !username) {
+    if (!root || !username || !agreed) {
       return
     }
     setState({ step: 'registering' })
@@ -265,7 +267,7 @@ export function PasskeyPage() {
       }
       setState({ step: 'error', message: msg })
     }
-  }, [navigate, root, username])
+  }, [agreed, navigate, root, username])
 
   const statusMessage = useMemo(() => {
     switch (state.step) {
@@ -361,17 +363,29 @@ export function PasskeyPage() {
             <LuFingerprint className="size-4" />
             Sign in with Passkey
           </button>
+          <TermsAgreement
+            agreed={agreed}
+            onChange={setAgreed}
+            disabled={false}
+          />
           <button
             type="button"
             onClick={() => void handleCreateAccount()}
+            disabled={!agreed}
             className={cn(
               'border-foreground/20 text-foreground hover:border-foreground/30 hover:bg-background/40',
               'flex w-full items-center justify-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors',
+              'disabled:cursor-not-allowed disabled:opacity-50',
             )}
           >
             <LuFingerprint className="size-4" />
             Create New Passkey Account
           </button>
+          <p className="text-foreground-alt text-xs">
+            If your passkey cannot derive an encryption key, Spacewave Cloud
+            keeps your account key so you can sign in, and we could use it to
+            open your data.
+          </p>
           <button
             type="button"
             onClick={() => {

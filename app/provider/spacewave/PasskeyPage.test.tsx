@@ -225,6 +225,7 @@ describe('PasskeyPage', () => {
     })
     fireEvent.click(screen.getByText('Continue'))
     await screen.findByText('Create New Passkey Account')
+    fireEvent.click(screen.getByRole('checkbox'))
     fireEvent.click(screen.getByText('Create New Passkey Account'))
 
     await screen.findByText(

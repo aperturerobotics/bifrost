@@ -23,7 +23,6 @@ import {
   completeStoredHandoff,
   getAuthReturnPath,
 } from '@s4wave/app/auth/handoff-state.js'
-import { useStaticHref } from '@s4wave/app/prerender/StaticContext.js'
 import { LoadingCard } from '@s4wave/web/ui/loading/LoadingCard.js'
 import { AuthProgressCard } from '@s4wave/web/ui/credential/AuthProgressCard.js'
 import {
@@ -33,6 +32,7 @@ import {
 } from './sso-state.js'
 import { generateAuthKeypairs, wrapPemWithPin } from './keypair-utils.js'
 import { OptionalPinLock } from './OptionalPinLock.js'
+import { TermsAgreement } from './TermsAgreement.js'
 import {
   AuthCard,
   AuthPrimaryActionButton,
@@ -80,13 +80,17 @@ function validateSignup(
   return null
 }
 
-/** useSignupFields holds the username and PIN inputs with their errors. */
+/**
+ * useSignupFields holds the username and PIN inputs with their errors, and
+ * whether the user agreed to the terms.
+ */
 function useSignupFields() {
   const [username, setUsername] = useState('')
   const [usernameError, setUsernameError] = useState('')
   const [pin, setPin] = useState('')
   const [confirmPin, setConfirmPin] = useState('')
   const [pinError, setPinError] = useState('')
+  const [agreed, setAgreed] = useState(false)
 
   const handleUsernameChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -121,6 +125,8 @@ function useSignupFields() {
     pin,
     confirmPin,
     pinError,
+    agreed,
+    setAgreed,
     handleUsernameChange,
     handlePinChange,
     handleConfirmPinChange,
@@ -186,11 +192,14 @@ function useSSOSignupFlow(
   const rootResource = useRootResource()
   const root = useResourceValue(rootResource)
   const [state, setState] = useState<SSOConfirmState>({ step: 'form' })
-  const { username, pin, confirmPin, reportError } = fields
+  const { username, pin, confirmPin, agreed, reportError } = fields
 
   const requestConfirm = useCallback(() => {
     if (!pendingState) {
       setState({ step: 'error', message: 'SSO session expired' })
+      return
+    }
+    if (!agreed) {
       return
     }
     const invalid = validateSignup(username, pin, confirmPin)
@@ -199,7 +208,7 @@ function useSSOSignupFlow(
       return
     }
     setState({ step: 'confirm', username })
-  }, [pendingState, username, pin, confirmPin, reportError])
+  }, [pendingState, agreed, username, pin, confirmPin, reportError])
 
   const cancelConfirm = useCallback(() => {
     setState({ step: 'form' })
@@ -453,7 +462,7 @@ function SSOSignupForm({
   onRequestConfirm,
   onCancel,
 }: SSOSignupFormProps) {
-  const { username, usernameError, pin, confirmPin, pinError } = fields
+  const { username, usernameError, pin, confirmPin, pinError, agreed } = fields
 
   return (
     <div className="flex flex-col gap-4">
@@ -488,9 +497,14 @@ function SSOSignupForm({
             pinInputId="sso-pin"
             keyHeldWithoutPin
           />
+          <TermsAgreement
+            agreed={agreed}
+            onChange={fields.setAgreed}
+            disabled={false}
+          />
           <AuthPrimaryActionButton
             onClick={onRequestConfirm}
-            disabled={!username || !!usernameError}
+            disabled={!username || !!usernameError || !agreed}
             icon={<LuUserPlus className="text-foreground size-4" />}
           >
             Create account
@@ -528,9 +542,6 @@ function ConfirmUsernameDialog({
   onConfirm,
   onCancel,
 }: ConfirmUsernameDialogProps) {
-  const tosHref = useStaticHref('/tos')
-  const privacyHref = useStaticHref('/privacy')
-
   return (
     <Dialog
       open={open}
@@ -554,27 +565,6 @@ function ConfirmUsernameDialog({
           >
             Confirm and create account
           </AuthPrimaryActionButton>
-          <p className="text-foreground-alt/70 text-center text-xs">
-            By clicking Confirm, you agree to our{' '}
-            <a
-              href={tosHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-brand hover:underline"
-            >
-              Terms of Service
-            </a>{' '}
-            and{' '}
-            <a
-              href={privacyHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-brand hover:underline"
-            >
-              Privacy Policy
-            </a>
-            .
-          </p>
           <BackToLoginButton onClick={onCancel}>
             Back to edit username
           </BackToLoginButton>
