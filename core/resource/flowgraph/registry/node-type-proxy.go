@@ -3,6 +3,7 @@ package resource_flowgraph_registry
 import (
 	"context"
 	"slices"
+	"time"
 
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/config"
@@ -11,6 +12,10 @@ import (
 	s4wave_flowgraph "github.com/s4wave/spacewave/sdk/flowgraph"
 	flowgraph_registry "github.com/s4wave/spacewave/sdk/flowgraph/registry"
 )
+
+// compileTimeout bounds one plugin Compile call, because the Device reconciles
+// every node on one loop and an unresponsive plugin would stall all of them.
+const compileTimeout = 30 * time.Second
 
 // NodeTypeProxy compiles placements through a plugin's retained Resource capability.
 type NodeTypeProxy struct {
@@ -46,8 +51,8 @@ func (p *NodeTypeProxy) GetConfigIDs() []string {
 
 // Compile invokes the plugin and decodes only its declared controller config IDs.
 func (p *NodeTypeProxy) Compile(ctx context.Context, node *s4wave_flowgraph.PlacedFlowgraphNode) (map[string]config.Config, error) {
-	// Cancel the call when either the Device or the registration ends.
-	ctx, cancel := context.WithCancel(ctx)
+	// Cancel the call when the Device or the registration ends, or the plugin stalls.
+	ctx, cancel := context.WithTimeout(ctx, compileTimeout)
 	defer cancel()
 	stop := context.AfterFunc(p.lifetime, cancel)
 	defer stop()
