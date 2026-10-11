@@ -179,6 +179,9 @@ func buildBlockEngine(
 
 // soEngine implements the world engine logic for the shared object.
 type soEngine struct {
+	// lifetime ends when the controller stops serving this engine. A commit
+	// that started ends with it.
+	lifetime context.Context
 	// c serializes writes and replay.
 	c *Controller
 	// so supplies the operation set and accepts local operations.
@@ -215,9 +218,11 @@ type soEngine struct {
 	control *sobject.Control
 }
 
-// newSoEngine constructs the shared object engine.
-func newSoEngine(c *Controller, so sobject.SharedObject, engine *world_block.Engine, replay *replayer) *soEngine {
+// newSoEngine constructs the shared object engine. lifetime bounds the commits
+// the engine finishes after their callers stop waiting.
+func newSoEngine(lifetime context.Context, c *Controller, so sobject.SharedObject, engine *world_block.Engine, replay *replayer) *soEngine {
 	e := &soEngine{
+		lifetime:       lifetime,
 		c:              c,
 		so:             so,
 		bengine:        engine,
@@ -502,12 +507,24 @@ func concurrentAuthors(set *sobject.SOOperationSet, earlier []replayOutcome, h [
 	return authors
 }
 
+// detach returns ctx's values without its cancellation, ended when the engine's
+// lifetime ends. The caller must call cancel.
+func (e *soEngine) detach(ctx context.Context) (context.Context, context.CancelFunc) {
+	detached, cancel := context.WithCancel(context.WithoutCancel(ctx))
+	stop := context.AfterFunc(e.lifetime, cancel)
+	return detached, func() {
+		stop()
+		cancel()
+	}
+}
+
 // queueOperation adds opData to the operation set as the local peer, replays
 // the set and installs the World after it. fork, when set, supplies the World
 // after the operation. It returns sobject.ErrRejectedOp wrapped with the
 // reason when replay rejected the operation. Once the SharedObject admits the
 // operation it is durable, so the reads and the replay that follow ignore ctx's
-// cancellation and the result says whether the operation was placed. clock, when
+// cancellation and the result says whether the operation was placed. They end
+// with the engine's lifetime, and the outcome is then unknown. clock, when
 // set, times the write: admission ends here unless a publication already ended
 // it. The caller holds the writer lock.
 func (e *soEngine) queueOperation(ctx context.Context, opData []byte, fork *replayFork, clock *commitClock) error {
@@ -519,7 +536,8 @@ func (e *soEngine) queueOperation(ctx context.Context, opData []byte, fork *repl
 	clock.end(stagePublicationAdmission)
 
 	// The operation is durable, so finish placing it whatever ctx does.
-	ctx = context.WithoutCancel(ctx)
+	ctx, cancel := e.detach(ctx)
+	defer cancel()
 
 	// Find it in the set.
 	snap, err := e.so.GetSharedObjectState(ctx)

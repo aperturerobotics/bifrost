@@ -66,7 +66,7 @@ func (t *soEngineWriteTx) Commit(ctx context.Context) error {
 	ctx, task := trace.NewTask(ctx, "alpha/so-engine/write-tx/commit")
 	defer task.End()
 	defer t.Discard()
-	defer t.warnIfSlow()
+	defer t.clock.warnIfSlow(t.eng.c.le)
 	t.clock.end(stageCallback)
 
 	// Close the operation buffer before publishing its candidate blocks.
@@ -168,14 +168,6 @@ func (t *soEngineWriteTx) Commit(ctx context.Context) error {
 	return err
 }
 
-// warnIfSlow logs the stage times of a write that took too long.
-func (t *soEngineWriteTx) warnIfSlow() {
-	if t.eng.c == nil {
-		return
-	}
-	t.clock.warnIfSlow(t.eng.c.le)
-}
-
 // writeBlocks writes the candidate blocks. A state write ordered after the
 // block writes needs them written, not flushed to the device.
 func (t *soEngineWriteTx) writeBlocks(ctx context.Context) error {
@@ -241,7 +233,24 @@ func (t *soEngineWriteTx) publish(ctx context.Context, publisher sobject.StatePu
 	t.clock.end(stagePublicationAdmission)
 
 	// Admission commits the write to the durable result.
-	err = receipt.Wait(context.WithoutCancel(ctx))
+	waitCtx, cancel := t.eng.detach(ctx)
+	defer cancel()
+	err = receipt.Wait(waitCtx)
+	select {
+	case <-receipt.Done():
+		err = receipt.Wait(context.Background())
+	default:
+		// The lifetime cut the wait and the outcome is unknown. Free the writer
+		// now; the publisher still holds the borrowed blocks until it resolves
+		// the receipt, and its result finishes the borrow.
+		go func() {
+			<-receipt.Done()
+			batch.Complete(receipt.Wait(context.Background()))
+			receipt.Release()
+		}()
+		t.clock.end(stageReceiptWait)
+		return false, err
+	}
 	batch.Complete(err)
 	t.clock.end(stageReceiptWait)
 	if err != nil {

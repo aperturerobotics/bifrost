@@ -191,7 +191,7 @@ func TestSetRetainedRootRequiresAcceptedHead(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(blk.Release)
-	e := newSoEngine(c, so, blk.bengine, newReplayer(c, so))
+	e := newSoEngine(ctx, c, so, blk.bengine, newReplayer(c, so))
 
 	// Retaining another root is refused before anything is queued.
 	ref := &block.BlockRef{Hash: testRetainedRootHash(t, "old")}
