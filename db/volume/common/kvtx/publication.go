@@ -14,8 +14,10 @@ func volumeRefGraphPrefix() []byte { return []byte("gc/") }
 // RebuildVolumeRefGraph regenerates a stopped volume's GC posting indexes.
 // The caller must exclude volume access until this succeeds. It preserves the
 // graph's live edges, primitive IDs, node values, and reference counts.
-func RebuildVolumeRefGraph(ctx context.Context, store store_kvtx.Store) (uint64, error) {
-	return block_gc.RebuildRefGraphIndexes(ctx, store, volumeRefGraphPrefix())
+// progress, when set, receives the next primitive ID and the horizon after
+// each batch.
+func RebuildVolumeRefGraph(ctx context.Context, store store_kvtx.Store, progress func(next, horizon uint64)) (uint64, error) {
+	return block_gc.RebuildRefGraphIndexes(ctx, store, volumeRefGraphPrefix(), progress)
 }
 
 // SupportsAtomicPublication excludes custom block domains, deferred Commit

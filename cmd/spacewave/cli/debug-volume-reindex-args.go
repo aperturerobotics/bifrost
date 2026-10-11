@@ -3,11 +3,13 @@
 package spacewave_cli
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 
 	"github.com/aperturerobotics/cli"
 	"github.com/pkg/errors"
+	"github.com/s4wave/spacewave/db/kvtx"
 	"github.com/s4wave/spacewave/db/s4db"
 	volume_kvtx "github.com/s4wave/spacewave/db/volume/common/kvtx"
 )
@@ -46,7 +48,13 @@ func (a *debugVolumeReindexArgs) Run(c *cli.Context) error {
 	}
 
 	// Regenerate the complete posting layout while the volume stays offline.
-	count, err := volume_kvtx.RebuildVolumeRefGraph(c.Context, db)
+	// Batches commit with write ordering: each records where a rerun
+	// resumes, so a crash can only rewind to an earlier batch, and one flush
+	// at the end makes the rebuild durable.
+	count, err := volume_kvtx.RebuildVolumeRefGraph(c.Context, kvtx.NewOrderedStore(db), reindexProgress())
+	if err == nil {
+		err = db.Sync(c.Context)
+	}
 	if err != nil {
 		return errors.Wrap(err, "rebuild reference indexes; rerun before starting the daemon")
 	}
@@ -55,6 +63,20 @@ func (a *debugVolumeReindexArgs) Run(c *cli.Context) error {
 		{"References Indexed", strconv.FormatUint(count, 10)},
 	})
 	return nil
+}
+
+// reindexProgress returns a progress function that reports each whole
+// percent of the primitive log indexed on standard error.
+func reindexProgress() func(next, horizon uint64) {
+	last := -1
+	return func(next, horizon uint64) {
+		pct := int((next - 1) * 100 / max(horizon, 1))
+		if pct == last {
+			return
+		}
+		last = pct
+		fmt.Fprintf(os.Stderr, "indexed %d of %d primitives (%d%%)\n", next-1, horizon, pct)
+	}
 }
 
 // newDebugVolumeReindexCommand builds the offline reference index regenerator.
