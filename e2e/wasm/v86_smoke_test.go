@@ -86,7 +86,7 @@ func TestQuickstartV86BootSmoke(t *testing.T) {
 	)
 
 	// Wait for the default image selection to render.
-	if err := page.Locator("text=/(?:Catalog image:|Will copy from catalog:)(?: Aperture Linux| v86image-01kszf4rsev1s7zkq2ms2y5r0w)/").First().WaitFor(
+	if err := page.Locator("text=/From catalog:(?: Aperture Linux| v86image-01kszf4rsev1s7zkq2ms2y5r0w)/").First().WaitFor(
 		playwright.LocatorWaitForOptions{Timeout: playwright.Float(v86SmokeStageTimeoutMS)},
 	); err != nil {
 		t.Fatalf("v86 stage selected default image absent: %v\n%s", err, readV86WizardDebug(page))
@@ -110,35 +110,12 @@ func TestQuickstartV86BootSmoke(t *testing.T) {
 		t.Fatalf("fill v86 VM name: %v", err)
 	}
 
-	// Click Create and retry with a DOM click if needed.
+	// Click Create once the wizard has loaded the catalog image.
 	createButton := page.Locator("button:visible:has-text('Create'):not([disabled])").Last()
 	if err := createButton.Click(
 		playwright.LocatorClickOptions{Timeout: playwright.Float(v86SmokeStageTimeoutMS)},
 	); err != nil {
 		t.Fatalf("v86 stage create click failed: %v\n%s", err, readV86WizardDebug(page))
-	}
-
-	// Wait for the v86 plugin viewer to render a Start button.
-	if _, err := page.WaitForFunction(`() => {
-		const hash = window.location.hash || ''
-		if (hash.includes('/-/vm/v86/')) return true
-		return Array.from(document.querySelectorAll('button')).some((button) =>
-			(button.innerText || button.textContent || '').trim() === 'Creating...' && button.disabled
-		)
-	}`, nil, playwright.PageWaitForFunctionOptions{
-		Timeout: playwright.Float(1000),
-	}); err != nil {
-		t.Logf("Create button did not enter creating state after Playwright click; retrying DOM click")
-		if _, evalErr := page.Evaluate(`() => {
-			const button = Array.from(document.querySelectorAll('button')).find((candidate) =>
-				(candidate.innerText || candidate.textContent || '').trim() === 'Create' && !candidate.disabled
-			)
-			if (!button) return false
-			button.click()
-			return true
-		}`, nil); evalErr != nil {
-			t.Fatalf("retry create v86 VM click: %v\n%s", evalErr, readV86WizardDebug(page))
-		}
 	}
 
 	// Record the create stage.
