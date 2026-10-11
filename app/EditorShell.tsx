@@ -35,16 +35,21 @@ import { ShellProvider } from './ShellContext.js'
 // isDebug is true in debug builds (BLDR_DEBUG injected by esbuild).
 const isDebug = typeof BLDR_DEBUG === 'boolean' && BLDR_DEBUG
 
+/** CommandSessionScope updates the session resource without remounting command UI. */
 function CommandSessionScope({ children }: { children: ReactNode }) {
+  // Read the committed active tab path for the command session.
   const rootResource = useRootResource()
   const { tabs, activeTabId } = useShellTabs()
   const activeSessionIndex = useMemo(() => {
+    // Identify the session referenced by the committed active tab.
     const activePath = tabs.find((tab) => tab.id === activeTabId)?.path ?? ''
     const match = activePath.match(/^\/u\/(\d+)(?:\/|$)/)
     if (!match) return null
     const sessionIndex = Number(match[1])
     return sessionIndex > 0 ? sessionIndex : null
   }, [tabs, activeTabId])
+
+  // Mount the session resource as its metadata becomes available.
   const metadata = useSessionMetadata(activeSessionIndex)
   const sessionResource = useResource(
     rootResource,
@@ -59,7 +64,7 @@ function CommandSessionScope({ children }: { children: ReactNode }) {
     [activeSessionIndex, metadata?.providerId, metadata?.providerAccountId],
   )
 
-  if (activeSessionIndex === null) return children
+  // Keep command UI mounted when a tab enters or leaves a session.
   return (
     <SessionContext.Provider resource={sessionResource}>
       {children}
@@ -123,22 +128,22 @@ function useShellDocumentEntry(): ShellDocumentEntry {
 }
 
 function EditorShellContent() {
+  // Read the document entry and persisted bottom-bar menu.
   const { getAppPath, subscribe } = useAppNavigation()
   const documentEntry = useShellDocumentEntry()
   const namespace = useStateNamespace(['shell'])
-
   const [openMenu, setOpenMenu] = useStateAtom<string>(
     namespace,
     'openMenu',
     '',
   )
 
-  // Track grid mode state with proper reactivity to hash changes
+  // Track whether navigation uses the split layout.
   const [isGridMode, setIsGridMode] = useState(() => {
     return getAppPath().startsWith('/g/')
   })
 
-  // Listen for hash changes to update grid mode state
+  // Keep the layout mode aligned with navigation.
   useEffect(() => {
     const handleHashChange = () => {
       setIsGridMode(getAppPath().startsWith('/g/'))
