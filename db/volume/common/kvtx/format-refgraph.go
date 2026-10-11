@@ -75,26 +75,10 @@ func convertCayleyEdgeBatch(ctx context.Context, store kvtx.Store, start []byte)
 		return next, err
 	}
 
-	// Resolve each node once and write every reference edge.
-	names := make(map[uint64]string)
-	var adds []block_gc.RefEdge
-	for _, e := range edges {
-		predicate, err := cayleyNodeName(ctx, tx, names, e.predicate)
-		if err != nil {
-			return nil, err
-		}
-		if predicate != block_gc.PredGCRef {
-			continue
-		}
-		subject, err := cayleyNodeName(ctx, tx, names, e.subject)
-		if err != nil {
-			return nil, err
-		}
-		object, err := cayleyNodeName(ctx, tx, names, e.object)
-		if err != nil {
-			return nil, err
-		}
-		adds = append(adds, block_gc.RefEdge{Subject: subject, Object: object})
+	// Write every reference edge.
+	adds, err := resolveCayleyRefs(ctx, tx, edges)
+	if err != nil {
+		return nil, err
 	}
 	if err := openRefGraph(kvtx.NewTxStore(tx)).ApplyRefBatch(ctx, adds, nil); err != nil {
 		return nil, err
@@ -145,6 +129,35 @@ func collectCayleyEdges(ctx context.Context, tx kvtx.Tx, start []byte) ([]cayley
 		})
 	}
 	return edges, nil, it.Err()
+}
+
+// resolveCayleyRefs returns the reference edges among edges, reading each
+// node's name from tx once.
+func resolveCayleyRefs(ctx context.Context, tx kvtx.Tx, edges []cayleyEdge) ([]block_gc.RefEdge, error) {
+	names := make(map[uint64]string)
+	var refs []block_gc.RefEdge
+	for _, e := range edges {
+		// Skip edges of other predicates.
+		predicate, err := cayleyNodeName(ctx, tx, names, e.predicate)
+		if err != nil {
+			return nil, err
+		}
+		if predicate != block_gc.PredGCRef {
+			continue
+		}
+
+		// Name both ends.
+		subject, err := cayleyNodeName(ctx, tx, names, e.subject)
+		if err != nil {
+			return nil, err
+		}
+		object, err := cayleyNodeName(ctx, tx, names, e.object)
+		if err != nil {
+			return nil, err
+		}
+		refs = append(refs, block_gc.RefEdge{Subject: subject, Object: object})
+	}
+	return refs, nil
 }
 
 // cayleyNodeName returns the IRI of a node primitive, reading it from the log
