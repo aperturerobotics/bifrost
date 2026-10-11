@@ -7,6 +7,8 @@ import {
   waitFor,
 } from '@testing-library/react'
 
+import { RuntimeClientClosedError } from '@aptre/bldr'
+
 import type { StateAtomAccessor } from './useBackendStateAtom.js'
 import { useBackendStateAtomValue } from './useBackendStateAtom.js'
 
@@ -113,5 +115,44 @@ describe('useBackendStateAtomValue', () => {
     push('{"json":"remote.md"}')
     await waitFor(() => expect(button.textContent).toBe('remote.md'))
     expect(setState).toHaveBeenCalledTimes(1)
+  })
+
+  describe.each([
+    {
+      name: 'ends quietly when the runtime client closes during a write',
+      err: new RuntimeClientClosedError('normal-close', 'client', 1),
+      logged: false,
+    },
+    {
+      name: 'logs a write that fails for another reason',
+      err: new Error('write failed'),
+      logged: true,
+    },
+  ])('write failure', ({ name, err, logged }) => {
+    it(name, async () => {
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+      const setState = vi.fn(() => Promise.reject(err))
+      const stateAtom = {
+        setState,
+        watchState: vi.fn(() => null),
+        release: vi.fn(),
+        [Symbol.dispose]: vi.fn(),
+      }
+      const accessStateAtom = vi.fn(() => Promise.resolve(stateAtom as never))
+
+      render(<SelectedNoteButton accessor={buildAccessor(accessStateAtom)} />)
+      fireEvent.click(screen.getByTestId('selected-note'))
+
+      await waitFor(() => expect(setState).toHaveBeenCalledTimes(1))
+      await Promise.resolve()
+      if (logged) {
+        await waitFor(() => expect(consoleError).toHaveBeenCalled())
+      } else {
+        expect(consoleError).not.toHaveBeenCalled()
+      }
+      consoleError.mockRestore()
+    })
   })
 })
