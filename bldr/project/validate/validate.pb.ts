@@ -2,14 +2,13 @@
 // @generated from file github.com/s4wave/spacewave/bldr/project/validate/validate.proto (package bldr.project.validate, syntax proto3)
 /* eslint-disable */
 
-import { createEnumType } from "@aptre/protobuf-es-lite/enum";
-import type { JsModuleKind } from "../../plugin/compiler/js/compiler.pb.js";
-import { JsModuleKind_Enum } from "../../plugin/compiler/js/compiler.pb.js";
-import type { MessageType } from "@aptre/protobuf-es-lite/message";
-import { createMessageType } from "@aptre/protobuf-es-lite/message";
-import { ScalarType } from "@aptre/protobuf-es-lite/scalar";
-import type { PartialFieldInfo } from "@aptre/protobuf-es-lite/field";
-
+import { createEnumType } from '@aptre/protobuf-es-lite/enum'
+import type { JsModuleKind } from '../../plugin/compiler/js/compiler.pb.js'
+import { JsModuleKind_Enum } from '../../plugin/compiler/js/compiler.pb.js'
+import type { MessageType } from '@aptre/protobuf-es-lite/message'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
+import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
+import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * RefusalKind is the rule a refused project breaks.
@@ -65,7 +64,11 @@ export enum RefusalKind {
   UNPINNED_DEPENDENCY = 5,
 }
 
-export const RefusalKind_Enum = /* @__PURE__ */ createEnumType("bldr.project.validate.RefusalKind", RefusalKind, "REFUSAL_KIND_");
+export const RefusalKind_Enum = /* @__PURE__ */ createEnumType(
+  'bldr.project.validate.RefusalKind',
+  RefusalKind,
+  'REFUSAL_KIND_',
+)
 
 /**
  * Module is one JavaScript module of a plugin.
@@ -78,23 +81,22 @@ export interface Module {
    *
    * @generated from field: bldr.plugin.compiler.js.JsModuleKind kind = 1;
    */
-  kind?: JsModuleKind;
+  kind?: JsModuleKind
   /**
    * Path is the module source file relative to the project root.
    *
    * @generated from field: string path = 2;
    */
-  path?: string;
-
-};
+  path?: string
+}
 
 export const Module: MessageType<Module> = /* @__PURE__ */ createMessageType({
-    typeName: "bldr.project.validate.Module",
-    fields: [
-        { no: 1, name: "kind", kind: "enum", T: JsModuleKind_Enum },
-        { no: 2, name: "path", kind: "scalar", T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-});
+  typeName: 'bldr.project.validate.Module',
+  fields: [
+    { no: 1, name: 'kind', kind: 'enum', T: JsModuleKind_Enum },
+    { no: 2, name: 'path', kind: 'scalar', T: ScalarType.STRING },
+  ] satisfies readonly PartialFieldInfo[],
+})
 
 /**
  * Plugin is one JavaScript plugin manifest declared in bldr.star.
@@ -107,30 +109,29 @@ export interface Plugin {
    *
    * @generated from field: string manifest_id = 1;
    */
-  manifestId?: string;
+  manifestId?: string
   /**
    * Description is the manifest's description.
    *
    * @generated from field: string description = 2;
    */
-  description?: string;
+  description?: string
   /**
    * Modules are the plugin's JavaScript modules.
    *
    * @generated from field: repeated bldr.project.validate.Module modules = 3;
    */
-  modules?: Module[];
-
-};
+  modules?: Module[]
+}
 
 export const Plugin: MessageType<Plugin> = /* @__PURE__ */ createMessageType({
-    typeName: "bldr.project.validate.Plugin",
-    fields: [
-        { no: 1, name: "manifest_id", kind: "scalar", T: ScalarType.STRING },
-        { no: 2, name: "description", kind: "scalar", T: ScalarType.STRING },
-        { no: 3, name: "modules", kind: "message", T: Module, repeated: true },
-    ] satisfies readonly PartialFieldInfo[],
-});
+  typeName: 'bldr.project.validate.Plugin',
+  fields: [
+    { no: 1, name: 'manifest_id', kind: 'scalar', T: ScalarType.STRING },
+    { no: 2, name: 'description', kind: 'scalar', T: ScalarType.STRING },
+    { no: 3, name: 'modules', kind: 'message', T: Module, repeated: true },
+  ] satisfies readonly PartialFieldInfo[],
+})
 
 /**
  * Dependency is one npm package pinned by bun.lock.
@@ -143,30 +144,30 @@ export interface Dependency {
    *
    * @generated from field: string name = 1;
    */
-  name?: string;
+  name?: string
   /**
    * Version is the locked version.
    *
    * @generated from field: string version = 2;
    */
-  version?: string;
+  version?: string
   /**
    * Direct is set when package.json names the package.
    *
    * @generated from field: bool direct = 3;
    */
-  direct?: boolean;
+  direct?: boolean
+}
 
-};
-
-export const Dependency: MessageType<Dependency> = /* @__PURE__ */ createMessageType({
-    typeName: "bldr.project.validate.Dependency",
+export const Dependency: MessageType<Dependency> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'bldr.project.validate.Dependency',
     fields: [
-        { no: 1, name: "name", kind: "scalar", T: ScalarType.STRING },
-        { no: 2, name: "version", kind: "scalar", T: ScalarType.STRING },
-        { no: 3, name: "direct", kind: "scalar", T: ScalarType.BOOL },
+      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
+      { no: 2, name: 'version', kind: 'scalar', T: ScalarType.STRING },
+      { no: 3, name: 'direct', kind: 'scalar', T: ScalarType.BOOL },
     ] satisfies readonly PartialFieldInfo[],
-});
+  })
 
 /**
  * Refusal is one reason a project may not build.
@@ -179,23 +180,22 @@ export interface Refusal {
    *
    * @generated from field: bldr.project.validate.RefusalKind kind = 1;
    */
-  kind?: RefusalKind;
+  kind?: RefusalKind
   /**
    * Reason explains the refusal to the person reviewing the project.
    *
    * @generated from field: string reason = 2;
    */
-  reason?: string;
-
-};
+  reason?: string
+}
 
 export const Refusal: MessageType<Refusal> = /* @__PURE__ */ createMessageType({
-    typeName: "bldr.project.validate.Refusal",
-    fields: [
-        { no: 1, name: "kind", kind: "enum", T: RefusalKind_Enum },
-        { no: 2, name: "reason", kind: "scalar", T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-});
+  typeName: 'bldr.project.validate.Refusal',
+  fields: [
+    { no: 1, name: 'kind', kind: 'enum', T: RefusalKind_Enum },
+    { no: 2, name: 'reason', kind: 'scalar', T: ScalarType.STRING },
+  ] satisfies readonly PartialFieldInfo[],
+})
 
 /**
  * Validation is the result of checking an untrusted Bldr project before any
@@ -209,28 +209,33 @@ export interface Validation {
    *
    * @generated from field: repeated bldr.project.validate.Plugin plugins = 1;
    */
-  plugins?: Plugin[];
+  plugins?: Plugin[]
   /**
    * Dependencies are the npm packages bun.lock pins, by name.
    *
    * @generated from field: repeated bldr.project.validate.Dependency dependencies = 2;
    */
-  dependencies?: Dependency[];
+  dependencies?: Dependency[]
   /**
    * Refusals are the reasons the project may not build.
    *
    * @generated from field: repeated bldr.project.validate.Refusal refusals = 3;
    */
-  refusals?: Refusal[];
+  refusals?: Refusal[]
+}
 
-};
-
-export const Validation: MessageType<Validation> = /* @__PURE__ */ createMessageType({
-    typeName: "bldr.project.validate.Validation",
+export const Validation: MessageType<Validation> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'bldr.project.validate.Validation',
     fields: [
-        { no: 1, name: "plugins", kind: "message", T: Plugin, repeated: true },
-        { no: 2, name: "dependencies", kind: "message", T: Dependency, repeated: true },
-        { no: 3, name: "refusals", kind: "message", T: Refusal, repeated: true },
+      { no: 1, name: 'plugins', kind: 'message', T: Plugin, repeated: true },
+      {
+        no: 2,
+        name: 'dependencies',
+        kind: 'message',
+        T: Dependency,
+        repeated: true,
+      },
+      { no: 3, name: 'refusals', kind: 'message', T: Refusal, repeated: true },
     ] satisfies readonly PartialFieldInfo[],
-});
-
+  })

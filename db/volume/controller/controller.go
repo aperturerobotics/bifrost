@@ -311,8 +311,7 @@ func (c *Controller) constructVolume(ctx context.Context) (volume.Volume, error)
 		}
 
 		// Retry on this controller when the open failure will clear.
-		var waiter volumeConstructionWaiter
-		if errors.As(err, &waiter) {
+		if waiter, ok := errors.AsType[volumeConstructionWaiter](err); ok {
 			c.le.WithError(err).Warn("volume open waits for the conflicting claim to clear")
 			if err := waiter.Wait(ctx); err != nil {
 				return nil, err
