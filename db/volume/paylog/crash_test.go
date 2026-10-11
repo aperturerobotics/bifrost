@@ -13,7 +13,6 @@ import (
 	"github.com/s4wave/spacewave/db/volume/crashtest"
 	"github.com/s4wave/spacewave/db/volume/device"
 	"github.com/s4wave/spacewave/db/volume/logindex"
-	"github.com/s4wave/spacewave/db/volume/refgraph"
 )
 
 // crashEngines are the engines the crash test runs on. The log engine
@@ -138,7 +137,7 @@ func TestCrashReplay(t *testing.T) {
 				// Count the calls of an uncrashed replay on the first pass.
 				if n < 0 {
 					base := d.Calls()
-					if _, err := s.ReplayWAL(ctx, refgraph.NewGraph(s)); err != nil {
+					if _, err := s.ReplayWAL(ctx, newGraph(s)); err != nil {
 						t.Fatal(err)
 					}
 					calls = d.Calls() - base
@@ -148,13 +147,13 @@ func TestCrashReplay(t *testing.T) {
 
 				// Crash the replay, recover, and replay again.
 				d.CrashAfter(n)
-				if _, err := s.ReplayWAL(ctx, refgraph.NewGraph(s)); err == nil {
+				if _, err := s.ReplayWAL(ctx, newGraph(s)); err == nil {
 					t.Fatalf("crash %d: replay finished without crashing", n)
 				}
 				_ = s.Close()
 				d.PowerLoss(rand.New(rand.NewPCG(uint64(n), 1))) //nolint:gosec
 				s = reopen(t, e, d, nil)
-				graph := refgraph.NewGraph(s)
+				graph := newGraph(s)
 				if _, err := s.ReplayWAL(ctx, graph); err != nil {
 					t.Fatal(err)
 				}

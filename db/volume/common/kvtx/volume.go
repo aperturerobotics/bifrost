@@ -140,10 +140,6 @@ func NewVolume(
 	// Route atomic publications through transaction-local reference graphs.
 	if atomicStore, ok := store.(kvtx.AtomicCommitStore); ok && atomicStore.SupportsAtomicCommit() {
 		v.atomicHashGet = !conf.GetDisableHashGet()
-		// Long-lived Cayley caches cannot be shared with transaction-local writes.
-		if v.refGraph != nil {
-			_ = v.refGraph.Close()
-		}
 		v.refGraph = &transactionRefGraph{volume: v}
 		v.publications = newPublicationWriter(v)
 		if orderedStore, ok := store.(kvtx.OrderedCommitStore); ok {
@@ -196,7 +192,7 @@ func NewVolumeWithBlockStore(
 }
 
 // NewVolumeWithBlockStoreAndGC builds a key/value volume with a custom block
-// store and a pre-built GC reference graph. The Cayley RefGraph is not created.
+// store and a pre-built GC reference graph.
 func NewVolumeWithBlockStoreAndGC(
 	ctx context.Context,
 	storeID string,
@@ -253,17 +249,12 @@ func initVolume(
 	}
 
 	// Open the persistent reference graph for Volume garbage collection.
-	rg, err := block_gc.NewRefGraph(ctx, store, volumeRefGraphPrefix())
-	if err != nil {
-		return nil, err
-	}
-	v.refGraph = rg
-
+	v.refGraph = openRefGraph(store)
 	return v, nil
 }
 
-// initVolumeSkipGC performs common volume initialization without creating
-// a Cayley-backed GC reference graph. Used when the caller provides its
+// initVolumeSkipGC performs common volume initialization without opening
+// the Volume's reference graph. Used when the caller provides its
 // own RefGraphOps (e.g. OPFS GCGraph).
 func initVolumeSkipGC(
 	ctx context.Context,

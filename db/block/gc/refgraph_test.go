@@ -18,18 +18,13 @@ import (
 func newTestRefGraph(t *testing.T) *RefGraph {
 	// Open an in-memory reference graph and register its cleanup.
 	t.Helper()
-	ctx := context.Background()
-	store := store_kvtx_inmem.NewStore()
-	rg, err := NewRefGraph(ctx, store, []byte("gc/"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	rg := NewRefGraph(store_kvtx_inmem.NewStore())
 	t.Cleanup(func() { rg.Close() })
 	return rg
 }
 
-// snapshotRefGraphRecords captures the underlying Cayley value, refcount,
-// primitive-log, and edge-index records for the refgraph prefix.
+// snapshotRefGraphRecords captures every record in the reference graph's
+// store.
 func snapshotRefGraphRecords(t *testing.T, store kvtx.Store) map[string][]byte {
 	// Open a read transaction for the reference graph records.
 	t.Helper()
@@ -42,7 +37,7 @@ func snapshotRefGraphRecords(t *testing.T, store kvtx.Store) map[string][]byte {
 
 	// Copy the reference graph records before the transaction closes.
 	records := make(map[string][]byte)
-	err = tx.ScanPrefix(ctx, []byte("gc/"), func(key, value []byte) error {
+	err = tx.ScanPrefix(ctx, nil, func(key, value []byte) error {
 		records[string(key)] = slices.Clone(value)
 		return nil
 	})
@@ -172,49 +167,6 @@ func TestRemoveNonExistentRef(t *testing.T) {
 	// Should not error when removing a non-existent edge.
 	if err := rg.RemoveRef(ctx, "x", "y"); err != nil {
 		t.Fatal(err)
-	}
-}
-
-func TestFilterRefChangesPreservesBatchAndGraphEdges(t *testing.T) {
-	// Open a reference graph for the test.
-	ctx := context.Background()
-	rg := newTestRefGraph(t)
-
-	// Prepare an added edge and an existing graph edge.
-	adds := []RefEdge{{Subject: "batch", Object: "in-adds"}}
-	if err := rg.AddRef(ctx, "graph", "in-graph"); err != nil {
-		t.Fatal(err)
-	}
-
-	// Filter removals against the batch and the stored graph.
-	removes := []RefEdge{
-		{Subject: "batch", Object: "in-adds"},
-		{Subject: "graph", Object: "in-graph"},
-		{Subject: "absent", Object: "absent"},
-	}
-	got, err := rg.presentRemoves(ctx, adds, removes)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Verify only edges present in the batch or graph survive filtering.
-	want := removes[:2]
-	if !slices.Equal(got, want) {
-		t.Fatalf("filtered removes = %#v, want %#v", got, want)
-	}
-
-	// An absent edge whose node names collide with the predicate IRI adds no
-	// lookup entries; it must still be probed, not assumed to exist.
-	got, err = rg.presentRemoves(ctx, nil, []RefEdge{
-		{Subject: PredGCRef, Object: PredGCRef},
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Verify the absent predicate-named edge is excluded.
-	if len(got) != 0 {
-		t.Fatalf("filtered predicate-named removes = %#v, want none", got)
 	}
 }
 
@@ -833,10 +785,7 @@ func TestApplyRefBatchMissingRemovalPreservesGraphRecords(t *testing.T) {
 	// Open a reference graph for the test.
 	ctx := context.Background()
 	store := store_kvtx_inmem.NewStore()
-	rg, err := NewRefGraph(ctx, store, []byte("gc/"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	rg := NewRefGraph(store)
 	t.Cleanup(func() { rg.Close() })
 
 	// Create an owned target and a staged orphan.
@@ -878,7 +827,7 @@ func TestApplyRefBatchMissingRemovalPreservesGraphRecords(t *testing.T) {
 	// Verify missing removals preserve the stored graph records.
 	afterRecords := snapshotRefGraphRecords(t, store)
 	if !equalRefGraphRecords(beforeRecords, afterRecords) {
-		t.Fatal("missing removals changed underlying Cayley records")
+		t.Fatal("missing removals changed the graph records")
 	}
 
 	// Read outgoing edges after missing removals.
@@ -915,45 +864,11 @@ func TestApplyRefBatchMissingRemovalPreservesGraphRecords(t *testing.T) {
 	}
 }
 
-func TestPrepareRefBatchFiltersBackendRemovals(t *testing.T) {
-	// Open a reference graph for the test.
-	ctx := context.Background()
-	rg := newTestRefGraph(t)
-
-	// Create the existing edge used among absent removals.
-	existing := RefEdge{Subject: "owner", Object: "target"}
-	if err := rg.AddRef(ctx, existing.Subject, existing.Object); err != nil {
-		t.Fatal(err)
-	}
-
-	// Prepare backend removals against the stored graph.
-	removes := []RefEdge{
-		existing,
-		{Subject: "missing-owner", Object: "target"},
-		{Subject: "missing-owner", Object: "never-seen"},
-	}
-	_, backendRemoves, err := rg.prepareRefBatch(ctx, nil, removes, false)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Verify the backend receives only the existing edge.
-	if got, want := len(backendRemoves), 1; got != want {
-		t.Fatalf("backend removal count = %d, want %d", got, want)
-	}
-	if !slices.Equal(backendRemoves, []RefEdge{existing}) {
-		t.Fatalf("backend removals = %#v, want only %#v", backendRemoves, existing)
-	}
-}
-
 func TestApplyRefBatchExistingRemovalUpdatesIndexesAndOrphan(t *testing.T) {
 	// Open a reference graph for the test.
 	ctx := context.Background()
 	store := store_kvtx_inmem.NewStore()
-	rg, err := NewRefGraph(ctx, store, []byte("gc/"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	rg := NewRefGraph(store)
 	t.Cleanup(func() { rg.Close() })
 
 	// Create an owned target and capture its stored records.
@@ -973,7 +888,7 @@ func TestApplyRefBatchExistingRemovalUpdatesIndexesAndOrphan(t *testing.T) {
 	// Verify removing the edge changes the graph records.
 	afterRecords := snapshotRefGraphRecords(t, store)
 	if equalRefGraphRecords(beforeRecords, afterRecords) {
-		t.Fatal("existing removal left underlying Cayley records unchanged")
+		t.Fatal("existing removal left the graph records unchanged")
 	}
 
 	// Verify the forward index no longer contains the ownership edge.
@@ -1122,7 +1037,7 @@ func TestApplyRefBatchLargeBatchKeepsAddThenRemoveSemantics(t *testing.T) {
 	rg := newTestRefGraph(t)
 
 	// Prepare additions spanning several batches and a colliding removal.
-	edgeCount := refGraphApplyBatchLimit*3 + 17
+	edgeCount := maxBatchEdges*3 + 17
 	adds := make([]RefEdge, 0, edgeCount+1)
 	for i := range edgeCount {
 		adds = append(adds, RefEdge{
@@ -1152,8 +1067,9 @@ func TestApplyRefBatchLargeBatchKeepsAddThenRemoveSemantics(t *testing.T) {
 		t.Fatal("removed edge should be absent after add-before-remove batch")
 	}
 
-	// Verify targets from different batch positions are present.
-	for _, node := range []string{"node-0", "node-512", "node-1536"} {
+	// Verify targets from different batch slices are present.
+	for _, i := range []int{0, maxBatchEdges, edgeCount - 1} {
+		node := "node-" + strconv.Itoa(i)
 		if !slices.Contains(refs, node) {
 			t.Fatalf("missing edge to %s", node)
 		}
@@ -1165,10 +1081,7 @@ func TestApplyRefBatchPreparesEachSliceAfterPriorCommit(t *testing.T) {
 	ctx := context.Background()
 	baseStore := store_kvtx_inmem.NewStore()
 	store := &refGraphTrackingStore{Store: baseStore}
-	rg, err := NewRefGraph(ctx, store, []byte("gc/"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	rg := NewRefGraph(store)
 	t.Cleanup(func() { rg.Close() })
 
 	// Create an existing edge and reset transaction counters.
@@ -1321,20 +1234,17 @@ func TestApplyRefBatchInterruptionKeepsCommittedPrefix(t *testing.T) {
 		Store:  store_kvtx_inmem.NewStore(),
 		cancel: cancel,
 	}
-	rg, err := NewRefGraph(ctx, store, []byte("gc/"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	rg := NewRefGraph(store)
 	t.Cleanup(func() {
 		if err := rg.Close(); err != nil {
 			t.Error(err)
 		}
 	})
 	store.commits.Store(0)
-	store.cancelAt = int64(refGraphApplySliceLimit / refGraphApplyBatchLimit)
+	store.cancelAt = 1
 
 	// Prepare additions spanning one full slice and a trailing edge.
-	adds := make([]RefEdge, refGraphApplySliceLimit+1)
+	adds := make([]RefEdge, maxBatchEdges+1)
 	for i := range adds {
 		adds[i] = RefEdge{
 			Subject: "interrupt-owner",
@@ -1343,7 +1253,7 @@ func TestApplyRefBatchInterruptionKeepsCommittedPrefix(t *testing.T) {
 	}
 
 	// Verify cancellation interrupts the batch after a committed prefix.
-	err = rg.ApplyRefBatch(ctx, adds, nil)
+	err := rg.ApplyRefBatch(ctx, adds, nil)
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("interrupted ApplyRefBatch error = %v, want context.Canceled", err)
 	}
@@ -1355,12 +1265,12 @@ func TestApplyRefBatchInterruptionKeepsCommittedPrefix(t *testing.T) {
 	}
 
 	// Verify exactly one full slice survives cancellation.
-	if len(refs) != refGraphApplySliceLimit {
-		t.Fatalf("committed prefix refs = %d, want %d", len(refs), refGraphApplySliceLimit)
+	if len(refs) != maxBatchEdges {
+		t.Fatalf("committed prefix refs = %d, want %d", len(refs), maxBatchEdges)
 	}
 
 	// Apply the remaining edge through a fresh context.
-	if err := rg.ApplyRefBatch(context.Background(), adds[refGraphApplySliceLimit:], nil); err != nil {
+	if err := rg.ApplyRefBatch(context.Background(), adds[maxBatchEdges:], nil); err != nil {
 		t.Fatal(err)
 	}
 
@@ -1581,80 +1491,4 @@ func TestApplyRefBatchIgnoresAbsentStagingRemoval(t *testing.T) {
 	if !slices.Contains(unreferenced, "target") {
 		t.Fatalf("target lost its owner but was not marked orphaned: %v", unreferenced)
 	}
-}
-
-func TestRegisterEntityChainRetriesInvalidSnapshot(t *testing.T) {
-	// Open a reference graph with one injected invalid snapshot.
-	ctx := context.Background()
-	store := &invalidSnapshotOnceStore{Store: store_kvtx_inmem.NewStore()}
-	rg, err := NewRefGraph(ctx, store, []byte("gc/"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer rg.Close()
-
-	// Register the existing provider edge and arm the snapshot failure.
-	if err := rg.AddRef(ctx, NodeGCRoot, "provider:local"); err != nil {
-		t.Fatal(err)
-	}
-	store.failNextRead.Store(true)
-
-	// Register the entity chain through the invalid snapshot.
-	if err := RegisterEntityChain(
-		ctx,
-		rg,
-		NodeGCRoot,
-		"provider:local",
-		"bucket:account-settings",
-	); err != nil {
-		t.Fatal(err)
-	}
-
-	// Verify the store injected the snapshot failure.
-	if !store.failed.Load() {
-		t.Fatal("test store did not inject an invalid snapshot")
-	}
-
-	// Read the new provider-to-bucket edge.
-	found, err := rg.hasRef(ctx, "provider:local", "bucket:account-settings")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Verify the chain extends beyond its duplicate root edge.
-	if !found {
-		t.Fatal("entity chain stopped after its duplicate root edge")
-	}
-}
-
-type invalidSnapshotOnceStore struct {
-	kvtx.Store
-	failNextRead atomic.Bool
-	failed       atomic.Bool
-}
-
-func (s *invalidSnapshotOnceStore) NewTransaction(ctx context.Context, write bool) (kvtx.Tx, error) {
-	tx, err := s.Store.NewTransaction(ctx, write)
-	if err != nil {
-		return nil, err
-	}
-	if write || !s.failNextRead.Load() {
-		return tx, nil
-	}
-	return &invalidSnapshotOnceTx{Tx: tx, store: s}, nil
-}
-
-type invalidSnapshotOnceTx struct {
-	kvtx.Tx
-	store *invalidSnapshotOnceStore
-	reads int
-}
-
-func (t *invalidSnapshotOnceTx) Get(ctx context.Context, key []byte) ([]byte, bool, error) {
-	t.reads++
-	if t.reads == 2 && t.store.failNextRead.CompareAndSwap(true, false) {
-		t.store.failed.Store(true)
-		return nil, false, kvtx.ErrInvalidSnapshot
-	}
-	return t.Tx.Get(ctx, key)
 }

@@ -22,7 +22,6 @@ import (
 	volume_kvtx "github.com/s4wave/spacewave/db/volume/common/kvtx"
 	"github.com/s4wave/spacewave/db/volume/logindex"
 	"github.com/s4wave/spacewave/db/volume/paylog"
-	"github.com/s4wave/spacewave/db/volume/refgraph"
 	"github.com/sirupsen/logrus"
 )
 
@@ -33,8 +32,11 @@ const ControllerID = "hydra/volume/browser"
 var Version = controller.MustParseVersion("0.0.1")
 
 // metadataPrefix holds the Volume metadata in the engine's store, apart from
-// the garbage collection graph, which refgraph keeps under its own prefix.
+// the reference graph.
 const metadataPrefix = "m/"
+
+// graphPrefix holds the reference graph records.
+const graphPrefix = "\x02"
 
 // Volume is the browser volume.
 type Volume = volume_kvtx.Volume
@@ -74,7 +76,7 @@ func NewVolume(ctx context.Context, le *logrus.Entry, conf *Config) (*Volume, er
 	if conf.GetVerbose() {
 		store = kvtx_vlogger.NewVLogger(le, store)
 	}
-	graph := refgraph.NewGraph(s)
+	graph := block_gc.NewCollectorRefGraph(kvtx_prefixer.NewPrefixer(s, []byte(graphPrefix)))
 	for _, node := range []string{block_gc.NodeGCRoot, block_gc.NodeUnreferenced} {
 		if err := graph.AddRoot(ctx, node); err != nil {
 			return nil, errors.Join(err, closeStore())

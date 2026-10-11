@@ -8,11 +8,9 @@ import (
 	"github.com/s4wave/spacewave/db/kvtx"
 )
 
-// transactionRefGraph never carries Cayley IRI/quad caches across physical
-// transactions. Atomic publication may remove/recreate nodes that a long-lived
-// handle has cached; reusing that cache can resurrect obsolete IDs. Each public
-// operation uses a fresh handle and one transaction in the publication domain.
-// The durable prefix and graph representation are unchanged.
+// transactionRefGraph runs each public operation in one physical transaction
+// of the publication domain, joined with the Volume's direct operations so it
+// cannot outlive Close.
 type transactionRefGraph struct{ volume *Volume }
 
 // read runs fn against a fresh read-scoped reference graph in one transaction.
@@ -33,12 +31,7 @@ func (g *transactionRefGraph) read(ctx context.Context, fn func(*block_gc.RefGra
 	defer tx.Discard()
 
 	// Read through a fresh reference graph scoped to the transaction.
-	rg, err := block_gc.NewRefGraph(ctx, kvtx.NewTxStore(tx), volumeRefGraphPrefix())
-	if err != nil {
-		return err
-	}
-	defer rg.Close()
-	return fn(rg)
+	return fn(openRefGraph(kvtx.NewTxStore(tx)))
 }
 
 // write runs fn against a fresh writable reference graph in one transaction.

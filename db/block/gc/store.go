@@ -67,22 +67,11 @@ type GCStoreOps struct {
 	pendingRemoves    []RefEdge           // normalized remove edges left by a failed direct flush
 }
 
-type storeTrackingDisabledContextKey struct{}
-
 const (
 	defaultFlushTask = "hydra/block-gc/store/flush-pending"
 	worldFlushTask   = "hydra/block-gc/store/flush-pending/world"
 	bucketFlushTask  = "hydra/block-gc/store/flush-pending/bucket"
 )
-
-func disableStoreTracking(ctx context.Context) context.Context {
-	return context.WithValue(ctx, storeTrackingDisabledContextKey{}, true)
-}
-
-func storeTrackingDisabled(ctx context.Context) bool {
-	disabled, _ := ctx.Value(storeTrackingDisabledContextKey{}).(bool)
-	return disabled
-}
 
 // WorldFlushTask returns the runtime trace task name for world-local GC flushes.
 func WorldFlushTask() string {
@@ -214,10 +203,7 @@ func (g *GCStoreOps) PutBlock(ctx context.Context, data []byte, opts *block.PutO
 		return nil, false, err
 	}
 
-	// Untracked writes and empty blocks take no ref edges.
-	if storeTrackingDisabled(ctx) {
-		return finish(ref, existed)
-	}
+	// Empty blocks take no ref edges.
 	if ref == nil || ref.GetEmpty() {
 		return finish(ref, existed)
 	}
@@ -257,11 +243,6 @@ func (g *GCStoreOps) PutBlockBatch(ctx context.Context, entries []*block.PutBatc
 	// Trace the batch and its ownership buffering as one task.
 	ctx, task := trace.NewTask(ctx, "hydra/block-gc/store/put-block-batch")
 	defer task.End()
-
-	// Untracked batches pass straight through.
-	if storeTrackingDisabled(ctx) {
-		return g.store.PutBlockBatch(ctx, entries)
-	}
 
 	// Tombstones release ownership below and write nothing.
 	puts := make([]*block.PutBatchEntry, 0, len(entries))
@@ -625,36 +606,6 @@ func deduplicateRefEdges(edges []RefEdge) []RefEdge {
 		}
 	}
 	return out
-}
-
-func normalizeRefEdges(adds, removes []RefEdge) ([]RefEdge, []RefEdge) {
-	// Deduplicate removal edges while preserving their caller order.
-	removeKeys := make(map[RefEdge]struct{}, len(removes))
-	normalizedRemoves := make([]RefEdge, 0, len(removes))
-	for _, edge := range removes {
-		key := edge
-		if _, ok := removeKeys[key]; ok {
-			continue
-		}
-		removeKeys[key] = struct{}{}
-		normalizedRemoves = append(normalizedRemoves, edge)
-	}
-
-	// Deduplicate additions and discard edges removed by the same batch.
-	addKeys := make(map[RefEdge]struct{}, len(adds))
-	normalizedAdds := make([]RefEdge, 0, len(adds))
-	for _, edge := range adds {
-		key := edge
-		if _, removed := removeKeys[key]; removed {
-			continue
-		}
-		if _, ok := addKeys[key]; ok {
-			continue
-		}
-		addKeys[key] = struct{}{}
-		normalizedAdds = append(normalizedAdds, edge)
-	}
-	return normalizedAdds, normalizedRemoves
 }
 
 // AddGCRef adds a gc/ref edge from subject to object and removes

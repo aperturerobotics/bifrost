@@ -248,15 +248,10 @@ func (w *publicationWriter) applyGroup(first *publicationRequest) (group []*publ
 	}
 	defer tx.Discard()
 
-	// Share that transaction across addressed blocks and lazily opened graph indexes.
+	// Share that transaction across addressed blocks and the reference graph.
 	store := kvtx.NewTxStore(tx)
 	blocks := block_store_kvtx.NewKVTxBlock(w.volume.kvKey, store, w.volume.GetHashType(), w.volume.atomicHashGet)
-	var rg *block_gc.RefGraph
-	defer func() {
-		if rg != nil {
-			_ = rg.Close()
-		}
-	}()
+	rg := openRefGraph(store)
 
 	// Preflight each request against prior accepted changes in this physical group.
 	accepted := 0
@@ -273,12 +268,7 @@ func (w *publicationWriter) applyGroup(first *publicationRequest) (group []*publ
 		if result == nil {
 			// All failures from here onward are physical-group failures: there are no
 			// per-request savepoints. Do not carry a partially written request onward.
-			if p.TrackGC && rg == nil {
-				rg, err = block_gc.NewRefGraph(ctx, store, volumeRefGraphPrefix())
-			}
-			if err == nil {
-				err = w.apply(ctx, req, tx, blocks, rg, replacements)
-			}
+			err = w.apply(ctx, req, tx, blocks, rg, replacements)
 			if err != nil {
 				break
 			}
@@ -298,12 +288,7 @@ func (w *publicationWriter) applyGroup(first *publicationRequest) (group []*publ
 	// Carry the Volume's deferred edits with the accepted requests.
 	var edits deferredEdits
 	if err == nil && accepted != 0 {
-		if rg == nil {
-			rg, err = block_gc.NewRefGraph(first.ctx, store, volumeRefGraphPrefix())
-		}
-		if err == nil {
-			edits, err = w.volume.applyDeferred(first.ctx, blocks, rg)
-		}
+		edits, err = w.volume.applyDeferred(first.ctx, blocks, rg)
 	}
 
 	// Publish all accepted requests together, or discard the entire physical group.

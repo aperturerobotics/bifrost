@@ -23,7 +23,7 @@ func BenchmarkDriveRatioWriteAtRootStorage(b *testing.B) {
 	var writeAtRootDuration time.Duration
 	var flushPendingDuration time.Duration
 	var applyRefBatchDuration time.Duration
-	var cayleyTransactions int
+	var graphTransactions int
 
 	// Measure root writes and allocations over fresh graph-backed stores.
 	b.ReportAllocs()
@@ -45,7 +45,7 @@ func BenchmarkDriveRatioWriteAtRootStorage(b *testing.B) {
 		b.StopTimer()
 		flushPendingDuration += store.flushDuration
 		applyRefBatchDuration += refGraph.applyRefBatchDuration
-		cayleyTransactions += refGraph.cayleyTransactions
+		graphTransactions += refGraph.graphTransactions
 		refGraph.Close()
 	}
 
@@ -56,7 +56,7 @@ func BenchmarkDriveRatioWriteAtRootStorage(b *testing.B) {
 	b.ReportMetric(float64(applyRefBatchDuration.Microseconds())/ops, "apply_ref_batch_us/op")
 	b.ReportMetric(driveStorageBenchmarkBlocks, "blocks/op")
 	b.ReportMetric(driveStorageBenchmarkRefs, "ref_edges/op")
-	b.ReportMetric(float64(cayleyTransactions)/ops, "cayley_transactions/op")
+	b.ReportMetric(float64(graphTransactions)/ops, "graph_transactions/op")
 }
 
 func newDriveRatioBenchmarkStore(
@@ -67,10 +67,7 @@ func newDriveRatioBenchmarkStore(
 	b.Helper()
 	kvStore := store_kvtx_inmem.NewStore()
 	rawStore := block_store_kvtx.NewKVTxBlock(store_kvkey.NewDefaultKVKey(), kvStore, 0, false)
-	refGraph, err := NewRefGraph(ctx, kvStore, []byte("gc/"))
-	if err != nil {
-		b.Fatal(err)
-	}
+	refGraph := NewRefGraph(kvStore)
 
 	// Wrap the graph and block store with phase timing.
 	timedGraph := &driveRatioBenchmarkRefGraph{RefGraph: refGraph}
@@ -140,7 +137,7 @@ type driveRatioBenchmarkRefGraph struct {
 	*RefGraph
 
 	applyRefBatchDuration time.Duration
-	cayleyTransactions    int
+	graphTransactions     int
 }
 
 func (rg *driveRatioBenchmarkRefGraph) ApplyRefBatch(ctx context.Context, adds, removes []RefEdge) error {
@@ -150,17 +147,17 @@ func (rg *driveRatioBenchmarkRefGraph) ApplyRefBatch(ctx context.Context, adds, 
 
 	// Accumulate graph mutation duration and transaction count.
 	rg.applyRefBatchDuration += time.Since(start)
-	rg.cayleyTransactions += refBatchTransactions(len(adds), len(removes))
+	rg.graphTransactions += refBatchTransactions(len(adds), len(removes))
 	return err
 }
 
 func refBatchTransactions(adds, removes int) int {
 	transactions := 0
 	if adds != 0 {
-		transactions += (adds + refGraphApplyBatchLimit - 1) / refGraphApplyBatchLimit
+		transactions += (adds + maxBatchEdges - 1) / maxBatchEdges
 	}
 	if removes != 0 {
-		transactions += (removes + refGraphApplyBatchLimit - 1) / refGraphApplyBatchLimit
+		transactions += (removes + maxBatchEdges - 1) / maxBatchEdges
 	}
 	return transactions
 }

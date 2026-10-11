@@ -3,91 +3,82 @@ package block_gc
 import (
 	"context"
 	"encoding/binary"
-	"io"
 	"slices"
-	"strconv"
-	"sync"
 
-	"github.com/aperturerobotics/cayley"
-	"github.com/aperturerobotics/cayley/graph"
-	cayley_kv "github.com/aperturerobotics/cayley/graph/kv"
-	cayley_proto "github.com/aperturerobotics/cayley/graph/proto"
-	"github.com/aperturerobotics/cayley/graph/refs"
-	cayley_hkv "github.com/aperturerobotics/cayley/kv"
-	cayley_flat "github.com/aperturerobotics/cayley/kv/flat"
-	"github.com/aperturerobotics/cayley/quad"
-	"github.com/aperturerobotics/cayley/query/shape"
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/kvtx"
-	kvtx_cayley "github.com/s4wave/spacewave/db/kvtx/cayley"
-	kvtx_prefixer "github.com/s4wave/spacewave/db/kvtx/prefixer"
-	trace "github.com/s4wave/spacewave/db/traceutil"
 )
 
-// refGraphQuadIndexes keep each unlabeled reference edge in its own posting.
-// Subject and object prefix scans still provide forward and reverse traversal.
-var refGraphQuadIndexes = []cayley_kv.QuadIndex{
-	{Dirs: []quad.Direction{quad.Subject, quad.Predicate, quad.Object}},
-	{Dirs: []quad.Direction{quad.Object, quad.Predicate, quad.Subject}},
-}
+// maxBatchEdges bounds the input edges committed in one transaction.
+const maxBatchEdges = 128
 
-// RefGraph is a unified reference graph for garbage collection backed by Cayley.
-// The durable graph is the only representation of the edge set. Membership and
-// owner queries read the store's own indexes, so opening a RefGraph costs
-// nothing proportional to how many edges it holds and neither does keeping one
-// open.
-type RefGraph struct {
-	// handle owns the Cayley indexes and their cached metadata.
-	handle *cayley.Handle
-	// store addresses the same prefixed durable graph as handle.
-	store kvtx.Store
-
-	// writeMu serializes bounded ownership transitions.
-	writeMu sync.Mutex
-}
-
+// Record kinds. Each kind byte begins a key followed by length-prefixed node
+// IRIs, so no node can be read as a prefix of another.
 const (
-	// refGraphApplySliceLimit bounds preparation and application together.
-	refGraphApplySliceLimit = 4096
-	// refGraphApplyBatchLimit commits each bounded slice without extra
-	// fsyncs. Additions precede removals within and across commits.
-	// Each slice releases writeMu.
-	refGraphApplyBatchLimit = refGraphApplySliceLimit
+	// kindForward keys an edge by subject then object; the value is the object.
+	kindForward byte = 'f'
+	// kindIncoming keys an edge by object then subject; the value is the subject.
+	kindIncoming byte = 'i'
+	// kindNode keys the node inventory of a collector graph.
+	kindNode byte = 'n'
+	// kindRoot keys the registered roots of a collector graph.
+	kindRoot byte = 'r'
 )
 
-// NewRefGraph constructs a RefGraph backed by the given kvtx store.
-// prefix is prepended to all keys (e.g., "gc/" for space context).
-func NewRefGraph(ctx context.Context, store kvtx.Store, prefix []byte) (*RefGraph, error) {
-	// Open the prefixed Cayley graph with idempotent edge updates.
-	prefixed := kvtx_prefixer.NewPrefixer(store, prefix)
-	opts := graph.Options{
-		"ignore_duplicate": true,
-		"ignore_missing":   true,
-		// Cayley checks stored metadata before using the per-edge layout.
-		// Opening never walks existing edges.
-		cayley_kv.OptQuadIndexes: refGraphQuadIndexes,
-	}
-	h, err := kvtx_cayley.NewGraph(ctx, prefixed, opts)
-	if err != nil {
-		return nil, errors.Wrap(err, "new ref graph; reindex stopped volumes with spacewave debug volume-reindex <volume-file>")
-	}
-	return &RefGraph{handle: h, store: prefixed}, nil
+// RefGraph stores the garbage collection ownership graph as plain records in
+// a transactional key-value store. Each edge is one record per direction keyed
+// by the full node IRIs, so membership is a point read, traversal is a prefix
+// scan and a removed edge leaves nothing behind. Opening a RefGraph reads
+// nothing.
+type RefGraph struct {
+	// store holds the graph records.
+	store kvtx.Store
+	// inventory records every node and root for the mark-sweep collector.
+	inventory bool
 }
 
-// RebuildRefGraphIndexes regenerates forward and reverse reference postings
-// from the durable primitive log without changing edges or node reference counts.
-// The caller must exclude graph access until the rebuild succeeds and rerun
-// an interrupted rebuild before reopening the graph. progress, when set,
-// receives the next primitive ID and the horizon after each batch.
-func RebuildRefGraphIndexes(ctx context.Context, store kvtx.Store, prefix []byte, progress func(next, horizon uint64)) (uint64, error) {
-	return kvtx_cayley.RebuildGraphIndexes(ctx, kvtx_prefixer.NewPrefixer(store, prefix), refGraphQuadIndexes, progress)
+// NewRefGraph constructs a reference graph over store. The incremental
+// collector finds garbage through orphan marks, so this graph keeps no node
+// inventory and does not support the CollectorGraph listing methods.
+func NewRefGraph(store kvtx.Store) *RefGraph {
+	return &RefGraph{store: store}
+}
+
+// NewCollectorRefGraph constructs a reference graph over store that also
+// records every node and root, as the mark-sweep collector requires.
+func NewCollectorRefGraph(store kvtx.Store) *RefGraph {
+	return &RefGraph{store: store, inventory: true}
+}
+
+// graphKey encodes a record kind followed by unambiguous full node IRIs.
+func graphKey(kind byte, nodes ...string) []byte {
+	// Size the key buffer for the kind byte and each length-prefixed node.
+	size := 1
+	for _, node := range nodes {
+		size += 4 + len(node)
+	}
+
+	// Append the kind byte and each node with its 4-byte length prefix.
+	key := make([]byte, 1, size)
+	key[0] = kind
+	for _, node := range nodes {
+		key = binary.BigEndian.AppendUint32(key, uint32(len(node))) //nolint:gosec // node IRIs are far shorter than 4 GiB.
+		key = append(key, node...)
+	}
+	return key
+}
+
+// transaction retries complete graph operations against a fresh consistent view.
+func (g *RefGraph) transaction(ctx context.Context, write bool, body func(context.Context, kvtx.Tx) error) error {
+	return kvtx.RunTransaction(ctx, write, func(ctx context.Context) (kvtx.Tx, error) {
+		return g.store.NewTransaction(ctx, write)
+	}, body)
 }
 
 // RegisterEntityChain registers a chain of gc/ref edges between nodes.
 // Each adjacent pair gets an AddRef call: nodes[0]->nodes[1],
-// nodes[1]->nodes[2], etc. At least 2 nodes required. Idempotent
-// (Cayley ignore_duplicate).
+// nodes[1]->nodes[2], etc. At least 2 nodes required. Idempotent.
 func RegisterEntityChain(ctx context.Context, rg RefGraphOps, nodes ...string) error {
 	// Require enough nodes to define a chain.
 	if len(nodes) < 2 {
@@ -103,992 +94,360 @@ func RegisterEntityChain(ctx context.Context, rg RefGraphOps, nodes ...string) e
 	return nil
 }
 
-// AddRef adds a gc/ref edge from subject to object. Idempotent.
-func (rg *RefGraph) AddRef(ctx context.Context, subject, object string) error {
-	// Serialize the RefGraph edge addition and trace its storage work.
-	rg.writeMu.Lock()
-	defer rg.writeMu.Unlock()
-	ctx = disableStoreTracking(ctx)
-	ctx, task := trace.NewTask(ctx, "hydra/block-gc/refgraph/add-ref")
-	defer task.End()
-	trace.Log(ctx, "hydra/block-gc/refgraph/add-ref/shape", "edges=1")
-
-	// Skip the RefGraph write when the exact edge already exists.
-	found, err := rg.hasRef(ctx, subject, object)
-	if err != nil {
-		return errors.Wrap(err, "check existing ref edge")
-	}
-	if found {
-		return nil
-	}
-
-	// Construct the GC reference quad for the new edge.
-	taskCtx, subtask := trace.NewTask(ctx, "hydra/block-gc/refgraph/add-ref/build-quad")
-	q := quad.Make(quad.IRI(subject), quad.IRI(PredGCRef), quad.IRI(object), nil)
-	subtask.End()
-
-	// Apply the new quad to the durable RefGraph.
-	taskCtx, subtask = trace.NewTask(taskCtx, "hydra/block-gc/refgraph/add-ref/add-quad")
-	err = rg.handle.AddQuad(taskCtx, q)
-	subtask.End()
-	return err
+// AddRef atomically inserts both edge directions. Idempotent.
+func (g *RefGraph) AddRef(ctx context.Context, subject, object string) error {
+	return g.transaction(ctx, true, func(ctx context.Context, tx kvtx.Tx) error {
+		return g.addRefTx(ctx, tx, subject, object)
+	})
 }
 
-// RemoveRef removes a single gc/ref edge from subject to object.
-// Removing a non-existent edge is a no-op.
-func (rg *RefGraph) RemoveRef(ctx context.Context, subject, object string) error {
-	// Serialize removal of the exact GC reference quad.
-	rg.writeMu.Lock()
-	defer rg.writeMu.Unlock()
-	ctx = disableStoreTracking(ctx)
-	q := quad.Make(quad.IRI(subject), quad.IRI(PredGCRef), quad.IRI(object), nil)
-	return rg.handle.RemoveQuad(ctx, q)
+// RemoveRef removes an exact edge without creating an orphan mark.
+func (g *RefGraph) RemoveRef(ctx context.Context, subject, object string) error {
+	return g.transaction(ctx, true, func(ctx context.Context, tx kvtx.Tx) error {
+		_, err := g.removeRefTx(ctx, tx, subject, object)
+		return err
+	})
 }
 
-// ApplyRefBatch serializes one bounded ownership transition under writeMu. It
-// applies additions before removals, treats missing exact removals as no-ops,
-// and derives orphan marks from the resulting owner set.
-// Preparation and application are bounded together so each slice commits
-// before preparation of the next slice begins.
-func (rg *RefGraph) ApplyRefBatch(ctx context.Context, adds, removes []RefEdge) error {
-	return rg.applyRefBatch(ctx, adds, removes, true, true)
+// batchRemainderError reports the suffix left after an earlier slice committed.
+type batchRemainderError struct {
+	// err is the failure that stopped the ownership transition.
+	err error
+	// adds is the uncommitted suffix of the original additions.
+	adds []RefEdge
+	// removes is the uncommitted suffix of the original removals.
+	removes []RefEdge
 }
 
-// applyRefBatch commits bounded add-before-remove slices with optional orphan marks.
-func (rg *RefGraph) applyRefBatch(
-	ctx context.Context,
-	adds, removes []RefEdge,
-	markOrphaned bool,
-	lockPerSlice bool,
-) error {
-	// Disable nested store tracking before tracing the bounded batch.
-	ctx = disableStoreTracking(ctx)
-	ctx, task := trace.NewTask(ctx, "hydra/block-gc/refgraph/apply-ref-batch")
-	defer task.End()
-	trace.Logf(
-		ctx,
-		"hydra/block-gc/refgraph/apply-ref-batch/shape",
-		"adds=%d removes=%d slice_limit=%d transaction_limit=%d",
-		len(adds),
-		len(removes),
-		refGraphApplySliceLimit,
-		refGraphApplyBatchLimit,
-	)
+// Error describes the failed partially committed ownership transition.
+func (e *batchRemainderError) Error() string {
+	return "apply ref batch after partial commit: " + e.err.Error()
+}
 
-	// Return early when the batch carries no ownership transition.
-	if len(adds) == 0 && len(removes) == 0 {
-		return nil
-	}
-	slice := 0
-	for len(adds) != 0 || len(removes) != 0 {
-		if err := ctx.Err(); err != nil {
-			return &refBatchError{
-				err:     err,
-				adds:    cloneRefEdges(adds),
-				removes: cloneRefEdges(removes),
-			}
+// Unwrap returns the storage failure that interrupted the transition.
+func (e *batchRemainderError) Unwrap() error {
+	return e.err
+}
+
+// RefBatchRemainder returns copies of the uncommitted input suffixes.
+func (e *batchRemainderError) RefBatchRemainder() ([]RefEdge, []RefEdge) {
+	return slices.Clone(e.adds), slices.Clone(e.removes)
+}
+
+// ApplyRefBatch commits a bounded ownership transition atomically. Larger
+// transitions commit slices in add-before-remove order and report an exact
+// uncommitted suffix if a later slice fails.
+func (g *RefGraph) ApplyRefBatch(ctx context.Context, adds, removes []RefEdge) error {
+	addIndex, removeIndex := 0, 0
+	committed := false
+	for addIndex < len(adds) || removeIndex < len(removes) {
+		// Take the next slice, finishing the additions before any removal.
+		startAdds, startRemoves := addIndex, removeIndex
+		remaining := maxBatchEdges
+		addIndex = min(addIndex+remaining, len(adds))
+		remaining -= addIndex - startAdds
+		if addIndex == len(adds) {
+			removeIndex = min(removeIndex+remaining, len(removes))
 		}
 
-		// Slice the transition and acquire the write lock for each slice.
-		addCount, removeCount := refBatchSliceCounts(adds, removes)
-		slice++
-		trace.Logf(
-			ctx,
-			"hydra/block-gc/refgraph/apply-ref-batch/slice-start",
-			"slice=%d adds=%d removes=%d remaining_adds=%d remaining_removes=%d",
-			slice,
-			addCount,
-			removeCount,
-			len(adds)-addCount,
-			len(removes)-removeCount,
-		)
-
-		sliceAdds := adds[:addCount]
-		sliceRemoves := removes[:removeCount]
-		if lockPerSlice {
-			rg.writeMu.Lock()
-		}
-
-		// Prepare durable additions and removals before applying the slice.
-		preparedAdds, preparedRemoves, err := rg.prepareRefBatch(
-			ctx,
-			sliceAdds,
-			sliceRemoves,
-			markOrphaned,
-		)
-		if err == nil {
-			var remainingAdds, remainingRemoves []RefEdge
-			remainingAdds, remainingRemoves, err = rg.applyRefBatchSliceLocked(
-				ctx,
-				preparedAdds,
-				preparedRemoves,
-			)
-			if err != nil {
-				if lockPerSlice {
-					rg.writeMu.Unlock()
-				}
-				return &refBatchError{
-					err:     err,
-					adds:    appendRefEdges(remainingAdds, adds[addCount:]),
-					removes: appendRefEdges(remainingRemoves, removes[removeCount:]),
-				}
-			}
-		}
-		if lockPerSlice {
-			rg.writeMu.Unlock()
-		}
+		// Commit the slice, reporting the uncommitted suffix after the first.
+		err := g.transaction(ctx, true, func(ctx context.Context, tx kvtx.Tx) error {
+			return g.applyRefBatchTx(ctx, tx, adds[startAdds:addIndex], removes[startRemoves:removeIndex])
+		})
 		if err != nil {
-			return &refBatchError{
+			if !committed {
+				return err
+			}
+			return &batchRemainderError{
 				err:     err,
-				adds:    appendRefEdges(sliceAdds, adds[addCount:]),
-				removes: appendRefEdges(sliceRemoves, removes[removeCount:]),
+				adds:    slices.Clone(adds[startAdds:]),
+				removes: slices.Clone(removes[startRemoves:]),
 			}
 		}
-
-		// Advance to the next slice after recording its successful application.
-		trace.Logf(
-			ctx,
-			"hydra/block-gc/refgraph/apply-ref-batch/slice-complete",
-			"slice=%d adds=%d removes=%d",
-			slice,
-			addCount,
-			removeCount,
-		)
-		adds = adds[addCount:]
-		removes = removes[removeCount:]
+		committed = true
 	}
-	trace.Logf(ctx, "hydra/block-gc/refgraph/apply-ref-batch/slices", "slices=%d", slice)
 	return nil
 }
 
-// refBatchSliceCounts fills one ownership slice with additions before removals.
-func refBatchSliceCounts(adds, removes []RefEdge) (int, int) {
-	// Fill the bounded RefGraph slice with additions before removals.
-	addCount := min(len(adds), refGraphApplySliceLimit)
-	removeCount := 0
-	if addCount < refGraphApplySliceLimit {
-		removeCount = min(len(removes), refGraphApplySliceLimit-addCount)
-	}
-	if addCount == 0 {
-		removeCount = min(len(removes), refGraphApplySliceLimit)
-	}
-	return addCount, removeCount
-}
-
-// cloneRefEdges returns an independent copy of an ownership change list.
-func cloneRefEdges(edges []RefEdge) []RefEdge {
-	return slices.Clone(edges)
-}
-
-// appendRefEdges copies two ownership change lists into one.
-func appendRefEdges(first, second []RefEdge) []RefEdge {
-	// Reuse a copy of the populated edge list when its counterpart is empty.
-	if len(first) == 0 {
-		return cloneRefEdges(second)
-	}
-	if len(second) == 0 {
-		return cloneRefEdges(first)
-	}
-
-	// Combine both edge lists without retaining their backing arrays.
-	out := make([]RefEdge, 0, len(first)+len(second))
-	out = append(out, first...)
-	out = append(out, second...)
-	return out
-}
-
-// applyRefBatchSliceLocked commits a prepared slice and returns its uncommitted suffix.
-func (rg *RefGraph) applyRefBatchSliceLocked(
-	ctx context.Context,
-	adds, removes []RefEdge,
-) ([]RefEdge, []RefEdge, error) {
-	// Derive orphan markers before removing opposing input edges.
-	adds, removes = normalizeRefEdges(adds, removes)
-
-	// Keep additions before removals within each bounded atomic commit.
-	chunks := 0
-	for len(adds) != 0 || len(removes) != 0 {
-		addCount := min(len(adds), refGraphApplyBatchLimit)
-		removeCount := min(len(removes), refGraphApplyBatchLimit-addCount)
-		chunks++
-		if err := rg.applyRefBatchChunk(ctx, adds[:addCount], removes[:removeCount]); err != nil {
-			return adds, removes, err
-		}
-		adds = adds[addCount:]
-		removes = removes[removeCount:]
-	}
-
-	// Record the number of committed RefGraph chunks.
-	trace.Logf(ctx, "hydra/block-gc/refgraph/apply-ref-batch/chunks", "chunks=%d", chunks)
-	return nil, nil, nil
-}
-
-// applyRefBatchChunk applies one atomic add-before-remove graph transaction.
-func (rg *RefGraph) applyRefBatchChunk(ctx context.Context, adds, removes []RefEdge) error {
-	// Trace the durable transaction for this RefGraph chunk.
-	ctx, task := trace.NewTask(ctx, "hydra/block-gc/refgraph/apply-ref-batch/apply-transaction")
-	defer task.End()
-	trace.Logf(ctx, "hydra/block-gc/refgraph/apply-ref-batch/apply-transaction/shape", "adds=%d removes=%d", len(adds), len(removes))
-
-	// Materialize one transaction preserving additions-before-removals order.
-	n := len(adds) + len(removes)
-	deltas := make([]graph.Delta, 0, n)
-	for _, e := range adds {
-		deltas = append(deltas, graph.Delta{Quad: quad.MakeIRI(e.Subject, PredGCRef, e.Object, ""), Action: graph.Add})
-	}
-	for _, e := range removes {
-		deltas = append(deltas, graph.Delta{Quad: quad.MakeIRI(e.Subject, PredGCRef, e.Object, ""), Action: graph.Delete})
-	}
-	return rg.handle.ApplyDeltas(ctx, deltas, graph.IgnoreOpts{IgnoreDup: true, IgnoreMissing: true})
-}
-
-// prepareRefBatch drops absent removals and derives orphan markers. Additions
-// pass through unprobed: ApplyDeltas checks each one against the durable graph
-// and skips existing edges, so probing them here would read every edge twice.
-func (rg *RefGraph) prepareRefBatch(
-	ctx context.Context,
-	adds, removes []RefEdge,
-	markOrphaned bool,
-) ([]RefEdge, []RefEdge, error) {
-	removes, err := rg.presentRemoves(ctx, adds, removes)
-	if err != nil {
-		return nil, nil, err
-	}
-	return rg.prepareOrphanMarks(ctx, adds, removes, markOrphaned)
-}
-
-// prepareOrphanMarks stages targets whose final owner is removed by this batch.
-func (rg *RefGraph) prepareOrphanMarks(
-	ctx context.Context,
-	adds, removes []RefEdge,
-	markOrphaned bool,
-) ([]RefEdge, []RefEdge, error) {
-	// Leave orphan markers unchanged when the batch requests no orphan check.
-	if !markOrphaned || len(removes) == 0 {
-		return adds, removes, nil
-	}
-
-	// Only removed owners matter to the existence query. Loading every current
-	// owner makes releasing one reference proportional to a block's sharing.
-	removedOwners := make(map[string]map[string]struct{})
-	for _, edge := range removes {
-		if IsPermanentRoot(edge.Object) {
-			continue
-		}
-		set := removedOwners[edge.Object]
-		if set == nil {
-			set = make(map[string]struct{})
-			removedOwners[edge.Object] = set
-		}
-		set[edge.Subject] = struct{}{}
-	}
-
-	// A new owner survives unless the same batch removes it. Additions land
-	// first, so an edge present in both lists cannot keep its target alive.
+// applyRefBatchTx applies one transaction slice in ownership order, marking
+// each object that loses its last owner as unreferenced.
+func (g *RefGraph) applyRefBatchTx(ctx context.Context, tx kvtx.Tx, adds, removes []RefEdge) error {
+	// Add every edge first, so an edge in both lists ends removed.
 	for _, edge := range adds {
-		if set, ok := removedOwners[edge.Object]; ok && edge.Subject != NodeUnreferenced {
-			if _, removed := set[edge.Subject]; !removed {
-				delete(removedOwners, edge.Object)
-			}
+		if err := g.addRefTx(ctx, tx, edge.Subject, edge.Object); err != nil {
+			return err
 		}
 	}
 
-	// An explicit staging removal must not recreate its marker. Otherwise,
-	// stop the indexed lookup as soon as one unaffected owner is found.
-	for object, set := range removedOwners {
-		if _, removingStaging := set[NodeUnreferenced]; removingStaging {
+	// Remove every edge, noting the objects that lost an owner and the
+	// objects whose staging edge the caller removed.
+	var released []string
+	unstaged := make(map[string]struct{})
+	for _, edge := range removes {
+		existed, err := g.removeRefTx(ctx, tx, edge.Subject, edge.Object)
+		switch {
+		case err != nil:
+			return err
+		case !existed || IsPermanentRoot(edge.Object):
+		case edge.Subject == NodeUnreferenced:
+			unstaged[edge.Object] = struct{}{}
+		default:
+			released = append(released, edge.Object)
+		}
+	}
+
+	// Mark each released object left without an owner, unless the caller
+	// removed its staging edge.
+	for _, object := range released {
+		if _, ok := unstaged[object]; ok {
 			continue
 		}
-		excluded := make([]string, 0, len(set))
-		for owner := range set {
-			excluded = append(excluded, owner)
-		}
-		owned, err := rg.HasIncomingRefsExcluding(ctx, object, excluded...)
+		owned, err := hasIncomingTx(ctx, tx, object, nil)
 		if err != nil {
-			return nil, nil, err
+			return err
 		}
 		if !owned {
-			adds = append(adds, RefEdge{Subject: NodeUnreferenced, Object: object})
+			if err := g.addRefTx(ctx, tx, NodeUnreferenced, object); err != nil {
+				return err
+			}
 		}
 	}
-	return adds, removes, nil
+	return nil
 }
 
-// presentRemoves drops removals of edges the graph does not hold, so a missing
-// exact removal stays a no-op and triggers no orphan check. An edge this batch
-// adds counts as present whether or not the durable graph held it.
-func (rg *RefGraph) presentRemoves(ctx context.Context, adds, removes []RefEdge) ([]RefEdge, error) {
-	// Probe the removals this batch does not add in one lookup.
-	added := make(map[RefEdge]struct{}, len(adds))
-	for _, edge := range adds {
-		added[edge] = struct{}{}
-	}
-	probes := make([]RefEdge, 0, len(removes))
-	for _, edge := range removes {
-		if _, ok := added[edge]; !ok {
-			probes = append(probes, edge)
-		}
-	}
-	found, err := rg.hasRefs(ctx, probes)
-	if err != nil {
-		return nil, err
+// addRefTx adds both edge directions, and the endpoint inventory of a
+// collector graph, unless the exact forward edge already exists.
+func (g *RefGraph) addRefTx(ctx context.Context, tx kvtx.Tx, subject, object string) error {
+	// Skip the edge when its exact forward record already exists.
+	forward := graphKey(kindForward, subject, object)
+	exists, err := tx.Exists(ctx, forward)
+	if err != nil || exists {
+		return err
 	}
 
-	// Keep the present removals in caller order without modifying retry inputs.
-	present := make([]RefEdge, 0, len(removes))
-	var probe int
-	for _, edge := range removes {
-		if _, ok := added[edge]; ok {
-			present = append(present, edge)
-			continue
+	// Record both endpoints in the inventory of a collector graph.
+	if g.inventory {
+		if err := tx.Set(ctx, graphKey(kindNode, subject), []byte(subject)); err != nil {
+			return err
 		}
-		if found[probe] {
-			present = append(present, edge)
+		if err := tx.Set(ctx, graphKey(kindNode, object), []byte(object)); err != nil {
+			return err
 		}
-		probe++
 	}
-	trace.Logf(ctx, "hydra/block-gc/refgraph/present-removes", "removes=%d present=%d", len(removes), len(present))
-	return present, nil
+
+	// Write the two edge directions.
+	if err := tx.Set(ctx, forward, []byte(object)); err != nil {
+		return err
+	}
+	return tx.Set(ctx, graphKey(kindIncoming, object, subject), []byte(subject))
 }
 
-// hasRef reports whether the durable graph holds the exact gc/ref edge. It
-// reads the complete object-predicate-subject posting key rather than scanning
-// keys that share its unpadded base62 prefix.
-func (rg *RefGraph) hasRef(ctx context.Context, subject, object string) (bool, error) {
-	found, err := rg.hasRefs(ctx, []RefEdge{{Subject: subject, Object: object}})
-	if err != nil {
+// removeRefTx removes both directions of an exact edge and reports whether it
+// existed.
+func (g *RefGraph) removeRefTx(ctx context.Context, tx kvtx.Tx, subject, object string) (bool, error) {
+	// Check the forward record, then delete both directions.
+	forward := graphKey(kindForward, subject, object)
+	exists, err := tx.Exists(ctx, forward)
+	if err != nil || !exists {
+		return exists, err
+	}
+	if err := tx.Delete(ctx, forward); err != nil {
 		return false, err
 	}
-	return found[0], nil
-}
-
-// hasRefs resolves node IDs in one batch and reads exact edge postings under
-// one storage transaction. A stale snapshot retries the complete lookup.
-func (rg *RefGraph) hasRefs(ctx context.Context, edges []RefEdge) ([]bool, error) {
-	// Leave an empty lookup to the caller's cancellation state.
-	if len(edges) == 0 {
-		return nil, ctx.Err()
+	if err := tx.Delete(ctx, graphKey(kindIncoming, object, subject)); err != nil {
+		return false, err
 	}
-
-	// Retry all edge reads together when the storage snapshot becomes stale.
-	var found []bool
-	err := kvtx.RunOperation(ctx, func(ctx context.Context) error {
-		var err error
-		found, err = rg.hasRefsAttempt(ctx, edges)
-		return err
-	})
-	return found, err
+	return true, nil
 }
 
-// hasRefsAttempt reads exact edges without external effects.
-func (rg *RefGraph) hasRefsAttempt(ctx context.Context, edges []RefEdge) ([]bool, error) {
-	// Resolve exact edges through the generic graph when the indexed store is unavailable.
-	found := make([]bool, len(edges))
-	qs, ok := graph.Unwrap(rg.handle.QuadStore).(*cayley_kv.QuadStore)
-	if !ok {
-		for i, edge := range edges {
-			var err error
-			found[i], err = rg.hasRefGeneric(ctx, edge.Subject, edge.Object)
-			if err != nil {
-				return nil, err
-			}
+// hasIncomingTx reports whether object has an owner other than the
+// unreferenced root and the ignored subjects, stopping at the first one.
+func hasIncomingTx(ctx context.Context, tx kvtx.Tx, object string, ignored map[string]struct{}) (bool, error) {
+	it := tx.Iterate(ctx, graphKey(kindIncoming, object), true, false)
+	defer it.Close()
+	for it.Next() {
+		subject, err := it.Value()
+		if err != nil {
+			return false, err
 		}
-		return found, nil
-	}
-
-	// Collect the distinct GC predicate, subject, and object IRIs for one lookup.
-	names := []string{PredGCRef}
-	seen := map[string]struct{}{PredGCRef: {}}
-	for _, edge := range edges {
-		for _, name := range [2]string{edge.Subject, edge.Object} {
-			if _, ok := seen[name]; !ok {
-				seen[name] = struct{}{}
-				names = append(names, name)
-			}
-		}
-	}
-
-	// Resolve the GC edge nodes and stop when the predicate is absent.
-	ids, err := resolveIRIRefIDs(ctx, qs, names)
-	if err != nil {
-		return nil, errors.Wrap(err, "resolve exact ref edges")
-	}
-	predID := ids[PredGCRef]
-	if predID == 0 {
-		return found, nil
-	}
-
-	// Open one read transaction for all exact edge postings.
-	tx, err := rg.store.NewTransaction(ctx, false)
-	if err != nil {
-		return nil, errors.Wrap(err, "open exact ref edge transaction")
-	}
-	defer tx.Discard()
-
-	return hasRefsInTransaction(ctx, tx, predID, ids, edges)
-}
-
-// hasRefsInTransaction batches postings and their newest live primitive checks.
-// Every read uses the same snapshot; results retain the caller's edge order.
-func hasRefsInTransaction(ctx context.Context, tx kvtx.Tx, predID uint64, ids map[string]uint64, edges []RefEdge) ([]bool, error) {
-	// Collect exact posting keys for edges whose endpoints exist.
-	found := make([]bool, len(edges))
-	keys := make([][]byte, 0, len(edges))
-	indexes := make([]int, 0, len(edges))
-	for i, edge := range edges {
-		objectID, subjectID := ids[edge.Object], ids[edge.Subject]
-		if objectID == 0 || subjectID == 0 {
+		if string(subject) == NodeUnreferenced {
 			continue
 		}
-		keys = append(keys, cayley_flat.KeyEscape(refGraphQuadIndexes[1].Key(
-			[]uint64{objectID, predID, subjectID},
-		)))
-		indexes = append(indexes, i)
+		if _, skip := ignored[string(subject)]; !skip {
+			return true, nil
+		}
 	}
+	return false, it.Err()
+}
 
-	// Read each exact posting once through the backend's batch operation.
-	postings, present, err := kvtx.GetBatch(ctx, tx, keys)
+// RemoveNodeRefs removes the observed outgoing targets in bounded transactions.
+// New unrelated edges may be added after this operation's initial snapshot.
+func (g *RefGraph) RemoveNodeRefs(ctx context.Context, node string, markOrphaned bool) ([]string, error) {
+	targets, err := g.GetOutgoingRefs(ctx, node)
 	if err != nil {
-		return nil, errors.Wrap(err, "read exact ref edge indexes")
+		return nil, err
 	}
-	quadIDs := make([][]uint64, len(keys))
-	for i, posting := range postings {
-		if !present[i] {
-			continue
-		}
-		for len(posting) != 0 {
-			quadID, n := binary.Uvarint(posting)
-			if n <= 0 {
-				return nil, errors.New("decode exact ref edge index")
+	for offset := 0; offset < len(targets); offset += maxBatchEdges {
+		chunk := targets[offset:min(offset+maxBatchEdges, len(targets))]
+		err := g.transaction(ctx, true, func(ctx context.Context, tx kvtx.Tx) error {
+			if markOrphaned {
+				removes := make([]RefEdge, 0, len(chunk))
+				for _, target := range chunk {
+					removes = append(removes, RefEdge{Subject: node, Object: target})
+				}
+				return g.applyRefBatchTx(ctx, tx, nil, removes)
 			}
-			quadIDs[i] = append(quadIDs[i], quadID)
-			posting = posting[n:]
-		}
-	}
-
-	// Validate newest primitives together, probing older entries only for edges
-	// whose newest primitive is deleted or does not match the exact edge.
-	logKeys := make([][]byte, 0, len(keys))
-	positions := make([]int, 0, len(keys))
-	for {
-		// Collect one unresolved primitive per edge for this read batch.
-		if err := ctx.Err(); err != nil {
+			for _, target := range chunk {
+				if _, err := g.removeRefTx(ctx, tx, node, target); err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+		if err != nil {
 			return nil, err
 		}
-		logKeys, positions = logKeys[:0], positions[:0]
-		for i, pending := range quadIDs {
-			if found[indexes[i]] || len(pending) == 0 {
-				continue
-			}
-			quadID := pending[len(pending)-1]
-			logKeys = append(logKeys, cayley_flat.KeyEscape(cayley_hkv.Key{
-				[]byte("l"), []byte(strconv.FormatUint(quadID, 10)),
-			}))
-			positions = append(positions, i)
-		}
-		if len(logKeys) == 0 {
-			return found, nil
-		}
-
-		// Read the selected primitives in one backend batch.
-		data, present, err := kvtx.GetBatch(ctx, tx, logKeys)
-		if err != nil {
-			return nil, errors.Wrap(err, "read exact ref edge primitives")
-		}
-		for j, i := range positions {
-			// Require the indexed primitive and check its exact endpoints.
-			pending := quadIDs[i]
-			quadID := pending[len(pending)-1]
-			quadIDs[i] = pending[:len(pending)-1]
-			if !present[j] {
-				return nil, errors.Errorf("exact ref edge primitive %d is missing", quadID)
-			}
-			var prim cayley_proto.Primitive
-			if err := prim.UnmarshalVT(data[j]); err != nil {
-				return nil, errors.Wrap(err, "decode exact ref edge primitive")
-			}
-			edge := edges[indexes[i]]
-			found[indexes[i]] = !prim.Deleted &&
-				prim.Object == ids[edge.Object] &&
-				prim.Predicate == predID &&
-				prim.Subject == ids[edge.Subject] && prim.Label == 0
-		}
-	}
-}
-
-// hasRefGeneric tests exact edge membership through the graph traversal API.
-func (rg *RefGraph) hasRefGeneric(ctx context.Context, subject, object string) (bool, error) {
-	var found bool
-	err := iterateFilteredNodeRefs(ctx, rg.handle, quad.Quad{
-		Subject:   quad.IRI(subject),
-		Predicate: quad.IRI(PredGCRef),
-		Object:    quad.IRI(object),
-	}, quad.Subject, func(graph.Ref) error {
-		found = true
-		return io.EOF
-	})
-	return found, err
-}
-
-// RemoveNodeRefs removes ALL outgoing gc/ref edges for a node.
-// Returns the list of target IRIs that lost an incoming edge.
-// If markOrphaned is true, targets that have no remaining incoming
-// refs (excluding from "unreferenced") get an unreferenced edge.
-func (rg *RefGraph) RemoveNodeRefs(ctx context.Context, node string, markOrphaned bool) ([]string, error) {
-	// Serialize removal of the node ownership edges.
-	rg.writeMu.Lock()
-	defer rg.writeMu.Unlock()
-
-	// Collect the node targets and remove their edges with the requested orphan marks.
-	targets, err := rg.GetOutgoingRefs(ctx, node)
-	if err != nil {
-		return nil, err
-	}
-	removes := make([]RefEdge, 0, len(targets))
-	for _, target := range targets {
-		removes = append(removes, RefEdge{Subject: node, Object: target})
-	}
-	if err := rg.applyRefBatch(ctx, nil, removes, markOrphaned, false); err != nil {
-		return nil, err
 	}
 	return targets, nil
 }
 
-// HasIncomingRefs checks if a node has any incoming gc/ref edges.
-// Excludes edges from "unreferenced" (those don't count as real refs).
-func (rg *RefGraph) HasIncomingRefs(ctx context.Context, node string) (bool, error) {
-	return rg.HasIncomingRefsExcluding(ctx, node)
+// HasIncomingRefs ignores the bookkeeping edge from the unreferenced root.
+func (g *RefGraph) HasIncomingRefs(ctx context.Context, node string) (bool, error) {
+	return g.HasIncomingRefsExcluding(ctx, node)
 }
 
-// HasIncomingRefsExcluding checks if a node has any incoming gc/ref edges.
-// Excludes edges from "unreferenced" and the specified source nodes.
-func (rg *RefGraph) HasIncomingRefsExcluding(
-	ctx context.Context,
-	node string,
-	excluded ...string,
-) (bool, error) {
-	// Trace the RefGraph incoming-owner lookup.
-	ctx, task := trace.NewTask(ctx, "hydra/block-gc/refgraph/has-incoming-refs-excluding")
-	defer task.End()
-
-	// Resolve staging and caller-excluded owners to graph reference keys.
-	taskCtx, subtask := trace.NewTask(ctx, "hydra/block-gc/refgraph/has-incoming-refs-excluding/resolve-excluded")
-	excludedIRIs := make([]string, 0, len(excluded)+1)
-	excludedIRIs = append(excludedIRIs, NodeUnreferenced)
-	excludedIRIs = append(excludedIRIs, excluded...)
-	excludedSet, err := rg.resolveIRIRefKeys(taskCtx, excludedIRIs)
-	if err != nil {
-		subtask.End()
-		return false, errors.Wrap(err, "resolve excluded refs")
+// HasIncomingRefsExcluding stops at the first owner outside the unreferenced
+// root and the caller's exclusions.
+func (g *RefGraph) HasIncomingRefsExcluding(ctx context.Context, node string, excluded ...string) (bool, error) {
+	// Index the exclusions, then scan the node's owners.
+	ignored := make(map[string]struct{}, len(excluded))
+	for _, source := range excluded {
+		ignored[source] = struct{}{}
 	}
-	subtask.End()
-
-	// Search the incoming index, falling back to a filtered graph traversal.
 	var found bool
-	taskCtx, subtask = trace.NewTask(ctx, "hydra/block-gc/refgraph/has-incoming-refs-excluding/iterate-candidates")
-	found, usedFast, err := rg.hasIncomingRefsExcludingFast(taskCtx, node, excludedSet)
-	if err == nil && !usedFast {
-		err = iterateFilteredNodeRefs(taskCtx, rg.handle, quad.Quad{
-			Predicate: quad.IRI(PredGCRef),
-			Object:    quad.IRI(node),
-		}, quad.Subject, func(ref graph.Ref) error {
-			if _, ok := excludedSet[refs.ToKey(ref)]; !ok {
-				found = true
-				return io.EOF
-			}
+	err := g.transaction(ctx, false, func(ctx context.Context, tx kvtx.Tx) error {
+		var err error
+		found, err = hasIncomingTx(ctx, tx, node, ignored)
+		return err
+	})
+	return found, err
+}
+
+// list returns the values of every record under prefix.
+func (g *RefGraph) list(ctx context.Context, prefix []byte) ([]string, error) {
+	var answer []string
+	err := g.transaction(ctx, false, func(ctx context.Context, tx kvtx.Tx) error {
+		answer = nil
+		return tx.ScanPrefix(ctx, prefix, func(_, value []byte) error {
+			answer = append(answer, string(value))
 			return nil
 		})
-	}
-	subtask.End()
-	return found, errors.Wrap(err, "iterate incoming candidates")
-}
-
-// resolveIRIRefKeys resolves present IRIs to comparable graph reference keys.
-func (rg *RefGraph) resolveIRIRefKeys(ctx context.Context, iris []string) (map[any]struct{}, error) {
-	// Allocate the excluded-owner set and its graph lookup values.
-	excludedSet := make(map[any]struct{}, len(iris))
-	toResolve := make([]quad.Value, 0, len(iris))
-
-	// Convert the excluded owner IRIs into Cayley values.
-	for _, iri := range iris {
-		toResolve = append(toResolve, quad.IRI(iri))
-	}
-
-	// Avoid a graph lookup when no owner IRIs were supplied.
-	if len(toResolve) == 0 {
-		return excludedSet, nil
-	}
-
-	// Resolve excluded owners through the graph naming API.
-	taskCtx, subtask := trace.NewTask(ctx, "hydra/block-gc/refgraph/has-incoming-refs-excluding/resolve-excluded/refs-of")
-	var (
-		resolved []graph.Ref
-		err      error
-	)
-	switch qs := rg.handle.QuadStore.(type) {
-	case refs.BatchNamer:
-		resolved, err = qs.RefsOf(taskCtx, toResolve)
-	default:
-		resolved = make([]graph.Ref, len(toResolve))
-		for i, node := range toResolve {
-			resolved[i], err = rg.handle.ValueOf(taskCtx, node)
-			if err != nil {
-				break
-			}
-		}
-	}
-	subtask.End()
+	})
 	if err != nil {
 		return nil, err
 	}
-
-	// Retain keys only for excluded owners present in the graph.
-	for _, ref := range resolved {
-		if ref == nil {
-			continue
-		}
-		excludedSet[refs.ToKey(ref)] = struct{}{}
-	}
-
-	return excludedSet, nil
+	return answer, nil
 }
 
-// GetOutgoingRefs returns all targets of gc/ref edges from the given node.
-func (rg *RefGraph) GetOutgoingRefs(ctx context.Context, node string) ([]string, error) {
-	// Trace the RefGraph outgoing-edge lookup.
-	ctx, task := trace.NewTask(ctx, "hydra/block-gc/refgraph/get-outgoing-refs")
-	defer task.End()
-
-	// Resolve the source and GC predicate before scanning outgoing quads.
-	subjRef, err := rg.handle.ValueOf(ctx, quad.IRI(node))
-	if err != nil || subjRef == nil {
-		return nil, errors.Wrap(err, "lookup outgoing subject")
-	}
-	predRef, err := rg.handle.ValueOf(ctx, quad.IRI(PredGCRef))
-	if err != nil || predRef == nil {
-		return nil, errors.Wrap(err, "lookup gc/ref predicate")
-	}
-	predKey := refs.ToKey(predRef)
-
-	// Open the outgoing subject iterator for the resolved source.
-	it := rg.handle.QuadIterator(ctx, quad.Subject, subjRef).Iterate(ctx)
-	defer it.Close()
-
-	// Collect target references only from quads with the GC predicate.
-	var nodeRefs []graph.Ref
-	for {
-		if !it.Next(ctx) {
-			if err := it.Err(); err != nil {
-				return nil, errors.Wrap(err, "iterate outgoing subject index")
-			}
-			return resolveNodeIRIs(ctx, rg.handle, nodeRefs)
-		}
-		quadRef, err := it.Result(ctx)
-		if err != nil {
-			return nil, errors.Wrap(err, "read outgoing quad ref")
-		}
-		gotPred, err := rg.handle.QuadDirection(ctx, quadRef, quad.Predicate)
-		if err != nil {
-			return nil, errors.Wrap(err, "read outgoing predicate")
-		}
-		if refs.ToKey(gotPred) != predKey {
-			continue
-		}
-		objRef, err := rg.handle.QuadDirection(ctx, quadRef, quad.Object)
-		if err != nil {
-			return nil, errors.Wrap(err, "read outgoing object")
-		}
-		nodeRefs = append(nodeRefs, objRef)
-	}
+// GetOutgoingRefs returns all current targets of a node.
+func (g *RefGraph) GetOutgoingRefs(ctx context.Context, node string) ([]string, error) {
+	return g.list(ctx, graphKey(kindForward, node))
 }
 
-// GetIncomingRefs returns all sources that have gc/ref edges pointing to the given node.
-func (rg *RefGraph) GetIncomingRefs(ctx context.Context, node string) ([]string, error) {
-	// Trace the incoming-edge lookup.
-	ctx, task := trace.NewTask(ctx, "hydra/block-gc/refgraph/get-incoming-refs")
-	defer task.End()
-
-	// Traverse the incoming index when the graph exposes exact postings.
-	if qs, ok := graph.Unwrap(rg.handle.QuadStore).(*cayley_kv.QuadStore); ok {
-		ids, err := resolveIRIRefIDs(ctx, qs, []string{PredGCRef, node})
-		if err != nil {
-			return nil, errors.Wrap(err, "resolve incoming refs")
-		}
-		predID := ids[PredGCRef]
-		objectID := ids[node]
-		if predID == 0 || objectID == 0 {
-			return nil, nil
-		}
-
-		var nodeRefs []graph.Ref
-		err = iterateIncomingIndexRefs(ctx, qs, objectID, predID,
-			func(ref cayley_kv.Int64Value, hasLive func() (bool, error)) error {
-				live, err := hasLive()
-				if err != nil {
-					return err
-				}
-				if live {
-					nodeRefs = append(nodeRefs, ref)
-				}
-				return nil
-			},
-		)
-		if err != nil {
-			return nil, errors.Wrap(err, "iterate incoming object index")
-		}
-		return resolveNodeIRIs(ctx, rg.handle, nodeRefs)
-	}
-
-	// Fall back to the graph's filtered traversal for other stores.
-	return collectFilteredNodeIRIs(ctx, rg.handle, quad.Quad{
-		Predicate: quad.IRI(PredGCRef),
-		Object:    quad.IRI(node),
-	}, quad.Subject)
+// GetIncomingRefs returns all current owners of a node.
+func (g *RefGraph) GetIncomingRefs(ctx context.Context, node string) ([]string, error) {
+	return g.list(ctx, graphKey(kindIncoming, node))
 }
 
-// GetUnreferencedNodes returns all nodes that have a gc/ref from "unreferenced".
-func (rg *RefGraph) GetUnreferencedNodes(ctx context.Context) ([]string, error) {
-	return rg.GetOutgoingRefs(ctx, NodeUnreferenced)
-}
-
-// Close closes the underlying graph handle.
-func (rg *RefGraph) Close() error {
-	return rg.handle.Close()
+// GetUnreferencedNodes returns the nodes marked for collector reconsideration.
+func (g *RefGraph) GetUnreferencedNodes(ctx context.Context) ([]string, error) {
+	return g.GetOutgoingRefs(ctx, NodeUnreferenced)
 }
 
 // AddBlockRef adds gc/ref from source block to target block.
-func (rg *RefGraph) AddBlockRef(ctx context.Context, source, target *block.BlockRef) error {
-	s := BlockIRI(source)
-	t := BlockIRI(target)
-	if s == "" || t == "" {
+func (g *RefGraph) AddBlockRef(ctx context.Context, source, target *block.BlockRef) error {
+	from, to := BlockIRI(source), BlockIRI(target)
+	if from == "" || to == "" {
 		return nil
 	}
-	return rg.AddRef(ctx, s, t)
+	return g.AddRef(ctx, from, to)
 }
 
-// AddObjectRoot adds gc/ref from object:{key} to block.
-func (rg *RefGraph) AddObjectRoot(ctx context.Context, objectKey string, ref *block.BlockRef) error {
-	t := BlockIRI(ref)
-	if t == "" {
+// AddObjectRoot links an object identity to its current content root.
+func (g *RefGraph) AddObjectRoot(ctx context.Context, objectKey string, ref *block.BlockRef) error {
+	target := BlockIRI(ref)
+	if target == "" {
 		return nil
 	}
-	return rg.AddRef(ctx, ObjectIRI(objectKey), t)
+	return g.AddRef(ctx, ObjectIRI(objectKey), target)
 }
 
-// RemoveObjectRoot removes gc/ref from object:{key} to block.
-func (rg *RefGraph) RemoveObjectRoot(ctx context.Context, objectKey string, ref *block.BlockRef) error {
-	t := BlockIRI(ref)
-	if t == "" {
+// RemoveObjectRoot removes an exact object-to-block ownership edge.
+func (g *RefGraph) RemoveObjectRoot(ctx context.Context, objectKey string, ref *block.BlockRef) error {
+	target := BlockIRI(ref)
+	if target == "" {
 		return nil
 	}
-	return rg.RemoveRef(ctx, ObjectIRI(objectKey), t)
+	return g.RemoveRef(ctx, ObjectIRI(objectKey), target)
 }
 
-// buildQuadFilters builds quad filters for the non-empty directions in gq.
-func buildQuadFilters(gq quad.Quad) shape.Quads {
-	// Construct filters for each specified direction of the GC quad.
-	var q shape.Quads
-	if gq.Subject != nil {
-		q = append(q, shape.QuadFilter{Dir: quad.Subject, Values: shape.Lookup([]quad.Value{gq.Subject})})
-	}
-	if gq.Predicate != nil {
-		q = append(q, shape.QuadFilter{Dir: quad.Predicate, Values: shape.Lookup([]quad.Value{gq.Predicate})})
-	}
-	if gq.Object != nil {
-		q = append(q, shape.QuadFilter{Dir: quad.Object, Values: shape.Lookup([]quad.Value{gq.Object})})
-	}
-	if gq.Label != nil {
-		q = append(q, shape.QuadFilter{Dir: quad.Label, Values: shape.Lookup([]quad.Value{gq.Label})})
-	}
-	return q
-}
-
-// hasIncomingRefsExcludingFast stops at the first indexed, live, unexcluded owner.
-func (rg *RefGraph) hasIncomingRefsExcludingFast(
-	ctx context.Context,
-	node string,
-	excludedSet map[any]struct{},
-) (bool, bool, error) {
-	// Use the incoming index only when the RefGraph has an indexed Cayley store.
-	qs, ok := graph.Unwrap(rg.handle.QuadStore).(*cayley_kv.QuadStore)
-	if !ok {
-		return false, false, nil
-	}
-
-	// Resolve the GC predicate and target before searching incoming owners.
-	ids, err := resolveIRIRefIDs(ctx, qs, []string{PredGCRef, node})
-	if err != nil {
-		return false, true, errors.Wrap(err, "lookup incoming refs")
-	}
-	predID := ids[PredGCRef]
-	objID := ids[node]
-	if predID == 0 || objID == 0 {
-		return false, true, nil
-	}
-
-	// Stop the incoming-index scan at the first live, unexcluded owner.
-	var found bool
-	err = iterateIncomingIndexRefs(ctx, qs, objID, predID,
-		func(ref cayley_kv.Int64Value, hasLive func() (bool, error)) error {
-			// Discard excluded owners before checking their live postings.
-			if _, ok := excludedSet[refs.ToKey(ref)]; ok {
-				return nil
-			}
-
-			// Check whether the candidate owner has a live incoming edge.
-			live, err := hasLive()
+// AddRoot records a node and its root membership in a collector graph.
+func (g *RefGraph) AddRoot(ctx context.Context, node string) error {
+	return g.transaction(ctx, true, func(ctx context.Context, tx kvtx.Tx) error {
+		for _, kind := range []byte{kindNode, kindRoot} {
+			key := graphKey(kind, node)
+			found, err := tx.Exists(ctx, key)
 			if err != nil {
 				return err
 			}
-			if !live {
-				return nil
+			if found {
+				continue
 			}
-
-			// Report the first surviving incoming owner.
-			found = true
-			return io.EOF
-		},
-	)
-	return found, true, errors.Wrap(err, "iterate incoming object index")
-}
-
-// resolveIRIRefIDs resolves present IRIs to numeric graph node IDs.
-func resolveIRIRefIDs(
-	ctx context.Context,
-	qs *cayley_kv.QuadStore,
-	iris []string,
-) (map[string]uint64, error) {
-	// Convert and resolve the requested IRIs through the graph naming API.
-	values := make([]quad.Value, len(iris))
-	for i, iri := range iris {
-		values[i] = quad.IRI(iri)
-	}
-	refs, err := qs.RefsOf(ctx, values)
-	if err != nil {
-		return nil, err
-	}
-
-	// Retain numeric IDs for nodes present in the indexed graph.
-	ids := make(map[string]uint64, len(iris))
-	for i, ref := range refs {
-		id, ok := ref.(cayley_kv.Int64Value)
-		if ok && id != 0 {
-			ids[iris[i]] = uint64(id)
-		}
-	}
-	return ids, nil
-}
-
-// iterateIncomingIndexRefs visits indexed sources and their live-edge checks.
-func iterateIncomingIndexRefs(
-	ctx context.Context,
-	qs *cayley_kv.QuadStore,
-	objectID, predID uint64,
-	cb func(cayley_kv.Int64Value, func() (bool, error)) error,
-) error {
-	return qs.IterateIndexPrefixNextRefs(
-		ctx,
-		refGraphQuadIndexes[1],
-		[]uint64{objectID, predID},
-		cb,
-	)
-}
-
-// iterateFilteredNodeRefs iterates node refs on dir from quads matching gq.
-func iterateFilteredNodeRefs(
-	ctx context.Context,
-	h *cayley.Handle,
-	gq quad.Quad,
-	dir quad.Direction,
-	cb func(ref graph.Ref) error,
-) error {
-	// Optimize the filtered GC quad traversal.
-	taskCtx, subtask := trace.NewTask(ctx, "hydra/block-gc/refgraph/iterate-filtered-node-refs/optimize-shape")
-	sh, _, err := shape.Optimize(taskCtx, shape.NodesFrom{
-		Dir:   dir,
-		Quads: buildQuadFilters(gq),
-	}, h)
-	subtask.End()
-	if err != nil {
-		return err
-	}
-
-	// Open the optimized graph iterator and retain its cleanup.
-	taskCtx, subtask = trace.NewTask(ctx, "hydra/block-gc/refgraph/iterate-filtered-node-refs/build-iterator")
-	it := sh.BuildIterator(taskCtx, h).Iterate(taskCtx)
-	subtask.End()
-	defer it.Close()
-
-	// Trace traversal and deliver each matching graph reference.
-	taskCtx, subtask = trace.NewTask(ctx, "hydra/block-gc/refgraph/iterate-filtered-node-refs/iterate")
-	defer subtask.End()
-	for {
-		if !it.Next(taskCtx) {
-			if err := it.Err(); err != nil {
+			if err := tx.Set(ctx, key, []byte(node)); err != nil {
 				return err
 			}
-			return nil
 		}
-		ref, err := it.Result(taskCtx)
-		if err != nil {
-			return err
-		}
-		if err := cb(ref); err != nil {
-			if err == io.EOF {
-				return nil
-			}
-			return err
-		}
-	}
-}
-
-// collectFilteredNodeIRIs collects node IRIs on dir from quads matching gq.
-func collectFilteredNodeIRIs(
-	ctx context.Context,
-	h *cayley.Handle,
-	gq quad.Quad,
-	dir quad.Direction,
-) ([]string, error) {
-	// Collect matching graph references before resolving their node values.
-	var nodeRefs []graph.Ref
-	if err := iterateFilteredNodeRefs(ctx, h, gq, dir, func(ref graph.Ref) error {
-		nodeRefs = append(nodeRefs, ref)
 		return nil
-	}); err != nil {
-		return nil, err
-	}
-
-	// Resolve only the references collected by this traversal.
-	if len(nodeRefs) == 0 {
-		return nil, nil
-	}
-	return resolveNodeIRIs(ctx, h, nodeRefs)
+	})
 }
 
-// resolveNodeIRIs resolves graph references to IRI strings in traversal order.
-func resolveNodeIRIs(ctx context.Context, h *cayley.Handle, nodeRefs []graph.Ref) ([]string, error) {
-	// Resolve the collected graph nodes to IRI strings.
-	vals, err := graph.ValuesOf(ctx, h, nodeRefs)
-	if err != nil {
-		return nil, err
-	}
-
-	// Collect the resolved IRI values in traversal order.
-	out := make([]string, 0, len(vals))
-	for _, v := range vals {
-		out = append(out, iriString(v))
-	}
-	return out, nil
+// RemoveRoot removes root membership without changing the node's edges.
+func (g *RefGraph) RemoveRoot(ctx context.Context, node string) error {
+	return g.deleteRecord(ctx, graphKey(kindRoot, node))
 }
 
-// iriString extracts the string value from a quad.Value, assuming it is an IRI.
-func iriString(v quad.Value) string {
-	if v == nil {
-		return ""
-	}
-	iri, ok := v.(quad.IRI)
-	if ok {
-		return string(iri)
-	}
-	return ""
+// RemoveNode removes inventory after the collector has handled its edges.
+func (g *RefGraph) RemoveNode(ctx context.Context, node string) error {
+	return g.deleteRecord(ctx, graphKey(kindNode, node))
 }
+
+// deleteRecord treats a missing record as a no-op.
+func (g *RefGraph) deleteRecord(ctx context.Context, key []byte) error {
+	return g.transaction(ctx, true, func(ctx context.Context, tx kvtx.Tx) error {
+		found, err := tx.Exists(ctx, key)
+		if err != nil || !found {
+			return err
+		}
+		return tx.Delete(ctx, key)
+	})
+}
+
+// IterateNodes returns the node inventory of a collector graph.
+func (g *RefGraph) IterateNodes(ctx context.Context) ([]string, error) {
+	return g.list(ctx, graphKey(kindNode))
+}
+
+// GetRootNodes returns the registered roots of a collector graph.
+func (g *RefGraph) GetRootNodes(ctx context.Context) ([]string, error) {
+	return g.list(ctx, graphKey(kindRoot))
+}
+
+// Close leaves the store's lifetime with its owner.
+func (g *RefGraph) Close() error { return nil }
+
+// _ is a type assertion
+var (
+	_ RefGraphOps            = (*RefGraph)(nil)
+	_ CollectorGraph         = (*RefGraph)(nil)
+	_ RefBatchRemainderError = (*batchRemainderError)(nil)
+)

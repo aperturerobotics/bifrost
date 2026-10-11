@@ -384,7 +384,6 @@ func buildBenchTreeWithGC(tb testing.TB, keys [][]byte) (*benchTree, *benchRefGr
 func buildBenchTreeWithRealGC(tb testing.TB, keys [][]byte) *benchTree {
 	// Build the block store on an in-memory key-value database.
 	tb.Helper()
-	ctx := context.Background()
 	kvStore := store_kvtx_inmem.NewStore()
 	store := newBenchBlockStoreWithOps(block_store_kvtx.NewKVTxBlock(
 		store_kvkey.NewDefaultKVKey(),
@@ -393,19 +392,8 @@ func buildBenchTreeWithRealGC(tb testing.TB, keys [][]byte) *benchTree {
 		false,
 	))
 
-	// Create the reference graph and register its cleanup.
-	refGraph, err := block_gc.NewRefGraph(ctx, kvStore, []byte("gc/"))
-	if err != nil {
-		tb.Fatal(err)
-	}
-	tb.Cleanup(func() {
-		if err := refGraph.Close(); err != nil {
-			tb.Error(err)
-		}
-	})
-
 	// Build the tree through the GC store and flush its reference graph.
-	gcStore := block_gc.NewGCStoreOps(store, refGraph)
+	gcStore := block_gc.NewGCStoreOps(store, block_gc.NewRefGraph(kvStore))
 	return buildBenchTreeWithOps(tb, keys, store, gcStore, gcStore.FlushPending)
 }
 

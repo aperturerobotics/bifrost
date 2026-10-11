@@ -34,18 +34,3 @@ func NewGraph(
 
 	return &cayley.Handle{QuadWriter: quadWriter, QuadStore: quadStore}, nil
 }
-
-// RebuildGraphIndexes regenerates postings from the graph's primitive log.
-// The caller must exclude graph readers and writers until it succeeds.
-// An interrupted rebuild must be rerun before reopening the graph; the rerun
-// resumes after its last committed batch. progress, when set, receives the
-// next primitive ID and the horizon after each batch.
-func RebuildGraphIndexes(ctx context.Context, objStore kvtx.Store, indexes []cayley_kv.QuadIndex, progress func(next, horizon uint64)) (uint64, error) {
-	// Build the regenerator over the same transaction adapter as the graph.
-	rebuilder, err := cayley_kv.NewIndexRebuilder(flat.Upgrade(hidalgo.NewKV(objStore)), indexes)
-	if err != nil {
-		return 0, err
-	}
-	rebuilder.SetProgress(progress)
-	return rebuilder.Rebuild(ctx)
-}

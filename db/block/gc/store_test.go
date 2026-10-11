@@ -34,10 +34,7 @@ func newGCTestEnv(t *testing.T) *gcTestEnv {
 	rawStore := block_store_kvtx.NewKVTxBlock(kvKey, kvStore, 0, false)
 
 	// Open the reference graph and register its cleanup.
-	rg, err := NewRefGraph(ctx, kvStore, []byte("gc/"))
-	if err != nil {
-		t.Fatal(err.Error())
-	}
+	rg := NewRefGraph(kvStore)
 	t.Cleanup(func() { rg.Close() })
 
 	// Wrap the block store with GC reference tracking.
@@ -225,10 +222,7 @@ func TestGCStoreOps_FlushPendingNormalizesDuplicateEdges(t *testing.T) {
 func TestGCStoreOps_FlushPendingRebuffersApplyRemainder(t *testing.T) {
 	// Open a reference graph for the partial-flush test.
 	ctx := context.Background()
-	rg, err := NewRefGraph(ctx, store_kvtx_inmem.NewStore(), []byte("gc/"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	rg := NewRefGraph(store_kvtx_inmem.NewStore())
 	t.Cleanup(func() { rg.Close() })
 
 	// Buffer three staging edges behind a graph that fails once.
@@ -239,7 +233,7 @@ func TestGCStoreOps_FlushPendingRebuffersApplyRemainder(t *testing.T) {
 	gcStore.mu.Unlock()
 
 	// Verify the first flush reports its injected failure.
-	err = gcStore.FlushPending(ctx)
+	err := gcStore.FlushPending(ctx)
 	if err == nil || !errors.Is(err, errInjectedRefBatch) {
 		t.Fatalf("first flush error = %v, want injected ref batch error", err)
 	}
@@ -297,8 +291,8 @@ func (r *failOnceRefGraph) ApplyRefBatch(ctx context.Context, adds, removes []Re
 	}
 	return &refBatchError{
 		err:     errInjectedRefBatch,
-		adds:    cloneRefEdges(adds[prefix:]),
-		removes: cloneRefEdges(removes),
+		adds:    slices.Clone(adds[prefix:]),
+		removes: slices.Clone(removes),
 	}
 }
 
@@ -590,10 +584,7 @@ func newGCTestEnvWithParent(t *testing.T, parentIRI string) *gcTestEnv {
 	rawStore := block_store_kvtx.NewKVTxBlock(kvKey, kvStore, 0, false)
 
 	// Open the reference graph and register its cleanup.
-	rg, err := NewRefGraph(ctx, kvStore, []byte("gc/"))
-	if err != nil {
-		t.Fatal(err.Error())
-	}
+	rg := NewRefGraph(kvStore)
 	t.Cleanup(func() { rg.Close() })
 
 	// Wrap the block store with parent reference tracking.

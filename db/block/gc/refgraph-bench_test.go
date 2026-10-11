@@ -43,7 +43,7 @@ func BenchmarkRefGraphApplyRefBatch(b *testing.B) {
 
 			// Report batch size, transaction count, and block-read costs.
 			b.ReportMetric(float64(edgeCount), "ref_edges/op")
-			b.ReportMetric(float64(refGraphBenchTransactions(edgeCount)), "cayley_transactions/op")
+			b.ReportMetric(float64(refGraphBenchTransactions(edgeCount)), "graph_transactions/op")
 			reportRefGraphBenchBlockReads(b, readCount, readBytes)
 		})
 	}
@@ -61,11 +61,7 @@ func newBenchRefGraph(b *testing.B, ctx context.Context) *block_gc.RefGraph {
 	}
 
 	// Open the reference graph and register transaction cleanup.
-	rg, err := block_gc.NewRefGraph(ctx, kvtx.NewTxStore(ktx), []byte("gc/"))
-	if err != nil {
-		ktx.Discard()
-		b.Fatal(err)
-	}
+	rg := block_gc.NewRefGraph(kvtx.NewTxStore(ktx))
 	b.Cleanup(func() {
 		rg.Close()
 		ktx.Discard()

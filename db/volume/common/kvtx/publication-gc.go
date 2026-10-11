@@ -46,11 +46,7 @@ func (v *Volume) withDirectAtomic(ctx context.Context, fn func(block.StoreOps, *
 	// Open transaction-local block and reference graph adapters.
 	store := kvtx.NewTxStore(tx)
 	blocks := block_store_kvtx.NewKVTxBlock(v.kvKey, store, v.GetHashType(), v.atomicHashGet)
-	rg, err := block_gc.NewRefGraph(ctx, store, volumeRefGraphPrefix())
-	if err != nil {
-		return err
-	}
-	defer rg.Close()
+	rg := openRefGraph(store)
 
 	// Apply the direct operation.
 	if fn != nil {
