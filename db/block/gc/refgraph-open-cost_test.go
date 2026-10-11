@@ -306,7 +306,7 @@ func findSubjectPrefixCollisions(
 	limit int,
 ) (string, []string) {
 	// Search reverse-index keys for distinct subject prefix collisions.
-	index := cayley_kv.DefaultQuadIndexes[1]
+	index := refGraphQuadIndexes[1]
 	for _, candidate := range subjects {
 		// Find extensions sharing the candidate subject key prefix.
 		candidateKey := index.Key([]uint64{ids["target"], ids[PredGCRef], ids[candidate]})

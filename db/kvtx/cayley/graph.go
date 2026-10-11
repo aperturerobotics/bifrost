@@ -18,15 +18,8 @@ func NewGraph(
 	objStore kvtx.Store,
 	graphOpts graph.Options,
 ) (*cayley.Handle, error) {
-	// Initialize the Cayley database over the transaction store.
+	// Open the Cayley quad store over the transaction adapter.
 	hidalgoKv := flat.Upgrade(hidalgo.NewKV(objStore))
-	if err := cayley_kv.Init(ctx, hidalgoKv, graphOpts); err != nil {
-		if err != graph.ErrDatabaseExists {
-			return nil, err
-		}
-	}
-
-	// Open the initialized Cayley quad store.
 	quadStore, err := cayley_kv.New(ctx, hidalgoKv, graphOpts)
 	if err != nil {
 		return nil, err
@@ -40,4 +33,16 @@ func NewGraph(
 	}
 
 	return &cayley.Handle{QuadWriter: quadWriter, QuadStore: quadStore}, nil
+}
+
+// RebuildGraphIndexes regenerates postings from the graph's primitive log.
+// The caller must exclude graph readers and writers until it succeeds.
+// An interrupted rebuild must be rerun before reopening the graph.
+func RebuildGraphIndexes(ctx context.Context, objStore kvtx.Store, indexes []cayley_kv.QuadIndex) (uint64, error) {
+	// Build the regenerator over the same transaction adapter as the graph.
+	rebuilder, err := cayley_kv.NewIndexRebuilder(flat.Upgrade(hidalgo.NewKV(objStore)), indexes)
+	if err != nil {
+		return 0, err
+	}
+	return rebuilder.Rebuild(ctx)
 }

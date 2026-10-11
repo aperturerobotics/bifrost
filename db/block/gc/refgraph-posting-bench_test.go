@@ -5,9 +5,12 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/aperturerobotics/cayley/graph"
 	cayley_kv "github.com/aperturerobotics/cayley/graph/kv"
 	cayley_flat "github.com/aperturerobotics/cayley/kv/flat"
 	"github.com/aperturerobotics/cayley/quad"
+	kvtx_cayley "github.com/s4wave/spacewave/db/kvtx/cayley"
+	kvtx_prefixer "github.com/s4wave/spacewave/db/kvtx/prefixer"
 	store_kvtx_inmem "github.com/s4wave/spacewave/db/store/kvtx/inmem"
 )
 
@@ -75,8 +78,66 @@ func BenchmarkRefGraphPostingChurn(b *testing.B) {
 	}
 }
 
-// requireRefGraphPostingSize verifies that the fixture holds one large posting,
-// rather than the same number of edges distributed across small posting keys.
+// BenchmarkRefGraphOutgoing reads all edges of a high-degree subject through RefGraphOps.
+func BenchmarkRefGraphOutgoing(b *testing.B) {
+	for _, layout := range []struct {
+		// name identifies the forward posting layout.
+		name string
+		// indexes configures the production graph's posting buckets.
+		indexes []cayley_kv.QuadIndex
+	}{
+		{name: "shared", indexes: cayley_kv.DefaultQuadIndexes},
+		{name: "per-edge", indexes: refGraphQuadIndexes},
+	} {
+		for _, count := range []int{1_000, 100_000} {
+			b.Run(layout.name+"/edges="+strconv.Itoa(count), func(b *testing.B) {
+				// Open the production graph adapter with the selected layout.
+				ctx := b.Context()
+				store := kvtx_prefixer.NewPrefixer(store_kvtx_inmem.NewStore(), []byte("gc/"))
+				handle, err := kvtx_cayley.NewGraph(ctx, store, graph.Options{
+					cayley_kv.OptQuadIndexes: layout.indexes,
+					"ignore_duplicate":       true,
+					"ignore_missing":         true,
+				})
+				if err != nil {
+					b.Fatal(err)
+				}
+				rg := &RefGraph{handle: handle, store: store}
+				b.Cleanup(func() {
+					if err := rg.Close(); err != nil {
+						b.Error(err)
+					}
+				})
+
+				// Populate the same subject and objects for both layouts.
+				subject := BucketIRI("outgoing-benchmark")
+				edges := make([]RefEdge, count)
+				for i := range edges {
+					edges[i] = RefEdge{Subject: subject, Object: "outgoing/" + strconv.Itoa(i)}
+				}
+				if err := rg.ApplyRefBatch(ctx, edges, nil); err != nil {
+					b.Fatal(err)
+				}
+
+				// Measure a complete forward read through the production interface.
+				var refs RefGraphOps = rg
+				b.ReportAllocs()
+				for b.Loop() {
+					outgoing, err := refs.GetOutgoingRefs(ctx, subject)
+					if err != nil {
+						b.Fatal(err)
+					}
+					if len(outgoing) != count {
+						b.Fatalf("outgoing edges = %d, want %d", len(outgoing), count)
+					}
+				}
+			})
+		}
+	}
+}
+
+// requireRefGraphPostingSize verifies the complete logical forward posting and
+// requires one physical posting per edge in the configured index layout.
 func requireRefGraphPostingSize(b *testing.B, rg *RefGraph, subject string, want int) {
 	// Resolve the subject through the graph naming API.
 	b.Helper()
@@ -95,29 +156,33 @@ func requireRefGraphPostingSize(b *testing.B, rg *RefGraph, subject string, want
 	// Read the exact shared forward posting under one storage transaction.
 	subjectID := uint64(subjectRef.(cayley_kv.Int64Value))
 	predID := uint64(predRef.(cayley_kv.Int64Value))
-	key := cayley_flat.KeyEscape(cayley_kv.DefaultQuadIndexes[0].Key([]uint64{subjectID, predID}))
+	key := cayley_flat.KeyEscape(refGraphQuadIndexes[0].Key([]uint64{subjectID, predID}))
 	tx, err := rg.store.NewTransaction(ctx, false)
 	if err != nil {
 		b.Fatal(err)
 	}
 	defer tx.Discard()
 
-	// Count encoded entries without allocating a decoded posting list.
-	data, found, err := tx.Get(ctx, key)
+	// Count the complete forward prefix without decoding unrelated postings.
+	it := tx.Iterate(ctx, key, true, false)
+	defer it.Close()
+	var count int
+	for err = it.Seek(key); err == nil && it.Valid(); it.Next() {
+		data, err := it.Value()
+		if err != nil {
+			b.Fatal(err)
+		}
+		_, n := binary.Uvarint(data)
+		if n <= 0 || n != len(data) {
+			b.Fatal("forward posting must contain exactly one quad ID")
+		}
+		count++
+	}
 	if err != nil {
 		b.Fatal(err)
 	}
-	if !found {
-		b.Fatal("shared forward posting is missing")
-	}
-	var count int
-	for len(data) != 0 {
-		_, n := binary.Uvarint(data)
-		if n <= 0 {
-			b.Fatal("shared forward posting contains an invalid quad ID")
-		}
-		count++
-		data = data[n:]
+	if err := it.Err(); err != nil {
+		b.Fatal(err)
 	}
 	if count != want {
 		b.Fatalf("shared forward posting holds %d edges, want %d", count, want)
