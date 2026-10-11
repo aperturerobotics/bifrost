@@ -498,13 +498,21 @@ func concurrentAuthors(set *sobject.SOOperationSet, earlier []replayOutcome, h [
 // queueOperation adds opData to the operation set as the local peer, replays
 // the set and installs the World after it. fork, when set, supplies the World
 // after the operation. It returns sobject.ErrRejectedOp wrapped with the
-// reason when replay rejected the operation. The caller holds the writer lock.
+// reason when replay rejected the operation. Once the SharedObject admits the
+// operation it is durable, so the reads and the replay that follow ignore ctx's
+// cancellation and the result says whether the operation was placed. The
+// caller holds the writer lock.
 func (e *soEngine) queueOperation(ctx context.Context, opData []byte, fork *replayFork) error {
-	// Add the operation and find it in the set.
+	// Add the operation.
 	localID, err := e.so.QueueOperation(ctx, opData)
 	if err != nil {
 		return err
 	}
+
+	// The operation is durable, so finish placing it whatever ctx does.
+	ctx = context.WithoutCancel(ctx)
+
+	// Find it in the set.
 	snap, err := e.so.GetSharedObjectState(ctx)
 	if err != nil {
 		return err
