@@ -3,12 +3,11 @@
 package bldr_project_validate
 
 import (
-	"bytes"
 	"io/fs"
-	"strings"
 
 	"github.com/aperturerobotics/fastjson"
 	"github.com/pkg/errors"
+	"github.com/s4wave/spacewave/bldr/project/bunlock"
 	bldr_project_starlark "github.com/s4wave/spacewave/bldr/project/starlark"
 )
 
@@ -16,7 +15,7 @@ import (
 // install.
 var lifecycleScripts = []string{"preinstall", "install", "postinstall", "preprepare", "prepare", "postprepare"}
 
-// dependencyFields are the package.json fields that name direct dependencies.
+// dependencyFields are the package.json fields that declare direct dependencies.
 var dependencyFields = []string{"dependencies", "devDependencies", "optionalDependencies", "peerDependencies"}
 
 // checkPackage reads package.json and bun.lock, refuses install scripts and
@@ -85,87 +84,32 @@ func (v *Validation) checkPackage(fsys fs.FS) error {
 // checkLock records each package bun.lock pins and refuses any it does not
 // pin by an integrity hash, such as git, file and workspace packages.
 func (v *Validation) checkLock(data []byte, direct map[string]bool) {
-	// Parse the lockfile, which allows trailing commas.
-	var parser fastjson.Parser
-	lock, err := parser.ParseBytes(withoutTrailingCommas(data))
+	// Use the fetcher's parser so confirmation and downloading accept the same pins.
+	packages, err := bunlock.Parse(data)
+	if errors.Is(err, bunlock.ErrTrustedDependencies) {
+		v.refuse(RefusalKind_REFUSAL_KIND_LIFECYCLE_SCRIPT, err.Error()+".")
+		return
+	}
 	if err != nil {
-		v.refuse(RefusalKind_REFUSAL_KIND_UNPINNED_DEPENDENCY, "bun.lock does not parse: "+err.Error())
+		v.refuse(RefusalKind_REFUSAL_KIND_UNPINNED_DEPENDENCY, err.Error()+".")
 		return
 	}
 
-	// Refuse trusted dependencies recorded in the lockfile.
-	if lock.Exists("trustedDependencies") {
-		v.refuse(RefusalKind_REFUSAL_KIND_LIFECYCLE_SCRIPT, "bun.lock trusts dependencies to run their install scripts.")
+	// Record resolved packages and account for each declared direct dependency.
+	pinned := make(map[string]bool, len(packages))
+	for _, pkg := range packages {
+		pinned[pkg.Key] = true
+		v.Dependencies = append(v.Dependencies, &Dependency{
+			Name:    pkg.Name,
+			Version: pkg.Version,
+			Direct:  direct[pkg.Key],
+		})
 	}
 
-	// Check each locked package.
-	packages := lock.GetObject("packages")
-	if packages == nil {
-		return
-	}
-	packages.Visit(func(key []byte, entry *fastjson.Value) {
-		v.checkLockEntry(string(key), entry.GetArray(), direct)
-	})
-}
-
-// checkLockEntry records one bun.lock package entry pinned by hash, as
-// [ident, registry, info, integrity], and refuses any other entry.
-func (v *Validation) checkLockEntry(key string, fields []*fastjson.Value, direct map[string]bool) {
-	// Split the ident into the package name and its locked version.
-	ident := ""
-	if len(fields) != 0 {
-		ident = string(fields[0].GetStringBytes())
-	}
-	at := strings.LastIndexByte(ident, '@')
-	if at <= 0 {
-		v.refuse(RefusalKind_REFUSAL_KIND_UNPINNED_DEPENDENCY, "bun.lock has an entry for "+key+" without a version.")
-		return
-	}
-	name, version := ident[:at], ident[at+1:]
-
-	// Require an npm integrity hash.
-	if len(fields) != 4 || !strings.HasPrefix(string(fields[3].GetStringBytes()), "sha512-") {
-		v.refuse(RefusalKind_REFUSAL_KIND_UNPINNED_DEPENDENCY, "bun.lock does not pin "+ident+" by its content hash.")
-		return
-	}
-
-	// Record the dependency; only the top-level entry of a named package is direct.
-	v.Dependencies = append(v.Dependencies, &Dependency{
-		Name:    name,
-		Version: version,
-		Direct:  direct[name] && key == name,
-	})
-}
-
-// withoutTrailingCommas returns data with each comma that directly precedes a
-// closing bracket or brace removed, leaving string contents unchanged.
-func withoutTrailingCommas(data []byte) []byte {
-	out := make([]byte, 0, len(data))
-	inString, escaped := false, false
-	for i, c := range data {
-		// Copy string contents verbatim, tracking escapes and the closing quote.
-		if inString {
-			switch {
-			case escaped:
-				escaped = false
-			case c == '\\':
-				escaped = true
-			case c == '"':
-				inString = false
-			}
-			out = append(out, c)
-			continue
+	// Refuse a manifest dependency absent from the lock's top-level package keys.
+	for name := range direct {
+		if !pinned[name] {
+			v.refuse(RefusalKind_REFUSAL_KIND_UNPINNED_DEPENDENCY, "bun.lock does not pin the direct dependency "+name+".")
 		}
-
-		// Drop a comma whose next token closes the array or object.
-		inString = c == '"'
-		if c == ',' {
-			rest := bytes.TrimLeft(data[i+1:], " \t\r\n")
-			if len(rest) != 0 && (rest[0] == ']' || rest[0] == '}') {
-				continue
-			}
-		}
-		out = append(out, c)
 	}
-	return out
 }
