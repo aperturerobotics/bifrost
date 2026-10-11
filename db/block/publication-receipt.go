@@ -65,6 +65,15 @@ func (r *PublicationReceipt) Resolve(err error) {
 	})
 }
 
+// Err returns the durable result. It is meaningful only after Done closes.
+func (r *PublicationReceipt) Err() error {
+	var err error
+	r.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
+		err = r.err
+	})
+	return err
+}
+
 // Wait returns the durable result, blocking until resolution when unresolved.
 func (r *PublicationReceipt) Wait(ctx context.Context) error {
 	var waitCh <-chan struct{}

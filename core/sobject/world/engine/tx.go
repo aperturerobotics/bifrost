@@ -238,14 +238,14 @@ func (t *soEngineWriteTx) publish(ctx context.Context, publisher sobject.StatePu
 	err = receipt.Wait(waitCtx)
 	select {
 	case <-receipt.Done():
-		err = receipt.Wait(context.Background())
+		err = receipt.Err()
 	default:
 		// The lifetime cut the wait and the outcome is unknown. Free the writer
 		// now; the publisher still holds the borrowed blocks until it resolves
 		// the receipt, and its result finishes the borrow.
 		go func() {
 			<-receipt.Done()
-			batch.Complete(receipt.Wait(context.Background()))
+			batch.Complete(receipt.Err())
 			receipt.Release()
 		}()
 		t.clock.end(stageReceiptWait)
