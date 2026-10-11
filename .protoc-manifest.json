@@ -3409,6 +3409,16 @@
         "plugin/cli/config.proto"
       ]
     },
+    "github.com/s4wave/spacewave/plugin/flowgraph": {
+      "hash": "dadfa352a1f4abd4cd75399962a7e82dceed8aed30ca6bf3e8929d505931eb5d",
+      "generatedFiles": [
+        "plugin/flowgraph/flowgraph.pb.go",
+        "plugin/flowgraph/flowgraph.pb.ts"
+      ],
+      "protoFiles": [
+        "plugin/flowgraph/flowgraph.proto"
+      ]
+    },
     "github.com/s4wave/spacewave/plugin/notes/proto": {
       "hash": "89b74d7830aa2c6b7d62c47ff1d7a01e37592a821dd0d80a88a8d7a4c77dd415",
       "generatedFiles": [
@@ -3706,6 +3716,18 @@
       ],
       "protoFiles": [
         "sdk/flowgraph/flowgraph.proto"
+      ]
+    },
+    "github.com/s4wave/spacewave/sdk/flowgraph/registry": {
+      "hash": "4543137472f4b822017103b1dbf0d974b7f72ec697f8c1591f494a1cfa9fad56",
+      "generatedFiles": [
+        "sdk/flowgraph/registry/registry.pb.go",
+        "sdk/flowgraph/registry/registry.pb.ts",
+        "sdk/flowgraph/registry/registry_srpc.pb.go",
+        "sdk/flowgraph/registry/registry_srpc.pb.ts"
+      ],
+      "protoFiles": [
+        "sdk/flowgraph/registry/registry.proto"
       ]
     },
     "github.com/s4wave/spacewave/sdk/flowgraph/run": {

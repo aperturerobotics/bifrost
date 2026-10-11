@@ -4,12 +4,14 @@ import (
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/starpc/srpc"
 	resource_configtype_registry "github.com/s4wave/spacewave/core/resource/configtype/registry"
+	resource_flowgraph_registry "github.com/s4wave/spacewave/core/resource/flowgraph/registry"
 	resource_objecttype_registry "github.com/s4wave/spacewave/core/resource/objecttype/registry"
 	resource_quickstart_registry "github.com/s4wave/spacewave/core/resource/quickstart/registry"
 	"github.com/s4wave/spacewave/core/resource/registration"
 	resource_viewer_registry "github.com/s4wave/spacewave/core/resource/viewer/registry"
 	resource_worldop_registry "github.com/s4wave/spacewave/core/resource/worldop/registry"
 	s4wave_configtype_registry "github.com/s4wave/spacewave/sdk/configtype/registry"
+	flowgraph_registry "github.com/s4wave/spacewave/sdk/flowgraph/registry"
 	s4wave_objecttype_registry "github.com/s4wave/spacewave/sdk/objecttype/registry"
 	s4wave_quickstart_registry "github.com/s4wave/spacewave/sdk/quickstart/registry"
 	s4wave_viewer_registry "github.com/s4wave/spacewave/sdk/viewer/registry"
@@ -32,6 +34,8 @@ type registries struct {
 	worldOp *resource_worldop_registry.WorldOpRegistryResource
 	// configType holds config types.
 	configType *resource_configtype_registry.ConfigTypeRegistryResource
+	// nodeType holds plugin Flowgraph compilers.
+	nodeType *resource_flowgraph_registry.RegistryResource
 	// quickstart holds Quickstarts and runs their seed handlers with the bus
 	// of the installation that created it.
 	quickstart *resource_quickstart_registry.QuickstartRegistryResource
@@ -49,6 +53,7 @@ func newRegistries(le *logrus.Entry, b bus.Bus) *registries {
 		objectType:   resource_objecttype_registry.NewObjectTypeRegistryResource(generations),
 		worldOp:      resource_worldop_registry.NewWorldOpRegistryResource(generations),
 		configType:   resource_configtype_registry.NewConfigTypeRegistryResource(),
+		nodeType:     resource_flowgraph_registry.NewRegistryResource(),
 		quickstart:   resource_quickstart_registry.NewQuickstartRegistryResource(le, b, generations),
 		objectWizard: s4wave_wizard.NewWizardRegistryResource(generations),
 	}
@@ -70,6 +75,9 @@ func (r *registries) register(mux srpc.Mux) error {
 		return err
 	}
 	if err := s4wave_configtype_registry.SRPCRegisterConfigTypeRegistryResourceService(mux, r.configType); err != nil {
+		return err
+	}
+	if err := flowgraph_registry.SRPCRegisterNodeTypeRegistryResourceService(mux, r.nodeType); err != nil {
 		return err
 	}
 	if err := s4wave_quickstart_registry.SRPCRegisterQuickstartRegistryResourceService(mux, r.quickstart); err != nil {

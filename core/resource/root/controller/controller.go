@@ -15,6 +15,7 @@ import (
 	resource_server "github.com/s4wave/spacewave/bldr/resource/server"
 	process_binding "github.com/s4wave/spacewave/core/plugin/process"
 	resource_command "github.com/s4wave/spacewave/core/resource/command"
+	resource_flowgraph_registry "github.com/s4wave/spacewave/core/resource/flowgraph/registry"
 	resource_listener "github.com/s4wave/spacewave/core/resource/listener"
 	yield_policy "github.com/s4wave/spacewave/core/resource/listener/yieldpolicy"
 	resource_objecttype_registry "github.com/s4wave/spacewave/core/resource/objecttype/registry"
@@ -209,6 +210,15 @@ func (c *Controller) Execute(ctx context.Context) error {
 		return err
 	}
 	releases = append(releases, worldOpBridgeRel)
+
+	// Resolve plugin Flowgraph node types on this installation's bus.
+	nodeTypeBridge := resource_flowgraph_registry.NewBridgeController(b, c.registries.nodeType)
+	nodeTypeBridgeRel, err := b.AddController(ctx, nodeTypeBridge, nil)
+	if err != nil {
+		releaseAll()
+		return err
+	}
+	releases = append(releases, nodeTypeBridgeRel)
 	defer releaseAll()
 
 	// Run confirmed background plugins until the controller stops. A failure

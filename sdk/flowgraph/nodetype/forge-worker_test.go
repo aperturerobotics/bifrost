@@ -149,7 +149,7 @@ func TestForgeWorkerRejectsMalformedParameters(t *testing.T) {
 		parameters := maps.Clone(valid)
 		mutate(parameters)
 		bad := forgeWorkerNode("", parameters)
-		if _, err := (forgeWorker{}).Compile(bad); err == nil {
+		if _, err := (forgeWorker{}).Compile(t.Context(), bad); err == nil {
 			t.Errorf("%s: Compile accepted the declaration", name)
 		}
 		if _, err := (forgeWorker{}).GetCapability(t.Context(), nil, bad); err == nil {

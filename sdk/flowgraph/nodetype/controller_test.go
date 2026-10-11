@@ -89,7 +89,7 @@ func TestCompileTCPPortToLocalPort(t *testing.T) {
 	compiled := make(map[string]map[string]config.Config)
 	for _, node := range []*s4wave_flowgraph.PlacedFlowgraphNode{tcp, local} {
 		nodeType := types[node.Node.GetTypeId()]
-		entries, err := nodeType.Compile(node)
+		entries, err := nodeType.Compile(ctx, node)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -119,7 +119,7 @@ func TestCompileTCPPortToLocalPort(t *testing.T) {
 
 	// Compile no entries once the connection is removed.
 	local.Connections = nil
-	entries, err := types[s4wave_flowgraph.LocalPortNodeTypeID].Compile(local)
+	entries, err := types[s4wave_flowgraph.LocalPortNodeTypeID].Compile(ctx, local)
 	if err != nil {
 		t.Fatal(err)
 	}

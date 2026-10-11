@@ -1,6 +1,8 @@
 package flowgraph_nodetype
 
 import (
+	"context"
+
 	"github.com/aperturerobotics/controllerbus/config"
 	"github.com/pkg/errors"
 	stream_listening "github.com/s4wave/spacewave/net/stream/listening"
@@ -32,9 +34,9 @@ func (localPort) GetConfigIDs() []string {
 // Compile listens on the node's address and opens a peer stream to the Device
 // at the other end of the connection. A Local Port with no connection compiles
 // to no entries, because it has no peer to forward to.
-func (localPort) Compile(node *s4wave_flowgraph.PlacedFlowgraphNode) (map[string]config.Config, error) {
+func (localPort) Compile(_ context.Context, node *s4wave_flowgraph.PlacedFlowgraphNode) (map[string]config.Config, error) {
 	// Select the connections that arrive at the stream port.
-	var inbound []*s4wave_flowgraph.PlacedFlowgraphConnection
+	inbound := make([]*s4wave_flowgraph.PlacedFlowgraphConnection, 0, len(node.Connections))
 	for _, conn := range node.Connections {
 		if conn.Connection.GetInputNode() == node.NodeID && conn.Connection.GetInputPort() == streamPortName {
 			inbound = append(inbound, conn)

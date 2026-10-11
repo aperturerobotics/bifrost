@@ -1,6 +1,7 @@
 package flowgraph_nodetype
 
 import (
+	"maps"
 	"testing"
 
 	s4wave_device "github.com/s4wave/spacewave/sdk/device"
@@ -18,6 +19,8 @@ func TestCheckoutRootCapability(t *testing.T) {
 			Node:         &s4wave_flowgraph.FlowgraphNode{TypeId: s4wave_flowgraph.CheckoutRootNodeTypeID, Parameters: parameters},
 		}
 	}
+
+	// Read the capability of a valid root.
 	valid := map[string]string{"name": " skiffos ", "path": "/srv/skiffos/", "access": "read-write"}
 	node := place(valid)
 	got, err := checkoutRoot{}.GetCapability(t.Context(), nil, node)
@@ -27,6 +30,8 @@ func TestCheckoutRootCapability(t *testing.T) {
 	if got.GetKind() != s4wave_device.DeviceCapabilityKindFilesystem {
 		t.Fatalf("kind = %q, want %q", got.GetKind(), s4wave_device.DeviceCapabilityKindFilesystem)
 	}
+
+	// Require the root's name, display path, selection ref and write access.
 	root := got.GetCheckoutRoot()
 	if root.GetName() != "skiffos" || root.GetDisplayPath() != "/srv/skiffos" || root.GetSelectionRef() != node.CapabilityID() {
 		t.Fatalf("checkout root = %v", root)
@@ -45,12 +50,10 @@ func TestCheckoutRootCapability(t *testing.T) {
 		"unknown access": func(p map[string]string) { p["access"] = "write" },
 	} {
 		parameters := map[string]string{}
-		for key, value := range valid {
-			parameters[key] = value
-		}
+		maps.Copy(parameters, valid)
 		mutate(parameters)
 		bad := place(parameters)
-		if _, err := (checkoutRoot{}).Compile(bad); err == nil {
+		if _, err := (checkoutRoot{}).Compile(t.Context(), bad); err == nil {
 			t.Errorf("%s: Compile accepted the root", name)
 		}
 		if _, err := (checkoutRoot{}).GetCapability(t.Context(), nil, bad); err == nil {

@@ -28,6 +28,7 @@ import (
 // error while the other nodes keep running. The daemon is the only writer of
 // the Device object.
 type Reconciler struct {
+	// le reports reconciliation failures.
 	le *logrus.Entry
 	// b is the root bus node types resolve on. The ConfigSet applies on the Device
 	// Session's bus, which the Session transport looked up on b publishes.
@@ -382,7 +383,7 @@ func (r *Reconciler) compile(
 	if report.nodeType == nil {
 		return report
 	}
-	compiled, err := report.nodeType.Compile(node)
+	compiled, err := report.nodeType.Compile(ctx, node)
 	if err != nil {
 		report.err = errors.Wrap(err, "compile node")
 		return report

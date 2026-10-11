@@ -55,7 +55,7 @@ func (n *nodeReport) state(applier *configApplier) (s4wave_device.DeviceCapabili
 		return s4wave_device.DeviceCapabilityState_DEVICE_CAPABILITY_STATE_REJECTED, n.err.Error()
 	}
 	if n.nodeType == nil {
-		return s4wave_device.DeviceCapabilityState_DEVICE_CAPABILITY_STATE_DECLARED, "waiting for the node type"
+		return s4wave_device.DeviceCapabilityState_DEVICE_CAPABILITY_STATE_DECLARED, "Node type unavailable. Load its plugin on this Device."
 	}
 	if len(n.keys) == 0 {
 		return s4wave_device.DeviceCapabilityState_DEVICE_CAPABILITY_STATE_AVAILABLE, ""
