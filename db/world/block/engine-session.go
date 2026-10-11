@@ -304,7 +304,7 @@ func (e *Engine) persistLegacyPublication(ctx context.Context, p *enginePublicat
 		_, err = e.writeBlockStore.Sync(ctx)
 	}
 	if err == nil {
-		err = block.MarkRootComplete(ctx, e.writeBlockStore, p.root.GetRootRef())
+		err = block.MarkDerivedRootsComplete(ctx, e.writeBlockStore, base.GetRootRef(), p.root.GetRootRef())
 	}
 	if err == nil {
 

@@ -22,7 +22,9 @@ type replayWorld struct {
 	ws *blkEngine
 	// head is the World ws serves.
 	head *bucket.ObjectRef
-	// roots are the roots ws committed, proven complete at close.
+	// base is the World ws was built on.
+	base *block.BlockRef
+	// roots are the roots ws committed, proven complete at close when base is.
 	roots []*block.BlockRef
 }
 
@@ -47,7 +49,7 @@ func (w *replayWorld) bind(ctx context.Context, head *bucket.ObjectRef) (*blkEng
 	if err != nil {
 		return nil, err
 	}
-	w.ws, w.head = ws, head.CloneVT()
+	w.ws, w.head, w.base = ws, head.CloneVT(), head.GetRootRef().CloneVT()
 	return ws, nil
 }
 
@@ -57,20 +59,20 @@ func (w *replayWorld) advance(head *bucket.ObjectRef) {
 	w.roots = append(w.roots, head.GetRootRef())
 }
 
-// close makes the committed blocks durable, proves their roots complete, and
-// releases the engine.
+// close makes the committed blocks durable, proves their roots complete when
+// the base World is, and releases the engine.
 func (w *replayWorld) close(ctx context.Context) error {
 	// Detach the engine.
 	if w.ws == nil {
 		return nil
 	}
-	ws, roots := w.ws, w.roots
-	w.ws, w.head, w.roots = nil, nil, nil
+	ws, base, roots := w.ws, w.base, w.roots
+	w.ws, w.head, w.base, w.roots = nil, nil, nil, nil
 	defer ws.Release()
 
 	// A completion proof lands only after the fence covers its writes.
 	if _, err := ws.bengine.Sync(ctx); err != nil {
 		return err
 	}
-	return block.MarkRootsComplete(ctx, w.so.GetBlockStore(), roots)
+	return block.MarkDerivedRootsComplete(ctx, w.so.GetBlockStore(), base, roots...)
 }

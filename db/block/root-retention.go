@@ -43,6 +43,20 @@ func MarkRootsComplete(ctx context.Context, store StoreOps, roots []*BlockRef) e
 	return store.(RootRetainer).MarkRootsComplete(ctx, roots)
 }
 
+// MarkDerivedRootsComplete records completion proofs for roots written over
+// base, when base is empty or proven complete. A write stores only the blocks
+// it changed, so the subtrees it kept are complete only where base's were: a
+// device that reads base on demand from a peer holds just the changed path.
+func MarkDerivedRootsComplete(ctx context.Context, store StoreOps, base *BlockRef, roots ...*BlockRef) error {
+	if !base.GetEmpty() {
+		complete, err := RootComplete(ctx, store, base)
+		if err != nil || !complete {
+			return err
+		}
+	}
+	return MarkRootsComplete(ctx, store, roots)
+}
+
 // RootComplete checks a proof whose lifetime is the physical root's lifetime.
 func RootComplete(ctx context.Context, store StoreOps, ref *BlockRef) (bool, error) {
 	if ref.GetEmpty() || !SupportsRootRetention(store) {

@@ -37,6 +37,9 @@ type WorldState struct {
 	verbose     bool
 	discarded   atomic.Bool
 	readRelease func()
+	// base is the root the block state was loaded from. Writes prove their
+	// root complete only when base is.
+	base *block.BlockRef
 
 	// store is the block store the World writes through. The volume behind it
 	// owns physical reachability.
@@ -162,7 +165,7 @@ func (t *WorldState) Sync(ctx context.Context) (bool, error) {
 	}
 	fenced, err := t.store.Sync(ctx)
 	if err == nil && fenced && t.write {
-		err = block.MarkRootComplete(ctx, t.store, t.GetRootRef())
+		err = block.MarkDerivedRootsComplete(ctx, t.store, t.base, t.GetRootRef())
 	}
 	return fenced, err
 }
@@ -184,7 +187,7 @@ func (t *WorldState) Flush(ctx context.Context) error {
 
 	// Record the written root's completion proof.
 	if t.write {
-		return block.MarkRootComplete(ctx, t.store, t.GetRootRef())
+		return block.MarkDerivedRootsComplete(ctx, t.store, t.base, t.GetRootRef())
 	}
 	return nil
 }
@@ -463,7 +466,7 @@ func (t *WorldState) setBlockTransaction(
 
 	// Swap in the rebuilt trees and drop the object memo.
 	_, subtask = trace.NewTask(ctx, "hydra/world-block/world-state/set-block-transaction/swap-handles")
-	t.btx, t.bcs = btx, bcs
+	t.btx, t.bcs, t.base = btx, bcs, bcs.GetRef().Clone()
 	if t.graphHd != nil {
 		_ = t.graphHd.Close()
 	}
