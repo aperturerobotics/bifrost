@@ -59,7 +59,7 @@ export const metadata = {
             name: 'Is my data secure when using Spacewave?',
             acceptedAnswer: {
               '@type': 'Answer',
-              text: "Absolutely. Spacewave uses end-to-end encryption and optionally peer-to-peer (P2P) networking. Your data is encrypted on your device and stays private in transport and in storage. Even we can't decrypt it.",
+              text: "Absolutely. Spacewave uses end-to-end encryption and optionally peer-to-peer (P2P) networking. Your data is encrypted on your device and stays private in transport and in storage. Protect your account with a password, a long PIN, or a passkey that can derive keys, and even we can't decrypt it.",
             },
           },
           {

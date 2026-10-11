@@ -486,6 +486,7 @@ function SSOSignupForm({
             onSubmit={onRequestConfirm}
             disabled={false}
             pinInputId="sso-pin"
+            keyHeldWithoutPin
           />
           <AuthPrimaryActionButton
             onClick={onRequestConfirm}

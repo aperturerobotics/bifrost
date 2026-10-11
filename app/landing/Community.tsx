@@ -42,7 +42,7 @@ const PRINCIPLES = [
   {
     icon: LuShield,
     title: 'End-to-end encrypted',
-    body: 'All data is end-to-end encrypted by default. Only your devices hold the keys.',
+    body: 'All data is end-to-end encrypted by default. Protect your account with a password, a long PIN, or a passkey that can derive keys, and only your devices can unlock it.',
   },
   {
     icon: LuWifi,

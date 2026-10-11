@@ -316,8 +316,9 @@ const FaqAccordion: React.FC = () => {
           <>
             Absolutely. Spacewave uses end-to-end encryption and optionally
             peer-to-peer (P2P) networking. Your data is encrypted on your device
-            and stays private in transport and in storage. Even we can't decrypt
-            it. This is{' '}
+            and stays private in transport and in storage. Protect your account
+            with a password, a long PIN, or a passkey that can derive keys, and
+            even we can't decrypt it. This is{' '}
             <ExternalLink
               href="https://www.cloudflare.com/learning/privacy/what-is-end-to-end-encryption/"
               className="text-brand hover:text-brand-highlight underline underline-offset-2"
@@ -1316,7 +1317,7 @@ const ComparisonChart: React.FC = () => {
       icon: <LuCreditCard className="size-4" />,
     },
     {
-      name: 'No telemetry or tracking of any kind',
+      name: 'No telemetry or ad tracking',
       spacewave: true,
       traditional: false,
       icon: <LuEyeOff className="size-4" />,

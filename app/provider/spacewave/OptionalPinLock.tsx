@@ -13,6 +13,9 @@ export interface OptionalPinLockProps {
   onSubmit: () => void
   disabled: boolean
   pinInputId: string
+  // keyHeldWithoutPin is set when skipping the PIN leaves the entity key in
+  // Spacewave Cloud custody, readable by the server without any user secret.
+  keyHeldWithoutPin?: boolean
 }
 
 // OptionalPinLock renders the optional PIN + confirm-PIN credential entry
@@ -27,6 +30,7 @@ export function OptionalPinLock(props: OptionalPinLockProps) {
     onSubmit,
     disabled,
     pinInputId,
+    keyHeldWithoutPin,
   } = props
 
   return (
@@ -71,6 +75,13 @@ export function OptionalPinLock(props: OptionalPinLockProps) {
         }}
       />
       {pinError && <p className="text-destructive text-xs">{pinError}</p>}
+      {keyHeldWithoutPin && !pin && (
+        <p className="text-foreground-alt text-xs">
+          Without a PIN, Spacewave Cloud keeps your account key so you can sign
+          in on any device, and we could use it to open your data. With a long
+          PIN, only you can unlock the key.
+        </p>
+      )}
     </div>
   )
 }

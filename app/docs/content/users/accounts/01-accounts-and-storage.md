@@ -32,11 +32,19 @@ backups.
 
 Spacewave Cloud is Spacewave's hosted service. A Cloud account adds sync
 between devices, backup, and shared Spaces, so you can continue on your phone
-what you started on your laptop. Your content is encrypted, and we cannot read
-it.
+what you started on your laptop. Your content is encrypted before it leaves
+your device.
 
 You can sign in with a password, a passkey, your organization's single sign-on,
 or a backup key. Cloud accounts also have a recovery email and billing.
+
+Who can unlock your account key depends on how you sign in. With a password, a
+passkey that can derive keys, or a long PIN, only you can unlock it, and we
+cannot read your content. If you sign in with Google, GitHub or another single
+sign-on provider, or with a passkey that cannot derive keys, and skip the PIN,
+Spacewave Cloud keeps your account key so you can sign in on any device. In
+that case we could use the key to open your data. Add a long PIN when you sign
+up to prevent this.
 
 ## Which to choose
 

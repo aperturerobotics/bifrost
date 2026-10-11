@@ -335,6 +335,7 @@ export function PasskeyConfirmPage() {
             onSubmit={() => void handleCreateAccount()}
             disabled={isBusy}
             pinInputId="desktop-passkey-pin"
+            keyHeldWithoutPin={!pendingState.prfCapable}
           />
 
           <div className="flex w-full flex-col gap-2">

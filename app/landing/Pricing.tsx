@@ -44,12 +44,12 @@ const FAQ_ITEMS = [
   {
     question: 'Is the free tier really unlimited?',
     answer:
-      'Yes. Spacewave runs entirely on your devices with no server dependency. All features work locally, including plugins, encryption, and peer-to-peer sync. There is no credit card required and no time limit.',
+      'Yes. Spacewave runs on your devices, and every local feature works without an account, including plugins, encryption, and peer-to-peer sync. There is no credit card required and no time limit. Cloud sync, backup, and sign-in use our servers.',
   },
   {
     question: 'What does Cloud add?',
     answer:
-      'Cloud provides always-on sync and backup through our infrastructure. Your devices sync through the cloud when direct peer-to-peer is unavailable, and your data is backed up so you never lose it.',
+      'Cloud provides always-on sync and backup through our infrastructure. Your devices sync through the cloud when direct peer-to-peer is unavailable, and your cloud data is there on any device you sign in to. Keep your own copy of anything you cannot afford to lose.',
   },
   {
     question: 'What happens to my data if I cancel Cloud?',
@@ -57,9 +57,9 @@ const FAQ_ITEMS = [
       'Your local data stays on your devices and is always yours. Cloud-synced data has a 30-day read-only grace period after cancellation. You can export everything at any time.',
   },
   {
-    question: 'Can I self-host the cloud parts?',
+    question: 'Can I run without the cloud?',
     answer:
-      'Yes. Spacewave is open-source and you can run your own relay and storage infrastructure. The Cloud plan is for those who want managed infrastructure without running servers.',
+      'Yes. The Spacewave app is open source, and your devices can store and sync your data peer to peer without any server of ours. The Cloud plan adds our managed sync, backup, and relay service, which is not open source.',
   },
   {
     question: 'How does usage-based pricing work?',

@@ -90,6 +90,41 @@ describe('OptionalPinLock', () => {
     expect(screen.getByText('PINs do not match')).toBeDefined()
   })
 
+  it('discloses server custody until a PIN is entered', () => {
+    const custodyNotice = /Spacewave Cloud keeps your account key/
+    const { rerender } = render(
+      <OptionalPinLock
+        pin=""
+        confirmPin=""
+        pinError=""
+        onPinChange={vi.fn()}
+        onConfirmPinChange={vi.fn()}
+        onSubmit={vi.fn()}
+        disabled={false}
+        pinInputId="test-pin"
+        keyHeldWithoutPin
+      />,
+    )
+
+    expect(screen.getByText(custodyNotice)).toBeDefined()
+
+    rerender(
+      <OptionalPinLock
+        pin="correct horse"
+        confirmPin=""
+        pinError=""
+        onPinChange={vi.fn()}
+        onConfirmPinChange={vi.fn()}
+        onSubmit={vi.fn()}
+        disabled={false}
+        pinInputId="test-pin"
+        keyHeldWithoutPin
+      />,
+    )
+
+    expect(screen.queryByText(custodyNotice)).toBeNull()
+  })
+
   it('invokes onSubmit when Enter is pressed and disabled is false', () => {
     const onSubmit = vi.fn()
 
