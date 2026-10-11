@@ -1,6 +1,7 @@
 package v86_wazero
 
 import (
+	"context"
 	"os"
 
 	"github.com/go-git/go-billy/v6/memfs"
@@ -11,41 +12,31 @@ import (
 	unixfs_overlay "github.com/s4wave/spacewave/db/unixfs/overlay"
 	unixfs_tar "github.com/s4wave/spacewave/db/unixfs/tar"
 	unixfs_v86fs "github.com/s4wave/spacewave/db/unixfs/v86fs"
+	unixfs_world "github.com/s4wave/spacewave/db/unixfs/world"
 )
 
-// OpenV86Root builds a v86fs Server that serves rootfsTar as the guest root.
-// The returned release func drops the root FSHandle and must run after the
-// guest stops using the server.
-func OpenV86Root(mode RootMode, rootfsTar string) (*unixfs_v86fs.Server, func(), error) {
+// OpenV86Root builds a v86fs Server that serves the image's rootfs as the
+// guest root. A local archive is parsed into memory; a CDN rootfs object is
+// read lazily from the published world. The returned release func drops the
+// root and any CDN mount and must run after the guest stops using the server.
+func OpenV86Root(ctx context.Context, mode RootMode, assets *AssetSet) (*unixfs_v86fs.Server, func(), error) {
+	// Validate the mode before allocating either layer.
 	mode, err := normalizeRootMode(mode)
 	if err != nil {
 		return nil, nil, err
 	}
 
+	// Build the upper layer before opening the lower so a bad mode leaks nothing.
+	var upper unixfs.FSCursor
 	switch mode.Mode {
 	case rootModeReadonly:
-		cursor, err := openV86RootLower(rootfsTar)
-		if err != nil {
-			return nil, nil, err
-		}
-		return openV86RootServer(cursor)
 	case rootModeRAM:
-		lower, err := openV86RootLower(rootfsTar)
-		if err != nil {
-			return nil, nil, err
-		}
-		upper := unixfs_billy.NewBillyFSCursor(memfs.New(), "")
-		return openV86RootServer(unixfs_overlay.NewOverlayFSCursor(lower, upper))
+		upper = unixfs_billy.NewBillyFSCursor(memfs.New(), "")
 	case rootModeDisk:
 		if err := os.MkdirAll(mode.Arg, 0o755); err != nil {
 			return nil, nil, errors.Wrap(err, "create disk root upper")
 		}
-		lower, err := openV86RootLower(rootfsTar)
-		if err != nil {
-			return nil, nil, err
-		}
-		upper := unixfs_billy.NewBillyFSCursor(osfs.New(mode.Arg), "")
-		return openV86RootServer(unixfs_overlay.NewOverlayFSCursor(lower, upper))
+		upper = unixfs_billy.NewBillyFSCursor(osfs.New(mode.Arg), "")
 	case rootModeVolume:
 		// TODO: back volume root mode with db/unixfs/block.
 		return nil, nil, errors.Errorf("root-mode volume not yet implemented")
@@ -55,10 +46,64 @@ func OpenV86Root(mode RootMode, rootfsTar string) (*unixfs_v86fs.Server, func(),
 	default:
 		return nil, nil, errors.Errorf("unknown root-mode %q, want %s", mode.Mode, rootModeAllowed)
 	}
+
+	// Open the image filesystem as the read-only lower layer.
+	lower, releaseLower, err := openV86RootLower(ctx, assets)
+	if err != nil {
+		if upper != nil {
+			upper.Release()
+		}
+		return nil, nil, err
+	}
+	root := lower
+	if upper != nil {
+		root = unixfs_overlay.NewOverlayFSCursor(lower, upper)
+	}
+
+	// Serve the layered root and release it before the lower layer's mount.
+	server, releaseRoot, err := openV86RootServer(root)
+	if err != nil {
+		releaseLower()
+		return nil, nil, err
+	}
+	return server, func() {
+		releaseRoot()
+		releaseLower()
+	}, nil
 }
 
-// openV86RootLower parses the rootfs tar into a read-only lower cursor.
-func openV86RootLower(rootfsTar string) (unixfs.FSCursor, error) {
+// openV86RootLower opens the image rootfs as a read-only cursor. The release
+// func drops the CDN world mount, if any, after the cursor is released.
+func openV86RootLower(ctx context.Context, assets *AssetSet) (unixfs.FSCursor, func(), error) {
+	// Prefer the local archive, which needs no CDN mount.
+	if assets.RootfsTar != "" {
+		cursor, err := openRootfsTar(assets.RootfsTar)
+		if err != nil {
+			return nil, nil, err
+		}
+		return cursor, func() {}, nil
+	}
+	if assets.RootfsObjectKey == "" {
+		return nil, nil, errors.New("v86 image has neither a rootfs tar nor a rootfs object")
+	}
+
+	// Keep the published world mounted for the lifetime of the lazy cursor.
+	opts := assets.cdn.withDefaults()
+	ws, releaseWorld, err := mountCdnWorld(ctx, opts)
+	if err != nil {
+		return nil, nil, err
+	}
+	fsType, _, err := unixfs_world.LookupFsType(ctx, ws, assets.RootfsObjectKey)
+	if err != nil {
+		releaseWorld()
+		return nil, nil, errors.Wrapf(err, "lookup rootfs object %q", assets.RootfsObjectKey)
+	}
+	cursor := unixfs_world.NewFSCursorWithContext(ctx, opts.Le, ws, assets.RootfsObjectKey, fsType, nil, false)
+	return cursor, releaseWorld, nil
+}
+
+// openRootfsTar parses a rootfs tar into a read-only cursor.
+func openRootfsTar(rootfsTar string) (unixfs.FSCursor, error) {
 	// Open the guest rootfs archive and close it after parsing.
 	f, err := os.Open(rootfsTar)
 	if err != nil {
@@ -66,12 +111,11 @@ func openV86RootLower(rootfsTar string) (unixfs.FSCursor, error) {
 	}
 	defer f.Close()
 
-	// Parse the guest rootfs archive into its read-only filesystem cursor.
+	// Parse the archive into its read-only filesystem cursor.
 	cursor, err := unixfs_tar.NewTarFSCursorFromReader(f)
 	if err != nil {
 		return nil, errors.Wrap(err, "parse rootfs tar")
 	}
-
 	return cursor, nil
 }
 

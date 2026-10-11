@@ -23,8 +23,19 @@ import (
 
 // ResolveAssets locates a complete local v86 image or downloads it from the CDN.
 func ResolveAssets(ctx context.Context, opts AssetOptions) (*AssetSet, error) {
-	// Prefer explicitly supplied local images over downloaded cache entries.
+	// Resolve the image and remember where its CDN rootfs object lives.
 	opts = opts.withDefaults()
+	assets, err := resolveAssetSet(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+	assets.cdn = opts
+	return assets, nil
+}
+
+// resolveAssetSet tries the local sources in priority order before the CDN.
+func resolveAssetSet(ctx context.Context, opts AssetOptions) (*AssetSet, error) {
+	// Prefer explicitly supplied local images over downloaded cache entries.
 	if opts.AssetDir != "" {
 		if assets, ok := assetSetFromDir(opts.AssetDir, opts.ImageKey); ok {
 			return assets, nil
@@ -85,12 +96,15 @@ func assetSetFromDir(dir, imageKey string) (*AssetSet, bool) {
 		RootfsFlatDir: filepath.Join(dir, "flat"),
 	}
 
-	// A CDN rootfs reference can replace the local filesystem archive.
-	if rootfsKey, err := os.ReadFile(filepath.Join(dir, "rootfs.object-key")); err == nil {
-		assets.RootfsObjectKey = strings.TrimSpace(string(rootfsKey))
+	// A local filesystem archive takes precedence over a CDN rootfs reference.
+	if !filesExist(assets.RootfsTar) {
+		assets.RootfsTar = ""
+		if rootfsKey, err := os.ReadFile(filepath.Join(dir, "rootfs.object-key")); err == nil {
+			assets.RootfsObjectKey = strings.TrimSpace(string(rootfsKey))
+		}
 	}
 	if filesExist(assets.Wasm, assets.SeaBIOS, assets.VGABIOS, assets.Kernel) &&
-		(assets.RootfsObjectKey != "" || filesExist(assets.RootfsTar)) {
+		(assets.RootfsTar != "" || assets.RootfsObjectKey != "") {
 		return assets, true
 	}
 	return nil, false
@@ -184,7 +198,6 @@ func hydrateAssetsFromCdn(ctx context.Context, opts AssetOptions) (*AssetSet, er
 	if !ok {
 		return nil, errors.Errorf("hydrated v86 assets incomplete in %s", opts.CacheDir)
 	}
-	assets.RootfsObjectKey = rootfsKey
 	return assets, nil
 }
 

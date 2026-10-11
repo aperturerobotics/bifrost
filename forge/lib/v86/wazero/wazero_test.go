@@ -201,7 +201,7 @@ func TestV86WazeroV86FSDeviceProbe(t *testing.T) {
 	}
 
 	// Open the read-only V86 filesystem root for the guest.
-	v86fsServer, releaseRoot, err := OpenV86Root(RootMode{Mode: rootModeReadonly}, assets.RootfsTar)
+	v86fsServer, releaseRoot, err := OpenV86Root(ctx, RootMode{Mode: rootModeReadonly}, assets)
 	if err != nil {
 		t.Fatalf("open v86fs root: %v", err)
 	}
@@ -287,7 +287,7 @@ func TestV86WazeroV86FSRootShell(t *testing.T) {
 	}
 
 	// Open the read-only V86 filesystem root for the guest.
-	v86fsServer, releaseRoot, err := OpenV86Root(RootMode{Mode: rootModeReadonly}, assets.RootfsTar)
+	v86fsServer, releaseRoot, err := OpenV86Root(ctx, RootMode{Mode: rootModeReadonly}, assets)
 	if err != nil {
 		t.Fatalf("open v86fs root: %v", err)
 	}
@@ -332,7 +332,7 @@ func TestV86WazeroV86FSRootShell(t *testing.T) {
 	// Wait for the guest root shell and report device diagnostics on failure.
 	waitCtx, waitCancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer waitCancel()
-	if _, err := waitSerial(waitCtx, instance, ":/#"); err != nil {
+	if _, err := waitSerial(waitCtx, instance, rootShellPrompt); err != nil {
 		stats := instance.v86fs.stats()
 		t.Fatalf("v86fs root shell prompt not reached: %v; device{driver_ok=%t last_status=%#x irq_line=%d kicks=%v requests=%d replies=%d notifications=%d trace=%v} serial_tail=%q top_writes=%s logs=%q",
 			err,
@@ -440,7 +440,7 @@ func TestV86WazeroHost9PRootShell(t *testing.T) {
 	// Wait for the guest root shell and report device diagnostics on failure.
 	waitCtx, waitCancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer waitCancel()
-	if _, err := waitSerial(waitCtx, instance, ":/#"); err != nil {
+	if _, err := waitSerial(waitCtx, instance, rootShellPrompt); err != nil {
 		reqCount, lastType, notifies, availIdx, availLastIdx, configured := host9p.stats()
 		t.Fatalf("host9p root shell prompt not reached: %v; host9p_requests=%d last_9p_type=%d notifies=%d queue_configured=%t avail_idx=%d avail_last_idx=%d serial_tail=%q io_counts=%s last_reads=%s last_writes=%s logs=%q",
 			err,
@@ -615,6 +615,10 @@ func portCounts(h *HostRuntime, ports ...uint16) string {
 	return strings.Join(parts, ",")
 }
 
+// rootShellPrompt ends the guest's root shell prompt. The published image
+// prompts with a colored user@host:cwd prefix, so only the suffix is stable.
+const rootShellPrompt = "# "
+
 func waitSerial(ctx context.Context, h *HostRuntime, marker string) (string, error) {
 	return waitSerialFrom(ctx, h, marker, 0)
 }
@@ -627,7 +631,7 @@ func runShellCommand(ctx context.Context, h *HostRuntime, command string) (strin
 	}
 
 	// Wait for the guest prompt and return the command serial output.
-	serial, err := waitSerialFrom(ctx, h, ":/#", before)
+	serial, err := waitSerialFrom(ctx, h, rootShellPrompt, before)
 	if before < len(serial) {
 		return serial[before:], err
 	}

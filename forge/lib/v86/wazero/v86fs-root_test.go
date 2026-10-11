@@ -60,7 +60,7 @@ func TestOpenV86RootModes(t *testing.T) {
 			}
 
 			// Open the V86 filesystem root and retain its release handle.
-			server, release, err := OpenV86Root(mode, rootfsTar)
+			server, release, err := OpenV86Root(context.Background(), mode, &AssetSet{RootfsTar: rootfsTar})
 			if err != nil {
 				t.Fatalf("open root: %v", err)
 			}
@@ -95,7 +95,7 @@ func TestOpenV86RootDeferredModes(t *testing.T) {
 		if err != nil {
 			t.Fatalf("parse %q: %v", value, err)
 		}
-		server, release, err := OpenV86Root(mode, rootfsTar)
+		server, release, err := OpenV86Root(context.Background(), mode, &AssetSet{RootfsTar: rootfsTar})
 		if err == nil {
 			if release != nil {
 				release()

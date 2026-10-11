@@ -22,4 +22,7 @@ type AssetSet struct {
 	RootfsFlatDir string
 	// RootfsObjectKey identifies a CDN filesystem when no local archive is used.
 	RootfsObjectKey string
+
+	// cdn locates the published Space that holds RootfsObjectKey.
+	cdn AssetOptions
 }

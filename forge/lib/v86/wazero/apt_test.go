@@ -25,7 +25,7 @@ func TestV86WazeroAptWritableRoot(t *testing.T) {
 	}
 
 	// Open a writable RAM root for the guest package lists.
-	v86fsServer, releaseRoot, err := OpenV86Root(RootMode{Mode: rootModeRAM}, assets.RootfsTar)
+	v86fsServer, releaseRoot, err := OpenV86Root(ctx, RootMode{Mode: rootModeRAM}, assets)
 	if err != nil {
 		t.Fatalf("open writable v86fs root: %v", err)
 	}
@@ -70,7 +70,7 @@ func TestV86WazeroAptWritableRoot(t *testing.T) {
 	// Wait for the guest root shell before running apt.
 	waitCtx, waitCancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer waitCancel()
-	if _, err := waitSerial(waitCtx, instance, ":/#"); err != nil {
+	if _, err := waitSerial(waitCtx, instance, rootShellPrompt); err != nil {
 		t.Fatalf("writable v86fs root shell prompt not reached: %v; serial_tail=%q logs=%q",
 			err,
 			tailString(string(instance.SerialOutput()), 8192),

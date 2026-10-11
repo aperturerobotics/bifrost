@@ -188,7 +188,7 @@ func buildV86RunBoot(ctx context.Context, args *v86RunArgs) (v86_wazero.HostBoot
 		if err != nil {
 			return v86_wazero.HostBootOptions{}, nil, nil, err
 		}
-		server, release, err := v86_wazero.OpenV86Root(rootMode, assets.RootfsTar)
+		server, release, err := v86_wazero.OpenV86Root(ctx, rootMode, assets)
 		if err != nil {
 			return v86_wazero.HostBootOptions{}, nil, nil, err
 		}
