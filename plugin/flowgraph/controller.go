@@ -31,9 +31,17 @@ type Controller struct {
 
 // NewFactory constructs the plugin startup factory for Bldr's goPkgs discovery.
 func NewFactory(b bus.Bus) controller.Factory {
-	return bus.NewBusControllerFactory(b, ConfigID, ControllerID, Version, "Stream Echo node type and editor", func() *Config { return &Config{} }, func(base *bus.BusController[*Config]) (*Controller, error) {
-		return &Controller{BusController: base}, nil
-	})
+	return bus.NewBusControllerFactory(
+		b,
+		ConfigID,
+		ControllerID,
+		Version,
+		"Stream Echo node type and editor",
+		func() *Config { return &Config{} },
+		func(base *bus.BusController[*Config]) (*Controller, error) {
+			return &Controller{BusController: base}, nil
+		},
+	)
 }
 
 // Execute registers the plugin capabilities over the core Resource boundary.
