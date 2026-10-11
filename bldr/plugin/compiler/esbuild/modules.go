@@ -106,7 +106,7 @@ func (m *Modules) Plugin() api.Plugin {
 			return api.OnLoadResult{Contents: &contents, Loader: api.LoaderJS}, nil
 		})
 
-		// Read only resolved block paths, preserving the source extension's loader.
+		// Read only resolved block paths.
 		build.OnLoad(api.OnLoadOptions{Filter: ".", Namespace: "blocks"}, func(args api.OnLoadArgs) (api.OnLoadResult, error) {
 			// Read bytes under the same lock used by npm resolution.
 			release, err := m.mtx.Lock(m.ctx)
@@ -122,29 +122,9 @@ func (m *Modules) Plugin() api.Plugin {
 				return api.OnLoadResult{}, errors.Errorf("module is missing: %s", args.Path)
 			}
 
-			// Let esbuild compile TypeScript, CommonJS, CSS and imported assets.
-			loader := api.LoaderJS
-			switch path.Ext(args.Path) {
-			case ".ts", ".mts", ".cts":
-				loader = api.LoaderTS
-			case ".tsx":
-				loader = api.LoaderTSX
-			case ".jsx":
-				loader = api.LoaderJSX
-			case ".json":
-				loader = api.LoaderJSON
-			case ".css":
-				loader = api.LoaderCSS
-				if strings.HasSuffix(args.Path, ".module.css") {
-					loader = api.LoaderLocalCSS
-				}
-			case ".png", ".jpg", ".jpeg", ".svg", ".gif", ".woff", ".woff2":
-				loader = api.LoaderFile
-			case ".txt":
-				loader = api.LoaderText
-			}
+			// Let esbuild choose the loader from the file extension.
 			contents := string(data)
-			return api.OnLoadResult{Contents: &contents, Loader: loader}, nil
+			return api.OnLoadResult{Contents: &contents, Loader: api.LoaderDefault}, nil
 		})
 	}}
 }
@@ -223,14 +203,11 @@ func (m *Modules) read(name string) ([]byte, bool, error) {
 // resolve selects a source path or a browser npm entry for one import.
 func (m *Modules) resolve(specifier, importer string, kind api.ResolveKind) (string, error) {
 	// Resolve entrypoints and relative imports within the virtual project root.
-	if kind == api.ResolveEntryPoint {
-		return m.resolveFile(path.Join("project", specifier), kind)
-	}
-	if strings.HasPrefix(specifier, "/") {
-		return m.resolveFile(path.Join("project", specifier), kind)
+	if kind == api.ResolveEntryPoint || strings.HasPrefix(specifier, "/") {
+		return m.resolveFile(path.Join("project", specifier))
 	}
 	if strings.HasPrefix(specifier, ".") {
-		return m.resolveFile(path.Join(path.Dir(importer), specifier), kind)
+		return m.resolveFile(path.Join(path.Dir(importer), specifier))
 	}
 
 	// Follow Node's nearest node_modules rule using Bun's pinned install keys.
@@ -248,7 +225,7 @@ func (m *Modules) resolve(specifier, importer string, kind api.ResolveKind) (str
 }
 
 // resolveFile applies browser extension and directory resolution to a block path.
-func (m *Modules) resolveFile(name string, kind api.ResolveKind) (string, error) {
+func (m *Modules) resolveFile(name string) (string, error) {
 	// Try exact files and extensionless TypeScript and JavaScript imports.
 	candidates := []string{name}
 	for _, ext := range []string{".tsx", ".ts", ".jsx", ".js", ".css", ".json", ".mjs", ".cjs"} {
@@ -295,7 +272,7 @@ func (m *Modules) resolveFile(name string, kind api.ResolveKind) (string, error)
 				if !fs.ValidPath(entry) || entry == "." {
 					return "", errors.New("npm main path escapes package")
 				}
-				return m.resolveFile(path.Join(name, entry), kind)
+				return m.resolveFile(path.Join(name, entry))
 			}
 		}
 	}
@@ -320,7 +297,7 @@ func (m *Modules) resolvePackage(root, subpath string, kind api.ResolveKind) (st
 		return "", err
 	}
 	if !found {
-		return m.resolveFile(path.Join(root, subpath), kind)
+		return m.resolveFile(path.Join(root, subpath))
 	}
 	var parser fastjson.Parser
 	metadata, err := parser.ParseBytes(data)
@@ -338,11 +315,11 @@ func (m *Modules) resolvePackage(root, subpath string, kind api.ResolveKind) (st
 		if !strings.HasPrefix(target, "./") || !fs.ValidPath(strings.TrimPrefix(target, "./")) {
 			return "", errors.Errorf("npm package does not export %s: %s", key, root)
 		}
-		return m.resolveFile(path.Join(root, target), kind)
+		return m.resolveFile(path.Join(root, target))
 	}
 
 	// Legacy packages expose their subpaths and browser/module/main entry fields.
-	return m.resolveFile(path.Join(root, subpath), kind)
+	return m.resolveFile(path.Join(root, subpath))
 }
 
 // packageExport selects exact and wildcard subpaths, then ordered conditions.
