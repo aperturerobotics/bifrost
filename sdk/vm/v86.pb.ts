@@ -524,6 +524,13 @@ export interface ReportV86RuntimeStatusResponse {
    * @generated from field: string rejection = 3;
    */
   rejection?: string
+  /**
+   * Config is the VM configuration the runtime boots with. It is set on an
+   * accepted report so the runtime reads it once per generation.
+   *
+   * @generated from field: s4wave.vm.V86Config config = 4;
+   */
+  config?: V86Config
 }
 
 export const ReportV86RuntimeStatusResponse: MessageType<ReportV86RuntimeStatusResponse> =
@@ -533,6 +540,7 @@ export const ReportV86RuntimeStatusResponse: MessageType<ReportV86RuntimeStatusR
       { no: 1, name: 'accepted', kind: 'scalar', T: ScalarType.BOOL },
       { no: 2, name: 'run_generation', kind: 'scalar', T: ScalarType.UINT64 },
       { no: 3, name: 'rejection', kind: 'scalar', T: ScalarType.STRING },
+      { no: 4, name: 'config', kind: 'message', T: V86Config },
     ] satisfies readonly PartialFieldInfo[],
   })
 

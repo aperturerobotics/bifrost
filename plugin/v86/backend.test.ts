@@ -32,6 +32,7 @@ const h = vi.hoisted(() => ({
     adapter: Record<string, unknown>
     rpc: unknown
     service?: string
+    attachNotifier: ReturnType<typeof vi.fn>
     close: ReturnType<typeof vi.fn>
     [Symbol.dispose](): void
   }>,
@@ -124,6 +125,7 @@ vi.mock('./v86fs-bridge.js', () => ({
       adapter,
       rpc,
       service: opts?.service,
+      attachNotifier: vi.fn(),
       close: vi.fn(),
       [Symbol.dispose]() {
         bridge.close()
@@ -147,6 +149,7 @@ vi.mock('@s4wave/sdk/vm/v86_srpc.pb.js', () => ({
         accepted: true,
         runGeneration:
           request.runGeneration === 0n ? 17n : request.runGeneration,
+        config: { memoryMb: 64 },
       })
     }
   },
@@ -163,6 +166,7 @@ vi.mock('@aptre/v86', () => ({
     serial0_send = vi.fn()
     stop = vi.fn()
     destroy = vi.fn()
+    v86 = { cpu: { devices: { virtio_v86fs: { tag: 'device' } } } }
 
     constructor(opts: Record<string, unknown>) {
       h.v86Constructors.push(opts)
@@ -297,6 +301,7 @@ describe('v86 backend registration', () => {
         wasm_fn: expect.any(Function),
         virtio_v86fs: true,
         virtio_v86fs_adapter: h.v86fsBridges[0]?.adapter,
+        memory_size: 64 * 1024 * 1024,
         disable_keyboard: true,
         disable_mouse: true,
         disable_speaker: true,
@@ -316,12 +321,18 @@ describe('v86 backend registration', () => {
       ],
     )
     expect(h.v86fsBridges[0]?.close).not.toHaveBeenCalled()
+    expect(h.v86fsBridges[0]?.attachNotifier).toHaveBeenCalledWith({
+      tag: 'device',
+    })
     h.broadcastChannels[0]?.messages.splice(0)
 
     const channel = h.broadcastChannels[0]
     expect(channel?.name).toBe('v86-serial-vm/v86/test')
     h.serialOutputListener?.(65)
-    expect(channel?.messages).toEqual([{ dir: 'out', byte: 65 }])
+    await Promise.resolve()
+    expect(channel?.messages).toEqual([
+      { dir: 'out', data: new Uint8Array([65]) },
+    ])
     channel?.onmessage?.({ data: { dir: 'in', text: 'help\n' } })
     expect(h.v86Instances[0]?.serial0_send).toHaveBeenCalledWith('help\n')
 

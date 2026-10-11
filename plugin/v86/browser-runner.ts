@@ -1,4 +1,5 @@
-import type { V86fsAdapter } from './v86fs-bridge.js'
+import type { V86Config } from '@s4wave/sdk/vm/v86.pb.js'
+import type { V86fsAdapter, V86fsNotifier } from './v86fs-bridge.js'
 import { v86SerialChannelName, type SerialFrame } from './serial-channel.js'
 
 type V86Emulator = {
@@ -9,6 +10,7 @@ type V86Emulator = {
   serial0_send(data: string): void
   stop(): void
   destroy(): void
+  v86: { cpu: { devices: { virtio_v86fs: V86fsNotifier } } }
 }
 
 type V86Constructor = new (options: Record<string, unknown>) => V86Emulator
@@ -51,14 +53,24 @@ export type BrowserV86Runtime = {
 
 export type StartBrowserV86RuntimeOptions = {
   assets: V86BootAssets
+  config?: V86Config
   instanceKey: string
   v86fsAdapter: V86fsAdapter
+  // attachV86fsNotifier receives the guest filesystem device once the guest
+  // reaches userspace. The guest mounts with usermode helpers, so mount
+  // notifications delivered earlier fail.
+  attachV86fsNotifier?: (notifier: V86fsNotifier) => void
 }
 
+const mib = 1024 * 1024
 const wasmPageBytes = 64 * 1024
-const v86GuestMemoryBytes = 256 * 1024 * 1024
-const v86VgaMemoryBytes = 2 * 1024 * 1024
-const v86WasmMemoryHeadroomBytes = 16 * 1024 * 1024
+const defaultGuestMemoryMb = 256
+const defaultVgaMemoryMb = 8
+const v86WasmMemoryHeadroomBytes = 16 * mib
+const v86BaseCmdline =
+  // Boot through /sbin/init so busybox gives ttyS0 job control; bash PID 1
+  // breaks Ctrl-C and SIGINT.
+  'rw init=/sbin/init root=v86fs rootfstype=v86fs console=ttyS0'
 // v86minBootReadyMarker identifies the first guest output that proves the
 // kernel and init path reached an interactive boot state.
 export const v86minBootReadyMarker = /(?:login:|# |\$ |Welcome)/
@@ -171,29 +183,56 @@ export async function startBrowserV86Runtime(
   const contract = getV86RunnerContract(env)
   const { V86 } = await loadV86Module(contract, loadModule)
 
+  const guestMemoryBytes =
+    (options.config?.memoryMb || defaultGuestMemoryMb) * mib
+  const vgaMemoryBytes =
+    (options.config?.vgaMemoryMb || defaultVgaMemoryMb) * mib
+  const bootArgs = options.config?.bootArgs?.trim()
+  const cmdline = bootArgs ? v86BaseCmdline + ' ' + bootArgs : v86BaseCmdline
+
   const serialChannelName = v86SerialChannelName(options.instanceKey)
   const serialChannel = new BroadcastChannel(serialChannelName)
   let stopped = false
   let emulator: V86Emulator | undefined
-  let serialText = ''
+
   let readySettled = false
   const readyResolvers = Promise.withResolvers<void>()
   const ready = readyResolvers.promise
-  const resolveReady = readyResolvers.resolve
-  const rejectReady = readyResolvers.reject
   const settleReady = (error?: Error) => {
     if (readySettled) return
     readySettled = true
     if (error) {
-      rejectReady(error)
+      readyResolvers.reject(error)
     } else {
-      resolveReady()
+      readyResolvers.resolve()
+    }
+  }
+
+  // serialBatch collects the bytes the guest emits in one emulator slice so
+  // the viewer receives one frame per slice instead of one per byte. Until
+  // the guest is ready, the decoded tail is scanned for the boot markers.
+  let serialBatch: number[] = []
+  let serialText = ''
+  const serialDecoder = new TextDecoder()
+  const flushSerialBatch = () => {
+    const data = Uint8Array.from(serialBatch)
+    serialBatch = []
+    serialChannel.postMessage({ dir: 'out', data } satisfies SerialFrame)
+    if (readySettled) return
+
+    serialText = (
+      serialText + serialDecoder.decode(data, { stream: true })
+    ).slice(-8192)
+    if (v86GuestFailureMarker.test(serialText)) {
+      settleReady(new Error('v86min guest boot failed'))
+    } else if (v86minBootReadyMarker.test(serialText)) {
+      settleReady()
     }
   }
 
   try {
     const minimumWasmMemoryBytes =
-      v86GuestMemoryBytes + v86VgaMemoryBytes + v86WasmMemoryHeadroomBytes
+      guestMemoryBytes + vgaMemoryBytes + v86WasmMemoryHeadroomBytes
 
     emulator = new V86({
       wasm_fn: ({ env }: { env: WebAssembly.ModuleImports }) =>
@@ -202,13 +241,12 @@ export async function startBrowserV86Runtime(
           { env },
           minimumWasmMemoryBytes,
         ),
-      memory_size: v86GuestMemoryBytes,
-      vga_memory_size: v86VgaMemoryBytes,
+      memory_size: guestMemoryBytes,
+      vga_memory_size: vgaMemoryBytes,
       bios: { buffer: viewBuffer(options.assets.bios) },
       vga_bios: { buffer: viewBuffer(options.assets.vgaBios) },
       bzimage: { buffer: viewBuffer(options.assets.kernel) },
-      // Boot through /sbin/init so busybox gives ttyS0 job control; bash PID 1 breaks Ctrl-C/SIGINT.
-      cmdline: 'rw init=/sbin/init root=v86fs rootfstype=v86fs console=ttyS0',
+      cmdline,
       virtio_v86fs: true,
       virtio_v86fs_adapter: options.v86fsAdapter,
       disable_keyboard: true,
@@ -218,20 +256,21 @@ export async function startBrowserV86Runtime(
     })
 
     emulator.add_listener('serial0-output-byte', (byte: number) => {
-      serialChannel.postMessage({ dir: 'out', byte })
-      serialText = (serialText + String.fromCharCode(byte)).slice(-8192)
-      if (v86GuestFailureMarker.test(serialText)) {
-        settleReady(new Error('v86min guest boot failed'))
-      } else if (v86minBootReadyMarker.test(serialText)) {
-        settleReady()
-      }
+      if (serialBatch.length === 0) queueMicrotask(flushSerialBatch)
+      serialBatch.push(byte)
     })
+    const running = emulator
+    void ready.then(
+      () => {
+        if (stopped) return
+        options.attachV86fsNotifier?.(running.v86.cpu.devices.virtio_v86fs)
+      },
+      () => {},
+    )
     serialChannel.onmessage = (ev: MessageEvent<SerialFrame>) => {
       const frame = ev.data
       if (!frame || frame.dir !== 'in') return
-      if (typeof frame.text === 'string' && frame.text.length > 0) {
-        emulator.serial0_send(frame.text)
-      }
+      if (frame.text) emulator.serial0_send(frame.text)
     }
 
     return {

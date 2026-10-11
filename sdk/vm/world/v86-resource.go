@@ -382,11 +382,15 @@ func (r *v86Resource) ensureRuntimeGeneration(ctx context.Context) (uint64, erro
 	return generation, err
 }
 
+// v86RuntimeStatusServer accepts runtime status reports for one run
+// generation of a VM.
 type v86RuntimeStatusServer struct {
 	resource   *v86Resource
 	generation uint64
 }
 
+// ReportStatus applies a runtime status report fenced by the server's run
+// generation. An accepted report returns the VM config the runtime boots with.
 func (s *v86RuntimeStatusServer) ReportStatus(
 	ctx context.Context,
 	req *s4wave_vm.ReportV86RuntimeStatusRequest,
@@ -473,10 +477,11 @@ func (r *v86Resource) applyRuntimeStatus(
 		return reject("vm object is gone")
 	}
 
-	// Read the VM desired state, observed state, and stored generation.
+	// Read the VM desired state, observed state, stored generation, and config.
 	var desired s4wave_vm.VmState
 	var observed s4wave_vm.VmState
 	var storedGeneration uint64
+	var config *s4wave_vm.V86Config
 	_, _, err = world.AccessObjectState(ctx, objState, false, func(bcs *block.Cursor) error {
 		// Decode the VM block and copy its runtime state for report validation.
 		vm, unmarshalErr := block.UnmarshalBlock[*s4wave_vm.VmV86](ctx, bcs, func() block.Block {
@@ -491,6 +496,7 @@ func (r *v86Resource) applyRuntimeStatus(
 		desired = vm.GetState()
 		observed = vm.GetObservedState()
 		storedGeneration = vm.GetRunGeneration()
+		config = vm.GetConfig()
 		return nil
 	})
 	if err != nil {
@@ -538,6 +544,7 @@ func (r *v86Resource) applyRuntimeStatus(
 		return reject("stale runtime status generation")
 	}
 	resp.Accepted = true
+	resp.Config = config
 	return resp, nil
 }
 
@@ -627,11 +634,13 @@ func (r *v86Resource) exposeV86fsToRuntimePlugin(ctx context.Context, pluginID s
 	}, nil
 }
 
+// v86fsRuntimeRouteInvoker logs each v86fs call the runtime plugin routes.
 type v86fsRuntimeRouteInvoker struct {
 	le  *logrus.Entry
 	inv srpc.Invoker
 }
 
+// InvokeMethod forwards the call to the v86fs mux and logs its result.
 func (i v86fsRuntimeRouteInvoker) InvokeMethod(serviceID, methodID string, strm srpc.Stream) (bool, error) {
 	ok, err := i.inv.InvokeMethod(serviceID, methodID, strm)
 	i.le.WithError(err).

@@ -4,7 +4,8 @@
  * Bridges the v86 VirtioV86FS adapter callback interface to a remote
  * v86fs SRPC server over a bidirectional stream. Each adapter callback
  * sends a tagged request and resolves the reply callback when the
- * matching tagged response arrives.
+ * matching tagged response arrives. Untagged server notifications wait for
+ * a notifier (the guest device) and are then delivered in order.
  *
  * Adapted from forge/lib/v86/bun/v86fs-bridge.ts for the alpha plugin
  * SharedWorker context. Uses BackendAPI SRPC (MessagePort to Go WASM)
@@ -18,6 +19,41 @@ import type { ProtoRpc } from 'starpc'
 
 // ReplyHandler receives the full V86fsMessage and extracts what it needs.
 type ReplyHandler = (msg: V86fsMessageType) => void
+
+// V86fsNotifier pushes host notifications into the guest. The v86
+// VirtioV86FS device implements it.
+export interface V86fsNotifier {
+  invalidate_inode_range(inode_id: number, offset: number, size: number): void
+  invalidate_dir(inode_id: number): void
+  mount_notify(name: string, mount_path: string): void
+  umount_notify(mount_path: string): void
+}
+
+// deliverV86fsNotification forwards one untagged server message.
+function deliverV86fsNotification(
+  notifier: V86fsNotifier,
+  msg: V86fsMessageType,
+): void {
+  const body = msg.body
+  switch (body?.case) {
+    case 'invalidate':
+      notifier.invalidate_inode_range(
+        Number(body.value.inodeId ?? 0n),
+        Number(body.value.offset ?? 0n),
+        Number(body.value.size ?? 0n),
+      )
+      break
+    case 'invalidateDir':
+      notifier.invalidate_dir(Number(body.value.dirId ?? 0n))
+      break
+    case 'mountNotify':
+      notifier.mount_notify(body.value.name ?? '', body.value.mountPath ?? '')
+      break
+    case 'umountNotify':
+      notifier.umount_notify(body.value.mountPath ?? '')
+      break
+  }
+}
 
 export interface V86fsAdapter {
   onClose(handle_id: number, reply: (status: number) => void): void
@@ -73,6 +109,7 @@ export function createV86fsSrpcAdapter(
   serviceOpts?: { service: string },
 ): {
   adapter: V86fsAdapter & Record<string, unknown>
+  attachNotifier: (notifier: V86fsNotifier) => void
   close: () => void
   [Symbol.dispose]: () => void
 } {
@@ -80,6 +117,8 @@ export function createV86fsSrpcAdapter(
   const outgoing = pushable<V86fsMessageType>({ objectMode: true })
   const pending = new Map<number, ReplyHandler>()
   let nextTag = 1
+  let notifier: V86fsNotifier | undefined
+  const heldNotifications: V86fsMessageType[] = []
 
   // Open bidirectional SRPC stream.
   const responses = client.RelayV86fs(outgoing)
@@ -90,6 +129,11 @@ export function createV86fsSrpcAdapter(
       const tag = msg.tag ?? 0
       if (tag === 0) {
         // Notifications (invalidate, mount, umount) have no tag.
+        if (notifier) {
+          deliverV86fsNotification(notifier, msg)
+        } else {
+          heldNotifications.push(msg)
+        }
         continue
       }
       const handler = pending.get(tag)
@@ -512,6 +556,12 @@ export function createV86fsSrpcAdapter(
 
   const bridge = {
     adapter,
+    attachNotifier(next: V86fsNotifier) {
+      notifier = next
+      for (const msg of heldNotifications.splice(0)) {
+        deliverV86fsNotification(next, msg)
+      }
+    },
     close() {
       outgoing.end()
     },

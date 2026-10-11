@@ -9,7 +9,10 @@ import {
 } from '@aptre/bldr-sdk/resource/index.js'
 import { ViewerRegistryResourceServiceClient } from '@s4wave/sdk/viewer/registry/registry_srpc.pb.js'
 import { ViewerSurface } from '@s4wave/sdk/viewer/registry/registry.pb.js'
-import { V86RuntimeStatus } from '@s4wave/sdk/vm/v86.pb.js'
+import {
+  V86RuntimeStatus,
+  type ReportV86RuntimeStatusResponse,
+} from '@s4wave/sdk/vm/v86.pb.js'
 import {
   V86RuntimeStatusServiceClient,
   V86RuntimeStatusServiceServiceName,
@@ -242,7 +245,7 @@ async function reportRuntimeStatus(
   status: V86RuntimeStatus,
   errorMessage: string,
   signal?: AbortSignal,
-): Promise<bigint> {
+): Promise<ReportV86RuntimeStatusResponse> {
   const response = await client.ReportStatus(
     {
       objectKey,
@@ -258,7 +261,7 @@ async function reportRuntimeStatus(
         (response.rejection || 'unknown reason'),
     )
   }
-  return response.runGeneration ?? generation
+  return response
 }
 
 async function tryReportRuntimeStatus(
@@ -378,7 +381,7 @@ export default async function main(
   }
 
   try {
-    generation = await reportRuntimeStatus(
+    const booting = await reportRuntimeStatus(
       statusClient,
       instanceKey,
       generation,
@@ -386,6 +389,7 @@ export default async function main(
       '',
       signal,
     )
+    generation = booting.runGeneration ?? 0n
     if (generation === 0n) {
       throw new Error('v86 runtime status route did not return a generation')
     }
@@ -418,11 +422,13 @@ export default async function main(
         vgaBios: vgaBiosBuf,
         kernel: kernelBuf,
       },
+      config: booting.config,
       instanceKey,
       v86fsAdapter: bridge.adapter,
+      attachV86fsNotifier: bridge.attachNotifier,
     })
     await waitForRuntimeReady(runtime, signal)
-    generation = await reportRuntimeStatus(
+    const readyReport = await reportRuntimeStatus(
       statusClient,
       instanceKey,
       generation,
@@ -430,6 +436,7 @@ export default async function main(
       '',
       signal,
     )
+    generation = readyReport.runGeneration ?? generation
   } catch (err) {
     const errorMessage = formatErrorMessage(err)
     console.error('[spacewave-v86] runtime failed:', errorMessage)

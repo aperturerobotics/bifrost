@@ -6,11 +6,11 @@
 // user-typed text back as input frames.
 
 // SerialFrame is the wire shape carried on the v86-serial broadcast channel.
-// dir="out" frames carry a single guest-emitted byte; dir="in" frames carry
-// text chunks to push into the emulator's COM1 port.
+// dir="out" frames carry the bytes the guest emitted in one emulator slice;
+// dir="in" frames carry text chunks to push into the emulator's COM1 port.
 export interface SerialFrame {
   dir: 'out' | 'in'
-  byte?: number
+  data?: Uint8Array
   text?: string
 }
 

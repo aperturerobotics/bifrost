@@ -49,6 +49,7 @@ class FakeV86 {
   serial0_send = vi.fn()
   stop = vi.fn()
   destroy = vi.fn()
+  v86 = { cpu: { devices: { virtio_v86fs: { tag: 'device' } } } }
 
   constructor(options: Record<string, unknown>) {
     h.constructors.push(options)
@@ -104,11 +105,14 @@ describe('browser V86 runner contract', () => {
   it('starts V86 headless and owns the serial BroadcastChannel bridge', async () => {
     vi.stubGlobal('BroadcastChannel', FakeBroadcastChannel)
     const adapter = { tag: 'v86fs' }
+    const attachV86fsNotifier = vi.fn()
     const runtime = await startBrowserV86Runtime(
       {
         assets: bootAssets(),
+        config: { memoryMb: 128, vgaMemoryMb: 4, bootArgs: ' quiet ' },
         instanceKey: 'vm/v86/test',
         v86fsAdapter: adapter as never,
+        attachV86fsNotifier,
       },
       () => Promise.resolve({ V86: FakeV86 }),
     )
@@ -119,6 +123,10 @@ describe('browser V86 runner contract', () => {
         wasm_fn: expect.any(Function),
         virtio_v86fs: true,
         virtio_v86fs_adapter: adapter,
+        memory_size: 128 * 1024 * 1024,
+        vga_memory_size: 4 * 1024 * 1024,
+        cmdline:
+          'rw init=/sbin/init root=v86fs rootfstype=v86fs console=ttyS0 quiet',
         disable_keyboard: true,
         disable_mouse: true,
         disable_speaker: true,
@@ -131,11 +139,16 @@ describe('browser V86 runner contract', () => {
       h.serialOutputListener?.(byte)
     }
     await runtime.ready
+    expect(attachV86fsNotifier).toHaveBeenCalledWith({ tag: 'device' })
 
     const channel = h.broadcastChannels[0]
     channel?.messages.splice(0)
     h.serialOutputListener?.(65)
-    expect(channel?.messages).toEqual([{ dir: 'out', byte: 65 }])
+    h.serialOutputListener?.(66)
+    await Promise.resolve()
+    expect(channel?.messages).toEqual([
+      { dir: 'out', data: new Uint8Array([65, 66]) },
+    ])
     channel?.onmessage?.({ data: { dir: 'in', text: 'help\n' } })
     expect(h.instances[0]?.serial0_send).toHaveBeenCalledWith('help\n')
 

@@ -169,6 +169,9 @@ message ReportV86RuntimeStatusResponse {
   uint64 run_generation = 2;
   // Rejection explains why a report was not accepted.
   string rejection = 3;
+  // Config is the VM configuration the runtime boots with. It is set on an
+  // accepted report so the runtime reads it once per generation.
+  V86Config config = 4;
 }
 
 // V86Image is a curated bundle of v86 assets (WASM emulator, SeaBIOS, VGA BIOS,

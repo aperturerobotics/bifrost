@@ -472,10 +472,7 @@ function SerialTerminal({
     const channel = new BroadcastChannel(v86SerialChannelName(objectKey))
     channel.onmessage = (ev: MessageEvent<SerialFrame>) => {
       const frame = ev.data
-      if (!frame || frame.dir !== 'out') return
-      if (typeof frame.byte === 'number') {
-        term.write(String.fromCharCode(frame.byte))
-      }
+      if (frame?.dir === 'out' && frame.data) term.write(frame.data)
     }
 
     const disposeInput = term.onData((chunk) => {
