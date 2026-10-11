@@ -3,6 +3,11 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { Resource } from '@aptre/bldr-sdk/hooks/useResource.js'
+import type { SpaceContents } from '@s4wave/sdk/space/contents.js'
+import {
+  SpacePluginLifecycleState,
+  type SpaceContentsState,
+} from '@s4wave/sdk/space/space.pb.js'
 import type { IWorldState } from '@s4wave/sdk/world/world-state.js'
 
 import { ObjectViewerContent } from './ObjectViewerContent.js'
@@ -29,6 +34,37 @@ function buildObjectInfo(): ObjectInfo {
         objectKey: 'gizmo/bootstrap/llm-session',
         objectType: 'gizmo/llm-session',
       },
+    },
+  }
+}
+
+// buildSpaceContents returns Space contents whose state stream yields each
+// pushed state.
+function buildSpaceContents(): {
+  resource: Resource<SpaceContents>
+  push: (state: SpaceContentsState) => void
+} {
+  const states: SpaceContentsState[] = []
+  let wake: (() => void) | null = null
+  const contents = {
+    async *watchState(_req: unknown, signal: AbortSignal) {
+      while (!signal.aborted) {
+        const state = states.shift()
+        if (state) {
+          yield state
+          continue
+        }
+        await new Promise<void>((resolve) => {
+          wake = resolve
+        })
+      }
+    },
+  } as unknown as SpaceContents
+  return {
+    resource: { value: contents, loading: false, error: null, retry: () => {} },
+    push: (state) => {
+      states.push(state)
+      wake?.()
     },
   }
 }
@@ -132,5 +168,39 @@ describe('ObjectViewerContent', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Open raw object' }))
 
     expect(onSelectComponent).toHaveBeenCalledWith(debugComponent)
+  })
+
+  it('waits for a loading Space plugin before reporting a missing viewer', async () => {
+    const contents = buildSpaceContents()
+    render(
+      <ObjectViewerContent
+        objectInfo={buildObjectInfo()}
+        worldState={buildWorldState()}
+        spaceContents={contents.resource}
+        typeID="gizmo/missing"
+      />,
+    )
+
+    contents.push({
+      ready: true,
+      plugins: [
+        {
+          pluginId: 'gizmo',
+          state: SpacePluginLifecycleState.SpacePluginLifecycleState_LOADING,
+        },
+      ],
+    })
+    expect(await screen.findByText('Loading plugins')).toBeDefined()
+
+    contents.push({
+      ready: true,
+      plugins: [
+        {
+          pluginId: 'gizmo',
+          state: SpacePluginLifecycleState.SpacePluginLifecycleState_LOADED,
+        },
+      ],
+    })
+    expect(await screen.findByText("Can't open this object yet")).toBeDefined()
   })
 })

@@ -383,10 +383,11 @@ func waitForV86ObjectRoute(t testing.TB, page playwright.Page) string {
 	// Record the VM route stage.
 	recordV86SmokeStage(t, page, "VM route")
 
-	// Wait for the v86 plugin viewer to render a Start button.
+	// Wait for the v86 plugin viewer to render a Start button. The missing
+	// viewer card can show while the plugin backend registers its viewer.
 	if _, err := page.WaitForFunction(`() => {
 		const body = document.body?.innerText || ''
-		if (/Runtime error|No installed viewer handles this object type/.test(body)) {
+		if (/Runtime error/.test(body)) {
 			throw new Error(body.slice(0, 2000))
 		}
 		return /\bV86\b/.test(body) && /Start/.test(body)
@@ -411,8 +412,8 @@ func installV86SerialProbe(page playwright.Page, vmKey string) error {
 		}
 		channel.onmessage = (ev) => {
 			const frame = ev.data
-			if (!frame || frame.dir !== 'out' || typeof frame.byte !== 'number') return
-			probe.text += String.fromCharCode(frame.byte)
+			if (!frame || frame.dir !== 'out' || !(frame.data instanceof Uint8Array)) return
+			probe.text += String.fromCharCode(...frame.data)
 			if (probe.text.length > 8192) probe.text = probe.text.slice(-8192)
 		}
 		globalThis.__v86SmokeSerial = probe

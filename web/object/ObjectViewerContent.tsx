@@ -1,5 +1,6 @@
-import { Suspense } from 'react'
+import { Suspense, useCallback } from 'react'
 import { WebViewErrorBoundary } from '@aptre/bldr-react'
+import { useStreamingResource } from '@aptre/bldr-sdk/hooks/useStreamingResource.js'
 
 import { cn } from '@s4wave/web/style/utils.js'
 import { Button } from '@s4wave/web/ui/button.js'
@@ -9,6 +10,10 @@ import type { IObjectState } from '@s4wave/sdk/world/object-state.js'
 import type { IWorldState } from '@s4wave/sdk/world/world-state.js'
 import type { Resource } from '@aptre/bldr-sdk/hooks/useResource.js'
 import type { SpaceContents } from '@s4wave/sdk/space/contents.js'
+import {
+  SpacePluginLifecycleState,
+  type SpaceContentsState,
+} from '@s4wave/sdk/space/space.pb.js'
 
 import type {
   ObjectViewerComponent,
@@ -32,10 +37,33 @@ interface ObjectViewerContentProps {
   standalone?: boolean
 }
 
+// noSpaceContents stands in for the Space contents of a viewer outside a Space.
+const noSpaceContents: Resource<SpaceContents> = {
+  value: null,
+  loading: false,
+  error: null,
+  retry: () => {},
+}
+
+// pluginsSettled reports whether no Space plugin runtime is still starting, so
+// a viewer it registers would already be listed.
+function pluginsSettled(state: SpaceContentsState | null): boolean {
+  if (!state?.ready) {
+    return false
+  }
+  return !(state.plugins ?? []).some(
+    (plugin) =>
+      plugin.state ===
+      SpacePluginLifecycleState.SpacePluginLifecycleState_LOADING,
+  )
+}
+
 // MissingViewerCard explains why no viewer is mounted and offers the raw object
-// viewer when it is installed.
+// viewer when it is installed. While a Space plugin is still loading, it shows
+// the loading state, since that plugin may register the viewer.
 function MissingViewerCard({
   objectInfo,
+  spaceContents,
   typeID,
   availableComponents,
   missingComponentID,
@@ -43,11 +71,34 @@ function MissingViewerCard({
 }: Pick<
   ObjectViewerContentProps,
   | 'objectInfo'
+  | 'spaceContents'
   | 'typeID'
   | 'availableComponents'
   | 'missingComponentID'
   | 'onSelectComponent'
 >) {
+  const contentsState = useStreamingResource(
+    spaceContents ?? noSpaceContents,
+    useCallback(
+      (contents: SpaceContents, signal: AbortSignal) =>
+        contents.watchState({}, signal),
+      [],
+    ),
+    [],
+  )
+  if (
+    spaceContents &&
+    !contentsState.error &&
+    !pluginsSettled(contentsState.value)
+  ) {
+    return (
+      <ObjectViewerLoadingState
+        title="Loading plugins"
+        detail="Waiting for the Space plugins that open this object."
+      />
+    )
+  }
+
   const objectKey = getObjectKey(objectInfo)
   const debugComponent = availableComponents?.find(
     (candidate) => candidate.componentID === debugViewerComponentID,
@@ -157,6 +208,7 @@ export function ObjectViewerContent({
     return (
       <MissingViewerCard
         objectInfo={objectInfo}
+        spaceContents={spaceContents}
         typeID={typeID}
         availableComponents={availableComponents}
         missingComponentID={missingComponentID}
