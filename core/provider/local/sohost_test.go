@@ -2,6 +2,7 @@ package provider_local
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -13,12 +14,12 @@ import (
 const testSharedObjectID = "test-shared-object"
 
 // newTestLocalSOHost returns a local host over the genesis state of a new
-// owner, without publishing snapshots.
-func newTestLocalSOHost(t *testing.T) *LocalSOHost {
+// owner, bound to lifetime, without publishing snapshots.
+func newTestLocalSOHost(t *testing.T, lifetime context.Context) *LocalSOHost {
 	// Build a host over a new owner's genesis.
 	t.Helper()
 	soHost, priv := newTestGenesisHost(t, store_kvtx_inmem.NewStore())
-	host, err := NewLocalSOHost(logrus.NewEntry(logrus.New()), priv, soHost, testSharedObjectID, testStepFactorySet())
+	host, err := NewLocalSOHost(lifetime, logrus.NewEntry(logrus.New()), priv, soHost, testSharedObjectID, testStepFactorySet())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -31,7 +32,7 @@ func TestWaitPublishedConfigFencesBodySnapshot(t *testing.T) {
 	// Build a host and a target config.
 	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
 	defer cancel()
-	host := newTestLocalSOHost(t)
+	host := newTestLocalSOHost(t, t.Context())
 	target := &sobject.SharedObjectConfig{ConfigChainSeqno: 7, ConfigChainHash: []byte("accepted")}
 
 	// A stale config does not release the wait.
@@ -57,7 +58,7 @@ func TestQueueOperationFencesPublishedSnapshot(t *testing.T) {
 	// Queue an operation while no snapshot is published.
 	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	defer cancel()
-	host := newTestLocalSOHost(t)
+	host := newTestLocalSOHost(t, t.Context())
 	type queued struct {
 		localID string
 		err     error
@@ -101,5 +102,22 @@ func TestQueueOperationFencesPublishedSnapshot(t *testing.T) {
 	}
 	if set.Find(host.peerID.String(), res.localID) == nil {
 		t.Fatal("published snapshot does not hold the queued operation")
+	}
+}
+
+// TestQueueOperationEndsWithLifetime checks that a queued operation whose
+// snapshot never arrives stops waiting when the host's lifetime ends, even when
+// the caller's context stays live.
+func TestQueueOperationEndsWithLifetime(t *testing.T) {
+	// Bind the host to a lifetime that has already ended.
+	lifetime, cancel := context.WithCancel(t.Context())
+	cancel()
+	host := newTestLocalSOHost(t, lifetime)
+
+	// The operation is added, and the wait for its snapshot ends with the lifetime.
+	ctx, cancelCaller := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancelCaller()
+	if _, err := host.QueueOperation(ctx, []byte("op")); !errors.Is(err, context.Canceled) {
+		t.Fatalf("queue after lifetime ended = %v; want context.Canceled", err)
 	}
 }

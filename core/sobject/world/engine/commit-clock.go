@@ -1,6 +1,7 @@
 package sobject_world_engine
 
 import (
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -27,7 +28,8 @@ const (
 	// stageBlockCommit commits the candidate World blocks.
 	stageBlockCommit
 	// stagePublicationAdmission prepares the operation and waits until the
-	// SharedObject admits it.
+	// SharedObject admits it. A SharedObject that does not publish writes its
+	// state here, so its receipt wait stays at zero.
 	stagePublicationAdmission
 	// stageReceiptWait waits for the publication to be durable.
 	stageReceiptWait
@@ -37,7 +39,7 @@ const (
 	commitStageCount
 )
 
-// commitStageNames are the log field names of the stages.
+// commitStageNames are the log names of the stages.
 var commitStageNames = [commitStageCount]string{
 	stageLockWait:             "lock-wait",
 	stageForkReplay:           "fork-replay",
@@ -84,10 +86,10 @@ func (c *commitClock) end(stage commitStage) {
 }
 
 // warnIfSlow logs the stage times when the write took longer than
-// slowCommitThreshold.
+// slowCommitThreshold. The stages field lists them in stage order.
 func (c *commitClock) warnIfSlow(le *logrus.Entry) {
 	// Stay quiet about a write that finished in time.
-	if c == nil || le == nil {
+	if c == nil {
 		return
 	}
 	elapsed := time.Since(c.started)
@@ -95,10 +97,16 @@ func (c *commitClock) warnIfSlow(le *logrus.Entry) {
 		return
 	}
 
-	// Name the duration of every stage.
-	fields := logrus.Fields{"elapsed": elapsed}
+	// Name the duration of every stage in order.
+	var stages strings.Builder
 	for stage, name := range commitStageNames {
-		fields[name] = c.stages[stage]
+		if stage != 0 {
+			stages.WriteByte(' ')
+		}
+		stages.WriteString(name + "=" + c.stages[stage].String())
 	}
-	le.WithFields(fields).Warn("slow World commit")
+	le.WithFields(logrus.Fields{
+		"elapsed": elapsed,
+		"stages":  stages.String(),
+	}).Warn("slow World commit")
 }

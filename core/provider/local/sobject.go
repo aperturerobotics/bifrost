@@ -342,6 +342,7 @@ func (t *sobjectTracker) executeSharedObjectTracker(rctx context.Context) (rerr 
 
 	// Construct the local publisher and mounted SharedObject handle.
 	lsoHost, err := NewLocalSOHost(
+		ctx,
 		le,
 		localPriv,
 		soHost,

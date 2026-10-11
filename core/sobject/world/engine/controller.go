@@ -216,8 +216,14 @@ func (c *Controller) executeWorld(
 		return err
 	}
 
+	// The engine's commits and background routines end with this call, which
+	// can return before ctx ends when read access is lost and a new engine
+	// replaces this one.
+	bgCtx, bgCancel := context.WithCancel(ctx)
+	defer bgCancel()
+
 	// Wrap the world block engine with our txn logic for sobject.
-	engine := newSoEngine(c, so, blkEngine.bengine, replay)
+	engine := newSoEngine(bgCtx, c, so, blkEngine.bengine, replay)
 	if host, ok := so.(sobject.StateHost); ok {
 		engine.control, err = sobject.NewControl(le, host.GetSOHost(), host.GetPrivKey(), engine)
 		if err != nil {
@@ -245,8 +251,6 @@ func (c *Controller) executeWorld(
 
 	// Order the Space as its main device, vote in the group's decisions and
 	// reclaim storage while the World is served.
-	bgCtx, bgCancel := context.WithCancel(ctx)
-	defer bgCancel()
 	if mainDevice, ok := so.(sobject.MainDevice); ok {
 		go func() {
 			if err := sobject.Sequence(bgCtx, so, mainDevice.SequenceOperations); err != nil && bgCtx.Err() == nil {

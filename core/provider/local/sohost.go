@@ -32,10 +32,15 @@ type LocalSOHost struct {
 	stateSnapCtr *ccontainer.CContainer[sobject.SharedObjectStateSnapshot]
 	// publishedConfigCtr holds the config of the latest published snapshot.
 	publishedConfigCtr *ccontainer.CContainer[*sobject.SharedObjectConfig]
+	// lifetime ends when the mount that runs Execute stops. A commit that
+	// started ends with it.
+	lifetime context.Context
 }
 
-// NewLocalSOHost constructs a new LocalSOHost.
+// NewLocalSOHost constructs a new LocalSOHost. lifetime is the context its
+// owner runs Execute under.
 func NewLocalSOHost(
+	lifetime context.Context,
 	le *logrus.Entry,
 	privKey crypto.PrivKey,
 	soHost *sobject.SOHost,
@@ -55,6 +60,7 @@ func NewLocalSOHost(
 		soHost:             soHost,
 		stateSnapCtr:       ccontainer.NewCContainer[sobject.SharedObjectStateSnapshot](nil),
 		publishedConfigCtr: ccontainer.NewCContainer[*sobject.SharedObjectConfig](nil),
+		lifetime:           lifetime,
 	}, nil
 }
 
@@ -121,6 +127,17 @@ func (l *LocalSOHost) AccessSharedObjectState(ctx context.Context, released func
 	return l.stateSnapCtr, func() {}, nil
 }
 
+// detach returns ctx's values without its cancellation, ended when the host's
+// lifetime ends. The caller must call cancel.
+func (l *LocalSOHost) detach(ctx context.Context) (context.Context, context.CancelFunc) {
+	detached, cancel := context.WithCancel(context.WithoutCancel(ctx))
+	stop := context.AfterFunc(l.lifetime, cancel)
+	return detached, func() {
+		stop()
+		cancel()
+	}
+}
+
 // QueueOperation signs op as the local participant and adds it to the
 // operation set. It returns the local operation id once the published snapshot
 // holds the operation. When ctx carries sobject.WithPublishState, an ordinary
@@ -136,8 +153,10 @@ func (l *LocalSOHost) QueueOperation(ctx context.Context, op []byte) (string, er
 
 	// Wait for the snapshot that holds the operation, or a later checkpoint.
 	// The state write made the operation durable, so the wait ignores ctx's
-	// cancellation and the call reports the operation as added.
-	ctx = context.WithoutCancel(ctx)
+	// cancellation and the call reports the operation as added. It ends with
+	// the host's lifetime, and the outcome is then unknown.
+	ctx, cancel := l.detach(ctx)
+	defer cancel()
 	_, err = l.stateSnapCtr.WaitValueWithValidator(ctx, func(snap sobject.SharedObjectStateSnapshot) (bool, error) {
 		// A snapshot holds the operation, or its checkpoint covers it.
 		if snap == nil {

@@ -50,15 +50,19 @@ func NewTx(client *resource_client.Client, ref resource_client.ResourceRef, read
 // transaction seals but before this call completes. Keep every outstanding
 // Commit result and join them before reporting success.
 //
-// The request ignores ctx's cancellation once sent, because canceling an RPC
-// does not roll back an admitted write: a caller's deadline never abandons a
-// commit that started, and a nil result means the write is placed. Closing the
+// A ctx that is already done returns its error and writes nothing. The request
+// ignores ctx's cancellation from the call on, because canceling an RPC does
+// not roll back an admitted write: a caller's deadline never abandons a commit
+// that started, and a nil result means the write is placed. Closing the
 // transport still ends the call, and its outcome is then unknown.
 //
 // A commit rejected because another writer advanced the World returns an error
 // matching coord.ErrStaleGeneration; the caller may retry from a new
 // transaction.
 func (tx *Tx) Commit(ctx context.Context) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	_, err := tx.txService.Commit(context.WithoutCancel(ctx), &CommitRequest{})
 	return CommitError(err)
 }

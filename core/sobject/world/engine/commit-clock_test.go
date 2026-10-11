@@ -3,6 +3,8 @@
 package sobject_world_engine_test
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -20,7 +22,7 @@ func TestWorldCommitLogsStageTimes(t *testing.T) {
 	defer sobject_world_engine.SetSlowCommitThreshold(0)()
 	w.create(t, "stages/0")
 
-	// One warning carries every stage as a duration field.
+	// One warning lists every stage with its duration, in stage order.
 	var slow []*logrus.Entry
 	for _, entry := range hook.AllEntries() {
 		if entry.Message == "slow World commit" {
@@ -30,22 +32,33 @@ func TestWorldCommitLogsStageTimes(t *testing.T) {
 	if len(slow) != 1 {
 		t.Fatalf("got %d slow World commit warnings, want 1", len(slow))
 	}
-	stages := []string{
+	elapsed, ok := slow[0].Data["elapsed"].(time.Duration)
+	if !ok {
+		t.Fatalf("warning lacks the elapsed duration: %v", slow[0].Data)
+	}
+	names := []string{
 		"lock-wait", "fork-replay", "callback", "world-state-commit",
 		"block-commit", "publication-admission", "receipt-wait", "advance",
 	}
-	for _, stage := range append(stages, "elapsed") {
-		if _, ok := slow[0].Data[stage].(time.Duration); !ok {
-			t.Fatalf("warning lacks the %s duration: %v", stage, slow[0].Data)
-		}
+	fields := strings.Fields(fmt.Sprint(slow[0].Data["stages"]))
+	if len(fields) != len(names) {
+		t.Fatalf("stages field has %d entries, want %d: %v", len(fields), len(names), fields)
 	}
 
-	// The stage durations add up to the elapsed time of the write.
+	// The stage durations add up to no more than the elapsed time of the write.
 	var sum time.Duration
-	for _, stage := range stages {
-		sum += slow[0].Data[stage].(time.Duration)
+	for i, field := range fields {
+		name, value, _ := strings.Cut(field, "=")
+		if name != names[i] {
+			t.Fatalf("stage %d is %s, want %s", i, name, names[i])
+		}
+		d, err := time.ParseDuration(value)
+		if err != nil {
+			t.Fatalf("stage %s has duration %q: %v", name, value, err)
+		}
+		sum += d
 	}
-	if elapsed := slow[0].Data["elapsed"].(time.Duration); sum > elapsed {
+	if sum > elapsed {
 		t.Fatalf("stages sum to %v, more than the elapsed %v", sum, elapsed)
 	}
 }
