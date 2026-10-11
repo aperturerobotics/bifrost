@@ -706,7 +706,7 @@ describe('DesktopRuntimeResource', () => {
     const homeDir = 'C:\\Users\\test'
     const unmanagedPath = 'C:\\Tools\\spacewave.exe'
     const targetPath =
-      'C:\\Users\\test\\AppData\\Local\\Programs\\Spacewave\\spacewave.exe'
+      'C:\\Users\\test\\AppData\\Local\\Programs\\Spacewave\\bin\\spacewave.exe'
     const platformId = 'desktop/windows/amd64'
     const probe = {
       fileExists: vi.fn(async (candidate: string) => {
@@ -740,7 +740,7 @@ describe('DesktopRuntimeResource', () => {
         homeDir,
         pathEntries: [
           'C:\\Tools',
-          'C:\\Users\\test\\AppData\\Local\\Programs\\Spacewave',
+          'C:\\Users\\test\\AppData\\Local\\Programs\\Spacewave\\bin',
         ],
         platformId,
         probe,

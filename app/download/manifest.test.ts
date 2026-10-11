@@ -58,7 +58,7 @@ describe('resolvePrimaryEntry', () => {
       'installer',
     )
     expect(entry?.unsigned).toBe(true)
-    expect(entry?.ext).toBe('zip')
+    expect(entry?.ext).toBe('exe')
   })
 
   it('does not mark macos entries as unsigned', () => {

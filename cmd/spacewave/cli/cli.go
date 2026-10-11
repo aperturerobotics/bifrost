@@ -25,6 +25,7 @@ func NewCliCommands(getBus func() cli_entrypoint.CliBus, yieldBroker *yield_poli
 	if yieldBroker == nil {
 		yieldBroker = yield_policy.NewBroker()
 	}
+
 	// Assemble the command tree in display order.
 	commands := []*cli.Command{
 		// Tier 1: entry points
@@ -37,6 +38,7 @@ func NewCliCommands(getBus func() cli_entrypoint.CliBus, yieldBroker *yield_poli
 		newWebCommand(getBus),
 	}
 	commands = appendTuiCommand(commands)
+	commands = appendInstallCommands(commands)
 	return append(
 		commands,
 		// Tier 2: auth

@@ -16,9 +16,9 @@ export type DownloadArch = PlatformArch
 export type DownloadKind = 'installer' | 'cli'
 
 // DownloadExt enumerates every artifact extension in DOWNLOAD_MANIFEST.
-// Installer extensions: dmg, zip, msix, AppImage. CLI extensions: tar.gz
+// Installer extensions: dmg, exe, AppImage. CLI extensions: tar.gz
 // (Linux archives) and zip (macOS notarized archives, Windows archives).
-export type DownloadExt = 'dmg' | 'zip' | 'msix' | 'AppImage' | 'tar.gz'
+export type DownloadExt = 'dmg' | 'exe' | 'zip' | 'AppImage' | 'tar.gz'
 
 // DownloadEntry describes one downloadable release artifact. The kind
 // discriminator distinguishes desktop installers from standalone CLI
@@ -98,11 +98,12 @@ export function resolvePrimaryEntry(
 // DOWNLOAD_MANIFEST is the hardcoded list of release assets. Both
 // desktop installers and standalone CLI binaries ship for the same host
 // matrix from the same release tag. URLs point at the latest GitHub
-// release. Windows installer entries carry unsigned: true during the
-// Azure Trusted Signing identity-validation period; flip to .msix and
-// drop the flag once signing clears. CLI artifacts are signed where
-// platform signing is available
-// (macOS zip, Windows zip); Linux CLI artifacts ship as tar.gz archives.
+// release. The Windows installer is the launcher executable, which installs
+// itself on first run. Windows installer entries carry unsigned: true during
+// the Azure Trusted Signing identity-validation period; drop the flag once
+// signing clears. CLI artifacts are signed where platform signing is
+// available (macOS zip, Windows zip); Linux CLI artifacts ship as tar.gz
+// archives.
 export const DOWNLOAD_MANIFEST: readonly DownloadEntry[] = [
   {
     kind: 'installer',
@@ -130,9 +131,9 @@ export const DOWNLOAD_MANIFEST: readonly DownloadEntry[] = [
     arch: 'amd64',
     osLabel: 'Windows',
     archLabel: 'x86_64',
-    filename: 'spacewave-windows-amd64.zip',
-    ext: 'zip',
-    url: assetUrl('spacewave-windows-amd64.zip'),
+    filename: 'spacewave-windows-amd64.exe',
+    ext: 'exe',
+    url: assetUrl('spacewave-windows-amd64.exe'),
     unsigned: true,
   },
   {
@@ -141,9 +142,9 @@ export const DOWNLOAD_MANIFEST: readonly DownloadEntry[] = [
     arch: 'arm64',
     osLabel: 'Windows',
     archLabel: 'ARM64',
-    filename: 'spacewave-windows-arm64.zip',
-    ext: 'zip',
-    url: assetUrl('spacewave-windows-arm64.zip'),
+    filename: 'spacewave-windows-arm64.exe',
+    ext: 'exe',
+    url: assetUrl('spacewave-windows-arm64.exe'),
     unsigned: true,
   },
   {

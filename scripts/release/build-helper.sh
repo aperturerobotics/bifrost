@@ -155,9 +155,8 @@ build_windows_native() {
 
 # sign_windows_helper signs the extracted Windows helper .exe via Azure
 # Trusted Signing. Mirrors the bldr Windows signing hook so one env export
-# covers the inner bldr-signed .exe, the MSIX container, and now the C++ helper
-# .exe. Unset profile = warn and skip (local iteration only; release runs must
-# set it).
+# covers the bldr-signed launcher and the C++ helper .exe. Unset profile =
+# warn and skip (local iteration only; release runs must set it).
 sign_windows_helper() {
   local exe="$1"
   local profile="${BLDR_WINDOWS_SIGN_PROFILE:-}"
@@ -255,6 +254,9 @@ case "$PLATFORM" in
         ;;
     esac
     sign_windows_helper "$OUT/windows-${ARCH}/spacewave-helper.exe"
+    # The Windows desktop launcher embeds the signed helper to install itself.
+    cp "$OUT/windows-${ARCH}/spacewave-helper.exe" \
+        "$REPO_ROOT/core/launcher/install/helper/windows-${ARCH}/spacewave-helper.exe"
     echo "Built Windows helper ($ARCH) in $OUT/windows-${ARCH}/"
     ;;
   *)

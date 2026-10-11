@@ -47,47 +47,4 @@ RUN curl -sL \
     && chmod +x /usr/local/bin/appimagetool \
     && APPIMAGE_EXTRACT_AND_RUN=1 /usr/local/bin/appimagetool --version
 
-# BLOCKED 2026-04-20: Azure identity validation is approved, but the active
-# release path still lacks the Windows-hosted signing hop required for MSIX.
-# `signtool.exe` (the binary `az sign` shells out to) is Windows-only, so the
-# packaging half can run in this Linux builder but the sign step cannot.
-#
-# When Windows-hosted signing wiring lands: uncomment, rebuild the image,
-# re-enable the `scripts/build-msix.sh` invocation in release.go step 6, and
-# restore the makemsix probe in scripts/ensure-builder-image.sh.
-#
-# Historical context (kept for re-enable): pinned to tag v1.7 (Microsoft's
-# last tagged release). msix-packaging's upstream toolchain forces C++14, but
-# Debian trixie's libicu-dev (ICU 76) headers require C++17. Patching the
-# MSIX_INTERFACE macro in AppxPackaging.hpp wraps templates inside extern
-# "C++" so GCC + C++17 compiles clean. -DMSIX_PACK=on is the only switch
-# needed; samples + tests are disabled to keep the build short.
-#
-# ARG MSIX_PACKAGING_VERSION=v1.7
-# RUN apt-get update && apt-get install -y --no-install-recommends \
-#       git g++ libssl-dev libicu-dev \
-#     && rm -rf /var/lib/apt/lists/*
-# RUN git clone --depth 1 --branch "${MSIX_PACKAGING_VERSION}" \
-#         https://github.com/microsoft/msix-packaging.git /tmp/msix-packaging \
-#     && find /tmp/msix-packaging -name CMakeLists.txt \
-#         -exec sed -i 's/CMAKE_CXX_STANDARD 14/CMAKE_CXX_STANDARD 17/g' {} + \
-#     && perl -i -0pe 's/#define MSIX_INTERFACE\(name,l,w1,w2,b1,b2,b3,b4,b5,b6,b7,b8\).*?    \};/#define MSIX_INTERFACE(name,l,w1,w2,b1,b2,b3,b4,b5,b6,b7,b8) extern "C++" { static constexpr const IID IID_##name = {l,w1,w2,{b1,b2,b3,b4,b5,b6,b7,b8}}; template<> struct UuidOfImpl<name> { static constexpr const IID\&amp; iid = IID_##name; }; }/s' \
-#         /tmp/msix-packaging/src/inc/AppxPackaging.hpp \
-#     && mkdir -p /tmp/msix-packaging/.vs \
-#     && cd /tmp/msix-packaging/.vs \
-#     && cmake -G Ninja \
-#         -DCMAKE_BUILD_TYPE=MinSizeRel \
-#         -DCMAKE_C_COMPILER=gcc \
-#         -DCMAKE_CXX_COMPILER=g++ \
-#         -DMSIX_PACK=on \
-#         -DUSE_VALIDATION_PARSER=on \
-#         -DMSIX_SAMPLES=off \
-#         -DMSIX_TESTS=off \
-#         -DLINUX=on \
-#         .. \
-#     && ninja makemsix \
-#     && install -m 0755 bin/makemsix /usr/local/bin/makemsix \
-#     && cd / && rm -rf /tmp/msix-packaging \
-#     && /usr/local/bin/makemsix --help >/dev/null
-
 WORKDIR /src

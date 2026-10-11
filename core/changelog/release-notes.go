@@ -79,7 +79,7 @@ func writeDownloadSection(b *strings.Builder, version string) {
 	b.WriteString(base)
 	b.WriteString("spacewave-macos-arm64.dmg) | [Windows (amd64)](")
 	b.WriteString(base)
-	b.WriteString("spacewave-windows-amd64.msix) | [Linux (amd64)](")
+	b.WriteString("spacewave-windows-amd64.exe) | [Linux (amd64)](")
 	b.WriteString(base)
 	b.WriteString("spacewave-linux-amd64.AppImage)")
 }

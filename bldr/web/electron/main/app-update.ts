@@ -5,17 +5,38 @@ import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
 
-/** installedAppVersion reads the short version of an installed app bundle. */
+/**
+ * installedAppVersion reads the version of an installed macOS app bundle or
+ * Windows launcher.
+ */
 export async function installedAppVersion(
-  installedAppDir: string,
+  installedApp: string,
 ): Promise<string> {
+  // The Windows launcher carries its version in its version resource.
+  if (process.platform === "win32") {
+    const { stdout } = await execFileAsync(
+      "powershell.exe",
+      [
+        "-NoProfile",
+        "-NonInteractive",
+        "-Command",
+        "(Get-Item -LiteralPath $env:SPACEWAVE_INSTALLED_APP).VersionInfo.ProductVersion",
+      ],
+      {
+        env: { ...process.env, SPACEWAVE_INSTALLED_APP: installedApp },
+        windowsHide: true,
+      },
+    );
+    return stdout.trim();
+  }
+
   const { stdout } = await execFileAsync("plutil", [
     "-extract",
     "CFBundleShortVersionString",
     "raw",
     "-o",
     "-",
-    path.join(installedAppDir, "Contents", "Info.plist"),
+    path.join(installedApp, "Contents", "Info.plist"),
   ]);
   return stdout.trim();
 }
@@ -92,4 +113,52 @@ export async function startAppBundleUpdate(
     child.once("error", reject);
   });
   child.unref();
+}
+
+/**
+ * startLauncherUpdate has the staged Windows launcher replace the installed
+ * one. The staged exe waits for this Electron PID, installs itself and its
+ * helper, and starts the installed launcher, which reopens the desktop.
+ */
+export async function startLauncherUpdate(
+  stagedExe: string,
+  installedLauncher: string,
+  pid: number,
+): Promise<void> {
+  // The installed launcher comes from the launch that opened the desktop.
+  if (!isAbsoluteExe(installedLauncher)) {
+    throw new Error("desktop was not opened from an installed launcher");
+  }
+  const installedInfo = await lstat(installedLauncher);
+  if (!installedInfo.isFile() || installedInfo.isSymbolicLink()) {
+    throw new Error("installed launcher is not a regular file");
+  }
+
+  // Recheck the artifact after the daemon's verified handoff.
+  if (!isAbsoluteExe(stagedExe)) {
+    throw new Error("staged update is not an absolute .exe");
+  }
+  const stagedInfo = await lstat(stagedExe);
+  if (!stagedInfo.isFile() || stagedInfo.isSymbolicLink()) {
+    throw new Error("staged update is not a regular file");
+  }
+
+  // The staged launcher outlives this process to finish the replacement.
+  const child = spawn(stagedExe, ["apply-update", "--pid", String(pid)], {
+    detached: true,
+    stdio: "ignore",
+    windowsHide: true,
+  });
+  await new Promise<void>((resolve, reject) => {
+    child.once("spawn", resolve);
+    child.once("error", reject);
+  });
+  child.unref();
+}
+
+// isAbsoluteExe reports whether a path is an absolute Windows executable path.
+function isAbsoluteExe(exePath: string): boolean {
+  return (
+    path.win32.isAbsolute(exePath) && exePath.toLowerCase().endsWith(".exe")
+  );
 }

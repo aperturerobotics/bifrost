@@ -1,0 +1,3 @@
+# The release and local builds place the signed helper here before
+# compiling the Windows desktop entrypoint.
+*.exe

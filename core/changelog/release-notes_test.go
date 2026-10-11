@@ -23,7 +23,7 @@ func TestRenderReleaseMarkdownIncludesDownloadLinks(t *testing.T) {
 	for _, want := range []string{
 		"## Downloads",
 		"[MacOS (arm64)](https://github.com/s4wave/spacewave/releases/download/v0.51.6/spacewave-macos-arm64.dmg)",
-		"[Windows (amd64)](https://github.com/s4wave/spacewave/releases/download/v0.51.6/spacewave-windows-amd64.msix)",
+		"[Windows (amd64)](https://github.com/s4wave/spacewave/releases/download/v0.51.6/spacewave-windows-amd64.exe)",
 		"[Linux (amd64)](https://github.com/s4wave/spacewave/releases/download/v0.51.6/spacewave-linux-amd64.AppImage)",
 	} {
 		if !strings.Contains(got, want) {

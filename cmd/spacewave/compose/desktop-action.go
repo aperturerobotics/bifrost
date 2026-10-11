@@ -15,7 +15,6 @@ import (
 	spacewave_cli "github.com/s4wave/spacewave/cmd/spacewave/cli"
 	"github.com/s4wave/spacewave/core/daemon"
 	launcher_helper "github.com/s4wave/spacewave/core/launcher/helper"
-	"github.com/s4wave/spacewave/core/provider/spacewave/launcher/appbundle"
 	loader_ui "github.com/s4wave/spacewave/core/provider/spacewave/loader/ui"
 	"github.com/sirupsen/logrus"
 )
@@ -23,9 +22,22 @@ import (
 // openDesktop attaches a no-argument native launch to the shared daemon. The
 // connector resolves the state root and starts a verified daemon copy outside
 // the app bundle when needed; this process owns only its Resource connection.
-// A failed open inside the app bundle stays visible in the helper window until
-// a retry succeeds or the person closes the window.
+// A downloaded Windows launcher installs itself first. A failed open stays
+// visible in the helper window until a retry succeeds or the person closes
+// the window.
 func openDesktop(ctx context.Context, le *logrus.Entry) error {
+	// Install a downloaded launcher, or hand the launch to the installed one.
+	window, handedOff := installDesktop(ctx, le)
+	if handedOff {
+		return nil
+	}
+	if window != nil {
+		defer closeHelperWindow(le, window)
+		if err := window.SendStatus("Opening Spacewave"); err != nil {
+			le.WithError(err).Debug("show opening status")
+		}
+	}
+
 	// Start a verified daemon copy only when no daemon serves the state root.
 	connector := daemon.NewConnector(nil, func(ctx context.Context, statePath string) error {
 		executable, err := os.Executable()
@@ -35,65 +47,100 @@ func openDesktop(ctx context.Context, le *logrus.Entry) error {
 		return daemon.StartCopiedProcess(ctx, statePath, executable)
 	})
 
-	// Open the desktop, and show any failure until a retry succeeds.
+	// Open the desktop, closing the install window once it opens.
 	open := func() error {
 		return openDesktopWithConnector(ctx, connector)
 	}
 	err := open()
 	if err == nil {
+		dismissHelperWindow(le, window)
 		return nil
 	}
-	return showDesktopFailure(ctx, le, err, open)
+
+	// Show the failure in the install window, or in the helper shipped beside
+	// this executable.
+	if window == nil {
+		executable, exeErr := os.Executable()
+		if exeErr != nil {
+			return err
+		}
+		window = openHelperWindow(ctx, le, []string{filepath.Dir(executable)})
+		if window == nil {
+			return err
+		}
+		defer closeHelperWindow(le, window)
+	}
+	return showDesktopFailure(ctx, le, window, err, open)
 }
 
-// showDesktopFailure reports err in the bundled helper window and retries the
-// open each time the person asks. It returns the latest failure when the
-// window closes, or err unchanged when no helper ships beside the executable.
-func showDesktopFailure(ctx context.Context, le *logrus.Entry, err error, retry func() error) error {
-	// Locate the helper shipped beside this executable.
-	executable, exeErr := os.Executable()
-	if exeErr != nil {
-		return err
-	}
-	dirs := []string{filepath.Dir(executable)}
+// openHelperWindow starts the loading window of the helper found in dirs on a
+// pipe in the shared storage root. It returns nil when no helper is found or
+// the window cannot start.
+func openHelperWindow(ctx context.Context, le *logrus.Entry, dirs []string) *launcher_helper.Client {
+	// Locate the helper.
 	helperPath, ok := loader_ui.ResolveHelperPathFromDirs(dirs, "", runtime.GOOS)
 	if !ok {
-		return err
+		return nil
 	}
 
 	// Start the helper window on a pipe in the shared storage root.
-	rootDir, rootErr := storagepath.DetermineStorageRoot("spacewave")
-	if rootErr != nil {
-		return err
+	rootDir, err := storagepath.DetermineStorageRoot("spacewave")
+	if err != nil {
+		le.WithError(err).Warn("resolve helper window root")
+		return nil
 	}
-	if mkdirErr := os.MkdirAll(rootDir, 0o700); mkdirErr != nil {
-		return err
+	if err := os.MkdirAll(rootDir, 0o700); err != nil {
+		le.WithError(err).Warn("create helper window root")
+		return nil
 	}
-	helper, helperErr := launcher_helper.NewLoadingClient(ctx, le, rootDir, helperPath, loader_ui.ResolveIconPathFromDirs(dirs))
-	if helperErr != nil {
-		le.WithError(helperErr).Warn("helper window unavailable")
-		return err
+	window, err := launcher_helper.NewLoadingClient(ctx, le, rootDir, helperPath, loader_ui.ResolveIconPathFromDirs(dirs))
+	if err != nil {
+		le.WithError(err).Warn("helper window unavailable")
+		return nil
 	}
-	defer func() {
-		if closeErr := helper.Close(); closeErr != nil {
-			le.WithError(closeErr).Warn("close helper window")
-		}
-	}()
+	return window
+}
 
-	// Show each failure until the person closes the window or a retry opens the desktop.
+// dismissHelperWindow dismisses window, if any, once the desktop has opened.
+func dismissHelperWindow(le *logrus.Entry, window *launcher_helper.Client) {
+	if window == nil {
+		return
+	}
+	if err := window.SendDismiss(); err != nil {
+		le.WithError(err).Debug("dismiss helper window")
+	}
+}
+
+// closeHelperWindow stops the helper behind window.
+func closeHelperWindow(le *logrus.Entry, window *launcher_helper.Client) {
+	if err := window.Close(); err != nil {
+		le.WithError(err).Warn("close helper window")
+	}
+}
+
+// showDesktopFailure reports err in window and retries the open each time the
+// person asks. It returns the latest failure when the window closes.
+func showDesktopFailure(
+	ctx context.Context,
+	le *logrus.Entry,
+	window *launcher_helper.Client,
+	err error,
+	retry func() error,
+) error {
 	for {
+		// Show the failure until the person retries or closes the window.
 		le.WithError(err).Warn("desktop did not open")
-		if sendErr := helper.SendError(desktopFailureMessage(err), true); sendErr != nil {
+		if sendErr := window.SendError(desktopFailureMessage(err), true); sendErr != nil {
 			return err
 		}
-		evt, recvErr := helper.RecvEvent(ctx)
+		evt, recvErr := window.RecvEvent(ctx)
 		if recvErr != nil || evt.GetRetry() == nil {
 			return err
 		}
+
+		// Dismiss the window once a retry opens the desktop.
 		if err = retry(); err == nil {
-			if dismissErr := helper.SendDismiss(); dismissErr != nil {
-				le.WithError(dismissErr).Debug("dismiss helper window")
-			}
+			dismissHelperWindow(le, window)
 			return nil
 		}
 	}
@@ -136,22 +183,4 @@ func openDesktopWithConnector(ctx context.Context, connector *daemon.Connector) 
 		return errDesktopUIUnavailable
 	}
 	return errors.Wrap(err, "open Spacewave desktop")
-}
-
-// installedApp returns the application bundle containing this executable, the
-// destination for desktop app updates, or empty outside a bundle.
-func installedApp() string {
-	// Resolve this process's executable path through its symlinks.
-	executable, err := os.Executable()
-	if err != nil {
-		return ""
-	}
-	executable, err = filepath.EvalSymlinks(executable)
-	if err != nil {
-		return ""
-	}
-
-	// Detect the enclosing application bundle.
-	_, appDir := appbundle.Detect(executable)
-	return appDir
 }

@@ -563,7 +563,6 @@ jobs:
           BLDR_WINDOWS_SIGN_PROFILE: ${{ inputs.sign_artifacts && vars.BLDR_WINDOWS_SIGN_PROFILE || '' }}
           BLDR_WINDOWS_SIGN_ACCOUNT: ${{ inputs.sign_artifacts && vars.BLDR_WINDOWS_SIGN_ACCOUNT || '' }}
           BLDR_WINDOWS_SIGN_ENDPOINT: ${{ inputs.sign_artifacts && vars.BLDR_WINDOWS_SIGN_ENDPOINT || '' }}
-          BLDR_WINDOWS_SIGN_MSIX: '0'
         run: |
           set -euo pipefail
           go run ./cmd/entrypoint-handoff \
@@ -579,7 +578,6 @@ jobs:
           BLDR_WINDOWS_SIGN_PROFILE: ${{ inputs.sign_artifacts && vars.BLDR_WINDOWS_SIGN_PROFILE || '' }}
           BLDR_WINDOWS_SIGN_ACCOUNT: ${{ inputs.sign_artifacts && vars.BLDR_WINDOWS_SIGN_ACCOUNT || '' }}
           BLDR_WINDOWS_SIGN_ENDPOINT: ${{ inputs.sign_artifacts && vars.BLDR_WINDOWS_SIGN_ENDPOINT || '' }}
-          BLDR_WINDOWS_SIGN_MSIX: '0'
         run: |
           set -euo pipefail
           go run ./cmd/entrypoint-handoff \
@@ -599,7 +597,6 @@ jobs:
           BLDR_WINDOWS_SIGN_PROFILE: ${{ inputs.sign_artifacts && vars.BLDR_WINDOWS_SIGN_PROFILE || '' }}
           BLDR_WINDOWS_SIGN_ACCOUNT: ${{ inputs.sign_artifacts && vars.BLDR_WINDOWS_SIGN_ACCOUNT || '' }}
           BLDR_WINDOWS_SIGN_ENDPOINT: ${{ inputs.sign_artifacts && vars.BLDR_WINDOWS_SIGN_ENDPOINT || '' }}
-          BLDR_WINDOWS_SIGN_MSIX: '0'
         run: |
           set -euo pipefail
           go run ./cmd/entrypoint-handoff \
@@ -612,42 +609,6 @@ jobs:
             --manifest-producer-target "release-cli-windows-${{ matrix.arch }}" \
             --out-dir .tmp/entrypoint-cli-manifest-packs/windows-${{ matrix.arch }}
 
-      - name: Collect Windows MSIX installer
-        if: steps.windows_handoff_cache.outputs.cache-hit != 'true'
-        id: windows_msix_paths
-        shell: pwsh
-        run: |
-          "msix=$((Resolve-Path 'dist/installers/spacewave-windows-${{ matrix.arch }}.msix').Path)" >> $env:GITHUB_OUTPUT
-
-      - name: Sign Windows ${{ matrix.arch }} MSIX installer
-        if: ${{ inputs.sign_artifacts && steps.windows_handoff_cache.outputs.cache-hit != 'true' }}
-        shell: pwsh
-        env:
-          BLDR_SIGN_ENDPOINT: https://wus.codesigning.azure.net/
-          BLDR_SIGN_ACCOUNT: ${{ vars.BLDR_WINDOWS_SIGN_ACCOUNT }}
-          BLDR_SIGN_PROFILE: ${{ vars.BLDR_WINDOWS_SIGN_PROFILE }}
-          BLDR_SIGN_FILE: ${{ steps.windows_msix_paths.outputs.msix }}
-        run: |
-          $ErrorActionPreference = 'Stop'
-          Invoke-TrustedSigning `
-            -Endpoint $env:BLDR_SIGN_ENDPOINT `
-            -CodeSigningAccountName $env:BLDR_SIGN_ACCOUNT `
-            -CertificateProfileName $env:BLDR_SIGN_PROFILE `
-            -Files $env:BLDR_SIGN_FILE `
-            -Description Spacewave `
-            -FileDigest SHA256 `
-            -TimestampRfc3161 'http://timestamp.acs.microsoft.com' `
-            -TimestampDigest SHA256
-
-      - name: Refresh staged Windows installers after MSIX signing
-        if: ${{ inputs.sign_artifacts && steps.windows_handoff_cache.outputs.cache-hit != 'true' }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          rm -rf .tmp/entrypoint-handoff/windows-${{ matrix.arch }}/installers
-          mkdir -p .tmp/entrypoint-handoff/windows-${{ matrix.arch }}/installers
-          cp -R dist/installers/. .tmp/entrypoint-handoff/windows-${{ matrix.arch }}/installers/
-
       - name: Verify Windows signatures
         if: ${{ inputs.sign_artifacts && steps.windows_handoff_cache.outputs.cache-hit != 'true' }}
         shell: pwsh
@@ -656,7 +617,7 @@ jobs:
             ".tmp/dist/windows-${{ matrix.arch }}/spacewave.exe"
             ".tmp/dist-cli/windows-${{ matrix.arch }}/spacewave.exe"
             "dist/helper/windows-${{ matrix.arch }}/spacewave-helper.exe"
-            "dist/installers/spacewave-windows-${{ matrix.arch }}.msix"
+            "dist/installers/spacewave-windows-${{ matrix.arch }}.exe"
           )
           foreach ($path in $files) {
             $sig = Get-AuthenticodeSignature -FilePath $path

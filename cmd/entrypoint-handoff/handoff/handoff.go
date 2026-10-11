@@ -17,6 +17,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -251,10 +252,6 @@ func Run(ctx context.Context, args *Args) error {
 		filepath.Join(".tmp", "Spacewave-arm64.zip"),
 		filepath.Join(".tmp", "Spacewave.AppDir-amd64"),
 		filepath.Join(".tmp", "Spacewave.AppDir-arm64"),
-		filepath.Join(".tmp", "msix-layout-amd64"),
-		filepath.Join(".tmp", "msix-layout-arm64"),
-		filepath.Join(".tmp", "winzip-layout-amd64"),
-		filepath.Join(".tmp", "winzip-layout-arm64"),
 		filepath.Join(".tmp", "macos-helper-plists"),
 		"staging",
 		filepath.Join("dist", "installers"),
@@ -293,6 +290,11 @@ func Run(ctx context.Context, args *Args) error {
 	if !args.SkipBuild {
 		if err := runPhase(le, "build-helpers", func() error {
 			return buildHelpers(ctx, repoDir, platforms)
+		}); err != nil {
+			return err
+		}
+		if err := runPhase(le, "stamp-windows-version", func() error {
+			return stampWindowsVersion(ctx, repoDir, args.Version, platforms)
 		}); err != nil {
 			return err
 		}
@@ -460,7 +462,7 @@ func prepareSupportFiles(ctx context.Context, repoDir string, platforms []string
 		}
 	}
 	if !needsDarwin {
-		return generateHostIcons(ctx, repoDir, iconPath)
+		return generateHostIcons(repoDir, iconPath)
 	}
 	if err := runScript(ctx, repoDir, filepath.Join("scripts", "release", "gen-icons.sh"), iconPath); err != nil {
 		return errors.Wrap(err, "gen-icons")
@@ -479,6 +481,33 @@ func buildHelpers(ctx context.Context, repoDir string, platforms []string) error
 		}
 	}
 	return nil
+}
+
+// stampWindowsVersion regenerates the Windows launcher resources with the
+// release version, which the desktop reads from an installed launcher to tell
+// whether a staged update is newer.
+func stampWindowsVersion(ctx context.Context, repoDir, version string, platforms []string) error {
+	// Skip the generator when no Windows launcher is built.
+	if !slices.ContainsFunc(platforms, func(platform string) bool {
+		return strings.HasPrefix(platform, "windows-")
+	}) {
+		return nil
+	}
+
+	// Build the resource generator command with the version in its environment.
+	args := []string{"go", "generate", "./core/launcher/install"}
+	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
+	cmd.Dir = repoDir
+	cmd.Env = append(os.Environ(), "SPACEWAVE_VERSION="+version)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	// Run the generator and log its completion.
+	logCommandStart("go", args)
+	start := time.Now()
+	err := cmd.Run()
+	logCommandFinish("go", args, start, err)
+	return errors.Wrap(err, "stamp Windows launcher version")
 }
 
 // buildEntrypoints produces desktop executables from the selected release overlay.
@@ -853,7 +882,7 @@ func buildBundles(repoDir string, platforms []string) error {
 	return nil
 }
 
-func generateHostIcons(ctx context.Context, repoDir, iconPath string) error {
+func generateHostIcons(repoDir, iconPath string) error {
 	// Open the source icon image.
 	f, err := os.Open(iconPath)
 	if err != nil {
@@ -886,29 +915,6 @@ func generateHostIcons(ctx context.Context, repoDir, iconPath string) error {
 		if err := outFile.Close(); err != nil {
 			return errors.Wrap(err, "close "+outPath)
 		}
-	}
-	icoInputs := []string{
-		filepath.Join(iconsDir, "icon-16.png"),
-		filepath.Join(iconsDir, "icon-32.png"),
-		filepath.Join(iconsDir, "icon-48.png"),
-		filepath.Join(iconsDir, "icon-64.png"),
-		filepath.Join(iconsDir, "icon-128.png"),
-		filepath.Join(iconsDir, "icon-256.png"),
-	}
-	outFile, err := os.Create(filepath.Join(iconsDir, "icon.ico"))
-	if err != nil {
-		return errors.Wrap(err, "create icon.ico")
-	}
-	defer outFile.Close()
-
-	// #nosec G204 -- argv is fixed except generated icon paths, and no shell is invoked.
-	cmd := exec.CommandContext(ctx, "bun", append([]string{"x", "png-to-ico"}, icoInputs...)...)
-	cmd.Dir = repoDir
-	cmd.Env = os.Environ()
-	cmd.Stdout = outFile
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return errors.Wrap(err, "png-to-ico")
 	}
 	return nil
 }
@@ -1043,11 +1049,8 @@ func packageInstallers(ctx context.Context, repoDir, version string, platforms [
 				return errors.Wrap(err, "build-macos "+platform)
 			}
 		case "windows":
-			if err := runScript(ctx, repoDir, filepath.Join("scripts", "release", "build-msix.sh"), goarch, version); err != nil {
-				return errors.Wrap(err, "build-msix "+platform)
-			}
-			if err := runScript(ctx, repoDir, filepath.Join("scripts", "release", "build-winzip.sh"), goarch, version); err != nil {
-				return errors.Wrap(err, "build-winzip "+platform)
+			if err := packageWindowsLauncher(repoDir, goarch); err != nil {
+				return err
 			}
 		case "linux":
 			if err := runScript(ctx, repoDir, filepath.Join("scripts", "release", "build-appimage.sh"), goarch); err != nil {
@@ -1058,6 +1061,20 @@ func packageInstallers(ctx context.Context, repoDir, version string, platforms [
 		}
 	}
 	return nil
+}
+
+// packageWindowsLauncher publishes the desktop executable as the Windows
+// download. The launcher installs itself on first run, so the signed
+// executable is the whole installer.
+func packageWindowsLauncher(repoDir, goarch string) error {
+	// Copy the signed launcher into the installers directory.
+	outDir := filepath.Join(repoDir, "dist", "installers")
+	if err := os.MkdirAll(outDir, 0o755); err != nil {
+		return errors.Wrap(err, "mkdir installers dir")
+	}
+	src := filepath.Join(repoDir, ".tmp", "dist", "windows-"+goarch, "spacewave.exe")
+	dst := filepath.Join(outDir, "spacewave-windows-"+goarch+".exe")
+	return errors.Wrap(copyFile(src, dst), "copy Windows launcher "+goarch)
 }
 
 func validatePlatformBundleInputs(repoDir string, platforms []string) error {
@@ -1102,11 +1119,6 @@ func validatePlatformBundleInputs(repoDir string, platforms []string) error {
 				return err
 			}
 		case "windows":
-			for _, iconName := range []string{"icon.ico", "icon-48.png", "icon-128.png", "icon-256.png"} {
-				if err := requireNonEmptyFile(filepath.Join(repoDir, ".tmp", "icons", iconName), "Windows icon "+iconName); err != nil {
-					return err
-				}
-			}
 		default:
 			return errors.New("unknown platform " + platform)
 		}
@@ -1145,10 +1157,8 @@ func validatePackagedArtifacts(repoDir string, platforms []string) error {
 				return err
 			}
 		case "windows":
-			for _, ext := range []string{"msix", "zip"} {
-				if err := requireNonEmptyFile(filepath.Join(installersDir, "spacewave-windows-"+goarch+"."+ext), "Windows installer "+platform+" "+ext); err != nil {
-					return err
-				}
+			if err := requireNonEmptyFile(filepath.Join(installersDir, "spacewave-windows-"+goarch+".exe"), "Windows launcher "+platform); err != nil {
+				return err
 			}
 		default:
 			return errors.New("unknown platform " + platform)

@@ -13,11 +13,6 @@ for size in 16 32 64 128 256 512; do
 done
 iconutil -c icns "$OUT/icon.iconset" -o "$OUT/icon.icns"
 
-for size in 16 32 48 64 128 256; do
-  sips -z $size $size "$SOURCE" --out "$OUT/icon-${size}.png" >/dev/null
-done
-bun x png-to-ico "$OUT"/icon-{16,32,48,64,128,256}.png > "$OUT/icon.ico"
-
 for size in 16 32 48 64 128 256 512; do
   sips -z $size $size "$SOURCE" --out "$OUT/icon-${size}.png" >/dev/null
 done

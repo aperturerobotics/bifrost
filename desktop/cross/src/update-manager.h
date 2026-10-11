@@ -16,8 +16,6 @@ public:
 	bool execute();
 
 private:
-	// WaitForProcessExit waits for an operating-system process-exit event.
-	bool WaitForProcessExit();
 	// SwapBinary retains the installed binary as a rollback candidate.
 	bool SwapBinary();
 	// Relaunch succeeds only when the operating system creates the

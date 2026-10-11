@@ -70,10 +70,17 @@ import {
 } from "./desktop-tray-runtime-projection.js";
 import { DesktopTrayController } from "./desktop-tray.js";
 import { buildApplicationMenuTemplate } from "./app-menu.js";
-import { installedAppVersion, startAppBundleUpdate } from "./app-update.js";
+import {
+  installedAppVersion,
+  startAppBundleUpdate,
+  startLauncherUpdate,
+} from "./app-update.js";
 
 // isMac reports whether the app runs on macOS.
 export const isMac = os.platform() === "darwin";
+
+// isWindows reports whether the app runs on Windows.
+const isWindows = os.platform() === "win32";
 // BLDR_DEBUG is set if this is a debug build.
 declare const BLDR_DEBUG: boolean | undefined;
 
@@ -340,7 +347,7 @@ export class BldrElectronApp {
   private setupAppUpdateIpc() {
     // An empty version means the installed app is unknown.
     ipcMain.handle("BLDR_ELECTRON_INSTALLED_APP_VERSION", async () => {
-      if (!isMac || !this.installedApp) {
+      if (!(isMac || isWindows) || !this.installedApp) {
         return "";
       }
       return installedAppVersion(this.installedApp);
@@ -348,8 +355,10 @@ export class BldrElectronApp {
     ipcMain.handle(
       "BLDR_ELECTRON_APPLY_APP_UPDATE",
       async (event, webViewId: string) => {
-        if (!isMac) {
-          throw new Error("installed .app updates are only supported on macOS");
+        if (!isMac && !isWindows) {
+          throw new Error(
+            "installed app updates are only supported on macOS and Windows",
+          );
         }
         const documentId = Object.entries(this.browserWindows).find(
           ([, win]) => win.webContents === event.sender,
@@ -376,12 +385,20 @@ export class BldrElectronApp {
           ApplyUpdateRequest.toBinary({ target: UpdateTarget.APP }),
         );
         const update = ApplyUpdateResponse.fromBinary(reply);
-        await startAppBundleUpdate(
-          update.stagedPath ?? "",
-          this.installedApp,
-          this.app.getPath("userData"),
-          process.pid,
-        );
+        if (isWindows) {
+          await startLauncherUpdate(
+            update.stagedPath ?? "",
+            this.installedApp,
+            process.pid,
+          );
+        } else {
+          await startAppBundleUpdate(
+            update.stagedPath ?? "",
+            this.installedApp,
+            this.app.getPath("userData"),
+            process.pid,
+          );
+        }
         this.app.quit();
       },
     );

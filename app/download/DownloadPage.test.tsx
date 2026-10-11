@@ -63,7 +63,7 @@ describe('DownloadPage', () => {
     const ctas = screen.getAllByRole('link', { name: /Download for Windows/ })
     const installerCta = ctas.find(
       (c) =>
-        c.getAttribute('href')?.includes('spacewave-windows-amd64.zip') &&
+        c.getAttribute('href')?.includes('spacewave-windows-amd64.exe') &&
         !c.getAttribute('href')?.includes('cli'),
     )
     expect(installerCta).toBeTruthy()

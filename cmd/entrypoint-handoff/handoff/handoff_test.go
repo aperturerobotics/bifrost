@@ -294,9 +294,6 @@ func TestValidatePlatformBundleInputsAcceptsCompleteMatrix(t *testing.T) {
 	// Supply the icons and desktop launcher used by the platform bundles.
 	for _, iconName := range []string{
 		"icon.icns",
-		"icon.ico",
-		"icon-48.png",
-		"icon-128.png",
 		"icon-256.png",
 	} {
 		writeTestFile(t, filepath.Join(dir, ".tmp", "icons", iconName))
@@ -336,8 +333,7 @@ func TestValidatePackagedArtifactsAcceptsCompleteMatrix(t *testing.T) {
 		case "linux":
 			writeTestFile(t, filepath.Join(dir, "dist", "installers", "spacewave-linux-"+goarch+".AppImage"))
 		case "windows":
-			writeTestFile(t, filepath.Join(dir, "dist", "installers", "spacewave-windows-"+goarch+".msix"))
-			writeTestFile(t, filepath.Join(dir, "dist", "installers", "spacewave-windows-"+goarch+".zip"))
+			writeTestFile(t, filepath.Join(dir, "dist", "installers", "spacewave-windows-"+goarch+".exe"))
 		}
 	}
 

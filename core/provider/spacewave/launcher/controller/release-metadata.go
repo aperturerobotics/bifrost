@@ -684,6 +684,20 @@ func (c *Controller) verifyStagedReleaseEntrypoint(
 		_ = os.RemoveAll(stageRoot)
 		return errors.New("darwin installed-app update must stage a signed .app bundle")
 	}
+
+	// The selected Windows desktop artifact replaces the installed launcher
+	// and carries the running daemon's Authenticode publisher.
+	if isWindowsDesktopPlatform(platformID) {
+		if stagedInfo.IsDir() || !strings.HasSuffix(stagedPath, ".exe") {
+			_ = os.RemoveAll(stageRoot)
+			return errors.New("windows installed-app update must stage a signed .exe")
+		}
+		if err := verifyAuthenticodePublisher(stagedPath); err != nil {
+			_ = os.RemoveAll(stageRoot)
+			return errors.Wrap(err, "verify staged launcher")
+		}
+		return nil
+	}
 	if !stagedInfo.IsDir() {
 		return nil
 	}
@@ -947,4 +961,10 @@ func nativeDesktopPlatformID() (string, error) {
 // isDarwinDesktopPlatform recognizes macOS desktop platform identifiers.
 func isDarwinDesktopPlatform(platformID string) bool {
 	return strings.HasPrefix(platformID, "desktop/darwin/")
+}
+
+// isWindowsDesktopPlatform reports whether a platform ID selects a Windows
+// desktop artifact.
+func isWindowsDesktopPlatform(platformID string) bool {
+	return strings.HasPrefix(platformID, "desktop/windows/")
 }

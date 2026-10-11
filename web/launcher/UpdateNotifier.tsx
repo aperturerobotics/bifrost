@@ -90,7 +90,7 @@ function UpdateNotifierInner() {
       toast('App update ready', {
         description: `Spacewave app ${version} is ready to install. The shared daemon will keep running.`,
         duration: Infinity,
-        action: info?.updateState?.stagedPath?.endsWith('.app')
+        action: /\.(app|exe)$/i.test(info?.updateState?.stagedPath ?? '')
           ? {
               label: 'Update app',
               onClick: () => {

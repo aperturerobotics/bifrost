@@ -20,6 +20,7 @@ endif()
 
 if(UNIX)
     add_executable(spacewave-update-test
+        src/process-exit.cpp
         src/update-manager.cpp
         src/update_manager_test.cc
     )
@@ -35,6 +36,7 @@ add_executable(spacewave-helper
     src/main.cpp
     src/proto.cpp
     src/pipe-client.cpp
+    src/process-exit.cpp
     src/update-manager.cpp
 )
 

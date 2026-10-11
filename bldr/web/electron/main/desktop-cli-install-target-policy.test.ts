@@ -61,13 +61,13 @@ describe('desktop CLI install target policy', () => {
       buildDesktopCLIInstallTargets({
         homeDir: 'C:\\Users\\test',
         platformId: 'desktop/windows/amd64',
-        pathEntries: ['C:\\Users\\test\\AppData\\Local\\Programs\\Spacewave'],
+        pathEntries: ['C:\\Users\\test\\AppData\\Local\\Programs\\Spacewave\\bin'],
         canWrite: async () => true,
       }),
     ).resolves.toMatchObject([
       {
         id: 'local-app-data',
-        path: 'C:\\Users\\test\\AppData\\Local\\Programs\\Spacewave\\spacewave.exe',
+        path: 'C:\\Users\\test\\AppData\\Local\\Programs\\Spacewave\\bin\\spacewave.exe',
         pathState:
           DesktopCLIInstallTargetPathState.DESKTOP_CLI_INSTALL_TARGET_PATH_STATE_ON_PATH,
       },

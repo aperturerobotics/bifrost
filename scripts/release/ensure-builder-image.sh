@@ -23,10 +23,6 @@ smoke_test() {
   # each tool the image provides so a stale image missing zig or
   # appimagetool surfaces as a clear failure here instead of deep into a
   # release run.
-  #
-  # makemsix probe removed 2026-04-20: Azure approval is done, but MSIX still
-  # needs a Windows signing hop before the path can be re-enabled. Restore the
-  # probe when the makemsix build stanza is re-enabled in desktop/Dockerfile.
   docker run --rm --platform linux/amd64 "$IMAGE" zig version >/dev/null
   docker run --rm --platform linux/amd64 \
       -e APPIMAGE_EXTRACT_AND_RUN=1 \

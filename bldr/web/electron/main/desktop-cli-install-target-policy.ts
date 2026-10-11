@@ -48,6 +48,8 @@ export function targetCandidates(
 ): Array<{ id: string; label: string; path: string }> {
   switch (platformOS(platformId)) {
     case 'windows':
+      // The desktop launcher installs as Programs\Spacewave\Spacewave.exe, and
+      // Windows file names ignore case, so the CLI lives in a bin folder.
       return [
         {
           id: 'local-app-data',
@@ -58,6 +60,7 @@ export function targetCandidates(
             'Local',
             'Programs',
             'Spacewave',
+            'bin',
             'spacewave.exe',
           ),
         },

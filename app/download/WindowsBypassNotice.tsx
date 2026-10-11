@@ -52,22 +52,22 @@ export function WindowsBypassNotice() {
         <div className="overflow-hidden">
           <div className="text-foreground-alt flex flex-col gap-3 px-5 pb-5 text-sm leading-relaxed">
             <ol className="ml-4 list-decimal space-y-2">
-              <li>Click Download, save the zip, and extract it.</li>
               <li>
-                Run <span className="font-mono text-xs">spacewave.exe</span>. If
-                SmartScreen shows{' '}
+                Run the downloaded{' '}
+                <span className="font-mono text-xs">.exe</span>. If SmartScreen
+                shows{' '}
                 <strong className="text-foreground">
                   &quot;Windows protected your PC&quot;
                 </strong>
                 , click <strong className="text-foreground">More info</strong>,
                 then <strong className="text-foreground">Run anyway</strong>.
               </li>
-              <li>Only needed once per install.</li>
+              <li>Spacewave installs itself, so this is only needed once.</li>
             </ol>
             <p className="text-xs">
               The Windows build is unsigned during Microsoft&apos;s code-signing
-              identity validation. The signed MSIX build returns once validation
-              completes; the SmartScreen prompt disappears at that point.
+              identity validation. The SmartScreen prompt disappears once
+              validation completes.
             </p>
           </div>
         </div>

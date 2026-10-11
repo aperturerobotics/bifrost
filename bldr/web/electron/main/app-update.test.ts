@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { startAppBundleUpdate } from "./app-update.js";
+import { startAppBundleUpdate, startLauncherUpdate } from "./app-update.js";
 
 vi.mock("node:child_process", async (importOriginal) => {
   const { EventEmitter } = await import("node:events");
@@ -91,6 +91,36 @@ describe("startAppBundleUpdate", () => {
     await expect(
       startAppBundleUpdate("/tmp/Staged.app", "", "/tmp/state", 1),
     ).rejects.toThrow("not opened from an installed .app");
+    expect(spawn).not.toHaveBeenCalled();
+  });
+});
+
+describe("startLauncherUpdate", () => {
+  it("has the staged launcher apply itself after the Electron PID exits", async () => {
+    // Put both launchers under this checkout's disposable root.
+    const root = path.join(process.cwd(), ".tmp", "launcher-update");
+    await mkdir(root, { recursive: true });
+    const fixture = await mkdtemp(path.join(root, "launcher-"));
+    fixtures.push(fixture);
+    const installed = path.join(fixture, "Spacewave.exe");
+    const staged = path.join(fixture, "staged", "Spacewave.exe");
+    await mkdir(path.dirname(staged), { recursive: true });
+    await writeFile(installed, "old launcher");
+    await writeFile(staged, "verified launcher");
+
+    await startLauncherUpdate(staged, installed, 4242);
+
+    expect(vi.mocked(spawn)).toHaveBeenCalledWith(
+      staged,
+      ["apply-update", "--pid", "4242"],
+      { detached: true, stdio: "ignore", windowsHide: true },
+    );
+  });
+
+  it("rejects a desktop not opened from an installed launcher", async () => {
+    await expect(
+      startLauncherUpdate("C:\\staged\\Spacewave.exe", "", 1),
+    ).rejects.toThrow("not opened from an installed launcher");
     expect(spawn).not.toHaveBeenCalled();
   });
 });
