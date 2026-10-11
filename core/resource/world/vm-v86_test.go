@@ -824,7 +824,7 @@ func TestVmV86TypedObject(t *testing.T) {
 		stream, execCancel := openExecuteStream(ctx, t, resClient, engine, vmKey)
 		defer execCancel()
 
-		// V86Image has no v86image/rootfs edge -> resolveV86Mount fails.
+		// V86Image has no v86image/rootfs edge and no cdn_source, so the rootfs mount fails.
 		expectStatusSequence(t, stream,
 			s4wave_process.ExecutionState_ExecutionState_STARTING,
 			s4wave_process.ExecutionState_ExecutionState_ERROR,
@@ -866,8 +866,8 @@ func TestVmV86TypedObject(t *testing.T) {
 		if req.pluginID != "spacewave-v86" {
 			t.Fatalf("plugin id = %q, want spacewave-v86", req.pluginID)
 		}
-		if req.instanceKey != vmKey {
-			t.Fatalf("instance key = %q, want %q", req.instanceKey, vmKey)
+		if want := "vm/v86-runtime/instance/" + vmKey; req.instanceKey != want {
+			t.Fatalf("instance key = %q, want %q", req.instanceKey, want)
 		}
 		if req.inst.CloseIfUnreferenced(false) {
 			t.Fatal("plugin directive closed while VM is still running")
@@ -916,8 +916,8 @@ func TestVmV86TypedObject(t *testing.T) {
 		if req.pluginID != "spacewave-v86" {
 			t.Fatalf("plugin id = %q, want spacewave-v86", req.pluginID)
 		}
-		if req.instanceKey != vmKey {
-			t.Fatalf("instance key = %q, want %q", req.instanceKey, vmKey)
+		if want := "vm/v86-runtime/instance/" + vmKey; req.instanceKey != want {
+			t.Fatalf("instance key = %q, want %q", req.instanceKey, want)
 		}
 		if req.inst.CloseIfUnreferenced(false) {
 			t.Fatal("plugin directive closed while VM is still running")

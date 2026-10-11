@@ -21,12 +21,16 @@ import (
 )
 
 // defaultVmPluginID is the plugin ID that hosts the default V86 backend. Each
-// VmV86 object gets its own plugin instance keyed by the object key.
+// VmV86 object gets its own plugin instance, keyed by
+// v86RuntimeInstancePrefix and the object key.
 const defaultVmPluginID = "spacewave-v86"
 
 const (
 	v86RuntimeV86fsServicePrefix  = "vm/v86-runtime/v86fs/"
 	v86RuntimeStatusServicePrefix = "vm/v86-runtime/status/"
+	// v86RuntimeInstancePrefix marks the runtime plugin instance of one VM, so
+	// the plugin can tell it from the instance each Space loads for viewers.
+	v86RuntimeInstancePrefix = "vm/v86-runtime/instance/"
 )
 
 // v86Resource implements PersistentExecutionService for a VmV86 object.
@@ -37,6 +41,7 @@ type v86Resource struct {
 	// b receives the runtime plugin load and serves the services it calls.
 	b           bus.Bus
 	v86fsServer *unixfs_v86fs.Server
+	mounts      *v86MountResolver
 
 	homeMountMtx     sync.Mutex
 	homeMountRefs    uint
@@ -44,8 +49,27 @@ type v86Resource struct {
 }
 
 // newV86Resource constructs a new v86Resource.
-func newV86Resource(le *logrus.Entry, objectKey string, ws world.WorldState, b bus.Bus, v86fsServer *unixfs_v86fs.Server) *v86Resource {
-	return &v86Resource{le: le, objectKey: objectKey, ws: ws, b: b, v86fsServer: v86fsServer}
+func newV86Resource(
+	le *logrus.Entry,
+	objectKey string,
+	ws world.WorldState,
+	b bus.Bus,
+	v86fsServer *unixfs_v86fs.Server,
+	mounts *v86MountResolver,
+) *v86Resource {
+	return &v86Resource{
+		le:          le,
+		objectKey:   objectKey,
+		ws:          ws,
+		b:           b,
+		v86fsServer: v86fsServer,
+		mounts:      mounts,
+	}
+}
+
+// runtimeInstanceKey returns the instance key of the VM's runtime plugin.
+func (r *v86Resource) runtimeInstanceKey() string {
+	return v86RuntimeInstancePrefix + r.objectKey
 }
 
 // acquireHomeMount keeps the run-scoped home mount registered until every
@@ -282,7 +306,7 @@ func (r *v86Resource) Execute(req *s4wave_process.ExecuteRequest, stream s4wave_
 				}
 
 				// Load the instanced runtime plugin and retain its directive reference.
-				plugin, _, newRef, loadErr := bldr_plugin.ExLoadPluginInstanced(ctx, r.b, true, runtimePluginID, r.objectKey, nil)
+				plugin, _, newRef, loadErr := bldr_plugin.ExLoadPluginInstanced(ctx, r.b, true, runtimePluginID, r.runtimeInstanceKey(), nil)
 				if loadErr != nil || plugin == nil || newRef == nil {
 					if newRef != nil {
 						newRef.Release()
@@ -565,7 +589,7 @@ func (r *v86Resource) exposeV86RuntimeStatus(
 
 	// Expose the status route to the runtime plugin and its worker server.
 	pluginServerID := bldr_plugin.PluginServerID(pluginID, "")
-	workerServerID := "web-worker/" + bldr_plugin.PluginServerID(pluginID, r.objectKey)
+	workerServerID := "web-worker/" + bldr_plugin.PluginServerID(pluginID, r.runtimeInstanceKey())
 	rpcServiceCtrl := bifrost_rpc.NewRpcServiceController(
 		controller.NewInfo(
 			"sdk/vm/world/v86/"+r.objectKey+"/runtime-status-route",
@@ -598,7 +622,7 @@ func (r *v86Resource) exposeV86fsToRuntimePlugin(ctx context.Context, pluginID s
 
 	// Expose the filesystem route to the runtime plugin and its worker server.
 	pluginServerID := bldr_plugin.PluginServerID(pluginID, "")
-	workerServerID := "web-worker/" + bldr_plugin.PluginServerID(pluginID, r.objectKey)
+	workerServerID := "web-worker/" + bldr_plugin.PluginServerID(pluginID, r.runtimeInstanceKey())
 	r.le.WithFields(logrus.Fields{
 		"object-key":       r.objectKey,
 		"plugin-id":        pluginID,
@@ -656,7 +680,7 @@ func (i v86fsRuntimeRouteInvoker) InvokeMethod(serviceID, methodID string, strm 
 // failure here is treated as an ERROR state for the handler.
 func (r *v86Resource) verifyBootMounts(ctx context.Context) error {
 	for _, mountName := range []string{"", "wasm", "seabios", "vgabios", "kernel"} {
-		fsh, err := resolveV86Mount(ctx, r.le, r.ws, r.objectKey, mountName)
+		fsh, err := r.mounts.resolve(ctx, mountName)
 		if err != nil {
 			displayName := mountName
 			if displayName == "" {

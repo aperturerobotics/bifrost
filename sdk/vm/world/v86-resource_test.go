@@ -43,7 +43,7 @@ func TestV86RuntimeStatusGenerationFence(t *testing.T) {
 	}
 
 	// Report bootstrap status through the VM resource.
-	resource := newV86Resource(nil, objectKey, ws, nil, nil)
+	resource := newV86Resource(nil, objectKey, ws, nil, nil, nil)
 	booting, err := resource.applyRuntimeStatus(ctx, generation, &s4wave_vm.ReportV86RuntimeStatusRequest{
 		ObjectKey: objectKey,
 		Status:    s4wave_vm.V86RuntimeStatus_V86RuntimeStatus_BOOTING,

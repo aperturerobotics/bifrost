@@ -54,7 +54,8 @@ export type BrowserV86Runtime = {
 export type StartBrowserV86RuntimeOptions = {
   assets: V86BootAssets
   config?: V86Config
-  instanceKey: string
+  // objectKey is the VmV86 object key; it names the serial channel.
+  objectKey: string
   v86fsAdapter: V86fsAdapter
   // attachV86fsNotifier receives the guest filesystem device once the guest
   // reaches userspace. The guest mounts with usermode helpers, so mount
@@ -69,8 +70,9 @@ const defaultVgaMemoryMb = 8
 const v86WasmMemoryHeadroomBytes = 16 * mib
 const v86BaseCmdline =
   // Boot through /sbin/init so busybox gives ttyS0 job control; bash PID 1
-  // breaks Ctrl-C and SIGINT.
-  'rw init=/sbin/init root=v86fs rootfstype=v86fs console=ttyS0'
+  // breaks Ctrl-C and SIGINT. The empty rootflags clears the kernel's built-in
+  // 9p flags, which v86fs rejects.
+  'rw init=/sbin/init root=v86fs rootfstype=v86fs rootflags= console=ttyS0'
 // v86minBootReadyMarker identifies the first guest output that proves the
 // kernel and init path reached an interactive boot state.
 export const v86minBootReadyMarker = /(?:login:|# |\$ |Welcome)/
@@ -174,8 +176,8 @@ export async function startBrowserV86Runtime(
   options: StartBrowserV86RuntimeOptions,
   loadModule: V86ModuleLoader = defaultV86ModuleLoader,
 ): Promise<BrowserV86Runtime> {
-  if (!options.instanceKey) {
-    throw new Error('spacewave-v86 browser runner requires an instance key')
+  if (!options.objectKey) {
+    throw new Error('spacewave-v86 browser runner requires a VM object key')
   }
 
   const env = detectV86RuntimeEnvironment()
@@ -190,7 +192,7 @@ export async function startBrowserV86Runtime(
   const bootArgs = options.config?.bootArgs?.trim()
   const cmdline = bootArgs ? v86BaseCmdline + ' ' + bootArgs : v86BaseCmdline
 
-  const serialChannelName = v86SerialChannelName(options.instanceKey)
+  const serialChannelName = v86SerialChannelName(options.objectKey)
   const serialChannel = new BroadcastChannel(serialChannelName)
   let stopped = false
   let emulator: V86Emulator | undefined
@@ -223,8 +225,10 @@ export async function startBrowserV86Runtime(
     serialText = (
       serialText + serialDecoder.decode(data, { stream: true })
     ).slice(-8192)
-    if (v86GuestFailureMarker.test(serialText)) {
-      settleReady(new Error('v86min guest boot failed'))
+    const failure = v86GuestFailureMarker.exec(serialText)
+    if (failure) {
+      const line = serialText.slice(failure.index).split('\n', 1)[0].trim()
+      settleReady(new Error('v86min guest boot failed: ' + line))
     } else if (v86minBootReadyMarker.test(serialText)) {
       settleReady()
     }

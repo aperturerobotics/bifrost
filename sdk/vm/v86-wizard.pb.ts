@@ -29,11 +29,12 @@ export enum V86WizardConfig_Source {
   EXISTING_IN_SPACE = 1,
 
   /**
-   * Source_COPY_FROM_CDN copies a V86Image from a CDN source object.
+   * Source_LINK_FROM_CDN links a V86Image that reads its assets from a CDN
+   * source object.
    *
-   * @generated from enum value: COPY_FROM_CDN = 2;
+   * @generated from enum value: LINK_FROM_CDN = 2;
    */
-  COPY_FROM_CDN = 2,
+  LINK_FROM_CDN = 2,
 }
 
 export const V86WizardConfig_Source_Enum = /* @__PURE__ */ createEnumType(

@@ -33,7 +33,7 @@ export function buildV86QuickstartWizardConfig(): V86WizardConfig {
     vgaMemoryMb: DEFAULT_V86_VGA_MEMORY_MB,
     networking: false,
     imageObjectKey: V86_USER_IMAGE_OBJECT_KEY,
-    source: V86WizardConfig_Source.COPY_FROM_CDN,
+    source: V86WizardConfig_Source.LINK_FROM_CDN,
     cdnSourceObjectKey: V86_DEFAULT_CDN_IMAGE_OBJECT_KEY,
     cdnId: '',
   }
@@ -63,7 +63,7 @@ export function seedV86WizardConfig(
     next.source = V86WizardConfig_Source.EXISTING_IN_SPACE
     next.imageObjectKey = inSpaceImages[0].objectKey
   } else {
-    next.source = V86WizardConfig_Source.COPY_FROM_CDN
+    next.source = V86WizardConfig_Source.LINK_FROM_CDN
     next.imageObjectKey = V86_USER_IMAGE_OBJECT_KEY
   }
   if (!next.memoryMb) next.memoryMb = DEFAULT_V86_MEMORY_MB

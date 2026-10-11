@@ -545,6 +545,36 @@ export const ReportV86RuntimeStatusResponse: MessageType<ReportV86RuntimeStatusR
   })
 
 /**
+ * V86ImageCdnSource locates a V86Image in a published CDN Space. An image
+ * without its own asset edges resolves each asset through this source.
+ *
+ * @generated from message s4wave.vm.V86ImageCdnSource
+ */
+export interface V86ImageCdnSource {
+  /**
+   * SpaceId is the CDN Space ULID.
+   *
+   * @generated from field: string space_id = 1;
+   */
+  spaceId?: string
+  /**
+   * ObjectKey is the V86Image object key in the CDN Space.
+   *
+   * @generated from field: string object_key = 2;
+   */
+  objectKey?: string
+}
+
+export const V86ImageCdnSource: MessageType<V86ImageCdnSource> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 's4wave.vm.V86ImageCdnSource',
+    fields: [
+      { no: 1, name: 'space_id', kind: 'scalar', T: ScalarType.STRING },
+      { no: 2, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
+    ] satisfies readonly PartialFieldInfo[],
+  })
+
+/**
  * V86Image is a curated bundle of v86 assets (WASM emulator, SeaBIOS, VGA BIOS,
  * kernel, rootfs) linked through graph edges. The object itself carries
  * metadata; the five UnixFS targets are attached via v86image/wasm,
@@ -598,6 +628,13 @@ export interface V86Image {
   /**
    * CreatedAt is the creation timestamp.
    *
+   * @generated from field: google.protobuf.Timestamp created_at = 8;
+   */
+  createdAt?: Date
+  /**
+   * CdnSource locates the published image whose assets this image reads
+   * lazily. Unset when every asset edge points at an object in this Space.
+   *
    * Links (via graph edges, not proto fields):
    *   v86image/wasm          -> UnixFS object (emulator WASM binary)
    *   v86image/bios/seabios  -> UnixFS object (SeaBIOS)
@@ -605,9 +642,9 @@ export interface V86Image {
    *   v86image/kernel        -> UnixFS object (kernel image)
    *   v86image/rootfs        -> UnixFS object (rootfs archive)
    *
-   * @generated from field: google.protobuf.Timestamp created_at = 8;
+   * @generated from field: s4wave.vm.V86ImageCdnSource cdn_source = 9;
    */
-  createdAt?: Date
+  cdnSource?: V86ImageCdnSource
 }
 
 export const V86Image: MessageType<V86Image> =
@@ -628,6 +665,7 @@ export const V86Image: MessageType<V86Image> =
         repeated: true,
       },
       { no: 8, name: 'created_at', kind: 'message', T: () => Timestamp },
+      { no: 9, name: 'cdn_source', kind: 'message', T: V86ImageCdnSource },
     ] satisfies readonly PartialFieldInfo[],
   })
 

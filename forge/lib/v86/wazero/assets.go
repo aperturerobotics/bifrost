@@ -10,7 +10,6 @@ import (
 
 	billy_util "github.com/go-git/go-billy/v6/util"
 	"github.com/pkg/errors"
-	cdn_bstore "github.com/s4wave/spacewave/core/cdn/bstore"
 	cdn_sharedobject "github.com/s4wave/spacewave/core/cdn/sharedobject"
 	"github.com/s4wave/spacewave/db/unixfs"
 	unixfs_billy "github.com/s4wave/spacewave/db/unixfs/billy"
@@ -156,7 +155,7 @@ func hydrateAssetsFromCdn(ctx context.Context, opts AssetOptions) (*AssetSet, er
 	}
 
 	// Hold one published world across image selection and file reads.
-	ws, release, err := mountCdnWorld(ctx, opts)
+	ws, release, err := cdn_sharedobject.MountWorld(ctx, opts.Le, nil, opts.CdnBaseURL, opts.CdnSpaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -199,41 +198,6 @@ func hydrateAssetsFromCdn(ctx context.Context, opts AssetOptions) (*AssetSet, er
 		return nil, errors.Errorf("hydrated v86 assets incomplete in %s", opts.CacheDir)
 	}
 	return assets, nil
-}
-
-// mountCdnWorld mounts the v86 image's shared object world for edge lookup.
-func mountCdnWorld(ctx context.Context, opts AssetOptions) (world_state.WorldState, func(), error) {
-	// Own the CDN transport until the mounted world is released.
-	store, err := cdn_bstore.NewCdnBlockStore(cdn_bstore.Options{
-		CdnBaseURL: opts.CdnBaseURL,
-		SpaceID:    opts.CdnSpaceID,
-		PointerTTL: -1,
-	})
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "build cdn block store")
-	}
-
-	// Bind the published head to the transport's block store.
-	so, err := cdn_sharedobject.NewCdnSharedObject(cdn_sharedobject.CdnSharedObjectOptions{
-		SpaceID:    opts.CdnSpaceID,
-		BlockStore: store,
-	})
-	if err != nil {
-		store.Close()
-		return nil, nil, errors.Wrap(err, "build cdn shared object")
-	}
-
-	// Keep the read engine and its backing transport under one release callback.
-	we, err := cdn_sharedobject.NewWorldEngine(ctx, opts.Le, nil, so)
-	if err != nil {
-		store.Close()
-		return nil, nil, errors.Wrap(err, "mount cdn world")
-	}
-	ws := world_state.NewEngineWorldState(we.Engine, true)
-	return ws, func() {
-		we.Release()
-		store.Close()
-	}, nil
 }
 
 // resolveV86ImageKey prefers an existing requested image, otherwise selecting

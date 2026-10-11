@@ -7,7 +7,6 @@ import (
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/starpc/srpc"
 	resource_server "github.com/s4wave/spacewave/bldr/resource/server"
-	"github.com/s4wave/spacewave/db/unixfs"
 	unixfs_v86fs "github.com/s4wave/spacewave/db/unixfs/v86fs"
 	"github.com/s4wave/spacewave/db/world"
 	s4wave_process "github.com/s4wave/spacewave/sdk/process"
@@ -56,27 +55,30 @@ func vmV86Factory(
 		resourceWS = world.NewEngineWorldState(engine, true)
 	}
 
-	// Create v86fs server with mount resolver that resolves graph edges to FSHandle.
-	v86fsServer := unixfs_v86fs.NewServer(le, func(ctx context.Context, name string) (*unixfs.FSHandle, error) {
-		return resolveV86Mount(ctx, le, resourceWS, objectKey, name)
-	})
+	// Serve v86fs mounts from the VM's graph edges and linked image.
+	mounts := newV86MountResolver(ctx, le, b, resourceWS, objectKey)
+	v86fsServer := unixfs_v86fs.NewServer(le, mounts.resolve)
 
 	// Pre-populate the v86fs dynamic mount table from V86Config.Mounts so the
 	// guest learns about workspace/home/etc. mounts via MOUNT_NOTIFY frames
 	// when the v86fs session joins.
 	mountCleanup, err := registerV86ConfigMounts(ctx, le, resourceWS, objectKey, v86fsServer)
 	if err != nil {
+		mounts.release()
 		return nil, nil, err
 	}
 
 	// The runtime plugin loads and calls back through the plugin bus.
 	pluginBus := objecttype.PluginBusFromContext(ctx, b)
-	resource := newV86Resource(le, objectKey, resourceWS, pluginBus, v86fsServer)
+	resource := newV86Resource(le, objectKey, resourceWS, pluginBus, v86fsServer, mounts)
 	mux := resource_server.NewResourceMux(func(mux srpc.Mux) error {
 		if err := s4wave_process.SRPCRegisterPersistentExecutionService(mux, resource); err != nil {
 			return err
 		}
 		return unixfs_v86fs.SRPCRegisterV86FsService(mux, v86fsServer)
 	})
-	return mux, mountCleanup, nil
+	return mux, func() {
+		mountCleanup()
+		mounts.release()
+	}, nil
 }

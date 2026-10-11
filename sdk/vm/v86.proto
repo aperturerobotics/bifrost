@@ -195,12 +195,24 @@ message V86Image {
   repeated string tags = 7;
   // CreatedAt is the creation timestamp.
   .google.protobuf.Timestamp created_at = 8;
+  // CdnSource locates the published image whose assets this image reads
+  // lazily. Unset when every asset edge points at an object in this Space.
+  V86ImageCdnSource cdn_source = 9;
   // Links (via graph edges, not proto fields):
   //   v86image/wasm          -> UnixFS object (emulator WASM binary)
   //   v86image/bios/seabios  -> UnixFS object (SeaBIOS)
   //   v86image/bios/vgabios  -> UnixFS object (VGA BIOS)
   //   v86image/kernel        -> UnixFS object (kernel image)
   //   v86image/rootfs        -> UnixFS object (rootfs archive)
+}
+
+// V86ImageCdnSource locates a V86Image in a published CDN Space. An image
+// without its own asset edges resolves each asset through this source.
+message V86ImageCdnSource {
+  // SpaceId is the CDN Space ULID.
+  string space_id = 1;
+  // ObjectKey is the V86Image object key in the CDN Space.
+  string object_key = 2;
 }
 
 // CreateV86ImageOp creates a new V86Image world object. Metadata is supplied

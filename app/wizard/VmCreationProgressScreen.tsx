@@ -4,20 +4,16 @@ import { PhaseChecklist } from '@s4wave/app/session/setup/PhaseChecklist.js'
 import { ProgressBar } from '@s4wave/web/ui/loading/ProgressBar.js'
 import { Spinner } from '@s4wave/web/ui/loading/Spinner.js'
 
-export type VmCreationStage = 'fetching' | 'copying' | 'creating' | 'ready'
+export type VmCreationStage = 'linking' | 'creating' | 'ready'
 
 export interface VmCreationProgress {
   stage: VmCreationStage
-  blocksSeen?: bigint
-  blocksCopied?: bigint
-  blocksWritten?: bigint
-  logicalSourceBytes?: bigint
 }
 
 interface VmCreationProgressScreenProps {
   progress: VmCreationProgress
   vmName: string
-  includesCdnCopy: boolean
+  includesCdnLink: boolean
   error?: string
   onRetry?: () => void
 }
@@ -26,46 +22,20 @@ const cdnStages: ReadonlyArray<{
   stage: VmCreationStage
   label: string
 }> = [
-  { stage: 'fetching', label: 'Fetching image from CDN' },
-  { stage: 'copying', label: 'Copying blocks' },
+  { stage: 'linking', label: 'Linking catalog image' },
   { stage: 'creating', label: 'Creating VM' },
   { stage: 'ready', label: 'Ready' },
 ]
 
-const localStages = cdnStages.slice(2)
-
-function formatBytes(bytes: bigint): string {
-  if (bytes < 1024n) return `${bytes} B`
-  const units = [
-    { size: 1024n ** 3n, label: 'GB' },
-    { size: 1024n ** 2n, label: 'MB' },
-    { size: 1024n, label: 'KB' },
-  ]
-  for (const unit of units) {
-    if (bytes < unit.size) continue
-    const tenths = (bytes * 10n) / unit.size
-    return `${tenths / 10n}.${tenths % 10n} ${unit.label}`
-  }
-  return `${bytes} B`
-}
+const localStages = cdnStages.slice(1)
 
 function getProgressDetail(
   progress: VmCreationProgress,
   vmName: string,
 ): string {
   switch (progress.stage) {
-    case 'fetching':
-      return 'Resolving the image and destination Space.'
-    case 'copying': {
-      const seen = progress.blocksSeen ?? 0n
-      const copied = progress.blocksCopied ?? 0n
-      const written = progress.blocksWritten ?? 0n
-      const bytes = progress.logicalSourceBytes ?? 0n
-      if (seen === 0n && copied === 0n && bytes === 0n) {
-        return 'Finding and copying the image blocks.'
-      }
-      return `${seen} seen · ${copied} copied · ${written} written · ${formatBytes(bytes)}`
-    }
+    case 'linking':
+      return 'Adding the catalog image to this Space.'
     case 'creating':
       return 'Image ready. Writing the VM object.'
     case 'ready':
@@ -73,16 +43,16 @@ function getProgressDetail(
   }
 }
 
-// VmCreationProgressScreen renders the event-driven CDN copy and VM creation
-// stages without implying a byte fraction the copy events cannot provide.
+// VmCreationProgressScreen renders the catalog image link and VM creation
+// stages.
 export function VmCreationProgressScreen({
   progress,
   vmName,
-  includesCdnCopy,
+  includesCdnLink,
   error,
   onRetry,
 }: VmCreationProgressScreenProps) {
-  const stages = includesCdnCopy ? cdnStages : localStages
+  const stages = includesCdnLink ? cdnStages : localStages
   const activeIndex = Math.max(
     0,
     stages.findIndex((item) => item.stage === progress.stage),

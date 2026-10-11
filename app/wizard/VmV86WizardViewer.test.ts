@@ -66,7 +66,7 @@ describe('getV86CatalogErrorCopy', () => {
 
     expect(copy).toEqual({
       title: 'No VM images are published yet',
-      detail: 'This image catalog has no published images to copy.',
+      detail: 'This image catalog has no published images yet.',
       unpublished: true,
     })
     expect(`${copy.title} ${copy.detail}`).not.toContain(raw)

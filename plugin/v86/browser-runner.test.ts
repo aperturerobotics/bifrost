@@ -110,7 +110,7 @@ describe('browser V86 runner contract', () => {
       {
         assets: bootAssets(),
         config: { memoryMb: 128, vgaMemoryMb: 4, bootArgs: ' quiet ' },
-        instanceKey: 'vm/v86/test',
+        objectKey: 'vm/v86/test',
         v86fsAdapter: adapter as never,
         attachV86fsNotifier,
       },
@@ -126,7 +126,7 @@ describe('browser V86 runner contract', () => {
         memory_size: 128 * 1024 * 1024,
         vga_memory_size: 4 * 1024 * 1024,
         cmdline:
-          'rw init=/sbin/init root=v86fs rootfstype=v86fs console=ttyS0 quiet',
+          'rw init=/sbin/init root=v86fs rootfstype=v86fs rootflags= console=ttyS0 quiet',
         disable_keyboard: true,
         disable_mouse: true,
         disable_speaker: true,
@@ -164,18 +164,20 @@ describe('browser V86 runner contract', () => {
     const runtime = await startBrowserV86Runtime(
       {
         assets: bootAssets(),
-        instanceKey: 'vm/v86/test',
+        objectKey: 'vm/v86/test',
         v86fsAdapter: {} as never,
       },
       () => Promise.resolve({ V86: FakeV86 }),
     )
 
-    for (const byte of 'kernel panic'
+    for (const byte of 'Kernel panic - not syncing: VFS\r\nmore'
       .split('')
       .map((char) => char.charCodeAt(0))) {
       h.serialOutputListener?.(byte)
     }
-    await expect(runtime.ready).rejects.toThrow('v86min guest boot failed')
+    await expect(runtime.ready).rejects.toThrow(
+      'v86min guest boot failed: Kernel panic - not syncing: VFS',
+    )
     runtime.stop()
   })
 
@@ -188,7 +190,7 @@ describe('browser V86 runner contract', () => {
     await startBrowserV86Runtime(
       {
         assets: bootAssets(),
-        instanceKey: 'vm/v86/test',
+        objectKey: 'vm/v86/test',
         v86fsAdapter: {} as never,
       },
       () => Promise.resolve({ V86: FakeV86 }),
@@ -215,7 +217,7 @@ describe('browser V86 runner contract', () => {
       startBrowserV86Runtime(
         {
           assets: bootAssets(),
-          instanceKey: 'vm/v86/test',
+          objectKey: 'vm/v86/test',
           v86fsAdapter: {} as never,
         },
         loadModule,
@@ -231,7 +233,7 @@ describe('browser V86 runner contract', () => {
       startBrowserV86Runtime(
         {
           assets: bootAssets(),
-          instanceKey: 'vm/v86/test',
+          objectKey: 'vm/v86/test',
           v86fsAdapter: {} as never,
         },
         () => Promise.reject(new ReferenceError('document is not defined')),

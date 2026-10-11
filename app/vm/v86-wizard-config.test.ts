@@ -19,7 +19,7 @@ describe('v86 wizard config', () => {
     expect(cfg.memoryMb).toBe(256)
     expect(cfg.vgaMemoryMb).toBe(8)
     expect(cfg.imageObjectKey).toBe('vm-image/default')
-    expect(cfg.source).toBe(V86WizardConfig_Source.COPY_FROM_CDN)
+    expect(cfg.source).toBe(V86WizardConfig_Source.LINK_FROM_CDN)
     expect(cfg.cdnSourceObjectKey).toBe(V86_DEFAULT_CDN_IMAGE_OBJECT_KEY)
     expect(cfg.cdnId).toBe('')
   })
@@ -56,14 +56,14 @@ describe('v86 wizard config', () => {
   it('falls back to CDN copy when the space has no VM images', () => {
     const cfg = seedV86WizardConfig({}, undefined, [])
 
-    expect(cfg.source).toBe(V86WizardConfig_Source.COPY_FROM_CDN)
+    expect(cfg.source).toBe(V86WizardConfig_Source.LINK_FROM_CDN)
     expect(cfg.imageObjectKey).toBe('vm-image/default')
   })
 
   it('keeps an already-selected source unchanged', () => {
     const cfg = seedV86WizardConfig(
       {
-        source: V86WizardConfig_Source.COPY_FROM_CDN,
+        source: V86WizardConfig_Source.LINK_FROM_CDN,
         imageObjectKey: 'vm-image/custom',
         memoryMb: 512,
       },
@@ -71,7 +71,7 @@ describe('v86 wizard config', () => {
       [{ objectKey: 'vm-image/direct' }],
     )
 
-    expect(cfg.source).toBe(V86WizardConfig_Source.COPY_FROM_CDN)
+    expect(cfg.source).toBe(V86WizardConfig_Source.LINK_FROM_CDN)
     expect(cfg.imageObjectKey).toBe('vm-image/custom')
     expect(cfg.memoryMb).toBe(512)
   })

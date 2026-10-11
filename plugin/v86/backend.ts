@@ -28,6 +28,10 @@ import { createV86fsSrpcAdapter, type V86fsAdapter } from './v86fs-bridge.js'
 
 const V86_RUNTIME_V86FS_SERVICE_PREFIX = 'vm/v86-runtime/v86fs/'
 const V86_RUNTIME_STATUS_SERVICE_PREFIX = 'vm/v86-runtime/status/'
+// V86_RUNTIME_INSTANCE_PREFIX marks the plugin instances that run one VmV86;
+// the rest of the instance key is the VM object key. Other instances, such as
+// the one each Space loads, only register the viewer.
+const V86_RUNTIME_INSTANCE_PREFIX = 'vm/v86-runtime/instance/'
 
 type ViteManifestEntry = {
   frontendBinding?: Binding
@@ -354,9 +358,12 @@ export default async function main(
   }
   const viewerRef = rootRef.createRef(viewer.resourceId)
 
-  const instanceKey = api.startInfo.instanceKey
-  if (!instanceKey) {
-    console.log('[spacewave-v86] no instance key, viewer-only mode')
+  const instanceKey = api.startInfo.instanceKey ?? ''
+  const objectKey = instanceKey.startsWith(V86_RUNTIME_INSTANCE_PREFIX)
+    ? instanceKey.slice(V86_RUNTIME_INSTANCE_PREFIX.length)
+    : ''
+  if (!objectKey) {
+    console.log('[spacewave-v86] not a VM runtime instance, viewer-only mode')
     retainUntilAbort(
       signal,
       [rootRef, viewerRef],
@@ -369,7 +376,7 @@ export default async function main(
   using _viewerRef = viewerRef
 
   const statusClient = new V86RuntimeStatusServiceClient(coreClient, {
-    service: v86RuntimeStatusServiceID(instanceKey),
+    service: v86RuntimeStatusServiceID(objectKey),
   })
   let generation = 0n
   let runtime: BrowserV86Runtime | undefined
@@ -383,7 +390,7 @@ export default async function main(
   try {
     const booting = await reportRuntimeStatus(
       statusClient,
-      instanceKey,
+      objectKey,
       generation,
       V86RuntimeStatus.V86RuntimeStatus_BOOTING,
       '',
@@ -395,7 +402,7 @@ export default async function main(
     }
 
     const bridge = createV86fsSrpcAdapter(coreClient, {
-      service: v86RuntimeV86fsServiceID(instanceKey),
+      service: v86RuntimeV86fsServiceID(objectKey),
     })
     v86fsBridge = bridge
 
@@ -423,14 +430,14 @@ export default async function main(
         kernel: kernelBuf,
       },
       config: booting.config,
-      instanceKey,
+      objectKey,
       v86fsAdapter: bridge.adapter,
       attachV86fsNotifier: bridge.attachNotifier,
     })
     await waitForRuntimeReady(runtime, signal)
     const readyReport = await reportRuntimeStatus(
       statusClient,
-      instanceKey,
+      objectKey,
       generation,
       V86RuntimeStatus.V86RuntimeStatus_READY,
       '',
@@ -444,7 +451,7 @@ export default async function main(
     releaseV86fsBridge()
     await tryReportRuntimeStatus(
       statusClient,
-      instanceKey,
+      objectKey,
       generation,
       signal.aborted
         ? V86RuntimeStatus.V86RuntimeStatus_STOPPED
@@ -464,7 +471,7 @@ export default async function main(
     runtime.stop()
     await tryReportRuntimeStatus(
       statusClient,
-      instanceKey,
+      objectKey,
       generation,
       V86RuntimeStatus.V86RuntimeStatus_STOPPED,
       '',

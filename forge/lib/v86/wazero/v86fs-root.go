@@ -7,6 +7,7 @@ import (
 	"github.com/go-git/go-billy/v6/memfs"
 	"github.com/go-git/go-billy/v6/osfs"
 	"github.com/pkg/errors"
+	cdn_sharedobject "github.com/s4wave/spacewave/core/cdn/sharedobject"
 	"github.com/s4wave/spacewave/db/unixfs"
 	unixfs_billy "github.com/s4wave/spacewave/db/unixfs/billy"
 	unixfs_overlay "github.com/s4wave/spacewave/db/unixfs/overlay"
@@ -89,7 +90,7 @@ func openV86RootLower(ctx context.Context, assets *AssetSet) (unixfs.FSCursor, f
 
 	// Keep the published world mounted for the lifetime of the lazy cursor.
 	opts := assets.cdn.withDefaults()
-	ws, releaseWorld, err := mountCdnWorld(ctx, opts)
+	ws, releaseWorld, err := cdn_sharedobject.MountWorld(ctx, opts.Le, nil, opts.CdnBaseURL, opts.CdnSpaceID)
 	if err != nil {
 		return nil, nil, err
 	}

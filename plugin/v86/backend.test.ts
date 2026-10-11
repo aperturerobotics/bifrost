@@ -281,7 +281,7 @@ describe('v86 backend registration', () => {
   it('boots an instanced runtime through the plugin-owned V86 bridge and serial channel', async () => {
     vi.stubGlobal('BroadcastChannel', FakeBroadcastChannel)
     const abort = new AbortController()
-    const api = buildApi('spacewave-v86', 'vm/v86/test')
+    const api = buildApi('spacewave-v86', 'vm/v86-runtime/instance/vm/v86/test')
 
     const running = main(api as never, abort.signal)
     await waitForV86Boot()
@@ -353,7 +353,7 @@ describe('v86 backend registration', () => {
     vi.stubGlobal('BroadcastChannel', FakeBroadcastChannel)
     const abort = new AbortController()
     const running = main(
-      buildApi('spacewave-v86', 'vm/v86/test') as never,
+      buildApi('spacewave-v86', 'vm/v86-runtime/instance/vm/v86/test') as never,
       abort.signal,
     )
     await waitForV86Boot()
@@ -376,7 +376,10 @@ describe('v86 backend registration', () => {
 
     await expect(
       main(
-        buildApi('spacewave-v86', 'vm/v86/test') as never,
+        buildApi(
+          'spacewave-v86',
+          'vm/v86-runtime/instance/vm/v86/test',
+        ) as never,
         new AbortController().signal,
       ),
     ).rejects.toThrow('requires BroadcastChannel')
@@ -396,6 +399,20 @@ describe('v86 backend registration', () => {
         V86RuntimeStatus.V86RuntimeStatus_ERROR,
       ],
     )
+  })
+
+  it('registers only the viewer for a Space plugin instance', async () => {
+    const abort = new AbortController()
+
+    await main(
+      buildApi('spacewave-v86', 'space/local/session/space') as never,
+      abort.signal,
+    )
+
+    expect(h.viewerRegistrations).toHaveLength(1)
+    expect(h.v86fsBridges).toHaveLength(0)
+    expect(h.v86Constructors).toHaveLength(0)
+    abort.abort()
   })
 
   it('registers the clean v86 viewer with the startInfo plugin id and retained lifetime', async () => {
