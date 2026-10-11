@@ -2,7 +2,6 @@ package s4db
 
 import (
 	"encoding/binary"
-	"maps"
 	"slices"
 
 	"github.com/tidwall/btree"
@@ -50,8 +49,12 @@ type space struct {
 	free *btree.Map[uint64, uint64]
 	// end is the file length in pages.
 	end uint64
-	// live maps each value page to its live bytes.
-	live map[uint64]uint32
+	// live holds the live bytes of each value page, indexed by page. It
+	// grows to the highest page that has held a value; pages past its end
+	// hold none.
+	live []uint32
+	// livePages counts the pages holding live bytes.
+	livePages int64
 	// liveBytes is the total live value bytes.
 	liveBytes int64
 	// values holds freed value runs in tag order.
@@ -74,7 +77,7 @@ type space struct {
 
 // newSpace returns the space of a new file.
 func newSpace() *space {
-	return &space{free: new(btree.Map[uint64, uint64]), end: firstPage, live: make(map[uint64]uint32)}
+	return &space{free: new(btree.Map[uint64, uint64]), end: firstPage}
 }
 
 // alloc returns n consecutive pages from the lowest free run that holds
@@ -235,7 +238,7 @@ func (s *space) closeOpen(tag uint64) {
 	// Pend the partly written last page when empty, free the unwritten
 	// pages, and close.
 	first := (s.open.cursor + pageSize - 1) / pageSize
-	if p := s.open.cursor / pageSize; p < first && s.live[p] == 0 {
+	if p := s.open.cursor / pageSize; p < first && s.liveAt(p) == 0 {
 		s.pend(&s.values, pending{start: p, n: 1, tag: tag})
 	}
 	s.addFree(run{start: first, n: s.open.end/pageSize - first})
@@ -256,12 +259,26 @@ func spans(off uint64, n int, fn func(page uint64, bytes uint32)) {
 // the saved state holds as free or pending.
 func (s *space) useValue(off uint64, n int) {
 	spans(off, n, func(p uint64, b uint32) {
-		if s.live[p] == 0 && !s.inOpen(p) {
-			s.claim(run{start: p, n: 1})
+		if s.liveAt(p) == 0 {
+			if !s.inOpen(p) {
+				s.claim(run{start: p, n: 1})
+			}
+			if p >= uint64(len(s.live)) {
+				s.live = append(s.live, make([]uint32, p+1-uint64(len(s.live)))...)
+			}
+			s.livePages++
 		}
 		s.live[p] += b
 	})
 	s.liveBytes += int64(n)
+}
+
+// liveAt returns the live bytes of page p.
+func (s *space) liveAt(p uint64) uint32 {
+	if p < uint64(len(s.live)) {
+		return s.live[p]
+	}
+	return 0
 }
 
 // claim takes r for a use replay found in the log. The writer never uses a
@@ -299,7 +316,7 @@ func (s *space) freeValue(off uint64, n int, tag uint64) {
 		if s.live[p] != 0 {
 			return
 		}
-		delete(s.live, p)
+		s.livePages--
 		if !s.inOpen(p) || (p+1)*pageSize <= s.open.cursor {
 			s.pend(&s.values, pending{start: p, n: 1, tag: tag})
 		}
@@ -374,7 +391,7 @@ func (s *space) drain() []run {
 
 // stats returns the live value bytes and the bytes value pages occupy.
 func (s *space) stats() (live, held int64) {
-	return s.liveBytes, int64(len(s.live)) * pageSize
+	return s.liveBytes, s.livePages * pageSize
 }
 
 // encode writes the space with the open extent closed.
@@ -442,8 +459,11 @@ type liveRun struct {
 // liveRuns returns the live value pages as runs in page order.
 func (s *space) liveRuns() []liveRun {
 	var runs []liveRun
-	for _, p := range slices.Sorted(maps.Keys(s.live)) {
-		b := s.live[p]
+	for i, b := range s.live {
+		if b == 0 {
+			continue
+		}
+		p := uint64(i)
 		if l := len(runs); l != 0 && runs[l-1].end() == p && runs[l-1].bytes == b {
 			runs[l-1].n++
 			continue
@@ -465,16 +485,18 @@ func decodeSpace(b []byte) (*space, error) {
 	}
 
 	// Read the live value page runs. A run may not reach past the file end.
+	s.live = make([]uint32, s.end)
 	var prev uint64
 	for range d.count() {
 		r := run{start: prev + d.uvarint(), n: d.uvarint()}
 		bytes := d.uvarint()
-		if r.end() > s.end || r.end() < r.start || bytes > pageSize {
+		if r.end() > s.end || r.end() < r.start || bytes == 0 || bytes > pageSize {
 			return nil, ErrCorrupt
 		}
 		for p := r.start; p < r.end(); p++ {
 			s.live[p] = uint32(bytes)
 		}
+		s.livePages += int64(r.n) // #nosec G115 -- runs end within the file.
 		s.liveBytes += pageOff(r.n) / pageSize * int64(bytes)
 		prev = r.end()
 	}

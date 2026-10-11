@@ -139,16 +139,25 @@ func checkSpace(t *testing.T, db *DB) {
 	}
 
 	// The space counts the same live bytes.
-	if !maps.Equal(live, sp.live) {
+	counted := make(map[uint64]uint32)
+	for p, b := range sp.live {
+		if b != 0 {
+			counted[uint64(p)] = b
+		}
+	}
+	if !maps.Equal(live, counted) || sp.livePages != int64(len(counted)) {
 		for p, b := range live {
-			if sp.live[p] != b {
-				t.Errorf("value page %d holds %d live bytes, space counts %d", p, b, sp.live[p])
+			if counted[p] != b {
+				t.Errorf("value page %d holds %d live bytes, space counts %d", p, b, counted[p])
 			}
 		}
-		for p, b := range sp.live {
+		for p, b := range counted {
 			if _, ok := live[p]; !ok {
 				t.Errorf("space counts %d live bytes on page %d, which holds none", b, p)
 			}
+		}
+		if sp.livePages != int64(len(counted)) {
+			t.Errorf("space counts %d live pages, %d hold live bytes", sp.livePages, len(counted))
 		}
 		t.FailNow()
 	}
