@@ -803,14 +803,29 @@ func (c *OverlayFSCursor) isHiddenByParentLocked(ctx context.Context) (bool, err
 	return hasUpperChildLocked(ctx, c.parent.upper, opaqueMarker)
 }
 
+// cursorOps returns the operations of a layer cursor. It follows the cursor's
+// proxy chain first, as the FSCursor contract requires; each proxy stays owned
+// by the cursor that returned it.
 func cursorOps(ctx context.Context, c unixfs.FSCursor) (unixfs.FSCursorOps, error) {
 	// Resolve operations only for an existing live filesystem cursor.
 	if c == nil {
 		return nil, unixfs_errors.ErrNotExist
 	}
-	if c.CheckReleased() {
-		return nil, unixfs_errors.ErrReleased
+	for {
+		if c.CheckReleased() {
+			return nil, unixfs_errors.ErrReleased
+		}
+		proxy, err := c.GetProxyCursor(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if proxy == nil {
+			break
+		}
+		c = proxy
 	}
+
+	// Read the operations of the resolved cursor.
 	ops, err := c.GetCursorOps(ctx)
 	if err != nil {
 		return nil, err
@@ -921,6 +936,7 @@ func isNotExist(err error) bool {
 	return errors.Is(err, unixfs_errors.ErrNotExist)
 }
 
+// overlayDirent is a directory entry merged from the overlay layers.
 type overlayDirent struct {
 	name      string
 	isDir     bool
@@ -928,22 +944,27 @@ type overlayDirent struct {
 	isSymlink bool
 }
 
+// GetName returns the entry name.
 func (d *overlayDirent) GetName() string {
 	return d.name
 }
 
+// GetIsDirectory reports whether the entry is a directory.
 func (d *overlayDirent) GetIsDirectory() bool {
 	return d.isDir
 }
 
+// GetIsFile reports whether the entry is a regular file.
 func (d *overlayDirent) GetIsFile() bool {
 	return d.isFile
 }
 
+// GetIsSymlink reports whether the entry is a symlink.
 func (d *overlayDirent) GetIsSymlink() bool {
 	return d.isSymlink
 }
 
+// cursorReader reads a file cursor sequentially up to size bytes.
 type cursorReader struct {
 	ctx  context.Context
 	ops  unixfs.FSCursorOps
@@ -951,6 +972,7 @@ type cursorReader struct {
 	size uint64
 }
 
+// Read implements io.Reader.
 func (r *cursorReader) Read(p []byte) (int, error) {
 	// Bound the cursor read to the remaining file content and signed offset range.
 	if r.off >= r.size {

@@ -297,6 +297,28 @@ func TestOverlayFSCursorReaddirAllCallbackCanReenterLookup(t *testing.T) {
 	}
 }
 
+// TestOverlayFSCursorProxyLower checks that the overlay follows a layer's
+// proxy cursor, as a World filesystem cursor serves its root through one.
+func TestOverlayFSCursorProxyLower(t *testing.T) {
+	// Serve the lower fixture through a proxy cursor.
+	target := mustLower(t)
+	defer target.Release()
+	lower := unixfs.NewFSCursorGetter(func(context.Context) (unixfs.FSCursor, error) {
+		return target, nil
+	})
+	root := NewOverlayFSCursor(lower, mustUpper(t))
+	defer root.Release()
+
+	// Read a lower file and list the root through the overlay.
+	if got := mustReadFile(t, root, "base.txt"); got != "lower base" {
+		t.Fatalf("base content: %q", got)
+	}
+	want := []string{"base.txt", "dir", "lower-only.txt"}
+	if got := mustReadDirNames(t, root); !slices.Equal(got, want) {
+		t.Fatalf("names: got %v want %v", got, want)
+	}
+}
+
 func mustLower(t *testing.T) unixfs.FSCursor {
 	// Build a tar archive containing the lower filesystem fixture.
 	t.Helper()
