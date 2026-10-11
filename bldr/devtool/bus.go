@@ -45,25 +45,25 @@ var devtoolTransformConf = []config.Config{
 
 // DevtoolBus contains a built devtool bus.
 type DevtoolBus struct {
-	// ctx contains the context
+	// ctx is canceled when the devtool bus is released.
 	ctx context.Context
-	// b contains the bus
+	// b contains the bus.
 	b bus.Bus
-	// le contains the root logger
+	// le contains the root logger.
 	le *logrus.Entry
-	// sr contains the static resolver
+	// sr contains the static resolver.
 	sr *static.Resolver
-	// watch enables watching for changes
+	// watch enables watching for changes.
 	watch bool
-	// storageID is the storage engine id
+	// storageID is the storage engine id.
 	storageID string
-	// worldEngineID is the world engine id for the devtool world
+	// worldEngineID is the world engine id for the devtool world.
 	worldEngineID string
-	// engineBucketID is the bucket used for world engine state storage
+	// engineBucketID is the bucket used for world engine state storage.
 	engineBucketID string
-	// engineObjectStoreID is the bucket used for root world engine state ref
+	// engineObjectStoreID is the bucket used for root world engine state ref.
 	engineObjectStoreID string
-	// pluginHostObjectKey is the object key used for the PluginHost
+	// pluginHostObjectKey is the object key used for the PluginHost.
 	pluginHostObjectKey string
 	// repoRoot is the project root containing the live module files.
 	repoRoot string
@@ -75,11 +75,11 @@ type DevtoolBus struct {
 	pluginsDistRoot string
 	// pluginsStateRoot is the path to the plugins state dir.
 	pluginsStateRoot string
-	// vol is the volume used for state
+	// vol is the volume used for state.
 	vol volume.Volume
-	// volInfo is the volume info for the vol used for state
+	// volInfo is the volume info for the vol used for state.
 	volInfo *volume.VolumeInfo
-	// volCtrl is the volume controller used for state
+	// volCtrl is the volume controller used for state.
 	volCtrl volume.Controller
 	// peerID is the peerID to use for operations.
 	peerID peer.ID
@@ -89,8 +89,8 @@ type DevtoolBus struct {
 	worldState world.WorldState
 	// statusProducer publishes devtool status snapshots.
 	statusProducer *devtool_status.BldrDevtoolStatusProducer
-	// rels are the release funcs
-	rels []func()
+	// release unwinds the controllers, state lock, and devtool context.
+	release func()
 }
 
 // BuildDevtoolBus builds the storage and bus for the devtool.
@@ -142,10 +142,10 @@ func BuildDevtoolBus(
 	}
 	rels = append(rels, relStatusObserver)
 
-	// add controller factories
+	// Register the devtool controller factories.
 	core_devtool.AddFactories(b, sr)
 
-	// add the configset controller
+	// Attach the config-set controller.
 	configSetCtrl, _ := configset_controller.NewController(le, b)
 	relConfigSetCtrl, err := b.AddController(ctx, configSetCtrl, nil)
 	if err != nil {
@@ -154,7 +154,7 @@ func BuildDevtoolBus(
 	}
 	rels = append(rels, relConfigSetCtrl)
 
-	// build the plugin state paths on disk
+	// Create the plugin output directories.
 	pluginHostObjectKey := "devtool"
 	pluginsRoot := filepath.Join(stateRoot, "plugin")
 	pluginsDistRoot := filepath.Join(pluginsRoot, "dist")
@@ -168,8 +168,7 @@ func BuildDevtoolBus(
 		return nil, err
 	}
 
-	// attach the default storage controller
-	// this provides separate named volumes with the storage volume controller.
+	// Attach the default storage controller to provide separate retained volumes.
 	storageID := default_storage.StorageID
 	storageCtrl := default_storage.NewController(storageID, b, stateRoot)
 	relStorageCtrl, err := b.AddController(ctx, storageCtrl, nil)
@@ -179,14 +178,14 @@ func BuildDevtoolBus(
 	}
 	rels = append(rels, relStorageCtrl)
 
-	// ensure there is at least one storage method
+	// Require at least one storage method.
 	storageMethods := storageCtrl.GetStorage()
 	if len(storageMethods) == 0 {
-		ctxCancel()
+		rel()
 		return nil, errors.New("no available storage methods")
 	}
 
-	// add the storage method factories
+	// Register the storage method factories.
 	for _, storageMethod := range storageMethods {
 		storageMethod.AddFactories(b, sr)
 	}
@@ -219,7 +218,7 @@ func BuildDevtoolBus(
 		return nil, err
 	}
 
-	// start the node controller.
+	// Start the node controller.
 	dir := resolver.NewLoadControllerWithConfig(&node_controller.Config{})
 	_, _, nodeCtrlRef, err := bus.ExecOneOff(ctx, b, dir, nil, nil)
 	if err != nil {
@@ -228,12 +227,12 @@ func BuildDevtoolBus(
 	}
 	rels = append(rels, nodeCtrlRef.Release)
 
-	// start devtool world
+	// Select the devtool World storage identifiers.
 	engineBucketID := "bldr/devtool"
 	engineObjStoreID := engineBucketID
 	engineID := "bldr"
 
-	// create bucket if it doesn't exist
+	// Create the World engine bucket if it does not exist.
 	bucketConf, err := bucket.NewConfig(engineBucketID, 1, nil)
 	if err != nil {
 		rel()
@@ -297,7 +296,7 @@ func BuildDevtoolBus(
 	}
 	worldState := world.NewEngineWorldState(eng, true)
 
-	// register the world operation types for plugin host
+	// Register the plugin host's World operation types.
 	lookupOpCtrl := world.NewLookupOpController("bldr-plugin-host-ops", engineID, bldr_manifest_world.LookupOp)
 	relLookupCtrl, err := b.AddController(ctx, lookupOpCtrl, nil)
 	if err != nil {
@@ -306,7 +305,7 @@ func BuildDevtoolBus(
 	}
 	rels = append(rels, relLookupCtrl)
 
-	// ensure the plugin host exists in the world
+	// Open a transaction to create the plugin host manifest store.
 	engTx, err := eng.NewTransaction(ctx, true)
 	if err != nil {
 		rel()
@@ -347,7 +346,7 @@ func BuildDevtoolBus(
 	}
 	inspectTx.Discard()
 
-	// distSrcDir is the path to the dist sources dir
+	// Return the devtool bus with its complete cleanup function.
 	distSrcDir := filepath.Join(stateRoot, "src")
 
 	return &DevtoolBus{
@@ -373,14 +372,13 @@ func BuildDevtoolBus(
 		worldEngine:         eng,
 		worldState:          worldState,
 		statusProducer:      statusProducer,
-		rels:                rels,
+		release:             rel,
 	}, nil
 }
 
 // SyncDistSources syncs the bldr sources and runs npm i and go mod vendor.
 //
-// bldrSum can be empty
-// bldrSrcPath can be empty
+// bldrSum and bldrSrcPath can be empty.
 func (d *DevtoolBus) SyncDistSources(bldrVersion, bldrSum, bldrSrcPath string) error {
 	return bldr.SyncDistSources(d.ctx, d.le, bldr.DistSourceSyncConfig{
 		RepoRoot:    d.repoRoot,
@@ -401,7 +399,7 @@ func (d *DevtoolBus) GetBus() bus.Bus {
 	return d.b
 }
 
-// GetLogger returns the root logger
+// GetLogger returns the root logger.
 func (d *DevtoolBus) GetLogger() *logrus.Entry {
 	return d.le
 }
@@ -636,9 +634,7 @@ func (d *DevtoolBus) startProjectController(ctx context.Context, b bus.Bus, repo
 	return projWatcher, ctrlRef, nil
 }
 
-// Release releases the devtool bus.
+// Release releases the controllers and state lock and cancels the devtool context.
 func (d *DevtoolBus) Release() {
-	for _, rel := range d.rels {
-		rel()
-	}
+	d.release()
 }
