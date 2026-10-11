@@ -63,7 +63,7 @@ func readArchive(ctx context.Context, data []byte, remaining *int64) (map[string
 		if header.Typeflag == tar.TypeDir {
 			continue
 		}
-		if header.Typeflag != tar.TypeReg && header.Typeflag != tar.TypeRegA {
+		if header.Typeflag != tar.TypeReg {
 			return nil, errors.New("npm archive contains a non-regular file")
 		}
 		if header.Size > limited.N {

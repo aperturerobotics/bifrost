@@ -1,3 +1,5 @@
+// Package esbuild builds JavaScript plugins from a source filesystem and
+// integrity-pinned npm tarballs, without a package manager or disk checkout.
 package esbuild
 
 import (
@@ -67,7 +69,8 @@ func (c *Compiler) BuildManifest(ctx context.Context, args *builder.BuildManifes
 		return nil, err
 	}
 	if target.GetBasePlatformID() != platform.PlatformID_JS {
-		return &builder.BuilderResult{}, nil
+		c.le.Warnf("skipping build for non-js platform: %v", target.GetInputPlatformID())
+		return nil, nil
 	}
 	if err := ctx.Err(); err != nil {
 		return nil, err
@@ -122,14 +125,14 @@ func (c *Compiler) BuildManifest(ctx context.Context, args *builder.BuildManifes
 		return nil, err
 	}
 	defer tx.Discard()
-	manifest, ref, err := conf.CommitManifest(ctx, c.le, tx, meta, "plugin.mjs", dist, assets)
+	built, ref, err := conf.CommitManifest(ctx, c.le, tx, meta, "plugin.mjs", dist, assets)
 	if err != nil {
 		return nil, err
 	}
 	if err := tx.Commit(ctx); err != nil {
 		return nil, err
 	}
-	return builder.NewBuilderResult(manifest, ref, modules.InputManifest()), nil
+	return builder.NewBuilderResult(built, ref, modules.InputManifest()), nil
 }
 
 // compile writes a single esbuild result into an ephemeral output filesystem.
@@ -137,14 +140,37 @@ func (c *Compiler) compile(ctx context.Context, modules *Modules, entries []api.
 	// Keep all source resolution in the block plugin and all output in memory.
 	outdir := filepath.Join(string(filepath.Separator), "output")
 	opts := api.BuildOptions{
-		AbsWorkingDir: string(filepath.Separator), Outdir: outdir,
-		EntryPointsAdvanced: entries, Plugins: []api.Plugin{modules.Plugin()},
-		Bundle: true, Splitting: true, Format: api.FormatESModule,
-		Platform: api.PlatformBrowser, Target: api.ES2022,
-		JSX: api.JSXAutomatic, OutExtension: map[string]string{".js": ".mjs"},
-		EntryNames: "[dir]/[name]", ChunkNames: "chunks/[name]-[hash]",
-		AssetNames: "assets/[name]-[hash]", LogLevel: api.LogLevelSilent,
-		MinifySyntax: minify, MinifyWhitespace: minify, MinifyIdentifiers: minify,
+		AbsWorkingDir:       string(filepath.Separator),
+		Outdir:              outdir,
+		EntryPointsAdvanced: entries,
+		Plugins:             []api.Plugin{modules.Plugin()},
+
+		Bundle:    true,
+		Splitting: true,
+		Format:    api.FormatESModule,
+		Platform:  api.PlatformBrowser,
+		Target:    api.ES2022,
+		JSX:       api.JSXAutomatic,
+		LogLevel:  api.LogLevelSilent,
+
+		OutExtension: map[string]string{".js": ".mjs"},
+		EntryNames:   "[dir]/[name]",
+		ChunkNames:   "chunks/[name]-[hash]",
+		AssetNames:   "assets/[name]-[hash]",
+		Loader: map[string]api.Loader{
+			".module.css": api.LoaderLocalCSS,
+			".gif":        api.LoaderFile,
+			".jpeg":       api.LoaderFile,
+			".jpg":        api.LoaderFile,
+			".png":        api.LoaderFile,
+			".svg":        api.LoaderFile,
+			".woff":       api.LoaderFile,
+			".woff2":      api.LoaderFile,
+		},
+
+		MinifySyntax:      minify,
+		MinifyWhitespace:  minify,
+		MinifyIdentifiers: minify,
 	}
 	if sourcemaps {
 		opts.Sourcemap = api.SourceMapLinked

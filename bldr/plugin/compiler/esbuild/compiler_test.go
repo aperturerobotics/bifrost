@@ -135,7 +135,8 @@ import {jsxFallback} from './rewrite.jsx'
 import {moduleFallback} from './module.mjs'
 import {commonFallback} from './common.cjs'
 import './style.css'
-export {React, createRoot, bundled, useResource, isBackendEntrypointFunc, value, fallback, exact, appended, jsxFallback, moduleFallback, commonFallback, shared, scopedValue}
+import icon from './icon.svg'
+export {icon, React, createRoot, bundled, useResource, isBackendEntrypointFunc, value, fallback, exact, appended, jsxFallback, moduleFallback, commonFallback, shared, scopedValue}
 export const element = <span>{bundled}</span>
 export const lazy = () => import('./lazy.ts')
 `)},
@@ -150,6 +151,7 @@ export const lazy = () => import('./lazy.ts')
 		"common.cts":     {Data: []byte(`export const commonFallback = 'source-cjs-fallback'`)},
 		"lazy.ts":        {Data: []byte(`export const lazyValue: string = 'lazy-block-value'`)},
 		"style.css":      {Data: []byte(`span { color: red }`)},
+		"icon.svg":       {Data: []byte(`<svg xmlns="http://www.w3.org/2000/svg"/>`)},
 	})
 
 	// Start a Bldr World with no executable tools available to the build.
@@ -235,6 +237,11 @@ export const lazy = () => import('./lazy.ts')
 			return errors.New("extension resolution selected an incorrect TypeScript neighbor")
 		}
 
+		// Imported images become emitted files rather than parsed JavaScript.
+		if !strings.Contains(string(frontend), "assets/icon-") {
+			return errors.New("svg import was not emitted as an asset")
+		}
+
 		// Read all emitted assets, including CSS and lazy chunks, from addressed blocks.
 		if _, err := fs.ReadFile(output, "frontend.css"); err != nil {
 			return err
@@ -260,7 +267,7 @@ export const lazy = () => import('./lazy.ts')
 	for _, file := range result.GetInputManifest().GetFiles() {
 		inputs = append(inputs, file.GetPath())
 	}
-	if !slices.Equal(inputs, []string{"appended.js.ts", "bun.lock", "common.cts", "exact.js", "frontend.tsx", "lazy.ts", "module.mts", "plugin.ts", "rewrite.ts", "style.css", "value.ts"}) {
+	if !slices.Equal(inputs, []string{"appended.js.ts", "bun.lock", "common.cts", "exact.js", "frontend.tsx", "icon.svg", "lazy.ts", "module.mts", "plugin.ts", "rewrite.ts", "style.css", "value.ts"}) {
 		t.Fatalf("source provenance = %v", inputs)
 	}
 

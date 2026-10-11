@@ -1,5 +1,3 @@
-// Package esbuild builds JavaScript plugins from a source filesystem and
-// integrity-pinned npm tarballs, without a package manager or disk checkout.
 package esbuild
 
 import (
