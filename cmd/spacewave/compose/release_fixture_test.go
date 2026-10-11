@@ -233,13 +233,18 @@ func TestReleaseLauncherBrowserAndNativeAuthorityComposition(t *testing.T) {
 		})
 	}
 
-	// Native launchers borrow the host transport through block-store RPC.
-	launcher := result.Config.GetManifests()["spacewave-launcher"]
+	// Native launchers borrow the host transport through block-store RPC. The
+	// development launcher mounts no Release World, so read the release override.
+	nativeBuild := result.Config.GetBuild()["release-desktop-linux-amd64"]
+	if nativeBuild == nil {
+		t.Fatal("missing native release build")
+	}
+	launcher := nativeBuild.GetManifestOverrides()["spacewave-launcher"]
 	if launcher == nil {
-		t.Fatal("missing native launcher manifest")
+		t.Fatal("missing native launcher override")
 	}
 	var native bldr_plugin_compiler_go.Config
-	if err := native.UnmarshalJSON(launcher.GetBuilder().GetConfig()); err != nil {
+	if err := native.UnmarshalJSON(launcher.GetConfig()); err != nil {
 		t.Fatal(err)
 	}
 	if native.GetConfigSet()["release-world-ops"] != nil || native.GetHostConfigSet()["release-world-ops"] != nil {
