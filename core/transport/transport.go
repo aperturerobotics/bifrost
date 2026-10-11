@@ -30,8 +30,6 @@ import (
 	stream_forwarding "github.com/s4wave/spacewave/net/stream/forwarding"
 	stream_listening "github.com/s4wave/spacewave/net/stream/listening"
 	transport_controller "github.com/s4wave/spacewave/net/transport/controller"
-	transport_webrtc "github.com/s4wave/spacewave/net/transport/webrtc"
-	transport_websocket "github.com/s4wave/spacewave/net/transport/websocket"
 	"github.com/sirupsen/logrus"
 )
 
@@ -425,24 +423,14 @@ func (t *SessionTransport) Execute(ctx context.Context) (err error) {
 				return process, err
 			}
 		}
-		switch d := di.GetDirective().(type) {
+		// The child bus loads and runs its own controllers, finding factories
+		// it lacks through the bridged LoadFactoryByConfig. Forwarding a load
+		// would run a second instance on the parent bus.
+		switch di.GetDirective().(type) {
 		case peer.GetPeer, link.EstablishLinkWithPeer, link_solicit.SolicitProtocol,
-			signaling.SignalPeer, signaling.HandleSignalPeer, configset.ApplyConfigSet:
+			signaling.SignalPeer, signaling.HandleSignalPeer, configset.ApplyConfigSet,
+			resolver.LoadControllerWithConfig, loader.ExecController:
 			return false, nil
-		case resolver.LoadControllerWithConfig:
-			switch d.GetLoadControllerConfig().(type) {
-			case *stream_api_accept.Config, *stream_forwarding.Config, *stream_listening.Config,
-				*dex_solicit.Config, *link_solicit_controller.Config,
-				*transport_webrtc.Config, *transport_websocket.Config:
-				return false, nil
-			}
-		case loader.ExecController:
-			switch d.GetExecControllerConfig().(type) {
-			case *stream_api_accept.Config, *stream_forwarding.Config, *stream_listening.Config,
-				*dex_solicit.Config, *link_solicit_controller.Config,
-				*transport_webrtc.Config, *transport_websocket.Config:
-				return false, nil
-			}
 		}
 		return true, nil
 	})
