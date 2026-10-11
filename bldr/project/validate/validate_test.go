@@ -29,7 +29,7 @@ manifest("acme-colors",
 )
 `
 
-// packageJSON names one direct dependency.
+// packageJSON declares one direct dependency.
 const packageJSON = `{"name": "acme", "dependencies": {"left-pad": "^1.3.0"}}`
 
 // bunLock pins the direct dependency and one nested package by hash, with the
@@ -45,8 +45,8 @@ const bunLock = `{
     },
   },
   "packages": {
-    "left-pad": ["left-pad@1.3.0", "", {"dependencies": {"@acme/util": "1.0.0"}}, "sha512-left,"],
-    "@acme/util": ["@acme/util@1.0.0", "", {}, "sha512-util"],
+    "left-pad": ["left-pad@1.3.0", "", {"dependencies": {"@acme/util": "1.0.0"}}, "sha512-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="],
+    "@acme/util": ["@acme/util@1.0.0", "", {}, "sha512-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="],
   }
 }
 `
@@ -61,6 +61,27 @@ func acceptedFiles() fstest.MapFS {
 		"plugin/ColorViewer.tsx":      {Data: []byte("export default {}\n")},
 		"node_modules/.keep":          {Data: nil},
 		"plugin/unrelated/readme.txt": {Data: []byte("hi\n")},
+	}
+}
+
+// TestValidateAliasedDependency shows the resolved package as a direct dependency.
+func TestValidateAliasedDependency(t *testing.T) {
+	// Declare a direct alias whose lock entry resolves to another npm name.
+	files := acceptedFiles()
+	files["package.json"] = &fstest.MapFile{Data: []byte(`{"dependencies":{"alias":"npm:left-pad@1.3.0"}}`)}
+	files["bun.lock"] = &fstest.MapFile{Data: []byte(strings.Replace(bunLock, `"left-pad": [`, `"alias": [`, 1))}
+	v, err := Validate(t.Context(), files)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(v.GetRefusals()) != 0 {
+		t.Fatalf("unexpected refusals: %v", v.GetRefusals())
+	}
+
+	// Keep the resolved identity while associating the direct flag with the alias.
+	deps := v.GetDependencies()
+	if len(deps) != 2 || deps[1].GetName() != "left-pad" || !deps[1].GetDirect() {
+		t.Fatalf("unexpected aliased dependency: %v", deps)
 	}
 }
 
@@ -103,7 +124,7 @@ func TestValidateAcceptsJsPlugin(t *testing.T) {
 // TestValidateRefusals refuses each rule with its kind and reason.
 func TestValidateRefusals(t *testing.T) {
 	cases := []struct {
-		// name names the case.
+		// name identifies the case.
 		name string
 		// edit changes the accepted repository.
 		edit func(fstest.MapFS)
@@ -153,11 +174,26 @@ manifest("acme-native", builder="bldr/plugin/compiler/go", config={"goPkgs": [".
 		name: "unpinned git dependency",
 		edit: func(files fstest.MapFS) {
 			files["bun.lock"] = &fstest.MapFile{Data: []byte(strings.Replace(bunLock,
-				`"@acme/util": ["@acme/util@1.0.0", "", {}, "sha512-util"],`,
+				`"@acme/util": ["@acme/util@1.0.0", "", {}, "sha512-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="],`,
 				`"@acme/util": ["@acme/util@github:acme/util#abc123", {}, "acme-util-abc123"],`, 1))}
 		},
 		kind:   RefusalKind_REFUSAL_KIND_UNPINNED_DEPENDENCY,
 		reason: "@acme/util@github:acme/util#abc123",
+	}, {
+		name: "malformed integrity digest",
+		edit: func(files fstest.MapFS) {
+			files["bun.lock"] = &fstest.MapFile{Data: []byte(strings.ReplaceAll(bunLock,
+				"sha512-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==", "sha512-short"))}
+		},
+		kind:   RefusalKind_REFUSAL_KIND_UNPINNED_DEPENDENCY,
+		reason: "content hash",
+	}, {
+		name: "direct dependency absent from lock",
+		edit: func(files fstest.MapFS) {
+			files["bun.lock"] = &fstest.MapFile{Data: []byte(`{"lockfileVersion":1,"packages":{}}`)}
+		},
+		kind:   RefusalKind_REFUSAL_KIND_UNPINNED_DEPENDENCY,
+		reason: "direct dependency left-pad",
 	}, {
 		name: "missing lockfile",
 		edit: func(files fstest.MapFS) {
@@ -266,7 +302,7 @@ func TestValidateRefusesMemoryExhaustion(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Require a refusal that names the memory.
+	// Require a refusal that reports memory exhaustion.
 	if len(v.GetRefusals()) != 1 || !strings.Contains(v.GetRefusals()[0].GetReason(), "memory") {
 		t.Fatalf("expected one refusal for memory, got %v", v.GetRefusals())
 	}
