@@ -5,9 +5,11 @@ package space_exec
 import (
 	"context"
 	"io/fs"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/aperturerobotics/controllerbus/bus"
@@ -27,14 +29,22 @@ import (
 	builder "github.com/s4wave/spacewave/bldr/manifest/builder"
 	"github.com/s4wave/spacewave/bldr/manifest/builder/resultworld"
 	bldr_platform "github.com/s4wave/spacewave/bldr/platform"
+	"github.com/s4wave/spacewave/bldr/plugin/compiler/esbuild"
+	js "github.com/s4wave/spacewave/bldr/plugin/compiler/js"
 	project "github.com/s4wave/spacewave/bldr/project"
+	"github.com/s4wave/spacewave/bldr/project/bunlock"
 	project_controller "github.com/s4wave/spacewave/bldr/project/controller"
+	validate "github.com/s4wave/spacewave/bldr/project/validate"
 	space_world_ops "github.com/s4wave/spacewave/core/space/world/ops"
+	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/bucket"
 	bucket_lookup "github.com/s4wave/spacewave/db/bucket/lookup"
+	"github.com/s4wave/spacewave/db/kvtx"
+	kvtx_block "github.com/s4wave/spacewave/db/kvtx/block"
 	"github.com/s4wave/spacewave/db/unixfs"
 	unixfs_block "github.com/s4wave/spacewave/db/unixfs/block"
 	unixfs_block_fs "github.com/s4wave/spacewave/db/unixfs/block/fs"
+	unixfs_iofs "github.com/s4wave/spacewave/db/unixfs/iofs"
 	unixfs_sync "github.com/s4wave/spacewave/db/unixfs/sync"
 	unixfs_world "github.com/s4wave/spacewave/db/unixfs/world"
 	"github.com/s4wave/spacewave/db/world"
@@ -46,6 +56,10 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 )
+
+// RepositoryCompilerLoader constructs a build target on demand. The handler
+// retains the source and dependency tree until the target finishes and closes.
+type RepositoryCompilerLoader func(context.Context, *logrus.Entry, bus.Bus, *unixfs.FSHandle, kvtx.TxOps, *js.Config, int64) (builder.Controller, error)
 
 // buildPluginHandler compiles a pinned Space source tree on its assigned native worker.
 // Forge owns scheduling and cancellation; Bldr owns compilation and build provenance.
@@ -71,11 +85,19 @@ type buildPluginHandler struct {
 	bus bus.Bus
 	// config selects an immutable build or a retained frontend attachment.
 	config *PluginBuildConfig
+	// loadRepositoryCompiler constructs the JS repository target only during a build.
+	loadRepositoryCompiler RepositoryCompilerLoader
 }
 
 // NewBuildPluginHandlerWithBus binds the build to the execution's World capability.
 // The bus supplies the assigned device's network transport for live authoring.
-func NewBuildPluginHandlerWithBus(_ context.Context, b bus.Bus, le *logrus.Entry, _ world.WorldState, handle forge_target.ExecControllerHandle, inputs forge_target.InputMap, data []byte) (Handler, error) {
+func NewBuildPluginHandlerWithBus(ctx context.Context, b bus.Bus, le *logrus.Entry, ws world.WorldState, handle forge_target.ExecControllerHandle, inputs forge_target.InputMap, data []byte) (Handler, error) {
+	return NewBuildPluginHandlerWithRepositoryCompiler(ctx, b, le, ws, handle, inputs, data, esbuild.NewRepositoryCompiler)
+}
+
+// NewBuildPluginHandlerWithRepositoryCompiler binds the handler with an on-demand
+// repository target loader. Construction does not load the compiler or read source.
+func NewBuildPluginHandlerWithRepositoryCompiler(_ context.Context, b bus.Bus, le *logrus.Entry, _ world.WorldState, handle forge_target.ExecControllerHandle, inputs forge_target.InputMap, data []byte, load RepositoryCompilerLoader) (Handler, error) {
 	// Decode the request and validate its mode-specific fields.
 	conf := &PluginBuildConfig{}
 	if err := conf.UnmarshalJSON(data); err != nil {
@@ -126,12 +148,18 @@ func NewBuildPluginHandlerWithBus(_ context.Context, b bus.Bus, le *logrus.Entry
 		le: le, engine: input.GetWorldEngine(), handle: handle,
 		source: source.CloneVT(), manifestID: manifestID, platformID: conf.GetPlatformId(),
 		configPath: configPath, installer: installer, bus: b, config: conf,
+		loadRepositoryCompiler: load,
 	}, nil
 }
 
 // Execute retains exact source, then lets Bldr write artifacts into the supplied World.
-// The temporary host checkout is disposable; accepted artifacts never depend on it.
+// Repository builds read blocks; other sources use a disposable native checkout.
 func (h *buildPluginHandler) Execute(ctx context.Context) error {
+	// Build admitted JS repositories from blocks without starting native tooling.
+	if h.config.GetFrontendId() == "" && h.platformID == bldr_platform.PlatformID_JS && strings.HasPrefix(h.source.GetKey(), "plugin-repos/") {
+		return h.buildRepository(ctx)
+	}
+
 	// Create the disposable checkout directory.
 	live := h.config.GetFrontendId() != ""
 	working, err := os.MkdirTemp("", "spacewave-plugin-build-")
@@ -147,11 +175,10 @@ func (h *buildPluginHandler) Execute(ctx context.Context) error {
 	// Materialize the pinned source into the checkout.
 	sourceRoot := filepath.Join(working, "source")
 	stateRoot := filepath.Join(sourceRoot, ".bldr")
-	source, err := h.materializeSource(ctx, sourceRoot)
-	if err != nil {
+	if err := h.materializeSource(ctx, sourceRoot); err != nil {
 		return errors.Wrap(err, "materialize plugin source")
 	}
-	if err := h.handle.WriteLog(ctx, "info", "Building "+h.manifestID+" from "+source.GetKey()); err != nil {
+	if err := h.handle.WriteLog(ctx, "info", "Building "+h.manifestID+" from "+h.source.GetKey()); err != nil {
 		return err
 	}
 
@@ -209,18 +236,131 @@ func (h *buildPluginHandler) Execute(ctx context.Context) error {
 		return errors.Errorf("plugin compiler built platform %q, not %q", got, h.platformID)
 	}
 
-	// Retain the source with the artifact, install it, and report the outputs.
-	resultRef, err := h.retainBuild(ctx, keys[0], refs[0])
+	return h.completeBuild(ctx, keys[0], refs[0], nil)
+}
+
+// completeBuild retains source and provenance, installs the artifact and reports outputs.
+func (h *buildPluginHandler) completeBuild(ctx context.Context, key string, ref *manifest.ManifestRef, result *builder.BuilderResult) error {
+	// Retain the source with the artifact and install under the submitting Session.
+	resultRef, err := h.retainBuild(ctx, key, ref, result)
 	if err != nil {
 		return err
 	}
+
+	// Publish the immutable output identities to Forge.
 	return h.handle.SetOutputs(ctx, forge_value.ValueSlice{
-		forge_value.NewValueWithWorldObjectSnapshot("source", source),
+		forge_value.NewValueWithWorldObjectSnapshot("source", h.source),
 		forge_value.NewValueWithWorldObjectSnapshot("manifest", &forge_value.WorldObjectSnapshot{
-			Key: keys[0], RootRef: refs[0].GetManifestRef(), ObjectType: "bldr/manifest",
+			Key: key, RootRef: ref.GetManifestRef(), ObjectType: "bldr/manifest",
 		}),
 		forge_value.NewValueWithBucketRef("build-result", resultRef),
 	}, true)
+}
+
+// buildRepository reads an admitted source snapshot and fetches its verified pins
+// into a build-scoped block tree. Only BuildSpacePlugin decides repository refusal.
+func (h *buildPluginHandler) buildRepository(ctx context.Context) error {
+	// Resolve the output World without starting the native project controller.
+	engineID := "plugin-build-" + h.handle.GetExecutionUniqueId()
+	releaseEngine, err := h.bus.AddController(ctx, world.NewEngineController(engineID, h.engine), nil)
+	if err != nil {
+		return err
+	}
+	defer releaseEngine()
+
+	// Keep the snapshot cursor and dependency blocks live through compilation.
+	var result *builder.BuilderResult
+	err = h.handle.AccessStorage(ctx, h.source.GetRootRef(), func(cursor *bucket_lookup.Cursor) error {
+		// Open the pinned directory directly through the execution's capability.
+		filesystem := unixfs_block_fs.NewFS(ctx, unixfs_block.NodeType_NodeType_DIRECTORY, cursor.Clone(), nil)
+		source, err := unixfs.NewFSHandle(filesystem)
+		if err != nil {
+			filesystem.Release()
+			return err
+		}
+		defer source.Release()
+		fsys := unixfs_iofs.NewFS(ctx, source)
+
+		// Read the admitted plugin configuration from the same immutable snapshot.
+		project, _, err := validate.ValidateProject(ctx, fsys)
+		if err != nil {
+			return err
+		}
+		selected := project.GetManifests()[h.manifestID]
+		if selected == nil {
+			return errors.Errorf("plugin repository does not declare plugin %q", h.manifestID)
+		}
+
+		// Apply the plugin's metadata and effective JS module configuration.
+		plugin := &js.Config{}
+		if err := plugin.UnmarshalJSON(selected.GetBuilder().GetConfig()); err != nil {
+			return err
+		}
+		meta, platform, err := (&manifest.ManifestMeta{
+			ManifestId: h.manifestID, PlatformId: h.platformID, BuildType: string(manifest.BuildType_DEV),
+			Description: selected.GetDescription(), Background: selected.GetBackground(), Rev: selected.GetRev(),
+		}).Resolve()
+		if err != nil {
+			return err
+		}
+		plugin.FlattenBuildTypes(manifest.BuildType_DEV)
+		plugin.FlattenPlatformTypes(platform)
+
+		// Open a writable dependency tree over the snapshot's effective block store.
+		_, root := block.NewTransaction(cursor.GetBlockStore(), cursor.GetTransformer(), nil, nil)
+		root.SetBlock(kvtx_block.NewKeyValueStore(0), true)
+		dependencies, err := kvtx_block.BuildKvTransaction(ctx, root, true)
+		if err != nil {
+			return err
+		}
+		defer dependencies.Discard()
+
+		// Fetch and commit the integrity pins before exposing them to the compiler.
+		fetcher, err := bunlock.NewFetcher(http.DefaultClient, "https://registry.npmjs.org", 64<<20)
+		if err != nil {
+			return err
+		}
+		lock, err := fs.ReadFile(fsys, "bun.lock")
+		if err != nil && !errors.Is(err, fs.ErrNotExist) {
+			return err
+		}
+		if len(lock) != 0 {
+			if _, err := fetcher.Fetch(ctx, lock, dependencies); err != nil {
+				return err
+			}
+		}
+		if err := dependencies.Commit(ctx); err != nil {
+			return err
+		}
+
+		// Load and close the compiler only for this requested build.
+		target, err := h.loadRepositoryCompiler(ctx, h.le, h.bus, source, dependencies, plugin, 256<<20)
+		if err != nil {
+			return err
+		}
+		defer target.Close()
+		if err := h.handle.WriteLog(ctx, "info", "Building "+h.manifestID+" from "+h.source.GetKey()); err != nil {
+			return err
+		}
+		result, err = target.BuildManifest(ctx, &builder.BuildManifestArgs{BuilderConfig: &builder.BuilderConfig{
+			ManifestMeta: meta, EngineId: engineID, PeerId: h.handle.GetPeerId().String(),
+			ProjectId: project.GetId(), LinkObjectKeys: []string{h.source.GetKey()},
+		}}, nil)
+		return err
+	})
+	if err != nil {
+		return err
+	}
+
+	// Store compiler provenance with the source and installation in one transaction.
+	if err := result.Validate(); err != nil {
+		return err
+	}
+	ref := result.GetManifestRef()
+	if ref.GetMeta().GetPlatformId() != h.platformID {
+		return errors.New("repository compiler returned a different platform")
+	}
+	return h.completeBuild(ctx, manifest.NewManifestArtifactKey(ref.GetManifestRef()), ref, result)
 }
 
 // prepareSDK writes the shipped TypeScript SDK under distRoot for the build.
@@ -257,16 +397,18 @@ func (h *buildPluginHandler) prepareSDK(ctx context.Context, sourceRoot, distRoo
 // the submitter asked for it, installs the artifact in the same transaction.
 // Execution cleanup must not remove the only local root of an installed plugin's input.
 // A failure before the commit leaves the installed plugins unchanged.
-func (h *buildPluginHandler) retainBuild(ctx context.Context, key string, ref *manifest.ManifestRef) (*bucket.ObjectRef, error) {
-	// Read the completed build result and check it identifies the manifest.
+func (h *buildPluginHandler) retainBuild(ctx context.Context, key string, ref *manifest.ManifestRef, result *builder.BuilderResult) (*bucket.ObjectRef, error) {
+	// Use the repository result or read the native project's stored provenance.
 	tx, err := h.engine.NewTransaction(ctx, true)
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Discard()
-	result, _, err := resultworld.LookupManifestBuildResult(ctx, tx, key)
-	if err != nil {
-		return nil, err
+	if result == nil {
+		result, _, err = resultworld.LookupManifestBuildResult(ctx, tx, key)
+		if err != nil {
+			return nil, err
+		}
 	}
 	if !result.GetManifestRef().EqualVT(ref) {
 		return nil, errors.New("build result does not identify the completed manifest")
@@ -360,8 +502,8 @@ func (h *buildPluginHandler) retainSource(ctx context.Context, ws world.WorldSta
 
 // materializeSource reads the immutable input through the execution's storage capability.
 // The Execution retains queued input; accepted build provenance retains its local DAG.
-func (h *buildPluginHandler) materializeSource(ctx context.Context, directory string) (*forge_value.WorldObjectSnapshot, error) {
-	err := h.handle.AccessStorage(ctx, h.source.GetRootRef(), func(cursor *bucket_lookup.Cursor) error {
+func (h *buildPluginHandler) materializeSource(ctx context.Context, directory string) error {
+	return h.handle.AccessStorage(ctx, h.source.GetRootRef(), func(cursor *bucket_lookup.Cursor) error {
 		// Sync the source tree into the build directory.
 		filesystem := unixfs_block_fs.NewFS(ctx, unixfs_block.NodeType_NodeType_DIRECTORY, cursor.Clone(), nil)
 		handle, err := unixfs.NewFSHandle(filesystem)
@@ -372,8 +514,7 @@ func (h *buildPluginHandler) materializeSource(ctx context.Context, directory st
 		defer handle.Release()
 		return unixfs_sync.Sync(ctx, directory, handle, unixfs_sync.DeleteMode_DeleteMode_NONE, nil)
 	})
-	if err != nil {
-		return nil, err
-	}
-	return h.source.CloneVT(), nil
 }
+
+// _ verifies the plugin build handler contract.
+var _ Handler = (*buildPluginHandler)(nil)

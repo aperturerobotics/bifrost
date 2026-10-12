@@ -96,7 +96,7 @@ var protobufEsLiteDistImports = []string{
 var BldrDistWebPkgImports = map[string][]string{
 	"react":                   {"index.js", "jsx-runtime.js", "jsx-dev-runtime.js"},
 	"react-dom":               {"index.js", "client.js"},
-	"@aptre/bldr":             {"index.ts"},
+	"@aptre/bldr":             {"index.ts", "plugin-entrypoint.ts"},
 	"@aptre/bldr-react":       {"index.ts"},
 	"@aptre/bldr-sdk":         bldrSdkImports,
 	"@aptre/protobuf-es-lite": protobufEsLiteDistImports,

@@ -6,8 +6,10 @@ import (
 	"context"
 	"io/fs"
 	"maps"
+	"path"
 	"path/filepath"
 	"slices"
+	"strconv"
 
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
@@ -20,10 +22,13 @@ import (
 	manifest "github.com/s4wave/spacewave/bldr/manifest"
 	builder "github.com/s4wave/spacewave/bldr/manifest/builder"
 	platform "github.com/s4wave/spacewave/bldr/platform"
+	js "github.com/s4wave/spacewave/bldr/plugin/compiler/js"
 	"github.com/s4wave/spacewave/bldr/project/bunlock"
 	bundler "github.com/s4wave/spacewave/bldr/web/bundler"
+	bundle "github.com/s4wave/spacewave/bldr/web/bundler/esbuild"
 	build "github.com/s4wave/spacewave/bldr/web/bundler/esbuild/build"
 	external "github.com/s4wave/spacewave/bldr/web/pkg/external"
+	view "github.com/s4wave/spacewave/bldr/web/view"
 	"github.com/s4wave/spacewave/db/kvtx"
 	"github.com/s4wave/spacewave/db/unixfs"
 	unixfs_iofs "github.com/s4wave/spacewave/db/unixfs/iofs"
@@ -46,6 +51,8 @@ type Compiler struct {
 	dependencies kvtx.TxOps
 	// config selects the plugin entrypoint, assets and expansion allowance.
 	config *Config
+	// repository configures Bldr's shared plugin entrypoint when building modules.
+	repository *js.Config
 }
 
 // NewCompiler constructs a target without loading or starting a build.
@@ -56,6 +63,35 @@ func NewCompiler(le *logrus.Entry, b bus.Bus, source *unixfs.FSHandle, dependenc
 		return nil, err
 	}
 	return &Compiler{le: le, bus: b, source: source, dependencies: dependencies, config: config}, nil
+}
+
+// NewRepositoryCompiler is the deferred compiler boundary for validated projects.
+// Each module becomes an asset; the host's Bldr entrypoint starts backend modules
+// and configures frontend views with the existing lifecycle.
+func NewRepositoryCompiler(ctx context.Context, le *logrus.Entry, b bus.Bus, source *unixfs.FSHandle, dependencies kvtx.TxOps, plugin *js.Config, maxExpandedSize int64) (builder.Controller, error) {
+	// Preserve the module order so entrypoint configuration and output paths agree.
+	conf := &Config{
+		Entrypoint: "plugin.mjs", WebPkgs: plugin.GetWebPkgs(), MaxExpandedSize: maxExpandedSize,
+		Assets: make([]*bundle.EsbuildBundleEntrypoint, 0, len(plugin.GetModules())),
+	}
+	for i, mod := range plugin.GetModules() {
+		switch mod.GetKind() {
+		case js.JsModuleKind_JS_MODULE_KIND_BACKEND, js.JsModuleKind_JS_MODULE_KIND_FRONTEND:
+		default:
+			return nil, errors.Errorf("unknown js module kind: %s", mod.GetKind())
+		}
+		conf.Assets = append(conf.Assets, &bundle.EsbuildBundleEntrypoint{
+			InputPath: path.Clean(mod.GetPath()), OutputPath: "modules/" + strconv.Itoa(i),
+		})
+	}
+
+	// Retain only the configuration needed by this build, without starting esbuild.
+	target, err := NewCompiler(le, b, source, dependencies, conf)
+	if err != nil {
+		return nil, err
+	}
+	target.repository = plugin.CloneVT()
+	return target, nil
 }
 
 // BuildManifest compiles once and returns the committed manifest and source
@@ -105,16 +141,34 @@ func (c *Compiler) BuildManifest(ctx context.Context, args *builder.BuildManifes
 	buildType := manifest.ToBuildType(meta.GetBuildType())
 	minify := conf.GetBuildPolicy().ResolveJsMinification(buildType)
 	sourcemaps := conf.GetBuildPolicy().ResolveJsSourcemaps(buildType)
-	if err := c.compile(ctx, modules, []api.EntryPoint{{InputPath: c.config.Entrypoint, OutputPath: "plugin"}}, dist, minify, sourcemaps); err != nil {
-		return nil, err
+	if c.repository == nil {
+		if err := c.compile(ctx, modules, []api.EntryPoint{{InputPath: c.config.Entrypoint, OutputPath: "plugin"}}, nil, dist, minify, sourcemaps); err != nil {
+			return nil, err
+		}
 	}
 	if len(c.config.Assets) != 0 {
 		entries := make([]api.EntryPoint, len(c.config.Assets))
 		for i, entry := range c.config.Assets {
 			entries[i] = api.EntryPoint{InputPath: entry.GetInputPath(), OutputPath: entry.GetOutputPath()}
 		}
-		if err := c.compile(ctx, modules, entries, assets, minify, sourcemaps); err != nil {
+		if err := c.compile(ctx, modules, entries, nil, assets, minify, sourcemaps); err != nil {
 			return nil, err
+		}
+	}
+
+	// Use the host's shared entrypoint lifecycle for repository modules and views.
+	if c.repository != nil {
+		entrypoint, err := c.repositoryEntrypoint(assets)
+		if err != nil {
+			return nil, err
+		}
+		if err := c.compile(ctx, modules, nil, &api.StdinOptions{Contents: entrypoint, Loader: api.LoaderJS}, dist, minify, sourcemaps); err != nil {
+			return nil, err
+		}
+		for _, name := range []string{"bldr.star", "package.json"} {
+			if _, _, err := modules.read("project/" + name); err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -136,13 +190,14 @@ func (c *Compiler) BuildManifest(ctx context.Context, args *builder.BuildManifes
 }
 
 // compile writes a single esbuild result into an ephemeral output filesystem.
-func (c *Compiler) compile(ctx context.Context, modules *Modules, entries []api.EntryPoint, output billy.Filesystem, minify, sourcemaps bool) error {
+func (c *Compiler) compile(ctx context.Context, modules *Modules, entries []api.EntryPoint, stdin *api.StdinOptions, output billy.Filesystem, minify, sourcemaps bool) error {
 	// Keep all source resolution in the block plugin and all output in memory.
 	outdir := filepath.Join(string(filepath.Separator), "output")
 	opts := api.BuildOptions{
 		AbsWorkingDir:       string(filepath.Separator),
 		Outdir:              outdir,
 		EntryPointsAdvanced: entries,
+		Stdin:               stdin,
 		Plugins:             []api.Plugin{modules.Plugin()},
 
 		Bundle:    true,
@@ -171,6 +226,11 @@ func (c *Compiler) compile(ctx context.Context, modules *Modules, entries []api.
 		MinifySyntax:      minify,
 		MinifyWhitespace:  minify,
 		MinifyIdentifiers: minify,
+	}
+	if stdin != nil {
+		opts.Outfile = filepath.Join(outdir, "plugin.mjs")
+		opts.Outdir = ""
+		opts.Splitting = false
 	}
 	if sourcemaps {
 		opts.Sourcemap = api.SourceMapLinked
@@ -215,6 +275,62 @@ func (c *Compiler) Execute(ctx context.Context) error { return nil }
 
 // Close has no retained compiler resources to release.
 func (c *Compiler) Close() error { return nil }
+
+// repositoryEntrypoint maps emitted assets to Bldr's existing runtime records.
+func (c *Compiler) repositoryEntrypoint(assets billy.Filesystem) (string, error) {
+	// Clone explicit entrypoints so generated entries never mutate caller state.
+	conf := c.repository.CloneVT()
+	conf.Modules = nil
+	for i, mod := range c.repository.GetModules() {
+		// Modules without an entrypoint remain available as bundled assets.
+		if !mod.GetEntrypoint() {
+			continue
+		}
+		name := "modules/" + strconv.Itoa(i)
+		if mod.GetKind() == js.JsModuleKind_JS_MODULE_KIND_BACKEND {
+			conf.BackendEntrypoints = append(conf.BackendEntrypoints, &js.BackendEntrypoint{ImportPath: "/assets/" + name + ".mjs"})
+			continue
+		}
+
+		// Bind each view to the immutable emitted script and its shared packages.
+		packages := make(map[string]string, len(external.BldrExternal)+len(conf.GetWebPkgs()))
+		for _, id := range external.BldrExternal {
+			packages[id] = ""
+		}
+		for _, pkg := range conf.GetWebPkgs() {
+			if pkg.GetExclude() {
+				packages[pkg.GetId()] = ""
+			}
+		}
+		entry := &js.FrontendEntrypoint{
+			WebViewId: mod.GetWebViewId().CloneVT(), WebViewParentId: mod.GetWebViewParentId().CloneVT(),
+			SetRenderMode: &view.SetRenderModeRequest{
+				RenderMode: view.RenderMode_RenderMode_REACT_COMPONENT,
+				ScriptPath: name + ".mjs", WebPkgPaths: packages,
+			},
+		}
+
+		// Attach the stylesheet emitted for this frontend module, when present.
+		css := name + ".css"
+		_, cssErr := assets.Stat(css)
+		if cssErr != nil && !errors.Is(cssErr, fs.ErrNotExist) {
+			return "", cssErr
+		}
+		if cssErr == nil {
+			entry.SetHtmlLinks = &view.SetHtmlLinksRequest{Clear: true, SetLinks: map[string]*view.HtmlLink{
+				"css-" + strconv.Itoa(i): {Rel: "stylesheet", Href: css},
+			}}
+		}
+		conf.FrontendEntrypoints = append(conf.FrontendEntrypoints, entry)
+	}
+
+	// Parse configuration with Bldr's schema codec inside the shared runtime.
+	data, err := conf.MarshalJSON()
+	if err != nil {
+		return "", err
+	}
+	return `import {createPluginEntrypoint} from "@aptre/bldr/plugin-entrypoint"; export default createPluginEntrypoint(` + string(data) + ");", nil
+}
 
 // HandleDirective resolves no directives; the build system invokes BuildManifest.
 func (c *Compiler) HandleDirective(ctx context.Context, instance directive.Instance) ([]directive.Resolver, error) {

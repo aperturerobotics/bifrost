@@ -14,7 +14,9 @@ import (
 	space_exec "github.com/s4wave/spacewave/core/forge/exec"
 	git_block "github.com/s4wave/spacewave/db/git/block"
 	git_world "github.com/s4wave/spacewave/db/git/world"
+	"github.com/s4wave/spacewave/db/unixfs"
 	unixfs_world "github.com/s4wave/spacewave/db/unixfs/world"
+	"github.com/s4wave/spacewave/db/world"
 	forge_cluster "github.com/s4wave/spacewave/forge/cluster"
 	forge_job "github.com/s4wave/spacewave/forge/job"
 	forge_lib_git_clone "github.com/s4wave/spacewave/forge/lib/git/clone"
@@ -210,5 +212,21 @@ func TestValidatePluginRepository(t *testing.T) {
 	// Queue the build at the reviewed commit.
 	if _, err := client.BuildSpacePlugin(ctx, build); err != nil {
 		t.Fatal(err)
+	}
+
+	// Refuse repository build code before another Job can retain or execute it.
+	obj, err := world.MustGetObject(ctx, tb.WorldState, response.GetSourceKey())
+	if err != nil {
+		t.Fatal(err)
+	}
+	config := `throw new Error("repository build code must never run")`
+	_, _, err = unixfs_world.FsMknodWithContent(ctx, tb.WorldState, obj, peer, unixfs_world.FSType_FSType_FS_NODE,
+		[]string{"vite.config.ts"}, unixfs.NewFSCursorNodeType_File(), int64(len(config)), strings.NewReader(config), 0o644, time.Now())
+	world.ReleaseObjectState(obj)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := client.BuildSpacePlugin(ctx, build); err == nil || !strings.Contains(err.Error(), "repository is refused") || !strings.Contains(err.Error(), "vite.config.ts") {
+		t.Fatalf("refused repository reached build submission: %v", err)
 	}
 }
