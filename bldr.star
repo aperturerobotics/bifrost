@@ -487,6 +487,23 @@ manifest("spacewave-sql",
     },
 )
 
+# spacewave-wasivm runs WebAssembly VMs. It is experimental: no release,
+# remote world or deploy includes it; only the -wasivm builds below do.
+manifest("spacewave-wasivm",
+    builder="bldr/plugin/compiler/go",
+    rev=1,
+    config={
+        "goPkgs": ["./plugin/wasivm"],
+        "configSet": {
+            "spacewave-wasivm": config_entry("plugin/wasivm", 1),
+        },
+        "webPkgs": EXCLUDED_WEB_PKGS,
+        "platformTypes": {
+            "js": {"goCompiler": "GO_COMPILER_GOSCRIPT"},
+        },
+    },
+)
+
 # bldr-materializer serves the typed MaterializeManifest streaming service from
 # a bundled plugin worker. The scheduler demands it for background manifest
 # copying; embedding it in browser entrypoints keeps the bootstrap available
@@ -785,6 +802,8 @@ BROWSER_RELEASE_E2E_GOSCRIPT_EMBED_MANIFESTS = browser_e2e_embed_manifests("js")
 
 build("app",         manifests=DEV_MANIFESTS,     targets=["desktop"])
 build("web",         manifests=DEV_MANIFESTS,     targets=["browser"])
+build("app-wasivm",  manifests=DEV_MANIFESTS + ["spacewave-wasivm"], targets=["desktop"])
+build("web-wasivm",  manifests=DEV_MANIFESTS + ["spacewave-wasivm"], targets=["browser"])
 build("release-web",
     manifests=BROWSER_RELEASE_MANIFESTS,
     targets=["browser"],

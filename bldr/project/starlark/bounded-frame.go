@@ -38,7 +38,7 @@ func writeFrame(w io.Writer, kind byte, body []byte) error {
 
 	// Write the header, then the body.
 	header := [frameHeaderSize]byte{kind}
-	binary.BigEndian.PutUint32(header[1:], uint32(len(body)))
+	binary.BigEndian.PutUint32(header[1:], uint32(len(body))) //nolint:gosec // bounded by MaxFileSize above.
 	if _, err := w.Write(header[:]); err != nil {
 		return err
 	}

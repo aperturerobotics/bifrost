@@ -806,6 +806,53 @@ func TestEvaluateRootDesktopReleaseBuildsJsEmbeds(t *testing.T) {
 	}
 }
 
+// TestEvaluateRootWasiVmIsOptIn keeps the experimental WasiVM plugin out of
+// every build, publish and start except the builds that opt in to it.
+func TestEvaluateRootWasiVmIsOptIn(t *testing.T) {
+	// Check the repository's authoritative build graph.
+	const pluginID, optInSuffix = "spacewave-wasivm", "-wasivm"
+	starPath := "../../../bldr.star"
+	if _, err := os.Stat(starPath); err != nil {
+		t.Skipf("bldr.star not found at %s: %v", starPath, err)
+	}
+	result, err := Evaluate(starPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Config.GetManifests()[pluginID] == nil {
+		t.Fatalf("manifest %q not found", pluginID)
+	}
+
+	// Only builds named for WasiVM may include it, by manifest or override.
+	optIns := 0
+	for name, build := range result.Config.GetBuild() {
+		included := slices.Contains(build.GetManifests(), pluginID)
+		for _, override := range build.GetManifestOverrides() {
+			included = included || strings.Contains(string(override.GetConfig()), pluginID)
+		}
+		if !included {
+			continue
+		}
+		if !strings.HasSuffix(name, optInSuffix) {
+			t.Fatalf("build %q includes %s without opting in", name, pluginID)
+		}
+		optIns++
+	}
+	if optIns == 0 {
+		t.Fatalf("no build opts in to %s", pluginID)
+	}
+
+	// No publish or startup includes it.
+	for name, publish := range result.Config.GetPublish() {
+		if slices.Contains(publish.GetManifests(), pluginID) {
+			t.Fatalf("publish %q includes %s", name, pluginID)
+		}
+	}
+	if slices.Contains(result.Config.GetStart().GetPlugins(), pluginID) {
+		t.Fatalf("start includes %s", pluginID)
+	}
+}
+
 // TestEvaluateRootDesktopStatusProjectorPlatformBoundary keeps desktop services out of browser and CLI compositions.
 func TestEvaluateRootDesktopStatusProjectorPlatformBoundary(t *testing.T) {
 	// Check the repository's authoritative build graph.
