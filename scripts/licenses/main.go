@@ -1,4 +1,5 @@
-// Command licenses reports the license text of Go dependencies as JSON.
+// Command licenses reports the license text of the Go dependencies of the
+// module in the working directory as JSON.
 package main
 
 import (
@@ -6,6 +7,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
+	"strings"
 
 	"github.com/google/go-licenses/v2/licenses"
 )
@@ -31,11 +34,16 @@ func main() {
 
 // report emits one complete report or fails without partial JSON.
 func report() error {
+	// Classify every dependency of the main modules.
 	base, err := licenses.NewClassifier()
 	if err != nil {
 		return err
 	}
-	libs, err := licenses.Libraries(context.Background(), classifier{base}, false, []string{"github.com/s4wave/spacewave"}, os.Args[1:]...)
+	own, err := mainModules()
+	if err != nil {
+		return err
+	}
+	libs, err := licenses.Libraries(context.Background(), classifier{base}, false, own, os.Args[1:]...)
 	if err != nil {
 		return err
 	}
@@ -55,4 +63,14 @@ func report() error {
 		}
 	}
 	return json.NewEncoder(os.Stdout).Encode(entries)
+}
+
+// mainModules lists the modules being built, whose own packages are not
+// dependencies.
+func mainModules() ([]string, error) {
+	out, err := exec.Command("go", "list", "-m").Output()
+	if err != nil {
+		return nil, fmt.Errorf("go list -m: %w", err)
+	}
+	return strings.Fields(string(out)), nil
 }
