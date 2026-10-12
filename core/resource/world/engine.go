@@ -102,7 +102,7 @@ func (r *EngineResource) GetEngineInfo(ctx context.Context, req *s4wave_world.Ge
 	if access.participantLookup != nil && sessionPeerID != "" {
 		var err error
 		participant, err = access.participantLookup(ctx, sessionPeerID)
-		if err != nil {
+		if err != nil && !errors.Is(err, sobject.ErrNotParticipant) {
 			return nil, err
 		}
 	}
