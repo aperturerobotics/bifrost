@@ -7,11 +7,11 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-	"syscall"
 
 	"github.com/aperturerobotics/fsnotify"
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/bldr/entrypoint/storagepath"
+	listener_control "github.com/s4wave/spacewave/core/resource/listener/control"
 )
 
 // SocketName is the Resource socket beneath a Spacewave state root.
@@ -100,7 +100,7 @@ func (c *Connector) Dial(ctx context.Context, statePath, socketPath string) (net
 	if err == nil {
 		return conn, nil
 	}
-	if !errors.Is(err, os.ErrNotExist) && !errors.Is(err, syscall.ECONNREFUSED) {
+	if !listener_control.NoListener(err) {
 		return nil, errors.Wrap(err, "connect to existing daemon socket")
 	}
 	if err := c.start(startCtx, statePath); err != nil && !errors.Is(err, ErrStarting) {
@@ -114,7 +114,7 @@ func (c *Connector) Dial(ctx context.Context, statePath, socketPath string) (net
 		if err == nil {
 			return conn, nil
 		}
-		if !errors.Is(err, os.ErrNotExist) && !errors.Is(err, syscall.ECONNREFUSED) {
+		if !listener_control.NoListener(err) {
 			return nil, err
 		}
 	wait:

@@ -1,4 +1,5 @@
 #include "pipe-client.h"
+#include <cstdio>
 #include <cstring>
 
 #ifdef _WIN32
@@ -22,14 +23,24 @@ PipeClient::~PipeClient()
 bool PipeClient::connect()
 {
 #ifdef _WIN32
-	// Windows: connect to named pipe.
-	HANDLE hPipe =
-		CreateFileA(pipePath_.c_str(), GENERIC_READ | GENERIC_WRITE, 0,
-			    nullptr, OPEN_EXISTING, 0, nullptr);
-	if (hPipe == INVALID_HANDLE_VALUE)
-		return false;
-	fd_ = (int)(intptr_t)hPipe;
-	return true;
+	// Windows: connect to the named pipe. Every instance may be busy while the
+	// server is between accepts, so wait for one to become free.
+	for (;;) {
+		HANDLE hPipe = CreateFileA(pipePath_.c_str(),
+					   GENERIC_READ | GENERIC_WRITE, 0,
+					   nullptr, OPEN_EXISTING, 0, nullptr);
+		if (hPipe != INVALID_HANDLE_VALUE) {
+			fd_ = (int)(intptr_t)hPipe;
+			return true;
+		}
+		DWORD err = GetLastError();
+		if (err != ERROR_PIPE_BUSY ||
+		    !WaitNamedPipeA(pipePath_.c_str(), 5000)) {
+			fprintf(stderr, "error: open pipe %s: error %lu\n",
+				pipePath_.c_str(), (unsigned long)GetLastError());
+			return false;
+		}
+	}
 #else
 	// Unix: connect to domain socket.
 	fd_ = socket(AF_UNIX, SOCK_STREAM, 0);

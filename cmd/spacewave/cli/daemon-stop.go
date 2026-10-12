@@ -6,7 +6,6 @@ import (
 	"context"
 	stderrors "errors"
 	"os"
-	"syscall"
 
 	"github.com/aperturerobotics/cli"
 	"github.com/pkg/errors"
@@ -67,19 +66,23 @@ func runStop(ctx context.Context, sockPath string) error {
 }
 
 // handleUnavailableDaemonSocket reports errors that prove no daemon listener
-// remains. Other dial errors must remain fatal to the stop command.
+// remains and removes the stale socket, if any. Other dial errors must remain
+// fatal to the stop command.
 func handleUnavailableDaemonSocket(sockPath string, dialErr error) (bool, error) {
-	switch {
-	case stderrors.Is(dialErr, os.ErrNotExist):
-		os.Stdout.WriteString("No Spacewave daemon is running.\n")
-		return true, nil
-	case stderrors.Is(dialErr, syscall.ECONNREFUSED):
-		if err := os.Remove(sockPath); err != nil && !os.IsNotExist(err) {
-			return true, errors.Wrap(err, "remove stale daemon socket")
-		}
-		os.Stdout.WriteString("No Spacewave daemon is running; removed a stale daemon socket.\n")
-		return true, nil
-	default:
+	// Keep dial errors that leave the socket's owner unknown fatal.
+	if !listener_control.NoListener(dialErr) {
 		return false, nil
 	}
+
+	// Remove the stale socket and report whether there was one.
+	err := os.Remove(sockPath)
+	if os.IsNotExist(err) {
+		os.Stdout.WriteString("No Spacewave daemon is running.\n")
+		return true, nil
+	}
+	if err != nil {
+		return true, errors.Wrap(err, "remove stale daemon socket")
+	}
+	os.Stdout.WriteString("No Spacewave daemon is running; removed a stale daemon socket.\n")
+	return true, nil
 }

@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"syscall"
 
@@ -30,7 +31,7 @@ func StartCopiedProcess(ctx context.Context, statePath, source string) error {
 // PrepareExecutable publishes a digest-named executable without replacing an
 // existing path, including one that a daemon may currently be executing. The
 // caller selects and verifies the source before preparing it for startup.
-func PrepareExecutable(statePath, source string) (published string, retErr error) {
+func PrepareExecutable(statePath, source string) (string, error) {
 	return prepareExecutable(statePath, source, "")
 }
 
@@ -43,10 +44,10 @@ func PrepareVerifiedExecutable(statePath, source, expectedSHA256 string) (string
 	return prepareExecutable(statePath, source, expectedSHA256)
 }
 
-// prepareExecutable copies selected bytes, with their application bundle when
-// they have one, to a digest path without replacing a version that another
+// prepareExecutable publishes selected bytes, with their application bundle
+// when they have one, at a digest path without replacing a version that another
 // daemon may still be executing.
-func prepareExecutable(statePath, source, expectedSHA256 string) (published string, retErr error) {
+func prepareExecutable(statePath, source, expectedSHA256 string) (string, error) {
 	// Keep the state root outside any bundle an app update replaces, even through a symlink.
 	root, err := filepath.EvalSymlinks(statePath)
 	if err != nil {
@@ -103,48 +104,9 @@ func prepareExecutable(statePath, source, expectedSHA256 string) (published stri
 		return path, nil
 	}
 
-	// Create a private temporary inode for the selected executable.
-	if _, err := input.Seek(0, io.SeekStart); err != nil {
-		return "", errors.Wrap(err, "rewind selected daemon executable")
-	}
-	output, err := os.CreateTemp(dir, ".daemon-*")
-	if err != nil {
-		return "", errors.Wrap(err, "create daemon executable copy")
-	}
-	defer func() {
-		if err := os.Remove(output.Name()); err != nil && retErr == nil {
-			published = ""
-			retErr = errors.Wrap(err, "remove temporary daemon executable")
-		}
-	}()
-
-	// Reject a source that changed between hashing and copying.
-	copyDigest := sha256.New()
-	if _, err := io.Copy(io.MultiWriter(output, copyDigest), input); err != nil {
-		_ = output.Close()
-		return "", errors.Wrap(err, "copy selected daemon executable")
-	}
-	if !bytes.Equal(copyDigest.Sum(nil), expected) {
-		_ = output.Close()
-		return "", errors.New("selected daemon executable changed while copying")
-	}
-
-	// Finish the file's executable mode and contents before publication.
-	if err := output.Chmod(0o700); err != nil {
-		_ = output.Close()
-		return "", errors.Wrap(err, "make daemon copy executable")
-	}
-	if err := output.Sync(); err != nil {
-		_ = output.Close()
-		return "", errors.Wrap(err, "sync daemon executable copy")
-	}
-	if err := output.Close(); err != nil {
-		return "", errors.Wrap(err, "close daemon executable copy")
-	}
-
-	// A hard link atomically publishes this inode only if the digest name is free.
-	if err := os.Link(output.Name(), path); err != nil && !errors.Is(err, os.ErrExist) {
-		return "", errors.Wrap(err, "publish daemon executable copy")
+	// Publish the selected bytes only if the digest name is still free.
+	if err := publishExecutable(dir, path, source, input, expected); err != nil {
+		return "", err
 	}
 	present, err = verifyExecutable(path, expected)
 	if err != nil {
@@ -154,6 +116,66 @@ func prepareExecutable(statePath, source, expectedSHA256 string) (published stri
 		return "", errors.New("published daemon executable copy disappeared")
 	}
 	return path, nil
+}
+
+// publishExecutable publishes source, whose bytes match expected, at path
+// unless another launch already published it there.
+//
+// On Windows path is a hard link to source when the volume allows it. The
+// daemon then starts from the file the running launcher was loaded from, so
+// antivirus software does not scan a second copy first, and Windows refuses
+// writes to that file while either process runs it. Elsewhere an in-place
+// write to source would change a running daemon through the link, so the
+// bytes are copied.
+func publishExecutable(dir, path, source string, input *os.File, expected []byte) (retErr error) {
+	// Link the running launcher's file in place when Windows allows it.
+	if runtime.GOOS == "windows" {
+		err := os.Link(source, path)
+		if err == nil || errors.Is(err, os.ErrExist) {
+			return nil
+		}
+	}
+
+	// Create a private temporary inode, removed once published or abandoned.
+	if _, err := input.Seek(0, io.SeekStart); err != nil {
+		return errors.Wrap(err, "rewind selected daemon executable")
+	}
+	output, err := os.CreateTemp(dir, ".daemon-*")
+	if err != nil {
+		return errors.Wrap(err, "create daemon executable copy")
+	}
+	defer func() {
+		_ = output.Close()
+		if err := os.Remove(output.Name()); err != nil && retErr == nil {
+			retErr = errors.Wrap(err, "remove temporary daemon executable")
+		}
+	}()
+
+	// Reject a source that changed between hashing and copying.
+	copyDigest := sha256.New()
+	if _, err := io.Copy(io.MultiWriter(output, copyDigest), input); err != nil {
+		return errors.Wrap(err, "copy selected daemon executable")
+	}
+	if !bytes.Equal(copyDigest.Sum(nil), expected) {
+		return errors.New("selected daemon executable changed while copying")
+	}
+
+	// Finish the file's executable mode and contents before publication.
+	if err := output.Chmod(0o700); err != nil {
+		return errors.Wrap(err, "make daemon copy executable")
+	}
+	if err := output.Sync(); err != nil {
+		return errors.Wrap(err, "sync daemon executable copy")
+	}
+	if err := output.Close(); err != nil {
+		return errors.Wrap(err, "close daemon executable copy")
+	}
+
+	// A hard link atomically publishes this inode only if the digest name is free.
+	if err := os.Link(output.Name(), path); err != nil && !errors.Is(err, os.ErrExist) {
+		return errors.Wrap(err, "publish daemon executable copy")
+	}
+	return nil
 }
 
 // prepareBundle publishes a copy of bundleRoot at dir/<name>.app and returns
@@ -214,7 +236,8 @@ func prepareBundle(dir, name, bundleRoot, executable string, expected []byte) (p
 
 // verifyExecutable checks an existing digest path without following a symlink.
 func verifyExecutable(path string, expected []byte) (bool, error) {
-	// Reject links, nonfiles, and copies whose execute bit was removed.
+	// Reject links, nonfiles, and copies whose execute bit was removed. Windows
+	// marks executables by the .exe extension and reports no execute bits.
 	info, err := os.Lstat(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return false, nil
@@ -225,7 +248,7 @@ func verifyExecutable(path string, expected []byte) (bool, error) {
 	if !info.Mode().IsRegular() {
 		return true, errors.Errorf("daemon executable copy is not a regular file: %s", path)
 	}
-	if info.Mode()&0o100 == 0 {
+	if runtime.GOOS != "windows" && info.Mode()&0o100 == 0 {
 		return true, errors.Errorf("daemon executable copy is not executable: %s", path)
 	}
 

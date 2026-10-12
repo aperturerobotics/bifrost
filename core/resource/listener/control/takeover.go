@@ -7,7 +7,6 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-	"syscall"
 
 	"github.com/aperturerobotics/fsnotify"
 	"github.com/pkg/errors"
@@ -91,7 +90,7 @@ func prepareSocket(
 	if err != nil {
 		// Only a refused connection proves a stale socket; permission and other
 		// transport errors leave the existing path untouched.
-		if !errors.Is(err, syscall.ECONNREFUSED) && !errors.Is(err, os.ErrNotExist) {
+		if !NoListener(err) {
 			return false, errors.Wrap(err, "connect to daemon socket")
 		}
 		le.WithError(err).Warn("removing stale daemon socket")
@@ -123,7 +122,7 @@ func prepareSocket(
 			_ = probe.Close()
 			return false, err
 		}
-		if !errors.Is(probeErr, syscall.ECONNREFUSED) && !errors.Is(probeErr, os.ErrNotExist) {
+		if !NoListener(probeErr) {
 			return false, errors.Wrap(probeErr, "confirm daemon socket release")
 		}
 		le.WithError(err).Warn("takeover peer exited before handoff completion; removing stale daemon socket")

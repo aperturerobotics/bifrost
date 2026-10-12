@@ -30,6 +30,10 @@ type Client struct {
 	pipeID   string
 	rootDir  string
 
+	// exited closes once the helper process is reaped; waitErr is then set.
+	exited  chan struct{}
+	waitErr error
+
 	readMtx  sync.Mutex
 	writeMtx sync.Mutex
 }
@@ -116,9 +120,18 @@ func (c *Client) startHelper(ctx context.Context, helperPath string, args ...str
 		)
 	}
 
-	// Accept the helper connection.
+	// Reap the helper in the background so its exit ends the Accept below.
+	c.exited = make(chan struct{})
+	go c.watchHelper(c.cmd, c.listener)
+
+	// Accept the helper connection, which fails if the helper exits first.
 	c.conn, err = c.listener.Accept()
 	if err != nil {
+		select {
+		case <-c.exited:
+			err = errors.Wrap(c.waitErr, "helper exited before connecting")
+		default:
+		}
 		return stderrors.Join(
 			errors.Wrap(err, "accept helper connection"),
 			errors.Wrap(c.Close(), "clean up helper"),
@@ -143,6 +156,14 @@ func (c *Client) startHelper(ctx context.Context, helperPath string, args ...str
 	// Report that the helper can receive commands.
 	c.le.Debug("helper connected and ready")
 	return nil
+}
+
+// watchHelper reaps the helper and closes its listener, so an Accept waiting
+// for a helper that exited without connecting returns.
+func (c *Client) watchHelper(cmd *exec.Cmd, listener net.Listener) {
+	c.waitErr = cmd.Wait()
+	_ = listener.Close()
+	close(c.exited)
 }
 
 // SendProgress sends a progress update to the helper.
@@ -224,15 +245,21 @@ func (c *Client) Close() error {
 		c.listener = nil
 	}
 
-	// Terminate and reap the helper subprocess.
-	if c.cmd != nil && c.cmd.Process != nil {
-		if err := c.cmd.Process.Kill(); err != nil && !stderrors.Is(err, os.ErrProcessDone) {
-			closeErr = stderrors.Join(closeErr, errors.Wrap(err, "kill helper process"))
+	// Terminate the helper unless it already exited, then wait for its reaper.
+	// Windows refuses to terminate a process that exited but is not yet reaped.
+	if c.exited != nil {
+		select {
+		case <-c.exited:
+		default:
+			if err := c.cmd.Process.Kill(); err != nil && !stderrors.Is(err, os.ErrProcessDone) {
+				c.le.WithError(err).Debug("kill helper process")
+			}
 		}
-		if err := c.cmd.Wait(); err != nil {
-			c.le.WithError(err).Debug("helper process exited")
+		<-c.exited
+		if c.waitErr != nil {
+			c.le.WithError(c.waitErr).Debug("helper process exited")
 		}
-		c.cmd = nil
+		c.cmd, c.exited = nil, nil
 	}
 	return closeErr
 }
