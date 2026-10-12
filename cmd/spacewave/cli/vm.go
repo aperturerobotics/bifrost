@@ -745,6 +745,54 @@ func readVMRunState(ctx context.Context, obj world.ObjectState, typeID string) (
 	return vm, err
 }
 
+// openVM opens the VM object vmKey and returns it with its type. The caller
+// releases the object.
+func openVM(ctx context.Context, engine world.Engine, vmKey string) (world.ObjectState, string, error) {
+	// Check the object's type, then open it.
+	ws := world.NewEngineWorldState(engine, false)
+	typeID, err := vmTypeID(ctx, ws, vmKey)
+	if err != nil {
+		return nil, "", err
+	}
+	obj, found, err := ws.GetObject(ctx, vmKey)
+	if err == nil && !found {
+		err = errors.Errorf("VM %q not found", vmKey)
+	}
+	if err != nil {
+		world.ReleaseObjectState(obj)
+		return nil, "", err
+	}
+	return obj, typeID, nil
+}
+
+// requireVMStartRequested fails unless the VM vmKey is running or starting.
+// A console waits for its VM to start, so a stopped VM would wait silently.
+func requireVMStartRequested(c *cli.Context, statePath string, sessionIdx uint32, spaceID, vmKey string) error {
+	return withVmSpace(c, statePath, sessionIdx, spaceID, func(
+		_ *sdkClient,
+		_ s4wave_space.SRPCSpaceResourceServiceClient,
+		engine world.Engine,
+	) error {
+		// Open the VM object.
+		ctx := c.Context
+		obj, typeID, err := openVM(ctx, engine, vmKey)
+		if err != nil {
+			return err
+		}
+		defer world.ReleaseObjectState(obj)
+
+		// Require a desired running state.
+		vm, err := readVMRunState(ctx, obj, typeID)
+		if err != nil {
+			return err
+		}
+		if vm.GetState() != s4wave_vm.VmState_VmState_RUNNING {
+			return errors.Errorf("VM %q is %s; start it with: spacewave vm start %s", vmKey, vmStateLabel(vm.GetObservedState()), vmKey)
+		}
+		return nil
+	})
+}
+
 // watchVM prints each observed state of the VM vmKey until it reaches the
 // desired state or fails.
 func watchVM(c *cli.Context, statePath string, sessionIdx uint32, spaceID, vmKey string) error {
@@ -755,19 +803,11 @@ func watchVM(c *cli.Context, statePath string, sessionIdx uint32, spaceID, vmKey
 	) error {
 		// Open the VM object.
 		ctx := c.Context
-		ws := world.NewEngineWorldState(engine, false)
-		typeID, err := vmTypeID(ctx, ws, vmKey)
+		obj, typeID, err := openVM(ctx, engine, vmKey)
 		if err != nil {
 			return err
 		}
-		obj, found, err := ws.GetObject(ctx, vmKey)
 		defer world.ReleaseObjectState(obj)
-		if err != nil {
-			return err
-		}
-		if !found {
-			return errors.Errorf("VM %q not found", vmKey)
-		}
 
 		// Print each new observed state until it settles.
 		last := s4wave_vm.VmState(-1)

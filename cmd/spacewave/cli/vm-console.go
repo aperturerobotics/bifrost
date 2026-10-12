@@ -42,6 +42,11 @@ func newVmConsoleCommand(statePath *string, sessionIdx *uint, spaceID *string) *
 // terminal until the VM exits or the user quits with Ctrl-A x. The console
 // replays the recent output first, so a late attach shows the prompt.
 func attachWasiVmConsole(c *cli.Context, statePath string, uri fsURI) error {
+	// Refuse a stopped VM, whose console would wait for a start.
+	if err := requireVMStartRequested(c, statePath, uri.sessionIdx, uri.spaceID, uri.objectKey); err != nil {
+		return err
+	}
+
 	// Open the console of the VM's typed resource.
 	mount, cleanup, err := mountObjectChain(c, statePath, uri, nil)
 	if err != nil {
