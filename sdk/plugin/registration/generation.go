@@ -2,6 +2,8 @@ package s4wave_plugin_registration
 
 import (
 	"context"
+	"slices"
+	"sync"
 
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/starpc/srpc"
@@ -9,7 +11,110 @@ import (
 	bldr_plugin "github.com/s4wave/spacewave/bldr/plugin"
 	resource_client "github.com/s4wave/spacewave/bldr/resource/client"
 	bifrost_rpc "github.com/s4wave/spacewave/net/rpc"
+	s4wave_plugin "github.com/s4wave/spacewave/sdk/plugin"
 )
+
+// corePluginID is the plugin that serves the capability registries.
+const corePluginID = "spacewave-core"
+
+// RegisterFunc makes a plugin's registrations through scope and returns the
+// references that hold them, including those made before an error. client
+// owns every returned reference.
+type RegisterFunc func(
+	ctx context.Context,
+	client *resource_client.Client,
+	scope srpc.Client,
+) ([]resource_client.ResourceRef, error)
+
+// Holder publishes a Go plugin's capabilities on the core plugin. A startup
+// controller embeds a Holder and calls Hold from Execute, so the plugin reports
+// ready only after its first registration pass settles.
+type Holder struct {
+	// register makes the plugin's registrations.
+	register RegisterFunc
+	// settled is closed once the first registration pass settles.
+	settled chan struct{}
+	// settleOnce closes settled.
+	settleOnce sync.Once
+}
+
+// NewHolder constructs a Holder that registers with register.
+func NewHolder(register RegisterFunc) *Holder {
+	return &Holder{register: register, settled: make(chan struct{})}
+}
+
+// WaitInitialCapabilities returns once the first registration pass has
+// admitted the registrations, found a historical worker, or failed.
+func (h *Holder) WaitInitialCapabilities(ctx context.Context) error {
+	select {
+	case <-h.settled:
+		return nil
+	case <-ctx.Done():
+		return context.Cause(ctx)
+	}
+}
+
+// settle records that the first registration pass has settled.
+func (h *Holder) settle() {
+	h.settleOnce.Do(func() {
+		close(h.settled)
+	})
+}
+
+// Hold publishes this Go plugin's capabilities on the core plugin until ctx
+// ends. It registers in the plugin's private generation, then admits the
+// registrations together, so a Space plugin's capabilities route to its own
+// installation. A historical worker registers nothing and waits for ctx.
+func (h *Holder) Hold(ctx context.Context, b bus.Bus) error {
+	// A pass that fails settles too: callers then see the missing capability.
+	defer h.settle()
+
+	// Connect to the core plugin's root Resource.
+	resources, err := s4wave_plugin.ConnectPluginResources(ctx, b, corePluginID)
+	if err != nil {
+		return err
+	}
+	defer resources.Release()
+	rootRef := resources.Client.AccessRootResource()
+	defer rootRef.Release()
+	root, err := rootRef.GetClient()
+	if err != nil {
+		return err
+	}
+
+	// Open the generation scope; a historical worker gets none.
+	scopeRef, err := PrepareGeneration(ctx, b, resources.Client, root)
+	if err != nil {
+		return err
+	}
+	if scopeRef == nil {
+		h.settle()
+		<-ctx.Done()
+		return nil
+	}
+	defer scopeRef.Release()
+	scope, err := scopeRef.GetClient()
+	if err != nil {
+		return err
+	}
+
+	// Register through the scope, then admit the registrations together.
+	refs, err := h.register(ctx, resources.Client, scope)
+	defer func() {
+		for _, ref := range slices.Backward(refs) {
+			ref.Release()
+		}
+	}()
+	if err != nil {
+		return err
+	}
+	if err := Activate(ctx, scope); err != nil {
+		return errors.Wrap(err, "activate registrations")
+	}
+	h.settle()
+	<-ctx.Done()
+	return nil
+}
 
 // PrepareGeneration opens the private registration scope of this Go plugin's
 // generation beneath the core root Resource. The plugin host supplies the
@@ -46,8 +151,6 @@ func PrepareGeneration(
 	if info.GetPluginId() == "" || manifestRoot == "" {
 		return nil, errors.New("plugin has no immutable manifest")
 	}
-
-	// Open the generation scope under the caller's core Resource client.
 
 	// Open the generation scope under the caller's core Resource client.
 	resp, err := NewSRPCRegistrationServiceClient(root).Prepare(ctx, &PrepareRequest{

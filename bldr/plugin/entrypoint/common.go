@@ -211,7 +211,7 @@ func ExecutePluginEntrypoint(
 
 	// apply config sets
 	mergedConfigSet := configset.MergeConfigSets(configSets...)
-	configSetStarted, csetRel, err := applyStartupConfigSet(b, mergedConfigSet)
+	waitConfigSetStarted, csetRel, err := applyStartupConfigSet(b, mergedConfigSet)
 	if err != nil {
 		rel()
 		return err
@@ -228,11 +228,10 @@ func ExecutePluginEntrypoint(
 		errCh,
 		func(ctx context.Context) error {
 			// Startup controllers are initial capabilities: callers of a ready
-			// plugin must reach the directives they resolve.
-			select {
-			case <-configSetStarted:
-			case <-ctx.Done():
-				return context.Cause(ctx)
+			// plugin must reach the directives they resolve and the
+			// capabilities they publish.
+			if err := waitConfigSetStarted(ctx); err != nil {
+				return err
 			}
 			if pluginInfo.GetStandalone() {
 				return nil
@@ -371,29 +370,57 @@ func startInitialCapabilityRegistration(
 }
 
 // applyStartupConfigSet applies the plugin's startup controllers. The returned
-// channel closes once every controller in set is running or reported an error.
-func applyStartupConfigSet(b bus.Bus, set configset.ConfigSet) (<-chan struct{}, func(), error) {
-	// An empty set reports started immediately.
+// wait func returns once every controller in set is running or reported an
+// error, and the first pass of each running InitialCapabilityRegistrar has
+// settled.
+func applyStartupConfigSet(b bus.Bus, set configset.ConfigSet) (func(context.Context) error, func(), error) {
+	// Wait for the set to settle, then for each registrar it started.
 	started := make(chan struct{})
+	var registrars []bldr_plugin.InitialCapabilityRegistrar
+	wait := func(ctx context.Context) error {
+		select {
+		case <-started:
+		case <-ctx.Done():
+			return context.Cause(ctx)
+		}
+		for _, registrar := range registrars {
+			if err := registrar.WaitInitialCapabilities(ctx); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	// An empty set reports started immediately.
 	if len(set) == 0 {
 		close(started)
-		return started, func() {}, nil
+		return wait, func() {}, nil
 	}
 
 	// Track the settled state of each controller key by directive value.
-	// The started channel closes once every key has settled.
+	// The started channel closes once every key has settled, after the
+	// registrars among them are recorded.
 	var mtx sync.Mutex
 	var closed bool
-	settled := make(map[uint32]string)
+	settled := make(map[uint32]configset.State)
 	update := func() {
-		keys := make(map[string]struct{}, len(settled))
-		for _, key := range settled {
-			keys[key] = struct{}{}
+		// Wait until every controller key has settled.
+		keys := make(map[string]configset.State, len(settled))
+		for _, st := range settled {
+			keys[st.GetId()] = st
 		}
-		if !closed && len(keys) >= len(set) {
-			closed = true
-			close(started)
+		if closed || len(keys) < len(set) {
+			return
 		}
+
+		// Record the registrars, then report the set started.
+		closed = true
+		for _, st := range keys {
+			if registrar, ok := st.GetController().(bldr_plugin.InitialCapabilityRegistrar); ok {
+				registrars = append(registrars, registrar)
+			}
+		}
+		close(started)
 	}
 	_, ref, err := b.AddDirective(
 		configset.NewApplyConfigSet(set),
@@ -407,7 +434,7 @@ func applyStartupConfigSet(b bus.Bus, set configset.ConfigSet) (<-chan struct{},
 
 				// Record the settled controller key and check completion.
 				mtx.Lock()
-				settled[v.GetValueID()] = st.GetId()
+				settled[v.GetValueID()] = st
 				update()
 				mtx.Unlock()
 			},
@@ -425,7 +452,7 @@ func applyStartupConfigSet(b bus.Bus, set configset.ConfigSet) (<-chan struct{},
 	}
 
 	// Release the directive reference to stop tracking the config set.
-	return started, ref.Release, nil
+	return wait, ref.Release, nil
 }
 
 // completeInitialCapabilityRegistration tells the plugin host that the plugin

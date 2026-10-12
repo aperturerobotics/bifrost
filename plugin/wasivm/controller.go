@@ -6,13 +6,13 @@ package wasivm_plugin
 
 import (
 	"context"
-	"slices"
 
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/aperturerobotics/starpc/srpc"
 	"github.com/pkg/errors"
+	bldr_plugin "github.com/s4wave/spacewave/bldr/plugin"
 	resource "github.com/s4wave/spacewave/bldr/resource"
 	resource_client "github.com/s4wave/spacewave/bldr/resource/client"
 	resource_server "github.com/s4wave/spacewave/bldr/resource/server"
@@ -20,7 +20,7 @@ import (
 	"github.com/s4wave/spacewave/db/blocktype"
 	bifrost_rpc "github.com/s4wave/spacewave/net/rpc"
 	s4wave_objecttype_registry "github.com/s4wave/spacewave/sdk/objecttype/registry"
-	s4wave_plugin "github.com/s4wave/spacewave/sdk/plugin"
+	s4wave_plugin_registration "github.com/s4wave/spacewave/sdk/plugin/registration"
 	s4wave_viewer_registry "github.com/s4wave/spacewave/sdk/viewer/registry"
 	s4wave_vm "github.com/s4wave/spacewave/sdk/vm"
 	s4wave_wizard "github.com/s4wave/spacewave/sdk/world/wizard"
@@ -52,6 +52,8 @@ var WizardEntrypoint bldr_web_bundler.WebBundlerOutput
 // Controller registers WasiVM with the core plugin and serves its resources.
 type Controller struct {
 	*bus.BusController[*Config]
+	// Holder publishes the registrations and reports when they are ready.
+	*s4wave_plugin_registration.Holder
 
 	// mux serves the plugin's resource service.
 	mux srpc.Invoker
@@ -85,34 +87,18 @@ func NewFactory(b bus.Bus) controller.Factory {
 			if err := resource_server.NewResourceServer(rootMux).Register(serverMux); err != nil {
 				return nil, err
 			}
-			return &Controller{BusController: base, mux: serverMux}, nil
+			return &Controller{
+				BusController: base,
+				Holder:        s4wave_plugin_registration.NewHolder(register),
+				mux:           serverMux,
+			}, nil
 		},
 	)
 }
 
 // Execute registers WasiVM with the core plugin until ctx ends.
 func (c *Controller) Execute(ctx context.Context) error {
-	// Connect to the core plugin's root resource.
-	resources, err := s4wave_plugin.ConnectPluginResources(ctx, c.GetBus(), "spacewave-core")
-	if err != nil {
-		return err
-	}
-	defer resources.Release()
-	rootRef := resources.Client.AccessRootResource()
-	defer rootRef.Release()
-	rootClient, err := rootRef.GetClient()
-	if err != nil {
-		return err
-	}
-
-	// Hold the registrations until ctx ends.
-	refs, err := register(ctx, resources.Client, rootClient)
-	defer releaseRefs(refs)
-	if err != nil {
-		return err
-	}
-	<-ctx.Done()
-	return nil
+	return c.Hold(ctx, c.GetBus())
 }
 
 // HandleDirective serves the plugin's resource service and the WasiVM block
@@ -137,11 +123,11 @@ var wasiVmBlockType = blocktype.NewBlockType(s4wave_vm.WasiVmTypeID, func() *s4w
 })
 
 // register registers the WasiVM ObjectType, operations, viewers and wizard
-// with the core plugin. It returns the registrations made, even on error.
+// through scope. It returns the registrations made, even on error.
 func register(
 	ctx context.Context,
 	client *resource_client.Client,
-	rootClient srpc.Client,
+	scope srpc.Client,
 ) ([]resource_client.ResourceRef, error) {
 	// Retain each registration until the caller releases it.
 	var refs []resource_client.ResourceRef
@@ -157,7 +143,7 @@ func register(
 	}
 
 	// Register the ObjectType and its operations.
-	ot, err := s4wave_objecttype_registry.NewSRPCObjectTypeRegistryResourceServiceClient(rootClient).
+	ot, err := s4wave_objecttype_registry.NewSRPCObjectTypeRegistryResourceServiceClient(scope).
 		RegisterObjectType(ctx, &s4wave_objecttype_registry.RegisterObjectTypeRequest{
 			TypeId:   s4wave_vm.WasiVmTypeID,
 			PluginId: PluginID,
@@ -169,7 +155,7 @@ func register(
 	if err := retain("object type", ot.GetResourceId(), err); err != nil {
 		return refs, err
 	}
-	woSvc := s4wave_worldop_registry.NewSRPCWorldOpRegistryResourceServiceClient(rootClient)
+	woSvc := s4wave_worldop_registry.NewSRPCWorldOpRegistryResourceServiceClient(scope)
 	for _, opID := range []string{s4wave_vm.CreateWasiVmOpId, s4wave_vm.SetWasiVmStateOpId} {
 		resp, err := woSvc.RegisterWorldOp(ctx, &s4wave_worldop_registry.RegisterWorldOpRequest{
 			OperationTypeId: opID,
@@ -181,7 +167,7 @@ func register(
 	}
 
 	// Register the viewer and the wizard viewer.
-	viewerSvc := s4wave_viewer_registry.NewSRPCViewerRegistryResourceServiceClient(rootClient)
+	viewerSvc := s4wave_viewer_registry.NewSRPCViewerRegistryResourceServiceClient(scope)
 	for _, viewer := range []*s4wave_viewer_registry.ViewerRegistration{{
 		TypeId:      s4wave_vm.WasiVmTypeID,
 		ViewerName:  "WebAssembly VM",
@@ -202,7 +188,7 @@ func register(
 	}
 
 	// Register the wizard that creates a WasiVM.
-	wizard, err := s4wave_wizard.NewSRPCObjectWizardRegistryResourceServiceClient(rootClient).
+	wizard, err := s4wave_wizard.NewSRPCObjectWizardRegistryResourceServiceClient(scope).
 		RegisterWizard(ctx, &s4wave_wizard.RegisterWizardRequest{Wizard: &s4wave_wizard.ObjectWizard{
 			TypeId:             s4wave_vm.WasiVmTypeID,
 			PluginId:           PluginID,
@@ -223,12 +209,8 @@ func register(
 	return refs, nil
 }
 
-// releaseRefs releases registrations in the reverse order they were made.
-func releaseRefs(refs []resource_client.ResourceRef) {
-	for _, ref := range slices.Backward(refs) {
-		ref.Release()
-	}
-}
-
 // _ is a type assertion.
-var _ controller.Controller = (*Controller)(nil)
+var (
+	_ controller.Controller                  = (*Controller)(nil)
+	_ bldr_plugin.InitialCapabilityRegistrar = (*Controller)(nil)
+)

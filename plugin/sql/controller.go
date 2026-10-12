@@ -2,20 +2,20 @@ package sql_plugin
 
 import (
 	"context"
-	"slices"
 
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/aperturerobotics/starpc/srpc"
 	"github.com/pkg/errors"
+	bldr_plugin "github.com/s4wave/spacewave/bldr/plugin"
 	resource "github.com/s4wave/spacewave/bldr/resource"
 	resource_client "github.com/s4wave/spacewave/bldr/resource/client"
 	resource_server "github.com/s4wave/spacewave/bldr/resource/server"
 	"github.com/s4wave/spacewave/db/blocktype"
 	bifrost_rpc "github.com/s4wave/spacewave/net/rpc"
 	s4wave_objecttype_registry "github.com/s4wave/spacewave/sdk/objecttype/registry"
-	s4wave_plugin "github.com/s4wave/spacewave/sdk/plugin"
+	s4wave_plugin_registration "github.com/s4wave/spacewave/sdk/plugin/registration"
 	s4wave_quickstart_registry "github.com/s4wave/spacewave/sdk/quickstart/registry"
 	s4wave_viewer_registry "github.com/s4wave/spacewave/sdk/viewer/registry"
 	s4wave_worldop_registry "github.com/s4wave/spacewave/sdk/worldop/registry"
@@ -33,7 +33,10 @@ var Version = controller.MustParseVersion("0.0.1")
 // Controller registers SQL domain handlers and serves them as a plugin resource.
 type Controller struct {
 	*bus.BusController[*Config]
+	// Holder publishes the registrations and reports when they are ready.
+	*s4wave_plugin_registration.Holder
 
+	// mux serves the plugin's resource service.
 	mux srpc.Invoker
 }
 
@@ -68,40 +71,19 @@ func NewFactory(b bus.Bus) controller.Factory {
 			if err := resource_server.NewResourceServer(rootMux).Register(serverMux); err != nil {
 				return nil, err
 			}
-			return &Controller{BusController: base, mux: serverMux}, nil
+			return &Controller{
+				BusController: base,
+				Holder:        s4wave_plugin_registration.NewHolder(registerSQL),
+				mux:           serverMux,
+			}, nil
 		},
 	)
 }
 
-// Execute registers SQL ObjectTypes, WorldOps, viewers, and Quickstart metadata.
+// Execute registers SQL ObjectTypes, WorldOps, viewers, and Quickstart
+// metadata until ctx ends.
 func (c *Controller) Execute(ctx context.Context) error {
-	// Connect to the core plugin resources.
-	resources, err := s4wave_plugin.ConnectPluginResources(ctx, c.GetBus(), "spacewave-core")
-	if err != nil {
-		return err
-	}
-	defer resources.Release()
-
-	// Resolve the core root resource client.
-	rootRef := resources.Client.AccessRootResource()
-	rootClient, err := rootRef.GetClient()
-	if err != nil {
-		rootRef.Release()
-		return err
-	}
-	defer rootRef.Release()
-
-	// Register SQL resources and retain their references for the controller lifetime.
-	refs, err := c.registerSQL(ctx, resources.Client, rootClient)
-	if err != nil {
-		releaseRefs(refs)
-		return err
-	}
-	defer releaseRefs(refs)
-
-	// Keep registrations active until the controller context ends.
-	<-ctx.Done()
-	return nil
+	return c.Hold(ctx, c.GetBus())
 }
 
 // HandleDirective asks if the handler can resolve the directive.
@@ -138,10 +120,12 @@ func (c *Controller) HandleDirective(ctx context.Context, di directive.Instance)
 	return nil, nil
 }
 
-func (c *Controller) registerSQL(
+// registerSQL registers the SQL ObjectTypes, operations, Quickstart and
+// viewers through scope. It returns the registrations made, even on error.
+func registerSQL(
 	ctx context.Context,
 	client *resource_client.Client,
-	rootClient srpc.Client,
+	scope srpc.Client,
 ) ([]resource_client.ResourceRef, error) {
 	// Track resource references so registrations can be released together.
 	var refs []resource_client.ResourceRef
@@ -154,7 +138,7 @@ func (c *Controller) registerSQL(
 	}
 
 	// Register SQL object types with the core registry.
-	otSvc := s4wave_objecttype_registry.NewSRPCObjectTypeRegistryResourceServiceClient(rootClient)
+	otSvc := s4wave_objecttype_registry.NewSRPCObjectTypeRegistryResourceServiceClient(scope)
 	for _, typeID := range sqlObjectTypeIDs {
 		resp, err := otSvc.RegisterObjectType(ctx, &s4wave_objecttype_registry.RegisterObjectTypeRequest{
 			TypeId:   typeID,
@@ -169,7 +153,7 @@ func (c *Controller) registerSQL(
 	}
 
 	// Register SQL world operations with the core registry.
-	woSvc := s4wave_worldop_registry.NewSRPCWorldOpRegistryResourceServiceClient(rootClient)
+	woSvc := s4wave_worldop_registry.NewSRPCWorldOpRegistryResourceServiceClient(scope)
 	for _, opID := range sqlWorldOpIDs {
 		resp, err := woSvc.RegisterWorldOp(ctx, &s4wave_worldop_registry.RegisterWorldOpRequest{
 			OperationTypeId: opID,
@@ -184,7 +168,7 @@ func (c *Controller) registerSQL(
 	}
 
 	// Register the SQL quickstart metadata.
-	qsSvc := s4wave_quickstart_registry.NewSRPCQuickstartRegistryResourceServiceClient(rootClient)
+	qsSvc := s4wave_quickstart_registry.NewSRPCQuickstartRegistryResourceServiceClient(scope)
 	quickstart, err := qsSvc.RegisterQuickstart(ctx, &s4wave_quickstart_registry.RegisterQuickstartRequest{
 		Registration: &s4wave_quickstart_registry.QuickstartRegistration{
 			QuickstartId:      SQLQuickstartID,
@@ -205,7 +189,7 @@ func (c *Controller) registerSQL(
 	}
 
 	// Register SQL viewers with the core registry.
-	viewerSvc := s4wave_viewer_registry.NewSRPCViewerRegistryResourceServiceClient(rootClient)
+	viewerSvc := s4wave_viewer_registry.NewSRPCViewerRegistryResourceServiceClient(scope)
 	for _, viewer := range sqlViewerRegistrations {
 		resp, err := viewerSvc.RegisterViewer(ctx, &s4wave_viewer_registry.RegisterViewerRequest{Registration: viewer})
 		if err != nil {
@@ -219,12 +203,8 @@ func (c *Controller) registerSQL(
 	return refs, nil
 }
 
-func releaseRefs(refs []resource_client.ResourceRef) {
-	// Release registrations in reverse order of acquisition.
-	for _, ref := range slices.Backward(refs) {
-		ref.Release()
-	}
-}
-
 // _ is a type assertion.
-var _ controller.Controller = (*Controller)(nil)
+var (
+	_ controller.Controller                  = (*Controller)(nil)
+	_ bldr_plugin.InitialCapabilityRegistrar = (*Controller)(nil)
+)

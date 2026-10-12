@@ -280,8 +280,12 @@ func TestRegisterSQLRejectsZeroResourceIDs(t *testing.T) {
 			defer cleanup()
 
 			// Attempt SQL registration and retain its partial references for cleanup.
-			refs, err := (&Controller{}).registerSQL(context.Background(), client, rootClient)
-			defer releaseRefs(refs)
+			refs, err := registerSQL(context.Background(), client, rootClient)
+			defer func() {
+				for _, ref := range refs {
+					ref.Release()
+				}
+			}()
 
 			// Check that SQL registration reports the expected zero resource ID error.
 			if err == nil {
