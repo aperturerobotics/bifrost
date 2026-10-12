@@ -24,7 +24,7 @@ require (
 	github.com/aperturerobotics/bbolt v0.0.0-20261006081945-09141165d72c // master
 	github.com/aperturerobotics/bldr-saucer v0.4.4
 	github.com/aperturerobotics/cayley v0.15.1-0.20261011175532-d3c081597b8a
-	github.com/aperturerobotics/cli v1.1.1-0.20261004095549-d4875ce31004 // master
+	github.com/aperturerobotics/cli v1.1.1-0.20261008170756-47089de94fb3 // master
 	github.com/aperturerobotics/common v0.35.5-0.20261006081939-817dcebc778f // master
 	github.com/aperturerobotics/controllerbus v0.53.6-0.20261007184646-7a3ab3aea145 // master
 	github.com/aperturerobotics/cpp-yamux v0.0.0-20260929192932-26bdf6cab5b3
@@ -42,6 +42,7 @@ require (
 	github.com/aperturerobotics/protobuf-go-lite v0.19.1-0.20261006081947-6c15c9bde28b // master
 	github.com/aperturerobotics/starpc v0.52.3-0.20261006081950-e03641ffbcc3 // master
 	github.com/aperturerobotics/util v1.34.10-0.20261006081936-7765b80f85f1 // master
+	github.com/aperturerobotics/wasivm/wazero/kernel v0.0.0-20261012035521-104207457d6a
 	github.com/cloudflare/circl v1.6.5
 	github.com/creack/pty v1.1.24
 	github.com/dgraph-io/ristretto/v2 v2.4.2
@@ -51,7 +52,7 @@ require (
 	github.com/fatih/color v1.19.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-git/go-billy/v6 v6.0.0-beta.1.0.20261005145446-43077f29f67b // main
-	github.com/go-git/go-git/v6 v6.0.0-beta.1.0.20261007092635-5016e0f7f0c0 // main
+	github.com/go-git/go-git/v6 v6.0.0-beta.1.0.20261009073342-bb92758aceaa // main
 	github.com/go-sql-driver/mysql v1.10.1
 	github.com/goccy/go-json v0.11.2
 	github.com/gomodule/redigo v2.0.0+incompatible
@@ -88,13 +89,13 @@ require (
 	github.com/whilp/git-urls v1.0.0
 	github.com/zeebo/blake3 v0.2.4
 	go.starlark.net v0.0.0-20261005163335-bcb1a1a55bf9
-	golang.org/x/crypto v0.57.0
+	golang.org/x/crypto v0.58.0
 	golang.org/x/exp v0.0.0-20261005173118-76772065c9b0
-	golang.org/x/mod v0.41.0 // latest
-	golang.org/x/sync v0.23.0
-	golang.org/x/sys v0.48.0
-	golang.org/x/term v0.46.0
-	golang.org/x/tools v0.51.0 // latest
+	golang.org/x/mod v0.42.0 // latest
+	golang.org/x/sync v0.24.0
+	golang.org/x/sys v0.49.0
+	golang.org/x/term v0.47.0
+	golang.org/x/tools v0.52.0 // latest
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	gorm.io/gorm v1.31.2
 	gotest.tools/v3 v3.5.2
@@ -161,9 +162,9 @@ require (
 	go.opentelemetry.io/otel v1.41.0 // indirect
 	go.opentelemetry.io/otel/trace v1.41.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
-	golang.org/x/net v0.59.0 // indirect
-	golang.org/x/telemetry v0.0.0-20260924152758-ed294f943157 // indirect
-	golang.org/x/text v0.42.0 // indirect
+	golang.org/x/net v0.61.0 // indirect
+	golang.org/x/telemetry v0.0.0-20261009151841-97e8ea77aa2a // indirect
+	golang.org/x/text v0.43.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
 	gopkg.in/src-d/go-errors.v1 v1.0.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

@@ -4180,7 +4180,7 @@
       ]
     },
     "github.com/s4wave/spacewave/sdk/vm": {
-      "hash": "89dcc204b0116205b55bee94f977cfe11518620cdbd9ab43d7125d5b97924cc9",
+      "hash": "4e5c232d5d4a09d8567635047a1812abbea8c2baa456ca73403706c5efd10de9",
       "generatedFiles": [
         "sdk/vm/v86-wizard.pb.go",
         "sdk/vm/v86-wizard.pb.ts",
@@ -4189,11 +4189,16 @@
         "sdk/vm/v86.pb.go",
         "sdk/vm/v86.pb.ts",
         "sdk/vm/v86_srpc.pb.go",
-        "sdk/vm/v86_srpc.pb.ts"
+        "sdk/vm/v86_srpc.pb.ts",
+        "sdk/vm/wasivm.pb.go",
+        "sdk/vm/wasivm.pb.ts",
+        "sdk/vm/wasivm_srpc.pb.go",
+        "sdk/vm/wasivm_srpc.pb.ts"
       ],
       "protoFiles": [
         "sdk/vm/v86-wizard.proto",
-        "sdk/vm/v86.proto"
+        "sdk/vm/v86.proto",
+        "sdk/vm/wasivm.proto"
       ]
     },
     "github.com/s4wave/spacewave/sdk/world": {

@@ -54,6 +54,8 @@ func lookupCoreWorldOp(ctx context.Context, opTypeID string) (world.Operation, e
 		s4wave_vm.LookupSetV86StateOp,
 		s4wave_vm.LookupCreateV86ImageOp,
 		s4wave_vm.LookupSetV86ImageMetadataOp,
+		s4wave_vm.LookupCreateWasiVmOp,
+		s4wave_vm.LookupSetWasiVmStateOp,
 		lookupGitWizardOp,
 	}).LookupOp(ctx, opTypeID)
 }

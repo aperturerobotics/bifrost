@@ -1,0 +1,70 @@
+syntax = "proto3";
+package s4wave.vm;
+
+import "github.com/s4wave/spacewave/sdk/terminal/terminal.proto";
+import "github.com/s4wave/spacewave/sdk/vm/v86.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/s4wave/spacewave/sdk/vm;s4wave_vm";
+
+// WasiVmConfig configures the init process of a WasiVM.
+message WasiVmConfig {
+  // InitPath is the init program in the rootfs. Empty runs /bin/sh.
+  string init_path = 1;
+  // InitArgs are the arguments after the program name.
+  repeated string init_args = 2;
+  // Env replaces the default environment of PATH, HOME and TERM when set.
+  map<string, string> env = 3;
+}
+
+// WasiVm is a virtual machine that runs WebAssembly programs on the WasiVM
+// kernel, with its root filesystem read from a UnixFS object.
+message WasiVm {
+  // State is the desired VM state. Runtime observations are in observed_state.
+  VmState state = 1;
+  // Name is the human-readable name of this VM instance.
+  string name = 2;
+  // Config configures the init process.
+  WasiVmConfig config = 3;
+  // CreatedAt is the creation timestamp.
+  .google.protobuf.Timestamp created_at = 4;
+  // ErrorMessage is the terminal diagnostic for the observed generation.
+  string error_message = 5;
+  // ObservedState is the runtime state committed by the VM resource owner.
+  VmState observed_state = 6;
+  // RunGeneration fences runtime observations from prior starts or stops.
+  uint64 run_generation = 7;
+  // Links (via graph edges, not proto fields):
+  //   wasivm/rootfs -> UnixFS object (required root filesystem)
+}
+
+// CreateWasiVmOp creates a new WasiVm world object linked to its rootfs.
+message CreateWasiVmOp {
+  // ObjectKey is the key to create the VM at.
+  string object_key = 1;
+  // Name is the display name.
+  string name = 2;
+  // Config configures the init process.
+  WasiVmConfig config = 3;
+  // Timestamp is the creation timestamp.
+  .google.protobuf.Timestamp timestamp = 4;
+  // RootfsObjectKey points at the UnixFS object holding the root filesystem.
+  string rootfs_object_key = 5;
+}
+
+// SetWasiVmStateOp changes the desired state of an existing WasiVm object.
+message SetWasiVmStateOp {
+  // ObjectKey is the object key of the WasiVm to update.
+  string object_key = 1;
+  // State is the target state: VmState_RUNNING or VmState_STOPPED.
+  VmState state = 2;
+}
+
+// WasiVmConsoleService attaches a viewer to the console of a running WasiVM.
+service WasiVmConsoleService {
+  // Console streams terminal frames. The viewer sends OPEN with its size,
+  // then INPUT and RESIZE. The VM sends READY, the recent output, then
+  // OUTPUT as it is written, and EXIT when the VM stops.
+  rpc Console(stream .s4wave.terminal.TerminalFrame)
+      returns (stream .s4wave.terminal.TerminalFrame);
+}

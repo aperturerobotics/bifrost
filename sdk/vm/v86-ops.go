@@ -172,9 +172,10 @@ func (o *SetV86ConfigOp) Validate() error {
 	return nil
 }
 
-// resolveVmV86Object returns the object state for a VmV86 key, rejecting
-// missing objects and wrong types. sysErr reports transport-level failures.
-func resolveVmV86Object(ctx context.Context, ws world.WorldState, objKey string) (objState world.ObjectState, sysErr bool, err error) {
+// resolveVmObject returns the object state for a VM key, rejecting missing
+// objects and types other than typeID. sysErr reports transport-level
+// failures.
+func resolveVmObject(ctx context.Context, ws world.WorldState, objKey, typeID string) (objState world.ObjectState, sysErr bool, err error) {
 	// Open the requested VM object and release failed lookups.
 	objState, found, err := ws.GetObject(ctx, objKey)
 	if err != nil {
@@ -183,18 +184,18 @@ func resolveVmV86Object(ctx context.Context, ws world.WorldState, objKey string)
 	}
 	if !found {
 		world.ReleaseObjectState(objState)
-		return nil, false, errors.New("vm-v86 object not found")
+		return nil, false, errors.Errorf("%s object not found", typeID)
 	}
 
 	// Require the opened object to carry the VM block type.
-	typeID, err := world_types.GetObjectType(ctx, ws, objKey)
+	gotTypeID, err := world_types.GetObjectType(ctx, ws, objKey)
 	if err != nil {
 		world.ReleaseObjectState(objState)
 		return nil, true, err
 	}
-	if typeID != VmV86TypeID {
+	if gotTypeID != typeID {
 		world.ReleaseObjectState(objState)
-		return nil, false, errors.Errorf("object %q is not a VmV86 (type=%q)", objKey, typeID)
+		return nil, false, errors.Errorf("object %q is not a %s (type=%q)", objKey, typeID, gotTypeID)
 	}
 	return objState, false, nil
 }
@@ -212,7 +213,7 @@ func (o *SetV86ConfigOp) ApplyWorldOp(
 	}
 
 	// Resolve the typed VM object for the configuration change.
-	objState, sysErr, err := resolveVmV86Object(ctx, ws, o.GetObjectKey())
+	objState, sysErr, err := resolveVmObject(ctx, ws, o.GetObjectKey(), VmV86TypeID)
 	defer world.ReleaseObjectState(objState)
 	if err != nil {
 		return sysErr, err
@@ -276,19 +277,6 @@ var _ world.Operation = (*SetV86ConfigOp)(nil)
 // SetV86StateOpId is the operation id for SetV86StateOp.
 var SetV86StateOpId = "vm/v86/set-state"
 
-func normalizeV86DesiredState(state VmState) (VmState, error) {
-	switch state {
-	case VmState_VmState_STARTING:
-		return VmState_VmState_RUNNING, nil
-	case VmState_VmState_STOPPING:
-		return VmState_VmState_STOPPED, nil
-	case VmState_VmState_STOPPED, VmState_VmState_RUNNING:
-		return state, nil
-	default:
-		return VmState_VmState_STOPPED, errors.Errorf("invalid desired v86 state %s", state.String())
-	}
-}
-
 // NewSetV86StateOp constructs a new SetV86StateOp.
 func NewSetV86StateOp(objKey string, state VmState, errorMessage string) *SetV86StateOp {
 	return &SetV86StateOp{
@@ -313,7 +301,8 @@ func (o *SetV86StateOp) Validate() error {
 	if len(o.GetObjectKey()) == 0 {
 		return world.ErrEmptyObjectKey
 	}
-	return nil
+	_, err := normalizeDesiredState(o.GetState())
+	return err
 }
 
 // ApplyWorldOp applies the operation as a world operation.
@@ -329,17 +318,13 @@ func (o *SetV86StateOp) ApplyWorldOp(
 	}
 
 	// Resolve the typed VM object for the desired state change.
-	objState, sysErr, err := resolveVmV86Object(ctx, ws, o.GetObjectKey())
+	objState, sysErr, err := resolveVmObject(ctx, ws, o.GetObjectKey(), VmV86TypeID)
 	defer world.ReleaseObjectState(objState)
 	if err != nil {
 		return sysErr, err
 	}
 
-	// Normalize the requested VM state before retaining it.
-	target, err := normalizeV86DesiredState(o.GetState())
-	if err != nil {
-		return false, err
-	}
+	// Begin a new run generation toward the requested state.
 	_, _, err = world.AccessObjectState(ctx, objState, true, func(bcs *block.Cursor) error {
 		// Decode the VM block and require its retained execution state.
 		vm, unmarshalErr := block.UnmarshalBlock[*VmV86](ctx, bcs, func() block.Block {
@@ -352,31 +337,15 @@ func (o *SetV86StateOp) ApplyWorldOp(
 			return errors.New("vm-v86 block missing on object")
 		}
 
-		// Normalize the retained desired state and reject a redundant request.
-		current := vm.GetState()
-		if current == VmState_VmState_ERROR {
-			current = VmState_VmState_STOPPED
-		} else if normalized, normalizeErr := normalizeV86DesiredState(current); normalizeErr == nil {
-			current = normalized
+		// Advance the run generation with its new desired and observed states.
+		desired, observed, stateErr := nextRunStates(vm.GetState(), vm.GetObservedState(), o.GetState())
+		if stateErr != nil {
+			return stateErr
 		}
-		observed := vm.GetObservedState()
-		if target == current &&
-			(target != VmState_VmState_RUNNING || observed != VmState_VmState_ERROR) &&
-			(target != VmState_VmState_STOPPED || observed == VmState_VmState_STOPPED) {
-			return errors.Errorf("v86 desired state already %s", target.String())
-		}
-
-		// Advance the VM's run generation and publish its new desired and observed states.
-		vm.State = target
+		vm.State = desired
+		vm.ObservedState = observed
 		vm.RunGeneration++
 		vm.ErrorMessage = ""
-		if target == VmState_VmState_RUNNING {
-			vm.ObservedState = VmState_VmState_STARTING
-		} else if observed != VmState_VmState_STOPPED {
-			vm.ObservedState = VmState_VmState_STOPPING
-		} else {
-			vm.ObservedState = VmState_VmState_STOPPED
-		}
 		bcs.SetBlock(vm, true)
 		return nil
 	})

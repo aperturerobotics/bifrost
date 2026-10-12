@@ -71,6 +71,7 @@ var applicationBlockTypes = map[string]blocktype.BlockType{
 	s4wave_sshhost.SshHostTypeID:             blocktype.NewBlockType(s4wave_sshhost.SshHostTypeID, s4wave_sshhost.NewSshHostBlock),
 	s4wave_terminal.TerminalTypeID:           blocktype.NewBlockType(s4wave_terminal.TerminalTypeID, s4wave_terminal.NewTerminalBlock),
 	s4wave_vm.VmV86TypeID:                    blocktype.NewBlockType(s4wave_vm.VmV86TypeID, func() *s4wave_vm.VmV86 { return &s4wave_vm.VmV86{} }),
+	s4wave_vm.WasiVmTypeID:                   blocktype.NewBlockType(s4wave_vm.WasiVmTypeID, func() *s4wave_vm.WasiVm { return &s4wave_vm.WasiVm{} }),
 }
 
 // lookupApplicationBlockType resolves application object roots for block traversal.

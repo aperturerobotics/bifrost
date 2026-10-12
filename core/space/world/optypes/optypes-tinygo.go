@@ -55,6 +55,8 @@ func LookupWorldOp(ctx context.Context, opTypeID string) (world.Operation, error
 		s4wave_vm.LookupSetV86StateOp,
 		s4wave_vm.LookupCreateV86ImageOp,
 		s4wave_vm.LookupSetV86ImageMetadataOp,
+		s4wave_vm.LookupCreateWasiVmOp,
+		s4wave_vm.LookupSetWasiVmStateOp,
 		s4wave_org.LookupInitOrganizationOp,
 		s4wave_org.LookupUpdateOrgOp,
 		s4wave_org.LookupDeleteOrganizationOp,

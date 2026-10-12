@@ -28,7 +28,7 @@ import (
 	"github.com/s4wave/spacewave/db/world"
 	world_types "github.com/s4wave/spacewave/db/world/types"
 	s4wave_cdn "github.com/s4wave/spacewave/sdk/cdn"
-	s4wave_process "github.com/s4wave/spacewave/sdk/process"
+	s4wave_space "github.com/s4wave/spacewave/sdk/space"
 	s4wave_vm "github.com/s4wave/spacewave/sdk/vm"
 )
 
@@ -72,14 +72,14 @@ func newVmStartCommand(statePath *string, sessionIdx *uint, spaceID *string) *cl
 			if key == "" {
 				return errors.New("VM key required")
 			}
-			if err := setV86VMState(c, *statePath, sessionIndex32(*sessionIdx), *spaceID, key, s4wave_vm.VmState_VmState_STARTING); err != nil {
+			if err := setVMState(c, *statePath, sessionIndex32(*sessionIdx), *spaceID, key, s4wave_vm.VmState_VmState_STARTING); err != nil {
 				return err
 			}
 			if !wait {
 				os.Stdout.WriteString("starting\n")
 				return nil
 			}
-			return watchV86VM(c, *statePath, sessionIndex32(*sessionIdx), *spaceID, key)
+			return watchVM(c, *statePath, sessionIndex32(*sessionIdx), *spaceID, key)
 		},
 	}
 }
@@ -94,19 +94,8 @@ func newVmWatchCommand(statePath *string, sessionIdx *uint, spaceID *string) *cl
 			if key == "" {
 				return errors.New("VM key required")
 			}
-			return watchV86VM(c, *statePath, sessionIndex32(*sessionIdx), *spaceID, key)
+			return watchVM(c, *statePath, sessionIndex32(*sessionIdx), *spaceID, key)
 		},
-	}
-}
-
-func isTerminalExecutionState(state s4wave_process.ExecutionState) bool {
-	switch state {
-	case s4wave_process.ExecutionState_ExecutionState_RUNNING,
-		s4wave_process.ExecutionState_ExecutionState_STOPPED,
-		s4wave_process.ExecutionState_ExecutionState_ERROR:
-		return true
-	default:
-		return false
 	}
 }
 
@@ -121,7 +110,7 @@ func newVmStopCommand(statePath *string, sessionIdx *uint, spaceID *string) *cli
 			if key == "" {
 				return errors.New("VM key required")
 			}
-			if err := setV86VMState(c, *statePath, sessionIndex32(*sessionIdx), *spaceID, key, s4wave_vm.VmState_VmState_STOPPED); err != nil {
+			if err := setVMState(c, *statePath, sessionIndex32(*sessionIdx), *spaceID, key, s4wave_vm.VmState_VmState_STOPPED); err != nil {
 				return err
 			}
 			os.Stdout.WriteString("stopped\n")
@@ -136,6 +125,7 @@ func newVmCreateCommand(statePath *string, sessionIdx *uint, spaceID *string) *c
 		Usage: "create a VM",
 		Subcommands: []*cli.Command{
 			newVmCreateV86Command(statePath, sessionIdx, spaceID),
+			newVmCreateWasiVmCommand(statePath, sessionIdx, spaceID),
 		},
 	}
 }
@@ -203,6 +193,39 @@ func newVmInfoCommand(statePath *string, sessionIdx *uint, spaceID *string) *cli
 				return err
 			}
 			return writeV86VMInfo(vm, c.String("output"))
+		},
+	}
+}
+
+func newVmCreateWasiVmCommand(statePath *string, sessionIdx *uint, spaceID *string) *cli.Command {
+	args := &wasiVmCreateArgs{}
+	return &cli.Command{
+		Name:      "wasivm",
+		Usage:     "create a WasiVM on a root filesystem",
+		ArgsUsage: "<name>",
+		Flags: []cli.Flag{
+			&cli.StringFlag{Name: "as", Usage: "destination VM object key", Destination: &args.objectKey},
+			&cli.StringFlag{Name: "rootfs", Usage: "root filesystem UnixFS object key", Destination: &args.rootfsObjectKey},
+			&cli.StringFlag{Name: "rootfs-tar", Usage: "import the root filesystem from a tar", Destination: &args.rootfsTarPath},
+			&cli.StringFlag{Name: "init", Usage: "init program path in the root filesystem", Destination: &args.initPath},
+			&cli.StringSliceFlag{Name: "init-arg", Usage: "init program argument", Destination: &args.initArgs},
+			&cli.StringSliceFlag{Name: "env", Usage: "init environment KEY=VALUE", Destination: &args.env},
+		},
+		Action: func(c *cli.Context) error {
+			// Require a name and one root filesystem source, then create the VM.
+			name := c.Args().First()
+			if name == "" {
+				return errors.New("VM name required")
+			}
+			if (args.rootfsObjectKey == "") == (args.rootfsTarPath == "") {
+				return errors.New("exactly one of --rootfs or --rootfs-tar is required")
+			}
+			key, err := createWasiVm(c, *statePath, sessionIndex32(*sessionIdx), *spaceID, name, args)
+			if err != nil {
+				return err
+			}
+			os.Stdout.WriteString(key + "\n")
+			return nil
 		},
 	}
 }
@@ -390,6 +413,15 @@ type v86VMCreateArgs struct {
 	mounts          cli.StringSlice
 }
 
+type wasiVmCreateArgs struct {
+	objectKey       string
+	rootfsObjectKey string
+	rootfsTarPath   string
+	initPath        string
+	initArgs        cli.StringSlice
+	env             cli.StringSlice
+}
+
 func vmMemoryMiB(value uint) (uint32, error) {
 	if value > math.MaxUint32 {
 		return 0, errors.Errorf("memory size exceeds uint32 range: %d MiB", value)
@@ -399,7 +431,7 @@ func vmMemoryMiB(value uint) (uint32, error) {
 
 func readV86Images(c *cli.Context, statePath string, sessionIdx uint32, spaceID string) ([]*v86ImageCLIEntry, error) {
 	var out []*v86ImageCLIEntry
-	err := withVmWorldReadTx(c, statePath, sessionIdx, spaceID, func(tx world.WorldState) error {
+	err := withVmWorldTx(c, statePath, sessionIdx, spaceID, false, func(tx world.WorldState) error {
 		// List image keys, sort them, and read each image.
 		keys, err := world_types.ListObjectsWithType(c.Context, tx, s4wave_vm.V86ImageTypeID)
 		if err != nil {
@@ -421,7 +453,7 @@ func readV86Images(c *cli.Context, statePath string, sessionIdx uint32, spaceID 
 
 func readV86VMs(c *cli.Context, statePath string, sessionIdx uint32, spaceID string) ([]*v86VMCLIEntry, error) {
 	var out []*v86VMCLIEntry
-	err := withVmWorldReadTx(c, statePath, sessionIdx, spaceID, func(tx world.WorldState) error {
+	err := withVmWorldTx(c, statePath, sessionIdx, spaceID, false, func(tx world.WorldState) error {
 		// List VM keys, sort them, and read each VM.
 		keys, err := world_types.ListObjectsWithType(c.Context, tx, s4wave_vm.VmV86TypeID)
 		if err != nil {
@@ -443,7 +475,7 @@ func readV86VMs(c *cli.Context, statePath string, sessionIdx uint32, spaceID str
 
 func readV86VM(c *cli.Context, statePath string, sessionIdx uint32, spaceID, key string) (*v86VMCLIEntry, error) {
 	var out *v86VMCLIEntry
-	err := withVmWorldReadTx(c, statePath, sessionIdx, spaceID, func(tx world.WorldState) error {
+	err := withVmWorldTx(c, statePath, sessionIdx, spaceID, false, func(tx world.WorldState) error {
 		vm, err := readV86VMFromTx(c, tx, key)
 		if err != nil {
 			return err
@@ -587,63 +619,11 @@ func createV86VM(
 	name string,
 	args *v86VMCreateArgs,
 ) (string, error) {
-	// Parse mounts and default the VM object key.
+	// Parse the mounts and memory sizes.
 	mounts, err := parseV86MountFlags(args.mounts.Value())
 	if err != nil {
 		return "", err
 	}
-	vmKey := args.objectKey
-	if vmKey == "" {
-		vmKey = "vm/v86/" + ulid.NewULID()
-	}
-	ctx := c.Context
-
-	// Connect to the daemon and resolve the Space.
-	client, err := connectDaemonFromContext(ctx, c, statePath)
-	if err != nil {
-		return "", err
-	}
-	defer client.close()
-	sess, err := client.mountSession(ctx, sessionIdx)
-	if err != nil {
-		return "", err
-	}
-	defer sess.Release()
-	sid, err := client.resolveSpaceID(ctx, sess, spaceID)
-	if err != nil {
-		return "", err
-	}
-
-	// Mount the Space and open the World engine.
-	spaceSvc, spaceCleanup, err := client.mountSpace(ctx, sess, sid)
-	if err != nil {
-		return "", err
-	}
-	defer spaceCleanup()
-	engine, engineCleanup, err := client.accessWorldEngine(ctx, spaceSvc)
-	if err != nil {
-		return "", err
-	}
-	defer engineCleanup()
-
-	// Open a write transaction and reject an existing VM key.
-	tx, err := engine.NewTransaction(ctx, true)
-	if err != nil {
-		return "", errors.Wrap(err, "new transaction")
-	}
-	defer tx.Discard()
-	{
-		objectState, found, err := tx.GetObject(ctx, vmKey)
-		world.ReleaseObjectState(objectState)
-		if err != nil {
-			return "", errors.Wrap(err, "probe destination VM")
-		} else if found {
-			return "", errors.Errorf("destination VM %q already exists", vmKey)
-		}
-	}
-
-	// Build the create operation from the image and config flags.
-	op := s4wave_vm.NewCreateVmV86Op(vmKey, name, args.imageObjectKey, time.Now())
 	memoryMb, err := vmMemoryMiB(args.memoryMb)
 	if err != nil {
 		return "", err
@@ -652,6 +632,13 @@ func createV86VM(
 	if err != nil {
 		return "", err
 	}
+
+	// Default the VM object key and build the create operation.
+	vmKey := args.objectKey
+	if vmKey == "" {
+		vmKey = "vm/v86/" + ulid.NewULID()
+	}
+	op := s4wave_vm.NewCreateVmV86Op(vmKey, name, args.imageObjectKey, time.Now())
 	op.Config = &s4wave_vm.V86Config{
 		MemoryMb:        memoryMb,
 		VgaMemoryMb:     vgaMemoryMb,
@@ -662,17 +649,96 @@ func createV86VM(
 		Mounts:          mounts,
 	}
 
-	// Apply the create operation and commit it.
-	if _, _, err := tx.ApplyWorldOp(ctx, op, ""); err != nil {
-		return "", errors.Wrap(err, "create v86 VM")
-	}
-	if err := tx.Commit(ctx); err != nil {
-		return "", errors.Wrap(err, "commit create VM")
+	// Create the VM under a new key.
+	err = withVmWorldTx(c, statePath, sessionIdx, spaceID, true, func(tx world.WorldState) error {
+		if err := requireNewObject(c.Context, tx, vmKey, "VM"); err != nil {
+			return err
+		}
+		_, _, err := tx.ApplyWorldOp(c.Context, op, "")
+		return errors.Wrap(err, "create v86 VM")
+	})
+	if err != nil {
+		return "", err
 	}
 	return vmKey, nil
 }
 
-func setV86VMState(
+func createWasiVm(
+	c *cli.Context,
+	statePath string,
+	sessionIdx uint32,
+	spaceID string,
+	name string,
+	args *wasiVmCreateArgs,
+) (string, error) {
+	// Default the VM and root filesystem object keys.
+	vmKey := args.objectKey
+	if vmKey == "" {
+		vmKey = "vm/wasivm/" + ulid.NewULID()
+	}
+	rootfsKey := args.rootfsObjectKey
+	if rootfsKey == "" {
+		rootfsKey = vmKey + "/rootfs"
+	}
+
+	// Parse the environment and build the create operation.
+	env := make(map[string]string, len(args.env.Value()))
+	for _, kv := range args.env.Value() {
+		k, v, ok := strings.Cut(kv, "=")
+		if !ok || k == "" {
+			return "", errors.Errorf("invalid --env %q, want KEY=VALUE", kv)
+		}
+		env[k] = v
+	}
+	ts := time.Now()
+	op := s4wave_vm.NewCreateWasiVmOp(vmKey, name, rootfsKey, ts)
+	op.Config = &s4wave_vm.WasiVmConfig{
+		InitPath: args.initPath,
+		InitArgs: args.initArgs.Value(),
+		Env:      env,
+	}
+
+	// Import the root filesystem when it comes from a tar, then create the VM.
+	ctx := c.Context
+	err := withVmWorldTx(c, statePath, sessionIdx, spaceID, true, func(tx world.WorldState) error {
+		if err := requireNewObject(ctx, tx, vmKey, "VM"); err != nil {
+			return err
+		}
+		if args.rootfsTarPath != "" {
+			if err := requireNewObject(ctx, tx, rootfsKey, "root filesystem"); err != nil {
+				return err
+			}
+			if _, err := importRootfsTar(ctx, tx, rootfsKey, args.rootfsTarPath, ts); err != nil {
+				return err
+			}
+		}
+		_, _, err := tx.ApplyWorldOp(ctx, op, "")
+		return errors.Wrap(err, "create WasiVM")
+	})
+	if err != nil {
+		return "", err
+	}
+	return vmKey, nil
+}
+
+// requireNewObject rejects a destination key that already holds an object.
+func requireNewObject(ctx context.Context, tx world.WorldState, key, what string) error {
+	// Probe the destination key.
+	objectState, found, err := tx.GetObject(ctx, key)
+	world.ReleaseObjectState(objectState)
+	if err != nil {
+		return errors.Wrapf(err, "probe destination %s", what)
+	}
+	if found {
+		return errors.Errorf("destination %s %q already exists", what, key)
+	}
+	return nil
+}
+
+// setVMState requests a run state for the VM vmKey with the state operation of
+// its VM type. A start first approves the VM's process binding, which has the
+// Space run the VM; the approval outlasts a stop, so the runner commits it.
+func setVMState(
 	c *cli.Context,
 	statePath string,
 	sessionIdx uint32,
@@ -680,98 +746,151 @@ func setV86VMState(
 	vmKey string,
 	state s4wave_vm.VmState,
 ) error {
-	// Connect to the daemon and mount the session.
-	ctx := c.Context
-	client, err := connectDaemonFromContext(ctx, c, statePath)
-	if err != nil {
-		return err
-	}
-	defer client.close()
-	sess, err := client.mountSession(ctx, sessionIdx)
-	if err != nil {
-		return err
-	}
-	defer sess.Release()
+	return withVmSpace(c, statePath, sessionIdx, spaceID, func(
+		client *sdkClient,
+		spaceSvc s4wave_space.SRPCSpaceResourceServiceClient,
+		engine world.Engine,
+	) error {
+		// Choose the state operation of the VM type.
+		ctx := c.Context
+		typeID, err := vmTypeID(ctx, world.NewEngineWorldState(engine, false), vmKey)
+		if err != nil {
+			return err
+		}
+		var op world.Operation = s4wave_vm.NewSetWasiVmStateOp(vmKey, state)
+		if typeID == s4wave_vm.VmV86TypeID {
+			op = s4wave_vm.NewSetV86StateOp(vmKey, state, "")
+		}
 
-	// Resolve the Space and open the World engine.
-	sid, err := client.resolveSpaceID(ctx, sess, spaceID)
-	if err != nil {
-		return err
-	}
-	spaceSvc, spaceCleanup, err := client.mountSpace(ctx, sess, sid)
-	if err != nil {
-		return err
-	}
-	defer spaceCleanup()
-	engine, engineCleanup, err := client.accessWorldEngine(ctx, spaceSvc)
-	if err != nil {
-		return err
-	}
-	defer engineCleanup()
+		// Approve the process binding before a start.
+		if state == s4wave_vm.VmState_VmState_RUNNING || state == s4wave_vm.VmState_VmState_STARTING {
+			contents, releaseContents, err := client.mountSpaceContents(ctx, spaceSvc)
+			if err != nil {
+				return err
+			}
+			defer releaseContents()
+			if _, err := contents.SetProcessBinding(ctx, &s4wave_space.SetProcessBindingRequest{
+				ObjectKey: vmKey,
+				TypeId:    typeID,
+				Approved:  true,
+			}); err != nil {
+				return errors.Wrap(err, "approve VM process binding")
+			}
+		}
 
-	// Apply the state change.
-	op := s4wave_vm.NewSetV86StateOp(vmKey, state, "")
-	return applyWorldOp(c, engine, op)
+		// Apply the state change.
+		err = world.ExecTransaction(ctx, engine, true, func(ctx context.Context, tx world.WorldState) error {
+			_, _, err := tx.ApplyWorldOp(ctx, op, "")
+			return err
+		})
+		return errors.Wrap(err, "apply "+op.GetOperationTypeId())
+	})
 }
 
-func watchV86VM(c *cli.Context, statePath string, sessionIdx uint32, spaceID, vmKey string) error {
-	// Connect to the daemon and mount the session.
-	ctx := c.Context
-	client, err := connectDaemonFromContext(ctx, c, statePath)
+// vmTypeID returns the type of the VM object vmKey.
+func vmTypeID(ctx context.Context, ws world.WorldState, vmKey string) (string, error) {
+	typeID, err := world_types.GetObjectType(ctx, ws, vmKey)
 	if err != nil {
-		return err
+		return "", errors.Wrap(err, "get VM type")
 	}
-	defer client.close()
-	sess, err := client.mountSession(ctx, sessionIdx)
-	if err != nil {
-		return err
+	switch typeID {
+	case s4wave_vm.VmV86TypeID, s4wave_vm.WasiVmTypeID:
+		return typeID, nil
+	case "":
+		return "", errors.Errorf("VM %q not found", vmKey)
+	default:
+		return "", errors.Errorf("%q is a %s object, not a VM", vmKey, typeID)
 	}
-	defer sess.Release()
+}
 
-	// Resolve the Space and open the World engine.
-	sid, err := client.resolveSpaceID(ctx, sess, spaceID)
-	if err != nil {
-		return err
-	}
-	spaceSvc, spaceCleanup, err := client.mountSpace(ctx, sess, sid)
-	if err != nil {
-		return err
-	}
-	defer spaceCleanup()
-	_, engineRef, engineCleanup, err := client.accessWorldEngineWithRef(ctx, spaceSvc)
-	if err != nil {
-		return err
-	}
-	defer engineCleanup()
+// vmRunState is the run state every VM block carries.
+type vmRunState interface {
+	// GetState returns the desired state.
+	GetState() s4wave_vm.VmState
+	// GetObservedState returns the state the runner last committed.
+	GetObservedState() s4wave_vm.VmState
+	// GetErrorMessage returns why the last run failed.
+	GetErrorMessage() string
+}
 
-	// Open the VM execution stream.
-	vmClient, _, _, vmCleanup, err := client.accessTypedObject(ctx, engineRef, vmKey)
-	if err != nil {
-		return err
-	}
-	defer vmCleanup()
-	execSvc := s4wave_process.NewSRPCPersistentExecutionServiceClient(vmClient)
-	stream, err := execSvc.Execute(ctx, &s4wave_process.ExecuteRequest{})
-	if err != nil {
-		return errors.Wrap(err, "execute VM")
-	}
-	defer stream.Close()
-
-	// Print each execution state until the VM stops.
-	for {
-		status, err := stream.Recv()
-		if err != nil {
-			return errors.Wrap(err, "recv VM status")
-		}
-		state := status.GetState()
-		os.Stdout.WriteString(state.String() + "\n")
-		if isTerminalExecutionState(state) {
-			if state == s4wave_process.ExecutionState_ExecutionState_ERROR {
-				return errors.New("VM entered ERROR")
+// readVMRunState reads the run state of a VM object of type typeID.
+func readVMRunState(ctx context.Context, obj world.ObjectState, typeID string) (vmRunState, error) {
+	var vm vmRunState
+	_, _, err := world.AccessObjectState(ctx, obj, false, func(bcs *block.Cursor) error {
+		if typeID == s4wave_vm.VmV86TypeID {
+			v86, err := block.UnmarshalBlock[*s4wave_vm.VmV86](ctx, bcs, func() block.Block {
+				return &s4wave_vm.VmV86{}
+			})
+			if v86 != nil {
+				vm = v86
 			}
-			return nil
+			return err
 		}
+		wasiVm, err := block.UnmarshalBlock[*s4wave_vm.WasiVm](ctx, bcs, func() block.Block {
+			return &s4wave_vm.WasiVm{}
+		})
+		if wasiVm != nil {
+			vm = wasiVm
+		}
+		return err
+	})
+	if err == nil && vm == nil {
+		err = errors.New("VM block missing")
 	}
+	return vm, err
+}
+
+// watchVM prints each observed state of the VM vmKey until it reaches the
+// desired state or fails.
+func watchVM(c *cli.Context, statePath string, sessionIdx uint32, spaceID, vmKey string) error {
+	return withVmSpace(c, statePath, sessionIdx, spaceID, func(
+		_ *sdkClient,
+		_ s4wave_space.SRPCSpaceResourceServiceClient,
+		engine world.Engine,
+	) error {
+		// Open the VM object.
+		ctx := c.Context
+		ws := world.NewEngineWorldState(engine, false)
+		typeID, err := vmTypeID(ctx, ws, vmKey)
+		if err != nil {
+			return err
+		}
+		obj, found, err := ws.GetObject(ctx, vmKey)
+		defer world.ReleaseObjectState(obj)
+		if err != nil {
+			return err
+		}
+		if !found {
+			return errors.Errorf("VM %q not found", vmKey)
+		}
+
+		// Print each new observed state until it settles.
+		last := s4wave_vm.VmState(-1)
+		for {
+			_, rev, err := obj.GetRootRef(ctx)
+			if err != nil {
+				return err
+			}
+			vm, err := readVMRunState(ctx, obj, typeID)
+			if err != nil {
+				return err
+			}
+			observed := vm.GetObservedState()
+			if observed != last {
+				last = observed
+				os.Stdout.WriteString(strings.ToLower(strings.TrimPrefix(observed.String(), "VmState_")) + "\n")
+			}
+			switch {
+			case observed == s4wave_vm.VmState_VmState_ERROR:
+				return errors.Errorf("VM failed: %s", vm.GetErrorMessage())
+			case observed == vm.GetState():
+				return nil
+			}
+			if _, err := obj.WaitRev(ctx, rev+1, false); err != nil {
+				return err
+			}
+		}
+	})
 }
 
 func parseV86MountFlags(vals []string) ([]*s4wave_vm.VmMount, error) {
@@ -814,7 +933,6 @@ func importV86ImageTar(
 	args *v86ImageImportTarArgs,
 ) (string, error) {
 	// Validate the import and default the image object key.
-	ctx := c.Context
 	if err := validateV86ImageImportTarArgs(args); err != nil {
 		return "", err
 	}
@@ -823,7 +941,23 @@ func importV86ImageTar(
 		dstKey = "v86image-" + ulid.NewULID()
 	}
 
-	// Name the wasm, BIOS, and kernel asset paths.
+	// Import the assets and create the image under a new key.
+	err := withVmWorldTx(c, statePath, sessionIdx, spaceID, true, func(tx world.WorldState) error {
+		if err := requireNewObject(c.Context, tx, dstKey, "image"); err != nil {
+			return err
+		}
+		return importV86ImageAssets(c.Context, tx, dstKey, args)
+	})
+	if err != nil {
+		return "", err
+	}
+	return dstKey, nil
+}
+
+// importV86ImageAssets imports the image files and rootfs tar of args and
+// creates the image dstKey linked to them.
+func importV86ImageAssets(ctx context.Context, tx world.WorldState, dstKey string, args *v86ImageImportTarArgs) error {
+	// Import the wasm, BIOS, and kernel files.
 	assetPaths := []struct {
 		name string
 		path string
@@ -834,79 +968,32 @@ func importV86ImageTar(
 		{"vgabios.bin", args.vgabiosPath, s4wave_vm.PredV86ImageBiosVgabios},
 		{"bzImage", args.kernelPath, s4wave_vm.PredV86ImageKernel},
 	}
-
-	// Connect to the daemon and resolve the Space.
-	client, err := connectDaemonFromContext(ctx, c, statePath)
-	if err != nil {
-		return "", err
-	}
-	defer client.close()
-	sess, err := client.mountSession(ctx, sessionIdx)
-	if err != nil {
-		return "", err
-	}
-	defer sess.Release()
-	sid, err := client.resolveSpaceID(ctx, sess, spaceID)
-	if err != nil {
-		return "", err
-	}
-
-	// Mount the Space and open the World engine.
-	spaceSvc, spaceCleanup, err := client.mountSpace(ctx, sess, sid)
-	if err != nil {
-		return "", err
-	}
-	defer spaceCleanup()
-	engine, engineCleanup, err := client.accessWorldEngine(ctx, spaceSvc)
-	if err != nil {
-		return "", err
-	}
-	defer engineCleanup()
-
-	// Open a write transaction on the World engine.
-	tx, err := engine.NewTransaction(ctx, true)
-	if err != nil {
-		return "", errors.Wrap(err, "new transaction")
-	}
-	defer tx.Discard()
-
-	// Reject an existing destination image.
-	{
-		objectState, found, err := tx.GetObject(ctx, dstKey)
-		world.ReleaseObjectState(objectState)
-		if err != nil {
-			return "", errors.Wrap(err, "probe destination")
-		} else if found {
-			return "", errors.Errorf("destination image %q already exists", dstKey)
-		}
-	}
-
-	// Import the wasm, BIOS, and kernel files.
 	ts := time.Now()
-	edges := make(map[string]string, 5)
+	edges := make(map[string]string, len(assetPaths)+1)
 	for _, asset := range assetPaths {
 		key, err := v86ImageImportAssetObjectKey(dstKey, string(asset.pred))
 		if err != nil {
-			return "", err
+			return err
 		}
 		key, err = importV86SingleFile(ctx, tx, key, asset.name, asset.path, ts)
 		if err != nil {
-			return "", err
+			return err
 		}
 		edges[string(asset.pred)] = key
 	}
 
-	// Import the rootfs tar and build the image record.
+	// Import the rootfs tar.
 	rootfsKey, err := v86ImageImportAssetObjectKey(dstKey, string(s4wave_vm.PredV86ImageRootfs))
 	if err != nil {
-		return "", err
+		return err
 	}
-	rootfsKey, err = importV86RootfsTar(ctx, tx, rootfsKey, args.rootfsTarPath, ts)
+	rootfsKey, err = importRootfsTar(ctx, tx, rootfsKey, args.rootfsTarPath, ts)
 	if err != nil {
-		return "", err
+		return err
 	}
 	edges[string(s4wave_vm.PredV86ImageRootfs)] = rootfsKey
-	tags := args.tags.Value()
+
+	// Create the image and set its asset edges.
 	img := &s4wave_vm.V86Image{
 		Name:          args.name,
 		Version:       args.version,
@@ -914,23 +1001,18 @@ func importV86ImageTar(
 		Distro:        args.distro,
 		KernelVersion: args.kernelVersion,
 		Description:   args.description,
-		Tags:          tags,
+		Tags:          args.tags.Value(),
 	}
-
-	// Create the image, set its asset edges, and commit.
 	op := s4wave_vm.NewCreateV86ImageOp(dstKey, img, ts)
 	if _, _, err := tx.ApplyWorldOp(ctx, op, ""); err != nil {
-		return "", errors.Wrap(err, "create v86 image")
+		return errors.Wrap(err, "create v86 image")
 	}
 	for pred, target := range edges {
 		if err := tx.SetGraphQuad(ctx, world.NewGraphQuadWithKeys(dstKey, pred, target, "")); err != nil {
-			return "", errors.Wrapf(err, "set %s edge", pred)
+			return errors.Wrapf(err, "set %s edge", pred)
 		}
 	}
-	if err := tx.Commit(ctx); err != nil {
-		return "", errors.Wrap(err, "commit import")
-	}
-	return dstKey, nil
+	return nil
 }
 
 func v86ImageImportAssetObjectKey(imageKey, pred string) (string, error) {
@@ -1030,7 +1112,7 @@ func importV86SingleFile(ctx context.Context, tx world.WorldState, key, name, pa
 	return key, nil
 }
 
-func importV86RootfsTar(ctx context.Context, tx world.WorldState, key, path string, ts time.Time) (string, error) {
+func importRootfsTar(ctx context.Context, tx world.WorldState, key, path string, ts time.Time) (string, error) {
 	// Open the rootfs tar and require it to be a file.
 	f, err := os.Open(path)
 	if err != nil {
@@ -1071,7 +1153,7 @@ func importV86RootfsTar(ctx context.Context, tx world.WorldState, key, path stri
 
 func readV86Image(c *cli.Context, statePath string, sessionIdx uint32, spaceID, key string) (*v86ImageCLIEntry, error) {
 	var out *v86ImageCLIEntry
-	err := withVmWorldReadTx(c, statePath, sessionIdx, spaceID, func(tx world.WorldState) error {
+	err := withVmWorldTx(c, statePath, sessionIdx, spaceID, false, func(tx world.WorldState) error {
 		img, err := readV86ImageFromTx(c, tx, key)
 		if err != nil {
 			return err
@@ -1082,12 +1164,13 @@ func readV86Image(c *cli.Context, statePath string, sessionIdx uint32, spaceID, 
 	return out, err
 }
 
-func withVmWorldReadTx(
+// withVmSpace runs cb with the selected Space and its World engine.
+func withVmSpace(
 	c *cli.Context,
 	statePath string,
 	sessionIdx uint32,
 	spaceID string,
-	cb func(world.WorldState) error,
+	cb func(client *sdkClient, spaceSvc s4wave_space.SRPCSpaceResourceServiceClient, engine world.Engine) error,
 ) error {
 	// Connect to the daemon.
 	ctx := c.Context
@@ -1117,20 +1200,34 @@ func withVmWorldReadTx(
 	}
 	defer spaceCleanup()
 
-	// Open the World engine.
+	// Open the World engine and run the callback.
 	engine, engineCleanup, err := client.accessWorldEngine(ctx, spaceSvc)
 	if err != nil {
 		return err
 	}
 	defer engineCleanup()
+	return cb(client, spaceSvc, engine)
+}
 
-	// Open a read transaction and run the callback.
-	tx, err := engine.NewTransaction(ctx, false)
-	if err != nil {
-		return errors.Wrap(err, "new transaction")
-	}
-	defer tx.Discard()
-	return cb(tx)
+// withVmWorldTx runs cb in a transaction on the World of the selected Space.
+// A write transaction commits when cb succeeds.
+func withVmWorldTx(
+	c *cli.Context,
+	statePath string,
+	sessionIdx uint32,
+	spaceID string,
+	write bool,
+	cb func(world.WorldState) error,
+) error {
+	return withVmSpace(c, statePath, sessionIdx, spaceID, func(
+		_ *sdkClient,
+		_ s4wave_space.SRPCSpaceResourceServiceClient,
+		engine world.Engine,
+	) error {
+		return world.ExecTransaction(c.Context, engine, write, func(_ context.Context, tx world.WorldState) error {
+			return cb(tx)
+		})
+	})
 }
 
 func readV86ImageFromTx(c *cli.Context, tx world.WorldState, key string) (*v86ImageCLIEntry, error) {

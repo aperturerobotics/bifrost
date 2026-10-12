@@ -1,0 +1,228 @@
+package s4wave_vm
+
+import (
+	"context"
+	"time"
+
+	timestamppb "github.com/aperturerobotics/protobuf-go-lite/types/known/timestamppb"
+	"github.com/pkg/errors"
+	"github.com/s4wave/spacewave/db/block"
+	"github.com/s4wave/spacewave/db/world"
+	world_types "github.com/s4wave/spacewave/db/world/types"
+	"github.com/s4wave/spacewave/net/peer"
+	"github.com/sirupsen/logrus"
+)
+
+// CreateWasiVmOpId is the operation id for CreateWasiVmOp.
+var CreateWasiVmOpId = "vm/wasivm/create"
+
+// NewCreateWasiVmOp constructs a new CreateWasiVmOp. rootfsObjectKey points at
+// the UnixFS object holding the root filesystem and is required.
+func NewCreateWasiVmOp(objKey, name, rootfsObjectKey string, ts time.Time) *CreateWasiVmOp {
+	return &CreateWasiVmOp{
+		ObjectKey:       objKey,
+		Name:            name,
+		RootfsObjectKey: rootfsObjectKey,
+		Timestamp:       timestamppb.New(ts),
+	}
+}
+
+// NewCreateWasiVmOpBlock constructs a new CreateWasiVmOp block.
+func NewCreateWasiVmOpBlock() block.Block {
+	return &CreateWasiVmOp{}
+}
+
+// GetOperationTypeId returns the operation type identifier.
+func (o *CreateWasiVmOp) GetOperationTypeId() string {
+	return CreateWasiVmOpId
+}
+
+// Validate performs cursory checks on the op.
+func (o *CreateWasiVmOp) Validate() error {
+	if len(o.GetObjectKey()) == 0 {
+		return world.ErrEmptyObjectKey
+	}
+	if err := o.GetTimestamp().Validate(false); err != nil {
+		return err
+	}
+	if len(o.GetRootfsObjectKey()) == 0 {
+		return errors.New("rootfs_object_key is required")
+	}
+	return nil
+}
+
+// ApplyWorldOp applies the operation as a world operation.
+func (o *CreateWasiVmOp) ApplyWorldOp(
+	ctx context.Context,
+	le *logrus.Entry,
+	ws world.WorldState,
+	sender peer.ID,
+) (sysErr bool, err error) {
+	// Validate the VM creation intent before changing World state.
+	if err := o.Validate(); err != nil {
+		return false, err
+	}
+
+	// Create the VM object with its initial metadata block.
+	objKey := o.GetObjectKey()
+	vm := &WasiVm{
+		Name:      o.GetName(),
+		Config:    o.GetConfig(),
+		CreatedAt: o.GetTimestamp(),
+	}
+	createdObject, _, err := world.CreateWorldObject(ctx, ws, objKey, func(bcs *block.Cursor) error {
+		bcs.SetBlock(vm, true)
+		return nil
+	})
+	world.ReleaseObjectState(createdObject)
+	if err != nil {
+		return false, err
+	}
+
+	// Mark the object type and link the root filesystem.
+	if err := world_types.SetObjectType(ctx, ws, objKey, WasiVmTypeID); err != nil {
+		return false, err
+	}
+	rootfsQuad := world.NewGraphQuadWithKeys(objKey, string(PredWasiVmRootfs), o.GetRootfsObjectKey(), "")
+	if err := ws.SetGraphQuad(ctx, rootfsQuad); err != nil {
+		return true, errors.Wrap(err, "set rootfs edge")
+	}
+	return false, nil
+}
+
+// ApplyWorldObjectOp applies the operation to a world object handle.
+func (o *CreateWasiVmOp) ApplyWorldObjectOp(
+	ctx context.Context,
+	le *logrus.Entry,
+	os world.ObjectState,
+	sender peer.ID,
+) (sysErr bool, err error) {
+	return false, world.ErrUnhandledOp
+}
+
+// MarshalBlock marshals the block to binary.
+func (o *CreateWasiVmOp) MarshalBlock() ([]byte, error) {
+	return o.MarshalVT()
+}
+
+// UnmarshalBlock unmarshals the block to the object.
+func (o *CreateWasiVmOp) UnmarshalBlock(data []byte) error {
+	return o.UnmarshalVT(data)
+}
+
+// LookupCreateWasiVmOp looks up a CreateWasiVmOp operation type.
+func LookupCreateWasiVmOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
+	if operationTypeID == CreateWasiVmOpId {
+		return &CreateWasiVmOp{}, nil
+	}
+	return nil, nil
+}
+
+// SetWasiVmStateOpId is the operation id for SetWasiVmStateOp.
+var SetWasiVmStateOpId = "vm/wasivm/set-state"
+
+// NewSetWasiVmStateOp constructs a new SetWasiVmStateOp.
+func NewSetWasiVmStateOp(objKey string, state VmState) *SetWasiVmStateOp {
+	return &SetWasiVmStateOp{ObjectKey: objKey, State: state}
+}
+
+// NewSetWasiVmStateOpBlock constructs a new SetWasiVmStateOp block.
+func NewSetWasiVmStateOpBlock() block.Block {
+	return &SetWasiVmStateOp{}
+}
+
+// GetOperationTypeId returns the operation type identifier.
+func (o *SetWasiVmStateOp) GetOperationTypeId() string {
+	return SetWasiVmStateOpId
+}
+
+// Validate performs cursory checks on the op.
+func (o *SetWasiVmStateOp) Validate() error {
+	if len(o.GetObjectKey()) == 0 {
+		return world.ErrEmptyObjectKey
+	}
+	_, err := normalizeDesiredState(o.GetState())
+	return err
+}
+
+// ApplyWorldOp applies the operation as a world operation.
+func (o *SetWasiVmStateOp) ApplyWorldOp(
+	ctx context.Context,
+	le *logrus.Entry,
+	ws world.WorldState,
+	sender peer.ID,
+) (sysErr bool, err error) {
+	// Validate the desired state and resolve the typed VM object.
+	if err := o.Validate(); err != nil {
+		return false, err
+	}
+	objState, sysErr, err := resolveVmObject(ctx, ws, o.GetObjectKey(), WasiVmTypeID)
+	defer world.ReleaseObjectState(objState)
+	if err != nil {
+		return sysErr, err
+	}
+
+	// Begin a new run generation toward the requested state.
+	_, _, err = world.AccessObjectState(ctx, objState, true, func(bcs *block.Cursor) error {
+		// Decode the VM block.
+		vm, unmarshalErr := block.UnmarshalBlock[*WasiVm](ctx, bcs, func() block.Block {
+			return &WasiVm{}
+		})
+		if unmarshalErr != nil {
+			return unmarshalErr
+		}
+		if vm == nil {
+			return errors.New("wasivm block missing on object")
+		}
+
+		// Advance the run generation with its new desired and observed states.
+		desired, observed, stateErr := nextRunStates(vm.GetState(), vm.GetObservedState(), o.GetState())
+		if stateErr != nil {
+			return stateErr
+		}
+		vm.State = desired
+		vm.ObservedState = observed
+		vm.RunGeneration++
+		vm.ErrorMessage = ""
+		bcs.SetBlock(vm, true)
+		return nil
+	})
+	if err != nil {
+		return true, err
+	}
+	return false, nil
+}
+
+// ApplyWorldObjectOp applies the operation to a world object handle.
+func (o *SetWasiVmStateOp) ApplyWorldObjectOp(
+	ctx context.Context,
+	le *logrus.Entry,
+	os world.ObjectState,
+	sender peer.ID,
+) (sysErr bool, err error) {
+	return false, world.ErrUnhandledOp
+}
+
+// MarshalBlock marshals the block to binary.
+func (o *SetWasiVmStateOp) MarshalBlock() ([]byte, error) {
+	return o.MarshalVT()
+}
+
+// UnmarshalBlock unmarshals the block to the object.
+func (o *SetWasiVmStateOp) UnmarshalBlock(data []byte) error {
+	return o.UnmarshalVT(data)
+}
+
+// LookupSetWasiVmStateOp looks up a SetWasiVmStateOp operation type.
+func LookupSetWasiVmStateOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
+	if operationTypeID == SetWasiVmStateOpId {
+		return &SetWasiVmStateOp{}, nil
+	}
+	return nil, nil
+}
+
+// _ is a type assertion
+var (
+	_ world.Operation = (*CreateWasiVmOp)(nil)
+	_ world.Operation = (*SetWasiVmStateOp)(nil)
+)
