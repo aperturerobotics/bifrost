@@ -11,7 +11,7 @@ import (
 	"github.com/s4wave/spacewave/core/sobject"
 )
 
-// joinRequestHarness holds an owner and a requester joined over a native transport.
+// joinRequestHarness holds an owner and a requester linked over a native transport.
 type joinRequestHarness struct {
 	ctx       context.Context
 	t         *testing.T
@@ -21,16 +21,16 @@ type joinRequestHarness struct {
 	readerKey *provider_local.Session
 }
 
-// newJoinRequestHarness starts two providers with reachable session transports.
+// newJoinRequestHarness starts two accounts linked over the provider's native
+// network.
 func newJoinRequestHarness(ctx context.Context, t *testing.T) *joinRequestHarness {
-	// Mount the owner and reader accounts on separate providers.
+	// Mount the owner and reader accounts on one provider.
 	skipFullP2PSyncUnderGoScript(t)
-	_, _, owner, ownerSession, releaseOwner := setupProviderAndSession(ctx, t)
+	tb, _, owner, ownerSession, releaseOwner := setupProviderAndSession(ctx, t)
 	t.Cleanup(releaseOwner)
-	_, _, reader, readerSession, releaseReader := setupProviderAndSession(ctx, t)
-	t.Cleanup(releaseReader)
+	reader, readerSession := setupPeerAccount(ctx, t, tb)
 
-	// Start both session transports and connect their backends.
+	// Start both session transports.
 	if err := owner.EnsureConfiguredSessionTransport(ctx, ownerSession.GetPrivKey()); err != nil {
 		t.Fatal(err)
 	}
@@ -41,8 +41,6 @@ func newJoinRequestHarness(ctx context.Context, t *testing.T) *joinRequestHarnes
 	}
 	t.Cleanup(reader.StopSessionTransport)
 	t.Cleanup(reader.StopP2PSync)
-	prepareSessionTransportBackends(ctx, t, owner.GetSessionTransport(), reader.GetSessionTransport())
-
 	return &joinRequestHarness{ctx: ctx, t: t, owner: owner, ownerKey: ownerSession, reader: reader, readerKey: readerSession}
 }
 

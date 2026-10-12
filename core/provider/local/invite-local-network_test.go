@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"github.com/aperturerobotics/util/broadcast"
-	"github.com/s4wave/spacewave/core/provider"
-	provider_local "github.com/s4wave/spacewave/core/provider/local"
 	"github.com/s4wave/spacewave/core/sobject"
 )
 
@@ -21,32 +19,8 @@ func TestLocalProviderInvitationUsesNativeNetwork(t *testing.T) {
 	tb, _, owner, ownerSession, releaseOwner := setupProviderAndSession(ctx, t)
 	t.Cleanup(releaseOwner)
 
-	// Look up the native provider that hosts both accounts.
-	rawProvider, providerRef, err := provider.ExLookupProvider(ctx, tb.Bus, "local", false, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(providerRef.Release)
-	local := rawProvider.(*provider_local.Provider)
-
-	// Create and mount an independent reader account and session.
-	readerRef, err := local.CreateLocalAccountAndSession(ctx, "")
-	if err != nil {
-		t.Fatal(err)
-	}
-	rawReader, releaseReader, err := local.AccessProviderAccount(ctx, readerRef.GetProviderResourceRef().GetProviderAccountId(), nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(releaseReader)
-
-	// Mount the reader's session.
-	reader := rawReader.(*provider_local.ProviderAccount)
-	readerSession, releaseSession, err := reader.MountSession(ctx, readerRef, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(releaseSession)
+	// Create an independent reader account on the same provider.
+	reader, readerSession := setupPeerAccount(ctx, t, tb)
 
 	// Create and mount the owner's shared object.
 	ref, err := owner.CreateSharedObject(ctx, "local-invitation", &sobject.SharedObjectMeta{BodyType: "space"}, "", "")

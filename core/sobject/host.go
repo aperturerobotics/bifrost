@@ -376,6 +376,32 @@ func (s *SOHost) ApplyConfigChange(ctx context.Context, entry *SOConfigChange, f
 	return lk.WriteSOState(ctx, nextState, entry)
 }
 
+// retryConfigChange runs change, which reads the config and signs a change of
+// it, until no concurrent writer moves the config head between that read and
+// the apply. Each retry waits for the host to publish a state other than the
+// one held before the failed attempt.
+func retryConfigChange[T any](ctx context.Context, host *SOHost, change func() (T, error)) (T, error) {
+	// Watch the state so a retry follows the head that invalidated the change.
+	var zero T
+	states, release, err := host.GetSOStateCtr(ctx, nil)
+	if err != nil {
+		return zero, err
+	}
+	defer release()
+
+	// Run the change until it applies or fails for another reason.
+	for {
+		held := states.GetValue()
+		out, err := change()
+		if !errors.Is(err, ErrConfigChainHeadMismatch) {
+			return out, err
+		}
+		if _, err := states.WaitValueChange(ctx, held, nil); err != nil {
+			return zero, err
+		}
+	}
+}
+
 // AddLocalOperation signs opData as the owner of privKey and adds it to the
 // operation set, encoded with the key of the epoch the operation names. It
 // returns the operation's local ID and nonce once the state holding it is

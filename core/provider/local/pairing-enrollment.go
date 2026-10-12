@@ -225,7 +225,7 @@ func (a *ProviderAccount) receivePairingEnrollment(ctx context.Context, stream *
 			break
 		}
 		object := frame.GetObject()
-		if err := a.installPairingObject(ctx, offer, object, sourcePeer); err != nil {
+		if err := a.installPairingObject(ctx, offer, object); err != nil {
 			return err
 		}
 		if object.GetEntry().GetRef().GetProviderResourceRef().GetId() == offer.GetSettingsId() {

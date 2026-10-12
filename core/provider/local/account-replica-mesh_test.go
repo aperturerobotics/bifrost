@@ -22,6 +22,7 @@ import (
 // TestAccountReplicaMesh verifies that the first machine has no special role
 // after a replica has a durable copy: B can enroll C, and A catches up later.
 func TestAccountReplicaMesh(t *testing.T) {
+	// Three accounts share one in-process network.
 	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()
 	network := inproc.NewNetwork()
@@ -38,6 +39,8 @@ func TestAccountReplicaMesh(t *testing.T) {
 		originals = append(originals, account)
 		sessions = append(sessions, sess)
 	}
+
+	// A seeds a Space and enrolls B, which copies it.
 	a := originals[0]
 	spaceRef, err := a.CreateSharedObject(ctx, ulid.NewULID(), &sobject.SharedObjectMeta{BodyType: "space"}, "", "")
 	if err != nil {
@@ -55,8 +58,12 @@ func TestAccountReplicaMesh(t *testing.T) {
 		t.Fatal(err)
 	}
 	waitReplicaCopy(ctx, t, b, spaceRef)
+
+	// B enrolls C, which copies the Space without A.
 	c, cSession := enrollMeshReplica(ctx, t, b, bSession, originals[2], sessions[2])
 	waitReplicaCopy(ctx, t, c, spaceRef)
+
+	// C holds the original payload.
 	so, releaseSO, err := c.MountSharedObject(ctx, spaceRef, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -66,6 +73,8 @@ func TestAccountReplicaMesh(t *testing.T) {
 	if err != nil || !found || !bytes.Equal(data, payload) {
 		t.Fatalf("third replica lacks the original payload: found=%v err=%v", found, err)
 	}
+
+	// C holds every block reachable from A's World head.
 	source, releaseSource, err := a.MountSharedObject(ctx, spaceRef, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -79,6 +88,8 @@ func TestAccountReplicaMesh(t *testing.T) {
 		t.Fatal(err)
 	}
 	waitReplicaObject(ctx, t, b, later)
+
+	// A returns and learns the Space and all three Sessions.
 	if err := a.EnsureConfiguredSessionTransport(ctx, sessions[0].GetPrivKey()); err != nil {
 		t.Fatal(err)
 	}
@@ -90,11 +101,12 @@ func TestAccountReplicaMesh(t *testing.T) {
 	if err != nil || len(settings.GetSessions()) != 3 {
 		t.Fatalf("returning original did not learn all three Sessions: %v, %v", settings, err)
 	}
+
+	// B unlinks C. Remaining replicas must share one verified revocation
+	// lineage, including for a Space originally created by the removed Session.
 	if err := b.UnlinkDevice(ctx, cSession.GetPeerId()); err != nil {
 		t.Fatal(err)
 	}
-	// Remaining replicas must share one verified revocation lineage, including
-	// for a Space originally created by the removed Session.
 	for _, ref := range []*sobject.SharedObjectRef{spaceRef, later} {
 		ownerState := getSOState(ctx, t, b, ref, ref.GetProviderResourceRef().GetId())
 		replicaSO, release, err := a.MountSharedObject(ctx, ref, nil)
@@ -118,6 +130,7 @@ func TestAccountReplicaMesh(t *testing.T) {
 // enrollMeshReplica exercises approved provider enrollment directly; bilateral
 // rejection and durable UI Session registration are covered by the duplex test.
 func enrollMeshReplica(ctx context.Context, t *testing.T, source *ProviderAccount, sourceSession session.Session, receiving *ProviderAccount, receivingSession session.Session) (*ProviderAccount, *Session) {
+	// The source offers its account to the receiving provider.
 	t.Helper()
 	settings, err := source.GetAccountSettingsRef(ctx)
 	if err != nil {
@@ -128,12 +141,16 @@ func enrollMeshReplica(ctx context.Context, t *testing.T, source *ProviderAccoun
 		t.Fatal(err)
 	}
 	offer := &pairing.AccountOffer{AccountId: source.GetAccountID(), SettingsId: settings.GetProviderResourceRef().GetId(), StoragePeerId: storage.GetPeerID().String(), OperationId: ulid.NewULID()}
+
+	// The receiver opens the offered account.
 	account, releaseAccount, err := receiving.t.p.AccessProviderAccount(ctx, source.GetAccountID(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(releaseAccount)
 	replica := account.(*ProviderAccount)
+
+	// The receiver mounts a new Session on the account.
 	ref := sourceSession.GetSessionRef().CloneVT()
 	ref.ProviderResourceRef.Id = ulid.NewULID()
 	sess, releaseSession, err := replica.MountSession(ctx, ref, nil)
@@ -141,6 +158,8 @@ func enrollMeshReplica(ctx context.Context, t *testing.T, source *ProviderAccoun
 		t.Fatal(err)
 	}
 	t.Cleanup(releaseSession)
+
+	// Both sides agree on the pairing identity and register the replica.
 	identity, err := replica.buildPairingIdentity(ctx, offer, sess, sourceSession.GetPeerId(), receivingSession.GetPeerId())
 	if err != nil {
 		t.Fatal(err)
@@ -154,15 +173,19 @@ func enrollMeshReplica(ctx context.Context, t *testing.T, source *ProviderAccoun
 	if err := source.registerPairingReplicas(ctx, &pairing.Enrollment{Offer: offer, Identity: identity}, sourceSession.GetPeerId(), receivingSession.GetPeerId()); err != nil {
 		t.Fatal(err)
 	}
+
+	// The source enrolls the replica in every object it lists.
 	for _, entry := range source.soListCtr.GetValue().GetSharedObjects() {
 		object, err := source.enrollPairingObject(ctx, entry, identity)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := replica.installPairingObject(ctx, offer, object, sourceSession.GetPeerId()); err != nil {
+		if err := replica.installPairingObject(ctx, offer, object); err != nil {
 			t.Fatal(err)
 		}
 	}
+
+	// The two Sessions keep links to each other.
 	if err := replica.EnsureConfiguredSessionTransport(ctx, sess.GetPrivKey()); err != nil {
 		t.Fatal(err)
 	}
@@ -231,6 +254,7 @@ func replicaWorldHead(ctx context.Context, t *testing.T, so sobject.SharedObject
 // assertSameBlockGraph checks that dst holds every block reachable from root in
 // src with the same bytes and edges.
 func assertSameBlockGraph(ctx context.Context, t *testing.T, src, dst block.StoreOps, root *block.BlockRef) {
+	// Walk the source graph breadth first from root.
 	t.Helper()
 	seen := map[string]bool{root.MarshalString(): true}
 	queue := []*block.BlockRef{root}

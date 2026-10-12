@@ -26,13 +26,14 @@ func setupProviderAndSession(ctx context.Context, t *testing.T, signalingURL ...
 	*provider_local.Session,
 	func(),
 ) {
+	// Start the testbed.
 	t.Helper()
-
 	tb, err := testbed.Default(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	// Load the local provider on the testbed volume.
 	providerID := "local"
 	peerID := tb.Volume.GetPeerID()
 	provCfg := &provider_local.Config{
@@ -53,6 +54,7 @@ func setupProviderAndSession(ctx context.Context, t *testing.T, signalingURL ...
 		t.Fatal(err)
 	}
 
+	// Look up the running provider.
 	prov, provRef, err := provider.ExLookupProvider(ctx, tb.Bus, providerID, false, nil)
 	if err != nil {
 		provCtrlRef.Release()
@@ -60,6 +62,7 @@ func setupProviderAndSession(ctx context.Context, t *testing.T, signalingURL ...
 		t.Fatal(err)
 	}
 
+	// Create an account and its Session.
 	localProv := prov.(*provider_local.Provider)
 	sessRef, err := localProv.CreateLocalAccountAndSession(ctx, "")
 	if err != nil {
@@ -69,6 +72,7 @@ func setupProviderAndSession(ctx context.Context, t *testing.T, signalingURL ...
 		t.Fatal(err)
 	}
 
+	// Mount the account.
 	accountID := sessRef.GetProviderResourceRef().GetProviderAccountId()
 	accIface, accRel, err := localProv.AccessProviderAccount(ctx, accountID, nil)
 	if err != nil {
@@ -79,6 +83,7 @@ func setupProviderAndSession(ctx context.Context, t *testing.T, signalingURL ...
 	}
 	acc := accIface.(*provider_local.ProviderAccount)
 
+	// Mount the Session.
 	sess, sessRelease, err := acc.MountSession(ctx, sessRef, nil)
 	if err != nil {
 		accRel()
@@ -89,7 +94,9 @@ func setupProviderAndSession(ctx context.Context, t *testing.T, signalingURL ...
 	}
 	localSess := sess.(*provider_local.Session)
 
+	// Return a release of everything acquired.
 	release := func() {
+		// Release in reverse order of acquisition.
 		sessRelease()
 		accRel()
 		provRef.Release()
@@ -99,27 +106,61 @@ func setupProviderAndSession(ctx context.Context, t *testing.T, signalingURL ...
 	return tb, sessRef, acc, localSess, release
 }
 
+// setupPeerAccount creates a second account and Session on the provider of
+// tb. Sessions of one provider reach each other over its native network.
+func setupPeerAccount(ctx context.Context, t *testing.T, tb *testbed.Testbed) (*provider_local.ProviderAccount, *provider_local.Session) {
+	// Look up the native provider that hosts both accounts.
+	t.Helper()
+	prov, provRef, err := provider.ExLookupProvider(ctx, tb.Bus, "local", false, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(provRef.Release)
+	localProv := prov.(*provider_local.Provider)
+
+	// Create and mount the account.
+	sessRef, err := localProv.CreateLocalAccountAndSession(ctx, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	acc, releaseAcc, err := localProv.AccessProviderAccount(ctx, sessRef.GetProviderResourceRef().GetProviderAccountId(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(releaseAcc)
+	account := acc.(*provider_local.ProviderAccount)
+
+	// Mount its Session.
+	sess, releaseSess, err := account.MountSession(ctx, sessRef, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(releaseSess)
+	return account, sess.(*provider_local.Session)
+}
+
 // mountAccountSettingsSO mounts the account settings SO via the bus.
 func mountAccountSettingsSO(ctx context.Context, t *testing.T, b bus.Bus, accountID string) (sobject.SharedObject, func()) {
+	// Look up the provider.
 	t.Helper()
-
 	prov, provRef, err := provider.ExLookupProvider(ctx, b, "local", false, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer provRef.Release()
 
+	// Resolve the account's settings object.
 	accIface, accRel, err := prov.(*provider_local.Provider).AccessProviderAccount(ctx, accountID, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer accRel()
-
 	ref, err := accIface.(*provider_local.ProviderAccount).GetAccountSettingsRef(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	// Mount it through the bus.
 	so, mountRef, err := sobject.ExMountSharedObject(ctx, b, ref, false, nil)
 	if err != nil {
 		t.Fatal(err)

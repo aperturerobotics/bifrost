@@ -41,16 +41,18 @@ func (a *ProviderAccount) watchSOHosting(ctx context.Context, soID string, so *S
 	}
 }
 
-// reconcileSOHosting moves hosting of so to follow its latest ownership
-// transfer. The account holding the successor commits the carried departure
-// and promotes its storage identity in one change, so it signs as host once the
-// departure settles, and stops naming a remote endpoint. Every other account
-// routes to the successor. An object without a departure transfer keeps the
-// endpoint its enrollment recorded.
+// reconcileSOHosting follows the owners named by the configuration of so.
+// The account holding the successor of a departure commits it and promotes its
+// storage identity in one change. An account whose storage identity owns so
+// enrolls its running Session as an owner, so the configuration names the
+// endpoint that serves so. Every account keeps a link to each other owner, so
+// a participant reaches the owner account's current Session after the Session
+// it joined through is replaced.
 func (a *ProviderAccount) reconcileSOHosting(ctx context.Context, soID string, so *SharedObject) error {
 	// The storage identity always signs; the session identity signs while its transport runs.
+	st := a.GetSessionTransport()
 	keys := map[string]crypto.PrivKey{so.localPid.String(): so.localPriv}
-	if st := a.GetSessionTransport(); st != nil {
+	if st != nil {
 		keys[st.GetPeerID().String()] = st.GetPrivKey()
 	}
 
@@ -62,65 +64,66 @@ func (a *ProviderAccount) reconcileSOHosting(ctx context.Context, soID string, s
 		}
 	}
 
-	// Route to the latest successor, or host when it is a local identity.
+	// Promote a local successor of the latest departure.
 	successor, err := sobject.ReadSOOwnershipSuccessor(ctx, so.soHost)
-	if err != nil || successor == "" {
-		return err
-	}
-	key, local := keys[successor]
-	if !local {
-		return a.setSOEndpoint(ctx, soID, successor)
-	}
-	if err := sobject.PromoteSOOwner(ctx, so.soHost, key, so.localPid.String()); err != nil {
-		return err
-	}
-	return a.setSOEndpoint(ctx, soID, "")
-}
-
-// setSOEndpoint persists the transport peer that hosts soID, empty when this
-// account hosts it, and retains a link to a remote host.
-func (a *ProviderAccount) setSOEndpoint(ctx context.Context, soID, endpoint string) error {
-	// Record the endpoint; an unchanged entry needs no new link.
-	changed, err := a.writeSOEndpoint(ctx, soID, endpoint)
-	if err != nil || !changed || endpoint == "" {
-		return err
-	}
-
-	// Keep a link to the new host. A stopped sync retains it when it starts.
-	remote, err := peer.IDB58Decode(endpoint)
 	if err != nil {
 		return err
 	}
-	if err := a.RetainP2PPeer(ctx, remote); err != nil {
-		a.le.WithError(err).WithField("so-id", soID).Debug("deferred retaining the shared object host")
+	if key, local := keys[successor]; local {
+		if err := sobject.PromoteSOOwner(ctx, so.soHost, key, so.localPid.String()); err != nil {
+			return err
+		}
+	}
+
+	// Enroll the running Session when the storage identity owns so. A pending
+	// departure at the head waits for its successor, which commits it only
+	// while it remains the head. A group's voters decide its owners.
+	state, err := so.soHost.GetHostState(ctx)
+	if err != nil {
+		return err
+	}
+	config := state.GetConfig()
+	departing, err := sobject.ReadSODepartingPeers(ctx, so.soHost, config.GetConfigChainHash())
+	if err != nil {
+		return err
+	}
+	owners := config.Owners()
+	if st != nil && len(departing) == 0 && !config.IsGroupControl() && slices.Contains(owners, so.localPid.String()) {
+		if err := a.enrollSOSession(ctx, soID, so, st.GetPeerID(), owners); err != nil {
+			return err
+		}
+	}
+
+	// Keep a link to every other owner. A storage identity never connects and
+	// waits in signaling.
+	for _, owner := range owners {
+		if _, local := keys[owner]; local {
+			continue
+		}
+		remote, err := peer.IDB58Decode(owner)
+		if err != nil {
+			return err
+		}
+		if err := a.RetainP2PPeer(ctx, remote); err != nil {
+			a.le.WithError(err).WithField("so-id", soID).Debug("deferred retaining a shared object owner")
+		}
 	}
 	return nil
 }
 
-// writeSOEndpoint replaces the endpoint of soID in the stored list under the
-// account mutation lock. It reports false when the entry is absent or unchanged.
-func (a *ProviderAccount) writeSOEndpoint(ctx context.Context, soID, endpoint string) (bool, error) {
-	// Hold the account mutation lock across the read and write.
-	relMtx, err := a.mtx.Lock(ctx)
+// enrollSOSession adds the Session peer as an owner of so unless owners
+// already name it.
+func (a *ProviderAccount) enrollSOSession(ctx context.Context, soID string, so *SharedObject, session peer.ID, owners []string) error {
+	// An enrolled Session needs no change.
+	if slices.Contains(owners, session.String()) {
+		return nil
+	}
+
+	// The storage identity signs the Session's addition.
+	pub, err := session.ExtractPublicKey()
 	if err != nil {
-		return false, err
+		return err
 	}
-	defer relMtx()
-
-	// Find the entry to update.
-	list := a.soListCtr.GetValue().CloneVT()
-	index := slices.IndexFunc(list.GetSharedObjects(), func(entry *sobject.SharedObjectListEntry) bool {
-		return entry.GetRef().GetProviderResourceRef().GetId() == soID
-	})
-	if index == -1 || list.GetSharedObjects()[index].GetTransportPeerId() == endpoint {
-		return false, nil
-	}
-
-	// Persist the new endpoint before publishing it.
-	list.SharedObjects[index].TransportPeerId = endpoint
-	if err := a.writeSharedObjectList(ctx, list); err != nil {
-		return false, err
-	}
-	a.soListCtr.SetValue(list)
-	return true, nil
+	_, err = sobject.AddSOParticipant(ctx, so.soHost, soID, so.localPriv, so.localPid.String(), session.String(), pub, sobject.SOParticipantRole_SOParticipantRole_OWNER, "", "")
+	return err
 }

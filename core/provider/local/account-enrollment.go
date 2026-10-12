@@ -44,7 +44,7 @@ func (a *ProviderAccount) enrollPairingObject(ctx context.Context, entry *sobjec
 
 // installPairingObject accepts a checkpoint only for the offered account. The
 // authenticated enrollment exchange supplies its trust; the catalog does not.
-func (a *ProviderAccount) installPairingObject(ctx context.Context, offer *pairing.AccountOffer, object *pairing.SharedObject, sourcePeer peer.ID) error {
+func (a *ProviderAccount) installPairingObject(ctx context.Context, offer *pairing.AccountOffer, object *pairing.SharedObject) error {
 	// Validate the object reference and its account binding.
 	entry := object.GetEntry()
 	ref := entry.GetRef()
@@ -62,7 +62,7 @@ func (a *ProviderAccount) installPairingObject(ctx context.Context, offer *pairi
 	}
 
 	// Mount the enrolled object with its config lineage.
-	return a.mountEnrolledSO(ctx, providerRef.GetId(), entry.GetMeta(), entry.GetSource(), object.GetState(), object.GetConfigLineage(), sourcePeer)
+	return a.mountEnrolledSO(ctx, providerRef.GetId(), entry.GetMeta(), entry.GetSource(), object.GetState(), object.GetConfigLineage())
 }
 
 // bindPairingSettings replaces only the empty settings object created while

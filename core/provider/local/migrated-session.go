@@ -268,7 +268,7 @@ func (a *ProviderAccount) fetchMigratedEnrollment(ctx context.Context, source se
 		// Install the returned checkpoints and require the settings object.
 		settingsReceived := false
 		for _, object := range response.GetObjects() {
-			if err := a.installPairingObject(ctx, migrationOffer(transition), object, server); err != nil {
+			if err := a.installPairingObject(ctx, migrationOffer(transition), object); err != nil {
 				return err
 			}
 			settingsReceived = settingsReceived || object.GetEntry().GetRef().GetProviderResourceRef().GetId() == transition.GetDestination().GetId()

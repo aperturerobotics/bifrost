@@ -24,8 +24,28 @@ import (
 //
 // localPriv must be the private key of an OWNER in the current config.
 // localPeerIDStr is the base58 peer ID corresponding to localPriv. username is
-// the provider username of entityID, or empty when entityID is empty.
+// the provider username of entityID, or empty when entityID is empty. A
+// concurrent local change of the config does not fail the addition.
 func AddSOParticipant(
+	ctx context.Context,
+	host *SOHost,
+	soID string,
+	localPriv crypto.PrivKey,
+	localPeerIDStr string,
+	targetPeerIDStr string,
+	targetPub crypto.PubKey,
+	role SOParticipantRole,
+	entityID string,
+	username string,
+) (*SOGrant, error) {
+	return retryConfigChange(ctx, host, func() (*SOGrant, error) {
+		return addSOParticipant(ctx, host, soID, localPriv, localPeerIDStr, targetPeerIDStr, targetPub, role, entityID, username)
+	})
+}
+
+// addSOParticipant makes one attempt at AddSOParticipant from the config the
+// host holds now.
+func addSOParticipant(
 	ctx context.Context,
 	host *SOHost,
 	soID string,

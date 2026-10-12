@@ -15,8 +15,23 @@ import (
 // configuration change. It returns the peer IDs that were present and removed.
 // Under group control signerPriv, a voter, agrees to the removal and it
 // returns those peers with ErrAwaitingGroup; the voters take the key from them
-// once the group decides.
+// once the group decides. A concurrent local change of the config does not
+// fail the removal.
 func RemoveSOParticipants(
+	ctx context.Context,
+	host *SOHost,
+	targetPeerIDs []string,
+	signerPriv crypto.PrivKey,
+	revInfo *SORevocationInfo,
+) ([]string, error) {
+	return retryConfigChange(ctx, host, func() ([]string, error) {
+		return removeSOParticipants(ctx, host, targetPeerIDs, signerPriv, revInfo)
+	})
+}
+
+// removeSOParticipants makes one attempt at RemoveSOParticipants from the
+// config the host holds now.
+func removeSOParticipants(
 	ctx context.Context,
 	host *SOHost,
 	targetPeerIDs []string,

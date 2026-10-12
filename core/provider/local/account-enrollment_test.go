@@ -96,7 +96,7 @@ func TestAccountReplicaEnrollment(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := replica.installPairingObject(ctx, offer, object, sourceSession.GetPeerId()); err != nil {
+		if err := replica.installPairingObject(ctx, offer, object); err != nil {
 			t.Fatal(err)
 		}
 	}

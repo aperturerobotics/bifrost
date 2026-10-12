@@ -234,20 +234,6 @@ func (i refusedInvoker) InvokeMethod(_, _ string, _ srpc.Stream) (bool, error) {
 	return true, i.err
 }
 
-// sharedObjectTransportPeer returns the verified endpoint retained by enrollment.
-func (r *SessionResource) sharedObjectTransportPeer(sharedObjectID string) string {
-	account, ok := r.session.GetProviderAccount().(*provider_local.ProviderAccount)
-	if !ok {
-		return ""
-	}
-	for _, entry := range account.GetSOListCtr().GetValue().GetSharedObjects() {
-		if entry.GetRef().GetProviderResourceRef().GetId() == sharedObjectID {
-			return entry.GetTransportPeerId()
-		}
-	}
-	return ""
-}
-
 // _ is a type assertion
 var (
 	_ link.MountedStreamHandler = (*remoteResourceHandler)(nil)
