@@ -56,7 +56,7 @@ func NewFactory(b bus.Bus) controller.Factory {
 			handler := &SQLHandler{le: base.GetLogger(), b: b}
 			rootMux := resource_server.NewResourceMux(
 				func(mux srpc.Mux) error {
-					return s4wave_objecttype_registry.SRPCRegisterObjectTypeHandlerService(mux, s4wave_objecttype_registry.NewCallerHandler(handler))
+					return s4wave_objecttype_registry.SRPCRegisterObjectTypeHandlerService(mux, handler)
 				},
 				func(mux srpc.Mux) error {
 					return s4wave_worldop_registry.SRPCRegisterWorldOpHandlerService(mux, handler)
