@@ -203,6 +203,13 @@ func TestPluginExecWaitsForUnlistedSpacePlugin(t *testing.T) {
 		t.Fatalf("waiting Execution state = %s, want RUNNING", state)
 	}
 
+	// Keep plugin side effects blocked until the Space lists the plugin.
+	select {
+	case req := <-service.requests:
+		t.Fatalf("unlisted plugin ran Execution %q", req.GetExecutionObjectKey())
+	default:
+	}
+
 	// The manifest resolver publishes its demand after the Execution status.
 	for {
 		requested, waitCh := spaceCtrl.GetRequestedPluginIDsAndWaitCh()
@@ -235,6 +242,9 @@ func TestPluginExecWaitsForUnlistedSpacePlugin(t *testing.T) {
 		if req.GetExecutionObjectKey() != execKey {
 			t.Fatalf("plugin ran Execution %q, want %q", req.GetExecutionObjectKey(), execKey)
 		}
+		if got := req.GetClaimEpoch(); got != waiting.GetClaim().GetEpoch() {
+			t.Fatalf("plugin claim epoch = %d, want %d", got, waiting.GetClaim().GetEpoch())
+		}
 	}
 
 	// The plugin load clears the wait before the Execution completes.
@@ -253,6 +263,11 @@ func TestPluginExecWaitsForUnlistedSpacePlugin(t *testing.T) {
 	}
 	if got := completed.GetWaitingPluginId(); got != "" {
 		t.Fatalf("completed waiting plugin = %q", got)
+	}
+
+	// The same Execution finishes under the claim it held while waiting.
+	if got := completed.GetClaim(); got.GetClaimId() != waiting.GetClaim().GetClaimId() || got.GetEpoch() != waiting.GetClaim().GetEpoch() {
+		t.Fatalf("Execution claim changed from %v to %v", waiting.GetClaim(), got)
 	}
 }
 
