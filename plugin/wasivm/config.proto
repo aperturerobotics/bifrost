@@ -1,0 +1,7 @@
+syntax = "proto3";
+package s4wave.plugin.wasivm;
+
+option go_package = "github.com/s4wave/spacewave/plugin/wasivm;wasivm_plugin";
+
+// Config configures the WasiVM plugin controller.
+message Config {}

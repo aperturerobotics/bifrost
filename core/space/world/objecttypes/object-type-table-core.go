@@ -64,5 +64,4 @@ var commonObjectTypes = map[string]objecttype.ObjectType{
 	s4wave_appconnector.AppSnapshotTypeID:     s4wave_appconnector_world.AppSnapshotType,
 	s4wave_vm.VmV86TypeID:                     s4wave_vm_world.VmV86Type,
 	s4wave_vm.V86ImageTypeID:                  s4wave_vm_world.V86ImageType,
-	s4wave_vm.WasiVmTypeID:                    s4wave_vm_world.WasiVmType,
 }

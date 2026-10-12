@@ -52,7 +52,6 @@ var commonObjectTypes = map[string]objecttype.ObjectType{
 	spacewave_chat.ChatMessageTypeID:          spacewave_chat_world.ChatMessageType,
 	s4wave_vm.VmV86TypeID:                     s4wave_vm_world.VmV86Type,
 	s4wave_vm.V86ImageTypeID:                  s4wave_vm_world.V86ImageType,
-	s4wave_vm.WasiVmTypeID:                    s4wave_vm_world.WasiVmType,
 	s4wave_org.OrganizationTypeID:             s4wave_org_world.OrganizationType,
 	s4wave_device.DeviceTypeID:                s4wave_device_world.DeviceType,
 	s4wave_device.ComputersDashboardTypeID:    s4wave_device_world.ComputersDashboardType,

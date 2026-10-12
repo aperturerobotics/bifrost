@@ -161,17 +161,4 @@ var ObjectWizards = []*ObjectWizard{
 		WizardTypeId:       "wizard/vm/v86",
 		Experimental:       true,
 	},
-	{
-		TypeId:             "vm/wasivm",
-		DisplayName:        "WebAssembly VM",
-		Description:        "WebAssembly programs running on a Space filesystem",
-		Category:           "VM",
-		IconName:           "LuTerminal",
-		CreateOpId:         "vm/wasivm/create",
-		DefaultNamePattern: "VM",
-		KeyPrefix:          "vm/wasivm/",
-		Persistent:         true,
-		WizardTypeId:       "wizard/vm/wasivm",
-		Experimental:       true,
-	},
 }

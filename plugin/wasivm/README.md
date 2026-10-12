@@ -7,11 +7,18 @@ filesystem over a root directory. A BusyBox root filesystem built for
 wasm32-wasi boots to an interactive shell.
 
 WasiVM is experimental. Spacewave does not include it unless a build opts in.
+A Space that loads the `spacewave-wasivm` plugin can create WebAssembly VMs:
+each one boots the kernel on a Space filesystem and serves its console.
 
 ## Layout
 
 | Path | Contents |
 | --- | --- |
+| `controller.go` | The plugin: it registers the `vm/wasivm` ObjectType, its operations, viewer and wizard. |
+| `handler.go` | The ObjectType and operation handlers the core plugin calls. |
+| `vm.go` | The VM resource, which runs a kernel for each run of a VM. |
+| `console.go` | The console of each running VM, shared by every attached viewer. |
+| `*.tsx` | The VM viewer and the wizard that creates a VM. |
 | `kernel/` | The kernel: processes, the filesystem, signals, the terminal and the WASI imports. |
 | `kernel/engine/` | The interface the kernel runs guests through. |
 | `kernel/engine/native/` | Its implementation on [wazero](https://wazero.io). |

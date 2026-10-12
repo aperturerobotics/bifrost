@@ -162,7 +162,7 @@ func (g *Generation) start(
 	if conf.GetHostPluginId() != "" {
 		loadInstanceKey = ""
 	}
-	if err := g.addController(ctx, parent, bus_bridge.NewBusBridge(child, parentFilter(conf.GetEngineId(), loadInstanceKey, appPluginIDs))); err != nil {
+	if err := g.addController(ctx, parent, bus_bridge.NewBusBridge(child, parentFilter(loadInstanceKey, appPluginIDs))); err != nil {
 		return err
 	}
 

@@ -68,7 +68,6 @@ func BuiltInRegistry() (*Registry, error) {
 		NewSchemaHandler(s4wave_appconnector.AppSnapshotTypeID, ClassificationRewrite, false, false, false, false, false, inspectAppSnapshot, rewriteAppSnapshot),
 		NewSchemaRefusalHandler(s4wave_vm.VmV86TypeID, ClassificationNonMigratable, "V86 runtime state is non-migratable"),
 		NewSchemaRefusalHandler(s4wave_vm.V86ImageTypeID, ClassificationExternalRef, "V86 image payload is external and not admitted for rewrite"),
-		NewSchemaRefusalHandler(s4wave_vm.WasiVmTypeID, ClassificationNonMigratable, "WasiVM runtime state is non-migratable"),
 		NewSchemaRefusalHandler(s4wave_org.OrganizationTypeID, ClassificationNonMigratable, "organization state is non-migratable"),
 		NewSchemaHandler(s4wave_secret_world.SecretTypeID, ClassificationRewrite, false, true, false, false, true, inspectSecret, rewriteSecret),
 		NewSchemaRefusalHandler(bldr_manifest_world.ManifestTypeID, ClassificationExternalRef, "manifest payload is external and not admitted for rewrite"),
@@ -91,6 +90,5 @@ var (
 	_ = s4wave_sshhost_world.SshHostType
 	_ = s4wave_appconnector_world.AppConnectorType
 	_ = s4wave_vm_world.VmV86Type
-	_ = s4wave_vm_world.WasiVmType
 	_ = spacewave_chat_world.ChatChannelType
 )

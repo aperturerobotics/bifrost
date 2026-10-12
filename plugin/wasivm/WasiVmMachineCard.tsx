@@ -3,7 +3,7 @@ import { LuPlay, LuRotateCcw, LuTerminal } from 'react-icons/lu'
 import { Button } from '@s4wave/web/ui/button.js'
 import { VmState } from '@s4wave/sdk/vm/v86.pb.js'
 
-import { VmErrorBanner } from './VmErrorBanner.js'
+import { VmErrorBanner } from '@s4wave/app/vm/VmErrorBanner.js'
 
 // WasiVmMachineCardProps describes a stopped or failed WasiVM and its
 // actions.

@@ -1,25 +1,22 @@
-package s4wave_vm_world
+package wasivm_plugin
 
 import (
 	"context"
 	"io"
 
-	"github.com/aperturerobotics/controllerbus/bus"
-	"github.com/aperturerobotics/starpc/srpc"
 	"github.com/aperturerobotics/util/broadcast"
-	bifrost_rpc "github.com/s4wave/spacewave/net/rpc"
 	s4wave_terminal "github.com/s4wave/spacewave/sdk/terminal"
 	s4wave_vm "github.com/s4wave/spacewave/sdk/vm"
 )
 
-// wasiVmScrollback is the output a console keeps at least for viewers that
-// attach after it was written.
-const wasiVmScrollback = 64 * 1024
+// scrollback is the output a console keeps at least for viewers that attach
+// after it was written.
+const scrollback = 64 * 1024
 
-// wasiVmConsole is the terminal of one WasiVM run. It keeps the recent output
-// for viewers that attach later and fans new output and the exit out to every
-// attached viewer.
-type wasiVmConsole struct {
+// console is the terminal of one run. It keeps the recent output for viewers
+// that attach later and fans new output and the exit out to every attached
+// viewer.
+type console struct {
 	// input feeds the kernel's terminal.
 	input io.Writer
 	// resize sets the size of the kernel's terminal.
@@ -42,22 +39,34 @@ type wasiVmConsole struct {
 }
 
 // Write appends kernel output to the console.
-func (c *wasiVmConsole) Write(p []byte) (int, error) {
+func (c *console) Write(p []byte) (int, error) {
 	c.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
 		c.out = append(c.out, p...)
 		c.end += uint64(len(p))
-		if len(c.out) > 2*wasiVmScrollback {
-			c.out = append([]byte(nil), c.out[len(c.out)-wasiVmScrollback:]...)
+		if len(c.out) > 2*scrollback {
+			c.out = append([]byte(nil), c.out[len(c.out)-scrollback:]...)
 		}
 		broadcast()
 	})
 	return len(p), nil
 }
 
+// exit records how the run ended and tells the attached viewers.
+func (c *console) exit(code int32, runErr error) {
+	c.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+		c.exited = true
+		c.exitCode = code
+		if runErr != nil {
+			c.exitError = runErr.Error()
+		}
+		broadcast()
+	})
+}
+
 // Console attaches a viewer. It replays the retained output, then streams new
 // output until the VM exits or the viewer closes. Input and size changes from
 // the viewer go to the kernel's terminal.
-func (c *wasiVmConsole) Console(strm s4wave_vm.SRPCWasiVmConsoleService_ConsoleStream) error {
+func (c *console) Console(strm s4wave_vm.SRPCWasiVmConsoleService_ConsoleStream) error {
 	// Tell the viewer the console is ready.
 	ctx, cancel := context.WithCancel(strm.Context())
 	defer cancel()
@@ -94,12 +103,13 @@ func (c *wasiVmConsole) Console(strm s4wave_vm.SRPCWasiVmConsoleService_ConsoleS
 	// Send output from the oldest retained byte until the VM exits.
 	var next uint64
 	for {
+		// Take the output the viewer has not seen, and the exit once the
+		// VM has exited.
 		var data []byte
 		var exit *s4wave_terminal.TerminalFrame
 		var waitCh <-chan struct{}
 		c.bcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
-			// Take the output the viewer has not seen, and the exit once
-			// the VM has exited.
+			// Skip output that left the scrollback before the viewer saw it.
 			start := c.end - uint64(len(c.out))
 			next = max(next, start)
 			data = c.out[next-start:]
@@ -113,6 +123,8 @@ func (c *wasiVmConsole) Console(strm s4wave_vm.SRPCWasiVmConsoleService_ConsoleS
 			}
 			waitCh = getWaitCh()
 		})
+
+		// Send it, then wait for more.
 		if len(data) != 0 {
 			if err := strm.Send(&s4wave_terminal.TerminalFrame{
 				Kind: s4wave_terminal.TerminalFrameKind_TERMINAL_FRAME_KIND_OUTPUT,
@@ -132,34 +144,75 @@ func (c *wasiVmConsole) Console(strm s4wave_vm.SRPCWasiVmConsoleService_ConsoleS
 	}
 }
 
-// wasiVmConsoleForwarder serves the console on a viewer's object resource by
-// forwarding each call to the route of the VM's running instance. A call made
-// while the VM is not running waits for its console to appear.
-type wasiVmConsoleForwarder struct {
-	inv       srpc.Invoker
-	serviceID string
+// consoleTable holds the console of each running VM by object key. Each
+// Space loads its own plugin instance, so an object key names one VM.
+type consoleTable struct {
+	// bcast guards consoles and wakes callers waiting for a console.
+	bcast broadcast.Broadcast
+	// consoles maps the object key of each running VM to its console.
+	consoles map[string]*console
 }
 
-// newWasiVmConsoleForwarder forwards consoles to the VM process serving
-// under route on the bus b.
-func newWasiVmConsoleForwarder(b bus.Bus, route string) *wasiVmConsoleForwarder {
-	return &wasiVmConsoleForwarder{
-		inv:       bifrost_rpc.NewInvoker(b, "", true),
-		serviceID: route + s4wave_vm.SRPCWasiVmConsoleServiceServiceID,
+// newConsoleTable constructs an empty consoleTable.
+func newConsoleTable() *consoleTable {
+	return &consoleTable{consoles: make(map[string]*console)}
+}
+
+// publish makes c the console of the VM objectKey until the returned func
+// is called.
+func (t *consoleTable) publish(objectKey string, c *console) func() {
+	t.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+		t.consoles[objectKey] = c
+		broadcast()
+	})
+	return func() {
+		t.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+			if t.consoles[objectKey] == c {
+				delete(t.consoles, objectKey)
+				broadcast()
+			}
+		})
 	}
 }
 
-// Console forwards the viewer stream to the running VM's console.
-func (f *wasiVmConsoleForwarder) Console(strm s4wave_vm.SRPCWasiVmConsoleService_ConsoleStream) error {
-	found, err := f.inv.InvokeMethod(f.serviceID, "Console", strm)
-	if err == nil && !found {
-		return srpc.ErrUnimplemented
+// wait returns the console of the VM objectKey, waiting for the VM to run.
+func (t *consoleTable) wait(ctx context.Context, objectKey string) (*console, error) {
+	for {
+		var c *console
+		var waitCh <-chan struct{}
+		t.bcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
+			c = t.consoles[objectKey]
+			waitCh = getWaitCh()
+		})
+		if c != nil {
+			return c, nil
+		}
+		select {
+		case <-ctx.Done():
+			return nil, context.Cause(ctx)
+		case <-waitCh:
+		}
 	}
-	return err
 }
 
-// _ is a type assertion
+// vmConsole serves the console of one VM on each of its resources. A viewer
+// that attaches while the VM is not running waits for it to start.
+type vmConsole struct {
+	consoles  *consoleTable
+	objectKey string
+}
+
+// Console attaches the viewer to the console of the running VM.
+func (v *vmConsole) Console(strm s4wave_vm.SRPCWasiVmConsoleService_ConsoleStream) error {
+	c, err := v.consoles.wait(strm.Context(), v.objectKey)
+	if err != nil {
+		return err
+	}
+	return c.Console(strm)
+}
+
+// _ is a type assertion.
 var (
-	_ s4wave_vm.SRPCWasiVmConsoleServiceServer = (*wasiVmConsole)(nil)
-	_ s4wave_vm.SRPCWasiVmConsoleServiceServer = (*wasiVmConsoleForwarder)(nil)
+	_ s4wave_vm.SRPCWasiVmConsoleServiceServer = (*console)(nil)
+	_ s4wave_vm.SRPCWasiVmConsoleServiceServer = (*vmConsole)(nil)
 )

@@ -27,9 +27,10 @@ import type { ObjectViewerComponentProps } from '@s4wave/web/object/object.js'
 import { getObjectKey } from '@s4wave/web/object/object.js'
 import { LoadingCard } from '@s4wave/web/ui/loading/LoadingCard.js'
 
-import { useVmRequest, watchVmObject } from './vm-object.js'
-import { VmErrorBanner } from './VmErrorBanner.js'
-import { VmHeader, VmStopButton } from './VmHeader.js'
+import { useVmRequest, watchVmObject } from '@s4wave/app/vm/vm-object.js'
+import { VmErrorBanner } from '@s4wave/app/vm/VmErrorBanner.js'
+import { VmHeader, VmStopButton } from '@s4wave/app/vm/VmHeader.js'
+
 import { WasiVmMachineCard } from './WasiVmMachineCard.js'
 
 // readRootfsKey reads the key of the root filesystem the VM at objectKey
@@ -117,9 +118,9 @@ function useWasiVm(
   }
 }
 
-// VmWasiViewer displays a WasiVM. A stopped or failed VM shows its machine
+// WasiVmViewer displays a WasiVM. A stopped or failed VM shows its machine
 // card with Start or Reset; a running VM shows its console.
-export function VmWasiViewer({
+export default function WasiVmViewer({
   objectInfo,
   worldState,
   spaceContents,

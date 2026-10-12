@@ -14,16 +14,16 @@ import type { ObjectViewerComponentProps } from '@s4wave/web/object/object.js'
 import { LoadingCard } from '@s4wave/web/ui/loading/LoadingCard.js'
 import { toast } from '@s4wave/web/ui/toaster.js'
 
-import { buildObjectKey } from '../space/create-op-builders.js'
-import { useWizardState } from './useWizardState.js'
-import { WizardField } from './WizardField.js'
-import { WizardFieldFrame } from './WizardFieldFrame.js'
-import { wizardInputClassName } from './wizard-field-styles.js'
-import { WizardShell } from './WizardShell.js'
+import { buildObjectKey } from '@s4wave/app/space/create-op-builders.js'
+import { useWizardState } from '@s4wave/app/wizard/useWizardState.js'
+import { WizardField } from '@s4wave/app/wizard/WizardField.js'
+import { WizardFieldFrame } from '@s4wave/app/wizard/WizardFieldFrame.js'
+import { wizardInputClassName } from '@s4wave/app/wizard/wizard-field-styles.js'
+import { WizardShell } from '@s4wave/app/wizard/WizardShell.js'
 
-// VmWasiWizardViewer creates a WasiVM: its name, the UnixFS object holding
+// WasiVmWizard creates a WasiVM: its name, the UnixFS object holding
 // its root filesystem, and the init program it runs.
-export function VmWasiWizardViewer(props: ObjectViewerComponentProps) {
+export default function WasiVmWizard(props: ObjectViewerComponentProps) {
   const ws = useWizardState(props, undefined)
   const { state } = ws
   const [rootfsChoice, setRootfsChoice] = useState('')

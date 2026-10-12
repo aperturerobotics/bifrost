@@ -1,4 +1,6 @@
-package s4wave_vm_world
+//go:build js
+
+package wasivm_plugin
 
 import (
 	"context"
@@ -9,14 +11,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// startWasiVmKernel reports that this build cannot run WebAssembly VMs.
-func startWasiVmKernel(
+// startKernel reports that the browser cannot run a WasiVM yet.
+func startKernel(
 	ctx context.Context,
 	le *logrus.Entry,
 	ws world.WorldState,
 	rootfsKey string,
 	config *s4wave_vm.WasiVmConfig,
-	exited func(code int32, err error),
-) (*wasiVmConsole, error) {
-	return nil, errors.New("this build cannot run WebAssembly VMs")
+	exited func(runErr error),
+) (*console, error) {
+	return nil, errors.New("WebAssembly VMs run only in the desktop app")
 }
