@@ -1,8 +1,10 @@
 package resource_world
 
 import (
+	"context"
 	"time"
 
+	"github.com/s4wave/spacewave/core/sobject"
 	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/net/peer"
 )
@@ -56,6 +58,12 @@ func WithSessionPeerID(sessionPeerID peer.ID) WorldStateResourceOption {
 		r.sessionPeerID = sessionPeerID
 		r.sessionPeerIDBound = true
 	}
+}
+
+// WithCallerParticipantLookup reads accepted caller identity from the granting mount.
+// A nil lookup leaves the accepted participant unknown.
+func WithCallerParticipantLookup(lookup func(context.Context, peer.ID) (*sobject.SOParticipantConfig, error)) WorldStateResourceOption {
+	return func(r *WorldStateResource) { r.participantLookup = lookup }
 }
 
 // WithEngineID binds typed access to the registry scope selected by the granting mount.

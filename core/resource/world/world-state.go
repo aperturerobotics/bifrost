@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	resource_server "github.com/s4wave/spacewave/bldr/resource/server"
 	resource_bucket_lookup "github.com/s4wave/spacewave/core/resource/bucket/lookup"
+	"github.com/s4wave/spacewave/core/sobject"
 	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/block/quad"
 	bucket_lookup "github.com/s4wave/spacewave/db/bucket/lookup"
@@ -51,6 +52,8 @@ type WorldStateResource struct {
 	sessionPeerID peer.ID
 	// sessionPeerIDBound prevents request context from replacing the mount peer.
 	sessionPeerIDBound bool
+	// participantLookup reads the caller's accepted participant, when known.
+	participantLookup func(context.Context, peer.ID) (*sobject.SOParticipantConfig, error)
 	// operationObserver receives operation accounting for this mount.
 	operationObserver WorldStateOperationObserver
 }

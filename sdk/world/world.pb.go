@@ -12,6 +12,7 @@ import (
 
 	protobuf_go_lite "github.com/aperturerobotics/protobuf-go-lite"
 	json "github.com/aperturerobotics/protobuf-go-lite/json"
+	sobject "github.com/s4wave/spacewave/core/sobject"
 	block "github.com/s4wave/spacewave/db/block"
 	quad "github.com/s4wave/spacewave/db/block/quad"
 	bucket "github.com/s4wave/spacewave/db/bucket"
@@ -286,6 +287,10 @@ type GetEngineInfoResponse struct {
 	EngineInfo *EngineInfo `protobuf:"bytes,1,opt,name=engine_info,json=engineInfo,proto3" json:"engineInfo,omitempty"`
 	// SessionPeerId is the authenticated sender bound to this Resource, when present.
 	SessionPeerId string `protobuf:"bytes,2,opt,name=session_peer_id,json=sessionPeerId,proto3" json:"sessionPeerId,omitempty"`
+	// CallerParticipant is the accepted participant of the authenticated caller,
+	// when the granting mount knows it. Consumers resolve current permissions
+	// from the addressed SharedObject instead of treating this snapshot as a grant.
+	CallerParticipant *sobject.SOParticipantConfig `protobuf:"bytes,3,opt,name=caller_participant,json=callerParticipant,proto3" json:"callerParticipant,omitempty"`
 }
 
 func (x *GetEngineInfoResponse) Reset() {
@@ -306,6 +311,13 @@ func (x *GetEngineInfoResponse) GetSessionPeerId() string {
 		return x.SessionPeerId
 	}
 	return ""
+}
+
+func (x *GetEngineInfoResponse) GetCallerParticipant() *sobject.SOParticipantConfig {
+	if x != nil {
+		return x.CallerParticipant
+	}
+	return nil
 }
 
 // WorldRootSnapshot identifies one committed Engine root.
@@ -3264,6 +3276,7 @@ func (m *GetEngineInfoResponse) CloneVT() *GetEngineInfoResponse {
 	r := new(GetEngineInfoResponse)
 	r.SessionPeerId = m.SessionPeerId
 	r.EngineInfo = protobuf_go_lite.CloneVTValue(m.EngineInfo)
+	r.CallerParticipant = protobuf_go_lite.CloneVTValue(m.CallerParticipant)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -5389,6 +5402,9 @@ func (this *GetEngineInfoResponse) EqualVT(that *GetEngineInfoResponse) bool {
 		return false
 	}
 	if this.SessionPeerId != that.SessionPeerId {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.CallerParticipant, that.CallerParticipant) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -8389,6 +8405,11 @@ func (x *GetEngineInfoResponse) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("sessionPeerId")
 		s.WriteString(x.SessionPeerId)
 	}
+	if x.CallerParticipant != nil || s.HasField("callerParticipant") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("callerParticipant")
+		x.CallerParticipant.MarshalProtoJSON(s.WithField("callerParticipant"))
+	}
 	s.WriteObjectEnd()
 }
 
@@ -8416,6 +8437,13 @@ func (x *GetEngineInfoResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "session_peer_id", "sessionPeerId":
 			s.AddField("session_peer_id")
 			x.SessionPeerId = s.ReadString()
+		case "caller_participant", "callerParticipant":
+			if s.ReadNil() {
+				x.CallerParticipant = nil
+				return
+			}
+			x.CallerParticipant = &sobject.SOParticipantConfig{}
+			x.CallerParticipant.UnmarshalProtoJSON(s.WithField("caller_participant", true))
 		}
 	})
 }
@@ -14306,6 +14334,16 @@ func (m *GetEngineInfoResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error)
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.CallerParticipant != nil {
+		size, err := m.CallerParticipant.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x1a
+	}
 	if len(m.SessionPeerId) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.SessionPeerId)
 		i--
@@ -19222,6 +19260,10 @@ func (m *GetEngineInfoResponse) SizeVT() (n int) {
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.SessionPeerId)
+	if m.CallerParticipant != nil {
+		l = m.CallerParticipant.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -20841,6 +20883,10 @@ func (x *GetEngineInfoResponse) MarshalProtoText() string {
 	if x.SessionPeerId != "" {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "session_peer_id")
 		protobuf_go_lite.TextWriteString(&sb, x.SessionPeerId)
+	}
+	if x.CallerParticipant != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "caller_participant")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.CallerParticipant)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -23280,6 +23326,21 @@ func (m *GetEngineInfoResponse) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.SessionPeerId = v
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CallerParticipant", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.CallerParticipant == nil {
+				m.CallerParticipant = &sobject.SOParticipantConfig{}
+			}
+			if err := m.CallerParticipant.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
