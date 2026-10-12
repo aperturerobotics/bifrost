@@ -2,12 +2,15 @@ package resource_space
 
 import (
 	"context"
+	"time"
 
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/pkg/errors"
 	bldr_manifest "github.com/s4wave/spacewave/bldr/manifest"
 	bldr_manifest_world "github.com/s4wave/spacewave/bldr/manifest/world"
 	bldr_platform "github.com/s4wave/spacewave/bldr/platform"
+	space_world "github.com/s4wave/spacewave/core/space/world"
+	space_world_ops "github.com/s4wave/spacewave/core/space/world/ops"
 	"github.com/s4wave/spacewave/db/block"
 	block_store "github.com/s4wave/spacewave/db/block/store"
 	block_transform "github.com/s4wave/spacewave/db/block/transform"
@@ -159,6 +162,25 @@ func (r *SpaceResource) DeployManifests(strm s4wave_space.SRPCSpaceResourceServi
 		}
 	}
 
+	// A deploy becomes the Space's installation for each platform it
+	// publishes. When the Space settings pin the plugin, repin every
+	// deployed artifact in this transaction, exactly as a Forge plugin
+	// build does.
+	{
+		settings, err := space_world.LookupSpaceSettingsBody(ctx, txws)
+		if err != nil {
+			return sendDeployManifestsResult(strm, errors.Wrap(err, "read space settings").Error())
+		}
+		if settings != nil && len(settings.GetPluginInstallations()[manifestID].GetManifestKeys()) != 0 {
+			for i := range refs {
+				key := bldr_manifest.NewManifestArtifactKey(storedRefs[i])
+				if _, err := space_world_ops.InstallSpacePlugin(ctx, txws, "", manifestID, key, time.Now()); err != nil {
+					return sendDeployManifestsResult(strm, errors.Wrapf(err, "install manifest_refs[%d]", i).Error())
+				}
+			}
+		}
+	}
+
 	// Commit is the publication point; Sync and the result may be ambiguous after it.
 	if err := tx.Commit(ctx); err != nil {
 		return sendDeployManifestsResult(strm, errors.Wrap(err, "commit manifest set").Error())
@@ -202,10 +224,11 @@ func validateManifestSet(refs []*bldr_manifest.ManifestRef) (string, error) {
 	return manifestID, nil
 }
 
-// checkManifestSetSupersedes rejects a set the host would never start. A Space
-// runs the highest revision of each manifest ID and platform, so a build at or
-// below a different deployed build publishes without effect. Redeploying the
-// same build is allowed.
+// checkManifestSetSupersedes rejects a build the Space already holds at or
+// above for the same platform. Any deploy the check admits runs: a deploy
+// repins the installation for each platform it publishes, and a lower build
+// is refused rather than published without effect. Redeploying the same
+// build is allowed.
 func checkManifestSetSupersedes(
 	ctx context.Context,
 	ws world.WorldState,
