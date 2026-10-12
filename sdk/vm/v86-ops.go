@@ -138,8 +138,6 @@ func LookupCreateVmV86Op(ctx context.Context, operationTypeID string) (world.Ope
 	return nil, nil
 }
 
-var _ world.Operation = (*CreateVmV86Op)(nil)
-
 // SetV86ConfigOpId is the operation id for SetV86ConfigOp.
 var SetV86ConfigOpId = "vm/v86/set-config"
 
@@ -272,8 +270,6 @@ func LookupSetV86ConfigOp(ctx context.Context, operationTypeID string) (world.Op
 	return nil, nil
 }
 
-var _ world.Operation = (*SetV86ConfigOp)(nil)
-
 // SetV86StateOpId is the operation id for SetV86StateOp.
 var SetV86StateOpId = "vm/v86/set-state"
 
@@ -338,8 +334,8 @@ func (o *SetV86StateOp) ApplyWorldOp(
 		}
 
 		// Advance the run generation with its new desired and observed states.
-		desired, observed, stateErr := nextRunStates(vm.GetState(), vm.GetObservedState(), o.GetState())
-		if stateErr != nil {
+		desired, observed, changed, stateErr := nextRunStates(vm.GetState(), vm.GetObservedState(), o.GetState())
+		if stateErr != nil || !changed {
 			return stateErr
 		}
 		vm.State = desired
@@ -384,4 +380,9 @@ func LookupSetV86StateOp(ctx context.Context, operationTypeID string) (world.Ope
 	return nil, nil
 }
 
-var _ world.Operation = (*SetV86StateOp)(nil)
+// _ is a type assertion.
+var (
+	_ world.Operation = (*CreateVmV86Op)(nil)
+	_ world.Operation = (*SetV86ConfigOp)(nil)
+	_ world.Operation = (*SetV86StateOp)(nil)
+)

@@ -176,8 +176,8 @@ func (o *SetWasiVmStateOp) ApplyWorldOp(
 		}
 
 		// Advance the run generation with its new desired and observed states.
-		desired, observed, stateErr := nextRunStates(vm.GetState(), vm.GetObservedState(), o.GetState())
-		if stateErr != nil {
+		desired, observed, changed, stateErr := nextRunStates(vm.GetState(), vm.GetObservedState(), o.GetState())
+		if stateErr != nil || !changed {
 			return stateErr
 		}
 		vm.State = desired

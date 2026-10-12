@@ -19,34 +19,34 @@ func normalizeDesiredState(state VmState) (VmState, error) {
 
 // nextRunStates returns the desired and observed states that begin a new run
 // generation toward the requested state, given the stored desired and
-// observed states. It rejects a request that would change nothing: starting a
-// VM that is already starting or running, or stopping one already stopped.
-// Starting a VM whose run failed is a retry.
-func nextRunStates(desired, observed, requested VmState) (VmState, VmState, error) {
+// observed states. It reports false for a request the VM already satisfies or
+// is working toward: starting a VM that is starting or running, or stopping
+// one already stopped. Starting a VM whose run failed is a retry.
+func nextRunStates(desired, observed, requested VmState) (VmState, VmState, bool, error) {
 	// Normalize the requested and stored desired states.
 	target, err := normalizeDesiredState(requested)
 	if err != nil {
-		return 0, 0, err
+		return 0, 0, false, err
 	}
 	current := VmState_VmState_STOPPED
 	if normalized, err := normalizeDesiredState(desired); err == nil {
 		current = normalized
 	}
 
-	// Reject a request the VM already satisfies or is working toward.
+	// Leave a VM that already satisfies or is working toward the request.
 	if target == current &&
 		(target != VmState_VmState_RUNNING || observed != VmState_VmState_ERROR) &&
 		(target != VmState_VmState_STOPPED || observed == VmState_VmState_STOPPED) {
-		return 0, 0, errors.Errorf("vm desired state already %s", target.String())
+		return 0, 0, false, nil
 	}
 
 	// Observe the transition until the runtime reports its result.
 	switch {
 	case target == VmState_VmState_RUNNING:
-		return target, VmState_VmState_STARTING, nil
+		return target, VmState_VmState_STARTING, true, nil
 	case observed != VmState_VmState_STOPPED:
-		return target, VmState_VmState_STOPPING, nil
+		return target, VmState_VmState_STOPPING, true, nil
 	default:
-		return target, VmState_VmState_STOPPED, nil
+		return target, VmState_VmState_STOPPED, true, nil
 	}
 }
