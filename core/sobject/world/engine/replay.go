@@ -575,7 +575,8 @@ func (r *replayer) replay(
 	if n != 0 {
 		state = r.positions[n-1].state
 	}
-	lastProgress := time.Now()
+	start := time.Now()
+	lastProgress := start
 	for i, h := range order[n:] {
 		// Log the progress of a long replay.
 		if time.Since(lastProgress) >= replayProgressInterval {
@@ -615,6 +616,11 @@ func (r *replayer) replay(
 			outcome = opOutcome
 		}
 		r.place(outcome, state)
+	}
+
+	// End a replay that logged its progress with what it placed.
+	if lastProgress != start {
+		r.c.le.Infof("replay placed the last %d of %d operations in %v", len(order)-n, len(order), time.Since(start).Round(time.Second))
 	}
 
 	// Report every outcome in order.
