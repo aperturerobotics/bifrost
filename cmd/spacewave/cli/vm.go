@@ -100,12 +100,16 @@ func newVmWatchCommand(statePath *string, sessionIdx *uint, spaceID *string) *cl
 }
 
 func newVmStopCommand(statePath *string, sessionIdx *uint, spaceID *string) *cli.Command {
+	var wait bool
 	return &cli.Command{
 		Name:      "stop",
 		Usage:     "request a VM stop",
 		ArgsUsage: "<vm-key>",
+		Flags: []cli.Flag{
+			&cli.BoolFlag{Name: "wait", Usage: "wait for stopped or error state", Destination: &wait},
+		},
 		Action: func(c *cli.Context) error {
-			// Require a VM key, stop it, and report that it stopped.
+			// Require a VM key, stop it, and watch when waiting was requested.
 			key := c.Args().First()
 			if key == "" {
 				return errors.New("VM key required")
@@ -113,8 +117,11 @@ func newVmStopCommand(statePath *string, sessionIdx *uint, spaceID *string) *cli
 			if err := setVMState(c, *statePath, sessionIndex32(*sessionIdx), *spaceID, key, s4wave_vm.VmState_VmState_STOPPED); err != nil {
 				return err
 			}
-			os.Stdout.WriteString("stopped\n")
-			return nil
+			if !wait {
+				os.Stdout.WriteString("stopping\n")
+				return nil
+			}
+			return watchVM(c, *statePath, sessionIndex32(*sessionIdx), *spaceID, key)
 		},
 	}
 }
