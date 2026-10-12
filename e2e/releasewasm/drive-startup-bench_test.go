@@ -19,6 +19,23 @@ import (
 // directory tree.
 const driveBenchEnv = "E2E_WASM_DRIVE_BENCH"
 
+// driveBenchCPUProfileEnv opts each bundled bench cell into a Chromium trace
+// carrying the V8 sampling profiler for every worker, written beside run.json
+// as cpu-profile.trace.json. Profiled cells include sampling overhead and
+// compare only with each other.
+const driveBenchCPUProfileEnv = "E2E_WASM_DRIVE_BENCH_CPU_PROFILE"
+
+// driveBenchCPUProfileCategories selects the trace events needed to attribute
+// worker CPU to the generated Go functions that were running.
+var driveBenchCPUProfileCategories = []string{
+	"devtools.timeline",
+	"disabled-by-default-devtools.timeline",
+	"v8",
+	"v8.execute",
+	"disabled-by-default-v8.cpu_profiler",
+	"blink.user_timing",
+}
+
 // TestGoScriptDriveStartupBenchBundled records the time-to-Drive bench for the
 // production bundled build across four runtime states on one owned
 // BrowserContext, writing the same run.json schema as the unbundled bench so
@@ -135,6 +152,9 @@ func runBundledDriveBenchCell(t *testing.T, page playwright.Page, in bundledDriv
 		t.Fatalf("resolve cell dir (%s): %v", in.cell, err)
 	}
 
+	// Start the optional CPU profile before the navigation that boots the runtime.
+	stopCPUProfile := startBundledCPUProfile(t, page, cellDir)
+
 	// Navigate the benchmark page to the Drive quickstart and enable timing.
 	navStart := time.Now()
 	if _, err := page.Goto(testHarness.getBaseURL() + "/quickstart/drive"); err != nil {
@@ -164,6 +184,7 @@ func runBundledDriveBenchCell(t *testing.T, page playwright.Page, in bundledDriv
 		t.Logf("quickstart content-ready not reached (%s): %s", in.cell, contentReadyErr)
 	}
 	logQuickstartTiming(t, page)
+	stopCPUProfile()
 
 	// Capture the optional bundled startup runtime trace.
 	var startupTrace []byte
@@ -233,6 +254,37 @@ func runBundledDriveBenchCell(t *testing.T, page playwright.Page, in bundledDriv
 	}
 	t.Logf("bundled drive bench cell %s written to %s (live=%dms route=%dms unixfs=%dms content=%dms)",
 		in.cell, runPath, liveAppMs, routeAcceptedMs, unixfsVisibleMs, contentReadyValue)
+}
+
+// startBundledCPUProfile starts the opt-in Chromium CPU profile for one cell
+// and returns the function that stops it and writes the trace into cellDir. It
+// returns a no-op when the profile is not requested or the browser is not
+// Chromium, the only engine with browser tracing.
+func startBundledCPUProfile(t *testing.T, page playwright.Page, cellDir string) func() {
+	t.Helper()
+	if os.Getenv(driveBenchCPUProfileEnv) != "1" || testHarness.browserName != "chromium" {
+		return func() {}
+	}
+
+	path := filepath.Join(cellDir, "cpu-profile.trace.json")
+	if err := os.MkdirAll(cellDir, 0o755); err != nil {
+		t.Fatalf("create cell dir for cpu profile: %v", err)
+	}
+	screenshots := false
+	if err := testHarness.browser.StartTracing(playwright.BrowserStartTracingOptions{
+		Page:        page,
+		Path:        &path,
+		Categories:  driveBenchCPUProfileCategories,
+		Screenshots: &screenshots,
+	}); err != nil {
+		t.Fatalf("start cpu profile: %v", err)
+	}
+	return func() {
+		if _, err := testHarness.browser.StopTracing(); err != nil {
+			t.Fatalf("stop cpu profile: %v", err)
+		}
+		t.Logf("bundled drive bench cpu profile written to %s", path)
+	}
 }
 
 // readBundledStartupMarks reads the page startup-mark timeline emitted by
