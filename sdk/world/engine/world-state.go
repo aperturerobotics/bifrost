@@ -438,15 +438,17 @@ func (ws *SDKWorldState) ListGraphEdgeBuckets(ctx context.Context, query *world.
 	return buckets, nil
 }
 
-// ListObjectsWithType lists object keys with the given type identifier.
-func (ws *SDKWorldState) ListObjectsWithType(ctx context.Context, typeID string) ([]string, error) {
+// ListObjectsWithType returns one page of matching keys in graph-index order.
+func (ws *SDKWorldState) ListObjectsWithType(ctx context.Context, typeID, startAfter string, limit uint32) ([]string, bool, error) {
 	resp, err := ws.service.ListObjectsWithType(ctx, &s4wave_world.ListObjectsWithTypeRequest{
-		TypeId: typeID,
+		TypeId:     typeID,
+		StartAfter: startAfter,
+		Limit:      limit,
 	})
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
-	return resp.ObjectKeys, nil
+	return resp.GetObjectKeys(), resp.GetMore(), nil
 }
 
 // GetObjectRootRefsBatch returns root references for object keys.

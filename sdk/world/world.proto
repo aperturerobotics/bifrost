@@ -579,16 +579,27 @@ message ListGraphEdgeBucketsResponse {
   repeated GraphEdgeBucket buckets = 1;
 }
 
-// ListObjectsWithTypeRequest is the request type for ListObjectsWithType.
+// ListObjectsWithTypeRequest selects one page of subjects of the type quads.
 message ListObjectsWithTypeRequest {
   // TypeId is the type identifier to match.
   string type_id = 1;
+  // StartAfter is the last object key returned by the previous page.
+  // Empty starts at the first subject in graph-index order.
+  string start_after = 2;
+  // Limit bounds the number of returned keys and must be non-zero.
+  // The server may return a shorter page and set more.
+  uint32 limit = 3;
 }
 
-// ListObjectsWithTypeResponse is the response type for ListObjectsWithType.
+// ListObjectsWithTypeResponse contains one page in Cayley graph-index order.
+// On an unchanged World, pages return every matching key exactly once in a
+// stable order. This order need not be ascending by object key.
 message ListObjectsWithTypeResponse {
-  // ObjectKeys is the list of object keys with the given type.
+  // ObjectKeys contains distinct matching subjects in graph-index order.
   repeated string object_keys = 1;
+  // More reports that matching subjects follow the last returned object key.
+  // Pass that key as start_after to read the next page.
+  bool more = 2;
 }
 
 // ObjectRootRef contains root reference metadata for one object key.

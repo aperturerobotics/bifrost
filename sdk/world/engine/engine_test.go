@@ -554,14 +554,20 @@ func TestSDKEngine_ListObjectsWithType(t *testing.T) {
 	}
 
 	// List objects linked to the requested type.
-	objKeys, err := sdkReadTx.ListObjectsWithType(ctx, "sdk/type")
+	objKeys, more, err := sdkReadTx.ListObjectsWithType(ctx, "sdk/type", "", 1)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	if len(objKeys) != 2 {
-		t.Fatalf("expected 2 typed objects, got %d", len(objKeys))
+	if !more || len(objKeys) != 1 || objKeys[0] != "typed/a" {
+		t.Fatalf("unexpected first page: %v, more=%v", objKeys, more)
 	}
-	if objKeys[0] != "typed/a" || objKeys[1] != "typed/c" {
+
+	// Resume the SDK page after its previous last key.
+	objKeys, more, err = sdkReadTx.ListObjectsWithType(ctx, "sdk/type", objKeys[0], 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if more || len(objKeys) != 1 || objKeys[0] != "typed/c" {
 		t.Fatalf("unexpected typed object keys: %v", objKeys)
 	}
 

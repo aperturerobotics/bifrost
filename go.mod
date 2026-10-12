@@ -23,7 +23,7 @@ require (
 	github.com/Microsoft/go-winio v0.6.2
 	github.com/aperturerobotics/bbolt v0.0.0-20261006081945-09141165d72c // master
 	github.com/aperturerobotics/bldr-saucer v0.4.4
-	github.com/aperturerobotics/cayley v0.15.1-0.20261011175532-d3c081597b8a
+	github.com/aperturerobotics/cayley v0.15.1-0.20261012101428-93d30ba80a9a
 	github.com/aperturerobotics/cli v1.1.1-0.20261008170756-47089de94fb3 // master
 	github.com/aperturerobotics/common v0.35.5-0.20261006081939-817dcebc778f // master
 	github.com/aperturerobotics/controllerbus v0.53.6-0.20261007184646-7a3ab3aea145 // master

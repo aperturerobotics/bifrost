@@ -14,15 +14,19 @@ import (
 // TypesPrefix is the prefix string for all types identifiers.
 const TypesPrefix = "types/"
 
-// TypePred is the predicate linking a object to its type.
+// TypePred is the predicate linking an object to its type.
 var TypePred quad.Value = quad.IRI("type")
 
+// typeGraphLookupLimit bounds exact object type-edge lookups.
 const typeGraphLookupLimit uint32 = 1_000_000
 
 // ObjectTypeLister lists objects by type without requiring a Cayley handle.
 type ObjectTypeLister interface {
-	// ListObjectsWithType lists object keys with the given type identifier.
-	ListObjectsWithType(ctx context.Context, typeID string) ([]string, error)
+	// ListObjectsWithType returns a page of distinct keys in graph-index order,
+	// strictly after startAfter. A non-zero limit bounds the page; more implies
+	// a non-empty page with another page available. Exactly-once traversal
+	// requires an unchanged World across pages.
+	ListObjectsWithType(ctx context.Context, typeID, startAfter string, limit uint32) ([]string, bool, error)
 }
 
 // BuildTypeObjectKey returns the object key referring to the type.
@@ -180,8 +184,8 @@ func EnsureTypeExists(ctx context.Context, ws world.WorldState, typeID string) e
 
 // IterateObjectsWithType iterates over object keys with the given type ID.
 func IterateObjectsWithType(
-	rctx context.Context,
-	ws world.WorldState,
+	ctx context.Context,
+	ws ObjectTypeLister,
 	typeID string,
 	cb func(objKey string) (bool, error),
 ) error {
@@ -195,10 +199,11 @@ func IterateObjectsWithType(
 		return nil
 	}
 
-	// Visit type matches through the World object listing API when available.
-	if lister, ok := ws.(ObjectTypeLister); ok {
-		// Fetch the object keys for the requested type.
-		objKeys, err := lister.ListObjectsWithType(rctx, typeID)
+	// Fetch bounded type pages, resuming from the last visited subject.
+	var startAfter string
+	for {
+		// Read one page before invoking the visitor.
+		objKeys, more, err := ws.ListObjectsWithType(ctx, typeID, startAfter, ObjectTypePageLimit)
 		if err != nil {
 			return err
 		}
@@ -210,44 +215,17 @@ func IterateObjectsWithType(
 				return err
 			}
 		}
-		return nil
-	}
 
-	// Resolve incoming type edges to their object keys.
-	objKeys, err := world.CollectGraphPathStepWithKeys(
-		rctx,
-		ws,
-		[]string{BuildTypeObjectKey(typeID)},
-		world.GraphPathDirectionIn,
-		TypePred.String(),
-		typeGraphLookupLimit,
-	)
-	if err != nil {
-		return err
-	}
-
-	// Visit each graph match until the callback stops the traversal.
-	for _, objKey := range objKeys {
-		ctnu, err := cb(objKey)
-		if err != nil || !ctnu {
-			return err
+		// Stop at the end of the type or resume after this page.
+		if !more {
+			return nil
 		}
+		startAfter = objKeys[len(objKeys)-1]
 	}
-	return nil
 }
 
-// ListObjectsWithType returns the list of object keys with the given type id.
-func ListObjectsWithType(ctx context.Context, ws world.WorldState, typeID string) ([]string, error) {
-	// Require a type identifier before collecting matching object keys.
-	if typeID == "" {
-		return nil, ErrTypeIDEmpty
-	}
-
-	// Delegate object collection to the World listing API when available.
-	if lister, ok := ws.(ObjectTypeLister); ok {
-		return lister.ListObjectsWithType(ctx, typeID)
-	}
-
+// ListObjectsWithType collects all matching object keys in graph-index order.
+func ListObjectsWithType(ctx context.Context, ws ObjectTypeLister, typeID string) ([]string, error) {
 	// Collect every object key visited by the type traversal.
 	var objKeys []string
 	err := IterateObjectsWithType(ctx, ws, typeID, func(objKey string) (bool, error) {

@@ -672,13 +672,14 @@ func (r *WorldStateResource) ListGraphEdgeBuckets(ctx context.Context, req *s4wa
 	return &s4wave_world.ListGraphEdgeBucketsResponse{Buckets: out}, nil
 }
 
-// ListObjectsWithType lists object keys with the given type identifier.
+// ListObjectsWithType returns one bounded page of subjects in graph-index order.
 func (r *WorldStateResource) ListObjectsWithType(ctx context.Context, req *s4wave_world.ListObjectsWithTypeRequest) (*s4wave_world.ListObjectsWithTypeResponse, error) {
-	objKeys, err := world_types.ListObjectsWithType(ctx, r.ws, req.GetTypeId())
+	// Seek the type index and collect only the requested page and lookahead.
+	objKeys, more, err := r.ws.ListObjectsWithType(ctx, req.GetTypeId(), req.GetStartAfter(), req.GetLimit())
 	if err != nil {
 		return nil, err
 	}
-	return &s4wave_world.ListObjectsWithTypeResponse{ObjectKeys: objKeys}, nil
+	return &s4wave_world.ListObjectsWithTypeResponse{ObjectKeys: objKeys, More: more}, nil
 }
 
 // GetObjectRootRefsBatch returns root references for object keys.

@@ -162,6 +162,7 @@ func (t *TrackedWorldState) Close() {
 
 // WorldState interface implementation - delegates to wrapped ws
 
+// GetReadOnly returns the wrapped state's transaction mode.
 func (t *TrackedWorldState) GetReadOnly() bool {
 	return t.ws.GetReadOnly()
 }
@@ -171,6 +172,7 @@ func (t *TrackedWorldState) Sync(ctx context.Context) (bool, error) {
 	return t.ws.Sync(ctx)
 }
 
+// GetSeqno returns the wrapped state's sequence number.
 func (t *TrackedWorldState) GetSeqno(ctx context.Context) (uint64, error) {
 	return t.ws.GetSeqno(ctx)
 }
@@ -219,22 +221,27 @@ func (t *TrackedWorldState) GetObjectBodiesBatchPageWithSeqno(ctx context.Contex
 	return bodies, consumed, seqno, nil
 }
 
+// WaitSeqno waits for the wrapped state to reach the requested sequence number.
 func (t *TrackedWorldState) WaitSeqno(ctx context.Context, seqno uint64) (uint64, error) {
 	return t.ws.WaitSeqno(ctx, seqno)
 }
 
+// BuildStorageCursor builds a cursor through the wrapped World storage.
 func (t *TrackedWorldState) BuildStorageCursor(ctx context.Context) (*bucket_lookup.Cursor, error) {
 	return t.ws.BuildStorageCursor(ctx)
 }
 
+// StageWorldState opens a staging scope through the wrapped state.
 func (t *TrackedWorldState) StageWorldState(ctx context.Context) (world.WorldStage, error) {
 	return t.ws.StageWorldState(ctx)
 }
 
+// AccessWorldState lends a storage cursor from the wrapped state to cb.
 func (t *TrackedWorldState) AccessWorldState(ctx context.Context, ref *bucket.ObjectRef, cb func(*bucket_lookup.Cursor) error) error {
 	return t.ws.AccessWorldState(ctx, ref, cb)
 }
 
+// CreateObject creates an object and records its revision when readable.
 func (t *TrackedWorldState) CreateObject(ctx context.Context, key string, rootRef *bucket.ObjectRef) (world.ObjectState, error) {
 	obj, err := t.ws.CreateObject(ctx, key, rootRef)
 	if err == nil {
@@ -247,6 +254,7 @@ func (t *TrackedWorldState) CreateObject(ctx context.Context, key string, rootRe
 	return obj, err
 }
 
+// GetObject looks up an object and records its revision or absence.
 func (t *TrackedWorldState) GetObject(ctx context.Context, key string) (world.ObjectState, bool, error) {
 	obj, found, err := t.ws.GetObject(ctx, key)
 	if err == nil {
@@ -263,11 +271,13 @@ func (t *TrackedWorldState) GetObject(ctx context.Context, key string) (world.Ob
 	return obj, found, err
 }
 
+// IterateObjects iterates objects without tracking per-object accesses.
 func (t *TrackedWorldState) IterateObjects(ctx context.Context, prefix string, reversed bool) world.ObjectIterator {
 	// Note: Iterator access is not tracked per-object, could track prefix
 	return t.ws.IterateObjects(ctx, prefix, reversed)
 }
 
+// RenameObject renames an object and records the affected objects and graph.
 func (t *TrackedWorldState) RenameObject(ctx context.Context, oldKey, newKey string, descendants bool) (world.ObjectState, error) {
 	obj, err := t.ws.RenameObject(ctx, oldKey, newKey, descendants)
 	if err == nil {
@@ -280,26 +290,31 @@ func (t *TrackedWorldState) RenameObject(ctx context.Context, oldKey, newKey str
 	return obj, err
 }
 
+// DeleteObject deletes an object through the wrapped state.
 func (t *TrackedWorldState) DeleteObject(ctx context.Context, key string) (bool, error) {
 	return t.ws.DeleteObject(ctx, key)
 }
 
+// AccessCayleyGraph records graph access and lends the wrapped graph handle to cb.
 func (t *TrackedWorldState) AccessCayleyGraph(ctx context.Context, write bool, cb func(ctx context.Context, h world.CayleyHandle) error) error {
 	// Track that quad access occurred
 	t.trackQuadQuery()
 	return t.ws.AccessCayleyGraph(ctx, write, cb)
 }
 
+// SetGraphQuad records graph access and sets a quad through the wrapped state.
 func (t *TrackedWorldState) SetGraphQuad(ctx context.Context, q world.GraphQuad) error {
 	t.trackQuadQuery()
 	return t.ws.SetGraphQuad(ctx, q)
 }
 
+// DeleteGraphQuad records graph access and deletes a quad through the wrapped state.
 func (t *TrackedWorldState) DeleteGraphQuad(ctx context.Context, q world.GraphQuad) error {
 	t.trackQuadQuery()
 	return t.ws.DeleteGraphQuad(ctx, q)
 }
 
+// LookupGraphQuads looks up quads and records a successful graph read.
 func (t *TrackedWorldState) LookupGraphQuads(ctx context.Context, filter world.GraphQuad, limit uint32) ([]world.GraphQuad, error) {
 	quads, err := t.ws.LookupGraphQuads(ctx, filter, limit)
 	if err == nil {
@@ -308,6 +323,7 @@ func (t *TrackedWorldState) LookupGraphQuads(ctx context.Context, filter world.G
 	return quads, err
 }
 
+// LookupGraphQuadsBatch looks up quad batches and records a successful graph read.
 func (t *TrackedWorldState) LookupGraphQuadsBatch(ctx context.Context, filters []world.GraphQuad, limitPerFilter uint32) ([][]world.GraphQuad, error) {
 	quads, err := t.ws.LookupGraphQuadsBatch(ctx, filters, limitPerFilter)
 	if err == nil {
@@ -316,6 +332,7 @@ func (t *TrackedWorldState) LookupGraphQuadsBatch(ctx context.Context, filters [
 	return quads, err
 }
 
+// QueryGraphPath queries a graph path and records a successful graph read.
 func (t *TrackedWorldState) QueryGraphPath(ctx context.Context, query *world.GraphPathQuery) (*world.GraphPathQueryResult, error) {
 	result, err := t.ws.QueryGraphPath(ctx, query)
 	if err == nil {
@@ -324,11 +341,23 @@ func (t *TrackedWorldState) QueryGraphPath(ctx context.Context, query *world.Gra
 	return result, err
 }
 
+// ListObjectsWithType records a successful type-index read and forwards its page.
+func (t *TrackedWorldState) ListObjectsWithType(ctx context.Context, typeID, startAfter string, limit uint32) ([]string, bool, error) {
+	// Retain the page result before marking the graph dependency.
+	keys, more, err := t.ws.ListObjectsWithType(ctx, typeID, startAfter, limit)
+	if err == nil {
+		t.trackQuadQuery()
+	}
+	return keys, more, err
+}
+
+// DeleteGraphObject records graph access and deletes the object's quads.
 func (t *TrackedWorldState) DeleteGraphObject(ctx context.Context, objKey string) error {
 	t.trackQuadQuery()
 	return t.ws.DeleteGraphObject(ctx, objKey)
 }
 
+// ApplyWorldOp applies a World operation through the wrapped state.
 func (t *TrackedWorldState) ApplyWorldOp(ctx context.Context, op world.Operation, opSender peer.ID) (uint64, bool, error) {
 	return t.ws.ApplyWorldOp(ctx, op, opSender)
 }

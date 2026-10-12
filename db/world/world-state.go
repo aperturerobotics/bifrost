@@ -63,6 +63,11 @@ type WorldState interface {
 	// responsibility (see Engine.Sync); a bare WorldState only fences blocks.
 	Sync(ctx context.Context) (bool, error)
 
+	// ListObjectsWithType returns distinct typed keys in graph-index order,
+	// strictly after startAfter. Limit must be non-zero; more marks another page.
+	// The World must remain unchanged for exactly-once traversal across pages.
+	ListObjectsWithType(ctx context.Context, typeID, startAfter string, limit uint32) ([]string, bool, error)
+
 	// WorldStorage accesses the world storage.
 	WorldStorage
 
@@ -75,9 +80,9 @@ type WorldState interface {
 	// returns tx.ErrNotWrite.
 	StageWorldState(ctx context.Context) (WorldStage, error)
 
-	// WorldStateObject contains the object APIs
+	// WorldStateObject contains the object APIs.
 	WorldStateObject
-	// WorldStateGraph contains the graph APIs
+	// WorldStateGraph contains the graph APIs.
 	WorldStateGraph
 	// WorldStateOp contains the operation APIs.
 	WorldStateOp
@@ -103,7 +108,7 @@ type WorldStateOp interface {
 	// If nil is returned for the error, implies success.
 	// If sysErr is set, the error is treated as a transient system error.
 	// Must support recursive calls to ApplyWorldOp / ApplyObjectOp.
-	// Returns seqno, sysErr, err
+	// Returns seqno, sysErr, err.
 	ApplyWorldOp(
 		ctx context.Context,
 		op Operation,
@@ -168,10 +173,10 @@ type ObjectIterator interface {
 	Next() bool
 
 	// Seek moves the iterator to the first key >= the provided key (or <= in reverse mode).
-	// Pass nil to seek to the beginning (or end if reversed).
+	// Pass an empty string to seek to the beginning (or end if reversed).
 	// Seek has two failure modes:
-	//  - return an error without modifying the iterator
-	//  - set the iterator Err to the error and return nil
+	//  - return an error without modifying the iterator.
+	//  - set the iterator Err to the error and return nil.
 	Seek(k string) error
 
 	// Close releases the iterator.
@@ -225,7 +230,7 @@ type CayleyHandle interface {
 	// graph.QuadWriter
 }
 
-// ApplyGraphDeltas applies a set of graph deltas to a WorldStateGraph
+// ApplyGraphDeltas applies a set of graph deltas to a WorldStateGraph.
 func ApplyGraphDeltas(ctx context.Context, ws WorldStateGraph, deltas []graph.Delta) error {
 	for _, delta := range deltas {
 		var err error
@@ -258,8 +263,8 @@ func GraphValueToString(gv quad.Value) string {
 	return gv.String()
 }
 
-// QuadValueToKey attempts to convert a graph value to a quad.IRI and then string.
-// use with GraphQuadStringToCayleyValue
+// QuadValueToKey converts a graph value to an object key.
+// Use with GraphQuadStringToCayleyValue.
 func QuadValueToKey(gv quad.Value) (string, error) {
 	if gv == nil {
 		return "", nil
@@ -271,8 +276,8 @@ func QuadValueToKey(gv quad.Value) (string, error) {
 	return GraphValueToKey(gv.String())
 }
 
-// GraphValueToKey attempts to convert a graph value to a quad.IRI and then string.
-// use with GraphQuadStringToCayleyValue
+// GraphValueToKey converts a graph value string to an object key.
+// Use with GraphQuadStringToCayleyValue.
 func GraphValueToKey(gv string) (string, error) {
 	iri, err := GraphEnsureIsIRI(gv)
 	if err != nil {
