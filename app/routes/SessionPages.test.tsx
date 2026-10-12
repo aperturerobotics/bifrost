@@ -137,9 +137,11 @@ describe('session informational pages', () => {
       screen.getByRole('heading', { name: 'Terms of Service' }),
     ).toBeTruthy()
     expect(screen.getByTestId('path').textContent).toBe('/u/7/legal/tos')
-    expect(
-      screen.getByRole('link', { name: 'Privacy Policy' }).getAttribute('href'),
-    ).toBe('#/u/7/legal/privacy')
+    for (const link of screen.getAllByRole('link', {
+      name: 'Privacy Policy',
+    })) {
+      expect(link.getAttribute('href')).toBe('#/u/7/legal/privacy')
+    }
     expect(
       screen.getByRole('link', { name: 'Download' }).getAttribute('href'),
     ).toBe('#/u/7/download')

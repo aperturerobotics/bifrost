@@ -10,6 +10,8 @@ import {
   type TerminalFrame,
 } from '@s4wave/sdk/terminal/terminal.pb.js'
 
+const terminalEncoder = new TextEncoder()
+
 const h = vi.hoisted(() => {
   const closeWaiter = {
     promise: Promise.resolve(),
@@ -20,7 +22,7 @@ const h = vi.hoisted(() => {
   })
   return {
     open: vi.fn<(host: HTMLElement) => void>(),
-    write: vi.fn<(data: string) => void>(),
+    write: vi.fn<(data: string | Uint8Array) => void>(),
     writeln: vi.fn<(data: string) => void>(),
     dispose: vi.fn<() => void>(),
     fit: vi.fn<() => void>(),
@@ -44,7 +46,7 @@ vi.mock('@xterm/xterm', () => ({
     onData() {
       return { dispose: vi.fn() }
     }
-    write(data: string) {
+    write(data: string | Uint8Array) {
       h.write(data)
     }
     writeln(data: string) {
@@ -93,7 +95,7 @@ async function* terminalFrames(
   yield { kind: TerminalFrameKind.READY }
   yield {
     kind: TerminalFrameKind.OUTPUT,
-    data: new TextEncoder().encode('ready\n'),
+    data: terminalEncoder.encode('ready\n'),
   }
   await h.closeSeen
   h.abortObservedBeforeExit =
@@ -188,7 +190,9 @@ describe('TerminalViewer', () => {
     expect(screen.getByText('Disconnected')).toBeTruthy()
     expect(screen.getByText('devices/build-host')).toBeTruthy()
     await vi.waitFor(() => expect(h.open).toHaveBeenCalled())
-    await vi.waitFor(() => expect(h.write).toHaveBeenCalledWith('ready\n'))
+    await vi.waitFor(() =>
+      expect(h.write).toHaveBeenCalledWith(terminalEncoder.encode('ready\n')),
+    )
     await vi.waitFor(() =>
       expect(h.clientFrames[0]?.kind).toBe(TerminalFrameKind.RESIZE),
     )
@@ -397,7 +401,9 @@ describe('TerminalViewer', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
 
     await vi.waitFor(() => expect(h.connectCalls).toBe(2))
-    await vi.waitFor(() => expect(h.write).toHaveBeenCalledWith('ready\n'))
+    await vi.waitFor(() =>
+      expect(h.write).toHaveBeenCalledWith(terminalEncoder.encode('ready\n')),
+    )
     unmount()
   })
 })
