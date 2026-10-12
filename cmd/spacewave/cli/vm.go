@@ -9,7 +9,6 @@ import (
 	"math"
 	"os"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 
@@ -51,6 +50,7 @@ func newVmCommand(_ func() cli_entrypoint.CliBus) *cli.Command {
 			newVmStartCommand(&statePath, &sessionIdx, &spaceID),
 			newVmStopCommand(&statePath, &sessionIdx, &spaceID),
 			newVmWatchCommand(&statePath, &sessionIdx, &spaceID),
+			newVmConsoleCommand(&statePath, &sessionIdx, &spaceID),
 			newVmImageCommand(&statePath, &sessionIdx, &spaceID),
 			newVmRunCommand(),
 		},
@@ -168,11 +168,11 @@ func newVmListCommand(statePath *string, sessionIdx *uint, spaceID *string) *cli
 		Name:  "list",
 		Usage: "list VMs in a space",
 		Action: func(c *cli.Context) error {
-			vms, err := readV86VMs(c, *statePath, sessionIndex32(*sessionIdx), *spaceID)
+			vms, err := readVMs(c, *statePath, sessionIndex32(*sessionIdx), *spaceID)
 			if err != nil {
 				return err
 			}
-			return writeV86VMList(vms, c.String("output"))
+			return writeVMList(vms, c.String("output"))
 		},
 	}
 }
@@ -188,11 +188,11 @@ func newVmInfoCommand(statePath *string, sessionIdx *uint, spaceID *string) *cli
 			if key == "" {
 				return errors.New("VM key required")
 			}
-			vm, err := readV86VM(c, *statePath, sessionIndex32(*sessionIdx), *spaceID, key)
+			vm, err := readVM(c, *statePath, sessionIndex32(*sessionIdx), *spaceID, key)
 			if err != nil {
 				return err
 			}
-			return writeV86VMInfo(vm, c.String("output"))
+			return writeVMInfo(vm, c.String("output"))
 		},
 	}
 }
@@ -380,12 +380,6 @@ type v86ImageCLIEntry struct {
 	assets    map[string]string
 }
 
-type v86VMCLIEntry struct {
-	objectKey string
-	vm        *s4wave_vm.VmV86
-	edges     map[string]string
-}
-
 type v86ImageImportTarArgs struct {
 	name          string
 	wasmPath      string
@@ -449,102 +443,6 @@ func readV86Images(c *cli.Context, statePath string, sessionIdx uint32, spaceID 
 		return nil
 	})
 	return out, err
-}
-
-func readV86VMs(c *cli.Context, statePath string, sessionIdx uint32, spaceID string) ([]*v86VMCLIEntry, error) {
-	var out []*v86VMCLIEntry
-	err := withVmWorldTx(c, statePath, sessionIdx, spaceID, false, func(tx world.WorldState) error {
-		// List VM keys, sort them, and read each VM.
-		keys, err := world_types.ListObjectsWithType(c.Context, tx, s4wave_vm.VmV86TypeID)
-		if err != nil {
-			return errors.Wrap(err, "list VMs")
-		}
-		slices.Sort(keys)
-		out = make([]*v86VMCLIEntry, 0, len(keys))
-		for _, key := range keys {
-			vm, err := readV86VMFromTx(c, tx, key)
-			if err != nil {
-				return err
-			}
-			out = append(out, vm)
-		}
-		return nil
-	})
-	return out, err
-}
-
-func readV86VM(c *cli.Context, statePath string, sessionIdx uint32, spaceID, key string) (*v86VMCLIEntry, error) {
-	var out *v86VMCLIEntry
-	err := withVmWorldTx(c, statePath, sessionIdx, spaceID, false, func(tx world.WorldState) error {
-		vm, err := readV86VMFromTx(c, tx, key)
-		if err != nil {
-			return err
-		}
-		out = vm
-		return nil
-	})
-	return out, err
-}
-
-func readV86VMFromTx(c *cli.Context, tx world.WorldState, key string) (*v86VMCLIEntry, error) {
-	// Load the VM object and require that it exists.
-	ctx := c.Context
-	obj, found, err := tx.GetObject(ctx, key)
-	defer world.ReleaseObjectState(obj)
-	if err != nil {
-		return nil, errors.Wrap(err, "get VM")
-	}
-	if !found {
-		return nil, errors.Errorf("VM %q not found", key)
-	}
-
-	// Decode the VM block and read its graph edges.
-	var vm *s4wave_vm.VmV86
-	_, _, err = world.AccessObjectState(ctx, obj, false, func(bcs *block.Cursor) error {
-		current, err := block.UnmarshalBlock[*s4wave_vm.VmV86](ctx, bcs, func() block.Block {
-			return &s4wave_vm.VmV86{}
-		})
-		if err != nil {
-			return err
-		}
-		vm = current.CloneVT()
-		return nil
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "read VM block")
-	}
-	edges, err := readV86VMEdges(ctx, tx, key)
-	if err != nil {
-		return nil, err
-	}
-	return &v86VMCLIEntry{objectKey: key, vm: vm, edges: edges}, nil
-}
-
-func readV86VMEdges(ctx context.Context, tx world.WorldState, key string) (map[string]string, error) {
-	preds := map[string]quad.IRI{
-		"image":          s4wave_vm.PredV86Image,
-		"kernelOverride": s4wave_vm.PredV86KernelOverride,
-		"rootfsOverride": s4wave_vm.PredV86RootfsOverride,
-		"biosOverride":   s4wave_vm.PredV86BiosOverride,
-		"wasmOverride":   s4wave_vm.PredV86WasmOverride,
-	}
-	out := make(map[string]string, len(preds))
-	for name, pred := range preds {
-		quads, err := tx.LookupGraphQuads(ctx, world.NewGraphQuadWithKeys(key, string(pred), "", ""), 1)
-		if err != nil {
-			return nil, errors.Wrapf(err, "lookup %s edge", name)
-		}
-		if len(quads) == 0 {
-			out[name] = ""
-			continue
-		}
-		target, err := world.GraphValueToKey(quads[0].GetObj())
-		if err != nil {
-			return nil, errors.Wrapf(err, "parse %s edge", name)
-		}
-		out[name] = target
-	}
-	return out, nil
 }
 
 func copyV86ImageFromCdn(
@@ -878,7 +776,7 @@ func watchVM(c *cli.Context, statePath string, sessionIdx uint32, spaceID, vmKey
 			observed := vm.GetObservedState()
 			if observed != last {
 				last = observed
-				os.Stdout.WriteString(strings.ToLower(strings.TrimPrefix(observed.String(), "VmState_")) + "\n")
+				os.Stdout.WriteString(vmStateLabel(observed) + "\n")
 			}
 			switch {
 			case observed == s4wave_vm.VmState_VmState_ERROR:
@@ -1325,40 +1223,6 @@ func writeV86ImageList(images []*v86ImageCLIEntry, outputFormat string) error {
 	return nil
 }
 
-func writeV86VMList(vms []*v86VMCLIEntry, outputFormat string) error {
-	// Emit the VM list as JSON or YAML, or write the table.
-	if outputFormat == "json" || outputFormat == "yaml" {
-		buf, ms := newMarshalBuf()
-		ms.WriteObjectStart()
-		var f bool
-		ms.WriteMoreIf(&f)
-		ms.WriteObjectField("vms")
-		ms.WriteArrayStart()
-		var vf bool
-		for _, vm := range vms {
-			ms.WriteMoreIf(&vf)
-			writeV86VMJSON(ms, vm)
-		}
-		ms.WriteArrayEnd()
-		ms.WriteObjectEnd()
-		return formatOutput(buf.Bytes(), outputFormat)
-	}
-	rows := [][]string{{"KEY", "NAME", "STATE", "IMAGE", "MEMORY", "VGA"}}
-	for _, vm := range vms {
-		cfg := vm.vm.GetConfig()
-		rows = append(rows, []string{
-			vm.objectKey,
-			vm.vm.GetName(),
-			vm.vm.GetState().String(),
-			vm.edges["image"],
-			strconv.Itoa(int(cfg.GetMemoryMb())),
-			strconv.Itoa(int(cfg.GetVgaMemoryMb())),
-		})
-	}
-	writeTable(os.Stdout, "", rows)
-	return nil
-}
-
 func writeV86ImageInfo(img *v86ImageCLIEntry, outputFormat string) error {
 	if outputFormat == "json" || outputFormat == "yaml" {
 		buf, ms := newMarshalBuf()
@@ -1378,35 +1242,6 @@ func writeV86ImageInfo(img *v86ImageCLIEntry, outputFormat string) error {
 		{"VGABIOS", img.assets["vgabios"]},
 		{"Kernel Asset", img.assets["kernel"]},
 		{"Rootfs", img.assets["rootfs"]},
-	}
-	writeFields(os.Stdout, fields)
-	return nil
-}
-
-func writeV86VMInfo(vm *v86VMCLIEntry, outputFormat string) error {
-	// Emit the VM info as JSON or YAML, or write its fields.
-	if outputFormat == "json" || outputFormat == "yaml" {
-		buf, ms := newMarshalBuf()
-		writeV86VMJSON(ms, vm)
-		return formatOutput(buf.Bytes(), outputFormat)
-	}
-	cfg := vm.vm.GetConfig()
-	fields := [][2]string{
-		{"Key", vm.objectKey},
-		{"Name", vm.vm.GetName()},
-		{"State", vm.vm.GetState().String()},
-		{"Image", vm.edges["image"]},
-		{"Memory MB", strconv.Itoa(int(cfg.GetMemoryMb()))},
-		{"VGA Memory MB", strconv.Itoa(int(cfg.GetVgaMemoryMb()))},
-		{"Networking", strconv.FormatBool(cfg.GetNetworking())},
-		{"Serial", strconv.FormatBool(cfg.GetSerialEnabled())},
-		{"Boot Args", cfg.GetBootArgs()},
-		{"Runtime Plugin", cfg.GetRuntimePluginId()},
-		{"Kernel Override", vm.edges["kernelOverride"]},
-		{"Rootfs Override", vm.edges["rootfsOverride"]},
-		{"BIOS Override", vm.edges["biosOverride"]},
-		{"WASM Override", vm.edges["wasmOverride"]},
-		{"Error", vm.vm.GetErrorMessage()},
 	}
 	writeFields(os.Stdout, fields)
 	return nil
@@ -1443,50 +1278,5 @@ func writeV86ImageJSON(ms *protojson.MarshalState, img *v86ImageCLIEntry) {
 		writeJSONStringField(ms, &af, name, img.assets[name])
 	}
 	ms.WriteObjectEnd()
-	ms.WriteObjectEnd()
-}
-
-func writeV86VMJSON(ms *protojson.MarshalState, vm *v86VMCLIEntry) {
-	// Start the VM object and open its config.
-	cfg := vm.vm.GetConfig()
-	ms.WriteObjectStart()
-	var f bool
-	writeJSONStringField(ms, &f, "objectKey", vm.objectKey)
-	writeJSONStringField(ms, &f, "name", vm.vm.GetName())
-	writeJSONStringField(ms, &f, "state", vm.vm.GetState().String())
-	writeJSONStringField(ms, &f, "imageObjectKey", vm.edges["image"])
-	ms.WriteMoreIf(&f)
-
-	// Open the config field.
-	ms.WriteObjectField("config")
-
-	// Write the VM config fields.
-	ms.WriteObjectStart()
-	var cf bool
-	writeJSONUint64Field(ms, &cf, "memoryMb", uint64(cfg.GetMemoryMb()))
-	writeJSONUint64Field(ms, &cf, "vgaMemoryMb", uint64(cfg.GetVgaMemoryMb()))
-	writeJSONBoolField(ms, &cf, "networking", cfg.GetNetworking())
-	writeJSONBoolField(ms, &cf, "serialEnabled", cfg.GetSerialEnabled())
-	writeJSONStringField(ms, &cf, "bootArgs", cfg.GetBootArgs())
-	writeJSONStringField(ms, &cf, "runtimePluginId", cfg.GetRuntimePluginId())
-
-	// Close the config object.
-	ms.WriteObjectEnd()
-
-	// Write the kernel, rootfs, BIOS, and wasm overrides.
-	ms.WriteMoreIf(&f)
-	ms.WriteObjectField("overrides")
-	ms.WriteObjectStart()
-	var of bool
-	writeJSONStringField(ms, &of, "kernel", vm.edges["kernelOverride"])
-	writeJSONStringField(ms, &of, "rootfs", vm.edges["rootfsOverride"])
-	writeJSONStringField(ms, &of, "bios", vm.edges["biosOverride"])
-	writeJSONStringField(ms, &of, "wasm", vm.edges["wasmOverride"])
-
-	// Close the overrides object.
-	ms.WriteObjectEnd()
-
-	// Write the error message and close the VM object.
-	writeJSONStringField(ms, &f, "errorMessage", vm.vm.GetErrorMessage())
 	ms.WriteObjectEnd()
 }

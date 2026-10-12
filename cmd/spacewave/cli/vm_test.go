@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -16,7 +17,7 @@ import (
 )
 
 func TestVmCommandShape(t *testing.T) {
-	// Require the top-level vm command and its first commands.
+	// Require the top-level vm command and its subcommands in order.
 	cmd := newVmCommand(nil)
 	if cmd.Name != "vm" {
 		t.Fatalf("name = %q, want vm", cmd.Name)
@@ -24,36 +25,17 @@ func TestVmCommandShape(t *testing.T) {
 	if !hasAlias(cmd.Aliases, "vms") {
 		t.Fatal("vms alias missing")
 	}
-	if len(cmd.Subcommands) != 8 {
-		t.Fatalf("subcommand count = %d, want 8", len(cmd.Subcommands))
+	var names []string
+	for _, sub := range cmd.Subcommands {
+		names = append(names, sub.Name)
 	}
-	if cmd.Subcommands[0].Name != "list" {
-		t.Fatalf("subcommand[0] = %q, want list", cmd.Subcommands[0].Name)
-	}
-	if cmd.Subcommands[1].Name != "info" {
-		t.Fatalf("subcommand[1] = %q, want info", cmd.Subcommands[1].Name)
-	}
-	if cmd.Subcommands[2].Name != "create" {
-		t.Fatalf("subcommand[2] = %q, want create", cmd.Subcommands[2].Name)
-	}
-	if cmd.Subcommands[3].Name != "start" {
-		t.Fatalf("subcommand[3] = %q, want start", cmd.Subcommands[3].Name)
+	want := []string{"list", "info", "create", "start", "stop", "watch", "console", "image", "run"}
+	if !slices.Equal(names, want) {
+		t.Fatalf("subcommands = %v, want %v", names, want)
 	}
 
-	// Require stop, watch, image, and the image alias.
-	if cmd.Subcommands[4].Name != "stop" {
-		t.Fatalf("subcommand[4] = %q, want stop", cmd.Subcommands[4].Name)
-	}
-	if cmd.Subcommands[5].Name != "watch" {
-		t.Fatalf("subcommand[5] = %q, want watch", cmd.Subcommands[5].Name)
-	}
-	image := cmd.Subcommands[6]
-	if image.Name != "image" {
-		t.Fatalf("subcommand[6] = %q, want image", image.Name)
-	}
-	if cmd.Subcommands[7].Name != "run" {
-		t.Fatalf("subcommand[7] = %q, want run", cmd.Subcommands[7].Name)
-	}
+	// Require the image group, its alias, and its v86 subcommand.
+	image := cmd.Subcommands[7]
 	if !hasAlias(image.Aliases, "images") {
 		t.Fatal("images alias missing")
 	}
