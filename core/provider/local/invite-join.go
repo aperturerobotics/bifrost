@@ -95,7 +95,7 @@ func (a *ProviderAccount) JoinViaInvite(
 
 	// Install the grant even if ctx ends now: the invite is already consumed and
 	// only this install lets a retry resume from the listed shared object.
-	if err := a.mountInvitedSO(context.WithoutCancel(ctx), result, ownerPeerID); err != nil {
+	if err := a.mountInvitedSO(context.WithoutCancel(ctx), result); err != nil {
 		return nil, errors.Wrap(err, "mount invited shared object")
 	}
 
@@ -243,7 +243,6 @@ func (a *ProviderAccount) holdDirectInviteOwnerLink(
 func (a *ProviderAccount) mountInvitedSO(
 	ctx context.Context,
 	result *sobject_invite.JoinResult,
-	ownerPeerID peer.ID,
 ) error {
 	// The result carries a grant, a state, and an object ID.
 	if result.Grant == nil {
@@ -256,7 +255,7 @@ func (a *ProviderAccount) mountInvitedSO(
 	if soID == "" {
 		return errors.New("invite result has no shared object ID")
 	}
-	return a.mountEnrolledSO(ctx, soID, &sobject.SharedObjectMeta{BodyType: "space"}, "shared", result.SharedObjectState, result.ConfigLineage, ownerPeerID)
+	return a.mountEnrolledSO(ctx, soID, &sobject.SharedObjectMeta{BodyType: "space"}, "shared", result.SharedObjectState, result.ConfigLineage)
 }
 
 // mountEnrolledSO persists a checkpoint received through an authorized enrollment
@@ -269,7 +268,6 @@ func (a *ProviderAccount) mountEnrolledSO(
 	source string,
 	state *sobject.SOState,
 	lineage []*sobject.SOConfigChange,
-	ownerPeerID peer.ID,
 ) error {
 	// Name the object in this account.
 	providerID := a.t.accountInfo.GetProviderId()
@@ -316,24 +314,18 @@ func (a *ProviderAccount) mountEnrolledSO(
 		soList = &sobject.SharedObjectList{}
 	}
 
-	// Refresh the verified endpoint when an existing participant accepts a new invite.
+	// An existing participant accepting a new invite is already listed.
 	for _, entry := range soList.GetSharedObjects() {
 		if entry.GetRef().GetProviderResourceRef().GetId() == soID {
-			entry.TransportPeerId = ownerPeerID.String()
-			if err := a.writeSharedObjectList(ctx, soList); err != nil {
-				return errors.Wrap(err, "persist invited peer endpoint")
-			}
-			a.soListCtr.SetValue(soList)
 			return nil
 		}
 	}
 
 	// Otherwise add the object in ID order.
 	soList.SharedObjects = append(soList.SharedObjects, &sobject.SharedObjectListEntry{
-		Ref:             ref.CloneVT(),
-		Source:          source,
-		TransportPeerId: ownerPeerID.String(),
-		Meta:            meta.CloneVT(),
+		Ref:    ref.CloneVT(),
+		Source: source,
+		Meta:   meta.CloneVT(),
 	})
 	slices.SortFunc(soList.SharedObjects, func(a, b *sobject.SharedObjectListEntry) int {
 		return strings.Compare(a.GetRef().GetProviderResourceRef().GetId(), b.GetRef().GetProviderResourceRef().GetId())

@@ -882,9 +882,6 @@ type MountSharedObjectResponse struct {
 	// HashType is the hash type preferred by the block store used for the shared object.
 	// The zero value (0) indicates any.
 	HashType hash.HashType `protobuf:"varint,6,opt,name=hash_type,json=hashType,proto3" json:"hashType,omitempty"`
-	// TransportPeerId is the verified invitation endpoint for remote service discovery.
-	// Empty for owner-created and preexisting records.
-	TransportPeerId string `protobuf:"bytes,7,opt,name=transport_peer_id,json=transportPeerId,proto3" json:"transportPeerId,omitempty"`
 }
 
 func (x *MountSharedObjectResponse) Reset() {
@@ -940,13 +937,6 @@ func (x *MountSharedObjectResponse) GetHashType() hash.HashType {
 		return x.HashType
 	}
 	return hash.HashType(0)
-}
-
-func (x *MountSharedObjectResponse) GetTransportPeerId() string {
-	if x != nil {
-		return x.TransportPeerId
-	}
-	return ""
 }
 
 // WatchSharedObjectHealthRequest is the request type for WatchSharedObjectHealth.
@@ -4298,7 +4288,6 @@ func (m *MountSharedObjectResponse) CloneVT() *MountSharedObjectResponse {
 	r.SharedObjectId = m.SharedObjectId
 	r.BlockStoreId = m.BlockStoreId
 	r.HashType = m.HashType
-	r.TransportPeerId = m.TransportPeerId
 	r.Health = protobuf_go_lite.CloneVTValue(m.Health)
 	r.SharedObjectMeta = protobuf_go_lite.CloneVTValue(m.SharedObjectMeta)
 	if len(m.unknownFields) > 0 {
@@ -6385,9 +6374,6 @@ func (this *MountSharedObjectResponse) EqualVT(that *MountSharedObjectResponse) 
 		return false
 	}
 	if this.HashType != that.HashType {
-		return false
-	}
-	if this.TransportPeerId != that.TransportPeerId {
 		return false
 	}
 	if !protobuf_go_lite.IsEqualVT(this.Health, that.Health) {
@@ -9849,11 +9835,6 @@ func (x *MountSharedObjectResponse) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("hashType")
 		x.HashType.MarshalProtoJSON(s)
 	}
-	if x.TransportPeerId != "" || s.HasField("transportPeerId") {
-		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("transportPeerId")
-		s.WriteString(x.TransportPeerId)
-	}
 	if x.Health != nil || s.HasField("health") {
 		s.WriteMoreIf(&wroteField)
 		s.WriteObjectField("health")
@@ -9898,9 +9879,6 @@ func (x *MountSharedObjectResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "hash_type", "hashType":
 			s.AddField("hash_type")
 			x.HashType.UnmarshalProtoJSON(s)
-		case "transport_peer_id", "transportPeerId":
-			s.AddField("transport_peer_id")
-			x.TransportPeerId = s.ReadString()
 		case "health":
 			if s.ReadNil() {
 				x.Health = nil
@@ -15972,11 +15950,6 @@ func (m *MountSharedObjectResponse) MarshalToSizedBufferVT(dAtA []byte) (int, er
 		i--
 		dAtA[i] = 0x42
 	}
-	if len(m.TransportPeerId) > 0 {
-		i = protobuf_go_lite.EncodeString(dAtA, i, m.TransportPeerId)
-		i--
-		dAtA[i] = 0x3a
-	}
 	if m.HashType != 0 {
 		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.HashType))
 		i--
@@ -20802,7 +20775,6 @@ func (m *MountSharedObjectResponse) SizeVT() (n int) {
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.SharedObjectId)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.BlockStoreId)
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.HashType)
-	n += protobuf_go_lite.SizeStringNonEmpty(1, m.TransportPeerId)
 	if m.Health != nil {
 		l = m.Health.SizeVT()
 		n += protobuf_go_lite.SizeMessage(1, l)
@@ -22446,10 +22418,6 @@ func (x *MountSharedObjectResponse) MarshalProtoText() string {
 	if x.HashType != 0 {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "hash_type")
 		protobuf_go_lite.TextWriteStringer(&sb, hash.HashType(x.HashType))
-	}
-	if x.TransportPeerId != "" {
-		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "transport_peer_id")
-		protobuf_go_lite.TextWriteString(&sb, x.TransportPeerId)
 	}
 	if x.Health != nil {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "health")
@@ -25448,16 +25416,6 @@ func (m *MountSharedObjectResponse) UnmarshalVT(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-		case 7:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TransportPeerId", wireType)
-			}
-			var v string
-			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
-			if err != nil {
-				return err
-			}
-			m.TransportPeerId = v
 		case 8:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Health", wireType)

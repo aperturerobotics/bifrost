@@ -17,10 +17,9 @@ func TestNativeSpaceLeave(t *testing.T) {
 	skipFullP2PSyncUnderGoScript(t)
 	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()
-	_, _, owner, ownerSession, releaseOwner := setupProviderAndSession(ctx, t)
+	tb, _, owner, ownerSession, releaseOwner := setupProviderAndSession(ctx, t)
 	t.Cleanup(releaseOwner)
-	_, _, reader, readerSession, releaseReader := setupProviderAndSession(ctx, t)
-	t.Cleanup(releaseReader)
+	reader, readerSession := setupPeerAccount(ctx, t, tb)
 
 	// The owner hosts a Space.
 	ref, err := owner.CreateSharedObject(ctx, "leave-space", &sobject.SharedObjectMeta{BodyType: "space"}, "", "")
@@ -46,25 +45,24 @@ func TestNativeSpaceLeave(t *testing.T) {
 	t.Cleanup(owner.StopSessionTransport)
 	t.Cleanup(owner.StopP2PSync)
 
-	// The reader joins through a reachable transport.
+	// The reader joins over the provider's native network.
 	if err := reader.EnsureConfiguredSessionTransport(ctx, readerSession.GetPrivKey()); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(reader.StopSessionTransport)
 	t.Cleanup(reader.StopP2PSync)
-	prepareSessionTransportBackends(ctx, t, owner.GetSessionTransport(), reader.GetSessionTransport())
 	if _, err := reader.JoinViaInvite(ctx, readerSession.GetPrivKey(), invite, ""); err != nil {
 		t.Fatal(err)
 	}
 	copy := mountJoined(ctx, t, reader, id)
 
-	// The joined copy enrolled both reader identities.
+	// The joined copy enrolled both reader identities beside both owner identities.
 	before, err := copy.GetSOHostState(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(before.GetConfig().GetParticipants()) != 3 {
-		t.Fatalf("expected owner, device, and storage participants: %v", before.GetConfig().GetParticipants())
+	if len(before.GetConfig().GetParticipants()) != 4 {
+		t.Fatalf("expected owner storage, owner Session, device, and storage participants: %v", before.GetConfig().GetParticipants())
 	}
 
 	// A leave proof cannot be redirected to another object.
@@ -86,8 +84,12 @@ func TestNativeSpaceLeave(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(after.GetConfig().GetParticipants()) != 1 || after.GetConfig().GetParticipants()[0].GetPeerId() != object.GetPeerID().String() {
-		t.Fatalf("departure did not preserve only the remaining owner: %v", after.GetConfig().GetParticipants())
+	owners := []string{object.GetPeerID().String(), ownerSession.GetPeerId().String()}
+	remaining := after.GetConfig().Owners()
+	slices.Sort(owners)
+	slices.Sort(remaining)
+	if len(after.GetConfig().GetParticipants()) != 2 || !slices.Equal(owners, remaining) {
+		t.Fatalf("departure did not preserve only the owner identities: %v", after.GetConfig().GetParticipants())
 	}
 
 	// The owner's retained history proves the departure.

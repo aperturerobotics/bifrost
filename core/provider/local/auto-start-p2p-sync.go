@@ -53,17 +53,15 @@ func (a *ProviderAccount) AutoStartP2PSyncIfNeeded(
 		}
 	}
 
-	// Count shared Spaces and collect the peers they share with: the owner of a
-	// joined Space, and the participants and invitation targets of an owned one.
+	// Count shared Spaces and collect the participants and invitation targets
+	// of owned ones. The sync of a joined Space retains its owners from its
+	// configuration.
 	sharedSpaceCount := 0
 	spacePeers := make(map[string]struct{})
 	if soList := a.soListCtr.GetValue(); soList != nil {
 		for _, entry := range soList.GetSharedObjects() {
 			if entry.GetSource() == "shared" {
 				sharedSpaceCount++
-				if endpoint := entry.GetTransportPeerId(); endpoint != "" {
-					spacePeers[endpoint] = struct{}{}
-				}
 				continue
 			}
 

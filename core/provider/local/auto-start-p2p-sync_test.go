@@ -92,31 +92,42 @@ func TestAutoStartP2PSyncIfNeededWithDevice(t *testing.T) {
 
 // TestAutoStartP2PSyncIfNeededWithSharedSpace verifies that a Device account
 // restores P2P sync after restart even though invite enrollment does not add a
-// paired-device record.
+// paired-device record, and that the sync dials the owners in the Space's
+// config.
 func TestAutoStartP2PSyncIfNeededWithSharedSpace(t *testing.T) {
 	// Bound the test and start the local and remote sessions.
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()
 
-	// Read the remote peer id used as the shared-space transport target.
+	// Start the local account and a remote Session that will own the Space.
 	_, _, acc, sess, release := setupProviderAndSession(ctx, t)
 	defer release()
 	_, _, _, remoteSess, releaseRemote := setupProviderAndSession(ctx, t)
 	defer releaseRemote()
 	remotePeerID := remoteSess.GetPeerId().String()
 
-	// Create a space and point its list entry at the remote peer.
+	// Create a space whose config names the remote Session as an owner.
 	spaceRef, err := acc.CreateSharedObject(ctx, "auto-start-shared-space", &sobject.SharedObjectMeta{
 		BodyType: "space",
 	}, "", "")
 	if err != nil {
 		t.Fatalf("CreateSharedObject: %v", err)
 	}
+	object, releaseObject, err := acc.MountSharedObject(ctx, spaceRef, nil)
+	if err != nil {
+		t.Fatalf("MountSharedObject: %v", err)
+	}
+	defer releaseObject()
+	host := object.(sobject.InviteHost)
+	if _, err := sobject.AddSOParticipant(ctx, host.GetSOHost(), object.GetSharedObjectID(), host.GetPrivKey(), object.GetPeerID().String(), remotePeerID, remoteSess.GetPrivKey().GetPublic(), sobject.SOParticipantRole_SOParticipantRole_OWNER, "", ""); err != nil {
+		t.Fatalf("AddSOParticipant: %v", err)
+	}
+
+	// List the space as joined.
 	soList := acc.GetSOListCtr().GetValue().CloneVT()
 	for _, entry := range soList.GetSharedObjects() {
 		if entry.GetRef().GetProviderResourceRef().GetId() == spaceRef.GetProviderResourceRef().GetId() {
 			entry.Source = "shared"
-			entry.TransportPeerId = remotePeerID
 		}
 	}
 	acc.GetSOListCtr().SetValue(soList)
@@ -167,7 +178,7 @@ func TestAutoStartP2PSyncIfNeededWithSharedSpace(t *testing.T) {
 	select {
 	case target := <-linkTargets:
 		if target != remotePeerID {
-			t.Fatalf("auto-start link target = %s, want saved transport peer %s", target, remotePeerID)
+			t.Fatalf("auto-start link target = %s, want config owner %s", target, remotePeerID)
 		}
 	case <-ctx.Done():
 		t.Fatalf("timed out waiting for auto-start link to %s", remotePeerID)

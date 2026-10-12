@@ -18,6 +18,7 @@ import (
 // publishAccountCatalogEntry commits catalog changes through canonical settings.
 // The automatically created settings object is published by account enrollment.
 func (a *ProviderAccount) publishAccountCatalogEntry(ctx context.Context, entry *sobject.SharedObjectListEntry, deleted bool) error {
+	// The settings object never lists itself.
 	ref, err := a.GetAccountSettingsRef(ctx)
 	if err != nil {
 		return err
@@ -28,6 +29,8 @@ func (a *ProviderAccount) publishAccountCatalogEntry(ctx context.Context, entry 
 		}
 		return nil
 	}
+
+	// Commit the entry through the mounted settings object.
 	so, release, err := a.MountSharedObject(ctx, ref, nil)
 	if err != nil {
 		return err
@@ -95,6 +98,7 @@ func (a *ProviderAccount) runAccountReplicaSync(ctx context.Context, state *p2pS
 // reconcileAccountReplica follows approved membership and discovers new objects
 // through their native owner service. Inventory metadata never supplies trust.
 func (a *ProviderAccount) reconcileAccountReplica(ctx context.Context, state *p2pSyncState, settingsID string, settings *account_settings.AccountSettings, list *sobject.SharedObjectList) error {
+	// Only an active Session of the account follows its membership.
 	localPeer := state.sessionTransport.GetPeerID().String()
 	self := settings.FindAccountSession(localPeer)
 	if self == nil || self.GetRevoked() {
@@ -251,7 +255,7 @@ func (a *ProviderAccount) fetchAccountReplicaObject(ctx context.Context, state *
 		if !object.GetEntry().GetRef().EqualVT(entry.GetRef()) {
 			return errors.New("account peer returned a different object")
 		}
-		return a.installPairingObject(ctx, &pairing.AccountOffer{AccountId: a.GetAccountID(), SettingsId: settingsID, StoragePeerId: member.GetStoragePeerId()}, object, remote)
+		return a.installPairingObject(ctx, &pairing.AccountOffer{AccountId: a.GetAccountID(), SettingsId: settingsID, StoragePeerId: member.GetStoragePeerId()}, object)
 	}
 	if lastErr == nil {
 		lastErr = errors.New("no other active account Session can provide the object")
@@ -261,6 +265,7 @@ func (a *ProviderAccount) fetchAccountReplicaObject(ctx context.Context, state *
 
 // releaseAccountReplicaPeer removes reconnect demand after membership revocation.
 func (a *ProviderAccount) releaseAccountReplicaPeer(remote peer.ID) {
+	// Drop the reconnect demand for the peer.
 	var state *p2pSyncState
 	a.p2pSyncBcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
 		delete(a.p2pPeerIDs, remote.String())
@@ -269,6 +274,8 @@ func (a *ProviderAccount) releaseAccountReplicaPeer(remote peer.ID) {
 	if state == nil {
 		return
 	}
+
+	// Release the running link to the peer.
 	var release func()
 	state.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
 		if ref := state.peerRefs[remote.String()]; ref != nil {

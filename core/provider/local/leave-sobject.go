@@ -4,6 +4,7 @@ import (
 	"context"
 	"slices"
 
+	"github.com/aperturerobotics/util/broadcast"
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/core/sobject"
 	sobject_invite "github.com/s4wave/spacewave/core/sobject/invite"
@@ -67,7 +68,8 @@ func (a *ProviderAccount) LeaveSharedObject(ctx context.Context, sessionKey cryp
 	}
 
 	// A hosted object commits a final departure locally and hands others to a successor.
-	if entry.GetTransportPeerId() == "" {
+	owners := state.GetConfig().Owners()
+	if slices.Contains(owners, local.localPid.String()) {
 		remains := slices.ContainsFunc(state.GetConfig().GetParticipants(), func(p *sobject.SOParticipantConfig) bool {
 			return !slices.Contains(departing, p.GetPeerId())
 		})
@@ -80,7 +82,9 @@ func (a *ProviderAccount) LeaveSharedObject(ctx context.Context, sessionKey cryp
 		}
 		return a.reconcileSOHosting(ctx, id, local)
 	}
-	ownerID, err := peer.IDB58Decode(entry.GetTransportPeerId())
+
+	// A joined object asks one linked owner to commit the departure.
+	ownerID, err := a.waitLinkedOwner(ctx, owners)
 	if err != nil {
 		return err
 	}
@@ -109,6 +113,22 @@ func (a *ProviderAccount) LeaveSharedObject(ctx context.Context, sessionKey cryp
 		return nil
 	}
 	return err
+}
+
+// waitLinkedOwner returns an owner with a live link, waiting until one links.
+// The object's sync retains every owner, so the wait needs no dial of its own.
+// One owner receives the request, because two owners committing the same
+// departure would fork the config chain.
+func (a *ProviderAccount) waitLinkedOwner(ctx context.Context, owners []string) (peer.ID, error) {
+	for {
+		online, waitChs := a.GetOnlinePeerIDsWithWait(owners)
+		if len(online) != 0 {
+			return peer.IDB58Decode(online[0])
+		}
+		if err := broadcast.WaitAny(ctx, waitChs...); err != nil {
+			return "", err
+		}
+	}
 }
 
 // acceptSharedObjectLeave holds the addressed host until its signed removal is committed.

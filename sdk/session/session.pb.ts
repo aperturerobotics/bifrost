@@ -779,13 +779,6 @@ export interface MountSharedObjectResponse {
    * @generated from field: hash.HashType hash_type = 6;
    */
   hashType?: HashType
-  /**
-   * TransportPeerId is the verified invitation endpoint for remote service discovery.
-   * Empty for owner-created and preexisting records.
-   *
-   * @generated from field: string transport_peer_id = 7;
-   */
-  transportPeerId?: string
 }
 
 export const MountSharedObjectResponse: MessageType<MountSharedObjectResponse> =
@@ -804,12 +797,6 @@ export const MountSharedObjectResponse: MessageType<MountSharedObjectResponse> =
       { no: 4, name: 'shared_object_id', kind: 'scalar', T: ScalarType.STRING },
       { no: 5, name: 'block_store_id', kind: 'scalar', T: ScalarType.STRING },
       { no: 6, name: 'hash_type', kind: 'enum', T: HashType_Enum },
-      {
-        no: 7,
-        name: 'transport_peer_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
     ] satisfies readonly PartialFieldInfo[],
   })
 

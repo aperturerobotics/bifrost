@@ -87,6 +87,17 @@ func IsOwner(role SOParticipantRole) bool {
 	return role == SOParticipantRole_SOParticipantRole_OWNER
 }
 
+// Owners returns the peer IDs of the owners in c, in participant order.
+func (c *SharedObjectConfig) Owners() []string {
+	var owners []string
+	for _, p := range c.GetParticipants() {
+		if IsOwner(p.GetRole()) {
+			owners = append(owners, p.GetPeerId())
+		}
+	}
+	return owners
+}
+
 // SOStateParticipantHandle implements SharedObjectStateSnapshot over a SOState
 // as one participant.
 type SOStateParticipantHandle struct {

@@ -11,8 +11,9 @@ import (
 )
 
 // TestNativeOwnerTransfer proves that a Space outlives its hosting owner: the
-// first invitee's account commits the departure and hosts, and the other
-// remaining account routes to it and has its operations admitted there.
+// first invitee's account commits the departure and hosts, enrolls its Session
+// as an owner, and the other remaining account reaches that Session through the
+// config and has its operations admitted there.
 func TestNativeOwnerTransfer(t *testing.T) {
 	// Full peer sync runs natively under one deadline.
 	skipFullP2PSyncUnderGoScript(t)
@@ -119,8 +120,7 @@ func TestNativeOwnerTransfer(t *testing.T) {
 	}) {
 		t.Fatal("departure committed before the successor's storage identity became owner")
 	}
-	waitSOEndpoint(ctx, t, second, id, "")
-	waitSOEndpoint(ctx, t, first, id, secondSession.GetPeerId().String())
+	waitSOOwner(ctx, t, remaining, secondSession.GetPeerId().String())
 
 	// The new host receives and replays the remaining writer's operation.
 	localID, err := remaining.QueueOperation(ctx, []byte("after transfer"))
@@ -179,14 +179,20 @@ func mountJoined(ctx context.Context, t *testing.T, account *provider_local.Prov
 	return mounted.(*provider_local.SharedObject)
 }
 
-// waitSOEndpoint waits until account routes object id to endpoint.
-func waitSOEndpoint(ctx context.Context, t *testing.T, account *provider_local.ProviderAccount, id, endpoint string) {
+// waitSOOwner waits until the config held by object names owner as an owner.
+func waitSOOwner(ctx context.Context, t *testing.T, object *provider_local.SharedObject, owner string) {
+	// Watch the accepted state of the object.
 	t.Helper()
-	if _, err := account.GetSOListCtr().WaitValueWithValidator(ctx, func(list *sobject.SharedObjectList) (bool, error) {
-		return slices.ContainsFunc(list.GetSharedObjects(), func(entry *sobject.SharedObjectListEntry) bool {
-			return entry.GetRef().GetProviderResourceRef().GetId() == id && entry.GetTransportPeerId() == endpoint
-		}), nil
+	states, release, err := object.GetSOHost().GetSOStateCtr(ctx, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer release()
+
+	// Wait for a config that names owner.
+	if _, err := states.WaitValueWithValidator(ctx, func(state *sobject.SOState) (bool, error) {
+		return slices.Contains(state.GetConfig().Owners(), owner), nil
 	}, nil); err != nil {
-		t.Fatalf("object endpoint did not become %q: %v", endpoint, err)
+		t.Fatalf("%s did not become an owner: %v", owner, err)
 	}
 }

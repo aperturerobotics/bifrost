@@ -372,7 +372,6 @@ func (r *SessionResource) addSharedObjectResource(
 
 	return &s4wave_session.MountSharedObjectResponse{
 		ResourceId:       id,
-		TransportPeerId:  r.sharedObjectTransportPeer(mountedSo.GetSharedObjectID()),
 		SharedObjectMeta: meta,
 		PeerId:           mountedSo.GetPeerID().String(),
 		SharedObjectId:   mountedSo.GetSharedObjectID(),
@@ -1930,9 +1929,6 @@ func acceptedCloudInviteJoinResponse(
 	}, nil
 }
 
-// _ is a type assertion
-var _ s4wave_session.SRPCSessionResourceServiceServer = (*SessionResource)(nil)
-
 // SetAppPluginIDs supplies application composition before the resource is published.
 func (r *SessionResource) SetAppPluginIDs(ids []string) {
 	r.appPluginIDs = slices.Clone(ids)
@@ -1942,3 +1938,6 @@ func (r *SessionResource) SetAppPluginIDs(ids []string) {
 func (r *SessionResource) SetBindingRegistry(registry *process_binding.BindingRegistry) {
 	r.bindingRegistry = registry
 }
+
+// _ is a type assertion
+var _ s4wave_session.SRPCSessionResourceServiceServer = (*SessionResource)(nil)

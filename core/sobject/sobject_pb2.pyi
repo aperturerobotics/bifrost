@@ -164,16 +164,14 @@ class SharedObjectList(_message.Message):
     def __init__(self, shared_objects: _Optional[_Iterable[_Union[SharedObjectListEntry, _Mapping]]] = ...) -> None: ...
 
 class SharedObjectListEntry(_message.Message):
-    __slots__ = ("ref", "meta", "source", "transport_peer_id")
+    __slots__ = ("ref", "meta", "source")
     REF_FIELD_NUMBER: _ClassVar[int]
     META_FIELD_NUMBER: _ClassVar[int]
     SOURCE_FIELD_NUMBER: _ClassVar[int]
-    TRANSPORT_PEER_ID_FIELD_NUMBER: _ClassVar[int]
     ref: SharedObjectRef
     meta: SharedObjectMeta
     source: str
-    transport_peer_id: str
-    def __init__(self, ref: _Optional[_Union[SharedObjectRef, _Mapping]] = ..., meta: _Optional[_Union[SharedObjectMeta, _Mapping]] = ..., source: _Optional[str] = ..., transport_peer_id: _Optional[str] = ...) -> None: ...
+    def __init__(self, ref: _Optional[_Union[SharedObjectRef, _Mapping]] = ..., meta: _Optional[_Union[SharedObjectMeta, _Mapping]] = ..., source: _Optional[str] = ...) -> None: ...
 
 class SharedObjectMeta(_message.Message):
     __slots__ = ("body_type", "body_meta", "account_private")

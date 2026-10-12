@@ -31,9 +31,6 @@ message SharedObjectListEntry {
   // Source indicates how the shared object was acquired.
   // Known values: "created" (owner-created), "shared" (invite-received or org-enrolled).
   string source = 3;
-  // TransportPeerId is the verified invite endpoint retained for reconnect.
-  // Empty for entries created before this field was added.
-  string transport_peer_id = 4;
 }
 
 // SharedObjectMeta is the contents of the provider_feature_meta field for a SharedObject.

@@ -105,19 +105,8 @@ func (s *SOHost) CreateInvite(
 		return errors.New("invite uses exceeds max uses")
 	}
 
-	// Sign the change against the current config.
-	currentState, err := s.GetHostState(ctx)
-	if err != nil {
-		return errors.Wrap(err, "get current state")
-	}
-	currentCfg := currentState.GetConfig()
-	entry, err := BuildSOConfigChange(s.sharedObjectID, currentCfg, currentCfg, SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_ADD_INVITE, signerPrivKey, nil)
-	if err != nil {
-		return errors.Wrap(err, "build config change")
-	}
-
-	// Apply it with the state change it authorizes.
-	return s.ApplyConfigChange(ctx, entry, func(state *SOState) error {
+	// Apply the state change with the signed change that authorizes it.
+	return s.applyInviteChange(ctx, signerPrivKey, SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_ADD_INVITE, func(state *SOState) error {
 		if FindInvite(state, invite.GetInviteId()) != nil {
 			return errors.New("invite_id already exists")
 		}
@@ -138,19 +127,9 @@ func (s *SOHost) RevokeInvite(
 		return errors.New("invite_id is required")
 	}
 
-	// Sign the change against the current config.
-	currentState, err := s.GetHostState(ctx)
-	if err != nil {
-		return errors.Wrap(err, "get current state")
-	}
-	currentCfg := currentState.GetConfig()
-	entry, err := BuildSOConfigChange(s.sharedObjectID, currentCfg, currentCfg, SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_REVOKE_INVITE, signerPrivKey, nil)
-	if err != nil {
-		return errors.Wrap(err, "build config change")
-	}
-
-	// Apply it with the state change it authorizes.
-	return s.ApplyConfigChange(ctx, entry, func(state *SOState) error {
+	// Apply the state change with the signed change that authorizes it.
+	return s.applyInviteChange(ctx, signerPrivKey, SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_REVOKE_INVITE, func(state *SOState) error {
+		// Revoke a live invite.
 		inv := FindInvite(state, inviteID)
 		if inv == nil {
 			return errors.New("invite not found in state")
@@ -177,19 +156,9 @@ func (s *SOHost) IncrementInviteUses(
 		return errors.New("invite_id is required")
 	}
 
-	// Sign the change against the current config.
-	currentState, err := s.GetHostState(ctx)
-	if err != nil {
-		return errors.Wrap(err, "get current state")
-	}
-	currentCfg := currentState.GetConfig()
-	entry, err := BuildSOConfigChange(s.sharedObjectID, currentCfg, currentCfg, SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_INCREMENT_INVITE_USES, signerPrivKey, nil)
-	if err != nil {
-		return errors.Wrap(err, "build config change")
-	}
-
-	// Apply it with the state change it authorizes.
-	return s.ApplyConfigChange(ctx, entry, func(state *SOState) error {
+	// Apply the state change with the signed change that authorizes it.
+	return s.applyInviteChange(ctx, signerPrivKey, SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_INCREMENT_INVITE_USES, func(state *SOState) error {
+		// Count a use of a usable invite.
 		inv := FindInvite(state, inviteID)
 		if inv == nil {
 			return errors.New("invite not found in state")
@@ -301,4 +270,26 @@ func FindInvite(state *SOState, inviteID string) *SOInvite {
 		return nil
 	}
 	return state.GetInvites()[idx]
+}
+
+// applyInviteChange signs a change of changeType that keeps the config held at
+// the head and applies fn with it, again when a concurrent writer moves the
+// head first.
+func (s *SOHost) applyInviteChange(ctx context.Context, signerPrivKey crypto.PrivKey, changeType SOConfigChangeType, fn func(state *SOState) error) error {
+	_, err := retryConfigChange(ctx, s, func() (struct{}, error) {
+		// Sign the change against the current config.
+		currentState, err := s.GetHostState(ctx)
+		if err != nil {
+			return struct{}{}, errors.Wrap(err, "get current state")
+		}
+		currentCfg := currentState.GetConfig()
+		entry, err := BuildSOConfigChange(s.sharedObjectID, currentCfg, currentCfg, changeType, signerPrivKey, nil)
+		if err != nil {
+			return struct{}{}, errors.Wrap(err, "build config change")
+		}
+
+		// Apply it with the state change it authorizes.
+		return struct{}{}, s.ApplyConfigChange(ctx, entry, fn)
+	})
+	return err
 }
