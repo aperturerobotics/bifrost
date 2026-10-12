@@ -5,9 +5,6 @@ import (
 	"slices"
 )
 
-// placeBatch is the number of pages place encodes before writing them.
-const placeBatch = 256
-
 // change is one key's change applied at a checkpoint.
 type change struct {
 	// key is the key.
@@ -28,18 +25,17 @@ type child struct {
 	d *draft
 }
 
-// builder rewrites the pages a checkpoint changes. New pages are drafts
-// holding their new children until place assigns pages.
+// builder rewrites the pages a checkpoint changes. A new leaf is written as
+// soon as the leaves under its parent are settled, so a checkpoint holds the
+// entries of the leaves under one inner page at a time. New inner pages are
+// drafts holding their new inner children until place writes them.
 type builder struct {
 	// p reads existing pages.
 	p *pager
+	// out writes the new pages.
+	out *pageWriter
 	// freed lists the replaced pages.
 	freed []uint64
-}
-
-// newBuilder returns a builder reading existing pages from p.
-func newBuilder(p *pager) *builder {
-	return &builder{p: p}
 }
 
 // build applies sorted changes to the tree at root and returns the new root,
@@ -54,6 +50,9 @@ func (b *builder) build(root uint64, changes []change) (*child, error) {
 		if kids, err = b.apply(root, nil, changes); err != nil {
 			return nil, err
 		}
+	}
+	if err := b.emit(kids); err != nil {
+		return nil, err
 	}
 
 	// Stack inner pages until one root remains.
@@ -146,9 +145,13 @@ func (b *builder) apply(page uint64, low []byte, changes []change) ([]child, err
 	}
 	flush()
 
-	// Merge underfull new children and pack them into new inner pages.
+	// Merge underfull new children, write the new leaves among them, and
+	// pack them into new inner pages.
 	kids, err = b.rebalance(kids)
 	if err != nil {
+		return nil, err
+	}
+	if err := b.emit(kids); err != nil {
 		return nil, err
 	}
 	out := packInner(kids)
@@ -380,88 +383,60 @@ func packInner(kids []child) []child {
 	return out
 }
 
-// place assigns consecutive pages from first to the new pages reachable from
-// top, children first, passes their encodings to write in batches, and
-// returns the decoded pages in page order; the last is the root.
-func place(top *child, first uint64, write func(buf []byte, page uint64) error) ([]*node, error) {
-	// Number the new pages in post order.
-	if top == nil || top.d == nil {
-		return nil, nil
-	}
-	pages := make(map[*draft]uint64)
-	var order []*draft
-	var visit func(d *draft)
-	visit = func(d *draft) {
-		for _, s := range d.sub {
-			if s != nil {
-				visit(s)
-			}
+// emit writes the new leaves among kids and replaces each with its page.
+// The low key is copied so the child holds no buffer of a replaced page.
+func (b *builder) emit(kids []child) error {
+	for i, c := range kids {
+		if c.d == nil || !c.d.leaf {
+			continue
 		}
-		pages[d] = first + uint64(len(order))
-		order = append(order, d)
-	}
-	visit(top.d)
-
-	// Resolve new children to their pages, encode, and write a batch of
-	// pages at a time. Each returned node is decoded from its own page, so a
-	// cached node never holds the buffers of the pages it replaced.
-	buf := make([]byte, 0, placeBatch*pageSize)
-	at := first
-	placed := make(map[*draft]*node, len(order))
-	out := make([]*node, len(order))
-	for i, d := range order {
-		for j, s := range d.sub {
-			if s != nil {
-				d.kids[j] = pages[s]
-			}
-		}
-		buf = d.encode(buf)
-
-		// Decode the page and link its new inner children.
-		n, err := decodeNode(bytes.Clone(buf[len(buf)-pageSize:]))
+		page, _, err := b.out.add(c.d)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		for j, s := range d.sub {
-			if s != nil && !s.leaf {
-				n.inner[j].Store(placed[s])
-			}
-		}
-		placed[d], out[i] = n, n
-
-		// Write a full batch.
-		if len(buf) == cap(buf) {
-			if err := write(buf, at); err != nil {
-				return nil, err
-			}
-			at += placeBatch
-			buf = buf[:0]
-		}
+		kids[i] = child{low: bytes.Clone(c.low), page: page}
 	}
-
-	// Write the last partial batch.
-	if len(buf) != 0 {
-		if err := write(buf, at); err != nil {
-			return nil, err
-		}
-	}
-	return out, nil
+	return nil
 }
 
-// reachable counts the new pages reachable from top.
-func reachable(top *child) int {
-	if top == nil || top.d == nil {
-		return 0
-	}
-	var count func(d *draft) int
-	count = func(d *draft) int {
-		c := 1
-		for _, s := range d.sub {
+// place writes the new inner pages under top, children first, sets top's
+// page, and writes the pages still buffered. Each new inner page links its
+// new inner children decoded, so lookups skip the cache for them.
+func (b *builder) place(top *child) error {
+	// Write each draft after its new children, resolving their pages.
+	var visit func(d *draft) (uint64, *node, error)
+	visit = func(d *draft) (uint64, *node, error) {
+		// Write the new children first and record their pages.
+		subs := make([]*node, len(d.sub))
+		for j, s := range d.sub {
+			if s == nil {
+				continue
+			}
+			page, n, err := visit(s)
+			if err != nil {
+				return 0, nil, err
+			}
+			d.kids[j], subs[j] = page, n
+		}
+
+		// Write the draft and link its decoded children.
+		page, n, err := b.out.add(d)
+		if err != nil {
+			return 0, nil, err
+		}
+		for j, s := range subs {
 			if s != nil {
-				c += count(s)
+				n.inner[j].Store(s)
 			}
 		}
-		return c
+		return page, n, nil
 	}
-	return count(top.d)
+	if top != nil && top.d != nil {
+		page, _, err := visit(top.d)
+		if err != nil {
+			return err
+		}
+		*top = child{page: page}
+	}
+	return b.out.flush()
 }

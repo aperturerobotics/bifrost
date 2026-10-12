@@ -159,7 +159,7 @@ func BenchmarkCheckpointWorkingSet(b *testing.B) {
 	updated := bytes.Repeat([]byte{2}, 150)
 	const changed = 262144
 	const reads = 200000
-	var updateTime, buildTime, writeTime, saveTime, beforeTime, afterTime time.Duration
+	var updateTime, buildTime, saveTime, beforeTime, afterTime time.Duration
 	for b.Loop() {
 		// Copy the closed fixture without retaining its bytes in the Go heap.
 		b.StopTimer()
@@ -223,19 +223,15 @@ func BenchmarkCheckpointWorkingSet(b *testing.B) {
 		}
 		b.StartTimer()
 		start = time.Now()
-		tree, err := buildTree(db.p, db.cur.Load())
-		if err != nil {
+		tree := db.w.newTree(db.cur.Load())
+		tree.b.out.reserve = func(n uint64) (run, error) {
+			return db.w.reserve(tree, n)
+		}
+		if err := tree.build(); err != nil {
 			b.Fatal(err)
 		}
 		buildTime += time.Since(start)
-		db.w.reserve(tree)
 		checkpointHeap(b, "built")
-		start = time.Now()
-		if err := db.w.writeTree(tree); err != nil {
-			b.Fatal(err)
-		}
-		writeTime += time.Since(start)
-		checkpointHeap(b, "placed")
 		start = time.Now()
 		if err := db.w.saveTree(ctx, tree); err != nil {
 			b.Fatal(err)
@@ -270,7 +266,7 @@ func BenchmarkCheckpointWorkingSet(b *testing.B) {
 		elapsed time.Duration
 	}{
 		{"update-ms", updateTime}, {"build-ms", buildTime},
-		{"write-ms", writeTime}, {"save-ms", saveTime},
+		{"save-ms", saveTime},
 		{"before-read-ms", beforeTime}, {"after-read-ms", afterTime},
 	} {
 		b.ReportMetric(float64(metric.elapsed.Nanoseconds())/1e6/float64(b.N), metric.name)

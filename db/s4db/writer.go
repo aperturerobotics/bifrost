@@ -461,13 +461,13 @@ func (w *writer) checkpoint(ctx context.Context) error {
 		return nil
 	}
 
-	// Build the tree, write its pages, and save it.
-	t, err := buildTree(w.db.p, st)
-	if err != nil {
-		return err
+	// Build and write the tree, reserving its pages as it goes, and save
+	// it.
+	t := w.newTree(st)
+	t.b.out.reserve = func(n uint64) (run, error) {
+		return w.reserve(t, n)
 	}
-	w.reserve(t)
-	if err := w.writeTree(t); err != nil {
+	if err := t.build(); err != nil {
 		return err
 	}
 	return w.saveTree(ctx, t)
@@ -513,23 +513,23 @@ func (w *writer) waitBuild(ctx context.Context) error {
 }
 
 // runCheckpoint builds the tree of st, which the snapshot in stripe keeps,
-// and writes its pages, holding the writer lock only to reserve the pages
-// and to save the tree. The next commit reports a failure.
+// and writes its pages, holding the writer lock only to reserve pages and
+// to save the tree. The next commit reports a failure.
 func (w *writer) runCheckpoint(st *state, stripe int) {
-	// Build the tree, reserve its pages under the writer lock, and write
-	// and flush them without it, so the barrier under the lock flushes
-	// little.
+	// Build and write the tree, reserving its pages under the writer lock
+	// as it goes, and flush them without it, so the barrier under the lock
+	// flushes little.
 	ctx := context.Background()
-	t, err := buildTree(w.db.p, st)
-	if err == nil {
-		if err = w.lock(ctx); err == nil {
-			w.reserve(t)
-			w.unlock(nil)
+	t := w.newTree(st)
+	t.b.out.reserve = func(n uint64) (run, error) {
+		if err := w.lock(ctx); err != nil {
+			return run{}, err
 		}
+		r, err := w.reserve(t, n)
+		w.unlock(nil)
+		return r, err
 	}
-	if err == nil {
-		err = w.writeTree(t)
-	}
+	err := t.build()
 	if err == nil {
 		_, err = w.db.s.flushBarrier()
 	}
@@ -544,8 +544,10 @@ func (w *writer) runCheckpoint(st *state, stripe int) {
 	}
 
 	// Save the tree, then end the snapshot so the pages it replaced can be
-	// released.
-	if err == nil {
+	// released. A tree dropped while it built is no failure.
+	if errors.Is(err, errDropped) {
+		err = nil
+	} else if err == nil {
 		err = w.saveTree(ctx, t)
 	}
 	w.db.release(st, stripe)
@@ -560,16 +562,13 @@ func (w *writer) runCheckpoint(st *state, stripe int) {
 type tree struct {
 	// st is the state whose overlay the tree includes.
 	st *state
-	// b holds the new pages and lists the pages they replace.
+	// b writes the new pages and lists the pages they replace.
 	b *builder
 	// top is the new root, nil when the tree is empty.
 	top *child
-	// sp is the space holding the reservation of pages.
+	// sp is the space holding the reserved pages, nil before the first
+	// reservation.
 	sp *space
-	// pages is the reserved run the new pages fill.
-	pages run
-	// nodes are the new pages decoded, in page order.
-	nodes []*node
 	// carried holds the overlay entries after st through record
 	// carriedSeq; nil before carryOver.
 	carried *carried
@@ -577,43 +576,60 @@ type tree struct {
 	carriedSeq uint64
 }
 
-// buildTree applies the overlay of st to its tree. It reads only st and the
-// pages its tree holds, so it needs no writer lock while a snapshot keeps st.
-func buildTree(p *pager, st *state) (*tree, error) {
+// errDropped reports a tree whose space was reloaded while it built: the
+// reloaded space does not hold its reservations.
+var errDropped = errors.New("checkpoint space reloaded")
+
+// newTree returns the tree of st, writing its pages through the database
+// file and cache. The caller sets the writer's reserve function.
+func (w *writer) newTree(st *state) *tree {
+	out := &pageWriter{cache: w.db.p.cache, write: func(buf []byte, page uint64) error {
+		_, err := w.db.s.WriteAt(buf, pageOff(page))
+		return err
+	}}
+	return &tree{st: st, b: &builder{p: w.db.p, out: out}}
+}
+
+// build applies the overlay of t's state to its tree and writes the new
+// pages. It reads only the state and the pages its tree holds, so it needs
+// no writer lock while a snapshot keeps the state.
+func (t *tree) build() error {
 	// Collect the overlay in key order and apply it.
+	st := t.st
 	changes := make([]change, 0, st.overlay.Len())
 	st.overlay.Scan(func(it overlayItem) bool {
 		e := it.e
 		changes = append(changes, change{key: e.key, del: e.del, val: e.val})
 		return true
 	})
-	b := newBuilder(p)
-	top, err := b.build(st.root, changes)
-	return &tree{st: st, b: b, top: top}, err
-}
-
-// reserve takes the run for t's new pages from the space. The caller holds
-// the writer lock.
-func (w *writer) reserve(t *tree) {
-	t.sp = w.sp
-	if n := reachable(t.top); n != 0 {
-		t.pages = w.sp.alloc(uint64(n)) // #nosec G115 -- counts are not negative.
-		w.sp.reserved = append(w.sp.reserved, t.pages)
-	}
-}
-
-// writeTree writes t's new pages into their reserved run. No other writer
-// uses the run, so it needs no writer lock.
-func (w *writer) writeTree(t *tree) error {
-	if t.pages.n == 0 {
-		return nil
-	}
-	nodes, err := place(t.top, t.pages.start, func(buf []byte, page uint64) error {
-		_, err := w.db.s.WriteAt(buf, pageOff(page))
+	top, err := t.b.build(st.root, changes)
+	if err != nil {
 		return err
-	})
-	t.nodes = nodes
-	return err
+	}
+	t.top = top
+	return t.b.place(top)
+}
+
+// reserve takes up to n pages from the space for t's new pages. The caller
+// holds the writer lock.
+func (w *writer) reserve(t *tree, n uint64) (run, error) {
+	// Keep the reservations in one space.
+	sp := w.sp
+	if t.sp == nil {
+		t.sp = sp
+	}
+	if t.sp != sp {
+		return run{}, errDropped
+	}
+
+	// Take n pages from the lowest free run holding them, else the largest
+	// free run of a write batch or more, else from the file end.
+	r, ok := sp.fit(min(n, placeBatch), n)
+	if !ok {
+		r = sp.alloc(n)
+	}
+	sp.reserved = append(sp.reserved, r)
+	return r, nil
 }
 
 // carryOver collects the overlay entries that follow t's state, so
@@ -658,32 +674,31 @@ func (t *tree) fold(changed []*record) {
 // dropped. The caller holds the writer lock.
 func (w *writer) saveTree(ctx context.Context, t *tree) error {
 	// End the reservation. Drop a tree whose space was reloaded or whose
-	// checkpoint another replaced, freeing its pages at once: no reader
-	// has seen them.
+	// checkpoint another replaced, freeing its pages at once and evicting
+	// them from the cache: no reader has seen them.
 	db, sp, b, st := w.db, w.sp, t.b, t.st
 	cur := db.cur.Load()
-	if t.sp != sp {
+	if t.sp != nil && t.sp != sp {
 		return nil
 	}
-	sp.reserved = slices.DeleteFunc(sp.reserved, func(r run) bool { return r == t.pages })
+	out := b.out
+	sp.reserved = slices.DeleteFunc(sp.reserved, func(r run) bool { return slices.Contains(out.runs, r) })
 	if cur.gen != st.gen {
-		sp.addFree(t.pages)
+		for _, r := range out.runs {
+			db.p.cache.drop(r)
+			sp.addFree(r)
+		}
 		return nil
 	}
+	sp.addFree(out.unused())
 
-	// Cache the new pages. The root is the last of them, or an existing
-	// page when nothing above it changed.
+	// The root is the new top page, or an existing page when nothing above
+	// it changed.
 	var root uint64
 	if t.top != nil {
 		root = t.top.page
 	}
-	fresh := len(t.nodes)
-	for i, n := range t.nodes {
-		db.p.cache.put(t.pages.start+uint64(i), n)
-	}
-	if fresh != 0 {
-		root = t.pages.end() - 1
-	}
+	fresh := out.count
 
 	// Free the replaced pages, the old space record, and the log chunks
 	// before the one holding the tree's next record once no snapshot reads
