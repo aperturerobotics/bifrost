@@ -60,9 +60,27 @@ func (s *replayTestSpace) sign(name string, priv crypto.PrivKey, key string, lin
 
 // signTx signs a World transaction as the next operation of an author.
 func (s *replayTestSpace) signTx(name string, priv crypto.PrivKey, tx *world_block_tx.Tx, link *sobject.SOOperationLink) *sobject.SOOperation {
-	// Encode the transaction and sign it under the Space config.
 	s.t.Helper()
-	data := marshalApplyTxOpForProcessTest(s.t, tx)
+	return s.signOp(name, priv, marshalApplyTxOpForProcessTest(s.t, tx), link)
+}
+
+// signRetainedRoot signs, as the next operation of an author, an operation
+// retaining the genesis World under name.
+func (s *replayTestSpace) signRetainedRoot(name string, priv crypto.PrivKey, root string, link *sobject.SOOperationLink) *sobject.SOOperation {
+	s.t.Helper()
+	data, err := (&SOWorldOp{Body: &SOWorldOp_SetRetainedRoot{
+		SetRetainedRoot: &SetRetainedRootOp{Name: root, RootRef: s.genesis.GetHeadRef().GetRootRef()},
+	}}).MarshalVT()
+	if err != nil {
+		s.t.Fatal(err.Error())
+	}
+	return s.signOp(name, priv, data, link)
+}
+
+// signOp signs World operation data as the next operation of an author.
+func (s *replayTestSpace) signOp(name string, priv crypto.PrivKey, data []byte, link *sobject.SOOperationLink) *sobject.SOOperation {
+	// Sign it under the Space config.
+	s.t.Helper()
 	link.ConfigHash = s.config.GetConfigChainHash()
 	op, err := sobject.BuildSOOperation(replayTestObjectID, priv, data, link, sobject.NewSOOperationLocalID())
 	if err != nil {
@@ -289,15 +307,16 @@ func TestReplayConvergesAcrossDeliveryOrders(t *testing.T) {
 
 // TestReplayResumesSavedReplay saves a replay and resumes it in a new
 // replayer, as a remounted World engine does. The resumed replayer must not
-// replay the saved operations, and must reach the World a cold replay reaches
-// when another operation arrives.
+// replay the saved operations, must restore the World after each of them, and
+// must reach the World a cold replay reaches when another operation arrives.
 func TestReplayResumesSavedReplay(t *testing.T) {
 	// Build the Space and its operations.
 	privA, pidA := newReplayTestKey(t)
 	privB, pidB := newReplayTestKey(t)
 	space := newReplayTestSpace(t, pidA, pidB)
 	opA := space.sign("A own", privA, "object-a", &sobject.SOOperationLink{Nonce: 1})
-	opAShared := space.sign("A shared", privA, "object-shared", &sobject.SOOperationLink{Nonce: 2, PrevOpHash: opA.Hash()})
+	opARoot := space.signRetainedRoot("A root", privA, "genesis", &sobject.SOOperationLink{Nonce: 2, PrevOpHash: opA.Hash()})
+	opAShared := space.sign("A shared", privA, "object-shared", &sobject.SOOperationLink{Nonce: 3, PrevOpHash: opARoot.Hash()})
 	opBShared := space.sign("B shared", privB, "object-shared", &sobject.SOOperationLink{Nonce: 1})
 
 	// Member A replays its own operations and saves the replay.
@@ -305,7 +324,7 @@ func TestReplayResumesSavedReplay(t *testing.T) {
 	store := store_kvtx_inmem.NewStore()
 	memberA := space.member(pidA, false)
 	memberA.replayer.so.(*testSharedObject).localStore = store
-	saved := memberA.deliver(opA, opAShared)
+	saved := memberA.deliver(opA, opARoot, opAShared)
 	if err := memberA.replayer.save(ctx); err != nil {
 		t.Fatal(err.Error())
 	}
@@ -324,6 +343,11 @@ func TestReplayResumesSavedReplay(t *testing.T) {
 	if err := restored.replayer.load(ctx); err != nil {
 		t.Fatal(err.Error())
 	}
+	if !slices.EqualFunc(restored.replayer.positions, memberA.replayer.positions, func(a, b replayPosition) bool {
+		return a.state.EqualVT(b.state)
+	}) {
+		t.Fatal("restored positions hold Worlds other than the saved replay's")
+	}
 	resumed := restored.deliver()
 	if !resumed.state.EqualVT(saved.state) || !slices.Equal(resumed.outcomes, saved.outcomes) {
 		t.Fatalf("resumed %q; want %q", resumed.outcomes, saved.outcomes)
@@ -332,7 +356,7 @@ func TestReplayResumesSavedReplay(t *testing.T) {
 	// After B's operation arrives, it matches a cold replay of all three.
 	restored.snap = memberA.snap
 	got := restored.deliver(opBShared)
-	want := space.member(pidB, true).deliver(opA, opAShared, opBShared)
+	want := space.member(pidB, true).deliver(opA, opARoot, opAShared, opBShared)
 	if !got.state.EqualVT(want.state) || !slices.Equal(got.outcomes, want.outcomes) {
 		t.Errorf("resumed replay %q; want %q", got.outcomes, want.outcomes)
 	}
@@ -502,7 +526,7 @@ func TestReplaySpanHoldsOnlyNewPositions(t *testing.T) {
 	// The next save holds only the World after a3, after the first block.
 	member.deliver(a1, a2, a3)
 	second, _ := save()
-	want := r.positions[2].world
+	want := r.positions[2].state.GetHeadRef().GetRootRef()
 	if len(second.GetWorlds()) != 1 || !second.GetWorlds()[0].EqualsRef(want) || !second.GetPrev().EqualsRef(firstRef) {
 		t.Fatalf("second span holds %d Worlds after %v; want the World after a3 after %v", len(second.GetWorlds()), second.GetPrev(), firstRef)
 	}

@@ -54,12 +54,8 @@ type replayOutcome struct {
 type replayPosition struct {
 	// outcome is the outcome of the operation.
 	outcome replayOutcome
-	// state is the World after the operation. A position restored from a
-	// saved replay keeps it only for the last position.
+	// state is the World after the operation.
 	state *InnerState
-	// world is the root block of the World after the operation. A restored
-	// position keeps it.
-	world *block.BlockRef
 }
 
 // replayFork is a local write computed on the World after the first index
@@ -188,7 +184,7 @@ func (r *replayer) sync(ctx context.Context, snap sobject.SharedObjectStateSnaps
 // the order of the rest is unchanged, so their outcomes stand.
 func (r *replayer) positionsAbove(base *InnerState) []replayPosition {
 	for i, v := range slices.Backward(r.positions) {
-		if state := v.state; state != nil && state.EqualVT(base) {
+		if v.state.EqualVT(base) {
 			return slices.Clone(r.positions[i+1:])
 		}
 	}
@@ -241,8 +237,7 @@ func (r *replayer) coveredWorld(checkpoint *sobject.SOCheckpointInner) (*InnerSt
 	if n == 0 {
 		return r.base, prefix, true
 	}
-	world := r.positions[n-1].state
-	return world, prefix, world != nil
+	return r.positions[n-1].state, prefix, true
 }
 
 // stateAfter returns the World after prefix when the replay placed prefix
@@ -259,9 +254,10 @@ func (r *replayer) stateAfter(prefix [][]byte) *InnerState {
 	return r.positions[len(prefix)-1].state
 }
 
-// load restores the replay saved in the local state of the World, if any.
-// Only its last position keeps a World, so a later order that diverges before
-// it replays from the base.
+// load restores the replay saved in the local state of the World, if any,
+// with the World after every position, so a later order resumes after the
+// longest prefix it shares with the saved one. A saved replay whose Worlds do
+// not lead to its head is not restored.
 func (r *replayer) load(ctx context.Context) error {
 	// Read the saved replay.
 	store, release, err := r.so.AccessLocalStateStore(ctx, replayCursorStoreID, nil)
@@ -285,27 +281,55 @@ func (r *replayer) load(ctx context.Context) error {
 		return nil
 	}
 
-	// Restore its outcomes, with the World after the last one.
-	r.base = cursor.GetBase()
-	r.positions = make([]replayPosition, len(cursor.GetOutcomes()))
+	// Restore its outcomes and the World after each.
+	base, head := cursor.GetBase(), cursor.GetHead()
+	positions := make([]replayPosition, len(cursor.GetOutcomes()))
+	state := base
 	for i, outcome := range cursor.GetOutcomes() {
-		r.positions[i].outcome = replayOutcome{
-			hash:     outcome.GetHash(),
-			reason:   outcome.GetReason(),
-			conflict: outcome.GetConflict(),
-			revoked:  outcome.GetRevoked(),
-			payloads: outcome.GetPayloads(),
+		state = restoredState(state, head, outcome)
+		positions[i] = replayPosition{
+			outcome: replayOutcome{
+				hash:     outcome.GetHash(),
+				reason:   outcome.GetReason(),
+				conflict: outcome.GetConflict(),
+				revoked:  outcome.GetRevoked(),
+				payloads: outcome.GetPayloads(),
+			},
+			state: state,
 		}
-		r.positions[i].world = outcome.GetWorld()
 		if outcome.GetReason() == "" || outcome.GetRevoked() {
 			r.markApplied(outcome.GetHash())
 		}
 	}
-	if n := len(r.positions); n != 0 {
-		r.positions[n-1].state = cursor.GetHead()
+	if !state.EqualVT(head) {
+		r.c.le.Warn("saved replay does not lead to its head, replaying from the checkpoint")
+		return nil
 	}
+	r.base, r.positions = base, positions
 	r.changed, r.deferred = false, false
 	return nil
+}
+
+// restoredState returns the World after the saved outcome of the operation
+// that followed prev. Every World after the base differs from head only in its
+// root and retained roots, which the outcome records.
+func restoredState(prev, head *InnerState, outcome *ReplayCursorOutcome) *InnerState {
+	// Keep the reference to an unchanged World, or name a new World as head
+	// names its own.
+	ref := prev.GetHeadRef()
+	if !outcome.GetWorld().EqualsRef(ref.GetRootRef()) {
+		ref = head.GetHeadRef().CloneVT()
+		ref.RootRef = outcome.GetWorld()
+	}
+
+	// An operation that changed neither leaves prev.
+	roots := prev.GetRetainedRoots()
+	if set := outcome.GetRetainedRoots(); set != nil {
+		roots = set.GetRoots()
+	} else if ref == prev.GetHeadRef() {
+		return prev
+	}
+	return &InnerState{HeadRef: ref, RetainedRoots: roots}
 }
 
 // save writes the replay to the local state of the World when it changed and
@@ -439,10 +463,11 @@ func (r *replayer) encodeSpan(extra []*block.BlockRef) (*block.PutBatchEntry, *b
 	var worlds, payloads []*block.BlockRef
 	for _, pos := range r.positions[from:] {
 		payloads = append(payloads, pos.outcome.payloads...)
-		if pos.world.GetEmpty() || (len(worlds) != 0 && worlds[len(worlds)-1].EqualsRef(pos.world)) {
+		world := pos.state.GetHeadRef().GetRootRef()
+		if world.GetEmpty() || (len(worlds) != 0 && worlds[len(worlds)-1].EqualsRef(world)) {
 			continue
 		}
-		worlds = append(worlds, pos.world)
+		worlds = append(worlds, world)
 	}
 	payloads = append(payloads, extra...)
 	if len(worlds) == 0 && len(payloads) == 0 {
@@ -465,23 +490,33 @@ func (r *replayer) encodeSpan(extra []*block.BlockRef) (*block.PutBatchEntry, *b
 	return &block.PutBatchEntry{Ref: ref, Data: data, Refs: refs}, ref, nil
 }
 
-// encodeCursor returns the encoded base, outcomes and World after them.
+// encodeCursor returns the encoded base, outcomes and World after them. Each
+// outcome records the root of the World after it, and its retained roots when
+// they changed.
 func (r *replayer) encodeCursor() ([]byte, error) {
+	// Record the base and head.
 	base, head, _ := r.head()
 	cursor := &ReplayCursor{
 		Base:     base,
 		Head:     head,
 		Outcomes: make([]*ReplayCursorOutcome, len(r.positions)),
 	}
+
+	// Record each outcome with its World.
+	roots := base.GetRetainedRoots()
 	for i, pos := range r.positions {
-		cursor.Outcomes[i] = &ReplayCursorOutcome{
+		outcome := &ReplayCursorOutcome{
 			Hash:     pos.outcome.hash,
 			Reason:   pos.outcome.reason,
 			Conflict: pos.outcome.conflict,
 			Revoked:  pos.outcome.revoked,
-			World:    pos.world,
+			World:    pos.state.GetHeadRef().GetRootRef(),
 			Payloads: pos.outcome.payloads,
 		}
+		if next := pos.state.GetRetainedRoots(); !slices.EqualFunc(next, roots, (*RetainedRoot).EqualVT) {
+			outcome.RetainedRoots, roots = &RetainedRootSet{Roots: next}, next
+		}
+		cursor.Outcomes[i] = outcome
 	}
 	return cursor.MarshalVT()
 }
@@ -516,15 +551,11 @@ func (r *replayer) replay(
 	}()
 
 	// Keep the positions of the prefix the new order shares with the last one.
-	// A restored prefix resumes only from its last position.
 	r.set = set
 	order := set.Order()
 	n := 0
 	for n < len(order) && n < len(r.positions) && bytes.Equal(order[n], r.positions[n].outcome.hash) {
 		n++
-	}
-	if n != 0 && r.positions[n-1].state == nil {
-		n = 0
 	}
 	if n != len(r.positions) || n != len(order) {
 		// Defer the save of a published fork appended to a saved replay.
@@ -618,7 +649,7 @@ func (r *replayer) place(outcome replayOutcome, state *InnerState) {
 	} else {
 		_, outcome.revoked = r.applied[string(outcome.hash)]
 	}
-	r.positions = append(r.positions, replayPosition{outcome: outcome, state: state, world: state.GetHeadRef().GetRootRef()})
+	r.positions = append(r.positions, replayPosition{outcome: outcome, state: state})
 }
 
 // markApplied records that this device applied the operation with hash h.
