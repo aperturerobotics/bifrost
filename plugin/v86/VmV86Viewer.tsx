@@ -129,9 +129,10 @@ async function* watchVmEdges(
   }
 }
 
-// requestVmState asks the VM at objectKey for a target state. The Space binds
-// the VM's process before a start and unbinds it after a stop; a start needs
-// contents to bind it.
+// requestVmState asks the VM at objectKey for a target state. A start first
+// approves the VM's process binding, which has the Space run the VM; the
+// approval outlasts a stop, so the runner commits it. A start needs contents
+// to approve the binding.
 async function requestVmState(
   world: IWorldState,
   contents: SpaceContents | null,
@@ -143,9 +144,6 @@ async function requestVmState(
   }
   const op = SetV86StateOp.create({ objectKey, state: target })
   await world.applyWorldOp(SET_V86_STATE_OP_ID, SetV86StateOp.toBinary(op), '')
-  if (target === VmState.VmState_STOPPED) {
-    await contents?.setProcessBinding(objectKey, VmV86TypeID, false)
-  }
 }
 
 // writeOverride moves the override edge of one slot from prevKey to nextKey,
