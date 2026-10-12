@@ -8,6 +8,7 @@ import {
   DevEnvironment,
   version,
   type Alias,
+  type Connect,
   type HotChannel,
   type HotPayload,
   type Plugin,
@@ -226,6 +227,20 @@ export class DevelopmentEnvironment {
     const adapter: Plugin = {
       name: 'bldr-frontend',
       enforce: 'pre',
+      configureServer(server) {
+        // Middleware mode broadcasts Vite errors but falls through to the host.
+        // Retain the failure status before Vite's error middleware consumes it.
+        const markError: Connect.ErrorHandleFunction = (
+          error,
+          _request,
+          response,
+          next,
+        ) => {
+          response.statusCode = 500
+          next(error)
+        }
+        return () => server.middlewares.use(markError)
+      },
       async resolveId(source, importer) {
         // Preserve the document's refresh runtime and shared package boundary.
         if (source === '/@react-refresh')
@@ -360,6 +375,10 @@ export class DevelopmentEnvironment {
     // Serve Vite middleware through the compiler's private HTTP adapter.
     this.listener = createHTTPServer((request, response) => {
       server.middlewares(request, response, () => {
+        if (response.statusCode === 500) {
+          response.end('Frontend compilation failed')
+          return
+        }
         response.writeHead(404)
         response.end('Frontend module not found')
       })

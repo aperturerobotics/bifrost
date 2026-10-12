@@ -6,42 +6,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/aperturerobotics/starpc/srpc"
 	"github.com/pkg/errors"
 	frontend "github.com/s4wave/spacewave/bldr/frontend"
 	bldr_project "github.com/s4wave/spacewave/bldr/project"
 )
-
-// frontendWatchStream captures the first response and announces Watch entry.
-type frontendWatchStream struct {
-	srpc.Stream
-	// ctx is the lifetime of this attachment.
-	ctx context.Context
-	// entered reports that Watch acquired the stream context.
-	entered chan struct{}
-	// events receives responses sent by Watch.
-	events chan *frontend.Event
-}
-
-// Context reports when Watch has entered before returning its lifetime.
-func (s *frontendWatchStream) Context() context.Context {
-	select {
-	case s.entered <- struct{}{}:
-	default:
-	}
-	return s.ctx
-}
-
-// Send records an attachment response.
-func (s *frontendWatchStream) Send(event *frontend.Event) error {
-	s.events <- event
-	return nil
-}
-
-// SendAndClose records the final attachment response.
-func (s *frontendWatchStream) SendAndClose(event *frontend.Event) error {
-	return s.Send(event)
-}
 
 // TestFrontendWatchWaitsForConfiguration keeps an early attachment from
 // mistaking a not-yet-configured compiler for a disabled frontend.
@@ -92,6 +60,3 @@ func TestFrontendWatchWaitsForConfiguration(t *testing.T) {
 		t.Fatal(ctx.Err())
 	}
 }
-
-// _ is a type assertion.
-var _ frontend.SRPCFrontend_WatchStream = (*frontendWatchStream)(nil)
