@@ -42,7 +42,6 @@ require (
 	github.com/aperturerobotics/protobuf-go-lite v0.19.1-0.20261006081947-6c15c9bde28b // master
 	github.com/aperturerobotics/starpc v0.52.3-0.20261006081950-e03641ffbcc3 // master
 	github.com/aperturerobotics/util v1.34.10-0.20261006081936-7765b80f85f1 // master
-	github.com/aperturerobotics/wasivm/wazero/kernel v0.0.0-20261012035521-104207457d6a
 	github.com/cloudflare/circl v1.6.5
 	github.com/creack/pty v1.1.24
 	github.com/dgraph-io/ristretto/v2 v2.4.2

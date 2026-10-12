@@ -54,19 +54,6 @@ func (c *wasiVmConsole) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-// exit records how the run ended and ends every viewer stream. runErr is the
-// error that ended a failed run.
-func (c *wasiVmConsole) exit(code int32, runErr error) {
-	c.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
-		c.exited = true
-		c.exitCode = code
-		if runErr != nil {
-			c.exitError = runErr.Error()
-		}
-		broadcast()
-	})
-}
-
 // Console attaches a viewer. It replays the retained output, then streams new
 // output until the VM exits or the viewer closes. Input and size changes from
 // the viewer go to the kernel's terminal.
