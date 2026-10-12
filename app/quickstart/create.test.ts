@@ -607,7 +607,7 @@ describe('quickstart create', () => {
       ['chat', 'My Chat'],
       ['docs', 'My Docs'],
       ['blog', 'My Blog'],
-      ['v86', 'My V86 VM'],
+      ['v86', 'My VM'],
       ['device', 'My Computers'],
       ['forge', 'My Forge Dashboard'],
       ['kv', 'My Key-Value Store'],
@@ -1729,11 +1729,11 @@ to try first.
     }
     expect(wizardCall[0]).toBe(CREATE_WIZARD_OBJECT_OP_ID)
     const wizardOp = CreateWizardObjectOp.fromBinary(wizardCall[1])
-    expect(wizardOp.objectKey).toMatch(/^wizard\/v86-vm-[a-z0-9]+-\d+$/)
+    expect(wizardOp.objectKey).toMatch(/^wizard\/vm-[a-z0-9]+-\d+$/)
     expect(wizardOp.wizardTypeId).toBe(V86_WIZARD_TYPE_ID)
     expect(wizardOp.targetTypeId).toBe(VmV86TypeID)
     expect(wizardOp.targetKeyPrefix).toBe(V86_WIZARD_TARGET_KEY_PREFIX)
-    expect(wizardOp.name).toBe('V86 VM')
+    expect(wizardOp.name).toBe('VM')
     expect(wizardOp.initialStep).toBe(1)
     const config = V86WizardConfig.fromBinary(wizardOp.initialConfigData)
     const expectedConfig = buildV86QuickstartWizardConfig()

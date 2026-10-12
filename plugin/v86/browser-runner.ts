@@ -64,11 +64,13 @@ const wasmPageBytes = 64 * 1024
 const defaultGuestMemoryMb = 256
 const defaultVgaMemoryMb = 8
 const v86WasmMemoryHeadroomBytes = 16 * mib
+// v86BaseCmdline boots through /sbin/init so systemd runs the ttyS0 shell with
+// job control; bash as PID 1 breaks Ctrl-C and SIGINT. The empty rootflags
+// clears the kernel's built-in 9p flags, which v86fs rejects. quiet keeps
+// kernel and systemd progress off the console, so the console opens on the
+// shell; boot args such as loglevel=7 come after it and restore the log.
 const v86BaseCmdline =
-  // Boot through /sbin/init so systemd runs the ttyS0 shell with job
-  // control; bash as PID 1 breaks Ctrl-C and SIGINT. The empty rootflags clears the kernel's built-in
-  // 9p flags, which v86fs rejects.
-  'rw init=/sbin/init root=v86fs rootfstype=v86fs rootflags= console=ttyS0'
+  'rw init=/sbin/init root=v86fs rootfstype=v86fs rootflags= console=ttyS0 quiet'
 // v86minBootReadyMarker identifies the first guest output that proves the
 // kernel and init path reached an interactive boot state.
 export const v86minBootReadyMarker = /(?:login:|# |\$ |Welcome)/

@@ -757,7 +757,7 @@ func TestWizardRegistryStaticAppWizardVisibility(t *testing.T) {
 		"forge/cluster":             {"Forge Cluster", false},
 		"forge/job":                 {"Forge Job", false},
 		"forge/task":                {"Forge Task", false},
-		"vm/v86":                    {"V86 VM", true},
+		"vm/v86":                    {"x86 VM", true},
 	}
 	seen := make(map[string]struct{}, len(expected))
 	for _, wizard := range s4wave_wizard.ObjectWizards {

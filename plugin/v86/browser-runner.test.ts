@@ -94,7 +94,7 @@ describe('browser V86 runner', () => {
     const runtime = await startBrowserV86Runtime(
       {
         assets: bootAssets(),
-        config: { memoryMb: 128, vgaMemoryMb: 4, bootArgs: ' quiet ' },
+        config: { memoryMb: 128, vgaMemoryMb: 4, bootArgs: ' loglevel=7 ' },
         objectKey: 'vm/v86/test',
         v86fsAdapter: adapter as never,
         attachV86fsNotifier,
@@ -111,7 +111,7 @@ describe('browser V86 runner', () => {
         memory_size: 128 * 1024 * 1024,
         vga_memory_size: 4 * 1024 * 1024,
         cmdline:
-          'rw init=/sbin/init root=v86fs rootfstype=v86fs rootflags= console=ttyS0 quiet',
+          'rw init=/sbin/init root=v86fs rootfstype=v86fs rootflags= console=ttyS0 quiet loglevel=7',
         screen: { adapter: expect.any(Object) },
         disable_keyboard: true,
         disable_mouse: true,

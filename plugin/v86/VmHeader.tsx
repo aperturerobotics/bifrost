@@ -42,13 +42,13 @@ const viewTabs = [
 ] as const
 
 // VmHeader is the slim strip above a VM: its name and state and, while it
-// runs, the panel tabs and machine actions. Labels collapse to icons in a
-// narrow panel.
+// runs, the panel tabs and machine actions. Labels collapse to icons, and the
+// leading icon hides, in a narrow panel.
 export function VmHeader({ name, state, controls }: VmHeaderProps) {
   return (
     <div className="border-foreground/8 @container flex h-9 shrink-0 items-center gap-2 border-b px-3">
       <div className="flex min-w-0 flex-1 items-center gap-2 select-none">
-        <LuTv className="text-foreground-alt size-4 shrink-0" />
+        <LuTv className="text-foreground-alt hidden size-4 shrink-0 @md:block" />
         <span className="text-foreground truncate text-sm font-medium tracking-tight">
           {name}
         </span>

@@ -39,8 +39,9 @@ and may not appear.
 
 ## Virtual machines
 
-A V86 VM is an x86 computer that runs in a browser tab, inside a Space. Adding
-one copies a starter disk image for you. VMs are experimental and may not
+An x86 VM is a computer that runs in a browser tab, inside a Space. When you
+add one, you choose a published disk image, and the VM downloads it as it
+reads it. VMs are experimental and may not
 appear. They also depend on an add-on. Without it, the VM appears in the Space
 but does not open.
 

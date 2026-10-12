@@ -406,7 +406,7 @@ const QUICKSTART_SEEDS: Record<
   chat: { spaceName: 'My Chat', initialObjectKey: CHAT_DEMO_CHANNEL_KEY },
   docs: { spaceName: 'My Docs' },
   blog: { spaceName: 'My Blog' },
-  v86: { spaceName: 'My V86 VM' },
+  v86: { spaceName: 'My VM' },
   device: { spaceName: 'My Computers' },
   forge: {
     spaceName: 'My Forge Dashboard',
@@ -1535,7 +1535,7 @@ async function initV86Quickstart(
       wizardTypeId: V86_WIZARD_TYPE_ID,
       targetTypeId: VmV86TypeID,
       targetKeyPrefix: V86_WIZARD_TARGET_KEY_PREFIX,
-      name: 'V86 VM',
+      name: 'VM',
       timestamp: now,
       initialStep: 1,
       initialConfigData: V86WizardConfig.toBinary(config),

@@ -161,7 +161,7 @@ describe('SpacePlugins', () => {
 
     expect(screen.getByLabelText('Plugin manifest ID')).toBeDefined()
     expect(screen.getByText('Notes')).toBeDefined()
-    expect(screen.getByText('V86 VM')).toBeDefined()
+    expect(screen.getByText('x86 VM')).toBeDefined()
   })
 
   it('installs a suggested plugin via addSpacePlugin', () => {
@@ -187,7 +187,7 @@ describe('SpacePlugins', () => {
     fireEvent.click(screen.getByLabelText('Add plugin'))
 
     expect(screen.queryByText('Notes')).toBeNull()
-    expect(screen.getByText('V86 VM')).toBeDefined()
+    expect(screen.getByText('x86 VM')).toBeDefined()
   })
 
   it('lists backend catalog plugins with revision and installs them', () => {
@@ -231,7 +231,7 @@ describe('SpacePlugins', () => {
     expect(screen.queryByText('rev 7')).toBeNull()
     // Known-plugin fallbacks stay browsable when not installed.
     expect(screen.getByText('Notes')).toBeDefined()
-    expect(screen.getByText('V86 VM')).toBeDefined()
+    expect(screen.getByText('x86 VM')).toBeDefined()
   })
 
   it('validates and installs a manually entered manifest ID', () => {

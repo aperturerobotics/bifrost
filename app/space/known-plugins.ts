@@ -28,7 +28,7 @@ export const KNOWN_SPACE_PLUGINS: readonly KnownSpacePlugin[] = [
   },
   {
     id: 'spacewave-v86',
-    name: 'V86 VM',
+    name: 'x86 VM',
     description: 'x86 virtual machine that runs in the browser',
     icon: LuMonitor,
   },

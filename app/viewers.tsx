@@ -382,7 +382,7 @@ const productObjectViewers: ObjectViewerComponent[] = [
   {
     componentID: 'spacewave.wizard.v86',
     typeID: 'wizard/vm/v86',
-    name: 'V86 Wizard',
+    name: 'VM Wizard',
     category: 'VM',
     requiresObjectState: false,
     component: lazy(() =>

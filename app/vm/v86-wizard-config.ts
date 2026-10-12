@@ -39,7 +39,7 @@ export function buildV86QuickstartWizardConfig(): V86WizardConfig {
 }
 
 export function buildV86QuickstartWizardKey(now: Date): string {
-  return wizardObjectKey('V86 VM ' + now.getTime().toString(36))
+  return wizardObjectKey('VM ' + now.getTime().toString(36))
 }
 
 export function seedV86WizardConfig(

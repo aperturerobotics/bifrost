@@ -163,10 +163,10 @@ export const QUICKSTART_OPTIONS = [
   },
   {
     id: 'v86',
-    name: 'Create a V86 VM',
+    name: 'Create an x86 VM',
     description: 'x86 virtual machine in the browser',
     seoDescription:
-      'Create a Spacewave V86 virtual machine workspace that runs x86 environments in the browser for portable experiments and development.',
+      'Create a Spacewave x86 virtual machine workspace that runs x86 environments in the browser for portable experiments and development.',
     category: 'compute',
     icon: LuMonitor,
     experimental: true,

@@ -355,7 +355,7 @@ async function registerV86Viewer(
     {
       registration: {
         typeId: 'vm/v86',
-        viewerName: 'V86',
+        viewerName: 'Virtual Machine',
         componentId: 'spacewave.v86.viewer',
         scriptPath: v86ViewerScript,
         surface: ViewerSurface.WEB,

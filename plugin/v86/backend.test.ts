@@ -427,7 +427,7 @@ describe('v86 backend registration', () => {
     expect(h.viewerRegistrations).toEqual([
       {
         typeId: 'vm/v86',
-        viewerName: 'V86',
+        viewerName: 'Virtual Machine',
         componentId: 'spacewave.v86.viewer',
         scriptPath:
           '/asset/spacewave-v86/manifest/root/v/b/fe/assets/v86-viewer.mjs',

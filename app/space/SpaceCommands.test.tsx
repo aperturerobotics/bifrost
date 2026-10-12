@@ -669,12 +669,12 @@ describe('SpaceCommands', () => {
       },
       {
         typeId: 'vm/v86',
-        displayName: 'V86 VM',
+        displayName: 'x86 VM',
         category: 'VM',
         persistent: true,
         wizardTypeId: 'wizard/vm/v86',
         keyPrefix: 'vm/v86/',
-        defaultNamePattern: 'V86 VM',
+        defaultNamePattern: 'VM',
       },
     ]
     renderCommands()
