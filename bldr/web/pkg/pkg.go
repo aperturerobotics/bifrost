@@ -21,8 +21,14 @@ type WebPkg interface {
 	GetWebPkgFsHandle(ctx context.Context) (*unixfs.FSHandle, error)
 }
 
-// PkgNameRe is a regex that can be used to check for valid package names.
-// https://github.com/dword-design/package-name-regex/blob/2899905/src/index.js
+// ImportSpecifierPrefix prefixes the bare specifier a bundle emits for a
+// shared web package import: "bldr-web-pkg/react/index.mjs". The document's
+// import map binds "bldr-web-pkg/{id}/" to the URL the host loads the package
+// from, so every bundle on the page shares one instance of each module.
+const ImportSpecifierPrefix = "bldr-web-pkg/"
+
+// PkgNameRe matches a valid npm package name, following
+// https://github.com/dword-design/package-name-regex/blob/2899905/src/index.js.
 var PkgNameRe = regexp.MustCompile(`^(@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$`)
 
 // ValidateWebPkgId validates a web package identifier.

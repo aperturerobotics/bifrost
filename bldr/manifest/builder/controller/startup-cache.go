@@ -32,9 +32,9 @@ import (
 )
 
 // startupCacheFormatEnvKey is bumped when compiler-owned output policy changes
-// without changing a plugin source file. V19 builds esbuild bundles with
-// relative chunk imports.
-const startupCacheFormatEnvKey = "BLDR_STARTUP_CACHE_FORMAT_V19"
+// without changing a plugin source file. V20 builds esbuild bundles that
+// import shared web packages through the document's import map.
+const startupCacheFormatEnvKey = "BLDR_STARTUP_CACHE_FORMAT_V20"
 
 // startupValidationResult contains the startup cache validation result.
 type startupValidationResult struct {

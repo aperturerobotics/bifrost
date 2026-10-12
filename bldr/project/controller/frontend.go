@@ -30,6 +30,7 @@ import (
 	vite_compiler "github.com/s4wave/spacewave/bldr/web/bundler/vite/compiler"
 	web_entrypoint_index "github.com/s4wave/spacewave/bldr/web/entrypoint/index"
 	web_fetch "github.com/s4wave/spacewave/bldr/web/fetch"
+	web_pkg "github.com/s4wave/spacewave/bldr/web/pkg"
 	web_pkg_external "github.com/s4wave/spacewave/bldr/web/pkg/external"
 	"github.com/sirupsen/logrus"
 )
@@ -387,7 +388,7 @@ func webPkgBindingScript(ids []string) string {
 	// Insert the map from the boot module, before the entrypoint import.
 	imports := make(map[string]string, len(ids))
 	for _, id := range ids {
-		imports["bldr-web-pkg/"+id+"/"] = "/b/pkg/" + id + "/"
+		imports[web_pkg.ImportSpecifierPrefix+id+"/"] = "/b/pkg/" + id + "/"
 	}
 	importMap := web_entrypoint_index.ImportMap{Imports: imports}.String()
 	return ` const webPkgs = document.createElement("script"); webPkgs.type = "importmap"; webPkgs.dataset.bldrWebPkg = ""; webPkgs.textContent = ` + strconv.Quote(importMap) + `; document.head.append(webPkgs);`

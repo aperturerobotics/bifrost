@@ -17,7 +17,9 @@ import (
 
 // BuildEsbuildPlugin constructs the bldr esbuild plugin.
 //
-// externalizePkgs will be marked as external and remapped to /b/pkg/{path}.
+// Imports of externalizePkgs are marked external and rewritten to the bare
+// specifier web_pkg.ImportSpecifierPrefix + "{id}/{path}", which the document's
+// import map resolves to the shared module the host loaded.
 func BuildEsbuildPlugin(
 	le *logrus.Entry,
 	externalizePkgs []string,
@@ -46,15 +48,8 @@ func BuildEsbuildPlugin(
 					return result, nil
 				}
 
-				// Match the import to the configured list of externalized imports.
-				// Objective: we want to import a singleton instance of modules like React.
-				// Mark the import as external so we will import() it dynamically at runtime.
-				//
-				// Add the original import path to the list of embedded external modules.
-				// Transform the import path to the new import path: /bldr/pkg/...
-				// Later: include the list of embedded external modules in the assets fs.
-				// Later: add an import map with the list of modules + paths to import from.
-				// "react" -> /p/web/pkg/react
+				// Externalize only the configured packages, so the page holds
+				// one instance of modules like React.
 				if !slices.Contains(externalizePkgs, webPkgID) {
 					return result, nil
 				}
@@ -124,11 +119,9 @@ func BuildEsbuildPlugin(
 					relPkgSubImpPath = relPkgSubImpPath[:len(relPkgSubPath)-len(relPkgSubImpPathExt)] + ".mjs"
 				}
 
-				// Remap import path and namespace.
+				// Import the shared module through the document's import map.
 				result.Namespace = "bldr"
-				result.Path = path.Join("/b/pkg", webPkgID, relPkgSubImpPath)
-
-				// Mark package as external so esbuild uses import(path) to load it.
+				result.Path = web_pkg.ImportSpecifierPrefix + path.Join(webPkgID, relPkgSubImpPath)
 				result.External = true
 
 				// Mark the import path we will need to bundle later.
