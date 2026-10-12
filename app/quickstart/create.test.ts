@@ -1742,9 +1742,7 @@ to try first.
     expect(config.networking ?? false).toBe(expectedConfig.networking ?? false)
     expect(config.source).toBe(expectedConfig.source)
     expect(config.imageObjectKey).toBe('vm-image/default')
-    expect(config.cdnSourceObjectKey).toBe(
-      'v86image-01kszf4rsev1s7zkq2ms2y5r0w',
-    )
+    expect(config.cdnSourceObjectKey).toBe(expectedConfig.cdnSourceObjectKey)
 
     const settingsCall = applyWorldOp.mock.calls[1]
     if (!settingsCall) {

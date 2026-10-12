@@ -14,7 +14,7 @@ const (
 	// DefaultCdnSpaceID identifies the fixture Space on the CDN.
 	DefaultCdnSpaceID = "01kpn3x0y79yr94ps1yae206vp"
 	// DefaultV86ImageKey selects the default boot image in the fixture Space.
-	DefaultV86ImageKey = "v86image-01kszf4rsev1s7zkq2ms2y5r0w"
+	DefaultV86ImageKey = "vm-image/aperture-linux/2026-10-11-r1"
 	// DefaultAssetCacheSubdir stores disposable boot files below the repository.
 	DefaultAssetCacheSubdir = ".tmp/v86-wazero"
 )

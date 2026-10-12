@@ -86,7 +86,7 @@ func TestQuickstartV86BootSmoke(t *testing.T) {
 	)
 
 	// Wait for the default image selection to render.
-	if err := page.Locator("text=/From catalog:(?: Aperture Linux| v86image-01kszf4rsev1s7zkq2ms2y5r0w)/").First().WaitFor(
+	if err := page.Locator("text=/From catalog: Aperture Linux \\(2026-10-11-r1\\)/").First().WaitFor(
 		playwright.LocatorWaitForOptions{Timeout: playwright.Float(v86SmokeStageTimeoutMS)},
 	); err != nil {
 		t.Fatalf("v86 stage selected default image absent: %v\n%s", err, readV86WizardDebug(page))
@@ -525,7 +525,7 @@ func probeV86CdnMount(page playwright.Page) string {
 			}
 			out.stage = 'listObjectsWithType'
 			out.v86ImageKeys = await world.listObjectsWithType('vm/image/v86', signal)
-			const defaultKey = 'v86image-01kszf4rsev1s7zkq2ms2y5r0w'
+			const defaultKey = 'vm-image/aperture-linux/2026-10-11-r1'
 			out.defaultV86ImageObjectKey = defaultKey
 			out.stage = 'defaultV86Image'
 			using defaultObj = await world.getObject(defaultKey, signal)
