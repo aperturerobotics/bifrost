@@ -322,24 +322,34 @@ function waitForRuntimeReady(
   return gate.promise
 }
 
-// main is the V86 backend entry point.
-export default async function main(
+// V86Viewer is the registration of the VM viewer and the clients that keep
+// its Resource refs alive.
+interface V86Viewer {
+  coreClient: SRPCClient
+  resourcesClient: ResourcesClient
+  rootRef: ClientResourceRef
+  viewerRef: ClientResourceRef
+}
+
+// registerV86Viewer registers the VM viewer with the core viewer registry.
+async function registerV86Viewer(
   api: BackendAPI,
   signal: AbortSignal,
-): Promise<void> {
+): Promise<V86Viewer> {
   if (!api.startInfo.pluginId) {
     throw new Error('missing plugin id in backend start info')
   }
 
+  // Resolve the core Resource tree and the viewer script together.
   const coreClient = new SRPCClient(api.buildPluginOpenStream('spacewave-core'))
   const resourcesService = new ResourceServiceClient(coreClient)
   const resourcesClient = new ResourcesClient(resourcesService, signal)
-
   const [rootRef, v86ViewerScript] = await Promise.all([
     resourcesClient.accessRootResource(),
     resolveAssetPath(api, signal, './plugin/v86/VmV86Viewer.tsx'),
   ])
 
+  // Register the viewer and hold its registration Resource.
   const vrSvc = new ViewerRegistryResourceServiceClient(rootRef.client)
   const viewer = await vrSvc.RegisterViewer(
     {
@@ -356,22 +366,51 @@ export default async function main(
   if (!viewer.resourceId) {
     throw new Error('v86 viewer registration did not return a resource id')
   }
-  const viewerRef = rootRef.createRef(viewer.resourceId)
+  return {
+    coreClient,
+    resourcesClient,
+    rootRef,
+    viewerRef: rootRef.createRef(viewer.resourceId),
+  }
+}
 
+// main is the V86 backend entry point. Startup ends once the viewer is
+// registered, so the host counts the plugin loaded only when it can open VMs.
+// A VM runtime instance then boots its VM and runs it until signal aborts;
+// every other instance holds the viewer registration until then. A failed
+// startup reports through startup alone.
+export default function main(
+  api: BackendAPI,
+  signal: AbortSignal,
+): { startup: Promise<void>; done: Promise<void> } {
+  const viewer = registerV86Viewer(api, signal)
   const instanceKey = api.startInfo.instanceKey ?? ''
   const objectKey = instanceKey.startsWith(V86_RUNTIME_INSTANCE_PREFIX)
     ? instanceKey.slice(V86_RUNTIME_INSTANCE_PREFIX.length)
     : ''
-  if (!objectKey) {
-    console.log('[spacewave-v86] not a VM runtime instance, viewer-only mode')
-    retainUntilAbort(
-      signal,
-      [rootRef, viewerRef],
-      [coreClient, resourcesClient],
-    )
-    return
-  }
+  const done = viewer.then(
+    (registered) => {
+      if (objectKey) {
+        return runV86Runtime(registered, objectKey, signal)
+      }
+      retainUntilAbort(
+        signal,
+        [registered.rootRef, registered.viewerRef],
+        [registered.coreClient, registered.resourcesClient],
+      )
+    },
+    () => undefined,
+  )
+  return { startup: viewer.then(() => undefined), done }
+}
 
+// runV86Runtime boots the VM at objectKey and runs it until signal aborts,
+// reporting each runtime status to the VM's controller.
+async function runV86Runtime(
+  { coreClient, rootRef, viewerRef }: V86Viewer,
+  objectKey: string,
+  signal: AbortSignal,
+): Promise<void> {
   using _rootRef = rootRef
   using _viewerRef = viewerRef
 

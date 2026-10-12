@@ -6,6 +6,8 @@ const h = vi.hoisted(() => ({
   buildPluginOpenStream: vi.fn(),
   pluginAssetHttpPath: vi.fn(),
   viewerRegistrations: [] as Array<Record<string, unknown>>,
+  // registerGate, when set, holds each RegisterViewer reply until it settles.
+  registerGate: undefined as Promise<void> | undefined,
   mountNames: [] as string[],
   readOffsets: [] as number[],
   v86Constructors: [] as Array<Record<string, unknown>>,
@@ -78,7 +80,8 @@ vi.mock('@s4wave/sdk/viewer/registry/registry_srpc.pb.js', () => ({
 
     RegisterViewer(req: { registration: Record<string, unknown> }) {
       h.viewerRegistrations.push(req.registration)
-      return Promise.resolve({ resourceId: h.nextResourceId++ })
+      const resourceId = h.nextResourceId++
+      return Promise.resolve(h.registerGate).then(() => ({ resourceId }))
     }
   },
 }))
@@ -253,6 +256,7 @@ describe('v86 backend registration', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     h.viewerRegistrations.length = 0
+    h.registerGate = undefined
     h.mountNames.length = 0
     h.readOffsets.length = 0
     h.v86Constructors.length = 0
@@ -283,7 +287,7 @@ describe('v86 backend registration', () => {
     const abort = new AbortController()
     const api = buildApi('spacewave-v86', 'vm/v86-runtime/instance/vm/v86/test')
 
-    const running = main(api as never, abort.signal)
+    const running = main(api as never, abort.signal).done
     await waitForV86Boot()
 
     expect(h.v86fsBridges[0]?.service).toBe(
@@ -355,7 +359,7 @@ describe('v86 backend registration', () => {
     const running = main(
       buildApi('spacewave-v86', 'vm/v86-runtime/instance/vm/v86/test') as never,
       abort.signal,
-    )
+    ).done
     await waitForV86Boot()
     abort.abort()
     await running
@@ -381,7 +385,7 @@ describe('v86 backend registration', () => {
           'vm/v86-runtime/instance/vm/v86/test',
         ) as never,
         new AbortController().signal,
-      ),
+      ).done,
     ).rejects.toThrow('requires BroadcastChannel')
 
     expect(h.v86Constructors).toHaveLength(0)
@@ -407,7 +411,7 @@ describe('v86 backend registration', () => {
     await main(
       buildApi('spacewave-v86', 'space/local/session/space') as never,
       abort.signal,
-    )
+    ).startup
 
     expect(h.viewerRegistrations).toHaveLength(1)
     expect(h.v86fsBridges).toHaveLength(0)
@@ -418,7 +422,7 @@ describe('v86 backend registration', () => {
   it('registers the clean v86 viewer with the startInfo plugin id and retained lifetime', async () => {
     const abort = new AbortController()
 
-    await main(buildApi('spacewave-v86') as never, abort.signal)
+    await main(buildApi('spacewave-v86') as never, abort.signal).startup
 
     expect(h.viewerRegistrations).toEqual([
       {
@@ -441,9 +445,30 @@ describe('v86 backend registration', () => {
     expect(h.rootRef[Symbol.dispose]).toHaveBeenCalledTimes(1)
   })
 
+  it('ends startup only after the viewer is registered', async () => {
+    const abort = new AbortController()
+    const gate = Promise.withResolvers<void>()
+    h.registerGate = gate.promise
+    let started = false
+
+    const { startup } = main(buildApi('spacewave-v86') as never, abort.signal)
+    void startup.then(() => {
+      started = true
+    })
+    await vi.waitFor(() => {
+      expect(h.viewerRegistrations).toHaveLength(1)
+    })
+    expect(started).toBe(false)
+
+    gate.resolve()
+    await startup
+    expect(started).toBe(true)
+    abort.abort()
+  })
+
   it('requires a backend startInfo plugin id', async () => {
     await expect(
-      main(buildApi('') as never, new AbortController().signal),
+      main(buildApi('') as never, new AbortController().signal).startup,
     ).rejects.toThrow('missing plugin id in backend start info')
     expect(h.viewerRegistrations).toHaveLength(0)
   })
