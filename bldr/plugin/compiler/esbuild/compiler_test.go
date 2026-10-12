@@ -23,7 +23,9 @@ import (
 	build_policy "github.com/s4wave/spacewave/bldr/manifest/build"
 	builder "github.com/s4wave/spacewave/bldr/manifest/builder"
 	manifest_world "github.com/s4wave/spacewave/bldr/manifest/world"
+	js "github.com/s4wave/spacewave/bldr/plugin/compiler/js"
 	"github.com/s4wave/spacewave/bldr/project/bunlock"
+	validate "github.com/s4wave/spacewave/bldr/project/validate"
 	"github.com/s4wave/spacewave/bldr/testbed"
 	bundler "github.com/s4wave/spacewave/bldr/web/bundler"
 	bundle "github.com/s4wave/spacewave/bldr/web/bundler/esbuild"
@@ -113,14 +115,26 @@ func TestBuildManifestFromPersistedBlocks(t *testing.T) {
 	// Reopen the persisted dependency tree after removing all registry access.
 	registry.Close()
 	_, root = block.NewTransaction(store, nil, ref, nil)
-	dependencies, err = kvtx_block.BuildKvTransaction(t.Context(), root, false)
+	dependencies, err = kvtx_block.BuildKvTransaction(t.Context(), root, true)
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(dependencies.Discard)
-	source := persistedSource(t, fstest.MapFS{
-		"bun.lock":  {Data: lockData},
-		"plugin.ts": {Data: []byte(`import {answer, shared} from 'answer'; export const value: number = answer; export {shared}; export default async function plugin(): Promise<void> { console.info(value) }`)},
+	files := fstest.MapFS{
+		"bldr.star": {Data: []byte(`
+project(id="block-fixture")
+manifest("block-plugin", builder="bldr/plugin/compiler/js", description="Pinned block fixture", rev=3, config={
+    "webPluginId": "web",
+    "modules": [
+        js_module("JS_MODULE_KIND_BACKEND", "./plugin.ts", entrypoint=True),
+        js_module("JS_MODULE_KIND_FRONTEND", "./frontend.tsx", entrypoint=True),
+    ],
+    "webPkgs": [{"id": "@custom/shared", "exclude": True}],
+})
+`)},
+		"package.json": {Data: []byte(`{"name":"block-fixture","dependencies":{"answer":"1.0.0","spacewave":"1.0.0","@acme/util":"1.0.0"}}`)},
+		"bun.lock":     {Data: lockData},
+		"plugin.ts":    {Data: []byte(`import {answer, shared} from 'answer'; export const value: number = answer; export {shared}; export default async function plugin(): Promise<void> { console.info(value) }`)},
 		"frontend.tsx": {Data: []byte(`
 import React from 'react'
 import {createRoot} from 'react-dom/client'
@@ -152,7 +166,8 @@ export const lazy = () => import('./lazy.ts')
 		"lazy.ts":        {Data: []byte(`export const lazyValue: string = 'lazy-block-value'`)},
 		"style.css":      {Data: []byte(`span { color: red }`)},
 		"icon.svg":       {Data: []byte(`<svg xmlns="http://www.w3.org/2000/svg"/>`)},
-	})
+	}
+	source := persistedSource(t, files)
 
 	// Start a Bldr World with no executable tools available to the build.
 	t.Setenv("PATH", t.TempDir())
@@ -295,13 +310,94 @@ export const lazy = () => import('./lazy.ts')
 	if len(retained) != 1 {
 		t.Fatalf("published %d manifests, want one complete build", len(retained))
 	}
+
+	// Build the shared repository entrypoint and module assets directly.
+	t.Run("repository", func(t *testing.T) {
+		// Use the repository's evaluated module configuration and manifest metadata.
+		project, _, err := validate.ValidateProject(t.Context(), unixfs_iofs.NewFS(t.Context(), source))
+		if err != nil {
+			t.Fatal(err)
+		}
+		selected := project.GetManifests()["block-plugin"]
+		config := &js.Config{}
+		if err := config.UnmarshalJSON(selected.GetBuilder().GetConfig()); err != nil {
+			t.Fatal(err)
+		}
+		conf := args.GetBuilderConfig().CloneVT()
+		conf.ManifestMeta.Description = selected.GetDescription()
+		conf.ManifestMeta.Rev = selected.GetRev()
+
+		// Build offline using the existing dependency blocks and manifest interface.
+		target, err := NewRepositoryCompiler(t.Context(), le, tb.GetBus(), source, dependencies, config, 1<<20)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() {
+			if err := target.Close(); err != nil {
+				t.Error(err)
+			}
+		})
+		result, err := target.BuildManifest(t.Context(), &builder.BuildManifestArgs{BuilderConfig: conf}, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := result.Validate(); err != nil {
+			t.Fatal(err)
+		}
+
+		// Read the generated lifecycle wrapper and both compiled module assets.
+		err = manifest_world.AccessManifest(t.Context(), le, tb.GetWorldState().AccessWorldState, result.GetManifestRef().GetManifestRef(), func(ctx context.Context, bls *bucket_lookup.Cursor, bcs *block.Cursor, value *manifest.Manifest, dist, assets *unixfs.FSHandle) error {
+			// Preserve the reviewed description and revision in the committed manifest.
+			if value.GetMeta().GetDescription() != "Pinned block fixture" || value.GetMeta().GetRev() != 3 {
+				return errors.New("repository manifest lost its reviewed metadata")
+			}
+
+			// Use Bldr's shared entrypoint lifecycle instead of treating a module as the host entrypoint.
+			code, err := fs.ReadFile(unixfs_iofs.NewFS(ctx, dist), value.GetEntrypoint())
+			if err != nil {
+				return err
+			}
+			for _, want := range []string{"createPluginEntrypoint", "@aptre/bldr/plugin-entrypoint", "/assets/modules/0.mjs", "modules/1.mjs", "modules/1.css"} {
+				if !strings.Contains(string(code), want) {
+					return errors.Errorf("repository entrypoint is missing %s", want)
+				}
+			}
+
+			// Keep verified npm code bundled while shared React and SDK imports remain external.
+			output := unixfs_iofs.NewFS(ctx, assets)
+			backend, err := fs.ReadFile(output, "modules/0.mjs")
+			if err != nil {
+				return err
+			}
+			frontend, err := fs.ReadFile(output, "modules/1.mjs")
+			if err != nil {
+				return err
+			}
+			if !strings.Contains(string(backend), "module.exports = 2") || !strings.Contains(string(frontend), "bundled-spacewave") || !strings.Contains(string(frontend), `from "react"`) {
+				return errors.New("repository modules did not use pinned dependencies and shared imports")
+			}
+			_, err = fs.ReadFile(output, "modules/1.css")
+			return err
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Record the reviewed repository files alongside the module source provenance.
+		var inputs []string
+		for _, file := range result.GetInputManifest().GetFiles() {
+			inputs = append(inputs, file.GetPath())
+		}
+		if !slices.Contains(inputs, "bldr.star") || !slices.Contains(inputs, "package.json") || !slices.Contains(inputs, "bun.lock") {
+			t.Fatalf("repository provenance = %v", inputs)
+		}
+	})
 }
 
 // npmArchive creates a deterministic npm tarball from regular package files.
 func npmArchive(t *testing.T, files map[string]string) []byte {
-	t.Helper()
-
 	// Encode source and metadata using npm's package/ archive layout.
+	t.Helper()
 	var output bytes.Buffer
 	compressed := gzip.NewWriter(&output)
 	archive := tar.NewWriter(compressed)
@@ -327,9 +423,8 @@ func npmArchive(t *testing.T, files map[string]string) []byte {
 
 // persistedSource copies fixture files to UnixFS and reopens the stored root.
 func persistedSource(t *testing.T, files fs.FS) *unixfs.FSHandle {
-	t.Helper()
-
 	// Open the real block-backed filesystem testbed.
+	t.Helper()
 	tb, err := db_testbed.NewTestbed(t.Context(), logrus.NewEntry(logrus.New()))
 	if err != nil {
 		t.Fatal(err)

@@ -164,6 +164,22 @@ manifest("acme-native", builder="bldr/plugin/compiler/go", config={"goPkgs": [".
 		kind:   RefusalKind_REFUSAL_KIND_VITE_CONFIG,
 		reason: "sets a Vite config",
 	}, {
+		name: "raw esbuild flags",
+		edit: func(files fstest.MapFS) {
+			files["bldr.star"] = &fstest.MapFile{Data: []byte(strings.Replace(jsProject, `"webPluginId": "web",`,
+				`"webPluginId": "web", "esbuildFlags": ["--inject=../host.ts"],`, 1))}
+		},
+		kind:   RefusalKind_REFUSAL_KIND_CONFIG,
+		reason: "sets esbuild bundles or flags",
+	}, {
+		name: "host controllers in an override",
+		edit: func(files fstest.MapFS) {
+			files["bldr.star"] = &fstest.MapFile{Data: []byte(strings.Replace(jsProject, `"webPluginId": "web",`,
+				`"webPluginId": "web", "buildTypes": {"dev": {"hostConfigSet": {"host": {"id": "privileged-controller"}}}},`, 1))}
+		},
+		kind:   RefusalKind_REFUSAL_KIND_CONFIG,
+		reason: "starts controllers on the plugin host",
+	}, {
 		name: "lifecycle script",
 		edit: func(files fstest.MapFS) {
 			files["package.json"] = &fstest.MapFile{Data: []byte(`{"scripts": {"postinstall": "node x.js"}, "dependencies": {"left-pad": "^1.3.0"}}`)}

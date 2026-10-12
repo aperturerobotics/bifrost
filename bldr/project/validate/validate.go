@@ -37,16 +37,24 @@ var buildConfigPrefixes = []string{"vite.config.", "postcss.config.", ".postcssr
 // reads package.json and bun.lock. Each rule the project breaks is a refusal;
 // an error means the check itself could not complete.
 func Validate(ctx context.Context, fsys fs.FS) (*Validation, error) {
+	_, validation, err := ValidateProject(ctx, fsys)
+	return validation, err
+}
+
+// ValidateProject returns the evaluated configuration and its validation from
+// the same source snapshot. The configuration may build only with no refusals.
+func ValidateProject(ctx context.Context, fsys fs.FS) (*bldr_project.ProjectConfig, *Validation, error) {
 	// Check the root files, the project config and the npm package.
 	v := &Validation{}
 	if err := v.checkRootFiles(fsys); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	if err := v.checkProject(ctx, fsys); err != nil {
-		return nil, err
+	conf, err := v.checkProject(ctx, fsys)
+	if err != nil {
+		return nil, nil, err
 	}
 	if err := v.checkPackage(fsys); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Order the plugins and dependencies for display.
@@ -56,7 +64,7 @@ func Validate(ctx context.Context, fsys fs.FS) (*Validation, error) {
 	slices.SortFunc(v.Dependencies, func(a, b *Dependency) int {
 		return strings.Compare(a.GetName()+"@"+a.GetVersion(), b.GetName()+"@"+b.GetVersion())
 	})
-	return v, nil
+	return conf, v, nil
 }
 
 // refuse records a refusal, once per distinct reason.
@@ -96,14 +104,14 @@ func (v *Validation) checkRootFiles(fsys fs.FS) error {
 }
 
 // checkProject evaluates bldr.star and checks each manifest it declares.
-func (v *Validation) checkProject(ctx context.Context, fsys fs.FS) error {
+func (v *Validation) checkProject(ctx context.Context, fsys fs.FS) (*bldr_project.ProjectConfig, error) {
 	// Require the project file before evaluating it.
 	if _, err := fs.Stat(fsys, projectFile); err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			v.refuse(RefusalKind_REFUSAL_KIND_CONFIG, "The repository has no bldr.star.")
-			return nil
+			return nil, nil
 		}
-		return errors.Wrap(err, "stat "+projectFile)
+		return nil, errors.Wrap(err, "stat "+projectFile)
 	}
 
 	// Evaluate the project within fsys under a deadline and a memory limit.
@@ -112,10 +120,10 @@ func (v *Validation) checkProject(ctx context.Context, fsys fs.FS) error {
 	result, err := bldr_project_starlark.EvaluateFSBounded(evalCtx, fsys, projectFile, evaluateMemory)
 	if err != nil {
 		if ctx.Err() != nil {
-			return context.Cause(ctx)
+			return nil, context.Cause(ctx)
 		}
 		v.refuse(RefusalKind_REFUSAL_KIND_CONFIG, "bldr.star does not evaluate: "+err.Error())
-		return nil
+		return nil, nil
 	}
 
 	// Refuse project sections a plugin repository does not need.
@@ -139,7 +147,7 @@ func (v *Validation) checkProject(ctx context.Context, fsys fs.FS) error {
 	for _, id := range ids {
 		v.checkManifest(id, conf.GetManifests()[id])
 	}
-	return nil
+	return conf, nil
 }
 
 // checkManifest admits a JavaScript plugin manifest and refuses any other.
