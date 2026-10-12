@@ -15,18 +15,15 @@ import type { IObjectState } from '@s4wave/sdk/world/object-state.js'
 import { listObjectsWithType } from '@s4wave/sdk/world/types/types.js'
 import type { IWorldState } from '@s4wave/sdk/world/world-state.js'
 import { UnixFSTypeID } from '@s4wave/sdk/unixfs/type.js'
+import {
+  PRED_V86_IMAGE,
+  SET_V86_STATE_OP_ID,
+  VmV86TypeID,
+} from '@s4wave/sdk/vm/vmv86.js'
 
-import { VmV86TypeID } from './sdk/vmv86.js'
 import { VmHeader } from './VmHeader.js'
 import { VmMachineCard, type OverrideSlot } from './VmMachineCard.js'
 import { VmRunningView } from './VmRunningView.js'
-
-export { VmV86TypeID }
-
-const setV86StateOpId = 'vm/v86/set-state'
-
-// imagePredicate links a VmV86 to its V86Image. Mirrors sdk/vm PredV86Image.
-const imagePredicate = '<v86/image>'
 
 // overridePredicate links a VmV86 to a per-asset override, which takes
 // precedence over the V86Image's asset when the VM boots. Mirrors sdk/vm
@@ -96,7 +93,7 @@ async function readVmEdges(
     return obj ? iriToKey(obj) : ''
   }
   const [imageKey, kernel, rootfs, bios, wasm] = await Promise.all([
-    lookup(imagePredicate),
+    lookup(PRED_V86_IMAGE),
     lookup(overridePredicate.kernel),
     lookup(overridePredicate.rootfs),
     lookup(overridePredicate.bios),
@@ -118,7 +115,7 @@ async function requestVmState(
     await contents?.setProcessBinding(objectKey, VmV86TypeID, true)
   }
   const op = SetV86StateOp.create({ objectKey, state: target })
-  await world.applyWorldOp(setV86StateOpId, SetV86StateOp.toBinary(op), '')
+  await world.applyWorldOp(SET_V86_STATE_OP_ID, SetV86StateOp.toBinary(op), '')
   if (target === VmState.VmState_STOPPED) {
     await contents?.setProcessBinding(objectKey, VmV86TypeID, false)
   }

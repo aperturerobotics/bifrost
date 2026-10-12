@@ -65,8 +65,8 @@ const defaultGuestMemoryMb = 256
 const defaultVgaMemoryMb = 8
 const v86WasmMemoryHeadroomBytes = 16 * mib
 const v86BaseCmdline =
-  // Boot through /sbin/init so busybox gives ttyS0 job control; bash PID 1
-  // breaks Ctrl-C and SIGINT. The empty rootflags clears the kernel's built-in
+  // Boot through /sbin/init so systemd runs the ttyS0 shell with job
+  // control; bash as PID 1 breaks Ctrl-C and SIGINT. The empty rootflags clears the kernel's built-in
   // 9p flags, which v86fs rejects.
   'rw init=/sbin/init root=v86fs rootfstype=v86fs rootflags= console=ttyS0'
 // v86minBootReadyMarker identifies the first guest output that proves the

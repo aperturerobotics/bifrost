@@ -4,11 +4,7 @@ import { PhaseChecklist } from '@s4wave/app/session/setup/PhaseChecklist.js'
 import { ProgressBar } from '@s4wave/web/ui/loading/ProgressBar.js'
 import { Spinner } from '@s4wave/web/ui/loading/Spinner.js'
 
-export type VmCreationStage = 'linking' | 'creating' | 'ready'
-
-export interface VmCreationProgress {
-  stage: VmCreationStage
-}
+import type { VmCreationProgress, VmCreationStage } from '../vm/v86-creation.js'
 
 interface VmCreationProgressScreenProps {
   progress: VmCreationProgress

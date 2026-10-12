@@ -1,0 +1,164 @@
+import { LuCloud } from 'react-icons/lu'
+
+import { useResource } from '@aptre/bldr-sdk/hooks/useResource.js'
+import { useStreamingResource } from '@aptre/bldr-sdk/hooks/useStreamingResource.js'
+import type { Root } from '@s4wave/sdk/root/root.js'
+import { useRootResource } from '@s4wave/web/hooks/useRootResource.js'
+import { Button } from '@s4wave/web/ui/button.js'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@s4wave/web/ui/dialog.js'
+import { InfoCard } from '@s4wave/web/ui/InfoCard.js'
+import { LoadingCard } from '@s4wave/web/ui/loading/LoadingCard.js'
+
+import {
+  formatV86ImageLabel,
+  getV86CatalogErrorCopy,
+  listCdnV86Images,
+  mountCdnImageSpace,
+  type CdnImageSpace,
+  type V86ImageEntry,
+} from '../vm/v86-images.js'
+import { V86ImageRow } from './V86ImageRow.js'
+
+// V86CatalogDialogProps describes the catalog a new VM picks an image from.
+export interface V86CatalogDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  cdnId: string
+  // selectedKey is the catalog object key the wizard has chosen, if any.
+  selectedKey: string
+  onSelect: (objectKey: string) => void
+}
+
+// V86CatalogDialog lists the VM images published in a CDN catalog.
+export function V86CatalogDialog({
+  open,
+  onOpenChange,
+  cdnId,
+  selectedKey,
+  onSelect,
+}: V86CatalogDialogProps) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>VM image catalog</DialogTitle>
+          <DialogDescription>
+            Published images download as the VM reads them.
+          </DialogDescription>
+        </DialogHeader>
+        <CatalogEntries
+          cdnId={cdnId}
+          selectedKey={selectedKey}
+          onSelect={onSelect}
+        />
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// CatalogEntries mounts the catalog Space and lists its images, following
+// each change to the catalog.
+function CatalogEntries({
+  cdnId,
+  selectedKey,
+  onSelect,
+}: Pick<V86CatalogDialogProps, 'cdnId' | 'selectedKey' | 'onSelect'>) {
+  const catalogResource = useResource(
+    useRootResource(),
+    async (root: Root, signal: AbortSignal, cleanup) =>
+      cleanup(await mountCdnImageSpace(root, cdnId, signal)),
+    [cdnId],
+  )
+  const entriesResource = useStreamingResource(
+    catalogResource,
+    async function* (
+      catalog: CdnImageSpace,
+      signal: AbortSignal,
+    ): AsyncGenerator<V86ImageEntry[]> {
+      yield await listCdnV86Images(catalog.space, signal)
+      for await (const _state of catalog.space.watchSpaceState({}, signal)) {
+        yield await listCdnV86Images(catalog.space, signal)
+      }
+    },
+    [],
+  )
+  const entries = entriesResource.value
+  const loadError = catalogResource.error ?? entriesResource.error
+
+  if (loadError) {
+    const copy = getV86CatalogErrorCopy(loadError)
+    return (
+      <div
+        role="alert"
+        className="border-destructive/15 bg-destructive/5 text-destructive rounded-lg border p-3"
+      >
+        <div className="text-sm font-semibold">{copy.title}</div>
+        <p className="mt-1 text-xs leading-relaxed">{copy.detail}</p>
+        {!copy.unpublished && (
+          <Button
+            variant="destructiveOutline"
+            size="toolbarWide"
+            onClick={() => {
+              if (catalogResource.error) catalogResource.retry()
+              if (entriesResource.error) entriesResource.retry()
+            }}
+            className="mt-3"
+          >
+            Retry
+          </Button>
+        )}
+      </div>
+    )
+  }
+  if (!entries) {
+    return (
+      <LoadingCard
+        view={{
+          state: 'active',
+          title: 'Loading image catalog',
+          detail: 'Looking for published VM images.',
+        }}
+      />
+    )
+  }
+  if (entries.length === 0) {
+    return (
+      <InfoCard
+        icon={<LuCloud className="text-foreground-alt/60 size-3.5" />}
+        title="No VM images are published yet"
+      >
+        <p className="text-foreground-alt/70 text-xs leading-relaxed">
+          This image catalog has no published images yet.
+        </p>
+      </InfoCard>
+    )
+  }
+  return (
+    <div className="max-h-wizard flex flex-col gap-2 overflow-y-auto">
+      {entries.map((entry) => (
+        <V86ImageRow
+          key={entry.objectKey}
+          icon={<LuCloud />}
+          title={formatV86ImageLabel(entry.image)}
+          detail={describeEntry(entry)}
+          selected={entry.objectKey === selectedKey}
+          onSelect={() => onSelect(entry.objectKey)}
+        />
+      ))}
+    </div>
+  )
+}
+
+// describeEntry summarizes a catalog image's distribution and tags.
+function describeEntry(entry: V86ImageEntry): string {
+  if (entry.metadataError) return 'Image details are unavailable.'
+  return [entry.image.distro, entry.image.tags?.join(', ')]
+    .filter(Boolean)
+    .join(' · ')
+}

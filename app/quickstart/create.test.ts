@@ -22,7 +22,6 @@ import {
 import {
   buildV86QuickstartWizardConfig,
   V86_WIZARD_TARGET_KEY_PREFIX,
-  V86_WIZARD_TARGET_TYPE_ID,
   V86_WIZARD_TYPE_ID,
 } from '@s4wave/app/vm/v86-wizard-config.js'
 import { CreateWizardObjectOp } from '@s4wave/sdk/world/wizard/wizard.pb.js'
@@ -43,6 +42,7 @@ import {
 import { InitForgeQuickstartOp } from '@s4wave/core/forge/dashboard/dashboard.pb.js'
 import { INIT_FORGE_QUICKSTART_OP_ID } from '@s4wave/sdk/forge/dashboard/init-forge-quickstart.js'
 import { V86WizardConfig } from '@s4wave/sdk/vm/v86-wizard.pb.js'
+import { VmV86TypeID } from '@s4wave/sdk/vm/vmv86.js'
 import type { RegisterCleanup } from '@aptre/bldr-sdk/hooks/useResource.js'
 
 import { asyncValues } from '@s4wave/web/test/async-values.js'
@@ -1731,7 +1731,7 @@ to try first.
     const wizardOp = CreateWizardObjectOp.fromBinary(wizardCall[1])
     expect(wizardOp.objectKey).toMatch(/^wizard\/v86-vm-[a-z0-9]+-\d+$/)
     expect(wizardOp.wizardTypeId).toBe(V86_WIZARD_TYPE_ID)
-    expect(wizardOp.targetTypeId).toBe(V86_WIZARD_TARGET_TYPE_ID)
+    expect(wizardOp.targetTypeId).toBe(VmV86TypeID)
     expect(wizardOp.targetKeyPrefix).toBe(V86_WIZARD_TARGET_KEY_PREFIX)
     expect(wizardOp.name).toBe('V86 VM')
     expect(wizardOp.initialStep).toBe(1)

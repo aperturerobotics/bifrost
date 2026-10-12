@@ -3,9 +3,6 @@ import { Resource } from '@aptre/bldr-sdk/resource/resource.js'
 import { PersistentExecutionServiceClient } from '@s4wave/sdk/process/process_srpc.pb.js'
 import type { ExecuteStatus } from '@s4wave/sdk/process/process.pb.js'
 
-// VmV86TypeID is the type identifier for V86 world objects.
-export const VmV86TypeID = 'vm/v86'
-
 // IVmV86Handle contains the VmV86Handle interface.
 export interface IVmV86Handle {
   // execute starts the persistent VM process and streams status updates.

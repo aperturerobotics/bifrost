@@ -13,7 +13,6 @@ export interface InSpaceV86ImageSource {
 }
 
 export const V86_WIZARD_TYPE_ID = 'wizard/vm/v86'
-export const V86_WIZARD_TARGET_TYPE_ID = 'vm/v86'
 export const V86_WIZARD_TARGET_KEY_PREFIX = 'vm/v86/'
 
 export const V86_USER_IMAGE_OBJECT_KEY = 'vm-image/default'

@@ -56,6 +56,7 @@ import { DeviceTypeID } from '@s4wave/sdk/device/device.js'
 import { CreateComputersDashboardOp } from '@s4wave/sdk/device/device.pb.js'
 import { CREATE_COMPUTERS_DASHBOARD_OP_ID } from '@s4wave/sdk/device/computers/create-computers-dashboard.js'
 import { V86WizardConfig } from '@s4wave/sdk/vm/v86-wizard.pb.js'
+import { VmV86TypeID } from '@s4wave/sdk/vm/vmv86.js'
 import { CreateWizardObjectOp } from '@s4wave/sdk/world/wizard/wizard.pb.js'
 import { CREATE_WIZARD_OBJECT_OP_ID } from '@s4wave/sdk/world/wizard/create-wizard.js'
 import { InitForgeQuickstartOp } from '@s4wave/core/forge/dashboard/dashboard.pb.js'
@@ -69,7 +70,6 @@ import {
   buildV86QuickstartWizardConfig,
   buildV86QuickstartWizardKey,
   V86_WIZARD_TARGET_KEY_PREFIX,
-  V86_WIZARD_TARGET_TYPE_ID,
   V86_WIZARD_TYPE_ID,
 } from '@s4wave/app/vm/v86-wizard-config.js'
 import {
@@ -1533,7 +1533,7 @@ async function initV86Quickstart(
     CreateWizardObjectOp.toBinary({
       objectKey: wizardKey,
       wizardTypeId: V86_WIZARD_TYPE_ID,
-      targetTypeId: V86_WIZARD_TARGET_TYPE_ID,
+      targetTypeId: VmV86TypeID,
       targetKeyPrefix: V86_WIZARD_TARGET_KEY_PREFIX,
       name: 'V86 VM',
       timestamp: now,

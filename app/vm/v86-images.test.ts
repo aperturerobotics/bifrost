@@ -4,16 +4,13 @@ import { V86ImageTypeID } from '@s4wave/sdk/vm/v86image.js'
 import type { Space } from '@s4wave/sdk/space/space.js'
 import { V86Image } from '@s4wave/sdk/vm/v86.pb.js'
 
-import {
-  getV86CatalogErrorCopy,
-  loadCdnV86ImagesFromSpace,
-} from './VmV86WizardViewer.js'
+import { getV86CatalogErrorCopy, listCdnV86Images } from './v86-images.js'
 
 vi.mock('@s4wave/sdk/world/types/types.js', () => ({
   listObjectsWithType: vi.fn().mockResolvedValue(['v86image-default']),
 }))
 
-describe('loadCdnV86ImagesFromSpace', () => {
+describe('listCdnV86Images', () => {
   it('unmarshals typed V86Image metadata before decoding catalog entries', async () => {
     const typedData = V86Image.toBinary({
       name: 'Aperture Linux',
@@ -44,7 +41,7 @@ describe('loadCdnV86ImagesFromSpace', () => {
     } as unknown as Space
     const signal = new AbortController().signal
 
-    const entries = await loadCdnV86ImagesFromSpace(space, signal)
+    const entries = await listCdnV86Images(space, signal)
 
     expect(unmarshal).toHaveBeenCalledWith(
       { blockType: V86ImageTypeID },
