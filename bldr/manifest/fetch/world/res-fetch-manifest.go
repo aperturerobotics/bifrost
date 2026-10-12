@@ -35,12 +35,20 @@ type fetchManifestResolver struct {
 // Resolve resolves the values, emitting them to the handler.
 func (r *fetchManifestResolver) Resolve(ctx context.Context, handler directive.ResolverHandler) error {
 	// Local and embedded Worlds use their existing resolution path.
-	if r.c.conf.GetReleaseAuthorityPluginId() == "" {
+	authorityPluginID := r.c.conf.GetReleaseAuthorityPluginId()
+	if authorityPluginID == "" {
 		return r.resolveWorld(ctx, handler)
 	}
 
+	// The authority's own selection cannot wait for the authority to run. Idle
+	// lets the scheduler start its embedded or cached manifest; the authorized
+	// Release World manifest follows as a watched value once it runs.
+	if r.dir.GetManifestId() == authorityPluginID {
+		handler.MarkIdle(true)
+	}
+
 	// Hold the embedded launcher's client while resolving executable manifests.
-	return plugin.ExPluginLoadAccessClient(ctx, r.c.bus, r.c.conf.GetReleaseAuthorityPluginId(), func(ctx context.Context, client srpc.Client) error {
+	return plugin.ExPluginLoadAccessClient(ctx, r.c.bus, authorityPluginID, func(ctx context.Context, client srpc.Client) error {
 		// Inherit the launcher's resolved pins instead of configuring another key.
 		response, err := manifest.NewSRPCReleaseAuthorityClient(client).GetReleasePeerIds(ctx, &manifest.GetReleasePeerIdsRequest{})
 		if err != nil {

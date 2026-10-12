@@ -71,6 +71,37 @@ func TestFetchManifestIdleOnlyAfterReadingMountedWorld(t *testing.T) {
 	}
 }
 
+// TestFetchManifestAuthorityIdleBeforeAuthorityRuns checks that the release
+// authority's own manifest fetch goes idle while the authority is not running,
+// so a scheduler awaiting idle can start the authority from its embedded copy.
+func TestFetchManifestAuthorityIdleBeforeAuthorityRuns(t *testing.T) {
+	// Mount a World with no LoadPlugin resolver for the authority.
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+	tb := world_testbed.MustDefault(t, ctx)
+	ctrl := NewController(logrus.NewEntry(logrus.New()), tb.Bus, &Config{
+		EngineId:                 tb.EngineID,
+		ObjectKeys:               []string{"release/manifests"},
+		ReleaseAuthorityPluginId: "launcher",
+	})
+	defer func() { _ = ctrl.Close() }()
+
+	// Resolve the authority's own manifest while it cannot load.
+	handler := &idleTestHandler{idle: make(chan int, 1)}
+	resolver := &fetchManifestResolver{c: ctrl, dir: manifest.NewFetchManifest("launcher", nil, []string{"js"}, 0)}
+	go func() { _ = resolver.Resolve(ctx, handler) }()
+
+	// The directive must go idle without values instead of waiting on itself.
+	select {
+	case values := <-handler.idle:
+		if values != 0 {
+			t.Fatalf("FetchManifest went idle with %d values, want 0", values)
+		}
+	case <-ctx.Done():
+		t.Fatal("authority FetchManifest waited for the authority to run")
+	}
+}
+
 // idleTestHandler reports the value count when the resolver first goes idle.
 type idleTestHandler struct {
 	// mtx guards the embedded handler, which the bus calls concurrently.
