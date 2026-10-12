@@ -819,8 +819,7 @@ func (c *Controller) BuildPlugin(
 			return nil, err
 		}
 
-		publicPath := bldr_plugin.PluginAssetHTTPPath(pluginID, bldr_plugin_compiler.EsbuildAssetSubdir)
-		esbuildBundlerConf, err := BuildEsbuildBundlerConfig(esbuildBundleVarMeta, bundleWebPkgs, baseEsbuildFlags, sourcePath, publicPath)
+		esbuildBundlerConf, err := BuildEsbuildBundlerConfig(esbuildBundleVarMeta, bundleWebPkgs, baseEsbuildFlags, sourcePath)
 		if err == nil {
 			err = esbuildBundlerConf.Validate()
 		}
@@ -1513,8 +1512,7 @@ func (c *Controller) FastRebuildPlugin(
 	// Rebuild the esbuild bundles recorded in the previous metadata.
 	if len(prevEsbuildBundles) > 0 {
 		// Build the esbuild bundler config from the previous metadata.
-		publicPath := bldr_plugin.PluginAssetHTTPPath(pluginID, bldr_plugin_compiler.EsbuildAssetSubdir)
-		esbuildBundlerConf, err := BuildEsbuildBundlerConfig(prevEsbuildBundles, prevWebPkgs, baseEsbuildFlags, sourcePath, publicPath)
+		esbuildBundlerConf, err := BuildEsbuildBundlerConfig(prevEsbuildBundles, prevWebPkgs, baseEsbuildFlags, sourcePath)
 		if err == nil {
 			err = esbuildBundlerConf.Validate()
 		}

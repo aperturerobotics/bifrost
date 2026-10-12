@@ -32,9 +32,9 @@ import (
 )
 
 // startupCacheFormatEnvKey is bumped when compiler-owned output policy changes
-// without changing a plugin source file. V18 retains shared package provider
-// assets when frontend modules use live compiler attachments.
-const startupCacheFormatEnvKey = "BLDR_STARTUP_CACHE_FORMAT_V18"
+// without changing a plugin source file. V19 builds esbuild bundles with
+// relative chunk imports.
+const startupCacheFormatEnvKey = "BLDR_STARTUP_CACHE_FORMAT_V19"
 
 // startupValidationResult contains the startup cache validation result.
 type startupValidationResult struct {

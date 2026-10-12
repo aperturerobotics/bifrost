@@ -425,7 +425,6 @@ func (c *Controller) BuildManifest(
 			Bundles:      esbuildBundleMetas,
 			WebPkgs:      webPkgs,
 			EsbuildFlags: baseEsbuildFlags,
-			// PublicPath is not needed here as it's handled by the Go compiler variable injection
 		}
 		if err := esbuildBundlerConf.Validate(); err != nil {
 			return nil, errors.Wrap(err, "invalid esbuild bundler config")

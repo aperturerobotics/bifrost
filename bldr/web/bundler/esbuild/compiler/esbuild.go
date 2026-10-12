@@ -19,18 +19,21 @@ import (
 )
 
 // BuildEsbuildBundle builds an esbuild bundle with the given bundle args.
+//
 // Parameters:
-// - le: logger entry
-// - codeRootPath: root path of the source code
-// - bundleID: identifier for the bundle
-// - entrypoints: list of entrypoints to build
-// - baseEsbuildOpts: base esbuild options to use
-// - webPkgs: list of web packages to externalize
-// - outAssetsPath: output path for assets
-// - publicPath: public URL path prefix for assets
-// - inlineSourcemaps: whether to inline sourcemaps
-// - minify: whether to minify JavaScript
-// - sourcemaps: whether to emit sourcemaps
+//   - le: logger entry
+//   - codeRootPath: root path of the source code
+//   - bundleID: identifier for the bundle
+//   - entrypoints: list of entrypoints to build
+//   - baseEsbuildOpts: base esbuild options to use
+//   - webPkgs: list of web packages to externalize
+//   - outAssetsPath: output path for assets
+//   - publicPath: public URL path prefix for chunks and assets, or empty for
+//     relative chunk imports
+//   - inlineSourcemaps: whether to inline sourcemaps
+//   - minify: whether to minify JavaScript
+//   - sourcemaps: whether to emit sourcemaps
+//
 // Returns:
 // - Web package references used by the bundle
 // - Metadata about the esbuild outputs

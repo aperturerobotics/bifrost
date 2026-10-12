@@ -257,9 +257,6 @@ func (c *Controller) BuildManifest(
 		for _, bundle := range bundleList {
 			bundleID := bundle.GetId()
 			publicPath := bundle.GetPublicPath()
-			if publicPath == "" {
-				publicPath = "/"
-			}
 			bundleWebPkgRefs, bundleOutputMeta, bundleSrcFiles, err := BuildEsbuildBundle(
 				le,
 				sourcePath,
@@ -488,9 +485,6 @@ func (c *Controller) FastRebuildBundle(
 	for _, bundleDef := range bundleList {
 		bundleID := bundleDef.GetId()
 		publicPath := bundleDef.GetPublicPath()
-		if publicPath == "" {
-			publicPath = "/"
-		}
 		bundleWebPkgRefs, bundleOutputMeta, bundleSrcFiles, err := BuildEsbuildBundle(
 			le,
 			sourcePath,

@@ -236,8 +236,9 @@ type EsbuildBundleMeta struct {
 	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	// Entrypoints is the list of entrypoints to pass to esbuild.
 	Entrypoints []*esbuild.EsbuildBundleEntrypoint `protobuf:"bytes,2,rep,name=entrypoints,proto3" json:"entrypoints,omitempty"`
-	// PublicPath overrides the default public URL path prefix for assets.
-	// If empty, defaults to /.
+	// PublicPath is the public URL path prefix for chunk imports and assets.
+	// If empty, chunks import each other by relative path, so the bundle loads
+	// under any root that serves it, including a path pinned to a manifest root.
 	PublicPath string `protobuf:"bytes,3,opt,name=public_path,json=publicPath,proto3" json:"publicPath,omitempty"`
 	// EsbuildFlags are additional command-line arguments to pass to esbuild for this bundle.
 	EsbuildFlags []string `protobuf:"bytes,4,rep,name=esbuild_flags,json=esbuildFlags,proto3" json:"esbuildFlags,omitempty"`

@@ -20,12 +20,15 @@ import (
 )
 
 // BuildEsbuildBundlerConfig builds the esbuild bundler controller config.
+//
+// The bundles set no public path, so their chunks import each other by
+// relative path: a viewer loaded at a path pinned to a manifest root loads its
+// chunks from the same build.
 func BuildEsbuildBundlerConfig(
 	bundleVars []*EsbuildBundleVarMeta,
 	webPkgs []*bldr_web_bundler.WebPkgRefConfig,
 	baseEsbuildFlags []string,
-	codeRootPath,
-	publicPath string,
+	codeRootPath string,
 ) (*bldr_web_bundler_esbuild_compiler.Config, error) {
 	// build list of EsbuildBundleMeta from bundleVar list
 	var esbuildBundleMeta []*bldr_web_bundler_esbuild_compiler.EsbuildBundleMeta
@@ -102,7 +105,6 @@ func BuildEsbuildBundlerConfig(
 		bundleMeta := &bldr_web_bundler_esbuild_compiler.EsbuildBundleMeta{
 			Id:           bundleVar.Id,
 			Entrypoints:  bundleEntrypoints,
-			PublicPath:   publicPath,
 			EsbuildFlags: bundleFlags,
 		}
 

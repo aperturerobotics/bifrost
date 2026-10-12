@@ -611,7 +611,7 @@
       ]
     },
     "github.com/s4wave/spacewave/bldr/web/bundler/esbuild/compiler": {
-      "hash": "b8d6206716413bb644f7eaa3f4b2804d68b79f66327387ba095bd3626b6b83cb",
+      "hash": "9c687f489d368da8e3f44903e46c52f4671a1e47b78443ec69f5197c2e6cf151",
       "generatedFiles": [
         "bldr/web/bundler/esbuild/compiler/compiler.pb.go",
         "bldr/web/bundler/esbuild/compiler/compiler.pb.ts"

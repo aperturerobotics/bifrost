@@ -63,8 +63,9 @@ export interface EsbuildBundleMeta {
    */
   entrypoints?: EsbuildBundleEntrypoint[]
   /**
-   * PublicPath overrides the default public URL path prefix for assets.
-   * If empty, defaults to /.
+   * PublicPath is the public URL path prefix for chunk imports and assets.
+   * If empty, chunks import each other by relative path, so the bundle loads
+   * under any root that serves it, including a path pinned to a manifest root.
    *
    * @generated from field: string public_path = 3;
    */
