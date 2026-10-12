@@ -247,4 +247,7 @@ message PluginContextInfo {
   // Empty for a singleton plugin; a Space uses its World engine ID.
   // State private to one installation is scoped by this key.
   string instance_key = 2;
+  // ManifestRoot is the root of the manifest the plugin runs, which names the
+  // exact build of its files. Empty when the host did not report it.
+  string manifest_root = 3;
 }

@@ -641,6 +641,9 @@ type PluginContextInfo struct {
 	// Empty for a singleton plugin; a Space uses its World engine ID.
 	// State private to one installation is scoped by this key.
 	InstanceKey string `protobuf:"bytes,2,opt,name=instance_key,json=instanceKey,proto3" json:"instanceKey,omitempty"`
+	// ManifestRoot is the root of the manifest the plugin runs, which names the
+	// exact build of its files. Empty when the host did not report it.
+	ManifestRoot string `protobuf:"bytes,3,opt,name=manifest_root,json=manifestRoot,proto3" json:"manifestRoot,omitempty"`
 }
 
 func (x *PluginContextInfo) Reset() {
@@ -659,6 +662,13 @@ func (x *PluginContextInfo) GetPluginMeta() *PluginMeta {
 func (x *PluginContextInfo) GetInstanceKey() string {
 	if x != nil {
 		return x.InstanceKey
+	}
+	return ""
+}
+
+func (x *PluginContextInfo) GetManifestRoot() string {
+	if x != nil {
+		return x.ManifestRoot
 	}
 	return ""
 }
@@ -965,6 +975,7 @@ func (m *PluginContextInfo) CloneVT() *PluginContextInfo {
 	}
 	r := new(PluginContextInfo)
 	r.InstanceKey = m.InstanceKey
+	r.ManifestRoot = m.ManifestRoot
 	r.PluginMeta = protobuf_go_lite.CloneVTValue(m.PluginMeta)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
@@ -1398,6 +1409,9 @@ func (this *PluginContextInfo) EqualVT(that *PluginContextInfo) bool {
 		return false
 	}
 	if this.InstanceKey != that.InstanceKey {
+		return false
+	}
+	if this.ManifestRoot != that.ManifestRoot {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -2426,6 +2440,11 @@ func (x *PluginContextInfo) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("instanceKey")
 		s.WriteString(x.InstanceKey)
 	}
+	if x.ManifestRoot != "" || s.HasField("manifestRoot") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("manifestRoot")
+		s.WriteString(x.ManifestRoot)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -2453,6 +2472,9 @@ func (x *PluginContextInfo) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "instance_key", "instanceKey":
 			s.AddField("instance_key")
 			x.InstanceKey = s.ReadString()
+		case "manifest_root", "manifestRoot":
+			s.AddField("manifest_root")
+			x.ManifestRoot = s.ReadString()
 		}
 	})
 }
@@ -3286,6 +3308,11 @@ func (m *PluginContextInfo) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if len(m.ManifestRoot) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.ManifestRoot)
+		i--
+		dAtA[i] = 0x1a
+	}
 	if len(m.InstanceKey) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.InstanceKey)
 		i--
@@ -3550,6 +3577,7 @@ func (m *PluginContextInfo) SizeVT() (n int) {
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.InstanceKey)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.ManifestRoot)
 	n += len(m.unknownFields)
 	return n
 }
@@ -3926,6 +3954,10 @@ func (x *PluginContextInfo) MarshalProtoText() string {
 	if x.InstanceKey != "" {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "instance_key")
 		protobuf_go_lite.TextWriteString(&sb, x.InstanceKey)
+	}
+	if x.ManifestRoot != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "manifest_root")
+		protobuf_go_lite.TextWriteString(&sb, x.ManifestRoot)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -5152,6 +5184,16 @@ func (m *PluginContextInfo) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.InstanceKey = v
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ManifestRoot", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.ManifestRoot = v
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

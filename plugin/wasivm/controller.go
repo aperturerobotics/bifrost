@@ -166,18 +166,19 @@ func register(
 		}
 	}
 
-	// Register the viewer and the wizard viewer.
+	// Register the viewer and the wizard viewer at the scripts of this build.
+	info := bldr_plugin.GetPluginContextInfo(ctx)
 	viewerSvc := s4wave_viewer_registry.NewSRPCViewerRegistryResourceServiceClient(scope)
 	for _, viewer := range []*s4wave_viewer_registry.ViewerRegistration{{
 		TypeId:      s4wave_vm.WasiVmTypeID,
 		ViewerName:  "WebAssembly VM",
-		ScriptPath:  ViewerEntrypoint.GetEntrypointHref(),
+		ScriptPath:  info.PinAssetsHref(ViewerEntrypoint.GetEntrypointHref()),
 		ComponentId: "spacewave.vm.wasivm",
 		Surface:     s4wave_viewer_registry.ViewerSurface_VIEWER_SURFACE_WEB,
 	}, {
 		TypeId:      wizardTypeID,
 		ViewerName:  "Create WebAssembly VM",
-		ScriptPath:  WizardEntrypoint.GetEntrypointHref(),
+		ScriptPath:  info.PinAssetsHref(WizardEntrypoint.GetEntrypointHref()),
 		ComponentId: "spacewave.wizard.wasivm",
 		Surface:     s4wave_viewer_registry.ViewerSurface_VIEWER_SURFACE_WEB,
 	}} {

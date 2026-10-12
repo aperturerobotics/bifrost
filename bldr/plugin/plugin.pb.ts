@@ -673,6 +673,13 @@ export interface PluginContextInfo {
    * @generated from field: string instance_key = 2;
    */
   instanceKey?: string
+  /**
+   * ManifestRoot is the root of the manifest the plugin runs, which names the
+   * exact build of its files. Empty when the host did not report it.
+   *
+   * @generated from field: string manifest_root = 3;
+   */
+  manifestRoot?: string
 }
 
 export const PluginContextInfo: MessageType<PluginContextInfo> =
@@ -681,5 +688,6 @@ export const PluginContextInfo: MessageType<PluginContextInfo> =
     fields: [
       { no: 1, name: 'plugin_meta', kind: 'message', T: PluginMeta },
       { no: 2, name: 'instance_key', kind: 'scalar', T: ScalarType.STRING },
+      { no: 3, name: 'manifest_root', kind: 'scalar', T: ScalarType.STRING },
     ] satisfies readonly PartialFieldInfo[],
   })

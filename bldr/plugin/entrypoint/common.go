@@ -78,7 +78,11 @@ func ExecutePluginEntrypoint(
 	}
 	ctx = bldr_plugin.WithPluginContextInfo(
 		ctx,
-		bldr_plugin.NewPluginContextInfo(meta.CloneVT(), pluginInfo.GetInstanceKey()),
+		bldr_plugin.NewPluginContextInfo(
+			meta.CloneVT(),
+			pluginInfo.GetInstanceKey(),
+			pluginInfo.GetManifestRef().GetManifestRef().GetRootRef().GetHash().MarshalString(),
+		),
 	)
 
 	// Start the core controller bus.

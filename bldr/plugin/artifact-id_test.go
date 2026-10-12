@@ -38,3 +38,33 @@ func TestPluginArtifactPaths(t *testing.T) {
 		}
 	}
 }
+
+// TestPinAssetsHref pins the plugin's own asset paths to its manifest root.
+func TestPinAssetsHref(t *testing.T) {
+	// Build one context with a manifest root and one without.
+	root, err := hash.Sum(hash.RecommendedHashType, []byte("module"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	meta := &PluginMeta{PluginId: "colors"}
+	pinned := NewPluginContextInfo(meta, "", root.MarshalString())
+	unknown := NewPluginContextInfo(meta, "", "")
+	href := PluginAssetsHttpPrefix + "colors/esb/viewer.js"
+
+	// The pinned path names the same file under the immutable artifact ID.
+	want := PluginAssetsHttpPrefix + PluginArtifactID("colors", root.MarshalString()) + "/esb/viewer.js"
+	if got := pinned.PinAssetsHref(href); got != want {
+		t.Fatalf("pinned href: %q, want %q", got, want)
+	}
+
+	// Leave other plugins' paths, and every path without a root, unchanged.
+	other := PluginAssetsHttpPrefix + "shapes/esb/viewer.js"
+	for _, tc := range []struct {
+		info *PluginContextInfo
+		href string
+	}{{pinned, other}, {unknown, href}, {nil, href}} {
+		if got := tc.info.PinAssetsHref(tc.href); got != tc.href {
+			t.Errorf("unpinned href changed: %q to %q", tc.href, got)
+		}
+	}
+}
