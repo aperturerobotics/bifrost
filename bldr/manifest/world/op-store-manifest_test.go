@@ -7,6 +7,7 @@ import (
 	"github.com/s4wave/spacewave/db/testbed"
 	"github.com/s4wave/spacewave/db/world"
 	world_block "github.com/s4wave/spacewave/db/world/block"
+	"github.com/s4wave/spacewave/net/crypto"
 	"github.com/s4wave/spacewave/net/peer"
 	"github.com/sirupsen/logrus"
 )
@@ -62,6 +63,83 @@ func TestExStoreManifestOpSkipsStoredManifest(t *testing.T) {
 	}
 	if ws.applied != 2 {
 		t.Fatalf("applied %d operations after adding a link, want 2", ws.applied)
+	}
+}
+
+// TestExStoreManifestOpStoresReleaseAuthorization checks that an authorized
+// ManifestRef is stored once, collected with its authorization, and stored
+// again when only the authorization changes.
+func TestExStoreManifestOpStoresReleaseAuthorization(t *testing.T) {
+	// Start a testbed.
+	ctx := t.Context()
+	le := logrus.NewEntry(logrus.New())
+	tb, err := testbed.NewTestbed(ctx, le)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	defer tb.Release()
+
+	// Build the mock World state from an empty cursor.
+	ocs, err := tb.BuildEmptyCursor(ctx)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	defer ocs.Release()
+	mockWS, err := world_block.BuildMockWorldState(ctx, le, true, ocs, false)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	// Create the manifest store and count operations applied to the World.
+	const hostKey, manifestKey = "release", "release/spacewave-web"
+	if _, err := CreateManifestStore(ctx, mockWS, hostKey); err != nil {
+		t.Fatal(err.Error())
+	}
+	ws := &opCountingWorldState{WorldState: mockWS}
+
+	// Sign the manifest reference with a fresh release key on each call.
+	ref := createTestManifestRef(t, ctx, tb, "spacewave-web", "js", 3)
+	signRef := func() {
+		key, _, err := crypto.GenerateEd25519Key(nil)
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+		if err := ref.SignReleaseAuthorization(key); err != nil {
+			t.Fatal(err.Error())
+		}
+	}
+
+	// Store the authorized manifest twice.
+	signRef()
+	for range 2 {
+		if err := ExStoreManifestOp(ctx, ws, peer.ID("test"), manifestKey, []string{hostKey}, ref); err != nil {
+			t.Fatal(err.Error())
+		}
+	}
+	if ws.applied != 1 {
+		t.Fatalf("applied %d operations storing one authorized manifest twice, want 1", ws.applied)
+	}
+
+	// Collect the manifest with the stored authorization.
+	collected, errs, err := CollectManifests(ctx, ws, nil, hostKey)
+	if err != nil || len(errs) != 0 {
+		t.Fatalf("collect manifests: %v %v", err, errs)
+	}
+	got := collected["spacewave-web"]
+	if len(got) != 1 || !got[0].ManifestRef.EqualVT(ref.GetManifestRef()) {
+		t.Fatalf("collected %v, want the stored manifest", got)
+	}
+	if !got[0].ReleaseAuthorization.EqualVT(ref.GetReleaseAuthorization()) {
+		t.Fatal("collected manifest lost its release authorization")
+	}
+
+	// A new authorization of the same manifest applies an operation.
+	signRef()
+	if err := ExStoreManifestOp(ctx, ws, peer.ID("test"), manifestKey, []string{hostKey}, ref); err != nil {
+		t.Fatal(err.Error())
+	}
+	if ws.applied != 2 {
+		t.Fatalf("applied %d operations after a new authorization, want 2", ws.applied)
 	}
 }
 

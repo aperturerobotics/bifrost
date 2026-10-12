@@ -15,7 +15,9 @@ import (
 var StoreManifestOpId = "bldr/manifest/store"
 
 // ExStoreManifestOp stores a manifest to an object key and links it from
-// linkObjKeys. It applies no operation when the World already holds both.
+// linkObjKeys. A ManifestRef carrying a release authorization is stored as a
+// ManifestRef object, any other as a Manifest object. It applies no operation
+// when the World already holds both.
 func ExStoreManifestOp(
 	ctx context.Context,
 	ws world.WorldState,
@@ -44,17 +46,24 @@ func ExStoreManifestOp(
 // only, so a store of an already stored manifest needs no write transaction.
 func (o *StoreManifestOp) ChangesWorld(ctx context.Context, ws world.WorldState) (bool, error) {
 	// Check the manifest object and its root ref.
-	obj, objOk, err := ws.GetObject(ctx, o.GetObjectKey())
-	defer world.ReleaseObjectState(obj)
-	if err != nil {
-		return false, err
-	}
-	if !objOk {
-		return true, nil
-	}
-	replace, err := manifestRootRefReplaces(ctx, ws, obj, o.GetManifestRef().GetManifestRef())
-	if err != nil || replace {
-		return replace, err
+	if o.hasReleaseAuthorization() {
+		stored, err := checkManifestRefStored(ctx, ws, o.GetObjectKey(), o.GetManifestRef())
+		if err != nil || !stored {
+			return !stored, err
+		}
+	} else {
+		obj, objOk, err := ws.GetObject(ctx, o.GetObjectKey())
+		defer world.ReleaseObjectState(obj)
+		if err != nil {
+			return false, err
+		}
+		if !objOk {
+			return true, nil
+		}
+		replace, err := manifestRootRefReplaces(ctx, ws, obj, o.GetManifestRef().GetManifestRef())
+		if err != nil || replace {
+			return replace, err
+		}
 	}
 
 	// Check each link from a linked object to the manifest.
@@ -112,8 +121,13 @@ func (o *StoreManifestOp) ApplyWorldOp(
 	ws world.WorldState,
 	sender peer.ID,
 ) (sysErr bool, err error) {
-	// store the object for the manifest
-	_, changed, err := SetManifest(ctx, ws, sender, o.GetObjectKey(), o.GetManifestRef().GetManifestRef())
+	// Store the manifest object, or the authorized reference to it.
+	var changed bool
+	if o.hasReleaseAuthorization() {
+		changed, err = SetManifestRef(ctx, ws, o.GetObjectKey(), o.GetManifestRef())
+	} else {
+		_, changed, err = SetManifest(ctx, ws, sender, o.GetObjectKey(), o.GetManifestRef().GetManifestRef())
+	}
 	if err != nil {
 		return false, err
 	}
@@ -148,6 +162,12 @@ func (o *StoreManifestOp) ApplyWorldOp(
 	}
 
 	return false, nil
+}
+
+// hasReleaseAuthorization reports whether the op stores a release-authorized
+// ManifestRef.
+func (o *StoreManifestOp) hasReleaseAuthorization() bool {
+	return o.GetManifestRef().GetReleaseAuthorization() != nil
 }
 
 // ApplyWorldObjectOp applies the operation to a world object handle.

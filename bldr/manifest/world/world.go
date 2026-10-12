@@ -28,6 +28,9 @@ const (
 	ManifestStoreTypeID = "bldr/manifest-store"
 	// ManifestTypeID is the type identifier for a Manifest.
 	ManifestTypeID = "bldr/manifest"
+	// ManifestRefTypeID is the type identifier for a ManifestRef that carries
+	// a release authorization of the Manifest it references.
+	ManifestRefTypeID = "bldr/manifest-ref"
 	// ManifestBundleTypeID is the type identifier for a ManifestBundle.
 	ManifestBundleTypeID = "bldr/manifest-bundle"
 
@@ -384,6 +387,52 @@ func SetManifest(
 	return nil, changed, err
 }
 
+// SetManifestRef stores ref as the root of the object at objKey, typed as a
+// ManifestRef. It replaces a Manifest previously stored at objKey and reports
+// whether the object changed.
+func SetManifestRef(
+	ctx context.Context,
+	ws world.WorldState,
+	objKey string,
+	ref *bldr_manifest.ManifestRef,
+) (bool, error) {
+	// Keep an identical stored reference.
+	stored, err := checkManifestRefStored(ctx, ws, objKey, ref)
+	if err != nil || stored {
+		return false, err
+	}
+
+	// Write the reference as the object root, then type the object.
+	_, _, err = world.AccessWorldObject(ctx, ws, objKey, true, func(bcs *block.Cursor) error {
+		bcs.SetBlock(ref.CloneVT(), true)
+		return nil
+	})
+	if err != nil {
+		return false, err
+	}
+	return true, world_types.SetObjectType(ctx, ws, objKey, ManifestRefTypeID)
+}
+
+// checkManifestRefStored reports whether objKey already holds ref as a ManifestRef
+// object.
+func checkManifestRefStored(
+	ctx context.Context,
+	ws world.WorldState,
+	objKey string,
+	ref *bldr_manifest.ManifestRef,
+) (bool, error) {
+	// Compare the stored reference only on a ManifestRef object.
+	objType, err := world_types.GetObjectType(ctx, ws, objKey)
+	if err != nil || objType != ManifestRefTypeID {
+		return false, err
+	}
+	curr, _, err := LookupManifestRef(ctx, ws, objKey)
+	if err != nil {
+		return false, err
+	}
+	return curr.EqualVT(ref), nil
+}
+
 // manifestRootRefReplaces reports whether storing rootRef replaces the root ref
 // of the existing manifest object obj. A different executable replaces it. A
 // same-executable ref replaces it only when it moves the manifest from an
@@ -454,13 +503,14 @@ func LookupManifestRef(ctx context.Context, ws world.WorldState, objKey string) 
 	return manifestRef, ref, err
 }
 
-// NewListManifestPath creates a Path that selects all Manifest
-// recursively linked with <manifest>.
+// NewListManifestPath creates a Path that selects all Manifest and
+// ManifestRef objects recursively linked with <manifest>.
 func NewListManifestPath(p *cayley.Path) *cayley.Path {
-	// Limit the candidate path to typed Manifest objects.
+	// Limit the candidate path to typed Manifest and ManifestRef objects.
 	return world_types.LimitNodesToTypes(
 		NewListManifestCandidatePath(p),
 		ManifestTypeID,
+		ManifestRefTypeID,
 	)
 }
 
@@ -772,64 +822,14 @@ type CollectedManifest struct {
 	ManifestRef *bucket.ObjectRef
 	// ManifestKey is the object key of the manifest.
 	ManifestKey string
+	// ReleaseAuthorization is the authorization stored beside the manifest by
+	// a ManifestRef object, or nil for a Manifest object.
+	ReleaseAuthorization *peer.SignedMsg
 }
 
 // GetRev returns the revision.
 func (c *CollectedManifest) GetRev() uint64 {
 	return c.Manifest.GetMeta().GetRev()
-}
-
-// StartupManifestSkipError describes a startup manifest candidate that was skipped.
-type StartupManifestSkipError struct {
-	// ObjectKey is the skipped candidate object key.
-	ObjectKey string
-	// ObjectRef is the object or manifest ref involved in the skip, if known.
-	ObjectRef *bucket.ObjectRef
-	// Err is the underlying availability error.
-	Err error
-}
-
-// Error returns the startup manifest skip message.
-func (e *StartupManifestSkipError) Error() string {
-	// A nil error has no message.
-	if e == nil {
-		return ""
-	}
-	if e.Err == nil {
-		return "startup manifest candidate[" + e.ObjectKey + "] unavailable"
-	}
-
-	// Describe the candidate with its ref, bucket, and root.
-	msg := "startup manifest candidate[" + e.ObjectKey + "]"
-	if e.ObjectRef != nil {
-		if !e.ObjectRef.GetEmpty() {
-			msg += " ref=" + e.ObjectRef.MarshalString()
-		}
-		if bucketID := e.ObjectRef.GetBucketId(); bucketID != "" {
-			msg += " bucket=" + bucketID
-		}
-		if rootRef := e.ObjectRef.GetRootRef(); !rootRef.GetEmpty() {
-			msg += " root=" + rootRef.MarshalString()
-		}
-	}
-	return msg + ": " + e.Err.Error()
-}
-
-// Unwrap returns the underlying skip cause.
-func (e *StartupManifestSkipError) Unwrap() error {
-	// A nil error unwraps to nil.
-	if e == nil {
-		return nil
-	}
-	return e.Err
-}
-
-func newStartupManifestSkipError(objKey string, objRef *bucket.ObjectRef, err error) *StartupManifestSkipError {
-	return &StartupManifestSkipError{
-		ObjectKey: objKey,
-		ObjectRef: objRef.Clone(),
-		Err:       err,
-	}
 }
 
 func startupContextError(err error) error {
@@ -869,7 +869,7 @@ func CollectManifests(
 	// Look up each manifest object key in turn.
 	for _, objKey := range manifestObjKeys {
 		// Context errors stop the collection; others are skip errors.
-		manifest, manifestRef, err := LookupManifest(ctx, ws, objKey)
+		collected, err := lookupCollectedManifest(ctx, ws, objKey)
 		if err != nil {
 			cause := errors.Cause(err)
 			if cause == context.Canceled || cause == context.DeadlineExceeded {
@@ -880,18 +880,14 @@ func CollectManifests(
 		}
 
 		// Filter by platform id when the caller supplied filters.
-		manifestID := manifest.GetMeta().GetManifestId()
-		platformID := manifest.GetMeta().GetPlatformId()
+		manifestID := collected.Manifest.GetMeta().GetManifestId()
+		platformID := collected.Manifest.GetMeta().GetPlatformId()
 		if len(filterPlatformIDs) != 0 && !slices.Contains(filterPlatformIDs, platformID) {
 			continue
 		}
 
 		// sort by rev descending
-		manifestList := append(manifestMap[manifestID], &CollectedManifest{
-			Manifest:    manifest,
-			ManifestRef: manifestRef,
-			ManifestKey: objKey,
-		})
+		manifestList := append(manifestMap[manifestID], collected)
 		slices.SortStableFunc(manifestList, func(a, b *CollectedManifest) int {
 			return cmp.Compare(b.GetRev(), a.GetRev())
 		})
@@ -899,6 +895,58 @@ func CollectManifests(
 	}
 
 	return manifestMap, manifestErrors, nil
+}
+
+// lookupCollectedManifest reads the Manifest object or ManifestRef object at
+// objKey. A ManifestRef must describe the Manifest it references.
+func lookupCollectedManifest(
+	ctx context.Context,
+	ws world.WorldState,
+	objKey string,
+) (*CollectedManifest, error) {
+	// A Manifest object holds the manifest itself.
+	objType, err := world_types.GetObjectType(ctx, ws, objKey)
+	if err != nil {
+		return nil, err
+	}
+	if objType != ManifestRefTypeID {
+		manifest, manifestRef, err := LookupManifest(ctx, ws, objKey)
+		if err != nil {
+			return nil, err
+		}
+		return &CollectedManifest{
+			Manifest:    manifest,
+			ManifestRef: manifestRef,
+			ManifestKey: objKey,
+		}, nil
+	}
+
+	// A ManifestRef object references the manifest beside its authorization.
+	ref, _, err := LookupManifestRef(ctx, ws, objKey)
+	if err != nil {
+		return nil, err
+	}
+	if err := ref.Validate(); err != nil {
+		return nil, err
+	}
+	var manifest *bldr_manifest.Manifest
+	_, err = world.AccessObject(ctx, ws.AccessWorldState, ref.GetManifestRef(), func(bcs *block.Cursor) error {
+		var err error
+		manifest, err = bldr_manifest.UnmarshalManifest(ctx, bcs)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	if !manifest.GetMeta().EqualVT(ref.GetMeta()) {
+		return nil, errors.New("manifest ref meta does not match manifest meta")
+	}
+	return &CollectedManifest{
+		Manifest:             manifest,
+		ManifestRef:          ref.GetManifestRef(),
+		ManifestKey:          objKey,
+		ReleaseAuthorization: ref.GetReleaseAuthorization(),
+	}, nil
 }
 
 // CollectStartupManifests collects readable startup manifest candidates linked

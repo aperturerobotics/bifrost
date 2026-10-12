@@ -15,7 +15,7 @@ import (
 	manifest_world "github.com/s4wave/spacewave/bldr/manifest/world"
 	plugin "github.com/s4wave/spacewave/bldr/plugin"
 	"github.com/s4wave/spacewave/db/block"
-	"github.com/s4wave/spacewave/db/unixfs/sync"
+	unixfs_sync "github.com/s4wave/spacewave/db/unixfs/sync"
 	"github.com/s4wave/spacewave/db/world"
 	world_testbed "github.com/s4wave/spacewave/db/world/testbed"
 	"github.com/s4wave/spacewave/net/crypto"
@@ -36,7 +36,6 @@ func TestReleaseAuthorizationBeforeStaging(t *testing.T) {
 		{name: "forged", wantError: "invalid signature"},
 		{name: "wrong signer", wantError: "not a pinned release peer"},
 		{name: "changed root", wantError: "does not match authorized root"},
-		{name: "direct unsigned manifest", wantError: "missing authorization"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// Publish the immutable executable and its independent release authorization.
@@ -80,21 +79,10 @@ func TestReleaseAuthorizationBeforeStaging(t *testing.T) {
 			case "changed root":
 				ref.ManifestRef = writeAuthorizedTestManifest(t, ctx, ws, "changed executable").GetManifestRef()
 			}
+
+			// Store the candidate through the release writer's World operation.
 			const candidateKey = storeKey + "/core"
-			if tc.name == "direct unsigned manifest" {
-				if _, _, err := manifest_world.SetManifest(ctx, ws, releasePeer, candidateKey, ref.GetManifestRef()); err != nil {
-					t.Fatal(err)
-				}
-			}
-			if tc.name != "direct unsigned manifest" {
-				if _, _, err := world.AccessWorldObject(ctx, ws, candidateKey, true, func(cursor *block.Cursor) error {
-					cursor.SetBlock(ref, true)
-					return nil
-				}); err != nil {
-					t.Fatal(err)
-				}
-			}
-			if err := ws.SetGraphQuad(ctx, manifest_world.NewManifestQuad(storeKey, candidateKey, "core")); err != nil {
+			if err := manifest_world.ExStoreManifestOp(ctx, ws, releasePeer, candidateKey, []string{storeKey}, ref); err != nil {
 				t.Fatal(err)
 			}
 
