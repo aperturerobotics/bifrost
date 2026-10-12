@@ -1,0 +1,51 @@
+package kernel
+
+// BusyboxApplets returns a VFS file map installing wasm at /bin/busybox
+// and common applet paths. All entries point to the same binary; busybox
+// determines its behavior from argv[0].
+func BusyboxApplets(wasm []byte) map[string][]byte {
+	return map[string][]byte{
+		"/bin/busybox":  wasm,
+		"/bin/sh":       wasm,
+		"/bin/cat":      wasm,
+		"/bin/echo":     wasm,
+		"/bin/ls":       wasm,
+		"/bin/env":      wasm,
+		"/bin/grep":     wasm,
+		"/bin/sed":      wasm,
+		"/bin/tr":       wasm,
+		"/bin/wc":       wasm,
+		"/bin/head":     wasm,
+		"/bin/tail":     wasm,
+		"/bin/sort":     wasm,
+		"/bin/tee":      wasm,
+		"/bin/true":     wasm,
+		"/bin/false":    wasm,
+		"/bin/mkdir":    wasm,
+		"/bin/rm":       wasm,
+		"/bin/cp":       wasm,
+		"/bin/mv":       wasm,
+		"/bin/pwd":      wasm,
+		"/bin/whoami":   wasm,
+		"/bin/uname":    wasm,
+		"/bin/test":     wasm,
+		"/bin/[":        wasm,
+		"/bin/printf":   wasm,
+		"/bin/sleep":    wasm,
+		"/bin/date":     wasm,
+		"/bin/id":       wasm,
+		"/bin/touch":    wasm,
+		"/bin/chmod":    wasm,
+		"/bin/chown":    wasm,
+		"/bin/basename": wasm,
+		"/bin/dirname":  wasm,
+		"/bin/xargs":    wasm,
+		"/bin/find":     wasm,
+		"/bin/awk":      wasm,
+		"/bin/cut":      wasm,
+		"/bin/diff":     wasm,
+		"/bin/uniq":     wasm,
+		"/bin/seq":      wasm,
+		"/usr/bin/env":  wasm,
+	}
+}

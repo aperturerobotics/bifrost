@@ -147,6 +147,11 @@ linters:
         path-except: 'e2e/wasm/'
       - linters: [gosec]
         path: '_test\.go$'
+      # The WasiVM kernel converts between the guest's 32-bit Linux ABI and
+      # Go integers; truncation there is the system call semantics.
+      - linters: [gosec]
+        path: '^plugin/wasivm/kernel/'
+        text: G115
     paths:
       - '(^|/)node_modules($|/)'
       - '(^|/)prototypes($|/)'

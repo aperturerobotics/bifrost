@@ -64,3 +64,6 @@ trace.out
 
 __pycache__/
 *.egg-info/
+
+# Built WasiVM root filesystem.
+/plugin/wasivm/rootfs/out/
