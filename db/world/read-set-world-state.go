@@ -115,6 +115,12 @@ func (s *readSetWorldState) QueryGraphPath(ctx context.Context, query *GraphPath
 	return s.WorldState.QueryGraphPath(ctx, query)
 }
 
+// ListObjectsWithType records a type-index graph read and forwards its page.
+func (s *readSetWorldState) ListObjectsWithType(ctx context.Context, typeID, startAfter string, limit uint32) ([]string, bool, error) {
+	s.reads.markGraph()
+	return s.WorldState.ListObjectsWithType(ctx, typeID, startAfter, limit)
+}
+
 // SetGraphQuad records the quad.
 func (s *readSetWorldState) SetGraphQuad(ctx context.Context, q GraphQuad) error {
 	s.reads.addPatterns(q)

@@ -215,6 +215,19 @@ func (e *engineWorldState) QueryGraphPath(ctx context.Context, query *GraphPathQ
 	return result, err
 }
 
+// ListObjectsWithType reads one typed subject page in a short-lived transaction.
+func (e *engineWorldState) ListObjectsWithType(ctx context.Context, typeID, startAfter string, limit uint32) ([]string, bool, error) {
+	// Resolve this page through the engine's existing read operation.
+	var keys []string
+	var more bool
+	err := e.performOp(ctx, false, func(tx Tx) error {
+		var err error
+		keys, more, err = tx.ListObjectsWithType(ctx, typeID, startAfter, limit)
+		return err
+	})
+	return keys, more, err
+}
+
 // SetGraphQuad sets a quad in the graph store.
 // Subject: must be an existing object IRI: <object-key>
 // Predicate: a predicate string, e.x. IRI: <ref>

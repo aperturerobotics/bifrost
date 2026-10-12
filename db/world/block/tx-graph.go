@@ -107,6 +107,19 @@ func (t *Tx) QueryGraphPath(ctx context.Context, query *world.GraphPathQuery) (*
 	return t.queryGraphPath(ctx, query)
 }
 
+// ListObjectsWithType retains the transaction lock for one typed subject page.
+func (t *Tx) ListObjectsWithType(ctx context.Context, typeID, startAfter string, limit uint32) ([]string, bool, error) {
+	// Retain the transaction's read authority through the page scan.
+	unlock, err := t.rmtx.Lock(ctx, false)
+	if err != nil {
+		return nil, false, err
+	}
+	defer unlock()
+
+	// Read the typed page from the transaction's current World state.
+	return t.state.ListObjectsWithType(ctx, typeID, startAfter, limit)
+}
+
 // SetGraphQuad sets a quad in the graph store.
 func (t *Tx) SetGraphQuad(ctx context.Context, q world.GraphQuad) error {
 	return t.setGraphQuad(ctx, q)

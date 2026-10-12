@@ -4,10 +4,12 @@ import (
 	"context"
 
 	"github.com/aperturerobotics/cayley/graph"
+	cayley_kv "github.com/aperturerobotics/cayley/graph/kv"
 	"github.com/aperturerobotics/cayley/quad"
 	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/tx"
 	"github.com/s4wave/spacewave/db/world"
+	world_types "github.com/s4wave/spacewave/db/world/types"
 )
 
 // graphQuadBatchCollector resolves filters within one underlying transaction.
@@ -294,6 +296,25 @@ func (t *WorldState) LookupGraphQuadsBatch(ctx context.Context, filters []world.
 // QueryGraphPath executes a bounded graph traversal.
 func (t *WorldState) QueryGraphPath(ctx context.Context, query *world.GraphPathQuery) (*world.GraphPathQueryResult, error) {
 	return t.queryGraphPathOnWorld(ctx, query)
+}
+
+// ListObjectsWithType reads one bounded subject page from the existing type index.
+func (t *WorldState) ListObjectsWithType(ctx context.Context, typeID, startAfter string, limit uint32) ([]string, bool, error) {
+	// Retain one storage read scope while resolving and scanning the type index.
+	if t.discarded.Load() {
+		return nil, false, tx.ErrDiscarded
+	}
+	if !t.write && t.store != nil {
+		store, release, err := t.store.BeginReadOperation(ctx)
+		if err != nil {
+			return nil, false, err
+		}
+		defer release()
+		ctx = block.WithReadOperationStore(ctx, store)
+	}
+
+	// Enumerate distinct subjects directly in the reverse index's order.
+	return world_types.ListObjectsWithTypeOnGraph(ctx, t.graphHd.QuadStore.(*cayley_kv.QuadStore), typeID, startAfter, limit)
 }
 
 // SetGraphQuad sets a quad in the graph store.

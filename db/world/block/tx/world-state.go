@@ -440,6 +440,19 @@ func (w *WorldState) QueryGraphPath(ctx context.Context, query *world.GraphPathQ
 	return w.world.QueryGraphPath(ctx, query)
 }
 
+// ListObjectsWithType retains the transaction lock for one typed subject page.
+func (w *WorldState) ListObjectsWithType(ctx context.Context, typeID, startAfter string, limit uint32) ([]string, bool, error) {
+	// Reject a discarded transaction before reading its World.
+	w.mtx.Lock()
+	defer w.mtx.Unlock()
+	if w.discarded {
+		return nil, false, tx.ErrDiscarded
+	}
+
+	// Preserve the underlying World's page and graph-index cursor.
+	return w.world.ListObjectsWithType(ctx, typeID, startAfter, limit)
+}
+
 // SetGraphQuad sets a quad in the graph store.
 func (w *WorldState) SetGraphQuad(ctx context.Context, q world.GraphQuad) error {
 	// Require a writable WorldState before setting a graph quad.

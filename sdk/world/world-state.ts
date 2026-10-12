@@ -196,7 +196,7 @@ export interface IWorldState {
     options?: ListGraphEdgeBucketsOptions,
   ): Promise<ListGraphEdgeBucketsResponse>
 
-  // ListObjectsWithType lists object keys with the given type identifier.
+  /** listObjectsWithType collects every matching key in stable graph-index order. */
   listObjectsWithType(
     typeID: string,
     abortSignal?: AbortSignal,
@@ -609,16 +609,27 @@ export class WorldStateResource extends Resource implements IWorldState {
     return bodies
   }
 
-  // ListObjectsWithType lists object keys with the given type identifier.
+  /** listObjectsWithType collects every matching key in stable graph-index order. */
   public async listObjectsWithType(
     typeID: string,
     abortSignal?: AbortSignal,
   ): Promise<string[]> {
-    const response = await this.service.ListObjectsWithType(
-      { typeId: typeID },
-      abortSignal,
-    )
-    return response.objectKeys ?? []
+    // Walk bounded service pages, resuming from each last subject.
+    const keys: string[] = []
+    let startAfter = ''
+    for (;;) {
+      // Request one typed page and append its distinct subjects.
+      const response = await this.service.ListObjectsWithType(
+        { typeId: typeID, startAfter, limit: 1000 },
+        abortSignal,
+      )
+      const page = response.objectKeys ?? []
+      keys.push(...page)
+
+      // Stop at the end of the type or resume from the last returned key.
+      if (!response.more) return keys
+      startAfter = page[page.length - 1]!
+    }
   }
 
   /** listObjects returns one page of objects under prefix in key order. */

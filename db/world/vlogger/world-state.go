@@ -54,7 +54,7 @@ func graphQuadForLogging(q world.GraphQuad) string {
 // If nil is returned for the error, implies success.
 // If sysErr is set, the error is treated as a transient system error.
 // Must support recursive calls to ApplyWorldOp / ApplyObjectOp.
-// Returns seqno, sysErr, err
+// Returns seqno, sysErr, err.
 func (w *WorldState) ApplyWorldOp(
 	ctx context.Context,
 	op world.Operation,
@@ -186,6 +186,11 @@ func (w *WorldState) DeleteGraphObject(ctx context.Context, value string) (err e
 		)
 	}()
 	return w.WorldState.DeleteGraphObject(ctx, value)
+}
+
+// ListObjectsWithType forwards a bounded typed page to the wrapped World.
+func (w *WorldState) ListObjectsWithType(ctx context.Context, typeID, startAfter string, limit uint32) ([]string, bool, error) {
+	return w.WorldState.ListObjectsWithType(ctx, typeID, startAfter, limit)
 }
 
 // _ is a type assertion

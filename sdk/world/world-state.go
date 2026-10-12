@@ -10,17 +10,7 @@ import (
 	world_types "github.com/s4wave/spacewave/db/world/types"
 )
 
-// WorldState represents the full state read/write interface to the world.
-// WorldState implements all world state operations.
-// Provides:
-// - GetReadOnly() bool
-// - WorldStorage: BuildStorageCursor, AccessWorldState
-// - WorldStateObject: CreateObject, GetObject, IterateObjects, RenameObject, DeleteObject
-// - WorldStateGraph: SetGraphQuad, DeleteGraphQuad, LookupGraphQuads, DeleteGraphObject
-// - WorldStateOp: ApplyWorldOp
-// - WorldWaitSeqno: GetSeqno, WaitSeqno
-//
-// This Go SDK implementation wraps WorldStateResourceService.
+// WorldState implements the World state operations over WorldStateResourceService.
 type WorldState struct {
 	client   *resource_client.Client
 	ref      resource_client.ResourceRef
@@ -366,15 +356,17 @@ func (ws *WorldState) ListGraphEdgeBuckets(ctx context.Context, query *world.Gra
 	return buckets, nil
 }
 
-// ListObjectsWithType lists object keys with the given type identifier.
-func (ws *WorldState) ListObjectsWithType(ctx context.Context, typeID string) ([]string, error) {
+// ListObjectsWithType returns one page of matching keys in graph-index order.
+func (ws *WorldState) ListObjectsWithType(ctx context.Context, typeID, startAfter string, limit uint32) ([]string, bool, error) {
 	resp, err := ws.service.ListObjectsWithType(ctx, &ListObjectsWithTypeRequest{
-		TypeId: typeID,
+		TypeId:     typeID,
+		StartAfter: startAfter,
+		Limit:      limit,
 	})
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
-	return resp.ObjectKeys, nil
+	return resp.GetObjectKeys(), resp.GetMore(), nil
 }
 
 // GetObjectRootRefsBatch returns root references for object keys.

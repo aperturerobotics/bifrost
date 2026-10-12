@@ -696,6 +696,10 @@ func (txs *staleRetryTx) GetObject(ctx context.Context, key string) (world.Objec
 	return &staleRetryObject{key: key, rootRef: ref}, true, nil
 }
 
+func (txs *staleRetryTx) ListObjectsWithType(ctx context.Context, typeID, startAfter string, limit uint32) ([]string, bool, error) {
+	panic("unexpected ListObjectsWithType call")
+}
+
 func (txs *staleRetryTx) IterateObjects(ctx context.Context, prefix string, reversed bool) world.ObjectIterator {
 	panic("unexpected IterateObjects call")
 }

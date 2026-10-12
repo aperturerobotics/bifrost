@@ -1867,7 +1867,7 @@ export const ListGraphEdgeBucketsResponse: MessageType<ListGraphEdgeBucketsRespo
   })
 
 /**
- * ListObjectsWithTypeRequest is the request type for ListObjectsWithType.
+ * ListObjectsWithTypeRequest selects one page of subjects of the type quads.
  *
  * @generated from message s4wave.world.ListObjectsWithTypeRequest
  */
@@ -1878,6 +1878,20 @@ export interface ListObjectsWithTypeRequest {
    * @generated from field: string type_id = 1;
    */
   typeId?: string
+  /**
+   * StartAfter is the last object key returned by the previous page.
+   * Empty starts at the first subject in graph-index order.
+   *
+   * @generated from field: string start_after = 2;
+   */
+  startAfter?: string
+  /**
+   * Limit bounds the number of returned keys and must be non-zero.
+   * The server may return a shorter page and set more.
+   *
+   * @generated from field: uint32 limit = 3;
+   */
+  limit?: number
 }
 
 export const ListObjectsWithTypeRequest: MessageType<ListObjectsWithTypeRequest> =
@@ -1885,21 +1899,32 @@ export const ListObjectsWithTypeRequest: MessageType<ListObjectsWithTypeRequest>
     typeName: 's4wave.world.ListObjectsWithTypeRequest',
     fields: [
       { no: 1, name: 'type_id', kind: 'scalar', T: ScalarType.STRING },
+      { no: 2, name: 'start_after', kind: 'scalar', T: ScalarType.STRING },
+      { no: 3, name: 'limit', kind: 'scalar', T: ScalarType.UINT32 },
     ] satisfies readonly PartialFieldInfo[],
   })
 
 /**
- * ListObjectsWithTypeResponse is the response type for ListObjectsWithType.
+ * ListObjectsWithTypeResponse contains one page in Cayley graph-index order.
+ * On an unchanged World, pages return every matching key exactly once in a
+ * stable order. This order need not be ascending by object key.
  *
  * @generated from message s4wave.world.ListObjectsWithTypeResponse
  */
 export interface ListObjectsWithTypeResponse {
   /**
-   * ObjectKeys is the list of object keys with the given type.
+   * ObjectKeys contains distinct matching subjects in graph-index order.
    *
    * @generated from field: repeated string object_keys = 1;
    */
   objectKeys?: string[]
+  /**
+   * More reports that matching subjects follow the last returned object key.
+   * Pass that key as start_after to read the next page.
+   *
+   * @generated from field: bool more = 2;
+   */
+  more?: boolean
 }
 
 export const ListObjectsWithTypeResponse: MessageType<ListObjectsWithTypeResponse> =
@@ -1913,6 +1938,7 @@ export const ListObjectsWithTypeResponse: MessageType<ListObjectsWithTypeRespons
         T: ScalarType.STRING,
         repeated: true,
       },
+      { no: 2, name: 'more', kind: 'scalar', T: ScalarType.BOOL },
     ] satisfies readonly PartialFieldInfo[],
   })
 
