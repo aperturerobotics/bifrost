@@ -4,14 +4,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/aperturerobotics/starpc/srpc"
 	bldr_manifest "github.com/s4wave/spacewave/bldr/manifest"
 	bldr_manifest_world "github.com/s4wave/spacewave/bldr/manifest/world"
 	"github.com/s4wave/spacewave/core/sobject"
+	space_world "github.com/s4wave/spacewave/core/space/world"
+	space_world_ops "github.com/s4wave/spacewave/core/space/world/ops"
 	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/bucket"
 	"github.com/s4wave/spacewave/db/testbed"
@@ -306,6 +310,89 @@ func TestDeployManifestsRejectsMaskedRevision(t *testing.T) {
 	}
 	if len(edges) != 1 {
 		t.Fatalf("edge count=%d want 1", len(edges))
+	}
+}
+
+// TestDeployManifestsRepinsPinnedInstallation checks that a deploy publishes
+// its artifact as the Space's installation when the settings already pin the
+// plugin, with the earlier pin retained for rollback.
+func TestDeployManifestsRepinsPinnedInstallation(t *testing.T) {
+	// Start a manifest-aware World engine for deployment repinning.
+	ctx := context.Background()
+	tb, eng := newDeployIntegrationEngine(t, ctx)
+	defer tb.Release()
+	defer eng.Close()
+	r := &SpaceResource{le: tb.Logger, space: &deployIntegrationBody{engine: eng, bucketID: tb.BucketId}}
+
+	// Deploy the first build of the plugin to the Space.
+	older, olderData := integrationRef(t, "gizmo-core", "desktop/darwin/arm64", 1, "older")
+	if e := runIntegrationDeploy(t, r, ctx, map[string][]byte{older.GetManifestRef().GetRootRef().MarshalString(): olderData}, integrationRequest(older), nil); e != nil {
+		t.Fatal(e)
+	}
+
+	// Wait for the deployed manifest to publish, then pin it like a Forge
+	// build does.
+	if _, e := eng.Sync(ctx); e != nil {
+		t.Fatal(e)
+	}
+	olderKey := bldr_manifest.NewManifestArtifactKey(older.GetManifestRef())
+	tx, e := eng.NewTransaction(ctx, true)
+	if e != nil {
+		t.Fatal(e)
+	}
+	if changed, e := space_world_ops.InstallSpacePlugin(ctx, tx, "", "gizmo-core", olderKey, time.Now()); e != nil || !changed {
+		tx.Discard()
+		t.Fatalf("initial pin: changed=%v err=%v", changed, e)
+	}
+	if e := tx.Commit(ctx); e != nil {
+		t.Fatal(e)
+	}
+	tx.Discard()
+
+	// Deploy the higher revision for the same platform.
+	newer, newerData := integrationRef(t, "gizmo-core", "desktop/darwin/arm64", 2, "newer")
+	if e := runIntegrationDeploy(t, r, ctx, map[string][]byte{newer.GetManifestRef().GetRootRef().MarshalString(): newerData}, integrationRequest(newer), nil); e != nil {
+		t.Fatal(e)
+	}
+
+	// The deployed artifact leads the installation and the earlier pin
+	// remains as rollback.
+	ws := world.NewEngineWorldState(eng, false)
+	settings, e := space_world.LookupSpaceSettingsBody(ctx, ws)
+	if e != nil {
+		t.Fatal(e)
+	}
+	keys := settings.GetPluginInstallations()["gizmo-core"].GetManifestKeys()
+	newerKey := bldr_manifest.NewManifestArtifactKey(newer.GetManifestRef())
+	if !slices.Equal(keys, []string{newerKey, olderKey}) {
+		t.Fatalf("installed artifacts %v, want [%s %s]", keys, newerKey, olderKey)
+	}
+}
+
+// TestDeployManifestsLeavesUnpinnedSpaceAlone checks that a deploy into a
+// Space with no pin keeps creating no installation entry.
+func TestDeployManifestsLeavesUnpinnedSpaceAlone(t *testing.T) {
+	// Start a manifest-aware World engine for an unpinned deployment.
+	ctx := context.Background()
+	tb, eng := newDeployIntegrationEngine(t, ctx)
+	defer tb.Release()
+	defer eng.Close()
+	r := &SpaceResource{le: tb.Logger, space: &deployIntegrationBody{engine: eng, bucketID: tb.BucketId}}
+
+	// Deploy one build into the Space.
+	ref, data := integrationRef(t, "gizmo-core", "js", 1, "js")
+	if e := runIntegrationDeploy(t, r, ctx, map[string][]byte{ref.GetManifestRef().GetRootRef().MarshalString(): data}, integrationRequest(ref), nil); e != nil {
+		t.Fatal(e)
+	}
+
+	// Verify the deployment published the manifest and no installation.
+	ws := world.NewEngineWorldState(eng, false)
+	settings, e := space_world.LookupSpaceSettingsBody(ctx, ws)
+	if e != nil {
+		t.Fatal(e)
+	}
+	if settings.GetPluginInstallations()["gizmo-core"].GetManifestKeys() != nil {
+		t.Fatalf("unpinned deploy created an installation: %v", settings.GetPluginInstallations())
 	}
 }
 
