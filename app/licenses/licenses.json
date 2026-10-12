@@ -814,7 +814,7 @@
     },
     {
       "name": "github.com/aperturerobotics/cli",
-      "version": "v1.1.1-0.20261004095549-d4875ce31004",
+      "version": "v1.1.1-0.20261008170756-47089de94fb3",
       "spdx": "MIT",
       "source": "go",
       "repo": "https://github.com/aperturerobotics/cli",
@@ -1639,7 +1639,7 @@
     },
     {
       "name": "golang.org/x/crypto",
-      "version": "v0.57.0",
+      "version": "v0.58.0",
       "spdx": "BSD-3-Clause",
       "source": "go",
       "repo": "https://github.com/golang/crypto",
@@ -1655,7 +1655,7 @@
     },
     {
       "name": "golang.org/x/mod",
-      "version": "v0.41.0",
+      "version": "v0.42.0",
       "spdx": "BSD-3-Clause",
       "source": "go",
       "repo": "https://github.com/golang/mod",
@@ -1663,7 +1663,7 @@
     },
     {
       "name": "golang.org/x/net",
-      "version": "v0.59.0",
+      "version": "v0.61.0",
       "spdx": "BSD-3-Clause",
       "source": "go",
       "repo": "https://github.com/golang/net",
@@ -1671,7 +1671,7 @@
     },
     {
       "name": "golang.org/x/sync",
-      "version": "v0.23.0",
+      "version": "v0.24.0",
       "spdx": "BSD-3-Clause",
       "source": "go",
       "repo": "https://github.com/golang/sync",
@@ -1679,7 +1679,7 @@
     },
     {
       "name": "golang.org/x/sys",
-      "version": "v0.48.0",
+      "version": "v0.49.0",
       "spdx": "BSD-3-Clause",
       "source": "go",
       "repo": "https://github.com/golang/sys",
@@ -1687,7 +1687,7 @@
     },
     {
       "name": "golang.org/x/term",
-      "version": "v0.46.0",
+      "version": "v0.47.0",
       "spdx": "BSD-3-Clause",
       "source": "go",
       "repo": "https://github.com/golang/term",
@@ -1695,7 +1695,7 @@
     },
     {
       "name": "golang.org/x/text",
-      "version": "v0.42.0",
+      "version": "v0.43.0",
       "spdx": "BSD-3-Clause",
       "source": "go",
       "repo": "https://github.com/golang/text",
@@ -1711,7 +1711,7 @@
     },
     {
       "name": "golang.org/x/tools",
-      "version": "v0.51.0",
+      "version": "v0.52.0",
       "spdx": "BSD-3-Clause",
       "source": "go",
       "repo": "https://github.com/golang/tools",
