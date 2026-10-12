@@ -10,6 +10,7 @@ import (
 	"runtime/debug"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/aperturerobotics/util/broadcast"
@@ -30,6 +31,9 @@ import (
 
 // dataChannelID is the channel ID used in webRTC for Quic-Over-WebRTC
 var dataChannelID = "bifrost-quic"
+
+// handshakeTimeout bounds the QUIC handshake over a ready data channel.
+const handshakeTimeout = 30 * time.Second
 
 // sessionTracker wraps an ongoing connection with a peer.
 type sessionTracker struct {
@@ -283,12 +287,23 @@ func (s *sessionTracker) executeLink(
 	// 4. B -> A: ICE candidate
 	// 5. B -> A: Dial quic (mTLS)
 	// 6. A -> B: Answer dial quic
+	//
+	// Bound the handshake. The listener waits in Accept until a handshake
+	// completes, and a dial whose packet writes block on the data channel
+	// never reaches its handshake idle timeout, so either side can otherwise
+	// wait forever and hold the tracker that every later link to the peer
+	// reuses. Closing the data channel at the deadline unblocks both.
+	hsCtx, hsCancel := context.WithTimeout(ctx, handshakeTimeout)
+	defer hsCancel()
+	stopClose := context.AfterFunc(hsCtx, func() { _ = dcRwc.Close() })
+
+	// Listen as the offerer or dial as the answerer.
 	var sess *quic.Conn
 	var err error
 	s.le.WithField("quic-role", role).Info("webrtc quic phase: handshake starting")
 	if s.offerer {
 		sess, err = transport_quic.ListenSession(
-			ctx,
+			hsCtx,
 			s.le,
 			linkOpts,
 			pc,
@@ -297,7 +312,7 @@ func (s *sessionTracker) executeLink(
 		)
 	} else {
 		sess, _, err = transport_quic.DialSession(
-			ctx,
+			hsCtx,
 			s.le,
 			linkOpts,
 			pc,
@@ -305,6 +320,10 @@ func (s *sessionTracker) executeLink(
 			remoteAddr,
 			s.peerID,
 		)
+	}
+	if !stopClose() && err == nil {
+		_ = sess.CloseWithError(0, "handshake ended")
+		err = context.Cause(hsCtx)
 	}
 	if err != nil {
 		s.le.WithFields(logrus.Fields{
