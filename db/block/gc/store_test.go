@@ -1034,9 +1034,8 @@ func TestGCStoreOps_PutBlockBatch_NewBlockAddsUnrefEdge(t *testing.T) {
 
 // buildTreeEntry creates a batch entry for data that references children.
 func buildTreeEntry(t *testing.T, data string, children ...*block.PutBatchEntry) *block.PutBatchEntry {
-	t.Helper()
-
 	// Build the entry's ref from its bytes.
+	t.Helper()
 	ref, err := block.BuildBlockRef([]byte(data), nil)
 	if err != nil {
 		t.Fatal(err.Error())
@@ -1163,10 +1162,62 @@ func TestGCStoreOps_ParentIRI_SweepKeepsMixedNewAndReputWrites(t *testing.T) {
 	}
 }
 
+// TestGCStoreOps_ParentIRI_ReputRecordsLostChildEdges tests that writing a block
+// stored without tracking records the edges the writer holds for it, so the
+// sweep keeps a child that another parent held until that parent was released.
+func TestGCStoreOps_ParentIRI_ReputRecordsLostChildEdges(t *testing.T) {
+	// Root the bucket.
+	parent := BucketIRI("lost-bucket")
+	env := newGCTestEnvWithParent(t, parent)
+	if err := env.refGraph.AddRef(env.ctx, NodeGCRoot, parent); err != nil {
+		t.Fatal(err.Error())
+	}
+
+	// An untracked writer stores a block that references the leaf.
+	leaf := buildTreeEntry(t, "lost-leaf")
+	lost := buildTreeEntry(t, "lost-parent", leaf)
+	other := buildTreeEntry(t, "lost-other", leaf)
+	if _, err := env.rawStore.PutBlockBatch(env.ctx, []*block.PutBatchEntry{leaf, lost}); err != nil {
+		t.Fatal(err.Error())
+	}
+
+	// The bucket stores the leaf again and a second parent of it, which adopts it.
+	if _, err := env.gcStore.PutBlockBatch(env.ctx, []*block.PutBatchEntry{leaf, other}); err != nil {
+		t.Fatal(err.Error())
+	}
+	env.flush(t)
+
+	// The bucket stores the first parent again and then releases the second.
+	if _, err := env.gcStore.PutBlockBatch(env.ctx, []*block.PutBatchEntry{lost}); err != nil {
+		t.Fatal(err.Error())
+	}
+	if err := env.gcStore.RmBlock(env.ctx, other.Ref); err != nil {
+		t.Fatal(err.Error())
+	}
+	env.flush(t)
+
+	// The sweep removes the second parent and keeps the leaf the first holds.
+	collector := NewCollector(env.refGraph, env.rawStore, nil)
+	for range 2 {
+		if _, err := collector.Collect(env.ctx); err != nil {
+			t.Fatal(err.Error())
+		}
+	}
+	if env.blockExists(t, other.Ref) {
+		t.Fatal("released block was not swept")
+	}
+	for _, entry := range []*block.PutBatchEntry{leaf, lost} {
+		if !env.blockExists(t, entry.Ref) {
+			t.Fatalf("reachable block %q was swept", entry.Data)
+		}
+	}
+}
+
 type recordingRefGraph struct {
 	adds       []RefEdge
 	removes    []RefEdge
 	applyCount int
+	outgoing   map[string][]string
 }
 
 func (r *recordingRefGraph) AddRef(context.Context, string, string) error {
@@ -1178,9 +1229,18 @@ func (r *recordingRefGraph) RemoveRef(context.Context, string, string) error {
 }
 
 func (r *recordingRefGraph) ApplyRefBatch(_ context.Context, adds, removes []RefEdge) error {
+	// Keep the latest batch.
 	r.applyCount++
 	r.adds = append([]RefEdge(nil), adds...)
 	r.removes = append([]RefEdge(nil), removes...)
+
+	// Keep every outgoing edge added so far.
+	if r.outgoing == nil {
+		r.outgoing = make(map[string][]string)
+	}
+	for _, edge := range adds {
+		r.outgoing[edge.Subject] = append(r.outgoing[edge.Subject], edge.Object)
+	}
 	return nil
 }
 
@@ -1256,8 +1316,8 @@ func (r *recordingRefGraph) HasIncomingRefsExcluding(context.Context, string, ..
 	return false, nil
 }
 
-func (r *recordingRefGraph) GetOutgoingRefs(context.Context, string) ([]string, error) {
-	return nil, nil
+func (r *recordingRefGraph) GetOutgoingRefs(_ context.Context, node string) ([]string, error) {
+	return r.outgoing[node], nil
 }
 
 func (r *recordingRefGraph) GetIncomingRefs(context.Context, string) ([]string, error) {
