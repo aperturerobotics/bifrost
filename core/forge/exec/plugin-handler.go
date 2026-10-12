@@ -283,26 +283,14 @@ func defaultPluginExecClientLoader(
 		return nil, nil, errors.New("plugin exec bridge requires bus")
 	}
 
-	// Use the loaded plugin or wait for its client through the plugin directive.
-	running, _, initialRef, err := bldr_plugin.ExLoadPlugin(ctx, b, true, pluginID, nil)
-	if err != nil {
+	// Record the wait before loading: a host awaiting its manifest or initial
+	// capability registration stays busy and may never report idle.
+	if err := onWaiting(); err != nil {
 		return nil, nil, err
 	}
-	var client srpc.Client
-	var ref directive.Reference
-	if running != nil {
-		client = running.GetRpcClient()
-		ref = initialRef
-	}
-	if running == nil {
-		if initialRef != nil {
-			initialRef.Release()
-		}
-		if err := onWaiting(); err != nil {
-			return nil, nil, err
-		}
-		client, ref, err = bldr_plugin.ExPluginLoadWaitClient(ctx, b, pluginID, nil)
-	}
+
+	// Retain plugin demand until the host supplies its ready RPC client.
+	client, ref, err := bldr_plugin.ExPluginLoadWaitClient(ctx, b, pluginID, nil)
 	if err != nil || client == nil {
 		if ref != nil {
 			ref.Release()
@@ -333,6 +321,7 @@ func newPluginExecHandler(b bus.Bus, load pluginExecClientLoader) HandlerFactory
 		inputs forge_target.InputMap,
 		configData []byte,
 	) (Handler, error) {
+		// Decode and validate the plugin execution configuration.
 		conf := &PluginExecConfig{}
 		if err := conf.UnmarshalVT(configData); err != nil {
 			return nil, errors.Wrap(err, "parse plugin exec config")
@@ -340,6 +329,8 @@ func newPluginExecHandler(b bus.Bus, load pluginExecClientLoader) HandlerFactory
 		if err := conf.Validate(); err != nil {
 			return nil, err
 		}
+
+		// Bind the plugin loader to the Execution handle and its inputs.
 		return &pluginExecHandler{
 			b:      b,
 			le:     le,
