@@ -22,7 +22,7 @@ const h = vi.hoisted(() => {
   return {
     open: vi.fn<(host: HTMLElement) => void>(),
     focus: vi.fn<() => void>(),
-    write: vi.fn<(data: string) => void>(),
+    write: vi.fn<(data: string | Uint8Array) => void>(),
     writeln: vi.fn<(data: string) => void>(),
     dispose: vi.fn<() => void>(),
     inputDispose: vi.fn<() => void>(),
@@ -91,7 +91,7 @@ vi.mock('@xterm/xterm', () => ({
         },
       }
     }
-    write(data: string) {
+    write(data: string | Uint8Array) {
       h.write(data)
     }
     writeln(data: string) {
@@ -242,7 +242,9 @@ describe('TerminalPane', () => {
     ])
 
     await vi.waitFor(() =>
-      expect(h.write).toHaveBeenCalledWith('deploy complete\n'),
+      expect(h.write).toHaveBeenCalledWith(
+        terminalEncoder.encode('deploy complete\n'),
+      ),
     )
     unmount()
   })

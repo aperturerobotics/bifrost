@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 
 import type { ObjectViewerComponentProps } from '@s4wave/web/object/object.js'
 import { getObjectKey } from '@s4wave/web/object/object.js'
@@ -13,7 +13,6 @@ import { LoadingCard } from '@s4wave/web/ui/loading/LoadingCard.js'
 import type { SpaceContents } from '@s4wave/sdk/space/contents.js'
 import { SetV86StateOp, VmState, VmV86 } from '@s4wave/sdk/vm/v86.pb.js'
 import { keyToIRI, iriToKey } from '@s4wave/sdk/world/graph-utils.js'
-import type { IObjectState } from '@s4wave/sdk/world/object-state.js'
 import { listObjectsWithType } from '@s4wave/sdk/world/types/types.js'
 import type { IWorldState } from '@s4wave/sdk/world/world-state.js'
 import { UnixFSTypeID } from '@s4wave/sdk/unixfs/type.js'
@@ -23,8 +22,10 @@ import {
   VmV86TypeID,
 } from '@s4wave/sdk/vm/vmv86.js'
 
-import { VmErrorBanner } from './VmErrorBanner.js'
-import { VmHeader } from './VmHeader.js'
+import { VmErrorBanner } from '@s4wave/app/vm/VmErrorBanner.js'
+import { VmHeader } from '@s4wave/app/vm/VmHeader.js'
+import { useVmRequest, watchVmObject } from '@s4wave/app/vm/vm-object.js'
+
 import { VmMachineCard, type OverrideSlot } from './VmMachineCard.js'
 import { VmRunningView } from './VmRunningView.js'
 
@@ -45,37 +46,6 @@ interface VmEdges {
   // readable metadata.
   imageLabel: string
   overrides: Record<OverrideSlot, string>
-}
-
-// readVmV86 reads the VmV86 block of an object, or null when it has none.
-async function readVmV86(
-  objectState: IObjectState,
-  signal: AbortSignal,
-): Promise<VmV86 | null> {
-  using cursor = await objectState.accessWorldState(undefined, signal)
-  const blockResp = await cursor.getBlock({}, signal)
-  if (!blockResp.found || !blockResp.data) return null
-  return VmV86.fromBinary(blockResp.data)
-}
-
-// watchVmV86 yields the VmV86 at objectKey and again at each new revision.
-async function* watchVmV86(
-  world: IWorldState,
-  objectKey: string,
-  signal: AbortSignal,
-): AsyncIterable<VmV86> {
-  if (!objectKey) return
-  const objectState = await world.getObject(objectKey, signal)
-  if (!objectState) return
-  using object = objectState
-  let revision = (await object.getRootRef(signal)).rev ?? 0n
-  for (;;) {
-    const vm = await readVmV86(object, signal)
-    if (!vm) return
-    yield vm
-    revision =
-      (await object.waitRev(revision + 1n, false, signal)).rev ?? revision
-  }
 }
 
 // readVmEdges reads the image and asset override edges of the VM at
@@ -135,7 +105,7 @@ async function* watchVmEdges(
 // to approve the binding.
 async function requestVmState(
   world: IWorldState,
-  contents: SpaceContents | null,
+  contents: SpaceContents | null | undefined,
   objectKey: string,
   target: VmState,
 ): Promise<void> {
@@ -176,7 +146,7 @@ function useVmV86(
     worldState,
     useCallback(
       (world: IWorldState, signal: AbortSignal) =>
-        watchVmV86(world, objectKey, signal),
+        watchVmObject(world, objectKey, (b) => VmV86.fromBinary(b), signal),
       [objectKey],
     ),
     [],
@@ -217,19 +187,6 @@ function useVmV86(
   }
 }
 
-// useRequest runs one action at a time from a view and keeps the failure of
-// the last one until the next starts.
-function useRequest(): [string, (action: () => Promise<void>) => void] {
-  const [error, setError] = useState('')
-  const request = useCallback((action: () => Promise<void>) => {
-    setError('')
-    action().catch((err: unknown) => {
-      setError(err instanceof Error ? err.message : String(err))
-    })
-  }, [])
-  return [error, request]
-}
-
 // VmV86Viewer displays a V86 virtual machine. A stopped or failed VM shows
 // its machine card with Start or Reset; a running VM shows its screen and
 // serial console.
@@ -243,7 +200,7 @@ export default function VmV86Viewer({
   const contents = useResourceValue(spaceContents ?? contextContentsResource)
   const world = worldState.value
   const vm = useVmV86(worldState, objectKey)
-  const [operationError, request] = useRequest()
+  const [operationError, request] = useVmRequest()
 
   // setVmState requests a target state from the view.
   const setVmState = (target: VmState) => {

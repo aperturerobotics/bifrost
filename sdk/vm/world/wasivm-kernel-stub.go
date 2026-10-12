@@ -20,5 +20,5 @@ func startWasiVmKernel(
 	config *s4wave_vm.WasiVmConfig,
 	exited func(code int32, err error),
 ) (*wasiVmConsole, error) {
-	return nil, errors.New("this build runs WasiVMs only in the native daemon")
+	return nil, errors.New("this runtime cannot run WebAssembly VMs yet; start the VM from the desktop app or the spacewave daemon")
 }

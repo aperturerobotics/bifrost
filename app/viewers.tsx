@@ -392,6 +392,30 @@ const productObjectViewers: ObjectViewerComponent[] = [
     ),
   },
   {
+    componentID: 'spacewave.wizard.wasivm',
+    typeID: 'wizard/vm/wasivm',
+    name: 'WebAssembly VM Wizard',
+    category: 'VM',
+    requiresObjectState: false,
+    component: lazy(() =>
+      import('@s4wave/app/wizard/VmWasiWizardViewer.js').then((module) => ({
+        default: module.VmWasiWizardViewer,
+      })),
+    ),
+  },
+  {
+    componentID: 'spacewave.vm.wasivm',
+    typeID: 'vm/wasivm',
+    name: 'WebAssembly VM',
+    category: 'VM',
+    requiresObjectState: false,
+    component: lazy(() =>
+      import('@s4wave/app/vm/VmWasiViewer.js').then((module) => ({
+        default: module.VmWasiViewer,
+      })),
+    ),
+  },
+  {
     componentID: 'spacewave.wizard.generic',
     typeID: 'wizard/*',
     name: 'Wizard',

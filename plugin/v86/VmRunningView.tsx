@@ -1,12 +1,13 @@
 import { useRef, useState } from 'react'
 
+import { VmErrorBanner } from '@s4wave/app/vm/VmErrorBanner.js'
+import { VmHeader } from '@s4wave/app/vm/VmHeader.js'
 import { VmState } from '@s4wave/sdk/vm/v86.pb.js'
 
 import { postScreenInput } from './screen-channel.js'
-import { VmErrorBanner } from './VmErrorBanner.js'
-import { VmHeader, type VmView } from './VmHeader.js'
 import { VmScreen } from './VmScreen.js'
 import { VmSerialConsole } from './VmSerialConsole.js'
+import { VmV86Controls, type VmView } from './VmV86Controls.js'
 
 // VmRunningViewProps describes a VM that is running or about to.
 export interface VmRunningViewProps {
@@ -36,21 +37,21 @@ export function VmRunningView({
 
   return (
     <>
-      <VmHeader
-        name={name}
-        state={state}
-        controls={{
-          view,
-          onViewChange: setView,
-          stopDisabled: stopRequested || state === VmState.VmState_STOPPING,
-          onStop,
-          onCtrlAltDel: () =>
-            postScreenInput(objectKey, { kind: 'ctrl-alt-del' }),
+      <VmHeader name={name} state={state}>
+        <VmV86Controls
+          view={view}
+          onViewChange={setView}
+          stopDisabled={stopRequested || state === VmState.VmState_STOPPING}
+          onStop={onStop}
+          onCtrlAltDel={() =>
+            postScreenInput(objectKey, { kind: 'ctrl-alt-del' })
+          }
           // The browser may refuse fullscreen; the panel then stays put.
-          onFullscreen: () =>
-            void panelRef.current?.requestFullscreen().catch(() => undefined),
-        }}
-      />
+          onFullscreen={() =>
+            void panelRef.current?.requestFullscreen().catch(() => undefined)
+          }
+        />
+      </VmHeader>
       {operationError && (
         <div className="shrink-0 p-3">
           <VmErrorBanner title="Operation error" message={operationError} />

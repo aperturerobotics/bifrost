@@ -24,8 +24,6 @@ import { resolveTerminalTheme } from './terminalTheme.js'
 const terminalEncoder = new TextEncoder()
 const maxQueuedTerminalFrames = 256
 
-const terminalDecoder = new TextDecoder()
-
 export type TerminalPaneConnector = (
   frames: MessageStream<TerminalFrame>,
   signal: AbortSignal,
@@ -41,7 +39,11 @@ export interface TerminalPaneProps {
   renderTrustChallenge?: TerminalPaneTrustChallengeRenderer
   onRetry?: () => void
   onBackToSettings?: () => void
+  // describeFailure turns a stream error into the detail the failure card
+  // shows. It defaults to safeTerminalFailureDetail.
+  describeFailure?: (rawError?: string) => string
 }
+
 type TerminalPaneStatus = TerminalStatus | { kind: 'ready' }
 
 interface TerminalFrameQueue {
@@ -64,6 +66,7 @@ export function TerminalPane({
   renderTrustChallenge,
   onRetry,
   onBackToSettings,
+  describeFailure = safeTerminalFailureDetail,
 }: TerminalPaneProps) {
   const terminalHostRef = useRef<HTMLDivElement | null>(null)
   const terminalQueueRef = useRef<TerminalFrameQueue | null>(null)
@@ -140,6 +143,7 @@ export function TerminalPane({
         term,
         renderAbort.signal,
         setTrustChallenge,
+        describeFailure,
         {
           onOutput: () => setStatus({ kind: 'ready' }),
           onFailure: (detail) => setStatus({ kind: 'failed', detail }),
@@ -175,7 +179,7 @@ export function TerminalPane({
       cancelled = true
       void stopAttempt()
     }
-  }, [connectTerminal, connectionAttempt])
+  }, [connectTerminal, connectionAttempt, describeFailure])
 
   const respondToSshTrust = useCallback((accepted: boolean) => {
     const queue = terminalQueueRef.current
@@ -252,6 +256,7 @@ async function readTerminalFrames(
   term: XTerm,
   signal: AbortSignal,
   onSshTrustChallenge: (frame: TerminalFrame | null) => void,
+  describeFailure: (rawError?: string) => string,
   handlers: TerminalFrameStateHandlers,
 ) {
   let receivedOutput = false
@@ -265,9 +270,10 @@ async function readTerminalFrames(
     for await (const frame of frames) {
       switch (frame.kind) {
         case TerminalFrameKind.OUTPUT: {
+          // xterm decodes the bytes itself, so a character split across
+          // frames is kept whole.
           if (!signal.aborted && frame.data) {
-            const output = terminalDecoder.decode(frame.data)
-            term.write(output)
+            term.write(frame.data)
             if (frame.data.length > 0) markOutput()
           }
           break
@@ -281,7 +287,7 @@ async function readTerminalFrames(
         case TerminalFrameKind.ERROR:
           onSshTrustChallenge(null)
           if (!signal.aborted) {
-            handlers.onFailure(safeTerminalFailureDetail(frame.error))
+            handlers.onFailure(describeFailure(frame.error))
           }
           return
         case TerminalFrameKind.EXIT:
@@ -293,11 +299,11 @@ async function readTerminalFrames(
       }
     }
     if (!signal.aborted && !receivedOutput) {
-      handlers.onFailure(safeTerminalFailureDetail())
+      handlers.onFailure(describeFailure())
     }
   } catch (error) {
     if (!signal.aborted) {
-      handlers.onFailure(safeTerminalFailureDetail(errorMessage(error)))
+      handlers.onFailure(describeFailure(errorMessage(error)))
     }
   }
 }

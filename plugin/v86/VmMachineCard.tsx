@@ -5,7 +5,7 @@ import { Button } from '@s4wave/web/ui/button.js'
 import { CollapsibleSection } from '@s4wave/web/ui/CollapsibleSection.js'
 import { VmState, type VmMount } from '@s4wave/sdk/vm/v86.pb.js'
 
-import { VmErrorBanner } from './VmErrorBanner.js'
+import { VmErrorBanner } from '@s4wave/app/vm/VmErrorBanner.js'
 
 // OverrideSlot is a boot asset a VM may take from a UnixFS object instead
 // of its V86Image.
