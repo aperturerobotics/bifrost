@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   detectV86RuntimeEnvironment,
-  getV86RunnerContract,
   startBrowserV86Runtime,
   type V86BootAssets,
 } from './browser-runner.js'
@@ -66,7 +65,7 @@ function bootAssets(): V86BootAssets {
   }
 }
 
-describe('browser V86 runner contract', () => {
+describe('browser V86 runner', () => {
   afterEach(() => {
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
@@ -79,30 +78,16 @@ describe('browser V86 runner contract', () => {
     h.instances.length = 0
   })
 
-  it('describes headless worker ownership without requiring document at import time', () => {
+  it('detects a worker without requiring document at import time', () => {
     const env = detectV86RuntimeEnvironment({
       BroadcastChannel: FakeBroadcastChannel,
       self: {},
     } as never)
-    const contract = getV86RunnerContract(env)
 
-    expect(env).toEqual(
-      expect.objectContaining({
-        executionOwner: 'worker',
-        hasDocument: false,
-        hasBroadcastChannel: true,
-      }),
-    )
-    expect(contract).toEqual({
-      backendExecution: 'worker',
-      displayOwner: 'viewer',
-      filesystemBridge: 'v86fs-adapter',
-      screenBridge: 'headless',
-      terminalBridge: 'BroadcastChannel',
-    })
+    expect(env).toEqual({ executionOwner: 'worker', hasBroadcastChannel: true })
   })
 
-  it('starts V86 headless and owns the serial BroadcastChannel bridge', async () => {
+  it('starts V86 and owns the serial and screen BroadcastChannel bridges', async () => {
     vi.stubGlobal('BroadcastChannel', FakeBroadcastChannel)
     const adapter = { tag: 'v86fs' }
     const attachV86fsNotifier = vi.fn()
@@ -127,6 +112,7 @@ describe('browser V86 runner contract', () => {
         vga_memory_size: 4 * 1024 * 1024,
         cmdline:
           'rw init=/sbin/init root=v86fs rootfstype=v86fs rootflags= console=ttyS0 quiet',
+        screen: { adapter: expect.any(Object) },
         disable_keyboard: true,
         disable_mouse: true,
         disable_speaker: true,
@@ -152,9 +138,12 @@ describe('browser V86 runner contract', () => {
     channel?.onmessage?.({ data: { dir: 'in', text: 'help\n' } })
     expect(h.instances[0]?.serial0_send).toHaveBeenCalledWith('help\n')
 
+    expect(h.broadcastChannels[1]?.name).toBe('v86-screen-vm/v86/test')
+
     runtime.stop()
     runtime.stop()
     expect(channel?.close).toHaveBeenCalledTimes(1)
+    expect(h.broadcastChannels[1]?.close).toHaveBeenCalledTimes(1)
     expect(h.instances[0]?.stop).toHaveBeenCalledTimes(1)
     expect(h.instances[0]?.destroy).toHaveBeenCalledTimes(1)
   })

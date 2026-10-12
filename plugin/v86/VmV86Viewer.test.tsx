@@ -61,6 +61,12 @@ vi.mock('@xterm/addon-fit', () => ({
   },
 }))
 
+vi.mock('@aptre/v86/screen', () => ({
+  ScreenAdapter: class {
+    destroy = vi.fn()
+  },
+}))
+
 vi.mock('@s4wave/sdk/world/types/types.js', () => ({
   listObjectsWithType: vi.fn(() => Promise.resolve([])),
 }))
@@ -119,6 +125,13 @@ describe('VmV86Viewer', () => {
         }
         postMessage = vi.fn()
         close = vi.fn()
+      },
+    )
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        observe = vi.fn()
+        disconnect = vi.fn()
       },
     )
   })
@@ -244,6 +257,7 @@ describe('VmV86Viewer', () => {
       mockContents.setProcessBinding.mock.invocationCallOrder[0],
     ).toBeLessThan(applyWorldOp.mock.invocationCallOrder[0] ?? 0)
   })
+
   it('renders start operation errors without changing observed state', async () => {
     const { world, applyWorldOp } = buildWorld(
       VmV86.create({
@@ -273,7 +287,7 @@ describe('VmV86Viewer', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Start' }))
     expect(await screen.findByText('Operation error')).toBeDefined()
     expect(screen.getByText('state request failed')).toBeDefined()
-    expect(screen.getAllByText('stopped')).not.toHaveLength(0)
+    expect(screen.getAllByText('Stopped')).not.toHaveLength(0)
   })
 
   it('keeps start unavailable until process controls are ready', async () => {

@@ -1,8 +1,13 @@
 import type { V86Config } from '@s4wave/sdk/vm/v86.pb.js'
 import type { V86fsAdapter, V86fsNotifier } from './v86fs-bridge.js'
+import {
+  ScreenRelay,
+  v86ScreenChannelName,
+  type ScreenEmulator,
+} from './screen-channel.js'
 import { v86SerialChannelName, type SerialFrame } from './serial-channel.js'
 
-type V86Emulator = {
+type V86Emulator = ScreenEmulator & {
   add_listener(
     event: 'serial0-output-byte',
     callback: (data: number) => void,
@@ -28,21 +33,12 @@ export type V86BootAssets = {
   kernel: Uint8Array
 }
 
+// V86RuntimeEnvironment describes the context the runner executes in. Only a
+// worker takes keyboard input, because in a document v86 would read every
+// key pressed on the page.
 export type V86RuntimeEnvironment = {
   executionOwner: 'main-document' | 'worker' | 'unknown'
-  hasDocument: boolean
-  hasWindow: boolean
-  hasSelf: boolean
   hasBroadcastChannel: boolean
-  hasOffscreenCanvas: boolean
-}
-
-export type V86RunnerContract = {
-  backendExecution: V86RuntimeEnvironment['executionOwner']
-  displayOwner: 'viewer'
-  filesystemBridge: 'v86fs-adapter'
-  screenBridge: 'headless'
-  terminalBridge: 'BroadcastChannel'
 }
 
 export type BrowserV86Runtime = {
@@ -83,48 +79,35 @@ function defaultV86ModuleLoader(): Promise<V86Module> {
   return import('@aptre/v86')
 }
 
+// detectV86RuntimeEnvironment inspects globals for the runner's context.
 export function detectV86RuntimeEnvironment(
   globals: typeof globalThis = globalThis,
 ): V86RuntimeEnvironment {
   const values = globals as Record<string, unknown>
-  const hasDocument = typeof values.document !== 'undefined'
-  const hasWindow = typeof values.window !== 'undefined'
+  const hasDocument =
+    typeof values.document !== 'undefined' &&
+    typeof values.window !== 'undefined'
   const hasSelf = typeof values.self !== 'undefined'
-  const executionOwner =
-    hasDocument && hasWindow ? 'main-document' : hasSelf ? 'worker' : 'unknown'
-
   return {
-    executionOwner,
-    hasDocument,
-    hasWindow,
-    hasSelf,
+    executionOwner: hasDocument
+      ? 'main-document'
+      : hasSelf
+        ? 'worker'
+        : 'unknown',
     hasBroadcastChannel: typeof values.BroadcastChannel !== 'undefined',
-    hasOffscreenCanvas: typeof values.OffscreenCanvas !== 'undefined',
-  }
-}
-
-export function getV86RunnerContract(
-  env: V86RuntimeEnvironment = detectV86RuntimeEnvironment(),
-): V86RunnerContract {
-  return {
-    backendExecution: env.executionOwner,
-    displayOwner: 'viewer',
-    filesystemBridge: 'v86fs-adapter',
-    screenBridge: 'headless',
-    terminalBridge: 'BroadcastChannel',
   }
 }
 
 function assertV86RuntimeEnvironment(env: V86RuntimeEnvironment): void {
   if (!env.hasBroadcastChannel) {
     throw new Error(
-      'spacewave-v86 browser runner requires BroadcastChannel for the viewer serial bridge',
+      'spacewave-v86 browser runner requires BroadcastChannel for the viewer bridge',
     )
   }
 }
 
 async function loadV86Module(
-  contract: V86RunnerContract,
+  env: V86RuntimeEnvironment,
   loadV86Module: V86ModuleLoader,
 ): Promise<V86Module> {
   try {
@@ -133,7 +116,7 @@ async function loadV86Module(
     const message = err instanceof Error ? err.message : String(err)
     throw new Error(
       'failed to import @aptre/v86 for ' +
-        contract.backendExecution +
+        env.executionOwner +
         ' backend; provide a worker-safe V86 module or move DOM-dependent boot into a main-document bridge: ' +
         message,
       { cause: err },
@@ -182,8 +165,7 @@ export async function startBrowserV86Runtime(
 
   const env = detectV86RuntimeEnvironment()
   assertV86RuntimeEnvironment(env)
-  const contract = getV86RunnerContract(env)
-  const { V86 } = await loadV86Module(contract, loadModule)
+  const { V86 } = await loadV86Module(env, loadModule)
 
   const guestMemoryBytes =
     (options.config?.memoryMb || defaultGuestMemoryMb) * mib
@@ -194,6 +176,10 @@ export async function startBrowserV86Runtime(
 
   const serialChannelName = v86SerialChannelName(options.objectKey)
   const serialChannel = new BroadcastChannel(serialChannelName)
+  const screenChannel = new BroadcastChannel(
+    v86ScreenChannelName(options.objectKey),
+  )
+  const screen = new ScreenRelay(screenChannel)
   let stopped = false
   let emulator: V86Emulator | undefined
 
@@ -253,12 +239,14 @@ export async function startBrowserV86Runtime(
       cmdline,
       virtio_v86fs: true,
       virtio_v86fs_adapter: options.v86fsAdapter,
-      disable_keyboard: true,
+      screen: { adapter: screen },
+      disable_keyboard: env.executionOwner !== 'worker',
       disable_mouse: true,
       disable_speaker: true,
       autostart: true,
     })
 
+    screen.attach(emulator)
     emulator.add_listener('serial0-output-byte', (byte: number) => {
       if (serialBatch.length === 0) queueMicrotask(flushSerialBatch)
       serialBatch.push(byte)
@@ -285,6 +273,7 @@ export async function startBrowserV86Runtime(
         stopped = true
         settleReady()
         serialChannel.close()
+        screenChannel.close()
         emulator.stop()
         emulator.destroy()
       },
@@ -292,6 +281,7 @@ export async function startBrowserV86Runtime(
   } catch (err) {
     settleReady(err instanceof Error ? err : new Error(String(err)))
     serialChannel.close()
+    screenChannel.close()
     emulator?.stop()
     emulator?.destroy()
     throw err

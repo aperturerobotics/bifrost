@@ -1,7 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { LuSettings, LuTv } from 'react-icons/lu'
-import { Terminal } from '@xterm/xterm'
-import { FitAddon } from '@xterm/addon-fit'
+import { useCallback, useState } from 'react'
 
 import type { ObjectViewerComponentProps } from '@s4wave/web/object/object.js'
 import { getObjectKey } from '@s4wave/web/object/object.js'
@@ -11,81 +8,43 @@ import {
 } from '@aptre/bldr-sdk/hooks/useResource.js'
 import { useStreamingResource } from '@aptre/bldr-sdk/hooks/useStreamingResource.js'
 import { SpaceContentsContext } from '@s4wave/web/contexts/contexts.js'
-import { terminalStatusToLoadingView } from '@s4wave/app/loading/status/terminal.js'
-import { LoadingCard } from '@s4wave/web/ui/loading/LoadingCard.js'
-import { cn } from '@s4wave/web/style/utils.js'
-import {
-  SetV86StateOp,
-  VmState,
-  VmV86,
-  VmMount,
-  type V86Config,
-} from '@s4wave/sdk/vm/v86.pb.js'
+import type { SpaceContents } from '@s4wave/sdk/space/contents.js'
+import { SetV86StateOp, VmState, VmV86 } from '@s4wave/sdk/vm/v86.pb.js'
 import { keyToIRI, iriToKey } from '@s4wave/sdk/world/graph-utils.js'
 import type { IObjectState } from '@s4wave/sdk/world/object-state.js'
 import { listObjectsWithType } from '@s4wave/sdk/world/types/types.js'
 import type { IWorldState } from '@s4wave/sdk/world/world-state.js'
 import { UnixFSTypeID } from '@s4wave/sdk/unixfs/type.js'
 
-import { v86SerialChannelName, type SerialFrame } from './serial-channel.js'
 import { VmV86TypeID } from './sdk/vmv86.js'
+import { VmHeader } from './VmHeader.js'
+import { VmMachineCard, type OverrideSlot } from './VmMachineCard.js'
+import { VmRunningView } from './VmRunningView.js'
 
 export { VmV86TypeID }
 
-const SET_V86_STATE_OP_ID = 'vm/v86/set-state'
+const setV86StateOpId = 'vm/v86/set-state'
 
-// V86 graph predicates for per-asset overrides. Mirrors
-// sdk/vm/v86.go PredV86{Kernel,Rootfs,Bios,Wasm}Override. When set, a
-// per-VM override takes precedence over the V86Image's v86image/* edge at
-// mount-resolve time.
-type OverrideSlot = 'kernel' | 'rootfs' | 'bios' | 'wasm'
+// imagePredicate links a VmV86 to its V86Image. Mirrors sdk/vm PredV86Image.
+const imagePredicate = '<v86/image>'
 
-const OVERRIDE_PREDICATE: Record<OverrideSlot, string> = {
+// overridePredicate links a VmV86 to a per-asset override, which takes
+// precedence over the V86Image's asset when the VM boots. Mirrors sdk/vm
+// PredV86{Kernel,Rootfs,Bios,Wasm}Override.
+const overridePredicate: Record<OverrideSlot, string> = {
   kernel: '<v86/kernel-override>',
   rootfs: '<v86/rootfs-override>',
   bios: '<v86/bios-override>',
   wasm: '<v86/wasm-override>',
 }
 
-const OVERRIDE_LABEL: Record<OverrideSlot, string> = {
-  kernel: 'Kernel',
-  rootfs: 'Rootfs',
-  bios: 'BIOS',
-  wasm: 'WASM',
+// VmEdges are the objects a VM boots from.
+interface VmEdges {
+  imageKey: string
+  overrides: Record<OverrideSlot, string>
 }
 
-const OVERRIDE_SLOTS: OverrideSlot[] = ['kernel', 'rootfs', 'bios', 'wasm']
-
-// vmStateLabel returns a compact human label for a VmState enum value.
-function vmStateLabel(state: VmState | undefined): string {
-  switch (state) {
-    case VmState.VmState_STARTING:
-      return 'starting'
-    case VmState.VmState_RUNNING:
-      return 'running'
-    case VmState.VmState_STOPPING:
-      return 'stopping'
-    case VmState.VmState_ERROR:
-      return 'error'
-    case VmState.VmState_STOPPED:
-    default:
-      return 'stopped'
-  }
-}
-
-function vmStateBadgeClass(state: VmState | undefined): string {
-  switch (state) {
-    case VmState.VmState_RUNNING:
-      return 'bg-emerald-500/10 text-emerald-500'
-    case VmState.VmState_STARTING:
-    case VmState.VmState_STOPPING:
-      return 'bg-amber-500/10 text-amber-500'
-    case VmState.VmState_ERROR:
-      return 'bg-red-500/10 text-red-500'
-    default:
-      return 'bg-muted text-muted-foreground'
-  }
-}
+// readVmV86 reads the VmV86 block of an object, or null when it has none.
 async function readVmV86(
   objectState: IObjectState,
   signal: AbortSignal,
@@ -96,6 +55,7 @@ async function readVmV86(
   return VmV86.fromBinary(blockResp.data)
 }
 
+// watchVmV86 yields the VmV86 at objectKey and again at each new revision.
 async function* watchVmV86(
   world: IWorldState,
   objectKey: string,
@@ -115,20 +75,82 @@ async function* watchVmV86(
   }
 }
 
-// VmV86Viewer displays a V86 virtual machine: an xterm-backed serial console,
-// Start/Stop controls bound to SetV86StateOp, a list of configured mounts,
-// and a VM info bar.
-export default function VmV86Viewer({
-  objectInfo,
-  worldState,
-  spaceContents,
-}: ObjectViewerComponentProps) {
-  const objectKey = getObjectKey(objectInfo)
-  const contextContentsResource = SpaceContentsContext.useContext()
-  const contentsResource = spaceContents ?? contextContentsResource
-  const contents = useResourceValue(contentsResource)
+// readVmEdges reads the image and asset override edges of the VM at
+// objectKey. A missing edge reads as "".
+async function readVmEdges(
+  world: IWorldState,
+  objectKey: string,
+  signal: AbortSignal,
+): Promise<VmEdges> {
+  const subject = keyToIRI(objectKey)
+  const lookup = async (predicate: string) => {
+    const resp = await world.lookupGraphQuads(
+      subject,
+      predicate,
+      undefined,
+      undefined,
+      1,
+      signal,
+    )
+    const obj = resp.quads?.[0]?.obj
+    return obj ? iriToKey(obj) : ''
+  }
+  const [imageKey, kernel, rootfs, bios, wasm] = await Promise.all([
+    lookup(imagePredicate),
+    lookup(overridePredicate.kernel),
+    lookup(overridePredicate.rootfs),
+    lookup(overridePredicate.bios),
+    lookup(overridePredicate.wasm),
+  ])
+  return { imageKey, overrides: { kernel, rootfs, bios, wasm } }
+}
 
-  const vmState = useStreamingResource(
+// requestVmState asks the VM at objectKey for a target state. The Space binds
+// the VM's process before a start and unbinds it after a stop; a start needs
+// contents to bind it.
+async function requestVmState(
+  world: IWorldState,
+  contents: SpaceContents | null,
+  objectKey: string,
+  target: VmState,
+): Promise<void> {
+  if (target === VmState.VmState_RUNNING) {
+    await contents?.setProcessBinding(objectKey, VmV86TypeID, true)
+  }
+  const op = SetV86StateOp.create({ objectKey, state: target })
+  await world.applyWorldOp(setV86StateOpId, SetV86StateOp.toBinary(op), '')
+  if (target === VmState.VmState_STOPPED) {
+    await contents?.setProcessBinding(objectKey, VmV86TypeID, false)
+  }
+}
+
+// writeOverride moves the override edge of one slot from prevKey to nextKey,
+// where "" means no override.
+async function writeOverride(
+  world: IWorldState,
+  objectKey: string,
+  slot: OverrideSlot,
+  prevKey: string,
+  nextKey: string,
+): Promise<void> {
+  const subject = keyToIRI(objectKey)
+  const predicate = overridePredicate[slot]
+  if (prevKey) {
+    await world.deleteGraphQuad(subject, predicate, keyToIRI(prevKey))
+  }
+  if (nextKey) {
+    await world.setGraphQuad(subject, predicate, keyToIRI(nextKey))
+  }
+}
+
+// useVmV86 watches the VM at objectKey and reads what it boots from, with
+// defaults for every field not yet loaded.
+function useVmV86(
+  worldState: ObjectViewerComponentProps['worldState'],
+  objectKey: string,
+) {
+  // Watch the VM.
+  const vmResource = useStreamingResource(
     worldState,
     useCallback(
       (world: IWorldState, signal: AbortSignal) =>
@@ -138,502 +160,104 @@ export default function VmV86Viewer({
     [],
   )
 
-  const vm = vmState.value
-  const desiredState = vm?.state
-  const vmStateValue = vm?.observedState ?? VmState.VmState_STOPPED
-  const vmErrorMessage = vm?.errorMessage?.trim() ?? ''
-  const cfg: V86Config | undefined = vm?.config
-  const mounts: VmMount[] = cfg?.mounts ?? []
-  const memoryMb = cfg?.memoryMb ?? 0
-  const createdAtMs = useMemo(() => {
-    const ts = vm?.createdAt
-    return ts ? ts.getTime() : 0
-  }, [vm?.createdAt])
-
-  // Apply SetV86StateOp with the requested target state.
-  const applyVmState = useCallback(
-    async (target: VmState) => {
-      const world = worldState.value
-      if (!world || !objectKey) return
-      if (contents && target === VmState.VmState_RUNNING) {
-        await contents.setProcessBinding(objectKey, VmV86TypeID, true)
-      }
-      const op = SetV86StateOp.create({
-        objectKey,
-        state: target,
-        errorMessage: '',
-      })
-      const data = SetV86StateOp.toBinary(op)
-      await world.applyWorldOp(SET_V86_STATE_OP_ID, data, '')
-      if (contents && target === VmState.VmState_STOPPED) {
-        await contents.setProcessBinding(objectKey, VmV86TypeID, false)
-      }
-    },
-    [contents, worldState, objectKey],
-  )
-  const [operationError, setOperationError] = useState('')
-  const captureActionError = useCallback((action: Promise<void>) => {
-    void action.catch((err: unknown) => {
-      setOperationError(err instanceof Error ? err.message : String(err))
-    })
-  }, [])
-
-  // Settings panel toggle.
-  const [showSettings, setShowSettings] = useState(false)
-  const toggleSettings = useCallback(() => setShowSettings((v) => !v), [])
-
-  // Read the four override edges for this VmV86 into a {slot: objectKey} map.
-  // A missing edge resolves to "" meaning "use V86Image default".
-  const overridesResource = useResource(
+  // Read its edges and the UnixFS objects an override may name.
+  const edgesResource = useResource(
     worldState,
-    async (world: IWorldState, signal: AbortSignal) => {
-      if (!world || !objectKey) return null
-      const subject = keyToIRI(objectKey)
-      const result: Record<OverrideSlot, string> = {
-        kernel: '',
-        rootfs: '',
-        bios: '',
-        wasm: '',
-      }
-      const entries = await Promise.all(
-        OVERRIDE_SLOTS.map(async (slot): Promise<[OverrideSlot, string]> => {
-          const resp = await world.lookupGraphQuads(
-            subject,
-            OVERRIDE_PREDICATE[slot],
-            undefined,
-            undefined,
-            1,
-            signal,
-          )
-          const quads = resp.quads ?? []
-          if (quads.length > 0 && quads[0].obj) {
-            return [slot, iriToKey(quads[0].obj)]
-          }
-          return [slot, '']
-        }),
-      )
-      for (const [slot, value] of entries) {
-        result[slot] = value
-      }
-      return result
-    },
+    (world: IWorldState, signal: AbortSignal) =>
+      readVmEdges(world, objectKey, signal),
     [objectKey],
   )
-  const overrides = overridesResource.value
-
-  // List UnixFS objects in the user Space. These are the candidates for
-  // per-asset override pickers; "(use V86Image default)" is the empty option.
-  const unixfsListResource = useResource(
+  const unixfsResource = useResource(
     worldState,
-    async (world: IWorldState, signal: AbortSignal) => {
-      if (!world) return [] as string[]
-      return listObjectsWithType(world, UnixFSTypeID, signal)
-    },
+    (world: IWorldState, signal: AbortSignal) =>
+      listObjectsWithType(world, UnixFSTypeID, signal),
     [],
   )
-  const unixfsKeys = useMemo(
-    () => unixfsListResource.value ?? [],
-    [unixfsListResource.value],
-  )
 
-  // applyOverride writes (or clears) the override edge for one slot.
-  const applyOverride = useCallback(
-    async (slot: OverrideSlot, nextKey: string) => {
-      const world = worldState.value
-      if (!world || !objectKey) return
-      const subject = keyToIRI(objectKey)
-      const predicate = OVERRIDE_PREDICATE[slot]
-      const prevKey = overrides?.[slot] ?? ''
-      if (prevKey === nextKey) return
-      if (prevKey) {
-        await world.deleteGraphQuad(subject, predicate, keyToIRI(prevKey))
-      }
-      if (nextKey) {
-        await world.setGraphQuad(subject, predicate, keyToIRI(nextKey))
-      }
-      overridesResource.retry()
-    },
-    [worldState, objectKey, overrides, overridesResource],
-  )
+  const vm = vmResource.value ?? VmV86.create()
+  const edges = edgesResource.value
+  return {
+    name: vm.name || objectKey,
+    state: vm.observedState ?? VmState.VmState_STOPPED,
+    desired: vm.state ?? VmState.VmState_STOPPED,
+    errorMessage: vm.errorMessage?.trim() ?? '',
+    memoryMb: vm.config?.memoryMb ?? 0,
+    mounts: vm.config?.mounts ?? [],
+    imageKey: edges?.imageKey ?? '',
+    overrides: edges?.overrides ?? null,
+    retryEdges: edgesResource.retry,
+    unixfsKeys: unixfsResource.value ?? [],
+  }
+}
 
-  const isRunningLike =
-    desiredState === VmState.VmState_RUNNING ||
-    vmStateValue === VmState.VmState_RUNNING ||
-    vmStateValue === VmState.VmState_STARTING ||
-    vmStateValue === VmState.VmState_STOPPING
-
-  const terminalConnecting =
-    vmStateValue !== VmState.VmState_RUNNING &&
-    (vmState.loading || vmStateValue === VmState.VmState_STARTING)
-
-  const handleStart = useCallback(() => {
-    setOperationError('')
-    captureActionError(applyVmState(VmState.VmState_RUNNING))
-  }, [applyVmState, captureActionError])
-
-  const handleStop = useCallback(() => {
-    setOperationError('')
-    captureActionError(applyVmState(VmState.VmState_STOPPED))
-  }, [applyVmState, captureActionError])
-
-  const handleReset = useCallback(() => {
-    setOperationError('')
-    captureActionError(applyVmState(VmState.VmState_STOPPED))
-  }, [applyVmState, captureActionError])
-
-  const startedLabel = useMemo(() => {
-    if (!isRunningLike || !createdAtMs) return '-'
-    return new Date(createdAtMs).toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
+// useRequest runs one action at a time from a view and keeps the failure of
+// the last one until the next starts.
+function useRequest(): [string, (action: () => Promise<void>) => void] {
+  const [error, setError] = useState('')
+  const request = useCallback((action: () => Promise<void>) => {
+    setError('')
+    action().catch((err: unknown) => {
+      setError(err instanceof Error ? err.message : String(err))
     })
-  }, [isRunningLike, createdAtMs])
+  }, [])
+  return [error, request]
+}
 
+// VmV86Viewer displays a V86 virtual machine. A stopped or failed VM shows
+// its machine card with Start or Reset; a running VM shows its screen and
+// serial console.
+export default function VmV86Viewer({
+  objectInfo,
+  worldState,
+  spaceContents,
+}: ObjectViewerComponentProps) {
+  const objectKey = getObjectKey(objectInfo)
+  const contextContentsResource = SpaceContentsContext.useContext()
+  const contents = useResourceValue(spaceContents ?? contextContentsResource)
+  const world = worldState.value
+  const vm = useVmV86(worldState, objectKey)
+  const [operationError, request] = useRequest()
+
+  // setVmState requests a target state from the view.
+  const setVmState = (target: VmState) => {
+    if (!world) return
+    request(() => requestVmState(world, contents, objectKey, target))
+  }
+
+  const running =
+    vm.state !== VmState.VmState_ERROR &&
+    (vm.desired === VmState.VmState_RUNNING ||
+      vm.state !== VmState.VmState_STOPPED)
   return (
     <div className="bg-background-primary flex h-full w-full flex-col overflow-hidden">
-      <VmHeader
-        vmStateValue={vmStateValue}
-        isRunningLike={isRunningLike}
-        processControlsReady={!!contents}
-        showSettings={showSettings}
-        errorMessage={vmErrorMessage}
-        onStart={handleStart}
-        onStop={handleStop}
-        onReset={handleReset}
-        onToggleSettings={toggleSettings}
-      />
-      {vmStateValue === VmState.VmState_ERROR && (
-        <VmErrorBanner message={vmErrorMessage} />
-      )}
-      {operationError && (
-        <VmErrorBanner title="Operation error" message={operationError} />
-      )}
-      <SerialTerminal
-        objectKey={objectKey}
-        showConnecting={terminalConnecting}
-      />
-      <VmInfoBar
-        memoryMb={memoryMb}
-        startedLabel={startedLabel}
-        vmStateValue={vmStateValue}
-      />
-      {showSettings && (
-        <VmSettingsPanel
-          loading={overridesResource.loading}
-          overrides={overrides}
-          unixfsKeys={unixfsKeys}
-          onOverrideChange={applyOverride}
+      {running ? (
+        <VmRunningView
+          objectKey={objectKey}
+          name={vm.name}
+          state={vm.state}
+          stopRequested={vm.desired === VmState.VmState_STOPPED}
+          onStop={() => setVmState(VmState.VmState_STOPPED)}
+          operationError={operationError}
         />
-      )}
-      {mounts.length > 0 && <VmMountList mounts={mounts} />}
-    </div>
-  )
-}
-
-function VmHeader({
-  vmStateValue,
-  isRunningLike,
-  processControlsReady,
-  showSettings,
-  errorMessage,
-  onStart,
-  onStop,
-  onReset,
-  onToggleSettings,
-}: {
-  vmStateValue: VmState | undefined
-  isRunningLike: boolean
-  processControlsReady: boolean
-  showSettings: boolean
-  errorMessage: string
-  onStart: () => void
-  onStop: () => void
-  onReset: () => void
-  onToggleSettings: () => void
-}) {
-  const isError = vmStateValue === VmState.VmState_ERROR
-  const startDisabled = !processControlsReady || isRunningLike
-  return (
-    <div className="border-foreground/8 flex h-9 shrink-0 items-center justify-between border-b px-4">
-      <div className="text-foreground flex items-center gap-2 text-sm font-semibold select-none">
-        <LuTv className="size-4" />
-        <span className="tracking-tight">V86</span>
-        <span
-          className={cn(
-            'rounded px-1.5 py-0.5 micro-ten font-medium tracking-wide uppercase',
-            vmStateBadgeClass(vmStateValue),
-          )}
-        >
-          {vmStateLabel(vmStateValue)}
-        </span>
-      </div>
-      <div className="flex items-center gap-1 text-xs">
-        {isError ? (
-          <button
-            type="button"
-            onClick={onReset}
-            title={errorMessage || 'Clear the VM error before starting again'}
-            className="rounded bg-red-500/10 px-2 py-0.5 text-red-500 transition-colors hover:bg-red-500/20"
-          >
-            Reset
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={onStart}
-            disabled={startDisabled}
-            className={cn(
-              'rounded px-2 py-0.5 transition-colors',
-              startDisabled
-                ? 'bg-muted/40 text-muted-foreground/60 cursor-not-allowed'
-                : 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20',
-            )}
-          >
-            Start
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={onStop}
-          disabled={!isRunningLike}
-          className={cn(
-            'rounded px-2 py-0.5 transition-colors',
-            !isRunningLike
-              ? 'bg-muted/40 text-muted-foreground/60 cursor-not-allowed'
-              : 'bg-red-500/10 text-red-500 hover:bg-red-500/20',
-          )}
-        >
-          Stop
-        </button>
-        <button
-          type="button"
-          onClick={onToggleSettings}
-          aria-pressed={showSettings}
-          title="Asset overrides"
-          className={cn(
-            'rounded px-2 py-0.5 transition-colors',
-            showSettings
-              ? 'bg-primary/10 text-primary'
-              : 'text-muted-foreground hover:bg-muted/40',
-          )}
-        >
-          <LuSettings className="size-3.5" />
-        </button>
-      </div>
-    </div>
-  )
-}
-
-function VmErrorBanner({
-  title = 'Runtime error',
-  message,
-}: {
-  title?: string
-  message: string
-}) {
-  return (
-    <div className="flex shrink-0 items-start gap-2 border-b border-red-500/20 bg-red-500/5 px-4 py-2 text-xs text-red-500">
-      <span className="font-medium">{title}</span>
-      <span className="text-foreground-alt min-w-0 flex-1">
-        {message || 'The VM stopped with an error.'}
-      </span>
-    </div>
-  )
-}
-
-function SerialTerminal({
-  objectKey,
-  showConnecting,
-}: {
-  objectKey: string
-  showConnecting: boolean
-}) {
-  const terminalHostRef = useRef<HTMLDivElement | null>(null)
-
-  useEffect(() => {
-    const host = terminalHostRef.current
-    if (!host || !objectKey) return
-    const term = new Terminal({
-      convertEol: true,
-      cursorBlink: true,
-      fontSize: 13,
-      theme: { background: '#000000', foreground: '#e5e7eb' },
-    })
-    const fit = new FitAddon()
-    term.loadAddon(fit)
-    term.open(host)
-    try {
-      fit.fit()
-    } catch {
-      // host may be briefly unsized during mount; ignore one-off fit errors
-    }
-
-    const channel = new BroadcastChannel(v86SerialChannelName(objectKey))
-    channel.onmessage = (ev: MessageEvent<SerialFrame>) => {
-      const frame = ev.data
-      if (frame?.dir === 'out' && frame.data) term.write(frame.data)
-    }
-
-    const disposeInput = term.onData((chunk) => {
-      if (!chunk) return
-      const frame: SerialFrame = { dir: 'in', text: chunk }
-      channel.postMessage(frame)
-    })
-
-    const handleResize = () => {
-      try {
-        fit.fit()
-      } catch {
-        /* resize before host has dimensions */
-      }
-    }
-    window.addEventListener('resize', handleResize)
-
-    return () => {
-      window.removeEventListener('resize', handleResize)
-      disposeInput.dispose()
-      channel.close()
-      term.dispose()
-    }
-  }, [objectKey])
-
-  return (
-    <div className="relative min-h-0 flex-1 overflow-hidden bg-zinc-950">
-      <div ref={terminalHostRef} className="size-full overflow-hidden" />
-      {showConnecting && (
-        <div
-          className="bg-background-dark/95 absolute inset-0 flex items-center justify-center p-4"
-          data-vm-terminal-status="connecting"
-          role="status"
-          aria-live="polite"
-        >
-          <LoadingCard
-            view={terminalStatusToLoadingView(
-              { kind: 'connecting' },
-              {
-                cliSession: false,
-                connectingTitle: 'Booting virtual machine…',
-                connectingDetail: 'Waiting for the virtual machine runtime.',
-              },
-            )}
-            className="w-full max-w-sm"
+      ) : (
+        <>
+          <VmHeader name={vm.name} state={vm.state} />
+          <VmMachineCard
+            {...vm}
+            operationError={operationError}
+            startDisabled={!world || !contents}
+            onStart={() => setVmState(VmState.VmState_RUNNING)}
+            onReset={() => setVmState(VmState.VmState_STOPPED)}
+            onOverrideChange={(slot, prevKey, nextKey) =>
+              world &&
+              request(async () => {
+                await writeOverride(world, objectKey, slot, prevKey, nextKey)
+                vm.retryEdges()
+              })
+            }
           />
-        </div>
+        </>
       )}
-    </div>
-  )
-}
-
-function VmInfoBar({
-  memoryMb,
-  startedLabel,
-  vmStateValue,
-}: {
-  memoryMb: number
-  startedLabel: string
-  vmStateValue: VmState | undefined
-}) {
-  return (
-    <div className="border-foreground/8 flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1 border-t px-4 py-1 text-xs">
-      <span className="text-muted-foreground">
-        mem{' '}
-        <span className="text-foreground font-medium">{memoryMb || '-'}MB</span>
-      </span>
-      <span className="text-muted-foreground">
-        started{' '}
-        <span className="text-foreground font-medium">{startedLabel}</span>
-      </span>
-      <span className="text-muted-foreground">
-        state{' '}
-        <span className="text-foreground font-medium">
-          {vmStateLabel(vmStateValue)}
-        </span>
-      </span>
-    </div>
-  )
-}
-
-function VmSettingsPanel({
-  loading,
-  overrides,
-  unixfsKeys,
-  onOverrideChange,
-}: {
-  loading: boolean
-  overrides: Record<OverrideSlot, string> | null
-  unixfsKeys: string[]
-  onOverrideChange: (slot: OverrideSlot, nextKey: string) => Promise<void>
-}) {
-  return (
-    <div className="border-foreground/8 shrink-0 border-t px-4 py-2 text-xs">
-      <div className="text-muted-foreground mb-1 tracking-wide uppercase">
-        Asset Overrides
-      </div>
-      {!overrides && (
-        <div className="text-muted-foreground">
-          {loading ? 'loading…' : '-'}
-        </div>
-      )}
-      {overrides && (
-        <div className="flex flex-col gap-1">
-          {OVERRIDE_SLOTS.map((slot) => {
-            const current = overrides[slot]
-            return (
-              <div
-                key={slot}
-                className="flex items-center justify-between gap-2"
-              >
-                <span className="text-foreground w-16 shrink-0">
-                  {OVERRIDE_LABEL[slot]}
-                </span>
-                <select
-                  aria-label={OVERRIDE_LABEL[slot]}
-                  value={current}
-                  onChange={(e) => {
-                    void onOverrideChange(slot, e.target.value)
-                  }}
-                  className="bg-muted/40 text-foreground min-w-0 flex-1 rounded px-1 py-0.5 font-mono text-xs"
-                >
-                  <option value="">(use V86Image default)</option>
-                  {current && !unixfsKeys.includes(current) && (
-                    <option value={current}>{current}</option>
-                  )}
-                  {unixfsKeys.map((key) => (
-                    <option key={key} value={key}>
-                      {key}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )
-          })}
-        </div>
-      )}
-    </div>
-  )
-}
-
-function VmMountList({ mounts }: { mounts: VmMount[] }) {
-  return (
-    <div className="border-foreground/8 shrink-0 border-t px-4 py-1 text-xs">
-      <div className="text-muted-foreground mb-0.5 tracking-wide uppercase">
-        Mounts
-      </div>
-      <div className="flex flex-col gap-0.5">
-        {mounts.map((m) => (
-          <div
-            key={`${m.path ?? ''}:${m.objectKey ?? ''}:${m.writable ? 'rw' : 'ro'}`}
-            className="flex items-center justify-between font-mono"
-          >
-            <span className="text-foreground">{m.path || '(unset)'}</span>
-            <span className="text-muted-foreground">
-              {m.objectKey ? m.objectKey.slice(0, 12) : '-'}
-              {m.writable ? ' rw' : ' ro'}
-            </span>
-          </div>
-        ))}
-      </div>
     </div>
   )
 }

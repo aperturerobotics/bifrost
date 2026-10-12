@@ -132,6 +132,34 @@ func TestQuickstartV86BootSmoke(t *testing.T) {
 	}
 	serial := waitForV86SerialOutput(t, page)
 	t.Logf("v86 serial output sample: %q", trimSerialSample(serial))
+	waitForV86Screen(t, page)
+}
+
+// waitForV86Screen opens the Screen panel and waits for the relayed VGA
+// screen to draw pixels.
+func waitForV86Screen(t testing.TB, page playwright.Page) {
+	t.Helper()
+
+	// Open the Screen panel.
+	if err := page.Locator("button[aria-label='Screen']").Click(); err != nil {
+		t.Fatalf("open v86 screen panel: %v", err)
+	}
+
+	// Wait for a canvas with at least one lit pixel.
+	if _, err := page.WaitForFunction(`() => {
+		const canvas = document.querySelector("[aria-label='Virtual machine screen'] canvas")
+		if (!canvas?.width || !canvas.height) return false
+		const data = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data
+		for (let i = 0; i < data.length; i += 4) {
+			if (data[i] || data[i + 1] || data[i + 2]) return true
+		}
+		return false
+	}`, nil, playwright.PageWaitForFunctionOptions{
+		Timeout: playwright.Float(v86SmokeStageTimeoutMS),
+	}); err != nil {
+		t.Fatalf("v86 stage screen drawn absent: %v\n%s", err, readV86WizardDebug(page))
+	}
+	recordV86SmokeStage(t, page, "screen drawn")
 }
 
 func recordV86SmokeStage(t testing.TB, page playwright.Page, stage string) {

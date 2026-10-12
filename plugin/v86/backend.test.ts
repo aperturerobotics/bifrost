@@ -391,7 +391,7 @@ describe('v86 backend registration', () => {
     expect(h.v86fsBridges[0]?.close).toHaveBeenCalledTimes(1)
     expect(errorSpy).toHaveBeenCalledWith(
       '[spacewave-v86] runtime failed:',
-      'spacewave-v86 browser runner requires BroadcastChannel for the viewer serial bridge',
+      'spacewave-v86 browser runner requires BroadcastChannel for the viewer bridge',
     )
     expect(h.runtimeStatusReports.map(({ request }) => request.status)).toEqual(
       [
