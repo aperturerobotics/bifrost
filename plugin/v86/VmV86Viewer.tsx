@@ -7,7 +7,9 @@ import {
   useResourceValue,
 } from '@aptre/bldr-sdk/hooks/useResource.js'
 import { useStreamingResource } from '@aptre/bldr-sdk/hooks/useStreamingResource.js'
+import { formatV86ImageLabel, readV86Image } from '@s4wave/app/vm/v86-images.js'
 import { SpaceContentsContext } from '@s4wave/web/contexts/contexts.js'
+import { LoadingCard } from '@s4wave/web/ui/loading/LoadingCard.js'
 import type { SpaceContents } from '@s4wave/sdk/space/contents.js'
 import { SetV86StateOp, VmState, VmV86 } from '@s4wave/sdk/vm/v86.pb.js'
 import { keyToIRI, iriToKey } from '@s4wave/sdk/world/graph-utils.js'
@@ -21,23 +23,27 @@ import {
   VmV86TypeID,
 } from '@s4wave/sdk/vm/vmv86.js'
 
+import { VmErrorBanner } from './VmErrorBanner.js'
 import { VmHeader } from './VmHeader.js'
 import { VmMachineCard, type OverrideSlot } from './VmMachineCard.js'
 import { VmRunningView } from './VmRunningView.js'
 
 // overridePredicate links a VmV86 to a per-asset override, which takes
 // precedence over the V86Image's asset when the VM boots. Mirrors sdk/vm
-// PredV86{Kernel,Rootfs,Bios,Wasm}Override.
+// PredV86{Kernel,Rootfs,Bios,Wasm}Override, bare IRIs like PRED_V86_IMAGE.
 const overridePredicate: Record<OverrideSlot, string> = {
-  kernel: '<v86/kernel-override>',
-  rootfs: '<v86/rootfs-override>',
-  bios: '<v86/bios-override>',
-  wasm: '<v86/wasm-override>',
+  kernel: 'v86/kernel-override',
+  rootfs: 'v86/rootfs-override',
+  bios: 'v86/bios-override',
+  wasm: 'v86/wasm-override',
 }
 
 // VmEdges are the objects a VM boots from.
 interface VmEdges {
   imageKey: string
+  // imageLabel names the linked image for display, or is "" when it has no
+  // readable metadata.
+  imageLabel: string
   overrides: Record<OverrideSlot, string>
 }
 
@@ -99,7 +105,28 @@ async function readVmEdges(
     lookup(overridePredicate.bios),
     lookup(overridePredicate.wasm),
   ])
-  return { imageKey, overrides: { kernel, rootfs, bios, wasm } }
+  const image = imageKey
+    ? await readV86Image(world, imageKey, signal)
+    : undefined
+  return {
+    imageKey,
+    imageLabel: image ? formatV86ImageLabel(image.image) : '',
+    overrides: { kernel, rootfs, bios, wasm },
+  }
+}
+
+// watchVmEdges yields the edges of the VM at objectKey and again after each
+// world change.
+async function* watchVmEdges(
+  world: IWorldState,
+  objectKey: string,
+  signal: AbortSignal,
+): AsyncIterable<VmEdges> {
+  let seqno = (await world.getSeqno(signal)).seqno
+  for (;;) {
+    yield await readVmEdges(world, objectKey, signal)
+    seqno = (await world.waitSeqno(seqno + 1n, signal)).seqno
+  }
 }
 
 // requestVmState asks the VM at objectKey for a target state. The Space binds
@@ -157,12 +184,15 @@ function useVmV86(
     [],
   )
 
-  // Read its edges and the UnixFS objects an override may name.
-  const edgesResource = useResource(
+  // Watch its edges, and read the UnixFS objects an override may name.
+  const edgesResource = useStreamingResource(
     worldState,
-    (world: IWorldState, signal: AbortSignal) =>
-      readVmEdges(world, objectKey, signal),
-    [objectKey],
+    useCallback(
+      (world: IWorldState, signal: AbortSignal) =>
+        watchVmEdges(world, objectKey, signal),
+      [objectKey],
+    ),
+    [],
   )
   const unixfsResource = useResource(
     worldState,
@@ -174,6 +204,8 @@ function useVmV86(
   const vm = vmResource.value ?? VmV86.create()
   const edges = edgesResource.value
   return {
+    loaded: !!vmResource.value,
+    loadError: vmResource.error,
     name: vm.name || objectKey,
     state: vm.observedState ?? VmState.VmState_STOPPED,
     desired: vm.state ?? VmState.VmState_STOPPED,
@@ -181,8 +213,8 @@ function useVmV86(
     memoryMb: vm.config?.memoryMb ?? 0,
     mounts: vm.config?.mounts ?? [],
     imageKey: edges?.imageKey ?? '',
+    imageLabel: edges?.imageLabel ?? '',
     overrides: edges?.overrides ?? null,
-    retryEdges: edgesResource.retry,
     unixfsKeys: unixfsResource.value ?? [],
   }
 }
@@ -221,6 +253,29 @@ export default function VmV86Viewer({
     request(() => requestVmState(world, contents, objectKey, target))
   }
 
+  // Hold the view until the VM record loads, so no default stands in for it.
+  if (!vm.loaded) {
+    return (
+      <div className="bg-background-primary flex h-full w-full items-center justify-center p-4">
+        {vm.loadError ? (
+          <VmErrorBanner
+            title="Could not load this virtual machine"
+            message={vm.loadError.message}
+          />
+        ) : (
+          <LoadingCard
+            view={{
+              state: 'active',
+              title: 'Loading virtual machine',
+              detail: 'Reading its settings from this Space.',
+            }}
+            className="w-full max-w-sm"
+          />
+        )}
+      </div>
+    )
+  }
+
   const running =
     vm.state !== VmState.VmState_ERROR &&
     (vm.desired === VmState.VmState_RUNNING ||
@@ -247,10 +302,9 @@ export default function VmV86Viewer({
             onReset={() => setVmState(VmState.VmState_STOPPED)}
             onOverrideChange={(slot, prevKey, nextKey) =>
               world &&
-              request(async () => {
-                await writeOverride(world, objectKey, slot, prevKey, nextKey)
-                vm.retryEdges()
-              })
+              request(() =>
+                writeOverride(world, objectKey, slot, prevKey, nextKey),
+              )
             }
           />
         </>

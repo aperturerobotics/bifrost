@@ -27,6 +27,8 @@ export interface VmMachineCardProps {
   // operationError is the failure of the last request from this view.
   operationError: string
   imageKey: string
+  // imageLabel names the image for display, or is "" to show imageKey.
+  imageLabel: string
   memoryMb: number
   mounts: VmMount[]
   // startDisabled holds Start until the Space can bind the VM's process.
@@ -53,6 +55,7 @@ export function VmMachineCard({
   errorMessage,
   operationError,
   imageKey,
+  imageLabel,
   memoryMb,
   mounts,
   startDisabled,
@@ -101,11 +104,8 @@ export function VmMachineCard({
           <dl className="flex flex-col gap-1.5 text-xs">
             <div className="flex gap-4">
               <dt className="text-foreground-alt w-16 shrink-0">Image</dt>
-              <dd
-                className="text-foreground min-w-0 truncate font-mono"
-                title={imageKey}
-              >
-                {imageKey || 'None'}
+              <dd className="text-foreground min-w-0 truncate" title={imageKey}>
+                {imageLabel || imageKey || 'None'}
               </dd>
             </div>
             <div className="flex gap-4">

@@ -174,6 +174,32 @@ describe('VmV86Viewer', () => {
     await waitFor(() => expect(screen.queryByRole('status')).toBeNull())
   })
 
+  it('holds the view until the VM record loads', () => {
+    const { world } = buildWorld(VmV86.create({ name: 'Loaded name' }))
+    mockVmResource.value = null
+
+    render(
+      <VmV86Viewer
+        objectInfo={{
+          info: {
+            case: 'worldObjectInfo',
+            value: { objectKey: 'vm/v86/test', objectType: 'vm/v86' },
+          },
+        }}
+        worldState={{
+          value: world,
+          loading: false,
+          error: null,
+          retry: vi.fn(),
+        }}
+      />,
+    )
+
+    expect(screen.getByText('Loading virtual machine')).toBeDefined()
+    expect(screen.queryByText('vm/v86/test')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Start' })).toBeNull()
+  })
+
   it('shows the stored runtime error and resets before start is available', async () => {
     const { world, applyWorldOp } = buildWorld(
       VmV86.create({
