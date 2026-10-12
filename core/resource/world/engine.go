@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	resource_server "github.com/s4wave/spacewave/bldr/resource/server"
 	resource_bucket_lookup "github.com/s4wave/spacewave/core/resource/bucket/lookup"
+	"github.com/s4wave/spacewave/core/sobject"
 	"github.com/s4wave/spacewave/db/bucket"
 	bucket_lookup "github.com/s4wave/spacewave/db/bucket/lookup"
 	"github.com/s4wave/spacewave/db/world"
@@ -93,9 +94,22 @@ func (r *EngineResource) Close() {
 
 // GetEngineInfo returns information about the world engine.
 func (r *EngineResource) GetEngineInfo(ctx context.Context, req *s4wave_world.GetEngineInfoRequest) (*s4wave_world.GetEngineInfoResponse, error) {
+	// Resolve accepted caller identity from the granting mount.
 	sessionPeerID, _ := worldStateResourceSessionPeerID(r.worldStateOptions...)
+	access := new(WorldStateResource)
+	applyWorldStateResourceOptions(access, r.worldStateOptions...)
+	var participant *sobject.SOParticipantConfig
+	if access.participantLookup != nil && sessionPeerID != "" {
+		var err error
+		participant, err = access.participantLookup(ctx, sessionPeerID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Return mount metadata with its accepted caller identity.
 	return &s4wave_world.GetEngineInfoResponse{
-		EngineInfo: r.engineInfo, SessionPeerId: sessionPeerID.String(),
+		EngineInfo: r.engineInfo, SessionPeerId: sessionPeerID.String(), CallerParticipant: participant,
 	}, nil
 }
 

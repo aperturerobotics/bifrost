@@ -12,8 +12,10 @@ import (
 	resource_client "github.com/s4wave/spacewave/bldr/resource/client"
 	resource_server "github.com/s4wave/spacewave/bldr/resource/server"
 	resource_world "github.com/s4wave/spacewave/core/resource/world"
+	"github.com/s4wave/spacewave/core/sobject"
 	space_world_optypes "github.com/s4wave/spacewave/core/space/world/optypes"
 	"github.com/s4wave/spacewave/db/world"
+	"github.com/s4wave/spacewave/net/peer"
 	s4wave_objecttype_registry "github.com/s4wave/spacewave/sdk/objecttype/registry"
 	s4wave_plugin "github.com/s4wave/spacewave/sdk/plugin"
 	sdk_world "github.com/s4wave/spacewave/sdk/world"
@@ -151,7 +153,7 @@ func (r *registrationFactory) invokeAttached(
 	objectKey string,
 	engine world.Engine,
 ) (srpc.Invoker, func(), error) {
-	invoker := newAttachedObjectTypeInvoker(r.reg.attached, r.reg.registration, objectKey, engine, objecttype.EngineIDFromContext(ctx), r.b, r.le)
+	invoker := newAttachedObjectTypeInvoker(r.reg.attached, r.reg.registration, objectKey, engine, objecttype.EngineIDFromContext(ctx), objecttype.CallerFromContext(ctx), r.b, r.le)
 	if err := invoker.connect(ctx); err != nil {
 		return nil, nil, err
 	}
@@ -172,7 +174,7 @@ func (r *registrationFactory) invokePlugin(
 	if resourceCtx != nil {
 		resourceClientCtx = resourceCtx.Context()
 	}
-	invoker := newPluginObjectTypeInvoker(resourceClientCtx, r.reg.registration, r.instanceKey, objectKey, engine, objecttype.EngineIDFromContext(ctx), r.b, r.le)
+	invoker := newPluginObjectTypeInvoker(resourceClientCtx, r.reg.registration, r.instanceKey, objectKey, engine, objecttype.EngineIDFromContext(ctx), objecttype.CallerFromContext(ctx), r.b, r.le)
 	if err := invoker.connect(ctx); err != nil {
 		return nil, nil, err
 	}
@@ -195,6 +197,8 @@ type pluginResourceSession struct {
 	engine world.Engine
 	// engineID is the registry scope granted with the borrowed engine.
 	engineID string
+	// caller is the authenticated identity retained through bridge reconnection.
+	caller objecttype.Caller
 
 	// openResources opens the ResourceClient generation. The alive callback
 	// reports whether the generation is still usable; nil means always.
@@ -237,8 +241,21 @@ func (s *pluginResourceSession) connectLocked(ctx context.Context) error {
 
 	// Lend the selected engine with its trusted registry scope.
 	if s.engine != nil {
+		var callerPeer peer.ID
+		if s.caller.PeerID != "" {
+			callerPeer, err = peer.IDB58Decode(s.caller.PeerID)
+			if err != nil {
+				s.resetLocked()
+				return err
+			}
+		}
 		lookupOp := space_world_optypes.BuildSpaceLookupOp(s.b, s.le, s.engineID)
-		s.engineResource = resource_world.NewEngineResource(s.le, s.b, s.engine, lookupOp, &sdk_world.EngineInfo{EngineId: s.engineID})
+		s.engineResource = resource_world.NewEngineResource(s.le, s.b, s.engine, lookupOp, &sdk_world.EngineInfo{EngineId: s.engineID},
+			resource_world.WithSessionPeerID(callerPeer),
+			resource_world.WithCallerParticipantLookup(func(context.Context, peer.ID) (*sobject.SOParticipantConfig, error) {
+				return s.caller.Participant.CloneVT(), nil
+			}),
+		)
 		s.engineResourceID, err = client.AttachResource(ctx, "world-engine", s.engineResource.GetMux())
 		if err != nil {
 			s.resetLocked()
@@ -366,6 +383,7 @@ func newAttachedObjectTypeInvoker(
 	objectKey string,
 	engine world.Engine,
 	engineID string,
+	caller objecttype.Caller,
 	b bus.Bus,
 	le *logrus.Entry,
 ) *attachedObjectTypeInvoker {
@@ -377,6 +395,7 @@ func newAttachedObjectTypeInvoker(
 		objectKey: objectKey,
 		engine:    engine,
 		engineID:  engineID,
+		caller:    caller,
 		detachCtx: handler.ctx,
 		openResources: func(_ context.Context) (*resource_client.Client, func(), func() bool, error) {
 			client, err := resource_client.NewClient(
@@ -427,6 +446,7 @@ func newPluginObjectTypeInvoker(
 	objectKey string,
 	engine world.Engine,
 	engineID string,
+	caller objecttype.Caller,
 	b bus.Bus,
 	le *logrus.Entry,
 ) *pluginObjectTypeInvoker {
@@ -438,6 +458,7 @@ func newPluginObjectTypeInvoker(
 		objectKey: objectKey,
 		engine:    engine,
 		engineID:  engineID,
+		caller:    caller,
 		detachCtx: resourceClientCtx,
 		openResources: func(_ context.Context) (*resource_client.Client, func(), func() bool, error) {
 			resources, err := s4wave_plugin.ConnectPluginInstanceResources(resourceClientCtx, b, reg.GetPluginId(), instanceKey)

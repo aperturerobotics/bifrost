@@ -11,6 +11,7 @@ import {
 } from '@aptre/protobuf-es-lite/message'
 import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
+import { SOParticipantConfig } from '../../core/sobject/sobject.pb.js'
 import { ObjectRef } from '../../db/bucket/bucket.pb.js'
 import { Quad } from '../../db/block/quad/quad.pb.js'
 
@@ -302,6 +303,14 @@ export interface GetEngineInfoResponse {
    * @generated from field: string session_peer_id = 2;
    */
   sessionPeerId?: string
+  /**
+   * CallerParticipant is the accepted participant of the authenticated caller,
+   * when the granting mount knows it. Consumers resolve current permissions
+   * from the addressed SharedObject instead of treating this snapshot as a grant.
+   *
+   * @generated from field: sobject.SOParticipantConfig caller_participant = 3;
+   */
+  callerParticipant?: SOParticipantConfig
 }
 
 export const GetEngineInfoResponse: MessageType<GetEngineInfoResponse> =
@@ -310,6 +319,12 @@ export const GetEngineInfoResponse: MessageType<GetEngineInfoResponse> =
     fields: [
       { no: 1, name: 'engine_info', kind: 'message', T: EngineInfo },
       { no: 2, name: 'session_peer_id', kind: 'scalar', T: ScalarType.STRING },
+      {
+        no: 3,
+        name: 'caller_participant',
+        kind: 'message',
+        T: () => SOParticipantConfig,
+      },
     ] satisfies readonly PartialFieldInfo[],
   })
 

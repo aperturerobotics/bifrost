@@ -12,6 +12,7 @@ import (
 	"github.com/s4wave/spacewave/bldr/resource"
 	resource_server "github.com/s4wave/spacewave/bldr/resource/server"
 	resource_unixfs "github.com/s4wave/spacewave/core/resource/unixfs"
+	"github.com/s4wave/spacewave/core/sobject"
 	unixfs_access "github.com/s4wave/spacewave/db/unixfs/access"
 	"github.com/s4wave/spacewave/db/world"
 	world_types "github.com/s4wave/spacewave/db/world/types"
@@ -37,6 +38,8 @@ type TypedObjectResource struct {
 	sessionPeerID peer.ID
 	// sessionPeerIDBound prevents request context from replacing the mount peer.
 	sessionPeerIDBound bool
+	// participantLookup reads accepted caller identity from the granting mount.
+	participantLookup func(context.Context, peer.ID) (*sobject.SOParticipantConfig, error)
 	// engineID is the registry scope selected by the granting mount.
 	engineID string
 	// engineIDBound prevents caller context from replacing the mount registry scope.
@@ -70,6 +73,7 @@ func NewTypedObjectResourceWithContext(ctx context.Context, le *logrus.Entry, b 
 		retirementCause: errors.WithStack(s4wave_world.ErrTypedObjectGrantRetired),
 		sessionPeerID:   access.sessionPeerID, sessionPeerIDBound: access.sessionPeerIDBound,
 		engineID: access.engineID, engineIDBound: access.engineIDBound,
+		participantLookup: access.participantLookup,
 	}
 
 	// Track shared unary handles until the granting mount closes.
@@ -130,6 +134,10 @@ func (r *TypedObjectResource) WatchTypedObject(req *s4wave_world.WatchTypedObjec
 	ctx = objecttype.WithEngineID(ctx, engineID)
 	if r.sessionPeerIDBound {
 		ctx = objecttype.WithSessionPeerID(ctx, r.sessionPeerID)
+	}
+	ctx, err = r.bindCaller(ctx)
+	if err != nil {
+		return err
 	}
 
 	// Run the typed resource's watch against the exact granted World state.
@@ -298,6 +306,26 @@ func (h *typedObjectHandle) close() {
 	}
 }
 
+// bindCaller resolves accepted participant identity before typed factory dispatch.
+func (r *TypedObjectResource) bindCaller(ctx context.Context) (context.Context, error) {
+	// Read accepted identity only when this mount can resolve its caller.
+	caller := objecttype.CallerFromContext(ctx)
+	if r.participantLookup != nil && caller.PeerID != "" {
+		peerID, err := peer.IDB58Decode(caller.PeerID)
+		if err != nil {
+			return nil, err
+		}
+		participant, err := r.participantLookup(ctx, peerID)
+		if err != nil {
+			return nil, err
+		}
+		caller.Participant = participant
+	}
+
+	// Freeze this identity for the dispatch; permissions remain a consumer check.
+	return objecttype.WithCaller(ctx, caller), nil
+}
+
 // buildTypedObjectHandle resolves the factory with the trusted unary handle scope.
 func (r *TypedObjectResource) buildTypedObjectHandle(key typedObjectResourceKey) (keyed.Routine, *typedObjectHandle) {
 	// Rebuild the trusted factory context from the typed handle key.
@@ -306,6 +334,10 @@ func (r *TypedObjectResource) buildTypedObjectHandle(key typedObjectResourceKey)
 		ctx = objecttype.WithSessionPeerID(ctx, key.sessionPeerID)
 	}
 	ctx = objecttype.WithEngineID(ctx, key.engineID)
+	ctx, err := r.bindCaller(ctx)
+	if err != nil {
+		return nil, &typedObjectHandle{err: err}
+	}
 
 	// A typed factory receives the same state that resolved its object and type.
 	ws := r.ws

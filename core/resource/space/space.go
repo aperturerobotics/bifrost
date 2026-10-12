@@ -553,6 +553,18 @@ func (r *SpaceResource) NewWorldEngineResource() (*resource_world.EngineResource
 		lookupOp,
 		engineInfo,
 		resource_world.WithSessionPeerID(sessionPeerID),
+		resource_world.WithCallerParticipantLookup(func(ctx context.Context, caller peer.ID) (*sobject.SOParticipantConfig, error) {
+			// Resolve caller identity from the mounted SharedObject's accepted config.
+			sharedObject := r.space.GetSharedObject()
+			if sharedObject == nil {
+				return nil, nil
+			}
+			state, err := sharedObject.GetSharedObjectState(ctx)
+			if err != nil {
+				return nil, err
+			}
+			return state.GetParticipantConfigForPeer(ctx, caller.String())
+		}),
 	), nil
 }
 
