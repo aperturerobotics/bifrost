@@ -14,7 +14,8 @@ import (
 )
 
 // CommitManifest writes out with the dist and assets filesystems and stores it
-// in the World.
+// in the World at manifestObjKey. An empty manifestObjKey writes the manifest
+// blocks only, for a caller that stores the returned reference itself.
 func CommitManifest(
 	ctx context.Context,
 	le *logrus.Entry,
@@ -33,6 +34,9 @@ func CommitManifest(
 	})
 	if err != nil {
 		return nil, manifestRef, err
+	}
+	if manifestObjKey == "" {
+		return out, manifestRef, nil
 	}
 
 	// Store the manifest at the object key through a world op.

@@ -18,7 +18,9 @@ import (
 
 // DeepCopyManifest re-encodes a Manifest into a destination World. The
 // destination access function determines its transform and object reference.
-// destManifestMeta overrides the copied metadata when non-nil.
+// destManifestMeta overrides the copied metadata when non-nil. An empty
+// destObjectKey writes the copy without storing a World object, as in
+// CommitManifest.
 func DeepCopyManifest(
 	ctx context.Context,
 	le *logrus.Entry,
