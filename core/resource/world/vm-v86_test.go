@@ -546,9 +546,8 @@ func TestVmV86TypedObject(t *testing.T) {
 		// STARTING is a compatibility alias that stores desired RUNNING.
 		apply(s4wave_vm.VmState_VmState_STARTING, true)
 
-		// A repeated RUNNING request is rejected until the observed runtime
-		// state changes or the caller requests STOPPED.
-		apply(s4wave_vm.VmState_VmState_RUNNING, false)
+		// A repeated RUNNING request changes nothing and succeeds.
+		apply(s4wave_vm.VmState_VmState_RUNNING, true)
 		apply(s4wave_vm.VmState_VmState_STOPPING, true)
 
 		// STOPPING is a compatibility alias that stores desired STOPPED;
