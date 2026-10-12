@@ -47,6 +47,8 @@ type SRPCSpacewaveSessionResourceServiceClient interface {
 	CreateBillingPortal(ctx context.Context, in *s4wave_provider_spacewave.CreateBillingPortalRequest) (*s4wave_provider_spacewave.CreateBillingPortalResponse, error)
 	// CreateBillingAccount creates a new unassigned billing account managed by the caller.
 	CreateBillingAccount(ctx context.Context, in *s4wave_provider_spacewave.CreateBillingAccountRequest) (*s4wave_provider_spacewave.CreateBillingAccountResponse, error)
+	// RedeemInvite redeems a platform invite code for the session's account.
+	RedeemInvite(ctx context.Context, in *s4wave_provider_spacewave.RedeemInviteRequest) (*s4wave_provider_spacewave.RedeemInviteResponse, error)
 	// ListManagedBillingAccounts lists billing accounts the caller manages.
 	ListManagedBillingAccounts(ctx context.Context, in *s4wave_provider_spacewave.ListManagedBillingAccountsRequest) (*s4wave_provider_spacewave.ListManagedBillingAccountsResponse, error)
 	// AssignBillingAccount binds a billing account to a principal.
@@ -420,6 +422,15 @@ func (c *srpcSpacewaveSessionResourceServiceClient) CreateBillingPortal(ctx cont
 func (c *srpcSpacewaveSessionResourceServiceClient) CreateBillingAccount(ctx context.Context, in *s4wave_provider_spacewave.CreateBillingAccountRequest) (*s4wave_provider_spacewave.CreateBillingAccountResponse, error) {
 	out := new(s4wave_provider_spacewave.CreateBillingAccountResponse)
 	err := c.cc.ExecCall(ctx, c.serviceID, "CreateBillingAccount", in, out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *srpcSpacewaveSessionResourceServiceClient) RedeemInvite(ctx context.Context, in *s4wave_provider_spacewave.RedeemInviteRequest) (*s4wave_provider_spacewave.RedeemInviteResponse, error) {
+	out := new(s4wave_provider_spacewave.RedeemInviteResponse)
+	err := c.cc.ExecCall(ctx, c.serviceID, "RedeemInvite", in, out)
 	if err != nil {
 		return nil, err
 	}
@@ -1073,6 +1084,8 @@ type SRPCSpacewaveSessionResourceServiceServer interface {
 	CreateBillingPortal(context.Context, *s4wave_provider_spacewave.CreateBillingPortalRequest) (*s4wave_provider_spacewave.CreateBillingPortalResponse, error)
 	// CreateBillingAccount creates a new unassigned billing account managed by the caller.
 	CreateBillingAccount(context.Context, *s4wave_provider_spacewave.CreateBillingAccountRequest) (*s4wave_provider_spacewave.CreateBillingAccountResponse, error)
+	// RedeemInvite redeems a platform invite code for the session's account.
+	RedeemInvite(context.Context, *s4wave_provider_spacewave.RedeemInviteRequest) (*s4wave_provider_spacewave.RedeemInviteResponse, error)
 	// ListManagedBillingAccounts lists billing accounts the caller manages.
 	ListManagedBillingAccounts(context.Context, *s4wave_provider_spacewave.ListManagedBillingAccountsRequest) (*s4wave_provider_spacewave.ListManagedBillingAccountsResponse, error)
 	// AssignBillingAccount binds a billing account to a principal.
@@ -1244,6 +1257,7 @@ func (SRPCSpacewaveSessionResourceServiceHandler) GetMethodIDs() []string {
 		"SetBillingSpendingLimit",
 		"CreateBillingPortal",
 		"CreateBillingAccount",
+		"RedeemInvite",
 		"ListManagedBillingAccounts",
 		"AssignBillingAccount",
 		"DetachBillingAccount",
@@ -1341,6 +1355,8 @@ func (d *SRPCSpacewaveSessionResourceServiceHandler) InvokeMethod(
 		return true, d.InvokeMethod_CreateBillingPortal(d.impl, strm)
 	case "CreateBillingAccount":
 		return true, d.InvokeMethod_CreateBillingAccount(d.impl, strm)
+	case "RedeemInvite":
+		return true, d.InvokeMethod_RedeemInvite(d.impl, strm)
 	case "ListManagedBillingAccounts":
 		return true, d.InvokeMethod_ListManagedBillingAccounts(d.impl, strm)
 	case "AssignBillingAccount":
@@ -1618,6 +1634,18 @@ func (SRPCSpacewaveSessionResourceServiceHandler) InvokeMethod_CreateBillingAcco
 		return err
 	}
 	out, err := impl.CreateBillingAccount(strm.Context(), req)
+	if err != nil {
+		return err
+	}
+	return strm.MsgSend(out)
+}
+
+func (SRPCSpacewaveSessionResourceServiceHandler) InvokeMethod_RedeemInvite(impl SRPCSpacewaveSessionResourceServiceServer, strm srpc.Stream) error {
+	req := new(s4wave_provider_spacewave.RedeemInviteRequest)
+	if err := strm.MsgRecv(req); err != nil {
+		return err
+	}
+	out, err := impl.RedeemInvite(strm.Context(), req)
 	if err != nil {
 		return err
 	}
@@ -2446,6 +2474,14 @@ type SRPCSpacewaveSessionResourceService_CreateBillingAccountStream interface {
 }
 
 type srpcSpacewaveSessionResourceService_CreateBillingAccountStream struct {
+	srpc.Stream
+}
+
+type SRPCSpacewaveSessionResourceService_RedeemInviteStream interface {
+	srpc.Stream
+}
+
+type srpcSpacewaveSessionResourceService_RedeemInviteStream struct {
 	srpc.Stream
 }
 

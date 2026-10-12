@@ -7,20 +7,26 @@ import { useSessionList } from '@s4wave/app/hooks/useSessionList.js'
 import { NavigatePath } from '@s4wave/web/router/NavigatePath.js'
 import { LoadingCard } from '@s4wave/web/ui/loading/LoadingCard.js'
 
-import { formatPendingJoin, storePendingJoin } from './pendingJoin.js'
-
-export { consumePendingJoin, storePendingJoin } from './pendingJoin.js'
+import { inviteRoute, joinRoute, storePendingRoute } from './pendingRoute.js'
 
 const LazyPairCodePage = lazy(async () => {
   const { PairCodePage } = await import('@s4wave/app/pair/PairCodePage.js')
   return { default: PairCodePage }
 })
 
-// JoinRedirect resolves the first available session and redirects to its join route.
-function JoinRedirect() {
+// SessionRedirect opens a session route in the first available session. With
+// no session yet, it stores the route for SessionContainer to open after
+// sign-in and sends the person to sign in.
+function SessionRedirect({
+  route,
+  pending,
+  title,
+}: {
+  route: string
+  pending: boolean
+  title: string
+}) {
   const environment = useAppEnvironment()
-  const params = useParams()
-  const code = params.code ?? ''
   const resource = useSessionList()
 
   if (resource.loading) {
@@ -30,7 +36,7 @@ function JoinRedirect() {
           <LoadingCard
             view={{
               state: 'loading',
-              title: 'Preparing join',
+              title,
               detail: 'Resolving your session before redirecting.',
             }}
           />
@@ -41,19 +47,39 @@ function JoinRedirect() {
 
   const sessions = resource.value?.sessions ?? []
   if (sessions.length === 0) {
-    // Stash the invite code so it survives account creation.
-    if (code) storePendingJoin(code, environment.documentStorage)
+    if (pending) storePendingRoute(route, environment.documentStorage)
     return <NavigatePath to="/" replace />
   }
 
   const idx = sessions[0].sessionIndex ?? 1
-  const target = code
-    ? `/u/${idx}/join/${formatPendingJoin(code)}`
-    : `/u/${idx}/join`
-  return <NavigatePath to={target} replace />
+  return <NavigatePath to={`/u/${idx}/${route}`} replace />
 }
 
-// SessionRoutes contains checkout, join, and pairing entry routes.
+// JoinRedirect opens the join route of a Space invitation.
+function JoinRedirect() {
+  const code = useParams().code ?? ''
+  return (
+    <SessionRedirect
+      route={code ? joinRoute(code) : 'join'}
+      pending={!!code}
+      title="Preparing join"
+    />
+  )
+}
+
+// InviteRedirect opens the redemption route of a platform invite.
+function InviteRedirect() {
+  const code = useParams().code ?? ''
+  return (
+    <SessionRedirect
+      route={inviteRoute(code)}
+      pending={true}
+      title="Preparing your invite"
+    />
+  )
+}
+
+// SessionRoutes contains checkout, join, invite, and pairing entry routes.
 // AppRoutes owns Quickstart and the mounted session surface.
 export const SessionRoutes = (
   <>
@@ -68,6 +94,9 @@ export const SessionRoutes = (
     </Route>
     <Route path="/join">
       <JoinRedirect />
+    </Route>
+    <Route path="/invite/:code">
+      <InviteRedirect />
     </Route>
     <Route path="/pair/:code">
       <LazyPairCodePage />

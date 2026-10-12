@@ -1919,6 +1919,23 @@ message CreateBillingAccountResponse {
   string billing_account_id = 1;
 }
 
+// RedeemInviteRequest is the request for RedeemInvite.
+// Redeems a platform invite code for the signed-in account.
+message RedeemInviteRequest {
+  // Code is the invite code from the invite link.
+  string code = 1;
+}
+
+// RedeemInviteResponse is the response for RedeemInvite. Redeeming the same
+// invite again returns the same response.
+message RedeemInviteResponse {
+  // Roles are the platform roles the invite granted.
+  repeated string roles = 1;
+  // Sponsored is true when the invite made a sponsored billing account the
+  // account's payer.
+  bool sponsored = 2;
+}
+
 // ListManagedBillingAccountsRequest is the request for ListManagedBillingAccounts.
 message ListManagedBillingAccountsRequest {}
 

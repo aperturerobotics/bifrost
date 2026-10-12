@@ -7197,6 +7197,66 @@ export const CreateBillingAccountResponse: MessageType<CreateBillingAccountRespo
   })
 
 /**
+ * RedeemInviteRequest is the request for RedeemInvite.
+ * Redeems a platform invite code for the signed-in account.
+ *
+ * @generated from message s4wave.provider.spacewave.RedeemInviteRequest
+ */
+export interface RedeemInviteRequest {
+  /**
+   * Code is the invite code from the invite link.
+   *
+   * @generated from field: string code = 1;
+   */
+  code?: string
+}
+
+export const RedeemInviteRequest: MessageType<RedeemInviteRequest> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 's4wave.provider.spacewave.RedeemInviteRequest',
+    fields: [
+      { no: 1, name: 'code', kind: 'scalar', T: ScalarType.STRING },
+    ] satisfies readonly PartialFieldInfo[],
+  })
+
+/**
+ * RedeemInviteResponse is the response for RedeemInvite. Redeeming the same
+ * invite again returns the same response.
+ *
+ * @generated from message s4wave.provider.spacewave.RedeemInviteResponse
+ */
+export interface RedeemInviteResponse {
+  /**
+   * Roles are the platform roles the invite granted.
+   *
+   * @generated from field: repeated string roles = 1;
+   */
+  roles?: string[]
+  /**
+   * Sponsored is true when the invite made a sponsored billing account the
+   * account's payer.
+   *
+   * @generated from field: bool sponsored = 2;
+   */
+  sponsored?: boolean
+}
+
+export const RedeemInviteResponse: MessageType<RedeemInviteResponse> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 's4wave.provider.spacewave.RedeemInviteResponse',
+    fields: [
+      {
+        no: 1,
+        name: 'roles',
+        kind: 'scalar',
+        T: ScalarType.STRING,
+        repeated: true,
+      },
+      { no: 2, name: 'sponsored', kind: 'scalar', T: ScalarType.BOOL },
+    ] satisfies readonly PartialFieldInfo[],
+  })
+
+/**
  * ListManagedBillingAccountsRequest is the request for ListManagedBillingAccounts.
  *
  * @generated from message s4wave.provider.spacewave.ListManagedBillingAccountsRequest

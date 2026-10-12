@@ -36,7 +36,7 @@ import {
 } from '@s4wave/web/ui/dialog.js'
 
 import { base58Decode } from '@s4wave/app/provider/spacewave/keypair-utils.js'
-import { PENDING_BEARER_INVITE_PREFIX } from '@s4wave/app/routes/pendingJoin.js'
+import { BEARER_INVITE_PREFIX } from '@s4wave/app/routes/pendingRoute.js'
 import { mountSpace } from '@s4wave/app/space/space.js'
 
 export interface JoinSpaceDialogProps {
@@ -528,8 +528,8 @@ async function resolveInvite(
     const path = url.hash ? url.hash.slice(1) : url.pathname
     const segments = path.split('/')
     encoded = segments[segments.length - 1]
-  } else if (input.startsWith(PENDING_BEARER_INVITE_PREFIX)) {
-    encoded = input.slice(PENDING_BEARER_INVITE_PREFIX.length)
+  } else if (input.startsWith(BEARER_INVITE_PREFIX)) {
+    encoded = input.slice(BEARER_INVITE_PREFIX.length)
   }
 
   if (encoded !== undefined) {

@@ -1570,6 +1570,16 @@ func (c *SessionClient) CreateBillingAccount(ctx context.Context, displayName st
 	return resp.GetBillingAccountId(), nil
 }
 
+// RedeemInvite redeems a platform invite code for the session's account.
+func (c *SessionClient) RedeemInvite(ctx context.Context, code string) (*s4wave_provider_spacewave.RedeemInviteResponse, error) {
+	req := &s4wave_provider_spacewave.RedeemInviteRequest{Code: code}
+	var resp s4wave_provider_spacewave.RedeemInviteResponse
+	if err := c.postMessage(ctx, "/api/invite/redeem", req, &resp, SeedReasonMutation); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
 // RenameBillingAccount updates the display_name on a BA the caller manages.
 func (c *SessionClient) RenameBillingAccount(ctx context.Context, baID, displayName string) error {
 	body, err := (&api.RenameBillingAccountRequest{

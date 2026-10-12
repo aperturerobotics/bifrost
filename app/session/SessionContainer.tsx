@@ -37,8 +37,9 @@ import { BillingAccountsRoute } from '@s4wave/app/billing/BillingAccountsRoute.j
 import { BillingCancelRoute } from '@s4wave/app/billing/BillingCancelRoute.js'
 import { OrgContainer } from '@s4wave/app/org/OrgContainer.js'
 import { JoinSpacePage } from '@s4wave/app/sobject/JoinSpacePage.js'
+import { InvitePage } from '@s4wave/app/provider/spacewave/InvitePage.js'
 import { useAppEnvironment } from '@s4wave/web/sdk/app/environment.js'
-import { consumePendingJoin } from '@s4wave/app/routes/pendingJoin.js'
+import { consumePendingRoute } from '@s4wave/app/routes/pendingRoute.js'
 import { SessionPageRoutes } from '@s4wave/app/routes/SessionPageRoutes.js'
 import { CreateSpaceRoute } from '@s4wave/app/quickstart/CreateSpaceRoute.js'
 import { SpacewaveRootRouter } from '@s4wave/app/provider/spacewave/SpacewaveRootRouter.js'
@@ -139,12 +140,12 @@ function useSessionArrival(session: Session | null) {
     }
   }, [session, environment.storage])
 
-  // Pick up a pending join code stashed by JoinRedirect (no-session path).
+  // Open a route SessionRedirect stored before a session existed.
   useEffect(() => {
     if (!session) return
-    const code = consumePendingJoin(environment.documentStorage)
-    if (code) {
-      navigate({ path: `./join/${code}`, replace: true })
+    const route = consumePendingRoute(environment.documentStorage)
+    if (route) {
+      navigate({ path: `./${route}`, replace: true })
     }
   }, [session, navigate, environment.documentStorage])
 }
@@ -478,6 +479,9 @@ export function SessionContainer(props: SessionContainerProps) {
                       </Route>
                       <Route path="/join">
                         <JoinSpacePage />
+                      </Route>
+                      <Route path="/invite/:code">
+                        <InvitePage />
                       </Route>
                       <Route path="/pair">
                         <LazyPairCodePage

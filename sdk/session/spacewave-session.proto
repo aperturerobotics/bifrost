@@ -38,6 +38,8 @@ service SpacewaveSessionResourceService {
   rpc CreateBillingPortal(.s4wave.provider.spacewave.CreateBillingPortalRequest) returns (.s4wave.provider.spacewave.CreateBillingPortalResponse);
   // CreateBillingAccount creates a new unassigned billing account managed by the caller.
   rpc CreateBillingAccount(.s4wave.provider.spacewave.CreateBillingAccountRequest) returns (.s4wave.provider.spacewave.CreateBillingAccountResponse);
+  // RedeemInvite redeems a platform invite code for the session's account.
+  rpc RedeemInvite(.s4wave.provider.spacewave.RedeemInviteRequest) returns (.s4wave.provider.spacewave.RedeemInviteResponse);
   // ListManagedBillingAccounts lists billing accounts the caller manages.
   rpc ListManagedBillingAccounts(.s4wave.provider.spacewave.ListManagedBillingAccountsRequest) returns (.s4wave.provider.spacewave.ListManagedBillingAccountsResponse);
   // AssignBillingAccount binds a billing account to a principal.

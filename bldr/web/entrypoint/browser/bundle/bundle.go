@@ -266,7 +266,7 @@ const bootStorageResetRules=[
   {area:'sessionStorage',kind:'key',key:'shell-tabs-layout',owner:'shell-tabs-ui',durability:'session-ui-state',resetPolicy:'reset',migrationPolicy:'recreate-default-layout'},
   {area:'sessionStorage',kind:'key',key:'spacewave-sso-start-provider',owner:'sso-start-flow',durability:'transient-auth-workflow-state',resetPolicy:'preserve',migrationPolicy:'auth-flow-owner-reset-only'},
   {area:'sessionStorage',kind:'key',key:'spacewave-sso-return-to',owner:'sso-start-flow',durability:'transient-auth-workflow-state',resetPolicy:'preserve',migrationPolicy:'auth-flow-owner-reset-only'},
-  {area:'sessionStorage',kind:'key',key:'spacewave-pending-join',owner:'join-flow',durability:'transient-join-workflow-state',resetPolicy:'preserve',migrationPolicy:'join-flow-owner-reset-only'},
+  {area:'sessionStorage',kind:'key',key:'spacewave-pending-route',owner:'pending-route-flow',durability:'transient-route-workflow-state',resetPolicy:'preserve',migrationPolicy:'pending-route-owner-reset-only'},
   {area:'sessionStorage',kind:'key',key:'spacewave-auth-handoff-payload',owner:'auth-handoff-flow',durability:'transient-auth-workflow-state',resetPolicy:'preserve',migrationPolicy:'auth-flow-owner-reset-only'}
 ];
 g.__swBootStorageResetRules=bootStorageResetRules.map(function(rule){return Object.assign({},rule)});

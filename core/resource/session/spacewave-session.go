@@ -1981,6 +1981,14 @@ func (r *SpacewaveSessionResource) CreateBillingAccount(
 	}, nil
 }
 
+// RedeemInvite redeems a platform invite code for the session's account.
+func (r *SpacewaveSessionResource) RedeemInvite(
+	ctx context.Context,
+	req *s4wave_provider_spacewave.RedeemInviteRequest,
+) (*s4wave_provider_spacewave.RedeemInviteResponse, error) {
+	return r.swAcc.GetSessionClient().RedeemInvite(ctx, req.GetCode())
+}
+
 // RenameBillingAccount updates the display name on a BA the caller manages.
 func (r *SpacewaveSessionResource) RenameBillingAccount(
 	ctx context.Context,

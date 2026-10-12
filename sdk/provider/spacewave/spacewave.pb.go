@@ -6950,6 +6950,58 @@ func (x *CreateBillingAccountResponse) GetBillingAccountId() string {
 	return ""
 }
 
+// RedeemInviteRequest is the request for RedeemInvite.
+// Redeems a platform invite code for the signed-in account.
+type RedeemInviteRequest struct {
+	unknownFields []byte
+	// Code is the invite code from the invite link.
+	Code string `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
+}
+
+func (x *RedeemInviteRequest) Reset() {
+	*x = RedeemInviteRequest{}
+}
+
+func (*RedeemInviteRequest) ProtoMessage() {}
+
+func (x *RedeemInviteRequest) GetCode() string {
+	if x != nil {
+		return x.Code
+	}
+	return ""
+}
+
+// RedeemInviteResponse is the response for RedeemInvite. Redeeming the same
+// invite again returns the same response.
+type RedeemInviteResponse struct {
+	unknownFields []byte
+	// Roles are the platform roles the invite granted.
+	Roles []string `protobuf:"bytes,1,rep,name=roles,proto3" json:"roles,omitempty"`
+	// Sponsored is true when the invite made a sponsored billing account the
+	// account's payer.
+	Sponsored bool `protobuf:"varint,2,opt,name=sponsored,proto3" json:"sponsored,omitempty"`
+}
+
+func (x *RedeemInviteResponse) Reset() {
+	*x = RedeemInviteResponse{}
+}
+
+func (*RedeemInviteResponse) ProtoMessage() {}
+
+func (x *RedeemInviteResponse) GetRoles() []string {
+	if x != nil {
+		return x.Roles
+	}
+	return nil
+}
+
+func (x *RedeemInviteResponse) GetSponsored() bool {
+	if x != nil {
+		return x.Sponsored
+	}
+	return false
+}
+
 // ListManagedBillingAccountsRequest is the request for ListManagedBillingAccounts.
 type ListManagedBillingAccountsRequest struct {
 	unknownFields []byte
@@ -12068,6 +12120,39 @@ func (m *CreateBillingAccountResponse) CloneVT() *CreateBillingAccountResponse {
 }
 
 func (m *CreateBillingAccountResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *RedeemInviteRequest) CloneVT() *RedeemInviteRequest {
+	if m == nil {
+		return (*RedeemInviteRequest)(nil)
+	}
+	r := new(RedeemInviteRequest)
+	r.Code = m.Code
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *RedeemInviteRequest) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *RedeemInviteResponse) CloneVT() *RedeemInviteResponse {
+	if m == nil {
+		return (*RedeemInviteResponse)(nil)
+	}
+	r := new(RedeemInviteResponse)
+	r.Sponsored = m.Sponsored
+	r.Roles = protobuf_go_lite.CloneSlice(m.Roles)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *RedeemInviteResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
@@ -17892,6 +17977,49 @@ func (this *CreateBillingAccountResponse) EqualVT(that *CreateBillingAccountResp
 
 func (this *CreateBillingAccountResponse) EqualMessageVT(thatMsg any) bool {
 	that, ok := thatMsg.(*CreateBillingAccountResponse)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *RedeemInviteRequest) EqualVT(that *RedeemInviteRequest) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.Code != that.Code {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *RedeemInviteRequest) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*RedeemInviteRequest)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *RedeemInviteResponse) EqualVT(that *RedeemInviteResponse) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if !protobuf_go_lite.EqualSlice(this.Roles, that.Roles) {
+		return false
+	}
+	if this.Sponsored != that.Sponsored {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *RedeemInviteResponse) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*RedeemInviteResponse)
 	if !ok {
 		return false
 	}
@@ -29935,6 +30063,102 @@ func (x *CreateBillingAccountResponse) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
+// MarshalProtoJSON marshals the RedeemInviteRequest message to JSON.
+func (x *RedeemInviteRequest) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Code != "" || s.HasField("code") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("code")
+		s.WriteString(x.Code)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the RedeemInviteRequest to JSON.
+func (x *RedeemInviteRequest) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the RedeemInviteRequest message from JSON.
+func (x *RedeemInviteRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "code":
+			s.AddField("code")
+			x.Code = s.ReadString()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the RedeemInviteRequest from JSON.
+func (x *RedeemInviteRequest) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the RedeemInviteResponse message to JSON.
+func (x *RedeemInviteResponse) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if len(x.Roles) > 0 || s.HasField("roles") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("roles")
+		s.WriteStringArray(x.Roles)
+	}
+	if x.Sponsored || s.HasField("sponsored") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("sponsored")
+		s.WriteBool(x.Sponsored)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the RedeemInviteResponse to JSON.
+func (x *RedeemInviteResponse) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the RedeemInviteResponse message from JSON.
+func (x *RedeemInviteResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "roles":
+			s.AddField("roles")
+			if s.ReadNil() {
+				x.Roles = nil
+				return
+			}
+			x.Roles = s.ReadStringArray()
+		case "sponsored":
+			s.AddField("sponsored")
+			x.Sponsored = s.ReadBool()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the RedeemInviteResponse from JSON.
+func (x *RedeemInviteResponse) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
 // MarshalProtoJSON marshals the ListManagedBillingAccountsRequest message to JSON.
 func (x *ListManagedBillingAccountsRequest) MarshalProtoJSON(s *json.MarshalState) {
 	if x == nil {
@@ -41759,6 +41983,87 @@ func (m *CreateBillingAccountResponse) MarshalToSizedBufferVT(dAtA []byte) (int,
 	return len(dAtA) - i, nil
 }
 
+func (m *RedeemInviteRequest) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RedeemInviteRequest) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *RedeemInviteRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.Code) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.Code)
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *RedeemInviteResponse) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RedeemInviteResponse) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *RedeemInviteResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.Sponsored {
+		i = protobuf_go_lite.EncodeBool(dAtA, i, m.Sponsored)
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.Roles) > 0 {
+		for iNdEx := len(m.Roles) - 1; iNdEx >= 0; iNdEx-- {
+			i = protobuf_go_lite.EncodeString(dAtA, i, m.Roles[iNdEx])
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *ListManagedBillingAccountsRequest) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -46914,6 +47219,29 @@ func (m *CreateBillingAccountResponse) SizeVT() (n int) {
 	return n
 }
 
+func (m *RedeemInviteRequest) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Code)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *RedeemInviteResponse) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeStringSlice(1, m.Roles)
+	n += protobuf_go_lite.SizeBoolNonZero(1, m.Sponsored)
+	n += len(m.unknownFields)
+	return n
+}
+
 func (m *ListManagedBillingAccountsRequest) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -51502,6 +51830,42 @@ func (x *CreateBillingAccountResponse) MarshalProtoText() string {
 }
 
 func (x *CreateBillingAccountResponse) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *RedeemInviteRequest) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "RedeemInviteRequest")
+	if x.Code != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "code")
+		protobuf_go_lite.TextWriteString(&sb, x.Code)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *RedeemInviteRequest) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *RedeemInviteResponse) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "RedeemInviteResponse")
+	if len(x.Roles) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "roles")
+		for i, v := range x.Roles {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			protobuf_go_lite.TextWriteString(&sb, v)
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	if x.Sponsored != false {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "sponsored")
+		protobuf_go_lite.TextWriteBool(&sb, x.Sponsored)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *RedeemInviteResponse) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -65430,6 +65794,122 @@ func (m *CreateBillingAccountResponse) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.BillingAccountId = v
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *RedeemInviteRequest) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RedeemInviteRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RedeemInviteRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Code", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Code = v
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *RedeemInviteResponse) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RedeemInviteResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RedeemInviteResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Roles", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Roles = append(m.Roles, v)
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Sponsored", wireType)
+			}
+			var v bool
+			v, iNdEx, err = protobuf_go_lite.DecodeVarintBool(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Sponsored = bool(v)
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

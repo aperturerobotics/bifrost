@@ -73,6 +73,8 @@ import {
   ProcessTargetedInvitationResponse,
   ReactivateSubscriptionRequest,
   ReactivateSubscriptionResponse,
+  RedeemInviteRequest,
+  RedeemInviteResponse,
   RefreshBillingStateRequest,
   RefreshBillingStateResponse,
   ReinitializeSharedObjectRequest,
@@ -323,6 +325,17 @@ export const SpacewaveSessionResourceServiceDefinition = {
       name: 'CreateBillingAccount',
       I: CreateBillingAccountRequest,
       O: CreateBillingAccountResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * RedeemInvite redeems a platform invite code for the session's account.
+     *
+     * @generated from rpc s4wave.session.SpacewaveSessionResourceService.RedeemInvite
+     */
+    RedeemInvite: {
+      name: 'RedeemInvite',
+      I: RedeemInviteRequest,
+      O: RedeemInviteResponse,
       kind: MethodKind.Unary,
     },
     /**
@@ -1109,6 +1122,16 @@ export interface SpacewaveSessionResourceService {
   ): Promise<CreateBillingAccountResponse>
 
   /**
+   * RedeemInvite redeems a platform invite code for the session's account.
+   *
+   * @generated from rpc s4wave.session.SpacewaveSessionResourceService.RedeemInvite
+   */
+  RedeemInvite(
+    request: RedeemInviteRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<RedeemInviteResponse>
+
+  /**
    * ListManagedBillingAccounts lists billing accounts the caller manages.
    *
    * @generated from rpc s4wave.session.SpacewaveSessionResourceService.ListManagedBillingAccounts
@@ -1850,6 +1873,17 @@ export interface SpacewaveSessionResourceServiceHandler {
   ): Promise<CreateBillingAccountResponse>
 
   /**
+   * RedeemInvite redeems a platform invite code for the session's account.
+   *
+   * @generated from rpc s4wave.session.SpacewaveSessionResourceService.RedeemInvite
+   */
+  RedeemInvite(
+    request: RedeemInviteRequest,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): Promise<RedeemInviteResponse>
+
+  /**
    * ListManagedBillingAccounts lists billing accounts the caller manages.
    *
    * @generated from rpc s4wave.session.SpacewaveSessionResourceService.ListManagedBillingAccounts
@@ -2497,6 +2531,7 @@ export class SpacewaveSessionResourceServiceClient implements SpacewaveSessionRe
     this.SetBillingSpendingLimit = this.SetBillingSpendingLimit.bind(this)
     this.CreateBillingPortal = this.CreateBillingPortal.bind(this)
     this.CreateBillingAccount = this.CreateBillingAccount.bind(this)
+    this.RedeemInvite = this.RedeemInvite.bind(this)
     this.ListManagedBillingAccounts = this.ListManagedBillingAccounts.bind(this)
     this.AssignBillingAccount = this.AssignBillingAccount.bind(this)
     this.DetachBillingAccount = this.DetachBillingAccount.bind(this)
@@ -2854,6 +2889,25 @@ export class SpacewaveSessionResourceServiceClient implements SpacewaveSessionRe
       abortSignal || undefined,
     )
     return CreateBillingAccountResponse.fromBinary(result)
+  }
+
+  /**
+   * RedeemInvite redeems a platform invite code for the session's account.
+   *
+   * @generated from rpc s4wave.session.SpacewaveSessionResourceService.RedeemInvite
+   */
+  async RedeemInvite(
+    request: RedeemInviteRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<RedeemInviteResponse> {
+    const requestMsg = RedeemInviteRequest.create(request)
+    const result = await this.rpc.request(
+      this.service,
+      SpacewaveSessionResourceServiceDefinition.methods.RedeemInvite.name,
+      RedeemInviteRequest.toBinary(requestMsg),
+      abortSignal || undefined,
+    )
+    return RedeemInviteResponse.fromBinary(result)
   }
 
   /**

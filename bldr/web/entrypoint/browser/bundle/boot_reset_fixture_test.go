@@ -106,7 +106,7 @@ const sessionStorage = new StorageFixture({
   'shell-tabs-layout': '{}',
   'spacewave-sso-start-provider': 'provider',
   'spacewave-sso-return-to': '#/return',
-  'spacewave-pending-join': 'invite',
+  'spacewave-pending-route': 'invite/abc',
   'spacewave-auth-handoff-payload': 'payload',
 })
 
@@ -228,7 +228,7 @@ assert(!sessionStorage.has('shell-tabs-state'), 'boot did not clear shell sessio
 assert(!sessionStorage.has('shell-tabs-layout'), 'boot did not clear shell layout key')
 assert(sessionStorage.getItem('spacewave-sso-start-provider') === 'provider', 'boot must preserve SSO start provider')
 assert(sessionStorage.getItem('spacewave-sso-return-to') === '#/return', 'boot must preserve SSO return path')
-assert(sessionStorage.getItem('spacewave-pending-join') === 'invite', 'boot must preserve pending join payload')
+assert(sessionStorage.getItem('spacewave-pending-route') === 'invite/abc', 'boot must preserve the pending route')
 assert(sessionStorage.getItem('spacewave-auth-handoff-payload') === 'payload', 'boot must preserve auth handoff payload')
 assert(!indexedDBDeleteCalled, 'boot must not delete IndexedDB')
 assert(opfsDirectoryRequested, 'boot must request the OPFS root')

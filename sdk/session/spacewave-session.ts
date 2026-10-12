@@ -57,6 +57,7 @@ import type {
   AssignBillingAccountResponse,
   DetachBillingAccountResponse,
   ListManagedBillingAccountsResponse,
+  RedeemInviteResponse,
   StartDesktopSSOLinkRequest,
   StartDesktopPasskeyReauthRequest,
   StartDesktopPasskeyReauthResponse,
@@ -499,6 +500,14 @@ export class SpacewaveSession extends Resource {
     abortSignal?: AbortSignal,
   ): Promise<ListManagedBillingAccountsResponse> {
     return await this.service.ListManagedBillingAccounts({}, abortSignal)
+  }
+
+  // redeemInvite redeems a platform invite code for the session's account.
+  public async redeemInvite(
+    code: string,
+    abortSignal?: AbortSignal,
+  ): Promise<RedeemInviteResponse> {
+    return await this.service.RedeemInvite({ code }, abortSignal)
   }
 
   // createBillingAccount creates a new unassigned billing account managed by

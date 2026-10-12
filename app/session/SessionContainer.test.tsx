@@ -18,7 +18,7 @@ const mockUseSessionInfo = vi.hoisted(() => vi.fn())
 const mockUseBottomBarSetOpenMenu = vi.hoisted(() => vi.fn())
 const mockUseRootResource = vi.hoisted(() => vi.fn())
 const mockUseStreamingResource = vi.hoisted(() => vi.fn())
-const mockConsumePendingJoin = vi.hoisted(() => vi.fn())
+const mockConsumePendingRoute = vi.hoisted(() => vi.fn())
 const mockNavigate = vi.hoisted(() => vi.fn())
 const mockUseSessionIndex = vi.hoisted(() => vi.fn())
 const mockUsePath = vi.hoisted(() => vi.fn())
@@ -40,8 +40,8 @@ vi.mock('@s4wave/web/hooks/useSessionInfo.js', () => ({
   useSessionInfo: mockUseSessionInfo,
 }))
 
-vi.mock('@s4wave/app/routes/pendingJoin.js', () => ({
-  consumePendingJoin: mockConsumePendingJoin,
+vi.mock('@s4wave/app/routes/pendingRoute.js', () => ({
+  consumePendingRoute: mockConsumePendingRoute,
 }))
 
 vi.mock('@s4wave/web/router/router.js', () => ({
@@ -301,7 +301,7 @@ describe('SessionContainer', () => {
     mockUseBottomBarSetOpenMenu.mockReturnValue(undefined)
     mockUseRootResource.mockReturnValue({ value: null })
     mockStreams(null, {})
-    mockConsumePendingJoin.mockReturnValue(null)
+    mockConsumePendingRoute.mockReturnValue(null)
 
     render(
       <SessionContainer
@@ -344,7 +344,7 @@ describe('SessionContainer', () => {
     mockStreams(null, {
       accountStatus: ProviderAccountStatus.ProviderAccountStatus_READY,
     })
-    mockConsumePendingJoin.mockReturnValue(null)
+    mockConsumePendingRoute.mockReturnValue(null)
     const watchOnboardingStatus = vi.fn(() => 'onboarding-stream')
     const watchLockState = vi.fn(() => 'lock-stream')
     const session = {
@@ -399,7 +399,7 @@ describe('SessionContainer', () => {
     mockUseBottomBarSetOpenMenu.mockReturnValue(undefined)
     mockUseRootResource.mockReturnValue({ value: null })
     mockStreams(null, null)
-    mockConsumePendingJoin.mockReturnValue(null)
+    mockConsumePendingRoute.mockReturnValue(null)
     const session = {
       spacewave: { watchOnboardingStatus: vi.fn() },
       watchLockState: vi.fn(),
@@ -442,7 +442,7 @@ describe('SessionContainer', () => {
     mockUseBottomBarSetOpenMenu.mockReturnValue(undefined)
     mockUseRootResource.mockReturnValue({ value: null })
     mockStreams(null, null)
-    mockConsumePendingJoin.mockReturnValue(null)
+    mockConsumePendingRoute.mockReturnValue(null)
 
     render(
       <SessionContainer
@@ -479,7 +479,7 @@ describe('SessionContainer', () => {
     mockStreams(null, {
       accountStatus: ProviderAccountStatus.ProviderAccountStatus_DELETED,
     })
-    mockConsumePendingJoin.mockReturnValue(null)
+    mockConsumePendingRoute.mockReturnValue(null)
 
     const { rerender } = render(
       <SessionContainer
@@ -546,7 +546,7 @@ describe('SessionContainer', () => {
     mockStreams(null, {
       accountStatus: ProviderAccountStatus.ProviderAccountStatus_DELETED,
     })
-    mockConsumePendingJoin.mockReturnValue(null)
+    mockConsumePendingRoute.mockReturnValue(null)
 
     render(
       <SessionContainer
@@ -585,7 +585,7 @@ describe('SessionContainer', () => {
       accountStatus:
         ProviderAccountStatus.ProviderAccountStatus_UNAUTHENTICATED,
     })
-    mockConsumePendingJoin.mockReturnValue(null)
+    mockConsumePendingRoute.mockReturnValue(null)
 
     render(
       <SessionContainer
@@ -624,7 +624,7 @@ describe('SessionContainer', () => {
       setupRequired: true,
       accountStatus: ProviderAccountStatus.ProviderAccountStatus_DORMANT,
     })
-    mockConsumePendingJoin.mockReturnValue(null)
+    mockConsumePendingRoute.mockReturnValue(null)
 
     render(
       <SessionContainer
@@ -659,7 +659,7 @@ describe('SessionContainer', () => {
       setupRequired: true,
       accountStatus: ProviderAccountStatus.ProviderAccountStatus_DORMANT,
     })
-    mockConsumePendingJoin.mockReturnValue(null)
+    mockConsumePendingRoute.mockReturnValue(null)
 
     render(
       <SessionContainer
@@ -697,7 +697,7 @@ describe('SessionContainer', () => {
         accountStatus: ProviderAccountStatus.ProviderAccountStatus_READY,
       },
     )
-    mockConsumePendingJoin.mockReturnValue(null)
+    mockConsumePendingRoute.mockReturnValue(null)
 
     render(
       <SessionContainer
@@ -720,7 +720,7 @@ describe('SessionContainer', () => {
     expect(screen.queryByTestId('content')).toBeNull()
   })
 
-  it('navigates to a stashed join code once the session is mounted', async () => {
+  it('opens a stashed route once the session is mounted', async () => {
     cleanup()
     mockNavigate.mockReset()
     mockUseStreamingResource.mockReset()
@@ -732,7 +732,7 @@ describe('SessionContainer', () => {
     mockUseBottomBarSetOpenMenu.mockReturnValue(undefined)
     mockUseRootResource.mockReturnValue({ value: null })
     mockStreams(null, {})
-    mockConsumePendingJoin.mockReturnValue('bearer:abc123')
+    mockConsumePendingRoute.mockReturnValue('join/bearer:abc123')
 
     render(
       <SessionContainer
@@ -786,7 +786,7 @@ describe('SessionContainer', () => {
         ],
       },
     )
-    mockConsumePendingJoin.mockReturnValue(null)
+    mockConsumePendingRoute.mockReturnValue(null)
     const acceptSpaceTargetedInvitation = vi.fn(() =>
       Promise.resolve({
         sharedObjectId: 'space-1',
@@ -856,7 +856,7 @@ describe('SessionContainer', () => {
         ],
       },
     )
-    mockConsumePendingJoin.mockReturnValue(null)
+    mockConsumePendingRoute.mockReturnValue(null)
     const processTargetedInvitation = vi.fn(async () => {})
     const session = {
       spacewave: {
@@ -921,7 +921,7 @@ describe('SessionContainer', () => {
         ],
       },
     )
-    mockConsumePendingJoin.mockReturnValue(null)
+    mockConsumePendingRoute.mockReturnValue(null)
     const acceptOrganizationTargetedInvitation = vi.fn(async () => {})
     const session = {
       spacewave: {
@@ -971,7 +971,7 @@ describe('SessionContainer', () => {
       mockUseBottomBarSetOpenMenu.mockReturnValue(undefined)
       mockUseRootResource.mockReturnValue({ value: null })
       mockStreams(null, {})
-      mockConsumePendingJoin.mockReturnValue(null)
+      mockConsumePendingRoute.mockReturnValue(null)
 
       render(
         <SessionContainer

@@ -103,12 +103,10 @@ func ensureDeveloperSpaceTogether(ctx context.Context, t *testing.T, resources [
 	errs := make([]error, len(resources))
 	var wg sync.WaitGroup
 	for i, r := range resources {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			resp, err := r.EnsureDeveloperSpace(ctx, &s4wave_session.EnsureDeveloperSpaceRequest{})
 			ids[i], errs[i] = resp.GetSharedObjectId(), err
-		}()
+		})
 	}
 	wg.Wait()
 	for _, err := range errs {

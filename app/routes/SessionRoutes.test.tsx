@@ -14,11 +14,8 @@ import { JoinSpaceViaInviteResult } from '@s4wave/sdk/session/session.pb.js'
 import { base58Encode } from '@s4wave/app/provider/spacewave/keypair-utils.js'
 import { buildInviteLink } from '@s4wave/app/urls.js'
 
-import {
-  SessionRoutes,
-  consumePendingJoin,
-  storePendingJoin,
-} from './SessionRoutes.js'
+import { SessionRoutes } from './SessionRoutes.js'
+import { consumePendingRoute } from './pendingRoute.js'
 
 const mockLookupInviteCode = vi.hoisted(() => vi.fn())
 const mockJoinSpaceViaInvite = vi.hoisted(() => vi.fn())
@@ -158,8 +155,8 @@ describe('SessionRoutes join redirect', () => {
     render(SessionRoutes)
 
     expect(screen.getByTestId('navigate').textContent).toBe('/')
-    expect(consumePendingJoin()).toBe('bearer:abc123')
-    expect(consumePendingJoin()).toBeNull()
+    expect(consumePendingRoute()).toBe('join/bearer:abc123')
+    expect(consumePendingRoute()).toBeNull()
   })
 
   it('replays the generated hash invite after the pending session handoff', async () => {
@@ -186,8 +183,9 @@ describe('SessionRoutes join redirect', () => {
     })
 
     render(SessionRoutes)
-    const pendingCode = consumePendingJoin()
-    expect(pendingCode).toBe(`bearer:${payload}`)
+    const pendingRoute = consumePendingRoute()
+    expect(pendingRoute).toBe(`join/bearer:${payload}`)
+    const pendingCode = pendingRoute?.slice('join/'.length)
 
     render(
       <JoinSpaceDialog
@@ -221,9 +219,17 @@ describe('SessionRoutes join redirect', () => {
     )
   })
 
-  it('stores and consumes pending join codes directly', () => {
-    storePendingJoin('xyz789')
-    expect(consumePendingJoin()).toBe('bearer:xyz789')
-    expect(consumePendingJoin()).toBeNull()
+  it('stores the platform invite route until a session exists', () => {
+    mockActiveRoutePath.value = '/invite/:code'
+    mockUseParams.mockReturnValue({ code: 'xyz789' })
+    mockUseSessionList.mockReturnValue({
+      loading: false,
+      value: { sessions: [] },
+    })
+
+    render(SessionRoutes)
+
+    expect(screen.getByTestId('navigate').textContent).toBe('/')
+    expect(consumePendingRoute()).toBe('invite/xyz789')
   })
 })
