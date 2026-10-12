@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest'
 import path from 'node:path'
-import url from 'node:url'
 import fs from 'node:fs'
 import {
   installLocalFetchPatch,
@@ -13,39 +12,26 @@ import {
 
 installLocalFetchPatch()
 
-function getModuleDir(): string {
-  if (import.meta.url.startsWith('file:')) {
-    return path.dirname(url.fileURLToPath(import.meta.url))
-  }
-  return path.resolve(process.cwd(), 'forge/lib/v86/bun')
-}
-
-const __dirname = getModuleDir()
-
-// V86_DIR: directory containing build/v86-debug.wasm, bios/, src/main.js.
-// Set via env var or defaults to the v86 repo checkout for local dev.
-const V86_DIR = path.resolve(
-  process.env.V86_DIR ?? path.resolve(__dirname, '../../../../repos/v86'),
-)
-
-// V86FS_DIR: directory containing bzImage, fs.json, flat/.
-// Set via env var or defaults to the wasivm prototype.
-const V86FS_DIR = path.resolve(
-  process.env.V86FS_DIR ??
-    path.resolve(__dirname, '../../../../repos/wasivm/prototypes/debian-v86'),
-)
+// V86_DIR names a v86 checkout with build/v86-debug.wasm, bios/ and
+// src/main.js. V86FS_DIR names a guest directory with bzImage, fs.json and
+// flat/. The boot tests skip unless both are set.
+const V86_DIR = process.env.V86_DIR ? path.resolve(process.env.V86_DIR) : ''
+const V86FS_DIR = process.env.V86FS_DIR
+  ? path.resolve(process.env.V86FS_DIR)
+  : ''
 
 const HAS_WASM =
+  V86_DIR !== '' &&
   fs.existsSync(path.join(V86_DIR, 'build/v86-debug.wasm')) &&
   fs.existsSync(path.join(V86_DIR, 'bios/seabios.bin'))
 const HAS_ROOTFS =
+  V86FS_DIR !== '' &&
   fs.existsSync(path.join(V86FS_DIR, 'bzImage')) &&
   fs.existsSync(path.join(V86FS_DIR, 'fs.json'))
 const HAS_ASSETS = HAS_WASM && HAS_ROOTFS
 
 // Import V86 from the v86 source (same as v86 repo's own tests).
 const v86Module = HAS_ASSETS
-
   ? ((await import(path.join(V86_DIR, 'src/main.js'))) as { V86: V86Ctor })
   : null
 const V86 = v86Module?.V86
@@ -362,9 +348,7 @@ function createMapAdapter(): {
           reply(2)
           return
         }
-        const idx = children.findIndex(
-          (id) => inodeMap.get(id)?.name === name,
-        )
+        const idx = children.findIndex((id) => inodeMap.get(id)?.name === name)
         if (idx < 0) {
           reply(2)
           return
@@ -394,7 +378,9 @@ function createMapAdapter(): {
 }
 
 // Create emulator with 9p rootfs + v86fs device.
-async function createEmulatorV86fs(v86fsAdapter: unknown): Promise<V86Emulator> {
+async function createEmulatorV86fs(
+  v86fsAdapter: unknown,
+): Promise<V86Emulator> {
   if (!V86) {
     throw new Error('missing V86 assets')
   }
@@ -419,61 +405,57 @@ async function createEmulatorV86fs(v86fsAdapter: unknown): Promise<V86Emulator> 
 
 // --- 9p tests (legacy path) ---
 
-describe.runIf(HAS_ASSETS)(
-  'forge v86 bun - 9p',
-  { timeout: 180_000 },
-  () => {
-    it('boots VM and runs echo', async () => {
-      const emulator = await createEmulator9p()
-      try {
-        await waitForSerial(emulator, ':/#', 120_000)
+describe.runIf(HAS_ASSETS)('forge v86 bun - 9p', { timeout: 180_000 }, () => {
+  it('boots VM and runs echo', async () => {
+    const emulator = await createEmulator9p()
+    try {
+      await waitForSerial(emulator, ':/#', 120_000)
 
-        const output = await runCommand(emulator, 'echo hello')
-        expect(output).toContain('hello')
+      const output = await runCommand(emulator, 'echo hello')
+      expect(output).toContain('hello')
 
-        const exitCode = await runCommand(emulator, 'echo $?')
-        expect(exitCode.trim()).toBe('0')
-      } finally {
-        emulator.stop()
-        emulator.destroy()
-      }
-    })
+      const exitCode = await runCommand(emulator, 'echo $?')
+      expect(exitCode.trim()).toBe('0')
+    } finally {
+      emulator.stop()
+      emulator.destroy()
+    }
+  })
 
-    it('captures non-zero exit code', async () => {
-      const emulator = await createEmulator9p()
-      try {
-        await waitForSerial(emulator, ':/#', 120_000)
+  it('captures non-zero exit code', async () => {
+    const emulator = await createEmulator9p()
+    try {
+      await waitForSerial(emulator, ':/#', 120_000)
 
-        await runCommand(emulator, 'false')
-        const exitCode = await runCommand(emulator, 'echo $?')
-        expect(exitCode.trim()).toBe('1')
-      } finally {
-        emulator.stop()
-        emulator.destroy()
-      }
-    })
+      await runCommand(emulator, 'false')
+      const exitCode = await runCommand(emulator, 'echo $?')
+      expect(exitCode.trim()).toBe('1')
+    } finally {
+      emulator.stop()
+      emulator.destroy()
+    }
+  })
 
-    it('runs multiple commands sequentially', async () => {
-      const emulator = await createEmulator9p()
-      try {
-        await waitForSerial(emulator, ':/#', 120_000)
+  it('runs multiple commands sequentially', async () => {
+    const emulator = await createEmulator9p()
+    try {
+      await waitForSerial(emulator, ':/#', 120_000)
 
-        // Use tmpfs since the 9p rootfs is read-only.
-        await runCommand(emulator, 'mount -t tmpfs tmpfs /tmp')
-        await runCommand(emulator, 'echo hello > /tmp/test.txt')
+      // Use tmpfs since the 9p rootfs is read-only.
+      await runCommand(emulator, 'mount -t tmpfs tmpfs /tmp')
+      await runCommand(emulator, 'echo hello > /tmp/test.txt')
 
-        const content = await runCommand(emulator, 'cat /tmp/test.txt')
-        expect(content.trim()).toBe('hello')
+      const content = await runCommand(emulator, 'cat /tmp/test.txt')
+      expect(content.trim()).toBe('hello')
 
-        const exitCode = await runCommand(emulator, 'echo $?')
-        expect(exitCode.trim()).toBe('0')
-      } finally {
-        emulator.stop()
-        emulator.destroy()
-      }
-    })
-  },
-)
+      const exitCode = await runCommand(emulator, 'echo $?')
+      expect(exitCode.trim()).toBe('0')
+    } finally {
+      emulator.stop()
+      emulator.destroy()
+    }
+  })
+})
 
 // --- v86fs tests (primary path) ---
 
@@ -510,10 +492,7 @@ describe.runIf(HAS_ASSETS)(
         await runCommand(emulator, 'mount -t v86fs none /mnt')
 
         // Write a new file via v86fs.
-        await runCommand(
-          emulator,
-          'echo "written-via-v86fs" > /mnt/output.txt',
-        )
+        await runCommand(emulator, 'echo "written-via-v86fs" > /mnt/output.txt')
 
         // Read it back.
         const content = await runCommand(emulator, 'cat /mnt/output.txt')
