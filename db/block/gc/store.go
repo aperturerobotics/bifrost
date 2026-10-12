@@ -18,6 +18,14 @@ type pendingRef struct {
 	source, target string
 }
 
+// pendingReput is a write of a block that already existed, with the refs the
+// writer holds for it. FlushPending records those refs when the graph holds no
+// outgoing edge of the block.
+type pendingReput struct {
+	ref     *block.BlockRef
+	targets []*block.BlockRef
+}
+
 // WALAppender appends batched ref graph edge operations to a write-ahead
 // log. When set on GCStoreOps, FlushPending writes to the WAL instead
 // of calling ApplyRefBatch on the RefGraph directly.
@@ -43,9 +51,11 @@ type WALAppender interface {
 //
 // Only a block's first write records its outgoing edges: the inner store
 // reports whether each written block already existed, and an existing block
-// keeps the edges recorded then. A Volume with a ref graph therefore needs every
-// stored block to have its edges; blocks written without tracking must be
-// repaired offline, since the store keeps block bytes without their refs.
+// keeps the edges recorded then. A block stored without tracking has none, and
+// the store keeps block bytes without their refs. Writing such a block again
+// with refs therefore records them when the graph holds no outgoing edge of the
+// block, so a child it references cannot lose its last owner to another parent
+// released later.
 type GCStoreOps struct {
 	store      block.StoreOps
 	refGraph   RefGraphOps
@@ -61,6 +71,7 @@ type GCStoreOps struct {
 	pendingUnref      []string            // block IRIs needing parent/unreferenced -> block edges
 	pendingUnstage    []string            // existing block IRIs leaving unreferenced for the parent
 	pendingCandidates []string            // cache-filled block IRIs needing unreferenced -> block edges
+	pendingReputs     []pendingReput      // existing blocks written with refs, checked for lost edges
 	pendingRefs       []pendingRef        // source -> target block ref edges
 	pendingUnunref    []string            // block IRIs to remove from unreferenced
 	pendingAdds       []RefEdge           // normalized add edges left by a failed direct flush
@@ -328,9 +339,10 @@ func (g *GCStoreOps) RmBlock(ctx context.Context, ref *block.BlockRef) error {
 
 // bufferPutLocked buffers the ownership edges of one written block. A new block
 // takes its owner and records the edges it holds, adopting the blocks it
-// references. An existing block recorded its edges at its first write, so a
-// parent only takes it again and clears its staging edge, and an unparented
-// store leaves it as it is.
+// references. An existing block recorded its edges at its first write unless it
+// was stored without tracking, so FlushPending checks that it has them. A
+// parent takes it again and clears its staging edge, and an unparented store
+// leaves it as it is.
 func (g *GCStoreOps) bufferPutLocked(ref *block.BlockRef, targets []*block.BlockRef, existed bool) {
 	iri := BlockIRI(ref)
 	if !existed {
@@ -338,6 +350,9 @@ func (g *GCStoreOps) bufferPutLocked(ref *block.BlockRef, targets []*block.Block
 		delete(g.pendingReleases, iri)
 		g.bufferRefEdgesLocked(ref, targets, true)
 		return
+	}
+	if len(targets) != 0 {
+		g.pendingReputs = append(g.pendingReputs, pendingReput{ref: ref, targets: targets})
 	}
 	if g.parentIRI != "" {
 		g.pendingUnref = append(g.pendingUnref, iri)
@@ -440,6 +455,11 @@ func (g *GCStoreOps) FlushPending(ctx context.Context) error {
 	}
 	ctx, task := trace.NewTask(ctx, taskName)
 	defer task.End()
+
+	// Record the edges of existing blocks that lost them.
+	if err := g.recordLostEdges(ctx); err != nil {
+		return err
+	}
 
 	// Finish an older failed delivery before taking newer ownership changes.
 	g.mu.Lock()
@@ -544,6 +564,37 @@ func (g *GCStoreOps) FlushPending(ctx context.Context) error {
 		return nil
 	}
 	return g.flushRefEdges(ctx, adds, removes)
+}
+
+// recordLostEdges buffers the child edges of each buffered existing block that
+// holds no outgoing edge, adopting its children as a first write does. Edges
+// the graph, its journal or this store's buffers hold count as held. A failed
+// read leaves the unchecked blocks buffered for the next flush.
+func (g *GCStoreOps) recordLostEdges(ctx context.Context) error {
+	// Snapshot the buffered blocks, since writers keep appending to them.
+	g.mu.Lock()
+	reputs := slices.Clone(g.pendingReputs)
+	g.mu.Unlock()
+
+	// Buffer the edges of each block that holds none.
+	for _, reput := range reputs {
+		held, err := g.getOutgoingBlockRefs(ctx, BlockIRI(reput.ref))
+		if err != nil {
+			return err
+		}
+		if len(held) != 0 {
+			continue
+		}
+		g.mu.Lock()
+		g.bufferRefEdgesLocked(reput.ref, reput.targets, true)
+		g.mu.Unlock()
+	}
+
+	// Drop the checked blocks and keep any appended meanwhile.
+	g.mu.Lock()
+	g.pendingReputs = g.pendingReputs[len(reputs):]
+	g.mu.Unlock()
+	return nil
 }
 
 // flushRefEdges retains every undelivered edge before reporting an error.
