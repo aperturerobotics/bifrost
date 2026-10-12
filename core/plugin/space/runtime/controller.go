@@ -12,6 +12,8 @@ import (
 	"github.com/aperturerobotics/util/broadcast"
 	"github.com/pkg/errors"
 	process_binding "github.com/s4wave/spacewave/core/plugin/process"
+	"github.com/s4wave/spacewave/db/world"
+	"github.com/s4wave/spacewave/sdk/world/objecttype"
 )
 
 // ControllerID is the controller ID.
@@ -160,6 +162,49 @@ func (c *Controller) NotifyProcessBindingsChanged() {
 	// Reconcile process bindings within the running Space generation.
 	if gen != nil {
 		gen.GetSpaceController().NotifyChanged()
+	}
+}
+
+// HandleDirective holds ObjectType and operation lookups for this Space's
+// engine on the daemon bus while its plugins register. A caller outside the
+// Space, such as a session applying an operation, then sees a Space plugin's
+// capabilities instead of finding none while the plugin starts.
+func (c *Controller) HandleDirective(ctx context.Context, di directive.Instance) ([]directive.Resolver, error) {
+	// Match only lookups for this Space's engine.
+	var engineID string
+	switch d := di.GetDirective().(type) {
+	case objecttype.LookupObjectType:
+		engineID = d.LookupObjectTypeEngineID()
+	case world.LookupWorldOp:
+		engineID = d.LookupWorldOpEngineID()
+	}
+	if engineID == "" || engineID != c.GetConfig().GetSpace().GetEngineId() {
+		return nil, nil
+	}
+	return directive.R(directive.NewFuncResolver(c.holdWhileRegistering), nil)
+}
+
+// holdWhileRegistering keeps handler non-idle while a generation is starting
+// or its desired plugins are still registering. A failed start releases the
+// hold until the retry.
+func (c *Controller) holdWhileRegistering(ctx context.Context, handler directive.ResolverHandler) error {
+	for {
+		// Read the generation, then its plugins' registration state.
+		gen, genCh, err := c.GetGeneration()
+		pending := gen == nil && err == nil
+		var spaceCh <-chan struct{}
+		if gen != nil {
+			pending, spaceCh = gen.GetSpaceController().GetRegistrationPendingAndWaitCh()
+		}
+
+		// Report the state and wait for either to change.
+		handler.MarkIdle(!pending)
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-genCh:
+		case <-spaceCh:
+		}
 	}
 }
 

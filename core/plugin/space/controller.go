@@ -294,7 +294,9 @@ func (c *Controller) HandleDirective(ctx context.Context, di directive.Instance)
 	case plugin_list.ListAvailablePlugins:
 		return c.resolveListAvailablePlugins(ctx, di, dir)
 	case objecttype.LookupObjectType:
-		return c.resolveLookupObjectType(dir)
+		return c.resolveCapabilityLookup(dir.LookupObjectTypeEngineID())
+	case world.LookupWorldOp:
+		return c.resolveCapabilityLookup(dir.LookupWorldOpEngineID())
 	}
 	return nil, nil
 }
@@ -324,18 +326,16 @@ func (c *Controller) resolveListAvailablePlugins(
 	)
 }
 
-// resolveLookupObjectType holds LookupObjectType for this Space's engine
-// non-idle while a desired plugin is still registering its object types.
-func (c *Controller) resolveLookupObjectType(
-	dir objecttype.LookupObjectType,
-) ([]directive.Resolver, error) {
-	engineID := dir.LookupObjectTypeEngineID()
+// resolveCapabilityLookup holds an ObjectType or operation lookup for this
+// Space's engine non-idle while a desired plugin is still registering, so the
+// lookup sees the plugin's capabilities instead of finding none.
+func (c *Controller) resolveCapabilityLookup(engineID string) ([]directive.Resolver, error) {
 	if engineID == "" || engineID != c.GetConfig().GetEngineId() {
 		return nil, nil
 	}
 	return directive.R(directive.NewFuncResolver(func(ctx context.Context, handler directive.ResolverHandler) error {
 		for {
-			pending, waitCh := c.loadedPlugins.HasPendingAndWaitCh()
+			pending, waitCh := c.GetRegistrationPendingAndWaitCh()
 			handler.MarkIdle(!pending)
 			select {
 			case <-ctx.Done():
@@ -344,6 +344,12 @@ func (c *Controller) resolveLookupObjectType(
 			}
 		}
 	}), nil)
+}
+
+// GetRegistrationPendingAndWaitCh reports whether a desired plugin is still
+// registering its capabilities, and returns a channel closed when that changes.
+func (c *Controller) GetRegistrationPendingAndWaitCh() (bool, <-chan struct{}) {
+	return c.loadedPlugins.HasPendingAndWaitCh()
 }
 
 // resolveFetchManifest handles a FetchManifest directive. The Space World
