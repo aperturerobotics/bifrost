@@ -390,6 +390,10 @@ func SetManifest(
 // SetManifestRef stores ref as the root of the object at objKey, typed as a
 // ManifestRef. It replaces a Manifest previously stored at objKey and reports
 // whether the object changed.
+//
+// A manifest in the World bucket is stored without its bucket id, so the
+// manifest blocks stay edges of the World DAG, as they do for a Manifest
+// object root. LookupManifestRef restores the bucket id.
 func SetManifestRef(
 	ctx context.Context,
 	ws world.WorldState,
@@ -403,8 +407,13 @@ func SetManifestRef(
 	}
 
 	// Write the reference as the object root, then type the object.
+	worldBucketID, err := lookupWorldBucketID(ctx, ws)
+	if err != nil {
+		return false, err
+	}
+	local := replaceManifestBucketID(ref, worldBucketID, "")
 	_, _, err = world.AccessWorldObject(ctx, ws, objKey, true, func(bcs *block.Cursor) error {
-		bcs.SetBlock(ref.CloneVT(), true)
+		bcs.SetBlock(local, true)
 		return nil
 	})
 	if err != nil {
@@ -413,8 +422,8 @@ func SetManifestRef(
 	return true, world_types.SetObjectType(ctx, ws, objKey, ManifestRefTypeID)
 }
 
-// checkManifestRefStored reports whether objKey already holds ref as a ManifestRef
-// object.
+// checkManifestRefStored reports whether objKey already holds ref as a
+// ManifestRef object.
 func checkManifestRefStored(
 	ctx context.Context,
 	ws world.WorldState,
@@ -426,11 +435,38 @@ func checkManifestRefStored(
 	if err != nil || objType != ManifestRefTypeID {
 		return false, err
 	}
-	curr, _, err := LookupManifestRef(ctx, ws, objKey)
+	curr, _, err := readManifestRefObject(ctx, ws, objKey)
 	if err != nil {
 		return false, err
 	}
-	return curr.EqualVT(ref), nil
+
+	// Compare in the stored form, without the World bucket id.
+	worldBucketID, err := lookupWorldBucketID(ctx, ws)
+	if err != nil {
+		return false, err
+	}
+	return curr.EqualVT(replaceManifestBucketID(ref, worldBucketID, "")), nil
+}
+
+// replaceManifestBucketID returns a copy of ref whose manifest bucket id is to
+// when it was from.
+func replaceManifestBucketID(ref *bldr_manifest.ManifestRef, from, to string) *bldr_manifest.ManifestRef {
+	out := ref.CloneVT()
+	objRef := out.GetManifestRef()
+	if objRef.GetRootRef() != nil && objRef.GetBucketId() == from {
+		objRef.BucketId = to
+	}
+	return out
+}
+
+// lookupWorldBucketID returns the id of the bucket holding the World's blocks.
+func lookupWorldBucketID(ctx context.Context, ws world.WorldState) (string, error) {
+	var bucketID string
+	err := ws.AccessWorldState(ctx, nil, func(bls *bucket_lookup.Cursor) error {
+		bucketID = bls.GetOpArgs().GetBucketId()
+		return nil
+	})
+	return bucketID, err
 }
 
 // manifestRootRefReplaces reports whether storing rootRef replaces the root ref
@@ -456,11 +492,7 @@ func manifestRootRefReplaces(
 	}
 
 	// Replace a same-executable ref only to move it into the World bucket.
-	var worldBucketID string
-	err = ws.AccessWorldState(ctx, nil, func(bls *bucket_lookup.Cursor) error {
-		worldBucketID = bls.GetOpArgs().GetBucketId()
-		return nil
-	})
+	worldBucketID, err := lookupWorldBucketID(ctx, ws)
 	if err != nil {
 		return false, err
 	}
@@ -486,8 +518,23 @@ func LookupManifest(ctx context.Context, ws world.WorldState, objKey string) (*b
 	return manifest, ref, err
 }
 
-// LookupManifestRef looks up a ManifestRef object in the world.
+// LookupManifestRef looks up a ManifestRef object in the world. A manifest
+// stored in the World bucket carries that bucket id again.
 func LookupManifestRef(ctx context.Context, ws world.WorldState, objKey string) (*bldr_manifest.ManifestRef, *bucket.ObjectRef, error) {
+	// Read the stored reference and restore the World bucket id.
+	local, ref, err := readManifestRefObject(ctx, ws, objKey)
+	if err != nil {
+		return nil, ref, err
+	}
+	worldBucketID, err := lookupWorldBucketID(ctx, ws)
+	if err != nil {
+		return nil, ref, err
+	}
+	return replaceManifestBucketID(local, "", worldBucketID), ref, nil
+}
+
+// readManifestRefObject reads the ManifestRef stored as the root of objKey.
+func readManifestRefObject(ctx context.Context, ws world.WorldState, objKey string) (*bldr_manifest.ManifestRef, *bucket.ObjectRef, error) {
 	// Fetch the object and unmarshal its manifest ref block.
 	obj, err := world.MustGetObject(ctx, ws, objKey)
 	defer world.ReleaseObjectState(obj)
