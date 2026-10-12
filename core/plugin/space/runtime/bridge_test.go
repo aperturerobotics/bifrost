@@ -146,7 +146,7 @@ func TestParentFilterForwardsInstallationLoads(t *testing.T) {
 	// Record what reaches the child through the parent filter.
 	recorder := newDirectiveRecorder()
 	addTestController(t, child, recorder)
-	addTestController(t, parent, bus_bridge.NewBusBridge(child, parentFilter("space-a", []string{"app"})))
+	addTestController(t, parent, bus_bridge.NewBusBridge(child, parentFilter("engine-a", "space-a", []string{"app"})))
 
 	// Pin plugin files to a manifest root.
 	root, err := hash.Sum(hash.RecommendedHashType, []byte("manifest"))
@@ -156,11 +156,12 @@ func TestParentFilterForwardsInstallationLoads(t *testing.T) {
 	pinned := bldr_plugin.PluginArtifactID("plugin", root.MarshalString())
 	pinnedApp := bldr_plugin.PluginArtifactID("app", root.MarshalString())
 
-	// The scheduler lookup, this installation's loads, and the pinned files of
-	// Space plugins reach the child.
+	// The scheduler lookup, this installation's loads, the services of this
+	// Space's processes, and the pinned files of Space plugins reach the child.
 	forwarded := []directive.Directive{
 		bldr_plugin.NewLookupPluginScheduler(),
 		bldr_plugin.NewLoadPluginInstanced("plugin", "space-a"),
+		bifrost_rpc.NewLookupRpcService(objecttype.ProcessServicePrefix("engine-a", "vm/a")+"svc", ""),
 		unixfs_access.NewAccessUnixFS(bldr_plugin.PluginAssetsFsId(pinned)),
 		unixfs_access.NewAccessUnixFS(bldr_plugin.PluginDistFsId(pinned)),
 	}
@@ -169,9 +170,12 @@ func TestParentFilterForwardsInstallationLoads(t *testing.T) {
 		recorder.waitFor(t, dir)
 	}
 
-	// Default, other installation, and app plugin loads, unpinned and app
-	// plugin files, and other filesystems stay on the parent.
+	// Default, other installation, and app plugin loads, the processes of
+	// other Spaces, unpinned and app plugin files, and other filesystems stay
+	// on the parent.
 	kept := []directive.Directive{
+		bifrost_rpc.NewLookupRpcService(objecttype.ProcessServicePrefix("engine-b", "vm/a")+"svc", ""),
+		bifrost_rpc.NewLookupRpcService("vm/a/svc", ""),
 		bldr_plugin.NewLoadPlugin("plugin"),
 		bldr_plugin.NewLoadPluginInstanced("plugin", "space-b"),
 		bldr_plugin.NewLoadPluginInstanced("app", "space-a"),
@@ -234,7 +238,7 @@ func TestBridgeScopedObjectTypeLifecycle(t *testing.T) {
 		t.Fatal(err)
 	}
 	addTestController(t, child, bus_bridge.NewBusBridge(parent, bridgeFilter(&plugin_space.Config{EngineId: "engine-a"}, nil)))
-	addTestController(t, parent, bus_bridge.NewBusBridge(child, parentFilter("engine-a", nil)))
+	addTestController(t, parent, bus_bridge.NewBusBridge(child, parentFilter("engine-a", "engine-a", nil)))
 	registerBridgedObjectType(t, resources, rootClient, "engine-b", "other")
 
 	// Keep a scoped demand alive before its handler is registered.
@@ -263,7 +267,7 @@ func TestBridgeScopedObjectTypeLifecycle(t *testing.T) {
 	if parentInst == nil {
 		t.Fatal("parent did not retain the original scoped directive")
 	}
-	if parentDirective(lookup, "engine-a", nil) {
+	if parentDirective(lookup, "engine-a", "engine-a", nil) {
 		t.Fatal("typed lookup would be forwarded back into the child")
 	}
 

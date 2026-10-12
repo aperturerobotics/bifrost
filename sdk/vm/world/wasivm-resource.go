@@ -40,9 +40,12 @@ func wasiVmFactory(
 		resourceWS = world.NewEngineWorldState(engine, true)
 	}
 
-	// Serve execution and the console of the VM.
-	resource := &wasiVmResource{le: le, objectKey: objectKey, ws: resourceWS, b: b}
-	console := newWasiVmConsoleForwarder(b, objectKey)
+	// Serve execution and the console of the VM. The running instance routes
+	// its console under the process prefix of the VM, which the Space forwards
+	// from the bus of every viewer.
+	route := objecttype.ProcessServicePrefix(objecttype.EngineIDFromContext(ctx), objectKey)
+	resource := &wasiVmResource{le: le, objectKey: objectKey, ws: resourceWS, b: b, route: route}
+	console := newWasiVmConsoleForwarder(b, route)
 	mux := resource_server.NewResourceMux(func(mux srpc.Mux) error {
 		if err := s4wave_process.SRPCRegisterPersistentExecutionService(mux, resource); err != nil {
 			return err
@@ -59,6 +62,8 @@ type wasiVmResource struct {
 	ws        world.WorldState
 	// b serves the console route of the running VM.
 	b bus.Bus
+	// route prefixes the services of the running VM on b.
+	route string
 }
 
 // wasiVmRun is one boot of a WasiVM.
@@ -334,7 +339,7 @@ func (r *wasiVmResource) exposeConsole(ctx context.Context, console *wasiVmConso
 		func(context.Context, func()) (srpc.Invoker, func(), error) {
 			return mux, nil, nil
 		},
-		[]string{wasiVmConsoleServicePrefix + r.objectKey + "/"},
+		[]string{r.route},
 		true,
 		nil,
 		nil,

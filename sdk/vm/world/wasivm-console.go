@@ -16,10 +16,6 @@ import (
 // attach after it was written.
 const wasiVmScrollback = 64 * 1024
 
-// wasiVmConsoleServicePrefix prefixes the bus route to the console of a
-// running WasiVM, followed by the object key and a slash.
-const wasiVmConsoleServicePrefix = "vm/wasivm/console/"
-
 // wasiVmConsole is the terminal of one WasiVM run. It keeps the recent output
 // for viewers that attach later and fans new output and the exit out to every
 // attached viewer.
@@ -157,11 +153,12 @@ type wasiVmConsoleForwarder struct {
 	serviceID string
 }
 
-// newWasiVmConsoleForwarder forwards consoles of objectKey over the bus b.
-func newWasiVmConsoleForwarder(b bus.Bus, objectKey string) *wasiVmConsoleForwarder {
+// newWasiVmConsoleForwarder forwards consoles to the VM process serving
+// under route on the bus b.
+func newWasiVmConsoleForwarder(b bus.Bus, route string) *wasiVmConsoleForwarder {
 	return &wasiVmConsoleForwarder{
 		inv:       bifrost_rpc.NewInvoker(b, "", true),
-		serviceID: wasiVmConsoleServicePrefix + objectKey + "/" + s4wave_vm.SRPCWasiVmConsoleServiceServiceID,
+		serviceID: route + s4wave_vm.SRPCWasiVmConsoleServiceServiceID,
 	}
 }
 

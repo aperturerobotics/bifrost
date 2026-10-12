@@ -11,6 +11,7 @@ import (
 	unixfs_access "github.com/s4wave/spacewave/db/unixfs/access"
 	"github.com/s4wave/spacewave/db/volume"
 	"github.com/s4wave/spacewave/db/world"
+	bifrost_rpc "github.com/s4wave/spacewave/net/rpc"
 	"github.com/s4wave/spacewave/sdk/world/objecttype"
 )
 
@@ -56,9 +57,9 @@ func bridgeDirective(dir directive.Directive, engineID string, volumeIDs, appPlu
 }
 
 // parentFilter forwards parent lookups the generation answers into it.
-func parentFilter(instanceKey string, appPluginIDs []string) func(directive.Instance) (bool, error) {
+func parentFilter(engineID, instanceKey string, appPluginIDs []string) func(directive.Instance) (bool, error) {
 	return func(inst directive.Instance) (bool, error) {
-		return parentDirective(inst.GetDirective(), instanceKey, appPluginIDs), nil
+		return parentDirective(inst.GetDirective(), engineID, instanceKey, appPluginIDs), nil
 	}
 }
 
@@ -66,12 +67,18 @@ func parentFilter(instanceKey string, appPluginIDs []string) func(directive.Inst
 // generation: LookupPluginScheduler, so session status sees its scheduler,
 // loads of this Space's plugin installation, so the daemon can reach a Space
 // plugin that registered a handler, and the pinned files of a Space plugin
-// execution, so a browser can load the viewers it registered. An empty
-// instanceKey forwards no loads. App plugin loads and files stay on the parent.
-func parentDirective(dir directive.Directive, instanceKey string, appPluginIDs []string) bool {
+// execution, so a browser can load the viewers it registered. The services of
+// the processes of objects in the Space's World engine engineID forward too,
+// so a viewer of an object reaches its running process. An empty instanceKey
+// forwards no loads, and an empty engineID no process services. App plugin
+// loads and files stay on the parent.
+func parentDirective(dir directive.Directive, engineID, instanceKey string, appPluginIDs []string) bool {
 	switch d := dir.(type) {
 	case bldr_plugin.LookupPluginScheduler:
 		return true
+	case bifrost_rpc.LookupRpcService:
+		return engineID != "" &&
+			strings.HasPrefix(d.LookupRpcServiceID(), objecttype.EngineProcessServicePrefix(engineID))
 	case bldr_plugin.LoadPlugin:
 		return instanceKey != "" &&
 			d.LoadPluginInstanceKey() == instanceKey &&
