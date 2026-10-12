@@ -82,6 +82,9 @@ message ReplayCursorOutcome {
   // Payloads are the roots of the operation's payload, which replay reads
   // again while the operation is above the checkpoint.
   repeated .block.BlockRef payloads = 6;
+  // RetainedRoots are the retained roots after the operation when they differ
+  // from those before it, and unset when the operation kept them.
+  RetainedRootSet retained_roots = 7;
 }
 
 // ReplaySpan is one block of the chain each member keeps as its one local

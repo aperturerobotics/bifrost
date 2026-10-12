@@ -193,6 +193,9 @@ type ReplayCursorOutcome struct {
 	// Payloads are the roots of the operation's payload, which replay reads
 	// again while the operation is above the checkpoint.
 	Payloads []*block.BlockRef `protobuf:"bytes,6,rep,name=payloads,proto3" json:"payloads,omitempty"`
+	// RetainedRoots are the retained roots after the operation when they differ
+	// from those before it, and unset when the operation kept them.
+	RetainedRoots *RetainedRootSet `protobuf:"bytes,7,opt,name=retained_roots,json=retainedRoots,proto3" json:"retainedRoots,omitempty"`
 }
 
 func (x *ReplayCursorOutcome) Reset() {
@@ -239,6 +242,13 @@ func (x *ReplayCursorOutcome) GetWorld() *block.BlockRef {
 func (x *ReplayCursorOutcome) GetPayloads() []*block.BlockRef {
 	if x != nil {
 		return x.Payloads
+	}
+	return nil
+}
+
+func (x *ReplayCursorOutcome) GetRetainedRoots() *RetainedRootSet {
+	if x != nil {
+		return x.RetainedRoots
 	}
 	return nil
 }
@@ -559,6 +569,7 @@ func (m *ReplayCursorOutcome) CloneVT() *ReplayCursorOutcome {
 	r.Hash = protobuf_go_lite.CloneBytes(m.Hash)
 	r.World = protobuf_go_lite.CloneVTValue(m.World)
 	r.Payloads = protobuf_go_lite.CloneVTSlice(m.Payloads)
+	r.RetainedRoots = protobuf_go_lite.CloneVTValue(m.RetainedRoots)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -836,6 +847,9 @@ func (this *ReplayCursorOutcome) EqualVT(that *ReplayCursorOutcome) bool {
 		return false
 	}
 	if !protobuf_go_lite.EqualVTSliceImplicit(this.Payloads, that.Payloads, func() *block.BlockRef { return &block.BlockRef{} }) {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.RetainedRoots, that.RetainedRoots) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -1366,6 +1380,11 @@ func (x *ReplayCursorOutcome) MarshalProtoJSON(s *json.MarshalState) {
 		}
 		s.WriteArrayEnd()
 	}
+	if x.RetainedRoots != nil || s.HasField("retainedRoots") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("retainedRoots")
+		x.RetainedRoots.MarshalProtoJSON(s.WithField("retainedRoots"))
+	}
 	s.WriteObjectEnd()
 }
 
@@ -1420,6 +1439,13 @@ func (x *ReplayCursorOutcome) UnmarshalProtoJSON(s *json.UnmarshalState) {
 				}
 				x.Payloads = append(x.Payloads, v)
 			})
+		case "retained_roots", "retainedRoots":
+			if s.ReadNil() {
+				x.RetainedRoots = nil
+				return
+			}
+			x.RetainedRoots = &RetainedRootSet{}
+			x.RetainedRoots.UnmarshalProtoJSON(s.WithField("retained_roots", true))
 		}
 	})
 }
@@ -2105,6 +2131,16 @@ func (m *ReplayCursorOutcome) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.RetainedRoots != nil {
+		size, err := m.RetainedRoots.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x3a
+	}
 	if len(m.Payloads) > 0 {
 		for iNdEx := len(m.Payloads) - 1; iNdEx >= 0; iNdEx-- {
 			size, err := m.Payloads[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
@@ -2637,6 +2673,10 @@ func (m *ReplayCursorOutcome) SizeVT() (n int) {
 		l = e.SizeVT()
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
+	if m.RetainedRoots != nil {
+		l = m.RetainedRoots.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -2922,6 +2962,10 @@ func (x *ReplayCursorOutcome) MarshalProtoText() string {
 			}
 		}
 		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	if x.RetainedRoots != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "retained_roots")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.RetainedRoots)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -3454,6 +3498,21 @@ func (m *ReplayCursorOutcome) UnmarshalVT(dAtA []byte) error {
 			}
 			m.Payloads = append(m.Payloads, &block.BlockRef{})
 			if err := m.Payloads[len(m.Payloads)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RetainedRoots", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.RetainedRoots == nil {
+				m.RetainedRoots = &RetainedRootSet{}
+			}
+			if err := m.RetainedRoots.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

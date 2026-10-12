@@ -200,6 +200,35 @@ export const InnerState: MessageType<InnerState> =
   })
 
 /**
+ * RetainedRootSet is the block each member keeps as its one local named root
+ * for all retained roots. Its outgoing refs are the retained World roots.
+ *
+ * @generated from message sobject.world.engine.RetainedRootSet
+ */
+export interface RetainedRootSet {
+  /**
+   * Roots are the retained roots, sorted by name.
+   *
+   * @generated from field: repeated sobject.world.engine.RetainedRoot roots = 1;
+   */
+  roots?: RetainedRoot[]
+}
+
+export const RetainedRootSet: MessageType<RetainedRootSet> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'sobject.world.engine.RetainedRootSet',
+    fields: [
+      {
+        no: 1,
+        name: 'roots',
+        kind: 'message',
+        T: RetainedRoot,
+        repeated: true,
+      },
+    ] satisfies readonly PartialFieldInfo[],
+  })
+
+/**
  * ReplayCursorOutcome is the outcome of one replayed operation.
  *
  * @generated from message sobject.world.engine.ReplayCursorOutcome
@@ -245,6 +274,13 @@ export interface ReplayCursorOutcome {
    * @generated from field: repeated block.BlockRef payloads = 6;
    */
   payloads?: BlockRef[]
+  /**
+   * RetainedRoots are the retained roots after the operation when they differ
+   * from those before it, and unset when the operation kept them.
+   *
+   * @generated from field: sobject.world.engine.RetainedRootSet retained_roots = 7;
+   */
+  retainedRoots?: RetainedRootSet
 }
 
 export const ReplayCursorOutcome: MessageType<ReplayCursorOutcome> =
@@ -263,6 +299,7 @@ export const ReplayCursorOutcome: MessageType<ReplayCursorOutcome> =
         T: () => BlockRef,
         repeated: true,
       },
+      { no: 7, name: 'retained_roots', kind: 'message', T: RetainedRootSet },
     ] satisfies readonly PartialFieldInfo[],
   })
 
@@ -362,35 +399,6 @@ export const ReplaySpan: MessageType<ReplaySpan> =
         repeated: true,
       },
       { no: 3, name: 'prev', kind: 'message', T: () => BlockRef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * RetainedRootSet is the block each member keeps as its one local named root
- * for all retained roots. Its outgoing refs are the retained World roots.
- *
- * @generated from message sobject.world.engine.RetainedRootSet
- */
-export interface RetainedRootSet {
-  /**
-   * Roots are the retained roots, sorted by name.
-   *
-   * @generated from field: repeated sobject.world.engine.RetainedRoot roots = 1;
-   */
-  roots?: RetainedRoot[]
-}
-
-export const RetainedRootSet: MessageType<RetainedRootSet> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.world.engine.RetainedRootSet',
-    fields: [
-      {
-        no: 1,
-        name: 'roots',
-        kind: 'message',
-        T: RetainedRoot,
-        repeated: true,
-      },
     ] satisfies readonly PartialFieldInfo[],
   })
 

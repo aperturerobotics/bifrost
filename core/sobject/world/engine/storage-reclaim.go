@@ -38,10 +38,6 @@ const reclaimFenceProofStoreID = "reclaim-fence-retention"
 // the fence within reclaimFenceTimeout.
 var errReclaimFenceUnanswered = errors.New("a roster device did not answer the storage reclaim fence")
 
-// errReclaimWorldsNotHeld is returned when the replay does not hold the World
-// after every operation above the checkpoint, as after a restart.
-var errReclaimWorldsNotHeld = errors.New("replay does not hold every World above the checkpoint")
-
 // executeStorageReclaim asks the block store for a storage reclaim pass
 // storageReclaimDelay after startup and after each World change, and at the
 // time the block store says the next pass comes due, so an idle Space still
@@ -267,9 +263,7 @@ func (e *soEngine) waitStable(ctx context.Context, h []byte, nonce uint64) error
 
 // liveWorlds replays the current operation set and returns the checkpoint's
 // World root, the World root after each operation above the checkpoint, named
-// by the operation's hash, and the retained roots. Returns
-// errReclaimWorldsNotHeld when the replay restored positions without their
-// Worlds.
+// by the operation's hash, and the retained roots.
 func (e *soEngine) liveWorlds(ctx context.Context) (*block.BlockRef, []*RetainedRoot, []*RetainedRoot, error) {
 	// Replay the current state under the writer lock.
 	unlockWriteMtx, err := e.c.writeMtx.Lock(ctx)
@@ -290,9 +284,6 @@ func (e *soEngine) liveWorlds(ctx context.Context) (*block.BlockRef, []*Retained
 	base := e.replay.base.GetHeadRef().GetRootRef()
 	prev := base
 	for _, pos := range e.replay.positions {
-		if pos.state == nil {
-			return nil, nil, nil, errReclaimWorldsNotHeld
-		}
 		ref := pos.state.GetHeadRef().GetRootRef()
 		if ref.GetEmpty() || ref.EqualVT(prev) {
 			continue
