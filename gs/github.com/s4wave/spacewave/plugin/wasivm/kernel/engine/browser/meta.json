@@ -1,0 +1,8 @@
+{
+  "dependencies": ["context"],
+  "asyncMethods": {
+    "Runtime.Compile": true,
+    "Module.Instantiate": true,
+    "Function.Call": true
+  }
+}

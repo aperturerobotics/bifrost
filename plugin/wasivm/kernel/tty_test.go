@@ -7,8 +7,6 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/go-git/go-billy/v6/osfs"
 )
 
 func TestVirtualTerminalDiscipline(t *testing.T) {
@@ -49,7 +47,7 @@ func TestVirtualTerminalShell(t *testing.T) {
 		Stderr:          &out,
 		Stdin:           stdinR,
 		VirtualTerminal: true,
-		RootFS:          osfs.New(rootfs),
+		RootFS:          hostFS(t, rootfs),
 		InitPath:        "/bin/sh",
 	})
 	if err != nil {
@@ -95,7 +93,7 @@ func TestBootStopsOnCancel(t *testing.T) {
 		Stderr:          prompt,
 		Stdin:           stdinR,
 		VirtualTerminal: true,
-		RootFS:          osfs.New(rootfs),
+		RootFS:          hostFS(t, rootfs),
 		InitPath:        "/bin/sh",
 	})
 	if err != nil {

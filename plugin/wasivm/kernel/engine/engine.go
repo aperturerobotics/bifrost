@@ -71,7 +71,8 @@ type Instance interface {
 
 // Function is an exported guest function.
 type Function interface {
-	// Call invokes the function.
+	// Call invokes the function. Once ctx ends, the guest stops and Call
+	// returns an error.
 	Call(ctx context.Context, args ...uint64) ([]uint64, error)
 }
 

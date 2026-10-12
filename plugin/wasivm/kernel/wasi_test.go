@@ -5,8 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-
-	"github.com/go-git/go-billy/v6/osfs"
 )
 
 // TestWASIReadDirRoot checks that listing the root shows both the root
@@ -109,7 +107,7 @@ func newWASITestProcess(t *testing.T) (*Process, *memMemory) {
 
 	// Start a kernel over it with one process.
 	k := &Kernel{procs: newProcessTable(), env: make(map[string]string)}
-	k.initVFS(&Config{RootFS: osfs.New(root)})
+	k.initVFS(&Config{RootFS: hostFS(t, root)})
 	p := newProcess(k, 1, nil)
 	mem := newMemMemory(8192)
 	p.inst = memInstance{mem: mem}

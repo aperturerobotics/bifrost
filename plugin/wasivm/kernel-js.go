@@ -5,20 +5,12 @@ package wasivm_plugin
 import (
 	"context"
 
-	"github.com/pkg/errors"
-	"github.com/s4wave/spacewave/db/world"
-	s4wave_vm "github.com/s4wave/spacewave/sdk/vm"
-	"github.com/sirupsen/logrus"
+	"github.com/s4wave/spacewave/plugin/wasivm/kernel/engine"
+	"github.com/s4wave/spacewave/plugin/wasivm/kernel/engine/browser"
 )
 
-// startKernel reports that the browser cannot run a WasiVM yet.
-func startKernel(
-	ctx context.Context,
-	le *logrus.Entry,
-	ws world.WorldState,
-	rootfsKey string,
-	config *s4wave_vm.WasiVmConfig,
-	exited func(runErr error),
-) (*console, error) {
-	return nil, errors.New("WebAssembly VMs run only in the desktop app")
+// newRuntime creates the engine that runs the guests, the browser's
+// WebAssembly API.
+func newRuntime(context.Context) engine.Runtime {
+	return browser.New()
 }

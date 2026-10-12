@@ -7,24 +7,23 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/pkg/errors"
-
-	"github.com/go-git/go-billy/v6/osfs"
 )
 
 // rootfsDir returns the built guest root. It skips the test when the root is
 // not built.
 func rootfsDir(t *testing.T) string {
-	// Find the root beside this package's source.
+	// Tests run in the package directory, beside the root's directory.
 	t.Helper()
-	_, f, _, _ := runtime.Caller(0)
-	dir := filepath.Join(filepath.Dir(f), "..", "rootfs", "out")
+	dir, err := filepath.Abs(filepath.Join("..", "rootfs", "out"))
+	if err != nil {
+		t.Fatal(err)
+	}
 	if _, err := os.Stat(dir); err != nil {
 		t.Skipf("root not built: %v", err)
 	}
@@ -86,7 +85,7 @@ func (tc *shellTest) run(t *testing.T) (stdout, stderr string) {
 
 	// Choose its filesystem and terminal.
 	if tc.root {
-		cfg.RootFS = osfs.New(rootfsDir(t))
+		cfg.RootFS = hostFS(t, rootfsDir(t))
 	} else {
 		cfg.Files = BusyboxApplets(bb)
 		maps.Copy(cfg.Files, tc.files)
