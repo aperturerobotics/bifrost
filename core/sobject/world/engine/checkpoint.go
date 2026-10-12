@@ -104,6 +104,14 @@ func NewWorldReplay(
 	return &WorldReplay{r: newReplayer(c, so)}, nil
 }
 
+// Resume restores the replay the World engine last saved on this device, so
+// the next Replay starts after the longest prefix it shares instead of at the
+// checkpoint. The replay never saves; the engine keeps the saved replay and
+// the blocks it reaches.
+func (w *WorldReplay) Resume(ctx context.Context) error {
+	return w.r.load(ctx)
+}
+
 // Replay replays the operation set of snap from its checkpoint's World and
 // returns the World after the last operation it can place.
 func (w *WorldReplay) Replay(ctx context.Context, snap sobject.SharedObjectStateSnapshot) (*InnerState, error) {

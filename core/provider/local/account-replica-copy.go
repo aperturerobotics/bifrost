@@ -21,8 +21,9 @@ import (
 // Session's existing DEX read-through store. The World is the checkpoint's World
 // with the operation set replayed onto it, as the World engine engineID builds
 // it on b. One replay follows every state, so each pass replays only the
-// operations the state added. Cached blocks survive cancellation and restart; a persisted
-// completion record is valid only for its exact immutable head.
+// operations the state added, and it starts from the replay the engine saved,
+// so a restart does too. Cached blocks survive cancellation and restart; a
+// persisted completion record is valid only for its exact immutable head.
 //
 // A block that no connected peer holds, or holds only without its refs, is not
 // a failure: the copy logs it once and waits for a new state, or for a peer
@@ -59,6 +60,9 @@ func (a *ProviderAccount) runAccountReplicaCopy(
 	defer releaseStates()
 	replay, err := sobject_world_engine.NewWorldReplay(a.le, b, a.GetStepFactorySet(), so, engineID, space_world_optypes.LookupWorldOp)
 	if err != nil {
+		return err
+	}
+	if err := replay.Resume(ctx); err != nil {
 		return err
 	}
 
