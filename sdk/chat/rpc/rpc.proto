@@ -67,6 +67,8 @@ message ChatMessageInfo {
   // Author is the agent or tool that sent the message for its person, empty
   // when the person sent it.
   string author = 11;
+  // Envelope is the exact wire form of a message another protocol originated.
+  .spacewave.chat.ChatEnvelope envelope = 12;
 }
 
 // GetChannelInfoRequest is a request for channel info.
@@ -197,6 +199,10 @@ message SendMessageRequest {
   // Author names the agent or tool sending for the authenticated person. It
   // must be a DNS label or empty, and a retry must repeat it.
   string author = 7;
+  // Envelope stores a message another protocol originated. Its ID selects the
+  // message key in place of TransactionId, so a repeated envelope returns the
+  // accepted message.
+  .spacewave.chat.ChatEnvelope envelope = 8;
 }
 
 // SendMessageResponse is the response after sending a message.

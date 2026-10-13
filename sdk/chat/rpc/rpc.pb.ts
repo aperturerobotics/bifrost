@@ -7,7 +7,7 @@ import {
   createEmptyMessageType,
   createMessageType,
 } from '@aptre/protobuf-es-lite/message'
-import { ChatMessageContent } from '../content/content.pb.js'
+import { ChatEnvelope, ChatMessageContent } from '../content/content.pb.js'
 import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
 import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
@@ -100,6 +100,12 @@ export interface ChatMessageInfo {
    * @generated from field: string author = 11;
    */
   author?: string
+  /**
+   * Envelope is the exact wire form of a message another protocol originated.
+   *
+   * @generated from field: spacewave.chat.ChatEnvelope envelope = 12;
+   */
+  envelope?: ChatEnvelope
 }
 
 export const ChatMessageInfo: MessageType<ChatMessageInfo> =
@@ -117,6 +123,7 @@ export const ChatMessageInfo: MessageType<ChatMessageInfo> =
       { no: 9, name: 'redacted_by_key', kind: 'scalar', T: ScalarType.STRING },
       { no: 10, name: 'replaces_key', kind: 'scalar', T: ScalarType.STRING },
       { no: 11, name: 'author', kind: 'scalar', T: ScalarType.STRING },
+      { no: 12, name: 'envelope', kind: 'message', T: () => ChatEnvelope },
     ] satisfies readonly PartialFieldInfo[],
   })
 
@@ -622,6 +629,14 @@ export interface SendMessageRequest {
    * @generated from field: string author = 7;
    */
   author?: string
+  /**
+   * Envelope stores a message another protocol originated. Its ID selects the
+   * message key in place of TransactionId, so a repeated envelope returns the
+   * accepted message.
+   *
+   * @generated from field: spacewave.chat.ChatEnvelope envelope = 8;
+   */
+  envelope?: ChatEnvelope
 }
 
 export const SendMessageRequest: MessageType<SendMessageRequest> =
@@ -646,6 +661,7 @@ export const SendMessageRequest: MessageType<SendMessageRequest> =
         T: ScalarType.BOOL,
       },
       { no: 7, name: 'author', kind: 'scalar', T: ScalarType.STRING },
+      { no: 8, name: 'envelope', kind: 'message', T: () => ChatEnvelope },
     ] satisfies readonly PartialFieldInfo[],
   })
 

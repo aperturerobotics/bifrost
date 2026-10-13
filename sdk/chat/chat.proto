@@ -58,6 +58,9 @@ message ChatMessage {
   // It attributes the message and grants nothing: the peer is still the
   // authority. Empty when the person sent it. Validated as a DNS label.
   string author = 9;
+  // Envelope is the exact wire form of a message another protocol originated,
+  // empty for messages sent through the channel.
+  ChatEnvelope envelope = 10;
 }
 
 // ChatMessagePage stores a bounded page of channel message keys.

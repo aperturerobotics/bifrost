@@ -40,3 +40,6 @@ type ChatRedaction = spacewave_chat_content.ChatRedaction
 
 // ChatMessageContent_Redaction carries a public redaction in channel history.
 type ChatMessageContent_Redaction = spacewave_chat_content.ChatMessageContent_Redaction
+
+// ChatEnvelope is the exact wire form of a message another protocol originated.
+type ChatEnvelope = spacewave_chat_content.ChatEnvelope

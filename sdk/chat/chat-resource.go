@@ -426,7 +426,7 @@ func (r *ChatResource) commitMessage(ctx context.Context, req *spacewave_chat_rp
 	defer wtx.Discard()
 
 	// An unchanged unkeyed state write keeps the existing message identity.
-	if req.GetTransactionId() == "" && req.GetContent().GetStateChange() != nil {
+	if req.GetTransactionId() == "" && req.GetEnvelope() == nil && req.GetContent().GetStateChange() != nil {
 		content, err := normalizeSendMessageContent(req)
 		if err != nil {
 			return nil, err
@@ -442,7 +442,7 @@ func (r *ChatResource) commitMessage(ctx context.Context, req *spacewave_chat_rp
 
 	// Give every append a stable identity before submitting it for replay.
 	request := req.CloneVT()
-	if request.GetTransactionId() == "" {
+	if request.GetTransactionId() == "" && request.GetEnvelope() == nil {
 		request.TransactionId = ulid.NewULID()
 	}
 	seqno, err := wtx.GetSeqno(ctx)
@@ -463,7 +463,7 @@ func (r *ChatResource) commitMessage(ctx context.Context, req *spacewave_chat_rp
 	}
 
 	// A retry has an existing key and needs no new World publication.
-	messageKey, err := TransactionMessageKey(r.objectKey, r.localPeerID, request.GetTransactionId())
+	messageKey, err := sendMessageKey(r.objectKey, r.localPeerID, request)
 	if err != nil {
 		return nil, err
 	}
@@ -493,20 +493,31 @@ func (r *ChatResource) appendMessage(ctx context.Context, wtx world.WorldState, 
 	if err := validateAuthor(req.GetAuthor()); err != nil {
 		return nil, err
 	}
+	if envelope := req.GetEnvelope(); envelope != nil {
+		if err := envelope.Validate(); err != nil {
+			return nil, err
+		}
+	}
 	if req.ExpectedStateMessageKey != nil && content.GetStateChange() == nil {
 		return nil, errors.New("chat state write condition requires a state change")
 	}
 
-	// Resolve the sender-scoped retry before reserving a history position.
-	msgKey := ""
-	if transactionID := req.GetTransactionId(); transactionID != "" {
-		msgKey, err = TransactionMessageKey(r.objectKey, r.localPeerID, transactionID)
-		if err != nil {
-			return nil, err
-		}
+	// Resolve a retry or a repeated envelope before reserving a history position.
+	msgKey, err := sendMessageKey(r.objectKey, r.localPeerID, req)
+	if err != nil {
+		return nil, err
+	}
+	if msgKey != "" {
 		prior, err := world.LookupObjectBody[*ChatMessage](ctx, wtx, msgKey, NewChatMessageBlock)
 		if err != nil && !errors.Is(err, world.ErrObjectNotFound) {
 			return nil, err
+		}
+		// Any sender may deliver an envelope; the first accepted copy stands.
+		if prior != nil && req.GetEnvelope() != nil {
+			if prior.GetEnvelope().GetId() != req.GetEnvelope().GetId() {
+				return nil, errors.New("chat envelope conflicts with its accepted message")
+			}
+			return &spacewave_chat_rpc.SendMessageResponse{MessageKey: msgKey}, nil
 		}
 		if prior != nil {
 			personID := prior.GetPersonId()
@@ -546,6 +557,10 @@ func (r *ChatResource) appendMessage(ctx context.Context, wtx world.WorldState, 
 		}
 		if redacted.GetContent().GetStateChange() != nil || redacted.GetContent().GetRedaction() != nil {
 			return nil, errors.New("chat state and redactions cannot be redacted")
+		}
+		// An envelope ID is never empty, so this also requires both or neither.
+		if redacted.GetEnvelope().GetId() != redaction.GetEnvelope().GetId() {
+			return nil, errors.New("chat redaction envelope does not match its target")
 		}
 	}
 
@@ -593,6 +608,7 @@ func (r *ChatResource) appendMessage(ctx context.Context, wtx world.WorldState, 
 		ReplyToKey:   req.GetReplyToKey(),
 		Index:        index,
 		ReplacesKey:  replacesKey,
+		Envelope:     req.GetEnvelope().CloneVT(),
 	}
 	obj, err := wtx.CreateObject(ctx, msgKey, nil)
 	defer world.ReleaseObjectState(obj)
@@ -646,6 +662,7 @@ func (r *ChatResource) appendMessage(ctx context.Context, wtx world.WorldState, 
 	// The first redaction strips the target body in place; its history position remains.
 	if redacted != nil && redacted.GetRedactedByKey() == "" {
 		redacted.Content = redactChatMessageContent(redacted.GetContent())
+		redacted.Envelope = content.GetRedaction().GetEnvelope().CloneVT()
 		redacted.RedactedByKey = msgKey
 		if err := writeObjectBody(ctx, wtx, content.GetRedaction().GetTargetKey(), redacted); err != nil {
 			return nil, err
@@ -1135,6 +1152,7 @@ func (r *ChatResource) readMessage(ctx context.Context, key string) (*spacewave_
 		Index:         msg.GetIndex(),
 		RedactedByKey: msg.GetRedactedByKey(),
 		ReplacesKey:   msg.GetReplacesKey(),
+		Envelope:      msg.GetEnvelope().CloneVT(),
 	}, nil
 }
 
@@ -1183,6 +1201,11 @@ func normalizeSendMessageContent(req *spacewave_chat_rpc.SendMessageRequest) (*C
 	case *ChatMessageContent_Redaction:
 		if value == nil || value.Redaction.GetTargetKey() == "" || len(value.Redaction.GetTargetKey()) > 4096 || len(value.Redaction.GetReason()) > 4096 {
 			return nil, errors.New("chat redaction requires a bounded target and reason")
+		}
+		if envelope := value.Redaction.GetEnvelope(); envelope != nil {
+			if err := envelope.Validate(); err != nil {
+				return nil, err
+			}
 		}
 	default:
 		return nil, errors.New("chat message content is missing")

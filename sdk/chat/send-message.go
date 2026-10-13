@@ -18,13 +18,13 @@ func (o *SendChatMessageOp) GetOperationTypeId() string { return SendChatMessage
 // AuthenticatedOperation selects the verified transaction signer on replay.
 func (o *SendChatMessageOp) AuthenticatedOperation() {}
 
-// Validate requires a stable send identity and timestamp.
+// Validate requires a stable send identity, a transaction ID or an envelope, and a timestamp.
 func (o *SendChatMessageOp) Validate() error {
 	if o.GetObjectKey() == "" {
 		return world.ErrEmptyObjectKey
 	}
-	if o.GetRequest().GetTransactionId() == "" {
-		return errors.New("chat append operation requires a transaction ID")
+	if o.GetRequest().GetTransactionId() == "" && o.GetRequest().GetEnvelope() == nil {
+		return errors.New("chat append operation requires a transaction ID or envelope")
 	}
 	return o.GetTimestamp().Validate(false)
 }

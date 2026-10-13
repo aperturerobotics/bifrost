@@ -144,6 +144,37 @@ export const ChatAnnotation: MessageType<ChatAnnotation> =
   })
 
 /**
+ * ChatEnvelope is the exact wire form of a message another protocol originated.
+ * The channel keeps it unchanged beside the content read from it, so the
+ * protocol can verify, hash and serve the original bytes.
+ *
+ * @generated from message spacewave.chat.ChatEnvelope
+ */
+export interface ChatEnvelope {
+  /**
+   * Id is the message's identity in its protocol, unique within the channel.
+   *
+   * @generated from field: string id = 1;
+   */
+  id?: string
+  /**
+   * Data is the protocol's exact bytes, bounded to 64 KiB.
+   *
+   * @generated from field: bytes data = 2;
+   */
+  data?: Uint8Array
+}
+
+export const ChatEnvelope: MessageType<ChatEnvelope> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'spacewave.chat.ChatEnvelope',
+    fields: [
+      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
+      { no: 2, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
+    ] satisfies readonly PartialFieldInfo[],
+  })
+
+/**
  * ChatRedaction removes the body of an earlier message by the same person.
  * The redaction is public metadata even when message bodies require encryption.
  *
@@ -162,6 +193,14 @@ export interface ChatRedaction {
    * @generated from field: string reason = 2;
    */
   reason?: string
+  /**
+   * Envelope is the target envelope's redacted wire form, which its protocol
+   * computes. It replaces the target's envelope and is required when the target
+   * has one.
+   *
+   * @generated from field: spacewave.chat.ChatEnvelope envelope = 3;
+   */
+  envelope?: ChatEnvelope
 }
 
 export const ChatRedaction: MessageType<ChatRedaction> =
@@ -170,6 +209,7 @@ export const ChatRedaction: MessageType<ChatRedaction> =
     fields: [
       { no: 1, name: 'target_key', kind: 'scalar', T: ScalarType.STRING },
       { no: 2, name: 'reason', kind: 'scalar', T: ScalarType.STRING },
+      { no: 3, name: 'envelope', kind: 'message', T: ChatEnvelope },
     ] satisfies readonly PartialFieldInfo[],
   })
 

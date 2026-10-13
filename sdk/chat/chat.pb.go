@@ -139,6 +139,9 @@ type ChatMessage struct {
 	// It attributes the message and grants nothing: the peer is still the
 	// authority. Empty when the person sent it. Validated as a DNS label.
 	Author string `protobuf:"bytes,9,opt,name=author,proto3" json:"author,omitempty"`
+	// Envelope is the exact wire form of a message another protocol originated,
+	// empty for messages sent through the channel.
+	Envelope *content.ChatEnvelope `protobuf:"bytes,10,opt,name=envelope,proto3" json:"envelope,omitempty"`
 }
 
 func (x *ChatMessage) Reset() {
@@ -208,6 +211,13 @@ func (x *ChatMessage) GetAuthor() string {
 		return x.Author
 	}
 	return ""
+}
+
+func (x *ChatMessage) GetEnvelope() *content.ChatEnvelope {
+	if x != nil {
+		return x.Envelope
+	}
+	return nil
 }
 
 // ChatMessagePage stores a bounded page of channel message keys.
@@ -550,6 +560,7 @@ func (m *ChatMessage) CloneVT() *ChatMessage {
 	r.Author = m.Author
 	r.Content = protobuf_go_lite.CloneVTValue(m.Content)
 	r.CreatedAt = protobuf_go_lite.CloneVTValue(m.CreatedAt)
+	r.Envelope = protobuf_go_lite.CloneVTValue(m.Envelope)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -748,6 +759,9 @@ func (this *ChatMessage) EqualVT(that *ChatMessage) bool {
 		return false
 	}
 	if this.Author != that.Author {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.Envelope, that.Envelope) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -1171,6 +1185,11 @@ func (x *ChatMessage) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("author")
 		s.WriteString(x.Author)
 	}
+	if x.Envelope != nil || s.HasField("envelope") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("envelope")
+		x.Envelope.MarshalProtoJSON(s.WithField("envelope"))
+	}
 	s.WriteObjectEnd()
 }
 
@@ -1223,6 +1242,13 @@ func (x *ChatMessage) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "author":
 			s.AddField("author")
 			x.Author = s.ReadString()
+		case "envelope":
+			if s.ReadNil() {
+				x.Envelope = nil
+				return
+			}
+			x.Envelope = &content.ChatEnvelope{}
+			x.Envelope.UnmarshalProtoJSON(s.WithField("envelope", true))
 		}
 	})
 }
@@ -1796,6 +1822,16 @@ func (m *ChatMessage) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.Envelope != nil {
+		size, err := m.Envelope.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x52
+	}
 	if len(m.Author) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.Author)
 		i--
@@ -2247,6 +2283,10 @@ func (m *ChatMessage) SizeVT() (n int) {
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.RedactedByKey)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.ReplacesKey)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Author)
+	if m.Envelope != nil {
+		l = m.Envelope.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -2465,6 +2505,10 @@ func (x *ChatMessage) MarshalProtoText() string {
 	if x.Author != "" {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "author")
 		protobuf_go_lite.TextWriteString(&sb, x.Author)
+	}
+	if x.Envelope != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "envelope")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Envelope)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -2930,6 +2974,21 @@ func (m *ChatMessage) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.Author = v
+		case 10:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Envelope", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Envelope == nil {
+				m.Envelope = &content.ChatEnvelope{}
+			}
+			if err := m.Envelope.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

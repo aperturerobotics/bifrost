@@ -8,7 +8,11 @@ import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
 import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-import { ChatMessageContent, ChatStateChange } from './content/content.pb.js'
+import {
+  ChatEnvelope,
+  ChatMessageContent,
+  ChatStateChange,
+} from './content/content.pb.js'
 import { SendMessageRequest } from './rpc/rpc.pb.js'
 
 /**
@@ -174,6 +178,13 @@ export interface ChatMessage {
    * @generated from field: string author = 9;
    */
   author?: string
+  /**
+   * Envelope is the exact wire form of a message another protocol originated,
+   * empty for messages sent through the channel.
+   *
+   * @generated from field: spacewave.chat.ChatEnvelope envelope = 10;
+   */
+  envelope?: ChatEnvelope
 }
 
 export const ChatMessage: MessageType<ChatMessage> =
@@ -189,6 +200,7 @@ export const ChatMessage: MessageType<ChatMessage> =
       { no: 7, name: 'redacted_by_key', kind: 'scalar', T: ScalarType.STRING },
       { no: 8, name: 'replaces_key', kind: 'scalar', T: ScalarType.STRING },
       { no: 9, name: 'author', kind: 'scalar', T: ScalarType.STRING },
+      { no: 10, name: 'envelope', kind: 'message', T: () => ChatEnvelope },
     ] satisfies readonly PartialFieldInfo[],
   })
 
