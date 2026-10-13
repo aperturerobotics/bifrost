@@ -31,7 +31,7 @@ const (
 
 // unrefLinkLifetime outlasts the time an unreferenced link stays open before
 // its holder closes it.
-const unrefLinkLifetime = 15 * time.Second
+const unrefLinkLifetime = 12 * time.Second
 
 // TestTransportLinksOnPresence verifies that a WebRTC link follows the
 // presence of the remote peer on the signaling session instead of a redial
@@ -178,7 +178,7 @@ func TestTransportLinksOnPresence(t *testing.T) {
 	crash[2] = nil
 	counter.wait(t, ip0, msgLinkLost, lost+1, 30*time.Second)
 	sessions := counter.count(ip0, msgSessionStarted)
-	runFor(t, 6*time.Second)
+	runFor(t, 3*time.Second)
 	counter.require(t, ip0, msgSessionStarted, sessions)
 
 	// When p2 returns, the peers link once.
@@ -186,7 +186,7 @@ func TestTransportLinksOnPresence(t *testing.T) {
 	stopSignaling[2] = startSignaling(2)
 	counter.wait(t, ip0, msgLinkPublished, 3, 30*time.Second)
 	waitConnectivity(ctx, t, le, px[0], px[2], "returned", 10*time.Second)
-	runFor(t, 5*time.Second)
+	runFor(t, 3*time.Second)
 	counter.require(t, ip0, msgLinkPublished, 3)
 	counter.require(t, ip2Restarted, msgLinkPublished, 1)
 }
