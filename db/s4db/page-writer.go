@@ -35,16 +35,16 @@ type pageWriter struct {
 	count int
 }
 
-// add writes d to the next page and returns the page and its decoded copy.
-func (w *pageWriter) add(d *draft) (uint64, *node, error) {
+// add writes d to the next page and returns the page.
+func (w *pageWriter) add(d *draft) (uint64, error) {
 	// Reserve more pages when the last run is used up.
 	if l := len(w.runs); l == 0 || w.next == w.runs[l-1].end() {
 		if err := w.flush(); err != nil {
-			return 0, nil, err
+			return 0, err
 		}
 		r, err := w.reserve(reserveBatch)
 		if err != nil {
-			return 0, nil, err
+			return 0, err
 		}
 		w.runs = append(w.runs, r)
 		w.next, w.at = r.start, r.start
@@ -60,7 +60,7 @@ func (w *pageWriter) add(d *draft) (uint64, *node, error) {
 	w.buf = d.encode(w.buf)
 	n, err := decodeNode(bytes.Clone(w.buf[len(w.buf)-pageSize:]))
 	if err != nil {
-		return 0, nil, err
+		return 0, err
 	}
 	w.cache.put(page, n)
 
@@ -68,7 +68,7 @@ func (w *pageWriter) add(d *draft) (uint64, *node, error) {
 	if len(w.buf) == cap(w.buf) {
 		err = w.flush()
 	}
-	return page, n, err
+	return page, err
 }
 
 // flush writes the pages in buf.

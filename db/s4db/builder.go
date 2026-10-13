@@ -390,7 +390,7 @@ func (b *builder) emit(kids []child) error {
 		if c.d == nil || !c.d.leaf {
 			continue
 		}
-		page, _, err := b.out.add(c.d)
+		page, err := b.out.add(c.d)
 		if err != nil {
 			return err
 		}
@@ -400,39 +400,25 @@ func (b *builder) emit(kids []child) error {
 }
 
 // place writes the new inner pages under top, children first, sets top's
-// page, and writes the pages still buffered. Each new inner page links its
-// new inner children decoded, so lookups skip the cache for them.
+// page, and writes the pages still buffered.
 func (b *builder) place(top *child) error {
 	// Write each draft after its new children, resolving their pages.
-	var visit func(d *draft) (uint64, *node, error)
-	visit = func(d *draft) (uint64, *node, error) {
-		// Write the new children first and record their pages.
-		subs := make([]*node, len(d.sub))
+	var visit func(d *draft) (uint64, error)
+	visit = func(d *draft) (uint64, error) {
 		for j, s := range d.sub {
 			if s == nil {
 				continue
 			}
-			page, n, err := visit(s)
+			page, err := visit(s)
 			if err != nil {
-				return 0, nil, err
+				return 0, err
 			}
-			d.kids[j], subs[j] = page, n
+			d.kids[j] = page
 		}
-
-		// Write the draft and link its decoded children.
-		page, n, err := b.out.add(d)
-		if err != nil {
-			return 0, nil, err
-		}
-		for j, s := range subs {
-			if s != nil {
-				n.inner[j].Store(s)
-			}
-		}
-		return page, n, nil
+		return b.out.add(d)
 	}
 	if top != nil && top.d != nil {
-		page, _, err := visit(top.d)
+		page, err := visit(top.d)
 		if err != nil {
 			return err
 		}

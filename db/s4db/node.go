@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"cmp"
 	"encoding/binary"
-	"sync/atomic"
 
 	"github.com/pkg/errors"
 )
@@ -34,8 +33,8 @@ const (
 const (
 	// leafEntryCost is an entry offset and its head.
 	leafEntryCost = 2 + 8
-	// innerEntryCost is an entry offset, its head, and its child link.
-	innerEntryCost = 2 + 8 + 8
+	// innerEntryCost is an entry offset and its head.
+	innerEntryCost = 2 + 8
 )
 
 // node is a decoded tree page. It keeps the page with the offset and head of
@@ -51,10 +50,6 @@ type node struct {
 	// heads holds the head of each key, so a search compares within one
 	// array and reads a key only on a tie.
 	heads []uint64
-	// inner holds the decoded children of an inner page that are themselves
-	// inner pages, filled as reads descend. A child page is freed only with
-	// every page that references it, so a link never outlives its target.
-	inner []atomic.Pointer[node]
 	// cost is the memory the decoded node holds, for the cache budget.
 	cost int
 }
@@ -172,11 +167,9 @@ func decodeNode(b []byte) (*node, error) {
 	count := int(binary.LittleEndian.Uint16(b[1:]))
 	n := &node{leaf: b[0] == pageLeaf, page: b, offs: make([]uint16, count), heads: make([]uint64, count)}
 	d := decoder{b: b[pageHeader : pageSize-4]}
+	n.cost = pageSize + count*innerEntryCost
 	if n.leaf {
 		n.cost = pageSize + count*leafEntryCost
-	} else {
-		n.inner = make([]atomic.Pointer[node], count)
-		n.cost = pageSize + count*innerEntryCost
 	}
 
 	// Find each entry and the head of its key, checking that its value or

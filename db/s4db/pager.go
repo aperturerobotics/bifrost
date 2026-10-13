@@ -53,19 +53,6 @@ func (p *pager) root(page uint64) (*node, error) {
 	return n, err
 }
 
-// child returns child i of inner page n, linking decoded inner children
-// into n so later lookups skip the cache.
-func (p *pager) child(n *node, i int) (*node, error) {
-	if c := n.inner[i].Load(); c != nil {
-		return c, nil
-	}
-	c, err := p.node(n.kid(i))
-	if err == nil && !c.leaf {
-		n.inner[i].Store(c)
-	}
-	return c, err
-}
-
 // get looks key up in the tree at root.
 func (p *pager) get(root uint64, key []byte) (value, bool, error) {
 	// Descend to the leaf covering key.
@@ -74,7 +61,7 @@ func (p *pager) get(root uint64, key []byte) (value, bool, error) {
 	}
 	n, err := p.root(root)
 	for err == nil && !n.leaf {
-		n, err = p.child(n, n.childIndex(key))
+		n, err = p.node(n.kid(n.childIndex(key)))
 	}
 	if err != nil {
 		return value{}, false, err
