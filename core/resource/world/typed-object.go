@@ -307,6 +307,8 @@ func (h *typedObjectHandle) close() {
 }
 
 // bindCaller resolves accepted participant identity before typed factory dispatch.
+// A caller that is not a participant dispatches with no participant, so each
+// consumer denies the operations that need one.
 func (r *TypedObjectResource) bindCaller(ctx context.Context) (context.Context, error) {
 	// Read accepted identity only when this mount can resolve its caller.
 	caller := objecttype.CallerFromContext(ctx)
@@ -316,7 +318,7 @@ func (r *TypedObjectResource) bindCaller(ctx context.Context) (context.Context, 
 			return nil, err
 		}
 		participant, err := r.participantLookup(ctx, peerID)
-		if err != nil {
+		if err != nil && !errors.Is(err, sobject.ErrNotParticipant) {
 			return nil, err
 		}
 		caller.Participant = participant
