@@ -6,6 +6,7 @@ import { SpaceContainerContext } from '@s4wave/web/contexts/SpaceContainerContex
 import { useAccessTypedHandle } from '@s4wave/web/hooks/useAccessTypedHandle.js'
 import type { ObjectViewerComponentProps } from '@s4wave/web/object/object.js'
 import { getObjectKey } from '@s4wave/web/object/object.js'
+import { useObjectName } from '@s4wave/web/object/ObjectViewerContext.js'
 import { EmptyState } from '@s4wave/web/ui/EmptyState.js'
 import { ErrorState } from '@s4wave/web/ui/ErrorState.js'
 import { LoadingInline } from '@s4wave/web/ui/loading/LoadingInline.js'
@@ -52,6 +53,7 @@ export function SqlSchemaViewer({
   // resolves to null until the schema metadata names a target db.
   const targetDbKey = schemaResource.value?.metadata?.targetDbObjectKey ?? ''
   const dbHandle = useAccessTypedHandle(worldState, targetDbKey, SqlDatabase)
+  useObjectName(schemaResource.value?.metadata?.displayName)
 
   const [openError, setOpenError] = useState<string | null>(null)
 

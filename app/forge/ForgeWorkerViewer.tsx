@@ -10,6 +10,7 @@ import { SpaceContentsContext } from '@s4wave/web/contexts/contexts.js'
 
 import type { ObjectViewerComponentProps } from '@s4wave/web/object/object.js'
 import { getObjectKey } from '@s4wave/web/object/object.js'
+import { useObjectName } from '@s4wave/web/object/ObjectViewerContext.js'
 import { useForgeBlockData } from '@s4wave/web/forge/useForgeBlockData.js'
 import { useForgeLinkedEntities } from '@s4wave/web/forge/useForgeLinkedEntities.js'
 import {
@@ -41,6 +42,7 @@ export function ForgeWorkerViewer({
 }: ObjectViewerComponentProps) {
   const objectKey = getObjectKey(objectInfo)
   const worker = useForgeBlockData(objectState, ForgeWorkerTypeID, Worker)
+  useObjectName(worker?.name)
 
   const { entities: clusters, loading: clustersLoading } =
     useForgeLinkedEntities(worldState, objectKey, PRED_CLUSTER_TO_WORKER, 'in')

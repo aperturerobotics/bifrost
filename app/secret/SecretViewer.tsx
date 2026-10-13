@@ -8,6 +8,7 @@ import { SharedObjectHealthStatus } from '@s4wave/core/sobject/sobject.pb.js'
 import { useAccessTypedHandle } from '@s4wave/web/hooks/useAccessTypedHandle.js'
 import type { ObjectViewerComponentProps } from '@s4wave/web/object/object.js'
 import { getObjectKey } from '@s4wave/web/object/object.js'
+import { useObjectName } from '@s4wave/web/object/ObjectViewerContext.js'
 import { cn } from '@s4wave/web/style/utils.js'
 import { CopyableField } from '@s4wave/web/ui/CopyableField.js'
 import { InfoCard } from '@s4wave/web/ui/InfoCard.js'
@@ -217,6 +218,7 @@ export function SecretViewer({
   )
   const stateResource = useStreamingResource(handle, streamFactory, [])
   const state: SecretState | undefined = stateResource.value ?? undefined
+  useObjectName(state?.secret?.displayName)
   const title = stateResource.error ? 'Secret' : state?.secret?.displayName
 
   return (

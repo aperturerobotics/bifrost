@@ -2,6 +2,7 @@ import { useStreamingResource } from '@aptre/bldr-sdk/hooks/useStreamingResource
 import { useAccessTypedHandle } from '@s4wave/web/hooks/useAccessTypedHandle.js'
 import type { ObjectViewerComponentProps } from '@s4wave/web/object/object.js'
 import { getObjectKey } from '@s4wave/web/object/object.js'
+import { useObjectName } from '@s4wave/web/object/ObjectViewerContext.js'
 import { LoadingCard } from '@s4wave/web/ui/loading/LoadingCard.js'
 import { useCallback } from 'react'
 
@@ -31,6 +32,7 @@ export function OrgViewer({
 
   const stateResource = useStreamingResource(handle, streamFactory, [])
   const state: OrgState | undefined = stateResource.value ?? undefined
+  useObjectName(state?.displayName)
 
   return (
     <div className="bg-background-primary flex h-full w-full flex-col">

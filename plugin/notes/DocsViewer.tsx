@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react'
 
 import type { ObjectViewerComponentProps } from '@s4wave/web/object/object.js'
 import { getObjectKey } from '@s4wave/web/object/object.js'
+import { useObjectName } from '@s4wave/web/object/ObjectViewerContext.js'
 import { ViewerStatusShell } from '@s4wave/web/object/ViewerStatusShell.js'
 import { useStateAtom, useStateNamespace } from '@s4wave/web/state/index.js'
 import { parseObjectUri } from '@s4wave/sdk/space/object-uri.js'
@@ -32,6 +33,7 @@ function DocsViewer({ objectInfo, worldState }: ObjectViewerComponentProps) {
     objectKey,
     Documentation.fromBinary,
   )
+  useObjectName(state.value?.name)
 
   const firstSource = sources[0]
 

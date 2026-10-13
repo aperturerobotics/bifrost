@@ -1,10 +1,12 @@
 import { LuCircleAlert, LuHash, LuRefreshCw } from 'react-icons/lu'
 import { useCallback, useEffect, useState } from 'react'
 
+import { useResource } from '@aptre/bldr-sdk/hooks/useResource.js'
 import { useStreamingResource } from '@aptre/bldr-sdk/hooks/useStreamingResource.js'
 import { useAccessTypedHandle } from '@s4wave/web/hooks/useAccessTypedHandle.js'
 import type { ObjectViewerComponentProps } from '@s4wave/web/object/object.js'
 import { getObjectKey } from '@s4wave/web/object/object.js'
+import { useObjectName } from '@s4wave/web/object/ObjectViewerContext.js'
 
 import { ChatHandle, ChatChannelTypeID } from '@s4wave/sdk/chat/chat.js'
 import type { ChatMessageInfo } from '@s4wave/sdk/chat/rpc/rpc.pb.js'
@@ -48,6 +50,12 @@ function ChatChannelContent({
     return chat.watchMessages(signal)
   }, [])
   const messagesResource = useStreamingResource(handle, streamFactory, [])
+  const infoResource = useResource(
+    handle,
+    (chat: ChatHandle, signal: AbortSignal) => chat.getChannelInfo(signal),
+    [],
+  )
+  useObjectName(infoResource.value?.name)
 
   useEffect(() => {
     const batch = messagesResource.value

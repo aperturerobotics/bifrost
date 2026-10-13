@@ -1,5 +1,6 @@
 import type { ObjectViewerComponentProps } from '@s4wave/web/object/object.js'
 import { getObjectKey } from '@s4wave/web/object/object.js'
+import { useObjectName } from '@s4wave/web/object/ObjectViewerContext.js'
 import { useAccessTypedHandle } from '@s4wave/web/hooks/useAccessTypedHandle.js'
 import { ViewerStatusShell } from '@s4wave/web/object/ViewerStatusShell.js'
 import { cn } from '@s4wave/web/style/utils.js'
@@ -34,6 +35,7 @@ function NotebookViewer({
     objectKey,
     Notebook.fromBinary,
   )
+  useObjectName(state.value?.name)
 
   const notebookHandle = resource.value
   const viewerState = useNotebookViewerState({ sources, notebookHandle })

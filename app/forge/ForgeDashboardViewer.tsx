@@ -21,6 +21,7 @@ import { SpaceContentsContext } from '@s4wave/web/contexts/contexts.js'
 
 import type { ObjectViewerComponentProps } from '@s4wave/web/object/object.js'
 import { getObjectKey } from '@s4wave/web/object/object.js'
+import { useObjectName } from '@s4wave/web/object/ObjectViewerContext.js'
 import { useForgeBlockData } from '@s4wave/web/forge/useForgeBlockData.js'
 import { useForgeLinkedEntities } from '@s4wave/web/forge/useForgeLinkedEntities.js'
 import {
@@ -64,6 +65,7 @@ export function ForgeDashboardViewer({
     ForgeDashboardTypeID,
     ForgeDashboard,
   )
+  useObjectName(dashboard?.name)
   const { navigateToObjects, spaceWorld } = SpaceContainerContext.useContext()
   const visibleWizardTypeSet = useVisibleObjectWizardTypeSet()
 

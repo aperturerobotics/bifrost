@@ -7,6 +7,7 @@ import {
 import { useAccessTypedHandle } from '@s4wave/web/hooks/useAccessTypedHandle.js'
 import type { ObjectViewerComponentProps } from '@s4wave/web/object/object.js'
 import { getObjectKey } from '@s4wave/web/object/object.js'
+import { useObjectName } from '@s4wave/web/object/ObjectViewerContext.js'
 import { Button } from '@s4wave/web/ui/button.js'
 import { ErrorState } from '@s4wave/web/ui/ErrorState.js'
 import { LoadingInline } from '@s4wave/web/ui/loading/LoadingInline.js'
@@ -60,6 +61,7 @@ export function SqlTableViewViewer({
   )
 
   const view = metaResource.value?.tableView
+  useObjectName(view?.displayName)
   const rows = rowsResource.value
   const data = rows
     ? {

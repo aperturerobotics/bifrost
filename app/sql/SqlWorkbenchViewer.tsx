@@ -14,6 +14,7 @@ import { useAccessTypedHandle } from '@s4wave/web/hooks/useAccessTypedHandle.js'
 import { ObjectViewer } from '@s4wave/web/object/ObjectViewer.js'
 import type { ObjectViewerComponentProps } from '@s4wave/web/object/object.js'
 import { getObjectKey } from '@s4wave/web/object/object.js'
+import { useObjectName } from '@s4wave/web/object/ObjectViewerContext.js'
 import type { ObjectInfo } from '@s4wave/web/object/object.pb.js'
 import { cn } from '@s4wave/web/style/utils.js'
 import { ErrorState } from '@s4wave/web/ui/ErrorState.js'
@@ -62,6 +63,7 @@ export function SqlWorkbenchViewer({
   const [mutationError, setMutationError] = useState<string | null>(null)
 
   const workbench = workbenchResource.value?.workbench
+  useObjectName(workbench?.displayName)
   const targetDbKey = workbench?.targetDbObjectKey ?? ''
   const pins = useMemo(
     () => workbench?.pinnedQueryObjectKeys ?? [],

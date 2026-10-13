@@ -18,6 +18,7 @@ import { State as TaskState } from '@go/github.com/s4wave/spacewave/forge/task/t
 
 import type { ObjectViewerComponentProps } from '@s4wave/web/object/object.js'
 import { getObjectKey } from '@s4wave/web/object/object.js'
+import { useObjectName } from '@s4wave/web/object/ObjectViewerContext.js'
 import { useForgeBlockData } from '@s4wave/web/forge/useForgeBlockData.js'
 import { useForgeLinkedEntities } from '@s4wave/web/forge/useForgeLinkedEntities.js'
 import {
@@ -71,6 +72,7 @@ export function ForgeClusterViewer({
 }: ObjectViewerComponentProps) {
   const objectKey = getObjectKey(objectInfo)
   const cluster = useForgeBlockData(objectState, ForgeClusterTypeID, Cluster)
+  useObjectName(cluster?.name)
   const { spaceWorld, navigateToObjects } = SpaceContainerContext.useContext()
   const [creatingJob, setCreatingJob] = useState(false)
   const visibleWizardTypeSet = useVisibleObjectWizardTypeSet()

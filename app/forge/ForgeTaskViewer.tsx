@@ -13,6 +13,7 @@ import {
 
 import type { ObjectViewerComponentProps } from '@s4wave/web/object/object.js'
 import { getObjectKey } from '@s4wave/web/object/object.js'
+import { useObjectName } from '@s4wave/web/object/ObjectViewerContext.js'
 import { useForgeBlockData } from '@s4wave/web/forge/useForgeBlockData.js'
 import { useForgeLinkedEntities } from '@s4wave/web/forge/useForgeLinkedEntities.js'
 import {
@@ -74,6 +75,7 @@ export function ForgeTaskViewer({
 }: ObjectViewerComponentProps) {
   const objectKey = getObjectKey(objectInfo)
   const task = useForgeBlockData(objectState, ForgeTaskTypeID, Task)
+  useObjectName(task?.name)
 
   const { entities: passes, loading: passesLoading } = useForgeLinkedEntities(
     worldState,
