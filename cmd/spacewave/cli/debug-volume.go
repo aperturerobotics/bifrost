@@ -113,6 +113,14 @@ func runDebugVolumeUsage(
 	}
 	defer db.Close()
 
+	// Report how the file's pages are used before taking the snapshot.
+	usage, err := db.Usage(ctx)
+	if err != nil {
+		return errors.Wrap(err, "read page usage")
+	}
+	otherBytes := usage.FileBytes - usage.FreeBytes - usage.ValuePageBytes -
+		usage.IndexBytes - usage.LogBytes - usage.PendingBytes
+
 	// Read every key from one snapshot. The snapshot holds back the space
 	// a running daemon frees, so the scan reads only the index.
 	ktx, err := db.NewTransaction(ctx, false)
@@ -170,6 +178,18 @@ func runDebugVolumeUsage(
 		writeJSONUint64Field(ms, &more, "keyBytes", total.keyBytes)
 		writeJSONUint64Field(ms, &more, "valueBytes", total.valueBytes)
 		ms.WriteMoreIf(&more)
+		ms.WriteObjectField("pages")
+		ms.WriteObjectStart()
+		var morePage bool
+		writeJSONInt64Field(ms, &morePage, "freeBytes", usage.FreeBytes)
+		writeJSONInt64Field(ms, &morePage, "valuePageBytes", usage.ValuePageBytes)
+		writeJSONInt64Field(ms, &morePage, "liveValueBytes", usage.ValueBytes)
+		writeJSONInt64Field(ms, &morePage, "indexBytes", usage.IndexBytes)
+		writeJSONInt64Field(ms, &morePage, "logBytes", usage.LogBytes)
+		writeJSONInt64Field(ms, &morePage, "pendingBytes", usage.PendingBytes)
+		writeJSONInt64Field(ms, &morePage, "otherBytes", otherBytes)
+		ms.WriteObjectEnd()
+		ms.WriteMoreIf(&more)
 		ms.WriteObjectField("classes")
 		ms.WriteArrayStart()
 		var moreClass bool
@@ -195,6 +215,13 @@ func runDebugVolumeUsage(
 		{"Keys", strconv.FormatUint(total.keys, 10)},
 		{"Key Bytes", humanize.IBytes(total.keyBytes)},
 		{"Value Bytes", humanize.IBytes(total.valueBytes)},
+		{"Free Pages", ibytes(usage.FreeBytes) + " (punched)"},
+		{"Value Pages", ibytes(usage.ValuePageBytes)},
+		{"Live Values", ibytes(usage.ValueBytes)},
+		{"Index Pages", ibytes(usage.IndexBytes)},
+		{"Log", ibytes(usage.LogBytes)},
+		{"Pending", ibytes(usage.PendingBytes)},
+		{"Other", ibytes(otherBytes)},
 	})
 	os.Stdout.WriteString("\n")
 	rows := [][]string{{"CLASS", "KEYS", "KEY BYTES", "VALUE BYTES"}}
@@ -208,6 +235,14 @@ func runDebugVolumeUsage(
 	}
 	writeTable(os.Stdout, "", rows)
 	return nil
+}
+
+// ibytes formats a signed byte count in binary units.
+func ibytes(n int64) string {
+	if n < 0 {
+		return "-" + humanize.IBytes(uint64(-n))
+	}
+	return humanize.IBytes(uint64(n))
 }
 
 // volumeKeyClassOf returns the leading depth segments of key, including their

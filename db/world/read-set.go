@@ -18,6 +18,8 @@ type ReadSet struct {
 	prefixes []string
 	// patterns are the graph quad lookup filters.
 	patterns []graphPattern
+	// endpoints are the object keys that patterns name as subject or object.
+	endpoints map[string]struct{}
 	// graph is set when the graph was read beyond quad lookups.
 	graph bool
 	// all is set when the World was read beyond objects and the graph.
@@ -26,7 +28,7 @@ type ReadSet struct {
 
 // NewReadSet constructs an empty ReadSet.
 func NewReadSet() *ReadSet {
-	return &ReadSet{keys: make(map[string]struct{})}
+	return &ReadSet{keys: make(map[string]struct{}), endpoints: make(map[string]struct{})}
 }
 
 // Track returns a WorldState that records the reads made through it.
@@ -87,13 +89,8 @@ func (r *ReadSet) touchesKey(key string) bool {
 	if r.graph {
 		return true
 	}
-	value := KeyToGraphValue(key).String()
-	for _, p := range r.patterns {
-		if p.subject == value || p.obj == value {
-			return true
-		}
-	}
-	return false
+	_, ok := r.endpoints[key]
+	return ok
 }
 
 // addKeys records object key reads.
@@ -116,12 +113,21 @@ func (r *ReadSet) addPrefix(prefix string) {
 func (r *ReadSet) addPatterns(filters ...GraphQuad) {
 	r.mtx.Lock()
 	for _, q := range filters {
-		r.patterns = append(r.patterns, graphPattern{
+		// Keep the filter for changed quads.
+		p := graphPattern{
 			subject:   q.GetSubject(),
 			predicate: q.GetPredicate(),
 			obj:       q.GetObj(),
 			label:     q.GetLabel(),
-		})
+		}
+		r.patterns = append(r.patterns, p)
+
+		// Index the object keys it names for changed objects.
+		for _, value := range []string{p.subject, p.obj} {
+			if key, err := GraphValueToKey(value); err == nil && key != "" {
+				r.endpoints[key] = struct{}{}
+			}
+		}
 	}
 	r.mtx.Unlock()
 }

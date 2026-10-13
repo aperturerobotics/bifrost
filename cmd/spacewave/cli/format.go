@@ -122,6 +122,13 @@ func writeJSONInt32Field(ms *protojson.MarshalState, more *bool, name string, va
 	ms.WriteInt32(value)
 }
 
+// writeJSONInt64Field writes a JSON int64 field with the leading separator.
+func writeJSONInt64Field(ms *protojson.MarshalState, more *bool, name string, value int64) {
+	ms.WriteMoreIf(more)
+	ms.WriteObjectField(name)
+	ms.WriteInt64(value)
+}
+
 // writeJSONUint64Field writes a JSON uint64 field with the leading separator.
 func writeJSONUint64Field(ms *protojson.MarshalState, more *bool, name string, value uint64) {
 	ms.WriteMoreIf(more)

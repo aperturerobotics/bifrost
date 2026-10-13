@@ -394,6 +394,30 @@ func (s *space) stats() (live, held int64) {
 	return s.liveBytes, s.livePages * pageSize
 }
 
+// usage returns the page use the space tracks. The caller fills in the
+// index pages, which the checkpoint counts.
+func (s *space) usage() Usage {
+	// Count the file and the live values.
+	u := Usage{
+		FileBytes:      pageOff(s.end),
+		ValueBytes:     s.liveBytes,
+		ValuePageBytes: s.livePages * pageSize,
+	}
+
+	// Sum the free runs, the log chunks, and the runs snapshots still hold.
+	s.free.Scan(func(_, n uint64) bool {
+		u.FreeBytes += pageOff(n)
+		return true
+	})
+	for _, c := range s.chunks {
+		u.LogBytes += pageOff(c.n)
+	}
+	for _, p := range slices.Concat(s.values, s.pages) {
+		u.PendingBytes += pageOff(p.n)
+	}
+	return u
+}
+
 // encode writes the space with the open extent closed.
 func (s *space) encode() []byte {
 	// Write the release marks, the file end, and the free runs.

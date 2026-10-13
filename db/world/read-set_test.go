@@ -27,7 +27,7 @@ func (readStubWorldState) LookupGraphQuads(context.Context, GraphQuad, uint32) (
 
 // TestReadSetTouched checks which ChangeSets touch the reads of a view.
 func TestReadSetTouched(t *testing.T) {
-	// Read key a, iterate prefix dir/, and look up (s, p, *).
+	// Read key a and iterate prefix dir/.
 	ctx := t.Context()
 	reads := NewReadSet()
 	ws := reads.Track(readStubWorldState{})
@@ -37,7 +37,15 @@ func TestReadSetTouched(t *testing.T) {
 		t.Fatal(err)
 	}
 	ws.IterateObjects(ctx, "dir/", false)
+
+	// Look up (s, p, *), (*, q, o2) and a literal object.
 	if _, err := ws.LookupGraphQuads(ctx, NewGraphQuadWithKeys("s", "p", "", ""), 0); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ws.LookupGraphQuads(ctx, NewGraphQuadWithKeys("", "q", "o2", ""), 0); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ws.LookupGraphQuads(ctx, NewGraphQuad("", "q", `"literal"`, ""), 0); err != nil {
 		t.Fatal(err)
 	}
 
@@ -55,6 +63,8 @@ func TestReadSetTouched(t *testing.T) {
 		{"matching quad", &ChangeSet{Quads: []GraphQuad{NewGraphQuadWithKeys("s", "p", "o", "")}}, true},
 		{"rename into read key", &ChangeSet{Keys: []string{"c", "a"}}, true},
 		{"pattern subject", &ChangeSet{Keys: []string{"s"}}, true},
+		{"pattern object", &ChangeSet{Keys: []string{"o2"}}, true},
+		{"literal object", &ChangeSet{Keys: []string{"literal"}}, false},
 		{"unknown", NewUnknownChangeSet(), true},
 	}
 	for _, c := range cases {

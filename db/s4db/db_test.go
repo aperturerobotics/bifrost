@@ -439,3 +439,36 @@ func TestScanPrefixLens(t *testing.T) {
 		t.Fatalf("lengths %v, want %v", got, want)
 	}
 }
+
+// TestUsage checks that Usage counts live values and that the page classes
+// fit in the file.
+func TestUsage(t *testing.T) {
+	// Store values too large for the index.
+	ctx := context.Background()
+	db := openTest(t, filepath.Join(t.TempDir(), "usage.s4wave"), Options{})
+	defer db.Close()
+	tx, _ := db.NewTransaction(ctx, true)
+	for i := range 100 {
+		if err := tx.Set(ctx, []byte{byte(i)}, make([]byte, 3000)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := tx.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	// The live values and their pages are counted, and every class fits.
+	u, err := db.Usage(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if u.ValueBytes != 300000 {
+		t.Fatalf("ValueBytes = %d, want 300000", u.ValueBytes)
+	}
+	if u.ValuePageBytes < u.ValueBytes || u.LogBytes == 0 {
+		t.Fatalf("usage %+v lacks value pages or log", u)
+	}
+	if sum := u.FreeBytes + u.ValuePageBytes + u.IndexBytes + u.LogBytes + u.PendingBytes; sum > u.FileBytes {
+		t.Fatalf("usage %+v sums to %d past the file", u, sum)
+	}
+}
