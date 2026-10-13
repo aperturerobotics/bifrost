@@ -497,8 +497,11 @@ func (s *sessionTracker) executeLink(
 			broadcast()
 		})
 		go s.w.handler.HandleLinkLost(nextLink)
-		_ = dcRwc.Close()
+
+		// Report the cause before closing the data channel: the close ends
+		// the link routine, which must find the cause waiting.
 		errCh <- cause
+		_ = dcRwc.Close()
 	}
 
 	// Construct the link and report any construction failure.
@@ -547,12 +550,18 @@ func (s *sessionTracker) executeLink(
 		}
 	}()
 
-	// Wait for cancellation or link closure.
+	// Wait for cancellation or link closure. A cause reported before the
+	// cancellation wins: the data channel closes right after the link does.
 	select {
-	case <-ctx.Done():
-		return context.Canceled
 	case err := <-errCh:
 		return err
+	case <-ctx.Done():
+		select {
+		case err := <-errCh:
+			return err
+		default:
+			return context.Canceled
+		}
 	}
 }
 
@@ -992,6 +1001,12 @@ func (s *sessionTracker) runSession(
 	linkRoutine := routine.NewStateRoutineContainer(
 		func(t1, t2 datachannel.ReadWriteCloser) bool { return t1 == t2 },
 		routine.WithExitCb(func(err error) {
+			// The routine is also cancelled when its data channel closes
+			// while the session lives. That is the remote peer closing the
+			// link, which spends the presence epoch.
+			if errors.Is(err, context.Canceled) && ctx.Err() == nil {
+				err = io.EOF
+			}
 			sess.failWithErr(pkgerrors.Wrap(err, "link routine"))
 		}),
 	)
