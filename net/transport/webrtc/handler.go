@@ -10,7 +10,7 @@ import (
 	"github.com/s4wave/spacewave/net/signaling"
 )
 
-// WebRTCSignalHandlerControllerID is the controller ID for WebRTCSignalHandler
+// WebRTCSignalHandlerControllerID is the controller ID for WebRTCSignalHandler.
 const WebRTCSignalHandlerControllerID = ControllerID + "/signal-handler"
 
 // WebRTCSignalHandler handles incoming signaling messages from other peers.
@@ -64,22 +64,22 @@ func (c *WebRTCSignalHandler) Close() error {
 type handleSignalPeerResolver struct {
 	t    *WebRTC
 	sess signaling.SignalPeerSession
-
-	// closed reports that Resolve has exited. t.bcast guards closed.
-	closed bool
 }
 
-// Resolve resolves the directive.
+// Resolve holds the session tracker for the remote peer and hands it each
+// decoded signal until the signaling session ends.
 func (r *handleSignalPeerResolver) Resolve(ctx context.Context, handler directive.ResolverHandler) error {
-	// Bind the incoming signaling session to its peer ingress lifetime.
-	remotePeerID := r.sess.GetRemotePeerID()
-	remotePeerIDStr := remotePeerID.String()
+	// Hold the session tracker of the remote peer while the session lasts.
+	remotePeerIDStr := r.sess.GetRemotePeerID().String()
+	ref, tkr, err := r.t.addSessionTrackerRef(remotePeerIDStr)
+	if err != nil {
+		return err
+	}
+	defer ref.Release()
 	r.t.le.Debugf("started signaling session with %v", remotePeerIDStr)
-	defer r.t.closeSignalIngress(remotePeerIDStr, r)
 
-	// Receive, validate, and deliver each incoming signaling message.
+	// Decode and validate each incoming signal and hand it to the tracker.
 	for {
-		// Wait for an incoming message.
 		data, err := r.sess.Recv(ctx)
 		if err != nil {
 			return err
@@ -95,16 +95,11 @@ func (r *handleSignalPeerResolver) Resolve(ctx context.Context, handler directiv
 			r.t.le.WithError(err).Warnf("failed to decode incoming signal from %v", remotePeerIDStr)
 			return err
 		}
-		incoming := &incomingSignal{
-			sig:      sig,
-			accepted: make(chan struct{}),
-		}
-		// Deliver under the transport lifetime context: retiring the directive
-		// instance mid-trickle must not drop an owned decoded signal while it
-		// awaits a live tracker execution. Transport shutdown still releases
-		// the parked delivery; the next Recv observes instance cancellation.
-		if err := r.t.deliverSignal(r.t.ctx, remotePeerIDStr, r, incoming); err != nil {
-			return err
+
+		select {
+		case <-ctx.Done():
+			return context.Canceled
+		case tkr.rxSignal <- sig:
 		}
 	}
 }

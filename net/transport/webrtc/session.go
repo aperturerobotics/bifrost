@@ -8,6 +8,7 @@ import (
 	"errors"
 	"io"
 	"runtime/debug"
+	"slices"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -29,103 +30,76 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// dataChannelID is the channel ID used in webRTC for Quic-Over-WebRTC
+// dataChannelID is the data channel label that carries QUIC over WebRTC.
 var dataChannelID = "bifrost-quic"
 
 // handshakeTimeout bounds the QUIC handshake over a ready data channel.
 const handshakeTimeout = 30 * time.Second
 
+// errLinkClosedLocally reports that the local peer closed a link while its
+// QUIC connection was still up.
+var errLinkClosedLocally = errors.New("link closed locally")
+
 // sessionTracker wraps an ongoing connection with a peer.
+//
+// The tracker runs one PeerConnection session at a time. It learns that the
+// remote peer is online from the signaling session: the remote peer is
+// present while it holds its end of that session open, and each time it
+// joins it starts a new presence epoch.
 type sessionTracker struct {
-	// w is the transport
+	// w is the transport.
 	w *WebRTC
-	// le is the logger
+	// le is the logger.
 	le *logrus.Entry
 	// key is the string encoding of the peer id.
 	key string
-	// peerID is the parsed version of the peer id
+	// peerID is the parsed remote peer id.
 	peerID peer.ID
-	// peerPub is the peer public key
+	// peerPub is the remote peer public key.
 	peerPub crypto.PubKey
-	// offerer indicates if we are offering or answering
+	// offerer indicates the local peer offers and the remote peer answers.
 	offerer bool
+	// rxSignal carries the signals received from the remote peer.
+	rxSignal chan *WebRtcSignal
 
-	// executionGeneration identifies each execute invocation on this tracker.
-	// execution is non-nil only while that invocation is live.
-	// w.bcast guards executionGeneration, execution, and link.
-	executionGeneration uint64
-	execution           *sessionTrackerExecution
-	// link contains the current link, if any
+	// w.bcast guards the fields below.
+
+	// signals are the attached signaling sessions with the remote peer, in
+	// attach order.
+	signals []*attachedSignal
+	// dialers counts the DialPeer calls waiting for a link.
+	dialers int
+	// link is the current link, if any.
 	link *Link
-	// linkRef holds the transport-owned tracker reference while a published
-	// link is live. The transport session, not the signal-ingress lease, owns
-	// the established-link reference: retiring the ingress lease must not
-	// cancel a tracker whose PeerConnection and datachannel are still in use.
+	// linkRef holds a tracker reference while a published link is live, so the
+	// tracker outlives the DialPeer call that started it.
 	linkRef *keyed.KeyedRef[string, *sessionTracker]
 }
 
-// sessionTrackerExecution is one live invocation of sessionTracker.execute.
-type sessionTrackerExecution struct {
-	generation     uint64
-	rxSignal       chan *incomingSignal
-	carriedOfferID []byte
+// attachedSignal is a signaling session with the remote peer and the presence
+// epoch it last reported.
+type attachedSignal struct {
+	// id is the directive value id of the session.
+	id uint32
+	// session is the signaling session.
+	session signaling.SignalPeerSession
+	// cancel stops the presence watch.
+	cancel context.CancelFunc
+	// epoch is the last presence epoch the session reported. The tracker's
+	// w.bcast guards it.
+	epoch uint64
 }
 
-// beginExecution publishes a new execution generation.
-func (s *sessionTracker) beginExecution() *sessionTrackerExecution {
-	var execution *sessionTrackerExecution
-	s.w.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
-		s.executionGeneration++
-		execution = &sessionTrackerExecution{
-			generation: s.executionGeneration,
-			rxSignal:   make(chan *incomingSignal),
-		}
-		s.execution = execution
-		broadcast()
-	})
-	return execution
-}
-
-// retireExecution clears a generation and reports its lease retirement.
-func (s *sessionTracker) retireExecution(execution *sessionTrackerExecution) {
-	s.w.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
-		if s.execution != execution {
-			return
-		}
-		s.execution = nil
-		s.w.retireSignalIngressLocked(s.key, s, broadcast)
-		broadcast()
-	})
-}
-
-// completeExecution waits for both child routines before retiring the execution.
-func (s *sessionTracker) completeExecution(
-	execution *sessionTrackerExecution,
-	linkDone, xmitDone <-chan struct{},
-) {
-	if linkDone != nil {
-		<-linkDone
-	}
-	if xmitDone != nil {
-		<-xmitDone
-	}
-	s.retireExecution(execution)
-}
-
-// incomingSignal holds a decoded signal until a live tracker accepts it.
-type incomingSignal struct {
-	sig      *WebRtcSignal
-	accepted chan struct{}
-}
-
-// accept records that the current live tracker owns the signal.
-func (s *incomingSignal) accept() {
-	close(s.accepted)
+// presence identifies one presence epoch of the remote peer on one signaling
+// session. The zero value is never present.
+type presence struct {
+	signal signaling.SignalPeerSession
+	epoch  uint64
 }
 
 // newSessionTracker constructs a new sessionTracker.
 func (w *WebRTC) newSessionTracker(peerIDStr string) (keyed.Routine, *sessionTracker) {
-	// note: we confirmed that parsePeerID is valid before adding the key
+	// addSessionTrackerRef validated the peer id before adding the key.
 	peerID, peerPub, _ := peer.ParsePeerIDWithPubKey(peerIDStr)
 	localPeerIDStr := w.peerID.String()
 	offerer := isOfferer(localPeerIDStr, peerIDStr)
@@ -133,15 +107,167 @@ func (w *WebRTC) newSessionTracker(peerIDStr string) (keyed.Routine, *sessionTra
 
 	// Construct the tracker with its remote identity and negotiation role.
 	sess := &sessionTracker{
-		w:       w,
-		le:      le,
-		key:     peerIDStr,
-		peerID:  peerID,
-		peerPub: peerPub,
-		offerer: offerer,
+		w:        w,
+		le:       le,
+		key:      peerIDStr,
+		peerID:   peerID,
+		peerPub:  peerPub,
+		offerer:  offerer,
+		rxSignal: make(chan *WebRtcSignal),
 	}
 
 	return sess.execute, sess
+}
+
+// snapshot returns the remote peer's presence, whether a local caller is
+// dialing, and a channel closed when either may have changed. The remote peer
+// is present on the first attached signaling session that reports it.
+func (s *sessionTracker) snapshot() (curr presence, dialing bool, waitCh <-chan struct{}) {
+	s.w.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
+		for _, sig := range s.signals {
+			if sig.epoch != 0 {
+				curr = presence{signal: sig.session, epoch: sig.epoch}
+				break
+			}
+		}
+		dialing = s.dialers != 0
+		waitCh = getWaitCh()
+	})
+	return curr, dialing, waitCh
+}
+
+// addSignal attaches a signaling session and watches its presence until ctx
+// ends or the session is removed.
+func (s *sessionTracker) addSignal(ctx context.Context, id uint32, session signaling.SignalPeerSession) {
+	// Record the session in attach order.
+	s.le.Debug("signaling session attached")
+	ctx, cancel := context.WithCancel(ctx)
+	sig := &attachedSignal{id: id, session: session, cancel: cancel}
+	s.w.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
+		s.signals = append(s.signals, sig)
+	})
+
+	// Publish each presence change the session reports.
+	go func() {
+		for {
+			epoch, changed := session.GetPresence()
+			s.w.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
+				if sig.epoch != epoch {
+					sig.epoch = epoch
+					broadcast()
+				}
+			})
+			select {
+			case <-ctx.Done():
+				return
+			case <-changed:
+			}
+		}
+	}()
+}
+
+// removeSignal detaches the signaling session with the directive value id.
+func (s *sessionTracker) removeSignal(id uint32) {
+	s.le.Debug("signaling session detached")
+	s.w.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
+		s.signals = slices.DeleteFunc(s.signals, func(sig *attachedSignal) bool {
+			if sig.id != id {
+				return false
+			}
+			sig.cancel()
+			return true
+		})
+		broadcast()
+	})
+}
+
+// opensSession reports whether sig asks the local peer for a new session: an
+// offer to the answerer, or an offer request to the offerer.
+func (s *sessionTracker) opensSession(sig *WebRtcSignal) bool {
+	if s.offerer {
+		_, ok := sig.GetBody().(*WebRtcSignal_RequestOffer)
+		return ok
+	}
+	return sig.GetSdp().GetSdpType() == webrtc.SDPTypeOffer.String()
+}
+
+// execute executes the sessionTracker.
+//
+// A session starts while the remote peer is present, either because it offers
+// or asks for an offer, or because a local caller is dialing and no earlier
+// session spent the current presence epoch. A session the remote peer ends
+// spends its epoch, so the tracker waits for the remote peer to join again
+// instead of redialing a peer that does not want the link. A session the local
+// peer ends, or whose PeerConnection fails, leaves the epoch for the next dial.
+func (s *sessionTracker) execute(ctx context.Context) error {
+	// Log the tracker lifetime.
+	s.le.Debug("session tracker starting")
+	defer s.le.Debug("session tracker exited")
+
+	// Follow the signaling sessions with the remote peer and the presence
+	// each one reports. Several signaling clients may serve the peer at once,
+	// as when a reconnecting client overlaps the one it replaces.
+	watchCtx, watchCancel := context.WithCancel(ctx)
+	defer watchCancel()
+	_, signalRef, err := s.w.b.AddDirective(
+		signaling.NewSignalPeer(s.w.conf.GetSignalingId(), s.w.peerID, s.peerID),
+		directive.NewTypedCallbackHandler(
+			func(v directive.TypedAttachedValue[signaling.SignalPeerSession]) {
+				s.addSignal(watchCtx, v.GetValueID(), v.GetValue())
+			},
+			func(v directive.TypedAttachedValue[signaling.SignalPeerSession]) {
+				s.removeSignal(v.GetValueID())
+			},
+			nil,
+			nil,
+		),
+	)
+	if err != nil {
+		return pkgerrors.Wrap(err, "watch signaling session")
+	}
+	defer signalRef.Release()
+
+	// spent is the presence epoch the remote peer ended a session in. first is
+	// the remote signal that opens the next session, if any.
+	var spent presence
+	var first *WebRtcSignal
+	for {
+		// Start a session when the remote peer asks for one or a local caller
+		// dials a presence epoch not yet spent.
+		curr, dialing, waitCh := s.snapshot()
+		if curr.epoch != 0 && (first != nil || (dialing && curr != spent)) {
+			le := s.le.WithField("presence-epoch", curr.epoch)
+			le.Info("webrtc session starting")
+			rearm, next, err := s.runSession(ctx, curr, first)
+			if ctx.Err() != nil {
+				return context.Canceled
+			}
+			le = le.WithField("rearm", rearm)
+			if err != nil {
+				le = le.WithError(err)
+			}
+			le.Info("webrtc session ended")
+			first, spent = next, curr
+			if rearm {
+				spent = presence{}
+			}
+			continue
+		}
+
+		// Wait for a dial, a presence change, or a remote request.
+		select {
+		case <-ctx.Done():
+			return context.Canceled
+		case <-waitCh:
+		case sig := <-s.rxSignal:
+			if s.opensSession(sig) {
+				s.le.WithField("presence-epoch", curr.epoch).Debug("remote peer requested a session")
+				first = sig
+			} else if s.w.GetVerbose() {
+				s.le.Debug("dropping remote signal received outside a session")
+			}
+		}
+	}
 }
 
 // outgoingSignal is a signal queued for the remote peer.
@@ -200,8 +326,12 @@ func (s *sessionTracker) executeOutbox(
 			}
 		}
 
-		// Send it, then dequeue it and report it sent.
+		// Send it, then dequeue it and report it sent. A routine replaced by a
+		// new signaling session stops without failing the session.
 		if err := s.sendSignal(ctx, sess, next.sig); err != nil {
+			if ctx.Err() != nil {
+				return context.Canceled
+			}
 			return err
 		}
 		outbox.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
@@ -239,10 +369,12 @@ func (s *sessionTracker) sendSignal(
 	return nil
 }
 
-// executeLink executes the quic link over a data channel of peerConn.
+// executeLink executes the quic link over a data channel of sess. It returns
+// errLinkClosedLocally when the local peer closed the link, and io.EOF when the
+// remote peer or the path closed it.
 func (s *sessionTracker) executeLink(
 	ctx context.Context,
-	peerConn *webrtc.PeerConnection,
+	sess *session,
 	dcRwc datachannel.ReadWriteCloser,
 ) error {
 	// Packet conn: maximum packet size should be larger than the MTU quic uses.
@@ -298,11 +430,11 @@ func (s *sessionTracker) executeLink(
 	stopClose := context.AfterFunc(hsCtx, func() { _ = dcRwc.Close() })
 
 	// Listen as the offerer or dial as the answerer.
-	var sess *quic.Conn
+	var conn *quic.Conn
 	var err error
 	s.le.WithField("quic-role", role).Info("webrtc quic phase: handshake starting")
 	if s.offerer {
-		sess, err = transport_quic.ListenSession(
+		conn, err = transport_quic.ListenSession(
 			hsCtx,
 			s.le,
 			linkOpts,
@@ -311,7 +443,7 @@ func (s *sessionTracker) executeLink(
 			s.peerID,
 		)
 	} else {
-		sess, _, err = transport_quic.DialSession(
+		conn, _, err = transport_quic.DialSession(
 			hsCtx,
 			s.le,
 			linkOpts,
@@ -322,7 +454,7 @@ func (s *sessionTracker) executeLink(
 		)
 	}
 	if !stopClose() && err == nil {
-		_ = sess.CloseWithError(0, "handshake ended")
+		_ = conn.CloseWithError(0, "handshake ended")
 		err = context.Cause(hsCtx)
 	}
 	if err != nil {
@@ -339,15 +471,21 @@ func (s *sessionTracker) executeLink(
 	var nextLink *Link
 	var wasClosed atomic.Bool
 
-	// publishedRef is the transport-owned tracker reference this publication
-	// established or reused. The link closure releases it only while it is
-	// still the tracker's owned reference.
+	// publishedRef is the tracker reference this publication established or
+	// reused. The link closure releases it only while the tracker still owns it.
 	var publishedRef *keyed.KeyedRef[string, *sessionTracker]
 	closed := func() {
-		// Retire the published link and its tracker reference under the transport lock.
+		// The link closes before its QUIC connection, so a live connection
+		// means the local peer closed the link.
 		if wasClosed.Swap(true) {
 			return
 		}
+		cause := io.EOF
+		if conn.Context().Err() == nil {
+			cause = errLinkClosedLocally
+		}
+
+		// Retire the published link and its tracker reference.
 		s.w.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
 			if s.link == nextLink {
 				s.link = nil
@@ -360,7 +498,7 @@ func (s *sessionTracker) executeLink(
 		})
 		go s.w.handler.HandleLinkLost(nextLink)
 		_ = dcRwc.Close()
-		errCh <- io.EOF
+		errCh <- cause
 	}
 
 	// Construct the link and report any construction failure.
@@ -371,24 +509,27 @@ func (s *sessionTracker) executeLink(
 		s.w.GetUUID(),
 		s.w.peerID,
 		localAddr,
-		sess,
+		conn,
 		closed,
 	)
 	if err != nil {
 		return pkgerrors.Wrap(err, "construct quic link")
 	}
-	nextLink = &Link{Link: quicLink, pc: peerConn}
+	nextLink = &Link{Link: quicLink, pc: sess.pc}
 	s.le.WithField("quic-role", role).Info("webrtc quic phase: link constructed")
 
-	// Publish the link under the broadcast lock and notify the handler.
-	// Acquire the transport-owned tracker reference for the live link so
-	// retiring the signal-ingress lease cannot cancel an established session.
+	// Publish the link and hold the tracker while it is live, then notify the
+	// handler.
+	sess.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
+		sess.linked = true
+		broadcast()
+	})
 	s.w.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
 		s.link = nextLink
 		if s.linkRef == nil {
-			ref, _, _, err := s.w.addSessionTrackerRef(s.key)
+			ref, _, err := s.w.addSessionTrackerRef(s.key)
 			if err != nil {
-				s.le.WithError(err).Warn("webrtc quic phase: transport link reference not acquired")
+				s.le.WithError(err).Warn("webrtc quic phase: link tracker reference not acquired")
 			} else {
 				s.linkRef = ref
 			}
@@ -417,19 +558,19 @@ func (s *sessionTracker) executeLink(
 
 // session contains the state for a single ongoing PeerConnection.
 type session struct {
-	// t is the session tracker
+	// t is the session tracker.
 	t *sessionTracker
-	// pc is the peer connection
+	// pc is the peer connection.
 	pc *webrtc.PeerConnection
 
-	// bcast guards the following fields
+	// bcast guards the fields below.
 	bcast broadcast.Broadcast
 
 	// NOTE: these fields are managed by pion-webrtc.
 
-	// fatalErr contains any fatal error
+	// fatalErr is the first fatal session error.
 	fatalErr error
-	// connState is the current connection state
+	// connState is the current connection state.
 	connState webrtc.PeerConnectionState
 
 	// localSeqno is the local session sequence number
@@ -438,9 +579,26 @@ type session struct {
 	// if !offerer: transmit request_offer=localSeqno when changed
 	localSeqno uint64
 
+	// localIceCandidates contains the current list of local ice candidates.
+	localIceCandidates []*webrtc.ICECandidateInit
+	// localIceCandidatesComplete indicates the ice candidate list is complete.
+	localIceCandidatesComplete bool
+
+	// dc is the data channel.
+	dc *webrtc.DataChannel
+	// dcOpen indicates the data channel is open.
+	dcOpen bool
+	// dcRwc is the detached data channel, nil unless dcOpen.
+	dcRwc datachannel.ReadWriteCloser
+
+	// linked indicates the session published its link.
+	linked bool
+
+	// NOTE: these fields are managed by runSession.
+
 	// rxOfferID is the SHA-256 digest of the exact offer SDP bytes of the
-	// remote offer currently applied to this session, when set. It records
-	// the active generation identity for the signal fence.
+	// remote offer currently applied to this session, when set. It identifies
+	// the active negotiation generation.
 	rxOfferID []byte
 
 	// rxOfferAnswerSDP holds the exact local answer SDP bytes transmitted for
@@ -455,38 +613,28 @@ type session struct {
 
 	// pendingOfferSDP holds the exact local offer SDP bytes whose digest is
 	// pendingOfferID. Pion augments LocalDescription with gathered ICE
-	// candidates after the initial transmission, so the outstanding-offer
-	// retransmit path replays these bytes to keep the generation identity
-	// stable across retransmissions.
+	// candidates after the initial transmission, so a retransmitted offer
+	// replays these bytes to keep its generation identity.
 	pendingOfferSDP string
 
 	// retiredOfferIDs holds the digests of remote offers this session already
 	// applied and replaced with a newer generation. A replayed copy of a
 	// retired offer is dropped before Pion so a stale description can never
-	// re-enter negotiation. The set lives and dies with the session; it is
-	// never retained across sessions.
+	// re-enter negotiation.
 	retiredOfferIDs map[string]struct{}
 
-	// pendingRemoteIce holds remote ICE candidates buffered before their
+	// lastAppliedRemoteSdp is the SDP string last applied with
+	// SetRemoteDescription. A byte-identical duplicate is ignored to avoid an
+	// unnecessary renegotiation and ICE restart.
+	lastAppliedRemoteSdp string
+
+	// remoteICE applies remote ICE candidates of the active generation.
+	remoteICE remoteICECandidateApplier
+
+	// pendingRemoteIce holds remote ICE candidates received before their
 	// generation could accept them, tagged with the offer id they arrived
-	// under. A tracker restart hands this buffer to the successor with the
-	// session itself, so an in-flight trickle survives the restart.
+	// under.
 	pendingRemoteIce []pendingRemoteCandidate
-
-	// localIceCandidates contains the current list of local ice candidates.
-	localIceCandidates []*webrtc.ICECandidateInit
-	// localIceCandidatesComplete indicates the ice candidate list is complete.
-	localIceCandidatesComplete bool
-
-	// dc is the data channel
-	dc *webrtc.DataChannel
-	// dcOpen indicates the data channel is open.
-	dcOpen bool
-	// dcRwc is the data channel read/write/closer
-	// nil unless dcOpen=true
-	dcRwc datachannel.ReadWriteCloser
-
-	// NOTE: these fields are managed by execute().
 }
 
 // newSession constructs a new session.
@@ -513,7 +661,11 @@ func (s *sessionTracker) newSession(ctx context.Context) (*session, <-chan struc
 	}
 
 	// Bind the new peer connection to its session state.
-	sess := &session{t: s, pc: pc}
+	sess := &session{
+		t:         s,
+		pc:        pc,
+		remoteICE: remoteICECandidateApplier{add: pc.AddICECandidate},
+	}
 
 	// Capture the first session notification before callbacks can change state.
 	var waitCh <-chan struct{}
@@ -612,6 +764,7 @@ func (s *session) createDataChannel(
 	})
 }
 
+// onNegotiationNeeded advances the local sequence so the session negotiates.
 func (s *session) onNegotiationNeeded() {
 	s.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
 		s.localSeqno++
@@ -624,47 +777,21 @@ func (s *session) onNegotiationNeeded() {
 	})
 }
 
-// acceptIncomingSignalLocked accepts sig unless this session is terminal, and
-// reports whether it did. The session owner exits on the same terminal states
-// without acting on a refused signal, so the signal ingress hands it to the
-// successor. A disconnected session still accepts: its owner acts on the
-// signal, and the remote peer's request for a new session is the usual way out
-// of that state. The caller must hold s.bcast.
-func (s *session) acceptIncomingSignalLocked(sig *incomingSignal) bool {
-	if sig == nil || s.fatalErr != nil || s.connState == webrtc.PeerConnectionStateFailed {
-		return false
-	}
-	sig.accept()
-	return true
-}
-
-// failWithErr fences signal acceptance before exposing a routine error.
-func (s *session) failWithErr(errCh chan<- error, err error) {
-	// Ignore successful exits and cancellation when recording session failures.
-	if err == nil || err == context.Canceled {
+// failWithErr records the first fatal session error.
+func (s *session) failWithErr(err error) {
+	if err == nil || errors.Is(err, context.Canceled) {
 		return
 	}
-
-	// Record the first fatal session error and notify state watchers.
-	var recorded bool
 	s.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
 		if s.fatalErr == nil {
 			s.fatalErr = err
-			recorded = true
 			broadcast()
 		}
 	})
-	if !recorded {
-		return
-	}
-
-	// Report the recorded session failure without blocking its callback.
-	select {
-	case errCh <- err:
-	default:
-	}
 }
 
+// onIceCandidate records a gathered local ICE candidate, or the end of
+// gathering when c is nil.
 func (s *session) onIceCandidate(c *webrtc.ICECandidate) {
 	s.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
 		// Publish completion when the ICE agent finishes gathering candidates.
@@ -690,6 +817,7 @@ func (s *session) onIceCandidate(c *webrtc.ICECandidate) {
 	})
 }
 
+// onConnectionStateChange records the PeerConnection state.
 func (s *session) onConnectionStateChange(connState webrtc.PeerConnectionState) {
 	s.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
 		if s.connState != connState {
@@ -730,69 +858,16 @@ func (s *session) onDataChannelClose() {
 	})
 }
 
-// close closes the session and releases its generation fence state.
+// close closes the peer connection.
 func (s *session) close() {
-	// fatalErr and connState are written by pion callback goroutines and the
-	// child routine exit paths; snapshot them under the lock.
-	var fatalErr error
-	var connState webrtc.PeerConnectionState
-	s.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
-		fatalErr = s.fatalErr
-		connState = s.connState
-	})
-
-	// An in-flight negotiation survives this tracker: hand the session to the
-	// peer's ingress lease for adoption by a successor instead of disposing an
-	// outstanding offer. The successor adopts the connection with the same
-	// pending offer id and retransmits the identical offer via the outstanding-
-	// offer path in transmitLocalNegotiation, so an answer already sent or
-	// still in flight correlates instead of dying with the retired generation.
-	// Only a session holding a live outstanding local offer is adoptable; a
-	// session with a recorded fatal error, a finished or unusable connection,
-	// or no outstanding offer cannot continue negotiation and is disposed so
-	// its successor mints a fresh generation on a new connection.
-	localDesc := s.pc.LocalDescription()
-	if fatalErr == nil && s.t != nil && s.t.offerer && len(s.pendingOfferID) > 0 &&
-		localDesc != nil && localDesc.SDP != "" &&
-		s.pc.SignalingState() == webrtc.SignalingStateHaveLocalOffer &&
-		connState != webrtc.PeerConnectionStateConnected &&
-		connState != webrtc.PeerConnectionStateFailed &&
-		connState != webrtc.PeerConnectionStateClosed &&
-		s.t.w.stashAdoptableSession(s.t.key, s) {
-		return
-	}
-	s.dispose()
-}
-
-// dispose releases the session's generation fence state and closes the peer
-// connection exactly once. It never stashes: the ingress-lease cleanup path
-// uses it to dispose a handed-over session outside every w.bcast section.
-func (s *session) dispose() {
-	s.retiredOfferIDs = nil
-	s.pendingRemoteIce = nil
 	_ = s.pc.Close()
-}
-
-// adoptSession binds a stashed in-flight session to this tracker generation
-// and returns the session's wait channel.
-func (s *sessionTracker) adoptSession(sess *session) <-chan struct{} {
-	var waitCh <-chan struct{}
-	sess.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
-		sess.t = s
-		// The successor owns the session lifecycle now; a predecessor fatal
-		// error must not exit the successor before it negotiates.
-		sess.fatalErr = nil
-		waitCh = getWaitCh()
-		broadcast()
-	})
-	return waitCh
 }
 
 // activeOfferID returns the digest identifying the negotiation generation
 // this session transmits signals for: the pending local offer while offering,
 // otherwise the remote offer applied to this session.
 func (s *session) activeOfferID() []byte {
-	if s.t != nil && s.t.offerer {
+	if s.t.offerer {
 		return s.pendingOfferID
 	}
 	return s.rxOfferID
@@ -807,7 +882,6 @@ func (s *session) activeOfferID() []byte {
 func (s *sessionTracker) retransmitOutstandingOffer(
 	sess *session,
 	currLocalSeqno uint64,
-	reason string,
 	xmitSignal func(*WebRtcSignal),
 ) (bool, error) {
 	// Require an outstanding local offer with retained SDP before replaying it.
@@ -818,16 +892,14 @@ func (s *sessionTracker) retransmitOutstandingOffer(
 	if sess.pendingOfferSDP == "" {
 		return false, pkgerrors.New("retransmit outstanding offer: no pending offer sdp")
 	}
-	s.le.WithFields(logrus.Fields{
-		"offer-id": shortOfferID(sess.pendingOfferID),
-		"reason":   reason,
-	}).Info("signal tx: retransmit outstanding offer")
+	s.le.WithField("offer-id", shortOfferID(sess.pendingOfferID)).
+		Info("signal tx: retransmit outstanding offer")
 	xmitSdp := &WebRtcSdp{
 		TxSeqno: currLocalSeqno,
 		SdpType: webrtc.SDPTypeOffer.String(),
 		Sdp:     sess.pendingOfferSDP,
+		OfferId: sess.pendingOfferID,
 	}
-	xmitSdp.OfferId = sess.pendingOfferID
 	xmitSignal(&WebRtcSignal{Body: &WebRtcSignal_Sdp{Sdp: xmitSdp}})
 	return true, nil
 }
@@ -848,7 +920,9 @@ func (s *sessionTracker) transmitLocalNegotiation(
 	// Choose an offer or offer request for the current negotiation role.
 	var xmit *WebRtcSignal
 	if s.offerer {
-		retransmitted, err := s.retransmitOutstandingOffer(sess, currLocalSeqno, "adopted session", xmitSignal)
+		// Replay an offer still waiting for its answer instead of minting a
+		// new generation.
+		retransmitted, err := s.retransmitOutstandingOffer(sess, currLocalSeqno, xmitSignal)
 		if err != nil {
 			return lastLocalSeqno, false, err
 		}
@@ -888,114 +962,69 @@ func (s *sessionTracker) transmitLocalNegotiation(
 	return currLocalSeqno, true, nil
 }
 
-// execute executes the sessionTracker.
-func (s *sessionTracker) execute(ctx context.Context) (err error) {
-	// Publish the tracker execution and arrange retirement of its child routines.
-	defer s.le.Warn("session tracker exited")
-	phase := "startup"
+// runSession runs one PeerConnection session with the remote peer at pres,
+// starting from the remote signal first when set. rearm reports that a later
+// dial may start another session in the same presence epoch: the local peer
+// closed the link or the PeerConnection failed. next is a remote signal that
+// opens the following session, when the remote peer replaced its
+// PeerConnection.
+func (s *sessionTracker) runSession(
+	ctx context.Context,
+	pres presence,
+	first *WebRtcSignal,
+) (rearm bool, next *WebRtcSignal, err error) {
+	// Report a panic as a session error naming the phase it happened in.
+	phase := "construct session"
 	defer func() {
 		if e := recover(); e != nil {
 			err = pkgerrors.Errorf("%s: recovered panic: %v", phase, e)
 		}
 	}()
-	s.le.Info("session tracker starting")
-	execution := s.beginExecution()
-	var linkDone, xmitDone <-chan struct{}
-	defer func() {
-		s.completeExecution(execution, linkDone, xmitDone)
-	}()
 
-	// Construct the PeerConnection and attach the callbacks. A session left
-	// by a retired predecessor with an offer still outstanding is adopted so
-	// its pending generation survives regeneration and the remote answer
-	// still correlates.
-	phase = "construct session"
-	sess := s.w.takeAdoptableSession(s.key, execution)
-	var waitCh <-chan struct{}
-	if sess != nil {
-		waitCh = s.adoptSession(sess)
-		s.le.Debug("adopted in-flight negotiation session from retired predecessor")
-	} else {
-		sess, waitCh, err = s.newSession(ctx)
-		if err != nil {
-			return pkgerrors.Wrap(err, phase)
-		}
+	// Construct the PeerConnection and attach the callbacks.
+	sess, waitCh, err := s.newSession(ctx)
+	if err != nil {
+		return false, nil, pkgerrors.Wrap(err, phase)
 	}
-	defer func() {
-		sess.close()
-	}()
-
-	// current is the session the child routines report failures to. It
-	// changes when the remote peer replaces its PeerConnection.
-	var current atomic.Pointer[session]
-	current.Store(sess)
+	defer sess.close()
 
 	// Construct the QUIC link routine and route failures into session state.
-	errCh := make(chan error, 1)
 	linkRoutine := routine.NewStateRoutineContainer(
 		func(t1, t2 datachannel.ReadWriteCloser) bool { return t1 == t2 },
 		routine.WithExitCb(func(err error) {
-			if err != nil {
-				current.Load().failWithErr(errCh, pkgerrors.Wrap(err, "link routine"))
-			}
+			sess.failWithErr(pkgerrors.Wrap(err, "link routine"))
 		}),
 	)
 	_, _, _ = linkRoutine.SetStateRoutine(func(ctx context.Context, dcRwc datachannel.ReadWriteCloser) error {
-		return s.executeLink(ctx, current.Load().pc, dcRwc)
+		return s.executeLink(ctx, sess, dcRwc)
 	})
 
-	// Construct the signal transmit routine and route failures into session
-	// state. It sends the outbox over the current signaling session.
+	// Construct the signal transmit routine. It sends the outbox over the
+	// current signaling session.
 	var outbox signalOutbox
 	xmitRoutine := routine.NewStateRoutineContainer(
 		func(t1, t2 signaling.SignalPeerSession) bool { return t1 == t2 },
 		routine.WithExitCb(func(err error) {
-			if err != nil {
-				current.Load().failWithErr(errCh, pkgerrors.Wrap(err, "signal transmit routine"))
-			}
+			sess.failWithErr(pkgerrors.Wrap(err, "signal transmit routine"))
 		}),
 	)
 	_, _, _ = xmitRoutine.SetStateRoutine(func(ctx context.Context, signal signaling.SignalPeerSession) error {
 		return s.executeOutbox(ctx, &outbox, signal)
 	})
 
-	// Follow the signaling session with the remote peer. A signaling client
-	// that reconnects replaces its session value, and a session of the
-	// closed connection never delivers again, so the outbox moves to the
-	// replacement. The watch is released after the routines stop.
-	phase = "watch signaling session"
-	_, signalRef, err := s.w.b.AddDirective(
-		signaling.NewSignalPeer(s.w.conf.GetSignalingId(), s.w.peerID, s.peerID),
-		directive.NewTypedCallbackHandler(
-			func(v directive.TypedAttachedValue[signaling.SignalPeerSession]) {
-				_, _, _, _ = xmitRoutine.SetState(v.GetValue())
-			},
-			func(v directive.TypedAttachedValue[signaling.SignalPeerSession]) {
-				_, _, _, _, _ = xmitRoutine.SwapValue(func(signal signaling.SignalPeerSession) signaling.SignalPeerSession {
-					if signal == v.GetValue() {
-						return nil
-					}
-					return signal
-				})
-			},
-			nil,
-			nil,
-		),
-	)
-	if err != nil {
-		return pkgerrors.Wrap(err, phase)
-	}
-	defer signalRef.Release()
-
-	// Set the context for the link and transmit routines.
-	phase = "bind routines"
+	// Run both routines until the session ends, then wait for them to exit
+	// before the PeerConnection closes.
 	linkRoutine.SetContext(ctx, true)
 	xmitRoutine.SetContext(ctx, true)
-
-	// Stop child routines before retiring this execution generation.
 	defer func() {
-		linkDone, _, _, _ = linkRoutine.SetState(nil)
-		xmitDone, _, _ = xmitRoutine.SetStateRoutine(nil)
+		linkDone, _, _, _ := linkRoutine.SetState(nil)
+		xmitDone, _, _ := xmitRoutine.SetStateRoutine(nil)
+		if linkDone != nil {
+			<-linkDone
+		}
+		if xmitDone != nil {
+			<-xmitDone
+		}
 	}()
 
 	// xmitSignal queues a signal for the remote peer. signalSent is closed
@@ -1005,7 +1034,7 @@ func (s *sessionTracker) execute(ctx context.Context) (err error) {
 		signalSent = outbox.push(msg)
 	}
 
-	// Watch the state and act accordingly.
+	// recheck wakes the loop to transmit the next local ICE candidate.
 	recheck := make(chan struct{}, 1)
 	recheckNext := func() {
 		select {
@@ -1014,22 +1043,10 @@ func (s *sessionTracker) execute(ctx context.Context) (err error) {
 		}
 	}
 
-	// retry retransmits the local offer while no answer has applied: the relay
-	// delivers at most once and the answerer asks for an offer only once.
-	// retryDue records that the timer fired and the retransmit waits for the
-	// outbox to drain.
-	var retry offerRetry
-	var retryDue bool
-	defer retry.stop()
-
 	// Currently processed local sequence number.
 	var lastLocalSeqno, currRemoteSeqno uint64
 	var currLinkRwc datachannel.ReadWriteCloser
-
-	// lastAppliedRemoteSdp is the SDP string we last applied via
-	// SetRemoteDescription. A byte-identical duplicate is ignored to avoid an
-	// unnecessary renegotiation / ICE restart.
-	var lastAppliedRemoteSdp string
+	var xmitSession signaling.SignalPeerSession
 
 	// Which ICE candidate index did we send last?
 	var lastSentICE int
@@ -1039,135 +1056,84 @@ func (s *sessionTracker) execute(ctx context.Context) (err error) {
 	// lastSentICE resets (a new local offer/answer regathers candidates).
 	var sentIceComplete bool
 
-	// Remote ICE candidates buffer on the session, not in this frame: a
-	// tracker restart hands the buffer to the successor with the session
-	// itself, so an in-flight trickle survives the restart. See
-	// session.pendingRemoteIce.
-	remoteICE := remoteICECandidateApplier{add: sess.pc.AddICECandidate}
-
-	// replaceSession closes the current session and continues on a fresh
-	// PeerConnection. The remote peer replaced its own PeerConnection, so the
-	// current one can never reconnect: renegotiating it would only wait out
-	// the ICE and QUIC idle timeouts while the stale link stays published.
-	replaceSession := func() error {
-		// Stop the link on the current connection and wait for it to exit.
-		waitReturn, _, _, _ := linkRoutine.SetState(nil)
-		if waitReturn != nil {
-			select {
-			case <-ctx.Done():
-				return context.Canceled
-			case <-waitReturn:
-			}
-		}
-		currLinkRwc = nil
-
-		// Close the session and open its replacement, keeping remote
-		// candidates buffered for a generation not applied yet.
-		pending := sess.pendingRemoteIce
-		sess.close()
-		next, nextWaitCh, err := s.newSession(ctx)
-		if err != nil {
-			return pkgerrors.Wrap(err, "replace session")
-		}
-		next.pendingRemoteIce = pending
-		sess, waitCh = next, nextWaitCh
-		current.Store(sess)
-		remoteICE = remoteICECandidateApplier{add: sess.pc.AddICECandidate}
-
-		// Start the negotiation state over for the new connection.
-		lastLocalSeqno, lastAppliedRemoteSdp = 0, ""
-		lastSentICE, sentIceComplete = 0, false
-		return nil
-	}
-
 	// React to session notifications and incoming signaling messages.
+	rxSignal := first
 	for {
 		phase = "wait for session change"
 
-		// Keep the local offer outstanding until its answer applies. A replaced
-		// session transmits a fresh offer, which restarts the backoff.
-		retry.sync(s.offerer && sess.pendingOfferID != nil &&
-			sess.pc.SignalingState() == webrtc.SignalingStateHaveLocalOffer)
-
-		// Wait for something to change or for an incoming signal.
-		var currIncomingSignal *incomingSignal
-
-		// Prioritize receiving an incoming signal first.
-		select {
-		case <-ctx.Done():
-			return context.Canceled
-		case currIncomingSignal = <-execution.rxSignal:
-		default:
+		// Send over the current signaling session. Before its link is up, the
+		// session belongs to the presence epoch it started in.
+		curr, _, trackerWaitCh := s.snapshot()
+		if curr.signal != xmitSession {
+			xmitSession = curr.signal
+			_, _, _, _ = xmitRoutine.SetState(xmitSession)
+		}
+		var linked bool
+		sess.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
+			linked = sess.linked
+		})
+		if !linked && curr != pres {
+			return false, nil, errors.New("remote peer presence changed before the link came up")
 		}
 
-		// Then allow also re-checking in case we need to transmit ice candidates.
-		if currIncomingSignal == nil {
+		// Prioritize receiving an incoming signal first.
+		if rxSignal == nil {
 			select {
 			case <-ctx.Done():
-				return context.Canceled
-			case err := <-errCh:
-				return err
-			case currIncomingSignal = <-execution.rxSignal:
-			case <-signalSent:
-				signalSent = nil
-			case <-retry.due():
-				retry.fired()
-				retryDue = true
-			case <-waitCh:
-			case <-recheck:
+				return false, nil, context.Canceled
+			case rxSignal = <-s.rxSignal:
+			default:
 			}
 		}
 
-		// A channel receive is not acceptance. The terminal-state transition
-		// and this acceptance fence are serialized by the session owner. A
-		// refused signal is left for the successor: the snapshot below
-		// observes the same terminal state and exits.
-		if currIncomingSignal != nil {
-			var accepted bool
-			sess.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
-				accepted = sess.acceptIncomingSignalLocked(currIncomingSignal)
-			})
-			if !accepted {
-				currIncomingSignal = nil
+		// Then allow also re-checking in case we need to transmit ice candidates.
+		if rxSignal == nil {
+			select {
+			case <-ctx.Done():
+				return false, nil, context.Canceled
+			case rxSignal = <-s.rxSignal:
+			case <-signalSent:
+				signalSent = nil
+			case <-waitCh:
+			case <-trackerWaitCh:
+			case <-recheck:
 			}
 		}
 
 		// Process the incoming signal, if any.
 		var currRxSdp *WebRtcSdp
 		var currRxIce *WebRtcIce
-		if currIncomingSignal != nil {
+		if rxSignal != nil {
 			phase = "process incoming signal"
-			switch b := currIncomingSignal.sig.GetBody().(type) {
+			sig := rxSignal
+			rxSignal = nil
+			switch b := sig.GetBody().(type) {
 			case *WebRtcSignal_RequestOffer:
 				if !s.offerer {
-					return errors.New("remote peer requested offer but we are not the offerer")
+					return false, nil, errors.New("remote peer requested offer but we are not the offerer")
 				}
 				currRemoteSeqno = b.RequestOffer
+
 				// The remote asks for an offer: retransmit the outstanding
-				// offer so a restarted answerer re-receives the generation
-				// its buffered candidates belong to.
-				retransmitted, err := s.retransmitOutstandingOffer(sess, b.RequestOffer, "offer requested", xmitSignal)
+				// offer in case the remote never received it.
+				retransmitted, err := s.retransmitOutstandingOffer(sess, b.RequestOffer, xmitSignal)
 				if err != nil {
-					return err
+					return false, nil, err
 				}
 
 				// The answerer asks for an offer only while it holds none, so
 				// a request after this session's answer landed comes from a
-				// new remote PeerConnection. Offer to it from a fresh session.
+				// new remote PeerConnection. Offer to it from a new session.
 				if !retransmitted && sess.pc.RemoteDescription() != nil {
 					s.le.Info("remote peer requested a new session: replacing the peer connection")
-					if err := replaceSession(); err != nil {
-						return err
-					}
+					return false, sig, nil
 				}
 			case *WebRtcSignal_Sdp:
 				// An offer from a different remote PeerConnection starts a
 				// new session instead of renegotiating the current one.
 				if !s.offerer && replacesRemotePeerConnection(sess.pc.RemoteDescription(), b.Sdp) {
 					s.le.Info("remote peer replaced its peer connection: replacing the local one")
-					if err := replaceSession(); err != nil {
-						return err
-					}
+					return false, sig, nil
 				}
 
 				// Process the incoming sdp below.
@@ -1210,11 +1176,16 @@ func (s *sessionTracker) execute(ctx context.Context) (err error) {
 			// get the next wait channel
 			waitCh = getWaitCh()
 		})
-		if currFatalErr != nil {
-			return currFatalErr
-		}
+
+		// A failed PeerConnection lost its path, which a new session may
+		// regain. A link the local peer closed leaves the epoch for the next
+		// dial. Any other failure, such as the remote peer closing the link,
+		// spends the epoch.
 		if currConnState == webrtc.PeerConnectionStateFailed {
-			return errors.New("webrtc connection failed")
+			return true, nil, errors.New("webrtc connection failed")
+		}
+		if currFatalErr != nil {
+			return errors.Is(currFatalErr, errLinkClosedLocally), nil, currFatalErr
 		}
 
 		// logger
@@ -1232,7 +1203,7 @@ func (s *sessionTracker) execute(ctx context.Context) (err error) {
 			if changed && waitReturn != nil {
 				select {
 				case <-ctx.Done():
-					return context.Canceled
+					return false, nil, context.Canceled
 				case <-waitReturn:
 				}
 			}
@@ -1240,19 +1211,8 @@ func (s *sessionTracker) execute(ctx context.Context) (err error) {
 		}
 
 		// Handle incoming offer and ICE signals.
-		if err := s.ingestRemoteSignal(
-			sess,
-			currRxSdp,
-			currRxIce,
-			currLocalSeqno,
-			&lastAppliedRemoteSdp,
-			&remoteICE,
-			&sess.pendingRemoteIce,
-			xmitSignal,
-			le,
-			&phase,
-		); err != nil {
-			return err
+		if err := s.ingestRemoteSignal(sess, currRxSdp, currRxIce, currLocalSeqno, xmitSignal, le, &phase); err != nil {
+			return false, nil, err
 		}
 
 		// If there is a pending outgoing signaling message, wait to send ice candidates or tx an offer.
@@ -1261,18 +1221,6 @@ func (s *sessionTracker) execute(ctx context.Context) (err error) {
 			case <-signalSent:
 				signalSent = nil
 			default:
-				continue
-			}
-		}
-
-		// Retransmit the unanswered offer once the outbox has drained.
-		if retryDue {
-			retryDue = false
-			retransmitted, err := s.retransmitOutstandingOffer(sess, currLocalSeqno, "no answer", xmitSignal)
-			if err != nil {
-				return err
-			}
-			if retransmitted {
 				continue
 			}
 		}
@@ -1289,18 +1237,16 @@ func (s *sessionTracker) execute(ctx context.Context) (err error) {
 			xmitSignal,
 		)
 		if err != nil {
-			return err
+			return false, nil, err
 		}
 		lastLocalSeqno = nextLocalSeqno
 		if transmitted {
-
 			// Restart sending ice candidates & recheck
 			lastSentICE = 0
 			sentIceComplete = false
 			waitCh = nil
 			continue
 		}
-
 		// Transmit ICE candidates, continue if waitCh is invalidated meanwhile
 		// Transmit at most once at a time, we need to make sure to process remote messages in a timely fashion.
 		if len(currTxICE) != 0 {
@@ -1309,7 +1255,7 @@ func (s *sessionTracker) execute(ctx context.Context) (err error) {
 			// make sure waitCh hasn't proced already
 			select {
 			case <-ctx.Done():
-				return context.Canceled
+				return false, nil, context.Canceled
 			case <-waitCh:
 				// Wait channel proced, continue immediately
 			default:
@@ -1320,7 +1266,7 @@ func (s *sessionTracker) execute(ctx context.Context) (err error) {
 				}
 				ice, err := NewWebRtcIce(iceCandidate)
 				if err != nil {
-					return pkgerrors.Wrap(err, "marshal local ice candidate")
+					return false, nil, pkgerrors.Wrap(err, "marshal local ice candidate")
 				}
 				ice.OfferId = sess.activeOfferID()
 				xmitSignal(&WebRtcSignal{Body: &WebRtcSignal_Ice{Ice: ice}})
@@ -1344,7 +1290,7 @@ func (s *sessionTracker) execute(ctx context.Context) (err error) {
 			mlineIndex := uint16(0)
 			eoc, err := NewWebRtcIce(&webrtc.ICECandidateInit{SDPMLineIndex: &mlineIndex})
 			if err != nil {
-				return pkgerrors.Wrap(err, "marshal end-of-candidates")
+				return false, nil, pkgerrors.Wrap(err, "marshal end-of-candidates")
 			}
 			eoc.OfferId = sess.activeOfferID()
 			xmitSignal(&WebRtcSignal{Body: &WebRtcSignal_Ice{Ice: eoc}})
@@ -1441,9 +1387,6 @@ func (s *sessionTracker) ingestRemoteSignal(
 	currRxSdp *WebRtcSdp,
 	currRxIce *WebRtcIce,
 	currLocalSeqno uint64,
-	lastAppliedRemoteSdp *string,
-	remoteICE *remoteICECandidateApplier,
-	pendingRemoteIce *[]pendingRemoteCandidate,
 	xmitSignal func(*WebRtcSignal),
 	le *logrus.Entry,
 	phase *string,
@@ -1487,7 +1430,7 @@ func (s *sessionTracker) ingestRemoteSignal(
 		switch {
 		case sessDesc == nil:
 			// Malformed description; ignore it.
-		case currRxSdp.GetSdp() == *lastAppliedRemoteSdp:
+		case currRxSdp.GetSdp() == sess.lastAppliedRemoteSdp:
 			// A byte-identical duplicate of the description we already applied.
 			// Ignore it to avoid an unnecessary renegotiation / ICE restart. The
 			// offerer re-sends its offer on every request_offer, so the answerer
@@ -1516,7 +1459,7 @@ func (s *sessionTracker) ingestRemoteSignal(
 			if err := sess.pc.SetRemoteDescription(*sessDesc); err != nil {
 				return pkgerrors.Wrap(err, "set remote description")
 			}
-			*lastAppliedRemoteSdp = currRxSdp.GetSdp()
+			sess.lastAppliedRemoteSdp = currRxSdp.GetSdp()
 
 			// Record the accepted remote offer digest as the active generation
 			// identity. On the offerer the active identity is the pending
@@ -1540,10 +1483,10 @@ func (s *sessionTracker) ingestRemoteSignal(
 			// the remote may still be trickling them for a generation this
 			// session has not seen yet, and replaying them into this
 			// generation would poison its candidate set.
-			matched, remaining := splitBufferedCandidates(*pendingRemoteIce, sess.activeOfferID())
-			*pendingRemoteIce = remaining
-			remoteICE.complete = false
-			if err := remoteICE.apply(matched); err != nil {
+			matched, remaining := splitBufferedCandidates(sess.pendingRemoteIce, sess.activeOfferID())
+			sess.pendingRemoteIce = remaining
+			sess.remoteICE.complete = false
+			if err := sess.remoteICE.apply(matched); err != nil {
 				// Best-effort flush: a rejected buffered candidate is skipped
 				// rather than tearing down the freshly applied offer.
 				le.WithError(err).Debug("skipping rejected buffered remote ice candidate")
@@ -1572,14 +1515,9 @@ func (s *sessionTracker) ingestRemoteSignal(
 		*phase = "handle remote ice"
 
 		// Generation fence: candidates for the active generation reach Pion;
-		// candidates for a retired generation drop; candidates for a
-		// generation this session has not seen yet buffer until it lands, so
-		// a tracker restart does not discard the in-flight candidate set
-		// while the remote keeps trickling under the previous offer id.
-		active := sess.rxOfferID
-		if s.offerer {
-			active = sess.pendingOfferID
-		}
+		// candidates for another generation drop; candidates that arrive
+		// before any generation is active buffer until one lands.
+		active := sess.activeOfferID()
 		if len(active) != 0 && !bytes.Equal(currRxIce.GetOfferId(), active) {
 			le.Debug("dropping stale ice candidate: offer id does not match the active generation")
 			return nil
@@ -1596,7 +1534,7 @@ func (s *sessionTracker) ingestRemoteSignal(
 		// the answer SDP lands.
 		if ice != nil {
 			if sess.pc.RemoteDescription() != nil {
-				if err := remoteICE.apply([]webrtc.ICECandidateInit{*ice}); err != nil {
+				if err := sess.remoteICE.apply([]webrtc.ICECandidateInit{*ice}); err != nil {
 					// A candidate the browser or ICE agent rejects is a
 					// best-effort signal, not a negotiation failure: browsers
 					// reject candidates for transient reasons (e.g. a passive
@@ -1607,7 +1545,7 @@ func (s *sessionTracker) ingestRemoteSignal(
 					le.WithError(err).Debug("skipping rejected remote ice candidate")
 				}
 			} else {
-				*pendingRemoteIce = append(*pendingRemoteIce, pendingRemoteCandidate{
+				sess.pendingRemoteIce = append(sess.pendingRemoteIce, pendingRemoteCandidate{
 					candidate: *ice,
 					offerID:   append([]byte(nil), currRxIce.GetOfferId()...),
 				})

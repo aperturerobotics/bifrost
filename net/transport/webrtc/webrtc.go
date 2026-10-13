@@ -75,8 +75,6 @@ var Version = controller.MustParseVersion("0.0.1")
 
 // WebRTC implements a WebRTC transport.
 type WebRTC struct {
-	// ctx is the context
-	ctx context.Context
 	// le is the logger
 	le *logrus.Entry
 	// b is the bus
@@ -110,8 +108,6 @@ type WebRTC struct {
 	bcast broadcast.Broadcast
 	// relSignalHandler releases the signal handler controller
 	relSignalHandler func()
-	// incomingSessions contains the per-peer signal-ingress leases.
-	incomingSessions map[string]*signalIngress
 }
 
 // NewWebRTC builds a new WebRTC transport.
@@ -119,7 +115,6 @@ type WebRTC struct {
 // ServeHTTP is implemented and can be used with a standard HTTP mux.
 // Optionally listens on an address.
 func NewWebRTC(
-	ctx context.Context,
 	le *logrus.Entry,
 	b bus.Bus,
 	conf *Config,
@@ -174,7 +169,6 @@ func NewWebRTC(
 
 	// Assemble the transport state.
 	tpt := &WebRTC{
-		ctx:        ctx,
 		b:          b,
 		le:         le,
 		conf:       conf,
@@ -190,8 +184,7 @@ func NewWebRTC(
 		identity:   identity,
 	}
 
-	// Initialize ingress leases and keyed session trackers.
-	tpt.incomingSessions = make(map[string]*signalIngress)
+	// Initialize the keyed session trackers.
 	tpt.sessionTrackers = keyed.NewKeyedRefCount[string, *sessionTracker](
 		tpt.newSessionTracker,
 		keyed.WithExitLogger[string, *sessionTracker](le),
@@ -220,7 +213,7 @@ func (w *WebRTC) GetVerbose() bool {
 
 // MatchTransportType checks if the given transport type ID matches this transport.
 // If returns true, the transport controller will call DialPeer with that tptaddr.
-// E.x.: "udp-quic" or "ws"
+// For example: "udp-quic" or "ws".
 func (w *WebRTC) MatchTransportType(transportType string) bool {
 	return transportType == w.tptType
 }
@@ -278,6 +271,10 @@ func (w *WebRTC) Execute(ctx context.Context) error {
 // emitted to the transport handler. DialPeer should return nil if the link
 // was established. DialPeer will then not be called again for the same peer
 // ID and address tuple until the yielded link is lost.
+//
+// DialPeer waits for the session tracker to publish a link. The tracker starts
+// a session while the remote peer is present on the signaling session, so a
+// dial to an offline peer waits without negotiating.
 // Returns fatal and error.
 func (w *WebRTC) DialPeer(
 	ctx context.Context,
@@ -297,27 +294,31 @@ func (w *WebRTC) DialPeer(
 	var tkr *sessionTracker
 	var lnk *Link
 
-	// Add or reuse the session tracker and snapshot its current link.
+	// Add or reuse the session tracker, count this dial, and snapshot its
+	// current link.
 	w.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
-		// Add or reuse the keyed session tracker reference.
-		var existed bool
-		ref, tkr, existed, err = w.addSessionTrackerRef(peerIDStr)
+		// Add or reuse the tracker reference.
+		ref, tkr, err = w.addSessionTrackerRef(peerIDStr)
+		if err != nil {
+			return
+		}
 
-		// Notify signal handlers if it didn't exist
-		if err == nil && !existed {
-			broadcast()
-		}
-		if tkr != nil {
-			lnk = tkr.link
-		}
+		// Count this dial and snapshot the current link.
+		tkr.dialers++
+		broadcast()
+		lnk = tkr.link
 		waitCh = getWaitCh()
 	})
-	if ref != nil {
-		defer ref.Release()
-	}
 	if err != nil {
 		return nil, false, err
 	}
+	defer func() {
+		w.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
+			tkr.dialers--
+			broadcast()
+		})
+		ref.Release()
+	}()
 
 	// Wait until the session tracker publishes a link.
 	for lnk == nil {
@@ -351,21 +352,21 @@ func (w *WebRTC) Close() error {
 }
 
 // addSessionTrackerRef validates the peer id string and adds a session tracker ref.
-func (w *WebRTC) addSessionTrackerRef(peerIDStr string) (*keyed.KeyedRef[string, *sessionTracker], *sessionTracker, bool, error) {
+func (w *WebRTC) addSessionTrackerRef(peerIDStr string) (*keyed.KeyedRef[string, *sessionTracker], *sessionTracker, error) {
 	// Parse the remote identity and public key before tracking its session.
 	peerID, peerPub, err := peer.ParsePeerIDWithPubKey(peerIDStr)
 	if err != nil {
-		return nil, nil, false, err
+		return nil, nil, err
 	}
 
 	// Reject attempts to establish a session with the local peer.
 	if w.peerID.MatchesPublicKey(peerPub) {
-		return nil, nil, false, errors.New("signaling: cannot self-dial")
+		return nil, nil, errors.New("signaling: cannot self-dial")
 	}
 
 	// Acquire the validated peer session tracker reference.
-	ref, tkr, existed := w.sessionTrackers.AddKeyRef(peerID.String())
-	return ref, tkr, existed, nil
+	ref, tkr, _ := w.sessionTrackers.AddKeyRef(peerID.String())
+	return ref, tkr, nil
 }
 
 // _ is a type assertion.

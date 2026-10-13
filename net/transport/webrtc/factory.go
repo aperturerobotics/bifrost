@@ -69,13 +69,12 @@ func (t *Factory) Construct(
 		peerIDConstraint,
 		cc.GetVerbose(),
 		func(
-			ctx context.Context,
+			_ context.Context,
 			le *logrus.Entry,
 			pkey crypto.PrivKey,
 			handler transport.TransportHandler,
 		) (transport.Transport, error) {
 			return NewWebRTC(
-				ctx,
 				le,
 				t.bus,
 				cc,
