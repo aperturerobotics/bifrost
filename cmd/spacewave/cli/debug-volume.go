@@ -184,6 +184,7 @@ func runDebugVolumeUsage(
 		writeJSONInt64Field(ms, &morePage, "freeBytes", usage.FreeBytes)
 		writeJSONInt64Field(ms, &morePage, "valuePageBytes", usage.ValuePageBytes)
 		writeJSONInt64Field(ms, &morePage, "liveValueBytes", usage.ValueBytes)
+		writeJSONInt64Field(ms, &morePage, "indexKeys", usage.IndexKeys)
 		writeJSONInt64Field(ms, &morePage, "indexBytes", usage.IndexBytes)
 		writeJSONInt64Field(ms, &morePage, "logBytes", usage.LogBytes)
 		writeJSONInt64Field(ms, &morePage, "pendingBytes", usage.PendingBytes)
@@ -218,6 +219,7 @@ func runDebugVolumeUsage(
 		{"Free Pages", ibytes(usage.FreeBytes) + " (punched)"},
 		{"Value Pages", ibytes(usage.ValuePageBytes)},
 		{"Live Values", ibytes(usage.ValueBytes)},
+		{"Index Keys", strconv.FormatInt(usage.IndexKeys, 10)},
 		{"Index Pages", ibytes(usage.IndexBytes)},
 		{"Log", ibytes(usage.LogBytes)},
 		{"Pending", ibytes(usage.PendingBytes)},

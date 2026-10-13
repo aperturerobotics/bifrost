@@ -15,6 +15,8 @@ type Usage struct {
 	// ValuePageBytes is the length of the pages holding live values. The
 	// difference from ValueBytes is the dead space inside them.
 	ValuePageBytes int64
+	// IndexKeys is the number of keys in the checkpoint's index.
+	IndexKeys int64
 	// IndexBytes is the length of the checkpoint's index pages.
 	IndexBytes int64
 	// LogBytes is the length of the log chunks.
@@ -32,9 +34,11 @@ func (db *DB) Usage(ctx context.Context) (Usage, error) {
 		return Usage{}, err
 	}
 
-	// Read the space, then the checkpoint's index pages.
+	// Read the space, then the checkpoint's index.
 	u := db.w.sp.usage()
-	u.IndexBytes = pageOff(db.cur.Load().sb.treePages)
+	sb := db.cur.Load().sb
+	u.IndexKeys = int64(sb.count) // #nosec G115 -- key counts fit in int64.
+	u.IndexBytes = pageOff(sb.treePages)
 	db.w.unlock(nil)
 	return u, nil
 }
