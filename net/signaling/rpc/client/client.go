@@ -12,7 +12,6 @@ import (
 	"github.com/aperturerobotics/util/routine"
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/net/crypto"
-	"github.com/s4wave/spacewave/net/hash"
 	"github.com/s4wave/spacewave/net/peer"
 	"github.com/s4wave/spacewave/net/protocol"
 	signaling_rpc "github.com/s4wave/spacewave/net/signaling/rpc"
@@ -189,157 +188,6 @@ func (c *Client) executeListenRoutine(ctx context.Context, handler ClientListenH
 	}
 }
 
-// ClientPeerRef is a reference to a client peer.
-type ClientPeerRef struct {
-	c   *Client
-	ref *keyed.KeyedRef[string, *clientPeerTracker]
-	tkr *clientPeerTracker
-}
-
-// GetLocalPeerID returns the local peer ID.
-func (r *ClientPeerRef) GetLocalPeerID() peer.ID {
-	return r.c.peerID
-}
-
-// GetRemotePeerID returns the remote peer ID.
-func (r *ClientPeerRef) GetRemotePeerID() peer.ID {
-	return r.tkr.peerID
-}
-
-// Send signs msg with the peer private key, waits for remote send capacity,
-// transmits the message, and waits for the remote peer to acknowledge it.
-// If context is canceled the message will also be canceled.
-func (r *ClientPeerRef) Send(ctx context.Context, msg []byte) (_ *signaling_rpc.SessionMsg, outErr error) {
-	// Sign the outgoing signaling message with a unique peer sequence number.
-	tkr := r.tkr
-	seqno := tkr.txNonce.Add(1)
-	sessMsg, err := signaling_rpc.NewSessionMsg(r.c.privKey, hash.RecommendedHashType, msg, seqno)
-	if err != nil {
-		return nil, err
-	}
-
-	// Track delivery and withdraw a transmitted message when this send fails.
-	var txed, acked bool
-	defer func() {
-		// Keep successful sends and messages that were never transmitted unchanged.
-		if !txed || outErr == nil {
-			return
-		}
-
-		// Clear acknowledged messages or request cancellation of an outstanding send.
-		tkr.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
-			if tkr.out != nil && tkr.out.Seqno == seqno {
-				// If the message was already acknowledged, clear it.
-				if !tkr.outSent || tkr.outAcked {
-					tkr.out, tkr.outSent, tkr.outAcked, tkr.outCancel = nil, false, false, false
-					broadcast()
-				} else if !tkr.outCancel {
-					// Otherwise mark to the main routine that we need to cancel this msg.
-					tkr.outCancel = true
-					broadcast()
-				}
-			}
-		})
-	}()
-
-	// Wait for the signaling session to accept and acknowledge this message.
-	for {
-		// Reconcile message ownership and acknowledgement under the peer tracker lock.
-		var waitCh <-chan struct{}
-		tkr.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
-			// Wait for an open signaling session before queuing this message.
-			if tkr.open == nil {
-				txed = false
-				waitCh = getWaitCh()
-				return
-			}
-
-			// Recover message ownership when the signaling session replaces its queue.
-			if txed {
-				if tkr.out == nil {
-					txed = false
-				} else if tkr.out.Seqno != seqno {
-					txed = false
-					waitCh = getWaitCh()
-					return
-				}
-			}
-
-			// Queue this message when the signaling peer has outgoing capacity.
-			if !txed {
-				if tkr.out == nil {
-					txed = true
-					tkr.out = sessMsg
-					broadcast()
-				}
-
-				waitCh = getWaitCh()
-				return
-			}
-
-			// Complete this send once the remote peer acknowledges its message.
-			if tkr.outAcked {
-				acked = true
-				tkr.out, tkr.outSent, tkr.outAcked = nil, false, false
-				broadcast()
-				return
-			}
-
-			// Subscribe to the next signaling peer state change while still locked.
-			waitCh = getWaitCh()
-		})
-
-		// Return the signed message once its acknowledgement has been observed.
-		if acked {
-			return sessMsg, nil
-		}
-
-		// Wait for signaling peer progress or caller cancellation.
-		if waitCh != nil {
-			select {
-			case <-ctx.Done():
-				return nil, context.Canceled
-			case <-waitCh:
-			}
-		}
-	}
-}
-
-// Recv waits for and acks an incoming message from a remote peer.
-func (r *ClientPeerRef) Recv(ctx context.Context) (*signaling_rpc.SessionMsg, error) {
-	tkr := r.tkr
-
-	var recv *signaling_rpc.SessionMsg
-	for {
-		var waitCh <-chan struct{}
-		tkr.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
-			if tkr.recv == nil || tkr.recvProcessed {
-				waitCh = getWaitCh()
-				return
-			}
-
-			recv = tkr.recv
-			tkr.recvProcessed = true
-			broadcast()
-		})
-
-		if recv != nil {
-			return recv, nil
-		}
-
-		select {
-		case <-ctx.Done():
-			return nil, context.Canceled
-		case <-waitCh:
-		}
-	}
-}
-
-// Release releases the peer reference.
-func (r *ClientPeerRef) Release() {
-	r.ref.Release()
-}
-
 // AddPeerRef adds a reference to a remote peer.
 // Initiates a session with the remote peer that can send/recv messages.
 // Be sure to release the ref when done with it.
@@ -364,6 +212,9 @@ type clientPeerTracker struct {
 	bcast broadcast.Broadcast
 	// open indicates the session is open
 	open *uint64
+	// presence numbers each open of the session, so a presence epoch never
+	// repeats while this tracker lives, even when the server restarts.
+	presence uint64
 	// out contains the next message to send out.
 	out *signaling_rpc.SessionMsg
 	// outSent indicates out was sent to the server.
@@ -432,6 +283,7 @@ func (s *clientPeerTracker) execute(ctx context.Context) error {
 			if s.open == nil || *s.open != seqno {
 				s.le.Debugf("signaling: client: session opened with seqno %v", seqno)
 				s.open = &seqno
+				s.presence++
 				s.outAcked, s.outSent = false, false
 				s.recv, s.recvProcessed = nil, false
 				broadcast()

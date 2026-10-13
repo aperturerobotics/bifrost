@@ -7,7 +7,7 @@ import (
 	"github.com/s4wave/spacewave/net/signaling"
 )
 
-// Session implements signaling.Session.
+// Session implements signaling.SignalPeerSession.
 type Session struct {
 	ref *ClientPeerRef
 }
@@ -41,6 +41,12 @@ func (s *Session) Recv(ctx context.Context) ([]byte, error) {
 		return nil, err
 	}
 	return msg.GetSignedMsg().GetData(), nil
+}
+
+// GetPresence returns the presence epoch of the remote peer and a channel
+// closed when it may have changed.
+func (s *Session) GetPresence() (epoch uint64, changed <-chan struct{}) {
+	return s.ref.GetPresence()
 }
 
 // _ is a type assertion
