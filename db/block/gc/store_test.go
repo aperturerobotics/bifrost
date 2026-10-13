@@ -1102,12 +1102,16 @@ func TestGCStoreOps_ParentIRI_PutBlockBatchExistingTreeBuffersOwnerOnly(t *testi
 		t.Fatal(err.Error())
 	}
 
-	// Each block gets its owner edge and loses its staging edge, and nothing else.
+	// Each block gets its owner edge and loses its staging edge, and each
+	// referenced block leaves the owner to the block above it.
 	var wantAdds, wantRemoves []RefEdge
 	for _, entry := range tree {
 		iri := BlockIRI(entry.Ref)
 		wantAdds = append(wantAdds, RefEdge{Subject: parent, Object: iri})
 		wantRemoves = append(wantRemoves, RefEdge{Subject: NodeUnreferenced, Object: iri})
+	}
+	for _, entry := range []*block.PutBatchEntry{leaf, mid} {
+		wantRemoves = append(wantRemoves, RefEdge{Subject: parent, Object: BlockIRI(entry.Ref)})
 	}
 	if !slices.Equal(sortedEdges(refGraph.adds), sortedEdges(wantAdds)) {
 		t.Fatalf("adds = %v, want %v", refGraph.adds, wantAdds)
@@ -1117,9 +1121,9 @@ func TestGCStoreOps_ParentIRI_PutBlockBatchExistingTreeBuffersOwnerOnly(t *testi
 	}
 }
 
-// TestGCStoreOps_ParentIRI_SweepKeepsMixedNewAndReputWrites tests that a sweep
-// keeps every reachable block after a batch that mixes new blocks with blocks
-// stored earlier, once the bucket releases its direct edges to the children.
+// TestGCStoreOps_ParentIRI_SweepKeepsMixedNewAndReputWrites tests that a batch
+// mixing new blocks with blocks stored earlier leaves the bucket holding only
+// the tops, and that a sweep keeps every block they reach.
 func TestGCStoreOps_ParentIRI_SweepKeepsMixedNewAndReputWrites(t *testing.T) {
 	// Root the bucket.
 	parent := BucketIRI("mixed-bucket")
@@ -1144,11 +1148,16 @@ func TestGCStoreOps_ParentIRI_SweepKeepsMixedNewAndReputWrites(t *testing.T) {
 	}
 	env.flush(t)
 
-	// Release every direct edge except the two roots.
-	for _, entry := range []*block.PutBatchEntry{leaf, mid} {
-		if err := env.refGraph.RemoveRef(env.ctx, parent, BlockIRI(entry.Ref)); err != nil {
-			t.Fatal(err.Error())
-		}
+	// The bucket holds the two tops and nothing below them.
+	held, err := env.refGraph.GetOutgoingRefs(env.ctx, parent)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	want := []string{BlockIRI(root.Ref), BlockIRI(sibling.Ref)}
+	slices.Sort(held)
+	slices.Sort(want)
+	if !slices.Equal(held, want) {
+		t.Fatalf("bucket holds %v, want %v", held, want)
 	}
 
 	// The sweep keeps all four blocks: the chain through its recorded edges.
@@ -1158,6 +1167,46 @@ func TestGCStoreOps_ParentIRI_SweepKeepsMixedNewAndReputWrites(t *testing.T) {
 	for _, entry := range []*block.PutBatchEntry{leaf, mid, root, sibling} {
 		if !env.blockExists(t, entry.Ref) {
 			t.Fatalf("reachable block %q was swept", entry.Data)
+		}
+	}
+}
+
+// TestGCStoreOps_ParentIRI_ReleasedReputTreeIsSwept tests that once the bucket
+// releases the top of a tree it wrote twice, the sweep frees the whole tree:
+// the second write leaves no staging edge on the blocks below the top.
+func TestGCStoreOps_ParentIRI_ReleasedReputTreeIsSwept(t *testing.T) {
+	// Root the bucket.
+	parent := BucketIRI("released-bucket")
+	env := newGCTestEnvWithParent(t, parent)
+	if err := env.refGraph.AddRef(env.ctx, NodeGCRoot, parent); err != nil {
+		t.Fatal(err.Error())
+	}
+
+	// Write a chain twice.
+	leaf := buildTreeEntry(t, "released-leaf")
+	mid := buildTreeEntry(t, "released-mid", leaf)
+	root := buildTreeEntry(t, "released-root", mid)
+	tree := []*block.PutBatchEntry{leaf, mid, root}
+	for range 2 {
+		if _, err := env.gcStore.PutBlockBatch(env.ctx, tree); err != nil {
+			t.Fatal(err.Error())
+		}
+		env.flush(t)
+	}
+
+	// Release the top, as a discarded publication does.
+	release := []RefEdge{{Subject: parent, Object: BlockIRI(root.Ref)}}
+	if err := env.refGraph.ApplyRefBatch(env.ctx, nil, release); err != nil {
+		t.Fatal(err.Error())
+	}
+
+	// The sweep frees the whole chain.
+	if _, err := NewCollector(env.refGraph, env.rawStore, nil).Collect(env.ctx); err != nil {
+		t.Fatal(err.Error())
+	}
+	for _, entry := range tree {
+		if env.blockExists(t, entry.Ref) {
+			t.Fatalf("released block %q survived the sweep", entry.Data)
 		}
 	}
 }

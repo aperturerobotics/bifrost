@@ -344,9 +344,11 @@ func (g *GCStoreOps) RmBlock(ctx context.Context, ref *block.BlockRef) error {
 // takes its owner and records the edges it holds, adopting the blocks it
 // references. An existing block recorded its edges at its first write unless it
 // was stored without tracking, so FlushPending checks that it has them. A
-// parent takes it again and clears its staging edge, and an unparented store
-// leaves it as it is.
+// parent takes it again, clears its staging edge and adopts the blocks it
+// references, so a rewritten tree leaves the parent holding only its top. An
+// unparented store leaves it as it is.
 func (g *GCStoreOps) bufferPutLocked(ref *block.BlockRef, targets []*block.BlockRef, existed bool) {
+	// Take a new block and the edges it holds.
 	iri := BlockIRI(ref)
 	if !existed {
 		g.pendingUnref = append(g.pendingUnref, iri)
@@ -354,13 +356,23 @@ func (g *GCStoreOps) bufferPutLocked(ref *block.BlockRef, targets []*block.Block
 		g.bufferRefEdgesLocked(ref, targets, true)
 		return
 	}
+
+	// Check that an existing block holds its edges.
 	if len(targets) != 0 {
 		g.pendingReputs = append(g.pendingReputs, pendingReput{ref: ref, targets: targets})
 	}
-	if g.parentIRI != "" {
-		g.pendingUnref = append(g.pendingUnref, iri)
-		g.pendingUnstage = append(g.pendingUnstage, iri)
-		delete(g.pendingReleases, iri)
+	if g.parentIRI == "" {
+		return
+	}
+
+	// Move the parent's hold from the referenced blocks to this one.
+	g.pendingUnref = append(g.pendingUnref, iri)
+	g.pendingUnstage = append(g.pendingUnstage, iri)
+	delete(g.pendingReleases, iri)
+	for _, t := range targets {
+		if t != nil && !t.GetEmpty() {
+			g.pendingUnunref = append(g.pendingUnunref, BlockIRI(t))
+		}
 	}
 }
 
