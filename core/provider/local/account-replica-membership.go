@@ -163,7 +163,7 @@ func (a *ProviderAccount) enrollAccountMemberObject(ctx context.Context, entry *
 	if err := local.soHost.WaitDurable(ctx); err != nil {
 		return nil, err
 	}
-	return &pairing.SharedObject{Entry: entry.CloneVT(), State: state.CloneVT(), ConfigLineage: lineage}, nil
+	return &pairing.SharedObject{Entry: entry.CloneVT(), State: state.Clone(), ConfigLineage: lineage}, nil
 }
 
 // revokeAccountReplicaAccess lets the initiating replica finish its one signed

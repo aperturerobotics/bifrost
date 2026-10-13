@@ -258,7 +258,7 @@ func (s *Server) AcceptInvite(ctx context.Context, req *AcceptInviteRequest) (*A
 	return &AcceptInviteResponse{
 		Grant:             grant,
 		SharedObjectId:    result.SharedObjectID,
-		SharedObjectState: ownerState.CloneVT(),
+		SharedObjectState: ownerState.Clone(),
 		ConfigLineage:     lineage,
 	}, nil
 }

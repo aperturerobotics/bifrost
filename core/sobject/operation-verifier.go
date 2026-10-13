@@ -10,15 +10,19 @@ import (
 // object. It remembers the operations it verified for the last set, so a state
 // that gains an operation verifies only that one, and a state that loses
 // operations to a checkpoint or is replaced by another drops them. An operation
-// is reused only when its bytes and signature are unchanged, so a set equals one
-// built from nothing. It is safe for concurrent use.
+// is immutable while held: state copies share it, and the verifier reuses its
+// hash. A separately decoded operation is reused only when its bytes and
+// signature match, so a set equals one built from nothing. It is safe for
+// concurrent use.
 type SOOperationVerifier struct {
 	// sharedObjectID is the shared object the operations are bound to.
 	sharedObjectID string
-	// mtx guards verified.
+	// mtx guards verified and hashes.
 	mtx sync.Mutex
 	// verified holds the operations of the last set built, by hash.
 	verified map[string]verifiedOperation
+	// hashes holds the hashes of the last state's immutable operations.
+	hashes map[*SOOperation]string
 }
 
 // verifiedOperation is an operation with the body its verification returned.
@@ -49,8 +53,12 @@ func (v *SOOperationVerifier) OperationSet(state *SOState) (*SOOperationSet, err
 	defer v.mtx.Unlock()
 	set := NewSOOperationSet(v.sharedObjectID, checkpoint)
 	verified := make(map[string]verifiedOperation, len(state.GetOps()))
+	hashes := make(map[*SOOperation]string, len(state.GetOps()))
 	for i, op := range state.GetOps() {
-		key := string(op.Hash())
+		key, ok := v.hashes[op]
+		if !ok {
+			key = string(op.Hash())
+		}
 		held, ok := v.verified[key]
 		if !ok || !held.op.EqualVT(op) {
 			inner, err := op.Verify(v.sharedObjectID)
@@ -59,12 +67,15 @@ func (v *SOOperationVerifier) OperationSet(state *SOState) (*SOOperationSet, err
 			}
 			held = verifiedOperation{op: op, inner: inner}
 		}
+		held.op = op
 		verified[key] = held
+		hashes[op] = key
 		set.insert(key, held.inner)
 	}
 
 	// Resolve the sequence and keep the operations of this set for the next.
 	set.setSequence(state.GetConfig().GetSequencer(), state.GetSequence())
 	v.verified = verified
+	v.hashes = hashes
 	return set, nil
 }

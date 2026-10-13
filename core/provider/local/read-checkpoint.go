@@ -109,7 +109,7 @@ func (s *SharedObject) GetSharedObjectReadCheckpoint(ctx context.Context) (*sobj
 	if !sobject.AuthoritativeSyncDenied(current.GetConfig(), s.tkr.healthCtr.GetValue()) {
 		return nil, nil
 	}
-	return s.buildReadCheckpoint(current.CloneVT()), nil
+	return s.buildReadCheckpoint(current.Clone()), nil
 }
 
 // buildReadCheckpoint returns the read checkpoint of a retained state.

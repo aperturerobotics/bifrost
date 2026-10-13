@@ -174,7 +174,7 @@ func newCloudSOHost(
 		}
 
 		// Bind the local snapshot to durable acceptance and the acquired write lock.
-		initialState := state.CloneVT()
+		initialState := state.Clone()
 		writeFn := func(ctx context.Context, state *sobject.SOState, changes ...*sobject.SOConfigChange) error {
 			if len(changes) == 0 {
 				return h.acceptLocalWrite(ctx, initialState, state)
@@ -766,7 +766,7 @@ func (h *cloudSOHost) handleStateDelta(ctx context.Context, msg *api.SOStateMess
 		}
 
 		// Apply the contiguous delta to an independent snapshot.
-		next := cached.CloneVT()
+		next := cached.Clone()
 		expected := since + 1
 		for _, entry := range entries {
 			if entry.GetSeqno() != expected {
@@ -914,7 +914,7 @@ func rebaseLocalWrite(sharedObjectID string, base, written, current *sobject.SOS
 	}
 
 	// Apply each changed field to the current state.
-	next := current.CloneVT()
+	next := current.Clone()
 	if !written.GetCheckpoint().EqualVT(base.GetCheckpoint()) {
 		if err := next.AdoptCheckpoint(sharedObjectID, written.GetCheckpoint()); err != nil {
 			return nil, nil, err
@@ -955,12 +955,12 @@ func (h *cloudSOHost) applyKeyEpoch(ctx context.Context, epoch *sobject.SOKeyEpo
 		return
 	}
 	cache.KeyEpochs = mergeSOKeyEpochs(cache.KeyEpochs, epoch)
-	next := h.stateCtr.GetValue().CloneVT()
+	next := h.stateCtr.GetValue().Clone()
 	if next != nil {
 		next.SetKeyEpoch(epoch.CloneVT())
 		next = h.stateWithVerifiedConfig(next, next.GetConfig())
 		if h.peerState != nil {
-			cache.PeerState = next.CloneVT()
+			cache.PeerState = next.Clone()
 		}
 	}
 	if h.persistVerifiedStateCache != nil {
@@ -1053,7 +1053,7 @@ func (h *cloudSOHost) applyConfigMutation(
 			next.SetKeyEpoch(epoch.CloneVT())
 		}
 		if h.peerState != nil {
-			cache.PeerState = next.CloneVT()
+			cache.PeerState = next.Clone()
 		}
 	}
 
@@ -1275,7 +1275,7 @@ func (h *cloudSOHost) syncConfigChainResponse(
 		VerifiedConfigChainHash:  bytes.Clone(newHash),
 		VerifiedConfigChainSeqno: entries[len(entries)-1].GetConfigSeqno(),
 		KeyEpochs:                cloneVTSlice(resp.GetKeyEpochs()),
-		PeerState:                h.peerState.CloneVT(),
+		PeerState:                h.peerState.Clone(),
 		ConfigHistory:            cloneVTSlice(entries),
 	}
 	if latestConfig != nil {
@@ -1285,7 +1285,7 @@ func (h *cloudSOHost) syncConfigChainResponse(
 	// Project configuration-only changes immediately, including local revocation.
 	nextState := h.stateWithVerifiedConfig(h.stateCtr.GetValue(), latestConfig)
 	if h.peerState != nil {
-		cache.PeerState = nextState.CloneVT()
+		cache.PeerState = nextState.Clone()
 	}
 
 	// Commit verified lineage before making the new authority observable.
@@ -1475,10 +1475,10 @@ func (h *cloudSOHost) buildVerifiedStateCache() *api.VerifiedSOStateCache {
 			VerifiedConfigChainHash:  bytes.Clone(h.lastConfigChainHash),
 			VerifiedConfigChainSeqno: h.verifiedConfigChainSeqno,
 			KeyEpochs:                cloneVTSlice(h.keyEpochs),
-			PeerState:                h.peerState.CloneVT(),
+			PeerState:                h.peerState.Clone(),
 			ConfigHistory:            cloneVTSlice(h.configHistory),
 			PendingPublication:       h.pending.CloneVT(),
-			CloudState:               h.cloudState.CloneVT(),
+			CloudState:               h.cloudState.Clone(),
 			CloudSequence:            h.lastSeqno,
 		}
 		config := h.verifiedConfig
@@ -1527,12 +1527,12 @@ func (h *cloudSOHost) hydrateVerifiedStateCache(cache *api.VerifiedSOStateCache)
 	// Restore a valid snapshot even when its participant projection is reordered.
 	h.configHistory = cloneVTSlice(cache.GetConfigHistory())
 	h.historyIndex = indexConfigHistory(h.configHistory)
-	h.peerState = cache.GetPeerState().CloneVT()
+	h.peerState = cache.GetPeerState().Clone()
 	h.pending = cache.GetPendingPublication().CloneVT()
-	h.cloudState = cache.GetCloudState().CloneVT()
+	h.cloudState = cache.GetCloudState().Clone()
 	h.lastSeqno = cache.GetCloudSequence()
 	if h.peerState != nil && sobject.EqualSOConfigs(h.peerState.GetConfig(), cache.GetCurrentConfig()) && h.peerState.Validate(h.soID) == nil {
-		h.stateCtr.SetValue(h.peerState.CloneVT())
+		h.stateCtr.SetValue(h.peerState.Clone())
 		h.triggerPull()
 	}
 

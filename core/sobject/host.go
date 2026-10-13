@@ -85,6 +85,7 @@ func (s *SOHost) GetSOStateCtr(ctx context.Context, released func()) (ccontainer
 }
 
 // GetHostState returns a snapshot of the current SOState.
+// Its signed operations are immutable and shared with the held state.
 func (s *SOHost) GetHostState(ctx context.Context) (*SOState, error) {
 	// Retain the watched state until its snapshot has been copied.
 	watchable, rel, err := s.soRc.Resolve(ctx)
@@ -98,11 +99,12 @@ func (s *SOHost) GetHostState(ctx context.Context) (*SOState, error) {
 	if err != nil {
 		return nil, err
 	}
-	return st.CloneVT(), nil
+	return st.Clone(), nil
 }
 
 // UpdateSOState locks the SO state, clones it, calls the provided function
 // to mutate the clone, then writes the updated state.
+// fn may edit the state's fields and operation slice, but not signed operations.
 func (s *SOHost) UpdateSOState(ctx context.Context, fn func(state *SOState) error) error {
 	// Hold the provider lock through mutation and persistence.
 	lk, err := s.lockFn(ctx, s.sharedObjectID)
@@ -112,7 +114,7 @@ func (s *SOHost) UpdateSOState(ctx context.Context, fn func(state *SOState) erro
 	defer lk.Release()
 
 	// Apply the mutation to an independent state and commit on success.
-	nextState := lk.GetSOState().CloneVT()
+	nextState := lk.GetSOState().Clone()
 	if err := fn(nextState); err != nil {
 		return err
 	}
@@ -247,7 +249,7 @@ func (s *SOHost) ImportPeerSnapshot(
 		if len(changes) == 0 {
 			return ErrParticipantRevoked
 		}
-		next := previous.CloneVT()
+		next := previous.Clone()
 		next.Config = candidate.GetConfig().CloneVT()
 		next.KeyEpochs = nil
 		next.Ops = nil
@@ -260,7 +262,7 @@ func (s *SOHost) ImportPeerSnapshot(
 
 	// Adopt the verified config and the candidate's checkpoint. Invitations
 	// stay locally administered.
-	next := previous.CloneVT()
+	next := previous.Clone()
 	next.Config = candidate.GetConfig().CloneVT()
 	next.pruneControlMessages()
 	if checkpoint := candidate.GetCheckpoint(); checkpoint != nil {
@@ -330,7 +332,7 @@ func (s *SOHost) InstallInviteSnapshot(ctx context.Context, candidate *SOState, 
 		return err
 	}
 	defer lock.Release()
-	return lock.WriteSOState(ctx, candidate.CloneVT(), lineage...)
+	return lock.WriteSOState(ctx, candidate.Clone(), lineage...)
 }
 
 // ApplyConfigChange applies a signed SOConfigChange to the shared object state.
@@ -357,7 +359,7 @@ func (s *SOHost) ApplyConfigChange(ctx context.Context, entry *SOConfigChange, f
 
 	// Retain the prior state unchanged if verification or the callback fails.
 	prevState := lk.GetSOState()
-	nextState := prevState.CloneVT()
+	nextState := prevState.Clone()
 
 	// Verify the transition against the configuration held under this lock.
 	nextState.Config, err = VerifyConfigChange(s.sharedObjectID, nextState.GetConfig(), entry)
@@ -426,7 +428,7 @@ func (s *SOHost) AddLocalOperation(
 
 	// Encode the data for the head of this peer's chain. An acknowledgment
 	// has no data to encode.
-	next := lk.GetSOState().CloneVT()
+	next := lk.GetSOState().Clone()
 	set, err := s.verifier.OperationSet(next)
 	if err != nil {
 		return "", 0, err

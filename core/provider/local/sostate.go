@@ -125,14 +125,14 @@ func NewObjectStoreSOStateFuncs(rctx context.Context, objStore object.ObjectStor
 		}
 
 		// Commit state and supplied configuration history before updating watchers.
-		initialState := ent.stateCtr.GetValue().CloneVT()
+		initialState := ent.stateCtr.GetValue().Clone()
 		return sobject.NewSOStateLock(
 			initialState,
 			func(ctx context.Context, state *sobject.SOState, changes ...*sobject.SOConfigChange) error {
 				// Serialize an independent state snapshot for replayable transaction writes.
 				ctx, task := trace.NewTask(ctx, "alpha/local-so/write-so-state")
 				defer task.End()
-				state = state.CloneVT()
+				state = state.Clone()
 				data, err := state.MarshalVT()
 				if err != nil {
 					return err

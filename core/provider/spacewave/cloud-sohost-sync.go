@@ -20,7 +20,7 @@ func (h *cloudSOHost) peerImportLock(ctx context.Context, _ string) (sobject.SOS
 	if err != nil {
 		return nil, err
 	}
-	initial := h.stateCtr.GetValue().CloneVT()
+	initial := h.stateCtr.GetValue().Clone()
 	return sobject.NewSOStateLock(initial, func(ctx context.Context, next *sobject.SOState, changes ...*sobject.SOConfigChange) error {
 		// Peer imports require durable cache storage and never call PostRoot.
 		if h.persistVerifiedStateCache == nil {
@@ -38,7 +38,7 @@ func (h *cloudSOHost) peerImportLock(ctx context.Context, _ string) (sobject.SOS
 		cache.CurrentConfig = next.GetConfig().CloneVT()
 		cache.VerifiedConfigChainHash = bytes.Clone(next.GetConfig().GetConfigChainHash())
 		cache.VerifiedConfigChainSeqno = next.GetConfig().GetConfigChainSeqno()
-		cache.PeerState = next.CloneVT()
+		cache.PeerState = next.Clone()
 		cache.ConfigHistory = append(cache.ConfigHistory, cloneVTSlice(changes)...)
 		if err := h.persistVerifiedStateCache(ctx, cache); err != nil {
 			return err
@@ -93,7 +93,7 @@ func (h *cloudSOHost) stateWithVerifiedConfig(state *sobject.SOState, config *so
 	}
 
 	// Clone the state and compute read access for each participant.
-	next := state.CloneVT()
+	next := state.Clone()
 	next.Config = config.CloneVT()
 	participants := config.GetParticipants()
 	readable := make(map[string]bool, len(participants))

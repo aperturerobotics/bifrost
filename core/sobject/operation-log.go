@@ -44,13 +44,14 @@ type SOOperationLink struct {
 
 // HashSOOperationInner returns the identity of an operation from its signed body.
 func HashSOOperationInner(inner []byte) []byte {
-	// Prefix the length-framed body with the domain.
-	preimage := make([]byte, 0, len(soOperationHashDomain)+8+len(inner))
-	preimage = append(preimage, soOperationHashDomain...)
-	preimage = binary.BigEndian.AppendUint64(preimage, uint64(len(inner)))
-	preimage = append(preimage, inner...)
-	digest := sha256.Sum256(preimage)
-	return digest[:]
+	// Hash the domain and length-framed body without copying the body.
+	digest := sha256.New()
+	var length [8]byte
+	binary.BigEndian.PutUint64(length[:], uint64(len(inner)))
+	digest.Write([]byte(soOperationHashDomain))
+	digest.Write(length[:])
+	digest.Write(inner)
+	return digest.Sum(nil)
 }
 
 // Hash returns the identity of the operation.

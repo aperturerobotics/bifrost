@@ -64,7 +64,7 @@ func (h *cloudSOHost) retainPublication(ctx context.Context, state *sobject.SOSt
 			return err
 		}
 	}
-	cache.PeerState = state.CloneVT()
+	cache.PeerState = state.Clone()
 	cache.PendingPublication = pending
 
 	// Persist the accepted state and its obligation together.
@@ -269,7 +269,7 @@ func (h *cloudSOHost) acceptCloudSnapshot(ctx context.Context, cloud *sobject.SO
 	if err != nil {
 		return err
 	}
-	next, other := cloud.CloneVT(), previous
+	next, other := cloud.Clone(), previous
 	switch {
 	case previousCheckpoint.GetHeight() > cloudCheckpoint.GetHeight():
 		next, other = h.stateWithVerifiedConfig(previous, cloud.GetConfig()), cloud
@@ -302,8 +302,8 @@ func (h *cloudSOHost) acceptCloudSnapshot(ctx context.Context, cloud *sobject.SO
 	cache := h.buildVerifiedStateCache()
 	if cache != nil && h.persistVerifiedStateCache != nil {
 		cache.PendingPublication = pending
-		cache.PeerState = next.CloneVT()
-		cache.CloudState = cloud.CloneVT()
+		cache.PeerState = next.Clone()
+		cache.CloudState = cloud.Clone()
 		cache.CloudSequence = sequence
 		if err := h.persistVerifiedStateCache(ctx, cache); err != nil {
 			return err
@@ -315,8 +315,8 @@ func (h *cloudSOHost) acceptCloudSnapshot(ctx context.Context, cloud *sobject.SO
 	h.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
 		// Commit the accepted state, cursor, and obligation into the host.
 		h.pending = pending
-		h.peerState = next.CloneVT()
-		h.cloudState = cloud.CloneVT()
+		h.peerState = next.Clone()
+		h.cloudState = cloud.Clone()
 		h.lastSeqno = sequence
 		h.initialStateErr = nil
 

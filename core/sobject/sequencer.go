@@ -77,7 +77,7 @@ func (s *SOHost) SequenceOperations(ctx context.Context, privKey crypto.PrivKey)
 	defer lk.Release()
 
 	// Sign the positions on a copy and commit them if any.
-	next := lk.GetSOState().CloneVT()
+	next := lk.GetSOState().Clone()
 	added, err := next.SequenceOperations(s.sharedObjectID, privKey)
 	if err != nil || len(added) == 0 {
 		return err

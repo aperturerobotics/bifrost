@@ -489,7 +489,7 @@ func (s *SOSync) prepareResponse(ctx context.Context, state *sobject.SOState, re
 	}
 
 	// Invitations are local capabilities; peers do not import them.
-	state = state.CloneVT()
+	state = state.Clone()
 	state.Invites = nil
 	data, err := state.MarshalVT()
 	if err != nil {
@@ -607,7 +607,7 @@ func syncStateHash(state *sobject.SOState) ([]byte, error) {
 
 	// Strip local capabilities and hash the remaining state. The digest never
 	// travels with the state, so a state larger than one frame still has one.
-	state = state.CloneVT()
+	state = state.Clone()
 	state.Invites = nil
 	data, err := state.MarshalVT()
 	if err != nil {
