@@ -25,11 +25,34 @@ type S4db struct {
 	verbose bool
 	// rootDir holds the Volume files.
 	rootDir string
+	// cacheBytes bounds the decoded index page cache of each Volume.
+	// Zero uses the s4db default.
+	cacheBytes int64
+	// checkpointMaxBytes bounds the overlay each Volume holds before a
+	// checkpoint. Zero uses the s4db default.
+	checkpointMaxBytes int64
+}
+
+// S4dbOption configures the s4db storage method.
+type S4dbOption func(*S4db)
+
+// WithCacheBytes sets the index page cache size of every Volume.
+func WithCacheBytes(n int64) S4dbOption {
+	return func(s *S4db) { s.cacheBytes = n }
+}
+
+// WithCheckpointMaxBytes sets the checkpoint overlay bound of every Volume.
+func WithCheckpointMaxBytes(n int64) S4dbOption {
+	return func(s *S4db) { s.checkpointMaxBytes = n }
 }
 
 // NewS4db constructs the s4db storage method rooted at rootDir.
-func NewS4db(verbose bool, rootDir string) storage.Storage {
-	return &S4db{verbose: verbose, rootDir: rootDir}
+func NewS4db(verbose bool, rootDir string, opts ...S4dbOption) storage.Storage {
+	s := &S4db{verbose: verbose, rootDir: rootDir}
+	for _, opt := range opts {
+		opt(s)
+	}
+	return s
 }
 
 // GetStorageInfo returns StorageInfo.
@@ -59,9 +82,11 @@ func (s *S4db) BuildVolumeConfig(id string, baseVolCtrlConf *volume_controller.C
 		return nil, err
 	}
 	return &volume_s4db.Config{
-		Path:         path,
-		Verbose:      s.verbose,
-		VolumeConfig: baseVolCtrlConf,
+		Path:               path,
+		Verbose:            s.verbose,
+		VolumeConfig:       baseVolCtrlConf,
+		CacheBytes:         s.cacheBytes,
+		CheckpointMaxBytes: s.checkpointMaxBytes,
 	}, nil
 }
 
