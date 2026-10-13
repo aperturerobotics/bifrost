@@ -126,9 +126,14 @@ func nextRosterDropped(cfg *SharedObjectConfig, set *SOOperationSet, self string
 		}
 	}
 
-	// Keep the dropped writers that have not caught up.
+	// Keep the dropped writers that have not caught up. Until self writes above
+	// the checkpoint there is nothing to catch up to, and returning a device
+	// whose last operations predate it would restore a peer that never came
+	// back.
+	nonce, _ := set.AuthorHead(self)
+	wrote := nonce != 0 && !set.Covers(self, nonce)
 	next := slices.DeleteFunc(slices.Clone(dropped), func(device string) bool {
-		return set.BuiltOnLatest(device, self)
+		return wrote && set.BuiltOnLatest(device, self)
 	})
 
 	// Drop the lagging members of an operation set that outgrew the budget.

@@ -178,6 +178,32 @@ func TestNextRosterDropped(t *testing.T) {
 	}
 }
 
+// TestNextRosterDroppedKeepsStaleDevice checks that a dropped device whose
+// operations predate the checkpointer's stays dropped while the checkpointer
+// has written nothing above the checkpoint.
+func TestNextRosterDroppedKeepsStaleDevice(t *testing.T) {
+	// Owner A has written nothing; dropped writer B wrote once and left.
+	peers := createMockPeers(t, 2)
+	keys := mustPrivKeys(t, peers)
+	state, _ := newTestSOState(t, peers)
+	ids := []string{peers[0].GetPeerID().String(), peers[1].GetPeerID().String()}
+	writeTestOp(t, state, keys[1], "b1")
+	dropped := state.GetConfig().CloneVT()
+	dropped.RosterDroppedPeerIds = ids[1:]
+
+	// B stays dropped until it builds on an edit of A's.
+	set := mustOperationSet(t, state)
+	if got := nextRosterDropped(dropped, set, ids[0]); !slices.Equal(got, ids[1:]) {
+		t.Fatalf("dropped %v before A wrote; want B", got)
+	}
+	writeTestOp(t, state, keys[0], "a1")
+	writeTestOp(t, state, keys[1], "")
+	set = mustOperationSet(t, state)
+	if got := nextRosterDropped(dropped, set, ids[0]); len(got) != 0 {
+		t.Fatalf("kept %v dropped after B built on A's edit", got)
+	}
+}
+
 // TestNextRosterDroppedReplacesStalledCheckpointer checks that the next owner
 // drops a checkpointer that stopped building on its edits once the operations
 // outgrow RosterDropBytes, and leaves a checkpointer that keeps up in place.
