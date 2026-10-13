@@ -6,6 +6,7 @@ import type {
   GetChannelInfoResponse,
   ListMessagesResponse,
   SendMessageResponse,
+  WatchChannelInfoResponse,
   WatchMessagesResponse,
 } from './rpc/rpc.pb.js'
 
@@ -24,8 +25,10 @@ export interface IChatHandle {
     abortSignal?: AbortSignal,
   ): Promise<SendMessageResponse>
 
-  // getChannelInfo returns channel metadata.
-  getChannelInfo(abortSignal?: AbortSignal): Promise<GetChannelInfoResponse>
+  // watchChannelInfo streams channel metadata, then again after each change.
+  watchChannelInfo(
+    abortSignal?: AbortSignal,
+  ): AsyncIterable<GetChannelInfoResponse>
 
   // listMessages returns paginated messages.
   listMessages(
@@ -73,11 +76,14 @@ export class ChatHandle extends Resource implements IChatHandle {
     )
   }
 
-  // getChannelInfo returns channel metadata.
-  public async getChannelInfo(
+  // watchChannelInfo streams channel metadata, then again after each change.
+  public async *watchChannelInfo(
     abortSignal?: AbortSignal,
-  ): Promise<GetChannelInfoResponse> {
-    return await this.service.GetChannelInfo({}, abortSignal)
+  ): AsyncIterable<GetChannelInfoResponse> {
+    const stream = this.service.WatchChannelInfo({}, abortSignal)
+    for await (const resp of stream as AsyncIterable<WatchChannelInfoResponse>) {
+      yield resp.info ?? {}
+    }
   }
 
   // listMessages returns paginated messages.

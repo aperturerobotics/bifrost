@@ -16,6 +16,8 @@ type SRPCChatResourceServiceClient interface {
 
 	// GetChannelInfo returns channel metadata and its retained history extent.
 	GetChannelInfo(ctx context.Context, in *GetChannelInfoRequest) (*GetChannelInfoResponse, error)
+	// WatchChannelInfo streams channel metadata, then again after each change.
+	WatchChannelInfo(ctx context.Context, in *WatchChannelInfoRequest) (SRPCChatResourceService_WatchChannelInfoClient, error)
 	// GetState returns the latest retained event for each channel state identity.
 	GetState(ctx context.Context, in *GetStateRequest) (*GetStateResponse, error)
 	// GetMessage returns one message from this channel by object key.
@@ -59,6 +61,39 @@ func (c *srpcChatResourceServiceClient) GetChannelInfo(ctx context.Context, in *
 		return nil, err
 	}
 	return out, nil
+}
+
+func (c *srpcChatResourceServiceClient) WatchChannelInfo(ctx context.Context, in *WatchChannelInfoRequest) (SRPCChatResourceService_WatchChannelInfoClient, error) {
+	stream, err := c.cc.NewStream(ctx, c.serviceID, "WatchChannelInfo", in)
+	if err != nil {
+		return nil, err
+	}
+	strm := &srpcChatResourceService_WatchChannelInfoClient{stream}
+	// A failed half-close means the call ended; MsgRecv reports its outcome.
+	_ = strm.CloseSend()
+	return strm, nil
+}
+
+type SRPCChatResourceService_WatchChannelInfoClient interface {
+	srpc.Stream
+	Recv() (*WatchChannelInfoResponse, error)
+	RecvTo(*WatchChannelInfoResponse) error
+}
+
+type srpcChatResourceService_WatchChannelInfoClient struct {
+	srpc.Stream
+}
+
+func (x *srpcChatResourceService_WatchChannelInfoClient) Recv() (*WatchChannelInfoResponse, error) {
+	m := new(WatchChannelInfoResponse)
+	if err := x.MsgRecv(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (x *srpcChatResourceService_WatchChannelInfoClient) RecvTo(m *WatchChannelInfoResponse) error {
+	return x.MsgRecv(m)
 }
 
 func (c *srpcChatResourceServiceClient) GetState(ctx context.Context, in *GetStateRequest) (*GetStateResponse, error) {
@@ -160,6 +195,8 @@ func (c *srpcChatResourceServiceClient) UpdateReadPosition(ctx context.Context, 
 type SRPCChatResourceServiceServer interface {
 	// GetChannelInfo returns channel metadata and its retained history extent.
 	GetChannelInfo(context.Context, *GetChannelInfoRequest) (*GetChannelInfoResponse, error)
+	// WatchChannelInfo streams channel metadata, then again after each change.
+	WatchChannelInfo(*WatchChannelInfoRequest, SRPCChatResourceService_WatchChannelInfoStream) error
 	// GetState returns the latest retained event for each channel state identity.
 	GetState(context.Context, *GetStateRequest) (*GetStateResponse, error)
 	// GetMessage returns one message from this channel by object key.
@@ -205,6 +242,7 @@ func (d *SRPCChatResourceServiceHandler) GetServiceID() string { return d.servic
 func (SRPCChatResourceServiceHandler) GetMethodIDs() []string {
 	return []string{
 		"GetChannelInfo",
+		"WatchChannelInfo",
 		"GetState",
 		"GetMessage",
 		"ListMessages",
@@ -227,6 +265,8 @@ func (d *SRPCChatResourceServiceHandler) InvokeMethod(
 	switch methodID {
 	case "GetChannelInfo":
 		return true, d.InvokeMethod_GetChannelInfo(d.impl, strm)
+	case "WatchChannelInfo":
+		return true, d.InvokeMethod_WatchChannelInfo(d.impl, strm)
 	case "GetState":
 		return true, d.InvokeMethod_GetState(d.impl, strm)
 	case "GetMessage":
@@ -258,6 +298,15 @@ func (SRPCChatResourceServiceHandler) InvokeMethod_GetChannelInfo(impl SRPCChatR
 		return err
 	}
 	return strm.MsgSend(out)
+}
+
+func (SRPCChatResourceServiceHandler) InvokeMethod_WatchChannelInfo(impl SRPCChatResourceServiceServer, strm srpc.Stream) error {
+	req := new(WatchChannelInfoRequest)
+	if err := strm.MsgRecv(req); err != nil {
+		return err
+	}
+	serverStrm := &srpcChatResourceService_WatchChannelInfoStream{strm}
+	return impl.WatchChannelInfo(req, serverStrm)
 }
 
 func (SRPCChatResourceServiceHandler) InvokeMethod_GetState(impl SRPCChatResourceServiceServer, strm srpc.Stream) error {
@@ -359,6 +408,29 @@ type SRPCChatResourceService_GetChannelInfoStream interface {
 
 type srpcChatResourceService_GetChannelInfoStream struct {
 	srpc.Stream
+}
+
+type SRPCChatResourceService_WatchChannelInfoStream interface {
+	srpc.Stream
+	Send(*WatchChannelInfoResponse) error
+	SendAndClose(*WatchChannelInfoResponse) error
+}
+
+type srpcChatResourceService_WatchChannelInfoStream struct {
+	srpc.Stream
+}
+
+func (x *srpcChatResourceService_WatchChannelInfoStream) Send(m *WatchChannelInfoResponse) error {
+	return x.MsgSend(m)
+}
+
+func (x *srpcChatResourceService_WatchChannelInfoStream) SendAndClose(m *WatchChannelInfoResponse) error {
+	if m != nil {
+		if err := x.MsgSend(m); err != nil {
+			return err
+		}
+	}
+	return x.CloseSend()
 }
 
 type SRPCChatResourceService_GetStateStream interface {

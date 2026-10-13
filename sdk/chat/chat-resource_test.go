@@ -16,39 +16,40 @@ import (
 	spacewave_chat_rpc "github.com/s4wave/spacewave/sdk/chat/rpc"
 )
 
-type chatMessageStream struct {
+// chatWatchStream records the responses a chat watch sends.
+type chatWatchStream[T interface{ CloneVT() T }] struct {
 	ctx  context.Context
-	sent chan *spacewave_chat_rpc.WatchMessagesResponse
+	sent chan T
 }
 
-func newChatMessageStream(ctx context.Context) *chatMessageStream {
-	return &chatMessageStream{
+func newChatWatchStream[T interface{ CloneVT() T }](ctx context.Context) *chatWatchStream[T] {
+	return &chatWatchStream[T]{
 		ctx:  ctx,
-		sent: make(chan *spacewave_chat_rpc.WatchMessagesResponse, 8),
+		sent: make(chan T, 8),
 	}
 }
 
-func (s *chatMessageStream) Context() context.Context {
+func (s *chatWatchStream[T]) Context() context.Context {
 	return s.ctx
 }
 
-func (s *chatMessageStream) MsgSend(srpc.Message) error {
+func (s *chatWatchStream[T]) MsgSend(srpc.Message) error {
 	panic("MsgSend should not be called")
 }
 
-func (s *chatMessageStream) MsgRecv(srpc.Message) error {
+func (s *chatWatchStream[T]) MsgRecv(srpc.Message) error {
 	panic("MsgRecv should not be called")
 }
 
-func (s *chatMessageStream) CloseSend() error {
+func (s *chatWatchStream[T]) CloseSend() error {
 	return nil
 }
 
-func (s *chatMessageStream) Close() error {
+func (s *chatWatchStream[T]) Close() error {
 	return nil
 }
 
-func (s *chatMessageStream) Send(resp *spacewave_chat_rpc.WatchMessagesResponse) error {
+func (s *chatWatchStream[T]) Send(resp T) error {
 	select {
 	case <-s.ctx.Done():
 		return s.ctx.Err()
@@ -57,11 +58,9 @@ func (s *chatMessageStream) Send(resp *spacewave_chat_rpc.WatchMessagesResponse)
 	}
 }
 
-func (s *chatMessageStream) SendAndClose(resp *spacewave_chat_rpc.WatchMessagesResponse) error {
-	if resp != nil {
-		if err := s.Send(resp); err != nil {
-			return err
-		}
+func (s *chatWatchStream[T]) SendAndClose(resp T) error {
+	if err := s.Send(resp); err != nil {
+		return err
 	}
 	return s.CloseSend()
 }
@@ -151,7 +150,7 @@ func TestChatResourceSendsListsAndWatchesMessages(t *testing.T) {
 	// Start a watch on the channel's accepted history.
 	watchCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	stream := newChatMessageStream(watchCtx)
+	stream := newChatWatchStream[*spacewave_chat_rpc.WatchMessagesResponse](watchCtx)
 	done := make(chan error, 1)
 	go func() {
 		done <- resource.WatchMessages(&spacewave_chat_rpc.WatchMessagesRequest{}, stream)
@@ -170,6 +169,56 @@ func TestChatResourceSendsListsAndWatchesMessages(t *testing.T) {
 		}
 	case <-time.After(2 * time.Second):
 		t.Fatal("timed out waiting for WatchMessages to stop")
+	}
+}
+
+func TestChatResourceWatchesChannelInfo(t *testing.T) {
+	// Start an isolated World with one channel.
+	ctx := t.Context()
+	wtb, err := db_world_testbed.Default(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(wtb.Release)
+	ws := world.NewEngineWorldState(wtb.Engine, true)
+	createChatChannel(t, ctx, ws, GeneralChannelKey, "General")
+	resource := newChatResource(t, ws, wtb.Engine, GeneralChannelKey, wtb.Volume.GetPeerID().String())
+
+	// The watch sends the current metadata first.
+	watchCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	stream := newChatWatchStream[*spacewave_chat_rpc.WatchChannelInfoResponse](watchCtx)
+	done := make(chan error, 1)
+	go func() {
+		done <- resource.WatchChannelInfo(&spacewave_chat_rpc.WatchChannelInfoRequest{}, stream)
+	}()
+	if name := recvChatWatchValue(t, stream.sent).GetInfo().GetName(); name != "General" {
+		t.Fatalf("first channel name = %q, want General", name)
+	}
+
+	// A room name state event renames the channel, and the watch sends the new name.
+	_, err = resource.SendMessage(ctx, &spacewave_chat_rpc.SendMessageRequest{
+		TransactionId: "rename",
+		Content: &ChatMessageContent{Content: &ChatMessageContent_StateChange{
+			StateChange: &ChatStateChange{Type: "m.room.name", ContentJson: `{"name":"Release"}`},
+		}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if name := recvChatWatchValue(t, stream.sent).GetInfo().GetName(); name != "Release" {
+		t.Fatalf("renamed channel name = %q, want Release", name)
+	}
+
+	// Cancel the watch and require stream termination.
+	cancel()
+	select {
+	case err := <-done:
+		if err != nil && err != context.Canceled {
+			t.Fatalf("WatchChannelInfo returned %v", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for WatchChannelInfo to stop")
 	}
 }
 
@@ -228,7 +277,7 @@ func TestChatResourceWatchMessagesSettlesEmptyChannel(t *testing.T) {
 	// Start the channel watch with a cancelable stream.
 	watchCtx, cancel := context.WithCancel(ctx)
 	t.Cleanup(cancel)
-	stream := newChatMessageStream(watchCtx)
+	stream := newChatWatchStream[*spacewave_chat_rpc.WatchMessagesResponse](watchCtx)
 	done := make(chan error, 1)
 	go func() {
 		done <- resource.WatchMessages(&spacewave_chat_rpc.WatchMessagesRequest{}, stream)
@@ -650,7 +699,7 @@ func appendChatMessageKey(t *testing.T, ctx context.Context, ws world.WorldState
 	}
 }
 
-func recvChatWatchValue(t *testing.T, ch <-chan *spacewave_chat_rpc.WatchMessagesResponse) *spacewave_chat_rpc.WatchMessagesResponse {
+func recvChatWatchValue[T any](t *testing.T, ch <-chan T) T {
 	t.Helper()
 
 	select {
@@ -662,7 +711,8 @@ func recvChatWatchValue(t *testing.T, ch <-chan *spacewave_chat_rpc.WatchMessage
 	case <-time.After(2 * time.Second):
 		t.Fatal("timed out waiting for chat watch response")
 	}
-	return nil
+	var zero T
+	return zero
 }
 
 func requireChatMessages(

@@ -237,6 +237,37 @@ func (x *GetChannelInfoResponse) GetEncryptionAlgorithm() string {
 	return ""
 }
 
+// WatchChannelInfoRequest is a request to stream channel info.
+type WatchChannelInfoRequest struct {
+	unknownFields []byte
+}
+
+func (x *WatchChannelInfoRequest) Reset() {
+	*x = WatchChannelInfoRequest{}
+}
+
+func (*WatchChannelInfoRequest) ProtoMessage() {}
+
+// WatchChannelInfoResponse contains the current channel metadata.
+type WatchChannelInfoResponse struct {
+	unknownFields []byte
+	// Info contains the channel metadata as of a shared-state change.
+	Info *GetChannelInfoResponse `protobuf:"bytes,1,opt,name=info,proto3" json:"info,omitempty"`
+}
+
+func (x *WatchChannelInfoResponse) Reset() {
+	*x = WatchChannelInfoResponse{}
+}
+
+func (*WatchChannelInfoResponse) ProtoMessage() {}
+
+func (x *WatchChannelInfoResponse) GetInfo() *GetChannelInfoResponse {
+	if x != nil {
+		return x.Info
+	}
+	return nil
+}
+
 // GetMessageRequest identifies one channel message to read.
 type GetMessageRequest struct {
 	unknownFields []byte
@@ -815,6 +846,37 @@ func (m *GetChannelInfoResponse) CloneMessageVT() protobuf_go_lite.CloneMessage 
 	return m.CloneVT()
 }
 
+func (m *WatchChannelInfoRequest) CloneVT() *WatchChannelInfoRequest {
+	if m == nil {
+		return (*WatchChannelInfoRequest)(nil)
+	}
+	r := new(WatchChannelInfoRequest)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *WatchChannelInfoRequest) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *WatchChannelInfoResponse) CloneVT() *WatchChannelInfoResponse {
+	if m == nil {
+		return (*WatchChannelInfoResponse)(nil)
+	}
+	r := new(WatchChannelInfoResponse)
+	r.Info = protobuf_go_lite.CloneVTValue(m.Info)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *WatchChannelInfoResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
 func (m *GetMessageRequest) CloneVT() *GetMessageRequest {
 	if m == nil {
 		return (*GetMessageRequest)(nil)
@@ -1204,6 +1266,43 @@ func (this *GetChannelInfoResponse) EqualVT(that *GetChannelInfoResponse) bool {
 
 func (this *GetChannelInfoResponse) EqualMessageVT(thatMsg any) bool {
 	that, ok := thatMsg.(*GetChannelInfoResponse)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *WatchChannelInfoRequest) EqualVT(that *WatchChannelInfoRequest) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *WatchChannelInfoRequest) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*WatchChannelInfoRequest)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *WatchChannelInfoResponse) EqualVT(that *WatchChannelInfoResponse) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.Info, that.Info) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *WatchChannelInfoResponse) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*WatchChannelInfoResponse)
 	if !ok {
 		return false
 	}
@@ -1894,6 +1993,82 @@ func (x *GetChannelInfoResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
 
 // UnmarshalJSON unmarshals the GetChannelInfoResponse from JSON.
 func (x *GetChannelInfoResponse) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the WatchChannelInfoRequest message to JSON.
+func (x *WatchChannelInfoRequest) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the WatchChannelInfoRequest to JSON.
+func (x *WatchChannelInfoRequest) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the WatchChannelInfoRequest message from JSON.
+func (x *WatchChannelInfoRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		// no fields
+	})
+}
+
+// UnmarshalJSON unmarshals the WatchChannelInfoRequest from JSON.
+func (x *WatchChannelInfoRequest) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the WatchChannelInfoResponse message to JSON.
+func (x *WatchChannelInfoResponse) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Info != nil || s.HasField("info") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("info")
+		x.Info.MarshalProtoJSON(s.WithField("info"))
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the WatchChannelInfoResponse to JSON.
+func (x *WatchChannelInfoResponse) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the WatchChannelInfoResponse message from JSON.
+func (x *WatchChannelInfoResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "info":
+			if s.ReadNil() {
+				x.Info = nil
+				return
+			}
+			x.Info = &GetChannelInfoResponse{}
+			x.Info.UnmarshalProtoJSON(s.WithField("info", true))
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the WatchChannelInfoResponse from JSON.
+func (x *WatchChannelInfoResponse) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -3103,6 +3278,80 @@ func (m *GetChannelInfoResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error
 	return len(dAtA) - i, nil
 }
 
+func (m *WatchChannelInfoRequest) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WatchChannelInfoRequest) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *WatchChannelInfoRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WatchChannelInfoResponse) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WatchChannelInfoResponse) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *WatchChannelInfoResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.Info != nil {
+		size, err := m.Info.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *GetMessageRequest) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -3879,6 +4128,30 @@ func (m *GetChannelInfoResponse) SizeVT() (n int) {
 	return n
 }
 
+func (m *WatchChannelInfoRequest) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *WatchChannelInfoResponse) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Info != nil {
+		l = m.Info.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
 func (m *GetMessageRequest) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -4220,6 +4493,30 @@ func (x *GetChannelInfoResponse) MarshalProtoText() string {
 }
 
 func (x *GetChannelInfoResponse) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *WatchChannelInfoRequest) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	protobuf_go_lite.TextStartMessage(&sb, "WatchChannelInfoRequest")
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *WatchChannelInfoRequest) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *WatchChannelInfoResponse) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WatchChannelInfoResponse")
+	if x.Info != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "info")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Info)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *WatchChannelInfoResponse) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -4938,6 +5235,107 @@ func (m *GetChannelInfoResponse) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.EncryptionAlgorithm = v
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *WatchChannelInfoRequest) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WatchChannelInfoRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WatchChannelInfoRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *WatchChannelInfoResponse) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WatchChannelInfoResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WatchChannelInfoResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Info", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Info == nil {
+				m.Info = &GetChannelInfoResponse{}
+			}
+			if err := m.Info.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

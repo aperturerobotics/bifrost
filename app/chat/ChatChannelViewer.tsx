@@ -1,7 +1,6 @@
 import { LuCircleAlert, LuHash, LuRefreshCw } from 'react-icons/lu'
 import { useCallback, useEffect, useState } from 'react'
 
-import { useResource } from '@aptre/bldr-sdk/hooks/useResource.js'
 import { useStreamingResource } from '@aptre/bldr-sdk/hooks/useStreamingResource.js'
 import { useAccessTypedHandle } from '@s4wave/web/hooks/useAccessTypedHandle.js'
 import type { ObjectViewerComponentProps } from '@s4wave/web/object/object.js'
@@ -50,9 +49,9 @@ function ChatChannelContent({
     return chat.watchMessages(signal)
   }, [])
   const messagesResource = useStreamingResource(handle, streamFactory, [])
-  const infoResource = useResource(
+  const infoResource = useStreamingResource(
     handle,
-    (chat: ChatHandle, signal: AbortSignal) => chat.getChannelInfo(signal),
+    (chat: ChatHandle, signal: AbortSignal) => chat.watchChannelInfo(signal),
     [],
   )
   useObjectName(infoResource.value?.name)

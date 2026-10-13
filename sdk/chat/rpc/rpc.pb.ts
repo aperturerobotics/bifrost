@@ -225,6 +225,41 @@ export const GetChannelInfoResponse: MessageType<GetChannelInfoResponse> =
   })
 
 /**
+ * WatchChannelInfoRequest is a request to stream channel info.
+ *
+ * @generated from message spacewave.chat.rpc.WatchChannelInfoRequest
+ */
+export interface WatchChannelInfoRequest {}
+
+export const WatchChannelInfoRequest: MessageType<WatchChannelInfoRequest> =
+  /* @__PURE__ */ createEmptyMessageType<WatchChannelInfoRequest>(
+    'spacewave.chat.rpc.WatchChannelInfoRequest',
+    true,
+  )
+
+/**
+ * WatchChannelInfoResponse contains the current channel metadata.
+ *
+ * @generated from message spacewave.chat.rpc.WatchChannelInfoResponse
+ */
+export interface WatchChannelInfoResponse {
+  /**
+   * Info contains the channel metadata as of a shared-state change.
+   *
+   * @generated from field: spacewave.chat.rpc.GetChannelInfoResponse info = 1;
+   */
+  info?: GetChannelInfoResponse
+}
+
+export const WatchChannelInfoResponse: MessageType<WatchChannelInfoResponse> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'spacewave.chat.rpc.WatchChannelInfoResponse',
+    fields: [
+      { no: 1, name: 'info', kind: 'message', T: GetChannelInfoResponse },
+    ] satisfies readonly PartialFieldInfo[],
+  })
+
+/**
  * GetMessageRequest identifies one channel message to read.
  *
  * @generated from message spacewave.chat.rpc.GetMessageRequest

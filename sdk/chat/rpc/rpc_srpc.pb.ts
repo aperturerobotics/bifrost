@@ -19,6 +19,8 @@ import {
   SendMessageResponse,
   UpdateReadPositionRequest,
   UpdateReadPositionResponse,
+  WatchChannelInfoRequest,
+  WatchChannelInfoResponse,
   WatchMessagesRequest,
   WatchMessagesResponse,
 } from './rpc.pb.js'
@@ -48,6 +50,17 @@ export const ChatResourceServiceDefinition = {
       I: GetChannelInfoRequest,
       O: GetChannelInfoResponse,
       kind: MethodKind.Unary,
+    },
+    /**
+     * WatchChannelInfo streams channel metadata, then again after each change.
+     *
+     * @generated from rpc spacewave.chat.rpc.ChatResourceService.WatchChannelInfo
+     */
+    WatchChannelInfo: {
+      name: 'WatchChannelInfo',
+      I: WatchChannelInfoRequest,
+      O: WatchChannelInfoResponse,
+      kind: MethodKind.ServerStreaming,
     },
     /**
      * GetState returns the latest retained event for each channel state identity.
@@ -157,6 +170,16 @@ export interface ChatResourceService {
   ): Promise<GetChannelInfoResponse>
 
   /**
+   * WatchChannelInfo streams channel metadata, then again after each change.
+   *
+   * @generated from rpc spacewave.chat.rpc.ChatResourceService.WatchChannelInfo
+   */
+  WatchChannelInfo(
+    request: WatchChannelInfoRequest,
+    abortSignal?: AbortSignal,
+  ): MessageStream<WatchChannelInfoResponse>
+
+  /**
    * GetState returns the latest retained event for each channel state identity.
    *
    * @generated from rpc spacewave.chat.rpc.ChatResourceService.GetState
@@ -253,6 +276,17 @@ export interface ChatResourceServiceHandler {
     abortSignal: AbortSignal,
     context: ServerContext,
   ): Promise<GetChannelInfoResponse>
+
+  /**
+   * WatchChannelInfo streams channel metadata, then again after each change.
+   *
+   * @generated from rpc spacewave.chat.rpc.ChatResourceService.WatchChannelInfo
+   */
+  WatchChannelInfo(
+    request: WatchChannelInfoRequest,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): MessageStream<WatchChannelInfoResponse>
 
   /**
    * GetState returns the latest retained event for each channel state identity.
@@ -353,6 +387,7 @@ export class ChatResourceServiceClient implements ChatResourceService {
     this.service = opts?.service || ChatResourceServiceServiceName
     this.rpc = rpc
     this.GetChannelInfo = this.GetChannelInfo.bind(this)
+    this.WatchChannelInfo = this.WatchChannelInfo.bind(this)
     this.GetState = this.GetState.bind(this)
     this.GetMessage = this.GetMessage.bind(this)
     this.ListMessages = this.ListMessages.bind(this)
@@ -379,6 +414,25 @@ export class ChatResourceServiceClient implements ChatResourceService {
       abortSignal || undefined,
     )
     return GetChannelInfoResponse.fromBinary(result)
+  }
+
+  /**
+   * WatchChannelInfo streams channel metadata, then again after each change.
+   *
+   * @generated from rpc spacewave.chat.rpc.ChatResourceService.WatchChannelInfo
+   */
+  WatchChannelInfo(
+    request: WatchChannelInfoRequest,
+    abortSignal?: AbortSignal,
+  ): MessageStream<WatchChannelInfoResponse> {
+    const requestMsg = WatchChannelInfoRequest.create(request)
+    const result = this.rpc.serverStreamingRequest(
+      this.service,
+      ChatResourceServiceDefinition.methods.WatchChannelInfo.name,
+      WatchChannelInfoRequest.toBinary(requestMsg),
+      abortSignal || undefined,
+    )
+    return buildDecodeMessageTransform(WatchChannelInfoResponse)(result)
   }
 
   /**

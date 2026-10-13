@@ -146,7 +146,7 @@ func TestEncryptedContentRoundTrip(t *testing.T) {
 	// Stream the same envelope through the existing client watch contract.
 	watchCtx, cancel := context.WithCancel(ctx)
 	t.Cleanup(cancel)
-	stream := newChatMessageStream(watchCtx)
+	stream := newChatWatchStream[*spacewave_chat_rpc.WatchMessagesResponse](watchCtx)
 	done := make(chan error, 1)
 	go func() { done <- resource.WatchMessages(&spacewave_chat_rpc.WatchMessagesRequest{}, stream) }()
 

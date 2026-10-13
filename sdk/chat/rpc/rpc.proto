@@ -11,6 +11,8 @@ option go_package = "github.com/s4wave/spacewave/sdk/chat/rpc;spacewave_chat_rpc
 service ChatResourceService {
   // GetChannelInfo returns channel metadata and its retained history extent.
   rpc GetChannelInfo(GetChannelInfoRequest) returns (GetChannelInfoResponse);
+  // WatchChannelInfo streams channel metadata, then again after each change.
+  rpc WatchChannelInfo(WatchChannelInfoRequest) returns (stream WatchChannelInfoResponse);
   // GetState returns the latest retained event for each channel state identity.
   rpc GetState(GetStateRequest) returns (GetStateResponse);
   // GetMessage returns one message from this channel by object key.
@@ -86,6 +88,16 @@ message GetChannelInfoResponse {
   // EncryptionAlgorithm reports the channel encryption policy. Empty allows plaintext;
   // otherwise message bodies require this algorithm. State and annotations remain public.
   string encryption_algorithm = 6;
+}
+
+// WatchChannelInfoRequest is a request to stream channel info.
+message WatchChannelInfoRequest {
+}
+
+// WatchChannelInfoResponse contains the current channel metadata.
+message WatchChannelInfoResponse {
+  // Info contains the channel metadata as of a shared-state change.
+  GetChannelInfoResponse info = 1;
 }
 
 // GetMessageRequest identifies one channel message to read.

@@ -134,7 +134,45 @@ func (r *ChatResource) GetChannelInfo(
 		return nil, err
 	}
 
-	// Project the metadata for the client.
+	return newChannelInfo(channel), nil
+}
+
+// WatchChannelInfo streams channel metadata, then again after each change.
+func (r *ChatResource) WatchChannelInfo(
+	_ *spacewave_chat_rpc.WatchChannelInfoRequest,
+	strm spacewave_chat_rpc.SRPCChatResourceService_WatchChannelInfoStream,
+) error {
+	ctx := strm.Context()
+	var sent *spacewave_chat_rpc.GetChannelInfoResponse
+	for {
+		// Snapshot the World sequence before reading to avoid missing a concurrent change.
+		seqno, err := r.ws.GetSeqno(ctx)
+		if err != nil {
+			return err
+		}
+		channel, err := r.readChannel(ctx)
+		if err != nil {
+			return err
+		}
+
+		// Send the metadata only when it differs from the last response.
+		info := newChannelInfo(channel)
+		if !info.EqualVT(sent) {
+			if err := strm.Send(&spacewave_chat_rpc.WatchChannelInfoResponse{Info: info}); err != nil {
+				return err
+			}
+			sent = info
+		}
+
+		// Resume only when the shared World changes or the client releases its stream.
+		if _, err := r.ws.WaitSeqno(ctx, seqno+1); err != nil {
+			return err
+		}
+	}
+}
+
+// newChannelInfo projects the channel metadata for the client.
+func newChannelInfo(channel *ChatChannel) *spacewave_chat_rpc.GetChannelInfoResponse {
 	return &spacewave_chat_rpc.GetChannelInfoResponse{
 		Name:                channel.GetName(),
 		Topic:               channel.GetTopic(),
@@ -142,7 +180,7 @@ func (r *ChatResource) GetChannelInfo(
 		CreatedAt:           channel.GetCreatedAt().CloneVT(),
 		CreatorPeerId:       channel.GetCreatorPeerId(),
 		EncryptionAlgorithm: channel.GetEncryptionAlgorithm(),
-	}, nil
+	}
 }
 
 // GetState returns the latest retained event for each channel state identity.
