@@ -51,8 +51,8 @@ type space struct {
 	end uint64
 	// live holds the live bytes of each value page, indexed by page. It
 	// grows to the highest page that has held a value; pages past its end
-	// hold none.
-	live []uint32
+	// hold none. A page holds at most pageSize bytes, so two bytes count it.
+	live []uint16
 	// livePages counts the pages holding live bytes.
 	livePages int64
 	// liveBytes is the total live value bytes.
@@ -247,24 +247,24 @@ func (s *space) closeOpen(tag uint64) {
 
 // spans calls fn with each page under n bytes at off and the bytes it
 // holds.
-func spans(off uint64, n int, fn func(page uint64, bytes uint32)) {
+func spans(off uint64, n int, fn func(page uint64, bytes uint16)) {
 	end := off + uint64(n) // #nosec G115 -- value lengths are not negative.
 	for p := off / pageSize; p*pageSize < end; p++ {
 		lo, hi := max(off, p*pageSize), min(end, (p+1)*pageSize)
-		fn(p, uint32(hi-lo)) // #nosec G115 -- at most one page.
+		fn(p, uint16(hi-lo)) // #nosec G115 -- at most one page.
 	}
 }
 
 // useValue counts n live bytes at off. Replay calls it for values on pages
 // the saved state holds as free or pending.
 func (s *space) useValue(off uint64, n int) {
-	spans(off, n, func(p uint64, b uint32) {
+	spans(off, n, func(p uint64, b uint16) {
 		if s.liveAt(p) == 0 {
 			if !s.inOpen(p) {
 				s.claim(run{start: p, n: 1})
 			}
 			if p >= uint64(len(s.live)) {
-				s.live = append(s.live, make([]uint32, p+1-uint64(len(s.live)))...)
+				s.live = append(s.live, make([]uint16, p+1-uint64(len(s.live)))...)
 			}
 			s.livePages++
 		}
@@ -274,7 +274,7 @@ func (s *space) useValue(off uint64, n int) {
 }
 
 // liveAt returns the live bytes of page p.
-func (s *space) liveAt(p uint64) uint32 {
+func (s *space) liveAt(p uint64) uint16 {
 	if p < uint64(len(s.live)) {
 		return s.live[p]
 	}
@@ -311,7 +311,7 @@ func cut(q []pending, r run) []pending {
 
 // freeValue drops n live bytes at off, freed by commit tag.
 func (s *space) freeValue(off uint64, n int, tag uint64) {
-	spans(off, n, func(p uint64, b uint32) {
+	spans(off, n, func(p uint64, b uint16) {
 		s.live[p] -= b
 		if s.live[p] != 0 {
 			return
@@ -453,7 +453,7 @@ func (s *space) encode() []byte {
 type liveRun struct {
 	run
 	// bytes is the live bytes of each page.
-	bytes uint32
+	bytes uint16
 }
 
 // liveRuns returns the live value pages as runs in page order.
@@ -485,7 +485,7 @@ func decodeSpace(b []byte) (*space, error) {
 	}
 
 	// Read the live value page runs. A run may not reach past the file end.
-	s.live = make([]uint32, s.end)
+	s.live = make([]uint16, s.end)
 	var prev uint64
 	for range d.count() {
 		r := run{start: prev + d.uvarint(), n: d.uvarint()}
@@ -494,7 +494,7 @@ func decodeSpace(b []byte) (*space, error) {
 			return nil, ErrCorrupt
 		}
 		for p := r.start; p < r.end(); p++ {
-			s.live[p] = uint32(bytes)
+			s.live[p] = uint16(bytes) // #nosec G115 -- checked against pageSize above.
 		}
 		s.livePages += int64(r.n) // #nosec G115 -- runs end within the file.
 		s.liveBytes += pageOff(r.n) / pageSize * int64(bytes)

@@ -127,11 +127,11 @@ func checkSpace(t *testing.T, db *DB) {
 	}
 
 	// Claim the pages under every stored value, counting their live bytes.
-	live := make(map[uint64]uint32)
+	live := make(map[uint64]uint16)
 	it := newIterator(db.p, st, nil, nil, false)
 	for it.Next() {
 		if v := it.cur.val; v.isRef {
-			spans(v.ref.off, int(v.ref.n), func(p uint64, b uint32) {
+			spans(v.ref.off, int(v.ref.n), func(p uint64, b uint16) {
 				claim(p, "value", true)
 				live[p] += b
 			})
@@ -139,7 +139,7 @@ func checkSpace(t *testing.T, db *DB) {
 	}
 
 	// The space counts the same live bytes.
-	counted := make(map[uint64]uint32)
+	counted := make(map[uint64]uint16)
 	for p, b := range sp.live {
 		if b != 0 {
 			counted[uint64(p)] = b

@@ -359,7 +359,8 @@ func packLeaves(entries []change) []child {
 	return kids
 }
 
-// packInner packs children into new inner pages.
+// packInner packs children into new inner pages. Each page copies its keys
+// into one buffer, so a draft held until place keeps no replaced page alive.
 func packInner(kids []child) []child {
 	// Measure the entries.
 	sizes := make([]int, len(kids))
@@ -371,9 +372,15 @@ func packInner(kids []child) []child {
 	var out []child
 	start := 0
 	for _, end := range split(sizes) {
+		keyBytes := 0
+		for _, k := range kids[start:end] {
+			keyBytes += len(k.low)
+		}
+		buf := make([]byte, 0, keyBytes)
 		d := &draft{keys: make([][]byte, 0, end-start), kids: make([]uint64, 0, end-start), sub: make([]*draft, 0, end-start)}
 		for _, k := range kids[start:end] {
-			d.keys = append(d.keys, k.low)
+			buf = append(buf, k.low...)
+			d.keys = append(d.keys, buf[len(buf)-len(k.low):])
 			d.kids = append(d.kids, k.page)
 			d.sub = append(d.sub, k.d)
 		}
@@ -384,7 +391,6 @@ func packInner(kids []child) []child {
 }
 
 // emit writes the new leaves among kids and replaces each with its page.
-// The low key is copied so the child holds no buffer of a replaced page.
 func (b *builder) emit(kids []child) error {
 	for i, c := range kids {
 		if c.d == nil || !c.d.leaf {
@@ -394,7 +400,7 @@ func (b *builder) emit(kids []child) error {
 		if err != nil {
 			return err
 		}
-		kids[i] = child{low: bytes.Clone(c.low), page: page}
+		kids[i] = child{low: c.low, page: page}
 	}
 	return nil
 }
