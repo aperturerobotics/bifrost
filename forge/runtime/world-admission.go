@@ -159,7 +159,9 @@ func verifyLiveClaim(capacity *WorkerCapacity, ref WorkerClaimRef, now time.Time
 }
 
 // ClaimWorkerCapacity claims or reclaims the Worker's capacity record for the
-// calling instance. An absent record is created at epoch 1 with zero totals;
+// calling instance. An absent record is created with zero totals at an epoch
+// seeded from the claim time in Unix milliseconds, so a completed drain, which
+// deletes the record, never lets a later claim repeat an earlier epoch;
 // an expired lease is reclaimed with an epoch bump that preserves OwnerState
 // so resumed drains stay draining. A live foreign
 // Device claim fails with ErrCapacityOwned. The same Device and claim id renew
@@ -200,7 +202,7 @@ func (a *WorldRuntimeAdmission) ClaimWorkerCapacity(
 				ObservedAt:           timestamp.New(now),
 				OwnerDeviceObjectKey: ref.DeviceObjectKey,
 				ClaimID:              ref.ClaimID,
-				OwnerEpoch:           1,
+				OwnerEpoch:           uint64(now.UnixMilli()),
 				OwnerLeaseExpiresAt:  timestamp.New(now.Add(a.ownerLease)),
 				OwnerState:           CapacityOwnerStateActive,
 			}

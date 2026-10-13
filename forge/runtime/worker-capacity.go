@@ -78,7 +78,8 @@ type WorkerCapacity struct {
 	// ClaimID identifies one owning Worker execution claim.
 	ClaimID string
 	// OwnerEpoch increments on every claim transition; calls fencing against
-	// an older epoch are stale.
+	// an older epoch are stale. A new record starts at its claim time in Unix
+	// milliseconds, so deleting the record never lets an epoch repeat.
 	OwnerEpoch uint64
 	// OwnerLeaseExpiresAt is when an unrenewed owner claim expires.
 	OwnerLeaseExpiresAt *timestamp.Timestamp

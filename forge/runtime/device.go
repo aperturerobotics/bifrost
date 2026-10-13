@@ -80,14 +80,14 @@ func LookupForgeWorkerAvailability(ctx context.Context, ws world.WorldState, dev
 		availability.ExpiresAt = capacity.OwnerLeaseExpiresAt.AsTime()
 	}
 	if capacity.OwnerDeviceObjectKey != deviceObjectKey {
-		availability.Reason = "forge worker claim belongs to another device"
+		availability.Reason = "forge worker claim belongs to device " + capacity.OwnerDeviceObjectKey
 		return availability, nil
 	}
 
 	// The Worker claim, not Device liveness, determines expiry and drain.
 	switch err := capacity.OwnerClaimActive(time.Now()); {
 	case errors.Is(err, ErrCapacityOwnerExpired):
-		availability.Reason = "forge worker owner claim expired"
+		availability.Reason = "forge worker owner claim expired at " + availability.ExpiresAt.UTC().Format(time.RFC3339)
 	case errors.Is(err, ErrCapacityDraining):
 		availability.State = DeviceDraining
 		availability.Reason = "forge worker owner claim is draining"

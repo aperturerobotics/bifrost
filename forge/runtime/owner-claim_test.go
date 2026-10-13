@@ -18,12 +18,13 @@ func TestClaimCreateRenewAndReclaimPreserveDraining(t *testing.T) {
 	ctx, eng, _ := newTestbed(t)
 	admission := NewWorldRuntimeAdmission(eng, newTestStopper(), time.Minute, time.Minute)
 
-	// Create-on-claim: absent record starts owned at epoch 1, state ACTIVE.
+	// Create-on-claim: absent record starts owned at a time-seeded epoch, state ACTIVE.
 	capacity, err := admission.ClaimWorkerCapacity(ctx, "worker/a", selfRef)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if capacity.OwnerEpoch != 1 || capacity.OwnerState != CapacityOwnerStateActive {
+	created := capacity.OwnerEpoch
+	if created < 2 || capacity.OwnerState != CapacityOwnerStateActive {
 		t.Fatalf("unexpected created claim: %+v", capacity)
 	}
 	if capacity.WorkerObjectKey != "worker/a" || capacity.OwnerDeviceObjectKey != selfRef.DeviceObjectKey {
@@ -32,7 +33,7 @@ func TestClaimCreateRenewAndReclaimPreserveDraining(t *testing.T) {
 
 	// Same ref renews idempotently without bumping the epoch.
 	capacity, err = admission.ClaimWorkerCapacity(ctx, "worker/a", selfRef)
-	if err != nil || capacity.OwnerEpoch != 1 {
+	if err != nil || capacity.OwnerEpoch != created {
 		t.Fatalf("same-ref claim must renew in place: %+v err=%v", capacity, err)
 	}
 
@@ -49,7 +50,7 @@ func TestClaimCreateRenewAndReclaimPreserveDraining(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if capacity.OwnerEpoch != 2 || capacity.OwnerState != CapacityOwnerStateDraining {
+	if capacity.OwnerEpoch != created+1 || capacity.OwnerState != CapacityOwnerStateDraining {
 		t.Fatalf("reclaim must bump epoch and preserve DRAINING: %+v", capacity)
 	}
 }

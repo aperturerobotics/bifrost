@@ -147,7 +147,7 @@ func TestDeviceAvailabilityExpiryAndNewEpoch(t *testing.T) {
 		t.Fatal(err)
 	}
 	expired := nextAvailabilityForTest(t, updates)
-	if expired.State != DeviceUnavailable || expired.Reason != "forge worker owner claim expired" ||
+	if expired.State != DeviceUnavailable || expired.Reason != "forge worker owner claim expired at "+expired.ExpiresAt.UTC().Format(time.RFC3339) ||
 		expired.ClaimEpoch != claim.OwnerEpoch || expired.OwnerState != CapacityOwnerStateActive ||
 		!expired.ExpiresAt.Equal(claim.OwnerLeaseExpiresAt.AsTime()) || time.Now().Before(expired.ExpiresAt) {
 		t.Fatalf("expired claim = %+v", expired)
@@ -179,6 +179,49 @@ func TestDeviceAvailabilityExpiryAndNewEpoch(t *testing.T) {
 	}
 }
 
+// TestDeviceAvailabilityNewEpochAfterCompletedDrain proves a claim made after a
+// completed drain deleted the record is distinguishable from the drained one.
+func TestDeviceAvailabilityNewEpochAfterCompletedDrain(t *testing.T) {
+	// Claim the Worker, then drain it until the capacity record is deleted.
+	ctx, eng, _ := newTestbed(t)
+	publishAvailabilityTestDevice(t, ctx, eng, availabilityTestDevice())
+	admission := NewWorldRuntimeAdmission(eng, newTestStopper(), 0, time.Minute)
+	claim, err := admission.ClaimWorkerCapacity(ctx, "worker/a", selfRef)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ws := world.NewEngineWorldState(eng, false)
+	drained := WorkerClaimRef{DeviceObjectKey: selfRef.DeviceObjectKey, ClaimID: "drained"}
+	if _, err := admission.ClaimWorkerCapacity(ctx, "worker/a", drained); err != nil {
+		t.Fatal(err)
+	}
+	if err := admission.DrainWorker(ctx, "worker/a", drained, claim.OwnerEpoch+1); err != nil {
+		t.Fatal(err)
+	}
+	gone, err := LookupDeviceAvailability(ctx, ws, selfRef.DeviceObjectKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gone.State != DeviceUnavailable || gone.Reason != "forge worker has no owner claim" {
+		t.Fatalf("drained Device = %+v", gone)
+	}
+
+	// A fresh claim a moment later reports an epoch above every epoch before the drain.
+	later := time.Now().Add(time.Second)
+	admission.SetTimeNow(func() time.Time { return later })
+	fresh, err := admission.ClaimWorkerCapacity(ctx, "worker/a", selfRef)
+	if err != nil {
+		t.Fatal(err)
+	}
+	restored, err := LookupDeviceAvailability(ctx, ws, selfRef.DeviceObjectKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if restored.State != DeviceAvailable || restored.ClaimEpoch != fresh.OwnerEpoch || restored.ClaimEpoch <= claim.OwnerEpoch+1 {
+		t.Fatalf("claim after drain = %+v, drained epoch %d", restored, claim.OwnerEpoch+1)
+	}
+}
+
 // TestDeviceAvailabilityCallbackCrossesExpiry prevents losing a deadline when
 // delivering the previous observation takes longer than the remaining lease.
 func TestDeviceAvailabilityCallbackCrossesExpiry(t *testing.T) {
@@ -207,7 +250,7 @@ func TestDeviceAvailabilityCallbackCrossesExpiry(t *testing.T) {
 				return ctx.Err()
 			}
 		case DeviceUnavailable:
-			if got.Reason != "forge worker owner claim expired" {
+			if got.Reason != "forge worker owner claim expired at "+got.ExpiresAt.UTC().Format(time.RFC3339) {
 				t.Fatalf("unexpected unavailable observation: %+v", got)
 			}
 			return stop
