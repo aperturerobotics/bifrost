@@ -3,6 +3,7 @@ package sobject_world_engine
 import (
 	"context"
 
+	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/db/block"
 )
 
@@ -49,7 +50,10 @@ func (h *rootHold) world(ctx context.Context, name string, root *block.BlockRef)
 	if stored == nil {
 		return block.ErrNotFound
 	}
-	h.entries = append(h.entries, &block.PutBatchEntry{Ref: root, Data: stored.GetData(), Refs: stored.GetRefs()})
+	if !stored.RefsKnown {
+		return errors.Wrap(block.ErrRefsUnknown, root.MarshalString())
+	}
+	h.entries = append(h.entries, &block.PutBatchEntry{Ref: root, Data: stored.Data, Refs: stored.Refs})
 	h.roots = append(h.roots, block.NamedRoot{Name: name, Ref: root})
 	return nil
 }

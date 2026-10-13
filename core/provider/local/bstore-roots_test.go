@@ -2,6 +2,7 @@ package provider_local
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/s4wave/spacewave/db/block"
@@ -25,8 +26,8 @@ func TestPinRootUnknownRefs(t *testing.T) {
 	if release != nil {
 		release()
 	}
-	if !errors.Is(err, block.ErrRefsUnknown) {
-		t.Fatalf("pin = %v, want ErrRefsUnknown", err)
+	if !errors.Is(err, block.ErrRefsUnknown) || !strings.Contains(err.Error(), ref.MarshalString()) {
+		t.Fatalf("pin = %v, want ErrRefsUnknown naming %s", err, ref.MarshalString())
 	}
 	found, err := destination.GetBlockExists(ctx, ref)
 	if err != nil || found {

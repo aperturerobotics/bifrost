@@ -13,7 +13,10 @@ import (
 	"github.com/s4wave/spacewave/core/sobject"
 	sobject_world_engine "github.com/s4wave/spacewave/core/sobject/world/engine"
 	"github.com/s4wave/spacewave/db/block"
+	block_store_inmem "github.com/s4wave/spacewave/db/block/store/inmem"
 	"github.com/s4wave/spacewave/db/object"
+	store_kvkey "github.com/s4wave/spacewave/db/store/kvkey"
+	store_kvtx_inmem "github.com/s4wave/spacewave/db/store/kvtx/inmem"
 	"github.com/s4wave/spacewave/db/volume"
 	"github.com/s4wave/spacewave/net/crypto"
 	"github.com/s4wave/spacewave/testbed"
@@ -252,6 +255,80 @@ func TestTransferAddsTargetSharedObjectBeforeWritingState(t *testing.T) {
 	want := "add:space-a,write:space-a"
 	if got != want {
 		t.Fatalf("expected call order %q, got %q", want, got)
+	}
+}
+
+// storeTestSource serves one block from a store that holds it without refs.
+type storeTestSource struct {
+	orderTestSource
+	store block.StoreOps
+	ref   *block.BlockRef
+}
+
+func (s *storeTestSource) GetBlockStore(context.Context, *sobject.SharedObjectRef) (block.StoreOps, func(), error) {
+	return s.store, func() {}, nil
+}
+
+func (s *storeTestSource) GetBlockRefs(context.Context, *sobject.SharedObjectRef) ([]*block.BlockRef, error) {
+	return []*block.BlockRef{s.ref}, nil
+}
+
+// storeTestTarget writes blocks to store.
+type storeTestTarget struct {
+	orderTestTarget
+	store block.StoreOps
+}
+
+func (t *storeTestTarget) GetBlockStore(context.Context, *sobject.SharedObjectRef) (block.StoreOps, func(), error) {
+	return t.store, func() {}, nil
+}
+
+// TestTransferRejectsUnknownRefs checks that a block the source holds without
+// its refs fails the transfer naming the block, instead of reaching the target
+// as a leaf.
+func TestTransferRejectsUnknownRefs(t *testing.T) {
+	// Serve a block from a store that retains only its bytes.
+	ctx := context.Background()
+	newStore := func() block.StoreOps {
+		return block_store_inmem.NewInmemBlock(store_kvkey.NewDefaultKVKey(), store_kvtx_inmem.NewStore(), 0, false)
+	}
+	source := newStore()
+	ref, _, err := source.PutBlock(ctx, []byte("untracked"), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	soRef := &sobject.SharedObjectRef{
+		ProviderResourceRef: &provider.ProviderResourceRef{Id: "space-a", ProviderId: "spacewave"},
+		BlockStoreId:        "space-a",
+	}
+	src := &storeTestSource{
+		orderTestSource: orderTestSource{list: &sobject.SharedObjectList{
+			SharedObjects: []*sobject.SharedObjectListEntry{{Ref: soRef, Meta: &sobject.SharedObjectMeta{BodyType: "space"}}},
+		}},
+		store: source,
+		ref:   ref,
+	}
+	target := newStore()
+	tgt := &storeTestTarget{store: target}
+
+	// The transfer fails before writing the block.
+	xfer := provider_transfer.NewTransfer(
+		logrus.NewEntry(logrus.StandardLogger()),
+		provider_transfer.TransferMode_TransferMode_MERGE,
+		src,
+		tgt,
+		nil,
+		1,
+		2,
+		nil,
+	)
+	err = xfer.Execute(ctx)
+	if !errors.Is(err, block.ErrRefsUnknown) || !strings.Contains(err.Error(), ref.MarshalString()) {
+		t.Fatalf("transfer = %v, want ErrRefsUnknown naming %s", err, ref.MarshalString())
+	}
+	found, err := target.GetBlockExists(ctx, ref)
+	if err != nil || found {
+		t.Fatalf("target = %v/%v, want absent", found, err)
 	}
 }
 

@@ -2,6 +2,7 @@ package block_store_writeback
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -21,7 +22,27 @@ func (f *failingStore) PutBlockBatch(context.Context, []*block.PutBatchEntry) ([
 	return nil, errors.New("bucket unreachable")
 }
 
+// leafStore tracks every block as a leaf, as a GC store does for a block with
+// no outgoing refs. The bare in-memory store holds bytes without refs.
+type leafStore struct {
+	block.StoreOps
+}
+
+// GetStoredBlock reads the block as a known leaf.
+func (l *leafStore) GetStoredBlock(ctx context.Context, ref *block.BlockRef) (*block.StoredBlock, error) {
+	stored, err := block.GetBlockWithoutRefs(ctx, l.StoreOps, ref)
+	if stored != nil {
+		stored.RefsKnown = true
+	}
+	return stored, err
+}
+
 func newInmemBlockStore() block.StoreOps {
+	return &leafStore{StoreOps: newUntrackedBlockStore()}
+}
+
+// newUntrackedBlockStore returns a store that holds bytes without refs.
+func newUntrackedBlockStore() block.StoreOps {
 	return block_store_inmem.NewInmemBlock(store_kvkey.NewDefaultKVKey(), store_kvtx_inmem.NewStore(), 0, false)
 }
 
@@ -192,5 +213,34 @@ func TestBackfillQueuesStoredBlocks(t *testing.T) {
 	}
 	if status, _ := s.GetStatus(); status.Target != "" {
 		t.Fatalf("target %q after disable", status.Target)
+	}
+}
+
+// TestUploadUntrackedBlock checks that a block held without its refs fails the
+// upload and stays queued, since the remote would keep it as a leaf.
+func TestUploadUntrackedBlock(t *testing.T) {
+	// Queue a block that the local store holds without its refs.
+	ctx := t.Context()
+	s, err := NewStore(ctx, newUntrackedBlockStore(), store_kvtx_inmem.NewStore(), true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ref, _, err := s.PutBlock(ctx, []byte("untracked"), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// The upload fails naming the block, and nothing reaches the remote.
+	remote := newInmemBlockStore()
+	err = s.Upload(ctx, remote)
+	if !errors.Is(err, block.ErrRefsUnknown) || !strings.Contains(err.Error(), ref.MarshalString()) {
+		t.Fatalf("upload = %v, want ErrRefsUnknown naming %s", err, ref.MarshalString())
+	}
+	found, err := remote.GetBlockExists(ctx, ref)
+	if err != nil || found {
+		t.Fatalf("remote = %v/%v, want absent", found, err)
+	}
+	if status, _ := s.GetStatus(); status.Pending != 1 || !errors.Is(status.Err, block.ErrRefsUnknown) {
+		t.Fatalf("status = %+v, want one pending block and ErrRefsUnknown", status)
 	}
 }

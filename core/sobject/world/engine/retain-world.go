@@ -95,7 +95,10 @@ func storeRootBlock(ctx context.Context, so sobject.SharedObject, root *block.Bl
 	if stored == nil {
 		return block.ErrNotFound
 	}
-	entry := &block.PutBatchEntry{Ref: root, Data: stored.GetData(), Refs: stored.GetRefs()}
+	if !stored.RefsKnown {
+		return errors.Wrap(block.ErrRefsUnknown, root.MarshalString())
+	}
+	entry := &block.PutBatchEntry{Ref: root, Data: stored.Data, Refs: stored.Refs}
 	if _, err := store.PutBlockBatch(ctx, []*block.PutBatchEntry{entry}); err != nil {
 		return err
 	}

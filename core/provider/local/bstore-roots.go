@@ -3,6 +3,7 @@ package provider_local
 import (
 	"context"
 
+	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/db/block"
 	block_store "github.com/s4wave/spacewave/db/block/store"
 )
@@ -33,7 +34,7 @@ func (b *BlockStore) PinRoot(ctx context.Context, ref *block.BlockRef) (func(), 
 			return nil, block.ErrNotFound
 		}
 		if !stored.RefsKnown {
-			return nil, block.ErrRefsUnknown
+			return nil, errors.Wrap(block.ErrRefsUnknown, ref.MarshalString())
 		}
 		if _, _, err := b.store.PutBlock(ctx, stored.Data, stored.PutOpts(ref)); err != nil {
 			return nil, err
