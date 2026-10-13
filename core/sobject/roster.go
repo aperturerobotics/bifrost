@@ -50,14 +50,16 @@ func SetSORoster(ctx context.Context, host *SOHost, dropped []string, signer cry
 }
 
 // MaintainRoster keeps the trimming roster current while the local peer is the
-// checkpointer. It returns each dropped device to the roster once it has built
-// on the local peer's latest operation. A dropped writer acknowledges like a
-// roster member, so a device that returns and only reads still answers the
-// checkpointer. Once the operations above the checkpoint reach RosterDropBytes
-// it drops the members that have not built on the local peer's latest
-// operation, so a device that stays offline cannot hold the state past what a
-// peer can sync. It watches the state and returns when ctx ends or a change
-// fails.
+// checkpointer, or the owner that takes over from a stalled one. It returns
+// each dropped device to the roster once it has built on the local peer's
+// latest operation. A dropped writer acknowledges like a roster member, so a
+// device that returns and only reads still answers the checkpointer. Once the
+// operations above the checkpoint reach RosterDropBytes it drops the members
+// that have not built on the local peer's latest operation, so a device that
+// stays offline cannot hold the state past what a peer can sync. That includes
+// an offline checkpointer: the first owner whose predecessors on the roster
+// have all fallen behind it drops them and becomes the checkpointer. It
+// watches the state and returns when ctx ends or a change fails.
 func MaintainRoster(ctx context.Context, so SharedObject, host RosterHost) error {
 	// Watch the state as the local peer.
 	ctr, rel, err := so.AccessSharedObjectState(ctx, nil)
@@ -79,13 +81,12 @@ func MaintainRoster(ctx context.Context, so SharedObject, host RosterHost) error
 			continue
 		}
 
-		// Only the checkpointer restores, against its own operations. A group
-		// changes its roster only by decision.
+		// A group changes its roster only by decision.
 		cfg, err := snap.GetConfig(ctx)
 		if err != nil {
 			return err
 		}
-		if cfg.IsGroupControl() || cfg.Checkpointer() != peerID {
+		if cfg.IsGroupControl() || !isOwnerPeer(cfg, peerID) {
 			continue
 		}
 		set, err := snap.GetOperationSet(ctx)
@@ -103,20 +104,37 @@ func MaintainRoster(ctx context.Context, so SharedObject, host RosterHost) error
 	}
 }
 
-// nextRosterDropped returns the writers the checkpointer should drop from the
-// trimming roster, in peer ID order: the dropped writers that have not built
-// on its latest operation, plus, once the operations reach RosterDropBytes,
-// the roster members that have not.
-func nextRosterDropped(cfg *SharedObjectConfig, set *SOOperationSet, checkpointer string) []string {
+// nextRosterDropped returns the writers the owner self should drop from the
+// trimming roster, in peer ID order. Only the checkpointer, or a successor
+// whose owners ahead on the roster all lag behind it once the operations reach
+// RosterDropBytes, changes the roster: it keeps the dropped writers that have
+// not built on its latest operation, plus, past the budget, the roster members
+// that have not. Any other owner returns the dropped writers unchanged.
+func nextRosterDropped(cfg *SharedObjectConfig, set *SOOperationSet, self string) []string {
+	// Act only as the checkpointer, or past the budget as its successor.
+	dropped := cfg.GetRosterDroppedPeerIds()
+	overBudget := set.Size() >= RosterDropBytes
+	for _, member := range cfg.TrimRoster() {
+		if member == self {
+			break
+		}
+		if !isOwnerPeer(cfg, member) {
+			continue
+		}
+		if !overBudget || set.BuiltOnLatest(member, self) {
+			return dropped
+		}
+	}
+
 	// Keep the dropped writers that have not caught up.
-	next := slices.DeleteFunc(slices.Clone(cfg.GetRosterDroppedPeerIds()), func(device string) bool {
-		return set.BuiltOnLatest(device, checkpointer)
+	next := slices.DeleteFunc(slices.Clone(dropped), func(device string) bool {
+		return set.BuiltOnLatest(device, self)
 	})
 
 	// Drop the lagging members of an operation set that outgrew the budget.
-	if set.Size() >= RosterDropBytes {
+	if overBudget {
 		for _, member := range cfg.TrimRoster() {
-			if member != checkpointer && !set.BuiltOnLatest(member, checkpointer) {
+			if member != self && !set.BuiltOnLatest(member, self) {
 				next = append(next, member)
 			}
 		}

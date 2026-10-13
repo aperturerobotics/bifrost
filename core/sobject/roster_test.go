@@ -178,6 +178,50 @@ func TestNextRosterDropped(t *testing.T) {
 	}
 }
 
+// TestNextRosterDroppedReplacesStalledCheckpointer checks that the next owner
+// drops a checkpointer that stopped building on its edits once the operations
+// outgrow RosterDropBytes, and leaves a checkpointer that keeps up in place.
+func TestNextRosterDroppedReplacesStalledCheckpointer(t *testing.T) {
+	// Owners A and B. A writes once and goes offline.
+	peers := createMockPeers(t, 2)
+	keys := mustPrivKeys(t, peers)
+	owner := SOParticipantRole_SOParticipantRole_OWNER
+	state, _ := newTestSOState(t, peers, owner, owner)
+	ids := []string{peers[0].GetPeerID().String(), peers[1].GetPeerID().String()}
+	writeTestOp(t, state, keys[0], "a1")
+	cfg := state.GetConfig()
+
+	// Below the budget B leaves the roster to the checkpointer.
+	writeTestOp(t, state, keys[1], "b1")
+	set := mustOperationSet(t, state)
+	if got := nextRosterDropped(cfg, set, ids[1]); len(got) != 0 {
+		t.Fatalf("B dropped %v below the budget", got)
+	}
+
+	// Past the budget B drops A and takes over as checkpointer.
+	edit := strings.Repeat("x", MaxInnerDataSize/2)
+	for set.Size() < RosterDropBytes {
+		writeTestOp(t, state, keys[1], edit)
+		set = mustOperationSet(t, state)
+	}
+	got := nextRosterDropped(cfg, set, ids[1])
+	if !slices.Equal(got, ids[:1]) {
+		t.Fatalf("B dropped %v past the budget; want A", got)
+	}
+	replaced := cfg.CloneVT()
+	replaced.RosterDroppedPeerIds = got
+	if checkpointer := replaced.Checkpointer(); checkpointer != ids[1] {
+		t.Fatalf("checkpointer is %s; want B", checkpointer)
+	}
+
+	// A checkpointer that built on B's latest edit stays.
+	writeTestOp(t, state, keys[0], "")
+	set = mustOperationSet(t, state)
+	if got := nextRosterDropped(cfg, set, ids[1]); len(got) != 0 {
+		t.Fatalf("B dropped %v after A built on its latest edit", got)
+	}
+}
+
 // TestMaintainRosterDropsOfflineDevice checks that the checkpointer, watching
 // a state that outgrew RosterDropBytes, drops the device that never built on
 // its edits.
