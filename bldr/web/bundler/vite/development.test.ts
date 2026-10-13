@@ -82,11 +82,16 @@ export async function releaseProvider() {
 `,
   )
   await writeFile(cssPath, 'button { color: red }')
+  await mkdir(join(root, 'ui'))
+  await writeFile(
+    join(root, 'ui', 'Context.tsx'),
+    'export const Context = Symbol("ui")\n',
+  )
   await writeFile(
     join(root, 'vite.config.ts'),
     `
 import react from ${JSON.stringify(require.resolve('@vitejs/plugin-react'))}
-export default { server: { watch: { ignored: [] } }, plugins: [react(), { name: 'echo', configureServer(server) {
+export default { resolve: { alias: { '@local/ui': ${JSON.stringify(join(root, 'ui'))} } }, server: { watch: { ignored: [] } }, plugins: [react(), { name: 'echo', configureServer(server) {
   server.middlewares.use((request, response, next) => {
     if (!request.url.endsWith('/large.js')) return next()
     const body = Buffer.alloc(16 * 1024 * 1024, 120)
@@ -104,7 +109,7 @@ export default { server: { watch: { ignored: [] } }, plugins: [react(), { name: 
       cacheDir: join(root, 'cache'),
       entrypoints: ['App.tsx'],
       externalPkgs: ['react', 'react-dom'],
-      webPkgIds: ['@s4wave/web'],
+      webPkgIds: ['@s4wave/web', '@local/ui'],
       sessionId: 'test',
     }),
   )
@@ -117,6 +122,10 @@ export default { server: { watch: { ignored: [] } }, plugins: [react(), { name: 
     const result = await environment.start()
     privateURL = result.privateUrl
     expect(result.refreshRuntime).toContain('injectIntoGlobalHook')
+    expect(result.webPkgImports).toEqual({
+      'bldr-web-pkg/@s4wave/web/': '/b/pkg/@s4wave/web/',
+      'bldr-web-pkg/@local/ui/': '/b/fe/test/@bldr-web-pkg/@local/ui/',
+    })
     const updates = environment.watch(abort.signal)
     expect((await updates.next()).value?.session?.routePrefix).toBe(
       '/b/fe/test/',
@@ -193,6 +202,15 @@ export default { server: { watch: { ignored: [] } }, plugins: [react(), { name: 
     expect(source).toContain('"bldr-web-pkg/@s4wave/web/sync/app-hooks.mjs"')
     expect(source).toContain('/sdk/hooks/useResource.tsx')
     expect(source).toContain('/b/fe/test/@react-refresh')
+
+    // A separately bundled view reaches aliased source through this graph.
+    const shim = await fetch(
+      privateURL + '/b/fe/test/@bldr-web-pkg/@local/ui/Context.mjs',
+    )
+    expect(shim.status).toBe(200)
+    const shimSource = await shim.text()
+    expect(shimSource).toContain('export * from "/b/fe/test/ui/Context.tsx"')
+    expect(shimSource).toContain('export default source.default')
     const css = await fetch(privateURL + '/b/fe/test/app.css')
     expect(await css.text()).toContain('__vite__updateStyle')
 

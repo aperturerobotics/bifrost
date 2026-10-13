@@ -239,6 +239,11 @@ type DevelopmentResult struct {
 	// RefreshRuntime is the project's React refresh module for the bootstrap.
 	// It is empty when the project does not use React refresh.
 	RefreshRuntime string `protobuf:"bytes,3,opt,name=refresh_runtime,json=refreshRuntime,proto3" json:"refreshRuntime,omitempty"`
+	// WebPkgImports maps each shared package specifier prefix to the URL prefix
+	// that serves it. A package aliased to project source is served from this
+	// graph, so separately bundled views share the application's module
+	// instances; every other package is served from the shared /b/pkg route.
+	WebPkgImports map[string]string `protobuf:"bytes,4,rep,name=web_pkg_imports,json=webPkgImports,proto3" json:"webPkgImports,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
 func (x *DevelopmentResult) Reset() {
@@ -266,6 +271,13 @@ func (x *DevelopmentResult) GetRefreshRuntime() string {
 		return x.RefreshRuntime
 	}
 	return ""
+}
+
+func (x *DevelopmentResult) GetWebPkgImports() map[string]string {
+	if x != nil {
+		return x.WebPkgImports
+	}
+	return nil
 }
 
 // WebPkgRef is a reference to a web package.
@@ -831,6 +843,32 @@ func (x *ImportMapEntry) GetOutputPath() string {
 	return ""
 }
 
+type DevelopmentResult_WebPkgImportsEntry struct {
+	unknownFields []byte
+	Key           string `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	Value         string `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+}
+
+func (x *DevelopmentResult_WebPkgImportsEntry) Reset() {
+	*x = DevelopmentResult_WebPkgImportsEntry{}
+}
+
+func (*DevelopmentResult_WebPkgImportsEntry) ProtoMessage() {}
+
+func (x *DevelopmentResult_WebPkgImportsEntry) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+func (x *DevelopmentResult_WebPkgImportsEntry) GetValue() string {
+	if x != nil {
+		return x.Value
+	}
+	return ""
+}
+
 type BuildRequest_DefinesEntry struct {
 	unknownFields []byte
 	Key           string `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
@@ -939,6 +977,7 @@ func (m *DevelopmentResult) CloneVT() *DevelopmentResult {
 	r.PrivateUrl = m.PrivateUrl
 	r.RefreshRuntime = m.RefreshRuntime
 	r.Session = protobuf_go_lite.CloneVTValue(m.Session)
+	r.WebPkgImports = protobuf_go_lite.CloneMap(m.WebPkgImports)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -1258,6 +1297,9 @@ func (this *DevelopmentResult) EqualVT(that *DevelopmentResult) bool {
 		return false
 	}
 	if this.RefreshRuntime != that.RefreshRuntime {
+		return false
+	}
+	if !protobuf_go_lite.EqualMap(this.WebPkgImports, that.WebPkgImports) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -1898,6 +1940,56 @@ func (x *ChangeDevelopmentResponse) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
+// MarshalProtoJSON marshals the DevelopmentResult_WebPkgImportsEntry message to JSON.
+func (x *DevelopmentResult_WebPkgImportsEntry) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Key != "" || s.HasField("key") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("key")
+		s.WriteString(x.Key)
+	}
+	if x.Value != "" || s.HasField("value") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("value")
+		s.WriteString(x.Value)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the DevelopmentResult_WebPkgImportsEntry to JSON.
+func (x *DevelopmentResult_WebPkgImportsEntry) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the DevelopmentResult_WebPkgImportsEntry message from JSON.
+func (x *DevelopmentResult_WebPkgImportsEntry) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "key":
+			s.AddField("key")
+			x.Key = s.ReadString()
+		case "value":
+			s.AddField("value")
+			x.Value = s.ReadString()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the DevelopmentResult_WebPkgImportsEntry from JSON.
+func (x *DevelopmentResult_WebPkgImportsEntry) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
 // MarshalProtoJSON marshals the DevelopmentResult message to JSON.
 func (x *DevelopmentResult) MarshalProtoJSON(s *json.MarshalState) {
 	if x == nil {
@@ -1920,6 +2012,19 @@ func (x *DevelopmentResult) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteMoreIf(&wroteField)
 		s.WriteObjectField("refreshRuntime")
 		s.WriteString(x.RefreshRuntime)
+	}
+	if x.WebPkgImports != nil || s.HasField("webPkgImports") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("webPkgImports")
+		s.WriteObjectStart()
+		var wroteElement bool
+		for _, k := range slices.Sorted(maps.Keys(x.WebPkgImports)) {
+			v := x.WebPkgImports[k]
+			s.WriteMoreIf(&wroteElement)
+			s.WriteObjectStringField(k)
+			s.WriteString(v)
+		}
+		s.WriteObjectEnd()
 	}
 	s.WriteObjectEnd()
 }
@@ -1951,6 +2056,16 @@ func (x *DevelopmentResult) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "refresh_runtime", "refreshRuntime":
 			s.AddField("refresh_runtime")
 			x.RefreshRuntime = s.ReadString()
+		case "web_pkg_imports", "webPkgImports":
+			s.AddField("web_pkg_imports")
+			if s.ReadNil() {
+				x.WebPkgImports = nil
+				return
+			}
+			x.WebPkgImports = make(map[string]string)
+			s.ReadStringMap(func(key string) {
+				x.WebPkgImports[key] = s.ReadString()
+			})
 		}
 	})
 }
@@ -3134,6 +3249,21 @@ func (m *DevelopmentResult) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if len(m.WebPkgImports) > 0 {
+		for k := range m.WebPkgImports {
+			v := m.WebPkgImports[k]
+			baseI := i
+			i = protobuf_go_lite.EncodeString(dAtA, i, v)
+			i--
+			dAtA[i] = 0x12
+			i = protobuf_go_lite.EncodeString(dAtA, i, k)
+			i--
+			dAtA[i] = 0xa
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x22
+		}
+	}
 	if len(m.RefreshRuntime) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.RefreshRuntime)
 		i--
@@ -3840,6 +3970,12 @@ func (m *DevelopmentResult) SizeVT() (n int) {
 	}
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.PrivateUrl)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.RefreshRuntime)
+	for k, v := range m.WebPkgImports {
+		_ = k
+		_ = v
+		mapEntrySize := protobuf_go_lite.SizeStringValue(1, k) + protobuf_go_lite.SizeStringValue(1, v)
+		n += protobuf_go_lite.SizeMessage(1, mapEntrySize)
+	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -4129,6 +4265,24 @@ func (x *ChangeDevelopmentResponse) String() string {
 	return x.MarshalProtoText()
 }
 
+func (x *DevelopmentResult_WebPkgImportsEntry) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WebPkgImportsEntry")
+	if x.Key != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "key")
+		protobuf_go_lite.TextWriteString(&sb, x.Key)
+	}
+	if x.Value != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "value")
+		protobuf_go_lite.TextWriteString(&sb, x.Value)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *DevelopmentResult_WebPkgImportsEntry) String() string {
+	return x.MarshalProtoText()
+}
+
 func (x *DevelopmentResult) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "DevelopmentResult")
@@ -4143,6 +4297,17 @@ func (x *DevelopmentResult) MarshalProtoText() string {
 	if x.RefreshRuntime != "" {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "refresh_runtime")
 		protobuf_go_lite.TextWriteString(&sb, x.RefreshRuntime)
+	}
+	if len(x.WebPkgImports) > 0 {
+		protobuf_go_lite.TextWriteMapStart(&sb, initialLen, "web_pkg_imports")
+		for _, k := range slices.Sorted(maps.Keys(x.WebPkgImports)) {
+			v := x.WebPkgImports[k]
+			protobuf_go_lite.TextWriteMapEntryPrefix(&sb)
+			protobuf_go_lite.TextWriteString(&sb, k)
+			protobuf_go_lite.TextWriteMapKeyValueSeparator(&sb)
+			protobuf_go_lite.TextWriteString(&sb, v)
+		}
+		protobuf_go_lite.TextWriteMapEnd(&sb)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -4929,6 +5094,48 @@ func (m *DevelopmentResult) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.RefreshRuntime = v
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field WebPkgImports", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			iNdEx = msgStart
+			if m.WebPkgImports == nil {
+				m.WebPkgImports = make(map[string]string)
+			}
+			var mapkey string
+			var mapvalue string
+			for iNdEx < postIndex {
+				entryPreIndex := iNdEx
+				var wire uint64
+				wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+				if err != nil {
+					return err
+				}
+				fieldNum := int32(wire >> 3)
+				if fieldNum == 1 {
+					mapkey, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+					if err != nil {
+						return err
+					}
+				} else if fieldNum == 2 {
+					mapvalue, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+					if err != nil {
+						return err
+					}
+				} else {
+					iNdEx = entryPreIndex
+					iNdEx, err = protobuf_go_lite.SkipWithin(dAtA, iNdEx, postIndex)
+					if err != nil {
+						return err
+					}
+				}
+			}
+			m.WebPkgImports[mapkey] = mapvalue
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

@@ -264,6 +264,15 @@ export interface DevelopmentResult {
    * @generated from field: string refresh_runtime = 3;
    */
   refreshRuntime?: string
+  /**
+   * WebPkgImports maps each shared package specifier prefix to the URL prefix
+   * that serves it. A package aliased to project source is served from this
+   * graph, so separately bundled views share the application's module
+   * instances; every other package is served from the shared /b/pkg route.
+   *
+   * @generated from field: map<string, string> web_pkg_imports = 4;
+   */
+  webPkgImports?: { [key: string]: string }
 }
 
 export const DevelopmentResult: MessageType<DevelopmentResult> =
@@ -273,6 +282,13 @@ export const DevelopmentResult: MessageType<DevelopmentResult> =
       { no: 1, name: 'session', kind: 'message', T: () => Session },
       { no: 2, name: 'private_url', kind: 'scalar', T: ScalarType.STRING },
       { no: 3, name: 'refresh_runtime', kind: 'scalar', T: ScalarType.STRING },
+      {
+        no: 4,
+        name: 'web_pkg_imports',
+        kind: 'map',
+        K: ScalarType.STRING,
+        V: { kind: 'scalar', T: ScalarType.STRING },
+      },
     ] satisfies readonly PartialFieldInfo[],
   })
 

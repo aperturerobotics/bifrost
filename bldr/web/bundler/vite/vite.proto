@@ -89,6 +89,11 @@ message DevelopmentResult {
   // RefreshRuntime is the project's React refresh module for the bootstrap.
   // It is empty when the project does not use React refresh.
   string refresh_runtime = 3;
+  // WebPkgImports maps each shared package specifier prefix to the URL prefix
+  // that serves it. A package aliased to project source is served from this
+  // graph, so separately bundled views share the application's module
+  // instances; every other package is served from the shared /b/pkg route.
+  map<string, string> web_pkg_imports = 4;
 }
 
 // WebPkgRef is a reference to a web package.

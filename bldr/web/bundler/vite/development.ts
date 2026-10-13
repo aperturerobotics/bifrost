@@ -73,6 +73,15 @@ function escapesRoot(root: string, path: string): boolean {
   )
 }
 
+/** webPkgSpecifierPrefix begins every shared package import specifier. */
+const webPkgSpecifierPrefix = 'bldr-web-pkg/'
+
+/** sourceWebPkgRoute serves shared packages with editable source by served name. */
+const sourceWebPkgRoute = '@bldr-web-pkg/'
+
+/** sourceWebPkgShim prefixes the virtual module re-exporting a source package. */
+const sourceWebPkgShim = '\0bldr-web-pkg:'
+
 /** changeEvents maps reported edits to Vite's watcher events. */
 const changeEvents: Record<DevelopmentChangeKind, string> = {
   [DevelopmentChangeKind.DevelopmentChangeKind_CHANGE]: 'change',
@@ -171,6 +180,48 @@ export class DevelopmentEnvironment {
     const refreshPath = `${this.session.routePrefix}@react-refresh`
     const sessionID = this.session.id!
 
+    // aliasTarget returns the path a project alias rewrites source to.
+    const aliasTarget = (source: string) => {
+      const alias = aliases.find(({ find }) =>
+        typeof find === 'string'
+          ? source === find || source.startsWith(find + '/')
+          : find.test(source),
+      )
+      return alias ? source.replace(alias.find, alias.replacement) : null
+    }
+
+    // editableTarget returns the project source path an aliased import of a
+    // shared package resolves to, or null when it has no editable source.
+    const editableTarget = (source: string) => {
+      const target = aliasTarget(source)
+      if (!target || inPackages(source, canonical)) return null
+      const local = relative(root, target)
+      const inside =
+        isAbsolute(target) &&
+        local !== '..' &&
+        !local.startsWith('..' + sep) &&
+        !isAbsolute(local) &&
+        local.split(sep)[0] !== 'node_modules'
+      return inside ? target : null
+    }
+
+    // Serve shared packages with editable source from this graph. A separately
+    // bundled view imports them by served name; the shim re-exports the
+    // source module so the view and the application share one instance.
+    const sourcePkgIDs = webPkgIDs.filter((id) => editableTarget(id))
+    const webPkgImports: Record<string, string> = {}
+    for (const id of webPkgIDs) {
+      const served = sourcePkgIDs.includes(id)
+        ? `${this.session.routePrefix}${sourceWebPkgRoute}${id}/`
+        : `/b/pkg/${id}/`
+      webPkgImports[`${webPkgSpecifierPrefix}${id}/`] = served
+    }
+    const sourceWebPkgSpecifier = (url: string) => {
+      const served = url.split('?')[0]!.slice(sourceWebPkgRoute.length + 1)
+      const id = sourcePkgIDs.find((id) => served.startsWith(id + '/'))
+      return id && served.endsWith('.mjs') ? served.slice(0, -4) : null
+    }
+
     // Keep canonical import-map modules external before Vite resolves aliases.
     const adapter: Plugin = {
       name: 'bldr-frontend',
@@ -179,31 +230,27 @@ export class DevelopmentEnvironment {
         // Preserve the document's refresh runtime and shared package boundary.
         if (source === '/@react-refresh')
           return { id: refreshPath, external: true }
+        if (source.startsWith('/' + sourceWebPkgRoute)) {
+          const specifier = sourceWebPkgSpecifier(source)
+          return specifier ? sourceWebPkgShim + specifier : null
+        }
         if (!isExternal(source)) return null
 
         // Project-local shared UI uses the same graph as application sources.
         // Canonical renderer packages always retain their import-map identity.
-        const alias = aliases.find(({ find }) =>
-          typeof find === 'string'
-            ? source === find || source.startsWith(find + '/')
-            : find.test(source),
-        )
-        if (alias) {
-          const target = source.replace(alias.find, alias.replacement)
-          const local = relative(root, target)
-          const editable =
-            isAbsolute(target) &&
-            local !== '..' &&
-            !local.startsWith('..' + sep) &&
-            !isAbsolute(local) &&
-            local.split(sep)[0] !== 'node_modules' &&
-            !inPackages(source, canonical)
-          if (editable || !isWebPkgModule(source)) {
-            return this.resolve(target, importer, { skipSelf: true })
-          }
-        }
+        const target = isWebPkgModule(source)
+          ? editableTarget(source)
+          : aliasTarget(source)
+        if (target) return this.resolve(target, importer, { skipSelf: true })
         if (isWebPkgModule(source)) return { id: source, external: true }
         return null
+      },
+      load(id) {
+        // A shim has a default export even when its source has none; reading
+        // the namespace keeps that case from failing to link.
+        if (!id.startsWith(sourceWebPkgShim)) return null
+        const specifier = JSON.stringify(id.slice(sourceWebPkgShim.length))
+        return `import * as source from ${specifier}\nexport * from ${specifier}\nexport default source.default\n`
       },
       transform(code, id) {
         if (id.split('?')[0].endsWith('/vite/dist/client/client.mjs')) {
@@ -338,11 +385,12 @@ export class DevelopmentEnvironment {
     await server.environments.client.depsOptimizer?.scanProcessing
     const refresh =
       await server.environments.client.pluginContainer.load('/@react-refresh')
-    return DevelopmentResult.create({
+    return {
       session: this.session,
       privateUrl: `http://127.0.0.1:${address.port}`,
       refreshRuntime: typeof refresh === 'string' ? refresh : refresh?.code,
-    })
+      webPkgImports,
+    }
   }
 
   /** watch emits a snapshot and bounded updates; a gap forces client recovery. */
