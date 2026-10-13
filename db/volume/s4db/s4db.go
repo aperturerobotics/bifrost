@@ -54,7 +54,10 @@ func NewVolume(ctx context.Context, le *logrus.Entry, conf *Config) (*Volume, er
 	if err := convertBolt(ctx, le, path); err != nil {
 		return nil, err
 	}
-	db, err := s4db.Open(path, s4db.Options{})
+	db, err := s4db.Open(path, s4db.Options{
+		CacheBytes:    int(conf.GetCacheBytes()),
+		CheckpointMax: conf.GetCheckpointMaxBytes(),
+	})
 	if err != nil {
 		return nil, err
 	}

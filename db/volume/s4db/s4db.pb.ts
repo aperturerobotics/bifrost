@@ -60,6 +60,23 @@ export interface Config {
    * @generated from field: store.kvtx.Config store_config = 7;
    */
   storeConfig?: Config$3
+  /**
+   * CacheBytes bounds the memory of decoded index pages. Zero selects the
+   * s4db default. A cache that holds the index spares a checkpoint and a
+   * lookup their page reads.
+   *
+   * @generated from field: int64 cache_bytes = 8;
+   */
+  cacheBytes?: bigint
+  /**
+   * CheckpointMaxBytes is the overlay size that always starts a checkpoint.
+   * Zero selects the s4db default. A larger overlay folds more commits into
+   * each rewrite of the index pages they touch, at the cost of overlay memory
+   * and log replay at open.
+   *
+   * @generated from field: int64 checkpoint_max_bytes = 9;
+   */
+  checkpointMaxBytes?: bigint
 }
 
 export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
@@ -72,5 +89,12 @@ export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
     { no: 5, name: 'verbose', kind: 'scalar', T: ScalarType.BOOL },
     { no: 6, name: 'volume_config', kind: 'message', T: () => Config$2 },
     { no: 7, name: 'store_config', kind: 'message', T: () => Config$3 },
+    { no: 8, name: 'cache_bytes', kind: 'scalar', T: ScalarType.INT64 },
+    {
+      no: 9,
+      name: 'checkpoint_max_bytes',
+      kind: 'scalar',
+      T: ScalarType.INT64,
+    },
   ] satisfies readonly PartialFieldInfo[],
 })

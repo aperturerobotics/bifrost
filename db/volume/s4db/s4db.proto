@@ -23,4 +23,13 @@ message Config {
   .volume.controller.Config volume_config = 6;
   // StoreConfig is the store configuration for kvtx.
   .store.kvtx.Config store_config = 7;
+  // CacheBytes bounds the memory of decoded index pages. Zero selects the
+  // s4db default. A cache that holds the index spares a checkpoint and a
+  // lookup their page reads.
+  int64 cache_bytes = 8;
+  // CheckpointMaxBytes is the overlay size that always starts a checkpoint.
+  // Zero selects the s4db default. A larger overlay folds more commits into
+  // each rewrite of the index pages they touch, at the cost of overlay memory
+  // and log replay at open.
+  int64 checkpoint_max_bytes = 9;
 }
