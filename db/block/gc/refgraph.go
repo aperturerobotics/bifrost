@@ -14,11 +14,12 @@ import (
 const maxBatchEdges = 128
 
 // Record kinds. Each kind byte begins a key followed by length-prefixed node
-// IRIs, so no node can be read as a prefix of another.
+// IRIs, so no node can be read as a prefix of another. Records hold no value:
+// a scan reads the last node from each key.
 const (
-	// kindForward keys an edge by subject then object; the value is the object.
+	// kindForward keys an edge by subject then object.
 	kindForward byte = 'f'
-	// kindIncoming keys an edge by object then subject; the value is the subject.
+	// kindIncoming keys an edge by object then subject.
 	kindIncoming byte = 'i'
 	// kindNode keys the node inventory of a collector graph.
 	kindNode byte = 'n'
@@ -67,6 +68,12 @@ func graphKey(kind byte, nodes ...string) []byte {
 		key = append(key, node...)
 	}
 	return key
+}
+
+// lastNode returns the node that follows prefix in a record key, where
+// prefix is a graphKey with one node fewer than key.
+func lastNode(prefix, key []byte) string {
+	return string(key[len(prefix)+4:])
 }
 
 // transaction retries complete graph operations against a fresh consistent view.
@@ -227,19 +234,19 @@ func (g *RefGraph) addRefTx(ctx context.Context, tx kvtx.Tx, subject, object str
 
 	// Record both endpoints in the inventory of a collector graph.
 	if g.inventory {
-		if err := tx.Set(ctx, graphKey(kindNode, subject), []byte(subject)); err != nil {
+		if err := tx.Set(ctx, graphKey(kindNode, subject), nil); err != nil {
 			return err
 		}
-		if err := tx.Set(ctx, graphKey(kindNode, object), []byte(object)); err != nil {
+		if err := tx.Set(ctx, graphKey(kindNode, object), nil); err != nil {
 			return err
 		}
 	}
 
 	// Write the two edge directions.
-	if err := tx.Set(ctx, forward, []byte(object)); err != nil {
+	if err := tx.Set(ctx, forward, nil); err != nil {
 		return err
 	}
-	return tx.Set(ctx, graphKey(kindIncoming, object, subject), []byte(subject))
+	return tx.Set(ctx, graphKey(kindIncoming, object, subject), nil)
 }
 
 // removeRefTx removes both directions of an exact edge and reports whether it
@@ -263,17 +270,16 @@ func (g *RefGraph) removeRefTx(ctx context.Context, tx kvtx.Tx, subject, object 
 // hasIncomingTx reports whether object has an owner other than the
 // unreferenced root and the ignored subjects, stopping at the first one.
 func hasIncomingTx(ctx context.Context, tx kvtx.Tx, object string, ignored map[string]struct{}) (bool, error) {
-	it := tx.Iterate(ctx, graphKey(kindIncoming, object), true, false)
+	// Walk the object's incoming records; each key ends in its subject.
+	prefix := graphKey(kindIncoming, object)
+	it := tx.Iterate(ctx, prefix, true, false)
 	defer it.Close()
 	for it.Next() {
-		subject, err := it.Value()
-		if err != nil {
-			return false, err
-		}
-		if string(subject) == NodeUnreferenced {
+		subject := lastNode(prefix, it.Key())
+		if subject == NodeUnreferenced {
 			continue
 		}
-		if _, skip := ignored[string(subject)]; !skip {
+		if _, skip := ignored[subject]; !skip {
 			return true, nil
 		}
 	}
@@ -333,13 +339,13 @@ func (g *RefGraph) HasIncomingRefsExcluding(ctx context.Context, node string, ex
 	return found, err
 }
 
-// list returns the values of every record under prefix.
+// list returns the last node of every record under prefix.
 func (g *RefGraph) list(ctx context.Context, prefix []byte) ([]string, error) {
 	var answer []string
 	err := g.transaction(ctx, false, func(ctx context.Context, tx kvtx.Tx) error {
 		answer = nil
-		return tx.ScanPrefix(ctx, prefix, func(_, value []byte) error {
-			answer = append(answer, string(value))
+		return tx.ScanPrefixKeys(ctx, prefix, func(key []byte) error {
+			answer = append(answer, lastNode(prefix, key))
 			return nil
 		})
 	})
@@ -403,7 +409,7 @@ func (g *RefGraph) AddRoot(ctx context.Context, node string) error {
 			if found {
 				continue
 			}
-			if err := tx.Set(ctx, key, []byte(node)); err != nil {
+			if err := tx.Set(ctx, key, nil); err != nil {
 				return err
 			}
 		}
