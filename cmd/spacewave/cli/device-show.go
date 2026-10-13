@@ -5,10 +5,15 @@ package spacewave_cli
 import (
 	"io"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/aperturerobotics/cli"
+	"github.com/aperturerobotics/fastjson"
 	"github.com/pkg/errors"
+	"github.com/s4wave/spacewave/db/world"
+	forge_runtime "github.com/s4wave/spacewave/forge/runtime"
 	s4wave_device "github.com/s4wave/spacewave/sdk/device"
 )
 
@@ -71,35 +76,80 @@ func (a *deviceShowArgs) Run(c *cli.Context) error {
 	}
 	defer cleanup()
 
-	// Read the current Device state from the Resource's watch.
-	stream, err := s4wave_device.NewSRPCDeviceResourceServiceClient(mount.typedClient).
-		WatchDeviceState(c.Context, &s4wave_device.WatchDeviceStateRequest{})
+	// Read the Device and its Worker claim from the same World revision.
+	tx, err := mount.engine.NewTransaction(c.Context, false)
 	if err != nil {
-		return errors.Wrap(err, "watch device state")
+		return errors.Wrap(err, "read device world")
 	}
-	defer stream.Close()
-	resp, err := stream.Recv()
+	defer tx.Discard()
+	device, err := world.LookupObjectBody[*s4wave_device.Device](c.Context, tx, mount.objectKey, s4wave_device.NewDeviceBlock)
 	if err != nil {
 		return errors.Wrap(err, "read device state")
 	}
-	device := resp.GetState()
+	availability, err := forge_runtime.LookupForgeWorkerAvailability(c.Context, tx, mount.objectKey, device)
+	if err != nil {
+		return errors.Wrap(err, "read device availability")
+	}
 
 	// Print documents in the requested format.
 	if a.output == "json" || a.output == "yaml" {
-		data, err := device.MarshalJSON()
+		data, err := marshalDeviceShow(device, availability)
 		if err != nil {
 			return errors.Wrap(err, "marshal device")
 		}
 		return formatOutput(data, a.output)
 	}
 
-	// Print the header fields and one row per capability.
-	w := os.Stdout
+	// Print the derived availability beside the Device's diagnostic fields.
+	writeDeviceShow(os.Stdout, mount.objectKey, device, availability)
+	return nil
+}
+
+// marshalDeviceShow adds derived availability without changing the Device schema.
+func marshalDeviceShow(device *s4wave_device.Device, availability forge_runtime.DeviceAvailability) ([]byte, error) {
+	// Preserve the generated Device JSON representation.
+	data, err := device.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	var parser fastjson.Parser
+	obj, err := parser.ParseBytes(data)
+	if err != nil {
+		return nil, err
+	}
+
+	// Describe the derived admission state independently of Device liveness.
+	var arena fastjson.Arena
+	claim := arena.NewObject()
+	claim.Set("state", arena.NewString(string(availability.State)))
+	claim.Set("reason", arena.NewString(availability.Reason))
+
+	// Retain the observed owner epoch, deadline and state for diagnosis.
+	claim.Set("claimEpoch", arena.NewNumberString(strconv.FormatUint(availability.ClaimEpoch, 10)))
+	claim.Set("expiresAt", arena.NewString(formatDeviceClaimExpiry(availability.ExpiresAt)))
+	claim.Set("ownerState", arena.NewString(formatDeviceOwnerState(availability.OwnerState)))
+
+	// Add the read-only summary without changing the stored Device representation.
+	obj.Set("availability", claim)
+	return obj.MarshalTo(nil), nil
+}
+
+// writeDeviceShow prints availability before the self-reported capabilities.
+func writeDeviceShow(w io.Writer, objectKey string, device *s4wave_device.Device, availability forge_runtime.DeviceAvailability) {
+	// Show the claim deadline separately from the last self-reported liveness.
 	writeFields(w, [][2]string{
-		{"Device", mount.objectKey},
+		{"Device", objectKey},
 		{"Label", device.GetLabel()},
 		{"Peer", device.GetPeerId()},
+		{"Availability", string(availability.State)},
+		{"Reason", availability.Reason},
+		{"Claim epoch", strconv.FormatUint(availability.ClaimEpoch, 10)},
+		{"Claim expiry", formatDeviceClaimExpiry(availability.ExpiresAt)},
+		{"Owner state", formatDeviceOwnerState(availability.OwnerState)},
+		{"Last liveness", strings.TrimPrefix(device.GetLastStatus().GetLiveness().String(), "DEVICE_LIVENESS_")},
 	})
+
+	// Keep capability reports visible as diagnostics, not admission evidence.
 	if capabilities := device.GetCapabilities(); len(capabilities) != 0 {
 		io.WriteString(w, "\nCAPABILITIES:\n")
 		rows := [][]string{{"ID", "KIND", "STATE", "DETAIL"}}
@@ -109,5 +159,24 @@ func (a *deviceShowArgs) Run(c *cli.Context) error {
 		}
 		writeTable(w, "  ", rows)
 	}
-	return nil
+}
+
+// formatDeviceClaimExpiry renders an observed deadline or no claim.
+func formatDeviceClaimExpiry(expiry time.Time) string {
+	if expiry.IsZero() {
+		return ""
+	}
+	return expiry.UTC().Format(time.RFC3339Nano)
+}
+
+// formatDeviceOwnerState names the stored claim state independently of expiry.
+func formatDeviceOwnerState(state forge_runtime.CapacityOwnerState) string {
+	switch state {
+	case forge_runtime.CapacityOwnerStateActive:
+		return "ACTIVE"
+	case forge_runtime.CapacityOwnerStateDraining:
+		return "DRAINING"
+	default:
+		return "UNSPECIFIED"
+	}
 }
