@@ -56,60 +56,51 @@ func clockResolution(clockID uint32) (uint32, uint32, bool) {
 	}
 }
 
-// readTimespec32 reads a timespec of two 32-bit fields from guest memory. It
-// returns an errno for an unreadable pointer or an out-of-range nanosecond
-// field.
-func readTimespec32(mem engine.Memory, ptr uint32) (time.Time, uint32) {
-	// Read both fields and range-check the nanoseconds.
-	sec, ok := mem.ReadUint32Le(ptr)
-	if !ok {
+// timevalSize is the size of a wasm32 struct timeval, a 64-bit tv_sec and a
+// 64-bit tv_usec. A struct itimerval holds two: the interval, then the value.
+const timevalSize = 16
+
+// readTimespec reads a wasm32 struct timespec, a 64-bit tv_sec and a 32-bit
+// tv_nsec. It returns an errno for an unreadable pointer or an out-of-range
+// nanosecond field.
+func readTimespec(mem engine.Memory, ptr uint32) (time.Time, uint32) {
+	sec, ok1 := mem.ReadUint64Le(ptr)
+	nsec, ok2 := mem.ReadUint32Le(ptr + 8)
+	switch {
+	case !ok1 || !ok2:
 		return time.Time{}, EFAULT
-	}
-	nsec, ok := mem.ReadUint32Le(ptr + 4)
-	if !ok {
-		return time.Time{}, EFAULT
-	}
-	if nsec >= uint32(time.Second) {
+	case nsec >= uint32(time.Second):
 		return time.Time{}, EINVAL
 	}
-	return time.Unix(int64(int32(sec)), int64(nsec)), 0
+	return time.Unix(int64(sec), int64(nsec)), 0
 }
 
-// writeZeroItimerval writes a disarmed itimerval to guest memory.
-func writeZeroItimerval(mem engine.Memory, ptr uint32) bool {
-	return mem.WriteUint64Le(ptr, 0) && mem.WriteUint64Le(ptr+8, 0)
+// readTimeval reads a wasm32 struct timeval as a duration. It returns an
+// errno for an unreadable pointer or a negative or out-of-range field.
+func readTimeval(mem engine.Memory, ptr uint32) (time.Duration, uint32) {
+	sec, ok1 := mem.ReadUint64Le(ptr)
+	usec, ok2 := mem.ReadUint64Le(ptr + 8)
+	switch {
+	case !ok1 || !ok2:
+		return 0, EFAULT
+	case int64(sec) < 0 || usec >= uint64(time.Second/time.Microsecond):
+		return 0, EINVAL
+	}
+	return time.Duration(sec)*time.Second + time.Duration(usec)*time.Microsecond, 0
 }
 
-// readItimerval32 reads an itimerval's interval and value from guest memory.
-func readItimerval32(mem engine.Memory, ptr uint32) (time.Duration, time.Duration, uint32) {
+// readItimerval reads an itimerval's interval and value from guest memory.
+func readItimerval(mem engine.Memory, ptr uint32) (time.Duration, time.Duration, uint32) {
 	// Read the interval, then the value after it.
-	interval, errno := readTimevalDuration32(mem, ptr)
+	interval, errno := readTimeval(mem, ptr)
 	if errno != 0 {
 		return 0, 0, errno
 	}
-	value, errno := readTimevalDuration32(mem, ptr+8)
+	value, errno := readTimeval(mem, ptr+timevalSize)
 	if errno != 0 {
 		return 0, 0, errno
 	}
 	return interval, value, 0
-}
-
-// readTimevalDuration32 reads a timeval of two 32-bit fields from guest
-// memory as a duration.
-func readTimevalDuration32(mem engine.Memory, ptr uint32) (time.Duration, uint32) {
-	// Read both fields and range-check the microseconds.
-	sec, ok := mem.ReadUint32Le(ptr)
-	if !ok {
-		return 0, EFAULT
-	}
-	usec, ok := mem.ReadUint32Le(ptr + 4)
-	if !ok {
-		return 0, EFAULT
-	}
-	if usec >= uint32(time.Second/time.Microsecond) {
-		return 0, EINVAL
-	}
-	return time.Duration(sec)*time.Second + time.Duration(usec)*time.Microsecond, 0
 }
 
 // sysClockSettime sets the kernel's realtime clock from a timespec.
@@ -123,7 +114,7 @@ func (p *Process) sysClockSettime(clockID, tpPtr uint32) uint64 {
 	}
 
 	// Read the time and set it.
-	t, errno := readTimespec32(p.inst.Memory(), tpPtr)
+	t, errno := readTimespec(p.inst.Memory(), tpPtr)
 	if errno != 0 {
 		return negErrno(errno)
 	}
@@ -131,23 +122,51 @@ func (p *Process) sysClockSettime(clockID, tpPtr uint32) uint64 {
 	return 0
 }
 
-// sysSetitimer reports every interval timer as disarmed and accepts only a
-// request to disarm one, since the kernel has no timer signal delivery.
-func (p *Process) sysSetitimer(which, newPtr, oldPtr uint32) uint64 {
-	// Report the old timer as disarmed.
+// sysSettimeofday sets the kernel's realtime clock from a timeval, when tvPtr
+// is set. Linux ignores the time zone.
+func (p *Process) sysSettimeofday(tvPtr uint32) uint64 {
+	// Read the time, if any, and set it.
+	if tvPtr == 0 {
+		return 0
+	}
+	d, errno := readTimeval(p.inst.Memory(), tvPtr)
+	if errno != 0 {
+		return negErrno(errno)
+	}
+	p.kernel.setRealtime(time.Unix(0, 0).Add(d))
+	return 0
+}
+
+// sysGetitimer reports every interval timer as disarmed, since the kernel has
+// no timer signal delivery.
+func (p *Process) sysGetitimer(which, curPtr uint32) uint64 {
 	if which > itimerProf {
 		return negErrno(EINVAL)
 	}
-	mem := p.inst.Memory()
-	if oldPtr != 0 && !writeZeroItimerval(mem, oldPtr) {
+	if !p.inst.Memory().Write(curPtr, make([]byte, 2*timevalSize)) {
 		return negErrno(EFAULT)
+	}
+	return 0
+}
+
+// sysSetitimer accepts only a request to disarm a timer, since the kernel has
+// no timer signal delivery.
+func (p *Process) sysSetitimer(which, newPtr, oldPtr uint32) uint64 {
+	// Report the old timer.
+	if oldPtr != 0 {
+		if res := p.sysGetitimer(which, oldPtr); res != 0 {
+			return res
+		}
+	}
+	if which > itimerProf {
+		return negErrno(EINVAL)
 	}
 
 	// Accept the new timer only when it disarms.
 	if newPtr == 0 {
 		return negErrno(EFAULT)
 	}
-	interval, value, errno := readItimerval32(mem, newPtr)
+	interval, value, errno := readItimerval(p.inst.Memory(), newPtr)
 	if errno != 0 {
 		return negErrno(errno)
 	}

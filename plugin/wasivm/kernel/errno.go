@@ -17,6 +17,9 @@ const (
 	// EIO reports an input or output failure.
 	EIO = 5
 
+	// ENOEXEC reports a file that is neither a program nor a script.
+	ENOEXEC = 8
+
 	// EBADF reports a descriptor that is not open.
 	EBADF = 9
 
@@ -35,8 +38,14 @@ const (
 	// EFAULT reports a bad guest address.
 	EFAULT = 14
 
+	// EBUSY reports a resource in use, such as a mounted directory.
+	EBUSY = 16
+
 	// EEXIST reports a file that already exists.
 	EEXIST = 17
+
+	// ENODEV reports a filesystem type the kernel lacks.
+	ENODEV = 19
 
 	// ENOTDIR reports a path component that is not a directory.
 	ENOTDIR = 20
@@ -73,6 +82,15 @@ const (
 
 	// ENODATA reports a missing extended attribute.
 	ENODATA = 61
+
+	// ENOTSOCK reports a socket call on a descriptor that is not a socket.
+	ENOTSOCK = 88
+
+	// EOPNOTSUPP reports an operation the file does not support.
+	EOPNOTSUPP = 95
+
+	// EAFNOSUPPORT reports an address family without sockets.
+	EAFNOSUPPORT = 97
 )
 
 // enosys is the result of a syscall the kernel does not implement.
@@ -92,30 +110,37 @@ func errnoFailed(res uint64) bool {
 // linuxToWasiErrno maps Linux errno values to WASI ones. wasi-libc numbers
 // errno differently from Linux, so a POSIX host function translates the
 // value before storing it in the guest's errno.
-var linuxToWasiErrno = [ELOOP + 1]uint32{
-	EPERM:     63,
-	ENOENT:    44,
-	ESRCH:     71,
-	EINTR:     27,
-	EIO:       29,
-	EBADF:     8,
-	ECHILD:    12,
-	EAGAIN:    6,
-	ENOMEM:    48,
-	EACCES:    2,
-	EFAULT:    21,
-	EEXIST:    20,
-	ENOTDIR:   54,
-	EISDIR:    31,
-	EINVAL:    28,
-	ENOTTY:    59,
-	ESPIPE:    70,
-	EMLINK:    34,
-	EPIPE:     64,
-	ERANGE:    68,
-	ENOSYS:    52,
-	ENOTEMPTY: 55,
-	ELOOP:     32,
+var linuxToWasiErrno = [EAFNOSUPPORT + 1]uint32{
+	EPERM:        63,
+	ENOENT:       44,
+	ESRCH:        71,
+	EINTR:        27,
+	EIO:          29,
+	ENOEXEC:      45,
+	EBADF:        8,
+	ECHILD:       12,
+	EAGAIN:       6,
+	ENOMEM:       48,
+	EACCES:       2,
+	EFAULT:       21,
+	EBUSY:        10,
+	EEXIST:       20,
+	ENODEV:       43,
+	ENOTDIR:      54,
+	EISDIR:       31,
+	EINVAL:       28,
+	ENOTTY:       59,
+	ESPIPE:       70,
+	EMLINK:       34,
+	EPIPE:        64,
+	ERANGE:       68,
+	ENOSYS:       52,
+	ENOTEMPTY:    55,
+	ELOOP:        32,
+	ENODATA:      61,
+	ENOTSOCK:     57,
+	EOPNOTSUPP:   58,
+	EAFNOSUPPORT: 5,
 }
 
 // wasiErrno translates a Linux errno to WASI. Values without a mapping pass
@@ -123,6 +148,16 @@ var linuxToWasiErrno = [ELOOP + 1]uint32{
 func wasiErrno(errno uint32) uint32 {
 	if int(errno) < len(linuxToWasiErrno) && linuxToWasiErrno[errno] != 0 {
 		return linuxToWasiErrno[errno]
+	}
+	return errno
+}
+
+// linuxErrno translates a WASI errno to Linux, the inverse of wasiErrno.
+func linuxErrno(errno uint32) uint32 {
+	for linux, wasi := range linuxToWasiErrno {
+		if wasi == errno && wasi != 0 {
+			return uint32(linux)
+		}
 	}
 	return errno
 }

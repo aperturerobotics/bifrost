@@ -9,7 +9,7 @@ import (
 // takes every byte.
 func TestPipeWriteCountsAllBytes(t *testing.T) {
 	// Open a pipe.
-	reader, writer := newPipeEnds()
+	reader, writer := newPipeEnds(1)
 	defer reader.unref()
 	defer writer.unref()
 
@@ -28,7 +28,7 @@ func TestPipeWriteCountsAllBytes(t *testing.T) {
 func TestPipeDrainsBeforeEOF(t *testing.T) {
 	// Buffer five bytes, then close the only writer.
 	ctx := context.Background()
-	reader, writer := newPipeEnds()
+	reader, writer := newPipeEnds(1)
 	defer reader.unref()
 	if n, ok := writer.write(ctx, []byte("hello")); !ok || n != len("hello") {
 		t.Fatalf("write = %d, %t; want %d, true", n, ok, len("hello"))
@@ -52,7 +52,7 @@ func TestPipeDrainsBeforeEOF(t *testing.T) {
 // fails with EPIPE.
 func TestPipeWriteAfterReadCloseFails(t *testing.T) {
 	// Close the read end of a pipe and give a process the write end.
-	reader, writer := newPipeEnds()
+	reader, writer := newPipeEnds(1)
 	defer writer.unref()
 	reader.unref()
 	p := &Process{fds: map[uint32]*OpenFile{3: {pipe: writer}}}
@@ -71,7 +71,7 @@ func TestPipeWriteAfterReadCloseFails(t *testing.T) {
 func TestPipeWriteWaitsForRoom(t *testing.T) {
 	// Fill a pipe.
 	ctx := context.Background()
-	reader, writer := newPipeEnds()
+	reader, writer := newPipeEnds(1)
 	defer reader.unref()
 	defer writer.unref()
 	if n, ok := writer.write(ctx, make([]byte, pipeCapacity)); !ok || n != pipeCapacity {

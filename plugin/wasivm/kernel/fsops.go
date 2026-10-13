@@ -1,49 +1,210 @@
 package kernel
 
 import (
+	"cmp"
 	"context"
+	"encoding/binary"
 	"os"
+	"time"
+
+	"github.com/s4wave/spacewave/plugin/wasivm/kernel/engine"
 )
 
+// statSize is the size of wasi-libc's struct stat on wasm32.
+const statSize = 144
+
 // sysSendfile copies up to count bytes from descriptor inFd to outFd. When
-// offsetPtr is set, the copy reads at the offset stored there and stores the
-// new offset back, leaving inFd's offset alone. Otherwise it advances inFd.
+// offsetPtr is set, the copy reads the file at the offset stored there and
+// stores the new offset back, leaving inFd's offset alone. Otherwise it reads
+// inFd as read does, so a pipe or terminal source works as on Linux.
 func (p *Process) sysSendfile(ctx context.Context, outFd, inFd, offsetPtr, count uint32) uint64 {
-	// Find the source file and the offset to read at.
+	// Find the source.
 	in, ok := p.fds[inFd]
-	if !ok || in.node == nil {
+	if !ok {
 		return negErrno(EBADF)
 	}
-	if in.node.mode&sIFMT == sIFDIR {
+	if in.node != nil && in.node.mode&sIFMT == sIFDIR {
 		return negErrno(EINVAL)
 	}
+
+	// Let a caught signal interrupt a blocking read or write.
+	ctx, release := p.interruptible(ctx)
+	defer release()
+
+	// Read at the given offset, or from the descriptor.
 	mem := p.inst.Memory()
-	off := in.offset
+	var buf []byte
+	var off int64
+	var errno uint64
 	if offsetPtr != 0 {
-		v, ok := mem.ReadUint32Le(offsetPtr)
+		if in.node == nil || in.node.mode&sIFMT != sIFREG {
+			return negErrno(ESPIPE)
+		}
+		v, ok := mem.ReadUint64Le(offsetPtr)
 		if !ok {
 			return negErrno(EFAULT)
 		}
 		off = int64(v)
+		buf, errno = p.readNodeBytes(in, off, int(count))
+	} else {
+		buf, errno = p.readFile(ctx, in, int(count))
 	}
-
-	// Copy the bytes.
-	buf, errno := p.readNodeBytes(in, off, int(count))
 	if errno != 0 || len(buf) == 0 {
 		return errno
 	}
-	res := p.writeOutBytes(ctx, outFd, buf)
-	if errnoFailed(res) {
-		return res
-	}
 
-	// Advance the offset the copy read at.
-	if offsetPtr != 0 {
-		mem.WriteUint32Le(offsetPtr, uint32(off+int64(res)))
-	} else {
-		in.offset += int64(res)
+	// Copy the bytes. The file's offset ends after the bytes written, so a
+	// short or failed write returns the rest of a regular file's read.
+	res := p.writeOutBytes(ctx, outFd, buf)
+	var written int64
+	if !errnoFailed(res) {
+		written = int64(res)
+	}
+	switch {
+	case offsetPtr != 0:
+		mem.WriteUint64Le(offsetPtr, uint64(off+written))
+	case in.node != nil && in.node.mode&sIFMT == sIFREG:
+		in.offset -= int64(len(buf)) - written
 	}
 	return res
+}
+
+// sysFstat writes the status of descriptor fd to statPtr.
+func (p *Process) sysFstat(fd, statPtr uint32) uint64 {
+	node, errno := p.fdNode(fd)
+	if errno != 0 {
+		return errno
+	}
+	return p.writeStat(p.inst.Memory(), statPtr, node)
+}
+
+// sysFstatat writes the status of the file at path, relative to dirfd, to
+// statPtr. It replaces wasi-libc's __wasilibc_nocwd_fstatat, so dirfd and
+// path name the file as WASI path calls do. AT_SYMLINK_NOFOLLOW, in its Linux
+// or wasi-libc value, reports a final symlink itself.
+func (p *Process) sysFstatat(dirfd, pathPtr, statPtr, flags uint32) uint64 {
+	// Resolve the path as the WASI path calls do.
+	mem := p.inst.Memory()
+	resolved, werr := p.wasiResolvePath(dirfd, readCString(mem, pathPtr))
+	if werr != wasiErrnoSuccess {
+		return negErrno(linuxErrno(werr))
+	}
+
+	// Write the status of its node.
+	if flags&wasiAtSymlinkNofollow != 0 {
+		flags |= atSymlinkNofollow
+	}
+	node, errno := p.lookup(resolved, flags)
+	if errno != 0 {
+		return errno
+	}
+	return p.writeStat(mem, statPtr, node)
+}
+
+// sysFchmodat sets the permission bits of the file at path, relative to
+// dirfd. Linux cannot change a symlink's mode, so AT_SYMLINK_NOFOLLOW on one
+// fails.
+func (p *Process) sysFchmodat(dirfd, pathPtr, mode, flags uint32) uint64 {
+	// Resolve the path.
+	path := readCString(p.inst.Memory(), pathPtr)
+	if path == "" {
+		return negErrno(ENOENT)
+	}
+
+	// Set the mode of its node.
+	node, errno := p.lookup(resolvePath(p.cwd, p.fds, dirfd, path), flags)
+	if errno != 0 {
+		return errno
+	}
+	return p.chmodNode(node, mode)
+}
+
+// sysFchmod sets the permission bits of descriptor fd's file.
+func (p *Process) sysFchmod(fd, mode uint32) uint64 {
+	node, errno := p.fdNode(fd)
+	if errno != 0 {
+		return errno
+	}
+	return p.chmodNode(node, mode)
+}
+
+// fdNode returns the node of descriptor fd. A pipe has no node, so it gets
+// one that describes a FIFO with the pipe's inode number.
+func (p *Process) fdNode(fd uint32) (*VNode, uint64) {
+	of, ok := p.fds[fd]
+	switch {
+	case !ok:
+		return nil, negErrno(EBADF)
+	case of.node == nil:
+		return &VNode{ino: of.pipe.pipe.ino, mode: sIFIFO | 0o600, nlink: 1}, 0
+	}
+	return of.node, 0
+}
+
+// lookup finds the node at a resolved path, following a final symlink unless
+// flags holds AT_SYMLINK_NOFOLLOW.
+func (p *Process) lookup(resolved string, flags uint32) (*VNode, uint64) {
+	var node *VNode
+	if flags&atSymlinkNofollow != 0 {
+		node = p.kernel.vfs.lookupNoFollow(resolved)
+	} else {
+		node = p.kernel.vfs.lookup(resolved)
+	}
+	if node == nil {
+		return nil, negErrno(ENOENT)
+	}
+	return node, 0
+}
+
+// chmodNode sets a node's permission bits, on the root filesystem too for a
+// host-backed file.
+func (p *Process) chmodNode(node *VNode, mode uint32) uint64 {
+	// Set the mode on the root filesystem, then the node.
+	if node.mode&sIFMT == sIFLNK {
+		return negErrno(EOPNOTSUPP)
+	}
+	mode &= 0o7777
+	if node.hostPath != "" {
+		if err := p.kernel.vfs.chmodHost(node.hostPath, mode); err != nil {
+			return negErrno(EIO)
+		}
+	}
+	node.mode = node.mode&sIFMT | mode
+	node.ctime = time.Now()
+	return 0
+}
+
+// writeStat writes a node's status to ptr as wasi-libc's struct stat. Every
+// file belongs to root, and a node without a time reports the current time.
+func (p *Process) writeStat(mem engine.Memory, ptr uint32, node *VNode) uint64 {
+	// Bring a host-backed node up to date.
+	p.kernel.vfs.refreshHost(node)
+
+	// Write the device, inode, link count, mode, device number and size.
+	var buf [statSize]byte
+	le := binary.LittleEndian
+	le.PutUint64(buf[0:], 1)
+	le.PutUint64(buf[8:], node.ino)
+	le.PutUint64(buf[16:], uint64(max(node.nlink, 1)))
+	le.PutUint32(buf[24:], node.mode)
+	le.PutUint64(buf[40:], node.rdev)
+	le.PutUint64(buf[48:], uint64(node.size))
+
+	// Write the block size and the 512-byte blocks the file holds.
+	le.PutUint32(buf[56:], 4096)
+	le.PutUint64(buf[64:], uint64((node.size+511)/512))
+
+	// Write the access, modification and change times.
+	now := time.Now()
+	for i, t := range []time.Time{node.atime, node.mtime, node.ctime} {
+		t = cmp.Or(t, now)
+		le.PutUint64(buf[72+16*i:], uint64(t.Unix()))
+		le.PutUint32(buf[80+16*i:], uint32(t.Nanosecond()))
+	}
+	if !mem.Write(ptr, buf[:]) {
+		return negErrno(EFAULT)
+	}
+	return 0
 }
 
 // sysMknodat creates a regular file, FIFO or device node. A mode without a
@@ -82,12 +243,6 @@ func (p *Process) sysFlock(fd, operation uint32) uint64 {
 		return 0
 	}
 	return negErrno(EINVAL)
-}
-
-// sysMkdirat creates a directory.
-func (p *Process) sysMkdirat(dirfd, pathPtr, mode uint32) uint64 {
-	path := readCString(p.inst.Memory(), pathPtr)
-	return p.mkdirResolved(resolvePath(p.cwd, p.fds, dirfd, path), mode)
 }
 
 // newEntry returns the directory that will hold a new entry at a resolved

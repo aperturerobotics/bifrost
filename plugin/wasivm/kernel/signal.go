@@ -81,9 +81,16 @@ func (p *Process) deliverSignal(sig uint32) {
 		return
 	}
 
-	// Hold a blocked signal pending.
+	// Hand a signal that arrives after exec to the program that replaced p.
 	bit := sigBit(sig)
 	p.sigMu.Lock()
+	if next := p.selfExecProc; next != nil {
+		p.sigMu.Unlock()
+		next.deliverSignal(sig)
+		return
+	}
+
+	// Hold a blocked signal pending.
 	if p.sigMask&bit&^sigKillStopMask != 0 {
 		p.sigPending |= bit
 		p.wakeSigWaitersLocked()
@@ -358,6 +365,47 @@ func (p *Process) waitForSignal(ctx context.Context, waitSet uint64, timeout tim
 	}
 }
 
+// sysSigtimedwait waits for a signal in the set at setPtr, for up to the
+// timespec at timeoutPtr or forever when it is null, consumes it and returns
+// its number. It writes the number to the siginfo at infoPtr when that is
+// set. A caught signal outside the set interrupts the wait.
+func (p *Process) sysSigtimedwait(ctx context.Context, setPtr, infoPtr, timeoutPtr uint32) uint64 {
+	// Read the set and the timeout.
+	mem := p.inst.Memory()
+	set, ok := mem.ReadUint64Le(setPtr)
+	if !ok {
+		return negErrno(EFAULT)
+	}
+	timeout := time.Duration(-1)
+	if timeoutPtr != 0 {
+		t, errno := readTimespec(mem, timeoutPtr)
+		if errno != 0 {
+			return negErrno(errno)
+		}
+		if t.Unix() < 0 {
+			return negErrno(EINVAL)
+		}
+		timeout = time.Duration(t.UnixNano())
+	}
+
+	// Wait, then report the signal.
+	ctx, release := p.interruptible(ctx)
+	defer release()
+	sig := p.waitForSignal(ctx, set, timeout)
+	if int32(sig) > 0 && infoPtr != 0 {
+		info := make([]byte, siginfoSize)
+		info[0] = byte(sig)
+		if !mem.Write(infoPtr, info) {
+			return negErrno(EFAULT)
+		}
+	}
+	return sig
+}
+
+// siginfoSize is the size of a siginfo_t, whose first field is the signal
+// number.
+const siginfoSize = 128
+
 // sysRtSigsuspend temporarily replaces the signal mask with newMask, waits
 // for a deliverable (unblocked) signal to fire, restores the previous mask,
 // and returns -EINTR per the rt_sigsuspend contract.
@@ -405,19 +453,25 @@ func (p *Process) restoreSigMask(old uint64) {
 }
 
 // sysKill sends a signal to a process when pid is positive, to the caller's
-// process group when pid is zero, or to process group -pid. Signal 0 only
-// checks that a target exists.
+// process group when pid is zero, to every process but init and the caller
+// when pid is -1, or to process group -pid. Signal 0 only checks that a
+// target exists. Init receives only the signals it handles.
 func (p *Process) sysKill(pid int32, sig uint32) uint64 {
 	// Find the targets.
 	if sig >= 32 {
 		return negErrno(EINVAL)
 	}
 	var targets []*Process
-	if pid > 0 {
+	switch {
+	case pid > 0:
 		if t := p.kernel.procs.get(int(pid)); t != nil {
 			targets = append(targets, t)
 		}
-	} else {
+	case pid == -1:
+		// Signal every process but init and the caller, as init's shutdown
+		// expects.
+		targets = p.kernel.procs.filter(func(t *Process) bool { return t.pid != initPID && t != p })
+	default:
 		pgid := p.pgid
 		if pid < 0 {
 			pgid = int(-pid)
@@ -428,11 +482,27 @@ func (p *Process) sysKill(pid int32, sig uint32) uint64 {
 		return negErrno(ESRCH)
 	}
 
-	// Send the signal.
+	// Send the signal. Init drops a signal it has no handler for, as on
+	// Linux, so a process cannot end init by accident.
 	for _, t := range targets {
-		t.deliverSignal(sig)
+		if !t.initIgnores(sig) {
+			t.deliverSignal(sig)
+		}
 	}
 	return 0
+}
+
+// initIgnores reports whether p is init and keeps the default disposition of
+// sig, which a signal from another process does not override. A blocked
+// signal stays pending, as init may take it with sigtimedwait or install a
+// handler before unblocking it.
+func (p *Process) initIgnores(sig uint32) bool {
+	if p.pid != initPID || sig == 0 || sig >= 32 {
+		return false
+	}
+	p.sigMu.Lock()
+	defer p.sigMu.Unlock()
+	return p.sigActions[sig].handler == sigDfl && p.sigMask&^sigKillStopMask&sigBit(sig) == 0
 }
 
 // sysRtSigaction writes signum's disposition to oldActPtr and installs the

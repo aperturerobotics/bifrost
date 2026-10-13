@@ -1,6 +1,7 @@
 package kernel
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"os"
@@ -19,74 +20,69 @@ func (p *Process) sysRead(ctx context.Context, fd, bufPtr, count uint32) uint64 
 	ctx, release := p.interruptible(ctx)
 	defer release()
 
-	// Read from the descriptor's pipe or file.
+	// Read the descriptor into guest memory.
 	of, ok := p.fds[fd]
-	switch {
-	case !ok:
-		return negErrno(EBADF)
-	case of.pipe != nil && of.pipe.reader:
-		return p.readPipe(ctx, of, bufPtr, count)
-	case of.node != nil:
-		return p.readVFS(ctx, of, bufPtr, count)
-	default:
+	if !ok {
 		return negErrno(EBADF)
 	}
-}
-
-// readStdin reads the kernel's terminal input into guest memory.
-func (p *Process) readStdin(ctx context.Context, bufPtr, count uint32) uint64 {
-	buf := make([]byte, count)
-	n, _ := p.kernel.stdin.read(ctx, buf)
-	return p.readResult(ctx, bufPtr, buf[:n])
-}
-
-// readPipe reads a pipe into guest memory.
-func (p *Process) readPipe(ctx context.Context, of *OpenFile, bufPtr, count uint32) uint64 {
-	buf := make([]byte, count)
-	n, _ := of.pipe.read(ctx, buf)
-	return p.readResult(ctx, bufPtr, buf[:n])
-}
-
-// readResult copies data read from a blocking source to guest memory. An
-// empty read that a signal interrupted returns EINTR.
-func (p *Process) readResult(ctx context.Context, bufPtr uint32, data []byte) uint64 {
-	if len(data) == 0 && interrupted(ctx) {
-		return negErrno(EINTR)
+	data, errno := p.readFile(ctx, of, int(count))
+	if errno != 0 {
+		return errno
 	}
 	p.inst.Memory().Write(bufPtr, data)
 	return uint64(len(data))
 }
 
+// readFile reads up to count bytes from a pipe, device or regular file,
+// advancing a regular file's offset. An empty blocking read that a signal
+// interrupted returns EINTR.
+func (p *Process) readFile(ctx context.Context, of *OpenFile, count int) ([]byte, uint64) {
+	// Read a pipe or the terminal, which block until input arrives.
+	var buf []byte
+	switch {
+	case of.pipe != nil && of.pipe.reader:
+		buf = make([]byte, count)
+		n, _ := of.pipe.read(ctx, buf)
+		buf = buf[:n]
+	case of.node == nil:
+		return nil, negErrno(EBADF)
+	case of.node.mode&sIFMT == sIFCHR && (of.node.rdev == devTTY || of.node.rdev == devConsole):
+		buf = make([]byte, count)
+		n, _ := p.kernel.stdin.read(ctx, buf)
+		buf = buf[:n]
+	default:
+		return p.readVFS(of, count)
+	}
+	if len(buf) == 0 && interrupted(ctx) {
+		return nil, negErrno(EINTR)
+	}
+	return buf, 0
+}
+
 // readVFS reads from a device or regular file at the descriptor's offset.
-func (p *Process) readVFS(ctx context.Context, of *OpenFile, bufPtr, count uint32) uint64 {
+func (p *Process) readVFS(of *OpenFile, count int) ([]byte, uint64) {
 	// Read a character device.
-	mem := p.inst.Memory()
 	if of.node.mode&sIFMT == sIFCHR {
 		switch of.node.rdev {
 		case devNull:
-			return 0
+			return nil, 0
 		case devZero:
-			mem.Write(bufPtr, make([]byte, count))
-			return uint64(count)
+			return make([]byte, count), 0
 		case devURandom:
 			buf := make([]byte, count)
 			_, _ = rand.Read(buf)
-			mem.Write(bufPtr, buf)
-			return uint64(count)
-		case devTTY, devConsole:
-			return p.readStdin(ctx, bufPtr, count)
+			return buf, 0
 		}
-		return negErrno(EIO)
+		return nil, negErrno(EIO)
 	}
 
 	// Read a regular file and advance the offset.
-	data, errno := p.readNodeBytes(of, of.offset, int(count))
+	data, errno := p.readNodeBytes(of, of.offset, count)
 	if errno != 0 {
-		return errno
+		return nil, errno
 	}
-	mem.Write(bufPtr, data)
 	of.offset += int64(len(data))
-	return uint64(len(data))
+	return data, 0
 }
 
 // sysWrite handles the write syscall.
@@ -197,12 +193,14 @@ func resize(data []byte, size int64) []byte {
 // fewer bytes at the end of the file, or a negative errno. It does not move
 // the descriptor offset.
 func (p *Process) readNodeBytes(of *OpenFile, off int64, count int) ([]byte, uint64) {
-	// Read a host file.
+	// Read a synthesized file's snapshot or a host file.
 	node := of.node
-	if node == nil {
+	switch {
+	case node == nil:
 		return nil, negErrno(EBADF)
-	}
-	if node.hostPath != "" {
+	case node.gen != nil:
+		return readAt(of.data, off, count), 0
+	case node.hostPath != "":
 		f, err := p.kernel.vfs.host.Open(node.hostPath)
 		if err != nil {
 			return nil, negErrno(EIO)
@@ -214,23 +212,29 @@ func (p *Process) readNodeBytes(of *OpenFile, off int64, count int) ([]byte, uin
 	}
 
 	// Copy from an in-memory file.
-	if off >= node.size {
-		return nil, 0
+	return readAt(node.data[:node.size], off, count), 0
+}
+
+// readAt returns a copy of up to count bytes of data from off.
+func readAt(data []byte, off int64, count int) []byte {
+	if off >= int64(len(data)) {
+		return nil
 	}
-	n := min(int64(count), node.size-off)
-	return append([]byte(nil), node.data[off:off+n]...), 0
+	return bytes.Clone(data[off:min(off+int64(count), int64(len(data)))])
 }
 
 // writeNodeBytes writes data to an open file at off, growing the file as
 // needed. It returns the bytes written or a negative errno. It does not move
 // the descriptor offset.
 func (p *Process) writeNodeBytes(of *OpenFile, off int64, data []byte) (int, uint64) {
-	// Write a host file and take its new size.
+	// Refuse a synthesized file, or write a host file and take its new size.
 	node := of.node
-	if node == nil {
+	switch {
+	case node == nil:
 		return 0, negErrno(EBADF)
-	}
-	if node.hostPath != "" {
+	case node.gen != nil:
+		return 0, negErrno(EACCES)
+	case node.hostPath != "":
 		f, err := p.kernel.vfs.host.OpenFile(node.hostPath, os.O_WRONLY, 0)
 		if err != nil {
 			return 0, negErrno(EIO)

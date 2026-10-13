@@ -2,9 +2,8 @@ package kernel
 
 import (
 	"context"
+	"encoding/binary"
 	"io"
-	"strconv"
-	"strings"
 )
 
 // posixFunctions returns the env module: the POSIX functions wasi-libc
@@ -15,44 +14,76 @@ func posixFunctions() map[string]hostFunc {
 		// Identity.
 		"getpid":  {"i", func(_ context.Context, p *Process, _ []uint64) uint64 { return uint64(p.pid) }},
 		"getppid": {"i", func(_ context.Context, p *Process, _ []uint64) uint64 { return uint64(p.ppid) }},
-		"getuid":  {"i", func(_ context.Context, p *Process, _ []uint64) uint64 { return uint64(p.uid) }},
-		"geteuid": {"i", func(_ context.Context, p *Process, _ []uint64) uint64 { return uint64(p.euid) }},
-		"getgid":  {"i", func(_ context.Context, p *Process, _ []uint64) uint64 { return uint64(p.gid) }},
-		"getegid": {"i", func(_ context.Context, p *Process, _ []uint64) uint64 { return uint64(p.egid) }},
 		"getpgrp": {"i", func(_ context.Context, p *Process, _ []uint64) uint64 { return uint64(p.pgid) }},
-		"setsid":  {"i", func(_ context.Context, p *Process, _ []uint64) uint64 { return uint64(p.sid) }},
-		"setpgid": returns("iii", 0),
+		"setsid": {"i", func(ctx context.Context, p *Process, _ []uint64) uint64 {
+			return p.posixResult(ctx, p.sysSetsid())
+		}},
+		"setpgid": {"iii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysSetpgid(int32(a[0]), int32(a[1])))
+		}},
+		"setpgrp": {"i", func(ctx context.Context, p *Process, _ []uint64) uint64 {
+			return p.posixResult(ctx, p.sysSetpgid(0, 0))
+		}},
+		"getpgid": {"ii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysGetpgid(int32(a[0])))
+		}},
+		"getsid": {"ii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysGetsid(int32(a[0])))
+		}},
+
+		// Credentials.
+		"getuid":  {"i", func(_ context.Context, p *Process, _ []uint64) uint64 { return uint64(p.uids.real) }},
+		"geteuid": {"i", func(_ context.Context, p *Process, _ []uint64) uint64 { return uint64(p.uids.eff) }},
+		"getgid":  {"i", func(_ context.Context, p *Process, _ []uint64) uint64 { return uint64(p.gids.real) }},
+		"getegid": {"i", func(_ context.Context, p *Process, _ []uint64) uint64 { return uint64(p.gids.eff) }},
+		"getresuid": {"iiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.writeRes(p.uids, uint32(a[0]), uint32(a[1]), uint32(a[2])))
+		}},
+		"getresgid": {"iiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.writeRes(p.gids, uint32(a[0]), uint32(a[1]), uint32(a[2])))
+		}},
 		"setuid": {"ii", func(_ context.Context, p *Process, a []uint64) uint64 {
-			return p.sysSetuid(uint32(a[0]))
+			p.uids.set(uint32(a[0]))
+			return 0
 		}},
 		"setgid": {"ii", func(_ context.Context, p *Process, a []uint64) uint64 {
-			return p.sysSetgid(uint32(a[0]))
+			p.gids.set(uint32(a[0]))
+			return 0
 		}},
-		"umask": {"ii", func(_ context.Context, p *Process, a []uint64) uint64 {
-			old := p.umask
-			p.umask = uint32(a[0]) & 0o777
-			return uint64(old)
+		"seteuid": {"ii", func(_ context.Context, p *Process, a []uint64) uint64 {
+			p.uids.setRes(idKeep, uint32(a[0]), idKeep)
+			return 0
+		}},
+		"setegid": {"ii", func(_ context.Context, p *Process, a []uint64) uint64 {
+			p.gids.setRes(idKeep, uint32(a[0]), idKeep)
+			return 0
+		}},
+		"setreuid": {"iii", func(_ context.Context, p *Process, a []uint64) uint64 {
+			p.uids.setRe(uint32(a[0]), uint32(a[1]))
+			return 0
+		}},
+		"setregid": {"iii", func(_ context.Context, p *Process, a []uint64) uint64 {
+			p.gids.setRe(uint32(a[0]), uint32(a[1]))
+			return 0
+		}},
+		"setresuid": {"iiii", func(_ context.Context, p *Process, a []uint64) uint64 {
+			p.uids.setRes(uint32(a[0]), uint32(a[1]), uint32(a[2]))
+			return 0
+		}},
+		"setresgid": {"iiii", func(_ context.Context, p *Process, a []uint64) uint64 {
+			p.gids.setRes(uint32(a[0]), uint32(a[1]), uint32(a[2]))
+			return 0
 		}},
 		"getgroups": {"iii", func(ctx context.Context, p *Process, a []uint64) uint64 {
 			return p.posixResult(ctx, p.sysGetgroups(uint32(a[0]), uint32(a[1])))
 		}},
-		"getgrouplist": {"iiiii", func(_ context.Context, p *Process, a []uint64) uint64 {
-			p.inst.Memory().WriteUint32Le(uint32(a[3]), 0)
-			return 0
+		"setgroups": {"iii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysSetgroups(uint32(a[0]), uint32(a[1])))
 		}},
 		"getlogin_r": {"iii", func(_ context.Context, p *Process, a []uint64) uint64 {
 			p.inst.Memory().Write(uint32(a[0]), []byte("root\x00"))
 			return 0
 		}},
-
-		// The user and group databases are empty.
-		"getpwuid": returns("ii", 0),
-		"getpwnam": returns("ii", 0),
-		"getgrnam": returns("ii", 0),
-		"getgrgid": returns("ii", 0),
-		"setpwent": returns("v", 0),
-		"getpwent": returns("i", 0),
-		"endpwent": returns("v", 0),
 
 		// Process control. vfork is fork, which Linux permits.
 		"vfork":        {"i", forkFunc},
@@ -66,9 +97,40 @@ func posixFunctions() map[string]hostFunc {
 		"execve": {"iiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
 			return p.posixResult(ctx, p.sysExecve(ctx, uint32(a[0]), uint32(a[1]), uint32(a[2])))
 		}},
+		"execv": {"iii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			mem := p.inst.Memory()
+			path, args := readCString(mem, uint32(a[0])), readArgvFromMemory(mem, uint32(a[1]))
+			return p.posixResult(ctx, p.exec(ctx, path, args, nil))
+		}},
 		"execvp": {"iii", func(ctx context.Context, p *Process, a []uint64) uint64 {
-			file := readCString(p.inst.Memory(), uint32(a[0]))
-			return p.posixResult(ctx, p.posixExecvp(ctx, file, uint32(a[1])))
+			mem := p.inst.Memory()
+			file, args := readCString(mem, uint32(a[0])), readArgvFromMemory(mem, uint32(a[1]))
+			return p.posixResult(ctx, p.posixExecvp(ctx, file, args))
+		}},
+
+		// The execl family passes its arguments after the second as varargs,
+		// which wasm32 passes as a pointer to the list.
+		"execl": {"iiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			mem := p.inst.Memory()
+			args, _ := readExeclArgs(mem, uint32(a[1]), uint32(a[2]))
+			return p.posixResult(ctx, p.exec(ctx, readCString(mem, uint32(a[0])), args, nil))
+		}},
+		"execlp": {"iiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			mem := p.inst.Memory()
+			args, _ := readExeclArgs(mem, uint32(a[1]), uint32(a[2]))
+			return p.posixResult(ctx, p.posixExecvp(ctx, readCString(mem, uint32(a[0])), args))
+		}},
+		"execle": {"iiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			// Read the arguments, then envp after their null. A null envp
+			// gives the program an empty environment.
+			mem := p.inst.Memory()
+			args, envpAt := readExeclArgs(mem, uint32(a[1]), uint32(a[2]))
+			envp, _ := mem.ReadUint32Le(envpAt)
+			env := readEnvpFromMemory(mem, envp)
+			if env == nil {
+				env = map[string]string{}
+			}
+			return p.posixResult(ctx, p.exec(ctx, readCString(mem, uint32(a[0])), args, env))
 		}},
 		"waitpid": {"iiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
 			// ECHILD with WNOHANG reports that no child changed state, so a
@@ -80,11 +142,12 @@ func posixFunctions() map[string]hostFunc {
 			}
 			return p.posixResult(ctx, result)
 		}},
-		"execl":  returns("iiii", fail),
-		"system": returns("ii", fail),
-
-		// The linker imports the destructor hook; exit flushes stdio itself.
-		"__wasm_call_dtors": returns("v", 0),
+		"wait": {"ii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysWait4(ctx, -1, uint32(a[0]), 0, 0))
+		}},
+		"pause": {"i", func(ctx context.Context, p *Process, _ []uint64) uint64 {
+			return p.posixResult(ctx, p.suspendWithMask(ctx, p.sigMask))
+		}},
 
 		// Signals.
 		"kill": {"iii", func(ctx context.Context, p *Process, a []uint64) uint64 {
@@ -121,7 +184,22 @@ func posixFunctions() map[string]hostFunc {
 		"setitimer": {"iiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
 			return p.posixResult(ctx, p.sysSetitimer(uint32(a[0]), uint32(a[1]), uint32(a[2])))
 		}},
+		"getitimer": {"iii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysGetitimer(uint32(a[0]), uint32(a[1])))
+		}},
 		"alarm": returns("ii", 0),
+		"sigtimedwait": {"iiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysSigtimedwait(ctx, uint32(a[0]), uint32(a[1]), uint32(a[2])))
+		}},
+		"sigwait": {"iii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			// sigwait returns the errno rather than setting it.
+			sig := p.sysSigtimedwait(ctx, uint32(a[0]), 0, 0)
+			if int32(sig) < 0 {
+				return uint64(-int32(sig))
+			}
+			p.inst.Memory().WriteUint32Le(uint32(a[1]), uint32(sig))
+			return 0
+		}},
 
 		// A sigset_t is 64 bits, bit n-1 standing for signal n.
 		"sigemptyset": {"ii", func(_ context.Context, p *Process, a []uint64) uint64 {
@@ -138,9 +216,22 @@ func posixFunctions() map[string]hostFunc {
 			mem.WriteUint64Le(uint32(a[0]), set|1<<(uint32(a[1])-1))
 			return 0
 		}},
+		"sigdelset": {"iii", func(_ context.Context, p *Process, a []uint64) uint64 {
+			mem := p.inst.Memory()
+			set, _ := mem.ReadUint64Le(uint32(a[0]))
+			mem.WriteUint64Le(uint32(a[0]), set&^(1<<(uint32(a[1])-1)))
+			return 0
+		}},
 		"sigismember": {"iii", func(_ context.Context, p *Process, a []uint64) uint64 {
 			set, _ := p.inst.Memory().ReadUint64Le(uint32(a[0]))
 			return set >> (uint32(a[1]) - 1) & 1
+		}},
+		"sigisemptyset": {"ii", func(_ context.Context, p *Process, a []uint64) uint64 {
+			set, _ := p.inst.Memory().ReadUint64Le(uint32(a[0]))
+			if set != 0 {
+				return 0
+			}
+			return 1
 		}},
 
 		// The signal headers declare SIG_IGN and SIG_ERR as functions.
@@ -174,9 +265,15 @@ func posixFunctions() map[string]hostFunc {
 			p.kernel.readWasiTermios(p.inst.Memory(), uint32(a[2]))
 			return 0
 		}},
-		"tcgetpgrp": {"ii", func(_ context.Context, p *Process, _ []uint64) uint64 { return uint64(p.pgid) }},
-		"tcsetpgrp": returns("iii", 0),
-		"tcflush":   returns("iii", 0),
+		"tcgetpgrp": {"ii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysTcgetpgrp(uint32(a[0])))
+		}},
+		"tcsetpgrp": {"iii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysTcsetpgrp(uint32(a[0]), int32(a[1])))
+		}},
+		// The console has no queues to discard and no flow control to stop.
+		"tcflush": returns("iii", 0),
+		"tcflow":  returns("iii", 0),
 		"cfgetispeed": {"ii", func(_ context.Context, p *Process, a []uint64) uint64 {
 			speed, _ := p.inst.Memory().ReadUint32Le(uint32(a[0]) + termiosIspeed)
 			return uint64(speed)
@@ -222,8 +319,25 @@ func posixFunctions() map[string]hostFunc {
 		"__posix_fcntl3": {"iiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
 			return p.posixResult(ctx, p.sysFcntl(uint32(a[0]), uint32(a[1]), uint32(a[2])))
 		}},
+		"dup3": {"iiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			// dup3 refuses to duplicate a descriptor onto itself.
+			if a[0] == a[1] {
+				return p.posixResult(ctx, negErrno(EINVAL))
+			}
+			return p.posixResult(ctx, p.sysDup2(uint32(a[0]), uint32(a[1])))
+		}},
 		"pipe": {"ii", func(ctx context.Context, p *Process, a []uint64) uint64 {
 			return p.posixResult(ctx, p.sysPipe2(uint32(a[0])))
+		}},
+		"pipe2": {"iii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			// The kernel has neither nonblocking pipes nor close-on-exec, so
+			// the flags change nothing.
+			return p.posixResult(ctx, p.sysPipe2(uint32(a[0])))
+		}},
+		"umask": {"ii", func(_ context.Context, p *Process, a []uint64) uint64 {
+			old := p.umask
+			p.umask = uint32(a[0]) & 0o777
+			return uint64(old)
 		}},
 		"chdir": {"ii", func(ctx context.Context, p *Process, a []uint64) uint64 {
 			return p.posixResult(ctx, p.sysChdir(uint32(a[0])))
@@ -234,6 +348,21 @@ func posixFunctions() map[string]hostFunc {
 		"flock": {"iii", func(ctx context.Context, p *Process, a []uint64) uint64 {
 			return p.posixResult(ctx, p.sysFlock(uint32(a[0]), uint32(a[1])))
 		}},
+		"fstat": {"iii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysFstat(uint32(a[0]), uint32(a[1])))
+		}},
+		"__wasilibc_nocwd_fstatat": {"iiiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysFstatat(uint32(a[0]), uint32(a[1]), uint32(a[2]), uint32(a[3])))
+		}},
+		"__posix_chmod": {"iii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysFchmodat(atFDCWD, uint32(a[0]), uint32(a[1]), 0))
+		}},
+		"__posix_fchmod": {"iii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysFchmod(uint32(a[0]), uint32(a[1])))
+		}},
+		"__posix_fchmodat": {"iiiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysFchmodat(uint32(a[0]), uint32(a[1]), uint32(a[2]), uint32(a[3])))
+		}},
 		"sendfile": {"iiiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
 			return p.posixResult(ctx, p.sysSendfile(ctx, uint32(a[0]), uint32(a[1]), uint32(a[2]), uint32(a[3])))
 		}},
@@ -242,9 +371,6 @@ func posixFunctions() map[string]hostFunc {
 		}},
 		"mknod": {"iiij", func(ctx context.Context, p *Process, a []uint64) uint64 {
 			return p.posixResult(ctx, p.sysMknodat(atFDCWD, uint32(a[0]), uint32(a[1]), uint32(a[2])))
-		}},
-		"mkdtemp": {"ii", func(_ context.Context, p *Process, a []uint64) uint64 {
-			return uint64(p.mkdtemp(uint32(a[0])))
 		}},
 		"getxattr": {"iiiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
 			return p.posixResult(ctx, p.sysGetxattr(uint32(a[0]), uint32(a[1]), uint32(a[2]), uint32(a[3])))
@@ -255,17 +381,29 @@ func posixFunctions() map[string]hostFunc {
 		"setxattr": {"iiiiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
 			return p.posixResult(ctx, p.sysSetxattr(uint32(a[0]), uint32(a[1]), uint32(a[2]), uint32(a[3]), uint32(a[4])))
 		}},
-		"mkstemp": returns("ii", fail),
-		"fchown":  returns("iiii", 0),
-		"chown":   returns("iiii", 0),
-		"lchown":  returns("iiii", 0),
-		"chroot":  returns("ii", 0),
-		"sync":    returns("v", 0),
+		"fchown": returns("iiii", 0),
+		"chown":  returns("iiii", 0),
+		"lchown": returns("iiii", 0),
+		"chroot": returns("ii", 0),
+		"sync":   returns("v", 0),
 
-		// There is one filesystem and no mount table.
-		"setmntent": returns("iii", 0),
-		"getmntent": returns("ii", 0),
-		"endmntent": returns("ii", 1),
+		// Mounts.
+		"mount": {"iiiiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			// Read the strings, of which data may be null.
+			mem := p.inst.Memory()
+			source, target, fstype := readCString(mem, uint32(a[0])), readCString(mem, uint32(a[1])), readCString(mem, uint32(a[2]))
+			var data string
+			if a[4] != 0 {
+				data = readCString(mem, uint32(a[4]))
+			}
+			return p.posixResult(ctx, p.sysMount(source, target, fstype, uint32(a[3]), data))
+		}},
+		"umount": {"ii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysUmount2(readCString(p.inst.Memory(), uint32(a[0]))))
+		}},
+		"umount2": {"iii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysUmount2(readCString(p.inst.Memory(), uint32(a[0]))))
+		}},
 
 		// Resources and time.
 		"getrlimit": {"iii", func(ctx context.Context, p *Process, a []uint64) uint64 {
@@ -280,20 +418,50 @@ func posixFunctions() map[string]hostFunc {
 		"setpriority": {"iiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
 			return p.posixResult(ctx, p.sysSetpriority(uint32(a[0]), uint32(a[1]), uint32(a[2])))
 		}},
+		"nice": {"ii", func(_ context.Context, p *Process, a []uint64) uint64 {
+			// Linux clamps the new value to the nice range and returns it.
+			p.nice = min(max(p.nice+int32(a[0]), -20), 19)
+			return uint64(uint32(p.nice))
+		}},
 		"clock_settime": {"iii", func(ctx context.Context, p *Process, a []uint64) uint64 {
 			return p.posixResult(ctx, p.sysClockSettime(uint32(a[0]), uint32(a[1])))
 		}},
+		"settimeofday": {"iii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysSettimeofday(uint32(a[0])))
+		}},
+		"reboot": {"ii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysReboot(uint32(a[0])))
+		}},
 		"sysinfo": {"ii", func(_ context.Context, p *Process, a []uint64) uint64 {
-			p.inst.Memory().Write(uint32(a[0]), make([]byte, sysinfoSize))
+			p.sysSysinfo(uint32(a[0]))
 			return 0
 		}},
 		"tzset": returns("v", 0),
 
-		// Networking is unsupported.
-		"socket":       returns("iiii", fail),
-		"bind":         returns("iiii", fail),
-		"listen":       returns("iii", fail),
-		"connect":      returns("iiii", fail),
+		// System names.
+		"uname": {"ii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysUname(uint32(a[0])))
+		}},
+		"sethostname": {"iii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysSetUTSName(&p.kernel.hostname, uint32(a[0]), uint32(a[1])))
+		}},
+		"setdomainname": {"iii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysSetUTSName(&p.kernel.domainname, uint32(a[0]), uint32(a[1])))
+		}},
+
+		// Networking is unsupported: no address family has sockets, so no
+		// descriptor is a socket.
+		"socket":       errnoFunc("iiii", EAFNOSUPPORT),
+		"bind":         errnoFunc("iiii", ENOTSOCK),
+		"listen":       errnoFunc("iii", ENOTSOCK),
+		"connect":      errnoFunc("iiii", ENOTSOCK),
+		"getsockname":  errnoFunc("iiii", ENOTSOCK),
+		"getpeername":  errnoFunc("iiii", ENOTSOCK),
+		"setsockopt":   errnoFunc("iiiiii", ENOTSOCK),
+		"sendto":       errnoFunc("iiiiiii", ENOTSOCK),
+		"recvfrom":     errnoFunc("iiiiiii", ENOTSOCK),
+		"sendmsg":      errnoFunc("iiii", ENOTSOCK),
+		"recvmsg":      errnoFunc("iiii", ENOTSOCK),
 		"getaddrinfo":  returns("iiiii", fail),
 		"freeaddrinfo": returns("vi", 0),
 		"gai_strerror": returns("ii", 0),
@@ -306,8 +474,28 @@ func posixFunctions() map[string]hostFunc {
 	}
 }
 
-// sysinfoSize is the size of the wasi-libc sysinfo struct.
-const sysinfoSize = 64
+// sysSysinfo writes the system's statistics as a wasm32 struct sysinfo to
+// ptr: the uptime, memory in bytes and process count. The kernel has no swap
+// and does not average the load.
+func (p *Process) sysSysinfo(ptr uint32) {
+	// Clear the struct up to its reserved tail.
+	k := p.kernel
+	mem := p.inst.Memory()
+	mem.Write(ptr, make([]byte, sysinfoReserved))
+
+	// Fill the uptime, memory, process count and memory unit.
+	used := min(k.memUsed(), memTotal)
+	mem.WriteUint32Le(ptr, uint32(k.uptime().Seconds()))
+	mem.WriteUint32Le(ptr+16, memTotal)
+	mem.WriteUint32Le(ptr+20, uint32(memTotal-used))
+	mem.Write(ptr+40, binary.LittleEndian.AppendUint16(nil, uint16(len(k.procs.filter(nil)))))
+	mem.WriteUint32Le(ptr+52, 1)
+}
+
+// sysinfoReserved is the offset of the wasm32 struct sysinfo's reserved
+// tail, after the uptime, loads, memory and swap sizes, process count,
+// high memory sizes and memory unit.
+const sysinfoReserved = 56
 
 // forkFunc starts a child process that runs beside the caller.
 func forkFunc(ctx context.Context, p *Process, _ []uint64) uint64 {
@@ -382,33 +570,11 @@ func (p *Process) longjmp(ctx context.Context, buf, val uint32) {
 	entry.snapshot.Restore(ctx, []uint64{uint64(val)})
 }
 
-// mkdtemp replaces the trailing XXXXXX of the template at ptr with a suffix
-// that names a new directory, and creates it. It returns ptr, or 0 on failure.
-func (p *Process) mkdtemp(ptr uint32) uint32 {
-	// The template must end with the six characters to replace.
-	mem := p.inst.Memory()
-	tmpl := readCString(mem, ptr)
-	if len(tmpl) < 6 {
-		return 0
-	}
-
-	// Try fresh suffixes until one names a directory that does not exist
-	// yet, writing each name back into the template.
-	prefix := tmpl[:len(tmpl)-6]
-	for range 100 {
-		suffix := strconv.FormatUint(uint64(p.kernel.tempSeq.Add(1)), 36)
-		suffix = strings.Repeat("0", max(0, 6-len(suffix))) + suffix
-		mem.Write(ptr, append([]byte(prefix+suffix[len(suffix)-6:]), 0))
-		result := p.sysMkdirat(atFDCWD, ptr, 0o700)
-		if result == negErrno(EEXIST) {
-			continue
-		}
-		if int32(result) < 0 {
-			return 0
-		}
-		return ptr
-	}
-	return 0
+// errnoFunc builds a host function that fails with errno.
+func errnoFunc(sig string, errno uint32) hostFunc {
+	return hostFunc{sig, func(ctx context.Context, p *Process, _ []uint64) uint64 {
+		return p.posixResult(ctx, negErrno(errno))
+	}}
 }
 
 // posixResult converts a Linux syscall result to the C convention: a

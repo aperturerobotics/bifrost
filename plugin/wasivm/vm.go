@@ -41,9 +41,11 @@ func (r *run) stop() {
 //
 // Starting a run boots the kernel on the linked root filesystem and publishes
 // its console, then commits RUNNING. A run that cannot start commits ERROR.
-// When init exits, the run commits STOPPED as both the desired and observed
-// state; when it fails, it commits ERROR. Every commit is fenced by the run
-// generation, so a late report from an earlier run changes nothing.
+// When init exits or the system halts, the run commits STOPPED as both the
+// desired and observed state; when it fails, it commits ERROR. When the
+// system restarts, the run begins the next generation, which this loop then
+// starts. Every commit is fenced by the run generation, so a late report from
+// an earlier run changes nothing.
 func (r *vmResource) Execute(req *s4wave_process.ExecuteRequest, stream s4wave_process.SRPCPersistentExecutionService_ExecuteStream) error {
 	// Stop the current run when its generation ends or execution ends.
 	var cur *run
@@ -184,9 +186,9 @@ func (r *vmResource) startRun(ctx context.Context, generation uint64, config *s4
 
 	// Boot the kernel; a run that ends on its own commits how it ended.
 	runCtx, cancel := context.WithCancel(ctx)
-	console, err := startKernel(runCtx, r.le, r.ws, rootfsKey, config, func(runErr error) {
+	console, err := startKernel(runCtx, r.le, r.ws, rootfsKey, config, func(reboot bool, runErr error) {
 		if runCtx.Err() == nil {
-			r.finishRun(runCtx, generation, runErr)
+			r.finishRun(runCtx, generation, reboot, runErr)
 		}
 	})
 	if err != nil {
@@ -196,10 +198,19 @@ func (r *vmResource) startRun(ctx context.Context, generation uint64, config *s4
 	return &run{generation: generation, cancel: cancel, unpublish: r.consoles.publish(r.objectKey, console)}, nil
 }
 
-// finishRun commits the end of a run: STOPPED as both the desired and
-// observed state when init exited, or ERROR when the run failed.
-func (r *vmResource) finishRun(ctx context.Context, generation uint64, runErr error) {
+// finishRun commits the end of a run: a new run generation when the system
+// restarted, STOPPED as both the desired and observed state when init exited
+// or the system halted, or ERROR when the run failed.
+func (r *vmResource) finishRun(ctx context.Context, generation uint64, reboot bool, runErr error) {
 	_, _, err := r.updateRun(ctx, generation, func(vm *s4wave_vm.WasiVm) bool {
+		// A restart begins the next run, which Execute starts.
+		if reboot {
+			vm.RunGeneration++
+			vm.ObservedState = s4wave_vm.VmState_VmState_STARTING
+			vm.ErrorMessage = ""
+			return true
+		}
+
 		// A failed run keeps the desired state for a retry.
 		if runErr != nil {
 			vm.ObservedState = s4wave_vm.VmState_VmState_ERROR

@@ -1,9 +1,11 @@
 package kernel
 
 import (
+	"bytes"
 	"cmp"
 	"context"
 	"maps"
+	"math/bits"
 	"strconv"
 	"strings"
 
@@ -114,20 +116,13 @@ func (p *Process) sysExecve(ctx context.Context, pathPtr, argvPtr, envpPtr uint3
 // the process exits for its replacement, which the caller waits on.
 func (p *Process) exec(ctx context.Context, path string, args []string, env map[string]string) uint64 {
 	// Read the program.
-	node := p.kernel.vfs.lookup(resolvePath(p.cwd, p.fds, atFDCWD, path))
-	if node == nil {
-		return negErrno(ENOENT)
-	}
-	wasm, err := p.kernel.vfs.readFile(node)
-	if err != nil {
-		return negErrno(EIO)
-	}
-	if len(wasm) == 0 {
-		return negErrno(ENOENT)
+	resolved, wasm, args, errno := p.loadProgram(path, args)
+	if errno != 0 {
+		return errno
 	}
 
 	// Replace the process.
-	p.selfExecProc = p.execChild(args, env)
+	p.execChild(args, env, resolved)
 	_ = p.inst.Close(ctx)
 	p.kernel.startChildProcess(context.WithoutCancel(ctx), p.selfExecProc, func(ctx context.Context) error {
 		return p.kernel.runProgram(ctx, p.selfExecProc, wasm)
@@ -135,43 +130,121 @@ func (p *Process) exec(ctx context.Context, path string, args []string, env map[
 	panic(&ProcessExitError{})
 }
 
-// execChild registers the process that runs an executed program under p's
-// PID. It shares p's descriptors and working directory, and takes env when it
-// is set.
-func (p *Process) execChild(args []string, env map[string]string) *Process {
-	// Share the descriptors, directory and environment.
+// maxInterpDepth is how many script interpreters an exec follows, as Linux
+// limits binfmt_script recursion.
+const maxInterpDepth = 4
+
+// loadProgram reads the WebAssembly program that exec runs for path and args,
+// returning its resolved path and arguments. A script that starts with "#!"
+// runs its interpreter with the script's path in place of args[0], as Linux
+// binfmt_script does.
+func (p *Process) loadProgram(path string, args []string) (string, []byte, []string, uint64) {
+	for range maxInterpDepth + 1 {
+		// Read the file, which must be an executable regular file.
+		resolved := resolvePath(p.cwd, p.fds, atFDCWD, path)
+		node := p.kernel.vfs.lookup(resolved)
+		if node == nil {
+			return "", nil, nil, negErrno(ENOENT)
+		}
+		if node.mode&sIFMT != sIFREG || node.mode&0o111 == 0 {
+			return "", nil, nil, negErrno(EACCES)
+		}
+		data, err := p.kernel.vfs.readFile(node)
+		if err != nil {
+			return "", nil, nil, negErrno(EIO)
+		}
+		if bytes.HasPrefix(data, wasmMagic) {
+			return resolved, data, args, 0
+		}
+
+		// Run a script's interpreter on it.
+		interp, arg, ok := parseInterpLine(data)
+		if !ok {
+			return "", nil, nil, negErrno(ENOEXEC)
+		}
+		next := []string{interp}
+		if arg != "" {
+			next = append(next, arg)
+		}
+		next = append(next, path)
+		if len(args) > 1 {
+			next = append(next, args[1:]...)
+		}
+		path, args = interp, next
+	}
+	return "", nil, nil, negErrno(ELOOP)
+}
+
+// interpLineMax is the most bytes of a script's "#!" line Linux reads.
+const interpLineMax = 256
+
+// parseInterpLine reads the interpreter and its optional single argument from
+// a script's "#!" line.
+func parseInterpLine(data []byte) (string, string, bool) {
+	// Take the line after "#!".
+	line, ok := bytes.CutPrefix(data[:min(len(data), interpLineMax)], []byte("#!"))
+	if !ok {
+		return "", "", false
+	}
+	if end := bytes.IndexByte(line, '\n'); end >= 0 {
+		line = line[:end]
+	}
+
+	// Split the interpreter from the rest, which is one argument.
+	fields := strings.TrimSpace(string(line))
+	end := strings.IndexAny(fields, " \t")
+	if end < 0 {
+		return fields, "", fields != ""
+	}
+	return fields[:end], strings.TrimSpace(fields[end:]), true
+}
+
+// execChild registers the process that runs the program at exe under p's PID
+// as p.selfExecProc. It keeps p's process state, such as its descriptors,
+// directory and credentials, and takes env when it is set.
+func (p *Process) execChild(args []string, env map[string]string, exe string) {
+	// Keep the process state with the new arguments and environment.
 	child := newProcess(p.kernel, p.pid, args)
-	child.ppid = p.ppid
-	child.pgid = p.pgid
-	child.sid = p.sid
-	child.cwd = p.cwd
-	child.fds = make(map[uint32]*OpenFile, len(p.fds))
-	for fd, of := range p.fds {
+	child.procState = p.clone()
+	child.args = args
+	child.exe = exe
+	child.started = p.started
+	for _, of := range child.fds {
 		of.ref()
-		child.fds[fd] = of
 	}
 	if env != nil {
 		child.env = env
 	}
 
 	// Keep the signal mask, pending signals and ignored signals, as exec
-	// does. A terminating signal that reached p during the exec ends the
-	// program when it starts.
+	// does. Later signals go to the program.
 	p.sigMu.Lock()
+	p.selfExecProc = child
 	child.sigMask = p.sigMask
 	child.sigPending = p.sigPending
-	child.sigTerm = p.sigTerm
-	p.sigTerm = 0
 	for sig, act := range p.sigActions {
 		if act.handler == sigIgn {
 			child.sigActions[sig].handler = sigIgn
 		}
 	}
+
+	// Take the signals in flight. A terminating signal that reached p during
+	// the exec ends the program when it starts.
+	child.sigTerm = p.sigTerm
+	caught := p.sigCaught
+	p.sigTerm, p.sigCaught = 0, 0
 	p.sigMu.Unlock()
+
+	// Exec resets the handlers, so a signal caught but not yet handled takes
+	// its default action in the program, as on Linux.
+	for caught != 0 {
+		sig := uint32(bits.TrailingZeros64(caught)) + 1
+		caught &^= sigBit(sig)
+		child.deliverSignal(sig)
+	}
 
 	// Register the program under its PID.
 	p.kernel.procs.set(child.pid, child)
-	return child
 }
 
 // sysWait4 waits for a child to exit, writes its wait status, and reaps it.
@@ -228,26 +301,52 @@ const rusageSize = 72
 
 // posixExecvp runs a program found by name in the PATH directories, or at
 // file when it names a path.
-func (p *Process) posixExecvp(ctx context.Context, file string, argvPtr uint32) uint64 {
-	// Run a path directly.
-	args := readArgvFromMemory(p.inst.Memory(), argvPtr)
-	if strings.Contains(file, "/") {
-		return p.exec(ctx, file, args, nil)
+func (p *Process) posixExecvp(ctx context.Context, file string, args []string) uint64 {
+	path := p.lookPath(file)
+	if path == "" {
+		return negErrno(ENOENT)
 	}
+	return p.exec(ctx, path, args, nil)
+}
 
-	// Search the PATH. An empty entry means the working directory.
+// lookPath returns file when it names a path, and otherwise the first PATH
+// directory entry named file, or "" when there is none. An empty PATH entry
+// means the working directory.
+func (p *Process) lookPath(file string) string {
+	if strings.Contains(file, "/") {
+		return file
+	}
 	for dir := range strings.SplitSeq(cmp.Or(p.env["PATH"], "/bin:/usr/bin"), ":") {
 		path := cmp.Or(dir, ".") + "/" + file
 		if p.kernel.vfs.lookup(resolvePath(p.cwd, p.fds, atFDCWD, path)) != nil {
-			return p.exec(ctx, path, args, nil)
+			return path
 		}
 	}
-	return negErrno(ENOENT)
+	return ""
 }
 
 // posixExit ends the program with code.
 func (p *Process) posixExit(code uint32) {
 	panic(&ProcessExitError{Code: int(code)})
+}
+
+// readExeclArgs reads the argument list of execl: arg0, then the variadic
+// arguments at va up to a null pointer. It returns the address after the null,
+// where execle passes envp.
+func readExeclArgs(mem engine.Memory, arg0, va uint32) ([]string, uint32) {
+	// Read the pointers up to the null.
+	if arg0 == 0 {
+		return nil, va
+	}
+	args := []string{readCString(mem, arg0)}
+	for {
+		ptr, ok := mem.ReadUint32Le(va)
+		va += 4
+		if !ok || ptr == 0 {
+			return args, va
+		}
+		args = append(args, readCString(mem, ptr))
+	}
 }
 
 // readArgvFromMemory reads a null-terminated argv array from guest memory.

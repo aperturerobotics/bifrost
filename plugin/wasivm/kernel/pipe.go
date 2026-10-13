@@ -25,10 +25,10 @@ type pipeEnd struct {
 	reader bool
 }
 
-// newPipeEnds returns the read and write ends of a new pipe, each with one
-// reference.
-func newPipeEnds() (*pipeEnd, *pipeEnd) {
-	pipe := &bufferedPipe{waitCh: make(chan struct{})}
+// newPipeEnds returns the read and write ends of a new pipe with inode number
+// ino, each with one reference.
+func newPipeEnds(ino uint64) (*pipeEnd, *pipeEnd) {
+	pipe := &bufferedPipe{ino: ino, waitCh: make(chan struct{})}
 	return &pipeEnd{pipe: pipe, refs: 1, reader: true}, &pipeEnd{pipe: pipe, refs: 1}
 }
 
@@ -71,6 +71,9 @@ func (pe *pipeEnd) write(ctx context.Context, dat []byte) (int, bool) {
 // bufferedPipe is a pipe whose buffer holds up to pipeCapacity bytes. A
 // writer waits while it is full, and a reader while it is empty.
 type bufferedPipe struct {
+	// ino is the pipe's inode number.
+	ino uint64
+
 	// mtx guards the fields below.
 	mtx sync.Mutex
 	// buf holds the bytes written and not yet read.

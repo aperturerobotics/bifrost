@@ -78,10 +78,14 @@ func (k *Kernel) defineHostModules(ctx context.Context) error {
 	return nil
 }
 
-// callLocked runs the host function fn for p holding the kernel lock.
+// callLocked runs the host function fn for p holding the kernel lock, with
+// p as the caller and its memory size recorded.
 func (k *Kernel) callLocked(ctx context.Context, p *Process, fn hostFunc, args []uint64) uint64 {
+	// Run fn as p under the kernel lock.
 	k.mu.Lock()
 	defer k.mu.Unlock()
+	k.caller = p
+	p.memSize = p.inst.Memory().Size()
 	return fn.call(ctx, p, args)
 }
 

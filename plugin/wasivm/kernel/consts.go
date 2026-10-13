@@ -164,6 +164,10 @@ const (
 	atREMOVEDIR       = 0x200
 	atEMPTY_PATH      = 0x1000
 	wnohang           = 1
+
+	// wasiAtSymlinkNofollow is wasi-libc's AT_SYMLINK_NOFOLLOW, which its
+	// own lstat passes. Linux leaves the bit unused.
+	wasiAtSymlinkNofollow = 0x1
 )
 
 // Resource limit ids (getrlimit/setrlimit/prlimit64, asm-generic). Only the

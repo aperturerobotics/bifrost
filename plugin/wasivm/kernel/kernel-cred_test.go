@@ -2,27 +2,26 @@ package kernel
 
 import "testing"
 
-// TestSetuidSetsAllUids checks setuid sets the real, effective, saved, and
-// filesystem uid together.
-func TestSetuidSetsAllUids(t *testing.T) {
-	p, _ := newMemProcess(wasmPageSize)
-	if res := p.sysSetuid(1000); res != 0 {
-		t.Fatalf("setuid: got %#x, want 0", res)
+// TestIDs checks the id setters keep the real, effective, saved and
+// filesystem ids as Linux does.
+func TestIDs(t *testing.T) {
+	tests := []struct {
+		name string
+		set  func(*ids)
+		want ids
+	}{
+		{name: "setuid", set: func(s *ids) { s.set(1000) }, want: ids{1000, 1000, 1000, 1000}},
+		{name: "seteuid", set: func(s *ids) { s.setRes(idKeep, 1000, idKeep) }, want: ids{0, 1000, 0, 1000}},
+		{name: "setresuid", set: func(s *ids) { s.setRes(1, 2, 3) }, want: ids{1, 2, 3, 2}},
+		{name: "setreuid real", set: func(s *ids) { s.setRe(1000, idKeep) }, want: ids{1000, 0, 0, 0}},
+		{name: "setreuid effective", set: func(s *ids) { s.setRe(idKeep, 1000) }, want: ids{0, 1000, 1000, 1000}},
 	}
-	if p.uid != 1000 || p.euid != 1000 || p.suid != 1000 || p.fsuid != 1000 {
-		t.Fatalf("uids = %d/%d/%d/%d, want all 1000", p.uid, p.euid, p.suid, p.fsuid)
-	}
-}
-
-// TestSetgidSetsAllGids checks setgid sets the real, effective, saved, and
-// filesystem gid together.
-func TestSetgidSetsAllGids(t *testing.T) {
-	p, _ := newMemProcess(wasmPageSize)
-	if res := p.sysSetgid(1000); res != 0 {
-		t.Fatalf("setgid: got %#x, want 0", res)
-	}
-	if p.gid != 1000 || p.egid != 1000 || p.sgid != 1000 || p.fsgid != 1000 {
-		t.Fatalf("gids = %d/%d/%d/%d, want all 1000", p.gid, p.egid, p.sgid, p.fsgid)
+	for _, tc := range tests {
+		var s ids
+		tc.set(&s)
+		if s != tc.want {
+			t.Fatalf("%s: ids = %+v, want %+v", tc.name, s, tc.want)
+		}
 	}
 }
 

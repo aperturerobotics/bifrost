@@ -28,8 +28,12 @@ func (p *Process) openResolved(resolved string, flags, mode uint32) uint64 {
 		_ = p.truncateNode(node, 0)
 	}
 
-	// Install the descriptor, starting an appending file at its end.
+	// Install the descriptor, starting an appending file at its end. A
+	// synthesized file reads the content it has at the open.
 	of := &OpenFile{node: node, path: resolved, flags: flags}
+	if node.gen != nil {
+		of.data = node.gen()
+	}
 	if flags&oAPPEND != 0 {
 		p.kernel.vfs.refreshHost(node)
 		of.offset = node.size
@@ -150,7 +154,7 @@ func (p *Process) isConsoleFD(fd uint32) bool {
 // pipefdPtr.
 func (p *Process) sysPipe2(pipefdPtr uint32) uint64 {
 	// Install both ends.
-	pr, pw := newPipeEnds()
+	pr, pw := newPipeEnds(p.kernel.vfs.allocIno())
 	rfd := p.allocFD()
 	p.fds[rfd] = &OpenFile{pipe: pr}
 	wfd := p.allocFD()

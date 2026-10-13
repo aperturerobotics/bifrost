@@ -28,38 +28,60 @@ type VFS struct {
 func newVFS() *VFS {
 	// Create the root directory as the first node.
 	v := &VFS{nextIno: 1}
-	v.root = v.newNode(sIFDIR | 0o755)
-	v.root.nlink = 2
-	v.root.children = make(map[string]*VNode)
+	v.root = v.newDir(0o755)
 	return v
+}
+
+// allocIno returns a fresh inode number.
+func (v *VFS) allocIno() uint64 {
+	ino := v.nextIno
+	v.nextIno++
+	return ino
 }
 
 // newNode creates a detached node of mode with a fresh inode number.
 func (v *VFS) newNode(mode uint32) *VNode {
 	now := time.Now()
-	node := &VNode{ino: v.nextIno, mode: mode, nlink: 1, atime: now, mtime: now, ctime: now}
-	v.nextIno++
+	return &VNode{ino: v.allocIno(), mode: mode, nlink: 1, atime: now, mtime: now, ctime: now}
+}
+
+// newDir creates a detached empty directory.
+func (v *VFS) newDir(perm uint32) *VNode {
+	node := v.newNode(sIFDIR | perm)
+	node.nlink = 2
+	node.children = make(map[string]*VNode)
 	return node
+}
+
+// link enters node in directory parent as name.
+func link(parent *VNode, name string, node *VNode) {
+	node.parent = parent
+	parent.children[name] = node
 }
 
 // mkNode creates a node of mode under parent. rdev is the device number of a
 // device node.
 func (v *VFS) mkNode(parent *VNode, name string, mode uint32, rdev uint64) *VNode {
-	// Link a new node into parent.
 	node := v.newNode(mode)
 	node.rdev = rdev
-	node.parent = parent
-	parent.children[name] = node
+	link(parent, name, node)
 	return node
 }
 
 // mkDir creates a directory under parent.
 func (v *VFS) mkDir(parent *VNode, name string) *VNode {
 	// Link an empty directory, whose ".." entry adds a link to parent.
-	node := v.mkNode(parent, name, sIFDIR|0o755, 0)
-	node.nlink = 2
-	node.children = make(map[string]*VNode)
+	node := v.newDir(0o755)
+	link(parent, name, node)
 	parent.nlink++
+	return node
+}
+
+// mkGenFile creates a read-only file under parent whose content gen
+// generates at each open.
+func (v *VFS) mkGenFile(parent *VNode, name string, gen func() []byte) *VNode {
+	node := v.mkNode(parent, name, sIFREG|0o444, 0)
+	node.gen = gen
 	return node
 }
 
@@ -89,8 +111,7 @@ func (v *VFS) mkCharDev(parent *VNode, name string, rdev uint64) *VNode {
 // mkSymlink creates a symbolic link under parent pointing to target.
 func (v *VFS) mkSymlink(parent *VNode, name, target string) *VNode {
 	node := v.mkNode(parent, name, sIFLNK|0o777, 0)
-	node.symlink = target
-	node.size = int64(len(target))
+	node.setSymlink(target)
 	return node
 }
 
@@ -125,8 +146,7 @@ func (v *VFS) vnodeFromHost(hostPath string) *VNode {
 		node.nlink = 2
 	case sIFLNK:
 		if target, err := v.host.Readlink(hostPath); err == nil {
-			node.symlink = target
-			node.size = int64(len(target))
+			node.setSymlink(target)
 		}
 	}
 	return node
@@ -144,13 +164,17 @@ func (v *VFS) refreshHost(node *VNode) {
 	}
 }
 
-// refreshDirChildren loads missing host-backed directory entries into the VFS
-// directory node while preserving in-memory overlays.
+// refreshDirChildren updates a synthesized directory's entries, or loads the
+// missing entries of a host-backed directory while preserving in-memory
+// overlays.
 func (v *VFS) refreshDirChildren(node *VNode) {
-	if node == nil || node.hostPath == "" || node.mode&sIFMT != sIFDIR {
-		return
+	switch {
+	case node == nil || node.mode&sIFMT != sIFDIR:
+	case node.list != nil:
+		node.list(node)
+	case node.hostPath != "":
+		v.loadHostChildren(node, node.hostPath)
 	}
-	v.loadHostChildren(node, node.hostPath)
 }
 
 // loadHostChildren adds the entries of the root filesystem directory at
@@ -209,6 +233,17 @@ func (v *VFS) chtimesHost(hostPath string, atime, mtime time.Time) error {
 		return nil
 	}
 	return ch.Chtimes(hostPath, atime, mtime)
+}
+
+// chmodHost sets the permission bits of a root filesystem file, which
+// vnodeFromHost reads back. A root filesystem that cannot change modes keeps
+// them.
+func (v *VFS) chmodHost(hostPath string, mode uint32) error {
+	ch, ok := v.host.(billy.Change)
+	if !ok {
+		return nil
+	}
+	return ch.Chmod(hostPath, os.FileMode(mode&0o777))
 }
 
 // hostChildPath joins a root filesystem directory path and an entry name.
@@ -282,8 +317,11 @@ func (v *VFS) lookupNoFollow(path string) *VNode {
 // child returns the entry name of directory dir, loading it from the root
 // filesystem when the tree lacks it, or nil.
 func (v *VFS) child(dir *VNode, name string) *VNode {
-	// Use the tree's entry.
-	if child := dir.children[name]; child != nil || v.host == nil {
+	// Use the tree's entry, updating a synthesized directory first.
+	if dir.list != nil {
+		dir.list(dir)
+	}
+	if child := dir.children[name]; child != nil || v.host == nil || dir.list != nil {
 		return child
 	}
 
@@ -305,17 +343,23 @@ func (v *VFS) nodePath(node *VNode) string {
 	// Find each node's name in its parent, from node up to the root.
 	var names []string
 	for cur := node; cur != v.root && cur.parent != nil; cur = cur.parent {
-		for name, child := range cur.parent.children {
-			if child == cur {
-				names = append(names, name)
-				break
-			}
-		}
+		names = append(names, nameIn(cur.parent, cur))
 	}
 
 	// Join them from the root down.
 	slices.Reverse(names)
 	return "/" + strings.Join(names, "/")
+}
+
+// nameIn returns the name of node in directory dir, or "" when dir does not
+// hold it.
+func nameIn(dir, node *VNode) string {
+	for name, child := range dir.children {
+		if child == node {
+			return name
+		}
+	}
+	return ""
 }
 
 // mkDirAll creates the in-memory directories along an absolute path and

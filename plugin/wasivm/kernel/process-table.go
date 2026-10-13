@@ -36,6 +36,13 @@ func (t *processTable) allocPID() int {
 	return pid
 }
 
+// lastPID returns the PID allocated last, or 0 before the first.
+func (t *processTable) lastPID() int {
+	l := t.bcast.Lock()
+	defer l.Unlock()
+	return t.nextPID - 1
+}
+
 // set records p under pid, replacing any process there.
 func (t *processTable) set(pid int, p *Process) {
 	l := t.bcast.Lock()
@@ -98,11 +105,9 @@ func (t *processTable) waitChild(ctx context.Context, ppid int, match func(p *Pr
 				continue
 			}
 			found = true
-			select {
-			case <-p.exitCh:
+			if p.exited() {
 				l.Unlock()
 				return p, nil
-			default:
 			}
 		}
 		waitCh := l.WaitCh()

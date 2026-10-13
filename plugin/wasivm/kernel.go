@@ -21,16 +21,17 @@ import (
 // startKernel boots the kernel for one run on the root filesystem object
 // rootfsKey. An in-memory upper layer holds the run's writes, so each run
 // starts from the unchanged root filesystem. It returns the run's console once
-// the kernel is booting. The kernel runs until ctx is canceled or init exits,
-// then releases its resources, ends the console, and calls exited with the
-// error that ended the run, or nil when init exited.
+// the kernel is booting. The kernel runs until ctx is canceled, init exits or
+// the system halts or restarts, then releases its resources, ends the console,
+// and calls exited with whether the system restarted and the error that
+// ended the run, or nil when it ended normally.
 func startKernel(
 	ctx context.Context,
 	le *logrus.Entry,
 	ws world.WorldState,
 	rootfsKey string,
 	config *s4wave_vm.WasiVmConfig,
-	exited func(runErr error),
+	exited func(reboot bool, runErr error),
 ) (*console, error) {
 	// Open the root filesystem and the WebAssembly runtime.
 	rootfs, releaseRootfs, err := openRootfs(ctx, le, ws, rootfsKey)
@@ -77,8 +78,9 @@ func startKernel(
 		var code int32
 		var runErr error
 		var exitErr *kernel.ProcessExitError
+		reboot := errors.Is(bootErr, kernel.ErrReboot)
 		switch {
-		case bootErr == nil, ctx.Err() != nil:
+		case bootErr == nil, reboot, ctx.Err() != nil:
 		case errors.As(bootErr, &exitErr):
 			code = int32(exitErr.Code) //nolint:gosec // an exit code fits in a byte.
 		case errors.Is(bootErr, kernel.ErrNoInit):
@@ -87,7 +89,7 @@ func startKernel(
 			runErr = bootErr
 		}
 		c.exit(code, runErr)
-		exited(runErr)
+		exited(reboot, runErr)
 	}()
 	return c, nil
 }

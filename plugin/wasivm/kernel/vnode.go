@@ -25,9 +25,20 @@ type VNode struct {
 	symlink string
 	// hostPath is the root filesystem path of a host-backed node, or empty.
 	hostPath string
-	atime    time.Time
-	mtime    time.Time
-	ctime    time.Time
+	// gen generates a synthesized file's content, which each open takes a
+	// snapshot of.
+	gen func() []byte
+	// list updates a synthesized directory's entries before each use.
+	list  func(dir *VNode)
+	atime time.Time
+	mtime time.Time
+	ctime time.Time
+}
+
+// setSymlink points a symlink at target.
+func (node *VNode) setSymlink(target string) {
+	node.symlink = target
+	node.size = int64(len(target))
 }
 
 // isTerminal reports whether node is the terminal: /dev/tty or /dev/console.

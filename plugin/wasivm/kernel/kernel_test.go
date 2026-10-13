@@ -265,32 +265,46 @@ func TestShell(t *testing.T) {
 	}
 }
 
-// TestBoot checks Boot runs the configured init program.
+// TestBoot checks Boot runs init as PID 1 and reports how the run ended: an
+// exited init or a halt returns nil, and a restart returns ErrReboot.
 func TestBoot(t *testing.T) {
-	// Start a kernel whose init runs a shell command.
-	bb := busyboxWasm(t)
-	var stdout bytes.Buffer
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-	k, err := New(ctx, testRuntime(t, ctx), &Config{
-		Stdout:   &stdout,
-		Stderr:   &stdout,
-		Stdin:    strings.NewReader(""),
-		InitPath: "/bin/busybox",
-		InitArgs: []string{"sh", "-c", "echo booted"},
-		Files:    map[string][]byte{"/bin/busybox": bb},
-	})
-	if err != nil {
-		t.Fatal(err)
+	tests := []struct {
+		name    string
+		command string
+		wantErr error
+	}{
+		{name: "exit", command: "echo booted"},
+		{name: "poweroff", command: "echo booted; /bin/busybox poweroff -f"},
+		{name: "reboot", command: "echo booted; /bin/busybox reboot -f", wantErr: ErrReboot},
 	}
-	defer k.Close(ctx)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Start a kernel whose init runs a shell command.
+			bb := busyboxWasm(t)
+			var stdout bytes.Buffer
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+			k, err := New(ctx, testRuntime(t, ctx), &Config{
+				Stdout:   &stdout,
+				Stderr:   &stdout,
+				Stdin:    strings.NewReader(""),
+				InitPath: "/bin/busybox",
+				InitArgs: []string{"sh", "-c", tc.command},
+				Files:    BusyboxApplets(bb),
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer k.Close(ctx)
 
-	// Boot it and check the command's output.
-	if err := k.Boot(ctx); err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(stdout.String(), "booted") {
-		t.Errorf("output: %q, want booted", stdout.String())
+			// Boot it and check how the run ended and the command's output.
+			if err := k.Boot(ctx); !errors.Is(err, tc.wantErr) {
+				t.Fatalf("Boot = %v, want %v; output: %q", err, tc.wantErr, stdout.String())
+			}
+			if !strings.Contains(stdout.String(), "booted") {
+				t.Errorf("output: %q, want booted", stdout.String())
+			}
+		})
 	}
 }
 

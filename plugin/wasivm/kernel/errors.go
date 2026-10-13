@@ -14,6 +14,12 @@ var (
 	ErrNoInit = errors.New("init program not found")
 	// ErrNoStart is returned for a program that exports no _start function.
 	ErrNoStart = errors.New("program has no _start export")
+	// ErrReboot is returned by Boot when the system restarted through the
+	// reboot call. The caller boots a new kernel.
+	ErrReboot = errors.New("the system restarted")
+
+	// errHalt ends a run that the reboot call halted or powered off.
+	errHalt = errors.New("the system halted")
 
 	// errNoProcessContext is returned by a host function called outside a
 	// process.

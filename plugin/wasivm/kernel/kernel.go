@@ -5,6 +5,7 @@
 package kernel
 
 import (
+	"bytes"
 	"cmp"
 	"context"
 	"fmt"
@@ -30,14 +31,24 @@ type Kernel struct {
 	// mu is the kernel lock. Each host call holds it except while it
 	// blocks, so processes change the kernel's state one at a time.
 	mu sync.Mutex
+	// caller is the process whose host call holds the kernel lock, which
+	// /proc/self names.
+	caller *Process
+	// mounts is the mount table, in mount order. The kernel lock guards it.
+	mounts []*mount
 
 	// procs is the process table.
 	procs *processTable
-	// tempSeq numbers the directories mkdtemp creates.
-	tempSeq atomic.Uint32
+	// shutdown ends the run Boot started, with ErrReboot or errHalt as the
+	// cause. It is nil outside Boot.
+	shutdown context.CancelCauseFunc
 
 	// tty reports whether the console is a terminal, host or virtual.
 	tty bool
+	// fgPgid is the terminal's foreground process group, or 0 until a
+	// process sets one, when every process is in the foreground. The kernel
+	// lock guards it.
+	fgPgid int
 	// termFD is the host terminal's descriptor, or -1 for none.
 	termFD int
 	// virtTTY reports whether the kernel emulates the terminal's line
@@ -153,7 +164,9 @@ func New(ctx context.Context, rt engine.Runtime, cfg *Config) (*Kernel, error) {
 	return k, nil
 }
 
-// Boot runs the program at InitPath as PID 1 and waits for it.
+// Boot runs the program at InitPath as PID 1 and waits for it, or until the
+// reboot call ends the run. It returns ErrReboot when the system restarted
+// and nil when it halted.
 func (k *Kernel) Boot(ctx context.Context) error {
 	// Read the init program.
 	node := k.vfs.lookup(k.initPath)
@@ -165,9 +178,24 @@ func (k *Kernel) Boot(ctx context.Context) error {
 		return ErrNoInit
 	}
 
-	// Run it with its arguments.
+	// Run it with its arguments until it exits or the reboot call ends the
+	// run.
+	ctx, shutdown := context.WithCancelCause(ctx)
+	defer shutdown(nil)
+	k.mu.Lock()
+	k.shutdown = shutdown
+	k.mu.Unlock()
 	args := append([]string{k.initPath}, k.initArgs...)
-	return k.RunProcess(ctx, wasm, args...)
+	err = k.RunProcess(ctx, wasm, args...)
+
+	// Report a restart. A halt ends the run as an exiting init does.
+	switch cause := context.Cause(ctx); {
+	case errors.Is(cause, ErrReboot):
+		return ErrReboot
+	case errors.Is(cause, errHalt):
+		return nil
+	}
+	return err
 }
 
 // RunProcess runs a guest program as a new process and waits for it and every
@@ -176,6 +204,11 @@ func (k *Kernel) RunProcess(ctx context.Context, wasm []byte, args ...string) er
 	// Register the process under a fresh PID.
 	pid := k.procs.allocPID()
 	p := newProcess(k, pid, args)
+	if len(args) != 0 {
+		// Name the program by its absolute path, as /proc/self/exe does.
+		exe := cmp.Or(p.lookPath(args[0]), args[0])
+		p.exe = resolvePath(p.cwd, p.fds, atFDCWD, exe)
+	}
 	k.procs.set(pid, p)
 
 	// Run it, then wait for the children it left running.
@@ -309,8 +342,12 @@ func blocking(ctx context.Context, wait func()) {
 	}
 
 	// Release the lock while waiting.
-	p.kernel.mu.Unlock()
-	defer p.kernel.mu.Lock()
+	k := p.kernel
+	k.mu.Unlock()
+	defer func() {
+		k.mu.Lock()
+		k.caller = p
+	}()
 	wait()
 }
 
@@ -319,8 +356,9 @@ func blocking(ctx context.Context, wait func()) {
 const exitCannotRun = 126
 
 // exitProcess releases a process after its program returns: it closes the
-// process's descriptors, wakes its waiters and sends its parent SIGCHLD. When
-// no parent will reap it, it removes it from the process table.
+// process's descriptors, wakes its waiters, gives its children to init and
+// sends its parent SIGCHLD. When no parent will reap it, it removes it from
+// the process table.
 func (k *Kernel) exitProcess(p *Process) {
 	// Close the descriptors and record the exit.
 	for fd, of := range p.fds {
@@ -329,17 +367,37 @@ func (k *Kernel) exitProcess(p *Process) {
 	}
 	p.cancel()
 	close(p.exitCh)
-	k.procs.exited()
 
-	// Tell the parent, unless an exec replaced the process and its
-	// replacement tells it later.
-	replaced := k.procs.get(p.pid) != p
+	// An exec's replacement keeps the children and tells the parent later.
+	k.mu.Lock()
+	defer k.mu.Unlock()
+	defer k.procs.exited()
+	if k.procs.get(p.pid) != p {
+		return
+	}
+
+	// Give the children to init, which reaps the exited ones.
+	if init := k.procs.get(initPID); init != nil && init != p {
+		var reap bool
+		for _, c := range k.procs.filter(func(c *Process) bool { return c.ppid == p.pid }) {
+			c.ppid = initPID
+			reap = reap || c.exited()
+		}
+		if reap {
+			init.deliverSignal(SIGCHLD)
+		}
+	}
+
+	// Tell the parent, or forget a process no parent reaps.
 	if p.ppid == 0 {
 		k.procs.removeProcess(p)
-	} else if parent := k.procs.get(p.ppid); parent != nil && !replaced {
+	} else if parent := k.procs.get(p.ppid); parent != nil {
 		parent.deliverSignal(SIGCHLD)
 	}
 }
+
+// initPID is the PID of the kernel's first process, which adopts orphans.
+const initPID = 1
 
 // Close stops reading the console, restores the host terminal and closes the
 // runtime.
@@ -368,12 +426,15 @@ func (k *Kernel) Resize(cols, rows uint32) {
 // signal it received, such as SIGINT from a terminal in cooked mode.
 func (k *Kernel) Signal(sig uint32) { k.deliverSignalToForeground(sig) }
 
-// deliverSignalToForeground sends sig to every process, as a terminal sends
-// the signal of a typed character whether or not anything reads it. The
-// terminal has no foreground process group, so every process is in the
-// foreground, and each one's disposition decides what the signal does.
+// deliverSignalToForeground sends sig to the terminal's foreground process
+// group, as a terminal sends the signal of a typed character whether or not
+// anything reads it. Before a process sets a foreground group, every process
+// is in the foreground, and each one's disposition decides what the signal
+// does.
 func (k *Kernel) deliverSignalToForeground(sig uint32) {
-	for _, t := range k.procs.filter(nil) {
+	k.mu.Lock()
+	defer k.mu.Unlock()
+	for _, t := range k.procs.filter(func(t *Process) bool { return k.fgPgid == 0 || t.pgid == k.fgPgid }) {
 		t.deliverSignal(sig)
 	}
 }
@@ -394,10 +455,11 @@ func (k *Kernel) initVFS(cfg *Config) {
 	v.mkCharDev(dev, "tty", devTTY)
 	v.mkCharDev(dev, "urandom", devURandom)
 
-	// Add the in-memory directories that overlay the root filesystem.
+	// Add the in-memory directories that overlay the root filesystem, and
+	// mount the root and the proc filesystem as Linux starts init.
 	v.mkDir(v.root, "tmp")
-	proc := v.mkDir(v.root, "proc")
-	v.mkDir(proc, "self")
+	k.mounts = []*mount{{source: "rootfs", target: "/", fstype: "rootfs", root: v.root}}
+	k.mountFS(v.mkDir(v.root, "proc"), &mount{source: "proc", target: "/proc", fstype: "proc", root: k.newProcFS()})
 
 	// List the root filesystem's top level beside the overlays, or create
 	// the standard directories of an in-memory root.
@@ -411,8 +473,12 @@ func (k *Kernel) initVFS(cfg *Config) {
 		v.mkDir(v.root, "root")
 	}
 
-	// Add the configured files.
+	// Add the configured files. A WebAssembly program is executable.
 	for path, content := range cfg.Files {
-		v.addFile(path, content, 0o644)
+		perm := uint32(0o644)
+		if bytes.HasPrefix(content, wasmMagic) {
+			perm = 0o755
+		}
+		v.addFile(path, content, perm)
 	}
 }

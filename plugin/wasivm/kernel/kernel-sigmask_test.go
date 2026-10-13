@@ -6,11 +6,15 @@ import (
 	"time"
 )
 
+// sigTestPID is the PID of the process newSigTestProcess returns, which is
+// not init, so signals take their disposition.
+const sigTestPID = 2
+
 // newSigTestProcess returns a registered process with no instance.
 func newSigTestProcess() *Process {
 	k := &Kernel{procs: newProcessTable()}
-	p := newProcess(k, 1, nil)
-	k.procs.set(1, p)
+	p := newProcess(k, sigTestPID, nil)
+	k.procs.set(sigTestPID, p)
 	return p
 }
 

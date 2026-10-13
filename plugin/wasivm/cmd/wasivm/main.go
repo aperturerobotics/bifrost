@@ -16,6 +16,7 @@
 package main
 
 import (
+	"context"
 	"os"
 
 	"github.com/pkg/errors"
@@ -98,8 +99,26 @@ func (a *runArgs) Run(c *cli.Context) error {
 		cfg.Files = kernel.BusyboxApplets(wasm)
 	}
 
-	// Start the kernel.
+	// Boot init, booting a new kernel each time the system restarts.
 	ctx := c.Context
+	if a.root != "" {
+		for {
+			err := runKernel(ctx, cfg, func(k *kernel.Kernel) error { return k.Boot(ctx) })
+			if !errors.Is(err, kernel.ErrReboot) {
+				return err
+			}
+		}
+	}
+
+	// Run the program until it exits.
+	return runKernel(ctx, cfg, func(k *kernel.Kernel) error {
+		return k.RunInteractive(ctx, wasm, args...)
+	})
+}
+
+// runKernel starts a kernel on a new runtime, calls run and closes both.
+func runKernel(ctx context.Context, cfg *kernel.Config, run func(k *kernel.Kernel) error) error {
+	// Start the kernel; it serves the runtime alone.
 	rt := native.New(ctx)
 	defer rt.Close(ctx)
 	k, err := kernel.New(ctx, rt, cfg)
@@ -108,11 +127,8 @@ func (a *runArgs) Run(c *cli.Context) error {
 	}
 	defer k.Close(ctx)
 
-	// Run the program until it exits.
-	if a.root != "" {
-		return k.Boot(ctx)
-	}
-	return k.RunInteractive(ctx, wasm, args...)
+	// Run until the program exits or the system halts or restarts.
+	return run(k)
 }
 
 func main() {

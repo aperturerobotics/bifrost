@@ -33,7 +33,8 @@ type Config struct {
 	// filesystem is held only in memory. The kernel does not close it.
 	RootFS billy.Filesystem
 	// Files adds in-memory files, keyed by absolute path such as
-	// "/etc/hostname", creating their parent directories.
+	// "/etc/hostname", creating their parent directories. A WebAssembly
+	// program is installed executable and any other file read-write.
 	Files map[string][]byte
 
 	// Env is the processes' environment. When nil, it holds PATH, HOME, TERM

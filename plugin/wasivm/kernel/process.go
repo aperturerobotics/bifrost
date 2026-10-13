@@ -5,6 +5,7 @@ import (
 	"maps"
 	"slices"
 	"sync"
+	"time"
 
 	"github.com/s4wave/spacewave/plugin/wasivm/kernel/engine"
 )
@@ -23,6 +24,11 @@ type Process struct {
 	globals []string
 	// cancel ends the program. Exit and a terminating signal call it.
 	cancel context.CancelFunc
+	// started is when the process started, kept across exec.
+	started time.Time
+	// memSize is the size of the program's memory at its last host call. The
+	// kernel lock guards it.
+	memSize uint32
 
 	// exitCh closes when the program has exited and exitCode and exitSignal
 	// are final. exitSignal is the signal that ended the program, or 0.
@@ -31,7 +37,8 @@ type Process struct {
 	exitSignal uint32
 
 	// selfExecProc is the process that replaced this one through exec. The
-	// caller waits on it.
+	// caller waits on it. It is set under sigMu, which hands later signals
+	// to it.
 	selfExecProc *Process
 	// jmpBufs holds the state setjmp recorded, by jmp_buf address.
 	jmpBufs map[uint32]jmpBufEntry
@@ -62,17 +69,11 @@ type procState struct {
 	pgid int
 	sid  int
 
-	// The credentials: the real, effective, saved and filesystem ids, and
-	// the supplementary groups. Every process runs as root by default, and
-	// the kernel stores the ids without checking file permissions.
-	uid    uint32
-	gid    uint32
-	euid   uint32
-	egid   uint32
-	suid   uint32
-	sgid   uint32
-	fsuid  uint32
-	fsgid  uint32
+	// The credentials: the user and group ids and the supplementary groups.
+	// Every process runs as root by default, and the kernel stores the ids
+	// without checking file permissions.
+	uids   ids
+	gids   ids
 	groups []uint32
 
 	// fds maps each descriptor number to its open file.
@@ -86,6 +87,8 @@ type procState struct {
 
 	env  map[string]string
 	args []string
+	// exe is the path of the program the process runs.
+	exe string
 }
 
 // clone returns a copy of s that shares no maps or slices with it.
@@ -124,8 +127,9 @@ func newProcess(k *Kernel, pid int, args []string) *Process {
 			env:     maps.Clone(k.env),
 			args:    args,
 		},
-		kernel: k,
-		exitCh: make(chan struct{}),
+		kernel:  k,
+		exitCh:  make(chan struct{}),
+		started: time.Now(),
 	}
 
 	// Open the standard descriptors and the root preopen.
@@ -148,6 +152,16 @@ func (p *Process) allocFD() uint32 {
 		fd++
 	}
 	return fd
+}
+
+// exited reports whether the program has exited.
+func (p *Process) exited() bool {
+	select {
+	case <-p.exitCh:
+		return true
+	default:
+		return false
+	}
 }
 
 // start runs the guest's _start entry point until the program exits.

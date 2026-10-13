@@ -663,7 +663,7 @@ func (p *Process) wasiPathSymlink(mem engine.Memory, oldpathPtr, oldpathLen, dir
 }
 
 // wasiPathReadlink writes a symlink's target, cut to bufLen bytes, to bufPtr
-// and its length to usedPtr. /proc/self/exe reads as the program's path.
+// and its length to usedPtr.
 func (p *Process) wasiPathReadlink(mem engine.Memory, dirfd, pathPtr, pathLen, bufPtr, bufLen, usedPtr uint32) uint32 {
 	// Find the target.
 	resolved, errno := p.wasiPathFromMemory(mem, dirfd, pathPtr, pathLen)
@@ -673,8 +673,6 @@ func (p *Process) wasiPathReadlink(mem engine.Memory, dirfd, pathPtr, pathLen, b
 	node := p.kernel.vfs.lookupNoFollow(resolved)
 	var target string
 	switch {
-	case resolved == "/proc/self/exe" && len(p.args) != 0:
-		target = p.args[0]
 	case node == nil:
 		return wasiErrno(ENOENT)
 	case node.mode&sIFMT != sIFLNK:

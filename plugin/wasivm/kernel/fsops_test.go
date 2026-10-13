@@ -40,21 +40,22 @@ func TestSendfileAdvancesOffset(t *testing.T) {
 	}
 }
 
-// TestSendfileOffsetPointer checks sendfile with an offset pointer copies
-// from that offset and advances it, leaving the descriptor's offset alone.
+// TestSendfileOffsetPointer checks sendfile with a pointer to a 64-bit offset
+// copies from that offset and advances it, leaving the descriptor's offset
+// alone.
 func TestSendfileOffsetPointer(t *testing.T) {
 	// Copy three bytes from offset 2.
 	p, mem := fsTestProcess()
 	inFD, _ := openTestFile(p, "in", []byte("abcdefgh"))
 	outFD, out := openTestFile(p, "out", nil)
 	const offPtr = 2048
-	mem.WriteUint32Le(offPtr, 2)
+	mem.WriteUint64Le(offPtr, 2)
 	if res := p.sysSendfile(context.Background(), outFD, inFD, offPtr, 3); res != 3 {
 		t.Fatalf("sendfile = %#x, want 3", res)
 	}
 
 	// Check the copy and both offsets.
-	off, _ := mem.ReadUint32Le(offPtr)
+	off, _ := mem.ReadUint64Le(offPtr)
 	if string(out.data) != "cde" || off != 5 || p.fds[inFD].offset != 0 {
 		t.Fatalf("copied %q, pointer offset %d, descriptor offset %d; want %q, 5, 0", out.data, off, p.fds[inFD].offset, "cde")
 	}

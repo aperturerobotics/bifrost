@@ -15,6 +15,9 @@ type OpenFile struct {
 	// descriptor table entry holds one reference to it.
 	pipe *pipeEnd
 
+	// data is a synthesized file's content, generated at open.
+	data []byte
+
 	// Directory reading state for getdents64.
 	dirNames []string
 }
