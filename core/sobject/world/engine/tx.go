@@ -140,8 +140,9 @@ func (t *soEngineWriteTx) Commit(ctx context.Context) error {
 	}
 
 	// The candidate is the World after the operation on the fork's position.
+	// It derives from the fork's head, which the engine installed when the
+	// fork began, because the engine's head is gone once the engine closes.
 	next := t.fork.state.CloneVT()
-	next.HeadRef = t.eng.bengine.GetRootRef()
 	next.HeadRef.RootRef = nroot
 	next.HeadRef.BucketId = ""
 	t.fork.state = next
