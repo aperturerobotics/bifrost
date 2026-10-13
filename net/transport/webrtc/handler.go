@@ -96,6 +96,8 @@ func (r *handleSignalPeerResolver) Resolve(ctx context.Context, handler directiv
 			return err
 		}
 
+		// Hand the signal to the tracker, which reads it between sessions and
+		// during one.
 		select {
 		case <-ctx.Done():
 			return context.Canceled
