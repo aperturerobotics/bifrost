@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import { LuTerminal } from 'react-icons/lu'
 
 import { useResource } from '@aptre/bldr-sdk/hooks/useResource.js'
+import type { Root } from '@s4wave/sdk/root/root.js'
 import { UnixFSTypeID } from '@s4wave/sdk/unixfs/type.js'
 import {
   CREATE_WASIVM_OP_ID,
@@ -10,6 +11,7 @@ import {
 import { CreateWasiVmOp } from '@s4wave/sdk/vm/wasivm.pb.js'
 import { listObjectsWithType } from '@s4wave/sdk/world/types/types.js'
 import type { IWorldState } from '@s4wave/sdk/world/world-state.js'
+import { useRootResource } from '@s4wave/web/hooks/useRootResource.js'
 import type { ObjectViewerComponentProps } from '@s4wave/web/object/object.js'
 import { LoadingCard } from '@s4wave/web/ui/loading/LoadingCard.js'
 import { toast } from '@s4wave/web/ui/toaster.js'
@@ -21,15 +23,36 @@ import { WizardFieldFrame } from '@s4wave/app/wizard/WizardFieldFrame.js'
 import { wizardInputClassName } from '@s4wave/app/wizard/wizard-field-styles.js'
 import { WizardShell } from '@s4wave/app/wizard/WizardShell.js'
 
-// WasiVmWizard creates a WasiVM: its name, the UnixFS object holding
-// its root filesystem, and the init program it runs.
+import {
+  formatWasiVmImageLabel,
+  linkCdnWasiVmImage,
+  listCdnWasiVmImages,
+} from './wasivm-images.js'
+
+// imageChoicePrefix and fsChoicePrefix mark a root filesystem choice as a
+// published image or a filesystem in this Space.
+const imageChoicePrefix = 'image:'
+const fsChoicePrefix = 'fs:'
+
+// WasiVmWizard creates a WasiVM: its name, the root filesystem it boots,
+// either a published image or a UnixFS object in the Space, and the init
+// program it runs.
 export default function WasiVmWizard(props: ObjectViewerComponentProps) {
   const ws = useWizardState(props, undefined)
   const { state } = ws
   const [rootfsChoice, setRootfsChoice] = useState('')
   const [initPath, setInitPath] = useState('')
 
-  // List the filesystems the VM can run on; the first is the default.
+  // List the published images and the filesystems in this Space; the default
+  // published image is the default choice. When the CDN is unreachable only
+  // the Space filesystems are listed.
+  const rootResource = useRootResource()
+  const cdnImages =
+    useResource(
+      rootResource,
+      (root: Root, signal: AbortSignal) => listCdnWasiVmImages(root, signal),
+      [],
+    ).value ?? []
   const unixfsKeys =
     useResource(
       props.worldState,
@@ -37,20 +60,45 @@ export default function WasiVmWizard(props: ObjectViewerComponentProps) {
         listObjectsWithType(world, UnixFSTypeID, signal),
       [],
     ).value ?? []
-  const rootfsKey = rootfsChoice || unixfsKeys[0] || ''
+  const choice =
+    rootfsChoice ||
+    (cdnImages[0]
+      ? imageChoicePrefix + cdnImages[0].objectKey
+      : unixfsKeys[0]
+        ? fsChoicePrefix + unixfsKeys[0]
+        : '')
+  const image = cdnImages.find(
+    (entry) => imageChoicePrefix + entry.objectKey === choice,
+  )
+  const rootfsKey = choice.startsWith(fsChoicePrefix)
+    ? choice.slice(fsChoicePrefix.length)
+    : ''
   const name = ws.localName.trim()
+  const root = rootResource.value
 
-  // Create the VM, then replace the wizard with it.
+  // Link the published image when one is chosen, create the VM, then replace
+  // the wizard with it.
   const handleFinalize = useCallback(async () => {
-    if (!state || ws.creating || !name || !rootfsKey) return
+    if (!state || ws.creating || !name || (!image && !rootfsKey)) return
     ws.setCreating(true)
     try {
       await ws.persistDraftState()
+      if (image) {
+        if (!root) throw new Error('root resource not ready')
+        await linkCdnWasiVmImage(
+          ws.spaceWorld,
+          root,
+          image,
+          ws.sessionPeerId,
+          new AbortController().signal,
+        )
+      }
       const objectKey = await buildObjectKey(ws.spaceWorld, 'vm/wasivm/', name)
       const op = CreateWasiVmOp.create({
         objectKey,
         name,
         rootfsObjectKey: rootfsKey,
+        imageObjectKey: image?.objectKey ?? '',
         config: { initPath: initPath.trim() },
         timestamp: new Date(),
       })
@@ -67,7 +115,7 @@ export default function WasiVmWizard(props: ObjectViewerComponentProps) {
     } finally {
       ws.setCreating(false)
     }
-  }, [state, ws, name, rootfsKey, initPath])
+  }, [state, ws, name, image, rootfsKey, root, initPath])
 
   if (!state) {
     return (
@@ -100,27 +148,43 @@ export default function WasiVmWizard(props: ObjectViewerComponentProps) {
       nameLabel="VM name"
       creating={ws.creating}
       onFinalize={() => void handleFinalize()}
-      canFinalize={!!name && !!rootfsKey}
+      canFinalize={!!name && (!!image || !!rootfsKey)}
     >
       <WizardFieldFrame
         label="Root filesystem"
         help={
-          unixfsKeys.length === 0
+          !choice
             ? 'Add a filesystem to this Space first; the VM runs its programs.'
             : 'The VM runs on a copy of this filesystem; its writes are discarded when it stops.'
         }
       >
         <select
-          value={rootfsKey}
-          disabled={unixfsKeys.length === 0}
+          value={choice}
+          disabled={!choice}
           onChange={(e) => setRootfsChoice(e.target.value)}
-          className={`${wizardInputClassName} w-full rounded-md border px-2 font-mono`}
+          className={`${wizardInputClassName} w-full rounded-md border px-2`}
         >
-          {unixfsKeys.map((key) => (
-            <option key={key} value={key}>
-              {key}
-            </option>
-          ))}
+          {cdnImages.length !== 0 && (
+            <optgroup label="Published images">
+              {cdnImages.map((entry) => (
+                <option
+                  key={entry.objectKey}
+                  value={imageChoicePrefix + entry.objectKey}
+                >
+                  {formatWasiVmImageLabel(entry.image)}
+                </option>
+              ))}
+            </optgroup>
+          )}
+          {unixfsKeys.length !== 0 && (
+            <optgroup label="Filesystems in this Space">
+              {unixfsKeys.map((key) => (
+                <option key={key} value={fsChoicePrefix + key}>
+                  {key}
+                </option>
+              ))}
+            </optgroup>
+          )}
         </select>
       </WizardFieldFrame>
       <WizardField

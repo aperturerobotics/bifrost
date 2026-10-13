@@ -3,6 +3,7 @@ package wasivm_plugin
 import (
 	"context"
 
+	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/starpc/srpc"
 	"github.com/pkg/errors"
 	resource_client "github.com/s4wave/spacewave/bldr/resource/client"
@@ -21,13 +22,15 @@ import (
 // handler serves the WasiVM ObjectType and operations to the core plugin.
 type handler struct {
 	le *logrus.Entry
+	// b mounts the CDN Spaces of published images.
+	b bus.Bus
 	// consoles holds the console of each running VM.
 	consoles *consoleTable
 }
 
 // newHandler constructs a handler.
-func newHandler(le *logrus.Entry) *handler {
-	return &handler{le: le, consoles: newConsoleTable()}
+func newHandler(le *logrus.Entry, b bus.Bus) *handler {
+	return &handler{le: le, b: b, consoles: newConsoleTable()}
 }
 
 // InvokeObjectType opens a WasiVM resource on the attached engine.
@@ -54,6 +57,7 @@ func (h *handler) InvokeObjectType(
 	}
 	vm := &vmResource{
 		le:        h.le.WithField("object-key", req.GetObjectKey()),
+		b:         h.b,
 		objectKey: req.GetObjectKey(),
 		ws:        world.NewEngineWorldState(engine, true),
 		consoles:  h.consoles,
@@ -189,6 +193,7 @@ func unmarshalOp(ctx context.Context, opTypeID string, data []byte) (world.Opera
 	op, err := world.LookupOpSlice([]world.LookupOp{
 		s4wave_vm.LookupCreateWasiVmOp,
 		s4wave_vm.LookupSetWasiVmStateOp,
+		s4wave_vm.LookupCreateWasiVmImageOp,
 	}).LookupOp(ctx, opTypeID)
 	if err == nil && op == nil {
 		err = errors.New("unhandled operation type")

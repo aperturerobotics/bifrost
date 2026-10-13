@@ -90,7 +90,7 @@ func (r *v86MountResolver) resolve(ctx context.Context, name string) (*unixfs.FS
 	}
 
 	// Resolve the VM override before consulting the linked image.
-	targetKey, ok, err := lookupSingleEdge(ctx, r.ws, r.objectKey, string(overridePred))
+	targetKey, ok, err := world.LookupGraphObjectKey(ctx, r.ws, r.objectKey, string(overridePred))
 	if err != nil {
 		return nil, err
 	}
@@ -99,14 +99,14 @@ func (r *v86MountResolver) resolve(ctx context.Context, name string) (*unixfs.FS
 	}
 
 	// Resolve the linked image and its requested filesystem asset.
-	imageKey, ok, err := lookupSingleEdge(ctx, r.ws, r.objectKey, string(s4wave_vm.PredV86Image))
+	imageKey, ok, err := world.LookupGraphObjectKey(ctx, r.ws, r.objectKey, string(s4wave_vm.PredV86Image))
 	if err != nil {
 		return nil, err
 	}
 	if !ok {
 		return nil, errors.Errorf("no v86/image edge on %s", r.objectKey)
 	}
-	assetKey, ok, err := lookupSingleEdge(ctx, r.ws, imageKey, string(imagePred))
+	assetKey, ok, err := world.LookupGraphObjectKey(ctx, r.ws, imageKey, string(imagePred))
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +128,7 @@ func (r *v86MountResolver) resolve(ctx context.Context, name string) (*unixfs.FS
 	if err != nil {
 		return nil, err
 	}
-	assetKey, ok, err = lookupSingleEdge(ctx, cdnWS, src.GetObjectKey(), string(imagePred))
+	assetKey, ok, err = world.LookupGraphObjectKey(ctx, cdnWS, src.GetObjectKey(), string(imagePred))
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +185,7 @@ func (r *v86MountResolver) release() {
 }
 
 // readV86ImageCdnSource reads the cdn_source of the V86Image at imageKey.
-func readV86ImageCdnSource(ctx context.Context, ws world.WorldState, imageKey string) (*s4wave_vm.V86ImageCdnSource, error) {
+func readV86ImageCdnSource(ctx context.Context, ws world.WorldState, imageKey string) (*s4wave_vm.VmImageCdnSource, error) {
 	// Open the image object.
 	objState, found, err := ws.GetObject(ctx, imageKey)
 	defer world.ReleaseObjectState(objState)
@@ -197,7 +197,7 @@ func readV86ImageCdnSource(ctx context.Context, ws world.WorldState, imageKey st
 	}
 
 	// Copy the source out of the image block.
-	var src *s4wave_vm.V86ImageCdnSource
+	var src *s4wave_vm.VmImageCdnSource
 	_, _, err = world.AccessObjectState(ctx, objState, false, func(bcs *block.Cursor) error {
 		img, err := block.UnmarshalBlock[*s4wave_vm.V86Image](ctx, bcs, func() block.Block {
 			return &s4wave_vm.V86Image{}
@@ -212,29 +212,6 @@ func readV86ImageCdnSource(ctx context.Context, ws world.WorldState, imageKey st
 		return nil, errors.Wrapf(err, "read v86 image %s", imageKey)
 	}
 	return src, nil
-}
-
-// lookupSingleEdge returns the target object key of the first graph quad
-// matching (subject, predicate, *). Reports (_, false, nil) when no edge is set.
-func lookupSingleEdge(ctx context.Context, ws world.WorldState, subject, pred string) (string, bool, error) {
-	// Look up the first graph edge matching the subject and predicate.
-	gqs, err := ws.LookupGraphQuads(
-		ctx,
-		world.NewGraphQuadWithKeys(subject, pred, "", ""),
-		1,
-	)
-	if err != nil {
-		return "", false, errors.Wrapf(err, "lookup graph edge %s on %s", pred, subject)
-	}
-	if len(gqs) == 0 {
-		return "", false, nil
-	}
-	targetKey, err := world.GraphValueToKey(gqs[0].GetObj())
-	if err != nil {
-		// Decode the graph target as a World object key.
-		return "", false, errors.Wrap(err, "parse target object key")
-	}
-	return targetKey, true, nil
 }
 
 // openFSHandleForObject opens a read-only FSHandle for a UnixFS world object.

@@ -55,7 +55,7 @@ func (x *WasiVmConfig) GetEnv() map[string]string {
 }
 
 // WasiVm is a virtual machine that runs WebAssembly programs on the WasiVM
-// kernel, with its root filesystem read from a UnixFS object.
+// kernel, with its root filesystem read from a UnixFS object or a WasiVmImage.
 type WasiVm struct {
 	unknownFields []byte
 	// State is the desired VM state. Runtime observations are in observed_state.
@@ -129,7 +129,8 @@ func (x *WasiVm) GetRunGeneration() uint64 {
 	return 0
 }
 
-// CreateWasiVmOp creates a new WasiVm world object linked to its rootfs.
+// CreateWasiVmOp creates a new WasiVm world object linked to its root
+// filesystem. At least one of rootfs_object_key and image_object_key is set.
 type CreateWasiVmOp struct {
 	unknownFields []byte
 	// ObjectKey is the key to create the VM at.
@@ -142,6 +143,8 @@ type CreateWasiVmOp struct {
 	Timestamp *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 	// RootfsObjectKey points at the UnixFS object holding the root filesystem.
 	RootfsObjectKey string `protobuf:"bytes,5,opt,name=rootfs_object_key,json=rootfsObjectKey,proto3" json:"rootfsObjectKey,omitempty"`
+	// ImageObjectKey points at the WasiVmImage supplying the root filesystem.
+	ImageObjectKey string `protobuf:"bytes,6,opt,name=image_object_key,json=imageObjectKey,proto3" json:"imageObjectKey,omitempty"`
 }
 
 func (x *CreateWasiVmOp) Reset() {
@@ -183,6 +186,120 @@ func (x *CreateWasiVmOp) GetRootfsObjectKey() string {
 		return x.RootfsObjectKey
 	}
 	return ""
+}
+
+func (x *CreateWasiVmOp) GetImageObjectKey() string {
+	if x != nil {
+		return x.ImageObjectKey
+	}
+	return ""
+}
+
+// WasiVmImage is a root filesystem published for WasiVMs. The object carries
+// metadata; the filesystem is linked through the wasivmimage/rootfs edge, or
+// read from the published image named by cdn_source.
+type WasiVmImage struct {
+	unknownFields []byte
+	// Name is the human-readable name of the image.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// Version identifies this revision of the image.
+	Version string `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
+	// Description is a free-form description of the image.
+	Description string `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	// Tags is a list of discovery tags, e.g. ["default"].
+	Tags []string `protobuf:"bytes,4,rep,name=tags,proto3" json:"tags,omitempty"`
+	// CreatedAt is the creation timestamp.
+	CreatedAt *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"createdAt,omitempty"`
+	// CdnSource locates the published image whose root filesystem this image
+	// reads lazily. Unset when the image has its own wasivmimage/rootfs edge.
+	CdnSource *VmImageCdnSource `protobuf:"bytes,6,opt,name=cdn_source,json=cdnSource,proto3" json:"cdnSource,omitempty"`
+}
+
+func (x *WasiVmImage) Reset() {
+	*x = WasiVmImage{}
+}
+
+func (*WasiVmImage) ProtoMessage() {}
+
+func (x *WasiVmImage) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *WasiVmImage) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
+func (x *WasiVmImage) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *WasiVmImage) GetTags() []string {
+	if x != nil {
+		return x.Tags
+	}
+	return nil
+}
+
+func (x *WasiVmImage) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+func (x *WasiVmImage) GetCdnSource() *VmImageCdnSource {
+	if x != nil {
+		return x.CdnSource
+	}
+	return nil
+}
+
+// CreateWasiVmImageOp creates a new WasiVmImage world object. Its rootfs edge,
+// when the image has one, is set separately via SetGraphQuad.
+type CreateWasiVmImageOp struct {
+	unknownFields []byte
+	// ObjectKey is the key to create the image at.
+	ObjectKey string `protobuf:"bytes,1,opt,name=object_key,json=objectKey,proto3" json:"objectKey,omitempty"`
+	// Image carries the metadata of the new image. Name is required.
+	Image *WasiVmImage `protobuf:"bytes,2,opt,name=image,proto3" json:"image,omitempty"`
+	// Timestamp is the creation timestamp. Stored on the block as CreatedAt.
+	Timestamp *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+}
+
+func (x *CreateWasiVmImageOp) Reset() {
+	*x = CreateWasiVmImageOp{}
+}
+
+func (*CreateWasiVmImageOp) ProtoMessage() {}
+
+func (x *CreateWasiVmImageOp) GetObjectKey() string {
+	if x != nil {
+		return x.ObjectKey
+	}
+	return ""
+}
+
+func (x *CreateWasiVmImageOp) GetImage() *WasiVmImage {
+	if x != nil {
+		return x.Image
+	}
+	return nil
+}
+
+func (x *CreateWasiVmImageOp) GetTimestamp() *timestamppb.Timestamp {
+	if x != nil {
+		return x.Timestamp
+	}
+	return nil
 }
 
 // SetWasiVmStateOp changes the desired state of an existing WasiVm object.
@@ -288,6 +405,7 @@ func (m *CreateWasiVmOp) CloneVT() *CreateWasiVmOp {
 	r.ObjectKey = m.ObjectKey
 	r.Name = m.Name
 	r.RootfsObjectKey = m.RootfsObjectKey
+	r.ImageObjectKey = m.ImageObjectKey
 	r.Config = protobuf_go_lite.CloneVTValue(m.Config)
 	r.Timestamp = protobuf_go_lite.CloneVTValue(m.Timestamp)
 	if len(m.unknownFields) > 0 {
@@ -297,6 +415,45 @@ func (m *CreateWasiVmOp) CloneVT() *CreateWasiVmOp {
 }
 
 func (m *CreateWasiVmOp) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *WasiVmImage) CloneVT() *WasiVmImage {
+	if m == nil {
+		return (*WasiVmImage)(nil)
+	}
+	r := new(WasiVmImage)
+	r.Name = m.Name
+	r.Version = m.Version
+	r.Description = m.Description
+	r.Tags = protobuf_go_lite.CloneSlice(m.Tags)
+	r.CreatedAt = protobuf_go_lite.CloneVTValue(m.CreatedAt)
+	r.CdnSource = protobuf_go_lite.CloneVTValue(m.CdnSource)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *WasiVmImage) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *CreateWasiVmImageOp) CloneVT() *CreateWasiVmImageOp {
+	if m == nil {
+		return (*CreateWasiVmImageOp)(nil)
+	}
+	r := new(CreateWasiVmImageOp)
+	r.ObjectKey = m.ObjectKey
+	r.Image = protobuf_go_lite.CloneVTValue(m.Image)
+	r.Timestamp = protobuf_go_lite.CloneVTValue(m.Timestamp)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *CreateWasiVmImageOp) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
@@ -402,11 +559,75 @@ func (this *CreateWasiVmOp) EqualVT(that *CreateWasiVmOp) bool {
 	if this.RootfsObjectKey != that.RootfsObjectKey {
 		return false
 	}
+	if this.ImageObjectKey != that.ImageObjectKey {
+		return false
+	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
 func (this *CreateWasiVmOp) EqualMessageVT(thatMsg any) bool {
 	that, ok := thatMsg.(*CreateWasiVmOp)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *WasiVmImage) EqualVT(that *WasiVmImage) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.Name != that.Name {
+		return false
+	}
+	if this.Version != that.Version {
+		return false
+	}
+	if this.Description != that.Description {
+		return false
+	}
+	if !protobuf_go_lite.EqualSlice(this.Tags, that.Tags) {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.CreatedAt, that.CreatedAt) {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.CdnSource, that.CdnSource) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *WasiVmImage) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*WasiVmImage)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *CreateWasiVmImageOp) EqualVT(that *CreateWasiVmImageOp) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.ObjectKey != that.ObjectKey {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.Image, that.Image) {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.Timestamp, that.Timestamp) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *CreateWasiVmImageOp) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*CreateWasiVmImageOp)
 	if !ok {
 		return false
 	}
@@ -694,6 +915,11 @@ func (x *CreateWasiVmOp) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("rootfsObjectKey")
 		s.WriteString(x.RootfsObjectKey)
 	}
+	if x.ImageObjectKey != "" || s.HasField("imageObjectKey") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("imageObjectKey")
+		s.WriteString(x.ImageObjectKey)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -734,12 +960,175 @@ func (x *CreateWasiVmOp) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "rootfs_object_key", "rootfsObjectKey":
 			s.AddField("rootfs_object_key")
 			x.RootfsObjectKey = s.ReadString()
+		case "image_object_key", "imageObjectKey":
+			s.AddField("image_object_key")
+			x.ImageObjectKey = s.ReadString()
 		}
 	})
 }
 
 // UnmarshalJSON unmarshals the CreateWasiVmOp from JSON.
 func (x *CreateWasiVmOp) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the WasiVmImage message to JSON.
+func (x *WasiVmImage) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Name != "" || s.HasField("name") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("name")
+		s.WriteString(x.Name)
+	}
+	if x.Version != "" || s.HasField("version") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("version")
+		s.WriteString(x.Version)
+	}
+	if x.Description != "" || s.HasField("description") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("description")
+		s.WriteString(x.Description)
+	}
+	if len(x.Tags) > 0 || s.HasField("tags") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("tags")
+		s.WriteStringArray(x.Tags)
+	}
+	if x.CreatedAt != nil || s.HasField("createdAt") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("createdAt")
+		x.CreatedAt.MarshalProtoJSON(s.WithField("createdAt"))
+	}
+	if x.CdnSource != nil || s.HasField("cdnSource") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("cdnSource")
+		x.CdnSource.MarshalProtoJSON(s.WithField("cdnSource"))
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the WasiVmImage to JSON.
+func (x *WasiVmImage) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the WasiVmImage message from JSON.
+func (x *WasiVmImage) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "name":
+			s.AddField("name")
+			x.Name = s.ReadString()
+		case "version":
+			s.AddField("version")
+			x.Version = s.ReadString()
+		case "description":
+			s.AddField("description")
+			x.Description = s.ReadString()
+		case "tags":
+			s.AddField("tags")
+			if s.ReadNil() {
+				x.Tags = nil
+				return
+			}
+			x.Tags = s.ReadStringArray()
+		case "created_at", "createdAt":
+			if s.ReadNil() {
+				x.CreatedAt = nil
+				return
+			}
+			x.CreatedAt = &timestamppb.Timestamp{}
+			x.CreatedAt.UnmarshalProtoJSON(s.WithField("created_at", true))
+		case "cdn_source", "cdnSource":
+			if s.ReadNil() {
+				x.CdnSource = nil
+				return
+			}
+			x.CdnSource = &VmImageCdnSource{}
+			x.CdnSource.UnmarshalProtoJSON(s.WithField("cdn_source", true))
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the WasiVmImage from JSON.
+func (x *WasiVmImage) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the CreateWasiVmImageOp message to JSON.
+func (x *CreateWasiVmImageOp) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.ObjectKey != "" || s.HasField("objectKey") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("objectKey")
+		s.WriteString(x.ObjectKey)
+	}
+	if x.Image != nil || s.HasField("image") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("image")
+		x.Image.MarshalProtoJSON(s.WithField("image"))
+	}
+	if x.Timestamp != nil || s.HasField("timestamp") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("timestamp")
+		x.Timestamp.MarshalProtoJSON(s.WithField("timestamp"))
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the CreateWasiVmImageOp to JSON.
+func (x *CreateWasiVmImageOp) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the CreateWasiVmImageOp message from JSON.
+func (x *CreateWasiVmImageOp) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "object_key", "objectKey":
+			s.AddField("object_key")
+			x.ObjectKey = s.ReadString()
+		case "image":
+			if s.ReadNil() {
+				x.Image = nil
+				return
+			}
+			x.Image = &WasiVmImage{}
+			x.Image.UnmarshalProtoJSON(s.WithField("image", true))
+		case "timestamp":
+			if s.ReadNil() {
+				x.Timestamp = nil
+				return
+			}
+			x.Timestamp = &timestamppb.Timestamp{}
+			x.Timestamp.UnmarshalProtoJSON(s.WithField("timestamp", true))
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the CreateWasiVmImageOp from JSON.
+func (x *CreateWasiVmImageOp) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -958,6 +1347,11 @@ func (m *CreateWasiVmOp) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if len(m.ImageObjectKey) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.ImageObjectKey)
+		i--
+		dAtA[i] = 0x32
+	}
 	if len(m.RootfsObjectKey) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.RootfsObjectKey)
 		i--
@@ -985,6 +1379,137 @@ func (m *CreateWasiVmOp) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	}
 	if len(m.Name) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.Name)
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.ObjectKey) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.ObjectKey)
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WasiVmImage) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WasiVmImage) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *WasiVmImage) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.CdnSource != nil {
+		size, err := m.CdnSource.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x32
+	}
+	if m.CreatedAt != nil {
+		size, err := m.CreatedAt.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x2a
+	}
+	if len(m.Tags) > 0 {
+		for iNdEx := len(m.Tags) - 1; iNdEx >= 0; iNdEx-- {
+			i = protobuf_go_lite.EncodeString(dAtA, i, m.Tags[iNdEx])
+			i--
+			dAtA[i] = 0x22
+		}
+	}
+	if len(m.Description) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.Description)
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Version) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.Version)
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Name) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.Name)
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *CreateWasiVmImageOp) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *CreateWasiVmImageOp) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *CreateWasiVmImageOp) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.Timestamp != nil {
+		size, err := m.Timestamp.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if m.Image != nil {
+		size, err := m.Image.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
 		i--
 		dAtA[i] = 0x12
 	}
@@ -1096,6 +1621,48 @@ func (m *CreateWasiVmOp) SizeVT() (n int) {
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.RootfsObjectKey)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.ImageObjectKey)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *WasiVmImage) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Name)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Version)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Description)
+	n += protobuf_go_lite.SizeStringSlice(1, m.Tags)
+	if m.CreatedAt != nil {
+		l = m.CreatedAt.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	if m.CdnSource != nil {
+		l = m.CdnSource.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *CreateWasiVmImageOp) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.ObjectKey)
+	if m.Image != nil {
+		l = m.Image.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	if m.Timestamp != nil {
+		l = m.Timestamp.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -1224,10 +1791,74 @@ func (x *CreateWasiVmOp) MarshalProtoText() string {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "rootfs_object_key")
 		protobuf_go_lite.TextWriteString(&sb, x.RootfsObjectKey)
 	}
+	if x.ImageObjectKey != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "image_object_key")
+		protobuf_go_lite.TextWriteString(&sb, x.ImageObjectKey)
+	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
 func (x *CreateWasiVmOp) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *WasiVmImage) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WasiVmImage")
+	if x.Name != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "name")
+		protobuf_go_lite.TextWriteString(&sb, x.Name)
+	}
+	if x.Version != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "version")
+		protobuf_go_lite.TextWriteString(&sb, x.Version)
+	}
+	if x.Description != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "description")
+		protobuf_go_lite.TextWriteString(&sb, x.Description)
+	}
+	if len(x.Tags) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "tags")
+		for i, v := range x.Tags {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			protobuf_go_lite.TextWriteString(&sb, v)
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	if x.CreatedAt != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "created_at")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.CreatedAt)
+	}
+	if x.CdnSource != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "cdn_source")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.CdnSource)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *WasiVmImage) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *CreateWasiVmImageOp) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "CreateWasiVmImageOp")
+	if x.ObjectKey != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "object_key")
+		protobuf_go_lite.TextWriteString(&sb, x.ObjectKey)
+	}
+	if x.Image != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "image")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Image)
+	}
+	if x.Timestamp != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "timestamp")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Timestamp)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *CreateWasiVmImageOp) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -1558,6 +2189,212 @@ func (m *CreateWasiVmOp) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.RootfsObjectKey = v
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ImageObjectKey", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.ImageObjectKey = v
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *WasiVmImage) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WasiVmImage: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WasiVmImage: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Name = v
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Version", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Version = v
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Description", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Description = v
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Tags", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Tags = append(m.Tags, v)
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CreatedAt", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.CreatedAt == nil {
+				m.CreatedAt = &timestamppb.Timestamp{}
+			}
+			if err := m.CreatedAt.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CdnSource", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.CdnSource == nil {
+				m.CdnSource = &VmImageCdnSource{}
+			}
+			if err := m.CdnSource.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *CreateWasiVmImageOp) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CreateWasiVmImageOp: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CreateWasiVmImageOp: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ObjectKey", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.ObjectKey = v
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Image", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Image == nil {
+				m.Image = &WasiVmImage{}
+			}
+			if err := m.Image.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Timestamp", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Timestamp == nil {
+				m.Timestamp = &timestamppb.Timestamp{}
+			}
+			if err := m.Timestamp.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

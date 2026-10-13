@@ -16,11 +16,13 @@ import { InfoCard } from '@s4wave/web/ui/InfoCard.js'
 import { LoadingCard } from '@s4wave/web/ui/loading/LoadingCard.js'
 
 import {
+  mountCdnImageSpace,
+  type CdnImageSpace,
+} from '../vm/cdn-image-space.js'
+import {
   formatV86ImageLabel,
   getV86CatalogErrorCopy,
   listCdnV86Images,
-  mountCdnImageSpace,
-  type CdnImageSpace,
   type V86ImageEntry,
 } from '../vm/v86-images.js'
 import { V86ImageRow } from './V86ImageRow.js'

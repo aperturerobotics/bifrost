@@ -214,19 +214,30 @@ func newVmCreateWasiVmCommand(statePath *string, sessionIdx *uint, spaceID *stri
 			&cli.StringFlag{Name: "as", Usage: "destination VM object key", Destination: &args.objectKey},
 			&cli.StringFlag{Name: "rootfs", Usage: "root filesystem UnixFS object key", Destination: &args.rootfsObjectKey},
 			&cli.StringFlag{Name: "rootfs-tar", Usage: "import the root filesystem from a tar", Destination: &args.rootfsTarPath},
+			&cli.StringFlag{Name: "image", Usage: "WasiVM image object key supplying the root filesystem", Destination: &args.imageObjectKey},
 			&cli.StringFlag{Name: "init", Usage: "init program path in the root filesystem", Destination: &args.initPath},
 			&cli.StringSliceFlag{Name: "init-arg", Usage: "init program argument", Destination: &args.initArgs},
 			&cli.StringSliceFlag{Name: "env", Usage: "init environment KEY=VALUE", Destination: &args.env},
 		},
 		Action: func(c *cli.Context) error {
-			// Require a name and one root filesystem source, then create the VM.
+			// Require a name.
 			name := c.Args().First()
 			if name == "" {
 				return errors.New("VM name required")
 			}
-			if (args.rootfsObjectKey == "") == (args.rootfsTarPath == "") {
-				return errors.New("exactly one of --rootfs or --rootfs-tar is required")
+
+			// Require exactly one root filesystem source.
+			sources := 0
+			for _, source := range []string{args.rootfsObjectKey, args.rootfsTarPath, args.imageObjectKey} {
+				if source != "" {
+					sources++
+				}
 			}
+			if sources != 1 {
+				return errors.New("exactly one of --rootfs, --rootfs-tar or --image is required")
+			}
+
+			// Create the VM and print its key.
 			key, err := createWasiVm(c, *statePath, sessionIndex32(*sessionIdx), *spaceID, name, args)
 			if err != nil {
 				return err
@@ -418,6 +429,7 @@ type wasiVmCreateArgs struct {
 	objectKey       string
 	rootfsObjectKey string
 	rootfsTarPath   string
+	imageObjectKey  string
 	initPath        string
 	initArgs        cli.StringSlice
 	env             cli.StringSlice
@@ -576,13 +588,13 @@ func createWasiVm(
 	name string,
 	args *wasiVmCreateArgs,
 ) (string, error) {
-	// Default the VM and root filesystem object keys.
+	// Default the VM key and the key of a root filesystem imported from a tar.
 	vmKey := args.objectKey
 	if vmKey == "" {
 		vmKey = "vm/wasivm/" + ulid.NewULID()
 	}
 	rootfsKey := args.rootfsObjectKey
-	if rootfsKey == "" {
+	if args.rootfsTarPath != "" {
 		rootfsKey = vmKey + "/rootfs"
 	}
 
@@ -596,7 +608,7 @@ func createWasiVm(
 		env[k] = v
 	}
 	ts := time.Now()
-	op := s4wave_vm.NewCreateWasiVmOp(vmKey, name, rootfsKey, ts)
+	op := s4wave_vm.NewCreateWasiVmOp(vmKey, name, rootfsKey, args.imageObjectKey, ts)
 	op.Config = &s4wave_vm.WasiVmConfig{
 		InitPath: args.initPath,
 		InitArgs: args.initArgs.Value(),

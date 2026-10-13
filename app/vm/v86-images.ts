@@ -1,11 +1,11 @@
-import type { Cdn } from '@s4wave/sdk/cdn/cdn.js'
-import { Root } from '@s4wave/sdk/root/root.js'
+import type { Root } from '@s4wave/sdk/root/root.js'
 import type { Space } from '@s4wave/sdk/space/space.js'
 import { V86Image } from '@s4wave/sdk/vm/v86.pb.js'
 import { V86ImageTypeID } from '@s4wave/sdk/vm/v86image.js'
 import { listObjectsWithType } from '@s4wave/sdk/world/types/types.js'
 import type { IWorldState } from '@s4wave/sdk/world/world-state.js'
 
+import { mountCdnImageSpace } from './cdn-image-space.js'
 import {
   compareV86ImageNewestFirst,
   isDefaultV86Image,
@@ -61,41 +61,6 @@ export async function listV86Images(
   return entries
     .filter((entry): entry is V86ImageEntry => !!entry)
     .sort(compareV86ImageNewestFirst)
-}
-
-// CdnImageSpace is the mounted Space of a CDN's image catalog.
-export interface CdnImageSpace {
-  cdn: Cdn
-  space: Space
-  [Symbol.dispose](): void
-}
-
-// mountCdnImageSpace mounts the catalog Space of the CDN cdnId.
-export async function mountCdnImageSpace(
-  root: Root,
-  cdnId: string,
-  signal: AbortSignal,
-): Promise<CdnImageSpace> {
-  // Keep a separate parent reference alive while child resources are created.
-  const ownedRoot = root.resourceRef.createResource(
-    root.resourceRef.resourceId,
-    Root,
-  )
-  let cdn: Cdn | undefined
-  let space: Space | undefined
-  const release = () => {
-    space?.[Symbol.dispose]()
-    cdn?.[Symbol.dispose]()
-    ownedRoot[Symbol.dispose]()
-  }
-  try {
-    cdn = (await ownedRoot.getCdn(cdnId, signal)).cdn
-    space = await cdn.mountCdnSpace(signal)
-    return { cdn, space, [Symbol.dispose]: release }
-  } catch (err) {
-    release()
-    throw err
-  }
 }
 
 // listCdnV86Images reads every V86Image published in a CDN catalog Space.

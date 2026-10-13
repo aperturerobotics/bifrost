@@ -589,7 +589,7 @@ type V86Image struct {
 	CreatedAt *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=created_at,json=createdAt,proto3" json:"createdAt,omitempty"`
 	// CdnSource locates the published image whose assets this image reads
 	// lazily. Unset when every asset edge points at an object in this Space.
-	CdnSource *V86ImageCdnSource `protobuf:"bytes,9,opt,name=cdn_source,json=cdnSource,proto3" json:"cdnSource,omitempty"`
+	CdnSource *VmImageCdnSource `protobuf:"bytes,9,opt,name=cdn_source,json=cdnSource,proto3" json:"cdnSource,omitempty"`
 }
 
 func (x *V86Image) Reset() {
@@ -654,37 +654,37 @@ func (x *V86Image) GetCreatedAt() *timestamppb.Timestamp {
 	return nil
 }
 
-func (x *V86Image) GetCdnSource() *V86ImageCdnSource {
+func (x *V86Image) GetCdnSource() *VmImageCdnSource {
 	if x != nil {
 		return x.CdnSource
 	}
 	return nil
 }
 
-// V86ImageCdnSource locates a V86Image in a published CDN Space. An image
+// VmImageCdnSource locates a VM image in a published CDN Space. An image
 // without its own asset edges resolves each asset through this source.
-type V86ImageCdnSource struct {
+type VmImageCdnSource struct {
 	unknownFields []byte
 	// SpaceId is the CDN Space ULID.
 	SpaceId string `protobuf:"bytes,1,opt,name=space_id,json=spaceId,proto3" json:"spaceId,omitempty"`
-	// ObjectKey is the V86Image object key in the CDN Space.
+	// ObjectKey is the image object key in the CDN Space.
 	ObjectKey string `protobuf:"bytes,2,opt,name=object_key,json=objectKey,proto3" json:"objectKey,omitempty"`
 }
 
-func (x *V86ImageCdnSource) Reset() {
-	*x = V86ImageCdnSource{}
+func (x *VmImageCdnSource) Reset() {
+	*x = VmImageCdnSource{}
 }
 
-func (*V86ImageCdnSource) ProtoMessage() {}
+func (*VmImageCdnSource) ProtoMessage() {}
 
-func (x *V86ImageCdnSource) GetSpaceId() string {
+func (x *VmImageCdnSource) GetSpaceId() string {
 	if x != nil {
 		return x.SpaceId
 	}
 	return ""
 }
 
-func (x *V86ImageCdnSource) GetObjectKey() string {
+func (x *VmImageCdnSource) GetObjectKey() string {
 	if x != nil {
 		return x.ObjectKey
 	}
@@ -946,11 +946,11 @@ func (m *V86Image) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
-func (m *V86ImageCdnSource) CloneVT() *V86ImageCdnSource {
+func (m *VmImageCdnSource) CloneVT() *VmImageCdnSource {
 	if m == nil {
-		return (*V86ImageCdnSource)(nil)
+		return (*VmImageCdnSource)(nil)
 	}
-	r := new(V86ImageCdnSource)
+	r := new(VmImageCdnSource)
 	r.SpaceId = m.SpaceId
 	r.ObjectKey = m.ObjectKey
 	if len(m.unknownFields) > 0 {
@@ -959,7 +959,7 @@ func (m *V86ImageCdnSource) CloneVT() *V86ImageCdnSource {
 	return r
 }
 
-func (m *V86ImageCdnSource) CloneMessageVT() protobuf_go_lite.CloneMessage {
+func (m *VmImageCdnSource) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
@@ -1295,7 +1295,7 @@ func (this *V86Image) EqualMessageVT(thatMsg any) bool {
 	return this.EqualVT(that)
 }
 
-func (this *V86ImageCdnSource) EqualVT(that *V86ImageCdnSource) bool {
+func (this *VmImageCdnSource) EqualVT(that *VmImageCdnSource) bool {
 	if this == that {
 		return true
 	} else if this == nil || that == nil {
@@ -1310,8 +1310,8 @@ func (this *V86ImageCdnSource) EqualVT(that *V86ImageCdnSource) bool {
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
-func (this *V86ImageCdnSource) EqualMessageVT(thatMsg any) bool {
-	that, ok := thatMsg.(*V86ImageCdnSource)
+func (this *VmImageCdnSource) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*VmImageCdnSource)
 	if !ok {
 		return false
 	}
@@ -2183,7 +2183,7 @@ func (x *V86Image) UnmarshalProtoJSON(s *json.UnmarshalState) {
 				x.CdnSource = nil
 				return
 			}
-			x.CdnSource = &V86ImageCdnSource{}
+			x.CdnSource = &VmImageCdnSource{}
 			x.CdnSource.UnmarshalProtoJSON(s.WithField("cdn_source", true))
 		}
 	})
@@ -2194,8 +2194,8 @@ func (x *V86Image) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
-// MarshalProtoJSON marshals the V86ImageCdnSource message to JSON.
-func (x *V86ImageCdnSource) MarshalProtoJSON(s *json.MarshalState) {
+// MarshalProtoJSON marshals the VmImageCdnSource message to JSON.
+func (x *VmImageCdnSource) MarshalProtoJSON(s *json.MarshalState) {
 	if x == nil {
 		s.WriteNil()
 		return
@@ -2215,13 +2215,13 @@ func (x *V86ImageCdnSource) MarshalProtoJSON(s *json.MarshalState) {
 	s.WriteObjectEnd()
 }
 
-// MarshalJSON marshals the V86ImageCdnSource to JSON.
-func (x *V86ImageCdnSource) MarshalJSON() ([]byte, error) {
+// MarshalJSON marshals the VmImageCdnSource to JSON.
+func (x *VmImageCdnSource) MarshalJSON() ([]byte, error) {
 	return json.DefaultMarshalerConfig.Marshal(x)
 }
 
-// UnmarshalProtoJSON unmarshals the V86ImageCdnSource message from JSON.
-func (x *V86ImageCdnSource) UnmarshalProtoJSON(s *json.UnmarshalState) {
+// UnmarshalProtoJSON unmarshals the VmImageCdnSource message from JSON.
+func (x *VmImageCdnSource) UnmarshalProtoJSON(s *json.UnmarshalState) {
 	if s.ReadNil() {
 		return
 	}
@@ -2239,8 +2239,8 @@ func (x *V86ImageCdnSource) UnmarshalProtoJSON(s *json.UnmarshalState) {
 	})
 }
 
-// UnmarshalJSON unmarshals the V86ImageCdnSource from JSON.
-func (x *V86ImageCdnSource) UnmarshalJSON(b []byte) error {
+// UnmarshalJSON unmarshals the VmImageCdnSource from JSON.
+func (x *VmImageCdnSource) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -2941,7 +2941,7 @@ func (m *V86Image) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *V86ImageCdnSource) MarshalVT() (dAtA []byte, err error) {
+func (m *VmImageCdnSource) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
 	}
@@ -2954,12 +2954,12 @@ func (m *V86ImageCdnSource) MarshalVT() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *V86ImageCdnSource) MarshalToVT(dAtA []byte) (int, error) {
+func (m *VmImageCdnSource) MarshalToVT(dAtA []byte) (int, error) {
 	size := m.SizeVT()
 	return m.MarshalToSizedBufferVT(dAtA[:size])
 }
 
-func (m *V86ImageCdnSource) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+func (m *VmImageCdnSource) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -3252,7 +3252,7 @@ func (m *V86Image) SizeVT() (n int) {
 	return n
 }
 
-func (m *V86ImageCdnSource) SizeVT() (n int) {
+func (m *VmImageCdnSource) SizeVT() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -3600,9 +3600,9 @@ func (x *V86Image) String() string {
 	return x.MarshalProtoText()
 }
 
-func (x *V86ImageCdnSource) MarshalProtoText() string {
+func (x *VmImageCdnSource) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
-	initialLen := protobuf_go_lite.TextStartMessage(&sb, "V86ImageCdnSource")
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "VmImageCdnSource")
 	if x.SpaceId != "" {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "space_id")
 		protobuf_go_lite.TextWriteString(&sb, x.SpaceId)
@@ -3614,7 +3614,7 @@ func (x *V86ImageCdnSource) MarshalProtoText() string {
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
-func (x *V86ImageCdnSource) String() string {
+func (x *VmImageCdnSource) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -4538,7 +4538,7 @@ func (m *V86Image) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			if m.CdnSource == nil {
-				m.CdnSource = &V86ImageCdnSource{}
+				m.CdnSource = &VmImageCdnSource{}
 			}
 			if err := m.CdnSource.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
 				return err
@@ -4567,7 +4567,7 @@ func (m *V86Image) UnmarshalVT(dAtA []byte) error {
 	return nil
 }
 
-func (m *V86ImageCdnSource) UnmarshalVT(dAtA []byte) error {
+func (m *VmImageCdnSource) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	var err error
@@ -4581,10 +4581,10 @@ func (m *V86ImageCdnSource) UnmarshalVT(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: V86ImageCdnSource: wiretype end group for non-group")
+			return fmt.Errorf("proto: VmImageCdnSource: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: V86ImageCdnSource: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: VmImageCdnSource: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:

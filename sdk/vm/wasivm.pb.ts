@@ -7,7 +7,7 @@ import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import type { VmState } from './v86.pb.js'
-import { VmState_Enum } from './v86.pb.js'
+import { VmImageCdnSource, VmState_Enum } from './v86.pb.js'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
 
 /**
@@ -60,7 +60,7 @@ export const WasiVmConfig: MessageType<WasiVmConfig> =
 
 /**
  * WasiVm is a virtual machine that runs WebAssembly programs on the WasiVM
- * kernel, with its root filesystem read from a UnixFS object.
+ * kernel, with its root filesystem read from a UnixFS object or a WasiVmImage.
  *
  * @generated from message s4wave.vm.WasiVm
  */
@@ -105,7 +105,8 @@ export interface WasiVm {
    * RunGeneration fences runtime observations from prior starts or stops.
    *
    * Links (via graph edges, not proto fields):
-   *   wasivm/rootfs -> UnixFS object (required root filesystem)
+   *   wasivm/rootfs -> UnixFS object (root filesystem, preferred when set)
+   *   wasivm/image  -> WasiVmImage (root filesystem when wasivm/rootfs is unset)
    *
    * @generated from field: uint64 run_generation = 7;
    */
@@ -126,7 +127,8 @@ export const WasiVm: MessageType<WasiVm> = /* @__PURE__ */ createMessageType({
 })
 
 /**
- * CreateWasiVmOp creates a new WasiVm world object linked to its rootfs.
+ * CreateWasiVmOp creates a new WasiVm world object linked to its root
+ * filesystem. At least one of rootfs_object_key and image_object_key is set.
  *
  * @generated from message s4wave.vm.CreateWasiVmOp
  */
@@ -161,6 +163,12 @@ export interface CreateWasiVmOp {
    * @generated from field: string rootfs_object_key = 5;
    */
   rootfsObjectKey?: string
+  /**
+   * ImageObjectKey points at the WasiVmImage supplying the root filesystem.
+   *
+   * @generated from field: string image_object_key = 6;
+   */
+  imageObjectKey?: string
 }
 
 export const CreateWasiVmOp: MessageType<CreateWasiVmOp> =
@@ -177,6 +185,113 @@ export const CreateWasiVmOp: MessageType<CreateWasiVmOp> =
         kind: 'scalar',
         T: ScalarType.STRING,
       },
+      { no: 6, name: 'image_object_key', kind: 'scalar', T: ScalarType.STRING },
+    ] satisfies readonly PartialFieldInfo[],
+  })
+
+/**
+ * WasiVmImage is a root filesystem published for WasiVMs. The object carries
+ * metadata; the filesystem is linked through the wasivmimage/rootfs edge, or
+ * read from the published image named by cdn_source.
+ *
+ * @generated from message s4wave.vm.WasiVmImage
+ */
+export interface WasiVmImage {
+  /**
+   * Name is the human-readable name of the image.
+   *
+   * @generated from field: string name = 1;
+   */
+  name?: string
+  /**
+   * Version identifies this revision of the image.
+   *
+   * @generated from field: string version = 2;
+   */
+  version?: string
+  /**
+   * Description is a free-form description of the image.
+   *
+   * @generated from field: string description = 3;
+   */
+  description?: string
+  /**
+   * Tags is a list of discovery tags, e.g. ["default"].
+   *
+   * @generated from field: repeated string tags = 4;
+   */
+  tags?: string[]
+  /**
+   * CreatedAt is the creation timestamp.
+   *
+   * @generated from field: google.protobuf.Timestamp created_at = 5;
+   */
+  createdAt?: Date
+  /**
+   * CdnSource locates the published image whose root filesystem this image
+   * reads lazily. Unset when the image has its own wasivmimage/rootfs edge.
+   *
+   * Links (via graph edges, not proto fields):
+   *   wasivmimage/rootfs -> UnixFS object (root filesystem)
+   *
+   * @generated from field: s4wave.vm.VmImageCdnSource cdn_source = 6;
+   */
+  cdnSource?: VmImageCdnSource
+}
+
+export const WasiVmImage: MessageType<WasiVmImage> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 's4wave.vm.WasiVmImage',
+    fields: [
+      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
+      { no: 2, name: 'version', kind: 'scalar', T: ScalarType.STRING },
+      { no: 3, name: 'description', kind: 'scalar', T: ScalarType.STRING },
+      {
+        no: 4,
+        name: 'tags',
+        kind: 'scalar',
+        T: ScalarType.STRING,
+        repeated: true,
+      },
+      { no: 5, name: 'created_at', kind: 'message', T: () => Timestamp },
+      { no: 6, name: 'cdn_source', kind: 'message', T: () => VmImageCdnSource },
+    ] satisfies readonly PartialFieldInfo[],
+  })
+
+/**
+ * CreateWasiVmImageOp creates a new WasiVmImage world object. Its rootfs edge,
+ * when the image has one, is set separately via SetGraphQuad.
+ *
+ * @generated from message s4wave.vm.CreateWasiVmImageOp
+ */
+export interface CreateWasiVmImageOp {
+  /**
+   * ObjectKey is the key to create the image at.
+   *
+   * @generated from field: string object_key = 1;
+   */
+  objectKey?: string
+  /**
+   * Image carries the metadata of the new image. Name is required.
+   *
+   * @generated from field: s4wave.vm.WasiVmImage image = 2;
+   */
+  image?: WasiVmImage
+  /**
+   * Timestamp is the creation timestamp. Stored on the block as CreatedAt.
+   *
+   * @generated from field: google.protobuf.Timestamp timestamp = 3;
+   */
+  timestamp?: Date
+}
+
+export const CreateWasiVmImageOp: MessageType<CreateWasiVmImageOp> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 's4wave.vm.CreateWasiVmImageOp',
+    fields: [
+      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
+      { no: 2, name: 'image', kind: 'message', T: WasiVmImage },
+      { no: 3, name: 'timestamp', kind: 'message', T: () => Timestamp },
     ] satisfies readonly PartialFieldInfo[],
   })
 

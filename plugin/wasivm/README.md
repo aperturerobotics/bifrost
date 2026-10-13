@@ -8,17 +8,21 @@ wasm32-wasi boots to an interactive shell.
 
 WasiVM is experimental. Spacewave does not include it unless a build opts in.
 A Space that loads the `spacewave-wasivm` plugin can create WebAssembly VMs:
-each one boots the kernel on a Space filesystem and serves its console.
+each one boots the kernel on a Space filesystem or a published WasiVM image
+and serves its console. A VM on a published image reads its root filesystem
+from the CDN as it runs, so creating one copies nothing.
 
 ## Layout
 
 | Path | Contents |
 | --- | --- |
-| `controller.go` | The plugin: it registers the `vm/wasivm` ObjectType, its operations, viewer and wizard. |
+| `controller.go` | The plugin: it registers the `vm/wasivm` ObjectType, its operations, viewer and wizard, and the `vm/image/wasivm` block type. |
 | `handler.go` | The ObjectType and operation handlers the core plugin calls. |
 | `vm.go` | The VM resource, which runs a kernel for each run of a VM. |
+| `rootfs.go` | Finds the root filesystem of a VM: its own, its image's, or the published image's on the CDN. |
 | `console.go` | The console of each running VM, shared by every attached viewer. |
 | `*.tsx` | The VM viewer and the wizard that creates a VM. |
+| `wasivm-images.ts` | Lists the images published on the CDN and links one into a Space. |
 | `kernel/` | The kernel: processes, the filesystem, signals, the terminal and the WASI imports. |
 | `kernel/engine/` | The interface the kernel runs guests through. |
 | `kernel/engine/native/` | Its implementation on [wazero](https://wazero.io). |

@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/aperturerobotics/cayley/quad"
 	timestamppb "github.com/aperturerobotics/protobuf-go-lite/types/known/timestamppb"
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/db/block"
@@ -17,12 +18,14 @@ import (
 var CreateWasiVmOpId = "vm/wasivm/create"
 
 // NewCreateWasiVmOp constructs a new CreateWasiVmOp. rootfsObjectKey points at
-// the UnixFS object holding the root filesystem and is required.
-func NewCreateWasiVmOp(objKey, name, rootfsObjectKey string, ts time.Time) *CreateWasiVmOp {
+// the UnixFS object holding the root filesystem and imageObjectKey at the
+// WasiVmImage supplying it; at least one is required.
+func NewCreateWasiVmOp(objKey, name, rootfsObjectKey, imageObjectKey string, ts time.Time) *CreateWasiVmOp {
 	return &CreateWasiVmOp{
 		ObjectKey:       objKey,
 		Name:            name,
 		RootfsObjectKey: rootfsObjectKey,
+		ImageObjectKey:  imageObjectKey,
 		Timestamp:       timestamppb.New(ts),
 	}
 }
@@ -45,8 +48,8 @@ func (o *CreateWasiVmOp) Validate() error {
 	if err := o.GetTimestamp().Validate(false); err != nil {
 		return err
 	}
-	if len(o.GetRootfsObjectKey()) == 0 {
-		return errors.New("rootfs_object_key is required")
+	if len(o.GetRootfsObjectKey()) == 0 && len(o.GetImageObjectKey()) == 0 {
+		return errors.New("rootfs_object_key or image_object_key is required")
 	}
 	return nil
 }
@@ -79,13 +82,24 @@ func (o *CreateWasiVmOp) ApplyWorldOp(
 		return false, err
 	}
 
-	// Mark the object type and link the root filesystem.
+	// Mark the object type and link the root filesystem and image.
 	if err := world_types.SetObjectType(ctx, ws, objKey, WasiVmTypeID); err != nil {
 		return false, err
 	}
-	rootfsQuad := world.NewGraphQuadWithKeys(objKey, string(PredWasiVmRootfs), o.GetRootfsObjectKey(), "")
-	if err := ws.SetGraphQuad(ctx, rootfsQuad); err != nil {
-		return true, errors.Wrap(err, "set rootfs edge")
+	for _, edge := range []struct {
+		pred   quad.IRI
+		target string
+	}{
+		{PredWasiVmRootfs, o.GetRootfsObjectKey()},
+		{PredWasiVmImage, o.GetImageObjectKey()},
+	} {
+		if edge.target == "" {
+			continue
+		}
+		q := world.NewGraphQuadWithKeys(objKey, string(edge.pred), edge.target, "")
+		if err := ws.SetGraphQuad(ctx, q); err != nil {
+			return true, errors.Wrapf(err, "set %s edge", edge.pred)
+		}
 	}
 	return false, nil
 }

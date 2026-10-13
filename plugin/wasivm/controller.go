@@ -72,7 +72,7 @@ func NewFactory(b bus.Bus) controller.Factory {
 		},
 		func(base *bus.BusController[*Config]) (*Controller, error) {
 			// Serve the ObjectType and operations of WasiVM.
-			h := newHandler(base.GetLogger())
+			h := newHandler(base.GetLogger(), base.GetBus())
 			rootMux := resource_server.NewResourceMux(
 				func(mux srpc.Mux) error {
 					return s4wave_objecttype_registry.SRPCRegisterObjectTypeHandlerService(mux, h)
@@ -102,7 +102,7 @@ func (c *Controller) Execute(ctx context.Context) error {
 }
 
 // HandleDirective serves the plugin's resource service and the WasiVM block
-// type.
+// types.
 func (c *Controller) HandleDirective(ctx context.Context, di directive.Instance) ([]directive.Resolver, error) {
 	switch d := di.GetDirective().(type) {
 	case bifrost_rpc.LookupRpcService:
@@ -110,17 +110,22 @@ func (c *Controller) HandleDirective(ctx context.Context, di directive.Instance)
 			return directive.R(bifrost_rpc.NewLookupRpcServiceResolver(c.mux), nil)
 		}
 	case blocktype.LookupBlockType:
-		if d.LookupBlockTypeID() == s4wave_vm.WasiVmTypeID {
-			return directive.R(directive.NewValueResolver([]blocktype.BlockType{wasiVmBlockType}), nil)
+		if bt, ok := blockTypes[d.LookupBlockTypeID()]; ok {
+			return directive.R(directive.NewValueResolver([]blocktype.BlockType{bt}), nil)
 		}
 	}
 	return nil, nil
 }
 
-// wasiVmBlockType is the block type of a WasiVM object.
-var wasiVmBlockType = blocktype.NewBlockType(s4wave_vm.WasiVmTypeID, func() *s4wave_vm.WasiVm {
-	return &s4wave_vm.WasiVm{}
-})
+// blockTypes are the block types of WasiVM objects by type ID.
+var blockTypes = map[string]blocktype.BlockType{
+	s4wave_vm.WasiVmTypeID: blocktype.NewBlockType(s4wave_vm.WasiVmTypeID, func() *s4wave_vm.WasiVm {
+		return &s4wave_vm.WasiVm{}
+	}),
+	s4wave_vm.WasiVmImageTypeID: blocktype.NewBlockType(s4wave_vm.WasiVmImageTypeID, func() *s4wave_vm.WasiVmImage {
+		return &s4wave_vm.WasiVmImage{}
+	}),
+}
 
 // register registers the WasiVM ObjectType, operations, viewers and wizard
 // through scope. It returns the registrations made, even on error.
@@ -156,7 +161,11 @@ func register(
 		return refs, err
 	}
 	woSvc := s4wave_worldop_registry.NewSRPCWorldOpRegistryResourceServiceClient(scope)
-	for _, opID := range []string{s4wave_vm.CreateWasiVmOpId, s4wave_vm.SetWasiVmStateOpId} {
+	for _, opID := range []string{
+		s4wave_vm.CreateWasiVmOpId,
+		s4wave_vm.SetWasiVmStateOpId,
+		s4wave_vm.CreateWasiVmImageOpId,
+	} {
 		resp, err := woSvc.RegisterWorldOp(ctx, &s4wave_worldop_registry.RegisterWorldOpRequest{
 			OperationTypeId: opID,
 			PluginId:        PluginID,

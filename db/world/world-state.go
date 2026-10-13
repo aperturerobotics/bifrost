@@ -4,13 +4,13 @@ import (
 	"context"
 	"strings"
 
-	trace "github.com/s4wave/spacewave/db/traceutil"
-
 	"github.com/aperturerobotics/cayley/graph"
 	"github.com/aperturerobotics/cayley/quad"
+	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/bucket"
 	bucket_lookup "github.com/s4wave/spacewave/db/bucket/lookup"
+	trace "github.com/s4wave/spacewave/db/traceutil"
 	"github.com/s4wave/spacewave/net/peer"
 )
 
@@ -284,6 +284,26 @@ func GraphValueToKey(gv string) (string, error) {
 		return "", err
 	}
 	return string(iri), nil
+}
+
+// LookupGraphObjectKey returns the object key targeted by the first graph quad
+// matching (subject, pred, *). It reports false when no such edge is set.
+func LookupGraphObjectKey(ctx context.Context, ws WorldStateGraph, subject, pred string) (string, bool, error) {
+	// Look up the first edge from the subject with the predicate.
+	gqs, err := ws.LookupGraphQuads(ctx, NewGraphQuadWithKeys(subject, pred, "", ""), 1)
+	if err != nil {
+		return "", false, errors.Wrapf(err, "look up graph edge %s on %s", pred, subject)
+	}
+	if len(gqs) == 0 {
+		return "", false, nil
+	}
+
+	// Decode the edge target as an object key.
+	targetKey, err := GraphValueToKey(gqs[0].GetObj())
+	if err != nil {
+		return "", false, errors.Wrapf(err, "parse graph edge %s target on %s", pred, subject)
+	}
+	return targetKey, true, nil
 }
 
 // GraphEnsureIsIRI confirms that a string is an IRI.

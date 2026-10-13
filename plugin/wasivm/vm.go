@@ -3,6 +3,7 @@ package wasivm_plugin
 import (
 	"context"
 
+	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/world"
@@ -14,7 +15,9 @@ import (
 // vmResource runs one WasiVM object. The Space calls Execute on one resource
 // per VM, which boots the kernel and publishes its console in consoles.
 type vmResource struct {
-	le        *logrus.Entry
+	le *logrus.Entry
+	// b mounts the CDN Space of a published image.
+	b         bus.Bus
 	objectKey string
 	ws        world.WorldState
 	consoles  *consoleTable
@@ -171,22 +174,16 @@ func readVm(ctx context.Context, objState world.ObjectState) (*s4wave_vm.WasiVm,
 
 // startRun boots the kernel for a run generation and publishes its console.
 func (r *vmResource) startRun(ctx context.Context, generation uint64, config *s4wave_vm.WasiVmConfig) (*run, error) {
-	// Find the root filesystem of the VM.
-	quads, err := r.ws.LookupGraphQuads(ctx, world.NewGraphQuadWithKeys(r.objectKey, string(s4wave_vm.PredWasiVmRootfs), "", ""), 1)
+	// Find the root filesystem of the VM for the length of the run.
+	runCtx, cancel := context.WithCancel(ctx)
+	rootfs, err := resolveRootfs(runCtx, r.le, r.b, r.ws, r.objectKey)
 	if err != nil {
-		return nil, errors.Wrap(err, "look up the root filesystem")
-	}
-	if len(quads) == 0 {
-		return nil, errors.New("the VM has no root filesystem")
-	}
-	rootfsKey, err := world.GraphValueToKey(quads[0].GetObj())
-	if err != nil {
-		return nil, errors.Wrap(err, "read the root filesystem key")
+		cancel()
+		return nil, errors.Wrap(err, "find the root filesystem")
 	}
 
 	// Boot the kernel; a run that ends on its own commits how it ended.
-	runCtx, cancel := context.WithCancel(ctx)
-	console, err := startKernel(runCtx, r.le, r.ws, rootfsKey, config, func(reboot bool, runErr error) {
+	console, err := startKernel(runCtx, r.le, rootfs, config, func(reboot bool, runErr error) {
 		if runCtx.Err() == nil {
 			r.finishRun(runCtx, generation, reboot, runErr)
 		}

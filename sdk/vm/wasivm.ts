@@ -20,6 +20,24 @@ export const SET_WASIVM_STATE_OP_ID = 'vm/wasivm/set-state'
 // sdk/vm/wasivm.go.
 export const PRED_WASIVM_ROOTFS = 'wasivm/rootfs'
 
+// PRED_WASIVM_IMAGE is the graph predicate linking a WasiVm to the
+// WasiVmImage it boots when it has no root filesystem of its own. Mirrors
+// PredWasiVmImage in sdk/vm/wasivm.go.
+export const PRED_WASIVM_IMAGE = 'wasivm/image'
+
+// WasiVmImageTypeID is the object type identifier for WasiVmImage objects.
+// Mirrors WasiVmImageTypeID in sdk/vm/wasivm-image.go.
+export const WasiVmImageTypeID = 'vm/image/wasivm'
+
+// CREATE_WASIVM_IMAGE_OP_ID is the operation type ID for
+// CreateWasiVmImageOp.
+export const CREATE_WASIVM_IMAGE_OP_ID = 'vm/image/wasivm/create'
+
+// PRED_WASIVM_IMAGE_ROOTFS is the graph predicate linking a WasiVmImage to
+// the UnixFS object holding its root filesystem. Mirrors
+// PredWasiVmImageRootfs in sdk/vm/wasivm-image.go.
+export const PRED_WASIVM_IMAGE_ROOTFS = 'wasivmimage/rootfs'
+
 // DEFAULT_WASIVM_INIT_PATH is the init program a WasiVm runs when its config
 // names none. Mirrors DefaultWasiVmInitPath in sdk/vm/wasivm.go.
 export const DEFAULT_WASIVM_INIT_PATH = '/bin/sh'

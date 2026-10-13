@@ -40,7 +40,7 @@ func TestWasiVmRunsInitOnConsole(t *testing.T) {
 	writeRootfsFile(t, ws, rootfsKey, "init", initWasm)
 
 	// Create a VM on the rootfs and start it.
-	create := s4wave_vm.NewCreateWasiVmOp(vmKey, "test", rootfsKey, time.Unix(1, 0))
+	create := s4wave_vm.NewCreateWasiVmOp(vmKey, "test", rootfsKey, "", time.Unix(1, 0))
 	create.Config = &s4wave_vm.WasiVmConfig{InitPath: "/init"}
 	if _, _, err := ws.ApplyWorldOp(ctx, create, ""); err != nil {
 		t.Fatal(err)

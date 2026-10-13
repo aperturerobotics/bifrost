@@ -545,12 +545,12 @@ export const ReportV86RuntimeStatusResponse: MessageType<ReportV86RuntimeStatusR
   })
 
 /**
- * V86ImageCdnSource locates a V86Image in a published CDN Space. An image
+ * VmImageCdnSource locates a VM image in a published CDN Space. An image
  * without its own asset edges resolves each asset through this source.
  *
- * @generated from message s4wave.vm.V86ImageCdnSource
+ * @generated from message s4wave.vm.VmImageCdnSource
  */
-export interface V86ImageCdnSource {
+export interface VmImageCdnSource {
   /**
    * SpaceId is the CDN Space ULID.
    *
@@ -558,16 +558,16 @@ export interface V86ImageCdnSource {
    */
   spaceId?: string
   /**
-   * ObjectKey is the V86Image object key in the CDN Space.
+   * ObjectKey is the image object key in the CDN Space.
    *
    * @generated from field: string object_key = 2;
    */
   objectKey?: string
 }
 
-export const V86ImageCdnSource: MessageType<V86ImageCdnSource> =
+export const VmImageCdnSource: MessageType<VmImageCdnSource> =
   /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.vm.V86ImageCdnSource',
+    typeName: 's4wave.vm.VmImageCdnSource',
     fields: [
       { no: 1, name: 'space_id', kind: 'scalar', T: ScalarType.STRING },
       { no: 2, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
@@ -642,9 +642,9 @@ export interface V86Image {
    *   v86image/kernel        -> UnixFS object (kernel image)
    *   v86image/rootfs        -> UnixFS object (rootfs archive)
    *
-   * @generated from field: s4wave.vm.V86ImageCdnSource cdn_source = 9;
+   * @generated from field: s4wave.vm.VmImageCdnSource cdn_source = 9;
    */
-  cdnSource?: V86ImageCdnSource
+  cdnSource?: VmImageCdnSource
 }
 
 export const V86Image: MessageType<V86Image> =
@@ -665,7 +665,7 @@ export const V86Image: MessageType<V86Image> =
         repeated: true,
       },
       { no: 8, name: 'created_at', kind: 'message', T: () => Timestamp },
-      { no: 9, name: 'cdn_source', kind: 'message', T: V86ImageCdnSource },
+      { no: 9, name: 'cdn_source', kind: 'message', T: VmImageCdnSource },
     ] satisfies readonly PartialFieldInfo[],
   })
 

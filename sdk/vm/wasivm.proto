@@ -18,7 +18,7 @@ message WasiVmConfig {
 }
 
 // WasiVm is a virtual machine that runs WebAssembly programs on the WasiVM
-// kernel, with its root filesystem read from a UnixFS object.
+// kernel, with its root filesystem read from a UnixFS object or a WasiVmImage.
 message WasiVm {
   // State is the desired VM state. Runtime observations are in observed_state.
   VmState state = 1;
@@ -35,10 +35,12 @@ message WasiVm {
   // RunGeneration fences runtime observations from prior starts or stops.
   uint64 run_generation = 7;
   // Links (via graph edges, not proto fields):
-  //   wasivm/rootfs -> UnixFS object (required root filesystem)
+  //   wasivm/rootfs -> UnixFS object (root filesystem, preferred when set)
+  //   wasivm/image  -> WasiVmImage (root filesystem when wasivm/rootfs is unset)
 }
 
-// CreateWasiVmOp creates a new WasiVm world object linked to its rootfs.
+// CreateWasiVmOp creates a new WasiVm world object linked to its root
+// filesystem. At least one of rootfs_object_key and image_object_key is set.
 message CreateWasiVmOp {
   // ObjectKey is the key to create the VM at.
   string object_key = 1;
@@ -50,6 +52,40 @@ message CreateWasiVmOp {
   .google.protobuf.Timestamp timestamp = 4;
   // RootfsObjectKey points at the UnixFS object holding the root filesystem.
   string rootfs_object_key = 5;
+  // ImageObjectKey points at the WasiVmImage supplying the root filesystem.
+  string image_object_key = 6;
+}
+
+// WasiVmImage is a root filesystem published for WasiVMs. The object carries
+// metadata; the filesystem is linked through the wasivmimage/rootfs edge, or
+// read from the published image named by cdn_source.
+message WasiVmImage {
+  // Name is the human-readable name of the image.
+  string name = 1;
+  // Version identifies this revision of the image.
+  string version = 2;
+  // Description is a free-form description of the image.
+  string description = 3;
+  // Tags is a list of discovery tags, e.g. ["default"].
+  repeated string tags = 4;
+  // CreatedAt is the creation timestamp.
+  .google.protobuf.Timestamp created_at = 5;
+  // CdnSource locates the published image whose root filesystem this image
+  // reads lazily. Unset when the image has its own wasivmimage/rootfs edge.
+  VmImageCdnSource cdn_source = 6;
+  // Links (via graph edges, not proto fields):
+  //   wasivmimage/rootfs -> UnixFS object (root filesystem)
+}
+
+// CreateWasiVmImageOp creates a new WasiVmImage world object. Its rootfs edge,
+// when the image has one, is set separately via SetGraphQuad.
+message CreateWasiVmImageOp {
+  // ObjectKey is the key to create the image at.
+  string object_key = 1;
+  // Image carries the metadata of the new image. Name is required.
+  WasiVmImage image = 2;
+  // Timestamp is the creation timestamp. Stored on the block as CreatedAt.
+  .google.protobuf.Timestamp timestamp = 3;
 }
 
 // SetWasiVmStateOp changes the desired state of an existing WasiVm object.
