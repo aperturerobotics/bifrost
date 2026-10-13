@@ -35,6 +35,9 @@ type WALAppender interface {
 	// GetPendingOutgoingRefs returns the targets of journaled edges from node
 	// that the ref graph has not applied yet, net of journaled removals.
 	GetPendingOutgoingRefs(ctx context.Context, node string) ([]string, error)
+	// GetPendingIncomingRefs returns the sources of journaled edges to node
+	// that the ref graph has not applied yet, net of journaled removals.
+	GetPendingIncomingRefs(ctx context.Context, node string) ([]string, error)
 }
 
 // GCStoreOps wraps a StoreOps with GC ref graph tracking.

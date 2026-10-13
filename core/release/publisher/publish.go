@@ -291,7 +291,8 @@ func collectBlocks(ctx context.Context, eng world.Engine, metadata *release.Rele
 						return false, err
 					}
 
-					// Add unseen verified blocks and require their stored refs to be known.
+					// Add unseen verified blocks, recovering unknown refs from the
+					// block the typed walk decoded rather than exporting a leaf.
 					key := entry.Ref.MarshalString()
 					index, exists := blocks[key]
 					if !exists {
@@ -300,7 +301,11 @@ func collectBlocks(ctx context.Context, eng world.Engine, metadata *release.Rele
 							return false, err
 						}
 						if !stored.GetRefsKnown() {
-							return false, errors.Wrap(block.ErrRefsUnknown, key)
+							refs, err := entry.BlockRefs(ctx, walk.GetBucket())
+							if err != nil {
+								return false, err
+							}
+							stored = &block.StoredBlock{Data: entry.Data, Refs: refs, RefsKnown: true}
 						}
 						index = len(result)
 						blocks[key] = index

@@ -8,6 +8,7 @@ import (
 	"github.com/aperturerobotics/util/broadcast"
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/core/sobject"
+	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/net/crypto"
 	"github.com/sirupsen/logrus"
 )
@@ -25,17 +26,6 @@ type Transfer struct {
 
 	bcast broadcast.Broadcast
 	state *TransferState
-}
-
-// TransferOptions carries the optional collaborators of a Transfer. The zero
-// value is valid: no cleanup, no checkpointing, and no space-ID filter.
-type TransferOptions struct {
-	// Cleanup deletes the source volume after a successful transfer.
-	Cleanup CleanupSource
-	// Checkpoint persists resumable transfer progress.
-	Checkpoint CheckpointStore
-	// FilterSpaceIDs restricts the transfer to the listed Space IDs.
-	FilterSpaceIDs []string
 }
 
 // NewTransfer constructs a Transfer for the given mode, source, target, and
@@ -317,14 +307,16 @@ func (t *Transfer) copyBlocksForSpace(ctx context.Context, spaceIdx int, soRef *
 			return t.fail(err)
 		}
 
-		// A source without refs (cloud packs) copies bytes only; the
-		// transfer lists every block, so none are skipped.
+		// Require the source refs so the destination can retain each block's children.
 		stored, err := srcBlocks.GetStoredBlock(ctx, ref)
 		if err != nil {
 			return errors.Wrapf(err, "read block %s", ref.MarshalString())
 		}
 		if stored == nil {
 			continue
+		}
+		if !stored.RefsKnown {
+			return errors.Wrapf(block.ErrRefsUnknown, "read block %s", ref.MarshalString())
 		}
 
 		if _, _, err := dstBlocks.PutBlock(ctx, stored.Data, stored.PutOpts(ref)); err != nil {

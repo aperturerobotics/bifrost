@@ -32,6 +32,9 @@ func (b *BlockStore) PinRoot(ctx context.Context, ref *block.BlockRef) (func(), 
 		if stored == nil {
 			return nil, block.ErrNotFound
 		}
+		if !stored.RefsKnown {
+			return nil, block.ErrRefsUnknown
+		}
 		if _, _, err := b.store.PutBlock(ctx, stored.Data, stored.PutOpts(ref)); err != nil {
 			return nil, err
 		}

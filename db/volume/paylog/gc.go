@@ -28,29 +28,48 @@ func (s *Store) AcquireSTW(context.Context) (func(), error) {
 // GetPendingOutgoingRefs returns the targets of journaled edges from node,
 // net of journaled removals, in journal order.
 func (s *Store) GetPendingOutgoingRefs(ctx context.Context, node string) ([]string, error) {
-	// Net the journaled adds and removes from node in order.
-	var targets []string
+	return s.pendingRefs(ctx, node, false)
+}
+
+// GetPendingIncomingRefs returns the sources of journaled edges to node,
+// net of journaled removals, in journal order.
+func (s *Store) GetPendingIncomingRefs(ctx context.Context, node string) ([]string, error) {
+	return s.pendingRefs(ctx, node, true)
+}
+
+// pendingRefs nets the journaled edges on one side of node in journal order.
+func (s *Store) pendingRefs(ctx context.Context, node string, incoming bool) ([]string, error) {
+	// Select the endpoints that match node and identify its neighbor.
+	endpoints := func(edge block_gc.RefEdge) (string, string) {
+		if incoming {
+			return edge.Object, edge.Subject
+		}
+		return edge.Subject, edge.Object
+	}
+
+	// Net the journaled adds and removes incident to node in order.
+	var refs []string
 	err := s.view(ctx, func(tx kvtx.Tx) error {
 		return tx.ScanPrefix(ctx, []byte(journalPrefix), func(_, value []byte) error {
-			// Decode the entry, then apply its edges from node.
+			// Decode the entry, then apply its edges incident to node.
 			adds, removes, err := journal.Unmarshal(value)
 			if err != nil {
 				return err
 			}
 			for _, edge := range adds {
-				if edge.Subject == node {
-					targets = append(targets, edge.Object)
+				if endpoint, neighbor := endpoints(edge); endpoint == node {
+					refs = append(refs, neighbor)
 				}
 			}
 			for _, edge := range removes {
-				if edge.Subject == node {
-					targets = slices.DeleteFunc(targets, func(target string) bool { return target == edge.Object })
+				if endpoint, neighbor := endpoints(edge); endpoint == node {
+					refs = slices.DeleteFunc(refs, func(ref string) bool { return ref == neighbor })
 				}
 			}
 			return nil
 		})
 	})
-	return targets, err
+	return refs, err
 }
 
 // ReplayWAL applies the journal to graph, removes the applied entries, and

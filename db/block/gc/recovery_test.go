@@ -46,6 +46,11 @@ func (*retryAppender) GetPendingOutgoingRefs(context.Context, string) ([]string,
 	return nil, nil
 }
 
+// GetPendingIncomingRefs reports no journaled edges.
+func (*retryAppender) GetPendingIncomingRefs(context.Context, string) ([]string, error) {
+	return nil, nil
+}
+
 func TestFlushRetainsFailedWALAppend(t *testing.T) {
 	// Create a GC store with a WAL append that fails once.
 	wal := &retryAppender{}
@@ -139,6 +144,11 @@ func (w blockingAppender) Append(context.Context, []RefEdge, []RefEdge) error {
 
 // GetPendingOutgoingRefs reports no journaled edges.
 func (blockingAppender) GetPendingOutgoingRefs(context.Context, string) ([]string, error) {
+	return nil, nil
+}
+
+// GetPendingIncomingRefs reports no journaled edges.
+func (blockingAppender) GetPendingIncomingRefs(context.Context, string) ([]string, error) {
 	return nil, nil
 }
 

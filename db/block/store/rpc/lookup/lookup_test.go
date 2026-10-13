@@ -37,11 +37,15 @@ func TestBlockStoreRPCLookup(t *testing.T) {
 	}
 	defer serverTb.Release()
 
-	// Create a block to lookup.
-	serverVol := serverTb.Volume
+	// Store a tracked leaf so the RPC reply can carry known empty refs.
+	serverBkt, _, serverBktRef, err := bucket.ExBuildBucketAPI(ctx, serverTb.Bus, false, serverTb.BucketId, serverTb.Volume.GetID(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer serverBktRef.Release()
 	sampleBlockBody := []byte("How hard are these tests? What exactly was in that phonebook of a contract I signed?")
 	samplePutOpts := &block.PutOpts{HashType: hash.HashType_HashType_BLAKE3}
-	sampleBlockRef, _, err := serverVol.PutBlock(ctx, sampleBlockBody, samplePutOpts)
+	sampleBlockRef, _, err := serverBkt.GetBucket().PutBlock(ctx, sampleBlockBody, samplePutOpts)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -159,5 +163,20 @@ func TestBlockStoreRPCLookup(t *testing.T) {
 	}
 	if !ex {
 		t.Fatal("expected to write back block to bucket but did not")
+	}
+
+	// Serve untracked bytes over the same RPC route without caching a false leaf.
+	untrackedData := []byte("untracked block")
+	untrackedRef, _, err := serverTb.Volume.PutBlock(ctx, untrackedData, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, found, err := lk.LookupBlock(ctx, untrackedRef)
+	if err != nil || !found || !bytes.Equal(got, untrackedData) {
+		t.Fatalf("untracked lookup = %q/%v/%v", got, found, err)
+	}
+	cached, err := readBkt.GetBucket().GetBlockExists(ctx, untrackedRef)
+	if err != nil || cached {
+		t.Fatalf("untracked writeback = %v/%v, want absent", cached, err)
 	}
 }
