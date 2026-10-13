@@ -18,7 +18,23 @@ func (g *GCStoreOps) GetStoredBlock(ctx context.Context, ref *block.BlockRef) (*
 	if err != nil || !found {
 		return nil, err
 	}
+	stored, err := g.getBlockEdges(ctx, ref, data)
+	if err != nil || stored.RefsKnown {
+		return stored, err
+	}
 
+	// A flush takes the buffered edges before it delivers them, so a block it
+	// is tracking can read as untracked. Read again between flushes.
+	release, err := g.flushMu.Lock(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+	return g.getBlockEdges(ctx, ref, data)
+}
+
+// getBlockEdges resolves the outgoing edges of a stored block.
+func (g *GCStoreOps) getBlockEdges(ctx context.Context, ref *block.BlockRef, data []byte) (*block.StoredBlock, error) {
 	// Collect durable, journaled, and buffered references for the stored block.
 	node := BlockIRI(ref)
 	refs, err := g.getOutgoingBlockRefs(ctx, node)

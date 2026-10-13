@@ -1,8 +1,10 @@
 package block_gc
 
 import (
+	"context"
 	"errors"
 	"io"
+	"sync"
 	"testing"
 
 	"github.com/s4wave/spacewave/db/block"
@@ -119,5 +121,91 @@ func TestGCStoreOpsGetStoredBlockLeaf(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// flushWAL journals edges in memory and holds Append until it is released.
+type flushWAL struct {
+	// appending is closed when Append starts.
+	appending chan struct{}
+	// release lets Append return.
+	release chan struct{}
+	// read is closed when the first incoming lookup has answered.
+	read     chan struct{}
+	readOnce sync.Once
+	// mtx guards adds.
+	mtx  sync.Mutex
+	adds []RefEdge
+}
+
+// Append journals the edges after it is released.
+func (w *flushWAL) Append(_ context.Context, adds, _ []RefEdge) error {
+	close(w.appending)
+	<-w.release
+	w.mtx.Lock()
+	w.adds = append(w.adds, adds...)
+	w.mtx.Unlock()
+	return nil
+}
+
+// GetPendingOutgoingRefs reports no journaled edges.
+func (*flushWAL) GetPendingOutgoingRefs(context.Context, string) ([]string, error) {
+	return nil, nil
+}
+
+// GetPendingIncomingRefs reports the sources of the journaled edges to node.
+func (w *flushWAL) GetPendingIncomingRefs(_ context.Context, node string) ([]string, error) {
+	w.mtx.Lock()
+	var sources []string
+	for _, edge := range w.adds {
+		if edge.Object == node {
+			sources = append(sources, edge.Subject)
+		}
+	}
+	w.mtx.Unlock()
+	w.readOnce.Do(func() { close(w.read) })
+	return sources, nil
+}
+
+// TestGCStoreOpsGetStoredBlockDuringFlush checks that a block whose edges a
+// running flush has taken but not journaled is not reported as untracked.
+func TestGCStoreOpsGetStoredBlockDuringFlush(t *testing.T) {
+	// Store a leaf and start a flush that stalls while journaling its edges.
+	env := newGCTestEnv(t)
+	wal := &flushWAL{
+		appending: make(chan struct{}),
+		release:   make(chan struct{}),
+		read:      make(chan struct{}),
+	}
+	env.gcStore.SetWALAppender(wal)
+	ref, _, err := env.gcStore.PutBlock(env.ctx, []byte("flushing leaf"), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	flushed := make(chan error, 1)
+	go func() { flushed <- env.gcStore.FlushPending(env.ctx) }()
+	<-wal.appending
+
+	// Read the block while the flush holds its edges, and finish the flush
+	// once the read has looked for them.
+	type result struct {
+		stored *block.StoredBlock
+		err    error
+	}
+	read := make(chan result, 1)
+	go func() {
+		stored, err := env.gcStore.GetStoredBlock(env.ctx, ref)
+		read <- result{stored, err}
+	}()
+	<-wal.read
+	close(wal.release)
+	if err := <-flushed; err != nil {
+		t.Fatal(err)
+	}
+
+	// The read waits out the flush and finds the journaled edge.
+	got := <-read
+	if got.err != nil || got.stored == nil || !got.stored.RefsKnown {
+		t.Fatalf("block during flush = %+v/%v, want known refs", got.stored, got.err)
 	}
 }
