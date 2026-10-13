@@ -114,6 +114,21 @@ func (it *Iterator) Value() ([]byte, error) {
 	return it.p.readValue(it.cur.val)
 }
 
+// ValueLen returns the length of the current value from the index, without
+// reading a packed value.
+func (it *Iterator) ValueLen() int {
+	switch {
+	case !it.Valid():
+		return 0
+	case it.cur.buffered:
+		return len(it.cur.data)
+	case it.cur.val.isRef:
+		return int(it.cur.val.ref.n)
+	default:
+		return len(it.cur.val.inline)
+	}
+}
+
 // ValueCopy copies the current value into b.
 func (it *Iterator) ValueCopy(b []byte) ([]byte, error) {
 	v, err := it.Value()

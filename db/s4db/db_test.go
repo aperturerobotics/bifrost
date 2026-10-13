@@ -397,3 +397,45 @@ func checkCrash(t *testing.T, path string, m model) {
 	}
 	c.check(t, db)
 }
+
+// TestScanPrefixLens checks that the index-only scan reports the length of
+// inline, packed, and buffered values.
+func TestScanPrefixLens(t *testing.T) {
+	// Commit an inline and a packed value.
+	ctx := context.Background()
+	db := openTest(t, filepath.Join(t.TempDir(), "lens.s4wave"), Options{})
+	defer db.Close()
+	want := map[string]int{"a": 10, "b": 64 << 10, "c": 3}
+	tx, err := db.NewTransaction(ctx, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, k := range []string{"a", "b"} {
+		if err := tx.Set(ctx, []byte(k), make([]byte, want[k])); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := tx.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	// Buffer a third value and scan the lengths.
+	tx, err = db.NewTransaction(ctx, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Discard()
+	if err := tx.Set(ctx, []byte("c"), make([]byte, want["c"])); err != nil {
+		t.Fatal(err)
+	}
+	got := make(map[string]int)
+	if err := tx.(*Tx).ScanPrefixLens(ctx, nil, func(k []byte, n int) error {
+		got[string(k)] = n
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if !maps.Equal(got, want) {
+		t.Fatalf("lengths %v, want %v", got, want)
+	}
+}

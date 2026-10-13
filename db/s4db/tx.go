@@ -210,8 +210,30 @@ func (t *Tx) ScanPrefixKeys(ctx context.Context, prefix []byte, cb func(key []by
 	return it.Err()
 }
 
+// ScanPrefixLens calls cb with each key under prefix and the length of its
+// value in key order. It reads only the index, so it costs far less than
+// ScanPrefix on large values.
+func (t *Tx) ScanPrefixLens(ctx context.Context, prefix []byte, cb func(key []byte, n int) error) error {
+	// Hold an iterator over the snapshot and buffered changes.
+	it := t.iterate(prefix, false)
+	defer it.Close()
+
+	// Deliver the prefix's keys and value lengths in index order.
+	for it.Next() {
+		if err := cb(it.Key(), it.ValueLen()); err != nil {
+			return err
+		}
+	}
+	return it.Err()
+}
+
 // Iterate returns an iterator over keys under prefix, always in key order.
 func (t *Tx) Iterate(ctx context.Context, prefix []byte, sort, reverse bool) kvtx.Iterator {
+	return t.iterate(prefix, reverse)
+}
+
+// iterate returns an iterator over keys under prefix.
+func (t *Tx) iterate(prefix []byte, reverse bool) *Iterator {
 	it := newIterator(t.db.p, t.st, t.changes, prefix, reverse)
 	if t.done {
 		it.err = kvtx.ErrDiscarded
