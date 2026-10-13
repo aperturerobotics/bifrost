@@ -173,9 +173,9 @@ func TestShell(t *testing.T) {
 		stdin: "cd /tmp\npwd\necho written > out.txt\ncat greeting.txt out.txt\nexit\n",
 		want:  []string{"/tmp", "hello from the VFS", "written"},
 	}, {
-		name:      "vforkExec",
-		script:    "/bin/busybox echo vfork-exec",
-		want:      []string{"vfork-exec"},
+		name:      "forkExec",
+		script:    "/bin/busybox echo fork-exec",
+		want:      []string{"fork-exec"},
 		notStderr: []string{"sh: vfork", "sh: waitpid"},
 	}, {
 		name:    "childInheritsCwd",
@@ -186,6 +186,13 @@ func TestShell(t *testing.T) {
 		name:   "pipeline",
 		script: "echo HELLO | tr A-Z a-z | cat",
 		want:   []string{"hello"},
+	}, {
+		// A fork child runs beside its parent: yes ends when head closes the
+		// pipe, and the shell runs on while its background job sleeps.
+		name:   "rootForkRunsBeside",
+		root:   true,
+		script: "yes | head -2; sleep 0 & echo started; wait; echo waited; (echo sub) | cat",
+		want:   []string{"y\ny\nstarted\nwaited\nsub"},
 	}, {
 		name:       "dupStderr",
 		script:     "exec 3>&2; echo via-three >&3",
@@ -239,7 +246,7 @@ func TestShell(t *testing.T) {
 		script: "set -- $(ls -ls /usr/bin/busybox); test $1 -gt 0 && echo has-blocks; echo $2",
 		want:   []string{"has-blocks", "-rwx"},
 	}, {
-		name:  "rootSequentialVforks",
+		name:  "rootSequentialForks",
 		root:  true,
 		stdin: "( true ); ( true ); echo subshells\ntrue | true | true; echo pipes\nn=$(echo abc | wc -c); echo nested-$n\nexit\n",
 		want:  []string{"subshells", "pipes", "nested-4"},

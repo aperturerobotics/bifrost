@@ -8,12 +8,27 @@ import (
 	"github.com/s4wave/spacewave/plugin/wasivm/kernel/engine"
 )
 
-// Instance is a running wazero guest.
+// Instance is a running wazero guest and its active guest calls. Only the
+// goroutine running the guest uses it.
 type Instance struct {
 	// mod is the wazero module instance.
 	mod api.Module
 	// runtime is the runtime that instantiated it.
 	runtime *Runtime
+	// unwinder suspends the guest, or is nil when the guest is not
+	// transformed with Asyncify.
+	unwinder *unwinder
+	// frames are the guest calls in progress, innermost last. A host call
+	// may call into the guest again, as a signal handler does.
+	frames []*frame
+}
+
+// frame returns the innermost guest call, or nil.
+func (i *Instance) frame() *frame {
+	if len(i.frames) == 0 {
+		return nil
+	}
+	return i.frames[len(i.frames)-1]
 }
 
 // Memory returns the instance's linear memory, or nil when the guest has
@@ -33,7 +48,7 @@ func (i *Instance) ExportedFunction(name string) engine.Function {
 	if fn == nil {
 		return nil
 	}
-	return &Function{fn: fn}
+	return &Function{inst: i, name: name, fn: fn}
 }
 
 // ExportedGlobal returns an exported global, or nil when the guest does not

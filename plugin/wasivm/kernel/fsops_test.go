@@ -1,6 +1,9 @@
 package kernel
 
-import "testing"
+import (
+	"context"
+	"testing"
+)
 
 // fsTestProcess returns a process with four pages of memory and an in-memory
 // VFS holding /tmp.
@@ -27,7 +30,7 @@ func TestSendfileAdvancesOffset(t *testing.T) {
 	p, _ := fsTestProcess()
 	inFD, _ := openTestFile(p, "in", []byte("abcdefgh"))
 	outFD, out := openTestFile(p, "out", nil)
-	if res := p.sysSendfile(outFD, inFD, 0, 4); res != 4 {
+	if res := p.sysSendfile(context.Background(), outFD, inFD, 0, 4); res != 4 {
 		t.Fatalf("sendfile = %#x, want 4", res)
 	}
 
@@ -46,7 +49,7 @@ func TestSendfileOffsetPointer(t *testing.T) {
 	outFD, out := openTestFile(p, "out", nil)
 	const offPtr = 2048
 	mem.WriteUint32Le(offPtr, 2)
-	if res := p.sysSendfile(outFD, inFD, offPtr, 3); res != 3 {
+	if res := p.sysSendfile(context.Background(), outFD, inFD, offPtr, 3); res != 3 {
 		t.Fatalf("sendfile = %#x, want 3", res)
 	}
 

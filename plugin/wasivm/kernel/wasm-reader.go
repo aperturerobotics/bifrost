@@ -72,6 +72,39 @@ func (r *wasmReader) readName() string {
 	return string(r.readBytes(r.readU32()))
 }
 
+// skipLEB steps over a LEB128 value of any width.
+func (r *wasmReader) skipLEB() {
+	for !r.done() {
+		if r.readByte()&0x80 == 0 {
+			return
+		}
+	}
+}
+
+// skipConstExpr steps over a constant expression and its end.
+func (r *wasmReader) skipConstExpr() {
+	for !r.done() {
+		switch r.readByte() {
+		case 0x0b:
+			return
+		case 0x41, 0x42, 0x23, 0xd2:
+			// i32.const, i64.const, global.get and ref.func.
+			r.skipLEB()
+		case 0x43:
+			r.readBytes(4)
+		case 0x44:
+			r.readBytes(8)
+		case 0xd0:
+			// ref.null.
+			r.readByte()
+		case 0x6a, 0x6b, 0x6c, 0x7c, 0x7d, 0x7e:
+			// The extended constant arithmetic takes no immediates.
+		default:
+			r.fail()
+		}
+	}
+}
+
 // skipLimits steps over the limits of a table or memory type.
 func (r *wasmReader) skipLimits() {
 	flags := r.readByte()

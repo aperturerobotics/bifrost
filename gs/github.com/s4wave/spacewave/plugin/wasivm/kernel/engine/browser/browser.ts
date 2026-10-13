@@ -7,7 +7,8 @@
 // memory. Function.Call then awaits the host call, copies the stack back and
 // calls the export again to rewind; the rewound import returns the host call's
 // results. A snapshot keeps the copied stack, so restoring it rewinds to the
-// same import again with other results.
+// same import again with other results, in the same instance or in a fork of
+// it.
 
 import * as $ from '@goscript/builtin/index.js'
 import * as context from '@goscript/context/index.js'
@@ -53,12 +54,6 @@ export class Runtime {
     } catch (err) {
       return [null, callError(err)]
     }
-  }
-
-  // WithSnapshots returns ctx: every call into an Asyncify guest can capture
-  // its state.
-  WithSnapshots(ctx: context.Context | null): context.Context | null {
-    return ctx
   }
 
   // Snapshotter returns the snapshotter of the host call running under ctx,
@@ -152,6 +147,16 @@ export class Instance {
     return frame
   }
 
+  // export returns the export name and its type, or null.
+  export(name: string): { fn: WasmFunction; type: FunctionType } | null {
+    const fn = this.exports[name]
+    const type = this.exportTypes.get(name)
+    if (typeof fn !== 'function' || !type) {
+      return null
+    }
+    return { fn: fn as WasmFunction, type }
+  }
+
   // Memory returns the instance's linear memory.
   Memory(): Memory | null {
     return this.memory
@@ -159,12 +164,7 @@ export class Instance {
 
   // ExportedFunction returns an exported function, or null.
   ExportedFunction(name: string): Function | null {
-    const fn = this.exports[name]
-    const type = this.exportTypes.get(name)
-    if (typeof fn !== 'function' || !type) {
-      return null
-    }
-    return new Function(this, fn as WasmFunction, type)
+    return this.export(name) ? new Function(this, name) : null
   }
 
   // ExportedGlobal returns an exported global, or null.
@@ -184,54 +184,75 @@ export class Instance {
 export class Function {
   constructor(
     private readonly inst: Instance,
-    private readonly fn: WasmFunction,
-    private readonly type: FunctionType,
+    private readonly name: string,
   ) {}
 
-  // Call invokes the function, unwinding and rewinding the guest at each
-  // host call that awaits or takes a snapshot, and at each snapshot restore
-  // that targets this call.
-  async Call(
+  // Call invokes the function.
+  Call(
     ctx: context.Context | null,
     args: $.Slice<bigint>,
   ): Promise<[$.Slice<bigint>, $.GoError]> {
-    const inst = this.inst
-    const frame = new Frame(inst, ctx)
-    const wasmArgs = $.asArray(args).map((arg, i) =>
-      toWasm(arg, this.type.params[i]),
-    )
-    inst.frames.push(frame)
-    try {
-      for (;;) {
-        try {
-          // Run the guest until it returns or unwinds.
-          const result = this.fn(...wasmArgs)
-          const capture = frame.unwound
-          if (!capture) {
-            return [fromWasmResults(result, this.type.results), null]
-          }
-          frame.unwound = null
+    return callExport(this.inst, ctx, this.name, [...$.asArray(args)], null, [])
+  }
+}
 
-          // Save the unwound stack, finish the host call, and rewind.
-          const unwinder = inst.unwinder!
-          capture.stack = unwinder.stopUnwind()
-          frame.resume = await frame.pending
-          unwinder.startRewind(capture.stack)
-        } catch (err) {
-          // A restore targeting this call rewinds to its snapshot.
-          if (!(err instanceof Restore) || err.frame !== frame) {
-            if (err instanceof Restore && inst.frames.includes(err.frame)) {
-              throw err
-            }
-            return [null, callError(err)]
-          }
-          frame.resume = err.results
-          inst.unwinder!.startRewind(err.stack)
+// call runs the export name of inst with args as a new frame of inst. It
+// unwinds and rewinds the guest at each host call that awaits or takes a
+// snapshot, and at each snapshot restore that targets this call. When rewind
+// is set, the call first rewinds to that unwound stack, whose host import
+// then returns resume.
+async function callExport(
+  inst: Instance,
+  ctx: context.Context | null,
+  name: string,
+  args: bigint[],
+  rewind: Uint8Array | null,
+  resume: bigint[],
+): Promise<[$.Slice<bigint>, $.GoError]> {
+  // Push the frame.
+  const exp = inst.export(name)
+  if (!exp) {
+    return [null, $.newError(`call of missing export ${name}`)]
+  }
+  const frame = new Frame(inst, ctx, name, args)
+  const wasmArgs = args.map((arg, i) => toWasm(arg, exp.type.params[i]))
+  inst.frames.push(frame)
+  if (rewind) {
+    frame.resume = resume
+    inst.unwinder!.startRewind(rewind)
+  }
+
+  try {
+    for (;;) {
+      try {
+        // Run the guest until it returns or unwinds.
+        const result = exp.fn(...wasmArgs)
+        const capture = frame.unwound
+        if (!capture) {
+          return [fromWasmResults(result, exp.type.results), null]
         }
+        frame.unwound = null
+
+        // Save the unwound stack, finish the host call, and rewind.
+        const unwinder = inst.unwinder!
+        capture.complete(unwinder.stopUnwind())
+        frame.resume = await frame.pending
+        unwinder.startRewind(capture.stack!)
+      } catch (err) {
+        // A restore targeting this call rewinds to its snapshot.
+        frame.abandon()
+        if (!(err instanceof Restore) || err.frame !== frame) {
+          if (err instanceof Restore && inst.frames.includes(err.frame)) {
+            throw err
+          }
+          return [null, callError(err)]
+        }
+        frame.resume = err.results
+        inst.unwinder!.startRewind(err.stack)
       }
-    } finally {
-      inst.frames.pop()
     }
+  } finally {
+    inst.frames.pop()
   }
 }
 
@@ -239,6 +260,8 @@ export class Function {
 class Frame {
   // ctx is the call's context, through which its host calls find it.
   readonly ctx: context.Context
+  // depth is the frame's index in the instance's frames.
+  readonly depth: number
   // capture is the state of the host call running in this frame.
   capture: Capture | null = null
   // unwound is the capture of a host call the guest is unwinding from.
@@ -252,18 +275,54 @@ class Frame {
   constructor(
     readonly inst: Instance,
     ctx: context.Context | null,
+    // name and args are the export the call runs and its arguments, which
+    // a fork resumes.
+    readonly name: string,
+    readonly args: bigint[],
   ) {
     this.ctx = context.WithValue(ctx, frameKey, this)
+    this.depth = inst.frames.length
+  }
+
+  // abandon ends the captures of a guest call that failed, so a fork waiting
+  // to resume from one fails too.
+  abandon(): void {
+    this.capture?.complete(null)
+    this.unwound?.complete(null)
+    this.capture = null
+    this.unwound = null
   }
 }
 
 // Capture is the guest stack unwound at one host call.
-type Capture = {
+class Capture {
   // wanted reports that a snapshot needs the stack, so the guest unwinds
   // even when the host call finishes at once.
-  wanted: boolean
+  wanted = false
   // stack is the unwound stack, or null before the guest unwinds.
-  stack: Uint8Array | null
+  stack: Uint8Array | null = null
+  // done settles once stack is set, or once the guest call failed without
+  // completing the capture.
+  readonly done: Promise<void>
+  private settle: () => void = () => {}
+
+  constructor(
+    // depth, name and args are those of the frame the host call ran in.
+    readonly depth: number,
+    readonly name: string,
+    readonly args: bigint[],
+  ) {
+    this.done = new Promise((resolve) => {
+      this.settle = resolve
+    })
+  }
+
+  // complete records the unwound stack, or null when the guest call failed
+  // first.
+  complete(stack: Uint8Array | null): void {
+    this.stack ??= stack
+    this.settle()
+  }
 }
 
 // hostImport adapts a kernel host function to a WebAssembly import of inst.
@@ -304,7 +363,7 @@ function hostImport(
     args.forEach((arg, i) => {
       stack[i] = fromWasm(arg, params[i])
     })
-    const capture: Capture = { wanted: false, stack: null }
+    const capture = new Capture(frame.depth, frame.name, frame.args)
     frame.capture = capture
     const err = call(frame.ctx, inst, stack)
 
@@ -353,36 +412,67 @@ function unwind(
 class Snapshotter {
   constructor(private readonly frame: Frame) {}
 
-  // Snapshot captures a state that can be restored any number of times.
+  // Snapshot captures the call stack of the running host call.
   Snapshot(): Snapshot {
     const capture = this.frame.capture!
     capture.wanted = true
-    return new Snapshot(this.frame, capture)
-  }
-
-  // SnapshotOnce captures a state that is restored at most once. The copied
-  // stack is never consumed, so it is the same as Snapshot.
-  SnapshotOnce(): Snapshot {
-    return this.Snapshot()
+    return new Snapshot(capture)
   }
 }
 
 // Snapshot is the guest stack of one host call.
 class Snapshot {
-  constructor(
-    private readonly frame: Frame,
-    private readonly capture: Capture,
-  ) {}
+  constructor(private readonly capture: Capture) {}
 
-  // Restore resumes the guest at the capture, returning returnValues from
-  // the host function that took it. It does not return: the thrown Restore
-  // unwinds to the frame's Function.Call.
-  Restore(returnValues: $.Slice<bigint>): void {
+  // Restore resumes the guest call running under ctx at the capture,
+  // returning returnValues from the host function that took it. It does not
+  // return: the thrown Restore unwinds to the call of the frame at the
+  // capture's depth.
+  Restore(ctx: context.Context | null, returnValues: $.Slice<bigint>): void {
+    const frame = ctx?.Value(frameKey) as Frame | null | undefined
+    const target = frame?.inst.frames[this.capture.depth]
+    if (!target) {
+      throw $.newError('restore outside the guest call of its snapshot')
+    }
     const stack = this.capture.stack
     if (!stack) {
       throw $.newError('restore of a snapshot the guest has not unwound to')
     }
-    throw new Restore(this.frame, stack, [...$.asArray(returnValues)])
+    throw new Restore(target, stack, [...$.asArray(returnValues)])
+  }
+
+  // Resume runs the captured guest call in inst, a fork of the instance the
+  // capture was taken in, as if the host function that took it returned
+  // returnValues. It waits for the capture and returns when the call does.
+  async Resume(
+    ctx: context.Context | null,
+    inst: engine.Instance | null,
+    returnValues: $.Slice<bigint>,
+  ): Promise<[$.Slice<bigint>, $.GoError]> {
+    // Wait for the capture.
+    const capture = this.capture
+    await capture.done
+    if (!capture.stack) {
+      return [
+        null,
+        $.newError('resume of a snapshot the guest has not unwound to'),
+      ]
+    }
+
+    // Rewind a new outermost frame of inst to it.
+    if (
+      !(inst instanceof Instance) ||
+      !inst.unwinder ||
+      capture.depth !== inst.frames.length
+    ) {
+      return [
+        null,
+        $.newError("resume outside a fork of the snapshot's instance"),
+      ]
+    }
+    return callExport(inst, ctx, capture.name, capture.args, capture.stack, [
+      ...$.asArray(returnValues),
+    ])
   }
 }
 

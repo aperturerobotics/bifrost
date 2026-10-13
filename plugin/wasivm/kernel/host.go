@@ -78,6 +78,13 @@ func (k *Kernel) defineHostModules(ctx context.Context) error {
 	return nil
 }
 
+// callLocked runs the host function fn for p holding the kernel lock.
+func (k *Kernel) callLocked(ctx context.Context, p *Process, fn hostFunc, args []uint64) uint64 {
+	k.mu.Lock()
+	defer k.mu.Unlock()
+	return fn.call(ctx, p, args)
+}
+
 // bindHostFunc binds fn to the process making each call. After the call it
 // runs the handlers of signals caught before or during it.
 func (k *Kernel) bindHostFunc(name string, fn hostFunc) (engine.HostFunction, error) {
@@ -97,7 +104,7 @@ func (k *Kernel) bindHostFunc(name string, fn hostFunc) (engine.HostFunction, er
 		if k.debugSyscalls {
 			args = slices.Clone(args)
 		}
-		result := fn.call(ctx, p, args)
+		result := k.callLocked(ctx, p, fn, args)
 		if len(results) != 0 {
 			stack[0] = result
 		}

@@ -130,8 +130,8 @@ func wasiFSFunctions() map[string]hostFunc {
 		"fd_tell": wasiFunc("iii", func(_ context.Context, p *Process, mem engine.Memory, a []uint64) uint32 {
 			return p.wasiFDTell(mem, uint32(a[0]), uint32(a[1]))
 		}),
-		"fd_write": wasiFunc("iiiii", func(_ context.Context, p *Process, mem engine.Memory, a []uint64) uint32 {
-			return p.wasiFDWrite(mem, uint32(a[0]), uint32(a[1]), uint32(a[2]), uint32(a[3]))
+		"fd_write": wasiFunc("iiiii", func(ctx context.Context, p *Process, mem engine.Memory, a []uint64) uint32 {
+			return p.wasiFDWrite(ctx, mem, uint32(a[0]), uint32(a[1]), uint32(a[2]), uint32(a[3]))
 		}),
 		"path_create_directory": wasiFunc("iiii", func(_ context.Context, p *Process, mem engine.Memory, a []uint64) uint32 {
 			return p.wasiPathCreateDirectory(mem, uint32(a[0]), uint32(a[1]), uint32(a[2]))
@@ -318,9 +318,9 @@ func (p *Process) wasiFDRead(ctx context.Context, mem engine.Memory, fd, iovsPtr
 }
 
 // wasiFDWrite writes the iovecs at iovsPtr to a descriptor.
-func (p *Process) wasiFDWrite(mem engine.Memory, fd, iovsPtr, iovsLen, nwrittenPtr uint32) uint32 {
+func (p *Process) wasiFDWrite(ctx context.Context, mem engine.Memory, fd, iovsPtr, iovsLen, nwrittenPtr uint32) uint32 {
 	return wasiTransfer(mem, iovsPtr, iovsLen, nwrittenPtr, func(base, length uint32) (uint32, uint32) {
-		return wasiResult(p.sysWrite(fd, base, length))
+		return wasiResult(p.sysWrite(ctx, fd, base, length))
 	})
 }
 

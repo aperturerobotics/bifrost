@@ -7,9 +7,6 @@ import (
 	"github.com/s4wave/spacewave/plugin/wasivm/kernel/engine"
 )
 
-// wasmPageSize is the size of a WebAssembly memory page.
-const wasmPageSize = 65536
-
 // memMemory is an engine.Memory over a byte slice, so a test can call a
 // syscall that reads guest memory without running a module.
 type memMemory struct {

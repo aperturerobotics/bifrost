@@ -27,6 +27,10 @@ type Kernel struct {
 	runtime engine.Runtime
 	vfs     *VFS
 
+	// mu is the kernel lock. Each host call holds it except while it
+	// blocks, so processes change the kernel's state one at a time.
+	mu sync.Mutex
+
 	// procs is the process table.
 	procs *processTable
 	// tempSeq numbers the directories mkdtemp creates.
@@ -175,7 +179,10 @@ func (k *Kernel) RunProcess(ctx context.Context, wasm []byte, args ...string) er
 	k.procs.set(pid, p)
 
 	// Run it, then wait for the children it left running.
-	if err := k.runProcess(ctx, p, wasm); err != nil {
+	err := k.runProcess(ctx, p, func(ctx context.Context) error {
+		return k.runProgram(ctx, p, wasm)
+	})
+	if err != nil {
 		return err
 	}
 	if err := k.procs.waitIdle(ctx); err != nil {
@@ -187,17 +194,19 @@ func (k *Kernel) RunProcess(ctx context.Context, wasm []byte, args ...string) er
 	return nil
 }
 
-// startChildProcess runs a registered child process in the background.
-func (k *Kernel) startChildProcess(ctx context.Context, p *Process, wasm []byte) {
+// startChildProcess runs a registered child process in the background. run
+// runs its guest, as runProcess describes.
+func (k *Kernel) startChildProcess(ctx context.Context, p *Process, run func(ctx context.Context) error) {
 	k.procs.start(func() {
-		_ = k.runProcess(ctx, p, wasm)
+		_ = k.runProcess(ctx, p, run)
 	})
 }
 
-// runProcess runs a registered process to completion, records its exit code
-// and releases it. A program that cannot run exits with 126. A child reports
-// that error on the kernel's stderr, since its parent sees only the exit code.
-func (k *Kernel) runProcess(ctx context.Context, p *Process, wasm []byte) error {
+// runProcess runs a registered process to completion with run, records its
+// exit and releases it. run runs the guest until it returns or exits. A
+// program that cannot run exits with 126. A child reports that error on the
+// kernel's stderr, since its parent sees only the exit code.
+func (k *Kernel) runProcess(ctx context.Context, p *Process, run func(ctx context.Context) error) error {
 	// Give the process a context its kill and exit cancel. A terminating
 	// signal that arrived before the start cancels it at once.
 	procCtx, cancel := context.WithCancel(context.WithValue(ctx, processContextKey{}, p))
@@ -212,13 +221,14 @@ func (k *Kernel) runProcess(ctx context.Context, p *Process, wasm []byte) error 
 
 	// Run the program. A terminating signal ends it with status 128 plus the
 	// signal number. Report any other failure before the parent can see it.
-	err := k.runProgram(procCtx, p, wasm)
+	err := k.runGuest(procCtx, p, run)
 	p.sigMu.Lock()
 	sig := p.sigTerm
 	p.sigMu.Unlock()
 	switch {
 	case sig != 0:
 		p.exitCode = 128 + int(sig)
+		p.exitSignal = sig
 		return nil
 	case err != nil:
 		p.exitCode = exitCannotRun
@@ -229,13 +239,35 @@ func (k *Kernel) runProcess(ctx context.Context, p *Process, wasm []byte) error 
 	return err
 }
 
-// runProgram compiles and runs a process's program and records its exit
-// code. When the program replaced itself with exec, the exit code is the
-// replacement's. It returns an error when the program could not run or
-// trapped.
+// runGuest runs the process's guest with run and records its exit code. When
+// the program replaced itself with exec, the exit code is the replacement's.
+// It returns an error when the program could not run or trapped.
+func (k *Kernel) runGuest(ctx context.Context, p *Process, run func(ctx context.Context) error) error {
+	// Run the guest; it ends by panicking a ProcessExitError from exit.
+	err := run(ctx)
+	if p.inst != nil {
+		_ = p.inst.Close(ctx)
+	}
+	var exitErr *ProcessExitError
+	if !errors.As(err, &exitErr) {
+		return err
+	}
+	p.exitCode = exitErr.Code
+
+	// After exec, the replacement process carries on under this PID.
+	if child := p.selfExecProc; child != nil {
+		<-child.exitCh
+		p.exitCode = child.exitCode
+		p.exitSignal = child.exitSignal
+	}
+	return nil
+}
+
+// runProgram compiles wasm as the process's program and runs it from its
+// entry point.
 func (k *Kernel) runProgram(ctx context.Context, p *Process, wasm []byte) error {
 	// Compile and instantiate the program.
-	wasm, err := prepareGuest(wasm)
+	wasm, globals, err := prepareGuest(wasm)
 	if err != nil {
 		return err
 	}
@@ -247,23 +279,39 @@ func (k *Kernel) runProgram(ctx context.Context, p *Process, wasm []byte) error 
 	if err != nil {
 		return errors.Wrap(err, "instantiate")
 	}
-	defer inst.Close(ctx)
-	p.inst = inst
+	p.inst, p.module, p.globals = inst, compiled, globals
+	return p.start(ctx)
+}
 
-	// Run the program; it ends by panicking a ProcessExitError from exit.
-	err = p.start(k.runtime.WithSnapshots(ctx))
-	var exitErr *ProcessExitError
-	if !errors.As(err, &exitErr) {
-		return err
-	}
-	p.exitCode = exitErr.Code
+// wait waits for ch to close and reports true, or for ctx to end and reports
+// false, without the kernel lock.
+func wait(ctx context.Context, ch <-chan struct{}) bool {
+	done := false
+	blocking(ctx, func() {
+		select {
+		case <-ctx.Done():
+		case <-ch:
+			done = true
+		}
+	})
+	return done
+}
 
-	// After exec, the replacement process carries on under this PID.
-	if child := p.selfExecProc; child != nil {
-		<-child.exitCh
-		p.exitCode = child.exitCode
+// blocking runs wait, which blocks, without the kernel lock the host call
+// running under ctx holds, so other processes run in the meantime. Outside a
+// process's host call it runs wait as is.
+func blocking(ctx context.Context, wait func()) {
+	// Find the process of the host call.
+	p, ok := ctx.Value(processContextKey{}).(*Process)
+	if !ok {
+		wait()
+		return
 	}
-	return nil
+
+	// Release the lock while waiting.
+	p.kernel.mu.Unlock()
+	defer p.kernel.mu.Lock()
+	wait()
 }
 
 // exitCannotRun is the exit code of a program that cannot run, as a shell
@@ -271,17 +319,25 @@ func (k *Kernel) runProgram(ctx context.Context, p *Process, wasm []byte) error 
 const exitCannotRun = 126
 
 // exitProcess releases a process after its program returns: it closes the
-// process's descriptors, wakes its waiters and, when no parent will reap it,
-// removes it from the process table.
+// process's descriptors, wakes its waiters and sends its parent SIGCHLD. When
+// no parent will reap it, it removes it from the process table.
 func (k *Kernel) exitProcess(p *Process) {
+	// Close the descriptors and record the exit.
 	for fd, of := range p.fds {
 		of.unref()
 		delete(p.fds, fd)
 	}
 	p.cancel()
 	close(p.exitCh)
+	k.procs.exited()
+
+	// Tell the parent, unless an exec replaced the process and its
+	// replacement tells it later.
+	replaced := k.procs.get(p.pid) != p
 	if p.ppid == 0 {
 		k.procs.removeProcess(p)
+	} else if parent := k.procs.get(p.ppid); parent != nil && !replaced {
+		parent.deliverSignal(SIGCHLD)
 	}
 }
 

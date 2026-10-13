@@ -14,7 +14,7 @@ func TestPipeWriteCountsAllBytes(t *testing.T) {
 	defer writer.unref()
 
 	// Write to it with no reader waiting.
-	n, ok := writer.write([]byte("hello"))
+	n, ok := writer.write(context.Background(), []byte("hello"))
 	if !ok {
 		t.Fatal("write failed with EPIPE while the read end is open")
 	}
@@ -30,7 +30,7 @@ func TestPipeDrainsBeforeEOF(t *testing.T) {
 	ctx := context.Background()
 	reader, writer := newPipeEnds()
 	defer reader.unref()
-	if n, ok := writer.write([]byte("hello")); !ok || n != len("hello") {
+	if n, ok := writer.write(ctx, []byte("hello")); !ok || n != len("hello") {
 		t.Fatalf("write = %d, %t; want %d, true", n, ok, len("hello"))
 	}
 	writer.unref()
@@ -58,48 +58,38 @@ func TestPipeWriteAfterReadCloseFails(t *testing.T) {
 	p := &Process{fds: map[uint32]*OpenFile{3: {pipe: writer}}}
 
 	// Write through the descriptor.
-	if got := p.writeOutBytes(3, []byte("hello")); got != negErrno(EPIPE) {
+	if got := p.writeOutBytes(context.Background(), 3, []byte("hello")); got != negErrno(EPIPE) {
 		t.Fatalf("write = %#x, want EPIPE", got)
 	}
-}
-
-// TestPipeReadRefReopens checks a new reference to a closed read end makes
-// the pipe writable again.
-func TestPipeReadRefReopens(t *testing.T) {
-	// Close the read end and expect writes to fail.
-	reader, writer := newPipeEnds()
-	defer reader.unref()
-	defer writer.unref()
-	reader.unref()
-	if n, ok := writer.write([]byte("before")); ok || n != 0 {
-		t.Fatalf("write after close = %d, %t; want 0, false", n, ok)
-	}
-
-	// Reference it again and expect writes to succeed.
-	reader.ref()
-	if n, ok := writer.write([]byte("after")); !ok || n != len("after") {
-		t.Fatalf("write after reopen = %d, %t; want %d, true", n, ok, len("after"))
+	if p.sigTerm != SIGPIPE {
+		t.Fatalf("terminating signal = %d, want SIGPIPE", p.sigTerm)
 	}
 }
 
-// TestPipeHeldReadRefSurvivesClose checks a held read reference keeps the pipe
-// open while the last ordinary reference closes, as across vfork.
-func TestPipeHeldReadRefSurvivesClose(t *testing.T) {
-	// Hold the read end, drop its reference and write.
+// TestPipeWriteWaitsForRoom checks a write to a full pipe takes nothing until
+// a read makes room, so a writer whose reader stops reading blocks.
+func TestPipeWriteWaitsForRoom(t *testing.T) {
+	// Fill a pipe.
 	ctx := context.Background()
 	reader, writer := newPipeEnds()
 	defer reader.unref()
 	defer writer.unref()
-	reader.hold()
-	reader.unref()
-	if n, ok := writer.write([]byte("held")); !ok || n != len("held") {
-		t.Fatalf("write with a held read end = %d, %t; want %d, true", n, ok, len("held"))
+	if n, ok := writer.write(ctx, make([]byte, pipeCapacity)); !ok || n != pipeCapacity {
+		t.Fatalf("write to fill = %d, %t; want %d, true", n, ok, pipeCapacity)
 	}
 
-	// Restore the held reference and read the bytes back.
-	reader.restoreHeld()
-	buf := make([]byte, len("held"))
-	if n, eof := reader.read(ctx, buf); eof || string(buf[:n]) != "held" {
-		t.Fatalf("read after restore = %q, eof %t; want %q", buf[:n], eof, "held")
+	// A write that gives up takes nothing.
+	canceled, cancel := context.WithCancel(ctx)
+	cancel()
+	if n, ok := writer.write(canceled, []byte("x")); !ok || n != 0 {
+		t.Fatalf("write to a full pipe = %d, %t; want 0, true", n, ok)
+	}
+
+	// After a read, the write fits.
+	if n, eof := reader.read(ctx, make([]byte, 1)); eof || n != 1 {
+		t.Fatalf("read = %d, eof %t; want 1, false", n, eof)
+	}
+	if n, ok := writer.write(ctx, []byte("x")); !ok || n != 1 {
+		t.Fatalf("write after a read = %d, %t; want 1, true", n, ok)
 	}
 }

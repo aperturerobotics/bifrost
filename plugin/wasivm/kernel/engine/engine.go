@@ -14,11 +14,8 @@ type Runtime interface {
 	Define(ctx context.Context, module string, fns map[string]HostFunction) error
 	// Compile compiles a WebAssembly binary into a reusable module.
 	Compile(ctx context.Context, wasm []byte) (Module, error)
-	// WithSnapshots returns a context whose guest calls can capture their
-	// execution state.
-	WithSnapshots(ctx context.Context) context.Context
 	// Snapshotter returns the snapshotter of the host call running under
-	// ctx, or nil when the call cannot capture its state.
+	// ctx, or nil when the guest cannot capture its state.
 	Snapshotter(ctx context.Context) Snapshotter
 	// Close releases the runtime and every module it compiled.
 	Close(ctx context.Context) error
@@ -109,20 +106,28 @@ type Memory interface {
 	Grow(pages uint32) (uint32, bool)
 }
 
-// Snapshotter captures the execution state of a running host call, so the
-// guest can later resume as if that call returned again. The kernel builds
-// vfork, setjmp and longjmp on it.
+// Snapshotter captures the call stack of a running host call, so the guest
+// can later resume as if that call returned again. The kernel builds fork,
+// setjmp and longjmp on it.
 type Snapshotter interface {
-	// Snapshot captures a state that can be restored any number of times.
+	// Snapshot captures the call stack of the running host call. The stack is
+	// complete once the host call returns.
 	Snapshot() Snapshot
-	// SnapshotOnce captures a state that is restored at most once, which
-	// costs less than Snapshot.
-	SnapshotOnce() Snapshot
 }
 
-// Snapshot is captured execution state.
+// Snapshot is a captured guest call stack. It holds no memory or globals:
+// the caller restores those it needs. A fork of an instance is another
+// instance of the same module into which the caller copied the instance's
+// memory and globals.
 type Snapshot interface {
-	// Restore resumes execution at the capture, returning returnValues from
-	// the host function that took it.
-	Restore(returnValues []uint64)
+	// Restore resumes the guest call running under ctx at the capture,
+	// returning returnValues from the host function that took it. It does
+	// not return. The guest call must be the one the capture was taken in,
+	// or the call at the same depth in a fork of its instance.
+	Restore(ctx context.Context, returnValues []uint64)
+	// Resume runs the captured guest call in inst, a fork of the instance
+	// the capture was taken in, as if the host function that took it
+	// returned returnValues. It waits for the capture to complete and
+	// returns when the guest call does.
+	Resume(ctx context.Context, inst Instance, returnValues []uint64) ([]uint64, error)
 }

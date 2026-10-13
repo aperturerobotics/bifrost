@@ -106,10 +106,8 @@ func (sr *stdinReader) read(ctx context.Context, p []byte) (int, error) {
 		}
 
 		// Wait for more.
-		select {
-		case <-ctx.Done():
+		if !wait(ctx, readyCh) {
 			return 0, ctx.Err()
-		case <-readyCh:
 		}
 	}
 }

@@ -17,27 +17,31 @@ type Process struct {
 
 	kernel *Kernel
 	inst   engine.Instance
+	// module is the compiled program inst runs, and globals are the export
+	// names of its mutable globals. A fork copies them into a new instance.
+	module  engine.Module
+	globals []string
 	// cancel ends the program. Exit and a terminating signal call it.
 	cancel context.CancelFunc
 
-	// exitCh closes when the program has exited and exitCode is final.
-	exitCh   chan struct{}
-	exitCode int
+	// exitCh closes when the program has exited and exitCode and exitSignal
+	// are final. exitSignal is the signal that ended the program, or 0.
+	exitCh     chan struct{}
+	exitCode   int
+	exitSignal uint32
 
-	// vfork is the parent state saved while a vfork child runs in this
-	// process, or nil. sigMu guards it, since signal delivery reads it.
-	vfork *vforkState
-	// selfExecProc is the process that replaced this one through an exec
-	// outside a vfork. The caller waits on it.
+	// selfExecProc is the process that replaced this one through exec. The
+	// caller waits on it.
 	selfExecProc *Process
 	// jmpBufs holds the state setjmp recorded, by jmp_buf address.
 	jmpBufs map[uint32]jmpBufEntry
+	// handlerDepth counts the signal handlers running.
+	handlerDepth int
 
-	// sigMu guards sigState, vfork and the signal fields below.
+	// sigMu guards sigState and the signal fields below.
 	sigMu sync.Mutex
-	// sigTerm is the terminating signal the process received. A vfork child
-	// exits at its next safe point, leaving the parent running. Any other
-	// process is canceled, at once or when it starts.
+	// sigTerm is the terminating signal the process received. The process
+	// is canceled, at once or when it starts.
 	sigTerm uint32
 	// sigInterrupt ends the blocking call in progress so that a caught
 	// signal's handler runs promptly.
@@ -51,8 +55,7 @@ type Process struct {
 	sigUnblockedDeliveries uint64
 }
 
-// procState is the state of a process that a vfork child changes and its
-// parent gets back when the child execs or exits.
+// procState is the state a fork child copies from its parent.
 type procState struct {
 	pid  int
 	ppid int

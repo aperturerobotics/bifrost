@@ -2,6 +2,7 @@ package kernel
 
 import (
 	"context"
+	"slices"
 	"testing"
 )
 
@@ -28,14 +29,20 @@ var testHandlerWasm = []byte{
 }
 
 // TestPrepareGuest checks that a prepared guest exports its stack pointer and
-// runs a handler from its table through the signal trampoline.
+// mutable globals and runs a handler from its table through the signal
+// trampoline.
 func TestPrepareGuest(t *testing.T) {
-	// Prepare and instantiate the guest.
+	// Prepare the guest.
 	ctx := context.Background()
-	wasm, err := prepareGuest(testHandlerWasm)
+	wasm, globals, err := prepareGuest(testHandlerWasm)
 	if err != nil {
 		t.Fatal(err)
 	}
+	if !slices.Equal(globals, []string{guestStackPointer, "caught"}) {
+		t.Fatalf("mutable globals %q, want the stack pointer and caught", globals)
+	}
+
+	// Instantiate it.
 	mod, err := testRuntime(t, ctx).Compile(ctx, wasm)
 	if err != nil {
 		t.Fatal(err)
@@ -65,11 +72,11 @@ func TestPrepareGuest(t *testing.T) {
 // nothing.
 func TestPrepareGuestIdempotent(t *testing.T) {
 	// Prepare the guest twice.
-	once, err := prepareGuest(testHandlerWasm)
+	once, _, err := prepareGuest(testHandlerWasm)
 	if err != nil {
 		t.Fatal(err)
 	}
-	twice, err := prepareGuest(once)
+	twice, _, err := prepareGuest(once)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,7 +1,7 @@
 package kernel
 
 // OpenFile represents an open file description. Descriptors made by dup,
-// exec and vfork share one OpenFile, and so share its offset and flags.
+// exec and fork share one OpenFile, and so share its offset and flags.
 type OpenFile struct {
 	node   *VNode
 	path   string // absolute path at time of open
@@ -30,20 +30,5 @@ func (of *OpenFile) ref() {
 func (of *OpenFile) unref() {
 	if of.pipe != nil {
 		of.pipe.unref()
-	}
-}
-
-// hold keeps the file's pipe end open while a vfork child changes the
-// descriptor table the parent will get back.
-func (of *OpenFile) hold() {
-	if of.pipe != nil {
-		of.pipe.hold()
-	}
-}
-
-// restoreHeld turns a hold back into the parent's table reference.
-func (of *OpenFile) restoreHeld() {
-	if of.pipe != nil {
-		of.pipe.restoreHeld()
 	}
 }

@@ -60,6 +60,8 @@ find "$out_dir" -type f -print0 | while IFS= read -r -d '' program; do
 		--enable-bulk-memory --enable-sign-ext \
 		--enable-mutable-globals --enable-nontrapping-float-to-int \
 		"$program" -o "$program.asyncify"
-	mv "$program.asyncify" "$program"
+	# Rewrite the program in place to keep its mode.
+	cat "$program.asyncify" >"$program"
+	rm "$program.asyncify"
 done
 echo "Built $out_dir"

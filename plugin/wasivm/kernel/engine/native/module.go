@@ -26,8 +26,13 @@ func (m *Module) Instantiate(ctx context.Context, name string) (engine.Instance,
 		return nil, err
 	}
 
-	// Record the instance for its host calls.
-	inst := &Instance{mod: mod, runtime: m.runtime}
+	// Reserve the unwind region and record the instance for its host calls.
+	unwinder, err := attachUnwinder(mod)
+	if err != nil {
+		_ = mod.Close(ctx)
+		return nil, err
+	}
+	inst := &Instance{mod: mod, runtime: m.runtime, unwinder: unwinder}
 	m.runtime.addInstance(mod, inst)
 	return inst, nil
 }

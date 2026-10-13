@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/aperturerobotics/util/broadcast"
+	"github.com/pkg/errors"
 )
 
 // processTable holds the kernel's processes by PID and counts the child
@@ -81,16 +82,50 @@ func (t *processTable) filter(match func(p *Process) bool) []*Process {
 	return out
 }
 
-// childOf returns a child of the process ppid, or nil when it has none.
-func (t *processTable) childOf(ppid int) *Process {
-	l := t.bcast.Lock()
-	defer l.Unlock()
-	for _, p := range t.procs {
-		if p.ppid == ppid {
-			return p
+// errNoChild is the error of waiting for a child when none matches.
+var errNoChild = errors.New("no matching child process")
+
+// waitChild waits for a child of the process ppid that match accepts to exit,
+// and returns it. With nohang it returns nil at once while every matching
+// child runs. It returns errNoChild when no child matches.
+func (t *processTable) waitChild(ctx context.Context, ppid int, match func(p *Process) bool, nohang bool) (*Process, error) {
+	for {
+		// Find an exited child.
+		l := t.bcast.Lock()
+		found := false
+		for _, p := range t.procs {
+			if p.ppid != ppid || !match(p) {
+				continue
+			}
+			found = true
+			select {
+			case <-p.exitCh:
+				l.Unlock()
+				return p, nil
+			default:
+			}
+		}
+		waitCh := l.WaitCh()
+		l.Unlock()
+		switch {
+		case !found:
+			return nil, errNoChild
+		case nohang:
+			return nil, nil
+		}
+
+		// Wait for an exit.
+		if !wait(ctx, waitCh) {
+			return nil, context.Cause(ctx)
 		}
 	}
-	return nil
+}
+
+// exited wakes waitChild after a process exits.
+func (t *processTable) exited() {
+	l := t.bcast.Lock()
+	l.Broadcast()
+	l.Unlock()
 }
 
 // start runs fn in a goroutine counted as a running child process.

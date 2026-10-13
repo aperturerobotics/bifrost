@@ -7,7 +7,7 @@
 // but a host call compiled to TypeScript may need to await. The engine
 // unwinds the guest's call stack into a buffer, awaits the call, and rewinds
 // the guest to the same import. A copy of that buffer is a snapshot: rewinding
-// from it again returns from the import a second time, as vfork, setjmp and
+// from it again returns from the import a second time, as fork, setjmp and
 // longjmp need.
 //
 // GoScript replaces this package with its TypeScript implementation in the
@@ -42,12 +42,6 @@ func (r *Runtime) Define(ctx context.Context, module string, fns map[string]engi
 // Compile compiles a WebAssembly binary into a reusable module.
 func (r *Runtime) Compile(ctx context.Context, wasm []byte) (engine.Module, error) {
 	return nil, errUnsupported
-}
-
-// WithSnapshots returns ctx: every call into an Asyncify guest can capture
-// its state.
-func (r *Runtime) WithSnapshots(ctx context.Context) context.Context {
-	return ctx
 }
 
 // Snapshotter returns the snapshotter of the host call running under ctx, or

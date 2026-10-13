@@ -11,8 +11,8 @@ import (
 // errInterrupted ends a blocking call so a caught signal's handler can run.
 var errInterrupted = errors.New("interrupted by signal")
 
-// sigState is the signal state of a process that a vfork child changes and
-// its parent gets back. The signal sets use the Linux layout: bit signo-1.
+// sigState is the signal state of a process. The signal sets use the Linux
+// layout: bit signo-1.
 type sigState struct {
 	// sigActions holds each signal's disposition.
 	sigActions [32]sigAction
@@ -100,26 +100,24 @@ func (p *Process) deliverSignal(sig uint32) {
 		handler = sigDfl
 	}
 	terminate := handler == sigDfl && bit&sigTerminateMask != 0
-	inVfork := p.vfork != nil
 
 	// Mark a signal with a guest handler caught and interrupt the blocking
-	// call. A vfork child shares its parent's instance, so a terminating
-	// signal also waits for its safe point.
+	// call.
 	switch {
 	case handler > sigIgn:
 		p.sigCaught |= bit
+		if p.sigInterrupt != nil {
+			p.sigInterrupt(errInterrupted)
+		}
 	case terminate:
 		p.sigTerm = sig
-	}
-	if (handler > sigIgn || terminate && inVfork) && p.sigInterrupt != nil {
-		p.sigInterrupt(errInterrupted)
 	}
 	cancel := p.cancel
 	p.sigMu.Unlock()
 
 	// Run the default action. A process that has not started yet ends when
 	// it starts.
-	if terminate && !inVfork && cancel != nil {
+	if terminate && cancel != nil {
 		cancel()
 	}
 }
@@ -170,18 +168,6 @@ func interrupted(ctx context.Context) bool {
 // signal trampoline. It runs after a host call returns, so the guest is at a
 // safe point. A handler may longjmp, which unwinds through this call.
 func (p *Process) runCaughtSignals(ctx context.Context) error {
-	// End a vfork child a terminating signal reached; its parent resumes.
-	p.sigMu.Lock()
-	term := uint32(0)
-	if p.vfork != nil {
-		term = p.sigTerm
-		p.sigTerm = 0
-	}
-	p.sigMu.Unlock()
-	if term != 0 {
-		p.posixExit(128 + term)
-	}
-
 	// Run the handlers until no signal is caught.
 	trampoline := p.inst.ExportedFunction(guestSignalTrampoline)
 	for {
@@ -201,7 +187,10 @@ func (p *Process) runCaughtSignals(ctx context.Context) error {
 		if handler <= sigIgn {
 			continue
 		}
-		if _, err := trampoline.Call(ctx, uint64(handler), uint64(sig)); err != nil {
+		p.handlerDepth++
+		_, err := trampoline.Call(ctx, uint64(handler), uint64(sig))
+		p.handlerDepth--
+		if err != nil {
 			return err
 		}
 	}
@@ -353,12 +342,18 @@ func (p *Process) waitForSignal(ctx context.Context, waitSet uint64, timeout tim
 		if timeout == 0 {
 			return negErrno(EAGAIN)
 		}
-		select {
-		case <-ctx.Done():
-			return negErrno(EINTR)
-		case <-timerC:
-			return negErrno(EAGAIN)
-		case <-ch:
+		var res uint64
+		blocking(ctx, func() {
+			select {
+			case <-ctx.Done():
+				res = negErrno(EINTR)
+			case <-timerC:
+				res = negErrno(EAGAIN)
+			case <-ch:
+			}
+		})
+		if res != 0 {
+			return res
 		}
 	}
 }
@@ -394,13 +389,8 @@ func (p *Process) suspendWithMask(ctx context.Context, newMask uint64) uint64 {
 		delivered := p.sigUnblockedDeliveries != startCount
 		ch := p.sigWaitChLocked()
 		p.sigMu.Unlock()
-		if delivered {
+		if delivered || !wait(ctx, ch) {
 			return negErrno(EINTR)
-		}
-		select {
-		case <-ctx.Done():
-			return negErrno(EINTR)
-		case <-ch:
 		}
 	}
 }

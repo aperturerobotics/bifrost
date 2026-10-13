@@ -57,19 +57,14 @@ func (r *Runtime) Compile(ctx context.Context, wasm []byte) (engine.Module, erro
 	return &Module{compiled: compiled, runtime: r}, nil
 }
 
-// WithSnapshots returns a context whose guest calls can capture their
-// execution state.
-func (r *Runtime) WithSnapshots(ctx context.Context) context.Context {
-	return experimental.WithSnapshotter(context.WithValue(ctx, snapshotsKey{}, struct{}{}))
-}
-
 // Snapshotter returns the snapshotter of the host call running under ctx, or
-// nil when the guest call was not started under WithSnapshots.
+// nil when its guest is not transformed with Asyncify.
 func (r *Runtime) Snapshotter(ctx context.Context) engine.Snapshotter {
-	if ctx.Value(snapshotsKey{}) == nil {
+	fr := frameOf(ctx)
+	if fr == nil || fr.inst.unwinder == nil {
 		return nil
 	}
-	return &snapshotter{s: experimental.GetSnapshotter(ctx)}
+	return snapshotter{fr: fr}
 }
 
 // Close releases the runtime and every module it compiled.
@@ -79,9 +74,17 @@ func (r *Runtime) Close(ctx context.Context) error {
 
 // hostCall adapts a kernel host function to wazero. wazero turns the panic
 // of a failed host function into the error of the guest call.
-func (r *Runtime) hostCall(fn func(context.Context, engine.Instance, []uint64) error) api.GoModuleFunc {
+func (r *Runtime) hostCall(fn hostFunc) api.GoModuleFunc {
 	return func(ctx context.Context, mod api.Module, stack []uint64) {
-		if err := fn(ctx, r.instance(mod), stack); err != nil {
+		// Run the call in the guest's innermost frame.
+		inst := r.instance(mod)
+		var err error
+		if fr := inst.frame(); fr != nil {
+			err = fr.hostCall(ctx, fn, stack)
+		} else {
+			err = fn(ctx, inst, stack)
+		}
+		if err != nil {
 			panic(err)
 		}
 	}

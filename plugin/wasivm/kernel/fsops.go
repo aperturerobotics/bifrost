@@ -1,11 +1,14 @@
 package kernel
 
-import "os"
+import (
+	"context"
+	"os"
+)
 
 // sysSendfile copies up to count bytes from descriptor inFd to outFd. When
 // offsetPtr is set, the copy reads at the offset stored there and stores the
 // new offset back, leaving inFd's offset alone. Otherwise it advances inFd.
-func (p *Process) sysSendfile(outFd, inFd, offsetPtr, count uint32) uint64 {
+func (p *Process) sysSendfile(ctx context.Context, outFd, inFd, offsetPtr, count uint32) uint64 {
 	// Find the source file and the offset to read at.
 	in, ok := p.fds[inFd]
 	if !ok || in.node == nil {
@@ -29,7 +32,7 @@ func (p *Process) sysSendfile(outFd, inFd, offsetPtr, count uint32) uint64 {
 	if errno != 0 || len(buf) == 0 {
 		return errno
 	}
-	res := p.writeOutBytes(outFd, buf)
+	res := p.writeOutBytes(ctx, outFd, buf)
 	if errnoFailed(res) {
 		return res
 	}

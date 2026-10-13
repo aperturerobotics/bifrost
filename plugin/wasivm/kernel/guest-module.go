@@ -89,22 +89,27 @@ func (m *guestModule) setPayload(id byte, payload []byte) {
 	m.sections = slices.Insert(m.sections, at, wasmSection{id: id, payload: payload})
 }
 
-// exports returns the names the module exports.
-func (m *guestModule) exports() (map[string]struct{}, error) {
+// wasmExport is the kind and index of an exported item.
+type wasmExport struct {
+	kind  byte
+	index uint32
+}
+
+// exports returns the module's exports by name.
+func (m *guestModule) exports() (map[string]wasmExport, error) {
 	// An absent section exports nothing.
 	r := &wasmReader{dat: m.payload(wasmSectionExport)}
-	names := make(map[string]struct{})
+	exports := make(map[string]wasmExport)
 	if r.done() {
-		return names, nil
+		return exports, nil
 	}
 
-	// Read each export's name, skipping its kind and index.
+	// Read each export's name, kind and index.
 	for range r.readU32() {
-		names[r.readName()] = struct{}{}
-		r.readByte()
-		r.readU32()
+		name := r.readName()
+		exports[name] = wasmExport{kind: r.readByte(), index: r.readU32()}
 	}
-	return names, r.err
+	return exports, r.err
 }
 
 // addExport exports the item of kind at index under name.
@@ -165,7 +170,7 @@ func (m *guestModule) funcType(params, results []byte) (uint32, error) {
 // locals and instructions, and returns its function index.
 func (m *guestModule) addFunction(typeIndex uint32, body []byte) (uint32, error) {
 	// The new function follows the imported and defined functions.
-	imported, _, err := m.imports()
+	imported, err := m.imports()
 	if err != nil {
 		return 0, err
 	}
@@ -182,30 +187,42 @@ func (m *guestModule) addFunction(typeIndex uint32, body []byte) (uint32, error)
 	}
 	m.setPayload(wasmSectionFunction, funcs)
 	m.setPayload(wasmSectionCode, code)
-	return imported + defined, nil
+	return imported.funcs + defined, nil
 }
 
-// imports counts the functions and tables the module imports.
-func (m *guestModule) imports() (funcs, tables uint32, err error) {
+// wasmImports counts the items a module imports by kind. Imported items
+// take the first indices of their kind.
+type wasmImports struct {
+	funcs   uint32
+	tables  uint32
+	globals uint32
+}
+
+// imports counts the functions, tables and globals the module imports.
+func (m *guestModule) imports() (wasmImports, error) {
+	// Read the import section, which a module without imports lacks.
 	r := &wasmReader{dat: m.payload(wasmSectionImport)}
+	var n wasmImports
 	if r.done() {
-		return 0, 0, nil
+		return n, nil
 	}
 
+	// Count each import by its kind.
 	for range r.readU32() {
 		r.readName()
 		r.readName()
 		switch r.readByte() {
 		case 0x00:
-			funcs++
+			n.funcs++
 			r.readU32()
 		case 0x01:
-			tables++
+			n.tables++
 			r.readByte()
 			r.skipLimits()
 		case 0x02:
 			r.skipLimits()
 		case 0x03:
+			n.globals++
 			r.readBytes(2)
 		case 0x04:
 			r.readByte()
@@ -214,14 +231,39 @@ func (m *guestModule) imports() (funcs, tables uint32, err error) {
 			r.fail()
 		}
 	}
-	return funcs, tables, r.err
+	return n, r.err
+}
+
+// mutableGlobals returns the index of each mutable global the module
+// defines.
+func (m *guestModule) mutableGlobals() ([]uint32, error) {
+	// Defined globals follow the imported ones.
+	imported, err := m.imports()
+	if err != nil {
+		return nil, err
+	}
+	r := &wasmReader{dat: m.payload(wasmSectionGlobal)}
+	if r.done() {
+		return nil, nil
+	}
+
+	// Read each global's type, mutability and initializer.
+	var out []uint32
+	for i := range r.readU32() {
+		r.readByte()
+		if r.readByte() == 0x01 {
+			out = append(out, imported.globals+i)
+		}
+		r.skipConstExpr()
+	}
+	return out, r.err
 }
 
 // hasTable reports whether the module imports or defines a table.
 func (m *guestModule) hasTable() (bool, error) {
-	_, tables, err := m.imports()
-	if err != nil || tables != 0 {
-		return tables != 0, err
+	imported, err := m.imports()
+	if err != nil || imported.tables != 0 {
+		return imported.tables != 0, err
 	}
 	r := &wasmReader{dat: m.payload(wasmSectionTable)}
 	return !r.done() && r.readU32() != 0, r.err

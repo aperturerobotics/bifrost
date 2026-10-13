@@ -1,5 +1,8 @@
 package kernel
 
+// wasmPageSize is the size of a WebAssembly memory page.
+const wasmPageSize = 65536
+
 // Section ids of the WebAssembly binary format.
 const (
 	// wasmSectionCustom holds named data such as the name section.
@@ -12,6 +15,8 @@ const (
 	wasmSectionFunction byte = 3
 	// wasmSectionTable holds the defined tables.
 	wasmSectionTable byte = 4
+	// wasmSectionGlobal holds the defined globals.
+	wasmSectionGlobal byte = 6
 	// wasmSectionExport holds the exports.
 	wasmSectionExport byte = 7
 	// wasmSectionCode holds the body of each defined function.

@@ -174,9 +174,7 @@ func (p *Process) wasiPollOneoff(ctx context.Context, mem engine.Memory, inPtr, 
 		return wasiWritePollEvents(mem, poll.ready, outPtr, neventsPtr)
 	}
 
-	// Wait for console input or the clock. A nil channel never fires.
-	ctx, release := p.interruptible(ctx)
-	defer release()
+	// Choose the channels to wait on. A nil channel never fires.
 	var stdinCh <-chan struct{}
 	if poll.stdin != nil {
 		stdinCh = poll.stdinCh
@@ -187,14 +185,24 @@ func (p *Process) wasiPollOneoff(ctx context.Context, mem engine.Memory, inPtr, 
 		defer timer.Stop()
 		timerCh = timer.C
 	}
-	select {
-	case <-ctx.Done():
+
+	// Wait for console input, the clock or a caught signal.
+	ctx, release := p.interruptible(ctx)
+	defer release()
+	var event *wasiPollEvent
+	blocking(ctx, func() {
+		select {
+		case <-ctx.Done():
+		case <-stdinCh:
+			event = poll.stdin
+		case <-timerCh:
+			event = poll.clock
+		}
+	})
+	if event == nil {
 		return wasiErrno(EINTR)
-	case <-stdinCh:
-		return wasiWritePollEvents(mem, []wasiPollEvent{*poll.stdin}, outPtr, neventsPtr)
-	case <-timerCh:
-		return wasiWritePollEvents(mem, []wasiPollEvent{*poll.clock}, outPtr, neventsPtr)
 	}
+	return wasiWritePollEvents(mem, []wasiPollEvent{*event}, outPtr, neventsPtr)
 }
 
 // wasiReadPoll reads n poll_oneoff subscriptions at inPtr into the events

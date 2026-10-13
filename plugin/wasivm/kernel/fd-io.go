@@ -90,32 +90,48 @@ func (p *Process) readVFS(ctx context.Context, of *OpenFile, bufPtr, count uint3
 }
 
 // sysWrite handles the write syscall.
-func (p *Process) sysWrite(fd, bufPtr, count uint32) uint64 {
+func (p *Process) sysWrite(ctx context.Context, fd, bufPtr, count uint32) uint64 {
 	buf, ok := p.inst.Memory().Read(bufPtr, count)
 	if !ok {
 		return negErrno(EFAULT)
 	}
-	return p.writeOutBytes(fd, buf)
+	return p.writeOutBytes(ctx, fd, buf)
 }
 
 // writeOutBytes writes buf to a descriptor's pipe or file. write, writev and
 // sendfile share it.
-func (p *Process) writeOutBytes(fd uint32, buf []byte) uint64 {
+func (p *Process) writeOutBytes(ctx context.Context, fd uint32, buf []byte) uint64 {
 	of, ok := p.fds[fd]
 	switch {
 	case !ok:
 		return negErrno(EBADF)
 	case of.pipe != nil && !of.pipe.reader:
-		n, ok := of.pipe.write(buf)
-		if !ok {
-			return negErrno(EPIPE)
-		}
-		return uint64(n)
+		return p.writePipe(ctx, of, buf)
 	case of.node != nil:
 		return p.writeVFS(of, buf)
 	default:
 		return negErrno(EBADF)
 	}
+}
+
+// writePipe writes buf to a pipe, waiting while it is full. A caught signal
+// interrupts the wait. A write to a pipe without a reader raises SIGPIPE and
+// fails with EPIPE.
+func (p *Process) writePipe(ctx context.Context, of *OpenFile, buf []byte) uint64 {
+	// Write, waiting while the pipe is full.
+	ctx, release := p.interruptible(ctx)
+	defer release()
+	n, ok := of.pipe.write(ctx, buf)
+
+	// Report a closed reader or an interrupted wait.
+	switch {
+	case !ok:
+		p.deliverSignal(SIGPIPE)
+		return negErrno(EPIPE)
+	case n == 0 && len(buf) != 0 && interrupted(ctx):
+		return negErrno(EINTR)
+	}
+	return uint64(n)
 }
 
 // writeVFS writes to a device or regular file at the descriptor's offset.

@@ -13,6 +13,7 @@ import (
 func posixFunctions() map[string]hostFunc {
 	return map[string]hostFunc{
 		// Identity.
+		"getpid":  {"i", func(_ context.Context, p *Process, _ []uint64) uint64 { return uint64(p.pid) }},
 		"getppid": {"i", func(_ context.Context, p *Process, _ []uint64) uint64 { return uint64(p.ppid) }},
 		"getuid":  {"i", func(_ context.Context, p *Process, _ []uint64) uint64 { return uint64(p.uid) }},
 		"geteuid": {"i", func(_ context.Context, p *Process, _ []uint64) uint64 { return uint64(p.euid) }},
@@ -53,13 +54,9 @@ func posixFunctions() map[string]hostFunc {
 		"getpwent": returns("i", 0),
 		"endpwent": returns("v", 0),
 
-		// Process control. fork is vfork: a guest has no MMU to copy.
-		"vfork": {"i", func(ctx context.Context, p *Process, _ []uint64) uint64 {
-			return p.posixVfork(ctx)
-		}},
-		"fork": {"i", func(ctx context.Context, p *Process, _ []uint64) uint64 {
-			return p.posixVfork(ctx)
-		}},
+		// Process control. vfork is fork, which Linux permits.
+		"vfork":        {"i", forkFunc},
+		"fork":         {"i", forkFunc},
 		"_exit":        {"vi", exitFunc},
 		"__posix_exit": {"vi", exitFunc},
 		"abort": {"v", func(_ context.Context, p *Process, _ []uint64) uint64 {
@@ -238,7 +235,7 @@ func posixFunctions() map[string]hostFunc {
 			return p.posixResult(ctx, p.sysFlock(uint32(a[0]), uint32(a[1])))
 		}},
 		"sendfile": {"iiiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
-			return p.posixResult(ctx, p.sysSendfile(uint32(a[0]), uint32(a[1]), uint32(a[2]), uint32(a[3])))
+			return p.posixResult(ctx, p.sysSendfile(ctx, uint32(a[0]), uint32(a[1]), uint32(a[2]), uint32(a[3])))
 		}},
 		"mkfifo": {"iii", func(ctx context.Context, p *Process, a []uint64) uint64 {
 			return p.posixResult(ctx, p.sysMknodat(atFDCWD, uint32(a[0]), uint32(a[1])&0o7777|sIFIFO, 0))
@@ -312,6 +309,11 @@ func posixFunctions() map[string]hostFunc {
 // sysinfoSize is the size of the wasi-libc sysinfo struct.
 const sysinfoSize = 64
 
+// forkFunc starts a child process that runs beside the caller.
+func forkFunc(ctx context.Context, p *Process, _ []uint64) uint64 {
+	return p.posixFork(ctx)
+}
+
 // exitFunc ends the process with the status in its argument.
 func exitFunc(_ context.Context, p *Process, a []uint64) uint64 {
 	p.posixExit(uint32(a[0]))
@@ -377,7 +379,7 @@ func (p *Process) longjmp(ctx context.Context, buf, val uint32) {
 		g.Set(uint64(entry.sp))
 	}
 	p.inst.Memory().Write(entry.sp, entry.cstack)
-	entry.snapshot.Restore([]uint64{uint64(val)})
+	entry.snapshot.Restore(ctx, []uint64{uint64(val)})
 }
 
 // mkdtemp replaces the trailing XXXXXX of the template at ptr with a suffix
