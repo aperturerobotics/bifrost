@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { Actions, Model, TabNode } from '@aptre/flex-layout'
 import type { LayoutModel } from '@s4wave/sdk/layout/layout.pb.js'
 import type { LayoutHost } from '@s4wave/sdk/layout/layout_srpc.pb.js'
 
@@ -77,5 +78,35 @@ describe('BaseLayout', () => {
 
     await expect(layout.replaceTab('current-tab', {})).resolves.toEqual({})
     expect(replaceTab).not.toHaveBeenCalled()
+  })
+
+  it('names a tab after its object until the user renames it', () => {
+    const layout = new BaseLayout({
+      layoutHost: buildLayoutHost(() => Promise.resolve({})),
+      renderTab: () => null,
+    })
+    const model = Model.fromJson({
+      global: {},
+      layout: {
+        type: 'row',
+        children: [
+          {
+            type: 'tabset',
+            children: [{ type: 'tab', id: 'vm-tab', name: 'vm-1' }],
+          },
+        ],
+      },
+    })
+    layout.state = { ...layout.state, model }
+    const tabName = () => (model.getNodeById('vm-tab') as TabNode).getName()
+
+    layout.nameTab('vm-tab', 'vm/vm-1', 'Build box')
+    expect(tabName()).toBe('Build box')
+    layout.nameTab('vm-tab', 'vm/vm-1', 'Release box')
+    expect(tabName()).toBe('Release box')
+
+    model.doAction(Actions.renameTab('vm-tab', 'Mine'))
+    layout.nameTab('vm-tab', 'vm/vm-1', 'Build box')
+    expect(tabName()).toBe('Mine')
   })
 })

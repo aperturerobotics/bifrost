@@ -14,6 +14,7 @@ import {
 import { AbortComponent } from '@aptre/bldr-react'
 import { ItState, retryWithAbort } from '@aptre/bldr'
 
+import { isObjectKeyName } from '@s4wave/web/space/object-tree.js'
 import { LoadingCard } from '@s4wave/web/ui/loading/LoadingCard.js'
 import isDeepEqual from '@s4wave/web/util/isEqual.js'
 
@@ -63,6 +64,8 @@ export interface ITabComponentProps {
   addTab: (request: AddTabRequest) => Promise<AddTabResponse>
   // replaceTab replaces the current tab payload without moving the tab.
   replaceTab: (request: ReplaceCurrentTabRequest) => Promise<ReplaceTabResponse>
+  // nameTab names the tab after the stored name of the object it shows.
+  nameTab: (objectKey: string, name: string) => void
   // tabData contains an optional Uint8Array tab data protobuf message.
   tabData?: Uint8Array
 }
@@ -116,6 +119,7 @@ class BaseLayoutTabWrapper extends PureComponent<
   private replaceTab: (
     request: ReplaceCurrentTabRequest,
   ) => Promise<ReplaceTabResponse>
+  private nameTab: (objectKey: string, name: string) => void
 
   constructor(props: { tabID: string; baseLayout: BaseLayout }) {
     super(props)
@@ -134,6 +138,7 @@ class BaseLayoutTabWrapper extends PureComponent<
       props.baseLayout,
       props.tabID,
     )
+    this.nameTab = props.baseLayout.nameTab.bind(props.baseLayout, props.tabID)
   }
 
   componentWillUnmount() {
@@ -153,6 +158,7 @@ class BaseLayoutTabWrapper extends PureComponent<
       navigate: this.navigate,
       addTab: this.addTab,
       replaceTab: this.replaceTab,
+      nameTab: this.nameTab,
       tabData: this.state.tabData,
     })
   }
@@ -180,6 +186,8 @@ export class BaseLayout extends AbortComponent<
   // pendingTabData holds tab data written by addTab before setState completes.
   // getTabData checks this first so new tabs can read their data synchronously.
   private pendingTabData: TabDataMap
+  // objectTabNames holds the name nameTab last gave each tab.
+  private objectTabNames: { [tabID: string]: string }
 
   constructor(props: IBaseLayoutProps) {
     super(props)
@@ -188,6 +196,7 @@ export class BaseLayout extends AbortComponent<
     }
     this.tabDataCbs = {}
     this.pendingTabData = {}
+    this.objectTabNames = {}
     this.setLayoutModel = new ItState<WatchLayoutModelRequest>(undefined, {
       mostRecentOnly: true,
     })
@@ -260,6 +269,25 @@ export class BaseLayout extends AbortComponent<
     if (!(node instanceof TabNode)) return undefined
     const config: unknown = node.getConfig()
     return config instanceof Uint8Array ? config : undefined
+  }
+
+  // nameTab renames a tab after the stored name of the object objectKey it
+  // shows. The tab keeps a name the user gave it: it follows the object only
+  // while its name derives from objectKey or is the name nameTab last gave it.
+  public nameTab(tabID: string, objectKey: string, name: string) {
+    const model = this.state.model
+    const node = model?.getNodeById(tabID)
+    if (!model || !(node instanceof TabNode)) return
+    const current = node.getName()
+    if (current === name) return
+    if (
+      current !== this.objectTabNames[tabID] &&
+      !isObjectKeyName(current, objectKey)
+    ) {
+      return
+    }
+    this.objectTabNames[tabID] = name
+    model.doAction(Actions.renameTab(tabID, name))
   }
 
   // getTabData returns the tab data for the given tab id.

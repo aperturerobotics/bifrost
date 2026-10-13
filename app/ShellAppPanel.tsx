@@ -23,6 +23,7 @@ import {
   useTabId,
 } from './ShellTabContext.js'
 import { buildPathTab } from './shell-layout-tab-utils.js'
+import { getTabObjectKey } from './shell-tab.js'
 
 // ShellAppPanelProps are the props for ShellAppPanel.
 export interface ShellAppPanelProps {
@@ -62,7 +63,8 @@ function ShellAppPanelInner({
   const { getAppNavigationGeneration, setAppPath } = useAppNavigation()
   const [openMenu, setOpenMenu] = useStateAtom<string>(null, 'openMenu', '')
   const tabId = useTabId()
-  const { tabs, activeTabId, addShellTab, updateTabPath } = useShellTabs()
+  const { tabs, activeTabId, addShellTab, updateTabPath, updateTabAutoName } =
+    useShellTabs()
 
   // The path commit can be delayed behind the store's Web Lock. Decide at
   // commit time, not at initiation: a panel that lost active status, a
@@ -126,16 +128,27 @@ function ShellAppPanelInner({
     [tabId, updateTabPath, syncAppPath, beginAppPathCommit],
   )
 
-  const tabContext = useMemo<TabContextValue>(
-    () => ({ tabId: tabId ?? '', addTab, navigateTab }),
-    [tabId, addTab, navigateTab],
-  )
-
   const path = useMemo(() => {
     if (!tabId) return initialPath
     const tab = tabs.find((t) => t.id === tabId)
     return tab?.path ?? initialPath
   }, [tabs, tabId, initialPath])
+
+  // A navigation resets the tab name from the path; nameTab changes with the
+  // path, so the shown object's viewer names the tab again.
+  const nameTab = useCallback(
+    (objectKey: string, name: string) => {
+      if (tabId && getTabObjectKey(path) === objectKey) {
+        updateTabAutoName(tabId, name)
+      }
+    },
+    [tabId, path, updateTabAutoName],
+  )
+
+  const tabContext = useMemo<TabContextValue>(
+    () => ({ tabId: tabId ?? '', addTab, navigateTab, nameTab }),
+    [tabId, addTab, navigateTab, nameTab],
+  )
 
   const handleNavigate = useCallback(
     (to: To) => {

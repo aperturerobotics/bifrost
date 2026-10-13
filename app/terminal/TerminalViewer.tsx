@@ -5,6 +5,7 @@ import { useStreamingResource } from '@aptre/bldr-sdk/hooks/useStreamingResource
 import { useAccessTypedHandle } from '@s4wave/web/hooks/useAccessTypedHandle.js'
 import type { ObjectViewerComponentProps } from '@s4wave/web/object/object.js'
 import { getObjectKey } from '@s4wave/web/object/object.js'
+import { useObjectName } from '@s4wave/web/object/ObjectViewerContext.js'
 import { LoadingCard } from '@s4wave/web/ui/loading/LoadingCard.js'
 
 import {
@@ -46,6 +47,7 @@ export function TerminalViewer({
   )
   const stateResource = useStreamingResource(handle, streamFactory, [])
   const state: Terminal | undefined = stateResource.value ?? undefined
+  useObjectName(state?.name)
 
   const connectTerminal = useMemo<TerminalPaneConnector | undefined>(() => {
     if (!terminalHandle) return undefined

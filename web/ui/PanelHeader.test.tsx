@@ -81,6 +81,7 @@ describe('PanelHeader', () => {
       visibleComponents: components,
       selectedComponent: components[0],
       onSelectComponent: vi.fn(),
+      setObjectName: vi.fn(),
     }
     render(
       <ObjectViewerProvider value={ctx}>
@@ -100,6 +101,7 @@ describe('PanelHeader', () => {
       visibleComponents: components,
       selectedComponent: components[0],
       onSelectComponent: vi.fn(),
+      setObjectName: vi.fn(),
     }
     render(
       <ObjectViewerProvider value={ctx}>
@@ -120,6 +122,7 @@ describe('PanelHeader', () => {
       visibleComponents: components,
       selectedComponent: components[0],
       onSelectComponent: vi.fn(),
+      setObjectName: vi.fn(),
     }
     render(
       <ObjectViewerProvider value={ctx}>

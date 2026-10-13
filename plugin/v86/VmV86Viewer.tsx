@@ -2,6 +2,7 @@ import { useCallback } from 'react'
 
 import type { ObjectViewerComponentProps } from '@s4wave/web/object/object.js'
 import { getObjectKey } from '@s4wave/web/object/object.js'
+import { useObjectName } from '@s4wave/web/object/ObjectViewerContext.js'
 import {
   useResource,
   useResourceValue,
@@ -170,6 +171,7 @@ function useVmV86(
   )
 
   const vm = vmResource.value ?? VmV86.create()
+  useObjectName(vm.name)
   const edges = edgesResource.value
   return {
     loaded: !!vmResource.value,

@@ -42,6 +42,8 @@ export interface TabContentProps {
   addTab: AddTabFunc
   // replaceTab is the function to replace the current tab.
   replaceTab?: ReplaceTabFunc
+  // nameTab names the tab after the stored name of an object.
+  nameTab?: (objectKey: string, name: string) => void
 }
 
 // decodeTabData decodes the tab data into an ObjectLayoutTab message.
@@ -63,6 +65,7 @@ export function TabContent({
   navigate,
   addTab,
   replaceTab,
+  nameTab,
 }: TabContentProps) {
   const layoutTab = useMemo(() => decodeTabData(tabData), [tabData])
   const spaceContext = SpaceContainerContext.useContextSafe()
@@ -91,15 +94,28 @@ export function TabContent({
     [navigate],
   )
 
+  const tabObjectInfo = layoutTab?.objectInfo?.info
+  const tabObjectKey =
+    tabObjectInfo?.case === 'worldObjectInfo'
+      ? tabObjectInfo.value.objectKey
+      : ''
+  const nameTabObject = useCallback(
+    (objectKey: string, name: string) => {
+      if (objectKey === tabObjectKey) nameTab?.(objectKey, name)
+    },
+    [nameTab, tabObjectKey],
+  )
+
   const tabContext = useMemo<TabContextValue>(
     () => ({
       tabId: tabID,
       addTab,
       navigateTab,
       replaceTab,
+      nameTab: nameTabObject,
       isObjectLayout: true,
     }),
-    [tabID, addTab, navigateTab, replaceTab],
+    [tabID, addTab, navigateTab, replaceTab, nameTabObject],
   )
 
   let content: ReactNode

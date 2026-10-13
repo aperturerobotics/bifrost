@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 
 import type { ObjectViewerComponentProps } from '@s4wave/web/object/object.js'
 import { getObjectKey } from '@s4wave/web/object/object.js'
+import { useObjectName } from '@s4wave/web/object/ObjectViewerContext.js'
 import { useAccessTypedHandle } from '@s4wave/web/hooks/useAccessTypedHandle.js'
 import { useStreamingResource } from '@aptre/bldr-sdk/hooks/useStreamingResource.js'
 import { useResourceValue } from '@aptre/bldr-sdk/hooks/useResource.js'
@@ -76,6 +77,7 @@ export function useWizardState(
     setDraftConfig(null)
   }
   const localName = draftName ?? remoteName
+  useObjectName(remoteName)
   const configData = draftConfig ? draftConfig.data : remoteConfigData
 
   const handleConfigDataChange = useCallback(

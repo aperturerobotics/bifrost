@@ -25,6 +25,7 @@ import { SpaceContentsContext } from '@s4wave/web/contexts/contexts.js'
 import { useAccessTypedHandle } from '@s4wave/web/hooks/useAccessTypedHandle.js'
 import type { ObjectViewerComponentProps } from '@s4wave/web/object/object.js'
 import { getObjectKey } from '@s4wave/web/object/object.js'
+import { useObjectName } from '@s4wave/web/object/ObjectViewerContext.js'
 import { LoadingCard } from '@s4wave/web/ui/loading/LoadingCard.js'
 
 import { useVmRequest, watchVmObject } from '@s4wave/app/vm/vm-object.js'
@@ -104,6 +105,7 @@ function useWasiVm(
   )
 
   const vm = vmResource.value ?? WasiVm.create()
+  useObjectName(vm.name)
   const initPath = vm.config?.initPath || DEFAULT_WASIVM_INIT_PATH
   return {
     loaded: !!vmResource.value,

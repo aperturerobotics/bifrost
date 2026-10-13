@@ -188,7 +188,14 @@ function useObjectLayoutController({
 
   // Render tab content
   const renderTab = useCallback(
-    ({ tabID, tabData, navigate, addTab, replaceTab }: ITabComponentProps) => {
+    ({
+      tabID,
+      tabData,
+      navigate,
+      addTab,
+      replaceTab,
+      nameTab,
+    }: ITabComponentProps) => {
       return (
         <TabContentContainer
           tabID={tabID}
@@ -196,6 +203,7 @@ function useObjectLayoutController({
           navigate={navigate}
           addTab={addTab}
           replaceTab={replaceTab}
+          nameTab={nameTab}
         />
       )
     },

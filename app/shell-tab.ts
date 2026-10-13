@@ -63,13 +63,8 @@ export function getTabNameFromPath(path: string): string {
   if (normalized.startsWith('u/')) {
     const parts = normalized.split('/')
     if (parts.length >= 4 && parts[2] === 'so') {
-      // /u/{idx}/so/{id} or deeper -- derive from sub-path if present
-      if (parts.length >= 6 && parts[4] === '-') {
-        // /u/{idx}/so/{id}/-/{objectKey}/... -- use the object identity.
-        const { objectKey } = parseObjectUri(parts.slice(5).join('/'))
-        return objectKey ? getObjectDisplayName(objectKey) : 'Space'
-      }
-      return 'Space'
+      const objectKey = getTabObjectKey(normalized)
+      return objectKey ? getObjectDisplayName(objectKey) : 'Space'
     }
     if (parts.length >= 3 && parts[2] === 'pair') {
       return 'Pair device'
@@ -99,6 +94,14 @@ export function getTabNameFromPath(path: string): string {
   }
 
   return 'Tab'
+}
+
+// getTabObjectKey returns the key of the Space object a tab path shows, from
+// /u/{idx}/so/{spaceId}/-/{objectKey}/..., or an empty string when the path
+// shows no object.
+export function getTabObjectKey(path: string): string {
+  const match = /^\/?u\/[^/]+\/so\/[^/]+\/-\/(.+)$/.exec(path)
+  return match ? parseObjectUri(match[1]).objectKey : ''
 }
 
 // generateTabId generates a unique tab ID.

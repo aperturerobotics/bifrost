@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { getTabNameFromPath } from './shell-tab.js'
+import { getTabNameFromPath, getTabObjectKey } from './shell-tab.js'
 
 describe('getTabNameFromPath', () => {
   it('labels docs routes as Docs', () => {
@@ -27,5 +27,16 @@ describe('getTabNameFromPath', () => {
     expect(
       getTabNameFromPath('/u/1/so/space/-/gizmo/bootstrap/llm-session'),
     ).toBe('Llm Session')
+  })
+})
+
+describe('getTabObjectKey', () => {
+  it('returns the object key of a Space object path', () => {
+    expect(getTabObjectKey('/u/1/so/space/-/vm/build-box')).toBe('vm/build-box')
+    expect(getTabObjectKey('/u/1/so/space/-/files/-/docs/readme.md')).toBe(
+      'files',
+    )
+    expect(getTabObjectKey('/u/1/so/space')).toBe('')
+    expect(getTabObjectKey('/docs')).toBe('')
   })
 })

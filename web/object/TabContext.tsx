@@ -25,6 +25,10 @@ export interface TabContextValue {
   ) => Promise<ReplaceTabResponse>
   // isObjectLayout is true when the context is provided by an ObjectLayout tab.
   isObjectLayout?: boolean
+  // nameTab names the tab after the stored name of the object objectKey. The
+  // host ignores an object the tab does not show and keeps a name the user
+  // gave the tab.
+  nameTab?: (objectKey: string, name: string) => void
 }
 
 const TabContext = createContext<TabContextValue | null>(null)

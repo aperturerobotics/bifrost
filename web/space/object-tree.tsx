@@ -237,6 +237,17 @@ export function getObjectDisplayName(objectKey: string): string {
   return humanizeObjectKeySegment(segment)
 }
 
+// isObjectKeyName reports whether name is one the interface derives from
+// objectKey alone: the key, its last segment, or its display name.
+export function isObjectKeyName(name: string, objectKey: string): boolean {
+  const segment = objectKey.split('/').filter(Boolean).at(-1) ?? objectKey
+  return (
+    name === objectKey ||
+    name === segment ||
+    name === getObjectDisplayName(objectKey)
+  )
+}
+
 export function buildSpaceObjectActionTargets(
   objects: readonly ObjectMetadata[],
   metadataById?: ObjectTypeMetadataById,

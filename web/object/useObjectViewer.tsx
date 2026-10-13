@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useState } from 'react'
+import { useMemo, useCallback, useEffect, useState } from 'react'
 import type React from 'react'
 import { useCommand } from '@s4wave/web/command/useCommand.js'
 import { useIsTabActive } from '@s4wave/web/contexts/TabActiveContext.js'
@@ -18,6 +18,7 @@ import { RootContext } from '@s4wave/web/contexts/contexts.js'
 import { useDocumentTitle } from '@s4wave/web/title/DocumentTitleContext.js'
 import { useDocumentTitleFocus } from '@s4wave/web/title/DocumentTitleFocusContext.js'
 import type { ObjectViewerComponent } from './object.js'
+import type { ObjectViewerContextValue } from './ObjectViewerContext.js'
 import { BottomBarItem } from '@s4wave/web/frame/bottom-bar-item.js'
 import { ComponentSelector } from './ComponentSelector.js'
 import { ObjectViewerDetails } from './ObjectViewerDetails.js'
@@ -55,11 +56,7 @@ export interface UseObjectViewerResult {
   selectedComponent: ObjectViewerComponent | undefined
   missingComponentID: string | undefined
   onSelectComponent: (c: ObjectViewerComponent) => void
-  viewerContextValue: {
-    visibleComponents: ObjectViewerComponent[]
-    selectedComponent?: ObjectViewerComponent
-    onSelectComponent: (c: ObjectViewerComponent) => void
-  }
+  viewerContextValue: ObjectViewerContextValue
   buttonRender: (
     selected: boolean,
     onClick: () => void,
@@ -271,10 +268,32 @@ function useViewerSelection({
   }
 }
 
+// useObjectNameReport holds the stored name the viewer reports for objectKey
+// and names the tab after it. A name reported for an earlier object is
+// dropped when the viewer moves to another.
+function useObjectNameReport(objectKey: string | undefined) {
+  const [report, setReport] = useState<{ objectKey?: string; name: string }>({
+    name: '',
+  })
+  const objectName = report.objectKey === objectKey ? report.name : ''
+  const setObjectName = useCallback(
+    (name: string) => setReport({ objectKey, name }),
+    [objectKey],
+  )
+
+  const nameTab = useTabContext()?.nameTab
+  useEffect(() => {
+    if (objectKey && objectName) nameTab?.(objectKey, objectName)
+  }, [nameTab, objectKey, objectName])
+
+  return { objectName, setObjectName }
+}
+
 // useViewerTitle sets the document title while the viewer's tab is active.
 function useViewerTitle(
   spaceContext: SpaceContext,
   objectKey: string | undefined,
+  objectName: string,
   isUnixfs: boolean,
   visibleComponents: ObjectViewerComponent[],
   selectedComponent: ObjectViewerComponent | undefined,
@@ -288,7 +307,7 @@ function useViewerTitle(
     !!tabContext.tabId &&
     tabContext.tabId === focusedTabId
   const objectTitle = objectKey
-    ? getObjectDisplayName(objectKey) || 'Object'
+    ? objectName || getObjectDisplayName(objectKey) || 'Object'
     : isUnixfs
       ? 'Files'
       : 'Object'
@@ -663,9 +682,15 @@ export function useObjectViewer({
   const displayKey = objectKey ?? (source.isUnixfs ? 'UnixFS' : 'No object')
   const objectExportUrl = objectExportURL(exportUrl, objectKey)
 
+  const { objectName, setObjectName } = useObjectNameReport(objectKey)
+  const viewerContextValue = useMemo(
+    () => ({ ...selection.viewerContextValue, setObjectName }),
+    [selection.viewerContextValue, setObjectName],
+  )
   useViewerTitle(
     spaceContext,
     objectKey,
+    objectName,
     source.isUnixfs,
     visibleComponents,
     selectedComponent,
@@ -707,7 +732,7 @@ export function useObjectViewer({
     selectedComponent,
     missingComponentID,
     onSelectComponent,
-    viewerContextValue: selection.viewerContextValue,
+    viewerContextValue,
     buttonRender: button.buttonRender,
     overlayContent: overlay.overlayContent,
     buttonKeyValue: button.buttonKeyValue,
