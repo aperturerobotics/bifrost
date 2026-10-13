@@ -11,7 +11,7 @@ import (
 )
 
 // TestEnvelopeStoredOnce checks that an envelope is stored once under its ID, whoever
-// delivers it, and that its redaction replaces the bytes with the redacted form.
+// delivers it, and that its redaction swaps in the stored redacted form.
 func TestEnvelopeStoredOnce(t *testing.T) {
 	// Start a World testbed.
 	ctx := t.Context()
@@ -33,7 +33,7 @@ func TestEnvelopeStoredOnce(t *testing.T) {
 	t.Cleanup(bob.Close)
 
 	// Alice stores an envelope with the content read from it.
-	envelope := &ChatEnvelope{Id: "$event", Data: []byte(`{"type":"m.room.message"}`)}
+	envelope := &ChatEnvelope{Id: "$event", Data: []byte(`{"type":"m.room.message"}`), RedactedData: []byte(`{}`)}
 	request := &chat_rpc.SendMessageRequest{
 		Content:  &ChatMessageContent{Content: &ChatMessageContent_Event{Event: &ChatEvent{Type: "m.room.message", ContentJson: `{"body":"hi"}`}}},
 		Envelope: envelope,
@@ -70,16 +70,8 @@ func TestEnvelopeStoredOnce(t *testing.T) {
 		t.Fatalf("envelope read back as %v", read.GetMessage().GetEnvelope())
 	}
 
-	// A redaction without the redacted envelope is rejected.
-	redaction := &ChatRedaction{TargetKey: sent.GetMessageKey()}
-	redact := &chat_rpc.SendMessageRequest{Content: &ChatMessageContent{Content: &ChatMessageContent_Redaction{Redaction: redaction}}}
-	if _, err := alice.SendMessage(ctx, redact); err == nil {
-		t.Fatal("redacted an envelope without its redacted form")
-	}
-
-	// With it, the stored bytes are replaced.
-	redacted := []byte(`{}`)
-	redaction.Envelope = &ChatEnvelope{Id: envelope.GetId(), Data: redacted}
+	// A redaction swaps in the redacted form the envelope stored.
+	redact := &chat_rpc.SendMessageRequest{Content: &ChatMessageContent{Content: &ChatMessageContent_Redaction{Redaction: &ChatRedaction{TargetKey: sent.GetMessageKey()}}}}
 	if _, err := alice.SendMessage(ctx, redact); err != nil {
 		t.Fatal(err)
 	}
@@ -87,7 +79,76 @@ func TestEnvelopeStoredOnce(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !bytes.Equal(read.GetMessage().GetEnvelope().GetData(), redacted) {
-		t.Fatalf("redacted envelope holds %q", read.GetMessage().GetEnvelope().GetData())
+	if got := read.GetMessage().GetEnvelope(); !bytes.Equal(got.GetData(), envelope.GetRedactedData()) || len(got.GetRedactedData()) != 0 {
+		t.Fatalf("redacted envelope holds %q and %q", got.GetData(), got.GetRedactedData())
+	}
+}
+
+// TestAttachEnvelope checks that attaching sets an absent envelope once, refuses an ID
+// naming another message, and stores the redacted form on a redacted message.
+func TestAttachEnvelope(t *testing.T) {
+	// Start a World testbed.
+	ctx := t.Context()
+	tb, err := db_world_testbed.Default(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(tb.Release)
+
+	// Create the channel and its two writers.
+	ws := world.NewEngineWorldState(tb.Engine, true)
+	const channelKey = "chat/channel/attach"
+	if _, _, err := ws.ApplyWorldOp(ctx, &CreateChatChannelOp{ObjectKey: channelKey, Name: "Attach", Timestamp: timestamppb.Now()}, tb.Volume.GetPeerID()); err != nil {
+		t.Fatal(err)
+	}
+	alice := newChatResourceForPerson(t, ws, tb.Engine, channelKey, "alice-device", "alice")
+	t.Cleanup(alice.Close)
+	bob := newChatResourceForPerson(t, ws, tb.Engine, channelKey, "bob-device", "bob")
+	t.Cleanup(bob.Close)
+
+	// Alice sends a message without an envelope.
+	text := &ChatMessageContent{Content: &ChatMessageContent_Text{Text: "hi"}}
+	plain, err := alice.SendMessage(ctx, &chat_rpc.SendMessageRequest{Content: text})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// The first attachment stands; a second returns it.
+	first := &ChatEnvelope{Id: "$first", Data: []byte(`{"n":1}`), RedactedData: []byte(`{}`)}
+	attached, err := alice.AttachEnvelope(ctx, &chat_rpc.AttachEnvelopeRequest{MessageKey: plain.GetMessageKey(), Envelope: first})
+	if err != nil || !attached.GetEnvelope().EqualVT(first) {
+		t.Fatalf("first attachment: %v %v", attached, err)
+	}
+	second := &ChatEnvelope{Id: "$second", Data: []byte(`{"n":2}`)}
+	attached, err = bob.AttachEnvelope(ctx, &chat_rpc.AttachEnvelopeRequest{MessageKey: plain.GetMessageKey(), Envelope: second})
+	if err != nil || !attached.GetEnvelope().EqualVT(first) {
+		t.Fatalf("second attachment: %v %v", attached, err)
+	}
+
+	// An envelope ID naming a message stored under its envelope key is refused.
+	sent, err := alice.SendMessage(ctx, &chat_rpc.SendMessageRequest{Content: text, Envelope: &ChatEnvelope{Id: "$sent", Data: []byte(`{}`)}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	other, err := alice.SendMessage(ctx, &chat_rpc.SendMessageRequest{Content: text})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := alice.AttachEnvelope(ctx, &chat_rpc.AttachEnvelopeRequest{MessageKey: other.GetMessageKey(), Envelope: &ChatEnvelope{Id: "$sent", Data: []byte(`{}`)}}); err == nil {
+		t.Fatalf("attached an ID naming %s", sent.GetMessageKey())
+	}
+
+	// Attaching to a redacted message stores the redacted form.
+	redact := &chat_rpc.SendMessageRequest{Content: &ChatMessageContent{Content: &ChatMessageContent_Redaction{Redaction: &ChatRedaction{TargetKey: other.GetMessageKey()}}}}
+	if _, err := alice.SendMessage(ctx, redact); err != nil {
+		t.Fatal(err)
+	}
+	late := &ChatEnvelope{Id: "$late", Data: []byte(`{"body":"hi"}`), RedactedData: []byte(`{}`)}
+	attached, err = alice.AttachEnvelope(ctx, &chat_rpc.AttachEnvelopeRequest{MessageKey: other.GetMessageKey(), Envelope: late})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := attached.GetEnvelope(); got.GetId() != late.GetId() || !bytes.Equal(got.GetData(), late.GetRedactedData()) || len(got.GetRedactedData()) != 0 {
+		t.Fatalf("redacted attachment: %v", got)
 	}
 }

@@ -653,6 +653,57 @@ func (x *SendMessageResponse) GetMessageKey() string {
 	return ""
 }
 
+// AttachEnvelopeRequest attaches an envelope to a message of the channel.
+type AttachEnvelopeRequest struct {
+	unknownFields []byte
+	// MessageKey identifies the message.
+	MessageKey string `protobuf:"bytes,1,opt,name=message_key,json=messageKey,proto3" json:"messageKey,omitempty"`
+	// Envelope is the message's wire form. Its ID must not name another message's
+	// envelope key.
+	Envelope *content.ChatEnvelope `protobuf:"bytes,2,opt,name=envelope,proto3" json:"envelope,omitempty"`
+}
+
+func (x *AttachEnvelopeRequest) Reset() {
+	*x = AttachEnvelopeRequest{}
+}
+
+func (*AttachEnvelopeRequest) ProtoMessage() {}
+
+func (x *AttachEnvelopeRequest) GetMessageKey() string {
+	if x != nil {
+		return x.MessageKey
+	}
+	return ""
+}
+
+func (x *AttachEnvelopeRequest) GetEnvelope() *content.ChatEnvelope {
+	if x != nil {
+		return x.Envelope
+	}
+	return nil
+}
+
+// AttachEnvelopeResponse returns the envelope the message holds.
+type AttachEnvelopeResponse struct {
+	unknownFields []byte
+	// Envelope is the requested envelope, or the one an earlier attach or send
+	// gave the message. A redacted message holds the redacted data.
+	Envelope *content.ChatEnvelope `protobuf:"bytes,1,opt,name=envelope,proto3" json:"envelope,omitempty"`
+}
+
+func (x *AttachEnvelopeResponse) Reset() {
+	*x = AttachEnvelopeResponse{}
+}
+
+func (*AttachEnvelopeResponse) ProtoMessage() {}
+
+func (x *AttachEnvelopeResponse) GetEnvelope() *content.ChatEnvelope {
+	if x != nil {
+		return x.Envelope
+	}
+	return nil
+}
+
 // GetReadPositionsRequest selects shared receipt state for the mounted channel.
 type GetReadPositionsRequest struct {
 	unknownFields []byte
@@ -1087,6 +1138,39 @@ func (m *SendMessageResponse) CloneVT() *SendMessageResponse {
 }
 
 func (m *SendMessageResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *AttachEnvelopeRequest) CloneVT() *AttachEnvelopeRequest {
+	if m == nil {
+		return (*AttachEnvelopeRequest)(nil)
+	}
+	r := new(AttachEnvelopeRequest)
+	r.MessageKey = m.MessageKey
+	r.Envelope = protobuf_go_lite.CloneVTValue(m.Envelope)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *AttachEnvelopeRequest) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *AttachEnvelopeResponse) CloneVT() *AttachEnvelopeResponse {
+	if m == nil {
+		return (*AttachEnvelopeResponse)(nil)
+	}
+	r := new(AttachEnvelopeResponse)
+	r.Envelope = protobuf_go_lite.CloneVTValue(m.Envelope)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *AttachEnvelopeResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
@@ -1596,6 +1680,49 @@ func (this *SendMessageResponse) EqualVT(that *SendMessageResponse) bool {
 
 func (this *SendMessageResponse) EqualMessageVT(thatMsg any) bool {
 	that, ok := thatMsg.(*SendMessageResponse)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *AttachEnvelopeRequest) EqualVT(that *AttachEnvelopeRequest) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.MessageKey != that.MessageKey {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.Envelope, that.Envelope) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *AttachEnvelopeRequest) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*AttachEnvelopeRequest)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *AttachEnvelopeResponse) EqualVT(that *AttachEnvelopeResponse) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.Envelope, that.Envelope) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *AttachEnvelopeResponse) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*AttachEnvelopeResponse)
 	if !ok {
 		return false
 	}
@@ -2806,6 +2933,106 @@ func (x *SendMessageResponse) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
+// MarshalProtoJSON marshals the AttachEnvelopeRequest message to JSON.
+func (x *AttachEnvelopeRequest) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.MessageKey != "" || s.HasField("messageKey") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("messageKey")
+		s.WriteString(x.MessageKey)
+	}
+	if x.Envelope != nil || s.HasField("envelope") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("envelope")
+		x.Envelope.MarshalProtoJSON(s.WithField("envelope"))
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the AttachEnvelopeRequest to JSON.
+func (x *AttachEnvelopeRequest) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the AttachEnvelopeRequest message from JSON.
+func (x *AttachEnvelopeRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "message_key", "messageKey":
+			s.AddField("message_key")
+			x.MessageKey = s.ReadString()
+		case "envelope":
+			if s.ReadNil() {
+				x.Envelope = nil
+				return
+			}
+			x.Envelope = &content.ChatEnvelope{}
+			x.Envelope.UnmarshalProtoJSON(s.WithField("envelope", true))
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the AttachEnvelopeRequest from JSON.
+func (x *AttachEnvelopeRequest) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the AttachEnvelopeResponse message to JSON.
+func (x *AttachEnvelopeResponse) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Envelope != nil || s.HasField("envelope") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("envelope")
+		x.Envelope.MarshalProtoJSON(s.WithField("envelope"))
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the AttachEnvelopeResponse to JSON.
+func (x *AttachEnvelopeResponse) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the AttachEnvelopeResponse message from JSON.
+func (x *AttachEnvelopeResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "envelope":
+			if s.ReadNil() {
+				x.Envelope = nil
+				return
+			}
+			x.Envelope = &content.ChatEnvelope{}
+			x.Envelope.UnmarshalProtoJSON(s.WithField("envelope", true))
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the AttachEnvelopeResponse from JSON.
+func (x *AttachEnvelopeResponse) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
 // MarshalProtoJSON marshals the GetReadPositionsRequest message to JSON.
 func (x *GetReadPositionsRequest) MarshalProtoJSON(s *json.MarshalState) {
 	if x == nil {
@@ -3947,6 +4174,95 @@ func (m *SendMessageResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *AttachEnvelopeRequest) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *AttachEnvelopeRequest) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *AttachEnvelopeRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.Envelope != nil {
+		size, err := m.Envelope.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.MessageKey) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.MessageKey)
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *AttachEnvelopeResponse) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *AttachEnvelopeResponse) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *AttachEnvelopeResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.Envelope != nil {
+		size, err := m.Envelope.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *GetReadPositionsRequest) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -4385,6 +4701,35 @@ func (m *SendMessageResponse) SizeVT() (n int) {
 	var l int
 	_ = l
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.MessageKey)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *AttachEnvelopeRequest) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.MessageKey)
+	if m.Envelope != nil {
+		l = m.Envelope.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *AttachEnvelopeResponse) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Envelope != nil {
+		l = m.Envelope.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -4843,6 +5188,38 @@ func (x *SendMessageResponse) MarshalProtoText() string {
 }
 
 func (x *SendMessageResponse) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *AttachEnvelopeRequest) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "AttachEnvelopeRequest")
+	if x.MessageKey != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "message_key")
+		protobuf_go_lite.TextWriteString(&sb, x.MessageKey)
+	}
+	if x.Envelope != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "envelope")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Envelope)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *AttachEnvelopeRequest) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *AttachEnvelopeResponse) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "AttachEnvelopeResponse")
+	if x.Envelope != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "envelope")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Envelope)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *AttachEnvelopeResponse) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -6213,6 +6590,132 @@ func (m *SendMessageResponse) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.MessageKey = v
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *AttachEnvelopeRequest) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: AttachEnvelopeRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: AttachEnvelopeRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MessageKey", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.MessageKey = v
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Envelope", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Envelope == nil {
+				m.Envelope = &content.ChatEnvelope{}
+			}
+			if err := m.Envelope.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *AttachEnvelopeResponse) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: AttachEnvelopeResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: AttachEnvelopeResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Envelope", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Envelope == nil {
+				m.Envelope = &content.ChatEnvelope{}
+			}
+			if err := m.Envelope.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

@@ -39,6 +39,7 @@ func lookupCoreWorldOp(ctx context.Context, opTypeID string) (world.Operation, e
 		spacewave_chat.LookupInitChatDemoOp,
 		spacewave_chat.LookupCreateChatChannelOp,
 		spacewave_chat.LookupSendChatMessageOp,
+		spacewave_chat.LookupAttachChatEnvelopeOp,
 		spacewave_chat.LookupUpdateChatReadPositionOp,
 		s4wave_device.LookupCreateComputersDashboardOp,
 		s4wave_flowgraph.LookupCreateFlowgraphOp,

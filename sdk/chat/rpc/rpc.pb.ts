@@ -689,6 +689,59 @@ export const SendMessageResponse: MessageType<SendMessageResponse> =
   })
 
 /**
+ * AttachEnvelopeRequest attaches an envelope to a message of the channel.
+ *
+ * @generated from message spacewave.chat.rpc.AttachEnvelopeRequest
+ */
+export interface AttachEnvelopeRequest {
+  /**
+   * MessageKey identifies the message.
+   *
+   * @generated from field: string message_key = 1;
+   */
+  messageKey?: string
+  /**
+   * Envelope is the message's wire form. Its ID must not name another message's
+   * envelope key.
+   *
+   * @generated from field: spacewave.chat.ChatEnvelope envelope = 2;
+   */
+  envelope?: ChatEnvelope
+}
+
+export const AttachEnvelopeRequest: MessageType<AttachEnvelopeRequest> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'spacewave.chat.rpc.AttachEnvelopeRequest',
+    fields: [
+      { no: 1, name: 'message_key', kind: 'scalar', T: ScalarType.STRING },
+      { no: 2, name: 'envelope', kind: 'message', T: () => ChatEnvelope },
+    ] satisfies readonly PartialFieldInfo[],
+  })
+
+/**
+ * AttachEnvelopeResponse returns the envelope the message holds.
+ *
+ * @generated from message spacewave.chat.rpc.AttachEnvelopeResponse
+ */
+export interface AttachEnvelopeResponse {
+  /**
+   * Envelope is the requested envelope, or the one an earlier attach or send
+   * gave the message. A redacted message holds the redacted data.
+   *
+   * @generated from field: spacewave.chat.ChatEnvelope envelope = 1;
+   */
+  envelope?: ChatEnvelope
+}
+
+export const AttachEnvelopeResponse: MessageType<AttachEnvelopeResponse> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'spacewave.chat.rpc.AttachEnvelopeResponse',
+    fields: [
+      { no: 1, name: 'envelope', kind: 'message', T: () => ChatEnvelope },
+    ] satisfies readonly PartialFieldInfo[],
+  })
+
+/**
  * GetReadPositionsRequest selects shared receipt state for the mounted channel.
  *
  * @generated from message spacewave.chat.rpc.GetReadPositionsRequest

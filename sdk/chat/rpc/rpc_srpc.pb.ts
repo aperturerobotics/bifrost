@@ -3,6 +3,8 @@
 /* eslint-disable */
 
 import {
+  AttachEnvelopeRequest,
+  AttachEnvelopeResponse,
   GetChannelInfoRequest,
   GetChannelInfoResponse,
   GetMessageRequest,
@@ -129,6 +131,18 @@ export const ChatResourceServiceDefinition = {
       kind: MethodKind.Unary,
     },
     /**
+     * AttachEnvelope gives a message without an envelope its wire form in another
+     * protocol. It never replaces an envelope the message already holds.
+     *
+     * @generated from rpc spacewave.chat.rpc.ChatResourceService.AttachEnvelope
+     */
+    AttachEnvelope: {
+      name: 'AttachEnvelope',
+      I: AttachEnvelopeRequest,
+      O: AttachEnvelopeResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
      * GetReadPositions returns the channel's shared per-person read positions.
      *
      * @generated from rpc spacewave.chat.rpc.ChatResourceService.GetReadPositions
@@ -238,6 +252,17 @@ export interface ChatResourceService {
     request: SendMessageRequest,
     abortSignal?: AbortSignal,
   ): Promise<SendMessageResponse>
+
+  /**
+   * AttachEnvelope gives a message without an envelope its wire form in another
+   * protocol. It never replaces an envelope the message already holds.
+   *
+   * @generated from rpc spacewave.chat.rpc.ChatResourceService.AttachEnvelope
+   */
+  AttachEnvelope(
+    request: AttachEnvelopeRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<AttachEnvelopeResponse>
 
   /**
    * GetReadPositions returns the channel's shared per-person read positions.
@@ -355,6 +380,18 @@ export interface ChatResourceServiceHandler {
   ): Promise<SendMessageResponse>
 
   /**
+   * AttachEnvelope gives a message without an envelope its wire form in another
+   * protocol. It never replaces an envelope the message already holds.
+   *
+   * @generated from rpc spacewave.chat.rpc.ChatResourceService.AttachEnvelope
+   */
+  AttachEnvelope(
+    request: AttachEnvelopeRequest,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): Promise<AttachEnvelopeResponse>
+
+  /**
    * GetReadPositions returns the channel's shared per-person read positions.
    *
    * @generated from rpc spacewave.chat.rpc.ChatResourceService.GetReadPositions
@@ -394,6 +431,7 @@ export class ChatResourceServiceClient implements ChatResourceService {
     this.ListThreads = this.ListThreads.bind(this)
     this.WatchMessages = this.WatchMessages.bind(this)
     this.SendMessage = this.SendMessage.bind(this)
+    this.AttachEnvelope = this.AttachEnvelope.bind(this)
     this.GetReadPositions = this.GetReadPositions.bind(this)
     this.UpdateReadPosition = this.UpdateReadPosition.bind(this)
   }
@@ -547,6 +585,26 @@ export class ChatResourceServiceClient implements ChatResourceService {
       abortSignal || undefined,
     )
     return SendMessageResponse.fromBinary(result)
+  }
+
+  /**
+   * AttachEnvelope gives a message without an envelope its wire form in another
+   * protocol. It never replaces an envelope the message already holds.
+   *
+   * @generated from rpc spacewave.chat.rpc.ChatResourceService.AttachEnvelope
+   */
+  async AttachEnvelope(
+    request: AttachEnvelopeRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<AttachEnvelopeResponse> {
+    const requestMsg = AttachEnvelopeRequest.create(request)
+    const result = await this.rpc.request(
+      this.service,
+      ChatResourceServiceDefinition.methods.AttachEnvelope.name,
+      AttachEnvelopeRequest.toBinary(requestMsg),
+      abortSignal || undefined,
+    )
+    return AttachEnvelopeResponse.fromBinary(result)
   }
 
   /**

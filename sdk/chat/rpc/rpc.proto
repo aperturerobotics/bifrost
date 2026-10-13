@@ -25,6 +25,9 @@ service ChatResourceService {
   rpc WatchMessages(WatchMessagesRequest) returns (stream WatchMessagesResponse);
   // SendMessage appends one message or resolves an identical retry.
   rpc SendMessage(SendMessageRequest) returns (SendMessageResponse);
+  // AttachEnvelope gives a message without an envelope its wire form in another
+  // protocol. It never replaces an envelope the message already holds.
+  rpc AttachEnvelope(AttachEnvelopeRequest) returns (AttachEnvelopeResponse);
   // GetReadPositions returns the channel's shared per-person read positions.
   rpc GetReadPositions(GetReadPositionsRequest) returns (GetReadPositionsResponse);
   // UpdateReadPosition advances only the authenticated person's read position.
@@ -210,6 +213,22 @@ message SendMessageResponse {
   // MessageKey is the object key of the created message. It is empty when
   // expected_state_message_key no longer names the current state.
   string message_key = 1;
+}
+
+// AttachEnvelopeRequest attaches an envelope to a message of the channel.
+message AttachEnvelopeRequest {
+  // MessageKey identifies the message.
+  string message_key = 1;
+  // Envelope is the message's wire form. Its ID must not name another message's
+  // envelope key.
+  .spacewave.chat.ChatEnvelope envelope = 2;
+}
+
+// AttachEnvelopeResponse returns the envelope the message holds.
+message AttachEnvelopeResponse {
+  // Envelope is the requested envelope, or the one an earlier attach or send
+  // gave the message. A redacted message holds the redacted data.
+  .spacewave.chat.ChatEnvelope envelope = 1;
 }
 
 // GetReadPositionsRequest selects shared receipt state for the mounted channel.

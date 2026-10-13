@@ -163,6 +163,14 @@ export interface ChatEnvelope {
    * @generated from field: bytes data = 2;
    */
   data?: Uint8Array
+  /**
+   * RedactedData is the protocol's form of the message after redaction, bounded
+   * to 64 KiB. Redacting the message replaces Data with it and clears it; empty
+   * leaves no bytes.
+   *
+   * @generated from field: bytes redacted_data = 3;
+   */
+  redactedData?: Uint8Array
 }
 
 export const ChatEnvelope: MessageType<ChatEnvelope> =
@@ -171,6 +179,7 @@ export const ChatEnvelope: MessageType<ChatEnvelope> =
     fields: [
       { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
       { no: 2, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
+      { no: 3, name: 'redacted_data', kind: 'scalar', T: ScalarType.BYTES },
     ] satisfies readonly PartialFieldInfo[],
   })
 
@@ -193,14 +202,6 @@ export interface ChatRedaction {
    * @generated from field: string reason = 2;
    */
   reason?: string
-  /**
-   * Envelope is the target envelope's redacted wire form, which its protocol
-   * computes. It replaces the target's envelope and is required when the target
-   * has one.
-   *
-   * @generated from field: spacewave.chat.ChatEnvelope envelope = 3;
-   */
-  envelope?: ChatEnvelope
 }
 
 export const ChatRedaction: MessageType<ChatRedaction> =
@@ -209,7 +210,6 @@ export const ChatRedaction: MessageType<ChatRedaction> =
     fields: [
       { no: 1, name: 'target_key', kind: 'scalar', T: ScalarType.STRING },
       { no: 2, name: 'reason', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'envelope', kind: 'message', T: ChatEnvelope },
     ] satisfies readonly PartialFieldInfo[],
   })
 

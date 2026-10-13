@@ -439,6 +439,43 @@ export const SendChatMessageOp: MessageType<SendChatMessageOp> =
   })
 
 /**
+ * AttachChatEnvelopeOp gives a message without an envelope its wire form in
+ * another protocol on accepted World replay.
+ *
+ * @generated from message spacewave.chat.AttachChatEnvelopeOp
+ */
+export interface AttachChatEnvelopeOp {
+  /**
+   * ObjectKey selects the channel holding the message.
+   *
+   * @generated from field: string object_key = 1;
+   */
+  objectKey?: string
+  /**
+   * MessageKey identifies the message.
+   *
+   * @generated from field: string message_key = 2;
+   */
+  messageKey?: string
+  /**
+   * Envelope is the message's wire form.
+   *
+   * @generated from field: spacewave.chat.ChatEnvelope envelope = 3;
+   */
+  envelope?: ChatEnvelope
+}
+
+export const AttachChatEnvelopeOp: MessageType<AttachChatEnvelopeOp> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'spacewave.chat.AttachChatEnvelopeOp',
+    fields: [
+      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
+      { no: 2, name: 'message_key', kind: 'scalar', T: ScalarType.STRING },
+      { no: 3, name: 'envelope', kind: 'message', T: () => ChatEnvelope },
+    ] satisfies readonly PartialFieldInfo[],
+  })
+
+/**
  * UpdateChatReadPositionOp advances a receipt on accepted World replay.
  *
  * @generated from message spacewave.chat.UpdateChatReadPositionOp

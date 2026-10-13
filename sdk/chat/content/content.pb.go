@@ -172,6 +172,10 @@ type ChatEnvelope struct {
 	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	// Data is the protocol's exact bytes, bounded to 64 KiB.
 	Data []byte `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
+	// RedactedData is the protocol's form of the message after redaction, bounded
+	// to 64 KiB. Redacting the message replaces Data with it and clears it; empty
+	// leaves no bytes.
+	RedactedData []byte `protobuf:"bytes,3,opt,name=redacted_data,json=redactedData,proto3" json:"redactedData,omitempty"`
 }
 
 func (x *ChatEnvelope) Reset() {
@@ -194,6 +198,13 @@ func (x *ChatEnvelope) GetData() []byte {
 	return nil
 }
 
+func (x *ChatEnvelope) GetRedactedData() []byte {
+	if x != nil {
+		return x.RedactedData
+	}
+	return nil
+}
+
 // ChatRedaction removes the body of an earlier message by the same person.
 // The redaction is public metadata even when message bodies require encryption.
 type ChatRedaction struct {
@@ -202,10 +213,6 @@ type ChatRedaction struct {
 	TargetKey string `protobuf:"bytes,1,opt,name=target_key,json=targetKey,proto3" json:"targetKey,omitempty"`
 	// Reason is an optional public explanation.
 	Reason string `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty"`
-	// Envelope is the target envelope's redacted wire form, which its protocol
-	// computes. It replaces the target's envelope and is required when the target
-	// has one.
-	Envelope *ChatEnvelope `protobuf:"bytes,3,opt,name=envelope,proto3" json:"envelope,omitempty"`
 }
 
 func (x *ChatRedaction) Reset() {
@@ -226,13 +233,6 @@ func (x *ChatRedaction) GetReason() string {
 		return x.Reason
 	}
 	return ""
-}
-
-func (x *ChatRedaction) GetEnvelope() *ChatEnvelope {
-	if x != nil {
-		return x.Envelope
-	}
-	return nil
 }
 
 // ChatStateChange replaces one channel state value while retaining its history.
@@ -492,6 +492,7 @@ func (m *ChatEnvelope) CloneVT() *ChatEnvelope {
 	r := new(ChatEnvelope)
 	r.Id = m.Id
 	r.Data = protobuf_go_lite.CloneBytes(m.Data)
+	r.RedactedData = protobuf_go_lite.CloneBytes(m.RedactedData)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -509,7 +510,6 @@ func (m *ChatRedaction) CloneVT() *ChatRedaction {
 	r := new(ChatRedaction)
 	r.TargetKey = m.TargetKey
 	r.Reason = m.Reason
-	r.Envelope = protobuf_go_lite.CloneVTValue(m.Envelope)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -756,6 +756,9 @@ func (this *ChatEnvelope) EqualVT(that *ChatEnvelope) bool {
 	if !protobuf_go_lite.EqualBytes(this.Data, that.Data) {
 		return false
 	}
+	if !protobuf_go_lite.EqualBytes(this.RedactedData, that.RedactedData) {
+		return false
+	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
@@ -777,9 +780,6 @@ func (this *ChatRedaction) EqualVT(that *ChatRedaction) bool {
 		return false
 	}
 	if this.Reason != that.Reason {
-		return false
-	}
-	if !protobuf_go_lite.IsEqualVT(this.Envelope, that.Envelope) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -1204,6 +1204,11 @@ func (x *ChatEnvelope) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("data")
 		s.WriteBytes(x.Data)
 	}
+	if len(x.RedactedData) > 0 || s.HasField("redactedData") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("redactedData")
+		s.WriteBytes(x.RedactedData)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -1227,6 +1232,9 @@ func (x *ChatEnvelope) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "data":
 			s.AddField("data")
 			x.Data = s.ReadBytes()
+		case "redacted_data", "redactedData":
+			s.AddField("redacted_data")
+			x.RedactedData = s.ReadBytes()
 		}
 	})
 }
@@ -1254,11 +1262,6 @@ func (x *ChatRedaction) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("reason")
 		s.WriteString(x.Reason)
 	}
-	if x.Envelope != nil || s.HasField("envelope") {
-		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("envelope")
-		x.Envelope.MarshalProtoJSON(s.WithField("envelope"))
-	}
 	s.WriteObjectEnd()
 }
 
@@ -1282,13 +1285,6 @@ func (x *ChatRedaction) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "reason":
 			s.AddField("reason")
 			x.Reason = s.ReadString()
-		case "envelope":
-			if s.ReadNil() {
-				x.Envelope = nil
-				return
-			}
-			x.Envelope = &ChatEnvelope{}
-			x.Envelope.UnmarshalProtoJSON(s.WithField("envelope", true))
 		}
 	})
 }
@@ -1725,6 +1721,11 @@ func (m *ChatEnvelope) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if len(m.RedactedData) > 0 {
+		i = protobuf_go_lite.EncodeBytes(dAtA, i, m.RedactedData)
+		i--
+		dAtA[i] = 0x1a
+	}
 	if len(m.Data) > 0 {
 		i = protobuf_go_lite.EncodeBytes(dAtA, i, m.Data)
 		i--
@@ -1766,16 +1767,6 @@ func (m *ChatRedaction) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	_ = l
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
-	}
-	if m.Envelope != nil {
-		size, err := m.Envelope.MarshalToSizedBufferVT(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
-		i--
-		dAtA[i] = 0x1a
 	}
 	if len(m.Reason) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.Reason)
@@ -2117,6 +2108,7 @@ func (m *ChatEnvelope) SizeVT() (n int) {
 	_ = l
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Id)
 	n += protobuf_go_lite.SizeBytesNonEmpty(1, m.Data)
+	n += protobuf_go_lite.SizeBytesNonEmpty(1, m.RedactedData)
 	n += len(m.unknownFields)
 	return n
 }
@@ -2129,10 +2121,6 @@ func (m *ChatRedaction) SizeVT() (n int) {
 	_ = l
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.TargetKey)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Reason)
-	if m.Envelope != nil {
-		l = m.Envelope.SizeVT()
-		n += protobuf_go_lite.SizeMessage(1, l)
-	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -2357,6 +2345,10 @@ func (x *ChatEnvelope) MarshalProtoText() string {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "data")
 		protobuf_go_lite.TextWriteBytes(&sb, x.Data)
 	}
+	if len(x.RedactedData) != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "redacted_data")
+		protobuf_go_lite.TextWriteBytes(&sb, x.RedactedData)
+	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
@@ -2374,10 +2366,6 @@ func (x *ChatRedaction) MarshalProtoText() string {
 	if x.Reason != "" {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "reason")
 		protobuf_go_lite.TextWriteString(&sb, x.Reason)
-	}
-	if x.Envelope != nil {
-		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "envelope")
-		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Envelope)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -2782,6 +2770,14 @@ func (m *ChatEnvelope) UnmarshalVT(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RedactedData", wireType)
+			}
+			m.RedactedData, iNdEx, err = protobuf_go_lite.DecodeBytesAppend(m.RedactedData, dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
@@ -2845,21 +2841,6 @@ func (m *ChatRedaction) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.Reason = v
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Envelope", wireType)
-			}
-			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
-			if err != nil {
-				return err
-			}
-			if m.Envelope == nil {
-				m.Envelope = &ChatEnvelope{}
-			}
-			if err := m.Envelope.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

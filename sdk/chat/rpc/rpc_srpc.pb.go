@@ -30,6 +30,9 @@ type SRPCChatResourceServiceClient interface {
 	WatchMessages(ctx context.Context, in *WatchMessagesRequest) (SRPCChatResourceService_WatchMessagesClient, error)
 	// SendMessage appends one message or resolves an identical retry.
 	SendMessage(ctx context.Context, in *SendMessageRequest) (*SendMessageResponse, error)
+	// AttachEnvelope gives a message without an envelope its wire form in another
+	// protocol. It never replaces an envelope the message already holds.
+	AttachEnvelope(ctx context.Context, in *AttachEnvelopeRequest) (*AttachEnvelopeResponse, error)
 	// GetReadPositions returns the channel's shared per-person read positions.
 	GetReadPositions(ctx context.Context, in *GetReadPositionsRequest) (*GetReadPositionsResponse, error)
 	// UpdateReadPosition advances only the authenticated person's read position.
@@ -174,6 +177,15 @@ func (c *srpcChatResourceServiceClient) SendMessage(ctx context.Context, in *Sen
 	return out, nil
 }
 
+func (c *srpcChatResourceServiceClient) AttachEnvelope(ctx context.Context, in *AttachEnvelopeRequest) (*AttachEnvelopeResponse, error) {
+	out := new(AttachEnvelopeResponse)
+	err := c.cc.ExecCall(ctx, c.serviceID, "AttachEnvelope", in, out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *srpcChatResourceServiceClient) GetReadPositions(ctx context.Context, in *GetReadPositionsRequest) (*GetReadPositionsResponse, error) {
 	out := new(GetReadPositionsResponse)
 	err := c.cc.ExecCall(ctx, c.serviceID, "GetReadPositions", in, out)
@@ -209,6 +221,9 @@ type SRPCChatResourceServiceServer interface {
 	WatchMessages(*WatchMessagesRequest, SRPCChatResourceService_WatchMessagesStream) error
 	// SendMessage appends one message or resolves an identical retry.
 	SendMessage(context.Context, *SendMessageRequest) (*SendMessageResponse, error)
+	// AttachEnvelope gives a message without an envelope its wire form in another
+	// protocol. It never replaces an envelope the message already holds.
+	AttachEnvelope(context.Context, *AttachEnvelopeRequest) (*AttachEnvelopeResponse, error)
 	// GetReadPositions returns the channel's shared per-person read positions.
 	GetReadPositions(context.Context, *GetReadPositionsRequest) (*GetReadPositionsResponse, error)
 	// UpdateReadPosition advances only the authenticated person's read position.
@@ -249,6 +264,7 @@ func (SRPCChatResourceServiceHandler) GetMethodIDs() []string {
 		"ListThreads",
 		"WatchMessages",
 		"SendMessage",
+		"AttachEnvelope",
 		"GetReadPositions",
 		"UpdateReadPosition",
 	}
@@ -279,6 +295,8 @@ func (d *SRPCChatResourceServiceHandler) InvokeMethod(
 		return true, d.InvokeMethod_WatchMessages(d.impl, strm)
 	case "SendMessage":
 		return true, d.InvokeMethod_SendMessage(d.impl, strm)
+	case "AttachEnvelope":
+		return true, d.InvokeMethod_AttachEnvelope(d.impl, strm)
 	case "GetReadPositions":
 		return true, d.InvokeMethod_GetReadPositions(d.impl, strm)
 	case "UpdateReadPosition":
@@ -372,6 +390,18 @@ func (SRPCChatResourceServiceHandler) InvokeMethod_SendMessage(impl SRPCChatReso
 		return err
 	}
 	out, err := impl.SendMessage(strm.Context(), req)
+	if err != nil {
+		return err
+	}
+	return strm.MsgSend(out)
+}
+
+func (SRPCChatResourceServiceHandler) InvokeMethod_AttachEnvelope(impl SRPCChatResourceServiceServer, strm srpc.Stream) error {
+	req := new(AttachEnvelopeRequest)
+	if err := strm.MsgRecv(req); err != nil {
+		return err
+	}
+	out, err := impl.AttachEnvelope(strm.Context(), req)
 	if err != nil {
 		return err
 	}
@@ -493,6 +523,14 @@ type SRPCChatResourceService_SendMessageStream interface {
 }
 
 type srpcChatResourceService_SendMessageStream struct {
+	srpc.Stream
+}
+
+type SRPCChatResourceService_AttachEnvelopeStream interface {
+	srpc.Stream
+}
+
+type srpcChatResourceService_AttachEnvelopeStream struct {
 	srpc.Stream
 }
 

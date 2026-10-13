@@ -120,6 +120,17 @@ message SendChatMessageOp {
   .google.protobuf.Timestamp timestamp = 3;
 }
 
+// AttachChatEnvelopeOp gives a message without an envelope its wire form in
+// another protocol on accepted World replay.
+message AttachChatEnvelopeOp {
+  // ObjectKey selects the channel holding the message.
+  string object_key = 1;
+  // MessageKey identifies the message.
+  string message_key = 2;
+  // Envelope is the message's wire form.
+  .spacewave.chat.ChatEnvelope envelope = 3;
+}
+
 // UpdateChatReadPositionOp advances a receipt on accepted World replay.
 message UpdateChatReadPositionOp {
   // ObjectKey selects the channel whose receipt advances.

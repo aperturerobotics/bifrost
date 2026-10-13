@@ -39,6 +39,7 @@ func LookupWorldOp(ctx context.Context, opTypeID string) (world.Operation, error
 		spacewave_chat.LookupInitChatDemoOp,
 		spacewave_chat.LookupCreateChatChannelOp,
 		spacewave_chat.LookupSendChatMessageOp,
+		spacewave_chat.LookupAttachChatEnvelopeOp,
 		spacewave_chat.LookupUpdateChatReadPositionOp,
 		forge_world.LookupWorldOp,
 		forge_dashboard.LookupCreateForgeDashboardOp,
