@@ -4,86 +4,28 @@ import (
 	"bytes"
 	"context"
 	"slices"
-	"strings"
 
 	"github.com/aperturerobotics/util/broadcast"
 	"github.com/aperturerobotics/util/ccontainer"
 	"github.com/s4wave/spacewave/core/sobject"
 )
 
-// ParticipantPresentation contains account labels used by sharing rows.
-type ParticipantPresentation struct {
-	SelfAccountID string
-	SelfEntityID  string
-	AccountLabels map[string]string
-}
-
-// MailboxEntry contains mailbox metadata needed by sharing state projection.
-type MailboxEntry struct {
-	ID        int64
-	InviteID  string
-	PeerID    string
-	Status    string
-	CreatedAt int64
-	AccountID string
-	EntityID  string
-}
-
-// ParticipantInfo is the app-facing participant presentation row.
-type ParticipantInfo struct {
-	AccountID string
-	EntityID  string
-	PeerIDs   []string
-	Role      sobject.SOParticipantRole
-	IsSelf    bool
-}
-
-// SharingState contains the sharing snapshot for a space.
-type SharingState struct {
-	// Participants is the canonical SharedObject audience.
-	Participants []*sobject.SOParticipantConfig
-	// Invites contains the owner's current invitation records.
-	Invites []*sobject.SOInvite
-	// MailboxEntries contains pending invitation delivery metadata.
-	MailboxEntries []*MailboxEntry
-	// JoinRequests contains the redemptions held for owner approval.
-	JoinRequests []*sobject.SOJoinRequest
-	// ViewerRole is the mounted participant's effective role.
-	ViewerRole sobject.SOParticipantRole
-	// CanManage indicates that the mounted participant may manage sharing.
-	CanManage bool
-	// ParticipantInfo groups participant presentation without conferring authority.
-	ParticipantInfo []*ParticipantInfo
-	// ConfigChainHash identifies the latest verified configuration entry.
-	ConfigChainHash []byte
-	// ConfigChainSeqno is the owner's configuration sequence number.
-	ConfigChainSeqno uint64
-	// ViewerPeerID is the authenticated participant of the mounted SharedObject.
-	ViewerPeerID string
-	// DeparturePending reports a departure the successor has not committed.
-	DeparturePending bool
-	// SequencerPeerID is the appointed sequencer, empty under Merge.
-	SequencerPeerID string
-	// Control is who controls the shared object.
-	Control sobject.SOControl
-	// ViewerWeight is the viewer's voting weight under group control.
-	ViewerWeight uint64
-	// TotalWeight is the voting weight of every voter under group control.
-	TotalWeight uint64
-	// Agreements are the changes voters agree to that the group has not
-	// decided, by most voting weight.
-	Agreements []*sobject.ControlAgreement
-}
-
 // State carries every input snapshot the sharing watch reads per emission.
 type State struct {
-	soState                 *sobject.SOState
-	departing               []string
-	mailboxEntries          []*MailboxEntry
-	joinRequests            []*sobject.SOJoinRequest
+	// bcast guards the fields below and fires when one changes.
+	bcast broadcast.Broadcast
+	// soState is the SharedObject state.
+	soState *sobject.SOState
+	// departing are the peers that have left in their own view.
+	departing []string
+	// mailboxEntries are the pending invitation deliveries.
+	mailboxEntries []*MailboxEntry
+	// joinRequests are the redemptions held for owner approval.
+	joinRequests []*sobject.SOJoinRequest
+	// participantPresentation labels the participant rows.
 	participantPresentation *ParticipantPresentation
-	err                     error
-	bcast                   broadcast.Broadcast
+	// err is the first bridge failure; the watch returns it.
+	err error
 }
 
 // DepartingFunc returns the peers that have left in their own view at state,
@@ -116,9 +58,13 @@ func (s *State) SetSOState(next *sobject.SOState, departing []string) {
 	})
 }
 
-// SetMailboxEntries updates mailbox entries and wakes watchers.
+// SetMailboxEntries updates mailbox entries and wakes watchers when they
+// differ from the current entries.
 func (s *State) SetMailboxEntries(entries []*MailboxEntry) {
 	s.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+		if slices.EqualFunc(s.mailboxEntries, entries, equalMailboxEntry) {
+			return
+		}
 		s.mailboxEntries = entries
 		broadcast()
 	})
@@ -291,175 +237,4 @@ func withoutPeers(state *sobject.SOState, peers []string) *sobject.SOState {
 		return slices.Contains(peers, p.GetPeerId())
 	})
 	return view
-}
-
-// ViewerRole returns the current viewer's effective participant role.
-func ViewerRole(state *sobject.SOState, peerID string) sobject.SOParticipantRole {
-	if state == nil || peerID == "" {
-		return sobject.SOParticipantRole_SOParticipantRole_UNKNOWN
-	}
-
-	role := sobject.SOParticipantRole_SOParticipantRole_UNKNOWN
-	for _, participant := range state.GetConfig().GetParticipants() {
-		if participant.GetPeerId() != peerID {
-			continue
-		}
-		if participant.GetRole() > role {
-			role = participant.GetRole()
-		}
-	}
-	return role
-}
-
-// BuildParticipantInfo groups participant rows by account or peer identity.
-func BuildParticipantInfo(
-	soState *sobject.SOState,
-	selfPeerID string,
-	presentation *ParticipantPresentation,
-) []*ParticipantInfo {
-	// Return no rows until the SharedObject configuration is available.
-	if soState == nil || soState.GetConfig() == nil {
-		return nil
-	}
-
-	// Read the configured audience before allocating participant rows.
-	participants := soState.GetConfig().GetParticipants()
-	if len(participants) == 0 {
-		return nil
-	}
-
-	// Group each participant by account identity, falling back to its peer.
-	rows := make(map[string]*ParticipantInfo, len(participants))
-	keys := make([]string, 0, len(participants))
-	for _, participant := range participants {
-		peerID := participant.GetPeerId()
-		if peerID == "" {
-			continue
-		}
-
-		accountID := participant.GetEntityId()
-		key := accountID
-		if key == "" {
-			key = "peer:" + peerID
-		}
-
-		row := rows[key]
-		if row == nil {
-			row = &ParticipantInfo{
-				AccountID: accountID,
-				Role:      participant.GetRole(),
-			}
-			if accountID != "" && presentation != nil {
-				if label := presentation.AccountLabels[accountID]; label != "" {
-					row.EntityID = label
-				}
-				if accountID == presentation.SelfAccountID && presentation.SelfEntityID != "" {
-					row.EntityID = presentation.SelfEntityID
-				}
-			}
-			rows[key] = row
-			keys = append(keys, key)
-		}
-
-		if participant.GetRole() > row.Role {
-			row.Role = participant.GetRole()
-		}
-		row.PeerIDs = append(row.PeerIDs, peerID)
-		if peerID == selfPeerID {
-			row.IsSelf = true
-		}
-	}
-
-	// Return no rows when the audience has no usable peer identities.
-	if len(keys) == 0 {
-		return nil
-	}
-
-	// Sort participant rows by their visible label.
-	slices.SortStableFunc(keys, func(a, b string) int {
-		return strings.Compare(participantSortLabel(rows[a]), participantSortLabel(rows[b]))
-	})
-
-	// Materialize the ordered participant rows for the caller.
-	out := make([]*ParticipantInfo, 0, len(keys))
-	for _, key := range keys {
-		out = append(out, rows[key])
-	}
-	return out
-}
-
-func participantSortLabel(info *ParticipantInfo) string {
-	// Select the participant's visible entity, account, or peer label.
-	if info == nil {
-		return ""
-	}
-	if info.EntityID != "" {
-		return info.EntityID
-	}
-	if info.AccountID != "" {
-		return info.AccountID
-	}
-	if len(info.PeerIDs) != 0 {
-		return info.PeerIDs[0]
-	}
-	return ""
-}
-
-// Equal reports whether two sharing snapshots contain the same projected values.
-func (s *SharingState) Equal(that *SharingState) bool {
-	if s == nil || that == nil {
-		return s == that
-	}
-	return s.ViewerRole == that.ViewerRole &&
-		s.CanManage == that.CanManage &&
-		s.ViewerPeerID == that.ViewerPeerID &&
-		s.DeparturePending == that.DeparturePending &&
-		s.SequencerPeerID == that.SequencerPeerID &&
-		s.Control == that.Control &&
-		s.ViewerWeight == that.ViewerWeight &&
-		s.TotalWeight == that.TotalWeight &&
-		slices.EqualFunc(s.Agreements, that.Agreements, equalAgreement) &&
-		bytes.Equal(s.ConfigChainHash, that.ConfigChainHash) &&
-		s.ConfigChainSeqno == that.ConfigChainSeqno &&
-		slices.EqualFunc(s.Participants, that.Participants, func(a, b *sobject.SOParticipantConfig) bool {
-			return a.EqualVT(b)
-		}) &&
-		slices.EqualFunc(s.Invites, that.Invites, func(a, b *sobject.SOInvite) bool {
-			return a.EqualVT(b)
-		}) &&
-		slices.EqualFunc(s.MailboxEntries, that.MailboxEntries, equalMailboxEntry) &&
-		slices.EqualFunc(s.JoinRequests, that.JoinRequests, func(a, b *sobject.SOJoinRequest) bool {
-			return a.EqualVT(b)
-		}) &&
-		slices.EqualFunc(s.ParticipantInfo, that.ParticipantInfo, equalParticipantInfo)
-}
-
-// equalAgreement reports whether two agreements name one change with the same
-// voters.
-func equalAgreement(a, b *sobject.ControlAgreement) bool {
-	return bytes.Equal(a.Hash, b.Hash) && a.Weight == b.Weight && slices.Equal(a.Voters, b.Voters)
-}
-
-func equalMailboxEntry(a *MailboxEntry, b *MailboxEntry) bool {
-	if a == nil || b == nil {
-		return a == b
-	}
-	return a.ID == b.ID &&
-		a.InviteID == b.InviteID &&
-		a.PeerID == b.PeerID &&
-		a.Status == b.Status &&
-		a.CreatedAt == b.CreatedAt &&
-		a.AccountID == b.AccountID &&
-		a.EntityID == b.EntityID
-}
-
-func equalParticipantInfo(a *ParticipantInfo, b *ParticipantInfo) bool {
-	if a == nil || b == nil {
-		return a == b
-	}
-	return a.AccountID == b.AccountID &&
-		a.EntityID == b.EntityID &&
-		a.Role == b.Role &&
-		a.IsSelf == b.IsSelf &&
-		slices.Equal(a.PeerIDs, b.PeerIDs)
 }

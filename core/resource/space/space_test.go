@@ -13,6 +13,9 @@ import (
 	"github.com/aperturerobotics/protobuf-go-lite/types/known/timestamppb"
 	"github.com/aperturerobotics/starpc/srpc"
 	resource_server "github.com/s4wave/spacewave/bldr/resource/server"
+	provider_spacewave "github.com/s4wave/spacewave/core/provider/spacewave"
+	api "github.com/s4wave/spacewave/core/provider/spacewave/api"
+	"github.com/s4wave/spacewave/core/resource/space/sharingstate"
 	resource_world "github.com/s4wave/spacewave/core/resource/world"
 	"github.com/s4wave/spacewave/core/sobject"
 	"github.com/s4wave/spacewave/core/space"
@@ -771,3 +774,34 @@ func (c *spaceRecordingResourceClient) client(t *testing.T, resourceID uint32) s
 }
 
 var _ resource_server.ResourceClientContext = (*spaceRecordingResourceClient)(nil)
+
+// TestBridgeSharingMailboxReadsChangeBeforeStart checks that a mailbox change
+// between seeding the sharing state and starting the bridge reaches the state.
+func TestBridgeSharingMailboxReadsChangeBeforeStart(t *testing.T) {
+	// Seed the sharing state with no mailbox entries.
+	ctx := t.Context()
+	acc := &provider_spacewave.ProviderAccount{}
+	state := sharingstate.NewState(&sobject.SOState{}, nil, nil, nil)
+
+	// Deliver a pending entry before the bridge starts.
+	const soID = "so-1"
+	acc.ApplyMailboxEntryEvent(soID, &api.MailboxEntry{Id: 1, InviteId: "invite-1", Status: "pending"}, 1)
+	go bridgeSharingMailbox(ctx, state, acc, soID)
+
+	// Wait for the sharing state to show the entry.
+	got := make(chan struct{})
+	go func() {
+		_ = state.RunWatchLoop(ctx, "", func(s *sharingstate.SharingState) error {
+			if len(s.MailboxEntries) == 1 {
+				close(got)
+				return errors.New("done")
+			}
+			return nil
+		})
+	}()
+	select {
+	case <-got:
+	case <-time.After(5 * time.Second):
+		t.Fatal("sharing state did not receive the mailbox entry")
+	}
+}

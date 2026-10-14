@@ -865,6 +865,14 @@ func (r *SpacewaveSessionResource) WatchOrganizationState(
 	orgBcast := r.swAcc.GetOrgBroadcast()
 	var prev *s4wave_provider_spacewave.WatchOrganizationStateResponse
 	for {
+		// Take the wait channel before loading, so a change during the load
+		// wakes the next iteration.
+		var ch <-chan struct{}
+		orgBcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
+			ch = getWaitCh()
+		})
+
+		// Send the organization state when it differs from the last sent.
 		resp, err := r.loadOrganizationState(ctx, orgID)
 		if err != nil {
 			return err
@@ -876,10 +884,7 @@ func (r *SpacewaveSessionResource) WatchOrganizationState(
 			prev = resp
 		}
 
-		var ch <-chan struct{}
-		orgBcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
-			ch = getWaitCh()
-		})
+		// Wait for the next organization change.
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
@@ -1915,10 +1920,13 @@ func (r *SpacewaveSessionResource) RepairSharedObject(
 	ctx context.Context,
 	req *s4wave_provider_spacewave.RepairSharedObjectRequest,
 ) (*s4wave_provider_spacewave.RepairSharedObjectResponse, error) {
+	// Require the shared object to repair.
 	sharedObjectID := req.GetSharedObjectId()
 	if sharedObjectID == "" {
 		return nil, errors.New("shared object id is required")
 	}
+
+	// Repair it, reporting a missing recovery credential to the caller.
 	err := r.swAcc.RepairSharedObject(ctx, sharedObjectID)
 	if errors.Is(err, sobject.ErrSharedObjectRecoveryCredentialRequired) {
 		return &s4wave_provider_spacewave.RepairSharedObjectResponse{CredentialRequired: true}, nil
