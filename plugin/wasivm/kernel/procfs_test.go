@@ -49,6 +49,7 @@ func TestProcFS(t *testing.T) {
 	}{
 		{path: "/proc/self/stat", want: "2 (sh) R 1 1 1 "},
 		{path: "/proc/1/stat", want: "1 (sh) S 0 1 1 "},
+		{path: "/proc/1/task/1/stat", want: "1 (sh) S 0 1 1 "},
 		{path: "/proc/self/cmdline", want: "/bin/sh\x00-c\x00true\x00"},
 		{path: "/proc/2/environ", want: "HOME=/\x00"},
 		{path: "/proc/self/status", want: "Name:\tsh\nUmask:\t0022\nState:\tR\n"},

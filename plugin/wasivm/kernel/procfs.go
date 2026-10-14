@@ -75,11 +75,30 @@ func (k *Kernel) listProcs(dir *VNode) {
 }
 
 // newProcDir creates the /proc directory of the process pid. Its files show
-// the process holding pid when they open, which exec can replace.
+// the process holding pid when they open, which exec can replace. Its task
+// directory lists the process's one thread, whose ID is pid, with the same
+// files, as Linux lists each thread of a process.
 func (k *Kernel) newProcDir(pid int) *VNode {
-	// Add the files.
+	// Fill the process directory.
 	v := k.vfs
 	dir := v.newDir(0o555)
+	k.fillProcDir(dir, pid)
+
+	// Add the task directory and its one thread.
+	task := v.newDir(0o555)
+	link(dir, "task", task)
+	dir.nlink++
+	thread := v.newDir(0o555)
+	link(task, strconv.Itoa(pid), thread)
+	task.nlink++
+	k.fillProcDir(thread, pid)
+	return dir
+}
+
+// fillProcDir adds to dir the files and links that describe the process pid.
+func (k *Kernel) fillProcDir(dir *VNode, pid int) {
+	// Add the files.
+	v := k.vfs
 	files := map[string]func(p *Process) []byte{
 		"cmdline": procCmdline,
 		"comm":    func(p *Process) []byte { return []byte(p.comm() + "\n") },
@@ -116,7 +135,6 @@ func (k *Kernel) newProcDir(pid int) *VNode {
 			links["root"].setSymlink("/")
 		}
 	}
-	return dir
 }
 
 // listFDs fills the /proc/<pid>/fd directory dir with a link for each of
