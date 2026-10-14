@@ -161,11 +161,18 @@ const sweepChunkSize = 64
 // changes, so a transaction sweeps chunks until the budget runs out.
 const sweepBudget = 50 * time.Millisecond
 
+// sweepChunkTime is the time one chunk should take. The budget is checked
+// between chunks only, so chunks are sized to fit it: a process starved of CPU
+// that overruns this time halves the next chunk instead of holding the writer
+// for many budgets.
+const sweepChunkTime = sweepBudget / 4
+
 // SweepUnreferenced treats candidate snapshots as hints, not deletion authority.
 // Current owners, outgoing edges, orphan markers, and physical deletion of each
 // candidate share one raw transaction with the same serialization as grouped
 // head publication. Each transaction sweeps chunks of candidates until
-// sweepBudget elapses. It returns the nodes removed by committed transactions,
+// sweepBudget elapses, sizing each chunk by how long the last one took. It
+// returns the nodes removed by committed transactions,
 // also when a later transaction fails.
 func (v *Volume) SweepUnreferenced(ctx context.Context, graph block_gc.RefGraphOps, nodes []string) ([]string, error) {
 	// Require the Volume transaction domain for atomic sweeping.
@@ -178,18 +185,21 @@ func (v *Volume) SweepUnreferenced(ctx context.Context, graph block_gc.RefGraphO
 	// Sweep the candidates in budgeted transactions. Each consumes chunks from
 	// the front of nodes.
 	var swept []string
+	size := sweepChunkSize
 	for len(nodes) != 0 {
 		var batch []string
 		err := v.withDirectAtomic(ctx, func(blocks block.StoreOps, rg *block_gc.RefGraph) error {
 			start := time.Now()
 			for len(nodes) != 0 && time.Since(start) < sweepBudget {
-				chunk := nodes[:min(len(nodes), sweepChunkSize)]
+				chunkStart := time.Now()
+				chunk := nodes[:min(len(nodes), size)]
 				nodes = nodes[len(chunk):]
 				removed, err := sweepChunk(ctx, blocks, rg, chunk)
 				if err != nil {
 					return err
 				}
 				batch = append(batch, removed...)
+				size = nextChunkSize(size, time.Since(chunkStart))
 			}
 			return nil
 		})
@@ -203,6 +213,19 @@ func (v *Volume) SweepUnreferenced(ctx context.Context, graph block_gc.RefGraphO
 		swept = append(swept, batch...)
 	}
 	return swept, nil
+}
+
+// nextChunkSize sizes the chunk after one of size candidates that took took:
+// half as large when it overran sweepChunkTime, and twice as large, up to
+// sweepChunkSize, when it took under half of it.
+func nextChunkSize(size int, took time.Duration) int {
+	switch {
+	case took > sweepChunkTime:
+		return max(size/2, 1)
+	case took < sweepChunkTime/2:
+		return min(size*2, sweepChunkSize)
+	}
+	return size
 }
 
 // sweepChunk removes the chunk's candidates the orphan marker still owns alone,
