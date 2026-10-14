@@ -97,6 +97,45 @@ func TestGCStoreOpsGetStoredBlockUntracked(t *testing.T) {
 	}
 }
 
+// TestGCStoreOpsGetStoredBlockUntrackedOwned checks that a block stored
+// without tracking stays unknown after a tracked block takes ownership of it.
+// Its incoming edge says nothing about its own refs.
+func TestGCStoreOpsGetStoredBlockUntrackedOwned(t *testing.T) {
+	// Store a child and its parent without GC tracking.
+	env := newGCTestEnv(t)
+	child, _, err := block.PutBlock(env.ctx, env.rawStore, block_mock.NewExample("owned child"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	parent := &block_mock.Root{ExampleSubBlock: &block_mock.SubBlock{ExamplePtr: child}}
+	parentRef, _, err := block.PutBlock(env.ctx, env.rawStore, parent)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Store a tracked owner that references the parent, and flush its edges.
+	owner := &block_mock.Root{ExampleSubBlock: &block_mock.SubBlock{ExamplePtr: parentRef}}
+	ownerRef, _, err := block.PutBlock(env.ctx, env.gcStore, owner)
+	if err != nil {
+		t.Fatal(err)
+	}
+	env.flush(t)
+	incoming, err := env.refGraph.GetIncomingRefs(env.ctx, BlockIRI(parentRef))
+	if err != nil || len(incoming) != 1 || incoming[0] != BlockIRI(ownerRef) {
+		t.Fatalf("parent owners = %v/%v, want [%v]", incoming, err, ownerRef)
+	}
+
+	// The owner's refs are known; the owned parent's are not.
+	stored, err := env.gcStore.GetStoredBlock(env.ctx, ownerRef)
+	if err != nil || stored == nil || !stored.RefsKnown || len(stored.Refs) != 1 || !stored.Refs[0].EqualsRef(parentRef) {
+		t.Fatalf("owner = %+v/%v, want known refs [%v]", stored, err, parentRef)
+	}
+	stored, err = env.gcStore.GetStoredBlock(env.ctx, parentRef)
+	if err != nil || stored == nil || stored.RefsKnown || len(stored.Refs) != 0 {
+		t.Fatalf("owned untracked parent = %+v/%v, want unknown refs", stored, err)
+	}
+}
+
 // TestGCStoreOpsGetStoredBlockLeaf checks leaf knowledge before and after its
 // ownership edges reach the graph.
 func TestGCStoreOpsGetStoredBlockLeaf(t *testing.T) {
@@ -130,7 +169,7 @@ type flushWAL struct {
 	appending chan struct{}
 	// release lets Append return.
 	release chan struct{}
-	// read is closed when the first incoming lookup has answered.
+	// read is closed when the first journal lookup has answered.
 	read     chan struct{}
 	readOnce sync.Once
 	// mtx guards adds.
@@ -140,31 +179,30 @@ type flushWAL struct {
 
 // Append journals the edges after it is released.
 func (w *flushWAL) Append(_ context.Context, adds, _ []RefEdge) error {
+	// Signal the start, then wait for the release.
 	close(w.appending)
 	<-w.release
+
+	// Journal the edges.
 	w.mtx.Lock()
 	w.adds = append(w.adds, adds...)
 	w.mtx.Unlock()
 	return nil
 }
 
-// GetPendingOutgoingRefs reports no journaled edges.
-func (*flushWAL) GetPendingOutgoingRefs(context.Context, string) ([]string, error) {
-	return nil, nil
-}
-
-// GetPendingIncomingRefs reports the sources of the journaled edges to node.
-func (w *flushWAL) GetPendingIncomingRefs(_ context.Context, node string) ([]string, error) {
+// GetPendingOutgoingRefs reports the targets of the journaled edges from node.
+func (w *flushWAL) GetPendingOutgoingRefs(_ context.Context, node string) ([]string, error) {
+	// Collect the targets, then signal the first lookup.
 	w.mtx.Lock()
-	var sources []string
+	var targets []string
 	for _, edge := range w.adds {
-		if edge.Object == node {
-			sources = append(sources, edge.Subject)
+		if edge.Subject == node {
+			targets = append(targets, edge.Object)
 		}
 	}
 	w.mtx.Unlock()
 	w.readOnce.Do(func() { close(w.read) })
-	return sources, nil
+	return targets, nil
 }
 
 // TestGCStoreOpsGetStoredBlockDuringFlush checks that a block whose edges a

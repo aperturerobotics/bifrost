@@ -494,12 +494,12 @@ func TestMultipleRefsFromSameSource(t *testing.T) {
 	}
 }
 
+// TestPermanentRoots checks which well-known nodes are permanent roots.
 func TestPermanentRoots(t *testing.T) {
-	if !IsPermanentRoot(NodeGCRoot) {
-		t.Fatal("gcroot should be permanent")
-	}
-	if !IsPermanentRoot(NodeUnreferenced) {
-		t.Fatal("unreferenced should be permanent")
+	for _, node := range []string{NodeGCRoot, NodeUnreferenced, NodeRefsKnown} {
+		if !IsPermanentRoot(node) {
+			t.Fatalf("%s should be permanent", node)
+		}
 	}
 	if IsPermanentRoot("block:abc") {
 		t.Fatal("block:abc should not be permanent")

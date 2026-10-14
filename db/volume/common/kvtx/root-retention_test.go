@@ -341,7 +341,7 @@ func TestRootRetentionDefersEditsToNextCommit(t *testing.T) {
 	}
 	node := block_gc.BlockIRI(root)
 	proofs, err := v.GetRefGraph().GetOutgoingRefs(ctx, node)
-	if err != nil || !slices.Equal(proofs, []string{completeWorldNode}) {
+	if err != nil || !slices.Equal(proofs, []string{block_gc.NodeRefsKnown, completeWorldNode}) {
 		t.Fatalf("root proof edges=%v err=%v", proofs, err)
 	}
 	owners, err := v.GetRefGraph().GetIncomingRefs(ctx, node)

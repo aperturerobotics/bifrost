@@ -28,26 +28,6 @@ func (s *Store) AcquireSTW(context.Context) (func(), error) {
 // GetPendingOutgoingRefs returns the targets of journaled edges from node,
 // net of journaled removals, in journal order.
 func (s *Store) GetPendingOutgoingRefs(ctx context.Context, node string) ([]string, error) {
-	return s.pendingRefs(ctx, node, false)
-}
-
-// GetPendingIncomingRefs returns the sources of journaled edges to node,
-// net of journaled removals, in journal order.
-func (s *Store) GetPendingIncomingRefs(ctx context.Context, node string) ([]string, error) {
-	return s.pendingRefs(ctx, node, true)
-}
-
-// pendingRefs nets the journaled edges on one side of node in journal order.
-func (s *Store) pendingRefs(ctx context.Context, node string, incoming bool) ([]string, error) {
-	// Select the endpoints that match node and identify its neighbor.
-	endpoints := func(edge block_gc.RefEdge) (string, string) {
-		if incoming {
-			return edge.Object, edge.Subject
-		}
-		return edge.Subject, edge.Object
-	}
-
-	// Net the journaled adds and removes incident to node in order.
 	var refs []string
 	err := s.view(ctx, func(tx kvtx.Tx) error {
 		return tx.ScanPrefix(ctx, []byte(journalPrefix), func(_, value []byte) error {
@@ -57,13 +37,13 @@ func (s *Store) pendingRefs(ctx context.Context, node string, incoming bool) ([]
 				return err
 			}
 			for _, edge := range adds {
-				if endpoint, neighbor := endpoints(edge); endpoint == node {
-					refs = append(refs, neighbor)
+				if edge.Subject == node {
+					refs = append(refs, edge.Object)
 				}
 			}
 			for _, edge := range removes {
-				if endpoint, neighbor := endpoints(edge); endpoint == node {
-					refs = slices.DeleteFunc(refs, func(ref string) bool { return ref == neighbor })
+				if edge.Subject == node {
+					refs = slices.DeleteFunc(refs, func(ref string) bool { return ref == edge.Object })
 				}
 			}
 			return nil

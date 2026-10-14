@@ -18,9 +18,28 @@ type formatMigration func(ctx context.Context, store kvtx.Store, keys *store_kvk
 // to store_kvkey.FormatVersion, so a store of any age is rewritten once. A new
 // format version retargets every entry and adds one for the previous version.
 var formatMigrations = [store_kvkey.FormatVersion]formatMigration{
-	0: migrateBase58Store,
-	1: migrateCayleyRefGraph,
-	2: migrateLegacyRefGraph,
+	0: migrateSteps(migrateBase58BlockKeys, migrateCayleyRefGraph, migrateRefsKnown),
+	1: migrateSteps(migrateCayleyRefGraph, migrateRefsKnown),
+	2: migrateSteps(migrateLegacyRefGraph, migrateRefsKnown),
+	3: migrateRefsKnown,
+}
+
+// migrateSteps returns a migration that runs steps in order.
+func migrateSteps(steps ...formatMigration) formatMigration {
+	return func(ctx context.Context, store kvtx.Store, keys *store_kvkey.KVKey) error {
+		for _, step := range steps {
+			if err := step(ctx, store, keys); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+}
+
+// migrateRefsKnown marks the refs of every block the graph names as known,
+// since a store before version 4 inferred that from any edge.
+func migrateRefsKnown(ctx context.Context, store kvtx.Store, _ *store_kvkey.KVKey) error {
+	return openRefGraph(store).SeedRefsKnown(ctx)
 }
 
 // migrateBatchBytes bounds the keys and values one migration commit moves.

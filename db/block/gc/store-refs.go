@@ -10,8 +10,9 @@ import (
 // GetStoredBlock reads a block and its outgoing block edges. The edges come
 // from the ref graph, the journal edges it has not applied, and the edges this
 // store has buffered but not flushed. Blocks are immutable, so an edge once
-// recorded stays valid for the life of the block. Without outgoing refs or an
-// incoming edge, the graph cannot distinguish a leaf from an untracked block.
+// recorded stays valid for the life of the block. The refs are known only when
+// those sources hold the block's edge to NodeRefsKnown, which a tracked put
+// writes with its other edges, or a re-put buffered the block's refs.
 func (g *GCStoreOps) GetStoredBlock(ctx context.Context, ref *block.BlockRef) (*block.StoredBlock, error) {
 	// Read the immutable block data before resolving its outgoing references.
 	data, found, err := g.store.GetBlock(ctx, ref)
@@ -36,78 +37,37 @@ func (g *GCStoreOps) GetStoredBlock(ctx context.Context, ref *block.BlockRef) (*
 // getBlockEdges resolves the outgoing edges of a stored block.
 func (g *GCStoreOps) getBlockEdges(ctx context.Context, ref *block.BlockRef, data []byte) (*block.StoredBlock, error) {
 	// Collect durable, journaled, and buffered references for the stored block.
-	node := BlockIRI(ref)
-	refs, err := g.getOutgoingBlockRefs(ctx, node)
+	refs, known, err := g.getOutgoingBlockRefs(ctx, BlockIRI(ref))
 	if err != nil {
 		return nil, err
 	}
 
-	// A re-put carries the block's own refs before FlushPending restores them.
-	if len(refs) == 0 {
+	// A re-put carries the block's own refs before FlushPending records them.
+	if !known {
 		g.mu.Lock()
 		for _, reput := range g.pendingReputs {
 			if reput.ref.EqualsRef(ref) {
-				refs = block.CloneBlockRefs(reput.targets)
+				refs, known = block.CloneBlockRefs(reput.targets), true
 				break
 			}
 		}
 		g.mu.Unlock()
 	}
-
-	// Distinguish a tracked leaf from bytes whose edges were never recorded.
-	known := len(refs) != 0 || g.hasBufferedBlockEdges(node)
-	if !known && g.wal != nil {
-		incoming, err := g.wal.GetPendingIncomingRefs(ctx, node)
-		if err != nil {
-			return nil, err
-		}
-		known = len(incoming) != 0
-	}
-	if !known {
-		incoming, err := g.refGraph.GetIncomingRefs(ctx, node)
-		if err != nil {
-			return nil, err
-		}
-		known = len(incoming) != 0
-	}
 	return &block.StoredBlock{Data: data, Refs: refs, RefsKnown: known}, nil
 }
 
-// hasBufferedBlockEdges reports whether node participates in a buffered edge,
-// including staging and ownership edges not yet materialized by FlushPending.
-func (g *GCStoreOps) hasBufferedBlockEdges(node string) bool {
-	// Check staging and ownership buffered by block writes.
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	if slices.Contains(g.pendingUnref, node) || slices.Contains(g.pendingCandidates, node) {
-		return true
-	}
-
-	// Check child edges and normalized additions retained after a failed flush.
-	for _, edge := range g.pendingRefs {
-		if edge.source == node || edge.target == node {
-			return true
-		}
-	}
-	for _, edge := range g.pendingAdds {
-		if edge.Subject == node || edge.Object == node {
-			return true
-		}
-	}
-	return false
-}
-
-// getOutgoingBlockRefs collects the block targets of node's outgoing edges.
-func (g *GCStoreOps) getOutgoingBlockRefs(ctx context.Context, node string) ([]*block.BlockRef, error) {
+// getOutgoingBlockRefs collects the block targets of node's outgoing edges,
+// and reports whether one of the edges marks its refs known.
+func (g *GCStoreOps) getOutgoingBlockRefs(ctx context.Context, node string) ([]*block.BlockRef, bool, error) {
 	// Read the durable outgoing edges and include pending journal entries.
 	targets, err := g.refGraph.GetOutgoingRefs(ctx, node)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	if g.wal != nil {
 		journaled, err := g.wal.GetPendingOutgoingRefs(ctx, node)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		targets = append(targets, journaled...)
 	}
@@ -135,5 +95,5 @@ func (g *GCStoreOps) getOutgoingBlockRefs(ctx context.Context, node string) ([]*
 			refs = append(refs, ref)
 		}
 	}
-	return refs, nil
+	return refs, slices.Contains(targets, NodeRefsKnown), nil
 }

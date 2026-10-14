@@ -507,13 +507,9 @@ func TestGCStoreOps_TransactionRecordsRefs(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	// Verify the root references exactly its child block.
-	if len(outgoing) != 1 {
-		t.Fatalf("expected 1 outgoing ref from root, got %d", len(outgoing))
-	}
-	expectedChild := BlockIRI(childRef)
-	if outgoing[0] != expectedChild {
-		t.Fatalf("expected ref to child %s, got %s", expectedChild, outgoing[0])
+	// Verify the root marks its refs known and references exactly its child.
+	if want := []string{NodeRefsKnown, BlockIRI(childRef)}; !slices.Equal(outgoing, want) {
+		t.Fatalf("root refs = %v, want %v", outgoing, want)
 	}
 
 	// Child's unreferenced edge should have been removed.
@@ -1086,8 +1082,8 @@ func TestGCStoreOps_ParentIRI_PutBlockBatchExistingTreeBuffersOwnerOnly(t *testi
 	if err := gcStore.FlushPending(ctx); err != nil {
 		t.Fatal(err.Error())
 	}
-	if len(refGraph.adds) != 5 {
-		t.Fatalf("first write adds = %v, want 3 owner and 2 child edges", refGraph.adds)
+	if len(refGraph.adds) != 8 {
+		t.Fatalf("first write adds = %v, want 3 owner, 3 refs-known and 2 child edges", refGraph.adds)
 	}
 
 	// Write the same chain again.
@@ -1438,8 +1434,8 @@ func TestGCStoreOpsGetStoredBlock(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	// Verify the parent edge targets the stored child.
-	if !slices.Equal(targets, []string{BlockIRI(child)}) {
+	// Verify the parent edges mark its refs known and target the stored child.
+	if !slices.Equal(targets, []string{NodeRefsKnown, BlockIRI(child)}) {
 		t.Fatalf("ref graph targets = %v, want [%s]", targets, BlockIRI(child))
 	}
 

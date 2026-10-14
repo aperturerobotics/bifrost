@@ -288,8 +288,9 @@ func (g *RefGraph) addRefTx(ctx context.Context, tx kvtx.Tx, subject, object str
 		}
 	}
 
-	// Write the two edge directions.
-	if err := tx.Set(ctx, forward, nil); err != nil {
+	// Write the two edge directions. An edge to NodeRefsKnown keeps only its
+	// forward record, since nothing asks which blocks have known refs.
+	if err := tx.Set(ctx, forward, nil); err != nil || object == NodeRefsKnown {
 		return err
 	}
 	return tx.Set(ctx, graphKey(kindIncoming, object, subject), nil)
@@ -307,8 +308,10 @@ func (g *RefGraph) removeRefTx(ctx context.Context, tx kvtx.Tx, subject, object 
 	if err := tx.Delete(ctx, forward); err != nil {
 		return false, err
 	}
-	if err := tx.Delete(ctx, graphKey(kindIncoming, object, subject)); err != nil {
-		return false, err
+	if object != NodeRefsKnown {
+		if err := tx.Delete(ctx, graphKey(kindIncoming, object, subject)); err != nil {
+			return false, err
+		}
 	}
 	return true, nil
 }

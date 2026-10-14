@@ -237,7 +237,7 @@ func TestDebugRefRepair(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Logf("dry run: %+v", dry)
-	if dry.spaces != 1 || dry.lacking == 0 || dry.edges == 0 || dry.owned != 1 || dry.rooted != 1 || dry.written != 0 {
+	if dry.spaces != 1 || dry.lacking == 0 || dry.edges == 0 || dry.unknown == 0 || dry.owned != 1 || dry.rooted != 1 || dry.written != 0 {
 		t.Fatalf("dry run: %+v", dry)
 	}
 	if dry.absent != 0 || dry.undecodable != 0 || dry.untyped["object type "+unixfs_world.FSNodeTypeID] != 0 {
@@ -295,7 +295,7 @@ func TestDebugRefRepair(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if again.edges != dry.edges || again.owned != dry.owned || again.rooted != dry.rooted || again.untracked != dry.untracked || again.untrackedBytes != dry.untrackedBytes {
+	if again.edges != dry.edges || again.unknown != dry.unknown || again.owned != dry.owned || again.rooted != dry.rooted || again.untracked != dry.untracked || again.untrackedBytes != dry.untrackedBytes {
 		t.Fatalf("dry run wrote edges: %+v then %+v", dry, again)
 	}
 
@@ -304,7 +304,7 @@ func TestDebugRefRepair(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := dry.edges + dry.owned + uint64(dry.rooted)
+	want := dry.edges + dry.unknown + dry.owned + uint64(dry.rooted)
 	if applied.written != want {
 		t.Fatalf("applied %d edges, expected %d", applied.written, want)
 	}
@@ -314,7 +314,7 @@ func TestDebugRefRepair(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if after.lacking != 0 || after.edges != 0 || after.owned != 0 || after.rooted != 0 || after.blocks != dry.blocks {
+	if after.lacking != 0 || after.edges != 0 || after.unknown != 0 || after.owned != 0 || after.rooted != 0 || after.blocks != dry.blocks {
 		t.Fatalf("after repair: %+v", after)
 	}
 }

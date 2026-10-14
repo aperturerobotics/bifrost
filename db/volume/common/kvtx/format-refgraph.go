@@ -25,15 +25,6 @@ var cayleyLogPrefix = []byte("gc/l/")
 // convertBatchEdges bounds the edges one conversion commit moves.
 const convertBatchEdges = 8192
 
-// migrateBase58Store upgrades a version 0 store: it rekeys the blocks, then
-// converts the reference graph.
-func migrateBase58Store(ctx context.Context, store kvtx.Store, keys *store_kvkey.KVKey) error {
-	if err := migrateBase58BlockKeys(ctx, store, keys); err != nil {
-		return err
-	}
-	return migrateCayleyRefGraph(ctx, store, keys)
-}
-
 // migrateCayleyRefGraph moves every reference edge from the Cayley primitive
 // log to the edge records of block_gc.RefGraph, then deletes the Cayley store.
 // Each batch writes its edges and deletes their log records in one commit,

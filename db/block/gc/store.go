@@ -35,9 +35,6 @@ type WALAppender interface {
 	// GetPendingOutgoingRefs returns the targets of journaled edges from node
 	// that the ref graph has not applied yet, net of journaled removals.
 	GetPendingOutgoingRefs(ctx context.Context, node string) ([]string, error)
-	// GetPendingIncomingRefs returns the sources of journaled edges to node
-	// that the ref graph has not applied yet, net of journaled removals.
-	GetPendingIncomingRefs(ctx context.Context, node string) ([]string, error)
 }
 
 // GCStoreOps wraps a StoreOps with GC ref graph tracking.
@@ -52,13 +49,13 @@ type WALAppender interface {
 // instead of the "unreferenced" staging node. This allows
 // bucket-level ownership of blocks.
 //
-// Only a block's first write records its outgoing edges: the inner store
-// reports whether each written block already existed, and an existing block
-// keeps the edges recorded then. A block stored without tracking has none, and
-// the store keeps block bytes without their refs. Writing such a block again
-// with refs therefore records them when the graph holds no outgoing edge of the
-// block, so a child it references cannot lose its last owner to another parent
-// released later.
+// Only a block's first write records its outgoing edges, along with an edge to
+// NodeRefsKnown: the inner store reports whether each written block already
+// existed, and an existing block keeps the edges recorded then. A block stored
+// without tracking has none, and the store keeps block bytes without their
+// refs. Writing such a block again with refs therefore records them when the
+// graph holds no outgoing edge of the block, so a child it references cannot
+// lose its last owner to another parent released later.
 type GCStoreOps struct {
 	store      block.StoreOps
 	refGraph   RefGraphOps
@@ -390,11 +387,13 @@ func (g *GCStoreOps) Sync(ctx context.Context) (bool, error) {
 	return g.store.Sync(ctx)
 }
 
-// bufferRefEdgesLocked buffers the source -> target edges of a put. With adopt
-// set, each target also leaves the staging of this store's owner, since the
-// source now holds it.
+// bufferRefEdgesLocked buffers the edges of a put that knows the source's
+// refs: one to NodeRefsKnown and one to each target. With adopt set, each
+// target also leaves the staging of this store's owner, since the source now
+// holds it.
 func (g *GCStoreOps) bufferRefEdgesLocked(source *block.BlockRef, targets []*block.BlockRef, adopt bool) {
 	sourceIRI := BlockIRI(source)
+	g.pendingRefs = append(g.pendingRefs, pendingRef{sourceIRI, NodeRefsKnown})
 	for _, t := range targets {
 		if t == nil || t.GetEmpty() {
 			continue
@@ -593,7 +592,7 @@ func (g *GCStoreOps) recordLostEdges(ctx context.Context) error {
 
 	// Buffer the edges of each block that holds none.
 	for _, reput := range reputs {
-		held, err := g.getOutgoingBlockRefs(ctx, BlockIRI(reput.ref))
+		held, _, err := g.getOutgoingBlockRefs(ctx, BlockIRI(reput.ref))
 		if err != nil {
 			return err
 		}

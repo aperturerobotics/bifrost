@@ -3,6 +3,7 @@ package block_gc
 import (
 	"context"
 	"errors"
+	"slices"
 	"testing"
 
 	"github.com/s4wave/spacewave/db/block"
@@ -43,11 +44,6 @@ func (w *retryAppender) Append(_ context.Context, adds, _ []RefEdge) error {
 
 // GetPendingOutgoingRefs reports no journaled edges.
 func (*retryAppender) GetPendingOutgoingRefs(context.Context, string) ([]string, error) {
-	return nil, nil
-}
-
-// GetPendingIncomingRefs reports no journaled edges.
-func (*retryAppender) GetPendingIncomingRefs(context.Context, string) ([]string, error) {
 	return nil, nil
 }
 
@@ -116,7 +112,7 @@ func TestReleasePreservesSharedBlockDependencies(t *testing.T) {
 
 			// Verify the surviving owner retains the shared child edge.
 			outgoing, err := env.refGraph.GetOutgoingRefs(env.ctx, BlockIRI(parent))
-			if err != nil || len(outgoing) != 1 || outgoing[0] != BlockIRI(child) {
+			if err != nil || !slices.Equal(outgoing, []string{NodeRefsKnown, BlockIRI(child)}) {
 				t.Fatalf("release lost shared dependencies: %v %v", outgoing, err)
 			}
 
@@ -144,11 +140,6 @@ func (w blockingAppender) Append(context.Context, []RefEdge, []RefEdge) error {
 
 // GetPendingOutgoingRefs reports no journaled edges.
 func (blockingAppender) GetPendingOutgoingRefs(context.Context, string) ([]string, error) {
-	return nil, nil
-}
-
-// GetPendingIncomingRefs reports no journaled edges.
-func (blockingAppender) GetPendingIncomingRefs(context.Context, string) ([]string, error) {
 	return nil, nil
 }
 

@@ -70,6 +70,7 @@ func refRepairFields(path string, dryRun bool, res refRepairResult) [][2]string 
 		{"Blocks undecodable", strconv.FormatUint(res.undecodable, 10)},
 		{"Blocks lacking edges", strconv.FormatUint(res.lacking, 10)},
 		{"Child edges missing", strconv.FormatUint(res.edges, 10)},
+		{"Blocks with unknown refs", strconv.FormatUint(res.unknown, 10)},
 		{"Unrooted buckets", strconv.Itoa(res.rooted)},
 		{"Unowned roots", strconv.FormatUint(res.owned, 10)},
 		{"Edges added", strconv.FormatUint(res.written, 10)},

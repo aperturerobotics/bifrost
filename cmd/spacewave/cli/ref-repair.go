@@ -107,6 +107,9 @@ type refRepairResult struct {
 	lacking uint64
 	// edges is the number of missing edges from a block to a child.
 	edges uint64
+	// unknown is the number of walked blocks whose refs the graph did not
+	// mark known.
+	unknown uint64
 	// owned is the number of roots nothing held, given to their bucket.
 	owned uint64
 	// rooted is the number of Space buckets the GC root did not hold.
@@ -443,13 +446,19 @@ func (r *refRepair) walk(ctx context.Context, root refRepairNode) error {
 // read reads, decodes and extracts the refs of one block, with the edges the
 // graph holds for it. It touches no repair state, so reads run concurrently.
 func (r *refRepair) read(ctx context.Context, n refRepairNode) (refRepairRead, error) {
+	// Name the block's graph node.
 	rd := refRepairRead{node: n, iri: block_gc.BlockIRI(n.ref)}
 
-	// Check only the presence of a block whose type holds no refs.
+	// Check only the presence and the edges of a block whose type holds no
+	// refs.
 	if n.ctor != nil && !holdsRefs(n.ctor()) {
 		var err error
 		rd.leaf = true
 		rd.found, err = r.store.GetBlockExists(ctx, n.ref)
+		if err != nil || !rd.found {
+			return rd, err
+		}
+		rd.have, err = r.rg.GetOutgoingRefs(ctx, rd.iri)
 		return rd, err
 	}
 
@@ -473,9 +482,7 @@ func (r *refRepair) read(ctx context.Context, n refRepairNode) (refRepairRead, e
 	if span, ok := rd.blk.(*sobject_world_engine.ReplaySpan); ok {
 		rd.refs = slices.Concat(span.GetWorlds(), span.GetPayloads())
 	}
-	if len(rd.refs) != 0 {
-		rd.have, err = r.rg.GetOutgoingRefs(ctx, rd.iri)
-	}
+	rd.have, err = r.rg.GetOutgoingRefs(ctx, rd.iri)
 	return rd, err
 }
 
@@ -501,6 +508,7 @@ func (r *refRepair) visit(ctx context.Context, rd *refRepairRead) ([]refRepairNo
 		r.le.Infof("walked %d blocks", r.res.blocks)
 	}
 	if rd.leaf {
+		r.recordEdges(rd.iri, nil, rd.have)
 		return nil, nil
 	}
 	if rd.decodeErr != nil {
@@ -534,9 +542,16 @@ func decodeRefRepairNode(n refRepairNode, data []byte) (any, error) {
 	return blk, blk.UnmarshalBlock(data)
 }
 
-// recordEdges plans each edge from the block at iri to refs that have, the
-// edges the graph holds for it, lacks.
+// recordEdges plans each edge from the block at iri to refs, and its edge to
+// the refs-known node, that have, the edges the graph holds for it, lacks.
 func (r *refRepair) recordEdges(iri string, refs []*block.BlockRef, have []string) {
+	// Mark the decoded block's refs known.
+	if !slices.Contains(have, block_gc.NodeRefsKnown) {
+		r.plan(iri, block_gc.NodeRefsKnown)
+		r.res.unknown++
+	}
+
+	// Plan the missing child edges.
 	var missing uint64
 	for _, ref := range refs {
 		child := block_gc.BlockIRI(ref)

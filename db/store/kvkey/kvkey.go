@@ -13,7 +13,9 @@ import (
 // quad store.
 // Version 3 encodes each block node of the graph as its hash type and digest
 // instead of its base58 IRI.
-const FormatVersion = 3
+// Version 4 records which blocks' outgoing edges are known as an edge from
+// each such block to the refs-known node.
+const FormatVersion = 4
 
 // formatVersionKey names the key holding the store's format version.
 var formatVersionKey = []byte("format")

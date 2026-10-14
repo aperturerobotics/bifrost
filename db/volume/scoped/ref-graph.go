@@ -211,9 +211,14 @@ func (g *refGraph) scopeOwner(node string) (string, error) {
 // scopeEdge maps an edge of the view to its edge in the volume. A removal must
 // start at an object or bucket node of the view, or at the unreferenced node.
 func (g *refGraph) scopeEdge(edge block_gc.RefEdge, add bool) (block_gc.RefEdge, error) {
-	// Map a staging mark, which names a block, and a bucket root, which names a
-	// bucket of the view.
+	// Map a staging mark, which names a block, a bucket root, which names a
+	// bucket of the view, and a block's refs-known edge.
 	switch {
+	case edge.Object == block_gc.NodeRefsKnown && add:
+		if _, ok := block_gc.ParseBlockIRI(edge.Subject); !ok {
+			return block_gc.RefEdge{}, errors.Wrapf(ErrRefused, "refs-known edge from %q", edge.Subject)
+		}
+		return edge, nil
 	case edge.Subject == block_gc.NodeUnreferenced:
 		if _, ok := block_gc.ParseBlockIRI(edge.Object); !ok {
 			return block_gc.RefEdge{}, errors.Wrapf(ErrRefused, "unreferenced mark of %q", edge.Object)
@@ -261,8 +266,13 @@ func (g *refGraph) scopeEdges(edges []block_gc.RefEdge, add bool) ([]block_gc.Re
 }
 
 // unscopeNode maps a node of the volume to its node in the view. It reports
-// false for the nodes outside the view.
+// false for the nodes outside the view. The refs-known node is in every view,
+// so a block's outgoing edges show whether its refs were recorded.
 func (g *refGraph) unscopeNode(node string) (string, bool) {
+	// Keep the refs-known node, and strip the view's prefix from an owner.
+	if node == block_gc.NodeRefsKnown {
+		return node, true
+	}
 	if key, ok := block_gc.ParseObjectIRI(node); ok {
 		key, ok = strings.CutPrefix(key, g.prefix)
 		return block_gc.ObjectIRI(key), ok
@@ -271,6 +281,8 @@ func (g *refGraph) unscopeNode(node string) (string, bool) {
 		id, ok = strings.CutPrefix(id, g.prefix)
 		return block_gc.BucketIRI(id), ok
 	}
+
+	// Keep a block, which every view shares.
 	_, ok := block_gc.ParseBlockIRI(node)
 	return node, ok
 }

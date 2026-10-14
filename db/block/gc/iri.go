@@ -20,6 +20,10 @@ const (
 	NodeGCRoot = "gcroot"
 	// NodeUnreferenced marks nodes that lost their last owner.
 	NodeUnreferenced = "unreferenced"
+	// NodeRefsKnown is the target of an edge from each block whose outgoing
+	// edges were recorded when it was stored. A block without that edge may
+	// hold refs the graph never saw, so its absence never means a leaf.
+	NodeRefsKnown = "refs-known"
 )
 
 // PredGCRef is the single predicate for all GC reference edges.
@@ -124,5 +128,5 @@ func ParseBucketIRI(iri string) (string, bool) {
 
 // IsPermanentRoot returns true if the IRI is a well-known permanent root.
 func IsPermanentRoot(iri string) bool {
-	return iri == NodeGCRoot || iri == NodeUnreferenced
+	return iri == NodeGCRoot || iri == NodeUnreferenced || iri == NodeRefsKnown
 }

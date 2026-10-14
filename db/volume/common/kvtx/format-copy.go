@@ -37,9 +37,11 @@ type CopyProgress struct {
 // live edges to edge records, so a store of format version 1 or 2, converted
 // in part or not at all, never rewrites its graph in place.
 //
-// src is read in one snapshot and must have no writer. The format version is
-// written last in a durable commit; a dst without it is an incomplete copy to
-// discard. progress, when set, is called after each commit.
+// A graph copied from a store before format version 4 gets the refs-known
+// edges the format migration seeds. src is read in one snapshot and must have
+// no writer. The format version is written last in a durable commit; a dst
+// without it is an incomplete copy to discard. progress, when set, is called
+// after each commit.
 func CopyStore(ctx context.Context, src, dst kvtx.Store, keys *store_kvkey.KVKey, progress func(CopyProgress)) error {
 	// Accept the current format and the earlier graph formats it converts.
 	version, err := readFormatVersion(ctx, src, keys)
@@ -49,7 +51,7 @@ func CopyStore(ctx context.Context, src, dst kvtx.Store, keys *store_kvkey.KVKey
 	if version == 0 || version > store_kvkey.FormatVersion {
 		return fmt.Errorf("copy needs store format version 1 to %d, found %d", store_kvkey.FormatVersion, version)
 	}
-	return copyStore(ctx, src, dst, keys, false, progress)
+	return copyStore(ctx, src, dst, keys, false, version < store_kvkey.FormatVersion, progress)
 }
 
 // CopyReachable writes the Volume store src into the empty store dst like
@@ -70,17 +72,18 @@ func CopyReachable(ctx context.Context, src, dst kvtx.Store, keys *store_kvkey.K
 	if version != store_kvkey.FormatVersion {
 		return fmt.Errorf("reachable copy needs store format version %d, found %d; copy it to the current format first", store_kvkey.FormatVersion, version)
 	}
-	return copyStore(ctx, src, dst, keys, true, progress)
+	return copyStore(ctx, src, dst, keys, true, false, progress)
 }
 
 // copyStore copies src into the empty store dst and records the format
 // version last. With reachable, it first marks the nodes reachable from the
-// graph root and copies only what they keep.
+// graph root and copies only what they keep. With seed, it marks the refs of
+// every block the copied graph names as known.
 func copyStore(
 	ctx context.Context,
 	src, dst kvtx.Store,
 	keys *store_kvkey.KVKey,
-	reachable bool,
+	reachable, seed bool,
 	progress func(CopyProgress),
 ) error {
 	// Refuse a destination that already holds keys.
@@ -112,6 +115,11 @@ func copyStore(
 	}
 	if err := w.convertEdges(ctx, stx); err != nil {
 		return err
+	}
+	if seed {
+		if err := openRefGraph(dst).SeedRefsKnown(ctx); err != nil {
+			return fmt.Errorf("seed refs-known edges: %w", err)
+		}
 	}
 
 	// Record the version in a durable commit that also makes the ordered

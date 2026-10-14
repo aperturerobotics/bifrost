@@ -43,28 +43,3 @@ func TestGCStoreOpsJournaledLeaf(t *testing.T) {
 		})
 	}
 }
-
-// TestPendingIncomingRefs checks incoming journal additions and removals without
-// applying them to the durable graph.
-func TestPendingIncomingRefs(t *testing.T) {
-	for _, engine := range engines {
-		t.Run(engine.name, func(t *testing.T) {
-			// Journal two owners and release the first owner.
-			ctx := t.Context()
-			store := openStore(t, engine, device.NewMemory())
-			adds := []block_gc.RefEdge{{Subject: "a", Object: "leaf"}, {Subject: "b", Object: "leaf"}}
-			if err := store.Append(ctx, adds, nil); err != nil {
-				t.Fatal(err)
-			}
-			if err := store.Append(ctx, nil, adds[:1]); err != nil {
-				t.Fatal(err)
-			}
-
-			// Only the surviving owner counts as a journaled incoming edge.
-			refs, err := store.GetPendingIncomingRefs(ctx, "leaf")
-			if err != nil || len(refs) != 1 || refs[0] != "b" {
-				t.Fatalf("incoming refs = %v/%v, want [b]", refs, err)
-			}
-		})
-	}
-}

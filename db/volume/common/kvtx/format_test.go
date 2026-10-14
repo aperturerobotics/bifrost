@@ -461,22 +461,37 @@ func testBlockIRI(t *testing.T, data string) string {
 }
 
 // checkLegacyRefGraph expects the writeLegacyStore edges in both directions,
-// its root and no version 2 records.
+// a refs-known edge from each block they name, its root and no version 2
+// records.
 func checkLegacyRefGraph(t *testing.T, store db_kvtx.Store) {
 	// Each edge reads forward and back.
 	ctx := context.Background()
 	rg := openRefGraph(store)
+	isRefsKnown := func(node string) bool { return node == block_gc.NodeRefsKnown }
 	for _, edge := range legacyEdges(t) {
 		out, err := rg.GetOutgoingRefs(ctx, edge.Subject)
 		if err != nil {
 			t.Fatal(err)
 		}
+		out = slices.DeleteFunc(out, isRefsKnown)
 		in, err := rg.GetIncomingRefs(ctx, edge.Object)
 		if err != nil {
 			t.Fatal(err)
 		}
 		if !slices.Equal(out, []string{edge.Object}) || !slices.Equal(in, []string{edge.Subject}) {
 			t.Fatalf("edge %v: outgoing %v, incoming %v", edge, out, in)
+		}
+	}
+
+	// The seeding marks the refs of both blocks known, and of nothing else.
+	for _, node := range []string{block_gc.NodeGCRoot, block_gc.BucketIRI("bucket"), testBlockIRI(t, "a"), testBlockIRI(t, "b")} {
+		out, err := rg.GetOutgoingRefs(ctx, node)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, want := block_gc.ParseBlockIRI(node)
+		if got := slices.ContainsFunc(out, isRefsKnown); got != want {
+			t.Fatalf("%v: refs known %v, want %v", node, got, want)
 		}
 	}
 
