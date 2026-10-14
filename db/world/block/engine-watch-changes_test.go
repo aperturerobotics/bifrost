@@ -60,7 +60,9 @@ func TestWatchChanges(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := obj.IncrementRev(ctx); err != nil {
+		_, err = obj.IncrementRev(ctx)
+		world.ReleaseObjectState(obj)
+		if err != nil {
 			t.Fatal(err)
 		}
 	}
