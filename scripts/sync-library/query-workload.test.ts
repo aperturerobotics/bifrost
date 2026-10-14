@@ -116,13 +116,22 @@ test(
         visible: false,
         note: 'edited',
       }
+      // A change with wakes false commits to an object the query never read,
+      // so the query takes no snapshot for it; the next change accounts for
+      // both commits.
       const changes: {
         label: string
         operation?: Operation
         reads: number
         affected: boolean
+        wakes?: false
       }[] = [
-        { label: 'unrelated-world-object', reads: 0, affected: false },
+        {
+          label: 'unrelated-world-object',
+          reads: 0,
+          affected: false,
+          wakes: false,
+        },
         {
           label: 'outside-prefix',
           operation: { kind: 'put', collection: 'colors', key: 'other', value },
@@ -170,9 +179,10 @@ test(
       ]
 
       // Measure changes and a full snapshot baseline through the same compiled Engine.
+      let unwoken: ReturnType<typeof queries.diagnostics> | undefined
       for (const change of changes) {
         signal.throwIfAborted()
-        const before = queries.diagnostics()
+        const before = unwoken ?? queries.diagnostics()
         const start = performance.now()
         if (change.operation) {
           await app.execute(principal, change.operation)
@@ -201,6 +211,11 @@ test(
         }
         const accepted = (await owner.engine.getSeqno(signal)).seqno ?? 0n
         const acceptedMs = performance.now() - start
+        if (change.wakes === false) {
+          unwoken = before
+          continue
+        }
+        unwoken = undefined
         while (queries.diagnostics().processedSeqno < accepted) {
           signal.throwIfAborted()
           assert.ok(
@@ -210,6 +225,7 @@ test(
           await setImmediate(undefined, { signal })
         }
         const after = queries.diagnostics()
+        assert.equal(after.snapshots - before.snapshots, 1)
         assert.equal(
           after.evaluations - before.evaluations,
           change.affected ? 1 : 0,

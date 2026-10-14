@@ -65,10 +65,12 @@ type QueryReads = Map<string, Map<string, JsonValue | undefined>>
 
 /**
  * AppQueries owns live function queries for one authenticated app attachment.
- * Subscribers with identical definition and arguments share a producer. A World
- * sequence wake checks object roots first; unrelated objects do no record reads
- * or callback work. Immutable tree comparison filters changed roots before record
- * reads. Missing prior roots and retyped objects trigger full reevaluation.
+ * Subscribers with identical definition and arguments share a producer. Each
+ * producer reads tracked World snapshots, so a commit wakes it only when it
+ * changes what the previous snapshot read; a commit to an unrelated object does
+ * no work. A wake checks the collection roots first, and immutable tree
+ * comparison filters the changed roots before record reads. Missing prior roots
+ * and retyped objects trigger full reevaluation.
  */
 export class AppQueries<S extends Schema, P extends Principal> {
   private readonly engine: Engine
@@ -204,7 +206,7 @@ export class AppQueries<S extends Schema, P extends Principal> {
     })())
   }
 
-  /** start runs one producer without retaining a World transaction between updates. */
+  /** start runs one producer without retaining a World snapshot between updates. */
   private start<A extends Validator, R>(
     definition: QueryDefinition<S, A, R>,
     input: Output<A> & JsonValue,
@@ -243,7 +245,11 @@ export class AppQueries<S extends Schema, P extends Principal> {
     return { controller, state, done, users: 0 }
   }
 
-  /** evaluate filters changed snapshots before rerunning the pure callback. */
+  /**
+   * evaluate filters changed snapshots before rerunning the pure callback. The
+   * server yields the next snapshot after a commit that changes what the
+   * previous one read, including a commit made while it was being read.
+   */
   private async *evaluate<A extends Validator, R>(
     definition: QueryDefinition<S, A, R>,
     input: Output<A> & JsonValue,
@@ -253,17 +259,16 @@ export class AppQueries<S extends Schema, P extends Principal> {
     let filter: QueryFilter | undefined
     let reads: QueryReads = new Map()
     let roots: { signature: string; type: string; ref?: ObjectRef }[] = []
-    let seqno = 0n
-    for (;;) {
+    for await (const tx of this.engine.watchWorldState(signal)) {
       signal.throwIfAborted()
       this.checkPrincipal()
-      const tx = await this.engine.newTransaction(false, signal)
       const unit = new ApplicationTransaction(tx, {
         ...this.options,
         write: false,
         signal,
       })
       let snapshot: QueryDelivery<R> | undefined
+      let seqno: bigint
       try {
         await this.options.checkState?.(tx, signal)
         seqno = (await tx.getSeqno(signal)).seqno
@@ -379,17 +384,10 @@ export class AppQueries<S extends Schema, P extends Principal> {
         }
       } finally {
         await unit.release()
-        try {
-          await tx.discard()
-        } finally {
-          tx.release()
-        }
+        tx.release()
       }
       this.counts.processedSeqno = seqno
       if (snapshot) yield snapshot
-
-      // The sequence belongs to the read snapshot, so commits during reads cannot be missed.
-      await this.engine.waitSeqno(seqno + 1n, signal)
     }
   }
 
