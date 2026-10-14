@@ -255,7 +255,7 @@ func testEngineStopsReplayAtBlockGap(t *testing.T, store *hidingBlockStore, want
 		}
 		woke := make(chan error, 1)
 		go func() {
-			_, err := space.c.waitReplayInput(ctx, so, stateCtr, snap, engine.replay.missing)
+			_, err := space.c.waitReplayInput(ctx, so, stateCtr, snap, engine.replay.missing, nil)
 			woke <- err
 		}()
 		store.serve()

@@ -62,7 +62,7 @@ func (c *Controller) waitWorldInit(
 
 		// Wait for the state to change or the block replay stopped at to
 		// arrive.
-		snap, err = c.waitReplayInput(ctx, so, soStateCtr, snap, replay.missing)
+		snap, err = c.waitReplayInput(ctx, so, soStateCtr, snap, replay.missing, nil)
 		if err != nil {
 			return nil, err
 		}

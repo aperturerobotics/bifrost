@@ -192,9 +192,15 @@ type soEngine struct {
 	// controller's writer lock.
 	replay *replayer
 	// retained is the last head held under the accepted World root, by
-	// updateEngineState or a published write, guarded by the controller's
+	// updateEngineState or an admitted write, guarded by the controller's
 	// writer lock.
 	retained *bucket.ObjectRef
+	// admissions are the admitted local writes whose receipts are not settled,
+	// in admission order, guarded by the controller's writer lock.
+	admissions []*writeAdmission
+	// failed holds the local ids of the operations whose publications failed,
+	// guarded by the controller's writer lock.
+	failed map[string]struct{}
 	// retainedRoots are the retained roots updateEngineState last held,
 	// guarded by the controller's writer lock.
 	retainedRoots []*RetainedRoot
@@ -228,6 +234,7 @@ func newSoEngine(lifetime context.Context, c *Controller, so sobject.SharedObjec
 		bengine:        engine,
 		replay:         replay,
 		backfillChoice: ccontainer.NewCContainer(false),
+		failed:         make(map[string]struct{}),
 	}
 	e.backfill = routine.NewStateRoutineContainer[bool](
 		nil,
@@ -272,9 +279,10 @@ func wrapReleaseWithTask(release func(), task *trace.Task) func() {
 
 // NewTransaction opens a read snapshot or a serialized write candidate.
 // Writes replay the current operation set before forking and hold the writer
-// lock until Commit or Discard. A write fails with the replay's error when an
-// operation's block is not available, and holds no lock. Always call Discard
-// when done.
+// lock until Commit installs their World or Discard. A write forks from the
+// World of the writes admitted before it, whose receipts may be pending. A
+// write fails with the replay's error when an operation's block is not
+// available, and holds no lock. Always call Discard when done.
 func (e *soEngine) NewTransaction(ctx context.Context, write bool) (world.Tx, error) {
 	// Read transaction.
 	if !write {
@@ -301,7 +309,7 @@ func (e *soEngine) NewTransaction(ctx context.Context, write bool) (world.Tx, er
 
 	// Fork the World of the current operation set. The watcher may still be
 	// waiting for writeMtx after operations arrived.
-	snapshot, err := getAdmittedState(ctx, e.so)
+	snapshot, err := e.admittedState(ctx)
 	if err != nil {
 		unlockWriteMtx()
 		return nil, err
@@ -535,23 +543,30 @@ func (e *soEngine) detach(ctx context.Context) (context.Context, context.CancelF
 // reason when replay rejected the operation. Once the SharedObject admits the
 // operation it is durable, so the reads and the replay that follow ignore ctx's
 // cancellation and the result says whether the operation was placed. They end
-// with the engine's lifetime, and the outcome is then unknown. clock, when
-// set, times the write: admission ends here unless a publication already ended
-// it. The caller holds the writer lock.
+// with the engine's lifetime, and the outcome is then unknown. An operation
+// admitted to a publication is placed before its receipt resolves; the caller
+// waits for the receipt. clock, when set, times the write: admission ends here
+// unless a publication already ended it. The caller holds the writer lock.
 func (e *soEngine) queueOperation(ctx context.Context, opData []byte, fork *replayFork, clock *commitClock) error {
-	// Add the operation.
+	// Add the operation, naming it in the admission it joined, if any. A
+	// failed publication still reports the id, which marks the snapshots
+	// showing the operation as stale.
+	admitted := len(e.admissions)
 	localID, err := e.so.QueueOperation(ctx, opData)
+	if len(e.admissions) > admitted {
+		e.admissions[admitted].localID = localID
+	}
 	if err != nil {
 		return err
 	}
 	clock.end(stagePublicationAdmission)
 
-	// The operation is durable, so finish placing it whatever ctx does.
+	// The operation is admitted, so finish placing it whatever ctx does.
 	ctx, cancel := e.detach(ctx)
 	defer cancel()
 
 	// Find it in the set.
-	snap, err := getAdmittedState(ctx, e.so)
+	snap, err := e.admittedState(ctx)
 	if err != nil {
 		return err
 	}
@@ -586,16 +601,17 @@ func (e *soEngine) queueOperation(ctx context.Context, opData []byte, fork *repl
 
 // updateEngineState installs a replayed World, holds it, its retained roots
 // and the replay that reached it in this participant's block store in one
-// call, and saves the replay. The caller holds the writer lock.
+// call, and saves the replay. While an admission waits for its receipt it only
+// installs the World: the pending publications hold its blocks, and the update
+// after the last receipt settles holds and saves what changed. The caller
+// holds the writer lock.
 func (e *soEngine) updateEngineState(ctx context.Context, state *InnerState) error {
 	// Trace the update.
 	ctx, task := trace.NewTask(ctx, "alpha/so-engine/update-engine-state")
 	defer task.End()
 
-	// Install and hold a changed head once. The watcher, the next write and
-	// the committing write all install the same head; a published write
-	// already holds it.
-	hold := newRootHold(e.so.GetBlockStore())
+	// Install a changed head once. The watcher, the next write and the
+	// committing write all install the same head.
 	ref := state.GetHeadRef().CloneVT()
 	if ref == nil {
 		ref = &bucket.ObjectRef{}
@@ -606,7 +622,16 @@ func (e *soEngine) updateEngineState(ctx context.Context, state *InnerState) err
 		if err := e.bengine.SetRootRef(ctx, ref); err != nil {
 			return err
 		}
+		e.c.notifyWrite()
 	}
+
+	// Hold nothing while the pending publications hold the World.
+	if e.pending() {
+		return nil
+	}
+
+	// Hold a changed head once; an admitted write already holds its World.
+	hold := newRootHold(e.so.GetBlockStore())
 	headChanged := !e.retained.EqualVT(ref)
 	if headChanged {
 		if err := hold.world(ctx, acceptedWorldRootName, ref.GetRootRef()); err != nil {
@@ -631,9 +656,6 @@ func (e *soEngine) updateEngineState(ctx context.Context, state *InnerState) err
 	// Record what is held.
 	if headChanged {
 		e.retained = ref
-	}
-	if installed {
-		e.c.notifyWrite()
 	}
 	if rootsChanged {
 		e.retainedRoots = state.GetRetainedRoots()

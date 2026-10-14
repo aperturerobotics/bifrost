@@ -455,6 +455,19 @@ func (r *replayer) saved() {
 	r.next, r.nextLen = nil, 0
 }
 
+// unsave records that the replay is durable only as it stood when base was
+// its checkpoint World and span held spanLen positions, since the
+// publications that carried later saves failed. A span saved on another
+// checkpoint World holds nothing replay keeps.
+func (r *replayer) unsave(base *InnerState, span *block.BlockRef, spanLen int) {
+	r.changed, r.deferred = true, false
+	r.span, r.spanLen = span, spanLen
+	if base != r.base {
+		r.span, r.spanLen = nil, 0
+	}
+	r.next, r.nextLen = nil, 0
+}
+
 // encodeSpan returns the span block holding the World after every position
 // and the payloads of every position followed by extra, with the span to name.
 // The block holds only the positions the saved span does not, and refers to

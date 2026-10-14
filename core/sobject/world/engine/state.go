@@ -10,7 +10,8 @@ import (
 	trace "github.com/s4wave/spacewave/db/traceutil"
 )
 
-// executeWatchSOState watches and processes shared object state changes.
+// executeWatchSOState watches and processes shared object state changes and
+// settles the receipts of admitted writes as they resolve.
 func (c *Controller) executeWatchSOState(
 	ctx context.Context,
 	soStateCtr ccontainer.Watchable[sobject.SharedObjectStateSnapshot],
@@ -18,10 +19,11 @@ func (c *Controller) executeWatchSOState(
 ) error {
 	var snap sobject.SharedObjectStateSnapshot
 	var missing *block.BlockRef
+	var settled <-chan struct{}
 	for {
-		// Wait for the state to change or the block replay stopped at to
-		// arrive.
-		_, err := c.waitReplayInput(ctx, soEngine.so, soStateCtr, snap, missing)
+		// Wait for the state to change, the block replay stopped at to arrive,
+		// or the oldest pending receipt to resolve.
+		_, err := c.waitReplayInput(ctx, soEngine.so, soStateCtr, snap, missing, settled)
 		if err != nil {
 			return err
 		}
@@ -37,12 +39,18 @@ func (c *Controller) executeWatchSOState(
 		// Separate lock acquisition from hold time so traces show contention vs work.
 		holdCtx, holdTask := trace.NewTask(ctx, "alpha/watch-state/hold-write-mtx")
 
-		// Get the latest snap in case it changed in the meantime.
+		// Get the latest snap in case it changed in the meantime, settle the
+		// resolved receipts, and skip a snapshot of a failed publication.
 		snap = soStateCtr.GetValue()
+		soEngine.settle()
+		stale, err := soEngine.stale(holdCtx, snap)
 
 		// Watch the state once (sync any changes to soEngine and update local state).
-		err = c.executeWatchSOStateOnce(holdCtx, snap, soEngine)
+		if err == nil && !stale {
+			err = c.executeWatchSOStateOnce(holdCtx, snap, soEngine)
+		}
 		missing = soEngine.replay.missing
+		settled = soEngine.settled()
 
 		// Be sure to unlock the writeMtx right away.
 		holdTask.End()
@@ -57,26 +65,42 @@ func (c *Controller) executeWatchSOState(
 
 // waitReplayInput waits for the state to change from snap and returns the new
 // state. When missing is set, it also returns the current state once a peer
-// serves that block, since replay stopped at it.
+// serves that block, since replay stopped at it. When settled is set, it also
+// returns the current state once settled closes.
 func (c *Controller) waitReplayInput(
 	ctx context.Context,
 	so sobject.SharedObject,
 	soStateCtr ccontainer.Watchable[sobject.SharedObjectStateSnapshot],
 	snap sobject.SharedObjectStateSnapshot,
 	missing *block.BlockRef,
+	settled <-chan struct{},
 ) (sobject.SharedObjectStateSnapshot, error) {
-	// Without a missing block only a state change resumes replay.
-	if missing == nil {
+	// Without another input only a state change resumes replay.
+	if missing == nil && settled == nil {
 		return soStateCtr.WaitValueChange(ctx, snap, nil)
+	}
+
+	// End the state wait once settled closes.
+	waitCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	if settled != nil {
+		go func() {
+			select {
+			case <-settled:
+				cancel()
+			case <-waitCtx.Done():
+			}
+		}()
 	}
 
 	// Fetch the block with a read that waits for a peer, ending the state
 	// wait once it arrives.
-	waitCtx, cancel := context.WithCancel(ctx)
-	defer cancel()
 	fetched := make(chan struct{})
 	go func() {
 		defer close(fetched)
+		if missing == nil {
+			return
+		}
 		_, found, err := so.GetBlockStore().GetBlock(waitCtx, missing)
 		if err != nil && waitCtx.Err() == nil {
 			c.le.WithError(err).Warn("fetch the block replay stopped at")
@@ -91,7 +115,7 @@ func (c *Controller) waitReplayInput(
 	cancel()
 	<-fetched
 
-	// An arrived block ends the wait with the current state.
+	// Another input ends the wait with the current state.
 	if err != nil && ctx.Err() == nil && errors.Is(err, context.Canceled) {
 		return soStateCtr.GetValue(), nil
 	}

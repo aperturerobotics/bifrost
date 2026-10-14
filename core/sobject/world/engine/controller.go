@@ -42,6 +42,9 @@ type Controller struct {
 	// writeMtx serializes write transactions and replay of the watched
 	// SharedObject state.
 	writeMtx csync.Mutex
+	// writer is the last served engine, whose admissions lockSettled settles,
+	// or nil before the first. Guarded by writeMtx.
+	writer *soEngine
 	// writeBcast is broadcast after each change of the installed World. The
 	// storage reclaim routine schedules a pass after each broadcast.
 	writeBcast broadcast.Broadcast
@@ -108,17 +111,24 @@ func (c *Controller) GetControllerInfo() *controller.Info {
 // Returning an error triggers a retry with backoff.
 func (c *Controller) Execute(ctx context.Context) error {
 	// Scope the routines to this execution.
-	le := c.le
 	rctx, rctxCancel := context.WithCancel(ctx)
 	defer rctxCancel()
 
-	// Mount the shared object.
-	le.Debug("mounting shared object")
+	// Mount the shared object and serve it.
+	c.le.Debug("mounting shared object")
 	so, soRef, err := sobject.ExMountSharedObject(rctx, c.bus, c.conf.GetRef(), false, rctxCancel)
 	if err != nil {
 		return err
 	}
 	defer soRef.Release()
+	return c.executeSharedObject(rctx, rctxCancel, so)
+}
+
+// executeSharedObject serves the World of the mounted so until rctx ends or an
+// error ends it. rctxCancel cancels rctx when so or its state is released.
+func (c *Controller) executeSharedObject(rctx context.Context, rctxCancel context.CancelFunc, so sobject.SharedObject) error {
+	// Hold the World engine lease while serving.
+	le := c.le
 	worldEngineLease, detectsLeaseLoss, err := c.acquireWorldEngineLease(rctx, so)
 	if err != nil {
 		return err
@@ -246,6 +256,9 @@ func (c *Controller) executeWorld(
 
 	// Publish the engine for the lifetime of this World.
 	le.WithField("world-seqno", seqno).Info("world engine ready")
+	if err := c.setWriter(ctx, engine); err != nil {
+		return err
+	}
 	c.engineCtr.SetValue(&wengine)
 	defer c.engineCtr.SetValue(nil)
 
@@ -283,8 +296,9 @@ func (c *Controller) executeWorld(
 // operation after every write transaction this device has started.
 func (c *Controller) acknowledger(so sobject.SharedObject) func(context.Context) error {
 	return func(ctx context.Context) error {
-		// Queue it under the writer lock.
-		unlockWriteMtx, err := c.writeMtx.Lock(ctx)
+		// Queue it under the writer lock once the admitted writes settle, so
+		// the direct state write does not wait for their receipts under it.
+		unlockWriteMtx, err := c.lockSettled(ctx)
 		if err != nil {
 			return err
 		}
@@ -322,6 +336,49 @@ func (c *Controller) WaitWorldEngineReplaced(ctx context.Context, eng Engine) er
 		return current == nil || *current != eng, nil
 	}, nil)
 	return err
+}
+
+// setWriter sets the served engine under the writer lock. The engine it
+// replaces settles no further: its writes ended with it.
+func (c *Controller) setWriter(ctx context.Context, e *soEngine) error {
+	unlock, err := c.writeMtx.Lock(ctx)
+	if err != nil {
+		return err
+	}
+	c.writer = e
+	unlock()
+	return nil
+}
+
+// lockSettled locks the writer lock once no admission of the served engine
+// waits for its receipt and returns the unlock function. A caller that writes
+// the SharedObject state directly or holds the replayed Worlds itself uses it,
+// since the direct write waits for every pending receipt and only a pending
+// publication holds the blocks of its World.
+func (c *Controller) lockSettled(ctx context.Context) (func(), error) {
+	for {
+		// Lock and settle the resolved receipts.
+		unlock, err := c.writeMtx.Lock(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if c.writer == nil {
+			return unlock, nil
+		}
+		c.writer.settle()
+		settled := c.writer.settled()
+		if settled == nil {
+			return unlock, nil
+		}
+
+		// Wait outside the lock for the oldest receipt to resolve.
+		unlock()
+		select {
+		case <-settled:
+		case <-ctx.Done():
+			return nil, context.Cause(ctx)
+		}
+	}
 }
 
 // Close releases any resources used by the controller.

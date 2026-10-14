@@ -146,7 +146,8 @@ var errStableCheckpointStale = errors.New("held state moved past the stable poin
 // local peer is the checkpointer and at least MinCheckpointOperations
 // operations are stable. The World after the stable prefix comes from the
 // replay, so nothing replays again. Under group control the voters decide the
-// checkpoint instead, so the replay only wakes the local voter.
+// checkpoint instead, so the replay only wakes the local voter. The caller
+// holds the writer lock.
 func (e *soEngine) checkpointStable(ctx context.Context, snap sobject.SharedObjectStateSnapshot, set *sobject.SOOperationSet) error {
 	// Only the checkpointer signs, and only from a host it can sign through.
 	host, ok := e.so.(sobject.StateHost)
@@ -165,6 +166,13 @@ func (e *soEngine) checkpointStable(ctx context.Context, snap sobject.SharedObje
 	}
 	self := e.so.GetPeerID().String()
 	if cfg.Checkpointer() != self {
+		return nil
+	}
+
+	// Skip while an admission waits for its receipt: the checkpoint writes
+	// the state directly, and the update after the last receipt settles
+	// checkpoints again.
+	if e.pending() {
 		return nil
 	}
 

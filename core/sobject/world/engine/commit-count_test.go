@@ -41,6 +41,36 @@ type localWorld struct {
 // World engine of the SharedObject soRef in its account, creating the
 // SharedObject when soRef is nil. Test cleanup stops them.
 func startLocalWorld(t *testing.T, dir string, soRef *sobject.SharedObjectRef) *localWorld {
+	// Open the account and its SharedObject.
+	t.Helper()
+	ctx := t.Context()
+	tb, acc, soRef := openLocalAccount(t, dir, soRef)
+
+	// Start its World engine with the mock operations.
+	engineID := "local-world-engine"
+	ctrl, _, ctrlRef, err := sobject_world_engine.StartEngineWithConfig(ctx, tb.Bus, sobject_world_engine.NewConfig(engineID, soRef), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(ctrlRef.Release)
+	relOpc, err := tb.Bus.AddController(ctx, world.NewLookupOpController("local-world-ops", engineID, world_mock.LookupMockOp), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(relOpc)
+
+	// Wait for the engine and find the account database.
+	eng, err := ctrl.GetWorldEngine(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return newLocalWorld(t, tb, acc, eng, soRef)
+}
+
+// openLocalAccount starts a local provider on s4db storage under dir and
+// opens the SharedObject soRef in its account, creating it when soRef is nil.
+// Test cleanup stops them.
+func openLocalAccount(t *testing.T, dir string, soRef *sobject.SharedObjectRef) (*testbed.Testbed, provider.ProviderAccount, *sobject.SharedObjectRef) {
 	// Start a testbed on s4db storage.
 	t.Helper()
 	ctx := t.Context()
@@ -79,25 +109,13 @@ func startLocalWorld(t *testing.T, dir string, soRef *sobject.SharedObjectRef) *
 			t.Fatal(err)
 		}
 	}
+	return tb, acc, soRef
+}
 
-	// Start its World engine with the mock operations.
-	engineID := "local-world-engine"
-	ctrl, _, ctrlRef, err := sobject_world_engine.StartEngineWithConfig(ctx, tb.Bus, sobject_world_engine.NewConfig(engineID, soRef), nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(ctrlRef.Release)
-	relOpc, err := tb.Bus.AddController(ctx, world.NewLookupOpController("local-world-ops", engineID, world_mock.LookupMockOp), nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(relOpc)
-
-	// Wait for the engine and find the account database.
-	eng, err := ctrl.GetWorldEngine(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+// newLocalWorld returns the World eng of the SharedObject soRef in the local
+// account acc on tb.
+func newLocalWorld(t *testing.T, tb *testbed.Testbed, acc provider.ProviderAccount, eng sobject_world_engine.Engine, soRef *sobject.SharedObjectRef) *localWorld {
+	t.Helper()
 	db := volume_s4db.GetDB(acc.(*provider_local.ProviderAccount).GetVolume())
 	if db == nil {
 		t.Fatal("account volume is not s4db")

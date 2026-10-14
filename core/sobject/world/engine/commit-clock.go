@@ -31,10 +31,12 @@ const (
 	// SharedObject admits it. A SharedObject that does not publish writes its
 	// state here, so its receipt wait stays at zero.
 	stagePublicationAdmission
-	// stageReceiptWait waits for the publication to be durable.
-	stageReceiptWait
-	// stageAdvance replays the operation set and installs the World.
+	// stageAdvance replays the operation set and installs the World. The
+	// writer lock is released at its end.
 	stageAdvance
+	// stageReceiptWait waits outside the writer lock for the publication to
+	// be durable.
+	stageReceiptWait
 	// commitStageCount is the number of stages.
 	commitStageCount
 )
@@ -47,8 +49,8 @@ var commitStageNames = [commitStageCount]string{
 	stageWorldStateCommit:     "world-state-commit",
 	stageBlockCommit:          "block-commit",
 	stagePublicationAdmission: "publication-admission",
-	stageReceiptWait:          "receipt-wait",
 	stageAdvance:              "advance",
+	stageReceiptWait:          "receipt-wait",
 }
 
 // commitClock times the stages of one World write with a clock read at each
@@ -86,7 +88,9 @@ func (c *commitClock) end(stage commitStage) {
 }
 
 // warnIfSlow logs the stage times when the write took longer than
-// slowCommitThreshold. The stages field lists them in stage order.
+// slowCommitThreshold. The stages field lists them in stage order, and the
+// hold field is the writer lock hold: every stage after the lock wait up to
+// the end of advance.
 func (c *commitClock) warnIfSlow(le *logrus.Entry) {
 	// Stay quiet about a write that finished in time.
 	if c == nil {
@@ -97,16 +101,21 @@ func (c *commitClock) warnIfSlow(le *logrus.Entry) {
 		return
 	}
 
-	// Name the duration of every stage in order.
+	// Name the duration of every stage in order and sum the hold.
 	var stages strings.Builder
+	var hold time.Duration
 	for stage, name := range commitStageNames {
 		if stage != 0 {
 			stages.WriteByte(' ')
 		}
 		stages.WriteString(name + "=" + c.stages[stage].String())
+		if stage > int(stageLockWait) && stage <= int(stageAdvance) {
+			hold += c.stages[stage]
+		}
 	}
 	le.WithFields(logrus.Fields{
 		"elapsed": elapsed,
+		"hold":    hold,
 		"stages":  stages.String(),
 	}).Warn("slow World commit")
 }

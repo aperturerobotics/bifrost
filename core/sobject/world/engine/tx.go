@@ -33,6 +33,9 @@ type soEngineWriteTx struct {
 	// receipt is the durable publication of the write. It keeps the published
 	// World pinned until Discard, after the engine installs it.
 	receipt *block.PublicationReceipt
+	// batch borrows the candidate blocks into the publication until its
+	// receipt resolves.
+	batch *block.PendingBatch
 	// clock times the stages of the write.
 	clock *commitClock
 }
@@ -60,7 +63,10 @@ func newSoEngineWriteTx(
 // set and installs the World after it. When no other operation arrived since
 // the fork, the candidate is that World; otherwise replay computes it. A
 // SharedObject that publishes its state commits the blocks, the operation and
-// the accepted World in one physical transaction.
+// the accepted World in one physical transaction: Commit releases the writer
+// lock once the publication admits the write and the engine installs its
+// World, so the next write forks from it, then waits for the receipt and
+// returns its error. A write is acknowledged only after its receipt.
 func (t *soEngineWriteTx) Commit(ctx context.Context) error {
 	// Keep candidate cleanup and writer release bound to every return path.
 	ctx, task := trace.NewTask(ctx, "alpha/so-engine/write-tx/commit")
@@ -166,6 +172,50 @@ func (t *soEngineWriteTx) Commit(ctx context.Context) error {
 	}
 	err = t.eng.queueOperation(taskCtx, opData, t.fork, t.clock)
 	t.clock.end(stageAdvance)
+
+	// Wait for the publication outside the writer lock. Its failure is the
+	// write's result, since queueOperation may report only what followed it.
+	t.unlockWriteMtx()
+	if t.receipt == nil {
+		return err
+	}
+	if rerr := t.waitReceipt(ctx); rerr != nil {
+		return rerr
+	}
+	return err
+}
+
+// waitReceipt waits for the publication to resolve, finishes the borrow of the
+// candidate blocks with its result and returns its error. Admission commits
+// the write to the durable result, so the wait ignores ctx's cancellation and
+// ends with the engine's lifetime. The outcome is then unknown: waitReceipt
+// returns the wait's error, and the publisher's result finishes the borrow and
+// releases the receipt once it resolves.
+func (t *soEngineWriteTx) waitReceipt(ctx context.Context) error {
+	// Wait for the receipt or the engine's lifetime.
+	defer t.clock.end(stageReceiptWait)
+	receipt, batch := t.receipt, t.batch
+	waitCtx, cancel := t.eng.detach(ctx)
+	defer cancel()
+	err := receipt.Wait(waitCtx)
+	select {
+	case <-receipt.Done():
+	default:
+		t.receipt = nil
+		go func() {
+			<-receipt.Done()
+			batch.Complete(receipt.Err())
+			receipt.Release()
+		}()
+		return err
+	}
+
+	// The accepted World root holds a published candidate.
+	err = receipt.Err()
+	batch.Complete(err)
+	if err == nil {
+		t.candidateRoot = nil
+	}
 	return err
 }
 
@@ -187,10 +237,11 @@ func (t *soEngineWriteTx) writeBlocks(ctx context.Context) error {
 // publish commits the candidate blocks, the state head, the candidate root
 // under the accepted World root, and the replay save the last write deferred
 // with the span holding the operation's payloads, in one physical
-// transaction, and returns its receipt once it succeeded. The write keeps the
-// receipt until Discard. When head is nil or the store cannot publish, it
-// writes the blocks and returns a nil receipt; the SharedObject then commits
-// its state itself.
+// transaction after the publications of the writes admitted before it, and
+// returns its receipt once the store admits it. The engine records the
+// admission, and the write keeps the receipt until Discard. When head is nil
+// or the store cannot publish, it writes the blocks and returns a nil receipt;
+// the SharedObject then commits its state itself.
 func (t *soEngineWriteTx) publish(ctx context.Context, publisher sobject.StatePublisher, root *block.BlockRef, head *block.AtomicHeadUpdate) (*block.PublicationReceipt, error) {
 	// Fall back when the state or the store cannot join a publication.
 	ctx, task := trace.NewTask(ctx, "alpha/so-engine/write-tx/publish")
@@ -222,6 +273,7 @@ func (t *soEngineWriteTx) publish(ctx context.Context, publisher sobject.StatePu
 		RootName: acceptedWorldRootName,
 		Root:     root,
 		Roots:    roots,
+		After:    t.eng.lastReceipt(),
 		Ordered:  world.OrderedCommit(ctx),
 	})
 	if errors.Is(err, block.ErrAtomicPublicationUnsupported) || errors.Is(err, block.ErrPublicationTooLarge) {
@@ -234,37 +286,12 @@ func (t *soEngineWriteTx) publish(ctx context.Context, publisher sobject.StatePu
 	}
 	t.clock.end(stagePublicationAdmission)
 
-	// Admission commits the write to the durable result.
-	waitCtx, cancel := t.eng.detach(ctx)
-	defer cancel()
-	err = receipt.Wait(waitCtx)
-	select {
-	case <-receipt.Done():
-		err = receipt.Err()
-	default:
-		// The lifetime cut the wait and the outcome is unknown. Free the writer
-		// now; the publisher still holds the borrowed blocks until it resolves
-		// the receipt, and its result finishes the borrow.
-		go func() {
-			<-receipt.Done()
-			batch.Complete(receipt.Err())
-			receipt.Release()
-		}()
-		t.clock.end(stageReceiptWait)
-		return nil, err
-	}
-	batch.Complete(err)
-	t.clock.end(stageReceiptWait)
-	if err != nil {
-		receipt.Release()
-		return nil, err
-	}
-
-	// The accepted World root holds the candidate, and the replay is saved.
+	// The publication holds the candidate under the accepted World root and
+	// carries the replay save once its receipt succeeds.
 	held := t.fork.state.GetHeadRef().CloneVT()
 	held.BucketId = t.eng.so.GetBlockStore().GetID()
-	t.receipt, t.candidateRoot, t.eng.retained = receipt, nil, held
-	t.eng.replay.saved()
+	t.receipt, t.batch = receipt, batch
+	t.eng.admit(receipt, held)
 	t.fork.published = true
 	return receipt, nil
 }

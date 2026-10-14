@@ -193,8 +193,9 @@ func (e *soEngine) fenceStorageReclaim(ctx context.Context, copyRoots bool) ([]*
 // writeFence queues an acknowledgment after every write transaction this
 // device has started and returns its hash and nonce.
 func (e *soEngine) writeFence(ctx context.Context) ([]byte, uint64, error) {
-	// Queue it under the writer lock.
-	unlockWriteMtx, err := e.c.writeMtx.Lock(ctx)
+	// Queue it under the writer lock once no receipt is pending, since the
+	// SharedObject writes it directly after every pending receipt.
+	unlockWriteMtx, err := e.c.lockSettled(ctx)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -205,7 +206,7 @@ func (e *soEngine) writeFence(ctx context.Context) ([]byte, uint64, error) {
 	}
 
 	// Find it in the operation set.
-	snap, err := getAdmittedState(ctx, e.so)
+	snap, err := e.admittedState(ctx)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -265,13 +266,14 @@ func (e *soEngine) waitStable(ctx context.Context, h []byte, nonce uint64) error
 // World root, the World root after each operation above the checkpoint, named
 // by the operation's hash, and the retained roots.
 func (e *soEngine) liveWorlds(ctx context.Context) (*block.BlockRef, []*RetainedRoot, []*RetainedRoot, error) {
-	// Replay the current state under the writer lock.
-	unlockWriteMtx, err := e.c.writeMtx.Lock(ctx)
+	// Replay the current state under the writer lock once the replayed
+	// Worlds are durable, since the caller holds them itself.
+	unlockWriteMtx, err := e.c.lockSettled(ctx)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 	defer unlockWriteMtx()
-	snap, err := getAdmittedState(ctx, e.so)
+	snap, err := e.admittedState(ctx)
 	if err != nil {
 		return nil, nil, nil, err
 	}

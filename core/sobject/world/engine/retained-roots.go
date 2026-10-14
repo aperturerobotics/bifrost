@@ -37,13 +37,14 @@ func (e *soEngine) SetRetainedRoot(ctx context.Context, name string, ref *block.
 	}
 
 	// Build the operation on the current World, excluding write transactions
-	// until it is placed.
-	unlockWriteMtx, err := e.c.writeMtx.Lock(ctx)
+	// until it is placed. The SharedObject writes it directly after every
+	// pending receipt, so wait for them outside the lock.
+	unlockWriteMtx, err := e.c.lockSettled(ctx)
 	if err != nil {
 		return err
 	}
 	defer unlockWriteMtx()
-	snap, err := getAdmittedState(ctx, e.so)
+	snap, err := e.admittedState(ctx)
 	if err != nil {
 		return err
 	}
