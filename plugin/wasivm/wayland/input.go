@@ -60,6 +60,10 @@ func heldModifiers(keys []uint32) uint32 {
 // left, middle and right. The scroll bits have none.
 var pointerButtonCodes = [5]uint32{0x110, 0x112, 0x111, 0, 0}
 
+// buttonBits is the mask of the viewer's button bits with evdev codes: the
+// buttons a press holds down, unlike the scroll bits.
+const buttonBits = 1<<0 | 1<<1 | 1<<2
+
 // scrollSteps maps the viewer's button bits to vertical scroll distances: up
 // and down, in the units of one mouse wheel step.
 var scrollSteps = [5]int32{0, 0, 0, -10, 10}

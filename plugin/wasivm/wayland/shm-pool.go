@@ -58,7 +58,15 @@ func (p *shmPool) createBuffer(id uint32, offset, width, height, stride int32, f
 	}
 
 	// Add the buffer, which holds the pool open.
-	b := &shmBuffer{pool: p, id: id, offset: int64(offset), width: int(width), height: int(height), stride: int(stride)}
+	b := &shmBuffer{
+		pool:   p,
+		id:     id,
+		offset: int64(offset),
+		width:  int(width),
+		height: int(height),
+		stride: int(stride),
+		opaque: format == shmFormatXRGB8888,
+	}
 	if err := p.c.add(id, b); err != nil {
 		return err
 	}

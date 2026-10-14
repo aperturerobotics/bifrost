@@ -9,7 +9,7 @@ import (
 
 // shmBuffer is a wl_buffer: a pixel array in a shared memory pool. Both of
 // its formats store each pixel as the bytes blue, green, red and alpha or
-// padding.
+// padding, with the colors premultiplied by the alpha.
 type shmBuffer struct {
 	// pool is the pool holding the pixels.
 	pool *shmPool
@@ -21,6 +21,8 @@ type shmBuffer struct {
 	width, height int
 	// stride is the distance between rows in bytes.
 	stride int
+	// opaque is set for the format whose fourth byte is padding.
+	opaque bool
 	// destroyed is set once the client destroys the buffer.
 	destroyed bool
 }
@@ -40,8 +42,9 @@ func (b *shmBuffer) destroy() {
 	b.pool.unref()
 }
 
-// read returns the area r of the buffer as opaque RGBA pixels. A pool file
-// shorter than its declared size reads as zeros past its end.
+// read returns the area r of the buffer as premultiplied RGBA pixels, opaque
+// when the buffer is. A pool file shorter than its declared size reads as
+// zeros past its end.
 func (b *shmBuffer) read(r image.Rectangle) ([]byte, error) {
 	// Read the band of rows covering r.
 	if r.Empty() {
@@ -53,13 +56,17 @@ func (b *shmBuffer) read(r image.Rectangle) ([]byte, error) {
 		return nil, err
 	}
 
-	// Reorder each pixel's bytes and drop its alpha.
+	// Reorder each pixel's bytes, replacing padding with opaque alpha.
 	pix := make([]byte, 4*r.Dx()*r.Dy())
 	for y := range r.Dy() {
 		row := band[y*b.stride:]
 		out := pix[4*y*r.Dx():]
 		for x := range r.Dx() {
-			out[4*x], out[4*x+1], out[4*x+2], out[4*x+3] = row[4*x+2], row[4*x+1], row[4*x], 0xff
+			alpha := row[4*x+3]
+			if b.opaque {
+				alpha = 0xff
+			}
+			out[4*x], out[4*x+1], out[4*x+2], out[4*x+3] = row[4*x+2], row[4*x+1], row[4*x], alpha
 		}
 	}
 	return pix, nil

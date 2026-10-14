@@ -52,6 +52,17 @@ const (
 	subcompositorGetSubsurface = 1
 )
 
+// wl_subsurface.
+const (
+	subsurfaceDestroy     = 0
+	subsurfaceSetPosition = 1
+	subsurfacePlaceAbove  = 2
+	subsurfacePlaceBelow  = 3
+)
+
+// wl_subcompositor error codes.
+const subcompositorErrBadSurface = 0
+
 // wl_shm.
 const (
 	shmCreatePool = 0
@@ -154,31 +165,86 @@ const (
 	wmBaseGetXdgSurface    = 2
 )
 
+// xdg_wm_base error codes.
+const (
+	wmBaseErrRole            = 0
+	wmBaseErrInvalidPopup    = 3
+	wmBaseErrInvalidSurface  = 4
+	wmBaseErrInvalidPosition = 6
+)
+
+// xdg_positioner.
+const (
+	positionerDestroy       = 0
+	positionerSetSize       = 1
+	positionerSetAnchorRect = 2
+	positionerSetAnchor     = 3
+	positionerSetGravity    = 4
+	positionerSetOffset     = 6
+)
+
+// xdg_positioner anchors and gravities, which share their values: the edge
+// or corner of the anchor rectangle the popup attaches to, and the direction
+// it extends from there.
+const (
+	edgeTop         = 1
+	edgeBottom      = 2
+	edgeLeft        = 3
+	edgeRight       = 4
+	edgeTopLeft     = 5
+	edgeBottomLeft  = 6
+	edgeTopRight    = 7
+	edgeBottomRight = 8
+)
+
 // xdg_surface.
 const (
-	xdgSurfaceDestroy     = 0
-	xdgSurfaceGetToplevel = 1
-	xdgSurfaceGetPopup    = 2
+	xdgSurfaceDestroy           = 0
+	xdgSurfaceGetToplevel       = 1
+	xdgSurfaceGetPopup          = 2
+	xdgSurfaceSetWindowGeometry = 3
 
 	xdgSurfaceConfigure = 0
 )
 
 // xdg_toplevel.
 const (
-	toplevelDestroy = 0
+	toplevelDestroy         = 0
+	toplevelSetTitle        = 2
+	toplevelSetAppID        = 3
+	toplevelMove            = 5
+	toplevelResize          = 6
+	toplevelSetMaxSize      = 7
+	toplevelSetMinSize      = 8
+	toplevelSetMaximized    = 9
+	toplevelUnsetMaximized  = 10
+	toplevelSetFullscreen   = 11
+	toplevelUnsetFullscreen = 12
 
 	toplevelConfigure = 0
 )
 
-// xdg_toplevel states: a fullscreen toplevel draws no decorations.
+// xdg_toplevel states.
 const (
+	toplevelMaximized  = 1
 	toplevelFullscreen = 2
+	toplevelResizing   = 3
 	toplevelActivated  = 4
+)
+
+// xdg_toplevel resize edges, as a mask.
+const (
+	resizeTop    = 1
+	resizeBottom = 2
+	resizeLeft   = 4
+	resizeRight  = 8
 )
 
 // xdg_popup.
 const (
 	popupDestroy = 0
+	popupGrab    = 1
 
-	popupDone = 1
+	popupConfigure = 0
+	popupDone      = 1
 )

@@ -103,9 +103,7 @@ func (c *client) serve() {
 	_ = c.conn.Close()
 
 	// Forget the client's surfaces and release its files.
-	c.comp.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
-		c.comp.remove(c, broadcast)
-	})
+	c.comp.update(func() { c.comp.remove(c) })
 	for _, obj := range c.objects {
 		switch obj := obj.(type) {
 		case *shmPool:
@@ -313,7 +311,7 @@ func (c *client) bindCompositor(resource) object {
 		}
 		switch op {
 		case compositorCreateSurface:
-			return c.add(id, &surface{c: c, id: id})
+			return c.add(id, newSurface(c, id))
 		case compositorCreateRegion:
 			return c.add(id, c.inert(id, 0))
 		}
@@ -321,17 +319,23 @@ func (c *client) bindCompositor(resource) object {
 	})
 }
 
-// bindSubcompositor binds wl_subcompositor. Its subsurfaces are never drawn.
+// bindSubcompositor binds wl_subcompositor, which makes subsurfaces.
 func (c *client) bindSubcompositor(r resource) object {
 	return requestFunc(func(op uint16, m *message) error {
 		switch op {
 		case subcompositorDestroy:
 			c.destroy(r.id)
 		case subcompositorGetSubsurface:
-			id := m.uint()
-			if m.err == nil {
-				return c.add(id, c.inert(id, 0))
+			id, sid, pid := m.uint(), m.uint(), m.uint()
+			if m.err != nil {
+				return nil
 			}
+			s, ok := c.objects[sid].(*surface)
+			parent, parentOK := c.objects[pid].(*surface)
+			if !ok || !parentOK {
+				return c.fail(r.id, subcompositorErrBadSurface, "bad surface")
+			}
+			return c.getSubsurface(id, s, parent)
 		}
 		return nil
 	})
@@ -395,13 +399,13 @@ func (c *client) bindSeat(r resource) object {
 	})
 }
 
-// addPointer creates a wl_pointer and enters the focused surface when it is
+// addPointer creates a wl_pointer and enters the hovered surface when it is
 // the client's.
 func (c *client) addPointer(p resource) error {
 	// Register the pointer, which forgets itself on release.
 	err := c.add(p.id, requestFunc(func(op uint16, _ *message) error {
 		if op == pointerRelease {
-			c.comp.bcast.HoldLock(func(func(), func() <-chan struct{}) {
+			c.comp.update(func() {
 				c.pointers = deleteResource(c.pointers, p.id)
 			})
 			c.destroy(p.id)
@@ -413,9 +417,9 @@ func (c *client) addPointer(p resource) error {
 	}
 
 	// Track it for input.
-	c.comp.bcast.HoldLock(func(func(), func() <-chan struct{}) {
+	c.comp.update(func() {
 		c.pointers = append(c.pointers, p)
-		if s := c.comp.focus; s != nil && s.c == c {
+		if s := c.comp.hover; s != nil && s.c == c {
 			c.comp.enterPointer(s, p)
 		}
 	})
@@ -428,7 +432,7 @@ func (c *client) addKeyboard(k resource) error {
 	// Register the keyboard, which forgets itself on release.
 	err := c.add(k.id, requestFunc(func(op uint16, _ *message) error {
 		if op == keyboardRelease {
-			c.comp.bcast.HoldLock(func(func(), func() <-chan struct{}) {
+			c.comp.update(func() {
 				c.keyboards = deleteResource(c.keyboards, k.id)
 			})
 			c.destroy(k.id)
@@ -446,9 +450,9 @@ func (c *client) addKeyboard(k resource) error {
 	}
 
 	// Track it for input.
-	c.comp.bcast.HoldLock(func(func(), func() <-chan struct{}) {
+	c.comp.update(func() {
 		c.keyboards = append(c.keyboards, k)
-		if s := c.comp.focus; s != nil && s.c == c {
+		if s := c.comp.active; s != nil && s.c == c {
 			c.comp.enterKeyboard(s, k)
 		}
 	})
@@ -502,34 +506,6 @@ func (c *client) bindDataDeviceManager(resource) object {
 			return c.add(id, c.inert(id, 1))
 		case dataDeviceManagerGetDataDevice:
 			return c.add(id, c.inert(id, 2))
-		}
-		return nil
-	})
-}
-
-// bindWmBase binds xdg_wm_base, which gives surfaces the xdg_surface role.
-func (c *client) bindWmBase(r resource) object {
-	return requestFunc(func(op uint16, m *message) error {
-		switch op {
-		case wmBaseDestroy:
-			c.destroy(r.id)
-		case wmBaseCreatePositioner:
-			id := m.uint()
-			if m.err == nil {
-				return c.add(id, c.inert(id, 0))
-			}
-		case wmBaseGetXdgSurface:
-			id, sid := m.uint(), m.uint()
-			if m.err != nil {
-				return nil
-			}
-			s, ok := c.objects[sid].(*surface)
-			if !ok {
-				return c.fail(r.id, errInvalidObject, "bad surface")
-			}
-			return c.add(id, requestFunc(func(op uint16, m *message) error {
-				return s.xdgSurfaceRequest(id, op, m)
-			}))
 		}
 		return nil
 	})
