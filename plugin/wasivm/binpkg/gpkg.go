@@ -205,21 +205,17 @@ func split(entries []*layer.Entry) (runtime, dev []*layer.Entry) {
 	}
 
 	// Place each entry in its parts.
+	var parts [2][]*layer.Entry
 	for _, e := range entries {
 		if e.Type != fs.ModeDir {
-			if part(e) == 1 {
-				dev = append(dev, e)
-			} else {
-				runtime = append(runtime, e)
-			}
+			parts[part(e)] = append(parts[part(e)], e)
 			continue
 		}
-		if used[0][e.Path] {
-			runtime = append(runtime, e)
-		}
-		if used[1][e.Path] {
-			dev = append(dev, e)
+		for i := range parts {
+			if used[i][e.Path] {
+				parts[i] = append(parts[i], e)
+			}
 		}
 	}
-	return runtime, dev
+	return parts[0], parts[1]
 }
