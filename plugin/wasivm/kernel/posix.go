@@ -305,11 +305,10 @@ func posixFunctions() map[string]hostFunc {
 		}},
 
 		// Pseudo-terminals. The C library's ptsname reads the index with
-		// TIOCGPTN; the ptsname import serves programs linked before it.
+		// TIOCGPTN.
 		"posix_openpt": {"ii", func(ctx context.Context, p *Process, a []uint64) uint64 {
 			return p.posixResult(ctx, p.openPtmx(oRDWR|kernelStatusFlags(uint32(a[0]))))
 		}},
-		"ptsname": returns("ii", 0),
 		"grantpt": {"ii", func(ctx context.Context, p *Process, a []uint64) uint64 {
 			_, errno := p.fdMaster(uint32(a[0]))
 			return p.posixResult(ctx, errno)
