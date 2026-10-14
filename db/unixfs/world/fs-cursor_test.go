@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
+	"github.com/s4wave/spacewave/db/unixfs"
 	"github.com/s4wave/spacewave/db/world"
 )
 
@@ -68,5 +70,46 @@ func TestNewFSCursorWithWriterConfirmsObservedRevision(t *testing.T) {
 	})
 	if err := (*confirm)(canceled, 5); err != nil {
 		t.Fatalf("expected observed revision confirmation, got %v", err)
+	}
+}
+
+// blockingWorldState blocks every object lookup until unblock closes, then
+// reports it missing. It closes entered when the first lookup starts.
+type blockingWorldState struct {
+	world.WorldState
+	entered chan struct{}
+	unblock chan struct{}
+}
+
+// GetObject signals entered and waits for unblock.
+func (w *blockingWorldState) GetObject(ctx context.Context, key string) (world.ObjectState, bool, error) {
+	close(w.entered)
+	<-w.unblock
+	return nil, false, nil
+}
+
+// TestGetProxyCursorReadsOutsideLock checks that a change callback can be
+// added while GetProxyCursor waits on a storage read.
+func TestGetProxyCursorReadsOutsideLock(t *testing.T) {
+	// Start a proxy resolution that blocks in its object lookup.
+	ws := &blockingWorldState{entered: make(chan struct{}), unblock: make(chan struct{})}
+	cursor := NewFSCursor(nil, ws, "test/blocking-lookup", FSType_FSType_FS_NODE, nil, false)
+	t.Cleanup(cursor.Release)
+	t.Cleanup(func() { close(ws.unblock) })
+	go func() {
+		_, _ = cursor.GetProxyCursor(context.Background())
+	}()
+	<-ws.entered
+
+	// Add a change callback while the lookup is blocked.
+	added := make(chan struct{})
+	go func() {
+		cursor.AddChangeCb(func(*unixfs.FSCursorChange) bool { return false })
+		close(added)
+	}()
+	select {
+	case <-added:
+	case <-time.After(5 * time.Second):
+		t.Fatal("AddChangeCb waited on the GetProxyCursor storage read")
 	}
 }
