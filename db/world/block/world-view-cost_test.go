@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/aperturerobotics/util/broadcast"
-	resource_world "github.com/s4wave/spacewave/core/resource/world"
 	"github.com/s4wave/spacewave/db/world"
 )
 
@@ -21,10 +20,12 @@ type viewCostEngine struct {
 	// txs counts the transactions the view opened.
 	txs atomic.Int64
 
-	// bcast guards waitFor and keyWaits and fires when either rises.
+	// bcast guards waitFor, delivered and keyWaits and fires when one rises.
 	bcast broadcast.Broadcast
 	// waitFor is the highest seqno the view has waited for.
 	waitFor uint64
+	// delivered is the highest seqno whose changes the view has received.
+	delivered uint64
 	// keyWaits counts the object key waits the view has started.
 	keyWaits int
 }
@@ -37,13 +38,33 @@ func (e *viewCostEngine) NewTransaction(ctx context.Context, write bool) (world.
 
 // WaitSeqno records value and waits on the Engine.
 func (e *viewCostEngine) WaitSeqno(ctx context.Context, value uint64) (uint64, error) {
+	e.raise(&e.waitFor, value)
+	return e.Engine.WaitSeqno(ctx, value)
+}
+
+// WatchChanges records the seqno the view waits past and each seqno whose
+// changes it receives, and watches the Engine.
+func (e *viewCostEngine) WatchChanges(
+	ctx context.Context,
+	afterSeqno uint64,
+	cb func(seqno uint64, changes *world.ChangeSet) error,
+) error {
+	e.raise(&e.waitFor, afterSeqno+1)
+	return world.WatchChanges(ctx, e.Engine, afterSeqno, func(seqno uint64, changes *world.ChangeSet) error {
+		err := cb(seqno, changes)
+		e.raise(&e.delivered, seqno)
+		return err
+	})
+}
+
+// raise raises the field at v to value under bcast.
+func (e *viewCostEngine) raise(v *uint64, value uint64) {
 	e.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
-		if value > e.waitFor {
-			e.waitFor = value
+		if value > *v {
+			*v = value
 			broadcast()
 		}
 	})
-	return e.Engine.WaitSeqno(ctx, value)
 }
 
 // WaitObjectRev counts the key wait and waits on the Engine.
@@ -57,14 +78,25 @@ func (e *viewCostEngine) WaitObjectRev(ctx context.Context, key string, rev uint
 
 // waitIdle waits until the view waits for a commit after seqno, or, for a
 // view that waits on object keys, until it has started keyWaits key waits.
-func (e *viewCostEngine) waitIdle(ctx context.Context, t *testing.T, name string, seqno uint64, keyWaits int) {
+// When delivered is set, a view that received the changes up to seqno is also
+// idle, as a view that keeps its change watch never waits again.
+func (e *viewCostEngine) waitIdle(
+	ctx context.Context,
+	t *testing.T,
+	name string,
+	seqno uint64,
+	keyWaits int,
+	delivered bool,
+) {
 	t.Helper()
 	timeout := time.After(10 * time.Second)
 	for {
 		var idle bool
 		var waitCh <-chan struct{}
 		e.bcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
-			idle = e.waitFor > seqno || (keyWaits != 0 && e.keyWaits >= keyWaits)
+			idle = e.waitFor > seqno ||
+				(keyWaits != 0 && e.keyWaits >= keyWaits) ||
+				(delivered && e.delivered >= seqno)
 			waitCh = getWaitCh()
 		})
 		if idle {
@@ -120,7 +152,6 @@ func TestWorldViewCostOnUnrelatedCommit(t *testing.T) {
 		},
 	}, {
 		name: "tracked-object",
-		want: 1,
 		run: func(ctx context.Context, eng world.Engine) error {
 			return runTrackedView(ctx, eng, func(ws world.WorldState) error {
 				_, _, err := world.GetObjectRev(ctx, ws, worldSeedObjectKey(4))
@@ -129,7 +160,6 @@ func TestWorldViewCostOnUnrelatedCommit(t *testing.T) {
 		},
 	}, {
 		name: "tracked-iterate",
-		want: 1,
 		run: func(ctx context.Context, eng world.Engine) error {
 			return runTrackedView(ctx, eng, func(ws world.WorldState) error {
 				iter := ws.IterateObjects(ctx, worldSeedTypeKey(0), false)
@@ -141,7 +171,6 @@ func TestWorldViewCostOnUnrelatedCommit(t *testing.T) {
 		},
 	}, {
 		name: "tracked-graph",
-		want: 1,
 		run: func(ctx context.Context, eng world.Engine) error {
 			return runTrackedView(ctx, eng, func(ws world.WorldState) error {
 				filter := world.NewGraphQuadWithKeys(worldSeedObjectKey(5), worldSeedParentPred, "", "")
@@ -151,7 +180,7 @@ func TestWorldViewCostOnUnrelatedCommit(t *testing.T) {
 		},
 	}, {
 		name: "tracked-changed-object",
-		want: 2,
+		want: 1,
 		run: func(ctx context.Context, eng world.Engine) error {
 			return runTrackedView(ctx, eng, func(ws world.WorldState) error {
 				_, _, err := world.GetObjectRev(ctx, ws, changedKey)
@@ -201,7 +230,7 @@ func TestWorldViewCostOnUnrelatedCommit(t *testing.T) {
 		}()
 	}
 	for i, c := range cases {
-		engs[i].waitIdle(ctx, t, c.name, seqno, c.keyWaits)
+		engs[i].waitIdle(ctx, t, c.name, seqno, c.keyWaits, false)
 	}
 
 	// Commit a change to the changed object.
@@ -224,13 +253,15 @@ func TestWorldViewCostOnUnrelatedCommit(t *testing.T) {
 
 	// A key view on an unchanged object never wakes, so only the view on the
 	// changed object starts another key wait. Its wakeup shares the commit's
-	// key comparison with every other key view.
+	// key comparison with every other key view. A tracked view on an
+	// unchanged object receives the commit's changes and keeps waiting; a
+	// view that reruns waits again.
 	for i, c := range cases {
 		keyWaits := c.keyWaits
 		if c.want != 0 {
 			keyWaits += c.keyWaits
 		}
-		engs[i].waitIdle(ctx, t, c.name, seqno+1, keyWaits)
+		engs[i].waitIdle(ctx, t, c.name, seqno+1, keyWaits, c.want == 0)
 	}
 
 	// Compare the transactions each view opened for the commit.
@@ -291,8 +322,8 @@ func waitObjectRevView(ctx context.Context, eng world.Engine, key string) error 
 	}
 }
 
-// runTrackedView runs read through a TrackedWorldState and runs it again
-// each time a read changes, as the World state watch does.
+// runTrackedView runs read through a ReadSet and runs it again each time a
+// read changes, as the World state watch does.
 func runTrackedView(ctx context.Context, eng world.Engine, read func(ws world.WorldState) error) error {
 	for {
 		if err := runTrackedViewOnce(ctx, eng, read); err != nil {
@@ -315,12 +346,12 @@ func runTrackedViewOnce(ctx context.Context, eng world.Engine, read func(ws worl
 	}
 
 	// Read through the tracked state and wait for a change.
-	tracked := resource_world.NewTrackedWorldState(tx, world.NewEngineWorldState(eng, false), seqno, ctx)
-	defer tracked.Close()
-	if err := read(tracked); err != nil {
+	reads := world.NewReadSet()
+	if err := read(reads.Track(tx)); err != nil {
 		return err
 	}
-	return tracked.WaitForChanges(ctx)
+	_, err = reads.WaitChange(ctx, eng, seqno)
+	return err
 }
 
 // waitObjectChangeView reads the roots of the objects at keys and waits for

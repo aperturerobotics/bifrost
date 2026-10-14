@@ -81,6 +81,35 @@ func (s *readSetWorldState) DeleteObject(ctx context.Context, key string) (bool,
 	return s.WorldState.DeleteObject(ctx, key)
 }
 
+// GetObjectBodiesBatchPage records the requested keys and pages their bodies
+// through the wrapped state.
+func (s *readSetWorldState) GetObjectBodiesBatchPage(ctx context.Context, keys []string, byteBudget int) ([]*ObjectBody, uint32, error) {
+	s.reads.addKeys(keys...)
+	return GetObjectBodiesBatchPage(ctx, s.WorldState, keys, byteBudget)
+}
+
+// GetObjectBodiesBatchPageWithSeqno records the requested keys and pages their
+// bodies with the wrapped state's seqno.
+func (s *readSetWorldState) GetObjectBodiesBatchPageWithSeqno(
+	ctx context.Context,
+	keys []string,
+	byteBudget int,
+) ([]*ObjectBody, uint32, uint64, error) {
+	// Page through the wrapped state's batcher when it has one.
+	s.reads.addKeys(keys...)
+	if pager, ok := s.WorldState.(ObjectBodyPageSeqnoBatcher); ok {
+		return pager.GetObjectBodiesBatchPageWithSeqno(ctx, keys, byteBudget)
+	}
+
+	// Read the seqno, then the page.
+	seqno, err := s.GetSeqno(ctx)
+	if err != nil {
+		return nil, 0, 0, err
+	}
+	bodies, consumed, err := GetObjectBodiesBatchPage(ctx, s.WorldState, keys, byteBudget)
+	return bodies, consumed, seqno, err
+}
+
 // HasObject records the object key.
 func (s *readSetWorldState) HasObject(ctx context.Context, key string) (bool, error) {
 	s.reads.addKeys(key)
@@ -140,4 +169,8 @@ func (s *readSetWorldState) DeleteGraphObject(ctx context.Context, value string)
 }
 
 // _ is a type assertion
-var _ WorldState = (*readSetWorldState)(nil)
+var (
+	_ WorldState                 = (*readSetWorldState)(nil)
+	_ ObjectBodyPageBatcher      = (*readSetWorldState)(nil)
+	_ ObjectBodyPageSeqnoBatcher = (*readSetWorldState)(nil)
+)

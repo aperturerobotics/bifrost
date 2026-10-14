@@ -824,56 +824,32 @@ func (r *SessionResource) watchSpaceIndexObjectType(
 	}
 	defer mountedSpaceRef.Release()
 
-	// Watch the mounted Space World for index ObjectType changes.
-	engine := mountedSpace.GetSharedObjectBody().GetWorldEngine()
+	// Send the index ObjectType of the mounted Space World each time it
+	// changes. The view reruns only when a commit touches what it read.
+	ws := world.NewEngineWorldState(mountedSpace.GetSharedObjectBody().GetWorldEngine(), false)
 	var previous string
 	first := true
-	for {
-		objectType, seqno, err := readSpaceIndexObjectType(ctx, engine)
+	err = world.WatchView(ctx, ws, func(ctx context.Context, ws world.WorldState) error {
+		// Read the index ObjectType and send it only when it changed.
+		objectType, err := space_world.LookupSpaceIndexObjectType(ctx, ws)
 		if err != nil {
-			if !errors.Is(err, context.Canceled) {
-				r.le.WithError(err).WithField("space-id", id).Warn("failed to read Space index ObjectType")
-				if initialPending {
-					sendProjection(true, "")
-				}
-			}
-			return
+			return err
 		}
-		if first || objectType != previous {
-			if !sendProjection(initialPending, objectType) {
-				return
-			}
-			initialPending = false
-			first = false
-			previous = objectType
+		if !first && objectType == previous {
+			return nil
 		}
-		if _, err := engine.WaitSeqno(ctx, seqno+1); err != nil {
-			if !errors.Is(err, context.Canceled) {
-				r.le.WithError(err).WithField("space-id", id).Warn("failed to watch Space index ObjectType")
-			}
-			return
+		if !sendProjection(initialPending, objectType) {
+			return context.Canceled
+		}
+		initialPending, first, previous = false, false, objectType
+		return nil
+	})
+	if !errors.Is(err, context.Canceled) {
+		r.le.WithError(err).WithField("space-id", id).Warn("failed to watch Space index ObjectType")
+		if initialPending {
+			sendProjection(true, "")
 		}
 	}
-}
-
-func readSpaceIndexObjectType(ctx context.Context, engine world.Engine) (string, uint64, error) {
-	// Open a read transaction for the Space index projection.
-	tx, err := engine.NewTransaction(ctx, false)
-	if err != nil {
-		return "", 0, err
-	}
-	defer tx.Discard()
-
-	// Read the World revision and index ObjectType from the scoped transaction.
-	seqno, err := tx.GetSeqno(ctx)
-	if err != nil {
-		return "", 0, err
-	}
-	objectType, err := space_world.LookupSpaceIndexObjectType(ctx, tx)
-	if err != nil {
-		return "", 0, err
-	}
-	return objectType, seqno, nil
 }
 
 // resourcesListResponse lists the Spaces with their index ObjectTypes.

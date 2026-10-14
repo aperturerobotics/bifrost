@@ -16,8 +16,8 @@ import (
 type WatchLoop struct {
 	// le is the logger
 	le *logrus.Entry
-	// objectKey is the object to monitor (if any)
-	// if unset monitors entire world state
+	// objectKey is the object to monitor, if any. When unset the loop
+	// monitors what the handler reads.
 	objectKey string
 	// handler is the watch loop handler
 	handler WatchLoopHandler
@@ -210,11 +210,19 @@ func (c *WatchLoop) executeOnce(ctx context.Context, ws world.WorldState) (bool,
 		objState = nil
 	}
 
+	// Record the reads of a handler that watches no single object.
+	handlerWs := ws
+	var reads *world.ReadSet
+	if c.objectKey == "" {
+		reads = world.NewReadSet()
+		handlerWs = reads.Track(ws)
+	}
+
 	// Run the handler. An unhandled operation waits for the next change, and
 	// any other error is logged unless it reflects cancellation.
 	waitForChanges, err := c.handler(
 		ctx, c.le,
-		ws, objState,
+		handlerWs, objState,
 		rootRef, rev,
 	)
 	if errors.Is(err, world.ErrUnhandledOp) {
@@ -245,7 +253,8 @@ func (c *WatchLoop) executeOnce(ctx context.Context, ws world.WorldState) (bool,
 	}
 
 	// Wait for the next revision of the watched object, its deletion or its
-	// creation. A loop without an object waits for the next World change.
+	// creation. A loop without an object waits for a change to what the
+	// handler read.
 	switch {
 	case objState != nil:
 		_, err = objState.WaitRev(wakeCtx, rev+1, false)
@@ -255,7 +264,7 @@ func (c *WatchLoop) executeOnce(ctx context.Context, ws world.WorldState) (bool,
 	case c.objectKey != "":
 		_, err = world.WaitObjectRev(wakeCtx, ws, c.objectKey, 0, true)
 	default:
-		_, err = ws.WaitSeqno(wakeCtx, seqno+1)
+		_, err = reads.WaitChange(wakeCtx, ws, seqno)
 	}
 	finishWake()
 

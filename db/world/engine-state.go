@@ -53,6 +53,15 @@ func (e *engineWorldState) WaitSeqno(ctx context.Context, value uint64) (uint64,
 	return e.e.WaitSeqno(ctx, value)
 }
 
+// WatchChanges forwards the Engine's change feed.
+func (e *engineWorldState) WatchChanges(
+	ctx context.Context,
+	afterSeqno uint64,
+	cb func(seqno uint64, changes *ChangeSet) error,
+) error {
+	return WatchChanges(ctx, e.e, afterSeqno, cb)
+}
+
 // WaitObjectRev waits for the object at key through the Engine's key watch.
 func (e *engineWorldState) WaitObjectRev(ctx context.Context, key string, rev uint64, ignoreNotFound bool) (uint64, error) {
 	return e.e.WaitObjectRev(ctx, key, rev, ignoreNotFound)
@@ -324,4 +333,5 @@ func (e *engineWorldState) performOpOnce(ctx context.Context, write bool, cb fun
 var (
 	_ WorldState      = (*engineWorldState)(nil)
 	_ ObjectRevWaiter = (*engineWorldState)(nil)
+	_ ChangeWatcher   = (*engineWorldState)(nil)
 )

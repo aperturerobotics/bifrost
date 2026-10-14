@@ -232,7 +232,7 @@ func (e *Engine) recordWatchedHeadLocked(root *bucket_lookup.Cursor, seqno uint6
 // subscriber. The caller must hold bcast.
 func (s *changeSubscriber) addLocked(seqno uint64, changes *world.ChangeSet) {
 	s.seqno = max(s.seqno, seqno)
-	s.changes = mergeChangeSets(s.changes, changes)
+	s.changes = world.MergeChangeSets(s.changes, changes, changeDiffLimit)
 	s.signal()
 }
 
@@ -242,28 +242,6 @@ func (s *changeSubscriber) signal() {
 	case s.wake <- struct{}{}:
 	default:
 	}
-}
-
-// mergeChangeSets returns the union of two ChangeSets without modifying
-// either. The union is unknown when either is, or when it lists more than
-// changeDiffLimit keys.
-func mergeChangeSets(a, b *world.ChangeSet) *world.ChangeSet {
-	// Share a lone ChangeSet and keep unknown sets unknown.
-	if a == nil {
-		return b
-	}
-	if a.Unknown || b.Unknown {
-		return world.NewUnknownChangeSet()
-	}
-
-	// Join the keys without duplicates, and the quads.
-	keys := slices.Concat(a.Keys, b.Keys)
-	slices.Sort(keys)
-	keys = slices.Compact(keys)
-	if len(keys) > changeDiffLimit {
-		return world.NewUnknownChangeSet()
-	}
-	return &world.ChangeSet{Keys: keys, Quads: slices.Concat(a.Quads, b.Quads)}
 }
 
 // _ is a type assertion
