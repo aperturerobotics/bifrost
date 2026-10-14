@@ -2,71 +2,63 @@ package resource_world
 
 import (
 	"context"
-	"errors"
-	"sync"
+	"maps"
+	"slices"
 
-	"github.com/aperturerobotics/util/routine"
+	"github.com/aperturerobotics/util/broadcast"
 	"github.com/s4wave/spacewave/db/bucket"
 	bucket_lookup "github.com/s4wave/spacewave/db/bucket/lookup"
 	"github.com/s4wave/spacewave/db/world"
 	"github.com/s4wave/spacewave/net/peer"
-	s4wave_world "github.com/s4wave/spacewave/sdk/world"
 )
 
-// TrackedWorldState wraps a WorldState and records all access patterns.
-// Immediately starts change detection as accesses are recorded.
+// TrackedWorldState wraps a WorldState and records the reads made through it.
+// One watch compares the recorded reads with the live World until one of them
+// changes, so a view built from the reads knows when to rebuild.
 type TrackedWorldState struct {
-	ws      world.WorldState
+	// ws is the read transaction the view reads.
+	ws world.WorldState
+	// watchWs is the live World the watch compares with.
 	watchWs world.WorldState
-
-	// stateRoutine manages change detection with current snapshot
-	stateRoutine *routine.StateRoutineContainer[*s4wave_world.TrackedWorldStateSnapshot]
-
-	// mtx guards currentSnapshot and orders snapshot publication.
-	mtx sync.Mutex
-	// currentSnapshot is the current tracking snapshot.
-	// Published snapshots are immutable; updates replace them with a deep copy.
-	currentSnapshot *s4wave_world.TrackedWorldStateSnapshot
-
-	// changeResultCh receives error (or nil) when changes are detected
+	// initialSeqno is the seqno of ws.
+	initialSeqno uint64
+	// cancel stops the watch.
+	cancel context.CancelFunc
+	// changeResultCh receives the watch result: nil when a read changed.
 	changeResultCh chan error
+
+	// bcast guards the fields below and fires when a read is recorded.
+	bcast broadcast.Broadcast
+	// revs maps each read object key to its revision in ws, 0 when missing.
+	revs map[string]uint64
+	// pending are the keys read since the watch last checked.
+	pending []string
+	// coarse is set by reads that object revisions cannot describe: graph
+	// reads and object iteration. Any commit after initialSeqno changes them.
+	coarse bool
 }
 
-// NewTrackedWorldState creates a new TrackedWorldState.
+// NewTrackedWorldState creates a TrackedWorldState reading ws at initialSeqno
+// and starts watching watchWs for changes to its reads.
 func NewTrackedWorldState(ws world.WorldState, watchWs world.WorldState, initialSeqno uint64, ctx context.Context) *TrackedWorldState {
-	// Construct the tracked state with an empty snapshot and change channel.
+	// Construct the tracked state with no reads.
+	ctx, cancel := context.WithCancel(ctx)
 	t := &TrackedWorldState{
-		ws:      ws,
-		watchWs: watchWs,
-		currentSnapshot: &s4wave_world.TrackedWorldStateSnapshot{
-			ObjectAccesses: make([]*s4wave_world.TrackedWorldStateSnapshot_ObjectAccess, 0),
-			HasQuadAccess:  false,
-			InitialSeqno:   initialSeqno,
-		},
+		ws:             ws,
+		watchWs:        watchWs,
+		initialSeqno:   initialSeqno,
+		cancel:         cancel,
 		changeResultCh: make(chan error, 1),
+		revs:           make(map[string]uint64),
 	}
 
-	// Initialize change detection with snapshot equality.
-	t.stateRoutine = routine.NewStateRoutineContainerVT[*s4wave_world.TrackedWorldStateSnapshot]()
-
-	// Publish each watch result to the wait channel.
-	t.stateRoutine.SetStateRoutine(func(ctx context.Context, snapshot *s4wave_world.TrackedWorldStateSnapshot) error {
-		err := watchTrackedChanges(ctx, snapshot, watchWs)
-		if errors.Is(err, context.Canceled) {
-			return err
+	// Publish the watch result unless the watch was stopped.
+	go func() {
+		err := t.watch(ctx)
+		if ctx.Err() == nil {
+			t.changeResultCh <- err
 		}
-
-		// Deliver the watch result without blocking the routine.
-		select {
-		case t.changeResultCh <- err:
-		default:
-		}
-		return err
-	})
-
-	// Start change detection under the caller context.
-	t.stateRoutine.SetContext(ctx, false)
-
+	}()
 	return t
 }
 
@@ -81,83 +73,168 @@ func (t *TrackedWorldState) WaitForChanges(ctx context.Context) error {
 	}
 }
 
-// updateSnapshot publishes a deep copy of the current snapshot with updateFn applied.
-// The previously published snapshot is never mutated.
-func (t *TrackedWorldState) updateSnapshot(updateFn func(*s4wave_world.TrackedWorldStateSnapshot)) {
-	// Lock the snapshot for the copy-and-publish update.
-	t.mtx.Lock()
-	defer t.mtx.Unlock()
-
-	// Deep copy the current tracking state and apply the update.
-	newSnapshot := t.currentSnapshot.CloneVT()
-	updateFn(newSnapshot)
-
-	// Publish the updated snapshot.
-	t.currentSnapshot = newSnapshot
-	t.stateRoutine.SetState(newSnapshot)
-}
-
-// trackObjectAccess records an object access.
+// trackObjectAccess records an object read at its revision, 0 when missing.
 func (t *TrackedWorldState) trackObjectAccess(key string, rev uint64) {
-	t.updateSnapshot(func(snap *s4wave_world.TrackedWorldStateSnapshot) {
-		// Update an existing access or append a new entry.
-		found := false
-		for _, objAccess := range snap.ObjectAccesses {
-			if objAccess.Key == key {
-				objAccess.Rev = rev
-				found = true
-				break
-			}
-		}
-		if !found {
-			snap.ObjectAccesses = append(snap.ObjectAccesses, &s4wave_world.TrackedWorldStateSnapshot_ObjectAccess{
-				Key: key,
-				Rev: rev,
-			})
+	t.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+		if t.trackRevLocked(key, rev) {
+			broadcast()
 		}
 	})
 }
 
-// trackObjectBodyAccesses records the accesses from one batched body read in a
-// single snapshot update, so a large page publishes one state change instead of
-// one per body.
+// trackObjectBodyAccesses records the reads from one batched body read with a
+// single wake of the watch.
 func (t *TrackedWorldState) trackObjectBodyAccesses(bodies []*world.ObjectBody) {
-	if len(bodies) == 0 {
-		return
+	t.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+		var added bool
+		for _, body := range bodies {
+			added = t.trackRevLocked(body.ObjectKey, body.Rev) || added
+		}
+		if added {
+			broadcast()
+		}
+	})
+}
+
+// trackRevLocked records one object read and reports whether it is new.
+// The caller holds bcast.
+func (t *TrackedWorldState) trackRevLocked(key string, rev uint64) bool {
+	// Skip a key already recorded at this revision.
+	if old, ok := t.revs[key]; ok && old == rev {
+		return false
 	}
 
-	// Merge batched body accesses into one tracking snapshot.
-	t.updateSnapshot(func(snap *s4wave_world.TrackedWorldStateSnapshot) {
-		existing := make(map[string]*s4wave_world.TrackedWorldStateSnapshot_ObjectAccess, len(snap.ObjectAccesses))
-		for _, objAccess := range snap.ObjectAccesses {
-			existing[objAccess.Key] = objAccess
-		}
-		for _, body := range bodies {
-			if objAccess, ok := existing[body.ObjectKey]; ok {
-				objAccess.Rev = body.Rev
-				continue
-			}
-			objAccess := &s4wave_world.TrackedWorldStateSnapshot_ObjectAccess{
-				Key: body.ObjectKey,
-				Rev: body.Rev,
-			}
-			snap.ObjectAccesses = append(snap.ObjectAccesses, objAccess)
-			existing[body.ObjectKey] = objAccess
-		}
-	})
+	// Record the revision and queue the key for the next check.
+	t.revs[key] = rev
+	t.pending = append(t.pending, key)
+	return true
 }
 
-// trackQuadQuery records a quad query access.
-func (t *TrackedWorldState) trackQuadQuery() {
-	// Mark quad access in a cloned snapshot.
-	t.updateSnapshot(func(snap *s4wave_world.TrackedWorldStateSnapshot) {
-		snap.HasQuadAccess = true
+// trackCoarse records a read that object revisions cannot describe.
+func (t *TrackedWorldState) trackCoarse() {
+	t.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+		if !t.coarse {
+			t.coarse = true
+			broadcast()
+		}
 	})
 }
 
 // Close stops the change detection routine.
 func (t *TrackedWorldState) Close() {
-	t.stateRoutine.ClearContext()
+	t.cancel()
+}
+
+// watch returns nil once a recorded read differs from the live World.
+func (t *TrackedWorldState) watch(ctx context.Context) error {
+	// The recorded revisions describe initialSeqno, so a check there is free.
+	checkedSeqno := t.initialSeqno
+	for {
+		// Sample the seqno before reading the revisions it describes, so a
+		// commit the check misses lands above it and ends the wait below.
+		seqno, err := t.watchWs.GetSeqno(ctx)
+		if err != nil {
+			return err
+		}
+
+		// Take the reads to check with the wait channel. A commit since the
+		// last check needs every read checked; otherwise only the new ones.
+		var (
+			keys   []string
+			revs   []uint64
+			coarse bool
+			idle   bool
+			readCh <-chan struct{}
+		)
+		t.bcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
+			// Choose the keys and take the wait channel.
+			readCh = getWaitCh()
+			coarse = t.coarse
+			idle = len(t.revs) == 0 && !coarse
+			keys = t.pending
+			if seqno != checkedSeqno {
+				keys = slices.Collect(maps.Keys(t.revs))
+			}
+			t.pending = nil
+
+			// Copy their recorded revisions.
+			revs = make([]uint64, len(keys))
+			for i, key := range keys {
+				revs[i] = t.revs[key]
+			}
+		})
+
+		// Report a change to a coarse read or to any read object.
+		if coarse && seqno > t.initialSeqno {
+			return nil
+		}
+		if seqno != t.initialSeqno {
+			changed, err := t.revsChanged(ctx, keys, revs)
+			if err != nil || changed {
+				return err
+			}
+		}
+		checkedSeqno = seqno
+
+		// Wait for a new read, or with reads recorded for a later commit.
+		if idle {
+			select {
+			case <-ctx.Done():
+				return context.Cause(ctx)
+			case <-readCh:
+			}
+			continue
+		}
+		if err := t.waitReadOrCommit(ctx, readCh, seqno); err != nil {
+			return err
+		}
+	}
+}
+
+// revsChanged checks whether any of keys has a live revision other than revs.
+// A missing object has revision 0.
+func (t *TrackedWorldState) revsChanged(ctx context.Context, keys []string, revs []uint64) (bool, error) {
+	// Read the live revisions in one batch.
+	if len(keys) == 0 {
+		return false, nil
+	}
+	refs, err := world.GetObjectRootRefsBatch(ctx, t.watchWs, keys)
+	if err != nil {
+		return false, err
+	}
+
+	// Compare them with the recorded revisions.
+	for i, ref := range refs {
+		var rev uint64
+		if ref.Exists {
+			rev = ref.Rev
+		}
+		if rev != revs[i] {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// waitReadOrCommit waits for readCh or a commit after seqno.
+func (t *TrackedWorldState) waitReadOrCommit(ctx context.Context, readCh <-chan struct{}, seqno uint64) error {
+	// Stop the seqno wait when a read is recorded.
+	waitCtx, waitCancel := context.WithCancel(ctx)
+	defer waitCancel()
+	go func() {
+		select {
+		case <-readCh:
+			waitCancel()
+		case <-waitCtx.Done():
+		}
+	}()
+
+	// A canceled wait is a recorded read unless ctx itself ended.
+	_, err := t.watchWs.WaitSeqno(waitCtx, seqno+1)
+	if err != nil && waitCtx.Err() != nil && ctx.Err() == nil {
+		return nil
+	}
+	return err
 }
 
 // WorldState interface implementation - delegates to wrapped ws
@@ -271,9 +348,9 @@ func (t *TrackedWorldState) GetObject(ctx context.Context, key string) (world.Ob
 	return obj, found, err
 }
 
-// IterateObjects iterates objects without tracking per-object accesses.
+// IterateObjects iterates objects and records a coarse read.
 func (t *TrackedWorldState) IterateObjects(ctx context.Context, prefix string, reversed bool) world.ObjectIterator {
-	// Note: Iterator access is not tracked per-object, could track prefix
+	t.trackCoarse()
 	return t.ws.IterateObjects(ctx, prefix, reversed)
 }
 
@@ -285,7 +362,7 @@ func (t *TrackedWorldState) RenameObject(ctx context.Context, oldKey, newKey str
 		if _, rev, revErr := obj.GetRootRef(ctx); revErr == nil {
 			t.trackObjectAccess(newKey, rev)
 		}
-		t.trackQuadQuery()
+		t.trackCoarse()
 	}
 	return obj, err
 }
@@ -297,20 +374,19 @@ func (t *TrackedWorldState) DeleteObject(ctx context.Context, key string) (bool,
 
 // AccessCayleyGraph records graph access and lends the wrapped graph handle to cb.
 func (t *TrackedWorldState) AccessCayleyGraph(ctx context.Context, write bool, cb func(ctx context.Context, h world.CayleyHandle) error) error {
-	// Track that quad access occurred
-	t.trackQuadQuery()
+	t.trackCoarse()
 	return t.ws.AccessCayleyGraph(ctx, write, cb)
 }
 
 // SetGraphQuad records graph access and sets a quad through the wrapped state.
 func (t *TrackedWorldState) SetGraphQuad(ctx context.Context, q world.GraphQuad) error {
-	t.trackQuadQuery()
+	t.trackCoarse()
 	return t.ws.SetGraphQuad(ctx, q)
 }
 
 // DeleteGraphQuad records graph access and deletes a quad through the wrapped state.
 func (t *TrackedWorldState) DeleteGraphQuad(ctx context.Context, q world.GraphQuad) error {
-	t.trackQuadQuery()
+	t.trackCoarse()
 	return t.ws.DeleteGraphQuad(ctx, q)
 }
 
@@ -318,7 +394,7 @@ func (t *TrackedWorldState) DeleteGraphQuad(ctx context.Context, q world.GraphQu
 func (t *TrackedWorldState) LookupGraphQuads(ctx context.Context, filter world.GraphQuad, limit uint32) ([]world.GraphQuad, error) {
 	quads, err := t.ws.LookupGraphQuads(ctx, filter, limit)
 	if err == nil {
-		t.trackQuadQuery()
+		t.trackCoarse()
 	}
 	return quads, err
 }
@@ -327,7 +403,7 @@ func (t *TrackedWorldState) LookupGraphQuads(ctx context.Context, filter world.G
 func (t *TrackedWorldState) LookupGraphQuadsBatch(ctx context.Context, filters []world.GraphQuad, limitPerFilter uint32) ([][]world.GraphQuad, error) {
 	quads, err := t.ws.LookupGraphQuadsBatch(ctx, filters, limitPerFilter)
 	if err == nil {
-		t.trackQuadQuery()
+		t.trackCoarse()
 	}
 	return quads, err
 }
@@ -336,7 +412,7 @@ func (t *TrackedWorldState) LookupGraphQuadsBatch(ctx context.Context, filters [
 func (t *TrackedWorldState) QueryGraphPath(ctx context.Context, query *world.GraphPathQuery) (*world.GraphPathQueryResult, error) {
 	result, err := t.ws.QueryGraphPath(ctx, query)
 	if err == nil {
-		t.trackQuadQuery()
+		t.trackCoarse()
 	}
 	return result, err
 }
@@ -346,14 +422,14 @@ func (t *TrackedWorldState) ListObjectsWithType(ctx context.Context, typeID, sta
 	// Retain the page result before marking the graph dependency.
 	keys, more, err := t.ws.ListObjectsWithType(ctx, typeID, startAfter, limit)
 	if err == nil {
-		t.trackQuadQuery()
+		t.trackCoarse()
 	}
 	return keys, more, err
 }
 
 // DeleteGraphObject records graph access and deletes the object's quads.
 func (t *TrackedWorldState) DeleteGraphObject(ctx context.Context, objKey string) error {
-	t.trackQuadQuery()
+	t.trackCoarse()
 	return t.ws.DeleteGraphObject(ctx, objKey)
 }
 
@@ -362,93 +438,19 @@ func (t *TrackedWorldState) ApplyWorldOp(ctx context.Context, op world.Operation
 	return t.ws.ApplyWorldOp(ctx, op, opSender)
 }
 
-// HasObject forwards the object-existence query to the wrapped state.
+// HasObject checks whether an object exists and records its revision.
 func (t *TrackedWorldState) HasObject(ctx context.Context, key string) (bool, error) {
-	return t.ws.HasObject(ctx, key)
-}
-
-// watchTrackedChanges is a StateRoutine that monitors a TrackedWorldStateSnapshot for changes.
-// Returns nil when any tracked resource changes.
-func watchTrackedChanges(ctx context.Context, snapshot *s4wave_world.TrackedWorldStateSnapshot, ws world.WorldState) error {
-	if snapshot == nil || (len(snapshot.ObjectAccesses) == 0 && !snapshot.HasQuadAccess) {
-		// Nothing to track yet, wait for context cancellation
-		<-ctx.Done()
-		return ctx.Err()
-	}
-
-	// Loop: wait for world changes, then check if tracked resources changed
-	for {
-		// Sample the seqno before reading the revisions it describes. The engine
-		// publishes a commit's seqno and its object revisions under one lock, so
-		// every commit the check below can miss lands above currentSeqno and the
-		// wait then returns immediately. Sampling after the check would hand the
-		// wait a seqno that already covers the missed commit, parking the watch
-		// until some later unrelated commit arrived.
-		currentSeqno, err := ws.GetSeqno(ctx)
-		if err != nil {
-			return err
-		}
-
-		// See if any tracked resources already changed
-		changed, err := checkTrackedChanges(ctx, snapshot, ws)
-		if err != nil {
-			return err
-		}
-		if changed {
-			// Something changed, return to trigger new tracked WorldState
-			return nil
-		}
-
-		// Nothing changed yet, wait for world seqno to increment
-		_, err = ws.WaitSeqno(ctx, currentSeqno+1)
-		if err != nil {
-			return err
-		}
-
-		// World changed, loop back to check tracked resources
-	}
-}
-
-// checkTrackedChanges checks if any tracked resources have changed.
-// Returns true if any change detected, false if all unchanged.
-func checkTrackedChanges(ctx context.Context, snapshot *s4wave_world.TrackedWorldStateSnapshot, ws world.WorldState) (bool, error) {
-	// Collect the tracked object keys and read their current root refs.
-	keys := make([]string, len(snapshot.ObjectAccesses))
-	for i, objAccess := range snapshot.ObjectAccesses {
-		keys[i] = objAccess.Key
-	}
-	refs, err := world.GetObjectRootRefsBatch(ctx, ws, keys)
+	// Read the root ref, which carries the revision HasObject does not.
+	refs, err := world.GetObjectRootRefsBatch(ctx, t.ws, []string{key})
 	if err != nil {
 		return false, err
 	}
-	for i, objAccess := range snapshot.ObjectAccesses {
-		currentRev := uint64(0)
-		if refs[i].Exists {
-			currentRev = refs[i].Rev
-		}
 
-		// Detect changes:
-		// - Tracked as non-existent (rev=0) but now exists (currentRev>0)
-		// - Tracked as existing (rev>0) but now deleted (currentRev=0)
-		// - Revision increased (currentRev>trackedRev)
-		if currentRev != objAccess.Rev {
-			return true, nil
-		}
+	// Record the revision, 0 when missing.
+	var rev uint64
+	if refs[0].Exists {
+		rev = refs[0].Rev
 	}
-
-	// Check world seqno if quad queries occurred
-	if snapshot.HasQuadAccess {
-		currentSeqno, err := ws.GetSeqno(ctx)
-		if err != nil {
-			return false, err
-		}
-
-		if currentSeqno > snapshot.InitialSeqno {
-			// World seqno changed (coarse check for quad changes)
-			return true, nil
-		}
-	}
-
-	// Nothing changed
-	return false, nil
+	t.trackObjectAccess(key, rev)
+	return refs[0].Exists, nil
 }
