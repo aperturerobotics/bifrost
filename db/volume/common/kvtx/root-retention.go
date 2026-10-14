@@ -94,6 +94,24 @@ func (v *Volume) RootComplete(ctx context.Context, ref *block.BlockRef) (bool, e
 	return slices.Contains(refs, completeWorldNode), err
 }
 
+// rootCompleteTx checks a root's proof inside a direct transaction. A pending
+// proof counts while the transaction still sees its root, since a sweep that
+// removed the root may not have dropped the proof yet.
+func (v *Volume) rootCompleteTx(ctx context.Context, blocks block.StoreOps, rg *block_gc.RefGraph, ref *block.BlockRef) (bool, error) {
+	// Accept a pending proof whose root is stored.
+	node := block_gc.BlockIRI(ref)
+	v.proofMu.Lock()
+	_, pending := v.rootProofs[node]
+	v.proofMu.Unlock()
+	if pending {
+		return blocks.GetBlockExists(ctx, ref)
+	}
+
+	// Otherwise read the durable proof edge.
+	refs, err := rg.GetOutgoingRefs(ctx, node)
+	return slices.Contains(refs, completeWorldNode), err
+}
+
 // forgetSweptProofs drops the pending proofs of nodes a sweep transaction may
 // have removed and counts the sweep, once the transaction has finished.
 func (v *Volume) forgetSweptProofs(nodes []string) {

@@ -37,6 +37,11 @@ func (c *Controller) retainPublicationWorld(ctx context.Context, so sobject.Shar
 // it. visited observes newly traversed blocks; cached complete subtrees are
 // omitted. missing, when set, accepts a block no reachable store holds as a
 // hole, which leaves the World without a completion proof.
+//
+// A volume proof does not own its root, so a sweep may remove an unowned
+// proved root with its graph at any time. A skipped subtree is held under a
+// stage until the copy's writes are fenced, and a proved World counts only if
+// its root was still stored when it was written again.
 func RetainWorld(
 	ctx context.Context,
 	so sobject.SharedObject,
@@ -51,11 +56,15 @@ func RetainWorld(
 	if complete, err := block.RootComplete(ctx, store, head.GetRootRef()); err != nil {
 		return err
 	} else if complete {
-		return storeRootBlock(ctx, so, head.GetRootRef())
+		kept, err := storeRootBlock(ctx, so, head.GetRootRef())
+		if err != nil || kept {
+			return err
+		}
 	}
 
 	// Copy the graph through the proof recorder.
 	proofs := newRetainProofs(store, store.GetID(), local)
+	defer proofs.release()
 	opts := &block.GraphCopyOptions{
 		Known:    proofs.known,
 		Complete: proofs.complete,
@@ -84,32 +93,42 @@ func RetainWorld(
 }
 
 // storeRootBlock writes the root block, read locally or fetched on demand, to
-// the local store of so, so a named root can hold it.
-func storeRootBlock(ctx context.Context, so sobject.SharedObject, root *block.BlockRef) error {
-	// Read the root block and write it with its refs.
+// the local store of so, so a named root can hold it. It reports whether the
+// root was already stored when written: a root swept since its proof was read
+// comes back without the graph under it.
+func storeRootBlock(ctx context.Context, so sobject.SharedObject, root *block.BlockRef) (bool, error) {
+	// Read the root block with its refs, without filling the store.
 	store := so.GetBlockStore()
-	stored, err := store.GetStoredBlock(ctx, root)
+	var src block.StoreOps = store
+	if cs, ok := store.(block.CopySource); ok {
+		src = cs.GetCopySource()
+	}
+	stored, err := src.GetStoredBlock(ctx, root)
 	if err != nil {
-		return err
+		return false, err
 	}
 	if stored == nil {
-		return block.ErrNotFound
+		return false, block.ErrNotFound
 	}
 	if !stored.RefsKnown {
-		return errors.Wrap(block.ErrRefsUnknown, root.MarshalString())
+		return false, errors.Wrap(block.ErrRefsUnknown, root.MarshalString())
 	}
+
+	// Write it again, noting whether it was still stored.
 	entry := &block.PutBatchEntry{Ref: root, Data: stored.Data, Refs: stored.Refs}
-	if _, err := store.PutBlockBatch(ctx, []*block.PutBatchEntry{entry}); err != nil {
-		return err
+	existed, err := store.PutBlockBatch(ctx, []*block.PutBatchEntry{entry})
+	if err != nil {
+		return false, err
 	}
+	kept := len(existed) != 0 && existed[0]
 
 	// The caller moves a named root next. A store ordered with the
 	// SharedObject state never makes that write durable before this one.
 	if sobject.QueueOrdersBlockWrites(so) {
-		return nil
+		return kept, nil
 	}
 	_, err = store.Sync(ctx)
-	return err
+	return kept, err
 }
 
 // LocalProofKeyPrefix prefixes the completion proofs RetainWorld keeps in the
@@ -132,6 +151,10 @@ type retainProofs struct {
 	local    kvtx.Store
 	// volume is set when the store holds proofs itself.
 	volume bool
+	// stage holds the proved subtrees the copy skips, opened on first use.
+	stage block.StoreOps
+	// releaseStage releases stage.
+	releaseStage func()
 	// pending holds proof keys not yet flushed.
 	pending map[string]struct{}
 	// roots holds volume proofs not yet flushed.
@@ -175,16 +198,9 @@ func (p *retainProofs) known(ctx context.Context, refs []*block.BlockRef) ([]boo
 		return known, nil
 	}
 
-	// Check volume proofs directly against the block store.
+	// Hold the subtrees with volume proofs until the copy releases them.
 	if p.volume {
-		for _, i := range check {
-			var err error
-			known[i], err = block.RootComplete(ctx, p.store, refs[i])
-			if err != nil {
-				return nil, err
-			}
-		}
-		return known, nil
+		return p.hold(ctx, refs, known, check)
 	}
 
 	// Read the local proof records for the remaining refs.
@@ -220,6 +236,53 @@ func (p *retainProofs) known(ctx context.Context, refs []*block.BlockRef) ([]boo
 		known[i] = exists[j]
 	}
 	return known, nil
+}
+
+// hold reports which checked refs have a volume proof and holds each proved
+// subtree under the stage, so it outlives the copy's writes of its parents. A
+// proof read first keeps the stage closed for a copy that skips nothing.
+func (p *retainProofs) hold(ctx context.Context, refs []*block.BlockRef, known []bool, check []int) ([]bool, error) {
+	// Collect the refs whose proof reads present.
+	var proved []*block.BlockRef
+	var provedIdx []int
+	for _, i := range check {
+		complete, err := block.RootComplete(ctx, p.store, refs[i])
+		if err != nil {
+			return nil, err
+		}
+		if complete {
+			proved = append(proved, refs[i])
+			provedIdx = append(provedIdx, i)
+		}
+	}
+	if len(proved) == 0 {
+		return known, nil
+	}
+
+	// Open the stage, then check the proofs again while it takes the subtrees.
+	if p.stage == nil {
+		stage, release, err := block.OpenStage(ctx, p.store)
+		if err != nil {
+			return nil, err
+		}
+		p.stage, p.releaseStage = stage, release
+	}
+	held, err := block.HoldCompleteRoots(ctx, p.stage, proved)
+	if err != nil {
+		return nil, err
+	}
+	for j, i := range provedIdx {
+		known[i] = held[j]
+	}
+	return known, nil
+}
+
+// release drops the stage holding skipped subtrees. The caller has fenced the
+// writes that reference them, or abandoned the copy.
+func (p *retainProofs) release() {
+	if p.releaseStage != nil {
+		p.releaseStage()
+	}
 }
 
 // complete queues a proof for ref and flushes a full batch.

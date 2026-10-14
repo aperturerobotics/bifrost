@@ -38,7 +38,7 @@ func TestRootRejectsUnknownRefs(t *testing.T) {
 	if len(hold.entries) != 0 || len(hold.roots) != 0 {
 		t.Fatalf("hold gathered %d entries and %d roots", len(hold.entries), len(hold.roots))
 	}
-	storeErr := storeRootBlock(ctx, &testSharedObject{blockStore: newTestBlockStore("untracked", inner)}, root)
+	_, storeErr := storeRootBlock(ctx, &testSharedObject{blockStore: newTestBlockStore("untracked", inner)}, root)
 	for name, err := range map[string]error{"hold": holdErr, "store": storeErr} {
 		if !errors.Is(err, block.ErrRefsUnknown) || !strings.Contains(err.Error(), root.MarshalString()) {
 			t.Fatalf("%s = %v, want ErrRefsUnknown naming %s", name, err, root.MarshalString())

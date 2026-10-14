@@ -79,6 +79,44 @@ func (v *Volume) PrepareStagedBlockBatch(ctx context.Context, stage string, entr
 	return existed, err
 }
 
+// HoldStageCompleteRoots reports which roots have a completion proof, durable
+// or pending, and makes the open stage own each of them in the same
+// transaction. A sweep removes a proof together with its root, so a held root
+// keeps the whole graph its proof names until the stage is released.
+func (v *Volume) HoldStageCompleteRoots(ctx context.Context, stage string, refs []*block.BlockRef) ([]bool, error) {
+	complete := make([]bool, len(refs))
+	err := v.withDirectAtomic(ctx, func(blocks block.StoreOps, rg *block_gc.RefGraph) error {
+		// Require the stage to still hang under its process owner.
+		if err := claimStage(ctx, rg, stage); err != nil {
+			return err
+		}
+
+		// Hold each root whose proof is in the graph or pending its write.
+		var adds []block_gc.RefEdge
+		for i, ref := range refs {
+			if ref.GetEmpty() {
+				continue
+			}
+			ok, err := v.rootCompleteTx(ctx, blocks, rg, ref)
+			if err != nil {
+				return err
+			}
+			if ok {
+				complete[i] = true
+				adds = append(adds, block_gc.RefEdge{Subject: stage, Object: block_gc.BlockIRI(ref)})
+			}
+		}
+		if len(adds) == 0 {
+			return nil
+		}
+		return rg.ApplyRefBatch(ctx, adds, nil)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return complete, nil
+}
+
 // claimStage requires the stage to still hang under its process owner. A
 // released stage's edges would hold blocks that nothing can reach or sweep.
 func claimStage(ctx context.Context, rg *block_gc.RefGraph, stage string) error {

@@ -380,6 +380,66 @@ func TestRootRetentionSweepDropsPendingProof(t *testing.T) {
 	}
 }
 
+// TestHoldStageCompleteRootsKeepsProvedGraph checks that a stage holding an
+// unowned proved root keeps it and its graph through a sweep, until the stage
+// is released, and that an unproved root is neither reported nor held.
+func TestHoldStageCompleteRootsKeepsProvedGraph(t *testing.T) {
+	// Write a proved tree and an unproved block, then release their ownership.
+	v, _ := newPublicationTestVolume(t)
+	ctx := t.Context()
+	prepare := func(data string, refs ...*block.BlockRef) *block.BlockRef {
+		t.Helper()
+		ref, _, err := v.PrepareOwnedBlock(ctx, "bucket", []byte(data), &block.PutOpts{Refs: refs})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return ref
+	}
+	leaf := prepare("proved leaf")
+	proved := prepare("proved root", leaf)
+	unproved := prepare("unproved root")
+	if err := v.MarkRootsComplete(ctx, []*block.BlockRef{proved}); err != nil {
+		t.Fatal(err)
+	}
+	if err := v.ReleaseBucketRoots(ctx, "bucket", []*block.BlockRef{proved, unproved}); err != nil {
+		t.Fatal(err)
+	}
+
+	// Hold both under a stage; only the proved root is reported.
+	stage, release, err := v.OpenStage(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	held, err := v.HoldStageCompleteRoots(ctx, stage, []*block.BlockRef{proved, unproved})
+	if err != nil || !slices.Equal(held, []bool{true, false}) {
+		t.Fatalf("held=%v err=%v", held, err)
+	}
+
+	// A sweep keeps the held graph and collects the unproved block.
+	collect := func() {
+		t.Helper()
+		if _, err := block_gc.NewCollector(v.GetRefGraph(), v, nil).Collect(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	exists := func(want bool, refs ...*block.BlockRef) {
+		t.Helper()
+		for _, ref := range refs {
+			if found, err := v.GetBlockExists(ctx, ref); err != nil || found != want {
+				t.Fatalf("block %s found=%v err=%v, want %v", ref.MarshalString(), found, err, want)
+			}
+		}
+	}
+	collect()
+	exists(true, proved, leaf)
+	exists(false, unproved)
+
+	// Releasing the stage lets the next sweep collect the graph.
+	release()
+	collect()
+	exists(false, proved, leaf)
+}
+
 // TestSetBucketRootsHoldsWrittenEntries checks that named roots hold blocks
 // written by the same call, after their staging ownership is released.
 func TestSetBucketRootsHoldsWrittenEntries(t *testing.T) {

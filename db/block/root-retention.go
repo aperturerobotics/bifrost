@@ -27,6 +27,28 @@ type RootRetainer interface {
 	RootComplete(context.Context, *BlockRef) (bool, error)
 }
 
+// CompleteRootHolder is implemented by a stage store whose volume checks
+// completion proofs under the stage's ownership.
+type CompleteRootHolder interface {
+	// HoldCompleteRoots reports which roots have a completion proof and makes
+	// the stage own each of them in the same transaction.
+	HoldCompleteRoots(context.Context, []*BlockRef) ([]bool, error)
+}
+
+// HoldCompleteRoots reports which roots have a completion proof and makes the
+// stage own each proved root, so the graph under it survives until the stage is
+// released. A copy that skips a proved subtree holds it this way until the
+// parent that references it lands: a proof read without a hold can lose its
+// subtree to a sweep first. stage is a store OpenStage returned. A store that
+// cannot hold proofs reports none.
+func HoldCompleteRoots(ctx context.Context, stage StoreOps, refs []*BlockRef) ([]bool, error) {
+	holder, ok := stage.(CompleteRootHolder)
+	if !ok {
+		return make([]bool, len(refs)), nil
+	}
+	return holder.HoldCompleteRoots(ctx, refs)
+}
+
 // MarkRootComplete records that a locally constructed DAG has been fenced, or
 // written ahead of the proof on a volume that makes writes durable in order.
 // Its normal block writes must have supplied all outgoing reference metadata.

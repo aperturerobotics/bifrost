@@ -28,6 +28,9 @@ type bucketRootVolume interface {
 	ReleaseBucketRoots(context.Context, string, []*block.BlockRef) error
 	// ReleaseStageRoots drops a stage's edges to roots.
 	ReleaseStageRoots(context.Context, string, []*block.BlockRef) error
+	// HoldStageCompleteRoots reports which roots have a completion proof and
+	// makes the stage own each of them.
+	HoldStageCompleteRoots(context.Context, string, []*block.BlockRef) ([]bool, error)
 	// MarkRootsComplete records completion proofs for stored roots.
 	MarkRootsComplete(context.Context, []*block.BlockRef) error
 	// RootComplete reports whether a root has a completion proof.
@@ -96,5 +99,18 @@ func (b *bucketHandle) ReleaseRoots(ctx context.Context, refs []*block.BlockRef)
 	return b.v.(bucketRootVolume).ReleaseBucketRoots(ctx, b.t.bucketID, refs)
 }
 
+// HoldCompleteRoots reports which roots have a completion proof and makes this
+// handle's stage own each of them in one volume transaction. A handle without a
+// stage reports no proofs.
+func (b *bucketHandle) HoldCompleteRoots(ctx context.Context, refs []*block.BlockRef) ([]bool, error) {
+	if b.stage == "" || !b.SupportsRootRetention() {
+		return make([]bool, len(refs)), nil
+	}
+	return b.v.(bucketRootVolume).HoldStageCompleteRoots(ctx, b.stage, refs)
+}
+
 // _ is a type assertion
-var _ block.RootRetainer = (*bucketHandle)(nil)
+var (
+	_ block.RootRetainer       = (*bucketHandle)(nil)
+	_ block.CompleteRootHolder = (*bucketHandle)(nil)
+)
