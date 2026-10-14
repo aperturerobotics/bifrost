@@ -3,7 +3,6 @@ import type { MessageStream } from 'starpc'
 
 import { Engine } from '@s4wave/sdk/world/engine.js'
 import type { IObjectState } from '@s4wave/sdk/world/object-state.js'
-import { accessObjectRootWorldState } from '@s4wave/sdk/world/utils.js'
 import { watchObjectQuery } from '@s4wave/sdk/sync/object-query.js'
 import type { AppRevision } from '@s4wave/sdk/sync/instance.js'
 
@@ -21,7 +20,7 @@ import type {
   GetSavedViewsAppResponse,
 } from './sdk/notebook.pb.js'
 import type { NotebookResourceService } from './sdk/notebook_srpc.pb.js'
-import { setObjectBlockData } from './object-block.js'
+import { readObjectBlockData, setObjectBlockData } from './object-block.js'
 import { notebookViewsKey } from './saved-views.js'
 
 /** NotebookResource reads and mutates the canonical Notebook block in its World. */
@@ -119,12 +118,8 @@ class NotebookResource implements NotebookResourceService {
     objectState: IObjectState,
     abortSignal?: AbortSignal,
   ): Promise<Notebook | null> {
-    using cursor = await accessObjectRootWorldState(objectState, abortSignal)
-    const blockResp = await cursor.getBlock({}, abortSignal)
-    if (!blockResp.found || !blockResp.data) {
-      return null
-    }
-    return Notebook.fromBinary(blockResp.data)
+    const data = await readObjectBlockData(objectState, abortSignal)
+    return data ? Notebook.fromBinary(data) : null
   }
 
   /** AddSource appends a source to the Notebook. */
@@ -177,10 +172,12 @@ class NotebookResource implements NotebookResourceService {
     // Validate against the transaction's source list, never a stale viewer copy.
     const order = (request.order ?? []).map(Number)
     await this.mutateNotebook((notebook) => {
+      // Require one position per source.
       const sources = [...(notebook.sources ?? [])]
       if (order.length !== sources.length) {
         throw new Error('source order length does not match source count')
       }
+
       // Require every index once before constructing the replacement list.
       const seen = new Set<number>()
       for (const idx of order) {
@@ -189,6 +186,7 @@ class NotebookResource implements NotebookResourceService {
         }
         seen.add(idx)
       }
+
       // Persist only the requested order.
       return {
         ...notebook,

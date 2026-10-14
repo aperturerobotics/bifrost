@@ -6,6 +6,8 @@ import { KvObjectTypeError } from '../../sdk/kv/world/store.js'
 import { Engine } from '../../sdk/world/engine.js'
 import type { Tx } from '../../sdk/world/world-state.js'
 import { getObjectType } from '../../sdk/world/types/types.js'
+import { watchWorldQuery } from '../../sdk/world/world-query.js'
+import type { IWorldState } from '../../sdk/world/world-state.js'
 import { SyncError, publicError } from '../../sdk/sync/errors.js'
 import type { Operation } from '../../sdk/sync/operation.js'
 import {
@@ -62,6 +64,21 @@ const encoder = new TextEncoder()
 const decoder = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true })
 const versionKey = encoder.encode('version')
 
+// kvStoreExists reports whether the collection object at key exists, and
+// throws KvObjectTypeError when it exists with another type.
+async function kvStoreExists(
+  world: IWorldState,
+  key: string,
+  signal?: AbortSignal,
+): Promise<boolean> {
+  using object = await world.getObject(key, signal)
+  if (!object) return false
+  if ((await getObjectType(world, key, signal)) !== 'kv/store') {
+    throw new KvObjectTypeError()
+  }
+  return true
+}
+
 // Application owns admission, policy, transactions, receipts, and its engine ref.
 // All application writes, including metadata and receipts, commit through one Tx.
 export class Application<S extends Schema, P extends Principal> {
@@ -81,6 +98,7 @@ export class Application<S extends Schema, P extends Principal> {
   private closing?: Promise<void>
 
   constructor(private readonly options: ApplicationOptions<S, P>) {
+    // Validate every schema name, validator and mutation handler.
     this.schema = defineSchema(options.schema)
     this.instance = options.instance ?? this.schema.id
     try {
@@ -104,6 +122,8 @@ export class Application<S extends Schema, P extends Principal> {
         'Schema requires valid names, Standard Schema v1 validators, and every mutation handler',
       )
     }
+
+    // Bound records and snapshots with positive integer limits.
     this.signal = this.controller.signal
     this.limits = {
       maxRecords: options.limits?.maxRecords ?? 10_000,
@@ -218,6 +238,7 @@ export class Application<S extends Schema, P extends Principal> {
     options: CallOptions = {},
     admin = false,
   ): Promise<JsonValue> {
+    // Refuse work once closing, and track the rest until it settles.
     if (this.closing)
       return Promise.reject(new SyncError('CLOSED', 'Server is closed'))
     const work = this.run(principal, operation, options, admin)
@@ -228,16 +249,22 @@ export class Application<S extends Schema, P extends Principal> {
 
   /** access binds local calls and function queries to one authenticated identity. */
   access(principal: P): DatabaseAccess<S> & AppSource<S> {
+    // Copy the identity so later changes by the caller do not apply.
     const identity = { ...principal }
+
+    // Share one query source among this identity's watches.
     // eslint-disable-next-line @typescript-eslint/no-this-alias -- The access object's generator has its own receiver; retain the application owner.
     const application = this
     let queries: AppQueries<S, P> | undefined
     let users = 0
+
+    // Bind local calls and watches to the identity.
     return {
       ...createAccess<S>((operation, options) =>
         this.execute(identity, operation, options),
       ),
       async *watch(definition, args, signal) {
+        // Open the shared source on the first watch and close it after the last.
         if (application.closing)
           throw new SyncError('CLOSED', 'Server is closed')
         const source = (queries ??= new AppQueries({
@@ -285,12 +312,15 @@ export class Application<S extends Schema, P extends Principal> {
     prefix: string,
     signal: AbortSignal,
   ): AsyncIterable<readonly RecordEntry<JsonValue>[]> {
+    // Bound the watch by the application, the caller and the principal.
     if (this.closing) throw new SyncError('CLOSED', 'Server is closed')
     const lifetime = AbortSignal.any([
       this.signal,
       signal,
       ...(principal.signal ? [principal.signal] : []),
     ])
+
+    // Track the delivery until it ends, and end its iterator on abort.
     const done = Promise.withResolvers<void>()
     this.active.add(done.promise)
     let query: SharedQuery | undefined
@@ -336,6 +366,7 @@ export class Application<S extends Schema, P extends Principal> {
     collection: string,
     prefix: string,
   ): SharedQuery {
+    // Register a query that replays its latest snapshot to each user.
     let snapshot: QuerySnapshot | undefined
     const query: SharedQuery = {
       controller: new AbortController(),
@@ -343,6 +374,8 @@ export class Application<S extends Schema, P extends Principal> {
       users: 0,
     }
     this.queries.set(id, query)
+
+    // Pump the producer into the query until it ends or aborts.
     const signal = AbortSignal.any([this.signal, query.controller.signal])
     const publish = (value: QuerySnapshot) => {
       snapshot = value
@@ -378,36 +411,20 @@ export class Application<S extends Schema, P extends Principal> {
     try {
       const key = collectionKey(this.instance, scope, collection)
       const bytes = prefix ? this.recordKey(prefix) : new Uint8Array()
+
+      // Wait for collection creation before opening its owning KV producer.
+      // The watch reruns only after a commit that touches the collection key.
       let emptyDelivered = false
-      for (;;) {
-        lifetime.throwIfAborted()
-        // Wait for collection creation before opening its owning KV producer.
-        // eslint-disable-next-line react-doctor/async-await-in-loop
-        const sequence = await this.engine.getSeqno(lifetime)
-        const read = await this.engine.newTransaction(false, lifetime)
-        let exists = false
-        try {
-          const object = await read.getObject(key, lifetime)
-          exists = object !== null
-          object?.release()
-          if (
-            exists &&
-            (await getObjectType(read, key, lifetime)) !== 'kv/store'
-          )
-            throw new KvObjectTypeError()
-        } finally {
-          try {
-            await read.discard()
-          } finally {
-            read.release()
-          }
-        }
+      for await (const { value: exists } of watchWorldQuery(
+        this.engine,
+        (world, signal) => kvStoreExists(world, key, signal),
+        lifetime,
+      )) {
         if (exists) break
         if (!emptyDelivered) {
           yield []
           emptyDelivered = true
         }
-        await this.engine.waitSeqno((sequence.seqno ?? 0n) + 1n, lifetime)
       }
       const access = await this.engine.accessTypedObject(key, lifetime)
       store = this.engine.resourceRef.createResource(access.resourceId, KvStore)
