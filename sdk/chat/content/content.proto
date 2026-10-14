@@ -69,13 +69,18 @@ message ChatEnvelope {
   repeated string state_ids = 6;
 }
 
-// ChatRedaction removes the body of an earlier message by the same person.
-// The redaction is public metadata even when message bodies require encryption.
+// ChatRedaction removes the body of a message. Its author may remove it, as may
+// a moderator or a redaction that carries its protocol's envelope. The
+// redaction is public metadata even when message bodies require encryption.
 message ChatRedaction {
   // TargetKey identifies the message whose body is removed.
   string target_key = 1;
   // Reason is an optional public explanation.
   string reason = 2;
+  // TargetEnvelopeId is the envelope ID the target carries, set when the
+  // channel may not hold the target yet. TargetKey is then the envelope's
+  // message key, and the body is removed when the target arrives.
+  string target_envelope_id = 3;
 }
 
 // ChatStateChange replaces one channel state value while retaining its history.

@@ -69,10 +69,14 @@ func (o *AttachChatEnvelopeOp) ApplyWorldOp(ctx context.Context, _ *logrus.Entry
 		return false, errors.New("chat envelope ID names another message")
 	}
 
-	// Attach the envelope, in its redacted form when the message is redacted.
+	// Attach the envelope, in its redacted form when the message is redacted,
+	// and apply a redaction that named the envelope before it was attached.
 	message.Envelope = o.GetEnvelope().CloneVT()
 	if message.GetRedactedByKey() != "" {
 		message.Envelope.Data, message.Envelope.RedactedData = message.Envelope.GetRedactedData(), nil
+	}
+	if err := applyPendingRedaction(ctx, ws, o.GetObjectKey(), envelopeKey, message); err != nil {
+		return false, err
 	}
 	return false, writeObjectBody(ctx, ws, o.GetMessageKey(), message)
 }

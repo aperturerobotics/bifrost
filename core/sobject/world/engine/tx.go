@@ -270,15 +270,16 @@ func (t *soEngineWriteTx) publish(ctx context.Context, publisher sobject.StatePu
 
 // ApplyWorldOp applies op to the candidate as accepted replay will apply it.
 // Replay attributes an authenticated operation to the verified signer, so the
-// candidate runs it as this engine's device with the device's accepted person.
+// candidate runs it as this engine's device with the device's accepted person
+// and role.
 func (t *soEngineWriteTx) ApplyWorldOp(ctx context.Context, op world.Operation, sender peer.ID) (uint64, bool, error) {
 	if _, authenticated := op.(world.AuthenticatedOperation); authenticated {
-		device, person, err := t.eng.OperationAuthor(ctx)
+		participant, err := t.eng.operationParticipant(ctx)
 		if err != nil {
 			return 0, false, err
 		}
-		sender = device
-		ctx = world.WithOperationPerson(ctx, person)
+		sender = t.eng.so.GetPeerID()
+		ctx = withOperationAuthor(ctx, participant)
 	}
 	return t.WorldState.ApplyWorldOp(ctx, op, sender)
 }

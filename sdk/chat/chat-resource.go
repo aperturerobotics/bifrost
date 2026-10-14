@@ -37,7 +37,8 @@ const (
 // ErrChatAuthorIdentityRequired is returned when a message has no authenticated author.
 var ErrChatAuthorIdentityRequired = errors.New("chat author identity required")
 
-// ErrChatRedactionForbidden is returned when a redaction targets another person's message.
+// ErrChatRedactionForbidden is returned when a redaction targets another
+// person's message without an owner's authority or its protocol's envelope.
 var ErrChatRedactionForbidden = errors.New("chat redaction targets another person's message")
 
 // errChatStateConflict indicates that current state no longer matches a write condition.
@@ -57,6 +58,8 @@ type ChatResource struct {
 	device peer.ID
 	// personID is the accepted entity or local-only signing device.
 	personID string
+	// owner reports that the signer owns the Space and may redact any message.
+	owner bool
 	// mux exposes channel operations for this attachment.
 	mux srpc.Mux
 }
@@ -603,23 +606,21 @@ func (r *ChatResource) appendMessage(ctx context.Context, wtx world.WorldState, 
 		if !found || suffix == "" || strings.ContainsAny(suffix, "/\x00") {
 			return nil, errors.New("chat relation target belongs to another channel")
 		}
+		if key == content.GetRedaction().GetTargetKey() {
+			continue
+		}
 		if _, err := world.LookupObjectBody[*ChatMessage](ctx, wtx, key, NewChatMessageBlock); err != nil {
 			return nil, errors.Wrap(err, "resolve chat relation target")
 		}
 	}
 
-	// A person redacts only their own message bodies; state and redactions are permanent history.
+	// Resolve the redaction target, which may not have arrived yet.
 	var redacted *ChatMessage
+	redactsPending := false
 	if redaction := content.GetRedaction(); redaction != nil {
-		redacted, err = world.LookupObjectBody[*ChatMessage](ctx, wtx, redaction.GetTargetKey(), NewChatMessageBlock)
+		redacted, redactsPending, err = r.resolveRedactionTarget(ctx, wtx, redaction, req.GetEnvelope() != nil)
 		if err != nil {
 			return nil, err
-		}
-		if redacted.GetPersonId() != r.personID {
-			return nil, ErrChatRedactionForbidden
-		}
-		if redacted.GetContent().GetStateChange() != nil || redacted.GetContent().GetRedaction() != nil {
-			return nil, errors.New("chat state and redactions cannot be redacted")
 		}
 	}
 
@@ -650,7 +651,7 @@ func (r *ChatResource) appendMessage(ctx context.Context, wtx world.WorldState, 
 		return nil, err
 	}
 
-	// Store the message body under its reserved key, linked to the state it replaces.
+	// Build the message body, linked to the state it replaces.
 	replacesKey := ""
 	if len(priorState) == 1 {
 		replacesKey, err = world.GraphValueToKey(priorState[0].GetObj())
@@ -669,6 +670,15 @@ func (r *ChatResource) appendMessage(ctx context.Context, wtx world.WorldState, 
 		ReplacesKey:  replacesKey,
 		Envelope:     req.GetEnvelope().CloneVT(),
 	}
+
+	// Strip the body when a redaction named its envelope before it arrived.
+	if req.GetEnvelope() != nil {
+		if err := applyPendingRedaction(ctx, wtx, r.objectKey, msgKey, msg); err != nil {
+			return nil, err
+		}
+	}
+
+	// Store the body under its reserved key.
 	obj, err := wtx.CreateObject(ctx, msgKey, nil)
 	defer world.ReleaseObjectState(obj)
 	if err != nil {
@@ -719,17 +729,99 @@ func (r *ChatResource) appendMessage(ctx context.Context, wtx world.WorldState, 
 	}
 
 	// The first redaction strips the target body in place; its history position remains.
-	if redacted != nil && redacted.GetRedactedByKey() == "" {
-		redacted.Content = redactChatMessageContent(redacted.GetContent())
-		if envelope := redacted.GetEnvelope(); envelope != nil {
-			envelope.Data, envelope.RedactedData = envelope.GetRedactedData(), nil
+	// A target not held yet is stripped when it arrives.
+	targetKey := content.GetRedaction().GetTargetKey()
+	if redactsPending {
+		if err := wtx.SetGraphQuad(ctx, NewChatPendingRedactionQuad(r.objectKey, msgKey, targetKey)); err != nil {
+			return nil, err
 		}
-		redacted.RedactedByKey = msgKey
-		if err := writeObjectBody(ctx, wtx, content.GetRedaction().GetTargetKey(), redacted); err != nil {
+	}
+	if redacted != nil && redacted.GetRedactedByKey() == "" {
+		redactChatMessage(redacted, msgKey)
+		if err := writeObjectBody(ctx, wtx, targetKey, redacted); err != nil {
 			return nil, err
 		}
 	}
 	return &spacewave_chat_rpc.SendMessageResponse{MessageKey: msgKey}, nil
+}
+
+// resolveRedactionTarget returns the message a redaction removes, or reports
+// that the target is not held yet. A person redacts their own message bodies.
+// A Space owner, or a redaction carrying its protocol's envelope, may redact
+// any message body, including one named by its envelope before it arrives.
+// State and redactions are permanent history.
+func (r *ChatResource) resolveRedactionTarget(ctx context.Context, ws world.WorldState, redaction *ChatRedaction, enveloped bool) (*ChatMessage, bool, error) {
+	// A target named by its envelope ID is stored under that envelope's key.
+	targetKey := redaction.GetTargetKey()
+	moderated := r.owner || enveloped
+	if envelopeID := redaction.GetTargetEnvelopeId(); envelopeID != "" {
+		envelopeKey, err := EnvelopeMessageKey(r.objectKey, envelopeID)
+		if err != nil {
+			return nil, false, err
+		}
+		if envelopeKey != targetKey {
+			return nil, false, errors.New("chat redaction target key does not match its envelope ID")
+		}
+	}
+
+	// Look up the target, deferring a moderator's redaction of one not held yet.
+	target, err := world.LookupObjectBody[*ChatMessage](ctx, ws, targetKey, NewChatMessageBlock)
+	if errors.Is(err, world.ErrObjectNotFound) && redaction.GetTargetEnvelopeId() != "" {
+		if !moderated {
+			return nil, false, ErrChatRedactionForbidden
+		}
+		return nil, true, nil
+	}
+	if err != nil {
+		return nil, false, errors.Wrap(err, "resolve chat redaction target")
+	}
+
+	// Check the authority and the kind of the held target.
+	if target.GetPersonId() != r.personID && !moderated {
+		return nil, false, ErrChatRedactionForbidden
+	}
+	if target.GetContent().GetStateChange() != nil || target.GetContent().GetRedaction() != nil {
+		return nil, false, errors.New("chat state and redactions cannot be redacted")
+	}
+	return target, false, nil
+}
+
+// applyPendingRedaction strips the body of a message arriving under
+// envelopeKey when a redaction named it earlier. State and redactions stay
+// intact. The pending records are consumed either way.
+func applyPendingRedaction(ctx context.Context, ws world.WorldState, channelKey, envelopeKey string, message *ChatMessage) error {
+	// Read and consume the redactions waiting for this envelope.
+	pending, err := ws.LookupGraphQuads(ctx, NewChatPendingRedactionQuad(channelKey, "", envelopeKey), 0)
+	if err != nil || len(pending) == 0 {
+		return err
+	}
+	for _, edge := range pending {
+		if err := ws.DeleteGraphQuad(ctx, edge); err != nil {
+			return err
+		}
+	}
+
+	// The first redaction strips the body.
+	content := message.GetContent()
+	if content.GetStateChange() != nil || content.GetRedaction() != nil || message.GetRedactedByKey() != "" {
+		return nil
+	}
+	redactionKey, err := world.GraphValueToKey(pending[0].GetObj())
+	if err != nil {
+		return err
+	}
+	redactChatMessage(message, redactionKey)
+	return nil
+}
+
+// redactChatMessage strips a message body in place, keeping its routing and
+// history position, and records the redaction that removed it.
+func redactChatMessage(message *ChatMessage, redactionKey string) {
+	message.Content = redactChatMessageContent(message.GetContent())
+	if envelope := message.GetEnvelope(); envelope != nil {
+		envelope.Data, envelope.RedactedData = envelope.GetRedactedData(), nil
+	}
+	message.RedactedByKey = redactionKey
 }
 
 // redactChatMessageContent keeps only the variant, event type, and relation routing of a body.
@@ -1273,7 +1365,7 @@ func normalizeSendMessageContent(req *spacewave_chat_rpc.SendMessageRequest) (*C
 			return nil, err
 		}
 	case *ChatMessageContent_Redaction:
-		if value == nil || value.Redaction.GetTargetKey() == "" || len(value.Redaction.GetTargetKey()) > 4096 || len(value.Redaction.GetReason()) > 4096 {
+		if value == nil || value.Redaction.GetTargetKey() == "" || len(value.Redaction.GetTargetKey()) > 4096 || len(value.Redaction.GetTargetEnvelopeId()) > 4096 || len(value.Redaction.GetReason()) > 4096 {
 			return nil, errors.New("chat redaction requires a bounded target and reason")
 		}
 	default:

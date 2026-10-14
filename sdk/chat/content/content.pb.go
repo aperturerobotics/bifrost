@@ -240,14 +240,19 @@ func (x *ChatEnvelope) GetStateIds() []string {
 	return nil
 }
 
-// ChatRedaction removes the body of an earlier message by the same person.
-// The redaction is public metadata even when message bodies require encryption.
+// ChatRedaction removes the body of a message. Its author may remove it, as may
+// a moderator or a redaction that carries its protocol's envelope. The
+// redaction is public metadata even when message bodies require encryption.
 type ChatRedaction struct {
 	unknownFields []byte
 	// TargetKey identifies the message whose body is removed.
 	TargetKey string `protobuf:"bytes,1,opt,name=target_key,json=targetKey,proto3" json:"targetKey,omitempty"`
 	// Reason is an optional public explanation.
 	Reason string `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty"`
+	// TargetEnvelopeId is the envelope ID the target carries, set when the
+	// channel may not hold the target yet. TargetKey is then the envelope's
+	// message key, and the body is removed when the target arrives.
+	TargetEnvelopeId string `protobuf:"bytes,3,opt,name=target_envelope_id,json=targetEnvelopeId,proto3" json:"targetEnvelopeId,omitempty"`
 }
 
 func (x *ChatRedaction) Reset() {
@@ -266,6 +271,13 @@ func (x *ChatRedaction) GetTargetKey() string {
 func (x *ChatRedaction) GetReason() string {
 	if x != nil {
 		return x.Reason
+	}
+	return ""
+}
+
+func (x *ChatRedaction) GetTargetEnvelopeId() string {
+	if x != nil {
+		return x.TargetEnvelopeId
 	}
 	return ""
 }
@@ -550,6 +562,7 @@ func (m *ChatRedaction) CloneVT() *ChatRedaction {
 	r := new(ChatRedaction)
 	r.TargetKey = m.TargetKey
 	r.Reason = m.Reason
+	r.TargetEnvelopeId = m.TargetEnvelopeId
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -829,6 +842,9 @@ func (this *ChatRedaction) EqualVT(that *ChatRedaction) bool {
 		return false
 	}
 	if this.Reason != that.Reason {
+		return false
+	}
+	if this.TargetEnvelopeId != that.TargetEnvelopeId {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -1360,6 +1376,11 @@ func (x *ChatRedaction) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("reason")
 		s.WriteString(x.Reason)
 	}
+	if x.TargetEnvelopeId != "" || s.HasField("targetEnvelopeId") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("targetEnvelopeId")
+		s.WriteString(x.TargetEnvelopeId)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -1383,6 +1404,9 @@ func (x *ChatRedaction) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "reason":
 			s.AddField("reason")
 			x.Reason = s.ReadString()
+		case "target_envelope_id", "targetEnvelopeId":
+			s.AddField("target_envelope_id")
+			x.TargetEnvelopeId = s.ReadString()
 		}
 	})
 }
@@ -1890,6 +1914,11 @@ func (m *ChatRedaction) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if len(m.TargetEnvelopeId) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.TargetEnvelopeId)
+		i--
+		dAtA[i] = 0x1a
+	}
 	if len(m.Reason) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.Reason)
 		i--
@@ -2249,6 +2278,7 @@ func (m *ChatRedaction) SizeVT() (n int) {
 	_ = l
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.TargetKey)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Reason)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.TargetEnvelopeId)
 	n += len(m.unknownFields)
 	return n
 }
@@ -2518,6 +2548,10 @@ func (x *ChatRedaction) MarshalProtoText() string {
 	if x.Reason != "" {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "reason")
 		protobuf_go_lite.TextWriteString(&sb, x.Reason)
+	}
+	if x.TargetEnvelopeId != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "target_envelope_id")
+		protobuf_go_lite.TextWriteString(&sb, x.TargetEnvelopeId)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -3026,6 +3060,16 @@ func (m *ChatRedaction) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.Reason = v
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TargetEnvelopeId", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.TargetEnvelopeId = v
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

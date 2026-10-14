@@ -699,13 +699,9 @@ func (r *replayer) replayOp(
 		return nil, outcome, err
 	}
 
-	// Apply it as the author's person.
-	person := writer.GetEntityId()
-	if person == "" {
-		person = author.String()
-	}
+	// Apply it as the author's person and role.
 	next, res, err := r.c.processOp(
-		world.WithOperationPerson(ctx, person),
+		withOperationAuthor(ctx, writer),
 		r.c.le,
 		w,
 		opData,

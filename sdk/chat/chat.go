@@ -27,6 +27,10 @@ var PredMessageSender = quad.IRI("spacewave-chat/message-sender")
 // PredChannelState links a channel to the latest event for each state identity.
 var PredChannelState = quad.IRI("spacewave-chat/channel-state")
 
+// PredPendingRedaction links a channel to a redaction whose target has not
+// arrived. The label names the target's envelope message key.
+var PredPendingRedaction = quad.IRI("spacewave-chat/pending-redaction")
+
 // PredThreadParticipant marks a thread summary with an attributed person label.
 var PredThreadParticipant = quad.IRI("spacewave-chat/thread-participant")
 
@@ -34,6 +38,12 @@ var PredThreadParticipant = quad.IRI("spacewave-chat/thread-participant")
 // Empty messageKey selects the current event for this identity in a graph query.
 func NewChatStateQuad(channelKey, messageKey, stateType, stateKey string) world.GraphQuad {
 	return world.NewGraphQuadWithKeys(channelKey, PredChannelState.String(), messageKey, quad.String(stateType+"\x00"+stateKey).String())
+}
+
+// NewChatPendingRedactionQuad records a redaction waiting for its target.
+// Empty redactionKey selects every redaction waiting for targetKey.
+func NewChatPendingRedactionQuad(channelKey, redactionKey, targetKey string) world.GraphQuad {
+	return world.NewGraphQuadWithKeys(channelKey, PredPendingRedaction.String(), redactionKey, quad.String(targetKey).String())
 }
 
 // NewChatThreadParticipantQuad records a verified person who authored a canonical thread reply.

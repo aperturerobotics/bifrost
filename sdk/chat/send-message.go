@@ -67,13 +67,19 @@ func LookupSendChatMessageOp(_ context.Context, operationTypeID string) (world.O
 }
 
 // newReplayResource binds a replayed operation to its verified signing device
-// and the person the replay authority resolved from the accepted config.
+// and the person and role the replay authority resolved from the accepted config.
 func newReplayResource(ctx context.Context, objectKey string, sender peer.ID) (*ChatResource, error) {
 	person := world.OperationPersonFromContext(ctx)
 	if sender == "" || person == "" {
 		return nil, ErrChatAuthorIdentityRequired
 	}
-	return &ChatResource{objectKey: objectKey, localPeerID: sender.String(), device: sender, personID: person}, nil
+	return &ChatResource{
+		objectKey:   objectKey,
+		localPeerID: sender.String(),
+		device:      sender,
+		personID:    person,
+		owner:       world.OperationOwnerFromContext(ctx),
+	}, nil
 }
 
 // _ is a type assertion

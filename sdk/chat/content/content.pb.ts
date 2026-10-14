@@ -225,8 +225,9 @@ export const ChatEnvelope: MessageType<ChatEnvelope> =
   })
 
 /**
- * ChatRedaction removes the body of an earlier message by the same person.
- * The redaction is public metadata even when message bodies require encryption.
+ * ChatRedaction removes the body of a message. Its author may remove it, as may
+ * a moderator or a redaction that carries its protocol's envelope. The
+ * redaction is public metadata even when message bodies require encryption.
  *
  * @generated from message spacewave.chat.ChatRedaction
  */
@@ -243,6 +244,14 @@ export interface ChatRedaction {
    * @generated from field: string reason = 2;
    */
   reason?: string
+  /**
+   * TargetEnvelopeId is the envelope ID the target carries, set when the
+   * channel may not hold the target yet. TargetKey is then the envelope's
+   * message key, and the body is removed when the target arrives.
+   *
+   * @generated from field: string target_envelope_id = 3;
+   */
+  targetEnvelopeId?: string
 }
 
 export const ChatRedaction: MessageType<ChatRedaction> =
@@ -251,6 +260,12 @@ export const ChatRedaction: MessageType<ChatRedaction> =
     fields: [
       { no: 1, name: 'target_key', kind: 'scalar', T: ScalarType.STRING },
       { no: 2, name: 'reason', kind: 'scalar', T: ScalarType.STRING },
+      {
+        no: 3,
+        name: 'target_envelope_id',
+        kind: 'scalar',
+        T: ScalarType.STRING,
+      },
     ] satisfies readonly PartialFieldInfo[],
   })
 

@@ -241,17 +241,21 @@ func newSoEngine(lifetime context.Context, c *Controller, so sobject.SharedObjec
 // OperationAuthor returns the participant signing device and accepted entity.
 // A participant without an entity uses its device as the person.
 func (e *soEngine) OperationAuthor(ctx context.Context) (peer.ID, string, error) {
-	// Resolve the person behind this device from the shared object state.
+	participant, err := e.operationParticipant(ctx)
+	if err != nil {
+		return "", "", err
+	}
+	return e.so.GetPeerID(), participantPerson(participant), nil
+}
+
+// operationParticipant returns this device's participant in the accepted
+// shared object config.
+func (e *soEngine) operationParticipant(ctx context.Context) (*sobject.SOParticipantConfig, error) {
 	snapshot, err := e.so.GetSharedObjectState(ctx)
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
-	device := e.so.GetPeerID()
-	person, err := operationPerson(ctx, snapshot, device)
-	if err != nil {
-		return "", "", err
-	}
-	return device, person, nil
+	return snapshot.GetParticipantConfigForPeer(ctx, e.so.GetPeerID().String())
 }
 
 // wrapReleaseWithTask ends task when release is called.
