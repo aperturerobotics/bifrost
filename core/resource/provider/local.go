@@ -12,6 +12,7 @@ import (
 	core_provider "github.com/s4wave/spacewave/core/provider"
 	provider_local "github.com/s4wave/spacewave/core/provider/local"
 	"github.com/s4wave/spacewave/core/session"
+	"github.com/s4wave/spacewave/core/sobject"
 	"github.com/s4wave/spacewave/net/keypem"
 	"github.com/s4wave/spacewave/net/peer"
 	s4wave_provider_local "github.com/s4wave/spacewave/sdk/provider/local"
@@ -237,9 +238,15 @@ func (s *LocalProviderResource) CompleteSpaceLinkEnrollment(
 		return nil, errors.New("unexpected provider account type")
 	}
 
-	// Redeem only once; retries reuse the account's existing grant and transport.
+	// Redeem each invite once; retries and daemon restarts reuse the account's
+	// grant and transport. An account that holds the Space under an older invite
+	// still redeems a fresh one, which brings its configuration up to date.
 	// The approving peer decides how long the join takes, so ctx alone bounds it.
-	if !localAccountHasSharedObject(localAcc, invite.GetSharedObjectId()) {
+	redeemed, err := localAccountRedeemedInvite(ctx, localAcc, invite)
+	if err != nil {
+		return nil, err
+	}
+	if !redeemed {
 		if _, err := localAcc.JoinViaInvite(ctx, sessionKey, invite, ""); err != nil {
 			return nil, errors.Wrap(err, "join space via invite")
 		}
@@ -357,19 +364,26 @@ func (s *LocalProviderResource) lookupLocalSessionByPeerID(
 	return nil, nil
 }
 
-// localAccountHasSharedObject reports whether the account already lists the
-// shared object, so a later enrollment retry can remount without consuming
-// the one-use invite again.
-func localAccountHasSharedObject(localAcc *provider_local.ProviderAccount, soID string) bool {
-	if soID == "" {
-		return false
-	}
+// localAccountRedeemedInvite reports whether the account's copy of the shared
+// object records the invite, which the approving peer's state carries once the
+// invite is redeemed.
+func localAccountRedeemedInvite(ctx context.Context, localAcc *provider_local.ProviderAccount, invite *sobject.SOInviteMessage) (bool, error) {
 	for _, entry := range localAcc.GetSOListCtr().GetValue().GetSharedObjects() {
-		if entry.GetRef().GetProviderResourceRef().GetId() == soID {
-			return true
+		if entry.GetRef().GetProviderResourceRef().GetId() != invite.GetSharedObjectId() {
+			continue
 		}
+		so, release, err := localAcc.MountSharedObject(ctx, entry.GetRef(), nil)
+		if err != nil {
+			return false, errors.Wrap(err, "mount shared object")
+		}
+		defer release()
+		state, err := so.(*provider_local.SharedObject).GetSOHostState(ctx)
+		if err != nil {
+			return false, errors.Wrap(err, "read shared object state")
+		}
+		return sobject.FindInvite(state, invite.GetInviteId()) != nil, nil
 	}
-	return false
+	return false, nil
 }
 
 // _ verifies the local provider Resource contract.

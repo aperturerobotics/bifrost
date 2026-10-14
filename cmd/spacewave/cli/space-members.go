@@ -29,14 +29,15 @@ func newSpaceMembersCommand(statePath *string, sessionIdx *uint) *cli.Command {
 				return errors.New("usage: space members [space-id]")
 			}
 			ctx := c.Context
-			members, err := readSpaceMembers(ctx, c, *statePath, *sessionIdx, c.Args().First())
+			state, err := readSpaceMembers(ctx, c, *statePath, *sessionIdx, c.Args().First())
 			if err != nil {
 				return err
 			}
 
-			// Emit them as JSON or YAML.
+			// Emit the whole sharing state as JSON or YAML, including the
+			// participant roles and the configuration chain head the Space holds.
 			if format := c.String("output"); format == "json" || format == "yaml" {
-				data, err := (&s4wave_space.SpaceSharingState{ParticipantInfo: members}).MarshalJSON()
+				data, err := state.MarshalJSON()
 				if err != nil {
 					return err
 				}
@@ -45,7 +46,7 @@ func newSpaceMembersCommand(statePath *string, sessionIdx *uint) *cli.Command {
 
 			// Print one row per member.
 			rows := [][]string{{"ACCOUNT", "NAME", "ROLE", "PEERS"}}
-			for _, member := range members {
+			for _, member := range state.GetParticipantInfo() {
 				name := member.GetEntityId()
 				if member.GetIsSelf() {
 					name += " (you)"
@@ -107,13 +108,13 @@ func newSpaceMembersRemoveCommand(statePath *string, sessionIdx *uint) *cli.Comm
 			if err != nil {
 				return err
 			}
-			members, err := watchSpaceMembers(ctx, client, sess, spaceID)
+			state, err := watchSpaceMembers(ctx, client, sess, spaceID)
 			if err != nil {
 				return err
 			}
 
 			// Split the names into listed members and other account IDs.
-			peerIDs, accountIDs, err := memberPeerIDs(members, args)
+			peerIDs, accountIDs, err := memberPeerIDs(state.GetParticipantInfo(), args)
 			if err != nil {
 				return err
 			}
@@ -142,15 +143,15 @@ func newSpaceMembersRemoveCommand(statePath *string, sessionIdx *uint) *cli.Comm
 	}
 }
 
-// readSpaceMembers mounts the selected session and returns the members of the
-// Space spaceArg names.
+// readSpaceMembers mounts the selected session and returns the sharing state of
+// the Space spaceArg names.
 func readSpaceMembers(
 	ctx context.Context,
 	c *cli.Context,
 	statePath string,
 	sessionIdx uint,
 	spaceArg string,
-) ([]*s4wave_space.SpaceParticipantInfo, error) {
+) (*s4wave_space.SpaceSharingState, error) {
 	// Mount the selected session.
 	client, err := connectDaemonFromContext(ctx, c, statePath)
 	if err != nil {
@@ -171,13 +172,13 @@ func readSpaceMembers(
 	return watchSpaceMembers(ctx, client, sess, spaceID)
 }
 
-// watchSpaceMembers mounts the Space and returns its current members.
+// watchSpaceMembers mounts the Space and returns its current sharing state.
 func watchSpaceMembers(
 	ctx context.Context,
 	client *sdkClient,
 	sess *s4wave_session.Session,
 	spaceID string,
-) ([]*s4wave_space.SpaceParticipantInfo, error) {
+) (*s4wave_space.SpaceSharingState, error) {
 	// Mount the Space.
 	spaceSvc, spaceCleanup, err := client.mountSpace(ctx, sess, spaceID)
 	if err != nil {
@@ -195,7 +196,7 @@ func watchSpaceMembers(
 	if err != nil {
 		return nil, errors.Wrap(err, "recv space sharing state")
 	}
-	return state.GetParticipantInfo(), nil
+	return state, nil
 }
 
 // awaitingGroupMessage reports a removal the group must still agree to.

@@ -260,32 +260,12 @@ func (s *SOHost) ImportPeerSnapshot(
 		return ErrParticipantRevoked
 	}
 
-	// Adopt the verified config and the candidate's checkpoint. Invitations
-	// stay locally administered.
+	// Merge the candidate into the held state. Invitations stay locally
+	// administered.
 	next := previous.Clone()
-	next.Config = candidate.GetConfig().CloneVT()
-	next.pruneControlMessages()
-	if checkpoint := candidate.GetCheckpoint(); checkpoint != nil {
-		if err := next.AdoptCheckpoint(s.sharedObjectID, checkpoint); err != nil {
-			return errors.Wrap(err, "peer snapshot checkpoint")
-		}
+	if err := next.mergeSnapshot(s.sharedObjectID, candidate); err != nil {
+		return err
 	}
-
-	// Merge the grants, operations, sequence and control messages.
-	if err := next.MergeKeyEpochs(s.sharedObjectID, candidate.GetKeyEpochs()); err != nil {
-		return errors.Wrap(err, "peer snapshot key epochs")
-	}
-	for _, op := range candidate.GetOps() {
-		if _, err := next.AddOperation(s.sharedObjectID, op); err != nil {
-			return errors.Wrap(err, "peer snapshot operation")
-		}
-	}
-	for _, record := range candidate.GetSequence() {
-		if _, err := next.AddSequence(s.sharedObjectID, record); err != nil {
-			return errors.Wrap(err, "peer snapshot sequence")
-		}
-	}
-	next.MergeControlMessages(s.sharedObjectID, candidate.GetControlMessages())
 
 	// Check the merged state.
 	if err := next.Validate(s.sharedObjectID); err != nil {
@@ -304,12 +284,47 @@ func (s *SOHost) ImportPeerSnapshot(
 	return lock.WriteSOState(ctx, next, changes...)
 }
 
+// mergeSnapshot adopts the config and checkpoint of a candidate whose config
+// the caller authenticated, then merges its grants, operations, sequence and
+// control messages. The state keeps its own operations and invitations.
+func (s *SOState) mergeSnapshot(sharedObjectID string, candidate *SOState) error {
+	// Adopt the verified config and the candidate's checkpoint.
+	s.Config = candidate.GetConfig().CloneVT()
+	s.pruneControlMessages()
+	if checkpoint := candidate.GetCheckpoint(); checkpoint != nil {
+		if err := s.AdoptCheckpoint(sharedObjectID, checkpoint); err != nil {
+			return errors.Wrap(err, "peer snapshot checkpoint")
+		}
+	}
+
+	// Merge the grants, operations, sequence and control messages.
+	if err := s.MergeKeyEpochs(sharedObjectID, candidate.GetKeyEpochs()); err != nil {
+		return errors.Wrap(err, "peer snapshot key epochs")
+	}
+	for _, op := range candidate.GetOps() {
+		if _, err := s.AddOperation(sharedObjectID, op); err != nil {
+			return errors.Wrap(err, "peer snapshot operation")
+		}
+	}
+	for _, record := range candidate.GetSequence() {
+		if _, err := s.AddSequence(sharedObjectID, record); err != nil {
+			return errors.Wrap(err, "peer snapshot sequence")
+		}
+	}
+	s.MergeControlMessages(sharedObjectID, candidate.GetControlMessages())
+	return nil
+}
+
 // InstallInviteSnapshot installs an explicit, externally authenticated
 // invitation result with lineage, the inviter's retained changes leading to
 // its config, oldest first. The lineage lets this replica resolve the config
 // of every operation the candidate holds. The caller must have authenticated
 // the invitation owner and its response before calling this operation.
-// Ordinary peer synchronization must use ImportPeerSnapshot.
+//
+// A replica that already holds the object keeps its own operations when the
+// lineage extends the held config, which the held config authorizes; the
+// invitation's invites replace the held ones. Otherwise the invitation replaces
+// the held state. Ordinary peer synchronization must use ImportPeerSnapshot.
 func (s *SOHost) InstallInviteSnapshot(ctx context.Context, candidate *SOState, lineage []*SOConfigChange) error {
 	// Validate the new checkpoint and lineage before opening the provider's
 	// replacement boundary.
@@ -332,7 +347,27 @@ func (s *SOHost) InstallInviteSnapshot(ctx context.Context, candidate *SOState, 
 		return err
 	}
 	defer lock.Release()
-	return lock.WriteSOState(ctx, candidate.Clone(), lineage...)
+
+	// Merge into the held state when the lineage extends the held config.
+	next := candidate.Clone()
+	previous := lock.GetSOState()
+	if head := previous.GetConfig().GetConfigChainHash(); len(head) != 0 {
+		suffix, err := unappliedConfigChanges(head, lineage)
+		if err != nil {
+			return err
+		}
+		if VerifyConfigChainSuffix(s.sharedObjectID, previous.GetConfig(), candidate.GetConfig(), suffix) == nil {
+			next = previous.Clone()
+			if err := next.mergeSnapshot(s.sharedObjectID, candidate); err != nil {
+				return err
+			}
+			next.Invites = candidate.CloneVT().GetInvites()
+			if err := next.Validate(s.sharedObjectID); err != nil {
+				return errors.Wrap(err, "invitation state")
+			}
+		}
+	}
+	return lock.WriteSOState(ctx, next, lineage...)
 }
 
 // ApplyConfigChange applies a signed SOConfigChange to the shared object state.

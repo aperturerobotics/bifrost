@@ -435,6 +435,43 @@ func TestLocalSpaceLinkDeviceEnrollmentEndToEnd(t *testing.T) {
 		t.Fatalf("reopened enrollment request released P2P sync: %v", err)
 	}
 
+	// A fresh approval for the enrolled Device is redeemed again, so the
+	// Device's copy records the new invite and takes the owner's configuration.
+	freshTicket, _ := buildDeviceTicket(t, devicePriv, devicePeerID)
+	freshResp, err := ownerRes.ApproveSpaceLink(ctx, &s4wave_session.ApproveLocalSpaceLinkRequest{
+		Ticket:     freshTicket,
+		ResourceId: spaceID,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	freshInvite := freshResp.GetCompletion().GetInvite()
+	if freshInvite.GetInviteId() == invite.GetInviteId() {
+		t.Fatal("fresh approval reused the redeemed invite")
+	}
+	if _, err := deviceProvRes.CompleteSpaceLinkEnrollment(ctx, &s4wave_provider_local.CompleteSpaceLinkEnrollmentRequest{
+		SessionPemPrivateKey: devicePEM,
+		SessionPeerId:        devicePeerID.String(),
+		Invite:               freshInvite,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	// The Device's copy of the Space records the fresh invite.
+	enrolledSORef := sobject.NewSharedObjectRef("local", deviceSessRef.GetProviderResourceRef().GetProviderAccountId(), spaceID, provider_local.SobjectBlockStoreID(spaceID))
+	enrolledSO, relEnrolledSO, err := deviceAcc.MountSharedObject(ctx, enrolledSORef, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer relEnrolledSO()
+	enrolledState, err := enrolledSO.(*provider_local.SharedObject).GetSOHostState(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sobject.FindInvite(enrolledState, freshInvite.GetInviteId()) == nil {
+		t.Fatal("enrolled Device did not redeem the fresh invite")
+	}
+
 	// Assert the join targeted the Space and the Device peer.
 	if joinResult.SharedObjectID != spaceID {
 		t.Fatalf("unexpected joined shared object %q", joinResult.SharedObjectID)
