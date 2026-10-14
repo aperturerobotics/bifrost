@@ -5,12 +5,17 @@ import (
 	"context"
 	"io"
 	"slices"
+	"sync"
 
 	"github.com/pkg/errors"
 )
 
 // warmRun bounds the pages one warm-up read covers.
 const warmRun = 256
+
+// nodeReads bounds the page reads nodes keeps in flight. A drive serves
+// many random reads at once in about the time of one.
+const nodeReads = 32
 
 // pager reads index pages through the cache, and values.
 type pager struct {
@@ -38,6 +43,38 @@ func (p *pager) node(page uint64) (*node, error) {
 	}
 	p.cache.put(page, n)
 	return n, nil
+}
+
+// nodes returns the decoded index pages, reading those not cached
+// concurrently.
+func (p *pager) nodes(pages []uint64) ([]*node, error) {
+	// Serve the cached pages and list the rest.
+	out := make([]*node, len(pages))
+	var miss []int
+	for i, page := range pages {
+		if out[i] = p.cache.get(page); out[i] == nil {
+			miss = append(miss, i)
+		}
+	}
+
+	// Read the rest together, keeping the error of each read.
+	errs := make([]error, len(pages))
+	slots := make(chan struct{}, nodeReads)
+	var wg sync.WaitGroup
+	for _, i := range miss {
+		slots <- struct{}{}
+		wg.Go(func() {
+			out[i], errs[i] = p.node(pages[i])
+			<-slots
+		})
+	}
+	wg.Wait()
+	for _, err := range errs {
+		if err != nil {
+			return nil, err
+		}
+	}
+	return out, nil
 }
 
 // root returns the decoded root page, keeping the last one outside the

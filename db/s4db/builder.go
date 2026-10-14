@@ -94,6 +94,27 @@ func (b *builder) apply(page uint64, low []byte, changes []change) ([]child, err
 		return kids, nil
 	}
 
+	// Split the changes among the children, and read the changed children
+	// together: each read is random, and one at a time they bound the
+	// checkpoint.
+	ends := make([]int, n.count())
+	var changed []uint64
+	start := 0
+	for i := range ends {
+		ends[i] = len(changes)
+		if i+1 < n.count() {
+			ends[i], _ = slices.BinarySearchFunc(changes, n.key(i+1), func(c change, k []byte) int { return bytes.Compare(c.key, k) })
+		}
+		if ends[i] > start {
+			changed = append(changed, n.kid(i))
+		}
+		start = ends[i]
+	}
+	nodes, err := b.p.nodes(changed)
+	if err != nil {
+		return nil, err
+	}
+
 	// Rewrite each child with changes in its range and keep the rest.
 	// Adjacent rewritten leaves pack together, so the checkpoint, which
 	// rewrites them anyway, leaves them as full as their entries allow.
@@ -108,14 +129,11 @@ func (b *builder) apply(page uint64, low []byte, changes []change) ([]child, err
 		}
 		leaves, inRun = nil, false
 	}
-	for i := range n.count() {
+	start = 0
+	for i, end := range ends {
 		// Keep a child without changes.
 		k, page := n.key(i), n.kid(i)
-		j := len(changes)
-		if i+1 < n.count() {
-			j, _ = slices.BinarySearchFunc(changes, n.key(i+1), func(c change, k []byte) int { return bytes.Compare(c.key, k) })
-		}
-		if j == 0 {
+		if end == start {
 			flush()
 			kids = append(kids, child{low: k, page: page})
 			continue
@@ -123,25 +141,23 @@ func (b *builder) apply(page uint64, low []byte, changes []change) ([]child, err
 
 		// Add a changed leaf's entries to the run, or rewrite an inner
 		// child.
-		c, err := b.p.node(page)
-		if err != nil {
-			return nil, err
-		}
+		c := nodes[0]
+		nodes = nodes[1:]
 		if c.leaf {
 			if !inRun {
 				leavesLow, inRun = k, true
 			}
 			b.freed = append(b.freed, page)
-			leaves = append(leaves, mergeLeaf(c, changes[:j])...)
+			leaves = append(leaves, mergeLeaf(c, changes[start:end])...)
 		} else {
 			flush()
-			sub, err := b.apply(page, k, changes[:j])
+			sub, err := b.apply(page, k, changes[start:end])
 			if err != nil {
 				return nil, err
 			}
 			kids = append(kids, sub...)
 		}
-		changes = changes[j:]
+		start = end
 	}
 	flush()
 
