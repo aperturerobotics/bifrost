@@ -301,9 +301,10 @@ export class EngineWorldState implements IWorldState {
   public async listObjectsWithType(
     typeID: string,
     abortSignal?: AbortSignal,
+    limit?: number,
   ): Promise<string[]> {
     return this.performOp(false, abortSignal, async (tx) => {
-      return await tx.listObjectsWithType(typeID, abortSignal)
+      return await tx.listObjectsWithType(typeID, abortSignal, limit)
     })
   }
 
