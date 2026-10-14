@@ -6,6 +6,7 @@ import (
 	"github.com/aperturerobotics/util/ccontainer"
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/core/sobject"
+	"github.com/s4wave/spacewave/db/block"
 	block_transform "github.com/s4wave/spacewave/db/block/transform"
 	trace "github.com/s4wave/spacewave/db/traceutil"
 	"github.com/s4wave/spacewave/net/crypto"
@@ -183,12 +184,26 @@ func (l *LocalSOHost) detach(ctx context.Context) (context.Context, context.Canc
 // QueueOperation signs op as the local participant and adds it to the
 // operation set. When ctx carries sobject.WithPublishState, an ordinary state
 // write is admitted to that publication, and QueueOperation returns the local
-// operation id once the admitted snapshot holds the operation. Otherwise it
-// returns once the durable snapshot holds it.
+// operation id once the admitted snapshot holds the operation, or the local
+// operation id with the publication's error once its receipt fails. Otherwise
+// it returns once the durable snapshot holds it.
 func (l *LocalSOHost) QueueOperation(ctx context.Context, op []byte) (string, error) {
-	// Sign the operation and add it to the host state.
+	// Capture the receipt of an admitted write: its failure removes the
+	// operation from the admitted state.
 	ctx, task := trace.NewTask(ctx, "alpha/local-so/queue-operation")
 	defer task.End()
+	var receipt *block.PublicationReceipt
+	snaps := l.stateSnapCtr
+	if publish := sobject.GetPublishState(ctx); publish != nil {
+		snaps = l.admittedSnapCtr
+		ctx = sobject.WithPublishState(ctx, func(ctx context.Context, head *block.AtomicHeadUpdate) (*block.PublicationReceipt, error) {
+			var err error
+			receipt, err = publish(ctx, head)
+			return receipt, err
+		})
+	}
+
+	// Sign the operation and add it to the host state.
 	localID, nonce, err := l.soHost.AddLocalOperation(ctx, l.le, l.sfs, l.privKey, op)
 	if err != nil {
 		return "", err
@@ -197,13 +212,21 @@ func (l *LocalSOHost) QueueOperation(ctx context.Context, op []byte) (string, er
 	// Wait for the snapshot that holds the operation, or a later checkpoint.
 	// The state write admitted or wrote the operation, so the wait ignores
 	// ctx's cancellation and the call reports the operation as added. It
-	// ends with the host's lifetime, and the outcome is then unknown.
-	snaps := l.stateSnapCtr
-	if sobject.GetPublishState(ctx) != nil {
-		snaps = l.admittedSnapCtr
-	}
+	// ends with the host's lifetime, and the outcome is then unknown, or with
+	// a failed receipt.
 	ctx, cancel := l.detach(ctx)
 	defer cancel()
+	if receipt != nil {
+		go func() {
+			select {
+			case <-receipt.Done():
+				if receipt.Err() != nil {
+					cancel()
+				}
+			case <-ctx.Done():
+			}
+		}()
+	}
 	_, err = snaps.WaitValueWithValidator(ctx, func(snap sobject.SharedObjectStateSnapshot) (bool, error) {
 		// A snapshot holds the operation, or its checkpoint covers it.
 		if snap == nil {
@@ -216,8 +239,19 @@ func (l *LocalSOHost) QueueOperation(ctx context.Context, op []byte) (string, er
 		peerID := l.peerID.String()
 		return set.Find(peerID, localID) != nil || set.Covers(peerID, nonce), nil
 	}, nil)
-	if err != nil {
-		return "", err
+	if err == nil {
+		return localID, nil
 	}
-	return localID, nil
+
+	// Report the publication's failure over the canceled wait.
+	if receipt != nil {
+		select {
+		case <-receipt.Done():
+			if rerr := receipt.Err(); rerr != nil {
+				return localID, rerr
+			}
+		default:
+		}
+	}
+	return "", err
 }

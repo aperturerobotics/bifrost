@@ -55,7 +55,9 @@ type SharedObject interface {
 	AccessSharedObjectState(ctx context.Context, released func()) (ccontainer.Watchable[SharedObjectStateSnapshot], func(), error)
 
 	// QueueOperation signs op as the local peer and adds it to the operation
-	// set. Returns the local operation id once the local state holds it.
+	// set. Returns the local operation id once the local state holds it. When
+	// the operation was admitted to a publication whose receipt then failed,
+	// returns the local operation id with the publication's error.
 	QueueOperation(ctx context.Context, op []byte) (string, error)
 }
 
