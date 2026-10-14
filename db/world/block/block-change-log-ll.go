@@ -9,9 +9,6 @@ import (
 )
 
 const (
-	minChangeLogLLBloomCapacity = 64
-	maxChangeLogLLBloomCapacity = 500000
-
 	// HeadChangeCountLimit is the most changes stored inline in an entry.
 	HeadChangeCountLimit = 5
 	// NodeChangeCountLimit is the most changes in one linked-list node.
@@ -49,7 +46,6 @@ func UnmarshalChangeLogLL(ctx context.Context, bcs *block.Cursor) (*ChangeLogLL,
 // Returns the new entry, which is also set into nextBcs.
 func AppendChangeLogLL(
 	ctx context.Context,
-	storeKeyCount uint64,
 	seqno uint64,
 	nextBcs *block.Cursor,
 	prevBcs *block.Cursor,
@@ -71,8 +67,7 @@ func AppendChangeLogLL(
 		return nil, err
 	}
 	cll := &ChangeLogLL{
-		Seqno: seqno,
-		// all in the changelog node must be of same type
+		Seqno:      seqno,
 		ChangeType: firstChange.GetChangeType(),
 	}
 	nextBcs.ClearAllRefs()
@@ -81,65 +76,24 @@ func AppendChangeLogLL(
 		nextBcs.SetRef(2, prevBcs)
 	}
 
-	// build bloom filter if necessary
-	bloomCapacity := int(storeKeyCount) //nolint:gosec
-	if len(worldChangesBcs) <= HeadChangeCountLimit {
-		bloomCapacity = 0
-	} else if bloomCapacity > maxChangeLogLLBloomCapacity {
-		bloomCapacity = maxChangeLogLLBloomCapacity
-	} else if bloomCapacity < minChangeLogLLBloomCapacity {
-		bloomCapacity = minChangeLogLLBloomCapacity
-	}
-
-	// Build a key filter when the batch is large enough to need one.
-	var kfb *filters.KeyFiltersBuilder
-	if bloomCapacity != 0 {
-		kfb = filters.NewKeyFiltersBuilder(bloomCapacity)
-	}
-
-	// changeBatchBcs located at world-change linked list HEAD sub-block
+	// Push the changes onto the linked list at the entry's change batch,
+	// at most NodeChangeCountLimit per node, leaving the final node with at
+	// most HeadChangeCountLimit. Each push detaches the previous head.
 	changeBatchBcs := nextBcs.FollowSubBlock(3)
-	i := 0
-	for {
+	for i := 0; i < len(worldChangesBcs); {
 		changeBatch := worldChangesBcs[i:]
-		if len(changeBatch) == 0 {
-			break
-		}
-		// limit size of linked-list node
-		maxBatchLen := NodeChangeCountLimit
-		if maxBatchLen != 0 && len(changeBatch) > maxBatchLen {
-			// batch at most NodeChangeCountLimit together
-			changeBatch = changeBatch[:maxBatchLen]
-		} else if len(changeBatch) > HeadChangeCountLimit {
-			// make sure the final batch is <= HeadChangeCountLimit long.
+		switch {
+		case len(changeBatch) > NodeChangeCountLimit:
+			changeBatch = changeBatch[:NodeChangeCountLimit]
+		case len(changeBatch) > HeadChangeCountLimit:
 			changeBatch = changeBatch[:len(changeBatch)-HeadChangeCountLimit]
 		}
-
-		// update the key filters
-		if kfb != nil {
-			for _, chBcs := range changeBatch {
-				ch, err := UnmarshalWorldChange(ctx, chBcs)
-				if err != nil {
-					return nil, err
-				}
-				ApplyWorldChangeToKeyFilters(kfb, ch)
-			}
-		}
-
-		// update HEAD of linked list by pushing a node
-		// internally, detaches the previous WorldChangeLL into a new cursor
 		cll.ChangeBatch, err = AppendWorldChangeLL(ctx, changeBatchBcs, changeBatchBcs, changeBatch)
 		if err != nil {
 			return nil, err
 		}
 		i += len(changeBatch)
 	}
-
-	// Store the built key filter on the changelog node.
-	if kfb != nil {
-		cll.KeyFilters = kfb.BuildKeyFilters()
-	}
-
 	return cll, nil
 }
 
