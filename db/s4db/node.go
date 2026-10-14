@@ -100,9 +100,14 @@ func (n *node) kid(i int) uint64 {
 // search returns the position of the first key at or after key and whether
 // it equals key.
 func (n *node) search(key []byte) (int, bool) {
+	return n.searchFrom(0, key)
+}
+
+// searchFrom is search over the keys from position lo.
+func (n *node) searchFrom(lo int, key []byte) (int, bool) {
 	// Bisect on heads, comparing whole keys on equal heads.
 	h := head(key)
-	lo, hi := 0, len(n.heads)
+	hi := len(n.heads)
 	for lo < hi {
 		m := int(uint(lo+hi) >> 1)
 		c := cmp.Compare(n.heads[m], h)
@@ -118,13 +123,15 @@ func (n *node) search(key []byte) (int, bool) {
 	return lo, lo < len(n.heads) && n.heads[lo] == h && bytes.Equal(n.key(lo), key)
 }
 
-// childIndex returns the child of inner page n covering key.
+// childIndex returns the child of inner page n covering key: the last child
+// whose low key is at or before key. The first child covers everything below
+// the second, so its key is never compared.
 func (n *node) childIndex(key []byte) int {
-	i, found := n.search(key)
+	i, found := n.searchFrom(1, key)
 	if found {
 		return i
 	}
-	return max(0, i-1)
+	return i - 1
 }
 
 // fill returns the bytes the entries of n occupy.

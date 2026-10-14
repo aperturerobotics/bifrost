@@ -131,8 +131,12 @@ func (b *builder) apply(page uint64, low []byte, changes []change) ([]child, err
 	}
 	start = 0
 	for i, end := range ends {
-		// Keep a child without changes.
+		// Keep a child without changes. The first child's low is the
+		// page's own.
 		k, page := n.key(i), n.kid(i)
+		if i == 0 {
+			k = low
+		}
 		if end == start {
 			flush()
 			kids = append(kids, child{low: k, page: page})
@@ -218,27 +222,35 @@ func (b *builder) rebalance(kids []child) ([]child, error) {
 	return kids, nil
 }
 
-// fill returns the bytes the entries of c occupy.
-func (b *builder) fill(c child) (int, error) {
+// fill returns the bytes the entries of c occupy and whether c is a leaf.
+func (b *builder) fill(c child) (int, bool, error) {
 	if c.d != nil {
-		return c.d.fill(), nil
+		return c.d.fill(), c.d.leaf, nil
 	}
 	n, err := b.p.node(c.page)
 	if err != nil {
-		return 0, err
+		return 0, false, err
 	}
-	return n.fill(), nil
+	return n.fill(), n.leaf, nil
 }
 
-// fits reports whether the entries of two children fit in one page.
+// fits reports whether the entries of two children fit in one page. The
+// first key of an inner page is empty, so merging inner pages adds the right
+// one's low key.
 func (b *builder) fits(l, r child) (bool, error) {
+	// Sum the entries of both pages.
 	total := 0
+	leaf := false
 	for _, c := range []child{l, r} {
-		n, err := b.fill(c)
+		n, isLeaf, err := b.fill(c)
 		if err != nil {
 			return false, err
 		}
 		total += n
+		leaf = isLeaf
+	}
+	if !leaf {
+		total += innerEntrySize(r.low) - innerEntrySize(nil)
 	}
 	return total <= pageRoom, nil
 }
@@ -375,13 +387,18 @@ func packLeaves(entries []change) []child {
 	return kids
 }
 
-// packInner packs children into new inner pages. Each page copies its keys
-// into one buffer, so a draft held until place keeps no replaced page alive.
+// packInner packs children into new inner pages. Each page stores an empty
+// first key and copies the others into one buffer, so a draft held until
+// place keeps no replaced page alive.
 func packInner(kids []child) []child {
-	// Measure the entries.
+	// Measure the entries. The first is stored empty; later pages measure
+	// their first key, which leaves them a little room.
 	sizes := make([]int, len(kids))
 	for i, k := range kids {
 		sizes[i] = innerEntrySize(k.low)
+	}
+	if len(sizes) != 0 {
+		sizes[0] = innerEntrySize(nil)
 	}
 
 	// Fill an inner page for each split.
@@ -389,18 +406,22 @@ func packInner(kids []child) []child {
 	start := 0
 	for _, end := range split(sizes) {
 		keyBytes := 0
-		for _, k := range kids[start:end] {
+		for _, k := range kids[start+1 : end] {
 			keyBytes += len(k.low)
 		}
 		buf := make([]byte, 0, keyBytes)
 		d := &draft{keys: make([][]byte, 0, end-start), kids: make([]uint64, 0, end-start), sub: make([]*draft, 0, end-start)}
-		for _, k := range kids[start:end] {
-			buf = append(buf, k.low...)
-			d.keys = append(d.keys, buf[len(buf)-len(k.low):])
+		for i, k := range kids[start:end] {
+			key := buf[len(buf):]
+			if i != 0 {
+				buf = append(buf, k.low...)
+				key = buf[len(buf)-len(k.low):]
+			}
+			d.keys = append(d.keys, key)
 			d.kids = append(d.kids, k.page)
 			d.sub = append(d.sub, k.d)
 		}
-		out = append(out, child{low: d.keys[0], d: d})
+		out = append(out, child{low: kids[start].low, d: d})
 		start = end
 	}
 	return out

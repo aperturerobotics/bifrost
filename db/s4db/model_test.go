@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"maps"
 	"math/rand/v2"
+	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/s4wave/spacewave/db/kvtx"
@@ -201,5 +203,53 @@ func checkSpace(t *testing.T, db *DB) {
 				t.Fatalf("%s page %d awaits release in %+v", who, p, x)
 			}
 		}
+	}
+}
+
+// TestDeepTreeGets reads every key after each commit to a tree whose long
+// shared key prefix makes inner pages narrow and deep. Checkpoints rewrite
+// inner pages often, and each must route a key equal to a separator to the
+// child that holds it.
+func TestDeepTreeGets(t *testing.T) {
+	// Open a database that checkpoints every few commits.
+	ctx := context.Background()
+	db := openTest(t, filepath.Join(t.TempDir(), "a.s4wave"), Options{CheckpointMin: 32 << 10, CheckpointMax: 64 << 10})
+	r := rand.New(rand.NewPCG(1, 2))
+	prefix := strings.Repeat("p", 120)
+	m := make(model)
+	for n := range 300 {
+		// Set or delete a random batch.
+		tx, err := db.NewTransaction(ctx, true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for range 1 + r.IntN(150) {
+			k := fmt.Sprintf("%s/%07d", prefix, r.IntN(30000))
+			if r.IntN(3) == 0 {
+				delete(m, k)
+				err = tx.Delete(ctx, []byte(k))
+			} else {
+				m[k] = []byte(k[len(prefix):])
+				err = tx.Set(ctx, []byte(k), m[k])
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+		}
+		if err := tx.Commit(ctx); err != nil {
+			t.Fatal(err)
+		}
+
+		// Read every key back.
+		rtx, err := db.NewTransaction(ctx, false)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for k := range m {
+			if _, ok, err := rtx.Get(ctx, []byte(k)); err != nil || !ok {
+				t.Fatalf("commit %d: get %s: found %v err %v", n, k[len(prefix):], ok, err)
+			}
+		}
+		rtx.Discard()
 	}
 }
