@@ -126,57 +126,60 @@ func (r *SpaceResource) GetWorldEngineBucketID() string {
 }
 
 // WatchSpaceState watches the SpaceState for the component.
+// It sends the state once, then again each time a World commit changes it.
 func (r *SpaceResource) WatchSpaceState(
 	req *s4wave_space.WatchSpaceStateRequest,
 	strm s4wave_space.SRPCSpaceResourceService_WatchSpaceStateStream,
 ) error {
-	// Initialize the world snapshot watch.
 	ctx, worldEng := strm.Context(), r.space.GetWorldEngine()
-
-	// Read and publish the current world contents.
-	var prevWorldSeqno uint64
+	var prev *s4wave_space.SpaceState
 	for {
-		r.le.Debugf("checking world state: seqno(%v)", prevWorldSeqno+1)
-
-		// Build one SpaceState snapshot from a read transaction.
-		var state *s4wave_space.SpaceState
-		if err := func() error {
-			// Open the world read transaction that supplies this Space snapshot.
-			wtx, err := worldEng.NewTransaction(ctx, false)
-			if err != nil {
-				return errors.Wrap(err, "open world transaction")
-			}
-			defer wtx.Discard()
-
-			// Read and retain the transaction sequence for the next Space update.
-			prevWorldSeqno, err = wtx.GetSeqno(ctx)
-			if err != nil {
-				return errors.Wrap(err, "read world sequence")
-			}
-
-			// Start a ready SpaceState response.
-			state = &s4wave_space.SpaceState{Ready: true, EngineId: r.space.GetWorldEngineID()}
-
-			// Load SpaceSettings when present.
-			state.Settings, err = space_world.LookupSpaceSettingsBody(ctx, wtx)
-			if err != nil {
-				return errors.Wrap(err, "read Space settings")
-			}
-
-			// Attach shared-object transform information.
-			state.TransformInfo = r.buildTransformInfo(ctx)
-
-			// Publish the snapshot.
-			return strm.Send(state)
-		}(); err != nil {
+		// Read the state and the seqno it describes.
+		state, seqno, err := r.readSpaceState(ctx, worldEng)
+		if err != nil {
 			return err
 		}
 
-		// Wait for the next world sequence.
-		if _, err := worldEng.WaitSeqno(ctx, prevWorldSeqno+1); err != nil {
+		// Send the state when it changed.
+		if !state.EqualVT(prev) {
+			if err := strm.Send(state); err != nil {
+				return err
+			}
+			prev = state
+		}
+
+		// Wait for the next World commit.
+		if _, err := worldEng.WaitSeqno(ctx, seqno+1); err != nil {
 			return err
 		}
 	}
+}
+
+// readSpaceState reads the SpaceState from one World read transaction and
+// returns it with the transaction's seqno.
+func (r *SpaceResource) readSpaceState(ctx context.Context, worldEng world.Engine) (*s4wave_space.SpaceState, uint64, error) {
+	// Open the read transaction and read its seqno.
+	wtx, err := worldEng.NewTransaction(ctx, false)
+	if err != nil {
+		return nil, 0, errors.Wrap(err, "open world transaction")
+	}
+	defer wtx.Discard()
+	seqno, err := wtx.GetSeqno(ctx)
+	if err != nil {
+		return nil, 0, errors.Wrap(err, "read world sequence")
+	}
+
+	// Read the Space settings and the SharedObject transform.
+	settings, err := space_world.LookupSpaceSettingsBody(ctx, wtx)
+	if err != nil {
+		return nil, 0, errors.Wrap(err, "read Space settings")
+	}
+	return &s4wave_space.SpaceState{
+		Ready:         true,
+		EngineId:      r.space.GetWorldEngineID(),
+		Settings:      settings,
+		TransformInfo: r.buildTransformInfo(ctx),
+	}, seqno, nil
 }
 
 // WatchSpaceSharingState watches the sharing snapshot for the space.

@@ -558,9 +558,21 @@ func (r *SessionResource) WatchResourcesList(
 	}
 	defer relSoList()
 
-	// Send an empty resource snapshot while the SharedObject list is uninitialized.
+	// Send each list that differs from the last one sent, starting with an
+	// empty list while the SharedObject list is uninitialized.
+	var currentList []*space.SpaceSoListEntry
+	objectTypes := make(map[string]string)
+	var prev *s4wave_session.WatchResourcesListResponse
+	send := func() error {
+		resp := resourcesListResponse(currentList, objectTypes)
+		if resp.EqualVT(prev) {
+			return nil
+		}
+		prev = resp
+		return strm.Send(resp)
+	}
 	if soListWatchable.GetValue() == nil {
-		if err := strm.Send(&s4wave_session.WatchResourcesListResponse{}); err != nil {
+		if err := send(); err != nil {
 			return err
 		}
 	}
@@ -570,7 +582,6 @@ func (r *SessionResource) WatchResourcesList(
 	listErrCh := make(chan error, 1)
 	projectionCh := make(chan resourcesListProjectionEvent)
 	workers := make(map[string]resourcesListProjectionWorker)
-	objectTypes := make(map[string]string)
 	var workerGeneration uint64
 
 	// goroutinesBcast guards the running projection goroutine count so the
@@ -639,9 +650,9 @@ func (r *SessionResource) WatchResourcesList(
 	}()
 
 	// Project each list revision and stream its current index ObjectTypes.
-	var currentList []*space.SpaceSoListEntry
+	// pendingInitial holds the workers whose first projection has not arrived;
+	// projection updates are held until every one has.
 	pendingInitial := make(map[string]uint64)
-	initialProjectionChanged := false
 	for {
 		select {
 		case <-ctx.Done():
@@ -649,6 +660,7 @@ func (r *SessionResource) WatchResourcesList(
 		case err := <-listErrCh:
 			return err
 		case soList := <-listCh:
+			// Filter the list to its Spaces.
 			list, err := space.FilterSharedObjectList(soList.GetSharedObjects(), func(ent *sobject.SharedObjectListEntry, err error) error {
 				return nil
 			})
@@ -657,83 +669,67 @@ func (r *SessionResource) WatchResourcesList(
 			}
 			currentList = filterOutCdnSpace(list)
 
-			for _, worker := range workers {
-				worker.cancel()
-			}
-			clear(workers)
-			clear(pendingInitial)
-			initialProjectionChanged = false
-
+			// Start a projection for each added or changed Space and stop the
+			// projections of the others, so a metadata change remounts nothing.
 			if req.GetIncludeIndexObjectTypes() {
-				present := make(map[string]struct{}, len(currentList))
+				refs := make(map[string]*sobject.SharedObjectRef, len(currentList))
 				for _, entry := range currentList {
 					ref := entry.GetEntry().GetRef()
-					id := ref.GetProviderResourceRef().GetId()
-					if id == "" || ref == nil {
+					if id := ref.GetProviderResourceRef().GetId(); id != "" {
+						refs[id] = ref
+					}
+				}
+				for id, worker := range workers {
+					if worker.ref.EqualVT(refs[id]) {
 						continue
 					}
-					present[id] = struct{}{}
-					workerGeneration++
-					workerCtx, workerCancel := context.WithCancel(ctx)
-					workers[id] = resourcesListProjectionWorker{
-						cancel:     workerCancel,
-						generation: workerGeneration,
-					}
-					pendingInitial[id] = workerGeneration
-					// Capture this worker's generation before starting the
-					// goroutine: the closure would otherwise read the shared
-					// counter after later iterations advanced it.
-					workerGen := workerGeneration
-					startGoroutine(func() {
-						r.watchSpaceIndexObjectType(
-							workerCtx,
-							ref.CloneVT(),
-							id,
-							workerGen,
-							projectionCh,
-						)
-					})
-				}
-				for id := range objectTypes {
-					if _, ok := present[id]; !ok {
+					worker.cancel()
+					delete(workers, id)
+					delete(pendingInitial, id)
+					if refs[id] == nil {
 						delete(objectTypes, id)
 					}
 				}
+				for id, ref := range refs {
+					if _, ok := workers[id]; ok {
+						continue
+					}
+					workerGeneration++
+					workerGen := workerGeneration
+					workerCtx, workerCancel := context.WithCancel(ctx)
+					workers[id] = resourcesListProjectionWorker{
+						ref:        ref,
+						cancel:     workerCancel,
+						generation: workerGen,
+					}
+					pendingInitial[id] = workerGen
+					startGoroutine(func() {
+						r.watchSpaceIndexObjectType(workerCtx, ref.CloneVT(), id, workerGen, projectionCh)
+					})
+				}
 			}
-
-			if err := sendResourcesList(strm, currentList, objectTypes); err != nil {
+			if err := send(); err != nil {
 				return err
 			}
 		case projection := <-projectionCh:
+			// Drop output from a stopped worker or a repeated first projection.
 			worker, ok := workers[projection.id]
 			if !ok || worker.generation != projection.generation {
 				continue
 			}
-			changed := objectTypes[projection.id] != projection.objectType
 			if projection.initial {
 				if pendingInitial[projection.id] != projection.generation {
 					continue
 				}
 				delete(pendingInitial, projection.id)
-				if changed {
-					objectTypes[projection.id] = projection.objectType
-					initialProjectionChanged = true
-				}
-				if len(pendingInitial) != 0 || !initialProjectionChanged {
-					continue
-				}
-				initialProjectionChanged = false
-			} else {
-				if !changed {
-					continue
-				}
-				objectTypes[projection.id] = projection.objectType
-				if len(pendingInitial) != 0 {
-					initialProjectionChanged = true
-					continue
-				}
 			}
-			if err := sendResourcesList(strm, currentList, objectTypes); err != nil {
+
+			// Record the type and send once every first projection arrived.
+			objectTypes[projection.id] = projection.objectType
+			if len(pendingInitial) != 0 {
+				continue
+			}
+			if err := send(); err != nil {
 				return err
 			}
 		}
@@ -770,6 +766,8 @@ type resourcesListProjectionEvent struct {
 
 // resourcesListProjectionWorker retains one generation's cancellation boundary.
 type resourcesListProjectionWorker struct {
+	// ref is the SharedObject the worker projects.
+	ref *sobject.SharedObjectRef
 	// cancel stops this worker when the resource list replaces it.
 	cancel context.CancelFunc
 	// generation identifies output admitted from this worker.
@@ -878,16 +876,18 @@ func readSpaceIndexObjectType(ctx context.Context, engine world.Engine) (string,
 	return objectType, seqno, nil
 }
 
-func sendResourcesList(
-	strm s4wave_session.SRPCSessionResourceService_WatchResourcesListStream,
+// resourcesListResponse lists the Spaces with their index ObjectTypes.
+// It copies each entry, so a later response does not change an earlier one.
+func resourcesListResponse(
 	list []*space.SpaceSoListEntry,
 	objectTypes map[string]string,
-) error {
-	for _, entry := range list {
-		id := entry.GetEntry().GetRef().GetProviderResourceRef().GetId()
-		entry.IndexObjectType = objectTypes[id]
+) *s4wave_session.WatchResourcesListResponse {
+	spaces := make([]*space.SpaceSoListEntry, len(list))
+	for i, entry := range list {
+		spaces[i] = entry.CloneVT()
+		spaces[i].IndexObjectType = objectTypes[entry.GetEntry().GetRef().GetProviderResourceRef().GetId()]
 	}
-	return strm.Send(&s4wave_session.WatchResourcesListResponse{SpacesList: list})
+	return &s4wave_session.WatchResourcesListResponse{SpacesList: spaces}
 }
 
 // MountSharedObject mounts a shared object within the session by ID.
