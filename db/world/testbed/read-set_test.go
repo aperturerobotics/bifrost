@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/s4wave/spacewave/db/world"
+	world_types "github.com/s4wave/spacewave/db/world/types"
 )
 
 // TestReadSetWaitChange checks that WaitChange skips a commit the reads did not
@@ -90,6 +91,42 @@ func TestReadSetWaitChangeIteration(t *testing.T) {
 	// Create an object under the prefix and expect the wait to end.
 	createObject(t, ctx, ws, "iter/new")
 	waitChange(t, ctx, reads, ws, seqno)
+}
+
+// TestReadSetWaitChangeTypeListing checks that a view listing a type skips a
+// commit typing an object as another type and sees an object gaining its type.
+func TestReadSetWaitChangeTypeListing(t *testing.T) {
+	// List the objects of a type through the tracked state.
+	ctx := t.Context()
+	tb := MustDefault(t, ctx)
+	ws := world.NewEngineWorldState(tb.Engine, true)
+	reads := world.NewReadSet()
+	seqno, err := ws.GetSeqno(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := world_types.ListObjectsWithType(ctx, reads.Track(ws), "listed"); err != nil {
+		t.Fatal(err)
+	}
+
+	// Type one object as another type, then give a second object the type.
+	createObject(t, ctx, ws, "typed/unrelated")
+	if err := world_types.SetObjectType(ctx, ws, "typed/unrelated", "other"); err != nil {
+		t.Fatal(err)
+	}
+	createObject(t, ctx, ws, "typed/listed")
+	if err := world_types.SetObjectType(ctx, ws, "typed/listed", "listed"); err != nil {
+		t.Fatal(err)
+	}
+	want, err := ws.GetSeqno(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Expect the wait to end at the commit that set the type.
+	if got := waitChange(t, ctx, reads, ws, seqno); got != want {
+		t.Fatalf("WaitChange = %d, want %d", got, want)
+	}
 }
 
 // readObject reads key through ws and returns the seqno before the read.

@@ -13,12 +13,11 @@ type GraphQuad interface {
 	GetPredicate() string
 	// GetObj returns the object field.
 	GetObj() string
-	// GetLabel returns the label field.
-	// (empty in most cases)
+	// GetLabel returns the label field, which is usually empty.
 	GetLabel() string
 }
 
-// GraphQuadStringToCayleyValue converts a graph quad string to a quad.Value
+// GraphQuadStringToCayleyValue converts a graph quad string to a quad.Value.
 func GraphQuadStringToCayleyValue(s string) quad.Value {
 	return quad.Raw(s)
 }
@@ -139,6 +138,19 @@ func NewGraphQuad(subj, pred, obj, value string) GraphQuad {
 	}
 }
 
+// TypePredicate is the predicate linking an object to its type object, whose
+// key is TypeObjectKeyPrefix followed by the type ID.
+const TypePredicate = "type"
+
+// TypeObjectKeyPrefix prefixes the key of every type object.
+const TypeObjectKeyPrefix = "types/"
+
+// NewTypeQuadFilter returns the lookup filter of the type edges into typeID,
+// which ListObjectsWithType lists.
+func NewTypeQuadFilter(typeID string) GraphQuad {
+	return NewGraphQuadWithKeys("", quad.IRI(TypePredicate).String(), TypeObjectKeyPrefix+typeID, "")
+}
+
 // NewGraphQuadWithKeys creates a new graph quad from object keys.
 func NewGraphQuadWithKeys(subjKey, pred, objKey, value string) GraphQuad {
 	var subj, obj string
@@ -166,8 +178,7 @@ func (g *graphQuad) GetObj() string {
 	return g.obj
 }
 
-// GetLabel returns the value field.
-// (empty in most cases)
+// GetLabel returns the value field, which is usually empty.
 func (g *graphQuad) GetLabel() string {
 	return g.value
 }
