@@ -18,4 +18,7 @@ export function throwTypedObjectError(
     abortSignal?.throwIfAborted()
     throw new TypedObjectGrantRetiredError()
   }
+  if (response.errorCode === WorldErrorCode.OBJECT_NOT_FOUND) {
+    throw new Error('object not found')
+  }
 }

@@ -124,6 +124,14 @@ export enum WorldErrorCode {
    * @generated from enum value: WORLD_ERROR_CODE_TYPED_OBJECT_GRANT_RETIRED = 2;
    */
   TYPED_OBJECT_GRANT_RETIRED = 2,
+
+  /**
+   * WORLD_ERROR_CODE_OBJECT_NOT_FOUND indicates that the World holds no object
+   * at the requested key.
+   *
+   * @generated from enum value: WORLD_ERROR_CODE_OBJECT_NOT_FOUND = 3;
+   */
+  OBJECT_NOT_FOUND = 3,
 }
 
 export const WorldErrorCode_Enum = /* @__PURE__ */ createEnumType(

@@ -74,15 +74,12 @@ func TestTypedObjectResource(t *testing.T) {
 			t.Fatalf("GetClient failed: %v", err)
 		}
 		typedSvcClient := s4wave_world.NewSRPCTypedObjectResourceServiceClient(srpcClient)
-		_, err = typedSvcClient.AccessTypedObject(ctx, &s4wave_world.AccessTypedObjectRequest{
+		_, err = s4wave_world.AccessTypedObject(ctx, typedSvcClient, &s4wave_world.AccessTypedObjectRequest{
 			ObjectKey: "nonexistent-object",
 		})
-		if err == nil {
-			t.Fatal("expected error for nonexistent object")
+		if !errors.Is(err, world.ErrObjectNotFound) {
+			t.Fatalf("AccessTypedObject error = %v, want ErrObjectNotFound", err)
 		}
-
-		// logf.
-		t.Logf("Correctly returned error for nonexistent object: %v", err)
 	})
 
 	// Run the AccessTypedObjectNoType subtest.

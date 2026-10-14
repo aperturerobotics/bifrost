@@ -40,7 +40,8 @@ func TestOperationResponsesPreserveTypedErrors(t *testing.T) {
 		}
 	}
 
-	// Unhandled operations retain their sentinel, and successful responses stay nil.
+	// Unhandled operations and missing objects retain their sentinels, and
+	// successful responses stay nil.
 	for _, result := range []error{
 		(&ApplyWorldOpResponse{ErrorCode: WorldErrorCode_WORLD_ERROR_CODE_UNHANDLED_OP}).GetError(),
 		(&ApplyObjectOpResponse{ErrorCode: WorldErrorCode_WORLD_ERROR_CODE_UNHANDLED_OP}).GetError(),
@@ -48,6 +49,9 @@ func TestOperationResponsesPreserveTypedErrors(t *testing.T) {
 		if !errors.Is(result, world.ErrUnhandledOp) {
 			t.Fatalf("unhandled error = %v", result)
 		}
+	}
+	if result := (&AccessTypedObjectResponse{ErrorCode: WorldErrorCode_WORLD_ERROR_CODE_OBJECT_NOT_FOUND}).GetError(); !errors.Is(result, world.ErrObjectNotFound) {
+		t.Fatalf("missing object error = %v", result)
 	}
 	if (&ApplyWorldOpResponse{}).GetError() != nil || (&ApplyObjectOpResponse{}).GetError() != nil {
 		t.Fatal("successful response returned an error")

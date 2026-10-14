@@ -117,6 +117,9 @@ const (
 	// WORLD_ERROR_CODE_TYPED_OBJECT_GRANT_RETIRED indicates that retirement of
 	// this exact granting World mount prevented typed-object acquisition.
 	WorldErrorCode_WORLD_ERROR_CODE_TYPED_OBJECT_GRANT_RETIRED WorldErrorCode = 2
+	// WORLD_ERROR_CODE_OBJECT_NOT_FOUND indicates that the World holds no object
+	// at the requested key.
+	WorldErrorCode_WORLD_ERROR_CODE_OBJECT_NOT_FOUND WorldErrorCode = 3
 )
 
 // Enum value maps for WorldErrorCode.
@@ -125,11 +128,13 @@ var (
 		0: "WORLD_ERROR_CODE_UNSPECIFIED",
 		1: "WORLD_ERROR_CODE_UNHANDLED_OP",
 		2: "WORLD_ERROR_CODE_TYPED_OBJECT_GRANT_RETIRED",
+		3: "WORLD_ERROR_CODE_OBJECT_NOT_FOUND",
 	}
 	WorldErrorCode_value = map[string]int32{
 		"WORLD_ERROR_CODE_UNSPECIFIED":                0,
 		"WORLD_ERROR_CODE_UNHANDLED_OP":               1,
 		"WORLD_ERROR_CODE_TYPED_OBJECT_GRANT_RETIRED": 2,
+		"WORLD_ERROR_CODE_OBJECT_NOT_FOUND":           3,
 	}
 )
 

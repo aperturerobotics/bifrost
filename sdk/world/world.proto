@@ -761,6 +761,9 @@ enum WorldErrorCode {
   // WORLD_ERROR_CODE_TYPED_OBJECT_GRANT_RETIRED indicates that retirement of
   // this exact granting World mount prevented typed-object acquisition.
   WORLD_ERROR_CODE_TYPED_OBJECT_GRANT_RETIRED = 2;
+  // WORLD_ERROR_CODE_OBJECT_NOT_FOUND indicates that the World holds no object
+  // at the requested key.
+  WORLD_ERROR_CODE_OBJECT_NOT_FOUND = 3;
 }
 
 // ApplyWorldOpResponse is the response type for ApplyWorldOp.

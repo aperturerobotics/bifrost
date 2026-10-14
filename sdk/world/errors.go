@@ -38,6 +38,8 @@ func ErrorFromCode(code WorldErrorCode) error {
 		return errors.Wrap(world.ErrUnhandledOp, "remote world operation unhandled")
 	case WorldErrorCode_WORLD_ERROR_CODE_TYPED_OBJECT_GRANT_RETIRED:
 		return ErrTypedObjectGrantRetired
+	case WorldErrorCode_WORLD_ERROR_CODE_OBJECT_NOT_FOUND:
+		return world.ErrObjectNotFound
 	default:
 		return nil
 	}

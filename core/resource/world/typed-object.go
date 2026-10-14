@@ -151,8 +151,9 @@ func (r *TypedObjectResource) WatchTypedObject(req *s4wave_world.WatchTypedObjec
 //   - plugin-assets/{plugin-id}: accesses the plugin's assets filesystem.
 //
 // The returned child owns its typed handle until Resource release.
-// Acquisition canceled by this mount's retirement returns a typed response
-// error; caller and Resource client cancellation remain RPC errors.
+// A missing object and acquisition canceled by this mount's retirement return
+// typed response errors; caller and Resource client cancellation remain RPC
+// errors.
 func (r *TypedObjectResource) AccessTypedObject(ctx context.Context, req *s4wave_world.AccessTypedObjectRequest) (*s4wave_world.AccessTypedObjectResponse, error) {
 	// Acquire the caller resource context.
 	resourceCtx, err := resource_server.MustGetResourceClientContext(ctx)
@@ -182,7 +183,9 @@ func (r *TypedObjectResource) AccessTypedObject(ctx context.Context, req *s4wave
 		return nil, err
 	}
 	if !found {
-		return nil, world.ErrObjectNotFound
+		return &s4wave_world.AccessTypedObjectResponse{
+			ErrorCode: s4wave_world.WorldErrorCode_WORLD_ERROR_CODE_OBJECT_NOT_FOUND,
+		}, nil
 	}
 
 	// Resolve the object's graph type.
