@@ -3,6 +3,7 @@ import type { ClientResourceRef } from '@aptre/bldr-sdk/resource/client.js'
 
 import { Engine } from './engine.js'
 import { type IObjectState } from './object-state.js'
+import { watchWorldQuery } from './world-query.js'
 import {
   Tx,
   type IWorldState,
@@ -477,29 +478,25 @@ class EngineWorldStateObject implements IObjectState {
     ignoreNotFound?: boolean,
     abortSignal?: AbortSignal,
   ): Promise<WaitRevResponse> {
-    // Each observation uses one snapshot; the live Engine owns the wait.
-    for (;;) {
-      const current = await runEngineOp(
-        this.engineState,
-        false,
-        abortSignal,
-        async (tx) => {
-          const { seqno } = await tx.getSeqno(abortSignal)
-          // eslint-disable-next-line react-doctor/server-sequential-independent-await -- A failed sequence read must not leave an unowned object Resource.
-          using obj = await tx.getObject(this.objectKey, abortSignal)
-          if (!obj && !ignoreNotFound) {
-            throw new Error(`Object not found: ${this.objectKey}`)
-          }
-          return { seqno, root: await obj?.getRootRef(abortSignal) }
-        },
-      )
-      if (current.root && (current.root.rev ?? 0n) >= rev) {
-        return { rev: current.root.rev }
+    // Reread the root only after a commit that changes this object.
+    const roots = watchWorldQuery(
+      this.engineState.getEngine(),
+      async (world, signal) => {
+        using obj = await world.getObject(this.objectKey, signal)
+        if (!obj && !ignoreNotFound) {
+          throw new Error(`Object not found: ${this.objectKey}`)
+        }
+        return obj?.getRootRef(signal)
+      },
+      abortSignal,
+    )
+    for await (const { value: root } of roots) {
+      if (root && (root.rev ?? 0n) >= rev) {
+        return { rev: root.rev }
       }
-      await this.engineState
-        .getEngine()
-        .waitSeqno((current.seqno ?? 0n) + 1n, abortSignal)
     }
+    abortSignal?.throwIfAborted()
+    throw new Error('World watch ended')
   }
 
   // release is a no-op for EngineWorldStateObject since it doesn't own any resources
