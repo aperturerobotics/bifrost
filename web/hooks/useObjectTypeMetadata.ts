@@ -1,7 +1,6 @@
 import { useMemo } from 'react'
 import type { Resource } from '@aptre/bldr-sdk/hooks/useResource.js'
 import type { Root } from '@s4wave/sdk/root'
-import { ObjectTypeRegistryResourceServiceClient } from '@s4wave/sdk/objecttype/registry/registry_srpc.pb.js'
 import {
   WatchObjectTypesRequest,
   WatchObjectTypesResponse,
@@ -17,11 +16,7 @@ const objectTypeCreateStream = (
   root: Root,
   req: WatchObjectTypesRequest,
   signal: AbortSignal,
-) =>
-  new ObjectTypeRegistryResourceServiceClient(root.client).WatchObjectTypes(
-    req,
-    signal,
-  )
+) => root.watchObjectTypes(req, signal)
 
 const objectTypeGetRegs = (resp: WatchObjectTypesResponse | null) =>
   resp?.registrations ?? []
