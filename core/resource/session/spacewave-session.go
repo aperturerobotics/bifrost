@@ -1264,6 +1264,7 @@ func (r *SpacewaveSessionResource) AcceptSpaceTargetedInvitation(
 	if err != nil {
 		return nil, err
 	}
+	r.swAcc.InvalidateTargetedInvitations()
 	return &s4wave_provider_spacewave.AcceptSpaceTargetedInvitationResponse{
 		Invitation:     targetedInvitationInfoFromAPI(processResp.GetInvitation()),
 		SharedObjectId: joinResp.GetSharedObjectId(),
@@ -1375,6 +1376,7 @@ func (r *SpacewaveSessionResource) AcceptOrganizationTargetedInvitation(
 	if err != nil {
 		return nil, err
 	}
+	r.swAcc.InvalidateTargetedInvitations()
 	org := acceptResp.GetOrganization()
 	if org == nil {
 		return nil, errors.New("targeted organization invite response missing organization")
@@ -1414,19 +1416,11 @@ func (r *SpacewaveSessionResource) ListTargetedInvitations(
 	ctx context.Context,
 	req *s4wave_provider_spacewave.ListTargetedInvitationsRequest,
 ) (*s4wave_provider_spacewave.ListTargetedInvitationsResponse, error) {
-	// Read the account's targeted invitations and map their response records.
-	cli := r.swAcc.GetSessionClient()
-	resp, err := cli.ListTargetedInvitations(ctx)
+	resp, _, err := r.swAcc.GetTargetedInvitations(ctx)
 	if err != nil {
 		return nil, err
 	}
-	invitations := make([]*s4wave_provider_spacewave.TargetedInvitationInfo, 0, len(resp.GetInvitations()))
-	for _, inv := range resp.GetInvitations() {
-		invitations = append(invitations, targetedInvitationInfoFromAPI(inv))
-	}
-	return &s4wave_provider_spacewave.ListTargetedInvitationsResponse{
-		Invitations: invitations,
-	}, nil
+	return targetedInvitationsFromAPI(resp), nil
 }
 
 // WatchTargetedInvitations streams recipient targeted invitation inbox snapshots.
@@ -1435,17 +1429,14 @@ func (r *SpacewaveSessionResource) WatchTargetedInvitations(
 	strm s4wave_session.SRPCSpacewaveSessionResourceService_WatchTargetedInvitationsStream,
 ) error {
 	ctx := strm.Context()
-	accountBcast := r.swAcc.GetAccountBroadcast()
 	var prev *s4wave_provider_spacewave.ListTargetedInvitationsResponse
 	for {
-		var ch <-chan struct{}
-		accountBcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
-			ch = getWaitCh()
-		})
-		resp, err := r.ListTargetedInvitations(ctx, req)
+		// Read the cached inbox and send it when it changed.
+		apiResp, ch, err := r.swAcc.GetTargetedInvitations(ctx)
 		if err != nil {
 			return err
 		}
+		resp := targetedInvitationsFromAPI(apiResp)
 		if prev == nil || !resp.EqualVT(prev) {
 			if err := strm.Send(resp); err != nil {
 				return err
@@ -1453,11 +1444,25 @@ func (r *SpacewaveSessionResource) WatchTargetedInvitations(
 			prev = resp
 		}
 
+		// Wait for the inbox to change.
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-ch:
 		}
+	}
+}
+
+// targetedInvitationsFromAPI maps an inbox response to its resource form.
+func targetedInvitationsFromAPI(
+	resp *api.ListTargetedInvitationsResponse,
+) *s4wave_provider_spacewave.ListTargetedInvitationsResponse {
+	invitations := make([]*s4wave_provider_spacewave.TargetedInvitationInfo, 0, len(resp.GetInvitations()))
+	for _, inv := range resp.GetInvitations() {
+		invitations = append(invitations, targetedInvitationInfoFromAPI(inv))
+	}
+	return &s4wave_provider_spacewave.ListTargetedInvitationsResponse{
+		Invitations: invitations,
 	}
 }
 
@@ -1496,6 +1501,7 @@ func (r *SpacewaveSessionResource) ProcessTargetedInvitation(
 	ctx context.Context,
 	req *s4wave_provider_spacewave.ProcessTargetedInvitationRequest,
 ) (*s4wave_provider_spacewave.ProcessTargetedInvitationResponse, error) {
+	// Apply the action, then refetch the changed inbox.
 	cli := r.swAcc.GetSessionClient()
 	resp, err := cli.ProcessTargetedInvitation(ctx, &api.ProcessTargetedInvitationRequest{
 		Id:     req.GetId(),
@@ -1504,6 +1510,7 @@ func (r *SpacewaveSessionResource) ProcessTargetedInvitation(
 	if err != nil {
 		return nil, err
 	}
+	r.swAcc.InvalidateTargetedInvitations()
 	return &s4wave_provider_spacewave.ProcessTargetedInvitationResponse{
 		Invitation: targetedInvitationInfoFromAPI(resp.GetInvitation()),
 	}, nil

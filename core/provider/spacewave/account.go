@@ -182,6 +182,8 @@ type ProviderAccount struct {
 	// register here so they can invalidate their cached root pointer when
 	// the cloud publishes a new =root.packedmsg=.
 	cdnRootChangedCbs map[*func(spaceID string)]struct{}
+	// targetedInvitations caches the targeted invitation inbox.
+	targetedInvitations targetedInvitationsCache
 	// state holds all cached account state guarded by accountBcast.
 	state accountState
 }
@@ -191,9 +193,12 @@ type ProviderAccount struct {
 // MUST release when the subscription is no longer needed. cb is invoked
 // from the WS read loop so it should be non-blocking or offload work.
 func (a *ProviderAccount) RegisterCdnRootChangedCallback(cb func(spaceID string)) func() {
+	// A nil callback has nothing to register.
 	if cb == nil {
 		return func() {}
 	}
+
+	// Register cb under its own address, which the release func removes.
 	key := &cb
 	a.cdnRootChangedMtx.Lock()
 	if a.cdnRootChangedCbs == nil {
@@ -212,6 +217,7 @@ func (a *ProviderAccount) RegisterCdnRootChangedCallback(cb func(spaceID string)
 // registered callback. Callbacks are invoked under a snapshot so Register
 // and Release calls do not block the WS reader.
 func (a *ProviderAccount) fireCdnRootChanged(spaceID string) {
+	// Snapshot the callbacks, then call them without the lock.
 	var cbs []func(string)
 	a.cdnRootChangedMtx.Lock()
 	for key := range a.cdnRootChangedCbs {
@@ -509,6 +515,7 @@ func (t *providerAccountTracker) executeProviderAccountTracker(rctx context.Cont
 		acc.BumpLocalEpoch()
 		acc.InvalidatePendingMailboxEntries()
 		acc.InvalidateSharedObjectMetadataCache()
+		acc.InvalidateTargetedInvitations()
 		acc.invalidateSharedObjectList()
 		acc.orgListJobs.Trigger()
 
@@ -548,11 +555,7 @@ func (t *providerAccountTracker) executeProviderAccountTracker(rctx context.Cont
 		}
 		acc.triggerMailboxEntryAutoProcess(ctx, soID, entry)
 	}
-	acc.wsTracker.onTargetedInvitationsChanged = func() {
-		acc.accountBcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
-			broadcast()
-		})
-	}
+	acc.wsTracker.onTargetedInvitationsChanged = acc.InvalidateTargetedInvitations
 
 	// Handle release, CDN root and dormancy events.
 	acc.wsTracker.onUpdateAvailable = func() {
@@ -923,10 +926,12 @@ func (a *ProviderAccount) SetCachedPrimaryEmail(email string) {
 		return
 	}
 	a.accountBcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+		// Only a loaded email list can be updated.
 		if !a.state.cachedEmailsValid || len(a.state.cachedEmails) == 0 {
 			return
 		}
 
+		// Store the list with email as primary and wake on a change.
 		next, changed := emailcache.SetPrimaryEmail(a.state.cachedEmails, email)
 		if !changed {
 			return
@@ -1031,14 +1036,19 @@ func (a *ProviderAccount) GetAccountState(ctx context.Context) (*api.AccountStat
 				err = errAccountTransitionPending
 			}
 			if err != nil {
+				// End the fetch, and retry at once when the session client
+				// was replaced by one that can sign.
 				var (
 					waitCh       <-chan struct{}
 					retryOnEvent bool
 				)
 				a.accountBcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
+					// Wake waiters on the ended fetch.
 					a.state.infoFetching = false
 					broadcast()
 					waitCh = getWaitCh()
+
+					// Check whether a newer client can sign.
 					current := a.sessionClient
 					retryOnEvent = current != cli &&
 						current != nil && current.SignedHTTPClient != nil &&
