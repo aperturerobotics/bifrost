@@ -3,6 +3,7 @@ package kvtx
 import (
 	"bytes"
 	"context"
+	"slices"
 
 	"github.com/aperturerobotics/util/broadcast"
 	"github.com/s4wave/spacewave/db/block"
@@ -28,6 +29,9 @@ type publicationRequest struct {
 	ctx context.Context
 	// publication is the caller's immutable unit retained until completion.
 	publication *block.AtomicPublication
+	// entries indexes the publication's entries by block key. The last entry
+	// for a key wins, as it does when the group writes them.
+	entries map[string]*block.PutBatchEntry
 	// receipt resolves only after this request has its final physical result.
 	receipt *block.PublicationReceipt
 	// bytes is the computed admission cost of the publication.
@@ -38,13 +42,19 @@ type publicationRequest struct {
 
 // publicationWriter serializes atomic publications into bounded physical groups.
 // It owns the queue, admission budget, and completion statistics for a volume.
+// Every admitted publication stays readable through find until its group
+// resolves, so a reader sees admitted blocks before they are applied and loses
+// them when their group fails.
 type publicationWriter struct {
 	// volume owns the shared physical block and metadata transaction domain.
 	volume *Volume
 	// bcast guards the queue, budget, statistics, and lifecycle state below.
 	bcast broadcast.Broadcast
-	// queue retains requests in their admission order until a group takes them.
+	// queue retains requests in their admission order until their group
+	// resolves. The requests before next belong to the group being applied.
 	queue []*publicationRequest
+	// next indexes the first queued request no group has taken.
+	next int
 	// closing rejects new admission while accepted work drains.
 	closing bool
 	// finished records that the drain goroutine exited after closing.
@@ -118,6 +128,16 @@ func (w *publicationWriter) submit(ctx context.Context, p *block.AtomicPublicati
 		return nil, err
 	}
 
+	// Index the entries by block key for reads while the request is queued.
+	entries := make(map[string]*block.PutBatchEntry, len(p.Entries))
+	for _, entry := range p.Entries {
+		key, err := entry.Ref.MarshalKey()
+		if err != nil {
+			return nil, err
+		}
+		entries[string(key)] = entry
+	}
+
 	// Wait on the queue owner's broadcast until this complete request fits.
 	for {
 		var waitCh <-chan struct{}
@@ -136,6 +156,7 @@ func (w *publicationWriter) submit(ctx context.Context, p *block.AtomicPublicati
 				w.queue = append(w.queue, &publicationRequest{
 					ctx:         context.WithoutCancel(ctx),
 					publication: p,
+					entries:     entries,
 					receipt:     receipt,
 					bytes:       size,
 					rootOwner:   rootOwner,
@@ -162,21 +183,49 @@ func (w *publicationWriter) submit(ctx context.Context, p *block.AtomicPublicati
 	}
 }
 
-// popLocked removes the next queued request. The caller holds bcast.
-func (w *publicationWriter) popLocked() *publicationRequest {
-	// Leave an idle queue available for later admissions.
-	if len(w.queue) == 0 {
+// takeLocked takes the next queued request for a group, or returns nil when
+// every queued request is taken. The request stays queued, and readable,
+// until its group resolves. The caller holds bcast.
+func (w *publicationWriter) takeLocked() *publicationRequest {
+	if w.next == len(w.queue) {
 		return nil
 	}
-
-	// Release the consumed slot while preserving the remaining admission order.
-	r := w.queue[0]
-	w.queue[0] = nil
-	w.queue = w.queue[1:]
-	if len(w.queue) == 0 {
-		w.queue = nil
-	}
+	r := w.queue[w.next]
+	w.next++
 	return r
+}
+
+// find returns the entry for ref of the newest admitted publication whose
+// group has not resolved, or nil when none writes ref. A tombstone entry is
+// returned too: the block is absent once it applies.
+func (w *publicationWriter) find(ref *block.BlockRef) (*block.PutBatchEntry, error) {
+	// A Volume without atomic publication has no admitted entries.
+	if w == nil {
+		return nil, nil
+	}
+
+	// Scan the queue under the writer's lock.
+	var entry *block.PutBatchEntry
+	var err error
+	w.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
+		// Skip encoding the key while nothing is admitted.
+		if len(w.queue) == 0 {
+			return
+		}
+
+		// Search the newest admission first, as later groups overwrite earlier ones.
+		var key []byte
+		key, err = ref.MarshalKey()
+		if err != nil {
+			return
+		}
+		for _, r := range slices.Backward(w.queue) {
+			if entry = r.entries[string(key)]; entry != nil {
+				return
+			}
+		}
+	})
+	return entry, err
 }
 
 // run drains queued publications one physical group at a time until closing.
@@ -186,7 +235,7 @@ func (w *publicationWriter) run() {
 		var first *publicationRequest
 		var waitCh <-chan struct{}
 		w.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
-			first = w.popLocked()
+			first = w.takeLocked()
 			if first != nil {
 				return
 			}
@@ -207,12 +256,16 @@ func (w *publicationWriter) run() {
 			continue
 		}
 
-		// Resolve the physical group before releasing its admission budget.
+		// Resolve the physical group before releasing its admission budget,
+		// and drop it from the read set as its receipts resolve.
 		group, results, committed := w.applyGroup(first)
 		w.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+			// Count the physical commit.
 			if committed {
 				w.stats.PhysicalCommits++
 			}
+
+			// Account for each request and resolve its receipt.
 			for i, r := range group {
 				if results[i] != nil {
 					w.stats.Rejected++
@@ -223,6 +276,8 @@ func (w *publicationWriter) run() {
 				w.stats.PendingEntries -= len(r.publication.Entries)
 				r.receipt.Resolve(results[i])
 			}
+			w.queue = slices.Delete(w.queue, 0, len(group))
+			w.next -= len(group)
 			broadcast()
 		})
 
@@ -277,7 +332,7 @@ func (w *publicationWriter) applyGroup(first *publicationRequest) (group []*publ
 		}
 		if len(group) < publicationGroupLimit {
 			w.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
-				next := w.popLocked()
+				next := w.takeLocked()
 				if next != nil {
 					group = append(group, next)
 				}
@@ -302,11 +357,17 @@ func (w *publicationWriter) applyGroup(first *publicationRequest) (group []*publ
 	}
 	w.volume.settleDeferred(edits, committed)
 
-	// Preserve preflight rejections while assigning physical failure to accepted work.
+	// Preserve preflight rejections while assigning physical failure to
+	// accepted work. A request whose predecessor shared the group failed
+	// through it.
 	if err != nil {
-		for i := range results {
-			if results[i] == nil {
-				results[i] = err
+		for i, req := range group {
+			if results[i] != nil {
+				continue
+			}
+			results[i] = err
+			if _, ok := prior[req.publication.After]; ok {
+				results[i] = block.NewPublicationDependencyError(err)
 			}
 		}
 	}
@@ -344,7 +405,7 @@ func (w *publicationWriter) preflight(
 	}
 
 	// Overlay the entries on the group's prior writes.
-	prepared, err := newPublicationOverlay(blocks, p.Entries)
+	prepared, err := newPublicationOverlay(blocks, req)
 	if err != nil {
 		return err
 	}

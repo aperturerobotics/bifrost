@@ -27,7 +27,7 @@ type StatsFn func(ctx context.Context) (*volume.StorageStats, error)
 
 // Volume implements a key-value volume.
 type Volume struct {
-	// volumeID is the volume id
+	// volumeID is the volume id.
 	volumeID string
 	// Store is the hydra store.
 	hstore.Store
@@ -35,9 +35,9 @@ type Volume struct {
 	coord.Coordinator
 	// Peer indicates the volume has a peer identity.
 	peer.Peer
-	// kvtxStore is the underlying kvtx store
+	// kvtxStore is the underlying kvtx store.
 	kvtxStore kvtx.Store
-	// kvKey is the underlying kvkey
+	// kvKey is the underlying kvkey.
 	kvKey *store_kvkey.KVKey
 	// refGraph is the volume's GC reference graph.
 	refGraph block_gc.RefGraphOps
@@ -49,11 +49,13 @@ type Volume struct {
 	statsFn StatsFn
 	// statsBcast wakes watchers when storage stats may have changed.
 	statsBcast broadcast.Broadcast
-	// closeFn is the close func, may be nil
+	// closeFn is the close func, may be nil.
 	closeFn func() error
 	// deleteFn removes the backing store after Close, may be nil.
 	deleteFn func() error
-	// publications owns bounded grouped writes in this volume's raw transaction domain.
+	// publications owns bounded grouped writes in this volume's raw
+	// transaction domain and serves admitted blocks until their group
+	// resolves.
 	publications *publicationWriter
 	// ordered flushes direct atomic writes committed with write ordering, may
 	// be nil.
@@ -68,17 +70,24 @@ type Volume struct {
 	// closed records that the close sequence finished.
 	closed bool
 	// directMu joins synchronous preparation and GC transactions before closing.
-	directMu     sync.RWMutex
+	directMu sync.RWMutex
+	// directClosed records that Close joined direct transactions, guarded by
+	// directMu.
 	directClosed bool
 	// closeErr stores the error from Close.
 	closeErr error
 	// rootPinMu guards reader pin counts and their volume lease. Direct
 	// transactions take it to carry released pins, so it is never held while
 	// opening a volume transaction.
-	rootPinMu      csync.Mutex
-	rootPinOwner   string
-	rootPinLease   coord.WriteLease
-	rootPins       map[string]*rootPin
+	rootPinMu csync.Mutex
+	// rootPinOwner is the process owner node of reader pins and stages, set
+	// with its lease on first use.
+	rootPinOwner string
+	// rootPinLease holds the owner's lease for the life of the process.
+	rootPinLease coord.WriteLease
+	// rootPins counts the reader pins by root node.
+	rootPins map[string]*rootPin
+	// rootPinsClosed records that Close released the reader pins.
 	rootPinsClosed bool
 	// proofMu guards the pending root proofs and the sweep count. It is never
 	// held across a volume transaction.
@@ -393,6 +402,12 @@ func (v *Volume) GetStorageStatsSnapshotWithWait(
 	return stats, waitCh, nil
 }
 
+// reader reads the embedded store with admitted publications laid over it.
+func (v *Volume) reader() publicationReader {
+	return publicationReader{writer: v.publications, store: v.Store}
+}
+
+// broadcastStorageStatsChanged wakes watchers of the Volume storage statistics.
 func (v *Volume) broadcastStorageStatsChanged() {
 	v.statsBcast.HoldLock(func(broadcastFn func(), _ func() <-chan struct{}) {
 		broadcastFn()
@@ -439,9 +454,38 @@ func (v *Volume) PutBlock(ctx context.Context, data []byte, opts *block.PutOpts)
 	return ref, exists, nil
 }
 
-// GetBlockExistsBatch forwards batched existence probes to the embedded store when supported.
+// BeginReadOperation opens a read scope on the embedded store that reads
+// admitted publications first.
+func (v *Volume) BeginReadOperation(ctx context.Context) (block.StoreOps, func(), error) {
+	return v.reader().BeginReadOperation(ctx)
+}
+
+// GetBlock reads a block of an admitted publication before the embedded store.
+func (v *Volume) GetBlock(ctx context.Context, ref *block.BlockRef) ([]byte, bool, error) {
+	return v.reader().GetBlock(ctx, ref)
+}
+
+// GetStoredBlock reads a block without its refs, admitted publications first.
+func (v *Volume) GetStoredBlock(ctx context.Context, ref *block.BlockRef) (*block.StoredBlock, error) {
+	return v.reader().GetStoredBlock(ctx, ref)
+}
+
+// GetBlockExists reports a block of an admitted publication before the
+// embedded store.
+func (v *Volume) GetBlockExists(ctx context.Context, ref *block.BlockRef) (bool, error) {
+	return v.reader().GetBlockExists(ctx, ref)
+}
+
+// GetBlockExistsBatch reports blocks of admitted publications and probes the
+// embedded store for the rest.
 func (v *Volume) GetBlockExistsBatch(ctx context.Context, refs []*block.BlockRef) ([]bool, error) {
-	return v.Store.GetBlockExistsBatch(ctx, refs)
+	return v.reader().GetBlockExistsBatch(ctx, refs)
+}
+
+// StatBlock reports a block of an admitted publication before the embedded
+// store.
+func (v *Volume) StatBlock(ctx context.Context, ref *block.BlockRef) (*block.BlockStat, error) {
+	return v.reader().StatBlock(ctx, ref)
 }
 
 // RmBlock forwards block deletion to the embedded store.

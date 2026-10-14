@@ -10,36 +10,33 @@ import (
 // publicationOverlay is bounded by the submitted delta, never by volume size.
 // Original batch slices are read-only; reads return independently owned bytes.
 type publicationOverlay struct {
+	// StoreOps reads the group's prior writes and the applied blocks.
 	block.StoreOps
+	// entries is the request's entry index by block key.
 	entries map[string]*block.PutBatchEntry
 }
 
-// newPublicationOverlay validates a publication's entries and builds its
-// transaction-scoped read overlay.
-func newPublicationOverlay(inner block.StoreOps, entries []*block.PutBatchEntry) (*publicationOverlay, error) {
-	out := &publicationOverlay{StoreOps: inner, entries: make(map[string]*block.PutBatchEntry, len(entries))}
-	for _, entry := range entries {
-		if entry == nil {
-			return nil, errInvalidPublication
-		}
+// newPublicationOverlay validates a request's entries and builds its
+// transaction-scoped read overlay from the request's entry index.
+func newPublicationOverlay(inner block.StoreOps, req *publicationRequest) (*publicationOverlay, error) {
+	// Require every entry to match its reference before the group writes it.
+	for _, entry := range req.publication.Entries {
 		if err := entry.Ref.Validate(false); err != nil {
 			return nil, err
 		}
-		if !entry.Tombstone {
-			if len(entry.Data) == 0 {
-				return nil, block.ErrEmptyBlock
-			}
-			if err := entry.Ref.VerifyData(entry.Data, true); err != nil {
-				return nil, err
-			}
+		if entry.Tombstone {
+			continue
 		}
-		key, err := entry.Ref.MarshalKey()
-		if err != nil {
+		if len(entry.Data) == 0 {
+			return nil, block.ErrEmptyBlock
+		}
+		if err := entry.Ref.VerifyData(entry.Data, true); err != nil {
 			return nil, err
 		}
-		out.entries[string(key)] = entry
 	}
-	return out, nil
+
+	// Serve the indexed entries before the inner store.
+	return &publicationOverlay{StoreOps: inner, entries: req.entries}, nil
 }
 
 // BeginReadOperation returns the overlay itself as its read scope.

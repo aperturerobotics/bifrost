@@ -189,6 +189,37 @@ func assertPublishedBlock(t *testing.T, v *Volume, p *block.AtomicPublication, w
 	}
 }
 
+func assertReadable(t *testing.T, v *Volume, p *block.AtomicPublication, want bool) {
+	// Read the publication block through the Volume and one of its read scopes.
+	t.Helper()
+	ref := p.Entries[0].Ref
+	scope, release, err := v.BeginReadOperation(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer release()
+	for _, store := range []block.StoreOps{v, scope} {
+		got, found, err := store.GetBlock(t.Context(), ref)
+		if err != nil || found != want || (want && !bytes.Equal(got, p.Entries[0].Data)) {
+			t.Fatalf("read found=%v want=%v err=%v", found, want, err)
+		}
+
+		// Check existence, the batch probe and the size.
+		exists, err := store.GetBlockExists(t.Context(), ref)
+		if err != nil || exists != want {
+			t.Fatalf("exists=%v want=%v err=%v", exists, want, err)
+		}
+		batch, err := store.GetBlockExistsBatch(t.Context(), []*block.BlockRef{ref})
+		if err != nil || len(batch) != 1 || batch[0] != want {
+			t.Fatalf("exists batch=%v want=%v err=%v", batch, want, err)
+		}
+		stat, err := store.StatBlock(t.Context(), ref)
+		if err != nil || (stat != nil) != want || (want && stat.Size != int64(len(p.Entries[0].Data))) {
+			t.Fatalf("stat=%v want=%v err=%v", stat, want, err)
+		}
+	}
+}
+
 func assertHead(t *testing.T, v *Volume, id, want string) {
 	// Read the publication head through the physical store transaction.
 	t.Helper()
@@ -235,13 +266,17 @@ func TestPublicationGroupAtomicBlocksOwnershipAndHead(t *testing.T) {
 	third := publicationFor(t, "independent", "", "3")
 	r3 := submitPublication(t, v, third)
 
-	// Verify queue admission leaves the durable head unchanged.
+	// Verify queue admission leaves the durable head unchanged and serves
+	// the admitted blocks of the unapplied group and the queue.
 	select {
 	case <-r1.Done():
 		t.Fatal("admission acknowledged durability")
 	default:
 	}
 	assertHead(t, v, "world", "")
+	for _, p := range []*block.AtomicPublication{first, second, third} {
+		assertReadable(t, v, p, true)
+	}
 
 	// Release the group and await every publication receipt.
 	g.unblock()
@@ -353,12 +388,15 @@ func TestPublicationPhysicalFailureRollsBackWholeGroup(t *testing.T) {
 			r2 := submitPublication(t, v, second)
 
 			// Release the transaction and verify both receipts report failure.
+			// The successor joins the group on a commit failure and follows in
+			// the next group on a set failure; it fails through its
+			// predecessor in both.
 			g.unblock()
 			if err := awaitPublication(t, r1); !errors.Is(err, failure) {
 				t.Fatal(err)
 			}
-			if err := awaitPublication(t, r2); err == nil {
-				t.Fatal("dependent publication survived physical failure")
+			if err := awaitPublication(t, r2); !errors.Is(err, block.ErrPublicationDependency) || !errors.Is(err, failure) {
+				t.Fatal(err)
 			}
 
 			// Verify the failed group leaves neither blocks nor heads.
@@ -367,6 +405,55 @@ func TestPublicationPhysicalFailureRollsBackWholeGroup(t *testing.T) {
 			assertHead(t, v, "one", "")
 			assertHead(t, v, "two", "")
 		})
+	}
+}
+
+func TestPublicationAdmittedBlocksLeaveWithFailedGroup(t *testing.T) {
+	// Fail the physical commit of a gated group.
+	v, s := newPublicationTestVolume(t)
+	g := s.arm(t)
+	failure := errors.New("injected commit failure")
+	s.mu.Lock()
+	s.errorCommit = failure
+	s.mu.Unlock()
+
+	// Admit a publication to the group and its successor to the queue.
+	first := publicationFor(t, "world", "", "1")
+	r1 := submitPublication(t, v, first)
+	<-g.started
+	second := publicationFor(t, "world", "1", "2")
+	second.After = r1
+	r2 := submitPublication(t, v, second)
+
+	// Verify a reader sees both admitted blocks before the group applies.
+	assertReadable(t, v, first, true)
+	assertReadable(t, v, second, true)
+	assertHead(t, v, "world", "")
+
+	// Release the group and verify the successor fails through its predecessor.
+	g.unblock()
+	if err := awaitPublication(t, r1); !errors.Is(err, failure) {
+		t.Fatal(err)
+	}
+	if err := awaitPublication(t, r2); !errors.Is(err, block.ErrPublicationDependency) || !errors.Is(err, failure) {
+		t.Fatal(err)
+	}
+
+	// Verify a successor admitted after the failure fails in its own group.
+	third := publicationFor(t, "world", "2", "3")
+	third.After = r2
+	if err := awaitPublication(t, submitPublication(t, v, third)); !errors.Is(err, block.ErrPublicationDependency) || !errors.Is(err, failure) {
+		t.Fatal(err)
+	}
+
+	// Verify the failed groups leave no readable block and no head.
+	for _, p := range []*block.AtomicPublication{first, second, third} {
+		assertReadable(t, v, p, false)
+		assertPublishedBlock(t, v, p, false)
+	}
+	assertHead(t, v, "world", "")
+	if stats := v.GetPublicationStats(); stats.Pending != 0 || stats.Rejected != 3 {
+		t.Fatalf("stats: %+v", stats)
 	}
 }
 

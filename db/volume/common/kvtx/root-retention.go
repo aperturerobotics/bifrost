@@ -42,12 +42,13 @@ func (v *Volume) MarkRootsComplete(ctx context.Context, roots []*block.BlockRef)
 		sweeps := v.sweeps
 		v.proofMu.Unlock()
 
-		// Require stored bytes before recording a root completion proof.
+		// Require stored bytes before recording a root completion proof. Read
+		// the store, not an admitted publication that may still fail.
 		for _, root := range roots {
 			if root.GetEmpty() {
 				continue
 			}
-			found, err := v.GetBlockExists(ctx, root)
+			found, err := v.Store.GetBlockExists(ctx, root)
 			if err != nil {
 				return err
 			}

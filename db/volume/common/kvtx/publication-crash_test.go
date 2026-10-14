@@ -144,9 +144,12 @@ func publicationCrashWorker(t *testing.T, role, path string) {
 		t.Fatal("no preflight")
 	}
 
-	// Admit the dependent publication and arm the physical crash cut.
+	// Admit the dependent publication, read both admitted blocks, and arm
+	// the physical crash cut.
 	second.After = r1
 	r2 := submitPublication(t, v, second)
+	assertReadable(t, v, first, true)
+	assertReadable(t, v, second, true)
 	s.armed.Store(true)
 
 	// Both requests are admitted before the physical commit reaches its cut.
