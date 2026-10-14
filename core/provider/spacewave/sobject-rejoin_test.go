@@ -59,6 +59,7 @@ func TestTryRecoverMissingSharedObjectPeerSkipsWhenEnrolled(t *testing.T) {
 		},
 		nil,
 		nil,
+		nil,
 	)
 	host.soHost.SetContext(context.Background())
 	so := &SharedObject{
@@ -160,6 +161,7 @@ func TestTryRecoverMissingSharedObjectPeerRefreshesCachedEpochGrants(t *testing.
 		},
 		nil,
 		nil,
+		nil,
 	)
 	host.soHost.SetContext(context.Background())
 	host.stateCtr.SetValue(&sobject.SOState{
@@ -211,11 +213,11 @@ func TestTryRecoverMissingSharedObjectPeerRefreshesCachedEpochGrants(t *testing.
 // TestTryRecoverMissingSharedObjectPeerAllowsReadOnlyLifecycle checks that a
 // read-only grace account still attempts self-enrollment.
 func TestTryRecoverMissingSharedObjectPeerAllowsReadOnlyLifecycle(t *testing.T) {
+	// Record the first rejoin request and stop there.
 	const (
 		soID      = "so-readonly"
 		accountID = "test-account"
 	)
-
 	priv, pid := generateTestKeypair(t)
 	var requested bool
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -227,6 +229,7 @@ func TestTryRecoverMissingSharedObjectPeerAllowsReadOnlyLifecycle(t *testing.T) 
 	}))
 	defer srv.Close()
 
+	// Hold a ready account in the read-only grace lifecycle.
 	acc := NewTestProviderAccount(t, srv.URL)
 	acc.state.info = &api.AccountStateResponse{
 		SubscriptionStatus: s4wave_provider_spacewave.BillingStatus_BillingStatus_CANCELED,
@@ -235,6 +238,7 @@ func TestTryRecoverMissingSharedObjectPeerAllowsReadOnlyLifecycle(t *testing.T) 
 	acc.state.status = provider.ProviderAccountStatus_ProviderAccountStatus_READY
 	acc.sessionClient = NewSessionClient(http.DefaultClient, srv.URL, DefaultSigningEnvPrefix, priv, pid.String())
 
+	// Mount a SharedObject on a cold host.
 	host := newCloudSOHost(
 		logrus.New().WithField("test", t.Name()),
 		acc.sessionClient,
@@ -244,6 +248,7 @@ func TestTryRecoverMissingSharedObjectPeerAllowsReadOnlyLifecycle(t *testing.T) 
 		priv,
 		pid,
 		acc.sfs,
+		nil,
 		nil,
 		nil,
 		nil,
@@ -257,6 +262,7 @@ func TestTryRecoverMissingSharedObjectPeerAllowsReadOnlyLifecycle(t *testing.T) 
 	}
 	ref := sobject.NewSharedObjectRef("spacewave", accountID, soID, soID)
 
+	// Recovery attempts the rejoin.
 	if err := so.tkr.tryRecoverMissingSharedObjectPeer(
 		context.Background(),
 		ref,
@@ -273,17 +279,18 @@ func TestTryRecoverMissingSharedObjectPeerAllowsReadOnlyLifecycle(t *testing.T) 
 // TestTryRecoverMissingSharedObjectPeerSkipsPendingDeleteLifecycle checks that
 // an account pending deletion makes no rejoin request.
 func TestTryRecoverMissingSharedObjectPeerSkipsPendingDeleteLifecycle(t *testing.T) {
+	// Fail the test on any rejoin request.
 	const (
 		soID      = "so-pending-delete"
 		accountID = "test-account"
 	)
-
 	priv, pid := generateTestKeypair(t)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Fatalf("unexpected rejoin request during pending delete lifecycle: %s", r.URL.Path)
 	}))
 	defer srv.Close()
 
+	// Hold a ready account pending deletion.
 	acc := NewTestProviderAccount(t, srv.URL)
 	acc.state.info = &api.AccountStateResponse{
 		SubscriptionStatus: s4wave_provider_spacewave.BillingStatus_BillingStatus_CANCELED,
@@ -292,6 +299,7 @@ func TestTryRecoverMissingSharedObjectPeerSkipsPendingDeleteLifecycle(t *testing
 	acc.state.status = provider.ProviderAccountStatus_ProviderAccountStatus_READY
 	acc.sessionClient = NewSessionClient(http.DefaultClient, srv.URL, DefaultSigningEnvPrefix, priv, pid.String())
 
+	// Mount a SharedObject on a cold host.
 	host := newCloudSOHost(
 		logrus.New().WithField("test", t.Name()),
 		acc.sessionClient,
@@ -301,6 +309,7 @@ func TestTryRecoverMissingSharedObjectPeerSkipsPendingDeleteLifecycle(t *testing
 		priv,
 		pid,
 		acc.sfs,
+		nil,
 		nil,
 		nil,
 		nil,
@@ -314,6 +323,7 @@ func TestTryRecoverMissingSharedObjectPeerSkipsPendingDeleteLifecycle(t *testing
 	}
 	ref := sobject.NewSharedObjectRef("spacewave", accountID, soID, soID)
 
+	// Recovery succeeds without a request.
 	if err := so.tkr.tryRecoverMissingSharedObjectPeer(
 		context.Background(),
 		ref,

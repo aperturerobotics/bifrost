@@ -36,27 +36,34 @@ func TestCloudPeerImportCommitsWithoutPublication(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Save the verified cache in a real account store.
+	// Build the verified cache for the genesis config.
 	cache := &api.VerifiedSOStateCache{
 		GenesisHash: initial.Config.ConfigChainHash, VerifiedConfigChainHash: initial.Config.ConfigChainHash,
-		CurrentConfig: initial.Config, ConfigHistory: []*sobject.SOConfigChange{genesis},
+		CurrentConfig: initial.Config,
 	}
+
+	// Persist the cache and its genesis entry.
 	account := &ProviderAccount{objStore: hashmap.NewHashmapKvtx(hashmap.NewHashmap[[]byte]())}
-	if err := account.writeVerifiedSOStateCache(ctx, testSharedObjectID, cache); err != nil {
+	if err := account.writeVerifiedSOStateCache(ctx, testSharedObjectID, cache, []*sobject.SOConfigChange{genesis}); err != nil {
 		t.Fatal(err)
 	}
 
-	// Open a host whose cache writes fail until released.
+	// Fail cache writes until released.
 	failed := errors.New("injected cache write failure")
 	var failWrite atomic.Bool
 	failWrite.Store(true)
-	persist := func(ctx context.Context, next *api.VerifiedSOStateCache) error {
+	persist := func(ctx context.Context, next *api.VerifiedSOStateCache, changes []*sobject.SOConfigChange) error {
 		if failWrite.Load() {
 			return failed
 		}
-		return account.writeVerifiedSOStateCache(ctx, testSharedObjectID, next)
+		return account.writeVerifiedSOStateCache(ctx, testSharedObjectID, next, changes)
 	}
-	host := newCloudSOHost(logrus.New().WithField("test", t.Name()), client, testSharedObjectID, "", nil, priv, pid, nil, cache, persist, nil)
+
+	// Open a host over the failing writes and the account's retained history.
+	read := func(ctx context.Context, hash []byte) (*sobject.SOConfigChange, error) {
+		return account.readVerifiedSOHistoryEntry(ctx, testSharedObjectID, hash)
+	}
+	host := newCloudSOHost(logrus.New().WithField("test", t.Name()), client, testSharedObjectID, "", nil, priv, pid, nil, cache, persist, read, nil)
 	host.stateCtr.SetValue(initial)
 	host.soHost.SetContext(ctx)
 	t.Cleanup(host.soHost.ClearContext)
@@ -93,7 +100,7 @@ func TestCloudPeerImportCommitsWithoutPublication(t *testing.T) {
 	}
 
 	// Reopen without HTTP seeding.
-	reopened := newCloudSOHost(logrus.New().WithField("test", t.Name()), client, testSharedObjectID, "", nil, priv, pid, nil, saved, persist, nil)
+	reopened := newCloudSOHost(logrus.New().WithField("test", t.Name()), client, testSharedObjectID, "", nil, priv, pid, nil, saved, persist, read, nil)
 	reopened.soHost.SetContext(ctx)
 	t.Cleanup(reopened.soHost.ClearContext)
 	got, err := reopened.soHost.GetHostState(ctx)
@@ -119,7 +126,7 @@ func TestCloudPeerImportCommitsWithoutPublication(t *testing.T) {
 	persisting, allowCommit := make(chan struct{}), make(chan struct{})
 	var newer *sobject.SOState
 	var blocked bool
-	reopened.persistVerifiedStateCache = func(ctx context.Context, cache *api.VerifiedSOStateCache) error {
+	reopened.persistVerifiedStateCache = func(ctx context.Context, cache *api.VerifiedSOStateCache, changes []*sobject.SOConfigChange) error {
 		if cache.GetPeerState().GetCheckpoint().EqualVT(newer.GetCheckpoint()) && !blocked {
 			blocked = true
 			close(persisting)
@@ -129,7 +136,7 @@ func TestCloudPeerImportCommitsWithoutPublication(t *testing.T) {
 				return ctx.Err()
 			}
 		}
-		return persist(ctx, cache)
+		return persist(ctx, cache, changes)
 	}
 
 	// Sign an older cloud checkpoint and a newer peer checkpoint after it.

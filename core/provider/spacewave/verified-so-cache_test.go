@@ -38,8 +38,9 @@ func TestVerifiedSOStateCacheRoundTrip(t *testing.T) {
 		}},
 	}
 
-	// Write the cache.
-	if err := acc.writeVerifiedSOStateCache(context.Background(), "so-1", cache); err != nil {
+	// Write the cache with one history entry.
+	change := &sobject.SOConfigChange{ConfigSeqno: 4}
+	if err := acc.writeVerifiedSOStateCache(context.Background(), "so-1", cache, []*sobject.SOConfigChange{change}); err != nil {
 		t.Fatalf("write verified SO state cache: %v", err)
 	}
 
@@ -53,6 +54,16 @@ func TestVerifiedSOStateCacheRoundTrip(t *testing.T) {
 	}
 	if !loaded.EqualVT(cache) {
 		t.Fatalf("loaded cache mismatch: got %+v want %+v", loaded, cache)
+	}
+
+	// The history entry reads back by its hash.
+	hash, err := sobject.HashSOConfigChange(change)
+	if err != nil {
+		t.Fatal(err)
+	}
+	retained, err := acc.readVerifiedSOHistoryEntry(context.Background(), "so-1", hash)
+	if err != nil || !retained.EqualVT(change) {
+		t.Fatalf("history entry = %v, %v", retained, err)
 	}
 }
 
@@ -87,6 +98,7 @@ func TestNewCloudSOHostHydratesVerifiedStateCache(t *testing.T) {
 		cache,
 		nil,
 		nil,
+		nil,
 	)
 
 	// The host adopts the cached head, key epochs, and config.
@@ -107,6 +119,8 @@ func TestNewCloudSOHostHydratesVerifiedStateCache(t *testing.T) {
 	}
 }
 
+// TestShouldSyncVerifiedConfigChain checks when a verified head must sync to
+// the current head.
 func TestShouldSyncVerifiedConfigChain(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -169,10 +183,11 @@ func TestShouldSyncVerifiedConfigChain(t *testing.T) {
 	}
 }
 
-// TestInvalidateVerifiedChainHitPath covers iter 5: an existing persisted
-// record is removed so the next load returns nil, forcing the next mount
-// to re-verify via /config-chain.
+// TestInvalidateVerifiedChainHitPath checks that invalidating removes an
+// existing record and its history, so the next mount re-verifies through
+// /config-chain.
 func TestInvalidateVerifiedChainHitPath(t *testing.T) {
+	// Persist a record with one retained change.
 	objStore := hashmap.NewHashmapKvtx(hashmap.NewHashmap[[]byte]())
 	acc := &ProviderAccount{objStore: objStore}
 	cache := &api.VerifiedSOStateCache{
@@ -180,10 +195,12 @@ func TestInvalidateVerifiedChainHitPath(t *testing.T) {
 		VerifiedConfigChainHash:  []byte("head"),
 		VerifiedConfigChainSeqno: 4,
 	}
-
-	if err := acc.writeVerifiedSOStateCache(context.Background(), "so-1", cache); err != nil {
+	change := &sobject.SOConfigChange{ConfigSeqno: 4}
+	if err := acc.writeVerifiedSOStateCache(context.Background(), "so-1", cache, []*sobject.SOConfigChange{change}); err != nil {
 		t.Fatalf("write: %v", err)
 	}
+
+	// Invalidating leaves no record.
 	if err := acc.InvalidateVerifiedChain(context.Background(), "so-1"); err != nil {
 		t.Fatalf("invalidate: %v", err)
 	}
@@ -194,12 +211,22 @@ func TestInvalidateVerifiedChainHitPath(t *testing.T) {
 	if loaded != nil {
 		t.Fatalf("expected nil after invalidate, got %+v", loaded)
 	}
+
+	// The retained history goes with the record.
+	hash, err := sobject.HashSOConfigChange(change)
+	if err != nil {
+		t.Fatal(err)
+	}
+	retained, err := acc.readVerifiedSOHistoryEntry(context.Background(), "so-1", hash)
+	if err != nil || retained != nil {
+		t.Fatalf("history after invalidate = %v, %v", retained, err)
+	}
 }
 
-// TestInvalidateVerifiedChainMissPath covers iter 5: invalidating an
-// already-absent record is a no-op (no error). Callers can invalidate
-// defensively without first probing for presence.
+// TestInvalidateVerifiedChainMissPath checks that invalidating an absent
+// record succeeds, so callers need not probe for it first.
 func TestInvalidateVerifiedChainMissPath(t *testing.T) {
+	// Invalidate a record that was never written.
 	objStore := hashmap.NewHashmapKvtx(hashmap.NewHashmap[[]byte]())
 	acc := &ProviderAccount{objStore: objStore}
 	if err := acc.InvalidateVerifiedChain(context.Background(), "so-missing"); err != nil {
@@ -207,26 +234,28 @@ func TestInvalidateVerifiedChainMissPath(t *testing.T) {
 	}
 }
 
-// TestVerifiedSOStateCacheKeyIsolation covers iter 4: separate SO ids
-// produce independent records within the same account ObjectStore so
-// invalidating one SO does not affect any other SO's verified state.
+// TestVerifiedSOStateCacheKeyIsolation checks that SharedObjects keep
+// independent records in one account store, so invalidating one leaves the
+// others intact.
 func TestVerifiedSOStateCacheKeyIsolation(t *testing.T) {
+	// Persist records for two SharedObjects.
 	objStore := hashmap.NewHashmapKvtx(hashmap.NewHashmap[[]byte]())
 	acc := &ProviderAccount{objStore: objStore}
-
 	cacheA := &api.VerifiedSOStateCache{VerifiedConfigChainHash: []byte("head-a")}
 	cacheB := &api.VerifiedSOStateCache{VerifiedConfigChainHash: []byte("head-b")}
-	if err := acc.writeVerifiedSOStateCache(context.Background(), "so-a", cacheA); err != nil {
+	if err := acc.writeVerifiedSOStateCache(context.Background(), "so-a", cacheA, nil); err != nil {
 		t.Fatalf("write so-a: %v", err)
 	}
-	if err := acc.writeVerifiedSOStateCache(context.Background(), "so-b", cacheB); err != nil {
+	if err := acc.writeVerifiedSOStateCache(context.Background(), "so-b", cacheB, nil); err != nil {
 		t.Fatalf("write so-b: %v", err)
 	}
 
+	// Invalidate the first one.
 	if err := acc.InvalidateVerifiedChain(context.Background(), "so-a"); err != nil {
 		t.Fatalf("invalidate so-a: %v", err)
 	}
 
+	// Only the first record is gone.
 	loadedA, err := acc.loadVerifiedSOStateCache(context.Background(), "so-a")
 	if err != nil {
 		t.Fatalf("load so-a: %v", err)
@@ -234,7 +263,6 @@ func TestVerifiedSOStateCacheKeyIsolation(t *testing.T) {
 	if loadedA != nil {
 		t.Fatalf("expected so-a invalidated, got %+v", loadedA)
 	}
-
 	loadedB, err := acc.loadVerifiedSOStateCache(context.Background(), "so-b")
 	if err != nil {
 		t.Fatalf("load so-b: %v", err)
@@ -244,16 +272,14 @@ func TestVerifiedSOStateCacheKeyIsolation(t *testing.T) {
 	}
 }
 
-// TestPullStateSkipsConfigChainOnWarmMount covers iter 2 (hydrate-on-host-
-// start) end-to-end: when newCloudSOHost is constructed with a verified
-// cache whose hash matches the SO state the cloud serves, pullState must
-// not signal the config-chain verifier. The HTTP server fails the test if
-// /config-chain is hit at all.
+// TestPullStateSkipsConfigChainOnWarmMount checks that a host hydrated with a
+// verified head matching the served state does not signal the config-chain
+// verifier. The server fails the test on any /config-chain request.
 func TestPullStateSkipsConfigChainOnWarmMount(t *testing.T) {
+	// Serve a state at the cached head.
 	const soID = "so-warm"
 	priv, pid := generateTestKeypair(t)
 	warmHash := []byte("warm-config-chain-hash")
-
 	state := &sobject.SOState{
 		Config: &sobject.SharedObjectConfig{
 			ConfigChainHash:  append([]byte(nil), warmHash...),
@@ -261,7 +287,6 @@ func TestPullStateSkipsConfigChainOnWarmMount(t *testing.T) {
 		},
 	}
 	stateJSON := mustMarshalSOStateMessageSnapshotJSON(t, state)
-
 	var (
 		stateHits       atomic.Int32
 		configChainHits atomic.Int32
@@ -280,6 +305,7 @@ func TestPullStateSkipsConfigChainOnWarmMount(t *testing.T) {
 	}))
 	defer srv.Close()
 
+	// Pull through a host hydrated at that head.
 	host := newCloudSOHost(
 		logrus.New().WithField("test", t.Name()),
 		NewSessionClient(http.DefaultClient, srv.URL, DefaultSigningEnvPrefix, priv, pid.String()),
@@ -295,12 +321,13 @@ func TestPullStateSkipsConfigChainOnWarmMount(t *testing.T) {
 		},
 		nil,
 		nil,
+		nil,
 	)
-
 	if err := host.pullState(context.Background(), SeedReasonColdSeed); err != nil {
 		t.Fatalf("pullState: %v", err)
 	}
 
+	// Only /state was fetched and the verifier stays idle.
 	if got := stateHits.Load(); got != 1 {
 		t.Fatalf("/state hits = %d, want 1", got)
 	}
@@ -312,16 +339,13 @@ func TestPullStateSkipsConfigChainOnWarmMount(t *testing.T) {
 	}
 }
 
-// TestPullStateTriggersConfigChainOnColdMount is the symmetric counterpart
-// to TestPullStateSkipsConfigChainOnWarmMount: with no hydrated cache the
-// config-chain verifier MUST be signaled so the first /state pull is
-// followed by a /config-chain fetch on the verifier routine. This
-// guards against a regression where the warm-skip logic also accidentally
-// suppresses cold-mount verification.
+// TestPullStateTriggersConfigChainOnColdMount checks that a host without a
+// hydrated cache signals the config-chain verifier after its first pull, so
+// the warm-mount skip never suppresses cold verification.
 func TestPullStateTriggersConfigChainOnColdMount(t *testing.T) {
+	// Serve only /state.
 	const soID = "so-cold"
 	priv, pid := generateTestKeypair(t)
-
 	state := &sobject.SOState{
 		Config: &sobject.SharedObjectConfig{
 			ConfigChainHash:  []byte("server-hash"),
@@ -329,7 +353,6 @@ func TestPullStateTriggersConfigChainOnColdMount(t *testing.T) {
 		},
 	}
 	stateJSON := mustMarshalSOStateMessageSnapshotJSON(t, state)
-
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/sobject/"+soID+"/state" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
@@ -338,6 +361,7 @@ func TestPullStateTriggersConfigChainOnColdMount(t *testing.T) {
 	}))
 	defer srv.Close()
 
+	// Pulling through a cold host signals the verifier.
 	host := newCloudSOHost(
 		logrus.New().WithField("test", t.Name()),
 		NewSessionClient(http.DefaultClient, srv.URL, DefaultSigningEnvPrefix, priv, pid.String()),
@@ -350,8 +374,8 @@ func TestPullStateTriggersConfigChainOnColdMount(t *testing.T) {
 		nil, // cold cache: no hydration
 		nil,
 		nil,
+		nil,
 	)
-
 	if err := host.pullState(context.Background(), SeedReasonColdSeed); err != nil {
 		t.Fatalf("pullState: %v", err)
 	}
@@ -360,26 +384,21 @@ func TestPullStateTriggersConfigChainOnColdMount(t *testing.T) {
 	}
 }
 
-// TestHandleSONotifyDeferToConfigChainOnInlineDelta covers the Phase 6 iter 6
-// regression: an inline so_notify carrying a state whose config_chain_hash
-// differs from the verified hash made handleStateDelta return
-// errSOConfigChainChanged, after which handleSONotify previously fell through
-// to triggerPull and fired a redundant GET /state. Contract: handleSONotify
-// must signal the config-chain verifier (so it can fetch /config-chain) and
-// must NOT signal the pull routine (the inline state already arrived; the next
-// inline event after the chain syncs carries it forward, or gap recovery rerun
-// a full pull). The HTTP server fails the test if /state is hit at all.
+// TestHandleSONotifyDeferToConfigChainOnInlineDelta checks that an inline
+// state whose config chain hash differs from the verified head signals the
+// config-chain verifier and not the pull routine: the inline state already
+// arrived, and the next inline event after the chain syncs carries it forward.
+// The server fails the test on any HTTP request.
 func TestHandleSONotifyDeferToConfigChainOnInlineDelta(t *testing.T) {
+	// Open a host at a verified head with no reachable endpoints.
 	const soID = "so-bump"
 	priv, pid := generateTestKeypair(t)
 	verifiedHash := []byte("verified-config-chain-hash")
 	bumpedHash := []byte("bumped-config-chain-hash")
-
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Fatalf("unexpected HTTP call from handleSONotify: %s", r.URL.Path)
 	}))
 	defer srv.Close()
-
 	host := newCloudSOHost(
 		logrus.New().WithField("test", t.Name()),
 		NewSessionClient(http.DefaultClient, srv.URL, DefaultSigningEnvPrefix, priv, pid.String()),
@@ -395,8 +414,10 @@ func TestHandleSONotifyDeferToConfigChainOnInlineDelta(t *testing.T) {
 		},
 		nil,
 		nil,
+		nil,
 	)
 
+	// Notify an inline state at a newer chain head.
 	snapshot := &sobject.SOState{
 		Config: &sobject.SharedObjectConfig{
 			ConfigChainHash:  append([]byte(nil), bumpedHash...),
@@ -411,19 +432,21 @@ func TestHandleSONotifyDeferToConfigChainOnInlineDelta(t *testing.T) {
 			Content: &api.SOStateMessage_Snapshot{Snapshot: snapshot},
 		},
 	}
-
 	host.handleSONotify(payload)
 
+	// The verifier is signaled and the pull routine is not.
 	if !host.configChangedRoutine.Pending() {
 		t.Fatal("config verifier was not signaled; config-chain verifier would not run")
 	}
-
 	if host.pullRoutine.Pending() {
 		t.Fatal("pull routine was signaled; this is the redundant GET /state regression")
 	}
 }
 
+// TestHandleSONotifyIgnoresMetadataOnly checks that a metadata-only event
+// signals neither the verifier nor the pull routine.
 func TestHandleSONotifyIgnoresMetadataOnly(t *testing.T) {
+	// Notify a metadata-only change.
 	priv, pid := generateTestKeypair(t)
 	host := newCloudSOHost(
 		logrus.New().WithField("test", t.Name()),
@@ -437,8 +460,8 @@ func TestHandleSONotifyIgnoresMetadataOnly(t *testing.T) {
 		nil,
 		nil,
 		nil,
+		nil,
 	)
-
 	host.handleSONotify(&api.SONotifyEventPayload{
 		ChangeType: "metadata",
 		Metadata: &api.SpaceMetadataResponse{
@@ -447,6 +470,7 @@ func TestHandleSONotifyIgnoresMetadataOnly(t *testing.T) {
 		},
 	})
 
+	// Neither routine is signaled.
 	if host.configChangedRoutine.Pending() {
 		t.Fatal("metadata-only notify should not signal config verifier")
 	}
@@ -458,6 +482,7 @@ func TestHandleSONotifyIgnoresMetadataOnly(t *testing.T) {
 // TestHandleSONotifyConfigChangedPullsState checks that a configuration change,
 // which carries no state, pulls the state that holds the new participant list.
 func TestHandleSONotifyConfigChangedPullsState(t *testing.T) {
+	// Notify a config change and expect a pending pull.
 	priv, pid := generateTestKeypair(t)
 	host := newCloudSOHost(
 		logrus.New().WithField("test", t.Name()),
@@ -471,19 +496,21 @@ func TestHandleSONotifyConfigChangedPullsState(t *testing.T) {
 		nil,
 		nil,
 		nil,
+		nil,
 	)
-
 	host.handleSONotify(&api.SONotifyEventPayload{ChangeType: "configChanged"})
-
 	if !host.pullRoutine.Pending() {
 		t.Fatal("config change notify should signal the pull routine")
 	}
 }
 
+// TestApplyConfigMutationPersistsVerifiedStateCache checks that applying a
+// config change persists the new verified head with only that change.
 func TestApplyConfigMutationPersistsVerifiedStateCache(t *testing.T) {
 	// Open a host with a cached verified head.
 	priv, pid := generateTestKeypair(t)
 	var persisted *api.VerifiedSOStateCache
+	var persistedChanges []*sobject.SOConfigChange
 	host := newCloudSOHost(
 		logrus.New().WithField("test", t.Name()),
 		NewSessionClient(http.DefaultClient, "http://example.com", DefaultSigningEnvPrefix, priv, pid.String()),
@@ -498,10 +525,12 @@ func TestApplyConfigMutationPersistsVerifiedStateCache(t *testing.T) {
 			VerifiedConfigChainHash:  []byte("old-hash"),
 			VerifiedConfigChainSeqno: 3,
 		},
-		func(_ context.Context, cache *api.VerifiedSOStateCache) error {
+		func(_ context.Context, cache *api.VerifiedSOStateCache, changes []*sobject.SOConfigChange) error {
 			persisted = cache.CloneVT()
+			persistedChanges = changes
 			return nil
 		},
+		nil,
 		nil,
 	)
 
@@ -535,6 +564,8 @@ func TestApplyConfigMutationPersistsVerifiedStateCache(t *testing.T) {
 	if persisted.GetVerifiedConfigChainSeqno() != 4 {
 		t.Fatalf("unexpected persisted verified seqno: %d", persisted.GetVerifiedConfigChainSeqno())
 	}
+
+	// The head is the entry's hash and the entry is the only retained change.
 	hash, err := sobject.HashSOConfigChange(entry)
 	if err != nil {
 		t.Fatalf("hash config change: %v", err)
@@ -545,4 +576,20 @@ func TestApplyConfigMutationPersistsVerifiedStateCache(t *testing.T) {
 	if persisted.GetCurrentConfig() == nil {
 		t.Fatal("expected current config in persisted verified cache")
 	}
+	if len(persistedChanges) != 1 || !persistedChanges[0].EqualVT(entry) {
+		t.Fatalf("persisted changes = %v, want only the applied entry", persistedChanges)
+	}
+}
+
+// attachTestVerifiedStore backs host's verified state and history with an
+// in-memory account store and returns that account.
+func attachTestVerifiedStore(host *cloudSOHost) *ProviderAccount {
+	acc := &ProviderAccount{objStore: hashmap.NewHashmapKvtx(hashmap.NewHashmap[[]byte]())}
+	host.persistVerifiedStateCache = func(ctx context.Context, cache *api.VerifiedSOStateCache, changes []*sobject.SOConfigChange) error {
+		return acc.writeVerifiedSOStateCache(ctx, host.soID, cache, changes)
+	}
+	host.readRetainedConfigChange = func(ctx context.Context, hash []byte) (*sobject.SOConfigChange, error) {
+		return acc.readVerifiedSOHistoryEntry(ctx, host.soID, hash)
+	}
+	return acc
 }

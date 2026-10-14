@@ -50,9 +50,10 @@ func TestAuthorizeSharedObjectMutationRejectsNonOwnerAccount(t *testing.T) {
 
 // TestAuthorizeSharedObjectMutationRejectsNonOwnerOrgMember refuses an organization member who is not an owner.
 func TestAuthorizeSharedObjectMutationRejectsNonOwnerOrgMember(t *testing.T) {
+	// Serve an organization where the account is only a member.
 	t.Parallel()
-
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Answer each organization route with its encoded response.
 		var body []byte
 		var err error
 		switch r.URL.Path {
@@ -80,6 +81,7 @@ func TestAuthorizeSharedObjectMutationRejectsNonOwnerOrgMember(t *testing.T) {
 	}))
 	defer srv.Close()
 
+	// Mutating an organization's Space is refused.
 	acc := NewTestProviderAccount(t, srv.URL)
 	err := acc.authorizeSharedObjectMutation(
 		context.Background(),
@@ -96,9 +98,10 @@ func TestAuthorizeSharedObjectMutationRejectsNonOwnerOrgMember(t *testing.T) {
 
 // TestAuthorizeSharedObjectMutationAllowsOrgOwner allows an owner of the owning organization.
 func TestAuthorizeSharedObjectMutationAllowsOrgOwner(t *testing.T) {
+	// Serve an organization the account owns.
 	t.Parallel()
-
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Answer each organization route with its encoded response.
 		var body []byte
 		var err error
 		switch r.URL.Path {
@@ -128,6 +131,7 @@ func TestAuthorizeSharedObjectMutationAllowsOrgOwner(t *testing.T) {
 	}))
 	defer srv.Close()
 
+	// Mutating an organization's Space is allowed.
 	acc := NewTestProviderAccount(t, srv.URL)
 	if err := acc.authorizeSharedObjectMutation(
 		context.Background(),
@@ -213,7 +217,7 @@ func TestReinitializeSharedObjectClearsVerifiedCacheBeforeReseed(t *testing.T) {
 	if err := acc.writeVerifiedSOStateCache(context.Background(), soID, &api.VerifiedSOStateCache{
 		GenesisHash:             []byte("old-genesis"),
 		VerifiedConfigChainHash: []byte("old-head"),
-	}); err != nil {
+	}, nil); err != nil {
 		t.Fatalf("write verified cache: %v", err)
 	}
 
@@ -358,8 +362,8 @@ func newSharedObjectRepairCacheTestAccount(
 	endpoint string,
 	sharedObjectID string,
 ) *ProviderAccount {
+	// Build an account with a store and an empty tracker set.
 	t.Helper()
-
 	acc := NewTestProviderAccount(t, endpoint)
 	acc.objStore = hashmap.NewHashmapKvtx(hashmap.NewHashmap[[]byte]())
 	acc.sobjects = keyed.NewKeyedRefCount[string, *sobjectTracker](
@@ -367,10 +371,12 @@ func newSharedObjectRepairCacheTestAccount(
 			return nil, nil
 		},
 	)
+
+	// Persist a verified cache at an old head.
 	if err := acc.writeVerifiedSOStateCache(context.Background(), sharedObjectID, &api.VerifiedSOStateCache{
 		GenesisHash:             []byte("old-genesis"),
 		VerifiedConfigChainHash: []byte("old-head"),
-	}); err != nil {
+	}, nil); err != nil {
 		t.Fatalf("write verified cache: %v", err)
 	}
 	return acc
@@ -407,8 +413,8 @@ func drainTestRequestBody(t *testing.T, r *http.Request) {
 
 // configStateIncludesKeyEpoch reports whether a config-state post carries a key epoch.
 func configStateIncludesKeyEpoch(t *testing.T, r *http.Request) bool {
+	// Decode the request and check for a key epoch.
 	t.Helper()
-
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		t.Fatalf("read config-state body: %v", err)

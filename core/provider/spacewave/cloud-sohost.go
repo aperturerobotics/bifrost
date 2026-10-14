@@ -58,18 +58,17 @@ type cloudSOHost struct {
 	verifiedConfig *sobject.SharedObjectConfig
 	// genesisHash is the hash of the genesis config change entry, pinned on first chain fetch.
 	genesisHash []byte
-	// persistVerifiedStateCache stores verified SO config state for restart hydration.
-	persistVerifiedStateCache func(context.Context, *api.VerifiedSOStateCache) error
+	// persistVerifiedStateCache stores verified SO config state for restart
+	// hydration and retains the newly accepted config changes with it.
+	persistVerifiedStateCache func(context.Context, *api.VerifiedSOStateCache, []*sobject.SOConfigChange) error
+	// readRetainedConfigChange returns a retained config change by hash, or nil.
+	readRetainedConfigChange func(context.Context, []byte) (*sobject.SOConfigChange, error)
 	// stateObserved projects accepted checkpoint mechanics without owning state.
 	stateObserved func(*sobject.SOState)
 	// bcast guards state, trusted configuration, and notification snapshots.
 	bcast broadcast.Broadcast
 	// acceptMu serializes cache acceptance and persistence, never HTTP requests.
 	acceptMu csync.Mutex
-	// configHistory retains immutable verified transitions, guarded by bcast.
-	configHistory []*sobject.SOConfigChange
-	// historyIndex serves bounded hash traversal; acceptMu guards updates and reads.
-	historyIndex map[string]*sobject.SOConfigChange
 	// peerState is the durable peer snapshot retained across cache-only updates.
 	peerState *sobject.SOState
 	// pending retains only work accepted locally for cloud publication.
@@ -123,7 +122,8 @@ func newCloudSOHost(
 	peerID peer.ID,
 	sfs *block_transform.StepFactorySet,
 	verifiedCache *api.VerifiedSOStateCache,
-	persistVerifiedStateCache func(context.Context, *api.VerifiedSOStateCache) error,
+	persistVerifiedStateCache func(context.Context, *api.VerifiedSOStateCache, []*sobject.SOConfigChange) error,
+	readRetainedConfigChange func(context.Context, []byte) (*sobject.SOConfigChange, error),
 	syncer *syncController,
 ) *cloudSOHost {
 	// Construct state containers and background routines before exposing the host.
@@ -139,6 +139,7 @@ func newCloudSOHost(
 		stateCtr:                  ccontainer.NewCContainer[*sobject.SOState](nil),
 		snapCtr:                   ccontainer.NewCContainer[sobject.SharedObjectStateSnapshot](nil),
 		persistVerifiedStateCache: persistVerifiedStateCache,
+		readRetainedConfigChange:  readRetainedConfigChange,
 		syncer:                    syncer,
 	}
 	h.pullRoutine = newCoalescedTriggerRoutine(le, "so-state-pull", h.pullOnTrigger)
@@ -437,6 +438,7 @@ func DecodeSOStateSnapshot(data []byte) (*sobject.SOState, error) {
 
 // decodeSOStateResponse decodes an SOStateMessage snapshot or delta marker.
 func decodeSOStateResponse(data []byte) (*sobject.SOState, uint64, *sobject.SOConfigChainResponse, error) {
+	// Decode the message, then return its snapshot or report its delta.
 	msg := &api.SOStateMessage{}
 	if err := msg.UnmarshalVT(data); err != nil {
 		return nil, 0, nil, errors.Wrap(err, "unmarshal SOStateMessage")
@@ -964,7 +966,7 @@ func (h *cloudSOHost) applyKeyEpoch(ctx context.Context, epoch *sobject.SOKeyEpo
 		}
 	}
 	if h.persistVerifiedStateCache != nil {
-		if err := h.persistVerifiedStateCache(ctx, cache); err != nil {
+		if err := h.persistVerifiedStateCache(ctx, cache, nil); err != nil {
 			h.le.WithError(err).Warn("failed to retain accepted key epoch")
 			return
 		}
@@ -1005,7 +1007,11 @@ func (h *cloudSOHost) applyConfigMutation(
 	// A completed server request may race a peer import or the config chain
 	// verifier, which may already hold this entry and its successors. Never
 	// regress held authority.
-	if _, ok := h.historyIndex[string(newHash)]; ok {
+	retained, err := h.readConfigEntry(ctx, h.soID, newHash)
+	if err != nil {
+		return err
+	}
+	if retained != nil {
 		return nil
 	}
 	if current := h.stateCtr.GetValue(); current != nil {
@@ -1039,7 +1045,6 @@ func (h *cloudSOHost) applyConfigMutation(
 	cache.CurrentConfig = nextCfg.CloneVT()
 	cache.VerifiedConfigChainHash = bytes.Clone(newHash)
 	cache.VerifiedConfigChainSeqno = entry.GetConfigSeqno()
-	cache.ConfigHistory = append(cache.ConfigHistory, entry.CloneVT())
 	if epoch != nil {
 		cache.KeyEpochs = mergeSOKeyEpochs(cache.KeyEpochs, epoch)
 	}
@@ -1057,18 +1062,17 @@ func (h *cloudSOHost) applyConfigMutation(
 		}
 	}
 
-	// Persist the cache before publishing it.
+	// Persist the cache and the new entry before publishing them.
 	if h.persistVerifiedStateCache != nil {
-		if err := h.persistVerifiedStateCache(ctx, cache); err != nil {
+		if err := h.persistVerifiedStateCache(ctx, cache, []*sobject.SOConfigChange{entry}); err != nil {
 			return err
 		}
 	}
 
 	// State, history and trusted metadata become visible together after persistence.
 	h.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+		// Commit the verified fields, then notify watchers.
 		h.verifiedConfig = cache.CurrentConfig
-		h.configHistory = cache.ConfigHistory
-		h.historyIndex = indexConfigHistory(cache.ConfigHistory)
 		h.lastConfigChainHash = cache.VerifiedConfigChainHash
 		h.verifiedConfigChainSeqno = cache.VerifiedConfigChainSeqno
 		h.keyEpochs = cache.KeyEpochs
@@ -1166,6 +1170,7 @@ func (h *cloudSOHost) syncConfigChain(ctx context.Context, newHash []byte) error
 		return nil
 	}
 
+	// Fetch the server's config chain.
 	chainData, err := h.client.GetConfigChain(ctx, h.soID)
 	if err != nil {
 		return errors.Wrap(err, "fetch config chain")
@@ -1276,7 +1281,6 @@ func (h *cloudSOHost) syncConfigChainResponse(
 		VerifiedConfigChainSeqno: entries[len(entries)-1].GetConfigSeqno(),
 		KeyEpochs:                cloneVTSlice(resp.GetKeyEpochs()),
 		PeerState:                h.peerState.Clone(),
-		ConfigHistory:            cloneVTSlice(entries),
 	}
 	if latestConfig != nil {
 		cache.CurrentConfig = latestConfig.CloneVT()
@@ -1290,7 +1294,7 @@ func (h *cloudSOHost) syncConfigChainResponse(
 
 	// Commit verified lineage before making the new authority observable.
 	if h.persistVerifiedStateCache != nil {
-		if err := h.persistVerifiedStateCache(ctx, cache); err != nil {
+		if err := h.persistVerifiedStateCache(ctx, cache, entries); err != nil {
 			return errors.Wrap(err, "persist verified config chain")
 		}
 	}
@@ -1304,9 +1308,7 @@ func (h *cloudSOHost) syncConfigChainResponse(
 			h.stateCtr.SetValue(nextState)
 		}
 
-		// Record the verified chain head and its history.
-		h.configHistory = cache.ConfigHistory
-		h.historyIndex = indexConfigHistory(cache.ConfigHistory)
+		// Record the verified chain head.
 		h.lastConfigChainHash = bytes.Clone(newHash)
 		h.verifiedConfigChainSeqno = entries[len(entries)-1].GetConfigSeqno()
 
@@ -1467,6 +1469,7 @@ func (h *cloudSOHost) GetSOHost() *sobject.SOHost {
 func (h *cloudSOHost) buildVerifiedStateCache() *api.VerifiedSOStateCache {
 	var cache *api.VerifiedSOStateCache
 	h.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
+		// Snapshot only a host that has verified a config chain.
 		if len(h.lastConfigChainHash) == 0 {
 			return
 		}
@@ -1476,7 +1479,6 @@ func (h *cloudSOHost) buildVerifiedStateCache() *api.VerifiedSOStateCache {
 			VerifiedConfigChainSeqno: h.verifiedConfigChainSeqno,
 			KeyEpochs:                cloneVTSlice(h.keyEpochs),
 			PeerState:                h.peerState.Clone(),
-			ConfigHistory:            cloneVTSlice(h.configHistory),
 			PendingPublication:       h.pending.CloneVT(),
 			CloudState:               h.cloudState.Clone(),
 			CloudSequence:            h.lastSeqno,
@@ -1502,6 +1504,8 @@ func shouldSyncVerifiedConfigChain(
 	verifiedHash []byte,
 	verifiedSeqno uint64,
 ) bool {
+	// Sync when a current head exists and the verified head is missing, older,
+	// or a different head at the same seqno.
 	if len(currentHash) == 0 {
 		return false
 	}
@@ -1525,8 +1529,6 @@ func (h *cloudSOHost) hydrateVerifiedStateCache(cache *api.VerifiedSOStateCache)
 	}
 
 	// Restore a valid snapshot even when its participant projection is reordered.
-	h.configHistory = cloneVTSlice(cache.GetConfigHistory())
-	h.historyIndex = indexConfigHistory(h.configHistory)
 	h.peerState = cache.GetPeerState().Clone()
 	h.pending = cache.GetPendingPublication().CloneVT()
 	h.cloudState = cache.GetCloudState().Clone()

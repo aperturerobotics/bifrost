@@ -68,7 +68,7 @@ func (h *cloudSOHost) retainPublication(ctx context.Context, state *sobject.SOSt
 	cache.PendingPublication = pending
 
 	// Persist the accepted state and its obligation together.
-	if err := h.persistVerifiedStateCache(ctx, cache); err != nil {
+	if err := h.persistVerifiedStateCache(ctx, cache, nil); err != nil {
 		return err
 	}
 	h.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
@@ -183,7 +183,7 @@ func (h *cloudSOHost) publishCheckpoint(ctx context.Context, sent *api.PendingSO
 	cache.PendingPublication = pending
 
 	// Persist the reduced obligation and update the host state.
-	if err := h.persistVerifiedStateCache(ctx, cache); err != nil {
+	if err := h.persistVerifiedStateCache(ctx, cache, nil); err != nil {
 		return err
 	}
 	h.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
@@ -305,7 +305,7 @@ func (h *cloudSOHost) acceptCloudSnapshot(ctx context.Context, cloud *sobject.SO
 		cache.PeerState = next.Clone()
 		cache.CloudState = cloud.Clone()
 		cache.CloudSequence = sequence
-		if err := h.persistVerifiedStateCache(ctx, cache); err != nil {
+		if err := h.persistVerifiedStateCache(ctx, cache, nil); err != nil {
 			return err
 		}
 	}

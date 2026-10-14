@@ -19,8 +19,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// testSharedObjectID is the SharedObject ID the package tests use.
 const testSharedObjectID = "test-shared-object"
 
+// TestCoalescedTriggerRoutineQueuesSinglePendingRun coalesces triggers made
+// during a run into one pending run.
 func TestCoalescedTriggerRoutineQueuesSinglePendingRun(t *testing.T) {
 	// Initialize a coalescing trigger routine.
 	started := make(chan struct{}, 3)
@@ -41,7 +44,6 @@ func TestCoalescedTriggerRoutineQueuesSinglePendingRun(t *testing.T) {
 	ctx := t.Context()
 	routine.SetContext(ctx)
 	defer routine.ClearContext()
-
 	routine.Trigger()
 	waitCoalescedTriggerRun(t, started)
 
@@ -60,6 +62,7 @@ func TestCoalescedTriggerRoutineQueuesSinglePendingRun(t *testing.T) {
 	}
 }
 
+// waitCoalescedTriggerRun waits up to a second for the next run to start.
 func waitCoalescedTriggerRun(t *testing.T, started <-chan struct{}) {
 	t.Helper()
 	select {
@@ -69,6 +72,8 @@ func waitCoalescedTriggerRun(t *testing.T, started <-chan struct{}) {
 	}
 }
 
+// TestAsyncCallbackJobsStartsOneOwnedJobPerTrigger starts one job per trigger
+// and drains when they return.
 func TestAsyncCallbackJobsStartsOneOwnedJobPerTrigger(t *testing.T) {
 	// Initialize callback jobs and their lifecycle context.
 	started := make(chan struct{}, 2)
@@ -80,7 +85,6 @@ func TestAsyncCallbackJobsStartsOneOwnedJobPerTrigger(t *testing.T) {
 		case <-release:
 		}
 	})
-
 	jobs.SetContext(t.Context())
 	defer jobs.ClearContext()
 
@@ -90,10 +94,13 @@ func TestAsyncCallbackJobsStartsOneOwnedJobPerTrigger(t *testing.T) {
 	jobs.Trigger()
 	waitAsyncCallbackJob(t, started)
 
+	// Release the jobs and wait for them to drain.
 	close(release)
 	waitAsyncCallbackJobsEmpty(t, jobs)
 }
 
+// TestAsyncCallbackJobsClearContextWaitsForOwnedJobs holds ClearContext until
+// the owned jobs return.
 func TestAsyncCallbackJobsClearContextWaitsForOwnedJobs(t *testing.T) {
 	// Initialize a job blocked on cancellation.
 	started := make(chan struct{})
@@ -107,12 +114,13 @@ func TestAsyncCallbackJobsClearContextWaitsForOwnedJobs(t *testing.T) {
 		<-allowReturn
 	})
 
-	// Cancel the job context and start cleanup.
+	// Start the job.
 	ctx, cancel := context.WithCancel(context.Background())
 	jobs.SetContext(ctx)
 	jobs.Trigger()
 	waitAsyncCallbackJob(t, started)
 
+	// Cancel the job context and start cleanup.
 	cancel()
 	go func() {
 		jobs.ClearContext()
@@ -138,13 +146,17 @@ func TestAsyncCallbackJobsClearContextWaitsForOwnedJobs(t *testing.T) {
 	}
 }
 
+// TestAsyncCallbackJobsIgnoresTriggerWithoutContext drops a trigger made
+// before any context is set.
 func TestAsyncCallbackJobsIgnoresTriggerWithoutContext(t *testing.T) {
+	// Trigger jobs that have no context.
 	started := make(chan struct{}, 1)
 	jobs := newAsyncCallbackJobs(func(context.Context) {
 		started <- struct{}{}
 	})
-
 	jobs.Trigger()
+
+	// Nothing is queued or started.
 	if got := jobs.Pending(); got != 0 {
 		t.Fatalf("trigger without context queued %d jobs", got)
 	}
@@ -155,18 +167,21 @@ func TestAsyncCallbackJobsIgnoresTriggerWithoutContext(t *testing.T) {
 	}
 }
 
+// TestAsyncCallbackJobsDoesNotReplayTriggerAfterCancel drops a trigger made
+// under a canceled context instead of running it under the next one.
 func TestAsyncCallbackJobsDoesNotReplayTriggerAfterCancel(t *testing.T) {
+	// Trigger under a canceled context, then set a live one.
 	started := make(chan struct{}, 1)
 	jobs := newAsyncCallbackJobs(func(context.Context) {
 		started <- struct{}{}
 	})
-
 	ctx, cancel := context.WithCancel(context.Background())
 	jobs.SetContext(ctx)
 	cancel()
 	jobs.Trigger()
 	jobs.SetContext(t.Context())
 
+	// Nothing is queued or started.
 	if got := jobs.Pending(); got != 0 {
 		t.Fatalf("trigger after canceled context queued %d jobs", got)
 	}
@@ -177,7 +192,11 @@ func TestAsyncCallbackJobsDoesNotReplayTriggerAfterCancel(t *testing.T) {
 	}
 }
 
+// TestCloudSOHostRefreshesBlockManifestBeforeInlineStateWhenNonceAdvances
+// refreshes the block manifest before publishing a state whose block-store
+// nonce advanced.
 func TestCloudSOHostRefreshesBlockManifestBeforeInlineStateWhenNonceAdvances(t *testing.T) {
+	// Record the refresh and that no state was published before it.
 	host := &cloudSOHost{
 		le:       logrus.New().WithField("test", t.Name()),
 		soID:     testSharedObjectID,
@@ -192,6 +211,7 @@ func TestCloudSOHostRefreshesBlockManifestBeforeInlineStateWhenNonceAdvances(t *
 		return nil
 	}
 
+	// Notify an inline state with an advanced nonce.
 	host.handleSONotify(&api.SONotifyEventPayload{
 		Seqno:           1,
 		ChangeType:      "op",
@@ -204,6 +224,7 @@ func TestCloudSOHostRefreshesBlockManifestBeforeInlineStateWhenNonceAdvances(t *
 		},
 	})
 
+	// The refresh ran and the state was published.
 	if !refreshed {
 		t.Fatal("block manifest refresh was not called for an advanced block-store nonce")
 	}
@@ -212,7 +233,10 @@ func TestCloudSOHostRefreshesBlockManifestBeforeInlineStateWhenNonceAdvances(t *
 	}
 }
 
+// TestCloudSOHostSkipsBlockManifestRefreshWithoutAdvancedNonce refreshes the
+// block manifest only when the nonce passes the local manifest sequence.
 func TestCloudSOHostSkipsBlockManifestRefreshWithoutAdvancedNonce(t *testing.T) {
+	// Count refreshes against a settable local manifest sequence.
 	host := &cloudSOHost{
 		le:       logrus.New().WithField("test", t.Name()),
 		soID:     testSharedObjectID,
@@ -227,6 +251,8 @@ func TestCloudSOHostSkipsBlockManifestRefreshWithoutAdvancedNonce(t *testing.T) 
 		refreshCalls++
 		return nil
 	}
+
+	// Notify inline states with a given nonce.
 	notify := func(seqno, blockStoreNonce uint64) {
 		t.Helper()
 		host.handleSONotify(&api.SONotifyEventPayload{
@@ -242,6 +268,7 @@ func TestCloudSOHostSkipsBlockManifestRefreshWithoutAdvancedNonce(t *testing.T) 
 		})
 	}
 
+	// A state without a nonce applies without a refresh.
 	notify(1, 0)
 	if refreshCalls != 0 {
 		t.Fatalf("refreshBlockManifest called %d time(s) without a block-store nonce", refreshCalls)
@@ -250,6 +277,7 @@ func TestCloudSOHostSkipsBlockManifestRefreshWithoutAdvancedNonce(t *testing.T) 
 		t.Fatal("inline SO state without a block-store nonce was not applied")
 	}
 
+	// Only nonces past the local sequence refresh.
 	notify(2, 7)
 	if refreshCalls != 1 {
 		t.Fatalf("refreshBlockManifest calls after advanced nonce = %d, want 1", refreshCalls)
@@ -265,7 +293,10 @@ func TestCloudSOHostSkipsBlockManifestRefreshWithoutAdvancedNonce(t *testing.T) 
 	}
 }
 
+// TestCloudSOHostTriggersPullWhenAdvancedBlockManifestRefreshFails withholds
+// the state and schedules a pull when the manifest refresh fails.
 func TestCloudSOHostTriggersPullWhenAdvancedBlockManifestRefreshFails(t *testing.T) {
+	// Fail every manifest refresh.
 	host := &cloudSOHost{
 		le:          logrus.New().WithField("test", t.Name()),
 		soID:        testSharedObjectID,
@@ -277,6 +308,7 @@ func TestCloudSOHostTriggersPullWhenAdvancedBlockManifestRefreshFails(t *testing
 		return refreshErr
 	}
 
+	// Notify an inline state with an advanced nonce.
 	host.handleSONotify(&api.SONotifyEventPayload{
 		Seqno:           1,
 		ChangeType:      "op",
@@ -289,6 +321,7 @@ func TestCloudSOHostTriggersPullWhenAdvancedBlockManifestRefreshFails(t *testing
 		},
 	})
 
+	// The state is withheld and a pull is pending.
 	if host.stateCtr.GetValue() != nil {
 		t.Fatal("inline SO state was published after block manifest refresh failed")
 	}
@@ -297,6 +330,8 @@ func TestCloudSOHostTriggersPullWhenAdvancedBlockManifestRefreshFails(t *testing
 	}
 }
 
+// TestCloudSOHostUsesInlineConfigChainWhenPulledStateHashChanges verifies a
+// pulled state's inline config chain without a separate chain request.
 func TestCloudSOHostUsesInlineConfigChainWhenPulledStateHashChanges(t *testing.T) {
 	// Load rejoin fixtures for one owner.
 	const accountID = "acct-inline-chain"
@@ -358,6 +393,7 @@ func TestCloudSOHostUsesInlineConfigChainWhenPulledStateHashChanges(t *testing.T
 		stateCtr:            ccontainer.NewCContainer[*sobject.SOState](nil),
 		lastConfigChainHash: previousConfig.GetConfigChainHash(),
 	}
+	attachTestVerifiedStore(host)
 	if err := host.pullState(context.Background(), SeedReasonColdSeed); err != nil {
 		t.Fatalf("pull state: %v", err)
 	}
@@ -383,6 +419,7 @@ func TestCloudSOHostUsesInlineConfigChainWhenPulledStateHashChanges(t *testing.T
 	}
 }
 
+// waitAsyncCallbackJob waits up to a second for the next job to start.
 func waitAsyncCallbackJob(t *testing.T, started <-chan struct{}) {
 	t.Helper()
 	select {
@@ -392,7 +429,9 @@ func waitAsyncCallbackJob(t *testing.T, started <-chan struct{}) {
 	}
 }
 
+// waitAsyncCallbackJobsEmpty waits up to a second for jobs to drain.
 func waitAsyncCallbackJobsEmpty(t *testing.T, jobs *asyncCallbackJobs) {
+	// Check the pending count each millisecond until the deadline.
 	t.Helper()
 	deadline := time.After(time.Second)
 	tick := time.NewTicker(time.Millisecond)

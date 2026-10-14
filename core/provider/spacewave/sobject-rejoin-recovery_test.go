@@ -101,6 +101,7 @@ func TestTryRecoverMissingSharedObjectPeer(t *testing.T) {
 		nil,
 		nil,
 		nil,
+		nil,
 	)
 	host.soHost.SetContext(t.Context())
 	so := &SharedObject{
@@ -233,6 +234,7 @@ func TestTryRecoverMissingSharedObjectPeerRepairsMissingGrant(t *testing.T) {
 		nil,
 		nil,
 		nil,
+		nil,
 	)
 	host.soHost.SetContext(t.Context())
 	so := &SharedObject{
@@ -334,6 +336,7 @@ func TestTryRecoverMissingSharedObjectPeerRequiresCredential(t *testing.T) {
 		nil,
 		nil,
 		nil,
+		nil,
 	)
 	host.soHost.SetContext(t.Context())
 	so := &SharedObject{
@@ -409,6 +412,7 @@ func TestTryRecoverMissingSharedObjectPeerRemovedEntity(t *testing.T) {
 		newPriv,
 		newPID,
 		acc.sfs,
+		nil,
 		nil,
 		nil,
 		nil,
@@ -568,6 +572,7 @@ func newRejoinScenario(t *testing.T) *rejoinScenario {
 		nil,
 		nil,
 		nil,
+		nil,
 	)
 	sc.host.soHost.SetContext(t.Context())
 	sc.so = &SharedObject{
@@ -613,6 +618,7 @@ func (sc *rejoinScenario) run(t *testing.T) {
 
 // assertHit checks a route count after the recovery request completes.
 func (sc *rejoinScenario) assertHit(t *testing.T, suffix string, want int) {
+	// Read the count under the scenario lock.
 	t.Helper()
 	sc.mu.Lock()
 	got := sc.hits["/api/sobject/"+sc.soID+suffix]
@@ -622,15 +628,17 @@ func (sc *rejoinScenario) assertHit(t *testing.T, suffix string, want int) {
 	}
 }
 
-// TestTryRecoverMissingSharedObjectPeerWarmCachesSkipFetches covers the
-// warm-cache recovery path. A complete
-// envelope + keypair cache must satisfy the rejoin path with zero
-// /recovery-envelope and zero /recovery-entity-keypairs fetches.
+// TestTryRecoverMissingSharedObjectPeerWarmCachesSkipFetches checks that a
+// complete envelope and keypair cache satisfies the rejoin without fetching
+// /recovery-envelope or /recovery-entity-keypairs.
 func TestTryRecoverMissingSharedObjectPeerWarmCachesSkipFetches(t *testing.T) {
+	// Rejoin with the primed caches.
 	sc := newRejoinScenario(t)
 	sc.primeEnvelopeCache(t)
 	sc.primeKeypairCache(t)
 	sc.run(t)
+
+	// Only the cold caches were fetched.
 	sc.assertHit(t, "/recovery-envelope", 0)
 	sc.assertHit(t, "/recovery-entity-keypairs", 0)
 	sc.assertHit(t, "/config-state", 1)
@@ -640,9 +648,12 @@ func TestTryRecoverMissingSharedObjectPeerWarmCachesSkipFetches(t *testing.T) {
 // envelope-warm/keypairs-cold branch: envelope lookup is satisfied from cache
 // but the keypair fetch still fires because the per-entity cache is empty.
 func TestTryRecoverMissingSharedObjectPeerWarmEnvelopeColdKeypairs(t *testing.T) {
+	// Rejoin with the primed caches.
 	sc := newRejoinScenario(t)
 	sc.primeEnvelopeCache(t)
 	sc.run(t)
+
+	// Only the cold caches were fetched.
 	sc.assertHit(t, "/recovery-envelope", 0)
 	sc.assertHit(t, "/recovery-entity-keypairs", 1)
 	sc.assertHit(t, "/config-state", 1)
@@ -652,9 +663,12 @@ func TestTryRecoverMissingSharedObjectPeerWarmEnvelopeColdKeypairs(t *testing.T)
 // envelope-cold/keypairs-warm branch: envelope must be fetched, but keypair
 // resolution is satisfied entirely from the per-entity cache.
 func TestTryRecoverMissingSharedObjectPeerColdEnvelopeWarmKeypairs(t *testing.T) {
+	// Rejoin with the primed caches.
 	sc := newRejoinScenario(t)
 	sc.primeKeypairCache(t)
 	sc.run(t)
+
+	// Only the cold caches were fetched.
 	sc.assertHit(t, "/recovery-envelope", 1)
 	sc.assertHit(t, "/recovery-entity-keypairs", 0)
 	sc.assertHit(t, "/config-state", 1)
@@ -664,8 +678,11 @@ func TestTryRecoverMissingSharedObjectPeerColdEnvelopeWarmKeypairs(t *testing.T)
 // branch: a fresh ProviderAccount with no cache must fetch both endpoints
 // exactly once and then POST /config-state.
 func TestTryRecoverMissingSharedObjectPeerColdBothFetches(t *testing.T) {
+	// Rejoin with empty caches.
 	sc := newRejoinScenario(t)
 	sc.run(t)
+
+	// Both caches were fetched once.
 	sc.assertHit(t, "/recovery-envelope", 1)
 	sc.assertHit(t, "/recovery-entity-keypairs", 1)
 	sc.assertHit(t, "/config-state", 1)
@@ -678,6 +695,7 @@ func TestTryRecoverMissingSharedObjectPeerColdBothFetches(t *testing.T) {
 // persist then writes the fresh envelope back into the cache so a subsequent
 // rejoin attempt would be warm.
 func TestTryRecoverMissingSharedObjectPeerStaleEnvelopeRefetches(t *testing.T) {
+	// Cache an envelope from another key epoch.
 	sc := newRejoinScenario(t)
 	stale := sc.envResp.GetEnvelope().CloneVT()
 	stale.KeyEpoch = sc.envResp.GetEnvelope().GetKeyEpoch() + 99
@@ -689,6 +707,8 @@ func TestTryRecoverMissingSharedObjectPeerStaleEnvelopeRefetches(t *testing.T) {
 		t.Fatalf("prime stale envelope cache: %v", err)
 	}
 	sc.primeKeypairCache(t)
+
+	// Rejoining refetches only the envelope.
 	sc.run(t)
 	sc.assertHit(t, "/recovery-envelope", 1)
 	sc.assertHit(t, "/recovery-entity-keypairs", 0)
