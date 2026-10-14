@@ -106,6 +106,57 @@ func TestSessionTransportUDPAuthorizesPeers(t *testing.T) {
 	}
 }
 
+// TestSessionTransportUDPAdmitsNamedPeers checks that a Session whose
+// authorizer refuses every peer still links to a peer it names to StartUDP.
+func TestSessionTransportUDPAdmitsNamedPeers(t *testing.T) {
+	// Build a Session that refuses every peer and one that admits any.
+	ctx, _, strict := newTestSessionTransport(t, "", transport.WithPeerAuthorizer(
+		func(context.Context, peer.ID) error { return errors.New("not an account session") },
+	))
+	_, _, remote := newTestSessionTransport(t, "", transport.WithPeerAuthorizer(
+		func(context.Context, peer.ID) error { return nil },
+	))
+	remoteID := remote.GetPeerID()
+	for _, st := range []*transport.SessionTransport{strict, remote} {
+		go func() { _ = st.Execute(ctx) }()
+		if err := st.AwaitReady(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// The strict Session names the remote one and dials it.
+	addr, err := remote.StartUDP(ctx, "127.0.0.1:0", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := strict.StartUDP(ctx, "127.0.0.1:0", map[peer.ID]string{
+		remoteID: addr.String(),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	_, elRef, err := strict.GetChildBus().AddDirective(
+		link.NewEstablishLinkWithPeer(strict.GetPeerID(), remoteID),
+		nil,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer elRef.Release()
+
+	// The named peer links despite the strict rule.
+	for {
+		linked, waitChs := strict.GetLinkedPeerIDsSnapshotWithWait([]peer.ID{remoteID})
+		if _, ok := linked[remoteID]; ok {
+			return
+		}
+		select {
+		case <-waitAny(waitChs):
+		case <-ctx.Done():
+			t.Fatal("named peer did not link")
+		}
+	}
+}
+
 // TestSessionTransportReauthorizeClosesRevokedPeer checks that a change from
 // the authorization watch closes the link and admitted stream of a peer the
 // authorizer no longer admits.

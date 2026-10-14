@@ -17,9 +17,12 @@ import (
 
 // StartUDP runs a UDP transport under the Session's peer until ctx ends or the
 // current transport run stops. It listens on listenAddr, or an ephemeral port
-// when empty, and dials each peer in peerAddrs at its host:port address. Every
-// link, inbound or dialed, must pass AuthorizePeer before it mounts. StartUDP
-// returns the bound local address once the socket is open.
+// when empty, and dials each peer in peerAddrs at its host:port address. A link,
+// inbound or dialed, mounts when its remote peer is named in peerAddrs or
+// passes AuthorizePeer. Naming a peer admits only its link: services that
+// grant authority, such as those served with ServeAuthorized, still apply
+// AuthorizePeer to each stream. StartUDP returns the bound local address once
+// the socket is open.
 func (t *SessionTransport) StartUDP(ctx context.Context, listenAddr string, peerAddrs map[peer.ID]string) (net.Addr, error) {
 	// Capture the running child bus and the lifetime that owns it.
 	var b bus.Bus
@@ -31,16 +34,25 @@ func (t *SessionTransport) StartUDP(ctx context.Context, listenAddr string, peer
 		return nil, errors.New("session transport is not running")
 	}
 
-	// Build the gated controller with a static dialer for each named peer.
+	// Build the gated controller with a static dialer for each named peer,
+	// admitting the named peers' links beside the Session's own rule.
 	dialers := make(map[string]*dialer.DialerOpts, len(peerAddrs))
+	named := make(map[peer.ID]struct{}, len(peerAddrs))
 	for id, addr := range peerAddrs {
 		dialers[id.String()] = &dialer.DialerOpts{Address: addr}
+		named[id] = struct{}{}
+	}
+	authorize := func(ctx context.Context, remotePeer peer.ID) error {
+		if _, ok := named[remotePeer]; ok {
+			return nil
+		}
+		return t.AuthorizePeer(ctx, remotePeer)
 	}
 	ctrl, err := transport_udp.NewController(t.le, b, &transport_udp.Config{
 		TransportPeerId: t.peerID.String(),
 		ListenAddr:      listenAddr,
 		Dialers:         dialers,
-	}, transport_controller.WithPeerAuthorizer(t.AuthorizePeer))
+	}, transport_controller.WithPeerAuthorizer(authorize))
 	if err != nil {
 		return nil, err
 	}
