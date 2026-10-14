@@ -171,11 +171,11 @@ type Engine struct {
 	headWatchDone chan struct{}
 	// headWatchErr is the latest refresh failure, guarded by bcast.
 	headWatchErr error
-	// keyWatch wakes object revision waiters by key. It is nil while no
-	// waiter is registered. Guarded by bcast.
-	keyWatch *engineKeyWatch
-	// keyWatches counts key watch goroutines that Close must join.
-	keyWatches int
+	// changeWatch compares each new head once for every watcher. It is nil
+	// while no watcher is registered. Guarded by bcast.
+	changeWatch *engineChangeWatch
+	// changeWatches counts change watch goroutines that Close must join.
+	changeWatches int
 	// watchedHeads records the recent published heads, oldest first, for
 	// change watchers. Guarded by bcast.
 	watchedHeads []*watchedHead
@@ -1286,10 +1286,10 @@ func (e *Engine) Close() error {
 	e.closed = true
 	e.signalHeadLocked()
 
-	// Cancel the key watch comparison in flight and wake its waiters.
-	if e.keyWatch != nil {
-		e.keyWatch.cancel()
-		e.stopKeyWatchLocked(e.keyWatch)
+	// Cancel the change watch comparison in flight and wake its watchers.
+	if w := e.changeWatch; w != nil {
+		w.cancel()
+		e.stopChangeWatchLocked(w)
 	}
 
 	// Detach every Engine-owned resource while publication is closed.
@@ -1327,10 +1327,10 @@ func (e *Engine) Close() error {
 		<-e.headWatchDone
 	}
 
-	// Join detached work, in-flight commit publication and key watches before
+	// Join detached work, in-flight commit publication and change watches before
 	// baseRoot release.
 	locked = e.bcast.Lock()
-	for e.retiring != 0 || e.committing != 0 || e.keyWatches != 0 {
+	for e.retiring != 0 || e.committing != 0 || e.changeWatches != 0 {
 		wait := locked.WaitCh()
 		locked.Unlock()
 		<-wait

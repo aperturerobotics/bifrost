@@ -16,13 +16,13 @@ func TestChangedObjectKeys(t *testing.T) {
 	ctx := t.Context()
 	e := newRetirementTestEngine(t, ctx)
 	ws := world.NewEngineWorldState(e, true)
-	createKeyWatchTestObject(t, ctx, ws, "diff/kept")
-	createKeyWatchTestObject(t, ctx, ws, "diff/changed")
-	createKeyWatchTestObject(t, ctx, ws, "diff/deleted")
+	createWatchTestObject(t, ctx, ws, "diff/kept")
+	createWatchTestObject(t, ctx, ws, "diff/changed")
+	createWatchTestObject(t, ctx, ws, "diff/deleted")
 	before := e.GetRootRef()
 
 	// Create, change and delete one object each.
-	createKeyWatchTestObject(t, ctx, ws, "diff/created")
+	createWatchTestObject(t, ctx, ws, "diff/created")
 	if _, _, err := ws.ApplyWorldOp(ctx, world_mock.NewMockWorldOp("diff/changed", "changed"), ""); err != nil {
 		t.Fatal(err)
 	}
@@ -38,7 +38,8 @@ func TestChangedObjectKeys(t *testing.T) {
 		return e.AccessWorldState(ctx, after, func(afterCs *bucket_lookup.Cursor) error {
 			// List the objects that differ between the roots.
 			var err error
-			keys, complete, err = e.changedObjectKeys(ctx, beforeCs, afterCs)
+			keys, _, err = e.compareChangeWatchHeads(ctx, beforeCs, afterCs, false)
+			complete = keys != nil
 			return err
 		})
 	})
@@ -61,7 +62,8 @@ func TestChangedObjectKeys(t *testing.T) {
 
 		// Compare the root with itself.
 		var err error
-		keys, complete, err = e.changedObjectKeys(ctx, cs, same)
+		keys, _, err = e.compareChangeWatchHeads(ctx, cs, same, false)
+		complete = keys != nil
 		return err
 	})
 	if err != nil || !complete || len(keys) != 0 {

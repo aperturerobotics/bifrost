@@ -11,15 +11,15 @@ import (
 	world_mock "github.com/s4wave/spacewave/db/world/mock"
 )
 
-// TestEngineKeyWatchWakesOnlyChangedKeys checks that a commit wakes the
+// TestEngineChangeWatchWakesOnlyChangedKeys checks that a commit wakes the
 // waiters of the objects it changed and leaves other waiters asleep.
-func TestEngineKeyWatchWakesOnlyChangedKeys(t *testing.T) {
+func TestEngineChangeWatchWakesOnlyChangedKeys(t *testing.T) {
 	// Create two objects on a real block Engine.
 	ctx := t.Context()
 	e := newRetirementTestEngine(t, ctx)
 	ws := world.NewEngineWorldState(e, true)
-	createKeyWatchTestObject(t, ctx, ws, "watch/quiet")
-	createKeyWatchTestObject(t, ctx, ws, "watch/busy")
+	createWatchTestObject(t, ctx, ws, "watch/quiet")
+	createWatchTestObject(t, ctx, ws, "watch/busy")
 
 	// Register a waiter on the quiet object.
 	locked := e.bcast.Lock()
@@ -74,7 +74,7 @@ func TestEngineWaitObjectRev(t *testing.T) {
 	ctx := t.Context()
 	e := newRetirementTestEngine(t, ctx)
 	ws := world.NewEngineWorldState(e, true)
-	rev := createKeyWatchTestObject(t, ctx, ws, "watch/object")
+	rev := createWatchTestObject(t, ctx, ws, "watch/object")
 
 	// A satisfied revision returns at once and a missing object is rejected.
 	got, err := e.WaitObjectRev(ctx, "watch/object", rev, false)
@@ -114,8 +114,8 @@ func TestEngineWaitObjectRev(t *testing.T) {
 	}
 }
 
-// createKeyWatchTestObject creates an object and returns its revision.
-func createKeyWatchTestObject(t *testing.T, ctx context.Context, ws world.WorldState, key string) uint64 {
+// createWatchTestObject creates an object and returns its revision.
+func createWatchTestObject(t *testing.T, ctx context.Context, ws world.WorldState, key string) uint64 {
 	// Create the object with an example root block.
 	t.Helper()
 	obj, _, err := world.CreateWorldObject(ctx, ws, key, func(cursor *block.Cursor) error {
