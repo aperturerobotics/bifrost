@@ -71,6 +71,19 @@ func (t *TxStoreTx) GetBatch(ctx context.Context, keys [][]byte) ([][]byte, []bo
 	return GetBatch(ctx, t.tx, keys)
 }
 
+// Prefetch forwards the prefetch to the transaction.
+func (t *TxStoreTx) Prefetch(ctx context.Context, keys [][]byte) error {
+	// Hold the virtual transaction lifecycle lock.
+	t.rmtx.RLock()
+	defer t.rmtx.RUnlock()
+
+	// Reject access through a discarded virtual transaction.
+	if t.discarded {
+		return tx.ErrDiscarded
+	}
+	return Prefetch(ctx, t.tx, keys)
+}
+
 // Size returns the number of keys in the store.
 func (t *TxStoreTx) Size(ctx context.Context) (uint64, error) {
 	t.rmtx.RLock()
@@ -235,4 +248,7 @@ func (t *TxStoreTx) discardOnce() error {
 }
 
 // _ is a type assertion
-var _ Tx = (*TxStoreTx)(nil)
+var (
+	_ Tx            = (*TxStoreTx)(nil)
+	_ PrefetchTxOps = (*TxStoreTx)(nil)
+)

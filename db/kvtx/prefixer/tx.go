@@ -47,6 +47,18 @@ func (t *tx) GetBatch(ctx context.Context, keys [][]byte) ([][]byte, []bool, err
 	return kvtx.GetBatch(ctx, t.lower, prefixed)
 }
 
+// Prefetch prefetches the prefixed keys.
+func (t *tx) Prefetch(ctx context.Context, keys [][]byte) error {
+	prefixed := make([][]byte, len(keys))
+	for i, key := range keys {
+		if len(key) == 0 {
+			return kvtx.ErrEmptyKey
+		}
+		prefixed[i] = t.getKey(key)
+	}
+	return kvtx.Prefetch(ctx, t.lower, prefixed)
+}
+
 // Size returns the number of keys in the tree.
 func (t *tx) Size(ctx context.Context) (uint64, error) {
 	return t.lower.Size(ctx)
@@ -114,9 +126,8 @@ func (t *tx) Exists(ctx context.Context, key []byte) (bool, error) {
 	return t.lower.Exists(ctx, k)
 }
 
-// Commit commits the transaction to storage.
-// Can return an error to indicate tx failure.
-// Will return error if called after Discard()
+// Commit commits the transaction to storage. It returns an error when the
+// transaction fails or was discarded.
 func (t *tx) Commit(ctx context.Context) error {
 	return t.lower.Commit(ctx)
 }
@@ -136,4 +147,7 @@ func (t *tx) Discard() {
 }
 
 // _ is a type assertion
-var _ kvtx.OrderedCommitTx = (*tx)(nil)
+var (
+	_ kvtx.OrderedCommitTx = (*tx)(nil)
+	_ kvtx.PrefetchTxOps   = (*tx)(nil)
+)

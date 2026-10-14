@@ -169,6 +169,12 @@ func (k *KVTxBlock) PutBlockBatch(ctx context.Context, entries []*block.PutBatch
 				return tx, err
 			},
 			func(ctx context.Context, tx kvtx.Tx) error {
+				// Prefetch the stored state of every block the writes check.
+				if err := prefetchPutBlockBatchOps(ctx, tx, remaining); err != nil {
+					return err
+				}
+
+				// Write the ops until the transaction is full.
 				written, attempt = 0, attempt[:0]
 				for _, op := range remaining {
 					opExisted, err := applyPutBlockBatchOp(ctx, tx, op)
@@ -400,11 +406,26 @@ func (k *KVTxBlock) GetBlockExistsBatch(ctx context.Context, refs []*block.Block
 	return found, err
 }
 
-// getBlockExistsBatch checks every ref's key through the given tx ops.
+// getBlockExistsBatch prefetches every ref's key through the given tx ops,
+// then checks each.
 func (k *KVTxBlock) getBlockExistsBatch(ctx context.Context, tx kvtx.TxOps, refs []*block.BlockRef) ([]bool, error) {
-	out := make([]bool, len(refs))
+	// Prefetch the keys.
+	keys := make([][]byte, len(refs))
 	for i, ref := range refs {
-		found, err := k.getBlockExists(ctx, tx, ref)
+		key, err := k.blockKey(ref)
+		if err != nil {
+			return nil, err
+		}
+		keys[i] = key
+	}
+	if err := kvtx.Prefetch(ctx, tx, keys); err != nil {
+		return nil, err
+	}
+
+	// Check each key.
+	out := make([]bool, len(keys))
+	for i, key := range keys {
+		found, err := tx.Exists(ctx, key)
 		if err != nil {
 			return nil, err
 		}
@@ -493,6 +514,18 @@ func applyPutBlockBatchOp(ctx context.Context, tx kvtx.Tx, op putBlockBatchOp) (
 		return exists, err
 	}
 	return false, tx.Set(ctx, op.key, op.data)
+}
+
+// prefetchPutBlockBatchOps prefetches the keys of the ops that check whether
+// their block is stored.
+func prefetchPutBlockBatchOps(ctx context.Context, tx kvtx.Tx, ops []putBlockBatchOp) error {
+	keys := make([][]byte, 0, len(ops))
+	for _, op := range ops {
+		if !op.tombstone {
+			keys = append(keys, op.key)
+		}
+	}
+	return kvtx.Prefetch(ctx, tx, keys)
 }
 
 // preparePutBlockBatchOp marshals one batch entry into its stored form.

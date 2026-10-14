@@ -67,6 +67,15 @@ func (t *Tx) GetBatch(ctx context.Context, keys [][]byte) (values [][]byte, foun
 	return kvtx.GetBatch(ctx, t.Tx, keys)
 }
 
+// Prefetch prefetches keys.
+func (t *Tx) Prefetch(ctx context.Context, keys [][]byte) (err error) {
+	t.le.Debugf("Prefetch(keys=%d) start", len(keys))
+	defer func() {
+		t.le.Debugf("Prefetch(keys=%d) => err(%v)", len(keys), err)
+	}()
+	return kvtx.Prefetch(ctx, t.Tx, keys)
+}
+
 // Size returns number of keys in the store.
 func (t *Tx) Size(ctx context.Context) (count uint64, err error) {
 	t.le.Debug("Size() start")
@@ -201,9 +210,8 @@ func (t *Tx) Exists(ctx context.Context, key []byte) (found bool, err error) {
 	return t.Tx.Exists(ctx, key)
 }
 
-// Commit commits the transaction to storage.
-// Can return an error to indicate tx failure.
-// Will return error if called after Discard()
+// Commit commits the transaction to storage. It returns an error when the
+// transaction fails or was discarded.
 func (t *Tx) Commit(ctx context.Context) (err error) {
 	// only log the first Commit or Discard call
 	var logFn func()
@@ -235,4 +243,7 @@ func (t *Tx) Discard() {
 }
 
 // _ is a type assertion
-var _ kvtx.Tx = (*Tx)(nil)
+var (
+	_ kvtx.Tx            = (*Tx)(nil)
+	_ kvtx.PrefetchTxOps = (*Tx)(nil)
+)

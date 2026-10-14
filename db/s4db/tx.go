@@ -87,31 +87,20 @@ func (t *Tx) Get(ctx context.Context, key []byte) ([]byte, bool, error) {
 }
 
 // GetBatch reads keys in index order and returns owned values in caller order.
-// It first loads the index pages covering every key with their reads in
-// flight together, so a cold batch waits for one round of reads per tree
-// level instead of one read per key.
+// It prefetches the keys first, so a cold batch waits for one round of reads
+// per tree level instead of one read per key.
 func (t *Tx) GetBatch(ctx context.Context, keys [][]byte) ([][]byte, []bool, error) {
-	// Validate the batch and retain the caller's result positions.
-	if t.done {
-		return nil, nil, kvtx.ErrDiscarded
+	// Load the index pages covering the keys.
+	if err := t.Prefetch(ctx, keys); err != nil {
+		return nil, nil, err
 	}
+
+	// Order the reads by key, retaining the caller's result positions.
 	order := make([]int, len(keys))
-	for i, key := range keys {
-		if len(key) == 0 {
-			return nil, nil, kvtx.ErrEmptyKey
-		}
+	for i := range keys {
 		order[i] = i
 	}
 	slices.SortFunc(order, func(i, j int) int { return bytes.Compare(keys[i], keys[j]) })
-
-	// Load the index pages of the snapshot covering the keys.
-	sorted := make([][]byte, len(order))
-	for n, i := range order {
-		sorted[n] = keys[i]
-	}
-	if err := t.db.p.prefetch(ctx, t.st.root, sorted); err != nil {
-		return nil, nil, err
-	}
 
 	// Read adjacent index keys together without changing the caller's slices.
 	values := make([][]byte, len(keys))
@@ -127,6 +116,25 @@ func (t *Tx) GetBatch(ctx context.Context, keys [][]byte) ([][]byte, []bool, err
 		}
 	}
 	return values, found, nil
+}
+
+// Prefetch loads the index pages of the snapshot on the path to each key,
+// keeping the reads of each tree level in flight together.
+func (t *Tx) Prefetch(ctx context.Context, keys [][]byte) error {
+	// Check the transaction and keys.
+	if t.done {
+		return kvtx.ErrDiscarded
+	}
+	for _, key := range keys {
+		if len(key) == 0 {
+			return kvtx.ErrEmptyKey
+		}
+	}
+
+	// Descend to the sorted keys together.
+	sorted := slices.Clone(keys)
+	slices.SortFunc(sorted, bytes.Compare)
+	return t.db.p.prefetch(ctx, t.st.root, sorted)
 }
 
 // Exists reports whether key is present.
@@ -327,4 +335,5 @@ func (t *Tx) Discard() {
 var (
 	_ kvtx.OrderedCommitTx = (*Tx)(nil)
 	_ kvtx.BatchTxOps      = (*Tx)(nil)
+	_ kvtx.PrefetchTxOps   = (*Tx)(nil)
 )
