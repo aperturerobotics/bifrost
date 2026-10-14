@@ -21,7 +21,7 @@ import (
 )
 
 // Reconciler runs the Flowgraph nodes placed on one Device. It watches the
-// World for placements and the DevicePolicy for the allowed node types,
+// World state each pass read and the DevicePolicy for the allowed node types,
 // compiles each allowed node through its node type, applies the compiled
 // entries as one ConfigSet on the Device Session's bus, and writes each node's
 // state into the Device object. A node that fails shows as rejected with its
@@ -52,6 +52,8 @@ type Reconciler struct {
 
 	// wake holds a pending reconcile. Every watched source sets it.
 	wake chan struct{}
+	// watchErr holds the error that ended a World watch.
+	watchErr chan error
 	// types holds the lookup of each node type in use.
 	types *nodeTypes
 	// applier applies the compiled entries.
@@ -80,6 +82,7 @@ func NewReconciler(
 		peerID:      peerID,
 		hold:        hold,
 		wake:        make(chan struct{}, 1),
+		watchErr:    make(chan error, 1),
 	}
 	r.types = newNodeTypes(b, r.notify)
 	r.applier = newConfigApplier(b, r.notify)
@@ -105,32 +108,84 @@ func (r *Reconciler) Run(ctx context.Context) error {
 		return err
 	}
 
-	// Watch the World and the policy, and reconcile after each change.
+	// Watch the policy, and reconcile after each change.
+	r.notify()
 	eg, egCtx := errgroup.WithContext(ctx)
-	eg.Go(func() error { return r.watchWorld(egCtx) })
 	eg.Go(func() error { return r.watchPolicy(egCtx) })
-	eg.Go(func() error {
-		for {
-			select {
-			case <-egCtx.Done():
-				return egCtx.Err()
-			case <-r.wake:
-			}
-			err := r.reconcile(egCtx)
-			switch {
-			case err == nil || egCtx.Err() != nil:
-			case errors.Is(err, world.ErrObjectNotFound):
-				// The Device object arrives with a later World change.
-				r.le.WithError(err).Debug("device object not available for flowgraph nodes")
-			default:
-				r.le.WithError(err).Warn("failed to reconcile flowgraph nodes")
-			}
-		}
-	})
+	eg.Go(func() error { return r.reconcileLoop(egCtx) })
 	if err := eg.Wait(); ctx.Err() == nil {
 		return err
 	}
 	return nil
+}
+
+// reconcileLoop reconciles after each wake, then watches the World state the
+// pass read, so only a change to that state wakes the next pass.
+func (r *Reconciler) reconcileLoop(ctx context.Context) error {
+	stop := func() {}
+	defer func() { stop() }()
+	for {
+		// Wait for a wake, then stop watching the previous pass's reads.
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case err := <-r.watchErr:
+			return err
+		case <-r.wake:
+		}
+		stop()
+
+		// Reconcile, recording the World state the pass reads.
+		seqno, err := r.engine.GetSeqno(ctx)
+		if err != nil {
+			return err
+		}
+		reads := world.NewReadSet()
+		err = r.reconcile(ctx, reads)
+		switch {
+		case err == nil || ctx.Err() != nil:
+		case errors.Is(err, world.ErrObjectNotFound):
+			// The Device object arrives with a later World change.
+			r.le.WithError(err).Debug("device object not available for flowgraph nodes")
+		default:
+			// Retry after any World change, since the pass may have stopped
+			// before reading what would fix it.
+			r.le.WithError(err).Warn("failed to reconcile flowgraph nodes")
+			reads = nil
+		}
+		stop = r.watchReads(ctx, seqno, reads)
+	}
+}
+
+// watchReads schedules a reconcile for the first World change after seqno that
+// touches reads, or for any change when reads is nil. It returns a function
+// that stops the watch and waits for it to exit.
+func (r *Reconciler) watchReads(ctx context.Context, seqno uint64, reads *world.ReadSet) func() {
+	ctx, cancel := context.WithCancel(ctx)
+	done := make(chan struct{})
+	go func() {
+		// Wait for the change, then wake the loop or report the failure.
+		defer close(done)
+		var err error
+		if reads != nil {
+			_, err = reads.WaitChange(ctx, r.engine, seqno)
+		} else {
+			_, err = r.engine.WaitSeqno(ctx, seqno+1)
+		}
+		switch {
+		case err == nil:
+			r.notify()
+		case ctx.Err() == nil:
+			select {
+			case r.watchErr <- err:
+			default:
+			}
+		}
+	}()
+	return func() {
+		cancel()
+		<-done
+	}
 }
 
 // notify schedules a reconcile.
@@ -138,21 +193,6 @@ func (r *Reconciler) notify() {
 	select {
 	case r.wake <- struct{}{}:
 	default:
-	}
-}
-
-// watchWorld schedules a reconcile for the current World and for every change.
-func (r *Reconciler) watchWorld(ctx context.Context) error {
-	seqno, err := r.engine.GetSeqno(ctx)
-	if err != nil {
-		return err
-	}
-	for {
-		r.notify()
-		seqno, err = r.engine.WaitSeqno(ctx, seqno+1)
-		if err != nil {
-			return err
-		}
 	}
 }
 
@@ -171,10 +211,10 @@ func (r *Reconciler) watchPolicy(ctx context.Context) error {
 }
 
 // reconcile brings the running nodes and the Device object to the placed nodes
-// the policy allows.
-func (r *Reconciler) reconcile(ctx context.Context) error {
+// the policy allows. It records the World state it reads in reads.
+func (r *Reconciler) reconcile(ctx context.Context, reads *world.ReadSet) error {
 	// Compile the placed nodes, then run every accepted node's entries together.
-	entries, reports, err := r.compilePlaced(ctx)
+	entries, reports, err := r.compilePlaced(ctx, reads)
 	if err != nil {
 		return err
 	}
@@ -183,20 +223,21 @@ func (r *Reconciler) reconcile(ctx context.Context) error {
 	}
 	r.setHeld(len(entries) != 0)
 	r.forgeWorker.Set(r.deviceKey, acceptedForgeWorker(reports))
-	return r.project(ctx, reports)
+	return r.project(ctx, reads, reports)
 }
 
 // compilePlaced compiles each node placed on this Device from one World
-// snapshot. It returns the entries of the accepted nodes by ConfigSet key and a
-// report for every node.
-func (r *Reconciler) compilePlaced(ctx context.Context) (map[string]config.Config, []*nodeReport, error) {
+// snapshot, recording its reads in reads. It returns the entries of the
+// accepted nodes by ConfigSet key and a report for every node.
+func (r *Reconciler) compilePlaced(ctx context.Context, reads *world.ReadSet) (map[string]config.Config, []*nodeReport, error) {
 	// Read the nodes placed on this Device.
 	tx, err := r.engine.NewTransaction(ctx, false)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "new transaction")
 	}
 	defer tx.Discard()
-	placed, err := readPlacedNodes(ctx, tx, r.deviceKey, r.peerID)
+	ws := reads.Track(tx)
+	placed, err := readPlacedNodes(ctx, ws, r.deviceKey, r.peerID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -223,7 +264,7 @@ func (r *Reconciler) compilePlaced(ctx context.Context) (map[string]config.Confi
 	// Compile each node in order.
 	reports := make([]*nodeReport, len(placed))
 	for i, node := range placed {
-		reports[i] = r.compile(ctx, tx, node, pass)
+		reports[i] = r.compile(ctx, ws, node, pass)
 	}
 	return pass.entries, reports, nil
 }
@@ -254,10 +295,12 @@ func (r *Reconciler) setHeld(held bool) {
 
 // project writes the state of each reported node into the Device object,
 // replacing the Flowgraph node capabilities it carried and keeping every other
-// capability. It opens a write transaction only when the Device differs.
-func (r *Reconciler) project(ctx context.Context, reports []*nodeReport) error {
+// capability. It opens a write transaction only when the Device differs. It
+// records its read of the Device in reads, so a later change to the Device
+// wakes a pass that restores the node capabilities.
+func (r *Reconciler) project(ctx context.Context, reads *world.ReadSet, reports []*nodeReport) error {
 	// Compare against the current Device first, since most wakes change nothing.
-	current, err := r.readDeviceState(ctx)
+	current, err := r.readDeviceState(ctx, reads)
 	if err != nil {
 		return err
 	}
@@ -311,8 +354,9 @@ func (r *Reconciler) nextCapabilities(device *s4wave_device.Device, reports []*n
 	return capabilities
 }
 
-// readDeviceState reads this daemon's Device on a read transaction.
-func (r *Reconciler) readDeviceState(ctx context.Context) (*s4wave_device.Device, error) {
+// readDeviceState reads this daemon's Device on a read transaction, recording
+// the read in reads.
+func (r *Reconciler) readDeviceState(ctx context.Context, reads *world.ReadSet) (*s4wave_device.Device, error) {
 	// Read the Device inside a transaction that is discarded on return.
 	tx, err := r.engine.NewTransaction(ctx, false)
 	if err != nil {
@@ -321,7 +365,7 @@ func (r *Reconciler) readDeviceState(ctx context.Context) (*s4wave_device.Device
 	defer tx.Discard()
 
 	// Release the object state, since the caller needs only the Device.
-	obj, device, err := r.loadDevice(ctx, tx)
+	obj, device, err := r.loadDevice(ctx, reads.Track(tx))
 	world.ReleaseObjectState(obj)
 	return device, err
 }
