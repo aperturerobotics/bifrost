@@ -112,6 +112,58 @@ func (p *pager) get(root uint64, key []byte) (value, bool, error) {
 	return n.val(i), true, nil
 }
 
+// prefetchRun is a page and the sorted keys whose paths pass through it.
+type prefetchRun struct {
+	page uint64
+	keys [][]byte
+}
+
+// prefetch reads the pages on the paths from root to each of the sorted keys
+// into the cache. It descends one level at a time and keeps the reads of a
+// level in flight together, so a later lookup of any key finds every page
+// cached and a cold batch costs one round of reads per level.
+func (p *pager) prefetch(ctx context.Context, root uint64, keys [][]byte) error {
+	if root == 0 || len(keys) == 0 {
+		return nil
+	}
+	level := []prefetchRun{{page: root, keys: keys}}
+	for len(level) != 0 {
+		// Read the level.
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		pages := make([]uint64, len(level))
+		for i, run := range level {
+			pages[i] = run.page
+		}
+		nodes, err := p.nodes(pages)
+		if err != nil {
+			return err
+		}
+
+		// Route each run of keys to the children covering them. Sorted keys
+		// reach the children in order, so adjacent keys share a run.
+		var next []prefetchRun
+		for i, n := range nodes {
+			if n.leaf {
+				continue
+			}
+			keys := level[i].keys
+			for len(keys) != 0 {
+				kid := n.childIndex(keys[0])
+				j := 1
+				for j < len(keys) && n.childIndex(keys[j]) == kid {
+					j++
+				}
+				next = append(next, prefetchRun{page: n.kid(kid), keys: keys[:j]})
+				keys = keys[j:]
+			}
+		}
+		level = next
+	}
+	return nil
+}
+
 // readValue returns a stored value, checking packed bytes against their
 // checksum.
 func (p *pager) readValue(v value) ([]byte, error) {

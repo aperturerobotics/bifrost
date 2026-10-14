@@ -87,9 +87,14 @@ func (t *Tx) Get(ctx context.Context, key []byte) ([]byte, bool, error) {
 }
 
 // GetBatch reads keys in index order and returns owned values in caller order.
-// Ordering keeps each leaf hot until every requested key in it has been read.
+// It first loads the index pages covering every key with their reads in
+// flight together, so a cold batch waits for one round of reads per tree
+// level instead of one read per key.
 func (t *Tx) GetBatch(ctx context.Context, keys [][]byte) ([][]byte, []bool, error) {
 	// Validate the batch and retain the caller's result positions.
+	if t.done {
+		return nil, nil, kvtx.ErrDiscarded
+	}
 	order := make([]int, len(keys))
 	for i, key := range keys {
 		if len(key) == 0 {
@@ -98,6 +103,15 @@ func (t *Tx) GetBatch(ctx context.Context, keys [][]byte) ([][]byte, []bool, err
 		order[i] = i
 	}
 	slices.SortFunc(order, func(i, j int) int { return bytes.Compare(keys[i], keys[j]) })
+
+	// Load the index pages of the snapshot covering the keys.
+	sorted := make([][]byte, len(order))
+	for n, i := range order {
+		sorted[n] = keys[i]
+	}
+	if err := t.db.p.prefetch(ctx, t.st.root, sorted); err != nil {
+		return nil, nil, err
+	}
 
 	// Read adjacent index keys together without changing the caller's slices.
 	values := make([][]byte, len(keys))

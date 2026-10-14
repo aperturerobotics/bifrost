@@ -238,6 +238,13 @@ func (g *RefGraph) ApplyRefBatch(ctx context.Context, adds, removes []RefEdge) e
 // applyRefBatchTx applies one transaction slice in ownership order, marking
 // each object that loses its last owner as unreferenced.
 func (g *RefGraph) applyRefBatchTx(ctx context.Context, tx kvtx.Tx, adds, removes []RefEdge) error {
+	// Load every record the checks below read in one batch read. A store
+	// that reads a batch concurrently then answers each check from its cache
+	// instead of reading it in turn while the transaction holds the writer.
+	if err := prefetchRefBatchTx(ctx, tx, adds, removes); err != nil {
+		return err
+	}
+
 	// Add every edge first, so an edge in both lists ends removed.
 	for _, edge := range adds {
 		if err := g.addRefTx(ctx, tx, edge.Subject, edge.Object); err != nil {
@@ -279,6 +286,27 @@ func (g *RefGraph) applyRefBatchTx(ctx context.Context, tx kvtx.Tx, adds, remove
 		}
 	}
 	return nil
+}
+
+// prefetchRefBatchTx reads the forward record of each edge and the first
+// incoming record position of each removed object, discarding the values.
+// Graph records are empty, so the batch reads only the index.
+func prefetchRefBatchTx(ctx context.Context, tx kvtx.Tx, adds, removes []RefEdge) error {
+	// List the records the batch checks.
+	keys := make([][]byte, 0, len(adds)+2*len(removes))
+	for _, edge := range adds {
+		keys = append(keys, graphKey(kindForward, edge.Subject, edge.Object))
+	}
+	for _, edge := range removes {
+		keys = append(keys,
+			graphKey(kindForward, edge.Subject, edge.Object),
+			graphKey(kindIncoming, edge.Object),
+		)
+	}
+
+	// Read them together.
+	_, _, err := kvtx.GetBatch(ctx, tx, keys)
+	return err
 }
 
 // addRefTx adds both edge directions, and the endpoint inventory of a

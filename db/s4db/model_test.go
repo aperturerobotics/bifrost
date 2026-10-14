@@ -4,12 +4,15 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"maps"
 	"math/rand/v2"
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/s4wave/spacewave/db/kvtx"
 )
@@ -252,4 +255,101 @@ func TestDeepTreeGets(t *testing.T) {
 		}
 		rtx.Discard()
 	}
+}
+
+// TestGetBatchPrefetch checks that a cold GetBatch answers present and absent
+// keys and leaves every page on each key's path cached.
+func TestGetBatchPrefetch(t *testing.T) {
+	// Build a deep tree across checkpoints.
+	ctx := context.Background()
+	db := openTest(t, filepath.Join(t.TempDir(), "a.s4wave"), Options{CheckpointMin: 32 << 10, CheckpointMax: 64 << 10})
+	defer db.Close()
+	prefix := strings.Repeat("p", 120)
+	for n := range 40 {
+		tx, err := db.NewTransaction(ctx, true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for i := range 200 {
+			k := fmt.Sprintf("%s/%07d", prefix, 2*(n*200+i))
+			if err := tx.Set(ctx, []byte(k), []byte(k[len(prefix):])); err != nil {
+				t.Fatal(err)
+			}
+		}
+		if err := tx.Commit(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// List even keys, which are present, and odd keys, which are absent.
+	var keys [][]byte
+	for i := 0; i < 16000; i += 37 {
+		keys = append(keys, fmt.Appendf(nil, "%s/%07d", prefix, i))
+	}
+
+	// Read them from a cold cache.
+	db.p.cache.clear()
+	tx, err := db.NewTransaction(ctx, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Discard()
+	values, found, err := tx.(kvtx.BatchTxOps).GetBatch(ctx, keys)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, key := range keys {
+		want := i*37%2 == 0
+		if found[i] != want || (want && !bytes.Equal(values[i], key[len(prefix):])) {
+			t.Fatalf("key %s: found %v value %q", key[len(prefix):], found[i], values[i])
+		}
+	}
+
+	// Prefetch the keys through a second pager with a cold cache, whose
+	// reads each take long enough to overlap with the reads beside them.
+	root := tx.(*Tx).st.root
+	if root == 0 {
+		t.Fatal("no checkpointed tree")
+	}
+	r := &overlapReader{r: db.s}
+	p := &pager{r: r, cache: newCache(64 << 20)}
+	if err := p.prefetch(ctx, root, keys); err != nil {
+		t.Fatal(err)
+	}
+	if r.most.Load() < 2 {
+		t.Fatalf("prefetch kept at most %d reads in flight", r.most.Load())
+	}
+
+	// Descend to each key through the cache alone.
+	for _, key := range keys {
+		for page := root; ; {
+			n := p.cache.get(page)
+			if n == nil {
+				t.Fatalf("key %s: page %d not cached", key[len(prefix):], page)
+			}
+			if n.leaf {
+				break
+			}
+			page = n.kid(n.childIndex(key))
+		}
+	}
+}
+
+// overlapReader records the most reads in flight at once.
+type overlapReader struct {
+	r          io.ReaderAt
+	open, most atomic.Int32
+}
+
+// ReadAt reads from the underlying file and holds the read open briefly.
+func (o *overlapReader) ReadAt(b []byte, off int64) (int, error) {
+	// Count the read in flight and raise the most seen.
+	n := o.open.Add(1)
+	defer o.open.Add(-1)
+	for m := o.most.Load(); n > m && !o.most.CompareAndSwap(m, n); m = o.most.Load() {
+	}
+
+	// Hold the read open so concurrent reads overlap it.
+	time.Sleep(time.Millisecond)
+	return o.r.ReadAt(b, off)
 }
