@@ -1,0 +1,97 @@
+package block_gc
+
+import "hash/maphash"
+
+// nodeSetMinBits is the base-2 logarithm of an empty NodeSet's table size.
+const nodeSetMinBits = 10
+
+// NodeSet is a set of graph nodes that keeps 16 bytes a node, so a mark of
+// millions of nodes fits a small memory budget. It stores a 128-bit hash of
+// each node under two random seeds chosen per set: two nodes share a hash with
+// probability about n²/2¹²⁹, and no one can choose nodes that collide without
+// the seeds. A collision would make Add report a new node as present.
+type NodeSet struct {
+	// seeds key the two halves of each node's hash.
+	seeds [2]maphash.Seed
+	// slots is an open-addressed table of 1<<bits hashes, in which the zero
+	// hash marks an empty slot.
+	slots [][2]uint64
+	// bits is the base-2 logarithm of the table size.
+	bits uint
+	// count is the number of nodes in the set.
+	count int
+}
+
+// NewNodeSet returns an empty set.
+func NewNodeSet() *NodeSet {
+	return &NodeSet{
+		seeds: [2]maphash.Seed{maphash.MakeSeed(), maphash.MakeSeed()},
+		slots: make([][2]uint64, 1<<nodeSetMinBits),
+		bits:  nodeSetMinBits,
+	}
+}
+
+// Len returns the number of nodes in the set.
+func (s *NodeSet) Len() int {
+	return s.count
+}
+
+// Has reports whether node is in the set.
+func (s *NodeSet) Has(node string) bool {
+	_, found := s.find(s.hash(node))
+	return found
+}
+
+// Add inserts node and reports whether it was absent.
+func (s *NodeSet) Add(node string) bool {
+	// Find the node's slot, or the empty slot it would take.
+	h := s.hash(node)
+	i, found := s.find(h)
+	if found {
+		return false
+	}
+
+	// Store it, doubling the table past a load of 0.8.
+	s.slots[i] = h
+	s.count++
+	if s.count*5 > len(s.slots)*4 {
+		s.grow()
+	}
+	return true
+}
+
+// hash returns the 128-bit hash of node. The zero hash is reserved for empty
+// slots, so it is moved to another value.
+func (s *NodeSet) hash(node string) [2]uint64 {
+	h := [2]uint64{maphash.String(s.seeds[0], node), maphash.String(s.seeds[1], node)}
+	if h == ([2]uint64{}) {
+		h[1] = 1
+	}
+	return h
+}
+
+// find returns the slot holding h, or the empty slot that ends its probe.
+func (s *NodeSet) find(h [2]uint64) (uint64, bool) {
+	mask := uint64(1)<<s.bits - 1
+	for i := h[0] & mask; ; i = (i + 1) & mask {
+		switch s.slots[i] {
+		case h:
+			return i, true
+		case [2]uint64{}:
+			return i, false
+		}
+	}
+}
+
+// grow doubles the table and reinserts every hash.
+func (s *NodeSet) grow() {
+	old := s.slots
+	s.bits++
+	s.slots = make([][2]uint64, 1<<s.bits)
+	for _, h := range old {
+		if h != ([2]uint64{}) {
+			i, _ := s.find(h)
+			s.slots[i] = h
+		}
+	}
+}

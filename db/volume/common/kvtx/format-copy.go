@@ -155,7 +155,7 @@ type copyWriter struct {
 	counts CopyProgress
 	// live holds the reachable nodes of a reachable copy; nil copies every
 	// key.
-	live map[string]struct{}
+	live *block_gc.NodeSet
 	// blockPrefix is the prefix of the block keys a reachable copy filters.
 	blockPrefix []byte
 	// graph reads the source's reference graph in the copy's snapshot during
@@ -238,7 +238,7 @@ func (w *copyWriter) keep(ctx context.Context, key []byte) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		if _, ok := w.live[subject]; ok {
+		if w.live.Has(subject) {
 			return true, nil
 		}
 		w.counts.DroppedRecords++
@@ -255,7 +255,7 @@ func (w *copyWriter) keep(ctx context.Context, key []byte) (bool, error) {
 		return false, fmt.Errorf("decode block key %q: %w", key, err)
 	}
 	node := block_gc.BlockIRI(ref)
-	if _, ok := w.live[node]; ok {
+	if w.live.Has(node) {
 		return true, nil
 	}
 

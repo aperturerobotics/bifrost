@@ -18,21 +18,20 @@ const reachChunk = 4096
 // and the registered roots, the roots included: the nodes the mark phase of a
 // complete collection keeps. The unreferenced queue marks candidates and owns
 // nothing, so neither it nor its edges are included. The walk reads one
-// snapshot a level at a time, loading the index pages of each chunk of the
-// level's records together in key order, so a cold store costs a batch of
-// reads per chunk instead of one read per node.
-func (g *RefGraph) Reachable(ctx context.Context) (map[string]struct{}, error) {
-	var reached map[string]struct{}
+// snapshot, popping chunks of nodes from a stack and loading the index pages
+// of each chunk's records together in key order, so a cold store costs a batch
+// of reads per chunk instead of one read per node, and the work list stays
+// small however wide the graph is.
+func (g *RefGraph) Reachable(ctx context.Context) (*NodeSet, error) {
+	reached := NewNodeSet()
 	err := g.transaction(ctx, false, func(ctx context.Context, tx kvtx.Tx) error {
-		// Seed the first level with the graph root and the registered roots.
-		reached = map[string]struct{}{NodeGCRoot: {}}
-		level := []string{NodeGCRoot}
+		// Seed the stack with the graph root and the registered roots.
+		reached.Add(NodeGCRoot)
+		stack := []string{NodeGCRoot}
 		prefix := graphKey(kindRoot)
 		err := tx.ScanPrefixKeys(ctx, prefix, func(key []byte) error {
-			node := lastNode(prefix, key)
-			if _, ok := reached[node]; !ok && node != NodeUnreferenced {
-				reached[node] = struct{}{}
-				level = append(level, node)
+			if node := lastNode(prefix, key); node != NodeUnreferenced && reached.Add(node) {
+				stack = append(stack, node)
 			}
 			return nil
 		})
@@ -40,51 +39,42 @@ func (g *RefGraph) Reachable(ctx context.Context) (map[string]struct{}, error) {
 			return err
 		}
 
-		// Walk the levels until one adds no node.
-		for len(level) != 0 {
-			level, err = reachLevel(ctx, tx, level, reached)
-			if err != nil {
+		// Walk chunks of the stack until it empties.
+		prefixes := make([][]byte, 0, reachChunk)
+		for len(stack) != 0 {
+			// Pop a chunk and order its record prefixes by key.
+			chunk := stack[max(0, len(stack)-reachChunk):]
+			prefixes = prefixes[:0]
+			for _, node := range chunk {
+				if node != NodeUnreferenced {
+					prefixes = append(prefixes, graphKey(kindForward, node))
+				}
+			}
+			stack = stack[:len(stack)-len(chunk)]
+			slices.SortFunc(prefixes, bytes.Compare)
+
+			// Load the chunk's index pages together, then push each new target.
+			if err := kvtx.Prefetch(ctx, tx, prefixes); err != nil {
 				return err
+			}
+			for _, prefix := range prefixes {
+				err := tx.ScanPrefixKeys(ctx, prefix, func(key []byte) error {
+					if node := lastNode(prefix, key); reached.Add(node) {
+						stack = append(stack, node)
+					}
+					return nil
+				})
+				if err != nil {
+					return err
+				}
 			}
 		}
 		return nil
 	})
-	return reached, err
-}
-
-// reachLevel adds each target of the forward records of level that is not
-// yet in reached, and returns those targets as the next level.
-func reachLevel(ctx context.Context, tx kvtx.Tx, level []string, reached map[string]struct{}) ([]string, error) {
-	// Order the level's record prefixes by key.
-	prefixes := make([][]byte, 0, len(level))
-	for _, node := range level {
-		if node != NodeUnreferenced {
-			prefixes = append(prefixes, graphKey(kindForward, node))
-		}
+	if err != nil {
+		return nil, err
 	}
-	slices.SortFunc(prefixes, bytes.Compare)
-
-	// Load each chunk's index pages together, then scan its records.
-	var next []string
-	for chunk := range slices.Chunk(prefixes, reachChunk) {
-		if err := kvtx.Prefetch(ctx, tx, chunk); err != nil {
-			return nil, err
-		}
-		for _, prefix := range chunk {
-			err := tx.ScanPrefixKeys(ctx, prefix, func(key []byte) error {
-				node := lastNode(prefix, key)
-				if _, ok := reached[node]; !ok {
-					reached[node] = struct{}{}
-					next = append(next, node)
-				}
-				return nil
-			})
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-	return next, nil
+	return reached, nil
 }
 
 // RecordSubject returns the node whose liveness decides whether a complete
