@@ -2980,6 +2980,9 @@ type SpaceMetadataResponse struct {
 	// {base}/{spaceId}/packs/{shard}/{packId}.kvf. Empty unless the object is a
 	// public Space.
 	PublicBaseUrl string `protobuf:"bytes,6,opt,name=public_base_url,json=publicBaseUrl,proto3" json:"publicBaseUrl,omitempty"`
+	// UpdatedAt is when the shared object's metadata last changed, in Unix
+	// milliseconds. The shared object list carries the same value per entry.
+	UpdatedAt int64 `protobuf:"varint,7,opt,name=updated_at,json=updatedAt,proto3" json:"updatedAt,omitempty"`
 }
 
 func (x *SpaceMetadataResponse) Reset() {
@@ -3028,6 +3031,13 @@ func (x *SpaceMetadataResponse) GetPublicBaseUrl() string {
 		return x.PublicBaseUrl
 	}
 	return ""
+}
+
+func (x *SpaceMetadataResponse) GetUpdatedAt() int64 {
+	if x != nil {
+		return x.UpdatedAt
+	}
+	return 0
 }
 
 // CreateOrgRequest is the request body for POST /org/create.
@@ -11291,6 +11301,7 @@ func (m *SpaceMetadataResponse) CloneVT() *SpaceMetadataResponse {
 	r.PublicRead = m.PublicRead
 	r.OwnerId = m.OwnerId
 	r.PublicBaseUrl = m.PublicBaseUrl
+	r.UpdatedAt = m.UpdatedAt
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -16868,6 +16879,9 @@ func (this *SpaceMetadataResponse) EqualVT(that *SpaceMetadataResponse) bool {
 		return false
 	}
 	if this.PublicBaseUrl != that.PublicBaseUrl {
+		return false
+	}
+	if this.UpdatedAt != that.UpdatedAt {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -26240,6 +26254,11 @@ func (x *SpaceMetadataResponse) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("publicBaseUrl")
 		s.WriteString(x.PublicBaseUrl)
 	}
+	if x.UpdatedAt != 0 || s.HasField("updatedAt") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("updatedAt")
+		s.WriteInt64(x.UpdatedAt)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -26275,6 +26294,9 @@ func (x *SpaceMetadataResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "public_base_url", "publicBaseUrl":
 			s.AddField("public_base_url")
 			x.PublicBaseUrl = s.ReadString()
+		case "updated_at", "updatedAt":
+			s.AddField("updated_at")
+			x.UpdatedAt = s.ReadInt64()
 		}
 	})
 }
@@ -41076,6 +41098,11 @@ func (m *SpaceMetadataResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error)
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.UpdatedAt != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.UpdatedAt))
+		i--
+		dAtA[i] = 0x38
+	}
 	if len(m.PublicBaseUrl) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.PublicBaseUrl)
 		i--
@@ -51639,6 +51666,7 @@ func (m *SpaceMetadataResponse) SizeVT() (n int) {
 	n += protobuf_go_lite.SizeBoolNonZero(1, m.PublicRead)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.OwnerId)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.PublicBaseUrl)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.UpdatedAt)
 	n += len(m.unknownFields)
 	return n
 }
@@ -56119,6 +56147,10 @@ func (x *SpaceMetadataResponse) MarshalProtoText() string {
 	if x.PublicBaseUrl != "" {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "public_base_url")
 		protobuf_go_lite.TextWriteString(&sb, x.PublicBaseUrl)
+	}
+	if x.UpdatedAt != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "updated_at")
+		protobuf_go_lite.TextWriteInt(&sb, x.UpdatedAt)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -65374,6 +65406,15 @@ func (m *SpaceMetadataResponse) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.PublicBaseUrl = v
+		case 7:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UpdatedAt", wireType)
+			}
+			m.UpdatedAt = 0
+			m.UpdatedAt, iNdEx, err = protobuf_go_lite.DecodeVarintInt64(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

@@ -1977,6 +1977,13 @@ export interface SpaceMetadataResponse {
    * @generated from field: string public_base_url = 6;
    */
   publicBaseUrl?: string
+  /**
+   * UpdatedAt is when the shared object's metadata last changed, in Unix
+   * milliseconds. The shared object list carries the same value per entry.
+   *
+   * @generated from field: int64 updated_at = 7;
+   */
+  updatedAt?: bigint
 }
 
 export const SpaceMetadataResponse: MessageType<SpaceMetadataResponse> =
@@ -1989,6 +1996,7 @@ export const SpaceMetadataResponse: MessageType<SpaceMetadataResponse> =
       { no: 4, name: 'public_read', kind: 'scalar', T: ScalarType.BOOL },
       { no: 5, name: 'owner_id', kind: 'scalar', T: ScalarType.STRING },
       { no: 6, name: 'public_base_url', kind: 'scalar', T: ScalarType.STRING },
+      { no: 7, name: 'updated_at', kind: 'scalar', T: ScalarType.INT64 },
     ] satisfies readonly PartialFieldInfo[],
   })
 
