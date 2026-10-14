@@ -52,8 +52,9 @@ func (p *Process) openResolved(resolved string, flags, mode uint32) uint64 {
 }
 
 // openTerminal binds an open of /dev/tty, /dev/console or a pty slave to its
-// terminal. /dev/tty names p's controlling terminal, and an open of a slave
-// may make it one.
+// terminal. /dev/tty names p's controlling terminal. An open never makes a
+// terminal the controlling one, as if O_NOCTTY were set, since WASI's open
+// cannot carry that flag; a session leader takes one with TIOCSCTTY.
 func (p *Process) openTerminal(of *OpenFile) uint64 {
 	// Find the terminal.
 	t := of.node.tty
@@ -62,17 +63,14 @@ func (p *Process) openTerminal(of *OpenFile) uint64 {
 			return negErrno(ENXIO)
 		}
 	}
-	if t == nil || t.pty == nil {
-		of.tty = t
-		return 0
-	}
 
-	// Open the slave.
-	if errno := t.pty.openSlave(); errno != 0 {
-		return errno
+	// Count an open of a slave.
+	if t != nil && t.pty != nil {
+		if errno := t.pty.openSlave(); errno != 0 {
+			return errno
+		}
 	}
 	of.tty = t
-	p.acquire(t)
 	return 0
 }
 

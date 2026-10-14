@@ -118,18 +118,6 @@ func (pt *pty) hangup() {
 	delete(k.ptys, pt.index)
 }
 
-// acquire makes t the controlling terminal of p, a session leader without
-// one, as Linux does when such a process opens a terminal no session
-// controls. The console stays the controlling terminal of every process
-// without a pty.
-func (p *Process) acquire(t *tty) {
-	if t.pty == nil || t.pty.hungUp || p.sid != p.pid || p.ctty != nil || t.sid != 0 {
-		return
-	}
-	p.ctty = t
-	t.sid, t.fgPgid = p.sid, p.pgid
-}
-
 // terminal returns p's controlling terminal: its pty, or the console when
 // the console is a terminal. It returns nil for a process with none.
 func (p *Process) terminal() *tty {

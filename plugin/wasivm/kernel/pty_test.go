@@ -26,7 +26,8 @@ func TestPtyPair(t *testing.T) {
 		t.Fatalf("pty index %d, want 0", index)
 	}
 
-	// The slave opens once unlocked, and becomes the controlling terminal.
+	// The slave opens once unlocked, and TIOCSCTTY makes it the controlling
+	// terminal.
 	if res := p.openResolved("/dev/pts/0", oRDWR, 0); res != negErrno(EIO) {
 		t.Fatalf("open of a locked slave = %#x, want EIO", res)
 	}
@@ -35,6 +36,12 @@ func TestPtyPair(t *testing.T) {
 		t.Fatalf("TIOCSPTLCK = %#x", res)
 	}
 	slave := openTestFD(t, p, "/dev/pts/0")
+	if p.ctty != nil {
+		t.Fatal("opening the slave made it the controlling terminal")
+	}
+	if res := p.sysIoctl(slave, tiocsctty, 0); res != 0 {
+		t.Fatalf("TIOCSCTTY = %#x", res)
+	}
 	if p.ctty == nil || p.ctty != p.fds[slave].tty {
 		t.Fatal("slave is not the controlling terminal")
 	}
