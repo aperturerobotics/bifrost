@@ -174,14 +174,6 @@ func (t *WorldState) appendChangelogEntry(ctx context.Context, w *World, changes
 		return lastChangeBcs, nil
 	}
 
-	// Read the object-tree size for the changelog filter.
-	taskCtx, subtask := trace.NewTask(ctx, "hydra/world-block/world-state/append-changelog-entry/object-tree-size")
-	objSize, err := t.objTree.Size(taskCtx)
-	subtask.End()
-	if err != nil {
-		return nil, err
-	}
-
 	// Seal the segment when this entry starts a new one. The World keeps the
 	// sealed head as the previous segment and drops the segment before it.
 	lastChange := w.GetLastChange()
@@ -196,8 +188,8 @@ func (t *WorldState) appendChangelogEntry(ctx context.Context, w *World, changes
 	}
 
 	// Append the changelog node and store it as the last change.
-	taskCtx, subtask = trace.NewTask(ctx, "hydra/world-block/world-state/append-changelog-entry/append-change-log")
-	lc, err := AppendChangeLogLL(taskCtx, objSize, seqno, lastChangeBcs, prevBcs, changesBcs)
+	taskCtx, subtask := trace.NewTask(ctx, "hydra/world-block/world-state/append-changelog-entry/append-change-log")
+	lc, err := AppendChangeLogLL(taskCtx, seqno, lastChangeBcs, prevBcs, changesBcs)
 	subtask.End()
 	if err != nil {
 		return nil, err

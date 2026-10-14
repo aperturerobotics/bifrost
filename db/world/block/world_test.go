@@ -13,7 +13,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/block/byteslice"
-	"github.com/s4wave/spacewave/db/block/filters"
 	block_mock "github.com/s4wave/spacewave/db/block/mock"
 	"github.com/s4wave/spacewave/db/bucket"
 	kvtx_block "github.com/s4wave/spacewave/db/kvtx/block"
@@ -1661,10 +1660,6 @@ func TestWorldState_Basic(t *testing.T) {
 	var changelogEntries []*world_block.ChangeLogLL
 	for lastChange.GetSeqno() != 0 {
 		changelogEntries = append(changelogEntries, lastChange)
-
-		//  le.Infof("changelog entry: %s", lastChange.String())
-		_ = lastChange
-
 		lastChangeBcs = lastChangeBcs.FollowRef(2, lastChange.GetPrevRef())
 		lastChange, err = world_block.UnmarshalChangeLogLL(ctx, lastChangeBcs)
 		if err != nil {
@@ -1672,25 +1667,12 @@ func TestWorldState_Basic(t *testing.T) {
 		}
 	}
 
-	// Expect 3 changelog entries:
-	// seqno=1: OBJECT_SET, prefix=test-obj-, key_bloom filter = <k:4, m:307, bit_set...
-	// seqno=2: OBJECT_INC_REV: prefix=test-obj-, key_bloom = same as first.
-	// seqno=3: OBJECT_GRAPH_SET
+	// Expect 3 changelog entries: OBJECT_SET, OBJECT_INC_REV, and
+	// OBJECT_GRAPH_SET, newest first.
 	if len(changelogEntries) != 3 {
 		t.Fatalf("expected 3 changelog entries but found %d", len(changelogEntries))
 	}
 	for i, ent := range changelogEntries {
-		if kp := ent.GetKeyFilters().GetKeyPrefix(); kp != "test-obj-" && i != 0 {
-			t.Fatalf("%d: key prefix expected test-obj- but got %s", i, kp)
-		}
-		keyBloomReader := filters.NewKeyFiltersReader(ent.GetKeyFilters())
-		forEachObj(func(objKey string) error {
-			if !keyBloomReader.TestObjectKey(objKey) {
-				return errors.Errorf("expected bloom to contain %q but did not", objKey)
-			}
-			return nil
-		})
-
 		if int(ent.GetSeqno()) != 3-i { //nolint:gosec
 			t.Fatalf("%d: seqno expected %d but got %d", i, 3-i, ent.GetSeqno())
 		}
