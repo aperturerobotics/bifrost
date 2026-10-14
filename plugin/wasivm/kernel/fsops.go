@@ -128,15 +128,17 @@ func (p *Process) sysFchmod(fd, mode uint32) uint64 {
 	return p.chmodNode(node, mode)
 }
 
-// fdNode returns the node of descriptor fd. A pipe has no node, so it gets
-// one that describes a FIFO with the pipe's inode number.
+// fdNode returns the node of descriptor fd. A pipe or socket has no node,
+// so it gets one that describes a FIFO or socket with its inode number.
 func (p *Process) fdNode(fd uint32) (*VNode, uint64) {
 	of, ok := p.fds[fd]
 	switch {
 	case !ok:
 		return nil, negErrno(EBADF)
+	case of.sock != nil:
+		return of.sock.vnode(), 0
 	case of.node == nil:
-		return &VNode{ino: of.pipe.pipe.ino, mode: sIFIFO | 0o600, nlink: 1}, 0
+		return &VNode{ino: of.pipe().ino, mode: sIFIFO | 0o600, nlink: 1}, 0
 	}
 	return of.node, 0
 }

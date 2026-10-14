@@ -134,12 +134,12 @@ func newProcess(k *Kernel, pid int, args []string) *Process {
 
 	// Open the standard descriptors and the root preopen.
 	if k.console != nil {
-		p.fds[0] = &OpenFile{node: k.console, path: "/dev/console", flags: oRDONLY}
-		p.fds[1] = &OpenFile{node: k.console, path: "/dev/console", flags: oWRONLY}
-		p.fds[2] = &OpenFile{node: k.console, path: "/dev/console", flags: oWRONLY, stderr: true}
+		p.setFD(0, &OpenFile{node: k.console, path: "/dev/console", flags: oRDONLY})
+		p.setFD(1, &OpenFile{node: k.console, path: "/dev/console", flags: oWRONLY})
+		p.setFD(2, &OpenFile{node: k.console, path: "/dev/console", flags: oWRONLY, stderr: true})
 	}
 	if k.vfs != nil {
-		p.fds[3] = &OpenFile{node: k.vfs.root, path: "/", flags: oDIRECTORY}
+		p.setFD(3, &OpenFile{node: k.vfs.root, path: "/", flags: oDIRECTORY})
 	}
 	return p
 }

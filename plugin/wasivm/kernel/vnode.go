@@ -23,6 +23,8 @@ type VNode struct {
 	parent *VNode
 	// symlink is a symlink's target.
 	symlink string
+	// socket is the listening socket bound to a socket node, or nil.
+	socket *unixSocket
 	// hostPath is the root filesystem path of a host-backed node, or empty.
 	hostPath string
 	// gen generates a synthesized file's content, which each open takes a

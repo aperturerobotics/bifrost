@@ -143,8 +143,11 @@ func (k *Kernel) listFDs(dir *VNode, p *Process) {
 	clear(dir.children)
 	for fd, of := range p.fds {
 		target := of.path
-		if of.pipe != nil {
-			target = fmt.Sprintf("pipe:[%d]", of.pipe.pipe.ino)
+		switch {
+		case of.sock != nil:
+			target = fmt.Sprintf("socket:[%d]", of.sock.ino)
+		case of.node == nil:
+			target = fmt.Sprintf("pipe:[%d]", of.pipe().ino)
 		}
 		k.vfs.mkSymlink(dir, strconv.FormatUint(uint64(fd), 10), target)
 	}

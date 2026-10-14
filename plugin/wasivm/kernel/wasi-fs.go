@@ -22,7 +22,10 @@ const (
 	wasiOflagsExcl      = 4
 	wasiOflagsTrunc     = 8
 
-	wasiFdflagsAppend = 1
+	wasiFdflagsAppend   = 1
+	wasiFdflagsNonblock = 4
+
+	wasiRiflagsRecvPeek = 1
 
 	wasiFilestatSetAtim    = 1
 	wasiFilestatSetAtimNow = 2
@@ -40,6 +43,7 @@ const (
 	wasiFiletypeCharacter    = 2
 	wasiFiletypeDirectory    = 3
 	wasiFiletypeRegular      = 4
+	wasiFiletypeSocketStream = 6
 	wasiFiletypeSymbolicLink = 7
 )
 
@@ -183,6 +187,8 @@ func (p *Process) wasiFDNode(fd uint32) (*VNode, uint32) {
 	switch {
 	case !ok:
 		return nil, wasiErrnoBadf
+	case of.sock != nil:
+		return of.sock.vnode(), wasiErrnoSuccess
 	case of.node == nil:
 		return &VNode{mode: sIFCHR | 0o600, nlink: 1}, wasiErrnoSuccess
 	}
@@ -200,7 +206,10 @@ func (p *Process) wasiFDFdstatGet(mem engine.Memory, fd, statPtr uint32) uint32 
 	// Work out its flags and rights. A terminal lacks the seek rights.
 	var flags uint16
 	if p.fds[fd].flags&oAPPEND != 0 {
-		flags = wasiFdflagsAppend
+		flags |= wasiFdflagsAppend
+	}
+	if p.fds[fd].flags&oNONBLOCK != 0 {
+		flags |= wasiFdflagsNonblock
 	}
 	rights := wasiRightsEverything
 	if p.kernel.tty && node.isTerminal() {
@@ -216,20 +225,23 @@ func (p *Process) wasiFDFdstatGet(mem engine.Memory, fd, statPtr uint32) uint32 
 	return wasiWrite(mem, statPtr, buf[:])
 }
 
-// wasiFDFdstatSetFlags sets or clears a descriptor's append flag. Setting it
-// moves the offset to the end of the file.
+// wasiFDFdstatSetFlags sets or clears a descriptor's append and nonblocking
+// flags. Setting append moves the offset to the end of the file.
 func (p *Process) wasiFDFdstatSetFlags(fd, flags uint32) uint32 {
-	// Clear the flag.
+	// Set the nonblocking flag and clear append.
 	of, ok := p.fds[fd]
 	if !ok {
 		return wasiErrnoBadf
 	}
-	of.flags &^= oAPPEND
+	of.flags &^= oAPPEND | oNONBLOCK
+	if flags&wasiFdflagsNonblock != 0 {
+		of.flags |= oNONBLOCK
+	}
 	if flags&wasiFdflagsAppend == 0 {
 		return wasiErrnoSuccess
 	}
 
-	// Set it and move to the end.
+	// Set append and move to the end.
 	of.flags |= oAPPEND
 	if of.node != nil {
 		p.kernel.vfs.refreshHost(of.node)
@@ -274,32 +286,40 @@ func (p *Process) wasiFDFileStatSetTimes(fd uint32, atim, mtim uint64, flags uin
 // and otherwise ends the transfer with the bytes already moved. move returns
 // zero bytes when it fails.
 func wasiTransfer(mem engine.Memory, iovsPtr, iovsLen, nPtr uint32, move func(base, length uint32) (uint32, uint32)) uint32 {
-	// Move each buffer.
+	total, errno := wasiMoveIovecs(mem, iovsPtr, iovsLen, move)
+	switch {
+	case errno != wasiErrnoSuccess:
+		return errno
+	case !mem.WriteUint32Le(nPtr, total):
+		return wasiErrnoFault
+	}
+	return wasiErrnoSuccess
+}
+
+// wasiMoveIovecs calls move on each buffer of the iovecs at iovsPtr until one
+// moves less than its length, and returns the total moved. An error after
+// some bytes moved ends the transfer with that total.
+func wasiMoveIovecs(mem engine.Memory, iovsPtr, iovsLen uint32, move func(base, length uint32) (uint32, uint32)) (uint32, uint32) {
 	var total uint32
 	for i := range iovsLen {
 		base, ok1 := mem.ReadUint32Le(iovsPtr + i*wasiIovecSize)
 		length, ok2 := mem.ReadUint32Le(iovsPtr + i*wasiIovecSize + 4)
 		if !ok1 || !ok2 {
-			return wasiErrnoFault
+			return 0, wasiErrnoFault
 		}
 		if length == 0 {
 			continue
 		}
 		n, errno := move(base, length)
 		if errno != wasiErrnoSuccess && total == 0 {
-			return errno
+			return 0, errno
 		}
 		total += n
 		if n < length {
 			break
 		}
 	}
-
-	// Report the total.
-	if !mem.WriteUint32Le(nPtr, total) {
-		return wasiErrnoFault
-	}
-	return wasiErrnoSuccess
+	return total, wasiErrnoSuccess
 }
 
 // wasiResult splits a syscall result into a byte count and a WASI errno.
@@ -569,6 +589,9 @@ func (p *Process) wasiPathOpen(mem engine.Memory, dirfd, pathPtr, pathLen, oflag
 	}
 	if fdflags&wasiFdflagsAppend != 0 {
 		flags |= oAPPEND
+	}
+	if fdflags&wasiFdflagsNonblock != 0 {
+		flags |= oNONBLOCK
 	}
 
 	// Open the file and report its descriptor.
@@ -847,6 +870,8 @@ func wasiFiletype(node *VNode) uint8 {
 		return wasiFiletypeRegular
 	case sIFLNK:
 		return wasiFiletypeSymbolicLink
+	case sIFSOCK:
+		return wasiFiletypeSocketStream
 	}
 	return wasiFiletypeUnknown
 }

@@ -106,6 +106,7 @@ const (
 	oEXCL      = 0o200
 	oTRUNC     = 0o1000
 	oAPPEND    = 0o2000
+	oNONBLOCK  = 0o4000
 	oDIRECTORY = 0o200000
 	oCLOEXEC   = 0o2000000
 )
@@ -134,13 +135,33 @@ const (
 
 // File type constants (mode bits).
 const (
-	sIFMT  = 0o170000
-	sIFDIR = 0o040000
-	sIFCHR = 0o020000
-	sIFBLK = 0o060000
-	sIFREG = 0o100000
-	sIFIFO = 0o010000
-	sIFLNK = 0o120000
+	sIFMT   = 0o170000
+	sIFDIR  = 0o040000
+	sIFCHR  = 0o020000
+	sIFBLK  = 0o060000
+	sIFREG  = 0o100000
+	sIFIFO  = 0o010000
+	sIFLNK  = 0o120000
+	sIFSOCK = 0o140000
+)
+
+// Open file status flags as the guest's headers number them: wasi-libc uses
+// the WASI file descriptor flags and rights bits.
+const (
+	guestOAPPEND   = 0x1
+	guestONONBLOCK = 0x4
+	guestORDONLY   = 0x04000000
+	guestOWRONLY   = 0x10000000
+)
+
+// Socket constants as the guest's headers number them.
+const (
+	guestAFUNIX       = 3
+	guestSockStream   = 6
+	guestSockNonblock = 0x4000
+	guestSockCloexec  = 0x2000
+	guestMsgWaitall   = 0x2
+	guestMsgDontwait  = 0x40
 )
 
 // flock operations (asm-generic).

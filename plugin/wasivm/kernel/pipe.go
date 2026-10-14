@@ -12,64 +12,9 @@ const pipeCapacity = 65536
 // writer's, Linux's PIPE_BUF.
 const pipeAtomic = 4096
 
-// pipeEnd is one side of a pipe. It counts the descriptor table entries that
-// refer to it, and closes its side of the pipe when the last one closes.
-type pipeEnd struct {
-	pipe *bufferedPipe
-
-	// mtx guards refs.
-	mtx sync.Mutex
-	// refs counts the descriptor table entries that refer to this end.
-	refs int
-	// reader is set when this end owns the read side.
-	reader bool
-}
-
-// newPipeEnds returns the read and write ends of a new pipe with inode number
-// ino, each with one reference.
-func newPipeEnds(ino uint64) (*pipeEnd, *pipeEnd) {
-	pipe := &bufferedPipe{ino: ino, waitCh: make(chan struct{})}
-	return &pipeEnd{pipe: pipe, refs: 1, reader: true}, &pipeEnd{pipe: pipe, refs: 1}
-}
-
-// ref adds a descriptor table entry's reference.
-func (pe *pipeEnd) ref() {
-	pe.mtx.Lock()
-	pe.refs++
-	pe.mtx.Unlock()
-}
-
-// unref drops a reference, closing the end after the last one.
-func (pe *pipeEnd) unref() {
-	// Drop the reference.
-	pe.mtx.Lock()
-	if pe.refs == 0 {
-		pe.mtx.Unlock()
-		return
-	}
-	pe.refs--
-	closed := pe.refs == 0
-	pe.mtx.Unlock()
-
-	// Close the end after the last one.
-	if closed {
-		pe.pipe.close(pe.reader)
-	}
-}
-
-// read reads from the pipe. It reports true at end of file or when ctx ends.
-func (pe *pipeEnd) read(ctx context.Context, dat []byte) (int, bool) {
-	return pe.pipe.read(ctx, dat)
-}
-
-// write writes to the pipe, waiting while it is full. It reports false when
-// the read side is closed.
-func (pe *pipeEnd) write(ctx context.Context, dat []byte) (int, bool) {
-	return pe.pipe.write(ctx, dat)
-}
-
 // bufferedPipe is a pipe whose buffer holds up to pipeCapacity bytes. A
-// writer waits while it is full, and a reader while it is empty.
+// writer waits while it is full, and a reader while it is empty. A pipe
+// carries one direction of a pipe(2) pair or of a connected socket.
 type bufferedPipe struct {
 	// ino is the pipe's inode number.
 	ino uint64
@@ -78,16 +23,22 @@ type bufferedPipe struct {
 	mtx sync.Mutex
 	// buf holds the bytes written and not yet read.
 	buf []byte
-	// readClosed and writeClosed are set when that side has no open
-	// reference.
-	readClosed  bool
+	// readClosed is set when no open file reads the pipe.
+	readClosed bool
+	// writeClosed is set when no open file writes the pipe.
 	writeClosed bool
 	// waitCh closes when the buffer or the close state changes.
 	waitCh chan struct{}
 }
 
-// read waits for data and copies it to dat. It reports true at end of file
-// or when ctx ends.
+// newBufferedPipe returns an empty pipe with inode number ino.
+func newBufferedPipe(ino uint64) *bufferedPipe {
+	return &bufferedPipe{ino: ino, waitCh: make(chan struct{})}
+}
+
+// read waits for data and copies it to dat. It reports true at end of file.
+// When ctx ends first it returns 0 bytes without end of file, so a done ctx
+// makes a read that does not wait.
 func (p *bufferedPipe) read(ctx context.Context, dat []byte) (int, bool) {
 	for {
 		// Take buffered data, or end of file once the writers closed.
@@ -111,7 +62,7 @@ func (p *bufferedPipe) read(ctx context.Context, dat []byte) (int, bool) {
 
 		// Wait for a write or a close.
 		if !wait(ctx, waitCh) {
-			return 0, true
+			return 0, false
 		}
 	}
 }
@@ -151,6 +102,18 @@ func (p *bufferedPipe) write(ctx context.Context, dat []byte) (int, bool) {
 			return written, true
 		}
 	}
+}
+
+// state reports whether a read, or a write when write is set, would proceed
+// without waiting, whether the other side has closed, and a channel that
+// closes at the pipe's next change.
+func (p *bufferedPipe) state(write bool) (ready, hangup bool, change <-chan struct{}) {
+	p.mtx.Lock()
+	defer p.mtx.Unlock()
+	if write {
+		return p.readClosed || len(p.buf) < pipeCapacity, p.readClosed, p.waitCh
+	}
+	return len(p.buf) != 0 || p.writeClosed, p.writeClosed, p.waitCh
 }
 
 // close marks the read or write side closed and wakes the other side.

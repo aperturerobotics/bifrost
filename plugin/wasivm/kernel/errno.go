@@ -71,6 +71,10 @@ const (
 	// ERANGE reports a result that does not fit its buffer.
 	ERANGE = 34
 
+	// ENAMETOOLONG reports a name longer than its limit, such as a socket
+	// path.
+	ENAMETOOLONG = 36
+
 	// ENOSYS reports a function the kernel does not implement.
 	ENOSYS = 38
 
@@ -86,11 +90,26 @@ const (
 	// ENOTSOCK reports a socket call on a descriptor that is not a socket.
 	ENOTSOCK = 88
 
+	// EPROTONOSUPPORT reports a socket type or protocol the kernel lacks.
+	EPROTONOSUPPORT = 93
+
 	// EOPNOTSUPP reports an operation the file does not support.
 	EOPNOTSUPP = 95
 
 	// EAFNOSUPPORT reports an address family without sockets.
 	EAFNOSUPPORT = 97
+
+	// EADDRINUSE reports a socket address that is already bound.
+	EADDRINUSE = 98
+
+	// EISCONN reports a socket that is already connected.
+	EISCONN = 106
+
+	// ENOTCONN reports a socket that is not connected.
+	ENOTCONN = 107
+
+	// ECONNREFUSED reports a socket address with no listener.
+	ECONNREFUSED = 111
 )
 
 // enosys is the result of a syscall the kernel does not implement.
@@ -110,37 +129,43 @@ func errnoFailed(res uint64) bool {
 // linuxToWasiErrno maps Linux errno values to WASI ones. wasi-libc numbers
 // errno differently from Linux, so a POSIX host function translates the
 // value before storing it in the guest's errno.
-var linuxToWasiErrno = [EAFNOSUPPORT + 1]uint32{
-	EPERM:        63,
-	ENOENT:       44,
-	ESRCH:        71,
-	EINTR:        27,
-	EIO:          29,
-	ENOEXEC:      45,
-	EBADF:        8,
-	ECHILD:       12,
-	EAGAIN:       6,
-	ENOMEM:       48,
-	EACCES:       2,
-	EFAULT:       21,
-	EBUSY:        10,
-	EEXIST:       20,
-	ENODEV:       43,
-	ENOTDIR:      54,
-	EISDIR:       31,
-	EINVAL:       28,
-	ENOTTY:       59,
-	ESPIPE:       70,
-	EMLINK:       34,
-	EPIPE:        64,
-	ERANGE:       68,
-	ENOSYS:       52,
-	ENOTEMPTY:    55,
-	ELOOP:        32,
-	ENODATA:      61,
-	ENOTSOCK:     57,
-	EOPNOTSUPP:   58,
-	EAFNOSUPPORT: 5,
+var linuxToWasiErrno = [ECONNREFUSED + 1]uint32{
+	EPERM:           63,
+	ENOENT:          44,
+	ESRCH:           71,
+	EINTR:           27,
+	EIO:             29,
+	ENOEXEC:         45,
+	EBADF:           8,
+	ECHILD:          12,
+	EAGAIN:          6,
+	ENOMEM:          48,
+	EACCES:          2,
+	EFAULT:          21,
+	EBUSY:           10,
+	EEXIST:          20,
+	ENODEV:          43,
+	ENOTDIR:         54,
+	EISDIR:          31,
+	EINVAL:          28,
+	ENOTTY:          59,
+	ESPIPE:          70,
+	EMLINK:          34,
+	EPIPE:           64,
+	ERANGE:          68,
+	ENAMETOOLONG:    37,
+	ENOSYS:          52,
+	ENOTEMPTY:       55,
+	ELOOP:           32,
+	ENODATA:         61,
+	ENOTSOCK:        57,
+	EPROTONOSUPPORT: 66,
+	EOPNOTSUPP:      58,
+	EAFNOSUPPORT:    5,
+	EADDRINUSE:      3,
+	EISCONN:         30,
+	ENOTCONN:        53,
+	ECONNREFUSED:    14,
 }
 
 // wasiErrno translates a Linux errno to WASI. Values without a mapping pass

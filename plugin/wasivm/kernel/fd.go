@@ -38,9 +38,7 @@ func (p *Process) openResolved(resolved string, flags, mode uint32) uint64 {
 		p.kernel.vfs.refreshHost(node)
 		of.offset = node.size
 	}
-	fd := p.allocFD()
-	p.fds[fd] = of
-	return uint64(fd)
+	return uint64(p.installFD(of))
 }
 
 // createFile creates a regular file at a resolved path whose parent
@@ -87,6 +85,13 @@ func (p *Process) sysClose(fd uint32) uint64 {
 	return 0
 }
 
+// installFD points the lowest unused descriptor at of and returns it.
+func (p *Process) installFD(of *OpenFile) uint32 {
+	fd := p.allocFD()
+	p.setFD(fd, of)
+	return fd
+}
+
 // setFD points descriptor fd at of, closing the file fd held before.
 func (p *Process) setFD(fd uint32, of *OpenFile) {
 	of.ref()
@@ -97,7 +102,9 @@ func (p *Process) setFD(fd uint32, of *OpenFile) {
 }
 
 // sysFcntl handles file control operations. The kernel has no close-on-exec
-// flag, so the descriptor flags read as zero.
+// flag, so the descriptor flags read as zero. F_GETFL and F_SETFL take the
+// file status flags in the guest's values, and F_SETFL changes only the
+// append and nonblocking flags, as on Linux.
 func (p *Process) sysFcntl(fd, cmd, arg uint32) uint64 {
 	of, ok := p.fds[fd]
 	if !ok {
@@ -114,12 +121,49 @@ func (p *Process) sysFcntl(fd, cmd, arg uint32) uint64 {
 	case fGETFD, fSETFD:
 		return 0
 	case fGETFL:
-		return uint64(of.flags)
+		return uint64(guestFileFlags(of.flags))
 	case fSETFL:
-		of.flags = arg
+		of.flags = of.flags&^(oAPPEND|oNONBLOCK) | kernelStatusFlags(arg)
 		return 0
 	}
 	return negErrno(EINVAL)
+}
+
+// guestFileFlags translates a file's access mode and status flags to the
+// guest's values.
+func guestFileFlags(flags uint32) uint32 {
+	// Translate the access mode.
+	var guest uint32
+	switch flags & 0o3 {
+	case oRDONLY:
+		guest = guestORDONLY
+	case oWRONLY:
+		guest = guestOWRONLY
+	default:
+		guest = guestORDONLY | guestOWRONLY
+	}
+
+	// Add the status flags.
+	if flags&oAPPEND != 0 {
+		guest |= guestOAPPEND
+	}
+	if flags&oNONBLOCK != 0 {
+		guest |= guestONONBLOCK
+	}
+	return guest
+}
+
+// kernelStatusFlags translates the append and nonblocking flags from the
+// guest's values to the kernel's.
+func kernelStatusFlags(guest uint32) uint32 {
+	var flags uint32
+	if guest&guestOAPPEND != 0 {
+		flags |= oAPPEND
+	}
+	if guest&guestONONBLOCK != 0 {
+		flags |= oNONBLOCK
+	}
+	return flags
 }
 
 // sysDup duplicates a file descriptor to the next free number.
@@ -151,14 +195,13 @@ func (p *Process) isConsoleFD(fd uint32) bool {
 }
 
 // sysPipe2 creates a pipe and writes its read and write descriptors to
-// pipefdPtr.
-func (p *Process) sysPipe2(pipefdPtr uint32) uint64 {
+// pipefdPtr. flags holds the guest's status flags for both ends.
+func (p *Process) sysPipe2(pipefdPtr, flags uint32) uint64 {
 	// Install both ends.
-	pr, pw := newPipeEnds(p.kernel.vfs.allocIno())
-	rfd := p.allocFD()
-	p.fds[rfd] = &OpenFile{pipe: pr}
-	wfd := p.allocFD()
-	p.fds[wfd] = &OpenFile{pipe: pw}
+	pipe := newBufferedPipe(p.kernel.vfs.allocIno())
+	status := kernelStatusFlags(flags)
+	rfd := p.installFD(&OpenFile{rx: pipe, flags: oRDONLY | status})
+	wfd := p.installFD(&OpenFile{tx: pipe, flags: oWRONLY | status})
 
 	// Return their numbers.
 	mem := p.inst.Memory()

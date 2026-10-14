@@ -327,12 +327,11 @@ func posixFunctions() map[string]hostFunc {
 			return p.posixResult(ctx, p.sysDup2(uint32(a[0]), uint32(a[1])))
 		}},
 		"pipe": {"ii", func(ctx context.Context, p *Process, a []uint64) uint64 {
-			return p.posixResult(ctx, p.sysPipe2(uint32(a[0])))
+			return p.posixResult(ctx, p.sysPipe2(uint32(a[0]), 0))
 		}},
 		"pipe2": {"iii", func(ctx context.Context, p *Process, a []uint64) uint64 {
-			// The kernel has neither nonblocking pipes nor close-on-exec, so
-			// the flags change nothing.
-			return p.posixResult(ctx, p.sysPipe2(uint32(a[0])))
+			// The kernel has no close-on-exec, so only O_NONBLOCK applies.
+			return p.posixResult(ctx, p.sysPipe2(uint32(a[0]), uint32(a[1])))
 		}},
 		"umask": {"ii", func(_ context.Context, p *Process, a []uint64) uint64 {
 			old := p.umask
@@ -449,19 +448,44 @@ func posixFunctions() map[string]hostFunc {
 			return p.posixResult(ctx, p.sysSetUTSName(&p.kernel.domainname, uint32(a[0]), uint32(a[1])))
 		}},
 
-		// Networking is unsupported: no address family has sockets, so no
-		// descriptor is a socket.
-		"socket":       errnoFunc("iiii", EAFNOSUPPORT),
-		"bind":         errnoFunc("iiii", ENOTSOCK),
-		"listen":       errnoFunc("iii", ENOTSOCK),
-		"connect":      errnoFunc("iiii", ENOTSOCK),
-		"getsockname":  errnoFunc("iiii", ENOTSOCK),
-		"getpeername":  errnoFunc("iiii", ENOTSOCK),
-		"setsockopt":   errnoFunc("iiiiii", ENOTSOCK),
-		"sendto":       errnoFunc("iiiiiii", ENOTSOCK),
-		"recvfrom":     errnoFunc("iiiiiii", ENOTSOCK),
-		"sendmsg":      errnoFunc("iiii", ENOTSOCK),
-		"recvmsg":      errnoFunc("iiii", ENOTSOCK),
+		// Sockets. Only Unix stream sockets exist; wasi-libc implements
+		// accept, send, recv, shutdown and getsockopt over the WASI calls.
+		"socket": {"iiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysSocket(uint32(a[0]), uint32(a[1]), uint32(a[2])))
+		}},
+		"socketpair": {"iiiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysSocketpair(uint32(a[0]), uint32(a[1]), uint32(a[2]), uint32(a[3])))
+		}},
+		"bind": {"iiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysBind(uint32(a[0]), uint32(a[1]), uint32(a[2])))
+		}},
+		"listen": {"iii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysListen(uint32(a[0])))
+		}},
+		"connect": {"iiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysConnect(uint32(a[0]), uint32(a[1]), uint32(a[2])))
+		}},
+		"getsockname": {"iiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysSockname(uint32(a[0]), uint32(a[1]), uint32(a[2]), false))
+		}},
+		"getpeername": {"iiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysSockname(uint32(a[0]), uint32(a[1]), uint32(a[2]), true))
+		}},
+		"setsockopt": {"iiiiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysSetsockopt(uint32(a[0])))
+		}},
+		"sendto": {"iiiiiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysSendto(ctx, uint32(a[0]), uint32(a[1]), uint32(a[2]), uint32(a[3]), uint32(a[5])))
+		}},
+		"recvfrom": {"iiiiiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysRecvfrom(ctx, uint32(a[0]), uint32(a[1]), uint32(a[2]), uint32(a[3]), uint32(a[5])))
+		}},
+		"sendmsg": {"iiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysMsg(ctx, uint32(a[0]), uint32(a[1]), uint32(a[2]), true))
+		}},
+		"recvmsg": {"iiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysMsg(ctx, uint32(a[0]), uint32(a[1]), uint32(a[2]), false))
+		}},
 		"getaddrinfo":  returns("iiiii", fail),
 		"freeaddrinfo": returns("vi", 0),
 		"gai_strerror": returns("ii", 0),
@@ -568,13 +592,6 @@ func (p *Process) longjmp(ctx context.Context, buf, val uint32) {
 	}
 	p.inst.Memory().Write(entry.sp, entry.cstack)
 	entry.snapshot.Restore(ctx, []uint64{uint64(val)})
-}
-
-// errnoFunc builds a host function that fails with errno.
-func errnoFunc(sig string, errno uint32) hostFunc {
-	return hostFunc{sig, func(ctx context.Context, p *Process, _ []uint64) uint64 {
-		return p.posixResult(ctx, negErrno(errno))
-	}}
 }
 
 // posixResult converts a Linux syscall result to the C convention: a

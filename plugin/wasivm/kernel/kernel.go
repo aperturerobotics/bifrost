@@ -317,8 +317,12 @@ func (k *Kernel) runProgram(ctx context.Context, p *Process, wasm []byte) error 
 }
 
 // wait waits for ch to close and reports true, or for ctx to end and reports
-// false, without the kernel lock.
+// false, without the kernel lock. A ctx that has already ended returns at
+// once, keeping the lock.
 func wait(ctx context.Context, ch <-chan struct{}) bool {
+	if ctx.Err() != nil {
+		return false
+	}
 	done := false
 	blocking(ctx, func() {
 		select {
@@ -360,7 +364,11 @@ const exitCannotRun = 126
 // sends its parent SIGCHLD. When no parent will reap it, it removes it from
 // the process table.
 func (k *Kernel) exitProcess(p *Process) {
-	// Close the descriptors and record the exit.
+	// Close the descriptors under the kernel lock, which guards their open
+	// files, and record the exit.
+	k.mu.Lock()
+	defer k.mu.Unlock()
+	defer k.procs.exited()
 	for fd, of := range p.fds {
 		of.unref()
 		delete(p.fds, fd)
@@ -369,9 +377,6 @@ func (k *Kernel) exitProcess(p *Process) {
 	close(p.exitCh)
 
 	// An exec's replacement keeps the children and tells the parent later.
-	k.mu.Lock()
-	defer k.mu.Unlock()
-	defer k.procs.exited()
 	if k.procs.get(p.pid) != p {
 		return
 	}

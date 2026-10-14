@@ -33,30 +33,40 @@ func (p *Process) sysRead(ctx context.Context, fd, bufPtr, count uint32) uint64 
 	return uint64(len(data))
 }
 
-// readFile reads up to count bytes from a pipe, device or regular file,
-// advancing a regular file's offset. An empty blocking read that a signal
-// interrupted returns EINTR.
+// readFile reads up to count bytes from a pipe, socket, device or regular
+// file, advancing a regular file's offset. An empty read of a pipe or socket
+// that is not at end of file returns EINTR when a signal interrupted it, or
+// EAGAIN when the file is nonblocking.
 func (p *Process) readFile(ctx context.Context, of *OpenFile, count int) ([]byte, uint64) {
-	// Read a pipe or the terminal, which block until input arrives.
-	var buf []byte
+	// Read a pipe or a connected socket, which wait for data.
 	switch {
-	case of.pipe != nil && of.pipe.reader:
-		buf = make([]byte, count)
-		n, _ := of.pipe.read(ctx, buf)
-		buf = buf[:n]
+	case of.rx != nil:
+		buf := make([]byte, count)
+		n, eof := of.rx.read(of.ioContext(ctx), buf)
+		switch {
+		case n != 0 || eof:
+			return buf[:n], 0
+		case interrupted(ctx):
+			return nil, negErrno(EINTR)
+		}
+		return nil, negErrno(EAGAIN)
+	case of.sock != nil:
+		return nil, negErrno(ENOTCONN)
 	case of.node == nil:
 		return nil, negErrno(EBADF)
-	case of.node.mode&sIFMT == sIFCHR && (of.node.rdev == devTTY || of.node.rdev == devConsole):
-		buf = make([]byte, count)
-		n, _ := p.kernel.stdin.read(ctx, buf)
-		buf = buf[:n]
-	default:
+	}
+
+	// Read the terminal, which waits until input arrives, or a device or
+	// regular file.
+	if !of.node.isTerminal() {
 		return p.readVFS(of, count)
 	}
-	if len(buf) == 0 && interrupted(ctx) {
+	buf := make([]byte, count)
+	n, _ := p.kernel.stdin.read(ctx, buf)
+	if n == 0 && interrupted(ctx) {
 		return nil, negErrno(EINTR)
 	}
-	return buf, 0
+	return buf[:n], 0
 }
 
 // readVFS reads from a device or regular file at the descriptor's offset.
@@ -94,40 +104,43 @@ func (p *Process) sysWrite(ctx context.Context, fd, bufPtr, count uint32) uint64
 	return p.writeOutBytes(ctx, fd, buf)
 }
 
-// writeOutBytes writes buf to a descriptor's pipe or file. write, writev and
-// sendfile share it.
+// writeOutBytes writes buf to a descriptor's pipe, socket or file. write,
+// writev and sendfile share it.
 func (p *Process) writeOutBytes(ctx context.Context, fd uint32, buf []byte) uint64 {
 	of, ok := p.fds[fd]
 	switch {
 	case !ok:
 		return negErrno(EBADF)
-	case of.pipe != nil && !of.pipe.reader:
+	case of.tx != nil:
 		return p.writePipe(ctx, of, buf)
+	case of.sock != nil:
+		return negErrno(ENOTCONN)
 	case of.node != nil:
 		return p.writeVFS(of, buf)
-	default:
-		return negErrno(EBADF)
 	}
+	return negErrno(EBADF)
 }
 
-// writePipe writes buf to a pipe, waiting while it is full. A caught signal
-// interrupts the wait. A write to a pipe without a reader raises SIGPIPE and
-// fails with EPIPE.
+// writePipe writes buf to a pipe or connected socket, waiting while it is
+// full. A caught signal interrupts the wait, and a nonblocking file takes
+// only what fits. A write with no reader raises SIGPIPE and fails with EPIPE.
 func (p *Process) writePipe(ctx context.Context, of *OpenFile, buf []byte) uint64 {
 	// Write, waiting while the pipe is full.
 	ctx, release := p.interruptible(ctx)
 	defer release()
-	n, ok := of.pipe.write(ctx, buf)
+	n, ok := of.tx.write(of.ioContext(ctx), buf)
 
-	// Report a closed reader or an interrupted wait.
+	// Report a closed reader or a write that took nothing.
 	switch {
 	case !ok:
 		p.deliverSignal(SIGPIPE)
 		return negErrno(EPIPE)
-	case n == 0 && len(buf) != 0 && interrupted(ctx):
+	case n != 0 || len(buf) == 0:
+		return uint64(n)
+	case interrupted(ctx):
 		return negErrno(EINTR)
 	}
-	return uint64(n)
+	return negErrno(EAGAIN)
 }
 
 // writeVFS writes to a device or regular file at the descriptor's offset.

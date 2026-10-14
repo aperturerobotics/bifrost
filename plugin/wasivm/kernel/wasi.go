@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"maps"
 	"math"
+	"reflect"
 	goruntime "runtime"
 	"slices"
 	"time"
@@ -38,6 +39,7 @@ const (
 	wasiEventtypeClock      = 0
 	wasiEventtypeFDRead     = 1
 	wasiEventtypeFDWrite    = 2
+	wasiEventrwflagsHangup  = 1
 	wasiSubclockAbstime     = 1
 	wasiSubscriptionSize    = 48
 	wasiEventSize           = 32
@@ -76,8 +78,17 @@ func wasiFunctions() map[string]hostFunc {
 			goruntime.Gosched()
 			return wasiErrnoSuccess
 		}),
-		"sock_accept": wasiFunc("iiii", func(context.Context, *Process, engine.Memory, []uint64) uint32 {
-			return wasiErrnoNosys
+		"sock_accept": wasiFunc("iiii", func(ctx context.Context, p *Process, mem engine.Memory, a []uint64) uint32 {
+			return p.wasiSockAccept(ctx, mem, uint32(a[0]), uint32(a[1]), uint32(a[2]))
+		}),
+		"sock_recv": wasiFunc("iiiiii", func(ctx context.Context, p *Process, mem engine.Memory, a []uint64) uint32 {
+			return p.wasiSockRecv(ctx, mem, uint32(a[0]), uint32(a[1]), uint32(a[2]), uint32(a[3]), uint32(a[4]), uint32(a[5]))
+		}),
+		"sock_send": wasiFunc("iiiiii", func(ctx context.Context, p *Process, mem engine.Memory, a []uint64) uint32 {
+			return p.wasiSockSend(ctx, mem, uint32(a[0]), uint32(a[1]), uint32(a[2]), uint32(a[4]))
+		}),
+		"sock_shutdown": wasiFunc("iii", func(_ context.Context, p *Process, _ engine.Memory, a []uint64) uint32 {
+			return wasiErrnoFromResult(p.sysShutdown(uint32(a[0]), uint32(a[1])))
 		}),
 	}
 	maps.Copy(fns, wasiFSFunctions())
@@ -141,28 +152,34 @@ type wasiPollEvent struct {
 	eventType uint8
 	// nbytes is the bytes a descriptor can read or write.
 	nbytes uint64
+	// flags holds wasiEventrwflagsHangup when the other side closed.
+	flags uint16
 }
 
-// wasiPoll is the state of a poll_oneoff call after reading its
-// subscriptions.
+// wasiPoll is a poll_oneoff call's subscriptions.
 type wasiPoll struct {
-	// ready holds the events that have already happened.
+	// ready holds the events found while reading the subscriptions: clocks
+	// already due.
 	ready []wasiPollEvent
-	// stdin is a read event waiting for console input, which stdinCh
-	// signals.
-	stdin   *wasiPollEvent
-	stdinCh <-chan struct{}
+	// fds holds the descriptor subscriptions.
+	fds []wasiPollFD
 	// clock is the earliest clock event not yet due, due after wait.
 	clock *wasiPollEvent
 	wait  time.Duration
 }
 
+// wasiPollFD is a subscription to a descriptor's readiness.
+type wasiPollFD struct {
+	event wasiPollEvent
+	fd    uint32
+}
+
 // wasiPollOneoff writes to outPtr the events of nsubscriptions subscriptions
-// at inPtr that happen first, and their count to neventsPtr. Descriptors are
-// always ready except a console with no input, so the call waits only for
-// console input or a clock. A caught signal ends the wait with EINTR.
+// at inPtr that happen first, and their count to neventsPtr. When no event
+// has happened it waits for a change on any descriptor, the clock or a
+// caught signal, which ends the wait with EINTR, then checks again.
 func (p *Process) wasiPollOneoff(ctx context.Context, mem engine.Memory, inPtr, outPtr, nsubscriptions, neventsPtr uint32) uint32 {
-	// Report the events that already happened.
+	// Read the subscriptions.
 	if nsubscriptions == 0 {
 		return wasiErrnoInval
 	}
@@ -170,15 +187,8 @@ func (p *Process) wasiPollOneoff(ctx context.Context, mem engine.Memory, inPtr, 
 	if errno != wasiErrnoSuccess {
 		return errno
 	}
-	if len(poll.ready) != 0 || (poll.stdin == nil && poll.clock == nil) {
-		return wasiWritePollEvents(mem, poll.ready, outPtr, neventsPtr)
-	}
 
-	// Choose the channels to wait on. A nil channel never fires.
-	var stdinCh <-chan struct{}
-	if poll.stdin != nil {
-		stdinCh = poll.stdinCh
-	}
+	// Start the clock.
 	var timerCh <-chan time.Time
 	if poll.clock != nil {
 		timer := time.NewTimer(poll.wait)
@@ -186,30 +196,88 @@ func (p *Process) wasiPollOneoff(ctx context.Context, mem engine.Memory, inPtr, 
 		timerCh = timer.C
 	}
 
-	// Wait for console input, the clock or a caught signal.
+	// Wait until an event happens.
 	ctx, release := p.interruptible(ctx)
 	defer release()
-	var event *wasiPollEvent
-	blocking(ctx, func() {
-		select {
-		case <-ctx.Done():
-		case <-stdinCh:
-			event = poll.stdin
-		case <-timerCh:
-			event = poll.clock
+	for {
+		// Report the events that happened.
+		ready, changes := p.wasiPollFDs(poll)
+		if len(ready) != 0 || (len(changes) == 0 && poll.clock == nil) {
+			return wasiWritePollEvents(mem, ready, outPtr, neventsPtr)
 		}
-	})
-	if event == nil {
-		return wasiErrno(EINTR)
+
+		// Wait for a change, the clock or a caught signal.
+		cases := make([]reflect.SelectCase, 0, len(changes)+2)
+		cases = append(cases, reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ctx.Done())})
+		cases = append(cases, reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(timerCh)})
+		for _, change := range changes {
+			cases = append(cases, reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(change)})
+		}
+		var chosen int
+		blocking(ctx, func() { chosen, _, _ = reflect.Select(cases) })
+		switch chosen {
+		case 0:
+			return wasiErrno(EINTR)
+		case 1:
+			return wasiWritePollEvents(mem, []wasiPollEvent{*poll.clock}, outPtr, neventsPtr)
+		}
 	}
-	return wasiWritePollEvents(mem, []wasiPollEvent{*event}, outPtr, neventsPtr)
 }
 
-// wasiReadPoll reads n poll_oneoff subscriptions at inPtr into the events
-// ready now and the ones to wait for.
+// wasiPollFDs returns the events that have happened: the clocks already
+// due and the descriptors that are ready. It also returns the channels that
+// close at the next change of each descriptor that is not ready.
+func (p *Process) wasiPollFDs(poll *wasiPoll) ([]wasiPollEvent, []<-chan struct{}) {
+	ready := slices.Clone(poll.ready)
+	var changes []<-chan struct{}
+	for _, sub := range poll.fds {
+		// Check the descriptor, which may have closed since the last check.
+		event := sub.event
+		isReady, hangup, change := p.fdReadiness(sub.fd, event.eventType == wasiEventtypeFDWrite)
+		switch {
+		case change == nil && !isReady:
+			event.errno = wasiErrnoBadf
+		case !isReady:
+			changes = append(changes, change)
+			continue
+		}
+		if hangup {
+			event.flags = wasiEventrwflagsHangup
+		}
+		ready = append(ready, event)
+	}
+	return ready, changes
+}
+
+// fdReadiness reports whether a read of descriptor fd, or a write when write
+// is set, would proceed without waiting, and whether the other side closed.
+// change closes at the descriptor's next change while it is not ready; a
+// descriptor that is not open reports neither readiness nor a change.
+func (p *Process) fdReadiness(fd uint32, write bool) (ready, hangup bool, change <-chan struct{}) {
+	of, ok := p.fds[fd]
+	switch {
+	case !ok:
+		return false, false, nil
+	case write && of.tx != nil:
+		return of.tx.state(true)
+	case write:
+		return true, false, nil
+	case of.rx != nil:
+		return of.rx.state(false)
+	case of.sock != nil && of.sock.listener != nil:
+		ready, change := of.sock.listener.state()
+		return ready, false, change
+	case of.node != nil && of.node.isTerminal():
+		ready, change := p.kernel.stdin.ready()
+		return ready, false, change
+	}
+	return true, false, nil
+}
+
+// wasiReadPoll reads n poll_oneoff subscriptions at inPtr into the clocks
+// already due, the earliest clock to wait for and the descriptors.
 func (p *Process) wasiReadPoll(mem engine.Memory, inPtr, n uint32) (*wasiPoll, uint32) {
-	stdinReady, stdinCh := p.kernel.stdin.ready()
-	poll := &wasiPoll{stdinCh: stdinCh}
+	poll := &wasiPoll{}
 	for i := range n {
 		// Read the subscription's header.
 		subPtr := inPtr + i*wasiSubscriptionSize
@@ -221,8 +289,10 @@ func (p *Process) wasiReadPoll(mem engine.Memory, inPtr, n uint32) (*wasiPoll, u
 		}
 		event := wasiPollEvent{userdata: userdata, eventType: eventType}
 
-		// File a clock event as ready or as the earliest wait.
-		if eventType == wasiEventtypeClock {
+		// File a clock event as ready or as the earliest wait, and a
+		// descriptor event for checking.
+		switch eventType {
+		case wasiEventtypeClock:
 			wait, errno := p.wasiPollClockWait(mem, subPtr)
 			switch {
 			case errno != wasiErrnoSuccess:
@@ -232,23 +302,11 @@ func (p *Process) wasiReadPoll(mem engine.Memory, inPtr, n uint32) (*wasiPoll, u
 			case poll.clock == nil || wait < poll.wait:
 				poll.clock, poll.wait = &event, wait
 			}
-			continue
-		}
-
-		// File a descriptor event as ready unless it reads a console with no
-		// input.
-		event.nbytes = 1
-		_, open := p.fds[fd]
-		switch {
-		case eventType != wasiEventtypeFDRead && eventType != wasiEventtypeFDWrite:
-			return nil, wasiErrnoInval
-		case !open:
-			event.errno = wasiErrnoBadf
-			poll.ready = append(poll.ready, event)
-		case eventType == wasiEventtypeFDRead && !stdinReady && p.isConsoleFD(fd):
-			poll.stdin = &event
+		case wasiEventtypeFDRead, wasiEventtypeFDWrite:
+			event.nbytes = 1
+			poll.fds = append(poll.fds, wasiPollFD{event: event, fd: fd})
 		default:
-			poll.ready = append(poll.ready, event)
+			return nil, wasiErrnoInval
 		}
 	}
 	return poll, wasiErrnoSuccess
@@ -292,6 +350,7 @@ func wasiWritePollEvents(mem engine.Memory, events []wasiPollEvent, outPtr, neve
 		binary.LittleEndian.PutUint16(buf[8:], event.errno)
 		buf[10] = event.eventType
 		binary.LittleEndian.PutUint64(buf[16:], event.nbytes)
+		binary.LittleEndian.PutUint16(buf[24:], event.flags)
 		if !mem.Write(outPtr+uint32(i)*wasiEventSize, buf[:]) {
 			return wasiErrnoFault
 		}
@@ -341,4 +400,59 @@ func wasiReadPath(mem engine.Memory, ptr, length uint32) (string, uint32) {
 		return "", wasiErrnoFault
 	}
 	return string(buf), wasiErrnoSuccess
+}
+
+// wasiSockAccept accepts a connection on a listening socket and writes its
+// descriptor to fdPtr. flags holds the WASI descriptor flags of the new
+// descriptor.
+func (p *Process) wasiSockAccept(ctx context.Context, mem engine.Memory, fd, flags, fdPtr uint32) uint32 {
+	// Accept the connection.
+	var status uint32
+	if flags&wasiFdflagsNonblock != 0 {
+		status = oNONBLOCK
+	}
+	newFD, errno := wasiResult(p.sysAccept(ctx, fd, status))
+
+	// Return its descriptor.
+	switch {
+	case errno != wasiErrnoSuccess:
+		return errno
+	case !mem.WriteUint32Le(fdPtr, newFD):
+		_ = p.sysClose(newFD)
+		return wasiErrnoFault
+	}
+	return wasiErrnoSuccess
+}
+
+// wasiSockRecv reads a connected socket into the iovecs at iovsPtr. It writes
+// the bytes read to nPtr and no output flags to flagsPtr. Peeking is
+// unsupported; waiting for all the data returns what arrived.
+func (p *Process) wasiSockRecv(ctx context.Context, mem engine.Memory, fd, iovsPtr, iovsLen, flags, nPtr, flagsPtr uint32) uint32 {
+	// Check the socket and the flags.
+	if _, errno := p.socketFile(fd); errno != 0 {
+		return wasiErrnoFromResult(errno)
+	}
+	if flags&wasiRiflagsRecvPeek != 0 {
+		return wasiErrno(EOPNOTSUPP)
+	}
+
+	// Read the data.
+	errno := wasiTransfer(mem, iovsPtr, iovsLen, nPtr, func(base, length uint32) (uint32, uint32) {
+		return wasiResult(p.sysRead(ctx, fd, base, length))
+	})
+	if errno == wasiErrnoSuccess && !mem.Write(flagsPtr, []byte{0, 0}) {
+		return wasiErrnoFault
+	}
+	return errno
+}
+
+// wasiSockSend writes the iovecs at iovsPtr to a connected socket and the
+// bytes written to nPtr.
+func (p *Process) wasiSockSend(ctx context.Context, mem engine.Memory, fd, iovsPtr, iovsLen, nPtr uint32) uint32 {
+	if _, errno := p.socketFile(fd); errno != 0 {
+		return wasiErrnoFromResult(errno)
+	}
+	return wasiTransfer(mem, iovsPtr, iovsLen, nPtr, func(base, length uint32) (uint32, uint32) {
+		return wasiResult(p.sysWrite(ctx, fd, base, length))
+	})
 }
