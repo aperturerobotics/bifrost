@@ -22,6 +22,9 @@ import (
 	s4wave_git "github.com/s4wave/spacewave/sdk/git"
 )
 
+// errNoLinkedRepo is returned when the worktree links no repository.
+var errNoLinkedRepo = errors.New("no linked repo object")
+
 // WorktreeSnapshot holds a snapshot of worktree state collected during factory init.
 type WorktreeSnapshot struct {
 	// RepoObjectKey is the object key of the linked git/repo.
@@ -77,7 +80,7 @@ func (r *GitWorktreeResource) GetRepoResource(ctx context.Context, req *s4wave_g
 	// Require a linked repository before constructing its child resource.
 	repoObjKey := r.snap.RepoObjectKey
 	if repoObjKey == "" {
-		return nil, errors.New("no linked repo object")
+		return nil, errNoLinkedRepo
 	}
 
 	// Create a repository resource whose snapshot uses the child context.
@@ -157,7 +160,8 @@ func (r *GitWorktreeResource) WatchStatus(
 	ctx := strm.Context()
 	var prev *s4wave_git.WatchStatusResponse
 	for {
-		seqno, err := r.ws.GetSeqno(ctx)
+		// Read the status and the object roots it was read at.
+		seen, err := r.statusRoots(ctx)
 		if err != nil {
 			return err
 		}
@@ -165,23 +169,55 @@ func (r *GitWorktreeResource) WatchStatus(
 		if err != nil {
 			return err
 		}
+
+		// Send the status only when it changed.
 		if prev == nil || !prev.EqualVT(resp) {
 			if err := strm.Send(resp); err != nil {
 				return err
 			}
 			prev = resp.CloneVT()
 		}
-		if _, err := r.ws.WaitSeqno(ctx, seqno+1); err != nil {
+
+		// Wait for one of the objects to change.
+		if err := world.WaitObjectChange(ctx, r.ws, seen...); err != nil {
 			return err
 		}
 	}
+}
+
+// statusRoots reads the roots of the objects the worktree status reads: the
+// worktree, its workdir and the repository. The worktree root is read before
+// its workdir link, so relinking the workdir changes a root in the result.
+func (r *GitWorktreeResource) statusRoots(ctx context.Context) ([]*world.ObjectRootRef, error) {
+	// Require a linked repository.
+	repoObjKey := r.snap.RepoObjectKey
+	if repoObjKey == "" {
+		return nil, errNoLinkedRepo
+	}
+
+	// Read the worktree root, then the workdir it links.
+	worktree, err := world.GetObjectRootRefsBatch(ctx, r.ws, []string{r.objKey})
+	if err != nil {
+		return nil, err
+	}
+	workdirRef, err := git_world.WorktreeLookupWorkdirRef(ctx, r.ws, r.objKey)
+	if err != nil {
+		return nil, err
+	}
+
+	// Read the workdir and repository roots.
+	rest, err := world.GetObjectRootRefsBatch(ctx, r.ws, []string{workdirRef.GetObjectKey(), repoObjKey})
+	if err != nil {
+		return nil, err
+	}
+	return append(worktree, rest...), nil
 }
 
 func (r *GitWorktreeResource) statusSnapshot(ctx context.Context) (*s4wave_git.WatchStatusResponse, error) {
 	// Require a linked repository before reading worktree status.
 	repoObjKey := r.snap.RepoObjectKey
 	if repoObjKey == "" {
-		return nil, errors.New("no linked repo object")
+		return nil, errNoLinkedRepo
 	}
 
 	// Read the current worktree status into the stream response.
@@ -245,7 +281,7 @@ func (r *GitWorktreeResource) StageFiles(ctx context.Context, req *s4wave_git.St
 	// Require the linked repository before staging files.
 	repoObjKey := r.snap.RepoObjectKey
 	if repoObjKey == "" {
-		return nil, errors.New("no linked repo object")
+		return nil, errNoLinkedRepo
 	}
 
 	// Stage the requested paths in a writable worktree transaction.
@@ -291,7 +327,7 @@ func (r *GitWorktreeResource) UnstageFiles(ctx context.Context, req *s4wave_git.
 	// Require the linked repository before unstaging files.
 	repoObjKey := r.snap.RepoObjectKey
 	if repoObjKey == "" {
-		return nil, errors.New("no linked repo object")
+		return nil, errNoLinkedRepo
 	}
 
 	// Reset the requested index paths in a writable worktree transaction.
@@ -359,7 +395,7 @@ func (r *GitWorktreeResource) CommitFiles(ctx context.Context, req *s4wave_git.C
 	paths := cleanPathList(req.GetPaths())
 	repoObjKey := r.snap.RepoObjectKey
 	if repoObjKey == "" {
-		return nil, errors.New("no linked repo object")
+		return nil, errNoLinkedRepo
 	}
 
 	// Commit the staged paths and collect the resulting commit metadata.

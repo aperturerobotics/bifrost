@@ -8,6 +8,7 @@ import (
 	"github.com/aperturerobotics/util/broadcast"
 	"github.com/aperturerobotics/util/routine"
 	resource_server "github.com/s4wave/spacewave/bldr/resource/server"
+	"github.com/s4wave/spacewave/db/world"
 	world_types "github.com/s4wave/spacewave/db/world/types"
 	s4wave_world "github.com/s4wave/spacewave/sdk/world"
 	"github.com/s4wave/spacewave/sdk/world/objecttype"
@@ -271,35 +272,31 @@ func (w *typedObjectWatch) run(ctx context.Context) (retErr error) {
 	}
 }
 
-// observeWorld follows revisions within the granted mutable state or pinned snapshot.
+// observeWorld follows the object's revisions within the granted mutable
+// state or pinned snapshot. The object type is a graph quad on the object, so
+// a type change revises the object.
 func (w *typedObjectWatch) observeWorld(ctx context.Context) error {
-	// Capture the World sequence before reading existence and graph metadata.
-	seqno, err := w.resource.ws.GetSeqno(ctx)
-	if err != nil {
-		return err
-	}
-
-	// Publish observations only within one unchanged World sequence.
+	ws := w.resource.ws
 	for {
-		// Read the object and type without retaining an ObjectState handle.
-		found, err := w.resource.ws.HasObject(ctx, w.objectKey)
+		// Read the object's root before its type.
+		seen, err := w.readObjectRoot(ctx)
 		if err != nil {
 			return err
 		}
 		var typeID string
-		if found {
-			typeID, err = world_types.GetObjectType(ctx, w.resource.ws, w.objectKey)
+		if seen.Exists {
+			typeID, err = world_types.GetObjectType(ctx, ws, w.objectKey)
 			if err != nil {
 				return err
 			}
 		}
 
-		// Consume a concurrent World revision before publishing mixed metadata.
-		observed, err := w.resource.ws.GetSeqno(ctx)
+		// Publish only when the object did not change during the reads.
+		observed, err := w.readObjectRoot(ctx)
 		if err != nil {
 			return err
 		}
-		if observed == seqno {
+		if observed.Exists == seen.Exists && observed.Rev == seen.Rev {
 			w.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
 				if !w.worldReady || w.typeID != typeID {
 					w.typeEpoch++
@@ -309,12 +306,20 @@ func (w *typedObjectWatch) observeWorld(ctx context.Context) error {
 			})
 		}
 
-		// Wait for the next owning World event, including pending writer changes.
-		seqno, err = w.resource.ws.WaitSeqno(ctx, seqno+1)
-		if err != nil {
+		// Wait for the object to change, including pending writer changes.
+		if err := world.WaitObjectChange(ctx, ws, seen); err != nil {
 			return err
 		}
 	}
+}
+
+// readObjectRoot reads the watched object's root and revision.
+func (w *typedObjectWatch) readObjectRoot(ctx context.Context) (*world.ObjectRootRef, error) {
+	refs, err := world.GetObjectRootRefsBatch(ctx, w.resource.ws, []string{w.objectKey})
+	if err != nil {
+		return nil, err
+	}
+	return refs[0], nil
 }
 
 // addLookup attaches callbacks and retains the registry's standing scoped demand.

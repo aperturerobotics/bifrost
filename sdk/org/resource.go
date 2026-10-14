@@ -9,6 +9,7 @@ import (
 	resource_server "github.com/s4wave/spacewave/bldr/resource/server"
 	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/world"
+	s4wave_world "github.com/s4wave/spacewave/sdk/world"
 )
 
 // OrgResource implements the OrgResourceService SRPC interface.
@@ -102,60 +103,34 @@ func orgWatchSnapshotsEqual(a, b *orgWatchSnapshot) bool {
 	return a.state.EqualVT(b.state)
 }
 
-// watchOrgWorld re-reads the org state after each World sequence change.
+// watchOrgWorld publishes the Organization state each time its object changes.
 func (r *OrgResource) watchOrgWorld(ctx context.Context) error {
-	for {
-		if err := ctx.Err(); err != nil {
-			r.setWatchError(err)
-			return err
+	err := s4wave_world.WatchWorldObject(ctx, r.ws, r.objKey, readOrgWorldState, func(state *OrgState, changed bool) error {
+		if changed {
+			r.setWatchState(state)
 		}
+		return nil
+	})
+	r.setWatchError(err)
+	return err
+}
 
-		seqno, err := r.ws.GetSeqno(ctx)
-		if err != nil {
-			r.setWatchError(err)
-			return err
-		}
-
-		objState, found, err := r.ws.GetObject(ctx, r.objKey)
-		if err != nil {
-			world.ReleaseObjectState(objState)
-			r.setWatchError(err)
-			return err
-		}
-		if !found {
-			r.setWatchError(world.ErrObjectNotFound)
-			return world.ErrObjectNotFound
-		}
-		state, err := func() (*OrgState, error) {
-			// Release the object-state handle before the WaitSeqno block below
-			// so the read scope does not span the wait.
-			defer world.ReleaseObjectState(objState)
-			var state *OrgState
-			_, _, err := world.AccessObjectState(ctx, objState, false, func(bcs *block.Cursor) error {
-				var uerr error
-				state, uerr = UnmarshalOrgState(ctx, bcs)
-				return uerr
-			})
-			if err != nil {
-				return nil, err
-			}
-			if state == nil {
-				state = &OrgState{}
-			}
-			return state, nil
-		}()
-		if err != nil {
-			r.setWatchError(err)
-			return err
-		}
-		r.setWatchState(state)
-
-		_, err = r.ws.WaitSeqno(ctx, seqno+1)
-		if err != nil {
-			r.setWatchError(err)
-			return err
-		}
+// readOrgWorldState reads the Organization state from its object root.
+func readOrgWorldState(ctx context.Context, objState world.ObjectState) (*OrgState, error) {
+	// Decode the state, starting from an empty one.
+	var state *OrgState
+	_, _, err := world.AccessObjectState(ctx, objState, false, func(bcs *block.Cursor) error {
+		var uerr error
+		state, uerr = UnmarshalOrgState(ctx, bcs)
+		return uerr
+	})
+	if err != nil {
+		return nil, err
 	}
+	if state == nil {
+		state = &OrgState{}
+	}
+	return state, nil
 }
 
 // snapshotWatchStateLocked returns the current state or watch error.

@@ -45,18 +45,14 @@ func ObjectLayoutFactory(
 		return nil, nil, objecttype.ErrWorldStateRequired
 	}
 
-	// Read the layout and the revision it was read at.
-	seqno, err := ws.GetSeqno(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-	layout, err := readLayout(ctx, ws, objectKey)
+	// Read the layout and the object revision it was read at.
+	layout, rev, err := readLayout(ctx, ws, objectKey)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	// stateCtr holds the observed layout model. The watch below republishes
-	// it after each later World revision so remote edits are visible, and
+	// it after each later object revision so remote edits are visible, and
 	// local writes publish their committed model at once. pubMtx orders the
 	// two publishers: writes counts local publications, and the watch drops
 	// a read that a local write overtook, so the model never moves back to an
@@ -65,13 +61,14 @@ func ObjectLayoutFactory(
 	var pubMtx sync.Mutex
 	var writes uint64
 
-	// Follow later World revisions until the resource is released.
+	// Follow later object revisions until the resource is released.
 	watch := routine.NewRoutineContainer()
 	watch.SetRoutine(func(ctx context.Context) error {
-		seqno := seqno
+		rev := rev
 		for {
-			// Wait for the next World revision.
-			if _, err := ws.WaitSeqno(ctx, seqno+1); err != nil {
+			// Wait for the next object revision.
+			seen := &world.ObjectRootRef{ObjectKey: objectKey, Rev: rev, Exists: true}
+			if err := world.WaitObjectChange(ctx, ws, seen); err != nil {
 				return err
 			}
 
@@ -79,12 +76,9 @@ func ObjectLayoutFactory(
 			pubMtx.Lock()
 			readWrites := writes
 			pubMtx.Unlock()
+			var cur *ObjectLayout
 			var err error
-			seqno, err = ws.GetSeqno(ctx)
-			if err != nil {
-				return err
-			}
-			cur, err := readLayout(ctx, ws, objectKey)
+			cur, rev, err = readLayout(ctx, ws, objectKey)
 			if err != nil {
 				return err
 			}
@@ -258,16 +252,21 @@ func navigateLayoutTab(model *s4wave_layout.LayoutModel, tabID, newPath string) 
 	return found, nil
 }
 
-// readLayout reads the layout object at objectKey from ws.
-func readLayout(ctx context.Context, ws world.WorldState, objectKey string) (*ObjectLayout, error) {
-	// Look up the layout object.
+// readLayout reads the layout object at objectKey from ws and the object
+// revision it was read at.
+func readLayout(ctx context.Context, ws world.WorldState, objectKey string) (*ObjectLayout, uint64, error) {
+	// Look up the layout object and its revision.
 	objState, found, err := ws.GetObject(ctx, objectKey)
 	defer world.ReleaseObjectState(objState)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	if !found {
-		return nil, world.ErrObjectNotFound
+		return nil, 0, world.ErrObjectNotFound
+	}
+	_, rev, err := objState.GetRootRef(ctx)
+	if err != nil {
+		return nil, 0, err
 	}
 
 	// Decode its stored layout.
@@ -277,5 +276,5 @@ func readLayout(ctx context.Context, ws world.WorldState, objectKey string) (*Ob
 		layout, err = block.UnmarshalBlock[*ObjectLayout](ctx, bcs, NewObjectLayoutBlock)
 		return err
 	})
-	return layout, err
+	return layout, rev, err
 }

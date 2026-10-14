@@ -7,6 +7,7 @@ import (
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/aperturerobotics/starpc/srpc"
+	"github.com/aperturerobotics/util/ccontainer"
 	"github.com/pkg/errors"
 	bldr_plugin "github.com/s4wave/spacewave/bldr/plugin"
 	resource_server "github.com/s4wave/spacewave/bldr/resource/server"
@@ -126,21 +127,48 @@ func (r *SpaceResource) GetWorldEngineBucketID() string {
 }
 
 // WatchSpaceState watches the SpaceState for the component.
-// It sends the state once, then again each time a World commit changes it.
+// It sends the state once, then again each time a change to the Space settings
+// object or the SharedObject state changes it.
 func (r *SpaceResource) WatchSpaceState(
 	req *s4wave_space.WatchSpaceStateRequest,
 	strm s4wave_space.SRPCSpaceResourceService_WatchSpaceStateStream,
 ) error {
-	ctx, worldEng := strm.Context(), r.space.GetWorldEngine()
+	// Watch the SharedObject state, which supplies the transform info.
+	ctx := strm.Context()
+	soStateCtr, relSoState, err := r.space.GetSharedObject().AccessSharedObjectState(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer relSoState()
+
+	// Track the last sent state and the settings root it was read at.
+	ws := world.NewEngineWorldState(r.space.GetWorldEngine(), false)
 	var prev *s4wave_space.SpaceState
-	for {
-		// Read the state and the seqno it describes.
-		state, seqno, err := r.readSpaceState(ctx, worldEng)
-		if err != nil {
-			return err
+	var seen *world.ObjectRootRef
+	var settings *space_world.SpaceSettings
+	for readSettings := true; ; {
+		// Read the settings root before the settings, so a change after the
+		// read ends the wait below.
+		if readSettings {
+			roots, err := world.GetObjectRootRefsBatch(ctx, ws, []string{space_world.SpaceSettingsObjectKey})
+			if err != nil {
+				return errors.Wrap(err, "read Space settings root")
+			}
+			seen = roots[0]
+			settings, err = space_world.LookupSpaceSettingsBody(ctx, ws)
+			if err != nil {
+				return errors.Wrap(err, "read Space settings")
+			}
 		}
 
-		// Send the state when it changed.
+		// Build the state and send it when it changed.
+		soState := soStateCtr.GetValue()
+		state := &s4wave_space.SpaceState{
+			Ready:         true,
+			EngineId:      r.space.GetWorldEngineID(),
+			Settings:      settings,
+			TransformInfo: r.buildTransformInfo(ctx, soState),
+		}
 		if !state.EqualVT(prev) {
 			if err := strm.Send(state); err != nil {
 				return err
@@ -148,38 +176,47 @@ func (r *SpaceResource) WatchSpaceState(
 			prev = state
 		}
 
-		// Wait for the next World commit.
-		if _, err := worldEng.WaitSeqno(ctx, seqno+1); err != nil {
+		// Wait for the settings object or the SharedObject state to change.
+		// Every Space commit changes the SharedObject state, so only a
+		// change to the settings object rereads the World.
+		readSettings, err = waitSpaceStateChange(ctx, ws, seen, soStateCtr, soState)
+		if err != nil {
 			return err
 		}
 	}
 }
 
-// readSpaceState reads the SpaceState from one World read transaction and
-// returns it with the transaction's seqno.
-func (r *SpaceResource) readSpaceState(ctx context.Context, worldEng world.Engine) (*s4wave_space.SpaceState, uint64, error) {
-	// Open the read transaction and read its seqno.
-	wtx, err := worldEng.NewTransaction(ctx, false)
-	if err != nil {
-		return nil, 0, errors.Wrap(err, "open world transaction")
-	}
-	defer wtx.Discard()
-	seqno, err := wtx.GetSeqno(ctx)
-	if err != nil {
-		return nil, 0, errors.Wrap(err, "read world sequence")
-	}
+// waitSpaceStateChange waits until the Space settings object differs from
+// seen or the SharedObject state differs from soState. It reports whether the
+// settings object changed.
+func waitSpaceStateChange(
+	ctx context.Context,
+	ws world.WorldState,
+	seen *world.ObjectRootRef,
+	soStateCtr ccontainer.Watchable[sobject.SharedObjectStateSnapshot],
+	soState sobject.SharedObjectStateSnapshot,
+) (bool, error) {
+	// Wait on the settings object and the SharedObject state at once. The
+	// first change cancels the other wait.
+	waitCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	settingsDone := make(chan error, 1)
+	go func() {
+		settingsDone <- world.WaitObjectChange(waitCtx, ws, seen)
+		cancel()
+	}()
+	_, _ = soStateCtr.WaitValueChange(waitCtx, soState, nil)
+	cancel()
 
-	// Read the Space settings and the SharedObject transform.
-	settings, err := space_world.LookupSpaceSettingsBody(ctx, wtx)
-	if err != nil {
-		return nil, 0, errors.Wrap(err, "read Space settings")
+	// Report a failed settings wait, or the end of ctx.
+	err := <-settingsDone
+	if err != nil && !errors.Is(err, context.Canceled) {
+		return false, err
 	}
-	return &s4wave_space.SpaceState{
-		Ready:         true,
-		EngineId:      r.space.GetWorldEngineID(),
-		Settings:      settings,
-		TransformInfo: r.buildTransformInfo(ctx),
-	}, seqno, nil
+	if cerr := ctx.Err(); cerr != nil {
+		return false, cerr
+	}
+	return err == nil, nil
 }
 
 // WatchSpaceSharingState watches the sharing snapshot for the space.
@@ -448,12 +485,10 @@ func (r *SpaceResource) ApproveSpaceChange(
 	return &s4wave_space.ApproveSpaceChangeResponse{}, nil
 }
 
-// buildTransformInfo extracts redacted transform info from the shared object state.
-func (r *SpaceResource) buildTransformInfo(ctx context.Context) *s4wave_space.TransformInfo {
-	// Read the shared-object transform metadata used by SpaceState.
-	so := r.space.GetSharedObject()
-	snap, err := so.GetSharedObjectState(ctx)
-	if err != nil {
+// buildTransformInfo extracts redacted transform info from the shared object
+// state snapshot. Returns nil when there is no snapshot yet.
+func (r *SpaceResource) buildTransformInfo(ctx context.Context, snap sobject.SharedObjectStateSnapshot) *s4wave_space.TransformInfo {
+	if snap == nil {
 		return nil
 	}
 	info, err := snap.GetTransformInfo(ctx)

@@ -119,54 +119,45 @@ func (r *WizardResource) WatchWizardState(_ *wizard.WatchWizardStateRequest, str
 	)
 }
 
+// watchWizardWorld publishes the wizard state each time its object changes.
 func (r *WizardResource) watchWizardWorld(ctx context.Context) error {
 	for {
-		if err := ctx.Err(); err != nil {
-			r.setWizardStateWatchError(err)
-			return err
+		seen, err := r.readWizardWorld(ctx)
+		if err == nil {
+			err = world.WaitObjectChange(ctx, r.ws, seen)
 		}
-
-		seqno, err := r.ws.GetSeqno(ctx)
-		if err != nil {
-			r.setWizardStateWatchError(err)
-			return err
-		}
-
-		objState, found, err := r.ws.GetObject(ctx, r.objKey)
-		if err != nil {
-			world.ReleaseObjectState(objState)
-			r.setWizardStateWatchError(err)
-			return err
-		}
-		if !found {
-			r.setWizardStateWatchError(world.ErrObjectNotFound)
-			return world.ErrObjectNotFound
-		}
-
-		state, rev, err := func() (*wizard.WizardState, uint64, error) {
-			// Read the wizard revision while retaining its object state.
-			defer world.ReleaseObjectState(objState)
-			_, rev, err := objState.GetRootRef(ctx)
-			if err != nil {
-				return nil, 0, err
-			}
-
-			// Decode the wizard state at the observed revision.
-			state, err := r.readWizardWorldState(ctx, objState)
-			return state, rev, err
-		}()
-		if err != nil {
-			r.setWizardStateWatchError(err)
-			return err
-		}
-		r.setWizardStateWatchState(state, rev)
-
-		_, err = r.ws.WaitSeqno(ctx, seqno+1)
 		if err != nil {
 			r.setWizardStateWatchError(err)
 			return err
 		}
 	}
+}
+
+// readWizardWorld publishes the wizard state and returns the object root it
+// was read at. The revision is read before the state, so a later change ends
+// the wait on it.
+func (r *WizardResource) readWizardWorld(ctx context.Context) (*world.ObjectRootRef, error) {
+	// Look up the wizard object and its revision.
+	objState, found, err := r.ws.GetObject(ctx, r.objKey)
+	defer world.ReleaseObjectState(objState)
+	if err != nil {
+		return nil, err
+	}
+	if !found {
+		return nil, world.ErrObjectNotFound
+	}
+	_, rev, err := objState.GetRootRef(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Decode and publish the state at the observed revision.
+	state, err := r.readWizardWorldState(ctx, objState)
+	if err != nil {
+		return nil, err
+	}
+	r.setWizardStateWatchState(state, rev)
+	return &world.ObjectRootRef{ObjectKey: r.objKey, Rev: rev, Exists: true}, nil
 }
 
 func (r *WizardResource) readWizardWorldState(ctx context.Context, objState world.ObjectState) (*wizard.WizardState, error) {
