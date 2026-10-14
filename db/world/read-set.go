@@ -114,12 +114,7 @@ func (r *ReadSet) addPatterns(filters ...GraphQuad) {
 	r.mtx.Lock()
 	for _, q := range filters {
 		// Keep the filter for changed quads.
-		p := graphPattern{
-			subject:   q.GetSubject(),
-			predicate: q.GetPredicate(),
-			obj:       q.GetObj(),
-			label:     q.GetLabel(),
-		}
+		p := newGraphPattern(q)
 		r.patterns = append(r.patterns, p)
 
 		// Index the object keys it names for changed objects.

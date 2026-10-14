@@ -38,7 +38,7 @@ func TestReadSetTouched(t *testing.T) {
 	}
 	ws.IterateObjects(ctx, "dir/", false)
 
-	// Look up (s, p, *), (*, q, o2) and a literal object.
+	// Look up (s, p, *), (*, q, o2), a literal object and (*, bare, o3).
 	if _, err := ws.LookupGraphQuads(ctx, NewGraphQuadWithKeys("s", "p", "", ""), 0); err != nil {
 		t.Fatal(err)
 	}
@@ -46,6 +46,9 @@ func TestReadSetTouched(t *testing.T) {
 		t.Fatal(err)
 	}
 	if _, err := ws.LookupGraphQuads(ctx, NewGraphQuad("", "q", `"literal"`, ""), 0); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ws.LookupGraphQuads(ctx, NewGraphQuadWithKeys("", "bare", "o3", ""), 0); err != nil {
 		t.Fatal(err)
 	}
 
@@ -57,19 +60,31 @@ func TestReadSetTouched(t *testing.T) {
 	}{
 		{"empty", &ChangeSet{}, false},
 		{"other key", &ChangeSet{Keys: []string{"b"}}, false},
-		{"other subject", &ChangeSet{Quads: []GraphQuad{NewGraphQuadWithKeys("s2", "p", "o", "")}}, false},
+		{"other subject", &ChangeSet{Quads: []GraphQuad{NewGraphQuad("<s2>", `"p"`, "<o>", "")}}, false},
 		{"read key", &ChangeSet{Keys: []string{"a"}}, true},
 		{"create under prefix", &ChangeSet{Keys: []string{"dir/x"}}, true},
-		{"matching quad", &ChangeSet{Quads: []GraphQuad{NewGraphQuadWithKeys("s", "p", "o", "")}}, true},
+		{"matching quad", &ChangeSet{Quads: []GraphQuad{NewGraphQuad("<s>", `"p"`, "<o>", "")}}, true},
 		{"rename into read key", &ChangeSet{Keys: []string{"c", "a"}}, true},
 		{"pattern subject", &ChangeSet{Keys: []string{"s"}}, true},
 		{"pattern object", &ChangeSet{Keys: []string{"o2"}}, true},
 		{"literal object", &ChangeSet{Keys: []string{"literal"}}, false},
+		{"bare predicate", &ChangeSet{Quads: []GraphQuad{NewGraphQuad("<s3>", `"bare"`, "<o3>", "")}}, true},
 		{"unknown", NewUnknownChangeSet(), true},
 	}
 	for _, c := range cases {
 		if got := reads.Touched(c.changes); got != c.touched {
 			t.Errorf("%s: touched = %v, want %v", c.name, got, c.touched)
 		}
+	}
+}
+
+// TestMatchGraphQuad matches a lookup filter against changed quads.
+func TestMatchGraphQuad(t *testing.T) {
+	filter := NewGraphQuadWithKeys("", "pred", "o", "")
+	if !MatchGraphQuad(filter, NewGraphQuad("<s>", `"pred"`, "<o>", "")) {
+		t.Error("bare predicate filter missed the stored quad")
+	}
+	if MatchGraphQuad(filter, NewGraphQuad("<s>", `"pred"`, "<o2>", "")) {
+		t.Error("filter matched another object")
 	}
 }

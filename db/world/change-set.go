@@ -10,7 +10,8 @@ type ChangeSet struct {
 	// follows a set or deleted quad naming the object is reported through
 	// Quads alone.
 	Keys []string
-	// Quads are the graph quads that were set or deleted.
+	// Quads are the graph quads that were set or deleted, each field spelled
+	// as the graph stores it.
 	Quads []GraphQuad
 }
 
