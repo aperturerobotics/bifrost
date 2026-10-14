@@ -6,7 +6,9 @@ type ChangeSet struct {
 	// Every ReadSet is touched by an unknown ChangeSet.
 	Unknown bool
 	// Keys are the object keys that were set, deleted, renamed, or revised.
-	// A rename lists both the old and the new key.
+	// A rename lists both the old and the new key. A revision that only
+	// follows a set or deleted quad naming the object is reported through
+	// Quads alone.
 	Keys []string
 	// Quads are the graph quads that were set or deleted.
 	Quads []GraphQuad

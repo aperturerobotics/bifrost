@@ -19,6 +19,7 @@ var errWindowRead = errors.New("read one change window")
 
 // TestWatchChanges checks that the change feed compares the head a watcher saw
 // against the current head and lists exactly the touched objects and quads.
+// Objects revised only by their changed quads are reported through the quads.
 func TestWatchChanges(t *testing.T) {
 	// Create the objects the changes touch and one they leave alone.
 	ctx := t.Context()
@@ -27,6 +28,7 @@ func TestWatchChanges(t *testing.T) {
 	createKeyWatchTestObject(t, ctx, ws, "watch/kept")
 	createKeyWatchTestObject(t, ctx, ws, "watch/deleted")
 	createKeyWatchTestObject(t, ctx, ws, "watch/linked")
+	createKeyWatchTestObject(t, ctx, ws, "watch/revised")
 	createKeyWatchTestObject(t, ctx, ws, "watch/untouched")
 
 	// Link two of them with the quad the changes delete.
@@ -52,18 +54,26 @@ func TestWatchChanges(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Revise one object explicitly, and one both explicitly and by a quad.
+	for _, key := range []string{"watch/revised", "watch/kept"} {
+		obj, err := world.MustGetObject(ctx, ws, key)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := obj.IncrementRev(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+
 	// Expect one window covering every commit.
 	_, changes := readChangeWindow(t, ctx, e, after)
 	if changes.Unknown {
 		t.Fatal("changes after retained head are unknown")
 	}
-	for _, key := range []string{"watch/created", "watch/deleted"} {
-		if !slices.Contains(changes.Keys, key) {
-			t.Fatalf("changed keys %q lack %q", changes.Keys, key)
-		}
-	}
-	if slices.Contains(changes.Keys, "watch/untouched") {
-		t.Fatalf("changed keys %q include an untouched object", changes.Keys)
+	got := slices.Sorted(slices.Values(changes.Keys))
+	want := []string{"watch/created", "watch/deleted", "watch/kept", "watch/revised"}
+	if !slices.Equal(got, want) {
+		t.Fatalf("changed keys %q, want %q", got, want)
 	}
 	checkQuads(t, changes.Quads, linked, unlinked)
 }
