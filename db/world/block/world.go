@@ -140,13 +140,15 @@ func BuildWorldStateFromCursor(
 		return nil, err
 	}
 
-	// Build the state, which releases the pin on Discard.
+	// Build the state, which releases the pin on Discard and keeps objects in
+	// the cursor's bucket as local edges of the World DAG.
 	state, err := NewWorldState(ctx, le, write, btx, bcs, store, storage, lookupOp, verbose)
 	if err != nil {
 		releaseRoot()
 		return nil, err
 	}
 	state.readRelease = releaseRoot
+	state.localBucketID = bls.GetRefWithOpArgs().GetBucketId()
 	return state, nil
 }
 
