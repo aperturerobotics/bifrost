@@ -554,6 +554,142 @@ func (x *WaitSeqnoResponse) GetSeqno() uint64 {
 	return 0
 }
 
+// WatchChangesRequest is the request type for WatchChanges.
+type WatchChangesRequest struct {
+	unknownFields []byte
+	// AfterSeqno is the revision the stream starts after.
+	AfterSeqno uint64 `protobuf:"varint,1,opt,name=after_seqno,json=afterSeqno,proto3" json:"afterSeqno,omitempty"`
+}
+
+func (x *WatchChangesRequest) Reset() {
+	*x = WatchChangesRequest{}
+}
+
+func (*WatchChangesRequest) ProtoMessage() {}
+
+func (x *WatchChangesRequest) GetAfterSeqno() uint64 {
+	if x != nil {
+		return x.AfterSeqno
+	}
+	return 0
+}
+
+// WorldChange lists what one or more coalesced commits changed.
+type WorldChange struct {
+	unknownFields []byte
+	// Seqno is the World revision the change reaches.
+	Seqno uint64 `protobuf:"varint,1,opt,name=seqno,proto3" json:"seqno,omitempty"`
+	// Unknown is set when the changes could not be listed. Any read may have
+	// changed.
+	Unknown bool `protobuf:"varint,2,opt,name=unknown,proto3" json:"unknown,omitempty"`
+	// Keys are the object keys that were set, deleted, renamed or revised.
+	Keys []string `protobuf:"bytes,3,rep,name=keys,proto3" json:"keys,omitempty"`
+	// Quads are the graph quads that were set or deleted.
+	Quads []*quad.Quad `protobuf:"bytes,4,rep,name=quads,proto3" json:"quads,omitempty"`
+}
+
+func (x *WorldChange) Reset() {
+	*x = WorldChange{}
+}
+
+func (*WorldChange) ProtoMessage() {}
+
+func (x *WorldChange) GetSeqno() uint64 {
+	if x != nil {
+		return x.Seqno
+	}
+	return 0
+}
+
+func (x *WorldChange) GetUnknown() bool {
+	if x != nil {
+		return x.Unknown
+	}
+	return false
+}
+
+func (x *WorldChange) GetKeys() []string {
+	if x != nil {
+		return x.Keys
+	}
+	return nil
+}
+
+func (x *WorldChange) GetQuads() []*quad.Quad {
+	if x != nil {
+		return x.Quads
+	}
+	return nil
+}
+
+// WaitObjectRevRequest is the request type for WaitObjectRev.
+type WaitObjectRevRequest struct {
+	unknownFields []byte
+	// Key is the object key to wait on.
+	Key string `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	// Rev is the minimum object revision to wait for.
+	Rev uint64 `protobuf:"varint,2,opt,name=rev,proto3" json:"rev,omitempty"`
+	// IgnoreNotFound waits for a missing object to appear instead of failing.
+	IgnoreNotFound bool `protobuf:"varint,3,opt,name=ignore_not_found,json=ignoreNotFound,proto3" json:"ignoreNotFound,omitempty"`
+}
+
+func (x *WaitObjectRevRequest) Reset() {
+	*x = WaitObjectRevRequest{}
+}
+
+func (*WaitObjectRevRequest) ProtoMessage() {}
+
+func (x *WaitObjectRevRequest) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+func (x *WaitObjectRevRequest) GetRev() uint64 {
+	if x != nil {
+		return x.Rev
+	}
+	return 0
+}
+
+func (x *WaitObjectRevRequest) GetIgnoreNotFound() bool {
+	if x != nil {
+		return x.IgnoreNotFound
+	}
+	return false
+}
+
+// WaitObjectRevResponse is the response type for WaitObjectRev.
+type WaitObjectRevResponse struct {
+	unknownFields []byte
+	// Rev is the object revision that satisfied the wait.
+	Rev uint64 `protobuf:"varint,1,opt,name=rev,proto3" json:"rev,omitempty"`
+	// ErrorCode is WORLD_ERROR_CODE_OBJECT_NOT_FOUND when the object is missing
+	// and IgnoreNotFound is unset.
+	ErrorCode WorldErrorCode `protobuf:"varint,2,opt,name=error_code,json=errorCode,proto3" json:"errorCode,omitempty"`
+}
+
+func (x *WaitObjectRevResponse) Reset() {
+	*x = WaitObjectRevResponse{}
+}
+
+func (*WaitObjectRevResponse) ProtoMessage() {}
+
+func (x *WaitObjectRevResponse) GetRev() uint64 {
+	if x != nil {
+		return x.Rev
+	}
+	return 0
+}
+
+func (x *WaitObjectRevResponse) GetErrorCode() WorldErrorCode {
+	if x != nil {
+		return x.ErrorCode
+	}
+	return WorldErrorCode_WORLD_ERROR_CODE_UNSPECIFIED
+}
+
 // AccessWorldStateRequest is the request type for AccessWorldState.
 type AccessWorldStateRequest struct {
 	unknownFields []byte
@@ -3401,6 +3537,76 @@ func (m *WaitSeqnoResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
+func (m *WatchChangesRequest) CloneVT() *WatchChangesRequest {
+	if m == nil {
+		return (*WatchChangesRequest)(nil)
+	}
+	r := new(WatchChangesRequest)
+	r.AfterSeqno = m.AfterSeqno
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *WatchChangesRequest) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *WorldChange) CloneVT() *WorldChange {
+	if m == nil {
+		return (*WorldChange)(nil)
+	}
+	r := new(WorldChange)
+	r.Seqno = m.Seqno
+	r.Unknown = m.Unknown
+	r.Keys = protobuf_go_lite.CloneSlice(m.Keys)
+	r.Quads = protobuf_go_lite.CloneVTSlice(m.Quads)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *WorldChange) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *WaitObjectRevRequest) CloneVT() *WaitObjectRevRequest {
+	if m == nil {
+		return (*WaitObjectRevRequest)(nil)
+	}
+	r := new(WaitObjectRevRequest)
+	r.Key = m.Key
+	r.Rev = m.Rev
+	r.IgnoreNotFound = m.IgnoreNotFound
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *WaitObjectRevRequest) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *WaitObjectRevResponse) CloneVT() *WaitObjectRevResponse {
+	if m == nil {
+		return (*WaitObjectRevResponse)(nil)
+	}
+	r := new(WaitObjectRevResponse)
+	r.Rev = m.Rev
+	r.ErrorCode = m.ErrorCode
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *WaitObjectRevResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
 func (m *AccessWorldStateRequest) CloneVT() *AccessWorldStateRequest {
 	if m == nil {
 		return (*AccessWorldStateRequest)(nil)
@@ -5537,6 +5743,104 @@ func (this *WaitSeqnoResponse) EqualVT(that *WaitSeqnoResponse) bool {
 
 func (this *WaitSeqnoResponse) EqualMessageVT(thatMsg any) bool {
 	that, ok := thatMsg.(*WaitSeqnoResponse)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *WatchChangesRequest) EqualVT(that *WatchChangesRequest) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.AfterSeqno != that.AfterSeqno {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *WatchChangesRequest) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*WatchChangesRequest)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *WorldChange) EqualVT(that *WorldChange) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.Seqno != that.Seqno {
+		return false
+	}
+	if this.Unknown != that.Unknown {
+		return false
+	}
+	if !protobuf_go_lite.EqualSlice(this.Keys, that.Keys) {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.Quads, that.Quads, func() *quad.Quad { return &quad.Quad{} }) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *WorldChange) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*WorldChange)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *WaitObjectRevRequest) EqualVT(that *WaitObjectRevRequest) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.Key != that.Key {
+		return false
+	}
+	if this.Rev != that.Rev {
+		return false
+	}
+	if this.IgnoreNotFound != that.IgnoreNotFound {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *WaitObjectRevRequest) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*WaitObjectRevRequest)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *WaitObjectRevResponse) EqualVT(that *WaitObjectRevResponse) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.Rev != that.Rev {
+		return false
+	}
+	if this.ErrorCode != that.ErrorCode {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *WaitObjectRevResponse) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*WaitObjectRevResponse)
 	if !ok {
 		return false
 	}
@@ -8769,6 +9073,247 @@ func (x *WaitSeqnoResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
 
 // UnmarshalJSON unmarshals the WaitSeqnoResponse from JSON.
 func (x *WaitSeqnoResponse) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the WatchChangesRequest message to JSON.
+func (x *WatchChangesRequest) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.AfterSeqno != 0 || s.HasField("afterSeqno") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("afterSeqno")
+		s.WriteUint64(x.AfterSeqno)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the WatchChangesRequest to JSON.
+func (x *WatchChangesRequest) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the WatchChangesRequest message from JSON.
+func (x *WatchChangesRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "after_seqno", "afterSeqno":
+			s.AddField("after_seqno")
+			x.AfterSeqno = s.ReadUint64()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the WatchChangesRequest from JSON.
+func (x *WatchChangesRequest) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the WorldChange message to JSON.
+func (x *WorldChange) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Seqno != 0 || s.HasField("seqno") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("seqno")
+		s.WriteUint64(x.Seqno)
+	}
+	if x.Unknown || s.HasField("unknown") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("unknown")
+		s.WriteBool(x.Unknown)
+	}
+	if len(x.Keys) > 0 || s.HasField("keys") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("keys")
+		s.WriteStringArray(x.Keys)
+	}
+	if len(x.Quads) > 0 || s.HasField("quads") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("quads")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.Quads {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s.WithField("quads"))
+		}
+		s.WriteArrayEnd()
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the WorldChange to JSON.
+func (x *WorldChange) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the WorldChange message from JSON.
+func (x *WorldChange) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "seqno":
+			s.AddField("seqno")
+			x.Seqno = s.ReadUint64()
+		case "unknown":
+			s.AddField("unknown")
+			x.Unknown = s.ReadBool()
+		case "keys":
+			s.AddField("keys")
+			if s.ReadNil() {
+				x.Keys = nil
+				return
+			}
+			x.Keys = s.ReadStringArray()
+		case "quads":
+			s.AddField("quads")
+			if s.ReadNil() {
+				x.Quads = nil
+				return
+			}
+			s.ReadArray(func() {
+				if s.ReadNil() {
+					x.Quads = append(x.Quads, nil)
+					return
+				}
+				v := &quad.Quad{}
+				v.UnmarshalProtoJSON(s.WithField("quads", false))
+				if s.Err() != nil {
+					return
+				}
+				x.Quads = append(x.Quads, v)
+			})
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the WorldChange from JSON.
+func (x *WorldChange) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the WaitObjectRevRequest message to JSON.
+func (x *WaitObjectRevRequest) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Key != "" || s.HasField("key") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("key")
+		s.WriteString(x.Key)
+	}
+	if x.Rev != 0 || s.HasField("rev") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("rev")
+		s.WriteUint64(x.Rev)
+	}
+	if x.IgnoreNotFound || s.HasField("ignoreNotFound") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("ignoreNotFound")
+		s.WriteBool(x.IgnoreNotFound)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the WaitObjectRevRequest to JSON.
+func (x *WaitObjectRevRequest) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the WaitObjectRevRequest message from JSON.
+func (x *WaitObjectRevRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "key":
+			s.AddField("key")
+			x.Key = s.ReadString()
+		case "rev":
+			s.AddField("rev")
+			x.Rev = s.ReadUint64()
+		case "ignore_not_found", "ignoreNotFound":
+			s.AddField("ignore_not_found")
+			x.IgnoreNotFound = s.ReadBool()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the WaitObjectRevRequest from JSON.
+func (x *WaitObjectRevRequest) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the WaitObjectRevResponse message to JSON.
+func (x *WaitObjectRevResponse) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Rev != 0 || s.HasField("rev") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("rev")
+		s.WriteUint64(x.Rev)
+	}
+	if x.ErrorCode != 0 || s.HasField("errorCode") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("errorCode")
+		x.ErrorCode.MarshalProtoJSON(s)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the WaitObjectRevResponse to JSON.
+func (x *WaitObjectRevResponse) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the WaitObjectRevResponse message from JSON.
+func (x *WaitObjectRevResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "rev":
+			s.AddField("rev")
+			x.Rev = s.ReadUint64()
+		case "error_code", "errorCode":
+			s.AddField("error_code")
+			x.ErrorCode.UnmarshalProtoJSON(s)
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the WaitObjectRevResponse from JSON.
+func (x *WaitObjectRevResponse) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -14513,6 +15058,193 @@ func (m *WaitSeqnoResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *WatchChangesRequest) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WatchChangesRequest) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *WatchChangesRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.AfterSeqno != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.AfterSeqno))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WorldChange) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WorldChange) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *WorldChange) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.Quads) > 0 {
+		for iNdEx := len(m.Quads) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.Quads[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0x22
+		}
+	}
+	if len(m.Keys) > 0 {
+		for iNdEx := len(m.Keys) - 1; iNdEx >= 0; iNdEx-- {
+			i = protobuf_go_lite.EncodeString(dAtA, i, m.Keys[iNdEx])
+			i--
+			dAtA[i] = 0x1a
+		}
+	}
+	if m.Unknown {
+		i = protobuf_go_lite.EncodeBool(dAtA, i, m.Unknown)
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.Seqno != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Seqno))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WaitObjectRevRequest) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WaitObjectRevRequest) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *WaitObjectRevRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.IgnoreNotFound {
+		i = protobuf_go_lite.EncodeBool(dAtA, i, m.IgnoreNotFound)
+		i--
+		dAtA[i] = 0x18
+	}
+	if m.Rev != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Rev))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.Key) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.Key)
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WaitObjectRevResponse) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WaitObjectRevResponse) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *WaitObjectRevResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.ErrorCode != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.ErrorCode))
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.Rev != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Rev))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *AccessWorldStateRequest) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -19027,6 +19759,59 @@ func (m *WaitSeqnoResponse) SizeVT() (n int) {
 	return n
 }
 
+func (m *WatchChangesRequest) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.AfterSeqno)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *WorldChange) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Seqno)
+	n += protobuf_go_lite.SizeBoolNonZero(1, m.Unknown)
+	n += protobuf_go_lite.SizeStringSlice(1, m.Keys)
+	for _, e := range m.Quads {
+		l = e.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *WaitObjectRevRequest) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Key)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Rev)
+	n += protobuf_go_lite.SizeBoolNonZero(1, m.IgnoreNotFound)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *WaitObjectRevResponse) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Rev)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.ErrorCode)
+	n += len(m.unknownFields)
+	return n
+}
+
 func (m *AccessWorldStateRequest) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -20650,6 +21435,98 @@ func (x *WaitSeqnoResponse) MarshalProtoText() string {
 }
 
 func (x *WaitSeqnoResponse) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *WatchChangesRequest) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WatchChangesRequest")
+	if x.AfterSeqno != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "after_seqno")
+		protobuf_go_lite.TextWriteUint(&sb, x.AfterSeqno)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *WatchChangesRequest) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *WorldChange) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WorldChange")
+	if x.Seqno != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "seqno")
+		protobuf_go_lite.TextWriteUint(&sb, x.Seqno)
+	}
+	if x.Unknown != false {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "unknown")
+		protobuf_go_lite.TextWriteBool(&sb, x.Unknown)
+	}
+	if len(x.Keys) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "keys")
+		for i, v := range x.Keys {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			protobuf_go_lite.TextWriteString(&sb, v)
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	if len(x.Quads) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "quads")
+		for i, v := range x.Quads {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &quad.Quad{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *WorldChange) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *WaitObjectRevRequest) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WaitObjectRevRequest")
+	if x.Key != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "key")
+		protobuf_go_lite.TextWriteString(&sb, x.Key)
+	}
+	if x.Rev != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "rev")
+		protobuf_go_lite.TextWriteUint(&sb, x.Rev)
+	}
+	if x.IgnoreNotFound != false {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "ignore_not_found")
+		protobuf_go_lite.TextWriteBool(&sb, x.IgnoreNotFound)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *WaitObjectRevRequest) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *WaitObjectRevResponse) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WaitObjectRevResponse")
+	if x.Rev != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "rev")
+		protobuf_go_lite.TextWriteUint(&sb, x.Rev)
+	}
+	if x.ErrorCode != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "error_code")
+		protobuf_go_lite.TextWriteStringer(&sb, WorldErrorCode(x.ErrorCode))
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *WaitObjectRevResponse) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -23493,6 +24370,278 @@ func (m *WaitSeqnoResponse) UnmarshalVT(dAtA []byte) error {
 			}
 			m.Seqno = 0
 			m.Seqno, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *WatchChangesRequest) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WatchChangesRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WatchChangesRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AfterSeqno", wireType)
+			}
+			m.AfterSeqno = 0
+			m.AfterSeqno, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *WorldChange) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WorldChange: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WorldChange: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Seqno", wireType)
+			}
+			m.Seqno = 0
+			m.Seqno, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Unknown", wireType)
+			}
+			var v bool
+			v, iNdEx, err = protobuf_go_lite.DecodeVarintBool(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Unknown = bool(v)
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Keys", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Keys = append(m.Keys, v)
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Quads", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Quads = append(m.Quads, &quad.Quad{})
+			if err := m.Quads[len(m.Quads)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *WaitObjectRevRequest) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WaitObjectRevRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WaitObjectRevRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Key = v
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Rev", wireType)
+			}
+			m.Rev = 0
+			m.Rev, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field IgnoreNotFound", wireType)
+			}
+			var v bool
+			v, iNdEx, err = protobuf_go_lite.DecodeVarintBool(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.IgnoreNotFound = bool(v)
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *WaitObjectRevResponse) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WaitObjectRevResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WaitObjectRevResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Rev", wireType)
+			}
+			m.Rev = 0
+			m.Rev, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ErrorCode", wireType)
+			}
+			m.ErrorCode = 0
+			var _v uint64
+			_v, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			m.ErrorCode = WorldErrorCode(_v)
 			if err != nil {
 				return err
 			}

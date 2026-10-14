@@ -30,6 +30,14 @@ service EngineResourceService {
 
   rpc WaitSeqno(WaitSeqnoRequest) returns (WaitSeqnoResponse);
 
+  // WatchChanges streams each later World revision with the objects and graph
+  // quads it changed since the previous message.
+  rpc WatchChanges(WatchChangesRequest) returns (stream WorldChange);
+
+  // WaitObjectRev waits until an object reaches a revision through the
+  // engine's key watch, which wakes only on commits that change the object.
+  rpc WaitObjectRev(WaitObjectRevRequest) returns (WaitObjectRevResponse);
+
   rpc BuildStorageCursor(BuildStorageCursorRequest) returns (BuildStorageCursorResponse);
 
   rpc AccessWorldState(AccessWorldStateRequest) returns (AccessWorldStateResponse);
@@ -163,6 +171,44 @@ message WaitSeqnoRequest {
 message WaitSeqnoResponse {
   // Seqno is the sequence number when the wait condition was satisfied.
   uint64 seqno = 1;
+}
+
+// WatchChangesRequest is the request type for WatchChanges.
+message WatchChangesRequest {
+  // AfterSeqno is the revision the stream starts after.
+  uint64 after_seqno = 1;
+}
+
+// WorldChange lists what one or more coalesced commits changed.
+message WorldChange {
+  // Seqno is the World revision the change reaches.
+  uint64 seqno = 1;
+  // Unknown is set when the changes could not be listed. Any read may have
+  // changed.
+  bool unknown = 2;
+  // Keys are the object keys that were set, deleted, renamed or revised.
+  repeated string keys = 3;
+  // Quads are the graph quads that were set or deleted.
+  repeated .quad.Quad quads = 4;
+}
+
+// WaitObjectRevRequest is the request type for WaitObjectRev.
+message WaitObjectRevRequest {
+  // Key is the object key to wait on.
+  string key = 1;
+  // Rev is the minimum object revision to wait for.
+  uint64 rev = 2;
+  // IgnoreNotFound waits for a missing object to appear instead of failing.
+  bool ignore_not_found = 3;
+}
+
+// WaitObjectRevResponse is the response type for WaitObjectRev.
+message WaitObjectRevResponse {
+  // Rev is the object revision that satisfied the wait.
+  uint64 rev = 1;
+  // ErrorCode is WORLD_ERROR_CODE_OBJECT_NOT_FOUND when the object is missing
+  // and IgnoreNotFound is unset.
+  WorldErrorCode error_code = 2;
 }
 
 // AccessWorldStateRequest is the request type for AccessWorldState.
