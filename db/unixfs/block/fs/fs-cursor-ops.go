@@ -48,6 +48,12 @@ func (f *FSCursorOps) CheckReleased() bool {
 	return f.isReleased.Load()
 }
 
+// GetNodeRef returns the block reference of the node, or nil before the node
+// is written. A directory reference covers its whole subtree.
+func (f *FSCursorOps) GetNodeRef() *block.BlockRef {
+	return f.fsTree.GetCursorRef()
+}
+
 // GetName returns the name of the inode (if applicable).
 // i.e. directory name, filename.
 func (f *FSCursorOps) GetName() string {
@@ -321,8 +327,8 @@ func (f *FSCursorOps) ReaddirAll(ctx context.Context, skip uint64, cb func(ent u
 }
 
 // Mknod creates child entries in a directory.
-// inode must be a directory.
-// if checkExist, checks if name exists, returns ErrExist if so
+// The inode must be a directory.
+// If checkExist is set and a name exists, returns ErrExist.
 func (f *FSCursorOps) Mknod(
 	ctx context.Context,
 	checkExist bool,

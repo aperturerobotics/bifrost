@@ -462,6 +462,19 @@ func TestFSHandleResourceWatchReaddirSeesSiblingRename(t *testing.T) {
 	if len(updated.GetEntries()) != 0 {
 		t.Fatalf("expected src watch to become empty after sibling rename, got %v", extractEntryNames(updated.GetEntries()))
 	}
+
+	// Require a write through another World cursor to reach the watch.
+	bfs := unixfs_billy.NewBillyFS(ctx, rootResource.handle, "", time.Now())
+	if err := billy_util.WriteFile(bfs, "src/new.txt", []byte("hi"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	updated, err = srcWatch.Recv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(extractEntryNames(updated.GetEntries()), []string{"new.txt"}) {
+		t.Fatalf("unexpected entries after external write: %v", extractEntryNames(updated.GetEntries()))
+	}
 }
 
 func recvWatchReaddir(
