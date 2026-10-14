@@ -153,3 +153,44 @@ func TestAttachEnvelope(t *testing.T) {
 		t.Fatalf("redacted attachment: %v", got)
 	}
 }
+
+// TestDetachedEnvelope checks that a detached envelope is stored without content,
+// even in an encrypted channel, and that one carrying content is refused.
+func TestDetachedEnvelope(t *testing.T) {
+	// Start a World testbed.
+	ctx := t.Context()
+	tb, err := db_world_testbed.Default(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(tb.Release)
+
+	// Create an encrypted channel and its writer.
+	ws := world.NewEngineWorldState(tb.Engine, true)
+	const channelKey = "chat/channel/detached"
+	if _, _, err := ws.ApplyWorldOp(ctx, &CreateChatChannelOp{ObjectKey: channelKey, Name: "Detached", Timestamp: timestamppb.Now(), EncryptionAlgorithm: "m.megolm.v1.aes-sha2"}, tb.Volume.GetPeerID()); err != nil {
+		t.Fatal(err)
+	}
+	alice := newChatResourceForPerson(t, ws, tb.Engine, channelKey, "alice-device", "alice")
+	t.Cleanup(alice.Close)
+
+	// A detached envelope with content is refused.
+	envelope := &ChatEnvelope{Id: "$auth", Data: []byte(`{"type":"m.room.power_levels"}`), Detached: true}
+	text := &ChatMessageContent{Content: &ChatMessageContent_Text{Text: "hi"}}
+	if _, err := alice.SendMessage(ctx, &chat_rpc.SendMessageRequest{Content: text, Envelope: envelope}); err == nil {
+		t.Fatal("detached envelope with content accepted")
+	}
+
+	// One without content is stored without content.
+	sent, err := alice.SendMessage(ctx, &chat_rpc.SendMessageRequest{Envelope: envelope})
+	if err != nil {
+		t.Fatal(err)
+	}
+	read, err := alice.GetMessage(ctx, &chat_rpc.GetMessageRequest{MessageKey: sent.GetMessageKey()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if read.GetMessage().GetContent() != nil || !read.GetMessage().GetEnvelope().EqualVT(envelope) {
+		t.Fatalf("detached message read back as %v", read.GetMessage())
+	}
+}

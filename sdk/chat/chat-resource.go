@@ -624,7 +624,7 @@ func (r *ChatResource) appendMessage(ctx context.Context, wtx world.WorldState, 
 	}
 
 	// New bodies follow current encryption policy; accepted retries retain their original result.
-	if algorithm := channel.GetEncryptionAlgorithm(); algorithm != "" && content.GetAnnotation() == nil && content.GetStateChange() == nil && content.GetRedaction() == nil && content.GetCiphertext().GetAlgorithm() != algorithm {
+	if algorithm := channel.GetEncryptionAlgorithm(); algorithm != "" && content != nil && content.GetAnnotation() == nil && content.GetStateChange() == nil && content.GetRedaction() == nil && content.GetCiphertext().GetAlgorithm() != algorithm {
 		return nil, errors.New("chat message ciphertext algorithm does not match channel")
 	}
 
@@ -734,7 +734,11 @@ func (r *ChatResource) appendMessage(ctx context.Context, wtx world.WorldState, 
 
 // redactChatMessageContent keeps only the variant, event type, and relation routing of a body.
 // Thread and annotation indexes built from the routing stay valid after redaction.
+// A message without content, such as a detached one, keeps none.
 func redactChatMessageContent(content *ChatMessageContent) *ChatMessageContent {
+	if content == nil {
+		return nil
+	}
 	switch value := content.GetContent().(type) {
 	case *ChatMessageContent_Ciphertext:
 		return &ChatMessageContent{Content: &ChatMessageContent_Ciphertext{Ciphertext: &ChatCiphertext{
@@ -1218,9 +1222,18 @@ func (r *ChatResource) readMessage(ctx context.Context, key string) (*spacewave_
 }
 
 // normalizeSendMessageContent validates one shared content value without decrypting it.
+// A detached message has none and returns nil.
 func normalizeSendMessageContent(req *spacewave_chat_rpc.SendMessageRequest) (*ChatMessageContent, error) {
-	// Keep the existing text request wire shape while accepting typed content.
+	// A detached message carries no content.
 	content := req.GetContent()
+	if req.GetEnvelope().GetDetached() {
+		if content != nil || req.GetText() != "" || req.GetReplyToKey() != "" {
+			return nil, errors.New("detached chat message carries no content")
+		}
+		return nil, nil
+	}
+
+	// Keep the existing text request wire shape while accepting typed content.
 	if content == nil {
 		return &ChatMessageContent{Content: &ChatMessageContent_Text{Text: req.GetText()}}, nil
 	}

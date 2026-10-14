@@ -180,6 +180,15 @@ type ChatEnvelope struct {
 	// one, such as the sender's admission to the conversation. Each carries only
 	// its ID and data, and redaction leaves them unchanged.
 	Prelude []*ChatEnvelope `protobuf:"bytes,4,rep,name=prelude,proto3" json:"prelude,omitempty"`
+	// Detached marks a message the protocol holds for reference outside the
+	// conversation, such as an event that only authorizes others. A detached
+	// message carries no content and no prelude.
+	Detached bool `protobuf:"varint,5,opt,name=detached,proto3" json:"detached,omitempty"`
+	// StateIds lists, by ID, the earlier messages whose events form the
+	// protocol's state before this one, for a message whose predecessors the
+	// channel lacks, such as the first one after a gap in its history. Empty when
+	// its predecessors determine the state. At most 16384 IDs.
+	StateIds []string `protobuf:"bytes,6,rep,name=state_ids,json=stateIds,proto3" json:"stateIds,omitempty"`
 }
 
 func (x *ChatEnvelope) Reset() {
@@ -212,6 +221,20 @@ func (x *ChatEnvelope) GetRedactedData() []byte {
 func (x *ChatEnvelope) GetPrelude() []*ChatEnvelope {
 	if x != nil {
 		return x.Prelude
+	}
+	return nil
+}
+
+func (x *ChatEnvelope) GetDetached() bool {
+	if x != nil {
+		return x.Detached
+	}
+	return false
+}
+
+func (x *ChatEnvelope) GetStateIds() []string {
+	if x != nil {
+		return x.StateIds
 	}
 	return nil
 }
@@ -502,9 +525,11 @@ func (m *ChatEnvelope) CloneVT() *ChatEnvelope {
 	}
 	r := new(ChatEnvelope)
 	r.Id = m.Id
+	r.Detached = m.Detached
 	r.Data = protobuf_go_lite.CloneBytes(m.Data)
 	r.RedactedData = protobuf_go_lite.CloneBytes(m.RedactedData)
 	r.Prelude = protobuf_go_lite.CloneVTSlice(m.Prelude)
+	r.StateIds = protobuf_go_lite.CloneSlice(m.StateIds)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -772,6 +797,12 @@ func (this *ChatEnvelope) EqualVT(that *ChatEnvelope) bool {
 		return false
 	}
 	if !protobuf_go_lite.EqualVTSliceImplicit(this.Prelude, that.Prelude, func() *ChatEnvelope { return &ChatEnvelope{} }) {
+		return false
+	}
+	if this.Detached != that.Detached {
+		return false
+	}
+	if !protobuf_go_lite.EqualSlice(this.StateIds, that.StateIds) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -1235,6 +1266,16 @@ func (x *ChatEnvelope) MarshalProtoJSON(s *json.MarshalState) {
 		}
 		s.WriteArrayEnd()
 	}
+	if x.Detached || s.HasField("detached") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("detached")
+		s.WriteBool(x.Detached)
+	}
+	if len(x.StateIds) > 0 || s.HasField("stateIds") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("stateIds")
+		s.WriteStringArray(x.StateIds)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -1279,6 +1320,16 @@ func (x *ChatEnvelope) UnmarshalProtoJSON(s *json.UnmarshalState) {
 				}
 				x.Prelude = append(x.Prelude, v)
 			})
+		case "detached":
+			s.AddField("detached")
+			x.Detached = s.ReadBool()
+		case "state_ids", "stateIds":
+			s.AddField("state_ids")
+			if s.ReadNil() {
+				x.StateIds = nil
+				return
+			}
+			x.StateIds = s.ReadStringArray()
 		}
 	})
 }
@@ -1765,6 +1816,18 @@ func (m *ChatEnvelope) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if len(m.StateIds) > 0 {
+		for iNdEx := len(m.StateIds) - 1; iNdEx >= 0; iNdEx-- {
+			i = protobuf_go_lite.EncodeString(dAtA, i, m.StateIds[iNdEx])
+			i--
+			dAtA[i] = 0x32
+		}
+	}
+	if m.Detached {
+		i = protobuf_go_lite.EncodeBool(dAtA, i, m.Detached)
+		i--
+		dAtA[i] = 0x28
+	}
 	if len(m.Prelude) > 0 {
 		for iNdEx := len(m.Prelude) - 1; iNdEx >= 0; iNdEx-- {
 			size, err := m.Prelude[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
@@ -2169,6 +2232,8 @@ func (m *ChatEnvelope) SizeVT() (n int) {
 		l = e.SizeVT()
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
+	n += protobuf_go_lite.SizeBoolNonZero(1, m.Detached)
+	n += protobuf_go_lite.SizeStringSlice(1, m.StateIds)
 	n += len(m.unknownFields)
 	return n
 }
@@ -2418,6 +2483,18 @@ func (x *ChatEnvelope) MarshalProtoText() string {
 			} else {
 				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
 			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	if x.Detached != false {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "detached")
+		protobuf_go_lite.TextWriteBool(&sb, x.Detached)
+	}
+	if len(x.StateIds) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "state_ids")
+		for i, v := range x.StateIds {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			protobuf_go_lite.TextWriteString(&sb, v)
 		}
 		protobuf_go_lite.TextWriteListEnd(&sb)
 	}
@@ -2863,6 +2940,26 @@ func (m *ChatEnvelope) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Detached", wireType)
+			}
+			var v bool
+			v, iNdEx, err = protobuf_go_lite.DecodeVarintBool(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Detached = bool(v)
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StateIds", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.StateIds = append(m.StateIds, v)
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

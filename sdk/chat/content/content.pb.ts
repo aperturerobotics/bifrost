@@ -179,6 +179,23 @@ export interface ChatEnvelope {
    * @generated from field: repeated spacewave.chat.ChatEnvelope prelude = 4;
    */
   prelude?: ChatEnvelope[]
+  /**
+   * Detached marks a message the protocol holds for reference outside the
+   * conversation, such as an event that only authorizes others. A detached
+   * message carries no content and no prelude.
+   *
+   * @generated from field: bool detached = 5;
+   */
+  detached?: boolean
+  /**
+   * StateIds lists, by ID, the earlier messages whose events form the
+   * protocol's state before this one, for a message whose predecessors the
+   * channel lacks, such as the first one after a gap in its history. Empty when
+   * its predecessors determine the state. At most 16384 IDs.
+   *
+   * @generated from field: repeated string state_ids = 6;
+   */
+  stateIds?: string[]
 }
 
 export const ChatEnvelope: MessageType<ChatEnvelope> =
@@ -193,6 +210,14 @@ export const ChatEnvelope: MessageType<ChatEnvelope> =
         name: 'prelude',
         kind: 'message',
         T: () => ChatEnvelope,
+        repeated: true,
+      },
+      { no: 5, name: 'detached', kind: 'scalar', T: ScalarType.BOOL },
+      {
+        no: 6,
+        name: 'state_ids',
+        kind: 'scalar',
+        T: ScalarType.STRING,
         repeated: true,
       },
     ] satisfies readonly PartialFieldInfo[],

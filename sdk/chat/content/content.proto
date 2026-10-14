@@ -57,6 +57,15 @@ message ChatEnvelope {
   // one, such as the sender's admission to the conversation. Each carries only
   // its ID and data, and redaction leaves them unchanged.
   repeated ChatEnvelope prelude = 4;
+  // Detached marks a message the protocol holds for reference outside the
+  // conversation, such as an event that only authorizes others. A detached
+  // message carries no content and no prelude.
+  bool detached = 5;
+  // StateIds lists, by ID, the earlier messages whose events form the
+  // protocol's state before this one, for a message whose predecessors the
+  // channel lacks, such as the first one after a gap in its history. Empty when
+  // its predecessors determine the state. At most 16384 IDs.
+  repeated string state_ids = 6;
 }
 
 // ChatRedaction removes the body of an earlier message by the same person.
