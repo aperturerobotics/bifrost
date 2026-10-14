@@ -343,7 +343,10 @@ func Main(
 	}
 	cli.HandleExitCoder(err)
 	if err != nil {
-		os.Stderr.WriteString(err.Error() + "\n")
+		// The log line above already reported the error when a logger exists.
+		if le == nil {
+			os.Stderr.WriteString(err.Error() + "\n")
+		}
 		os.Exit(1)
 	}
 }
