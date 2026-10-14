@@ -230,34 +230,45 @@ func setupWorldSeededBench(ctx context.Context, tb testing.TB) (*world_block.Eng
 	// first caller.
 	tb.Helper()
 	worldSeed.once.Do(func() {
-		worldSeed.testbed, worldSeed.rootRef, worldSeed.err = seedWorld(context.WithoutCancel(ctx))
+		worldSeed.testbed, worldSeed.rootRef, worldSeed.err = seedWorld(context.WithoutCancel(ctx), worldSeedObjects)
 	})
 	if worldSeed.err != nil {
 		tb.Fatal(worldSeed.err.Error())
 	}
+	return openSeededEngine(ctx, tb, worldSeed.testbed, worldSeed.rootRef)
+}
 
-	// Open the Engine on a cursor at the seeded root.
-	le := logrus.NewEntry(logrus.New())
-	ocs, err := worldSeed.testbed.BuildEmptyCursor(ctx)
+// openSeededEngine opens a World Engine on a seeded root of tbed.
+func openSeededEngine(
+	ctx context.Context,
+	tb testing.TB,
+	tbed *testbed.Testbed,
+	rootRef *bucket.ObjectRef,
+) (*world_block.Engine, func()) {
+	// Build a cursor at the seeded root.
+	tb.Helper()
+	ocs, err := tbed.BuildEmptyCursor(ctx)
 	if err != nil {
 		tb.Fatal(err.Error())
 	}
-	ocs.SetRootRef(worldSeed.rootRef.GetRootRef())
+	ocs.SetRootRef(rootRef.GetRootRef())
+
+	// Open the Engine on the cursor.
+	le := logrus.NewEntry(logrus.New())
 	eng, err := world_block.NewEngine(ctx, le, ocs, world_mock.LookupMockOp, nil, false)
 	if err != nil {
 		ocs.Release()
 		tb.Fatal(err.Error())
 	}
-	cleanup := func() {
+	return eng, func() {
 		eng.Close()
 		ocs.Release()
 	}
-	return eng, cleanup
 }
 
-// seedWorld builds a testbed World of worldSeedObjects objects in batches of
+// seedWorld builds a testbed World of objects objects in batches of
 // worldSeedObjectsPerTx and returns the testbed and the World root.
-func seedWorld(ctx context.Context) (*testbed.Testbed, *bucket.ObjectRef, error) {
+func seedWorld(ctx context.Context, objects int) (*testbed.Testbed, *bucket.ObjectRef, error) {
 	// Start a testbed with an empty cursor.
 	le := logrus.NewEntry(logrus.New())
 	tbed, err := testbed.NewTestbed(ctx, le)
@@ -293,9 +304,9 @@ func seedWorld(ctx context.Context) (*testbed.Testbed, *bucket.ObjectRef, error)
 		tbed.Release()
 		return nil, nil, err
 	}
-	for start := 0; start < worldSeedObjects; start += worldSeedObjectsPerTx {
+	for start := 0; start < objects; start += worldSeedObjectsPerTx {
 		if err := seedWorldTx(ctx, eng, func(ws world.WorldState) error {
-			return seedWorldObjects(ctx, ws, start, min(start+worldSeedObjectsPerTx, worldSeedObjects))
+			return seedWorldObjects(ctx, ws, start, min(start+worldSeedObjectsPerTx, objects))
 		}); err != nil {
 			tbed.Release()
 			return nil, nil, err

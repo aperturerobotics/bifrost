@@ -354,3 +354,55 @@ func TestBoundedWatchOverRPCMapsLimitError(t *testing.T) {
 		t.Fatalf("unbounded RPC path broken: found=%v err=%v", found, err)
 	}
 }
+
+// TestWatchPrefixSkipsChangesOutsidePrefix checks that commits outside the
+// watched prefix deliver no snapshot, and that a later change under the prefix
+// still does.
+func TestWatchPrefixSkipsChangesOutsidePrefix(t *testing.T) {
+	// Start a testbed with a bounded context.
+	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
+	defer cancel()
+	tb, err := testbed.Default(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tb.Release()
+
+	// Create the store object and its watched record.
+	objectKey := "kv/prefix-skip-store"
+	createKvStoreObject(t, ctx, tb.WorldState, objectKey, true)
+	store, cleanup := openBoundedWorldBackedStore(t, ctx, tb.WorldState, objectKey)
+	defer cleanup()
+	commitKvSet(t, ctx, store, "watched/a", "one")
+
+	// Watch the prefix and forward each snapshot.
+	snapshots := make(chan []kvtx.WatchEntry, 8)
+	watchErr := make(chan error, 1)
+	go func() {
+		watchErr <- store.WatchPrefix(ctx, []byte("watched/"), func(entries []kvtx.WatchEntry) error {
+			snapshots <- entries
+			return nil
+		})
+	}()
+	next := func() []kvtx.WatchEntry {
+		t.Helper()
+		select {
+		case entries := <-snapshots:
+			return entries
+		case err := <-watchErr:
+			t.Fatalf("watch ended: %v", err)
+		case <-ctx.Done():
+			t.Fatal(ctx.Err())
+		}
+		return nil
+	}
+	expectWatchEntries(t, next(), []kvtx.WatchEntry{{Key: []byte("watched/a"), Value: []byte("one")}})
+
+	// Commit outside the prefix, then change the watched record.
+	commitKvSet(t, ctx, store, "other/x", "1")
+	commitKvSet(t, ctx, store, "other/y", "2")
+	commitKvSet(t, ctx, store, "watched/a", "two")
+
+	// Expect the next snapshot to be the watched change.
+	expectWatchEntries(t, next(), []kvtx.WatchEntry{{Key: []byte("watched/a"), Value: []byte("two")}})
+}

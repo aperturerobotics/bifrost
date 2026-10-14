@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/bucket"
+	bucket_lookup "github.com/s4wave/spacewave/db/bucket/lookup"
 	"github.com/s4wave/spacewave/db/kvtx"
 	kvtx_block "github.com/s4wave/spacewave/db/kvtx/block"
 	"github.com/s4wave/spacewave/db/world"
@@ -105,9 +106,13 @@ func (s *WorldBackedStore) WatchPrefixBounded(ctx context.Context, prefix []byte
 		return nil
 	}
 
-	// Retain the World object and the last delivered snapshot for the watch.
-	var prev []kvtx.WatchEntry
-	var havePrev bool
+	// Retain the World object, the last delivered snapshot, and the root it
+	// was scanned from.
+	var (
+		prev     []kvtx.WatchEntry
+		prevRoot *bucket.ObjectRef
+		havePrev bool
+	)
 	obj, err := world.MustGetObject(ctx, s.ws, s.key)
 	defer world.ReleaseObjectState(obj)
 	if err != nil {
@@ -122,24 +127,36 @@ func (s *WorldBackedStore) WatchPrefixBounded(ctx context.Context, prefix []byte
 		}
 
 		// Read the World revision before scanning its current KV snapshot.
-		_, rev, err := obj.GetRootRef(ctx)
+		root, rev, err := obj.GetRootRef(ctx)
 		if err != nil {
 			return err
 		}
 
-		// Scan the prefix within the requested snapshot limits.
-		entries, err := s.scanWatchPrefix(ctx, prefix, limits)
-		if err != nil {
-			return err
-		}
-
-		// Deliver the prefix snapshot only when its entries have changed.
-		if !havePrev || !kvWatchEntriesEqual(prev, entries) {
-			if err := cb(entries); err != nil {
+		// Skip the scan when no key under the prefix changed since the
+		// scanned root.
+		changed := !havePrev
+		if havePrev {
+			changed, err = s.prefixChanged(ctx, prevRoot, root, prefix)
+			if err != nil {
 				return err
 			}
-			prev = entries
-			havePrev = true
+		}
+
+		// Scan the prefix within the requested snapshot limits, and deliver
+		// the snapshot only when its entries have changed.
+		if changed {
+			entries, scanned, err := s.scanWatchPrefix(ctx, prefix, limits)
+			if err != nil {
+				return err
+			}
+			if !havePrev || !kvWatchEntriesEqual(prev, entries) {
+				if err := cb(entries); err != nil {
+					return err
+				}
+				prev = entries
+				havePrev = true
+			}
+			prevRoot = scanned
 		}
 
 		// Wait for the World object to publish its next revision.
@@ -149,22 +166,60 @@ func (s *WorldBackedStore) WatchPrefixBounded(ctx context.Context, prefix []byte
 	}
 }
 
-// scanWatchPrefix scans one bounded snapshot in stable sorted key order.
-// It checks the record count before loading another value and the key and value
+// prefixChanged reports whether a key under prefix differs between two KV
+// roots, reading only the tree nodes that may hold such a key. A root whose
+// blocks are unavailable counts as changed, so the caller rescans.
+func (s *WorldBackedStore) prefixChanged(ctx context.Context, before, after *bucket.ObjectRef, prefix []byte) (bool, error) {
+	// Equal roots hold equal keys, and an empty root cannot be compared.
+	if before.EqualsRef(after) {
+		return false, nil
+	}
+	if before.GetEmpty() || after.GetEmpty() {
+		return true, nil
+	}
+
+	// Compare the two roots within the prefix.
+	var changed bool
+	ranges := []kvtx_block.KeyRange{kvtx_block.PrefixKeyRange(prefix)}
+	err := s.ws.AccessWorldState(ctx, before, func(beforeCs *bucket_lookup.Cursor) error {
+		return s.ws.AccessWorldState(ctx, after, func(afterCs *bucket_lookup.Cursor) error {
+			// List the changed keys under the prefix.
+			_, left := beforeCs.BuildTransaction(nil)
+			_, right := afterCs.BuildTransaction(nil)
+			keys, err := kvtx_block.ChangedKeysIn(ctx, left, right, ranges)
+			changed = len(keys) != 0
+			return err
+		})
+	})
+	if errors.Is(err, block.ErrNotFound) {
+		return true, nil
+	}
+	return changed, err
+}
+
+// scanWatchPrefix scans one bounded snapshot in stable sorted key order and
+// returns it with the root it was read from. It checks the record count before loading another value and the key and value
 // bytes before cloning the next entry, returning ErrWatchLimit with no partial
 // snapshot.
-func (s *WorldBackedStore) scanWatchPrefix(ctx context.Context, prefix []byte, limits kvtx.WatchLimits) ([]kvtx.WatchEntry, error) {
+func (s *WorldBackedStore) scanWatchPrefix(
+	ctx context.Context,
+	prefix []byte,
+	limits kvtx.WatchLimits,
+) ([]kvtx.WatchEntry, *bucket.ObjectRef, error) {
 	// Refresh the block root and open a read transaction between writes.
 	s.writeMtx.Lock()
-	tx, err := func() (kvtx.Tx, error) {
+	root, tx, err := func() (*bucket.ObjectRef, kvtx.Tx, error) {
+		// Hold the writers out while the root and transaction are read.
 		defer s.writeMtx.Unlock()
-		if err := s.refreshInnerRoot(ctx); err != nil {
-			return nil, err
+		root, err := s.refreshInnerRoot(ctx)
+		if err != nil {
+			return nil, nil, err
 		}
-		return s.inner.NewTransaction(ctx, false)
+		tx, err := s.inner.NewTransaction(ctx, false)
+		return root, tx, err
 	}()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer tx.Discard()
 
@@ -179,17 +234,17 @@ func (s *WorldBackedStore) scanWatchPrefix(ctx context.Context, prefix []byte, l
 	for it.Next() {
 		// Enforce the snapshot record limit before loading another value.
 		if limits.MaxRecords != 0 && numRecords >= limits.MaxRecords {
-			return nil, kvtx.ErrWatchLimit
+			return nil, nil, kvtx.ErrWatchLimit
 		}
 
 		// Load the next prefix entry and enforce the snapshot byte limit.
 		key := it.Key()
 		value, err := it.Value()
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		if limits.MaxBytes != 0 && numBytes+uint64(len(key))+uint64(len(value)) > limits.MaxBytes {
-			return nil, kvtx.ErrWatchLimit
+			return nil, nil, kvtx.ErrWatchLimit
 		}
 
 		// Retain an independent entry and account for its snapshot size.
@@ -203,11 +258,13 @@ func (s *WorldBackedStore) scanWatchPrefix(ctx context.Context, prefix []byte, l
 
 	// Report an iterator failure before returning the completed snapshot.
 	if err := it.Err(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return entries, nil
+	return entries, root, nil
 }
 
+// kvWatchEntriesEqual reports whether two snapshots hold the same entries in
+// the same order.
 func kvWatchEntriesEqual(a, b []kvtx.WatchEntry) bool {
 	if len(a) != len(b) {
 		return false
@@ -276,20 +333,20 @@ func (s *WorldBackedStore) clearActiveTx(tx *worldBackedTx) {
 	s.mtx.Unlock()
 }
 
-func (s *WorldBackedStore) refreshInnerRoot(ctx context.Context) error {
+func (s *WorldBackedStore) refreshInnerRoot(ctx context.Context) (*bucket.ObjectRef, error) {
 	// Retain the World object while reading its current root.
 	obj, err := world.MustGetObject(ctx, s.ws, s.key)
 	defer world.ReleaseObjectState(obj)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Read the World root for the inner block store.
 	root, _, err := obj.GetRootRef(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return s.inner.SetRootRef(ctx, root)
+	return root, s.inner.SetRootRef(ctx, root)
 }
 
 type worldBackedTx struct {
@@ -327,7 +384,7 @@ func (t *worldBackedTx) Commit(ctx context.Context) error {
 	}
 
 	// Refresh the block store from the root accepted by the World operation.
-	if err := t.store.refreshInnerRoot(ctx); err != nil {
+	if _, err := t.store.refreshInnerRoot(ctx); err != nil {
 		return &CommitPersistedError{Err: err}
 	}
 	return nil

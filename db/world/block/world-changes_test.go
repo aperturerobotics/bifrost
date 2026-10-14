@@ -10,7 +10,7 @@ import (
 )
 
 // TestChangedObjectKeys checks that comparing two World roots lists exactly
-// the created, changed and deleted objects.
+// the created, changed and deleted objects, in full or among chosen keys.
 func TestChangedObjectKeys(t *testing.T) {
 	// Create three objects and record the World root.
 	ctx := t.Context()
@@ -38,7 +38,7 @@ func TestChangedObjectKeys(t *testing.T) {
 		return e.AccessWorldState(ctx, after, func(afterCs *bucket_lookup.Cursor) error {
 			// List the objects that differ between the roots.
 			var err error
-			keys, _, err = e.compareChangeWatchHeads(ctx, beforeCs, afterCs, false)
+			keys, _, err = e.compareChangeWatchHeads(ctx, nil, beforeCs, afterCs, false)
 			complete = keys != nil
 			return err
 		})
@@ -54,6 +54,21 @@ func TestChangedObjectKeys(t *testing.T) {
 		t.Fatalf("ChangedObjectKeys = %q complete=%v, want %q", keys, complete, want)
 	}
 
+	// Compare only a few keys and expect the changed ones among them.
+	err = e.AccessWorldState(ctx, before, func(beforeCs *bucket_lookup.Cursor) error {
+		return e.AccessWorldState(ctx, after, func(afterCs *bucket_lookup.Cursor) error {
+			// List the changed objects among the requested keys.
+			_, beforeBcs := beforeCs.BuildTransaction(nil)
+			_, afterBcs := afterCs.BuildTransaction(nil)
+			var err error
+			keys, err = ChangedObjectKeysIn(ctx, beforeBcs, afterBcs, []string{"diff/kept", "diff/deleted", "diff/missing"})
+			return err
+		})
+	})
+	if err != nil || !slices.Equal(keys, []string{"diff/deleted"}) {
+		t.Fatalf("ChangedObjectKeysIn = %q err=%v, want [diff/deleted]", keys, err)
+	}
+
 	// Identical roots differ in no object.
 	err = e.AccessWorldState(ctx, after, func(cs *bucket_lookup.Cursor) error {
 		// Clone the root so both sides are independent cursors.
@@ -62,7 +77,7 @@ func TestChangedObjectKeys(t *testing.T) {
 
 		// Compare the root with itself.
 		var err error
-		keys, _, err = e.compareChangeWatchHeads(ctx, cs, same, false)
+		keys, _, err = e.compareChangeWatchHeads(ctx, nil, cs, same, false)
 		complete = keys != nil
 		return err
 	})

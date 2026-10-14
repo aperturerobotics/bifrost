@@ -2,14 +2,16 @@ package world_block
 
 import (
 	"context"
+	"maps"
 	"slices"
 
 	bucket_lookup "github.com/s4wave/spacewave/db/bucket/lookup"
 	"github.com/s4wave/spacewave/db/world"
 )
 
-// changeDiffLimit bounds the changed keys one head comparison reports. A
-// larger change wakes every watcher, and subscribers receive unknown changes.
+// changeDiffLimit bounds the changed keys one head comparison reports. For a
+// larger change, the watch compares only the keys its waiters watch, and
+// subscribers receive unknown changes.
 const changeDiffLimit = 4096
 
 // engineChangeWatch is the Engine's change producer. It compares each new head
@@ -222,7 +224,7 @@ func (e *Engine) runChangeWatch(w *engineChangeWatch) {
 		locked.Unlock()
 
 		// Compare the World trees outside the publication lock.
-		keys, changes, err := e.compareChangeWatchHeads(w.ctx, w.base, next, listChanges)
+		keys, changes, err := e.compareChangeWatchHeads(w.ctx, w, w.base, next, listChanges)
 		if err != nil && w.ctx.Err() == nil {
 			e.le.WithError(err).Warn("world change comparison failed; waking every watcher")
 		}
@@ -247,11 +249,14 @@ func (e *Engine) runChangeWatch(w *engineChangeWatch) {
 }
 
 // compareChangeWatchHeads compares two held heads. keys lists the changed
-// object records, including revisions that only follow changed quads, and is
-// nil when they could not be listed. When listChanges is set, changes is the
-// ChangeSet for subscribers; otherwise, and on failure, it is unknown.
+// object records, including revisions that only follow changed quads; for a
+// change too large to list, it lists only the changed keys w's waiters watch.
+// keys is nil when the comparison failed. When listChanges is set and the
+// change could be listed, changes is the ChangeSet for subscribers; otherwise
+// it is unknown.
 func (e *Engine) compareChangeWatchHeads(
 	ctx context.Context,
+	w *engineChangeWatch,
 	before, after *bucket_lookup.Cursor,
 	listChanges bool,
 ) (keys []string, changes *world.ChangeSet, err error) {
@@ -259,8 +264,18 @@ func (e *Engine) compareChangeWatchHeads(
 	_, beforeBcs := before.BuildTransactionWithStore(nil, e.writeBlockStore)
 	_, afterBcs := after.BuildTransactionWithStore(nil, e.writeBlockStore)
 	keys, complete, err := ChangedObjectKeys(ctx, beforeBcs, afterBcs, changeDiffLimit)
-	if err != nil || !complete {
+	if err != nil {
 		return nil, world.NewUnknownChangeSet(), err
+	}
+
+	// Compare only the watched keys of a change too large to list. A waiter
+	// registered after after was published reads a head at or past it.
+	if !complete {
+		locked := e.bcast.Lock()
+		watched := slices.Collect(maps.Keys(w.waiters))
+		locked.Unlock()
+		keys, err = ChangedObjectKeysIn(ctx, beforeBcs, afterBcs, watched)
+		return keys, world.NewUnknownChangeSet(), err
 	}
 
 	// Add the changed quads for the subscribers.
