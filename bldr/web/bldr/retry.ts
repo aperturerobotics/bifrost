@@ -10,25 +10,38 @@ export function constantBackoff(waitMs: number = 500): BackoffFn {
   }
 }
 
-// exponentialBackoff constructs a new exponential BackoffFn.
+// ExponentialBackoff is a BackoffFn whose wait doubles on each call.
+export interface ExponentialBackoff extends BackoffFn {
+  // reset returns the wait to its initial value, such as after a success.
+  reset(): void
+}
+
+// exponentialBackoff constructs a new ExponentialBackoff.
 //
-// Starts at initialMs and doubles on each call up to maxMs.
+// The wait starts at initialMs and doubles on each call up to maxMs. Each call
+// returns a random wait between half and all of it, so clients that failed
+// together do not retry together.
 export function exponentialBackoff(
   initialMs: number = 100,
   maxMs: number = 5000,
-): BackoffFn {
+): ExponentialBackoff {
   let current = initialMs
-  return () => {
+  const backoff = () => {
     const wait = current
     current = Math.min(current * 2, maxMs)
-    return wait
+    return wait / 2 + (Math.random() * wait) / 2
   }
+  return Object.assign(backoff, {
+    reset: () => {
+      current = initialMs
+    },
+  })
 }
 
 // RetryOpts are options passed to Retry.
 export interface RetryOpts {
   // backoffFn controls backoff timing.
-  // defaults to constant wait of 500ms.
+  // defaults to exponentialBackoff with its default bounds.
   backoffFn?: BackoffFn
   // errorCb is an optional callback for when the function returns an error.
   errorCb?: (err: unknown) => void
@@ -81,6 +94,7 @@ export class Retry<T = void> {
     private fn: () => Promise<T>,
     opts?: RetryOpts,
   ) {
+    // Cancel the retry when the abort signal fires.
     this._abortSignal = opts?.abortSignal
     if (this._abortSignal) {
       this._abortListener = () => this.cancel()
@@ -89,28 +103,30 @@ export class Retry<T = void> {
       })
     }
 
-    this._backoffFn = opts?.backoffFn || constantBackoff()
+    // Apply the options, warning on each failure by default.
+    this._backoffFn = opts?.backoffFn || exponentialBackoff()
     this._errorCb =
       opts?.errorCb ??
       ((err) => {
         console.warn('Retry: retrying after error', { error: err })
       })
-
     this._setTimeout = opts?.setTimeout || setTimeout.bind(globalThis)
     this._clearTimeout = opts?.clearTimeout || clearTimeout.bind(globalThis)
 
+    // Expose the result, which never reports an unhandled rejection.
     this.result = new Promise<T>((resolve, reject) => {
       this._resolve = resolve
       this._reject = reject
     })
-    // prevent unhandled rejection error in node.js
     this.result.catch(() => {})
-    // call _execute on next tick
+
+    // Start the first attempt on the next tick.
     queueMicrotask(this._execute.bind(this))
   }
 
   // cancel prevents further retrying of the function.
   public cancel() {
+    // Cancel once, stopping any pending wait and rejecting the result.
     if (this._canceled) {
       return
     }

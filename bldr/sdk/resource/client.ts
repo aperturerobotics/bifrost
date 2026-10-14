@@ -1,7 +1,7 @@
 import '../dispose-symbol.js'
 
 import { createAbortController } from '../../web/bldr/abort.js'
-import { retryWithAbort } from '../../web/bldr/retry.js'
+import { exponentialBackoff, retryWithAbort } from '../../web/bldr/retry.js'
 import type { ResourceService } from './resource_srpc.pb.js'
 import type {
   ResourceAttachRequest,
@@ -33,8 +33,10 @@ const releasedResourceClient: ReleasedResourceClient = new Proxy(
   { released: true } as ReleasedResourceClient,
   {
     get(target, prop) {
+      // Answer the released marker and serialization directly.
       if (prop === 'released') return true
       if (prop === 'toJSON') return () => ({ released: true })
+
       // Return undefined for inspection properties used by React/DevTools/vitest/pretty-format
       // This includes:
       // - Symbols (Symbol.toStringTag, Symbol.iterator, etc.)
@@ -322,8 +324,8 @@ function createResourceRef(
   onRelease: (id: number, ref: InternalResourceRef) => void,
   onServerRelease: (id: number) => void,
 ): InternalResourceRef {
+  // Release the reference once, reporting it to the client.
   let released = false
-
   const release = () => {
     if (released) return
     released = true
@@ -352,6 +354,7 @@ function createResourceRef(
     return srpcClient
   }
 
+  // Expose the reference state and its lazily created client.
   const ref: InternalResourceRef = {
     get resourceId() {
       return id
@@ -631,6 +634,7 @@ export class Client {
 
   // openAttachSession opens the ResourceAttach bidi stream.
   private async openAttachSession(): Promise<AttachSession> {
+    // Attach under the initialized client handle.
     const state = await this.ensureInitialized()
     const controller = createAbortController(this.signal)
 
@@ -682,6 +686,7 @@ export class Client {
       throw err
     }
 
+    // Track the session's attached resources and pending adds.
     const sess: AttachSession = {
       controller,
       outgoing,
@@ -699,6 +704,7 @@ export class Client {
       serviceId: string,
       methodId: string,
     ) => {
+      // Split the resource ID prefix from the service ID.
       const slashIdx = serviceId.indexOf('/')
       if (slashIdx < 0) return null
       const resourceId = parseInt(serviceId.substring(0, slashIdx), 10)
@@ -713,6 +719,7 @@ export class Client {
       yamuxParams: { enableKeepAlive: false },
     })
 
+    // Release an attached resource when the server detaches it.
     const releaseAttachedResource = (resourceId: number) =>
       this.releaseAttachedResource(sess, resourceId)
 
@@ -780,6 +787,7 @@ export class Client {
         this.clearAttachSession(sess)
       })
 
+    // Cache the session for later attaches.
     this.attachSession = sess
     return sess
   }
@@ -797,6 +805,7 @@ export class Client {
    * Dispose the client and clean up all resources.
    */
   dispose(reason: ResourceClientErrorCode = 'CLIENT_DISPOSED'): void {
+    // Dispose once and fail any pending reconnect.
     if (this.disposed) return
     this.disposed = true
     this._reconnectReject?.(
@@ -823,6 +832,7 @@ export class Client {
       this.connectionController = null
     }
 
+    // Release every reference and clear the client state.
     const releaseReason: ResourceReleaseReason = 'client-disposed'
     for (const [resourceId, refs] of this.resources.entries()) {
       refs.forEach((ref) => ref._markReleased())
@@ -839,6 +849,7 @@ export class Client {
    * Ensure the client is initialized and return the init state.
    */
   private async ensureInitialized(): Promise<ClientInitState> {
+    // Refuse a disposed client.
     this.throwIfDisposed()
 
     // Return existing state if available
@@ -866,8 +877,8 @@ export class Client {
     this.connectionController = createAbortController(this.signal)
 
     return new Promise<ClientInitState>((resolve, reject) => {
+      // Abort the connection when initialization does not complete.
       let initialized = false
-
       const cleanup = () => {
         if (!initialized) {
           this.connectionController?.abort()
@@ -889,11 +900,11 @@ export class Client {
         }
       }
 
+      // Cancel at once or when the client signal aborts.
       if (this.signal.aborted) {
         handleCancel()
         return
       }
-
       this.signal.addEventListener('abort', handleCancel, { once: true })
 
       // Start the connection with retry
@@ -924,6 +935,7 @@ export class Client {
     onInitialized: (state: ClientInitState) => void,
     markInitialized: () => void,
   ): Promise<void> {
+    // Require the controller performInitialization created.
     const controller = this.connectionController
     if (!controller) {
       throw new ResourceClientError(
@@ -933,11 +945,14 @@ export class Client {
     }
 
     // Reject the first failed stream. Once initialized, the same connection
-    // loop retains its backoff and reconnect behavior.
+    // loop retains its backoff and reconnect behavior, and each initialized
+    // stream resets the backoff so a long healthy session reconnects quickly.
     let initializedOnce = false
+    const backoffFn = exponentialBackoff()
     await retryWithAbort(
       controller.signal,
       async (signal) => {
+        // Abort the attempt when init does not arrive in time.
         const attemptController = createAbortController(signal)
         let initialized = false
         let initTimedOut = false
@@ -949,6 +964,8 @@ export class Client {
           },
           resourceClientInitTimeoutMS,
         )
+
+        // Publish the attempt's control session.
         const outgoing = pushable<ResourceClientRequest>({ objectMode: true })
         const session: ResourceClientSession = {
           controller: attemptController,
@@ -961,10 +978,15 @@ export class Client {
           controlWaiters: new Set(),
         }
         this.resourceSession = session
+
+        // Close the session and fail its control waiters.
         const retire = () => {
+          // Close the session once.
           if (session.closed) return
           session.closed = true
           outgoing.end()
+
+          // Fail the waiters and drop the published session.
           const error = new ResourceClientError(
             'ResourceClient control stream closed',
             'CONNECTION_FAILED',
@@ -975,6 +997,8 @@ export class Client {
           session.controlWaiters.clear()
           if (this.resourceSession === session) this.resourceSession = null
         }
+
+        // Report an init timeout as a connection failure.
         const throwInitTimeout = (): never => {
           throw new ResourceClientError(
             resourceClientInitTimeoutMessage,
@@ -1000,6 +1024,7 @@ export class Client {
             if (body?.case === 'init') {
               initialized = true
               session.initialized = true
+              backoffFn.reset()
               if (initTimeout) clearTimeout(initTimeout)
               initTimeout = undefined
               const state: ClientInitState = {
@@ -1055,6 +1080,7 @@ export class Client {
         }
       },
       {
+        backoffFn,
         errorCb: (error) => {
           if (!initializedOnce) {
             controller.abort()
@@ -1066,6 +1092,7 @@ export class Client {
       },
     )
   }
+
   /**
    * Throw an error if the client has been disposed.
    */
@@ -1082,6 +1109,7 @@ export class Client {
    * Creates a new reference to a resource.
    */
   private createRef(id: number): ClientResourceRef {
+    // Find or start the reference set for the resource.
     this.throwIfDisposed()
     let refs = this.resources.get(id)
     const firstRef = !refs
@@ -1089,6 +1117,8 @@ export class Client {
       refs = new Set()
       this.resources.set(id, refs)
     }
+
+    // Add the reference, adopting the resource on its first one.
     const ref = createResourceRef(
       id,
       this,
@@ -1101,16 +1131,21 @@ export class Client {
     return ref
   }
 
+  // releaseRef drops ref and releases the resource with its last reference.
   private releaseRef(id: number, ref: InternalResourceRef): void {
+    // Keep the resource while other references remain.
     const refs = this.resources.get(id)
     if (!refs) return
     refs.delete(ref)
     if (refs.size !== 0) return
+
+    // Release the resource on the server and notify listeners.
     this.resources.delete(id)
     this.queueControl({ case: 'release', value: { resourceId: id } })
     this.events.emit({ resourceId: id, reason: 'client-released' })
   }
 
+  // queueControl sends body on the initialized control session, if any.
   private queueControl(body: NonNullable<ResourceClientRequest['body']>): void {
     const session = this.resourceSession
     if (!session || session.closed || !session.initialized) return
@@ -1118,7 +1153,9 @@ export class Client {
     session.outgoing.push({ controlId, body })
   }
 
+  // waitForControls resolves once the server acknowledges every queued control.
   async waitForControls(abortSignal?: AbortSignal): Promise<void> {
+    // Require a live control session.
     if (abortSignal?.aborted) throw new Error(ERR_RPC_ABORT)
     const session = this.resourceSession
     if (!session || session.closed || !session.initialized) {
@@ -1127,10 +1164,14 @@ export class Client {
         'CONNECTION_FAILED',
       )
     }
+
+    // Return when the latest control is already acknowledged.
     const target = session.nextControlId
     if (target <= session.acknowledgedControlId) return
 
+    // Wait for the acknowledgment or an abort.
     await new Promise<void>((resolve, reject) => {
+      // Settle the waiter once, removing its abort listeners.
       const cleanup = () => {
         session.controller.signal.removeEventListener('abort', onSessionAbort)
         abortSignal?.removeEventListener('abort', onCallAbort)
@@ -1146,6 +1187,8 @@ export class Client {
           reject(error)
         },
       }
+
+      // Reject a waiter still registered when either signal aborts.
       const rejectWaiter = (error: Error) => {
         if (!session.controlWaiters.delete(waiter)) return
         waiter.reject(error)
@@ -1158,6 +1201,8 @@ export class Client {
           ),
         )
       const onCallAbort = () => rejectWaiter(new Error(ERR_RPC_ABORT))
+
+      // Register the waiter, then check signals that aborted already.
       session.controlWaiters.add(waiter)
       session.controller.signal.addEventListener('abort', onSessionAbort, {
         once: true,
@@ -1168,6 +1213,8 @@ export class Client {
     })
   }
 
+  // acknowledgeControl records the server's in-order acknowledgment of
+  // controlId and resolves the waiters it satisfies.
   private acknowledgeControl(
     session: ResourceClientSession,
     controlId: number,
@@ -1188,13 +1235,19 @@ export class Client {
       waiter.resolve()
     }
   }
+
+  // shouldRetryResourceClientStreamSilently reports whether error is an
+  // expected transport reset or init timeout that needs no warning.
   private shouldRetryResourceClientStreamSilently(error: unknown): boolean {
+    // An init timeout is expected.
     if (
       error instanceof ResourceClientError &&
       error.message === resourceClientInitTimeoutMessage
     ) {
       return true
     }
+
+    // A yamux stream reset is expected, by text or by name and message.
     const errText = String(error)
     if (errText === 'StreamResetError: stream reset') return true
     if (typeof error !== 'object' || error === null) return false
@@ -1209,6 +1262,7 @@ export class Client {
    * Called when the server notifies us that a resource was released.
    */
   private handleServerResourceRelease(resourceId: number): void {
+    // Ignore a resource with no references.
     const refs = this.resources.get(resourceId)
     if (!refs) return
 
@@ -1230,6 +1284,7 @@ export class Client {
    * Used when connection is lost and resources are no longer valid.
    */
   private releaseAllResources(reason: ResourceReleaseReason): void {
+    // Retire the generation and release every reference.
     this._connectionGeneration++
     this.clearAttachSession()
     for (const [resourceId, refs] of this.resources.entries()) {
@@ -1237,11 +1292,14 @@ export class Client {
       this.events.emit({ resourceId, reason })
     }
     this.resources.clear()
+
+    // Wait for the connection loop to initialize the next generation.
     this.initState = null
     this.initPromise = new Promise<ClientInitState>((resolve, reject) => {
       this._reconnectResolve = resolve
       this._reconnectReject = reject
     })
+
     // A generation may be retired before any caller requests its root.
     void this.initPromise.catch(() => {})
     this.connectionLostEvents.emit(undefined)
@@ -1251,6 +1309,7 @@ export class Client {
   // Transport owners call this after their underlying connection closes.
   // The next resource acquisition opens a fresh generation through the service.
   resetConnection(): void {
+    // Detach the connection and release every reference.
     if (this.disposed) return
     const controller = this.connectionController
     this.connectionController = null
@@ -1260,6 +1319,8 @@ export class Client {
       this.events.emit({ resourceId, reason: 'connection-lost' })
     }
     this.resources.clear()
+
+    // Fail a pending reconnect so the next acquisition initializes afresh.
     this.initState = null
     this.initPromise = null
     this._reconnectReject?.(
@@ -1270,13 +1331,17 @@ export class Client {
     )
     this._reconnectResolve = null
     this._reconnectReject = null
+
+    // Abort the old transport and announce the new generation.
     this.retireResourceSession()
     controller?.abort()
     this._connectionGeneration++
     this.connectionLostEvents.emit(undefined)
   }
 
+  // finishResourceSession ends the control stream after its queued controls.
   private finishResourceSession(): void {
+    // Close the session and end its request stream.
     const session = this.resourceSession
     if (!session) return
     session.closed = true
@@ -1284,7 +1349,9 @@ export class Client {
     this.resourceSession = null
   }
 
+  // retireResourceSession closes the control session and aborts its stream.
   private retireResourceSession(): void {
+    // Close the session and abort its transport.
     const session = this.resourceSession
     if (!session) return
     session.closed = true
@@ -1295,6 +1362,7 @@ export class Client {
 
   // clearAttachSession tears down any cached ResourceAttach session state.
   private clearAttachSession(sess?: AttachSession): void {
+    // Drop the cached session and close it once.
     const current = sess ?? this.attachSession
     if (!current) {
       return
@@ -1305,6 +1373,8 @@ export class Client {
     if (current.closed) {
       return
     }
+
+    // Abort the stream and reject the pending attaches.
     current.closed = true
     current.controller.abort()
     current.outgoing.end()

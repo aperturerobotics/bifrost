@@ -1,4 +1,4 @@
-import type { DragEvent, ReactNode } from 'react'
+import type { ComponentProps, DragEvent, ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   act,
@@ -161,7 +161,6 @@ function buildDisposableHandle<T extends object>(
 }
 
 vi.mock('@s4wave/web/hooks/useUnixFSHandle.js', () => ({
-  convertDirEntriesToFileEntries: (entries: MockDirEntry[]) => entries,
   useUnixFSRootHandle: () =>
     h.mockRootHandleResource ??
     buildResource({
@@ -176,8 +175,9 @@ vi.mock('@s4wave/web/hooks/useUnixFSHandle.js', () => ({
       mknod: h.mockMknod,
       rename: h.mockRename,
     }),
-  useUnixFSHandleReaddir: () =>
-    h.mockEntriesResource ?? buildResource(h.mockFileEntries),
+  useUnixFSHandleListing: () =>
+    h.mockEntriesResource ??
+    buildResource({ entries: h.mockFileEntries, rows: h.mockFileEntries }),
   useUnixFSHandleStat: () => h.mockStatResource ?? buildResource(h.mockStat),
 }))
 
@@ -564,41 +564,96 @@ const unixFSLoadingStageCases: Array<[string, () => void, string]> = [
   ],
 ]
 
+// renderBrowser renders the browser at the root of the files UnixFS, with
+// props overriding those defaults.
+function renderBrowser(
+  props: Partial<ComponentProps<typeof UnixFSBrowser>> = {},
+) {
+  return render(
+    <UnixFSBrowser
+      unixfsId="files"
+      basePath="/"
+      currentPath="/"
+      worldState={buildResource({} as IWorldState)}
+      {...props}
+    />,
+  )
+}
+
+// getDragSurface returns the browser's upload drop surface.
+function getDragSurface(container: HTMLElement): Element {
+  const surface = container.querySelector('.bg-file-back')
+  if (!surface) {
+    throw new Error('drag surface not found')
+  }
+  return surface
+}
+
+// select sets the file list selection.
+function select(selectedIds: string[]) {
+  act(() => {
+    setSelection(selectedIds)
+  })
+}
+
+// openContextMenuMove opens the move dialog from the context menu of the
+// first row while docs and file are selected.
+function openContextMenuMove() {
+  select(['docs', 'file'])
+  act(() => {
+    triggerRowContextMenu(h.mockFileEntries[0], 5, 7)
+  })
+  act(() => {
+    triggerContextMenuMove()
+  })
+}
+
 describe('UnixFSBrowser drag gating', () => {
   afterEach(() => {
     cleanup()
   })
 
   beforeEach(() => {
+    // Browse as Chrome with every mock reset.
     setUserAgent(
       'Mozilla/5.0 AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36',
     )
-    h.mockAddFiles.mockReset()
-    h.mockExtractNativeUploadSelection.mockReset()
-    h.mockDownloadUnixFSSelection.mockReset()
-    h.mockAppStartupBoundary.mockReset()
-    h.mockLookup.mockReset()
-    h.mockMkdirAll.mockReset()
-    h.mockMknod.mockReset()
-    h.mockNavigate.mockReset()
+    for (const mock of [
+      h.mockAddFiles,
+      h.mockExtractNativeUploadSelection,
+      h.mockDownloadUnixFSSelection,
+      h.mockAppStartupBoundary,
+      h.mockLookup,
+      h.mockMkdirAll,
+      h.mockMknod,
+      h.mockNavigate,
+      h.mockRename,
+      h.mockRootClone,
+      h.mockRootLookupPath,
+    ]) {
+      mock.mockReset()
+    }
+
+    // Clear the resource overrides.
     h.mockRootHandleResource = null
     h.mockPathHandleResource = null
     h.mockEntriesResource = null
     h.mockStatResource = null
-    h.mockRename.mockReset()
-    h.mockRootClone.mockReset()
-    h.mockRootLookupPath.mockReset()
+
+    // Clear the registered commands and the captured props.
+    h.registeredCommands.clear()
+    h.latestFileListProps = null
+    h.latestContextMenuProps = null
+    h.latestMoveDialogProps = null
+    h.latestFileViewerProps = null
+
+    // Show a root directory with a folder, a text file and an image.
     h.mockSyncStatus = {
       packRangeLabel: '2 / 128 KiB',
       packIndexTailLabel: '1 / 4 KiB',
       packLookupLabel: '1 opened / 2 candidates',
       packIndexCacheLabel: '0 hits / 1 misses',
     }
-    h.registeredCommands.clear()
-    h.latestFileListProps = null
-    h.latestContextMenuProps = null
-    h.latestMoveDialogProps = null
-    h.latestFileViewerProps = null
     h.mockStat = {
       info: { isDir: true },
       mimeType: 'inode/directory',
@@ -610,6 +665,7 @@ describe('UnixFSBrowser drag gating', () => {
     ]
     h.mockSpaceSharingState = { canManage: true }
 
+    // Resolve lookups to handle 77 and every write successfully.
     h.mockLookup.mockResolvedValue(buildDisposableHandle({ id: 77 }))
     h.mockRootClone.mockResolvedValue(
       buildDisposableHandle({
@@ -632,6 +688,7 @@ describe('UnixFSBrowser drag gating', () => {
   })
 
   it('exposes matching readdir metadata through file list entry details', async () => {
+    // List entries with and without modification times.
     h.mockFileEntries = [
       {
         id: 'other.txt',
@@ -661,21 +718,14 @@ describe('UnixFSBrowser drag gating', () => {
         modTime: 0n,
       },
     ]
-    render(
-      <UnixFSBrowser
-        unixfsId="files"
-        basePath="/"
-        currentPath="/"
-        worldState={buildResource({} as IWorldState)}
-      />,
-    )
-
+    renderBrowser()
     const getEntryDetails = h.latestFileListProps?.getEntryDetails
     if (!getEntryDetails) {
       throw new Error('file list did not provide getEntryDetails')
     }
     const signal = new AbortController().signal
 
+    // Each entry's details come from its own listing metadata.
     await expect(
       getEntryDetails(0, h.mockFileEntries[1], signal),
     ).resolves.toEqual({
@@ -697,38 +747,28 @@ describe('UnixFSBrowser drag gating', () => {
   })
 
   it('confirms the top-bar new folder input on Return', async () => {
+    // Name a new folder from the toolbar.
     const user = userEvent.setup()
-    render(
-      <UnixFSBrowser
-        unixfsId="files"
-        basePath="/"
-        currentPath="/"
-        worldState={buildResource({} as IWorldState)}
-      />,
+    renderBrowser()
+    await user.click(screen.getByTitle('New folder'))
+    await user.type(
+      screen.getByPlaceholderText('Folder name'),
+      'Projects{Enter}',
     )
 
-    await user.click(screen.getByTitle('New folder'))
-    const input = screen.getByPlaceholderText('Folder name')
-
-    await user.type(input, 'Projects{Enter}')
-
+    // Return creates it.
     await waitFor(() => {
       expect(h.mockMkdirAll).toHaveBeenCalledWith(['Projects'])
     })
   })
-  it('marks breadcrumb root navigation as object-local', async () => {
-    const user = userEvent.setup()
-    render(
-      <UnixFSBrowser
-        unixfsId="files"
-        basePath="/"
-        currentPath="/docs/images"
-        worldState={buildResource({} as IWorldState)}
-      />,
-    )
 
+  it('marks breadcrumb root navigation as object-local', async () => {
+    // Navigate to the root from a subdirectory.
+    const user = userEvent.setup()
+    renderBrowser({ currentPath: '/docs/images' })
     await user.click(screen.getByLabelText('Navigate to root'))
 
+    // The navigation stays inside the object.
     expect(h.mockNavigate).toHaveBeenCalledWith({
       path: '/',
       navigation: 'local',
@@ -736,17 +776,11 @@ describe('UnixFSBrowser drag gating', () => {
   })
 
   it('disables navigate up at the UnixFS root and enables it in subdirectories', () => {
-    const view = render(
-      <UnixFSBrowser
-        unixfsId="files"
-        basePath="/"
-        currentPath="/"
-        worldState={buildResource({} as IWorldState)}
-      />,
-    )
-
+    // At the root, navigate up is disabled.
+    const view = renderBrowser()
     expect(h.registeredCommands.get('spacewave.nav.up')?.enabled).toBe(false)
 
+    // In a subdirectory, it navigates to the parent.
     view.rerender(
       <UnixFSBrowser
         unixfsId="files"
@@ -755,7 +789,6 @@ describe('UnixFSBrowser drag gating', () => {
         worldState={buildResource({} as IWorldState)}
       />,
     )
-
     const navigateUp = h.registeredCommands.get('spacewave.nav.up')
     expect(navigateUp?.enabled).toBe(true)
     if (!navigateUp?.handler) throw new Error('navigate up handler missing')
@@ -767,25 +800,21 @@ describe('UnixFSBrowser drag gating', () => {
   })
 
   it('renders owner-provided directory headers above the file list', () => {
+    // Render a directory header that lists the entry names.
     h.mockFileEntries = [
       { id: 'guide', name: 'getting-started.md', isDir: false },
       { id: 'docs', name: 'docs', isDir: true },
     ]
+    renderBrowser({
+      worldState: buildResource(null),
+      directoryHeader: ({ entries }) => (
+        <div data-testid="owner-directory-header">
+          {entries.map((entry) => entry.name).join(',')}
+        </div>
+      ),
+    })
 
-    render(
-      <UnixFSBrowser
-        unixfsId="files"
-        basePath="/"
-        currentPath="/"
-        worldState={buildResource(null)}
-        directoryHeader={({ entries }) => (
-          <div data-testid="owner-directory-header">
-            {entries.map((entry) => entry.name).join(',')}
-          </div>
-        )}
-      />,
-    )
-
+    // The header and the rows both render.
     expect(screen.getByTestId('file-entry-guide')).toBeTruthy()
     expect(screen.getByTestId('file-entry-docs')).toBeTruthy()
     expect(screen.getByTestId('owner-directory-header').textContent).toBe(
@@ -794,6 +823,7 @@ describe('UnixFSBrowser drag gating', () => {
   })
 
   it('accepts backend-cleaned directory handles for display paths with dot segments', () => {
+    // The handle reports the cleaned path of a dotted display path.
     h.mockPathHandleResource = buildResource({
       getPath: () => 'docs/images',
       lookup: h.mockLookup,
@@ -801,40 +831,32 @@ describe('UnixFSBrowser drag gating', () => {
       mknod: h.mockMknod,
       rename: h.mockRename,
     })
+    renderBrowser({
+      currentPath: '/docs/./images',
+      worldState: buildResource(null),
+    })
 
-    render(
-      <UnixFSBrowser
-        unixfsId="files"
-        basePath="/"
-        currentPath="/docs/./images"
-        worldState={buildResource(null)}
-      />,
-    )
-
+    // The listing still renders.
     expect(screen.getByTestId('file-entry-docs')).toBeTruthy()
     expect(h.latestFileListProps?.entries).toHaveLength(3)
   })
 
   it('shows empty folder actions that create or upload from the current folder', async () => {
+    // Render an empty folder.
     const user = userEvent.setup()
     h.mockFileEntries = []
-
-    render(
-      <UnixFSBrowser
-        unixfsId="files"
-        basePath="/"
-        currentPath="/"
-        worldState={buildResource(null)}
-      />,
-    )
-
+    renderBrowser({ worldState: buildResource(null) })
     expect(screen.getByText('This folder is empty')).toBeTruthy()
-    const uploadInput = screen.getByTestId('unixfs-upload-input')
-    const uploadClick = vi.spyOn(uploadInput, 'click')
 
+    // Upload files opens the file picker.
+    const uploadClick = vi.spyOn(
+      screen.getByTestId('unixfs-upload-input'),
+      'click',
+    )
     await user.click(screen.getByRole('button', { name: 'Upload files' }))
     expect(uploadClick).toHaveBeenCalledOnce()
 
+    // New folder opens the name input.
     const newFolderButtons = screen.getAllByRole('button', {
       name: 'New folder',
     })
@@ -843,20 +865,14 @@ describe('UnixFSBrowser drag gating', () => {
   })
 
   it('marks generic UnixFS browser startup boundaries without Quickstart labels', async () => {
+    // Render a listing with a seeded file.
     h.mockFileEntries = [
       { id: 'guide', name: 'getting-started.md', isDir: false },
       { id: 'docs', name: 'docs', isDir: true },
     ]
+    renderBrowser({ worldState: buildResource(null) })
 
-    render(
-      <UnixFSBrowser
-        unixfsId="files"
-        basePath="/"
-        currentPath="/"
-        worldState={buildResource(null)}
-      />,
-    )
-
+    // The browser marks its generic startup boundaries.
     await waitFor(() => {
       expect(h.mockAppStartupBoundary).toHaveBeenCalledWith(
         'unixfs.browser-mounted',
@@ -879,6 +895,7 @@ describe('UnixFSBrowser drag gating', () => {
       )
     })
 
+    // It marks no Quickstart boundary.
     const markedLabels = h.mockAppStartupBoundary.mock.calls.map((call) =>
       String(call[0]),
     )
@@ -886,16 +903,14 @@ describe('UnixFSBrowser drag gating', () => {
   })
 
   it('renders a custom browser body under the toolbar instead of the file list', () => {
-    render(
-      <UnixFSBrowser
-        unixfsId="files"
-        basePath="/"
-        currentPath="/gallery"
-        worldState={buildResource(null)}
-        browserBody={CustomBrowserBody}
-      />,
-    )
+    // Render a directory with a custom body.
+    renderBrowser({
+      currentPath: '/gallery',
+      worldState: buildResource(null),
+      browserBody: CustomBrowserBody,
+    })
 
+    // The body replaces the file list under the toolbar.
     expect(screen.getByText('Toolbar')).toBeDefined()
     expect(screen.getByTestId('custom-browser-body').textContent).toBe(
       '/gallery',
@@ -904,21 +919,18 @@ describe('UnixFSBrowser drag gating', () => {
   })
 
   it('lets a custom browser body replace the file viewer branch', () => {
+    // Render a file with a custom body.
     h.mockStat = {
       info: { isDir: false },
       mimeType: 'image/png',
     }
+    renderBrowser({
+      currentPath: '/gallery/logo.png',
+      worldState: buildResource(null),
+      browserBody: CustomBrowserBody,
+    })
 
-    render(
-      <UnixFSBrowser
-        unixfsId="files"
-        basePath="/"
-        currentPath="/gallery/logo.png"
-        worldState={buildResource(null)}
-        browserBody={CustomBrowserBody}
-      />,
-    )
-
+    // The body replaces the file viewer under the toolbar.
     expect(screen.getByText('Toolbar')).toBeDefined()
     expect(screen.getByTestId('custom-browser-body').textContent).toBe(
       '/gallery/logo.png',
@@ -927,70 +939,37 @@ describe('UnixFSBrowser drag gating', () => {
   })
 
   it('ignores internal app drags', () => {
-    const { container } = render(
-      <UnixFSBrowser
-        unixfsId="files"
-        basePath="/"
-        currentPath="/"
-        worldState={buildResource({} as IWorldState)}
-      />,
-    )
-    const dragSurface = container.querySelector('.bg-file-back')
-    if (!dragSurface) {
-      throw new Error('drag surface not found')
-    }
-
+    // Drag an internal app item over the drop surface.
+    const dragSurface = getDragSurface(renderBrowser().container)
     const dataTransfer = createInternalAppDragDataTransfer()
-
     expect(fireEvent.dragOver(dragSurface, { dataTransfer })).toBe(true)
     expect(screen.queryByText('Drop files to upload')).toBeNull()
 
+    // Dropping it uploads nothing.
     expect(fireEvent.drop(dragSurface, { dataTransfer })).toBe(true)
     expect(h.mockAddFiles).not.toHaveBeenCalled()
   })
 
   it('ignores internal tab drags', () => {
-    const { container } = render(
-      <UnixFSBrowser
-        unixfsId="files"
-        basePath="/"
-        currentPath="/"
-        worldState={buildResource({} as IWorldState)}
-      />,
-    )
-    const dragSurface = container.querySelector('.bg-file-back')
-    if (!dragSurface) {
-      throw new Error('drag surface not found')
-    }
-
+    // Drag a tab over the drop surface.
+    const dragSurface = getDragSurface(renderBrowser().container)
     const dataTransfer = createInternalTabDragDataTransfer()
-
     expect(fireEvent.dragOver(dragSurface, { dataTransfer })).toBe(true)
     expect(screen.queryByText('Drop files to upload')).toBeNull()
 
+    // Dropping it uploads nothing.
     expect(fireEvent.drop(dragSurface, { dataTransfer })).toBe(true)
     expect(h.mockAddFiles).not.toHaveBeenCalled()
   })
 
   it('accepts native file drags and uploads dropped files', async () => {
-    const { container } = render(
-      <UnixFSBrowser
-        unixfsId="files"
-        basePath="/"
-        currentPath="/"
-        worldState={buildResource({} as IWorldState)}
-      />,
-    )
-    const dragSurface = container.querySelector('.bg-file-back')
-    if (!dragSurface) {
-      throw new Error('drag surface not found')
-    }
-
+    // Drag native files over the drop surface.
+    const dragSurface = getDragSurface(renderBrowser().container)
     const dataTransfer = createNativeFileDataTransfer()
-
     expect(fireEvent.dragOver(dragSurface, { dataTransfer })).toBe(false)
     expect(screen.getByText('Drop files to upload')).toBeTruthy()
 
+    // Dropping them uploads the files.
     expect(fireEvent.drop(dragSurface, { dataTransfer })).toBe(false)
     await waitFor(() => {
       expect(h.mockExtractNativeUploadSelection).toHaveBeenCalledTimes(1)
@@ -1005,27 +984,16 @@ describe('UnixFSBrowser drag gating', () => {
   })
 
   it('forwards explicit dropped directories to the upload manager', async () => {
+    // Drop a selection with explicit directories.
     h.mockExtractNativeUploadSelection.mockResolvedValue({
       files: [new File(['hello'], 'nested/child.txt')],
       directories: ['nested', 'nested/empty'],
     })
-
-    const { container } = render(
-      <UnixFSBrowser
-        unixfsId="files"
-        basePath="/"
-        currentPath="/"
-        worldState={buildResource({} as IWorldState)}
-      />,
-    )
-    const dragSurface = container.querySelector('.bg-file-back')
-    if (!dragSurface) {
-      throw new Error('drag surface not found')
-    }
-
+    const dragSurface = getDragSurface(renderBrowser().container)
     const dataTransfer = createNativeFileDataTransfer()
     expect(fireEvent.drop(dragSurface, { dataTransfer })).toBe(false)
 
+    // The upload creates the directories.
     await waitFor(() => {
       expect(h.mockAddFiles).toHaveBeenCalledWith(
         expect.anything(),
@@ -1036,22 +1004,15 @@ describe('UnixFSBrowser drag gating', () => {
   })
 
   it('moves same-unixfs drags onto folder rows', async () => {
-    render(
-      <UnixFSBrowser
-        unixfsId="files"
-        basePath="/"
-        currentPath="/"
-        worldState={buildResource({} as IWorldState)}
-      />,
-    )
+    // Drag a file of this UnixFS over the docs row.
+    renderBrowser()
     const folderEntry = screen.getByTestId('file-entry-docs')
     const dataTransfer = createUnixFSEntryAppDragDataTransfer({})
-
     expect(fireEvent.dragOver(folderEntry, { dataTransfer })).toBe(false)
     expect(folderEntry.getAttribute('data-drop-active')).toBe('true')
 
+    // Dropping it moves the file into docs.
     expect(fireEvent.drop(folderEntry, { dataTransfer })).toBe(true)
-
     await waitFor(() => {
       expect(h.mockRootLookupPath).toHaveBeenCalledWith('docs', undefined)
       expect(h.mockRootClone).not.toHaveBeenCalled()
@@ -1065,61 +1026,44 @@ describe('UnixFSBrowser drag gating', () => {
   })
 
   it('confirms inline rename with Enter', async () => {
+    // Start renaming the selected file.
     const user = userEvent.setup()
-    render(
-      <UnixFSBrowser
-        unixfsId="files"
-        basePath="/"
-        currentPath="/"
-        worldState={buildResource({} as IWorldState)}
-      />,
-    )
-
-    act(() => {
-      setSelection(['file'])
-    })
+    renderBrowser()
+    select(['file'])
     act(() => {
       triggerRenameCommand()
     })
 
+    // Enter confirms the new name.
     const input = screen.getByDisplayValue('file.txt')
     await user.clear(input)
     await user.type(input, 'renamed.txt{Enter}')
-
     await waitFor(() => {
       expect(h.mockRename).toHaveBeenCalledWith('file.txt', 'renamed.txt')
     })
   })
 
   it('confirms inline rename with the confirm button', async () => {
+    // Start renaming the selected file.
     const user = userEvent.setup()
-    render(
-      <UnixFSBrowser
-        unixfsId="files"
-        basePath="/"
-        currentPath="/"
-        worldState={buildResource({} as IWorldState)}
-      />,
-    )
-
-    act(() => {
-      setSelection(['file'])
-    })
+    renderBrowser()
+    select(['file'])
     act(() => {
       triggerRenameCommand()
     })
 
+    // The confirm button confirms the new name.
     const input = screen.getByDisplayValue('file.txt')
     await user.clear(input)
     await user.type(input, 'confirmed.txt')
     await user.click(screen.getByRole('button', { name: 'Confirm rename' }))
-
     await waitFor(() => {
       expect(h.mockRename).toHaveBeenCalledWith('file.txt', 'confirmed.txt')
     })
   })
 
   it('keeps the toolbar visible during loading transitions without reusable entries', () => {
+    // Load the stat and the listing with nothing to reuse.
     h.mockEntriesResource = {
       value: null,
       loading: true,
@@ -1132,16 +1076,9 @@ describe('UnixFSBrowser drag gating', () => {
       error: null,
       retry: vi.fn(),
     }
+    renderBrowser({ currentPath: '/test' })
 
-    render(
-      <UnixFSBrowser
-        unixfsId="files"
-        basePath="/"
-        currentPath="/test"
-        worldState={buildResource({} as IWorldState)}
-      />,
-    )
-
+    // The toolbar stays above the loading diagnostics.
     expect(screen.getByText('Toolbar')).toBeTruthy()
     expect(screen.getByText('Loading files')).toBeTruthy()
     expect(
@@ -1161,39 +1098,27 @@ describe('UnixFSBrowser drag gating', () => {
   it.each(unixFSLoadingStageCases)(
     'renders %s loading diagnostics',
     (_, setup, expectedStage) => {
+      // Render the loading case.
       setup()
+      renderBrowser({ currentPath: '/test' })
 
-      render(
-        <UnixFSBrowser
-          unixfsId="files"
-          basePath="/"
-          currentPath="/test"
-          worldState={buildResource({} as IWorldState)}
-        />,
-      )
-
+      // The diagnostics name its stage.
       expect(screen.getByTestId('unixfs-loading-diagnostics')).toBeTruthy()
       expect(screen.getByText(expectedStage)).toBeTruthy()
     },
   )
 
   it('rejects cross-root folder drags without activating move affordances', async () => {
-    render(
-      <UnixFSBrowser
-        unixfsId="files"
-        basePath="/"
-        currentPath="/"
-        worldState={buildResource({} as IWorldState)}
-      />,
-    )
+    // Drag a file of another UnixFS over the docs row.
+    renderBrowser()
     const folderEntry = screen.getByTestId('file-entry-docs')
     const dataTransfer = createUnixFSEntryAppDragDataTransfer({
       unixfsId: 'unixfs/other',
     })
-
     expect(fireEvent.dragOver(folderEntry, { dataTransfer })).toBe(true)
     expect(folderEntry.getAttribute('data-drop-active')).toBe('false')
 
+    // Dropping it moves nothing.
     expect(fireEvent.drop(folderEntry, { dataTransfer })).toBe(true)
     await waitFor(() => {
       expect(h.mockRename).not.toHaveBeenCalled()
@@ -1201,19 +1126,11 @@ describe('UnixFSBrowser drag gating', () => {
   })
 
   it('enables download command for a single directory selection', async () => {
-    render(
-      <UnixFSBrowser
-        unixfsId="files"
-        basePath="/"
-        currentPath="/"
-        worldState={buildResource({} as IWorldState)}
-      />,
-    )
+    // Select one directory.
+    renderBrowser()
+    select(['docs'])
 
-    act(() => {
-      setSelection(['docs'])
-    })
-
+    // Download is enabled.
     await waitFor(() => {
       expect(h.registeredCommands.get('spacewave.file.download')?.enabled).toBe(
         true,
@@ -1222,23 +1139,14 @@ describe('UnixFSBrowser drag gating', () => {
   })
 
   it('downloads the whole selection when the command is triggered for multi-select', async () => {
-    render(
-      <UnixFSBrowser
-        unixfsId="files"
-        basePath="/"
-        currentPath="/nested"
-        worldState={buildResource({} as IWorldState)}
-      />,
-    )
-
-    act(() => {
-      setSelection(['docs', 'file'])
-    })
-
+    // Download a two-entry selection.
+    renderBrowser({ currentPath: '/nested' })
+    select(['docs', 'file'])
     act(() => {
       triggerDownloadCommand()
     })
 
+    // The download carries both entries under the current path.
     await waitFor(() => {
       const lastCall = h.mockDownloadUnixFSSelection.mock.calls.at(-1) as
         | [{ currentPath: string; entries: FileEntry[] }]
@@ -1252,67 +1160,41 @@ describe('UnixFSBrowser drag gating', () => {
   })
 
   it('targets the whole selection when right-clicking an already-selected row', () => {
-    render(
-      <UnixFSBrowser
-        unixfsId="files"
-        basePath="/"
-        currentPath="/"
-        worldState={buildResource({} as IWorldState)}
-      />,
-    )
-
-    act(() => {
-      setSelection(['docs', 'file'])
-    })
-
+    // Right-click a selected row.
+    renderBrowser()
+    select(['docs', 'file'])
     act(() => {
       triggerRowContextMenu(h.mockFileEntries[0], 5, 7)
     })
 
+    // The menu acts on the whole selection.
     expect(getContextMenuActionEntryIds()).toEqual(['docs', 'file'])
     expect(getContextMenuMoveItemPaths()).toEqual(['/docs', '/file.txt'])
   })
 
   it('targets only the clicked row when right-clicking an unselected row', () => {
-    render(
-      <UnixFSBrowser
-        unixfsId="files"
-        basePath="/"
-        currentPath="/"
-        worldState={buildResource({} as IWorldState)}
-      />,
-    )
-
-    act(() => {
-      setSelection(['docs', 'file'])
-    })
-
+    // Right-click an unselected row.
+    renderBrowser()
+    select(['docs', 'file'])
     act(() => {
       triggerRowContextMenu(h.mockFileEntries[2], 9, 11)
     })
 
+    // The menu acts on that row alone.
     expect(getContextMenuActionEntryIds()).toEqual(['logo'])
     expect(getContextMenuMoveItemPaths()).toEqual(['/logo.png'])
   })
 
   it('builds a multi-item drag envelope when dragging a selected row from a multi-selection', () => {
-    render(
-      <UnixFSBrowser
-        unixfsId="files"
-        basePath="/"
-        currentPath="/"
-        worldState={buildResource({} as IWorldState)}
-      />,
-    )
-
-    act(() => {
-      setSelection(['docs', 'file'])
-    })
-
+    // Drag a selected row.
+    renderBrowser()
+    select(['docs', 'file'])
     const envelope = getLatestDragEnvelope(h.mockFileEntries[1], [
       'docs',
       'file',
     ])
+
+    // The envelope carries every selected item.
     expect(envelope?.items.map((item) => item.id)).toEqual(['docs', 'file'])
     expect(
       envelope?.items.map((item) => item.capabilities.map((cap) => cap.kind)),
@@ -1323,39 +1205,22 @@ describe('UnixFSBrowser drag gating', () => {
   })
 
   it('keeps unselected row drags single-item even when other rows are selected', () => {
-    render(
-      <UnixFSBrowser
-        unixfsId="files"
-        basePath="/"
-        currentPath="/"
-        worldState={buildResource({} as IWorldState)}
-      />,
-    )
-
-    act(() => {
-      setSelection(['docs', 'file'])
-    })
-
+    // Drag an unselected row.
+    renderBrowser()
+    select(['docs', 'file'])
     const envelope = getLatestDragEnvelope(h.mockFileEntries[2], [
       'docs',
       'file',
     ])
+
+    // The envelope carries only that row.
     expect(envelope?.items.map((item) => item.id)).toEqual(['logo'])
   })
 
   it('builds a direct desktop download target for a file row', () => {
-    render(
-      <UnixFSBrowser
-        unixfsId="files"
-        basePath="/"
-        currentPath="/nested"
-        worldState={buildResource({} as IWorldState)}
-      />,
-    )
-
-    const target = getLatestDownloadDragTarget(h.mockFileEntries[1])
-
-    expect(target).toEqual({
+    // A file row downloads its raw bytes.
+    renderBrowser({ currentPath: '/nested' })
+    expect(getLatestDownloadDragTarget(h.mockFileEntries[1])).toEqual({
       mimeType: 'application/octet-stream',
       filename: 'file.txt',
       url: '/p/spacewave-core/fs/u/1/so/space-test/-/files/-/nested/file.txt',
@@ -1363,18 +1228,9 @@ describe('UnixFSBrowser drag gating', () => {
   })
 
   it('builds a zip desktop download target for a directory row', () => {
-    render(
-      <UnixFSBrowser
-        unixfsId="files"
-        basePath="/"
-        currentPath="/nested"
-        worldState={buildResource({} as IWorldState)}
-      />,
-    )
-
-    const target = getLatestDownloadDragTarget(h.mockFileEntries[0])
-
-    expect(target).toEqual({
+    // A directory row downloads a zip export.
+    renderBrowser({ currentPath: '/nested' })
+    expect(getLatestDownloadDragTarget(h.mockFileEntries[0])).toEqual({
       mimeType: 'application/zip',
       filename: 'docs.zip',
       url: '/p/spacewave-core/export/u/1/so/space-test/-/files/-/nested/docs',
@@ -1382,24 +1238,15 @@ describe('UnixFSBrowser drag gating', () => {
   })
 
   it('builds a multi-entry desktop download target when dragging a selected row', () => {
-    render(
-      <UnixFSBrowser
-        unixfsId="files"
-        basePath="/"
-        currentPath="/nested"
-        worldState={buildResource({} as IWorldState)}
-      />,
-    )
-
-    act(() => {
-      setSelection(['docs', 'file'])
-    })
-
+    // Drag a selected row to the desktop.
+    renderBrowser({ currentPath: '/nested' })
+    select(['docs', 'file'])
     const target = getLatestDownloadDragTarget(h.mockFileEntries[1], [
       'docs',
       'file',
     ])
 
+    // The selection downloads as one zip.
     expect(target?.mimeType).toBe('application/zip')
     expect(target?.filename).toBe('selection.zip')
     expect(target?.url).toMatch(
@@ -1408,24 +1255,15 @@ describe('UnixFSBrowser drag gating', () => {
   })
 
   it('keeps unselected row desktop drags single-entry when another selection exists', () => {
-    render(
-      <UnixFSBrowser
-        unixfsId="files"
-        basePath="/"
-        currentPath="/nested"
-        worldState={buildResource({} as IWorldState)}
-      />,
-    )
-
-    act(() => {
-      setSelection(['docs', 'file'])
-    })
-
+    // Drag an unselected row to the desktop.
+    renderBrowser({ currentPath: '/nested' })
+    select(['docs', 'file'])
     const target = getLatestDownloadDragTarget(h.mockFileEntries[2], [
       'docs',
       'file',
     ])
 
+    // Only that file downloads.
     expect(target).toEqual({
       mimeType: 'application/octet-stream',
       filename: 'logo.png',
@@ -1434,35 +1272,22 @@ describe('UnixFSBrowser drag gating', () => {
   })
 
   it('disables desktop download targets for Firefox while keeping app drag envelopes', () => {
+    // Firefox drags carry the app envelope but no download target.
     setUserAgent('Mozilla/5.0 Gecko/20100101 Firefox/124.0')
-    render(
-      <UnixFSBrowser
-        unixfsId="files"
-        basePath="/"
-        currentPath="/nested"
-        worldState={buildResource({} as IWorldState)}
-      />,
-    )
-
+    renderBrowser({ currentPath: '/nested' })
     expect(getLatestDownloadDragTarget(h.mockFileEntries[1])).toBeNull()
     expect(getLatestDragEnvelope(h.mockFileEntries[1])?.items).toHaveLength(1)
   })
 
   it('passes an inline raw file url to the file viewer for image files', () => {
+    // View an image file.
     h.mockStat = {
       info: { isDir: false },
       mimeType: 'image/png',
     }
+    renderBrowser({ unixfsId: 'docs/demo', currentPath: '/nested/logo.png' })
 
-    render(
-      <UnixFSBrowser
-        unixfsId="docs/demo"
-        basePath="/"
-        currentPath="/nested/logo.png"
-        worldState={buildResource({} as IWorldState)}
-      />,
-    )
-
+    // The viewer gets the stat and an inline URL.
     expect(h.latestFileViewerProps?.path).toBe('/nested/logo.png')
     expect(h.latestFileViewerProps?.stat.mimeType).toBe('image/png')
     expect(h.latestFileViewerProps?.inlineFileURL).toBe(
@@ -1471,77 +1296,41 @@ describe('UnixFSBrowser drag gating', () => {
   })
 
   it('prefers the UnixfsObjectInfo mime type override when provided', () => {
+    // View a generic file with a mime type override.
     h.mockStat = {
       info: { isDir: false },
       mimeType: 'application/octet-stream',
     }
+    renderBrowser({
+      unixfsId: 'docs/demo',
+      currentPath: '/nested/demo-video',
+      mimeTypeOverride: 'video/mp4',
+    })
 
-    render(
-      <UnixFSBrowser
-        unixfsId="docs/demo"
-        basePath="/"
-        currentPath="/nested/demo-video"
-        mimeTypeOverride="video/mp4"
-        worldState={buildResource({} as IWorldState)}
-      />,
-    )
-
+    // The viewer uses the override.
     expect(h.latestFileViewerProps?.stat.mimeType).toBe('video/mp4')
   })
 
   it('opens the move dialog from the context menu for the targeted selection', () => {
-    render(
-      <UnixFSBrowser
-        unixfsId="files"
-        basePath="/"
-        currentPath="/"
-        worldState={buildResource({} as IWorldState)}
-      />,
-    )
+    // Open the move dialog for the selection.
+    renderBrowser()
+    openContextMenuMove()
 
-    act(() => {
-      setSelection(['docs', 'file'])
-    })
-
-    act(() => {
-      triggerRowContextMenu(h.mockFileEntries[0], 5, 7)
-    })
-
-    act(() => {
-      triggerContextMenuMove()
-    })
-
+    // The dialog moves both selected items.
     expect(h.latestMoveDialogProps?.moveItems.map((item) => item.path)).toEqual(
       ['/docs', '/file.txt'],
     )
   })
 
   it('executes modal moves through the shared move executor', async () => {
-    render(
-      <UnixFSBrowser
-        unixfsId="files"
-        basePath="/"
-        currentPath="/"
-        worldState={buildResource({} as IWorldState)}
-      />,
-    )
-
-    act(() => {
-      setSelection(['docs', 'file'])
-    })
-
-    act(() => {
-      triggerRowContextMenu(h.mockFileEntries[0], 5, 7)
-    })
-
-    act(() => {
-      triggerContextMenuMove()
-    })
-
+    // Confirm a move of the selection to archive.
+    renderBrowser()
+    openContextMenuMove()
     await act(async () => {
       await h.latestMoveDialogProps?.onConfirm?.('/archive')
     })
 
+    // Both items move into the looked-up archive handle.
     expect(h.mockRootClone).not.toHaveBeenCalled()
     expect(h.mockRootLookupPath).toHaveBeenCalledWith('archive', undefined)
     expect(h.mockRename.mock.calls).toEqual([
@@ -1551,19 +1340,9 @@ describe('UnixFSBrowser drag gating', () => {
   })
 
   it('moves a multi-selection together onto a folder row', async () => {
-    render(
-      <UnixFSBrowser
-        unixfsId="files"
-        basePath="/"
-        currentPath="/"
-        worldState={buildResource({} as IWorldState)}
-      />,
-    )
-
-    act(() => {
-      setSelection(['file', 'logo'])
-    })
-
+    // Build the drag of a two-file selection.
+    renderBrowser()
+    select(['file', 'logo'])
     const envelope = getLatestDragEnvelope(h.mockFileEntries[1], [
       'file',
       'logo',
@@ -1572,14 +1351,14 @@ describe('UnixFSBrowser drag gating', () => {
       throw new Error('expected drag envelope')
     }
 
+    // The docs row accepts it.
     const folderEntry = screen.getByTestId('file-entry-docs')
     const dataTransfer = createAppDragDataTransferFromEnvelope(envelope)
-
     expect(fireEvent.dragOver(folderEntry, { dataTransfer })).toBe(false)
     expect(folderEntry.getAttribute('data-drop-active')).toBe('true')
 
+    // Dropping it moves both files.
     expect(fireEvent.drop(folderEntry, { dataTransfer })).toBe(true)
-
     await waitFor(() => {
       expect(h.mockRename.mock.calls).toEqual([
         ['file.txt', 'file.txt', 77, undefined],
@@ -1589,19 +1368,9 @@ describe('UnixFSBrowser drag gating', () => {
   })
 
   it('rejects invalid self or descendant multi-selection drops without partial moves', async () => {
-    render(
-      <UnixFSBrowser
-        unixfsId="files"
-        basePath="/"
-        currentPath="/"
-        worldState={buildResource({} as IWorldState)}
-      />,
-    )
-
-    act(() => {
-      setSelection(['docs', 'file'])
-    })
-
+    // Build the drag of a selection that includes docs.
+    renderBrowser()
+    select(['docs', 'file'])
     const envelope = getLatestDragEnvelope(h.mockFileEntries[0], [
       'docs',
       'file',
@@ -1610,12 +1379,13 @@ describe('UnixFSBrowser drag gating', () => {
       throw new Error('expected drag envelope')
     }
 
+    // The docs row refuses it.
     const folderEntry = screen.getByTestId('file-entry-docs')
     const dataTransfer = createAppDragDataTransferFromEnvelope(envelope)
-
     expect(fireEvent.dragOver(folderEntry, { dataTransfer })).toBe(true)
     expect(folderEntry.getAttribute('data-drop-active')).toBe('false')
 
+    // Dropping it moves nothing.
     expect(fireEvent.drop(folderEntry, { dataTransfer })).toBe(true)
     await waitFor(() => {
       expect(h.mockRename).not.toHaveBeenCalled()

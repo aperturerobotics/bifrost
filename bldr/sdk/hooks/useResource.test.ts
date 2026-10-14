@@ -1,9 +1,12 @@
-import React, { act } from 'react'
+import React, { act, useEffect } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 import { ResourcesProvider } from './ResourcesContext.js'
 import { useResource, type Resource } from './useResource.js'
-import { useStreamingResource } from './useStreamingResource.js'
+import {
+  useStreamingResource,
+  type UseStreamingResourceOptions,
+} from './useStreamingResource.js'
 import { useMappedResource } from './useMappedResource.js'
 import { Resource as SDKResource } from '../resource/resource.js'
 import type {
@@ -184,6 +187,40 @@ function TestMappedValue(props: {
   )
 }
 
+/** Row is a streamed value with an identity separate from its content. */
+type Row = { id: number; label: string }
+
+/** TestStreamOptions renders a stream of rows and records each distinct value. */
+function TestStreamOptions(props: {
+  streamFactory: () => AsyncIterable<Row>
+  options: UseStreamingResourceOptions<Row>
+  seen: Row[]
+}) {
+  // Stream rows from a trivial parent.
+  const parent = useResource(async () => ({}), [])
+  const resource = useStreamingResource(
+    parent,
+    () => props.streamFactory(),
+    [],
+    props.options,
+  )
+
+  // Record each value the consumer receives.
+  const { seen } = props
+  useEffect(() => {
+    if (resource.value && seen.at(-1) !== resource.value) {
+      seen.push(resource.value)
+    }
+  }, [resource.value, seen])
+
+  return React.createElement('div', {
+    'data-loading': String(resource.loading),
+    'data-value': resource.value?.label ?? '',
+    'data-error': resource.error?.message ?? '',
+  })
+}
+
+/** ManualAsyncIterableController pushes, fails or ends a manual stream. */
 type ManualAsyncIterableController<T> = {
   iterable: AsyncIterable<T>
   push(value: T): void
@@ -191,7 +228,9 @@ type ManualAsyncIterableController<T> = {
   finish(): void
 }
 
+/** createManualAsyncIterable returns a stream the test drives by hand. */
 function createManualAsyncIterable<T>(): ManualAsyncIterableController<T> {
+  // Queue pushed results until a reader waits for them.
   const queue: Array<IteratorResult<T>> = []
   const waiters: Array<{
     resolve: (value: IteratorResult<T>) => void
@@ -200,6 +239,7 @@ function createManualAsyncIterable<T>(): ManualAsyncIterableController<T> {
   let failure: unknown = null
   let done = false
 
+  // Hand each result to the oldest waiter, or queue it.
   return {
     iterable: {
       [Symbol.asyncIterator]() {
@@ -250,11 +290,13 @@ function createManualAsyncIterable<T>(): ManualAsyncIterableController<T> {
   }
 }
 
+/** Deferred is a promise the test resolves by hand. */
 type Deferred<T> = {
   promise: Promise<T>
   resolve(value: T): void
 }
 
+/** deferred returns an unresolved Deferred. */
 function deferred<T>(): Deferred<T> {
   let resolve!: (value: T) => void
   const promise = new Promise<T>((r) => {
@@ -263,14 +305,37 @@ function deferred<T>(): Deferred<T> {
   return { promise, resolve }
 }
 
+/** flush lets one round of pending promise callbacks run. */
 async function flush(): Promise<void> {
   await Promise.resolve()
 }
 
+/** deferredFactory returns a factory whose promises the test resolves by version. */
+function deferredFactory<T>() {
+  const pending = new Map<number, Deferred<T>>()
+  const factory = vi.fn((version: number) => {
+    const next = deferred<T>()
+    pending.set(version, next)
+    return next.promise
+  })
+  return { pending, factory }
+}
+
+/** manualStreams returns a stream factory that records each manual stream. */
+function manualStreams<T>() {
+  const streams: Array<ManualAsyncIterableController<T>> = []
+  const streamFactory = vi.fn((_version?: number) => {
+    const next = createManualAsyncIterable<T>()
+    streams.push(next)
+    return next.iterable
+  })
+  return { streams, streamFactory }
+}
+
 describe('useResource', () => {
+  // Each test renders into one root in a fresh container.
   let container: HTMLDivElement | null = null
   let root: Root | null = null
-
   afterEach(async () => {
     if (root) {
       await act(async () => {
@@ -283,132 +348,115 @@ describe('useResource', () => {
     container = null
   })
 
-  it('retries released SDK resources by default', async () => {
-    const client = new FakeResourceClient()
-    let nextId = 1
-    const factory = vi.fn(async () => buildHandle(nextId++))
+  // mount creates the test's container and root.
+  const mount = () => {
     container = document.createElement('div')
     document.body.appendChild(container)
     root = createRoot(container)
-    const props = {
-      client: client as never,
-      children: React.createElement(TestHandle, { factory }),
-    }
+  }
 
+  // update runs fn inside act, then lets flushes promise rounds run.
+  const update = async (fn: () => void, flushes = 1) => {
     await act(async () => {
-      root?.render(React.createElement(ResourcesProvider, props))
-      await flush()
+      fn()
+      for (let i = 0; i < flushes; i++) await flush()
     })
+  }
 
-    expect(container.firstElementChild?.getAttribute('data-handle-id')).toBe(
-      '1',
+  // render renders element into the root inside act.
+  const render = (element: React.ReactElement, flushes = 1) =>
+    update(() => root?.render(element), flushes)
+
+  // click clicks the rendered button.
+  const click = () =>
+    update(() =>
+      container
+        ?.querySelector('button')
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true })),
     )
 
-    await act(async () => {
-      client.emit({ resourceId: 1, reason: 'server-released' })
-      await flush()
-    })
+  // view reads an attribute of the rendered element.
+  const view = (name: string) =>
+    container?.firstElementChild?.getAttribute(name)
 
-    expect(container.firstElementChild?.getAttribute('data-handle-id')).toBe(
-      '2',
+  it('retries released SDK resources by default', async () => {
+    // Render a handle from a factory that counts its calls.
+    const client = new FakeResourceClient()
+    let nextId = 1
+    const factory = vi.fn(async () => buildHandle(nextId++))
+    mount()
+    await render(
+      React.createElement(
+        ResourcesProvider,
+        { client: client as never },
+        React.createElement(TestHandle, { factory }),
+      ),
     )
+    expect(view('data-handle-id')).toBe('1')
+
+    // A server release builds a new handle.
+    await update(() =>
+      client.emit({ resourceId: 1, reason: 'server-released' }),
+    )
+    expect(view('data-handle-id')).toBe('2')
     expect(factory).toHaveBeenCalledTimes(2)
   })
 
   it('allows opting out of release-triggered retries', async () => {
+    // Render a handle that does not retry on release.
     const client = new FakeResourceClient()
     let nextId = 1
     const factory = vi.fn(async () => buildHandle(nextId++))
-    container = document.createElement('div')
-    document.body.appendChild(container)
-    root = createRoot(container)
-    const props = {
-      client: client as never,
-      children: React.createElement(TestHandle, {
-        factory,
-        retryOnReleasedResource: false,
-      }),
-    }
-
-    await act(async () => {
-      root?.render(React.createElement(ResourcesProvider, props))
-      await flush()
-    })
-
-    expect(container.firstElementChild?.getAttribute('data-handle-id')).toBe(
-      '1',
+    mount()
+    await render(
+      React.createElement(
+        ResourcesProvider,
+        { client: client as never },
+        React.createElement(TestHandle, {
+          factory,
+          retryOnReleasedResource: false,
+        }),
+      ),
     )
+    expect(view('data-handle-id')).toBe('1')
 
-    await act(async () => {
-      client.emit({ resourceId: 1, reason: 'server-released' })
-      await flush()
-    })
-
-    expect(container.firstElementChild?.getAttribute('data-handle-id')).toBe(
-      '1',
+    // A server release keeps the first handle.
+    await update(() =>
+      client.emit({ resourceId: 1, reason: 'server-released' }),
     )
+    expect(view('data-handle-id')).toBe('1')
     expect(factory).toHaveBeenCalledTimes(1)
   })
 
   it('retries only failed parents', async () => {
+    // Render a child under a healthy parent.
     const parentRetry = vi.fn()
     const factory = vi.fn(async (value: string) => `child:${value}`)
-    container = document.createElement('div')
-    document.body.appendChild(container)
-    root = createRoot(container)
-    const click = async () => {
-      await act(async () => {
-        container
-          ?.querySelector('button')
-          ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-        await flush()
+    const parent = (value: string | null, error: Error | null) =>
+      React.createElement(TestRetryChild, {
+        parent: { value, loading: false, error, retry: parentRetry },
+        factory,
       })
-    }
-
-    await act(async () => {
-      root?.render(
-        React.createElement(TestRetryChild, {
-          parent: {
-            value: 'ok',
-            loading: false,
-            error: null,
-            retry: parentRetry,
-          },
-          factory,
-        }),
-      )
-      await flush()
-    })
+    mount()
+    await render(parent('ok', null))
     expect(factory).toHaveBeenCalledTimes(1)
 
+    // A retry reruns only the child.
     await click()
     expect(parentRetry).not.toHaveBeenCalled()
     expect(factory).toHaveBeenCalledTimes(2)
 
-    await act(async () => {
-      root?.render(
-        React.createElement(TestRetryChild, {
-          parent: {
-            value: null,
-            loading: false,
-            error: new Error('parent failed'),
-            retry: parentRetry,
-          },
-          factory,
-        }),
-      )
-      await flush()
-    })
-
+    // Under a failed parent, a retry reaches the parent.
+    await render(parent(null, new Error('parent failed')))
     await click()
     expect(parentRetry).toHaveBeenCalledTimes(1)
   })
 
   it('aborts child work when its SDK parent is released', async () => {
+    // Start child work that never finishes under an SDK parent.
     const client = new FakeResourceClient()
-    const parentValue = buildHandle(1)
     const parent: Resource<FakeSDKHandle> = {
-      value: parentValue,
+      value: buildHandle(1),
       loading: false,
       error: null,
       retry: vi.fn(),
@@ -421,27 +469,21 @@ describe('useResource', () => {
         return 'unreachable'
       },
     )
-    container = document.createElement('div')
-    document.body.appendChild(container)
-    root = createRoot(container)
-
-    await act(async () => {
-      root?.render(
-        React.createElement(
-          ResourcesProvider,
-          { client: client as never },
-          React.createElement(TestChildResource, {
-            parent,
-            factory: childFactory,
-          }),
-        ),
-      )
-      await flush()
-    })
-
+    mount()
+    await render(
+      React.createElement(
+        ResourcesProvider,
+        { client: client as never },
+        React.createElement(TestChildResource, {
+          parent,
+          factory: childFactory,
+        }),
+      ),
+    )
     expect(childFactory).toHaveBeenCalledOnce()
     expect(childSignal?.aborted).toBe(false)
 
+    // Releasing the parent aborts the child at once.
     await act(async () => {
       client.emit({ resourceId: 1, reason: 'client-released' })
       expect(childSignal?.aborted).toBe(true)
@@ -449,567 +491,343 @@ describe('useResource', () => {
   })
 
   it('keeps the previous resource value visible while a dependency reload is pending', async () => {
-    const pending = new Map<number, Deferred<string>>()
-    const factory = vi.fn((version: number) => {
-      const next = deferred<string>()
-      pending.set(version, next)
-      return next.promise
-    })
-    container = document.createElement('div')
-    document.body.appendChild(container)
-    root = createRoot(container)
+    // Load the first version.
+    const { pending, factory } = deferredFactory<string>()
+    mount()
+    await render(React.createElement(TestValue, { factory, version: 1 }))
+    await update(() => pending.get(1)?.resolve('value-1'))
+    expect(view('data-value')).toBe('value-1')
+    expect(view('data-loading')).toBe('false')
 
-    await act(async () => {
-      root?.render(React.createElement(TestValue, { factory, version: 1 }))
-      await flush()
-    })
+    // The pending reload keeps the first value.
+    await render(React.createElement(TestValue, { factory, version: 2 }))
+    expect(view('data-value')).toBe('value-1')
+    expect(view('data-loading')).toBe('true')
 
-    await act(async () => {
-      pending.get(1)?.resolve('value-1')
-      await flush()
-    })
-
-    expect(container.firstElementChild?.getAttribute('data-value')).toBe(
-      'value-1',
-    )
-    expect(container.firstElementChild?.getAttribute('data-loading')).toBe(
-      'false',
-    )
-
-    await act(async () => {
-      root?.render(React.createElement(TestValue, { factory, version: 2 }))
-      await flush()
-    })
-
-    expect(container.firstElementChild?.getAttribute('data-value')).toBe(
-      'value-1',
-    )
-    expect(container.firstElementChild?.getAttribute('data-loading')).toBe(
-      'true',
-    )
-
-    await act(async () => {
-      pending.get(2)?.resolve('value-2')
-      await flush()
-    })
-
-    expect(container.firstElementChild?.getAttribute('data-value')).toBe(
-      'value-2',
-    )
-    expect(container.firstElementChild?.getAttribute('data-loading')).toBe(
-      'false',
-    )
+    // The second value replaces it.
+    await update(() => pending.get(2)?.resolve('value-2'))
+    expect(view('data-value')).toBe('value-2')
+    expect(view('data-loading')).toBe('false')
   })
 
   it('suppresses stale async completions after a dependency reload', async () => {
-    const pending = new Map<number, Deferred<string>>()
-    const factory = vi.fn((version: number) => {
-      const next = deferred<string>()
-      pending.set(version, next)
-      return next.promise
-    })
-    container = document.createElement('div')
-    document.body.appendChild(container)
-    root = createRoot(container)
+    // Start the first version and replace it before it loads.
+    const { pending, factory } = deferredFactory<string>()
+    mount()
+    await render(React.createElement(TestValue, { factory, version: 1 }))
+    expect(view('data-loading')).toBe('true')
+    expect(view('data-value')).toBe('')
+    await render(React.createElement(TestValue, { factory, version: 2 }))
 
-    await act(async () => {
-      root?.render(React.createElement(TestValue, { factory, version: 1 }))
-      await flush()
-    })
+    // The second version loads.
+    await update(() => pending.get(2)?.resolve('value-2'))
+    expect(view('data-loading')).toBe('false')
+    expect(view('data-value')).toBe('value-2')
 
-    expect(container.firstElementChild?.getAttribute('data-loading')).toBe(
-      'true',
-    )
-    expect(container.firstElementChild?.getAttribute('data-value')).toBe('')
-
-    await act(async () => {
-      root?.render(React.createElement(TestValue, { factory, version: 2 }))
-      await flush()
-    })
-
-    await act(async () => {
-      pending.get(2)?.resolve('value-2')
-      await flush()
-    })
-
-    expect(container.firstElementChild?.getAttribute('data-loading')).toBe(
-      'false',
-    )
-    expect(container.firstElementChild?.getAttribute('data-value')).toBe(
-      'value-2',
-    )
-
-    await act(async () => {
-      pending.get(1)?.resolve('stale-value-1')
-      await flush()
-    })
-
-    expect(container.firstElementChild?.getAttribute('data-loading')).toBe(
-      'false',
-    )
-    expect(container.firstElementChild?.getAttribute('data-value')).toBe(
-      'value-2',
-    )
+    // The first version's late result is ignored.
+    await update(() => pending.get(1)?.resolve('stale-value-1'))
+    expect(view('data-loading')).toBe('false')
+    expect(view('data-value')).toBe('value-2')
     expect(factory).toHaveBeenCalledTimes(2)
   })
 
   it('keeps the previous streamed value visible while the parent reloads', async () => {
-    const pending = new Map<number, Deferred<{ version: number }>>()
-    const factory = vi.fn((version: number) => {
-      const next = deferred<{ version: number }>()
-      pending.set(version, next)
-      return next.promise
-    })
-    container = document.createElement('div')
-    document.body.appendChild(container)
-    root = createRoot(container)
+    // Stream from the first parent version.
+    const { pending, factory } = deferredFactory<{ version: number }>()
+    mount()
+    await render(React.createElement(TestStreamValue, { factory, version: 1 }))
+    await update(() => pending.get(1)?.resolve({ version: 1 }), 2)
+    expect(view('data-value')).toBe('stream-1')
+    expect(view('data-loading')).toBe('false')
 
-    await act(async () => {
-      root?.render(
-        React.createElement(TestStreamValue, { factory, version: 1 }),
-      )
-      await flush()
-    })
+    // The reloading parent keeps the first streamed value.
+    await render(React.createElement(TestStreamValue, { factory, version: 2 }))
+    expect(view('data-value')).toBe('stream-1')
+    expect(view('data-loading')).toBe('true')
 
-    await act(async () => {
-      pending.get(1)?.resolve({ version: 1 })
-      await flush()
-      await flush()
-    })
-
-    expect(container.firstElementChild?.getAttribute('data-value')).toBe(
-      'stream-1',
-    )
-    expect(container.firstElementChild?.getAttribute('data-loading')).toBe(
-      'false',
-    )
-
-    await act(async () => {
-      root?.render(
-        React.createElement(TestStreamValue, { factory, version: 2 }),
-      )
-      await flush()
-    })
-
-    expect(container.firstElementChild?.getAttribute('data-value')).toBe(
-      'stream-1',
-    )
-    expect(container.firstElementChild?.getAttribute('data-loading')).toBe(
-      'true',
-    )
-
-    await act(async () => {
-      pending.get(2)?.resolve({ version: 2 })
-      await flush()
-      await flush()
-    })
-
-    expect(container.firstElementChild?.getAttribute('data-value')).toBe(
-      'stream-2',
-    )
-    expect(container.firstElementChild?.getAttribute('data-loading')).toBe(
-      'false',
-    )
+    // The second parent's stream replaces it.
+    await update(() => pending.get(2)?.resolve({ version: 2 }), 2)
+    expect(view('data-value')).toBe('stream-2')
+    expect(view('data-loading')).toBe('false')
   })
 
   it('marks the stream loading while a parent replacement is still pending', async () => {
-    const streams = new Map<number, ManualAsyncIterableController<string>>()
-    const streamFactory = vi.fn((version: number) => {
-      const next = createManualAsyncIterable<string>()
-      streams.set(version, next)
-      return next.iterable
-    })
-    container = document.createElement('div')
-    document.body.appendChild(container)
-    root = createRoot(container)
-
-    const renderParent = (parent: Resource<{ version: number }>) => {
-      root?.render(
+    // Stream from the first parent version.
+    const { streams, streamFactory } = manualStreams<string>()
+    const renderParent = (version: number, loading: boolean) =>
+      render(
         React.createElement(TestStreamingFromParent, {
-          parent,
+          parent: { value: { version }, loading, error: null, retry: () => {} },
           streamFactory,
         }),
       )
-    }
+    mount()
+    await renderParent(1, false)
+    await update(() => streams[0].push('stream-1'))
+    expect(view('data-loading')).toBe('false')
+    expect(view('data-value')).toBe('stream-1')
 
-    await act(async () => {
-      renderParent({
-        value: { version: 1 },
-        loading: false,
-        error: null,
-        retry: () => {},
-      })
-      await flush()
-    })
-
-    await act(async () => {
-      streams.get(1)?.push('stream-1')
-      await flush()
-    })
-
-    expect(container.firstElementChild?.getAttribute('data-loading')).toBe(
-      'false',
-    )
-    expect(container.firstElementChild?.getAttribute('data-value')).toBe(
-      'stream-1',
-    )
-
-    await act(async () => {
-      renderParent({
-        value: { version: 2 },
-        loading: true,
-        error: null,
-        retry: () => {},
-      })
-      await flush()
-    })
-
-    expect(container.firstElementChild?.getAttribute('data-loading')).toBe(
-      'true',
-    )
-    expect(container.firstElementChild?.getAttribute('data-value')).toBe(
-      'stream-1',
-    )
+    // A loading replacement marks the stream loading without reopening it.
+    await renderParent(2, true)
+    expect(view('data-loading')).toBe('true')
+    expect(view('data-value')).toBe('stream-1')
     expect(streamFactory).toHaveBeenCalledTimes(1)
 
-    await act(async () => {
-      renderParent({
-        value: { version: 2 },
-        loading: false,
-        error: null,
-        retry: () => {},
-      })
-      await flush()
-    })
-
-    expect(container.firstElementChild?.getAttribute('data-loading')).toBe(
-      'true',
-    )
+    // The loaded replacement opens a new stream, loading until it yields.
+    await renderParent(2, false)
+    expect(view('data-loading')).toBe('true')
     expect(streamFactory).toHaveBeenCalledTimes(2)
-
-    await act(async () => {
-      streams.get(2)?.push('stream-2')
-      await flush()
-    })
-
-    expect(container.firstElementChild?.getAttribute('data-loading')).toBe(
-      'false',
-    )
-    expect(container.firstElementChild?.getAttribute('data-value')).toBe(
-      'stream-2',
-    )
+    await update(() => streams[1].push('stream-2'))
+    expect(view('data-loading')).toBe('false')
+    expect(view('data-value')).toBe('stream-2')
   })
 
   it('ignores stale stream errors while a parent replacement is in flight', async () => {
-    const pending = new Map<number, Deferred<{ version: number }>>()
-    const streams = new Map<number, ManualAsyncIterableController<string>>()
-    const factory = vi.fn((version: number) => {
-      const next = deferred<{ version: number }>()
-      pending.set(version, next)
-      return next.promise
-    })
-    const streamFactory = vi.fn((version: number) => {
-      const next = createManualAsyncIterable<string>()
-      streams.set(version, next)
-      return next.iterable
-    })
-    container = document.createElement('div')
-    document.body.appendChild(container)
-    root = createRoot(container)
-
-    await act(async () => {
-      root?.render(
+    // Render parent versions over manual streams.
+    const { pending, factory } = deferredFactory<{ version: number }>()
+    const { streams, streamFactory } = manualStreams<string>()
+    const renderVersion = (version: number) =>
+      render(
         React.createElement(TestStreamValue, {
           factory,
-          version: 1,
+          version,
           streamFactory,
         }),
       )
-      await flush()
-    })
 
-    await act(async () => {
-      pending.get(1)?.resolve({ version: 1 })
-      await flush()
-      await flush()
-    })
+    // Stream from the first parent version.
+    mount()
+    await renderVersion(1)
+    await update(() => pending.get(1)?.resolve({ version: 1 }), 2)
+    await update(() => streams[0].push('stream-1'))
+    expect(view('data-value')).toBe('stream-1')
+    expect(view('data-error')).toBe('')
 
-    await act(async () => {
-      streams.get(1)?.push('stream-1')
-      await flush()
-    })
-
-    expect(container.firstElementChild?.getAttribute('data-value')).toBe(
-      'stream-1',
-    )
-    expect(container.firstElementChild?.getAttribute('data-error')).toBe('')
-
-    await act(async () => {
-      root?.render(
-        React.createElement(TestStreamValue, {
-          factory,
-          version: 2,
-          streamFactory,
-        }),
-      )
-      await flush()
-    })
-
-    await act(async () => {
-      streams.get(1)?.fail(new Error('released handle'))
+    // The old stream's failure during the replacement shows no error.
+    await renderVersion(2)
+    await update(() => {
+      streams[0].fail(new Error('released handle'))
       pending.get(2)?.resolve({ version: 2 })
-      await flush()
-      await flush()
-    })
+    }, 2)
+    expect(view('data-loading')).toBe('true')
+    expect(view('data-value')).toBe('stream-1')
+    expect(view('data-error')).toBe('')
 
-    expect(container.firstElementChild?.getAttribute('data-loading')).toBe(
-      'true',
-    )
-    expect(container.firstElementChild?.getAttribute('data-value')).toBe(
-      'stream-1',
-    )
-    expect(container.firstElementChild?.getAttribute('data-error')).toBe('')
-
-    await act(async () => {
-      streams.get(2)?.push('stream-2')
-      await flush()
-    })
-
-    expect(container.firstElementChild?.getAttribute('data-loading')).toBe(
-      'false',
-    )
-    expect(container.firstElementChild?.getAttribute('data-value')).toBe(
-      'stream-2',
-    )
-    expect(container.firstElementChild?.getAttribute('data-error')).toBe('')
+    // The new stream's value replaces the old one.
+    await update(() => streams[1].push('stream-2'))
+    expect(view('data-loading')).toBe('false')
+    expect(view('data-value')).toBe('stream-2')
+    expect(view('data-error')).toBe('')
   })
 
   it('retries a current stream abort without staying loading forever', async () => {
-    const streams: Array<ManualAsyncIterableController<string>> = []
+    // Open the first stream.
     const factory = vi.fn(async (version: number) => ({ version }))
-    const streamFactory = vi.fn(() => {
-      const next = createManualAsyncIterable<string>()
-      streams.push(next)
-      return next.iterable
-    })
-    container = document.createElement('div')
-    document.body.appendChild(container)
-    root = createRoot(container)
-
-    await act(async () => {
-      root?.render(
-        React.createElement(TestStreamValue, {
-          factory,
-          version: 1,
-          streamFactory,
-        }),
-      )
-      await flush()
-      await flush()
-    })
-
+    const { streams, streamFactory } = manualStreams<string>()
+    mount()
+    await render(
+      React.createElement(TestStreamValue, {
+        factory,
+        version: 1,
+        streamFactory,
+      }),
+      2,
+    )
     expect(streamFactory).toHaveBeenCalledTimes(1)
 
-    await act(async () => {
-      streams[0].fail(new Error('ERR_RPC_ABORT'))
-      await flush()
-      await flush()
-      await flush()
-    })
-
+    // An abort reopens the stream without an error.
+    await update(() => streams[0].fail(new Error('ERR_RPC_ABORT')), 3)
     expect(streamFactory).toHaveBeenCalledTimes(2)
-    expect(container.firstElementChild?.getAttribute('data-loading')).toBe(
-      'true',
-    )
-    expect(container.firstElementChild?.getAttribute('data-error')).toBe('')
+    expect(view('data-loading')).toBe('true')
+    expect(view('data-error')).toBe('')
 
-    await act(async () => {
-      streams[1].push('stream-1-retry')
-      await flush()
-    })
-
-    expect(container.firstElementChild?.getAttribute('data-loading')).toBe(
-      'false',
-    )
-    expect(container.firstElementChild?.getAttribute('data-value')).toBe(
-      'stream-1-retry',
-    )
-    expect(container.firstElementChild?.getAttribute('data-error')).toBe('')
+    // The reopened stream's value settles the view.
+    await update(() => streams[1].push('stream-1-retry'))
+    expect(view('data-loading')).toBe('false')
+    expect(view('data-value')).toBe('stream-1-retry')
+    expect(view('data-error')).toBe('')
   })
 
   it('surfaces repeated current stream aborts instead of hanging', async () => {
-    const streams: Array<ManualAsyncIterableController<string>> = []
+    // Open the first stream and abort it once.
     const factory = vi.fn(async (version: number) => ({ version }))
-    const streamFactory = vi.fn(() => {
-      const next = createManualAsyncIterable<string>()
-      streams.push(next)
-      return next.iterable
-    })
-    container = document.createElement('div')
-    document.body.appendChild(container)
-    root = createRoot(container)
-
-    await act(async () => {
-      root?.render(
-        React.createElement(TestStreamValue, {
-          factory,
-          version: 1,
-          streamFactory,
-        }),
-      )
-      await flush()
-      await flush()
-    })
-
-    await act(async () => {
-      streams[0].fail(new Error('ERR_RPC_ABORT'))
-      await flush()
-      await flush()
-      await flush()
-    })
-
+    const { streams, streamFactory } = manualStreams<string>()
+    mount()
+    await render(
+      React.createElement(TestStreamValue, {
+        factory,
+        version: 1,
+        streamFactory,
+      }),
+      2,
+    )
+    await update(() => streams[0].fail(new Error('ERR_RPC_ABORT')), 3)
     expect(streamFactory).toHaveBeenCalledTimes(2)
 
-    await act(async () => {
-      streams[1].fail(new Error('ERR_RPC_ABORT'))
-      await flush()
-      await flush()
-    })
-
-    expect(container.firstElementChild?.getAttribute('data-loading')).toBe(
-      'false',
-    )
-    expect(container.firstElementChild?.getAttribute('data-value')).toBe('')
-    expect(container.firstElementChild?.getAttribute('data-error')).toBe(
-      'ERR_RPC_ABORT',
-    )
+    // A second abort reports the error.
+    await update(() => streams[1].fail(new Error('ERR_RPC_ABORT')), 2)
+    expect(view('data-loading')).toBe('false')
+    expect(view('data-value')).toBe('')
+    expect(view('data-error')).toBe('ERR_RPC_ABORT')
   })
 
   it('settles as not loading when the parent resolves to null', async () => {
+    // Render a stream under a parent that resolves to null.
     const factory = vi.fn(async (): Promise<{ version: number } | null> => null)
-    container = document.createElement('div')
-    document.body.appendChild(container)
-    root = createRoot(container)
-
-    await act(async () => {
-      root?.render(
-        React.createElement(TestStreamValue, {
-          factory: factory as never,
-          version: 1,
-        }),
-      )
-      await flush()
-      await flush()
-    })
-
-    expect(container.firstElementChild?.getAttribute('data-loading')).toBe(
-      'false',
+    mount()
+    await render(
+      React.createElement(TestStreamValue, {
+        factory: factory as never,
+        version: 1,
+      }),
+      2,
     )
-    expect(container.firstElementChild?.getAttribute('data-value')).toBe('')
-    expect(container.firstElementChild?.getAttribute('data-error')).toBe('')
+
+    // The view settles empty.
+    expect(view('data-loading')).toBe('false')
+    expect(view('data-value')).toBe('')
+    expect(view('data-error')).toBe('')
   })
 
   it('settles as not loading when an explicit parent has no terminal value', async () => {
+    // Render a stream under a settled parent with no value.
     const streamFactory = vi.fn((version: number) =>
       streamValue(`stream-${version}`),
     )
-    container = document.createElement('div')
-    document.body.appendChild(container)
-    root = createRoot(container)
-
-    await act(async () => {
-      root?.render(
-        React.createElement(TestStreamingFromParent, {
-          parent: {
-            value: null,
-            loading: false,
-            error: null,
-            retry: () => {},
-          },
-          streamFactory,
-        }),
-      )
-      await flush()
-    })
-
-    expect(container.firstElementChild?.getAttribute('data-loading')).toBe(
-      'false',
+    mount()
+    await render(
+      React.createElement(TestStreamingFromParent, {
+        parent: { value: null, loading: false, error: null, retry: () => {} },
+        streamFactory,
+      }),
     )
-    expect(container.firstElementChild?.getAttribute('data-value')).toBe('')
-    expect(container.firstElementChild?.getAttribute('data-error')).toBe('')
+
+    // The view settles empty without opening the stream.
+    expect(view('data-loading')).toBe('false')
+    expect(view('data-value')).toBe('')
+    expect(view('data-error')).toBe('')
     expect(streamFactory).not.toHaveBeenCalled()
   })
 
   it('propagates mapped resource loading, error, and retry while mapping non-null values', async () => {
+    // Map a loading, failed source with a value.
     let retryCalls = 0
-    const error = new Error('source failed')
+    const retry = () => {
+      retryCalls += 1
+    }
     const mapValue = vi.fn((value: string) => `mapped:${value}`)
-    container = document.createElement('div')
-    document.body.appendChild(container)
-    root = createRoot(container)
+    mount()
+    await render(
+      React.createElement(TestMappedValue, {
+        source: {
+          value: 'source-value',
+          loading: true,
+          error: new Error('source failed'),
+          retry,
+        },
+        mapValue,
+      }),
+    )
 
-    await act(async () => {
-      root?.render(
-        React.createElement(TestMappedValue, {
-          source: {
-            value: 'source-value',
-            loading: true,
-            error,
-            retry: () => {
-              retryCalls += 1
-            },
-          },
-          mapValue,
-        }),
-      )
-      await flush()
-    })
-
-    expect(container.firstElementChild?.getAttribute('data-loading')).toBe(
-      'true',
-    )
-    expect(container.firstElementChild?.getAttribute('data-value')).toBe(
-      'mapped:source-value',
-    )
-    expect(container.firstElementChild?.getAttribute('data-error')).toBe(
-      'source failed',
-    )
+    // The mapped resource carries the source's state and mapped value.
+    expect(view('data-loading')).toBe('true')
+    expect(view('data-value')).toBe('mapped:source-value')
+    expect(view('data-error')).toBe('source failed')
     expect(mapValue).toHaveBeenCalledTimes(1)
     expect(mapValue).toHaveBeenCalledWith('source-value')
 
-    await act(async () => {
-      container
-        ?.querySelector('button')
-        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      await flush()
-    })
-
+    // A retry reaches the source.
+    await click()
     expect(retryCalls).toBe(1)
 
+    // A null source value is not mapped.
     mapValue.mockClear()
-
-    await act(async () => {
-      root?.render(
-        React.createElement(TestMappedValue, {
-          source: {
-            value: null,
-            loading: false,
-            error: null,
-            retry: () => {
-              retryCalls += 1
-            },
-          },
-          mapValue,
-        }),
-      )
-      await flush()
-    })
-
-    expect(container.firstElementChild?.getAttribute('data-loading')).toBe(
-      'false',
+    await render(
+      React.createElement(TestMappedValue, {
+        source: { value: null, loading: false, error: null, retry },
+        mapValue,
+      }),
     )
-    expect(container.firstElementChild?.getAttribute('data-value')).toBe('')
-    expect(container.firstElementChild?.getAttribute('data-error')).toBe('')
+    expect(view('data-loading')).toBe('false')
+    expect(view('data-value')).toBe('')
+    expect(view('data-error')).toBe('')
     expect(mapValue).not.toHaveBeenCalled()
+  })
+
+  it('keeps the current value when equals matches the next one', async () => {
+    // Stream rows that equal each other by id.
+    const stream = createManualAsyncIterable<Row>()
+    const seen: Row[] = []
+    mount()
+    await render(
+      React.createElement(TestStreamOptions, {
+        streamFactory: () => stream.iterable,
+        options: { equals: (a, b) => a.id === b.id },
+        seen,
+      }),
+      2,
+    )
+
+    // An equal row keeps the first row's identity; a changed one replaces it.
+    for (const row of [
+      { id: 1, label: 'first' },
+      { id: 1, label: 'same id' },
+      { id: 2, label: 'second' },
+    ]) {
+      await update(() => stream.push(row))
+    }
+    expect(seen.map((row) => row.label)).toEqual(['first', 'second'])
+  })
+
+  it('reconnects a stream that fails after yielding', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      // Open a reconnecting stream and read its first value.
+      const { streams, streamFactory } = manualStreams<Row>()
+      mount()
+      await render(
+        React.createElement(TestStreamOptions, {
+          streamFactory,
+          options: { reconnect: true },
+          seen: [],
+        }),
+        2,
+      )
+      await update(() => streams[0].push({ id: 1, label: 'first' }))
+
+      // A failure keeps the value and reopens the stream after the backoff.
+      await update(() => streams[0].fail(new Error('dropped')))
+      expect(view('data-value')).toBe('first')
+      expect(view('data-error')).toBe('')
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(100)
+      })
+      expect(streamFactory).toHaveBeenCalledTimes(2)
+
+      // The reopened stream replaces the value.
+      await update(() => streams[1].push({ id: 2, label: 'second' }))
+      expect(view('data-value')).toBe('second')
+      expect(view('data-loading')).toBe('false')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('reports a reconnecting stream that fails before yielding', async () => {
+    // Open a reconnecting stream that fails at once.
+    const stream = createManualAsyncIterable<Row>()
+    mount()
+    await render(
+      React.createElement(TestStreamOptions, {
+        streamFactory: () => stream.iterable,
+        options: { reconnect: true },
+        seen: [],
+      }),
+      2,
+    )
+    await update(() => stream.fail(new Error('refused')))
+
+    // The error shows instead of an endless reconnect.
+    expect(view('data-error')).toBe('refused')
   })
 })

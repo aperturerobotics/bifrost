@@ -59,30 +59,71 @@ export async function resolveUnixFSHandle(
   return cleanup(handle)
 }
 
-// convertDirEntriesToFileEntries converts DirEntry[] to FileEntry[].
-export function convertDirEntriesToFileEntries(
-  entries: DirEntry[],
-): FileEntry[] {
-  return entries.map((entry) => {
-    const fileKind = getUnixFSDirEntryKind(entry)
-    return {
-      id: entry.name ?? '',
-      name: entry.name ?? '',
-      isDir: fileKind === 'directory',
-      isSymlink: fileKind === 'symlink',
-    }
-  })
+// toFileEntry converts a directory entry to a file browser row.
+function toFileEntry(entry: DirEntry): FileEntry {
+  const fileKind = getUnixFSDirEntryKind(entry)
+  return {
+    id: entry.name ?? '',
+    name: entry.name ?? '',
+    isDir: fileKind === 'directory',
+    isSymlink: fileKind === 'symlink',
+  }
+}
+
+// fileEntryEquals reports whether two directory rows show the same entry.
+function fileEntryEquals(a: FileEntry, b: FileEntry): boolean {
+  return (
+    a.id === b.id &&
+    a.name === b.name &&
+    a.isDir === b.isDir &&
+    a.isSymlink === b.isSymlink
+  )
+}
+
+/** UnixFSListing is one directory listing with its file browser rows. */
+export interface UnixFSListing {
+  /** entries are the directory entries in listing order. */
+  entries: DirEntry[]
+  /** rows are the file browser rows for entries, in the same order. */
+  rows: FileEntry[]
+}
+
+// watchListing follows a directory listing with its file browser rows. Each
+// listing keeps the previous row object for an unchanged entry, so a change
+// renders only the rows it changed.
+async function* watchListing(
+  handle: FSHandle,
+  signal: AbortSignal,
+): AsyncIterable<UnixFSListing> {
+  let previous = new Map<string, FileEntry>()
+  for await (const entries of handle.watchReaddir(signal)) {
+    // Build the rows, reusing each unchanged one.
+    const next = new Map<string, FileEntry>()
+    const rows = entries.map((entry) => {
+      // Keep the previous row while its entry is unchanged.
+      const row = toFileEntry(entry)
+      const prev = previous.get(row.id)
+      const kept = prev && fileEntryEquals(prev, row) ? prev : row
+      next.set(row.id, kept)
+      return kept
+    })
+    previous = next
+    yield { entries, rows }
+  }
 }
 
 // emptyAsyncIterable is a no-op async iterable that yields nothing.
-async function* emptyAsyncIterable(): AsyncIterable<DirEntry[]> {}
+async function* emptyAsyncIterable<T>(): AsyncIterable<T> {}
 
-// useUnixFSHandleReaddir watches directory entries from a handle via streaming RPC.
-// Returns null if handle is null or disabled.
-export function useUnixFSHandleReaddir(
+/**
+ * useUnixFSHandleListing follows the directory listing of a handle. Returns
+ * null while the handle is null or disabled.
+ */
+export function useUnixFSHandleListing(
   handle: Resource<FSHandle | null>,
   options?: { enabled?: boolean },
-): Resource<DirEntry[] | null> {
+): Resource<UnixFSListing | null> {
+  // Watch the listing only for an enabled handle.
   const enabled = options?.enabled ?? true
   const handleId = handle.value?.id ?? null
   const gatedHandle = useMappedResource(
@@ -92,21 +133,22 @@ export function useUnixFSHandleReaddir(
   )
   return useStreamingResource(
     gatedHandle,
-    (h, signal) => (h ? h.watchReaddir(signal) : emptyAsyncIterable()),
+    (h, signal) =>
+      h ? watchListing(h, signal) : emptyAsyncIterable<UnixFSListing>(),
     [enabled, handleId],
   )
 }
 
-// useUnixFSHandleEntries reads directory entries from a handle.
-// Returns null if handle is null, not a directory, or disabled.
+/**
+ * useUnixFSHandleEntries follows the file browser rows of a handle's
+ * directory. Returns null while the handle is null or disabled.
+ */
 export function useUnixFSHandleEntries(
   handle: Resource<FSHandle | null>,
   options?: { enabled?: boolean },
 ): Resource<FileEntry[] | null> {
-  const readdirResource = useUnixFSHandleReaddir(handle, options)
-  return useMappedResource(readdirResource, (entries) =>
-    entries ? convertDirEntriesToFileEntries(entries) : null,
-  )
+  const listing = useUnixFSHandleListing(handle, options)
+  return useMappedResource(listing, (value) => value?.rows ?? null, [])
 }
 
 // StatResult contains the result of a stat operation with derived mime type.
@@ -136,6 +178,7 @@ export async function readUnixFSHandleStat(
   handle: FSHandle,
   signal: AbortSignal,
 ): Promise<StatResult> {
+  // Read the info, then derive its kind and mime type.
   const info = isRootFSHandle(handle)
     ? rootFSHandleInfo(handle)
     : await handle.getFileInfo(signal)

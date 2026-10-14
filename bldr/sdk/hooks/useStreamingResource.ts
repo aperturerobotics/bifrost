@@ -1,29 +1,66 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { isAbortError } from 'starpc'
 
+import { exponentialBackoff } from '../../web/bldr/retry.js'
 import type { Resource } from './useResource.js'
 import {
   useResourceTransitionState,
   useResourceTransitionVersion,
 } from './resourceTransitionState.js'
 
-// useStreamingResource subscribes to an async iterable derived from a parent resource.
-// Returns a Resource<T> that updates on each yielded value.
+/** UseStreamingResourceOptions tunes how a streaming resource follows its stream. */
+export interface UseStreamingResourceOptions<T> {
+  /**
+   * equals reports whether a yielded value matches the current one. A matching
+   * value keeps the current value's identity, so its consumers do not render.
+   */
+  equals?: (prev: T, next: T) => boolean
+  /**
+   * reconnect reopens a stream that fails after yielding, keeping the last
+   * value while it backs off exponentially. Each yielded value resets the
+   * backoff. A stream that fails before its first value reports the error.
+   */
+  reconnect?: boolean
+}
+
+/**
+ * useStreamingResource subscribes to an async iterable derived from a parent
+ * resource. Returns a Resource<T> that updates on each yielded value.
+ */
 export function useStreamingResource<P, T>(
   parent: Resource<P>,
   streamFactory: (parent: P, signal: AbortSignal) => AsyncIterable<T>,
   deps: React.DependencyList,
+  options?: UseStreamingResourceOptions<T>,
 ): Resource<T> {
+  // Track the options, the last value and the stream's restart state.
+  const equals = useEffectEvent(
+    (prev: T, next: T) => options?.equals?.(prev, next) ?? false,
+  )
+  const reconnect = options?.reconnect ?? false
   const parentValueChangeCount = useResourceTransitionVersion([parent.value])
   const [retryCount, setRetryCount] = useState(0)
   const abortRetriedParentValueChangeRef = useRef<number | null>(null)
+  const valueRef = useRef<T | null>(null)
+  const reconnectingRef = useRef(false)
+  const [backoff] = useState(exponentialBackoff)
 
+  // Restart the stream when the factory or the parent value changes.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const stableFactory = useCallback(streamFactory, deps)
   const transitionVersion = useResourceTransitionVersion([
     stableFactory,
     parentValueChangeCount,
   ])
+
+  // Track the current run and the value it reports.
   const {
     state,
     begin,
@@ -37,7 +74,9 @@ export function useStreamingResource<P, T>(
   const effectiveLoading =
     parent.loading || isPending(transitionVersion) || state.loading
 
+  // Follow the stream for the current parent value and factory.
   useEffect(() => {
+    // Wait for the parent before opening the stream.
     const parentValue = parent.value
     if (parentValue === null) {
       settleNull(transitionVersion, parent.loading)
@@ -48,8 +87,9 @@ export function useStreamingResource<P, T>(
       return
     }
 
+    // Follow the stream, keeping the current value for an equal item.
     const run = begin(transitionVersion)
-
+    let reconnectTimer: ReturnType<typeof setTimeout> | undefined
     void (async () => {
       let emitted = false
       try {
@@ -57,13 +97,19 @@ export function useStreamingResource<P, T>(
           if (!isCurrent(run)) {
             break
           }
-          emitted = true
+          backoff.reset()
+          reconnectingRef.current = false
           if (
             abortRetriedParentValueChangeRef.current === parentValueChangeCount
           ) {
             abortRetriedParentValueChangeRef.current = null
           }
-          complete(run, item)
+          const prev = valueRef.current
+          const value = prev !== null && equals(prev, item) ? prev : item
+          if (emitted && value === prev) continue
+          emitted = true
+          valueRef.current = value
+          complete(run, value)
         }
         if (!isCurrent(run)) {
           return
@@ -85,12 +131,28 @@ export function useStreamingResource<P, T>(
           fail(run, e)
           return
         }
+
+        // Reopen after a backoff, keeping the last value while waiting.
+        if (reconnect && (emitted || reconnectingRef.current)) {
+          reconnectingRef.current = true
+          setLoading()
+          reconnectTimer = setTimeout(
+            () => setRetryCount((c) => c + 1),
+            backoff(),
+          )
+          return
+        }
         fail(run, e)
       }
     })()
 
-    return () => run.abort()
+    return () => {
+      run.abort()
+      clearTimeout(reconnectTimer)
+    }
   }, [
+    backoff,
+    reconnect,
     parent.loading,
     parent.value,
     parentValueChangeCount,
@@ -105,10 +167,12 @@ export function useStreamingResource<P, T>(
     stableFactory,
   ])
 
+  // Restart the stream on request.
   const retry = useCallback(() => {
     setRetryCount((c) => c + 1)
   }, [])
 
+  // Report the parent's error ahead of the stream's own.
   return useMemo(
     () => ({
       value: state.value,
