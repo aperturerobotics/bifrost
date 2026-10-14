@@ -78,7 +78,8 @@ func TestSpaceContentsResourceWatchStateCachesAvailablePluginCatalogForUnchanged
 	}
 	assertCatalogCacheTestAvailablePlugins(t, initial.GetAvailablePlugins(), manifestSpecs)
 
-	// Commit an unrelated SpaceSettings write to wake the contents watch.
+	// Configure a plugin, which changes the contents state but not the
+	// manifest set, so the watch sends a state built from the cached catalog.
 	settingsTx, err := tb.Engine.NewTransaction(ctx, true)
 	if err != nil {
 		watchCancel()
@@ -90,7 +91,7 @@ func TestSpaceContentsResourceWatchStateCachesAvailablePluginCatalogForUnchanged
 		settingsTx,
 		"",
 		space_world_ops.DefaultSpaceSettingsObjectKey,
-		&space_world.SpaceSettings{},
+		&space_world.SpaceSettings{PluginIds: []string{"catalog-cache-test"}},
 		true,
 		time.Now(),
 	); err != nil {

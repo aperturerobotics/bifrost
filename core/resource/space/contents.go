@@ -341,8 +341,8 @@ func (r *SpaceContentsResource) WatchState(
 	strm s4wave_space.SRPCSpaceContentsResourceService_WatchStateStream,
 ) error {
 	ctx := strm.Context()
-
 	var prevSeqno uint64
+	var prev *s4wave_space.SpaceContentsState
 	for {
 		// Read SpaceSettings, manifest descriptions, and the installable plugin
 		// catalog from the world.
@@ -441,19 +441,26 @@ func (r *SpaceContentsResource) WatchState(
 			}
 			plugins = append(plugins, status)
 		}
+
+		// Read the process decisions from the account store.
 		processBindings, err := r.listProcessBindingInfos(ctx)
 		if err != nil {
 			return err
 		}
 
-		if err := strm.Send(&s4wave_space.SpaceContentsState{
+		// Send the state when it changed.
+		state := &s4wave_space.SpaceContentsState{
 			Ready:              true,
 			Plugins:            plugins,
 			ProcessBindings:    processBindings,
 			AvailablePlugins:   availablePlugins,
 			RequestedPluginIds: requestedIDs,
-		}); err != nil {
-			return err
+		}
+		if !state.EqualVT(prev) {
+			if err := strm.Send(state); err != nil {
+				return err
+			}
+			prev = state
 		}
 
 		// Wait for a world seqno, runtime, process binding, loaded, or

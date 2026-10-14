@@ -441,9 +441,23 @@ func TestSpaceContentsResourceProjectsPluginHostWatchChange(t *testing.T) {
 	if current, _, err := resource.runtime.GetGeneration(); current != first || err != nil {
 		t.Fatal("host publication replaced the runtime")
 	}
+
+	// The watch sends only a changed state, so configure a second plugin to
+	// read the state after the host change, and check the first is healthy.
+	if _, _, err := space_world_ops.SetSpaceSettings(
+		ctx,
+		tb.WorldState,
+		peer.ID(""),
+		"",
+		&space_world.SpaceSettings{PluginIds: []string{"test-plugin", "test-plugin-b"}},
+		true,
+		time.Now(),
+	); err != nil {
+		t.Fatal(err)
+	}
 	state := recvSpaceRuntimeWatchState(t, stream)
-	if len(state.GetPlugins()) != 1 {
-		t.Fatalf("plugins = %d, want 1", len(state.GetPlugins()))
+	for len(state.GetPlugins()) != 2 {
+		state = recvSpaceRuntimeWatchState(t, stream)
 	}
 	if state.GetPlugins()[0].GetState() == s4wave_space.SpacePluginLifecycleState_SpacePluginLifecycleState_FAILED {
 		t.Fatalf("plugin state = %#v", state.GetPlugins()[0])
