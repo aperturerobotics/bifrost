@@ -12,7 +12,7 @@ import { mountCdnImageSpace } from '@s4wave/app/vm/cdn-image-space.js'
 // WASIVM_DEFAULT_CDN_IMAGE_OBJECT_KEY is the published image a new VM boots
 // unless the user picks another.
 export const WASIVM_DEFAULT_CDN_IMAGE_OBJECT_KEY =
-  'vm-image/skiffos-wasi/2026-10-13-r1'
+  'vm-image/skiffos-wasi/2026-10-14-r1'
 
 // WasiVmImageEntry is a WasiVmImage object and its metadata.
 export interface WasiVmImageEntry {

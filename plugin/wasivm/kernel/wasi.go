@@ -14,12 +14,11 @@ import (
 	"github.com/s4wave/spacewave/plugin/wasivm/kernel/engine"
 )
 
-// Every process starts with the root directory open as descriptor 3, the
-// one directory it finds with fd_prestat_get.
-const (
-	wasiPreopenRootFD = 3
-	wasiPreopenRoot   = "/"
-)
+// wasiAtFDCWD is wasi-libc's AT_FDCWD, -2 as uint32. The WasiVM libc passes
+// every path it is given unchanged with this directory descriptor, so the
+// kernel resolves paths as Linux does and opens no preopened directories:
+// every descriptor from 3 up is the program's.
+const wasiAtFDCWD = 0xFFFFFFFE
 
 // WASI errno values the kernel returns directly. wasiErrno translates the
 // rest from Linux.

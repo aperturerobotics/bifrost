@@ -44,7 +44,7 @@ func TestWASIFileStat(t *testing.T) {
 	}
 	for _, c := range cases {
 		pathPtr, pathLen := writeWASIPath(t, mem, c.path)
-		if errno := p.wasiPathFileStatGet(mem, wasiPreopenRootFD, c.flags, pathPtr, pathLen, 512); errno != wasiErrnoSuccess {
+		if errno := p.wasiPathFileStatGet(mem, wasiAtFDCWD, c.flags, pathPtr, pathLen, 512); errno != wasiErrnoSuccess {
 			t.Errorf("path_filestat_get(%s): errno %d", c.path, errno)
 			continue
 		}
@@ -78,6 +78,48 @@ func TestWASIOpenReadClose(t *testing.T) {
 	}
 	if _, ok := p.fds[fd]; ok {
 		t.Fatalf("fd %d open after close", fd)
+	}
+}
+
+// TestWASIPathsBesideDescriptor3 checks that the kernel resolves paths
+// without a root descriptor: with a file the program opened on descriptor 3,
+// an absolute path opens from the root, a relative one from the working
+// directory, and AT_FDCWD reports the working directory.
+func TestWASIPathsBesideDescriptor3(t *testing.T) {
+	// Put a file on descriptor 3, then open paths beside it.
+	p, mem := newWASITestProcess(t)
+	p.setFD(3, &OpenFile{node: p.kernel.vfs.lookup("/etc/message"), path: "/etc/message"})
+	wasiTestOpen(t, p, mem, "/usr/bin/busybox", 0)
+	p.cwd = "/etc"
+	wasiTestOpen(t, p, mem, "message", 0)
+
+	// openat reads the working directory's rights through AT_FDCWD.
+	if errno := p.wasiFDFdstatGet(mem, wasiAtFDCWD, 256); errno != wasiErrnoSuccess {
+		t.Fatalf("fd_fdstat_get(AT_FDCWD): errno %d", errno)
+	}
+	if filetype, _ := mem.ReadByteAt(256); filetype != wasiFiletypeDirectory {
+		t.Errorf("AT_FDCWD filetype %d", filetype)
+	}
+}
+
+// TestGetcwd checks that getcwd reports the directory chdir set, and ERANGE for
+// a buffer too small to hold it with its NUL.
+func TestGetcwd(t *testing.T) {
+	// Change to /etc.
+	p, mem := newWASITestProcess(t)
+	if r := p.chdirResolved("/etc"); r != 0 {
+		t.Fatalf("chdir: %d", int32(r))
+	}
+
+	// Read it back into a buffer that fits, then one that does not.
+	if r := p.sysGetcwd(256, 5); r != 5 {
+		t.Fatalf("getcwd: %d", int32(r))
+	}
+	if got, _ := mem.Read(256, 5); string(got) != "/etc\x00" {
+		t.Errorf("getcwd wrote %q", got)
+	}
+	if r := p.sysGetcwd(256, 4); r != negErrno(ERANGE) {
+		t.Errorf("getcwd into 4 bytes: %d", int32(r))
 	}
 }
 
@@ -115,12 +157,12 @@ func newWASITestProcess(t *testing.T) (*Process, *memMemory) {
 	return p, mem
 }
 
-// wasiTestOpen opens path under the root preopen with path_open.
+// wasiTestOpen opens path with path_open.
 func wasiTestOpen(t *testing.T, p *Process, mem *memMemory, path string, oflags uint32) uint32 {
 	// Open the path and read back the descriptor.
 	t.Helper()
 	pathPtr, pathLen := writeWASIPath(t, mem, path)
-	if errno := p.wasiPathOpen(mem, wasiPreopenRootFD, pathPtr, pathLen, oflags, 0, 128); errno != wasiErrnoSuccess {
+	if errno := p.wasiPathOpen(mem, wasiAtFDCWD, pathPtr, pathLen, oflags, 0, 128); errno != wasiErrnoSuccess {
 		t.Fatalf("path_open(%s): errno %d", path, errno)
 	}
 	fd, _ := mem.ReadUint32Le(128)

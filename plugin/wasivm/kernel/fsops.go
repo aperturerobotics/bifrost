@@ -338,6 +338,17 @@ func (p *Process) sysChdir(pathPtr uint32) uint64 {
 	return p.chdirResolved(resolvePath(p.cwd, p.fds, atFDCWD, path))
 }
 
+// sysGetcwd writes the working directory and its terminating NUL to buf and
+// returns their length, or ERANGE when size cannot hold them.
+func (p *Process) sysGetcwd(bufPtr, size uint32) uint64 {
+	cwd := p.cwd + "\x00"
+	if uint32(len(cwd)) > size {
+		return negErrno(ERANGE)
+	}
+	p.inst.Memory().Write(bufPtr, []byte(cwd))
+	return uint64(len(cwd))
+}
+
 // chdirResolved changes the current working directory to a resolved path.
 func (p *Process) chdirResolved(resolved string) uint64 {
 	node := p.kernel.vfs.lookup(resolved)

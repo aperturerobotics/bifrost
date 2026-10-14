@@ -344,6 +344,9 @@ func posixFunctions() map[string]hostFunc {
 		"fchdir": {"ii", func(ctx context.Context, p *Process, a []uint64) uint64 {
 			return p.posixResult(ctx, p.sysFchdir(uint32(a[0])))
 		}},
+		"__wasivm_getcwd": {"iii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysGetcwd(uint32(a[0]), uint32(a[1])))
+		}},
 		"flock": {"iii", func(ctx context.Context, p *Process, a []uint64) uint64 {
 			return p.posixResult(ctx, p.sysFlock(uint32(a[0]), uint32(a[1])))
 		}},

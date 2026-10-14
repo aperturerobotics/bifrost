@@ -111,8 +111,8 @@ type jmpBufEntry struct {
 	cstack []byte
 }
 
-// newProcess creates a process with the kernel's environment, its standard
-// descriptors on the console, and the root directory preopened at fd 3.
+// newProcess creates a process with the kernel's environment and its
+// standard descriptors on the console.
 func newProcess(k *Kernel, pid int, args []string) *Process {
 	// Start from the defaults.
 	p := &Process{
@@ -132,14 +132,11 @@ func newProcess(k *Kernel, pid int, args []string) *Process {
 		started: time.Now(),
 	}
 
-	// Open the standard descriptors and the root preopen.
+	// Open the standard descriptors.
 	if k.console != nil {
 		p.setFD(0, &OpenFile{node: k.console, path: "/dev/console", flags: oRDONLY})
 		p.setFD(1, &OpenFile{node: k.console, path: "/dev/console", flags: oWRONLY})
 		p.setFD(2, &OpenFile{node: k.console, path: "/dev/console", flags: oWRONLY, stderr: true})
-	}
-	if k.vfs != nil {
-		p.setFD(3, &OpenFile{node: k.vfs.root, path: "/", flags: oDIRECTORY})
 	}
 	return p
 }

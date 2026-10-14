@@ -7,7 +7,6 @@ import (
 	"maps"
 	"math"
 	"slices"
-	"strings"
 	"time"
 
 	"github.com/s4wave/spacewave/plugin/wasivm/kernel/engine"
@@ -52,7 +51,6 @@ const (
 	wasiDirentHeaderSize = 24
 	wasiFilestatSize     = 64
 	wasiFdstatSize       = 24
-	wasiPrestatSize      = 8
 	wasiIovecSize        = 8
 )
 
@@ -107,11 +105,12 @@ func wasiFSFunctions() map[string]hostFunc {
 		"fd_pread": wasiFunc("iiiiji", func(_ context.Context, p *Process, mem engine.Memory, a []uint64) uint32 {
 			return p.wasiFDPread(mem, uint32(a[0]), uint32(a[1]), uint32(a[2]), a[3], uint32(a[4]))
 		}),
-		"fd_prestat_dir_name": wasiFunc("iiii", func(_ context.Context, p *Process, mem engine.Memory, a []uint64) uint32 {
-			return p.wasiFDPrestatDirName(mem, uint32(a[0]), uint32(a[1]), uint32(a[2]))
+		// No descriptor is a preopened directory.
+		"fd_prestat_dir_name": wasiFunc("iiii", func(context.Context, *Process, engine.Memory, []uint64) uint32 {
+			return wasiErrnoBadf
 		}),
-		"fd_prestat_get": wasiFunc("iii", func(_ context.Context, p *Process, mem engine.Memory, a []uint64) uint32 {
-			return p.wasiFDPrestatGet(mem, uint32(a[0]), uint32(a[1]))
+		"fd_prestat_get": wasiFunc("iii", func(context.Context, *Process, engine.Memory, []uint64) uint32 {
+			return wasiErrnoBadf
 		}),
 		"fd_pwrite": wasiFunc("iiiiji", func(_ context.Context, p *Process, mem engine.Memory, a []uint64) uint32 {
 			return p.wasiFDPwrite(mem, uint32(a[0]), uint32(a[1]), uint32(a[2]), a[3], uint32(a[4]))
@@ -196,19 +195,32 @@ func (p *Process) wasiFDNode(fd uint32) (*VNode, uint32) {
 }
 
 // wasiFDFdstatGet writes a descriptor's type, flags and rights to statPtr.
+// wasiAtFDCWD reports the working directory, since wasi-libc's openat reads
+// the rights a new file inherits from its directory descriptor.
 func (p *Process) wasiFDFdstatGet(mem engine.Memory, fd, statPtr uint32) uint32 {
-	// Find the node.
-	node, errno := p.wasiFDNode(fd)
-	if errno != wasiErrnoSuccess {
-		return errno
+	// Find the node and its open flags.
+	var node *VNode
+	var openFlags uint32
+	if fd == wasiAtFDCWD {
+		node = p.kernel.vfs.lookup(p.cwd)
+		if node == nil {
+			return wasiErrno(ENOENT)
+		}
+	} else {
+		var errno uint32
+		node, errno = p.wasiFDNode(fd)
+		if errno != wasiErrnoSuccess {
+			return errno
+		}
+		openFlags = p.fds[fd].flags
 	}
 
 	// Work out its flags and rights. A terminal lacks the seek rights.
 	var flags uint16
-	if p.fds[fd].flags&oAPPEND != 0 {
+	if openFlags&oAPPEND != 0 {
 		flags |= wasiFdflagsAppend
 	}
-	if p.fds[fd].flags&oNONBLOCK != 0 {
+	if openFlags&oNONBLOCK != 0 {
 		flags |= wasiFdflagsNonblock
 	}
 	rights := wasiRightsEverything
@@ -537,34 +549,6 @@ func (p *Process) wasiFDAllocate(fd uint32, offset, length uint64) uint32 {
 	return wasiErrnoFromResult(p.truncateNode(of.node, end))
 }
 
-// wasiIsPreopen reports whether fd is the root directory preopen.
-func (p *Process) wasiIsPreopen(fd uint32) bool {
-	of, ok := p.fds[fd]
-	return fd == wasiPreopenRootFD && ok && of.path == wasiPreopenRoot
-}
-
-// wasiFDPrestatGet writes the prestat record of the root preopen, a
-// directory and its name's length, to prestatPtr.
-func (p *Process) wasiFDPrestatGet(mem engine.Memory, fd, prestatPtr uint32) uint32 {
-	if !p.wasiIsPreopen(fd) {
-		return wasiErrnoBadf
-	}
-	var buf [wasiPrestatSize]byte
-	binary.LittleEndian.PutUint32(buf[4:], uint32(len(wasiPreopenRoot)))
-	return wasiWrite(mem, prestatPtr, buf[:])
-}
-
-// wasiFDPrestatDirName writes the root preopen's name to pathPtr.
-func (p *Process) wasiFDPrestatDirName(mem engine.Memory, fd, pathPtr, pathLen uint32) uint32 {
-	switch {
-	case !p.wasiIsPreopen(fd):
-		return wasiErrnoBadf
-	case pathLen < uint32(len(wasiPreopenRoot)):
-		return wasiErrnoInval
-	}
-	return wasiWrite(mem, pathPtr, []byte(wasiPreopenRoot))
-}
-
 // wasiOpenFlags pairs each WASI open flag with the open(2) flag it maps to.
 var wasiOpenFlags = [...]struct{ wasi, posix uint32 }{
 	{wasiOflagsCreat, oCREAT},
@@ -732,9 +716,8 @@ func (p *Process) wasiPathFromMemory(mem engine.Memory, dirfd, pathPtr, pathLen 
 	return p.wasiResolvePath(dirfd, path)
 }
 
-// wasiResolvePath resolves path against the directory of dirfd. A relative
-// path under the root preopen that names the working directory, as
-// wasiPathUsesCWD decides, resolves against the working directory.
+// wasiResolvePath resolves path against the directory of dirfd, or against
+// the working directory when dirfd is wasiAtFDCWD.
 func (p *Process) wasiResolvePath(dirfd uint32, path string) (string, uint32) {
 	// Take an absolute path as it is.
 	if path == "" {
@@ -745,6 +728,9 @@ func (p *Process) wasiResolvePath(dirfd uint32, path string) (string, uint32) {
 	}
 
 	// Join a relative path to its directory.
+	if dirfd == wasiAtFDCWD {
+		return cleanPath(p.cwd + "/" + path), wasiErrnoSuccess
+	}
 	of, ok := p.fds[dirfd]
 	switch {
 	case !ok || of.path == "":
@@ -752,22 +738,7 @@ func (p *Process) wasiResolvePath(dirfd uint32, path string) (string, uint32) {
 	case of.node == nil || of.node.mode&sIFMT != sIFDIR:
 		return "", wasiErrno(ENOTDIR)
 	}
-	base := of.path
-	if p.wasiIsPreopen(dirfd) && wasiPathUsesCWD(path) {
-		base = p.cwd
-	}
-	return cleanPath(base + "/" + path), wasiErrnoSuccess
-}
-
-// wasiPathUsesCWD reports whether a relative path under the root preopen
-// names the working directory. wasi-libc passes an absolute path such as
-// /bin/ls as bin/ls under the preopen, but passes a relative path the
-// program gave unchanged. A path with no slash or one starting at . or ..
-// is the program's; others are stripped absolute paths.
-func wasiPathUsesCWD(path string) bool {
-	return path == "." || path == ".." ||
-		strings.HasPrefix(path, "./") || strings.HasPrefix(path, "../") ||
-		!strings.Contains(path, "/")
+	return cleanPath(of.path + "/" + path), wasiErrnoSuccess
 }
 
 // wasiLookupPath returns the node at a path, following a final symlink when
