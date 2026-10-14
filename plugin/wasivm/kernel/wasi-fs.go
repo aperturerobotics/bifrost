@@ -23,6 +23,9 @@ const (
 
 	wasiFdflagsAppend   = 1
 	wasiFdflagsNonblock = 4
+	// wasiFdflagsNoctty is the WasiVM libc's O_NOCTTY, which its open passes
+	// in a bit of the fdflags WASI leaves unused.
+	wasiFdflagsNoctty = 0x100
 
 	wasiRiflagsRecvPeek = 1
 
@@ -576,6 +579,9 @@ func (p *Process) wasiPathOpen(mem engine.Memory, dirfd, pathPtr, pathLen, oflag
 	}
 	if fdflags&wasiFdflagsNonblock != 0 {
 		flags |= oNONBLOCK
+	}
+	if fdflags&wasiFdflagsNoctty != 0 {
+		flags |= oNOCTTY
 	}
 
 	// Open the file and report its descriptor.

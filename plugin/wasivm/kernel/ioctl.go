@@ -132,9 +132,15 @@ func (p *Process) setControlling(t *tty) uint64 {
 	case t.sid != 0 && t.sid != p.sid:
 		return negErrno(EPERM)
 	}
+	p.control(t)
+	return 0
+}
+
+// control makes t the controlling terminal of p, a session leader, with p's
+// group in the foreground.
+func (p *Process) control(t *tty) {
 	p.ctty = t
 	t.sid, t.fgPgid = p.sid, p.pgid
-	return 0
 }
 
 // putInt writes v to the guest int at ptr.

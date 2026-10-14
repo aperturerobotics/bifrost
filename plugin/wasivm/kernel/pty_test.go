@@ -7,9 +7,10 @@ import (
 )
 
 // TestPtyPair checks a pseudo-terminal from open to hangup: the slave stays
-// locked until unlocked, becomes the opener's controlling terminal, runs the
-// line discipline on what the master writes, signals its foreground group,
-// carries the window size, and hangs up when the master closes.
+// locked until unlocked, becomes the controlling terminal of a session leader
+// that opens it without O_NOCTTY, runs the line discipline on what the master
+// writes, signals its foreground group, carries the window size, and hangs up
+// when the master closes.
 func TestPtyPair(t *testing.T) {
 	// Open the master and read the pty's index.
 	p, mem := newWASITestProcess(t)
@@ -26,8 +27,8 @@ func TestPtyPair(t *testing.T) {
 		t.Fatalf("pty index %d, want 0", index)
 	}
 
-	// The slave opens once unlocked, and TIOCSCTTY makes it the controlling
-	// terminal.
+	// The slave opens once unlocked. An open with O_NOCTTY leaves it free,
+	// and one without makes it the controlling terminal.
 	if res := p.openResolved("/dev/pts/0", oRDWR, 0); res != negErrno(EIO) {
 		t.Fatalf("open of a locked slave = %#x, want EIO", res)
 	}
@@ -35,13 +36,10 @@ func TestPtyPair(t *testing.T) {
 	if res := p.sysIoctl(master, tiocsptlck, arg); res != 0 {
 		t.Fatalf("TIOCSPTLCK = %#x", res)
 	}
+	if res := p.openResolved("/dev/pts/0", oRDWR|oNOCTTY, 0); errnoFailed(res) || p.ctty != nil {
+		t.Fatalf("open with O_NOCTTY = %#x, controlling terminal %v", res, p.ctty)
+	}
 	slave := openTestFD(t, p, "/dev/pts/0")
-	if p.ctty != nil {
-		t.Fatal("opening the slave made it the controlling terminal")
-	}
-	if res := p.sysIoctl(slave, tiocsctty, 0); res != 0 {
-		t.Fatalf("TIOCSCTTY = %#x", res)
-	}
 	if p.ctty == nil || p.ctty != p.fds[slave].tty {
 		t.Fatal("slave is not the controlling terminal")
 	}

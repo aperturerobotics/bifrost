@@ -1,12 +1,14 @@
 package kernel
 
-// sysSetsid starts a new session and process group led by p, as Linux does.
-// A process group leader cannot start a session.
+// sysSetsid starts a new session and process group led by p, with no
+// controlling terminal, as Linux does. A process group leader cannot start a
+// session.
 func (p *Process) sysSetsid() uint64 {
 	if p.pgid == p.pid {
 		return negErrno(EPERM)
 	}
 	p.sid, p.pgid = p.pid, p.pid
+	p.ctty = nil
 	return uint64(p.pid)
 }
 

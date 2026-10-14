@@ -104,6 +104,7 @@ const (
 	oRDWR      = 0o2
 	oCREAT     = 0o100
 	oEXCL      = 0o200
+	oNOCTTY    = 0o400
 	oTRUNC     = 0o1000
 	oAPPEND    = 0o2000
 	oNONBLOCK  = 0o4000
