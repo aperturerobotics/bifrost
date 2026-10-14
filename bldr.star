@@ -473,7 +473,7 @@ manifest("spacewave-flowgraph",
 
 manifest("spacewave-sql",
     builder="bldr/plugin/compiler/go",
-    rev=1,
+    rev=2,
     config={
         "goPkgs": ["./plugin/sql"],
         "configSet": {

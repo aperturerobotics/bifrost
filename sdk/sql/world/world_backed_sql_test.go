@@ -149,6 +149,50 @@ func TestWorldBackedSqlReportsCommitPersistedWhenWorldRootUpdateFails(t *testing
 	}
 }
 
+func TestWorldBackedSqlUpsertAndReplace(t *testing.T) {
+	// Start the testbed and open a typed SQL World object.
+	ctx := context.Background()
+	tb, err := testbed.Default(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tb.Release()
+	objectKey := "sql/upsert-db"
+	createSqlDbObject(t, ctx, tb.WorldState, objectKey, true)
+	store, cleanup := openWorldBackedSql(t, ctx, tb.WorldState, objectKey)
+	defer cleanup()
+
+	// Create the database and a table with a primary and a unique key.
+	rootTx := openSqlTx(t, ctx, store, true, "")
+	execSql(t, ctx, rootTx, "CREATE DATABASE shop")
+	commitSql(t, ctx, rootTx)
+	writeTx := openSqlTx(t, ctx, store, true, "/shop")
+	for _, query := range []string{
+		"CREATE TABLE items (id BIGINT NOT NULL PRIMARY KEY, sku VARCHAR(32) NOT NULL UNIQUE, qty BIGINT NOT NULL)",
+		"INSERT INTO items (id, sku, qty) VALUES (1, 'a', 1), (2, 'b', 2)",
+		// A primary key conflict updates the existing row in each form.
+		"INSERT INTO items (id, sku, qty) VALUES (1, 'a', 9) ON DUPLICATE KEY UPDATE qty = 5",
+		"INSERT INTO items (id, sku, qty) VALUES (1, 'a', 3) ON DUPLICATE KEY UPDATE qty = qty + VALUES(qty)",
+		"INSERT INTO items (id, sku, qty) VALUES (2, 'b', 7) AS new ON DUPLICATE KEY UPDATE qty = new.qty",
+		// A unique key conflict updates the row holding that key.
+		"INSERT INTO items (id, sku, qty) VALUES (3, 'b', 4) ON DUPLICATE KEY UPDATE qty = qty + 1",
+		// REPLACE deletes the conflicting row and inserts the new one.
+		"REPLACE INTO items (id, sku, qty) VALUES (1, 'z', 6)",
+		"REPLACE INTO items (id, sku, qty) VALUES (4, 'b', 10)",
+	} {
+		execSql(t, ctx, writeTx, query)
+	}
+	commitSql(t, ctx, writeTx)
+
+	// Verify the committed rows after the upserts and replacements.
+	readTx := openSqlTx(t, ctx, store, false, "/shop")
+	defer readTx.Discard()
+	rows := querySingleString(t, ctx, readTx, "SELECT GROUP_CONCAT(CONCAT(id, ':', sku, ':', qty) ORDER BY id) FROM items")
+	if want := "1:z:6,4:b:10"; rows != want {
+		t.Fatalf("items = %q, want %q", rows, want)
+	}
+}
+
 func createSqlDbObject(
 	t *testing.T,
 	ctx context.Context,

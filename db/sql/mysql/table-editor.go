@@ -3,7 +3,9 @@ package mysql
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
+	"strings"
 
 	"github.com/dolthub/go-mysql-server/sql"
 	"github.com/dolthub/go-mysql-server/sql/types"
@@ -244,14 +246,19 @@ func (i *TableEditor) Delete(sqlCtx *sql.Context, row sql.Row) error {
 	return tx.Delete(cctx, rowKey)
 }
 
+// ensureUniqueRow checks row against the primary key and every unique index,
+// skipping the stored row at skipKey. A conflict returns sql.UniqueKeyError
+// carrying the existing row, which INSERT ... ON DUPLICATE KEY UPDATE and
+// REPLACE use to update or delete it.
 func (i *TableEditor) ensureUniqueRow(sqlCtx *sql.Context, row sql.Row, skipKey []byte) error {
-	if len(i.t.schema.PkOrdinals) != 0 {
-		found, err := i.hasRowWithEqualValues(sqlCtx, row, i.t.schema.PkOrdinals, skipKey, false)
+	pkOrds := i.t.schema.PkOrdinals
+	if len(pkOrds) != 0 {
+		existing, err := i.findRowWithEqualValues(sqlCtx, row, pkOrds, skipKey, false)
 		if err != nil {
 			return err
 		}
-		if found {
-			return sql.ErrPrimaryKeyViolation.New()
+		if existing != nil {
+			return sql.NewUniqueKeyErr(formatKey(row, pkOrds), true, existing)
 		}
 	}
 	for _, index := range i.t.root.GetIndexes() {
@@ -262,34 +269,46 @@ func (i *TableEditor) ensureUniqueRow(sqlCtx *sql.Context, row sql.Row, skipKey 
 		if err != nil {
 			return err
 		}
-		found, err := i.hasRowWithEqualValues(sqlCtx, row, ords, skipKey, true)
+		existing, err := i.findRowWithEqualValues(sqlCtx, row, ords, skipKey, true)
 		if err != nil {
 			return err
 		}
-		if found {
-			return sql.ErrDuplicateEntry.New(index.GetName())
+		if existing != nil {
+			return sql.NewUniqueKeyErr(formatKey(row, ords), false, existing)
 		}
 	}
 	return nil
 }
 
-func (i *TableEditor) hasRowWithEqualValues(
+// formatKey formats the key columns of row for a duplicate key message.
+func formatKey(row sql.Row, ordinals []int) string {
+	vals := make([]string, len(ordinals))
+	for idx, ord := range ordinals {
+		vals[idx] = fmt.Sprint(row[ord])
+	}
+	return "[" + strings.Join(vals, ",") + "]"
+}
+
+// findRowWithEqualValues returns the first stored row other than the one at
+// skipKey whose values at ordinals equal those of row, or nil when none does.
+// With skipNull, a null value in row matches nothing, as in a unique index.
+func (i *TableEditor) findRowWithEqualValues(
 	sqlCtx *sql.Context,
 	row sql.Row,
 	ordinals []int,
 	skipKey []byte,
 	skipNull bool,
-) (bool, error) {
+) (sql.Row, error) {
 	// Ignore comparisons with no indexed columns.
 	if len(ordinals) == 0 {
-		return false, nil
+		return nil, nil
 	}
 
 	// Exclude rows with null indexed values when uniqueness permits them.
 	if skipNull {
 		for _, ord := range ordinals {
 			if row[ord] == nil {
-				return false, nil
+				return nil, nil
 			}
 		}
 	}
@@ -303,7 +322,7 @@ func (i *TableEditor) hasRowWithEqualValues(
 	// Open the table partition iterator for the key comparison.
 	partIter, err := i.t.Partitions(sqlCtx)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 	defer partIter.Close(sqlCtx)
 
@@ -312,27 +331,27 @@ func (i *TableEditor) hasRowWithEqualValues(
 		// Read the next table partition and handle iterator completion.
 		part, err := partIter.Next(sqlCtx)
 		if err == io.EOF {
-			return false, nil
+			return nil, nil
 		}
 		if err != nil {
-			return false, err
+			return nil, err
 		}
 
 		// Require a table partition before opening its row transaction.
 		pt, ok := part.(*TablePartition)
 		if !ok {
-			return false, ErrUnexpectedType
+			return nil, ErrUnexpectedType
 		}
 		tx, err := pt.BuildTreeTx(cctx, false, false)
 		if err != nil {
-			return false, err
+			return nil, err
 		}
 
 		// Open the partition row iterator and discard failed transactions.
 		rowIter, err := NewTablePartitionRowIter(cctx, tx, i.t.schema.Schema)
 		if err != nil {
 			tx.Discard()
-			return false, err
+			return nil, err
 		}
 
 		// Compare each stored row with the requested indexed values.
@@ -345,7 +364,7 @@ func (i *TableEditor) hasRowWithEqualValues(
 			if err != nil {
 				rowIter.Close(sqlCtx)
 				tx.Discard()
-				return false, err
+				return nil, err
 			}
 
 			// Exclude the row being replaced from the uniqueness comparison.
@@ -358,14 +377,14 @@ func (i *TableEditor) hasRowWithEqualValues(
 			if err != nil {
 				rowIter.Close(sqlCtx)
 				tx.Discard()
-				return false, err
+				return nil, err
 			}
 
-			// Release the partition resources before reporting a matching row.
+			// Release the partition resources before returning the matching row.
 			if equals {
 				rowIter.Close(sqlCtx)
 				tx.Discard()
-				return true, nil
+				return next, nil
 			}
 		}
 
@@ -533,4 +552,5 @@ var (
 	_ sql.RowInserter         = (*TableEditor)(nil)
 	_ sql.RowUpdater          = (*TableEditor)(nil)
 	_ sql.RowDeleter          = (*TableEditor)(nil)
+	_ sql.RowReplacer         = (*TableEditor)(nil)
 )

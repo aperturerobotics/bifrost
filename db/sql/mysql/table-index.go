@@ -142,13 +142,13 @@ func (t *Table) CreateIndex(ctx *sql.Context, def sql.IndexDef) error {
 					tx.Discard()
 					return err
 				}
-				found, err := editor.hasRowWithEqualValues(ctx, row, ords, rowIter.it.Key(), true)
+				existing, err := editor.findRowWithEqualValues(ctx, row, ords, rowIter.it.Key(), true)
 				if err != nil {
 					rowIter.Close(ctx)
 					tx.Discard()
 					return err
 				}
-				if found {
+				if existing != nil {
 					rowIter.Close(ctx)
 					tx.Discard()
 					return sql.ErrDuplicateEntry.New(index.GetName())
@@ -226,18 +226,22 @@ func (t *Table) columnOrdinal(name string) (int, bool) {
 	return 0, false
 }
 
+// ID returns the index name.
 func (idx *tableIndex) ID() string {
 	return idx.name
 }
 
+// Database returns an empty name because the index belongs to its table alone.
 func (idx *tableIndex) Database() string {
 	return ""
 }
 
+// Table returns the name of the indexed table.
 func (idx *tableIndex) Table() string {
 	return idx.table.name
 }
 
+// Expressions returns the indexed column expressions as strings.
 func (idx *tableIndex) Expressions() []string {
 	exprs := idx.expressions()
 	out := make([]string, len(exprs))
@@ -247,34 +251,42 @@ func (idx *tableIndex) Expressions() []string {
 	return out
 }
 
+// IsUnique reports whether the index rejects duplicate keys.
 func (idx *tableIndex) IsUnique() bool {
 	return idx.unique
 }
 
+// IsSpatial reports false because spatial indexes are not supported.
 func (idx *tableIndex) IsSpatial() bool {
 	return false
 }
 
+// IsFullText reports false because full-text indexes are not supported.
 func (idx *tableIndex) IsFullText() bool {
 	return false
 }
 
+// IsVector reports false because vector indexes are not supported.
 func (idx *tableIndex) IsVector() bool {
 	return false
 }
 
+// Comment returns the index comment.
 func (idx *tableIndex) Comment() string {
 	return idx.comment
 }
 
+// IndexType returns BTREE, the type MySQL reports for an ordered index.
 func (idx *tableIndex) IndexType() string {
 	return "BTREE"
 }
 
+// IsGenerated reports false because every index is declared by the user.
 func (idx *tableIndex) IsGenerated() bool {
 	return false
 }
 
+// ColumnExpressionTypes returns each indexed expression with its type.
 func (idx *tableIndex) ColumnExpressionTypes(ctx *sql.Context) []sql.ColumnExpressionType {
 	exprs := idx.expressions()
 	out := make([]sql.ColumnExpressionType, len(exprs))
@@ -287,10 +299,12 @@ func (idx *tableIndex) ColumnExpressionTypes(ctx *sql.Context) []sql.ColumnExpre
 	return out
 }
 
+// CanSupport reports true because a lookup scans the table for any range.
 func (idx *tableIndex) CanSupport(ctx *sql.Context, ranges ...sql.Range) bool {
 	return true
 }
 
+// CanSupportOrderBy reports false because lookups return rows in table order.
 func (idx *tableIndex) CanSupportOrderBy(expr sql.Expression) bool {
 	return false
 }
@@ -300,6 +314,8 @@ func (idx *tableIndex) CoversColumns([]string) bool {
 	return false
 }
 
+// PrefixLengths returns the key prefix length of each column, or zero for the
+// whole value.
 func (idx *tableIndex) PrefixLengths() []uint16 {
 	out := make([]uint16, len(idx.columns))
 	for i, col := range idx.columns {

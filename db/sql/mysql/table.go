@@ -208,7 +208,7 @@ func (t *Table) Schema(*sql.Context) sql.Schema {
 	return t.schema.Schema
 }
 
-// PrimaryKeySchema returns this table's PrimaryKeySchema
+// PrimaryKeySchema returns the table schema with its primary key ordinals.
 func (t *Table) PrimaryKeySchema(*sql.Context) sql.PrimaryKeySchema {
 	return t.schema
 }
@@ -287,7 +287,13 @@ func (t *Table) Deleter(sqlCtx *sql.Context) sql.RowDeleter {
 	return t.NewTableEditor(sqlCtx)
 }
 
-// PeekNextAutoIncrementValue peeks at the next AUTO_INCREMENT value
+// Replacer returns a row replacer for the table.
+func (t *Table) Replacer(sqlCtx *sql.Context) sql.RowReplacer {
+	return t.NewTableEditor(sqlCtx)
+}
+
+// PeekNextAutoIncrementValue returns the next AUTO_INCREMENT value without
+// reserving it.
 func (t *Table) PeekNextAutoIncrementValue(*sql.Context) (uint64, error) {
 	return t.autoIncVal, nil
 }
@@ -349,6 +355,7 @@ var (
 	_ sql.UpdatableTable      = (*Table)(nil)
 	_ sql.AutoIncrementTable  = (*Table)(nil)
 	_ sql.DeletableTable      = (*Table)(nil)
+	_ sql.ReplaceableTable    = (*Table)(nil)
 	_ sql.AlterableTable      = (*Table)(nil)
 	_ sql.IndexAddressable    = (*Table)(nil)
 	_ sql.IndexedTable        = (*Table)(nil)
