@@ -45,6 +45,10 @@ type Controller struct {
 	// writer is the last served engine, whose admissions lockSettled settles,
 	// or nil before the first. Guarded by writeMtx.
 	writer *soEngine
+	// failed holds the local ids of the operations whose publications failed.
+	// It outlives the engine, so a replacement skips the snapshots that still
+	// show them. Guarded by writeMtx.
+	failed map[string]struct{}
 	// writeBcast is broadcast after each change of the installed World. The
 	// storage reclaim routine schedules a pass after each broadcast.
 	writeBcast broadcast.Broadcast
@@ -64,6 +68,7 @@ func NewController(
 		engineCtr: ccontainer.NewCContainer[*Engine](nil),
 		engineID:  conf.GetEngineId(),
 		sfs:       sfs,
+		failed:    make(map[string]struct{}),
 	}, nil
 }
 
@@ -189,6 +194,14 @@ func (c *Controller) executeWorld(
 	so sobject.SharedObject,
 	soStateCtr ccontainer.Watchable[sobject.SharedObjectStateSnapshot],
 ) error {
+	// Wait for the writes the previous engine admitted to settle, so this
+	// engine starts from the store and knows which operations failed.
+	unlock, err := c.lockSettled(ctx)
+	if err != nil {
+		return err
+	}
+	unlock()
+
 	// Resume the saved replay, then replay the World, initializing it if
 	// necessary.
 	le := c.le
@@ -348,6 +361,17 @@ func (c *Controller) setWriter(ctx context.Context, e *soEngine) error {
 	c.writer = e
 	unlock()
 	return nil
+}
+
+// staleSnapshot reports whether snap of so shows a failed write, for a caller
+// outside the writer lock.
+func (c *Controller) staleSnapshot(ctx context.Context, so sobject.SharedObject, snap sobject.SharedObjectStateSnapshot) (bool, error) {
+	unlock, err := c.writeMtx.Lock(ctx)
+	if err != nil {
+		return false, err
+	}
+	defer unlock()
+	return c.stale(ctx, so, snap)
 }
 
 // lockSettled locks the writer lock once no admission of the served engine

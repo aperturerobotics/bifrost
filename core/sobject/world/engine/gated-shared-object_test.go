@@ -19,6 +19,10 @@ import (
 // commit of the next publication a World write admits, then apply or fail it.
 type gatedSharedObject struct {
 	*provider_local.SharedObject
+	// ctrl is the World engine controller serving the SharedObject.
+	ctrl *sobject_world_engine.Controller
+	// stopServe stops the engine serve started.
+	stopServe func()
 
 	// mtx guards next.
 	mtx sync.Mutex
@@ -29,7 +33,7 @@ type gatedSharedObject struct {
 // startGatedWorld starts a local provider on s4db storage under dir and a
 // World engine serving the SharedObject soRef through a gatedSharedObject,
 // creating the SharedObject when soRef is nil. Test cleanup stops them.
-func startGatedWorld(t *testing.T, dir string, soRef *sobject.SharedObjectRef) (*localWorld, *gatedSharedObject, *sobject_world_engine.Controller) {
+func startGatedWorld(t *testing.T, dir string, soRef *sobject.SharedObjectRef) (*localWorld, *gatedSharedObject) {
 	// Mount the SharedObject and wrap it.
 	t.Helper()
 	tb, acc, soRef := openLocalAccount(t, dir, soRef)
@@ -42,30 +46,43 @@ func startGatedWorld(t *testing.T, dir string, soRef *sobject.SharedObjectRef) (
 	if !ok {
 		t.Fatalf("SharedObject is %T, not a local SharedObject", so)
 	}
-	gated := &gatedSharedObject{SharedObject: local}
-
-	// Serve its World with the mock operations until cleanup.
 	ctrl, err := sobject_world_engine.NewController(tb.Logger, tb.Bus, sobject_world_engine.NewConfig("gated-world-engine", soRef), transform_all.BuildFactorySet())
 	if err != nil {
 		t.Fatal(err)
 	}
 	ctrl.SetStaticLookupOp(world_mock.LookupMockOp)
-	ctx, cancel := context.WithCancel(t.Context())
-	exited := make(chan error, 1)
-	go func() {
-		exited <- sobject_world_engine.ExecuteWorld(ctx, ctrl, gated)
-	}()
-	t.Cleanup(func() {
-		cancel()
-		<-exited
-	})
+	gated := &gatedSharedObject{SharedObject: local, ctrl: ctrl}
 
-	// Wait for the engine.
+	// Serve its World with the mock operations until cleanup.
+	gated.serve(t)
 	eng, err := ctrl.GetWorldEngine(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
-	return newLocalWorld(t, tb, acc, eng, soRef), gated, ctrl
+	return newLocalWorld(t, tb, acc, eng, soRef), gated
+}
+
+// serve starts serving the World of s with its controller until stop or test
+// cleanup. A controller that served before replaces its engine.
+func (s *gatedSharedObject) serve(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	exited := make(chan error, 1)
+	go func() {
+		exited <- sobject_world_engine.ExecuteWorld(ctx, s.ctrl, s)
+	}()
+	var once sync.Once
+	s.stopServe = func() {
+		once.Do(func() {
+			cancel()
+			<-exited
+		})
+	}
+	t.Cleanup(s.stopServe)
+}
+
+// stop ends the engine serve started, as losing read access does.
+func (s *gatedSharedObject) stop() {
+	s.stopServe()
 }
 
 // hold holds the physical commit of the next publication a World write

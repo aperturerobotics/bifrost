@@ -79,7 +79,7 @@ func (e *soEngine) settle() {
 		// A failed receipt takes its successors with it.
 		for _, failed := range e.admissions {
 			if failed.localID != "" {
-				e.failed[failed.localID] = struct{}{}
+				e.c.failed[failed.localID] = struct{}{}
 			}
 		}
 		e.replay.unsave(adm.base, adm.span, adm.spanLen)
@@ -106,6 +106,31 @@ func (e *soEngine) pending() bool {
 	return len(e.admissions) != 0
 }
 
+// reinstall settles the failed publication and installs the World from before
+// it. A write whose receipt failed calls it before returning, so the next
+// attempt, which reruns at once, finds that World installed. A failure to
+// reinstall is logged; the watcher installs the World at the next state
+// change. It ends with the engine's lifetime, not the write's context.
+func (e *soEngine) reinstall(ctx context.Context) {
+	// Take the writer lock the failed write released.
+	ctx, cancel := e.detach(ctx)
+	defer cancel()
+	unlockWriteMtx, err := e.c.writeMtx.Lock(ctx)
+	if err != nil {
+		return
+	}
+	defer unlockWriteMtx()
+
+	// Replay the state without the failed operations.
+	snap, err := e.admittedState(ctx)
+	if err == nil {
+		_, err = e.advance(ctx, snap, nil)
+	}
+	if err != nil && ctx.Err() == nil {
+		e.c.le.WithError(err).Warn("failed to reinstall the World after a failed publication")
+	}
+}
+
 // admittedState settles the resolved receipts and returns the admitted state,
 // waiting for a snapshot without the operations of failed publications. The
 // caller holds the writer lock.
@@ -123,19 +148,19 @@ func (e *soEngine) admittedState(ctx context.Context) (sobject.SharedObjectState
 		if snap == nil {
 			return false, nil
 		}
-		stale, err := e.stale(ctx, snap)
+		stale, err := e.c.stale(ctx, e.so, snap)
 		return !stale, err
 	}, nil)
 }
 
-// stale reports whether snap holds an operation of a failed publication. The
-// SharedObject publishes each snapshot after the state it shows, so a snapshot
-// of the state before a failed receipt reset it can arrive after the reset.
-// Every operation has a new local id, so a failed one never returns. The
+// stale reports whether snap of so holds an operation of a failed publication.
+// The SharedObject publishes each snapshot after the state it shows, so a
+// snapshot of the state before a failed receipt reset it can arrive after the
+// reset. Every operation has a new local id, so a failed one never returns. The
 // caller holds the writer lock.
-func (e *soEngine) stale(ctx context.Context, snap sobject.SharedObjectStateSnapshot) (bool, error) {
+func (c *Controller) stale(ctx context.Context, so sobject.SharedObject, snap sobject.SharedObjectStateSnapshot) (bool, error) {
 	// Skip reading the set while nothing failed.
-	if len(e.failed) == 0 {
+	if len(c.failed) == 0 {
 		return false, nil
 	}
 
@@ -144,8 +169,8 @@ func (e *soEngine) stale(ctx context.Context, snap sobject.SharedObjectStateSnap
 	if err != nil {
 		return false, err
 	}
-	self := e.so.GetPeerID().String()
-	for localID := range e.failed {
+	self := so.GetPeerID().String()
+	for localID := range c.failed {
 		if set.Find(self, localID) != nil {
 			return true, nil
 		}

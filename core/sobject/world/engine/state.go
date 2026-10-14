@@ -43,7 +43,7 @@ func (c *Controller) executeWatchSOState(
 		// resolved receipts, and skip a snapshot of a failed publication.
 		snap = soStateCtr.GetValue()
 		soEngine.settle()
-		stale, err := soEngine.stale(holdCtx, snap)
+		stale, err := c.stale(holdCtx, soEngine.so, snap)
 
 		// Watch the state once (sync any changes to soEngine and update local state).
 		if err == nil && !stale {

@@ -186,7 +186,8 @@ func (t *soEngineWriteTx) Commit(ctx context.Context) error {
 }
 
 // waitReceipt waits for the publication to resolve, finishes the borrow of the
-// candidate blocks with its result and returns its error. Admission commits
+// candidate blocks with its result and returns its error, once the engine
+// reinstalled the World from before a failed publication. Admission commits
 // the write to the durable result, so the wait ignores ctx's cancellation and
 // ends with the engine's lifetime. The outcome is then unknown: waitReceipt
 // returns the wait's error, and the publisher's result finishes the borrow and
@@ -210,13 +211,16 @@ func (t *soEngineWriteTx) waitReceipt(ctx context.Context) error {
 		return err
 	}
 
-	// The accepted World root holds a published candidate.
+	// A failed publication returns only after the engine reinstalls the World
+	// from before it. The accepted World root holds a published candidate.
 	err = receipt.Err()
 	batch.Complete(err)
-	if err == nil {
-		t.candidateRoot = nil
+	if err != nil {
+		t.eng.reinstall(ctx)
+		return err
 	}
-	return err
+	t.candidateRoot = nil
+	return nil
 }
 
 // writeBlocks writes the candidate blocks. A state write ordered after the

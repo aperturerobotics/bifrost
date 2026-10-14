@@ -198,9 +198,6 @@ type soEngine struct {
 	// admissions are the admitted local writes whose receipts are not settled,
 	// in admission order, guarded by the controller's writer lock.
 	admissions []*writeAdmission
-	// failed holds the local ids of the operations whose publications failed,
-	// guarded by the controller's writer lock.
-	failed map[string]struct{}
 	// retainedRoots are the retained roots updateEngineState last held,
 	// guarded by the controller's writer lock.
 	retainedRoots []*RetainedRoot
@@ -234,7 +231,6 @@ func newSoEngine(lifetime context.Context, c *Controller, so sobject.SharedObjec
 		bengine:        engine,
 		replay:         replay,
 		backfillChoice: ccontainer.NewCContainer(false),
-		failed:         make(map[string]struct{}),
 	}
 	e.backfill = routine.NewStateRoutineContainer[bool](
 		nil,

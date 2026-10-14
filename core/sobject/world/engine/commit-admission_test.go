@@ -13,7 +13,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/core/sobject"
-	sobject_world_engine "github.com/s4wave/spacewave/core/sobject/world/engine"
 	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/world"
 )
@@ -23,7 +22,7 @@ import (
 // Commit returns once its own publication is durable.
 func TestCommitForksFromAdmittedWorld(t *testing.T) {
 	// Hold the publication of the first write.
-	w, so, _ := startGatedWorld(t, t.TempDir(), nil)
+	w, so := startGatedWorld(t, t.TempDir(), nil)
 	before := admittedOps(t, so)
 	applying, release := so.hold(nil)
 	first := commitAsync(t, w.newWrite(t, "admit/1"))
@@ -69,7 +68,7 @@ func TestCommitForksFromAdmittedWorld(t *testing.T) {
 // World.
 func TestCommitReceiptFailure(t *testing.T) {
 	// Admit two writes after a durable one, holding the first publication.
-	w, so, ctrl := startGatedWorld(t, t.TempDir(), nil)
+	w, so := startGatedWorld(t, t.TempDir(), nil)
 	w.create(t, "fail/0")
 	before := admittedOps(t, so)
 	injected := errors.New("injected publication failure")
@@ -88,25 +87,19 @@ func TestCommitReceiptFailure(t *testing.T) {
 		t.Fatalf("second Commit: %v, want the injected failure or its dependency", err)
 	}
 
-	// The engine installs the World from before them.
-	want := map[string]bool{"fail/0": true, "fail/1": false, "fail/2": false}
-	err := sobject_world_engine.WaitInstalled(t.Context(), ctrl, func() (bool, error) {
-		read := newRead(t, w)
-		defer read.Discard()
-		for key, found := range want {
-			if worldHas(t, read, key) != found {
-				return false, nil
-			}
+	// Each failed Commit returns after the engine installed the World from
+	// before them, so a rerun forks from it at once.
+	read := newRead(t, w)
+	for key, found := range map[string]bool{"fail/0": true, "fail/1": false, "fail/2": false} {
+		if worldHas(t, read, key) != found {
+			t.Fatalf("%s present = %v after the failed Commits, want %v", key, !found, found)
 		}
-		return true, nil
-	})
-	if err != nil {
-		t.Fatal(err)
 	}
+	read.Discard()
 
 	// The next write commits on it.
 	w.create(t, "fail/3")
-	read := newRead(t, w)
+	read = newRead(t, w)
 	defer read.Discard()
 	for _, key := range []string{"fail/0", "fail/3"} {
 		if !worldHas(t, read, key) {
@@ -116,9 +109,9 @@ func TestCommitReceiptFailure(t *testing.T) {
 }
 
 // TestCommitAdmissionCrash cuts the process after two writes are admitted
-// while the first publication is held. The restarted engine replays from the
-// replay it saved before them, reads the World from before both and commits
-// again.
+// while the first publication is held. A group of publications commits
+// atomically, so the restarted engine reads the World from before both, which
+// holds the durable write of an earlier process, and commits again.
 func TestCommitAdmissionCrash(t *testing.T) {
 	const roleEnv = "SPACEWAVE_COMMIT_ADMISSION_CRASH_ROLE"
 	const dirEnv = "SPACEWAVE_COMMIT_ADMISSION_CRASH_DIR"
@@ -180,7 +173,7 @@ func commitAdmissionCrashWorker(t *testing.T, role, dir string) {
 
 	// Admit two writes behind a held publication and cut.
 	case "admitted":
-		w, so, _ := startGatedWorld(t, storage, soRef)
+		w, so := startGatedWorld(t, storage, soRef)
 		before := admittedOps(t, so)
 		applying, _ := so.hold(nil)
 		commitAsync(t, w.newWrite(t, "crash/1"))
@@ -207,6 +200,53 @@ func commitAdmissionCrashWorker(t *testing.T, role, dir string) {
 	}
 }
 
+// TestEngineReplacedWithAdmissions stops the engine while two admitted writes
+// wait for a held publication, as losing read access does, and serves the World
+// again. The new engine starts after the publication fails, reads the World
+// from before the writes and commits again.
+func TestEngineReplacedWithAdmissions(t *testing.T) {
+	// Admit two writes behind a held publication, then stop the engine.
+	w, so := startGatedWorld(t, t.TempDir(), nil)
+	w.create(t, "replace/0")
+	before := admittedOps(t, so)
+	injected := errors.New("injected publication failure")
+	applying, release := so.hold(injected)
+	first := commitAsync(t, w.newWrite(t, "replace/1"))
+	waitReached(t, applying)
+	second := commitAsync(t, w.newWrite(t, "replace/2"))
+	waitAdmittedOps(t, so, before+2)
+	so.stop()
+
+	// The replacement waits for the publication, which fails.
+	so.serve(t)
+	ctx, cancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
+	defer cancel()
+	if _, err := so.ctrl.GetWorldEngine(ctx); err == nil {
+		t.Fatal("replacement engine served while the publication was held")
+	}
+	release()
+	eng, err := so.ctrl.GetWorldEngine(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	w.eng = eng
+	for _, done := range []<-chan error{first, second} {
+		if err := <-done; err == nil {
+			t.Fatal("Commit of the stopped engine succeeded")
+		}
+	}
+
+	// It reads the World from before the writes, and commits on it.
+	read := newRead(t, w)
+	for key, found := range map[string]bool{"replace/0": true, "replace/1": false, "replace/2": false} {
+		if worldHas(t, read, key) != found {
+			t.Fatalf("%s present = %v in the replacement engine, want %v", key, !found, found)
+		}
+	}
+	read.Discard()
+	w.create(t, "replace/3")
+}
+
 // TestCheckpointSkipsPendingAdmission holds the publication of the write that
 // makes MinCheckpointOperations operations stable. The engine does not
 // checkpoint, or hold the writer lock, while it waits for the receipt, and
@@ -214,7 +254,7 @@ func commitAdmissionCrashWorker(t *testing.T, role, dir string) {
 func TestCheckpointSkipsPendingAdmission(t *testing.T) {
 	// Write one operation short of a checkpoint. Every operation of the only
 	// roster member is stable.
-	w, so, _ := startGatedWorld(t, t.TempDir(), nil)
+	w, so := startGatedWorld(t, t.TempDir(), nil)
 	var n int
 	for ; admittedOps(t, so) < sobject.MinCheckpointOperations-1; n++ {
 		w.create(t, "checkpoint/"+strconv.Itoa(n))

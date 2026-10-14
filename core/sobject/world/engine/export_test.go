@@ -22,26 +22,3 @@ func ExecuteWorld(ctx context.Context, c *Controller, so sobject.SharedObject) e
 	defer cancel()
 	return c.executeSharedObject(ctx, cancel, so)
 }
-
-// WaitInstalled calls check after each World the engine of c installs, and
-// once first, until it returns true or an error.
-func WaitInstalled(ctx context.Context, c *Controller, check func() (bool, error)) error {
-	for {
-		// Read the wait channel before checking, so no install is missed.
-		var wait <-chan struct{}
-		c.writeBcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
-			wait = getWaitCh()
-		})
-		done, err := check()
-		if err != nil || done {
-			return err
-		}
-
-		// Wait for the next install.
-		select {
-		case <-ctx.Done():
-			return context.Cause(ctx)
-		case <-wait:
-		}
-	}
-}

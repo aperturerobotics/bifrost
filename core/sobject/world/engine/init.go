@@ -27,6 +27,20 @@ func (c *Controller) waitWorldInit(
 
 	var queued bool
 	for {
+		// Wait out a snapshot that still shows a failed write of the previous
+		// engine.
+		stale, err := c.staleSnapshot(ctx, so, snap)
+		if err != nil {
+			return nil, err
+		}
+		if stale {
+			snap, err = c.waitReplayInput(ctx, so, soStateCtr, snap, nil, nil)
+			if err != nil {
+				return nil, err
+			}
+			continue
+		}
+
 		// Replay the state. ErrNotParticipant ends the wait.
 		participant, err := snap.GetParticipantConfig(ctx)
 		if err != nil {
