@@ -105,7 +105,7 @@ Load async UI data through the existing resource hooks: `useResource`, `useStrea
 
 ## RPC, watches and cloud
 
-Expose changing state through server-streaming `Watch*` RPCs. Unary calls return immutable values or perform one-shot actions. Route containers share watch snapshots through context, and subscribers to the same state share one Go-side stream.
+Expose changing state through server-streaming `Watch*` RPCs. Unary calls return immutable values or perform one-shot actions. Route containers share watch snapshots through context. An SDK watch that takes a key, such as a `Root` or `Session` watch or a keyed `useWorldQuery`, shares one Go-side stream among its subscribers with `SharedStreams`; an unkeyed watch opens its own stream.
 
 An RPC that returns a `resource_id` allocates a server resource. Wrap it with `resourceRef.createRef(id)` and release the reference; releasing the resource tears it down. A composite `useResource` value exposes its IDs through `getResourceIds`, and the hook retries a resource the server released unless that release is expected and terminal.
 
