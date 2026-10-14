@@ -3,48 +3,53 @@ package block_gc
 import (
 	"bytes"
 	"context"
-	"maps"
-	"slices"
 	"strings"
 
 	"github.com/s4wave/spacewave/db/kvtx"
 )
 
-// seedBatchRecords bounds the forward records one seeding commit reads.
+// seedBatchRecords bounds the records one seeding commit reads.
 const seedBatchRecords = 8192
 
 // SeedRefsKnown adds an edge to NodeRefsKnown from every block that an edge
 // names. A graph written before those edges existed treated a block with any
 // edge as having known refs, so seeding keeps its reads unchanged. That rule
 // also counts a block stored untracked under a tracked owner as known; the
-// repair walk, which decodes each block, corrects such a block. Each commit
-// seeds the blocks of up to seedBatchRecords forward records, and a rerun
+// repair walk, which decodes each block, corrects such a block.
+//
+// Seeding scans the forward records for their subjects, then the incoming
+// records for their objects. Both scans meet their first node in key order,
+// so the new records arrive in key order too, and each checkpoint rewrites
+// only the index pages around them instead of pages across the whole index.
+// Each commit seeds the nodes of up to seedBatchRecords records, and a rerun
 // after a crash finds the edges already written.
 func (g *RefGraph) SeedRefsKnown(ctx context.Context) error {
-	for start := graphKey(kindForward); start != nil; {
-		var err error
-		start, err = g.seedRefsKnownBatch(ctx, start)
-		if err != nil {
-			return err
+	for _, kind := range []byte{kindForward, kindIncoming} {
+		for start := graphKey(kind); start != nil; {
+			var err error
+			start, err = g.seedRefsKnownBatch(ctx, kind, start)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
 }
 
-// seedRefsKnownBatch seeds the blocks of the forward records at or after
+// seedRefsKnownBatch seeds the first nodes of the records of kind at or after
 // start in one commit, and returns the key to resume from, or nil at the end.
-func (g *RefGraph) seedRefsKnownBatch(ctx context.Context, start []byte) ([]byte, error) {
+func (g *RefGraph) seedRefsKnownBatch(ctx context.Context, kind byte, start []byte) ([]byte, error) {
 	var next []byte
 	err := g.transaction(ctx, true, func(ctx context.Context, tx kvtx.Tx) error {
-		// Collect the block nodes of the next forward records.
-		blocks, last, more, err := readForwardBlocks(ctx, tx, start)
+		// Collect the block nodes that lead the next records.
+		blocks, last, more, err := readFirstBlocks(ctx, tx, kind, start)
 		if err != nil {
 			return err
 		}
 
-		// Add the edge each block lacks, in key order, and resume after the
-		// last record read.
-		for _, node := range slices.Sorted(maps.Keys(blocks)) {
+		// Add the edge each block lacks, and resume after the last record
+		// read.
+		for _, node := range blocks {
 			if err := g.addRefTx(ctx, tx, node, NodeRefsKnown); err != nil {
 				return err
 			}
@@ -58,33 +63,30 @@ func (g *RefGraph) seedRefsKnownBatch(ctx context.Context, start []byte) ([]byte
 	return next, err
 }
 
-// readForwardBlocks returns the block nodes of up to seedBatchRecords forward
-// records at or after start, the last key read, and whether more remain.
-func readForwardBlocks(ctx context.Context, tx kvtx.Tx, start []byte) (map[string]struct{}, []byte, bool, error) {
+// readFirstBlocks returns the distinct block nodes that lead up to
+// seedBatchRecords records of kind at or after start, in key order, with the
+// last key read and whether more records remain.
+func readFirstBlocks(ctx context.Context, tx kvtx.Tx, kind byte, start []byte) ([]string, []byte, bool, error) {
 	// Position the iterator at start.
-	it := tx.Iterate(ctx, graphKey(kindForward), true, false)
+	it := tx.Iterate(ctx, graphKey(kind), true, false)
 	defer it.Close()
 	if err := it.Seek(start); err != nil {
 		return nil, nil, false, err
 	}
 
-	// Decode both nodes of each record and keep the blocks.
-	blocks := make(map[string]struct{})
+	// Keep each record's first node when it is a block. Records sharing a
+	// first node are adjacent, so comparing with the previous node removes
+	// the repeats.
+	var blocks []string
 	var last []byte
 	for read := 0; it.Valid() && read < seedBatchRecords; read++ {
 		key := it.Key()
-		subject, rest, err := readNode(key[1:])
+		node, _, err := readNode(key[1:])
 		if err != nil {
 			return nil, nil, false, err
 		}
-		object, _, err := readNode(rest)
-		if err != nil {
-			return nil, nil, false, err
-		}
-		for _, node := range []string{subject, object} {
-			if strings.HasPrefix(node, prefixBlock) {
-				blocks[node] = struct{}{}
-			}
+		if strings.HasPrefix(node, prefixBlock) && (len(blocks) == 0 || blocks[len(blocks)-1] != node) {
+			blocks = append(blocks, node)
 		}
 		last = bytes.Clone(key)
 		it.Next()
