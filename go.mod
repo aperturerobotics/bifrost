@@ -50,7 +50,7 @@ require (
 	github.com/dustin/go-humanize v1.1.0
 	github.com/fatih/color v1.19.0
 	github.com/ghodss/yaml v1.0.0
-	github.com/go-git/go-billy/v6 v6.0.0-beta.1.0.20261005145446-43077f29f67b // main
+	github.com/go-git/go-billy/v6 v6.0.0-beta.1.0.20261014124120-5fd4cced2e8e // main
 	github.com/go-git/go-git/v6 v6.0.0-beta.1.0.20261009073342-bb92758aceaa // main
 	github.com/go-sql-driver/mysql v1.10.1
 	github.com/goccy/go-json v0.11.2
@@ -76,7 +76,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/quic-go/quic-go v0.63.0
 	github.com/restic/chunker v0.5.0
-	github.com/s4wave/goscript v0.4.3
+	github.com/s4wave/goscript v0.4.4
 	github.com/sasha-s/go-deadlock v0.3.9
 	github.com/satori/go.uuid v1.2.0
 	github.com/sergi/go-diff v1.4.0
