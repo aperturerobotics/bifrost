@@ -7,15 +7,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/s4wave/spacewave/core/pairing"
-	sobject_world_engine "github.com/s4wave/spacewave/core/sobject/world/engine"
-	"github.com/s4wave/spacewave/db/block"
-	"github.com/s4wave/spacewave/db/bucket"
-
+	"github.com/aperturerobotics/util/ccontainer"
 	"github.com/aperturerobotics/util/ulid"
+	"github.com/s4wave/spacewave/core/pairing"
 	"github.com/s4wave/spacewave/core/session"
 	"github.com/s4wave/spacewave/core/sobject"
+	sobject_world_engine "github.com/s4wave/spacewave/core/sobject/world/engine"
 	"github.com/s4wave/spacewave/core/transport"
+	"github.com/s4wave/spacewave/db/block"
+	"github.com/s4wave/spacewave/db/bucket"
 	"github.com/s4wave/spacewave/net/transport/inproc"
 )
 
@@ -49,12 +49,6 @@ func TestAccountReplicaMesh(t *testing.T) {
 	leaf, payload := seedAccountReplicaPayload(ctx, t, a, spaceRef)
 	b, bSession := enrollMeshReplica(ctx, t, a, sessions[0], originals[1], sessions[1])
 	waitReplicaCopy(ctx, t, b, spaceRef)
-
-	// B holds A's final enrollment change before A goes offline; otherwise B
-	// extends an older head and A returns on a branch nobody shares.
-	for _, entry := range a.soListCtr.GetValue().GetSharedObjects() {
-		waitReplicaConfig(ctx, t, a, b, entry.GetRef())
-	}
 
 	// Recreate the receiver's workers while the original account is offline.
 	a.StopP2PSync()
@@ -110,11 +104,12 @@ func TestAccountReplicaMesh(t *testing.T) {
 
 	// B unlinks C. Remaining replicas must share one verified revocation
 	// lineage, including for a Space originally created by the removed Session.
+	// A may still be merging a branch it wrote before going offline.
 	if err := b.UnlinkDevice(ctx, cSession.GetPeerId()); err != nil {
 		t.Fatal(err)
 	}
 	for _, ref := range []*sobject.SharedObjectRef{spaceRef, later} {
-		waitReplicaConfig(ctx, t, b, a, ref)
+		waitSameConfig(ctx, t, a, b, ref)
 	}
 }
 
@@ -206,28 +201,50 @@ func waitReplicaCopy(ctx context.Context, t *testing.T, account *ProviderAccount
 	}
 }
 
-// waitReplicaConfig waits until replica holds the configuration head owner
-// holds for ref.
-func waitReplicaConfig(ctx context.Context, t *testing.T, owner, replica *ProviderAccount, ref *sobject.SharedObjectRef) {
-	// Read the owner's head and watch the replica's state.
+// waitSameConfig waits until both accounts hold the same configuration head
+// for ref, following merges that move either head.
+func waitSameConfig(ctx context.Context, t *testing.T, x, y *ProviderAccount, ref *sobject.SharedObjectRef) {
+	// Watch both states and signal each change.
 	t.Helper()
-	ownerState := getSOState(ctx, t, owner, ref, ref.GetProviderResourceRef().GetId())
-	replicaSO, release, err := replica.MountSharedObject(ctx, ref, nil)
-	if err != nil {
-		t.Fatal(err)
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	changed := make(chan struct{}, 1)
+	var watched []ccontainer.Watchable[*sobject.SOState]
+	for _, account := range []*ProviderAccount{x, y} {
+		so, release, err := account.MountSharedObject(ctx, ref, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer release()
+		states, releaseStates, err := so.(*SharedObject).GetSOHost().GetSOStateCtr(ctx, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer releaseStates()
+		watched = append(watched, states)
+		go func() {
+			var previous *sobject.SOState
+			for {
+				current, err := states.WaitValueChange(ctx, previous, nil)
+				if err != nil {
+					return
+				}
+				previous = current
+				select {
+				case changed <- struct{}{}:
+				default:
+				}
+			}
+		}()
 	}
-	defer release()
-	states, releaseStates, err := replicaSO.(*SharedObject).GetSOHost().GetSOStateCtr(ctx, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer releaseStates()
 
-	// Wait for the replica to reach the same head.
-	if _, err := states.WaitValueWithValidator(ctx, func(state *sobject.SOState) (bool, error) {
-		return bytes.Equal(state.GetConfig().GetConfigChainHash(), ownerState.GetConfig().GetConfigChainHash()), nil
-	}, nil); err != nil {
-		t.Fatalf("replica did not reach the owner's configuration head: %v", err)
+	// Compare the heads after every change.
+	for !bytes.Equal(watched[0].GetValue().GetConfig().GetConfigChainHash(), watched[1].GetValue().GetConfig().GetConfigChainHash()) {
+		select {
+		case <-ctx.Done():
+			t.Fatalf("replicas did not converge to one configuration head: %v", ctx.Err())
+		case <-changed:
+		}
 	}
 }
 

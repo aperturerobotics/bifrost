@@ -73,6 +73,7 @@ class SOConfigChangeType(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     SO_CONFIG_CHANGE_TYPE_SET_ROSTER: _ClassVar[SOConfigChangeType]
     SO_CONFIG_CHANGE_TYPE_SET_SEQUENCER: _ClassVar[SOConfigChangeType]
     SO_CONFIG_CHANGE_TYPE_SET_CONTROL: _ClassVar[SOConfigChangeType]
+    SO_CONFIG_CHANGE_TYPE_MERGE: _ClassVar[SOConfigChangeType]
 
 class SORevocationReason(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     __slots__ = ()
@@ -135,6 +136,7 @@ SO_CONFIG_CHANGE_TYPE_TRANSFER_OWNERSHIP: SOConfigChangeType
 SO_CONFIG_CHANGE_TYPE_SET_ROSTER: SOConfigChangeType
 SO_CONFIG_CHANGE_TYPE_SET_SEQUENCER: SOConfigChangeType
 SO_CONFIG_CHANGE_TYPE_SET_CONTROL: SOConfigChangeType
+SO_CONFIG_CHANGE_TYPE_MERGE: SOConfigChangeType
 SO_REVOCATION_REASON_UNKNOWN: SORevocationReason
 SO_REVOCATION_REASON_SESSION_REVOKED: SORevocationReason
 SO_REVOCATION_REASON_ORG_REMOVED: SORevocationReason
@@ -322,7 +324,7 @@ class SORevocationInfo(_message.Message):
     def __init__(self, reason: _Optional[_Union[SORevocationReason, str]] = ..., timestamp: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., nonce: _Optional[int] = ..., leave_request_hash: _Optional[bytes] = ...) -> None: ...
 
 class SOConfigChange(_message.Message):
-    __slots__ = ("config_seqno", "config", "previous_hash", "change_type", "revocation_info", "leave_request", "shared_object_id", "signatures", "commit")
+    __slots__ = ("config_seqno", "config", "previous_hash", "change_type", "revocation_info", "leave_request", "shared_object_id", "signatures", "commit", "merge")
     CONFIG_SEQNO_FIELD_NUMBER: _ClassVar[int]
     CONFIG_FIELD_NUMBER: _ClassVar[int]
     PREVIOUS_HASH_FIELD_NUMBER: _ClassVar[int]
@@ -332,6 +334,7 @@ class SOConfigChange(_message.Message):
     SHARED_OBJECT_ID_FIELD_NUMBER: _ClassVar[int]
     SIGNATURES_FIELD_NUMBER: _ClassVar[int]
     COMMIT_FIELD_NUMBER: _ClassVar[int]
+    MERGE_FIELD_NUMBER: _ClassVar[int]
     config_seqno: int
     config: SharedObjectConfig
     previous_hash: bytes
@@ -341,7 +344,16 @@ class SOConfigChange(_message.Message):
     shared_object_id: str
     signatures: _containers.RepeatedCompositeFieldContainer[_peer_pb2.Signature]
     commit: _containers.RepeatedCompositeFieldContainer[SOControlMessage]
-    def __init__(self, config_seqno: _Optional[int] = ..., config: _Optional[_Union[SharedObjectConfig, _Mapping]] = ..., previous_hash: _Optional[bytes] = ..., change_type: _Optional[_Union[SOConfigChangeType, str]] = ..., revocation_info: _Optional[_Union[SORevocationInfo, _Mapping]] = ..., leave_request: _Optional[_Union[SOLeaveRequest, _Mapping]] = ..., shared_object_id: _Optional[str] = ..., signatures: _Optional[_Iterable[_Union[_peer_pb2.Signature, _Mapping]]] = ..., commit: _Optional[_Iterable[_Union[SOControlMessage, _Mapping]]] = ...) -> None: ...
+    merge: SOConfigMerge
+    def __init__(self, config_seqno: _Optional[int] = ..., config: _Optional[_Union[SharedObjectConfig, _Mapping]] = ..., previous_hash: _Optional[bytes] = ..., change_type: _Optional[_Union[SOConfigChangeType, str]] = ..., revocation_info: _Optional[_Union[SORevocationInfo, _Mapping]] = ..., leave_request: _Optional[_Union[SOLeaveRequest, _Mapping]] = ..., shared_object_id: _Optional[str] = ..., signatures: _Optional[_Iterable[_Union[_peer_pb2.Signature, _Mapping]]] = ..., commit: _Optional[_Iterable[_Union[SOControlMessage, _Mapping]]] = ..., merge: _Optional[_Union[SOConfigMerge, _Mapping]] = ...) -> None: ...
+
+class SOConfigMerge(_message.Message):
+    __slots__ = ("fork", "branch")
+    FORK_FIELD_NUMBER: _ClassVar[int]
+    BRANCH_FIELD_NUMBER: _ClassVar[int]
+    fork: SOConfigChange
+    branch: _containers.RepeatedCompositeFieldContainer[SOConfigChange]
+    def __init__(self, fork: _Optional[_Union[SOConfigChange, _Mapping]] = ..., branch: _Optional[_Iterable[_Union[SOConfigChange, _Mapping]]] = ...) -> None: ...
 
 class SOParticipantConfig(_message.Message):
     __slots__ = ("peer_id", "role", "entity_id", "username", "voting_weight")

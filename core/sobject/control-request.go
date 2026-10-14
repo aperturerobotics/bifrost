@@ -122,7 +122,7 @@ func (s *SOState) sealControlRecord(agreed []byte) ([]byte, error) {
 func (s *SOState) judgeControlRecord(sharedObjectID, self string, msgs []ControlMessage, entry *SOConfigChange) controlValidity {
 	// Check the record against the held config and checkpoint.
 	cfg := s.GetConfig()
-	if !isPeerConfigChange(entry.GetChangeType()) || linkConfigChange(sharedObjectID, cfg, entry) != nil {
+	if !isGroupConfigChange(entry.GetChangeType()) || linkConfigChange(sharedObjectID, cfg, entry) != nil {
 		return controlInvalid
 	}
 	if _, err := configChangeResult(entry); err != nil {
@@ -211,7 +211,7 @@ func ChangeSOConfig(
 	if !current.IsGroupControl() {
 		return applyOwnerConfigChange(ctx, host, state, next, changeType, signer, revInfo, fn)
 	}
-	if !isPeerConfigChange(changeType) {
+	if !isGroupConfigChange(changeType) {
 		return errors.Errorf("a group does not decide %v", changeType)
 	}
 

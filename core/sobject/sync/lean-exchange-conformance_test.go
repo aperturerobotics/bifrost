@@ -115,6 +115,39 @@ func leanSyncExchange(t *testing.T, a *fastjson.Arena, x *syncExchange) *fastjso
 	return v
 }
 
+// leanSyncHistoryReads projects the provider reads a history request makes
+// against advertised: the held suffix from the requested base, or, when the base
+// is not held, the held branch above the requested floor. Each is null when its
+// read fails or is not made.
+func leanSyncHistoryReads(
+	t *testing.T,
+	a *fastjson.Arena,
+	s *SOSync,
+	advertised *sobject.SOState,
+	request *SOSyncHistoryRequest,
+) (history, branch *fastjson.Value) {
+	// Read the held suffix from the requested base.
+	t.Helper()
+	head := advertised.GetConfig().GetConfigChainHash()
+	entries, err := s.soHost.ReadConfigHistory(t.Context(), request.GetBaseHash(), head)
+	if err == nil {
+		return leanSyncChanges(t, a, entries), a.NewNull()
+	}
+	if !errors.Is(err, sobject.ErrConfigHistoryUnavailable) {
+		return a.NewNull(), a.NewNull()
+	}
+
+	// Read the held branch above the floor instead.
+	cursor, entries, err := s.soHost.ReadConfigBranch(t.Context(), head, request.GetFloorSeqno())
+	if err != nil {
+		return a.NewNull(), a.NewNull()
+	}
+	read := a.NewObject()
+	read.Set("cursor", a.NewString(hex.EncodeToString(cursor)))
+	read.Set("changes", leanSyncChanges(t, a, entries))
+	return a.NewNull(), read
+}
+
 // leanSyncExchangeCheck compares one real owner operation and its observable host effects.
 func leanSyncExchangeCheck(t *testing.T, x *syncExchange, current *sobject.SOState,
 	message *SOSyncMessage, pump bool, writes *int, name string, loop *leanSyncLoopRun,
@@ -143,22 +176,20 @@ func leanSyncExchangeCheck(t *testing.T, x *syncExchange, current *sobject.SOSta
 	}
 	wire.Invites = nil
 
-	// leanSyncMarshal encoded.
+	// Encode the held state and its digest.
 	encoded := leanSyncMarshal(t, wire)
 	digest := sha256.Sum256(encoded)
 	input.Set("stateBytes", a.NewNumberInt(wire.SizeVT()))
 	input.Set("encoded", a.NewString(hex.EncodeToString(encoded)))
 	input.Set("digest", a.NewString(hex.EncodeToString(digest[:])))
-	history := a.NewNull()
-	advertisedEncoded := a.NewNull()
 
-	// Record snapshotBytes.
+	// Record the provider's reads and the advertised snapshot size.
+	history, branch := a.NewNull(), a.NewNull()
+	advertisedEncoded := a.NewNull()
 	snapshotBytes := 0
 	if x.advertised != nil {
-		entries, err := x.sync.soHost.ReadConfigHistory(t.Context(), message.GetHistoryRequest().GetBaseHash(), x.advertised.GetConfig().GetConfigChainHash())
-		if err == nil {
-			history = leanSyncChanges(t, &a, entries)
-		}
+		// Read the held suffix or branch, then encode the stripped advertisement.
+		history, branch = leanSyncHistoryReads(t, &a, x.sync, x.advertised, message.GetHistoryRequest())
 		advertised := x.advertised.CloneVT()
 		advertised.Invites = nil
 		data := leanSyncMarshal(t, advertised)
@@ -167,9 +198,14 @@ func leanSyncExchangeCheck(t *testing.T, x *syncExchange, current *sobject.SOSta
 			Revision: message.GetHistoryRequest().GetRevision(), BaseHash: message.GetHistoryRequest().GetBaseHash()}
 		snapshotBytes = (&SOSyncMessage{Body: &SOSyncMessage_Snapshot{Snapshot: snapshot}}).SizeVT()
 	}
+
+	// Publish the provider observations.
 	input.Set("history", history)
+	input.Set("branch", branch)
 	input.Set("advertisedEncoded", advertisedEncoded)
 	input.Set("snapshotBytes", a.NewNumberInt(snapshotBytes))
+
+	// Measure each candidate page of the pending response.
 	sizes := a.NewArray()
 	if x.response != nil {
 		for count := 1; count <= len(x.response.changes) && count <= maxHistoryPageEntries; count++ {

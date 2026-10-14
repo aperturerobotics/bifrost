@@ -7,6 +7,7 @@ import (
 	"io"
 	"net"
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 
@@ -32,8 +33,18 @@ func gateLogger() *logrus.Entry {
 
 // newMemHost builds an SOHost backed by a state container and an optional successful-write observer.
 func newMemHost(soID string, initial *sobject.SOState, onWrite ...func()) (*sobject.SOHost, *ccontainer.CContainer[*sobject.SOState]) {
+	return newMemHostRetaining(soID, initial, nil, onWrite...)
+}
 
-	// Check the condition before continuing.
+// newMemHostRetaining builds a memory SOHost that already retains the
+// config history entries in retained, such as the genesis behind initial.
+func newMemHostRetaining(
+	soID string,
+	initial *sobject.SOState,
+	retained []*sobject.SOConfigChange,
+	onWrite ...func(),
+) (*sobject.SOHost, *ccontainer.CContainer[*sobject.SOState]) {
+	// Start from an empty state and the retained history.
 	if initial == nil {
 		initial = &sobject.SOState{}
 	}
@@ -41,8 +52,18 @@ func newMemHost(soID string, initial *sobject.SOState, onWrite ...func()) (*sobj
 	watchFn := func(_ context.Context, _ string, _ func()) (ccontainer.Watchable[*sobject.SOState], func(), error) {
 		return ctr, func() {}, nil
 	}
+
+	// mutex serializes imports; historyMtx guards history for readers outside it.
 	var mutex csync.Mutex
+	var historyMtx sync.RWMutex
 	history := make(map[string]*sobject.SOConfigChange)
+	for _, change := range retained {
+		hash, err := sobject.HashSOConfigChange(change)
+		if err != nil {
+			panic(err)
+		}
+		history[string(hash)] = change.CloneVT()
+	}
 	lockFn := func(ctx context.Context, _ string) (sobject.SOStateLock, error) {
 		release, err := mutex.Lock(ctx)
 		if err != nil {
@@ -54,7 +75,9 @@ func newMemHost(soID string, initial *sobject.SOState, onWrite ...func()) (*sobj
 				if err != nil {
 					return err
 				}
+				historyMtx.Lock()
 				history[string(hash)] = change.CloneVT()
+				historyMtx.Unlock()
 			}
 			ctr.SetValue(state)
 			if len(onWrite) != 0 {
@@ -63,16 +86,24 @@ func newMemHost(soID string, initial *sobject.SOState, onWrite ...func()) (*sobj
 			return nil
 		}, release), nil
 	}
-	syncFuncs := &sobject.SOHostSyncFuncs{History: func(ctx context.Context, _ string, base, target []byte) ([]*sobject.SOConfigChange, error) {
-		release, err := mutex.Lock(ctx)
-		if err != nil {
-			return nil, err
-		}
-		defer release()
-		return sobject.ReadConfigSuffix(ctx, base, target, func(_ context.Context, hash []byte) (*sobject.SOConfigChange, error) {
-			return history[string(hash)], nil
-		})
-	}}
+	read := func(_ context.Context, hash []byte) (*sobject.SOConfigChange, error) {
+		historyMtx.RLock()
+		defer historyMtx.RUnlock()
+		return history[string(hash)], nil
+	}
+	syncFuncs := &sobject.SOHostSyncFuncs{
+		History: func(ctx context.Context, _ string, base, target []byte) ([]*sobject.SOConfigChange, error) {
+			release, err := mutex.Lock(ctx)
+			if err != nil {
+				return nil, err
+			}
+			defer release()
+			return sobject.ReadConfigSuffix(ctx, base, target, read)
+		},
+		Entry: func(ctx context.Context, _ string, hash []byte) (*sobject.SOConfigChange, error) {
+			return read(ctx, hash)
+		},
+	}
 	return sobject.NewSOHost(context.Background(), watchFn, lockFn, soID, syncFuncs), ctr
 }
 

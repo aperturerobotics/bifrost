@@ -367,6 +367,9 @@ enum SOConfigChangeType {
   // SO_CONFIG_CHANGE_TYPE_SET_CONTROL chooses owner or group control, or
   // changes voting weights.
   SO_CONFIG_CHANGE_TYPE_SET_CONTROL = 11;
+  // SO_CONFIG_CHANGE_TYPE_MERGE absorbs a concurrent branch of owner records
+  // into the chain after its parent. See SOConfigMerge.
+  SO_CONFIG_CHANGE_TYPE_MERGE = 12;
 }
 
 // SORevocationReason describes why a participant was removed.
@@ -424,6 +427,25 @@ message SOConfigChange {
   // one round, voters of the parent config, more than two thirds of its
   // voting weight.
   repeated SOControlMessage commit = 12;
+
+  // Merge is the branch a MERGE record absorbs. Only populated when
+  // change_type is MERGE.
+  SOConfigMerge merge = 13;
+}
+
+// SOConfigMerge is a concurrent branch of the config chain that a MERGE record
+// absorbs. The branch records keep their original signatures. Each applies the
+// fields it changed from its parent onto the config after the records before
+// it, in order, starting from the merge record's parent config. A record is
+// dropped when a signer is no longer an OWNER of that config, or when its
+// result would be invalid, so the MERGE record's config is determined by its
+// parent and this branch.
+message SOConfigMerge {
+  // Fork is the record both branches extend: the parent of branch[0].
+  SOConfigChange fork = 1;
+  // Branch are the absorbed records, oldest first, each the child of the one
+  // before it.
+  repeated SOConfigChange branch = 2;
 }
 
 // SOParticipantConfig contains a listing of an entity associated with a shared object.

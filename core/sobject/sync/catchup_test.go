@@ -1,15 +1,18 @@
 package sobject_sync
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"errors"
 	"net"
+	"slices"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/s4wave/spacewave/core/sobject"
+	"github.com/s4wave/spacewave/net/crypto"
 	"github.com/s4wave/spacewave/net/peer"
 	stream_packet "github.com/s4wave/spacewave/net/stream/packet"
 )
@@ -17,6 +20,7 @@ import (
 // TestAuthenticatedCatchupPinsPagesAndContinues proves real paired streams catch
 // up across multiple history pages and then propagate configuration-only changes.
 func TestAuthenticatedCatchupPinsPagesAndContinues(t *testing.T) {
+	// An owner and a reader start from the same authenticated state.
 	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	defer cancel()
 	const soID = "paged-authenticated-catchup"
@@ -62,6 +66,7 @@ func TestAuthenticatedCatchupPinsPagesAndContinues(t *testing.T) {
 	observed := &authenticationStream{Conn: left, messages: make(chan *SOSyncMessage, 64)}
 	localDone, remoteDone := make(chan error, 1), make(chan error, 1)
 
+	// The receiver accepts the complete target state.
 	go func() { localDone <- local.runStream(ctx, gateLogger(), observed, "transport-a", "transport-b") }()
 	go func() { remoteDone <- remote.runStream(ctx, gateLogger(), right, "transport-b", "transport-a") }()
 	accepted, err := states.WaitValueWithValidator(ctx, func(state *sobject.SOState) (bool, error) {
@@ -310,5 +315,109 @@ func TestUnverifiableCatchupRequiresRecovery(t *testing.T) {
 				t.Fatalf("catchup changed local state: %v", err)
 			}
 		})
+	}
+}
+
+// TestConcurrentOwnerBranchesMerge proves two owners that each extended the
+// config while apart converge over a real stream: the owner whose head loses
+// merges its branch onto the other head, and both keep every participant.
+func TestConcurrentOwnerBranchesMerge(t *testing.T) {
+	// Two owners start from one config.
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+	const soID = "concurrent-owner-merge"
+	ownerA, ownerB := mustKeyPair(t), mustKeyPair(t)
+	initial := &sobject.SOState{Config: &sobject.SharedObjectConfig{Participants: []*sobject.SOParticipantConfig{
+		participantCfg(mustPeerIDStr(t, ownerA), sobject.SOParticipantRole_SOParticipantRole_OWNER),
+		participantCfg(mustPeerIDStr(t, ownerB), sobject.SOParticipantRole_SOParticipantRole_OWNER),
+	}}}
+
+	// Both hold the same genesis and its checkpoint.
+	genesis, err := sobject.BuildSOConfigChange(soID, initial.Config, initial.Config, sobject.SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_GENESIS, ownerA, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if initial.Config, err = sobject.VerifyConfigChange(soID, initial.Config, genesis); err != nil {
+		t.Fatal(err)
+	}
+	if initial.Checkpoint, err = sobject.BuildGenesisSOCheckpoint(ownerA, soID, initial.Config.GetConfigChainHash(), nil); err != nil {
+		t.Fatal(err)
+	}
+
+	// Each owner runs a host retaining the genesis.
+	newPeer := func(key crypto.PrivKey) *SOSync {
+		// Build the host and the sync under the owner's identity.
+		host, _ := newMemHostRetaining(soID, initial.CloneVT(), []*sobject.SOConfigChange{genesis})
+		t.Cleanup(host.ClearContext)
+		id, err := peer.IDFromPrivateKey(key)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return NewSOSync(gateLogger(), nil, soID, id, key, host, nil)
+	}
+	a, b := newPeer(ownerA), newPeer(ownerB)
+
+	// While apart, A adds one reader and B adds two, so B's head wins.
+	addReader := func(s *SOSync, signer crypto.PrivKey) string {
+		// Add a new reader to the held config.
+		t.Helper()
+		current, err := s.soHost.GetHostState(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		reader := mustPeerIDStr(t, mustKeyPair(t))
+		next := current.GetConfig().CloneVT()
+		next.Participants = append(next.Participants, participantCfg(reader, sobject.SOParticipantRole_SOParticipantRole_READER))
+
+		// Sign the change and apply it locally.
+		change, err := sobject.BuildSOConfigChange(soID, current.GetConfig(), next, sobject.SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_ADD_PARTICIPANT, signer, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := s.soHost.ApplyConfigChange(ctx, change, nil); err != nil {
+			t.Fatal(err)
+		}
+		return reader
+	}
+	readers := []string{addReader(a, ownerA), addReader(b, ownerB), addReader(b, ownerB)}
+
+	// Sync until both hold the same head above both branches.
+	left, right := net.Pipe()
+	t.Cleanup(func() { left.Close(); right.Close() })
+	done := make(chan error, 2)
+	go func() { done <- a.runStream(ctx, gateLogger(), left, "transport-a", "transport-b") }()
+	go func() { done <- b.runStream(ctx, gateLogger(), right, "transport-b", "transport-a") }()
+	var heads [2]*sobject.SharedObjectConfig
+	for i, s := range []*SOSync{a, b} {
+		// Wait for the merge to reach this owner.
+		states, release, err := s.soHost.GetSOStateCtr(ctx, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		state, err := states.WaitValueWithValidator(ctx, func(state *sobject.SOState) (bool, error) {
+			return state.GetConfig().GetConfigChainSeqno() == 3, nil
+		}, done)
+		release()
+		if err != nil {
+			t.Fatal(err)
+		}
+		heads[i] = state.GetConfig()
+	}
+
+	// Both hold the merge record's config, with every reader from both branches.
+	if !bytes.Equal(heads[0].GetConfigChainHash(), heads[1].GetConfigChainHash()) {
+		t.Fatal("owners hold different heads after merging")
+	}
+	for _, reader := range readers {
+		if !slices.ContainsFunc(heads[0].GetParticipants(), func(p *sobject.SOParticipantConfig) bool { return p.GetPeerId() == reader }) {
+			t.Fatalf("merged config lacks reader %s", reader)
+		}
+	}
+	merge, err := a.soHost.ReadConfigEntry(ctx, heads[0].GetConfigChainHash())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if merge.GetChangeType() != sobject.SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_MERGE || len(merge.GetMerge().GetBranch()) != 1 {
+		t.Fatalf("head is %s absorbing %d records, want one merged record", merge.GetChangeType(), len(merge.GetMerge().GetBranch()))
 	}
 }

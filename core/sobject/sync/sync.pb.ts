@@ -174,6 +174,13 @@ export interface SOSyncHistoryRequest {
    * @generated from field: bytes base_hash = 2;
    */
   baseHash?: Uint8Array
+  /**
+   * FloorSeqno is the config sequence of the receiver's held checkpoint. A
+   * sender that does not hold base_hash sends its branch above it instead.
+   *
+   * @generated from field: uint64 floor_seqno = 3;
+   */
+  floorSeqno?: bigint
 }
 
 export const SOSyncHistoryRequest: MessageType<SOSyncHistoryRequest> =
@@ -182,6 +189,7 @@ export const SOSyncHistoryRequest: MessageType<SOSyncHistoryRequest> =
     fields: [
       { no: 1, name: 'revision', kind: 'scalar', T: ScalarType.UINT64 },
       { no: 2, name: 'base_hash', kind: 'scalar', T: ScalarType.BYTES },
+      { no: 3, name: 'floor_seqno', kind: 'scalar', T: ScalarType.UINT64 },
     ] satisfies readonly PartialFieldInfo[],
   })
 
@@ -246,6 +254,38 @@ export const SOSyncRecoveryRequired: MessageType<SOSyncRecoveryRequired> =
     typeName: 'sobject.sync.SOSyncRecoveryRequired',
     fields: [
       { no: 1, name: 'revision', kind: 'scalar', T: ScalarType.UINT64 },
+    ] satisfies readonly PartialFieldInfo[],
+  })
+
+/**
+ * SOSyncBranch precedes the history pages when the sender does not hold the
+ * requested base, so the two config chains diverged. The pages start after
+ * cursor, the sender's record at the requested floor, and the receiver merges
+ * the branches.
+ *
+ * @generated from message sobject.sync.SOSyncBranch
+ */
+export interface SOSyncBranch {
+  /**
+   * Revision identifies the pinned target advertisement.
+   *
+   * @generated from field: uint64 revision = 1;
+   */
+  revision?: bigint
+  /**
+   * Cursor is the hash immediately before the first page's first entry.
+   *
+   * @generated from field: bytes cursor = 2;
+   */
+  cursor?: Uint8Array
+}
+
+export const SOSyncBranch: MessageType<SOSyncBranch> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'sobject.sync.SOSyncBranch',
+    fields: [
+      { no: 1, name: 'revision', kind: 'scalar', T: ScalarType.UINT64 },
+      { no: 2, name: 'cursor', kind: 'scalar', T: ScalarType.BYTES },
     ] satisfies readonly PartialFieldInfo[],
   })
 
@@ -346,6 +386,15 @@ export interface SOSyncMessage {
         value: SOSyncRecoveryRequired
         case: 'recoveryRequired'
       }
+    | {
+        /**
+         * Branch reports that history pages start after an earlier common head.
+         *
+         * @generated from field: sobject.sync.SOSyncBranch branch = 11;
+         */
+        value: SOSyncBranch
+        case: 'branch'
+      }
 }
 
 export const SOSyncMessage: MessageType<SOSyncMessage> =
@@ -401,6 +450,13 @@ export const SOSyncMessage: MessageType<SOSyncMessage> =
         name: 'recovery_required',
         kind: 'message',
         T: SOSyncRecoveryRequired,
+        oneof: 'body',
+      },
+      {
+        no: 11,
+        name: 'branch',
+        kind: 'message',
+        T: SOSyncBranch,
         oneof: 'body',
       },
     ] satisfies readonly PartialFieldInfo[],

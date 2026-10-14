@@ -30,6 +30,8 @@ message SOSyncMessage {
     SOSyncHistoryPage history_page = 9;
     // RecoveryRequired reports that trusted recovery must replace this exchange.
     SOSyncRecoveryRequired recovery_required = 10;
+    // Branch reports that history pages start after an earlier common head.
+    SOSyncBranch branch = 11;
   }
 }
 
@@ -95,6 +97,20 @@ message SOSyncHistoryRequest {
   uint64 revision = 1;
   // BaseHash identifies the receiver's exact trusted checkpoint.
   bytes base_hash = 2;
+  // FloorSeqno is the config sequence of the receiver's held checkpoint. A
+  // sender that does not hold base_hash sends its branch above it instead.
+  uint64 floor_seqno = 3;
+}
+
+// SOSyncBranch precedes the history pages when the sender does not hold the
+// requested base, so the two config chains diverged. The pages start after
+// cursor, the sender's record at the requested floor, and the receiver merges
+// the branches.
+message SOSyncBranch {
+  // Revision identifies the pinned target advertisement.
+  uint64 revision = 1;
+  // Cursor is the hash immediately before the first page's first entry.
+  bytes cursor = 2;
 }
 
 // SOSyncHistoryPage advances the request's cursor without adopting any state.

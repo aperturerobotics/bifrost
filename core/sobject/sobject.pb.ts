@@ -382,6 +382,14 @@ export enum SOConfigChangeType {
    * @generated from enum value: SO_CONFIG_CHANGE_TYPE_SET_CONTROL = 11;
    */
   SO_CONFIG_CHANGE_TYPE_SET_CONTROL = 11,
+
+  /**
+   * SO_CONFIG_CHANGE_TYPE_MERGE absorbs a concurrent branch of owner records
+   * into the chain after its parent. See SOConfigMerge.
+   *
+   * @generated from enum value: SO_CONFIG_CHANGE_TYPE_MERGE = 12;
+   */
+  SO_CONFIG_CHANGE_TYPE_MERGE = 12,
 }
 
 export const SOConfigChangeType_Enum = /* @__PURE__ */ createEnumType(
@@ -1375,6 +1383,48 @@ export const SOControlMessage: MessageType<SOControlMessage> =
   })
 
 /**
+ * SOConfigMerge is a concurrent branch of the config chain that a MERGE record
+ * absorbs. The branch records keep their original signatures. Each applies the
+ * fields it changed from its parent onto the config after the records before
+ * it, in order, starting from the merge record's parent config. A record is
+ * dropped when a signer is no longer an OWNER of that config, or when its
+ * result would be invalid, so the MERGE record's config is determined by its
+ * parent and this branch.
+ *
+ * @generated from message sobject.SOConfigMerge
+ */
+export interface SOConfigMerge {
+  /**
+   * Fork is the record both branches extend: the parent of branch[0].
+   *
+   * @generated from field: sobject.SOConfigChange fork = 1;
+   */
+  fork?: SOConfigChange
+  /**
+   * Branch are the absorbed records, oldest first, each the child of the one
+   * before it.
+   *
+   * @generated from field: repeated sobject.SOConfigChange branch = 2;
+   */
+  branch?: SOConfigChange[]
+}
+
+export const SOConfigMerge: MessageType<SOConfigMerge> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'sobject.SOConfigMerge',
+    fields: [
+      { no: 1, name: 'fork', kind: 'message', T: () => SOConfigChange },
+      {
+        no: 2,
+        name: 'branch',
+        kind: 'message',
+        T: () => SOConfigChange,
+        repeated: true,
+      },
+    ] satisfies readonly PartialFieldInfo[],
+  })
+
+/**
  * SOConfigChange is a control record: one signed change in the config chain.
  * Its identity is the hash of the record with signatures cleared.
  *
@@ -1442,6 +1492,13 @@ export interface SOConfigChange {
    * @generated from field: repeated sobject.SOControlMessage commit = 12;
    */
   commit?: SOControlMessage[]
+  /**
+   * Merge is the branch a MERGE record absorbs. Only populated when
+   * change_type is MERGE.
+   *
+   * @generated from field: sobject.SOConfigMerge merge = 13;
+   */
+  merge?: SOConfigMerge
 }
 
 export const SOConfigChange: MessageType<SOConfigChange> =
@@ -1474,6 +1531,7 @@ export const SOConfigChange: MessageType<SOConfigChange> =
         T: SOControlMessage,
         repeated: true,
       },
+      { no: 13, name: 'merge', kind: 'message', T: SOConfigMerge },
     ] satisfies readonly PartialFieldInfo[],
   })
 

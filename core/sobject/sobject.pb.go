@@ -333,6 +333,9 @@ const (
 	// SO_CONFIG_CHANGE_TYPE_SET_CONTROL chooses owner or group control, or
 	// changes voting weights.
 	SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_SET_CONTROL SOConfigChangeType = 11
+	// SO_CONFIG_CHANGE_TYPE_MERGE absorbs a concurrent branch of owner records
+	// into the chain after its parent. See SOConfigMerge.
+	SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_MERGE SOConfigChangeType = 12
 )
 
 // Enum value maps for SOConfigChangeType.
@@ -350,6 +353,7 @@ var (
 		9:  "SO_CONFIG_CHANGE_TYPE_SET_ROSTER",
 		10: "SO_CONFIG_CHANGE_TYPE_SET_SEQUENCER",
 		11: "SO_CONFIG_CHANGE_TYPE_SET_CONTROL",
+		12: "SO_CONFIG_CHANGE_TYPE_MERGE",
 	}
 	SOConfigChangeType_value = map[string]int32{
 		"SO_CONFIG_CHANGE_TYPE_UNKNOWN":               0,
@@ -364,6 +368,7 @@ var (
 		"SO_CONFIG_CHANGE_TYPE_SET_ROSTER":            9,
 		"SO_CONFIG_CHANGE_TYPE_SET_SEQUENCER":         10,
 		"SO_CONFIG_CHANGE_TYPE_SET_CONTROL":           11,
+		"SO_CONFIG_CHANGE_TYPE_MERGE":                 12,
 	}
 )
 
@@ -1252,6 +1257,9 @@ type SOConfigChange struct {
 	// one round, voters of the parent config, more than two thirds of its
 	// voting weight.
 	Commit []*SOControlMessage `protobuf:"bytes,12,rep,name=commit,proto3" json:"commit,omitempty"`
+	// Merge is the branch a MERGE record absorbs. Only populated when
+	// change_type is MERGE.
+	Merge *SOConfigMerge `protobuf:"bytes,13,opt,name=merge,proto3" json:"merge,omitempty"`
 }
 
 func (x *SOConfigChange) Reset() {
@@ -1319,6 +1327,49 @@ func (x *SOConfigChange) GetSignatures() []*peer.Signature {
 func (x *SOConfigChange) GetCommit() []*SOControlMessage {
 	if x != nil {
 		return x.Commit
+	}
+	return nil
+}
+
+func (x *SOConfigChange) GetMerge() *SOConfigMerge {
+	if x != nil {
+		return x.Merge
+	}
+	return nil
+}
+
+// SOConfigMerge is a concurrent branch of the config chain that a MERGE record
+// absorbs. The branch records keep their original signatures. Each applies the
+// fields it changed from its parent onto the config after the records before
+// it, in order, starting from the merge record's parent config. A record is
+// dropped when a signer is no longer an OWNER of that config, or when its
+// result would be invalid, so the MERGE record's config is determined by its
+// parent and this branch.
+type SOConfigMerge struct {
+	unknownFields []byte
+	// Fork is the record both branches extend: the parent of branch[0].
+	Fork *SOConfigChange `protobuf:"bytes,1,opt,name=fork,proto3" json:"fork,omitempty"`
+	// Branch are the absorbed records, oldest first, each the child of the one
+	// before it.
+	Branch []*SOConfigChange `protobuf:"bytes,2,rep,name=branch,proto3" json:"branch,omitempty"`
+}
+
+func (x *SOConfigMerge) Reset() {
+	*x = SOConfigMerge{}
+}
+
+func (*SOConfigMerge) ProtoMessage() {}
+
+func (x *SOConfigMerge) GetFork() *SOConfigChange {
+	if x != nil {
+		return x.Fork
+	}
+	return nil
+}
+
+func (x *SOConfigMerge) GetBranch() []*SOConfigChange {
+	if x != nil {
+		return x.Branch
 	}
 	return nil
 }
@@ -2930,6 +2981,7 @@ func (m *SOConfigChange) CloneVT() *SOConfigChange {
 	r.LeaveRequest = protobuf_go_lite.CloneVTValue(m.LeaveRequest)
 	r.Signatures = protobuf_go_lite.CloneVTSlice(m.Signatures)
 	r.Commit = protobuf_go_lite.CloneVTSlice(m.Commit)
+	r.Merge = protobuf_go_lite.CloneVTValue(m.Merge)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -2937,6 +2989,23 @@ func (m *SOConfigChange) CloneVT() *SOConfigChange {
 }
 
 func (m *SOConfigChange) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *SOConfigMerge) CloneVT() *SOConfigMerge {
+	if m == nil {
+		return (*SOConfigMerge)(nil)
+	}
+	r := new(SOConfigMerge)
+	r.Fork = protobuf_go_lite.CloneVTValue(m.Fork)
+	r.Branch = protobuf_go_lite.CloneVTSlice(m.Branch)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *SOConfigMerge) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
@@ -3901,11 +3970,37 @@ func (this *SOConfigChange) EqualVT(that *SOConfigChange) bool {
 	if !protobuf_go_lite.EqualVTSliceImplicit(this.Commit, that.Commit, func() *SOControlMessage { return &SOControlMessage{} }) {
 		return false
 	}
+	if !protobuf_go_lite.IsEqualVT(this.Merge, that.Merge) {
+		return false
+	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
 func (this *SOConfigChange) EqualMessageVT(thatMsg any) bool {
 	that, ok := thatMsg.(*SOConfigChange)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *SOConfigMerge) EqualVT(that *SOConfigMerge) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.Fork, that.Fork) {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.Branch, that.Branch, func() *SOConfigChange { return &SOConfigChange{} }) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *SOConfigMerge) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*SOConfigMerge)
 	if !ok {
 		return false
 	}
@@ -6298,6 +6393,11 @@ func (x *SOConfigChange) MarshalProtoJSON(s *json.MarshalState) {
 		}
 		s.WriteArrayEnd()
 	}
+	if x.Merge != nil || s.HasField("merge") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("merge")
+		x.Merge.MarshalProtoJSON(s.WithField("merge"))
+	}
 	s.WriteObjectEnd()
 }
 
@@ -6384,12 +6484,94 @@ func (x *SOConfigChange) UnmarshalProtoJSON(s *json.UnmarshalState) {
 				}
 				x.Commit = append(x.Commit, v)
 			})
+		case "merge":
+			if s.ReadNil() {
+				x.Merge = nil
+				return
+			}
+			x.Merge = &SOConfigMerge{}
+			x.Merge.UnmarshalProtoJSON(s.WithField("merge", true))
 		}
 	})
 }
 
 // UnmarshalJSON unmarshals the SOConfigChange from JSON.
 func (x *SOConfigChange) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the SOConfigMerge message to JSON.
+func (x *SOConfigMerge) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Fork != nil || s.HasField("fork") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("fork")
+		x.Fork.MarshalProtoJSON(s.WithField("fork"))
+	}
+	if len(x.Branch) > 0 || s.HasField("branch") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("branch")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.Branch {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s.WithField("branch"))
+		}
+		s.WriteArrayEnd()
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the SOConfigMerge to JSON.
+func (x *SOConfigMerge) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the SOConfigMerge message from JSON.
+func (x *SOConfigMerge) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "fork":
+			if s.ReadNil() {
+				x.Fork = nil
+				return
+			}
+			x.Fork = &SOConfigChange{}
+			x.Fork.UnmarshalProtoJSON(s.WithField("fork", true))
+		case "branch":
+			s.AddField("branch")
+			if s.ReadNil() {
+				x.Branch = nil
+				return
+			}
+			s.ReadArray(func() {
+				if s.ReadNil() {
+					x.Branch = append(x.Branch, nil)
+					return
+				}
+				v := &SOConfigChange{}
+				v.UnmarshalProtoJSON(s.WithField("branch", false))
+				if s.Err() != nil {
+					return
+				}
+				x.Branch = append(x.Branch, v)
+			})
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the SOConfigMerge from JSON.
+func (x *SOConfigMerge) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -9313,6 +9495,16 @@ func (m *SOConfigChange) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.Merge != nil {
+		size, err := m.Merge.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x6a
+	}
 	if len(m.Commit) > 0 {
 		for iNdEx := len(m.Commit) - 1; iNdEx >= 0; iNdEx-- {
 			size, err := m.Commit[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
@@ -9386,6 +9578,60 @@ func (m *SOConfigChange) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.ConfigSeqno))
 		i--
 		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *SOConfigMerge) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *SOConfigMerge) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *SOConfigMerge) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.Branch) > 0 {
+		for iNdEx := len(m.Branch) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.Branch[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if m.Fork != nil {
+		size, err := m.Fork.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
@@ -11184,6 +11430,28 @@ func (m *SOConfigChange) SizeVT() (n int) {
 		l = e.SizeVT()
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
+	if m.Merge != nil {
+		l = m.Merge.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *SOConfigMerge) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Fork != nil {
+		l = m.Fork.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	for _, e := range m.Branch {
+		l = e.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -12181,10 +12449,40 @@ func (x *SOConfigChange) MarshalProtoText() string {
 		}
 		protobuf_go_lite.TextWriteListEnd(&sb)
 	}
+	if x.Merge != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "merge")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Merge)
+	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
 func (x *SOConfigChange) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *SOConfigMerge) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "SOConfigMerge")
+	if x.Fork != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "fork")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Fork)
+	}
+	if len(x.Branch) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "branch")
+		for i, v := range x.Branch {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &SOConfigChange{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *SOConfigMerge) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -14360,6 +14658,92 @@ func (m *SOConfigChange) UnmarshalVT(dAtA []byte) error {
 			}
 			m.Commit = append(m.Commit, &SOControlMessage{})
 			if err := m.Commit[len(m.Commit)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 13:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Merge", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Merge == nil {
+				m.Merge = &SOConfigMerge{}
+			}
+			if err := m.Merge.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *SOConfigMerge) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SOConfigMerge: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SOConfigMerge: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Fork", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Fork == nil {
+				m.Fork = &SOConfigChange{}
+			}
+			if err := m.Fork.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Branch", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Branch = append(m.Branch, &SOConfigChange{})
+			if err := m.Branch[len(m.Branch)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

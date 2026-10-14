@@ -46,7 +46,7 @@ func configChangeSignedBody(entry *SOConfigChange) ([]byte, error) {
 // 2. Monotonically increasing config_seqno (starting from 0)
 // 3. previous_hash matching the hash of the prior entry (genesis has zero previous_hash)
 // 4. Authorization by the prior config; genesis by an owner of its own
-// config, which must start under owner control
+// config, which must start under owner control.
 func VerifyConfigChain(sharedObjectID string, entries []*SOConfigChange) error {
 	// Require a chain before validating its bootstrap entry.
 	if len(entries) == 0 {
@@ -113,12 +113,16 @@ func VerifyConfigChain(sharedObjectID string, entries []*SOConfigChange) error {
 // The resulting configuration must pass Validate, so a nonempty result keeps an OWNER.
 // An empty held head permits sequence zero for locally authorized bootstrap.
 // SELF_ENROLL_PEER requires a separate authenticated peer-to-entity binding.
+// A MERGE entry must carry the config its branch yields on current.
 func VerifyConfigChange(sharedObjectID string, current *SharedObjectConfig, entry *SOConfigChange) (*SharedObjectConfig, error) {
 	if err := linkConfigChange(sharedObjectID, current, entry); err != nil {
 		return nil, err
 	}
 	if err := verifyConfigChangeAuthority(entry, current); err != nil {
 		return nil, errors.Wrap(err, "verify config change")
+	}
+	if err := verifyConfigMerge(sharedObjectID, current, entry); err != nil {
+		return nil, err
 	}
 	return configChangeResult(entry)
 }
@@ -171,6 +175,8 @@ func configChangeResult(entry *SOConfigChange) (*SharedObjectConfig, error) {
 // VerifyConfigChainSuffix authenticates a candidate configuration from a held,
 // nonempty checkpoint. Every transition must be authorized by its predecessor.
 // Genesis and self-enrollment are unavailable on this peer verification path.
+// A suffix that does not follow the checkpoint starts at the fork of a merge
+// that absorbs it; see ConfigSuffixBase.
 // Empty suffixes require every candidate field to equal the checkpoint,
 // independent of participant order.
 // This verifies configuration authority only, not root or content acceptance.
@@ -181,6 +187,10 @@ func VerifyConfigChainSuffix(sharedObjectID string, current, candidate *SharedOb
 	}
 	if err := current.Validate(); err != nil {
 		return errors.Wrap(err, "trusted config")
+	}
+	current, err := ConfigSuffixBase(current, entries)
+	if err != nil {
+		return err
 	}
 
 	// Advance only through authorized changes linked to the evolving head.
@@ -203,8 +213,8 @@ func VerifyConfigChainSuffix(sharedObjectID string, current, candidate *SharedOb
 }
 
 // isPeerConfigChange reports whether a change of type t may reach a peer
-// through sync: every type but genesis and self-enrollment, which need
-// their own proof.
+// through sync, or be absorbed by a merge: every type but genesis and
+// self-enrollment, which need their own proof.
 func isPeerConfigChange(t SOConfigChangeType) bool {
 	switch t {
 	case SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_ADD_PARTICIPANT,
@@ -215,11 +225,18 @@ func isPeerConfigChange(t SOConfigChangeType) bool {
 		SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_TRANSFER_OWNERSHIP,
 		SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_SET_ROSTER,
 		SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_SET_SEQUENCER,
-		SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_SET_CONTROL:
+		SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_SET_CONTROL,
+		SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_MERGE:
 		return true
 	default:
 		return false
 	}
+}
+
+// isGroupConfigChange reports whether a group may decide a change of type t:
+// every peer change but a merge, which one owner signs.
+func isGroupConfigChange(t SOConfigChangeType) bool {
+	return isPeerConfigChange(t) && t != SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_MERGE
 }
 
 // VerifyConfigLineage authenticates changes, oldest first, that lead to an

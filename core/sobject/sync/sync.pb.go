@@ -30,6 +30,7 @@ type SOSyncMessage struct {
 	//	*SOSyncMessage_HistoryRequest
 	//	*SOSyncMessage_HistoryPage
 	//	*SOSyncMessage_RecoveryRequired
+	//	*SOSyncMessage_Branch
 	Body isSOSyncMessage_Body `protobuf_oneof:"body"`
 }
 
@@ -109,6 +110,13 @@ func (x *SOSyncMessage) GetRecoveryRequired() *SOSyncRecoveryRequired {
 	return nil
 }
 
+func (x *SOSyncMessage) GetBranch() *SOSyncBranch {
+	if x, ok := x.GetBody().(*SOSyncMessage_Branch); ok {
+		return x.Branch
+	}
+	return nil
+}
+
 type isSOSyncMessage_Body interface {
 	isSOSyncMessage_Body()
 }
@@ -158,6 +166,11 @@ type SOSyncMessage_RecoveryRequired struct {
 	RecoveryRequired *SOSyncRecoveryRequired `protobuf:"bytes,10,opt,name=recovery_required,json=recoveryRequired,proto3,oneof"`
 }
 
+type SOSyncMessage_Branch struct {
+	// Branch reports that history pages start after an earlier common head.
+	Branch *SOSyncBranch `protobuf:"bytes,11,opt,name=branch,proto3,oneof"`
+}
+
 func (*SOSyncMessage_Snapshot) isSOSyncMessage_Body() {}
 
 func (*SOSyncMessage_Ack) isSOSyncMessage_Body() {}
@@ -175,6 +188,8 @@ func (*SOSyncMessage_HistoryRequest) isSOSyncMessage_Body() {}
 func (*SOSyncMessage_HistoryPage) isSOSyncMessage_Body() {}
 
 func (*SOSyncMessage_RecoveryRequired) isSOSyncMessage_Body() {}
+
+func (*SOSyncMessage_Branch) isSOSyncMessage_Body() {}
 
 // SOSyncSnapshot is a full SOState snapshot exchanged after mutual
 // authentication. The receiver merges its checkpoint, key epochs and
@@ -386,6 +401,9 @@ type SOSyncHistoryRequest struct {
 	Revision uint64 `protobuf:"varint,1,opt,name=revision,proto3" json:"revision,omitempty"`
 	// BaseHash identifies the receiver's exact trusted checkpoint.
 	BaseHash []byte `protobuf:"bytes,2,opt,name=base_hash,json=baseHash,proto3" json:"baseHash,omitempty"`
+	// FloorSeqno is the config sequence of the receiver's held checkpoint. A
+	// sender that does not hold base_hash sends its branch above it instead.
+	FloorSeqno uint64 `protobuf:"varint,3,opt,name=floor_seqno,json=floorSeqno,proto3" json:"floorSeqno,omitempty"`
 }
 
 func (x *SOSyncHistoryRequest) Reset() {
@@ -404,6 +422,45 @@ func (x *SOSyncHistoryRequest) GetRevision() uint64 {
 func (x *SOSyncHistoryRequest) GetBaseHash() []byte {
 	if x != nil {
 		return x.BaseHash
+	}
+	return nil
+}
+
+func (x *SOSyncHistoryRequest) GetFloorSeqno() uint64 {
+	if x != nil {
+		return x.FloorSeqno
+	}
+	return 0
+}
+
+// SOSyncBranch precedes the history pages when the sender does not hold the
+// requested base, so the two config chains diverged. The pages start after
+// cursor, the sender's record at the requested floor, and the receiver merges
+// the branches.
+type SOSyncBranch struct {
+	unknownFields []byte
+	// Revision identifies the pinned target advertisement.
+	Revision uint64 `protobuf:"varint,1,opt,name=revision,proto3" json:"revision,omitempty"`
+	// Cursor is the hash immediately before the first page's first entry.
+	Cursor []byte `protobuf:"bytes,2,opt,name=cursor,proto3" json:"cursor,omitempty"`
+}
+
+func (x *SOSyncBranch) Reset() {
+	*x = SOSyncBranch{}
+}
+
+func (*SOSyncBranch) ProtoMessage() {}
+
+func (x *SOSyncBranch) GetRevision() uint64 {
+	if x != nil {
+		return x.Revision
+	}
+	return 0
+}
+
+func (x *SOSyncBranch) GetCursor() []byte {
+	if x != nil {
+		return x.Cursor
 	}
 	return nil
 }
@@ -601,6 +658,19 @@ func (m *SOSyncMessage_RecoveryRequired) CloneOneofVT() isSOSyncMessage_Body {
 	return m.CloneVT()
 }
 
+func (m *SOSyncMessage_Branch) CloneVT() *SOSyncMessage_Branch {
+	if m == nil {
+		return (*SOSyncMessage_Branch)(nil)
+	}
+	r := new(SOSyncMessage_Branch)
+	r.Branch = protobuf_go_lite.CloneVTValue(m.Branch)
+	return r
+}
+
+func (m *SOSyncMessage_Branch) CloneOneofVT() isSOSyncMessage_Body {
+	return m.CloneVT()
+}
+
 func (m *SOSyncSnapshot) CloneVT() *SOSyncSnapshot {
 	if m == nil {
 		return (*SOSyncSnapshot)(nil)
@@ -712,6 +782,7 @@ func (m *SOSyncHistoryRequest) CloneVT() *SOSyncHistoryRequest {
 	}
 	r := new(SOSyncHistoryRequest)
 	r.Revision = m.Revision
+	r.FloorSeqno = m.FloorSeqno
 	r.BaseHash = protobuf_go_lite.CloneBytes(m.BaseHash)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
@@ -720,6 +791,23 @@ func (m *SOSyncHistoryRequest) CloneVT() *SOSyncHistoryRequest {
 }
 
 func (m *SOSyncHistoryRequest) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *SOSyncBranch) CloneVT() *SOSyncBranch {
+	if m == nil {
+		return (*SOSyncBranch)(nil)
+	}
+	r := new(SOSyncBranch)
+	r.Revision = m.Revision
+	r.Cursor = protobuf_go_lite.CloneBytes(m.Cursor)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *SOSyncBranch) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
@@ -939,6 +1027,23 @@ func (this *SOSyncMessage_RecoveryRequired) EqualVT(thatIface isSOSyncMessage_Bo
 	return true
 }
 
+func (this *SOSyncMessage_Branch) EqualVT(thatIface isSOSyncMessage_Body) bool {
+	that, ok := thatIface.(*SOSyncMessage_Branch)
+	if !ok {
+		return false
+	}
+	if this == that {
+		return true
+	}
+	if this == nil && that != nil || this != nil && that == nil {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTImplicit(this.Branch, that.Branch, func() *SOSyncBranch { return &SOSyncBranch{} }) {
+		return false
+	}
+	return true
+}
+
 func (this *SOSyncSnapshot) EqualVT(that *SOSyncSnapshot) bool {
 	if this == that {
 		return true
@@ -1098,11 +1203,37 @@ func (this *SOSyncHistoryRequest) EqualVT(that *SOSyncHistoryRequest) bool {
 	if !protobuf_go_lite.EqualBytes(this.BaseHash, that.BaseHash) {
 		return false
 	}
+	if this.FloorSeqno != that.FloorSeqno {
+		return false
+	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
 func (this *SOSyncHistoryRequest) EqualMessageVT(thatMsg any) bool {
 	that, ok := thatMsg.(*SOSyncHistoryRequest)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *SOSyncBranch) EqualVT(that *SOSyncBranch) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.Revision != that.Revision {
+		return false
+	}
+	if !protobuf_go_lite.EqualBytes(this.Cursor, that.Cursor) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *SOSyncBranch) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*SOSyncBranch)
 	if !ok {
 		return false
 	}
@@ -1201,6 +1332,10 @@ func (x *SOSyncMessage) MarshalProtoJSON(s *json.MarshalState) {
 			s.WriteMoreIf(&wroteField)
 			s.WriteObjectField("recoveryRequired")
 			ov.RecoveryRequired.MarshalProtoJSON(s.WithField("recoveryRequired"))
+		case *SOSyncMessage_Branch:
+			s.WriteMoreIf(&wroteField)
+			s.WriteObjectField("branch")
+			ov.Branch.MarshalProtoJSON(s.WithField("branch"))
 		}
 	}
 	s.WriteObjectEnd()
@@ -1301,6 +1436,15 @@ func (x *SOSyncMessage) UnmarshalProtoJSON(s *json.UnmarshalState) {
 			}
 			ov.RecoveryRequired = &SOSyncRecoveryRequired{}
 			ov.RecoveryRequired.UnmarshalProtoJSON(s.WithField("recovery_required", true))
+		case "branch":
+			ov := &SOSyncMessage_Branch{}
+			x.Body = ov
+			if s.ReadNil() {
+				ov.Branch = nil
+				return
+			}
+			ov.Branch = &SOSyncBranch{}
+			ov.Branch.UnmarshalProtoJSON(s.WithField("branch", true))
 		}
 	})
 }
@@ -1652,6 +1796,11 @@ func (x *SOSyncHistoryRequest) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("baseHash")
 		s.WriteBytes(x.BaseHash)
 	}
+	if x.FloorSeqno != 0 || s.HasField("floorSeqno") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("floorSeqno")
+		s.WriteUint64(x.FloorSeqno)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -1675,12 +1824,65 @@ func (x *SOSyncHistoryRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "base_hash", "baseHash":
 			s.AddField("base_hash")
 			x.BaseHash = s.ReadBytes()
+		case "floor_seqno", "floorSeqno":
+			s.AddField("floor_seqno")
+			x.FloorSeqno = s.ReadUint64()
 		}
 	})
 }
 
 // UnmarshalJSON unmarshals the SOSyncHistoryRequest from JSON.
 func (x *SOSyncHistoryRequest) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the SOSyncBranch message to JSON.
+func (x *SOSyncBranch) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Revision != 0 || s.HasField("revision") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("revision")
+		s.WriteUint64(x.Revision)
+	}
+	if len(x.Cursor) > 0 || s.HasField("cursor") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("cursor")
+		s.WriteBytes(x.Cursor)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the SOSyncBranch to JSON.
+func (x *SOSyncBranch) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the SOSyncBranch message from JSON.
+func (x *SOSyncBranch) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "revision":
+			s.AddField("revision")
+			x.Revision = s.ReadUint64()
+		case "cursor":
+			s.AddField("cursor")
+			x.Cursor = s.ReadBytes()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the SOSyncBranch from JSON.
+func (x *SOSyncBranch) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -2062,6 +2264,30 @@ func (m *SOSyncMessage_RecoveryRequired) MarshalToSizedBufferVT(dAtA []byte) (in
 	return len(dAtA) - i, nil
 }
 
+func (m *SOSyncMessage_Branch) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *SOSyncMessage_Branch) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.Branch != nil {
+		size, err := m.Branch.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x5a
+	} else {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, 0)
+		i--
+		dAtA[i] = 0x5a
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *SOSyncSnapshot) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -2358,8 +2584,55 @@ func (m *SOSyncHistoryRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) 
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.FloorSeqno != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.FloorSeqno))
+		i--
+		dAtA[i] = 0x18
+	}
 	if len(m.BaseHash) > 0 {
 		i = protobuf_go_lite.EncodeBytes(dAtA, i, m.BaseHash)
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.Revision != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Revision))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *SOSyncBranch) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *SOSyncBranch) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *SOSyncBranch) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.Cursor) > 0 {
+		i = protobuf_go_lite.EncodeBytes(dAtA, i, m.Cursor)
 		i--
 		dAtA[i] = 0x12
 	}
@@ -2610,6 +2883,21 @@ func (m *SOSyncMessage_RecoveryRequired) SizeVT() (n int) {
 	return n
 }
 
+func (m *SOSyncMessage_Branch) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Branch != nil {
+		l = m.Branch.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	} else {
+		n += 2
+	}
+	return n
+}
+
 func (m *SOSyncSnapshot) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -2693,6 +2981,19 @@ func (m *SOSyncHistoryRequest) SizeVT() (n int) {
 	_ = l
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.Revision)
 	n += protobuf_go_lite.SizeBytesNonEmpty(1, m.BaseHash)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.FloorSeqno)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *SOSyncBranch) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Revision)
+	n += protobuf_go_lite.SizeBytesNonEmpty(1, m.Cursor)
 	n += len(m.unknownFields)
 	return n
 }
@@ -2790,6 +3091,13 @@ func (x *SOSyncMessage) MarshalProtoText() string {
 			protobuf_go_lite.TextWriteTextMarshaler(&sb, &SOSyncRecoveryRequired{})
 		} else {
 			protobuf_go_lite.TextWriteTextMarshaler(&sb, body.RecoveryRequired)
+		}
+	case *SOSyncMessage_Branch:
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "branch")
+		if body.Branch == nil {
+			protobuf_go_lite.TextWriteTextMarshaler(&sb, &SOSyncBranch{})
+		} else {
+			protobuf_go_lite.TextWriteTextMarshaler(&sb, body.Branch)
 		}
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
@@ -2930,10 +3238,32 @@ func (x *SOSyncHistoryRequest) MarshalProtoText() string {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "base_hash")
 		protobuf_go_lite.TextWriteBytes(&sb, x.BaseHash)
 	}
+	if x.FloorSeqno != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "floor_seqno")
+		protobuf_go_lite.TextWriteUint(&sb, x.FloorSeqno)
+	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
 func (x *SOSyncHistoryRequest) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *SOSyncBranch) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "SOSyncBranch")
+	if x.Revision != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "revision")
+		protobuf_go_lite.TextWriteUint(&sb, x.Revision)
+	}
+	if len(x.Cursor) != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "cursor")
+		protobuf_go_lite.TextWriteBytes(&sb, x.Cursor)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *SOSyncBranch) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -3179,6 +3509,26 @@ func (m *SOSyncMessage) UnmarshalVT(dAtA []byte) error {
 					return err
 				}
 				m.Body = &SOSyncMessage_RecoveryRequired{RecoveryRequired: v}
+			}
+			iNdEx = postIndex
+		case 11:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Branch", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if oneof, ok := m.Body.(*SOSyncMessage_Branch); ok {
+				if err := oneof.Branch.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+					return err
+				}
+			} else {
+				v := &SOSyncBranch{}
+				if err := v.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+					return err
+				}
+				m.Body = &SOSyncMessage_Branch{Branch: v}
 			}
 			iNdEx = postIndex
 		default:
@@ -3624,6 +3974,75 @@ func (m *SOSyncHistoryRequest) UnmarshalVT(dAtA []byte) error {
 				return fmt.Errorf("proto: wrong wireType = %d for field BaseHash", wireType)
 			}
 			m.BaseHash, iNdEx, err = protobuf_go_lite.DecodeBytesAppend(m.BaseHash, dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FloorSeqno", wireType)
+			}
+			m.FloorSeqno = 0
+			m.FloorSeqno, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *SOSyncBranch) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SOSyncBranch: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SOSyncBranch: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Revision", wireType)
+			}
+			m.Revision = 0
+			m.Revision, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Cursor", wireType)
+			}
+			m.Cursor, iNdEx, err = protobuf_go_lite.DecodeBytesAppend(m.Cursor, dAtA, iNdEx)
 			if err != nil {
 				return err
 			}
