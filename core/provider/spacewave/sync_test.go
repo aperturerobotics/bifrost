@@ -2,6 +2,7 @@ package provider_spacewave
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"crypto/sha256"
 	"io"
@@ -57,6 +58,7 @@ func TestSyncPull_Success(t *testing.T) {
 
 	// Serve the page to a GET with no cursor.
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Check the request shape.
 		if r.Method != http.MethodGet {
 			t.Errorf("expected GET, got %s", r.Method)
 		}
@@ -369,17 +371,19 @@ func TestSyncPushData_MissingBloomFilter(t *testing.T) {
 
 // TestSyncControllerPushPackfileRetriesCanceledPush retries a canceled upload with the same pack.
 func TestSyncControllerPushPackfileRetriesCanceledPush(t *testing.T) {
+	// Build a controller whose parent context is already canceled.
 	s := &syncController{}
-
 	parentCtx, cancel := context.WithCancel(context.Background())
 	cancel()
 
+	// Cancel the first push and accept the retry on a live context.
 	calls := 0
 	err := s.pushPackfile(parentCtx, "test-pack-id", 7, func(
 		ctx context.Context,
 		packID string,
 		blockCount int,
 	) error {
+		// Check the push arguments.
 		calls++
 		if packID != "test-pack-id" {
 			t.Fatalf("unexpected pack id %q", packID)
@@ -408,6 +412,7 @@ func TestSyncControllerPushPackfileRetriesCanceledPush(t *testing.T) {
 
 // TestSyncControllerInitSkipsPullForRemoteManifest uses an existing remote manifest without pulling.
 func TestSyncControllerInitSkipsPullForRemoteManifest(t *testing.T) {
+	// Count the pull requests the server sees.
 	ctx := context.Background()
 	pullRequests := make(chan struct{}, 1)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -418,6 +423,7 @@ func TestSyncControllerInitSkipsPullForRemoteManifest(t *testing.T) {
 	}))
 	defer srv.Close()
 
+	// Build a controller with a remote manifest and pulls skipped.
 	priv, pid := generateTestKeypair(t)
 	cli := NewSessionClient(http.DefaultClient, srv.URL, DefaultSigningEnvPrefix, priv, pid.String())
 	store := newSyncTestKvStore()
@@ -444,6 +450,7 @@ func TestSyncControllerInitSkipsPullForRemoteManifest(t *testing.T) {
 		skipPull: true,
 	}
 
+	// Init uses the remote manifest without a pull.
 	if err := s.Init(ctx); err != nil {
 		t.Fatalf("init: %v", err)
 	}
@@ -459,6 +466,7 @@ func TestSyncControllerInitSkipsPullForRemoteManifest(t *testing.T) {
 
 // TestSyncControllerPullNowRecordsLatestSequenceFromEmptyPull retains sequence progress from empty responses.
 func TestSyncControllerPullNowRecordsLatestSequenceFromEmptyPull(t *testing.T) {
+	// Serve one empty pull carrying the latest sequence.
 	ctx := context.Background()
 	respData := mustMarshalVT(t, &packfile.PullResponse{LatestSequence: 9})
 	var pullRequests int
@@ -474,6 +482,7 @@ func TestSyncControllerPullNowRecordsLatestSequenceFromEmptyPull(t *testing.T) {
 	}))
 	defer srv.Close()
 
+	// Build the controller against the server.
 	priv, pid := generateTestKeypair(t)
 	cli := NewSessionClient(http.DefaultClient, srv.URL, DefaultSigningEnvPrefix, priv, pid.String())
 	store := newSyncTestKvStore()
@@ -490,6 +499,7 @@ func TestSyncControllerPullNowRecordsLatestSequenceFromEmptyPull(t *testing.T) {
 		lower:      packfile_store.NewPackfileStore(nil, nil),
 	}
 
+	// Pull once and check the recorded sequence.
 	if err := s.PullNow(ctx); err != nil {
 		t.Fatalf("PullNow: %v", err)
 	}
@@ -710,6 +720,81 @@ func TestSyncControllerExecuteHonorsRetryAfterBackoff(t *testing.T) {
 	}
 }
 
+// TestSyncControllerExecuteBacksOffThroughLocalEdits checks that local edits
+// during the retry backoff of a failed flush do not retry it early.
+func TestSyncControllerExecuteBacksOffThroughLocalEdits(t *testing.T) {
+	// Encode a retryable outage with no Retry-After.
+	errResp := &api.ErrorResponse{
+		Code:      "unavailable",
+		Message:   "try again",
+		Retryable: true,
+	}
+	respData, err := errResp.MarshalJSON()
+	if err != nil {
+		t.Fatalf("marshal error response: %v", err)
+	}
+
+	// Answer every request with the error, counting the requests.
+	requests := make(chan struct{}, 4)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case requests <- struct{}{}:
+		default:
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusServiceUnavailable)
+		_, _ = w.Write(respData)
+	}))
+	defer srv.Close()
+
+	// Run a syncer with a dirty block against the server.
+	priv, pid := generateTestKeypair(t)
+	cli := NewSessionClient(http.DefaultClient, srv.URL, DefaultSigningEnvPrefix, priv, pid.String())
+	s := newDirtySyncExecuteTestController(t, cli, nil)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	done := make(chan error, 1)
+	go func() {
+		done <- s.Execute(ctx)
+	}()
+
+	// Wait for the first push.
+	select {
+	case <-requests:
+	case <-time.After(syncExecuteRequestTimeout):
+		t.Fatal("expected initial sync push")
+	}
+
+	// Wake the syncer as local edits do through most of the first 500ms
+	// backoff, and require no retry within it.
+	edits := time.NewTicker(20 * time.Millisecond)
+	defer edits.Stop()
+	window := time.After(300 * time.Millisecond)
+	for waiting := true; waiting; {
+		select {
+		case <-requests:
+			t.Fatal("a local edit ended the retry backoff")
+		case <-edits.C:
+			s.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+				broadcast()
+			})
+		case <-window:
+			waiting = false
+		}
+	}
+
+	// Stop the syncer and require a clean exit.
+	cancel()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatalf("Execute returned error: %v", err)
+		}
+	case <-time.After(syncExecuteStopTimeout):
+		t.Fatal("expected Execute to stop when context is canceled")
+	}
+}
+
 // TestSyncControllerExecuteGatesAccessDeniedFlushFailures waits for access changes after denied writes.
 func TestSyncControllerExecuteGatesAccessDeniedFlushFailures(t *testing.T) {
 	// Encode the read-only denial.
@@ -885,6 +970,7 @@ func newSyncTestBlockStore() block.StoreOps {
 
 // newSyncTestLowerPackfileStore packs fixture blocks into a readable lower store.
 func newSyncTestLowerPackfileStore(t *testing.T, blocks map[string][]byte) *packfile_store.PackfileStore {
+	// Hash each fixture block.
 	t.Helper()
 	var items []struct {
 		h    *hash.Hash
@@ -901,6 +987,7 @@ func newSyncTestLowerPackfileStore(t *testing.T, blocks map[string][]byte) *pack
 		}{h: h, data: data})
 	}
 
+	// Pack the blocks in order.
 	var buf bytes.Buffer
 	idx := 0
 	result, err := writer.PackBlocks(&buf, func() (*hash.Hash, *block.StoredBlock, error) {
@@ -915,6 +1002,7 @@ func newSyncTestLowerPackfileStore(t *testing.T, blocks map[string][]byte) *pack
 		t.Fatalf("pack lower blocks: %v", err)
 	}
 
+	// Serve the pack from memory.
 	packData := bytes.Clone(buf.Bytes())
 	lower := packfile_store.NewPackfileStore(
 		func(packID string, size int64) (*packfile_store.PackReader, error) {
@@ -1011,11 +1099,14 @@ func assertSyncPackEntryMetadata(t *testing.T, entries []*packfile.PackfileEntry
 
 // readPackPhysicalKeys returns block keys in physical pack order.
 func readPackPhysicalKeys(t *testing.T, body []byte) []string {
+	// Read the pack index.
 	t.Helper()
 	reader, err := kvfile.BuildReader(bytes.NewReader(body), uint64(len(body)))
 	if err != nil {
 		t.Fatalf("build pack reader: %v", err)
 	}
+
+	// Collect the index entries in offset order.
 	var entries []*kvfile.IndexEntry
 	err = reader.ScanPrefixEntries(nil, func(ie *kvfile.IndexEntry, _ int) error {
 		entries = append(entries, ie.CloneVT())
@@ -1025,14 +1116,10 @@ func readPackPhysicalKeys(t *testing.T, body []byte) []string {
 		t.Fatalf("scan pack entries: %v", err)
 	}
 	slices.SortFunc(entries, func(a, b *kvfile.IndexEntry) int {
-		if a.GetOffset() < b.GetOffset() {
-			return -1
-		}
-		if a.GetOffset() > b.GetOffset() {
-			return 1
-		}
-		return 0
+		return cmp.Compare(a.GetOffset(), b.GetOffset())
 	})
+
+	// Decode each entry's block key.
 	keys := make([]string, 0, len(entries))
 	for _, entry := range entries {
 		h, err := packfile.ParseBlockKey(entry.GetKey())
@@ -1052,6 +1139,7 @@ func addSyncDirtyBlock(
 	upper block.StoreOps,
 	body string,
 ) *block.BlockRef {
+	// Store the block and mark it for upload.
 	t.Helper()
 	data := []byte(body)
 	ref, _, err := upper.PutBlock(ctx, data, nil)
@@ -1070,6 +1158,7 @@ func newDirtySyncExecuteTestController(
 	cli *SessionClient,
 	gate *broadcast.Broadcast,
 ) *syncController {
+	// Build the dirty and manifest stores.
 	t.Helper()
 	ctx := context.Background()
 	dirtyStore := newSyncTestKvStore()
@@ -1079,6 +1168,7 @@ func newDirtySyncExecuteTestController(
 		t.Fatalf("new manifest: %v", err)
 	}
 
+	// Queue one dirty block.
 	upper := newSyncTestBlockStore()
 	wtx, err := dirtyStore.NewTransaction(ctx, true)
 	if err != nil {
@@ -1090,6 +1180,7 @@ func newDirtySyncExecuteTestController(
 		t.Fatalf("commit dirty tx: %v", err)
 	}
 
+	// Build the controller over the stores.
 	s := &syncController{
 		le:         logrus.NewEntry(logrus.New()),
 		store:      dirtyStore,

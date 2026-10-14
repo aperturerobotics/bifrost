@@ -45,6 +45,7 @@ const blockStoreBucketConfigRev = 2
 
 // publicReadRemoteRefresher fetches the authoritative anonymous manifest.
 type publicReadRemoteRefresher interface {
+	// Refresh fetches the manifest and applies it.
 	Refresh(context.Context) error
 }
 
@@ -455,9 +456,7 @@ func (t *bstoreTracker) executeBlockStoreTracker(rctx context.Context) error {
 
 	// Pull when the websocket reports a new block store nonce.
 	if !sc.skipPull && t.a.wsTracker != nil {
-		t.a.wsTracker.RegisterBlockStoreNonceCallback(t.id, func(uint64) {
-			sc.TriggerRemotePull()
-		})
+		t.a.wsTracker.RegisterBlockStoreNonceCallback(t.id, sc.TriggerRemotePull)
 		defer t.a.wsTracker.UnregisterBlockStoreNonceCallback(t.id)
 	}
 
