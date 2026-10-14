@@ -100,9 +100,8 @@ vi.mock('@s4wave/web/hooks/useUnixFSHandle.js', () => ({
       mknod: h.mockMknod,
       rename: h.mockPathRename,
     }),
-  convertDirEntriesToFileEntries: (entries: typeof h.mockFileEntries) =>
-    entries,
-  useUnixFSHandleReaddir: () => buildResource(h.mockFileEntries),
+  useUnixFSHandleListing: () =>
+    buildResource({ entries: h.mockFileEntries, rows: h.mockFileEntries }),
   useUnixFSHandleStat: () => buildResource(h.mockStat),
 }))
 
@@ -177,25 +176,61 @@ class ResizeObserverMock {
   disconnect() {}
 }
 
+// renderAt renders the browser at currentPath.
+function renderAt(currentPath: string) {
+  render(
+    <UnixFSBrowser
+      unixfsId="files"
+      basePath="/"
+      currentPath={currentPath}
+      worldState={buildResource({} as IWorldState)}
+    />,
+  )
+}
+
+// dragFileTo drags the file.txt row onto the target found by findTarget,
+// which runs again before the drop to pick up a rerendered target.
+function dragFileTo(findTarget: () => Element | null) {
+  // Start the drag on the file row.
+  const fileRow = screen.getByText('file.txt').closest('[role="row"]')
+  expect(fileRow).toBeTruthy()
+  const dataTransfer = createMutableDataTransfer()
+  fireEvent.dragStart(fileRow!, { dataTransfer })
+
+  // The target accepts the drag, then takes the drop.
+  expect(fireEvent.dragOver(findTarget()!, { dataTransfer })).toBe(false)
+  const target = findTarget()
+  expect(target).toBeTruthy()
+  fireEvent.drop(target!, { dataTransfer })
+}
+
 describe('UnixFSBrowser real file-list drag-to-folder move', () => {
   beforeEach(() => {
-    h.mockAddFiles.mockReset()
-    h.mockExtractNativeUploadSelection.mockReset()
-    h.mockAppStartupBoundary.mockReset()
-    h.mockLookup.mockReset()
-    h.mockMkdirAll.mockReset()
-    h.mockMknod.mockReset()
-    h.mockNavigate.mockReset()
-    h.mockPathRename.mockReset()
-    h.mockRootCloneRename.mockReset()
-    h.mockRootClone.mockReset()
-    h.mockRootLookupPath.mockReset()
+    // Reset every mock.
+    for (const mock of [
+      h.mockAddFiles,
+      h.mockExtractNativeUploadSelection,
+      h.mockAppStartupBoundary,
+      h.mockLookup,
+      h.mockMkdirAll,
+      h.mockMknod,
+      h.mockNavigate,
+      h.mockPathRename,
+      h.mockRootCloneRename,
+      h.mockRootClone,
+      h.mockRootLookupPath,
+    ]) {
+      mock.mockReset()
+    }
+
+    // Give the virtualized file list a layout.
     vi.stubGlobal('ResizeObserver', ResizeObserverMock)
     Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
       configurable: true,
       get: () => 640,
     })
 
+    // Resolve the root clone and the docs lookup to distinct handles.
     h.mockRootClone.mockResolvedValue(
       buildDisposableHandle({
         id: 11,
@@ -215,33 +250,17 @@ describe('UnixFSBrowser real file-list drag-to-folder move', () => {
   })
 
   it('drops a UnixFS file row onto a folder row through FileList and invokes the move owner', async () => {
-    render(
-      <UnixFSBrowser
-        unixfsId="files"
-        basePath="/"
-        currentPath="/"
-        worldState={buildResource({} as IWorldState)}
-      />,
-    )
-
+    // Show the root listing.
+    renderAt('/')
     await waitFor(() => {
       expect(screen.getByText('docs')).toBeTruthy()
       expect(screen.getByText('file.txt')).toBeTruthy()
     })
 
-    const fileRow = screen.getByText('file.txt').closest('[role="row"]')
-    const folderRow = screen.getByText('docs').closest('[role="row"]')
-    expect(fileRow).toBeTruthy()
-    expect(folderRow).toBeTruthy()
+    // Drop the file on the docs row.
+    dragFileTo(() => screen.getByText('docs').closest('[role="row"]'))
 
-    const dataTransfer = createMutableDataTransfer()
-    fireEvent.dragStart(fileRow!, { dataTransfer })
-
-    expect(fireEvent.dragOver(folderRow!, { dataTransfer })).toBe(false)
-    const latestFolderRow = screen.getByText('docs').closest('[role="row"]')
-    expect(latestFolderRow).toBeTruthy()
-    fireEvent.drop(latestFolderRow!, { dataTransfer })
-
+    // The file moves into the looked-up docs handle.
     await waitFor(() => {
       expect(h.mockRootLookupPath).toHaveBeenCalledWith('docs', undefined)
       expect(h.mockPathRename.mock.calls).toEqual([
@@ -253,30 +272,17 @@ describe('UnixFSBrowser real file-list drag-to-folder move', () => {
   })
 
   it('drops a UnixFS file row onto the root path target through the move owner', async () => {
-    render(
-      <UnixFSBrowser
-        unixfsId="files"
-        basePath="/"
-        currentPath="/docs"
-        worldState={buildResource({} as IWorldState)}
-      />,
-    )
-
+    // Show the docs listing.
+    renderAt('/docs')
     await waitFor(() => {
       expect(screen.getByText('file.txt')).toBeTruthy()
       expect(screen.getByLabelText('Navigate to root')).toBeTruthy()
     })
 
-    const fileRow = screen.getByText('file.txt').closest('[role="row"]')
-    const rootTarget = screen.getByLabelText('Navigate to root')
-    expect(fileRow).toBeTruthy()
+    // Drop the file on the root breadcrumb.
+    dragFileTo(() => screen.getByLabelText('Navigate to root'))
 
-    const dataTransfer = createMutableDataTransfer()
-    fireEvent.dragStart(fileRow!, { dataTransfer })
-
-    expect(fireEvent.dragOver(rootTarget, { dataTransfer })).toBe(false)
-    fireEvent.drop(rootTarget, { dataTransfer })
-
+    // The file moves into a clone of the root handle.
     await waitFor(() => {
       expect(h.mockRootClone).toHaveBeenCalledWith(undefined)
       expect(h.mockPathRename.mock.calls).toEqual([
@@ -287,34 +293,19 @@ describe('UnixFSBrowser real file-list drag-to-folder move', () => {
   })
 
   it('drops a UnixFS file row onto the parent breadcrumb through the move owner', async () => {
-    render(
-      <UnixFSBrowser
-        unixfsId="files"
-        basePath="/"
-        currentPath="/docs/images"
-        worldState={buildResource({} as IWorldState)}
-      />,
-    )
-
+    // Show the docs/images listing.
+    const parent = () =>
+      screen.getByRole('button', { name: 'Navigate to docs' })
+    renderAt('/docs/images')
     await waitFor(() => {
       expect(screen.getByText('file.txt')).toBeTruthy()
-      expect(
-        screen.getByRole('button', { name: 'Navigate to docs' }),
-      ).toBeTruthy()
+      expect(parent()).toBeTruthy()
     })
 
-    const fileRow = screen.getByText('file.txt').closest('[role="row"]')
-    const parentBreadcrumb = screen.getByRole('button', {
-      name: 'Navigate to docs',
-    })
-    expect(fileRow).toBeTruthy()
+    // Drop the file on the docs breadcrumb.
+    dragFileTo(parent)
 
-    const dataTransfer = createMutableDataTransfer()
-    fireEvent.dragStart(fileRow!, { dataTransfer })
-
-    expect(fireEvent.dragOver(parentBreadcrumb, { dataTransfer })).toBe(false)
-    fireEvent.drop(parentBreadcrumb, { dataTransfer })
-
+    // The file moves into the looked-up docs handle.
     await waitFor(() => {
       expect(h.mockRootLookupPath).toHaveBeenCalledWith('docs', undefined)
       expect(h.mockPathRename.mock.calls).toEqual([
@@ -325,30 +316,18 @@ describe('UnixFSBrowser real file-list drag-to-folder move', () => {
   })
 
   it('drops a UnixFS file row onto the Up control through the move owner', async () => {
-    render(
-      <UnixFSBrowser
-        unixfsId="files"
-        basePath="/"
-        currentPath="/docs/images"
-        worldState={buildResource({} as IWorldState)}
-      />,
-    )
-
+    // Show the docs/images listing.
+    const up = () => screen.getByRole('button', { name: 'Up' })
+    renderAt('/docs/images')
     await waitFor(() => {
       expect(screen.getByText('file.txt')).toBeTruthy()
-      expect(screen.getByRole('button', { name: 'Up' })).toBeTruthy()
+      expect(up()).toBeTruthy()
     })
 
-    const fileRow = screen.getByText('file.txt').closest('[role="row"]')
-    const upTarget = screen.getByRole('button', { name: 'Up' })
-    expect(fileRow).toBeTruthy()
+    // Drop the file on the Up control.
+    dragFileTo(up)
 
-    const dataTransfer = createMutableDataTransfer()
-    fireEvent.dragStart(fileRow!, { dataTransfer })
-
-    expect(fireEvent.dragOver(upTarget, { dataTransfer })).toBe(false)
-    fireEvent.drop(upTarget, { dataTransfer })
-
+    // The file moves into the looked-up parent handle.
     await waitFor(() => {
       expect(h.mockRootLookupPath).toHaveBeenCalledWith('docs', undefined)
       expect(h.mockPathRename.mock.calls).toEqual([
