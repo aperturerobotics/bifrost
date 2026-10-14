@@ -44,6 +44,7 @@ func newObjectCommand(statePath *string, sessionIdx *uint) *cli.Command {
 			buildObjectGraphCommand(statePath, sessionIdx, &spaceID),
 			buildObjectCreateCommand(statePath, sessionIdx, &spaceID),
 			buildObjectDeleteCommand(statePath, sessionIdx, &spaceID),
+			newObjectRPCCommand(),
 		},
 	}
 }
