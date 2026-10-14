@@ -53,6 +53,11 @@ func (e *engineWorldState) WaitSeqno(ctx context.Context, value uint64) (uint64,
 	return e.e.WaitSeqno(ctx, value)
 }
 
+// WaitObjectRev waits for the object at key through the Engine's key watch.
+func (e *engineWorldState) WaitObjectRev(ctx context.Context, key string, rev uint64, ignoreNotFound bool) (uint64, error) {
+	return e.e.WaitObjectRev(ctx, key, rev, ignoreNotFound)
+}
+
 // BuildStorageCursor builds a cursor to the world storage with an empty ref.
 // The cursor should be released independently of the WorldState.
 // Be sure to call Release on the cursor when done.
@@ -316,4 +321,7 @@ func (e *engineWorldState) performOpOnce(ctx context.Context, write bool, cb fun
 }
 
 // _ is a type assertion
-var _ WorldState = (*engineWorldState)(nil)
+var (
+	_ WorldState      = (*engineWorldState)(nil)
+	_ ObjectRevWaiter = (*engineWorldState)(nil)
+)

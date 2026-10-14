@@ -13,18 +13,20 @@ import (
 	"github.com/s4wave/spacewave/db/world"
 )
 
-// viewCostEngine counts the transactions one view opens and records the
-// highest seqno the view waits for.
+// viewCostEngine counts the transactions one view opens and records how the
+// view waits for changes.
 type viewCostEngine struct {
 	world.Engine
 
 	// txs counts the transactions the view opened.
 	txs atomic.Int64
 
-	// bcast guards waitFor and fires when it rises.
+	// bcast guards waitFor and keyWaits and fires when either rises.
 	bcast broadcast.Broadcast
 	// waitFor is the highest seqno the view has waited for.
 	waitFor uint64
+	// keyWaits counts the object key waits the view has started.
+	keyWaits int
 }
 
 // NewTransaction counts the transaction and opens it on the Engine.
@@ -44,24 +46,35 @@ func (e *viewCostEngine) WaitSeqno(ctx context.Context, value uint64) (uint64, e
 	return e.Engine.WaitSeqno(ctx, value)
 }
 
-// waitIdle waits until the view waits for a commit after seqno.
-func (e *viewCostEngine) waitIdle(ctx context.Context, t *testing.T, name string, seqno uint64) {
+// WaitObjectRev counts the key wait and waits on the Engine.
+func (e *viewCostEngine) WaitObjectRev(ctx context.Context, key string, rev uint64, ignoreNotFound bool) (uint64, error) {
+	e.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+		e.keyWaits++
+		broadcast()
+	})
+	return e.Engine.WaitObjectRev(ctx, key, rev, ignoreNotFound)
+}
+
+// waitIdle waits until the view waits for a commit after seqno, or, for a
+// view that waits on object keys, until it has started keyWaits key waits.
+func (e *viewCostEngine) waitIdle(ctx context.Context, t *testing.T, name string, seqno uint64, keyWaits int) {
 	t.Helper()
 	timeout := time.After(10 * time.Second)
 	for {
-		var waitFor uint64
+		var idle bool
 		var waitCh <-chan struct{}
 		e.bcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
-			waitFor, waitCh = e.waitFor, getWaitCh()
+			idle = e.waitFor > seqno || (keyWaits != 0 && e.keyWaits >= keyWaits)
+			waitCh = getWaitCh()
 		})
-		if waitFor > seqno {
+		if idle {
 			return
 		}
 		select {
 		case <-ctx.Done():
 			t.Fatal(ctx.Err())
 		case <-timeout:
-			t.Fatalf("%s did not wait for a commit after seqno %d", name, seqno)
+			t.Fatalf("%s did not wait for a change after seqno %d", name, seqno)
 		case <-waitCh:
 		}
 	}
@@ -73,6 +86,9 @@ type viewCostCase struct {
 	name string
 	// want is the transaction count on the unrelated commit.
 	want int64
+	// keyWaits is the object key waits the view starts per read, or zero for
+	// a view that waits on the seqno.
+	keyWaits int
 	// run runs the view on eng until ctx ends.
 	run func(ctx context.Context, eng world.Engine) error
 }
@@ -142,6 +158,31 @@ func TestWorldViewCostOnUnrelatedCommit(t *testing.T) {
 				return err
 			})
 		},
+	}, {
+		name:     "key-object",
+		keyWaits: 1,
+		run: func(ctx context.Context, eng world.Engine) error {
+			return waitObjectChangeView(ctx, eng, worldSeedObjectKey(6))
+		},
+	}, {
+		name:     "key-missing-object",
+		keyWaits: 1,
+		run: func(ctx context.Context, eng world.Engine) error {
+			return waitObjectChangeView(ctx, eng, "view-cost/missing")
+		},
+	}, {
+		name:     "key-objects",
+		keyWaits: 2,
+		run: func(ctx context.Context, eng world.Engine) error {
+			return waitObjectChangeView(ctx, eng, worldSeedObjectKey(7), worldSeedObjectKey(8))
+		},
+	}, {
+		name:     "key-changed-object",
+		want:     1,
+		keyWaits: 1,
+		run: func(ctx context.Context, eng world.Engine) error {
+			return waitObjectChangeView(ctx, eng, changedKey)
+		},
 	}}
 
 	// Start every view and wait for it to settle at the current seqno.
@@ -160,11 +201,10 @@ func TestWorldViewCostOnUnrelatedCommit(t *testing.T) {
 		}()
 	}
 	for i, c := range cases {
-		engs[i].waitIdle(ctx, t, c.name, seqno)
+		engs[i].waitIdle(ctx, t, c.name, seqno, c.keyWaits)
 	}
 
-	// Commit a change to the changed object, then wait for every view to
-	// settle after it.
+	// Commit a change to the changed object.
 	before := make([]int64, len(cases))
 	for i := range engs {
 		before[i] = engs[i].txs.Load()
@@ -181,8 +221,16 @@ func TestWorldViewCostOnUnrelatedCommit(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err.Error())
 	}
+
+	// A key view on an unchanged object never wakes, so only the view on the
+	// changed object starts another key wait. Its wakeup shares the commit's
+	// key comparison with every other key view.
 	for i, c := range cases {
-		engs[i].waitIdle(ctx, t, c.name, seqno+1)
+		keyWaits := c.keyWaits
+		if c.want != 0 {
+			keyWaits += c.keyWaits
+		}
+		engs[i].waitIdle(ctx, t, c.name, seqno+1, keyWaits)
 	}
 
 	// Compare the transactions each view opened for the commit.
@@ -273,4 +321,19 @@ func runTrackedViewOnce(ctx context.Context, eng world.Engine, read func(ws worl
 		return err
 	}
 	return tracked.WaitForChanges(ctx)
+}
+
+// waitObjectChangeView reads the roots of the objects at keys and waits for
+// one of them to change, as a watch over a few objects does.
+func waitObjectChangeView(ctx context.Context, eng world.Engine, keys ...string) error {
+	ws := world.NewEngineWorldState(eng, false)
+	for {
+		seen, err := world.GetObjectRootRefsBatch(ctx, ws, keys)
+		if err != nil {
+			return err
+		}
+		if err := world.WaitObjectChange(ctx, ws, seen...); err != nil {
+			return err
+		}
+	}
 }
