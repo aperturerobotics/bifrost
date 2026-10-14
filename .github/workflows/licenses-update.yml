@@ -88,4 +88,5 @@ jobs:
             exit 1
           fi
 
+          git pull --rebase origin master
           git push origin HEAD:master

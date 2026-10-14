@@ -1,0 +1,86 @@
+name: Go Fix
+
+on:
+  push:
+    branches: ['master']
+    paths:
+      - '**.go'
+      - 'go.mod'
+      - 'go.sum'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  go-fix:
+    name: Go Fix
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: licenses-update
+    steps:
+      - name: Create spacewave-ci app token
+        id: spacewave_ci_app_token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.SPACEWAVE_CI_APP_CLIENT_ID }}
+          private-key: ${{ secrets.SPACEWAVE_CI_APP_PRIVATE_KEY }}
+          owner: s4wave
+          repositories: spacewave
+          permission-contents: write
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          token: ${{ steps.spacewave_ci_app_token.outputs.token }}
+
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.27.1'
+          cache: false
+
+      - name: Cache trusted Go dependencies
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: trusted-go-${{ github.job }}-${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+
+      - name: Prune superseded Go dependency caches
+        uses: ./.github/actions/prune-go-cache
+
+      # Keep explicit embedded literals: the retained Staticcheck IR predates Go
+      # 1.27's promoted keyed-field syntax. The purego build is the one CI tests.
+      - name: Run go fix
+        env:
+          GOFLAGS: -mod=mod -tags=purego
+        run: go fix -embedlit=false ./...
+
+      - name: Commit, verify convergence, push
+        env:
+          GOFLAGS: -mod=mod -tags=purego
+        run: |
+          if git diff --quiet -- . ':!go.mod' ':!go.sum'; then
+            echo "go fix changed nothing; nothing to commit."
+            exit 0
+          fi
+
+          git config user.name "spacewave-ci[bot]"
+          git config user.email "277994435+spacewave-ci[bot]@users.noreply.github.com"
+          git add -u -- . ':!go.mod' ':!go.sum'
+          git commit -s -m "chore(go): apply go fix"
+
+          go fix -embedlit=false ./...
+          if ! git diff --quiet -- . ':!go.mod' ':!go.sum'; then
+            echo "go fix did not converge: the tree is dirty after a second run."
+            git --no-pager diff --stat
+            exit 1
+          fi
+
+          git pull --rebase origin master
+          git push origin HEAD:master

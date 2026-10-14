@@ -216,7 +216,7 @@ test_space_in_go_name_package_dirs() {
 	git -C "$test_dir/repo" add 'net/my pkg/a.go'
 	try_commit ok &&
 		log_has 'go list ./net/my pkg' &&
-		log_has 'go fix -embedlit=false ./net/my pkg'
+		! grep -Fq 'go fix' "$test_dir/hook.log"
 	note_result $? "$label"
 	cleanup
 }
@@ -224,7 +224,7 @@ test_space_in_go_name_package_dirs() {
 # --- 6. package boundaries ---------------------------------------------------
 
 test_go_pkg_dirs_unique_and_rooted() {
-	label='packages: unique rooted dirs incl root-level file; one go fix per dir set'
+	label='packages: unique rooted dirs incl root-level file; no go fix'
 	new_repo
 	mkdir -p "$test_dir/repo/net" "$test_dir/repo/svc/sub"
 	printf 'package main\n' >"$test_dir/repo/root.go"
@@ -239,7 +239,7 @@ test_go_pkg_dirs_unique_and_rooted() {
 		log_has 'go list ./.' &&
 		log_has 'go list ./net' &&
 		log_has 'go list ./svc/sub' &&
-		log_has 'go fix -embedlit=false ./. ./net ./svc/sub'
+		! grep -Fq 'go fix' "$test_dir/hook.log"
 	note_result $? "$label"
 	cleanup
 }
