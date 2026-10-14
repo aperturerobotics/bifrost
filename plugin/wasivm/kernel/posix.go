@@ -362,11 +362,12 @@ func posixFunctions() map[string]hostFunc {
 			return p.posixResult(ctx, p.sysPipe2(uint32(a[0]), uint32(a[1])))
 		}},
 
-		// Event, timer and epoll files.
+		// Event, timer and epoll files. The C library's timerfd_create
+		// passes its clock's Linux number.
 		"eventfd": {"iii", func(ctx context.Context, p *Process, a []uint64) uint64 {
 			return p.posixResult(ctx, p.sysEventfd(uint32(a[0]), uint32(a[1])))
 		}},
-		"timerfd_create": {"iii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+		"__wasivm_timerfd_create": {"iii", func(ctx context.Context, p *Process, a []uint64) uint64 {
 			return p.posixResult(ctx, p.sysTimerfdCreate(uint32(a[0]), uint32(a[1])))
 		}},
 		"timerfd_settime": {"iiiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
