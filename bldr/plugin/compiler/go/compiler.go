@@ -1417,9 +1417,10 @@ func newBuildTagsForAnalyze(
 	// Start from the build type's base tags.
 	buildTags := gocompiler.NewBuildTags(buildType)
 
-	// Add the pure-Go tag for browser and non-desktop targets.
+	// Select portable Go and the reduced SQL surface for browser and
+	// non-desktop targets, matching gocompiler.ExecBuildEntrypoint.
 	if goCompiler.IsTinyGo() || goCompiler.IsGoScript() || (buildPlatform != nil && buildPlatform.GetBasePlatformID() != bldr_platform.PlatformID_DESKTOP) {
-		buildTags = append(buildTags, gocompiler.PureGoBuildTag)
+		buildTags = append(buildTags, gocompiler.PureGoBuildTag, gocompiler.SQLLiteBuildTag)
 	}
 
 	// Add the TinyGo-specific tags.
@@ -1432,9 +1433,6 @@ func newBuildTagsForAnalyze(
 		if _, ok := buildPlatform.(*bldr_platform.CloudflarePlatform); ok {
 			buildTags = append(buildTags, gocompiler.CloudflareBuildTag)
 		}
-	}
-	if goCompiler.IsTinyGo() || goCompiler.IsGoScript() {
-		buildTags = append(buildTags, gocompiler.SQLLiteBuildTag)
 	}
 	return buildTags
 }

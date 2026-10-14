@@ -23,9 +23,10 @@ const GoScriptBuildTag = "goscript"
 // CloudflareBuildTag selects source meant for Cloudflare Workers builds.
 const CloudflareBuildTag = "bldr_cloudflare"
 
-// SQLLiteBuildTag selects the reduced SQL surface for browser builds: source
-// gated on sql_lite drops the go-mysql-server driver, stdlib database/sql
-// integration, and other native-only SQL paths from the bundle.
+// SQLLiteBuildTag selects the reduced SQL surface for every build that sets
+// PureGoBuildTag: source gated on sql_lite drops the go-mysql-server driver,
+// stdlib database/sql integration, collation tables, and other native-only
+// SQL paths from the artifact.
 const SQLLiteBuildTag = "sql_lite"
 
 // PureGoBuildTag selects portable Go over assembly in the standard library and

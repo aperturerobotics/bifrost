@@ -78,7 +78,7 @@ func ExecBuildEntrypoint(
 	buildTags = slices.Clone(buildTags)
 	buildTags = append(buildTags, NewBuildTags(buildType)...)
 	if useTinygo || !isNativeBuildPlatform || isWasmOutput {
-		buildTags = append(buildTags, PureGoBuildTag)
+		buildTags = append(buildTags, PureGoBuildTag, SQLLiteBuildTag)
 	}
 
 	// ldflags

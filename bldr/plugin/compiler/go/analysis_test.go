@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	bldr_manifest "github.com/s4wave/spacewave/bldr/manifest"
+	bldr_platform "github.com/s4wave/spacewave/bldr/platform"
 	"github.com/s4wave/spacewave/bldr/util/gocompiler"
 	"github.com/sirupsen/logrus"
 )
@@ -449,6 +450,14 @@ func TestNewBuildTagsForAnalyzeIncludesTinyGoTag(t *testing.T) {
 	}
 	if slices.Contains(standardTags, gocompiler.SQLLiteBuildTag) {
 		t.Fatalf("standard Go analysis tags unexpectedly include sql_lite: %v", standardTags)
+	}
+
+	// Standard Go for a JavaScript host builds portable Go and the reduced SQL surface.
+	jsTags := newBuildTagsForAnalyze(bldr_platform.NewJsPlatform(), bldr_manifest.BuildType_RELEASE, gocompiler.GoCompilerGo)
+	for _, want := range []string{gocompiler.PureGoBuildTag, gocompiler.SQLLiteBuildTag} {
+		if !slices.Contains(jsTags, want) {
+			t.Fatalf("standard Go js analysis tags missing %q: %v", want, jsTags)
+		}
 	}
 }
 
