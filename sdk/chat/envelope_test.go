@@ -215,3 +215,44 @@ func TestDetachedEnvelope(t *testing.T) {
 		t.Fatalf("detached batch read back as %v", read.GetMessage())
 	}
 }
+
+// TestEnvelopeEncryptionPolicy checks that an encrypted channel refuses a local
+// plaintext body but keeps one that arrives in an envelope.
+func TestEnvelopeEncryptionPolicy(t *testing.T) {
+	// Start a World testbed.
+	ctx := t.Context()
+	tb, err := db_world_testbed.Default(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(tb.Release)
+
+	// Create an encrypted channel and its writer.
+	ws := world.NewEngineWorldState(tb.Engine, true)
+	const channelKey = "chat/channel/envelope-policy"
+	if _, _, err := ws.ApplyWorldOp(ctx, &CreateChatChannelOp{ObjectKey: channelKey, Name: "Policy", Timestamp: timestamppb.Now(), EncryptionAlgorithm: "m.megolm.v1.aes-sha2"}, tb.Volume.GetPeerID()); err != nil {
+		t.Fatal(err)
+	}
+	alice := newChatResourceForPerson(t, ws, tb.Engine, channelKey, "alice-device", "alice")
+	t.Cleanup(alice.Close)
+
+	// A local plaintext event is refused.
+	event := &ChatMessageContent{Content: &ChatMessageContent_Event{Event: &ChatEvent{Type: "m.room.message", ContentJson: `{"body":"hi","msgtype":"m.text"}`}}}
+	if _, err := alice.SendMessage(ctx, &chat_rpc.SendMessageRequest{TransactionId: "local", Content: event}); err == nil {
+		t.Fatal("local plaintext accepted in an encrypted channel")
+	}
+
+	// The same body in an envelope is kept.
+	envelope := &ChatEnvelope{Id: "$plain", Data: []byte(`{"type":"m.room.message"}`)}
+	sent, err := alice.SendMessage(ctx, &chat_rpc.SendMessageRequest{Content: event, Envelope: envelope})
+	if err != nil {
+		t.Fatal(err)
+	}
+	read, err := alice.GetMessage(ctx, &chat_rpc.GetMessageRequest{MessageKey: sent.GetMessageKey()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !read.GetMessage().GetContent().EqualVT(event) {
+		t.Fatalf("enveloped message read back as %v", read.GetMessage())
+	}
+}

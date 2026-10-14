@@ -624,8 +624,10 @@ func (r *ChatResource) appendMessage(ctx context.Context, wtx world.WorldState, 
 		}
 	}
 
-	// New bodies follow current encryption policy; accepted retries retain their original result.
-	if algorithm := channel.GetEncryptionAlgorithm(); algorithm != "" && content != nil && content.GetAnnotation() == nil && content.GetStateChange() == nil && content.GetRedaction() == nil && content.GetCiphertext().GetAlgorithm() != algorithm {
+	// New local bodies follow current encryption policy. A body that arrives in
+	// an envelope already passed its room's own rules, and accepted retries
+	// retain their original result.
+	if algorithm := channel.GetEncryptionAlgorithm(); algorithm != "" && req.GetEnvelope() == nil && content != nil && content.GetAnnotation() == nil && content.GetStateChange() == nil && content.GetRedaction() == nil && content.GetCiphertext().GetAlgorithm() != algorithm {
 		return nil, errors.New("chat message ciphertext algorithm does not match channel")
 	}
 
