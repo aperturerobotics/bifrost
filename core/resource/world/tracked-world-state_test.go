@@ -25,6 +25,7 @@ type commitDuringCheckWorldState struct {
 	committed bool
 }
 
+// GetObjectRootRefsBatch reads the revisions, then commits the change once.
 func (w *commitDuringCheckWorldState) GetObjectRootRefsBatch(ctx context.Context, keys []string) ([]*world.ObjectRootRef, error) {
 	refs, err := world.GetObjectRootRefsBatch(ctx, w.WorldState, keys)
 	if err != nil {
@@ -32,24 +33,24 @@ func (w *commitDuringCheckWorldState) GetObjectRootRefsBatch(ctx context.Context
 	}
 	if !w.committed {
 		w.committed = true
-		if err := w.commitObjectRevision(ctx); err != nil {
+		if err := incrementObjectRev(ctx, w.engine, w.objectKey); err != nil {
 			return nil, err
 		}
 	}
 	return refs, nil
 }
 
-func (w *commitDuringCheckWorldState) commitObjectRevision(ctx context.Context) error {
-
-	// newTransaction tx,err.
-	tx, err := w.engine.NewTransaction(ctx, true)
+// incrementObjectRev commits one revision of an existing object.
+func incrementObjectRev(ctx context.Context, engine world.Engine, key string) error {
+	// Open a write transaction for the change.
+	tx, err := engine.NewTransaction(ctx, true)
 	if err != nil {
 		return err
 	}
 	defer tx.Discard()
 
-	// getObject obj,found,err via tx.
-	obj, found, err := tx.GetObject(ctx, w.objectKey)
+	// Increment the object's revision and commit.
+	obj, found, err := tx.GetObject(ctx, key)
 	defer world.ReleaseObjectState(obj)
 	if err != nil {
 		return err
@@ -63,70 +64,106 @@ func (w *commitDuringCheckWorldState) commitObjectRevision(ctx context.Context) 
 	return tx.Commit(ctx)
 }
 
-func TestTrackedWorldStateCommitDuringRevisionCheck(t *testing.T) {
+// createObject commits a new empty object.
+func createObject(ctx context.Context, t *testing.T, engine world.Engine, key string) {
+	// Create the object in its own write transaction.
+	t.Helper()
+	tx, err := engine.NewTransaction(ctx, true)
+	if err != nil {
+		t.Fatalf("NewTransaction: %v", err)
+	}
+	defer tx.Discard()
+	obj, err := tx.CreateObject(ctx, key, nil)
+	world.ReleaseObjectState(obj)
+	if err != nil {
+		t.Fatalf("CreateObject %s: %v", key, err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		t.Fatalf("Commit %s: %v", key, err)
+	}
+}
 
-	// context ctx.
+// openReadTx opens a read transaction and returns it with its seqno.
+func openReadTx(ctx context.Context, t *testing.T, engine world.Engine) (world.Tx, uint64) {
+	// Open the transaction and release it with the test.
+	t.Helper()
+	tx, err := engine.NewTransaction(ctx, false)
+	if err != nil {
+		t.Fatalf("NewTransaction read: %v", err)
+	}
+	t.Cleanup(tx.Discard)
+	seqno, err := tx.GetSeqno(ctx)
+	if err != nil {
+		t.Fatalf("GetSeqno read: %v", err)
+	}
+	return tx, seqno
+}
+
+// waitForChanges waits for the tracked state to report a change.
+func waitForChanges(ctx context.Context, t *testing.T, tracked *resource_world.TrackedWorldState) {
+	// Bound the wait so a missed change fails the test.
+	t.Helper()
+	waitCtx, waitCancel := context.WithTimeout(ctx, 10*time.Second)
+	defer waitCancel()
+	if err := tracked.WaitForChanges(waitCtx); err != nil {
+		t.Fatalf("WaitForChanges: %v", err)
+	}
+}
+
+// TestTrackedWorldStateCommitDuringRevisionCheck checks that a commit landing
+// while the watch compares revisions still wakes it.
+func TestTrackedWorldStateCommitDuringRevisionCheck(t *testing.T) {
+	// Start a World testbed.
 	ctx := t.Context()
 	tb, tbCleanup := setupWorldTestbed(ctx, t)
 	defer tbCleanup()
 
-	// Perform the action.
+	// Read the object, then commit an unrelated object so the watch compares
+	// revisions instead of trusting the read's own seqno.
 	const objectKey = "tracked-watch/commit-during-check"
-	writeTx, err := tb.Engine.NewTransaction(ctx, true)
-	if err != nil {
-		t.Fatalf("NewTransaction initial: %v", err)
-	}
-	{
-		createdObject, err := writeTx.CreateObject(ctx, objectKey, nil)
-		world.ReleaseObjectState(createdObject)
-		if err != nil {
-			writeTx.Discard()
-			t.Fatalf("CreateObject initial: %v", err)
-		}
-	}
-	if err := writeTx.Commit(ctx); err != nil {
-		writeTx.Discard()
-		t.Fatalf("Commit initial: %v", err)
-	}
-	writeTx.Discard()
+	createObject(ctx, t, tb.Engine, objectKey)
+	readTx, seqno := openReadTx(ctx, t, tb.Engine)
+	createObject(ctx, t, tb.Engine, "tracked-watch/unrelated")
 
-	// newTransaction readTx,err via tb.
-	readTx, err := tb.Engine.NewTransaction(ctx, false)
-	if err != nil {
-		t.Fatalf("NewTransaction read: %v", err)
-	}
-	defer readTx.Discard()
-	seqno, err := readTx.GetSeqno(ctx)
-	if err != nil {
-		t.Fatalf("GetSeqno read: %v", err)
-	}
-
-	// Record watchWs.
+	// Track the object through a live World that commits during the check.
 	watchWs := &commitDuringCheckWorldState{
 		WorldState: world.NewEngineWorldState(tb.Engine, false),
 		engine:     tb.Engine,
 		objectKey:  objectKey,
 	}
-
-	// withCancel trackedCtx,trackedCancel via context.
-	trackedCtx, trackedCancel := context.WithCancel(ctx)
-	defer trackedCancel()
-	trackedWs := resource_world.NewTrackedWorldState(readTx, watchWs, seqno, trackedCtx)
+	trackedWs := resource_world.NewTrackedWorldState(readTx, watchWs, seqno, ctx)
 	defer trackedWs.Close()
-
-	// Perform the action.
-	{
-		objectState, _, err := trackedWs.GetObject(ctx, objectKey)
-		world.ReleaseObjectState(objectState)
-		if err != nil {
-			t.Fatalf("GetObject tracked: %v", err)
-		}
+	objectState, _, err := trackedWs.GetObject(ctx, objectKey)
+	world.ReleaseObjectState(objectState)
+	if err != nil {
+		t.Fatalf("GetObject tracked: %v", err)
 	}
 
-	// withTimeout waitCtx,waitCancel via context.
-	waitCtx, waitCancel := context.WithTimeout(ctx, 10*time.Second)
-	defer waitCancel()
-	if err := trackedWs.WaitForChanges(waitCtx); err != nil {
-		t.Fatalf("WaitForChanges after commit racing the revision check: %v", err)
+	// The commit during the check wakes the watch.
+	waitForChanges(ctx, t, trackedWs)
+}
+
+// TestTrackedWorldStateIterationSeesNewObject checks that a view that only
+// iterates a prefix sees an object created under it.
+func TestTrackedWorldStateIterationSeesNewObject(t *testing.T) {
+	// Start a World testbed.
+	ctx := t.Context()
+	tb, tbCleanup := setupWorldTestbed(ctx, t)
+	defer tbCleanup()
+
+	// Iterate the prefix through the tracked state.
+	readTx, seqno := openReadTx(ctx, t, tb.Engine)
+	trackedWs := resource_world.NewTrackedWorldState(readTx, world.NewEngineWorldState(tb.Engine, false), seqno, ctx)
+	defer trackedWs.Close()
+	iter := trackedWs.IterateObjects(ctx, "tracked-iter/", false)
+	for iter.Next() {
 	}
+	if err := iter.Err(); err != nil {
+		t.Fatalf("IterateObjects: %v", err)
+	}
+	iter.Close()
+
+	// Create an object under the prefix and wait for the change.
+	createObject(ctx, t, tb.Engine, "tracked-iter/new")
+	waitForChanges(ctx, t, trackedWs)
 }
