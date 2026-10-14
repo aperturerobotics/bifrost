@@ -181,8 +181,9 @@ type ChatEnvelope struct {
 	// its ID and data, and redaction leaves them unchanged.
 	Prelude []*ChatEnvelope `protobuf:"bytes,4,rep,name=prelude,proto3" json:"prelude,omitempty"`
 	// Detached marks a message the protocol holds for reference outside the
-	// conversation, such as an event that only authorizes others. A detached
-	// message carries no content and no prelude.
+	// conversation, such as an event that only authorizes others or a batch of
+	// history from before the channel's first message. A detached message
+	// carries no content.
 	Detached bool `protobuf:"varint,5,opt,name=detached,proto3" json:"detached,omitempty"`
 	// StateIds lists, by ID, the earlier messages whose events form the
 	// protocol's state before this one, for a message whose predecessors the

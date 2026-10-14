@@ -181,8 +181,9 @@ export interface ChatEnvelope {
   prelude?: ChatEnvelope[]
   /**
    * Detached marks a message the protocol holds for reference outside the
-   * conversation, such as an event that only authorizes others. A detached
-   * message carries no content and no prelude.
+   * conversation, such as an event that only authorizes others or a batch of
+   * history from before the channel's first message. A detached message
+   * carries no content.
    *
    * @generated from field: bool detached = 5;
    */

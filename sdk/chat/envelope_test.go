@@ -154,8 +154,9 @@ func TestAttachEnvelope(t *testing.T) {
 	}
 }
 
-// TestDetachedEnvelope checks that a detached envelope is stored without content,
-// even in an encrypted channel, and that one carrying content is refused.
+// TestDetachedEnvelope checks that a detached envelope, alone or with earlier
+// history, is stored without content, even in an encrypted channel, and that one
+// carrying content is refused.
 func TestDetachedEnvelope(t *testing.T) {
 	// Start a World testbed.
 	ctx := t.Context()
@@ -192,5 +193,25 @@ func TestDetachedEnvelope(t *testing.T) {
 	}
 	if read.GetMessage().GetContent() != nil || !read.GetMessage().GetEnvelope().EqualVT(envelope) {
 		t.Fatalf("detached message read back as %v", read.GetMessage())
+	}
+
+	// A detached batch of earlier history keeps its prelude and state.
+	batch := &ChatEnvelope{
+		Id:       "$topic",
+		Data:     []byte(`{"type":"m.room.topic"}`),
+		Detached: true,
+		Prelude:  []*ChatEnvelope{{Id: "$rules", Data: []byte(`{"type":"m.room.join_rules"}`)}},
+		StateIds: []string{"$auth"},
+	}
+	sent, err = alice.SendMessage(ctx, &chat_rpc.SendMessageRequest{Envelope: batch})
+	if err != nil {
+		t.Fatal(err)
+	}
+	read, err = alice.GetMessage(ctx, &chat_rpc.GetMessageRequest{MessageKey: sent.GetMessageKey()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if read.GetMessage().GetContent() != nil || !read.GetMessage().GetEnvelope().EqualVT(batch) {
+		t.Fatalf("detached batch read back as %v", read.GetMessage())
 	}
 }

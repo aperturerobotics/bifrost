@@ -36,10 +36,7 @@ func (e *ChatEnvelope) Validate() error {
 		}
 	}
 
-	// Check the state, which a detached message does not have.
-	if e.GetDetached() && (len(e.GetPrelude()) != 0 || len(e.GetStateIds()) != 0) {
-		return errors.New("detached chat envelope carries no prelude or state")
-	}
+	// Check the state.
 	if len(e.GetStateIds()) > maxEnvelopeStateIDs {
 		return errors.Errorf("chat envelope state exceeds %d IDs", maxEnvelopeStateIDs)
 	}

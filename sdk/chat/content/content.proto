@@ -58,8 +58,9 @@ message ChatEnvelope {
   // its ID and data, and redaction leaves them unchanged.
   repeated ChatEnvelope prelude = 4;
   // Detached marks a message the protocol holds for reference outside the
-  // conversation, such as an event that only authorizes others. A detached
-  // message carries no content and no prelude.
+  // conversation, such as an event that only authorizes others or a batch of
+  // history from before the channel's first message. A detached message
+  // carries no content.
   bool detached = 5;
   // StateIds lists, by ID, the earlier messages whose events form the
   // protocol's state before this one, for a message whose predecessors the
