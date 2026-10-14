@@ -62,23 +62,60 @@ function createMockTx(
   }
 }
 
-// Mock Engine created from engineRef.
-function createMockEngine(tx?: ReturnType<typeof createMockTx>) {
+// Mock read snapshot yielded by engine.watchWorldState().
+function createMockSnapshot(
+  objectState?: ReturnType<typeof createMockObjectState> | null,
+  seqno = 1n,
+) {
+  const release = vi.fn()
+  return {
+    getSeqno: vi.fn(() => Promise.resolve({ seqno })),
+    getObject: vi.fn(() => Promise.resolve(objectState ?? null)),
+    release,
+    [Symbol.dispose]: release,
+  }
+}
+
+type MockSnapshot = ReturnType<typeof createMockSnapshot>
+
+// abortError is the rejection of an aborted wait.
+function abortError() {
+  return new DOMException('Aborted', 'AbortError')
+}
+
+// Mock Engine created from engineRef. Its watch yields each queued snapshot,
+// then waits for the next push until the signal aborts.
+function createMockEngine(
+  tx?: ReturnType<typeof createMockTx>,
+  snapshots: MockSnapshot[] = [],
+) {
+  const queue = [...snapshots]
+  let wake: (() => void) | undefined
   return {
     newTransaction: vi.fn(() => Promise.resolve(tx ?? createMockTx())),
-    getSeqno: vi.fn(() => Promise.resolve({ seqno: 1n })),
-    waitSeqno: vi.fn(
-      (_seqno: bigint, signal?: AbortSignal) =>
-        new Promise<{ seqno: bigint }>((resolve, reject) => {
+    watchWorldState: vi.fn(async function* (signal?: AbortSignal) {
+      for (;;) {
+        const next = queue.shift()
+        if (next) {
+          yield next
+          continue
+        }
+        await new Promise<void>((resolve, reject) => {
           if (signal?.aborted) {
-            reject(new DOMException('Aborted', 'AbortError'))
+            reject(abortError())
             return
           }
-          const onAbort = () =>
-            reject(new DOMException('Aborted', 'AbortError'))
-          signal?.addEventListener('abort', onAbort, { once: true })
-        }),
-    ),
+          wake = resolve
+          signal?.addEventListener('abort', () => reject(abortError()), {
+            once: true,
+          })
+        })
+      }
+    }),
+    push(snapshot: MockSnapshot) {
+      queue.push(snapshot)
+      wake?.()
+    },
     resourceRef: createMockEngineRef(),
     id: 1,
     release: vi.fn(),
@@ -137,8 +174,8 @@ describe('NotebookResource', () => {
       ])
       const cursor = createMockCursor(notebookData)
       const objectState = createMockObjectState(cursor)
-      const tx = createMockTx(objectState)
-      mockEngineInstance = createMockEngine(tx)
+      const snapshot = createMockSnapshot(objectState)
+      mockEngineInstance = createMockEngine(undefined, [snapshot])
 
       const engineRef = createMockEngineRef()
       const resource = new NotebookResource('my-notebook', engineRef as never)
@@ -158,11 +195,8 @@ describe('NotebookResource', () => {
       expect(notebook.sources![0].ref).toBe('fs/-/notes')
 
       // Verify resource chain was called correctly.
-      expect(mockEngineInstance.newTransaction).toHaveBeenCalledWith(
-        false,
-        ac.signal,
-      )
-      expect(tx.getObject).toHaveBeenCalledWith('my-notebook', ac.signal)
+      expect(mockEngineInstance.watchWorldState).toHaveBeenCalledWith(ac.signal)
+      expect(snapshot.getObject).toHaveBeenCalledWith('my-notebook', ac.signal)
       expect(objectState.accessWorldState).toHaveBeenCalledWith(
         { bucketId: 'test', rootRef: { hash: { hash: new Uint8Array([1]) } } },
         ac.signal,
@@ -174,8 +208,8 @@ describe('NotebookResource', () => {
       const notebookData = makeNotebookBytes('Cleanup Test', [])
       const cursor = createMockCursor(notebookData)
       const objectState = createMockObjectState(cursor)
-      const tx = createMockTx(objectState)
-      mockEngineInstance = createMockEngine(tx)
+      const snapshot = createMockSnapshot(objectState)
+      mockEngineInstance = createMockEngine(undefined, [snapshot])
 
       const engineRef = createMockEngineRef()
       const resource = new NotebookResource('key', engineRef as never)
@@ -187,215 +221,113 @@ describe('NotebookResource', () => {
 
       expect(cursor.release).toHaveBeenCalled()
       expect(objectState.release).toHaveBeenCalled()
-      expect(tx.release).toHaveBeenCalled()
+      expect(snapshot.release).toHaveBeenCalledOnce()
       expect(mockEngineInstance.release).toHaveBeenCalled()
     })
 
-    it('yields nothing when object is not found', async () => {
-      const tx = createMockTx(null)
-      mockEngineInstance = createMockEngine(tx)
+    it('yields no Notebook when the object is not found', async () => {
+      const snapshot = createMockSnapshot(null)
+      mockEngineInstance = createMockEngine(undefined, [snapshot])
 
       const engineRef = createMockEngineRef()
       const resource = new NotebookResource('missing', engineRef as never)
 
-      // Pre-abort: generator checks abortSignal.aborted on loop entry after
-      // the first read returns null and waitSeqno rejects with AbortError.
       const ac = new AbortController()
-      const stream = resource.WatchNotebook({}, ac.signal)
-      const iter = stream[Symbol.asyncIterator]()
-
-      // Start iteration. Generator reads null, calls getSeqno, then waitSeqno.
-      // Schedule abort so waitSeqno rejects.
-      const resultPromise = iter.next()
+      const iter = resource.WatchNotebook({}, ac.signal)[Symbol.asyncIterator]()
+      const result = await iter.next()
+      expect(result.done).toBe(false)
+      expect(result.value?.notebook).toBeUndefined()
+      expect(snapshot.getObject).toHaveBeenCalledWith('missing', ac.signal)
+      expect(snapshot.release).toHaveBeenCalledOnce()
       ac.abort()
-      const result = await resultPromise
-      expect(result.done).toBe(true)
-      expect(tx.getObject).toHaveBeenCalledWith('missing', ac.signal)
+      await iter.return?.(undefined)
     })
 
     it('yields nothing when block data is missing', async () => {
       const cursor = createMockCursor(undefined)
       const objectState = createMockObjectState(cursor)
-      const tx = createMockTx(objectState)
-      mockEngineInstance = createMockEngine(tx)
+      mockEngineInstance = createMockEngine(undefined, [
+        createMockSnapshot(objectState),
+      ])
 
       const engineRef = createMockEngineRef()
       const resource = new NotebookResource('no-block', engineRef as never)
 
       const ac = new AbortController()
-      const stream = resource.WatchNotebook({}, ac.signal)
-      const iter = stream[Symbol.asyncIterator]()
+      const iter = resource.WatchNotebook({}, ac.signal)[Symbol.asyncIterator]()
       const resultPromise = iter.next()
       ac.abort()
       const result = await resultPromise
       expect(result.done).toBe(true)
     })
 
-    it('delivers a commit between the snapshot read and the next wait', async () => {
-      // Keep the first transaction pinned while the live Engine advances.
-      const before = createMockObjectState(
-        createMockCursor(makeNotebookBytes('Before', [])),
+    it('re-reads the Notebook from the snapshot after a change', async () => {
+      // The first snapshot holds the first version of the Notebook.
+      const first = createMockObjectState(
+        createMockCursor(makeNotebookBytes('Version 1', [])),
       )
-      const after = createMockObjectState(
-        createMockCursor(makeNotebookBytes('After', [])),
+      const second = createMockObjectState(
+        createMockCursor(
+          makeNotebookBytes('Version 2', [
+            NotebookSource.create({ name: 'Added', ref: 'fs/-/' }),
+          ]),
+        ),
       )
-      after.getRootRef.mockResolvedValue({
+      second.getRootRef.mockResolvedValue({
         rootRef: {
           bucketId: 'test',
           rootRef: { hash: { hash: new Uint8Array([2]) } },
         },
       })
-      const firstTx = createMockTx(before)
-      const secondTx = createMockTx(after)
-      secondTx.getSeqno.mockResolvedValue({ seqno: 2n })
-      mockEngineInstance = createMockEngine(firstTx)
-      mockEngineInstance.newTransaction
-        .mockResolvedValueOnce(firstTx)
-        .mockResolvedValue(secondTx)
-      const controller = new AbortController()
+      mockEngineInstance = createMockEngine(undefined, [
+        createMockSnapshot(first),
+      ])
+      const ac = new AbortController()
       const resource = new NotebookResource(
         'key',
         createMockEngineRef() as never,
       )
-      const stream = resource
-        .WatchNotebook({}, controller.signal)
-        [Symbol.asyncIterator]()
-      expect((await stream.next()).value?.notebook?.name).toBe('Before')
+      const iter = resource.WatchNotebook({}, ac.signal)[Symbol.asyncIterator]()
+      expect((await iter.next()).value?.notebook?.name).toBe('Version 1')
 
-      // A commit arrives while the consumer is displaying the first value.
-      mockEngineInstance.getSeqno.mockResolvedValue({ seqno: 2n })
-      mockEngineInstance.waitSeqno.mockImplementation(async (seqno) => {
-        if (seqno > 2n) {
-          controller.abort()
-          throw new DOMException('Aborted', 'AbortError')
-        }
-        return { seqno: 2n }
-      })
-      const second = await stream.next()
-      await stream.return?.(undefined)
-      expect(second.value?.notebook?.name).toBe('After')
-      expect(mockEngineInstance.waitSeqno).toHaveBeenCalledWith(
-        2n,
-        controller.signal,
-      )
+      // The server sends the next snapshot after the Notebook changes.
+      const secondPromise = iter.next()
+      mockEngineInstance.push(createMockSnapshot(second, 2n))
+      const notebook = (await secondPromise).value?.notebook
+      expect(notebook?.name).toBe('Version 2')
+      expect(notebook?.sources).toHaveLength(1)
+
+      ac.abort()
+      await iter.return?.(undefined)
     })
 
     it('skips decoding on unrelated World changes and retains the resource Engine', async () => {
       // Two World snapshots refer to the same Notebook root.
       const cursor = createMockCursor(makeNotebookBytes('Notebook', []))
       const object = createMockObjectState(cursor)
-      const tx = createMockTx(object)
-      tx.getSeqno
-        .mockResolvedValueOnce({ seqno: 1n })
-        .mockResolvedValue({ seqno: 2n })
-      mockEngineInstance = createMockEngine(tx)
+      const first = createMockSnapshot(object)
+      const second = createMockSnapshot(object, 2n)
+      mockEngineInstance = createMockEngine(undefined, [first])
       const engineRef = createMockEngineRef()
       const resource = new NotebookResource('key', engineRef as never)
       const controller = new AbortController()
-      const stream = resource
+      const iter = resource
         .WatchNotebook({}, controller.signal)
         [Symbol.asyncIterator]()
-      await stream.next()
+      await iter.next()
 
-      // Wake once for the unrelated edit, then cancel at the next live wait.
-      mockEngineInstance.waitSeqno.mockImplementation(async (seqno) => {
-        if (seqno === 3n) {
-          controller.abort()
-          throw new DOMException('Aborted', 'AbortError')
-        }
-        return { seqno: 2n }
-      })
-      expect((await stream.next()).done).toBe(true)
+      // Deliver the unchanged root, then cancel at the next wait.
+      const next = iter.next()
+      mockEngineInstance.push(second)
+      await vi.waitFor(() => expect(second.release).toHaveBeenCalled())
+      controller.abort()
+      expect((await next).done).toBe(true)
       expect(cursor.getBlock).toHaveBeenCalledTimes(1)
-      expect(tx.discard).toHaveBeenCalledTimes(2)
+      expect(first.release).toHaveBeenCalledOnce()
       expect(engineRef.createRef).toHaveBeenCalledWith(engineRef.resourceId)
       expect(engineRef.release).not.toHaveBeenCalled()
       resource.dispose()
       expect(engineRef.release).toHaveBeenCalledOnce()
-    })
-
-    it('re-reads after waitSeqno resolves', async () => {
-      const nb1 = makeNotebookBytes('Version 1', [])
-      const nb2 = makeNotebookBytes('Version 2', [
-        NotebookSource.create({ name: 'Added', ref: 'fs/-/' }),
-      ])
-
-      let readCount = 0
-      const cursor1 = createMockCursor(nb1)
-      const cursor2 = createMockCursor(nb2)
-      const objectState1 = createMockObjectState(cursor1)
-      const objectState2 = createMockObjectState(cursor2)
-      objectState2.getRootRef.mockResolvedValue({
-        rootRef: {
-          bucketId: 'test',
-          rootRef: { hash: { hash: new Uint8Array([2]) } },
-        },
-      })
-
-      const tx = {
-        getSeqno: vi.fn(() =>
-          Promise.resolve({ seqno: BigInt(readCount + 1) }),
-        ),
-        getObject: vi.fn(() => {
-          readCount++
-          return Promise.resolve(readCount === 1 ? objectState1 : objectState2)
-        }),
-        commit: vi.fn(() => Promise.resolve()),
-        discard: vi.fn(() => Promise.resolve()),
-        release: vi.fn(),
-      }
-
-      let waitResolve: (() => void) | undefined
-      mockEngineInstance = {
-        ...createMockEngine(),
-        newTransaction: vi.fn(() => Promise.resolve(tx)),
-        getSeqno: vi.fn(() => Promise.resolve({ seqno: BigInt(readCount) })),
-        waitSeqno: vi.fn(
-          (_seqno: bigint, signal?: AbortSignal) =>
-            new Promise<{ seqno: bigint }>((resolve, reject) => {
-              if (signal?.aborted) {
-                reject(new DOMException('Aborted', 'AbortError'))
-                return
-              }
-              waitResolve = () => resolve({ seqno: _seqno })
-              signal?.addEventListener(
-                'abort',
-                () => reject(new DOMException('Aborted', 'AbortError')),
-                { once: true },
-              )
-            }),
-        ),
-        release: vi.fn(),
-      }
-
-      const engineRef = createMockEngineRef()
-      const resource = new NotebookResource('key', engineRef as never)
-      const ac = new AbortController()
-      const stream = resource.WatchNotebook({}, ac.signal)
-      const iter = stream[Symbol.asyncIterator]()
-
-      // First yield: Version 1.
-      const first = await iter.next()
-      expect(first.done).toBe(false)
-      const nb1Result = (first.value as { notebook: Notebook }).notebook
-      expect(nb1Result.name).toBe('Version 1')
-
-      // Generator is now suspended at the yield. Resume it: it will call
-      // getSeqno then waitSeqno (which blocks). Run concurrently.
-      const secondPromise = iter.next()
-      // Let the microtask queue drain so waitSeqno is called.
-      await new Promise((r) => setTimeout(r, 0))
-      // Simulate world change.
-      waitResolve!()
-      const second = await secondPromise
-
-      expect(second.done).toBe(false)
-      const nb2Result = (second.value as { notebook: Notebook }).notebook
-      expect(nb2Result.name).toBe('Version 2')
-      expect(nb2Result.sources).toHaveLength(1)
-
-      ac.abort()
-      await iter.return?.()
     })
   })
 

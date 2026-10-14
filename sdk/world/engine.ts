@@ -157,125 +157,21 @@ export class Engine extends Resource {
     }
   }
 
-  // WatchWorldState creates a reactive watch that tracks WorldState accesses
-  // and re-executes the callback whenever tracked resources change.
-  //
-  // The callback receives:
-  // - worldState: A tracked WorldState resource
-  // - abortSignal: Signal that triggers when changes detected or watch stops
-  // - cleanup: Function to register disposable resources
-  //
-  // Returns a cleanup function to stop the watch.
-  //
-  // As the callback accesses resources, server-side tracking starts immediately.
-  // Change detection begins as soon as first access is recorded. When changes occur,
-  // the server sends a new resource_id and the callback is re-executed.
-  public watchWorldState<T = void>(
-    callback: (
-      worldState: WorldStateResource,
-      abortSignal: AbortSignal,
-      cleanup: <R extends Disposable | null | undefined>(resource: R) => R,
-    ) => Promise<T>,
-  ): () => void {
-    return createWatchWorldState(this.watchService, this.resourceRef, callback)
-  }
-}
-
-// createWatchWorldState implements the reactive watch pattern for WorldState changes.
-// This is a common implementation that can be used by any class that has access to
-// WatchWorldStateResourceService and can create WorldStateResource instances.
-function createWatchWorldState<T = void>(
-  watchService: WatchWorldStateResourceService,
-  resourceRef: ClientResourceRef,
-  callback: (
-    worldState: WorldStateResource,
-    abortSignal: AbortSignal,
-    cleanup: <R extends Disposable | null | undefined>(resource: R) => R,
-  ) => Promise<T>,
-): () => void {
-  let cancelled = false
-  const cleanupResources: Disposable[] = []
-
-  // Create abort controller for entire watch
-  const watchAbortController = new AbortController()
-
-  // Abort controller for the current callback execution
-  let execAbortController: AbortController | undefined
-
-  const stopWatch = () => {
-    cancelled = true
-    watchAbortController.abort()
-    execAbortController?.abort()
-    cleanupResources.forEach((r) => r[Symbol.dispose]())
-    cleanupResources.length = 0
-  }
-
-  // Start async watch loop
-  void (async () => {
-    try {
-      // Start streaming RPC
-      const stream = watchService.WatchWorldState(
-        {},
-        watchAbortController.signal,
+  // watchWorldState yields a read snapshot of the head, then a new one after
+  // each commit that changes what was read through the latest snapshot. The
+  // server records those reads, and a read made after the commit that changed
+  // it still ends the wait. Once the next snapshot is yielded, the server
+  // releases the previous one. The caller owns each snapshot and releases it
+  // once its reads are done.
+  public async *watchWorldState(
+    abortSignal?: AbortSignal,
+  ): AsyncIterable<WorldStateResource> {
+    const stream = this.watchService.WatchWorldState({}, abortSignal)
+    for await (const response of stream) {
+      yield this.resourceRef.createResource(
+        response.resourceId ?? 0,
+        WorldStateResource,
       )
-
-      for await (const response of stream) {
-        if (cancelled) break
-
-        // Abort the previous execution now that changes were detected.
-        execAbortController?.abort()
-
-        // Clean up previous execution's resources
-        cleanupResources.forEach((r) => r[Symbol.dispose]())
-        cleanupResources.length = 0
-
-        // Create abort controller for this execution
-        execAbortController = new AbortController()
-        const execSignal = execAbortController.signal
-
-        // Create WorldState resource from resource_id
-        const trackedWorldState = resourceRef.createResource(
-          response.resourceId ?? 0,
-          WorldStateResource,
-        )
-
-        // Register cleanup function that returns the resource for chaining
-        const cleanup = <R extends Disposable | null | undefined>(
-          resource: R,
-        ): R => {
-          if (resource) {
-            cleanupResources.push(resource)
-          }
-          return resource
-        }
-
-        try {
-          // Execute callback
-          // As the callback accesses resources, server-side tracking starts immediately
-          // Change detection begins as soon as first access is recorded
-          await callback(trackedWorldState, execSignal, cleanup)
-        } catch (err) {
-          // Handle errors in callback (could be abort errors, which are expected)
-          if (err instanceof Error && err.name !== 'AbortError') {
-            console.error('Error in watchWorldState callback:', err)
-          }
-        } finally {
-          // Dispose tracked WorldState resource
-          trackedWorldState[Symbol.dispose]()
-        }
-
-        // Server is now monitoring tracked resources for changes
-        // When changes occur, server sends new resource_id
-        // Loop continues with next iteration
-      }
-    } catch (err) {
-      if (!cancelled && !(err instanceof Error && err.name === 'AbortError')) {
-        console.error('WatchWorldState stream error:', err)
-      }
-    } finally {
-      stopWatch()
     }
-  })()
-
-  return stopWatch
+  }
 }
