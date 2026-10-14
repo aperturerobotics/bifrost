@@ -164,7 +164,8 @@ func TestWatchLoopWakeAfterWaitClearIsSticky(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	// Start a handler that pauses each iteration until released.
+	// Start a handler that reads the object the test creates and pauses each
+	// iteration until released.
 	events := make(chan struct{}, 4)
 	release := make(chan struct{})
 	loop := world_control.NewWatchLoop(
@@ -172,11 +173,17 @@ func TestWatchLoopWakeAfterWaitClearIsSticky(t *testing.T) {
 		"",
 		world_control.NewWaitForStateHandler(func(
 			ctx context.Context,
-			_ world.WorldState,
+			ws world.WorldState,
 			_ world.ObjectState,
 			_ *block.Cursor,
 			_ uint64,
 		) (bool, error) {
+			// Read the object the test changes, then hold until released.
+			obj, _, err := ws.GetObject(ctx, "wake-after-clear")
+			world.ReleaseObjectState(obj)
+			if err != nil {
+				return false, err
+			}
 			events <- struct{}{}
 			select {
 			case <-release:

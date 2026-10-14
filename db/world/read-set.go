@@ -1,10 +1,15 @@
 package world
 
 import (
+	"context"
 	"slices"
 	"strings"
 	"sync"
 )
+
+// readSetChangeLimit bounds the keys and quads WaitChange merges before it
+// treats the changes as unknown.
+const readSetChangeLimit = 4096
 
 // ReadSet records what a view read from the World, so a ChangeSet can be
 // checked against it. Reads it cannot describe precisely mark it conservative,
@@ -24,11 +29,17 @@ type ReadSet struct {
 	graph bool
 	// all is set when the World was read beyond objects and the graph.
 	all bool
+	// added closes when a read is recorded and is then replaced.
+	added chan struct{}
 }
 
 // NewReadSet constructs an empty ReadSet.
 func NewReadSet() *ReadSet {
-	return &ReadSet{keys: make(map[string]struct{}), endpoints: make(map[string]struct{})}
+	return &ReadSet{
+		keys:      make(map[string]struct{}),
+		endpoints: make(map[string]struct{}),
+		added:     make(chan struct{}),
+	}
 }
 
 // Track returns a WorldState that records the reads made through it.
@@ -73,6 +84,60 @@ func (r *ReadSet) Touched(changes *ChangeSet) bool {
 	return false
 }
 
+// WaitChange waits for the first change of w after afterSeqno that touches the
+// reads, and returns its seqno. Record afterSeqno before the reads. Reads may
+// continue while WaitChange runs: it merges the changes since afterSeqno and
+// checks them again whenever a read is recorded, so a change that lands before
+// the read of what it changed still ends the wait.
+func (r *ReadSet) WaitChange(ctx context.Context, w WorldWaitSeqno, afterSeqno uint64) (uint64, error) {
+	// Merge the changes since afterSeqno in the background.
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	var (
+		mtx     sync.Mutex
+		changes *ChangeSet
+		seqno   uint64
+	)
+	changed := make(chan struct{}, 1)
+	watchErr := make(chan error, 1)
+	go func() {
+		watchErr <- WatchChanges(ctx, w, afterSeqno, func(s uint64, cs *ChangeSet) error {
+			// Merge the change and wake the check without blocking.
+			mtx.Lock()
+			changes, seqno = MergeChangeSets(changes, cs, readSetChangeLimit), s
+			mtx.Unlock()
+			select {
+			case changed <- struct{}{}:
+			default:
+			}
+			return nil
+		})
+	}()
+
+	// Check the merged changes after each change and each recorded read.
+	for {
+		// Capture the read signal before checking, so a read recorded after
+		// the check wakes the loop.
+		r.mtx.Lock()
+		added := r.added
+		r.mtx.Unlock()
+		mtx.Lock()
+		cs, s := changes, seqno
+		mtx.Unlock()
+		if cs != nil && r.Touched(cs) {
+			return s, nil
+		}
+		select {
+		case <-ctx.Done():
+			return 0, ctx.Err()
+		case err := <-watchErr:
+			return 0, err
+		case <-changed:
+		case <-added:
+		}
+	}
+}
+
 // touchesKey checks a changed object key. The caller holds mtx.
 func (r *ReadSet) touchesKey(key string) bool {
 	// Match the key itself and the iterated prefixes.
@@ -99,6 +164,7 @@ func (r *ReadSet) addKeys(keys ...string) {
 	for _, key := range keys {
 		r.keys[key] = struct{}{}
 	}
+	r.signalLocked()
 	r.mtx.Unlock()
 }
 
@@ -106,6 +172,7 @@ func (r *ReadSet) addKeys(keys ...string) {
 func (r *ReadSet) addPrefix(prefix string) {
 	r.mtx.Lock()
 	r.prefixes = append(r.prefixes, prefix)
+	r.signalLocked()
 	r.mtx.Unlock()
 }
 
@@ -124,6 +191,7 @@ func (r *ReadSet) addPatterns(filters ...GraphQuad) {
 			}
 		}
 	}
+	r.signalLocked()
 	r.mtx.Unlock()
 }
 
@@ -131,6 +199,7 @@ func (r *ReadSet) addPatterns(filters ...GraphQuad) {
 func (r *ReadSet) markGraph() {
 	r.mtx.Lock()
 	r.graph = true
+	r.signalLocked()
 	r.mtx.Unlock()
 }
 
@@ -138,5 +207,12 @@ func (r *ReadSet) markGraph() {
 func (r *ReadSet) markAll() {
 	r.mtx.Lock()
 	r.all = true
+	r.signalLocked()
 	r.mtx.Unlock()
+}
+
+// signalLocked wakes the waits checking the reads. The caller holds mtx.
+func (r *ReadSet) signalLocked() {
+	close(r.added)
+	r.added = make(chan struct{})
 }

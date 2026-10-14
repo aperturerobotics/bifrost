@@ -353,8 +353,9 @@ func (r *EngineResource) WatchWorldState(
 
 	// Publish a fresh snapshot after each observed change.
 	for {
-		// Register a tracked snapshot resource.
-		trackedWs, resourceID, err := r.addTrackedWorldState(ctx, resourceCtx)
+		// Register a snapshot resource that records what the client reads.
+		reads := world.NewReadSet()
+		seqno, resourceID, err := r.addTrackedWorldState(ctx, resourceCtx, reads)
 		if err != nil {
 			return err
 		}
@@ -372,46 +373,46 @@ func (r *EngineResource) WatchWorldState(
 		}
 		currentID = resourceID
 
-		// Wait for an observed world change.
-		if err := trackedWs.WaitForChanges(ctx); err != nil {
+		// Wait for a change to something the client read.
+		if _, err := reads.WaitChange(ctx, r.engine, seqno); err != nil {
 			return err
 		}
 	}
 }
 
-// addTrackedWorldState registers a tracked WorldState resource over a new read
-// transaction. The transaction is discarded once the resource and all of its
+// addTrackedWorldState registers a WorldState resource over a new read
+// transaction that records its reads in reads, and returns the transaction's
+// seqno. The transaction is discarded once the resource and all of its
 // adopted descendants are released.
 func (r *EngineResource) addTrackedWorldState(
 	ctx context.Context,
 	resourceCtx resource_server.ResourceClientContext,
-) (*TrackedWorldState, uint32, error) {
+	reads *world.ReadSet,
+) (uint64, uint32, error) {
 	// Begin the snapshot transaction and capture its sequence.
 	wtx, err := r.engine.NewTransaction(ctx, false)
 	if err != nil {
-		return nil, 0, err
+		return 0, 0, err
 	}
 	seqno, err := wtx.GetSeqno(ctx)
 	if err != nil {
 		wtx.Discard()
-		return nil, 0, err
+		return 0, 0, err
 	}
 
 	// Register the tracked resource over the transaction lease.
-	trackedWs := NewTrackedWorldState(wtx, world.NewEngineWorldState(r.engine, false), seqno, ctx)
-	trackedResource := NewEngineWorldStateResource(r.le, r.b, trackedWs, r.lookupOp, r.engine, r.worldStateOptions...)
+	trackedResource := NewEngineWorldStateResource(r.le, r.b, reads.Track(wtx), r.lookupOp, r.engine, r.worldStateOptions...)
 	txLease := newResourceLease(wtx.Discard)
 	release := func() {
 		trackedResource.Close()
-		trackedWs.Close()
 		txLease.releaseRef()
 	}
 	resourceID, err := resourceCtx.AddResource(txLease.wrapInvoker(trackedResource.GetMux()), release)
 	if err != nil {
 		release()
-		return nil, 0, err
+		return 0, 0, err
 	}
-	return trackedWs, resourceID, nil
+	return seqno, resourceID, nil
 }
 
 // AccessTypedObject looks up an object, determines its type, and returns a typed resource.

@@ -345,23 +345,25 @@ func (r *SpaceContentsResource) WatchState(
 	var prev *s4wave_space.SpaceContentsState
 	for {
 		// Read SpaceSettings, manifest descriptions, and the installable plugin
-		// catalog from the world.
+		// catalog from the world, recording the reads.
+		reads := world.NewReadSet()
 		var pluginIDs []string
 		var descriptions map[string]string
 		var availablePlugins []*s4wave_space.AvailablePlugin
 		if err := func() error {
 			// Open a World snapshot for the Space contents readback.
-			wtx, err := r.engine.NewTransaction(ctx, false)
+			tx, err := r.engine.NewTransaction(ctx, false)
 			if err != nil {
 				return err
 			}
-			defer wtx.Discard()
+			defer tx.Discard()
 
 			// Capture the World revision for the next contents change.
-			prevSeqno, err = wtx.GetSeqno(ctx)
+			prevSeqno, err = tx.GetSeqno(ctx)
 			if err != nil {
 				return err
 			}
+			wtx := reads.Track(tx)
 
 			// Read the configured plugins from SpaceSettings.
 			settings, err := space_world.LookupSpaceSettingsBody(ctx, wtx)
@@ -463,10 +465,10 @@ func (r *SpaceContentsResource) WatchState(
 			prev = state
 		}
 
-		// Wait for a world seqno, runtime, process binding, loaded, or
-		// requested state change.
+		// Wait for a change to what the World reads saw, or a runtime,
+		// process binding, loaded, or requested state change.
 		err = waitSpaceContentsSources(ctx, func(waitCtx context.Context) error {
-			_, err := r.engine.WaitSeqno(waitCtx, prevSeqno+1)
+			_, err := reads.WaitChange(waitCtx, r.engine, prevSeqno)
 			return err
 		}, []<-chan struct{}{runtimeCh, loadedCh, requestedCh}, waitStatusChange, waitHostChange)
 		if err != nil {
@@ -475,12 +477,12 @@ func (r *SpaceContentsResource) WatchState(
 	}
 }
 
-// waitSpaceContentsSources blocks until waitSeqno returns, any channel in
+// waitSpaceContentsSources blocks until waitWorld returns, any channel in
 // waitChs closes, or any waitFn returns nil. It returns ctx.Err when ctx ends
 // first and nil after any wake.
 func waitSpaceContentsSources(
 	ctx context.Context,
-	waitSeqno func(context.Context) error,
+	waitWorld func(context.Context) error,
 	waitChs []<-chan struct{},
 	waitFns ...func(context.Context) error,
 ) error {
@@ -514,8 +516,8 @@ func waitSpaceContentsSources(
 		}()
 	}
 
-	// Join the contents watchers after the World revision wait ends.
-	err := waitSeqno(waitCtx)
+	// Join the contents watchers after the World change wait ends.
+	err := waitWorld(waitCtx)
 	waitCancel()
 	for range waitCount {
 		<-waitAnyDone
