@@ -30,8 +30,13 @@ func TestCloexec(t *testing.T) {
 		}
 	}
 
-	// Exec keeps only the descriptors without the flag.
+	// Exec keeps only the descriptors without the flag, and the read end
+	// drops to the one reference of its duplicate at once.
+	readEnd := p.fds[rfd]
 	p.execChild([]string{"prog"}, nil, "/bin/prog")
+	if readEnd.refs != 1 {
+		t.Errorf("read end has %d references after exec, want 1", readEnd.refs)
+	}
 	child := p.selfExecProc
 	for _, fd := range []uint32{rfd, cloexecDupFD} {
 		if _, ok := child.fds[fd]; ok {
