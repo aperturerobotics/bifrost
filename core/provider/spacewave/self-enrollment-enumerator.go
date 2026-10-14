@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"maps"
 	"slices"
 
 	"github.com/s4wave/spacewave/core/cdn"
@@ -226,10 +227,11 @@ func (a *ProviderAccount) loadSelfEnrollmentEntries(
 		entries[soID] = entry
 	}
 
-	// Memoize the listed entries unless an invalidation raced the load.
+	// Memoize a copy of the listed entries, since the caller reads the
+	// returned map unlocked, unless an invalidation raced the load.
 	a.accountBcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
 		if a.state.selfEnrollmentEntriesRev == rev {
-			a.state.selfEnrollmentEntries = entries
+			a.state.selfEnrollmentEntries = maps.Clone(entries)
 		}
 	})
 	return entries, nil
