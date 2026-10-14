@@ -46,6 +46,9 @@ type writer struct {
 	// held is set while this handle holds the writer lock. It is safe
 	// without the writer lock.
 	held atomic.Bool
+	// waiting counts this handle's writers waiting for the writer lock. It
+	// is safe without the writer lock.
+	waiting atomic.Int32
 	// building is set while a background checkpoint runs. It and builds
 	// are safe without the writer lock.
 	building atomic.Bool
@@ -60,12 +63,17 @@ type writer struct {
 // other processes appended. Waiting for another process cannot be
 // canceled; ctx bounds the wait for this handle's writers.
 func (w *writer) lock(ctx context.Context) error {
-	// Exclude this handle's writers, then other processes.
+	// Exclude this handle's writers, then other processes, counted as
+	// waiting until both are held.
+	w.waiting.Add(1)
 	release, err := w.mtx.Lock(ctx)
 	if err != nil {
+		w.waiting.Add(-1)
 		return err
 	}
-	if _, err := w.db.s.lock(lockWriter, true); err != nil {
+	_, err = w.db.s.lock(lockWriter, true)
+	w.waiting.Add(-1)
+	if err != nil {
 		release()
 		return err
 	}

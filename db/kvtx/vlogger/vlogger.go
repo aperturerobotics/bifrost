@@ -48,5 +48,11 @@ func (l *VLoggerStore) SupportsAtomicCommit() bool {
 	return ok && s.SupportsAtomicCommit()
 }
 
+// WritersWaiting reports whether a writer waits on the wrapped store.
+func (l *VLoggerStore) WritersWaiting() bool {
+	s, ok := l.Store.(kvtx.WriterQueueStore)
+	return ok && s.WritersWaiting()
+}
+
 // _ is a type assertion
-var _ kvtx.Store = (*VLoggerStore)(nil)
+var _ kvtx.WriterQueueStore = (*VLoggerStore)(nil)

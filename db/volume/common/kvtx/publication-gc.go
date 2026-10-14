@@ -171,9 +171,10 @@ const sweepChunkTime = sweepBudget / 4
 // Current owners, outgoing edges, orphan markers, and physical deletion of each
 // candidate share one raw transaction with the same serialization as grouped
 // head publication. Each transaction sweeps chunks of candidates until
-// sweepBudget elapses, sizing each chunk by how long the last one took. It
-// returns the nodes removed by committed transactions,
-// also when a later transaction fails.
+// sweepBudget elapses or another writer queues for the store, sizing each
+// chunk by how long the last one took, so a foreground commit waits for at
+// most one chunk. It returns the nodes removed by committed transactions, also
+// when a later transaction fails.
 func (v *Volume) SweepUnreferenced(ctx context.Context, graph block_gc.RefGraphOps, nodes []string) ([]string, error) {
 	// Require the Volume transaction domain for atomic sweeping.
 	actual, ok := v.refGraph.(*transactionRefGraph)
@@ -190,7 +191,7 @@ func (v *Volume) SweepUnreferenced(ctx context.Context, graph block_gc.RefGraphO
 		var batch []string
 		err := v.withDirectAtomic(ctx, func(blocks block.StoreOps, rg *block_gc.RefGraph) error {
 			start := time.Now()
-			for len(nodes) != 0 && time.Since(start) < sweepBudget {
+			for len(nodes) != 0 {
 				chunkStart := time.Now()
 				chunk := nodes[:min(len(nodes), size)]
 				nodes = nodes[len(chunk):]
@@ -200,6 +201,9 @@ func (v *Volume) SweepUnreferenced(ctx context.Context, graph block_gc.RefGraphO
 				}
 				batch = append(batch, removed...)
 				size = nextChunkSize(size, time.Since(chunkStart))
+				if time.Since(start) >= sweepBudget || v.writersWaiting() {
+					break
+				}
 			}
 			return nil
 		})
@@ -213,6 +217,13 @@ func (v *Volume) SweepUnreferenced(ctx context.Context, graph block_gc.RefGraphO
 		swept = append(swept, batch...)
 	}
 	return swept, nil
+}
+
+// writersWaiting reports whether another writer queues for the store, so a
+// sweep transaction commits early and lets it in.
+func (v *Volume) writersWaiting() bool {
+	q, ok := v.kvtxStore.(kvtx.WriterQueueStore)
+	return ok && q.WritersWaiting()
 }
 
 // nextChunkSize sizes the chunk after one of size candidates that took took:

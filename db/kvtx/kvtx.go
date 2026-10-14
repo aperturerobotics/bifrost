@@ -17,6 +17,8 @@ type Store interface {
 // CoordinationRefreshStore refreshes a store at an external coordination
 // boundary before callers open transactions derived from that boundary.
 type CoordinationRefreshStore interface {
+	// RefreshForCoordinationLock reloads the store's view after the caller
+	// takes the external coordination lock.
 	RefreshForCoordinationLock() error
 }
 
@@ -113,14 +115,13 @@ type Iterator interface {
 	ValueCopy([]byte) ([]byte, error)
 	// Next advances to the next entry and returns Valid.
 	Next() bool
-	// Seek moves the iterator to the first key >= the provided key (or <= in reverse mode).
-	// Pass nil to seek to the beginning (or end if reversed).
-	// It is not necessary to call Next() after seek.
-	// If prefix is set, k should have the prefix or be nil. prefix is not prepended automatically.
-	// Seek has three possible failure modes:
-	//  - return an error without modifying the iterator
-	//  - set the iterator Err to the error and return nil
-	//  - set the iterator Err to the error and return the error
+	// Seek moves the iterator to the first key >= k, or <= k in reverse mode.
+	//
+	// Pass nil to seek to the beginning, or the end if reversed. Seek positions
+	// the iterator, so Next is not needed after it. If prefix is set, k should
+	// have the prefix or be nil; Seek does not prepend it. Seek fails in one of
+	// three ways: it returns an error without modifying the iterator, it sets
+	// the iterator Err and returns nil, or it sets Err and returns the error.
 	Seek(k []byte) error
 	// Close closes the iterator.
 	// Note: it is not necessary to close all iterators before Discard().
@@ -143,6 +144,7 @@ type Tx interface {
 // next Commit makes it durable.
 type OrderedCommitTx interface {
 	Tx
+	// CommitOrdered commits the transaction with write ordering.
 	CommitOrdered(ctx context.Context) error
 }
 
@@ -172,11 +174,12 @@ func (t orderedCommitTx) Commit(ctx context.Context) error {
 }
 
 // OrderedCommitStore is a store whose write transactions implement
-// OrderedCommitTx. Sync makes every completed ordered commit durable.
-// WaitDurable waits for the same guarantee without forcing a flush.
+// OrderedCommitTx. WaitDurable waits for durability without forcing a flush.
 type OrderedCommitStore interface {
 	Store
+	// Sync makes every completed ordered commit durable.
 	Sync(ctx context.Context) error
+	// WaitDurable waits until every completed ordered commit is durable.
 	WaitDurable(ctx context.Context) error
 }
 
@@ -188,5 +191,15 @@ type OrderedCommitStore interface {
 // transactional tests; this does not make their data process-persistent.
 type AtomicCommitStore interface {
 	Store
+	// SupportsAtomicCommit reports whether the store provides the fence.
 	SupportsAtomicCommit() bool
+}
+
+// WriterQueueStore is a store whose write transactions exclude each other and
+// that reports when writers queue. A write transaction doing deferrable work,
+// such as garbage collection, commits early when one waits.
+type WriterQueueStore interface {
+	Store
+	// WritersWaiting reports whether a write transaction waits to begin.
+	WritersWaiting() bool
 }

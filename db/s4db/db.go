@@ -539,6 +539,12 @@ func (db *DB) NewTransaction(ctx context.Context, write bool) (kvtx.Tx, error) {
 	return &Tx{db: db, st: st, stripe: stripe, changes: newChanges()}, nil
 }
 
+// WritersWaiting reports whether a writer of this handle waits for the writer
+// lock, so a holder doing deferrable work can commit early and let it in.
+func (db *DB) WritersWaiting() bool {
+	return db.w.waiting.Load() != 0
+}
+
 // SupportsAtomicCommit reports true: Commit applies a write transaction in
 // full and durably before it returns, and Discard drops it.
 func (db *DB) SupportsAtomicCommit() bool {
@@ -642,4 +648,5 @@ var (
 	_ kvtx.Store              = (*DB)(nil)
 	_ kvtx.OrderedCommitStore = (*DB)(nil)
 	_ kvtx.AtomicCommitStore  = (*DB)(nil)
+	_ kvtx.WriterQueueStore   = (*DB)(nil)
 )
