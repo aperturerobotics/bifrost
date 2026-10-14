@@ -93,8 +93,9 @@ type ProviderAccount struct {
 	soListBcast broadcast.Broadcast
 	// soListAccess indicates subscription status permits SO list access.
 	soListAccess bool
-	// soListInvalidate restarts soListRc when the cache is stale.
-	soListInvalidate func()
+	// soListInvalidate restarts soListRc when the cache is stale and returns
+	// whether a refetch started.
+	soListInvalidate func() bool
 	// selfRejoinSweep opportunistically heals missing same-entity SO peers after
 	// a new session registers or reconnect invalidates sweep-side caches.
 	selfRejoinSweep *routine.StateRoutineContainer[*selfRejoinSweepState]
@@ -525,10 +526,14 @@ func (t *providerAccountTracker) executeProviderAccountTracker(rctx context.Cont
 		le.Debug("session ws connected; invalidating event-driven caches")
 		acc.BumpLocalEpoch()
 		acc.InvalidatePendingMailboxEntries()
-		acc.InvalidateSharedObjectMetadataCache()
 		acc.InvalidateTargetedInvitations()
-		acc.invalidateSharedObjectList()
 		acc.orgListJobs.Trigger()
+
+		// The list refetch reconciles cached metadata by revision; without
+		// one, every entry is stale.
+		if !acc.invalidateSharedObjectList() {
+			acc.InvalidateSharedObjectMetadataCache()
+		}
 
 		// Re-evaluate every mounted SO once per connection: the cold-start
 		// gate short-circuits warm SOs and the cache-aware classifier fetches

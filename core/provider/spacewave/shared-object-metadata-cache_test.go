@@ -18,7 +18,10 @@ import (
 	s4wave_provider_spacewave "github.com/s4wave/spacewave/sdk/provider/spacewave"
 )
 
+// TestGetSharedObjectMetadataSingleflightAndWarmCache shares one cold fetch
+// among concurrent readers and serves clones from the warm cache.
 func TestGetSharedObjectMetadataSingleflightAndWarmCache(t *testing.T) {
+	// Serve metadata once the test releases the first fetch.
 	var hits atomic.Int32
 	hitStarted := make(chan struct{})
 	release := make(chan struct{})
@@ -39,6 +42,7 @@ func TestGetSharedObjectMetadataSingleflightAndWarmCache(t *testing.T) {
 	}))
 	defer srv.Close()
 
+	// Read concurrently while the first fetch is held.
 	acc := NewTestProviderAccount(t, srv.URL)
 	ctx := context.Background()
 	errs := make(chan error, 8)
@@ -51,10 +55,12 @@ func TestGetSharedObjectMetadataSingleflightAndWarmCache(t *testing.T) {
 				return
 			}
 			if metadata.GetDisplayName() != "Space One" {
-				errs <- errorsUnexpectedMetadata(metadata.GetDisplayName())
+				errs <- errors.Errorf("unexpected display name: %q", metadata.GetDisplayName())
 			}
 		})
 	}
+
+	// Release the fetch; every reader shares it.
 	<-hitStarted
 	close(release)
 	wg.Wait()
@@ -66,6 +72,7 @@ func TestGetSharedObjectMetadataSingleflightAndWarmCache(t *testing.T) {
 		t.Fatalf("expected one cold seed, got %d", hits.Load())
 	}
 
+	// A warm read returns a clone and fetches nothing.
 	metadata, err := acc.GetSharedObjectMetadata(ctx, "so-1")
 	if err != nil {
 		t.Fatalf("get warm metadata: %v", err)
@@ -83,7 +90,10 @@ func TestGetSharedObjectMetadataSingleflightAndWarmCache(t *testing.T) {
 	}
 }
 
+// TestGetSharedObjectMetadataInvalidationRefetch refetches an invalidated
+// entry.
 func TestGetSharedObjectMetadataInvalidationRefetch(t *testing.T) {
+	// Serve metadata named by the fetch count.
 	var hits atomic.Int32
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/sobject/so-1/meta" {
@@ -99,6 +109,7 @@ func TestGetSharedObjectMetadataInvalidationRefetch(t *testing.T) {
 	}))
 	defer srv.Close()
 
+	// Seed the cache.
 	acc := NewTestProviderAccount(t, srv.URL)
 	ctx := context.Background()
 	metadata, err := acc.GetSharedObjectMetadata(ctx, "so-1")
@@ -109,6 +120,7 @@ func TestGetSharedObjectMetadataInvalidationRefetch(t *testing.T) {
 		t.Fatalf("unexpected display name: %q", metadata.GetDisplayName())
 	}
 
+	// Invalidate it; the next read fetches again.
 	acc.InvalidateSharedObjectMetadata("so-1")
 	metadata, err = acc.GetSharedObjectMetadata(ctx, "so-1")
 	if err != nil {
@@ -122,7 +134,10 @@ func TestGetSharedObjectMetadataInvalidationRefetch(t *testing.T) {
 	}
 }
 
+// TestSharedObjectMetadataDeleteTombstone answers reads of a deleted object
+// from its tombstone.
 func TestSharedObjectMetadataDeleteTombstone(t *testing.T) {
+	// Serve metadata for any object.
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		writeSharedObjectMetadata(t, w, &api.SpaceMetadataResponse{
 			DisplayName: "Space One",
@@ -131,6 +146,7 @@ func TestSharedObjectMetadataDeleteTombstone(t *testing.T) {
 	}))
 	defer srv.Close()
 
+	// Seed, delete, and read the entry.
 	acc := NewTestProviderAccount(t, srv.URL)
 	if _, err := acc.GetSharedObjectMetadata(context.Background(), "so-1"); err != nil {
 		t.Fatalf("get metadata: %v", err)
@@ -141,10 +157,14 @@ func TestSharedObjectMetadataDeleteTombstone(t *testing.T) {
 	}
 }
 
+// TestSharedObjectMetadataInvalidationIsPerObject refetches only the
+// invalidated object.
 func TestSharedObjectMetadataInvalidationIsPerObject(t *testing.T) {
+	// Serve metadata named by path and per-path fetch count.
 	hits := map[string]int{}
 	var mtx sync.Mutex
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Count the fetch for its path.
 		mtx.Lock()
 		hits[r.URL.Path]++
 		hit := hits[r.URL.Path]
@@ -158,6 +178,7 @@ func TestSharedObjectMetadataInvalidationIsPerObject(t *testing.T) {
 	}))
 	defer srv.Close()
 
+	// Seed both objects.
 	acc := NewTestProviderAccount(t, srv.URL)
 	ctx := context.Background()
 	if _, err := acc.GetSharedObjectMetadata(ctx, "so-1"); err != nil {
@@ -166,6 +187,8 @@ func TestSharedObjectMetadataInvalidationIsPerObject(t *testing.T) {
 	if _, err := acc.GetSharedObjectMetadata(ctx, "so-2"); err != nil {
 		t.Fatalf("get so-2 metadata: %v", err)
 	}
+
+	// Invalidate one and read both.
 	acc.InvalidateSharedObjectMetadata("so-1")
 	if _, err := acc.GetSharedObjectMetadata(ctx, "so-1"); err != nil {
 		t.Fatalf("get invalidated so-1 metadata: %v", err)
@@ -178,6 +201,7 @@ func TestSharedObjectMetadataInvalidationIsPerObject(t *testing.T) {
 		t.Fatalf("expected warm so-2 metadata, got %q", metadata.GetDisplayName())
 	}
 
+	// Only the invalidated object fetched again.
 	mtx.Lock()
 	defer mtx.Unlock()
 	if hits["/api/sobject/so-1/meta"] != 2 {
@@ -188,7 +212,10 @@ func TestSharedObjectMetadataInvalidationIsPerObject(t *testing.T) {
 	}
 }
 
+// TestSharedObjectMetadataReadPathsShareSeed shares one cold fetch between
+// independent read paths.
 func TestSharedObjectMetadataReadPathsShareSeed(t *testing.T) {
+	// Serve metadata owned by another account once released.
 	var hits atomic.Int32
 	hitStarted := make(chan struct{})
 	release := make(chan struct{})
@@ -209,6 +236,7 @@ func TestSharedObjectMetadataReadPathsShareSeed(t *testing.T) {
 	}))
 	defer srv.Close()
 
+	// Read through two paths while the fetch is held.
 	acc := NewTestProviderAccount(t, srv.URL)
 	enableTestCloudMutations(acc)
 	ctx := context.Background()
@@ -228,6 +256,7 @@ func TestSharedObjectMetadataReadPathsShareSeed(t *testing.T) {
 		}
 	}()
 
+	// Release the fetch; both paths share it.
 	<-hitStarted
 	close(release)
 	wg.Wait()
@@ -239,6 +268,7 @@ func TestSharedObjectMetadataReadPathsShareSeed(t *testing.T) {
 		t.Fatalf("expected independent cold read paths to share one seed, got %d", hits.Load())
 	}
 
+	// Warm reads fetch nothing.
 	if err := acc.reconcilePendingParticipant(ctx, "so-1", "account-2"); err != nil {
 		t.Fatalf("warm pending participant reconciliation: %v", err)
 	}
@@ -250,12 +280,16 @@ func TestSharedObjectMetadataReadPathsShareSeed(t *testing.T) {
 	}
 }
 
+// TestUpdateSharedObjectMetadataSeedsCache stores the update response in the
+// metadata cache and the list without a fetch.
 func TestUpdateSharedObjectMetadataSeedsCache(t *testing.T) {
+	// Answer updates with the renamed metadata and reject fetches.
 	var updateHits atomic.Int32
 	var metaHits atomic.Int32
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/api/sobject/so-1/update":
+			// Check the request and answer with the stored metadata.
 			updateHits.Add(1)
 			body, err := io.ReadAll(r.Body)
 			if err != nil {
@@ -284,6 +318,7 @@ func TestUpdateSharedObjectMetadataSeedsCache(t *testing.T) {
 	}))
 	defer srv.Close()
 
+	// Cache a list entry with the old name.
 	acc := NewTestProviderAccount(t, srv.URL)
 	oldMeta, err := space.NewSharedObjectMeta("Old Space")
 	if err != nil {
@@ -294,6 +329,8 @@ func TestUpdateSharedObjectMetadataSeedsCache(t *testing.T) {
 		Meta:   oldMeta,
 		Source: "cloud",
 	})
+
+	// Rename the object.
 	metadata, err := acc.UpdateSharedObjectMetadata(
 		context.Background(),
 		"so-1",
@@ -302,9 +339,11 @@ func TestUpdateSharedObjectMetadataSeedsCache(t *testing.T) {
 	if err != nil {
 		t.Fatalf("update shared object metadata: %v", err)
 	}
-	if metadata.GetPublicRead() != true {
+	if !metadata.GetPublicRead() {
 		t.Fatal("expected update response to include public read")
 	}
+
+	// The metadata cache holds its own copy of the new name.
 	metadata.DisplayName = "mutated"
 	metadata, err = acc.GetSharedObjectMetadata(context.Background(), "so-1")
 	if err != nil {
@@ -313,6 +352,8 @@ func TestUpdateSharedObjectMetadataSeedsCache(t *testing.T) {
 	if metadata.GetDisplayName() != "Renamed Space" {
 		t.Fatalf("unexpected cached display name: %q", metadata.GetDisplayName())
 	}
+
+	// The list carries it too, and nothing was fetched.
 	list := acc.soListCtr.GetValue()
 	if list == nil || len(list.GetSharedObjects()) != 1 {
 		t.Fatalf("expected one cached shared object, got %#v", list)
@@ -328,6 +369,8 @@ func TestUpdateSharedObjectMetadataSeedsCache(t *testing.T) {
 	}
 }
 
+// enableTestCloudMutations marks acc ready with a subscription that permits
+// cloud writes.
 func enableTestCloudMutations(acc *ProviderAccount) {
 	acc.state.info = &api.AccountStateResponse{
 		SubscriptionStatus: s4wave_provider_spacewave.BillingStatus_BillingStatus_TRIALING,
@@ -336,11 +379,13 @@ func enableTestCloudMutations(acc *ProviderAccount) {
 	acc.state.status = provider.ProviderAccountStatus_ProviderAccountStatus_READY
 }
 
+// writeSharedObjectMetadata writes metadata as a binary response.
 func writeSharedObjectMetadata(
 	t *testing.T,
 	w http.ResponseWriter,
 	metadata *api.SpaceMetadataResponse,
 ) {
+	// Encode the metadata and write it.
 	t.Helper()
 	data, err := metadata.MarshalVT()
 	if err != nil {
@@ -348,10 +393,6 @@ func writeSharedObjectMetadata(
 	}
 	w.Header().Set("Content-Type", "application/octet-stream")
 	_, _ = w.Write(data)
-}
-
-func errorsUnexpectedMetadata(displayName string) error {
-	return errors.Errorf("unexpected display name: %q", displayName)
 }
 
 // TestSharedObjectMetadataFetchSuperseded checks that an in-flight fetch does
@@ -389,6 +430,7 @@ func TestSharedObjectMetadataFetchSuperseded(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			// Hold the first fetch until released.
 			hitStarted := make(chan struct{})
 			release := make(chan struct{})
 			var hits atomic.Int32
@@ -401,6 +443,7 @@ func TestSharedObjectMetadataFetchSuperseded(t *testing.T) {
 			}))
 			defer srv.Close()
 
+			// Supersede the held fetch, then release it.
 			acc := NewTestProviderAccount(t, srv.URL)
 			type result struct {
 				metadata *api.SpaceMetadataResponse
@@ -414,11 +457,60 @@ func TestSharedObjectMetadataFetchSuperseded(t *testing.T) {
 			<-hitStarted
 			tc.supersede(acc)
 			close(release)
+
+			// The read returns the superseding state after one fetch.
 			res := <-done
 			tc.check(t, res.metadata, res.err)
 			if hits.Load() != 1 {
 				t.Fatalf("expected one fetch, got %d", hits.Load())
 			}
 		})
+	}
+}
+
+// TestReconcileSharedObjectMetadataKeepsCurrentRevisions keeps only cached
+// metadata the list confirms current.
+func TestReconcileSharedObjectMetadataKeepsCurrentRevisions(t *testing.T) {
+	// Cache metadata at known and unknown revisions.
+	acc := NewTestProviderAccount(t, "http://example.invalid")
+	for soID, updatedAt := range map[string]int64{
+		"so-current":  5,
+		"so-newer":    5,
+		"so-unknown":  0,
+		"so-unlisted": 5,
+	} {
+		acc.SetSharedObjectMetadata(soID, &api.SpaceMetadataResponse{
+			DisplayName: soID,
+			UpdatedAt:   updatedAt,
+		})
+	}
+	acc.DeleteSharedObjectMetadata("so-deleted")
+
+	// Reconcile against a list with one newer revision.
+	list := &sobject.SharedObjectList{}
+	for soID, updatedAt := range map[string]int64{
+		"so-current": 5,
+		"so-newer":   9,
+		"so-unknown": 3,
+		"so-deleted": 7,
+	} {
+		list.SharedObjects = append(list.SharedObjects, &sobject.SharedObjectListEntry{
+			Ref:       acc.buildSharedObjectRef(soID),
+			UpdatedAt: updatedAt,
+		})
+	}
+	acc.reconcileSharedObjectMetadata(list)
+
+	// Only the confirmed entry stays valid and the deleted one stays deleted.
+	for soID, want := range map[string]sharedObjectMetadataStatus{
+		"so-current":  sharedObjectMetadataValid,
+		"so-newer":    sharedObjectMetadataInvalid,
+		"so-unknown":  sharedObjectMetadataInvalid,
+		"so-unlisted": sharedObjectMetadataInvalid,
+		"so-deleted":  sharedObjectMetadataDeleted,
+	} {
+		if _, got := acc.getSharedObjectMetadataSnapshot(soID); got != want {
+			t.Errorf("%s: status %d, want %d", soID, got, want)
+		}
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 	api "github.com/s4wave/spacewave/core/provider/spacewave/api"
 	"github.com/s4wave/spacewave/core/provider/spacewave/seedflight"
+	"github.com/s4wave/spacewave/core/sobject"
 )
 
 // sharedObjectMetadataStatus describes the cache state for one shared object.
@@ -39,6 +40,7 @@ func (a *ProviderAccount) GetSharedObjectMetadata(
 	ctx context.Context,
 	soID string,
 ) (*api.SpaceMetadataResponse, error) {
+	// Serve a settled cache entry directly.
 	if soID == "" {
 		return nil, errors.New("shared object id is required")
 	}
@@ -48,11 +50,11 @@ func (a *ProviderAccount) GetSharedObjectMetadata(
 		return nil, ErrSharedObjectMetadataDeleted
 	}
 
+	// Otherwise join or start the entry's seed fetch.
 	var seed *seedflight.Seed
 	a.accountBcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
 		seed = &a.getOrCreateSharedObjectMetadataStateLocked(soID).seed
 	})
-
 	if err := seed.RunWhenReady(
 		ctx,
 		&a.accountBcast,
@@ -67,6 +69,7 @@ func (a *ProviderAccount) GetSharedObjectMetadata(
 		return nil, err
 	}
 
+	// Return the snapshot the seed settled.
 	metadata, status := a.getSharedObjectMetadataSnapshot(soID)
 	if status == sharedObjectMetadataValid {
 		return metadata, nil
@@ -84,9 +87,7 @@ func (a *ProviderAccount) getSharedObjectMetadataSnapshot(
 	var metadata *api.SpaceMetadataResponse
 	var status sharedObjectMetadataStatus
 	a.accountBcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
-		if a.state.sharedObjectMetadata == nil {
-			return
-		}
+		// Copy the entry, if any, so callers cannot mutate the cache.
 		state := a.state.sharedObjectMetadata[soID]
 		if state == nil {
 			return
@@ -146,6 +147,7 @@ func (a *ProviderAccount) UpdateSharedObjectMetadata(
 	soID string,
 	metadata *api.SpaceMetadataResponse,
 ) (*api.SpaceMetadataResponse, error) {
+	// Send the update with the account's session client.
 	if soID == "" {
 		return nil, errors.New("shared object id is required")
 	}
@@ -157,6 +159,8 @@ func (a *ProviderAccount) UpdateSharedObjectMetadata(
 	if err != nil {
 		return nil, errors.Wrap(err, "update shared object metadata")
 	}
+
+	// Store the returned snapshot in the cache and the list.
 	next := &api.SpaceMetadataResponse{}
 	if err := next.UnmarshalVT(data); err != nil {
 		return nil, errors.Wrap(err, "unmarshal shared object metadata")
@@ -190,6 +194,7 @@ func setSharedObjectMetadataLocked(
 	metadata *api.SpaceMetadataResponse,
 	broadcast func(),
 ) {
+	// Supersede in-flight fetches, and announce only a changed snapshot.
 	state.gen++
 	next := cloneSharedObjectMetadata(metadata)
 	if state.status == sharedObjectMetadataValid && sharedObjectMetadataEqual(state.metadata, next) {
@@ -208,9 +213,7 @@ func (a *ProviderAccount) InvalidateSharedObjectMetadata(
 		return
 	}
 	a.accountBcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
-		if a.state.sharedObjectMetadata == nil {
-			return
-		}
+		// Supersede in-flight fetches and mark a cached entry stale.
 		state := a.state.sharedObjectMetadata[soID]
 		if state == nil {
 			return
@@ -249,6 +252,46 @@ func (a *ProviderAccount) InvalidateSharedObjectMetadataCache() {
 	})
 }
 
+// reconcileSharedObjectMetadata marks cached metadata stale when list shows a
+// newer revision, does not list the object, or the cached revision is unknown.
+// In-flight fetches of entries already stale repeat, since they may predate
+// the list.
+func (a *ProviderAccount) reconcileSharedObjectMetadata(list *sobject.SharedObjectList) {
+	// Index the listed revisions.
+	listed := make(map[string]int64, len(list.GetSharedObjects()))
+	for _, entry := range list.GetSharedObjects() {
+		listed[entry.GetRef().GetProviderResourceRef().GetId()] = entry.GetUpdatedAt()
+	}
+
+	// Mark each cached entry stale unless it holds the listed revision.
+	a.accountBcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+		// Deleted entries stay deleted; stale ones only repeat their fetch.
+		changed := false
+		for soID, state := range a.state.sharedObjectMetadata {
+			if state == nil || state.status == sharedObjectMetadataDeleted {
+				continue
+			}
+			if state.status == sharedObjectMetadataInvalid {
+				state.gen++
+				continue
+			}
+
+			// Keep a valid entry the list confirms current.
+			held := state.metadata.GetUpdatedAt()
+			rev, ok := listed[soID]
+			if ok && held != 0 && rev <= held {
+				continue
+			}
+			state.gen++
+			state.status = sharedObjectMetadataInvalid
+			changed = true
+		}
+		if changed {
+			broadcast()
+		}
+	})
+}
+
 // DeleteSharedObjectMetadata marks one shared-object metadata cache entry deleted.
 func (a *ProviderAccount) DeleteSharedObjectMetadata(
 	soID string,
@@ -257,6 +300,7 @@ func (a *ProviderAccount) DeleteSharedObjectMetadata(
 		return
 	}
 	a.accountBcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+		// Supersede in-flight fetches and record the deletion.
 		state := a.getOrCreateSharedObjectMetadataStateLocked(soID)
 		state.gen++
 		if state.status == sharedObjectMetadataDeleted && state.metadata == nil {

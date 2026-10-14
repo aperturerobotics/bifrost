@@ -800,9 +800,11 @@ func (a *ProviderAccount) fetchSharedObjectList(ctx context.Context) error {
 		return err
 	}
 
-	// Store it, keeping created entries the snapshot does not list yet.
+	// Store it, keeping created entries the snapshot does not list yet, and
+	// mark cached metadata the snapshot shows changed as stale.
 	a.soListCtr.SetValue(mergeSharedObjectListSnapshot(list, a.soListCtr.GetValue()))
 	a.selfEnrollmentRefresh.Trigger()
+	a.reconcileSharedObjectMetadata(list)
 	return nil
 }
 
