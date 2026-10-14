@@ -794,27 +794,6 @@ message WatchWorldStateResponse {
   uint32 resource_id = 1;
 }
 
-// TrackedWorldStateSnapshot is an immutable snapshot of tracked WorldState accesses.
-// Used internally to coordinate change detection with StateRoutineContainer.
-message TrackedWorldStateSnapshot {
-  // ObjectAccess represents a tracked object access.
-  message ObjectAccess {
-    // Key is the object key that was accessed.
-    string key = 1;
-    // Rev is the revision of the object at access time.
-    uint64 rev = 2;
-  }
-
-  // ObjectAccesses is the list of object accesses that were tracked.
-  repeated ObjectAccess object_accesses = 1;
-
-  // HasQuadAccess indicates if any quad queries were performed.
-  bool has_quad_access = 2;
-
-  // InitialSeqno is the world seqno when tracking started.
-  uint64 initial_seqno = 3;
-}
-
 service ObjectIteratorResourceService {
   rpc Err(ErrRequest) returns (ErrResponse);
 
