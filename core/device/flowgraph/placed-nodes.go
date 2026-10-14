@@ -8,24 +8,23 @@ import (
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/world"
-	world_types "github.com/s4wave/spacewave/db/world/types"
 	s4wave_device "github.com/s4wave/spacewave/sdk/device"
 	s4wave_flowgraph "github.com/s4wave/spacewave/sdk/flowgraph"
 )
 
-// readPlacedNodes reads every node of every Flowgraph in ws that is placed on
-// the Device at deviceKey, in Flowgraph key and node ID order.
+// readPlacedNodes reads every Flowgraph node in ws that is placed on the
+// Device at deviceKey, in Flowgraph key and node ID order. It reads only the
+// Flowgraphs with a placement edge to the Device.
 func readPlacedNodes(
 	ctx context.Context,
 	ws world.WorldState,
 	deviceKey, devicePeerID string,
 ) ([]*s4wave_flowgraph.PlacedFlowgraphNode, error) {
-	// List the Flowgraphs in key order.
-	flowgraphKeys, err := world_types.ListObjectsWithType(ctx, ws, s4wave_flowgraph.FlowgraphTypeID)
+	// List the Flowgraphs placed on the Device in key order.
+	flowgraphKeys, err := readPlacedFlowgraphKeys(ctx, ws, deviceKey)
 	if err != nil {
 		return nil, err
 	}
-	slices.Sort(flowgraphKeys)
 
 	// Resolve each Device's peer ID once, since several connections share it.
 	peerIDs := map[string]string{deviceKey: devicePeerID}
@@ -63,6 +62,31 @@ func readPlacedNodes(
 		}
 	}
 	return placed, nil
+}
+
+// readPlacedFlowgraphKeys returns the sorted keys of the Flowgraphs with a
+// node placed on the Device at deviceKey, from the placement edges that end at
+// the Device. A Device holds one edge per placed node, so the lookup takes no
+// limit.
+func readPlacedFlowgraphKeys(ctx context.Context, ws world.WorldState, deviceKey string) ([]string, error) {
+	// Look up the placement edges that end at the Device.
+	filter := world.NewGraphQuadWithKeys("", s4wave_flowgraph.DevicePlacementPredicate, deviceKey, "")
+	edges, err := ws.LookupGraphQuads(ctx, filter, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	// Collect each Flowgraph once.
+	keys := make([]string, 0, len(edges))
+	for _, edge := range edges {
+		key, err := world.GraphValueToKey(edge.GetSubject())
+		if err != nil {
+			return nil, err
+		}
+		keys = append(keys, key)
+	}
+	slices.Sort(keys)
+	return slices.Compact(keys), nil
 }
 
 // placedConnections returns the connections of snapshot that end at nodeID, in
