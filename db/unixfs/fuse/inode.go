@@ -5,6 +5,7 @@ package fuse
 import (
 	"context"
 	ofs "io/fs"
+	"slices"
 	"sync"
 	"syscall"
 	"time"
@@ -497,8 +498,8 @@ func (i *Inode) releaseRecursive() {
 	}
 
 	// Release children before their parents.
-	for i := len(toRelease) - 1; i >= 0; i-- {
-		toRelease[i].Release()
+	for _, t := range slices.Backward(toRelease) {
+		t.Release()
 	}
 }
 

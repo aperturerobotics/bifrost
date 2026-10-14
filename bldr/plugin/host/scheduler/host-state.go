@@ -61,8 +61,8 @@ func orderHosts(prev *pluginHostSet, hosts []plugin_host.PluginHost) []plugin_ho
 	var known int
 	if prev != nil {
 		known = len(prev.pluginHosts)
-		for i := len(prev.pluginHosts) - 1; i >= 0; i-- {
-			ranks[prev.pluginHosts[i]] = i
+		for i, v := range slices.Backward(prev.pluginHosts) {
+			ranks[v] = i
 		}
 	}
 

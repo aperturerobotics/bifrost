@@ -92,7 +92,7 @@ func Mount(
 		String() string
 	}
 	srv := fs.New(rootFS.conn, &fs.Config{
-		Debug: func(msg interface{}) {
+		Debug: func(msg any) {
 			if verbose {
 				sb, ok := msg.(stringable)
 				if ok {
