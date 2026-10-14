@@ -6,6 +6,7 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/aperturerobotics/util/ccontainer"
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/core/sobject"
 	"github.com/s4wave/spacewave/db/block"
@@ -544,6 +545,11 @@ type replayTestPublisher struct{}
 // LocalStateHead returns an empty head update.
 func (replayTestPublisher) LocalStateHead(string, []byte, []byte) *block.AtomicHeadUpdate {
 	return &block.AtomicHeadUpdate{}
+}
+
+// AccessAdmittedState is not used by the replayer.
+func (replayTestPublisher) AccessAdmittedState(context.Context, func()) (ccontainer.Watchable[sobject.SharedObjectStateSnapshot], func(), error) {
+	return nil, nil, errors.New("replay test publisher has no admitted state")
 }
 
 // TestReplaySpanHoldsOnlyNewPositions checks that each save writes a span

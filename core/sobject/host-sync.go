@@ -41,6 +41,10 @@ type SOHostSyncFuncs struct {
 	// completed before the call is durable. When nil, state writes are durable
 	// when they return.
 	WaitDurable func(context.Context) error
+	// Admitted watches the admitted state: the watched state followed by the
+	// operations admitted to publications whose receipts are pending. When
+	// nil, the admitted state is the watched state.
+	Admitted SOStateWatchFunc
 }
 
 // ReadConfigSuffix follows retained hash-addressed entries from target to base.

@@ -11,6 +11,7 @@ import (
 	"github.com/s4wave/spacewave/net/crypto"
 	"github.com/s4wave/spacewave/net/peer"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/sync/errgroup"
 )
 
 // LocalSOHost publishes the local participant's view of a shared object and
@@ -28,8 +29,10 @@ type LocalSOHost struct {
 	sfs *block_transform.StepFactorySet
 	// soHost owns the shared object state.
 	soHost *sobject.SOHost
-	// stateSnapCtr holds the snapshot of the latest host state.
+	// stateSnapCtr holds the snapshot of the latest durable host state.
 	stateSnapCtr *ccontainer.CContainer[sobject.SharedObjectStateSnapshot]
+	// admittedSnapCtr holds the snapshot of the latest admitted host state.
+	admittedSnapCtr *ccontainer.CContainer[sobject.SharedObjectStateSnapshot]
 	// publishedConfigCtr holds the config of the latest published snapshot.
 	publishedConfigCtr *ccontainer.CContainer[*sobject.SharedObjectConfig]
 	// lifetime ends when the mount that runs Execute stops. A commit that
@@ -59,28 +62,38 @@ func NewLocalSOHost(
 		sfs:                sfs,
 		soHost:             soHost,
 		stateSnapCtr:       ccontainer.NewCContainer[sobject.SharedObjectStateSnapshot](nil),
+		admittedSnapCtr:    ccontainer.NewCContainer[sobject.SharedObjectStateSnapshot](nil),
 		publishedConfigCtr: ccontainer.NewCContainer[*sobject.SharedObjectConfig](nil),
 		lifetime:           lifetime,
 	}, nil
 }
 
-// Execute publishes a snapshot of every host state until ctx is canceled.
+// Execute publishes a snapshot of every durable and every admitted host
+// state until ctx is canceled.
 func (l *LocalSOHost) Execute(ctx context.Context) error {
-	// Publish a snapshot and the config of every host state.
+	// Watch the durable and the admitted host state.
 	stateCtr, relStateCtr, err := l.soHost.GetSOStateCtr(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer relStateCtr()
-	var state *sobject.SOState
-	for {
-		state, err = stateCtr.WaitValueChange(ctx, state, nil)
-		if err != nil {
-			return err
-		}
-		l.stateSnapCtr.SetValue(l.buildSnapshot(state))
-		l.publishedConfigCtr.SetValue(state.GetConfig().CloneVT())
+	admittedCtr, relAdmittedCtr, err := l.soHost.GetAdmittedSOStateCtr(ctx, nil)
+	if err != nil {
+		return err
 	}
+	defer relAdmittedCtr()
+
+	// Publish a snapshot of each, and the config of each durable state.
+	g, ctx := errgroup.WithContext(ctx)
+	g.Go(func() error {
+		return l.publishSnapshots(ctx, stateCtr, l.stateSnapCtr, func(state *sobject.SOState) {
+			l.publishedConfigCtr.SetValue(state.GetConfig().CloneVT())
+		})
+	})
+	g.Go(func() error {
+		return l.publishSnapshots(ctx, admittedCtr, l.admittedSnapCtr)
+	})
+	return g.Wait()
 }
 
 // buildSnapshot returns the local participant's snapshot of state.
@@ -122,9 +135,38 @@ func (l *LocalSOHost) waitPublishedConfig(ctx context.Context, target *sobject.S
 	return err
 }
 
-// AccessSharedObjectState adds a reference to the state and returns the state container.
+// AccessSharedObjectState adds a reference to the durable state and returns
+// the state container.
 func (l *LocalSOHost) AccessSharedObjectState(ctx context.Context, released func()) (ccontainer.Watchable[sobject.SharedObjectStateSnapshot], func(), error) {
 	return l.stateSnapCtr, func() {}, nil
+}
+
+// AccessAdmittedState adds a reference to the admitted state and returns the
+// state container.
+func (l *LocalSOHost) AccessAdmittedState(ctx context.Context, released func()) (ccontainer.Watchable[sobject.SharedObjectStateSnapshot], func(), error) {
+	return l.admittedSnapCtr, func() {}, nil
+}
+
+// publishSnapshots sets snaps to the snapshot of each state of states until
+// ctx is canceled, after calling each, when set, with the state.
+func (l *LocalSOHost) publishSnapshots(
+	ctx context.Context,
+	states ccontainer.Watchable[*sobject.SOState],
+	snaps *ccontainer.CContainer[sobject.SharedObjectStateSnapshot],
+	each ...func(*sobject.SOState),
+) error {
+	var state *sobject.SOState
+	for {
+		var err error
+		state, err = states.WaitValueChange(ctx, state, nil)
+		if err != nil {
+			return err
+		}
+		snaps.SetValue(l.buildSnapshot(state))
+		for _, fn := range each {
+			fn(state)
+		}
+	}
 }
 
 // detach returns ctx's values without its cancellation, ended when the host's
@@ -139,9 +181,10 @@ func (l *LocalSOHost) detach(ctx context.Context) (context.Context, context.Canc
 }
 
 // QueueOperation signs op as the local participant and adds it to the
-// operation set. It returns the local operation id once the published snapshot
-// holds the operation. When ctx carries sobject.WithPublishState, an ordinary
-// state write commits through that publication.
+// operation set. When ctx carries sobject.WithPublishState, an ordinary state
+// write is admitted to that publication, and QueueOperation returns the local
+// operation id once the admitted snapshot holds the operation. Otherwise it
+// returns once the durable snapshot holds it.
 func (l *LocalSOHost) QueueOperation(ctx context.Context, op []byte) (string, error) {
 	// Sign the operation and add it to the host state.
 	ctx, task := trace.NewTask(ctx, "alpha/local-so/queue-operation")
@@ -152,12 +195,16 @@ func (l *LocalSOHost) QueueOperation(ctx context.Context, op []byte) (string, er
 	}
 
 	// Wait for the snapshot that holds the operation, or a later checkpoint.
-	// The state write made the operation durable, so the wait ignores ctx's
-	// cancellation and the call reports the operation as added. It ends with
-	// the host's lifetime, and the outcome is then unknown.
+	// The state write admitted or wrote the operation, so the wait ignores
+	// ctx's cancellation and the call reports the operation as added. It
+	// ends with the host's lifetime, and the outcome is then unknown.
+	snaps := l.stateSnapCtr
+	if sobject.GetPublishState(ctx) != nil {
+		snaps = l.admittedSnapCtr
+	}
 	ctx, cancel := l.detach(ctx)
 	defer cancel()
-	_, err = l.stateSnapCtr.WaitValueWithValidator(ctx, func(snap sobject.SharedObjectStateSnapshot) (bool, error) {
+	_, err = snaps.WaitValueWithValidator(ctx, func(snap sobject.SharedObjectStateSnapshot) (bool, error) {
 		// A snapshot holds the operation, or its checkpoint covers it.
 		if snap == nil {
 			return false, nil

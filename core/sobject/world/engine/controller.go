@@ -132,8 +132,8 @@ func (c *Controller) Execute(ctx context.Context) error {
 		}()
 	}
 
-	// access the shared object state
-	soStateCtr, soStateCtrRel, err := so.AccessSharedObjectState(rctx, rctxCancel)
+	// Access the state the engine replays.
+	soStateCtr, soStateCtrRel, err := accessAdmittedState(rctx, so, rctxCancel)
 	if err != nil {
 		return err
 	}

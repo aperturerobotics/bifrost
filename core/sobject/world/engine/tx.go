@@ -160,7 +160,7 @@ func (t *soEngineWriteTx) Commit(ctx context.Context) error {
 	taskCtx, task := trace.NewTask(ctx, "alpha/so-engine/write-tx/queue-operation")
 	defer task.End()
 	if publishes {
-		taskCtx = sobject.WithPublishState(taskCtx, func(ctx context.Context, head *block.AtomicHeadUpdate) (bool, error) {
+		taskCtx = sobject.WithPublishState(taskCtx, func(ctx context.Context, head *block.AtomicHeadUpdate) (*block.PublicationReceipt, error) {
 			return t.publish(ctx, publisher, nroot, head)
 		})
 	}
@@ -187,27 +187,28 @@ func (t *soEngineWriteTx) writeBlocks(ctx context.Context) error {
 // publish commits the candidate blocks, the state head, the candidate root
 // under the accepted World root, and the replay save the last write deferred
 // with the span holding the operation's payloads, in one physical
-// transaction, and reports true once it is durable. When head is nil or the
-// store cannot publish, it writes the blocks and reports false; the
-// SharedObject then commits its state itself.
-func (t *soEngineWriteTx) publish(ctx context.Context, publisher sobject.StatePublisher, root *block.BlockRef, head *block.AtomicHeadUpdate) (bool, error) {
+// transaction, and returns its receipt once it succeeded. The write keeps the
+// receipt until Discard. When head is nil or the store cannot publish, it
+// writes the blocks and returns a nil receipt; the SharedObject then commits
+// its state itself.
+func (t *soEngineWriteTx) publish(ctx context.Context, publisher sobject.StatePublisher, root *block.BlockRef, head *block.AtomicHeadUpdate) (*block.PublicationReceipt, error) {
 	// Fall back when the state or the store cannot join a publication.
 	ctx, task := trace.NewTask(ctx, "alpha/so-engine/write-tx/publish")
 	defer task.End()
 	store, ok := t.eng.so.GetBlockStore().(block.AtomicPublisher)
 	if head == nil || !ok || !store.SupportsAtomicPublication() {
-		return false, t.writeBlocks(ctx)
+		return nil, t.writeBlocks(ctx)
 	}
 
 	// Borrow the candidate blocks and collect the pending replay save.
 	batch, err := t.btx.TakePending(ctx)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 	saveEntries, roots, cursor, err := t.eng.replay.pendingSave(publisher, t.fork.payloads)
 	if err != nil {
 		batch.Complete(err)
-		return false, err
+		return nil, err
 	}
 	heads := []*block.AtomicHeadUpdate{head}
 	if cursor != nil {
@@ -225,11 +226,11 @@ func (t *soEngineWriteTx) publish(ctx context.Context, publisher sobject.StatePu
 	})
 	if errors.Is(err, block.ErrAtomicPublicationUnsupported) || errors.Is(err, block.ErrPublicationTooLarge) {
 		batch.Complete(err)
-		return false, t.writeBlocks(ctx)
+		return nil, t.writeBlocks(ctx)
 	}
 	if err != nil {
 		batch.Complete(err)
-		return false, err
+		return nil, err
 	}
 	t.clock.end(stagePublicationAdmission)
 
@@ -250,13 +251,13 @@ func (t *soEngineWriteTx) publish(ctx context.Context, publisher sobject.StatePu
 			receipt.Release()
 		}()
 		t.clock.end(stageReceiptWait)
-		return false, err
+		return nil, err
 	}
 	batch.Complete(err)
 	t.clock.end(stageReceiptWait)
 	if err != nil {
 		receipt.Release()
-		return false, err
+		return nil, err
 	}
 
 	// The accepted World root holds the candidate, and the replay is saved.
@@ -265,7 +266,7 @@ func (t *soEngineWriteTx) publish(ctx context.Context, publisher sobject.StatePu
 	t.receipt, t.candidateRoot, t.eng.retained = receipt, nil, held
 	t.eng.replay.saved()
 	t.fork.published = true
-	return true, nil
+	return receipt, nil
 }
 
 // ApplyWorldOp applies op to the candidate as accepted replay will apply it.

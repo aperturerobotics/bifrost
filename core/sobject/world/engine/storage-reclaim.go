@@ -117,7 +117,7 @@ func (c *Controller) notifyWrite() {
 // due time schedules another.
 func (e *soEngine) reclaimStorage(ctx context.Context) (time.Time, error) {
 	// Only the checkpointer reclaims.
-	snap, err := e.so.GetSharedObjectState(ctx)
+	snap, err := getAdmittedState(ctx, e.so)
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -205,7 +205,7 @@ func (e *soEngine) writeFence(ctx context.Context) ([]byte, uint64, error) {
 	}
 
 	// Find it in the operation set.
-	snap, err := e.so.GetSharedObjectState(ctx)
+	snap, err := getAdmittedState(ctx, e.so)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -226,7 +226,7 @@ func (e *soEngine) waitStable(ctx context.Context, h []byte, nonce uint64) error
 	// Watch the state until the deadline.
 	ctx, cancel := context.WithTimeoutCause(ctx, reclaimFenceTimeout, errReclaimFenceUnanswered)
 	defer cancel()
-	ctr, rel, err := e.so.AccessSharedObjectState(ctx, nil)
+	ctr, rel, err := accessAdmittedState(ctx, e.so, nil)
 	if err != nil {
 		return err
 	}
@@ -271,7 +271,7 @@ func (e *soEngine) liveWorlds(ctx context.Context) (*block.BlockRef, []*Retained
 		return nil, nil, nil, err
 	}
 	defer unlockWriteMtx()
-	snap, err := e.so.GetSharedObjectState(ctx)
+	snap, err := getAdmittedState(ctx, e.so)
 	if err != nil {
 		return nil, nil, nil, err
 	}

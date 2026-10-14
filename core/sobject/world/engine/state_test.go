@@ -173,11 +173,16 @@ func TestBuildBlkEngineBorrowsTransformAwareBlockStoreDecodedCache(t *testing.T)
 // testSharedObject serves a block store, a local state store and a fixed
 // snapshot, and records the operations queued on it.
 type testSharedObject struct {
-	peerID     peer.ID
+	// peerID is the local participant.
+	peerID peer.ID
+	// blockStore is the shared object block store.
 	blockStore bstore.BlockStore
+	// localStore is the local state store of every store id.
 	localStore kvtx.Store
-	snapshot   sobject.SharedObjectStateSnapshot
-	queued     [][]byte
+	// snapshot is the fixed shared object state.
+	snapshot sobject.SharedObjectStateSnapshot
+	// queued are the operations queued in order.
+	queued [][]byte
 }
 
 // testBlockStore is a block store with an attached decoded cache.
@@ -201,34 +206,42 @@ func (s *testBlockStore) ReclaimStorage(context.Context, bstore.ReclaimFence) (t
 	return time.Time{}, nil
 }
 
+// GetBus returns no bus.
 func (s *testSharedObject) GetBus() bus.Bus {
 	return nil
 }
 
+// GetPeerID returns the local participant.
 func (s *testSharedObject) GetPeerID() peer.ID {
 	return s.peerID
 }
 
+// GetSharedObjectID returns an empty id.
 func (s *testSharedObject) GetSharedObjectID() string {
 	return ""
 }
 
+// GetBlockStore returns the block store.
 func (s *testSharedObject) GetBlockStore() bstore.BlockStore {
 	return s.blockStore
 }
 
+// AccessLocalStateStore returns the local state store.
 func (s *testSharedObject) AccessLocalStateStore(ctx context.Context, storeID string, released func()) (kvtx.Store, func(), error) {
 	return s.localStore, func() {}, nil
 }
 
+// GetSharedObjectState returns the fixed snapshot.
 func (s *testSharedObject) GetSharedObjectState(ctx context.Context) (sobject.SharedObjectStateSnapshot, error) {
 	return s.snapshot, nil
 }
 
+// AccessSharedObjectState returns a container holding the fixed snapshot.
 func (s *testSharedObject) AccessSharedObjectState(ctx context.Context, released func()) (ccontainer.Watchable[sobject.SharedObjectStateSnapshot], func(), error) {
-	return nil, nil, nil
+	return ccontainer.NewCContainer(s.snapshot), func() {}, nil
 }
 
+// QueueOperation records op.
 func (s *testSharedObject) QueueOperation(ctx context.Context, op []byte) (string, error) {
 	s.queued = append(s.queued, op)
 	return "", nil

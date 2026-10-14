@@ -145,6 +145,12 @@ func (s *SharedObject) AccessSharedObjectState(ctx context.Context, released fun
 	return s.lsoHost.AccessSharedObjectState(ctx, released)
 }
 
+// AccessAdmittedState adds a reference to the admitted state and returns the
+// state container.
+func (s *SharedObject) AccessAdmittedState(ctx context.Context, released func()) (ccontainer.Watchable[sobject.SharedObjectStateSnapshot], func(), error) {
+	return s.lsoHost.AccessAdmittedState(ctx, released)
+}
+
 // AccessSharedObjectHealth retains the provider's health watch for this mount.
 func (s *SharedObject) AccessSharedObjectHealth(ctx context.Context, released func()) (ccontainer.Watchable[*sobject.SharedObjectHealth], func(), error) {
 	ref, err := s.tkr.ref.Await(ctx)

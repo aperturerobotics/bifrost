@@ -108,14 +108,14 @@ func TestSOStateWritePublishedOperation(t *testing.T) {
 	host := sobject.NewSOHost(ctx, watch, lock, testSharedObjectID, syncFuncs)
 	t.Cleanup(host.ClearContext)
 	le := logrus.NewEntry(logrus.New())
-	add := func(published bool) *block.AtomicHeadUpdate {
-		// Add one operation through a publication that returns published.
+	add := func(receipt *block.PublicationReceipt) *block.AtomicHeadUpdate {
+		// Add one operation through a publication that returns receipt.
 		t.Helper()
 		store.commits = 0
 		var head *block.AtomicHeadUpdate
-		publish := func(_ context.Context, h *block.AtomicHeadUpdate) (bool, error) {
+		publish := func(_ context.Context, h *block.AtomicHeadUpdate) (*block.PublicationReceipt, error) {
 			head = h
-			return published, nil
+			return receipt, nil
 		}
 		pctx := sobject.WithPublishState(ctx, publish)
 		if _, _, err := host.AddLocalOperation(pctx, le, testStepFactorySet(), priv, []byte("op")); err != nil {
@@ -125,7 +125,7 @@ func TestSOStateWritePublishedOperation(t *testing.T) {
 	}
 
 	// A declined publication commits the state itself.
-	head := add(false)
+	head := add(nil)
 	if head == nil || head.ObjectStoreID != "objs" || string(head.Key) != string(SobjectObjectStoreHostStateKey(testSharedObjectID)) {
 		t.Fatalf("declined publication: head = %v", head)
 	}
@@ -133,10 +133,12 @@ func TestSOStateWritePublishedOperation(t *testing.T) {
 		t.Fatalf("declined publication: commits = %d", store.commits)
 	}
 
-	// An accepted publication leaves the state write to it.
-	head = add(true)
+	// An admitted publication leaves the state write to it.
+	receipt := block.NewPublicationReceipt()
+	defer receipt.Resolve(nil)
+	head = add(receipt)
 	if store.commits != 0 {
-		t.Fatalf("accepted publication: commits = %d", store.commits)
+		t.Fatalf("admitted publication: commits = %d", store.commits)
 	}
 
 	// The head replaces only the state the lock loaded.

@@ -43,7 +43,7 @@ func (e *soEngine) SetRetainedRoot(ctx context.Context, name string, ref *block.
 		return err
 	}
 	defer unlockWriteMtx()
-	snap, err := e.so.GetSharedObjectState(ctx)
+	snap, err := getAdmittedState(ctx, e.so)
 	if err != nil {
 		return err
 	}

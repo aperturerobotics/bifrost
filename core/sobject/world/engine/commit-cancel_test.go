@@ -11,7 +11,7 @@ import (
 )
 
 // TestWorldCommitFinishesAfterCancel cancels the commit context as soon as the
-// SharedObject holds the operation. The commit has started, so it must finish
+// SharedObject admits the operation. The commit has started, so it must finish
 // and report that the operation is in the operation set and the World.
 func TestWorldCommitFinishesAfterCancel(t *testing.T) {
 	// Mount the SharedObject the engine writes to.
@@ -23,8 +23,13 @@ func TestWorldCommitFinishesAfterCancel(t *testing.T) {
 	}
 	defer soRef.Release()
 
-	// Count the operations it holds before the write.
-	state, relState, err := so.AccessSharedObjectState(t.Context(), nil)
+	// Count the operations it admitted before the write. The durable state
+	// can still lag the last commit.
+	publisher, ok := so.(sobject.StatePublisher)
+	if !ok {
+		t.Fatal("local SharedObject does not publish its state")
+	}
+	state, relState, err := publisher.AccessAdmittedState(t.Context(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -34,8 +39,8 @@ func TestWorldCommitFinishesAfterCancel(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Cancel once the operation set grows, which is after the engine queued the
-	// operation and before it finishes placing it.
+	// Cancel once the admitted operation set grows, which is after the engine
+	// queued the operation and before it finishes placing it.
 	tx := w.newWrite(t, "cancel/1")
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()

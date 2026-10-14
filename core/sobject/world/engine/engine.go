@@ -251,7 +251,7 @@ func (e *soEngine) OperationAuthor(ctx context.Context) (peer.ID, string, error)
 // operationParticipant returns this device's participant in the accepted
 // shared object config.
 func (e *soEngine) operationParticipant(ctx context.Context) (*sobject.SOParticipantConfig, error) {
-	snapshot, err := e.so.GetSharedObjectState(ctx)
+	snapshot, err := getAdmittedState(ctx, e.so)
 	if err != nil {
 		return nil, err
 	}
@@ -301,7 +301,7 @@ func (e *soEngine) NewTransaction(ctx context.Context, write bool) (world.Tx, er
 
 	// Fork the World of the current operation set. The watcher may still be
 	// waiting for writeMtx after operations arrived.
-	snapshot, err := e.so.GetSharedObjectState(ctx)
+	snapshot, err := getAdmittedState(ctx, e.so)
 	if err != nil {
 		unlockWriteMtx()
 		return nil, err
@@ -544,7 +544,7 @@ func (e *soEngine) queueOperation(ctx context.Context, opData []byte, fork *repl
 	defer cancel()
 
 	// Find it in the set.
-	snap, err := e.so.GetSharedObjectState(ctx)
+	snap, err := getAdmittedState(ctx, e.so)
 	if err != nil {
 		return err
 	}
