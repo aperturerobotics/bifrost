@@ -6,6 +6,7 @@ import (
 
 	"github.com/s4wave/spacewave/core/sobject"
 	"github.com/s4wave/spacewave/db/block"
+	"github.com/s4wave/spacewave/db/world"
 	"github.com/s4wave/spacewave/net/peer"
 )
 
@@ -73,6 +74,12 @@ func WithEngineID(engineID string) WorldStateResourceOption {
 		r.engineID = engineID
 		r.engineIDBound = true
 	}
+}
+
+// WithOuterEngine grants OpenOuterWorld the Space Engine that authorized a
+// nested World mount. A nil Engine marks a top-level mount.
+func WithOuterEngine(engine world.Engine) WorldStateResourceOption {
+	return func(r *WorldStateResource) { r.outerEngine = engine }
 }
 
 // applyWorldStateResourceOptions applies the granting component's access options.

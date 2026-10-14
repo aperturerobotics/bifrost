@@ -2,6 +2,7 @@ package resource_world
 
 import (
 	"context"
+	"slices"
 	"strings"
 	"time"
 
@@ -38,7 +39,7 @@ type WorldStateResource struct {
 	lookupOp world.LookupOp
 	// storage accesses the outer World or Engine to open nested World snapshots.
 	storage world.WorldStorage
-	// outerEngine is the authorizing engine retained only by nested World resources.
+	// outerEngine is the Space Engine that authorized a nested World mount.
 	outerEngine world.Engine
 
 	// engineID is the registry scope granted by the mounting component.
@@ -216,10 +217,11 @@ func (r *WorldStateResource) AccessWorldState(ctx context.Context, req *s4wave_w
 	return &s4wave_world.AccessWorldStateResponse{ResourceId: id}, nil
 }
 
-// OpenNestedWorld opens a typed object's immutable nested World snapshot.
-// The returned resource owns its snapshot pin independently of the outer state.
+// OpenNestedWorld grants a read-only Engine over a typed object's nested
+// World. The Engine follows the object's revisions, and each of its
+// transactions retains the nested World at the revision it opened.
 func (r *WorldStateResource) OpenNestedWorld(ctx context.Context, req *s4wave_world.OpenNestedWorldRequest) (*s4wave_world.OpenNestedWorldResponse, error) {
-	// Require the Resource client that will own the nested snapshot.
+	// Require the Resource client that will own the nested Engine.
 	resourceCtx, err := resource_server.MustGetResourceClientContext(ctx)
 	if err != nil {
 		return nil, err
@@ -245,26 +247,23 @@ func (r *WorldStateResource) OpenNestedWorld(ctx context.Context, req *s4wave_wo
 		return nil, errors.Errorf("object %s has no nested World root", key)
 	}
 
-	// Open the immutable nested World through the granting storage scope.
-	var nested *world_block.WorldState
-	err = r.storage.AccessWorldState(ctx, outer.GetWorldRef(), func(cursor *bucket_lookup.Cursor) error {
-		var buildErr error
-		nested, buildErr = world_block.BuildWorldStateFromCursor(ctx, r.le, false, cursor, r.storage, r.lookupOp, false)
-		return buildErr
-	})
-	if err != nil {
-		return nil, err
+	// Follow the object through the live Engine that granted this state.
+	engine, ok := r.storage.(world.Engine)
+	if !ok {
+		return nil, errors.New("nested World requires a live outer World")
+	}
+	authority := r.outerEngine
+	if authority == nil {
+		authority = engine
 	}
 
-	// Carry the granting World options and storage into the nested Resource.
-	resource := NewWorldStateResource(r.le, r.b, nested, r.lookupOp, r.options...)
-	resource.storage = r.storage
-	if engine, ok := r.storage.(world.Engine); ok {
-		resource.outerEngine = engine
-	}
-	id, err := resourceCtx.AddResource(resource.GetMux(), nested.Discard)
+	// Mount the nested Engine with the granting options and outer authority.
+	nested := world_block.NewNestedEngine(r.le, engine, r.storage, r.lookupOp, key)
+	opts := append(slices.Clone(r.options), WithOuterEngine(authority))
+	resource := NewEngineResource(r.le, r.b, nested, r.lookupOp, nil, opts...)
+	id, err := resourceCtx.AddResource(resource.GetMux(), resource.Close)
 	if err != nil {
-		nested.Discard()
+		resource.Close()
 		return nil, err
 	}
 	return &s4wave_world.OpenNestedWorldResponse{ResourceId: id}, nil
@@ -283,8 +282,10 @@ func (r *WorldStateResource) OpenOuterWorld(ctx context.Context, _ *s4wave_world
 		return nil, err
 	}
 
-	// Transfer the outer Engine Resource to the client with its trusted mount options.
-	resource := NewEngineResource(r.le, r.b, r.outerEngine, r.lookupOp, nil, r.options...)
+	// Transfer the outer Engine Resource to the client with its trusted mount
+	// options, as a top-level mount.
+	opts := append(slices.Clone(r.options), WithOuterEngine(nil))
+	resource := NewEngineResource(r.le, r.b, r.outerEngine, r.lookupOp, nil, opts...)
 	id, err := resourceCtx.AddResource(resource.GetMux(), resource.Close)
 	if err != nil {
 		resource.Close()

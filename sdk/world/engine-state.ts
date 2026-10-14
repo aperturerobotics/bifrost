@@ -116,7 +116,7 @@ export class EngineWorldState implements IWorldState {
     return this.engine.stageWorldState(abortSignal)
   }
 
-  /** openNestedWorld opens a retained read-only sub-World from a typed outer object. */
+  /** openNestedWorld opens a read-only nested World that follows a typed outer object. */
   public async openNestedWorld(
     objectKey: string,
     abortSignal?: AbortSignal,

@@ -18,8 +18,9 @@ import (
 	sdk_world_engine "github.com/s4wave/spacewave/sdk/world/engine"
 )
 
-// TestNestedWorldResource exercises the published snapshot through the real
-// resource connection, including read-only enforcement and independent release.
+// TestNestedWorldResource exercises the nested World Engine through the real
+// resource connection: read-only transactions, following the outer object's
+// revisions, snapshot retention, and independent release.
 func TestNestedWorldResource(t *testing.T) {
 	// Connect to a real in-memory ResourceServer and World engine.
 	ctx := t.Context()
@@ -57,85 +58,66 @@ func TestNestedWorldResource(t *testing.T) {
 	}
 	defer storage.Release()
 
-	// Stage the snapshot until the outer object adopts it.
-	stage, err := storage.StageWorldState(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer stage.Release()
-
 	// Publish a typed outer object with a standard nested-World root.
-	snapshot, err := world_block.ImportSnapshot(ctx, stage, maps.All(map[string]block.Block{
-		"inner": block_mock.NewExample("nested content"),
-	}), nil)
-	if err != nil {
-		t.Fatal(err)
-	}
 	const outerKey = "example/nested"
-	if err := world.ExecTransaction(ctx, storage, true, func(ctx context.Context, state world.WorldState) error {
-		_, _, err := world.AccessWorldObject(ctx, state, outerKey, true, func(cursor *block.Cursor) error {
-			nested, err := world_block.NewNestedWorld(tb.EngineBucketID, snapshot, nil)
-			if err != nil {
-				return err
-			}
-			cursor.SetBlock(nested, true)
-			return nil
-		})
-		if err != nil {
-			return err
-		}
-		return world_types.SetObjectType(ctx, state, outerKey, "example/custom")
-	}); err != nil {
-		t.Fatal(err)
-	}
+	publishNestedWorld(ctx, t, storage, tb.EngineBucketID, outerKey, "nested content")
 
-	// Open the nested state, then retire the enclosing transaction.
+	// Open the nested Engine, then retire the enclosing transaction.
 	outer, err := engine.NewTransaction(ctx, false)
 	if err != nil {
 		t.Fatal(err)
 	}
 	nested, err := outer.OpenNestedWorld(ctx, outerKey)
+	outer.Release()
 	if err != nil {
-		outer.Release()
 		t.Fatal(err)
 	}
-	outer.Release()
-	if !nested.GetReadOnly() {
-		t.Fatal("nested state is writable")
-	}
 
-	// Read the retained snapshot through the nested resource.
-	obj, found, err := nested.GetObject(ctx, "inner")
-	if err != nil || !found {
-		world.ReleaseObjectState(obj)
-		t.Fatalf("nested lookup: found %v, error %v", found, err)
+	// A nested transaction is read-only even when a writer is requested.
+	first, err := nested.NewTransaction(ctx, true)
+	if err != nil {
+		t.Fatal(err)
 	}
-	var body *block_mock.Example
-	_, _, err = world.AccessObjectState(ctx, obj, false, func(cursor *block.Cursor) error {
-		var decodeErr error
-		body, decodeErr = block.UnmarshalBlock[*block_mock.Example](ctx, cursor, block_mock.NewExampleBlock)
-		return decodeErr
-	})
-	world.ReleaseObjectState(obj)
-	if err != nil || body.GetMsg() != "nested content" {
-		t.Fatalf("nested read: body %v, error %v", body, err)
+	defer first.Release()
+	if !first.GetReadOnly() {
+		t.Fatal("nested transaction is writable")
 	}
+	requireExampleBody(ctx, t, first, "nested content")
 
-	// Every World mutation must be rejected by the nested state.
-	if obj, err := nested.CreateObject(ctx, "forbidden", nil); err == nil {
+	// Every World mutation must be rejected by the nested transaction.
+	if obj, err := first.CreateObject(ctx, "forbidden", nil); err == nil {
 		world.ReleaseObjectState(obj)
 		t.Fatal("nested object creation succeeded")
 	} else {
 		world.ReleaseObjectState(obj)
 	}
-	if _, err := nested.DeleteObject(ctx, "inner"); err == nil {
+	if _, err := first.DeleteObject(ctx, "inner"); err == nil {
 		t.Fatal("nested object deletion succeeded")
 	}
-	if err := nested.SetGraphQuad(ctx, world.NewGraphQuadWithKeys("inner", "<forbidden>", "inner", "")); err == nil {
+	if err := first.SetGraphQuad(ctx, world.NewGraphQuadWithKeys("inner", "<forbidden>", "inner", "")); err == nil {
 		t.Fatal("nested graph mutation succeeded")
 	}
 
-	// The WorldState interface adapter must expose the same retained snapshot.
+	// Republishing the outer object advances the nested Engine.
+	seqno, err := first.GetSeqno(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	publishNestedWorld(ctx, t, storage, tb.EngineBucketID, outerKey, "updated content")
+	if _, err := nested.WaitSeqno(ctx, seqno+1); err != nil {
+		t.Fatal(err)
+	}
+
+	// A new transaction reads the update; the first keeps its snapshot.
+	second, err := nested.NewTransaction(ctx, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	requireExampleBody(ctx, t, second, "updated content")
+	second.Release()
+	requireExampleBody(ctx, t, first, "nested content")
+
+	// The WorldState interface adapter grants the same following Engine.
 	adapterTx, err := storage.NewTransaction(ctx, false)
 	if err != nil {
 		t.Fatal(err)
@@ -146,21 +128,24 @@ func TestNestedWorldResource(t *testing.T) {
 		t.Fatal("unexpected World transaction implementation")
 	}
 
-	// Retain the nested snapshot after discarding the adapter transaction.
+	// Open the nested World through the adapter transaction.
 	adapterNested, err := adapter.OpenNestedWorld(ctx, outerKey)
 	adapterTx.Discard()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// Require the adapter snapshot to preserve the nested object contents.
-	adapterBody, err := world.LookupObjectBody[*block_mock.Example](ctx, adapterNested, "inner", block_mock.NewExampleBlock)
+	// The adapter's nested World reads the latest publication.
+	err = world.ExecTransaction(ctx, adapterNested, false, func(ctx context.Context, state world.WorldState) error {
+		requireExampleBody(ctx, t, state, "updated content")
+		return nil
+	})
 	adapterNested.Release()
-	if err != nil || adapterBody.GetMsg() != "nested content" {
-		t.Fatalf("WorldState adapter nested read: body %v, error %v", adapterBody, err)
+	if err != nil {
+		t.Fatal(err)
 	}
 
-	// Release the nested resource while the connection and engine stay open.
+	// Release the nested Engine while the connection and engine stay open.
 	nested.Release()
 	check, err := engine.NewTransaction(ctx, false)
 	if err != nil {
@@ -172,5 +157,73 @@ func TestNestedWorldResource(t *testing.T) {
 		t.Fatalf("connection after release: found %v, error %v", found, err)
 	} else {
 		world.ReleaseObjectState(obj)
+	}
+}
+
+// publishNestedWorld sets key in storage to a typed NestedWorld whose "inner"
+// object holds msg.
+func publishNestedWorld(ctx context.Context, t *testing.T, storage world.Engine, bucketID, key, msg string) {
+	// Report failures at the caller.
+	t.Helper()
+
+	// Stage the snapshot until the outer object adopts it.
+	stage, err := storage.StageWorldState(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer stage.Release()
+	snapshot, err := world_block.ImportSnapshot(ctx, stage, maps.All(map[string]block.Block{
+		"inner": block_mock.NewExample(msg),
+	}), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Point the typed outer object at the snapshot.
+	err = world.ExecTransaction(ctx, storage, true, func(ctx context.Context, state world.WorldState) error {
+		_, _, err := world.AccessWorldObject(ctx, state, key, true, func(cursor *block.Cursor) error {
+			nested, err := world_block.NewNestedWorld(bucketID, snapshot, nil)
+			if err != nil {
+				return err
+			}
+			cursor.SetBlock(nested, true)
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+		return world_types.SetObjectType(ctx, state, key, "example/custom")
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+// objectGetter looks up World objects by key.
+type objectGetter interface {
+	GetObject(ctx context.Context, key string) (world.ObjectState, bool, error)
+}
+
+// requireExampleBody fails unless the "inner" object in ws holds msg.
+func requireExampleBody(ctx context.Context, t *testing.T, ws objectGetter, msg string) {
+	// Report failures at the caller.
+	t.Helper()
+
+	// Look up the object, releasing its state after the read.
+	obj, found, err := ws.GetObject(ctx, "inner")
+	defer world.ReleaseObjectState(obj)
+	if err != nil || !found {
+		t.Fatalf("nested lookup: found %v, error %v", found, err)
+	}
+
+	// Decode its body and compare the message.
+	var body *block_mock.Example
+	_, _, err = world.AccessObjectState(ctx, obj, false, func(cursor *block.Cursor) error {
+		var decodeErr error
+		body, decodeErr = block.UnmarshalBlock[*block_mock.Example](ctx, cursor, block_mock.NewExampleBlock)
+		return decodeErr
+	})
+	if err != nil || body.GetMsg() != msg {
+		t.Fatalf("nested read: body %v, error %v, want %q", body, err, msg)
 	}
 }

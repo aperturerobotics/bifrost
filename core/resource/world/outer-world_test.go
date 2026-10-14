@@ -20,7 +20,7 @@ import (
 )
 
 // TestOpenOuterWorld grants the enclosing Space Engine independently of its
-// nested snapshot, confines it to that Space, and applies World ops there.
+// nested World, confines it to that Space, and applies World ops there.
 func TestOpenOuterWorld(t *testing.T) {
 
 	// context ctx.
@@ -111,14 +111,20 @@ func TestOpenOuterWorld(t *testing.T) {
 			root.Release()
 			t.Fatal("opened outer World from a non-nested resource")
 		}
-		nested, err := root.OpenNestedWorld(ctx, key)
+		nestedEngine, err := root.OpenNestedWorld(ctx, key)
 		root.Release()
 		if err != nil {
+			t.Fatal(err)
+		}
+		nested, err := nestedEngine.NewTransaction(ctx, false)
+		if err != nil {
+			nestedEngine.Release()
 			t.Fatal(err)
 		}
 		outer, err := nested.OpenOuterWorld(ctx)
 		if err != nil {
 			nested.Release()
+			nestedEngine.Release()
 			t.Fatal(err)
 		}
 		outerWorld, err := sdk_world_engine.NewSDKEngine(client, outer.GetResourceRef())
@@ -150,8 +156,13 @@ func TestOpenOuterWorld(t *testing.T) {
 			outerTx.Release()
 			t.Fatal("reopened outer World from a top-level transaction")
 		}
-		recursiveNested, err := outerTx.OpenNestedWorld(ctx, key)
+		recursiveEngine, err := outerTx.OpenNestedWorld(ctx, key)
 		outerTx.Release()
+		if err != nil {
+			t.Fatal(err)
+		}
+		recursiveNested, err := recursiveEngine.NewTransaction(ctx, false)
+		recursiveEngine.Release()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -170,6 +181,7 @@ func TestOpenOuterWorld(t *testing.T) {
 
 		if releaseNestedFirst {
 			nested.Release()
+			nestedEngine.Release()
 			requireObject(ctx, t, outerWorld, key, true)
 			outer.Release()
 		} else {
@@ -180,6 +192,7 @@ func TestOpenOuterWorld(t *testing.T) {
 				t.Fatalf("nested World after outer release: found %v, err %v", found, err)
 			}
 			nested.Release()
+			nestedEngine.Release()
 		}
 	}
 }

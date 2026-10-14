@@ -4,7 +4,6 @@ import {
   useResource,
   useResourceValue,
 } from '@aptre/bldr-sdk/hooks/useResource.js'
-import { useStreamingResource } from '@aptre/bldr-sdk/hooks/useStreamingResource.js'
 import { resolvePath, type To, useNavigate } from '@s4wave/web/router/router.js'
 import {
   isLocalNavigation,
@@ -26,7 +25,7 @@ import { useObjectMetadata } from '@s4wave/web/hooks/useObjectMetadata.js'
 // The outer route's viewer subpath is world/-/<inner-key>/-/<viewer-path>.
 const nestedRoutePrefix = 'world/-/'
 
-/** NestedWorldObjectViewer owns the opened read-only sub-World for this outer key. */
+/** NestedWorldObjectViewer owns the read-only nested World opened for this outer key. */
 function NestedWorldObjectViewer({
   outerKey,
   innerKey,
@@ -44,38 +43,11 @@ function NestedWorldObjectViewer({
   navigateToSubPath: (path: string) => void
   navigateToRoot: () => void
 }) {
-  // Observe only revisions of the selected outer object. Capture the World
-  // sequence before reading its root so a concurrent publication cannot be missed.
-  const outerRevision = useStreamingResource(
-    spaceWorldResource,
-    async function* (world, signal) {
-      if (!innerKey) return
-
-      let lastRev: bigint | undefined
-      let seqno = (await world.getSeqno(signal)).seqno
-      while (!signal.aborted) {
-        const object = await world.getObject(outerKey, signal)
-        if (!object) throw new Error(`Object not found: ${outerKey}`)
-        let rev: bigint
-        try {
-          rev = (await object.getRootRef(signal)).rev ?? 0n
-        } finally {
-          object.release()
-        }
-        if (rev !== lastRev) {
-          lastRev = rev
-          yield rev
-        }
-        seqno = (await world.waitSeqno(seqno + 1n, signal)).seqno
-      }
-    },
-    [outerKey, Boolean(innerKey)],
-  )
-
-  // The resource hook owns each immutable snapshot and disposes it on revision.
+  // The nested World follows the outer object's revisions, so it opens once
+  // per outer key and its watches survive republication.
   const worldState = useResource(
-    [spaceWorldResource, outerRevision],
-    async ([world], signal, cleanup) => {
+    spaceWorldResource,
+    async (world, signal, cleanup) => {
       const nestedWorld = await world.openNestedWorld(outerKey, signal)
       return cleanup(nestedWorld)
     },
@@ -152,8 +124,9 @@ function NestedWorldObjectViewer({
   )
 }
 
-// SpaceObjectContainer displays an object within a space.
+/** SpaceObjectContainer displays an object within a space. */
 export function SpaceObjectContainer() {
+  // Read the selected object and the Space it lives in.
   const environment = useAppEnvironment()
   const {
     spaceId,
@@ -167,23 +140,30 @@ export function SpaceObjectContainer() {
   const navigate = useNavigate()
   const spaceContentsResource = SpaceContentsContext.useContext()
 
+  // Split a nested World route from the outer object's viewer path.
   const routerPath = '/' + (objectPath || '')
   const nestedRoute = objectPath?.startsWith(nestedRoutePrefix)
     ? parseObjectUri(objectPath.slice(nestedRoutePrefix.length))
     : null
 
+  // Route viewer navigation to sibling objects, global pages or subpaths.
   const handleViewerNavigate = useCallback(
     (to: To) => {
+      // Open sibling objects in the same Space.
       if (isWorldObjectNavigation(to)) {
         navigateToSubPath(
           to.path ? to.objectKey + '/-/' + to.path : to.objectKey,
         )
         return
       }
+
+      // Leave the Space for global destinations.
       if (to.path.startsWith('/') && !isLocalNavigation(to)) {
         navigate(to)
         return
       }
+
+      // Resolve local destinations against the object viewer path.
       const resolved = resolvePath(routerPath, to)
       const stripped = resolved.replace(/^\//, '')
       const key = objectKey ?? ''
@@ -193,6 +173,7 @@ export function SpaceObjectContainer() {
     [navigate, routerPath, objectKey, navigateToSubPath],
   )
 
+  // Prefer the World's object type, falling back to the quickstart handoff.
   const worldObjectType = useObjectMetadata(spaceWorldResource, objectKey ?? '')
     .value?.typeId
   const objectType = useMemo(() => {
@@ -215,6 +196,7 @@ export function SpaceObjectContainer() {
     environment.instanceKey,
   ])
 
+  // Describe the selected object to the viewer.
   const objectInfo: ObjectInfo = useMemo(
     () => ({
       info: objectKey
@@ -230,6 +212,7 @@ export function SpaceObjectContainer() {
     [objectKey, objectType],
   )
 
+  // Link the Space export for the current session.
   const exportUrl = useMemo(
     () =>
       sessionIndex != null && spaceId
@@ -238,6 +221,7 @@ export function SpaceObjectContainer() {
     [sessionIndex, spaceId],
   )
 
+  // Show an object inside a nested World through its own viewer.
   if (nestedRoute && objectKey) {
     return (
       <NestedWorldObjectViewer
@@ -252,6 +236,7 @@ export function SpaceObjectContainer() {
     )
   }
 
+  // Show the selected Space object.
   return (
     <ObjectViewer
       objectInfo={objectInfo}

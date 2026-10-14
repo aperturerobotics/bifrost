@@ -17,8 +17,8 @@ import (
 	s4wave_world "github.com/s4wave/spacewave/sdk/world"
 )
 
-// TestOpenNestedWorldResourceRelease checks that the registered resource owns
-// the snapshot after its outer transaction ends and releases it on request.
+// TestOpenNestedWorldResourceRelease checks that the registered nested Engine
+// outlives its outer transaction and is released on request.
 func TestOpenNestedWorldResourceRelease(t *testing.T) {
 	// Publish one nested and one ordinary typed object.
 	ctx := t.Context()
@@ -95,24 +95,25 @@ func TestOpenNestedWorldResourceRelease(t *testing.T) {
 		t.Fatalf("nested resources = %d, want 1", len(resources.releases))
 	}
 
-	// The nested snapshot remains readable after its outer transaction ends.
+	// The nested Engine stays readable after its outer transaction ends, and
+	// grants only read-only transactions.
 	client, err := resources.GetAttachedResource(resp.GetResourceId())
 	if err != nil {
 		t.Fatal(err)
 	}
-	service := s4wave_world.NewSRPCWorldStateResourceServiceClient(client)
-	readOnly, err := service.GetReadOnly(resourceCtx, &s4wave_world.GetReadOnlyRequest{})
-	if err != nil || !readOnly.GetReadOnly() {
-		t.Fatalf("nested read-only state: %v, %v", readOnly, err)
-	}
-	if _, err := service.CreateObject(resourceCtx, &s4wave_world.CreateObjectRequest{ObjectKey: "forbidden"}); err == nil {
-		t.Fatal("created object in nested snapshot")
-	}
+	service := s4wave_world.NewSRPCEngineResourceServiceClient(client)
 	if _, err := service.GetSeqno(resourceCtx, &s4wave_world.GetSeqnoRequest{}); err != nil {
-		t.Fatalf("nested state after outer discard: %v", err)
+		t.Fatalf("nested Engine after outer discard: %v", err)
+	}
+	txResp, err := service.NewTransaction(resourceCtx, &s4wave_world.NewTransactionRequest{Write: true})
+	if err != nil || !txResp.GetReadOnly() {
+		t.Fatalf("nested write transaction: %v, %v", txResp, err)
+	}
+	if !resources.ReleaseResource(txResp.GetResourceId()) {
+		t.Fatal("nested transaction not released")
 	}
 
-	// Releasing the registered resource runs its snapshot cleanup.
+	// Releasing the registered resource runs its cleanup.
 	if !resources.ReleaseResource(resp.GetResourceId()) || len(resources.releases) != 0 {
 		t.Fatalf("nested resource not released: %d retained", len(resources.releases))
 	}
