@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/aperturerobotics/util/broadcast"
+	"github.com/s4wave/spacewave/plugin/wasivm/kernel"
 	s4wave_terminal "github.com/s4wave/spacewave/sdk/terminal"
 	s4wave_vm "github.com/s4wave/spacewave/sdk/vm"
 )
@@ -17,6 +18,8 @@ const scrollback = 64 * 1024
 // that attach later and fans new output and the exit out to every attached
 // viewer.
 type console struct {
+	// kernel is the run's kernel, which the display dials.
+	kernel *kernel.Kernel
 	// input feeds the kernel's terminal.
 	input io.Writer
 	// resize sets the size of the kernel's terminal.

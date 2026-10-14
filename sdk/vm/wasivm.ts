@@ -3,7 +3,11 @@ import { Resource } from '@aptre/bldr-sdk/resource/resource.js'
 import type { MessageStream } from 'starpc'
 
 import type { TerminalFrame } from '../terminal/terminal.pb.js'
-import { WasiVmConsoleServiceClient } from './wasivm_srpc.pb.js'
+import type { WasiVmDisplayFrame, WasiVmDisplayInput } from './wasivm.pb.js'
+import {
+  WasiVmConsoleServiceClient,
+  WasiVmDisplayServiceClient,
+} from './wasivm_srpc.pb.js'
 
 // WasiVmTypeID is the object type identifier for WasiVm objects. Mirrors
 // WasiVmTypeID in sdk/vm/wasivm.go.
@@ -45,10 +49,12 @@ export const DEFAULT_WASIVM_INIT_PATH = '/bin/sh'
 // WasiVmHandle is the typed resource of a WasiVm object.
 export class WasiVmHandle extends Resource {
   private console: WasiVmConsoleServiceClient
+  private display: WasiVmDisplayServiceClient
 
   constructor(resourceRef: ClientResourceRef) {
     super(resourceRef)
     this.console = new WasiVmConsoleServiceClient(resourceRef.client)
+    this.display = new WasiVmDisplayServiceClient(resourceRef.client)
   }
 
   // connectConsole attaches to the console of the running VM. The stream
@@ -59,5 +65,15 @@ export class WasiVmHandle extends Resource {
     abortSignal?: AbortSignal,
   ): MessageStream<TerminalFrame> {
     return this.console.Console(frames, abortSignal)
+  }
+
+  // connectDisplay attaches to X display 0 of the running VM. The stream
+  // waits for the VM and its X server, sends the whole screen, then each
+  // region that changes; input carries the viewer's pointer and keys back.
+  public connectDisplay(
+    input: MessageStream<WasiVmDisplayInput>,
+    abortSignal?: AbortSignal,
+  ): MessageStream<WasiVmDisplayFrame> {
+    return this.display.Display(input, abortSignal)
   }
 }

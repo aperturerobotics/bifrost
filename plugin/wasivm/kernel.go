@@ -60,6 +60,7 @@ func startKernel(
 		releaseRootfs()
 		return nil, errors.Wrap(err, "create the kernel")
 	}
+	c.kernel = k
 	c.resize = k.Resize
 
 	// Run init, then release the run and report how it ended.

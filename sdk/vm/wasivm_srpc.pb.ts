@@ -11,6 +11,7 @@ import {
   ProtoRpc,
   ServerContext,
 } from 'starpc'
+import { WasiVmDisplayFrame, WasiVmDisplayInput } from './wasivm.pb.js'
 
 /**
  * WasiVmConsoleService attaches a viewer to the console of a running WasiVM.
@@ -104,5 +105,106 @@ export class WasiVmConsoleServiceClient implements WasiVmConsoleService {
       abortSignal || undefined,
     )
     return buildDecodeMessageTransform(TerminalFrame)(result)
+  }
+}
+/**
+ * WasiVmDisplayService attaches a viewer to the X display of a running
+ * WasiVM.
+ *
+ * @generated from service s4wave.vm.WasiVmDisplayService
+ */
+export const WasiVmDisplayServiceDefinition = {
+  typeName: 's4wave.vm.WasiVmDisplayService',
+  methods: {
+    /**
+     * Display streams the screen and carries input back. Once the X server on
+     * display 0 accepts the VM's client, the VM sends the whole screen, then
+     * each region that changes. The viewer sends pointer and key input. The
+     * stream ends when the X server closes the connection.
+     *
+     * @generated from rpc s4wave.vm.WasiVmDisplayService.Display
+     */
+    Display: {
+      name: 'Display',
+      I: WasiVmDisplayInput,
+      O: WasiVmDisplayFrame,
+      kind: MethodKind.BiDiStreaming,
+    },
+  },
+} as const
+
+/**
+ * WasiVmDisplayService attaches a viewer to the X display of a running
+ * WasiVM.
+ *
+ * @generated from service s4wave.vm.WasiVmDisplayService
+ */
+export interface WasiVmDisplayService {
+  /**
+   * Display streams the screen and carries input back. Once the X server on
+   * display 0 accepts the VM's client, the VM sends the whole screen, then
+   * each region that changes. The viewer sends pointer and key input. The
+   * stream ends when the X server closes the connection.
+   *
+   * @generated from rpc s4wave.vm.WasiVmDisplayService.Display
+   */
+  Display(
+    request: MessageStream<WasiVmDisplayInput>,
+    abortSignal?: AbortSignal,
+  ): MessageStream<WasiVmDisplayFrame>
+}
+
+/**
+ * WasiVmDisplayService attaches a viewer to the X display of a running
+ * WasiVM.
+ *
+ * @generated from service s4wave.vm.WasiVmDisplayService
+ */
+export interface WasiVmDisplayServiceHandler {
+  /**
+   * Display streams the screen and carries input back. Once the X server on
+   * display 0 accepts the VM's client, the VM sends the whole screen, then
+   * each region that changes. The viewer sends pointer and key input. The
+   * stream ends when the X server closes the connection.
+   *
+   * @generated from rpc s4wave.vm.WasiVmDisplayService.Display
+   */
+  Display(
+    request: MessageStream<WasiVmDisplayInput>,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): MessageStream<WasiVmDisplayFrame>
+}
+
+export const WasiVmDisplayServiceServiceName =
+  WasiVmDisplayServiceDefinition.typeName
+
+export class WasiVmDisplayServiceClient implements WasiVmDisplayService {
+  private readonly rpc: ProtoRpc
+  private readonly service: string
+  constructor(rpc: ProtoRpc, opts?: { service?: string }) {
+    this.service = opts?.service || WasiVmDisplayServiceServiceName
+    this.rpc = rpc
+    this.Display = this.Display.bind(this)
+  }
+  /**
+   * Display streams the screen and carries input back. Once the X server on
+   * display 0 accepts the VM's client, the VM sends the whole screen, then
+   * each region that changes. The viewer sends pointer and key input. The
+   * stream ends when the X server closes the connection.
+   *
+   * @generated from rpc s4wave.vm.WasiVmDisplayService.Display
+   */
+  Display(
+    request: MessageStream<WasiVmDisplayInput>,
+    abortSignal?: AbortSignal,
+  ): MessageStream<WasiVmDisplayFrame> {
+    const result = this.rpc.bidirectionalStreamingRequest(
+      this.service,
+      WasiVmDisplayServiceDefinition.methods.Display.name,
+      buildEncodeMessageTransform(WasiVmDisplayInput)(request),
+      abortSignal || undefined,
+    )
+    return buildDecodeMessageTransform(WasiVmDisplayFrame)(result)
   }
 }

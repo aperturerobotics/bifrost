@@ -139,3 +139,61 @@ service WasiVmConsoleService {
   rpc Console(stream .s4wave.terminal.TerminalFrame)
       returns (stream .s4wave.terminal.TerminalFrame);
 }
+
+// WasiVmDisplayService attaches a viewer to the X display of a running
+// WasiVM.
+service WasiVmDisplayService {
+  // Display streams the screen and carries input back. Once the X server on
+  // display 0 accepts the VM's client, the VM sends the whole screen, then
+  // each region that changes. The viewer sends pointer and key input. The
+  // stream ends when the X server closes the connection.
+  rpc Display(stream WasiVmDisplayInput) returns (stream WasiVmDisplayFrame);
+}
+
+// WasiVmDisplayFrame is a region of the screen.
+message WasiVmDisplayFrame {
+  // ScreenWidth is the screen's width in pixels.
+  uint32 screen_width = 1;
+  // ScreenHeight is the screen's height in pixels.
+  uint32 screen_height = 2;
+  // X is the left edge of the region.
+  uint32 x = 3;
+  // Y is the top edge of the region.
+  uint32 y = 4;
+  // Width is the region's width in pixels.
+  uint32 width = 5;
+  // Height is the region's height in pixels.
+  uint32 height = 6;
+  // Rgba holds the region's pixels row by row, four bytes each: red, green,
+  // blue and an opaque alpha.
+  bytes rgba = 7;
+}
+
+// WasiVmDisplayInput is a pointer or key event from the viewer.
+message WasiVmDisplayInput {
+  oneof body {
+    // Pointer moves the pointer and sets its buttons.
+    WasiVmPointerEvent pointer = 1;
+    // Key presses or releases a key.
+    WasiVmKeyEvent key = 2;
+  }
+}
+
+// WasiVmPointerEvent moves the pointer and sets which buttons are held.
+message WasiVmPointerEvent {
+  // X is the pointer's column in screen pixels.
+  int32 x = 1;
+  // Y is the pointer's row in screen pixels.
+  int32 y = 2;
+  // Buttons holds bit n-1 for each held X button n: 1 is the left, 2 the
+  // middle, 3 the right, and 4 and 5 scroll up and down.
+  uint32 buttons = 3;
+}
+
+// WasiVmKeyEvent presses or releases a key.
+message WasiVmKeyEvent {
+  // Keysym is the X keysym the key produces.
+  uint32 keysym = 1;
+  // Down is set for a press and clear for a release.
+  bool down = 2;
+}

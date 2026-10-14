@@ -57,6 +57,7 @@ require (
 	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/google/uuid v1.6.0
 	github.com/hack-pad/safejs v0.1.1
+	github.com/jezek/xgb v1.3.1
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/klauspost/compress v1.20.2-0.20261004115517-d189b4c2eb01
 	github.com/libp2p/go-yamux/v5 v5.1.0

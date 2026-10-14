@@ -421,3 +421,183 @@ export const SetWasiVmStateOp: MessageType<SetWasiVmStateOp> =
       { no: 2, name: 'state', kind: 'enum', T: VmState_Enum },
     ] satisfies readonly PartialFieldInfo[],
   })
+
+/**
+ * WasiVmDisplayFrame is a region of the screen.
+ *
+ * @generated from message s4wave.vm.WasiVmDisplayFrame
+ */
+export interface WasiVmDisplayFrame {
+  /**
+   * ScreenWidth is the screen's width in pixels.
+   *
+   * @generated from field: uint32 screen_width = 1;
+   */
+  screenWidth?: number
+  /**
+   * ScreenHeight is the screen's height in pixels.
+   *
+   * @generated from field: uint32 screen_height = 2;
+   */
+  screenHeight?: number
+  /**
+   * X is the left edge of the region.
+   *
+   * @generated from field: uint32 x = 3;
+   */
+  x?: number
+  /**
+   * Y is the top edge of the region.
+   *
+   * @generated from field: uint32 y = 4;
+   */
+  y?: number
+  /**
+   * Width is the region's width in pixels.
+   *
+   * @generated from field: uint32 width = 5;
+   */
+  width?: number
+  /**
+   * Height is the region's height in pixels.
+   *
+   * @generated from field: uint32 height = 6;
+   */
+  height?: number
+  /**
+   * Rgba holds the region's pixels row by row, four bytes each: red, green,
+   * blue and an opaque alpha.
+   *
+   * @generated from field: bytes rgba = 7;
+   */
+  rgba?: Uint8Array
+}
+
+export const WasiVmDisplayFrame: MessageType<WasiVmDisplayFrame> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 's4wave.vm.WasiVmDisplayFrame',
+    fields: [
+      { no: 1, name: 'screen_width', kind: 'scalar', T: ScalarType.UINT32 },
+      { no: 2, name: 'screen_height', kind: 'scalar', T: ScalarType.UINT32 },
+      { no: 3, name: 'x', kind: 'scalar', T: ScalarType.UINT32 },
+      { no: 4, name: 'y', kind: 'scalar', T: ScalarType.UINT32 },
+      { no: 5, name: 'width', kind: 'scalar', T: ScalarType.UINT32 },
+      { no: 6, name: 'height', kind: 'scalar', T: ScalarType.UINT32 },
+      { no: 7, name: 'rgba', kind: 'scalar', T: ScalarType.BYTES },
+    ] satisfies readonly PartialFieldInfo[],
+  })
+
+/**
+ * WasiVmPointerEvent moves the pointer and sets which buttons are held.
+ *
+ * @generated from message s4wave.vm.WasiVmPointerEvent
+ */
+export interface WasiVmPointerEvent {
+  /**
+   * X is the pointer's column in screen pixels.
+   *
+   * @generated from field: int32 x = 1;
+   */
+  x?: number
+  /**
+   * Y is the pointer's row in screen pixels.
+   *
+   * @generated from field: int32 y = 2;
+   */
+  y?: number
+  /**
+   * Buttons holds bit n-1 for each held X button n: 1 is the left, 2 the
+   * middle, 3 the right, and 4 and 5 scroll up and down.
+   *
+   * @generated from field: uint32 buttons = 3;
+   */
+  buttons?: number
+}
+
+export const WasiVmPointerEvent: MessageType<WasiVmPointerEvent> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 's4wave.vm.WasiVmPointerEvent',
+    fields: [
+      { no: 1, name: 'x', kind: 'scalar', T: ScalarType.INT32 },
+      { no: 2, name: 'y', kind: 'scalar', T: ScalarType.INT32 },
+      { no: 3, name: 'buttons', kind: 'scalar', T: ScalarType.UINT32 },
+    ] satisfies readonly PartialFieldInfo[],
+  })
+
+/**
+ * WasiVmKeyEvent presses or releases a key.
+ *
+ * @generated from message s4wave.vm.WasiVmKeyEvent
+ */
+export interface WasiVmKeyEvent {
+  /**
+   * Keysym is the X keysym the key produces.
+   *
+   * @generated from field: uint32 keysym = 1;
+   */
+  keysym?: number
+  /**
+   * Down is set for a press and clear for a release.
+   *
+   * @generated from field: bool down = 2;
+   */
+  down?: boolean
+}
+
+export const WasiVmKeyEvent: MessageType<WasiVmKeyEvent> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 's4wave.vm.WasiVmKeyEvent',
+    fields: [
+      { no: 1, name: 'keysym', kind: 'scalar', T: ScalarType.UINT32 },
+      { no: 2, name: 'down', kind: 'scalar', T: ScalarType.BOOL },
+    ] satisfies readonly PartialFieldInfo[],
+  })
+
+/**
+ * WasiVmDisplayInput is a pointer or key event from the viewer.
+ *
+ * @generated from message s4wave.vm.WasiVmDisplayInput
+ */
+export interface WasiVmDisplayInput {
+  /**
+   * @generated from oneof s4wave.vm.WasiVmDisplayInput.body
+   */
+  body?:
+    | {
+        value?: undefined
+        case: undefined
+      }
+    | {
+        /**
+         * Pointer moves the pointer and sets its buttons.
+         *
+         * @generated from field: s4wave.vm.WasiVmPointerEvent pointer = 1;
+         */
+        value: WasiVmPointerEvent
+        case: 'pointer'
+      }
+    | {
+        /**
+         * Key presses or releases a key.
+         *
+         * @generated from field: s4wave.vm.WasiVmKeyEvent key = 2;
+         */
+        value: WasiVmKeyEvent
+        case: 'key'
+      }
+}
+
+export const WasiVmDisplayInput: MessageType<WasiVmDisplayInput> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 's4wave.vm.WasiVmDisplayInput',
+    fields: [
+      {
+        no: 1,
+        name: 'pointer',
+        kind: 'message',
+        T: WasiVmPointerEvent,
+        oneof: 'body',
+      },
+      { no: 2, name: 'key', kind: 'message', T: WasiVmKeyEvent, oneof: 'body' },
+    ] satisfies readonly PartialFieldInfo[],
+  })

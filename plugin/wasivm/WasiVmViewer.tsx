@@ -1,4 +1,5 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
+import { LuMonitor, LuSquareTerminal } from 'react-icons/lu'
 
 import {
   useResource,
@@ -26,12 +27,14 @@ import { useAccessTypedHandle } from '@s4wave/web/hooks/useAccessTypedHandle.js'
 import type { ObjectViewerComponentProps } from '@s4wave/web/object/object.js'
 import { getObjectKey } from '@s4wave/web/object/object.js'
 import { useObjectName } from '@s4wave/web/object/ObjectViewerContext.js'
+import { Button } from '@s4wave/web/ui/button.js'
 import { LoadingCard } from '@s4wave/web/ui/loading/LoadingCard.js'
 
 import { useVmRequest, watchVmObject } from '@s4wave/app/vm/vm-object.js'
 import { VmErrorBanner } from '@s4wave/app/vm/VmErrorBanner.js'
 import { VmHeader, VmStopButton } from '@s4wave/app/vm/VmHeader.js'
 
+import { WasiVmDisplay, type WasiVmDisplayConnector } from './WasiVmDisplay.js'
 import { WasiVmMachineCard } from './WasiVmMachineCard.js'
 
 // readRootfsKey reads the key of the root filesystem the VM at objectKey
@@ -120,21 +123,47 @@ function useWasiVm(
   }
 }
 
-// WasiVmViewer displays a WasiVM. A stopped or failed VM shows its machine
-// card with Start or Reset; a running VM shows its console.
-export default function WasiVmViewer({
-  objectInfo,
-  worldState,
-  spaceContents,
-}: ObjectViewerComponentProps) {
-  const objectKey = getObjectKey(objectInfo)
-  const contextContentsResource = SpaceContentsContext.useContext()
-  const contents = useResourceValue(spaceContents ?? contextContentsResource)
-  const world = worldState.value
-  const vm = useWasiVm(worldState, objectKey)
-  const [operationError, request] = useVmRequest()
+// WasiVmScreenToggleProps configures the switch between console and display.
+interface WasiVmScreenToggleProps {
+  showDisplay: boolean
+  onToggle: () => void
+}
 
-  // Attach the console through the VM's typed resource.
+// WasiVmScreenToggle switches a running VM's view between its console and
+// its X display. Its label collapses to the icon in a narrow header.
+function WasiVmScreenToggle({
+  showDisplay,
+  onToggle,
+}: WasiVmScreenToggleProps) {
+  return (
+    <Button
+      variant="outline"
+      size="toolbarSm"
+      aria-label={showDisplay ? 'Show console' : 'Show display'}
+      onClick={onToggle}
+    >
+      {showDisplay ? <LuSquareTerminal /> : <LuMonitor />}
+      <span className="hidden @md:inline">
+        {showDisplay ? 'Console' : 'Display'}
+      </span>
+    </Button>
+  )
+}
+
+// WasiVmScreenProps configures the screen of one run of a VM.
+interface WasiVmScreenProps {
+  worldState: ObjectViewerComponentProps['worldState']
+  objectKey: string
+  showDisplay: boolean
+}
+
+// WasiVmScreen shows the console or the X display of a running VM, each
+// attached through the VM's typed resource.
+function WasiVmScreen({
+  worldState,
+  objectKey,
+  showDisplay,
+}: WasiVmScreenProps) {
   const handle = useAccessTypedHandle(
     worldState,
     objectKey,
@@ -148,6 +177,37 @@ export default function WasiVmViewer({
         : undefined,
     [handle],
   )
+  const connectDisplay = useMemo<WasiVmDisplayConnector | undefined>(
+    () =>
+      handle
+        ? (input, signal) => handle.connectDisplay(input, signal)
+        : undefined,
+    [handle],
+  )
+  return showDisplay ? (
+    <WasiVmDisplay connectDisplay={connectDisplay} />
+  ) : (
+    <TerminalPane
+      connectTerminal={connectConsole}
+      describeFailure={describeConsoleFailure}
+    />
+  )
+}
+
+// WasiVmViewer displays a WasiVM. A stopped or failed VM shows its machine
+// card with Start or Reset; a running VM shows its console or its X display.
+export default function WasiVmViewer({
+  objectInfo,
+  worldState,
+  spaceContents,
+}: ObjectViewerComponentProps) {
+  const objectKey = getObjectKey(objectInfo)
+  const contextContentsResource = SpaceContentsContext.useContext()
+  const contents = useResourceValue(spaceContents ?? contextContentsResource)
+  const world = worldState.value
+  const vm = useWasiVm(worldState, objectKey)
+  const [operationError, request] = useVmRequest()
+  const [showDisplay, setShowDisplay] = useState(false)
 
   // setVmState requests a target state from the view.
   const setVmState = (target: VmState) => {
@@ -187,6 +247,12 @@ export default function WasiVmViewer({
     <div className="bg-background-primary flex h-full w-full flex-col overflow-hidden">
       <VmHeader name={vm.name} state={vm.state}>
         {running && (
+          <WasiVmScreenToggle
+            showDisplay={showDisplay}
+            onToggle={() => setShowDisplay(!showDisplay)}
+          />
+        )}
+        {running && (
           <VmStopButton
             disabled={stopRequested || vm.state === VmState.VmState_STOPPING}
             onStop={() => setVmState(VmState.VmState_STOPPED)}
@@ -199,11 +265,12 @@ export default function WasiVmViewer({
         </div>
       )}
       {running ? (
-        // Each run is a new kernel, so a new run attaches a new terminal.
-        <TerminalPane
+        // Each run is a new kernel, so a new run attaches a new screen.
+        <WasiVmScreen
           key={vm.runGeneration.toString()}
-          connectTerminal={connectConsole}
-          describeFailure={describeConsoleFailure}
+          worldState={worldState}
+          objectKey={objectKey}
+          showDisplay={showDisplay}
         />
       ) : (
         <WasiVmMachineCard

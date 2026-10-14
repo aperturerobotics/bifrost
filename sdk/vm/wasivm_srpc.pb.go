@@ -6,7 +6,6 @@ package s4wave_vm
 
 import (
 	context "context"
-
 	srpc "github.com/aperturerobotics/starpc/srpc"
 	s4wave_terminal "github.com/s4wave/spacewave/sdk/terminal"
 )
@@ -170,5 +169,169 @@ func (x *srpcWasiVmConsoleService_ConsoleStream) Recv() (*s4wave_terminal.Termin
 }
 
 func (x *srpcWasiVmConsoleService_ConsoleStream) RecvTo(m *s4wave_terminal.TerminalFrame) error {
+	return x.MsgRecv(m)
+}
+
+type SRPCWasiVmDisplayServiceClient interface {
+	// SRPCClient returns the underlying SRPC client.
+	SRPCClient() srpc.Client
+
+	// Display streams the screen and carries input back. Once the X server on
+	// display 0 accepts the VM's client, the VM sends the whole screen, then
+	// each region that changes. The viewer sends pointer and key input. The
+	// stream ends when the X server closes the connection.
+	Display(ctx context.Context) (SRPCWasiVmDisplayService_DisplayClient, error)
+}
+
+type srpcWasiVmDisplayServiceClient struct {
+	cc        srpc.Client
+	serviceID string
+}
+
+func NewSRPCWasiVmDisplayServiceClient(cc srpc.Client) SRPCWasiVmDisplayServiceClient {
+	return &srpcWasiVmDisplayServiceClient{cc: cc, serviceID: SRPCWasiVmDisplayServiceServiceID}
+}
+
+func NewSRPCWasiVmDisplayServiceClientWithServiceID(cc srpc.Client, serviceID string) SRPCWasiVmDisplayServiceClient {
+	if serviceID == "" {
+		serviceID = SRPCWasiVmDisplayServiceServiceID
+	}
+	return &srpcWasiVmDisplayServiceClient{cc: cc, serviceID: serviceID}
+}
+
+func (c *srpcWasiVmDisplayServiceClient) SRPCClient() srpc.Client { return c.cc }
+
+func (c *srpcWasiVmDisplayServiceClient) Display(ctx context.Context) (SRPCWasiVmDisplayService_DisplayClient, error) {
+	stream, err := c.cc.NewStream(ctx, c.serviceID, "Display", nil)
+	if err != nil {
+		return nil, err
+	}
+	strm := &srpcWasiVmDisplayService_DisplayClient{stream}
+	return strm, nil
+}
+
+type SRPCWasiVmDisplayService_DisplayClient interface {
+	srpc.Stream
+	Send(*WasiVmDisplayInput) error
+	Recv() (*WasiVmDisplayFrame, error)
+	RecvTo(*WasiVmDisplayFrame) error
+}
+
+type srpcWasiVmDisplayService_DisplayClient struct {
+	srpc.Stream
+}
+
+func (x *srpcWasiVmDisplayService_DisplayClient) Send(m *WasiVmDisplayInput) error {
+	if m == nil {
+		return nil
+	}
+	return x.MsgSend(m)
+}
+
+func (x *srpcWasiVmDisplayService_DisplayClient) Recv() (*WasiVmDisplayFrame, error) {
+	m := new(WasiVmDisplayFrame)
+	if err := x.MsgRecv(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (x *srpcWasiVmDisplayService_DisplayClient) RecvTo(m *WasiVmDisplayFrame) error {
+	return x.MsgRecv(m)
+}
+
+type SRPCWasiVmDisplayServiceServer interface {
+	// Display streams the screen and carries input back. Once the X server on
+	// display 0 accepts the VM's client, the VM sends the whole screen, then
+	// each region that changes. The viewer sends pointer and key input. The
+	// stream ends when the X server closes the connection.
+	Display(SRPCWasiVmDisplayService_DisplayStream) error
+}
+
+const SRPCWasiVmDisplayServiceServiceID = "s4wave.vm.WasiVmDisplayService"
+
+type SRPCWasiVmDisplayServiceHandler struct {
+	serviceID string
+	impl      SRPCWasiVmDisplayServiceServer
+}
+
+// NewSRPCWasiVmDisplayServiceHandler constructs a new RPC handler.
+// serviceID: if empty, uses default: s4wave.vm.WasiVmDisplayService
+func NewSRPCWasiVmDisplayServiceHandler(impl SRPCWasiVmDisplayServiceServer, serviceID string) srpc.Handler {
+	if serviceID == "" {
+		serviceID = SRPCWasiVmDisplayServiceServiceID
+	}
+	return &SRPCWasiVmDisplayServiceHandler{impl: impl, serviceID: serviceID}
+}
+
+// SRPCRegisterWasiVmDisplayService registers the implementation with the mux.
+// Uses the default serviceID: s4wave.vm.WasiVmDisplayService
+func SRPCRegisterWasiVmDisplayService(mux srpc.Mux, impl SRPCWasiVmDisplayServiceServer) error {
+	return mux.Register(NewSRPCWasiVmDisplayServiceHandler(impl, ""))
+}
+
+func (d *SRPCWasiVmDisplayServiceHandler) GetServiceID() string { return d.serviceID }
+
+func (SRPCWasiVmDisplayServiceHandler) GetMethodIDs() []string {
+	return []string{
+		"Display",
+	}
+}
+
+func (d *SRPCWasiVmDisplayServiceHandler) InvokeMethod(
+	serviceID, methodID string,
+	strm srpc.Stream,
+) (bool, error) {
+	if serviceID != "" && serviceID != d.GetServiceID() {
+		return false, nil
+	}
+
+	switch methodID {
+	case "Display":
+		return true, d.InvokeMethod_Display(d.impl, strm)
+	default:
+		return false, nil
+	}
+}
+
+func (SRPCWasiVmDisplayServiceHandler) InvokeMethod_Display(impl SRPCWasiVmDisplayServiceServer, strm srpc.Stream) error {
+	clientStrm := &srpcWasiVmDisplayService_DisplayStream{strm}
+	return impl.Display(clientStrm)
+}
+
+type SRPCWasiVmDisplayService_DisplayStream interface {
+	srpc.Stream
+	Send(*WasiVmDisplayFrame) error
+	SendAndClose(*WasiVmDisplayFrame) error
+	Recv() (*WasiVmDisplayInput, error)
+	RecvTo(*WasiVmDisplayInput) error
+}
+
+type srpcWasiVmDisplayService_DisplayStream struct {
+	srpc.Stream
+}
+
+func (x *srpcWasiVmDisplayService_DisplayStream) Send(m *WasiVmDisplayFrame) error {
+	return x.MsgSend(m)
+}
+
+func (x *srpcWasiVmDisplayService_DisplayStream) SendAndClose(m *WasiVmDisplayFrame) error {
+	if m != nil {
+		if err := x.MsgSend(m); err != nil {
+			return err
+		}
+	}
+	return x.CloseSend()
+}
+
+func (x *srpcWasiVmDisplayService_DisplayStream) Recv() (*WasiVmDisplayInput, error) {
+	m := new(WasiVmDisplayInput)
+	if err := x.MsgRecv(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (x *srpcWasiVmDisplayService_DisplayStream) RecvTo(m *WasiVmDisplayInput) error {
 	return x.MsgRecv(m)
 }
