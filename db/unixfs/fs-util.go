@@ -10,9 +10,10 @@ import (
 
 	"github.com/pkg/errors"
 	unixfs_errors "github.com/s4wave/spacewave/db/unixfs/errors"
+	"golang.org/x/sync/errgroup"
 )
 
-// MaxReadFileSize is the maximum size for ReadFile operations (4GB)
+// MaxReadFileSize is the maximum size for ReadFile operations, 4 GiB.
 const MaxReadFileSize = 4 * 1024 * 1024 * 1024
 
 // NewReadFileSizeTooLargeError returns a standardized error for when a file is too large to be read.
@@ -20,38 +21,23 @@ func NewReadFileSizeTooLargeError(size uint64) error {
 	return errors.Errorf("file size too large for ReadFile: %d bytes", size)
 }
 
+// readdirFanOut bounds the concurrent child lookups of one directory listing.
+const readdirFanOut = 8
+
 // ReaddirAllToFileInfo calls readdir and generates FileInfo objects.
 // If skip is set, skips N entries.
 // If limit is set, limits output to N entries.
 func ReaddirAllToFileInfo(ctx context.Context, skip, limit uint64, h *FSHandle) ([]fs.FileInfo, error) {
-	// Collect child names within the requested directory limit.
-	var children []string
-	err := h.ReaddirAll(ctx, skip, func(ent FSCursorDirent) error {
-		children = append(children, ent.GetName())
-		if limit != 0 && len(children) >= int(limit) { //nolint:gosec
-			return io.EOF
-		}
-		return nil
-	})
-	if err != nil && err != io.EOF {
+	// Read the entries, then drop the children removed since the listing.
+	ents, infos, err := readdirInfos(ctx, skip, limit, h)
+	if err != nil {
 		return nil, err
 	}
-
-	// lookup all children
-	out := make([]fs.FileInfo, 0, len(children))
-	for _, childName := range children {
-		ch, err := h.Lookup(ctx, childName)
-		if err == unixfs_errors.ErrNotExist {
-			continue
+	out := make([]fs.FileInfo, 0, len(ents))
+	for _, fi := range infos {
+		if fi != nil {
+			out = append(out, fi)
 		}
-		if err != nil {
-			return nil, errors.Wrapf(err, "lookup child %q", childName)
-		}
-		fi, err := ch.GetFileInfo(ctx)
-		if err != nil {
-			return nil, errors.Wrapf(err, "lookup child %q: file info", childName)
-		}
-		out = append(out, fi)
 	}
 	return out, nil
 }
@@ -60,38 +46,67 @@ func ReaddirAllToFileInfo(ctx context.Context, skip, limit uint64, h *FSHandle) 
 // If skip is set, skips N entries.
 // If limit is set, limits output to N entries.
 func ReaddirAllToDirEntries(ctx context.Context, skip, limit uint64, h *FSHandle) ([]fs.DirEntry, error) {
+	// Read the entries, then drop the children removed since the listing.
+	ents, infos, err := readdirInfos(ctx, skip, limit, h)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]fs.DirEntry, 0, len(ents))
+	for i, fi := range infos {
+		if fi != nil {
+			out = append(out, NewFSDirEntry(ents[i], fi))
+		}
+	}
+	return out, nil
+}
+
+// readdirInfos lists the directory entries of h and looks up the FileInfo of
+// each child, up to readdirFanOut at a time. infos[i] belongs to ents[i] and is
+// nil for a child removed since the listing.
+func readdirInfos(ctx context.Context, skip, limit uint64, h *FSHandle) ([]FSCursorDirent, []fs.FileInfo, error) {
 	// Collect directory records within the requested entry limit.
-	var children []FSCursorDirent
+	var ents []FSCursorDirent
 	err := h.ReaddirAll(ctx, skip, func(ent FSCursorDirent) error {
-		children = append(children, ent)
-		if limit != 0 && len(children) >= int(limit) { //nolint:gosec
+		ents = append(ents, ent)
+		if limit != 0 && len(ents) >= int(limit) { //nolint:gosec
 			return io.EOF
 		}
 		return nil
 	})
 	if err != nil && err != io.EOF {
-		return nil, err
+		return nil, nil, err
 	}
 
-	// lookup all children & build directory entries
-	out := make([]fs.DirEntry, 0, len(children))
-	for _, child := range children {
-		childName := child.GetName()
-		ch, err := h.Lookup(ctx, childName)
-		if err == unixfs_errors.ErrNotExist {
-			continue
-		}
-		if err != nil {
-			return nil, errors.Wrapf(err, "lookup child %q", childName)
-		}
-		fi, err := ch.GetFileInfo(ctx)
-		if err != nil {
-			return nil, errors.Wrapf(err, "lookup child %q: file info", childName)
-		}
-		out = append(out, NewFSDirEntry(child, fi))
-	}
+	// Look up the children concurrently, so their node reads overlap.
+	infos := make([]fs.FileInfo, len(ents))
+	eg, egCtx := errgroup.WithContext(ctx)
+	eg.SetLimit(readdirFanOut)
+	for i, ent := range ents {
+		eg.Go(func() error {
+			// Open the child, skipping one removed since the listing.
+			name := ent.GetName()
+			ch, err := h.Lookup(egCtx, name)
+			if err == unixfs_errors.ErrNotExist {
+				return nil
+			}
+			if err != nil {
+				return errors.Wrapf(err, "lookup child %q", name)
+			}
+			defer ch.Release()
 
-	return out, nil
+			// Read its info into the entry's slot.
+			fi, err := ch.GetFileInfo(egCtx)
+			if err != nil {
+				return errors.Wrapf(err, "lookup child %q: file info", name)
+			}
+			infos[i] = fi
+			return nil
+		})
+	}
+	if err := eg.Wait(); err != nil {
+		return nil, nil, err
+	}
+	return ents, infos, nil
 }
 
 // RenameWithPaths renames using two paths within a FSHandle.

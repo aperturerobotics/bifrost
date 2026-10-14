@@ -118,12 +118,16 @@ func (v *VFS) mkSymlink(parent *VNode, name, target string) *VNode {
 // vnodeFromHost creates a node for a root filesystem path without following
 // a final symlink. It returns nil when the path does not exist.
 func (v *VFS) vnodeFromHost(hostPath string) *VNode {
-	// Stat the path.
 	info, err := v.host.Lstat(hostPath)
 	if err != nil {
 		return nil
 	}
+	return v.vnodeFromInfo(hostPath, info)
+}
 
+// vnodeFromInfo creates a node for the root filesystem path hostPath from its
+// Lstat info.
+func (v *VFS) vnodeFromInfo(hostPath string, info os.FileInfo) *VNode {
 	// Create the node with the path's type, size and times.
 	mode := uint32(info.Mode().Perm())
 	switch {
@@ -189,16 +193,19 @@ func (v *VFS) loadHostChildren(node *VNode, hostPath string) {
 		node.children = make(map[string]*VNode)
 	}
 
-	// Add the entries the tree lacks.
+	// Add the entries the tree lacks, from the info the listing returned.
 	for _, entry := range entries {
 		name := entry.Name()
 		if node.children[name] != nil {
 			continue
 		}
-		if child := v.vnodeFromHost(hostChildPath(hostPath, name)); child != nil {
-			child.parent = node
-			node.children[name] = child
+		info, err := entry.Info()
+		if err != nil {
+			continue
 		}
+		child := v.vnodeFromInfo(hostChildPath(hostPath, name), info)
+		child.parent = node
+		node.children[name] = child
 	}
 }
 
