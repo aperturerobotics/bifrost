@@ -1075,7 +1075,7 @@ func (a *ProviderAccount) startSOSync(
 		provRef := ref.GetProviderResourceRef()
 		exchange := state.getExchange(BlockStoreBucketID(provRef.GetProviderId(), provRef.GetProviderAccountId(), ref.GetBlockStoreId()))
 		objectSync.copy.SetRoutine(func(ctx context.Context) error {
-			return a.runAccountReplicaCopy(ctx, childBus, so, space.SpaceEngineId(ref), state, exchange)
+			return a.runAccountReplicaCopy(ctx, so, state, exchange)
 		})
 	}
 

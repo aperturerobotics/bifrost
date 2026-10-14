@@ -291,27 +291,8 @@ func (e *soEngine) NewTransaction(ctx context.Context, write bool) (world.Tx, er
 	// Serialize the write fork with other writes and replay.
 	ctx, task := trace.NewTask(ctx, "alpha/so-engine/new-transaction")
 	defer task.End()
-	taskCtx, subtask := trace.NewTask(ctx, "alpha/so-engine/new-transaction/lock-write-mtx")
-	unlockWriteMtx, err := e.c.writeMtx.Lock(taskCtx)
-	subtask.End()
+	unlockWriteMtx, err := e.lockReplayed(ctx, clock)
 	if err != nil {
-		return nil, err
-	}
-	clock.end(stageLockWait)
-
-	// Trace the hold until the write releases the lock.
-	_, holdWriteMtxTask := trace.NewTask(ctx, "alpha/so-engine/write-tx/hold-write-mtx")
-	unlockWriteMtx = wrapReleaseWithTask(unlockWriteMtx, holdWriteMtxTask)
-
-	// Fork the World of the current operation set. The watcher may still be
-	// waiting for writeMtx after operations arrived.
-	snapshot, err := e.admittedState(ctx)
-	if err != nil {
-		unlockWriteMtx()
-		return nil, err
-	}
-	if _, err := e.advance(ctx, snapshot, nil); err != nil {
-		unlockWriteMtx()
 		return nil, err
 	}
 	base, head, index := e.replay.head()
@@ -403,15 +384,67 @@ func (e *soEngine) WatchChanges(ctx context.Context, afterSeqno uint64, cb func(
 	return e.bengine.WatchChanges(ctx, afterSeqno, cb)
 }
 
+// lockReplayed takes the writer lock and installs the World after every
+// operation of the current set, which the watcher may not have replayed yet.
+// A write replays even when this device follows the leader, since its own
+// replay places it after every operation the set holds. Replay reads only
+// local blocks, so when it stops at a block a peer must serve, lockReplayed
+// releases the lock, fetches that block and tries again. On success the
+// caller holds the lock and releases it with the returned function.
+func (e *soEngine) lockReplayed(ctx context.Context, clock *commitClock) (func(), error) {
+	for {
+		// Take the writer lock, tracing the hold until the write releases it.
+		taskCtx, task := trace.NewTask(ctx, "alpha/so-engine/new-transaction/lock-write-mtx")
+		unlockWriteMtx, err := e.c.writeMtx.Lock(taskCtx)
+		task.End()
+		if err != nil {
+			return nil, err
+		}
+		clock.end(stageLockWait)
+		_, holdWriteMtxTask := trace.NewTask(ctx, "alpha/so-engine/write-tx/hold-write-mtx")
+		unlockWriteMtx = wrapReleaseWithTask(unlockWriteMtx, holdWriteMtxTask)
+
+		// Replay and install the World of the current operation set.
+		snapshot, err := e.admittedState(ctx)
+		if err == nil {
+			_, err = e.install(ctx, snapshot, nil, false)
+		}
+		if err == nil {
+			return unlockWriteMtx, nil
+		}
+		missing := e.replay.missing
+		unlockWriteMtx()
+		if !block.IsNotAvailable(err) || missing == nil {
+			return nil, err
+		}
+
+		// Fetch the block replay stopped at with a read that waits for a peer.
+		if _, found, err := e.so.GetBlockStore().GetBlock(ctx, missing); err != nil {
+			return nil, err
+		} else if !found {
+			return nil, errors.Wrap(block.ErrNotFound, missing.MarshalString())
+		}
+	}
+}
+
 // advance replays snap, installs the World after its last placed operation
-// and reports this device's rejected edits. fork, when set, supplies the World
+// and reports this device's rejected edits. A device that follows the leader
+// installs the leader's checkpoint instead of replaying, unless fork is set.
+// The caller holds the writer lock.
+func (e *soEngine) advance(ctx context.Context, snap sobject.SharedObjectStateSnapshot, fork *replayFork) ([]replayOutcome, error) {
+	return e.install(ctx, snap, fork, fork == nil)
+}
+
+// install reaches the World for snap, installs it and reports this device's
+// rejected edits. follow lets a device that follows the leader install the
+// leader's checkpoint instead of replaying. fork, when set, supplies the World
 // after a local write. When replay stops at an operation whose block is not
-// available, advance installs the World before it and returns the replay's
+// available, install installs the World before it and returns the replay's
 // error, so the next advance resumes at that operation. The caller holds the
 // writer lock.
-func (e *soEngine) advance(ctx context.Context, snap sobject.SharedObjectStateSnapshot, fork *replayFork) ([]replayOutcome, error) {
-	// Replay and install the World.
-	state, outcomes, err := e.replay.sync(ctx, snap, fork)
+func (e *soEngine) install(ctx context.Context, snap sobject.SharedObjectStateSnapshot, fork *replayFork, follow bool) ([]replayOutcome, error) {
+	// Reach and install the World.
+	state, outcomes, err := e.reach(ctx, snap, fork, follow)
 	if state != nil && block.IsNotAvailable(err) {
 		if installErr := e.updateEngineState(ctx, state); installErr != nil {
 			return nil, installErr

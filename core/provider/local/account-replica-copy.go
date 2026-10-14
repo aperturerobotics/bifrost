@@ -4,8 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/aperturerobotics/controllerbus/bus"
-	"github.com/aperturerobotics/util/ccontainer"
 	"github.com/aperturerobotics/util/routine"
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/core/sobject"
@@ -17,13 +15,13 @@ import (
 	"github.com/s4wave/spacewave/db/kvtx"
 )
 
-// runAccountReplicaCopy hydrates the World of every accepted state through the
-// Session's existing DEX read-through store. The World is the checkpoint's World
-// with the operation set replayed onto it, as the World engine engineID builds
-// it on b. One replay follows every state, so each pass replays only the
-// operations the state added, and it starts from the replay the engine saved,
-// so a restart does too. Cached blocks survive cancellation and restart; a
-// persisted completion record is valid only for its exact immutable head.
+// runAccountReplicaCopy hydrates the published graph of every accepted state
+// through the Session's existing DEX read-through store: the checkpoint's World
+// and the payloads of the operations above it, which together hold every block
+// the World after those operations reads. Nothing is replayed; the Worlds the
+// operations derive are rebuilt from these blocks by whoever replays them.
+// Cached blocks survive cancellation and restart; a persisted completion record
+// is valid only for its exact immutable head.
 //
 // A block that no connected peer holds, or holds only without its refs, is not
 // a failure: the copy logs it once and waits for a new state, or for a peer
@@ -32,9 +30,7 @@ import (
 // object's copy error before the routine retries.
 func (a *ProviderAccount) runAccountReplicaCopy(
 	ctx context.Context,
-	b bus.Bus,
 	so sobject.SharedObject,
-	engineID string,
 	state *p2pSyncState,
 	exchange *dex_solicit.Controller,
 ) (rerr error) {
@@ -46,8 +42,7 @@ func (a *ProviderAccount) runAccountReplicaCopy(
 		}
 	}()
 
-	// Open the copy's local progress store, the object state stream and the
-	// replay that follows it.
+	// Open the copy's local progress store and the object state stream.
 	local, release, err := so.AccessLocalStateStore(ctx, "account-replica-copy", nil)
 	if err != nil {
 		return err
@@ -58,13 +53,6 @@ func (a *ProviderAccount) runAccountReplicaCopy(
 		return err
 	}
 	defer releaseStates()
-	replay, err := sobject_world_engine.NewWorldReplay(a.le, b, a.GetStepFactorySet(), so, engineID, space_world_optypes.LookupWorldOp)
-	if err != nil {
-		return err
-	}
-	if err := replay.Resume(ctx); err != nil {
-		return err
-	}
 
 	// Replacing the head cancels and joins the previous copy before starting
 	// the next one. A missing old block cannot pin replication to an old head.
@@ -76,91 +64,38 @@ func (a *ProviderAccount) runAccountReplicaCopy(
 		}
 	}()
 
-	// Copy each new World head as its state arrives.
+	// Copy each new published graph as its state arrives.
 	var snapshot sobject.SharedObjectStateSnapshot
-	var previousHead *bucket.ObjectRef
-	var missing bool
-	var starts uint64
+	var previous *block.BlockRef
 	for {
-		// While a block is missing, a peer that connects may hold it.
-		var peerStart func(context.Context) error
-		if missing && exchange != nil {
-			peerStart = func(ctx context.Context) error {
-				return exchange.WaitSessionStart(ctx, starts)
-			}
-		}
-		snapshot, err = waitStateOrWake(ctx, states, snapshot, peerStart)
+		snapshot, err = states.WaitValueChange(ctx, snapshot, nil)
 		if err != nil {
 			return err
 		}
 		if snapshot == nil {
 			continue
 		}
-
-		// Replay the operation set onto the checkpoint's World. Members write
-		// edits as operations, so the checkpoint alone lags the World they
-		// hold. Count peer sessions first so one starting during the replay
-		// still wakes the wait.
-		if exchange != nil {
-			starts = exchange.GetSessionStarts()
-		}
-		head, err := replay.Replay(ctx, snapshot)
-		if errors.Is(err, block.ErrNotFound) {
-			if !missing {
-				a.le.WithError(err).Info("waiting for a peer that holds a missing World block")
-			}
-			missing = true
-			continue
-		}
+		span, root, err := sobject_world_engine.PublishedGraph(ctx, snapshot, space_world_optypes.LookupWorldOp)
 		if err != nil {
 			return err
 		}
-		missing = false
-
-		// Start the copy for a new head.
-		if head.GetHeadRef() == nil || head.GetHeadRef().EqualVT(previousHead) {
+		if root.GetEmpty() || root.EqualsRef(previous) {
 			continue
 		}
-		previousHead = head.GetHeadRef().CloneVT()
+		previous = root
+
+		// Store the span block on each attempt, so a sweep between attempts
+		// cannot leave the copy without its root.
+		head := &bucket.ObjectRef{RootRef: root}
 		copier.SetRoutine(func(ctx context.Context) error {
-			return a.copyAccountWorldHead(ctx, so, state, local, head.GetHeadRef(), exchange)
+			if span != nil {
+				if _, err := so.GetBlockStore().PutBlockBatch(ctx, []*block.PutBatchEntry{span}); err != nil {
+					return err
+				}
+			}
+			return a.copyAccountWorldHead(ctx, so, state, local, head, exchange)
 		})
 	}
-}
-
-// waitStateOrWake waits for a state other than snapshot. When wake is set and
-// returns nil first, it returns snapshot unchanged.
-func waitStateOrWake(
-	ctx context.Context,
-	states ccontainer.Watchable[sobject.SharedObjectStateSnapshot],
-	snapshot sobject.SharedObjectStateSnapshot,
-	wake func(context.Context) error,
-) (sobject.SharedObjectStateSnapshot, error) {
-	// Without a wake, only a new state ends the wait.
-	if wake == nil {
-		return states.WaitValueChange(ctx, snapshot, nil)
-	}
-
-	// Cancel the state wait when wake returns; woke tells that cancel apart
-	// from the caller's.
-	waitCtx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	woke := make(chan struct{})
-	go func() {
-		if wake(waitCtx) == nil {
-			close(woke)
-			cancel()
-		}
-	}()
-	next, err := states.WaitValueChange(waitCtx, snapshot, nil)
-	if err != nil && ctx.Err() == nil {
-		select {
-		case <-woke:
-			return snapshot, nil
-		default:
-		}
-	}
-	return next, err
 }
 
 // copyAccountWorldHead copies head until it completes. A block that no

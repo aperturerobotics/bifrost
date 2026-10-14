@@ -144,10 +144,10 @@ var errStableCheckpointStale = errors.New("held state moved past the stable poin
 
 // checkpointStable signs and adopts a checkpoint at the stable point when the
 // local peer is the checkpointer and at least MinCheckpointOperations
-// operations are stable. The World after the stable prefix comes from the
-// replay, so nothing replays again. Under group control the voters decide the
-// checkpoint instead, so the replay only wakes the local voter. The caller
-// holds the writer lock.
+// operations are stable, or any operation is when the local peer leads. The
+// World after the stable prefix comes from the replay, so nothing replays
+// again. Under group control the voters decide the checkpoint instead, so the
+// replay only wakes the local voter. The caller holds the writer lock.
 func (e *soEngine) checkpointStable(ctx context.Context, snap sobject.SharedObjectStateSnapshot, set *sobject.SOOperationSet) error {
 	// Only the checkpointer signs, and only from a host it can sign through.
 	host, ok := e.so.(sobject.StateHost)
@@ -176,10 +176,15 @@ func (e *soEngine) checkpointStable(ctx context.Context, snap sobject.SharedObje
 		return nil
 	}
 
-	// Wait for enough stable operations whose World the replay holds.
-	roster := cfg.TrimRoster()
-	prefix := set.StablePoint(roster)
-	if len(prefix) < sobject.MinCheckpointOperations {
+	// Wait for enough stable operations whose World the replay holds. The
+	// leader publishes every ordered batch, since the other participants
+	// install its checkpoints instead of replaying.
+	minStable := sobject.MinCheckpointOperations
+	if cfg.Leader() == self {
+		minStable = 1
+	}
+	prefix := set.StablePoint(cfg.TrimRoster())
+	if len(prefix) < minStable {
 		return nil
 	}
 	world := e.replay.stateAfter(prefix)

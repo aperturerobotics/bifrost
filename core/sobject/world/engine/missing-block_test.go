@@ -34,9 +34,11 @@ type hidingBlockStore struct {
 	// the block missing.
 	err error
 	// peer, when set, makes the hidden block one only an absent peer holds:
-	// a read that may wait for a peer blocks until peer is closed, and a read
-	// that may not records the block and reports it unavailable.
-	peer chan struct{}
+	// a read that may wait for a peer signals asked and blocks until peer is
+	// closed, and a read that may not records the block and reports it
+	// unavailable.
+	peer  chan struct{}
+	asked chan struct{}
 }
 
 // GetBlock reads a block, withholding the hidden block.
@@ -48,6 +50,10 @@ func (s *hidingBlockStore) GetBlock(ctx context.Context, ref *block.BlockRef) ([
 		if peerWait := block.GetPeerWait(ctx); peerWait != nil {
 			peerWait.Skip(ref)
 			return nil, false, block.ErrUnavailable
+		}
+		select {
+		case s.asked <- struct{}{}:
+		default:
 		}
 		select {
 		case <-s.peer:
@@ -89,8 +95,9 @@ func (c *opCounter) Fire(entry *logrus.Entry) error {
 // each later one must stop at that operation without holding the write lock,
 // serve the World before it, fail writers with the read error, and resume at
 // that operation, never applying an earlier operation again, once the block
-// arrives. A block only an absent peer holds must also wake the watcher when
-// it arrives.
+// arrives. A writer waits for a block only an absent peer holds, without
+// holding the write lock, and the block must also wake the watcher when it
+// arrives.
 func TestEngineStopsReplayAtMissingBlock(t *testing.T) {
 	t.Run("missing", func(t *testing.T) {
 		testEngineStopsReplayAtBlockGap(t, &hidingBlockStore{}, block.ErrNotFound)
@@ -100,7 +107,8 @@ func TestEngineStopsReplayAtMissingBlock(t *testing.T) {
 		testEngineStopsReplayAtBlockGap(t, &hidingBlockStore{err: unserved}, block.ErrUnavailable)
 	})
 	t.Run("absent-peer", func(t *testing.T) {
-		testEngineStopsReplayAtBlockGap(t, &hidingBlockStore{peer: make(chan struct{})}, block.ErrUnavailable)
+		store := &hidingBlockStore{peer: make(chan struct{}), asked: make(chan struct{}, 1)}
+		testEngineStopsReplayAtBlockGap(t, store, block.ErrUnavailable)
 	})
 }
 
@@ -206,16 +214,52 @@ func testEngineStopsReplayAtBlockGap(t *testing.T, store *hidingBlockStore, want
 		unlock()
 	}
 
-	// A writer fails with the missing block after replay applied the four
-	// operations before it and tried the fifth.
-	if tx, err := engine.NewTransaction(ctx, true); !errors.Is(err, want) {
-		if err == nil {
-			tx.Discard()
+	// writeStops opens a writer while the block is missing. The writer fails
+	// with the read error, or, when only an absent peer holds the block, waits
+	// for the peer without holding the write lock until its context ends.
+	writeStops := func(name string) {
+		// Expect the read error when no peer will serve the block.
+		t.Helper()
+		if store.peer == nil {
+			if tx, err := engine.NewTransaction(ctx, true); !errors.Is(err, want) {
+				if err == nil {
+					tx.Discard()
+				}
+				t.Fatalf("%s with a missing block = %v; want %v", name, err, want)
+			} else if op := world_mock.MockObjectOpId + " on ghost"; !strings.Contains(err.Error(), op) {
+				t.Fatalf("%s with a missing block = %v; want it to name %q", name, err, op)
+			}
+			return
 		}
-		t.Fatalf("write with a missing block = %v; want %v", err, want)
-	} else if op := world_mock.MockObjectOpId + " on ghost"; !strings.Contains(err.Error(), op) {
-		t.Fatalf("write with a missing block = %v; want it to name %q", err, op)
+
+		// Otherwise start the writer, dropping any earlier wait signal.
+		select {
+		case <-store.asked:
+		default:
+		}
+		writeCtx, writeCancel := context.WithCancel(ctx)
+		defer writeCancel()
+		done := make(chan error, 1)
+		go func() {
+			tx, err := engine.NewTransaction(writeCtx, true)
+			if err == nil {
+				tx.Discard()
+			}
+			done <- err
+		}()
+
+		// Cancel it once it waits for the peer with the write lock free.
+		<-store.asked
+		writeLockFree()
+		writeCancel()
+		if err := <-done; !errors.Is(err, context.Canceled) {
+			t.Fatalf("%s waiting for an absent peer = %v; want it canceled", name, err)
+		}
 	}
+
+	// A writer stops at the missing block after replay applied the four
+	// operations before it and tried the fifth.
+	writeStops("write")
 	wantApplied(5)
 	writeLockFree()
 
@@ -239,12 +283,7 @@ func testEngineStopsReplayAtBlockGap(t *testing.T, store *hidingBlockStore, want
 		t.Fatalf("watcher ended on a missing block: %v", err)
 	}
 	wantApplied(6)
-	if tx, err := engine.NewTransaction(ctx, true); !errors.Is(err, want) {
-		if err == nil {
-			tx.Discard()
-		}
-		t.Fatalf("second write with a missing block = %v; want %v", err, want)
-	}
+	writeStops("second write")
 	wantApplied(7)
 	writeLockFree()
 

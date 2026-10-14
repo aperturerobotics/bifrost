@@ -8,6 +8,7 @@ import (
 	provider_local "github.com/s4wave/spacewave/core/provider/local"
 	"github.com/s4wave/spacewave/core/sobject"
 	sobject_world_engine "github.com/s4wave/spacewave/core/sobject/world/engine"
+	"github.com/s4wave/spacewave/db/block"
 )
 
 // TestMainDeviceOffline has the owner's device order a local Space as its main
@@ -39,8 +40,8 @@ func TestMainDeviceOffline(t *testing.T) {
 	ownerObject := mounted.(*provider_local.SharedObject)
 	memberObject, memberRef := joinWriter(ctx, t, ownerAccount, ownerSession, ownerObject, memberAccount, memberSession)
 
-	// Both members replay the Space, and the owner's device becomes the main
-	// device and places every edit so far.
+	// The owner's device becomes the main device, places every edit so far
+	// and checkpoints the World holding them, which the writer installs.
 	owner := &offlineMember{t: t, name: "owner", tb: tb, account: ownerAccount, object: ownerObject, ref: ref}
 	member := &offlineMember{t: t, name: "member", tb: tb, account: memberAccount, object: memberObject, ref: memberRef}
 	for _, m := range []*offlineMember{owner, member} {
@@ -51,7 +52,7 @@ func TestMainDeviceOffline(t *testing.T) {
 		t.Fatal(err)
 	}
 	member.waitSequencer(ctx, ownerObject.GetPeerID().String())
-	member.waitUnordered(ctx, 0)
+	member.waitCheckpoint(ctx, owner.root(ctx))
 
 	// The main device goes offline. The writer's edit applies at once and
 	// waits to be put in order.
@@ -60,17 +61,119 @@ func TestMainDeviceOffline(t *testing.T) {
 	member.requireObjects(ctx, "while-main-offline")
 	member.waitUnordered(ctx, 1)
 
-	// The main device returns and places the edit.
+	// The main device returns and places the edit, then checkpoints the World
+	// holding it, which the writer installs.
 	if err := ownerAccount.StartPersistentP2PSync(ctx, ownerAccount.GetSessionTransport()); err != nil {
 		t.Fatal(err)
 	}
 	member.waitUnordered(ctx, 0)
-	owner.waitOperations(ctx, memberObject.GetPeerID().String(), 1)
+	owner.requireObjects(ctx, "while-main-offline")
 	ownerRoot := owner.root(ctx)
+	member.waitCheckpoint(ctx, ownerRoot)
 	if memberRoot := member.root(ctx); !memberRoot.EqualVT(ownerRoot) {
 		t.Fatalf("member World root %v; want the owner's %v", memberRoot, ownerRoot)
 	}
-	owner.requireObjects(ctx, "while-main-offline")
+}
+
+// TestFollowerInstallsLeaderCheckpoint has the owner's device lead a Space: it
+// orders and checkpoints every edit. A writer with no edits of its own installs
+// each checkpoint as its World, so after every owner edit the writer holds the
+// World the checkpoint publishes, with no operation left above it to replay.
+func TestFollowerInstallsLeaderCheckpoint(t *testing.T) {
+	// Full peer sync runs natively under one deadline.
+	skipFullP2PSyncUnderGoScript(t)
+	ctx, cancel := context.WithTimeout(t.Context(), 60*time.Second)
+	defer cancel()
+
+	// Start one daemon with both members' accounts and a World engine.
+	tb, _, ownerAccount, ownerSession, release := setupProviderAndSession(ctx, t)
+	t.Cleanup(release)
+	memberAccount, memberSession := addLocalSession(ctx, t, tb)
+	tb.StaticResolver.AddFactory(sobject_world_engine.NewFactory(tb.Bus))
+
+	// The owner creates the Space and a writer joins it.
+	ref, err := ownerAccount.CreateSharedObject(ctx, "follower-space", &sobject.SharedObjectMeta{BodyType: "space"}, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	mounted, releaseObject, err := ownerAccount.MountSharedObject(ctx, ref, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(releaseObject)
+	ownerObject := mounted.(*provider_local.SharedObject)
+	memberObject, memberRef := joinWriter(ctx, t, ownerAccount, ownerSession, ownerObject, memberAccount, memberSession)
+
+	// The owner's device becomes the leader.
+	owner := &offlineMember{t: t, name: "owner", tb: tb, account: ownerAccount, object: ownerObject, ref: ref}
+	member := &offlineMember{t: t, name: "member", tb: tb, account: memberAccount, object: memberObject, ref: memberRef}
+	for _, m := range []*offlineMember{owner, member} {
+		m.start(ctx)
+		t.Cleanup(m.stop)
+	}
+	if _, err := ownerObject.SetSequencer(ctx, ownerObject.GetPeerID().String()); err != nil {
+		t.Fatal(err)
+	}
+	member.waitSequencer(ctx, ownerObject.GetPeerID().String())
+
+	// Each owner edit reaches the writer as a checkpoint it installs.
+	var keys []string
+	for _, key := range []string{"first", "second", "third"} {
+		owner.create(ctx, key)
+		keys = append(keys, key)
+		root := owner.root(ctx)
+		member.waitCheckpoint(ctx, root)
+		if memberRoot := member.root(ctx); !memberRoot.EqualVT(root) {
+			t.Fatalf("member World root %v after %s; want the checkpoint's %v", memberRoot, key, root)
+		}
+		member.requireObjects(ctx, keys...)
+	}
+}
+
+// waitCheckpoint waits until the Space's checkpoint publishes the World root
+// with no edit above it.
+func (m *offlineMember) waitCheckpoint(ctx context.Context, root *block.BlockRef) {
+	// Watch the readable state.
+	t := m.t
+	t.Helper()
+	states, release, err := m.object.AccessSharedObjectState(ctx, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer release()
+
+	// Decode each checkpoint's World and look for edits above it.
+	if _, err := states.WaitValueWithValidator(ctx, func(snapshot sobject.SharedObjectStateSnapshot) (bool, error) {
+		// Read the checkpoint's World root.
+		if snapshot == nil {
+			return false, nil
+		}
+		checkpoint, err := snapshot.GetCheckpoint(ctx)
+		if err != nil {
+			return false, err
+		}
+		head := &sobject_world_engine.InnerState{}
+		if err := head.UnmarshalVT(checkpoint.GetStateData()); err != nil {
+			return false, err
+		}
+		if !head.GetHeadRef().GetRootRef().EqualVT(root) {
+			return false, nil
+		}
+
+		// Require that only acknowledgments remain above it.
+		set, err := snapshot.GetOperationSet(ctx)
+		if err != nil {
+			return false, err
+		}
+		for _, h := range set.Order() {
+			if !set.Get(h).IsAcknowledgment() {
+				return false, nil
+			}
+		}
+		return true, nil
+	}, nil); err != nil {
+		t.Fatalf("%s did not see a checkpoint of World %v: %v", m.name, root, err)
+	}
 }
 
 // waitSequencer waits until the Space's config appoints peerID.

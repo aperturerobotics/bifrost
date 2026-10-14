@@ -144,27 +144,8 @@ func (r *replayer) sync(ctx context.Context, snap sobject.SharedObjectStateSnaps
 	r.missing = nil
 
 	// Restart from the checkpoint's World when it changed.
-	checkpoint, err := snap.GetCheckpoint(ctx)
-	if err != nil {
+	if err := r.rebase(ctx, snap); err != nil {
 		return nil, nil, err
-	}
-	base := &InnerState{}
-	if err := base.UnmarshalVT(checkpoint.GetStateData()); err != nil {
-		return nil, nil, errors.Wrap(err, "checkpoint World state")
-	}
-	if !base.EqualVT(r.base) {
-		if err := holdWorldRoot(ctx, r.so, replayBaseRootName, base.GetHeadRef().GetRootRef()); err != nil {
-			return nil, nil, err
-		}
-		if world, _, ok := r.coveredWorld(checkpoint); ok {
-			r.mismatch = nil
-			if !world.EqualVT(base) {
-				r.mismatch = &sobject.SOCheckpointMismatch{Height: checkpoint.GetHeight()}
-			}
-		}
-		r.base, r.positions = base, r.positionsAbove(base)
-		r.changed, r.deferred = true, false
-		r.span, r.spanLen = nil, 0
 	}
 
 	// Replay the operation set from the shared prefix.
@@ -177,6 +158,38 @@ func (r *replayer) sync(ctx context.Context, snap sobject.SharedObjectStateSnaps
 		r.missing = peerWait.GetRef()
 	}
 	return state, outcomes, err
+}
+
+// rebase makes the World of the checkpoint of snap the base when it changed,
+// keeping the positions above it.
+func (r *replayer) rebase(ctx context.Context, snap sobject.SharedObjectStateSnapshot) error {
+	// Decode the checkpoint's World.
+	checkpoint, err := snap.GetCheckpoint(ctx)
+	if err != nil {
+		return err
+	}
+	base := &InnerState{}
+	if err := base.UnmarshalVT(checkpoint.GetStateData()); err != nil {
+		return errors.Wrap(err, "checkpoint World state")
+	}
+	if base.EqualVT(r.base) {
+		return nil
+	}
+
+	// Hold it, judge it against the replay and start from it.
+	if err := holdWorldRoot(ctx, r.so, replayBaseRootName, base.GetHeadRef().GetRootRef()); err != nil {
+		return err
+	}
+	if world, _, ok := r.coveredWorld(checkpoint); ok {
+		r.mismatch = nil
+		if !world.EqualVT(base) {
+			r.mismatch = &sobject.SOCheckpointMismatch{Height: checkpoint.GetHeight()}
+		}
+	}
+	r.base, r.positions = base, r.positionsAbove(base)
+	r.changed, r.deferred = true, false
+	r.span, r.spanLen = nil, 0
+	return nil
 }
 
 // positionsAbove returns the positions after the last one whose World is

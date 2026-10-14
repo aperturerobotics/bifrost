@@ -225,24 +225,14 @@ func (s *SOState) GetOperation(peerID, localID string) (*SOOperation, error) {
 }
 
 // AddOperation verifies op and adds it to the set. It reports false when the
-// state already holds op or the checkpoint covers it. Authorization is decided
-// by replay under the config op names.
+// state already holds op or the checkpoint covers it. A held operation is not
+// verified again: the hash names its signed body, which was verified when it
+// was added, so a peer resending the set costs no signature checks.
+// Authorization is decided by replay under the config op names.
 func (s *SOState) AddOperation(sharedObjectID string, op *SOOperation) (bool, error) {
-	// Admit an authentic operation above the checkpoint.
-	inner, err := op.Verify(sharedObjectID)
-	if err != nil {
-		return false, err
-	}
-	checkpoint, err := s.GetCheckpointInner()
-	if err != nil {
-		return false, err
-	}
-	if NewSOOperationSet(sharedObjectID, checkpoint).Covers(inner.GetPeerId(), inner.GetNonce()) {
-		return false, nil
-	}
-
-	// Insert it in hash order unless held. Hashing may suspend under GoScript,
-	// which slices callbacks do not allow, so search with a plain loop.
+	// Find its place in hash order, unless held. Hashing may suspend under
+	// GoScript, which slices callbacks do not allow, so search with a plain
+	// loop.
 	h := op.Hash()
 	i, j := 0, len(s.Ops)
 	for i < j {
@@ -256,6 +246,19 @@ func (s *SOState) AddOperation(sharedObjectID string, op *SOOperation) (bool, er
 		} else {
 			j = m
 		}
+	}
+
+	// Admit an authentic operation above the checkpoint.
+	inner, err := op.Verify(sharedObjectID)
+	if err != nil {
+		return false, err
+	}
+	checkpoint, err := s.GetCheckpointInner()
+	if err != nil {
+		return false, err
+	}
+	if NewSOOperationSet(sharedObjectID, checkpoint).Covers(inner.GetPeerId(), inner.GetNonce()) {
+		return false, nil
 	}
 	if len(s.Ops) >= MaxOperations {
 		return false, errors.Wrap(ErrMaxCountExceeded, "operations")
