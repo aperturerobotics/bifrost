@@ -81,7 +81,7 @@ func wasiFunctions() map[string]hostFunc {
 		"sock_accept": wasiFunc("iiii", func(ctx context.Context, p *Process, mem engine.Memory, a []uint64) uint32 {
 			return p.wasiSockAccept(ctx, mem, uint32(a[0]), uint32(a[1]), uint32(a[2]))
 		}),
-		"sock_recv": wasiFunc("iiiiii", func(ctx context.Context, p *Process, mem engine.Memory, a []uint64) uint32 {
+		"sock_recv": wasiFunc("iiiiiii", func(ctx context.Context, p *Process, mem engine.Memory, a []uint64) uint32 {
 			return p.wasiSockRecv(ctx, mem, uint32(a[0]), uint32(a[1]), uint32(a[2]), uint32(a[3]), uint32(a[4]), uint32(a[5]))
 		}),
 		"sock_send": wasiFunc("iiiiii", func(ctx context.Context, p *Process, mem engine.Memory, a []uint64) uint32 {
