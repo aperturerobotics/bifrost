@@ -17,13 +17,16 @@ import {
 import { cn } from '@s4wave/web/style/utils.js'
 
 import {
-  type SessionSyncStatusView,
+  type SessionSyncSummary,
   useSessionSyncStatus,
+  useSessionSyncSummary,
 } from './SessionSyncStatusContext.js'
 
 // SessionSyncStatusButton registers the session sync-status bottom-bar item.
+// The button follows the sync summary; only the open popover follows the
+// transfer rates.
 export function SessionSyncStatusButton() {
-  const status = useSessionSyncStatus()
+  const status = useSessionSyncSummary()
   const buttonRender = useCallback(
     (selected: boolean, onClick: () => void, className?: string) => (
       <Popover open={selected}>
@@ -50,7 +53,7 @@ export function SessionSyncStatusButton() {
           onPointerDownOutside={onClick}
           variant="status"
         >
-          <SessionSyncStatusPopover status={status} />
+          <SessionSyncStatusPopover />
         </PopoverContent>
       </Popover>
     ),
@@ -68,7 +71,7 @@ export function SessionSyncStatusButton() {
   )
 }
 
-function SessionSyncStatusGlyph({ status }: { status: SessionSyncStatusView }) {
+function SessionSyncStatusGlyph({ status }: { status: SessionSyncSummary }) {
   if (status.loading || status.active) {
     return <Spinner size="sm" />
   }
@@ -87,11 +90,8 @@ function SessionSyncStatusGlyph({ status }: { status: SessionSyncStatusView }) {
   )
 }
 
-function SessionSyncStatusPopover({
-  status,
-}: {
-  status: SessionSyncStatusView
-}) {
+function SessionSyncStatusPopover() {
+  const status = useSessionSyncStatus()
   return (
     <div className="space-y-3 p-3" data-testid="session-sync-status-popover">
       <div className="flex items-start gap-3">

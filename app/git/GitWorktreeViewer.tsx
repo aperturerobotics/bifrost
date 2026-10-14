@@ -551,7 +551,6 @@ function WorktreeBrowsePanel({
   controller: GitWorktreeController
 }) {
   const {
-    displayPath,
     files,
     handleChangesFileClick,
     nav,
@@ -562,24 +561,15 @@ function WorktreeBrowsePanel({
     workdirPath,
     worktreeResource,
   } = controller
-  const isRoot =
-    route.mode === 'workdir' ? workdirPath === '/' : displayPath === '/'
 
   switch (route.mode) {
     case 'files':
-      return (
-        <FileTree
-          entries={files.fileEntries}
-          onOpen={nav.handleOpen}
-          autoHeight={isRoot}
-        />
-      )
+      return <FileTree entries={files.fileEntries} onOpen={nav.handleOpen} />
     case 'workdir':
       return (
         <FileTree
           entries={workdirFiles.fileEntries}
           onOpen={nav.handleOpen}
-          autoHeight={isRoot}
           renderEntry={renderEntry}
           currentPath={workdirPath}
         />
@@ -724,7 +714,7 @@ function GitWorktreeReadyContent({
 
   return (
     <GitViewerFrame {...frameProps}>
-      <div className="bg-file-back min-h-0 flex-1 overflow-auto">
+      <div className="bg-file-back flex min-h-0 flex-1 flex-col overflow-auto">
         <WorktreeRouteBody controller={controller} />
       </div>
     </GitViewerFrame>

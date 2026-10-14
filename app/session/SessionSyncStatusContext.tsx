@@ -13,8 +13,9 @@ import { isStorageQuotaError } from '@s4wave/app/session/storage/storage-error.j
 
 export type SessionSyncVisualState = 'loading' | 'synced' | 'active' | 'error'
 
-export interface SessionSyncStatusView {
-  snapshot: WatchSyncStatusResponse | null
+// SessionSyncSummary is the part of the sync status that changes with the
+// sync state, not with each transfer rate sample.
+export interface SessionSyncSummary {
   visualState: SessionSyncVisualState
   loading: boolean
   active: boolean
@@ -23,6 +24,13 @@ export interface SessionSyncStatusView {
   summaryLabel: string
   detailLabel: string
   ariaLabel: string
+  lastError: string
+}
+
+// SessionSyncStatusView is the complete sync status, including the transfer
+// rates and counters that change on every sample.
+export interface SessionSyncStatusView extends SessionSyncSummary {
+  snapshot: WatchSyncStatusResponse | null
   transportLabel: string
   p2pLabel: string
   uploadRateLabel: string
@@ -35,7 +43,6 @@ export interface SessionSyncStatusView {
   packLookupLabel: string
   packIndexCacheLabel: string
   lastActivityLabel: string
-  lastError: string
   localCopies: {
     id: string
     name: string
@@ -80,7 +87,11 @@ const loadingView: SessionSyncStatusView = {
 const SessionSyncStatusContext =
   createContext<SessionSyncStatusView>(loadingView)
 
-// SessionSyncStatusProvider owns the session sync-status watch for a session UI tree.
+const SessionSyncSummaryContext = createContext<SessionSyncSummary>(loadingView)
+
+// SessionSyncStatusProvider owns the session sync-status watch for a session
+// UI tree. It provides the complete status, and a summary whose value changes
+// only when a summary field does, so summary consumers skip the rate samples.
 export function SessionSyncStatusProvider({
   children,
 }: {
@@ -101,17 +112,62 @@ export function SessionSyncStatusProvider({
       ),
     [resource?.error, resource?.loading, resource?.value],
   )
+  const {
+    visualState,
+    loading,
+    active,
+    error,
+    local,
+    summaryLabel,
+    detailLabel,
+    ariaLabel,
+    lastError,
+  } = value
+  const summary = useMemo(
+    (): SessionSyncSummary => ({
+      visualState,
+      loading,
+      active,
+      error,
+      local,
+      summaryLabel,
+      detailLabel,
+      ariaLabel,
+      lastError,
+    }),
+    [
+      visualState,
+      loading,
+      active,
+      error,
+      local,
+      summaryLabel,
+      detailLabel,
+      ariaLabel,
+      lastError,
+    ],
+  )
 
   return (
-    <SessionSyncStatusContext.Provider value={value}>
-      {children}
-    </SessionSyncStatusContext.Provider>
+    <SessionSyncSummaryContext.Provider value={summary}>
+      <SessionSyncStatusContext.Provider value={value}>
+        {children}
+      </SessionSyncStatusContext.Provider>
+    </SessionSyncSummaryContext.Provider>
   )
 }
 
-// useSessionSyncStatus returns the current provider-owned session sync status view.
+// useSessionSyncStatus returns the complete session sync status, which changes
+// on every transfer rate sample. Prefer useSessionSyncSummary where the
+// summary fields suffice.
 export function useSessionSyncStatus(): SessionSyncStatusView {
   return use(SessionSyncStatusContext)
+}
+
+// useSessionSyncSummary returns the session sync summary, which changes only
+// when the sync state or its labels change.
+export function useSessionSyncSummary(): SessionSyncSummary {
+  return use(SessionSyncSummaryContext)
 }
 
 export function buildSessionSyncStatusView(

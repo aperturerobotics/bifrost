@@ -1,4 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { List, useListRef, type RowComponentProps } from 'react-window'
+import {
+  coarsePointerQuery,
+  useMediaQuery,
+} from '@s4wave/web/hooks/useMediaQuery.js'
 import { isExpandable, TreeNode } from './TreeNode.js'
 import {
   findNodeById,
@@ -11,7 +16,7 @@ import {
   TreeStateContext,
   TreeDispatchContext,
 } from './TreeState.js'
-import { TreeRow } from './TreeRow.js'
+import { TreeRow, type TreeRowProps } from './TreeRow.js'
 import { cn } from '@s4wave/web/style/utils.js'
 
 export interface TreeProps<T = void> {
@@ -25,6 +30,71 @@ export interface TreeProps<T = void> {
   onRowContextMenu?: (node: TreeNode<T>, event: React.MouseEvent) => void
 }
 
+// treeRowHeight and coarseTreeRowHeight are the heights of a row slot for a
+// fine and a coarse pointer: the expand button, the row padding, and the bottom
+// border. The coarse button keeps the 44px target of web/style/app.css.
+const treeRowHeight = 29
+const coarseTreeRowHeight = 53
+
+// TreeRowEntry is a visible node and its depth.
+interface TreeRowEntry<T> {
+  node: TreeNode<T>
+  level: number
+}
+
+// flattenTree returns the visible nodes in display order.
+function flattenTree<T>(
+  nodes: TreeNode<T>[],
+  expandedIds: Set<string>,
+): TreeRowEntry<T>[] {
+  const rows: TreeRowEntry<T>[] = []
+  const visit = (node: TreeNode<T>, level: number) => {
+    rows.push({ node, level })
+    if (node.children && expandedIds.has(node.id)) {
+      for (const child of node.children) visit(child, level + 1)
+    }
+  }
+  for (const node of nodes) visit(node, 0)
+  return rows
+}
+
+// TreeListRowProps are the props the list passes to every rendered row.
+type TreeListRowProps<T> = Pick<
+  TreeRowProps<T>,
+  'onRowDefaultAction' | 'onRowContextMenu' | 'onRowDragStart'
+> & {
+  rows: TreeRowEntry<T>[]
+  state: TreeState
+}
+
+// TreeListRow renders the row at index inside the list's positioned slot.
+function TreeListRow<T>({
+  index,
+  style,
+  rows,
+  state,
+  onRowDefaultAction,
+  onRowContextMenu,
+  onRowDragStart,
+}: RowComponentProps<TreeListRowProps<T>>) {
+  const { node, level } = rows[index]
+  return (
+    <div role="none" style={style}>
+      <TreeRow
+        node={node}
+        level={level}
+        index={index}
+        isSelected={state.selectedIds.has(node.id)}
+        isFocused={state.focusedId === node.id}
+        isExpanded={state.expandedIds.has(node.id)}
+        onRowDefaultAction={onRowDefaultAction}
+        onRowContextMenu={onRowContextMenu}
+        onRowDragStart={onRowDragStart}
+      />
+    </div>
+  )
+}
+
 // withDefaultFocus focuses the first node while no node has focus.
 function withDefaultFocus(state: TreeState, firstId?: string): TreeState {
   if (state.focusedId != null || firstId == null) return state
@@ -35,7 +105,8 @@ function withDefaultFocus(state: TreeState, firstId?: string): TreeState {
   }
 }
 
-// Tree renders a hierarchical tree with keyboard navigation and selection.
+// Tree renders a hierarchical tree with keyboard navigation and selection. It
+// renders only the rows near the visible part of the tree.
 export function Tree<T>({
   nodes,
   state: [storedState, update],
@@ -50,11 +121,21 @@ export function Tree<T>({
     [storedState, firstNodeID],
   )
 
-  // Track nodes for the reducer - update via effect to avoid ref update during render
+  const rows = useMemo(
+    () => flattenTree(nodes, state.expandedIds),
+    [nodes, state.expandedIds],
+  )
+
+  // Handlers read the latest nodes, rows, and state through refs, so they stay
+  // stable and the rows they reach skip renders.
   const nodesRef = useRef<TreeNode<T>[]>(nodes)
+  const rowsRef = useRef(rows)
+  const stateRef = useRef(state)
   useEffect(() => {
     nodesRef.current = nodes
-  }, [nodes])
+    rowsRef.current = rows
+    stateRef.current = state
+  }, [nodes, rows, state])
 
   const dispatch = useCallback(
     (action: TreeAction) =>
@@ -203,36 +284,53 @@ export function Tree<T>({
     [dispatch, state, nodes, onRowDefaultAction],
   )
 
-  const flattenedRows = useMemo(() => {
-    const renderNode = (
-      node: TreeNode<T>,
-      level: number,
-      index: number,
-    ): React.ReactNode[] => [
-      <TreeRow
-        key={node.id}
-        node={node}
-        level={level}
-        index={index}
-        onRowDefaultAction={onRowDefaultAction}
-        onRowContextMenu={onRowContextMenu}
-      />,
-      ...(node.children && state.expandedIds.has(node.id)
-        ? node.children.flatMap((child, i) =>
-            renderNode(child, level + 1, index + i + 1),
-          )
-        : []),
-    ]
+  // A dragged row that is not selected becomes the selection it drags.
+  const handleRowDragStart = useCallback(
+    (e: React.DragEvent<HTMLElement>, node: TreeNode<T>) => {
+      const current = stateRef.current
+      if (!node.onDragStart) return
+      if (current.selectedIds.has(node.id)) {
+        node.onDragStart(e, node, current)
+        return
+      }
+      dispatch({ type: 'SELECT_NODE', id: node.id })
+      node.onDragStart(e, node, {
+        ...current,
+        selectedIds: new Set([node.id]),
+      })
+    },
+    [dispatch],
+  )
 
-    return nodes.flatMap((node, index) => renderNode(node, 0, index))
-  }, [nodes, state.expandedIds, onRowDefaultAction, onRowContextMenu])
+  // Scroll the focused row into view when the focus moves, which mounts it.
+  const listRef = useListRef(null)
+  useEffect(() => {
+    const index = rowsRef.current.findIndex(
+      (row) => row.node.id === state.focusedId,
+    )
+    if (index !== -1) {
+      listRef.current?.scrollToRow({ index, align: 'smart' })
+    }
+  }, [listRef, state.focusedId])
+
+  const coarsePointer = useMediaQuery(coarsePointerQuery)
+  const rowProps = useMemo(
+    (): TreeListRowProps<T> => ({
+      rows,
+      state,
+      onRowDefaultAction,
+      onRowContextMenu,
+      onRowDragStart: handleRowDragStart,
+    }),
+    [rows, state, onRowDefaultAction, onRowContextMenu, handleRowDragStart],
+  )
 
   return (
     <TreeStateContext.Provider value={state}>
       <TreeDispatchContext.Provider value={dispatch}>
         <div
           className={cn(
-            'group flex flex-1 flex-col overflow-auto outline-none focus:outline-none',
+            'group flex min-h-0 flex-1 flex-col outline-none focus:outline-none',
             className,
           )}
           role="tree"
@@ -265,7 +363,17 @@ export function Tree<T>({
               {placeholder ?? 'No items'}
             </div>
           ) : (
-            <div>{flattenedRows}</div>
+            <List
+              role="none"
+              className="min-h-0"
+              listRef={listRef}
+              defaultHeight={600}
+              overscanCount={8}
+              rowComponent={TreeListRow<T>}
+              rowCount={rows.length}
+              rowHeight={coarsePointer ? coarseTreeRowHeight : treeRowHeight}
+              rowProps={rowProps}
+            />
           )}
         </div>
       </TreeDispatchContext.Provider>

@@ -395,6 +395,18 @@ describe('Tree', () => {
     })
   })
 
+  it('renders only the rows near the visible part of a large tree', () => {
+    const nodes = Array.from({ length: 1000 }, (_, i) => ({
+      id: `node-${i}`,
+      name: `Node ${i}`,
+    }))
+    render(<TestTree nodes={nodes} />)
+
+    const rows = screen.getAllByRole('treeitem')
+    expect(rows.length).toBeGreaterThan(0)
+    expect(rows.length).toBeLessThan(100)
+  })
+
   it('should have proper ARIA attributes', async () => {
     render(<TestTree nodes={mockNodes} expandedIds={new Set(['root'])} />)
 

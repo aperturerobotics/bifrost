@@ -26,6 +26,7 @@ vi.mock('./SessionSyncStatusContext.js', async () => {
   return {
     ...actual,
     useSessionSyncStatus: mockUseSessionSyncStatus,
+    useSessionSyncSummary: mockUseSessionSyncStatus,
   }
 })
 

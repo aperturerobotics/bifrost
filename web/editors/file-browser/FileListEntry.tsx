@@ -372,7 +372,6 @@ function FileEntryRow({
         focused && !selected && 'ring-brand/25 ring-1 ring-inset',
         entry.id === dropTargetEntryId &&
           'bg-brand/10 ring-brand/40 ring-1 ring-inset',
-        style['--list-row-height'] !== undefined && 'list-row-height',
       )}
       draggable={drag.draggable}
       onClick={row.select}

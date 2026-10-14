@@ -381,15 +381,14 @@ function SpaceObjectBrowserView({
 
   const treeCard = (
     <InfoCard>
-      <div className="max-h-75 overflow-auto">
-        <Tree
-          nodes={treeNodes}
-          onRowDefaultAction={handleOpen}
-          onRowContextMenu={handleContextMenu}
-          state={treeState}
-          placeholder="No objects"
-        />
-      </div>
+      <Tree
+        nodes={treeNodes}
+        onRowDefaultAction={handleOpen}
+        onRowContextMenu={handleContextMenu}
+        state={treeState}
+        placeholder="No objects"
+        className="max-h-75"
+      />
     </InfoCard>
   )
   const menu = (

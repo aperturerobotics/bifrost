@@ -63,9 +63,6 @@ export interface ListProps<T = void> {
   // useListState.
   state: ListStateHandle
   onRowContextMenu?: (item: ListItem<T>, event: React.MouseEvent) => void
-  // autoHeight disables virtualization and renders all rows at natural height.
-  // The list takes its content height instead of filling its container.
-  autoHeight?: boolean
 }
 
 // List renders a virtualized list with keyboard navigation and selection.
@@ -81,7 +78,6 @@ export function List<T>({
   sortFn,
   state: [state, update],
   onRowContextMenu,
-  autoHeight,
 }: ListProps<T>) {
   const listRef = useRef<ListImperativeAPI | null>(null)
 
@@ -371,9 +367,7 @@ export function List<T>({
       <ListDispatchContext.Provider value={dispatch}>
         <div
           className={cn(
-            autoHeight
-              ? 'flex flex-col'
-              : 'flex min-h-0 flex-1 flex-col overflow-hidden',
+            'flex min-h-0 flex-1 flex-col overflow-hidden',
             className,
           )}
           role="group"
@@ -385,33 +379,13 @@ export function List<T>({
             ref={listContainerRef}
             tabIndex={focusedIndexVisible ? -1 : 0}
             role="rowgroup"
-            className={cn(
-              'p-0.5 outline-none',
-              autoHeight
-                ? 'flex flex-col'
-                : 'flex min-h-0 flex-1 flex-col overflow-hidden',
-            )}
+            className="flex min-h-0 flex-1 flex-col overflow-hidden p-0.5 outline-none"
             onKeyDown={handleKeyDown}
           >
             {sortedItems.length === 0 ? (
               <div className="text-foreground-alt flex flex-1 items-center justify-center p-4">
                 {placeholder ?? 'No items'}
               </div>
-            ) : autoHeight ? (
-              <ul className="relative">
-                {sortedItems.map((item, index) => (
-                  <RowComponentInternal
-                    key={item.id}
-                    index={index}
-                    style={{ '--list-row-height': rowHeight }}
-                    ariaAttributes={{
-                      'aria-posinset': index + 1,
-                      'aria-setsize': sortedItems.length,
-                      role: 'listitem',
-                    }}
-                  />
-                ))}
-              </ul>
             ) : (
               <VirtualList
                 listRef={listRef}

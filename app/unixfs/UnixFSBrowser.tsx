@@ -19,10 +19,7 @@ import { UnixFSPathLoadingCard } from '@s4wave/app/loading/wrappers/UnixFSPathLo
 import { SpaceContainerContext } from '@s4wave/web/contexts/SpaceContainerContext.js'
 import { useSessionIndex } from '@s4wave/web/contexts/contexts.js'
 import { useSessionUploadManager } from '@s4wave/app/session/SessionUploadManagerContext.js'
-import {
-  type SessionSyncStatusView,
-  useSessionSyncStatus,
-} from '../session/SessionSyncStatusContext.js'
+import { useSessionSyncStatus } from '../session/SessionSyncStatusContext.js'
 import { UnixFSFileViewer } from './UnixFSFileViewer.js'
 import { UnixFSBrowserDialogs } from './UnixFSBrowserDialogs.js'
 import { UnixFSBrowserDropSurface } from './UnixFSBrowserDropSurface.js'
@@ -99,13 +96,10 @@ function buildUnixFSLoadingStageLabel({
   return 'waiting for filesystem resource'
 }
 
-function UnixFSLoadingDiagnostics({
-  stageLabel,
-  status,
-}: {
-  stageLabel: string
-  status: SessionSyncStatusView
-}) {
+// UnixFSLoadingDiagnostics shows the loading stage and the pack read counters,
+// which it follows only while it is mounted.
+function UnixFSLoadingDiagnostics({ stageLabel }: { stageLabel: string }) {
+  const status = useSessionSyncStatus()
   return (
     <div
       className="text-foreground-alt/60 max-w-xl space-y-1 text-center font-mono text-xs leading-relaxed"
@@ -158,7 +152,6 @@ function useUnixFSBrowserModel({
   const { httpPathPrefix } = useAppEnvironment()
   const spaceId = SpaceContainerContext.useContextSafe()?.spaceId ?? null
   const sessionIndex = useSessionIndex()
-  const syncStatus = useSessionSyncStatus()
   const displayPath = currentPath || basePath || '/'
 
   // Uploads are owned by the session, not this viewer, so an in-flight upload
@@ -465,10 +458,7 @@ function useUnixFSBrowserModel({
       onConfirmMove: edits.handleConfirmMove,
     },
     loadingDiagnostics: (
-      <UnixFSLoadingDiagnostics
-        stageLabel={loadingStageLabel}
-        status={syncStatus}
-      />
+      <UnixFSLoadingDiagnostics stageLabel={loadingStageLabel} />
     ),
   }
 }
