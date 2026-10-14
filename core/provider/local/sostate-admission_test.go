@@ -27,6 +27,10 @@ type chainPublisher struct {
 	heads []*block.AtomicHeadUpdate
 	// receipts are the receipts of heads.
 	receipts []*block.PublicationReceipt
+	// onPublish, when set, runs after head i is recorded and before publish
+	// returns, as the publisher does when a predecessor fails while a write
+	// admits.
+	onPublish func(i int)
 }
 
 // publish admits head and returns its pending receipt.
@@ -34,6 +38,9 @@ func (p *chainPublisher) publish(_ context.Context, head *block.AtomicHeadUpdate
 	receipt := block.NewPublicationReceipt()
 	p.heads = append(p.heads, head)
 	p.receipts = append(p.receipts, receipt)
+	if p.onPublish != nil {
+		p.onPublish(len(p.heads) - 1)
+	}
 	return receipt, nil
 }
 
@@ -228,6 +235,50 @@ func TestSOStateAdmissionFailure(t *testing.T) {
 		}
 		synctest.Wait()
 		held[op3] = true
+		h.expect("admitted", h.admitted, held)
+		h.expect("durable", h.durable, held)
+	})
+}
+
+// TestSOStateAdmissionFailureDuringAdmit checks that an operation built on
+// the admitted state before a receipt failed, and admitted after the entry
+// reset that state, fails with the predecessor and leaves the admitted state
+// at the durable state.
+func TestSOStateAdmissionFailureDuringAdmit(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		// Fail the first receipt while the second operation admits.
+		h := newAdmissionHarness(t)
+		op1 := h.add(true)
+		h.pub.onPublish = func(i int) {
+			if i != 1 {
+				return
+			}
+			h.pub.receipts[0].Resolve(errors.New("publication failed"))
+			synctest.Wait()
+		}
+		if _, err := h.addErr(true); !errors.Is(err, block.ErrPublicationDependency) {
+			t.Fatalf("admission built on a failed publication returned %v, want ErrPublicationDependency", err)
+		}
+
+		// The failed chain leaves the durable state as the admitted state.
+		h.expect("admitted", h.admitted, map[string]bool{op1: false})
+		if h.durable.GetValue() != h.admitted.GetValue() {
+			t.Fatal("admission built on a failed publication left the admitted state ahead")
+		}
+
+		// The dependent admission fails with its predecessor, and the next
+		// operation builds on the durable state.
+		ctx := t.Context()
+		if err := h.pub.apply(ctx, 1); err == nil {
+			t.Fatal("successor of a failed publication succeeded")
+		}
+		h.pub.onPublish = nil
+		op3 := h.add(true)
+		if err := h.pub.apply(ctx, 2); err != nil {
+			t.Fatal(err)
+		}
+		synctest.Wait()
+		held := map[string]bool{op1: false, op3: true}
 		h.expect("admitted", h.admitted, held)
 		h.expect("durable", h.durable, held)
 	})

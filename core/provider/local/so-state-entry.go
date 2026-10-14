@@ -7,6 +7,7 @@ import (
 	"github.com/aperturerobotics/util/ccontainer"
 	"github.com/aperturerobotics/util/csync"
 	"github.com/aperturerobotics/util/promise"
+	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/core/sobject"
 	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/kvtx"
@@ -126,10 +127,10 @@ func (e *soStateEntry) execute(ctx context.Context, objStore object.ObjectStore,
 	}
 }
 
-// admitted returns the admitted state after settling the resolved receipts,
+// readAdmitted returns the admitted state after settling the resolved receipts,
 // so a write never builds on an admission already known to have failed. The
 // caller holds writeMtx.
-func (e *soStateEntry) admitted() *sobject.SOState {
+func (e *soStateEntry) readAdmitted() *sobject.SOState {
 	var state *sobject.SOState
 	var released []func()
 	e.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
@@ -140,10 +141,10 @@ func (e *soStateEntry) admitted() *sobject.SOState {
 	return state
 }
 
-// settled waits until every pending receipt settled and returns the durable
+// waitSettled waits until every pending receipt settled and returns the durable
 // state, which then equals the admitted state. The caller holds writeMtx, so
 // no admission arrives while it waits.
-func (e *soStateEntry) settled(ctx context.Context) (*sobject.SOState, error) {
+func (e *soStateEntry) waitSettled(ctx context.Context) (*sobject.SOState, error) {
 	for {
 		// Settle the resolved receipts and find the next one to wait for.
 		var state *sobject.SOState
@@ -171,15 +172,29 @@ func (e *soStateEntry) settled(ctx context.Context) (*sobject.SOState, error) {
 	}
 }
 
-// admit records state as admitted to the publication of receipt. release
-// drops the entry reference the admission holds until its receipt settles.
-// The caller holds writeMtx.
-func (e *soStateEntry) admit(state *sobject.SOState, receipt *block.PublicationReceipt, release func()) {
+// admit records state, built on base, as admitted to the publication of
+// receipt. release drops the entry reference the admission holds until its
+// receipt settles. The caller holds writeMtx, so only a failed receipt
+// settling since the caller read base as the admitted state can have changed
+// it. The publication's head then expects a state that never became durable:
+// admit tracks the admission as dependent, leaves the admitted state alone,
+// and returns ErrPublicationDependency.
+func (e *soStateEntry) admit(base, state *sobject.SOState, receipt *block.PublicationReceipt, release func()) error {
+	var err error
 	e.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
-		e.pending = append(e.pending, &soStateAdmission{state: state, receipt: receipt, release: release})
-		e.admittedCtr.SetValue(state)
+		// Track the admission, dependent when the admitted state was reset.
+		dependent := e.admittedCtr.GetValue() != base
+		e.pending = append(e.pending, &soStateAdmission{state: state, receipt: receipt, dependent: dependent, release: release})
+
+		// Publish the admitted state unless the admission is dependent.
+		if dependent {
+			err = errors.Wrap(block.ErrPublicationDependency, "shared object state write built on a failed publication")
+		} else {
+			e.admittedCtr.SetValue(state)
+		}
 		broadcast()
 	})
+	return err
 }
 
 // commit records state as written directly to storage. The caller holds

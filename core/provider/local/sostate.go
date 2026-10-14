@@ -85,9 +85,11 @@ func NewObjectStoreSOStateFuncs(rctx context.Context, objStore object.ObjectStor
 
 		// Read the state the write builds on.
 		admission := sobject.GetPublishState(ctx) != nil && !checkpoint && !peerImport && objStoreID != ""
-		base := ent.admitted()
-		if !admission {
-			base, err = ent.settled(ctx)
+		var base *sobject.SOState
+		if admission {
+			base = ent.readAdmitted()
+		} else {
+			base, err = ent.waitSettled(ctx)
 			if err != nil {
 				relLock()
 				ref.Release()
@@ -124,14 +126,13 @@ func NewObjectStoreSOStateFuncs(rctx context.Context, objStore object.ObjectStor
 					}
 					if receipt != nil {
 						admRef, _, _ := soRc.AddKeyRef(sharedObjectID)
-						ent.admit(state, receipt, admRef.Release)
-						return nil
+						return ent.admit(base, state, receipt, admRef.Release)
 					}
 				}
 
 				// Otherwise write after every pending receipt, on the state the
 				// lock loaded. A failed receipt removed that state.
-				durable, err := ent.settled(ctx)
+				durable, err := ent.waitSettled(ctx)
 				if err != nil {
 					return err
 				}
