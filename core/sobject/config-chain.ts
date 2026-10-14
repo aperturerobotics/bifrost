@@ -1,7 +1,10 @@
 import { sha256 } from '@noble/hashes/sha2.js'
 import { bytesToHex } from '@noble/hashes/utils.js'
 
-import { extractPublicKeyFromPeerID } from '../../net/peer/id.js'
+import {
+  extractPublicKeyFromPeerID,
+  peerIDFromPublicKey,
+} from '../../net/peer/id.js'
 import { verifySignature } from '../../net/peer/signature.js'
 import {
   isSOGroupControl,
@@ -9,14 +12,16 @@ import {
   verifySOCommit,
 } from './control.js'
 import {
+  SOCheckpointHead,
   SOConfigChange,
   SOConfigChangeType,
+  type SOConfigMerge,
+  SOOperationPosition,
   SOParticipantConfig,
-  type SOOperationPosition,
   SOParticipantRole,
   type SOSequenceHead,
-  type SOSequencer,
-  type SharedObjectConfig,
+  SOSequencer,
+  SharedObjectConfig,
 } from './sobject.pb.js'
 
 // SO_CONFIG_CHANGE_SIGNATURE_CONTEXT is the signature context of every control
@@ -268,9 +273,9 @@ export async function verifySOConfigChain(
 // verifySOConfigChange verifies one signed transition against the held
 // configuration and returns a fresh configuration carrying the new head.
 // Checks run in this order: object binding, then the link to the held head
-// (stale), then authorization, then the shape of the result. A
-// SELF_ENROLL_PEER record checks only the configuration shape; the caller
-// must authenticate the peer-to-entity binding.
+// (stale), then authorization, then a MERGE record's branch, then the shape of
+// the result. A SELF_ENROLL_PEER record checks only the configuration shape;
+// the caller must authenticate the peer-to-entity binding.
 // It throws SOConfigChangeError when the record is rejected.
 export async function verifySOConfigChange(
   sharedObjectID: string,
@@ -312,8 +317,10 @@ export async function verifySOConfigChange(
     )
   }
 
-  // The held configuration authorizes the record.
+  // The held configuration authorizes the record, and a merge carries the
+  // config its branch yields.
   await verifyConfigChangeAuthority(entry, current)
+  await verifyConfigMerge(sharedObjectID, current, entry)
 
   // An authorized signer still cannot produce an unusable configuration.
   const result = withConfigChainHead(next, expected, hashSOConfigChange(entry))
@@ -494,4 +501,246 @@ function validateSelfEnrollPeerChange(
   if ((participant.username ?? '') !== username) {
     throw deny("self-enroll username must match the entity's recorded username")
   }
+}
+
+// PEER_CONFIG_CHANGE_TYPES are the change types a merge may absorb, matching
+// Go isPeerConfigChange: every type but genesis and self-enrollment, which
+// need their own proof.
+const PEER_CONFIG_CHANGE_TYPES: ReadonlySet<SOConfigChangeType> = new Set([
+  SOConfigChangeType.SO_CONFIG_CHANGE_TYPE_ADD_PARTICIPANT,
+  SOConfigChangeType.SO_CONFIG_CHANGE_TYPE_REMOVE_PARTICIPANT,
+  SOConfigChangeType.SO_CONFIG_CHANGE_TYPE_ADD_INVITE,
+  SOConfigChangeType.SO_CONFIG_CHANGE_TYPE_REVOKE_INVITE,
+  SOConfigChangeType.SO_CONFIG_CHANGE_TYPE_INCREMENT_INVITE_USES,
+  SOConfigChangeType.SO_CONFIG_CHANGE_TYPE_TRANSFER_OWNERSHIP,
+  SOConfigChangeType.SO_CONFIG_CHANGE_TYPE_SET_ROSTER,
+  SOConfigChangeType.SO_CONFIG_CHANGE_TYPE_SET_SEQUENCER,
+  SOConfigChangeType.SO_CONFIG_CHANGE_TYPE_SET_CONTROL,
+  SOConfigChangeType.SO_CONFIG_CHANGE_TYPE_MERGE,
+])
+
+// verifyConfigMerge checks that a MERGE record's config is the one its branch
+// yields on current, and that only MERGE records carry a branch, matching Go
+// verifyConfigMerge.
+async function verifyConfigMerge(
+  sharedObjectID: string,
+  current: SharedObjectConfig,
+  entry: SOConfigChange,
+): Promise<void> {
+  // Only a MERGE record carries a branch.
+  if (entry.changeType !== SOConfigChangeType.SO_CONFIG_CHANGE_TYPE_MERGE) {
+    if (entry.merge) {
+      throw new SOConfigChangeError(
+        'invalid',
+        'only a merge record may carry a merge branch',
+      )
+    }
+    return
+  }
+
+  // Recompute the merged config and require the record to carry it.
+  const expected = await mergeConfigBranch(sharedObjectID, current, entry.merge)
+  if (!equalSOConfigs(entry.config, expected)) {
+    throw new SOConfigChangeError(
+      'invalid',
+      'merge record config differs from its merged branch',
+    )
+  }
+}
+
+// mergeConfigBranch returns the config merge yields on head, matching Go
+// mergeConfigBranch. Each branch record must follow the one before it, and the
+// first must follow the fork. A record applies only while every signer owns
+// the result, so records decided under group control are dropped.
+async function mergeConfigBranch(
+  sharedObjectID: string,
+  head: SharedObjectConfig,
+  merge: SOConfigMerge | undefined,
+): Promise<SharedObjectConfig> {
+  // An owner signs a merge alone, so the head must be under owner control.
+  const invalid = (message: string) =>
+    new SOConfigChangeError('invalid', `merge record: ${message}`)
+  if (isSOGroupControl(head)) {
+    throw invalid('merge requires owner control')
+  }
+  const fork = merge?.fork
+  const branch = merge?.branch ?? []
+  if (!fork || branch.length === 0) {
+    throw invalid('merge requires a fork and a branch')
+  }
+
+  // Apply the fields each record changed, while its signers still own.
+  let parent = withConfigChainHead(
+    fork.config ?? {},
+    fork.configSeqno ?? 0n,
+    hashSOConfigChange(fork),
+  )
+  let result = SharedObjectConfig.clone(head)!
+  for (const [i, change] of branch.entries()) {
+    if (!PEER_CONFIG_CHANGE_TYPES.has(change.changeType ?? 0)) {
+      throw invalid(`branch[${i}]: unsupported merged config change`)
+    }
+    const next = await verifySOConfigChange(
+      sharedObjectID,
+      parent,
+      change,
+    ).catch((err: Error) => {
+      throw invalid(`branch[${i}]: ${err.message}`)
+    })
+    if (signedByOwners(change, result)) {
+      const candidate = applyConfigDelta(result, parent, next)
+      try {
+        validateSOConfig(candidate)
+        result = candidate
+      } catch {
+        // An invalid result drops the record.
+      }
+    }
+    parent = next
+  }
+  return result
+}
+
+// signedByOwners reports whether entry carries signatures and every signer is
+// an OWNER of cfg. The caller has verified the signatures.
+function signedByOwners(
+  entry: SOConfigChange,
+  cfg: SharedObjectConfig,
+): boolean {
+  const sigs = entry.signatures ?? []
+  return (
+    sigs.length !== 0 &&
+    sigs.every((sig) => {
+      const signer = sig.pubKey ? peerIDFromPublicKey(sig.pubKey) : null
+      return !!signer && isOwnerPeer(cfg, signer)
+    })
+  )
+}
+
+// applyConfigDelta returns target with each field that next changed from
+// parent set to its value in next, matching Go applyConfigDelta. Participants
+// and removed authors merge by peer ID, and dropped roster peers merge as a
+// set. The chain head fields keep target's values.
+function applyConfigDelta(
+  target: SharedObjectConfig,
+  parent: SharedObjectConfig,
+  next: SharedObjectConfig,
+): SharedObjectConfig {
+  // Merge the keyed lists by peer ID.
+  const out = SharedObjectConfig.clone(target)!
+  const peerID = (item: { peerId?: string }) => item.peerId ?? ''
+  out.participants = mergeByKey(
+    out.participants ?? [],
+    parent.participants ?? [],
+    next.participants ?? [],
+    peerID,
+    (a, b) => SOParticipantConfig.equals(a, b),
+    (item) => SOParticipantConfig.clone(item)!,
+  )
+  out.removedAuthors = mergeByKey(
+    out.removedAuthors ?? [],
+    parent.removedAuthors ?? [],
+    next.removedAuthors ?? [],
+    peerID,
+    (a, b) => SOOperationPosition.equals(a, b),
+    (item) => SOOperationPosition.clone(item)!,
+  ).sort((a, b) => compareStrings(peerID(a), peerID(b)))
+  out.rosterDroppedPeerIds = mergeByKey(
+    out.rosterDroppedPeerIds ?? [],
+    parent.rosterDroppedPeerIds ?? [],
+    next.rosterDroppedPeerIds ?? [],
+    (id) => id,
+    (a, b) => a === b,
+    (id) => id,
+  ).sort(compareStrings)
+
+  // Take each single field the record changed.
+  if (!equalPresent(SOSequencer, parent.sequencer, next.sequencer)) {
+    out.sequencer = SOSequencer.clone(next.sequencer) ?? undefined
+  }
+  if ((parent.control ?? 0) !== (next.control ?? 0)) {
+    out.control = next.control
+  }
+  if (
+    !equalPresent(
+      SOCheckpointHead,
+      parent.sealedCheckpoint,
+      next.sealedCheckpoint,
+    )
+  ) {
+    out.sealedCheckpoint =
+      SOCheckpointHead.clone(next.sealedCheckpoint) ?? undefined
+  }
+  return out
+}
+
+// mergeByKey applies the change from parent to next onto target, matching
+// items by key: an item next added or changed replaces or joins target's, and
+// an item next removed leaves target. Target keeps its order; new items follow.
+function mergeByKey<T>(
+  target: readonly T[],
+  parent: readonly T[],
+  next: readonly T[],
+  key: (item: T) => string,
+  equal: (a: T, b: T) => boolean,
+  clone: (item: T) => T,
+): T[] {
+  // Index the parent's and next's items by key.
+  const before = new Map(parent.map((item) => [key(item), item]))
+  const after = new Set(next.map(key))
+
+  // Drop removed items, then add or replace changed ones.
+  const out = target.filter(
+    (item) => !before.has(key(item)) || after.has(key(item)),
+  )
+  for (const item of next) {
+    const prev = before.get(key(item))
+    if (prev !== undefined && equal(prev, item)) {
+      continue
+    }
+    const i = out.findIndex((existing) => key(existing) === key(item))
+    if (i === -1) {
+      out.push(clone(item))
+    } else {
+      out[i] = clone(item)
+    }
+  }
+  return out
+}
+
+// equalPresent reports whether a and b are both absent, or both present and
+// equal, matching Go EqualVT on message pointers.
+function equalPresent<T>(
+  type: { equals(a: T | undefined, b: T | undefined): boolean },
+  a: T | undefined,
+  b: T | undefined,
+): boolean {
+  return (a === undefined) === (b === undefined) && type.equals(a, b)
+}
+
+// equalSOConfigs reports whether two configs are equal independent of
+// participant order, matching Go EqualSOConfigs.
+function equalSOConfigs(
+  a: SharedObjectConfig | undefined,
+  b: SharedObjectConfig,
+): boolean {
+  if (!a) {
+    return false
+  }
+  const sorted = (cfg: SharedObjectConfig): SharedObjectConfig => ({
+    ...cfg,
+    participants: [...(cfg.participants ?? [])].sort((x, y) =>
+      compareStrings(x.peerId ?? '', y.peerId ?? ''),
+    ),
+  })
+  return SharedObjectConfig.equals(sorted(a), sorted(b))
+}
+
+// compareStrings orders strings by code unit, which is byte order for the
+// ASCII peer IDs it compares.
+function compareStrings(a: string, b: string): number {
+  if (a === b) {
+    return 0
+  }
+  return a < b ? -1 : 1
 }

@@ -587,12 +587,7 @@ func buildConfigVectors(t *testing.T, vectors *operationLogVectors) {
 	appointBadStart := buildVectorChange(t, vectorObjectID, cur2, badStart, SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_SET_SEQUENCER, privA)
 
 	// Record each transition with its Go result.
-	changes := []struct {
-		name    string
-		kind    string
-		current *SharedObjectConfig
-		entry   *SOConfigChange
-	}{
+	changes := []configChangeCase{
 		{"owner-removes-participant", "", cur1, remove},
 		{"self-enroll", "", cur2, enroll},
 		{"self-enroll-from-stale-head", "stale", cur2, staleEnroll},
@@ -603,6 +598,7 @@ func buildConfigVectors(t *testing.T, vectors *operationLogVectors) {
 		{"owner-appoints-sequencer", "", cur2, appoint},
 		{"sequencer-start-without-hash", "invalid", cur2, appointBadStart},
 	}
+	changes = append(changes, buildMergeVectorCases(t, privA, privC, add, cur1, cur2, peerS)...)
 	for _, c := range changes {
 		v := configChangeVector{Name: c.name, Kind: c.kind, Current: mustMarshalVT(t, c.current), Entry: mustMarshalVT(t, c.entry)}
 		next, err := VerifyConfigChange(vectorObjectID, c.current, c.entry)
@@ -613,6 +609,63 @@ func buildConfigVectors(t *testing.T, vectors *operationLogVectors) {
 			v.NextHash = hex.EncodeToString(next.GetConfigChainHash())
 		}
 		vectors.ConfigChanges = append(vectors.ConfigChanges, v)
+	}
+}
+
+// configChangeCase is a control record applied to a held configuration, with
+// the TypeScript rejection kind Go's result implies.
+type configChangeCase struct {
+	name    string
+	kind    string
+	current *SharedObjectConfig
+	entry   *SOConfigChange
+}
+
+// buildMergeVectorCases builds merges on cur2, which removed owner C after
+// add, of a concurrent branch from add: A appoints sequencer peerS, then C
+// drops A's writer. The merge keeps A's change and drops C's, since C no
+// longer owns.
+func buildMergeVectorCases(
+	t *testing.T,
+	privA, privC crypto.PrivKey,
+	add *SOConfigChange,
+	cur1, cur2 *SharedObjectConfig,
+	peerS string,
+) []configChangeCase {
+	// Build the concurrent branch from add.
+	t.Helper()
+	appointed := cur1.CloneVT()
+	appointed.Sequencer = &SOSequencer{PeerId: peerS}
+	appoint := buildVectorChange(t, vectorObjectID, cur1, appointed, SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_SET_SEQUENCER, privA)
+	branch1 := vectorHead(t, appointed, appoint)
+	dropWriter := buildVectorChange(t, vectorObjectID, branch1, withParticipants(branch1, branch1.GetParticipants()[0], branch1.GetParticipants()[2]),
+		SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_REMOVE_PARTICIPANT, privC)
+
+	// A merges the branch onto cur2.
+	merge, err := BuildSOConfigMerge(vectorObjectID, cur2, add, []*SOConfigChange{appoint, dropWriter}, privA)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// A merge carrying a config its branch does not yield, re-signed.
+	forged := merge.CloneVT()
+	forged.Signatures = nil
+	forged.Config.Participants = forged.Config.Participants[:1]
+	if err := signSOConfigChange(forged, privA); err != nil {
+		t.Fatal(err)
+	}
+
+	// A record of another type carrying the branch, re-signed.
+	smuggled := buildVectorChange(t, vectorObjectID, cur2, merge.GetConfig(), SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_SET_SEQUENCER, privA)
+	smuggled.Signatures = nil
+	smuggled.Merge = merge.GetMerge().CloneVT()
+	if err := signSOConfigChange(smuggled, privA); err != nil {
+		t.Fatal(err)
+	}
+	return []configChangeCase{
+		{"owner-merges-concurrent-branch", "", cur2, merge},
+		{"merge-config-differs-from-branch", "invalid", cur2, forged},
+		{"non-merge-carries-branch", "invalid", cur2, smuggled},
 	}
 }
 
