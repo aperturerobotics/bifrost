@@ -72,7 +72,7 @@ func (a *ProviderAccount) ListBlockStoreRefs(ctx context.Context, blockStoreID s
 		pending = pending[:len(pending)-1]
 		targets, err := rg.GetOutgoingRefs(ctx, node)
 		if err != nil {
-			return nil, errors.Wrapf(err, "read references of %q", node)
+			return nil, errors.Wrapf(err, "read references of %q", block_gc.FormatIRI(node))
 		}
 		for _, target := range targets {
 			if _, ok := seen[target]; ok || block_gc.IsPermanentRoot(target) {

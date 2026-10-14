@@ -1,18 +1,13 @@
 package block_gc
 
 import (
-	"bytes"
 	"context"
 	"encoding/binary"
-	"math"
 	"slices"
-	"strings"
 
-	b58 "github.com/mr-tron/base58/base58"
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/kvtx"
-	"github.com/s4wave/spacewave/net/hash"
 )
 
 // maxBatchEdges bounds the input edges committed in one transaction.
@@ -77,54 +72,17 @@ func graphKey(kind byte, nodes ...string) []byte {
 	return key
 }
 
-// appendNode appends the encoding of node to key. A block node is its hash
-// type byte, never zero, followed by the digest, whose length the type fixes;
-// it holds about half the bytes of the base58 IRI. Any other node, or a block
-// IRI that does not decode back to the same text, is textNode, a uvarint
-// length and the IRI.
+// appendNode appends the encoding of node to key. A block node is its
+// BlockIRI after the prefix: the hash type byte, never zero, and the digest,
+// whose length the type fixes. Any other node is textNode, a uvarint length
+// and the IRI.
 func appendNode(key []byte, node string) []byte {
-	if h := parseBlockNode(node); h != nil {
-		key = append(key, byte(h.GetHashType())) //nolint:gosec // parseBlockNode admits types up to math.MaxUint8.
-		return append(key, h.GetHash()...)
+	if _, _, ok := parseBlockIRI(node); ok {
+		return append(key, node[len(prefixBlock):]...)
 	}
 	key = append(key, textNode)
 	key = binary.AppendUvarint(key, uint64(len(node)))
 	return append(key, node...)
-}
-
-// parseBlockNode returns the hash of a block IRI that encodes as a digest,
-// or nil.
-func parseBlockNode(node string) *hash.Hash {
-	// Decode the marshaled ref from the IRI.
-	rest, ok := strings.CutPrefix(node, prefixBlock)
-	if !ok || rest == "" {
-		return nil
-	}
-	data, err := b58.Decode(rest)
-	if err != nil {
-		return nil
-	}
-	ref := &block.BlockRef{}
-	if err := ref.UnmarshalVT(data); err != nil {
-		return nil
-	}
-
-	// Require a digest of its type's length.
-	h := ref.GetHash()
-	t := h.GetHashType()
-	if t == hash.HashType_HashType_UNKNOWN || t > math.MaxUint8 || len(h.GetHash()) != t.GetHashLen() {
-		return nil
-	}
-
-	// Require the IRI that lastNode spells from the digest. The canonical
-	// encoding begins with a nonzero byte, so its base58 text has no leading
-	// '1', and only one base58 text without a leading '1' decodes to given
-	// bytes. Comparing the bytes compares the IRIs without encoding base58.
-	canon, err := block.NewBlockRef(&hash.Hash{HashType: t, Hash: h.GetHash()}).MarshalVT()
-	if err != nil || rest[0] == '1' || !bytes.Equal(canon, data) {
-		return nil
-	}
-	return h
 }
 
 // lastNode returns the node that follows prefix in a record key, where
@@ -135,10 +93,7 @@ func lastNode(prefix, key []byte) string {
 		_, n := binary.Uvarint(enc[1:])
 		return string(enc[1+n:])
 	}
-	return BlockIRI(&block.BlockRef{Hash: &hash.Hash{
-		HashType: hash.HashType(enc[0]),
-		Hash:     enc[1:],
-	}})
+	return prefixBlock + string(enc)
 }
 
 // transaction retries complete graph operations against a fresh consistent view.

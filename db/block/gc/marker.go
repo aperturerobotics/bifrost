@@ -97,7 +97,7 @@ func (m *Marker) Mark(ctx context.Context) (sweepCandidates []string, colors map
 
 		targets, err := m.graph.GetOutgoingRefs(ctx, node)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, "read outgoing references of %q", node)
+			return nil, nil, errors.Wrapf(err, "read outgoing references of %q", FormatIRI(node))
 		}
 		for _, t := range targets {
 			c := colors[t]

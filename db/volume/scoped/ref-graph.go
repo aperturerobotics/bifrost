@@ -192,7 +192,7 @@ func (g *refGraph) scopeNode(node string) (string, error) {
 	if _, ok := block_gc.ParseBlockIRI(node); ok {
 		return node, nil
 	}
-	return "", errors.Wrapf(ErrRefused, "ref graph node %q", node)
+	return "", errors.Wrapf(ErrRefused, "ref graph node %q", block_gc.FormatIRI(node))
 }
 
 // scopeOwner maps an object or bucket node of the view to its node in the
@@ -203,7 +203,7 @@ func (g *refGraph) scopeOwner(node string) (string, error) {
 		return "", err
 	}
 	if _, ok := block_gc.ParseBlockIRI(node); ok {
-		return "", errors.Wrapf(ErrRefused, "ref graph owner %q", node)
+		return "", errors.Wrapf(ErrRefused, "ref graph owner %q", block_gc.FormatIRI(node))
 	}
 	return scoped, nil
 }

@@ -9,7 +9,6 @@ import (
 	"sync/atomic"
 	"testing"
 
-	b58 "github.com/mr-tron/base58/base58"
 	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/kvtx"
 	store_kvtx_inmem "github.com/s4wave/spacewave/db/store/kvtx/inmem"
@@ -1371,26 +1370,24 @@ func TestBlockIRIRoundTrip(t *testing.T) {
 // and expects each to decode to itself, and no node's key to prefix another's.
 func TestGraphKeyNodes(t *testing.T) {
 	// Collect block nodes of both hash types and text nodes, including
-	// block IRIs that do not parse, that carry a leading zero digit, and
-	// whose reference carries an unknown field.
+	// block IRIs with a short digest or an unknown hash type, and one spelled
+	// in base58.
 	sha, err := hash.Sum(hash.HashType_HashType_SHA256, []byte("sha"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	dat, err := testBlockRef(t, "extra").MarshalVT()
-	if err != nil {
-		t.Fatal(err)
-	}
+	short := BlockIRI(testBlockRef(t, "short"))
 	nodes := []string{
 		BlockIRI(testBlockRef(t, "a")),
 		BlockIRI(testBlockRef(t, "b")),
 		BlockIRI(block.NewBlockRef(sha)),
 		NodeGCRoot,
 		BucketIRI("bucket"),
-		"block:not-base58",
+		"block:not-a-digest",
 		"",
-		"block:1" + testBlockRef(t, "zero").MarshalString(),
-		"block:" + b58.Encode(append(dat, 0x18, 0x01)),
+		short[:len(short)-1],
+		"block:\x09" + short[len(prefixBlock)+1:],
+		"block:" + testBlockRef(t, "base58").MarshalString(),
 	}
 
 	// Each node decodes back from a record key.
@@ -1408,6 +1405,26 @@ func TestGraphKeyNodes(t *testing.T) {
 			if a != b && bytes.HasPrefix(graphKey(kindNode, b), graphKey(kindNode, a)) {
 				t.Fatalf("key of %q prefixes key of %q", a, b)
 			}
+		}
+	}
+}
+
+// TestLegacyBlockIRI converts a base58 block IRI and leaves other IRIs alone.
+func TestLegacyBlockIRI(t *testing.T) {
+	// A base58 block IRI converts, and the binary IRI formats back to it.
+	ref := testBlockRef(t, "legacy")
+	legacy := "block:" + ref.MarshalString()
+	if got := LegacyBlockIRI(legacy); got != BlockIRI(ref) {
+		t.Fatalf("legacy IRI converted to %q, want %q", got, BlockIRI(ref))
+	}
+	if got := FormatIRI(BlockIRI(ref)); got != legacy {
+		t.Fatalf("formatted IRI %q, want %q", got, legacy)
+	}
+
+	// Binary block IRIs and other IRIs pass through unchanged.
+	for _, iri := range []string{BlockIRI(ref), BucketIRI("bucket"), "block:not-base58", NodeGCRoot} {
+		if got := LegacyBlockIRI(iri); got != iri {
+			t.Fatalf("IRI %q converted to %q", iri, got)
 		}
 	}
 }

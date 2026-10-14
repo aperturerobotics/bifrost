@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/s4wave/spacewave/db/block"
+	"github.com/s4wave/spacewave/net/hash"
 )
 
 // IRI prefix constants for constructing graph node identifiers.
@@ -15,36 +16,84 @@ const (
 
 // Well-known node IRIs (permanent roots).
 const (
-	NodeGCRoot       = "gcroot"
+	// NodeGCRoot owns everything reachable that no other root holds.
+	NodeGCRoot = "gcroot"
+	// NodeUnreferenced marks nodes that lost their last owner.
 	NodeUnreferenced = "unreferenced"
 )
 
 // PredGCRef is the single predicate for all GC reference edges.
 const PredGCRef = "gc/ref"
 
-// BlockIRI returns the IRI for a block reference: "block:{b58hash}".
+// BlockIRI returns the IRI for a block reference: "block:" followed by the
+// hash type byte, never zero, and the digest, whose length the type fixes.
+// The IRI is binary; FormatIRI spells it for people.
 func BlockIRI(ref *block.BlockRef) string {
+	// An empty reference names no node.
 	if ref == nil || ref.GetEmpty() {
 		return ""
 	}
-	return prefixBlock + ref.MarshalString()
+
+	// Append the hash type byte and digest after the prefix.
+	h := ref.GetHash()
+	iri := make([]byte, 0, len(prefixBlock)+1+len(h.GetHash()))
+	iri = append(iri, prefixBlock...)
+	iri = append(iri, byte(h.GetHashType())) //nolint:gosec // hash types fit in a byte.
+	iri = append(iri, h.GetHash()...)
+	return string(iri)
 }
 
-// ParseBlockIRI parses a "block:{b58}" IRI back to a BlockRef.
+// ParseBlockIRI parses a BlockIRI back to a BlockRef.
 // Returns nil, false if not a valid block IRI.
 func ParseBlockIRI(iri string) (*block.BlockRef, bool) {
-	// Require a nonempty block IRI before decoding its reference.
+	t, digest, ok := parseBlockIRI(iri)
+	if !ok {
+		return nil, false
+	}
+	return block.NewBlockRef(&hash.Hash{HashType: t, Hash: []byte(digest)}), true
+}
+
+// parseBlockIRI returns the hash type and digest of a block IRI, requiring
+// a known type and a digest of its length.
+func parseBlockIRI(iri string) (hash.HashType, string, bool) {
+	// Require the block prefix and a nonempty suffix.
 	rest, ok := strings.CutPrefix(iri, prefixBlock)
 	if !ok || rest == "" {
-		return nil, false
+		return 0, "", false
 	}
 
-	// Decode the block reference from the IRI suffix.
+	// Require a known hash type followed by a digest of its length.
+	t := hash.HashType(rest[0])
+	if size := t.GetHashLen(); size <= 0 || len(rest)-1 != size {
+		return 0, "", false
+	}
+	return t, rest[1:], true
+}
+
+// FormatIRI returns iri for people: a block IRI spelled with the base58
+// text of its reference, any other IRI unchanged.
+func FormatIRI(iri string) string {
+	if ref, ok := ParseBlockIRI(iri); ok {
+		return prefixBlock + ref.MarshalString()
+	}
+	return iri
+}
+
+// LegacyBlockIRI converts a block IRI spelled with the base58 text of its
+// reference, as earlier volumes stored it, to its BlockIRI. It returns any
+// other IRI unchanged. Base58 text never begins with a byte that is a hash
+// type, so the two forms cannot be confused.
+func LegacyBlockIRI(iri string) string {
+	// Decode the base58 reference after the block prefix.
+	rest, ok := strings.CutPrefix(iri, prefixBlock)
+	if !ok || rest == "" {
+		return iri
+	}
 	ref, err := block.UnmarshalBlockRefB58(rest)
 	if err != nil {
-		return nil, false
+		return iri
 	}
-	return ref, true
+	return BlockIRI(ref)
 }
 
 // ObjectIRI returns "object:{key}" for a world object.

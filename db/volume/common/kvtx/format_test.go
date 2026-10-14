@@ -396,15 +396,15 @@ func checkConvertedRefGraph(t *testing.T, store db_kvtx.Store) {
 }
 
 // writeLegacyStore writes a version 2 store whose graph holds gcroot->bucket,
-// bucket->a and a->b, with a and b block nodes, and registers gcroot as a
-// root.
+// bucket->a and a->b, with a and b block nodes spelled in base58 as version 2
+// stored them, and registers gcroot as a root.
 func writeLegacyStore(t *testing.T, store db_kvtx.Store, keys *store_kvkey.KVKey) {
 	// Collect the root record and both records of each edge.
 	records := [][]byte{legacyGraphKey('r', block_gc.NodeGCRoot)}
 	for _, edge := range legacyEdges(t) {
 		records = append(records,
-			legacyGraphKey('f', edge.Subject, edge.Object),
-			legacyGraphKey('i', edge.Object, edge.Subject),
+			legacyGraphKey('f', block_gc.FormatIRI(edge.Subject), block_gc.FormatIRI(edge.Object)),
+			legacyGraphKey('i', block_gc.FormatIRI(edge.Object), block_gc.FormatIRI(edge.Subject)),
 		)
 	}
 

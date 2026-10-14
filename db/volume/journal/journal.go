@@ -45,6 +45,8 @@ func appendEdges(b []byte, edges []block_gc.RefEdge) []byte {
 }
 
 // readEdges decodes edges written by appendEdges and returns the rest of b.
+// Entries written before block IRIs were binary spell them in base58, so
+// each node passes through LegacyBlockIRI.
 func readEdges(b []byte) ([]block_gc.RefEdge, []byte, error) {
 	// Read the edge count and trim it from the buffer.
 	n, size := binary.Uvarint(b)
@@ -63,7 +65,7 @@ func readEdges(b []byte) ([]block_gc.RefEdge, []byte, error) {
 				return nil, nil, errors.New("invalid journal entry")
 			}
 			end := size + int(l) //nolint:gosec
-			fields[j] = string(b[size:end])
+			fields[j] = block_gc.LegacyBlockIRI(string(b[size:end]))
 			b = b[end:]
 		}
 		edges[i] = block_gc.RefEdge{Subject: fields[0], Object: fields[1]}

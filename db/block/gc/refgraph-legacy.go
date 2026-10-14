@@ -22,7 +22,7 @@ func LegacyRecordKey(record []byte) ([]byte, error) {
 			return nil, fmt.Errorf("decode reference graph record %q", record)
 		}
 		n := binary.BigEndian.Uint32(rest)
-		nodes = append(nodes, string(rest[4:4+n]))
+		nodes = append(nodes, LegacyBlockIRI(string(rest[4:4+n])))
 		rest = rest[4+n:]
 	}
 	return graphKey(kind, nodes...), nil

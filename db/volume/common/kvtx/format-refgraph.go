@@ -192,8 +192,9 @@ func cayleyNodeName(ctx context.Context, tx kvtx.Tx, names map[uint64]string, id
 	}
 
 	// Cache the name for the rest of the batch.
-	names[id] = string(iri)
-	return string(iri), nil
+	name := block_gc.LegacyBlockIRI(string(iri))
+	names[id] = name
+	return name, nil
 }
 
 // deletePrefix deletes every key under prefix in bounded commits. Each batch

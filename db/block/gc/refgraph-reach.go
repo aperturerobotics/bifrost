@@ -136,5 +136,5 @@ func readNode(enc []byte) (string, []byte, error) {
 		return "", nil, fmt.Errorf("truncated block node of hash type %d", enc[0])
 	}
 	end := 1 + size
-	return lastNode(nil, enc[:end]), enc[end:], nil
+	return prefixBlock + string(enc[:end]), enc[end:], nil
 }
