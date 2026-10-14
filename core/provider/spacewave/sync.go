@@ -40,20 +40,36 @@ const syncDirtyPageLimit = 4096
 
 // syncController manages packfile push/pull synchronization.
 type syncController struct {
-	le                *logrus.Entry
-	store             kvtx.Store
-	client            *SessionClient
-	resourceID        string
-	mfst              *manifest.Manifest
-	lower             *packfile_store.PackfileStore
-	remote            func() []*packfile.PackfileEntry
-	upper             block.StoreOps
-	refGraph          packfile_order.RefGraph
-	conf              *SyncConfig
-	telemetry         *ProviderAccount
-	gateBcast         *broadcast.Broadcast
-	skipPull          bool
+	// le is the logger.
+	le *logrus.Entry
+	// store holds the durable dirty queue.
+	store kvtx.Store
+	// client calls the cloud block store.
+	client *SessionClient
+	// resourceID is the cloud block store ID.
+	resourceID string
+	// mfst is the local packfile manifest.
+	mfst *manifest.Manifest
+	// lower serves the packfiles in the manifest.
+	lower *packfile_store.PackfileStore
+	// remote lists remote packfile entries the manifest does not hold yet.
+	remote func() []*packfile.PackfileEntry
+	// upper holds the local blocks awaiting upload.
+	upper block.StoreOps
+	// refGraph orders dirty blocks by reference.
+	refGraph packfile_order.RefGraph
+	// conf is the sync configuration.
+	conf *SyncConfig
+	// telemetry receives sync telemetry when set.
+	telemetry *ProviderAccount
+	// gateBcast fires when account state that gates uploads changes.
+	gateBcast *broadcast.Broadcast
+	// skipPull disables remote pulls.
+	skipPull bool
+	// remotePullRoutine runs one coalesced pull per remote nonce trigger.
 	remotePullRoutine *coalescedTriggerRoutine
+	// remoteNonce is the highest block store sequence the cloud reported.
+	remoteNonce atomic.Uint64
 
 	// dirtySize projects pending bytes under bcast.
 	dirtySize int64
@@ -315,8 +331,11 @@ func (s *syncController) Execute(ctx context.Context) error {
 		retryAt = time.Time{}
 		next, _, changed := s.pendingSnapshot()
 		if !next.IsZero() && !next.After(first) {
-			if err := waitDirtySyncRetry(ctx, changed, syncNoProgressBackoff); err != nil {
+			select {
+			case <-ctx.Done():
 				return nil
+			case <-changed:
+			case <-time.After(syncNoProgressBackoff):
 			}
 		}
 	}
@@ -344,21 +363,23 @@ func (s *syncController) drain(ctx context.Context, retryAt time.Time) {
 	}
 }
 
-func waitDirtySyncRetry(ctx context.Context, ch <-chan struct{}, delay time.Duration) error {
-	if delay == cbackoff.Stop {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-ch:
-			return nil
-		}
+// waitDirtySyncRetry waits delay after a failed flush. Local edits do not end
+// the wait, so editing during an outage or a rate limit does not retry early.
+// A stopped backoff waits for the next local edit, on changed, instead.
+func waitDirtySyncRetry(ctx context.Context, changed <-chan struct{}, delay time.Duration) error {
+	// Wait on changed only when the backoff stopped.
+	var timer <-chan time.Time
+	if delay != cbackoff.Stop {
+		t := time.NewTimer(delay)
+		defer t.Stop()
+		timer, changed = t.C, nil
 	}
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
-	case <-ch:
+	case <-changed:
 		return nil
-	case <-time.After(delay):
+	case <-timer:
 		return nil
 	}
 }
@@ -423,14 +444,28 @@ func (s *syncController) LastPullSequence(ctx context.Context) (uint64, error) {
 	return s.mfst.GetLastPullSequence(ctx)
 }
 
-// TriggerRemotePull coalesces a remote block-store nonce notification into one pull.
-func (s *syncController) TriggerRemotePull() {
-	if s.remotePullRoutine != nil && !s.skipPull {
-		s.remotePullRoutine.Trigger()
+// TriggerRemotePull coalesces a remote block-store nonce notification into one
+// pull. The pull is skipped when the last pull already reached the nonce.
+func (s *syncController) TriggerRemotePull(nonce uint64) {
+	// Record the highest nonce, then wake the pull routine.
+	if s.remotePullRoutine == nil || s.skipPull {
+		return
 	}
+	for {
+		prev := s.remoteNonce.Load()
+		if nonce <= prev || s.remoteNonce.CompareAndSwap(prev, nonce) {
+			break
+		}
+	}
+	s.remotePullRoutine.Trigger()
 }
 
+// pullRemoteOnTrigger pulls unless the last pull already reached the highest
+// reported nonce, as with an echo of this store's own push.
 func (s *syncController) pullRemoteOnTrigger(ctx context.Context) {
+	if last, err := s.LastPullSequence(ctx); err == nil && s.remoteNonce.Load() <= last {
+		return
+	}
 	if err := s.PullNow(ctx); err != nil && ctx.Err() == nil {
 		s.le.WithError(err).Warn("remote nonce pull failed")
 		s.recordSyncOwnerError(err)

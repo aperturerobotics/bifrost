@@ -19,7 +19,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// TestBstoreSyncOwnerRetriesAndRecordsTelemetry checks that a failed sync
+// restarts and records its error in the telemetry.
 func TestBstoreSyncOwnerRetriesAndRecordsTelemetry(t *testing.T) {
+	// Build a sync controller that records telemetry.
 	syncErr := errors.New("sync failed")
 	telemetry := &ProviderAccount{}
 	sc := &syncController{
@@ -28,6 +31,7 @@ func TestBstoreSyncOwnerRetriesAndRecordsTelemetry(t *testing.T) {
 		telemetry:  telemetry,
 	}
 
+	// Fail the first sync, then run the restarted one until canceled.
 	calls := make(chan int32, 2)
 	var callCount atomic.Int32
 	var restarted sync.Once
@@ -36,6 +40,7 @@ func TestBstoreSyncOwnerRetriesAndRecordsTelemetry(t *testing.T) {
 		logrus.NewEntry(logrus.New()),
 		sc,
 		func(ctx context.Context) error {
+			// Report the call and fail the first one.
 			call := callCount.Add(1)
 			calls <- call
 			if call == 1 {
@@ -48,6 +53,7 @@ func TestBstoreSyncOwnerRetriesAndRecordsTelemetry(t *testing.T) {
 		routine.WithBackoff(&cbackoff.ZeroBackOff{}),
 	)
 
+	// Run the owner for the test.
 	ctx, cancel := context.WithCancel(context.Background())
 	owner.Start(ctx)
 	defer func() {
@@ -55,6 +61,7 @@ func TestBstoreSyncOwnerRetriesAndRecordsTelemetry(t *testing.T) {
 		owner.Stop()
 	}()
 
+	// Wait for the failed sync and its restart.
 	if got := waitForBstoreSyncOwnerCall(t, calls); got != 1 {
 		t.Fatalf("first execute call = %d, want 1", got)
 	}
@@ -63,6 +70,7 @@ func TestBstoreSyncOwnerRetriesAndRecordsTelemetry(t *testing.T) {
 	}
 	waitForBstoreSyncOwnerSignal(t, restartedCh, time.Second, "sync owner restart")
 
+	// The telemetry shows the failure.
 	snap := telemetry.GetSyncTelemetrySnapshot()
 	if snap.LastError != syncErr.Error() {
 		t.Fatalf("last sync error = %q, want %q", snap.LastError, syncErr.Error())
@@ -72,7 +80,10 @@ func TestBstoreSyncOwnerRetriesAndRecordsTelemetry(t *testing.T) {
 	}
 }
 
+// TestBstoreSyncOwnerStopWaitsForExecuteCleanup checks that Stop returns
+// only after the running sync has cleaned up.
 func TestBstoreSyncOwnerStopWaitsForExecuteCleanup(t *testing.T) {
+	// Build an owner whose sync runs until canceled.
 	started := make(chan struct{})
 	cleaned := make(chan struct{})
 	var startedOnce sync.Once
@@ -88,10 +99,12 @@ func TestBstoreSyncOwnerStopWaitsForExecuteCleanup(t *testing.T) {
 		routine.WithBackoff(&cbackoff.ZeroBackOff{}),
 	)
 
+	// Start the sync, then stop it.
 	owner.Start(context.Background())
 	waitForBstoreSyncOwnerSignal(t, started, time.Second, "sync owner start")
 	owner.Stop()
 
+	// The cleanup finished before Stop returned.
 	select {
 	case <-cleaned:
 	default:
@@ -99,21 +112,28 @@ func TestBstoreSyncOwnerStopWaitsForExecuteCleanup(t *testing.T) {
 	}
 }
 
+// TestSyncControllerCoalescesNonceTriggersIntoPullNow checks that nonce
+// triggers during a pull coalesce into one pull, and that a nonce the last
+// pull reached starts none.
 func TestSyncControllerCoalescesNonceTriggersIntoPullNow(t *testing.T) {
+	// Serve pulls that wait for release.
 	ctx := context.Background()
 	pullStarted := make(chan struct{}, 3)
 	releasePull := make(chan struct{})
-	respData := mustMarshalVT(t, &packfile.PullResponse{LatestSequence: 7})
+	var pulls atomic.Uint64
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Answer each pull with the next sequence, starting at 7.
 		if r.URL.Path != "/api/bstore/space-1/sync/pull" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
 		pullStarted <- struct{}{}
 		<-releasePull
-		_, _ = w.Write(respData)
+		seq := 6 + pulls.Add(1)
+		_, _ = w.Write(mustMarshalVT(t, &packfile.PullResponse{LatestSequence: seq}))
 	}))
 	defer srv.Close()
 
+	// Build the sync controller against the server.
 	priv, pid := generateTestKeypair(t)
 	store := newSyncTestKvStore()
 	mfst, err := packfile_manifest.New(ctx, store)
@@ -128,6 +148,8 @@ func TestSyncControllerCoalescesNonceTriggersIntoPullNow(t *testing.T) {
 		mfst:       mfst,
 		lower:      packfile_store.NewPackfileStore(nil, nil),
 	}
+
+	// Run the remote pull routine for the test.
 	sc.remotePullRoutine = newCoalescedTriggerRoutine(
 		logrus.NewEntry(logrus.New()),
 		"test-bstore-remote-pull",
@@ -140,22 +162,27 @@ func TestSyncControllerCoalescesNonceTriggersIntoPullNow(t *testing.T) {
 		sc.remotePullRoutine.ClearContext()
 	}()
 
-	sc.TriggerRemotePull()
+	// Trigger again while the first pull runs; no second pull starts yet.
+	sc.TriggerRemotePull(1)
 	waitForBstoreSyncOwnerSignal(t, pullStarted, time.Second, "nonce-triggered pull")
-	sc.TriggerRemotePull()
-	sc.TriggerRemotePull()
-	sc.TriggerRemotePull()
+	sc.TriggerRemotePull(8)
+	sc.TriggerRemotePull(8)
+	sc.TriggerRemotePull(8)
 	select {
 	case <-pullStarted:
 		t.Fatal("coalesced nonce triggers started a redundant concurrent pull")
 	case <-time.After(100 * time.Millisecond):
 	}
 
+	// Releasing the pull runs one pending pull.
 	close(releasePull)
 	waitForBstoreSyncOwnerSignal(t, pullStarted, time.Second, "coalesced pending pull")
+
+	// A nonce the last pull already reached starts no pull.
+	sc.TriggerRemotePull(8)
 	select {
 	case <-pullStarted:
-		t.Fatal("coalesced nonce triggers replayed more than one pending pull")
+		t.Fatal("a pull started after the coalesced pending pull")
 	case <-time.After(250 * time.Millisecond):
 	}
 }
