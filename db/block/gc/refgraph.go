@@ -1,6 +1,7 @@
 package block_gc
 
 import (
+	"bytes"
 	"context"
 	"encoding/binary"
 	"math"
@@ -108,14 +109,19 @@ func parseBlockNode(node string) *hash.Hash {
 		return nil
 	}
 
-	// Require a digest of its type's length and an IRI the digest spells
-	// again exactly.
+	// Require a digest of its type's length.
 	h := ref.GetHash()
 	t := h.GetHashType()
 	if t == hash.HashType_HashType_UNKNOWN || t > math.MaxUint8 || len(h.GetHash()) != t.GetHashLen() {
 		return nil
 	}
-	if BlockIRI(ref) != node {
+
+	// Require the IRI that lastNode spells from the digest. The canonical
+	// encoding begins with a nonzero byte, so its base58 text has no leading
+	// '1', and only one base58 text without a leading '1' decodes to given
+	// bytes. Comparing the bytes compares the IRIs without encoding base58.
+	canon, err := block.NewBlockRef(&hash.Hash{HashType: t, Hash: h.GetHash()}).MarshalVT()
+	if err != nil || rest[0] == '1' || !bytes.Equal(canon, data) {
 		return nil
 	}
 	return h

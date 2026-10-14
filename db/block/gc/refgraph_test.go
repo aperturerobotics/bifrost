@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	b58 "github.com/mr-tron/base58/base58"
 	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/kvtx"
 	store_kvtx_inmem "github.com/s4wave/spacewave/db/store/kvtx/inmem"
@@ -1369,9 +1370,14 @@ func TestBlockIRIRoundTrip(t *testing.T) {
 // TestGraphKeyNodes encodes block and text nodes as the far node of a record
 // and expects each to decode to itself, and no node's key to prefix another's.
 func TestGraphKeyNodes(t *testing.T) {
-	// Collect block nodes of both hash types and text nodes, including a
-	// block IRI that does not parse.
+	// Collect block nodes of both hash types and text nodes, including
+	// block IRIs that do not parse, that carry a leading zero digit, and
+	// whose reference carries an unknown field.
 	sha, err := hash.Sum(hash.HashType_HashType_SHA256, []byte("sha"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	dat, err := testBlockRef(t, "extra").MarshalVT()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1383,6 +1389,8 @@ func TestGraphKeyNodes(t *testing.T) {
 		BucketIRI("bucket"),
 		"block:not-base58",
 		"",
+		"block:1" + testBlockRef(t, "zero").MarshalString(),
+		"block:" + b58.Encode(append(dat, 0x18, 0x01)),
 	}
 
 	// Each node decodes back from a record key.
