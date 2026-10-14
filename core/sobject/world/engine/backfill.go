@@ -153,8 +153,9 @@ func (e *soEngine) executeBackfill(ctx context.Context, _ bool) error {
 
 // backfillRoots returns the installed World root and the retained roots.
 func (e *soEngine) backfillRoots(ctx context.Context) ([]*block.BlockRef, error) {
-	// Read them under the writer lock.
-	unlockWriteMtx, err := e.c.writeMtx.Lock(ctx)
+	// Read them under the writer lock once the installed World is durable,
+	// since the copy reads only the store.
+	unlockWriteMtx, err := e.c.lockSettled(ctx)
 	if err != nil {
 		return nil, err
 	}
