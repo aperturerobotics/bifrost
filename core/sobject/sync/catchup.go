@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"sync"
 	"time"
 
 	"github.com/aperturerobotics/util/ccontainer"
@@ -298,12 +299,12 @@ func (x *syncExchange) prepareSend(current *sobject.SOState) error {
 			if x.outgoing.GetSnapshot() != nil {
 				x.response = nil
 			}
-		case x.advertised == nil && current != nil && !current.EqualVT(x.lastAdvertised):
+		case x.advertised == nil && current != nil && current != x.lastAdvertised && !current.EqualVT(x.lastAdvertised):
 			x.revision++
 			if x.revision == 0 {
 				return errors.New("sync revision exhausted")
 			}
-			digest, err := syncStateHash(current)
+			digest, err := x.sync.digest.get(current)
 			if err != nil {
 				return err
 			}
@@ -344,7 +345,7 @@ func (x *syncExchange) receive(ctx context.Context, le *logrus.Entry, current *s
 			return errors.New("invalid or overlapping sync head")
 		}
 		x.remoteRevision = head.GetRevision()
-		digest, err := syncStateHash(current)
+		digest, err := x.sync.digest.get(current)
 		if err != nil {
 			return err
 		}
@@ -596,6 +597,37 @@ func (s *SOSync) acceptResponse(ctx context.Context, receiving *syncReceive, sna
 		return nil
 	}
 	return err
+}
+
+// stateDigest memoizes the sync digest of the most recent state it hashed.
+// Watched states are immutable once published, so the pointer identifies the
+// value, and the streams of one host share each digest.
+type stateDigest struct {
+	// mtx guards state and sum, and holds concurrent callers for one hash.
+	mtx sync.Mutex
+	// state is the last state hashed.
+	state *sobject.SOState
+	// sum is the digest of state. Callers must not modify it.
+	sum []byte
+}
+
+// get returns the sync digest of state, hashing it only when it differs from
+// the last state hashed.
+func (d *stateDigest) get(state *sobject.SOState) ([]byte, error) {
+	// Reuse the digest of the same state.
+	d.mtx.Lock()
+	defer d.mtx.Unlock()
+	if state != nil && state == d.state {
+		return d.sum, nil
+	}
+
+	// Hash the new state and remember it.
+	sum, err := syncStateHash(state)
+	if err != nil {
+		return nil, err
+	}
+	d.state, d.sum = state, sum
+	return sum, nil
 }
 
 // syncStateHash detects unchanged content without treating the advertised digest as authority.

@@ -65,6 +65,8 @@ type SOSync struct {
 	peerRecovery func(peer.ID, bool)
 	// failures remembers the last logged stream failure of each peer.
 	failures syncFailures
+	// digest memoizes the digest of the latest watched state for every stream.
+	digest stateDigest
 }
 
 // solicitationGeneration owns the workers admitted by one solicitation
