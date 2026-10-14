@@ -308,13 +308,16 @@ func TestPublicationRejectsBeforeMutationWithoutContaminatingGroup(t *testing.T)
 	r1 := submitPublication(t, v, stale)
 	<-g.started
 
-	// Queue a dependent publication and a block with corrupt bytes.
+	// Queue a dependent publication, and refuse a block with corrupt bytes at
+	// admission.
 	child := publicationFor(t, "child", "", "bad")
 	child.After = r1
 	r2 := submitPublication(t, v, child)
 	invalid := publicationFor(t, "invalid", "", "bad")
 	invalid.Entries[0].Data = []byte("incorrect hash")
-	r3 := submitPublication(t, v, invalid)
+	if _, err := v.SubmitAtomic(t.Context(), invalid); err == nil {
+		t.Fatal("admitted corrupt block")
+	}
 
 	// Queue a rejected validator alongside an independent valid publication.
 	rejected := publicationFor(t, "validation", "", "bad")
@@ -333,10 +336,7 @@ func TestPublicationRejectsBeforeMutationWithoutContaminatingGroup(t *testing.T)
 		t.Fatal(err)
 	}
 
-	// Verify corrupt and invalid publications fail while the valid one commits.
-	if err := awaitPublication(t, r3); err == nil {
-		t.Fatal("accepted corrupt block")
-	}
+	// Verify the invalid publication fails while the valid one commits.
 	if err := awaitPublication(t, r4); !errors.Is(err, validationErr) {
 		t.Fatal(err)
 	}
@@ -356,7 +356,7 @@ func TestPublicationRejectsBeforeMutationWithoutContaminatingGroup(t *testing.T)
 	if _, err := v.Sync(t.Context()); err != nil {
 		t.Fatalf("isolated rejection poisoned unrelated fence: %v", err)
 	}
-	if stats := v.GetPublicationStats(); stats.PhysicalCommits != 1 || stats.Rejected != 4 {
+	if stats := v.GetPublicationStats(); stats.PhysicalCommits != 1 || stats.Rejected != 3 {
 		t.Fatalf("stats: %+v", stats)
 	}
 }
@@ -615,5 +615,131 @@ func TestPublicationUnsupportedStoreDoesNotManufactureDurability(t *testing.T) {
 	}
 	if _, err := v.SubmitAtomic(t.Context(), nil); !errors.Is(err, block.ErrAtomicPublicationUnsupported) {
 		t.Fatal(err)
+	}
+}
+
+func assertScopeReads(t *testing.T, scope block.StoreOps, p *block.AtomicPublication, want bool) {
+	// Read the publication block through an already open read scope.
+	t.Helper()
+	got, found, err := scope.GetBlock(t.Context(), p.Entries[0].Ref)
+	if err != nil || found != want || (want && !bytes.Equal(got, p.Entries[0].Data)) {
+		t.Fatalf("scope read found=%v want=%v err=%v", found, want, err)
+	}
+}
+
+func TestPublicationReadScopeKeepsAdmittedBlocksUntilItsGroupFails(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		failure error
+	}{
+		{name: "applied"},
+		{name: "failed", failure: errors.New("injected commit failure")},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// Admit a gated publication and open a read scope over an empty snapshot.
+			v, s := newPublicationTestVolume(t)
+			v.Store = publicationSnapshotStore{Store: v.Store}
+			g := s.arm(t)
+			s.mu.Lock()
+			s.errorCommit = tc.failure
+			s.mu.Unlock()
+			first := publicationFor(t, "world", "", "1")
+			r1 := submitPublication(t, v, first)
+			<-g.started
+			scope, release, err := v.BeginReadOperation(t.Context())
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer release()
+			assertScopeReads(t, scope, first, true)
+
+			// Resolve the group. A block that applied is absent from the scope's
+			// snapshot, so the scope keeps serving it; a failed one leaves the scope.
+			g.unblock()
+			if err := awaitPublication(t, r1); !errors.Is(err, tc.failure) {
+				t.Fatal(err)
+			}
+			assertScopeReads(t, scope, first, tc.failure == nil)
+		})
+	}
+}
+
+func TestPublicationRejectedRequestsLeaveReadsBeforeTheirGroupResolves(t *testing.T) {
+	// Gate a group whose first request is rejected as stale.
+	v, s := newPublicationTestVolume(t)
+	v.Store = publicationSnapshotStore{Store: v.Store}
+	g := s.arm(t)
+	rejected := publicationFor(t, "world", "stale", "1")
+	r1 := submitPublication(t, v, rejected)
+	<-g.started
+
+	// Queue a dependent of the rejected request and a request that blocks in
+	// validation, holding the group open after the first two are decided.
+	dependent := publicationFor(t, "other", "", "2")
+	dependent.After = r1
+	r2 := submitPublication(t, v, dependent)
+	validating, releaseValidate := make(chan struct{}), make(chan struct{})
+	t.Cleanup(func() {
+		select {
+		case <-releaseValidate:
+		default:
+			close(releaseValidate)
+		}
+	})
+	slow := publicationFor(t, "third", "", "3")
+	slow.Validate = func(context.Context, block.StoreOps) error {
+		close(validating)
+		<-releaseValidate
+		return nil
+	}
+	r3 := submitPublication(t, v, slow)
+	for _, p := range []*block.AtomicPublication{rejected, dependent, slow} {
+		assertReadable(t, v, p, true)
+	}
+
+	// Verify the rejected request and its dependent leave the read set while
+	// the group they share is still applying.
+	g.unblock()
+	<-validating
+	assertReadable(t, v, rejected, false)
+	assertReadable(t, v, dependent, false)
+	assertReadable(t, v, slow, true)
+
+	// Release the group and verify each request resolves as it read.
+	close(releaseValidate)
+	if err := awaitPublication(t, r1); !errors.Is(err, coord.ErrStaleGeneration) {
+		t.Fatal(err)
+	}
+	if err := awaitPublication(t, r2); !errors.Is(err, block.ErrPublicationDependency) {
+		t.Fatal(err)
+	}
+	if err := awaitPublication(t, r3); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestPublicationAdmissionRejectsUnverifiedEntries(t *testing.T) {
+	// Submit an entry whose bytes do not match its reference.
+	v, _ := newPublicationTestVolume(t)
+	p := publicationFor(t, "world", "", "1")
+	p.Entries[0].Data = []byte("tampered")
+
+	// Verify admission rejects it and no reader sees its bytes.
+	if _, err := v.SubmitAtomic(t.Context(), p); err == nil {
+		t.Fatal("unverified entry admitted")
+	}
+	assertReadable(t, v, p, false)
+}
+
+func TestPublicationStoredBlockReadsThroughTheStore(t *testing.T) {
+	// Read a block no publication writes from a store that reports known refs.
+	v, _ := newPublicationTestVolume(t)
+	v.Store = publicationSnapshotStore{Store: v.Store}
+	p := publicationFor(t, "world", "", "1")
+
+	// Verify the Volume serves the store's stored block with its refs.
+	stored, err := v.GetStoredBlock(t.Context(), p.Entries[0].Ref)
+	if err != nil || stored == nil || !stored.RefsKnown {
+		t.Fatalf("stored=%v err=%v", stored, err)
 	}
 }

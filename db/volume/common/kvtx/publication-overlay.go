@@ -16,27 +16,10 @@ type publicationOverlay struct {
 	entries map[string]*block.PutBatchEntry
 }
 
-// newPublicationOverlay validates a request's entries and builds its
-// transaction-scoped read overlay from the request's entry index.
-func newPublicationOverlay(inner block.StoreOps, req *publicationRequest) (*publicationOverlay, error) {
-	// Require every entry to match its reference before the group writes it.
-	for _, entry := range req.publication.Entries {
-		if err := entry.Ref.Validate(false); err != nil {
-			return nil, err
-		}
-		if entry.Tombstone {
-			continue
-		}
-		if len(entry.Data) == 0 {
-			return nil, block.ErrEmptyBlock
-		}
-		if err := entry.Ref.VerifyData(entry.Data, true); err != nil {
-			return nil, err
-		}
-	}
-
-	// Serve the indexed entries before the inner store.
-	return &publicationOverlay{StoreOps: inner, entries: req.entries}, nil
+// newPublicationOverlay builds a transaction-scoped read overlay serving a
+// request's verified entry index before the inner store.
+func newPublicationOverlay(inner block.StoreOps, entries map[string]*block.PutBatchEntry) *publicationOverlay {
+	return &publicationOverlay{StoreOps: inner, entries: entries}
 }
 
 // BeginReadOperation returns the overlay itself as its read scope.

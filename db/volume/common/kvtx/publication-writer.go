@@ -29,9 +29,12 @@ type publicationRequest struct {
 	ctx context.Context
 	// publication is the caller's immutable unit retained until completion.
 	publication *block.AtomicPublication
-	// entries indexes the publication's entries by block key. The last entry
-	// for a key wins, as it does when the group writes them.
+	// entries indexes the publication's verified entries by block key. The
+	// last entry for a key wins, as it does when the group writes them.
 	entries map[string]*block.PutBatchEntry
+	// failed records that the request is known to fail, guarded by the
+	// writer's bcast. Readers skip a failed request while its group resolves.
+	failed bool
 	// receipt resolves only after this request has its final physical result.
 	receipt *block.PublicationReceipt
 	// bytes is the computed admission cost of the publication.
@@ -119,6 +122,35 @@ func publicationSize(p *block.AtomicPublication) (int, error) {
 	return size, nil
 }
 
+// indexPublicationEntries verifies every entry of p against its reference and
+// indexes the entries by block key. A reader is served from the index, so no
+// entry that fails verification is ever indexed.
+func indexPublicationEntries(p *block.AtomicPublication) (map[string]*block.PutBatchEntry, error) {
+	entries := make(map[string]*block.PutBatchEntry, len(p.Entries))
+	for _, entry := range p.Entries {
+		// Require the entry to match its reference before any group writes it.
+		if err := entry.Ref.Validate(false); err != nil {
+			return nil, err
+		}
+		if !entry.Tombstone {
+			if len(entry.Data) == 0 {
+				return nil, block.ErrEmptyBlock
+			}
+			if err := entry.Ref.VerifyData(entry.Data, true); err != nil {
+				return nil, err
+			}
+		}
+
+		// Index the entry, the last for a key winning.
+		key, err := entry.Ref.MarshalKey()
+		if err != nil {
+			return nil, err
+		}
+		entries[string(key)] = entry
+	}
+	return entries, nil
+}
+
 // submit admits a publication under the bounded budget, returning its receipt.
 // It blocks while the queue is full and the admission context stays live.
 func (w *publicationWriter) submit(ctx context.Context, p *block.AtomicPublication, rootOwner string, release func()) (*block.PublicationReceipt, error) {
@@ -128,14 +160,10 @@ func (w *publicationWriter) submit(ctx context.Context, p *block.AtomicPublicati
 		return nil, err
 	}
 
-	// Index the entries by block key for reads while the request is queued.
-	entries := make(map[string]*block.PutBatchEntry, len(p.Entries))
-	for _, entry := range p.Entries {
-		key, err := entry.Ref.MarshalKey()
-		if err != nil {
-			return nil, err
-		}
-		entries[string(key)] = entry
+	// Verify and index the entries by block key for reads while queued.
+	entries, err := indexPublicationEntries(p)
+	if err != nil {
+		return nil, err
 	}
 
 	// Wait on the queue owner's broadcast until this complete request fits.
@@ -195,21 +223,44 @@ func (w *publicationWriter) takeLocked() *publicationRequest {
 	return r
 }
 
-// find returns the entry for ref of the newest admitted publication whose
-// group has not resolved, or nil when none writes ref. A tombstone entry is
-// returned too: the block is absent once it applies.
-func (w *publicationWriter) find(ref *block.BlockRef) (*block.PutBatchEntry, error) {
+// pin returns the unresolved requests in admission order, never nil for a
+// writer. A read scope serves its pinned requests for its whole life, so a
+// block it read from a group stays readable after the group applies, as the
+// scope's store snapshot does not hold it.
+func (w *publicationWriter) pin() []*publicationRequest {
+	// A Volume without atomic publication has no admitted requests.
+	if w == nil {
+		return nil
+	}
+
+	// Copy the queue under the writer's lock.
+	var pinned []*publicationRequest
+	w.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
+		pinned = append(make([]*publicationRequest, 0, len(w.queue)), w.queue...)
+	})
+	return pinned
+}
+
+// find returns the entry for ref of the newest request that has not failed, or
+// nil when none writes ref. It searches the pinned requests, or the live queue
+// when pinned is nil. A tombstone entry is returned too: the block is absent
+// once it applies.
+func (w *publicationWriter) find(ref *block.BlockRef, pinned []*publicationRequest) (*block.PutBatchEntry, error) {
 	// A Volume without atomic publication has no admitted entries.
 	if w == nil {
 		return nil, nil
 	}
 
-	// Scan the queue under the writer's lock.
+	// Scan the requests under the writer's lock.
 	var entry *block.PutBatchEntry
 	var err error
 	w.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
 		// Skip encoding the key while nothing is admitted.
-		if len(w.queue) == 0 {
+		requests := pinned
+		if requests == nil {
+			requests = w.queue
+		}
+		if len(requests) == 0 {
 			return
 		}
 
@@ -219,13 +270,31 @@ func (w *publicationWriter) find(ref *block.BlockRef) (*block.PutBatchEntry, err
 		if err != nil {
 			return
 		}
-		for _, r := range slices.Backward(w.queue) {
+		for _, r := range slices.Backward(requests) {
+			if r.failed {
+				continue
+			}
 			if entry = r.entries[string(key)]; entry != nil {
 				return
 			}
 		}
 	})
 	return entry, err
+}
+
+// failDependentsLocked marks failed the queued requests that follow a failed
+// request, as each fails with ErrPublicationDependency when its group runs.
+// The caller holds bcast.
+func (w *publicationWriter) failDependentsLocked() {
+	failed := make(map[*block.PublicationReceipt]struct{})
+	for _, r := range w.queue {
+		if _, ok := failed[r.publication.After]; ok {
+			r.failed = true
+		}
+		if r.failed {
+			failed[r.receipt] = struct{}{}
+		}
+	}
 }
 
 // run drains queued publications one physical group at a time until closing.
@@ -264,6 +333,13 @@ func (w *publicationWriter) run() {
 			if committed {
 				w.stats.PhysicalCommits++
 			}
+
+			// Hide failed requests from readers before they leave the queue,
+			// along with the queued requests that depend on them.
+			for i, r := range group {
+				r.failed = results[i] != nil
+			}
+			w.failDependentsLocked()
 
 			// Account for each request and resolve its receipt.
 			for i, r := range group {
@@ -320,11 +396,18 @@ func (w *publicationWriter) applyGroup(first *publicationRequest) (group []*publ
 		result := w.preflight(ctx, req, prior, tx, blocks, &replacements)
 		results = append(results, result)
 		prior[req.receipt] = result
-		if result == nil {
+		if result != nil {
+			// Hide the rejected request from readers while the group runs.
+			w.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
+				req.failed = true
+				w.failDependentsLocked()
+			})
+		} else {
 			// All failures from here onward are physical-group failures: there are no
 			// per-request savepoints. Do not carry a partially written request onward.
 			err = w.apply(ctx, req, tx, blocks, rg, replacements)
 			if err != nil {
+				results[i] = err
 				break
 			}
 			accepted++
@@ -404,11 +487,8 @@ func (w *publicationWriter) preflight(
 		}
 	}
 
-	// Overlay the entries on the group's prior writes.
-	prepared, err := newPublicationOverlay(blocks, req)
-	if err != nil {
-		return err
-	}
+	// Overlay the verified entries on the group's prior writes.
+	prepared := newPublicationOverlay(blocks, req.entries)
 
 	// Compare each head with its committed record.
 	for _, head := range p.Heads {

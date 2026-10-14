@@ -12,13 +12,16 @@ import (
 // laid over the store. An entry of a queued or unapplied publication answers
 // before the store, so a reader sees admitted blocks before their group
 // applies; the entry leaves the read set when its group resolves, applied or
-// failed. Entries come from in-process publishers and are verified before
-// they are applied, so reads return them without hashing.
+// failed, and a request known to fail leaves it at once. The writer verifies
+// entries at admission, so reads return them without hashing.
 type publicationReader struct {
 	// writer holds the admitted publications, nil without atomic publication.
 	writer *publicationWriter
 	// store reads and writes the applied blocks.
 	store block.StoreOps
+	// pinned holds the requests admitted when a read scope opened, and is nil
+	// outside a read scope, which reads the live queue.
+	pinned []*publicationRequest
 }
 
 // GetHashType returns the store's preferred hash type.
@@ -32,13 +35,23 @@ func (r publicationReader) GetSupportedFeatures() block.StoreFeature {
 }
 
 // BeginReadOperation opens a read scope on the store that still reads
-// admitted entries first.
+// admitted entries first. The scope serves the requests admitted before its
+// store snapshot opens: one that applies later is absent from the snapshot, so
+// the scope keeps serving it.
 func (r publicationReader) BeginReadOperation(ctx context.Context) (block.StoreOps, func(), error) {
+	// A read scope reads its pinned requests and its snapshot for its life.
+	if r.pinned != nil {
+		return r, func() {}, nil
+	}
+
+	// Pin the admitted requests before the snapshot opens, so a group that
+	// applies in between is both pinned and in the snapshot.
+	pinned := r.writer.pin()
 	scope, release, err := r.store.BeginReadOperation(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
-	return publicationReader{writer: r.writer, store: scope}, release, nil
+	return publicationReader{writer: r.writer, store: scope, pinned: pinned}, release, nil
 }
 
 // PutBlock writes a block to the store.
@@ -54,7 +67,7 @@ func (r publicationReader) PutBlockBatch(ctx context.Context, entries []*block.P
 // GetBlock reads an admitted entry before the store.
 func (r publicationReader) GetBlock(ctx context.Context, ref *block.BlockRef) ([]byte, bool, error) {
 	// Read the store when no admitted publication writes the block.
-	entry, err := r.writer.find(ref)
+	entry, err := r.writer.find(ref, r.pinned)
 	if err != nil {
 		return nil, false, err
 	}
@@ -69,14 +82,29 @@ func (r publicationReader) GetBlock(ctx context.Context, ref *block.BlockRef) ([
 	return bytes.Clone(entry.Data), true, nil
 }
 
-// GetStoredBlock reads a block without its refs, as the store keeps none.
+// GetStoredBlock reads an admitted entry before the store. An admitted entry
+// carries no refs, as the store keeps none for the block once it applies.
 func (r publicationReader) GetStoredBlock(ctx context.Context, ref *block.BlockRef) (*block.StoredBlock, error) {
-	return block.GetBlockWithoutRefs(ctx, r, ref)
+	// Read the store when no admitted publication writes the block, so a store
+	// that knows its refs reports them.
+	entry, err := r.writer.find(ref, r.pinned)
+	if err != nil {
+		return nil, err
+	}
+	if entry == nil {
+		return r.store.GetStoredBlock(ctx, ref)
+	}
+
+	// Serve the admitted bytes, or absence for a tombstone.
+	if entry.Tombstone {
+		return nil, nil
+	}
+	return &block.StoredBlock{Data: bytes.Clone(entry.Data)}, nil
 }
 
 // GetBlockExists reports an admitted entry before the store.
 func (r publicationReader) GetBlockExists(ctx context.Context, ref *block.BlockRef) (bool, error) {
-	entry, err := r.writer.find(ref)
+	entry, err := r.writer.find(ref, r.pinned)
 	if err != nil {
 		return false, err
 	}
@@ -94,7 +122,7 @@ func (r publicationReader) GetBlockExistsBatch(ctx context.Context, refs []*bloc
 	var missing []*block.BlockRef
 	var missingIdx []int
 	for i, ref := range refs {
-		entry, err := r.writer.find(ref)
+		entry, err := r.writer.find(ref, r.pinned)
 		if err != nil {
 			return nil, err
 		}
@@ -128,7 +156,7 @@ func (r publicationReader) RmBlock(ctx context.Context, ref *block.BlockRef) err
 // StatBlock reports an admitted entry's size before the store.
 func (r publicationReader) StatBlock(ctx context.Context, ref *block.BlockRef) (*block.BlockStat, error) {
 	// Stat the store when no admitted publication writes the block.
-	entry, err := r.writer.find(ref)
+	entry, err := r.writer.find(ref, r.pinned)
 	if err != nil {
 		return nil, err
 	}
