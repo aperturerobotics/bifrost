@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/s4wave/spacewave/db/bucket"
 	hydra_testbed "github.com/s4wave/spacewave/db/testbed"
 	"github.com/s4wave/spacewave/db/unixfs"
 	unixfs_world "github.com/s4wave/spacewave/db/unixfs/world"
@@ -294,5 +295,64 @@ func TestFSCursorDisambiguatesObjectKeyAndDescendantPaths(t *testing.T) {
 	// Verify that the descendant mount returns its own file contents.
 	if got := string(buf[:n]); got != "object two" {
 		t.Fatalf("got second %q, want %q", got, "object two")
+	}
+}
+
+// TestFSCursorListsOnlyProjectedObjects hides untyped objects and the World
+// type records from a projected directory.
+func TestFSCursorListsOnlyProjectedObjects(t *testing.T) {
+	// Create one UnixFS object beside an untyped object.
+	ctx, le, wtb := setupFSCursorTestbed(t)
+	addUnixFSLookupController(t, ctx, wtb, "test-space-projection-filter")
+	ws := world.NewEngineWorldState(wtb.Engine, true)
+	if _, _, err := unixfs_world.FsInit(
+		ctx,
+		ws,
+		wtb.Volume.GetPeerID(),
+		"docs/fs",
+		unixfs_world.FSType_FSType_FS_NODE,
+		nil,
+		true,
+		time.Now(),
+	); err != nil {
+		t.Fatal(err)
+	}
+	plain, err := ws.CreateObject(ctx, "plain/object", &bucket.ObjectRef{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	world.ReleaseObjectState(plain)
+
+	// Open the projected World root.
+	rootCursor := NewFSCursor(le, world.NewEngineWorldState(wtb.Engine, false), 9, "space-9")
+	rootHandle, err := unixfs.NewFSHandle(rootCursor)
+	if err != nil {
+		rootCursor.Release()
+		t.Fatal(err)
+	}
+	defer rootHandle.Release()
+	worldHandle, _, err := rootHandle.LookupPath(ctx, "u/9/so/space-9/-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer worldHandle.Release()
+
+	// Collect the names of its entries.
+	var names []string
+	if err := worldHandle.ReaddirAll(ctx, 0, func(ent unixfs.FSCursorDirent) error {
+		names = append(names, ent.GetName())
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	// Only the directory leading to the UnixFS object appears.
+	if len(names) != 1 || names[0] != "docs" {
+		t.Fatalf("unexpected projected root children: %#v", names)
+	}
+	for _, name := range []string{"plain", "types"} {
+		if _, _, err := worldHandle.LookupPath(ctx, name); err == nil {
+			t.Fatalf("expected %q to be hidden", name)
+		}
 	}
 }
