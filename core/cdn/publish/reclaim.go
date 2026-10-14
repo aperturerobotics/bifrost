@@ -10,6 +10,7 @@ import (
 	"github.com/s4wave/spacewave/core/provider/spacewave/packfile/delta"
 	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/packfile"
+	"github.com/s4wave/spacewave/db/packfile/writer"
 	"github.com/s4wave/spacewave/net/hash"
 	"golang.org/x/sync/errgroup"
 )
@@ -199,10 +200,25 @@ func replaceGroup(
 		return nil, nil, nil
 	}
 
+	// Supersede the group once its live blocks are durable.
+	replaced := make([]string, len(group))
+	for i, pack := range group {
+		replaced[i] = pack.entry.GetId()
+	}
+	return errors.Wrap(pushSuperseding(ctx, opts, next, replaced), "replace reclaimed packs")
+}
+
+// pushSuperseding uploads the blocks of iter in order and supersedes the
+// replaced packs, at most reclaimMaxReplaced of them, with the last uploaded
+// pack once the others are durable.
+func pushSuperseding(ctx context.Context, opts Options, iter writer.BlockIterator, replaced []string) error {
 	// Upload every chunk but the last as an ordinary pack, holding one back.
+	if len(replaced) > reclaimMaxReplaced {
+		return errors.Errorf("one push supersedes at most %d packs, not %d", reclaimMaxReplaced, len(replaced))
+	}
 	var held []byte
 	var heldBloom []byte
-	_, err := delta.EmitDeltaChunks(ctx, opts.DstSpaceID, next, delta.DefaultMaxChunkBytes, func(ctx context.Context, _ int, entry *packfile.PackfileEntry, data []byte) error {
+	_, err := delta.EmitDeltaChunks(ctx, opts.DstSpaceID, iter, delta.DefaultMaxChunkBytes, func(ctx context.Context, _ int, entry *packfile.PackfileEntry, data []byte) error {
 		if held != nil {
 			if err := PushPackData(ctx, opts, held, heldBloom); err != nil {
 				return err
@@ -212,13 +228,12 @@ func replaceGroup(
 		return nil
 	})
 	if err != nil {
-		return errors.Wrap(err, "upload reclaimed packs")
+		return errors.Wrap(err, "upload packs")
+	}
+	if held == nil {
+		return errors.New("no blocks to carry the replacement")
 	}
 
-	// Supersede the group with the last chunk.
-	replaced := make([]string, len(group))
-	for i, pack := range group {
-		replaced[i] = pack.entry.GetId()
-	}
-	return errors.Wrap(PushReplacementData(ctx, opts, held, heldBloom, replaced), "replace reclaimed packs")
+	// Supersede the replaced packs with the last chunk.
+	return PushReplacementData(ctx, opts, held, heldBloom, replaced)
 }
