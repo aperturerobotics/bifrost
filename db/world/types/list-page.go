@@ -62,7 +62,7 @@ func ListObjectsWithTypeOnGraph(ctx context.Context, h *cayley_kv.QuadStore, typ
 		}
 
 		// Detect a following page without decoding its first subject.
-		if uint32(len(keys)) == limit {
+		if len(keys) == int(limit) {
 			more = true
 			return io.EOF
 		}

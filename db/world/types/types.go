@@ -12,10 +12,10 @@ import (
 )
 
 // TypesPrefix is the prefix string for all types identifiers.
-const TypesPrefix = "types/"
+const TypesPrefix = world.TypeObjectKeyPrefix
 
 // TypePred is the predicate linking an object to its type.
-var TypePred quad.Value = quad.IRI("type")
+var TypePred quad.Value = quad.IRI(world.TypePredicate)
 
 // typeGraphLookupLimit bounds exact object type-edge lookups.
 const typeGraphLookupLimit uint32 = 1_000_000
