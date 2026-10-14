@@ -6,13 +6,14 @@ package s4wave_vm
 
 import (
 	fmt "fmt"
+	io "io"
+	maps "maps"
+	slices "slices"
+
 	protobuf_go_lite "github.com/aperturerobotics/protobuf-go-lite"
 	json "github.com/aperturerobotics/protobuf-go-lite/json"
 	timestamppb "github.com/aperturerobotics/protobuf-go-lite/types/known/timestamppb"
 	_ "github.com/s4wave/spacewave/sdk/terminal"
-	io "io"
-	maps "maps"
-	slices "slices"
 )
 
 // WasiVmConfig configures the init process of a WasiVM.
@@ -935,6 +936,7 @@ func (this *WasiVmConfig) EqualMessageVT(thatMsg any) bool {
 	}
 	return this.EqualVT(that)
 }
+
 func (this *WasiVm) EqualVT(that *WasiVm) bool {
 	if this == that {
 		return true
@@ -972,6 +974,7 @@ func (this *WasiVm) EqualMessageVT(thatMsg any) bool {
 	}
 	return this.EqualVT(that)
 }
+
 func (this *CreateWasiVmOp) EqualVT(that *CreateWasiVmOp) bool {
 	if this == that {
 		return true
@@ -1006,6 +1009,7 @@ func (this *CreateWasiVmOp) EqualMessageVT(thatMsg any) bool {
 	}
 	return this.EqualVT(that)
 }
+
 func (this *WasiVmImage) EqualVT(that *WasiVmImage) bool {
 	if this == that {
 		return true
@@ -1040,6 +1044,7 @@ func (this *WasiVmImage) EqualMessageVT(thatMsg any) bool {
 	}
 	return this.EqualVT(that)
 }
+
 func (this *CreateWasiVmImageOp) EqualVT(that *CreateWasiVmImageOp) bool {
 	if this == that {
 		return true
@@ -1065,6 +1070,7 @@ func (this *CreateWasiVmImageOp) EqualMessageVT(thatMsg any) bool {
 	}
 	return this.EqualVT(that)
 }
+
 func (this *WasiVmPackage) EqualVT(that *WasiVmPackage) bool {
 	if this == that {
 		return true
@@ -1096,6 +1102,7 @@ func (this *WasiVmPackage) EqualMessageVT(thatMsg any) bool {
 	}
 	return this.EqualVT(that)
 }
+
 func (this *CreateWasiVmPackageOp) EqualVT(that *CreateWasiVmPackageOp) bool {
 	if this == that {
 		return true
@@ -1121,6 +1128,7 @@ func (this *CreateWasiVmPackageOp) EqualMessageVT(thatMsg any) bool {
 	}
 	return this.EqualVT(that)
 }
+
 func (this *SetWasiVmStateOp) EqualVT(that *SetWasiVmStateOp) bool {
 	if this == that {
 		return true
@@ -1143,6 +1151,7 @@ func (this *SetWasiVmStateOp) EqualMessageVT(thatMsg any) bool {
 	}
 	return this.EqualVT(that)
 }
+
 func (this *WasiVmDisplayFrame) EqualVT(that *WasiVmDisplayFrame) bool {
 	if this == that {
 		return true
@@ -1180,6 +1189,7 @@ func (this *WasiVmDisplayFrame) EqualMessageVT(thatMsg any) bool {
 	}
 	return this.EqualVT(that)
 }
+
 func (this *WasiVmDisplayInput) EqualVT(that *WasiVmDisplayInput) bool {
 	if this == that {
 		return true
@@ -1208,6 +1218,7 @@ func (this *WasiVmDisplayInput) EqualMessageVT(thatMsg any) bool {
 	}
 	return this.EqualVT(that)
 }
+
 func (this *WasiVmDisplayInput_Pointer) EqualVT(thatIface isWasiVmDisplayInput_Body) bool {
 	that, ok := thatIface.(*WasiVmDisplayInput_Pointer)
 	if !ok {
@@ -1267,6 +1278,7 @@ func (this *WasiVmPointerEvent) EqualMessageVT(thatMsg any) bool {
 	}
 	return this.EqualVT(that)
 }
+
 func (this *WasiVmKeyEvent) EqualVT(that *WasiVmKeyEvent) bool {
 	if this == that {
 		return true
@@ -2852,6 +2864,7 @@ func (m *WasiVmDisplayInput_Pointer) MarshalToSizedBufferVT(dAtA []byte) (int, e
 	}
 	return len(dAtA) - i, nil
 }
+
 func (m *WasiVmDisplayInput_Key) MarshalToVT(dAtA []byte) (int, error) {
 	size := m.SizeVT()
 	return m.MarshalToSizedBufferVT(dAtA[:size])
@@ -2875,6 +2888,7 @@ func (m *WasiVmDisplayInput_Key) MarshalToSizedBufferVT(dAtA []byte) (int, error
 	}
 	return len(dAtA) - i, nil
 }
+
 func (m *WasiVmPointerEvent) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -3161,6 +3175,7 @@ func (m *WasiVmDisplayInput_Pointer) SizeVT() (n int) {
 	}
 	return n
 }
+
 func (m *WasiVmDisplayInput_Key) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -3175,6 +3190,7 @@ func (m *WasiVmDisplayInput_Key) SizeVT() (n int) {
 	}
 	return n
 }
+
 func (m *WasiVmPointerEvent) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -3217,6 +3233,7 @@ func (x *WasiVmConfig_EnvEntry) MarshalProtoText() string {
 func (x *WasiVmConfig_EnvEntry) String() string {
 	return x.MarshalProtoText()
 }
+
 func (x *WasiVmConfig) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WasiVmConfig")
@@ -3249,6 +3266,7 @@ func (x *WasiVmConfig) MarshalProtoText() string {
 func (x *WasiVmConfig) String() string {
 	return x.MarshalProtoText()
 }
+
 func (x *WasiVm) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WasiVm")
@@ -3286,6 +3304,7 @@ func (x *WasiVm) MarshalProtoText() string {
 func (x *WasiVm) String() string {
 	return x.MarshalProtoText()
 }
+
 func (x *CreateWasiVmOp) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "CreateWasiVmOp")
@@ -3319,6 +3338,7 @@ func (x *CreateWasiVmOp) MarshalProtoText() string {
 func (x *CreateWasiVmOp) String() string {
 	return x.MarshalProtoText()
 }
+
 func (x *WasiVmImage) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WasiVmImage")
@@ -3356,6 +3376,7 @@ func (x *WasiVmImage) MarshalProtoText() string {
 func (x *WasiVmImage) String() string {
 	return x.MarshalProtoText()
 }
+
 func (x *CreateWasiVmImageOp) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "CreateWasiVmImageOp")
@@ -3377,6 +3398,7 @@ func (x *CreateWasiVmImageOp) MarshalProtoText() string {
 func (x *CreateWasiVmImageOp) String() string {
 	return x.MarshalProtoText()
 }
+
 func (x *WasiVmPackage) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WasiVmPackage")
@@ -3406,6 +3428,7 @@ func (x *WasiVmPackage) MarshalProtoText() string {
 func (x *WasiVmPackage) String() string {
 	return x.MarshalProtoText()
 }
+
 func (x *CreateWasiVmPackageOp) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "CreateWasiVmPackageOp")
@@ -3427,6 +3450,7 @@ func (x *CreateWasiVmPackageOp) MarshalProtoText() string {
 func (x *CreateWasiVmPackageOp) String() string {
 	return x.MarshalProtoText()
 }
+
 func (x *SetWasiVmStateOp) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "SetWasiVmStateOp")
@@ -3444,6 +3468,7 @@ func (x *SetWasiVmStateOp) MarshalProtoText() string {
 func (x *SetWasiVmStateOp) String() string {
 	return x.MarshalProtoText()
 }
+
 func (x *WasiVmDisplayFrame) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WasiVmDisplayFrame")
@@ -3481,6 +3506,7 @@ func (x *WasiVmDisplayFrame) MarshalProtoText() string {
 func (x *WasiVmDisplayFrame) String() string {
 	return x.MarshalProtoText()
 }
+
 func (x *WasiVmDisplayInput) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WasiVmDisplayInput")
@@ -3506,6 +3532,7 @@ func (x *WasiVmDisplayInput) MarshalProtoText() string {
 func (x *WasiVmDisplayInput) String() string {
 	return x.MarshalProtoText()
 }
+
 func (x *WasiVmPointerEvent) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WasiVmPointerEvent")
@@ -3527,6 +3554,7 @@ func (x *WasiVmPointerEvent) MarshalProtoText() string {
 func (x *WasiVmPointerEvent) String() string {
 	return x.MarshalProtoText()
 }
+
 func (x *WasiVmKeyEvent) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WasiVmKeyEvent")
@@ -3544,6 +3572,7 @@ func (x *WasiVmKeyEvent) MarshalProtoText() string {
 func (x *WasiVmKeyEvent) String() string {
 	return x.MarshalProtoText()
 }
+
 func (m *WasiVmConfig) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -3648,6 +3677,7 @@ func (m *WasiVmConfig) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
+
 func (m *WasiVm) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -3771,6 +3801,7 @@ func (m *WasiVm) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
+
 func (m *CreateWasiVmOp) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -3883,6 +3914,7 @@ func (m *CreateWasiVmOp) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
+
 func (m *WasiVmImage) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -3995,6 +4027,7 @@ func (m *WasiVmImage) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
+
 func (m *CreateWasiVmImageOp) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -4077,6 +4110,7 @@ func (m *CreateWasiVmImageOp) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
+
 func (m *WasiVmPackage) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -4174,6 +4208,7 @@ func (m *WasiVmPackage) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
+
 func (m *CreateWasiVmPackageOp) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -4256,6 +4291,7 @@ func (m *CreateWasiVmPackageOp) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
+
 func (m *SetWasiVmStateOp) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -4319,6 +4355,7 @@ func (m *SetWasiVmStateOp) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
+
 func (m *WasiVmDisplayFrame) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -4423,6 +4460,7 @@ func (m *WasiVmDisplayFrame) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
+
 func (m *WasiVmDisplayInput) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -4505,6 +4543,7 @@ func (m *WasiVmDisplayInput) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
+
 func (m *WasiVmPointerEvent) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -4574,6 +4613,7 @@ func (m *WasiVmPointerEvent) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
+
 func (m *WasiVmKeyEvent) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0

@@ -224,9 +224,11 @@ message OpenNestedWorldRequest {
   string object_key = 1;
 }
 
-// OpenNestedWorldResponse grants a read-only World state at the published snapshot.
+// OpenNestedWorldResponse grants a read-only Engine over the nested World.
 message OpenNestedWorldResponse {
-  // ResourceId identifies the retained nested World state resource.
+  // ResourceId identifies the nested World Engine resource.
+  // Its seqno is the outer object's revision, and each transaction reads the
+  // nested World published at the revision it opened.
   uint32 resource_id = 1;
 }
 
@@ -268,7 +270,8 @@ service WorldStateResourceService {
   // A read-only state rejects the request.
   rpc StageWorldState(StageWorldStateRequest) returns (StageWorldStateResponse);
 
-  // OpenNestedWorld opens the immutable nested World published by an outer object.
+  // OpenNestedWorld opens a read-only Engine that follows the nested World an
+  // outer object publishes.
   rpc OpenNestedWorld(OpenNestedWorldRequest) returns (OpenNestedWorldResponse);
 
   // OpenOuterWorld grants the enclosing Space Engine under the same authority.

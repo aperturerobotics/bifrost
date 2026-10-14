@@ -6,6 +6,7 @@ package s4wave_vm
 
 import (
 	context "context"
+
 	srpc "github.com/aperturerobotics/starpc/srpc"
 	s4wave_terminal "github.com/s4wave/spacewave/sdk/terminal"
 )

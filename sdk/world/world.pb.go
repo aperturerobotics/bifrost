@@ -731,10 +731,12 @@ func (x *OpenNestedWorldRequest) GetObjectKey() string {
 	return ""
 }
 
-// OpenNestedWorldResponse grants a read-only World state at the published snapshot.
+// OpenNestedWorldResponse grants a read-only Engine over the nested World.
 type OpenNestedWorldResponse struct {
 	unknownFields []byte
-	// ResourceId identifies the retained nested World state resource.
+	// ResourceId identifies the nested World Engine resource.
+	// Its seqno is the outer object's revision, and each transaction reads the
+	// nested World published at the revision it opened.
 	ResourceId uint32 `protobuf:"varint,1,opt,name=resource_id,json=resourceId,proto3" json:"resourceId,omitempty"`
 }
 

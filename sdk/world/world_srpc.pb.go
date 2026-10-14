@@ -869,7 +869,8 @@ type SRPCWorldStateResourceServiceClient interface {
 	// writes through the transaction, which adopts the build when it commits.
 	// A read-only state rejects the request.
 	StageWorldState(ctx context.Context, in *StageWorldStateRequest) (*StageWorldStateResponse, error)
-	// OpenNestedWorld opens the immutable nested World published by an outer object.
+	// OpenNestedWorld opens a read-only Engine that follows the nested World an
+	// outer object publishes.
 	OpenNestedWorld(ctx context.Context, in *OpenNestedWorldRequest) (*OpenNestedWorldResponse, error)
 	// OpenOuterWorld grants the enclosing Space Engine under the same authority.
 	OpenOuterWorld(ctx context.Context, in *OpenOuterWorldRequest) (*OpenOuterWorldResponse, error)
@@ -1225,7 +1226,8 @@ type SRPCWorldStateResourceServiceServer interface {
 	// writes through the transaction, which adopts the build when it commits.
 	// A read-only state rejects the request.
 	StageWorldState(context.Context, *StageWorldStateRequest) (*StageWorldStateResponse, error)
-	// OpenNestedWorld opens the immutable nested World published by an outer object.
+	// OpenNestedWorld opens a read-only Engine that follows the nested World an
+	// outer object publishes.
 	OpenNestedWorld(context.Context, *OpenNestedWorldRequest) (*OpenNestedWorldResponse, error)
 	// OpenOuterWorld grants the enclosing Space Engine under the same authority.
 	OpenOuterWorld(context.Context, *OpenOuterWorldRequest) (*OpenOuterWorldResponse, error)
