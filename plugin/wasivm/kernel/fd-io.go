@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
+	"io"
 	"os"
 	"time"
 )
@@ -38,35 +39,37 @@ func (p *Process) sysRead(ctx context.Context, fd, bufPtr, count uint32) uint64 
 // that is not at end of file returns EINTR when a signal interrupted it, or
 // EAGAIN when the file is nonblocking.
 func (p *Process) readFile(ctx context.Context, of *OpenFile, count int) ([]byte, uint64) {
-	// Read a pipe or a connected socket, which wait for data.
+	// Read a pipe, a connected socket, a pty master or a terminal, which
+	// wait for data, or a device or regular file.
+	buf := make([]byte, count)
+	var n int
+	var eof bool
 	switch {
 	case of.rx != nil:
-		buf := make([]byte, count)
-		n, eof := of.rx.read(of.ioContext(ctx), buf)
-		switch {
-		case n != 0 || eof:
-			return buf[:n], 0
-		case interrupted(ctx):
-			return nil, negErrno(EINTR)
-		}
-		return nil, negErrno(EAGAIN)
+		n, eof = of.rx.read(of.ioContext(ctx), buf)
+	case of.tty != nil:
+		var err error
+		n, err = of.tty.in.read(of.ioContext(ctx), buf)
+		eof = err == io.EOF
 	case of.sock != nil:
 		return nil, negErrno(ENOTCONN)
 	case of.node == nil:
 		return nil, negErrno(EBADF)
-	}
-
-	// Read the terminal, which waits until input arrives, or a device or
-	// regular file.
-	if !of.node.isTerminal() {
+	default:
 		return p.readVFS(of, count)
 	}
-	buf := make([]byte, count)
-	n, _ := p.kernel.stdin.read(ctx, buf)
-	if n == 0 && interrupted(ctx) {
+
+	// Report data or end of file. A pty master reads its slave's end as EIO,
+	// as Linux does.
+	switch {
+	case eof && n == 0 && of.ptm != nil:
+		return nil, negErrno(EIO)
+	case n != 0 || eof:
+		return buf[:n], 0
+	case interrupted(ctx):
 		return nil, negErrno(EINTR)
 	}
-	return buf[:n], 0
+	return nil, negErrno(EAGAIN)
 }
 
 // readVFS reads from a device or regular file at the descriptor's offset.
@@ -104,8 +107,8 @@ func (p *Process) sysWrite(ctx context.Context, fd, bufPtr, count uint32) uint64
 	return p.writeOutBytes(ctx, fd, buf)
 }
 
-// writeOutBytes writes buf to a descriptor's pipe, socket or file. write,
-// writev and sendfile share it.
+// writeOutBytes writes buf to a descriptor's pipe, socket, terminal or file.
+// write, writev and sendfile share it.
 func (p *Process) writeOutBytes(ctx context.Context, fd uint32, buf []byte) uint64 {
 	of, ok := p.fds[fd]
 	switch {
@@ -113,6 +116,10 @@ func (p *Process) writeOutBytes(ctx context.Context, fd uint32, buf []byte) uint
 		return negErrno(EBADF)
 	case of.tx != nil:
 		return p.writePipe(ctx, of, buf)
+	case of.ptm != nil:
+		return of.ptm.write(buf)
+	case of.tty != nil:
+		return p.writeTerminal(ctx, of, buf)
 	case of.sock != nil:
 		return negErrno(ENOTCONN)
 	case of.node != nil:
@@ -150,8 +157,6 @@ func (p *Process) writeVFS(of *OpenFile, buf []byte) uint64 {
 		switch of.node.rdev {
 		case devNull:
 			return uint64(len(buf))
-		case devTTY, devConsole:
-			return p.writeConsole(of, buf)
 		}
 		return negErrno(EIO)
 	}
@@ -165,15 +170,26 @@ func (p *Process) writeVFS(of *OpenFile, buf []byte) uint64 {
 	return uint64(n)
 }
 
-// writeConsole writes to the kernel's stdout, or its stderr for the standard
-// error descriptor. The onlcrWriter on both applies output processing.
-func (p *Process) writeConsole(of *OpenFile, buf []byte) uint64 {
-	w := p.kernel.stdout
-	if of.stderr {
-		w = p.kernel.stderr
+// writeTerminal writes buf to a terminal as its output. A pty slave waits
+// while its master's queue is full; a caught signal interrupts the wait, and
+// a nonblocking file takes only what fits. A write after the master closed
+// fails with EIO.
+func (p *Process) writeTerminal(ctx context.Context, of *OpenFile, buf []byte) uint64 {
+	// Write, waiting while the master's queue is full.
+	ctx, release := p.interruptible(ctx)
+	defer release()
+	n, ok := of.tty.write(of.ioContext(ctx), buf, of.stderr)
+
+	// Report a hangup or a write that took nothing.
+	switch {
+	case !ok:
+		return negErrno(EIO)
+	case n != 0 || len(buf) == 0:
+		return uint64(n)
+	case interrupted(ctx):
+		return negErrno(EINTR)
 	}
-	n, _ := w.Write(buf)
-	return uint64(n)
+	return negErrno(EAGAIN)
 }
 
 // truncateNode resizes a file to size, zero-extending it or dropping its

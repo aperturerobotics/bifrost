@@ -12,13 +12,13 @@ import (
 func TestVirtualTerminalDiscipline(t *testing.T) {
 	// Prepare a kernel whose console is a virtual terminal in cooked mode.
 	var out bytes.Buffer
-	k := &Kernel{tty: true, termFD: -1, virtTTY: true}
-	k.initTermios()
-	k.stdout = &onlcrWriter{kernel: k, inner: &out}
-	sr := newStdinReader(k)
+	k := &Kernel{termFD: -1}
+	k.console = newTTY(k, true, true)
+	k.console.stdout = &onlcrWriter{term: k.console, inner: &out}
+	in := k.console.in
 
 	// Edit a line with erase and kill, then end it with a carriage return.
-	got, eofMarks := sr.discipline(k, []byte("xy\x15ab\x7fc\r"))
+	got, eofMarks := in.discipline([]byte("xy\x15ab\x7fc\r"))
 	if string(got) != "ac\n" || eofMarks != 0 {
 		t.Fatalf("discipline = %q, %d; want %q, 0", got, eofMarks, "ac\n")
 	}
@@ -28,7 +28,7 @@ func TestVirtualTerminalDiscipline(t *testing.T) {
 
 	// VEOF on an empty line is an end-of-file mark; on a partial line it
 	// delivers the line without a newline.
-	got, eofMarks = sr.discipline(k, []byte("\x04ab\x04"))
+	got, eofMarks = in.discipline([]byte("\x04ab\x04"))
 	if string(got) != "ab" || eofMarks != 1 {
 		t.Fatalf("discipline = %q, %d; want %q, 1", got, eofMarks, "ab")
 	}

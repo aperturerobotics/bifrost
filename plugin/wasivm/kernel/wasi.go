@@ -266,8 +266,8 @@ func (p *Process) fdReadiness(fd uint32, write bool) (ready, hangup bool, change
 	case of.sock != nil && of.sock.listener != nil:
 		ready, change := of.sock.listener.state()
 		return ready, false, change
-	case of.node != nil && of.node.isTerminal():
-		ready, change := p.kernel.stdin.ready()
+	case of.tty != nil:
+		ready, change := of.tty.in.ready()
 		return ready, false, change
 	}
 	return true, false, nil

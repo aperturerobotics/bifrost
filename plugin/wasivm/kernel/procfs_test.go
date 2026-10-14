@@ -10,6 +10,7 @@ import (
 func newProcTestKernel() (*Kernel, *Process) {
 	// Start the kernel, then add the processes.
 	k := &Kernel{procs: newProcessTable(), env: map[string]string{"HOME": "/"}}
+	k.console = newTTY(k, false, false)
 	k.initVFS(&Config{})
 	for pid := range 2 {
 		p := newProcess(k, pid+1, []string{"/bin/sh", "-c", "true"})

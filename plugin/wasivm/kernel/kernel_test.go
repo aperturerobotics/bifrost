@@ -378,8 +378,9 @@ func TestONLCR(t *testing.T) {
 	for _, tc := range tests {
 		k := &Kernel{}
 		k.termRaw.Store(tc.raw)
-		binary.LittleEndian.PutUint32(k.termIOS[4:8], tc.oflag)
-		if got := string(k.onlcrProcess([]byte(tc.in))); got != tc.want {
+		term := newTTY(k, false, false)
+		binary.LittleEndian.PutUint32(term.termIOS[4:8], tc.oflag)
+		if got := string(term.processOutput([]byte(tc.in))); got != tc.want {
 			t.Errorf("%s: %q, want %q", tc.name, got, tc.want)
 		}
 	}

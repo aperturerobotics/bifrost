@@ -75,26 +75,43 @@ func (p *Process) lookupPID(pid int32) *Process {
 	return p.kernel.procs.get(int(pid))
 }
 
-// sysTcgetpgrp returns the terminal's foreground process group. Before any
-// process sets one, every process is in the foreground, so it is p's own.
+// sysTcgetpgrp returns the foreground process group of p's controlling
+// terminal on fd. Before any process sets one, every process is in the
+// foreground, so it is p's own.
 func (p *Process) sysTcgetpgrp(fd uint32) uint64 {
-	if !p.kernel.tty || !p.isConsoleFD(fd) {
+	t := p.controllingFD(fd)
+	if t == nil {
 		return negErrno(ENOTTY)
 	}
-	return uint64(p.kernel.foreground(p))
+	return uint64(t.foreground(p))
 }
 
-// sysTcsetpgrp makes pgid the terminal's foreground process group, which
-// receives the signals of the terminal's control characters.
+// sysTcsetpgrp makes pgid the foreground process group of p's controlling
+// terminal on fd, which receives the signals of the terminal's control
+// characters.
 func (p *Process) sysTcsetpgrp(fd uint32, pgid int32) uint64 {
+	t := p.controllingFD(fd)
 	switch {
-	case !p.kernel.tty || !p.isConsoleFD(fd):
+	case t == nil:
 		return negErrno(ENOTTY)
 	case pgid <= 0:
 		return negErrno(EINVAL)
 	case !p.kernel.groupInSession(int(pgid), p.sid):
 		return negErrno(EPERM)
 	}
-	p.kernel.fgPgid = int(pgid)
+	t.fgPgid = int(pgid)
 	return 0
+}
+
+// controllingFD returns the terminal of descriptor fd when it is p's
+// controlling terminal, or nil.
+func (p *Process) controllingFD(fd uint32) *tty {
+	of, ok := p.fds[fd]
+	if !ok || of.ptm != nil {
+		return nil
+	}
+	if t := of.terminal(); t != nil && t == p.terminal() {
+		return t
+	}
+	return nil
 }

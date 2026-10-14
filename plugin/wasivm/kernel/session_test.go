@@ -5,7 +5,9 @@ import "testing"
 // newSessionTestKernel returns a kernel whose init, PID 1, leads the
 // session, with children 2 and 3 in init's process group.
 func newSessionTestKernel() (*Kernel, []*Process) {
+	// Create a kernel with a terminal console and its processes.
 	k := &Kernel{procs: newProcessTable()}
+	k.console = newTTY(k, true, true)
 	procs := make([]*Process, 3)
 	for i := range procs {
 		p := newProcess(k, i+1, nil)
@@ -58,12 +60,12 @@ func TestForegroundGroupSignals(t *testing.T) {
 
 	// Signal before and after making it the foreground group.
 	for _, fg := range []int{0, 2} {
-		k.fgPgid = fg
+		k.console.fgPgid = fg
 		for _, p := range procs {
 			p.sigActions[SIGINT] = sigAction{handler: 0x1000}
 			p.sigCaught = 0
 		}
-		k.deliverSignalToForeground(SIGINT)
+		k.console.signalForeground(SIGINT)
 		for _, p := range procs {
 			want := fg == 0 || p.pgid == fg
 			if got := p.sigCaught != 0; got != want {

@@ -15,8 +15,13 @@ type OpenFile struct {
 	// flags holds the open flags, in the kernel's values.
 	flags uint32
 
-	// stderr routes console writes to the kernel's stderr stream.
+	// stderr routes console writes to the console's stderr stream.
 	stderr bool
+	// tty is the terminal the file reads and writes, or nil.
+	tty *tty
+	// ptm is the pseudo-terminal whose master the file is, or nil. Its rx
+	// reads the slave's output.
+	ptm *pty
 
 	// refs counts the descriptor table entries that refer to the file.
 	refs int
@@ -50,8 +55,11 @@ func (of *OpenFile) unref() {
 	}
 }
 
-// release closes the file's sides of its pipes and its socket.
+// release closes the file's sides of its pipes, its socket and its
+// pseudo-terminal: a slave's last close ends the master's input, and the
+// master's close hangs up the slave.
 func (of *OpenFile) release() {
+	// Close the pipes and the socket.
 	if of.rx != nil {
 		of.rx.close(true)
 	}
@@ -61,6 +69,28 @@ func (of *OpenFile) release() {
 	if of.sock != nil {
 		of.sock.close()
 	}
+
+	// Close the pseudo-terminal's side.
+	if of.tty != nil && of.tty.pty != nil {
+		of.tty.pty.closeSlave()
+	}
+	if of.ptm != nil {
+		of.ptm.hangup()
+	}
+}
+
+// terminal returns the terminal of a terminal file: the console, a pty slave,
+// or the slave of a pty master. It returns nil for any other file, and for
+// the console when it is not a terminal.
+func (of *OpenFile) terminal() *tty {
+	t := of.tty
+	if of.ptm != nil {
+		t = of.ptm.term
+	}
+	if t == nil || !t.terminal {
+		return nil
+	}
+	return t
 }
 
 // pipe returns the pipe a pipe file reads or writes, or nil.

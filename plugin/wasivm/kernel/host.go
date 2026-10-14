@@ -130,5 +130,5 @@ func (k *Kernel) traceHostCall(p *Process, name string, args []uint64, results [
 	default:
 		line += fmt.Sprintf(" = %d", int64(result))
 	}
-	_, _ = fmt.Fprintln(k.stderr, line)
+	_, _ = fmt.Fprintln(k.console.stderr, line)
 }

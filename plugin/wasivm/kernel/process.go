@@ -68,6 +68,9 @@ type procState struct {
 	ppid int
 	pgid int
 	sid  int
+	// ctty is the process's pty when one is its controlling terminal. Nil
+	// leaves the console as its controlling terminal.
+	ctty *tty
 
 	// The credentials: the user and group ids and the supplementary groups.
 	// Every process runs as root by default, and the kernel stores the ids
@@ -133,10 +136,10 @@ func newProcess(k *Kernel, pid int, args []string) *Process {
 	}
 
 	// Open the standard descriptors.
-	if k.console != nil {
-		p.setFD(0, &OpenFile{node: k.console, path: "/dev/console", flags: oRDONLY})
-		p.setFD(1, &OpenFile{node: k.console, path: "/dev/console", flags: oWRONLY})
-		p.setFD(2, &OpenFile{node: k.console, path: "/dev/console", flags: oWRONLY, stderr: true})
+	if c := k.console; c != nil && c.node != nil {
+		p.setFD(0, &OpenFile{node: c.node, path: "/dev/console", flags: oRDONLY, tty: c})
+		p.setFD(1, &OpenFile{node: c.node, path: "/dev/console", flags: oWRONLY, tty: c})
+		p.setFD(2, &OpenFile{node: c.node, path: "/dev/console", flags: oWRONLY, tty: c, stderr: true})
 	}
 	return p
 }

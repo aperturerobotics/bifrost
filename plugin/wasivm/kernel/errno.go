@@ -17,6 +17,10 @@ const (
 	// EIO reports an input or output failure.
 	EIO = 5
 
+	// ENXIO reports a device that does not exist, such as /dev/tty for a
+	// process without a terminal.
+	ENXIO = 6
+
 	// ENOEXEC reports a file that is neither a program nor a script.
 	ENOEXEC = 8
 
@@ -58,6 +62,9 @@ const (
 
 	// ENOTTY reports a descriptor that is not a terminal.
 	ENOTTY = 25
+
+	// ENOSPC reports exhausted space, such as every pseudo-terminal in use.
+	ENOSPC = 28
 
 	// ESPIPE reports a seek on a pipe.
 	ESPIPE = 29
@@ -135,6 +142,7 @@ var linuxToWasiErrno = [ECONNREFUSED + 1]uint32{
 	ESRCH:           71,
 	EINTR:           27,
 	EIO:             29,
+	ENXIO:           60,
 	ENOEXEC:         45,
 	EBADF:           8,
 	ECHILD:          12,
@@ -149,6 +157,7 @@ var linuxToWasiErrno = [ECONNREFUSED + 1]uint32{
 	EISDIR:          31,
 	EINVAL:          28,
 	ENOTTY:          59,
+	ENOSPC:          51,
 	ESPIPE:          70,
 	EMLINK:          34,
 	EPIPE:           64,

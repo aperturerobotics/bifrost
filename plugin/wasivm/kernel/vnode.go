@@ -25,6 +25,8 @@ type VNode struct {
 	symlink string
 	// socket is the listening socket bound to a socket node, or nil.
 	socket *unixSocket
+	// tty is the terminal of /dev/console or a /dev/pts node, or nil.
+	tty *tty
 	// hostPath is the root filesystem path of a host-backed node, or empty.
 	hostPath string
 	// gen generates a synthesized file's content, which each open takes a
@@ -41,9 +43,4 @@ type VNode struct {
 func (node *VNode) setSymlink(target string) {
 	node.symlink = target
 	node.size = int64(len(target))
-}
-
-// isTerminal reports whether node is the terminal: /dev/tty or /dev/console.
-func (node *VNode) isTerminal() bool {
-	return node.mode&sIFMT == sIFCHR && (node.rdev == devTTY || node.rdev == devConsole)
 }

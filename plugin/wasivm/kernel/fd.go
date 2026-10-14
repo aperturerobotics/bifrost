@@ -28,9 +28,19 @@ func (p *Process) openResolved(resolved string, flags, mode uint32) uint64 {
 		_ = p.truncateNode(node, 0)
 	}
 
+	// Open a terminal device.
+	of := &OpenFile{node: node, path: resolved, flags: flags}
+	if node.mode&sIFMT == sIFCHR {
+		if node.rdev == devPtmx {
+			return p.openPtmx(flags)
+		}
+		if errno := p.openTerminal(of); errno != 0 {
+			return errno
+		}
+	}
+
 	// Install the descriptor, starting an appending file at its end. A
 	// synthesized file reads the content it has at the open.
-	of := &OpenFile{node: node, path: resolved, flags: flags}
 	if node.gen != nil {
 		of.data = node.gen()
 	}
@@ -39,6 +49,31 @@ func (p *Process) openResolved(resolved string, flags, mode uint32) uint64 {
 		of.offset = node.size
 	}
 	return uint64(p.installFD(of))
+}
+
+// openTerminal binds an open of /dev/tty, /dev/console or a pty slave to its
+// terminal. /dev/tty names p's controlling terminal, and an open of a slave
+// may make it one.
+func (p *Process) openTerminal(of *OpenFile) uint64 {
+	// Find the terminal.
+	t := of.node.tty
+	if of.node.rdev == devTTY {
+		if t = p.terminal(); t == nil {
+			return negErrno(ENXIO)
+		}
+	}
+	if t == nil || t.pty == nil {
+		of.tty = t
+		return 0
+	}
+
+	// Open the slave.
+	if errno := t.pty.openSlave(); errno != 0 {
+		return errno
+	}
+	of.tty = t
+	p.acquire(t)
+	return 0
 }
 
 // createFile creates a regular file at a resolved path whose parent
@@ -188,10 +223,14 @@ func (p *Process) sysDup2(oldfd, newfd uint32) uint64 {
 	return uint64(newfd)
 }
 
-// isConsoleFD reports whether fd reads the kernel's console input.
-func (p *Process) isConsoleFD(fd uint32) bool {
+// fdTerminal returns the terminal of descriptor fd, or nil when fd is not a
+// terminal.
+func (p *Process) fdTerminal(fd uint32) *tty {
 	of, ok := p.fds[fd]
-	return ok && of.node != nil && of.node.isTerminal()
+	if !ok {
+		return nil
+	}
+	return of.terminal()
 }
 
 // sysPipe2 creates a pipe and writes its read and write descriptors to

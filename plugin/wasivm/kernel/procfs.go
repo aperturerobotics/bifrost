@@ -203,9 +203,9 @@ func procStatm(p *Process) []byte {
 // does not count CPU time or page faults, which read as zero.
 func (k *Kernel) procPidStat(p *Process) []byte {
 	// Fill the fields up to the resource limit of the resident set.
-	ttyNr, tpgid := 0, -1
-	if k.tty {
-		ttyNr, tpgid = devConsole, k.foreground(p)
+	ttyNr, tpgid := uint64(0), -1
+	if t := p.terminal(); t != nil {
+		ttyNr, tpgid = t.node.rdev, t.foreground(p)
 	}
 	started := p.started.Sub(k.bootTime) * clockTicks / time.Second
 	fields := []any{
@@ -265,15 +265,6 @@ func (k *Kernel) procStatus(p *Process) []byte {
 	out = fmt.Appendf(out, "VmSize:\t%8d kB\nVmRSS:\t%8d kB\nThreads:\t1\n", p.memSize/1024, p.memSize/1024)
 	out = fmt.Appendf(out, "SigPnd:\t%016x\nShdPnd:\t%016x\nSigBlk:\t%016x\n", pending, 0, blocked)
 	return fmt.Appendf(out, "SigIgn:\t%016x\nSigCgt:\t%016x\n", ignored, caught)
-}
-
-// foreground returns the terminal's foreground process group as p's
-// session sees it.
-func (k *Kernel) foreground(p *Process) int {
-	if k.fgPgid == 0 {
-		return p.pgid
-	}
-	return k.fgPgid
 }
 
 // procFilesystems renders /proc/filesystems, the types mount accepts.

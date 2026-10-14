@@ -149,6 +149,7 @@ func newWASITestProcess(t *testing.T) (*Process, *memMemory) {
 
 	// Start a kernel over it with one process.
 	k := &Kernel{procs: newProcessTable(), env: make(map[string]string)}
+	k.console = newTTY(k, false, false)
 	k.initVFS(&Config{RootFS: hostFS(t, root)})
 	p := newProcess(k, 1, nil)
 	mem := newMemMemory(8192)

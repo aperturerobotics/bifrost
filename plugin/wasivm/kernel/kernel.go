@@ -1,7 +1,8 @@
 // Package kernel runs Linux programs compiled to WebAssembly. Its host
 // functions implement the Linux syscalls and WASI imports those programs
-// call: processes, signals, pipes, a terminal and a filesystem over an
-// optional root. No Linux kernel runs; the Go host is the kernel.
+// call: processes, signals, pipes, sockets, the console and pseudo-terminals,
+// and a filesystem over an optional root. No Linux kernel runs; the Go host
+// is the kernel.
 package kernel
 
 import (
@@ -47,29 +48,18 @@ type Kernel struct {
 	// cause. It is nil outside Boot.
 	shutdown context.CancelCauseFunc
 
-	// tty reports whether the console is a terminal, host or virtual.
-	tty bool
-	// fgPgid is the terminal's foreground process group, or 0 until a
-	// process sets one, when every process is in the foreground. The kernel
-	// lock guards it.
-	fgPgid int
+	// console is the terminal of /dev/console, which each process starts
+	// with as its standard input, output and error.
+	console *tty
+	// ptys holds the open pseudo-terminals by index, and pts is the
+	// /dev/pts directory of their slaves. The kernel lock guards both.
+	ptys map[int]*pty
+	pts  *VNode
+
 	// termFD is the host terminal's descriptor, or -1 for none.
 	termFD int
-	// virtTTY reports whether the kernel emulates the terminal's line
-	// discipline.
-	virtTTY bool
 	// termRaw reports whether the host terminal is in raw mode.
 	termRaw atomic.Bool
-	// termMtx guards termIOS, which the guest sets while the input
-	// goroutine reads it.
-	termMtx sync.Mutex
-	// termIOS is the terminal's termios state.
-	termIOS termios
-
-	// winCols and winRows are the virtual terminal's window size.
-	winCols atomic.Uint32
-	winRows atomic.Uint32
-
 	// termMakeRaw, termRestore and termGetSize operate the host terminal.
 	// The platform's initTermOps sets them.
 	termMakeRaw func(fd int) (any, error)
@@ -78,13 +68,6 @@ type Kernel struct {
 	// termOldState is the host terminal's state before raw mode, which Close
 	// restores.
 	termOldState any
-
-	// console is the /dev/console node each process starts with as its
-	// standard input, output and error.
-	console *VNode
-	stdout  io.Writer
-	stderr  io.Writer
-	stdin   *stdinReader
 
 	// debugSyscalls logs every syscall to stderr.
 	debugSyscalls bool
@@ -135,9 +118,7 @@ func New(ctx context.Context, rt engine.Runtime, cfg *Config) (*Kernel, error) {
 		runtime:       rt,
 		procs:         newProcessTable(),
 		debugSyscalls: cfg.DebugSyscalls,
-		tty:           termFD >= 0 || cfg.VirtualTerminal,
 		termFD:        termFD,
-		virtTTY:       cfg.VirtualTerminal,
 		bootTime:      time.Now(),
 		initPath:      cmp.Or(cfg.InitPath, "/init"),
 		initArgs:      cfg.InitArgs,
@@ -146,25 +127,21 @@ func New(ctx context.Context, rt engine.Runtime, cfg *Config) (*Kernel, error) {
 		domainname:    "(none)",
 	}
 
-	// Route every output path through ONLCR processing, which turns a
-	// newline into a carriage return and newline while the terminal asks
-	// for it.
-	k.stdout = &onlcrWriter{kernel: k, inner: cmp.Or[io.Writer](cfg.Stdout, os.Stdout)}
-	k.stderr = &onlcrWriter{kernel: k, inner: cmp.Or[io.Writer](cfg.Stderr, os.Stderr)}
-
-	// Set up the terminal, the filesystem and the host modules.
-	k.winCols.Store(80)
-	k.winRows.Store(24)
-	k.stdin = newStdinReader(k)
+	// Create the console. Its output paths turn a newline into a carriage
+	// return and newline while the terminal asks for it.
 	initTermOps(k)
-	k.initTermios()
+	k.console = newTTY(k, termFD >= 0 || cfg.VirtualTerminal, cfg.VirtualTerminal)
+	k.console.stdout = &onlcrWriter{term: k.console, inner: cmp.Or[io.Writer](cfg.Stdout, os.Stdout)}
+	k.console.stderr = &onlcrWriter{term: k.console, inner: cmp.Or[io.Writer](cfg.Stderr, os.Stderr)}
+
+	// Set up the filesystem and the host modules.
 	k.initVFS(cfg)
 	if err := k.defineHostModules(ctx); err != nil {
 		return nil, err
 	}
 
 	// Start reading the console input.
-	k.stdin.start(ctx, cmp.Or[io.Reader](cfg.Stdin, os.Stdin))
+	k.console.in.start(ctx, cmp.Or[io.Reader](cfg.Stdin, os.Stdin))
 	return k, nil
 }
 
@@ -270,7 +247,7 @@ func (k *Kernel) runProcess(ctx context.Context, p *Process, run func(ctx contex
 	case err != nil:
 		p.exitCode = exitCannotRun
 		if p.ppid != 0 {
-			_, _ = fmt.Fprintf(k.stderr, "pid %d: %v\n", p.pid, err)
+			_, _ = fmt.Fprintf(k.console.stderr, "pid %d: %v\n", p.pid, err)
 		}
 	}
 	return err
@@ -412,7 +389,7 @@ const initPID = 1
 // runtime.
 func (k *Kernel) Close(ctx context.Context) error {
 	// Stop the input and restore the terminal.
-	k.stdin.close()
+	k.console.in.close()
 	if k.termOldState != nil && k.termRestore != nil {
 		_ = k.termRestore(k.termFD, k.termOldState)
 		k.termOldState = nil
@@ -423,33 +400,26 @@ func (k *Kernel) Close(ctx context.Context) error {
 	return k.runtime.Close(ctx)
 }
 
-// Resize sets the virtual terminal's window size and sends SIGWINCH to the
-// foreground processes.
+// Resize sets the console's window size and sends SIGWINCH to its
+// foreground processes when the size changed.
 func (k *Kernel) Resize(cols, rows uint32) {
-	k.winCols.Store(cols)
-	k.winRows.Store(rows)
-	k.deliverSignalToForeground(SIGWINCH)
-}
-
-// Signal sends sig to the foreground processes, as the host forwards a
-// signal it received, such as SIGINT from a terminal in cooked mode.
-func (k *Kernel) Signal(sig uint32) { k.deliverSignalToForeground(sig) }
-
-// deliverSignalToForeground sends sig to the terminal's foreground process
-// group, as a terminal sends the signal of a typed character whether or not
-// anything reads it. Before a process sets a foreground group, every process
-// is in the foreground, and each one's disposition decides what the signal
-// does.
-func (k *Kernel) deliverSignalToForeground(sig uint32) {
 	k.mu.Lock()
 	defer k.mu.Unlock()
-	for _, t := range k.procs.filter(func(t *Process) bool { return k.fgPgid == 0 || t.pgid == k.fgPgid }) {
-		t.deliverSignal(sig)
-	}
+	k.console.resize(cols, rows)
+}
+
+// Signal sends sig to the console's foreground processes, as the host
+// forwards a signal it received, such as SIGINT from a terminal in cooked
+// mode.
+func (k *Kernel) Signal(sig uint32) {
+	k.mu.Lock()
+	defer k.mu.Unlock()
+	k.console.signalForeground(sig)
 }
 
 // initVFS creates the filesystem: the devices, the in-memory directories, the
-// root filesystem and the configured files.
+// root filesystem and the configured files. The console's node joins the
+// console k already has.
 func (k *Kernel) initVFS(cfg *Config) {
 	// Create a VFS over the root filesystem.
 	k.vfs = newVFS()
@@ -460,9 +430,15 @@ func (k *Kernel) initVFS(cfg *Config) {
 	dev := v.mkDir(v.root, "dev")
 	v.mkCharDev(dev, "null", devNull)
 	v.mkCharDev(dev, "zero", devZero)
-	k.console = v.mkCharDev(dev, "console", devConsole)
-	v.mkCharDev(dev, "tty", devTTY)
 	v.mkCharDev(dev, "urandom", devURandom)
+
+	// Add the terminals: the console, the controlling terminal and the
+	// pseudo-terminal multiplexer with its empty table of slaves.
+	k.console.node = v.mkCharDev(dev, "console", devConsole)
+	k.console.node.tty = k.console
+	v.mkCharDev(dev, "tty", devTTY)
+	v.mkCharDev(dev, "ptmx", devPtmx)
+	k.pts, k.ptys = v.mkDir(dev, "pts"), make(map[int]*pty)
 
 	// Add the in-memory directories that overlay the root filesystem, and
 	// mount the root and the proc filesystem as Linux starts init.

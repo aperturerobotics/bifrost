@@ -129,6 +129,22 @@ func (p *bufferedPipe) close(read bool) {
 	p.mtx.Unlock()
 }
 
+// reopenWrite marks the write side open again, for a pty slave opened after
+// all its files closed.
+func (p *bufferedPipe) reopenWrite() {
+	p.mtx.Lock()
+	p.writeClosed = false
+	p.notifyLocked()
+	p.mtx.Unlock()
+}
+
+// buffered returns the number of bytes a read could take now.
+func (p *bufferedPipe) buffered() int {
+	p.mtx.Lock()
+	defer p.mtx.Unlock()
+	return len(p.buf)
+}
+
 // notifyLocked wakes the waiters on a change. The caller holds mtx.
 func (p *bufferedPipe) notifyLocked() {
 	close(p.waitCh)

@@ -224,7 +224,7 @@ func (p *Process) wasiFDFdstatGet(mem engine.Memory, fd, statPtr uint32) uint32 
 		flags |= wasiFdflagsNonblock
 	}
 	rights := wasiRightsEverything
-	if p.kernel.tty && node.isTerminal() {
+	if p.fdTerminal(fd) != nil {
 		rights = wasiRightsTerminal
 	}
 
@@ -477,7 +477,7 @@ func (p *Process) wasiSeekableFD(fd uint32) (*OpenFile, uint32) {
 	switch {
 	case !ok:
 		return nil, wasiErrnoBadf
-	case of.node == nil || of.node.isTerminal():
+	case of.node == nil || of.tty != nil || of.ptm != nil:
 		return nil, wasiErrno(ESPIPE)
 	}
 	return of, wasiErrnoSuccess

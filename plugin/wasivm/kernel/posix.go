@@ -251,18 +251,20 @@ func posixFunctions() map[string]hostFunc {
 		"siglongjmp": {"vii", longjmpFunc},
 
 		// Terminal control.
-		"tcgetattr": {"iii", func(_ context.Context, p *Process, a []uint64) uint64 {
-			if !p.kernel.tty || !p.isConsoleFD(uint32(a[0])) {
-				return fail
+		"tcgetattr": {"iii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			t := p.fdTerminal(uint32(a[0]))
+			if t == nil {
+				return p.posixResult(ctx, negErrno(ENOTTY))
 			}
-			p.kernel.writeWasiTermios(p.inst.Memory(), uint32(a[1]))
+			t.writeWasiTermios(p.inst.Memory(), uint32(a[1]))
 			return 0
 		}},
-		"tcsetattr": {"iiii", func(_ context.Context, p *Process, a []uint64) uint64 {
-			if !p.kernel.tty || !p.isConsoleFD(uint32(a[0])) {
-				return fail
+		"tcsetattr": {"iiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			t := p.fdTerminal(uint32(a[0]))
+			if t == nil {
+				return p.posixResult(ctx, negErrno(ENOTTY))
 			}
-			p.kernel.readWasiTermios(p.inst.Memory(), uint32(a[2]))
+			t.readWasiTermios(p.inst.Memory(), uint32(a[2]))
 			return 0
 		}},
 		"tcgetpgrp": {"ii", func(ctx context.Context, p *Process, a []uint64) uint64 {
@@ -296,17 +298,29 @@ func posixFunctions() map[string]hostFunc {
 			return 0
 		}},
 		"ttyname_r": {"iiii", func(_ context.Context, p *Process, a []uint64) uint64 {
-			p.inst.Memory().Write(uint32(a[1]), []byte("/dev/tty\x00"))
-			return 0
+			return uint64(p.ttyname(uint32(a[0]), uint32(a[1]), uint32(a[2])))
+		}},
+		"__wasivm_ioctl": {"iiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysIoctl(uint32(a[0]), uint32(a[1]), uint32(a[2])))
 		}},
 
-		// Pseudo-terminals are unsupported.
-		"posix_openpt": {"ii", func(ctx context.Context, p *Process, _ []uint64) uint64 {
-			return p.posixResult(ctx, enosys)
+		// Pseudo-terminals. The C library's ptsname reads the index with
+		// TIOCGPTN; the ptsname import serves programs linked before it.
+		"posix_openpt": {"ii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.openPtmx(oRDWR|kernelStatusFlags(uint32(a[0]))))
 		}},
-		"ptsname":  returns("ii", 0),
-		"grantpt":  returns("ii", fail),
-		"unlockpt": returns("ii", fail),
+		"ptsname": returns("ii", 0),
+		"grantpt": {"ii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			_, errno := p.fdMaster(uint32(a[0]))
+			return p.posixResult(ctx, errno)
+		}},
+		"unlockpt": {"ii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			pt, errno := p.fdMaster(uint32(a[0]))
+			if errno == 0 {
+				pt.locked = false
+			}
+			return p.posixResult(ctx, errno)
+		}},
 
 		// Files. __posix_fcntl3 replaces wasi-libc's fcntl, which rejects
 		// F_DUPFD.
@@ -584,7 +598,7 @@ func (p *Process) longjmp(ctx context.Context, buf, val uint32) {
 	// Find the state.
 	entry, ok := p.jmpBufs[buf]
 	if !ok {
-		_, _ = io.WriteString(p.kernel.stderr, "longjmp: no matching setjmp\n")
+		_, _ = io.WriteString(p.kernel.console.stderr, "longjmp: no matching setjmp\n")
 		p.abort()
 		return
 	}
