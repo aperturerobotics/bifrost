@@ -42,7 +42,8 @@ var devPrefixes = []string{
 }
 
 // ReadArchive reads the description and installed files of the GPKG binary
-// package at gpkgPath. Paths under /bin, /sbin and /lib move under /usr, and
+// package at gpkgPath. A package with no image, such as a virtual, installs no
+// files. Paths under /bin, /sbin and /lib move under /usr, and
 // hard links become copies of their target, which content addressing stores
 // once.
 func ReadArchive(gpkgPath string) (*Archive, error) {
@@ -74,9 +75,6 @@ func ReadArchive(gpkgPath string) (*Archive, error) {
 		if err != nil {
 			return nil, errors.Wrapf(err, "%s: %s", gpkgPath, hdr.Name)
 		}
-	}
-	if image == nil {
-		return nil, errors.Errorf("%s: no image.tar.zst", gpkgPath)
 	}
 	arc.Runtime, arc.Dev = split(image)
 	return &arc, nil
