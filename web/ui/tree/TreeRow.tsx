@@ -1,15 +1,24 @@
-import { useCallback, use } from 'react'
+import { memo, use, useCallback } from 'react'
 import { LuChevronDown, LuChevronRight } from 'react-icons/lu'
 import { cn } from '@s4wave/web/style/utils.js'
 import { isExpandable, TreeNode } from './TreeNode.js'
-import { TreeStateContext, TreeDispatchContext } from './TreeState.js'
+import { TreeDispatchContext } from './TreeState.js'
 
-interface TreeRowProps<T = void> {
+export interface TreeRowProps<T = void> {
   node: TreeNode<T>
+  // level is the depth of the node, zero at the root.
   level: number
+  // index is the position of the row among the visible rows.
   index: number
+  isSelected: boolean
+  isFocused: boolean
+  isExpanded: boolean
   onRowDefaultAction?: (nodes: TreeNode<T>[]) => void
   onRowContextMenu?: (node: TreeNode<T>, event: React.MouseEvent) => void
+  onRowDragStart?: (
+    event: React.DragEvent<HTMLElement>,
+    node: TreeNode<T>,
+  ) => void
 }
 
 const levelIndentPx = 12
@@ -125,14 +134,14 @@ function TreeRowContent<T>({ node }: { node: TreeNode<T> }) {
 }
 
 // useTreeRowHandlers binds the selection, focus, and drag handlers of a row.
-function useTreeRowHandlers<T>(
-  node: TreeNode<T>,
-  isSelected: boolean,
-  isFocused: boolean,
-  onRowDefaultAction: TreeRowProps<T>['onRowDefaultAction'],
-  onRowContextMenu: TreeRowProps<T>['onRowContextMenu'],
-) {
-  const state = use(TreeStateContext)
+function useTreeRowHandlers<T>({
+  node,
+  isSelected,
+  isFocused,
+  onRowDefaultAction,
+  onRowContextMenu,
+  onRowDragStart,
+}: TreeRowProps<T>) {
   const dispatch = use(TreeDispatchContext)
 
   const handleTreeItemSelect = useCallback(
@@ -214,19 +223,9 @@ function useTreeRowHandlers<T>(
     [isFocused],
   )
 
-  const nodeOnDragStart = node.onDragStart
   const onDragStart = useCallback(
-    (e: React.DragEvent<HTMLElement>) => {
-      if (nodeOnDragStart && state) {
-        const wasSelected = state.selectedIds.has(node.id)
-        if (!wasSelected) {
-          dispatch?.({ type: 'SELECT_NODE', id: node.id })
-        }
-        state.selectedIds.add(node.id)
-        nodeOnDragStart(e, node, state)
-      }
-    },
-    [nodeOnDragStart, node, state, dispatch],
+    (e: React.DragEvent<HTMLElement>) => onRowDragStart?.(e, node),
+    [onRowDragStart, node],
   )
 
   return {
@@ -237,35 +236,22 @@ function useTreeRowHandlers<T>(
     handleTreeItemFocus,
     handleTreeItemKeyDown,
     handleRef,
-    onDragStart: nodeOnDragStart ? onDragStart : undefined,
+    onDragStart: node.onDragStart ? onDragStart : undefined,
   }
 }
 
-export function TreeRow<T = void>({
-  node,
-  level,
-  onRowDefaultAction,
-  onRowContextMenu,
-  index,
-}: TreeRowProps<T>) {
-  const state = use(TreeStateContext)
-
+// TreeRowImpl renders one row from its own selection, focus, and expansion, so
+// a change of the tree state renders only the rows it changes.
+function TreeRowImpl<T = void>(props: TreeRowProps<T>) {
+  const { node, level, index, isSelected, isFocused } = props
   const hasChildren = isExpandable(node)
-  const isExpanded = hasChildren && (state?.expandedIds.has(node.id) ?? false)
-  const isSelected = state?.selectedIds.has(node.id) ?? false
-  const isFocused = state?.focusedId === node.id
-  const handlers = useTreeRowHandlers(
-    node,
-    isSelected,
-    isFocused,
-    onRowDefaultAction,
-    onRowContextMenu,
-  )
+  const isExpanded = hasChildren && props.isExpanded
+  const handlers = useTreeRowHandlers(props)
 
   return (
     <div
       className={cn(
-        'tree-row-indent relative flex cursor-pointer items-center gap-1 py-1 text-xs select-none',
+        'tree-row-indent relative flex h-full cursor-pointer items-center gap-1 py-1 text-xs select-none',
         'border-foreground/6 border-b outline-none transition-colors',
         'focus-visible:ring-brand/30 focus-visible:ring-1 focus-visible:ring-inset',
         isSelected &&
@@ -311,3 +297,6 @@ export function TreeRow<T = void>({
     </div>
   )
 }
+
+// TreeRow renders one tree row, skipping renders while its props are unchanged.
+export const TreeRow = memo(TreeRowImpl) as typeof TreeRowImpl

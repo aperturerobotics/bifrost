@@ -329,7 +329,7 @@ function GitRepoRouteBody({ controller, handle }: GitRepoRouteBodyProps) {
   const isRoot = displayPath === '/'
 
   if (!isRoot || route.mode === 'files') {
-    return <FileTree entries={fileEntries} onOpen={nav.handleOpen} autoHeight />
+    return <FileTree entries={fileEntries} onOpen={nav.handleOpen} />
   }
 
   switch (route.mode) {
@@ -409,7 +409,7 @@ function GitRepoContent({ controller }: { controller: GitRepoController }) {
       onModeChange={isCommit ? undefined : nav.handleModeChange}
       hasReadme={!!readmePath}
     >
-      <div className="bg-file-back min-h-0 flex-1 overflow-auto">
+      <div className="bg-file-back flex min-h-0 flex-1 flex-col overflow-auto">
         <GitRepoRouteBody controller={controller} handle={handle} />
       </div>
     </GitViewerFrame>

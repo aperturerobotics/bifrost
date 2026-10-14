@@ -6,9 +6,12 @@ import {
   use,
   useCallback,
   useMemo,
-  useSyncExternalStore,
 } from 'react'
 import { LuChevronDown, LuChevronUp } from 'react-icons/lu'
+import {
+  coarsePointerQuery,
+  useMediaQuery,
+} from '@s4wave/web/hooks/useMediaQuery.js'
 import { cn } from '@s4wave/web/style/utils.js'
 import { useStateNamespace } from '@s4wave/web/state/persist.js'
 import {
@@ -40,7 +43,6 @@ interface FileListProps {
   state: ListStateHandle
   rowHeight?: number
   loadingId?: string | null
-  autoHeight?: boolean
   placeholder?: ReactNode
   renderEntry?: RenderEntryCallback
   currentPath?: string
@@ -79,20 +81,6 @@ type FileListRowConfig = Pick<
 >
 
 const FileListRowConfigContext = createContext<FileListRowConfig | null>(null)
-const coarsePointerQuery = '(pointer: coarse)'
-
-function subscribeCoarsePointer(callback: () => void): () => void {
-  const query = window.matchMedia(coarsePointerQuery)
-  query.addEventListener('change', callback)
-  return () => query.removeEventListener('change', callback)
-}
-
-function getCoarsePointerSnapshot(): boolean {
-  return (
-    typeof window !== 'undefined' &&
-    window.matchMedia(coarsePointerQuery).matches
-  )
-}
 
 // FileListRow keeps the rendered row component identity stable while hover and
 // drag-drop props change during native drag sessions.
@@ -138,7 +126,6 @@ export function FileList({
   state,
   rowHeight,
   loadingId,
-  autoHeight,
   placeholder,
   renderEntry,
   currentPath,
@@ -149,11 +136,7 @@ export function FileList({
   onEntryDragLeave,
   onEntryDrop,
 }: FileListProps) {
-  const coarsePointer = useSyncExternalStore(
-    subscribeCoarsePointer,
-    getCoarsePointerSnapshot,
-    () => false,
-  )
+  const coarsePointer = useMediaQuery(coarsePointerQuery)
 
   // The virtualizer reserves the full coarse-pointer menu target in each row.
   const effectiveRowHeight = Math.max(rowHeight ?? 24, coarsePointer ? 44 : 24)
@@ -264,7 +247,6 @@ export function FileList({
         state={state}
         renderHeader={renderHeader}
         sortFn={sortFn}
-        autoHeight={autoHeight}
         placeholder={placeholder}
       />
     </FileListRowConfigContext.Provider>

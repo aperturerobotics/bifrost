@@ -10,7 +10,6 @@ export interface FileTreeProps {
   entries: FileEntry[]
   onOpen: (entries: FileEntry[]) => void
   loadingId?: string | null
-  autoHeight?: boolean
   renderEntry?: RenderEntryCallback
   currentPath?: string
 }
@@ -20,7 +19,6 @@ export function FileTree({
   entries,
   onOpen,
   loadingId,
-  autoHeight,
   renderEntry,
   currentPath,
 }: FileTreeProps) {
@@ -31,7 +29,6 @@ export function FileTree({
       state={listState}
       onOpen={onOpen}
       loadingId={loadingId ?? undefined}
-      autoHeight={autoHeight}
       renderEntry={renderEntry}
       currentPath={currentPath}
     />

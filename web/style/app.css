@@ -603,10 +603,6 @@
     height: var(--system-status-height);
   }
 
-  .list-row-height {
-    height: var(--list-row-height);
-  }
-
   .sql-sidebar-width {
     width: var(--sql-sidebar-width);
   }

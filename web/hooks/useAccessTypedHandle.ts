@@ -1,12 +1,24 @@
 import {
   useResource,
   type Resource,
+  type UseResourceOptions,
 } from '@aptre/bldr-sdk/hooks/useResource.js'
 import { Resource as SDKResource } from '@aptre/bldr-sdk/resource/resource.js'
 import type { ClientResourceRef } from '@aptre/bldr-sdk/resource/client.js'
 import type { IWorldState } from '@s4wave/sdk/world/world-state.js'
 
+// typedHandleOptions retries the access when the server or the connection
+// releases the handle. It is shared so the release listener is subscribed
+// once per handle instead of once per render.
+const typedHandleOptions: UseResourceOptions<SDKResource> = {
+  retryOnReleasedResource: {
+    reasons: ['server-released', 'connection-lost'],
+    getResourceIds: (handle) => [handle.id],
+  },
+}
+
 // useAccessTypedHandle creates an SDK handle for a world object's typed resource.
+// A handle of a different type than typeId resolves to null.
 export function useAccessTypedHandle<T extends SDKResource>(
   worldState: Resource<IWorldState>,
   objectKey: string | null,
@@ -27,12 +39,7 @@ export function useAccessTypedHandle<T extends SDKResource>(
       }
       return cleanup(new HandleClass(ref))
     },
-    [objectKey],
-    {
-      retryOnReleasedResource: {
-        reasons: ['server-released', 'connection-lost'],
-        getResourceIds: (handle) => [handle.id],
-      },
-    },
+    [objectKey, typeId, HandleClass],
+    typedHandleOptions,
   )
 }
