@@ -145,7 +145,7 @@ func readGraphLinks(ctx context.Context, bcs *block.Cursor, keys [][]byte) ([]wo
 	defer graphHd.Close()
 	quads := make([]world.GraphQuad, 0, len(links))
 	for _, p := range links {
-		q, err := graphHd.QuadStore.Quad(ctx, p)
+		q, err := graphHd.Quad(ctx, p)
 		if err != nil {
 			return nil, err
 		}

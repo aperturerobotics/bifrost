@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/s4wave/spacewave/db/block"
 	block_mock "github.com/s4wave/spacewave/db/block/mock"
@@ -157,6 +158,68 @@ func TestWatchChangesCollectedBase(t *testing.T) {
 	// Expect unknown changes since the collected head.
 	if _, changes := readChangeWindow(t, ctx, f.engine, after); !changes.Unknown {
 		t.Fatalf("changes since a collected head = %+v, want unknown", changes)
+	}
+}
+
+// peerRootStore pins one root through a peer. A pin of that root that may wait
+// for a peer blocks until its context ends, and one that may not reports the
+// root unavailable, as a store reading through to an absent peer does. Other
+// pins go to the store.
+type peerRootStore struct {
+	block.StoreOps
+	block.RootRetainer
+	// peer is the root only a peer holds.
+	peer *block.BlockRef
+}
+
+// SupportsRootRetention reports that the store pins roots.
+func (s *peerRootStore) SupportsRootRetention() bool { return true }
+
+// PinRoot pins ref, asking the absent peer for the peer root.
+func (s *peerRootStore) PinRoot(ctx context.Context, ref *block.BlockRef) (func(), error) {
+	if !ref.EqualsRef(s.peer) {
+		return block.PinRoot(ctx, s.StoreOps, ref)
+	}
+	if block.GetPeerWait(ctx) != nil {
+		return nil, block.ErrUnavailable
+	}
+	<-ctx.Done()
+	return nil, context.Cause(ctx)
+}
+
+// TestWatchChangesPeerBase checks that a watcher whose base only an absent
+// peer could serve sees unknown changes. Pinning the base must not wait for
+// the peer, since it holds the publication lock every reader and writer needs.
+func TestWatchChangesPeerBase(t *testing.T) {
+	// Commit an object and watch from that head.
+	f := newSessionFixture(t)
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+	w := sessionWriter(t, f)
+	sessionObject(t, w, "peer/first")
+	if err := w.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+	after := headSeqno(t, ctx, f.engine)
+	base := f.engine.GetRootRef().GetRootRef()
+
+	// Supersede the head and leave it only on an absent peer.
+	w = sessionWriter(t, f)
+	sessionObject(t, w, "peer/second")
+	if err := w.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+	e := f.engine
+	locked := e.bcast.Lock()
+	e.writeBlockStore = &peerRootStore{StoreOps: e.writeBlockStore, peer: base}
+	locked.Unlock()
+
+	// Expect unknown changes since the base before the deadline.
+	if _, changes := readChangeWindow(t, ctx, e, after); !changes.Unknown {
+		t.Fatalf("changes since a peer-only base = %+v, want unknown", changes)
+	}
+	if err := ctx.Err(); err != nil {
+		t.Fatalf("watch waited for the absent peer: %v", err)
 	}
 }
 
