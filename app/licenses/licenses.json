@@ -1144,6 +1144,14 @@
       "repo": "https://github.com/hashicorp/golang-lru"
     },
     {
+      "name": "github.com/jezek/xgb",
+      "version": "v1.3.1",
+      "spdx": "BSD-3-Clause",
+      "source": "go",
+      "repo": "https://github.com/jezek/xgb",
+      "fullText": "// Copyright (c) 2009 The XGB Authors. All rights reserved.\n//\n// Redistribution and use in source and binary forms, with or without\n// modification, are permitted provided that the following conditions are\n// met:\n//\n//    * Redistributions of source code must retain the above copyright\n// notice, this list of conditions and the following disclaimer.\n//    * Redistributions in binary form must reproduce the above\n// copyright notice, this list of conditions and the following disclaimer\n// in the documentation and/or other materials provided with the\n// distribution.\n//    * Neither the name of Google Inc. nor the names of its\n// contributors may be used to endorse or promote products derived from\n// this software without specific prior written permission.\n//\n// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS\n// \"AS IS\" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT\n// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR\n// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT\n// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,\n// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT\n// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,\n// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY\n// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT\n// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE\n// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.\n//\n// Subject to the terms and conditions of this License, Google hereby\n// grants to You a perpetual, worldwide, non-exclusive, no-charge,\n// royalty-free, irrevocable (except as stated in this section) patent\n// license to make, have made, use, offer to sell, sell, import, and\n// otherwise transfer this implementation of XGB, where such license\n// applies only to those patent claims licensable by Google that are\n// necessarily infringed by use of this implementation of XGB. If You\n// institute patent litigation against any entity (including a\n// cross-claim or counterclaim in a lawsuit) alleging that this\n// implementation of XGB or a Contribution incorporated within this\n// implementation of XGB constitutes direct or contributory patent\n// infringement, then any patent licenses granted to You under this\n// License for this implementation of XGB shall terminate as of the date\n// such litigation is filed.\n"
+    },
+    {
       "name": "github.com/jinzhu/inflection",
       "version": "v1.0.0",
       "spdx": "MIT",
