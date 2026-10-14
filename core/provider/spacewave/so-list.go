@@ -11,11 +11,12 @@ import (
 func (a *ProviderAccount) syncSharedObjectListAccess(
 	subStatus s4wave_provider_spacewave.BillingStatus,
 ) {
+	// Record the access flag and take the invalidator when it changed.
 	allowed := hasSOListAccess(subStatus)
-
 	var invalidate func()
 	var changed bool
 	a.soListBcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+		// Store the flag and take the invalidator only on a change.
 		if a.soListAccess == allowed {
 			return
 		}
@@ -27,9 +28,11 @@ func (a *ProviderAccount) syncSharedObjectListAccess(
 	if !changed {
 		return
 	}
+
+	// Clear the list when access is revoked and restart its resolution.
 	if !allowed {
 		a.soListCtr.SetValue(&sobject.SharedObjectList{})
-		a.refreshSelfEnrollmentSummary(context.Background())
+		a.selfEnrollmentRefresh.Trigger()
 	}
 	if invalidate != nil {
 		invalidate()
@@ -67,7 +70,7 @@ func (a *ProviderAccount) resolveSharedObjectList(
 
 	if !a.hasSharedObjectListAccess() {
 		a.soListCtr.SetValue(&sobject.SharedObjectList{})
-		a.refreshSelfEnrollmentSummary(ctx)
+		a.selfEnrollmentRefresh.Trigger()
 		return struct{}{}, nil, nil
 	}
 	if err := a.fetchSharedObjectList(ctx); err != nil {
@@ -86,12 +89,14 @@ func (a *ProviderAccount) setSharedObjectListInvalidator(invalidate func()) {
 
 // EnsureSharedObjectListLoaded resolves soListRc and waits for the current snapshot.
 func (a *ProviderAccount) EnsureSharedObjectListLoaded(ctx context.Context) error {
+	// Hold a reference so the list resolves.
 	_, rel, err := a.soListRc.Resolve(ctx)
 	if err != nil {
 		return err
 	}
 	defer rel()
 
+	// Wait for the resolved snapshot.
 	_, err = a.soListCtr.WaitValue(ctx, nil)
 	return err
 }

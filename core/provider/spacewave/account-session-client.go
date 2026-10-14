@@ -38,11 +38,13 @@ func (a *ProviderAccount) sessionClientSnapshot() (*SessionClient, string) {
 // account. If the cached session client is missing its private key, it falls
 // back to any mounted unlocked session and repairs the cached client.
 func (a *ProviderAccount) getReadySessionClient(ctx context.Context) (*SessionClient, crypto.PrivKey, peer.ID, error) {
+	// Use the cached client when it can sign and is not bound to a session.
 	cli, sessionID := a.sessionClientSnapshot()
 	if cli != nil && cli.priv != nil && cli.peerID != "" && sessionID == "" {
 		return cli, cli.priv, cli.peerID, nil
 	}
 
+	// Otherwise prefer the cached client's session, then any mounted session.
 	entries := a.sessions.GetKeysWithData()
 	if cli, priv, pid, ok := a.getReadySessionClientForSession(ctx, entries, sessionID); ok {
 		return cli, priv, pid, nil
@@ -135,15 +137,19 @@ func (a *ProviderAccount) maybeSetSessionClient(sessionID string, cli *SessionCl
 
 	// Refresh the state derived from the session client.
 	a.setSelfRejoinSweepState(rejoinState)
-	a.refreshSelfEnrollmentSummary(context.Background())
+	a.selfEnrollmentRefresh.Trigger()
 }
 
+// dropSessionClientForSession clears the cached session client when it
+// belongs to sessionID, and refreshes the state derived from it.
 func (a *ProviderAccount) dropSessionClientForSession(sessionID string) {
+	// Clear the client only when sessionID owns it.
 	if sessionID == "" {
 		return
 	}
 	var rejoinState *selfRejoinSweepState
 	a.accountBcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+		// Clear the client and rebuild the sweep state it feeds.
 		if a.sessionClientSessionID != sessionID {
 			return
 		}
@@ -152,6 +158,8 @@ func (a *ProviderAccount) dropSessionClientForSession(sessionID string) {
 		rejoinState = a.buildSelfRejoinSweepStateLocked()
 		broadcast()
 	})
+
+	// Refresh the state derived from the session client.
 	a.setSelfRejoinSweepState(rejoinState)
-	a.refreshSelfEnrollmentSummary(context.Background())
+	a.selfEnrollmentRefresh.Trigger()
 }

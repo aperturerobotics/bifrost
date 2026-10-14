@@ -4,7 +4,9 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"testing"
+	"time"
 
 	"github.com/aperturerobotics/util/ccontainer"
 	"github.com/s4wave/spacewave/core/cdn"
@@ -207,6 +209,8 @@ func TestRefreshSelfEnrollmentSummaryInvalidatesOnUnauthError(t *testing.T) {
 	}
 }
 
+// TestSelfEnrollmentSummaryRefreshesOnCacheWrite proves a verified cache
+// write refreshes the summary in the background.
 func TestSelfEnrollmentSummaryRefreshesOnCacheWrite(t *testing.T) {
 	// Build an account with a pending missing-cache entry.
 	priv, sessionPID, _ := generateEntityKey(t)
@@ -214,93 +218,78 @@ func TestSelfEnrollmentSummaryRefreshesOnCacheWrite(t *testing.T) {
 	acc.cacheSharedObjectListEntry(selfEnrollmentListEntry("needs"))
 
 	// The initial summary must report the pending entry.
-	if got := acc.GetSelfEnrollmentSummary(); got == nil || got.count != 1 || !got.loaded || len(got.ids) != 1 || got.ids[0] != "needs" {
-		t.Fatalf("summary before cache write = %+v, want pending missing-cache summary", got)
-	}
-
-	// Write the enrollment cache and expect an account broadcast.
-	var ch <-chan struct{}
-	acc.accountBcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
-		ch = getWaitCh()
+	waitSelfEnrollmentSummary(t, acc, "pending missing-cache summary", func(got *SelfEnrollmentSummary) bool {
+		return got.GetCount() == 1 && got.GetLoaded() && slices.Equal(got.GetIDs(), []string{"needs"})
 	})
-	writeSelfEnrollmentCache(t, acc, "needs", "acct-1", sessionPID.String(), sobject.SOParticipantRole_SOParticipantRole_READER)
-	select {
-	case <-ch:
-	default:
-		t.Fatal("expected account broadcast after summary changed")
-	}
 
-	// The summary must now be empty and loaded.
-	got := acc.GetSelfEnrollmentSummary()
-	if got == nil {
-		t.Fatal("expected summary")
-	}
-	if got.count != 0 || got.generationKey != "" || !got.loaded || len(got.ids) != 0 {
-		t.Fatalf("summary = %+v, want empty enrolled summary", got)
-	}
+	// Writing the enrollment cache must empty the loaded summary.
+	writeSelfEnrollmentCache(t, acc, "needs", "acct-1", sessionPID.String(), sobject.SOParticipantRole_SOParticipantRole_READER)
+	waitSelfEnrollmentSummary(t, acc, "empty enrolled summary", func(got *SelfEnrollmentSummary) bool {
+		return got != nil && got.GetCount() == 0 && got.GetGenerationKey() == "" && got.GetLoaded()
+	})
 }
 
+// TestSelfEnrollmentSummaryRefreshesOnSessionPeerChange proves replacing the
+// session client changes the generation key.
 func TestSelfEnrollmentSummaryRefreshesOnSessionPeerChange(t *testing.T) {
 	// Build an account with a pending entry and capture its summary.
 	priv, sessionPID, _ := generateEntityKey(t)
 	acc := newSelfEnrollmentSummaryTestAccount(t, priv, sessionPID.String())
 	acc.cacheSharedObjectListEntry(selfEnrollmentListEntry("needs"))
 	writeSelfEnrollmentCache(t, acc, "needs", "acct-1", "", sobject.SOParticipantRole_SOParticipantRole_READER)
+	first := waitSelfEnrollmentSummary(t, acc, "generation key", func(got *SelfEnrollmentSummary) bool {
+		return got.GetGenerationKey() != ""
+	})
 
-	// The first summary must carry a generation key.
-	first := acc.GetSelfEnrollmentSummary()
-	if first == nil || first.generationKey == "" {
-		t.Fatalf("summary = %+v, want generation key", first)
-	}
-
-	// Replace the session client and expect a new generation key.
+	// Replacing the session client must produce a new generation key.
 	nextPriv, nextPID, _ := generateEntityKey(t)
 	acc.ReplaceSessionClient(NewSessionClient(http.DefaultClient, "http://example.invalid", DefaultSigningEnvPrefix, nextPriv, nextPID.String()))
-	second := acc.GetSelfEnrollmentSummary()
-	if second == nil || second.generationKey == "" {
-		t.Fatalf("summary after peer change = %+v, want generation key", second)
-	}
-	if first.generationKey == second.generationKey {
-		t.Fatal("expected generation key to change with session peer")
-	}
+	waitSelfEnrollmentSummary(t, acc, "new generation key", func(got *SelfEnrollmentSummary) bool {
+		key := got.GetGenerationKey()
+		return key != "" && key != first.GetGenerationKey()
+	})
 }
 
+// TestSelfEnrollmentSummaryClearsWhenPeerEnrolled proves enrolling the
+// session peer clears the pending entry.
 func TestSelfEnrollmentSummaryClearsWhenPeerEnrolled(t *testing.T) {
 	// Build an account with a pending entry before enrollment.
 	priv, sessionPID, _ := generateEntityKey(t)
 	acc := newSelfEnrollmentSummaryTestAccount(t, priv, sessionPID.String())
 	acc.cacheSharedObjectListEntry(selfEnrollmentListEntry("needs"))
 	writeSelfEnrollmentCache(t, acc, "needs", "acct-1", "", sobject.SOParticipantRole_SOParticipantRole_READER)
-
-	// The pre-enrollment summary must report one pending entry.
-	first := acc.GetSelfEnrollmentSummary()
-	if first == nil || first.count != 1 {
-		t.Fatalf("summary before enrollment = %+v, want one pending entry", first)
-	}
-
-	// Write the enrollment cache and expect the summary broadcast.
-	var ch <-chan struct{}
-	acc.accountBcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
-		ch = getWaitCh()
+	waitSelfEnrollmentSummary(t, acc, "one pending entry", func(got *SelfEnrollmentSummary) bool {
+		return got.GetCount() == 1
 	})
-	writeSelfEnrollmentCache(t, acc, "needs", "acct-1", sessionPID.String(), sobject.SOParticipantRole_SOParticipantRole_READER)
-	select {
-	case <-ch:
-	default:
-		t.Fatal("expected account broadcast after enrollment summary cleared")
-	}
 
-	// The summary must be empty and loaded after enrollment.
-	got := acc.GetSelfEnrollmentSummary()
-	if got == nil {
-		t.Fatal("expected empty summary")
+	// Enrolling the session peer must empty the loaded summary.
+	writeSelfEnrollmentCache(t, acc, "needs", "acct-1", sessionPID.String(), sobject.SOParticipantRole_SOParticipantRole_READER)
+	waitSelfEnrollmentSummary(t, acc, "empty enrolled summary", func(got *SelfEnrollmentSummary) bool {
+		return got != nil && got.GetCount() == 0 && got.GetGenerationKey() == "" && got.GetLoaded()
+	})
+}
+
+// waitSelfEnrollmentSummary waits through account broadcasts until match
+// accepts the summary, and returns it. It fails the test after five seconds.
+func waitSelfEnrollmentSummary(
+	t *testing.T,
+	acc *ProviderAccount,
+	want string,
+	match func(*SelfEnrollmentSummary) bool,
+) *SelfEnrollmentSummary {
+	// Wait for a matching summary under the account broadcast.
+	t.Helper()
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	var got *SelfEnrollmentSummary
+	err := acc.accountBcast.Wait(ctx, func(_ func(), _ func() <-chan struct{}) (bool, error) {
+		got = acc.GetSelfEnrollmentSummary()
+		return match(got), nil
+	})
+	if err != nil {
+		t.Fatalf("summary = %+v, want %s: %v", got, want, err)
 	}
-	if got.count != 0 || got.generationKey != "" || len(got.ids) != 0 {
-		t.Fatalf("summary after enrollment = %+v, want empty summary", got)
-	}
-	if !got.loaded {
-		t.Fatal("loaded = false, want true after enrollment cache write")
-	}
+	return got
 }
 
 func selfEnrollmentListEntry(id string) *sobject.SharedObjectListEntry {
@@ -315,14 +304,19 @@ func newSelfEnrollmentSummaryTestAccount(
 	priv crypto.PrivKey,
 	peerID string,
 ) *ProviderAccount {
+	// Build the account with its summary refresh running for the test.
 	t.Helper()
-	return &ProviderAccount{
+	acc := &ProviderAccount{
 		accountID:     "acct-1",
 		le:            logrus.New().WithField("test", t.Name()),
 		objStore:      hashmap.NewHashmapKvtx(hashmap.NewHashmap[[]byte]()),
 		sessionClient: NewSessionClient(http.DefaultClient, "http://example.invalid", DefaultSigningEnvPrefix, priv, peerID),
 		soListCtr:     ccontainer.NewCContainer[*sobject.SharedObjectList](nil),
 	}
+	acc.selfEnrollmentRefresh = newCoalescedTriggerRoutine(acc.le, "self-enrollment-refresh", acc.refreshSelfEnrollmentSummary)
+	acc.selfEnrollmentRefresh.SetContext(t.Context())
+	t.Cleanup(acc.selfEnrollmentRefresh.ClearContext)
+	return acc
 }
 
 func writeSelfEnrollmentCache(

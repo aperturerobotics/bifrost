@@ -9,6 +9,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// newNamedRoutineContainer builds a routine container logging under name when
+// le is set.
 func newNamedRoutineContainer(le *logrus.Entry, name string) *routine.RoutineContainer {
 	if le == nil {
 		return routine.NewRoutineContainer()
@@ -16,6 +18,8 @@ func newNamedRoutineContainer(le *logrus.Entry, name string) *routine.RoutineCon
 	return routine.NewRoutineContainerWithLogger(le.WithField("routine", name))
 }
 
+// coalescedTriggerRoutine runs one callback at a time on its bound context.
+// Triggers that arrive while the callback runs coalesce into one more run.
 type coalescedTriggerRoutine struct {
 	rc      *routine.RoutineContainer
 	bcast   broadcast.Broadcast
@@ -23,6 +27,7 @@ type coalescedTriggerRoutine struct {
 	run     func(context.Context)
 }
 
+// newCoalescedTriggerRoutine builds a routine whose triggers run run.
 func newCoalescedTriggerRoutine(
 	le *logrus.Entry,
 	name string,
@@ -36,21 +41,28 @@ func newCoalescedTriggerRoutine(
 	return r
 }
 
+// SetContext binds the routine to ctx, restarting it when ctx changes.
 func (r *coalescedTriggerRoutine) SetContext(ctx context.Context) {
 	r.rc.SetContext(ctx, true)
 }
 
+// ClearContext stops the routine until the next context.
 func (r *coalescedTriggerRoutine) ClearContext() {
 	r.rc.ClearContext()
 }
 
+// Trigger schedules one run. A nil routine ignores the trigger.
 func (r *coalescedTriggerRoutine) Trigger() {
+	if r == nil {
+		return
+	}
 	r.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
 		r.pending = true
 		broadcast()
 	})
 }
 
+// Pending returns whether a trigger is waiting for its run.
 func (r *coalescedTriggerRoutine) Pending() bool {
 	if r == nil {
 		return false
@@ -62,8 +74,10 @@ func (r *coalescedTriggerRoutine) Pending() bool {
 	return pending
 }
 
+// execute runs the callback once per coalesced trigger until ctx ends.
 func (r *coalescedTriggerRoutine) execute(ctx context.Context) error {
 	for {
+		// Wait for a trigger and claim it.
 		if err := r.bcast.Wait(ctx, func(_ func(), _ func() <-chan struct{}) (bool, error) {
 			if !r.pending {
 				return false, nil
@@ -73,6 +87,8 @@ func (r *coalescedTriggerRoutine) execute(ctx context.Context) error {
 		}); err != nil {
 			return err
 		}
+
+		// Run the callback for the claimed trigger.
 		r.run(ctx)
 		if err := ctx.Err(); err != nil {
 			return context.Canceled
@@ -103,6 +119,7 @@ func newAsyncCallbackJobs(run func(context.Context)) *asyncCallbackJobs {
 
 // SetContext binds new jobs to ctx and stops the jobs of the prior context.
 func (j *asyncCallbackJobs) SetContext(ctx context.Context) {
+	// Swap the context, taking the jobs of the prior one.
 	var stop []*routine.RoutineContainer
 	j.mtx.Lock()
 	if j.ctx == ctx {
@@ -114,6 +131,8 @@ func (j *asyncCallbackJobs) SetContext(ctx context.Context) {
 	}
 	j.ctx = ctx
 	j.mtx.Unlock()
+
+	// Stop the prior jobs outside the lock.
 	stopAsyncCallbackJobs(stop)
 }
 
@@ -160,6 +179,7 @@ func (j *asyncCallbackJobs) Pending() int {
 	return len(j.jobs)
 }
 
+// takeJobsLocked removes and returns every running job. The caller holds mtx.
 func (j *asyncCallbackJobs) takeJobsLocked() []*routine.RoutineContainer {
 	stop := make([]*routine.RoutineContainer, 0, len(j.jobs))
 	for key, rc := range j.jobs {
@@ -169,7 +189,9 @@ func (j *asyncCallbackJobs) takeJobsLocked() []*routine.RoutineContainer {
 	return stop
 }
 
+// stopAsyncCallbackJobs stops jobs and waits for each to exit.
 func stopAsyncCallbackJobs(jobs []*routine.RoutineContainer) {
+	// Detach and stop each job, collecting its exit channel.
 	wait := make([]<-chan struct{}, 0, len(jobs))
 	for _, rc := range jobs {
 		waitCh, _ := rc.SetRoutine(nil)
@@ -178,6 +200,8 @@ func stopAsyncCallbackJobs(jobs []*routine.RoutineContainer) {
 		}
 		rc.ClearContext()
 	}
+
+	// Wait for every job to exit.
 	for _, ch := range wait {
 		<-ch
 	}
