@@ -2,7 +2,6 @@ syntax = "proto3";
 package world.block;
 
 import "github.com/s4wave/spacewave/db/block/block.proto";
-import "github.com/s4wave/spacewave/db/block/filters/filters.proto";
 import "github.com/s4wave/spacewave/db/block/quad/quad.proto";
 import "github.com/s4wave/spacewave/db/kvtx/block/kvtx.proto";
 import "github.com/s4wave/spacewave/db/bucket/bucket.proto";
@@ -129,12 +128,4 @@ message ChangeLogLL {
   // ChangeType is the type of change applied.
   // If there are multiple changes, they will all be of this type.
   WorldChangeType change_type = 4;
-  // KeyFilters contains filters to quickly check if a key was affected.
-  // Bloom capacity is the object key count before changes are applied.
-  // Bloom capacity: min 64 (38bytes), max 500k (300KiB).
-  // Bloom false-negative rate 0%, false-positive rate ~10%.
-  // Key prefix false-negative rate depends on common prefix of ops.
-  // Should be used as a changelog filter for watchers.
-  // If change_batch.prev_ref is empty, this field will also be empty.
-  .filters.KeyFilters key_filters = 5;
 }

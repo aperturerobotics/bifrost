@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/s4wave/spacewave/db/block"
-	filters "github.com/s4wave/spacewave/db/block/filters"
 	"github.com/s4wave/spacewave/db/world"
 )
 
@@ -109,7 +108,6 @@ func (w *ChangeLogLL) IsEmpty() bool {
 
 // Clone clones the changelog ll object.
 // Note: references the same ChangeBatch object.
-// Note: clones the KeyFilters object.
 func (w *ChangeLogLL) Clone() *ChangeLogLL {
 	if w == nil {
 		return nil
@@ -119,7 +117,6 @@ func (w *ChangeLogLL) Clone() *ChangeLogLL {
 		PrevRef:     w.PrevRef,
 		ChangeBatch: w.ChangeBatch,
 		ChangeType:  w.ChangeType,
-		KeyFilters:  w.KeyFilters.Clone(),
 	}
 }
 
@@ -181,7 +178,6 @@ func (w *ChangeLogLL) ApplySubBlock(id uint32, next block.SubBlock) error {
 func (w *ChangeLogLL) GetSubBlocks() map[uint32]block.SubBlock {
 	m := make(map[uint32]block.SubBlock)
 	m[3] = w.GetChangeBatch()
-	m[5] = w.GetKeyFilters()
 	return m
 }
 
@@ -195,15 +191,6 @@ func (w *ChangeLogLL) GetSubBlockCtor(id uint32) block.SubBlockCtor {
 			if v == nil && create {
 				w.ChangeBatch = &WorldChangeLL{}
 				v = w.ChangeBatch
-			}
-			return v
-		}
-	case 5:
-		return func(create bool) block.SubBlock {
-			v := w.GetKeyFilters()
-			if v == nil && create {
-				w.KeyFilters = &filters.KeyFilters{}
-				v = w.KeyFilters
 			}
 			return v
 		}
