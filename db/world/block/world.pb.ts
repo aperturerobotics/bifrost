@@ -9,7 +9,6 @@ import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-import { KeyFilters } from '../../block/filters/filters.pb.js'
 import { KeyValueStore } from '../../kvtx/block/kvtx.pb.js'
 import { ObjectRef } from '../../bucket/bucket.pb.js'
 
@@ -235,18 +234,6 @@ export interface ChangeLogLL {
    * @generated from field: world.block.WorldChangeType change_type = 4;
    */
   changeType?: WorldChangeType
-  /**
-   * KeyFilters contains filters to quickly check if a key was affected.
-   * Bloom capacity is the object key count before changes are applied.
-   * Bloom capacity: min 64 (38bytes), max 500k (300KiB).
-   * Bloom false-negative rate 0%, false-positive rate ~10%.
-   * Key prefix false-negative rate depends on common prefix of ops.
-   * Should be used as a changelog filter for watchers.
-   * If change_batch.prev_ref is empty, this field will also be empty.
-   *
-   * @generated from field: filters.KeyFilters key_filters = 5;
-   */
-  keyFilters?: KeyFilters
 }
 
 export const ChangeLogLL: MessageType<ChangeLogLL> =
@@ -257,7 +244,6 @@ export const ChangeLogLL: MessageType<ChangeLogLL> =
       { no: 2, name: 'prev_ref', kind: 'message', T: () => BlockRef },
       { no: 3, name: 'change_batch', kind: 'message', T: WorldChangeLL },
       { no: 4, name: 'change_type', kind: 'enum', T: WorldChangeType_Enum },
-      { no: 5, name: 'key_filters', kind: 'message', T: () => KeyFilters },
     ] satisfies readonly PartialFieldInfo[],
   })
 

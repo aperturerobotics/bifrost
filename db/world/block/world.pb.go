@@ -13,7 +13,6 @@ import (
 	protobuf_go_lite "github.com/aperturerobotics/protobuf-go-lite"
 	json "github.com/aperturerobotics/protobuf-go-lite/json"
 	block1 "github.com/s4wave/spacewave/db/block"
-	filters "github.com/s4wave/spacewave/db/block/filters"
 	quad "github.com/s4wave/spacewave/db/block/quad"
 	bucket "github.com/s4wave/spacewave/db/bucket"
 	block "github.com/s4wave/spacewave/db/kvtx/block"
@@ -341,14 +340,6 @@ type ChangeLogLL struct {
 	// ChangeType is the type of change applied.
 	// If there are multiple changes, they will all be of this type.
 	ChangeType WorldChangeType `protobuf:"varint,4,opt,name=change_type,json=changeType,proto3" json:"changeType,omitempty"`
-	// KeyFilters contains filters to quickly check if a key was affected.
-	// Bloom capacity is the object key count before changes are applied.
-	// Bloom capacity: min 64 (38bytes), max 500k (300KiB).
-	// Bloom false-negative rate 0%, false-positive rate ~10%.
-	// Key prefix false-negative rate depends on common prefix of ops.
-	// Should be used as a changelog filter for watchers.
-	// If change_batch.prev_ref is empty, this field will also be empty.
-	KeyFilters *filters.KeyFilters `protobuf:"bytes,5,opt,name=key_filters,json=keyFilters,proto3" json:"keyFilters,omitempty"`
 }
 
 func (x *ChangeLogLL) Reset() {
@@ -383,13 +374,6 @@ func (x *ChangeLogLL) GetChangeType() WorldChangeType {
 		return x.ChangeType
 	}
 	return WorldChangeType_WorldChange_INVALID
-}
-
-func (x *ChangeLogLL) GetKeyFilters() *filters.KeyFilters {
-	if x != nil {
-		return x.KeyFilters
-	}
-	return nil
 }
 
 func (m *World) CloneVT() *World {
@@ -481,7 +465,6 @@ func (m *ChangeLogLL) CloneVT() *ChangeLogLL {
 	r.ChangeType = m.ChangeType
 	r.PrevRef = protobuf_go_lite.CloneVTValue(m.PrevRef)
 	r.ChangeBatch = protobuf_go_lite.CloneVTValue(m.ChangeBatch)
-	r.KeyFilters = protobuf_go_lite.CloneVTValue(m.KeyFilters)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -636,9 +619,6 @@ func (this *ChangeLogLL) EqualVT(that *ChangeLogLL) bool {
 		return false
 	}
 	if this.ChangeType != that.ChangeType {
-		return false
-	}
-	if !protobuf_go_lite.IsEqualVT(this.KeyFilters, that.KeyFilters) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -1077,11 +1057,6 @@ func (x *ChangeLogLL) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("changeType")
 		x.ChangeType.MarshalProtoJSON(s)
 	}
-	if x.KeyFilters != nil || s.HasField("keyFilters") {
-		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("keyFilters")
-		x.KeyFilters.MarshalProtoJSON(s.WithField("keyFilters"))
-	}
 	s.WriteObjectEnd()
 }
 
@@ -1119,13 +1094,6 @@ func (x *ChangeLogLL) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "change_type", "changeType":
 			s.AddField("change_type")
 			x.ChangeType.UnmarshalProtoJSON(s)
-		case "key_filters", "keyFilters":
-			if s.ReadNil() {
-				x.KeyFilters = nil
-				return
-			}
-			x.KeyFilters = &filters.KeyFilters{}
-			x.KeyFilters.UnmarshalProtoJSON(s.WithField("key_filters", true))
 		}
 	})
 }
@@ -1449,16 +1417,6 @@ func (m *ChangeLogLL) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
-	if m.KeyFilters != nil {
-		size, err := m.KeyFilters.MarshalToSizedBufferVT(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
-		i--
-		dAtA[i] = 0x2a
-	}
 	if m.ChangeType != 0 {
 		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.ChangeType))
 		i--
@@ -1601,10 +1559,6 @@ func (m *ChangeLogLL) SizeVT() (n int) {
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.ChangeType)
-	if m.KeyFilters != nil {
-		l = m.KeyFilters.SizeVT()
-		n += protobuf_go_lite.SizeMessage(1, l)
-	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -1759,10 +1713,6 @@ func (x *ChangeLogLL) MarshalProtoText() string {
 	if x.ChangeType != 0 {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "change_type")
 		protobuf_go_lite.TextWriteStringer(&sb, WorldChangeType(x.ChangeType))
-	}
-	if x.KeyFilters != nil {
-		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "key_filters")
-		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.KeyFilters)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -2263,21 +2213,6 @@ func (m *ChangeLogLL) UnmarshalVT(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-		case 5:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field KeyFilters", wireType)
-			}
-			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
-			if err != nil {
-				return err
-			}
-			if m.KeyFilters == nil {
-				m.KeyFilters = &filters.KeyFilters{}
-			}
-			if err := m.KeyFilters.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
