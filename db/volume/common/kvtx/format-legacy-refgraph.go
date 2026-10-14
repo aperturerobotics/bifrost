@@ -22,53 +22,62 @@ func migrateLegacyRefGraph(ctx context.Context, store kvtx.Store, _ *store_kvkey
 // the encoding that spelled each node as a length and its full IRI, to the
 // current encoding under prefix. Each batch writes its records and deletes the
 // originals in one commit, so a rerun resumes with the records not yet moved.
-// A store holding none costs one scan. Neither prefix may contain the other.
+// Each batch seeks past the records earlier batches moved, since the deleted
+// keys stay in the store's layers until a checkpoint folds them and stepping
+// over them again would make the migration quadratic. A store holding none
+// costs one scan. Neither prefix may contain the other.
 func MigrateLegacyRefGraph(ctx context.Context, store kvtx.Store, legacy, prefix []byte) error {
-	for {
-		done, err := moveLegacyRecords(ctx, store, legacy, prefix)
-		if err != nil || done {
+	for start := legacy; start != nil; {
+		var err error
+		start, err = moveLegacyRecords(ctx, store, legacy, prefix, start)
+		if err != nil {
 			return err
 		}
 	}
+	return nil
 }
 
-// moveLegacyRecords moves up to convertBatchEdges records under legacy in one
-// commit, and reports whether none remain.
-func moveLegacyRecords(ctx context.Context, store kvtx.Store, legacy, prefix []byte) (bool, error) {
-	// Read the first records left under legacy.
+// moveLegacyRecords moves up to convertBatchEdges records under legacy at or
+// after start in one commit, and returns the key to resume from, or nil when
+// none remain.
+func moveLegacyRecords(ctx context.Context, store kvtx.Store, legacy, prefix, start []byte) ([]byte, error) {
+	// Read the next records left under legacy.
 	tx, err := store.NewTransaction(ctx, true)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 	defer tx.Discard()
-	records, err := readLegacyRecords(ctx, tx, legacy)
+	records, err := readLegacyRecords(ctx, tx, legacy, start)
 	if err != nil || len(records) == 0 {
-		return true, err
+		return nil, err
 	}
 
 	// Write each record in the current encoding and delete the original.
 	for _, record := range records {
 		key, err := block_gc.LegacyRecordKey(record[len(legacy):])
 		if err != nil {
-			return false, err
+			return nil, err
 		}
 		if err := tx.Set(ctx, append(bytes.Clone(prefix), key...), nil); err != nil {
-			return false, err
+			return nil, err
 		}
 		if err := tx.Delete(ctx, record); err != nil {
-			return false, err
+			return nil, err
 		}
 	}
-	return len(records) < convertBatchEdges, kvtx.CommitOrdered(ctx, tx)
+	if err := kvtx.CommitOrdered(ctx, tx); err != nil || len(records) < convertBatchEdges {
+		return nil, err
+	}
+	return keyAfter(records[len(records)-1]), nil
 }
 
 // readLegacyRecords returns the keys of up to convertBatchEdges records under
-// legacy.
-func readLegacyRecords(ctx context.Context, tx kvtx.Tx, legacy []byte) ([][]byte, error) {
+// legacy at or after start.
+func readLegacyRecords(ctx context.Context, tx kvtx.Tx, legacy, start []byte) ([][]byte, error) {
 	// Seek to the first record.
 	it := tx.Iterate(ctx, legacy, true, false)
 	defer it.Close()
-	if err := it.Seek(legacy); err != nil {
+	if err := it.Seek(start); err != nil {
 		return nil, err
 	}
 

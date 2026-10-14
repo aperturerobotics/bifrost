@@ -85,17 +85,19 @@ func readFormatVersion(ctx context.Context, store kvtx.Store, keys *store_kvkey.
 // migrateBase58BlockKeys moves each block keyed by the base58 text of its
 // marshaled ref to the key of the ref bytes. Every binary key begins with
 // binaryBlockRefTag, so binary keys sort before all base58 keys and each batch
-// seeks past them. A batch moves its blocks in one commit, so a rerun resumes
-// at the first block still keyed in base58.
+// seeks past them, and past the base58 keys earlier batches moved. A batch
+// moves its blocks in one commit, so a rerun resumes at the first block still
+// keyed in base58.
 func migrateBase58BlockKeys(ctx context.Context, store kvtx.Store, keys *store_kvkey.KVKey) error {
 	prefix := keys.GetBlockFullPrefix()
-	start := append(bytes.Clone(prefix), binaryBlockRefTag+1)
-	for {
-		more, err := migrateBase58BlockKeyBatch(ctx, store, keys, prefix, start)
-		if err != nil || !more {
+	for start := append(bytes.Clone(prefix), binaryBlockRefTag+1); start != nil; {
+		var err error
+		start, err = migrateBase58BlockKeyBatch(ctx, store, keys, prefix, start)
+		if err != nil {
 			return err
 		}
 	}
+	return nil
 }
 
 // keyValue is one key and its value.
@@ -104,38 +106,42 @@ type keyValue struct {
 }
 
 // migrateBase58BlockKeyBatch moves up to migrateBatchBytes of base58 keyed
-// blocks, and reports whether more remain.
+// blocks at or after start, and returns the key to resume from, or nil when
+// none remain.
 func migrateBase58BlockKeyBatch(
 	ctx context.Context,
 	store kvtx.Store,
 	keys *store_kvkey.KVKey,
 	prefix, start []byte,
-) (bool, error) {
+) ([]byte, error) {
 	// Collect the next batch under the writer.
 	tx, err := store.NewTransaction(ctx, true)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 	defer tx.Discard()
 	moves, more, err := collectBlockMoves(ctx, tx, prefix, start)
 	if err != nil || len(moves) == 0 {
-		return false, err
+		return nil, err
 	}
 
 	// Rekey each block by its decoded ref bytes.
 	for _, m := range moves {
 		ref, err := b58.Decode(string(m.key[len(prefix):]))
 		if err != nil {
-			return false, fmt.Errorf("decode block key %q: %w", m.key, err)
+			return nil, fmt.Errorf("decode block key %q: %w", m.key, err)
 		}
 		if err := tx.Set(ctx, keys.GetBlockKey(ref), m.value); err != nil {
-			return false, err
+			return nil, err
 		}
 		if err := tx.Delete(ctx, m.key); err != nil {
-			return false, err
+			return nil, err
 		}
 	}
-	return more, kvtx.CommitOrdered(ctx, tx)
+	if err := kvtx.CommitOrdered(ctx, tx); err != nil || !more {
+		return nil, err
+	}
+	return keyAfter(moves[len(moves)-1].key), nil
 }
 
 // collectBlockMoves copies up to migrateBatchBytes of the blocks at or after

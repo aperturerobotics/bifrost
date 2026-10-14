@@ -8,6 +8,7 @@ import (
 	"encoding/binary"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"testing"
 
 	"github.com/aperturerobotics/cayley/graph"
@@ -162,6 +163,59 @@ func TestUpgradeLegacyRefGraph(t *testing.T) {
 		t.Fatal(err)
 	}
 	checkLegacyRefGraph(t, store)
+}
+
+// TestMigrateLegacyRefGraphBatches moves more records than one batch holds,
+// resuming each batch after the last, and expects every record moved.
+func TestMigrateLegacyRefGraphBatches(t *testing.T) {
+	// Write a version 2 root record per node across three batches.
+	ctx := context.Background()
+	store := store_kvtx_inmem.NewStore()
+	tx, err := store.NewTransaction(ctx, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Discard()
+	n := 2*convertBatchEdges + 3
+	for i := range n {
+		if err := tx.Set(ctx, legacyGraphKey('r', "node-"+strconv.Itoa(i)), nil); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := tx.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	// Migrate and count the records under each prefix.
+	if err := MigrateLegacyRefGraph(ctx, store, legacyRefGraphPrefix, refGraphPrefix); err != nil {
+		t.Fatal(err)
+	}
+	if got := countPrefix(t, store, legacyRefGraphPrefix); got != 0 {
+		t.Fatalf("%d version 2 records left", got)
+	}
+	if got := countPrefix(t, store, refGraphPrefix); got != n {
+		t.Fatalf("moved %d records, want %d", got, n)
+	}
+}
+
+// countPrefix returns the number of keys under prefix.
+func countPrefix(t *testing.T, store db_kvtx.Store, prefix []byte) int {
+	// Scan the prefix in a snapshot.
+	t.Helper()
+	tx, err := store.NewTransaction(context.Background(), false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Discard()
+	var n int
+	err = tx.ScanPrefixKeys(context.Background(), prefix, func([]byte) error {
+		n++
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return n
 }
 
 // copyCase is an earlier format store CopyStore converts.

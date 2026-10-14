@@ -196,44 +196,59 @@ func cayleyNodeName(ctx context.Context, tx kvtx.Tx, names map[uint64]string, id
 	return string(iri), nil
 }
 
-// deletePrefix deletes every key under prefix in bounded commits.
+// deletePrefix deletes every key under prefix in bounded commits. Each batch
+// seeks past the keys earlier batches deleted.
 func deletePrefix(ctx context.Context, store kvtx.Store, prefix []byte) error {
-	for {
-		more, err := deletePrefixBatch(ctx, store, prefix)
-		if err != nil || !more {
+	for start := prefix; start != nil; {
+		var err error
+		start, err = deletePrefixBatch(ctx, store, prefix, start)
+		if err != nil {
 			return err
 		}
 	}
+	return nil
 }
 
-// deletePrefixBatch deletes up to convertBatchEdges keys under prefix in one
-// commit, and reports whether more remain.
-func deletePrefixBatch(ctx context.Context, store kvtx.Store, prefix []byte) (bool, error) {
+// deletePrefixBatch deletes up to convertBatchEdges keys under prefix at or
+// after start in one commit, and returns the key to resume from, or nil when
+// none remain.
+func deletePrefixBatch(ctx context.Context, store kvtx.Store, prefix, start []byte) ([]byte, error) {
 	// Open the batch's write transaction.
 	tx, err := store.NewTransaction(ctx, true)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 	defer tx.Discard()
 
 	// Collect the next keys.
-	it := tx.Iterate(ctx, prefix, false, false)
+	it := tx.Iterate(ctx, prefix, true, false)
 	var keys [][]byte
-	for it.Next() && len(keys) < convertBatchEdges {
+	err = it.Seek(start)
+	for ; err == nil && it.Valid() && len(keys) < convertBatchEdges; it.Next() {
 		keys = append(keys, bytes.Clone(it.Key()))
 	}
-	more := it.Valid()
-	err = it.Err()
+	more := err == nil && it.Valid()
+	if err == nil {
+		err = it.Err()
+	}
 	it.Close()
 	if err != nil || len(keys) == 0 {
-		return false, err
+		return nil, err
 	}
 
 	// Delete them in one commit.
 	for _, key := range keys {
 		if err := tx.Delete(ctx, key); err != nil {
-			return false, err
+			return nil, err
 		}
 	}
-	return more, kvtx.CommitOrdered(ctx, tx)
+	if err := kvtx.CommitOrdered(ctx, tx); err != nil || !more {
+		return nil, err
+	}
+	return keyAfter(keys[len(keys)-1]), nil
+}
+
+// keyAfter returns the least key greater than key.
+func keyAfter(key []byte) []byte {
+	return append(bytes.Clone(key), 0)
 }
