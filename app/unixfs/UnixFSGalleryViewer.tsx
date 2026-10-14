@@ -4,9 +4,10 @@ import 'react-photo-view/dist/react-photo-view.css'
 import { useCallback, useMemo, useState, type MouseEventHandler } from 'react'
 import type { Resource } from '@aptre/bldr-sdk/hooks/useResource.js'
 import { LuDownload, LuExternalLink, LuImage } from 'react-icons/lu'
+import { PhotoSlider } from 'react-photo-view'
+import { List, type RowComponentProps } from 'react-window'
 
 import { Spinner } from '@s4wave/web/ui/loading/Spinner.js'
-import { PhotoProvider, PhotoView } from 'react-photo-view'
 import { useStreamingResource } from '@aptre/bldr-sdk/hooks/useStreamingResource.js'
 import { usePath } from '@s4wave/web/router/router.js'
 import { useSessionIndex } from '@s4wave/web/contexts/contexts.js'
@@ -30,6 +31,18 @@ import {
 import { UnixFSBrowser, type UnixFSBrowserBodyProps } from './UnixFSBrowser.js'
 
 const emptyGalleryItems: UnixFSGalleryCandidate[] = []
+
+// galleryTileMinWidth is the narrowest a tile may be before the grid drops a
+// column, in pixels.
+const galleryTileMinWidth = 192
+
+// galleryGap is the space between tiles and between rows, in pixels. It
+// matches the gap-3 class of each row.
+const galleryGap = 12
+
+// galleryCaptionHeight is the height of the caption under each square
+// preview, in pixels. It matches the h-14 class of the caption.
+const galleryCaptionHeight = 56
 
 interface GalleryPreviewItem {
   path: string
@@ -64,7 +77,7 @@ function GalleryTile({
           </div>
         )}
       </div>
-      <div className="space-y-1 px-3 py-2 text-left">
+      <div className="h-14 space-y-1 px-3 py-2 text-left">
         <div
           className="text-foreground truncate text-xs font-medium"
           title={item.label}
@@ -152,7 +165,7 @@ function LightboxToolbar({
 }
 
 /**
- * lightboxToolbarRender builds the PhotoProvider toolbar renderer for the
+ * lightboxToolbarRender builds the PhotoSlider toolbar renderer for the
  * lightbox items. It renders nothing for an item without a mounted preview.
  */
 function lightboxToolbarRender(
@@ -243,7 +256,7 @@ function useGalleryScan(
     previewItems,
     lightboxItems,
     scopePath: galleryState.value?.scopePath ?? currentPath,
-    isScanning: !(galleryState.value?.complete ?? false) && !galleryState.error,
+    isScanning: !galleryState.value && !galleryState.error,
     spaceId,
     sessionIndex,
     httpPathPrefix,
@@ -297,38 +310,91 @@ function GalleryEmptyState({ isScanning }: { isScanning: boolean }) {
         <div className="text-foreground text-sm font-semibold">
           {isScanning ? 'Scanning for images' : 'No images under this path'}
         </div>
-        {isScanning && (
-          <div className="text-foreground-alt text-xs">
-            The gallery will populate as image files are discovered in this
-            subtree.
-          </div>
-        )}
       </div>
     </div>
   )
 }
 
-/** GalleryGrid lays out the preview tiles, opening a lightbox for tiles with a preview. */
-function GalleryGrid({ items }: { items: GalleryPreviewItem[] }) {
+interface GalleryRowProps {
+  items: GalleryPreviewItem[]
+  columns: number
+  onOpen: (path: string) => void
+}
+
+/** GalleryRow renders one row of tiles of the virtualized gallery grid. */
+function GalleryRow({
+  index,
+  style,
+  ariaAttributes,
+  items,
+  columns,
+  onOpen,
+}: RowComponentProps<GalleryRowProps>) {
+  const rowItems = items.slice(index * columns, (index + 1) * columns)
   return (
-    <div
-      data-testid="unixfs-gallery-grid"
-      className="grid-cols-gallery grid gap-3"
-    >
-      {items.map((item) => {
-        if (!item.previewURL) {
-          return <GalleryTile key={item.path} interactive={false} item={item} />
-        }
-        return (
-          <PhotoView key={item.path} src={item.previewURL}>
-            <GalleryTile interactive item={item} />
-          </PhotoView>
-        )
-      })}
+    <div style={style} {...ariaAttributes}>
+      <div
+        className="grid-cols-gallery grid gap-3"
+        style={{ '--gallery-columns': columns }}
+      >
+        {rowItems.map((item) => (
+          <GalleryTile
+            key={item.path}
+            interactive={!!item.previewURL}
+            item={item}
+            onClick={() => onOpen(item.path)}
+          />
+        ))}
+      </div>
     </div>
   )
 }
 
+/**
+ * GalleryGrid lays out the preview tiles in rows that fit the measured width,
+ * and renders only the rows near the visible part of the gallery.
+ */
+function GalleryGrid({
+  items,
+  onOpen,
+}: {
+  items: GalleryPreviewItem[]
+  onOpen: (path: string) => void
+}) {
+  const [width, setWidth] = useState(0)
+  const columns = Math.max(
+    1,
+    Math.floor((width + galleryGap) / (galleryTileMinWidth + galleryGap)),
+  )
+  const tileWidth =
+    width > 0
+      ? (width - galleryGap * (columns - 1)) / columns
+      : galleryTileMinWidth
+  const rowProps = useMemo(
+    () => ({ items, columns, onOpen }),
+    [items, columns, onOpen],
+  )
+
+  return (
+    <List
+      data-testid="unixfs-gallery-grid"
+      className="h-full"
+      data-columns={columns}
+      defaultHeight={600}
+      onResize={(size) => setWidth(size.width)}
+      overscanCount={2}
+      rowComponent={GalleryRow}
+      rowCount={Math.ceil(items.length / columns)}
+      rowHeight={Math.ceil(tileWidth + galleryCaptionHeight + galleryGap)}
+      rowProps={rowProps}
+    />
+  )
+}
+
+/**
+ * UnixFSGalleryBody shows the image index of the current path as a gallery
+ * grid, and opens a lightbox over the images with a preview.
+ */
 function UnixFSGalleryBody({
   rootHandle,
   currentPath,
@@ -337,6 +403,7 @@ function UnixFSGalleryBody({
   const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(
     null,
   )
+  const [lightboxPath, setLightboxPath] = useState<string | null>(null)
   const scan = useGalleryScan(rootHandle, currentPath, unixfsId)
   const { galleryState, previewItems, lightboxItems, isScanning } = scan
   const { spaceId, sessionIndex, httpPathPrefix } = scan
@@ -345,6 +412,22 @@ function UnixFSGalleryBody({
   const handlePortalContainer = useCallback((el: HTMLDivElement | null) => {
     setPortalContainer(el)
   }, [])
+
+  // The lightbox follows the open image by path, so it stays on that image
+  // while the index changes and closes when the image leaves.
+  const lightboxIndex =
+    lightboxPath === null
+      ? -1
+      : lightboxItems.findIndex((item) => item.path === lightboxPath)
+  const lightboxImages = useMemo(
+    () =>
+      lightboxItems.map((item) => ({ key: item.path, src: item.previewURL })),
+    [lightboxItems],
+  )
+  const handleLightboxIndex = useCallback(
+    (index: number) => setLightboxPath(lightboxItems[index]?.path ?? null),
+    [lightboxItems],
+  )
   const toolbarRender = useMemo(
     () =>
       lightboxToolbarRender(lightboxItems, {
@@ -360,7 +443,7 @@ function UnixFSGalleryBody({
     <div
       data-testid="unixfs-gallery-viewer"
       ref={handlePortalContainer}
-      className="relative h-full w-full overflow-auto px-4 py-3"
+      className="relative flex h-full w-full flex-col px-4 py-3"
     >
       <GalleryHeader
         imageCount={previewItems.length}
@@ -368,36 +451,46 @@ function UnixFSGalleryBody({
         issueCount={galleryErrors.length}
         isScanning={isScanning}
       />
-      <div className="min-h-0">
-        {galleryState.error && (
-          <div className="text-destructive rounded-lg border border-current/20 bg-current/10 px-3 py-2 text-xs">
-            {galleryState.error.message}
-          </div>
-        )}
+      {galleryState.error && (
+        <div className="text-destructive rounded-lg border border-current/20 bg-current/10 px-3 py-2 text-xs">
+          {galleryState.error.message}
+        </div>
+      )}
+      {!galleryState.error && galleryState.value?.truncated && (
+        <div className="text-foreground-alt/60 mb-3 text-xs">
+          Showing the first {previewItems.length} images. Open a subdirectory to
+          see the rest.
+        </div>
+      )}
+      {!galleryState.error && galleryErrors.length > 0 && (
+        <div className="text-foreground-alt/60 mb-3 text-xs">
+          Some descendants could not be scanned. Discovered images remain
+          visible.
+        </div>
+      )}
+      {!galleryState.error && !sessionIndex && (
+        <div className="text-foreground-alt/60 mb-3 text-xs">
+          Inline previews require a mounted session context.
+        </div>
+      )}
+      <div className="min-h-0 flex-1">
         {!galleryState.error && !hasItems && (
           <GalleryEmptyState isScanning={isScanning} />
         )}
         {hasItems && (
-          <PhotoProvider
-            className="!absolute inset-0 h-full w-full"
-            portalContainer={portalContainer ?? undefined}
-            toolbarRender={toolbarRender}
-          >
-            <GalleryGrid items={previewItems} />
-          </PhotoProvider>
-        )}
-        {!galleryState.error && galleryErrors.length > 0 && (
-          <div className="text-foreground-alt/60 mt-3 text-xs">
-            Some descendants could not be scanned. Discovered images remain
-            visible.
-          </div>
-        )}
-        {!galleryState.error && !sessionIndex && (
-          <div className="text-foreground-alt/60 mt-3 text-xs">
-            Inline previews require a mounted session context.
-          </div>
+          <GalleryGrid items={previewItems} onOpen={setLightboxPath} />
         )}
       </div>
+      <PhotoSlider
+        className="!absolute inset-0 h-full w-full"
+        images={lightboxImages}
+        index={Math.max(lightboxIndex, 0)}
+        onClose={() => setLightboxPath(null)}
+        onIndexChange={handleLightboxIndex}
+        portalContainer={portalContainer ?? undefined}
+        toolbarRender={toolbarRender}
+        visible={lightboxIndex !== -1}
+      />
     </div>
   )
 }

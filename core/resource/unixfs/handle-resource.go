@@ -976,17 +976,50 @@ func readWatchEntries(
 // revision in place, and lists the directory only when its block reference
 // changes.
 func (r *FSHandleResource) WatchReaddir(req *s4wave_unixfs.HandleWatchReaddirRequest, strm s4wave_unixfs.SRPCFSHandleResourceService_WatchReaddirStream) error {
+	var prev *s4wave_unixfs.HandleWatchReaddirResponse
+	var prevRef *block.BlockRef
+	var next *s4wave_unixfs.HandleWatchReaddirResponse
+	return r.watchChanges(
+		strm.Context(),
+		func(handle *unixfs.FSHandle) error {
+			// List the directory only when its block reference changed.
+			entries, ref, changed, err := readWatchEntries(strm.Context(), handle, prevRef)
+			if err != nil {
+				return err
+			}
+			prevRef, next = ref, nil
+			if changed {
+				next = &s4wave_unixfs.HandleWatchReaddirResponse{Entries: entries}
+			}
+			return nil
+		},
+		func() error {
+			// Emit the directory listing only when its entries change.
+			if next == nil || (prev != nil && next.EqualVT(prev)) {
+				return nil
+			}
+			prev = next
+			return strm.Send(next)
+		},
+	)
+}
+
+// watchChanges calls read with an independent handle on the resource's
+// directory, then publish, and repeats both after each change until ctx ends or
+// either fails. read runs under the resource tree read barrier, and publish
+// runs outside it.
+func (r *FSHandleResource) watchChanges(
+	ctx context.Context,
+	read func(handle *unixfs.FSHandle) error,
+	publish func() error,
+) error {
 	// Open an independent watch handle.
-	ctx := strm.Context()
 	watchHandle, fsCursor, err := r.newWatchHandle(ctx)
 	if err != nil {
 		return err
 	}
 	defer func() { watchHandle.Release() }()
 
-	// Publish each changed directory listing until the watch ends.
-	var prev *s4wave_unixfs.HandleWatchReaddirResponse
-	var prevRef *block.BlockRef
 	for {
 		// Capture the change notifications before reading the directory.
 		var localCh, cursorCh <-chan struct{}
@@ -1008,9 +1041,10 @@ func (r *FSHandleResource) WatchReaddir(req *s4wave_unixfs.HandleWatchReaddirReq
 			continue
 		}
 
-		// Read the directory listing while the resource tree read barrier is held.
+		// Read while the resource tree read barrier is held, and retry a read
+		// that the cursor's release interrupted.
 		r.handleMtx.RLock()
-		entries, ref, changed, err := readWatchEntries(ctx, watchHandle, prevRef)
+		err := read(watchHandle)
 		r.handleMtx.RUnlock()
 		if errors.Is(err, unixfs_errors.ErrReleased) && fsCursor != nil && fsCursor.CheckReleased() {
 			continue
@@ -1018,17 +1052,8 @@ func (r *FSHandleResource) WatchReaddir(req *s4wave_unixfs.HandleWatchReaddirReq
 		if err != nil {
 			return err
 		}
-		prevRef = ref
-
-		// Emit the directory listing only when its entries change.
-		if changed {
-			resp := &s4wave_unixfs.HandleWatchReaddirResponse{Entries: entries}
-			if prev == nil || !resp.EqualVT(prev) {
-				if err := strm.Send(resp); err != nil {
-					return err
-				}
-				prev = resp
-			}
+		if err := publish(); err != nil {
+			return err
 		}
 
 		// Wait for a local change or a change applied to the watch cursor.
@@ -1041,7 +1066,7 @@ func (r *FSHandleResource) WatchReaddir(req *s4wave_unixfs.HandleWatchReaddirReq
 	}
 }
 
-// newWatchHandle opens an independent handle for WatchReaddir. The World
+// newWatchHandle opens an independent handle for a watch. The World
 // cursor is nil for a handle with no backing World object.
 func (r *FSHandleResource) newWatchHandle(ctx context.Context) (*unixfs.FSHandle, *unixfs_world.FSCursor, error) {
 	// Watch an object-backed directory on its own World cursor.

@@ -53,6 +53,8 @@ type SRPCFSHandleResourceServiceClient interface {
 	UploadTree(ctx context.Context) (SRPCFSHandleResourceService_UploadTreeClient, error)
 
 	WatchReaddir(ctx context.Context, in *HandleWatchReaddirRequest) (SRPCFSHandleResourceService_WatchReaddirClient, error)
+
+	WatchFiles(ctx context.Context, in *HandleWatchFilesRequest) (SRPCFSHandleResourceService_WatchFilesClient, error)
 }
 
 type srpcFSHandleResourceServiceClient struct {
@@ -391,6 +393,39 @@ func (x *srpcFSHandleResourceService_WatchReaddirClient) RecvTo(m *HandleWatchRe
 	return x.MsgRecv(m)
 }
 
+func (c *srpcFSHandleResourceServiceClient) WatchFiles(ctx context.Context, in *HandleWatchFilesRequest) (SRPCFSHandleResourceService_WatchFilesClient, error) {
+	stream, err := c.cc.NewStream(ctx, c.serviceID, "WatchFiles", in)
+	if err != nil {
+		return nil, err
+	}
+	strm := &srpcFSHandleResourceService_WatchFilesClient{stream}
+	// A failed half-close means the call ended; MsgRecv reports its outcome.
+	_ = strm.CloseSend()
+	return strm, nil
+}
+
+type SRPCFSHandleResourceService_WatchFilesClient interface {
+	srpc.Stream
+	Recv() (*HandleWatchFilesResponse, error)
+	RecvTo(*HandleWatchFilesResponse) error
+}
+
+type srpcFSHandleResourceService_WatchFilesClient struct {
+	srpc.Stream
+}
+
+func (x *srpcFSHandleResourceService_WatchFilesClient) Recv() (*HandleWatchFilesResponse, error) {
+	m := new(HandleWatchFilesResponse)
+	if err := x.MsgRecv(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (x *srpcFSHandleResourceService_WatchFilesClient) RecvTo(m *HandleWatchFilesResponse) error {
+	return x.MsgRecv(m)
+}
+
 type SRPCFSHandleResourceServiceServer interface {
 	Lookup(context.Context, *HandleLookupRequest) (*HandleLookupResponse, error)
 
@@ -431,6 +466,8 @@ type SRPCFSHandleResourceServiceServer interface {
 	UploadTree(SRPCFSHandleResourceService_UploadTreeStream) (*HandleUploadTreeResponse, error)
 
 	WatchReaddir(*HandleWatchReaddirRequest, SRPCFSHandleResourceService_WatchReaddirStream) error
+
+	WatchFiles(*HandleWatchFilesRequest, SRPCFSHandleResourceService_WatchFilesStream) error
 }
 
 const SRPCFSHandleResourceServiceServiceID = "s4wave.unixfs.FSHandleResourceService"
@@ -479,6 +516,7 @@ func (SRPCFSHandleResourceServiceHandler) GetMethodIDs() []string {
 		"UploadFile",
 		"UploadTree",
 		"WatchReaddir",
+		"WatchFiles",
 	}
 }
 
@@ -531,6 +569,8 @@ func (d *SRPCFSHandleResourceServiceHandler) InvokeMethod(
 		return true, d.InvokeMethod_UploadTree(d.impl, strm)
 	case "WatchReaddir":
 		return true, d.InvokeMethod_WatchReaddir(d.impl, strm)
+	case "WatchFiles":
+		return true, d.InvokeMethod_WatchFiles(d.impl, strm)
 	default:
 		return false, nil
 	}
@@ -761,6 +801,15 @@ func (SRPCFSHandleResourceServiceHandler) InvokeMethod_WatchReaddir(impl SRPCFSH
 	return impl.WatchReaddir(req, serverStrm)
 }
 
+func (SRPCFSHandleResourceServiceHandler) InvokeMethod_WatchFiles(impl SRPCFSHandleResourceServiceServer, strm srpc.Stream) error {
+	req := new(HandleWatchFilesRequest)
+	if err := strm.MsgRecv(req); err != nil {
+		return err
+	}
+	serverStrm := &srpcFSHandleResourceService_WatchFilesStream{strm}
+	return impl.WatchFiles(req, serverStrm)
+}
+
 type SRPCFSHandleResourceService_LookupStream interface {
 	srpc.Stream
 }
@@ -986,6 +1035,29 @@ func (x *srpcFSHandleResourceService_WatchReaddirStream) Send(m *HandleWatchRead
 }
 
 func (x *srpcFSHandleResourceService_WatchReaddirStream) SendAndClose(m *HandleWatchReaddirResponse) error {
+	if m != nil {
+		if err := x.MsgSend(m); err != nil {
+			return err
+		}
+	}
+	return x.CloseSend()
+}
+
+type SRPCFSHandleResourceService_WatchFilesStream interface {
+	srpc.Stream
+	Send(*HandleWatchFilesResponse) error
+	SendAndClose(*HandleWatchFilesResponse) error
+}
+
+type srpcFSHandleResourceService_WatchFilesStream struct {
+	srpc.Stream
+}
+
+func (x *srpcFSHandleResourceService_WatchFilesStream) Send(m *HandleWatchFilesResponse) error {
+	return x.MsgSend(m)
+}
+
+func (x *srpcFSHandleResourceService_WatchFilesStream) SendAndClose(m *HandleWatchFilesResponse) error {
 	if m != nil {
 		if err := x.MsgSend(m); err != nil {
 			return err

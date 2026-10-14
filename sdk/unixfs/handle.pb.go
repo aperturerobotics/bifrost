@@ -1214,6 +1214,87 @@ func (x *HandleWatchReaddirResponse) GetEntries() []*DirEntry {
 	return nil
 }
 
+// HandleWatchFilesRequest is the request for WatchFiles.
+type HandleWatchFilesRequest struct {
+	unknownFields []byte
+	// Extensions are the file name suffixes to match, such as ".png". Matching
+	// ignores case.
+	Extensions []string `protobuf:"bytes,1,rep,name=extensions,proto3" json:"extensions,omitempty"`
+	// Limit bounds the number of matched paths, taken in path order. Zero
+	// selects the server default.
+	Limit uint32 `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`
+}
+
+func (x *HandleWatchFilesRequest) Reset() {
+	*x = HandleWatchFilesRequest{}
+}
+
+func (*HandleWatchFilesRequest) ProtoMessage() {}
+
+func (x *HandleWatchFilesRequest) GetExtensions() []string {
+	if x != nil {
+		return x.Extensions
+	}
+	return nil
+}
+
+func (x *HandleWatchFilesRequest) GetLimit() uint32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+// HandleWatchFilesResponse is one change to the files matched below the
+// directory. The first response holds every match.
+type HandleWatchFilesResponse struct {
+	unknownFields []byte
+	// Added are the matched paths added, relative to the directory, in path
+	// order.
+	Added []string `protobuf:"bytes,1,rep,name=added,proto3" json:"added,omitempty"`
+	// Removed are the matched paths removed.
+	Removed []string `protobuf:"bytes,2,rep,name=removed,proto3" json:"removed,omitempty"`
+	// Truncated is set when the limit hides further matches.
+	Truncated bool `protobuf:"varint,3,opt,name=truncated,proto3" json:"truncated,omitempty"`
+	// Errors describe each directory that could not be read. Each response
+	// carries the complete current list.
+	Errors []string `protobuf:"bytes,4,rep,name=errors,proto3" json:"errors,omitempty"`
+}
+
+func (x *HandleWatchFilesResponse) Reset() {
+	*x = HandleWatchFilesResponse{}
+}
+
+func (*HandleWatchFilesResponse) ProtoMessage() {}
+
+func (x *HandleWatchFilesResponse) GetAdded() []string {
+	if x != nil {
+		return x.Added
+	}
+	return nil
+}
+
+func (x *HandleWatchFilesResponse) GetRemoved() []string {
+	if x != nil {
+		return x.Removed
+	}
+	return nil
+}
+
+func (x *HandleWatchFilesResponse) GetTruncated() bool {
+	if x != nil {
+		return x.Truncated
+	}
+	return false
+}
+
+func (x *HandleWatchFilesResponse) GetErrors() []string {
+	if x != nil {
+		return x.Errors
+	}
+	return nil
+}
+
 func (m *DirEntry) CloneVT() *DirEntry {
 	if m == nil {
 		return (*DirEntry)(nil)
@@ -1996,6 +2077,42 @@ func (m *HandleWatchReaddirResponse) CloneVT() *HandleWatchReaddirResponse {
 }
 
 func (m *HandleWatchReaddirResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *HandleWatchFilesRequest) CloneVT() *HandleWatchFilesRequest {
+	if m == nil {
+		return (*HandleWatchFilesRequest)(nil)
+	}
+	r := new(HandleWatchFilesRequest)
+	r.Limit = m.Limit
+	r.Extensions = protobuf_go_lite.CloneSlice(m.Extensions)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *HandleWatchFilesRequest) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *HandleWatchFilesResponse) CloneVT() *HandleWatchFilesResponse {
+	if m == nil {
+		return (*HandleWatchFilesResponse)(nil)
+	}
+	r := new(HandleWatchFilesResponse)
+	r.Truncated = m.Truncated
+	r.Added = protobuf_go_lite.CloneSlice(m.Added)
+	r.Removed = protobuf_go_lite.CloneSlice(m.Removed)
+	r.Errors = protobuf_go_lite.CloneSlice(m.Errors)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *HandleWatchFilesResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
@@ -3019,6 +3136,58 @@ func (this *HandleWatchReaddirResponse) EqualVT(that *HandleWatchReaddirResponse
 
 func (this *HandleWatchReaddirResponse) EqualMessageVT(thatMsg any) bool {
 	that, ok := thatMsg.(*HandleWatchReaddirResponse)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *HandleWatchFilesRequest) EqualVT(that *HandleWatchFilesRequest) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if !protobuf_go_lite.EqualSlice(this.Extensions, that.Extensions) {
+		return false
+	}
+	if this.Limit != that.Limit {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *HandleWatchFilesRequest) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*HandleWatchFilesRequest)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *HandleWatchFilesResponse) EqualVT(that *HandleWatchFilesResponse) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if !protobuf_go_lite.EqualSlice(this.Added, that.Added) {
+		return false
+	}
+	if !protobuf_go_lite.EqualSlice(this.Removed, that.Removed) {
+		return false
+	}
+	if this.Truncated != that.Truncated {
+		return false
+	}
+	if !protobuf_go_lite.EqualSlice(this.Errors, that.Errors) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *HandleWatchFilesResponse) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*HandleWatchFilesResponse)
 	if !ok {
 		return false
 	}
@@ -5167,6 +5336,138 @@ func (x *HandleWatchReaddirResponse) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
+// MarshalProtoJSON marshals the HandleWatchFilesRequest message to JSON.
+func (x *HandleWatchFilesRequest) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if len(x.Extensions) > 0 || s.HasField("extensions") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("extensions")
+		s.WriteStringArray(x.Extensions)
+	}
+	if x.Limit != 0 || s.HasField("limit") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("limit")
+		s.WriteUint32(x.Limit)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the HandleWatchFilesRequest to JSON.
+func (x *HandleWatchFilesRequest) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the HandleWatchFilesRequest message from JSON.
+func (x *HandleWatchFilesRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "extensions":
+			s.AddField("extensions")
+			if s.ReadNil() {
+				x.Extensions = nil
+				return
+			}
+			x.Extensions = s.ReadStringArray()
+		case "limit":
+			s.AddField("limit")
+			x.Limit = s.ReadUint32()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the HandleWatchFilesRequest from JSON.
+func (x *HandleWatchFilesRequest) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the HandleWatchFilesResponse message to JSON.
+func (x *HandleWatchFilesResponse) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if len(x.Added) > 0 || s.HasField("added") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("added")
+		s.WriteStringArray(x.Added)
+	}
+	if len(x.Removed) > 0 || s.HasField("removed") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("removed")
+		s.WriteStringArray(x.Removed)
+	}
+	if x.Truncated || s.HasField("truncated") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("truncated")
+		s.WriteBool(x.Truncated)
+	}
+	if len(x.Errors) > 0 || s.HasField("errors") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("errors")
+		s.WriteStringArray(x.Errors)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the HandleWatchFilesResponse to JSON.
+func (x *HandleWatchFilesResponse) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the HandleWatchFilesResponse message from JSON.
+func (x *HandleWatchFilesResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "added":
+			s.AddField("added")
+			if s.ReadNil() {
+				x.Added = nil
+				return
+			}
+			x.Added = s.ReadStringArray()
+		case "removed":
+			s.AddField("removed")
+			if s.ReadNil() {
+				x.Removed = nil
+				return
+			}
+			x.Removed = s.ReadStringArray()
+		case "truncated":
+			s.AddField("truncated")
+			x.Truncated = s.ReadBool()
+		case "errors":
+			s.AddField("errors")
+			if s.ReadNil() {
+				x.Errors = nil
+				return
+			}
+			x.Errors = s.ReadStringArray()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the HandleWatchFilesResponse from JSON.
+func (x *HandleWatchFilesResponse) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
 func (m *DirEntry) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -7047,6 +7348,108 @@ func (m *HandleWatchReaddirResponse) MarshalToSizedBufferVT(dAtA []byte) (int, e
 	return len(dAtA) - i, nil
 }
 
+func (m *HandleWatchFilesRequest) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *HandleWatchFilesRequest) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *HandleWatchFilesRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.Limit != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Limit))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.Extensions) > 0 {
+		for iNdEx := len(m.Extensions) - 1; iNdEx >= 0; iNdEx-- {
+			i = protobuf_go_lite.EncodeString(dAtA, i, m.Extensions[iNdEx])
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *HandleWatchFilesResponse) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *HandleWatchFilesResponse) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *HandleWatchFilesResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.Errors) > 0 {
+		for iNdEx := len(m.Errors) - 1; iNdEx >= 0; iNdEx-- {
+			i = protobuf_go_lite.EncodeString(dAtA, i, m.Errors[iNdEx])
+			i--
+			dAtA[i] = 0x22
+		}
+	}
+	if m.Truncated {
+		i = protobuf_go_lite.EncodeBool(dAtA, i, m.Truncated)
+		i--
+		dAtA[i] = 0x18
+	}
+	if len(m.Removed) > 0 {
+		for iNdEx := len(m.Removed) - 1; iNdEx >= 0; iNdEx-- {
+			i = protobuf_go_lite.EncodeString(dAtA, i, m.Removed[iNdEx])
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if len(m.Added) > 0 {
+		for iNdEx := len(m.Added) - 1; iNdEx >= 0; iNdEx-- {
+			i = protobuf_go_lite.EncodeString(dAtA, i, m.Added[iNdEx])
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *DirEntry) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -7620,6 +8023,32 @@ func (m *HandleWatchReaddirResponse) SizeVT() (n int) {
 		l = e.SizeVT()
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *HandleWatchFilesRequest) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeStringSlice(1, m.Extensions)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Limit)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *HandleWatchFilesResponse) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeStringSlice(1, m.Added)
+	n += protobuf_go_lite.SizeStringSlice(1, m.Removed)
+	n += protobuf_go_lite.SizeBoolNonZero(1, m.Truncated)
+	n += protobuf_go_lite.SizeStringSlice(1, m.Errors)
 	n += len(m.unknownFields)
 	return n
 }
@@ -8382,6 +8811,66 @@ func (x *HandleWatchReaddirResponse) MarshalProtoText() string {
 }
 
 func (x *HandleWatchReaddirResponse) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *HandleWatchFilesRequest) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "HandleWatchFilesRequest")
+	if len(x.Extensions) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "extensions")
+		for i, v := range x.Extensions {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			protobuf_go_lite.TextWriteString(&sb, v)
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	if x.Limit != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "limit")
+		protobuf_go_lite.TextWriteUint(&sb, x.Limit)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *HandleWatchFilesRequest) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *HandleWatchFilesResponse) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "HandleWatchFilesResponse")
+	if len(x.Added) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "added")
+		for i, v := range x.Added {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			protobuf_go_lite.TextWriteString(&sb, v)
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	if len(x.Removed) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "removed")
+		for i, v := range x.Removed {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			protobuf_go_lite.TextWriteString(&sb, v)
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	if x.Truncated != false {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "truncated")
+		protobuf_go_lite.TextWriteBool(&sb, x.Truncated)
+	}
+	if len(x.Errors) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "errors")
+		for i, v := range x.Errors {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			protobuf_go_lite.TextWriteString(&sb, v)
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *HandleWatchFilesResponse) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -10997,6 +11486,151 @@ func (m *HandleWatchReaddirResponse) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *HandleWatchFilesRequest) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: HandleWatchFilesRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: HandleWatchFilesRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Extensions", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Extensions = append(m.Extensions, v)
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Limit", wireType)
+			}
+			m.Limit = 0
+			m.Limit, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *HandleWatchFilesResponse) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: HandleWatchFilesResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: HandleWatchFilesResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Added", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Added = append(m.Added, v)
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Removed", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Removed = append(m.Removed, v)
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Truncated", wireType)
+			}
+			var v bool
+			v, iNdEx, err = protobuf_go_lite.DecodeVarintBool(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Truncated = bool(v)
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Errors", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Errors = append(m.Errors, v)
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

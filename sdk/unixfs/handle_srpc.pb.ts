@@ -39,6 +39,8 @@ import {
   HandleUploadFileResponse,
   HandleUploadTreeRequest,
   HandleUploadTreeResponse,
+  HandleWatchFilesRequest,
+  HandleWatchFilesResponse,
   HandleWatchReaddirRequest,
   HandleWatchReaddirResponse,
   HandleWriteAtRequest,
@@ -239,6 +241,15 @@ export const FSHandleResourceServiceDefinition = {
       O: HandleWatchReaddirResponse,
       kind: MethodKind.ServerStreaming,
     },
+    /**
+     * @generated from rpc s4wave.unixfs.FSHandleResourceService.WatchFiles
+     */
+    WatchFiles: {
+      name: 'WatchFiles',
+      I: HandleWatchFilesRequest,
+      O: HandleWatchFilesResponse,
+      kind: MethodKind.ServerStreaming,
+    },
   },
 } as const
 
@@ -405,6 +416,14 @@ export interface FSHandleResourceService {
     request: HandleWatchReaddirRequest,
     abortSignal?: AbortSignal,
   ): MessageStream<HandleWatchReaddirResponse>
+
+  /**
+   * @generated from rpc s4wave.unixfs.FSHandleResourceService.WatchFiles
+   */
+  WatchFiles(
+    request: HandleWatchFilesRequest,
+    abortSignal?: AbortSignal,
+  ): MessageStream<HandleWatchFilesResponse>
 }
 
 /**
@@ -590,6 +609,15 @@ export interface FSHandleResourceServiceHandler {
     abortSignal: AbortSignal,
     context: ServerContext,
   ): MessageStream<HandleWatchReaddirResponse>
+
+  /**
+   * @generated from rpc s4wave.unixfs.FSHandleResourceService.WatchFiles
+   */
+  WatchFiles(
+    request: HandleWatchFilesRequest,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): MessageStream<HandleWatchFilesResponse>
 }
 
 export const FSHandleResourceServiceServiceName =
@@ -621,6 +649,7 @@ export class FSHandleResourceServiceClient implements FSHandleResourceService {
     this.UploadFile = this.UploadFile.bind(this)
     this.UploadTree = this.UploadTree.bind(this)
     this.WatchReaddir = this.WatchReaddir.bind(this)
+    this.WatchFiles = this.WatchFiles.bind(this)
   }
   /**
    * @generated from rpc s4wave.unixfs.FSHandleResourceService.Lookup
@@ -958,5 +987,22 @@ export class FSHandleResourceServiceClient implements FSHandleResourceService {
       abortSignal || undefined,
     )
     return buildDecodeMessageTransform(HandleWatchReaddirResponse)(result)
+  }
+
+  /**
+   * @generated from rpc s4wave.unixfs.FSHandleResourceService.WatchFiles
+   */
+  WatchFiles(
+    request: HandleWatchFilesRequest,
+    abortSignal?: AbortSignal,
+  ): MessageStream<HandleWatchFilesResponse> {
+    const requestMsg = HandleWatchFilesRequest.create(request)
+    const result = this.rpc.serverStreamingRequest(
+      this.service,
+      FSHandleResourceServiceDefinition.methods.WatchFiles.name,
+      HandleWatchFilesRequest.toBinary(requestMsg),
+      abortSignal || undefined,
+    )
+    return buildDecodeMessageTransform(HandleWatchFilesResponse)(result)
   }
 }

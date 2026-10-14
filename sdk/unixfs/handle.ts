@@ -11,6 +11,7 @@ import type {
   NodeType,
   HandleReaddirResponse,
   HandleReadStreamResponse,
+  HandleWatchFilesResponse,
   HandleWatchReaddirResponse,
   MknodType,
   DirEntry,
@@ -165,6 +166,16 @@ export interface IFSHandle {
   // watchReaddir watches directory entries as an async iterable.
   // Each yielded value is the complete current directory listing.
   watchReaddir(abortSignal?: AbortSignal): AsyncIterable<DirEntry[]>
+
+  // watchFiles watches the files below this directory whose names end in one
+  // of extensions, ignoring case. The first response adds every match, and
+  // each later one adds and removes the paths a change touched. limit bounds
+  // the matched paths, with zero selecting the server default.
+  watchFiles(
+    extensions: string[],
+    limit?: number,
+    abortSignal?: AbortSignal,
+  ): AsyncIterable<HandleWatchFilesResponse>
 
   // mknod creates new files or directories.
   mknod(
@@ -462,6 +473,18 @@ export class FSHandle extends Resource implements IFSHandle {
     for await (const resp of stream as AsyncIterable<HandleWatchReaddirResponse>) {
       yield resp.entries ?? []
     }
+  }
+
+  // watchFiles watches the files below this directory whose names end in one
+  // of extensions, ignoring case. The first response adds every match, and
+  // each later one adds and removes the paths a change touched. limit bounds
+  // the matched paths, with zero selecting the server default.
+  public watchFiles(
+    extensions: string[],
+    limit?: number,
+    abortSignal?: AbortSignal,
+  ): AsyncIterable<HandleWatchFilesResponse> {
+    return this.service.WatchFiles({ extensions, limit }, abortSignal)
   }
 
   // mknod creates new files or directories.

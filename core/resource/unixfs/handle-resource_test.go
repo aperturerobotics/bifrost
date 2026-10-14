@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"path"
 	"slices"
 	"sync"
 	"testing"
@@ -491,6 +492,89 @@ func recvWatchReaddir(
 		ch <- resp
 	}()
 	return ch
+}
+
+// TestFSHandleResourceWatchFiles streams the matching files below a directory,
+// then the paths each change adds and removes.
+func TestFSHandleResourceWatchFiles(t *testing.T) {
+	// Seed matching files at several depths beside files that do not match.
+	ctx, resClient, rootHandle, _, cleanup := setupFSHandleResourceClient(t)
+	defer cleanup()
+	bfs := unixfs_billy.NewBillyFS(ctx, rootHandle, "", time.Now())
+	for _, name := range []string{"src/a.jpg", "dest/deep/c.PNG", "dest/x.txt"} {
+		if err := bfs.MkdirAll(path.Dir(name), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := billy_util.WriteFile(bfs, name, []byte("img"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// Open the filesystem root RPC service.
+	rootRef := resClient.AccessRootResource()
+	defer rootRef.Release()
+	rootClient, err := rootRef.GetClient()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rootSvc := s4wave_unixfs.NewSRPCFSHandleResourceServiceClient(rootClient)
+
+	// A limited watch takes the first match in path order.
+	watchCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	limited, err := rootSvc.WatchFiles(watchCtx, &s4wave_unixfs.HandleWatchFilesRequest{
+		Extensions: []string{".jpg", ".png"},
+		Limit:      1,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := limited.Recv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(resp.GetAdded(), []string{"dest/deep/c.PNG"}) || !resp.GetTruncated() {
+		t.Fatalf("unexpected limited response: %v", resp)
+	}
+
+	// The first response holds every match.
+	watch, err := rootSvc.WatchFiles(watchCtx, &s4wave_unixfs.HandleWatchFilesRequest{
+		Extensions: []string{".JPG", ".png"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err = watch.Recv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(resp.GetAdded(), []string{"dest/deep/c.PNG", "src/a.jpg"}) || resp.GetTruncated() {
+		t.Fatalf("unexpected initial response: %v", resp)
+	}
+
+	// A new match arrives as an addition.
+	if err := billy_util.WriteFile(bfs, "src/b.png", []byte("img"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	resp, err = watch.Recv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(resp.GetAdded(), []string{"src/b.png"}) || len(resp.GetRemoved()) != 0 {
+		t.Fatalf("unexpected response after write: %v", resp)
+	}
+
+	// A removed match arrives as a removal.
+	if err := bfs.Remove("src/a.jpg"); err != nil {
+		t.Fatal(err)
+	}
+	resp, err = watch.Recv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(resp.GetRemoved(), []string{"src/a.jpg"}) || len(resp.GetAdded()) != 0 {
+		t.Fatalf("unexpected response after remove: %v", resp)
+	}
 }
 
 func TestFSHandleResourceUploadTreeNested(t *testing.T) {
