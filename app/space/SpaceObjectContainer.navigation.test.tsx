@@ -1,6 +1,5 @@
 import { useCallback, useState } from 'react'
 import {
-  act,
   cleanup,
   fireEvent,
   render,
@@ -42,15 +41,6 @@ const h = vi.hoisted(() => ({
     spaceWorldResource: {
       value: null as null | {
         openNestedWorld: (key: string, signal: AbortSignal) => Promise<unknown>
-        getSeqno: () => Promise<{ seqno: bigint }>
-        getObject: (key: string) => Promise<{
-          getRootRef: () => Promise<{ rev: bigint }>
-          release: () => void
-        }>
-        waitSeqno: (
-          seqno: bigint,
-          signal: AbortSignal,
-        ) => Promise<{ seqno: bigint }>
       },
       loading: false,
       error: null,
@@ -108,50 +98,9 @@ vi.mock('@s4wave/app/quickstart/session-handoff.js', () => ({
   getQuickstartInitialObjectHandoff: vi.fn(),
 }))
 
-function makeOuterWorld(
-  openNestedWorld: (key: string, signal: AbortSignal) => Promise<unknown>,
-) {
-  let rev = 1n
-  let seqno = 1n
-  const waiters: Array<(value: { seqno: bigint }) => void> = []
-  const getObject = vi.fn(async () => ({
-    getRootRef: async () => ({ rev }),
-    release: vi.fn(),
-  }))
-  const world = {
-    openNestedWorld,
-    getSeqno: async () => ({ seqno }),
-    getObject,
-    waitSeqno: vi.fn(
-      (target: bigint, signal: AbortSignal) =>
-        new Promise<{ seqno: bigint }>((resolve, reject) => {
-          if (seqno >= target) {
-            resolve({ seqno })
-            return
-          }
-          const onAbort = () => {
-            const index = waiters.indexOf(onWrite)
-            if (index !== -1) waiters.splice(index, 1)
-            reject(new DOMException('Aborted', 'AbortError'))
-          }
-          const onWrite = (value: { seqno: bigint }) => {
-            signal.removeEventListener('abort', onAbort)
-            resolve(value)
-          }
-          waiters.push(onWrite)
-          signal.addEventListener('abort', onAbort, { once: true })
-        }),
-    ),
-  }
-  const write = (nextRev: bigint) => {
-    rev = nextRev
-    seqno++
-    for (const resolve of waiters.splice(0)) resolve({ seqno })
-  }
-  return { world, getObject, write }
-}
-
+/** AppRouteHarness routes the container beside a login page with a history stack. */
 function AppRouteHarness() {
+  // Keep a history stack that the login page's back button can pop.
   const [entries, setEntries] = useState([wizardPath])
   const [entryIndex, setEntryIndex] = useState(0)
   const path = entries[entryIndex] ?? wizardPath
@@ -195,16 +144,18 @@ function AppRouteHarness() {
 
 describe('SpaceObjectContainer authentication navigation', () => {
   it('opens the app login route and keeps the device wizard as the back target', () => {
+    // Open the login route from the viewer.
     render(<AppRouteHarness />)
-
     fireEvent.click(
       screen.getByRole('button', { name: 'Sign in or create account' }),
     )
 
+    // The app route changes without a Space subpath navigation.
     expect(screen.getByText('Spacewave Cloud login')).toBeTruthy()
     expect(screen.getByTestId('current-route').textContent).toBe('/login')
     expect(h.navigateToSubPath).not.toHaveBeenCalled()
 
+    // Going back returns to the device wizard.
     fireEvent.click(
       screen.getByRole('button', { name: 'Back to device wizard' }),
     )
@@ -216,54 +167,14 @@ describe('SpaceObjectContainer authentication navigation', () => {
 })
 
 describe('nested World route', () => {
-  it('replaces a mounted nested viewer only when its outer root changes', async () => {
-    const firstRelease = vi.fn()
-    const secondRelease = vi.fn()
-    const first = { [Symbol.dispose]: firstRelease, result: 'before' }
-    const second = { [Symbol.dispose]: secondRelease, result: 'after' }
-    const openNestedWorld = vi
-      .fn()
-      .mockResolvedValueOnce(first)
-      .mockResolvedValueOnce(second)
-    const outer = makeOuterWorld(openNestedWorld)
-    h.spaceContext.spaceWorldResource.value = outer.world
-    h.spaceContext.objectKey = 'projection/logbook'
-    h.spaceContext.objectPath = 'world/-/orient/plan/first'
-    h.viewer.mockClear()
-
-    const view = render(
-      <Router path={wizardPath} onNavigate={vi.fn()}>
-        <SpaceObjectContainer />
-      </Router>,
-    )
-    await waitFor(() =>
-      expect(h.viewer.mock.lastCall?.[0].worldState.value).toBe(first),
-    )
-
-    // A Space or Goal write advances the World without replacing this root.
-    await act(async () => outer.write(1n))
-    await waitFor(() => expect(outer.getObject).toHaveBeenCalledTimes(2))
-    expect(openNestedWorld).toHaveBeenCalledTimes(1)
-    expect(firstRelease).not.toHaveBeenCalled()
-
-    // Publish a new root under the same key without changing the route or parent.
-    await act(async () => outer.write(2n))
-    await waitFor(() =>
-      expect(h.viewer.mock.lastCall?.[0].worldState.value).toBe(second),
-    )
-    expect(h.viewer.mock.lastCall?.[0].worldState.value.result).toBe('after')
-    expect(openNestedWorld).toHaveBeenCalledTimes(2)
-    expect(firstRelease).toHaveBeenCalledTimes(1)
-    view.unmount()
-    expect(secondRelease).toHaveBeenCalledTimes(1)
-  })
-
   it('decodes the outer key and nested viewer subpath from a deep link', () => {
+    // Parse the outer route, then the nested route inside its path.
     const outer = parseObjectUri(
       'projection/logbook/-/world/-/orient/plan/first/-/details',
     )
     const inner = parseObjectUri(outer.path.slice('world/-/'.length))
 
+    // Each level carries its own key and subpath.
     expect(outer.objectKey).toBe('projection/logbook')
     expect(inner).toEqual({
       objectKey: 'orient/plan/first',
@@ -272,15 +183,16 @@ describe('nested World route', () => {
   })
 
   it('opens the outer object, navigates within the inner viewer, and releases on route change', async () => {
+    // Route to an object inside the outer object's nested World.
     const release = vi.fn()
     const nestedWorld = { [Symbol.dispose]: release, getReadOnly: () => true }
     const openNestedWorld = vi.fn().mockResolvedValue(nestedWorld)
-    h.spaceContext.spaceWorldResource.value =
-      makeOuterWorld(openNestedWorld).world
+    h.spaceContext.spaceWorldResource.value = { openNestedWorld }
     h.spaceContext.objectKey = 'projection/logbook'
     h.spaceContext.objectPath = 'world/-/orient/plan/first/-/details'
     h.viewer.mockClear()
 
+    // The viewer shows the inner object from the opened nested World.
     const view = render(
       <Router path={wizardPath} onNavigate={vi.fn()}>
         <SpaceObjectContainer />
@@ -295,6 +207,8 @@ describe('nested World route', () => {
     expect(props.objectInfo.info.value.objectKey).toBe('orient/plan/first')
     expect(props.worldState.value).toBe(nestedWorld)
     expect(props.path).toBe('/details')
+
+    // Local and sibling navigation stays inside the nested route.
     props.onNavigate({ path: 'history' })
     expect(h.navigateToSubPath).toHaveBeenCalledWith(
       'projection/logbook/-/world/-/orient/plan/first/-/details/history',
@@ -308,6 +222,7 @@ describe('nested World route', () => {
       'projection/logbook/-/world/-/orient/repo/-/plans',
     )
 
+    // Leaving the nested route releases the nested World.
     h.spaceContext.objectPath = ''
     view.rerender(
       <Router path={wizardPath} onNavigate={vi.fn()}>
@@ -316,6 +231,7 @@ describe('nested World route', () => {
     )
     await waitFor(() => expect(release).toHaveBeenCalledTimes(1))
 
+    // Returning opens it again, and unmounting releases it.
     h.spaceContext.objectPath = 'world/-/orient/issue/second'
     view.rerender(
       <Router path={wizardPath} onNavigate={vi.fn()}>
@@ -328,12 +244,13 @@ describe('nested World route', () => {
   })
 
   it('shows an empty route without opening a World', () => {
+    // Route to a nested World without an inner object.
     const openNestedWorld = vi.fn()
-    h.spaceContext.spaceWorldResource.value =
-      makeOuterWorld(openNestedWorld).world
+    h.spaceContext.spaceWorldResource.value = { openNestedWorld }
     h.spaceContext.objectKey = 'projection/logbook'
     h.spaceContext.objectPath = 'world/-/'
 
+    // The empty state shows and no World opens.
     render(
       <Router path={wizardPath} onNavigate={vi.fn()}>
         <SpaceObjectContainer />
@@ -344,12 +261,13 @@ describe('nested World route', () => {
   })
 
   it('shows an open error with retry instead of an indefinite loading state', async () => {
+    // Route to a nested World that fails to open.
     const openNestedWorld = vi.fn().mockRejectedValue(new Error('Unavailable'))
-    h.spaceContext.spaceWorldResource.value =
-      makeOuterWorld(openNestedWorld).world
+    h.spaceContext.spaceWorldResource.value = { openNestedWorld }
     h.spaceContext.objectKey = 'projection/logbook'
     h.spaceContext.objectPath = 'world/-/orient/plan/first'
 
+    // The error and a retry show in place of the loading state.
     render(
       <Router path={wizardPath} onNavigate={vi.fn()}>
         <SpaceObjectContainer />

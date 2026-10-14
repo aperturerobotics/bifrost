@@ -125,18 +125,19 @@ func (ws *SDKWorldState) AccessWorldState(ctx context.Context, ref *bucket.Objec
 	return s4wave_bucket_lookup.AccessCursor(ctx, ws.client, resp.GetResourceId(), cb)
 }
 
-// OpenNestedWorld opens a typed outer object's immutable sub-World.
-// Release the returned state independently of this World state.
-func (ws *SDKWorldState) OpenNestedWorld(ctx context.Context, key string) (*SDKWorldState, error) {
-	// Open the immutable sub-World through its outer object.
+// OpenNestedWorld grants a read-only Engine over the nested World a typed
+// outer object publishes. The Engine follows the object's revisions.
+// Release the returned Engine independently of this World state.
+func (ws *SDKWorldState) OpenNestedWorld(ctx context.Context, key string) (*SDKEngine, error) {
+	// Open the nested World Engine through the outer object.
 	resp, err := ws.service.OpenNestedWorld(ctx, &s4wave_world.OpenNestedWorldRequest{ObjectKey: key})
 	if err != nil {
 		return nil, err
 	}
 
-	// Wrap the nested World resource with an independent reference.
+	// Wrap the nested Engine resource with an independent reference.
 	ref := ws.client.CreateResourceReference(resp.GetResourceId())
-	nested, err := NewSDKWorldState(ws.client, ref, true)
+	nested, err := NewSDKEngine(ws.client, ref)
 	if err != nil {
 		ref.Release()
 		return nil, err

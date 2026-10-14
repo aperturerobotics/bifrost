@@ -100,7 +100,7 @@ export interface IWorldState {
   // stage writes through the transaction. A read-only state rejects it.
   stageWorldState(abortSignal?: AbortSignal): Promise<WorldStage>
 
-  /** openNestedWorld opens a typed outer object as a read-only sub-World. Dispose of the returned owned state independently. */
+  /** openNestedWorld opens a typed outer object's nested World as a read-only state that follows the object's revisions. Dispose of it independently. */
   openNestedWorld(
     objectKey: string,
     abortSignal?: AbortSignal,
@@ -367,20 +367,20 @@ export class WorldStateResource extends Resource implements IWorldState {
     return this.resourceRef.createResource(response.resourceId ?? 0, WorldStage)
   }
 
-  /** openNestedWorld opens a typed object's immutable sub-World. Release it independently. */
+  /** openNestedWorld grants a read-only Engine over a typed object's nested World that follows the object's revisions. Dispose of it independently. */
   public async openNestedWorld(
     objectKey: string,
     abortSignal?: AbortSignal,
-  ): Promise<WorldStateResource> {
+  ): Promise<EngineWorldState> {
     const response = await this.service.OpenNestedWorld(
       { objectKey },
       abortSignal,
     )
-    return this.resourceRef.createResource(
+    const engine = this.resourceRef.createResource(
       response.resourceId ?? 0,
-      WorldStateResource,
-      { readOnly: true },
+      Engine,
     )
+    return new EngineWorldState(engine, false, true)
   }
 
   /** openOuterWorld grants the enclosing Space World under the same authority. Dispose of it independently. */
@@ -601,6 +601,7 @@ export class WorldStateResource extends Resource implements IWorldState {
     objectKeys: string[],
     abortSignal?: AbortSignal,
   ): Promise<ObjectBody[] | null> {
+    // Collect the pages, giving up if any page reads another World revision.
     const bodies: ObjectBody[] = []
     let worldSeqno: bigint | undefined
     const pages = this.service.GetObjectBodiesBatch({ objectKeys }, abortSignal)

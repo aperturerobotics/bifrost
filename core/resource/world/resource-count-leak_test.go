@@ -27,7 +27,7 @@ import (
 )
 
 // TestRemoteNestedWorldResourceReleaseReturnsServerCountToBaseline proves that
-// retiring an immutable nested snapshot releases its server resource without
+// retiring a nested World Engine releases its server resources without
 // retiring the enclosing transaction or the connection.
 func TestRemoteNestedWorldResourceReleaseReturnsServerCountToBaseline(t *testing.T) {
 
@@ -109,6 +109,7 @@ func TestRemoteNestedWorldResourceReleaseReturnsServerCountToBaseline(t *testing
 
 	// Iterate the test cases.
 	for i := range 10 {
+		// Open the nested Engine and one read transaction on it.
 		nested, err := outer.OpenNestedWorld(ctx, outerKey)
 		if err != nil {
 			t.Fatal(err)
@@ -117,9 +118,17 @@ func TestRemoteNestedWorldResourceReleaseReturnsServerCountToBaseline(t *testing
 			nested.Release()
 			t.Fatalf("iteration %d: open count = %d, want %d", i, got, baseline+1)
 		}
-		obj, found, err := nested.GetObject(ctx, "inner")
+		nestedTx, err := nested.NewTransaction(ctx, false)
+		if err != nil {
+			nested.Release()
+			t.Fatal(err)
+		}
+
+		// Read the nested object through the transaction.
+		obj, found, err := nestedTx.GetObject(ctx, "inner")
 		if err != nil || !found {
 			world.ReleaseObjectState(obj)
+			nestedTx.Release()
 			nested.Release()
 			t.Fatalf("iteration %d: nested lookup: found %v, error %v", i, found, err)
 		}
@@ -137,17 +146,23 @@ func TestRemoteNestedWorldResourceReleaseReturnsServerCountToBaseline(t *testing
 			t.Fatalf("iteration %d: nested result = %q", i, body.GetMsg())
 		}
 
-		enclosing, err := nested.OpenOuterWorld(ctx)
+		// Grant the enclosing Space through the nested transaction.
+		enclosing, err := nestedTx.OpenOuterWorld(ctx)
 		if err != nil {
+			nestedTx.Release()
 			nested.Release()
 			t.Fatal(err)
 		}
-		if got := server.CountTrackedResources(); got != baseline+2 {
+		if got := server.CountTrackedResources(); got != baseline+3 {
+			nestedTx.Release()
 			nested.Release()
 			enclosing.Release()
-			t.Fatalf("iteration %d: outer open count = %d, want %d", i, got, baseline+2)
+			t.Fatalf("iteration %d: outer open count = %d, want %d", i, got, baseline+3)
 		}
+
+		// Release the grants in either order.
 		if i%2 == 0 {
+			nestedTx.Release()
 			nested.Release()
 			waitForTrackedResourceCount(t, server, baseline+1)
 			enclosingWorld, err := sdk_world_engine.NewSDKEngine(client, enclosing.GetResourceRef())
@@ -158,12 +173,13 @@ func TestRemoteNestedWorldResourceReleaseReturnsServerCountToBaseline(t *testing
 			enclosing.Release()
 		} else {
 			enclosing.Release()
-			waitForTrackedResourceCount(t, server, baseline+1)
-			obj, found, err = nested.GetObject(ctx, "inner")
+			waitForTrackedResourceCount(t, server, baseline+2)
+			obj, found, err = nestedTx.GetObject(ctx, "inner")
 			world.ReleaseObjectState(obj)
 			if err != nil || !found {
 				t.Fatalf("iteration %d: nested after enclosing release: found %v, err %v", i, found, err)
 			}
+			nestedTx.Release()
 			nested.Release()
 		}
 		waitForTrackedResourceCount(t, server, baseline)

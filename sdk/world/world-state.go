@@ -92,18 +92,19 @@ func (ws *WorldState) AccessWorldState(ctx context.Context, ref *bucket.ObjectRe
 	return resp.ResourceId, nil
 }
 
-// OpenNestedWorld opens an immutable sub-World published by a typed outer object.
-// Release the returned state independently of this World state.
-func (ws *WorldState) OpenNestedWorld(ctx context.Context, key string) (*WorldState, error) {
-	// Open the immutable nested World through the outer object.
+// OpenNestedWorld grants a read-only Engine over the nested World a typed
+// outer object publishes. The Engine follows the object's revisions.
+// Release the returned Engine independently of this World state.
+func (ws *WorldState) OpenNestedWorld(ctx context.Context, key string) (*Engine, error) {
+	// Open the nested World Engine through the outer object.
 	resp, err := ws.service.OpenNestedWorld(ctx, &OpenNestedWorldRequest{ObjectKey: key})
 	if err != nil {
 		return nil, err
 	}
 
-	// Wrap the nested World resource and release it if construction fails.
+	// Wrap the nested Engine resource and release it if construction fails.
 	ref := ws.client.CreateResourceReference(resp.GetResourceId())
-	nested, err := NewWorldState(ws.client, ref, true)
+	nested, err := NewEngine(ws.client, ref)
 	if err != nil {
 		ref.Release()
 		return nil, err
