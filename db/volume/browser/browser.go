@@ -36,7 +36,11 @@ var Version = controller.MustParseVersion("0.0.1")
 const metadataPrefix = "m/"
 
 // graphPrefix holds the reference graph records.
-const graphPrefix = "\x02"
+const graphPrefix = "\x03"
+
+// legacyGraphPrefix held the reference graph records of format version 2,
+// which spelled each node as a length and its full IRI.
+const legacyGraphPrefix = "\x02"
 
 // Volume is the browser volume.
 type Volume = volume_kvtx.Volume
@@ -76,6 +80,18 @@ func NewVolume(ctx context.Context, le *logrus.Entry, conf *Config) (*Volume, er
 	if conf.GetVerbose() {
 		store = kvtx_vlogger.NewVLogger(le, store)
 	}
+
+	// Move an older graph to the current encoding before the Volume records
+	// the current format version.
+	stale, err := volume_kvtx.NeedsFormatUpgrade(ctx, store, keys)
+	if err == nil && stale {
+		err = volume_kvtx.MigrateLegacyRefGraph(ctx, s, []byte(legacyGraphPrefix), []byte(graphPrefix))
+	}
+	if err != nil {
+		return nil, errors.Join(err, closeStore())
+	}
+
+	// Open the graph and register its roots.
 	graph := block_gc.NewCollectorRefGraph(kvtx_prefixer.NewPrefixer(s, []byte(graphPrefix)))
 	for _, node := range []string{block_gc.NodeGCRoot, block_gc.NodeUnreferenced} {
 		if err := graph.AddRoot(ctx, node); err != nil {

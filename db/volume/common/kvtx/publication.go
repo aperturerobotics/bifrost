@@ -10,7 +10,7 @@ import (
 )
 
 // refGraphPrefix holds the Volume's reference graph records.
-var refGraphPrefix = []byte("refs/")
+var refGraphPrefix = []byte{2}
 
 // openRefGraph opens the Volume's reference graph over store. Opening reads
 // nothing, so each transaction opens its own.

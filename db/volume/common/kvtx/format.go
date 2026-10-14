@@ -20,6 +20,7 @@ type formatMigration func(ctx context.Context, store kvtx.Store, keys *store_kvk
 var formatMigrations = [store_kvkey.FormatVersion]formatMigration{
 	0: migrateBase58Store,
 	1: migrateCayleyRefGraph,
+	2: migrateLegacyRefGraph,
 }
 
 // migrateBatchBytes bounds the keys and values one migration commit moves.

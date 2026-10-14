@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	block_gc "github.com/s4wave/spacewave/db/block/gc"
 	"github.com/s4wave/spacewave/db/kvtx"
 	store_kvkey "github.com/s4wave/spacewave/db/store/kvkey"
 )
@@ -22,21 +23,21 @@ type CopyProgress struct {
 
 // CopyStore writes the Volume store src into the empty store dst at
 // store_kvkey.FormatVersion. It copies every key outside the Cayley graph,
-// then converts the graph's live edges to edge records, so a format version 1
-// store, converted in part or not at all, never rewrites its Cayley log in
-// place.
+// encoding the version 2 graph records again, then converts the Cayley graph's
+// live edges to edge records, so a store of format version 1 or 2, converted
+// in part or not at all, never rewrites its graph in place.
 //
 // src is read in one snapshot and must have no writer. The format version is
 // written last in a durable commit; a dst without it is an incomplete copy to
 // discard. progress, when set, is called after each commit.
 func CopyStore(ctx context.Context, src, dst kvtx.Store, keys *store_kvkey.KVKey, progress func(CopyProgress)) error {
-	// Accept the current format and the Cayley format it converts.
+	// Accept the current format and the earlier graph formats it converts.
 	version, err := readFormatVersion(ctx, src, keys)
 	if err != nil {
 		return err
 	}
-	if version != 1 && version != store_kvkey.FormatVersion {
-		return fmt.Errorf("copy needs store format version 1 or %d, found %d", store_kvkey.FormatVersion, version)
+	if version == 0 || version > store_kvkey.FormatVersion {
+		return fmt.Errorf("copy needs store format version 1 to %d, found %d", store_kvkey.FormatVersion, version)
 	}
 	if err := requireEmptyStore(ctx, dst); err != nil {
 		return err
@@ -49,7 +50,7 @@ func CopyStore(ctx context.Context, src, dst kvtx.Store, keys *store_kvkey.KVKey
 	}
 	defer stx.Discard()
 
-	// Copy the keys, then convert the graph.
+	// Copy the keys, then convert the Cayley graph.
 	w := &copyWriter{store: dst, progress: progress}
 	if err := w.copyKeys(ctx, stx, keys.GetFormatVersionKey()); err != nil {
 		return err
@@ -100,7 +101,8 @@ type copyWriter struct {
 }
 
 // copyKeys copies every key of stx except the Cayley graph and versionKey,
-// in commits of up to migrateBatchBytes.
+// in commits of up to migrateBatchBytes. It writes each version 2 graph
+// record in the current encoding.
 func (w *copyWriter) copyKeys(ctx context.Context, stx kvtx.Tx, versionKey []byte) error {
 	// Walk every key in order.
 	it := stx.Iterate(ctx, nil, true, false)
@@ -125,7 +127,15 @@ func (w *copyWriter) copyKeys(ctx context.Context, stx kvtx.Tx, versionKey []byt
 			if err != nil {
 				return err
 			}
-			batch = append(batch, keyValue{key: bytes.Clone(key), value: value})
+			key = bytes.Clone(key)
+			if record, ok := bytes.CutPrefix(key, legacyRefGraphPrefix); ok {
+				current, err := block_gc.LegacyRecordKey(record)
+				if err != nil {
+					return err
+				}
+				key = append(bytes.Clone(refGraphPrefix), current...)
+			}
+			batch = append(batch, keyValue{key: key, value: value})
 			size += len(key) + len(value)
 		}
 		if size >= migrateBatchBytes {

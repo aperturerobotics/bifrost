@@ -1366,6 +1366,44 @@ func TestBlockIRIRoundTrip(t *testing.T) {
 	}
 }
 
+// TestGraphKeyNodes encodes block and text nodes as the far node of a record
+// and expects each to decode to itself, and no node's key to prefix another's.
+func TestGraphKeyNodes(t *testing.T) {
+	// Collect block nodes of both hash types and text nodes, including a
+	// block IRI that does not parse.
+	sha, err := hash.Sum(hash.HashType_HashType_SHA256, []byte("sha"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	nodes := []string{
+		BlockIRI(testBlockRef(t, "a")),
+		BlockIRI(testBlockRef(t, "b")),
+		BlockIRI(block.NewBlockRef(sha)),
+		NodeGCRoot,
+		BucketIRI("bucket"),
+		"block:not-base58",
+		"",
+	}
+
+	// Each node decodes back from a record key.
+	subject := BlockIRI(testBlockRef(t, "subject"))
+	prefix := graphKey(kindForward, subject)
+	for _, node := range nodes {
+		if got := lastNode(prefix, graphKey(kindForward, subject, node)); got != node {
+			t.Fatalf("node %q decoded as %q", node, got)
+		}
+	}
+
+	// No node's key prefixes another's, so a prefix scan stays exact.
+	for _, a := range nodes {
+		for _, b := range nodes {
+			if a != b && bytes.HasPrefix(graphKey(kindNode, b), graphKey(kindNode, a)) {
+				t.Fatalf("key of %q prefixes key of %q", a, b)
+			}
+		}
+	}
+}
+
 func TestParseBlockIRIInvalid(t *testing.T) {
 	// Verify block parsing rejects a foreign IRI.
 	_, ok := ParseBlockIRI("not-a-block-iri")

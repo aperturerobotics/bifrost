@@ -3,19 +3,23 @@ package block_gc
 import (
 	"context"
 	"encoding/binary"
+	"math"
 	"slices"
+	"strings"
 
+	b58 "github.com/mr-tron/base58/base58"
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/kvtx"
+	"github.com/s4wave/spacewave/net/hash"
 )
 
 // maxBatchEdges bounds the input edges committed in one transaction.
 const maxBatchEdges = 128
 
-// Record kinds. Each kind byte begins a key followed by length-prefixed node
-// IRIs, so no node can be read as a prefix of another. Records hold no value:
-// a scan reads the last node from each key.
+// Record kinds. Each kind byte begins a key followed by encoded nodes, each of
+// which delimits itself, so no node can be read as a prefix of another.
+// Records hold no value: a scan reads the last node from each key.
 const (
 	// kindForward keys an edge by subject then object.
 	kindForward byte = 'f'
@@ -52,28 +56,83 @@ func NewCollectorRefGraph(store kvtx.Store) *RefGraph {
 	return &RefGraph{store: store, inventory: true}
 }
 
-// graphKey encodes a record kind followed by unambiguous full node IRIs.
+// textNode begins the encoding of a node that is not a block.
+const textNode byte = 0
+
+// graphKey encodes a record kind followed by its nodes.
 func graphKey(kind byte, nodes ...string) []byte {
-	// Size the key buffer for the kind byte and each length-prefixed node.
+	// Size the key buffer for the kind byte and the longest node encodings.
 	size := 1
 	for _, node := range nodes {
-		size += 4 + len(node)
+		size += 1 + binary.MaxVarintLen64 + len(node)
 	}
 
-	// Append the kind byte and each node with its 4-byte length prefix.
+	// Append the kind byte and each node.
 	key := make([]byte, 1, size)
 	key[0] = kind
 	for _, node := range nodes {
-		key = binary.BigEndian.AppendUint32(key, uint32(len(node))) //nolint:gosec // node IRIs are far shorter than 4 GiB.
-		key = append(key, node...)
+		key = appendNode(key, node)
 	}
 	return key
+}
+
+// appendNode appends the encoding of node to key. A block node is its hash
+// type byte, never zero, followed by the digest, whose length the type fixes;
+// it holds about half the bytes of the base58 IRI. Any other node, or a block
+// IRI that does not decode back to the same text, is textNode, a uvarint
+// length and the IRI.
+func appendNode(key []byte, node string) []byte {
+	if h := parseBlockNode(node); h != nil {
+		key = append(key, byte(h.GetHashType())) //nolint:gosec // parseBlockNode admits types up to math.MaxUint8.
+		return append(key, h.GetHash()...)
+	}
+	key = append(key, textNode)
+	key = binary.AppendUvarint(key, uint64(len(node)))
+	return append(key, node...)
+}
+
+// parseBlockNode returns the hash of a block IRI that encodes as a digest,
+// or nil.
+func parseBlockNode(node string) *hash.Hash {
+	// Decode the marshaled ref from the IRI.
+	rest, ok := strings.CutPrefix(node, prefixBlock)
+	if !ok || rest == "" {
+		return nil
+	}
+	data, err := b58.Decode(rest)
+	if err != nil {
+		return nil
+	}
+	ref := &block.BlockRef{}
+	if err := ref.UnmarshalVT(data); err != nil {
+		return nil
+	}
+
+	// Require a digest of its type's length and an IRI the digest spells
+	// again exactly.
+	h := ref.GetHash()
+	t := h.GetHashType()
+	if t == hash.HashType_HashType_UNKNOWN || t > math.MaxUint8 || len(h.GetHash()) != t.GetHashLen() {
+		return nil
+	}
+	if BlockIRI(ref) != node {
+		return nil
+	}
+	return h
 }
 
 // lastNode returns the node that follows prefix in a record key, where
 // prefix is a graphKey with one node fewer than key.
 func lastNode(prefix, key []byte) string {
-	return string(key[len(prefix)+4:])
+	enc := key[len(prefix):]
+	if enc[0] == textNode {
+		_, n := binary.Uvarint(enc[1:])
+		return string(enc[1+n:])
+	}
+	return BlockIRI(&block.BlockRef{Hash: &hash.Hash{
+		HashType: hash.HashType(enc[0]),
+		Hash:     enc[1:],
+	}})
 }
 
 // transaction retries complete graph operations against a fresh consistent view.

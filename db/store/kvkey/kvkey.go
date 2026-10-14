@@ -11,7 +11,9 @@ import (
 // Version 1 keys each block by the marshaled ref bytes.
 // Version 2 stores the reference graph as edge records instead of a Cayley
 // quad store.
-const FormatVersion = 2
+// Version 3 encodes each block node of the graph as its hash type and digest
+// instead of its base58 IRI.
+const FormatVersion = 3
 
 // formatVersionKey names the key holding the store's format version.
 var formatVersionKey = []byte("format")
