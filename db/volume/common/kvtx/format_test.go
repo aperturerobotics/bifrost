@@ -503,3 +503,137 @@ func checkLegacyRefGraph(t *testing.T, store db_kvtx.Store) {
 		t.Fatal(err)
 	}
 }
+
+// TestCopyReachable copies a store whose graph root reaches blocks a and b
+// through a bucket, with b also left in the unreferenced queue, while c sits
+// only in the queue, d has no graph record and e belongs to a bucket nothing
+// reaches. The copy keeps a, b, their records and the key outside the graph,
+// and drops the rest.
+func TestCopyReachable(t *testing.T) {
+	t.Run("inmem", func(t *testing.T) {
+		testCopyReachable(t, store_kvtx_inmem.NewStore(), store_kvtx_inmem.NewStore())
+	})
+	t.Run("s4db", func(t *testing.T) {
+		dir := t.TempDir()
+		var dbs [2]*s4db.DB
+		for i, name := range []string{"src.s4db", "dst.s4db"} {
+			db, err := s4db.Open(filepath.Join(dir, name), s4db.Options{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() { _ = db.Close() })
+			dbs[i] = db
+		}
+		testCopyReachable(t, dbs[0], dbs[1])
+	})
+}
+
+// testCopyReachable runs TestCopyReachable on one pair of stores.
+func testCopyReachable(t *testing.T, src, dst db_kvtx.Store) {
+	// Open a write transaction on the source.
+	ctx := context.Background()
+	keys := store_kvkey.NewDefaultKVKey()
+	tx, err := src.NewTransaction(ctx, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Write the blocks.
+	refs := make(map[string]*block.BlockRef)
+	for _, name := range []string{"a", "b", "c", "d", "e"} {
+		ref, err := block.BuildBlockRef([]byte(name), nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		rm, err := ref.MarshalKey()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := tx.Set(ctx, keys.GetBlockKey(rm), []byte(name)); err != nil {
+			t.Fatal(err)
+		}
+		refs[name] = ref
+	}
+
+	// Write the key outside the graph and the current format version.
+	if err := tx.Set(ctx, []byte("other"), []byte("value")); err != nil {
+		t.Fatal(err)
+	}
+	if err := tx.Set(ctx, keys.GetFormatVersionKey(), store_kvkey.MarshalFormatVersion(store_kvkey.FormatVersion)); err != nil {
+		t.Fatal(err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	// Write the graph.
+	iri := func(name string) string { return block_gc.BlockIRI(refs[name]) }
+	err = openRefGraph(src).ApplyRefBatch(ctx, []block_gc.RefEdge{
+		{Subject: block_gc.NodeGCRoot, Object: block_gc.BucketIRI("live")},
+		{Subject: block_gc.BucketIRI("live"), Object: iri("a")},
+		{Subject: iri("a"), Object: iri("b")},
+		{Subject: block_gc.NodeUnreferenced, Object: iri("b")},
+		{Subject: block_gc.NodeUnreferenced, Object: iri("c")},
+		{Subject: block_gc.BucketIRI("gone"), Object: iri("e")},
+	}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Copy the reachable part.
+	var last CopyProgress
+	if err := CopyReachable(ctx, src, dst, keys, func(p CopyProgress) { last = p }); err != nil {
+		t.Fatal(err)
+	}
+
+	// Each edge is two records: the copy keeps the three reachable edges and
+	// drops the two queue marks and the unreachable bucket's edge.
+	want := CopyProgress{Keys: 9, DroppedBlocks: 3, UnownedBlocks: 1, DroppedRecords: 6}
+	last.Bytes, last.DroppedBytes = 0, 0
+	if last != want {
+		t.Fatalf("progress %+v, want %+v", last, want)
+	}
+
+	// The destination holds the reachable blocks and edges and the other key.
+	rtx, err := dst.NewTransaction(ctx, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rtx.Discard()
+	for name, kept := range map[string]bool{"a": true, "b": true, "c": false, "d": false, "e": false} {
+		rm, err := refs[name].MarshalKey()
+		if err != nil {
+			t.Fatal(err)
+		}
+		found, err := rtx.Exists(ctx, keys.GetBlockKey(rm))
+		if err != nil || found != kept {
+			t.Fatalf("block %s: found %v, want %v, err %v", name, found, kept, err)
+		}
+	}
+	if found, err := rtx.Exists(ctx, []byte("other")); err != nil || !found {
+		t.Fatalf("other key: found %v err %v", found, err)
+	}
+	rg := openRefGraph(dst)
+	for node, want := range map[string][]string{
+		block_gc.NodeGCRoot:        {block_gc.BucketIRI("live")},
+		block_gc.BucketIRI("live"): {iri("a")},
+		iri("a"):                   {iri("b")},
+		block_gc.NodeUnreferenced:  nil,
+		block_gc.BucketIRI("gone"): nil,
+	} {
+		got, err := rg.GetOutgoingRefs(ctx, node)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !slices.Equal(got, want) {
+			t.Fatalf("outgoing refs of %s: %v, want %v", node, got, want)
+		}
+	}
+
+	// A store at an earlier format is refused.
+	old := store_kvtx_inmem.NewStore()
+	writeLegacyStore(t, old, keys)
+	if err := CopyReachable(ctx, old, store_kvtx_inmem.NewStore(), keys, nil); err == nil {
+		t.Fatal("reachable copy of a version 2 store succeeded")
+	}
+}

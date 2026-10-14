@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/s4wave/spacewave/db/block"
 	block_gc "github.com/s4wave/spacewave/db/block/gc"
 	"github.com/s4wave/spacewave/db/kvtx"
 	store_kvkey "github.com/s4wave/spacewave/db/store/kvkey"
@@ -19,6 +20,15 @@ type CopyProgress struct {
 	Bytes uint64
 	// Edges is the number of Cayley log edges converted.
 	Edges uint64
+	// DroppedBlocks is the number of blocks a reachable copy left out.
+	DroppedBlocks uint64
+	// UnownedBlocks is the number of dropped blocks no graph record owned,
+	// which a running collector would never have deleted.
+	UnownedBlocks uint64
+	// DroppedRecords is the number of graph records a reachable copy left out.
+	DroppedRecords uint64
+	// DroppedBytes is the size of the keys and values left out.
+	DroppedBytes uint64
 }
 
 // CopyStore writes the Volume store src into the empty store dst at
@@ -39,6 +49,41 @@ func CopyStore(ctx context.Context, src, dst kvtx.Store, keys *store_kvkey.KVKey
 	if version == 0 || version > store_kvkey.FormatVersion {
 		return fmt.Errorf("copy needs store format version 1 to %d, found %d", store_kvkey.FormatVersion, version)
 	}
+	return copyStore(ctx, src, dst, keys, false, progress)
+}
+
+// CopyReachable writes the Volume store src into the empty store dst like
+// CopyStore, keeping only what a complete collection would keep: the blocks
+// reachable from the graph root, the graph records of reachable nodes and
+// every key outside the graph and the blocks. It drops the unreferenced queue.
+//
+// src must be at store_kvkey.FormatVersion: the walk reads only the current
+// graph, so the records of a store not yet converted would be missed and
+// their blocks dropped. A dropped block no graph record owned is counted in
+// UnownedBlocks, since a running collector would never have deleted it.
+func CopyReachable(ctx context.Context, src, dst kvtx.Store, keys *store_kvkey.KVKey, progress func(CopyProgress)) error {
+	// Require a fully converted source.
+	version, err := readFormatVersion(ctx, src, keys)
+	if err != nil {
+		return err
+	}
+	if version != store_kvkey.FormatVersion {
+		return fmt.Errorf("reachable copy needs store format version %d, found %d; copy it to the current format first", store_kvkey.FormatVersion, version)
+	}
+	return copyStore(ctx, src, dst, keys, true, progress)
+}
+
+// copyStore copies src into the empty store dst and records the format
+// version last. With reachable, it first marks the nodes reachable from the
+// graph root and copies only what they keep.
+func copyStore(
+	ctx context.Context,
+	src, dst kvtx.Store,
+	keys *store_kvkey.KVKey,
+	reachable bool,
+	progress func(CopyProgress),
+) error {
+	// Refuse a destination that already holds keys.
 	if err := requireEmptyStore(ctx, dst); err != nil {
 		return err
 	}
@@ -50,8 +95,18 @@ func CopyStore(ctx context.Context, src, dst kvtx.Store, keys *store_kvkey.KVKey
 	}
 	defer stx.Discard()
 
-	// Copy the keys, then convert the Cayley graph.
+	// Mark the reachable nodes in the same snapshot.
 	w := &copyWriter{store: dst, progress: progress}
+	if reachable {
+		w.graph = openRefGraph(kvtx.NewTxStore(stx))
+		w.blockPrefix = keys.GetBlockFullPrefix()
+		w.live, err = w.graph.Reachable(ctx, block_gc.NodeGCRoot)
+		if err != nil {
+			return fmt.Errorf("mark reachable nodes: %w", err)
+		}
+	}
+
+	// Copy the keys, then convert the Cayley graph.
 	if err := w.copyKeys(ctx, stx, keys.GetFormatVersionKey()); err != nil {
 		return err
 	}
@@ -98,6 +153,14 @@ type copyWriter struct {
 	progress func(CopyProgress)
 	// counts is the work committed so far.
 	counts CopyProgress
+	// live holds the reachable nodes of a reachable copy; nil copies every
+	// key.
+	live map[string]struct{}
+	// blockPrefix is the prefix of the block keys a reachable copy filters.
+	blockPrefix []byte
+	// graph reads the source's reference graph in the copy's snapshot during
+	// a reachable copy.
+	graph *block_gc.RefGraph
 }
 
 // copyKeys copies every key of stx except the Cayley graph and versionKey,
@@ -135,8 +198,16 @@ func (w *copyWriter) copyKeys(ctx context.Context, stx kvtx.Tx, versionKey []byt
 				}
 				key = append(bytes.Clone(refGraphPrefix), current...)
 			}
-			batch = append(batch, keyValue{key: key, value: value})
-			size += len(key) + len(value)
+			keep, err := w.keep(ctx, key)
+			if err != nil {
+				return err
+			}
+			if keep {
+				batch = append(batch, keyValue{key: key, value: value})
+				size += len(key) + len(value)
+			} else {
+				w.counts.DroppedBytes += uint64(len(key) + len(value)) //nolint:gosec // lengths are never negative.
+			}
 		}
 		if size >= migrateBatchBytes {
 			if err := w.commitKeys(ctx, batch, size); err != nil {
@@ -150,6 +221,55 @@ func (w *copyWriter) copyKeys(ctx context.Context, stx kvtx.Tx, versionKey []byt
 		return err
 	}
 	return w.commitKeys(ctx, batch, size)
+}
+
+// keep reports whether the copy writes key, counting a dropped key. A
+// reachable copy drops the graph records of unreachable nodes and the blocks
+// no reachable node names.
+func (w *copyWriter) keep(ctx context.Context, key []byte) (bool, error) {
+	// A full copy keeps every key.
+	if w.live == nil {
+		return true, nil
+	}
+
+	// Keep a graph record whose subject is reachable.
+	if record, ok := bytes.CutPrefix(key, refGraphPrefix); ok {
+		subject, err := block_gc.RecordSubject(record)
+		if err != nil {
+			return false, err
+		}
+		if _, ok := w.live[subject]; ok {
+			return true, nil
+		}
+		w.counts.DroppedRecords++
+		return false, nil
+	}
+
+	// Keep a reachable block and every key outside the blocks.
+	data, ok := bytes.CutPrefix(key, w.blockPrefix)
+	if !ok {
+		return true, nil
+	}
+	ref := &block.BlockRef{}
+	if err := ref.UnmarshalVT(data); err != nil {
+		return false, fmt.Errorf("decode block key %q: %w", key, err)
+	}
+	node := block_gc.BlockIRI(ref)
+	if _, ok := w.live[node]; ok {
+		return true, nil
+	}
+
+	// Count a dropped block that no record names as an object, not even the
+	// unreferenced queue.
+	w.counts.DroppedBlocks++
+	owners, err := w.graph.GetIncomingRefs(ctx, node)
+	if err != nil {
+		return false, err
+	}
+	if len(owners) == 0 {
+		w.counts.UnownedBlocks++
+	}
+	return false, nil
 }
 
 // commitKeys writes batch, holding size bytes, in one ordered commit.

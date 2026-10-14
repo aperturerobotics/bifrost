@@ -22,6 +22,8 @@ const copyReportInterval = 10 * time.Second
 
 // newDebugVolumeCopyCommand builds the offline volume copy command.
 func newDebugVolumeCopyCommand() *cli.Command {
+	// Bind the reachable flag.
+	var reachable bool
 	return &cli.Command{
 		Name:      "volume-copy",
 		Usage:     "copy a stopped volume file into a new file at the current store format",
@@ -29,19 +31,30 @@ func newDebugVolumeCopyCommand() *cli.Command {
 		Description: "Copies every key of a stopped s4db volume into a new file, converting a Cayley reference graph " +
 			"to edge records on the way, so the source is never rewritten in place. The new file is written in key order " +
 			"with compaction off and records the format version last; a copy that stops early lacks it and should be deleted. " +
-			"The source is left unchanged. Replace the source with the new file only after checking it.",
+			"The source is left unchanged. Replace the source with the new file only after checking it. " +
+			"With --reachable, the source must already be at the current format, and the copy keeps only the blocks " +
+			"and graph records reachable from the graph root, as a complete collection would. Check its count of " +
+			"unowned blocks before using it: the running collector never deletes those.",
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:        "reachable",
+				Usage:       "copy only the blocks and graph records reachable from the graph root",
+				Destination: &reachable,
+			},
+		},
 		Action: func(c *cli.Context) error {
 			if c.NArg() != 2 {
 				return errors.New("expected the volume file and the new file")
 			}
-			return copyVolumeFile(c.Context, c.Args().Get(0), c.Args().Get(1), os.Stderr)
+			return copyVolumeFile(c.Context, c.Args().Get(0), c.Args().Get(1), reachable, os.Stderr)
 		},
 	}
 }
 
 // copyVolumeFile copies the stopped volume at src into the new file dst,
-// writing progress lines to w. It removes dst when the copy fails.
-func copyVolumeFile(ctx context.Context, src, dst string, w io.Writer) (err error) {
+// only its reachable part with reachable, writing progress lines to w. It
+// removes dst when the copy fails.
+func copyVolumeFile(ctx context.Context, src, dst string, reachable bool, w io.Writer) (err error) {
 	// Open the source, refusing a missing file, which the open would create,
 	// and a file a daemon has open.
 	if _, err := os.Stat(src); err != nil {
@@ -79,16 +92,37 @@ func copyVolumeFile(ctx context.Context, src, dst string, w io.Writer) (err erro
 	// Copy, reporting progress at most once per interval.
 	start := time.Now()
 	var last time.Time
+	var counts volume_kvtx.CopyProgress
 	report := func(p volume_kvtx.CopyProgress) {
+		counts = p
 		if time.Since(last) < copyReportInterval {
 			return
 		}
 		last = time.Now()
-		fmt.Fprintf(w, "%s: %d keys, %s, %d graph edges\n", time.Since(start).Round(time.Second), p.Keys, humanize.IBytes(p.Bytes), p.Edges)
+		fmt.Fprintf(w, "%s: %s\n", time.Since(start).Round(time.Second), formatCopyProgress(p))
 	}
-	if err := volume_kvtx.CopyStore(ctx, sdb, ddb, store_kvkey.NewDefaultKVKey(), report); err != nil {
+
+	// Copy every key, or only the reachable part.
+	copyStore := volume_kvtx.CopyStore
+	if reachable {
+		copyStore = volume_kvtx.CopyReachable
+	}
+	if err := copyStore(ctx, sdb, ddb, store_kvkey.NewDefaultKVKey(), report); err != nil {
 		return err
 	}
-	fmt.Fprintf(w, "copied %s to %s in %s\n", src, dst, time.Since(start).Round(time.Second))
+	fmt.Fprintf(w, "copied %s to %s in %s: %s\n", src, dst, time.Since(start).Round(time.Second), formatCopyProgress(counts))
 	return nil
+}
+
+// formatCopyProgress describes the work of a copy, with what a reachable copy
+// dropped.
+func formatCopyProgress(p volume_kvtx.CopyProgress) string {
+	line := fmt.Sprintf("%d keys, %s, %d graph edges", p.Keys, humanize.IBytes(p.Bytes), p.Edges)
+	if p.DroppedBytes == 0 {
+		return line
+	}
+	return fmt.Sprintf(
+		"%s; dropped %d blocks (%d unowned), %d graph records, %s",
+		line, p.DroppedBlocks, p.UnownedBlocks, p.DroppedRecords, humanize.IBytes(p.DroppedBytes),
+	)
 }
