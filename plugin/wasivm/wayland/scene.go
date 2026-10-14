@@ -299,7 +299,7 @@ func blend(pix []byte, r image.Rectangle, s *surface, at image.Point) {
 		for i := 0; i < len(from); i += 4 {
 			keep := 255 - uint32(from[i+3])
 			for j := range 3 {
-				to[i+j] = from[i+j] + byte((uint32(to[i+j])*keep+127)/255)
+				to[i+j] = from[i+j] + byte((uint32(to[i+j])*keep+127)/255) //nolint:gosec // at most 255.
 			}
 		}
 	}
