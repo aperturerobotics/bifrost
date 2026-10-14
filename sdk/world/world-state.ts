@@ -196,10 +196,14 @@ export interface IWorldState {
     options?: ListGraphEdgeBucketsOptions,
   ): Promise<ListGraphEdgeBucketsResponse>
 
-  /** listObjectsWithType collects every matching key in stable graph-index order. */
+  /**
+   * listObjectsWithType collects the matching keys in stable graph-index
+   * order: every key, or the first limit keys when limit is positive.
+   */
   listObjectsWithType(
     typeID: string,
     abortSignal?: AbortSignal,
+    limit?: number,
   ): Promise<string[]>
 
   /**
@@ -609,25 +613,27 @@ export class WorldStateResource extends Resource implements IWorldState {
     return bodies
   }
 
-  /** listObjectsWithType collects every matching key in stable graph-index order. */
+  /** listObjectsWithType collects the matching keys in stable graph-index order. */
   public async listObjectsWithType(
     typeID: string,
     abortSignal?: AbortSignal,
+    limit = 0,
   ): Promise<string[]> {
     // Walk bounded service pages, resuming from each last subject.
     const keys: string[] = []
     let startAfter = ''
     for (;;) {
-      // Request one typed page and append its distinct subjects.
+      // Request one typed page, no larger than the keys still wanted.
+      const pageLimit = limit > 0 ? Math.min(limit - keys.length, 1000) : 1000
       const response = await this.service.ListObjectsWithType(
-        { typeId: typeID, startAfter, limit: 1000 },
+        { typeId: typeID, startAfter, limit: pageLimit },
         abortSignal,
       )
       const page = response.objectKeys ?? []
       keys.push(...page)
 
-      // Stop at the end of the type or resume from the last returned key.
-      if (!response.more) return keys
+      // Stop at the limit or the end of the type, or resume from the last key.
+      if (!response.more || (limit > 0 && keys.length >= limit)) return keys
       startAfter = page[page.length - 1]!
     }
   }

@@ -220,7 +220,7 @@ export function CanvasViewer({
     useWorldQuery(
       worldState,
       async (world, signal) =>
-        (await world.listObjectsWithType(UnixFSTypeID, signal))[0] ?? null,
+        (await world.listObjectsWithType(UnixFSTypeID, signal, 1))[0] ?? null,
       [],
     ).value ?? null
   const unixfsRoot = useUnixFSRootHandle(worldState, unixfsObjectKey)
